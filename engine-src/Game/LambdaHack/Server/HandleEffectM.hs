@@ -1802,7 +1802,8 @@ effectDupItem execSfx iidOriginal target = do
            modifyServer $ \ser ->
              ser {sgenerationAn = EM.adjust (EM.insertWith (+) iid 1) slore
                                             (sgenerationAn ser)}
-           execUpdAtomic $ UpdCreateItem True iid (itemBase itemFull) (1, []) c
+           execUpdAtomic $ UpdCreateItem True iid (itemBase itemFull)
+                                         quantSingle c
            return UseUp
 
 -- ** Identify

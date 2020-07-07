@@ -660,7 +660,7 @@ itemAidVerbMU msgClass aid verb iid ek = do
   side <- getsClient sside
   factionD <- getsState sfactionD
   let lid = blid body
-      fakeKit = (1, [])
+      fakeKit = quantSingle
   localTime <- getsState $ getLocalTime lid
   subject <- partActorLeader aid
   -- The item may no longer be in @c@, but it was.
@@ -689,7 +689,7 @@ manyItemsAidVerbMU msgClass aid verb bag ekf = do
   side <- getsClient sside
   factionD <- getsState sfactionD
   let lid = blid body
-      fakeKit = (1, [])
+      fakeKit = quantSingle
   localTime <- getsState $ getLocalTime lid
   subject <- partActorLeader aid
   -- The item may no longer be in @c@, but it was.
@@ -756,7 +756,7 @@ createActorUI born aid body = do
            return (n, if 0 < n && n < 10 then Char.intToDigit n else '@')
     let (object1, object2) =
           partItemShortest rwidth (bfid body) factionD localTime
-                           itemFull (1, [])
+                           itemFull quantSingle
         (bname, bpronoun) =
           if | bproj body ->
                let adj = case btrajectory body of
@@ -1233,7 +1233,8 @@ discover c iid = do
     CTrunk _ _ p | p == originPoint -> return (True, [])
       -- the special reveal at game over, using fake @CTrunk@; don't spam
     _ -> return (False, [])
-  let kit = EM.findWithDefault (1, []) iid bag  -- may be used up by that time
+  let kit = EM.findWithDefault quantSingle iid bag
+              -- may be used up by that time
       knownName = makePhrase
         [partItemMediumAW rwidth side factionD localTime itemFull kit]
       flav = flavourToName $ jflavour $ itemBase itemFull
@@ -1571,7 +1572,7 @@ ppSfxMsg sfxMsg = case sfxMsg of
       localTime <- getsState $ getLocalTime lid
       let (object1, object2) =
             partItemShortest maxBound side factionD localTime
-                             itemFull (1, [])
+                             itemFull quantSingle
           name = makePhrase [object1, object2]
       return $
         Just ( MsgWarning
@@ -1699,9 +1700,8 @@ ppSfxMsg sfxMsg = case sfxMsg of
       itemFull <- getsState $ itemToFull iid
       side <- getsClient sside
       bag <- getsState $ getBodyStoreBag b cstore
-      let kit = (1, [])
-          (name, powers) =
-            partItem rwidth (bfid b) factionD localTime itemFull kit
+      let (name, powers) =
+            partItem rwidth (bfid b) factionD localTime itemFull quantSingle
           total = case bag EM.! iid of
             (_, []) -> error $ "" `showFailure` (bag, iid, aid, cstore, delta)
             (_, t:_) -> deltaOfItemTimer localTime t
@@ -1723,7 +1723,7 @@ ppSfxMsg sfxMsg = case sfxMsg of
             -- So their narrative context needs to be taken into account.
             ( MsgLonger
             , [partItemShortWownW rwidth side factionD (partActor bUI) localTime
-                                  itemFull (1, [])]
+                                  itemFull quantSingle]
               ++ cond ++ ["is extended"] )
       return $ Just (msgClass, makeSentence parts)
     else return Nothing
@@ -1741,7 +1741,7 @@ ppSfxMsg sfxMsg = case sfxMsg of
   SfxItemYield iid k lid -> do
     iidSeen <- getsState $ EM.member iid . sitemD
     if iidSeen then do
-      let fakeKit = (1, [])
+      let fakeKit = quantSingle
           fakeC = CFloor lid originPoint
           verb = MU.Text $ "yield" <+> makePhrase [MU.CardinalAWs k "item"]
       msg <- itemVerbMUGeneral False iid fakeKit verb fakeC
@@ -1766,7 +1766,7 @@ strike catch source target iid = assert (source /= target) $ do
     tbUI <- getsSession $ getActorUI target
     localTime <- getsState $ getLocalTime (blid tb)
     itemFullWeapon <- getsState $ itemToFull iid
-    let kitWeapon = (1, [])
+    let kitWeapon = quantSingle
     side <- getsClient sside
     factionD <- getsState sfactionD
     tfact <- getsState $ (EM.! bfid tb) . sfactionD
@@ -1794,7 +1794,7 @@ strike catch source target iid = assert (source /= target) $ do
           Just (iidArmor, itemFullArmor) | iidArmor /= btrunk tb ->
             let (object1, object2) =
                   partItemShortest rwidth (bfid tb) factionD localTime
-                                   itemFullArmor (1, [])
+                                   itemFullArmor quantSingle
                 name = MU.Phrase [object1, object2]
             in ( ["with", MU.WownW tpronoun name]
                , Dice.supDice (IK.idamage $ itemKind itemFullArmor) > 0 )
@@ -2008,7 +2008,7 @@ strike catch source target iid = assert (source /= target) $ do
                        maximumBy (Ord.comparing $ abs . fst) condArmor
                      (object1, object2) =
                        partItemShortest rwidth (bfid tb) factionD localTime
-                                        itemFullArmor (1, [])
+                                        itemFullArmor quantSingle
                      name = makePhrase [object1, object2]
                      msgText =
                        if hurtMult > 20 && not surprisinglyGoodDefense

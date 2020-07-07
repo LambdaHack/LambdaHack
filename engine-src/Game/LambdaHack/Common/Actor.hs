@@ -260,7 +260,7 @@ getCarriedIidsAndTrunk :: Actor -> [ItemId]
 getCarriedIidsAndTrunk b =
   -- The trunk is important for a case of spotting a caught projectile
   -- with a stolen projecting item. This actually does happen.
-  let trunk = EM.singleton (btrunk b) (1, [])
+  let trunk = EM.singleton (btrunk b) quantSingle
   in EM.keys $ EM.unionsWith const [beqp b, borgan b, trunk]
 
 getCarriedIidCStore :: Actor -> [(ItemId, CStore)]

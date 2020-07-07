@@ -229,7 +229,7 @@ getCarriedAssocsAndTrunk :: Actor -> State -> [(ItemId, Item)]
 getCarriedAssocsAndTrunk b s =
   -- The trunk is important for a case of spotting a caught projectile
   -- with a stolen projecting item. This actually does happen.
-  let trunk = EM.singleton (btrunk b) (1, [])
+  let trunk = EM.singleton (btrunk b) quantSingle
   in bagAssocs s $ EM.unionsWith const [beqp b, borgan b, trunk]
 
 getContainerBag :: Container -> State -> ItemBag

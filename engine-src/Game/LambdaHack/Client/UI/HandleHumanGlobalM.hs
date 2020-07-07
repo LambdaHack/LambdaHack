@@ -1182,7 +1182,7 @@ verifyToolEffect lid store itemFull = do
   factionD <- getsState sfactionD
   let object = makePhrase
                  [partItemWsShort rwidth side factionD 1 localTime
-                                  itemFull (1, [])]
+                                  itemFull quantSingle]
       prompt = "Do you really want to transform the terrain using"
                <+> object
                <+> "that may cause substantial side-effects?"

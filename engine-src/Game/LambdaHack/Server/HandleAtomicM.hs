@@ -176,7 +176,7 @@ cmdAtomicSemSer oldState cmd = case cmd of
     invalidatePerActor aid2
   UpdMoveItem iid _k aid s1 s2 -> do
     let dummyVerbose = False
-        dummyKit = (1, [])
+        dummyKit = quantSingle
     cmdAtomicSemSer oldState $
       UpdLoseItem dummyVerbose iid dummyKit (CActor aid s1)
     cmdAtomicSemSer oldState $

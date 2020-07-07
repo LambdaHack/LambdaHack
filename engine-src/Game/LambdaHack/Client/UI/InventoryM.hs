@@ -53,7 +53,7 @@ accessModeBag leader s MOrgans = let b = getActorBody leader s
 accessModeBag leader s MOwned = let fid = bfid $ getActorBody leader s
                                 in combinedItems fid s
 accessModeBag _ _ MSkills = EM.empty
-accessModeBag _ s MLore{} = EM.map (const (1, [])) $ sitemD s
+accessModeBag _ s MLore{} = EM.map (const quantSingle) $ sitemD s
 accessModeBag _ _ MPlaces = EM.empty
 
 -- | Let a human player choose any item from a given group.

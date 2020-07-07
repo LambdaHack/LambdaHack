@@ -85,7 +85,7 @@ revealItems fid = do
             cdummy = CTrunk fid minLid originPoint  -- only @fid@ matters here
             itemKind = okind coitem itemKindId
         execUpdAtomic $ if IA.isHumanTrinket itemKind  -- a hack
-                        then UpdSpotItem False iid (1, []) cdummy
+                        then UpdSpotItem False iid quantSingle cdummy
                         else UpdDiscover cdummy iid itemKindId arItem
   generationAn <- getsServer sgenerationAn
   getKindId <- getsState $ flip getIidKindIdServer
