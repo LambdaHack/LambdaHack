@@ -745,9 +745,10 @@ drawLeaderDamage width leader = do
                     actorCurAndMaxSk leader
   let possiblyHasTimeout (timeout, _, (itemFull, _)) =
         timeout > 0 || itemSuspect itemFull
-      lT = filter possiblyHasTimeout strongest
-      lSurelyNoTimeout = filter (not . possiblyHasTimeout) strongest
-      strongestToDisplay = lT ++ take 1 lSurelyNoTimeout
+      (lT, lTrest) = span possiblyHasTimeout strongest
+      strongestToDisplay = lT ++ case lTrest of
+        [] -> []
+        noTimeout : lTrest2 -> noTimeout : filter possiblyHasTimeout lTrest2
       showStrongest showInBrief l =
         let lToDisplay = concatMap (ppDice showInBrief) l
             (ldischarged, lrest) = span (not . fst) lToDisplay
