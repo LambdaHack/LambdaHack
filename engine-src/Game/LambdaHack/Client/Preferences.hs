@@ -188,7 +188,14 @@ effectToBenefit cops fid factionD eff =
     IK.OnCombine eff1 -> effectToBenefit cops fid factionD eff1
     IK.OnUser eff1 ->
       let (effSelf, _) = effectToBenefit cops fid factionD eff1
-      in delta effSelf  -- in both cases just applies the effect to itself
+      in (effSelf, - effSelf)
+           -- in both cases just applies the effect to itself,
+           -- which is approximately equal to applying the opposite to foe;
+           -- this may result in double-counting, but ensures that weapons
+           -- that harm their wielders are properly discouted;
+           -- in a way, this should be double-counted, because the effect
+           -- not only hinders (or enhances) applying the item,
+           -- but meleeing with it, too
     IK.AndEffect eff1 _ -> effectToBenefit cops fid factionD eff1
       -- for simplicity; so in content make sure to place initial animations
       -- among normal effects, not at the start of composite effect
