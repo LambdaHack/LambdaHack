@@ -51,7 +51,7 @@ instance Binary ItemKnown
 instance Hashable ItemKnown
 
 data NewItem =
-    NewItem ItemKnown ItemFull Int ItemTimers
+    NewItem ItemKnown ItemFull ItemQuant
   | NoNewItem
 
 -- | Reverse item map, for item creation, to keep items and item identifiers
@@ -119,15 +119,18 @@ newItem cops freq flavourMap discoRev levelDepth totalDepth =
     arItem <- IA.rollAspectRecord (IK.iaspects itemKind) levelDepth totalDepth
     let itemBase = buildItem cops arItem flavourMap discoRev itemKindId
         itemIdentity = jkind itemBase
-        itemK = max 1 itemN
-        itemTimer = [itemTimerZero | IA.checkFlag Ability.Periodic arItem]
+        !itemK = max 1 itemN
+        !itemTimer = [itemTimerZero | IA.checkFlag Ability.Periodic arItem]
           -- enable optimization in @applyPeriodicLevel@
         itemSuspect = False
         -- Bonuses on items/actors unaffected by number of spawned actors.
         itemDisco = ItemDiscoFull arItem
         itemFull = ItemFull {..}
         itemKnown = ItemKnown itemIdentity arItem (jfid itemBase)
-    return $! NewItem itemKnown itemFull itemK itemTimer
+        itemQuant = if itemK == 1 && null itemTimer
+                    then quantSingle
+                    else (itemK, itemTimer)
+    return $! NewItem itemKnown itemFull itemQuant
 
 -- | The reverse map to @DiscoveryKind@, needed for item creation.
 -- This is total and never changes, hence implemented as vector.

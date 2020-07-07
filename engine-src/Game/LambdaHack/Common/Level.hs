@@ -148,6 +148,12 @@ assertSparseItems m =
   assert (EM.null (EM.filter EM.null m)
           `blame` "null floors found" `swith` m) m
 
+hashConsSingle :: ItemFloor -> ItemFloor
+hashConsSingle m =
+  EM.map (EM.map (\case
+                    (1, []) -> quantSingle
+                    kit -> kit)) m
+
 assertSparseProjectiles :: ProjectileMap -> ProjectileMap
 assertSparseProjectiles m =
   assert (EM.null (EM.filter null m)
@@ -332,8 +338,8 @@ instance Binary Level where
   get = do
     lkind <- get
     ldepth <- get
-    lfloor <- get
-    lembed <- get
+    lfloor <- hashConsSingle <$> get
+    lembed <- hashConsSingle <$> get
     lbig <- get
     lproj <- get
     ltile <- get

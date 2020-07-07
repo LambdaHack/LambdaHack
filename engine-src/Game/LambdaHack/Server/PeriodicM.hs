@@ -102,7 +102,7 @@ addAnyActor summoned lvlSpawned actorFreq lid time mpos = do
     NoNewItem -> do
       debugPossiblyPrint "Server: addAnyActor: trunk failed to roll"
       return Nothing
-    NewItem itemKnownRaw itemFullRaw itemK itemTimer -> do
+    NewItem itemKnownRaw itemFullRaw itemQuant -> do
       (fid, _) <- rndToAction $ oneOf $
                     possibleActorFactions (itemKind itemFullRaw) factionD
       pers <- getsServer sperFid
@@ -120,9 +120,8 @@ addAnyActor summoned lvlSpawned actorFreq lid time mpos = do
             getsState $ rollSpawnPos cops allPers mobile aquatic lid lvl fid
           rndToAction rollPos
       case mrolledPos of
-        Just pos -> do
-          let kit = (itemK, itemTimer)
-          Just <$> registerActor summoned itemKnownRaw (itemFullRaw, kit)
+        Just pos ->
+          Just <$> registerActor summoned itemKnownRaw (itemFullRaw, itemQuant)
                                  fid pos lid time
         Nothing -> do
           debugPossiblyPrint

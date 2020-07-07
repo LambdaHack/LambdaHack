@@ -1317,7 +1317,7 @@ effectCreateItem jfidRaw mcount source target miidOriginal store grp tim = do
   m2 <- rollItemAspect freq lid
   case m2 of
     NoNewItem -> return UseDud  -- e.g., unique already generated
-    NewItem itemKnownRaw itemFullRaw kRaw itRaw -> do
+    NewItem itemKnownRaw itemFullRaw (kRaw, itRaw) -> do
       -- Avoid too many different item identifiers (one for each faction)
       -- for blasts or common item generating tiles. Conditions are
       -- allowed to be duplicated, because they provide really useful info
@@ -1762,7 +1762,7 @@ effectRerollItem execSfx iidOriginal target = do
                  case m2 of
                    NoNewItem ->
                      error "effectRerollItem: can't create rerolled item"
-                   NewItem itemKnown@(ItemKnown _ ar2 _) itemFull _ _ ->
+                   NewItem itemKnown@(ItemKnown _ ar2 _) itemFull _ ->
                      if ar2 == itemAspect && n > 0
                      then roll100 (n - 1)
                      else return (itemKnown, itemFull)

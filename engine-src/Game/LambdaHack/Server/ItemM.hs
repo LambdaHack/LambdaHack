@@ -213,7 +213,7 @@ rollItemAspect freq lid = do
   Level{ldepth} <- getLevel lid
   m2 <- rndToAction $ newItem cops freq flavour discoRev ldepth totalDepth
   case m2 of
-    NewItem (ItemKnown _ arItem _) ItemFull{itemKindId} _ _ -> do
+    NewItem (ItemKnown _ arItem _) ItemFull{itemKindId} _ -> do
       when (IA.checkFlag Ability.Unique arItem) $
         modifyServer $ \ser ->
           ser {suniqueSet = ES.insert itemKindId (suniqueSet ser)}
@@ -230,8 +230,11 @@ rollAndRegisterItem verbose lid itemFreq container mk = do
   m2 <- rollItemAspect freq lid
   case m2 of
     NoNewItem -> return Nothing
-    NewItem itemKnown itemFull itemK itemTimer -> do
-      let kit2 = (fromMaybe itemK mk, itemTimer)
+    NewItem itemKnown itemFull kit -> do
+      let f k = if k == 1 && null (snd kit)
+                then quantSingle
+                else (k, snd kit)
+          !kit2 = maybe kit f mk
       iid <- registerItem verbose (itemFull, kit2) itemKnown container
       return $ Just (iid, (itemFull, kit2))
 
