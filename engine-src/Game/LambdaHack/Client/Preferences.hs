@@ -48,8 +48,7 @@ effectToBenefit :: COps -> FactionId -> FactionDict -> IK.Effect
 effectToBenefit cops fid factionD eff =
   let delta x = (x, x)
   in case eff of
-    IK.Burn d -> delta $ -(min 1500 $ 15 * Dice.meanDice d)
-      -- often splash damage, armor doesn't block (but HurtMelee doesn't boost)
+    IK.Burn d -> delta $ -(min 1000 $ 10 * Dice.meanDice d)
     IK.Explode IK.S_SINGLE_SPARK -> delta (-1)  -- probing and flavour
     IK.Explode IK.S_SPARK -> delta (-9)  -- small, to not affect weapon order
     IK.Explode IK.S_FRAGRANCE -> (1, -5)  -- situational
