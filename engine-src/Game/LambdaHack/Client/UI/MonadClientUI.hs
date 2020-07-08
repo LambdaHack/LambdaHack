@@ -13,7 +13,7 @@ module Game.LambdaHack.Client.UI.MonadClientUI
   , chanFrontend, anyKeyPressed, discardPressedKey, resetPressedKeys
   , addPressedControlEsc, revCmdMap
   , getReportUI, getLeaderUI, getArenaUI, viewedLevelUI
-  , xhairToPos, clearAimMode
+  , xhairToPos, setXHairFromGUI, clearAimMode
   , getFontSetup, scoreToSlideshow, defaultHistory
   , tellAllClipPS, tellGameClipPS, elapsedSessionTimeGT
   , resetSessionStart, resetGameStart, partActorLeader, partPronounLeader
@@ -241,6 +241,10 @@ xhairToPos = do
     Just aid -> getsState $ aidTgtToPos aid lidV sxhair
                   -- e.g., xhair on another level
 
+setXHairFromGUI :: MonadClientUI m => Maybe Target -> m ()
+setXHairFromGUI sxhair =
+  modifySession $ \sess -> sess {sxhair, sxhairGoTo = Nothing}
+
 -- If aim mode is exited, usually the player had the opportunity to deal
 -- with xhair on a foe spotted on another level, so now move xhair
 -- back to the leader level.
@@ -259,7 +263,7 @@ clearAimMode = do
           Just TPoint{} -> Just $ TPoint TUnknown lidV xhairPos
             -- the point is possibly unknown on this level; unimportant anyway
           _ -> sxhairOld
-    modifySession $ \sess -> sess {sxhair}
+    setXHairFromGUI sxhair
 
 getFontSetup :: MonadClientUI m => m FontSetup
 getFontSetup = do

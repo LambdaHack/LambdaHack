@@ -922,7 +922,7 @@ clearTargetIfItemClearHuman :: (MonadClient m, MonadClientUI m) => m ()
 clearTargetIfItemClearHuman = do
   itemSel <- getsSession sitemSel
   when (isNothing itemSel) $ do
-    modifySession $ \sess -> sess {sxhair = Nothing}
+    setXHairFromGUI Nothing
     leader <- getLeaderUI
     modifyClient $ updateTarget leader (const Nothing)
     doLook
@@ -969,7 +969,7 @@ moveXhairHuman dir n = do
     let sxhair = case xhair of
           Just TVector{} -> Just $ TVector $ newPos `vectorToFrom` lpos
           _ -> Just $ TPoint TKnown lidV newPos
-    modifySession $ \sess -> sess {sxhair}
+    setXHairFromGUI sxhair
     doLook
     return Nothing
 
@@ -1018,8 +1018,8 @@ aimFloorHuman = do
                                     else TNonEnemy aid
             Nothing -> Just $ TPoint TUnknown lidV xhairPos
         _ -> xhair
-  modifySession $ \sess -> sess { saimMode = Just $ AimMode lidV
-                                , sxhair }
+  modifySession $ \sess -> sess {saimMode = Just $ AimMode lidV}
+  setXHairFromGUI sxhair
   doLook
 
 -- * AimEnemy
@@ -1060,8 +1060,8 @@ aimEnemyHuman = do
         (a, _) : _ -> Just $ if pickEnemies then TEnemy a else TNonEnemy a
         [] -> xhair  -- no seen foes in sight, stick to last target
   -- Register the chosen enemy, to pick another on next invocation.
-  modifySession $ \sess -> sess { saimMode = Just $ AimMode lidV
-                                , sxhair }
+  modifySession $ \sess -> sess {saimMode = Just $ AimMode lidV}
+  setXHairFromGUI sxhair
   doLook
 
 -- * AimItem
@@ -1103,8 +1103,8 @@ aimItemHuman = do
         p : _ -> Just $ TPoint TKnown lidV p  -- don't force AI to collect it
         [] -> xhair  -- no items remembered, stick to last target
   -- Register the chosen enemy, to pick another on next invocation.
-  modifySession $ \sess -> sess { saimMode = Just $ AimMode lidV
-                                , sxhair }
+  modifySession $ \sess -> sess {saimMode = Just $ AimMode lidV}
+  setXHairFromGUI sxhair
   doLook
 
 -- * AimAscend
@@ -1128,8 +1128,8 @@ aimAscendHuman k = do
       mxhairPos <- xhairToPos
       let xhairPos = fromMaybe lpos mxhairPos
           sxhair = Just $ TPoint TKnown lidK xhairPos
-      modifySession $ \sess -> sess { saimMode = Just (AimMode lidK)
-                                    , sxhair }
+      modifySession $ \sess -> sess {saimMode = Just (AimMode lidK)}
+      setXHairFromGUI sxhair
       doLook
       return Nothing
 
@@ -1163,7 +1163,7 @@ xhairUnknownHuman = do
     Nothing -> failMsg "no more unknown spots left"
     Just p -> do
       let sxhair = Just $ TPoint TUnknown (blid b) p
-      modifySession $ \sess -> sess {sxhair}
+      setXHairFromGUI sxhair
       doLook
       return Nothing
 
@@ -1179,7 +1179,7 @@ xhairItemHuman = do
     _ -> do
       let (_, (p, bag)) = maximumBy (comparing fst) items
           sxhair = Just $ TPoint (TItem bag) (blid b) p
-      modifySession $ \sess -> sess {sxhair}
+      setXHairFromGUI sxhair
       doLook
       return Nothing
 
@@ -1195,7 +1195,7 @@ xhairStairHuman up = do
     _ -> do
       let (_, (p, (p0, bag))) = maximumBy (comparing fst) stairs
           sxhair = Just $ TPoint (TEmbed bag p0) (blid b) p
-      modifySession $ \sess -> sess {sxhair}
+      setXHairFromGUI sxhair
       doLook
       return Nothing
 
@@ -1231,8 +1231,8 @@ aimPointerFloorHuman = do
         sxhairMoused = sxhair /= oldXhair
     modifySession $ \sess ->
       sess { saimMode = Just $ AimMode lidV
-           , sxhair
            , sxhairMoused }
+    setXHairFromGUI sxhair
     doLook
   else stopPlayBack
 
@@ -1265,7 +1265,7 @@ aimPointerEnemyHuman = do
         sxhairMoused = sxhair /= oldXhair
     modifySession $ \sess ->
       sess { saimMode = Just $ AimMode lidV
-           , sxhairMoused
-           , sxhair }
+           , sxhairMoused }
+    setXHairFromGUI sxhair
     doLook
   else stopPlayBack
