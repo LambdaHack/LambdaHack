@@ -276,7 +276,7 @@ skillsOverlay aid = do
             slotLab = slotLabel c
             lab = textToAL slotLab
             labLen = textSize squareFont $ attrLine lab
-            indentation = if isSquareFont propFont then 40 else 20
+            indentation = if isSquareFont propFont then 42 else 20
             valueText = skillToDecorator skill b
                         $ Ability.getSk skill actorMaxSk
             triple = ( lab
