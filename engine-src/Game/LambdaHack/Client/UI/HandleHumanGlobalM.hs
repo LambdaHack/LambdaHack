@@ -26,7 +26,8 @@ module Game.LambdaHack.Client.UI.HandleHumanGlobalM
 #ifdef EXPOSE_INTERNAL
     -- * Internal operations
   , areaToRectangles, meleeAid, displaceAid, moveSearchAlter, alterCommon
-  , goToXhair, multiActorGoTo, moveOrSelectItem, selectItemsToMove, moveItems
+  , goToXhair, goToXhairExplorationMode, goToXhairGoTo
+  , multiActorGoTo, moveOrSelectItem, selectItemsToMove, moveItems
   , projectItem, applyItem, alterTileAtPos, verifyAlters, processTileActions
   , verifyEscape, verifyToolEffect, closeTileAtPos, msgAddDone, pickPoint
   , generateMenu, nxtGameMode
@@ -37,6 +38,7 @@ import Prelude ()
 
 import Game.LambdaHack.Core.Prelude
 
+import           Data.Either (isLeft)
 import qualified Data.EnumMap.Strict as EM
 import qualified Data.EnumSet as ES
 import qualified Data.Map.Strict as M
@@ -590,42 +592,63 @@ goToXhair :: (MonadClient m, MonadClientUI m)
 goToXhair initialStep run = do
   aimMode <- getsSession saimMode
   -- Movement is legal only outside aiming mode.
-  if isJust aimMode then failWith "cannot move in aiming mode"
-  else do
-    leader <- getLeaderUI
-    b <- getsState $ getActorBody leader
-    xhairPos <- xhairToPos
-    case xhairPos of
-      Nothing -> failWith "crosshair position invalid"
-      Just c -> do
-        running <- getsSession srunning
-        case running of
-          -- Don't use running params from previous run or goto-xhair.
-          Just paramOld | not initialStep -> do
-            arena <- getArenaUI
-            runOutcome <- multiActorGoTo arena c paramOld
-            case runOutcome of
-              Left stopMsg -> return $ Left stopMsg
-              Right (finalGoal, dir) ->
-                moveRunHuman initialStep finalGoal run False dir
-          _ | c == bpos b -> failWith "position reached"
-          _ -> do
-            let !_A = assert (initialStep || not run) ()
-            (bfs, mpath) <- getCacheBfsAndPath leader c
-            xhairMoused <- getsSession sxhairMoused
-            case mpath of
-              _ | xhairMoused && isNothing (accessBfs bfs c) ->
-                failWith
-                  "no route to crosshair (press again to go there anyway)"
-              _ | initialStep && adjacent (bpos b) c -> do
-                let dir = towards (bpos b) c
-                moveRunHuman initialStep True run False dir
-              Nothing -> failWith "no route to crosshair"
-              Just AndPath{pathList=[]} -> failWith "almost there"
-              Just AndPath{pathList = p1 : _} -> do
-                let finalGoal = p1 == c
-                    dir = towards (bpos b) p1
-                moveRunHuman initialStep finalGoal run False dir
+  if isJust aimMode
+  then failWith "cannot move in aiming mode"
+  else goToXhairExplorationMode initialStep run
+
+goToXhairExplorationMode :: (MonadClient m, MonadClientUI m)
+                         => Bool -> Bool -> m (FailOrCmd RequestTimed)
+goToXhairExplorationMode initialStep run = do
+  xhair <- getsSession sxhair
+  xhairGoTo <- getsSession sxhairGoTo
+  mfail <-
+    if not (isNothing xhairGoTo) && xhairGoTo /= xhair
+    then failWith "crosshair position changed"
+    else do
+      when (isNothing xhairGoTo) $  -- set it up for next steps
+        modifySession $ \sess -> sess {sxhairGoTo = xhair}
+      goToXhairGoTo initialStep run
+  when (isLeft mfail) $
+    modifySession $ \sess -> sess {sxhairGoTo = Nothing}
+  return mfail
+
+goToXhairGoTo :: (MonadClient m, MonadClientUI m)
+              => Bool -> Bool -> m (FailOrCmd RequestTimed)
+goToXhairGoTo initialStep run = do
+  leader <- getLeaderUI
+  b <- getsState $ getActorBody leader
+  xhairPos <- xhairToPos
+  case xhairPos of
+    Nothing -> failWith "crosshair position invalid"
+    Just c -> do
+      running <- getsSession srunning
+      case running of
+        -- Don't use running params from previous run or goto-xhair.
+        Just paramOld | not initialStep -> do
+          arena <- getArenaUI
+          runOutcome <- multiActorGoTo arena c paramOld
+          case runOutcome of
+            Left stopMsg -> return $ Left stopMsg
+            Right (finalGoal, dir) ->
+              moveRunHuman initialStep finalGoal run False dir
+        _ | c == bpos b -> failWith "position reached"
+        _ -> do
+          let !_A = assert (initialStep || not run) ()
+          (bfs, mpath) <- getCacheBfsAndPath leader c
+          xhairMoused <- getsSession sxhairMoused
+          case mpath of
+            _ | xhairMoused && isNothing (accessBfs bfs c) ->
+              failWith
+                "no route to crosshair (press again to go there anyway)"
+            _ | initialStep && adjacent (bpos b) c -> do
+              let dir = towards (bpos b) c
+              moveRunHuman initialStep True run False dir
+            Nothing -> failWith "no route to crosshair"
+            Just AndPath{pathList=[]} -> failWith "almost there"
+            Just AndPath{pathList = p1 : _} -> do
+              let finalGoal = p1 == c
+                  dir = towards (bpos b) p1
+              moveRunHuman initialStep finalGoal run False dir
 
 multiActorGoTo :: (MonadClient m, MonadClientUI m)
                => LevelId -> Point -> RunParams -> m (FailOrCmd (Bool, Vector))

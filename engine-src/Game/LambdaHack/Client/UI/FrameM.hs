@@ -210,7 +210,8 @@ resetPlayBack = do
   modifySession $ \sess ->
     let lastFrame = lastMacroFrame (smacroFrame sess) (smacroStack sess)
     in sess { smacroFrame = lastFrame {keyPending = mempty}
-            , smacroStack = [] }
+            , smacroStack = []
+            , sxhairGoTo = Nothing }
   srunning <- getsSession srunning
   case srunning of
     Nothing -> return ()

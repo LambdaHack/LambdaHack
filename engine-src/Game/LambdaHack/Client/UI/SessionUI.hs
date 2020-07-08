@@ -36,6 +36,7 @@ import qualified System.Random.SplitMix32 as SM
 -- An important component is the frontend session.
 data SessionUI = SessionUI
   { sxhair         :: Maybe Target       -- ^ the common xhair
+  , sxhairGoTo     :: Maybe Target       -- ^ xhair set for last GoTo
   , sactorUI       :: ActorDictUI        -- ^ assigned actor UI presentations
   , sitemUI        :: ItemDictUI         -- ^ assigned item first seen level
   , sslots         :: ItemSlots          -- ^ map from slots to items
@@ -130,6 +131,7 @@ emptySessionUI :: UIOptions -> SessionUI
 emptySessionUI sUIOptions =
   SessionUI
     { sxhair = Nothing
+    , sxhairGoTo = Nothing
     , sactorUI = EM.empty
     , sitemUI = EM.empty
     , sslots = ItemSlots $ EM.fromDistinctAscList
@@ -197,6 +199,7 @@ instance Binary SessionUI where
     put (show srandomUI)
   get = do
     sxhair <- get
+
     sactorUI <- get
     sitemUI <- get
     sslots <- get
@@ -209,7 +212,8 @@ instance Binary SessionUI where
     smarkVision <- get
     smarkSmell <- get
     g <- get
-    let slastItemMove = Nothing
+    let sxhairGoTo = Nothing
+        slastItemMove = Nothing
         schanF = ChanFrontend $ const $
           error $ "Binary: ChanFrontend" `showFailure` ()
         sccui = emptyCCUI
