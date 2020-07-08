@@ -594,12 +594,12 @@ drawArenaStatus COps{cocave}
   let ck = okind cocave lkind
       seenN = 100 * lseen `div` max 1 lexpl
       seenTxt | seenN >= 100 = "all"
-              | otherwise = T.justifyLeft 3 ' ' (tshow seenN <> "%")
+              | otherwise = tshow seenN <> "%"
       lvlN = T.justifyLeft 2 ' ' (tshow ld)
       seenStatus = "[" <> seenTxt <+> "seen]"
-  in textToAS $ T.justifyLeft width ' '
-              $ T.take 29 (lvlN <+> T.justifyLeft 26 ' ' (cname ck))
-                <+> seenStatus
+  in textToAS $ T.take (width - 10)
+                       (T.justifyLeft (width - 10) ' ' (lvlN <+> cname ck))
+                <> T.justifyRight 10 ' ' seenStatus
 
 drawLeaderStatus :: MonadClientUI m => Int -> m AttrString
 drawLeaderStatus waitT = do
