@@ -127,15 +127,15 @@ blockMiss poss = Animation $ map (mzipPairs poss)
   ]
 
 -- | Attack that is subtle (e.g., damage dice 0).
-subtleHit :: Point -> Animation
-subtleHit pos = Animation $ map (mzipSingleton pos)
-  [ cSym BrCyan '&'
-  , blank
-  , cSym BrYellow '&'
-  , blank
-  , cSym BrYellow '&'
-  , blank
-  , blank
+subtleHit :: (Point, Point) -> Animation
+subtleHit poss = Animation $ map (mzipPairs poss)
+  [ (blank           , cSym BrCyan '&')
+  , (blank           , blank)
+  , (blank           , cSym BrYellow '&')
+  , (cSym BrBlue  '\\',blank)
+  , (blank           , cSym BrYellow '&')
+  , (cSym BrBlue  '/', blank)
+  , (blank           , blank)
   ]
 
 -- | Death animation for an organic body.

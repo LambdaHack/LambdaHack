@@ -1754,7 +1754,7 @@ strike catch source target iid = assert (source /= target) $ do
   tb <- getsState $ getActorBody target
   sourceSeen <- getsState $ EM.member source . sactorD
   if not sourceSeen then
-    animate (blid tb) $ subtleHit (bpos tb)
+    animate (blid tb) $ blockMiss (bpos tb, bpos tb)
   else do
     hurtMult <- getsState $ armorHurtBonus source target
     sb <- getsState $ getActorBody source
@@ -1965,7 +1965,7 @@ strike catch source target iid = assert (source /= target) $ do
                [MU.SubjectVerbSg spart verb, tpart, adverb]
                ++ if bproj sb then [] else weaponNameWith
          msgAdd msgClassMelee msg  -- too common for color
-         animate (blid tb) $ subtleHit (bpos sb)
+         animate (blid tb) $ subtleHit ps
        | bproj sb -> do  -- more terse than melee, because sometimes very spammy
          let msgRangedPowerful | targetIsFoe = MsgRangedPowerfulWe
                                | targetIsFriend = MsgRangedPowerfulUs
