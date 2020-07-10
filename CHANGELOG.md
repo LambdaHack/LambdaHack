@@ -1,5 +1,942 @@
 ## [v0.10.0.0](https://github.com/LambdaHack/LambdaHack/compare/v0.9.5.0...v0.10.0.0)
 
+- Even in the subtle hit animation indicate who is the victim
+- Add a missing space between 'modify terrain stat' and '5' with square font
+- Make Burn as valuable as other damage for consistent UI display
+- Show very good no-timeouts weapons at the correct position
+- Partially hash-cons ItemQuant, with very modest effect
+- Change some occurences of trivial Quant to quantSingle
+- Simplify skill and place menu code
+- Don't multiply initialPlaces when preparing place display
+- Consume places for places menu more eagerly
+- Eliminate space leak when creating items
+- Avoid memory leak due to caves used for levels on a list
+- Fit the short help blurb in 4 lines
+- Start the game with a confirmation prompt
+- Sort weapons wrt timeout and item kinds ID as well
+- Simplify querying skills of the leader
+- Avoid long animations before the extra burn or wound animations
+- Change combat animations to easily distinguish attacker from attacked
+- Let AI displace teammates when no risk of displacing back
+- Restrict AI use of stash guards less harshly
+- Add a comment about allies stealing each other's stashes
+- Let AI keep fleeing if no support gained
+- Remove a few redundant TypeFamilies pragmas
+- Explain in a comment why on a level with stash many sleeping may accumulate
+- Make safari scenario harder now that aliens are buffed up
+- Let AI displace friends less often
+- Unify the test for item being damaging
+- Improve module haddocs for content
+- Hide unneeded content group name patterns
+- Add short-caves debug game mode
+- Display melee damage even if there's no ranged damage
+- Reduce the number of calls to foeRegularAssocs
+- Make sure AI actions are not recursive, even shallowly
+- Reduce the number of calls to currentSkillsClient
+- Speed up skill arithmetic
+- Math order of cases in processWatchfulness with the order in type definition
+- Remove inlines that stopped helping in GHC 8.8 and that obstruct profiling
+- Compute friendAssocs only once for each actor AI processing
+- Limit and speed up invalidating BFS
+- Speed up a few significantly expensive functions
+- Use the JS splitmix optimization
+- Tweak random numbers code a bit
+- Improve haddocks of the dice mechanism
+- Improve help display a bit
+- Move ClientOptions.hs to adhere to the convention about module hierarchies
+- Meld LH and Allure content, continued
+- Port over oil explosions that harm the targeted actor from Allure
+- Meld LH and Allure cave and item content
+- State the number of item in equipment even when removing from it
+- Explain the goofy handling of recharging in stash
+- Regenerate tile even if kind not changed, but all embeds gone
+- Permit altering tiles with items on them
+- Don't leave stash unguarded if friends may spawn
+- Add stash detection effect
+- Cap stat bonuses when assigning AI value to items
+- Value skill bonuses differently for each skill
+- Be even more specific when describing what an actor does on a tile
+- Adjust the SDL test to run without installing fonts, as Debian requires
+- Don't let projectiles ever cause normal tile transitions
+- Tweak pushing via an embed
+- Add Q&A about hearing
+- Tweak item valuations to make awkward armours wearable by AI
+- When describing an actor, say if it's pushed
+- Push towards embed, not in direction of previous movement
+- Simplify key bindings display code
+- Clean up naming of column offset in UI
+- Ensure no missing space between columns of help text
+- Prevent a trailing space
+- Don't activate barrels via mist
+- Don't treat blasts that damage through effects as mists
+- Don't let on noise distance if nobody can hear it directly
+- Differentiate the sound of projectile and actor hitting a tile
+- Emit sound also when an actor hits a tile
+- Display close and out-of-level noises with special colours
+- Display noise distance information
+- Send noise distance information
+- Refactor hearing
+- Mock up extended hearing
+- Give better message when not enough skill to melee
+- Disturb resting when calm enough again
+- Don't summon by hitting a projectile
+- Make actor aggresive if only one is not guarding stash on the level
+- Ban teleporting immobile foes; they come back and their loot is lost
+- Validate that item group names are short enough
+- Cath too long group names
+- Catch empty group names
+- Let more actors start sleeping
+- Consistently create on the ground all items looted from terrain
+- Mark game modes already won in this difficulty
+- Clear screen after start ASAP
+- Use the AttrLine smart constructor or assertions as appropriate
+- Rename firstParagraph
+- Tweak types to work with the stricter smart constructor
+- Move assertion about trailing whitespace to a smart constructor
+- Eliminate trailing spaces in help and item menus
+- Replace a momentarily trailing space with nbsp
+- Don't define special messages with space, they are added automatically
+- When splitting lines, remove the trailing spaces
+- Simplify a condition in splitAttrPhrase
+- Don't add a space when appending a report that starts with newline
+- Don't produce backdrop on black background
+- Optimize truncateAttrLine and truncateOverlay
+- Mark assertions expensive in menus
+- Make avoiding SDL frame drawing more fine-grained
+- Simplify SDL frame drawing based on previous frame
+- Optimize menu scrolling via an extra texture
+- Don't waste healing items when HP low ceiling
+- Don't display that foes don't know their weapon when only you don't
+- Reflect keybindings change in the start scenario menu
+- Permit hero AI to consume elixirs
+- Don't flee if can kill a blocking enemy instead
+- Make fast or hasted actors willing to close in for melee
+- Compensate for overhead of animals when creating conditions
+- Mark organs that are ready to expire once applyPeriodicLevel runs
+- Avoid stating that an organ will last for 0s
+- Tweak slightly AI item preferences
+- Get rid of DropBestWeapon
+- Don't rechare nor discharge projecile payloads
+- Start dicharging with strongest weapons
+- Let Discharge add to cooldown, not reset
+- Discharge only items with a timeout
+- Consider as support only actors that can harm in melee
+- Make organs (minimally) accessible from triggering
+- Let AI trigger items among organs
+- Relax trigger stat 1 restrictions
+- Tweak AI item use preferences valuation
+- Improve the endgame item menu message
+- Record duplication of items to avoid absurd endgame messages
+- Discharge not only equipment, but also organs
+- Don't paralyse the last AI stash guard
+- Give AI stash guard more freedom if friends adjacent
+- Make AI keep guarding even if teammates on the level may leave it
+- Don't let AI leave stash unless foes harm it
+- Don't abandon stash when teammates temporarily immobile
+- Prevent displacing a stash guard
+- Don't abandon stash if temporarily nonmoving
+- Abandon stash if under heavy fire
+- Don't abandon stash unless foes seen
+- Don't use aidTgtToPos unless necessary
+- If enemy in light, pelt him instead of leaving dark
+- Don't stop fleeing into hideout after 5 turns even if foes appear
+- Target dark if fleeing and no foes targetted
+- Efficiently find closest hideout for AI
+- Tabulate hideout tiles predicate
+- Factor out distanceBfs
+- Don't hog leadership just because weak and enemies close
+- When fleeing and soon after target only actors that can't melee
+- Stop fleeing if not hit and possibly friends managed to join
+- Take into account recent fleeing when taking off light
+- Simplify hinders
+- In AI action choice use recent fleeing instead of this and last turn distress
+- Don't overwrite fleeing record if fled recently
+- Don't chase foes if fled recently
+- GC fleeing record when actor lost
+- Extend fleeing state from 1 to 5 turns
+- Store not only fleeing position but also fleeing start time
+- Reorder organs
+- Make two organs not LH-specific
+- Don't undervalue weapons with drop condition
+- Make it possible for animals to mark levels as explored
+- Make slack tactics AI less erratic when focused or distressed
+- Add a comment about animals bad at changing levels
+- Let AI displace any sleeping blockers
+- Don't let AI actors fall asleep if not relaxed
+- Don't force animals to change target just before reaching it
+- Improve condAimCrucialM for vector targets
+- Flesh out the crawl survival test scenario
+- Make crafting act as if on bottom level
+- Move skill checks from pathfinding to targetting and restrict immovable actors
+- Forbid making missiles hungry, asleep, etc.
+- Optimize processTileActions
+- Make sure projectiles can modify terrain even if safe from effects
+- Don't reset TVector target, because it's set manually
+- Create a central staircase
+- Display ranged damage even when limited space in menu line
+- Shorten the display of weapons if not enough space
+- Don't consider enemy projectiles for determining if AI is in melee
+- Make poison less deadly in corridors
+- Eliminate the stash domination exploit
+- Make guessing if AI was hit by projectiles more accurate
+- Prevent wounded animals from closing in agains mutliple enemies
+- In messages tell discharge from recharge effects
+- Make smell more important that stairs, again
+- Clean up vector target code
+- Melee non-targets if target not worth killing
+- Don't perform all monadic actions that compute strategies before choosing one
+- Don't retarget actor if blocked by the very actor and so can melee it
+- Simplify target shoice for slack doctrine factions
+- Sort items in lists in normal texts
+- Help AI unlock the dungeon if stash guard helds the key
+- Prevent animals from eating their own meat
+- Prevent creating new items via throwing others, with ikit
+- Signal specially when an item is located in a stash, as well
+- Say when an item appears in a stash, etc.
+- Don't warn if selected missile from stash can't be picked up
+- Don't flee if back next turn
+- When fleeing don't remember the last targetted enemy
+- Move keybinding content definitions to match display order
+- Prevent, in UI, removing from equipment if not calm
+- Warn when illegal item movement attempted
+- Display stash blurb also when switching the leader
+- Don't let stash guards leave levels
+- Don't prevent displacing a friend if only half of a loop is present
+- Don't neglect guarding stash unless no buddies to help
+- Tweak AI conditions
+- Don't flee if own stash close unless completely overwhelmed
+- Easily displace teammates that guard the stash
+- Mention stash when walking over a tile
+- Do not flee and be reluctant to chase when guarding stash
+- Introduce guarding own stash
+- Make isDoor more accurate
+- Don't make a rumble when door closes
+- Tabulate isOpenable and isClosable
+- Make tall staircases more likely now that they are often broken
+- Make types a bit more strict in stairs calculation
+- Simplify stair number computation
+- Rename cextraStairs
+- Change the semantics of cextraStairs
+- Separate stair number computation and level generation
+- Compute abandoned stairs earlier
+- Correct the documentation of cextraStairs
+- Roll extra stairs earlier
+- Roll cave kinds earlier
+- Simplify shuffling caves
+- When transforming walkable tiles, don't insist on embed activations
+- Ban crafting and terrain transformation in the same action
+- Try to make the terrain transformation specs more readable
+- Prevent the exploit of using cover against non-moving shooters
+- Make makeLine non-monadic
+- Keep the data invariant of @arenas@ for longer
+- Make the *interrupted* running display look less corrupted
+- Add and tweak comments about item maps
+- Update the manual and keybindings printout
+- Tweak the wording of keybidings descriptions
+- Prevent marking inert items as (charging)
+- Add ANY_FLASK group
+- Make sure impression is dropped before other conditions
+- Handle failed bump-modification without embed activation
+- Change the key for new game, not to mix up with 'n'o
+- Remove misleading comment about tiles being explorable
+- In message fits in one long line, don't wrap it into small lines
+- Don't make consumables with Ascend effect worthless
+- Change division by zero into an assertion failure
+- Comment why 'seen' sometimes gets from 100% to 99%
+- Validate HideAs in content instead of asserting its property later on
+- Tweak (speedup the tiniest bit) updAlterTile
+- Stop leader before leaving dark in a more useful way
+- Don't equip light even if enemy only remembered
+- Simplify the interesting target conditions for AI
+- Flee through dark not only when starting in light
+- Chase and flee through dark even if not starting from light
+- Simplify the chasing ambient light condition
+- Prefer leaders that don't step into light
+- Detour when chasing, to avoid lit spots
+- Prefer fleeing into dark spots
+- Don't flee from projectiles if can't flee into the dark
+- Prevent AI from vainly chasing fast shooters
+- Tweak and simplify AI fleeing condition
+- Help AI sidestep a blocking meleeing friend
+- Let AI go towards enemy stash even if in melee
+- Join melee from twice longer distance
+- Rename CURIOUS_ITEM
+- Don't display 0 ranged damages
+- Add missing content group definitions
+- Simplify content validation
+- Check that content group names are all listed
+- Let the draft detector emit noise and sound
+- Tweak the engine to accomodate a detection device that pings
+- Prevent non-humans from hogging key items and so blocking progress
+- Reorder item definition to match those of Allure for diffing
+- Don't emit server leader change messages if known to client
+- Comment about the trade-offs of weapon benefit calculation
+- Mark the lore screen with crafting recipes
+- Don't confusingly refuse to display the pushing effect for shields
+- Increase minimal damage taken, regardless of armor, to 5%
+- Be pendantic when emitting messages about creating items
+- Don't say that a projectile is wounded
+- Show enemy HP under the selected item
+- Simplify strongestMelee
+- Add an alias for picking up all items, etc.
+- Sort out naming of item and embed activations
+- Simplify revCmdMap
+- Warn when embeds activated, but transformation failed
+- Check dangerous tools use even when nested in transformations
+- Don't transform terrain when bumping
+- Let pathfinding avoid vicinity of enemies
+- Make it easy to discern an attack on teammate among many messages
+- Don't display misleading condition drop messages
+- Visually distinguish embed names and descriptions
+- Permit fractional FPS, for debugging
+- Colour-code map position descriptions
+- Move the run macro to where all other engine macros are defined
+- Permit unknown command, for testing
+- Simplify and clarify the mock
+- Unify repeatHumanTransition 1 and macroHumanTransition
+- Reflect in types that macro frame stack is never empty
+- Make more space for explicit import lists
+- Rename components of the macro data structure
+- Drive the point home that repeatHumanTransition 1 /= macroHumanTransition
+- Add tests that illustrate not creating new buffers for in-game macros
+- Touch up the macro code a bit
+- Add tests showing lack of referential transparency of named macros
+- Don't prompt about recording a macro it's part of macro replay
+- Warn when pick up not to equipment due to low calm
+- Display how many items in equipment when equipping
+- Refuse to equip if equipment full
+- Separate testing harness import from game content import
+- Add a helper function to shorten tests
+- Rename the semantics functions
+- Implement the desired semantics of RepeatLast
+- Sketch the desired semantics of RepeatLast via tests
+- Use the same updateLastAction function in test mock
+- Collect a more precise last action key
+- Simplify slightly the mock
+- Grey out more (all?) illegal commands
+- Add special messages when illegally flinging or applying
+- Go even through stores that all factions have empty
+- Revert banning stores for all actors based on the first checked
+- Add special messages when illegally moving items from or to eqp or ground
+- Forbid unequipping items when not calm, again
+- Don't ignore illegal stores if once shown
+- Display the number of items in equipment even when not calm
+- Write client RNG seed to UI RNG seed numbers at game restart
+- Save UI random seed to avoid boring messages if many save/loads
+- Add a comment about stealth viable for tactics, but not strategy
+- Reset C-f when x-hair automatically changed
+- Pick as leaders also the actors that could melee but should not
+- Make animals unable to catch projectiles
+- Don't cycle xhair through own stash
+- Display slideshows normall unless really too long, not just excessively long
+- Give more time to view a frame when frame level changes
+- Be more verbose when kicking terrain
+- Prevent the inability of taking off max calm draining items
+- Re-assign action repeating keys
+- Clean up macro command's texts
+- Place ikit item in a semi-random way
+- Tweak content group names for display
+- Avoid 'of gain of gain' in item descriptions
+- Don't talk about blocking when no kinetic damage dealt
+- Match the order of game over lore screens with in-game lore menu
+- Prevent AI from imbibing a potion of panic
+- Don't call a tile alterable if embeds have no effects
+- Prefer leaders that target enemy stashes
+- Don't chase stashes of friends and neutrals
+- When creating items on the floor during dungeon generation, create ikit items
+- When embedding items in tiles, optionally generate more items
+- Redesign so that charging items can be determined even if timeout unknown
+- Clean up some instance deriving
+- Factor out two more pure functions about macros to use in unit tests
+- Permit creation of input content without parsing a config file
+- Factor out pure function about macros to use in unit tests
+- Record nested macros on stack
+- Snatch enemy stash ASAP if adjacent
+- Port tests to tasty
+- Undo the attempt to end game when player kills window
+- Remove a spurious recordHistory
+- Make sure verifyCaches error doesn't obscure RNG seed of the crashing run
+- Don't let big actors auto-craft at death
+- In menus show how long conditions will last
+- Tell how for long an actor is going to be slowed when first affected
+- Tell how for long an actor is slowed in total after extra slowness, etc.
+- Tell how much poisoned actor is in total after extra poison, etc.
+- Don't display the mandatory turn frame if a frame already displayed this turn
+- Don't draw (and printscreen) identical frames, even if small fonts used
+- Don't trigger terrain if projectile has lost its payload
+- Enable cooking of food thrown into fire
+- Don't spam when blasts transform terrain
+- Simplify dieSer
+- Ensure the last step of projectile flight is shown
+- Remove a repeated check
+- Be more verbose when transforming items with scrolls
+- Display level where the stash is, as a reminder
+- Don't displace sleeping immobile actors
+- Simplify checking if an item is identified
+- Prevent AI from putting most weapons in reserve
+- Let AI be eager to equip unidentified and good unique items
+- Don't be too verbose with tile altering when leader stands on it
+- Don't craft from equipment due to possible involuntary harm
+- Remove altering via dropping items; too disaster-prone
+- Refactor handleDir
+- Permit indicating the zero vector with mouse
+- Colour and reword the message about consuming items
+- Be a bit more verbose about tile changes
+- Don't inform about a projectile's equipment
+- Avoid hitting 'feebly' with a heavy hammer
+- Show, e.g., harpoon as an obvious choice for throwing despite usable for melee
+- Don't summon by hitting a friend
+- Don't hit delicately just because the weapon was not identified
+- Prevent AI from wasting time throwing very weak projectiles
+- Avoid 'chip of scientific explanation turns out to be', when identifying
+- Improve item destruction messages
+- Add OnUser effect constructor
+- Avoid 'the pair turns out to be' when identifying
+- When short name requested, don't append numbers and parens
+- Prevent VerbMsgFail being repeated 99 times
+- Describe how colours correspond to tile properties
+- Let even unskilled actors take over stash
+- Take over stash also when actor dominated or created
+- Target enemy stash in preference even to enemy actors
+- Add comments about salter and pathfinding
+- Avoid 'controlled by Controlled foo'
+- Avoid 'hits delicately' with a 14 HP wounding hammer
+- Ensure in content that Burn is positive
+- Mark weapon burning and wounding on HUD, to avoid hammers all look benign
+- Clarify that chosen weapon needs not be optimal for a foe
+- Improve display of places lore
+- Pick up enemy summoning periodic items to deny them to foes
+- Don't send the SfxTrigger messages to the client
+- Mention that stats menu summarizes the organ menu
+- Add sample cabal.project.local files
+- Introduce VerbMsgFail effect
+- Let crafting use up terrain, if successful
+- Don't split tile properties description by description of things on the tile
+- Avoid crafting via walking into a worshop tile
+- Introduce SeqEffect to use for crafting creation in place of AndEffect
+- Let components 'disappear', not 'be removed' during crafting
+- Improve crafting recipe description
+- Automatically identify crafted items
+- When cratfing, use tools but destroy components
+- Don't create items in equipment if not enough free slots
+- When crafting, apply as many copies of durable items as required, not just one
+- Don't crash if crafting fails due to unique already generated
+- Improve debugging of item creation
+- Don't display thrown damage for organs
+- Flesh out projectiles opening terrain and flying through
+- Require embed activation even for item-fueled terrain transformations
+- Don't spam if recording is a part of a macro
+- Make the summary of killed enemies less confusing
+- Let some explosions destroy terrain
+- Add black backdrop beneath prop font overlays, for readability
+- Be even less verbose in descriptions of items with crafting
+- Validate that item definitions have slots whenever expected
+- Rename the Macro type
+- Record also in-game menu navigation keys
+- Recover macro's recording order invariant
+- Document Macro, swap types in smacroBuffer's Either type
+- Wrap the macro buffer into a newtype
+- Encode recording state in type of macro buffer
+- Be more precise when reporting OnCombine effects
+- Format crafting recipes in a more readable way
+- Gather effects application flags into one record, for redability
+- Add an assertion that catches ItemQuant data invariant violation
+- Ignore timeouts when using tools or transforming terrain
+- Don't apply kinetic damage when using tools or transforming terrain
+- Generalize printing crafting recipes to many products
+- Rename the dagger item definition to match Allure
+- Help parsing recipes with bullets
+- Avoid spike 2d1 (cooldown 8) of cooldowns at 4
+- Typeset crafting recipes slightly
+- Rename the whetstone item definition to match Allure
+- Don't repeat crafting recipes in OnCombine descriptions
+- Show full crafting recipes only in lore menu, not when targeting
+- Speed up and simplify the use of countIidConsumed
+- Alter ConsumeItems and unify with ChangeWith
+- Add optional count parameter to effect CreateItem
+- Validate that item definition parameters in content are positive
+- Display details of item crafting effects
+- Add ConsumeItems effect
+- Let AI ignore potentially unopenable entrances, to avoid AI loops
+- Improve messages related to Discharge effect
+- Simplify checking actor presence on a level
+- Add the Discharge effect
+- Be more verbose when loot created
+- Don't complain about failed transformation if embedded item triggered
+- Revert "Break thrown non-unique items, even if durable"
+- Let projectiles trigger only easiest embeds and alterings
+- In tile content specify if projectiles may trigger actions
+- Display when ending a flight, to make harpoon a sensible weapon
+- When actor lacks tools to transform a tile, inform him
+- Break thrown non-unique items, even if durable
+- Squash repeated terrain transformation tools in descriptions
+- Confirm that a weapon is to be used for transformation
+- List tools needed for transformation in terrain description
+- Factor out client altering conditions
+- Unify altering by bumping and altering by pointing and server conditions
+- Don't waste turn when altering fails, but waste when embed triggering fails
+- Factor out listToolsForAltering and subtractGrpfromBag
+- Permit the use of tile altering tools with different durabilities
+- Factor out parseTileAction
+- Don't count repetitions in OneOf effect description
+- Prefer non-durable altering tools, even in equipment
+- Avoid message about triggering a 'way' without any more details
+- Rename terrain patterns that denote possibly depleted resource
+- Consider durable tools last for terrain alteration
+- Process tile features in order to prefer trap disarming to triggering
+- Prevent embeds triggering each other in a loop
+- Simplify applying embeds
+- Display untruncated (and mangled) messages in teletype mode
+- Make frontendName to avoid losing message in teletype frontend
+- Clean up the presentation of group name patterns again
+- Verify that singleton group names are so
+- Separate singleton kind group names
+- Validate that some more kind groups are singletons
+- Rename HideAs to PresentAs for item kinds
+- Simplify individual content validation due to stronger global validation
+- Check that group names unique and not void
+- Supply group names to the content creation and validation function
+- Improve special endgame messages
+- Clean up the lists of hardwired patterns
+- Get rid of OVER in pattern names
+- Clean up the DEFENSELESS vs VULNERABLE mixup
+- Remove foldl from prelude to prevent space leaks
+- Group the patterns yet slightly differently
+- Catch empty OneOf during item content validation
+- Group the patterns slightly differently
+- Be consistent in taking only first word as game mode name
+- Rename PHD_DEFENSE_QUESTION to VULNERABILITY_BALM for diffing with Allure
+- Group TileKind patterns
+- Remove IsString instance of GroupName to catch typos
+- Reorder code in content files
+- Make embed content patterns different from tile patterns
+- Use PatternSynonyms for all content
+- Permit and use PatternSynonyms in some ItemKind-related code
+- Don't crash when some items consumed during dropping
+- Don't warn about untriggered embeds; altering may be the focus
+- Don't report exploiting if not triggered
+- Let terrain be changed with items even when embeds not untriggered
+- Be less verbose when losing items
+- Be more verbose when losing items due to tile altering
+- Report which embedded item was exploited so that 'Nothing happens' makes sense
+- Don't report items appearing under projectiles that are already spent
+- Reword command category headings
+- Don't move away staircase inhabitants if projectile is changing levels
+- Let only visible projectiles discover hidden tiles, etc.
+- Don't display vacuus menu mode switch symbols
+- Waste items for altering only if voluntary or released as projectile
+- Get rid of spam about inability to modify terrain
+- Identify item lost in order to modify terrain
+- Let projectiles alter terrain, but not when just flying over it
+- Don't check alter skill when projectiles do the altering
+- Improve comments about the 6 tile modifying constructors
+- Don't modify terrain by just walking over it
+- Permit the use of equipment for modifying terrain
+- Warn when no items to modify terrain
+- Prefer durable items for altering tiles
+- Don't destroy but apply durable items used to alter tiles
+- Add tile alteration that demands and consumes items
+- Improve description of cooking effects
+- Add OrEffect binary constructor
+- Replace Composite by a binary constructor
+- Display failure message when embed not under feet triggered vacuusly
+- Don't light adjacent tiles for free
+- Avoid 'you look less hungry' about the pointman
+- When smashed item exhibits no effect, don't warn
+- Report tile changes under a big actor
+- Generally never alter tile if under feet and embed not triggered
+- Detect when dropping or destroying items is vacuus
+- Only alter tiles via walking on them if any embed triggered
+- Don't spam when embed doesn't trigger when walked over
+- Implement DestroyItem effect
+- Let embedded items react to items dropped over them
+- Explain away only pointman moving
+- Inform about automatic melee in the in-game help
+- Mention that all factions and actors are equal
+- Reverse stars and underscores in HP bar in HUD
+- Stress suvival in the game manual
+- Make skill check for embedded items on the client consistent with server
+- Give hints when terrain can't be entered nor modified
+- Describe hunger removing items, etc., with more detail
+- Mention leap frog in game manual
+- When scrapping message repetitions, ignore trailing EOLs
+- Don't spam about items underfoot at game start, when they are also 'located'
+- Report moving player's stash on a new line, mostly for starting screen
+- Bring back scenario notes at game start and resume
+- Bring back notes in challenges menu
+- Handle the meta note about scenario separately
+- Mention challenges in the high score entries
+- Remove the Show instance of ScoreRecord
+- Invalidate inMelee when weapons dropped or picked up
+- Use --assertExplored in makefile tests
+- Verify the commandline assertion about explored level
+- Don't assert exploration if another game started in a debug run
+- Add a debug commandline option to verify explorers are not stuck
+- Make projectile-less actors randomly more aggressive
+- Add a bit of histeresis when fleeing
+- Destroy proportional font textures to avoid freezes when they pile up
+- Prevent AI from running away from helpless foe
+- Stop targetting foes once they lose all weapons
+- Let AI do more vs foe with HP <= 0 to avoid stalemate if foe regenerates fast
+- Don't spuriously check if TEnemy is a foe
+- Improve documentation of targeting
+- Don't attack hapless nonmoving foes at range also
+- Don't normally target nonmoving actors that can only melee
+- Use actorWorthMelee in inMelee
+- Melee a targeted foe even if not worth meleeing otherwise
+- Don't target hapless uninteresting foes
+- Don't melee a foe with only benign weapons
+- Don't consider foes with benign weapons a threat
+- Only consider actor in melee if adjacent foes worth meleeing
+- Don't interrupt running if benign melee actor adjacent
+- Introduce the count of benign weapons of an actor
+- Make sure tutorial scenarios have enough melee weapons
+- Avoid checking isModifiable once more, in verifyAlters
+- Consistently check isModifiable together with embeds
+- Mark the new request failures as impossible on the server
+- Add some internal operations, for future easier profiling
+- Removed TileOpenClosed error message
+- Further enhancements in tile closing
+- Removed TriggerTile
+- Remove commandline default that forced Just that is interpreted as game reset
+- Bring back the way dungeon generation perturbed random rolls
+- Make 64bit native and 32bit browser games play the same with the same RNG seed
+- Keep a separate random seed for UI
+- Use bitmaskWithRejection form randomR
+- Add some BENCHOPTS
+- Use splitmix
+- Suggest switching to another teammate if movement skill drained
+- Turned off showing of default --maxFps value
+- Additional logPriority value and defaultMaxFps
+- Couple command line options are now clamped or checked before they're set
+- Only run with selected actors that are not yet at goal
+- Hint about menus in movement stst too low message
+- Hint to wake up if movement skill drained by sleep
+- Display also own asleep actors green on HUD
+- Make the heading of item menu when inspecting an organ less confusing
+- Tell that second 'f' projects
+- Add a comment about the 'exploit' verb
+- Do not mention 'trunk' in weapon strike messages
+- Do not mention 'trunk' in armor blocking messages
+- Suggest in history menu to press RET
+- Get rid of Server.EndM
+- Make sure closing window in rage at defeat/win saves game
+- Mention in the manual that HP starts at half max
+- Reformat game peculiarities list in the manual
+- Don't announce pushing that has no effect
+- Try to make the under AI control prefix less confusing
+- Let animations be toggled in main menu
+- Don't display buttons on a separate line unless message is very long
+- Add a newline after scenario description
+- Avoid blank lines in history
+- Overhaul the order and blurbs of game modes
+- Make raid scenario squad-based
+- Display scenario descriptions in their submenu
+- Don't show backstory in submenus of the main menu
+- Rework new game start menus
+- Add a visual separator between new games in history
+- Reverse the order history messages are displayed in
+- Copy the list of distinguishing features from Allure homepage
+- Restructure chronologically the game manual with verbs as section titles
+- Avoid empty paragraphs
+- Ignore linebreaks when showing the condensed history line
+- Underline that mouse is optional
+- Make 'crosshair' on the status line uniform with other headers
+- Bring back the help prompt that doesn't confusingly mention advancing
+- Mark overful HP and Calm specially on HUD
+- Add some blank lines when stacking command lists
+- Stress that mouse is optional
+- Move mouse help screens earlier
+- Don't indent help parts by proportional space width
+- Clarify the structure of help information
+- Don't show 'crosshair' when not aiming
+- Get rid of 'x-hair'
+- Make collective running less prominent in help; tweak help
+- Mark some text files as out of date
+- Add a paragraph break before nearby item summary
+- Accept longer menu messages
+- Add a paragraph break before cave description
+- Warn that over-max HP gain is transient
+- Mark deaths with paragraphs and display 'Alas' already at incapacitation
+- Add a line break after gameover identification of items
+- Add a couple of line-breaks to reports
+- Rename emptyAttrString, which was misleading
+- Introduce a newtype of attribute lines with no linebreaks
+- Prevent backstory overflow in main menu with proportional font
+- Move O command just after I command in help
+- When toggling autoplay, as with y/n, not SPACE/ESC
+- Let left and right arrow keys move between sides of help screen
+- Fine-tune helps screens for display side-by-side
+- Naively cram help screens side by side
+- Merge the two item command help pages
+- Use proportional font for help, dashboard and item menu
+- Use square font for movement scheme help paragraph
+- Make it possible to use many fonts in help
+- Get rid of MoveKeys.txt
+- Set up main menu for both proportional and square fonts
+- Remove backstory from help screens
+- Add backstory to main menu, set up for square font, for now
+- With square font, add extra space before item symbol
+- Represent button width as a datatype
+- Parameterize all typesetting by the font setup (multi or single)
+- Pass along information about supported fonts
+- Let sdl frontend really handle the setup with no prop nor mono font
+- Gut out ascii art
+- Add blank space around some lines of overlays
+- Take all items with *, not !
+- Update the item removal verb
+- Switch a single place lore display to mono font
+- Render skill menu and item lore menu with proper fonts
+- Display item symbol in item menu in square font
+- Display label and symbol in items overlay using square fonts
+- Display at most 3 lines of buttons when too little space for menu
+- Make a mouse misclick error easier to understand
+- Don't wrap Mono keys after a prompt
+- Overlay in square font when basic frame is under animations
+- Introduce a separate UI coordinate system
+- Make boxSize even
+- Don't highlight wrong overlays when buttons highlighted
+- Avoid proportional font in button-like UI areas
+- Permit overlays with gaps
+- Name font kinds consistently
+- Display some overlays in monospace font
+- Display history labels in mono font
+- Specify fonts also in slideshows
+- Move the definitions of DisplayFont and FontOverlayMap
+- Propagate the choice of fonts for overlays
+- Generalize drawOverlay to specify desired font for each overlay
+- Generalize overlays to let them start at arbitrary X offsets
+- Eliminate overlayFrameWithLines
+- Document better the overlay types
+- Move ColorMode to another module
+- Specify when to use which kind of main font
+- Add monospace rectangular font to game configuration
+- Remove the old woff font
+- Add new fonts, proportional and monospace
+- Specify size of the message font separately
+- Don't cursor highlight break up proportional font message chunks
+- Don't let space break up prorpotional font message chunks
+- Render the extra overlays in proportional font
+- If message font supported, pass overlay over instead of rendering
+- Initialize also the message font in SDL frontend
+- Add message overlay font to game configuration
+- Comment about why animals rarely eat food
+- Rename tactics to doctrine
+- Get rid of the henchman notion
+- Rename leader to pointman
+- Handle UpdTimeItem when container not visible (CStash), but item visible
+- Improve command descriptions
+- Redefine key bindings not to collide with new movement keys
+- Detect collisions of keybindings with movement keys
+- Use the keys freed by removing the right hand movement setup
+- Replace right hand with left hand movement keys
+- Main inventory the main store in game help and UI
+- Move total value display to all posessions menu
+- Identify items at any item move, in case they are thrown at stash
+- Avoid spam about actors getting braced
+- Mention in failure messages that hoard accessed when stading over it
+- Mention in failure messages that too low Calm for Eqp
+- Attempt to display handling of multiple items more succintly
+- Bring back UpdMoveItem to have better messages
+- Properly describe item move actions
+- Lose access to stash when enemy steps on it
+- Say who's stash is an item moved to, unless it's ours
+- Announce that enemy stash found
+- Make sure to let clients know even the human trinket items at gameover
+- Let new stash correctly overwrite old, even if old not seen
+- Introduce PosSightLevels and use for CStash containers
+- Get rid of seenAtomicGeneralCli
+- Simplify handleAndBroadcast
+- Make updTimeItem more loose when enemy CStash is considered
+- Don't carry item definitions in commands that don't create items
+- Register on the client the items necessary for commands
+- Analyze what items client needs to know to process a command
+- Clean up creation vs spotting of actors and items
+- Add UpdRegisterItems to be used instead of many ad-hoc calls currently
+- Be permissive when performing atomic action wrt CStash
+- Simplify SfxStrike, etc., and don't require access to store's bag
+- Simplify PosFidAndSight
+- Remove UpdMoveItem atomic command that is not too common without CInv any more
+- Simplify handling of CStash action visiblity
+- Display also enemy stashes in position description
+- Let actors learn stash positions when they come into view
+- Mark on the map enemy stashes as well
+- Refactor UpdStashFaction to let enemies see it sometimes
+- Add shared stash position to team's perception
+- Say in position description that stash is there
+- Mark own shared stash position with white box
+- Remove gstash handling in atomic commands
+- Move CStash in server code, not atomic commands
+- Avoid catch-all in cmdAtomicSemSer
+- Introduce UpdStashFaction
+- Do not produce a now unused ItemFull for inventory
+- When moving items, don't cycle to Ground, when over stash
+- In UI don't try to use CGround when over CStash
+- Don't let AI consider floor items at it shared stash location
+- When scanning a map, don't consider own stash an ordinary pile of items
+- Update atomic position information for shared stash
+- Make eqp, not stash, unavailable when low Calm
+- Make CStash the new implicit default when picking up items
+- Gut out CInv and CSha and replace it with CStash represented on the map
+- Remove the unused effect ActivateInv
+- Bump version, anticipating major inventory logic overhaul
+- Reword the MOwned item dialog mode blurbs
+- Simplify the header of the lore menus
+- Change meny keys / and ? to > and <
+- Update scenario names in the manual
+- Mention the ! key whenever KP_* is mentioned
+- Simplify and fix placement of --more- prompts
+- Change the AttrString word gluing operation and fix drawFrameStatus
+- Slightly fix speed calculation to agree with what's on the wiki
+- Fix wrong alignment of level percent seen
+- Fix autoexplore with changing crosshair
+- Fix goto not interrupted change of crosshair
+- Fix the valuation of OnUser effect
+- Fix the lack of the last backdrop line in the game greeting blurb
+- Fix memory leak in placesFromState
+- Fix double braced due the hack for skill-less yelling
+- Fix order of using weapons inconsistent with HUD
+- Fix actor that can't wait not ignored as a pointman even when inactive
+- Fix stash guard preferred as pointman
+- Fix AI leader choice to really prefer old leader and to avoid light more
+- Fix raid scenario starting with two faction close to escape
+- Fix random number out of range on 32bit JS
+- Fix teleport effect from stash item not identifying it
+- Fix warnings in gtk frontend
+- Fix the extra blank menu line starting too late
+- Fix section links in the game manual
+- Fix and simplify rules for disabling tile transformation
+- Fix missed blank prefixes of empty lines inside text
+- Fix and simplify projectiles activating and transforming terrain, again
+- Fix projectiles not able to lit up oil
+- Fix padded empty string overwriting UI elements
+- Fix the position of second column with square font
+- Fix trailing spaces in dashboard
+- Fix a trailing space in a message
+- Fix disable extra empty shadow line at the bottom of menus
+- Fix determining if item identified in permittedPrecious
+- Fix an actor pulling himself
+- Fix desynchronized copy-pasted actorVulnerable code
+- Fix history message display header
+- Fix Calm measurement code to match code documentation
+- Fix sleeping stash guard not considered a guard
+- Fix reaching escape from below when all levels explored
+- Fix hero AI sometimes not exploring levels fully
+- Fix weapon order of Smithhammer
+- Fix messages about melee-only armor deflecting missiles
+- Fix wrong condition, wrongly reducing fleeing behaviour
+- Fix comments about slack doctrine targets
+- Fix assertion failure when targetting a tile under oneself
+- Fix code documentation about inventory stores
+- Fix the unequipping failure message condition
+- Fix wrong cave reversal when generating dungeon
+- Fix non-pointman heroes meleeing healing geysers
+- Fix poisons never activating and never running out
+- Fix registering if altering failed due to bumping
+- Fix a bushy patch that can block starting actors
+- Fix diverging definitions of foes worth killing
+- Fix barrels not destroyed by bumping
+- Fix inability to open doors due to no embeds
+- Fix projectiles not to bump off, but to transform terrain
+- Fix the display of level in stash menu header
+- Fix alliance placing to put heroes over stairs
+- Fix a wrong message when displacing a waking foe
+- Fix AI not eating and not removing other bad conditions
+- Fix nested macros
+- Fix wrong game mode started due to only the first word inspected
+- Fix the result of AndEffect
+- Fix the warning when flinging benign items
+- Fix a loop when actor pushed to another level via stairs
+- Fix melee disrupting pushed flight
+- Fix unidentified weapons marked in HUD as without timeout
+- Fix modelling wear and tear with DestroyItem
+- Fix mixed up resistance conditions
+- Fix item dropping crashes when OnSmash effects remove them while dropped
+- Fix an AI loop when applying a recharging item
+- Fix some no-fence places not appearing in statistics
+- Fix display of empty lists of tools for terrain transformations
+- Fix referring in the server code to definitions from the client internals
+- Fix embedded items activated twice
+- Fix an attempt to consume more items than there exist
+- Fix broken running macro
+- Fix activating embeds
+- Fix repeating predefined macros
+- Fix unsafe recording
+- Fix in-game macro system
+- Fix discharging an item that is not recharged
+- Fix consumeItems missing in an export list
+- Fix missing spaces in describeToolsAlternative
+- Fix display of tool alternatives
+- Fix random results of sortEmbeds
+- Fix checks if actors in combat
+- Fix the semantics of Discharge effect
+- Fix a crash when updating invisible item timer
+- Fix altering skill check in the client
+- Fix omission of OpenWith when OpenTo is considered
+- Fix unidentified embedded items impossible to trigger
+- Fix usage of outdated state component when altering tiles
+- Fix an attempt to apply a used up embedded item
+- Fix the direction of < and > scrolling in ending screens
+- Fix rubble tile definition wrt order of activated features
+- Fix old actor body used after altering caused by collision with terrain
+- Fix wrong condition for alien captured at victory message
+- Fix moving only all or none items between containers
+- Fix crash when actor not visible after triggering an item
+- Fix crash when dopping previous may destroy next items
+- Fix projectile altering a tile too many times at once
+- Fix DropItem reporting no activation due to item vanishing earlier
+- Fix off-by-one when picking projectiles with enough range
+- Fix trying to destroy an empty item bag when modifying terrain with it
+- Fix assumption that if last actor is alien, game is won
+- Fix no identification message sometimes in the first turn
+- Fix compilation without EXPOSE_INTERNAL
+- Fix the trap of drain Calm item in equipment that can't be removed
+- Fix tiles never altered via walking on them
+- Fix articles incorrectly recognized in words that end similarly
+- Fix wrong calculation of number of non-durable weapons
+- Fix incorrect conjugation
+- Fix a corruption of backstory text
+- Fix first character of buttons sometimes overwritten by space
+- Fix wrongly displaying a special ending for small scenarios
+- Fix other frontends wrt engine and sdl2 frontend changes
+- Fix proportional overlay overwriting first character of mono one
+- Fix help setup for large screens
+- Fix broken item menu with square font
+- Fix wrong button initial position with square font
+- Fix distant overlays wrongly getting a highlighted line
+- Fix SDL frontend truncating proportional font lines
+- Fix and tweak measuring texts in various fonts
+- Fix empty menus in single font mode
+- Fix spurious ending prompt in single-font setup
+- Fix padding of line chunks overwriting subsequent chunks
+- Fix display of history
+- Fix buttons holding other locations of an item
+- Fix not shown highlight of prop font lines
+- Fix spurious empty line between header and menu
+- Fix use of fromAscList where fromDistinctAscList would do
+- Fix spacing in history display
+- Fix off-by-one crash in history
+- Fix mouse clicks on buttons in small font areas
+- Fix updateLine for the case of multiple overlays
+- Fix overrun in mouse help table
+- Fix history highlight restricted to 80 columns
+- Fix menu highlight splitting proportional text chunks
+- Fix proportional texts never wiped out
+- Fix horizontal starting points of message chunks
+- Fix a syntax error stemming from wrong CPP
+- Fix illegal containers creeping into item choice
+- Fix cmdAtomicSemSer for UpdMoveItem
+- Fix AI not sidestepping explosive tiles, even if it could
+- Fix AI not sidestepping nearby actors
+- Fix cmdAtomicSemSer in the presense of CStash that acts like CFloor
+- Fix broken atomic commands assigned wrong LevelId
+- Fix visible enemy stash position not updated, because foes not seen
+- Fix countless typos
+- Start using cabal-plan
+- Fix and improve Makefile, cabal file and CI scripts
+- Improve and update game manual and help texts wrt game changes
+- Tweak travis scripts and building docs in README
+
 ## [v0.9.5.0](https://github.com/LambdaHack/LambdaHack/compare/v0.9.4.0...v0.9.5.0)
 
 - Fix NumLock disabled in the browser
