@@ -3,7 +3,7 @@
 module Game.LambdaHack.Client.UI.ItemSlot
   ( SlotChar(..), ItemSlots(..), SingleItemSlots
   , allSlots, intSlots, slotLabel
-  , assignSlot, partyItemSet, sortSlotMap, mergeItemSlots
+  , assignSlot, sortSlotMap, mergeItemSlots
   ) where
 
 import Prelude ()
@@ -14,15 +14,11 @@ import           Data.Binary
 import           Data.Bits (unsafeShiftL, unsafeShiftR)
 import           Data.Char
 import qualified Data.EnumMap.Strict as EM
-import qualified Data.EnumSet as ES
 import           Data.Function
 import           Data.Ord (comparing)
 import qualified Data.Text as T
 
-import           Game.LambdaHack.Common.Actor
-import           Game.LambdaHack.Common.ActorState
 import           Game.LambdaHack.Common.Item
-import           Game.LambdaHack.Common.State
 import           Game.LambdaHack.Common.Types
 import qualified Game.LambdaHack.Content.ItemKind as IK
 import           Game.LambdaHack.Definition.Defs
@@ -79,14 +75,6 @@ assignSlot lSlots =
         Just ((lm, _), _) -> slotPrefix lm
         Nothing -> 0
   in SlotChar (maxPrefix + 1) 'x'
-
-partyItemSet :: SLore -> FactionId -> Maybe Actor -> State -> ES.EnumSet ItemId
-partyItemSet slore fid mbody s =
-  let onPersons = combinedFromLore slore fid s
-      onGround = maybe EM.empty  -- consider floor only under the acting actor
-                   (\b -> getFloorBag (blid b) (bpos b) s)
-                   mbody
-  in ES.unions $ map EM.keysSet $ onPersons : [onGround | slore == SItem]
 
 -- If appearance and aspects the same, keep the order from before sort.
 compareItemFull :: ItemFull -> ItemFull -> Ordering

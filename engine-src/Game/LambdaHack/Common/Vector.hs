@@ -3,7 +3,7 @@
 -- and not monotonic @Enum@ instance.
 module Game.LambdaHack.Common.Vector
   ( Vector(..), VectorI
-  , isUnit, isDiagonal, neg, chessDistVector, euclidDistSqVector
+  , isUnit, neg, chessDistVector, euclidDistSqVector
   , moves, movesCardinal, movesCardinalI, movesDiagonal, movesDiagonalI
   , compassText, vicinityBounded, vicinityUnsafe
   , vicinityCardinal, vicinityCardinalUnsafe, squareUnsafeSet
@@ -12,7 +12,7 @@ module Game.LambdaHack.Common.Vector
   , RadianAngle, rotate, towards
 #ifdef EXPOSE_INTERNAL
     -- * Internal operations
-  , _moveTexts, longMoveTexts, movesSquare, pathToTrajectory
+  , longMoveTexts, movesSquare, pathToTrajectory
   , normalize, normalizeVector
 #endif
   ) where
@@ -72,13 +72,6 @@ isUnit :: Vector -> Bool
 {-# INLINE isUnit #-}
 isUnit v = chessDistVector v == 1
 
--- | Checks whether a unit vector is a diagonal direction,
--- as opposed to cardinal. If the vector is not unit,
--- it checks that the vector is not horizontal nor vertical.
-isDiagonal :: Vector -> Bool
-{-# INLINE isDiagonal #-}
-isDiagonal (Vector x y) = x * y /= 0
-
 -- | Reverse an arbirary vector.
 neg :: Vector -> Vector
 {-# INLINE neg #-}
@@ -116,9 +109,8 @@ movesDiagonal = map (uncurry Vector) [(-1, -1), (1, -1), (1, 1), (-1, 1)]
 movesDiagonalI :: [VectorI]
 movesDiagonalI = map fromEnum movesDiagonal
 
--- | Currently unused.
-_moveTexts :: [Text]
-_moveTexts = ["NW", "N", "NE", "E", "SE", "S", "SW", "W"]
+-- moveTexts :: [Text]
+-- moveTexts = ["NW", "N", "NE", "E", "SE", "S", "SW", "W"]
 
 longMoveTexts :: [Text]
 longMoveTexts = [ "northwest", "north", "northeast", "east"

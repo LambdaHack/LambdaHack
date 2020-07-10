@@ -1,11 +1,9 @@
 {-# LANGUAGE TupleSections #-}
 -- | Server operations common to many modules.
 module Game.LambdaHack.Server.CommonM
-  ( revealItems, moveStores, generalMoveItem
-  , deduceQuits, writeSaveAll, verifyCaches, deduceKilled
-  , electLeader, setFreshLeader
-  , updatePer, recomputeCachePer, projectFail
-  , addActorFromGroup, registerActor, discoverIfMinorEffects
+  ( revealItems, generalMoveItem, deduceQuits, writeSaveAll, verifyCaches
+  , deduceKilled, electLeader, setFreshLeader, updatePer, recomputeCachePer
+  , projectFail, addActorFromGroup, registerActor, discoverIfMinorEffects
   , pickWeaponServer, currentSkillsServer, allGroupItems
   , addCondition, removeConditionSingle, addSleep, removeSleepSingle
   , addKillToAnalytics
@@ -108,16 +106,6 @@ revealItems fid = do
   mapM_ discoverSample $ EM.keys $ nonDupGen EM.! SOrgan
   mapM_ discoverSample $ EM.keys $ nonDupGen EM.! SCondition
   mapM_ discoverSample $ EM.keys $ nonDupGen EM.! SBlast
-
-moveStores :: MonadServerAtomic m
-           => Bool -> ActorId -> CStore -> CStore -> m ()
-moveStores verbose aid fromStore toStore = do
-  b <- getsState $ getActorBody aid
-  let g iid (k, _) = do
-        move <- generalMoveItem verbose iid k (CActor aid fromStore)
-                                              (CActor aid toStore)
-        mapM_ execUpdAtomic move
-  mapActorCStore_ fromStore g b
 
 -- | Generate the atomic updates that jointly perform a given item move.
 generalMoveItem :: MonadStateRead m

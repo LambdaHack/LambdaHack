@@ -111,7 +111,8 @@ newItem :: COps -> Frequency (ContentId IK.ItemKind, ItemKind)
         -> Dice.AbsDepth -> Dice.AbsDepth
         -> Rnd NewItem
 newItem cops freq flavourMap discoRev levelDepth totalDepth =
-  if nullFreq freq then return NoNewItem
+  if nullFreq freq
+  then return NoNewItem  -- e.g., rare tile has a unique embed, only first time
   else do
     (itemKindId, itemKind) <- frequency freq
     -- Number of new items/actors unaffected by number of spawned actors.

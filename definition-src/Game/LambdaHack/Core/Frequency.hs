@@ -6,10 +6,9 @@ module Game.LambdaHack.Core.Frequency
     -- * Construction
   , uniformFreq, toFreq
     -- * Transformation
-  , scaleFreq, renameFreq, setFreq
+  , scaleFreq
     -- * Consumption
   , nullFreq, runFrequency, nameFrequency
-  , minFreq, maxFreq, mostFreq
   ) where
 
 import Prelude ()
@@ -18,7 +17,6 @@ import Game.LambdaHack.Core.Prelude
 
 import Control.Applicative
 import Data.Int (Int32)
-import Data.Ord (comparing)
 import GHC.Generics (Generic)
 
 -- | The frequency distribution type. Not normalized (operations may
@@ -109,26 +107,6 @@ scaleFreq n (Frequency xs name) =
                 p * n
   in Frequency (map (first multN) xs) name
 
--- | Change the description of the frequency.
-renameFreq :: Text -> Frequency a -> Frequency a
-renameFreq newName fr = fr {nameFrequency = newName}
-
--- | Set frequency of an element.
-setFreq :: Eq a => Frequency a -> a -> Int -> Frequency a
-setFreq (Frequency xs name) x n =
-  let xsNew = [(n, x) | n <= 0] ++ filter ((/= x) . snd) xs
-  in Frequency xsNew name
-
 -- | Test if the frequency distribution is empty.
 nullFreq :: Frequency a -> Bool
 nullFreq (Frequency fs _) = null fs
-
-minFreq :: Ord a => Frequency a -> Maybe a
-minFreq fr = if nullFreq fr then Nothing else Just $ minimum fr
-
-maxFreq :: Ord a => Frequency a -> Maybe a
-maxFreq fr = if nullFreq fr then Nothing else Just $ maximum fr
-
-mostFreq :: Frequency a -> Maybe a
-mostFreq fr = if nullFreq fr then Nothing
-              else Just $ snd $ maximumBy (comparing fst) $ runFrequency fr

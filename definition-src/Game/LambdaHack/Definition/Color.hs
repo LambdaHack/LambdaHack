@@ -10,7 +10,7 @@ module Game.LambdaHack.Definition.Color
     -- * Characters with attributes
   , AttrChar(..), AttrCharW32(..)
   , attrCharToW32, attrCharFromW32
-  , fgFromW32, bgFromW32, attrW32FromW32, charFromW32, attrFromW32
+  , fgFromW32, bgFromW32, charFromW32, attrFromW32
   , spaceAttrW32, nbspAttrW32, spaceCursorAttrW32, trimmedLineAttrW32
   , attrChar2ToW32, attrChar1ToW32
   ) where
@@ -95,26 +95,26 @@ colorToRGB BrMagenta = "#FF77FF"
 colorToRGB BrCyan    = "#52F4E5"
 colorToRGB BrWhite   = "#FFFFFF"
 
--- | For reference, the original Linux console colors.
--- Good old retro feel and more useful than xterm (e.g. brown).
-_olorToRGB :: Color -> Text
-_olorToRGB Black     = "#000000"
-_olorToRGB Red       = "#AA0000"
-_olorToRGB Green     = "#00AA00"
-_olorToRGB Brown     = "#AA5500"
-_olorToRGB Blue      = "#0000AA"
-_olorToRGB Magenta   = "#AA00AA"
-_olorToRGB Cyan      = "#00AAAA"
-_olorToRGB White     = "#AAAAAA"
-_olorToRGB AltWhite  = "#AAAAAA"
-_olorToRGB BrBlack   = "#555555"
-_olorToRGB BrRed     = "#FF5555"
-_olorToRGB BrGreen   = "#55FF55"
-_olorToRGB BrYellow  = "#FFFF55"
-_olorToRGB BrBlue    = "#5555FF"
-_olorToRGB BrMagenta = "#FF55FF"
-_olorToRGB BrCyan    = "#55FFFF"
-_olorToRGB BrWhite   = "#FFFFFF"
+-- -- | For reference, the original Linux console colors.
+-- -- Good old retro feel and more useful than xterm (e.g. brown).
+-- colorToRGB :: Color -> Text
+-- colorToRGB Black     = "#000000"
+-- colorToRGB Red       = "#AA0000"
+-- colorToRGB Green     = "#00AA00"
+-- colorToRGB Brown     = "#AA5500"
+-- colorToRGB Blue      = "#0000AA"
+-- colorToRGB Magenta   = "#AA00AA"
+-- colorToRGB Cyan      = "#00AAAA"
+-- colorToRGB White     = "#AAAAAA"
+-- colorToRGB AltWhite  = "#AAAAAA"
+-- colorToRGB BrBlack   = "#555555"
+-- colorToRGB BrRed     = "#FF5555"
+-- colorToRGB BrGreen   = "#55FF55"
+-- colorToRGB BrYellow  = "#FFFF55"
+-- colorToRGB BrBlue    = "#5555FF"
+-- colorToRGB BrMagenta = "#FF55FF"
+-- colorToRGB BrCyan    = "#55FFFF"
+-- colorToRGB BrWhite   = "#FFFFFF"
 
 -- | Additional map cell highlight, e.g., a colorful square around the cell
 -- or a colorful background.
@@ -189,10 +189,6 @@ bgFromW32 :: AttrCharW32 -> Highlight
 {-# INLINE bgFromW32 #-}
 bgFromW32 w =
   toEnum $ fromEnum $ attrCharW32 w .&. (2 ^ (8 :: Int) - 1)
-
-attrW32FromW32 :: AttrCharW32 -> Word32
-{-# INLINE attrW32FromW32 #-}
-attrW32FromW32 w = attrCharW32 w .&. (2 ^ (16 :: Int) - 1)
 
 charFromW32 :: AttrCharW32 -> Char
 {-# INLINE charFromW32 #-}

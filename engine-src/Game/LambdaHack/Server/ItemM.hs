@@ -79,7 +79,7 @@ registerItem verbose (itemFull@ItemFull{itemBase, itemKindId, itemKind}, kit)
     ser {sgenerationAn = EM.adjust (EM.insertWith (+) iid (fst kit)) slore
                                    (sgenerationAn ser)}
   moveStash <- moveStashIfNeeded container
-  mapM_  execUpdAtomic moveStash
+  mapM_ execUpdAtomic moveStash
   execUpdAtomic $ UpdCreateItem verbose iid itemBase kit container
   let worth = itemPrice (fst kit) itemKind
   unless (worth == 0) $ execUpdAtomic $ UpdAlterGold worth
@@ -149,7 +149,7 @@ createCaveItem pos lid = do
   Level{lkind} <- getLevel lid
   let container = CFloor lid pos
       litemFreq = citemFreq $ okind cocave lkind
-  mIidEtc <-  rollAndRegisterItem True lid litemFreq container Nothing
+  mIidEtc <- rollAndRegisterItem True lid litemFreq container Nothing
   createKitItems lid pos mIidEtc
 
 createEmbedItem :: MonadServerAtomic m

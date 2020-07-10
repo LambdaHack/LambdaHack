@@ -6,12 +6,11 @@ module Game.LambdaHack.Common.ActorState
   , friendRegularAssocs, friendRegularList, bagAssocs, bagAssocsK
   , posToBig, posToBigAssoc, posToProjs, posToProjAssocs
   , posToAids, posToAidAssocs, calculateTotal, itemPrice, findIid
-  , combinedGround, combinedOrgan, combinedEqp
-  , combinedItems, combinedFromLore
+  , combinedGround, combinedOrgan, combinedEqp, combinedItems
   , getActorBody, getActorMaxSkills, actorCurrentSkills, canTraverse
   , getCarriedAssocsAndTrunk, getContainerBag
   , getFloorBag, getEmbedBag, getBodyStoreBag, getFactionStashBag
-  , mapActorItems_, getActorAssocs, getActorAssocsK
+  , mapActorItems_, getActorAssocs
   , memActor, getLocalTime, regenCalmDelta, actorInAmbient
   , dispEnemy, itemToFull, fullAssocs, kitAssocs
   , getItemKindId, getIidKindId, getItemKind, getIidKind
@@ -177,15 +176,6 @@ combinedItems fid s =
       bs = map snd $ inline fidActorNotProjGlobalAssocs fid s
   in EM.unionsWith mergeItemQuant $ map beqp bs ++ [stashBag]
 
-combinedFromLore :: SLore -> FactionId -> State -> ItemBag
-combinedFromLore slore fid s = case slore of
-  SItem -> combinedItems fid s
-  SOrgan -> combinedOrgan fid s
-  STrunk -> combinedOrgan fid s
-  SCondition -> combinedOrgan fid s
-  SBlast -> EM.empty
-  SEmbed -> EM.empty
-
 getActorBody :: ActorId -> State -> Actor
 {-# INLINE getActorBody #-}
 getActorBody aid s = sactorD s EM.! aid
@@ -272,13 +262,8 @@ mapActorItems_ f b s = do
         mapM_ (uncurry $ f cstore) $ EM.assocs bag
   mapM_ g sts
 
-getActorAssocs :: ActorId -> CStore -> State -> [(ItemId, Item)]
+getActorAssocs :: ActorId -> CStore -> State -> [(ItemId, (Item, ItemQuant))]
 getActorAssocs aid cstore s =
-  let b = getActorBody aid s
-  in bagAssocs s $ getBodyStoreBag b cstore s
-
-getActorAssocsK :: ActorId -> CStore -> State -> [(ItemId, (Item, ItemQuant))]
-getActorAssocsK aid cstore s =
   let b = getActorBody aid s
   in bagAssocsK s $ getBodyStoreBag b cstore s
 
@@ -357,14 +342,14 @@ itemToFull iid s =
 
 fullAssocs :: ActorId -> [CStore] -> State -> [(ItemId, ItemFull)]
 fullAssocs aid cstores s =
-  let allAssocs = concatMap (\cstore -> getActorAssocsK aid cstore s) cstores
+  let allAssocs = concatMap (\cstore -> getActorAssocs aid cstore s) cstores
       iToFull (iid, (item, _kit)) =
         (iid, itemToFull6 (scops s) (sdiscoKind s) (sdiscoAspect s) iid item)
   in map iToFull allAssocs
 
 kitAssocs :: ActorId -> [CStore] -> State -> [(ItemId, ItemFullKit)]
 kitAssocs aid cstores s =
-  let allAssocs = concatMap (\cstore -> getActorAssocsK aid cstore s) cstores
+  let allAssocs = concatMap (\cstore -> getActorAssocs aid cstore s) cstores
       iToFull (iid, (item, kit)) =
         (iid, ( itemToFull6 (scops s) (sdiscoKind s) (sdiscoAspect s) iid item
               , kit ))

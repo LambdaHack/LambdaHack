@@ -5,7 +5,7 @@ module Game.LambdaHack.Core.Dice
     Dice, AbsDepth(..), castDice, d, dL, z, zL, intToDice, minDice, maxDice
   , infsupDice, supDice, infDice, meanDice, reduceDice
     -- * Dice for rolling a pair of integer parameters representing coordinates.
-  , DiceXY(..), supDiceXY, infDiceXY, meanDiceXY
+  , DiceXY(..), supDiceXY, infDiceXY
   ) where
 
 import Prelude ()
@@ -265,7 +265,3 @@ supDiceXY (DiceXY x y) = (supDice x, supDice y)
 -- | Minimal value of DiceXY.
 infDiceXY :: DiceXY -> (Int, Int)
 infDiceXY (DiceXY x y) = (infDice x, infDice y)
-
--- | Mean value of DiceXY.
-meanDiceXY :: DiceXY -> (Double, Double)
-meanDiceXY (DiceXY x y) = (meanDice x, meanDice y)

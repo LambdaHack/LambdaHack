@@ -9,7 +9,7 @@ module Game.LambdaHack.Client.UI.Key
   , upKM, downKM, leftKM, rightKM
   , homeKM, endKM, backspaceKM, controlP
   , leftButtonReleaseKM, middleButtonReleaseKM, rightButtonReleaseKM
-  , dirAllKey, handleDir, moveBinding, mkKM, mkChar, mkKP
+  , dirAllKey, handleDir, moveBinding, mkKM, mkChar
   , keyTranslate, keyTranslateWeb
   , dirMoveNoModifier, dirRunNoModifier, dirRunControl, dirRunShift
 #ifdef EXPOSE_INTERNAL
@@ -297,9 +297,6 @@ mkKM s = let mkKey sk =
 
 mkChar :: Char -> KM
 mkChar c = KM NoModifier $ Char c
-
-mkKP :: Char -> KM
-mkKP c = KM NoModifier $ KP c
 
 -- | Translate key from a GTK string description to our internal key type.
 -- To be used, in particular, for the command bindings and macros

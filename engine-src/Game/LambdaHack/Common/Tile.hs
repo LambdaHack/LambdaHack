@@ -21,7 +21,7 @@ module Game.LambdaHack.Common.Tile
   , isVeryOftenItem, isCommonItem, isOftenActor, isNoItem, isNoActor
   , isEasyOpen, isEmbed, isAquatic, alterMinSkill, alterMinWalk
     -- * Slow property lookups
-  , kindHasFeature, hasFeature, openTo, closeTo, embeddedItems, revealAs
+  , kindHasFeature, openTo, closeTo, embeddedItems, revealAs
   , obscureAs, hideAs, buildAs
   , isEasyOpenKind, isOpenable, isClosable, isModifiable
   , TileAction (..), parseTileAction
@@ -291,11 +291,6 @@ alterMinWalk TileSpeedup{alterMinWalkTab} =
 kindHasFeature :: TK.Feature -> TileKind -> Bool
 {-# INLINE kindHasFeature #-}
 kindHasFeature f t = f `elem` TK.tfeature t
-
--- | Whether a tile kind (specified by its id) has the given feature.
-hasFeature :: ContentData TileKind -> TK.Feature -> ContentId TileKind -> Bool
-{-# INLINE hasFeature #-}
-hasFeature cotile f t = kindHasFeature f (okind cotile t)
 
 openTo :: ContentData TileKind -> ContentId TileKind -> Rnd (ContentId TileKind)
 openTo cotile t = do
