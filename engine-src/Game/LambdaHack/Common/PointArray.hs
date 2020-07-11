@@ -3,8 +3,9 @@
 module Game.LambdaHack.Common.PointArray
   ( UnboxRepClass(..), Array(..)
   , empty, (!), accessI, (//), replicateA, unfoldrNA
-  , foldrA, foldlA', ifoldrA', ifoldlA'
-  , mapA, imapA, imapMA_, minIndexesA, maxIndexA, maxLastIndexA
+  , foldrA, foldrA', foldlA', ifoldlA', ifoldrA', foldMA'
+  , mapA, imapA, imapMA_, minIndexesA, maxIndexA, maxIndexByA, maxLastIndexA
+  , toListA
 #ifdef EXPOSE_INTERNAL
     -- * Internal operations
   , toUnboxRep
@@ -172,11 +173,11 @@ foldrA :: UnboxRepClass c => (c -> a -> a) -> a -> Array c -> a
 foldrA f z0 Array{..} =
   U.foldr (\c a-> f (fromUnboxRep c) a) z0 avector
 
--- -- | Fold right strictly over an array.
--- foldrA' :: UnboxRepClass c => (c -> a -> a) -> a -> Array c -> a
--- {-# INLINE foldrA' #-}
--- foldrA' f z0 Array{..} =
---   U.foldr' (\c a-> f (fromUnboxRep c) a) z0 avector
+-- | Fold right strictly over an array.
+foldrA' :: UnboxRepClass c => (c -> a -> a) -> a -> Array c -> a
+{-# INLINE foldrA' #-}
+foldrA' f z0 Array{..} =
+  U.foldr' (\c a-> f (fromUnboxRep c) a) z0 avector
 
 -- | Fold left strictly over an array.
 foldlA' :: UnboxRepClass c => (a -> c -> a) -> a -> Array c -> a
@@ -205,11 +206,11 @@ ifoldrA' :: UnboxRepClass c => (Point -> c -> a -> a) -> a -> Array c -> a
 ifoldrA' f z0 Array{..} =
   U.ifoldr' (\n c a -> f (toEnum n) (fromUnboxRep c) a) z0 avector
 
--- -- | Fold monadically strictly over an array.
--- foldMA' :: (Monad m, UnboxRepClass c) => (a -> c -> m a) -> a -> Array c -> m a
--- {-# INLINE foldMA' #-}
--- foldMA' f z0 Array{..} =
---   U.foldM' (\a c -> f a (fromUnboxRep c)) z0 avector
+-- | Fold monadically strictly over an array.
+foldMA' :: (Monad m, UnboxRepClass c) => (a -> c -> m a) -> a -> Array c -> m a
+{-# INLINE foldMA' #-}
+foldMA' f z0 Array{..} =
+  U.foldM' (\a c -> f a (fromUnboxRep c)) z0 avector
 
 -- -- | Fold monadically strictly over an array
 -- -- (function applied to each element and its index).
@@ -292,13 +293,13 @@ maxIndexA :: UnboxRepClass c => Array c -> Point
 {-# INLINE maxIndexA #-}
 maxIndexA Array{..} = toEnum $ U.maxIndex avector
 
--- -- | Yield the point coordinates of the first maximum element of the array.
--- -- The array may not be empty.
--- maxIndexByA :: UnboxRepClass c => (c -> c -> Ordering) -> Array c -> Point
--- {-# INLINE maxIndexByA #-}
--- maxIndexByA f Array{..} =
---   let g a b = f (fromUnboxRep a) (fromUnboxRep b)
---   in toEnum $ U.maxIndexBy g avector
+-- | Yield the point coordinates of the first maximum element of the array.
+-- The array may not be empty.
+maxIndexByA :: UnboxRepClass c => (c -> c -> Ordering) -> Array c -> Point
+{-# INLINE maxIndexByA #-}
+maxIndexByA f Array{..} =
+  let g a b = f (fromUnboxRep a) (fromUnboxRep b)
+  in toEnum $ U.maxIndexBy g avector
 
 -- | Yield the point coordinates of the last maximum element of the array.
 -- The array may not be empty.
@@ -321,6 +322,6 @@ maxLastIndexA Array{..} =
 -- fromListA axsize aysize l =
 --   Array{avector = U.fromListN (axsize * aysize) $ map toUnboxRep l, ..}
 
--- toListA :: UnboxRepClass c => Array c -> [c]
--- {-# INLINE toListA #-}
--- toListA Array{..} = map fromUnboxRep $ U.toList avector
+toListA :: UnboxRepClass c => Array c -> [c]
+{-# INLINE toListA #-}
+toListA Array{..} = map fromUnboxRep $ U.toList avector
