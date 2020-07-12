@@ -394,7 +394,9 @@ partActorLeader aid = do
   b <- getsState $ getActorBody aid
   return $! case mleader of
     Just leader | aid == leader -> "you"
-    _ | bhp b <= 0 -> MU.Phrase ["the fallen", partActor bUI]
+    _ | bhp b <= 0
+        && not (bproj b) ->  -- avoid "the fallen falling" projectiles
+      MU.Phrase ["the fallen", partActor bUI]
     _ -> partActor bUI
 
 -- | The part of speech with the actor's pronoun or "you" if a leader
