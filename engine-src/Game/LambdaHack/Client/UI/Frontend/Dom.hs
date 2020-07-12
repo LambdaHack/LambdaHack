@@ -53,6 +53,7 @@ import GHCJS.DOM.Types
   , HTMLDivElement (HTMLDivElement)
   , HTMLTableCellElement (HTMLTableCellElement)
   , IsMouseEvent
+  , JSString
   , Window
   , runDOM
   , unsafeCastTo
@@ -164,9 +165,9 @@ runWeb coscreen ClientOptions{..} rfMVar = do
 shutdown :: IO ()
 shutdown = return () -- nothing to clean up
 
-setProp :: CSSStyleDeclaration -> Text -> Text -> DOM ()
+setProp :: CSSStyleDeclaration -> JSString -> Text -> DOM ()
 setProp style propRef propValue =
-  setProperty style propRef propValue (Nothing :: Maybe Text)
+  setProperty style propRef propValue (Nothing :: Maybe JSString)
 
 -- | Let each table cell handle mouse events inside.
 handleMouse :: RawFrontend
@@ -248,20 +249,22 @@ display :: FrontendSession  -- ^ frontend session data
 display FrontendSession{..} !curFrame = flip runDOM undefined $ do
   let setChar :: Int -> (Word32, Word32) -> DOM Int
       setChar !i (!w, !wPrev) | w == wPrev = return $! i + 1
-      setChar i (w, _) = do
+      setChar i (w, wPrev) = do
         let Point{..} = toEnum i
             Color.AttrChar{acAttr=Color.Attr{fg=fgRaw,bg}, acChar} =
               Color.attrCharFromW32 $ Color.AttrCharW32 w
             fg | py `mod` 2 == 0 && fgRaw == Color.White = Color.AltWhite
                | otherwise = fgRaw
             (!cell, !style) = scharCells V.! i
-        if | acChar == ' ' -> setTextContent cell $ Just ['\x00a0']
+        if | acChar == ' ' -> setTextContent cell $ Just ("\x00a0" :: JSString)
            | acChar == floorSymbol && not (Color.isBright fg) ->
-             setTextContent cell $ Just ['\x22C5']
+             setTextContent cell $ Just ("\x22C5" :: JSString)
            | otherwise -> setTextContent cell $ Just [acChar]
         setProp style "color" $ Color.colorToRGB fg
-        setProp style "border-color" $ Color.colorToRGB
-                                     $ Color.highlightToColor bg
+        let bgPrev = Color.bgFromW32 $ Color.AttrCharW32 wPrev
+        when (bg /= bgPrev) $
+          setProp style "border-color"
+                        (Color.colorToRGB $ Color.highlightToColor bg)
         return $! i + 1
   !prevFrame <- readIORef spreviousFrame
   writeIORef spreviousFrame curFrame
