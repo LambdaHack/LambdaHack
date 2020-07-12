@@ -103,7 +103,7 @@ generatedEscapes =
       outdoorEscapes = map switchEscapeToOutdoorDown escapeDownBasic
   in upEscapes ++ outdoorEscapes
 
--- The dots below are @Char.chr 183@, as defined in @TileKind.floorSymbol@.
+-- The dots below are @'\x00B7'@, as defined in @TileKind.floorSymbol@.
 deadEnd = PlaceKind  -- needs to have index 0
   { psymbol  = 'd'
   , pname    = "a dead end"

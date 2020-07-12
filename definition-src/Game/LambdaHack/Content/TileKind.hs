@@ -19,11 +19,10 @@ import Prelude ()
 
 import Game.LambdaHack.Core.Prelude
 
-import           Control.DeepSeq
-import           Data.Binary
-import qualified Data.Char as Char
-import           Data.Hashable
-import           GHC.Generics (Generic)
+import Control.DeepSeq
+import Data.Binary
+import Data.Hashable
+import GHC.Generics (Generic)
 
 import Game.LambdaHack.Content.ItemKind (ItemKind)
 import Game.LambdaHack.Definition.Color
@@ -253,8 +252,8 @@ isClosableKind t =
 talterForStairs :: Word8
 talterForStairs = 3
 
-floorSymbol :: Char.Char
-floorSymbol = Char.chr 183
+floorSymbol :: Char
+floorSymbol = '\x00B7'
 
 -- Alter skill schema:
 -- 0  can be altered by everybody (escape)

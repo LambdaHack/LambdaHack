@@ -16,7 +16,6 @@ import Prelude ()
 import Game.LambdaHack.Core.Prelude
 
 import           Data.Binary
-import           Data.Char (chr)
 import qualified Data.Text as T
 import           GHC.Generics (Generic)
 
@@ -72,7 +71,7 @@ deadEndId = toContentId 0
 validateOverride :: [(Char, GroupName TileKind)] -> [Text]
 validateOverride ov =
   let symbols = sort $ map fst ov
-      duplicated = filter (uncurry (==)) $ zip symbols (chr 0 : symbols)
+      duplicated = filter (uncurry (==)) $ zip symbols ('\0' : symbols)
   in [ "duplicated override symbols:"
         <+> T.pack (intersperse ' ' $ map fst duplicated)
      | not (null duplicated) ]

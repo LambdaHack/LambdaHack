@@ -10,7 +10,6 @@ import Game.LambdaHack.Core.Prelude
 import           Control.Concurrent
 import qualified Control.Monad.IO.Class as IO
 import           Control.Monad.Trans.Reader (ask)
-import qualified Data.Char as Char
 import           Data.IORef
 import qualified Data.Vector as V
 import qualified Data.Vector.Unboxed as U
@@ -102,7 +101,7 @@ runWeb coscreen ClientOptions{..} rfMVar = do
   -- Create the session record.
   divBlockRaw <- createElement doc ("div" :: Text)
   divBlock <- unsafeCastTo HTMLDivElement divBlockRaw
-  let cell = "<td>" ++ [Char.chr 160]
+  let cell = "<td>\x00a0"
       row = "<tr>" ++ concat (replicate (rwidth coscreen) cell)
       rows = concat (replicate (rheight coscreen) row)
   tableElemRaw <- createElement doc ("table" :: Text)
@@ -256,9 +255,9 @@ display FrontendSession{..} !curFrame = flip runDOM undefined $ do
             fg | py `mod` 2 == 0 && fgRaw == Color.White = Color.AltWhite
                | otherwise = fgRaw
             (!cell, !style) = scharCells V.! i
-        if | acChar == ' ' -> setTextContent cell $ Just [Char.chr 160]
+        if | acChar == ' ' -> setTextContent cell $ Just ['\x00a0']
            | acChar == floorSymbol && not (Color.isBright fg) ->
-             setTextContent cell $ Just [Char.chr 8901]
+             setTextContent cell $ Just ['\x22C5']
            | otherwise -> setTextContent cell $ Just [acChar]
         setProp style "color" $ Color.colorToRGB fg
         setProp style "border-color" $ Color.colorToRGB

@@ -261,7 +261,7 @@ drawFramePath drawnLevelId = do
       shiftedLine = if null shiftedBTrajectory
                     then bline
                     else shiftedBTrajectory
-      acOnPathOrLine :: Char.Char -> Point -> ContentId TileKind
+      acOnPathOrLine :: Char -> Point -> ContentId TileKind
                      -> Color.AttrCharW32
       acOnPathOrLine !ch !p0 !tile =
         let fgOnPathOrLine =

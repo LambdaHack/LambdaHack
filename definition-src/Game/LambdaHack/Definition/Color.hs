@@ -203,7 +203,7 @@ spaceAttrW32 :: AttrCharW32
 spaceAttrW32 = attrCharToW32 $ AttrChar defAttr ' '
 
 nbspAttrW32 :: AttrCharW32
-nbspAttrW32 = attrCharToW32 $ AttrChar defAttr $ Char.chr 160
+nbspAttrW32 = attrCharToW32 $ AttrChar defAttr '\x00a0'
 
 spaceCursorAttrW32 :: AttrCharW32
 spaceCursorAttrW32 =

@@ -430,10 +430,10 @@ drawFrame coscreen ClientOptions{..} sess@FrontendSession{..} curFrame = do
               -- Make all visible floors bold (no bold fold variant for 16x16x,
               -- so only the dot can be bold).
               let acChar = if not (Color.isBright fg)
-                              && acCharRaw == floorSymbol  -- 0xb7
+                              && acCharRaw == floorSymbol  -- '\x00B7'
                            then if isBitmapFont
-                                then Char.chr 7   -- hack
-                                else Char.chr 8901  -- 0x22c5
+                                then '\x0007'
+                                else '\x22C5'
                            else acCharRaw
               textSurfaceRaw <- TTF.shadedGlyph squareFont (colorToRGBA fg)
                                                 (colorToRGBA Color.Black) acChar
