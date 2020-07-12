@@ -1,6 +1,6 @@
 -- | UI client options.
 module Game.LambdaHack.Client.UI.UIOptionsParse
-  ( mkUIOptions, applyUIOptions
+  ( mkUIOptions, glueSeed, applyUIOptions
 #ifdef EXPOSE_INTERNAL
     -- * Internal operations
   , configError, readError, parseConfig
@@ -88,8 +88,14 @@ parseConfig cfg =
       uNoAnim = getOption "noAnim"
       uhpWarningPercent = getOption "hpWarningPercent"
       uMessageColors = getOptionMaybe "messageColors"
-      uCmdline = words $ getOption "overrideCmdline"
+      uCmdline = glueSeed $ words $ getOption "overrideCmdline"
   in UIOptions{..}
+
+glueSeed :: [String] -> [String]
+glueSeed [] = []
+glueSeed ("SMGen" : s1 : s2 : rest) =
+  ("SMGen" ++ " " ++ s1 ++ " " ++ s2) : glueSeed rest
+glueSeed (s : rest) = s : glueSeed rest
 
 -- | Read and parse UI config file.
 mkUIOptions :: COps -> Bool -> IO UIOptions
