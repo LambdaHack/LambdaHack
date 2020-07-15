@@ -139,7 +139,7 @@ displayFrames lid frs = do
             else return $ framesRaw ++ [Nothing, Nothing, Nothing]
   mapM_ displayFrame frames
 
--- | Write 'FrontKey' UI request to the frontend, read the reply,
+-- | Write 'Frontend.FrontKey' UI request to the frontend, read the reply,
 -- set pointer, return key.
 connFrontendFrontKey :: MonadClientUI m => [K.KM] -> PreFrame3 -> m K.KM
 connFrontendFrontKey frontKeyKeys ((bfr, ffr), (ovProp, ovMono)) = do
