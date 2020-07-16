@@ -166,10 +166,23 @@ which is already a part of your OS distribution, or available within
 The Haskell Platform[7]. Get the library from Hackage[3] as follows
 
     cabal update
-    cabal install LambdaHack
+    cabal run LambdaHack
 
 For a newer snapshot, clone the source code from github[5]
-and run `cabal install` from the main directory.
+and run `cabal run LambdaHack` from the main directory.
+Alternatively, if you'd like to develop in this codebase,
+the following speeds up the turn-around a lot
+
+    cp cabal.project.local.development cabal.project.local
+    cabal install cabal-plan
+
+and then compile with
+
+    cabal build .
+
+and run the game with
+
+    make play
 
 There is a built-in black and white line terminal frontend, suitable
 for teletype terminals or a keyboard and a printer (but it's going to use
@@ -180,7 +193,7 @@ the spiffy colorful squares outlining special positions that exist in SDL2
 frontend, but only crude cursor highlights), use Cabal flags, e.g,
 to switch to the vty console frontend optimized for screen readers, run
 
-    cabal install -fvty
+    cabal run -fvty LambdaHack
 
 
 Testing and debugging
@@ -205,7 +218,7 @@ You can use HPC with the game as follows (details vary according
 to HPC version).
 
     cabal clean
-    cabal install --enable-coverage
+    cabal build --enable-coverage
     make test
     hpc report --hpcdir=dist/hpc/dyn/mix/LambdaHack --hpcdir=dist/hpc/dyn/mix/LambdaHack-xxx/ LambdaHack
     hpc markup --hpcdir=dist/hpc/dyn/mix/LambdaHack --hpcdir=dist/hpc/dyn/mix/LambdaHack-xxx/ LambdaHack
