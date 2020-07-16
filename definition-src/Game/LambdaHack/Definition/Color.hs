@@ -66,12 +66,12 @@ defFG = White
 isBright :: Color -> Bool
 isBright c = c > BrBlack
 
--- | Colour sets.
+-- | Colour sets. Sorted.
 darkCol, brightCol, stdCol, legalFgCol :: [Color]
 darkCol = [Red .. Cyan]
 brightCol = [BrRed .. BrCyan]  -- BrBlack is not really that bright
 stdCol = darkCol ++ brightCol
-legalFgCol = White : BrWhite : BrBlack : stdCol
+legalFgCol = darkCol ++ [White, BrBlack] ++ brightCol ++ [BrWhite]
 
 -- | Translationg to heavily modified Linux console color RGB values.
 --
