@@ -23,8 +23,8 @@ configure-debug:
 configure-prof:
 	cabal configure --enable-profiling --profiling-detail=exported-functions
 
-ghcjs-new-build:
-	cabal new-build --ghcjs .
+ghcjs-build:
+	cabal build --ghcjs .
 
 chrome-log:
 	google-chrome --enable-logging --v=1 file:///home/mikolaj/r/lambdahack.github.io/index.html &
@@ -259,17 +259,28 @@ test-short-load:
 	$$(cabal-plan list-bin LambdaHack) --dbgMsgSer --logPriority 4 --boostRandomItem --savePrefix battleSurvival --dumpInitRngs --automateAll --keepAutomated --gameMode battleSurvival --frontendTeletype --stopAfterSeconds 2 $(RNGOPTS) 2> /tmp/teletypetest.log
 
 
-build-binary-common:
-	mkdir -p LambdaHackTheGame/GameDefinition/fonts
+build-binary-v1:
 	cabal v1-install --force-reinstalls --disable-library-profiling --disable-profiling --disable-documentation --enable-optimization --only-dependencies
 	cabal v1-configure --disable-library-profiling --disable-profiling --enable-optimization --prefix=/ --datadir=. --datasubdir=.
 	cabal v1-build exe:LambdaHack
+	mkdir -p LambdaHackTheGame/GameDefinition/fonts
 	cabal v1-copy --destdir=LambdaHackTheGameInstall
-	([ -f "LambdaHackTheGameInstall/bin/LambdaHack" ] && mv LambdaHackTheGameInstall/bin/LambdaHack LambdaHackTheGame) || exit 0
-	([ -f "LambdaHackTheGameInstall/msys64/bin/LambdaHack.exe" ] && mv LambdaHackTheGameInstall/msys64/bin/LambdaHack.exe LambdaHackTheGame) || exit 0
-	([ -f "LambdaHackTheGameInstall/msys32/bin/LambdaHack.exe" ] && mv LambdaHackTheGameInstall/msys32/bin/LambdaHack.exe LambdaHackTheGame) || exit 0
-#	cabal new-build --disable-library-profiling --disable-profiling --disable-documentation --only-dependencies .
-#	cabal new-install --disable-library-profiling --disable-profiling --disable-documentation --datadir=. --datasubdir=. --install-method=copy --installdir=LambdaHackTheGame --enable-executable-stripping exe:LambdaHack
+
+copy-binary:
+	cp $$(cabal-plan list-bin LambdaHack) LambdaHackTheGame
+
+configure-binary-v2:
+	cabal configure --disable-tests --disable-library-profiling --disable-profiling --disable-documentation --enable-optimization --prefix=/ --datadir=. --datasubdir=.
+
+configure-binary-v2-vty:
+	cabal configure -fvty --disable-tests --disable-library-profiling --disable-profiling --disable-documentation --enable-optimization --prefix=/ --datadir=. --datasubdir=.
+
+build-binary-v2:
+	cabal build --only-dependencies all
+	cabal build exe:LambdaHack
+	mkdir -p LambdaHackTheGame/GameDefinition/fonts
+
+copy-directory:
 	cp GameDefinition/config.ui.default LambdaHackTheGame/GameDefinition
 	cp GameDefinition/fonts/16x16xw.woff LambdaHackTheGame/GameDefinition/fonts
 	cp GameDefinition/fonts/16x16xw.bdf LambdaHackTheGame/GameDefinition/fonts
@@ -288,13 +299,26 @@ build-binary-common:
 	cp COPYLEFT LambdaHackTheGame
 	cp CREDITS LambdaHackTheGame
 
-build-binary-ubuntu: build-binary-common
+build-binary-common: build-binary-v1 copy-directory
+
+build-binary-windows: configure-binary-v2 build-binary-v2 copy-directory
+
+build-directory: configure-binary-v2 build-binary-v2 copy-binary copy-directory
+
+build-binary-ubuntu: build-directory
 	LambdaHackTheGame/LambdaHack --version > /dev/null; \
 	LH_VERSION=$$(cat ~/.LambdaHack/stdout.txt); \
 	tar -czf LambdaHack_$${LH_VERSION}_ubuntu-16.04-amd64.tar.gz LambdaHackTheGame
 
-build-binary-macosx: build-binary-common
+build-binary-macosx: build-directory
 	LambdaHackTheGame/LambdaHack --version > /dev/null; \
 	LH_VERSION=$$(cat ~/.LambdaHack/stdout.txt); \
 	OS_VERSION=$$(sw_vers -productVersion); \
 	tar -czf LambdaHack_$${LH_VERSION}_macosx-$${OS_VERSION}-amd64.tar.gz LambdaHackTheGame
+
+build-directory-vty: configure-binary-v2-vty build-binary-v2 copy-binary copy-directory
+
+build-binary-screen-reader-ubuntu: build-directory-vty
+	LambdaHackTheGame/LambdaHack --version > /dev/null; \
+	LH_VERSION=$$(cat ~/.LambdaHack/stdout.txt); \
+	tar -czf LambdaHack_$${LH_VERSION}_screen-reader-ubuntu-16.04-amd64.tar.gz LambdaHackTheGame
