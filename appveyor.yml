@@ -120,7 +120,7 @@ install:
       && cp /c/msys64/mingw32/bin/libpcre-1.dll LambdaHackTheGame
       && cp /c/msys64/mingw32/bin/libstdc++-6.dll LambdaHackTheGame
       && cp /c/msys64/mingw32/bin/libiconv-2.dll LambdaHackTheGame
-      && cp LambdaHackTheGameInstall/msys32/bin/LambdaHack.exe LambdaHackTheGame
+      && cp LambdaHackTheGameInstall/msys64/bin/LambdaHack.exe LambdaHackTheGame
       && 7z a -ssc -tzip LambdaHack_dev_windows-i686.zip LambdaHackTheGame
     )
 
