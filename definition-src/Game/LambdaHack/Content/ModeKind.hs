@@ -39,6 +39,7 @@ data ModeKind = ModeKind
   , mendMsg :: [(Outcome, Text)]
                                -- ^ messages displayed at particular game ends;
                                --   if no message, the screen is skipped
+  , mrules  :: Text            -- ^ rules note
   , mdesc   :: Text            -- ^ description
   , mnote   :: Text            -- ^ meta note
   }
