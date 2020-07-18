@@ -626,6 +626,9 @@ keyTranslate shiftPressed n = case n of
   KeycodeCaret -> K.Char '^'
   KeycodeUnderscore -> K.Char '_'
   KeycodeBackquote -> if shiftPressed then K.Char '~' else K.Char '`'
+  Keycode 167      -> if shiftPressed then K.Char '~' else K.Char '`'
+    -- on some keyboards the key below ESC is paragraph and its scancode is 167
+    -- and moreover SDL sometimes gives this code even on normal keyboards
   KeycodeUp         -> K.Up
   KeycodeDown       -> K.Down
   KeycodeLeft       -> K.Left
