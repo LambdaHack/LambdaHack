@@ -276,7 +276,7 @@ configure-binary-v2-vty:
 	cabal configure -fvty --disable-tests --disable-library-profiling --disable-profiling --disable-documentation --enable-optimization --prefix=/ --datadir=. --datasubdir=.
 
 build-binary-v2:
-	cabal build --only-dependencies all
+	cabal build --only-dependencies .
 	cabal build exe:LambdaHack
 	mkdir -p LambdaHackTheGame/GameDefinition/fonts
 
