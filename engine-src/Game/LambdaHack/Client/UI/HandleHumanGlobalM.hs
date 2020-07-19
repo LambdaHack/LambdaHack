@@ -1555,7 +1555,7 @@ generateMenu cmdSemInCxtOfKM blurb kds gameInfo menuName = do
   CCUI{coscreen=ScreenContent{rwidth, rheight, rmainMenuLine}} <-
     getsSession sccui
   FontSetup{..} <- getFontSetup
-  let offset = if isSquareFont propFont || length blurb <= 1 then 2 else -8
+  let offset = 2
       bindings =  -- key bindings to display
         let fmt (k, (d, _)) =
               ( Just k
@@ -1580,8 +1580,8 @@ generateMenu cmdSemInCxtOfKM blurb kds gameInfo menuName = do
       introLen = length blurb
       introMaxLen = maximum $ 30 : map (textSize monoFont . attrLine) blurb
       introOv = map (first $ K.PointUI (2 * rwidth - introMaxLen - offset))
-                $ zip [max 0 (rheight - introLen - 1) ..] blurb
-      ov = EM.insertWith (++) propFont introOv
+                $ zip [max 0 (rheight - introLen - offset) ..] blurb
+      ov = EM.insertWith (++) monoFont introOv
            $ EM.singleton squareFont $ offsetOverlayX menuOvLines
   ekm <- displayChoiceScreen menuName ColorFull True
                              (menuToSlideshow (ov, kyxs)) [K.escKM]
@@ -1716,11 +1716,11 @@ challengesMenuHuman cmdSemInCxtOfKM = do
       width = if isSquareFont propFont then 42 else 84
       duplicateEOL '\n' = "\n\n"
       duplicateEOL c = T.singleton c
-      blurb = splitAttrString width $ textToAS $ T.concatMap duplicateEOL
-              $ mdesc gameMode
-                <> if T.null (mnote gameMode)
-                   then "\n"  -- whitespace compensates for the lack of note
-                   else "\n[Note: " <> mnote gameMode <> "]"
+      blurb = splitAttrString width $ textToAS 
+              $ mnote gameMode
+                <> duplicateEOL '\n'
+                <> mrules gameMode
+                   
   generateMenu cmdSemInCxtOfKM blurb kds gameInfo "challenge"
 
 -- * GameScenarioIncr
