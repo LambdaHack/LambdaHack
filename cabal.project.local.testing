@@ -1,13 +1,12 @@
 jobs: 1
 flags: +with_expensive_assertions
-profiling: True
-library-profiling: True
+profiling: False
+library-profiling: False
 tests: False
 coverage: False
 library-coverage: False
-optimization: False
+optimization: True
 documentation: False
-profiling-detail: all-functions
 
 package *
   documentation: True
