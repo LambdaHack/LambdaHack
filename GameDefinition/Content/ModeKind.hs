@@ -99,7 +99,8 @@ raid = ModeKind
       , "* Find exit and escape ASAP"
       ]
   , mdesc   = "An incredibly advanced typing machine worth 100 gold is buried at the exit of this maze. Be the first to find it and fund a research team that makes typing accurate and dependable forever."
-  , mnote   = "In addition to initiating the (loose) game plot, this scenario serves as an introductory tutorial. There is only one level. Relax, explore, gather loot, find the exit and escape. With some luck, you won't even need to fight anything or use any items. Feel free to scout with only one of the heroes and keep the other one immobile, e.g., standing guard over the squad's shared inventory stash. If in grave danger, retreat with the scout to join forces with the guard. The more gold collected and the faster the victory, the higher the score."
+  , mmotivation = "In addition to initiating the (loose) game plot, this scenario serves as an introductory tutorial. There is only one level. Relax, explore, gather loot, find the exit and escape. With some luck, you won't even need to fight anything or use any items."
+  , mhint= "Feel free to scout with only one of the heroes and keep the other one immobile, e.g., standing guard over the squad's shared inventory stash. If in grave danger, retreat with the scout to join forces with the guard. The more gold collected and the faster the victory, the higher the score."
   }
 
 brawl = ModeKind  -- sparse melee in daylight, with shade for melee ambush
@@ -117,7 +118,8 @@ brawl = ModeKind  -- sparse melee in daylight, with shade for melee ambush
       , "* Incapacitate all enemies ASAP"
       ]
   , mdesc   = "Your research team disagrees over a drink with some gentlemen scientists about premises of a relative completeness theorem and there's only one way to settle that. Remember to keep your party together when opponents are spotted, or they might be tempted to silence solitary disputants one by one and so win the altercation."
-  , mnote   = "In addition to advancing the game plot, this scenario trains melee, squad formation and stealth. If you get beaten, ponder the hints from the defeat message. The battle is completely symmetric, both in numbers, goals and squad capabilities (e.g., only the pointman moves, while all others either melee or wait). Observe and mimic the enemies and savour the fairness --- you won't find any in the main crawl scenario that follows."
+  , mmotivation = "In addition to advancing the game plot, this scenario trains melee, squad formation and stealth. If you get beaten, ponder the hints from the defeat message."
+  , mhint= "The battle is completely symmetric, both in numbers, goals and squad capabilities (e.g., only the pointman moves, while all others either melee or wait). Observe and mimic the enemies and savour the fairness --- you won't find any in the main crawl scenario that follows."
   }
 
 crawl = ModeKind
@@ -129,13 +131,14 @@ crawl = ModeKind
   , mendMsg = [ (Killed, "To think that followers of science and agents of enlightenment would earn death as their reward! Where did we err in our ways? Perhaps nature should not have been disturbed so brashly and the fell beasts woken up from their slumber so eagerly? Perhaps the gathered items should have been used for scientific experiments on the spot rather than hoarded as if of base covetousness? Or perhaps the challenge, chosen freely but without the foreknowledge of the grisly difficulty, was insurmountable and forlorn from the start, despite the enormous power of educated reason at out disposal?")
               , (Escape, "It's better to live to tell the tale than to choke on more than one can swallow. There was no more exquisite cultural artifacts and glorious scientific wonders in these forbidding tunnels anyway. Or were there?") ]
   , mrules  = T.unlines $
-      [ "* many levels"
+      [ "* Many levels"
       , "* Three heroes vs. spawned enemies"
       , "* Gather gold, gems and elixirs"
       , "* Find exit and escape ASAP"
       ]
   , mdesc   = "Enjoy the peaceful seclusion of these cold austere tunnels, but don't let wanton curiosity, greed and the ever-creeping abstraction madness keep you down there for too long. If you find survivors (whole or perturbed or segmented) of the past scientific missions, exercise extreme caution and engage or ignore at your discretion."
-  , mnote   = "This is the main, longest and most replayable scenario of the game. If you keep dying, attempt the next game modes as a breather (perhaps at lowered difficulty). They fill the gaps in the plot and teach particular skills that may come in handy and help you discover new tactics of your own or come up with a strategy for staving off the attrition."
+  , mmotivation = "This is the main, longest and most replayable scenario of the game."
+  , mhint= "If you keep dying, attempt the next game modes as a breather (perhaps at lowered difficulty). They fill the gaps in the plot and teach particular skills that may come in handy and help you discover new tactics of your own or come up with a strategy for staving off the attrition."
   }
 
 -- The trajectory tip is important because of tactics of scout looking from
@@ -160,7 +163,8 @@ shootout = ModeKind  -- sparse ranged in daylight
       , "* Incapacitate all enemies ASAP"
       ]
   , mdesc   = "Whose arguments are most striking and whose ideas fly fastest? Let's scatter up, attack the problems from different angles and find out."
-  , mnote   = "This scenario is a flashback, picking the plot up where brawl (2) left it. It also teaches specifically the ranged combat skill in the simplified setup of fully symmetric battle. Try to come up with the best squad formation for this tactical challenge. Don't despair if you run out of ammo, because if you aim truly, enemy has few hit points left at this point. In turn, when trying to avoid enemy projectiles, you can display the trajectory of any soaring entity by pointing it with the crosshair in aiming mode."
+  , mmotivation = "This scenario is a flashback, picking the plot up where brawl (2) left it. It also teaches specifically the ranged combat skill in the simplified setup of fully symmetric battle."
+  , mhint= "Try to come up with the best squad formation for this tactical challenge. Don't despair if you run out of ammo, because if you aim truly, enemy has few hit points left at this point. In turn, when trying to avoid enemy projectiles, you can display the trajectory of any soaring entity by pointing it with the crosshair in aiming mode."
   }
 
 hunt = ModeKind  -- melee vs ranged with reaction fire in daylight
@@ -177,7 +181,8 @@ hunt = ModeKind  -- melee vs ranged with reaction fire in daylight
       , "* Incapacitate all enemies ASAP"
       ]
   , mdesc   = "Who is the hunter and who is the prey?"
-  , mnote   = "This is yet another reminiscence of the events that led to the long crawl adventure. This episode is quite a tactical challenge, because enemies are allowed to fling their ammo simultaneously at you team, which has no such capacities and focuses on melee combat instead. Act accordingly."
+  , mmotivation = "This is yet another reminiscence of the events that led to the long crawl adventure. This episode is quite a tactical challenge, because enemies are allowed to fling their ammo simultaneously at your team, which has no such capacities and focuses on melee combat instead. Act accordingly."
+  , mhint= ""
   }
 
 escape = ModeKind  -- asymmetric ranged and stealth race at night
@@ -195,7 +200,8 @@ escape = ModeKind  -- asymmetric ranged and stealth race at night
       , "* Find exit and escape ASAP"
       ]
   , mdesc   = "Dwelling into dark matters is dangerous, so avoid the crowd of firebrand disputants, catch any gems of thought, find a way out and bring back a larger team to shed new light on the field."
-  , mnote   = ""
+  , mmotivation = ""
+  , mhint= ""
   }
 
 zoo = ModeKind  -- asymmetric crowd melee at night
@@ -212,7 +218,8 @@ zoo = ModeKind  -- asymmetric crowd melee at night
       , "* Incapacitate all enemies ASAP"
       ]
   , mdesc   = "The heat of the dispute reaches the nearby Wonders of Science and Nature exhibition, igniting greenery, nets and cages. Crazed animals must be dissuaded from ruining precious scientific equipment and setting back the otherwise fruitful exchange of ideas."
-  , mnote   = ""
+  , mmotivation = ""
+  , mhint= ""
   }
 
 -- The tactic is to sneak in the dark, highlight enemy with thrown torches
@@ -237,7 +244,8 @@ ambush = ModeKind  -- dense ranged with reaction fire vs melee at night
       , "* Assert control of the situation ASAP"
       ]
   , mdesc   = "Prevent hijacking of your ideas at all cost! Be stealthy, be observant, be aggressive. Fast execution is what makes or breaks a creative team."
-  , mnote   = ""
+  , mmotivation = ""
+  , mhint= ""
   }
 
 safari = ModeKind  -- Easter egg available only via screensaver
@@ -254,7 +262,8 @@ safari = ModeKind  -- Easter egg available only via screensaver
       , "* Find exit and escape ASAP"
       ]
   , mdesc   = "\"In this enactment you'll discover the joys of hunting the most exquisite of Earth's flora and fauna, both animal and semi-intelligent. Exit at the bottommost level.\" This is a drama script recovered from a monster nest debris."
-  , mnote   = ""
+  , mmotivation = ""
+  , mhint= ""
   }
 
 -- * Testing modes
@@ -268,7 +277,8 @@ dig = ModeKind
   , mendMsg = []
   , mrules  = ""
   , mdesc   = "Delve deeper!"
-  , mnote   = ""
+  , mmotivation = ""
+  , mhint= ""
   }
 
 see = ModeKind
@@ -280,7 +290,8 @@ see = ModeKind
   , mendMsg = []
   , mrules  = ""
   , mdesc   = "See all!"
-  , mnote   = ""
+  , mmotivation = ""
+  , mhint= ""
   }
 
 short = ModeKind
@@ -292,7 +303,8 @@ short = ModeKind
   , mendMsg = []
   , mrules  = ""
   , mdesc   = "See all short scenarios!"
-  , mnote   = ""
+  , mmotivation = ""
+  , mhint= ""
   }
 
 crawlEmpty = ModeKind
@@ -304,7 +316,8 @@ crawlEmpty = ModeKind
   , mendMsg = []
   , mrules  = ""
   , mdesc   = "Enjoy the free space."
-  , mnote   = ""
+  , mmotivation = ""
+  , mhint= ""
   }
 
 crawlSurvival = ModeKind
@@ -316,7 +329,8 @@ crawlSurvival = ModeKind
   , mendMsg = []
   , mrules  = ""
   , mdesc   = "Lure the human intruders deeper and deeper."
-  , mnote   = ""
+  , mmotivation = ""
+  , mhint= ""
   }
 
 safariSurvival = ModeKind
@@ -328,7 +342,8 @@ safariSurvival = ModeKind
   , mendMsg = []
   , mrules  = ""
   , mdesc   = "In this enactment you'll discover the joys of being hunted among the most exquisite of Earth's flora and fauna, both animal and semi-intelligent."
-  , mnote   = ""
+  , mmotivation = ""
+  , mhint= ""
   }
 
 battle = ModeKind
@@ -340,7 +355,8 @@ battle = ModeKind
   , mendMsg = []
   , mrules  = ""
   , mdesc   = "Odds are stacked against those that unleash the horrors of abstraction."
-  , mnote   = ""
+  , mmotivation = ""
+  , mhint= ""
   }
 
 battleDefense = ModeKind
@@ -352,7 +368,8 @@ battleDefense = ModeKind
   , mendMsg = []
   , mrules  = ""
   , mdesc   = "Odds are stacked for those that breathe mathematics."
-  , mnote   = ""
+  , mmotivation = ""
+  , mhint= ""
   }
 
 battleSurvival = ModeKind
@@ -364,7 +381,8 @@ battleSurvival = ModeKind
   , mendMsg = []
   , mrules  = ""
   , mdesc   = "Odds are stacked for those that ally with the strongest."
-  , mnote   = ""
+  , mmotivation = ""
+  , mhint= ""
   }
 
 defense = ModeKind  -- perhaps a real scenario in the future
@@ -376,7 +394,8 @@ defense = ModeKind  -- perhaps a real scenario in the future
   , mendMsg = []
   , mrules  = ""
   , mdesc   = "Don't let human interlopers defile your abstract secrets and flee unpunished!"
-  , mnote   = ""
+  , mmotivation = ""
+  , mhint= ""
   }
 
 defenseEmpty = ModeKind
@@ -388,7 +407,8 @@ defenseEmpty = ModeKind
   , mendMsg = []
   , mrules  = ""
   , mdesc   = "Lord over."
-  , mnote   = ""
+  , mmotivation = ""
+  , mhint= ""
   }
 
 -- * Screensaver modes

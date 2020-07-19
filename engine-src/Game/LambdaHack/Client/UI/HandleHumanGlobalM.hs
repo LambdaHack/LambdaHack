@@ -1717,7 +1717,7 @@ challengesMenuHuman cmdSemInCxtOfKM = do
       duplicateEOL '\n' = "\n\n"
       duplicateEOL c = T.singleton c
       blurb = splitAttrString width $ textToAS 
-              $ mnote gameMode
+              $ mmotivation gameMode
                 <> duplicateEOL '\n'
                 <> mrules gameMode
                    
