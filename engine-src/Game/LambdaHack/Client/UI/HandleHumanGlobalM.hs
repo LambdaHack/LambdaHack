@@ -1339,7 +1339,7 @@ helpHuman cmdSemInCxtOfKM = do
                 <> "The story so far:\n"
                 <> T.concatMap duplicateEOL (mdesc gameMode) <> "\n\n"
                 <> "Rules of the game:\n"
-                <> mrules gameMode <> "\n"
+                <> mrules gameMode <> "\n\n"
                 <> "Running commentary:\n"
                 <> T.concatMap duplicateEOL (mmotivation gameMode) <> "\n\n"
                 <> "Hints, not needed unless stuck:\n"

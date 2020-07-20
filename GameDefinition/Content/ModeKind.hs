@@ -92,7 +92,7 @@ raid = ModeKind
   , mendMsg = [ (Killed, "This expedition has gone wrong. However, scientific mind does not despair, but analyzes and corrects. Did you perchance awake one animal too many? Did you remember to try using all consumables at your disposal for your immediate survival? Did you choose a challenge with difficulty level within your means? Answer honestly, ponder wisely, experiment methodically.")
               , (Defeated, "Regrettably, the other team snatched the grant, while you were busy contemplating natural phenomena. Science is a competitive sport, as sad as it sounds. It's not enough to make a discovery, you have to get there first.")
               , (Escape, "You've got hold of the machine! Think of the hours of fun taking it apart and putting it back together again! That's a great first step on your quest to solve the typing problems of the world.") ]
-  , mrules  = T.unlines $
+  , mrules  = T.intercalate "\n" $
       [ "* One level only"
       , "* Two heroes vs. Spawned enemies"
       , "* Gather gold"
@@ -111,7 +111,7 @@ brawl = ModeKind  -- sparse melee in daylight, with shade for melee ambush
   , mcaves  = cavesBrawl
   , mendMsg = [ (Killed, "The inquisitive scholars turned out to be envious of our deep insight to the point of outright violence. It would still not result in such a defeat and recanting of our thesis if we figured out to use terrain to protect us from missiles or even completely hide our presence. It would also help if we honourably kept our ground together to the end, at the same time preventing the overwhelming enemy forces from brutishly ganging up on our modest-sized, though valiant, research team.")
               , (Conquer, "That's settled: local compactness *is* necessary for relative completeness, given the assumptions.") ]
-  , mrules  = T.unlines $
+  , mrules  = T.intercalate "\n" $
       [ "* One level only"
       , "* Three heroes vs. Three human enemies"
       , "* Minimize losses"
@@ -130,7 +130,7 @@ crawl = ModeKind
   , mcaves  = cavesCrawl
   , mendMsg = [ (Killed, "To think that followers of science and agents of enlightenment would earn death as their reward! Where did we err in our ways? Perhaps nature should not have been disturbed so brashly and the fell beasts woken up from their slumber so eagerly? Perhaps the gathered items should have been used for scientific experiments on the spot rather than hoarded as if of base covetousness? Or perhaps the challenge, chosen freely but without the foreknowledge of the grisly difficulty, was insurmountable and forlorn from the start, despite the enormous power of educated reason at out disposal?")
               , (Escape, "It's better to live to tell the tale than to choke on more than one can swallow. There was no more exquisite cultural artifacts and glorious scientific wonders in these forbidding tunnels anyway. Or were there?") ]
-  , mrules  = T.unlines $
+  , mrules  = T.intercalate "\n" $
       [ "* Many levels"
       , "* Three heroes vs. Spawned enemies"
       , "* Gather gold, gems and elixirs"
@@ -156,7 +156,7 @@ shootout = ModeKind  -- sparse ranged in daylight
   , mroster = rosterShootout
   , mcaves  = cavesShootout
   , mendMsg = []
-  , mrules  = T.unlines $
+  , mrules  = T.intercalate "\n" $
       [ "* One level only"
       , "* Three heroes vs. Three human enemies"
       , "* Minimize losses"
@@ -174,7 +174,7 @@ hunt = ModeKind  -- melee vs ranged with reaction fire in daylight
   , mroster = rosterHunt
   , mcaves  = cavesHunt
   , mendMsg = []
-  , mrules  = T.unlines $
+  , mrules  = T.intercalate "\n" $
       [ "* One level only"
       , "* Seven heroes vs. Seven human enemies capable of concurrent action"
       , "* Minimize losses"
@@ -192,7 +192,7 @@ escape = ModeKind  -- asymmetric ranged and stealth race at night
   , mroster = rosterEscape
   , mcaves  = cavesEscape
   , mendMsg = []
-  , mrules  = T.unlines $
+  , mrules  = T.intercalate "\n" $
       [ "* One level only"
       , "* Three heroes vs. Seven human enemies capable of concurrent attacks"
       , "* Minimize losses"
@@ -211,7 +211,7 @@ zoo = ModeKind  -- asymmetric crowd melee at night
   , mroster = rosterZoo
   , mcaves  = cavesZoo
   , mendMsg = []
-  , mrules  = T.unlines $
+  , mrules  = T.intercalate "\n" $
       [ "* One level only"
       , "* Five heroes vs. Many enemies"
       , "* Minimize losses"
@@ -237,7 +237,7 @@ ambush = ModeKind  -- dense ranged with reaction fire vs melee at night
   , mroster = rosterAmbush
   , mcaves  = cavesAmbush
   , mendMsg = []
-  , mrules  = T.unlines $
+  , mrules  = T.intercalate "\n" $
       [ "* One level only"
       , "* Three heroes with concurrent attacks vs. Unidentified foes"
       , "* Minimize losses"
@@ -255,7 +255,7 @@ safari = ModeKind  -- Easter egg available only via screensaver
   , mroster = rosterSafari
   , mcaves  = cavesSafari
   , mendMsg = []
-  , mrules  = T.unlines $
+  , mrules  = T.intercalate "\n" $
       [ "* Three levels"
       , "* Many teammates capable of concurrent action vs. Many enemies"
       , "* Minimize losses"
