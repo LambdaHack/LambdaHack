@@ -1329,12 +1329,32 @@ helpHuman :: MonadClientUI m
 helpHuman cmdSemInCxtOfKM = do
   ccui@CCUI{coinput, coscreen=ScreenContent{rwidth, rheight}}
     <- getsSession sccui
-  fontSetup <- getFontSetup
-  let keyH = keyHelp ccui fontSetup
+  fontSetup@FontSetup{..} <- getFontSetup
+  gameMode <- getGameMode
+  let width = if isSquareFont propFont then 42 else 84
+      duplicateEOL '\n' = "\n\n"
+      duplicateEOL c = T.singleton c
+      blurb = splitAttrString width $ textToAS
+              $ "\nYou are playing the '" <> mname gameMode <> "' scenario.\n\n"
+                <> "The story so far:\n"
+                <> T.concatMap duplicateEOL (mdesc gameMode) <> "\n\n"
+                <> "Rules of the game:\n"
+                <> mrules gameMode <> "\n"
+                <> "Running commentary:\n"
+                <> T.concatMap duplicateEOL (mmotivation gameMode) <> "\n\n"
+                <> "Hints, not needed unless stuck:\n"
+                <> T.concatMap duplicateEOL (mhint gameMode)
+      spLen = textSize monoFont " "
+      modeH = ( "Press SPACE or PGDN to advance or ESC to see the map again."
+              , ( EM.singleton propFont . offsetOverlayX
+                  . map (\t -> (spLen, t))
+                  $ blurb
+                , [] ) )
+      keyH = keyHelp ccui fontSetup
       splitHelp (t, okx) = splitOKX fontSetup True rwidth rheight (textToAS t)
                                     [K.spaceKM, K.escKM] okx
-      sli = toSlideshow fontSetup $ concat $ map splitHelp keyH
-  -- Thus, the whole help menu corresponde to a single menu of item or lore,
+      sli = toSlideshow fontSetup $ concat $ map splitHelp $ modeH : keyH
+  -- Thus, the whole help menu corresponds to a single menu of item or lore,
   -- e.g., shared stash menu. This is especially clear when the shared stash
   -- menu contains many pages.
   ekm <- displayChoiceScreen "help" ColorFull True sli [K.spaceKM, K.escKM]
@@ -1716,11 +1736,11 @@ challengesMenuHuman cmdSemInCxtOfKM = do
       width = if isSquareFont propFont then 42 else 84
       duplicateEOL '\n' = "\n\n"
       duplicateEOL c = T.singleton c
-  
+
       blurb = splitAttrString width $ textToAS $
         T.concatMap duplicateEOL (mmotivation gameMode <> "\n")
         <> mrules gameMode
-                   
+
   generateMenu cmdSemInCxtOfKM blurb kds gameInfo "challenge"
 
 -- * GameScenarioIncr

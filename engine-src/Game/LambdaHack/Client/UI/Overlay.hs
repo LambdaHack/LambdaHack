@@ -201,7 +201,7 @@ splitAttrPhrase w (AttrLine xs)
 type Overlay = [(PointUI, AttrLine)]
 
 offsetOverlay :: [AttrLine] -> Overlay
-offsetOverlay l = map (first  $PointUI 0) $ zip [0..] l
+offsetOverlay l = map (first $ PointUI 0) $ zip [0..] l
 
 offsetOverlayX :: [(Int, AttrLine)] -> Overlay
 offsetOverlayX l =
