@@ -94,7 +94,7 @@ raid = ModeKind
               , (Escape, "You've got hold of the machine! Think of the hours of fun taking it apart and putting it back together again! That's a great first step on your quest to solve the typing problems of the world.") ]
   , mrules  = T.unlines $
       [ "* One level only"
-      , "* Two heroes vs. spawned enemies"
+      , "* Two heroes vs. Spawned enemies"
       , "* Gather gold"
       , "* Find exit and escape ASAP"
       ]
@@ -132,7 +132,7 @@ crawl = ModeKind
               , (Escape, "It's better to live to tell the tale than to choke on more than one can swallow. There was no more exquisite cultural artifacts and glorious scientific wonders in these forbidding tunnels anyway. Or were there?") ]
   , mrules  = T.unlines $
       [ "* Many levels"
-      , "* Three heroes vs. spawned enemies"
+      , "* Three heroes vs. Spawned enemies"
       , "* Gather gold, gems and elixirs"
       , "* Find exit and escape ASAP"
       ]
@@ -176,13 +176,13 @@ hunt = ModeKind  -- melee vs ranged with reaction fire in daylight
   , mendMsg = []
   , mrules  = T.unlines $
       [ "* One level only"
-      , "* Seven heroes vs. seven human enemies capable of concurrent action"
+      , "* Seven heroes vs. Seven human enemies capable of concurrent action"
       , "* Minimize losses"
       , "* Incapacitate all enemies ASAP"
       ]
   , mdesc   = "Who is the hunter and who is the prey?"
-  , mmotivation = "This is yet another reminiscence of the events that led to the long crawl adventure. This episode is quite a tactical challenge, because enemies are allowed to fling their ammo simultaneously at your team, which has no such capacities and focuses on melee combat instead. Act accordingly."
-  , mhint= ""
+  , mmotivation = "This is yet another reminiscence of the events that led to the long crawl adventure. This episode is quite a tactical challenge, because enemies are allowed to fling their ammo simultaneously at your team, which has no such capacities."
+  , mhint= "Try not to outshoot the enemy, but to instead focus more on melee tactics."
   }
 
 escape = ModeKind  -- asymmetric ranged and stealth race at night
@@ -194,7 +194,7 @@ escape = ModeKind  -- asymmetric ranged and stealth race at night
   , mendMsg = []
   , mrules  = T.unlines $
       [ "* One level only"
-      , "* Three heroes vs. seven human enemies capable of concurrent action"
+      , "* Three heroes vs. Seven human enemies capable of concurrent attacks"
       , "* Minimize losses"
       , "* Gather gems"
       , "* Find exit and escape ASAP"
@@ -213,7 +213,7 @@ zoo = ModeKind  -- asymmetric crowd melee at night
   , mendMsg = []
   , mrules  = T.unlines $
       [ "* One level only"
-      , "* Five heroes vs. many enemies"
+      , "* Five heroes vs. Many enemies"
       , "* Minimize losses"
       , "* Incapacitate all enemies ASAP"
       ]
@@ -239,7 +239,7 @@ ambush = ModeKind  -- dense ranged with reaction fire vs melee at night
   , mendMsg = []
   , mrules  = T.unlines $
       [ "* One level only"
-      , "* Three heroes capable of concurrent action vs. unspecified number of human enemies"
+      , "* Three heroes capable of concurrent attacks vs. Unknown number and identity of human enemies"
       , "* Minimize losses"
       , "* Assert control of the situation ASAP"
       ]
@@ -257,7 +257,7 @@ safari = ModeKind  -- Easter egg available only via screensaver
   , mendMsg = []
   , mrules  = T.unlines $
       [ "* Three levels"
-      , "* Many allies capable of concurrent action vs. many enemies capable of concurrent action"
+      , "* Many teammates capable of concurrent action vs. Many enemies"
       , "* Minimize losses"
       , "* Find exit and escape ASAP"
       ]
