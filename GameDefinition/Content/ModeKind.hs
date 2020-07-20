@@ -239,7 +239,7 @@ ambush = ModeKind  -- dense ranged with reaction fire vs melee at night
   , mendMsg = []
   , mrules  = T.unlines $
       [ "* One level only"
-      , "* Three heroes with concurrent attacks vs. Unknown number and identity of foes"
+      , "* Three heroes with concurrent attacks vs. Unidentified foes"
       , "* Minimize losses"
       , "* Assert control of the situation ASAP"
       ]
