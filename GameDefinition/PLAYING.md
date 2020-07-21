@@ -28,7 +28,7 @@ What to expect
 
 LambdaHack is a turn-based game. You issue a command.
 Then you watch its results unfold on the screen, without you being able
-to intervene. Then the dust settles down and you have as much time
+to intervene. Then the dust settles and you have as much time
 as you want to inspect the battlefield and think about your next move.
 
 Once the few basic command keys and on-screen symbols are learned,

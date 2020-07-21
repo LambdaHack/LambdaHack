@@ -55,7 +55,8 @@ makeData muiOptions (InputContentRaw copsClient) =
       isMainMenu (_, ([CmdMainMenu], _, _)) = True
       isMainMenu _ = False
       rawContent = copsClient ++ uCommands0
-      (rawContentMainMenu, rawContentNoMainMenu) = partition isMainMenu rawContent
+      (rawContentMainMenu, rawContentNoMainMenu) =
+        partition isMainMenu rawContent
       filteredContent =
         rawContentMainMenu
         ++ ((if uVi0
@@ -77,8 +78,8 @@ makeData muiOptions (InputContentRaw copsClient) =
                                            , "KP_5", "C-KP_5" ])
              $ rawContentNoMainMenu)
       bcmdList =
-        -- Users are free to overwrite commands, but at the defaults should be
-        -- non-overlapping with the movement keys.
+        -- Users are free to overwrite commands, but at least the defaults
+        -- should be non-overlapping with the movement keys.
 #ifdef WITH_EXPENSIVE_ASSERTIONS
         assert (rawContentMainMenu ++ rawContentNoMainMenu == filteredContent
                 `blame` "duplicate keys"
