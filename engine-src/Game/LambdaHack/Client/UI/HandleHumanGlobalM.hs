@@ -881,22 +881,25 @@ moveItems cLegalRaw (fromCStore, l) destCStore = do
                   retRec CEqp
         else case destCStore of  -- player forces store, so @benInEqp@ ignored
           CEqp | eqpOverfull b (oldN + 1) -> do
-            msgAdd MsgWarning $
+            msgAdd MsgPromptItem $
               "Failure:" <+> showReqFailure EqpOverfull <> "."
             -- No recursive call here, we exit item manipulation:
             return []
           CEqp | eqpOverfull b (oldN + k) -> do
-            msgAdd MsgWarning $
+            msgAdd MsgPromptItem $
               "Failure:" <+> showReqFailure EqpStackFull <> "."
             return []
           CEqp | not calmE -> do
-            msgAdd MsgWarning $
+            msgAdd MsgPromptItem $
               "Failure:" <+> showReqFailure ItemNotCalm <> "."
             return []
           _ -> retRec destCStore
   l4 <- ret4 l 0
   if | fromCStore == CEqp && not calmE -> failSer ItemNotCalm
-     | null l4 -> error $ "" `showFailure` l
+     | null l4 ->
+         if destCStore == CEqp
+         then failWith "impossible command aborted"
+         else error $ "" `showFailure` (cLegalRaw, fromCStore, l, destCStore)
      | otherwise -> return $ Right $ ReqMoveItems l4
 
 -- * Project
