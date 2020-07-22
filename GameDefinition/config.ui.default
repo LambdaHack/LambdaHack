@@ -13,6 +13,7 @@
 ; or elsewhere.
 
 [additional_commands]
+; Angband compatibility (accept target)
 Cmd_2 = ("KP_Insert", ([CmdAim], "", ByAimMode AimModeCmd {exploration = ExecuteIfClear Dashboard, aiming = Accept}))
 ; Custom key rebinding example:
 ;
@@ -26,7 +27,6 @@ Cmd_2 = ("KP_Insert", ([CmdAim], "", ByAimMode AimModeCmd {exploration = Execute
 ;                    If there is no need to have the new binding displayed in the help menu, it is recommended to leave this empty, [], as the example above 
 ;   "My Happy Cmd" - Is a name given to your binding, which would be dispayed in the help page in-game if you use 'CmdAim' from above
 
-; Angband compatibility (accept target)
 
 [hero_names]
 HeroName_0 = ("Haskell Alvin", "he")
