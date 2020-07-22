@@ -135,7 +135,7 @@ ppSLore SEmbed = "terrain"
 headingSLore :: SLore -> Text
 headingSLore SItem = "miscellaneous item"
 headingSLore SOrgan = "vital anatomic organ"
-headingSLore STrunk = "living creature"
+headingSLore STrunk = "autonomous entity"
 headingSLore SCondition = "momentary bodily condition"
 headingSLore SBlast = "explosion blast particle"
 headingSLore SEmbed = "landmark feature"
