@@ -251,6 +251,8 @@ If the dice are displayed with upper-case `D` instead of lower-case `d`,
 the weapon has additional effects apart of the usual kinetic damage
 and any additional direct damage, such as wounding or burning.
 The nature of the effects can be appraised via the equipment outfit menu.
+The wounding and burning effects always just add their nominal value
+to total damage, bypassing any melee skill and armor modifiers.
 
 Weapon damage and other item properties are displayed using
 the dice notation `xdy`, which denotes `x` rolls of `y`-sided dice.
@@ -385,9 +387,10 @@ organs that are not on cooldown) of each opponent is taken into account
 for determining the damage and any extra effects of the blow.
 To determine the damage dealt, the outcome of the weapon's damage
 dice roll (but not rolls for any additional direct damage effects,
-such as wounding or burning) is multiplied by a percentage bonus. The bonus
-is calculated by taking the damage bonus (summed from the equipped items
-and organs and conditions of the attacker, capped at 200%) minus the melee
+such as wounding or burning, which nominal values are added at the end)
+is multiplied by a percentage bonus. The bonus is calculated
+by taking the damage bonus (summed from the equipped items and organs
+and conditions of the attacker, capped at 200%) minus the melee
 armor modifier of the defender (capped at 200%, as well). However,
 at least 5% of damage always gets through, even if the bonus is nominally
 below -95%, so excessively strong armor acts only as a buffer against
