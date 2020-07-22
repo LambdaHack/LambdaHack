@@ -751,6 +751,8 @@ drawLeaderDamage width leader = do
       strongestToDisplay = lT ++ case lTrest of
         [] -> []
         noTimeout : lTrest2 -> noTimeout : filter possiblyHasTimeout lTrest2
+          -- the second portion of timeout weapons won't ever be used
+          -- but often it's the player's mistake, so show them anyway
       showStrongest showInBrief l =
         let lToDisplay = concatMap (ppDice showInBrief) l
             (ldischarged, lrest) = span (not . fst) lToDisplay

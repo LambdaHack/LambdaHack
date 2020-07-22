@@ -161,8 +161,8 @@ effectToBenefit cops fid factionD eff =
                  - total / fromIntegral count
                    -- the same when dropped from me and foe
     IK.DropItem{} -> delta (-10)  -- depends a lot on what is dropped
-    IK.Recharge n _ -> (0, fromIntegral n)
-      -- when not in combat, often all own items recharged, so AI passes
+    IK.Recharge n d -> delta $ fromIntegral n * Dice.meanDice d / 10
+      -- this high value to price weapons with @OnUser@ over fists
     IK.Discharge n d -> delta $ - fromIntegral n * Dice.meanDice d / 10
     IK.PolyItem -> (1, 0)  -- may fizzle, so AI never uses (could loop)
     IK.RerollItem -> (1, 0)  -- may fizzle, so AI never uses (could loop)
