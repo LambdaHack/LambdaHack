@@ -1703,15 +1703,20 @@ ppSfxMsg sfxMsg = case sfxMsg of
       storeOwn <- ppContainerWownW partPronounLeader True (CActor aid cstore)
       let cond = [ "condition"
                  | IA.checkFlag Ability.Condition $ aspectRecordFull itemFull ]
-          -- Note that when enemy actor causes the extension to himsefl,
+          arItem = aspectRecordFull itemFull
+          isBlast = IA.checkFlag Ability.Blast arItem
+          -- Note that when enemy actor causes the extension to himself,
           -- the player is not notified at all. So the shorter blurb below
           -- is the middle ground.
-          (msgClass, parts) | bfid b == side =
+          (msgClass, parts) | bfid b == side && not isBlast =
             ( MsgLongerUs
             , ["the", name, powers] ++ cond ++ storeOwn ++ ["will now last"]
               ++ [MU.Text $ timeDeltaInSecondsText delta <+> "longer"]
               ++ [MU.Text $ "(total:" <+> timeDeltaInSecondsText total <> ")"] )
-                            | otherwise =  -- avoid TMI for not our actors
+                            | otherwise =
+            -- Avoid TMI for not our actors and for explosions, for which
+            -- the totals defeat merging of similar messages.
+            --
             -- Ideally we'd use a pronoun here, but the action (e.g., hit)
             -- that caused this extension can be invisible to some onlookers.
             -- So their narrative context needs to be taken into account.
