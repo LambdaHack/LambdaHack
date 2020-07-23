@@ -124,7 +124,7 @@ memberBack verbose = do
   leader <- getLeaderUI
   hs <- partyAfterLeader leader
   let (autoDun, _) = autoDungeonLevel fact
-  case reverse hs of
+  case hs of
     _ | autoDun -> failMsg $ showReqFailure NoChangeDunLeader
     [] -> failMsg "no other member in the party"
     (np, b, _) : _ -> do
