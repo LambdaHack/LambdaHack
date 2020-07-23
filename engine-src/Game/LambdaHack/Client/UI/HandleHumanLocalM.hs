@@ -9,7 +9,7 @@ module Game.LambdaHack.Client.UI.HandleHumanLocalM
   , chooseItemHuman, chooseItemDialogMode
   , chooseItemProjectHuman, chooseItemApplyHuman
   , psuitReq, triggerSymbols, pickLeaderHuman, pickLeaderWithPointerHuman
-  , memberCycleHuman, memberBackHuman
+  , memberCycleHuman, memberCycleLevelHuman
   , selectActorHuman, selectNoneHuman, selectWithPointerHuman
   , repeatHuman, repeatHumanTransition
   , repeatLastHuman, repeatLastHumanTransition
@@ -629,14 +629,14 @@ pickLeaderWithPointerHuman = pickLeaderWithPointer
 -- * MemberCycle
 
 -- | Switch current member to the next on the viewed level, if any, wrapping.
-memberCycleHuman :: MonadClientUI m => m MError
-memberCycleHuman = memberCycle True
+memberCycleLevelHuman :: MonadClientUI m => m MError
+memberCycleLevelHuman = memberCycleLevel True
 
 -- * MemberBack
 
 -- | Switch current member to the previous in the whole dungeon, wrapping.
-memberBackHuman :: MonadClientUI m => m MError
-memberBackHuman = memberBack True
+memberCycleHuman :: MonadClientUI m =>  m MError
+memberCycleHuman = memberCycle True
 
 -- * SelectActor
 

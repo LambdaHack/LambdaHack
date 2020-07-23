@@ -2,7 +2,7 @@
 module Game.LambdaHack.Client.UI.HandleHelperM
   ( FailError, showFailError, MError, mergeMError, FailOrCmd, failWith
   , failSer, failMsg, weaveJust
-  , memberCycle, memberBack, partyAfterLeader, pickLeader, pickLeaderWithPointer
+  , memberCycle, memberCycleLevel, partyAfterLeader, pickLeader, pickLeaderWithPointer
   , itemOverlay, skillsOverlay, placesFromState, placesOverlay
   , pickNumber, lookAtItems, lookAtStash, lookAtPosition
   , displayItemLore, viewLoreItems, cycleLore, spoilsBlurb
@@ -96,10 +96,9 @@ weaveJust :: FailOrCmd a -> Either MError a
 weaveJust (Left ferr) = Left $ Just ferr
 weaveJust (Right a) = Right a
 
-
--- | Switches current member to the previous in the whole dungeon, wrapping.
-memberBack :: MonadClientUI m => Bool -> m MError
-memberBack verbose = do
+-- | Switches current member to the next on the level, if any, wrapping.
+memberCycleLevel :: MonadClientUI m => Bool -> m MError
+memberCycleLevel verbose = do
   side <- getsClient sside
   fact <- getsState $ (EM.! side) . sfactionD
   lidV <- viewedLevelUI
@@ -117,7 +116,7 @@ memberBack verbose = do
                                 `swith` (leader, np, b)) ()
       return Nothing
 
--- | Switches current member to the next on the level, if any, wrapping.
+-- | Switches current member to the previous in the whole dungeon, wrapping.
 memberCycle :: MonadClientUI m => Bool -> m MError
 memberCycle verbose = do
   side <- getsClient sside
@@ -197,7 +196,7 @@ pickLeaderWithPointer = do
   K.PointUI x y <- getsSession spointer
   let (px, py) = (x `div` 2, y - K.mapStartY)
   -- Pick even if no space in status line for the actor's symbol.
-  if | py == rheight - 2 && px == 0 -> memberBack True
+  if | py == rheight - 2 && px == 0 -> memberCycleLevel True
      | py == rheight - 2 ->
          case drop (px - 1) viewed of
            [] -> return Nothing
