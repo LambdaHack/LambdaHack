@@ -97,8 +97,8 @@ weaveJust (Left ferr) = Left $ Just ferr
 weaveJust (Right a) = Right a
 
 -- | Switches current member to the next on the level, if any, wrapping.
-memberCycleLevel :: MonadClientUI m => Bool -> m MError
-memberCycleLevel verbose = do
+memberCycleLevel :: MonadClientUI m => Bool -> Bool -> m MError
+memberCycleLevel verbose forward = do
   side <- getsClient sside
   fact <- getsState $ (EM.! side) . sfactionD
   lidV <- viewedLevelUI
@@ -106,7 +106,8 @@ memberCycleLevel verbose = do
   body <- getsState $ getActorBody leader
   hs <- partyAfterLeader leader
   let (autoDun, _) = autoDungeonLevel fact
-  case filter (\(_, b, _) -> blid b == lidV) hs of
+  let hsSort = if forward then hs else reverse hs
+  case filter (\(_, b, _) -> blid b == lidV) hsSort of
     _ | autoDun && lidV /= blid body ->
       failMsg $ showReqFailure NoChangeDunLeader
     [] -> failMsg "cannot pick any other member on this level"
@@ -117,14 +118,14 @@ memberCycleLevel verbose = do
       return Nothing
 
 -- | Switches current member to the previous in the whole dungeon, wrapping.
-memberCycle :: MonadClientUI m => Bool -> m MError
-memberCycle verbose = do
+memberCycle :: MonadClientUI m => Bool -> Bool -> m MError
+memberCycle verbose forward = do
   side <- getsClient sside
   fact <- getsState $ (EM.! side) . sfactionD
   leader <- getLeaderUI
   hs <- partyAfterLeader leader
   let (autoDun, _) = autoDungeonLevel fact
-  case hs of
+  case if forward then hs else reverse hs of
     _ | autoDun -> failMsg $ showReqFailure NoChangeDunLeader
     [] -> failMsg "no other member in the party"
     (np, b, _) : _ -> do
@@ -196,7 +197,7 @@ pickLeaderWithPointer = do
   K.PointUI x y <- getsSession spointer
   let (px, py) = (x `div` 2, y - K.mapStartY)
   -- Pick even if no space in status line for the actor's symbol.
-  if | py == rheight - 2 && px == 0 -> memberCycleLevel True
+  if | py == rheight - 2 && px == 0 -> memberCycleLevel True True
      | py == rheight - 2 ->
          case drop (px - 1) viewed of
            [] -> return Nothing
