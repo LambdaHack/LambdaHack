@@ -63,12 +63,12 @@ standardKeysAndMouse = InputContentRaw $ map evalKeyDef $
               , "clear messages and show history"
               , ExecuteIfClear LastHistory ))
   , ("Tab", ( [CmdMove]
-            , "cycle among party members on the level"
+            , "cycle among all party members"
             , MemberCycle ))
       -- listed here to keep proper order
   , ("BackTab", ( [CmdMinimal, CmdMove]
-              , "cycle among all party members"
-              , MemberBack ))
+                , "cycle among party members on the level"
+                , MemberBack ))
   , ("*", ( [CmdMinimal, CmdAim]
           , "cycle crosshair among enemies"
           , AimEnemy ))
