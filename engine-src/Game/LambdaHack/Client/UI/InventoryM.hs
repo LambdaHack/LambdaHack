@@ -330,7 +330,7 @@ transition psuit prompt promptGeneric permitMulitple
           in (km, useMultipleDef $ Right km)
         , let km = K.mkChar '!'
           in (km, useMultipleDef $ Left "")  -- alias close to 'g'
-        , let km = revCmd MemberCycle
+        , let km = revCmd MemberCycleForwardLevel
           in (km, DefItemKey
            { defLabel = Right km
            , defCond = maySwitchLeader cCur
@@ -340,12 +340,12 @@ transition psuit prompt promptGeneric permitMulitple
                let !_A = assert (isNothing err `blame` err) ()
                recCall numPrefix cCur cRest itemDialogState
            })
-        , let km = revCmd MemberBack
+        , let km = revCmd MemberCycleForward
           in (km, DefItemKey
            { defLabel = Right km
            , defCond = maySwitchLeader cCur && not (autoDun || null hs)
            , defAction = \_ -> do
-               err <- memberBack False
+               err <- memberCycle False
                let !_A = assert (isNothing err `blame` err) ()
                recCall numPrefix cCur cRest itemDialogState
            })
