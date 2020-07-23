@@ -336,7 +336,7 @@ transition psuit prompt promptGeneric permitMulitple
            , defCond = maySwitchLeader cCur
                        && any (\(_, b, _) -> blid b == blid body) hs
            , defAction = \_ -> do
-               err <- memberCycle False
+               err <- memberCycleLevel False True
                let !_A = assert (isNothing err `blame` err) ()
                recCall numPrefix cCur cRest itemDialogState
            })
@@ -345,7 +345,7 @@ transition psuit prompt promptGeneric permitMulitple
            { defLabel = Right km
            , defCond = maySwitchLeader cCur && not (autoDun || null hs)
            , defAction = \_ -> do
-               err <- memberCycle False
+               err <- memberCycle False True
                let !_A = assert (isNothing err `blame` err) ()
                recCall numPrefix cCur cRest itemDialogState
            })

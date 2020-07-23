@@ -134,8 +134,8 @@ cmdSemantics cmd = case cmd of
   ChooseItemApply ts -> Left <$> chooseItemApplyHuman ts
   PickLeader k -> Left <$> pickLeaderHuman k
   PickLeaderWithPointer -> Left <$> pickLeaderWithPointerHuman
-  MemberCycleForwardLevel -> Left <$> memberCycleLevelHuman
-  MemberCycleForward -> Left <$> memberCycleHuman
+  MemberCycleForwardLevel -> Left <$> memberCycleLevelHuman True
+  MemberCycleForward -> Left <$> memberCycleHuman True
   SelectActor -> addNoError selectActorHuman
   SelectNone -> addNoError selectNoneHuman
   SelectWithPointer -> Left <$> selectWithPointerHuman
