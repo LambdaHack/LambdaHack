@@ -66,7 +66,7 @@ standardKeysAndMouse = InputContentRaw $ map evalKeyDef $
             , "cycle among all party members"
             , MemberCycle ))
       -- listed here to keep proper order
-  , ("BackTab", ( [CmdMinimal, CmdMove]
+  , ("A-Tab", ( [CmdMinimal, CmdMove]
                 , "cycle among party members on the level"
                 , MemberBack ))
   , ("*", ( [CmdMinimal, CmdAim]
