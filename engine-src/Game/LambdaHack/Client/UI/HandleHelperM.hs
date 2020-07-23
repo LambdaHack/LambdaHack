@@ -96,9 +96,10 @@ weaveJust :: FailOrCmd a -> Either MError a
 weaveJust (Left ferr) = Left $ Just ferr
 weaveJust (Right a) = Right a
 
--- | Switches current member to the next on the level, if any, wrapping.
-memberCycle :: MonadClientUI m => Bool -> m MError
-memberCycle verbose = do
+
+-- | Switches current member to the previous in the whole dungeon, wrapping.
+memberBack :: MonadClientUI m => Bool -> m MError
+memberBack verbose = do
   side <- getsClient sside
   fact <- getsState $ (EM.! side) . sfactionD
   lidV <- viewedLevelUI
@@ -116,9 +117,9 @@ memberCycle verbose = do
                                 `swith` (leader, np, b)) ()
       return Nothing
 
--- | Switches current member to the previous in the whole dungeon, wrapping.
-memberBack :: MonadClientUI m => Bool -> m MError
-memberBack verbose = do
+-- | Switches current member to the next on the level, if any, wrapping.
+memberCycle :: MonadClientUI m => Bool -> m MError
+memberCycle verbose = do
   side <- getsClient sside
   fact <- getsState $ (EM.! side) . sfactionD
   leader <- getLeaderUI
