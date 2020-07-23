@@ -21,17 +21,17 @@ Cmd_2 = ("KP_Insert", ([CmdAim], "", ByAimMode AimModeCmd {exploration = Execute
 ;
 ; Explanation: to (t)rigger a consumable item for use, you normally use
 ;               the key press 't'.
-; Suppose you would like to use the key press 'a' instead of 't'. 
+; Suppose you would like to use the key press 'a' instead of 't'.
 ;   Cmd_3          - can be anything as long as it doesn't conflict or
 ;                    overlap with a binding already defined
-;   "a"            - the new key to use 
+;   "a"            - the new key to use
 ;   "[CmdItem]"    - can either be [] or [CmdItem]. If using [CmdItem]
-;    		     the new keybinding will be displayed in the help menu
-;                    in-game alongside other keys related to handling items. 
+;                    the new keybinding will be displayed in the help menu
+;                    in-game alongside other keys related to handling items.
 ;                    If there is no need to have the new binding displayed
 ;                    in the help menu, it is recommended to leave this empty []
 ;   "My Happy Cmd" - Is a name given to your binding, which would be dispayed
-;                    in the help page in-game if you use 'CmdAim' from above
+;                    in the help page in-game if you use 'CmdItem' from above
 
 
 [hero_names]
