@@ -17,20 +17,19 @@
 Cmd_2 = ("KP_Insert", ([CmdAim], "", ByAimMode AimModeCmd {exploration = ExecuteIfClear Dashboard, aiming = Accept}))
 ; Custom key rebinding example:
 ;
-;   CmdItem = ("a", ([], "My Happy Cmd", Macro["t"]))
+;   Cmd_3 = ("a", ([CmdItem], "My Happy Cmd", Macro["t"]))
 ;
 ; Explanation: to (t)rigger a consumable item for use, you normally use
 ;               the key press 't'.
 ; Suppose you would like to use the key press 'a' instead of 't'. 
-;   CmdItem        - can be anything as long as it doesn't conflict or
+;   Cmd_3          - can be anything as long as it doesn't conflict or
 ;                    overlap with a binding already defined
 ;   "a"            - the new key to use 
-;   "[]"           - can either be [] or [CmdAim]. If using [CmdAim] your
-;                    keybinding will be displayed from the help menu,
-;                    and you would even be able to activate it from there
+;   "[CmdItem]"    - can either be [] or [CmdItem]. If using [CmdItem]
+;    		     the new keybinding will be displayed in the help menu
+;                    in-game alongside other keys related to handling items. 
 ;                    If there is no need to have the new binding displayed
-;                    in the help menu, it is recommended to leave this empty [],
-;                    as in the example
+;                    in the help menu, it is recommended to leave this empty []
 ;   "My Happy Cmd" - Is a name given to your binding, which would be dispayed
 ;                    in the help page in-game if you use 'CmdAim' from above
 
