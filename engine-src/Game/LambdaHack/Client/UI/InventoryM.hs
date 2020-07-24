@@ -67,7 +67,7 @@ getGroupItem :: MonadClientUI m
              -> Text      -- ^ generic prompt
              -> Text      -- ^ the verb to use
              -> Text      -- ^ the generic verb to use
-             -> [CStore]  -- ^ initial legal modes
+             -> [CStore]  -- ^ stores to cycle through
              -> m (Either Text (ItemId, (ItemDialogMode, Either K.KM SlotChar)))
 getGroupItem psuit prompt promptGeneric verb verbGeneric stores = do
   side <- getsClient sside
@@ -84,7 +84,7 @@ getGroupItem psuit prompt promptGeneric verb verbGeneric stores = do
                  (\body _ actorSk cCur _ ->
                     promptGeneric
                     <+> ppItemDialogBody verbGeneric body actorSk cCur)
-                 stores stores True False
+                 stores True False
   case soc of
     Left err -> return $ Left err
     Right ([(iid, _)], cekm) -> return $ Right (iid, cekm)
@@ -128,15 +128,13 @@ getFull :: MonadClientUI m
             -> Text)        -- ^ specific prompt for only suitable items
         -> (Actor -> ActorUI -> Ability.Skills -> ItemDialogMode -> State
             -> Text)        -- ^ generic prompt
-        -> [CStore]         -- ^ initial legal modes
-        -> [CStore]         -- ^ legal modes with Calm taken into account
+        -> [CStore]         -- ^ stores to cycle through
         -> Bool             -- ^ whether to ask, when the only item
                             --   in the starting mode is suitable
         -> Bool             -- ^ whether to permit multiple items as a result
         -> m (Either Text ( [(ItemId, ItemQuant)]
                           , (ItemDialogMode, Either K.KM SlotChar) ))
-getFull psuit prompt promptGeneric cLegalRaw cLegal
-        askWhenLone permitMulitple = do
+getFull psuit prompt promptGeneric stores askWhenLone permitMulitple = do
   leader <- getLeaderUI
   mpsuit <- psuit
   let psuitFun = case mpsuit of
@@ -147,18 +145,11 @@ getFull psuit prompt promptGeneric cLegalRaw cLegal
   b <- getsState $ getActorBody leader
   getCStoreBag <- getsState $ \s cstore -> getBodyStoreBag b cstore s
   let hasThisActor = not . EM.null . getCStoreBag
-  case filter hasThisActor cLegal of
-    [] -> case filter hasThisActor cLegalRaw of
-            [] -> do
-              let contLegalRaw = map MStore cLegalRaw
-                  tLegal = map (MU.Text . ppItemDialogModeIn) contLegalRaw
-                  ppLegal = makePhrase [MU.WWxW "nor" tLegal]
-              return $ Left $ "no items" <+> ppLegal
-            [CEqp] -> return $ Left "not calm enough to remove equipment"
-            [CGround, CEqp] ->  -- order matters
-              return $ Left "not calm enough to remove equipment"
-            [CGround] -> return $ Left "you vainly paw through your own hoard"
-            _ -> return $ Left "no relevant items"
+  case filter hasThisActor stores of
+    [] -> do
+      let dialogModes = map MStore stores
+          ts = map (MU.Text . ppItemDialogModeIn) dialogModes
+      return $ Left $ "no items" <+> makePhrase [MU.WWxW "nor" ts]
     haveThis@(headThisActor : _) -> do
       itemToF <- getsState $ flip itemToFull
       let suitsThisActor store =
@@ -168,7 +159,7 @@ getFull psuit prompt promptGeneric cLegalRaw cLegal
           firstStore = fromMaybe headThisActor $ find suitsThisActor haveThis
           -- Don't display stores totally empty for all actors.
           breakStores cInit =
-            let (pre, rest) = break (== cInit) cLegalRaw
+            let (pre, rest) = break (== cInit) stores
                 post = dropWhile (== cInit) rest
             in (MStore cInit, map MStore $ post ++ pre)
           (modeFirst, modeRest) = breakStores firstStore

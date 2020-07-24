@@ -762,7 +762,7 @@ moveOrSelectItem cLegal cLegalRaw destCStore mverb auto = do
                         && CEqp `elem` cLegalRaw ->
       failWith "neither the selected item nor any other can be unequipped"
     _ -> do
-      mis <- selectItemsToMove cLegal cLegalRaw destCStore mverb auto
+      mis <- selectItemsToMove cLegalRaw destCStore mverb auto
       case mis of
         Left err -> return $ Left err
         Right (fromCStore, [(iid, _)]) | cLegalRaw /= [CGround] -> do
@@ -775,10 +775,10 @@ moveOrSelectItem cLegal cLegalRaw destCStore mverb auto = do
              | otherwise -> Right <$> moveItems cLegalRaw is destCStore
 
 selectItemsToMove :: forall m. MonadClientUI m
-                  => [CStore] -> [CStore] -> CStore -> Maybe Text -> Bool
+                  => [CStore] -> CStore -> Maybe Text -> Bool
                   -> m (FailOrCmd (CStore, [(ItemId, ItemQuant)]))
-selectItemsToMove cLegal cLegalRaw destCStore mverb auto = do
-  let !_A = assert (destCStore `notElem` cLegalRaw) ()
+selectItemsToMove stores destCStore mverb auto = do
+  let !_A = assert (destCStore `notElem` stores) ()
   let verb = fromMaybe (verbCStore destCStore) mverb
   leader <- getLeaderUI
   actorCurAndMaxSk <- leaderSkillsClientUI
@@ -798,11 +798,11 @@ selectItemsToMove cLegal cLegalRaw destCStore mverb auto = do
      | destCStore == CGround && overStash -> failSer ItemOverStash
      | destCStore == CEqp && eqpOverfull b 1 -> failSer EqpOverfull
      | otherwise -> do
-       let cLegalLast = case lastItemMove of
+       let storesLast = case lastItemMove of
              Just (lastFrom, lastDest) | lastDest == destCStore
-                                         && lastFrom `elem` cLegal ->
-               lastFrom : delete lastFrom cLegal
-             _ -> cLegal
+                                         && lastFrom `elem` stores ->
+               lastFrom : delete lastFrom stores
+             _ -> stores
            prompt = "What to"
            promptEqp = "What consumable to"
            eqpItemsN body =
@@ -843,7 +843,7 @@ selectItemsToMove cLegal cLegalRaw destCStore mverb auto = do
                     prompt <+> ppItemDialogBody body actorSk cCur)
                  (\body _ actorSk cCur _ ->
                     promptGeneric <+> ppItemDialogBody body actorSk cCur)
-                 cLegalRaw cLegalLast (not auto) True
+                 storesLast (not auto) True
        case ggi of
          Right (l, (MStore fromCStore, _)) -> do
            modifySession $ \sess ->
