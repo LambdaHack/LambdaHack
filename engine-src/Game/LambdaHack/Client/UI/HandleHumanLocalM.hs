@@ -971,13 +971,13 @@ moveXhairHuman dir n = do
 -- * AimTgt
 
 -- | Start aiming.
-aimTgtHuman :: MonadClientUI m => m MError
+aimTgtHuman :: MonadClientUI m => m ()
 aimTgtHuman = do
   -- (Re)start aiming at the current level.
   lidV <- viewedLevelUI
   modifySession $ \sess -> sess {saimMode = Just $ AimMode lidV}
   doLook
-  failMsg "flinging started; press again to project"
+  msgAdd MsgAlert "*flinging started; press again to project*"
 
 -- * AimFloor
 

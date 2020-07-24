@@ -67,7 +67,7 @@ import           Game.LambdaHack.Definition.Defs
 
 -- | Message describing the cause of failure of human command.
 newtype FailError = FailError {failError :: Text}
-  deriving Show
+  deriving (Show, Eq)
 
 showFailError :: FailError -> Text
 showFailError (FailError err) = "*" <> err <> "*"

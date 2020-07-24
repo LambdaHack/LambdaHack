@@ -1534,7 +1534,7 @@ itemMenuHuman cmdSemInCxtOfKM = do
           case ekm of
             Left km -> case km `M.lookup` bcmdMap coinput of
               _ | km == K.escKM -> weaveJust <$> failWith "never mind"
-              _ | km == K.spaceKM -> return $ Left Nothing
+              _ | km == K.spaceKM -> weaveJust <$> failWith "back to list"
               _ | km `elem` foundKeys -> case km of
                 K.KM{key=K.Fun n} -> do
                   let (newAid, (bNew, newCStore)) = foundAlt !! (n - 1)
@@ -1554,8 +1554,8 @@ itemMenuHuman cmdSemInCxtOfKM = do
                 res <- cmdSemInCxtOfKM km cmd
                 modifySession $ \sess ->
                   sess {sitemSel = case res of
-                          Left{} -> Nothing
-                          Right{} ->  Just (iid, fromCStore, False)}
+                          Left Just{} -> Nothing
+                          _ -> Just (iid, fromCStore, False)}
                 return res
               Nothing -> weaveJust <$> failWith "never mind"
             Right _slot -> error $ "" `showFailure` ekm
@@ -1572,8 +1572,9 @@ chooseItemMenuHuman cmdSemInCxtOfKM c = do
   case res of
     Right c2 -> do
       res2 <- itemMenuHuman cmdSemInCxtOfKM
+      backToList <- failMsg "back to list"
       case res2 of
-        Left Nothing -> chooseItemMenuHuman cmdSemInCxtOfKM c2
+        Left err | err == backToList -> chooseItemMenuHuman cmdSemInCxtOfKM c2
         _ -> return res2
     Left err -> return $ Left $ Just err
 

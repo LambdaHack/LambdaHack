@@ -157,7 +157,7 @@ cmdSemantics cmd = case cmd of
   ClearTargetIfItemClear -> addNoError clearTargetIfItemClearHuman
   ItemClear -> addNoError itemClearHuman
   MoveXhair v k -> Left <$> moveXhairHuman v k
-  AimTgt -> Left <$> aimTgtHuman
+  AimTgt -> addNoError aimTgtHuman
   AimFloor -> addNoError aimFloorHuman
   AimEnemy -> addNoError aimEnemyHuman
   AimItem -> addNoError aimItemHuman
