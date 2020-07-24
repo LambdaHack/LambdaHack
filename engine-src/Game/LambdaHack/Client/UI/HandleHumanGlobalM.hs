@@ -727,13 +727,17 @@ moveOrSelectItem :: forall m. MonadClientUI m
                  => [CStore] -> [CStore] -> CStore -> Maybe Text -> Bool
                  -> m (FailOrCmd RequestTimed)
 moveOrSelectItem cLegal cLegalRaw destCStore mverb auto = do
+  leader <- getLeaderUI
+  b <- getsState $ getActorBody leader
+  actorCurAndMaxSk <- leaderSkillsClientUI
+  mstash <- getsState $ \s -> gstash $ sfactionD s EM.! bfid b
+  let calmE = calmEnough b actorCurAndMaxSk
+      overStash = mstash == Just (blid b, bpos b)
   itemSel <- getsSession sitemSel
   modifySession $ \sess -> sess {sitemSel = Nothing}  -- prevent surprise
   case itemSel of
     Just (iid, fromCStore, _) | fromCStore /= destCStore
                                 && fromCStore `elem` cLegal -> do
-      leader <- getLeaderUI
-      b <- getsState $ getActorBody leader
       bag <- getsState $ getBodyStoreBag b fromCStore
       case iid `EM.lookup` bag of
         Nothing ->  -- the case of old selection or selection from another actor
@@ -742,17 +746,20 @@ moveOrSelectItem cLegal cLegalRaw destCStore mverb auto = do
           let eqpFree = eqpFreeN b
               kToPick | destCStore == CEqp = min eqpFree k
                       | otherwise = k
-          if kToPick == 0
-          then failWith "no more items can be equipped"
-          else do
-            socK <- pickNumber (not auto) kToPick
-            case socK of
-              Left Nothing -> moveItemHuman cLegalRaw destCStore mverb auto
-              Left (Just err) -> return $ Left err
-              Right kChosen ->
-                let is = (fromCStore, [(iid, (kChosen, take kChosen it))])
-                in moveItems cLegalRaw is destCStore
-    Just (_, CEqp, _) | CEqp `notElem` cLegal && CEqp `elem` cLegalRaw ->
+          if | destCStore == CEqp && not calmE -> failSer ItemNotCalm
+             | destCStore == CGround && overStash -> failSer ItemOverStash
+             | kToPick == 0 -> failWith "no more items can be equipped"
+             | otherwise -> do
+               socK <- pickNumber (not auto) kToPick
+               case socK of
+                 Left Nothing -> moveItemHuman cLegalRaw destCStore mverb auto
+                 Left (Just err) -> return $ Left err
+                 Right kChosen ->
+                   let is = (fromCStore, [(iid, (kChosen, take kChosen it))])
+                   in Right <$> moveItems cLegalRaw is destCStore
+    Just (_, CEqp, _) | CEqp /= destCStore
+                        && not calmE
+                        && CEqp `elem` cLegalRaw ->
       failWith "neither the selected item nor any other can be unequipped"
     _ -> do
       mis <- selectItemsToMove cLegal cLegalRaw destCStore mverb auto
@@ -761,8 +768,11 @@ moveOrSelectItem cLegal cLegalRaw destCStore mverb auto = do
         Right (fromCStore, [(iid, _)]) | cLegalRaw /= [CGround] -> do
           modifySession $ \sess ->
             sess {sitemSel = Just (iid, fromCStore, False)}
-          moveItemHuman cLegalRaw destCStore mverb auto
-        Right is -> moveItems cLegalRaw is destCStore
+          moveOrSelectItem cLegal cLegalRaw destCStore mverb auto
+        Right is@(fromCStore, _) ->
+          if | fromCStore == CEqp && not calmE -> failSer ItemNotCalm
+             | fromCStore == CGround && overStash -> failSer ItemOverStash
+             | otherwise -> Right <$> moveItems cLegalRaw is destCStore
 
 selectItemsToMove :: forall m. MonadClientUI m
                   => [CStore] -> [CStore] -> CStore -> Maybe Text -> Bool
@@ -843,7 +853,7 @@ selectItemsToMove cLegal cLegalRaw destCStore mverb auto = do
 
 moveItems :: forall m. MonadClientUI m
           => [CStore] -> (CStore, [(ItemId, ItemQuant)]) -> CStore
-          -> m (FailOrCmd RequestTimed)
+          -> m RequestTimed
 moveItems cLegalRaw (fromCStore, l) destCStore = do
   leader <- getLeaderUI
   actorCurAndMaxSk <- leaderSkillsClientUI
@@ -883,24 +893,18 @@ moveItems cLegalRaw (fromCStore, l) destCStore = do
           CEqp | eqpOverfull b (oldN + 1) -> do
             msgAdd MsgPromptItem $
               "Failure:" <+> showReqFailure EqpOverfull <> "."
-            -- No recursive call here, we exit item manipulation:
+            -- No recursive call here, we exit item manipulation,
+            -- but something is moved or else outer functions would not call us.
             return []
           CEqp | eqpOverfull b (oldN + k) -> do
             msgAdd MsgPromptItem $
               "Failure:" <+> showReqFailure EqpStackFull <> "."
             return []
-          CEqp | not calmE -> do
-            msgAdd MsgPromptItem $
-              "Failure:" <+> showReqFailure ItemNotCalm <> "."
-            return []
           _ -> retRec destCStore
   l4 <- ret4 l 0
-  if | fromCStore == CEqp && not calmE -> failSer ItemNotCalm
-     | null l4 ->
-         if destCStore == CEqp
-         then failWith "impossible command aborted"
-         else error $ "" `showFailure` (cLegalRaw, fromCStore, l, destCStore)
-     | otherwise -> return $ Right $ ReqMoveItems l4
+  if null l4
+  then error $ "" `showFailure` (cLegalRaw, fromCStore, l, destCStore)
+  else return $! ReqMoveItems l4
 
 -- * Project
 
