@@ -721,16 +721,22 @@ moveItemHuman stores destCStore mverb auto = do
 moveOrSelectItem :: forall m. MonadClientUI m
                  => [CStore] -> CStore -> Maybe Text -> Bool
                  -> m (FailOrCmd RequestTimed)
-moveOrSelectItem stores destCStore mverb auto = do
+moveOrSelectItem storesRaw destCStore mverb auto = do
   leader <- getLeaderUI
   b <- getsState $ getActorBody leader
   actorCurAndMaxSk <- leaderSkillsClientUI
   mstash <- getsState $ \s -> gstash $ sfactionD s EM.! bfid b
   let calmE = calmEnough b actorCurAndMaxSk
       overStash = mstash == Just (blid b, bpos b)
+      stores = case storesRaw of
+        CEqp : rest@(_ : _) | not calmE -> rest ++ [CEqp]
+        CGround : rest@(_ : _) | overStash -> rest ++ [CGround]
+        _ -> storesRaw
   itemSel <- getsSession sitemSel
   modifySession $ \sess -> sess {sitemSel = Nothing}  -- prevent surprise
   case itemSel of
+    _ | stores == [CGround] && overStash ->
+      failWith "you can't loot items from your own stash"
     Just (_, fromCStore@CEqp, _) | fromCStore /= destCStore
                                    && fromCStore `elem` stores
                                    && not calmE ->
