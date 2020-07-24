@@ -355,13 +355,12 @@ chooseItemProjectHuman :: forall m. (MonadClient m, MonadClientUI m)
                        => [HumanCmd.TriggerItem] -> m MError
 chooseItemProjectHuman ts = do
   leader <- getLeaderUI
-  actorCurAndMaxSk <- leaderSkillsClientUI
   b <- getsState $ getActorBody leader
   mstash <- getsState $ \s -> gstash $ sfactionD s EM.! bfid b
   let overStash = mstash == Just (blid b, bpos b)
-      calmE = calmEnough b actorCurAndMaxSk
-      cLegalRaw = [CGround, CStash, CEqp]
-      cLegal = [CGround | not overStash] ++ [CStash] ++ [CEqp | calmE]
+      storesBase = [CStash, CEqp]
+      stores | overStash = storesBase ++ [CGround]
+             | otherwise = [CGround] ++ storesBase
       (verb1, object1) = case ts of
         [] -> ("aim", "item")
         tr : _ -> (HumanCmd.tiverb tr, HumanCmd.tiobject tr)
@@ -394,8 +393,7 @@ chooseItemProjectHuman ts = do
                       || IK.isymbol (itemKind itemFull) `elem` triggerSyms)
               prompt = makePhrase ["What", object1, "to"]
               promptGeneric = "What to"
-          ggi <- getGroupItem psuit prompt promptGeneric verb "fling"
-                              cLegalRaw cLegal
+          ggi <- getGroupItem psuit prompt promptGeneric verb "fling" stores
           case ggi of
             Right (iid, (MStore fromCStore, _)) -> do
               modifySession $ \sess ->
@@ -539,14 +537,12 @@ chooseItemApplyHuman :: forall m. MonadClientUI m
                      => [HumanCmd.TriggerItem] -> m MError
 chooseItemApplyHuman ts = do
   leader <- getLeaderUI
-  actorCurAndMaxSk <- leaderSkillsClientUI
   b <- getsState $ getActorBody leader
   mstash <- getsState $ \s -> gstash $ sfactionD s EM.! bfid b
   let overStash = mstash == Just (blid b, bpos b)
-      calmE = calmEnough b actorCurAndMaxSk
-      cLegalRaw = [CGround, CStash, CEqp, COrgan]
-      cLegal = [CGround | not overStash] ++ [CStash]
-               ++ [CEqp | calmE] ++ [COrgan]
+      storesBase = [CStash, CEqp, COrgan]
+      stores | overStash = storesBase ++ [CGround]
+             | otherwise = [CGround] ++ storesBase
       (verb1, object1) = case ts of
         [] -> ("trigger", "item")
         tr : _ -> (HumanCmd.tiverb tr, HumanCmd.tiobject tr)
@@ -578,8 +574,7 @@ chooseItemApplyHuman ts = do
               either (const False) id (mp cstore itemFull kit)
               && (null triggerSyms
                   || IK.isymbol (itemKind itemFull) `elem` triggerSyms)
-      ggi <- getGroupItem psuit prompt promptGeneric verb "trigger"
-                          cLegalRaw cLegal
+      ggi <- getGroupItem psuit prompt promptGeneric verb "trigger" stores
       case ggi of
         Right (iid, (MStore fromCStore, _)) -> do
           modifySession $ \sess ->

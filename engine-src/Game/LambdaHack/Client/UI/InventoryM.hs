@@ -68,9 +68,8 @@ getGroupItem :: MonadClientUI m
              -> Text      -- ^ the verb to use
              -> Text      -- ^ the generic verb to use
              -> [CStore]  -- ^ initial legal modes
-             -> [CStore]  -- ^ legal modes after Calm taken into account
              -> m (Either Text (ItemId, (ItemDialogMode, Either K.KM SlotChar)))
-getGroupItem psuit prompt promptGeneric verb verbGeneric cLegalRaw cLegal = do
+getGroupItem psuit prompt promptGeneric verb verbGeneric stores = do
   side <- getsClient sside
   mstash <- getsState $ \s -> gstash $ sfactionD s EM.! side
   let ppItemDialogBody v body actorSk cCur = case cCur of
@@ -85,7 +84,7 @@ getGroupItem psuit prompt promptGeneric verb verbGeneric cLegalRaw cLegal = do
                  (\body _ actorSk cCur _ ->
                     promptGeneric
                     <+> ppItemDialogBody verbGeneric body actorSk cCur)
-                 cLegalRaw cLegal True False
+                 stores stores True False
   case soc of
     Left err -> return $ Left err
     Right ([(iid, _)], cekm) -> return $ Right (iid, cekm)
