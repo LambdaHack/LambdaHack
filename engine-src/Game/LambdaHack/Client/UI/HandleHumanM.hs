@@ -99,9 +99,8 @@ cmdSemantics cmd = case cmd of
   MoveOnceToXhair -> weaveJust <$> (ReqUITimed <$$> moveOnceToXhairHuman)
   RunOnceToXhair  -> weaveJust <$> (ReqUITimed <$$> runOnceToXhairHuman)
   ContinueToXhair -> weaveJust <$> (ReqUITimed <$$> continueToXhairHuman)
-  MoveItem cLegalRaw toCStore mverb auto ->
-    weaveJust
-    <$> (ReqUITimed <$$> moveItemHuman cLegalRaw toCStore mverb auto)
+  MoveItem stores toCStore mverb auto ->
+    weaveJust <$> (ReqUITimed <$$> moveItemHuman stores toCStore mverb auto)
   Project -> weaveJust <$> (ReqUITimed <$$> projectHuman)
   Apply -> weaveJust <$> (ReqUITimed <$$> applyHuman)
   AlterDir -> weaveJust <$> (ReqUITimed <$$> alterDirHuman)

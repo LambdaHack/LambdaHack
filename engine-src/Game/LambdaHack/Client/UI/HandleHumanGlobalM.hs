@@ -707,16 +707,11 @@ continueToXhairHuman = goToXhair False False{-irrelevant-}
 moveItemHuman :: forall m. MonadClientUI m
               => [CStore] -> CStore -> Maybe Text -> Bool
               -> m (FailOrCmd RequestTimed)
-moveItemHuman cLegalRaw destCStore mverb auto = do
+moveItemHuman stores destCStore mverb auto = do
+  let !_A = assert (destCStore `notElem` stores) ()
   actorCurAndMaxSk <- leaderSkillsClientUI
-  if Ability.getSk Ability.SkMoveItem actorCurAndMaxSk > 0 then do
-    leader <- getLeaderUI
-    b <- getsState $ getActorBody leader
-    mstash <- getsState $ \s -> gstash $ sfactionD s EM.! bfid b
-    let overStash = mstash == Just (blid b, bpos b)
-        calmE = calmEnough b actorCurAndMaxSk
-        cLegal = cLegalRaw \\ ([CGround | overStash] ++ [CEqp | not calmE])
-    moveOrSelectItem cLegal cLegalRaw destCStore mverb auto
+  if Ability.getSk Ability.SkMoveItem actorCurAndMaxSk > 0
+  then moveOrSelectItem stores destCStore mverb auto
   else failSer MoveItemUnskilled
 
 -- This cannot be structured as projecting or applying, with @ByItemMode@
@@ -724,9 +719,9 @@ moveItemHuman cLegalRaw destCStore mverb auto = do
 -- more than one item is chosen, which doesn't fit @sitemSel@. Separating
 -- grabbing of multiple items as a distinct command is too high a price.
 moveOrSelectItem :: forall m. MonadClientUI m
-                 => [CStore] -> [CStore] -> CStore -> Maybe Text -> Bool
+                 => [CStore] -> CStore -> Maybe Text -> Bool
                  -> m (FailOrCmd RequestTimed)
-moveOrSelectItem cLegal cLegalRaw destCStore mverb auto = do
+moveOrSelectItem stores destCStore mverb auto = do
   leader <- getLeaderUI
   b <- getsState $ getActorBody leader
   actorCurAndMaxSk <- leaderSkillsClientUI
@@ -736,12 +731,20 @@ moveOrSelectItem cLegal cLegalRaw destCStore mverb auto = do
   itemSel <- getsSession sitemSel
   modifySession $ \sess -> sess {sitemSel = Nothing}  -- prevent surprise
   case itemSel of
+    Just (_, fromCStore@CEqp, _) | fromCStore /= destCStore
+                                   && fromCStore `elem` stores
+                                   && not calmE ->
+      failWith "neither the selected item nor any other can be unequipped"
+    Just (_, fromCStore@CGround, _) | fromCStore /= destCStore
+                                      && fromCStore `elem` stores
+                                      && overStash ->
+      failWith "you vainly paw through your own hoard"
     Just (iid, fromCStore, _) | fromCStore /= destCStore
-                                && fromCStore `elem` cLegal -> do
+                                && fromCStore `elem` stores -> do
       bag <- getsState $ getBodyStoreBag b fromCStore
       case iid `EM.lookup` bag of
         Nothing ->  -- the case of old selection or selection from another actor
-          moveItemHuman cLegalRaw destCStore mverb auto
+          moveOrSelectItem stores destCStore mverb auto
         Just (k, it) -> assert (k > 0) $ do
           let eqpFree = eqpFreeN b
               kToPick | destCStore == CEqp = min eqpFree k
@@ -752,33 +755,28 @@ moveOrSelectItem cLegal cLegalRaw destCStore mverb auto = do
              | otherwise -> do
                socK <- pickNumber (not auto) kToPick
                case socK of
-                 Left Nothing -> moveItemHuman cLegalRaw destCStore mverb auto
+                 Left Nothing -> moveOrSelectItem stores destCStore mverb auto
                  Left (Just err) -> return $ Left err
                  Right kChosen ->
                    let is = (fromCStore, [(iid, (kChosen, take kChosen it))])
-                   in Right <$> moveItems cLegalRaw is destCStore
-    Just (_, CEqp, _) | CEqp /= destCStore
-                        && not calmE
-                        && CEqp `elem` cLegalRaw ->
-      failWith "neither the selected item nor any other can be unequipped"
+                   in Right <$> moveItems stores is destCStore
     _ -> do
-      mis <- selectItemsToMove cLegalRaw destCStore mverb auto
+      mis <- selectItemsToMove stores destCStore mverb auto
       case mis of
         Left err -> return $ Left err
-        Right (fromCStore, [(iid, _)]) | cLegalRaw /= [CGround] -> do
+        Right (fromCStore, [(iid, _)]) | stores /= [CGround] -> do
           modifySession $ \sess ->
             sess {sitemSel = Just (iid, fromCStore, False)}
-          moveOrSelectItem cLegal cLegalRaw destCStore mverb auto
+          moveOrSelectItem stores destCStore mverb auto
         Right is@(fromCStore, _) ->
           if | fromCStore == CEqp && not calmE -> failSer ItemNotCalm
              | fromCStore == CGround && overStash -> failSer ItemOverStash
-             | otherwise -> Right <$> moveItems cLegalRaw is destCStore
+             | otherwise -> Right <$> moveItems stores is destCStore
 
 selectItemsToMove :: forall m. MonadClientUI m
                   => [CStore] -> CStore -> Maybe Text -> Bool
                   -> m (FailOrCmd (CStore, [(ItemId, ItemQuant)]))
 selectItemsToMove stores destCStore mverb auto = do
-  let !_A = assert (destCStore `notElem` stores) ()
   let verb = fromMaybe (verbCStore destCStore) mverb
   leader <- getLeaderUI
   actorCurAndMaxSk <- leaderSkillsClientUI
@@ -855,7 +853,8 @@ selectItemsToMove stores destCStore mverb auto = do
 moveItems :: forall m. MonadClientUI m
           => [CStore] -> (CStore, [(ItemId, ItemQuant)]) -> CStore
           -> m RequestTimed
-moveItems cLegalRaw (fromCStore, l) destCStore = do
+moveItems stores (fromCStore, l) destCStore = do
+  let !_A = assert (fromCStore /= destCStore && fromCStore `elem` stores) ()
   leader <- getLeaderUI
   actorCurAndMaxSk <- leaderSkillsClientUI
   b <- getsState $ getActorBody leader
@@ -869,7 +868,7 @@ moveItems cLegalRaw (fromCStore, l) destCStore = do
               let n = oldN + if toCStore == CEqp then k else 0
               l4 <- ret4 rest n
               return $ (iid, k, fromCStore, toCStore) : l4
-        if cLegalRaw == [CGround] && destCStore == CStash  -- normal pickup
+        if stores == [CGround] && destCStore == CStash  -- normal pickup
         then -- @CStash@ is the implicit default; refine:
              if | not $ benInEqp $ discoBenefit EM.! iid -> retRec CStash
                 | eqpOverfull b (oldN + 1) -> do
@@ -904,7 +903,7 @@ moveItems cLegalRaw (fromCStore, l) destCStore = do
           _ -> retRec destCStore
   l4 <- ret4 l 0
   if null l4
-  then error $ "" `showFailure` (cLegalRaw, fromCStore, l, destCStore)
+  then error $ "" `showFailure` (stores, fromCStore, l, destCStore)
   else return $! ReqMoveItems l4
 
 -- * Project

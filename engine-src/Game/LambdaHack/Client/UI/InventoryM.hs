@@ -179,8 +179,8 @@ getItem :: MonadClientUI m
             -> Text)        -- ^ specific prompt for only suitable items
         -> (Actor -> ActorUI -> Ability.Skills -> ItemDialogMode -> State
             -> Text)        -- ^ generic prompt
-        -> ItemDialogMode   -- ^ first mode, legal or not
-        -> [ItemDialogMode] -- ^ the (rest of) legal modes
+        -> ItemDialogMode   -- ^ first mode to display
+        -> [ItemDialogMode] -- ^ the (rest of) modes
         -> Bool             -- ^ whether to ask, when the only item
                             --   in the starting mode is suitable
         -> Bool             -- ^ whether to permit multiple items as a result
