@@ -794,62 +794,63 @@ selectItemsToMove cLegal cLegalRaw destCStore mverb auto = do
   -- e.g., making all rings identified)
   let calmE = calmEnough b actorCurAndMaxSk
       overStash = mstash == Just (blid b, bpos b)
-  if destCStore == CEqp && not calmE then failSer ItemNotCalm
-  else if destCStore == CEqp && eqpOverfull b 1 then failSer EqpOverfull
-  else if destCStore == CGround && overStash then failSer ItemOverStash
-  else do
-    let cLegalLast = case lastItemMove of
-          Just (lastFrom, lastDest) | lastDest == destCStore
-                                      && lastFrom `elem` cLegal ->
-            lastFrom : delete lastFrom cLegal
-          _ -> cLegal
-        prompt = "What to"
-        promptEqp = "What consumable to"
-        eqpItemsN body =
-          let n = sum $ map fst $ EM.elems $ beqp body
-          in "(" <> makePhrase [MU.CarWs n "item"]
-        ppItemDialogBody body actorSk cCur = case cCur of
-          MStore CEqp | not $ calmEnough body actorSk ->
-            "distractedly paw at" <+> ppItemDialogModeIn cCur
-          MStore CGround | mstash == Just (blid body, bpos body) ->
-            "greedily fondle" <+> ppItemDialogModeIn cCur
-          _ -> case destCStore of
-            CEqp | not $ calmEnough body actorSk ->
-              "distractedly attempt to" <+> verb <+> ppItemDialogModeFrom cCur
-            CEqp | eqpOverfull body 1 ->
-              "attempt to fit into equipment" <+> ppItemDialogModeFrom cCur
-            CGround | mstash == Just (blid body, bpos body) ->
-              "greedily attempt to" <+> verb <+> ppItemDialogModeFrom cCur
-            CEqp -> verb
-                    <+> eqpItemsN body <+> "so far)"
-                    <+> ppItemDialogModeFrom cCur
-            _ -> verb <+> ppItemDialogModeFrom cCur
-                 <+> if cCur == MStore CEqp
-                     then eqpItemsN body <+> "now)"
-                     else ""
-        (promptGeneric, psuit) =
-          -- We prune item list only for eqp, because other stores don't have
-          -- so clear cut heuristics. So when picking up a stash, either grab
-          -- it to auto-store things, or equip first using the pruning
-          -- and then stash the rest selectively or en masse.
-          if destCStore == CEqp
-          then (promptEqp, return $ SuitsSomething $ \_ itemFull _kit ->
-                 IA.goesIntoEqp $ aspectRecordFull itemFull)
-          else (prompt, return SuitsEverything)
-    ggi <-
-      getFull psuit
-              (\body _ actorSk cCur _ ->
-                 prompt <+> ppItemDialogBody body actorSk cCur)
-              (\body _ actorSk cCur _ ->
-                 promptGeneric <+> ppItemDialogBody body actorSk cCur)
-              cLegalRaw cLegalLast (not auto) True
-    case ggi of
-      Right (l, (MStore fromCStore, _)) -> do
-        modifySession $ \sess ->
-          sess {slastItemMove = Just (fromCStore, destCStore)}
-        return $ Right (fromCStore, l)
-      Left err -> failWith err
-      _ -> error $ "" `showFailure` ggi
+  if | destCStore == CEqp && not calmE -> failSer ItemNotCalm
+     | destCStore == CGround && overStash -> failSer ItemOverStash
+     | destCStore == CEqp && eqpOverfull b 1 -> failSer EqpOverfull
+     | otherwise -> do
+       let cLegalLast = case lastItemMove of
+             Just (lastFrom, lastDest) | lastDest == destCStore
+                                         && lastFrom `elem` cLegal ->
+               lastFrom : delete lastFrom cLegal
+             _ -> cLegal
+           prompt = "What to"
+           promptEqp = "What consumable to"
+           eqpItemsN body =
+             let n = sum $ map fst $ EM.elems $ beqp body
+             in "(" <> makePhrase [MU.CarWs n "item"]
+           ppItemDialogBody body actorSk cCur = case cCur of
+             MStore CEqp | not $ calmEnough body actorSk ->
+               "distractedly paw at" <+> ppItemDialogModeIn cCur
+             MStore CGround | mstash == Just (blid body, bpos body) ->
+               "greedily fondle" <+> ppItemDialogModeIn cCur
+             _ -> case destCStore of
+               CEqp | not $ calmEnough body actorSk ->
+                 "distractedly attempt to" <+> verb
+                 <+> ppItemDialogModeFrom cCur
+               CEqp | eqpOverfull body 1 ->
+                 "attempt to fit into equipment" <+> ppItemDialogModeFrom cCur
+               CGround | mstash == Just (blid body, bpos body) ->
+                 "greedily attempt to" <+> verb <+> ppItemDialogModeFrom cCur
+               CEqp -> verb
+                       <+> eqpItemsN body <+> "so far)"
+                       <+> ppItemDialogModeFrom cCur
+               _ -> verb <+> ppItemDialogModeFrom cCur
+                    <+> if cCur == MStore CEqp
+                        then eqpItemsN body <+> "now)"
+                        else ""
+           (promptGeneric, psuit) =
+             -- We prune item list only for eqp, because other stores don't have
+             -- so clear cut heuristics. So when picking up a stash, either grab
+             -- it to auto-store things, or equip first using the pruning
+             -- and then stash the rest selectively or en masse.
+             if destCStore == CEqp
+             then (promptEqp, return $ SuitsSomething $ \_ itemFull _kit ->
+                    IA.goesIntoEqp $ aspectRecordFull itemFull)
+             else (prompt, return SuitsEverything)
+       ggi <-
+         getFull psuit
+                 (\body _ actorSk cCur _ ->
+                    prompt <+> ppItemDialogBody body actorSk cCur)
+                 (\body _ actorSk cCur _ ->
+                    promptGeneric <+> ppItemDialogBody body actorSk cCur)
+                 cLegalRaw cLegalLast (not auto) True
+       case ggi of
+         Right (l, (MStore fromCStore, _)) -> do
+           modifySession $ \sess ->
+             sess {slastItemMove = Just (fromCStore, destCStore)}
+           return $ Right (fromCStore, l)
+         Left err -> failWith err
+         _ -> error $ "" `showFailure` ggi
 
 moveItems :: forall m. MonadClientUI m
           => [CStore] -> (CStore, [(ItemId, ItemQuant)]) -> CStore
