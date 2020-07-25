@@ -150,8 +150,8 @@ standardKeysAndMouse = InputContentRaw $ map evalKeyDef $
             , Macro ["C-KP_Begin", "A-v"] ))
 
   -- Aiming
-  , ("+", ([CmdAim], "swerve the aiming line", EpsIncr True))
-  , ("-", ([CmdAim], "unswerve the aiming line", EpsIncr False))
+  , ("+", ([CmdAim], "swerve the aiming line", EpsIncr Forward))
+  , ("-", ([CmdAim], "unswerve the aiming line", EpsIncr Backward))
   , ("\\", ([CmdAim], "cycle aiming modes", AimFloor))
   , ("C-?", ( [CmdAim]
             , "set crosshair to nearest unknown spot"

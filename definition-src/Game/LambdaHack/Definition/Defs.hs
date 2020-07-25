@@ -7,6 +7,7 @@ module Game.LambdaHack.Definition.Defs
   , CStore(..), ppCStore, ppCStoreIn, verbCStore
   , SLore(..), ItemDialogMode(..), ppSLore, headingSLore
   , ppItemDialogMode, ppItemDialogModeIn, ppItemDialogModeFrom
+  , Direction(..)
   ) where
 
 import Prelude ()
@@ -153,3 +154,10 @@ ppItemDialogModeIn c = let (tIn, t) = ppItemDialogMode c in tIn <+> t
 
 ppItemDialogModeFrom :: ItemDialogMode -> Text
 ppItemDialogModeFrom c = let (_tIn, t) = ppItemDialogMode c in "from" <+> t
+
+data Direction = Forward | Backward
+  deriving (Show, Read, Eq, Ord, Generic)
+
+instance NFData Direction
+
+instance Binary Direction

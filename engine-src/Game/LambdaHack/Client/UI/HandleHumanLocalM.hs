@@ -629,16 +629,14 @@ pickLeaderWithPointerHuman = pickLeaderWithPointer
 -- * MemberCycle
 
 -- | Switch current member to the next on the viewed level, if any, wrapping.
-memberCycleLevelHuman :: MonadClientUI m => HumanCmd.CycleDirection -> m MError
-memberCycleLevelHuman HumanCmd.Forward = memberCycleLevel True True
-memberCycleLevelHuman HumanCmd.Backward = memberCycleLevel True False
+memberCycleLevelHuman :: MonadClientUI m => Direction -> m MError
+memberCycleLevelHuman direction = memberCycleLevel True direction
 
 -- * MemberBack
 
 -- | Switch current member to the previous in the whole dungeon, wrapping.
-memberCycleHuman :: MonadClientUI m => HumanCmd.CycleDirection -> m MError
-memberCycleHuman HumanCmd.Forward = memberCycle True True
-memberCycleHuman HumanCmd.Backward = memberCycle True False
+memberCycleHuman :: MonadClientUI m => Direction -> m MError
+memberCycleHuman direction = memberCycle True direction
 
 -- * SelectActor
 
@@ -1133,12 +1131,12 @@ aimAscendHuman k = do
 -- * EpsIncr
 
 -- | Tweak the @eps@ parameter of the aiming digital line.
-epsIncrHuman :: (MonadClient m, MonadClientUI m) => Bool -> m ()
-epsIncrHuman b = do
+epsIncrHuman :: (MonadClient m, MonadClientUI m) => Direction -> m ()
+epsIncrHuman d = do
   saimMode <- getsSession saimMode
   lidV <- viewedLevelUI
   modifySession $ \sess -> sess {saimMode = Just $ AimMode lidV}
-  modifyClient $ \cli -> cli {seps = seps cli + if b then 1 else -1}
+  modifyClient $ \cli -> cli {seps = seps cli + case d of { Forward -> 1; Backward -> -1}}
   invalidateBfsPathAll
   flashAiming
   modifySession $ \sess -> sess {saimMode}
