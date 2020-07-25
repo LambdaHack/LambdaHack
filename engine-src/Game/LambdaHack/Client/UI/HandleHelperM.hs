@@ -202,7 +202,7 @@ pickLeaderWithPointer = do
   K.PointUI x y <- getsSession spointer
   let (px, py) = (x `div` 2, y - K.mapStartY)
   -- Pick even if no space in status line for the actor's symbol.
-  if | py == rheight - 2 && px == 0 -> memberCycleLevel True Forward
+  if | py == rheight - 2 && px == 0 -> memberCycle True Forward
      | py == rheight - 2 ->
          case drop (px - 1) viewed of
            [] -> return Nothing
