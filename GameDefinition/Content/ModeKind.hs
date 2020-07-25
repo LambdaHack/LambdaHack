@@ -200,7 +200,7 @@ escape = ModeKind  -- asymmetric ranged and stealth race at night
       , "* Find exit and escape ASAP"
       ]
   , mdesc   = "Dwelling into dark matters is dangerous, so avoid the crowd of firebrand disputants, catch any gems of thought, find a way out and bring back a larger team to shed new light on the field."
-  , mmotivation = ""
+  , mmotivation = "The focus of this installment is on stealthy exploration under the threat of numerically superior enemy."
   , mhint = ""
   }
 
@@ -218,7 +218,7 @@ zoo = ModeKind  -- asymmetric crowd melee at night
       , "* Incapacitate all enemies ASAP"
       ]
   , mdesc   = "The heat of the dispute reaches the nearby Wonders of Science and Nature exhibition, igniting greenery, nets and cages. Crazed animals must be dissuaded from ruining precious scientific equipment and setting back the otherwise fruitful exchange of ideas."
-  , mmotivation = ""
+  , mmotivation = "This is a crowd control exercise, at night, with a raging fire."
   , mhint = ""
   }
 
@@ -244,7 +244,7 @@ ambush = ModeKind  -- dense ranged with reaction fire vs melee at night
       , "* Assert control of the situation ASAP"
       ]
   , mdesc   = "Prevent hijacking of your ideas at all cost! Be stealthy, be observant, be aggressive. Fast execution is what makes or breaks a creative team."
-  , mmotivation = ""
+  , mmotivation = "In this scenario, finally, your heroes are able to all use ranged attacks at once, given enough ammunition."
   , mhint = ""
   }
 
@@ -262,7 +262,7 @@ safari = ModeKind  -- Easter egg available only via screensaver
       , "* Find exit and escape ASAP"
       ]
   , mdesc   = "\"In this enactment you'll discover the joys of hunting the most exquisite of Earth's flora and fauna, both animal and semi-intelligent. Exit at the bottommost level.\" This is a drama script recovered from a monster nest debris."
-  , mmotivation = ""
+  , mmotivation = "This is an Easter egg. The default squad doctrine is that all team members follow the pointman, but it can be changed from the settings submenu of the main menu."
   , mhint = ""
   }
 
@@ -315,7 +315,7 @@ crawlEmpty = ModeKind
   , mcaves  = cavesCrawlEmpty
   , mendMsg = []
   , mrules  = ""
-  , mdesc   = "Enjoy the free space."
+  , mdesc   = "Enjoy the extra legroom."
   , mmotivation = ""
   , mhint = ""
   }
@@ -394,7 +394,7 @@ defense = ModeKind  -- perhaps a real scenario in the future
   , mendMsg = []
   , mrules  = ""
   , mdesc   = "Don't let human interlopers defile your abstract secrets and flee unpunished!"
-  , mmotivation = ""
+  , mmotivation = "This is an initial sketch of the reversed crawl game mode. Play on high difficulty to avoid guaranteed victories against the pitiful humans."
   , mhint = ""
   }
 
@@ -406,7 +406,7 @@ defenseEmpty = ModeKind
   , mcaves  = cavesCrawlEmpty
   , mendMsg = []
   , mrules  = ""
-  , mdesc   = "Lord over."
+  , mdesc   = "Lord over empty halls."
   , mmotivation = ""
   , mhint = ""
   }
