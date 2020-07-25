@@ -664,11 +664,21 @@ lookAtPosition lidV p = do
                        then ""
                        else "The following items on the ground or in equipment enable special transformations:"
                             <+> tItems <> "."  -- not telling to what terrain
+      actorEOL = if T.null actorsDesc
+                    || T.null itemsBlurb && null embedsList
+                 then ""
+                 else "\n"
+      itemsEOL = if T.null actorsDesc && T.null itemsBlurb
+                    || null embedsList
+                 then ""
+                 else "\n"
   return $ [ (MsgPromptWarning, stashBlurb)
            , (MsgPromptThreat, actorsBlurb)
-           , (MsgPrompt, actorsDesc)
-           , (MsgPromptItem, itemsBlurb)
+           , (MsgPrompt, actorsDesc
+                         <> actorEOL)
            , (MsgPrompt, smellBlurb)
+           , (MsgPromptItem, itemsBlurb
+                             <> itemsEOL)
            , (MsgPromptFocus, tileBlurb)
            , (MsgPrompt, placeBlurb) ]
            ++ concatMap (\(embedName, embedDesc) ->
