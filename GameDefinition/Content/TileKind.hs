@@ -365,7 +365,7 @@ wallObscuredFrescoedH = TileKind
   }
 pillar = TileKind
   { tsymbol  = '0'
-  , tname    = "rock"
+  , tname    = "rock outcrop"
   , tfreq    = [ (CACHE_OR_NOT, 70)
                , (STAIR_TERMINAL_LIT, 100), (STAIR_TERMINAL_DARK, 100)
                , (LEGEND_LIT, 100), (LEGEND_DARK, 100)
@@ -380,7 +380,7 @@ pillar = TileKind
   }
 pillarCache = TileKind
   { tsymbol  = '0'
-  , tname    = "smoothed rock"
+  , tname    = "smoothed outcrop"
   , tfreq    = [(CACHE_OR_NOT, 30), (CACHE, 1), (STAIR_TERMINAL_DARK, 4)]
                  -- treasure only in dark staircases
   , tcolor   = BrBlue
@@ -755,7 +755,7 @@ floorDamp = floorArena
                , (DAMP_FLOOR_LIT, 1), (STAIR_TERMINAL_LIT, 20) ]
   }
 floorDirt = floorArena
-  { tname    = "dirt"
+  { tname    = "dirt floor"
   , tfreq    = [ (SHOOTOUT_SET_LIT, 1000), (ESCAPE_SET_LIT, 1000)
                , (AMBUSH_SET_LIT, 1000), (BATTLE_SET_LIT, 1000)
                , (BRAWL_SET_LIT, 1000), (DIRT_LIT, 1) ]
