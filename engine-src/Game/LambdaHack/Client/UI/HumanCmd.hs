@@ -4,7 +4,6 @@ module Game.LambdaHack.Client.UI.HumanCmd
   ( CmdCategory(..), categoryDescription
   , CmdArea(..), areaDescription
   , CmdTriple, AimModeCmd(..), HumanCmd(..)
-  , CycleDirection(..)
   , TriggerItem(..)
   ) where
 
@@ -155,8 +154,8 @@ data HumanCmd =
   | ChooseItemApply [TriggerItem]
   | PickLeader Int
   | PickLeaderWithPointer
-  | MemberCycle CycleDirection
-  | MemberCycleLevel CycleDirection
+  | MemberCycle Direction
+  | MemberCycleLevel Direction
   | SelectActor
   | SelectNone
   | SelectWithPointer
@@ -183,7 +182,7 @@ data HumanCmd =
   | AimEnemy
   | AimItem
   | AimAscend Int
-  | EpsIncr Bool
+  | EpsIncr Direction 
   | XhairUnknown
   | XhairItem
   | XhairStair Bool
@@ -196,13 +195,6 @@ data HumanCmd =
 instance NFData HumanCmd
 
 instance Binary HumanCmd
-
-data CycleDirection = Forward | Backward
-  deriving (Show, Read, Eq, Ord, Generic)
-
-instance NFData CycleDirection
-
-instance Binary CycleDirection
 
 -- | Description of how item manipulation is triggered and communicated
 -- to the player.

@@ -292,13 +292,13 @@ transition psuit prompt promptGeneric permitMulitple
         EM.filterWithKey hasPrefixOpen suitableItemSlotsAll
       bagSuit = EM.fromList $ map (\iid -> (iid, bagAllSuit EM.! iid))
                                   (EM.elems suitableItemSlotsOpen)
-      nextContainers forward = if forward
-                               then case cRest ++ [cCur] of
-                                 c1 : rest -> (c1, rest)
-                                 [] -> error $ "" `showFailure` cRest
-                               else case reverse $ cCur : cRest of
-                                 c1 : rest -> (c1, reverse rest)
-                                 [] -> error $ "" `showFailure` cRest
+      nextContainers direction = case direction of 
+        Forward -> case cRest ++ [cCur] of
+          c1 : rest -> (c1, rest)
+          [] -> error $ "" `showFailure` cRest
+        Backward -> case reverse $ cCur : cRest of
+          c1 : rest -> (c1, reverse rest)
+          [] -> error $ "" `showFailure` cRest
   (bagFiltered, promptChosen) <- getsState $ \s ->
     case itemDialogState of
       ISuitable -> (bagSuit, prompt body bodyUI actorCurAndMaxSk cCur s <> ":")
@@ -314,9 +314,9 @@ transition psuit prompt promptGeneric permitMulitple
       keyDefs :: [(K.KM, DefItemKey m)]
       keyDefs = filter (defCond . snd) $
         [ let km = K.mkChar '<'
-          in (km, changeContainerDef False $ Right km)
+          in (km, changeContainerDef Backward $ Right km)
         , let km = K.mkChar '>'
-          in (km, changeContainerDef True $ Right km)
+          in (km, changeContainerDef Forward $ Right km)
         , let km = K.mkChar '+'
           in (km, DefItemKey
            { defLabel = Right km
@@ -336,7 +336,7 @@ transition psuit prompt promptGeneric permitMulitple
            , defCond = maySwitchLeader cCur
                        && any (\(_, b, _) -> blid b == blid body) hs
            , defAction = \_ -> do
-               err <- memberCycleLevel False True
+               err <- memberCycleLevel False Forward
                let !_A = assert (isNothing err `blame` err) ()
                recCall numPrefix cCur cRest itemDialogState
            })
@@ -345,7 +345,7 @@ transition psuit prompt promptGeneric permitMulitple
            { defLabel = Right km
            , defCond = maySwitchLeader cCur && not (autoDun || null hs)
            , defAction = \_ -> do
-               err <- memberCycle False True
+               err <- memberCycle False Forward
                let !_A = assert (isNothing err `blame` err) ()
                recCall numPrefix cCur cRest itemDialogState
            })
@@ -367,8 +367,8 @@ transition psuit prompt promptGeneric permitMulitple
            })
         ]
         ++ numberPrefixes
-      changeContainerDef forward defLabel =
-        let (cCurAfterCalm, cRestAfterCalm) = nextContainers forward
+      changeContainerDef direction defLabel =
+        let (cCurAfterCalm, cRestAfterCalm) = nextContainers direction
         in DefItemKey
           { defLabel
           , defCond = cCurAfterCalm /= cCur
