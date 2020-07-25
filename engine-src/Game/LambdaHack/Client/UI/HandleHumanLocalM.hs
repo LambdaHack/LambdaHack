@@ -629,14 +629,16 @@ pickLeaderWithPointerHuman = pickLeaderWithPointer
 -- * MemberCycle
 
 -- | Switch current member to the next on the viewed level, if any, wrapping.
-memberCycleLevelHuman :: MonadClientUI m => Bool -> m MError
-memberCycleLevelHuman forward = memberCycleLevel True forward
+memberCycleLevelHuman :: MonadClientUI m => HumanCmd.CycleDirection -> m MError
+memberCycleLevelHuman HumanCmd.Forward = memberCycleLevel True True
+memberCycleLevelHuman HumanCmd.Backward = memberCycleLevel True False
 
 -- * MemberBack
 
 -- | Switch current member to the previous in the whole dungeon, wrapping.
-memberCycleHuman :: MonadClientUI m => Bool -> m MError
-memberCycleHuman forward = memberCycle True forward
+memberCycleHuman :: MonadClientUI m => HumanCmd.CycleDirection -> m MError
+memberCycleHuman HumanCmd.Forward = memberCycle True True
+memberCycleHuman HumanCmd.Backward = memberCycle True False
 
 -- * SelectActor
 
