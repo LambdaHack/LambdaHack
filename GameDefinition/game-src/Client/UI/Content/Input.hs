@@ -62,7 +62,7 @@ standardKeysAndMouse = InputContentRaw $ map evalKeyDef $
   , ("space", ( [CmdMinimal, CmdMeta]
               , "clear messages and show history"
               , ExecuteIfClear LastHistory ))
-  , ("Tab", ( [CmdMinimal]
+  , ("Tab", ( [CmdMinimal, CmdMove]
             , "cycle among all party members"
             , MemberCycle Forward))
       -- listed here to keep proper order
