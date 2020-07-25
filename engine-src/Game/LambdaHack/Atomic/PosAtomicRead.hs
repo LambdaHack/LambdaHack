@@ -88,8 +88,8 @@ posUpdAtomic cmd = case cmd of
   UpdLoseActor _ body -> return $! posProjBody body
   UpdSpotItem _ _ _ c -> singleContainerStash c
   UpdLoseItem _ _ _ c -> singleContainerStash c
-  UpdSpotItemBag c _ -> singleContainerStash c
-  UpdLoseItemBag c _ -> singleContainerStash c
+  UpdSpotItemBag _ c _ -> singleContainerStash c
+  UpdLoseItemBag _ c _ -> singleContainerStash c
   UpdMoveActor aid fromP toP -> do
     b <- getsState $ getActorBody aid
     -- Non-projectile actors are never totally isolated from environment;
@@ -206,7 +206,7 @@ iidUpdAtomic cmd = case cmd of
   UpdLoseActor{} -> []  -- already seen, so items known
   UpdSpotItem _ iid _ _ -> [iid]
   UpdLoseItem{} -> []
-  UpdSpotItemBag _ bag -> EM.keys bag
+  UpdSpotItemBag _ _ bag -> EM.keys bag
   UpdLoseItemBag{} -> []
   UpdMoveActor{} -> []
   UpdWaitActor{} -> []
@@ -369,17 +369,17 @@ breakUpdAtomic cmd = case cmd of
     case mstash of
       Just (lid, pos) -> return [UpdLoseItem verbose iid kit (CFloor lid pos)]
       Nothing -> error $ "manipulating void stash" `showFailure` (aid, b, iid)
-  UpdSpotItemBag (CActor aid CStash) bag -> do
+  UpdSpotItemBag verbose (CActor aid CStash) bag -> do
     b <- getsState $ getActorBody aid
     mstash <- getsState $ \s -> gstash $ sfactionD s EM.! bfid b
     case mstash of
-      Just (lid, pos) -> return [UpdSpotItemBag (CFloor lid pos) bag]
+      Just (lid, pos) -> return [UpdSpotItemBag verbose (CFloor lid pos) bag]
       Nothing -> error $ "manipulating void stash" `showFailure` (aid, b, bag)
-  UpdLoseItemBag (CActor aid CStash) bag -> do
+  UpdLoseItemBag verbose (CActor aid CStash) bag -> do
     b <- getsState $ getActorBody aid
     mstash <- getsState $ \s -> gstash $ sfactionD s EM.! bfid b
     case mstash of
-      Just (lid, pos) -> return [UpdLoseItemBag (CFloor lid pos) bag]
+      Just (lid, pos) -> return [UpdLoseItemBag verbose (CFloor lid pos) bag]
       Nothing -> error $ "manipulating void stash" `showFailure` (aid, b, bag)
   UpdMoveItem iid k aid CStash store2 -> do
     b <- getsState $ getActorBody aid

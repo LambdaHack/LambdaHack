@@ -653,7 +653,7 @@ reqAlterFail bumping effToUse voluntary source tpos = do
       alterSkill = Ability.getSk Ability.SkAlter actorSk
       tileMinSkill = Tile.alterMinSkill coTileSpeedup serverTile
       revealEmbeds = unless (EM.null embeds) $
-        execUpdAtomic $ UpdSpotItemBag (CEmbed lid tpos) embeds
+        execUpdAtomic $ UpdSpotItemBag True (CEmbed lid tpos) embeds
       embedKindList =
         map (\(iid, kit) -> (getKind iid, (iid, kit))) (EM.assocs embeds)
       sbItemKind = getKind $ btrunk sb
@@ -785,7 +785,7 @@ reqAlterFail bumping effToUse voluntary source tpos = do
               -- on the client, without causing any problems. Otherwise,
               -- if the position is in view, client has accurate info.
               unless (EM.null embeds2) $
-                execUpdAtomic $ UpdLoseItemBag (CEmbed lid tpos) embeds2
+                execUpdAtomic $ UpdLoseItemBag True (CEmbed lid tpos) embeds2
               -- Altering always reveals the outcome tile, so it's not hidden
               -- and so its embedded items are always visible.
               embedItemOnPos lid tpos toTile

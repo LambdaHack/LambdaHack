@@ -132,14 +132,14 @@ cmdAtomicSemSer oldState cmd = case cmd of
       invalidateLucidAid aid
     when (itemAffectsPerRadius discoAspect iid) $ reconsiderPerActor aid
   UpdLoseItem{} -> return ()
-  UpdSpotItemBag (CFloor lid _) bag  -> validateFloorBag bag lid
-  UpdSpotItemBag (CActor aid CStash) bag -> do
+  UpdSpotItemBag _ (CFloor lid _) bag  -> validateFloorBag bag lid
+  UpdSpotItemBag _ (CActor aid CStash) bag -> do
     lid <- levelOfStash aid
     validateFloorBag bag lid
-  UpdSpotItemBag (CActor aid CGround) bag -> do
+  UpdSpotItemBag _ (CActor aid CGround) bag -> do
     lid <- getsState $ blid . getActorBody aid
     validateFloorBag bag lid
-  UpdSpotItemBag (CActor aid _) bag -> do
+  UpdSpotItemBag _ (CActor aid _) bag -> do
     discoAspect <- getsState sdiscoAspect
     let iids = EM.keys bag
     when (any (itemAffectsShineRadius discoAspect) iids) $
@@ -147,14 +147,14 @@ cmdAtomicSemSer oldState cmd = case cmd of
     when (any (itemAffectsPerRadius discoAspect) iids) $
       reconsiderPerActor aid
   UpdSpotItemBag{} -> return ()
-  UpdLoseItemBag (CFloor lid _) bag -> validateFloorBag bag lid
-  UpdLoseItemBag (CActor aid CStash) bag -> do
+  UpdLoseItemBag _ (CFloor lid _) bag -> validateFloorBag bag lid
+  UpdLoseItemBag _ (CActor aid CStash) bag -> do
     lid <- levelOfStash aid
     validateFloorBag bag lid
-  UpdLoseItemBag (CActor aid CGround) bag -> do
+  UpdLoseItemBag _ (CActor aid CGround) bag -> do
     lid <- levelOfStash aid
     validateFloorBag bag lid
-  UpdLoseItemBag (CActor aid _) bag -> do
+  UpdLoseItemBag _ (CActor aid _) bag -> do
     discoAspect <- getsState sdiscoAspect
     let iids = EM.keys bag
     when (any (itemAffectsShineRadius discoAspect) iids) $

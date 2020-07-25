@@ -75,8 +75,8 @@ data UpdAtomic =
   | UpdLoseActor ActorId Actor
   | UpdSpotItem Bool ItemId ItemQuant Container
   | UpdLoseItem Bool ItemId ItemQuant Container
-  | UpdSpotItemBag Container ItemBag
-  | UpdLoseItemBag Container ItemBag
+  | UpdSpotItemBag Bool Container ItemBag
+  | UpdLoseItemBag Bool Container ItemBag
   -- Move actors and items.
   | UpdMoveActor ActorId Point Point
   | UpdWaitActor ActorId Watchfulness Watchfulness
@@ -217,8 +217,8 @@ undoUpdAtomic cmd = case cmd of
   UpdLoseActor aid body -> Just $ UpdSpotActor aid body
   UpdSpotItem verbose iid k c -> Just $ UpdLoseItem verbose iid k c
   UpdLoseItem verbose iid k c -> Just $ UpdSpotItem verbose iid k c
-  UpdSpotItemBag c bag -> Just $ UpdLoseItemBag c bag
-  UpdLoseItemBag c bag -> Just $ UpdSpotItemBag c bag
+  UpdSpotItemBag verbose c bag -> Just $ UpdLoseItemBag verbose c bag
+  UpdLoseItemBag verbose c bag -> Just $ UpdSpotItemBag verbose c bag
   UpdMoveActor aid fromP toP -> Just $ UpdMoveActor aid toP fromP
   UpdWaitActor aid fromWS toWS -> Just $ UpdWaitActor aid toWS fromWS
   UpdDisplaceActor source target -> Just $ UpdDisplaceActor target source

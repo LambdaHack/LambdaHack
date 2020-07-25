@@ -435,7 +435,7 @@ subtractIidfromGrps (bagsToLose1, iidsToApply1, grps1)
                                then (nToApplyIfDurable, nToDestroyAlways)
                                else (0, max nToApplyIfDurable nToDestroyAlways)
   in ( if nToDestroy == 0
-       then bagsToLose1  -- avoid vacuus @UpdLoseItem@
+       then bagsToLose1  -- avoid vacuus @UpdDestroyItem@
        else let kit2 = (nToDestroy, take nToDestroy it)
                 removedBags = EM.singleton store $ EM.singleton iid kit2
             in EM.unionWith (EM.unionWith mergeItemQuant)

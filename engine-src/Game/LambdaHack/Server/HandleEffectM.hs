@@ -1915,7 +1915,7 @@ effectDetect execSfx d radius target container = do
               revealEmbed p = do
                 embeds <- getsState $ getEmbedBag (blid b) p
                 unless (EM.null embeds) $
-                  execUpdAtomic $ UpdSpotItemBag (CEmbed (blid b) p) embeds
+                  execUpdAtomic $ UpdSpotItemBag True (CEmbed (blid b) p) embeds
               actionH l = do
                 pos <- getsState $ posFromC container
                 let f p = when (p /= pos) $ do

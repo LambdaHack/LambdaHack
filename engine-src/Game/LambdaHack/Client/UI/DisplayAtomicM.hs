@@ -179,10 +179,10 @@ displayRespUpdAtomicUI cmd = case cmd of
       let verb = MU.Text $ makePhrase $ "be removed from" : ownW
       itemVerbMUShort MsgItemMove iid kit verb c
   UpdLoseItem{} -> return ()
-  UpdSpotItemBag c bag -> do
+  UpdSpotItemBag verbose c bag -> do
     mapWithKeyM_ (\iid kit -> spotItem False iid kit c) bag
       -- @False@ for less spam and becuase summarized below
-    case c of
+    when verbose $ case c of
       CActor aid store -> do
         let verb = MU.Text $ verbCStore store
         b <- getsState $ getActorBody aid

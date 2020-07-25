@@ -83,13 +83,13 @@ cmdAtomicSemCli oldState cmd = case cmd of
     wipeBfsIfItemAffectsSkills [store] aid
     invalidateInMeleeDueToItem aid store
   UpdLoseItem{} -> return ()
-  UpdSpotItemBag (CActor aid store) bag -> do
+  UpdSpotItemBag _ (CActor aid store) bag -> do
     wipeBfsIfItemAffectsSkills [store] aid
     mapM_ addItemToDiscoBenefit $ EM.keys bag
     invalidateInMeleeDueToItem aid store
-  UpdSpotItemBag _ bag ->
+  UpdSpotItemBag _ _ bag ->
     mapM_ addItemToDiscoBenefit $ EM.keys bag
-  UpdLoseItemBag (CActor aid store) _ -> do
+  UpdLoseItemBag _ (CActor aid store) _ -> do
     wipeBfsIfItemAffectsSkills [store] aid
     invalidateInMeleeDueToItem aid store
   UpdLoseItemBag{} -> return ()

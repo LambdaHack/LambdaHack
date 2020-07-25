@@ -317,11 +317,11 @@ atomicRemember lid inPer sClient s =
               (Nothing, Nothing) -> []  -- most common, no items ever
               (Just bag, Nothing) ->  -- common, client unaware
                 cmdItemsFromIids (EM.keys bag) sClient s
-                ++ [UpdSpotItemBag (fc lid p) bag | allow p]
+                ++ [UpdSpotItemBag True (fc lid p) bag | allow p]
               (Nothing, Just bagClient) ->  -- uncommon, all items vanished
                 -- We don't check @allow@, because client sees items there,
                 -- so we assume he's aware of the tile enough to notice.
-                [UpdLoseItemBag (fc lid p) bagClient]
+                [UpdLoseItemBag True (fc lid p) bagClient]
               (Just bag, Just bagClient) ->
                 -- We don't check @allow@, because client sees items there,
                 -- so we assume he's aware of the tile enough to see new items.
@@ -330,8 +330,8 @@ atomicRemember lid inPer sClient s =
                 else -- uncommon, surprise; because it's rare, we send
                      -- whole bags and don't optimize by sending only delta
                      cmdItemsFromIids (EM.keys bag) sClient s
-                     ++ [ UpdLoseItemBag (fc lid p) bagClient
-                        , UpdSpotItemBag (fc lid p) bag ]
+                     ++ [ UpdLoseItemBag True (fc lid p) bagClient
+                        , UpdSpotItemBag True (fc lid p) bag ]
         in concatMap f inFov
       inFloor = inContainer (const True) CFloor (lfloor lvl) (lfloor lvlClient)
       -- Check that client may be shown embedded items, assuming he's not seeing
