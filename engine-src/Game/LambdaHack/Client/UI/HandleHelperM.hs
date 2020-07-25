@@ -664,17 +664,17 @@ lookAtPosition lidV p = do
                        then ""
                        else "The following items on the ground or in equipment enable special transformations:"
                             <+> tItems <> "."  -- not telling to what terrain
-  return $ [ (MsgPromptFocus, tileBlurb)
+  return $ [ (MsgPromptWarning, stashBlurb)
+           , (MsgPromptThreat, actorsBlurb)
+           , (MsgPrompt, actorsDesc)
+           , (MsgPromptItem, itemsBlurb)
+           , (MsgPrompt, smellBlurb)
+           , (MsgPromptFocus, tileBlurb)
            , (MsgPrompt, placeBlurb) ]
            ++ concatMap (\(embedName, embedDesc) ->
                 [ (MsgPromptMention, embedName)
                 , (MsgPrompt, embedDesc) ]) embedsList
-           ++ [ (MsgPrompt, alterBlurb <+> transformBlurb)
-              , (MsgPromptWarning, stashBlurb)
-              , (MsgPromptThreat, actorsBlurb)
-              , (MsgPrompt, actorsDesc)
-              , (MsgPromptItem, itemsBlurb)
-              , (MsgPrompt, smellBlurb) ]
+           ++ [ (MsgPrompt, alterBlurb <+> transformBlurb) ]
 
 displayItemLore :: MonadClientUI m
                 => ItemBag -> Int -> (ItemId -> ItemFull -> Int -> Text) -> Int
