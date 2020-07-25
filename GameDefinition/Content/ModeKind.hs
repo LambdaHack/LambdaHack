@@ -413,66 +413,59 @@ defenseEmpty = ModeKind
 
 -- * Screensaver modes
 
-screensave :: AutoLeader -> Roster -> Roster
-screensave auto r =
+screensave :: AutoLeader -> ModeKind -> ModeKind
+screensave auto mk =
   let f [] = []
       f ((player, initial) : rest) =
         (player {fleaderMode = LeaderAI auto}, initial) : rest
-  in r {rosterList = f $ rosterList r}
+  in mk { mroster = (mroster mk) {rosterList = f $ rosterList $ mroster mk}
+        , mmotivation = "This is one of the screensaver scenarios, not available from the main menu, with all factions controlled by AI. Feel free to take over or relinquish control at any moment, but to register a legitimate high score, choose a standard scenario instead.\n" <> mmotivation mk
+        }
 
-screensaverRaid = raid
+screensaverRaid = screensave (AutoLeader False False) $ raid
   { mname   = "auto-raid (1)"
   , mfreq   = [(INSERT_COIN, 2), (NO_CONFIRMS, 1)]
-  , mroster = screensave (AutoLeader False False) rosterRaid
   }
 
-screensaverBrawl = brawl
+screensaverBrawl = screensave (AutoLeader False False) $ brawl
   { mname   = "auto-brawl (2)"
   , mfreq   = [(NO_CONFIRMS, 1)]
-  , mroster = screensave (AutoLeader False False) rosterBrawl
   }
 
-screensaverShootout = shootout
+screensaverShootout = screensave (AutoLeader False False) $ shootout
   { mname   = "auto-shootout (3)"
   , mfreq   = [(INSERT_COIN, 2), (NO_CONFIRMS, 1)]
-  , mroster = screensave (AutoLeader False False) rosterShootout
   }
 
-screensaverHunt = hunt
+screensaverHunt = screensave (AutoLeader False False) $ hunt
   { mname   = "auto-hunt (4)"
   , mfreq   = [(INSERT_COIN, 2), (NO_CONFIRMS, 1)]
-  , mroster = screensave (AutoLeader False False) rosterHunt
   }
 
-screensaverEscape = escape
+screensaverEscape = screensave (AutoLeader False False) $ escape
   { mname   = "auto-escape (5)"
   , mfreq   = [(INSERT_COIN, 2), (NO_CONFIRMS, 1)]
-  , mroster = screensave (AutoLeader False False) rosterEscape
   }
 
-screensaverZoo = zoo
+screensaverZoo = screensave (AutoLeader False False) $ zoo
   { mname   = "auto-zoo (6)"
   , mfreq   = [(NO_CONFIRMS, 1)]
-  , mroster = screensave (AutoLeader False False) rosterZoo
   }
 
-screensaverAmbush = ambush
+screensaverAmbush = screensave (AutoLeader False False) $ ambush
   { mname   = "auto-ambush (7)"
   , mfreq   = [(NO_CONFIRMS, 1)]
-  , mroster = screensave (AutoLeader False False) rosterAmbush
   }
 
-screensaverCrawl = crawl
+screensaverCrawl = screensave (AutoLeader False False) $ crawl
   { mname   = "auto-crawl (long)"
   , mfreq   = [(NO_CONFIRMS, 1)]
-  , mroster = screensave (AutoLeader False False) rosterCrawl
   }
 
-screensaverSafari = safari
+-- changing leader by client needed, because of TFollow
+screensaverSafari = screensave (AutoLeader False True) $ safari
   { mname   = "auto-safari"
   , mfreq   = [(INSERT_COIN, 1), (NO_CONFIRMS, 1)]
-  , mroster = -- changing leader by client needed, because of TFollow
-              screensave (AutoLeader False True) rosterSafari
   }
 
 rosterRaid, rosterBrawl, rosterShootout, rosterHunt, rosterEscape, rosterZoo, rosterAmbush, rosterCrawl, rosterCrawlEmpty, rosterCrawlSurvival, rosterSafari, rosterSafariSurvival, rosterBattle, rosterBattleDefense, rosterBattleSurvival, rosterDefense, rosterDefenseEmpty :: Roster
