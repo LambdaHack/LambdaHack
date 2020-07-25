@@ -155,7 +155,9 @@ data HumanCmd =
   | PickLeader Int
   | PickLeaderWithPointer
   | MemberCycleForward
+  | MemberCycleBackward
   | MemberCycleForwardLevel
+  | MemberCycleBackwardLevel
   | SelectActor
   | SelectNone
   | SelectWithPointer
