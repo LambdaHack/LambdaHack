@@ -66,7 +66,8 @@ data StateClient = StateClient
   , snxtScenario  :: Int            -- ^ next game scenario number
   , smarkSuspect  :: Int            -- ^ whether to mark suspect features
   , scondInMelee  :: EM.EnumMap LevelId Bool
-                                    -- ^ whether we are in melee, per level
+      -- ^ whether we are in melee, per level; this is not a set, due to
+      --   an unbenchmarked theory that a constant shape map is faster
   , svictories    :: EM.EnumMap (ContentId ModeKind) (M.Map Challenge Int)
                                     -- ^ won games at particular difficulty lvls
   , soptions      :: ClientOptions  -- ^ client options

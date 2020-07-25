@@ -59,6 +59,9 @@ data FovValid a =
   deriving (Show, Eq)
 
 -- | Main perception validity map, for all factions.
+--
+-- The inner type is not a set, due to an unbenchmarked theory
+-- that a constant shape map is faster.
 type PerValidFid = EM.EnumMap FactionId (EM.EnumMap LevelId Bool)
 
 -- | Visually reachable positions (light passes through them to the actor).
