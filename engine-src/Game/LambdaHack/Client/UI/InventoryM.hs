@@ -311,6 +311,27 @@ transition psuit prompt promptGeneric permitMulitple
       maySwitchLeader MLore{} = False
       maySwitchLeader MPlaces = False
       maySwitchLeader _ = True
+      cycleKeyDef direction =
+        let km = revCmd $ MemberCycle direction
+        in (km, DefItemKey
+               { defLabel = Right km
+               , defCond = maySwitchLeader cCur && not (autoDun || null hs)
+               , defAction = \_ -> do
+                   err <- memberCycle False direction
+                   let !_A = assert (isNothing err `blame` err) ()
+                   recCall numPrefix cCur cRest itemDialogState
+               })
+      cycleLevelKeyDef direction =
+        let km = revCmd $ MemberCycleLevel direction
+        in (km, DefItemKey
+                { defLabel = Right km
+                , defCond = maySwitchLeader cCur
+                            && any (\(_, b, _) -> blid b == blid body) hs
+                , defAction = \_ -> do
+                    err <- memberCycleLevel False direction
+                    let !_A = assert (isNothing err `blame` err) ()
+                    recCall numPrefix cCur cRest itemDialogState
+                })
       keyDefs :: [(K.KM, DefItemKey m)]
       keyDefs = filter (defCond . snd) $
         [ let km = K.mkChar '<'
@@ -330,25 +351,10 @@ transition psuit prompt promptGeneric permitMulitple
           in (km, useMultipleDef $ Right km)
         , let km = K.mkChar '!'
           in (km, useMultipleDef $ Left "")  -- alias close to 'g'
-        , let km = revCmd $ MemberCycleLevel Forward
-          in (km, DefItemKey
-           { defLabel = Right km
-           , defCond = maySwitchLeader cCur
-                       && any (\(_, b, _) -> blid b == blid body) hs
-           , defAction = \_ -> do
-               err <- memberCycleLevel False Forward
-               let !_A = assert (isNothing err `blame` err) ()
-               recCall numPrefix cCur cRest itemDialogState
-           })
-        , let km = revCmd $ MemberCycle Forward
-          in (km, DefItemKey
-           { defLabel = Right km
-           , defCond = maySwitchLeader cCur && not (autoDun || null hs)
-           , defAction = \_ -> do
-               err <- memberCycle False Forward
-               let !_A = assert (isNothing err `blame` err) ()
-               recCall numPrefix cCur cRest itemDialogState
-           })
+        , cycleKeyDef Forward
+        , cycleKeyDef Backward
+        , cycleLevelKeyDef Forward
+        , cycleLevelKeyDef Backward
         , (K.KM K.NoModifier K.LeftButtonRelease, DefItemKey
            { defLabel = Left ""
            , defCond = maySwitchLeader cCur && not (null hs)
