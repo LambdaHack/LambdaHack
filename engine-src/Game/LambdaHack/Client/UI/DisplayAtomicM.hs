@@ -867,7 +867,7 @@ spotItemBag verbose c bag = do
         "be located" <+> if locatedWhere == ppContainer EM.empty c
                          then ""  -- boring
                          else locatedWhere
-      subjectMaybe :: (ItemId, ItemQuant) -> m (Maybe (Int, MU.Part))
+      subjectMaybe :: (ItemId, ItemQuant) -> m (Maybe (Int, MU.Part, MU.Part))
       subjectMaybe (iid, kit@(k, _)) = do
         recordItemLid iid c
         itemFull <- getsState $ itemToFull iid
@@ -878,9 +878,11 @@ spotItemBag verbose c bag = do
             updateItemSlot c iid
             case c of
               CFloor{} -> do
-                let subject = partItemWs rwidth side factionD k localTime
-                                         itemFull kit
-                return $ Just (k, subject)
+                let subjectShort = partItemWsShort rwidth side factionD k
+                                                   localTime itemFull kit
+                    subjectLong = partItemWs rwidth side factionD k
+                                             localTime itemFull kit
+                return $ Just (k, subjectShort, subjectLong)
               _ -> return Nothing
           _ -> return Nothing  -- this item or another with the same @iid@
                                -- seen already (has a slot assigned); old news
@@ -890,15 +892,19 @@ spotItemBag verbose c bag = do
   subjectMaybes <- mapM subjectMaybe sortedAssocs
   let subjects = catMaybes subjectMaybes
       sendMsg plural = do
-        let subject = MU.WWandW $ map snd subjects
-            msg | plural = makeSentence [MU.SubjectVerb MU.PlEtc MU.Yes
-                                                        subject beLocated]
-                | otherwise = makeSentence [MU.SubjectVerbSg subject beLocated]
+        let subjectShort = MU.WWandW $ map (\(_, part, _) -> part) subjects
+            subjectLong = MU.WWandW $ map (\(_, _, part) -> part) subjects
+            msg subject =
+              if plural
+              then makeSentence [MU.SubjectVerb MU.PlEtc MU.Yes
+                                                subject beLocated]
+              else makeSentence [MU.SubjectVerbSg subject beLocated]
         resetXhair
-        msgAdd MsgItemMove msg
+        msgAdd MsgItemMove $ msg subjectShort
+        msgAdd MsgItemMoveLog $ msg subjectLong
   case subjects of
     [] -> return ()
-    [(1, _)] -> sendMsg False
+    [(1, _, _)] -> sendMsg False
     _ -> sendMsg True
   when verbose $ case c of
     CActor aid store -> do

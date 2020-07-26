@@ -294,12 +294,12 @@ partItemHigh width side factionD =
 -- The @count@ can be different than @itemK@ in @ItemFull@, e.g., when picking
 -- a subset of items to drop.
 partItemWsRanged :: Int -> FactionId -> FactionDict -> Bool -> DetailLevel
-                 -> Int -> Time -> ItemFull -> ItemQuant
+                 -> Int -> Int -> Time -> ItemFull -> ItemQuant
                  -> MU.Part
-partItemWsRanged width side factionD ranged detail count localTime
-                 itemFull kit =
-  let (name, powers) =
-        partItemN width side factionD ranged detail 4 localTime itemFull kit
+partItemWsRanged width side factionD ranged detail
+                 maxWordsToShow count localTime itemFull kit =
+  let (name, powers) = partItemN width side factionD ranged detail
+                       maxWordsToShow localTime itemFull kit
       arItem = aspectRecordFull itemFull
       periodic = IA.checkFlag Ability.Periodic arItem
       condition = IA.checkFlag Ability.Condition arItem
@@ -320,19 +320,19 @@ partItemWs :: Int -> FactionId -> FactionDict -> Int -> Time -> ItemFull
            -> ItemQuant
            -> MU.Part
 partItemWs width side factionD =
-  partItemWsRanged width side factionD False DetailMedium
+  partItemWsRanged width side factionD False DetailMedium 4
 
 partItemWsShort :: Int -> FactionId -> FactionDict -> Int -> Time -> ItemFull
                 -> ItemQuant
                 -> MU.Part
 partItemWsShort width side factionD =
-  partItemWsRanged width side factionD False DetailLow
+  partItemWsRanged width side factionD False DetailLow 4
 
 partItemWsLong :: Int -> FactionId -> FactionDict -> Int -> Time -> ItemFull
                -> ItemQuant
                -> MU.Part
 partItemWsLong width side factionD =
-  partItemWsRanged width side factionD False DetailHigh
+  partItemWsRanged width side factionD False DetailHigh 100
 
 partItemShortAW :: Int -> FactionId -> FactionDict -> Time -> ItemFull
                 -> ItemQuant
