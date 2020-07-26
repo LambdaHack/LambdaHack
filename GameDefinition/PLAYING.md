@@ -332,7 +332,7 @@ screen or the dashboard and execute it on the spot.
     ESC          open main menu/finish aiming
     RET or INS   open dashboard/accept target
     SPACE        clear messages and show history
-    S-TAB        cycle among all party members
+    TAB          cycle among all party members
     *            cycle crosshair among enemies
     /            cycle crosshair among items
     M            modify any admissible terrain

@@ -39,7 +39,7 @@ screen or the dashboard and execute it on the spot.
     ESC          open main menu/finish aiming
     RET or INS   open dashboard/accept target
     SPACE        clear messages and show history
-    S-TAB        cycle among all party members
+    TAB          cycle among all party members
     *            cycle crosshair among enemies
     /            cycle crosshair among items
     M            modify any admissible terrain
@@ -121,8 +121,10 @@ the starting item store. Each store is accessible from the dashboard as well.
 Terrain exploration and modification commands
 
  keys         command
- TAB          cycle among party members on the level
- S-TAB        cycle among all party members
+ TAB          cycle among all party members
+ S-TAB        cycle backwards among all party members
+ A-TAB        cycle among party members on the level
+ A-S-TAB      cycle backwards among party members on the level
  m            modify door by closing it
  M            modify any admissible terrain
  =            select (or deselect) party member
