@@ -117,7 +117,8 @@ brawl = ModeKind  -- sparse melee in daylight, with shade for melee ambush
       , "* Minimize losses"
       , "* Incapacitate all enemies ASAP"
       ]
-  , mdesc   = "Your research team disagrees over a drink with some gentlemen scientists about premises of a relative completeness theorem and there's only one way to settle that. Remember to keep your party together when opponents are spotted, or they might be tempted to silence solitary disputants one by one and so win the altercation."
+  , mdesc   = "Your research team disagrees over a drink with some gentlemen scientists about premises of a relative completeness theorem and there's only one way to settle that."
+      -- Not enough space with square fonts and also this is more of a hint than a flavour: Remember to keep your party together when opponents are spotted, or they might be tempted to silence solitary disputants one by one and so win the altercation.
   , mmotivation = "In addition to advancing game plot, this scenario trains melee, squad formation and stealth. The battle is completely symmetric, both in numbers, goals (incapacitate all enemies) and squad capabilities (only the pointman moves, while all others either melee or wait). Observe and mimic the enemies and savour the fairness --- you won't find any in the main crawl scenario that follows."
   , mhint = "Run a short distance with Shift or LMB, switch the pointman with Tab, repeat. In open terrain, if you keep distance between teammates, this resembles the leap frog infantry tactics. For best effects, end each sprint behind a cover or concealment.\nIf you get beaten repeatedly, try using all consumables you find. Ponder the hints from the defeat message, in particular the one about keeping your party together once the opponents are spotted. However, if you want to discover a winning tactics on your own, make sure to ignore any such tips until you succeed."
   }
