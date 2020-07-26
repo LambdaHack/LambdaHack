@@ -1582,15 +1582,17 @@ chooseItemMenuHuman cmdSemInCxtOfKM c = do
 
 generateMenu :: MonadClientUI m
              => (K.KM -> HumanCmd -> m (Either MError ReqUI))
-             -> [AttrLine] -> [(K.KM, (Text, HumanCmd))] -> [String] -> String
+             -> [(DisplayFont, [AttrLine])]
+             -> [(K.KM, (Text, HumanCmd))]
+             -> [String]
+             -> String
              -> m (Either MError ReqUI)
 generateMenu cmdSemInCxtOfKM blurb kds gameInfo menuName = do
   COps{corule} <- getsState scops
   CCUI{coscreen=ScreenContent{rwidth, rheight, rmainMenuLine}} <-
     getsSession sccui
   FontSetup{..} <- getFontSetup
-  let offset = 2
-      bindings =  -- key bindings to display
+  let bindings =  -- key bindings to display
         let fmt (k, (d, _)) =
               ( Just k
               , T.unpack
@@ -1611,12 +1613,32 @@ generateMenu cmdSemInCxtOfKM blurb kds gameInfo menuName = do
                  ++ bindings
       (menuOvLines, mkyxs) = unzip $ zipWith generate [0..] rawLines
       kyxs = catMaybes mkyxs
-      introLen = length blurb
-      introMaxLen = maximum $ 30 : map (textSize monoFont . attrLine) blurb
-      introOv = map (first $ K.PointUI (2 * rwidth - introMaxLen - offset))
-                $ zip [max 0 (rheight - introLen - offset) ..] blurb
-      ov = EM.insertWith (++) monoFont introOv
-           $ EM.singleton squareFont $ offsetOverlayX menuOvLines
+      introLen = sum $ map (length . snd) blurb
+      introWidths = concatMap (\(font, als) ->
+        map (\al -> let len = textSize monoFont (attrLine al)
+                    in len + if font == propFont
+                                && not (isSquareFont propFont)
+                             then - len `div` 8
+                             else 0)
+            als) blurb
+      introMaxWidth = maximum $ 30 : introWidths
+      zipAttrLines :: Int -> [AttrLine] -> (Overlay, Int)
+      zipAttrLines start als =
+        ( map (first $ K.PointUI (2 * rwidth - introMaxWidth - 2))
+          $ zip [start ..] als
+        , start + length als )
+      addOverlay :: (FontOverlayMap, Int) -> (DisplayFont, [AttrLine])
+                 -> (FontOverlayMap, Int)
+      addOverlay (!em, !start) (font, als) =
+        let (als2, start2) = zipAttrLines start als
+        in ( EM.insertWith (++) font als2 em
+           , start2 )
+      start0 = max 0 (rheight - introLen
+                      - if isSquareFont propFont then 1 else 2)
+      (ov, _) = foldl' addOverlay
+                       ( EM.singleton squareFont $ offsetOverlayX menuOvLines
+                       , start0 )
+                       blurb
   ekm <- displayChoiceScreen menuName ColorFull True
                              (menuToSlideshow (ov, kyxs)) [K.escKM]
   case ekm of
@@ -1656,7 +1678,8 @@ mainMenuHuman cmdSemInCxtOfKM = do
       glueLines ll = ll
       backstory | isSquareFont propFont = rintroScreen
                 | otherwise = glueLines rintroScreen
-  generateMenu cmdSemInCxtOfKM (map stringToAL backstory) kds gameInfo "main"
+  generateMenu cmdSemInCxtOfKM [(propFont, map stringToAL backstory)]
+               kds gameInfo "main"
 
 -- * MainMenuAutoOn
 
@@ -1722,7 +1745,7 @@ challengesMenuHuman :: MonadClientUI m
                     -> m (Either MError ReqUI)
 challengesMenuHuman cmdSemInCxtOfKM = do
   cops <- getsState scops
-  FontSetup{propFont} <- getFontSetup
+  FontSetup{..} <- getFontSetup
   svictories <- getsClient svictories
   snxtScenario <- getsClient snxtScenario
   nxtChal <- getsClient snxtChal
@@ -1747,14 +1770,22 @@ challengesMenuHuman cmdSemInCxtOfKM = do
             , (K.mkKM "Escape", ("back to main menu", MainMenu)) ]
       gameInfo = map T.unpack [ "Setup and start new game:"
                               , "" ]
-      width = if isSquareFont propFont then 42 else 84
+      widthProp = if isSquareFont propFont then 42 else 82
+      widthMono = if isSquareFont propFont then 42 else 70
       duplicateEOL '\n' = "\n\n"
       duplicateEOL c = T.singleton c
-
-      blurb = splitAttrString width $ textToAS $
-        T.concatMap duplicateEOL (mmotivation gameMode <> "\n")
-        <> mrules gameMode
-
+      blurb =
+        [ ( propFont
+          , splitAttrString widthProp
+            $ textFgToAS Color.BrBlack
+            $ T.concatMap duplicateEOL (mdesc gameMode <> "\n") )
+        , ( monoFont
+          , splitAttrString widthMono
+            $ textToAS
+            $ mrules gameMode <> "\n\n"
+              <>
+              T.concatMap duplicateEOL (mmotivation gameMode) )
+        ]
   generateMenu cmdSemInCxtOfKM blurb kds gameInfo "challenge"
 
 -- * GameScenarioIncr
