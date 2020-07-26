@@ -61,16 +61,16 @@ infixr 6 <+:>  -- matches Monoid.<>
   else l1 ++ [Color.spaceAttrW32] ++ l2
 
 -- We consider only these, because they are short and form a closed category.
-nonbreakableRev :: [AttrString]
-nonbreakableRev = map stringToAS ["eht", "a", "na", "ehT", "A", "nA"]
+nonbreakableRev :: [String]
+nonbreakableRev = ["eht", "a", "na", "ehT", "A", "nA", "I"]
 
 isPrefixOfNonbreakable :: AttrString -> Bool
 isPrefixOfNonbreakable s =
   let isPrefixOfNb sRev nbRev = case stripPrefix nbRev sRev of
         Nothing -> False
         Just [] -> True
-        Just (c : _) -> isSpace $ Color.charFromW32 c
-  in any (isPrefixOfNb s) nonbreakableRev
+        Just (c : _) -> isSpace c
+  in any (isPrefixOfNb $ map Color.charFromW32 s) nonbreakableRev
 
 breakAtSpace :: AttrString -> (AttrString, AttrString)
 breakAtSpace lRev =
