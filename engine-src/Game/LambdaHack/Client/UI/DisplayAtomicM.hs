@@ -660,9 +660,9 @@ itemAidVerbMU msgClass aid verb iid ek = do
 
 manyItemsAidVerbMU :: MonadClientUI m
                    => MsgClass -> ActorId -> MU.Part
-                   -> ItemBag -> (Int -> Either (Maybe Int) Int)
+                   -> [(ItemId, ItemQuant)] -> (Int -> Either (Maybe Int) Int)
                    -> m ()
-manyItemsAidVerbMU msgClass aid verb bag ekf = do
+manyItemsAidVerbMU msgClass aid verb sortedAssocs ekf = do
   CCUI{coscreen=ScreenContent{rwidth}} <- getsSession sccui
   body <- getsState $ getActorBody aid
   side <- getsClient sside
@@ -673,7 +673,6 @@ manyItemsAidVerbMU msgClass aid verb bag ekf = do
   subject <- partActorLeader aid
   -- The item may no longer be in @c@, but it was.
   itemToF <- getsState $ flip itemToFull
-  getKind <- getsState $ flip getIidKindId
   let object (iid, (k, _)) =
         let itemFull = itemToF iid
         in case ekf k of
@@ -687,10 +686,8 @@ manyItemsAidVerbMU msgClass aid verb bag ekf = do
             let (name1, powers) =
                   partItemShort rwidth side factionD localTime itemFull fakeKit
             in MU.Phrase ["the", MU.Car1Ws n name1, powers]
-      sortItems iis = map snd $ sortOn fst
-                      $ map (\(iid, kit) -> (getKind iid, (iid, kit))) iis
       msg = makeSentence [ MU.SubjectVerbSg subject verb
-                         , MU.WWandW $ map object $ sortItems $ EM.assocs bag]
+                         , MU.WWandW $ map object sortedAssocs]
   msgAdd msgClass msg
 
 createActorUI :: MonadClientUI m => Bool -> ActorId -> Actor -> m ()
@@ -889,7 +886,8 @@ spotItemBag verbose c bag = do
                                -- seen already (has a slot assigned); old news
       sortItems iis = map snd $ sortOn fst
                       $ map (\(iid, kit) -> (getKind iid, (iid, kit))) iis
-  subjectMaybes <- mapM subjectMaybe $ sortItems $ EM.assocs bag
+      sortedAssocs = sortItems $ EM.assocs bag
+  subjectMaybes <- mapM subjectMaybe sortedAssocs
   let subjects = catMaybes subjectMaybes
       sendMsg plural = do
         let subject = MU.WWandW $ map snd subjects
@@ -910,9 +908,9 @@ spotItemBag verbose c bag = do
       let underAI = isAIFact fact
       mleader <- getsClient sleader
       if Just aid == mleader && not underAI then
-        manyItemsAidVerbMU MsgItemMove aid verb bag Right
+        manyItemsAidVerbMU MsgItemMove aid verb sortedAssocs Right
       else when (not (bproj b) && bhp b > 0) $  -- don't announce death drops
-        manyItemsAidVerbMU MsgItemMove aid verb bag (Left . Just)
+        manyItemsAidVerbMU MsgItemMove aid verb sortedAssocs (Left . Just)
     _ -> return ()
 
 recordItemLid :: MonadClientUI m => ItemId -> Container -> m ()
