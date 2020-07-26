@@ -1344,7 +1344,7 @@ helpHuman cmdSemInCxtOfKM = do
     <- getsSession sccui
   fontSetup@FontSetup{..} <- getFontSetup
   gameMode <- getGameMode
-  let width = if isSquareFont propFont then 42 else 84
+  let width = if isSquareFont propFont then 79 else 84
       duplicateEOL '\n' = "\n\n"
       duplicateEOL c = T.singleton c
       blurb = splitAttrString width $ textToAS
