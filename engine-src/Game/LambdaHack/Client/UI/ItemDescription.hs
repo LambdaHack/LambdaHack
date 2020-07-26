@@ -1,8 +1,8 @@
 -- | Descriptions of items.
 module Game.LambdaHack.Client.UI.ItemDescription
   ( partItem, partItemShort, partItemShortest, partItemHigh
-  , partItemWs, partItemWsShort, partItemWsLong, partItemWsRanged
-  , partItemShortAW, partItemMediumAW, partItemShortWownW
+  , partItemWs, partItemWsShortest, partItemWsShort, partItemWsLong
+  , partItemWsRanged, partItemShortAW, partItemMediumAW, partItemShortWownW
   , viewItem, itemDesc
 #ifdef EXPOSE_INTERNAL
     -- * Internal operations
@@ -14,7 +14,7 @@ import Prelude ()
 
 import Game.LambdaHack.Core.Prelude
 
-import           Data.Char (isAlpha)
+import           Data.Char (isAlpha, isAlphaNum)
 import qualified Data.EnumMap.Strict as EM
 import qualified Data.Text as T
 import qualified NLP.Miniutter.English as MU
@@ -81,12 +81,12 @@ partItemN3 width side factionD ranged detailLevel maxWordsToShow localTime
                     then "us"
                     else gname (factionD EM.! fid)]
         _ -> []
-      powerTsBeginsWithAlpha = case map T.unpack powerTs of
-        (c : _) : _ -> isAlpha c
+      powerTsBeginsWithAlphaOrNum = case map T.unpack powerTs of
+        (c : _) : _ -> isAlpha c || isAlphaNum c
         _ -> False
       -- Ranged damage displayed even if lack of space, to prevent confusion
       -- and ... when only ranged damage is missing from the description.
-      displayPowers = maxWordsToShow > 1 || powerTsBeginsWithAlpha
+      displayPowers = maxWordsToShow > 1 || powerTsBeginsWithAlphaOrNum
       ts = lsource
            ++ (if displayPowers
                then take maxWordsToShow powerTs
@@ -319,6 +319,12 @@ partItemWs :: Int -> FactionId -> FactionDict -> Int -> Time -> ItemFull
            -> MU.Part
 partItemWs width side factionD =
   partItemWsRanged width side factionD False DetailMedium 4
+
+partItemWsShortest :: Int -> FactionId -> FactionDict -> Int -> Time -> ItemFull
+                   -> ItemQuant
+                   -> MU.Part
+partItemWsShortest width side factionD =
+  partItemWsRanged width side factionD False DetailLow 1
 
 partItemWsShort :: Int -> FactionId -> FactionDict -> Int -> Time -> ItemFull
                 -> ItemQuant

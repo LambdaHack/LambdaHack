@@ -878,10 +878,10 @@ spotItemBag verbose c bag = do
             updateItemSlot c iid
             case c of
               CFloor{} -> do
-                let subjectShort = partItemWsShort rwidth side factionD k
-                                                   localTime itemFull kit
-                    subjectLong = partItemWs rwidth side factionD k
-                                             localTime itemFull kit
+                let subjectShort = partItemWsShortest rwidth side factionD k
+                                                      localTime itemFull kit
+                    subjectLong = partItemWsLong rwidth side factionD k
+                                                 localTime itemFull kit
                 return $ Just (k, subjectShort, subjectLong)
               _ -> return Nothing
           _ -> return Nothing  -- this item or another with the same @iid@
