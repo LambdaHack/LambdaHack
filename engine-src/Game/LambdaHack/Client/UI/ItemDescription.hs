@@ -226,14 +226,12 @@ textAllPowers width detailLevel skipRecharging
                                        -- timeout is called "cooldown" in UI
               _ -> error $ "" `showFailure` mtimeout
        in ( onCombineTs
-          , [ damageText
-            | detLev > DetailLow && (not periodic || IK.idamage itemKind == 0) ]
+          , [damageText]
             ++ [timeoutText | detLev > DetailLow && not periodic]
-            ++ if detLev >= DetailLow
-               then aes ++ if detLev >= DetailAll
-                           then [onCombine, onSmash]
-                           else [onCombineRawTs]
-               else [] )
+            ++ aes
+            ++ if detLev >= DetailAll
+               then [onCombine, onSmash]
+               else [onCombineRawTs] )
       hurtMult = armorHurtCalculation True (IA.aSkills arItem)
                                            Ability.zeroSkills
       dmg = Dice.meanDice $ IK.idamage itemKind
