@@ -53,7 +53,7 @@ standardKeysAndMouse = InputContentRaw $ map evalKeyDef $
                , ByAimMode AimModeCmd { exploration =
                                           ExecuteIfClear MainMenuAutoOff
                                       , aiming = Cancel } ))
-  , ("C-Escape", ([CmdNoHelp], "", MainMenuAutoOn))
+  , ("C-Escape", ([], "", MainMenuAutoOn))
       -- required by frontends; not shown
   , ("Return", ( [CmdMinimal, CmdAim]
                , "open dashboard/accept target"
@@ -79,7 +79,7 @@ standardKeysAndMouse = InputContentRaw $ map evalKeyDef $
   , ("%", ([CmdMinimal, CmdMeta], "yell/yawn and stop sleeping", Yell))
 
   -- Item menu, first part of item use commands
-  , ("comma", grabItems "")
+  , ("comma", grabItems "")  -- only show extra key, not extra entry
   , ("r", dropItems "remove item(s)")
   , ("f", addCmdCategory CmdItemMenu $ projectA flingTs)
   , ("C-f", addCmdCategory CmdItemMenu
@@ -161,12 +161,10 @@ standardKeysAndMouse = InputContentRaw $ map evalKeyDef $
             , "aim at nearest downstairs"
             , XhairStair False ))
   , ("<", ([CmdAim], "move aiming one level up" , AimAscend 1))
-  , ("C-<", ( [CmdNoHelp], "move aiming 10 levels up"
-            , AimAscend 10) )
+  , ("C-<", ([], "move aiming 10 levels up", AimAscend 10))
   , (">", ([CmdAim], "move aiming one level down", AimAscend (-1)))
       -- 'lower' would be misleading in some games, just as 'deeper'
-  , ("C->", ( [CmdNoHelp], "move aiming 10 levels down"
-            , AimAscend (-10)) )
+  , ("C->", ([], "move aiming 10 levels down", AimAscend (-10)))
   , ("BackSpace" , ( [CmdAim]
                    , "clear chosen item and crosshair"
                    , ComposeUnlessError ClearTargetIfItemClear ItemClear))
@@ -179,12 +177,12 @@ standardKeysAndMouse = InputContentRaw $ map evalKeyDef $
   , ("?", ([CmdMeta], "display help", Hint))
   , ("F1", ([CmdMeta, CmdDashboard], "display help immediately", Help))
   , ("F12", ([CmdMeta], "open dashboard", Dashboard))
-  , ("v", repeatLastTriple 1)
-  , ("C-v", addCmdCategory CmdNoHelp $ replaceDesc "" $ repeatLastTriple 25)
-  , ("A-v", addCmdCategory CmdNoHelp $ replaceDesc "" $ repeatLastTriple 100)
-  , ("V", repeatTriple 1)
-  , ("C-V", addCmdCategory CmdNoHelp $ replaceDesc "" $ repeatTriple 25)
-  , ("A-V", addCmdCategory CmdNoHelp $ replaceDesc "" $ repeatTriple 100)
+  , ("v", repeatLastTriple 1 [CmdMeta])
+  , ("C-v", repeatLastTriple 25 [])
+  , ("A-v", repeatLastTriple 100 [])
+  , ("V", repeatTriple 1 [CmdMeta])
+  , ("C-V", repeatTriple 25 [])
+  , ("A-V", repeatTriple 100 [])
   , ("'", ([CmdMeta], "start recording commands", Record))
   , ("C-S", ([CmdMeta], "save game backup", GameSave))
   , ("C-P", ([CmdMeta], "print screen", PrintScreen))
@@ -205,22 +203,22 @@ standardKeysAndMouse = InputContentRaw $ map evalKeyDef $
     , ([CmdMouse], "modify terrain at pointer", AlterWithPointer) )
   , ("MiddleButtonRelease", mouseMMB)
   , ("C-RightButtonRelease", replaceDesc "" mouseMMB)
-  , ( "C-S-LeftButtonRelease",
-      addCmdCategory CmdNoHelp $ replaceDesc "" mouseMMB )
+  , ( "C-S-LeftButtonRelease", let (_, _, cmd) = mouseMMB
+                               in ([], "", cmd) )
   , ("WheelNorth", ([CmdMouse], "swerve the aiming line", Macro ["+"]))
   , ("WheelSouth", ([CmdMouse], "unswerve the aiming line", Macro ["-"]))
 
   -- Debug and others not to display in help screens
-  , ("C-semicolon", ( [CmdNoHelp]
+  , ("C-semicolon", ( []
                     , "move one step towards the crosshair"
                     , MoveOnceToXhair ))
-  , ("C-colon", ( [CmdNoHelp]
+  , ("C-colon", ( []
                 , "run collectively one step towards the crosshair"
                 , RunOnceToXhair ))
-  , ("C-quotedbl", ( [CmdNoHelp]
+  , ("C-quotedbl", ( []
                    , "continue towards the crosshair"
                    , ContinueToXhair ))
-  , ("C-comma", ([CmdNoHelp], "run once ahead", RunOnceAhead))
+  , ("C-comma", ([], "run once ahead", RunOnceAhead))
   , ("safe1", ( [CmdInternal]
               , "go to pointer for 25 steps"
               , goToCmd ))

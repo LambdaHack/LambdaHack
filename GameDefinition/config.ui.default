@@ -20,7 +20,7 @@ Cmd_2 = ("KP_Insert", ([CmdAim], "", ByAimMode AimModeCmd {exploration = Execute
 ;   Cmd_3 = ("a", ([CmdItem], "My Happy Cmd", Macro["t"]))
 ;
 ; Explanation: to (t)rigger a consumable item for use, you normally use
-;               the key press 't'.
+;              the key press 't'.
 ; Suppose you would like to use the key press 'a' instead of 't'.
 ;   Cmd_3          - can be anything as long as it doesn't conflict or
 ;                    overlap with a binding already defined

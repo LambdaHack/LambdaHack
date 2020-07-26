@@ -22,7 +22,7 @@ import Game.LambdaHack.Definition.Defs
 data CmdCategory =
     CmdMainMenu | CmdDashboard | CmdItemMenu
   | CmdMove | CmdItem | CmdAim | CmdMeta | CmdMouse
-  | CmdInternal | CmdNoHelp | CmdDebug | CmdMinimal
+  | CmdInternal | CmdDebug | CmdMinimal
   deriving (Show, Read, Eq, Generic)
 
 instance NFData CmdCategory
@@ -39,7 +39,6 @@ categoryDescription CmdAim = "All aiming commands"
 categoryDescription CmdMeta = "Assorted commands"
 categoryDescription CmdMouse = "Mouse"
 categoryDescription CmdInternal = "Internal"
-categoryDescription CmdNoHelp = "Ignored in help"
 categoryDescription CmdDebug = "Debug"
 categoryDescription CmdMinimal = "The minimal command set"
 
@@ -182,7 +181,7 @@ data HumanCmd =
   | AimEnemy
   | AimItem
   | AimAscend Int
-  | EpsIncr Direction 
+  | EpsIncr Direction
   | XhairUnknown
   | XhairItem
   | XhairStair Bool

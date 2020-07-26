@@ -116,7 +116,8 @@ makeData muiOptions (InputContentRaw copsClient) =
   , brevMap = M.fromListWith (flip (++)) $ concat
       [ [(cmd, [k])]
       | (k, (cats, _desc, cmd)) <- bcmdList
-      , all (`notElem` [CmdMainMenu, CmdDebug, CmdNoHelp]) cats
+      , not (null cats)
+        && all (`notElem` [CmdMainMenu, CmdDebug]) cats
       ]
   }
 
@@ -142,19 +143,21 @@ moveItemTriple stores1 store2 object auto =
       desc = makePhrase [verb, object]
   in ([CmdItemMenu, CmdItem], desc, MoveItem stores1 store2 Nothing auto)
 
-repeatTriple :: Int -> CmdTriple
-repeatTriple n = ( [CmdMeta]
-                 , if n == 1
-                   then "voice recorded macro again"
-                   else "voice recorded macro" <+> tshow n <+> "times"
-                 , Repeat n )
+repeatTriple :: Int -> [CmdCategory] -> CmdTriple
+repeatTriple n cats =
+  ( cats
+  , if n == 1
+    then "voice recorded macro again"
+    else "voice recorded macro" <+> tshow n <+> "times"
+  , Repeat n )
 
-repeatLastTriple :: Int -> CmdTriple
-repeatLastTriple n = ( [CmdMeta]
-                     , if n == 1
-                       then "voice last action again"
-                       else "voice last action" <+> tshow n <+> "times in a row"
-                     , RepeatLast n )
+repeatLastTriple :: Int -> [CmdCategory] -> CmdTriple
+repeatLastTriple n cats =
+  ( cats
+  , if n == 1
+    then "voice last action again"
+    else "voice last action" <+> tshow n <+> "times in a row"
+  , RepeatLast n )
 
 -- @AimFloor@ is not there, but @AimEnemy@ and @AimItem@ almost make up for it.
 mouseLMB :: HumanCmd -> Text -> CmdTriple
