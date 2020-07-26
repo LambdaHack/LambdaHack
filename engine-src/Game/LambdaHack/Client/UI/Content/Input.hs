@@ -8,6 +8,7 @@ module Game.LambdaHack.Client.UI.Content.Input
   , goToCmd, runToAllCmd, autoexploreCmd, autoexplore25Cmd
   , aimFlingCmd, projectI, projectA, flingTs, applyIK, applyI
   , grabItems, dropItems, descIs, defaultHeroSelect, macroRun25
+  , memberCycle, memberCycleLevel
 #ifdef EXPOSE_INTERNAL
     -- * Internal operations
   , replaceCmd, projectICmd, grabCmd, dropCmd
@@ -283,3 +284,17 @@ defaultHeroSelect k = ([Char.intToDigit k], ([CmdMeta], "", PickLeader k))
 
 macroRun25 :: [String]
 macroRun25 = ["C-comma", "C-v"]
+
+memberCycle :: Direction -> [CmdCategory] -> CmdTriple
+memberCycle d cats = ( cats
+                     , "cycle"
+                       <+> (if d == Backward then "backwards" else "")
+                       <+> "among all party members"
+                     , MemberCycle d )
+
+memberCycleLevel :: Direction -> [CmdCategory] -> CmdTriple
+memberCycleLevel d cats = ( cats
+                          , "cycle"
+                            <+> (if d == Backward then "backwards" else "")
+                            <+> " among party members on the level"
+                          , MemberCycleLevel d )

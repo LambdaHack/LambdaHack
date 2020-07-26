@@ -62,19 +62,11 @@ standardKeysAndMouse = InputContentRaw $ map evalKeyDef $
   , ("space", ( [CmdMinimal, CmdMeta]
               , "clear messages and show history"
               , ExecuteIfClear LastHistory ))
-  , ("Tab", ( [CmdMinimal, CmdMove]
-            , "cycle among all party members"
-            , MemberCycle Forward))
-      -- listed here to keep proper order
-  , ("BackTab", ( [CmdMove]
-            , "cycle backwards among all party members"
-            , MemberCycle Backward))
-  , ("A-Tab", ( [CmdMove]
-                , "cycle among party members on the level"
-                , MemberCycleLevel Forward))
-  , ("A-BackTab", ( [CmdMove]
-                , "cycle backwards among party members on the level"
-                , MemberCycleLevel Backward))
+  , ("Tab", memberCycle Forward [CmdMinimal, CmdMove])
+      -- listed here to keep proper order of the minimal cheat sheet
+  , ("BackTab", memberCycle Backward [CmdMove])
+  , ("A-Tab", memberCycleLevel Forward [CmdMove])
+  , ("A-BackTab", memberCycleLevel Backward [CmdMove])
   , ("*", ( [CmdMinimal, CmdAim]
           , "cycle crosshair among enemies"
           , AimEnemy ))
