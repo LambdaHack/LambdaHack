@@ -67,6 +67,9 @@ standardKeysAndMouse = InputContentRaw $ map evalKeyDef $
   , ("BackTab", memberCycle Backward [CmdMove])
   , ("A-Tab", memberCycleLevel Forward [CmdMove])
   , ("A-BackTab", memberCycleLevel Backward [CmdMove])
+  , ("C-Tab", memberCycleLevel Forward [])
+  , ("C-BackTab", memberCycleLevel Backward [])
+      -- TODO: the keys are too long to fit in help menu, unless vertically
   , ("*", ( [CmdMinimal, CmdAim]
           , "cycle crosshair among enemies"
           , AimEnemy ))
