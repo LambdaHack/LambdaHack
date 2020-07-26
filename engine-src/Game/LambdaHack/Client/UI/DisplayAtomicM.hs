@@ -8,7 +8,7 @@ module Game.LambdaHack.Client.UI.DisplayAtomicM
   , updateItemSlot, markDisplayNeeded, lookAtMove
   , aidVerbMU, aidVerbMU0, aidVerbDuplicateMU
   , itemVerbMU, itemAidVerbMU, manyItemsAidVerbMU
-  , createActorUI, destroyActorUI, spotItem, moveActor, displaceActorUI
+  , createActorUI, destroyActorUI, spotItemBag, moveActor, displaceActorUI
   , moveItemUI, quitFactionUI
   , displayGameOverLoot, displayGameOverAnalytics
   , discover, ppSfxMsg, strike
@@ -22,7 +22,6 @@ import Game.LambdaHack.Core.Prelude
 import qualified Data.Char as Char
 import qualified Data.EnumMap.Strict as EM
 import qualified Data.EnumSet as ES
-import           Data.Key (mapWithKeyM_)
 import qualified Data.Ord as Ord
 import qualified Data.Text as T
 import           Data.Tuple
@@ -171,7 +170,7 @@ displayRespUpdAtomicUI cmd = case cmd of
       markDisplayNeeded lid
   UpdSpotActor aid body -> createActorUI False aid body
   UpdLoseActor aid body -> destroyActorUI False aid body
-  UpdSpotItem verbose iid kit c -> spotItem verbose iid kit c
+  UpdSpotItem verbose iid kit c -> spotItemBag verbose c $ EM.singleton iid kit
   UpdLoseItem True iid kit c@(CActor aid _) -> do
     b <- getsState $ getActorBody aid
     when (not (bproj b) && bhp b > 0) $ do  -- don't spam
@@ -179,21 +178,7 @@ displayRespUpdAtomicUI cmd = case cmd of
       let verb = MU.Text $ makePhrase $ "be removed from" : ownW
       itemVerbMUShort MsgItemMove iid kit verb c
   UpdLoseItem{} -> return ()
-  UpdSpotItemBag verbose c bag -> do
-    mapWithKeyM_ (\iid kit -> spotItem False iid kit c) bag
-      -- @False@ for less spam and becuase summarized below
-    when verbose $ case c of
-      CActor aid store -> do
-        let verb = MU.Text $ verbCStore store
-        b <- getsState $ getActorBody aid
-        fact <- getsState $ (EM.! bfid b) . sfactionD
-        let underAI = isAIFact fact
-        mleader <- getsClient sleader
-        if Just aid == mleader && not underAI then
-          manyItemsAidVerbMU MsgItemMove aid verb bag Right
-        else when (not (bproj b) && bhp b > 0) $  -- don't spam
-          manyItemsAidVerbMU MsgItemMove aid verb bag (Left . Just)
-      _ -> return ()
+  UpdSpotItemBag verbose c bag -> spotItemBag verbose c bag
   UpdLoseItemBag{} -> return ()  -- rarely interesting and can be very long
   -- Move actors and items.
   UpdMoveActor aid source target -> moveActor aid source target
@@ -851,45 +836,72 @@ destroyActorUI destroy aid b = do
     -- If pushed, animate spotting again, to draw attention to pushing.
     markDisplayNeeded (blid b)
 
-spotItem :: MonadClientUI m
-         => Bool -> ItemId -> ItemQuant -> Container -> m ()
-spotItem verbose iid kit@(k, _) c = do
+spotItemBag :: forall m. MonadClientUI m => Bool -> Container -> ItemBag -> m ()
+spotItemBag verbose c bag = do
   -- This is due to a move, or similar, which will be displayed,
   -- so no extra @markDisplayNeeded@ needed here and in similar places.
-  recordItemLid iid c
+  CCUI{coscreen=ScreenContent{rwidth}} <- getsSession sccui
+  side <- getsClient sside
+  getKind <- getsState $ flip getIidKindId
+  lid <- getsState $ lidFromC c
+  localTime <- getsState $ getLocalTime lid
+  factionD <- getsState sfactionD
+  -- Queried just once, so many copies of a new item can be reported. OK.
   ItemSlots itemSlots <- getsSession sslots
-  arItem <- getsState $ aspectRecordFromIid iid
-  let slore = IA.loreFromContainer arItem c
-  case lookup iid $ map swap $ EM.assocs $ itemSlots EM.! slore of
-    Nothing -> do  -- never seen or would have a slot
-      updateItemSlot c iid
-      case c of
-        CFloor lid p -> do
-          sxhairOld <- getsSession sxhair
-          case sxhairOld of
-            Just TEnemy{} -> return ()  -- probably too important to overwrite
-            Just (TPoint TEnemyPos{} _ _) -> return ()
-            Just (TPoint TStash{} _ _) -> return ()
-            Just (TVector _) -> return ()  -- explicitly set; keep it
-            _ -> do
-              -- Don't steal xhair if it's only an item on another level.
-              -- For enemies, OTOH, capture xhair to alarm player.
-              lidV <- viewedLevelUI
-              when (lid == lidV) $ do
-                bag <- getsState $ getFloorBag lid p
-                modifySession $ \sess ->
-                  sess { sxhair = Just $ TPoint (TItem bag) lidV p
-                       , sitemSel = Nothing }  -- reset flinging totally
-          factionD <- getsState sfactionD
-          let locatedWhere = ppContainer factionD c
-              beLocated = MU.Text $
-                "be located" <+> if locatedWhere == ppContainer EM.empty c
-                                 then ""  -- boring
-                                 else locatedWhere
-          itemVerbMU MsgItemMove iid kit beLocated c
+  sxhairOld <- getsSession sxhair
+  let resetXhair = case c of
+        CFloor _ p -> case sxhairOld of
+          Just TEnemy{} -> return ()  -- probably too important to overwrite
+          Just (TPoint TEnemyPos{} _ _) -> return ()
+          Just (TPoint TStash{} _ _) -> return ()
+          Just (TVector _) -> return ()  -- explicitly set; keep it
+          _ -> do
+            -- Don't steal xhair if it's only an item on another level.
+            -- For enemies, OTOH, capture xhair to alarm player.
+            lidV <- viewedLevelUI
+            when (lid == lidV) $ do
+              bagFloor <- getsState $ getFloorBag lid p
+              modifySession $ \sess ->
+                sess { sxhair = Just $ TPoint (TItem bagFloor) lidV p
+                     , sitemSel = Nothing }  -- reset flinging totally
         _ -> return ()
-    _ -> return ()  -- this item or another with the same @iid@
-                    -- seen already (has a slot assigned), so old news
+      locatedWhere = ppContainer factionD c
+      beLocated = MU.Text $
+        "be located" <+> if locatedWhere == ppContainer EM.empty c
+                         then ""  -- boring
+                         else locatedWhere
+      subjectMaybe :: (ItemId, ItemQuant) -> m (Maybe (Int, MU.Part))
+      subjectMaybe (iid, kit@(k, _)) = do
+        recordItemLid iid c
+        itemFull <- getsState $ itemToFull iid
+        let arItem = aspectRecordFull itemFull
+            slore = IA.loreFromContainer arItem c
+        case lookup iid $ map swap $ EM.assocs $ itemSlots EM.! slore of
+          Nothing -> do  -- never seen or would have a slot
+            updateItemSlot c iid
+            case c of
+              CFloor{} -> do
+                let subject = partItemWs rwidth side factionD k localTime
+                                         itemFull kit
+                return $ Just (k, subject)
+              _ -> return Nothing
+          _ -> return Nothing  -- this item or another with the same @iid@
+                               -- seen already (has a slot assigned); old news
+      sortItems iis = map snd $ sortOn fst
+                      $ map (\(iid, kit) -> (getKind iid, (iid, kit))) iis
+  subjectMaybes <- mapM subjectMaybe $ sortItems $ EM.assocs bag
+  let subjects = catMaybes subjectMaybes
+      sendMsg plural = do
+        let subject = MU.WWandW $ map snd subjects
+            msg | plural = makeSentence [MU.SubjectVerb MU.PlEtc MU.Yes
+                                                        subject beLocated]
+                | otherwise = makeSentence [MU.SubjectVerbSg subject beLocated]
+        resetXhair
+        msgAdd MsgItemMove msg
+  case subjects of
+    [] -> return ()
+    [(1, _)] -> sendMsg False
+    _ -> sendMsg True
   when verbose $ case c of
     CActor aid store -> do
       let verb = MU.Text $ verbCStore store
@@ -898,9 +910,9 @@ spotItem verbose iid kit@(k, _) c = do
       let underAI = isAIFact fact
       mleader <- getsClient sleader
       if Just aid == mleader && not underAI then
-        itemAidVerbMU MsgItemMove aid verb iid (Right k)
+        manyItemsAidVerbMU MsgItemMove aid verb bag Right
       else when (not (bproj b) && bhp b > 0) $  -- don't announce death drops
-        itemAidVerbMU MsgItemMove aid verb iid (Left $ Just k)
+        manyItemsAidVerbMU MsgItemMove aid verb bag (Left . Just)
     _ -> return ()
 
 recordItemLid :: MonadClientUI m => ItemId -> Container -> m ()
