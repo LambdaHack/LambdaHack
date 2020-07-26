@@ -292,7 +292,7 @@ transition psuit prompt promptGeneric permitMulitple
         EM.filterWithKey hasPrefixOpen suitableItemSlotsAll
       bagSuit = EM.fromList $ map (\iid -> (iid, bagAllSuit EM.! iid))
                                   (EM.elems suitableItemSlotsOpen)
-      nextContainers direction = case direction of 
+      nextContainers direction = case direction of
         Forward -> case cRest ++ [cCur] of
           c1 : rest -> (c1, rest)
           [] -> error $ "" `showFailure` cRest
@@ -314,7 +314,7 @@ transition psuit prompt promptGeneric permitMulitple
       cycleKeyDef direction =
         let km = revCmd $ MemberCycle direction
         in (km, DefItemKey
-               { defLabel = Right km
+               { defLabel = if direction == Forward then Right km else Left ""
                , defCond = maySwitchLeader cCur && not (autoDun || null hs)
                , defAction = \_ -> do
                    err <- memberCycle False direction
@@ -324,7 +324,7 @@ transition psuit prompt promptGeneric permitMulitple
       cycleLevelKeyDef direction =
         let km = revCmd $ MemberCycleLevel direction
         in (km, DefItemKey
-                { defLabel = Right km
+                { defLabel = Left ""
                 , defCond = maySwitchLeader cCur
                             && any (\(_, b, _) -> blid b == blid body) hs
                 , defAction = \_ -> do
