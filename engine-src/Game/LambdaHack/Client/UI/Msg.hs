@@ -375,6 +375,8 @@ scrapRepetition History{ newReport = Report newMsgs
                          then init s
                          else s
           f (RepMsgN s2 _) = butLastEOL (msgLine s1) == butLastEOL (msgLine s2)
+                             && msgClass s1 == msgClass s2
+                                  -- the class may not display or not save
       in case break f rest1 of
         (_, []) | commutative s1 -> case break f oldMsgs of
           (noDup, RepMsgN s2 n2 : rest2) ->
