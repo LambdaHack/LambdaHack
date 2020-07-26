@@ -1515,7 +1515,7 @@ itemMenuHuman cmdSemInCxtOfKM = do
                                   ([], ["", keyCaption]) ([], [])
               t0 = makeSentence [ MU.SubjectVerbSg (partActor bUI) "choose"
                                 , "an item", MU.Text $ ppCStoreIn fromCStore ]
-              alRep = renderReport report
+              alRep = renderReport True report
               al1 | null alRep = textToAS t0
                   | otherwise = alRep ++ stringToAS "\n" ++ textToAS t0
               splitHelp (al, okx) =

@@ -299,7 +299,9 @@ nullReport (Report l) = null l
 
 nullFilteredReport :: Report -> Bool
 nullFilteredReport (Report l) =
-  null $ filter (\(RepMsgN msg n) -> n > 0 && isDisplayed (msgClass msg)) l
+  null $ filter (\(RepMsgN msg n) -> n > 0
+                                     && (isSavedToHistory (msgClass msg)
+                                         || isDisplayed (msgClass msg))) l
 
 -- | Add a message to the end of the report.
 snocReport :: Report -> Msg -> Int -> Report
@@ -312,10 +314,12 @@ consReport Msg{msgLine=[]} rep = rep
 consReport y (Report r) = Report $ r ++ [RepMsgN y 1]
 
 -- | Render a report as a (possibly very long) 'AttrString'. Filter out
--- messages not meant for display.
-renderReport :: Report -> AttrString
-renderReport (Report r) =
-  let rep = Report $ filter (isDisplayed . msgClass . repMsg) r
+-- messages not meant for display, unless not displaying, but recalling.
+renderReport :: Bool -> Report -> AttrString
+renderReport displaying (Report r) =
+  let rep = Report $ if displaying
+                     then filter (isDisplayed . msgClass . repMsg) r
+                     else r
   in renderWholeReport rep
 
 -- | Render a report as a (possibly very long) 'AttrString'.
@@ -426,7 +430,7 @@ renderTimeReport :: Time -> Report -> [AttrString]
 renderTimeReport !t (Report r) =
   let turns = t `timeFitUp` timeTurn
       rep = Report $ filter (isSavedToHistory . msgClass . repMsg) r
-  in [ stringToAS (show turns ++ ": ") ++ renderReport rep
+  in [ stringToAS (show turns ++ ": ") ++ renderReport False rep
      | not $ nullReport rep ]
 
 lengthHistory :: History -> Int
