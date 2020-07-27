@@ -6,7 +6,7 @@ module Game.LambdaHack.Content.ModeKind
   , Caves, Roster(..), Outcome(..)
   , HiCondPoly, HiSummand, HiPolynomial, HiIndeterminant(..)
   , Player(..), LeaderMode(..), AutoLeader(..)
-  , genericEndMessages
+  , victoryOutcomes, genericEndMessages
 #ifdef EXPOSE_INTERNAL
     -- * Internal operations
   , validateSingle, validateAll
@@ -147,6 +147,9 @@ data AutoLeader = AutoLeader
   deriving (Show, Eq, Generic)
 
 instance Binary AutoLeader
+
+victoryOutcomes :: [Outcome]
+victoryOutcomes = [Conquer, Escape]
 
 genericEndMessages :: [(Outcome, Text)]
 genericEndMessages =

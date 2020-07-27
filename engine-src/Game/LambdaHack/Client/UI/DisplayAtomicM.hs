@@ -1072,7 +1072,7 @@ quitFactionUI fid toSt manalytics = do
               (enemyAid, _) : _ -> do
                 bUI <- getsSession $ getActorUI enemyAid
                 return $! makePhrase [MU.Capitalize (partActor bUI)] <> "?"
-            let won = maybe False ((`elem` [Conquer, Escape]) . stOutcome) toSt
+            let won = maybe False ((`elem` victoryOutcomes) . stOutcome) toSt
                 sp2 | not won = ""
                     | smartUniqueEnemyCaptured =
                   "\nOh, wait, who is this, towering behind your escaping crew?" <+> smartEnemySentence <+> "This changes everything. For everybody. Everywhere. Forever. Did you plan for this? Are you sure it was your idea? What happens now and are things under your control any more?"

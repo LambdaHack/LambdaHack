@@ -124,8 +124,7 @@ cmdAtomicSemCli oldState cmd = case cmd of
     side <- getsClient sside
     when (side == fid && maybe False ((/= Camping) . stOutcome) toSt) $ do
       let won = case toSt of
-            Just Status{stOutcome=Conquer} -> True
-            Just Status{stOutcome=Escape} -> True
+            Just Status{stOutcome} | stOutcome `elem` victoryOutcomes -> True
             _ -> False
       when won $ do
         gameModeId <- getsState sgameModeId
