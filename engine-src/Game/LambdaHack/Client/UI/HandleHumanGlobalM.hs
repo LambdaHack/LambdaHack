@@ -1366,11 +1366,30 @@ helpHuman cmdSemInCxtOfKM = do
              "Hints, not needed unless stuck:\n"
         <> textToAS
              (T.concatMap duplicateEOL (mhint gameMode))
+      blurbEnd = splitAttrString width $
+        textToAS "\n\n\n"
+        <> intercalate (textToAS "\n\n")
+                       (map renderOutcomeMsg [minBound..maxBound])
+      renderOutcomeMsg :: Outcome -> AttrString
+      renderOutcomeMsg outcome =
+        let t = fromMaybe "" $ lookup outcome $ mendMsg gameMode
+        in textFgToAS Color.Brown
+             (renderOutcome outcome <> ":\n")
+           <> textToAS
+                (T.concatMap duplicateEOL t)
+      renderOutcome :: Outcome -> Text
+      renderOutcome outcome = "Game over message at" <+> tshow outcome
       spLen = textSize monoFont " "
       modeH = ( "Press SPACE or PGDN to advance or ESC to see the map again."
-              , ( EM.singleton propFont . offsetOverlayX
-                  . map (\t -> (spLen, t))
-                  $ blurb
+              , ( if isSquareFont propFont
+                  then EM.singleton propFont
+                       $ offsetOverlayX
+                       $ map (\t -> (spLen, t)) $ blurb ++ blurbEnd
+                  else EM.insertWith (++) propFont
+                         (offsetOverlayX $ map (\t -> (81, t)) blurbEnd)
+                       $ EM.singleton propFont
+                       $ offsetOverlayX
+                       $ map (\t -> (spLen, t)) blurb
                 , [] ) )
       keyH = keyHelp ccui fontSetup
       splitHelp (t, okx) = splitOKX fontSetup True rwidth rheight (textToAS t)

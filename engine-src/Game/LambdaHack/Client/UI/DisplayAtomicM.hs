@@ -464,7 +464,7 @@ displayRespUpdAtomicUI cmd = case cmd of
       recordHistory
     lid <- getArenaUI
     lvl <- getLevel lid
-    mode <- getGameMode
+    gameMode <- getGameMode
     curChal <- getsClient scurChal
     fact <- getsState $ (EM.! fid) . sfactionD
     let loneMode = case ginitial fact of
@@ -473,8 +473,9 @@ displayRespUpdAtomicUI cmd = case cmd of
           _ -> False
     msgAdd MsgAdmin "----------------------------------------------------------"
     recordHistory
-    msgAdd MsgWarning $ "New game started in" <+> mname mode <+> "mode. See game help (F1) for details."
-    msgAdd MsgAdmin $ mdesc mode
+    msgAdd MsgWarning $ "New game started in" <+> mname gameMode
+                        <+> "mode. See game help (F1) for details."
+    msgAdd MsgAdmin $ mdesc gameMode
     let desc = cdesc $ okind cocave $ lkind lvl
     unless (T.null desc) $ do
       msgLnAdd MsgFocus "You take in your surroundings."
@@ -510,9 +511,10 @@ displayRespUpdAtomicUI cmd = case cmd of
     unless (isAIFact fact) $ do
       lid <- getArenaUI
       lvl <- getLevel lid
-      mode <- getGameMode
-      msgAdd MsgAlert $ "Continuing" <+> mname mode <> ". See game help (F1) for details."
-      msgAdd0 MsgPrompt $ mdesc mode
+      gameMode <- getGameMode
+      msgAdd MsgAlert $ "Continuing" <+> mname gameMode
+                        <> ". See game help (F1) for details."
+      msgAdd0 MsgPrompt $ mdesc gameMode
       let desc = cdesc $ okind cocave $ lkind lvl
       unless (T.null desc) $ do
         msgLnAdd0 MsgPromptFocus "You remember your surroundings."
@@ -1004,7 +1006,7 @@ quitFactionUI fid toSt manalytics = do
   when (fid == side && not camping) $ do
     tellGameClipPS
     resetGameStart
-  mode <- getGameMode
+  gameMode <- getGameMode
   allNframes <- getsSession sallNframes
   let startingPart = case toSt of
         _ | horror -> Nothing  -- Ignore summoned actors' factions.
@@ -1021,7 +1023,7 @@ quitFactionUI fid toSt manalytics = do
         Nothing -> Nothing  -- server wipes out Camping for savefile
       middlePart = case toSt of
         _ | fid /= side -> Nothing
-        Just Status{stOutcome} -> lookup stOutcome $ mendMsg mode
+        Just Status{stOutcome} -> lookup stOutcome $ mendMsg gameMode
         Nothing -> Nothing
       partingPart = case toSt of
         _ | fid /= side || allNframes == -1 -> Nothing
