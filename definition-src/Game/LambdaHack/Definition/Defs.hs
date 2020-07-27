@@ -36,10 +36,13 @@ newtype GroupName a = GroupName {fromGroupName :: Text}
 -- how common the kind is within the group.
 type Freqs a = [(GroupName a, Int)]
 
--- | Rarity on given depths.
+-- | Rarity on given depths. The first element of the pair is in (0, 10]
+-- interval and, e.g., if there are 20 levels, 0.5 represents the first level
+-- and 10 the last.
 type Rarity = [(Double, Int)]
 
--- We assume @dataset@ is sorted and between 0 and 10.
+-- We assume @dataset@ is sorted and the first element of the pair
+-- is in (0, 10] interval.
 linearInterpolation :: Int -> Int -> Rarity -> Int
 linearInterpolation !levelDepth !totalDepth !dataset =
   let findInterval :: (Double, Int) -> Rarity -> ((Double, Int), (Double, Int))

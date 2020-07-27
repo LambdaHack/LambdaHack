@@ -44,7 +44,7 @@ validateRarity rarity =
   in [ "rarity not sorted" | sortedRarity /= rarity ]
      ++ [ "rarity depth thresholds not unique"
         | map head (groupBy ((==) `on` fst) sortedRarity) /= sortedRarity ]
-     ++ [ "rarity depth not between 0 and 10"
+     ++ [ "rarity depth not in (0, 10] interval"
         | case (sortedRarity, reverse sortedRarity) of
             ((lowest, _) : _, (highest, _) : _) ->
               lowest <= 0 || highest > 10
