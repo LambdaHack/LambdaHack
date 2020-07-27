@@ -42,8 +42,8 @@ getLevel lid = getsState $ (EM.! lid) . sdungeon
 getGameMode :: MonadStateRead m => m ModeKind
 getGameMode = do
   COps{comode} <- getsState scops
-  t <- getsState sgameModeId
-  return $! okind comode t
+  gameModeId <- getsState sgameModeId
+  return $! okind comode gameModeId
 
 isNoConfirmsGame :: MonadStateRead m => m Bool
 isNoConfirmsGame = do

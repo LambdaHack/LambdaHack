@@ -2,7 +2,8 @@
 -- | High score table operations.
 module Game.LambdaHack.Common.HighScore
   ( ScoreTable, ScoreDict
-  , empty, register, showScore, showAward, getTable, unTable, getRecord
+  , empty, register, showScore, showAward
+  , getTable, unTable, getRecord, getStatus
 #ifdef EXPOSE_INTERNAL
     -- * Internal operations
   , ScoreRecord, insertPos
@@ -25,8 +26,8 @@ import Game.LambdaHack.Common.Faction
 import Game.LambdaHack.Common.Misc
 import Game.LambdaHack.Common.Time
 import Game.LambdaHack.Content.ItemKind (ItemKind)
-import Game.LambdaHack.Content.ModeKind (HiCondPoly, HiIndeterminant (..),
-                                         ModeKind, Outcome (..))
+import Game.LambdaHack.Content.ModeKind
+  (HiCondPoly, HiIndeterminant (..), ModeKind, Outcome (..))
 import Game.LambdaHack.Definition.Defs
 
 -- | A single score record. Records are ordered in the highscore table,
@@ -146,6 +147,9 @@ getRecord :: Int -> ScoreTable -> ScoreRecord
 getRecord pos (ScoreTable table) =
   fromMaybe (error $ "" `showFailure` pos)
   $ listToMaybe $ drop (pred pos) table
+
+getStatus :: ScoreRecord -> Status
+getStatus = status
 
 showAward :: Int        -- ^ number of (3-line) scores to be shown
           -> ScoreTable -- ^ current score table

@@ -79,6 +79,7 @@ import           Game.LambdaHack.Common.ActorState
 import           Game.LambdaHack.Common.Area
 import           Game.LambdaHack.Common.ClientOptions
 import           Game.LambdaHack.Common.Faction
+import qualified Game.LambdaHack.Common.HighScore as HighScore
 import           Game.LambdaHack.Common.Item
 import qualified Game.LambdaHack.Common.ItemAspect as IA
 import           Game.LambdaHack.Common.Kind
@@ -1343,7 +1344,9 @@ helpHuman cmdSemInCxtOfKM = do
   ccui@CCUI{coinput, coscreen=ScreenContent{rwidth, rheight}}
     <- getsSession sccui
   fontSetup@FontSetup{..} <- getFontSetup
+  gameModeId <- getsState sgameModeId
   gameMode <- getGameMode
+  scoreDict <- getsState shigh
   let width = if isSquareFont propFont then 79 else 82
       duplicateEOL '\n' = "\n\n"
       duplicateEOL c = T.singleton c
@@ -1375,8 +1378,16 @@ helpHuman cmdSemInCxtOfKM = do
         let t = fromMaybe "" $ lookup outcome $ mendMsg gameMode
         in textFgToAS Color.Brown
              (renderOutcome outcome <> ":\n")
-           <> textToAS
-                (T.concatMap duplicateEOL t)
+           <> if outcome `elem` victoryOutcomes && not (outcomeSeen outcome)
+              then []  -- too big of a spoiler
+              else textToAS
+                     (T.concatMap duplicateEOL t)
+      outcomeSeen :: Outcome -> Bool
+      outcomeSeen outcome =
+        let seeOutcomes =
+              map (stOutcome . HighScore.getStatus)
+                  (maybe [] HighScore.unTable $ EM.lookup gameModeId scoreDict)
+        in outcome `elem` seeOutcomes
       renderOutcome :: Outcome -> Text
       renderOutcome outcome = "Game over message at" <+> tshow outcome
       spLen = textSize monoFont " "
