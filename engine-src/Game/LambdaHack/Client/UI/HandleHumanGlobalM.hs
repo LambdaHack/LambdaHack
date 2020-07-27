@@ -1361,7 +1361,7 @@ helpHuman cmdSemInCxtOfKM = do
         <> textFgToAS Color.Cyan
              "Running commentary:\n"
         <> textToAS
-             (T.concatMap duplicateEOL (mmotivation gameMode) <> "\n\n")
+             (T.concatMap duplicateEOL (mreason gameMode) <> "\n\n")
         <> textFgToAS Color.BrBlue
              "Hints, not needed unless stuck:\n"
         <> textToAS
@@ -1795,7 +1795,7 @@ challengesMenuHuman cmdSemInCxtOfKM = do
             $ textToAS
             $ mrules gameMode
               <> "\n\n" <>
-              T.concatMap duplicateEOL (mmotivation gameMode) )
+              T.concatMap duplicateEOL (mreason gameMode) )
         ]
   generateMenu cmdSemInCxtOfKM blurb kds gameInfo "challenge"
 
