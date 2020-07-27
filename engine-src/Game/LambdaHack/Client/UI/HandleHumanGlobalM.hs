@@ -1770,13 +1770,14 @@ challengesMenuHuman cmdSemInCxtOfKM = do
             , (K.mkKM "Escape", ("back to main menu", MainMenu)) ]
       gameInfo = map T.unpack [ "Setup and start new game:"
                               , "" ]
-      widthProp = if isSquareFont propFont then 42 else 82
-      widthMono = if isSquareFont propFont then 42 else 70
+      -- widthProp = if isSquareFont propFont then 42 else 82
+      -- widthMono = if isSquareFont propFont then 42 else 70
+      widthMono = if isSquareFont propFont then 42 else 79
       duplicateEOL '\n' = "\n\n"
       duplicateEOL c = T.singleton c
       blurb =
-        [ ( propFont
-          , splitAttrString widthProp
+        [ ( monoFont  -- TODO: try italics or propFont after big font changed
+          , splitAttrString widthMono
             $ textFgToAS Color.BrBlack
             $ T.concatMap duplicateEOL (mdesc gameMode <> "\n") )
         , ( monoFont
