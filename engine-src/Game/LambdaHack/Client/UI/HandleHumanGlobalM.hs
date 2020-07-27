@@ -1344,19 +1344,28 @@ helpHuman cmdSemInCxtOfKM = do
     <- getsSession sccui
   fontSetup@FontSetup{..} <- getFontSetup
   gameMode <- getGameMode
-  let width = if isSquareFont propFont then 79 else 84
+  let width = if isSquareFont propFont then 79 else 82
       duplicateEOL '\n' = "\n\n"
       duplicateEOL c = T.singleton c
-      blurb = splitAttrString width $ textToAS
-              $ "\nYou are playing the '" <> mname gameMode <> "' scenario.\n\n"
-                <> "The story so far:\n"
-                <> T.concatMap duplicateEOL (mdesc gameMode) <> "\n\n"
-                <> "Rules of the game:\n"
-                <> mrules gameMode <> "\n\n"
-                <> "Running commentary:\n"
-                <> T.concatMap duplicateEOL (mmotivation gameMode) <> "\n\n"
-                <> "Hints, not needed unless stuck:\n"
-                <> T.concatMap duplicateEOL (mhint gameMode)
+      blurb = splitAttrString width $
+        textToAS
+          ("\nYou are playing the '" <> mname gameMode <> "' scenario.\n\n")
+        <> textFgToAS Color.Brown
+             "The story so far:\n"
+        <> textToAS
+             (T.concatMap duplicateEOL (mdesc gameMode) <> "\n\n")
+        <> textFgToAS Color.BrCyan
+             "Rules of the game:\n"
+        <> textToAS
+             (mrules gameMode <> "\n\n")
+        <> textFgToAS Color.Cyan
+             "Running commentary:\n"
+        <> textToAS
+             (T.concatMap duplicateEOL (mmotivation gameMode) <> "\n\n")
+        <> textFgToAS Color.BrBlue
+             "Hints, not needed unless stuck:\n"
+        <> textToAS
+             (T.concatMap duplicateEOL (mhint gameMode))
       spLen = textSize monoFont " "
       modeH = ( "Press SPACE or PGDN to advance or ESC to see the map again."
               , ( EM.singleton propFont . offsetOverlayX
@@ -1779,12 +1788,13 @@ challengesMenuHuman cmdSemInCxtOfKM = do
         [ ( monoFont  -- TODO: try italics or propFont after big font changed
           , splitAttrString widthMono
             $ textFgToAS Color.BrBlack
-            $ T.concatMap duplicateEOL (mdesc gameMode <> "\n") )
+            $ T.concatMap duplicateEOL (mdesc gameMode)
+              <> "\n\n" )
         , ( monoFont
           , splitAttrString widthMono
             $ textToAS
-            $ mrules gameMode <> "\n\n"
-              <>
+            $ mrules gameMode
+              <> "\n\n" <>
               T.concatMap duplicateEOL (mmotivation gameMode) )
         ]
   generateMenu cmdSemInCxtOfKM blurb kds gameInfo "challenge"
