@@ -85,10 +85,9 @@ newItemKind COps{coitem, coItemSpeedup} uniqueSet itemFreq
             (Dice.AbsDepth ldepth) (Dice.AbsDepth totalDepth) lvlSpawned =
   -- Effective generation depth of actors (not items) increases with spawns.
   -- Up to 10 spawns, no effect. With 20 spawns, depth + 5, and then
-  -- each 10 spawns adds 5 depth. Capped by @totalDepth@, to ensure variety.
+  -- each 10 spawns adds 5 depth.
   let numSpawnedCoeff = max 0 $ lvlSpawned `div` 2 - 5
-      -- The first 10 spawns are of the nominal level.
-      ldSpawned = min totalDepth $ ldepth + numSpawnedCoeff
+      ldSpawned = ldepth + numSpawnedCoeff
       f _ acc _ ik _ | ik `ES.member` uniqueSet = acc
       f !q !acc !p !ik !kind =
         -- Don't consider lvlSpawned for uniques, except those that have

@@ -36,26 +36,44 @@ newtype GroupName a = GroupName {fromGroupName :: Text}
 -- how common the kind is within the group.
 type Freqs a = [(GroupName a, Int)]
 
--- | Rarity on given depths. The first element of the pair is in (0, 10]
--- interval and, e.g., if there are 20 levels, 0.5 represents the first level
--- and 10 the last.
+-- | Rarity on given depths. The first element of the pair is normally
+-- in (0, 10] interval and, e.g., if there are 20 levels, 0.5 represents
+-- the first level and 10 the last. Exceptionally, it may be larger than 10,
+-- meaning appearance in the dungeon is not possible under normal circumstances
+-- and the value remains constant above the interval bound.
 type Rarity = [(Double, Int)]
 
--- We assume @dataset@ is sorted and the first element of the pair
--- is in (0, 10] interval.
+-- We assume @dataset@ is non-empty, sorted and the first element of the pair
+-- is positive. The convention for adding implicit outer intervals is
+-- that the value drops linearly, reaching 0 at 0. Similarly,
+-- if the last interval ends at or before 10, the value drops linearly,
+-- reaching 0 a step after 10. Otherwise, the value stays constant
+-- after the last interval. In the former case, the effective level depth
+-- is trimmed to 10 (which is equivalent to value staying constant
+-- after 10, or more generally, after the last, implicit or explicit bound,
+-- but it's simpler to implement).
 linearInterpolation :: Int -> Int -> Rarity -> Int
 linearInterpolation !levelDepth !totalDepth !dataset =
   let findInterval :: (Double, Int) -> Rarity -> ((Double, Int), (Double, Int))
-      findInterval x1y1 [] = (x1y1, (11, 0))
+      findInterval x1y1@(x1Last, y1Last) [] =
+        if x1Last > 10
+        then (x1y1, (fromIntegral levelDepth, y1Last))
+               -- this artificial interval has sufficient length to emulate
+               -- the value staying constant indefinitely
+        else let stepLevel = 10 / fromIntegral totalDepth
+               -- this is the distance representing one level, the same
+               -- as the distance from 0 to the representation of level 1
+             in (x1y1, (10 + stepLevel, 0))
       findInterval !x1y1 ((!x, !y) : rest) =
         if fromIntegral levelDepth * 10 <= x * fromIntegral totalDepth
         then (x1y1, (x, y))
         else findInterval (x, y) rest
       ((x1, y1), (x2, y2)) = findInterval (0, 0) dataset
+      levelDepthTrimmed = if x2 > 10 then levelDepth else min levelDepth 10
   in ceiling
      $ fromIntegral y1
        + fromIntegral (y2 - y1)
-         * (fromIntegral levelDepth * 10 - x1 * fromIntegral totalDepth)
+         * (fromIntegral levelDepthTrimmed * 10 - x1 * fromIntegral totalDepth)
          / ((x2 - x1) * fromIntegral totalDepth)
 
 -- | Content identifiers for the content type @c@.
