@@ -66,9 +66,9 @@ pattern DEFENSE_EMPTY = GroupName "defenseEmpty"
 
 content :: [ModeKind]
 content =
-  [raid, brawl, crawl, shootout, hunt, escape, zoo, ambush, crawlEmpty, crawlSurvival, dig, see, short, safari, safariSurvival, battle, battleDefense, battleSurvival, defense, defenseEmpty, screensaverRaid, screensaverBrawl, screensaverShootout, screensaverHunt, screensaverEscape, screensaverZoo, screensaverAmbush, screensaverCrawl, screensaverSafari]
+  [raid, brawl, crawl, shootout, hunt, escape, zoo, ambush, safari, dig, see, short, crawlEmpty, crawlSurvival, safariSurvival, battle, battleDefense, battleSurvival, defense, defenseEmpty, screensaverRaid, screensaverBrawl, screensaverCrawl, screensaverShootout, screensaverHunt, screensaverEscape, screensaverZoo, screensaverAmbush, screensaverSafari]
 
-raid,    brawl, crawl, shootout, hunt, escape, zoo, ambush, crawlEmpty, crawlSurvival, dig, see, short, safari, safariSurvival, battle, battleDefense, battleSurvival, defense, defenseEmpty, screensaverRaid, screensaverBrawl, screensaverShootout, screensaverHunt, screensaverEscape, screensaverZoo, screensaverAmbush, screensaverCrawl, screensaverSafari :: ModeKind
+raid,    brawl, crawl, shootout, hunt, escape, zoo, ambush, safari, dig, see, short, crawlEmpty, crawlSurvival, safariSurvival, battle, battleDefense, battleSurvival, defense, defenseEmpty, screensaverRaid, screensaverBrawl, screensaverCrawl, screensaverShootout, screensaverHunt, screensaverEscape, screensaverZoo, screensaverAmbush, screensaverSafari :: ModeKind
 
 -- What other symmetric (two only-one-moves factions) and asymmetric vs crowd
 -- scenarios make sense (e.g., are good for a tutorial or for standalone
@@ -433,6 +433,11 @@ screensaverBrawl = screensave (AutoLeader False False) $ brawl
   , mfreq   = [(NO_CONFIRMS, 1)]
   }
 
+screensaverCrawl = screensave (AutoLeader False False) $ crawl
+  { mname   = "auto-crawl (long)"
+  , mfreq   = [(NO_CONFIRMS, 1)]
+  }
+
 screensaverShootout = screensave (AutoLeader False False) $ shootout
   { mname   = "auto-shootout (3)"
   , mfreq   = [(INSERT_COIN, 2), (NO_CONFIRMS, 1)]
@@ -458,18 +463,13 @@ screensaverAmbush = screensave (AutoLeader False False) $ ambush
   , mfreq   = [(NO_CONFIRMS, 1)]
   }
 
-screensaverCrawl = screensave (AutoLeader False False) $ crawl
-  { mname   = "auto-crawl (long)"
-  , mfreq   = [(NO_CONFIRMS, 1)]
-  }
-
 -- changing leader by client needed, because of TFollow
 screensaverSafari = screensave (AutoLeader False True) $ safari
   { mname   = "auto-safari"
   , mfreq   = [(INSERT_COIN, 1), (NO_CONFIRMS, 1)]
   }
 
-rosterRaid, rosterBrawl, rosterShootout, rosterHunt, rosterEscape, rosterZoo, rosterAmbush, rosterCrawl, rosterCrawlEmpty, rosterCrawlSurvival, rosterSafari, rosterSafariSurvival, rosterBattle, rosterBattleDefense, rosterBattleSurvival, rosterDefense, rosterDefenseEmpty :: Roster
+rosterRaid, rosterBrawl, rosterCrawl, rosterShootout, rosterHunt, rosterEscape, rosterZoo, rosterAmbush, rosterSafari, rosterCrawlEmpty, rosterCrawlSurvival, rosterSafariSurvival, rosterBattle, rosterBattleDefense, rosterBattleSurvival, rosterDefense, rosterDefenseEmpty :: Roster
 
 rosterRaid = Roster
   { rosterList = [ ( playerHero {fhiCondPoly = hiHeroShort}
@@ -499,6 +499,20 @@ rosterBrawl = Roster
                   , ("Explorer", "Horror Den")
                   , ("Indigo Researcher", "Horror Den") ]
   , rosterAlly = [] }
+
+rosterCrawl = Roster
+  { rosterList = [ ( playerHero
+                   , [(-1, 3, HERO)] )
+                 , ( playerMonster
+                   , [(-4, 1, SCOUT_MONSTER), (-4, 3, MONSTER)] )
+                 , ( playerAnimal
+                   , -- Fun from the start to avoid empty initial level:
+                     [ (-1, 1 + 1 `d` 2, ANIMAL)
+                     -- Huge battle at the end:
+                     , (-10, 100, MOBILE_ANIMAL) ] ) ]
+  , rosterEnemy = [ ("Explorer", "Monster Hive")
+                  , ("Explorer", "Animal Kingdom") ]
+  , rosterAlly = [("Monster Hive", "Animal Kingdom")] }
 
 -- Exactly one scout gets a sight boost, to help the aggressor, because he uses
 -- the scout for initial attack, while camper (on big enough maps)
@@ -571,38 +585,6 @@ rosterAmbush = Roster
                   , ("Indigo Researcher", "Horror Den") ]
   , rosterAlly = [] }
 
-rosterCrawl = Roster
-  { rosterList = [ ( playerHero
-                   , [(-1, 3, HERO)] )
-                 , ( playerMonster
-                   , [(-4, 1, SCOUT_MONSTER), (-4, 3, MONSTER)] )
-                 , ( playerAnimal
-                   , -- Fun from the start to avoid empty initial level:
-                     [ (-1, 1 + 1 `d` 2, ANIMAL)
-                     -- Huge battle at the end:
-                     , (-10, 100, MOBILE_ANIMAL) ] ) ]
-  , rosterEnemy = [ ("Explorer", "Monster Hive")
-                  , ("Explorer", "Animal Kingdom") ]
-  , rosterAlly = [("Monster Hive", "Animal Kingdom")] }
-
-rosterCrawlEmpty = Roster
-  { rosterList = [ ( playerHero
-                   , [(-1, 1, HERO)] )
-                 , (playerHorror, []) ]  -- for spawned and summoned monsters
-  , rosterEnemy = []
-  , rosterAlly = [] }
-
-rosterCrawlSurvival = rosterCrawl
-  { rosterList = [ ( playerAntiHero
-                   , [(-1, 3, HERO)] )
-                 , ( playerMonster
-                   , [(-4, 1, SCOUT_MONSTER), (-4, 3, MONSTER)] )
-                 , ( playerAnimal {fhasUI = True}
-                   , -- Fun from the start to avoid empty initial level:
-                     [ (-1, 1 + 1 `d` 2, ANIMAL)
-                     -- Huge battle at the end:
-                     , (-10, 100, MOBILE_ANIMAL) ] ) ] }
-
 -- No horrors faction needed, because spawned heroes land in civilian faction.
 rosterSafari = Roster
   { rosterList = [ ( playerMonsterTourist
@@ -624,6 +606,24 @@ rosterSafari = Roster
                     , "Animal Exquisite Herds and Packs Galore" ) ]
   , rosterAlly = [ ( "Animal Magnificent Specimen Variety"
                    , "Animal Exquisite Herds and Packs Galore" ) ] }
+
+rosterCrawlEmpty = Roster
+  { rosterList = [ ( playerHero
+                   , [(-1, 1, HERO)] )
+                 , (playerHorror, []) ]  -- for spawned and summoned monsters
+  , rosterEnemy = []
+  , rosterAlly = [] }
+
+rosterCrawlSurvival = rosterCrawl
+  { rosterList = [ ( playerAntiHero
+                   , [(-1, 3, HERO)] )
+                 , ( playerMonster
+                   , [(-4, 1, SCOUT_MONSTER), (-4, 3, MONSTER)] )
+                 , ( playerAnimal {fhasUI = True}
+                   , -- Fun from the start to avoid empty initial level:
+                     [ (-1, 1 + 1 `d` 2, ANIMAL)
+                     -- Huge battle at the end:
+                     , (-10, 100, MOBILE_ANIMAL) ] ) ] }
 
 rosterSafariSurvival = rosterSafari
   { rosterList = [ ( playerMonsterTourist
@@ -693,21 +693,11 @@ rosterDefenseEmpty = rosterCrawl
   , rosterEnemy = []
   , rosterAlly = [] }
 
-cavesRaid, cavesBrawl, cavesShootout, cavesHunt, cavesEscape, cavesZoo, cavesAmbush, cavesCrawl, cavesCrawlEmpty, cavesDig, cavesSee, cavesShort, cavesSafari, cavesBattle :: Caves
+cavesRaid, cavesBrawl, cavesCrawl, cavesShootout, cavesHunt, cavesEscape, cavesZoo, cavesAmbush, cavesSafari, cavesDig, cavesSee, cavesShort, cavesCrawlEmpty, cavesBattle :: Caves
 
 cavesRaid = [([-2], [CAVE_RAID])]
 
 cavesBrawl = [([-2], [CAVE_BRAWL])]
-
-cavesShootout = [([-5], [CAVE_SHOOTOUT])]
-
-cavesHunt = [([-6], [CAVE_HUNT])]
-
-cavesEscape = [([-7], [CAVE_ESCAPE])]
-
-cavesZoo = [([-8], [CAVE_ZOO])]
-
-cavesAmbush = [([-9], [CAVE_AMBUSH])]
 
 listCrawl :: [([Int], [GroupName CaveKind])]
 listCrawl =
@@ -721,15 +711,27 @@ listCrawl =
 
 cavesCrawl = listCrawl
 
-cavesCrawlEmpty = cavesCrawl
+cavesShootout = [([-5], [CAVE_SHOOTOUT])]
 
-renumberCaves :: Int -> ([Int], [GroupName CaveKind])
-              -> ([Int], [GroupName CaveKind])
-renumberCaves offset (ns, l) = (map (+ offset) ns, l)
+cavesHunt = [([-6], [CAVE_HUNT])]
+
+cavesEscape = [([-7], [CAVE_ESCAPE])]
+
+cavesZoo = [([-8], [CAVE_ZOO])]
+
+cavesAmbush = [([-9], [CAVE_AMBUSH])]
+
+cavesSafari = [ ([-4], [CAVE_SAFARI_1])
+              , ([-7], [CAVE_SAFARI_2])
+              , ([-10], [CAVE_SAFARI_3]) ]
 
 cavesDig = concat $ zipWith (map . renumberCaves)
                             [0, -10 ..]
                             (replicate 100 listCrawl)
+
+renumberCaves :: Int -> ([Int], [GroupName CaveKind])
+              -> ([Int], [GroupName CaveKind])
+renumberCaves offset (ns, l) = (map (+ offset) ns, l)
 
 cavesSee = let numberCaves n c = ([n], [c])
            in zipWith numberCaves [-1, -2 ..]
@@ -746,8 +748,6 @@ allCaves =
   , CAVE_ROGUE, CAVE_LABORATORY, CAVE_EMPTY, CAVE_ARENA, CAVE_SMOKING
   , CAVE_NOISE, CAVE_MINE ]
 
-cavesSafari = [ ([-4], [CAVE_SAFARI_1])
-              , ([-7], [CAVE_SAFARI_2])
-              , ([-10], [CAVE_SAFARI_3]) ]
+cavesCrawlEmpty = cavesCrawl
 
 cavesBattle = [([-5], [CAVE_BATTLE])]
