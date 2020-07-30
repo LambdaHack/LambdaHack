@@ -227,7 +227,11 @@ hearSfxAtomic cmd =
     SfxTaunt voluntary aid -> do
       b <- getsState $ getActorBody aid
       (subject, verb) <- displayTaunt voluntary rndToAction aid
-      return $ Just (HearTaunt $ subject <+> verb, True, bpos b)  -- intentional
+      discoAspect <- getsState sdiscoAspect
+      let arTrunk = discoAspect EM.! btrunk b
+          unique = if IA.checkFlag Ability.Unique arTrunk then "big" else ""
+      return $ Just (HearTaunt $ subject <+> unique <+> verb, True, bpos b)
+        -- intentional
     _ -> return Nothing
 
 filterHear :: MonadStateRead m => Point -> [(ActorId, Actor)] -> m [ActorId]
