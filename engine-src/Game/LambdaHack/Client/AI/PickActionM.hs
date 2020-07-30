@@ -353,10 +353,10 @@ actionStrategy foeAssocs friendAssocs aid retry = do
             $ projectItem actorSk aid
                 -- equivalent of @condCanProject@ called inside
           , condAimEnemyTargeted && not condInMelee )
-        , ( [SkApply]
+        , ( [SkApply]  -- common, because animals have that
           , stratToFreq 10
             $ applyItem actorSk aid ApplyAll  -- use any potion or scroll
-          , condAimEnemyTargeted || condThreat 9 )  -- can affect enemies
+          , condAimEnemyTargeted || condThreat 9 )  -- can buff against enemies
         , ( runSkills
           , stratToFreq (if | condInMelee ->
                               4000  -- friends pummeled by target, go to help
@@ -432,11 +432,20 @@ actionStrategy foeAssocs friendAssocs aid retry = do
   -- as non-leader action.
   let checkAction :: ([Skill], m a, Bool) -> Bool
       checkAction (abts, _, cond) = (null abts || any abInSkill abts) && cond
+      sumS :: [([Skill], m a, Bool)] -> [m a]
       sumS abAction =
         let as = filter checkAction abAction
         in map (\(_, m, _) -> m) as
+      sumF :: [([Skill], m (Frequency RequestTimed), Bool)]
+           -> m (Frequency RequestTimed)
       sumF abFreq = do
         let as = filter checkAction abFreq
+        -- This is costly: the monadic side-effects are evaluated.
+        -- If we roll an unevaluated one until we find one that is permitted,
+        -- keeping track of those aready checked might outweigh the savings.
+        -- Even worse, without evaluating per-item frequencies,
+        -- applying an amazing item may be disregarded in favour of throwing
+        -- a mediocre one.
         strats <- mapM (\(_, m, _) -> m) as
         return $! msum strats
       combineWeighted as = liftFrequency <$> sumF as
