@@ -402,5 +402,5 @@ atomicRemember lid inPer sClient s =
       fActor (aid, b) = cmdItemsFromIids (getCarriedIidsAndTrunk b) sClient s
                         ++ [UpdSpotActor aid b]
       inActor = concatMap fActor inAssocs
-  in atomicStash ++ atomicTile ++ inFloor ++ inEmbed ++ inSmell
-     ++ atomicSmell ++ inActor
+  in atomicStash ++ inActor ++ inSmell ++ atomicSmell ++ inFloor
+     ++ atomicTile ++ inEmbed
