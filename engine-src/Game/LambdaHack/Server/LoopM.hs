@@ -692,6 +692,11 @@ dieSer aid b2 = do
   -- If the actor was a projectile and no effect was triggered by hitting
   -- an enemy, the item still exists and @OnSmash@ effects will be triggered.
   dropAllEquippedItems aid b3
+  -- Also destroy the trunk (but not other organs, to save time) for effects.
+  case btrunk b3 `EM.lookup` borgan b3 of
+    Nothing -> return ()  -- a projectile, most probably
+    Just kit ->
+      void $ dropCStoreItem False True COrgan aid b3 maxBound (btrunk b3) kit
   -- As the last act of heroism, the actor (even if projectile)
   -- changes the terrain with its embedded items, if possible.
   when (not spentProj && not isBlast) $
