@@ -139,7 +139,7 @@ crawl = ModeKind
       ]
   , mdesc   = "Enjoy the peaceful seclusion of these cold austere tunnels, but don't let wanton curiosity, greed and the ever-creeping abstraction madness keep you down there for too long. If you find survivors (whole or perturbed or segmented) of the past scientific missions, exercise extreme caution and engage or ignore at your discretion."
   , mreason = "This is the main, longest and most replayable scenario of the game."
-  , mhint   = "If you keep dying, attempt the subsequent game modes as a breather (perhaps at lowered difficulty). They fill the gaps in the plot and teach particular skills that may come in handy and help you discover new tactics of your own or come up with a strategy for staving off the attrition."
+  , mhint   = "If you keep dying, attempt the subsequent game modes as a breather (perhaps at lowered difficulty). They fill the gaps in the plot and teach particular skills that may come in handy and help you discover new tactics of your own or come up with a strategy for staving off the attrition. Also experimenting with the initial scenarios may answer some questions you didn't have when playing them originally."
   }
 
 -- The trajectory tip is important because of tactics of scout looking from

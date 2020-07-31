@@ -129,8 +129,8 @@ to defend a key location until the first wave of attackers is broken.
 The large game arena calls for strategic thinking, including resource
 management, area denial and unavoidable temporary retreats to other levels.
 Thus, the crawl game mode is the most replayable one, but even the small
-scenarios can be refreshed by ramping up difficulty settings and striving
-to beat a high score.
+scenarios can be refreshed by striving to beat a high score and then
+ramping up the difficulty settings.
 
 
 Exploring the world
@@ -369,9 +369,10 @@ and take care to move one at a time, monsters don't care about each other
 and crowd and stampede all at once, sometimes brutally colliding by accident.
 
 Monsters are depicted on the map with letters. Upper case letters
-are unique monsters, often guardians of special floors, and lower case
-letters are the rabble. If there are humans not from our team,
-they are marked with `@` and `1` through `9` in other colours than white.
+are unique monsters, often guardians of special floors, resources
+and keys to other areas. Lower case letters are the rabble.
+If there are humans not from our team, they are marked
+with `@` and `1` through `9` in other colours than white.
 
 When a hero walks and bumps into a monster or a monster attacks
 the hero, melee combat occurs. Hero *running* into and displacing
