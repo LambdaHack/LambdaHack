@@ -58,54 +58,46 @@ makeData muiOptions (InputContentRaw copsClient) =
       rawContent = copsClient ++ uCommands0
       (rawContentMainMenu, rawContentNoMainMenu) =
         partition isMainMenu rawContent
-      filteredContent =
-        rawContentMainMenu
-        ++ ((if uVi0
-             then filter (\(k, _) ->
-                    k `notElem` [K.mkKM "period", K.mkKM "C-period"])
-             else id)
-             $ (if uLeftHand0
-                then filter (\(k, _) ->
-                       k `notElem` [K.mkKM "s", K.mkKM "S"])
-                else id)
-             $ filter (\(k, _) ->
-                 k `notElem` map (K.KM K.NoModifier)
-                                 (K.dirMoveNoModifier uVi0 uLeftHand0)
-                             ++ map (K.KM K.NoModifier)
-                                    (K.dirRunNoModifier uVi0 uLeftHand0)
-                             ++ map (K.KM K.Control) K.dirRunControl
-                             ++ map (K.KM K.Shift) K.dirRunShift
-                             ++ map K.mkKM [ "KP_Begin", "C-KP_Begin"
-                                           , "KP_5", "C-KP_5" ])
-             $ rawContentNoMainMenu)
-      bcmdList =
-        -- Users are free to overwrite commands, but at least the defaults
-        -- should be non-overlapping with the movement keys.
+      filteredNoMainMenu =
+        filter (\(k, _) ->
+          k `notElem` map (K.KM K.NoModifier)
+                          (K.dirMoveNoModifier uVi0 uLeftHand0)
+                      ++ map (K.KM K.NoModifier)
+                             (K.dirRunNoModifier uVi0 uLeftHand0)
+                      ++ map (K.KM K.Control) K.dirRunControl
+                      ++ map (K.KM K.Shift) K.dirRunShift
+                      ++ map K.mkKM [ "KP_Begin"
+                                    , "C-KP_Begin"
+                                    , "KP_5"
+                                    , "C-KP_5" ]
+                      ++ [K.mkKM "period" | uVi0]
+                      ++ [K.mkKM "C-period" | uVi0]
+                      ++ [K.mkKM "s" | uLeftHand0]
+                      ++ [K.mkKM "S" | uLeftHand0])
+          rawContentNoMainMenu
 #ifdef WITH_EXPENSIVE_ASSERTIONS
-        assert (rawContentMainMenu ++ rawContentNoMainMenu == filteredContent
-                `blame` "duplicate keys"
-                `swith` (rawContentMainMenu ++ rawContentNoMainMenu)
-                        \\ filteredContent) $
+      -- Users are free to overwrite commands, but at least the defaults
+      -- should be non-overlapping with the movement keys.
+      !_A = assert (rawContentNoMainMenu == filteredNoMainMenu
+                    `blame` "duplicate keys"
+                    `swith` rawContentNoMainMenu \\ filteredNoMainMenu) ()
 #endif
-          filteredContent
-          ++ (if uVi0
-              then [ (K.mkKM "period", waitTriple)
-                   , (K.mkKM "C-period", wait10Triple) ]
-              else [])
-          ++ (if uLeftHand0
-              then [ (K.mkKM "s", waitTriple)
-                   , (K.mkKM "S", wait10Triple) ]
-              else [])
-          ++ [ (K.mkKM "KP_Begin", waitTriple)
-             , (K.mkKM "C-KP_Begin", wait10Triple)
-             , (K.mkKM "KP_5", wait10Triple)
-             , (K.mkKM "C-KP_5", wait10Triple) ]
-          ++ K.moveBinding uVi0 uLeftHand0
-               (\v -> ([CmdMove], "", moveXhairOr 1 MoveDir v))
-               (\v -> ([CmdMove], "", moveXhairOr 10 RunDir v))
+      bcmdList = rawContentMainMenu
+                 ++ filteredNoMainMenu
+                 ++ K.moveBinding uVi0 uLeftHand0
+                      (\v -> ([CmdMove], "", moveXhairOr 1 MoveDir v))
+                      (\v -> ([CmdMove], "", moveXhairOr 10 RunDir v))
+                 ++ [ (K.mkKM "KP_Begin", waitTriple)
+                    , (K.mkKM "C-KP_Begin", wait10Triple)
+                    , (K.mkKM "KP_5", wait10Triple)
+                    , (K.mkKM "C-KP_5", wait10Triple) ]
+                 ++ [(K.mkKM "period", waitTriple) | uVi0]
+                 ++ [(K.mkKM "C-period", wait10Triple) | uVi0]
+                 ++ [(K.mkKM "s", waitTriple) | uLeftHand0]
+                 ++ [(K.mkKM "S", wait10Triple) | uLeftHand0]
       -- This catches repetitions inside input content definitions.
-      rejectRepetitions t1 t2 = error $ "duplicate key"
-                                        `showFailure` (t1, t2)
+      rejectRepetitions t1 t2 =
+        error $ "duplicate key" `showFailure` (t1, t2)
   in InputContent
   { bcmdMap = M.fromListWith rejectRepetitions
       [ (k, triple)
