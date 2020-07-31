@@ -248,7 +248,7 @@ data Effect =
       --   text as verb that is emitted whenever the item is activated;
       --   no spam is emitted if a projectile
   | VerbMsgFail Text
-      -- ^ as @VerbMsg@, but a failed effect (emits @UseDud@)
+      -- ^ as @VerbMsg@, but a failed effect (returns @UseDud@)
   deriving (Show, Eq, Generic)
 
 data DetectKind =

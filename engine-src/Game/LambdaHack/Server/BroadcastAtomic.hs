@@ -18,6 +18,7 @@ import Game.LambdaHack.Core.Prelude
 
 import qualified Data.EnumMap.Strict as EM
 import qualified Data.EnumSet as ES
+import qualified NLP.Miniutter.English as MU
 
 import           Game.LambdaHack.Atomic
 import           Game.LambdaHack.Common.Actor
@@ -222,6 +223,15 @@ hearSfxAtomic cmd =
     SfxEffect _ aid (IK.Summon grp p) _ -> do
       b <- getsState $ getActorBody aid
       return $ Just (HearSummon (bproj b) grp p, False, bpos b)
+    SfxEffect _ aid (IK.VerbMsg verb) _ -> do
+      b <- getsState $ getActorBody aid
+      discoAspect <- getsState sdiscoAspect
+      let arTrunk = discoAspect EM.! btrunk b
+          phrase = makePhrase [MU.SubjectVerbSg "noises of someone that"
+                                                (MU.Text verb)]
+      return $! if IA.checkFlag Ability.Unique arTrunk
+                then Just (HearTaunt phrase, True, bpos b)
+                else Nothing
     SfxCollideTile _ p ->
       return $ Just (HearCollideTile, False, p)
     SfxTaunt voluntary aid -> do
