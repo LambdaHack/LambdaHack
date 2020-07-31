@@ -690,7 +690,7 @@ lookAtPosition lidV p = do
            ++ concatMap (\(embedName, embedDesc) ->
                 [ (MsgPromptMention, embedName)
                 , (MsgPrompt, embedDesc) ]) embedsList
-           ++ [ (MsgPrompt, alterBlurb <+> transformBlurb) ]
+           ++ [ (MsgPromptItem, alterBlurb <+> transformBlurb) ]
 
 displayItemLore :: MonadClientUI m
                 => ItemBag -> Int -> (ItemId -> ItemFull -> Int -> Text) -> Int
