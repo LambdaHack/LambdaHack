@@ -4,7 +4,7 @@ module Game.LambdaHack.Client.UI.HandleHelperM
   , failSer, failMsg, weaveJust
   , memberCycle, memberCycleLevel, partyAfterLeader, pickLeader, pickLeaderWithPointer
   , itemOverlay, skillsOverlay, placesFromState, placesOverlay
-  , pickNumber, lookAtItems, lookAtStash, lookAtPosition
+  , pickNumber, guardItemSize, lookAtItems, lookAtStash, lookAtPosition
   , displayItemLore, viewLoreItems, cycleLore, spoilsBlurb
   , ppContainerWownW
 #ifdef EXPOSE_INTERNAL
@@ -479,7 +479,7 @@ lookAtActors p lidV = do
               flyVerb | bproj body = "zip through here"
                       | isJust $ btrajectory body = "move through here"
                       | otherwise = resideVerb
-              guardVerbs = guardItemVerbs body bfact s
+              guardVerbs = guardItemVerbs body s
               verbs = flyVerb : guardVerbs
               projDesc | not $ bproj body = ""
                        | otherwise =
@@ -538,26 +538,26 @@ lookAtActors p lidV = do
                   , "" )
   return actorsBlurb
 
-guardItemVerbs :: Actor -> Faction -> State -> [MU.Part]
-guardItemVerbs body _fact s =
-  -- In reality, currently the client knows all the items
-  -- in eqp of the foe, but we may remove the knowledge
+guardItemVerbs :: Actor -> State -> [MU.Part]
+guardItemVerbs body s =
+  -- We only hint while, in reality, currently the client knows
+  -- all the items in eqp of the foe. But we may remove the knowledge
   -- in the future and, anyway, it would require a dedicated
   -- UI mode beyond a couple of items per actor.
-  --
-  -- OTOH, shares stash is currently secret for other factions, so that
-  -- case would never be triggered except for our own actors.
-  -- We may want to relax that secrecy, but there are technical hurdles.
-  let toReport iid =
-        let itemKind = getIidKind iid s
-        in fromMaybe 0 (lookup IK.UNREPORTED_INVENTORY (IK.ifreq itemKind)) <= 0
-      itemsSize = length $ filter toReport $ EM.keys (beqp body)
+  let itemsSize = guardItemSize body s
       belongingsVerbs | itemsSize == 1 = ["fondle a trinket"]
                       | itemsSize > 1 = ["guard a hoard"]
                       | otherwise = []
   in if bproj body
      then []
      else belongingsVerbs
+
+guardItemSize :: Actor -> State -> Int
+guardItemSize body s =
+  let toReport iid =
+        let itemKind = getIidKind iid s
+        in fromMaybe 0 (lookup IK.UNREPORTED_INVENTORY (IK.ifreq itemKind)) <= 0
+  in length $ filter toReport $ EM.keys (beqp body)
 
 -- | Produces a textual description of items at a position.
 lookAtItems :: MonadClientUI m

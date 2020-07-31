@@ -793,8 +793,14 @@ createActorUI born aid body = do
                sess { sxhair = Just $ TEnemy aid
                     , sitemSel = Nothing } -- reset flinging totally
       foes <- getsState $ foeRegularList side (blid body)
-      unless (ES.member aid lastLost || length foes > 1) $
-        msgAdd0 MsgFirstEnemySpot "You are not alone!"
+      itemsSize <- getsState $ guardItemSize body
+      unless (ES.member aid lastLost) $
+        if length foes > 1
+        then when (itemsSize > 0) $
+          msgAdd0 MsgFirstEnemySpot "Another armed threat!"
+        else if itemsSize > 0
+             then msgAdd0 MsgFirstEnemySpot "Armed intrusion ahead!"
+             else msgAdd0 MsgFirstEnemySpot "You are not alone!"
     stopPlayBack
 
 destroyActorUI :: MonadClientUI m => Bool -> ActorId -> Actor -> m ()
