@@ -325,7 +325,7 @@ closestSmell aid = do
     _ -> do
       bfs <- getCacheBfs aid
       let ts = mapMaybe (\x@(p, _) -> fmap (,x) (accessBfs bfs p)) smells
-      return $! sortBy (comparing (fst &&& absoluteTimeNegate . snd . snd)) ts
+      return $! sortOn (fst &&& absoluteTimeNegate . snd . snd) ts
 
 data FleeViaStairsOrEscape =
     ViaStairs

@@ -14,7 +14,6 @@ import           Data.Binary
 import           Data.Bits (unsafeShiftL, unsafeShiftR)
 import           Data.Char
 import qualified Data.EnumMap.Strict as EM
-import           Data.Function
 import qualified Data.Text as T
 
 import           Game.LambdaHack.Common.Item
@@ -75,20 +74,15 @@ assignSlot lSlots =
         Nothing -> 0
   in SlotChar (maxPrefix + 1) 'x'
 
--- If appearance and aspects the same, keep the order from before sort.
-compareItemFull :: ItemFull -> ItemFull -> Ordering
-compareItemFull itemFull1 itemFull2 =
-  let kindAndAppearance ItemFull{itemBase=Item{..}, ..} =
-        ( not itemSuspect, itemKindId, itemDisco
-        , IK.isymbol itemKind, IK.iname itemKind
-        , jflavour, jfid )
-  in comparing kindAndAppearance itemFull1 itemFull2
-
 sortSlotMap :: (ItemId -> ItemFull) -> SingleItemSlots -> SingleItemSlots
 sortSlotMap itemToF em =
-  let f iid = (iid, itemToF iid)
-      sortItemIds l = map fst $ sortBy (compareItemFull `on` snd)
-                      $ map f l
+  -- If appearance and aspects the same, keep the order from before sort.
+  let kindAndAppearance iid =
+        let ItemFull{itemBase=Item{..}, ..} = itemToF iid
+        in ( not itemSuspect, itemKindId, itemDisco
+           , IK.isymbol itemKind, IK.iname itemKind
+           , jflavour, jfid )
+      sortItemIds = sortOn kindAndAppearance
   in EM.fromDistinctAscList $ zip allSlots $ sortItemIds $ EM.elems em
 
 mergeItemSlots :: (ItemId -> ItemFull) -> [SingleItemSlots] -> SingleItemSlots
