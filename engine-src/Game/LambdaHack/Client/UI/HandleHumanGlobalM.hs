@@ -1370,7 +1370,7 @@ helpHuman cmdSemInCxtOfKM = do
         <> textToAS
              (T.concatMap duplicateEOL (mhint gameMode))
       blurbEnd = splitAttrString width $
-        textToAS "\n\n\n"
+        textToAS "\nScenario endings experienced so far:\n\n"
         <> intercalate (textToAS "\n\n")
                        (map renderOutcomeMsg [minBound..maxBound])
       renderOutcomeMsg :: Outcome -> AttrString
@@ -1396,9 +1396,9 @@ helpHuman cmdSemInCxtOfKM = do
       renderOutcome :: Outcome -> Text
       renderOutcome outcome =
         "Game over message at" <+> tshow outcome
-        <+> if Just outcome == lastOutcome
-            then "(last major outcome)"
-            else ""
+        <+> if | Just outcome /= lastOutcome -> ""
+               | outcome `elem` victoryOutcomes -> "(last achieved ending)"
+               | otherwise -> "(last suffered ending)"
       spLen = textSize monoFont " "
       modeH = ( "Press SPACE or PGDN to advance or ESC to see the map again."
               , ( if isSquareFont propFont
