@@ -90,7 +90,7 @@ promptMainKeys = do
                | otherwise = "keypad"
       manyTeammates = length ours > 1
       keepTab = if manyTeammates
-                then "Switch to another teammate with Tab (S-Tab for other levels), while all others auto-melee foes, if adjacent, but normally don't chase them."
+                then "Switch to another teammate with Tab, while all others auto-melee foes, if adjacent, but normally don't chase them."
                 else ""
       describePos = if mmbIsNormal
                     then "Describe map position with MMB."
@@ -98,7 +98,7 @@ promptMainKeys = do
       viewEquip = if stashKeysAreNormal
                   then "View shared (I)nventory stash and stash items into the (i)nventory."
                   else ""
-      moreHelp = "Press" <+> tshow kmHelp <+> "for help."
+      moreHelp = "Press" <+> tshow kmHelp <+> "for more help."
       mmbIsNormal = kmXhairPointerFloor == K.middleButtonReleaseKM
       stashKeysAreNormal = kmViewStash == K.mkChar 'I'
                            && kmItemStash == K.mkChar 'i'
