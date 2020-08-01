@@ -797,12 +797,22 @@ eitherHistory showAll = do
                          , ButtonWidth propFont 1000 ))
             | sn <- take histBound intSlots ]
   promptAdd0 msg
-  okxs <- overlayToSlideshow (rheight - 2) [K.returnKM, K.escKM]
+  let keysAllHistory =
+        K.returnKM
+#ifndef USE_JSFILE
+        : K.mkChar '.'
+#endif
+        : [K.escKM]
+  okxs <- overlayToSlideshow (rheight - 2) keysAllHistory
                              (EM.unionWith (++) rhLab rhDesc, kxs)
   let displayAllHistory = do
-        ekm <- displayChoiceScreen "history" ColorFull False okxs
-                                   [K.spaceKM, K.escKM]
+        ekm <- displayChoiceScreen "history" ColorFull False okxs keysAllHistory
         case ekm of
+          Left km | km == K.mkChar '.' -> do
+            let t = T.unlines $ map (T.pack . map Color.charFromW32)
+                                    renderedHistory
+            path <- dumpTextFile t "history.txt"
+            promptAdd0 $ "All of history dumped to file" <+> T.pack path <> "."
           Left km | km == K.escKM ->
             promptAdd0 "Try to survive a few seconds more, if you can."
           Left km | km == K.spaceKM ->  -- click in any unused space

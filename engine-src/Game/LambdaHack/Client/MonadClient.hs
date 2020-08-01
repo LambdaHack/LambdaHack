@@ -7,7 +7,7 @@ module Game.LambdaHack.Client.MonadClient
   , MonadClient(modifyClient)
     -- * Assorted primitives
   , getClient, putClient
-  , debugPossiblyPrint, createTabBFS, rndToAction
+  , debugPossiblyPrint, createTabBFS, dumpTextFile, rndToAction
   ) where
 
 import Prelude ()
@@ -18,11 +18,14 @@ import           Control.Monad.ST.Strict (stToIO)
 import qualified Control.Monad.Trans.State.Strict as St
 import qualified Data.Primitive.PrimArray as PA
 import qualified Data.Text.IO as T
+import           System.FilePath
 import           System.IO (hFlush, stdout)
 
 import Game.LambdaHack.Client.State
 import Game.LambdaHack.Common.ClientOptions
+import Game.LambdaHack.Common.File
 import Game.LambdaHack.Common.Kind
+import Game.LambdaHack.Common.Misc
 import Game.LambdaHack.Common.MonadStateRead
 import Game.LambdaHack.Common.Point
 import Game.LambdaHack.Common.State
@@ -59,6 +62,14 @@ createTabBFS = do
   liftIO $ stToIO $ do
     tabAMutable <- PA.newPrimArray (rXmax * rYmax)  -- always enough
     PA.unsafeFreezePrimArray tabAMutable
+
+dumpTextFile :: MonadClientRead m => Text -> FilePath -> m FilePath
+dumpTextFile t filename = liftIO $ do
+  dataDir <- appDataDir
+  tryCreateDir dataDir
+  let path = dataDir </> filename
+  T.writeFile path t
+  return path
 
 -- | Invoke pseudo-random computation with the generator kept in the state.
 rndToAction :: MonadClient m => Rnd a -> m a
