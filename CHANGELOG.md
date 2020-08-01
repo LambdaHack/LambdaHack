@@ -125,8 +125,8 @@
 - Let AI trigger items among organs
 - Relax trigger stat 1 restrictions
 - Tweak AI item use preferences valuation
-- Improve the endgame item menu message
-- Record duplication of items to avoid absurd endgame messages
+- Improve the gameover item menu message
+- Record duplication of items to avoid absurd gameover messages
 - Discharge not only equipment, but also organs
 - Don't paralyse the last AI stash guard
 - Give AI stash guard more freedom if friends adjacent
@@ -496,7 +496,7 @@
 - Simplify individual content validation due to stronger global validation
 - Check that group names unique and not void
 - Supply group names to the content creation and validation function
-- Improve special endgame messages
+- Improve special gameover messages
 - Clean up the lists of hardwired patterns
 - Get rid of OVER in pattern names
 - Clean up the DEFENSELESS vs VULNERABLE mixup
@@ -991,7 +991,7 @@
 - Create a new 16x16 font and use it everywhere; tweak smaller fonts
 - Lock some levels or otherwise make ascending tricky
 - Add cooldown to most melee weapons, display that in HUD, adjust AI
-- Add per-scenario and per-outcome end-game messages in content
+- Add per-scenario and per-outcome gameover messages in content
 - Add duplicate and reroll item effects in preparation for crafting
 - Add actor and item analytics as a preparation for XP gain quests
 - Implement piercing projectiles that may share a tile with a big actor

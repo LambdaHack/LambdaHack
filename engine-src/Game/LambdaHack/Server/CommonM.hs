@@ -145,7 +145,7 @@ quitF status fid = do
       manalytics <-
         if fhasUI $ gplayer fact then do
           keepAutomated <- getsServer $ skeepAutomated . soptions
-          -- Try to remove AI control of the UI faction, to show endgame info.
+          -- Try to remove AI control of the UI faction, to show gameover info.
           when (isAIFact fact
                 && fleaderMode (gplayer fact) /= LeaderNull
                 && not keepAutomated) $

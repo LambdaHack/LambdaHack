@@ -390,7 +390,7 @@ applyPeriodicLevel = do
         -- it's very exotic and quite time-intensive whenever hundreds
         -- of projectiles exist due to ongoing explosions.
         -- Nothing activates when actor dying to prevent a regenerating
-        -- actor from resurrecting each turn, resulting in silly end-game stats.
+        -- actor from resurrecting each turn, resulting in silly gameover stats.
         when (not (bproj b) && bhp b > 0 && blid b `ES.member` arenas) $ do
           -- Equipment goes first, to refresh organs before they expire,
           -- to avoid the message that organ expired.
