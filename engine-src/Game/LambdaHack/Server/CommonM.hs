@@ -19,7 +19,6 @@ import Prelude ()
 import Game.LambdaHack.Core.Prelude
 
 import qualified Data.EnumMap.Strict as EM
-import qualified Data.Ord as Ord
 import           Data.Ratio
 
 import           Game.LambdaHack.Atomic
@@ -75,7 +74,7 @@ revealItems fid = do
   aids <- getsState $ fidActorNotProjGlobalAssocs fid
   mapM_ f aids
   dungeon <- getsState sdungeon
-  let minLid = fst $ minimumBy (Ord.comparing (ldepth . snd))
+  let minLid = fst $ minimumBy (comparing (ldepth . snd))
                    $ EM.assocs dungeon
       discoverSample iid = do
         itemKindId <- getsState $ getIidKindIdServer iid
@@ -685,7 +684,7 @@ allGroupItems store grp target = do
   let assocsKindId = map (\as@(iid, _) -> (getKindId iid, as)) assocsCStore
       hasGroup (itemKindId, _) =
         maybe False (> 0) $ lookup grp $ IK.ifreq $ okind coitem itemKindId
-  return $! map snd $ sortOn fst $ filter hasGroup assocsKindId
+  return $! map snd $ sortBy (comparing fst) $ filter hasGroup assocsKindId
 
 addCondition :: MonadServerAtomic m => Bool -> GroupName ItemKind -> ActorId -> m ()
 addCondition verbose name aid = do

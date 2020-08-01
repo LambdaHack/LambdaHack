@@ -591,7 +591,8 @@ lookAtItems canSee p aid = do
         ii : _ : _ : _ | standingOn && bfid b == side ->
           MU.Phrase [nWs ii, "and other items"]
           -- the actor is ours, so can see details with inventory commands
-        iis -> MU.WWandW $ map nWs $ map snd $ sortOn fst
+        -- @SortOn@ less efficient here, because function cheap.
+        iis -> MU.WWandW $ map nWs $ map snd $ sortBy (comparing fst)
                $ map (\(iid, kit) -> (getKind iid, (iid, kit))) iis
   -- Here @squashedWWandW@ is not needed, because identical items at the same
   -- position are already merged in the floor item bag and multiple identical

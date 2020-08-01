@@ -18,7 +18,6 @@ import Game.LambdaHack.Core.Prelude
 
 import           Control.Monad.ST.Strict
 import qualified Data.IntMap.Strict as IM
-import           Data.Ord (comparing)
 import qualified Data.Vector.Generic as G
 import qualified Data.Vector.Unboxed as U
 import qualified Data.Vector.Unboxed.Mutable as VM
@@ -131,6 +130,8 @@ truncateOverlay halveXstart width rheight wipeAdjacent fillLen onBlank ov =
       -- Below we at least mitigate the case of multiple lines per row.
       f lenPrev lenNext lal =
         -- This is crude, because an al at lower x may be longer, but KISS.
+        -- @sortOn@ is significantly faster than @SortBy@ here,
+        -- though it takes more memory.
         case sortOn (\(PointUI x _, _) -> x) lal of
           [] -> error "empty list of overlay lines at the given row"
           minAl : rest ->

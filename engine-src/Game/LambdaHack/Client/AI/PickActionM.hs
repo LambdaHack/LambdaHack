@@ -1210,7 +1210,8 @@ moveTowards actorSk aid avoidAmbient target goal relaxed = do
                    | v <- moves
                    , let p = source `shift` v
                    , isSensible p ]
-        sorted = sortOn fst sensible
+        -- @SortOn@ less efficient here, because function cheap.
+        sorted = sortBy (comparing fst) sensible
         groups = map (map snd) $ groupBy ((==) `on` fst) sorted
         freqs = map (liftFrequency . uniformFreq "moveTowards") groups
     return $! foldr (.|) reject freqs

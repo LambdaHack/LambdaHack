@@ -42,7 +42,6 @@ import           Data.Either (isLeft)
 import qualified Data.EnumMap.Strict as EM
 import qualified Data.EnumSet as ES
 import qualified Data.Map.Strict as M
-import           Data.Ord (comparing)
 import qualified Data.Text as T
 import           Data.Version
 import qualified NLP.Miniutter.English as MU

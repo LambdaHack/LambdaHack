@@ -30,7 +30,6 @@ import Prelude ()
 import Game.LambdaHack.Core.Prelude
 
 import qualified Data.EnumMap.Strict as EM
-import           Data.Ord
 
 import           Game.LambdaHack.Client.Bfs
 import           Game.LambdaHack.Client.MonadClient

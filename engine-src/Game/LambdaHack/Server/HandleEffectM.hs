@@ -34,7 +34,6 @@ import qualified Data.EnumSet as ES
 import qualified Data.HashMap.Strict as HM
 import           Data.Int (Int64)
 import           Data.Key (mapWithKeyM_)
-import qualified Data.Ord as Ord
 import qualified Data.Text as T
 
 import           Game.LambdaHack.Atomic
@@ -653,7 +652,7 @@ highestImpression tb = do
         maybe False (> 0) $ lookup IK.S_IMPRESSED $ IK.ifreq $ getKind iid
       impressions = EM.filterWithKey (\iid _ -> isImpression iid) $ borgan tb
       f (_, (k, _)) = k
-      maxImpression = maximumBy (Ord.comparing f) $ EM.assocs impressions
+      maxImpression = maximumBy (comparing f) $ EM.assocs impressions
   if EM.null impressions
   then return Nothing
   else case jfid $ getItem $ fst maxImpression of
@@ -1288,7 +1287,7 @@ effectCreateItem jfidRaw mcount source target miidOriginal store grp tim = do
   totalDepth <- getsState stotalDepth
   lvlTb <- getLevel (blid tb)
   dungeon <- getsState sdungeon
-  let maxLidLvl = maximumBy (Ord.comparing (ldepth . snd)) $ EM.assocs dungeon
+  let maxLidLvl = maximumBy (comparing (ldepth . snd)) $ EM.assocs dungeon
       -- If the number of items independent of depth, make also the timer
       -- the item kind choice and aspects independent of depth.
       -- Prime example is crafting. TODO: base this on skill.
@@ -1754,7 +1753,7 @@ effectRerollItem execSfx iidOriginal target = do
            identifyIid iid c itemKindId itemKind
            execUpdAtomic $ UpdDestroyItem False iid itemBase kit c
            dungeon <- getsState sdungeon
-           let maxLid = fst $ maximumBy (Ord.comparing (ldepth . snd))
+           let maxLid = fst $ maximumBy (comparing (ldepth . snd))
                             $ EM.assocs dungeon
                roll100 :: Int -> m (ItemKnown, ItemFull)
                roll100 n = do

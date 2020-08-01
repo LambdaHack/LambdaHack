@@ -21,7 +21,6 @@ import Game.LambdaHack.Core.Prelude
 import qualified Data.EnumMap.Strict as EM
 import qualified Data.EnumSet as ES
 import qualified Data.Map.Strict as M
-import           Data.Ord
 
 import           Game.LambdaHack.Atomic
 import           Game.LambdaHack.Client.Bfs

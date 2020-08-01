@@ -26,7 +26,6 @@ import qualified Data.EnumMap.Strict as EM
 import qualified Data.EnumSet as ES
 import           Data.Hashable (Hashable)
 import qualified Data.Ix as Ix
-import qualified Data.Ord as Ord
 import           GHC.Generics (Generic)
 
 import qualified Game.LambdaHack.Common.ItemAspect as IA
@@ -229,7 +228,7 @@ strongestSlot discoBenefit eqpSlot is =
                                then 1000
                                else 0
              in (ben + idBonus + uniqueBonus, (iid, (itemFull, kit)))
-  in sortBy (flip $ Ord.comparing fst) $ mapMaybe f is
+  in sortBy (flip $ comparing fst) $ mapMaybe f is
 
 valueAtEqpSlot :: EqpSlot -> IA.AspectRecord -> Int
 valueAtEqpSlot eqpSlot arItem@IA.AspectRecord{..} =

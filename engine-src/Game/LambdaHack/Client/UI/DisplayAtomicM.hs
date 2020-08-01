@@ -22,7 +22,6 @@ import Game.LambdaHack.Core.Prelude
 import qualified Data.Char as Char
 import qualified Data.EnumMap.Strict as EM
 import qualified Data.EnumSet as ES
-import qualified Data.Ord as Ord
 import qualified Data.Text as T
 import           Data.Tuple
 import           GHC.Exts (inline)
@@ -893,7 +892,8 @@ spotItemBag verbose c bag = do
               _ -> return Nothing
           _ -> return Nothing  -- this item or another with the same @iid@
                                -- seen already (has a slot assigned); old news
-      sortItems iis = map snd $ sortOn fst
+      -- @SortOn@ less efficient here, because function cheap.
+      sortItems iis = map snd $ sortBy (comparing fst)
                       $ map (\(iid, kit) -> (getKind iid, (iid, kit))) iis
       sortedAssocs = sortItems $ EM.assocs bag
   subjectMaybes <- mapM subjectMaybe sortedAssocs
@@ -2027,7 +2027,7 @@ strike catch source target iid = assert (source /= target) $ do
                then ("", msgClassMelee)
                else
                  let (armor, (_, itemFullArmor)) =
-                       maximumBy (Ord.comparing $ abs . fst) condArmor
+                       maximumBy (comparing $ abs . fst) condArmor
                      (object1, object2) =
                        partItemShortest rwidth (bfid tb) factionD localTime
                                         itemFullArmor quantSingle

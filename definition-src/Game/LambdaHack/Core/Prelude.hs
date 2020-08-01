@@ -11,7 +11,7 @@ module Game.LambdaHack.Core.Prelude
 
   , module Control.Exception.Assert.Sugar
 
-  , Text, (<+>), tshow, divUp, sum, (<$$>), partitionM, length, null
+  , Text, (<+>), tshow, divUp, sum, (<$$>), partitionM, length, null, comparing
 
   , (***), (&&&), first, second
   ) where
@@ -37,6 +37,7 @@ import           Data.Key
 import           Data.List.Compat hiding (foldl, foldl1, length, null, sum)
 import qualified Data.List.Compat as List
 import           Data.Maybe
+import           Data.Ord (comparing)
 import           Data.Semigroup.Compat (Semigroup ((<>)))
 import           Data.Text (Text)
 import qualified Data.Text as T (pack)

@@ -15,7 +15,6 @@ import           Data.Bits (unsafeShiftL, unsafeShiftR)
 import           Data.Char
 import qualified Data.EnumMap.Strict as EM
 import           Data.Function
-import           Data.Ord (comparing)
 import qualified Data.Text as T
 
 import           Game.LambdaHack.Common.Item

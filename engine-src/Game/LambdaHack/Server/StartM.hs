@@ -18,7 +18,6 @@ import qualified Data.EnumSet as ES
 import qualified Data.IntMap.Strict as IM
 import           Data.Key (mapWithKeyM_)
 import qualified Data.Map.Strict as M
-import           Data.Ord
 import qualified Data.Set as S
 import qualified Data.Text as T
 import           Data.Tuple (swap)

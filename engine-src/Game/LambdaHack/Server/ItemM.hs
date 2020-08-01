@@ -17,7 +17,6 @@ import qualified Data.EnumMap.Strict as EM
 import qualified Data.EnumSet as ES
 import           Data.Function
 import qualified Data.HashMap.Strict as HM
-import           Data.Ord
 
 import           Game.LambdaHack.Atomic
 import           Game.LambdaHack.Common.Actor

@@ -40,7 +40,8 @@ maxContentId = toContentId maxBound
 
 validateRarity :: Rarity -> [Text]
 validateRarity rarity =
-  let sortedRarity = sortOn fst rarity
+  -- @SortOn@ less efficient here, because function cheap.
+  let sortedRarity = sortBy (comparing fst) rarity
   in [ "rarity not sorted" | sortedRarity /= rarity ]
      ++ [ "rarity depth thresholds not unique"
         | map head (groupBy ((==) `on` fst) sortedRarity) /= sortedRarity ]

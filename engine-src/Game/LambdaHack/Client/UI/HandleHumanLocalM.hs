@@ -39,7 +39,6 @@ import Game.LambdaHack.Core.Prelude
 import           Data.Either (fromRight)
 import qualified Data.EnumMap.Strict as EM
 import qualified Data.EnumSet as ES
-import           Data.Ord
 import qualified Data.Text as T
 import qualified NLP.Miniutter.English as MU
 

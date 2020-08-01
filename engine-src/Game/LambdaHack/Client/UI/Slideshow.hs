@@ -102,7 +102,9 @@ toSlideshow FontSetup{..} okxs = Slideshow $ addFooters False okxsNotNull
   appendToFontOverlayMap ovs al =
     let maxYminXofOverlay ov = let ymxOfOverlay (PointUI x y, _) = (- y, x)
                                in minimum $ (0, 0) : map ymxOfOverlay ov
-        assocsYX = sortOn snd $ EM.assocs $ EM.map maxYminXofOverlay ovs
+        -- @SortOn@ less efficient here, because function cheap.
+        assocsYX = sortBy (comparing snd)
+                   $ EM.assocs $ EM.map maxYminXofOverlay ovs
         (fontMax, unique) = case assocsYX of
           [] -> (monoFont, False)
           (font, (y, _x)) : rest -> (font, all (\(_, (y2, _)) -> y /= y2) rest)
