@@ -3,7 +3,7 @@
 module Game.LambdaHack.Common.HighScore
   ( ScoreTable, ScoreDict
   , empty, register, showScore, showAward
-  , getTable, unTable, getRecord, getStatus
+  , getTable, unTable, getRecord, getStatus, getDate
 #ifdef EXPOSE_INTERNAL
     -- * Internal operations
   , ScoreRecord, insertPos
@@ -150,6 +150,9 @@ getRecord pos (ScoreTable table) =
 
 getStatus :: ScoreRecord -> Status
 getStatus = status
+
+getDate :: ScoreRecord -> POSIXTime
+getDate = date
 
 showAward :: Int        -- ^ number of (3-line) scores to be shown
           -> ScoreTable -- ^ current score table

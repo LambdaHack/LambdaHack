@@ -42,6 +42,7 @@ import           Data.Either (isLeft)
 import qualified Data.EnumMap.Strict as EM
 import qualified Data.EnumSet as ES
 import qualified Data.Map.Strict as M
+import           Data.Ord (comparing)
 import qualified Data.Text as T
 import           Data.Version
 import qualified NLP.Miniutter.English as MU
@@ -1382,14 +1383,23 @@ helpHuman cmdSemInCxtOfKM = do
               then []  -- a possible spoiler and lack of progression
               else textToAS
                      (T.concatMap duplicateEOL t)
+      highScoreRecords =
+        maybe [] HighScore.unTable $ EM.lookup gameModeId scoreDict
       outcomeSeen :: Outcome -> Bool
       outcomeSeen outcome =
-        let seeOutcomes =
-              map (stOutcome . HighScore.getStatus)
-                  (maybe [] HighScore.unTable $ EM.lookup gameModeId scoreDict)
-        in outcome `elem` seeOutcomes
+        outcome `elem` map (stOutcome . HighScore.getStatus) highScoreRecords
+      lastOutcome :: Maybe Outcome
+      lastOutcome = if null highScoreRecords
+                    then Nothing
+                    else Just $ stOutcome . HighScore.getStatus
+                              $ maximumBy (comparing HighScore.getDate)
+                                          highScoreRecords
       renderOutcome :: Outcome -> Text
-      renderOutcome outcome = "Game over message at" <+> tshow outcome
+      renderOutcome outcome =
+        "Game over message at" <+> tshow outcome
+        <+> if Just outcome == lastOutcome
+            then "(last major outcome)"
+            else ""
       spLen = textSize monoFont " "
       modeH = ( "Press SPACE or PGDN to advance or ESC to see the map again."
               , ( if isSquareFont propFont
