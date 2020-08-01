@@ -454,14 +454,13 @@ displayRespUpdAtomicUI cmd = case cmd of
     sstart <- getsSession sstart
     when (sstart == 0) resetSessionStart
     history <- getsSession shistory
-    if lengthHistory history == 0 then do
+    when (lengthHistory history == 0) $ do
       let title = T.pack $ rtitle corule
       msgAdd MsgAdmin $ "Welcome to" <+> title <> "!"
       -- Generate initial history. Only for UI clients.
       shistory <- defaultHistory
       modifySession $ \sess -> sess {shistory}
-    else
-      recordHistory
+    recordHistory  -- to ensure EOL even at creation of history
     lid <- getArenaUI
     lvl <- getLevel lid
     gameMode <- getGameMode
