@@ -131,13 +131,14 @@ truncateOverlay halveXstart width rheight wipeAdjacent fillLen onBlank ov =
       f lenPrev lenNext lal =
         -- This is crude, because an al at lower x may be longer, but KISS.
         -- @sortOn@ is significantly faster than @SortBy@ here,
-        -- though it takes more memory.
-        case sortOn (\(PointUI x _, _) -> x) lal of
+        -- though it takes more memory. The below is an explicit compromise.
+        let xlal = map (\pll@(PointUI x _, _) -> (x, pll)) lal
+        in case sortBy (comparing fst) xlal of
           [] -> error "empty list of overlay lines at the given row"
           minAl : rest ->
             g lenPrev lenNext fillLen minAl
             : map (g 0 0 0) rest
-      g lenPrev lenNext fillL (p@(PointUI xstartRaw _), layerLine) =
+      g lenPrev lenNext fillL (xstartRaw, (p, layerLine)) =
         let xstart = if halveXstart then xstartRaw `div` 2 else xstartRaw
             maxLen = if wipeAdjacent then max lenPrev lenNext else 0
             fillFromStart = max fillL (1 + maxLen) - xstart
