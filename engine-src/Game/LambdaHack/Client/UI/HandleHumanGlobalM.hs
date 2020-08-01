@@ -1378,8 +1378,8 @@ helpHuman cmdSemInCxtOfKM = do
         let t = fromMaybe "" $ lookup outcome $ mendMsg gameMode
         in textFgToAS Color.Brown
              (renderOutcome outcome <> ":\n")
-           <> if outcome `elem` victoryOutcomes && not (outcomeSeen outcome)
-              then []  -- too big of a spoiler
+           <> if not (outcomeSeen outcome)
+              then []  -- a possible spoiler and lack of progression
               else textToAS
                      (T.concatMap duplicateEOL t)
       outcomeSeen :: Outcome -> Bool
