@@ -564,20 +564,26 @@ lookAtItems :: MonadClientUI m
             -> m Text
 lookAtItems canSee p aid = do
   CCUI{coscreen=ScreenContent{rwidth}} <- getsSession sccui
+  side <- getsClient sside
   itemToF <- getsState $ flip itemToFull
   b <- getsState $ getActorBody aid
   -- Not using @viewedLevelUI@, because @aid@ may be temporarily not a leader.
   saimMode <- getsSession saimMode
   let lidV = maybe (blid b) aimLevelId saimMode
+      standingOn = p == bpos b && lidV == blid b
+      -- In exploration mode the detail level depends on whether the actor
+      -- that looks stand over the items, because then he can check details
+      -- with inventory commands (or look in aiming mode).
+      detailExploration =
+        if standingOn && bfid b == side then DetailMedium else DetailAll
+      detail = maybe detailExploration detailLevel saimMode
   localTime <- getsState $ getLocalTime lidV
   subject <- partActorLeader aid
   is <- getsState $ getFloorBag lidV p
-  side <- getsClient sside
   factionD <- getsState sfactionD
   globalTime <- getsState stime
   getKind <- getsState $ flip getIidKindId
-  let standingOn = p == bpos b && lidV == blid b
-      verb = MU.Text $ if | standingOn -> if bhp b > 0
+  let verb = MU.Text $ if | standingOn -> if bhp b > 0
                                           then "stand on"
                                           else "fall over"
                           | canSee -> "notice"
@@ -585,10 +591,9 @@ lookAtItems canSee p aid = do
       nWs (iid, kit@(k, _)) =
         partItemWs rwidth side factionD k localTime (itemToF iid) kit
       object = case EM.assocs is of
-        ii : _ : _ : _ | standingOn && bfid b == side ->
+        _ : _ | detail == DetailLow -> "some items"
+        ii : _ : _ : _ | detail <= DetailMedium ->
           MU.Phrase [nWs ii, "and other items"]
-          -- the actor is ours, so can see details with inventory commands
-        -- @SortOn@ less efficient here, because function cheap.
         iis -> MU.WWandW $ map nWs $ map snd $ sortBy (comparing fst)
                $ map (\(iid, kit) -> (getKind iid, (iid, kit))) iis
   -- Here @squashedWWandW@ is not needed, because identical items at the same

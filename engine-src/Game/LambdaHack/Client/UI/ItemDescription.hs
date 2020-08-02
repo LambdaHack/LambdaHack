@@ -1,8 +1,9 @@
 -- | Descriptions of items.
 module Game.LambdaHack.Client.UI.ItemDescription
   ( partItem, partItemShort, partItemShortest, partItemHigh
-  , partItemWs, partItemWsShortest, partItemWsShort, partItemWsLong
-  , partItemWsRanged, partItemShortAW, partItemMediumAW, partItemShortWownW
+  , partItemWsDetail, partItemWs, partItemWsShortest, partItemWsShort
+  , partItemWsLong, partItemWsRanged
+  , partItemShortAW, partItemMediumAW, partItemShortWownW
   , viewItem, itemDesc
 #ifdef EXPOSE_INTERNAL
     -- * Internal operations
@@ -313,6 +314,15 @@ partItemWsRanged width side factionD ranged detail
         | IA.checkFlag Ability.Unique arItem && count == 1 ->
             MU.Phrase ["the", name, powers]
         | otherwise -> MU.Phrase [MU.CarAWs count name, powers]
+
+partItemWsDetail :: DetailLevel
+                 -> Int -> FactionId -> FactionDict -> Int -> Time -> ItemFull
+                 -> ItemQuant
+                 -> MU.Part
+partItemWsDetail DetailLow = \_ _ _ _ _ _ _ -> ""
+partItemWsDetail DetailMedium = partItemWsShortest
+partItemWsDetail DetailHigh = partItemWs
+partItemWsDetail DetailAll = partItemWsLong
 
 partItemWs :: Int -> FactionId -> FactionDict -> Int -> Time -> ItemFull
            -> ItemQuant
