@@ -452,99 +452,96 @@ lookAtActors :: MonadClientUI m
 lookAtActors p lidV = do
   CCUI{coscreen=ScreenContent{rwidth}} <- getsSession sccui
   side <- getsClient sside
-  inhabitants <- getsState $ \s -> posToAidAssocs p lidV s
+  inhabitants <- getsState $ posToAidAssocs p lidV
   sactorUI <- getsSession sactorUI
   let inhabitantsUI =
         map (\(aid2, b2) -> (aid2, b2, sactorUI EM.! aid2)) inhabitants
   factionD <- getsState sfactionD
   localTime <- getsState $ getLocalTime lidV
-  s <- getState
   saimMode <- getsSession saimMode
   let detail = maybe DetailAll detailLevel saimMode
-      actorsBlurb = case inhabitants of
-        [] -> ("", "")
-        (_, body) : rest ->
-          let itemFull = itemToFull (btrunk body) s
-              bfact = factionD EM.! bfid body
-              -- Even if it's the leader, give his proper name, not 'you'.
-              subjects = map (\(_, _, bUI) -> partActor bUI)
-                             inhabitantsUI
-              -- No "a" prefix even if singular and inanimate, to distinguish
-              -- from items lying on the floor (and to simplify code).
-              (subject, person) = squashedWWandW subjects
-              resideVerb = case bwatch body of
-                WWatch -> "be here"
-                WWait 0 -> "idle here"
-                WWait _ -> "brace for impact"
-                WSleep -> "sleep here"
-                WWake -> "be waking up"
-              flyVerb | bproj body = "zip through here"
-                      | isJust $ btrajectory body = "move through here"
-                      | otherwise = resideVerb
-              guardVerbs = guardItemVerbs body s
-              verbs = flyVerb : guardVerbs
-              projDesc | not (bproj body) || detail < DetailAll = ""
-                       | otherwise =
-                let kit = beqp body EM.! btrunk body
-                    ps = [partItemMediumAW rwidth side factionD localTime
-                                           itemFull kit]
-                    tailWords = tail . T.words . makePhrase
-                in if tailWords ps == tailWords subjects
-                   then ""
-                   else makeSentence $ "this is" : ps
-              factDesc = case jfid $ itemBase itemFull of
-                Just tfid | tfid /= bfid body ->
-                  let dominatedBy = if bfid body == side
-                                    then "us"
-                                    else gname bfact
-                      tfact = factionD EM.! tfid
-                  in "Originally of" <+> gname tfact
-                     <> ", now fighting for" <+> dominatedBy <> "."
-                _ | detail < DetailAll -> ""  -- only domination worth spamming
-                _ | bfid body == side -> ""  -- just one of us
-                _ | bproj body -> "Launched by" <+> gname bfact <> "."
-                _ -> "One of" <+> gname bfact <> "."
-              idesc = if detail < DetailAll
-                      then ""
-                      else IK.idesc $ itemKind itemFull
-              -- If many different actors, only list names.
-              sameTrunks = all (\(_, b) -> btrunk b == btrunk body) rest
-              desc = wrapInParens $ projDesc <+> factDesc <+> idesc
-              onlyIs = bwatch body == WWatch && null guardVerbs
-              allBlurb = makeSentence [MU.SubjectVVxV "and" person MU.Yes
-                                                      subject verbs]
-              headBlurb = makeSentence [MU.SubjectVVxV "and" MU.Sg3rd MU.Yes
-                                                       (head subjects) verbs]
-              andProjectiles = case subjects of
-                _ : projs@(_ : _) ->
-                  let (subjectProjs, personProjs) =
-                        squashedWWandW projs
-                  in makeSentence
-                       [MU.SubjectVerb personProjs MU.Yes
-                                       subjectProjs "can be seen"]
-                _ -> ""
-          in if | bhp body <= 0 && not (bproj body) ->
-                  ( makeSentence
-                      (MU.SubjectVerbSg (head subjects) "lie here"
-                       : if null guardVerbs
-                         then []
-                         else [ MU.SubjectVVxV "and" MU.Sg3rd MU.No
-                                               "and" guardVerbs
-                              , "any more" ])
-                  , wrapInParens desc <+> andProjectiles )
-                | sameTrunks ->  -- only non-proj or several similar projectiles
-                  ( allBlurb
-                  , desc )
-                | not (bproj body) && onlyIs ->
-                  ( headBlurb
-                  , desc <+> andProjectiles )
-                | not (bproj body) ->
-                  ( makeSentence [subject, "can be seen"] <+> headBlurb
-                  , desc )
-                | otherwise -> assert (bproj body && not (null rest)) $
-                  ( makeSentence [subject, "can be seen"]
-                  , "" )
-  return actorsBlurb
+  case inhabitants of
+    [] -> return ("", "")
+    (_, body) : rest -> do
+      itemFull <- getsState $ itemToFull $ btrunk body
+      guardVerbs <- getsState $ guardItemVerbs body
+      let bfact = factionD EM.! bfid body
+          -- Even if it's the leader, give his proper name, not 'you'.
+          subjects = map (\(_, _, bUI) -> partActor bUI)
+                         inhabitantsUI
+          -- No "a" prefix even if singular and inanimate, to distinguish
+          -- from items lying on the floor (and to simplify code).
+          (subject, person) = squashedWWandW subjects
+          resideVerb = case bwatch body of
+            WWatch -> "be here"
+            WWait 0 -> "idle here"
+            WWait _ -> "brace for impact"
+            WSleep -> "sleep here"
+            WWake -> "be waking up"
+          flyVerb | bproj body = "zip through here"
+                  | isJust $ btrajectory body = "move through here"
+                  | otherwise = resideVerb
+          verbs = flyVerb : guardVerbs
+          projDesc | not (bproj body) || detail < DetailAll = ""
+                   | otherwise =
+            let kit = beqp body EM.! btrunk body
+                ps = [partItemMediumAW rwidth side factionD localTime
+                                       itemFull kit]
+                tailWords = tail . T.words . makePhrase
+            in if tailWords ps == tailWords subjects
+               then ""
+               else makeSentence $ "this is" : ps
+          factDesc = case jfid $ itemBase itemFull of
+            Just tfid | tfid /= bfid body ->
+              let dominatedBy = if bfid body == side then "us" else gname bfact
+                  tfact = factionD EM.! tfid
+              in "Originally of" <+> gname tfact
+                 <> ", now fighting for" <+> dominatedBy <> "."
+            _ | detail < DetailAll -> ""  -- only domination worth spamming
+            _ | bfid body == side -> ""  -- just one of us
+            _ | bproj body -> "Launched by" <+> gname bfact <> "."
+            _ -> "One of" <+> gname bfact <> "."
+          idesc = if detail < DetailAll
+                  then ""
+                  else IK.idesc $ itemKind itemFull
+          -- If many different actors, only list names.
+          sameTrunks = all (\(_, b) -> btrunk b == btrunk body) rest
+          desc = wrapInParens $ projDesc <+> factDesc <+> idesc
+          onlyIs = bwatch body == WWatch && null guardVerbs
+          allBlurb = makeSentence [MU.SubjectVVxV "and" person MU.Yes
+                                                  subject verbs]
+          headBlurb = makeSentence [MU.SubjectVVxV "and" MU.Sg3rd MU.Yes
+                                                   (head subjects) verbs]
+          andProjectiles = case subjects of
+            _ : projs@(_ : _) ->
+              let (subjectProjs, personProjs) =
+                    squashedWWandW projs
+              in makeSentence
+                   [MU.SubjectVerb personProjs MU.Yes
+                                   subjectProjs "can be seen"]
+            _ -> ""
+      return $!
+        if | bhp body <= 0 && not (bproj body) ->
+             ( makeSentence
+                 (MU.SubjectVerbSg (head subjects) "lie here"
+                  : if null guardVerbs
+                    then []
+                    else [ MU.SubjectVVxV "and" MU.Sg3rd MU.No
+                                          "and" guardVerbs
+                         , "any more" ])
+             , wrapInParens desc <+> andProjectiles )
+           | sameTrunks ->  -- only non-proj or several similar projectiles
+             ( allBlurb
+             , desc )
+           | not (bproj body) && onlyIs ->
+             ( headBlurb
+             , desc <+> andProjectiles )
+           | not (bproj body) ->
+             ( makeSentence [subject, "can be seen"] <+> headBlurb
+             , desc )
+           | otherwise -> assert (bproj body && not (null rest)) $
+             ( makeSentence [subject, "can be seen"]
+             , "" )
 
 guardItemVerbs :: Actor -> State -> [MU.Part]
 guardItemVerbs body s =
