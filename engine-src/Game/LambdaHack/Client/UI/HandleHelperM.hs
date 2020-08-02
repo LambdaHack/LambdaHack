@@ -629,12 +629,17 @@ lookAtStash lidV p = do
 lookAtPosition :: MonadClientUI m => LevelId -> Point -> m [(MsgClass, Text)]
 lookAtPosition lidV p = do
   COps{cotile} <- getsState scops
+  side <- getsClient sside
   leader <- getLeaderUI
   per <- getPerFid lidV
   let canSee = ES.member p (totalVisible per)
   -- Show general info about current position.
   (tileBlurb, placeBlurb, embedsList) <- lookAtTile canSee p leader lidV
   (actorsBlurb, actorsDesc) <- lookAtActors p lidV
+  inhabitants <- getsState $ posToAidAssocs p lidV
+  let actorMsgClass = if (bfid . snd <$> inhabitants) == [side]
+                      then MsgPrompt  -- our single proj or non-proj; tame
+                      else MsgPromptThreat
   itemsBlurb <- lookAtItems canSee p leader
   stashBlurb <- lookAtStash lidV p
   lvl@Level{lsmell, ltime} <- getLevel lidV
@@ -690,7 +695,7 @@ lookAtPosition lidV p = do
                then ""
                else "\n"
   return $ [ (MsgPromptWarning, stashBlurb)
-           , (MsgPromptThreat, actorsBlurb) ]
+           , (actorMsgClass, actorsBlurb) ]
            ++ [(MsgPrompt, actorsDesc <> midEOL)]
            ++ [(MsgPrompt, smellBlurb) | detail >= DetailHigh]
            ++ [(MsgPromptItem, itemsBlurb <> midEOL)]
