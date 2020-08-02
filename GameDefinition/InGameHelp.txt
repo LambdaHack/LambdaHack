@@ -75,7 +75,7 @@ For more general gameplay information see PLAYING.md.
 Mouse button effects per screen area, in exploration and in aiming modes
 
  exploration    LMB (left mouse button)         RMB (right mouse button)
- message line   clear messages and show history display help
+ message line   show history                    display help
  pointman tile  grab item(s)                    remove item(s)
  party on map   pick new pointman on screen     select party member on screen
  the map area   go to pointer for 25 steps      set crosshair to enemy
@@ -143,6 +143,7 @@ All aiming commands
  keys         command
  ESC          open main menu/finish aiming
  RET or INS   open dashboard/accept target
+ SPACE        show history/cycle detail level
  *            cycle crosshair among enemies
  /            cycle crosshair among items
  +            swerve the aiming line
@@ -160,7 +161,6 @@ All aiming commands
 Assorted commands
 
  keys         command
- SPACE        show history/cycle detail level
  %            yell/yawn and stop sleeping
  @            describe organs of the pointman
  #            show skill summary of the pointman

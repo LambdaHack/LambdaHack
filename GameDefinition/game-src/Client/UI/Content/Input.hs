@@ -59,7 +59,7 @@ standardKeysAndMouse = InputContentRaw $ map evalKeyDef $
                , "open dashboard/accept target"
                , ByAimMode AimModeCmd { exploration = ExecuteIfClear Dashboard
                                       , aiming = Accept } ))
-  , ("space", ( [CmdMinimal, CmdMeta]
+  , ("space", ( [CmdMinimal, CmdAim]
               , "show history/cycle detail level"
               , ByAimMode AimModeCmd { exploration = LastHistory
                                      , aiming = DetailCycle } ))

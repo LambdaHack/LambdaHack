@@ -273,7 +273,7 @@ keyHelp CCUI{ coinput=coinput@InputContent{..}
         , ( lastHelpEnd
           , okxs CmdMeta
                  (["", categoryDescription CmdMeta], ["", keyCaption])
-                 ([], [seeAlso]) ) ]
+                 ([], ["", seeAlso]) ) ]
       else
         [ ( lastHelpEnd
           , mergeOKX
