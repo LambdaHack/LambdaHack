@@ -1,3 +1,4 @@
+{-# LANGUAGE DeriveGeneric #-}
 -- | Description of effects.
 module Game.LambdaHack.Client.UI.EffectDescription
   ( DetailLevel(..), effectToSuffix, detectToObject, detectToVerb
@@ -14,7 +15,9 @@ import Prelude ()
 
 import Game.LambdaHack.Core.Prelude
 
+import           Data.Binary
 import qualified Data.Text as T
+import           GHC.Generics (Generic)
 import qualified NLP.Miniutter.English as MU
 
 import           Game.LambdaHack.Common.Actor
@@ -26,7 +29,9 @@ import           Game.LambdaHack.Definition.Ability
 import           Game.LambdaHack.Definition.Defs
 
 data DetailLevel = DetailLow | DetailMedium | DetailHigh | DetailAll
-  deriving (Eq, Ord, Enum, Bounded)
+  deriving (Show, Eq, Ord, Enum, Bounded, Generic)
+
+instance Binary DetailLevel
 
 -- | Suffix to append to a basic content name if the content causes the effect.
 --

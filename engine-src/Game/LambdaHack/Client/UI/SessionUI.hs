@@ -1,4 +1,4 @@
-{-# LANGUAGE GeneralizedNewtypeDeriving #-}
+{-# LANGUAGE DeriveGeneric, GeneralizedNewtypeDeriving #-}
 -- | The client UI session state.
 module Game.LambdaHack.Client.UI.SessionUI
   ( SessionUI(..), ItemDictUI, AimMode(..), KeyMacro(..), KeyMacroFrame(..)
@@ -16,10 +16,12 @@ import qualified Data.EnumMap.Strict as EM
 import qualified Data.EnumSet as ES
 import qualified Data.Map.Strict as M
 import           Data.Time.Clock.POSIX
+import           GHC.Generics (Generic)
 
 import           Game.LambdaHack.Client.State
 import           Game.LambdaHack.Client.UI.ActorUI
 import           Game.LambdaHack.Client.UI.ContentClientUI
+import           Game.LambdaHack.Client.UI.EffectDescription (DetailLevel (..))
 import           Game.LambdaHack.Client.UI.Frontend
 import           Game.LambdaHack.Client.UI.ItemSlot
 import qualified Game.LambdaHack.Client.UI.Key as K
@@ -99,15 +101,20 @@ data KeyMacroFrame = KeyMacroFrame
 type ItemDictUI = EM.EnumMap ItemId LevelId
 
 -- | Current aiming mode of a client.
-newtype AimMode = AimMode { aimLevelId :: LevelId }
-  deriving (Show, Eq, Binary)
+data AimMode = AimMode
+  { aimLevelId  :: LevelId
+  , detailLevel :: DetailLevel
+  }
+  deriving (Show, Eq, Generic)
+
+instance Binary AimMode
 
 -- | In-game macros. We record menu navigation keystrokes and keystrokes
 -- bound to commands with one exception --- we exclude keys that invoke
 -- the @Record@ command, to avoid surprises.
 -- Keys are kept in the same order in which they're meant to be replayed,
 -- i.e. the first element of the list is replayed also as the first one.
-newtype KeyMacro = KeyMacro { unKeyMacro :: [K.KM] }
+newtype KeyMacro = KeyMacro {unKeyMacro :: [K.KM]}
   deriving (Show, Eq, Binary, Semigroup, Monoid)
 
 -- | Parameters of the current run.

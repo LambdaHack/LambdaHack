@@ -984,7 +984,9 @@ aimTgtHuman :: MonadClientUI m => m ()
 aimTgtHuman = do
   -- (Re)start aiming at the current level.
   lidV <- viewedLevelUI
-  modifySession $ \sess -> sess {saimMode = Just $ AimMode lidV}
+  modifySession $ \sess -> sess {saimMode =
+    let newDetail = maybe DetailLow detailLevel (saimMode sess)
+    in Just $ AimMode lidV newDetail}
   doLook
   msgAdd MsgAlert "*flinging started; press again to project*"
 
@@ -1022,7 +1024,9 @@ aimFloorHuman = do
                                     else TNonEnemy aid
             Nothing -> Just $ TPoint TUnknown lidV xhairPos
         _ -> xhair
-  modifySession $ \sess -> sess {saimMode = Just $ AimMode lidV}
+  modifySession $ \sess -> sess {saimMode =
+    let newDetail = maybe DetailLow detailLevel saimMode
+    in Just $ AimMode lidV newDetail}
   setXHairFromGUI sxhair
   doLook
 
@@ -1064,7 +1068,9 @@ aimEnemyHuman = do
         (a, _) : _ -> Just $ if pickEnemies then TEnemy a else TNonEnemy a
         [] -> xhair  -- no seen foes in sight, stick to last target
   -- Register the chosen enemy, to pick another on next invocation.
-  modifySession $ \sess -> sess {saimMode = Just $ AimMode lidV}
+  modifySession $ \sess -> sess {saimMode =
+    let newDetail = maybe DetailLow detailLevel saimMode
+    in Just $ AimMode lidV newDetail}
   setXHairFromGUI sxhair
   doLook
 
@@ -1107,7 +1113,9 @@ aimItemHuman = do
         p : _ -> Just $ TPoint TKnown lidV p  -- don't force AI to collect it
         [] -> xhair  -- no items remembered, stick to last target
   -- Register the chosen enemy, to pick another on next invocation.
-  modifySession $ \sess -> sess {saimMode = Just $ AimMode lidV}
+  modifySession $ \sess -> sess {saimMode =
+    let newDetail = maybe DetailLow detailLevel saimMode
+    in Just $ AimMode lidV newDetail}
   setXHairFromGUI sxhair
   doLook
 
@@ -1132,7 +1140,9 @@ aimAscendHuman k = do
       mxhairPos <- xhairToPos
       let xhairPos = fromMaybe lpos mxhairPos
           sxhair = Just $ TPoint TKnown lidK xhairPos
-      modifySession $ \sess -> sess {saimMode = Just (AimMode lidK)}
+      modifySession $ \sess -> sess {saimMode =
+        let newDetail = maybe DetailLow detailLevel (saimMode sess)
+        in Just $ AimMode lidK newDetail}
       setXHairFromGUI sxhair
       doLook
       return Nothing
@@ -1144,7 +1154,9 @@ epsIncrHuman :: (MonadClient m, MonadClientUI m) => Direction -> m ()
 epsIncrHuman d = do
   saimMode <- getsSession saimMode
   lidV <- viewedLevelUI
-  modifySession $ \sess -> sess {saimMode = Just $ AimMode lidV}
+  modifySession $ \sess -> sess {saimMode =
+    let newDetail = maybe DetailLow detailLevel saimMode
+    in Just $ AimMode lidV newDetail}
   let sepsDelta = case d of
         Forward -> 1
         Backward -> -1
@@ -1237,7 +1249,9 @@ aimPointerFloorHuman = do
     let sxhair = Just $ TPoint TUnknown lidV $ Point px py
         sxhairMoused = sxhair /= oldXhair
     modifySession $ \sess ->
-      sess { saimMode = Just $ AimMode lidV
+      sess { saimMode =
+               let newDetail = maybe DetailLow detailLevel (saimMode sess)
+               in Just $ AimMode lidV newDetail
            , sxhairMoused }
     setXHairFromGUI sxhair
     doLook
@@ -1271,7 +1285,9 @@ aimPointerEnemyHuman = do
             Nothing -> Just $ TPoint TUnknown lidV newPos
         sxhairMoused = sxhair /= oldXhair
     modifySession $ \sess ->
-      sess { saimMode = Just $ AimMode lidV
+      sess { saimMode =
+               let newDetail = maybe DetailLow detailLevel (saimMode sess)
+               in Just $ AimMode lidV newDetail
            , sxhairMoused }
     setXHairFromGUI sxhair
     doLook

@@ -154,7 +154,6 @@ partyAfterLeader leader = do
 pickLeader :: MonadClientUI m => Bool -> ActorId -> m Bool
 pickLeader verbose aid = do
   leader <- getLeaderUI
-  saimMode <- getsSession saimMode
   if leader == aid
     then return False -- already picked
     else do
@@ -170,10 +169,8 @@ pickLeader verbose aid = do
       -- Update client state.
       updateClientLeader aid
       -- Move the xhair, if active, to the new level.
-      case saimMode of
-        Nothing -> return ()
-        Just _ ->
-          modifySession $ \sess -> sess {saimMode = Just $ AimMode $ blid body}
+      modifySession $ \sess -> sess {saimMode =
+        (\aimMode -> aimMode {aimLevelId = blid body}) <$> saimMode sess}
       -- Inform about items, etc.
       itemsBlurb <- lookAtItems True (bpos body) aid
       stashBlurb <- lookAtStash (blid body) (bpos body)
