@@ -174,7 +174,7 @@ pickLeader verbose aid = do
       -- Inform about items, etc.
       itemsBlurb <- lookAtItems True (bpos body) aid
       stashBlurb <- lookAtStash (blid body) (bpos body)
-      when verbose $ msgAdd MsgAtFeet $ itemsBlurb <+> stashBlurb
+      when verbose $ msgAdd MsgAtFeet $ stashBlurb <+> itemsBlurb
       return True
 
 pickLeaderWithPointer :: MonadClientUI m => m MError
