@@ -926,11 +926,13 @@ endAimingMsg = do
 -- | Cycle detail level of aiming mode descriptions, starting up.
 detailCycleHuman :: MonadClientUI m => m ()
 detailCycleHuman = do
-  let cycleDetail detail = if detail == maxBound then minBound else succ detail
   modifySession $ \sess -> sess {saimMode =
-    (\aimMode -> aimMode {detailLevel = cycleDetail $ detailLevel aimMode})
+    (\aimMode -> aimMode {detailLevel = detailSuccCycle $ detailLevel aimMode})
                  <$> saimMode sess}
   doLook
+
+detailSuccCycle :: DetailLevel -> DetailLevel
+detailSuccCycle detail = if detail == maxBound then minBound else succ detail
 
 -- * ClearTargetIfItemClear
 
@@ -1236,7 +1238,8 @@ xhairPointerFloorHuman :: MonadClientUI m => m ()
 xhairPointerFloorHuman = do
   saimMode <- getsSession saimMode
   aimPointerFloorHuman
-  modifySession $ \sess -> sess {saimMode}
+  when (isNothing saimMode) $
+    modifySession $ \sess -> sess {saimMode}
 
 -- * XhairPointerEnemy
 
@@ -1244,7 +1247,8 @@ xhairPointerEnemyHuman :: MonadClientUI m => m ()
 xhairPointerEnemyHuman = do
   saimMode <- getsSession saimMode
   aimPointerEnemyHuman
-  modifySession $ \sess -> sess {saimMode}
+  when (isNothing saimMode) $
+    modifySession $ \sess -> sess {saimMode}
 
 -- * AimPointerFloor
 
@@ -1260,9 +1264,12 @@ aimPointerFloorHuman = do
     oldXhair <- getsSession sxhair
     let sxhair = Just $ TPoint TUnknown lidV $ Point px py
         sxhairMoused = sxhair /= oldXhair
+        detailSucc = if sxhairMoused
+                     then detailLevel
+                     else detailSuccCycle . detailLevel
     modifySession $ \sess ->
       sess { saimMode =
-               let newDetail = maybe DetailLow detailLevel (saimMode sess)
+               let newDetail = maybe DetailLow detailSucc (saimMode sess)
                in Just $ AimMode lidV newDetail
            , sxhairMoused }
     setXHairFromGUI sxhair
@@ -1296,9 +1303,12 @@ aimPointerEnemyHuman = do
                                     else TNonEnemy aid
             Nothing -> Just $ TPoint TUnknown lidV newPos
         sxhairMoused = sxhair /= oldXhair
+        detailSucc = if sxhairMoused
+                     then detailLevel
+                     else detailSuccCycle . detailLevel
     modifySession $ \sess ->
       sess { saimMode =
-               let newDetail = maybe DetailLow detailLevel (saimMode sess)
+               let newDetail = maybe DetailLow detailSucc (saimMode sess)
                in Just $ AimMode lidV newDetail
            , sxhairMoused }
     setXHairFromGUI sxhair
