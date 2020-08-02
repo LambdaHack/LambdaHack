@@ -509,10 +509,20 @@ lookAtActors p lidV = do
                       else IK.idesc $ itemKind itemFull
               -- If many different actors, only list names.
               sameTrunks = all (\(_, b) -> btrunk b == btrunk body) rest
-              desc = if sameTrunks then projDesc <+> factDesc <+> idesc else ""
-              -- Both description and faction blurb may be empty.
-              pdesc = if desc == "" then "" else "(" <> desc <> ")"
+              desc = wrapInParens $ projDesc <+> factDesc <+> idesc
               onlyIs = bwatch body == WWatch && null guardVerbs
+              allBlurb = makeSentence [MU.SubjectVVxV "and" person MU.Yes
+                                                      subject verbs]
+              headBlurb = makeSentence [MU.SubjectVVxV "and" MU.Sg3rd MU.Yes
+                                                       (head subjects) verbs]
+              andProjectiles = case subjects of
+                _ : projs@(_ : _) ->
+                  let (subjectProjs, personProjs) =
+                        squashedWWandW projs
+                  in makeSentence
+                       [MU.SubjectVerb personProjs MU.Yes
+                                       subjectProjs "can be seen"]
+                _ -> ""
           in if | bhp body <= 0 && not (bproj body) ->
                   ( makeSentence
                       (MU.SubjectVerbSg (head subjects) "lie here"
@@ -521,25 +531,18 @@ lookAtActors p lidV = do
                          else [ MU.SubjectVVxV "and" MU.Sg3rd MU.No
                                                "and" guardVerbs
                               , "any more" ])
-                    <+> case subjects of
-                          _ : projs@(_ : _) ->
-                            let (subjectProjs, personProjs) =
-                                  squashedWWandW projs
-                            in makeSentence
-                                 [MU.SubjectVerb personProjs MU.Yes
-                                                 subjectProjs "can be seen"]
-                          _ -> ""
-                  , "" )
-                | null rest || onlyIs ->
-                  ( makeSentence
-                      [MU.SubjectVVxV "and" person MU.Yes subject verbs]
-                  , pdesc )
-                | otherwise ->
+                  , wrapInParens desc <+> andProjectiles )
+                | sameTrunks ->  -- only non-proj or several similar projectiles
+                  ( allBlurb
+                  , desc )
+                | not (bproj body) && onlyIs ->
+                  ( headBlurb
+                  , desc <+> andProjectiles )
+                | not (bproj body) ->
+                  ( makeSentence [subject, "can be seen"] <+> headBlurb
+                  , desc )
+                | otherwise -> assert (bproj body && not (null rest)) $
                   ( makeSentence [subject, "can be seen"]
-                    <+> if onlyIs
-                        then ""
-                        else makeSentence [MU.SubjectVVxV "and" MU.Sg3rd MU.Yes
-                                                          (head subjects) verbs]
                   , "" )
   return actorsBlurb
 

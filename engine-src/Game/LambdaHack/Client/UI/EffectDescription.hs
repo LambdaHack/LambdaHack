@@ -4,10 +4,10 @@ module Game.LambdaHack.Client.UI.EffectDescription
   ( DetailLevel(..), effectToSuffix, detectToObject, detectToVerb
   , skillName, skillDesc, skillToDecorator, skillSlots
   , kindAspectToSuffix, aspectToSentence, affixDice
-  , describeToolsAlternative, describeCrafting
+  , describeToolsAlternative, describeCrafting, wrapInParens
 #ifdef EXPOSE_INTERNAL
     -- * Internal operations
-  , slotToSentence, tmodToSuff, affixBonus, wrapInParens, wrapInChevrons
+  , slotToSentence, tmodToSuff, affixBonus, wrapInChevrons
 #endif
   ) where
 
