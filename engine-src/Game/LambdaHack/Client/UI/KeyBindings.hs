@@ -156,7 +156,7 @@ keyHelp CCUI{ coinput=coinput@InputContent{..}
       let kst1 = keySel sel key1
           kst2 = keySel sel key2
           f (ca1, Left km1, _) (ca2, Left km2, _) y =
-            assert (ca1 == ca2 `blame` (kst1, kst2))
+            assert (ca1 == ca2 `blame` (ca1, ca2, km1, km2, kst1, kst2))
               [ (Left [km1], ( K.PointUI (doubleIfSquare $ keyM + 3) y
                              , ButtonWidth monoFont keyB ))
               , (Left [km2], ( K.PointUI (doubleIfSquare $ keyB + keyM + 5) y

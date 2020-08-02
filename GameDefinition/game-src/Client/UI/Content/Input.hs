@@ -60,8 +60,9 @@ standardKeysAndMouse = InputContentRaw $ map evalKeyDef $
                , ByAimMode AimModeCmd { exploration = ExecuteIfClear Dashboard
                                       , aiming = Accept } ))
   , ("space", ( [CmdMinimal, CmdMeta]
-              , "clear messages and show history"
-              , ExecuteIfClear LastHistory ))
+              , "show history/cycle detail level"
+              , ByAimMode AimModeCmd { exploration = LastHistory
+                                     , aiming = DetailCycle } ))
   , ("Tab", memberCycle Forward [CmdMinimal, CmdMove])
       -- listed here to keep proper order of the minimal cheat sheet
   , ("BackTab", memberCycle Backward [CmdMove])
@@ -247,12 +248,15 @@ standardKeysAndMouse = InputContentRaw $ map evalKeyDef $
               , "accept target"
               , Accept ))
   , ("safe10", ( [CmdInternal]
+               , "show history"
+               , LastHistory ))
+  , ("safe11", ( [CmdInternal]
                , "wait a turn, bracing for impact"
                , Wait ))
-  , ("safe11", ( [CmdInternal]
+  , ("safe12", ( [CmdInternal]
                , "lurk 0.1 of a turn"
                , Wait10 ))
-  , ("safe12", ( [CmdInternal]
+  , ("safe13", ( [CmdInternal]
                , "snap crosshair to enemy"
                , XhairPointerEnemy ))
   ]
