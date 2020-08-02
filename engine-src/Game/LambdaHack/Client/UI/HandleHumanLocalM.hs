@@ -930,6 +930,7 @@ detailCycleHuman = do
   modifySession $ \sess -> sess {saimMode =
     (\aimMode -> aimMode {detailLevel = cycleDetail $ detailLevel aimMode})
                  <$> saimMode sess}
+  doLook
 
 -- * ClearTargetIfItemClear
 
