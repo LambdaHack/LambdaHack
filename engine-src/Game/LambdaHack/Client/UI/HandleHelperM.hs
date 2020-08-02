@@ -406,12 +406,14 @@ lookAtTile canSee p aid lidV = do
   factionD <- getsState sfactionD
   b <- getsState $ getActorBody aid
   lvl <- getLevel lidV
+  saimMode <- getsSession saimMode
   embeds <- getsState $ getEmbedBag lidV p
   itemToF <- getsState $ flip itemToFull
   seps <- getsClient seps
   localTime <- getsState $ getLocalTime lidV
   getKind <- getsState $ flip getIidKind
-  let aims = isJust $ makeLine False b p seps cops lvl
+  let detail = maybe DetailAll detailLevel saimMode
+      aims = isJust $ makeLine False b p seps cops lvl
       tkid = lvl `at` p
       tile = okind cotile tkid
       vis | TK.tname tile == "unknown space" = "that is"
@@ -429,7 +431,8 @@ lookAtTile canSee p aid lidV = do
       itemLook (iid, kit@(k, _)) =
         let itemFull = itemToF iid
             arItem = aspectRecordFull itemFull
-            nWs = partItemWsLong rwidth side factionD k localTime itemFull kit
+            nWs = partItemWsDetail detail
+                                   rwidth side factionD k localTime itemFull kit
             verb = if k == 1 || IA.checkFlag Ability.Condition arItem
                    then "is"
                    else "are"
@@ -456,7 +459,9 @@ lookAtActors p lidV = do
   factionD <- getsState sfactionD
   localTime <- getsState $ getLocalTime lidV
   s <- getState
-  let actorsBlurb = case inhabitants of
+  saimMode <- getsSession saimMode
+  let detail = maybe DetailAll detailLevel saimMode
+      actorsBlurb = case inhabitants of
         [] -> ("", "")
         (_, body) : rest ->
           let itemFull = itemToFull (btrunk body) s
@@ -478,7 +483,7 @@ lookAtActors p lidV = do
                       | otherwise = resideVerb
               guardVerbs = guardItemVerbs body s
               verbs = flyVerb : guardVerbs
-              projDesc | not $ bproj body = ""
+              projDesc | not (bproj body) || detail < DetailAll = ""
                        | otherwise =
                 let kit = beqp body EM.! btrunk body
                     ps = [partItemMediumAW rwidth side factionD localTime
@@ -495,10 +500,13 @@ lookAtActors p lidV = do
                       tfact = factionD EM.! tfid
                   in "Originally of" <+> gname tfact
                      <> ", now fighting for" <+> dominatedBy <> "."
+                _ | detail < DetailAll -> ""  -- only domination worth spamming
                 _ | bfid body == side -> ""  -- just one of us
                 _ | bproj body -> "Launched by" <+> gname bfact <> "."
                 _ -> "One of" <+> gname bfact <> "."
-              idesc = IK.idesc $ itemKind itemFull
+              idesc = if detail < DetailAll
+                      then ""
+                      else IK.idesc $ itemKind itemFull
               -- If many different actors, only list names.
               sameTrunks = all (\(_, b) -> btrunk b == btrunk body) rest
               desc = if sameTrunks then projDesc <+> factDesc <+> idesc else ""
@@ -545,9 +553,7 @@ guardItemVerbs body s =
       belongingsVerbs | itemsSize == 1 = ["fondle a trinket"]
                       | itemsSize > 1 = ["guard a hoard"]
                       | otherwise = []
-  in if bproj body
-     then []
-     else belongingsVerbs
+  in if bproj body then [] else belongingsVerbs
 
 guardItemSize :: Actor -> State -> Int
 guardItemSize body s =
@@ -591,7 +597,8 @@ lookAtItems canSee p aid = do
       nWs (iid, kit@(k, _)) =
         partItemWs rwidth side factionD k localTime (itemToF iid) kit
       object = case EM.assocs is of
-        _ : _ | detail == DetailLow -> "some items"
+        [_] | detail == DetailLow -> "an item"
+        _ | detail == DetailLow -> "some items"
         ii : _ : _ : _ | detail <= DetailMedium ->
           MU.Phrase [nWs ii, "and other items"]
         iis -> MU.WWandW $ map nWs $ map snd $ sortBy (comparing fst)
@@ -631,7 +638,9 @@ lookAtPosition lidV p = do
   itemsBlurb <- lookAtItems canSee p leader
   stashBlurb <- lookAtStash lidV p
   lvl@Level{lsmell, ltime} <- getLevel lidV
-  let smellBlurb = case EM.lookup p lsmell of
+  saimMode <- getsSession saimMode
+  let detail = maybe DetailAll detailLevel saimMode
+      smellBlurb = case EM.lookup p lsmell of
         Just sml | sml > ltime ->
           let Delta t = smellTimeout `timeDeltaSubtract`
                           (sml `timeDeltaToFrom` ltime)
@@ -673,27 +682,26 @@ lookAtPosition lidV p = do
                        then ""
                        else "The following items on the ground or in equipment enable special transformations:"
                             <+> tItems <> "."  -- not telling to what terrain
-      actorEOL = if T.null actorsDesc
-                    || T.null itemsBlurb && null embedsList
-                 then ""
-                 else "\n"
-      itemsEOL = if T.null actorsDesc && T.null itemsBlurb
-                    || null embedsList
-                 then ""
-                 else "\n"
+      modifyBlurb = alterBlurb <+> transformBlurb
+      midEOL = if detail < DetailHigh
+                  || T.null actorsDesc
+                  || T.null itemsBlurb
+                  || null embedsList && T.null modifyBlurb
+               then ""
+               else "\n"
   return $ [ (MsgPromptWarning, stashBlurb)
-           , (MsgPromptThreat, actorsBlurb)
-           , (MsgPrompt, actorsDesc
-                         <> actorEOL)
-           , (MsgPrompt, smellBlurb)
-           , (MsgPromptItem, itemsBlurb
-                             <> itemsEOL)
-           , (MsgPromptFocus, tileBlurb)
-           , (MsgPrompt, placeBlurb) ]
+           , (MsgPromptThreat, actorsBlurb) ]
+           ++ [(MsgPrompt, actorsDesc <> midEOL)]
+           ++ [(MsgPrompt, smellBlurb) | detail >= DetailHigh]
+           ++ [(MsgPromptItem, itemsBlurb <> midEOL)]
+           ++ [(MsgPromptFocus, tileBlurb) | detail >= DetailMedium
+                                             || T.null actorsBlurb
+                                                && T.null itemsBlurb]
+           ++ [(MsgPrompt, placeBlurb) | detail >= DetailHigh]
            ++ concatMap (\(embedName, embedDesc) ->
-                [ (MsgPromptMention, embedName)
-                , (MsgPrompt, embedDesc) ]) embedsList
-           ++ [ (MsgPromptItem, alterBlurb <+> transformBlurb) ]
+                [(MsgPromptMention, embedName) | detail >= DetailMedium]
+                ++ [(MsgPrompt, embedDesc) | detail == DetailAll]) embedsList
+           ++ [(MsgPromptItem, modifyBlurb) | detail == DetailAll]
 
 displayItemLore :: MonadClientUI m
                 => ItemBag -> Int -> (ItemId -> ItemFull -> Int -> Text) -> Int
