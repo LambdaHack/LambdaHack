@@ -19,7 +19,7 @@ module Game.LambdaHack.Client.UI.HandleHumanGlobalM
   , helpHuman, hintHuman, dashboardHuman, itemMenuHuman, chooseItemMenuHuman
   , mainMenuHuman, mainMenuAutoOnHuman, mainMenuAutoOffHuman
   , settingsMenuHuman, challengesMenuHuman
-  , gameScenarioIncr, gameDifficultyIncr, gameWolfToggle, gameFishToggle
+  , gameDifficultyIncr, gameWolfToggle, gameFishToggle, gameScenarioIncr
     -- * Global commands that never take time
   , gameRestartHuman, gameQuitHuman, gameDropHuman, gameExitHuman, gameSaveHuman
   , doctrineHuman, automateHuman, automateToggleHuman, automateBackHuman
@@ -1838,12 +1838,6 @@ challengesMenuHuman cmdSemInCxtOfKM = do
         ]
   generateMenu cmdSemInCxtOfKM blurb kds gameInfo "challenge"
 
--- * GameScenarioIncr
-
-gameScenarioIncr :: MonadClient m => m ()
-gameScenarioIncr =
-  modifyClient $ \cli -> cli {snxtScenario = snxtScenario cli + 1}
-
 -- * GameDifficultyIncr
 
 gameDifficultyIncr :: MonadClient m => m ()
@@ -1868,6 +1862,12 @@ gameFishToggle :: MonadClient m => m ()
 gameFishToggle =
   modifyClient $ \cli ->
     cli {snxtChal = (snxtChal cli) {cfish = not (cfish (snxtChal cli))} }
+
+-- * GameScenarioIncr
+
+gameScenarioIncr :: MonadClient m => m ()
+gameScenarioIncr =
+  modifyClient $ \cli -> cli {snxtScenario = snxtScenario cli + 1}
 
 -- * GameRestart
 

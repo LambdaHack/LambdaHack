@@ -18,7 +18,8 @@ module Game.LambdaHack.Client.UI.HandleHumanLocalM
   , markVisionHuman, markSmellHuman, markSuspectHuman, markAnimHuman
   , printScreenHuman
     -- * Commands specific to aiming
-  , cancelHuman, acceptHuman, clearTargetIfItemClearHuman, itemClearHuman
+  , cancelHuman, acceptHuman, detailCycleHuman
+  , clearTargetIfItemClearHuman, itemClearHuman
   , moveXhairHuman, aimTgtHuman, aimFloorHuman, aimEnemyHuman, aimItemHuman
   , aimAscendHuman, epsIncrHuman
   , xhairUnknownHuman, xhairItemHuman, xhairStairHuman
@@ -919,6 +920,16 @@ endAimingMsg = do
       makeSentence [MU.SubjectVerbSg subject "clear target"]
     Just targetMsg ->
       makeSentence [MU.SubjectVerbSg subject "target", MU.Text targetMsg]
+
+-- * DetailCycle
+
+-- | Cycle detail level of aiming mode descriptions, starting up.
+detailCycleHuman :: MonadClientUI m => m ()
+detailCycleHuman = do
+  let cycleDetail detail = if detail == maxBound then minBound else succ detail
+  modifySession $ \sess -> sess {saimMode =
+    (\aimMode -> aimMode {detailLevel = cycleDetail $ detailLevel aimMode})
+                 <$> saimMode sess}
 
 -- * ClearTargetIfItemClear
 

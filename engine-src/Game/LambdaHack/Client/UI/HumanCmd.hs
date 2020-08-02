@@ -173,6 +173,7 @@ data HumanCmd =
     -- These are mostly related to aiming.
   | Cancel
   | Accept
+  | DetailCycle
   | ClearTargetIfItemClear
   | ItemClear
   | MoveXhair Vector Int

@@ -154,6 +154,7 @@ cmdSemantics cmd = case cmd of
 
   Cancel -> addNoError cancelHuman
   Accept -> addNoError acceptHuman
+  DetailCycle -> addNoError detailCycleHuman
   ClearTargetIfItemClear -> addNoError clearTargetIfItemClearHuman
   ItemClear -> addNoError itemClearHuman
   MoveXhair v k -> Left <$> moveXhairHuman v k
