@@ -49,6 +49,7 @@ import           Game.LambdaHack.Client.UI.ActorUI
 import           Game.LambdaHack.Client.UI.Content.Input
 import           Game.LambdaHack.Client.UI.Content.Screen
 import           Game.LambdaHack.Client.UI.ContentClientUI
+import           Game.LambdaHack.Client.UI.EffectDescription
 import           Game.LambdaHack.Client.UI.Frame
 import qualified Game.LambdaHack.Client.UI.Frontend as Frontend
 import qualified Game.LambdaHack.Client.UI.HumanCmd as HumanCmd
@@ -192,12 +193,20 @@ getReportUI :: MonadClientUI m => m Report
 getReportUI = do
   sUIOptions <- getsSession sUIOptions
   report <- getsSession $ newReport . shistory
+  saimMode <- getsSession saimMode
   side <- getsClient sside
   fact <- getsState $ (EM.! side) . sfactionD
-  let underAI = isAIFact fact
+  let newcomerHelp = True  -- TODO
+      defaultDetailLevel = DetailLow  -- TODO
+      detailAtDefault = (detailLevel <$> saimMode) == Just defaultDetailLevel
+      underAI = isAIFact fact
       mem = EM.fromList <$> uMessageColors sUIOptions
+      -- Here we assume newbies don't override default keys.
+      promptAim = toMsg mem MsgPrompt "<aiming mode: press SPACE or RMB for more detail, f to fling, ESC to cancel>\n"
       promptAI = toMsg mem MsgAlert "<press any key for main menu>"
-  return $! if underAI then consReport promptAI report else report
+  return $! if | newcomerHelp && detailAtDefault -> consReport promptAim report
+               | underAI -> consReport promptAI report
+               | otherwise -> report
 
 getLeaderUI :: MonadClientUI m => m ActorId
 getLeaderUI = do
