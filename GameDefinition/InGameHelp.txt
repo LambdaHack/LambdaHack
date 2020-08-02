@@ -59,9 +59,9 @@ C-RMB or C-S-LMB.
     keys         command (exploration/aiming)
     LMB          go to pointer for 25 steps/fling at enemy
     S-LMB        run to pointer collectively for 25 steps/fling at enemy
-    RMB or C-LMB start aiming at enemy under pointer
+    RMB or C-LMB start aiming at enemy under pointer/cycle detail level
     S-RMB        modify terrain at pointer
-    MMB or C-RMB snap crosshair to floor under pointer
+    MMB or C-RMB snap crosshair to floor under pointer/cycle detail level
     WHEEL-UP     swerve the aiming line
     WHEEL-DN     unswerve the aiming line
 

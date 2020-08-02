@@ -180,12 +180,12 @@ mouseLMB goToOrRunTo desc =
 
 mouseMMB :: CmdTriple
 mouseMMB = ( [CmdMouse]
-           , "snap crosshair to floor under pointer"
+           , "snap crosshair to floor under pointer/cycle detail level"
            , XhairPointerFloor )
 
 mouseRMB :: CmdTriple
 mouseRMB = ( [CmdMouse]
-           , "start aiming at enemy under pointer"
+           , "start aiming at enemy under pointer/cycle detail level"
            , ByAimMode aimMode )
  where
   aimMode = AimModeCmd

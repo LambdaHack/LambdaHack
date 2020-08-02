@@ -93,7 +93,7 @@ promptMainKeys = do
                 then "Switch to another teammate with Tab, while all others auto-melee foes, if adjacent, but normally don't chase them."
                 else ""
       describePos = if mmbIsNormal
-                    then "Describe map position with MMB."
+                    then "Describe map position with MMB or RMB."
                     else ""
       viewEquip = if stashKeysAreNormal
                   then "View shared (I)nventory stash and stash items into the (i)nventory."
