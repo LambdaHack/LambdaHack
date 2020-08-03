@@ -448,8 +448,8 @@ lookAtActors p lidV = do
   side <- getsClient sside
   inhabitants <- getsState $ posToAidAssocs p lidV
   sactorUI <- getsSession sactorUI
-  let inhabitantsUI =
-        map (\(aid2, b2) -> (aid2, b2, sactorUI EM.! aid2)) inhabitants
+  let inhabitantsUI = map (\(aid2, b2) ->
+                             (aid2, b2, sactorUI EM.! aid2)) inhabitants
   factionD <- getsState sfactionD
   localTime <- getsState $ getLocalTime lidV
   saimMode <- getsSession saimMode
@@ -688,18 +688,19 @@ lookAtPosition lidV p = do
                             <+> tItems <> "."  -- not telling to what terrain
       modifyBlurb = alterBlurb <+> transformBlurb
       midEOL = if detail < DetailHigh
-                  || T.null actorsDesc
-                  || T.null itemsBlurb
+                  || T.null stashBlurb && T.null actorsDesc
+                  || T.null smellBlurb && T.null itemsBlurb
                   || null embedsList && T.null modifyBlurb
                then ""
                else "\n"
   return $ [ (MsgPromptWarning, stashBlurb)
-           , (actorMsgClass, actorsBlurb) ]
-           ++ [(MsgPrompt, actorsDesc <> midEOL)]
+           , (actorMsgClass, actorsBlurb)
+           , (MsgPrompt, actorsDesc <> midEOL) ]
            ++ [(MsgPrompt, smellBlurb) | detail >= DetailHigh]
            ++ [(MsgPromptItem, itemsBlurb <> midEOL)]
-           ++ [(MsgPromptFocus, tileBlurb) | detail >= DetailMedium
-                                             || not (null embedsList)]
+           ++ [(MsgPromptFocus, tileBlurb) | detail >= DetailHigh
+                                             || detail == DetailMedium
+                                                && not (null embedsList)]
            ++ [(MsgPrompt, placeBlurb) | detail >= DetailHigh]
            ++ case detail of
                 DetailAll ->
@@ -710,10 +711,10 @@ lookAtPosition lidV p = do
                   [(MsgPromptMention, case embedsList of
                     [] -> ""
                     [((k, _), _)] ->
-                      ppEmbedName (k, if k == 1
+                      ppEmbedName (1, if k == 1
                                       then "an embedded item"
                                       else "a stack of embedded items")
-                    _ -> ppEmbedName (2, "some embedded items"))]
+                    _ -> ppEmbedName (9, "some embedded items"))]
                 _ -> let n = sum $ map (fst . fst) embedsList
                          wWandW = MU.WWandW $ map (snd . fst) embedsList
                      in [(MsgPromptMention, ppEmbedName (n, wWandW)) | n > 0]

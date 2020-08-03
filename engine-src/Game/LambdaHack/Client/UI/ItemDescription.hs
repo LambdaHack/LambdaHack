@@ -93,7 +93,7 @@ partItemN3 width side factionD ranged detailLevel maxWordsToShow localTime
            ++ (if displayPowers
                then take maxWordsToShow powerTs
                else [])
-           ++ [ "(...)" | displayPowers && length powerTs > maxWordsToShow ]
+           ++ ["(...)" | displayPowers && length powerTs > maxWordsToShow]
            ++ (if displayPowers && ranged then rangedDamage else [])
            ++ [charges | maxWordsToShow > 1]
       name | temporary =
