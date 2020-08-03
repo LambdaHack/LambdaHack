@@ -597,7 +597,8 @@ lookAtItems canSee p aid = do
       nWs (iid, kit@(k, _)) =
         partItemWs rwidth side factionD k localTime (itemToF iid) kit
       object = case EM.assocs is of
-        [_] | detail == DetailLow -> "an item"
+        [(_, (k, _))] | detail == DetailLow ->
+          if k == 1 then "an item" else "an item stack"
         _ | detail == DetailLow -> "some items"
         ii : _ : _ : _ | detail <= DetailMedium ->
           MU.Phrase [nWs ii, "and other items"]
