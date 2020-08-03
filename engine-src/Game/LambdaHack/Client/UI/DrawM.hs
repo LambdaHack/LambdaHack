@@ -506,8 +506,9 @@ drawFrameStatus drawnLevelId = do
       markSleepTgtDesc
         | mxhairWatchfulness /= Just WSleep = textToAS
         | otherwise = textFgToAS Color.Green
-      xhairName AimMode{detailLevel} =
-        "Crosshair x" <> tshow (1 + fromEnum detailLevel)
+      xdetail AimMode{detailLevel} =
+        "x" <> tshow (1 + fromEnum detailLevel)
+      xhairName aimMode = "Crosshair" <+> xdetail aimMode
       xhairBlurb =
         maybe
           teamBlurb
@@ -515,7 +516,7 @@ drawFrameStatus drawnLevelId = do
              Just aimMode ->
                textToAS (xhairName aimMode <> ":")
                <+:> markSleepTgtDesc (trimTgtDesc (widthXhairOrItem - 14) t)
-             Nothing ->markSleepTgtDesc (trimTgtDesc widthXhairOrItem t))
+             Nothing -> markSleepTgtDesc (trimTgtDesc widthXhairOrItem t))
           mhairDesc
       tgtOrItem
         | Just (iid, fromCStore, _) <- sitemSel
@@ -534,8 +535,12 @@ drawFrameStatus drawnLevelId = do
                       partItem rwidth (bfid b) factionD localTime itemFull kit
                     t = makePhrase [MU.Car1Ws k name, powers]
                     xhairHP = maybe "" (" " <>) mxhairHP
-                    trimTD = trimTgtDesc (widthTgt - T.length xhairHP - 6) t
-                return (textToAS $ "Item:" <+> trimTD, xhairHP)
+                    (xItemWidth, xItemText) = case saimMode of
+                      Just aimMode -> (9, "Item" <+> xdetail aimMode)
+                      Nothing -> (6, "Item")
+                    trimTD =
+                      trimTgtDesc (widthTgt - T.length xhairHP - xItemWidth) t
+                return (textToAS $ xItemText <> ":" <+> trimTD, xhairHP)
         | otherwise =
             return (xhairBlurb, pathCsr)
   (xhairLine, pathXhairOrNull) <- tgtOrItem
