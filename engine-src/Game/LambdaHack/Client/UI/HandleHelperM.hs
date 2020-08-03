@@ -46,7 +46,6 @@ import           Game.LambdaHack.Common.ActorState
 import           Game.LambdaHack.Common.ClientOptions
 import           Game.LambdaHack.Common.Faction
 import           Game.LambdaHack.Common.Item
-import qualified Game.LambdaHack.Common.ItemAspect as IA
 import           Game.LambdaHack.Common.Kind
 import           Game.LambdaHack.Common.Level
 import           Game.LambdaHack.Common.Misc
@@ -398,7 +397,7 @@ lookAtTile :: MonadClientUI m
            -> Point      -- ^ position to describe
            -> ActorId    -- ^ the actor that looks
            -> LevelId    -- ^ level the position is at
-           -> m (Text, Text, [(Text, Text)])
+           -> m (Text, Text, [((Int, MU.Part), Text)])
 lookAtTile canSee p aid lidV = do
   CCUI{coscreen=ScreenContent{rwidth}} <- getsSession sccui
   cops@COps{cotile, coplace} <- getsState scops
@@ -430,15 +429,10 @@ lookAtTile canSee p aid lidV = do
         Just (PK.PExists _) -> ""
       embedLook (iid, kit@(k, _)) =
         let itemFull = itemToF iid
-            arItem = aspectRecordFull itemFull
             nWs = partItemWsDetail detail
                                    rwidth side factionD k localTime itemFull kit
-            verb = if k == 1 || IA.checkFlag Ability.Condition arItem
-                   then "is"
-                   else "are"
-            ik = itemKind itemFull
-            desc = IK.idesc ik
-        in (makeSentence ["There", verb, nWs], desc)
+            desc = IK.idesc $ itemKind itemFull
+        in ((k, nWs), desc)
       embedKindList =
         map (\(iid, kit) -> (getKind iid, (iid, kit))) (EM.assocs embeds)
       embedList = map embedLook $ sortEmbeds cops tkid embedKindList
@@ -655,7 +649,11 @@ lookAtPosition lidV p = do
         _ -> ""
   embeds <- getsState $ getEmbedBag lidV p
   getKind <- getsState $ flip getIidKind
-  let embedKindList = map (\(iid, kit) -> (getKind iid, (iid, kit)))
+  let ppEmbedName :: (Int, MU.Part) -> Text
+      ppEmbedName (k, part) =
+        let verb = if k == 1 then "is" else "are"
+        in makeSentence ["There", verb, part]
+      embedKindList = map (\(iid, kit) -> (getKind iid, (iid, kit)))
                           (EM.assocs embeds)
       feats = TK.tfeature $ okind cotile $ lvl `at` p
       tileActions = mapMaybe (Tile.parseTileAction False False embedKindList)
@@ -701,12 +699,24 @@ lookAtPosition lidV p = do
            ++ [(MsgPrompt, smellBlurb) | detail >= DetailHigh]
            ++ [(MsgPromptItem, itemsBlurb <> midEOL)]
            ++ [(MsgPromptFocus, tileBlurb) | detail >= DetailMedium
-                                             || T.null actorsBlurb
-                                                && T.null itemsBlurb]
+                                             || not (null embedsList)]
            ++ [(MsgPrompt, placeBlurb) | detail >= DetailHigh]
-           ++ concatMap (\(embedName, embedDesc) ->
-                [(MsgPromptMention, embedName) | detail >= DetailMedium]
-                ++ [(MsgPrompt, embedDesc) | detail == DetailAll]) embedsList
+           ++ case detail of
+                DetailAll ->
+                  concatMap (\(embedName, embedDesc) ->
+                    [ (MsgPromptMention, ppEmbedName embedName)
+                    , (MsgPrompt, embedDesc) ]) embedsList
+                DetailLow ->
+                  [(MsgPromptMention, case embedsList of
+                    [] -> ""
+                    [((k, _), _)] ->
+                      ppEmbedName (k, if k == 1
+                                      then "an embedded item"
+                                      else "a stack of embedded items")
+                    _ -> ppEmbedName (2, "some embedded items"))]
+                _ -> let n = sum $ map (fst . fst) embedsList
+                         wWandW = MU.WWandW $ map (snd . fst) embedsList
+                     in [(MsgPromptMention, ppEmbedName (n, wWandW)) | n > 0]
            ++ [(MsgPromptItem, modifyBlurb) | detail == DetailAll]
 
 displayItemLore :: MonadClientUI m
