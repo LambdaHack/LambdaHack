@@ -694,7 +694,7 @@ lookAtPosition lidV p = do
                   || null embedsList && T.null modifyBlurb
                then ""
                else "\n"
-  return $ [ (MsgPromptWarning, stashBlurb)
+      ms = [ (MsgPromptWarning, stashBlurb)
            , (actorMsgClass, actorsBlurb)
            , (MsgPrompt, actorsDesc <> midEOL) ]
            ++ [(MsgPrompt, smellBlurb) | detail >= DetailHigh]
@@ -720,6 +720,9 @@ lookAtPosition lidV p = do
                          wWandW = MU.WWandW $ map (snd . fst) embedsList
                      in [(MsgPromptMention, ppEmbedName (n, wWandW)) | n > 0]
            ++ [(MsgPromptItem, modifyBlurb) | detail == DetailAll]
+  return $! if all (T.null . snd) ms && detail > DetailLow
+            then [(MsgPromptFocus, tileBlurb)]
+            else ms
 
 displayItemLore :: MonadClientUI m
                 => ItemBag -> Int -> (ItemId -> ItemFull -> Int -> Text) -> Int
