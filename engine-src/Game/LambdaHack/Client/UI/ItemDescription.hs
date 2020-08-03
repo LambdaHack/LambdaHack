@@ -87,14 +87,13 @@ partItemN3 width side factionD ranged detailLevel maxWordsToShow localTime
         _ -> False
       -- Ranged damage displayed even if lack of space, to prevent confusion
       -- and ... when only ranged damage is missing from the description.
-      displayPowers = maxWordsToShow > 1 || powerTsBeginsWithAlphaOrNum
+      displayPowers = maxWordsToShow > 1
+                      || powerTsBeginsWithAlphaOrNum && length powerTs == 1
       ts = lsource
            ++ (if displayPowers
                then take maxWordsToShow powerTs
                else [])
-           ++ [ "(...)" | displayPowers
-                          && length powerTs > maxWordsToShow
-                          && detailLevel > DetailLow ]
+           ++ [ "(...)" | displayPowers && length powerTs > maxWordsToShow ]
            ++ (if displayPowers && ranged then rangedDamage else [])
            ++ [charges | maxWordsToShow > 1]
       name | temporary =
@@ -105,9 +104,9 @@ partItemN3 width side factionD ranged detailLevel maxWordsToShow localTime
       capName = if IA.checkFlag Ability.Unique arItem
                 then MU.Capitalize $ MU.Text name
                 else MU.Text name
-  in (orTs, capName, if maxWordsToShow == 0
-                     then MU.Text $ IA.aELabel arItem
-                     else MU.Phrase $ map MU.Text ts)
+  in (orTs, capName, if displayPowers
+                     then MU.Phrase $ map MU.Text ts
+                     else MU.Text $ IA.aELabel arItem)
 
 -- TODO: simplify the code a lot
 textAllPowers :: Int -> DetailLevel -> Bool -> ItemFull
@@ -298,7 +297,7 @@ partItemWsRanged :: Int -> FactionId -> FactionDict -> Bool -> DetailLevel
 partItemWsRanged width side factionD ranged detail
                  maxWordsToShow count localTime itemFull kit =
   let (name, powers) = partItemN width side factionD ranged detail
-                       maxWordsToShow localTime itemFull kit
+                                 maxWordsToShow localTime itemFull kit
       arItem = aspectRecordFull itemFull
       periodic = IA.checkFlag Ability.Periodic arItem
       condition = IA.checkFlag Ability.Condition arItem
