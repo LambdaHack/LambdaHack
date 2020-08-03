@@ -428,7 +428,7 @@ lookAtTile canSee p aid lidV = do
         Just (PK.PEntry pk) -> entrySentence pk "it is an entrance to"
         Just (PK.PAround pk) -> entrySentence pk "it surrounds"
         Just (PK.PExists _) -> ""
-      itemLook (iid, kit@(k, _)) =
+      embedLook (iid, kit@(k, _)) =
         let itemFull = itemToF iid
             arItem = aspectRecordFull itemFull
             nWs = partItemWsDetail detail
@@ -441,7 +441,7 @@ lookAtTile canSee p aid lidV = do
         in (makeSentence ["There", verb, nWs], desc)
       embedKindList =
         map (\(iid, kit) -> (getKind iid, (iid, kit))) (EM.assocs embeds)
-      embedList = map itemLook $ sortEmbeds cops tkid embedKindList
+      embedList = map embedLook $ sortEmbeds cops tkid embedKindList
   return (makeSentence [vis, tilePart], placeBlurb, embedList)
 
 -- | Produces a textual description of actors at a position.
@@ -595,7 +595,8 @@ lookAtItems canSee p aid = do
                           | canSee -> "notice"
                           | otherwise -> "remember"
       nWs (iid, kit@(k, _)) =
-        partItemWs rwidth side factionD k localTime (itemToF iid) kit
+        partItemWsDetail detail
+                         rwidth side factionD k localTime (itemToF iid) kit
       object = case EM.assocs is of
         [(_, (k, _))] | detail == DetailLow ->
           if k == 1 then "an item" else "an item stack"
