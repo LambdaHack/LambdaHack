@@ -893,8 +893,7 @@ spotItemBag verbose c bag = do
           _ -> return Nothing  -- this item or another with the same @iid@
                                -- seen already (has a slot assigned); old news
       -- @SortOn@ less efficient here, because function cheap.
-      sortItems iis = map snd $ sortBy (comparing fst)
-                      $ map (\(iid, kit) -> (getKind iid, (iid, kit))) iis
+      sortItems iis = sortOn (getKind . fst) iis
       sortedAssocs = sortItems $ EM.assocs bag
   subjectMaybes <- mapM subjectMaybe sortedAssocs
   let subjects = catMaybes subjectMaybes

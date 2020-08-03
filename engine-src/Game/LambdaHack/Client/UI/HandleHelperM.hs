@@ -603,8 +603,7 @@ lookAtItems canSee p aid = do
         _ | detail == DetailLow -> "some items"
         ii : _ : _ : _ | detail <= DetailMedium ->
           MU.Phrase [nWs ii, "and other items"]
-        iis -> MU.WWandW $ map nWs $ map snd $ sortBy (comparing fst)
-               $ map (\(iid, kit) -> (getKind iid, (iid, kit))) iis
+        iis -> MU.WWandW $ map nWs $ sortOn (getKind . fst) iis
   -- Here @squashedWWandW@ is not needed, because identical items at the same
   -- position are already merged in the floor item bag and multiple identical
   -- messages concerning different positions are merged with <x7>
