@@ -999,7 +999,7 @@ aimTgtHuman = do
   -- (Re)start aiming at the current level.
   lidV <- viewedLevelUI
   modifySession $ \sess -> sess {saimMode =
-    let newDetail = maybe DetailLow detailLevel (saimMode sess)
+    let newDetail = maybe defaultDetailLevel detailLevel (saimMode sess)
     in Just $ AimMode lidV newDetail}
   doLook
   msgAdd MsgAlert "*flinging started; press again to project*"
@@ -1039,7 +1039,7 @@ aimFloorHuman = do
             Nothing -> Just $ TPoint TUnknown lidV xhairPos
         _ -> xhair
   modifySession $ \sess -> sess {saimMode =
-    let newDetail = maybe DetailLow detailLevel saimMode
+    let newDetail = maybe defaultDetailLevel detailLevel saimMode
     in Just $ AimMode lidV newDetail}
   setXHairFromGUI sxhair
   doLook
@@ -1083,7 +1083,7 @@ aimEnemyHuman = do
         [] -> xhair  -- no seen foes in sight, stick to last target
   -- Register the chosen enemy, to pick another on next invocation.
   modifySession $ \sess -> sess {saimMode =
-    let newDetail = maybe DetailLow detailLevel saimMode
+    let newDetail = maybe defaultDetailLevel detailLevel saimMode
     in Just $ AimMode lidV newDetail}
   setXHairFromGUI sxhair
   doLook
@@ -1128,7 +1128,7 @@ aimItemHuman = do
         [] -> xhair  -- no items remembered, stick to last target
   -- Register the chosen enemy, to pick another on next invocation.
   modifySession $ \sess -> sess {saimMode =
-    let newDetail = maybe DetailLow detailLevel saimMode
+    let newDetail = maybe defaultDetailLevel detailLevel saimMode
     in Just $ AimMode lidV newDetail}
   setXHairFromGUI sxhair
   doLook
@@ -1155,7 +1155,7 @@ aimAscendHuman k = do
       let xhairPos = fromMaybe lpos mxhairPos
           sxhair = Just $ TPoint TKnown lidK xhairPos
       modifySession $ \sess -> sess {saimMode =
-        let newDetail = maybe DetailLow detailLevel (saimMode sess)
+        let newDetail = maybe defaultDetailLevel detailLevel (saimMode sess)
         in Just $ AimMode lidK newDetail}
       setXHairFromGUI sxhair
       doLook
@@ -1169,7 +1169,7 @@ epsIncrHuman d = do
   saimMode <- getsSession saimMode
   lidV <- viewedLevelUI
   modifySession $ \sess -> sess {saimMode =
-    let newDetail = maybe DetailLow detailLevel saimMode
+    let newDetail = maybe defaultDetailLevel detailLevel saimMode
     in Just $ AimMode lidV newDetail}
   let sepsDelta = case d of
         Forward -> 1
@@ -1269,7 +1269,8 @@ aimPointerFloorHuman = do
                      else detailSuccCycle . detailLevel
     modifySession $ \sess ->
       sess { saimMode =
-               let newDetail = maybe DetailLow detailSucc (saimMode sess)
+               let newDetail = maybe defaultDetailLevel detailSucc
+                                     (saimMode sess)
                in Just $ AimMode lidV newDetail
            , sxhairMoused }
     setXHairFromGUI sxhair
@@ -1308,7 +1309,8 @@ aimPointerEnemyHuman = do
                      else detailSuccCycle . detailLevel
     modifySession $ \sess ->
       sess { saimMode =
-               let newDetail = maybe DetailLow detailSucc (saimMode sess)
+               let newDetail = maybe defaultDetailLevel detailSucc
+                                     (saimMode sess)
                in Just $ AimMode lidV newDetail
            , sxhairMoused }
     setXHairFromGUI sxhair

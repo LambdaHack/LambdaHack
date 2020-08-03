@@ -1,7 +1,8 @@
 {-# LANGUAGE DeriveGeneric #-}
 -- | Description of effects.
 module Game.LambdaHack.Client.UI.EffectDescription
-  ( DetailLevel(..), effectToSuffix, detectToObject, detectToVerb
+  ( DetailLevel(..), defaultDetailLevel
+  , effectToSuffix, detectToObject, detectToVerb
   , skillName, skillDesc, skillToDecorator, skillSlots
   , kindAspectToSuffix, aspectToSentence, affixDice
   , describeToolsAlternative, describeCrafting, wrapInParens
@@ -32,6 +33,9 @@ data DetailLevel = DetailLow | DetailMedium | DetailHigh | DetailAll
   deriving (Show, Eq, Ord, Enum, Bounded, Generic)
 
 instance Binary DetailLevel
+
+defaultDetailLevel :: DetailLevel
+defaultDetailLevel = DetailMedium  -- TODO: take from config file
 
 -- | Suffix to append to a basic content name if the content causes the effect.
 --

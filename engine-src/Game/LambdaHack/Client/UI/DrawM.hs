@@ -38,7 +38,6 @@ import           Game.LambdaHack.Client.State
 import           Game.LambdaHack.Client.UI.ActorUI
 import           Game.LambdaHack.Client.UI.Content.Screen
 import           Game.LambdaHack.Client.UI.ContentClientUI
-import           Game.LambdaHack.Client.UI.EffectDescription
 import           Game.LambdaHack.Client.UI.Frame
 import           Game.LambdaHack.Client.UI.Frontend (frontendName)
 import           Game.LambdaHack.Client.UI.ItemDescription
@@ -507,16 +506,15 @@ drawFrameStatus drawnLevelId = do
       markSleepTgtDesc
         | mxhairWatchfulness /= Just WSleep = textToAS
         | otherwise = textFgToAS Color.Green
-      xhairName aimMode = case detailLevel aimMode of
-        DetailLow -> "Crosshair"
-        d -> "Zoom x" <> tshow (1 + fromEnum d)
+      xhairName AimMode{detailLevel} =
+        "Crosshair x" <> tshow (1 + fromEnum detailLevel)
       xhairBlurb =
         maybe
           teamBlurb
           (\t -> case saimMode of
              Just aimMode ->
                textToAS (xhairName aimMode <> ":")
-               <+:> markSleepTgtDesc (trimTgtDesc (widthXhairOrItem - 11) t)
+               <+:> markSleepTgtDesc (trimTgtDesc (widthXhairOrItem - 14) t)
              Nothing ->markSleepTgtDesc (trimTgtDesc widthXhairOrItem t))
           mhairDesc
       tgtOrItem

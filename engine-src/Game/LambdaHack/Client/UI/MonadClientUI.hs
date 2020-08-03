@@ -197,7 +197,6 @@ getReportUI = do
   side <- getsClient sside
   fact <- getsState $ (EM.! side) . sfactionD
   let newcomerHelp = True  -- TODO
-      defaultDetailLevel = DetailLow  -- TODO
       detailAtDefault = (detailLevel <$> saimMode) == Just defaultDetailLevel
       underAI = isAIFact fact
       mem = EM.fromList <$> uMessageColors sUIOptions
