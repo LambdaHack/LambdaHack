@@ -1,3 +1,4 @@
+{-# LANGUAGE TupleSections #-}
 -- | Helper functions for both inventory management and human commands.
 module Game.LambdaHack.Client.UI.HandleHelperM
   ( FailError, showFailError, MError, mergeMError, FailOrCmd, failWith
@@ -737,11 +738,18 @@ displayItemLore itemBag meleeSkill promptFun slotIndex lSlots = do
   factionD <- getsState sfactionD
   -- The hacky level 0 marks items never seen, but sent by server at gameover.
   jlid <- getsSession $ fromMaybe (toEnum 0) <$> EM.lookup iid2 . sitemUI
-  FontSetup{propFont} <- getFontSetup
-  let attrLine = itemDesc rwidth True side factionD meleeSkill
-                          CGround localTime jlid itemFull2 kit2
-      ov = EM.singleton propFont $ offsetOverlay
-           $ splitAttrString rwidth attrLine
+  FontSetup{..} <- getFontSetup
+  let descAl = itemDesc rwidth True side factionD meleeSkill
+                        CGround localTime jlid itemFull2 kit2
+      (descSymAl, descBlurbAl) = span (/= Color.spaceAttrW32) descAl
+      descSym = offsetOverlay $ splitAttrString rwidth descSymAl
+      descBlurb = offsetOverlayX $
+        case splitAttrString rwidth $ stringToAS "xx" ++ descBlurbAl of
+          [] -> error "splitting AttrString loses characters"
+          al1 : rest ->
+            (2, attrStringToAL $ drop 2 $ attrLine al1) : map (0,) rest
+      ov = EM.insertWith (++) squareFont descSym
+           $ EM.singleton propFont descBlurb
       keys = [K.spaceKM, K.escKM]
              ++ [K.upKM | slotIndex /= 0]
              ++ [K.downKM | slotIndex /= lSlotsBound]
