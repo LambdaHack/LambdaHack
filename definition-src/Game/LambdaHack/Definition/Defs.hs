@@ -49,7 +49,7 @@ type Rarity = [(Double, Int)]
 -- if the last interval ends at or before 10, the value drops linearly,
 -- reaching 0 a step after 10. Otherwise, the value stays constant
 -- after the last interval. In the former case, the effective level depth
--- is trimmed to 10 (which is equivalent to value staying constant
+-- is trimmed to @totalDepth@ (which is equivalent to value staying constant
 -- after 10, or more generally, after the last, implicit or explicit bound,
 -- but it's simpler to implement).
 linearInterpolation :: Int -> Int -> Rarity -> Int
@@ -69,7 +69,8 @@ linearInterpolation !levelDepth !totalDepth !dataset =
         then (x1y1, (x, y))
         else findInterval (x, y) rest
       ((x1, y1), (x2, y2)) = findInterval (0, 0) dataset
-      levelDepthTrimmed = if x2 > 10 then levelDepth else min levelDepth 10
+      levelDepthTrimmed =
+        if x2 > 10 then levelDepth else min levelDepth totalDepth
   in ceiling
      $ fromIntegral y1
        + fromIntegral (y2 - y1)
