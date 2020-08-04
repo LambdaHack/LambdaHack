@@ -57,9 +57,9 @@ linearInterpolation !levelDepth !totalDepth !dataset =
   let findInterval :: (Double, Int) -> Rarity -> ((Double, Int), (Double, Int))
       findInterval x1y1@(x1Last, y1Last) [] =
         if x1Last > 10
-        then (x1y1, (fromIntegral levelDepth, y1Last))
-               -- this artificial interval has sufficient length to emulate
-               -- the value staying constant indefinitely
+        then (x1y1, (x1Last + 1, y1Last))
+               -- this dummy interval is enough to emulate the value staying
+               -- constant indefinitely
         else let stepLevel = 10 / fromIntegral totalDepth
                -- this is the distance representing one level, the same
                -- as the distance from 0 to the representation of level 1
