@@ -883,8 +883,9 @@ effectSummon grp nDm iid source target periodic = do
            targetTime = timeShift localTime actorTurn
            afterTime = timeShift targetTime $ Delta timeClip
        when (length (take power ps) < power) $
-          debugPossiblyPrint
-            "Server: effectSummon: failed to find enough free positions"
+          debugPossiblyPrint $
+            "Server: effectSummon: failed to find enough free positions at"
+            <+> tshow (blid tb, bpos tb)
        bs <- forM (take power ps) $ \p -> do
          -- Mark as summoned to prevent immediate chain summoning.
          -- Summon from current depth, not deeper due to many spawns already.
