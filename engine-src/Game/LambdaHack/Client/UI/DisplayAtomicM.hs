@@ -906,7 +906,7 @@ spotItemBag verbose c bag = do
                                                 subject beLocated]
               else makeSentence [MU.SubjectVerbSg subject beLocated]
         resetXhair
-        msgAdd MsgItemMove $ msg subjectShort
+        msgAdd MsgItemMoveNoLog $ msg subjectShort
         msgAdd MsgItemMoveLog $ msg subjectLong
   case subjects of
     [] -> return ()

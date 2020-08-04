@@ -90,6 +90,7 @@ data MsgClass =
   | MsgActorSpot
   | MsgFirstEnemySpot
   | MsgItemMove
+  | MsgItemMoveNoLog
   | MsgItemMoveLog
   | MsgAction
   | MsgActionMinor
@@ -136,7 +137,7 @@ instance NFData MsgClass
 instance Binary MsgClass
 
 isSavedToHistory :: MsgClass -> Bool
-isSavedToHistory MsgItemMove = False
+isSavedToHistory MsgItemMoveNoLog = False
 isSavedToHistory MsgNumeric = False
 isSavedToHistory MsgSpam = False
 isSavedToHistory MsgMacro = False
@@ -167,6 +168,7 @@ interruptsRunning MsgHeard = False
 interruptsRunning MsgEffectMinor = False
 interruptsRunning MsgItemDisco = False
 interruptsRunning MsgItemMove = False
+interruptsRunning MsgItemMoveNoLog = False
 interruptsRunning MsgItemMoveLog = False
 interruptsRunning MsgActionMinor = False
 interruptsRunning MsgAtFeet = False
@@ -191,6 +193,7 @@ disturbsResting MsgLeader = False -- handled separately
 disturbsResting MsgEffectMinor = False
 disturbsResting MsgItemDisco = False
 disturbsResting MsgItemMove = False
+disturbsResting MsgItemMoveNoLog = False
 disturbsResting MsgItemMoveLog = False
 disturbsResting MsgActionMinor = False
 disturbsResting MsgAtFeet = False
@@ -244,6 +247,7 @@ msgColor MsgItemDisco = Color.BrMagenta
 msgColor MsgActorSpot = Color.White  -- too common
 msgColor MsgFirstEnemySpot = Color.Red
 msgColor MsgItemMove = Color.White
+msgColor MsgItemMoveNoLog = Color.White
 msgColor MsgItemMoveLog = Color.White
 msgColor MsgAction = Color.White
 msgColor MsgActionMinor = Color.White
