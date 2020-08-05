@@ -11,7 +11,7 @@ module Game.LambdaHack.Client.UI.MonadClientUI
   , clientPrintUI, getSession, putSession, displayFrames
   , connFrontendFrontKey, setFrontAutoYes, frontendShutdown, printScreen
   , chanFrontend, anyKeyPressed, discardPressedKey, resetPressedKeys
-  , addPressedControlEsc, revCmdMap
+  , addPressedKey, addPressedControlEsc, revCmdMap
   , getReportUI, miniHintAiming, getLeaderUI, getArenaUI, viewedLevelUI
   , xhairToPos, setXHairFromGUI, clearAimMode
   , getFontSetup, scoreToSlideshow, defaultHistory
@@ -20,7 +20,7 @@ module Game.LambdaHack.Client.UI.MonadClientUI
   , tryRestore, leaderSkillsClientUI, rndToActionUI
 #ifdef EXPOSE_INTERNAL
     -- * Internal operations
-  , connFrontend, displayFrame, addPressedKey
+  , connFrontend, displayFrame
 #endif
   ) where
 
@@ -173,12 +173,13 @@ discardPressedKey = connFrontend Frontend.FrontDiscardKey
 resetPressedKeys :: MonadClientUI m => m ()
 resetPressedKeys = connFrontend Frontend.FrontResetKeys
 
-addPressedKey :: MonadClientUI m => K.KMP -> m ()
-addPressedKey = connFrontend . Frontend.FrontAdd
+addPressedKey :: MonadClientUI m => K.KM -> m ()
+addPressedKey km =
+  connFrontend $ Frontend.FrontAdd $ K.KMP { K.kmpKeyMod = km
+                                           , K.kmpPointer = K.PointUI 0 0 }
 
 addPressedControlEsc :: MonadClientUI m => m ()
-addPressedControlEsc = addPressedKey K.KMP { K.kmpKeyMod = K.controlEscKM
-                                           , K.kmpPointer = K.PointUI 0 0 }
+addPressedControlEsc = addPressedKey K.controlEscKM
 
 revCmdMap :: MonadClientUI m => m (HumanCmd.HumanCmd -> K.KM)
 revCmdMap = do
