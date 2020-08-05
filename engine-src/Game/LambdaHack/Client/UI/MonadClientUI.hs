@@ -12,7 +12,7 @@ module Game.LambdaHack.Client.UI.MonadClientUI
   , connFrontendFrontKey, setFrontAutoYes, frontendShutdown, printScreen
   , chanFrontend, anyKeyPressed, discardPressedKey, resetPressedKeys
   , addPressedControlEsc, revCmdMap
-  , getReportUI, getLeaderUI, getArenaUI, viewedLevelUI
+  , getReportUI, miniHintAiming, getLeaderUI, getArenaUI, viewedLevelUI
   , xhairToPos, setXHairFromGUI, clearAimMode
   , getFontSetup, scoreToSlideshow, defaultHistory
   , tellAllClipPS, tellGameClipPS, elapsedSessionTimeGT

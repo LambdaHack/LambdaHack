@@ -12,6 +12,7 @@ import qualified Data.EnumMap.Strict as EM
 
 import           Game.LambdaHack.Client.MonadClient
 import           Game.LambdaHack.Client.State
+import           Game.LambdaHack.Client.UI.EffectDescription
 import qualified Game.LambdaHack.Client.UI.HumanCmd as HumanCmd
 import qualified Game.LambdaHack.Client.UI.Key as K
 import           Game.LambdaHack.Client.UI.MonadClientUI
@@ -89,6 +90,7 @@ promptMainKeys = do
                | uVi = "keypad or hjklyubn"
                | otherwise = "keypad"
       manyTeammates = length ours > 1
+      detailAtDefault = (detailLevel <$> saimMode) == Just defaultDetailLevel
       keepTab = if manyTeammates
                 then "Switch to another teammate with Tab, while all others auto-melee foes, if adjacent, but normally don't chase them."
                 else ""
@@ -109,7 +111,8 @@ promptMainKeys = do
         <+> keepTab
         <+> moreHelp
            | otherwise =
-        tgtKindVerb xhair
+        (if detailAtDefault then "" else miniHintAiming)
+        <+> tgtKindVerb xhair
         <+> "with" <+> moveKeys <+> "keys or mouse."
         <+> keepTab
         <+> moreHelp
