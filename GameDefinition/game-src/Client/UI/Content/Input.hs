@@ -49,15 +49,15 @@ standardKeysAndMouse = InputContentRaw $ map evalKeyDef $
           , ChooseItemMenu (MStore CEqp) ))
   , ("g", addCmdCategory CmdMinimal $ grabItems "grab item(s)")
   , ("Escape", ( [CmdMinimal, CmdAim]
-               , "open main menu/finish aiming"
-               , ByAimMode AimModeCmd { exploration =
-                                          ExecuteIfClear MainMenuAutoOff
-                                      , aiming = Cancel } ))
+               , "clear msgs and open main menu/finish aiming"
+               , ByAimMode AimModeCmd
+                             { exploration = ExecuteIfClear MainMenuAutoOff
+                             , aiming = ExecuteIfClear Cancel } ))
   , ("C-Escape", ([], "", MainMenuAutoOn))
       -- required by frontends; not shown
   , ("Return", ( [CmdMinimal, CmdAim]
                , "open dashboard/accept target"
-               , ByAimMode AimModeCmd { exploration = ExecuteIfClear Dashboard
+               , ByAimMode AimModeCmd { exploration = Dashboard
                                       , aiming = Accept } ))
   , ("space", ( [CmdMinimal, CmdAim]
               , "show history/cycle detail level"
@@ -77,7 +77,7 @@ standardKeysAndMouse = InputContentRaw $ map evalKeyDef $
   , ("/", ([CmdMinimal, CmdAim], "cycle crosshair among items", AimItem))
   , ("m", ([CmdMove], "modify door by closing it", CloseDir))
   , ("M", ([CmdMinimal, CmdMove], "modify any admissible terrain", AlterDir))
-  , ("%", ([CmdMinimal, CmdMeta], "yell/yawn and stop sleeping", Yell))
+  , ("%", ([CmdMinimal, CmdMeta], "yell or yawn and stop sleeping", Yell))
 
   -- Item menu, first part of item use commands
   , ("comma", grabItems "")  -- only show extra key, not extra entry
@@ -239,11 +239,11 @@ standardKeysAndMouse = InputContentRaw $ map evalKeyDef $
               , "fling at enemy under pointer"
               , aimFlingCmd ))
   , ("safe7", ( [CmdInternal, CmdDashboard]
-              , "open main menu"
-              , MainMenuAutoOff ))
+              , "clear msgs and open main menu"
+              , ExecuteIfClear MainMenuAutoOff ))
   , ("safe8", ( [CmdInternal]
-              , "cancel aiming"
-              , Cancel ))
+              , "clear msgs and cancel aiming"
+              , ExecuteIfClear Cancel ))
   , ("safe9", ( [CmdInternal]
               , "accept target"
               , Accept ))
