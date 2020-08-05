@@ -2,7 +2,7 @@
 -- | The client UI session state.
 module Game.LambdaHack.Client.UI.SessionUI
   ( SessionUI(..), ItemDictUI, AimMode(..), KeyMacro(..), KeyMacroFrame(..)
-  , RunParams(..), HintMode(..)
+  , RunParams(..)
   , emptySessionUI, emptyMacroFrame
   , toggleMarkVision, toggleMarkSmell, getActorUI
   ) where
@@ -71,7 +71,6 @@ data SessionUI = SessionUI
                                     -- ^ indices of last used menu items
   , sdisplayNeeded :: Bool          -- ^ current level needs displaying
   , sturnDisplayed :: Bool          -- ^ a frame was already displayed this turn
-  , shintMode      :: HintMode      -- ^ how to show keys hints when no messages
   , sreportNull    :: Bool          -- ^ whether no report created last UI turn
                                     --   or the report wiped out from screen
   , sstart         :: POSIXTime     -- ^ this session start time
@@ -128,12 +127,6 @@ data RunParams = RunParams
   }
   deriving (Show)
 
-data HintMode =
-    HintAbsent
-  | HintShown
-  | HintWiped
-  deriving (Eq, Enum, Bounded)
-
 emptySessionUI :: UIOptions -> SessionUI
 emptySessionUI sUIOptions =
   SessionUI
@@ -166,7 +159,6 @@ emptySessionUI sUIOptions =
     , sdisplayNeeded = False
     , sturnDisplayed = False
     , sreportNull = True
-    , shintMode = HintAbsent
     , sstart = 0
     , sgstart = 0
     , sallTime = timeZero
@@ -235,7 +227,6 @@ instance Binary SessionUI where
         sdisplayNeeded = False  -- displayed regardless
         sturnDisplayed = False
         sreportNull = True
-        shintMode = HintAbsent
         sstart = 0
         sgstart = 0
         sallTime = timeZero

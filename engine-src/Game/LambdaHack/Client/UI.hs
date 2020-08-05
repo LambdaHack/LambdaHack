@@ -118,19 +118,11 @@ queryUI = do
 humanCommand :: forall m. (MonadClient m, MonadClientUI m) => m ReqUI
 humanCommand = do
   FontSetup{propFont} <- getFontSetup
-  modifySession $ \sess -> sess { slastLost = ES.empty
-                                , shintMode = HintAbsent }
+  modifySession $ \sess -> sess {slastLost = ES.empty}
   let loop :: Maybe ActorId -> m ReqUI
       loop mOldLeader = do
         report <- getsSession $ newReport . shistory
-        hintMode <- getsSession shintMode
-        -- Hints are not considered non-empty reports.
-        modifySession $ \sess -> sess
-          {sreportNull = nullReport report || hintMode == HintShown}
-        case hintMode of
-          HintAbsent -> return ()
-          HintShown -> modifySession $ \sess -> sess {shintMode = HintWiped}
-          HintWiped -> modifySession $ \sess -> sess {shintMode = HintAbsent}
+        modifySession $ \sess -> sess {sreportNull = nullReport report}
         slidesRaw <- reportToSlideshowKeep []
         over <- case unsnoc slidesRaw of
           Nothing -> return []

@@ -1433,13 +1433,12 @@ hintHuman :: MonadClientUI m
           => (K.KM -> HumanCmd -> m (Either MError ReqUI))
           -> m (Either MError ReqUI)
 hintHuman cmdSemInCxtOfKM = do
-  hintMode <- getsSession shintMode
-  if hintMode == HintWiped then
-    helpHuman cmdSemInCxtOfKM
-  else do
-    modifySession $ \sess -> sess {shintMode = HintShown}
+  sreportNull <- getsSession sreportNull
+  if sreportNull then do
     promptMainKeys
     return $ Left Nothing
+  else
+    helpHuman cmdSemInCxtOfKM
 
 -- * Dashboard
 
