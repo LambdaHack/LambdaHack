@@ -133,43 +133,43 @@ install:
 
 
 #  - IF "%goal%"=="test" (
-#      make test-short || (tail -n 500 %APPDATA%\LambdaHack\stderr.txt & exit 77)
+#      make test-short || (tail -n 200 %APPDATA%\LambdaHack\stderr.txt & tail -n 200 %APPDATA%\LambdaHack\stdout.txt & exit 77)
 #    )
   - IF "%goal%"=="test" (
-      make testCrawl-appveyor || (tail -n 500 %APPDATA%\LambdaHack\stderr.txt & exit 77)
+      make testCrawl-appveyor || (tail -n 200 %APPDATA%\LambdaHack\stderr.txt & tail -n 200 %APPDATA%\LambdaHack\stdout.txt & exit 77)
     )
   - IF "%goal%"=="test" (
-      make testCrawl-appveyor || (tail -n 500 %APPDATA%\LambdaHack\stderr.txt & exit 77)
+      make testCrawl-appveyor || (tail -n 200 %APPDATA%\LambdaHack\stderr.txt & tail -n 200 %APPDATA%\LambdaHack\stdout.txt & exit 77)
     )
   - IF "%goal%"=="test" (
-      make testCrawl-appveyor || (tail -n 500 %APPDATA%\LambdaHack\stderr.txt & exit 77)
+      make testCrawl-appveyor || (tail -n 200 %APPDATA%\LambdaHack\stderr.txt & tail -n 200 %APPDATA%\LambdaHack\stdout.txt & exit 77)
     )
   - IF "%goal%"=="test" (
-      make testCrawl-appveyor || (tail -n 500 %APPDATA%\LambdaHack\stderr.txt & exit 77)
+      make testCrawl-appveyor || (tail -n 200 %APPDATA%\LambdaHack\stderr.txt & tail -n 200 %APPDATA%\LambdaHack\stdout.txt & exit 77)
     )
   - IF "%goal%"=="test" (
-      make testCrawl-appveyor || (tail -n 500 %APPDATA%\LambdaHack\stderr.txt & exit 77)
+      make testCrawl-appveyor || (tail -n 200 %APPDATA%\LambdaHack\stderr.txt & tail -n 200 %APPDATA%\LambdaHack\stdout.txt & exit 77)
     )
   - IF "%goal%"=="test" (
-      make testDefense-appveyor || (tail -n 500 %APPDATA%\LambdaHack\stderr.txt & exit 77)
+      make testDefense-appveyor || (tail -n 200 %APPDATA%\LambdaHack\stderr.txt & tail -n 200 %APPDATA%\LambdaHack\stdout.txt & exit 77)
     )
   - IF "%goal%"=="test" (
-      make testCrawl-appveyor || (tail -n 500 %APPDATA%\LambdaHack\stderr.txt & exit 77)
+      make testCrawl-appveyor || (tail -n 200 %APPDATA%\LambdaHack\stderr.txt & tail -n 200 %APPDATA%\LambdaHack\stdout.txt & exit 77)
     )
   - IF "%goal%"=="test" (
-      make testCrawl-appveyor || (tail -n 500 %APPDATA%\LambdaHack\stderr.txt & exit 77)
+      make testCrawl-appveyor || (tail -n 200 %APPDATA%\LambdaHack\stderr.txt & tail -n 200 %APPDATA%\LambdaHack\stdout.txt & exit 77)
     )
   - IF "%goal%"=="test" (
-      make testCrawl-appveyor || (tail -n 500 %APPDATA%\LambdaHack\stderr.txt & exit 77)
+      make testCrawl-appveyor || (tail -n 200 %APPDATA%\LambdaHack\stderr.txt & tail -n 200 %APPDATA%\LambdaHack\stdout.txt & exit 77)
     )
   - IF "%goal%"=="test" (
-      make testCrawl-appveyor || (tail -n 500 %APPDATA%\LambdaHack\stderr.txt & exit 77)
+      make testCrawl-appveyor || (tail -n 200 %APPDATA%\LambdaHack\stderr.txt & tail -n 200 %APPDATA%\LambdaHack\stdout.txt & exit 77)
     )
   - IF "%goal%"=="test" (
-      make testCrawl-appveyor || (tail -n 500 %APPDATA%\LambdaHack\stderr.txt & exit 77)
+      make testCrawl-appveyor || (tail -n 200 %APPDATA%\LambdaHack\stderr.txt & tail -n 200 %APPDATA%\LambdaHack\stdout.txt & exit 77)
     )
   - IF "%goal%"=="test" (
-      make testDefense-appveyor || (tail -n 500 %APPDATA%\LambdaHack\stderr.txt & exit 77)
+      make testDefense-appveyor || (tail -n 200 %APPDATA%\LambdaHack\stderr.txt & tail -n 200 %APPDATA%\LambdaHack\stdout.txt & exit 77)
     )
   - cabal clean
 
