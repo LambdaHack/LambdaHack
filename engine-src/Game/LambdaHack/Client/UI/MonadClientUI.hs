@@ -201,11 +201,14 @@ getReportUI = do
       underAI = isAIFact fact
       mem = EM.fromList <$> uMessageColors sUIOptions
       -- Here we assume newbies don't override default keys.
-      promptAim = toMsg mem MsgPrompt "<aiming mode: press SPACE or RMB for more detail, f to fling, ESC to cancel>\n"
+      promptAim = toMsg mem MsgPrompt $ miniHintAiming <> "\n"
       promptAI = toMsg mem MsgAlert "<press any key for main menu>"
   return $! if | newcomerHelp && detailAtDefault -> consReport promptAim report
                | underAI -> consReport promptAI report
                | otherwise -> report
+
+miniHintAiming :: Text
+miniHintAiming = "Aiming mode: press SPACE or RMB to increase detail, f to fling, ESC to cancel."
 
 getLeaderUI :: MonadClientUI m => m ActorId
 getLeaderUI = do
