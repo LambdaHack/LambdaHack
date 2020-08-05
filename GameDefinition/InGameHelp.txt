@@ -36,7 +36,7 @@ screen or the dashboard and execute it on the spot.
     keys         command
     I            manage the shared inventory stash
     g or ,       grab item(s)
-    ESC          clear msgs and open main menu/finish aiming
+    ESC          clear messages/open main menu/finish aiming
     RET or INS   open dashboard/accept target
     SPACE        show history/cycle detail level
     TAB          cycle among all party members
@@ -141,7 +141,7 @@ Terrain exploration and modification commands
 All aiming commands
 
  keys         command
- ESC          clear msgs and open main menu/finish aiming
+ ESC          clear messages/open main menu/finish aiming
  RET or INS   open dashboard/accept target
  SPACE        show history/cycle detail level
  *            cycle crosshair among enemies

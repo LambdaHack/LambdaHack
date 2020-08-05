@@ -49,7 +49,7 @@ standardKeysAndMouse = InputContentRaw $ map evalKeyDef $
           , ChooseItemMenu (MStore CEqp) ))
   , ("g", addCmdCategory CmdMinimal $ grabItems "grab item(s)")
   , ("Escape", ( [CmdMinimal, CmdAim]
-               , "clear msgs and open main menu/finish aiming"
+               , "clear messages/open main menu/finish aiming"
                , ByAimMode AimModeCmd
                              { exploration = ExecuteIfClear MainMenuAutoOff
                              , aiming = ExecuteIfClear Cancel } ))
