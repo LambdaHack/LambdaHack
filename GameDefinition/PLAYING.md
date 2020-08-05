@@ -331,14 +331,14 @@ screen or the dashboard and execute it on the spot.
     keys         command
     I            manage the shared inventory stash
     g or ,       grab item(s)
-    ESC          open main menu/finish aiming
+    ESC          clear msgs and open main menu/finish aiming
     RET or INS   open dashboard/accept target
     SPACE        show history/cycle detail level
     TAB          cycle among all party members
     *            cycle crosshair among enemies
     /            cycle crosshair among items
     M            modify any admissible terrain
-    %            yell/yawn and stop sleeping
+    %            yell or yawn and stop sleeping
 
 Screen area and UI mode (exploration/aiming) determine mouse click
 effects. Here we give an overview of effects of each button over

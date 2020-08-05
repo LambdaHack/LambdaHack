@@ -36,14 +36,14 @@ screen or the dashboard and execute it on the spot.
     keys         command
     I            manage the shared inventory stash
     g or ,       grab item(s)
-    ESC          open main menu/finish aiming
+    ESC          clear msgs and open main menu/finish aiming
     RET or INS   open dashboard/accept target
     SPACE        show history/cycle detail level
     TAB          cycle among all party members
     *            cycle crosshair among enemies
     /            cycle crosshair among items
     M            modify any admissible terrain
-    %            yell/yawn and stop sleeping
+    %            yell or yawn and stop sleeping
 
 
 Optional mouse commands
@@ -80,18 +80,18 @@ Mouse button effects per screen area, in exploration and in aiming modes
  party on map   pick new pointman on screen     select party member on screen
  the map area   go to pointer for 25 steps      set crosshair to enemy
  level number   move aiming one level up        move aiming one level down
- level caption  open dashboard                  open main menu
+ level caption  open dashboard                  clear msgs and open main menu
  percent seen   explore nearest unknown spot    autoexplore 25 times
  crosshair info cycle crosshair among enemies   cycle crosshair among items
  party roster   pick new pointman on screen     select party member on screen
- Calm value     yell/yawn and stop sleeping     yell/yawn and stop sleeping
+ Calm value     yell or yawn and stop sleeping  yell or yawn and stop sleeping
  HP gauge       rest (wait 25 times)            heed (lurk 0.1 turns 100 times)
  HP value       wait a turn, bracing for impact lurk 0.1 of a turn
  pointman info  auto-fling and keep choice      clear chosen item and crosshair
 
  aiming mode    LMB (left mouse button)         RMB (right mouse button)
  the map area   fling at enemy under pointer    snap crosshair to enemy
- level caption  accept target                   cancel aiming
+ level caption  accept target                   clear msgs and cancel aiming
  percent seen   aim at nearest upstairs         aim at nearest downstairs
 
 
@@ -141,7 +141,7 @@ Terrain exploration and modification commands
 All aiming commands
 
  keys         command
- ESC          open main menu/finish aiming
+ ESC          clear msgs and open main menu/finish aiming
  RET or INS   open dashboard/accept target
  SPACE        show history/cycle detail level
  *            cycle crosshair among enemies
@@ -161,7 +161,7 @@ All aiming commands
 Assorted commands
 
  keys         command
- %            yell/yawn and stop sleeping
+ %            yell or yawn and stop sleeping
  @            describe organs of the pointman
  #            show skill summary of the pointman
  ~            display known lore
