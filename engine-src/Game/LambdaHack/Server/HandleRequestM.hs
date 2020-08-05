@@ -866,7 +866,7 @@ reqAlterFail bumping effToUse voluntary source tpos = do
               groundBag2 <- getsState $ getBodyStoreBag sb CGround
               eqpBag2 <- getsState $ getBodyStoreBag sb CEqp
               if (not bumping || null grps)
-                   -- <M> confirmation needed to consume items, bump not enough
+                   -- 'M' confirmation needed to consume items, bump not enough
                  && (bproj sb || voluntary || null grps)
                        -- consume only if voluntary or released as projectile
                  && (maybe True (== UseUp) museResult

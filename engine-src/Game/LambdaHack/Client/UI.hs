@@ -154,7 +154,7 @@ humanCommand = do
                                                           then - swaitTimes sess
                                                           else 0}
               restrictedCmdSemInCxtOfKM km cmd
-            _ -> let msgKey = "unknown command <" <> K.showKM km <> ">"
+            _ -> let msgKey = "unknown command '" <> K.showKM km <> "'"
                  in weaveJust <$> failWith (T.pack msgKey)
         -- GC macro stack if there are no actions left to handle,
         -- removing all unnecessary macro frames at once,

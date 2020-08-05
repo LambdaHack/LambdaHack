@@ -472,7 +472,7 @@ displayRespUpdAtomicUI cmd = case cmd of
     msgAdd MsgAdmin "----------------------------------------------------------"
     recordHistory
     msgAdd MsgWarning $ "New game started in" <+> mname gameMode
-                        <+> "mode. See game help (F1) for details."
+                        <+> "mode. Press '?' for details."
     msgAdd MsgAdmin $ mdesc gameMode
     let desc = cdesc $ okind cocave $ lkind lvl
     unless (T.null desc) $ do
@@ -511,7 +511,7 @@ displayRespUpdAtomicUI cmd = case cmd of
       lvl <- getLevel lid
       gameMode <- getGameMode
       msgAdd MsgAlert $ "Continuing" <+> mname gameMode
-                        <> ". See game help (F1) for details."
+                        <> ". Press '?' for details."
       msgAdd0 MsgPrompt $ mdesc gameMode
       let desc = cdesc $ okind cocave $ lkind lvl
       unless (T.null desc) $ do

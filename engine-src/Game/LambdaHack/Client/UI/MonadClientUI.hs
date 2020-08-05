@@ -208,7 +208,7 @@ getReportUI = do
                | otherwise -> report
 
 miniHintAiming :: Text
-miniHintAiming = "Aiming mode: press SPACE or RMB to increase detail, f to fling, ESC to cancel."
+miniHintAiming = "Aiming mode: press SPACE or RMB to increase detail, 'f' to fling, ESC to cancel."
 
 getLeaderUI :: MonadClientUI m => m ActorId
 getLeaderUI = do

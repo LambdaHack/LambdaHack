@@ -1030,7 +1030,7 @@ aimFloorHuman = do
         Just TVector{} ->
           -- If many actors, we pick here the first that would be picked
           -- by '*', so that all other projectiles on the tile come next,
-          -- when pressing "*", without any intervening actors from other tiles.
+          -- when pressing '*', without any intervening actors from other tiles.
           -- This is why we use @actorAssocs@ above instead of @posToAidAssocs@.
           case find (\(_, b) -> Just (bpos b) == mxhairPos) bsAll of
             Just (aid, b) -> Just $ if isFoe side fact (bfid b)
@@ -1296,7 +1296,7 @@ aimPointerEnemyHuman = do
         sxhair =
           -- If many actors, we pick here the first that would be picked
           -- by '*', so that all other projectiles on the tile come next,
-          -- when pressing "*", without any intervening actors from other tiles.
+          -- when pressing '*', without any intervening actors from other tiles.
           -- This is why we use @actorAssocs@ above instead of @posToAidAssocs@.
           case find (\(_, b) -> bpos b == newPos) bsAll of
             Just (aid, b) -> Just $ if isFoe side fact (bfid b)
