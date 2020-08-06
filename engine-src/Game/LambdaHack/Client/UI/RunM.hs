@@ -25,7 +25,6 @@ import Game.LambdaHack.Core.Prelude
 import qualified Data.EnumMap.Strict as EM
 import           GHC.Exts (inline)
 
-import           Game.LambdaHack.Client.CommonM
 import           Game.LambdaHack.Client.MonadClient
 import           Game.LambdaHack.Client.Request
 import           Game.LambdaHack.Client.State
@@ -44,7 +43,6 @@ import qualified Game.LambdaHack.Common.Tile as Tile
 import           Game.LambdaHack.Common.Types
 import           Game.LambdaHack.Common.Vector
 import           Game.LambdaHack.Content.TileKind (TileKind)
-import qualified Game.LambdaHack.Definition.Ability as Ability
 import           Game.LambdaHack.Definition.Defs
 
 -- | Continue running in the given direction.
@@ -189,7 +187,6 @@ checkAndRun :: MonadClientRead m
             => ActorId -> Vector -> m (Either Text Vector)
 checkAndRun aid dir = do
   COps{coTileSpeedup} <- getsState scops
-  actorSk <- currentSkillsClient aid
   actorMaxSkills <- getsState sactorMaxSkills
   body <- getsState $ getActorBody aid
   fact <- getsState $ (EM.! bfid body) . sfactionD
@@ -243,10 +240,9 @@ checkAndRun aid dir = do
         let suspect =
               smarkSuspect > 0 && Tile.isSuspect coTileSpeedup tile
               || smarkSuspect > 1 && Tile.isHideAs coTileSpeedup tile
-            alterSkill = Ability.getSk Ability.SkAlter actorSk
-            alterable = alterSkill >= Tile.alterMinSkill coTileSpeedup tile
+            embed = Tile.isEmbed coTileSpeedup tile  -- no matter if embeds left
             walkable = Tile.isWalkable coTileSpeedup tile
-        in (suspect, alterable, walkable)
+        in (suspect, embed, walkable)
       terrainChangeMiddle = tilePropAt tileThere
                             `notElem` map tilePropAt [tileLast, tileHere]
       terrainChangeLeft = tilePropAt leftForwardTileHere
