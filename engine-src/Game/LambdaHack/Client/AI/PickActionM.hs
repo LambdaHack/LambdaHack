@@ -869,7 +869,7 @@ projectItem actorSk aid = do
                       rangeMult =  -- penalize wasted or unsafely low range
                         10 + max 0 (10 - abs (trange - bestRange))
                   in if trange >= chessDist (bpos b) fpos && recharged
-                     then Just ( - ceiling (benR * fromIntegral rangeMult / 10)
+                     then Just ( - ceiling (benR * intToDouble rangeMult / 10)
                                , ReqProject fpos newEps iid cstore )
                      else Nothing
                 benRanged = mapMaybe fRanged benList

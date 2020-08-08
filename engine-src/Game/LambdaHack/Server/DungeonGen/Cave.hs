@@ -163,7 +163,8 @@ buildCave cops@COps{cocave, coplace, cotile, coTileSpeedup}
         voidPlaces <- do
           let gridArea = fromMaybe (error $ "" `showFailure` lgr)
                          $ toArea (0, 0, gx - 1, gy - 1)
-              voidNum = round $ cmaxVoid * fromIntegral (EM.size gs2)
+              voidNum = round $
+                cmaxVoid * (fromIntegralTypeMe :: Int -> Rational) (EM.size gs2)
               isOrdinaryArea p = case p `EM.lookup` gs2 of
                 Just SpecialArea{} -> True
                 _ -> False
@@ -235,7 +236,8 @@ buildCave cops@COps{cocave, coplace, cotile, coTileSpeedup}
         connects <- connectGrid voidPlaces lgrid
         addedConnects <- do
           let cauxNum =
-                round $ cauxConnects * fromIntegral (fst lgrid * snd lgrid)
+                round $ cauxConnects * (fromIntegralTypeMe :: Int -> Rational)
+                                         (fst lgrid * snd lgrid)
           cns <- map head . group . sort
                  <$> replicateM cauxNum (randomConnection lgrid)
           -- This allows connections through a single void room,

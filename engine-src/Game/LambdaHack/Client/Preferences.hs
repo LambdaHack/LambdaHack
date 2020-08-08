@@ -15,6 +15,7 @@ import Prelude ()
 import Game.LambdaHack.Core.Prelude
 
 import qualified Data.EnumMap.Strict as EM
+import           Data.Int (Int64)
 
 import           Game.LambdaHack.Common.Faction
 import           Game.LambdaHack.Common.Item
@@ -63,26 +64,26 @@ effectToBenefit cops fid factionD eff =
       delta (-50)  -- not too low so that S_INK_SAC used by AI
     IK.RefillHP p ->
       delta $ if p > 0
-              then min 2000 (20 * fromIntegral p)
-              else max (-1000) (10 * fromIntegral p)
+              then min 2000 (20 * intToDouble p)
+              else max (-1000) (10 * intToDouble p)
         -- one HP healed is worth a bit more than one HP dealt to enemy,
         -- because if the actor survives, he may deal damage many times;
         -- however, AI is mostly for non-heroes that fight in suicidal crowds,
         -- so the two values are kept close enough to maintain berserk approach
     IK.RefillCalm p ->
       ( if p > 0
-        then min 100 (fromIntegral p)
+        then min 100 (intToDouble p)
           -- this may cause ice to be attractive to AI,
           -- but it doesn't trigger it due to no @ConsideredByAI@
         else if p >= -5
-             then max (-100) (fromIntegral p)
-             else max (-1500) (15 * fromIntegral p)
+             then max (-100) (intToDouble p)
+             else max (-1500) (15 * intToDouble p)
           -- big Calm drains are incredibly dangerous, so don't be stupid
           -- and don't self-inflict them, particularly if you are an intelligent
           -- high-HP actor, which is likely if you collect and apply items
       , if p > 0
-        then min 100 (fromIntegral p)
-        else max (-500) (5 * fromIntegral p) )
+        then min 100 (intToDouble p)
+        else max (-500) (5 * intToDouble p) )
           -- quite a powerful weapon, especially against high-HP foes
     IK.Dominate -> (0, -100)  -- I obtained an actor with, say 10HP,
                               -- worth 200, and enemy lost him, another 100;
@@ -127,7 +128,7 @@ effectToBenefit cops fid factionD eff =
       let turnTimer = IK.foldTimer 1 Dice.meanDice Dice.meanDice timer
             -- copy count used instead of timer for organs with many copies
           (total, count) = organBenefit turnTimer grp cops fid factionD
-      in delta $ total / fromIntegral count
+      in delta $ total / intToDouble count
            -- the same when created in me and in foe
            -- average over all matching grps; simplified: rarities ignored
     IK.CreateItem _ _ IK.TREASURE _ -> (100, 0)  -- assumed not temporary
@@ -141,7 +142,7 @@ effectToBenefit cops fid factionD eff =
     IK.CreateItem _ _ IK.ANY_JEWELRY _ -> (100, 0)
     IK.CreateItem _ _ grp _ ->  -- assumed not temporary and @grp@ tiny
       let (total, count) = recBenefit grp cops fid factionD
-      in (total / fromIntegral count, 0)
+      in (total / intToDouble count, 0)
     IK.DestroyItem{} -> delta (-10)  -- potentially harmful
     IK.ConsumeItems{} -> delta (-10)  -- potentially harmful
     IK.DropItem _ _ COrgan IK.CONDITION ->
@@ -158,20 +159,20 @@ effectToBenefit cops fid factionD eff =
           (total, count) = organBenefit turnTimer grp cops fid factionD
           boundBonus n = if n == maxBound then 10 else 0
       in delta $ boundBonus ngroup + boundBonus kcopy
-                 - total / fromIntegral count
+                 - total / intToDouble count
                    -- the same when dropped from me and foe
     IK.DropItem{} -> delta (-10)  -- depends a lot on what is dropped
-    IK.Recharge n d -> delta $ fromIntegral n * Dice.meanDice d / 10
+    IK.Recharge n d -> delta $ intToDouble n * Dice.meanDice d / 10
       -- this high value to price weapons with @OnUser@ over fists
-    IK.Discharge n d -> delta $ - fromIntegral n * Dice.meanDice d / 10
+    IK.Discharge n d -> delta $ - intToDouble n * Dice.meanDice d / 10
     IK.PolyItem -> (1, 0)  -- may fizzle, so AI never uses (could loop)
     IK.RerollItem -> (1, 0)  -- may fizzle, so AI never uses (could loop)
     IK.DupItem -> (1, 0)  -- may fizzle, so AI never uses (could loop)
     IK.Identify -> (1, 0)  -- may fizzle, so AI never uses (could loop)
-    IK.Detect IK.DetectAll radius -> (fromIntegral radius * 2, 0)
-    IK.Detect IK.DetectLoot radius -> (fromIntegral radius * 2, 0)
-    IK.Detect IK.DetectExit radius -> (fromIntegral radius / 2, 0)
-    IK.Detect _ radius -> (fromIntegral radius, 0)
+    IK.Detect IK.DetectAll radius -> (intToDouble radius * 2, 0)
+    IK.Detect IK.DetectLoot radius -> (intToDouble radius * 2, 0)
+    IK.Detect IK.DetectExit radius -> (intToDouble radius / 2, 0)
+    IK.Detect _ radius -> (intToDouble radius, 0)
     IK.SendFlying _ -> (0, -1)   -- very context dependent, but lack of control
     IK.PullActor _ -> (0, -1)    -- is deadly on some maps, leading to harm;
     IK.PushActor _ -> (0, -100)  -- pushing others may crush them against wall
@@ -181,7 +182,7 @@ effectToBenefit cops fid factionD eff =
       let bs = map (effectToBenefit cops fid factionD) effs
           f (self, foe) (accSelf, accFoe) = (self + accSelf, foe + accFoe)
           (effSelf, effFoe) = foldr f (0, 0) bs
-      in (effSelf / fromIntegral (length bs), effFoe / fromIntegral (length bs))
+      in (effSelf / intToDouble (length bs), effFoe / intToDouble (length bs))
     IK.OnSmash _ -> delta 0
       -- can be beneficial; we'd need to analyze explosions, range, etc.
     IK.OnCombine eff1 -> effectToBenefit cops fid factionD eff1
@@ -297,12 +298,12 @@ organBenefit turnTimer grp cops@COps{coitem} fid factionD =
   let f (!sacc, !pacc) !p _ !kind =
         let count = Dice.meanDice (IK.icount kind)
             paspect asp =
-              fromIntegral p
+              intToDouble p
               * count * turnTimer
                 -- the aspect stays for this many turns'
                * aspectToBenefit asp
             peffect eff =
-              fromIntegral p
+              intToDouble p
               * count
                 -- this many consecutive effects will be generated, if any
               * fst (effectToBenefit cops fid factionD eff)
@@ -450,7 +451,7 @@ totalUsefulness cops fid factionD itemFull@ItemFull{itemKind, itemSuspect} =
       -- Timeout 2 means two such items are needed to use the effect each turn,
       -- so a single such item may be worth half of the permanent value.
       -- E.g., when item heals 1 HP each turn, that's precisly the calculation.
-      timeout = fromIntegral $ IA.aTimeout arItem
+      timeout = intToDouble $ IA.aTimeout arItem
       scalePeriodic value = value / max 1 timeout
       -- With non-periodic items, when we need to expend a turn to apply the
       -- item or, e.g., we lose the opportunity to use another weapon if we hit
@@ -523,11 +524,12 @@ totalUsefulness cops fid factionD itemFull@ItemFull{itemKind, itemSuspect} =
         hurtMult = armorHurtCalculation True (IA.aSkills arItem)
                                              Ability.zeroSkills
         dmg = Dice.meanDice $ IK.idamage itemKind
-        rawDeltaHP = ceiling $ fromIntegral hurtMult * xD dmg / 100
+        rawDeltaHP = ceiling $ intToDouble hurtMult * xD dmg / 100
         -- For simplicity, we ignore range bonus/malus and @Lobable@.
         IK.ThrowMod{IK.throwVelocity} = IA.aToThrow arItem
         speed = speedFromWeight (IK.iweight itemKind) throwVelocity
-        v = - fromIntegral (modifyDamageBySpeed rawDeltaHP speed) * 10 / xD 1
+        v = - (fromIntegralTypeMe :: Int64 -> Double)
+                (modifyDamageBySpeed rawDeltaHP speed) * 10 / xD 1
           -- 1 damage valued at 10, just as in @damageUsefulness@
       -- If item is periodic, we factor in the self value of effects,
       -- because they are applied to self, whether the actor wants it or not.

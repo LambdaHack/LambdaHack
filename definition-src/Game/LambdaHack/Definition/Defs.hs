@@ -60,22 +60,22 @@ linearInterpolation !levelDepth !totalDepth !dataset =
         then (x1y1, (x1Last + 1, y1Last))
                -- this dummy interval is enough to emulate the value staying
                -- constant indefinitely
-        else let stepLevel = 10 / fromIntegral totalDepth
+        else let stepLevel = 10 / intToDouble totalDepth
                -- this is the distance representing one level, the same
                -- as the distance from 0 to the representation of level 1
              in (x1y1, (10 + stepLevel, 0))
       findInterval !x1y1 ((!x, !y) : rest) =
-        if fromIntegral levelDepth * 10 <= x * fromIntegral totalDepth
+        if intToDouble levelDepth * 10 <= x * intToDouble totalDepth
         then (x1y1, (x, y))
         else findInterval (x, y) rest
       ((x1, y1), (x2, y2)) = findInterval (0, 0) dataset
       levelDepthTrimmed =
         if x2 > 10 then levelDepth else min levelDepth totalDepth
   in ceiling
-     $ fromIntegral y1
-       + fromIntegral (y2 - y1)
-         * (fromIntegral levelDepthTrimmed * 10 - x1 * fromIntegral totalDepth)
-         / ((x2 - x1) * fromIntegral totalDepth)
+     $ intToDouble y1
+       + intToDouble (y2 - y1)
+         * (intToDouble levelDepthTrimmed * 10 - x1 * intToDouble totalDepth)
+         / ((x2 - x1) * intToDouble totalDepth)
 
 -- | Content identifiers for the content type @c@.
 newtype ContentId c = ContentId Word16

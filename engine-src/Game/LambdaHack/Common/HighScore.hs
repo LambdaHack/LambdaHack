@@ -83,19 +83,19 @@ register :: ScoreTable  -- ^ old table
          -> (Bool, (ScoreTable, Int))
 register table total dungeonTotal time status@Status{stOutcome}
          date challenge gplayerName ourVictims theirVictims hiCondPoly =
-  let turnsSpent = fromIntegral $ timeFitUp time timeTurn
+  let turnsSpent = intToDouble $ timeFitUp time timeTurn
       hiInValue (hi, c) = assert (total <= dungeonTotal) $ case hi of
         HiConst -> c
         HiLoot | dungeonTotal == 0 -> c  -- a fluke; no gold generated
-        HiLoot -> c * fromIntegral total / fromIntegral dungeonTotal
+        HiLoot -> c * intToDouble total / intToDouble dungeonTotal
         HiSprint -> -- Up to -c turns matter.
                     max 0 (-c - turnsSpent)
         HiBlitz -> -- Up to 1000000/-c turns matter.
                    sqrt $ max 0 (1000000 + c * turnsSpent)
         HiSurvival -> -- Up to 1000000/c turns matter.
                       sqrt $ max 0 (min 1000000 $ c * turnsSpent)
-        HiKill -> c * fromIntegral (sum (EM.elems theirVictims))
-        HiLoss -> c * fromIntegral (sum (EM.elems ourVictims))
+        HiKill -> c * intToDouble (sum (EM.elems theirVictims))
+        HiLoss -> c * intToDouble (sum (EM.elems ourVictims))
       hiPolynomialValue = sum . map hiInValue
       hiSummandValue (hiPoly, outcomes) =
         if stOutcome `elem` outcomes
@@ -103,7 +103,7 @@ register table total dungeonTotal time status@Status{stOutcome}
         else 0
       hiCondValue = sum . map hiSummandValue
       -- Other challenges than HP difficulty are not reflected in score.
-      points = (ceiling :: Double -> Int)
+      points = ceiling
                $ hiCondValue hiCondPoly
                  * 1.5 ^^ (- (difficultyCoeff (cdiff challenge)))
       negTime = absoluteTimeNegate time

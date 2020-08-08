@@ -142,18 +142,18 @@ timeDeltaReverse (Delta (Time t)) = Delta (Time (-t))
 -- | Scale the time vector by an @Int@ scalar value.
 timeDeltaScale :: Delta Time -> Int -> Delta Time
 {-# INLINE timeDeltaScale #-}
-timeDeltaScale (Delta (Time t)) s = Delta (Time (t * fromIntegral s))
+timeDeltaScale (Delta (Time t)) s = Delta (Time (t * intToInt64 s))
 
 -- | Take the given percent of the time vector.
 timeDeltaPercent :: Delta Time -> Int -> Delta Time
 {-# INLINE timeDeltaPercent #-}
 timeDeltaPercent (Delta (Time t)) s =
-  Delta (Time (t * fromIntegral s `div` 100))
+  Delta (Time (t * intToInt64 s `div` 100))
 
 -- | Divide a time vector.
 timeDeltaDiv :: Delta Time -> Int -> Delta Time
 {-# INLINE timeDeltaDiv #-}
-timeDeltaDiv (Delta (Time t)) n = Delta (Time (t `div` fromIntegral n))
+timeDeltaDiv (Delta (Time t)) n = Delta (Time (t `div` intToInt64 n))
 
 -- | Represent the main 10 thresholds of a time range by digits,
 -- given the total length of the time range.
@@ -190,7 +190,7 @@ sInMs = 1000000
 -- | Constructor for content definitions.
 toSpeed :: Int -> Speed
 {-# INLINE toSpeed #-}
-toSpeed s = Speed $ fromIntegral s * sInMs `div` 10
+toSpeed s = Speed $ intToInt64 s * sInMs `div` 10
 
 -- | Readable representation of speed in the format used in content definitions.
 fromSpeed :: Speed -> Int
@@ -254,14 +254,16 @@ modifyDamageBySpeed dmg (Speed s) =
   let Speed sThrust = speedThrust
   in if s <= minimalSpeed
      then 0  -- needed mostly not to display useless ranged damage
-     else round (fromIntegral dmg * fromIntegral s ^ (2 :: Int)
-                 / fromIntegral sThrust ^ (2 :: Int) :: Double)
-                    -- Double, because overflows Int64
+     else round $  -- Double, because overflows Int64
+       (fromIntegralTypeMe :: Int64 -> Double) dmg
+       * (fromIntegralTypeMe :: Int64 -> Double) s ^ (2 :: Int)
+       / (fromIntegralTypeMe :: Int64 -> Double) sThrust ^ (2 :: Int)
 
 -- | Scale speed by a scalar value.
 speedScale :: Rational -> Speed -> Speed
 {-# INLINE speedScale #-}
-speedScale s (Speed v) = Speed (round $ fromIntegral v * s)
+speedScale s (Speed v) =
+  Speed (round $ (fromIntegralTypeMe :: Int64 -> Rational) v * s)
 
 -- | Speed addition.
 speedAdd :: Speed -> Speed -> Speed
@@ -280,12 +282,12 @@ ticksPerMeter (Speed v) =
 -- See <https://github.com/LambdaHack/LambdaHack/wiki/Item-statistics>.
 speedFromWeight :: Int -> Int -> Speed
 speedFromWeight !weight !throwVelocity =
-  let w = fromIntegral weight
+  let w = intToInt64 weight
       mpMs | w < 250 = sInMs * 20
            | w < 1500 = sInMs * 20 * 1250 `div` (w + 1000)
            | w < 10500 = sInMs * (11500 - w) `div` 1000
            | otherwise = minimalSpeed * 2  -- move one step and drop
-      v = mpMs * fromIntegral throwVelocity `div` 100
+      v = mpMs * intToInt64 throwVelocity `div` 100
       -- We round down to the nearest multiple of 2M (unless the speed
       -- is very low), to ensure both turns of flight cover the same distance
       -- and that the speed matches the distance traveled exactly.

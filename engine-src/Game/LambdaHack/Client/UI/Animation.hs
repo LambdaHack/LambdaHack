@@ -16,6 +16,7 @@ import Game.LambdaHack.Core.Prelude
 
 import           Data.Bits
 import qualified Data.EnumMap.Strict as EM
+import           Data.Word (Word32)
 
 import           Game.LambdaHack.Client.UI.Content.Screen
 import           Game.LambdaHack.Client.UI.Frame
@@ -239,7 +240,8 @@ fadeout ScreenContent{rwidth, rheight} out step = do
       rollFrame !n = do
         w <- randomWord32
         -- @fromIntegral@ is potentially costly, but arch-independent.
-        let fadeAttr !y !x = attrChar1ToW32 $ fadeChar (fromIntegral w) n x y
+        let fadeAttr !y !x = attrChar1ToW32 $
+              fadeChar ((fromIntegralTypeMe :: Word32 -> Int) w) n x y
             fadeLine !y =
               let x1 :: Int
                   {-# INLINE x1 #-}

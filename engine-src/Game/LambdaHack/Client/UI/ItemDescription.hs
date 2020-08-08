@@ -235,7 +235,7 @@ textAllPowers width detailLevel skipRecharging
       hurtMult = armorHurtCalculation True (IA.aSkills arItem)
                                            Ability.zeroSkills
       dmg = Dice.meanDice $ IK.idamage itemKind
-      rawDeltaHP = ceiling $ fromIntegral hurtMult * xD dmg / 100
+      rawDeltaHP = ceiling $ intToDouble hurtMult * xD dmg / 100
       IK.ThrowMod{IK.throwVelocity} = IA.aToThrow arItem
       speed = speedFromWeight (IK.iweight itemKind) throwVelocity
       pdeltaHP = modifyDamageBySpeed rawDeltaHP speed
@@ -424,9 +424,9 @@ itemDesc width markParagraphs side factionD aHurtMeleeOfOwner store localTime
                               else aHurtMeleeOfItem
                   mult = 100 + min 100 (max (-95) multRaw)
                   percentDeltaHP = xM meanDmg `divUp` 100
-                  rawDeltaHP = fromIntegral mult * percentDeltaHP
+                  rawDeltaHP = intToInt64 mult * percentDeltaHP
                   pmult = 100 + min 100 (max (-95) aHurtMeleeOfItem)
-                  prawDeltaHP = fromIntegral pmult * percentDeltaHP
+                  prawDeltaHP = intToInt64 pmult * percentDeltaHP
                   pdeltaHP = modifyDamageBySpeed prawDeltaHP speed
                   minDeltaHP = 5 * percentDeltaHP
                   mDeltaHP = modifyDamageBySpeed minDeltaHP speed
@@ -455,7 +455,7 @@ itemDesc width markParagraphs side factionD aHurtMeleeOfOwner store localTime
       weight = IK.iweight itemKind
       (scaledWeight, unitWeight)
         | weight > 1000 =
-          (tshow $ fromIntegral weight / (1000 :: Double), "kg")
+          (tshow $ intToDouble weight / 1000, "kg")
         | otherwise = (tshow weight, "g")
       onLevel = "on level" <+> tshow (abs $ fromEnum jlid) <> "."
       discoFirst = (if IA.checkFlag Ability.Unique arItem

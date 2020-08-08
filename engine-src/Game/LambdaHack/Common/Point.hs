@@ -51,8 +51,8 @@ instance Show Point where
   show (Point x y) = show (x, y)
 
 instance Binary Point where
-  put = put . (fromIntegral :: Int -> Int32) . fromEnum
-  get = fmap (toEnum . (fromIntegral :: Int32 -> Int)) get
+  put = put . (fromIntegralTypeMe :: Int -> Int32) . fromEnum
+  get = fmap (toEnum . (fromIntegralTypeMe :: Int32 -> Int)) get
 
 -- Note that @Ord@ on @Int@ is not monotonic wrt @Ord@ on @Point@.
 -- We need to keep it that way, because we want close xs to have close indexes,

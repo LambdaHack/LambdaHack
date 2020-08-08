@@ -46,8 +46,8 @@ instance Hashable Flavour where
   hashWithSalt = hashUsing fromEnum
 
 instance Binary Flavour where
-  put = put . (fromIntegral :: Int -> Word16) . fromEnum
-  get = fmap (toEnum . (fromIntegral :: Word16 -> Int)) get
+  put = put . (fromIntegralTypeMe :: Int -> Word16) . fromEnum
+  get = fmap (toEnum . (fromIntegralTypeMe :: Word16 -> Int)) get
 
 -- | Turn a colour set into a flavour set.
 zipPlain, zipFancy, zipLiquid, zipGlassPlain, zipGlassFancy :: [Color] -> [Flavour]

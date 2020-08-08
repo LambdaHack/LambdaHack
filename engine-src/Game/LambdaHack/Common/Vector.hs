@@ -44,8 +44,8 @@ data Vector = Vector
   deriving (Show, Read, Eq, Ord, Generic)
 
 instance Binary Vector where
-  put = put . (fromIntegral :: Int -> Int32) . fromEnum
-  get = fmap (toEnum . (fromIntegral :: Int32 -> Int)) get
+  put = put . (fromIntegralTypeMe :: Int -> Int32) . fromEnum
+  get = fmap (toEnum . (fromIntegralTypeMe :: Int32 -> Int)) get
 
 -- Note that the conversion is not monotonic wrt the natural @Ord@ instance,
 -- to keep it in sync with Point.
@@ -218,8 +218,8 @@ type RadianAngle = Double
 -- direction.
 rotate :: RadianAngle -> Vector -> Vector
 rotate angle (Vector x' y') =
-  let x = fromIntegral x'
-      y = fromIntegral y'
+  let x = intToDouble x'
+      y = intToDouble y'
       -- Minus before the angle comes from our coordinates being
       -- mirrored along the X axis (Y coordinates grow going downwards).
       dx = x * cos (-angle) - y * sin (-angle)
@@ -247,7 +247,7 @@ normalize dx dy =
 
 normalizeVector :: Vector -> Vector
 normalizeVector v@(Vector vx vy) =
-  let res = normalize (fromIntegral vx) (fromIntegral vy)
+  let res = normalize (intToDouble vx) (intToDouble vy)
   in assert (not (isUnit v) || v == res
              `blame` "unit vector gets untrivially normalized"
              `swith` (v, res))

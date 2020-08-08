@@ -348,8 +348,8 @@ tellAllClipPS = do
     let time = absoluteTimeAdd allTime gtime
         nframes = allNframes + gnframes
         diff = fromRational $ toRational $ curPOSIX - sstartPOSIX
-        cps = fromIntegral (timeFit time timeClip) / diff :: Double
-        fps = fromIntegral nframes / diff :: Double
+        cps = intToDouble (timeFit time timeClip) / diff
+        fps = intToDouble nframes / diff
     clientPrintUI $
       "Session time:" <+> tshow diff <> "s; frames:" <+> tshow nframes <> "."
       <+> "Average clips per second:" <+> tshow cps <> "."
@@ -366,8 +366,8 @@ tellGameClipPS = do
       time <- getsState stime
       nframes <- getsSession snframes
       let diff = fromRational $ toRational $ curPOSIX - sgstartPOSIX
-          cps = fromIntegral (timeFit time timeClip) / diff :: Double
-          fps = fromIntegral nframes / diff :: Double
+          cps = intToDouble (timeFit time timeClip) / diff
+          fps = intToDouble nframes / diff
       -- This means: "Game portion after last reload time:...".
       clientPrintUI $
         "Game time:" <+> tshow diff <> "s; frames:" <+> tshow nframes <> "."
@@ -378,7 +378,9 @@ elapsedSessionTimeGT :: MonadClientUI m => Int -> m Bool
 elapsedSessionTimeGT stopAfter = do
   current <- liftIO getPOSIXTime
   sstartPOSIX <- getsSession sstart
-  return $! fromIntegral stopAfter + sstartPOSIX <= current
+  return $! (fromIntegralTypeMe :: Int -> NominalDiffTime) stopAfter
+            + sstartPOSIX
+            <= current
 
 resetSessionStart :: MonadClientUI m => m ()
 resetSessionStart = do

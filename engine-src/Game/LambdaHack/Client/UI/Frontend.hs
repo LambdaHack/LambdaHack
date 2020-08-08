@@ -84,7 +84,7 @@ chanFrontendIO coscreen soptions = do
 #endif
               | otherwise = Chosen.startup coscreen soptions
       maxFps = fromMaybe defaultMaxFps $ smaxFps soptions
-      delta = max 1 $ round $ fromIntegral microInSec / max 0.000001 maxFps
+      delta = max 1 $ round $ intToDouble microInSec / max 0.000001 maxFps
   rf <- startup
   fautoYesRef <- newIORef $ not $ sdisableAutoYes soptions
   fdelay <- newMVar 0

@@ -234,11 +234,11 @@ infDice = fst . infsupDice
 -- to be taken as argument.
 meanDice :: Dice -> Double
 meanDice dice1 = case dice1 of
-  DiceI k -> fromIntegral k
-  DiceD n k -> fromIntegral (n * (k + 1)) / 2
-  DiceDL n k -> fromIntegral (n * (k + 1)) / 4
-  DiceZ n k -> fromIntegral (n * k) / 2
-  DiceZL n k -> fromIntegral (n * k) / 4
+  DiceI k -> intToDouble k
+  DiceD n k -> intToDouble (n * (k + 1)) / 2
+  DiceDL n k -> intToDouble (n * (k + 1)) / 4
+  DiceZ n k -> intToDouble (n * k) / 2
+  DiceZL n k -> intToDouble (n * k) / 4
   DicePlus d1 d2 -> meanDice d1 + meanDice d2
   DiceTimes d1 d2 -> meanDice d1 * meanDice d2  -- I hope this is that simple
   DiceNegate d1 -> negate $ meanDice d1

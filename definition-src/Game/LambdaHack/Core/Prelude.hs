@@ -12,6 +12,7 @@ module Game.LambdaHack.Core.Prelude
   , module Control.Exception.Assert.Sugar
 
   , Text, (<+>), tshow, divUp, sum, (<$$>), partitionM, length, null, comparing
+  , fromIntegralTypeMe, intToDouble, intToInt64
 
   , (***), (&&&), first, second
   ) where
@@ -19,7 +20,17 @@ module Game.LambdaHack.Core.Prelude
 import Prelude ()
 
 import Prelude.Compat hiding
-  (appendFile, foldl, foldl1, length, null, readFile, sum, writeFile, (<>))
+  ( appendFile
+  , foldl
+  , foldl1
+  , fromIntegral
+  , length
+  , null
+  , readFile
+  , sum
+  , writeFile
+  , (<>)
+  )
 
 import           Control.Applicative
 import           Control.Arrow (first, second, (&&&), (***))
@@ -33,6 +44,7 @@ import qualified Data.EnumSet as ES
 import qualified Data.Fixed as Fixed
 import           Data.Hashable
 import qualified Data.HashMap.Strict as HM
+import           Data.Int (Int64)
 import           Data.Key
 import           Data.List.Compat hiding (foldl, foldl1, length, null, sum)
 import qualified Data.List.Compat as List
@@ -44,6 +56,7 @@ import qualified Data.Text as T (pack)
 import qualified Data.Time as Time
 import           NLP.Miniutter.English ((<+>))
 import qualified NLP.Miniutter.English as MU
+import qualified Prelude.Compat
 
 -- | Show and pack the result.
 tshow :: Show a => a -> Text
@@ -150,3 +163,14 @@ instance NFData MU.Part
 instance NFData MU.Person
 
 instance NFData MU.Polarity
+
+-- | Re-exported 'Prelude.fromIntegral', but please give it explicit type
+-- to make it obvious if wrapping, etc., may occur.
+fromIntegralTypeMe :: (Integral a, Num b) => a -> b
+fromIntegralTypeMe = Prelude.Compat.fromIntegral
+
+intToDouble :: Int -> Double
+intToDouble = Prelude.Compat.fromIntegral
+
+intToInt64 :: Int -> Int64
+intToInt64 = Prelude.Compat.fromIntegral

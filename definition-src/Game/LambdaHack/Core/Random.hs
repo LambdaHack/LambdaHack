@@ -51,15 +51,18 @@ randomR0 h = St.state $ nextRandom h
 -- The limitation to @Int32@ values is needed to keep it working on signed
 -- types. In package @random@, a much more complex scheme is used
 -- to keep it working for arbitrary fixed number of bits.
-nextRandom :: Integral a => a -> SM.SMGen -> (a, SM.SMGen)
+nextRandom :: forall a. Integral a => a -> SM.SMGen -> (a, SM.SMGen)
 {-# INLINE nextRandom #-}
-nextRandom h g = assert (h <= fromIntegral (maxBound :: Int32)) $
-  let (w32, g') = SM.bitmaskWithRejection32' (fromIntegral h) g
-      x = fromIntegral w32
+nextRandom h g = assert (h <= (fromIntegralTypeMe :: Int32 -> a) maxBound) $
+  let (w32, g') = SM.bitmaskWithRejection32'
+                    ((fromIntegralTypeMe :: a -> Word32) h) g
+      x = (fromIntegralTypeMe :: Word32 -> a) w32
   in if x > h
      then error $ "nextRandom internal error"
                   `showFailure`
-                    (fromIntegral x :: Integer, fromIntegral h :: Integer, w32)
+                    ( (fromIntegralTypeMe :: a -> Integer) x
+                    , (fromIntegralTypeMe :: a -> Integer) h
+                    , w32 )
      else (x, g')
 
 -- | Get a random 'Word32' using full range.

@@ -467,7 +467,7 @@ closestTriggers fleeVia aid = do
   return $!
     let mix (benefit, ppbag) dist =
           let maxd = subtractBfsDistance maxBfsDistance apartBfs
-              v = fromIntegral $ (1 + maxd - dist) ^ (2 :: Int)
+              v = intToDouble $ (1 + maxd - dist) ^ (2 :: Int)
           in (ceiling $ benefit * v, ppbag)
     in mapMaybe (\bpp@(_, (p, _)) ->
          mix bpp <$> accessBfs bfs p) vicAll
