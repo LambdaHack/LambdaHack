@@ -751,7 +751,8 @@ dominateFid fid source target = do
 -- | Drop all actor's equipped items.
 dropAllEquippedItems :: MonadServerAtomic m => ActorId -> Actor -> m ()
 dropAllEquippedItems aid b =
-  mapActorCStore_ CEqp (dropCStoreItem False False CEqp aid b maxBound) b
+  mapActorCStore_ CEqp (void
+                        <$$> dropCStoreItem False False CEqp aid b maxBound) b
 
 -- ** Impress
 
@@ -2140,7 +2141,7 @@ effectSeqEffect :: forall m. MonadServerAtomic m
                 => (IK.Effect -> m UseResult) -> [IK.Effect]
                 -> m UseResult
 effectSeqEffect recursiveCall effs = do
-  mapM_ recursiveCall effs
+  mapM_ (void <$> recursiveCall) effs
   return UseUp
   -- no @execSfx@, because individual effects sent them
 

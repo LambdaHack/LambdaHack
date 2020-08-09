@@ -297,7 +297,7 @@ gameReset serverOptions mGameMode mrandom = do
   return $! defState
 
 -- Spawn initial actors. Clients should notice this, to set their leaders.
-populateDungeon :: MonadServerAtomic m => m ()
+populateDungeon :: forall m. MonadServerAtomic m => m ()
 populateDungeon = do
   cops@COps{coTileSpeedup} <- getsState scops
   dungeon <- getsState sdungeon
@@ -322,9 +322,11 @@ populateDungeon = do
                $ concatMap getEntryLevels needInitialCrew
       hasActorsOnArena lid (_, fact) =
         any ((== lid) . boundLid) $ ginitialWolf fact
+      initialActorPositions :: LevelId -> m (LevelId, [(FactionId, Point)])
       initialActorPositions lid = do
         lvl <- getLevel lid
-        let arenaFactions = filter (hasActorsOnArena lid) needInitialCrew
+        let arenaFactions =
+              map fst $ filter (hasActorsOnArena lid) needInitialCrew
         entryPoss <- rndToAction
                      $ findEntryPoss cops lid lvl (length arenaFactions)
         when (length entryPoss < length arenaFactions) $
@@ -333,10 +335,11 @@ populateDungeon = do
         let usedPoss = zip arenaFactions entryPoss
         return $! (lid, usedPoss)
       initialActors (lid, usedPoss) = mapM_ (placeActors lid) usedPoss
-      placeActors lid ((fid3, fact3), ppos) = do
+      placeActors :: LevelId -> (FactionId, Point) -> m ()
+      placeActors lid (fid3, ppos) = do
         lvl <- getLevel lid
         let validTile t = not $ Tile.isNoActor coTileSpeedup t
-            initActors = ginitialWolf fact3
+            initActors = ginitialWolf $ factionD EM.! fid3
             initGroups = concat [ replicate n actorGroup
                                 | ln3@(_, n, actorGroup) <- initActors
                                 , boundLid ln3 == lid ]
@@ -353,12 +356,11 @@ populateDungeon = do
           maid <- addActorFromGroup actorGroup fid3 p lid rndTime
           case maid of
             Nothing -> error $ "can't spawn initial actors"
-                               `showFailure` (lid, (fid3, fact3))
+                               `showFailure` (lid, fid3)
             Just aid -> do
               mleader <- getsState $ gleader . (EM.! fid3) . sfactionD
               -- Sleeping actor may become a leader, but it's quickly corrected.
               when (isNothing mleader) $ setFreshLeader fid3 aid
-              return True
   lposs <- mapM initialActorPositions arenas
   let factionPositions = EM.fromList $ map (second $ map snd) lposs
   placeItemsInDungeon factionPositions

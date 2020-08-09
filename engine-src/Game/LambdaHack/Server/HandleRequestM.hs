@@ -711,7 +711,8 @@ reqAlterFail bumping effToUse voluntary source tpos = do
       -- The exception is changable tiles, because they are not so easy
       -- to trigger; they need previous or subsequent altering.
       unless (Tile.isModifiable coTileSpeedup serverTile || projNoDamage) $
-        mapM_ tryApplyEmbed (sortEmbeds cops serverTile embedKindList)
+        mapM_ (void <$> tryApplyEmbed)
+              (sortEmbeds cops serverTile embedKindList)
       return Nothing  -- searching is always success
   else
     -- Here either @clientTile == serverTile@ or the client

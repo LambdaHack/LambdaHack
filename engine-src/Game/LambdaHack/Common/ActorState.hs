@@ -252,7 +252,7 @@ getFactionStashBag fid s = case gstash $ sfactionD s EM.! fid of
   Nothing -> EM.empty
 
 mapActorItems_ :: Monad m
-               => (CStore -> ItemId -> ItemQuant -> m a) -> Actor -> State
+               => (CStore -> ItemId -> ItemQuant -> m ()) -> Actor -> State
                -> m ()
 mapActorItems_ f b s = do
   let notProcessed = [CGround]

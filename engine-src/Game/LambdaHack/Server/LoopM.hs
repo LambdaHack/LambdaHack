@@ -79,7 +79,7 @@ loopSer serverOptions executorClient = do
                             $ updateCOpsAndCachedData (const cops)
                             $ sclientStates ser EM.! fid
                   in execUpdAtomicFidCatch fid cmd
-      mapM_ f $ EM.keys factionD
+      mapM_ (void <$> f) $ EM.keys factionD
       updConn
       initPer
       pers <- getsServer sperFid

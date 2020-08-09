@@ -12,7 +12,7 @@ module Game.LambdaHack.Core.Prelude
   , module Control.Exception.Assert.Sugar
 
   , Text, (<+>), tshow, divUp, sum, (<$$>), partitionM, length, null, comparing
-  , fromIntegralTypeMe, intToDouble, intToInt64
+  , fromIntegralTypeMe, intToDouble, intToInt64, mapM_, forM_
 
   , (***), (&&&), first, second
   ) where
@@ -25,6 +25,7 @@ import Prelude.Compat hiding
   , foldl1
   , fromIntegral
   , length
+  , mapM_
   , null
   , readFile
   , sum
@@ -37,7 +38,8 @@ import           Control.Arrow (first, second, (&&&), (***))
 import           Control.DeepSeq
 import           Control.Exception.Assert.Sugar
   (allB, assert, blame, showFailure, swith)
-import           Control.Monad.Compat
+import           Control.Monad.Compat hiding (forM_, mapM_)
+import qualified Control.Monad.Compat
 import           Data.Binary
 import qualified Data.EnumMap.Strict as EM
 import qualified Data.EnumSet as ES
@@ -174,3 +176,13 @@ intToDouble = Prelude.Compat.fromIntegral
 
 intToInt64 :: Int -> Int64
 intToInt64 = Prelude.Compat.fromIntegral
+
+-- | This is has a more specific type (unit result) than normally,
+-- to catch errors.
+mapM_ :: (Foldable t, Monad m) => (a -> m ()) -> t a -> m ()
+mapM_ = Control.Monad.Compat.mapM_
+
+-- | This is has a more specific type (unit result) than normally,
+-- to catch errors.
+forM_ :: (Foldable t, Monad m) => t a -> (a -> m ()) -> m ()
+forM_ = Control.Monad.Compat.forM_
