@@ -40,6 +40,7 @@ import qualified Game.LambdaHack.Common.Tile as Tile
 import           Game.LambdaHack.Common.Time
 import           Game.LambdaHack.Common.Types
 import qualified Game.LambdaHack.Content.CaveKind as CK
+import           Game.LambdaHack.Content.ItemKind (ItemKind)
 import qualified Game.LambdaHack.Content.ItemKind as IK
 import           Game.LambdaHack.Content.ModeKind
 import qualified Game.LambdaHack.Core.Dice as Dice
@@ -316,12 +317,13 @@ populateDungeon = do
       needInitialCrew = sortOn (valuePlayer . gplayer . snd)
                         $ filter (not . null . ginitialWolf . snd)
                         $ EM.assocs factionD
-      boundLid (ln, _, _) = max minD . min maxD . toEnum $ ln
-      getEntryLevels (_, fact) = map boundLid $ ginitialWolf fact
+      boundLid ln = max minD . min maxD . toEnum $ ln
+      getEntryLevels (_, fact) =
+        map (boundLid . \(ln, _, _) -> ln) $ ginitialWolf fact
       arenas = ES.elems $ ES.fromList
                $ concatMap getEntryLevels needInitialCrew
       hasActorsOnArena lid (_, fact) =
-        any ((== lid) . boundLid) $ ginitialWolf fact
+        any ((== lid) . boundLid . \(ln, _, _) -> ln) $ ginitialWolf fact
       initialActorPositions :: LevelId
                             -> m (LevelId, EM.EnumMap FactionId Point)
       initialActorPositions lid = do
@@ -335,23 +337,25 @@ populateDungeon = do
             "Server: populateDungeon: failed to find enough faction positions"
         let usedPoss = EM.fromList $ zip arenaFactions entryPoss
         return $! (lid, usedPoss)
-      initialActors (lid, usedPoss) =
-        mapM_ (placeActors lid) $ EM.assocs usedPoss
-      placeActors :: LevelId -> (FactionId, Point) -> m ()
-      placeActors lid (fid3, ppos) = do
+  factionPositions <- EM.fromDistinctAscList
+                      <$> mapM initialActorPositions arenas
+  let initialActors :: (FactionId, Faction) -> m ()
+      initialActors (fid3, fact3) = do
+        let initActors = ginitialWolf fact3
+        mapM_ (placeActors fid3) initActors
+      placeActors :: FactionId -> (Int, Int, GroupName ItemKind) -> m ()
+      placeActors fid3 (ln, n, actorGroup) = do
+        let lid = boundLid ln
+            ppos = factionPositions EM.! lid EM.! fid3
         lvl <- getLevel lid
         let validTile t = not $ Tile.isNoActor coTileSpeedup t
-            initActors = ginitialWolf $ factionD EM.! fid3
-            initGroups = concat [ replicate n actorGroup
-                                | ln3@(_, n, actorGroup) <- initActors
-                                , boundLid ln3 == lid ]
             psFree = nearbyFreePoints cops lvl validTile ppos
-        when (length psFree < length initGroups) $
+        when (length psFree < n) $
           debugPossiblyPrint
             "Server: populateDungeon: failed to find enough actor positions"
-        let ps = zip initGroups psFree
+        let ps = take n psFree
         localTime <- getsState $ getLocalTime lid
-        forM_ ps $ \ (actorGroup, p) -> do
+        forM_ ps $ \p -> do
           rndDelay <- rndToAction $ randomR (1, clipsInTurn - 1)
           let delta = timeDeltaScale (Delta timeClip) rndDelay
               rndTime = timeShift localTime delta
@@ -363,11 +367,9 @@ populateDungeon = do
               mleader <- getsState $ gleader . (EM.! fid3) . sfactionD
               -- Sleeping actor may become a leader, but it's quickly corrected.
               when (isNothing mleader) $ setFreshLeader fid3 aid
-  factionPositions <- EM.fromDistinctAscList
-                      <$> mapM initialActorPositions arenas
   placeItemsInDungeon factionPositions
   embedItemsInDungeon
-  mapM_ initialActors $ EM.assocs factionPositions
+  mapM_ initialActors needInitialCrew
 
 -- | Find starting postions for all factions. Try to make them distant
 -- from each other. Place as many of the factions, as possible,
