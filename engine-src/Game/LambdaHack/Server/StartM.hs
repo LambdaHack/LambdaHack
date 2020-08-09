@@ -328,8 +328,8 @@ populateDungeon = do
               map fst $ filter (hasActorsOnArena lid) needInitialCrew
         entryPoss <- rndToAction
                      $ findEntryPoss cops lid lvl (length arenaFactions)
-        when (length entryPoss < length arenaFactions) $
-          debugPossiblyPrint "Server: populateDungeon: failed to find enough distinct faction starting positions; some factions share positions"
+        when (length entryPoss < length arenaFactions) $ debugPossiblyPrint
+          "Server: populateDungeon: failed to find enough distinct faction starting positions; some factions share positions"
         let usedPoss = EM.fromList $ zip arenaFactions $ cycle entryPoss
         return $ (lid, usedPoss)
   factionPositions <- EM.fromDistinctAscList
@@ -341,16 +341,15 @@ populateDungeon = do
       placeActors :: FactionId -> (Int, Int, GroupName ItemKind) -> m ()
       placeActors fid3 (ln, n, actorGroup) = do
         let lid = toEnum ln
-            ppos = factionPositions EM.! lid EM.! fid3
         lvl <- getLevel lid
-        let validTile t = not $ Tile.isNoActor coTileSpeedup t
+        let ppos = factionPositions EM.! lid EM.! fid3
+            validTile t = not $ Tile.isNoActor coTileSpeedup t
             -- This takes into account already spawned actors of this
             -- and other factions. If not enough space, some are skipped.
             psFree = nearbyFreePoints cops lvl validTile ppos
-        when (length psFree < n) $
-          debugPossiblyPrint
-            "Server: populateDungeon: failed to find enough initial actor positions; some actors are not generated"
-        let ps = take n psFree
+            ps = take n psFree
+        when (length ps < n) $ debugPossiblyPrint
+          "Server: populateDungeon: failed to find enough initial actor positions; some actors are not generated"
         localTime <- getsState $ getLocalTime lid
         forM_ ps $ \p -> do
           rndDelay <- rndToAction $ randomR (1, clipsInTurn - 1)
