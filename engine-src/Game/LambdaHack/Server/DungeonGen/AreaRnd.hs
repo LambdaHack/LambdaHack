@@ -120,7 +120,7 @@ connectGrid voidPlaces (nx, ny) = do
                                            | y <- [0..ny-1], x <- [0..nx-1] ]
   -- Candidates are neighbours that are still unconnected. We start with
   -- a random choice.
-  p <- oneOf $ ES.toList $ unconnected ES.\\ voidPlaces
+  p <- oneOf $ ES.elems $ unconnected ES.\\ voidPlaces
   let candidates = ES.singleton p
   connectGrid' voidPlaces (nx, ny) unconnected candidates []
 
@@ -132,7 +132,7 @@ connectGrid' voidPlaces (nx, ny) unconnected candidates !acc
   | unconnected `ES.isSubsetOf` voidPlaces = return acc
   | otherwise = do
       let candidatesBest = candidates ES.\\ voidPlaces
-      c <- oneOf $ ES.toList $ if ES.null candidatesBest
+      c <- oneOf $ ES.elems $ if ES.null candidatesBest
                                then candidates
                                else candidatesBest
       -- potential new candidates:
@@ -143,7 +143,7 @@ connectGrid' voidPlaces (nx, ny) unconnected candidates !acc
       new <- if ES.null ds
              then return id
              else do
-               d <- oneOf (ES.toList ds)
+               d <- oneOf (ES.elems ds)
                return (sortPoint (c, d) :)
       connectGrid' voidPlaces (nx, ny) nu
         (ES.delete c (candidates `ES.union` nc)) (new acc)

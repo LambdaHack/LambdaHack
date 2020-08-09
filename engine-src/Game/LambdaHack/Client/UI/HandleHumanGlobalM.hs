@@ -305,7 +305,7 @@ moveRunHuman initialStep finalGoal run runAhead dir = do
   sel <- getsSession sselected
   let runMembers = if runAhead || noRunWithMulti fact
                    then [leader]
-                   else ES.toList (ES.delete leader sel) ++ [leader]
+                   else ES.elems (ES.delete leader sel) ++ [leader]
       runParams = RunParams { runLeader = leader
                             , runMembers
                             , runInitial = True

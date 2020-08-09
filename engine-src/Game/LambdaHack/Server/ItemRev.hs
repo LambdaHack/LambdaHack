@@ -189,7 +189,7 @@ rollFlavourMap !rnd !key !ik = case IK.iflavour ik of
     assert (not (ES.null proper)
             `blame` "not enough flavours for items"
             `swith` (flvs, available, ik, availableMap)) $ do
-      flavour <- oneOf $ ES.toList proper
+      flavour <- oneOf $ ES.elems proper
       let availableReduced = ES.delete flavour available
       return ( EM.insert key flavour assocs
              , EM.insert (IK.isymbol ik) availableReduced availableMap)

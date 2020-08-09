@@ -649,12 +649,12 @@ updTimeItem iid c fromIt toIt = assert (fromIt /= toIt) $ do
 updAgeGame :: MonadStateWrite m => ES.EnumSet LevelId -> m ()
 updAgeGame lids = do
   modifyState $ updateTime $ flip timeShift (Delta timeClip)
-  mapM_ (ageLevel (Delta timeClip)) $ ES.toList lids
+  mapM_ (ageLevel (Delta timeClip)) $ ES.elems lids
 
 updUnAgeGame :: MonadStateWrite m => ES.EnumSet LevelId -> m ()
 updUnAgeGame lids = do
   modifyState $ updateTime $ flip timeShift (timeDeltaReverse $ Delta timeClip)
-  mapM_ (ageLevel (timeDeltaReverse $ Delta timeClip)) $ ES.toList lids
+  mapM_ (ageLevel (timeDeltaReverse $ Delta timeClip)) $ ES.elems lids
 
 ageLevel :: MonadStateWrite m => Delta Time -> LevelId -> m ()
 ageLevel delta lid =

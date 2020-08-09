@@ -185,8 +185,8 @@ handleFidUpd updatePerFid fid fact = do
   fa <- factionArena fact
   arenas <- getsServer sarenas
   let myArenas = case fa of
-        Just myArena -> myArena : delete myArena (ES.toList arenas)
-        Nothing -> ES.toList arenas
+        Just myArena -> myArena : delete myArena (ES.elems arenas)
+        Nothing -> ES.elems arenas
   nonWaitMove <- handle myArenas
   breakASAP <- getsServer sbreakASAP
   unless breakASAP $ killDying myArenas
@@ -247,7 +247,7 @@ loopUpd updConn = do
           -- ensures state is not changed and so the clip doesn't need
           -- to be carried through before save.
           arenas <- getsServer sarenas
-          mapM_ (\fid -> mapM_ (`handleTrajectories` fid) $ ES.toList arenas)
+          mapM_ (\fid -> mapM_ (`handleTrajectories` fid) $ ES.elems arenas)
                 (EM.keys factionD)
           endClip updatePerFid  -- must be last, in case performs a bkp save
           -- The condition can be changed in @handleTrajectories@ by pushing

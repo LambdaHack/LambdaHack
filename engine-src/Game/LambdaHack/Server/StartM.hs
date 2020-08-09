@@ -318,7 +318,7 @@ populateDungeon = do
                         $ EM.assocs factionD
       boundLid (ln, _, _) = max minD . min maxD . toEnum $ ln
       getEntryLevels (_, fact) = map boundLid $ ginitialWolf fact
-      arenas = ES.toList $ ES.fromList
+      arenas = ES.elems $ ES.fromList
                $ concatMap getEntryLevels needInitialCrew
       hasActorsOnArena lid (_, fact) =
         any ((== lid) . boundLid) $ ginitialWolf fact
