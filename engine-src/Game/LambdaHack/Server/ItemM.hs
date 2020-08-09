@@ -240,19 +240,19 @@ rollAndRegisterItem verbose lid itemFreq container mk = do
 -- Tiles already placed, so it's possible to scatter over walkable tiles.
 placeItemsInDungeon :: forall m. MonadServerAtomic m
                     => EM.EnumMap LevelId [Point] -> m ()
-placeItemsInDungeon alliancePositions = do
+placeItemsInDungeon factionPositions = do
   COps{cocave, coTileSpeedup} <- getsState scops
   totalDepth <- getsState stotalDepth
   let initialItems (lid, lvl@Level{lkind, ldepth}) = do
         litemNum <- rndToAction $ castDice ldepth totalDepth
                                   (citemNum $ okind cocave lkind)
-        let alPos = EM.findWithDefault [] lid alliancePositions
+        let alPos = EM.findWithDefault [] lid factionPositions
             placeItems :: Int -> m ()
             placeItems n | n == litemNum = return ()
             placeItems !n = do
               Level{lfloor} <- getLevel lid
               -- Don't generate items around initial actors or in bunches.
-              let distAllianceAndNotFloor !p _ =
+              let distAndNotFloor !p _ =
                     let f !k b = chessDist p k > 4 && b
                     in p `EM.notMember` lfloor && foldr f True alPos
               mpos <- rndToAction $ findPosTry2 20 lvl
@@ -260,9 +260,8 @@ placeItemsInDungeon alliancePositions = do
                           && not (Tile.isNoItem coTileSpeedup t))
                 [ \_ !t -> Tile.isVeryOftenItem coTileSpeedup t
                 , \_ !t -> Tile.isCommonItem coTileSpeedup t ]
-                distAllianceAndNotFloor
-                [ distAllianceAndNotFloor
-                , distAllianceAndNotFloor ]
+                distAndNotFloor
+                [distAndNotFloor, distAndNotFloor]
               case mpos of
                 Just pos -> do
                   createCaveItem pos lid

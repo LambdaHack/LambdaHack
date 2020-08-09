@@ -325,27 +325,14 @@ populateDungeon = do
       initialActorPositions lid = do
         lvl <- getLevel lid
         let arenaFactions = filter (hasActorsOnArena lid) needInitialCrew
-            indexff (fid, _) = findIndex ((== fid) . fst) arenaFactions
-            representsAlliance ff2@(fid2, fact2) =
-              not $ any (\ff3@(fid3, _) ->
-                           indexff ff3 < indexff ff2
-                           && isFriend fid2 fact2 fid3) arenaFactions
-            arenaAlliances = filter representsAlliance arenaFactions
         entryPoss <- rndToAction
-                     $ findEntryPoss cops lid lvl (length arenaAlliances)
-        when (length entryPoss < length arenaAlliances) $
+                     $ findEntryPoss cops lid lvl (length arenaFactions)
+        when (length entryPoss < length arenaFactions) $
           debugPossiblyPrint
-            "Server: populateDungeon: failed to find enough alliance positions"
-        let usedPoss = zip arenaAlliances entryPoss
+            "Server: populateDungeon: failed to find enough faction positions"
+        let usedPoss = zip arenaFactions entryPoss
         return $! (lid, usedPoss)
-      initialActors (lid, usedPoss) = do
-        let arenaFactions = filter (hasActorsOnArena lid) needInitialCrew
-            placeAlliance ((fid3, _), ppos) =
-              mapM_ (\(fid4, fact4) ->
-                      when (isFriend fid4 fact4 fid3) $
-                        placeActors lid ((fid4, fact4), ppos))
-                    arenaFactions
-        mapM_ placeAlliance usedPoss
+      initialActors (lid, usedPoss) = mapM_ (placeActors lid) usedPoss
       placeActors lid ((fid3, fact3), ppos) = do
         lvl <- getLevel lid
         let validTile t = not $ Tile.isNoActor coTileSpeedup t
@@ -373,8 +360,8 @@ populateDungeon = do
               when (isNothing mleader) $ setFreshLeader fid3 aid
               return True
   lposs <- mapM initialActorPositions arenas
-  let alliancePositions = EM.fromList $ map (second $ map snd) lposs
-  placeItemsInDungeon alliancePositions
+  let factionPositions = EM.fromList $ map (second $ map snd) lposs
+  placeItemsInDungeon factionPositions
   embedItemsInDungeon
   mapM_ initialActors lposs
 
