@@ -301,7 +301,6 @@ gameReset serverOptions mGameMode mrandom = do
 populateDungeon :: forall m. MonadServerAtomic m => m ()
 populateDungeon = do
   cops@COps{coTileSpeedup} <- getsState scops
-  dungeon <- getsState sdungeon
   factionD <- getsState sfactionD
   curChalSer <- getsServer $ scurChalSer . soptions
   let ginitialWolf fact1 = if cwolf curChalSer && fhasUI (gplayer fact1)
@@ -309,7 +308,6 @@ populateDungeon = do
                              [] -> []
                              (ln, _, grp) : _ -> [(ln, 1, grp)]
                            else ginitial fact1
-      (minD, maxD) = dungeonBounds dungeon
       -- Players that escape go first to be started over stairs, if possible,
       -- and far from escapes.
       valuePlayer pl = (not $ fcanEscape pl, fname pl)
@@ -317,13 +315,11 @@ populateDungeon = do
       needInitialCrew = sortOn (valuePlayer . gplayer . snd)
                         $ filter (not . null . ginitialWolf . snd)
                         $ EM.assocs factionD
-      boundLid ln = max minD . min maxD . toEnum $ ln
       getEntryLevels (_, fact) =
-        map (boundLid . \(ln, _, _) -> ln) $ ginitialWolf fact
-      arenas = ES.elems $ ES.fromList
-               $ concatMap getEntryLevels needInitialCrew
+        map (\(ln, _, _) -> toEnum ln) $ ginitialWolf fact
+      arenas = ES.elems $ ES.fromList $ concatMap getEntryLevels needInitialCrew
       hasActorsOnArena lid (_, fact) =
-        any ((== lid) . boundLid . \(ln, _, _) -> ln) $ ginitialWolf fact
+        any (\(ln, _, _) -> toEnum ln == lid) $ ginitialWolf fact
       initialActorPositions :: LevelId
                             -> m (LevelId, EM.EnumMap FactionId Point)
       initialActorPositions lid = do
@@ -345,7 +341,7 @@ populateDungeon = do
         mapM_ (placeActors fid3) initActors
       placeActors :: FactionId -> (Int, Int, GroupName ItemKind) -> m ()
       placeActors fid3 (ln, n, actorGroup) = do
-        let lid = boundLid ln
+        let lid = toEnum ln
             ppos = factionPositions EM.! lid EM.! fid3
         lvl <- getLevel lid
         let validTile t = not $ Tile.isNoActor coTileSpeedup t
