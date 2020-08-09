@@ -322,7 +322,8 @@ populateDungeon = do
                $ concatMap getEntryLevels needInitialCrew
       hasActorsOnArena lid (_, fact) =
         any ((== lid) . boundLid) $ ginitialWolf fact
-      initialActorPositions :: LevelId -> m (LevelId, [(FactionId, Point)])
+      initialActorPositions :: LevelId
+                            -> m (LevelId, EM.EnumMap FactionId Point)
       initialActorPositions lid = do
         lvl <- getLevel lid
         let arenaFactions =
@@ -332,9 +333,10 @@ populateDungeon = do
         when (length entryPoss < length arenaFactions) $
           debugPossiblyPrint
             "Server: populateDungeon: failed to find enough faction positions"
-        let usedPoss = zip arenaFactions entryPoss
+        let usedPoss = EM.fromList $ zip arenaFactions entryPoss
         return $! (lid, usedPoss)
-      initialActors (lid, usedPoss) = mapM_ (placeActors lid) usedPoss
+      initialActors (lid, usedPoss) =
+        mapM_ (placeActors lid) $ EM.assocs usedPoss
       placeActors :: LevelId -> (FactionId, Point) -> m ()
       placeActors lid (fid3, ppos) = do
         lvl <- getLevel lid
@@ -361,11 +363,11 @@ populateDungeon = do
               mleader <- getsState $ gleader . (EM.! fid3) . sfactionD
               -- Sleeping actor may become a leader, but it's quickly corrected.
               when (isNothing mleader) $ setFreshLeader fid3 aid
-  lposs <- mapM initialActorPositions arenas
-  let factionPositions = EM.fromList $ map (second $ map snd) lposs
+  factionPositions <- EM.fromDistinctAscList
+                      <$> mapM initialActorPositions arenas
   placeItemsInDungeon factionPositions
   embedItemsInDungeon
-  mapM_ initialActors lposs
+  mapM_ initialActors $ EM.assocs factionPositions
 
 -- | Find starting postions for all factions. Try to make them distant
 -- from each other. Place as many of the factions, as possible,

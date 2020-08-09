@@ -239,14 +239,14 @@ rollAndRegisterItem verbose lid itemFreq container mk = do
 
 -- Tiles already placed, so it's possible to scatter over walkable tiles.
 placeItemsInDungeon :: forall m. MonadServerAtomic m
-                    => EM.EnumMap LevelId [Point] -> m ()
+                    => EM.EnumMap LevelId (EM.EnumMap FactionId Point) -> m ()
 placeItemsInDungeon factionPositions = do
   COps{cocave, coTileSpeedup} <- getsState scops
   totalDepth <- getsState stotalDepth
   let initialItems (lid, lvl@Level{lkind, ldepth}) = do
         litemNum <- rndToAction $ castDice ldepth totalDepth
                                   (citemNum $ okind cocave lkind)
-        let alPos = EM.findWithDefault [] lid factionPositions
+        let alPos = EM.elems $ EM.findWithDefault EM.empty lid factionPositions
             placeItems :: Int -> m ()
             placeItems n | n == litemNum = return ()
             placeItems !n = do
