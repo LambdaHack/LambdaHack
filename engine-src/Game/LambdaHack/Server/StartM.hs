@@ -303,8 +303,9 @@ populateDungeon = do
   cops@COps{coTileSpeedup} <- getsState scops
   factionD <- getsState sfactionD
   curChalSer <- getsServer $ scurChalSer . soptions
-  let ginitialWolf fact1 = if cwolf curChalSer && fhasUI (gplayer fact1)
-                           then case ginitial fact1 of
+  let nGt0 (_, n, _) = n > 0
+      ginitialWolf fact1 = if cwolf curChalSer && fhasUI (gplayer fact1)
+                           then case filter nGt0 $ ginitial fact1 of
                              [] -> []
                              (ln, _, grp) : _ -> [(ln, 1, grp)]
                            else ginitial fact1
