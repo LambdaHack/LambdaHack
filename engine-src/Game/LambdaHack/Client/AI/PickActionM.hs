@@ -1053,10 +1053,9 @@ displaceFoe aid = do
       nFriends body = length $ filter (adjacent (bpos body) . bpos) friends
       nFrNew = nFriends b + 1
       qualifyActor (aid2, b2) = do
-        let tpos = bpos b2
-        case posToAidsLvl tpos lvl of
-          _ | not (walkable tpos)  -- DisplaceAccess
-              || boldpos b == Just tpos
+        case posToAidsLvl (bpos b2) lvl of
+          _ | not (walkable (bpos b2))  -- DisplaceAccess
+              || boldpos b == Just (bpos b2)
                  && boldpos b2 == Just (bpos b) ->  -- avoid short loops
               return Nothing
           [_] -> do
@@ -1066,7 +1065,8 @@ displaceFoe aid = do
               -- DisplaceSupported
             let nFrOld = nFriends b2
             return $! if dEnemy && nFrOld < nFrNew
-                      then Just (nFrOld * nFrOld, ReqDisplace aid2)
+                      then Just ( (nFrNew - nFrOld) ^ (2 :: Int)
+                                , ReqDisplace aid2 )
                       else Nothing
           _ -> return Nothing  -- DisplaceProjectiles
   foes <- mapM qualifyActor adjFoes

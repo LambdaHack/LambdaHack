@@ -323,7 +323,7 @@ leadLevelSwitch = do
                 -- and sometimes the level with the boss is counted among
                 -- them, but it never happens in the crucial periods when
                 -- AI armies are transferred from level to level.
-                f ((lid, _), _) = abs $ fromEnum lid
+                f ((_, lvl), _) = ldepth lvl
                 ours = oursSeen ++ take 2 (sortBy (comparing f) oursNotSeen)
             -- Actors on desolate levels (not many own or enemy non-projectiles)
             -- tend to become (or stay) leaders so that they can join the main

@@ -15,7 +15,6 @@ import Game.LambdaHack.Core.Prelude
 
 import qualified Data.EnumMap.Strict as EM
 import qualified Data.EnumSet as ES
-import           Data.Function
 import qualified Data.HashMap.Strict as HM
 
 import           Game.LambdaHack.Atomic
@@ -272,8 +271,7 @@ placeItemsInDungeon factionPositions = do
   dungeon <- getsState sdungeon
   -- Make sure items on easy levels are generated first, to avoid all
   -- artifacts on deep levels.
-  let absLid = abs . fromEnum
-      fromEasyToHard = sortBy (comparing absLid `on` fst) $ EM.assocs dungeon
+  let fromEasyToHard = sortBy (comparing (ldepth . snd)) $ EM.assocs dungeon
   mapM_ initialItems fromEasyToHard
 
 -- Tiles already placed, so it's possible to scatter companion items
@@ -285,8 +283,7 @@ embedItemsInDungeon = do
   dungeon <- getsState sdungeon
   -- Make sure items on easy levels are generated first, to avoid all
   -- artifacts on deep levels.
-  let absLid = abs . fromEnum
-      fromEasyToHard = sortBy (comparing absLid `on` fst) $ EM.assocs dungeon
+  let fromEasyToHard = sortBy (comparing (ldepth . snd)) $ EM.assocs dungeon
   mapM_ embedItemsOnLevel fromEasyToHard
 
 -- | Mapping over actor's items from a give store.
