@@ -327,8 +327,7 @@ populateDungeon = do
         lvl <- getLevel lid
         let arenaFactions =
               map fst $ filter (hasActorsOnArena lid) needInitialCrew
-        entryPoss <- rndToAction
-                     $ findEntryPoss cops lid lvl (length arenaFactions)
+        entryPoss <- rndToAction $ findEntryPoss cops lvl (length arenaFactions)
         when (length entryPoss < length arenaFactions) $ debugPossiblyPrint
           "Server: populateDungeon: failed to find enough distinct faction starting positions; some factions share positions"
         let usedPoss = EM.fromList $ zip arenaFactions $ cycle entryPoss
@@ -336,9 +335,8 @@ populateDungeon = do
   factionPositions <- EM.fromDistinctAscList
                       <$> mapM initialActorPositions arenas
   let initialActors :: (FactionId, Faction) -> m ()
-      initialActors (fid3, fact3) = do
-        let initActors = ginitialWolf fact3
-        mapM_ (placeActors fid3) initActors
+      initialActors (fid3, fact3) =
+        mapM_ (placeActors fid3) $ ginitialWolf fact3
       placeActors :: FactionId -> (Int, Int, GroupName ItemKind) -> m ()
       placeActors fid3 (ln, n, actorGroup) = do
         let lid = toEnum ln
@@ -373,10 +371,13 @@ populateDungeon = do
 -- over stairs. Place the last faction(s) over escape(s)
 -- (we assume they are guardians of the escapes).
 -- This implies the inital factions (if any) start far from escapes.
-findEntryPoss :: COps -> LevelId -> Level -> Int -> Rnd [Point]
-findEntryPoss COps{coTileSpeedup}
-              lid lvl@Level{larea, lstair, lescape} k = do
-  let (_, xspan, yspan) = spanArea larea
+findEntryPoss :: COps -> Level -> Int -> Rnd [Point]
+findEntryPoss COps{cocave, coTileSpeedup}
+              lvl@Level{lkind, larea, lstair, lescape}
+              kRaw = do
+  let lskip = CK.cskip $ okind cocave lkind
+      k = kRaw + length lskip  -- is @lskip@ is bogus, will be too large; OK
+      (_, xspan, yspan) = spanArea larea
       factionDist = max xspan yspan - 10
       dist !poss !cmin !l _ = all (\ !pos -> chessDist l pos > cmin) poss
       tryFind _ 0 = return []
@@ -399,17 +400,21 @@ findEntryPoss COps{coTileSpeedup}
             nps <- tryFind (np : ps) (n - 1)
             return $! np : nps
           Nothing -> return []
-      -- Only consider deeper stairs to avoid leaderless spawners that stay near
-      -- their starting stairs ambushing explorers that enter the level,
-      -- unless the staircase has both sets of stairs.
-      deeperStairs = (if fromEnum lid > 0 then fst else snd) lstair
+      sameStaircase :: [Point] -> Point -> Bool
+      sameStaircase upStairs Point{..} =
+        any (\(Point ux uy) -> uy == py && ux + 2 == px) upStairs
+      upAndSomeDownStairs =
+        fst lstair
+        ++ filter (not . sameStaircase (fst lstair)) (snd lstair)
+      skipIndexes ixs l = map snd $ filter (\(ix, _) -> ix `notElem` ixs)
+                                  $ zip [0..] l
   let !_A = assert (k > 0 && factionDist > 0) ()
-      onStairs = reverse $ take k deeperStairs
-      onEscapes = reverse $ take (k - length onStairs) lescape
-      nk = k - length onStairs - length onEscapes
+      onEscapes = take k lescape
+      onStairs = take (k - length onEscapes) upAndSomeDownStairs
+      nk = k - length onEscapes - length onStairs
   -- Starting in the middle is too easy.
-  found <- tryFind (middlePoint larea : onStairs ++ onEscapes) nk
-  return $! onStairs ++ found ++ onEscapes
+  found <- tryFind (middlePoint larea : onEscapes ++ onStairs) nk
+  return $! skipIndexes lskip $ onEscapes ++ onStairs ++ found
 
 -- | Apply options that don't need a new game.
 applyDebug :: MonadServer m => m ()

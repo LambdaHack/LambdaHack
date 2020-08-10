@@ -69,7 +69,8 @@ data CaveKind = CaveKind
   , cescapeFreq     :: Freqs PlaceKind     -- ^ escape groups, if any
   , cstairFreq      :: Freqs PlaceKind     -- ^ place groups for created stairs
   , cstairAllowed   :: Freqs PlaceKind     -- ^ extra groups for inherited
-  , cdesc           :: Text                -- ^ full cave description
+  , cskip           :: [Int]  -- ^ which faction starting positions to skip
+  , cdesc           :: Text   -- ^ full cave description
   }
   deriving Show  -- No Eq and Ord to make extending logically sound
 

@@ -113,6 +113,7 @@ rogue = CaveKind
   , cstairFreq    = [ (WALLED_STAIRCASE, 50), (OPEN_STAIRCASE, 50)
                     , (TINY_STAIRCASE, 1) ]
   , cstairAllowed = []
+  , cskip         = []
   , cdesc         = "Winding tunnels stretch into the dark."
   }  -- no lit corridors cave alternative, since both lit # and . look bad here
 arena = rogue
