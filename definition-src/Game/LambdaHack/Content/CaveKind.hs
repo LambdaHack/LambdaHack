@@ -86,14 +86,15 @@ validateSingle CaveKind{..} =
      ++ [ "cYminSize < 20" | cYminSize < 20 ]
      ++ [ "minCellSizeX < 1" | minCellSizeX < 1 ]
      ++ [ "minCellSizeY < 1" | minCellSizeY < 1 ]
-     ++ [ "minCellSizeX < 6 && stairs"
-        | minCellSizeX < 6 && not (null cstairFreq && null cescapeFreq) ]
-     ++ [ "minCellSizeY < 4 && stairs"
-        | minCellSizeY < 4 && not (null cstairFreq && null cescapeFreq) ]
-     ++ [ "minMinSizeX < 5 && stairs"
-        | minMinSizeX < 5 && not (null cstairFreq && null cescapeFreq) ]
-     ++ [ "minMinSizeY < 3 && stairs"
-        | minMinSizeY < 3 && not (null cstairFreq && null cescapeFreq) ]
+     -- The following four are heuristics, so not too restrictive:
+     ++ [ "minCellSizeX < 6 && non-trivial stairs"
+        | minCellSizeX < 6 && not (length cstairFreq <= 1 && null cescapeFreq) ]
+     ++ [ "minCellSizeY < 4 && non-trivial stairs"
+        | minCellSizeY < 4 && not (length cstairFreq <= 1 && null cescapeFreq) ]
+     ++ [ "minMinSizeX < 5 && non-trivial stairs"
+        | minMinSizeX < 5 && not (length cstairFreq <= 1 && null cescapeFreq) ]
+     ++ [ "minMinSizeY < 3 && non-trivial stairs"
+        | minMinSizeY < 3 && not (length cstairFreq <= 1 && null cescapeFreq) ]
      ++ [ "minMinSizeX < 1" | minMinSizeX < 1 ]
      ++ [ "minMinSizeY < 1" | minMinSizeY < 1 ]
      ++ [ "minMaxSizeX < maxMinSizeX" | minMaxSizeX < maxMinSizeX ]
