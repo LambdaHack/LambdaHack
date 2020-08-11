@@ -229,7 +229,10 @@ drawFrameContent drawnLevelId = do
 drawFramePath :: forall m. MonadClientUI m => LevelId -> m FrameForall
 drawFramePath drawnLevelId = do
  SessionUI{saimMode} <- getSession
- if isNothing saimMode then return $! FrameForall $ \_ -> return () else do
+ sreportNull <- getsSession sreportNull
+ if isNothing saimMode || sreportNull
+ then return $! FrameForall $ \_ -> return ()
+ else do
   COps{corule=RuleContent{rXmax, rYmax}, coTileSpeedup} <- getsState scops
   StateClient{seps} <- getClient
   -- Not @ScreenContent@, because pathing in level's map.
