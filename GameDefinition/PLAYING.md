@@ -333,7 +333,7 @@ screen or the dashboard and execute it on the spot.
     g or ,       grab item(s)
     ESC          clear messages/open main menu/finish aiming
     RET or INS   open dashboard/accept target
-    SPACE        show history/cycle detail level
+    SPACE        clear messages/show history/cycle detail level
     TAB          cycle among all party members
     *            cycle crosshair among enemies
     /            cycle crosshair among items

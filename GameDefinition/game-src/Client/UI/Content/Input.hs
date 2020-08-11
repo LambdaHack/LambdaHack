@@ -60,8 +60,8 @@ standardKeysAndMouse = InputContentRaw $ map evalKeyDef $
                , ByAimMode AimModeCmd { exploration = Dashboard
                                       , aiming = Accept } ))
   , ("space", ( [CmdMinimal, CmdAim]
-              , "show history/cycle detail level"
-              , ByAimMode AimModeCmd { exploration = LastHistory
+              , "clear messages/show history/cycle detail level"
+              , ByAimMode AimModeCmd { exploration = ExecuteIfClear LastHistory
                                      , aiming = DetailCycle } ))
   , ("Tab", memberCycle Forward [CmdMinimal, CmdMove])
       -- listed here to keep proper order of the minimal cheat sheet
