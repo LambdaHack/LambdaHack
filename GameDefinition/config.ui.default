@@ -14,7 +14,7 @@
 
 [additional_commands]
 ; Angband compatibility (accept target)
-Cmd_2 = ("KP_Insert", ([CmdAim], "", ByAimMode AimModeCmd {exploration = ExecuteIfClear Dashboard, aiming = Accept}))
+Cmd_2 = ("KP_Insert", ([CmdAim], "", ByAimMode AimModeCmd {exploration = Dashboard, aiming = Accept}))
 ; Custom key rebinding example:
 ;
 ;   Cmd_3 = ("a", ([CmdItem], "My Happy Cmd", Macro ["t"]))
