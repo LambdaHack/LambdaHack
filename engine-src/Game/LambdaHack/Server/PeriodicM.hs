@@ -290,7 +290,7 @@ leadLevelSwitch = do
             let !_A = assert (fid == bfid body) ()
             s <- getsServer $ (EM.! fid) . sclientStates
             let leaderStuck = actorWaits body
-                oursRaw =
+                lvlsRaw =
                   [ ((lid, lvl), (allSeen, as))
                   | (lid, lvl) <- EM.assocs $ sdungeon s
                   , lid /= blid body || not leaderStuck
@@ -309,7 +309,7 @@ leadLevelSwitch = do
                           || CK.cactorCoeff (okind cocave $ lkind lvl) > 150
                              && not (fhasGender $ gplayer fact)
                   ]
-                (oursSeen, oursNotSeen) = partition (fst . snd) oursRaw
+                (lvlsSeen, lvlsNotSeen) = partition (fst . snd) lvlsRaw
                 -- Monster AI changes leadership mostly to move from level
                 -- to level and, in particular, to quickly bring troops
                 -- to the frontline level and so prevent human from killing
@@ -324,7 +324,7 @@ leadLevelSwitch = do
                 -- them, but it never happens in the crucial periods when
                 -- AI armies are transferred from level to level.
                 f ((_, lvl), _) = ldepth lvl
-                ours = oursSeen ++ take 2 (sortBy (comparing f) oursNotSeen)
+                lvls = lvlsSeen ++ take 2 (sortBy (comparing f) lvlsNotSeen)
             -- Actors on desolate levels (not many own or enemy non-projectiles)
             -- tend to become (or stay) leaders so that they can join the main
             -- force where it matters ASAP. Unfortunately, this keeps hero
@@ -334,7 +334,7 @@ leadLevelSwitch = do
             -- be dangerous, especially if adjacent to stairs.
             let overOwnStash b = Just (blid b, bpos b) == gstash fact
                 freqList = [ (k, (lid, aid))
-                           | ((lid, lvl), (_, (aid, b) : rest)) <- ours
+                           | ((lid, lvl), (_, (aid, b) : rest)) <- lvls
                            , let len = min 20 (EM.size $ lbig lvl)
                                  n = 1000000 `div` (1 + len)
                                  -- Visit the stash guard rarely, but not too
@@ -350,7 +350,22 @@ leadLevelSwitch = do
                     && chessDist pos (bpos body) == 1  -- visible
                   Nothing -> False
                 closeToEnemyStash = any closeToFactStash $ EM.assocs factionD
-            unless (closeToEnemyStash || null freqList) $ do
+            foes <- getsState $ foeRegularList fid (blid body)
+            ours <- getsState $ map snd
+                                <$> fidActorRegularAssocs fid (blid body)
+            let foesClose = filter (\b -> chessDist (bpos body) (bpos b) <= 2)
+                                   foes
+                oursCloseMelee =
+                  filter (\b -> chessDist (bpos body) (bpos b) <= 2
+                                && bweapon b - bweapBenign b > 0)
+                         ours
+                canHelpMelee =
+                  not leaderStuck
+                  && length oursCloseMelee >= 2
+                  && length foesClose >= 1
+                  && not (all (\b -> any (adjacent (bpos b) . bpos) foes)
+                              oursCloseMelee)
+            unless (closeToEnemyStash || canHelpMelee || null freqList) $ do
               (lid, a) <- rndToAction $ frequency
                                       $ toFreq "leadLevel" freqList
               unless (lid == blid body) $  -- flip levels rather than actors
