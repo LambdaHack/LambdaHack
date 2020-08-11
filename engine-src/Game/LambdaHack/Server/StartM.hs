@@ -187,7 +187,7 @@ resetFactions :: FactionDict -> ContentId ModeKind -> Int -> Dice.AbsDepth
               -> Roster
               -> Rnd FactionDict
 resetFactions factionDold gameModeIdOld curDiffSerOld totalDepth players = do
-  let rawCreate (gplayer@Player{..}, initialActors) = do
+  let rawCreate (ix, (gplayer@Player{..}, initialActors)) = do
         let castInitialActors (ln, d, actorGroup) = do
               n <- castDice (Dice.AbsDepth $ abs ln) totalDepth d
               return (ln, n, actorGroup)
@@ -218,15 +218,9 @@ resetFactions factionDold gameModeIdOld curDiffSerOld totalDepth players = do
             gvictims = EM.empty
             gvictimsD = gvictimsDnew
             gstash = Nothing
-        return $! Faction{..}
-  lUI <- mapM rawCreate $ filter (fhasUI . fst) $ rosterList players
-  let !_A = assert (length lUI <= 1
-                    `blame` "currently, at most one faction may have a UI"
-                    `swith` lUI) ()
-  lnoUI <- mapM rawCreate $ filter (not . fhasUI . fst) $ rosterList players
-  let lFs = reverse (zip [toEnum (-1), toEnum (-2)..] lnoUI)  -- sorted
-            ++ zip [toEnum 1..] lUI
-      swapIx l =
+        return $ (toEnum $ if fhasUI then ix else -ix, Faction{..})
+  lFs <- mapM rawCreate $ zip [1..] $ rosterList players
+  let swapIx l =
         let findPlayerName name = find ((name ==) . fname . gplayer . snd)
             f (name1, name2) =
               case (findPlayerName name1 lFs, findPlayerName name2 lFs) of
@@ -242,7 +236,7 @@ resetFactions factionDold gameModeIdOld curDiffSerOld totalDepth players = do
               let adj fact = fact {gdipl = EM.insert ix2 diplMode (gdipl fact)}
               in EM.adjust adj ix1
         in foldr f
-      rawFs = EM.fromDistinctAscList lFs
+      rawFs = EM.fromList lFs
       -- War overrides alliance, so 'warFs' second.
       allianceFs = mkDipl Alliance rawFs (swapIx (rosterAlly players))
       warFs = mkDipl War allianceFs (swapIx (rosterEnemy players))
@@ -309,11 +303,8 @@ populateDungeon = do
                              [] -> []
                              (ln, _, grp) : _ -> [(ln, 1, grp)]
                            else ginitial fact1
-      -- Players that escape go first to be started over stairs, if possible,
-      -- and far from escapes.
-      valuePlayer pl = (not $ fcanEscape pl, fname pl)
-      -- Sorting, to keep games from similar game modes mutually reproducible.
-      needInitialCrew = sortOn (valuePlayer . gplayer . snd)
+      -- Keep the same order of factions as in roster.
+      needInitialCrew = sortBy (comparing $ abs . fromEnum . fst)
                         $ filter (not . null . ginitialWolf . snd)
                         $ EM.assocs factionD
       getEntryLevels (_, fact) =
