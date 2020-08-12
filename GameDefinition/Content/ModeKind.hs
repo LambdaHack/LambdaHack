@@ -547,13 +547,14 @@ rosterHunt = Roster
   , rosterAlly = [] }
 
 rosterEscape = Roster
-  { rosterList = [ ( playerHero {fhiCondPoly = hiHeroMedium}
-                   , [(-7, 1, SCOUT_HERO), (-7, 2, ESCAPIST_HERO)] )
-                 , ( playerAntiHero { fname = "Indigo Researcher"
+  { rosterList = [ ( playerAntiHero { fname = "Indigo Researcher"
                                     , fcanEscape = False  -- start on escape
                                     , fneverEmpty = False  -- loot after killing
                                     , fhiCondPoly = hiHeroMedium }
                    , [(-7, 1, SCOUT_HERO), (-7, 6, AMBUSHER_HERO)] )
+                 , ( playerHero {fhiCondPoly = hiHeroMedium}
+                   , [(-7, 1, SCOUT_HERO), (-7, 2, ESCAPIST_HERO)] )
+                     -- second on the list to let foes occupy the exit
                  , (playerHorror, []) ]
   , rosterEnemy = [ ("Explorer", "Indigo Researcher")
                   , ("Explorer", "Horror Den")
