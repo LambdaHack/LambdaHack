@@ -390,8 +390,6 @@ test-suite test
   main-is:            Spec.hs
   other-modules:      SessionUIMock
   build-depends:      ,LambdaHack
-                      ,this-game-content
-                      ,this-game-src
                       ,async
                       ,base
                       ,containers
