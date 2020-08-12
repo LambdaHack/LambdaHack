@@ -133,7 +133,7 @@ common options
                       GeneralizedNewtypeDeriving, TupleSections,
                       DeriveFoldable, DeriveTraversable,
                       ExistentialQuantification, GADTs, StandaloneDeriving,
-                      DataKinds, KindSignatures, DeriveGeneric
+                      DataKinds, KindSignatures, DeriveGeneric, DeriveLift
   ghc-options:        -Wall -Wcompat -Worphans -Wincomplete-uni-patterns -Wincomplete-record-updates -Wimplicit-prelude -Wmissing-home-modules -Widentities -Wredundant-constraints -Wmissing-export-lists -Wpartial-fields
   ghc-options:        -Wall-missed-specialisations
   ghc-options:        -fno-ignore-asserts -fexpose-all-unfoldings -fspecialise-aggressively -fsimpl-tick-factor=200
@@ -342,6 +342,7 @@ library
                       vector     >= 0.11,
                       vector-binary-instances >= 0.2.3.1,
                       template-haskell >= 2.6,
+                      th-lift-instances,
                       ghc-compact
 
   if impl(ghcjs) || flag(jsaddle) {

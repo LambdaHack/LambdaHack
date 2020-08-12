@@ -223,7 +223,7 @@ tryRestore = do
         fileName = prefix <> Save.saveNameSer cops
     res <- liftIO $ Save.restoreGame cops fileName
     let cfgUIName = rcfgUIName corule
-        content = rcfgUIDefault corule
+        (configString, _) = rcfgUIDefault corule
     dataDir <- liftIO appDataDir
-    liftIO $ tryWriteFile (dataDir </> cfgUIName) content
+    liftIO $ tryWriteFile (dataDir </> cfgUIName) configString
     return $! res

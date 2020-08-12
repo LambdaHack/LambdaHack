@@ -129,7 +129,7 @@ common options
                       GeneralizedNewtypeDeriving, TupleSections,
                       DeriveFoldable, DeriveTraversable,
                       ExistentialQuantification, GADTs, StandaloneDeriving,
-                      DataKinds, KindSignatures, DeriveGeneric
+                      DataKinds, KindSignatures, DeriveGeneric, DeriveLift
   ghc-options:        -Wall -Wcompat -Worphans -Wincomplete-uni-patterns -Wincomplete-record-updates -Wimplicit-prelude -Wmissing-home-modules -Widentities -Wredundant-constraints -Wmissing-export-lists -Wpartial-fields
   ghc-options:        -Wall-missed-specialisations
   ghc-options:        -fno-ignore-asserts -fexpose-all-unfoldings -fspecialise-aggressively -fsimpl-tick-factor=200
@@ -191,6 +191,7 @@ library definition
                       ,enummapset
                       ,ghc-prim
                       ,hashable
+                      ,hsini
                       ,keys
                       ,miniutter
                       ,splitmix
@@ -406,8 +407,10 @@ library this-game-content
   build-depends:      ,definition
                       ,base
                       ,filepath
+                      ,hsini
                       ,template-haskell
                       ,text
+                      ,th-lift-instances
 
 library this-game-src
   import: options

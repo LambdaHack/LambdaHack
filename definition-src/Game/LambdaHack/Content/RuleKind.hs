@@ -11,7 +11,9 @@ import Prelude ()
 
 import Game.LambdaHack.Core.Prelude
 
-import Data.Version
+import qualified Data.Ini as Ini
+import qualified Data.Ini.Types as Ini
+import           Data.Version
 
 import Game.LambdaHack.Definition.Defs
 
@@ -25,7 +27,8 @@ data RuleContent = RuleContent
   , rfontDir          :: FilePath  -- ^ font directory for the game (not lib)
   , rexeVersion       :: Version   -- ^ version of the game
   , rcfgUIName        :: FilePath  -- ^ name of the UI config file
-  , rcfgUIDefault     :: String    -- ^ the default UI settings config file
+  , rcfgUIDefault     :: (String, Ini.Config)
+                                   -- ^ the default UI settings config file
   , rwriteSaveClips   :: Int       -- ^ game saved that often (not on browser)
   , rleadLevelClips   :: Int       -- ^ server switches leader level that often
   , rscoresFile       :: FilePath  -- ^ name of the scores file
@@ -43,7 +46,7 @@ emptyRuleContent = RuleContent
   , rfontDir = ""
   , rexeVersion = makeVersion []
   , rcfgUIName = ""
-  , rcfgUIDefault = ""
+  , rcfgUIDefault = ("", Ini.emptyConfig)
   , rwriteSaveClips = 0
   , rleadLevelClips = 0
   , rscoresFile = ""

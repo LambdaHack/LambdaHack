@@ -101,10 +101,7 @@ glueSeed (s : rest) = s : glueSeed rest
 mkUIOptions :: COps -> Bool -> IO UIOptions
 mkUIOptions COps{corule} benchmark = do
   let cfgUIName = rcfgUIName corule
-      sUIDefault = rcfgUIDefault corule
-      cfgUIDefault =
-        either (configError . ("Ini.parse sUIDefault" `showFailure`)) id
-        $ Ini.parse sUIDefault
+      (_, cfgUIDefault) = rcfgUIDefault corule
   dataDir <- appDataDir
   let userPath = dataDir </> cfgUIName
   cfgUser <- if benchmark then return Ini.emptyConfig else do
