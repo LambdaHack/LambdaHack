@@ -905,9 +905,12 @@ spotItemBag verbose c bag = do
               then makeSentence [MU.SubjectVerb MU.PlEtc MU.Yes
                                                 subject beLocated]
               else makeSentence [MU.SubjectVerbSg subject beLocated]
+            msgShort = msg subjectShort
+            msgLong = msg subjectLong
+            dotsIfShorter = if msgShort == msgLong then "" else ".."
         resetXhair
-        msgAdd MsgItemMoveNoLog $ msg subjectShort
-        msgAdd MsgItemMoveLog $ msg subjectLong
+        msgAdd MsgItemMoveNoLog $ msgShort <> dotsIfShorter
+        msgAdd MsgItemMoveLog $ msgLong
   case subjects of
     [] -> return ()
     [(1, _, _)] -> sendMsg False
