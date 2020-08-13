@@ -183,7 +183,7 @@ hunt = ModeKind  -- melee vs ranged with reaction fire in daylight
       ]
   , mdesc   = "Who is the hunter and who is the prey? The only criterion is last man standing when the chase ends."
   , mreason = "This scenario is quite a tactical challenge, because enemies are allowed to fling their ammo simultaneously at your team, which has no such ability."
-  , mhint   = "Try not to outshoot the enemy, but to instead focus more on melee tactics."
+  , mhint   = "Try not to outshoot the enemy, but to instead focus more on melee tactics. A useful concept here is communication overhead. Any team member that is not waiting and spotting for everybody, but acts, e.g., melees or moves or manages items, slows down all other team members by rougly 10%, because they need to keep track of his actions. Therefore, if other heroes melee, consider carefully if it makes sense to come to their aid, slowing them while you move, or if it's better to stay put and monitor the perimeter. This is true for all factions and all actors on each level separately, except the pointman of each faction, if any."  -- this also eliminates lag in big battles and helps the player to focus on combat and not get distracted by distant team members frantically trying to reach the battleground in time
   }
 
 escape = ModeKind  -- asymmetric ranged and stealth race at night
@@ -220,7 +220,7 @@ zoo = ModeKind  -- asymmetric crowd melee at night
       ]
   , mdesc   = "The heat of the dispute reaches the nearby Wonders of Science and Nature exhibition, igniting greenery, nets and cages. Crazed animals must be dissuaded from ruining precious scientific equipment and setting back the otherwise fruitful exchange of ideas."
   , mreason = "This is a crowd control exercise, at night, with a raging fire."
-  , mhint   = ""
+  , mhint   = "Note that communication overhead, as explained in perilous hunt scenario hints, makes it impossible for any faction to hit your heroes by more than 10 normal speed actors each turn. However, this is still too much, so position is everything."
   }
 
 -- The tactic is to sneak in the dark, highlight enemy with thrown torches
