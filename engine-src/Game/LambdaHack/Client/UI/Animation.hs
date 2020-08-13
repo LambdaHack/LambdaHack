@@ -14,7 +14,7 @@ import Prelude ()
 
 import Game.LambdaHack.Core.Prelude
 
-import           Data.Bits
+import           Data.Bits (xor)
 import qualified Data.EnumMap.Strict as EM
 import           Data.Word (Word32)
 
@@ -241,7 +241,7 @@ fadeout ScreenContent{rwidth, rheight} out step = do
         w <- randomWord32
         -- @fromIntegral@ is potentially costly, but arch-independent.
         let fadeAttr !y !x = attrChar1ToW32 $
-              fadeChar ((toIntegralTypeMe :: Word32 -> Int) w) n x y
+              fadeChar ((intCast :: Word32 -> Int) w) n x y
             fadeLine !y =
               let x1 :: Int
                   {-# INLINE x1 #-}

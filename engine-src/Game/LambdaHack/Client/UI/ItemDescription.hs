@@ -424,9 +424,9 @@ itemDesc width markParagraphs side factionD aHurtMeleeOfOwner store localTime
                               else aHurtMeleeOfItem
                   mult = 100 + min 100 (max (-95) multRaw)
                   percentDeltaHP = xM meanDmg `divUp` 100
-                  rawDeltaHP = intToInt64 mult * percentDeltaHP
+                  rawDeltaHP = intCast mult * percentDeltaHP
                   pmult = 100 + min 100 (max (-95) aHurtMeleeOfItem)
-                  prawDeltaHP = intToInt64 pmult * percentDeltaHP
+                  prawDeltaHP = intCast pmult * percentDeltaHP
                   pdeltaHP = modifyDamageBySpeed prawDeltaHP speed
                   minDeltaHP = 5 * percentDeltaHP
                   mDeltaHP = modifyDamageBySpeed minDeltaHP speed

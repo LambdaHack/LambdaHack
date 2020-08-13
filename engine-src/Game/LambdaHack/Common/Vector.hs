@@ -44,8 +44,8 @@ data Vector = Vector
   deriving (Show, Read, Eq, Ord, Generic)
 
 instance Binary Vector where
-  put = put . (toIntegralTypeMe :: Int -> Int32) . fromEnum
-  get = fmap (toEnum . (toIntegralTypeMe :: Int32 -> Int)) get
+  put = put . (toIntegralCrash :: Int -> Int32) . fromEnum
+  get = fmap (toEnum . (intCast :: Int32 -> Int)) get
 
 -- Note that the conversion is not monotonic wrt the natural @Ord@ instance,
 -- to keep it in sync with Point.

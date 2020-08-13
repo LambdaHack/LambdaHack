@@ -378,7 +378,7 @@ elapsedSessionTimeGT :: MonadClientUI m => Int -> m Bool
 elapsedSessionTimeGT stopAfter = do
   current <- liftIO getPOSIXTime
   sstartPOSIX <- getsSession sstart
-  return $! (fromIntegralTypeMe :: Int -> NominalDiffTime) stopAfter
+  return $! (fromIntegralWrap :: Int -> NominalDiffTime) stopAfter
             + sstartPOSIX
             <= current
 

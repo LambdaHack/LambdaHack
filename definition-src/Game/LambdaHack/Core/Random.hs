@@ -21,7 +21,6 @@ import Prelude ()
 import Game.LambdaHack.Core.Prelude
 
 import qualified Control.Monad.Trans.State.Strict as St
-import qualified Data.Bits as Bits
 import           Data.Int (Int32)
 import           Data.Ratio
 import           Data.Word (Word32)
@@ -34,7 +33,7 @@ import           Game.LambdaHack.Core.Frequency
 type Rnd a = St.State SM.SMGen a
 
 -- | Get a random object within a (inclusive) range with a uniform distribution.
-randomR :: (Integral a, Bits.Bits a) => (a, a) -> Rnd a
+randomR :: (Integral a) => (a, a) -> Rnd a
 {-# INLINE randomR #-}
 randomR (0, h) = St.state $ nextRandom h
 randomR (l, h) | l > h = error "randomR: empty range"
@@ -43,27 +42,29 @@ randomR (l, h) = St.state $ \g ->
   in (x + l, g')
 
 -- | Generate random 'Integral' in @[0, x]@ range.
-randomR0 :: (Integral a, Bits.Bits a) => a -> Rnd a
+randomR0 :: (Integral a) => a -> Rnd a
 {-# INLINE randomR0 #-}
 randomR0 h = St.state $ nextRandom h
 
--- | Generate random 'Integral' in @[0, x]@ range, where @x@ is within @Int32@.
+-- | Generate a random integral value in @[0, x]@ range, where @x@ is within
+-- @Int32@.
 --
 -- The limitation to @Int32@ values is needed to keep it working on signed
 -- types. In package @random@, a much more complex scheme is used
 -- to keep it working for arbitrary fixed number of bits.
-nextRandom :: forall a. (Integral a, Bits.Bits a) =>
-           a -> SM.SMGen -> (a, SM.SMGen)
+nextRandom :: forall a. (Integral a) => a -> SM.SMGen -> (a, SM.SMGen)
 {-# INLINE nextRandom #-}
-nextRandom h g = assert (h <= (toIntegralTypeMe :: Int32 -> a) maxBound) $
+nextRandom h g = assert ((intCast :: a -> Integer) h
+                         <= (intCast :: Int32 -> Integer) maxBound) $
   let (w32, g') = SM.bitmaskWithRejection32'
-                    ((toIntegralTypeMe :: a -> Word32) h) g
-      x = (toIntegralTypeMe :: Word32 -> a) w32
+                    ((fromIntegralWrap :: a -> Word32) h) g
+      -- `fromIntegralWrap` is fine here, because wrapping is OK.
+      x = (fromIntegralWrap :: Word32 -> a) w32
   in if x > h
      then error $ "nextRandom internal error"
                   `showFailure`
-                    ( (toIntegralTypeMe :: a -> Integer) x
-                    , (toIntegralTypeMe :: a -> Integer) h
+                    ( (intCast :: a -> Integer) x
+                    , (intCast :: a -> Integer) h
                     , w32 )
      else (x, g')
 

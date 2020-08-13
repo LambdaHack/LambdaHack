@@ -12,7 +12,7 @@ module Game.LambdaHack.Core.Prelude
   , module Control.Exception.Assert.Sugar
 
   , Text, (<+>), tshow, divUp, sum, (<$$>), partitionM, length, null, comparing
-  , fromIntegralTypeMe, toIntegralTypeMe, intToDouble, int64ToDouble, intToInt64
+  , intCast, fromIntegralWrap, toIntegralCrash, intToDouble, int64ToDouble
   , mapM_, forM_
 
   , (***), (&&&), first, second
@@ -49,6 +49,7 @@ import qualified Data.Fixed as Fixed
 import           Data.Hashable
 import qualified Data.HashMap.Strict as HM
 import           Data.Int (Int64)
+import           Data.IntCast (intCast)
 import           Data.Key
 import           Data.List.Compat hiding (foldl, foldl1, length, null, sum)
 import qualified Data.List.Compat as List
@@ -169,27 +170,25 @@ instance NFData MU.Person
 instance NFData MU.Polarity
 
 -- | Re-exported 'Prelude.fromIntegral', but please give it explicit type
--- to make it obvious if wrapping, etc., may occur. Use `toIntegralTypeMe`
+-- to make it obvious if wrapping, etc., may occur. Use `toIntegralCrash`
 -- instead, if possible, because it fails instead of wrapping, etc.
-fromIntegralTypeMe :: (Integral a, Num b) => a -> b
-fromIntegralTypeMe = Prelude.Compat.fromIntegral
+-- In general, it may wrap or otherwise lose information.
+fromIntegralWrap :: (Integral a, Num b) => a -> b
+fromIntegralWrap = Prelude.Compat.fromIntegral
 
 -- | Re-exported 'Data.Bits.toIntegralSized', but please give it explicit type
 -- to make it obvious if wrapping, etc., may occur and to trigger optimization.
-toIntegralTypeMe :: (Integral a, Integral b, Bits.Bits a, Bits.Bits b)
-                   => a -> b
-{-# INLINE toIntegralTypeMe #-}
-toIntegralTypeMe = fromMaybe (error "toIntegralTypeMe")
-                     . Bits.toIntegralSized
+-- In general, it may crash.
+toIntegralCrash :: (Integral a, Integral b, Bits.Bits a, Bits.Bits b)
+                => a -> b
+{-# INLINE toIntegralCrash #-}
+toIntegralCrash = fromMaybe (error "toIntegralCrash") . Bits.toIntegralSized
 
 intToDouble :: Int -> Double
 intToDouble = Prelude.Compat.fromIntegral
 
 int64ToDouble :: Int64 -> Double
 int64ToDouble = Prelude.Compat.fromIntegral
-
-intToInt64 :: Int -> Int64
-intToInt64 = Prelude.Compat.fromIntegral
 
 -- | This has a more specific type (unit result) than normally, to catch errors.
 mapM_ :: (Foldable t, Monad m) => (a -> m ()) -> t a -> m ()

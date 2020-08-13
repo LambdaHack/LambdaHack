@@ -15,7 +15,6 @@ import Prelude ()
 import Game.LambdaHack.Core.Prelude
 
 import qualified Data.EnumMap.Strict as EM
-import           Data.Int (Int64)
 
 import           Game.LambdaHack.Common.Faction
 import           Game.LambdaHack.Common.Item

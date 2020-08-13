@@ -1842,7 +1842,7 @@ strike catch source target iid = assert (source /= target) $ do
         unRefillHP _ = Nothing
         kineticDmg =
           let dmg = Dice.supDice $ IK.idamage $ itemKind itemFullWeapon
-              rawDeltaHP = intToInt64 sHurt * xM dmg `divUp` 100
+              rawDeltaHP = intCast sHurt * xM dmg `divUp` 100
           in case btrajectory sb of
             Just (_, speed) | bproj sb ->
               - modifyDamageBySpeed rawDeltaHP speed
