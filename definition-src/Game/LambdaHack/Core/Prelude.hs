@@ -12,7 +12,8 @@ module Game.LambdaHack.Core.Prelude
   , module Control.Exception.Assert.Sugar
 
   , Text, (<+>), tshow, divUp, sum, (<$$>), partitionM, length, null, comparing
-  , fromIntegralTypeMe, intToDouble, intToInt64, mapM_, forM_
+  , fromIntegralTypeMe, toIntegralTypeMe, intToDouble, int64ToDouble, intToInt64
+  , mapM_, forM_
 
   , (***), (&&&), first, second
   ) where
@@ -41,6 +42,7 @@ import           Control.Exception.Assert.Sugar
 import           Control.Monad.Compat hiding (forM_, mapM_)
 import qualified Control.Monad.Compat
 import           Data.Binary
+import qualified Data.Bits as Bits
 import qualified Data.EnumMap.Strict as EM
 import qualified Data.EnumSet as ES
 import qualified Data.Fixed as Fixed
@@ -167,22 +169,32 @@ instance NFData MU.Person
 instance NFData MU.Polarity
 
 -- | Re-exported 'Prelude.fromIntegral', but please give it explicit type
--- to make it obvious if wrapping, etc., may occur.
+-- to make it obvious if wrapping, etc., may occur. Use `toIntegralTypeMe`
+-- instead, if possible, because it fails instead of wrapping, etc.
 fromIntegralTypeMe :: (Integral a, Num b) => a -> b
 fromIntegralTypeMe = Prelude.Compat.fromIntegral
+
+-- | Re-exported 'Data.Bits.toIntegralSized', but please give it explicit type
+-- to make it obvious if wrapping, etc., may occur and to trigger optimization.
+toIntegralTypeMe :: (Integral a, Integral b, Bits.Bits a, Bits.Bits b)
+                   => a -> b
+{-# INLINE toIntegralTypeMe #-}
+toIntegralTypeMe = fromMaybe (error "toIntegralTypeMe")
+                     . Bits.toIntegralSized
 
 intToDouble :: Int -> Double
 intToDouble = Prelude.Compat.fromIntegral
 
+int64ToDouble :: Int64 -> Double
+int64ToDouble = Prelude.Compat.fromIntegral
+
 intToInt64 :: Int -> Int64
 intToInt64 = Prelude.Compat.fromIntegral
 
--- | This is has a more specific type (unit result) than normally,
--- to catch errors.
+-- | This has a more specific type (unit result) than normally, to catch errors.
 mapM_ :: (Foldable t, Monad m) => (a -> m ()) -> t a -> m ()
 mapM_ = Control.Monad.Compat.mapM_
 
--- | This is has a more specific type (unit result) than normally,
--- to catch errors.
+-- | This has a more specific type (unit result) than normally, to catch errors.
 forM_ :: (Foldable t, Monad m) => t a -> (a -> m ()) -> m ()
 forM_ = Control.Monad.Compat.forM_

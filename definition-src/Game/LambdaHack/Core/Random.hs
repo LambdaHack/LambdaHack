@@ -21,6 +21,7 @@ import Prelude ()
 import Game.LambdaHack.Core.Prelude
 
 import qualified Control.Monad.Trans.State.Strict as St
+import qualified Data.Bits as Bits
 import           Data.Int (Int32)
 import           Data.Ratio
 import           Data.Word (Word32)
@@ -33,7 +34,7 @@ import           Game.LambdaHack.Core.Frequency
 type Rnd a = St.State SM.SMGen a
 
 -- | Get a random object within a (inclusive) range with a uniform distribution.
-randomR :: Integral a => (a, a) -> Rnd a
+randomR :: (Integral a, Bits.Bits a) => (a, a) -> Rnd a
 {-# INLINE randomR #-}
 randomR (0, h) = St.state $ nextRandom h
 randomR (l, h) | l > h = error "randomR: empty range"
@@ -42,7 +43,7 @@ randomR (l, h) = St.state $ \g ->
   in (x + l, g')
 
 -- | Generate random 'Integral' in @[0, x]@ range.
-randomR0 :: Integral a => a -> Rnd a
+randomR0 :: (Integral a, Bits.Bits a) => a -> Rnd a
 {-# INLINE randomR0 #-}
 randomR0 h = St.state $ nextRandom h
 
@@ -51,17 +52,18 @@ randomR0 h = St.state $ nextRandom h
 -- The limitation to @Int32@ values is needed to keep it working on signed
 -- types. In package @random@, a much more complex scheme is used
 -- to keep it working for arbitrary fixed number of bits.
-nextRandom :: forall a. Integral a => a -> SM.SMGen -> (a, SM.SMGen)
+nextRandom :: forall a. (Integral a, Bits.Bits a) =>
+           a -> SM.SMGen -> (a, SM.SMGen)
 {-# INLINE nextRandom #-}
-nextRandom h g = assert (h <= (fromIntegralTypeMe :: Int32 -> a) maxBound) $
+nextRandom h g = assert (h <= (toIntegralTypeMe :: Int32 -> a) maxBound) $
   let (w32, g') = SM.bitmaskWithRejection32'
-                    ((fromIntegralTypeMe :: a -> Word32) h) g
-      x = (fromIntegralTypeMe :: Word32 -> a) w32
+                    ((toIntegralTypeMe :: a -> Word32) h) g
+      x = (toIntegralTypeMe :: Word32 -> a) w32
   in if x > h
      then error $ "nextRandom internal error"
                   `showFailure`
-                    ( (fromIntegralTypeMe :: a -> Integer) x
-                    , (fromIntegralTypeMe :: a -> Integer) h
+                    ( (toIntegralTypeMe :: a -> Integer) x
+                    , (toIntegralTypeMe :: a -> Integer) h
                     , w32 )
      else (x, g')
 

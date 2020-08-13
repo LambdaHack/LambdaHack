@@ -255,9 +255,8 @@ modifyDamageBySpeed dmg (Speed s) =
   in if s <= minimalSpeed
      then 0  -- needed mostly not to display useless ranged damage
      else round $  -- Double, because overflows Int64
-       (fromIntegralTypeMe :: Int64 -> Double) dmg
-       * (fromIntegralTypeMe :: Int64 -> Double) s ^ (2 :: Int)
-       / (fromIntegralTypeMe :: Int64 -> Double) sThrust ^ (2 :: Int)
+       int64ToDouble dmg * int64ToDouble s ^ (2 :: Int)
+       / int64ToDouble sThrust ^ (2 :: Int)
 
 -- | Scale speed by a scalar value.
 speedScale :: Rational -> Speed -> Speed

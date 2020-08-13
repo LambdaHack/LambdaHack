@@ -528,8 +528,7 @@ totalUsefulness cops fid factionD itemFull@ItemFull{itemKind, itemSuspect} =
         -- For simplicity, we ignore range bonus/malus and @Lobable@.
         IK.ThrowMod{IK.throwVelocity} = IA.aToThrow arItem
         speed = speedFromWeight (IK.iweight itemKind) throwVelocity
-        v = - (fromIntegralTypeMe :: Int64 -> Double)
-                (modifyDamageBySpeed rawDeltaHP speed) * 10 / xD 1
+        v = - int64ToDouble (modifyDamageBySpeed rawDeltaHP speed) * 10 / xD 1
           -- 1 damage valued at 10, just as in @damageUsefulness@
       -- If item is periodic, we factor in the self value of effects,
       -- because they are applied to self, whether the actor wants it or not.
