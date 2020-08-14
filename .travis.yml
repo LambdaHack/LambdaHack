@@ -275,7 +275,7 @@ jobs:
 
 before_install:
   - HC=$(echo "/opt/$CC/bin/ghc" | sed 's/-/\//')
-  - WITHCOMPILER="-w $HC"
+  - WITHCOMPILER="-w $HC --allow-newer"
   - HADDOCK=$(echo "/opt/$CC/bin/haddock" | sed 's/-/\//')
   - if [ "$TRAVIS_OS_NAME" = "osx" ]; then HADDOCK=$(echo $HADDOCK | sed "s:^/opt:$HOME/.ghc-install:"); fi
   - HCPKG="$HC-pkg"
