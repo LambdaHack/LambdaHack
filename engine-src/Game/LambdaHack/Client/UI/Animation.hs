@@ -239,9 +239,10 @@ fadeout ScreenContent{rwidth, rheight} out step = do
         in EM.findWithDefault ' ' k edge
       rollFrame !n = do
         w <- randomWord32
-        -- @fromIntegral@ is potentially costly, but arch-independent.
+        -- @fromIntegralWrap@ is potentially costly, but arch-independent.
+        -- Also, it's fine if it wraps.
         let fadeAttr !y !x = attrChar1ToW32 $
-              fadeChar ((intCast :: Word32 -> Int) w) n x y
+              fadeChar ((fromIntegralWrap :: Word32 -> Int) w) n x y
             fadeLine !y =
               let x1 :: Int
                   {-# INLINE x1 #-}
