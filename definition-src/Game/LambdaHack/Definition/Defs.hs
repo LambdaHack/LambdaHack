@@ -53,29 +53,29 @@ type Rarity = [(Double, Int)]
 -- after 10, or more generally, after the last, implicit or explicit bound,
 -- but it's simpler to implement).
 linearInterpolation :: Int -> Int -> Rarity -> Int
-linearInterpolation !levelDepth !totalDepth !dataset =
-  let findInterval :: (Double, Int) -> Rarity -> ((Double, Int), (Double, Int))
+linearInterpolation !levelDepthInt !totalDepthInt !dataset =
+  let levelDepth10 = intToDouble $ levelDepthInt * 10
+      totalDepth = intToDouble totalDepthInt
+      findInterval :: (Double, Int) -> Rarity -> ((Double, Int), (Double, Int))
       findInterval x1y1@(x1Last, y1Last) [] =
         if x1Last > 10
         then (x1y1, (x1Last + 1, y1Last))
                -- this dummy interval is enough to emulate the value staying
                -- constant indefinitely
-        else let stepLevel = 10 / intToDouble totalDepth
+        else let stepLevel = 10 / totalDepth
                -- this is the distance representing one level, the same
                -- as the distance from 0 to the representation of level 1
              in (x1y1, (10 + stepLevel, 0))
       findInterval !x1y1 ((!x, !y) : rest) =
-        if intToDouble levelDepth * 10 <= x * intToDouble totalDepth
+        if levelDepth10 <= x * totalDepth
         then (x1y1, (x, y))
         else findInterval (x, y) rest
       ((x1, y1), (x2, y2)) = findInterval (0, 0) dataset
-      levelDepthTrimmed =
-        if x2 > 10 then levelDepth else min levelDepth totalDepth
-  in ceiling
-     $ intToDouble y1
-       + intToDouble (y2 - y1)
-         * (intToDouble levelDepthTrimmed * 10 - x1 * intToDouble totalDepth)
-         / ((x2 - x1) * intToDouble totalDepth)
+      levelDepth10Trimmed =
+        if x2 > 10 then levelDepth10 else min levelDepth10 (totalDepth * 10)
+  in y1 + ceiling
+            (intToDouble (y2 - y1) * (levelDepth10Trimmed - x1 * totalDepth)
+             / ((x2 - x1) * totalDepth))
 
 -- | Content identifiers for the content type @c@.
 newtype ContentId c = ContentId Word16
