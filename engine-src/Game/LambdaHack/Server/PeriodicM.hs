@@ -18,6 +18,7 @@ import Game.LambdaHack.Core.Prelude
 import qualified Data.EnumMap.Strict as EM
 import qualified Data.EnumSet as ES
 import           Data.Int (Int64)
+import qualified Data.Text as T
 
 import           Game.LambdaHack.Atomic
 import           Game.LambdaHack.Common.Actor
@@ -99,7 +100,9 @@ addAnyActor summoned lvlSpawned actorFreq lid time mpos = do
   m2 <- rollItemAspect freq lid
   case m2 of
     NoNewItem -> do
-      debugPossiblyPrint "Server: addAnyActor: trunk failed to roll"
+      debugPossiblyPrint $ T.pack $
+        "Server: addAnyActor: trunk failed to roll"
+        `showFailure` (summoned, lvlSpawned, actorFreq, freq, lid, time, mpos)
       return Nothing
     NewItem itemKnownRaw itemFullRaw itemQuant -> do
       (fid, _) <- rndToAction $ oneOf $

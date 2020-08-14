@@ -43,38 +43,49 @@ type Freqs a = [(GroupName a, Int)]
 -- and the value remains constant above the interval bound.
 type Rarity = [(Double, Int)]
 
--- We assume @dataset@ is non-empty, sorted and the first element of the pair
--- is positive. The convention for adding implicit outer intervals is
--- that the value drops linearly, reaching 0 at 0. Similarly,
--- if the last interval ends at or before 10, the value drops linearly,
--- reaching 0 a step after 10. Otherwise, the value stays constant
--- after the last interval. In the former case, the effective level depth
--- is trimmed to @totalDepth@ (which is equivalent to value staying constant
--- after 10, or more generally, after the last, implicit or explicit bound,
--- but it's simpler to implement).
+-- We assume depths are greater or equal to one and the rarity @dataset@
+-- is non-empty, sorted and the first elements of the pairs are positive.
+-- The convention for adding implicit outer intervals is that
+-- the value increases linearly, starting from 0 at 0. Similarly,
+-- if the last interval ends before 10, the value drops linearly,
+-- in a way that would reach 0 a step after 10, but staying constant
+-- from 10 onward. If the last interval ends after 10, the value stays constant
+-- after the interval's upper bound.
+--
+-- Note that rarity [(1, 1)] means constant value 1 only thanks to @ceiling@.
+-- OTOH, [(1, 10)] is not equivalent to [(10/150, 10)] in a 150-deep dungeon,
+-- since its value at the first level is drastically lower. This only
+-- matters if content creators mix the two notations, so care must be taken
+-- in such cases. Otherwise, for any given level, all kinds scale consistently
+-- and the simpler notation just paintes the dungeon in larger strokes.
 linearInterpolation :: Int -> Int -> Rarity -> Int
 linearInterpolation !levelDepthInt !totalDepthInt !dataset =
   let levelDepth10 = intToDouble $ levelDepthInt * 10
       totalDepth = intToDouble totalDepthInt
       findInterval :: (Double, Int) -> Rarity -> ((Double, Int), (Double, Int))
-      findInterval x1y1@(x1Last, y1Last) [] =
-        if x1Last > 10
-        then (x1y1, (x1Last + 1, y1Last))
-               -- this dummy interval is enough to emulate the value staying
-               -- constant indefinitely
-        else let stepLevel = 10 / totalDepth
-               -- this is the distance representing one level, the same
-               -- as the distance from 0 to the representation of level 1
-             in (x1y1, (10 + stepLevel, 0))
+      findInterval x1y1@(x1Last, y1Last) [] =  -- we are past the last interval
+        let stepLevel = 10 / totalDepth
+              -- this is the distance representing one level, the same
+              -- as the distance from 0 to the representation of level 1
+            yConstant = if x1Last >= 10
+                        then y1Last
+                        else ceiling (intToDouble y1Last * stepLevel
+                                      / (10 + stepLevel - x1Last))
+              -- this is the value of the interpolation formula at the end
+              -- with y2 == 0, levelDepth10 == totalDepth * 10,
+              -- and x2 == 10 + stepLevel
+        in if levelDepthInt > totalDepthInt  -- value stays constant
+           then ((x1Last, yConstant), (x1Last + 1, yConstant))
+                  -- this artificial interval is enough to emulate
+                  -- the value staying constant indefinitely
+           else (x1y1, (10 + stepLevel, 0))
       findInterval !x1y1 ((!x, !y) : rest) =
         if levelDepth10 <= x * totalDepth
         then (x1y1, (x, y))
         else findInterval (x, y) rest
       ((x1, y1), (x2, y2)) = findInterval (0, 0) dataset
-      levelDepth10Trimmed =
-        if x2 > 10 then levelDepth10 else min levelDepth10 (totalDepth * 10)
   in y1 + ceiling
-            (intToDouble (y2 - y1) * (levelDepth10Trimmed - x1 * totalDepth)
+            (intToDouble (y2 - y1) * (levelDepth10 - x1 * totalDepth)
              / ((x2 - x1) * totalDepth))
 
 -- | Content identifiers for the content type @c@.

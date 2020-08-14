@@ -83,6 +83,7 @@ newItemKind :: COps -> UniqueSet -> Freqs ItemKind
             -> Frequency (ContentId IK.ItemKind, ItemKind)
 newItemKind COps{coitem, coItemSpeedup} uniqueSet itemFreq
             (Dice.AbsDepth ldepth) (Dice.AbsDepth totalDepth) lvlSpawned =
+  assert (any (\(_, n) -> n > 0) itemFreq) $
   -- Effective generation depth of actors (not items) increases with spawns.
   -- Up to 10 spawns, no effect. With 20 spawns, depth + 5, and then
   -- each 10 spawns adds 5 depth.
