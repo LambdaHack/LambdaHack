@@ -467,9 +467,10 @@ moveSearchAlter run dir = do
            -- Explicit request to examine the terrain.
            blurb <- lookAtPosition (blid sb) tpos
            mapM_ (uncurry msgAdd0) blurb
-           failWith $ if alterable
-                      then "potentially exploitable"
-                      else "not exploitable"
+           failWith $
+             if | Tile.isModifiable coTileSpeedup t -> "potentially modifiable"
+                | alterable -> "potentially triggerable"
+                | otherwise -> "inert"
        | otherwise -> alterCommon True tpos
   return $! runStopOrCmd
 
