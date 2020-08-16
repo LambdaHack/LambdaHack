@@ -360,7 +360,7 @@ drawFrame coscreen ClientOptions{..} sess@FrontendSession{..} curFrame = do
         let width = min xsize $ fromEnum sw
             height = min boxSize $ fromEnum sh
             xsrc = max 0 (fromEnum sw - width) `div` 2
-            ysrc = max 0 (fromEnum sh - height) `div` 2
+            ysrc = max 0 (fromEnum sh - height) `divUp` 2
             srcR = SDL.Rectangle (vp xsrc ysrc)
                                  (Vect.V2 (toEnum width) (toEnum height))
             xtgt = (xsize - width) `divUp` 2
@@ -389,7 +389,7 @@ drawFrame coscreen ClientOptions{..} sess@FrontendSession{..} curFrame = do
                     else widthRaw
             height = min boxSize $ fromEnum sh
             xsrc = 0
-            ysrc = max 0 (fromEnum sh - height) `div` 2
+            ysrc = max 0 (fromEnum sh - height) `divUp` 2
             srcR = SDL.Rectangle (vp xsrc ysrc)
                                  (Vect.V2 (toEnum width) (toEnum height))
             xtgt = 0
@@ -511,8 +511,7 @@ drawFrame coscreen ClientOptions{..} sess@FrontendSession{..} curFrame = do
       drawPropChunk x row fg t = do
         textSurfaceRaw <- TTF.shaded (fromJust spropFont) (colorToRGBA fg)
                                      (colorToRGBA Color.Black) t
-        (width, textTexture) <-
-          scaleSurfaceToTextureProp x row textSurfaceRaw
+        (width, textTexture) <- scaleSurfaceToTextureProp x row textSurfaceRaw
         let tgtR = SDL.Rectangle (vp x (row * boxSize))
                                  (Vect.V2 (toEnum width) (toEnum boxSize))
         -- Potentially overwrite some of the screen.
