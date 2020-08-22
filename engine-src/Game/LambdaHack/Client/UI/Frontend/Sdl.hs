@@ -130,6 +130,7 @@ startupFun coscreen soptions@ClientOptions{..} rfMVar = do
  spropFont <- maybe (return Nothing)
                     (\file -> Just <$> TTF.load file propFontSize)
                     propFontFile
+ -- TTF.setHinting (fromJust spropFont) TTF.Light  -- mimics OTF, tight tracking
  smonoFont <- maybe (return Nothing)
                     (\file -> Just <$> TTF.load file monoFontSize)
                     monoFontFile
