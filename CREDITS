@@ -9,7 +9,9 @@ Daniel Keefe
 Pablo Reszczynski
 Rafał Szczerski
 Oleg Grenrus
+Simon Michael
 bulbousBullfrog
+
 
 
 Fonts 16x16xw.woff, 16x16xw.bdf, 16x16x.fnt, 8x8x.fnt and 8x8xb.fnt
@@ -21,6 +23,7 @@ http://www.thangorodrim.net/development/opensource.html).
 Any further modifications by authors of LambdaHack
 are also released under GNU GPL version 2. The licence file is at
 GameDefinition/fonts/LICENSE.16x16x in the source code tree.
+
 Font 16x16xw.bdf is derived from 16x16x.fon by changing all but
 a few glyphs, converting to BDF format, extending character set
 and hacking the font file with bdftopcf and pcf2bdf to include
@@ -29,16 +32,66 @@ was not able to display the glyphs.
 Font 16x16xw.woff was derived from 16x16xw.bdf by changing format
 to TTF with bitsnpicas, faking descendent offsets to be 1 point lower
 to prevent freetype from adding an extra pixel to the descendent,
-tweaking with fontforge glyps 3 5 6 8 A a S s b d h to prevent antialiasing
+tweaking with fontforge glyphs 3 5 6 8 A a S s b d h to prevent antialiasing
 of their vital parts when zoomed out, auto-hinting, manually simplifying
 hints in some glyphs and converting to WOFF format.
 
 
-Fonts source-code-pro-v9-latin_latin-ext-700.woff
-and source-sans-pro-v12-latin_latin-ext-700.woff
-are generated via google-webfonts-helper.herokuapp.com
-from 'Source' fonts with the following copyright notice:
-Copyright 2010, 2012, 2014 Adobe Systems Incorporated (http://www.adobe.com/),
-with Reserved Font Name ‘Source’.
+
+Fonts BinarySansProLH-Regular.ttf.woff, BinarySansProLH-Semibold.ttf.woff
+and BinaryCodeProLH-Bold.ttf.woff are compiled from sources
+at https://github.com/adobe-fonts/source-sans-pro
+and https://github.com/adobe-fonts/source-code-pro
+published with the following copyright notice:
+
+Copyright 2010-2019 Adobe (http://www.adobe.com/), with Reserved Font Name 'Source'. All Rights Reserved. Source is a trademark of Adobe in the United States and/or other countries.
 This Font Software is licensed under the SIL Open Font License, Version 1.1.
 The licence file is at GameDefinition/fonts/OFL.txt in the source code tree.
+
+The sources are modified and processed as follows (see
+https://github.com/adobe-fonts/source-sans-pro/issues/193 for background):
+
+in Roman/Instances/Semibold/font.ufo/glyphs/s.glif
+put advance width="452"
+rm Roman/Instances/Semibold/font.ufo/data/com.adobe.type.processedHashMap
+bash build.sh
+pyftfeatfreeze -f 'cv03' -S -U LH -R 'Source/Binary' target/TTF/SourceSansPro-Semibold.ttf BinarySansProLH-Semibold.ttf
+pyftsubset BinarySansProLH-Semibold.ttf --unicodes="*" --flavor=woff --with-zopfli --output-file=BinarySansProLH-Semibold.ttf.woff
+
+and similarly for BinarySansProLH-Regular.ttf.woff, while
+for BinaryCodeProLH-Bold.ttf.woff the last steps are:
+
+pyftfeatfreeze -f 'cv02' -S -U LH -R 'Source/Binary' target/TTF/SourceCodePro-Bold.ttf BinaryCodeProLH-Bold.ttf
+pyftsubset BinaryCodeProLH-Bold.ttf --unicodes="*" --flavor=woff --with-zopfli --output-file=BinaryCodeProLH-Bold.ttf.woff
+
+
+
+Fonts DejaVuLGCSans.ttf.woff and DejaVuLGCSans-Bold.ttf.woff
+are downloaded from https://github.com/dejavu-fonts/dejavu-fonts
+and compresses with pyftsubset. Their copyright notice is
+DejaVu fonts 2.37 (c)2004-2016 DejaVu fonts team
+Fonts are (c) Bitstream (see below). DejaVu changes are in public domain.
+The licence file is at GameDefinition/fonts/LICENSE.DejaVu in the source code tree.
+
+Font Hack-Bold.ttf.woff is downloaded from
+https://github.com/source-foundry/Hack
+and compresses with pyftsubset. Its copyright notice is
+Hack work is (c) 2018 Source Foundry Authors. MIT License
+Bitstream Vera Sans Mono (c) 2003 Bitstream, Inc. (with Reserved Font Names _Bitstream_ and _Vera_). Bitstream Vera License.
+The licence file is at GameDefinition/fonts/LICENSE.Hack in the source code tree.
+
+
+
+Fonts ubuntu-v14-latin-ext_latin-regular.ttf.woff,
+ubuntu-v14-latin-ext_latin-500.ttf.woff
+and ubuntu-mono-v9-latin-ext_latin-700.ttf.woff
+are generated via google-webfonts-helper.herokuapp.com
+from 'Ubuntu Font Family' fonts with the following copyright notice:
+Copyright 2011 Canonical Ltd. Licensed under the Ubuntu Font Licence 1.0
+The licence file is at GameDefinition/fonts/UFL.txt in the source code tree.
+
+The files are compressed with pyftsubset to save some space and make
+sure they are created from TTF, not OTF fonts. Unfortunately, being TTF
+fonts and having broken hinting in the mono variant, they require
+forcing TTF.Light hinting in the SDL frontend. If ever OTF fonts
+emerge, they should be used instead (similarly compressed).
