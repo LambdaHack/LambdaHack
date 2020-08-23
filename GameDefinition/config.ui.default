@@ -95,7 +95,7 @@ gtkFontFamily = "DejaVu Sans Mono,Consolas,Courier New,Liberation Mono,Courier,F
 ; the long text fonts (the format is: kind name size hinting):
 binaryRegular = FontProportional "BinarySansProLH-Regular.ttf.woff" 16 HintingHeavy
 binaryBold = FontProportional "BinarySansProLH-Semibold.ttf.woff" 16 HintingHeavy
-binaryMono = FontMonospace "BinaryCodeProLH-Bold.ttf.wofff" 14 HintingHeavy
+binaryMono = FontMonospace "BinaryCodeProLH-Bold.ttf.woff" 14 HintingHeavy
 dejavuRegular = FontProportional "DejaVuLGCSans.ttf.woff" 15 HintingHeavy
 dejavuBold = FontProportional "DejaVuLGCSans-Bold.ttf.woff" 13 HintingHeavy
 dejavuMono = FontMonospace "Hack-Bold.ttf.woff" 13 HintingHeavy
@@ -104,9 +104,10 @@ ubuntuBold = FontProportional "ubuntu-v14-latin-ext_latin-500.ttf.woff" 16 Hinti
 ubuntuMono = FontMonospace "ubuntu-mono-v9-latin-ext_latin-700.ttf.woff" 16 HintingLight
 ; the map fonts (the format is: kind name size hinting cellSizeAdd):
 16x16xwScalable = FontMapScalable "16x16xw.woff" 16 HintingHeavy 0
-16x16xwBitmap = FontMapBitmap "16x16xw.bdf" 16 HintingNotApplicable 0
-8x8xbBitmap = FontMapBitmap "8x8xb.fnt" 8 HintingNotApplicable 2
-8x8xBitmap = FontMapBitmap "8x8x.fnt" 8 HintingNotApplicable 2
+; the map fonts (the format is: kind name cellSizeAdd):
+16x16xwBitmap = FontMapBitmap "16x16xw.bdf" 0
+8x8xbBitmap = FontMapBitmap "8x8xb.fnt" 2
+8x8xBitmap = FontMapBitmap "8x8x.fnt" 2
 
 [fontsets]
 ; best proportional:

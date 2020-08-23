@@ -60,6 +60,7 @@ data FrontendSession = FrontendSession
   , srenderer        :: SDL.Renderer
   , squareFont       :: TTF.Font
   , spropFont        :: Maybe TTF.Font
+  , sboldFont        :: Maybe TTF.Font
   , smonoFont        :: Maybe TTF.Font
   , squareAtlas      :: IORef FontAtlas
   , smonoAtlas       :: IORef FontAtlas
@@ -98,59 +99,91 @@ startupFun coscreen soptions@ClientOptions{..} rfMVar = do
  -- lowest: pattern SDL_LOG_PRIORITY_VERBOSE = (1) :: LogPriority
  -- our default: pattern SDL_LOG_PRIORITY_ERROR = (5) :: LogPriority
  SDL.logSetAllPriority $ toEnum $ fromMaybe 5 slogPriority
- let title = T.pack $ fromJust stitle
-     findFontFile mt =
-       if maybe True T.null mt
-       then return Nothing
-       else do
-         let fontFileName = T.unpack (fromJust mt)
-             fontFileOrig | isRelative fontFileName =
-                            fromJust sfontDir </> fontFileName
-                          | otherwise = fontFileName
-         fontFileOrigExists <- doesFileExist fontFileOrig
-         if fontFileOrigExists
-         then return $ Just fontFileOrig
-         else do
-           -- Handling old font format specified in old game config files.
-           let fontFileAlt = dropExtension fontFileOrig <.> "fnt"
-           fontFileAltExists <- doesFileExist fontFileAlt
-           if fontFileAltExists
-           then return $ Just fontFileAlt
-           else fail $ "Font file does not exist: " ++ fontFileOrig
- squareFontFile <- findFontFile sdlSquareFontFile
- propFontFile <- findFontFile sdlPropFontFile
- monoFontFile <- findFontFile sdlMonoFontFile
- let fontSize = fromJust sscalableFontSize  -- is ignored for bitmap fonts
-     propFontSize = fromJust sdlPropFontSize
-     monoFontSize = fromJust sdlMonoFontSize
  TTF.initialize
- squareFont <- TTF.load (fromJust squareFontFile) fontSize
- isSquareMono <- TTF.isMonospace squareFont
- let !_A = assert isSquareMono ()
- spropFont <- maybe (return Nothing)
-                    (\file -> Just <$> TTF.load file propFontSize)
-                    propFontFile
- -- TTF.setHinting (fromJust spropFont) TTF.Light  -- mimics OTF, tight tracking
- smonoFont <- maybe (return Nothing)
-                    (\file -> Just <$> TTF.load file monoFontSize)
-                    monoFontFile
- isMonoMono <- maybe (return True) TTF.isMonospace smonoFont
- let !_A = assert isMonoMono ()
- let sdlSizeAdd = fromJust
-                  $ if isBitmapFile (fromJust squareFontFile)
-                      -- based on main font, because cell size is based off it
-                    then sdlBitmapSizeAdd
-                    else sdlScalableSizeAdd
- squareFontSize <- (+ sdlSizeAdd) <$> TTF.height squareFont
+ let title = T.pack $ fromJust stitle
+     chosenFontsetID = fromJust schosenFontset
+     chosenFontset = case lookup chosenFontsetID sfontsets of
+       Nothing -> error $ "Fontset not defined in config file"
+                          `showFailure` chosenFontsetID
+       Just fs -> fs
+     findFontFile t =
+       if T.null t
+       then return Nothing
+       else case lookup t sfonts of
+         Nothing -> error $ "Font not defined in config file" `showFailure` t
+         Just (FontProportional fname fsize fhint) -> do
+           sdlFont <- loadFontFile fname fsize
+           setHintMode sdlFont fhint
+           realSize <- TTF.height sdlFont
+           let !_A = assert (realSize > 0) ()  -- sanity
+           return $ Just (sdlFont, realSize)
+         Just (FontMonospace fname fsize fhint) -> do
+           sdlFont <- loadFontFile fname fsize
+           setHintMode sdlFont fhint
+           isFontMono <- TTF.isMonospace sdlFont
+           realSize <- TTF.height sdlFont
+           let !_A = assert (isFontMono && realSize > 0) ()  -- sanity
+           return $ Just (sdlFont, realSize)
+         Just (FontMapScalable fname fsize fhint cellSizeAdd) -> do
+           sdlFont <- loadFontFile fname fsize
+           setHintMode sdlFont fhint
+           isFontMono <- TTF.isMonospace sdlFont
+           realSize <- TTF.height sdlFont
+           let !_A = assert (isFontMono && realSize > 0) ()  -- sanity
+           return $ Just (sdlFont, realSize + cellSizeAdd)
+         Just (FontMapBitmap fname cellSizeAdd) -> do
+           sdlFont <- loadFontFile fname 0  -- size ignored for bitmap fonts
+           isFontMono <- TTF.isMonospace sdlFont
+           realSize <- TTF.height sdlFont
+           let !_A = assert (isFontMono && realSize > 0) ()  -- sanity
+           return $ Just (sdlFont, realSize + cellSizeAdd)
+     loadFontFile fname fsize = do
+       let fontFileName = T.unpack fname
+           fontFilePath | isRelative fontFileName =
+                          fromJust sfontDir </> fontFileName
+                        | otherwise = fontFileName
+       fontFileExists <- doesFileExist fontFilePath
+       unless fontFileExists $
+         fail $ "Font file does not exist: " ++ fontFilePath
+       TTF.load fontFilePath fsize
+     setHintMode _ HintingHeavy = return ()  -- default
+     setHintMode sdlFont HintingLight = TTF.setHinting sdlFont TTF.Light
+ let scale = 1 :: Int
+ (squareFont, squareFontSize) <-
+   if scale == 1 then do
+     mfontMapBitmap <- findFontFile $ fontMapBitmap chosenFontset
+     case mfontMapBitmap of
+       Just x -> return x
+       Nothing -> do
+         mfontMapScalable <- findFontFile $ fontMapScalable chosenFontset
+         case mfontMapScalable of
+           Just x -> return x
+           Nothing -> error "Neither bitmap nor scalable map font defined"
+   else do
+     mfontMapScalable <- findFontFile $ fontMapScalable chosenFontset
+     case mfontMapScalable of
+        Just x -> return x
+        Nothing -> error "Scaling requested but scalable map font not defined"
  let halfSize = squareFontSize `div` 2
-     boxSize = 2 * halfSize
+     boxSize = 2 * halfSize  -- map font determines cell size for all others
+ -- Real size of these fonts ignored.
+ spropFont <- fst <$$> findFontFile (fontPropBold {-TODO-} chosenFontset)
+ sboldFont <- fst <$$> findFontFile (fontPropBold chosenFontset)
+ smonoFont <- fst <$$> findFontFile (fontMono chosenFontset)
+ let !_A =
+       assert
+         (isJust spropFont && isJust sboldFont && isJust smonoFont
+          || isNothing spropFont && isNothing sboldFont && isNothing smonoFont
+          `blame` "Either all auxiliary fonts should be defined or none"
+          `swith` chosenFontset) ()
  -- The hacky log priority 0 tells SDL frontend to init and quit at once,
  -- for testing on CIs without graphics access.
  if slogPriority == Just 0 then do
   rf <- createRawFrontend coscreen (\_ -> return ()) (return ())
   putMVar rfMVar rf
-  maybe (return ()) TTF.free smonoFont
   maybe (return ()) TTF.free spropFont
+  maybe (return ()) TTF.free sboldFont
+  maybe (return ()) TTF.free smonoFont
   TTF.free squareFont
   TTF.quit
   SDL.quit
@@ -240,8 +273,9 @@ startupFun coscreen soptions@ClientOptions{..} rfMVar = do
         if continueSdlLoop
         then loopSDL
         else do
-          maybe (return ()) TTF.free smonoFont
           maybe (return ()) TTF.free spropFont
+          maybe (return ()) TTF.free sboldFont
+          maybe (return ()) TTF.free smonoFont
           TTF.free squareFont
           TTF.quit
           SDL.destroyRenderer srenderer

@@ -26,17 +26,19 @@ import           System.Environment (getProgName)
 import           System.IO.Unsafe (unsafePerformIO)
 
 data FontDefinition =
-    FontProportional Text Int HintingMode
+    FontProportional Text Int HintingMode  -- ^ filename, size, hinting mode
   | FontMonospace Text Int HintingMode
-  | FontMapScalable Text Int HintingMode Int
-  | FontMapBitmap Text Int HintingMode Int
+  | FontMapScalable Text Int HintingMode Int  -- ^ extra cell extension
+  | FontMapBitmap Text Int  -- ^ size ignored for bitmap fonts and no hinting
   deriving (Show, Eq, Read, Generic)
 
 instance NFData FontDefinition
 
 instance Binary FontDefinition
 
-data HintingMode = HintingHeavy | HintingLight | HintingNotApplicable
+data HintingMode =
+    HintingHeavy  -- ^ current libfreetype6 default, thin, large letter spacing
+  | HintingLight  -- ^ mimics OTF, blurry, thick, tight tracking, accurate shape
   deriving (Show, Eq, Read, Generic)
 
 instance NFData HintingMode
