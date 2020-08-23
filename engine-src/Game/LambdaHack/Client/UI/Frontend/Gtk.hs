@@ -116,8 +116,7 @@ startupFun coscreen ClientOptions{..} rfMVar = do
   -- Set the font specified in config, if any.
   -- The list are monospace fonts that have fixed size regardless
   -- of boldness (on some OSes at least).
-  f <- fontDescriptionFromString
-       $ "DejaVu Sans Mono,Consolas,Courier New,Liberation Mono,Courier,FreeMono,Monospace" <+> maybe "16" tshow sscalableFontSize <> "px"
+  f <- fontDescriptionFromString "DejaVu Sans Mono,Consolas,Courier New,Liberation Mono,Courier,FreeMono,Monospace 16px"
   widgetModifyFont sview (Just f)
   IO.liftIO $ do
     textViewSetLeftMargin sview 3
