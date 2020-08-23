@@ -59,7 +59,7 @@ hpWarningPercent = 20
 overrideCmdline = ""
 
 [fonts]
-; the long text fonts (the format is: kind name size hinting):
+; the auxiliary fonts (the format is: kind name size hinting):
 binaryRegular = FontProportional "BinarySansProLH-Regular.ttf.woff" 16 HintingHeavy
 binaryBold = FontProportional "BinarySansProLH-Semibold.ttf.woff" 16 HintingHeavy
 binaryMono = FontMonospace "BinaryCodeProLH-Bold.ttf.woff" 14 HintingHeavy
