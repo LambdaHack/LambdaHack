@@ -1,6 +1,8 @@
+{-# LANGUAGE DeriveGeneric #-}
 -- | Hacks that haven't found their home yet.
 module Game.LambdaHack.Common.Misc
-  ( makePhrase, makeSentence, squashedWWandW
+  ( FontDefinition(..), HintingMode(..), FontSet(..)
+  , makePhrase, makeSentence, squashedWWandW
   , appDataDir
   , xM, xD, minusM, minusM1, minusM2, oneM, tenthM
   , show64With2
@@ -12,13 +14,46 @@ import Prelude ()
 import Game.LambdaHack.Core.Prelude
 
 import           Control.Concurrent
+import           Control.DeepSeq
+import           Data.Binary
 import qualified Data.Char as Char
 import           Data.Int (Int64)
 import qualified Data.Map as M
+import           GHC.Generics (Generic)
 import qualified NLP.Miniutter.English as MU
 import           System.Directory (getAppUserDataDirectory)
 import           System.Environment (getProgName)
 import           System.IO.Unsafe (unsafePerformIO)
+
+data FontDefinition =
+    FontProportional Text Int HintingMode
+  | FontMonospace Text Int HintingMode
+  | FontMapScalable Text Int HintingMode Int
+  | FontMapBitmap Text Int HintingMode Int
+  deriving (Show, Eq, Read, Generic)
+
+instance NFData FontDefinition
+
+instance Binary FontDefinition
+
+data HintingMode = HintingHeavy | HintingLight | HintingNotApplicable
+  deriving (Show, Eq, Read, Generic)
+
+instance NFData HintingMode
+
+instance Binary HintingMode
+
+data FontSet = FontSet
+  { fontMapScalable :: Text
+  , fontMapBitmap   :: Text
+  , fontPropRegular :: Text
+  , fontPropBold    :: Text
+  , fontMono        :: Text }
+  deriving (Show, Eq, Read, Generic)
+
+instance NFData FontSet
+
+instance Binary FontSet
 
 -- | Re-exported English phrase creation functions, applied to our custom
 -- irregular word sets.

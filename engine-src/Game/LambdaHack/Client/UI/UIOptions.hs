@@ -1,7 +1,7 @@
 {-# LANGUAGE DeriveGeneric #-}
 -- | UI client options.
 module Game.LambdaHack.Client.UI.UIOptions
-  ( UIOptions(..), FontDefinition(..), HintingMode(..), FontSet(..)
+  ( UIOptions(..)
   ) where
 
 import Prelude ()
@@ -15,6 +15,7 @@ import GHC.Generics (Generic)
 import           Game.LambdaHack.Client.UI.HumanCmd
 import qualified Game.LambdaHack.Client.UI.Key as K
 import           Game.LambdaHack.Client.UI.Msg
+import           Game.LambdaHack.Common.Misc
 import qualified Game.LambdaHack.Definition.Color as Color
 
 -- | Options that affect the UI of the client.
@@ -52,33 +53,3 @@ data UIOptions = UIOptions
 instance NFData UIOptions
 
 instance Binary UIOptions
-
-data FontDefinition =
-    FontProportional Text Int HintingMode
-  | FontMonospace Text Int HintingMode
-  | FontMapScalable Text Int HintingMode Int
-  | FontMapBitmap Text Int HintingMode Int
-  deriving (Show, Eq, Read, Generic)
-
-instance NFData FontDefinition
-
-instance Binary FontDefinition
-
-data HintingMode = HintingHeavy | HintingLight | HintingNotApplicable
-  deriving (Show, Eq, Read, Generic)
-
-instance NFData HintingMode
-
-instance Binary HintingMode
-
-data FontSet = FontSet
-  { fontMapScalable :: Text
-  , fontMapBitmap   :: Text
-  , fontPropRegular :: Text
-  , fontPropBold    :: Text
-  , fontMono        :: Text }
-  deriving (Show, Eq, Read, Generic)
-
-instance NFData FontSet
-
-instance Binary FontSet

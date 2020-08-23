@@ -11,7 +11,7 @@ import Game.LambdaHack.Core.Prelude
 import Data.Binary
 import GHC.Generics (Generic)
 
-import Game.LambdaHack.Client.UI.UIOptions
+import Game.LambdaHack.Common.Misc
 
 -- | Options that affect the behaviour of the client (but not game rules).
 data ClientOptions = ClientOptions
