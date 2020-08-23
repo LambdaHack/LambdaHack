@@ -11,9 +11,17 @@ import Game.LambdaHack.Core.Prelude
 import Data.Binary
 import GHC.Generics (Generic)
 
+import Game.LambdaHack.Client.UI.UIOptions
+
 -- | Options that affect the behaviour of the client (but not game rules).
 data ClientOptions = ClientOptions
-  { sgtkFontFamily     :: Maybe Text
+  { schosenFontset     :: Maybe Text
+      -- ^ Font set chosen by the player for the whole UI.
+  , sfonts             :: [(Text, FontDefinition)]
+      -- ^ Available fonts as defined in config file.
+  , sfontsets          :: [(Text, FontSet)]
+      -- ^ Available font sets as defined in config file.
+  , sgtkFontFamily     :: Maybe Text
       -- ^ Font family to use for the GTK main game window.
   , sdlSquareFontFile  :: Maybe Text
       -- ^ Font file to use for the SDL2 main game window.
@@ -75,7 +83,10 @@ instance Binary ClientOptions
 -- | Default value of client options.
 defClientOptions :: ClientOptions
 defClientOptions = ClientOptions
-  { sgtkFontFamily = Nothing
+  { schosenFontset = Nothing
+  , sfonts = []
+  , sfontsets = []
+  , sgtkFontFamily = Nothing
   , sdlSquareFontFile = Nothing
   , sdlPropFontSize = Nothing
   , sdlPropFontFile = Nothing

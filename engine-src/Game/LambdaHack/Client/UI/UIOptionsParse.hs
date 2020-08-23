@@ -131,6 +131,10 @@ mkUIOptions COps{corule} benchmark = do
 -- | Modify client options with UI options.
 applyUIOptions :: COps -> UIOptions -> ClientOptions -> ClientOptions
 applyUIOptions COps{corule} uioptions =
+     (\opts -> opts {schosenFontset =
+        schosenFontset opts `mplus` Just (uChosenFontset uioptions)}) .
+     (\opts -> opts {sfonts = uFonts uioptions}) .
+     (\opts -> opts {sfontsets = uFontsets uioptions}) .
      (\opts -> opts {sgtkFontFamily =
         sgtkFontFamily opts `mplus` Just (uGtkFontFamily uioptions)}) .
      (\opts -> opts {sdlSquareFontFile =

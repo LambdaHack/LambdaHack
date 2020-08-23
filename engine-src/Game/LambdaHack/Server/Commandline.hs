@@ -68,6 +68,7 @@ serverOptionsP = do
   sdumpInitRngs     <- dumpInitRngsP
   sdbgMsgSer        <- dbgMsgSerP
   sassertExplored   <- assertExploredP
+  schosenFontset    <- chosenFontsetP
   sgtkFontFamily    <- gtkFontFamilyP
   sdlSquareFontFile <- sdlSquareFontFileP
   sdlPropFontSize   <- sdlPropFontSizeP
@@ -91,7 +92,9 @@ serverOptionsP = do
   pure ServerOptions
     {
       sclientOptions = ClientOptions
-        { stitle         = Nothing
+        { sfonts         = []  -- comes only from config file
+        , sfontsets      = []  -- comes only from config file
+        , stitle         = Nothing
         , snewGameCli    = snewGameSer
         , ssavePrefixCli = ssavePrefixSer
         , ..
@@ -243,6 +246,12 @@ assertExploredP = optional $ max 1 <$>
   option auto (  long "assertExplored"
               <> help "Check that when the session ends, the indicated level has been explored"
               <> metavar "N" )
+
+chosenFontsetP :: Parser (Maybe Text)
+chosenFontsetP = optional $ T.pack <$>
+  strOption (  long "fontset"
+            <> metavar "FONTSET_ID"
+            <> help "Render UI using the given fontset from config file" )
 
 gtkFontFamilyP :: Parser (Maybe Text)
 gtkFontFamilyP = optional $ T.pack <$>

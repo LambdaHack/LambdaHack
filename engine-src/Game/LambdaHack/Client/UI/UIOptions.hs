@@ -58,14 +58,14 @@ data FontDefinition =
   | FontMonospace Text Int HintingMode
   | FontMapScalable Text Int HintingMode Int
   | FontMapBitmap Text Int HintingMode Int
-  deriving (Show, Read, Generic)
+  deriving (Show, Eq, Read, Generic)
 
 instance NFData FontDefinition
 
 instance Binary FontDefinition
 
 data HintingMode = HintingHeavy | HintingLight | HintingNotApplicable
-  deriving (Show, Read, Generic)
+  deriving (Show, Eq, Read, Generic)
 
 instance NFData HintingMode
 
@@ -77,7 +77,7 @@ data FontSet = FontSet
   , fontPropRegular :: Text
   , fontPropBold    :: Text
   , fontMono        :: Text }
-  deriving (Show, Read, Generic)
+  deriving (Show, Eq, Read, Generic)
 
 instance NFData FontSet
 
