@@ -142,12 +142,12 @@ startupFun coscreen soptions@ClientOptions{..} rfMVar = do
        fontFileExists <- doesFileExist fontFilePath
        unless fontFileExists $
          fail $ "Font file does not exist: " ++ fontFilePath
-       TTF.load fontFilePath fsize
+       TTF.load fontFilePath $
+         round $ fromJust sallFontsScale * intToDouble fsize
      setHintMode _ HintingHeavy = return ()  -- default
      setHintMode sdlFont HintingLight = TTF.setHinting sdlFont TTF.Light
- let scale = 1 :: Int
  (squareFont, squareFontSize, mapFontIsBitmap) <-
-   if scale == 1 then do
+   if fromJust sallFontsScale == 1.0 then do
      mfontMapBitmap <- findFontFile $ fontMapBitmap chosenFontset
      case mfontMapBitmap of
        Just (sdlFont, size) -> return (sdlFont, size, True)
