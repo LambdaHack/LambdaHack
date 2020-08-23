@@ -71,7 +71,6 @@ parseConfig cfg =
       uVi = getOption "movementViKeys_hjklyubn"
       uLeftHand = getOption "movementLeftHandKeys_axwdqezc"
       uChosenFontset = getOption "chosenFontset"
-      uGtkFontFamily = getOption "gtkFontFamily"
       uSdlSquareFontFile = getOption "sdlSquareFontFile"
       uSdlPropFontSize = getOption "sdlPropFontSize"
       uSdlPropFontFile = getOption "sdlPropFontFile"
@@ -135,8 +134,6 @@ applyUIOptions COps{corule} uioptions =
         schosenFontset opts `mplus` Just (uChosenFontset uioptions)}) .
      (\opts -> opts {sfonts = uFonts uioptions}) .
      (\opts -> opts {sfontsets = uFontsets uioptions}) .
-     (\opts -> opts {sgtkFontFamily =
-        sgtkFontFamily opts `mplus` Just (uGtkFontFamily uioptions)}) .
      (\opts -> opts {sdlSquareFontFile =
         sdlSquareFontFile opts `mplus` Just (uSdlSquareFontFile uioptions)}) .
      (\opts -> opts {sdlPropFontSize =

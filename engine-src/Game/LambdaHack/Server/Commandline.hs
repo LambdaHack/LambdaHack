@@ -69,7 +69,6 @@ serverOptionsP = do
   sdbgMsgSer        <- dbgMsgSerP
   sassertExplored   <- assertExploredP
   schosenFontset    <- chosenFontsetP
-  sgtkFontFamily    <- gtkFontFamilyP
   sdlSquareFontFile <- sdlSquareFontFileP
   sdlPropFontSize   <- sdlPropFontSizeP
   sdlPropFontFile   <- sdlPropFontFileP
@@ -252,12 +251,6 @@ chosenFontsetP = optional $ T.pack <$>
   strOption (  long "fontset"
             <> metavar "FONTSET_ID"
             <> help "Render UI using the given fontset from config file" )
-
-gtkFontFamilyP :: Parser (Maybe Text)
-gtkFontFamilyP = optional $ T.pack <$>
-  strOption (  long "gtkFontFamily"
-            <> metavar "FONT_FAMILY"
-            <> help "Use FONT_FAMILY for the main game window in GTK frontend" )
 
 sdlSquareFontFileP :: Parser (Maybe Text)
 sdlSquareFontFileP = optional $ T.pack <$>

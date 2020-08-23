@@ -87,7 +87,6 @@ hpWarningPercent = 20
 ; messageColors = []
 overrideCmdline = ""
 ; Legacy: monospace fonts that have fixed size regardless of boldness (on some OSes at least)
-gtkFontFamily = "DejaVu Sans Mono,Consolas,Courier New,Liberation Mono,Courier,FreeMono,Monospace"
 ; sdlFonSizeAdd is now ignored
 ; runStopMsgs is now ignored
 

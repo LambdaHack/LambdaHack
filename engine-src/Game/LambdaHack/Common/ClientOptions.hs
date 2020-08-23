@@ -21,8 +21,6 @@ data ClientOptions = ClientOptions
       -- ^ Available fonts as defined in config file.
   , sfontsets          :: [(Text, FontSet)]
       -- ^ Available font sets as defined in config file.
-  , sgtkFontFamily     :: Maybe Text
-      -- ^ Font family to use for the GTK main game window.
   , sdlSquareFontFile  :: Maybe Text
       -- ^ Font file to use for the SDL2 main game window.
   , sdlPropFontSize    :: Maybe Int
@@ -86,7 +84,6 @@ defClientOptions = ClientOptions
   { schosenFontset = Nothing
   , sfonts = []
   , sfontsets = []
-  , sgtkFontFamily = Nothing
   , sdlSquareFontFile = Nothing
   , sdlPropFontSize = Nothing
   , sdlPropFontFile = Nothing
