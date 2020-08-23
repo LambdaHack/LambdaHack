@@ -17,6 +17,8 @@ import Game.LambdaHack.Common.Misc
 data ClientOptions = ClientOptions
   { schosenFontset    :: Maybe Text
       -- ^ Font set chosen by the player for the whole UI.
+  , sallFontsScale    :: Maybe Double
+      -- ^ The scale applied to all fonts, resizing the whole UI.
   , sfonts            :: [(Text, FontDefinition)]
       -- ^ Available fonts as defined in config file.
   , sfontsets         :: [(Text, FontSet)]
@@ -64,6 +66,7 @@ instance Binary ClientOptions
 defClientOptions :: ClientOptions
 defClientOptions = ClientOptions
   { schosenFontset = Nothing
+  , sallFontsScale = Nothing
   , sfonts = []
   , sfontsets = []
   , slogPriority = Nothing

@@ -69,6 +69,7 @@ serverOptionsP = do
   sdbgMsgSer        <- dbgMsgSerP
   sassertExplored   <- assertExploredP
   schosenFontset    <- chosenFontsetP
+  sallFontsScale    <- allFontsScaleP
   sfontDir          <- fontDirP
   slogPriority      <- logPriorityP
   smaxFps           <- maxFpsP
@@ -244,6 +245,12 @@ chosenFontsetP = optional $ T.pack <$>
             <> metavar "FONTSET_ID"
             <> help "Render UI using the given fontset from config file" )
 
+allFontsScaleP :: Parser (Maybe Double)
+allFontsScaleP = optional $ max 0 <$>
+  option auto (  long "allFontsScale"
+              <> metavar "D"
+              <> help "Scale all fonts by D, resizing the whole UI" )
+
 fontDirP :: Parser (Maybe FilePath)
 fontDirP = optional $
   strOption (  long "fontDir"
@@ -253,8 +260,8 @@ fontDirP = optional $
 maxFpsP :: Parser (Maybe Double)
 maxFpsP = optional $ max 0 <$>
   option auto (  long "maxFps"
-              <> metavar "N"
-              <> help "Display at most N frames per second" )
+              <> metavar "D"
+              <> help "Display at most D frames per second" )
 
 logPriorityP :: Parser (Maybe Int)
 logPriorityP = optional $

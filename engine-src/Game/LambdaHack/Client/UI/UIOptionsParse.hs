@@ -71,6 +71,7 @@ parseConfig cfg =
       uVi = getOption "movementViKeys_hjklyubn"
       uLeftHand = getOption "movementLeftHandKeys_axwdqezc"
       uChosenFontset = getOption "chosenFontset"
+      uAllFontsScale = getOption "allFontsScale"
 #ifdef USE_JSFILE
       -- Local storage quota exeeded on Chrome.
       uHistoryMax = getOption "historyMax" `div` 10
@@ -124,6 +125,8 @@ applyUIOptions :: COps -> UIOptions -> ClientOptions -> ClientOptions
 applyUIOptions COps{corule} uioptions =
      (\opts -> opts {schosenFontset =
         schosenFontset opts `mplus` Just (uChosenFontset uioptions)}) .
+     (\opts -> opts {sallFontsScale =
+        sallFontsScale opts `mplus` Just (uAllFontsScale uioptions)}) .
      (\opts -> opts {sfonts = uFonts uioptions}) .
      (\opts -> opts {sfontsets = uFontsets uioptions}) .
      (\opts -> opts {smaxFps =

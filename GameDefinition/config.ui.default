@@ -47,6 +47,9 @@ HeroName_6 = ("Christopher Flatt", "he")
 movementViKeys_hjklyubn = True
 movementLeftHandKeys_axwdqezc = True
 chosenFontset = "binary"
+; 1.0 means don't scale; 1.5, 2.0, 3.0 give good results, <0.7 very bad
+; for scales < 1 try fontsets with bolder auxiliary fonts and/or HintingLight
+allFontsScale = 1.0
 ; New historyMax takes effect after removal of savefiles.
 historyMax = 5000
 maxFps = 24
@@ -68,6 +71,7 @@ ubuntuRegular = FontProportional "ubuntu-v14-latin-ext_latin-regular.ttf.woff" 1
 ubuntuBold = FontProportional "ubuntu-v14-latin-ext_latin-500.ttf.woff" 16 HintingLight
 ubuntuMono = FontMonospace "ubuntu-mono-v9-latin-ext_latin-700.ttf.woff" 16 HintingLight
 ; the map fonts (the format is: kind name size hinting cellSizeAdd):
+; with allFontsScale < 1, try HintingLight for fuzzy, but less distorted shapes:
 16x16xwScalable = FontMapScalable "16x16xw.woff" 16 HintingHeavy 0
 ; the map fonts (the format is: kind name cellSizeAdd):
 16x16xwBitmap = FontMapBitmap "16x16xw.bdf" 0
