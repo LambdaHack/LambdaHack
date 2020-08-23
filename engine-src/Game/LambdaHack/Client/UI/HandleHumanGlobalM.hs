@@ -1662,13 +1662,8 @@ generateMenu cmdSemInCxtOfKM blurb kds gameInfo menuName = do
       (menuOvLines, mkyxs) = unzip $ zipWith generate [0..] rawLines
       kyxs = catMaybes mkyxs
       introLen = sum $ map (length . snd) blurb
-      introWidths = concatMap (\(font, als) ->
-        map (\al -> let len = textSize monoFont (attrLine al)
-                    in len + if font == propFont
-                                && not (isSquareFont propFont)
-                             then - len `div` 8
-                             else 0)
-            als) blurb
+      introWidths =  -- assume worst case, that is mono font used as prop
+        concatMap (map (textSize monoFont . attrLine) . snd) blurb
       introMaxWidth = maximum $ 30 : introWidths
       zipAttrLines :: Int -> [AttrLine] -> (Overlay, Int)
       zipAttrLines start als =
