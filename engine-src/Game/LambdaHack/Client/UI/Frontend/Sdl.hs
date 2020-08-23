@@ -167,7 +167,7 @@ startupFun coscreen soptions@ClientOptions{..} rfMVar = do
  let halfSize = squareFontSize `div` 2
      boxSize = 2 * halfSize  -- map font determines cell size for all others
  -- Real size of these fonts ignored.
- spropFont <- fst <$$> findFontFile (fontPropBold {-TODO-} chosenFontset)
+ spropFont <- fst <$$> findFontFile (fontPropRegular chosenFontset)
  sboldFont <- fst <$$> findFontFile (fontPropBold chosenFontset)
  smonoFont <- fst <$$> findFontFile (fontMono chosenFontset)
  let !_A =
@@ -544,7 +544,10 @@ drawFrame coscreen ClientOptions{..} sess@FrontendSession{..} curFrame = do
         drawPropLine (x + width) row otherRest
       drawPropChunk :: Int -> Int -> Color.Color -> T.Text -> IO Int
       drawPropChunk x row fg t = do
-        textSurfaceRaw <- TTF.shaded (fromJust spropFont) (colorToRGBA fg)
+        let font = if fg >= Color.White && fg /= Color.BrBlack
+                   then spropFont
+                   else sboldFont
+        textSurfaceRaw <- TTF.shaded (fromJust font) (colorToRGBA fg)
                                      (colorToRGBA Color.Black) t
         (width, textTexture) <- scaleSurfaceToTextureProp x row textSurfaceRaw
         let tgtR = SDL.Rectangle (vp x (row * boxSize))
