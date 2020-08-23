@@ -279,9 +279,14 @@ clearAimMode = do
 
 getFontSetup :: MonadClientUI m => m FontSetup
 getFontSetup = do
-  soptions@ClientOptions{sdlPropFontFile} <- getsClient soptions
-  let multiFont = Frontend.frontendName soptions == "sdl"
-                  && maybe False (not . T.null) sdlPropFontFile
+  soptions@ClientOptions{schosenFontset, sfontsets} <- getsClient soptions
+  let chosenFontsetID = fromJust schosenFontset
+      chosenFontset = case lookup chosenFontsetID sfontsets of
+        Nothing -> error $ "Fontset not defined in config file"
+                           `showFailure` chosenFontsetID
+        Just fs -> fs
+      multiFont = Frontend.frontendName soptions == "sdl"
+                  && not ( T.null (fontPropRegular chosenFontset))
   return $! if multiFont then multiFontSetup else singleFontSetup
 
 scoreToSlideshow :: MonadClientUI m => Int -> Status -> m Slideshow
