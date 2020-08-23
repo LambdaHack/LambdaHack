@@ -99,6 +99,10 @@ startupFun coscreen soptions@ClientOptions{..} rfMVar = do
        Nothing -> error $ "Fontset not defined in config file"
                           `showFailure` chosenFontsetID
        Just fs -> fs
+     -- If some auxiliary fonts are equal and at the same size, this wastefully
+     -- opens them many times. However, native builds are efficient enough
+     -- and slow machines should use the most frugal case (only square font)
+     -- in which no waste occurs and all rendering is aided with an atlas.
      findFontFile t =
        if T.null t
        then return Nothing
