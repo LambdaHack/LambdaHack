@@ -59,6 +59,8 @@ data FrontendSession = FrontendSession
   { swindow          :: SDL.Window
   , srenderer        :: SDL.Renderer
   , squareFont       :: TTF.Font
+  , squareFontSize   :: Int
+  , mapFontIsBitmap  :: Bool
   , spropFont        :: Maybe TTF.Font
   , sboldFont        :: Maybe TTF.Font
   , smonoFont        :: Maybe TTF.Font
@@ -83,15 +85,6 @@ frontendName = "sdl"
 -- so we can't avoid the communication overhead of bound threads.
 startup :: ScreenContent -> ClientOptions -> IO RawFrontend
 startup coscreen soptions = startupBound $ startupFun coscreen soptions
-
-isBitmapFile :: String -> Bool
-isBitmapFile fontFileName =
-  "fon" `isSuffixOf` fontFileName
-  || "fnt" `isSuffixOf` fontFileName
-  || "bdf" `isSuffixOf` fontFileName
-  || "FON" `isSuffixOf` fontFileName
-  || "FNT" `isSuffixOf` fontFileName
-  || "BDF" `isSuffixOf` fontFileName
 
 startupFun :: ScreenContent -> ClientOptions -> MVar RawFrontend -> IO ()
 startupFun coscreen soptions@ClientOptions{..} rfMVar = do
@@ -149,20 +142,20 @@ startupFun coscreen soptions@ClientOptions{..} rfMVar = do
      setHintMode _ HintingHeavy = return ()  -- default
      setHintMode sdlFont HintingLight = TTF.setHinting sdlFont TTF.Light
  let scale = 1 :: Int
- (squareFont, squareFontSize) <-
+ (squareFont, squareFontSize, mapFontIsBitmap) <-
    if scale == 1 then do
      mfontMapBitmap <- findFontFile $ fontMapBitmap chosenFontset
      case mfontMapBitmap of
-       Just x -> return x
+       Just (sdlFont, size) -> return (sdlFont, size, True)
        Nothing -> do
          mfontMapScalable <- findFontFile $ fontMapScalable chosenFontset
          case mfontMapScalable of
-           Just x -> return x
+           Just (sdlFont, size) -> return (sdlFont, size, False)
            Nothing -> error "Neither bitmap nor scalable map font defined"
    else do
      mfontMapScalable <- findFontFile $ fontMapScalable chosenFontset
      case mfontMapScalable of
-        Just x -> return x
+        Just (sdlFont, size) -> return (sdlFont, size, False)
         Nothing -> error "Scaling requested but scalable map font not defined"
  let halfSize = squareFontSize `div` 2
      boxSize = 2 * halfSize  -- map font determines cell size for all others
@@ -367,12 +360,7 @@ drawFrame :: ScreenContent    -- ^ e.g., game screen size
           -> SingleFrame      -- ^ the screen frame to draw
           -> IO ()
 drawFrame coscreen ClientOptions{..} sess@FrontendSession{..} curFrame = do
-  let isBitmapFont = isBitmapFile $ T.unpack (fromJust sdlSquareFontFile)
-      sdlSizeAdd = fromJust $ if isBitmapFont
-                              then sdlBitmapSizeAdd
-                              else sdlScalableSizeAdd
   prevFrame <- readIORef spreviousFrame
-  squareFontSize <- (+ sdlSizeAdd) <$> TTF.height squareFont
   let halfSize = squareFontSize `div` 2
       boxSize = 2 * halfSize
       vp :: Int -> Int -> Vect.Point Vect.V2 CInt
@@ -466,7 +454,7 @@ drawFrame coscreen ClientOptions{..} sess@FrontendSession{..} curFrame = do
               -- so only the dot can be bold).
               let acChar = if not (Color.isBright fg)
                               && acCharRaw == floorSymbol  -- '\x00B7'
-                           then if isBitmapFont
+                           then if mapFontIsBitmap
                                 then '\x0007'
                                 else '\x22C5'
                            else acCharRaw
