@@ -1,7 +1,7 @@
 {-# LANGUAGE DeriveGeneric #-}
 -- | UI client options.
 module Game.LambdaHack.Client.UI.UIOptions
-  ( UIOptions(..)
+  ( UIOptions(..), FontDefinition(..), HintingMode(..), FontSet(..)
   ) where
 
 import Prelude ()
@@ -26,6 +26,7 @@ data UIOptions = UIOptions
     -- ui
   , uVi                 :: Bool
   , uLeftHand           :: Bool
+  , uChosenFontset      :: Text
   , uGtkFontFamily      :: Text
   , uSdlSquareFontFile  :: Text
   , uSdlPropFontSize    :: Int
@@ -43,9 +44,41 @@ data UIOptions = UIOptions
   , uMessageColors      :: Maybe [(MsgClass, Color.Color)]
   , uCmdline            :: [String]
       -- ^ Hardwired commandline arguments to process.
+  , uFonts              :: [(Text, FontDefinition)]
+  , uFontsets           :: [(Text, FontSet)]
   }
   deriving (Show, Generic)
 
 instance NFData UIOptions
 
 instance Binary UIOptions
+
+data FontDefinition =
+    FontProportional Text Int HintingMode
+  | FontMonospace Text Int HintingMode
+  | FontMapScalable Text Int HintingMode Int
+  | FontMapBitmap Text Int HintingMode Int
+  deriving (Show, Read, Generic)
+
+instance NFData FontDefinition
+
+instance Binary FontDefinition
+
+data HintingMode = HintingHeavy | HintingLight | HintingNotApplicable
+  deriving (Show, Read, Generic)
+
+instance NFData HintingMode
+
+instance Binary HintingMode
+
+data FontSet = FontSet
+  { fontMapScalable :: Text
+  , fontMapBitmap   :: Text
+  , fontPropRegular :: Text
+  , fontPropBold    :: Text
+  , fontMono        :: Text }
+  deriving (Show, Read, Generic)
+
+instance NFData FontSet
+
+instance Binary FontSet

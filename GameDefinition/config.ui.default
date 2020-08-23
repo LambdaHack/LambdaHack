@@ -46,6 +46,7 @@ HeroName_6 = ("Christopher Flatt", "he")
 [ui]
 movementViKeys_hjklyubn = True
 movementLeftHandKeys_axwdqezc = True
+chosenFontset = "binary"
 ; The font to use for scaling SDL2 display (best by multiples of 0.5):
 ;sdlSquareFontFile = "16x16xw.woff"
 scalableFontSize = 16
@@ -89,3 +90,42 @@ overrideCmdline = ""
 gtkFontFamily = "DejaVu Sans Mono,Consolas,Courier New,Liberation Mono,Courier,FreeMono,Monospace"
 ; sdlFonSizeAdd is now ignored
 ; runStopMsgs is now ignored
+
+[fonts]
+; the long text fonts (the format is: kind name size hinting):
+binaryRegular = FontProportional "BinarySansProLH-Regular.ttf.woff" 16 HintingHeavy
+binaryBold = FontProportional "BinarySansProLH-Semibold.ttf.woff" 16 HintingHeavy
+binaryMono = FontMonospace "BinaryCodeProLH-Bold.ttf.wofff" 14 HintingHeavy
+dejavuRegular = FontProportional "DejaVuLGCSans.ttf.woff" 15 HintingHeavy
+dejavuBold = FontProportional "DejaVuLGCSans-Bold.ttf.woff" 13 HintingHeavy
+dejavuMono = FontMonospace "Hack-Bold.ttf.woff" 13 HintingHeavy
+ubuntuRegular = FontProportional "ubuntu-v14-latin-ext_latin-regular.ttf.woff" 16 HintingLight
+ubuntuBold = FontProportional "ubuntu-v14-latin-ext_latin-500.ttf.woff" 16 HintingLight
+ubuntuMono = FontMonospace "ubuntu-mono-v9-latin-ext_latin-700.ttf.woff" 16 HintingLight
+; the map fonts (the format is: kind name size hinting cellSizeAdd):
+16x16xwScalable = FontMapScalable "16x16xw.woff" 16 HintingHeavy 0
+16x16xwBitmap = FontMapBitmap "16x16xw.bdf" 16 HintingNotApplicable 0
+8x8xbBitmap = FontMapBitmap "8x8xb.fnt" 8 HintingNotApplicable 2
+8x8xBitmap = FontMapBitmap "8x8x.fnt" 8 HintingNotApplicable 2
+
+[fontsets]
+; best proportional:
+binary = FontSet {fontMapScalable = "16x16xwScalable", fontMapBitmap = "16x16xwBitmap", fontPropRegular = "binaryRegular", fontPropBold = "binaryBold", fontMono = "binaryMono"}
+dejavuBold = FontSet {fontMapScalable = "16x16xwScalable", fontMapBitmap = "16x16xwBitmap", fontPropRegular = "dejavuBold", fontPropBold = "dejavuBold", fontMono = "dejavuMono"}
+ubuntuThin = FontSet {fontMapScalable = "16x16xwScalable", fontMapBitmap = "16x16xwBitmap", fontPropRegular = "ubuntuRegular", fontPropBold = "ubuntuRegular", fontMono = "ubuntuMono"}
+
+; decent proportional:
+binaryBold = FontSet {fontMapScalable = "16x16xwScalable", fontMapBitmap = "16x16xwBitmap", fontPropRegular = "binaryBold", fontPropBold = "binaryBold", fontMono = "binaryMono"}
+dejavu = FontSet {fontMapScalable = "16x16xwScalable", fontMapBitmap = "16x16xwBitmap", fontPropRegular = "dejavuRegular", fontPropBold = "dejavuBold", fontMono = "dejavuMono"}
+ubuntu = FontSet {fontMapScalable = "16x16xwScalable", fontMapBitmap = "16x16xwBitmap", fontPropRegular = "ubuntuRegular", fontPropBold = "ubuntuBold", fontMono = "ubuntuMono"}
+ubuntuBold = FontSet {fontMapScalable = "16x16xwScalable", fontMapBitmap = "16x16xwBitmap", fontPropRegular = "ubuntuBold", fontPropBold = "ubuntuBold", fontMono = "ubuntuMono"}
+
+; monospace:
+binaryMono = FontSet {fontMapScalable = "16x16xwScalable", fontMapBitmap = "16x16xwBitmap", fontPropRegular = "binaryMono", fontPropBold = "binaryMono", fontMono = "binaryMono"}
+dejavuMono = FontSet {fontMapScalable = "16x16xwScalable", fontMapBitmap = "16x16xwBitmap", fontPropRegular = "dejavuMono", fontPropBold = "dejavuMono", fontMono = "dejavuMono"}
+ubuntuMono = FontSet {fontMapScalable = "16x16xwScalable", fontMapBitmap = "16x16xwBitmap", fontPropRegular = "ubuntuMono", fontPropBold = "ubuntuMono", fontMono = "ubuntuMono"}
+
+; square:
+16x16xw = FontSet {fontMapScalable = "16x16xwScalable", fontMapBitmap = "16x16xwBitmap", fontPropRegular = "", fontPropBold = "", fontMono = ""}
+8x8xb = FontSet {fontMapScalable = "", fontMapBitmap = "8x8xbBitmap", fontPropRegular = "", fontPropBold = "", fontMono = ""}
+8x8x = FontSet {fontMapScalable = "", fontMapBitmap = "8x8xBitmap", fontPropRegular = "", fontPropBold = "", fontMono = ""}

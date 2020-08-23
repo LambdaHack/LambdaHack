@@ -16,6 +16,7 @@ import qualified Data.Ini as Ini
 import qualified Data.Ini.Reader as Ini
 import qualified Data.Ini.Types as Ini
 import qualified Data.Map.Strict as M
+import qualified Data.Text as T
 import           System.FilePath
 import           Text.Read
 
@@ -32,8 +33,8 @@ configError :: String -> a
 configError err = error $ "Error when parsing configuration file. Please fix config.ui.ini or remove it altogether. The details:\n" ++ err
 
 readError :: Read a => String -> a
-readError = either (configError . ("when reading a value" `showFailure`)) id
-            . readEither
+readError s = either (configError . ("when reading:\n" ++ s `showFailure`)) id
+              $ readEither s
 
 parseConfig :: Ini.Config -> UIOptions
 parseConfig cfg =
@@ -69,6 +70,7 @@ parseConfig cfg =
         in either (lookupFail optionName) id $ readEither s
       uVi = getOption "movementViKeys_hjklyubn"
       uLeftHand = getOption "movementLeftHandKeys_axwdqezc"
+      uChosenFontset = getOption "chosenFontset"
       uGtkFontFamily = getOption "gtkFontFamily"
       uSdlSquareFontFile = getOption "sdlSquareFontFile"
       uSdlPropFontSize = getOption "sdlPropFontSize"
@@ -89,6 +91,15 @@ parseConfig cfg =
       uhpWarningPercent = getOption "hpWarningPercent"
       uMessageColors = getOptionMaybe "messageColors"
       uCmdline = glueSeed $ words $ getOption "overrideCmdline"
+      uFonts =
+        let toFont (ident, fontString) = (T.pack ident, readError fontString)
+            section = Ini.allItems "fonts" cfg
+        in map toFont section
+      uFontsets =
+        let toFontSet (ident, fontSetString) =
+              (T.pack ident, readError fontSetString)
+            section = Ini.allItems "fontsets" cfg
+        in map toFontSet section
   in UIOptions{..}
 
 glueSeed :: [String] -> [String]
