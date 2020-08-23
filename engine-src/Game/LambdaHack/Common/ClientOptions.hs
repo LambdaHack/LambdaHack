@@ -15,64 +15,46 @@ import Game.LambdaHack.Common.Misc
 
 -- | Options that affect the behaviour of the client (but not game rules).
 data ClientOptions = ClientOptions
-  { schosenFontset     :: Maybe Text
+  { schosenFontset    :: Maybe Text
       -- ^ Font set chosen by the player for the whole UI.
-  , sfonts             :: [(Text, FontDefinition)]
+  , sfonts            :: [(Text, FontDefinition)]
       -- ^ Available fonts as defined in config file.
-  , sfontsets          :: [(Text, FontSet)]
+  , sfontsets         :: [(Text, FontSet)]
       -- ^ Available font sets as defined in config file.
-  , sdlSquareFontFile  :: Maybe Text
-      -- ^ Font file to use for the SDL2 main game window.
-  , sdlPropFontSize    :: Maybe Int
-      -- ^ Font size to use for the SDL2 message overlay.
-  , sdlPropFontFile    :: Maybe Text
-      -- ^ Font file to use for the SDL2 message overlay.
-  , sdlMonoFontSize    :: Maybe Int
-      -- ^ Font size to use for the SDL2 monospaced rectangular font.
-  , sdlMonoFontFile    :: Maybe Text
-      -- ^ Font file to use for the SDL2 monospaced rectangular font.
-  , sdlScalableSizeAdd :: Maybe Int
-      -- ^ Pixels to add to map cells on top of scalable font max glyph height.
-      --   To get symmetric padding, add an even number.
-  , sdlBitmapSizeAdd   :: Maybe Int
-      -- ^ Pixels to add to map cells on top of fixed font max glyph height.
-      --   To get symmetric padding, add an even number.
-  , sscalableFontSize  :: Maybe Int
-      -- ^ Font size to use for the main game window.
-  , slogPriority       :: Maybe Int
+  , slogPriority      :: Maybe Int
       -- ^ How much to log (e.g., from SDL). 1 is all, 5 is errors, the default.
-  , smaxFps            :: Maybe Double
+  , smaxFps           :: Maybe Double
       -- ^ Maximal frames per second.
       -- This is better low and fixed, to avoid jerkiness and delays
       -- that tell the player there are many intelligent enemies on the level.
       -- That's better than scaling AI sofistication down based
       -- on the FPS setting and machine speed.
-  , sdisableAutoYes    :: Bool
+  , sdisableAutoYes   :: Bool
       -- ^ Never auto-answer all prompts, even if under AI control.
-  , snoAnim            :: Maybe Bool
+  , snoAnim           :: Maybe Bool
       -- ^ Don't show any animations.
-  , snewGameCli        :: Bool
+  , snewGameCli       :: Bool
       -- ^ Start a new game, overwriting the save file.
-  , sbenchmark         :: Bool
+  , sbenchmark        :: Bool
       -- ^ Don't create directories and files and show time stats.
-  , stitle             :: Maybe String
-  , sfontDir           :: Maybe FilePath
-  , ssavePrefixCli     :: String
+  , stitle            :: Maybe String
+  , sfontDir          :: Maybe FilePath
+  , ssavePrefixCli    :: String
       -- ^ Prefix of the save game file name.
-  , sfrontendTeletype  :: Bool
+  , sfrontendTeletype :: Bool
       -- ^ Whether to use the stdout/stdin frontend.
-  , sfrontendNull      :: Bool
+  , sfrontendNull     :: Bool
       -- ^ Whether to use null (no input/output) frontend.
-  , sfrontendLazy      :: Bool
+  , sfrontendLazy     :: Bool
       -- ^ Whether to use lazy (output not even calculated) frontend.
-  , sdbgMsgCli         :: Bool
+  , sdbgMsgCli        :: Bool
       -- ^ Show clients' internal debug messages.
-  , sstopAfterSeconds  :: Maybe Int
-  , sstopAfterFrames   :: Maybe Int
-  , sprintEachScreen   :: Bool
-  , sexposePlaces      :: Bool
-  , sexposeItems       :: Bool
-  , sexposeActors      :: Bool
+  , sstopAfterSeconds :: Maybe Int
+  , sstopAfterFrames  :: Maybe Int
+  , sprintEachScreen  :: Bool
+  , sexposePlaces     :: Bool
+  , sexposeItems      :: Bool
+  , sexposeActors     :: Bool
   }
   deriving (Show, Eq, Generic)
 
@@ -84,14 +66,6 @@ defClientOptions = ClientOptions
   { schosenFontset = Nothing
   , sfonts = []
   , sfontsets = []
-  , sdlSquareFontFile = Nothing
-  , sdlPropFontSize = Nothing
-  , sdlPropFontFile = Nothing
-  , sdlMonoFontSize = Nothing
-  , sdlMonoFontFile = Nothing
-  , sdlScalableSizeAdd = Nothing
-  , sdlBitmapSizeAdd = Nothing
-  , sscalableFontSize = Nothing
   , slogPriority = Nothing
   , smaxFps = Nothing
   , sdisableAutoYes = False

@@ -71,14 +71,6 @@ parseConfig cfg =
       uVi = getOption "movementViKeys_hjklyubn"
       uLeftHand = getOption "movementLeftHandKeys_axwdqezc"
       uChosenFontset = getOption "chosenFontset"
-      uSdlSquareFontFile = getOption "sdlSquareFontFile"
-      uSdlPropFontSize = getOption "sdlPropFontSize"
-      uSdlPropFontFile = getOption "sdlPropFontFile"
-      uSdlMonoFontSize = getOption "sdlMonoFontSize"
-      uSdlMonoFontFile = getOption "sdlMonoFontFile"
-      uSdlScalableSizeAdd = getOption "sdlScalableSizeAdd"
-      uSdlBitmapSizeAdd = getOption "sdlBitmapSizeAdd"
-      uScalableFontSize = getOption "scalableFontSize"
 #ifdef USE_JSFILE
       -- Local storage quota exeeded on Chrome.
       uHistoryMax = getOption "historyMax" `div` 10
@@ -134,22 +126,6 @@ applyUIOptions COps{corule} uioptions =
         schosenFontset opts `mplus` Just (uChosenFontset uioptions)}) .
      (\opts -> opts {sfonts = uFonts uioptions}) .
      (\opts -> opts {sfontsets = uFontsets uioptions}) .
-     (\opts -> opts {sdlSquareFontFile =
-        sdlSquareFontFile opts `mplus` Just (uSdlSquareFontFile uioptions)}) .
-     (\opts -> opts {sdlPropFontSize =
-        sdlPropFontSize opts `mplus` Just (uSdlPropFontSize uioptions)}) .
-     (\opts -> opts {sdlPropFontFile =
-        sdlPropFontFile opts `mplus` Just (uSdlPropFontFile uioptions)}) .
-     (\opts -> opts {sdlMonoFontSize =
-        sdlMonoFontSize opts `mplus` Just (uSdlMonoFontSize uioptions)}) .
-     (\opts -> opts {sdlMonoFontFile =
-        sdlMonoFontFile opts `mplus` Just (uSdlMonoFontFile uioptions)}) .
-     (\opts -> opts {sdlScalableSizeAdd =
-        sdlScalableSizeAdd opts `mplus` Just (uSdlScalableSizeAdd uioptions)}) .
-     (\opts -> opts {sdlBitmapSizeAdd =
-        sdlBitmapSizeAdd opts `mplus` Just (uSdlBitmapSizeAdd uioptions)}) .
-     (\opts -> opts {sscalableFontSize =
-        sscalableFontSize opts `mplus` Just (uScalableFontSize uioptions)}) .
      (\opts -> opts {smaxFps =
         smaxFps opts `mplus` Just (uMaxFps uioptions)}) .
      (\opts -> opts {snoAnim =

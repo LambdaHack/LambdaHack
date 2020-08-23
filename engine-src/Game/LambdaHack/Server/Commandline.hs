@@ -69,14 +69,6 @@ serverOptionsP = do
   sdbgMsgSer        <- dbgMsgSerP
   sassertExplored   <- assertExploredP
   schosenFontset    <- chosenFontsetP
-  sdlSquareFontFile <- sdlSquareFontFileP
-  sdlPropFontSize   <- sdlPropFontSizeP
-  sdlPropFontFile   <- sdlPropFontFileP
-  sdlMonoFontSize   <- sdlMonoFontSizeP
-  sdlMonoFontFile   <- sdlMonoFontFileP
-  sdlScalableSizeAdd <- sdlScalableSizeAddP
-  sdlBitmapSizeAdd  <- sdlBitmapSizeAddP
-  sscalableFontSize <- scalableFontSizeP
   sfontDir          <- fontDirP
   slogPriority      <- logPriorityP
   smaxFps           <- maxFpsP
@@ -251,54 +243,6 @@ chosenFontsetP = optional $ T.pack <$>
   strOption (  long "fontset"
             <> metavar "FONTSET_ID"
             <> help "Render UI using the given fontset from config file" )
-
-sdlSquareFontFileP :: Parser (Maybe Text)
-sdlSquareFontFileP = optional $ T.pack <$>
-  strOption (  long "sdlFontFile"
-            <> metavar "FONT_FILE"
-            <> help "Use FONT_FILE for the main game window in SDL2 frontend" )
-
-sdlPropFontSizeP :: Parser (Maybe Int)
-sdlPropFontSizeP = optional $ max 0 <$>
-  option auto (  long "sdlPropFontSize"
-              <> metavar "N"
-              <> help "Use font size of N pixels for the message overlay in SDL2 frontend" )
-
-sdlPropFontFileP :: Parser (Maybe Text)
-sdlPropFontFileP = optional $ T.pack <$>
-  strOption (  long "sdlPropFontFile"
-            <> metavar "FONT_FILE"
-            <> help "Use FONT_FILE for the message overlay in SDL2 frontend" )
-
-sdlMonoFontSizeP :: Parser (Maybe Int)
-sdlMonoFontSizeP = optional $ max 0 <$>
-  option auto (  long "sdlMonoFontSize"
-              <> metavar "N"
-              <> help "Use font size of N pixels for the monospaced rectangular font in SDL2 frontend" )
-
-sdlMonoFontFileP :: Parser (Maybe Text)
-sdlMonoFontFileP = optional $ T.pack <$>
-  strOption (  long "sdlMonoFontFile"
-            <> metavar "FONT_FILE"
-            <> help "Use FONT_FILE for the monospaced rectangular font in SDL2 frontend" )
-
-sdlScalableSizeAddP :: Parser (Maybe Int)
-sdlScalableSizeAddP = optional $
-  option auto (  long "sdlScalableSizeAdd"
-              <> metavar "N"
-              <> help "Enlarge map cells by N over scalable font max height in SDL2 frontend (N may be negative)" )
-
-sdlBitmapSizeAddP :: Parser (Maybe Int)
-sdlBitmapSizeAddP = optional $
-  option auto (  long "sdlBitmapSizeAdd"
-              <> metavar "N"
-              <> help "Enlarge map cells by N on top of bitmap font max height in SDL2 frontend (N may be negative)" )
-
-scalableFontSizeP :: Parser (Maybe Int)
-scalableFontSizeP = optional $
-  option auto (  long "scalableFontSize"
-              <> metavar "N"
-              <> help "Use font size of N pixels for the main game window (interpreted differently by different graphical frontends; ignored for bitmap fonts)" )
 
 fontDirP :: Parser (Maybe FilePath)
 fontDirP = optional $

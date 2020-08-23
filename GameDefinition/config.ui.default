@@ -47,37 +47,6 @@ HeroName_6 = ("Christopher Flatt", "he")
 movementViKeys_hjklyubn = True
 movementLeftHandKeys_axwdqezc = True
 chosenFontset = "binary"
-; The font to use for scaling SDL2 display (best by multiples of 0.5):
-;sdlSquareFontFile = "16x16xw.woff"
-scalableFontSize = 16
-sdlScalableSizeAdd = 0
-sdlSquareFontFile = "16x16xw.bdf"
-;sdlPropFontSize = 16
-;sdlPropFontFile = "BinarySansProLH-Regular.ttf.woff"
-;sdlPropFontSize = 16
-;sdlPropFontFile = "BinarySansProLH-Semibold.ttf.woff"
-;sdlMonoFontSize = 14
-;sdlMonoFontFile = "BinaryCodeProLH-Bold.ttf.woff"
-;sdlPropFontSize = 15
-;sdlPropFontFile = "DejaVuLGCSans.ttf.woff"
-;sdlPropFontSize = 13
-;sdlPropFontFile = "DejaVuLGCSans-Bold.ttf.woff"
-;sdlMonoFontSize = 13
-;sdlMonoFontFile = "Hack-Bold.ttf.woff"
-;sdlPropFontSize = 16
-;sdlPropFontFile = "ubuntu-v14-latin-ext_latin-regular.ttf.woff"
-;sdlPropFontSize = 16
-;sdlPropFontFile = "ubuntu-v14-latin-ext_latin-500.ttf.woff"
-;sdlMonoFontSize = 16
-;sdlMonoFontFile = "ubuntu-mono-v9-latin-ext_latin-700.ttf.woff"
-sdlPropFontSize = 16
-sdlPropFontFile = "BinarySansProLH-Semibold.ttf.woff"
-sdlMonoFontSize = 14
-sdlMonoFontFile = "BinaryCodeProLH-Bold.ttf.woff"
-sdlBitmapSizeAdd = 0
-;sdlSquareFontFile = "8x8xb.fnt"
-;sdlSquareFontFile = "8x8x.fnt"
-;sdlBitmapSizeAdd = 2
 ; New historyMax takes effect after removal of savefiles.
 historyMax = 5000
 maxFps = 24
@@ -86,9 +55,6 @@ hpWarningPercent = 20
 ; Uncomment to make all messages white.
 ; messageColors = []
 overrideCmdline = ""
-; Legacy: monospace fonts that have fixed size regardless of boldness (on some OSes at least)
-; sdlFonSizeAdd is now ignored
-; runStopMsgs is now ignored
 
 [fonts]
 ; the long text fonts (the format is: kind name size hinting):

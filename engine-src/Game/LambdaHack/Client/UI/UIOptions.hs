@@ -21,31 +21,23 @@ import qualified Game.LambdaHack.Definition.Color as Color
 -- | Options that affect the UI of the client.
 data UIOptions = UIOptions
   { -- commands
-    uCommands           :: [(K.KM, CmdTriple)]
+    uCommands         :: [(K.KM, CmdTriple)]
     -- hero names
-  , uHeroNames          :: [(Int, (Text, Text))]
+  , uHeroNames        :: [(Int, (Text, Text))]
     -- ui
-  , uVi                 :: Bool
-  , uLeftHand           :: Bool
-  , uChosenFontset      :: Text
-  , uSdlSquareFontFile  :: Text
-  , uSdlPropFontSize    :: Int
-  , uSdlPropFontFile    :: Text
-  , uSdlMonoFontSize    :: Int
-  , uSdlMonoFontFile    :: Text
-  , uSdlScalableSizeAdd :: Int
-  , uSdlBitmapSizeAdd   :: Int
-  , uScalableFontSize   :: Int
-  , uHistoryMax         :: Int
-  , uMaxFps             :: Double
-  , uNoAnim             :: Bool
-  , uhpWarningPercent   :: Int
+  , uVi               :: Bool
+  , uLeftHand         :: Bool
+  , uChosenFontset    :: Text
+  , uHistoryMax       :: Int
+  , uMaxFps           :: Double
+  , uNoAnim           :: Bool
+  , uhpWarningPercent :: Int
       -- ^ HP percent at which warning is emitted.
-  , uMessageColors      :: Maybe [(MsgClass, Color.Color)]
-  , uCmdline            :: [String]
+  , uMessageColors    :: Maybe [(MsgClass, Color.Color)]
+  , uCmdline          :: [String]
       -- ^ Hardwired commandline arguments to process.
-  , uFonts              :: [(Text, FontDefinition)]
-  , uFontsets           :: [(Text, FontSet)]
+  , uFonts            :: [(Text, FontDefinition)]
+  , uFontsets         :: [(Text, FontSet)]
   }
   deriving (Show, Generic)
 
