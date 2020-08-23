@@ -286,8 +286,12 @@ getFontSetup = do
                            `showFailure` chosenFontsetID
         Just fs -> fs
       multiFont = Frontend.frontendName soptions == "sdl"
-                  && not ( T.null (fontPropRegular chosenFontset))
-  return $! if multiFont then multiFontSetup else singleFontSetup
+                  && not (T.null (fontPropRegular chosenFontset))
+  return $! if | not multiFont -> singleFontSetup
+               | fontPropRegular chosenFontset == fontMono chosenFontset
+                 && fontPropBold chosenFontset == fontMono chosenFontset ->
+                 monoFontSetup
+               | otherwise -> multiFontSetup
 
 scoreToSlideshow :: MonadClientUI m => Int -> Status -> m Slideshow
 scoreToSlideshow total status = do
