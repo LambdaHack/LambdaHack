@@ -57,17 +57,17 @@ drawOverlay dm onBlank ovs lid = do
   FontSetup{..} <- getFontSetup
   soptions <- getsClient soptions
   let isTeletype = Frontend.frontendName soptions == "teletype"
-      ovProp | multiFont
+      ovProp | not $ isSquareFont propFont
              = truncateOverlay False (4 * rwidth) rheight False 0 onBlank
                $ EM.findWithDefault [] propFont ovs
              | isTeletype  -- hack for debug output
              = map (second attrLine) $ concat $ EM.elems ovs
              | otherwise = []
-      ovMono = if multiFont
+      ovMono = if not $ isSquareFont monoFont
                then truncateOverlay False (2 * rwidth) rheight False 0 onBlank
                     $ EM.findWithDefault [] monoFont ovs
                else []
-      ovOther | multiFont
+      ovOther | not $ isSquareFont propFont
               = truncateOverlay True rwidth rheight True 0 onBlank
                 $ EM.findWithDefault [] squareFont ovs
                   -- no backdrop for square font, so @wipeAdjacent@
@@ -80,7 +80,7 @@ drawOverlay dm onBlank ovs lid = do
                     -- 20 needed not to leave gaps in skills menu
                     -- in the absence of backdrop
       ovBackdrop =
-        if multiFont && not onBlank
+        if not (isSquareFont propFont) && not onBlank
         then let propOutline =
                    truncateOverlay False (4 * rwidth) rheight True 0 onBlank
                    $ EM.findWithDefault [] propFont ovs

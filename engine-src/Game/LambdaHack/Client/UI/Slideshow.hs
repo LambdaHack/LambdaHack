@@ -36,20 +36,19 @@ isSquareFont _ = False
 type FontOverlayMap = EM.EnumMap DisplayFont Overlay
 
 data FontSetup = FontSetup
-  { multiFont  :: Bool
-  , squareFont :: DisplayFont
+  { squareFont :: DisplayFont
   , monoFont   :: DisplayFont
   , propFont   :: DisplayFont
   }
 
 multiFontSetup :: FontSetup
-multiFontSetup = FontSetup True SquareFont MonoFont PropFont
+multiFontSetup = FontSetup SquareFont MonoFont PropFont
 
 monoFontSetup :: FontSetup
-monoFontSetup = FontSetup True SquareFont MonoFont MonoFont
+monoFontSetup = FontSetup SquareFont MonoFont MonoFont
 
 singleFontSetup :: FontSetup
-singleFontSetup = FontSetup False SquareFont SquareFont SquareFont
+singleFontSetup = FontSetup SquareFont SquareFont SquareFont
 
 textSize :: DisplayFont -> [a] -> Int
 textSize SquareFont l = 2 * length l

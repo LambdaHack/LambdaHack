@@ -33,7 +33,6 @@ Cmd_2 = ("KP_Insert", ([CmdAim], "", ByAimMode AimModeCmd {exploration = Dashboa
 ;   "My Happy Cmd" - Is a name given to your binding, which would be dispayed
 ;                    in the help page in-game if you use 'CmdItem' from above
 
-
 [hero_names]
 HeroName_0 = ("Haskell Alvin", "he")
 HeroName_1 = ("Alonzo Barkley", "he")
