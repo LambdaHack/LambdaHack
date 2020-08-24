@@ -140,10 +140,15 @@ tieKnot serverOptions = do
   -- Avoid the bound thread that would slow down the communication.
   a <- async $ tieKnotForAsync serverOptions
                `Ex.finally` fillWorkaround
+  -- Exit on an exception without waiting for frontend to spawn.
   link a
   -- Run a (possibly void) workaround. It's needed for OSes/frontends
   -- that need to perform some actions on the main thread
   -- (not just any bound thread), e.g., newer OS X drawing with SDL2.
   join (takeMVar workaroundOnMainThreadMVar)
+  -- Wait in case frontend workaround not run on the main thread
+  -- and so we'd exit too early and end the game.
   wait a
+  -- Consume the void workaround if it was spurious to make @tieKnot@ reentrant.
+  void $ tryTakeMVar workaroundOnMainThreadMVar
 #endif
