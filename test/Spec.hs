@@ -5,7 +5,9 @@ import Prelude ()
 import Game.LambdaHack.Core.Prelude
 
 import qualified Data.Map.Strict as M
+import qualified Data.Text as T
 import           Options.Applicative
+import           System.IO.Unsafe (unsafePerformIO)
 import           Test.Tasty
 import           Test.Tasty.HUnit
 
@@ -14,10 +16,13 @@ import           Game.LambdaHack.Client.UI.Frontend.Chosen
 import qualified Game.LambdaHack.Client.UI.HumanCmd as HumanCmd
 import qualified Game.LambdaHack.Client.UI.Key as K
 import           Game.LambdaHack.Client.UI.SessionUI
+import           Game.LambdaHack.Client.UI.UIOptions
 import           Game.LambdaHack.Client.UI.UIOptionsParse
+import qualified Game.LambdaHack.Content.RuleKind as RK
 import           Game.LambdaHack.Server
 
 import qualified Client.UI.Content.Input as Content.Input
+import qualified Content.RuleKind
 import           TieKnot
 
 import SessionUIMock
@@ -288,18 +293,23 @@ macroTests = testGroup "macroTests" $
      ]
 
 integrationTests :: TestTree
-integrationTests = testGroup "integrationTests"
+integrationTests = testGroup "integrationTests" $
   [ testCase "Null frontend; 50 frames" $ do
-      let args = glueSeed $ words "--dbgMsgSer --logPriority 4 --newGame 1 --noAnim --maxFps 100000 --frontendNull --benchmark --stopAfterFrames 50 --automateAll --keepAutomated --gameMode crawl --setDungeonRng SMGen 123 123 --setMainRng SMGen 123 123"
+      let args = glueSeed $ words "--dbgMsgSer --logPriority 4 --newGame 1 --noAnim --maxFps 100000 --frontendNull --benchmark --stopAfterFrames 5 --automateAll --keepAutomated --gameMode crawl --setDungeonRng SMGen 123 123 --setMainRng SMGen 123 123"
       serverOptions <- handleParseResult $ execParserPure defaultPrefs serverOptionsPI args
       tieKnot serverOptions
-  , testCase "SDL fronted; init only" $
-      when (frontendName == "sdl") $ do
-        -- This test only works when run from the same directory that
-        -- the .cabal files is in. And this is what Debian needs, so OK.
-        -- The hacky log priority 0 tells SDL frontend to init and quit at once,
-        -- for testing on CIs without graphics access.
-        let args2 = glueSeed $ words "--fontDir GameDefinition/fonts --dbgMsgSer --logPriority 0 --newGame 3 --maxFps 100000 --benchmark --stopAfterFrames 50 --automateAll --keepAutomated --gameMode battle --setDungeonRng SMGen 125 125 --setMainRng SMGen 125 125"
-        serverOptions2 <- handleParseResult $ execParserPure defaultPrefs serverOptionsPI args2
-        tieKnot serverOptions2
   ]
+  ++
+  let corule = RK.makeData Content.RuleKind.standardRules
+      uiOptions = unsafePerformIO $ mkUIOptions corule True
+      testFontset fontsetName =
+        testCase ("SDL fronted; init only; " ++ fontsetName ++ " fontset") $
+          when (frontendName == "sdl") $ do
+            -- This test only works when run from the same directory that
+            -- the .cabal files is in. And this is what Debian needs, so OK.
+            -- The hacky log priority 0 tells SDL frontend to init
+            -- and quit at once, for testing on CIs without graphics access.
+            let args2 = glueSeed $ words $ "--fontDir GameDefinition/fonts --dbgMsgSer --logPriority 0 --newGame 3 --maxFps 100000 --benchmark --stopAfterFrames 5 --automateAll --keepAutomated --gameMode battle --setDungeonRng SMGen 125 125 --setMainRng SMGen 125 125 --fontset " ++ fontsetName
+            serverOptions2 <- handleParseResult $ execParserPure defaultPrefs serverOptionsPI args2
+            tieKnot serverOptions2
+  in map testFontset $ map (T.unpack . fst) $ uFontsets uiOptions
