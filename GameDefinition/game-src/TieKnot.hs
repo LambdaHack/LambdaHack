@@ -113,7 +113,7 @@ tieKnotForAsync options@ServerOptions{ sallClear
   -- It is reparsed at each start of the game executable.
   -- Fail here, not inside client code, so that savefiles are not removed,
   -- because they are not the source of the failure.
-  sUIOptions <- mkUIOptions cops benchmark
+  sUIOptions <- mkUIOptions (corule cops) benchmark
   -- Client content operations containing default keypresses
   -- and command descriptions.
   let !ccui = CCUI

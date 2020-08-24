@@ -101,8 +101,8 @@ glueSeed ("SMGen" : s1 : s2 : rest) =
 glueSeed (s : rest) = s : glueSeed rest
 
 -- | Read and parse UI config file.
-mkUIOptions :: COps -> Bool -> IO UIOptions
-mkUIOptions COps{corule} benchmark = do
+mkUIOptions :: RuleContent -> Bool -> IO UIOptions
+mkUIOptions corule benchmark = do
   let cfgUIName = rcfgUIName corule
       (_, cfgUIDefault) = rcfgUIDefault corule
   dataDir <- appDataDir
