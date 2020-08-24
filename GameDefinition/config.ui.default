@@ -81,13 +81,12 @@ ubuntuMono = FontMonospace "ubuntu-mono-v9-latin-ext_latin-700.ttf.woff" 16 Hint
 ; best proportional:
 binary = FontSet {fontMapScalable = "16x16xwScalable", fontMapBitmap = "16x16xwBitmap", fontPropRegular = "binaryRegular", fontPropBold = "binaryBold", fontMono = "binaryMono"}
 dejavuBold = FontSet {fontMapScalable = "16x16xwScalable", fontMapBitmap = "16x16xwBitmap", fontPropRegular = "dejavuBold", fontPropBold = "dejavuBold", fontMono = "dejavuMono"}
-ubuntuThin = FontSet {fontMapScalable = "16x16xwScalable", fontMapBitmap = "16x16xwBitmap", fontPropRegular = "ubuntuRegular", fontPropBold = "ubuntuRegular", fontMono = "ubuntuMono"}
+ubuntu = FontSet {fontMapScalable = "16x16xwScalable", fontMapBitmap = "16x16xwBitmap", fontPropRegular = "ubuntuRegular", fontPropBold = "ubuntuBold", fontMono = "ubuntuMono"}
 
 ; decent proportional:
 binaryBold = FontSet {fontMapScalable = "16x16xwScalable", fontMapBitmap = "16x16xwBitmap", fontPropRegular = "binaryBold", fontPropBold = "binaryBold", fontMono = "binaryMono"}
 dejavu = FontSet {fontMapScalable = "16x16xwScalable", fontMapBitmap = "16x16xwBitmap", fontPropRegular = "dejavuRegular", fontPropBold = "dejavuBold", fontMono = "dejavuMono"}
-ubuntu = FontSet {fontMapScalable = "16x16xwScalable", fontMapBitmap = "16x16xwBitmap", fontPropRegular = "ubuntuRegular", fontPropBold = "ubuntuBold", fontMono = "ubuntuMono"}
-ubuntuBold = FontSet {fontMapScalable = "16x16xwScalable", fontMapBitmap = "16x16xwBitmap", fontPropRegular = "ubuntuBold", fontPropBold = "ubuntuBold", fontMono = "ubuntuMono"}
+ubuntuThin = FontSet {fontMapScalable = "16x16xwScalable", fontMapBitmap = "16x16xwBitmap", fontPropRegular = "ubuntuRegular", fontPropBold = "ubuntuRegular", fontMono = "ubuntuMono"}
 
 ; monospace:
 binaryMono = FontSet {fontMapScalable = "16x16xwScalable", fontMapBitmap = "16x16xwBitmap", fontPropRegular = "binaryMono", fontPropBold = "binaryMono", fontMono = "binaryMono"}
