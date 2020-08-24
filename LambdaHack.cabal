@@ -471,4 +471,5 @@ test-suite test
                       ,optparse-applicative
                       ,tasty >= 1.0
                       ,tasty-hunit
+                      ,text
                       ,transformers
