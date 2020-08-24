@@ -53,7 +53,7 @@ debugPossiblyPrint :: MonadClient m => Text -> m ()
 debugPossiblyPrint t = do
   sdbgMsgCli <- getsClient $ sdbgMsgCli . soptions
   when sdbgMsgCli $ liftIO $ do
-    T.hPutStrLn stdout t
+    T.hPutStr stdout $! t <> "\n"  -- hPutStrLn not atomic enough
     hFlush stdout
 
 createTabBFS :: MonadClient m => m (PA.PrimArray PointI)

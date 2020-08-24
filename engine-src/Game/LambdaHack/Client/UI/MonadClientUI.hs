@@ -82,7 +82,7 @@ import qualified Game.LambdaHack.Definition.Ability as Ability
 -- in a different terminal/window/machine.
 clientPrintUI :: MonadClientUI m => Text -> m ()
 clientPrintUI t = liftIO $ do
-  T.hPutStrLn stdout t
+  T.hPutStr stdout $! t <> "\n"  -- hPutStrLn not atomic enough
   hFlush stdout
 
 -- | The monad that gives the client access to UI operations,

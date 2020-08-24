@@ -89,20 +89,20 @@ debugPossiblyPrint :: MonadServer m => Text -> m ()
 debugPossiblyPrint t = do
   debug <- getsServer $ sdbgMsgSer . soptions
   when debug $ liftIO $ do
-    T.hPutStrLn stdout t
+    T.hPutStr stdout $! t <> "\n"  -- hPutStrLn not atomic enough
     hFlush stdout
 
 debugPossiblyPrintAndExit :: MonadServer m => Text -> m ()
 debugPossiblyPrintAndExit t = do
   debug <- getsServer $ sdbgMsgSer . soptions
   when debug $ liftIO $ do
-    T.hPutStrLn stdout t
+    T.hPutStr stdout $! t <> "\n"  -- hPutStrLn not atomic enough
     hFlush stdout
     exitFailure
 
 serverPrint :: MonadServer m => Text -> m ()
 serverPrint t = liftIO $ do
-  T.hPutStrLn stdout t
+  T.hPutStr stdout $! t <> "\n"  -- hPutStrLn not atomic enough
   hFlush stdout
 
 saveServer :: MonadServer m => m ()
@@ -115,7 +115,7 @@ saveServer = do
 -- | Dumps to stdout the RNG states from the start of the game.
 dumpRngs :: MonadServer m => RNGs -> m ()
 dumpRngs rngs = liftIO $ do
-  T.hPutStrLn stdout $ tshow rngs
+  T.hPutStr stdout $! tshow rngs <> "\n"  -- hPutStrLn not atomic enough
   hFlush stdout
 
 -- | Read the high scores dictionary. Return the empty table if no file.

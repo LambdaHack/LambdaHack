@@ -140,7 +140,7 @@ delayPrint t = do
   smgen <- SM.newSMGen
   let (delay, _) = nextRandom 10000 smgen
   threadDelay $ 100 * delay  -- try not to interleave saves with other clients
-  T.hPutStrLn stdout t
+  T.hPutStr stdout $! t <> "\n"  -- hPutStrLn not atomic enough
   hFlush stdout
 
 saveNameCli :: COps -> FactionId -> String
