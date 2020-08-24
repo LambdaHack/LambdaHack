@@ -100,3 +100,8 @@ sure they are created from TTF, not OTF fonts. Unfortunately, being TTF
 fonts and having broken hinting in the mono variant, they require
 forcing TTF.Light hinting in the SDL frontend. If ever OTF fonts
 emerge, they should be used instead (similarly compressed).
+
+Warning: the Ubuntu Font Family fonts are considered non-free by Debian
+and so we don't include them in Debian and some other GNU/Linux packages.
+If you use such a package, feel free to download the fonts from the web
+or create links to their locations in non-free Debian package fonts-ubuntu.
