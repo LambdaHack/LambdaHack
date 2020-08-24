@@ -23,9 +23,11 @@ import qualified Control.Concurrent.STM as STM
 import           Control.Monad.ST.Strict
 import           Data.IORef
 import           Data.Kind (Type)
+import qualified Data.Text.IO as T
 import qualified Data.Vector.Generic as G
 import qualified Data.Vector.Unboxed as U
 import           Data.Word
+import           System.IO (hFlush, stdout)
 
 import           Game.LambdaHack.Client.UI.Content.Screen
 import           Game.LambdaHack.Client.UI.Frame
@@ -86,6 +88,9 @@ chanFrontendIO coscreen soptions = do
       maxFps = fromMaybe defaultMaxFps $ smaxFps soptions
       delta = max 1 $ round $ intToDouble microInSec / max 0.000001 maxFps
   rf <- startup
+  when (sdbgMsgCli soptions) $ do
+    T.hPutStr stdout "Frontend startup up.\n"  -- hPutStrLn not atomic enough
+    hFlush stdout
   fautoYesRef <- newIORef $ not $ sdisableAutoYes soptions
   fdelay <- newMVar 0
   fasyncTimeout <- async $ frameTimeoutThread delta fdelay rf

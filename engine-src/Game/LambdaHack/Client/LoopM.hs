@@ -57,8 +57,12 @@ loopCli :: ( MonadClientSetup m
         => CCUI -> UIOptions -> ClientOptions -> m ()
 loopCli ccui sUIOptions clientOptions = do
   modifyClient $ \cli -> cli {soptions = clientOptions}
+  side <- getsClient sside
   hasUI <- clientHasUI
   if not hasUI then initAI else initUI ccui
+  let cliendKindText = if not hasUI then "AI" else "UI"
+  debugPossiblyPrint $ cliendKindText <+> "client"
+                       <+> tshow side <+> "started 1/4."
   -- Warning: state and client state are invalid here, e.g., sdungeon
   -- and sper are empty.
   restoredG <- tryRestore
@@ -78,12 +82,15 @@ loopCli ccui sUIOptions clientOptions = do
         sess {shistory = shistory sessR}) msessR
       return False
     _ -> return False
+  debugPossiblyPrint $ cliendKindText <+> "client"
+                       <+> tshow side <+> "started 2/4."
   -- At this point @ClientState@ not overriten dumbly and @State@ valid.
   tabA <- createTabBFS
   tabB <- createTabBFS
   modifyClient $ \cli -> cli {stabs = (tabA, tabB)}
-  side <- getsClient sside
   cmd1 <- receiveResponse
+  debugPossiblyPrint $ cliendKindText <+> "client"
+                       <+> tshow side <+> "started 3/4."
   case (restored, cmd1) of
     (True, RespUpdAtomic _ UpdResume{}) -> return ()
     (True, RespUpdAtomic _ UpdRestart{}) ->
@@ -104,8 +111,8 @@ loopCli ccui sUIOptions clientOptions = do
     _ -> error $ "unexpected command" `showFailure` (side, restored, cmd1)
   handleResponse cmd1
   -- State and client state now valid.
-  let cliendKindText = if not hasUI then "AI" else "UI"
-  debugPossiblyPrint $ cliendKindText <+> "client" <+> tshow side <+> "started."
+  debugPossiblyPrint $ cliendKindText <+> "client"
+                       <+> tshow side <+> "started 4/4."
   loop
   debugPossiblyPrint $ cliendKindText <+> "client" <+> tshow side <+> "stopped."
  where
