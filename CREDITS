@@ -44,7 +44,9 @@ at https://github.com/adobe-fonts/source-sans-pro
 and https://github.com/adobe-fonts/source-code-pro
 published with the following copyright notice:
 
-Copyright 2010-2019 Adobe (http://www.adobe.com/), with Reserved Font Name 'Source'. All Rights Reserved. Source is a trademark of Adobe in the United States and/or other countries.
+Copyright 2010-2019 Adobe (http://www.adobe.com/), with Reserved Font
+Name 'Source'. All Rights Reserved. Source is a trademark of Adobe
+in the United States and/or other countries.
 This Font Software is licensed under the SIL Open Font License, Version 1.1.
 The licence file is at GameDefinition/fonts/OFL.txt in the source code tree.
 
@@ -69,16 +71,19 @@ pyftsubset BinaryCodeProLH-Bold.ttf --unicodes="*" --flavor=woff --with-zopfli -
 Fonts DejaVuLGCSans.ttf.woff and DejaVuLGCSans-Bold.ttf.woff
 are downloaded from https://github.com/dejavu-fonts/dejavu-fonts
 and compresses with pyftsubset. Their copyright notice is
-DejaVu fonts 2.37 (c)2004-2016 DejaVu fonts team
+DejaVu fonts 2.37 (c)2004-2016 DejaVu fonts team.
 Fonts are (c) Bitstream (see below). DejaVu changes are in public domain.
-The licence file is at GameDefinition/fonts/LICENSE.DejaVu in the source code tree.
+The licence file is at GameDefinition/fonts/LICENSE.DejaVu in the source
+code tree.
 
 Font Hack-Bold.ttf.woff is downloaded from
 https://github.com/source-foundry/Hack
 and compresses with pyftsubset. Its copyright notice is
-Hack work is (c) 2018 Source Foundry Authors. MIT License
-Bitstream Vera Sans Mono (c) 2003 Bitstream, Inc. (with Reserved Font Names _Bitstream_ and _Vera_). Bitstream Vera License.
-The licence file is at GameDefinition/fonts/LICENSE.Hack in the source code tree.
+Hack work is (c) 2018 Source Foundry Authors. MIT License.
+Bitstream Vera Sans Mono (c) 2003 Bitstream, Inc. (with Reserved Font
+Names _Bitstream_ and _Vera_). Bitstream Vera License.
+The licence file is at GameDefinition/fonts/LICENSE.Hack in the source
+code tree.
 
 
 
