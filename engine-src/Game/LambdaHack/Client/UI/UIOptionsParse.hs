@@ -1,6 +1,6 @@
 -- | UI client options.
 module Game.LambdaHack.Client.UI.UIOptionsParse
-  ( mkUIOptions, glueSeed, applyUIOptions
+  ( mkUIOptions, applyUIOptions
 #ifdef EXPOSE_INTERNAL
     -- * Internal operations
   , configError, readError, parseConfig
