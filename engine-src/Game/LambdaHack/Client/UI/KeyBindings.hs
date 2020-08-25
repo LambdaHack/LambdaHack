@@ -198,26 +198,27 @@ keyHelp CCUI{ coinput=coinput@InputContent{..}
          + 6 > rheight then
         [ ( movTextEnd
           , mergeOKX
-              (mergeOKX (typesetInProp
-                         $ ["", casualDescription <+> "(1/2)", ""]
-                           ++ movBlurb1, [])
-                        (typesetInSquare $ "" : movSchema, []))
+              (mergeOKX ( typesetInMono ["", casualDescription <+> "(1/2)", ""]
+                        , [] )
+                        (mergeOKX (typesetInProp movBlurb1, [])
+                                  (typesetInSquare $ "" : movSchema, [])))
               (typesetInProp $ "" : movBlurb2, []) )
         , ( movTextEnd
           , okxs CmdMinimal
                  ( ["", casualDescription <+> "(2/2)", ""]
-                   ++ minimalBlurb ++ [""]
+                 , minimalBlurb ++ [""]
                  , [keyCaption] )
                  ([], []) ) ]
       else
         [ ( movTextEnd
           , mergeOKX
-              (mergeOKX (typesetInProp
-                         $ ["", casualDescription, ""]
-                           ++ movBlurb1, [])
-                        (typesetInSquare $ "" : movSchema, []))
+              (mergeOKX ( typesetInMono ["", casualDescription, ""]
+                        , [] )
+                        (mergeOKX (typesetInProp movBlurb1, [])
+                                  (typesetInSquare $ "" : movSchema, [])))
               (okxs CmdMinimal
-                    ( [""] ++ movBlurb2 ++ [""]
+                    ( []
+                    , [""] ++ movBlurb2 ++ [""]
                        ++ minimalBlurb ++ [""]
                     , [keyCaption] )
                     ([], [""])) ) ]
@@ -225,13 +226,13 @@ keyHelp CCUI{ coinput=coinput@InputContent{..}
         [ ( movTextEnd
           , let (ls, _) = okxs CmdMouse
                                ( ["", "Optional mouse commands", ""]
-                                 ++ mouseBasicsBlurb ++ [""]
+                               , mouseBasicsBlurb ++ [""]
                                , [mouseOverviewCaption] )
                                ([], [])
             in (ls, []) )  -- don't capture mouse wheel, etc.
         , ( movTextEnd
           , mergeOKX
-              (typesetInProp $ "" : mouseAreasMini, [])
+              (typesetInMono $ "" : mouseAreasMini, [])
               (mergeOKX
                  (okm fst K.leftButtonReleaseKM K.rightButtonReleaseKM
                       [areaCaption "Exploration"])
@@ -241,7 +242,7 @@ keyHelp CCUI{ coinput=coinput@InputContent{..}
         [ ( movTextEnd
           , let (ls, _) = okxs CmdMouse
                                ( ["", "Optional mouse commands", ""]
-                                 ++ mouseBasicsBlurb ++ [""]
+                               , mouseBasicsBlurb ++ [""]
                                , [mouseOverviewCaption] )
                                ([], [])
                 okx0 = (ls, [])  -- don't capture mouse wheel, etc.
@@ -257,38 +258,42 @@ keyHelp CCUI{ coinput=coinput@InputContent{..}
     , if catLength CmdItem + catLength CmdMove + 9 + 9 > rheight then
         [ ( movTextEnd
           , okxs CmdItem
-                 (["", categoryDescription CmdItem], ["", keyCaption])
+                 (["", categoryDescription CmdItem], [], ["", keyCaption])
                  ([], "" : itemAllEnding) )
         , ( movTextEnd
           , okxs CmdMove
-                 (["", categoryDescription CmdMove], ["", keyCaption])
+                 (["", categoryDescription CmdMove], [], ["", keyCaption])
                  (pickLeaderDescription, []) ) ]
       else
         [ ( movTextEnd
           , mergeOKX
               (okxs CmdItem
-                    (["", categoryDescription CmdItem], ["", keyCaption])
+                    (["", categoryDescription CmdItem], [], ["", keyCaption])
                     ([], "" : itemAllEnding))
               (okxs CmdMove
-                    (["", "", categoryDescription CmdMove], ["", keyCaption])
+                    ( ["", "", categoryDescription CmdMove]
+                    , []
+                    , ["", keyCaption] )
                     (pickLeaderDescription, [""])) ) ]
     , if catLength CmdAim + catLength CmdMeta + 9 > rheight then
         [ ( movTextEnd
           , okxs CmdAim
-                 (["", categoryDescription CmdAim], ["", keyCaption])
+                 (["", categoryDescription CmdAim], [], ["", keyCaption])
                  ([], []) )
         , ( lastHelpEnd
           , okxs CmdMeta
-                 (["", categoryDescription CmdMeta], ["", keyCaption])
+                 (["", categoryDescription CmdMeta], [], ["", keyCaption])
                  ([], ["", seeAlso]) ) ]
       else
         [ ( lastHelpEnd
           , mergeOKX
               (okxs CmdAim
-                    (["", categoryDescription CmdAim], ["", keyCaption])
+                    (["", categoryDescription CmdAim], [], ["", keyCaption])
                     ([], []))
               (okxs CmdMeta
-                    (["", "", categoryDescription CmdMeta], ["", keyCaption])
+                    ( ["", "", categoryDescription CmdMeta]
+                    , []
+                    , ["", keyCaption] )
                     ([], ["", seeAlso, ""])) ) ]
     ]
 
@@ -298,9 +303,10 @@ keyHelp CCUI{ coinput=coinput@InputContent{..}
 -- have very different widths.
 okxsN :: InputContent -> DisplayFont -> DisplayFont -> Int -> Int
       -> (HumanCmd -> Bool) -> Bool -> CmdCategory
-      -> ([Text], [Text]) -> ([Text], [Text]) -> OKX
+      -> ([Text], [Text], [Text]) -> ([Text], [Text]) -> OKX
 okxsN InputContent{..} keyFont descFont offset offsetCol2 greyedOut
-      showManyKeys cat (headerProp, headerMono) (footerMono, footerProp) =
+      showManyKeys cat (headerMono1, headerProp, headerMono2)
+                       (footerMono, footerProp) =
   let fmt k h = (T.singleton '\x00a0' <> k, h)
       coImage :: HumanCmd -> [K.KM]
       coImage cmd = M.findWithDefault (error $ "" `showFailure` cmd) cmd brevMap
@@ -322,10 +328,13 @@ okxsN InputContent{..} keyFont descFont offset offsetCol2 greyedOut
       f (ks, (_, (_, t2))) y =
         (ks, ( K.PointUI spLen y
              , ButtonWidth keyFont (offsetCol2 + 2 + T.length t2 - 1)))
-      kxs = zipWith f keys [offset + length headerProp + length headerMono ..]
+      kxs = zipWith f keys [offset + length headerMono1
+                                   + length headerProp
+                                   + length headerMono2 ..]
       renumberOv = map (\(K.PointUI x y, al) -> (K.PointUI x (y + offset), al))
-      ts = map (\t -> (False, ("", t))) headerProp
-           ++ map (\t -> (False, (t, ""))) headerMono
+      ts = map (\t -> (False, (t, ""))) headerMono1
+           ++ map (\t -> (False, ("", t))) headerProp
+           ++ map (\t -> (False, (t, ""))) headerMono2
            ++ map snd keys
            ++ map (\t -> (False, (t, ""))) footerMono
            ++ map (\t -> (False, ("", t))) footerProp

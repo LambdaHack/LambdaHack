@@ -1452,7 +1452,7 @@ dashboardHuman cmdSemInCxtOfKM = do
   fontSetup@FontSetup{..} <- getFontSetup
   let offsetCol2 = 2
       (ov0, kxs0) = okxsN coinput monoFont propFont 0 offsetCol2 (const False)
-                          False CmdDashboard ([], []) ([], [])
+                          False CmdDashboard ([], [], []) ([], [])
       al1 = textToAS "Dashboard"
   let splitHelp (al, okx) = splitOKX fontSetup False rwidth (rheight - 2) al
                                      [K.escKM] okx
@@ -1560,7 +1560,7 @@ itemMenuHuman cmdSemInCxtOfKM = do
               offset = 1 + maxYofOverlay (descBlurb ++ ovFound)
               (ov0, kxs0) = okxsN coinput monoFont propFont offset offsetCol2
                                   greyedOut True CmdItemMenu
-                                  ([], ["", keyCaption]) ([], [])
+                                  ([], [], ["", keyCaption]) ([], [])
               t0 = makeSentence [ MU.SubjectVerbSg (partActor bUI) "choose"
                                 , "an item", MU.Text $ ppCStoreIn fromCStore ]
               alRep = renderReport True report
