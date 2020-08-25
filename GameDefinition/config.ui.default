@@ -45,6 +45,7 @@ HeroName_6 = ("Christopher Flatt", "he")
 [ui]
 movementViKeys_hjklyubn = True
 movementLeftHandKeys_axwdqezc = True
+; recommended: "binary" or "dejavuBold" or, if not a Debian package, "ubuntu"
 chosenFontset = "binary"
 ; 1.0 means don't scale; 1.5, 2.0, 3.0 give good results, <0.7 very bad
 ; for scales < 1 try fontsets with bolder auxiliary fonts and/or HintingLight
@@ -93,7 +94,7 @@ binaryBold = FontSet {fontMapScalable = "16x16xwScalable", fontMapBitmap = "16x1
 dejavu = FontSet {fontMapScalable = "16x16xwScalable", fontMapBitmap = "16x16xwBitmap", fontPropRegular = "dejavuRegular", fontPropBold = "dejavuBold", fontMono = "dejavuMono"}
 ubuntuThin = FontSet {fontMapScalable = "16x16xwScalable", fontMapBitmap = "16x16xwBitmap", fontPropRegular = "ubuntuRegular", fontPropBold = "ubuntuRegular", fontMono = "ubuntuMono"}
 
-; monospace:
+; monospace, for people that don't like proportional or many fonts:
 binaryMono = FontSet {fontMapScalable = "16x16xwScalable", fontMapBitmap = "16x16xwBitmap", fontPropRegular = "binaryMono", fontPropBold = "binaryMono", fontMono = "binaryMono"}
 dejavuMono = FontSet {fontMapScalable = "16x16xwScalable", fontMapBitmap = "16x16xwBitmap", fontPropRegular = "dejavuMono", fontPropBold = "dejavuMono", fontMono = "dejavuMono"}
 ubuntuMono = FontSet {fontMapScalable = "16x16xwScalable", fontMapBitmap = "16x16xwBitmap", fontPropRegular = "ubuntuMono", fontPropBold = "ubuntuMono", fontMono = "ubuntuMono"}
