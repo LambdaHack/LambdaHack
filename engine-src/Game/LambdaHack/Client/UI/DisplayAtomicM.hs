@@ -217,12 +217,11 @@ displayRespUpdAtomicUI cmd = case cmd of
                       | targetIsFoe = MsgDeathGood
                       | targetIsFriend = MsgDeathBad
                       | otherwise = MsgDeath
-         if bfid b == side && not (bproj b)
-         then do
-           msgAdd msgClass msgDie
-           displayMore ColorBW "Alas!"
-         else
-           msgAdd msgClass $ msgDie <> if bproj b then "" else "\n"
+         if | bproj b -> msgAdd msgClass msgDie
+            | bfid b == side -> do
+              msgLnAdd msgClass $ msgDie <+> "Alas!"
+              displayMore ColorBW ""
+            | otherwise -> msgLnAdd msgClass msgDie
          -- We show death anims only if not dead already before this refill.
          let deathAct
                | alreadyDeadBefore =
@@ -1048,7 +1047,7 @@ quitFactionUI fid toSt manalytics = do
       isNoConfirms <- isNoConfirmsGame
       go <- if isNoConfirms
             then return False
-            else displaySpaceEsc ColorFull ""
+            else displaySpaceEsc ColorFull ""  -- short, just @startingPart@
       recordHistory
         -- we are going to exit or restart, so record and clear, but only once
       (itemBag, total) <- getsState $ calculateTotal side
@@ -1080,14 +1079,17 @@ quitFactionUI fid toSt manalytics = do
                 bUI <- getsSession $ getActorUI enemyAid
                 return $! makePhrase [MU.Capitalize (partActor bUI)] <> "?"
             let won = maybe False ((`elem` victoryOutcomes) . stOutcome) toSt
-                sp2 | not won = ""
-                    | smartUniqueEnemyCaptured =
-                  "\nOh, wait, who is this, towering behind your escaping crew?" <+> smartEnemySentence <+> "This changes everything. For everybody. Everywhere. Forever. Did you plan for this? Are you sure it was your idea? What happens now and are things under your control any more?"
-                    | smartEnemyCaptured =
-                  "\nOh, wait, who is this, hunched among your escaping crew?" <+> smartEnemySentence <+> "Suddenly, this makes your crazy story credible. Suddenly, the door of knowledge opens again. How will you play that move?"
-                    | otherwise = ""
+                (sp2, escPrompt) =
+                  if | not won -> ("", "Accept the unacceptable?")
+                     | smartUniqueEnemyCaptured ->
+                       ( "\nOh, wait, who is this, towering behind your escaping crew?" <+> smartEnemySentence <+> "This changes everything. For everybody. Everywhere. Forever. Did you plan for this? Are you sure it was your idea?"
+                       , "What happens now?" )
+                     | smartEnemyCaptured ->
+                       ( "\nOh, wait, who is this, hunched among your escaping crew?" <+> smartEnemySentence <+> "Suddenly, this makes your crazy story credible. Suddenly, the door of knowledge opens again."
+                       , "How will you play that move?" )
+                     | otherwise -> ("", "Let's see what we've got here.")
             msgAdd MsgPlot $ sp1 <> sp2
-            void $ displaySpaceEsc ColorFull ""
+            void $ displaySpaceEsc ColorFull escPrompt
         case manalytics of
           Nothing -> return ()
           Just (factionAn, generationAn) ->
@@ -1106,7 +1108,7 @@ quitFactionUI fid toSt manalytics = do
         void $ getConfirms ColorFull [K.spaceKM, K.escKM] scoreSlides
       -- The last prompt stays onscreen during shutdown, etc.
       when (not isNoConfirms || camping) $
-        void $ displaySpaceEsc ColorFull pp
+        void $ displaySpaceEsc ColorFull pp  -- these are short
     _ -> return ()
 
 displayGameOverLoot :: MonadClientUI m
@@ -1436,9 +1438,9 @@ displayRespSfxAtomicUI sfx = case sfx of
             -- Avoid "controlled by Controlled foo".
             let fidName = T.unwords $ tail $ T.words fidNameRaw
                 verb = "be no longer controlled by"
-            msgAdd MsgEffectMajor $ makeSentence
+            msgLnAdd MsgEffectMajor $ makeSentence
               [MU.SubjectVerbSg subject verb, MU.Text fidName]
-            when isOurAlive $ displayMoreKeep ColorFull ""
+            when isOurAlive $ displayMoreKeep ColorFull ""  -- Ln makes it short
           else do
             -- After domination, possibly not seen, if actor (already) not ours.
             fidSourceNameRaw <- getsState $ gname . (EM.! fidSource) . sfactionD
@@ -1527,7 +1529,7 @@ displayRespSfxAtomicUI sfx = case sfx of
             makeSentence [MU.SubjectVerbSg subject verb, object]
           -- Don't make it modal if all info remains after no longer seen.
           unless (d `elem` [IK.DetectHidden, IK.DetectExit]) $
-            displayMore ColorFull ""
+            displayMore ColorFull ""  -- the sentence short
         IK.SendFlying{} -> aidVerbMU MsgEffect aid "be sent flying"
         IK.PushActor{} -> aidVerbMU MsgEffect aid "be pushed"
         IK.PullActor{} -> aidVerbMU MsgEffect aid "be pulled"

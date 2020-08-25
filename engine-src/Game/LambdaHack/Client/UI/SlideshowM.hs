@@ -12,6 +12,7 @@ import Game.LambdaHack.Core.Prelude
 import           Data.Either
 import qualified Data.EnumMap.Strict as EM
 import qualified Data.Map.Strict as M
+import qualified Data.Text as T
 
 import           Game.LambdaHack.Client.UI.Content.Screen
 import           Game.LambdaHack.Client.UI.ContentClientUI
@@ -20,6 +21,7 @@ import           Game.LambdaHack.Client.UI.FrameM
 import           Game.LambdaHack.Client.UI.ItemSlot
 import qualified Game.LambdaHack.Client.UI.Key as K
 import           Game.LambdaHack.Client.UI.MonadClientUI
+import           Game.LambdaHack.Client.UI.Msg
 import           Game.LambdaHack.Client.UI.MsgM
 import           Game.LambdaHack.Client.UI.Overlay
 import           Game.LambdaHack.Client.UI.SessionUI
@@ -58,7 +60,7 @@ reportToSlideshowKeep keys = do
 -- Feature: if many pages, only the last SPACE exits (but first ESC).
 displaySpaceEsc :: MonadClientUI m => ColorMode -> Text -> m Bool
 displaySpaceEsc dm prompt = do
-  promptAdd0 prompt
+  unless (T.null prompt) $ msgLnAdd0 MsgPrompt prompt
   -- Two frames drawn total (unless @prompt@ very long).
   slides <- reportToSlideshow [K.spaceKM, K.escKM]
   km <- getConfirms dm [K.spaceKM, K.escKM] slides
@@ -68,14 +70,14 @@ displaySpaceEsc dm prompt = do
 -- Feature: if many pages, only the last SPACE exits (but first ESC).
 displayMore :: MonadClientUI m => ColorMode -> Text -> m ()
 displayMore dm prompt = do
-  promptAdd0 prompt
+  unless (T.null prompt) $ msgLnAdd0 MsgPrompt prompt
   slides <- reportToSlideshow [K.spaceKM]
   km <- getConfirms dm [K.spaceKM, K.escKM, K.mkChar '?'] slides
   if km == K.mkChar '?' then addPressedKey $ K.mkChar '?' else return ()
 
 displayMoreKeep :: MonadClientUI m => ColorMode -> Text -> m ()
 displayMoreKeep dm prompt = do
-  promptAdd0 prompt
+  unless (T.null prompt) $ msgLnAdd0 MsgPrompt prompt
   slides <- reportToSlideshowKeep [K.spaceKM]
   km <- getConfirms dm [K.spaceKM, K.escKM, K.mkChar '?'] slides
   if km == K.mkChar '?' then addPressedKey $ K.mkChar '?' else return ()
@@ -84,7 +86,7 @@ displayMoreKeep dm prompt = do
 -- and white colours to turn player's attention to the choice.
 displayYesNo :: MonadClientUI m => ColorMode -> Text -> m Bool
 displayYesNo dm prompt = do
-  promptAdd0 prompt
+  unless (T.null prompt) $ msgLnAdd0 MsgPrompt prompt
   let yn = map K.mkChar ['y', 'n']
   slides <- reportToSlideshow yn
   km <- getConfirms dm (K.escKM : yn) slides
