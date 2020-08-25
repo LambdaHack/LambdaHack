@@ -149,10 +149,8 @@ keyHelp CCUI{ coinput=coinput@InputContent{..}
       in map caMakeChoice caCmds
     doubleIfSquare n | isSquareFont monoFont = 2 * n
                      | otherwise = n
-    okm :: (forall a. (a, a) -> a)
-        -> K.KM -> K.KM -> [Text] -> [Text]
-        -> OKX
-    okm sel key1 key2 header footer =
+    okm :: (forall a. (a, a) -> a) -> K.KM -> K.KM -> [Text] -> OKX
+    okm sel key1 key2 header =
       let kst1 = keySel sel key1
           kst2 = keySel sel key2
           f (ca1, Left km1, _) (ca2, Left km2, _) y =
@@ -163,10 +161,16 @@ keyHelp CCUI{ coinput=coinput@InputContent{..}
                              , ButtonWidth monoFont keyB )) ]
           f c d e = error $ "" `showFailure` (c, d, e)
           kxs = concat $ zipWith3 f kst1 kst2 [1 + length header..]
-          render (ca1, _, desc1) (_, _, desc2) =
-            fmm (areaDescription ca1) desc1 desc2
-          menu = zipWith render kst1 kst2
-      in (typesetInMono $ "" : header ++ menu ++ footer, kxs)
+          menuLeft = map (\(ca1, _, _) -> areaDescription ca1) kst1
+          menuMiddle = map (\(_, _, desc) -> desc) kst1
+          menuRight = map (\(_, _, desc) -> desc) kst2
+          y0 = 1 + length header
+      in ( EM.unionsWith (++)
+             [ typesetInMono $ "" : header
+             , EM.singleton monoFont $ typesetXY (2, y0) menuLeft
+             , EM.singleton propFont $ typesetXY (17, y0) menuMiddle
+             , EM.singleton propFont $ typesetXY (49, y0) menuRight ]
+         , kxs )
     typesetInSquare :: [Text] -> FontOverlayMap
     typesetInSquare = EM.singleton squareFont . offsetOverlayX
                       . map (\t -> (spLen, textToAL t))
@@ -176,6 +180,9 @@ keyHelp CCUI{ coinput=coinput@InputContent{..}
     typesetInProp :: [Text] -> FontOverlayMap
     typesetInProp = EM.singleton propFont . offsetOverlayX
                     . map (\t -> (spLen, textToAL t))
+    typesetXY :: (Int, Int) -> [Text] -> Overlay
+    typesetXY (xoffset, yoffset) =
+      map (\(y, t) -> (K.PointUI xoffset (y + yoffset), textToAL t)) . zip [0..]
     sideBySide :: [(Text, OKX)] -> [(Text, OKX)]
     sideBySide ((_t1, (ovs1, kyx1)) : (t2, (ovs2, kyx2)) : rest)
       | not $ isSquareFont propFont =
@@ -227,9 +234,9 @@ keyHelp CCUI{ coinput=coinput@InputContent{..}
               (typesetInProp $ "" : mouseAreasMini, [])
               (mergeOKX
                  (okm fst K.leftButtonReleaseKM K.rightButtonReleaseKM
-                      [areaCaption "exploration"] [])
+                      [areaCaption "Exploration"])
                  (okm snd K.leftButtonReleaseKM K.rightButtonReleaseKM
-                      [areaCaption "aiming mode"] [])) ) ]
+                      [areaCaption "Aiming Mode"])) ) ]
       else
         [ ( movTextEnd
           , let (ls, _) = okxs CmdMouse
@@ -244,9 +251,9 @@ keyHelp CCUI{ coinput=coinput@InputContent{..}
                     (typesetInProp $ "" : mouseAreasBlurb, []))
                  (mergeOKX
                     (okm fst K.leftButtonReleaseKM K.rightButtonReleaseKM
-                         [areaCaption "exploration"] [])
+                         [areaCaption "Exploration"])
                     (okm snd K.leftButtonReleaseKM K.rightButtonReleaseKM
-                         [areaCaption "aiming mode"] [] )) ) ]
+                         [areaCaption "Aiming Mode"] )) ) ]
     , if catLength CmdItem + catLength CmdMove + 9 + 9 > rheight then
         [ ( movTextEnd
           , okxs CmdItem
