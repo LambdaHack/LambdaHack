@@ -224,19 +224,28 @@ bindsPronouns MsgMeleeUs = True
 bindsPronouns MsgLongerUs = True
 bindsPronouns _ = False
 
--- Only @White@ color gets replaced by this one.
+-- The assumption is that due to the bold font used for dark colours,
+-- dark red, green, blue (RGB) are more pronouced that their bright versions.
+-- It helps that they are saturated and the bright versions are pastel.
+-- Brown is too different from yellow, so it is considered subdued,
+-- and bright pink and cyan are so jarring that their dark counterparts
+-- are comparatively less noticeable. So, the alarm colours are:
+-- Red, Green, Blue, BrYellow, BrMagenta, BrCyan and BrWhite.
+--
+-- Only initially @White@ colour in text (e.g., not highlighted @BrWhite@)
+-- gets replaced by the one indicated.
 msgColor :: MsgClass -> Color.Color
 msgColor MsgAdmin = Color.White
-msgColor MsgBecome = Color.BrBlue  -- similar color to cyan and role to Effect
-msgColor MsgNoLonger = Color.Blue
+msgColor MsgBecome = Color.Blue  -- similar color to cyan and role to Effect
+msgColor MsgNoLonger = Color.BrBlue
 msgColor MsgLongerUs = Color.White  -- not important enough
 msgColor MsgLonger = Color.White  -- not important enough
-msgColor MsgItemCreation = Color.BrBlue
-msgColor MsgItemDestruction = Color.Blue
-msgColor MsgDeathGood = Color.BrGreen
-msgColor MsgDeathBad = Color.BrRed
+msgColor MsgItemCreation = Color.Blue
+msgColor MsgItemDestruction = Color.BrBlue
+msgColor MsgDeathGood = Color.Green
+msgColor MsgDeathBad = Color.Red
 msgColor MsgDeath = Color.White
-msgColor MsgDeathThreat = Color.BrRed
+msgColor MsgDeathThreat = Color.Red
 msgColor MsgLeader = Color.White
 msgColor MsgDiplomacy = Color.BrYellow
 msgColor MsgOutcome = Color.BrWhite
@@ -245,7 +254,7 @@ msgColor MsgLandscape = Color.White
 msgColor MsgTileDisco = Color.Magenta
 msgColor MsgItemDisco = Color.BrMagenta
 msgColor MsgActorSpot = Color.White  -- too common
-msgColor MsgFirstEnemySpot = Color.Red
+msgColor MsgFirstEnemySpot = Color.BrRed
 msgColor MsgItemMove = Color.White
 msgColor MsgItemMoveNoLog = Color.White
 msgColor MsgItemMoveLog = Color.White
@@ -258,18 +267,18 @@ msgColor MsgMisc = Color.White
 msgColor MsgHeardElsewhere = Color.White
 msgColor MsgHeardClose = Color.BrYellow
 msgColor MsgHeard = Color.Brown
-msgColor MsgFocus = Color.Green
+msgColor MsgFocus = Color.BrGreen
 msgColor MsgWarning = Color.BrYellow
-msgColor MsgRangedPowerfulWe = Color.Green
-msgColor MsgRangedPowerfulUs = Color.Red
+msgColor MsgRangedPowerfulWe = Color.BrGreen
+msgColor MsgRangedPowerfulUs = Color.BrRed
 msgColor MsgRanged = Color.White
 msgColor MsgRangedUs = Color.Brown
 msgColor MsgRare = Color.Cyan
 msgColor MsgVeryRare = Color.BrCyan
-msgColor MsgMeleePowerfulWe = Color.Green
-msgColor MsgMeleePowerfulUs = Color.Red
-msgColor MsgMeleeInterestingWe = Color.Green
-msgColor MsgMeleeInterestingUs = Color.Red
+msgColor MsgMeleePowerfulWe = Color.BrGreen
+msgColor MsgMeleePowerfulUs = Color.BrRed
+msgColor MsgMeleeInterestingWe = Color.BrGreen
+msgColor MsgMeleeInterestingUs = Color.BrRed
 msgColor MsgMelee = Color.White
 msgColor MsgMeleeUs = Color.Brown
 msgColor MsgDone = Color.White
@@ -280,11 +289,11 @@ msgColor MsgSpam = Color.White
 msgColor MsgMacro = Color.White
 msgColor MsgRunStop = Color.White
 msgColor MsgPrompt = Color.White
-msgColor MsgPromptFocus = Color.Green
+msgColor MsgPromptFocus = Color.BrGreen
 msgColor MsgPromptMention = Color.Cyan
 msgColor MsgPromptWarning = Color.BrYellow
-msgColor MsgPromptThreat = Color.BrRed
-msgColor MsgPromptItem = Color.BrBlue
+msgColor MsgPromptThreat = Color.Red
+msgColor MsgPromptItem = Color.Blue
 msgColor MsgAlert = Color.BrYellow
 msgColor MsgStopPlayback = Color.BrYellow
 
