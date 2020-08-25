@@ -1819,7 +1819,7 @@ challengesMenuHuman cmdSemInCxtOfKM = do
       duplicateEOL '\n' = "\n\n"
       duplicateEOL c = T.singleton c
       blurb =
-        [ ( monoFont  -- TODO: try italics or propFont after big font changed
+        [ ( propFont
           , splitAttrString widthMono
             $ textFgToAS Color.BrBlack
             $ T.concatMap duplicateEOL (mdesc gameMode)
@@ -1828,8 +1828,11 @@ challengesMenuHuman cmdSemInCxtOfKM = do
           , splitAttrString widthMono
             $ textToAS
             $ mrules gameMode
-              <> "\n\n" <>
-              T.concatMap duplicateEOL (mreason gameMode) )
+              <> "\n\n" )
+        , ( propFont
+          , splitAttrString widthMono
+            $ textToAS
+            $ T.concatMap duplicateEOL (mreason gameMode) )
         ]
   generateMenu cmdSemInCxtOfKM blurb kds gameInfo "challenge"
 
