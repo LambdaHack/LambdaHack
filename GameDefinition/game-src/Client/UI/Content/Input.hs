@@ -239,8 +239,8 @@ standardKeysAndMouse = InputContentRaw $ map evalKeyDef $
               , "fling at enemy under pointer"
               , aimFlingCmd ))
   , ("safe7", ( [CmdInternal, CmdDashboard]
-              , "clear msgs and open main menu"
-              , ExecuteIfClear MainMenuAutoOff ))
+              , "open main menu"
+              , MainMenuAutoOff ))
   , ("safe8", ( [CmdInternal]
               , "clear msgs and cancel aiming"
               , ExecuteIfClear Cancel ))
