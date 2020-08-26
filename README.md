@@ -102,26 +102,27 @@ Screen and keyboard configuration
 The game UI can be configured via a config file.
 The default settings, the same that are built into the binary,
 are in [GameDefinition/config.ui.default](https://github.com/LambdaHack/LambdaHack/blob/master/GameDefinition/config.ui.default).
-When the game is run for the first time, the file is copied to the default
+When the game is run for the first time, the file is written to the default
 user data location, which is `~/.LambdaHack/` on Linux,
 `C:\Users\<username>\AppData\Roaming\LambdaHack\`
 (or `C:\Documents And Settings\user\Application Data\LambdaHack\`
 or something else altogether) on Windows
 and `Inspect/Application/Local Storage` under RMB menu
 when run inside the Chrome browser.
+If the user config file is outdated or corrupted, removing it guarantees
+that the new default file would be put in its place.
 
-Screen font and, consequently, window size can be changed by editing
+Screen fonts and, consequently, window size can be changed by editing
 the config file in the user data folder. The default bitmap font
-`16x16xw.bdf` covers most national characters in the Latin alphabet
-(e.g. to give custom names to player characters) and results
-in a game window of exactly 720p HD dimensions. The `8x8xb.fnt`
+`16x16xw.bdf` used for the game map covers most national characters
+in the Latin alphabet (e.g. to give custom names to player characters)
+and results in a game window of exactly 720p HD dimensions. The `8x8xb.fnt`
 bitmap font results in a tiny window and covers latin-1 characters only.
-The scalable `16x16xw.woff` font results in window sizes dependent
-on the `scalableFontSize` parameter in the config file.
-With `scalableFontSize = 16` it should look almost the same
-as the pixel-perfect `16x16xw.bdf`, with `scalableFontSize = 24`
-it's 1080p Full HD (you'd also need `sdlPropFontSize = 22`
-and `sdlMonoFontSize = 21`).
+The config file parameter `allFontsScale` permits further window size
+adjustments, automatically switching to the scalable `16x16xw.woff`
+version of the game map font. Config file option `chosenFontset` governs
+not only the main game map font, but also the shape of the rectangular fonts,
+if any, in which longer texts are overlaid over the map.
 
 If you don't have a numeric keypad, you can use the left-hand movement
 key setup (axwdqezc) or Vi editor keys (aka roguelike keys) or mouse.
