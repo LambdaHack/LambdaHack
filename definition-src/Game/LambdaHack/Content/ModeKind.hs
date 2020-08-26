@@ -6,7 +6,7 @@ module Game.LambdaHack.Content.ModeKind
   , Caves, Roster(..), Outcome(..)
   , HiCondPoly, HiSummand, HiPolynomial, HiIndeterminant(..)
   , Player(..), LeaderMode(..), AutoLeader(..)
-  , victoryOutcomes, genericEndMessages
+  , victoryOutcomes, genericEndMessages, screensave
 #ifdef EXPOSE_INTERNAL
     -- * Internal operations
   , validateSingle, validateAll
@@ -159,6 +159,14 @@ genericEndMessages =
   , (Conquer, "Can it be done in a better style, though?" )
   , (Escape, "Can it be done more efficiently, though?" )
   , (Restart, "This time for real." ) ]
+
+screensave :: AutoLeader -> ModeKind -> ModeKind
+screensave auto mk =
+  let f x@(Player{fleaderMode = LeaderAI{}}, _) = x
+      f (player, initial) = (player {fleaderMode = LeaderAI auto}, initial)
+  in mk { mroster = (mroster mk) {rosterList = map f $ rosterList $ mroster mk}
+        , mreason = "This is one of the screensaver scenarios, not available from the main menu, with all factions controlled by AI. Feel free to take over or relinquish control at any moment, but to register a legitimate high score, choose a standard scenario instead.\n" <> mreason mk
+        }
 
 -- | Catch invalid game mode kind definitions.
 validateSingle :: ModeKind -> [Text]

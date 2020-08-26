@@ -414,15 +414,6 @@ defenseEmpty = ModeKind
 
 -- * Screensaver modes
 
-screensave :: AutoLeader -> ModeKind -> ModeKind
-screensave auto mk =
-  let f [] = []
-      f ((player, initial) : rest) =
-        (player {fleaderMode = LeaderAI auto}, initial) : rest
-  in mk { mroster = (mroster mk) {rosterList = f $ rosterList $ mroster mk}
-        , mreason = "This is one of the screensaver scenarios, not available from the main menu, with all factions controlled by AI. Feel free to take over or relinquish control at any moment, but to register a legitimate high score, choose a standard scenario instead.\n" <> mreason mk
-        }
-
 screensaverRaid = screensave (AutoLeader False False) $ raid
   { mname   = "auto-raid (1)"
   , mfreq   = [(INSERT_COIN, 2), (NO_CONFIRMS, 1)]
