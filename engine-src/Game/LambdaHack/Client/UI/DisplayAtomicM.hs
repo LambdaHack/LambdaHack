@@ -447,7 +447,11 @@ displayRespUpdAtomicUI cmd = case cmd of
   UpdCoverServer{} -> error "server command leaked to client"
   UpdPerception{} -> return ()
   UpdRestart fid _ _ _ _ srandom -> do
-    modifySession $ \sess -> sess {srandomUI = srandom}
+    -- Start or take over the frontend.
+    CCUI{coscreen} <- getsSession sccui
+    soptions <- getsClient soptions
+    schanF <- chanFrontend coscreen soptions
+    modifySession $ \sess -> sess {schanF, srandomUI = srandom}
     COps{cocave, corule} <- getsState scops
     sstart <- getsSession sstart
     when (sstart == 0) resetSessionStart
@@ -502,6 +506,11 @@ displayRespUpdAtomicUI cmd = case cmd of
   UpdRestartServer{} -> return ()
   UpdResume fid _ -> do
     COps{cocave} <- getsState scops
+    -- Start or take over the frontend.
+    CCUI{coscreen} <- getsSession sccui
+    soptions <- getsClient soptions
+    schanF <- chanFrontend coscreen soptions
+    modifySession $ \sess -> sess {schanF}
     resetSessionStart
     fact <- getsState $ (EM.! fid) . sfactionD
     setFrontAutoYes $ isAIFact fact
@@ -519,7 +528,11 @@ displayRespUpdAtomicUI cmd = case cmd of
       displayMore ColorFull "\nAre you up for the challenge?"
       promptAdd0 "Prove yourself!"
   UpdResumeServer{} -> return ()
-  UpdKillExit{} -> frontendShutdown
+  UpdKillExit{} -> do
+    side <- getsClient sside
+    factionD <- getsState sfactionD
+    when (side `EM.member` factionD) $  -- the active UI client
+      frontendShutdown
   UpdWriteSave -> msgAdd MsgSpam "Saving backup."
   UpdHearFid _ distance hearMsg -> do
     mleader <- getsClient sleader
@@ -1558,7 +1571,9 @@ displayRespSfxAtomicUI sfx = case sfx of
     case mmsg of
       Just (msgClass, msg) -> msgAdd msgClass msg
       Nothing -> return ()
-  SfxRestart -> fadeOutOrIn True
+  SfxRestart -> do
+    fadeOutOrIn True
+    relinquishFrontend  -- make sure the fadeout is not interspersed with fadein
   SfxCollideTile source pos -> do
     COps{cotile} <- getsState scops
     sb <- getsState $ getActorBody source

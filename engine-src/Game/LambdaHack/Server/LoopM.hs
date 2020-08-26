@@ -708,8 +708,11 @@ dieSer aid b2 = do
 restartGame :: MonadServerAtomic m
             => m () -> m () -> Maybe (GroupName ModeKind) -> m ()
 restartGame updConn loop mgameMode = do
+  -- This goes only to the old UI client.
+  execSfxAtomic SfxRestart
   soptionsNxt <- getsServer soptionsNxt
   srandom <- getsServer srandom
+  -- Create new factions.
   s <- gameReset soptionsNxt mgameMode (Just srandom)
   -- Note how we also no longer assert exploration, because there may not be
   -- enough time left in the debug run to explore again in a new game.
@@ -718,7 +721,9 @@ restartGame updConn loop mgameMode = do
                                    , sassertExplored = Nothing }
   modifyServer $ \ser -> ser { soptionsNxt = optionsBarRngs
                              , soptions = optionsBarRngs }
+  -- This reaches only the intersection of old and new clients.
   execUpdAtomic $ UpdRestartServer s
+  -- Spawn new clients, as needed, according to new factions.
   updConn
   initPer
   reinitGame

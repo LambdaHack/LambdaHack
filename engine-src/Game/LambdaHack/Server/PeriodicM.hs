@@ -406,9 +406,7 @@ endOrLoop loop restart = do
     modifyServer $ \ser -> ser {swriteSave = False}
     writeSaveAll True
   if | gameOver && sstopAfterGameOver -> gameExit
-     | restartNeeded -> do
-       execSfxAtomic SfxRestart
-       restart (listToMaybe quitters)
+     | restartNeeded -> restart (listToMaybe quitters)
      | not $ null campers -> gameExit  -- and @loop@ is not called
      | otherwise -> loop  -- continue current game
 

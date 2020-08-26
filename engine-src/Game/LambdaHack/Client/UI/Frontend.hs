@@ -3,7 +3,7 @@
 -- using one of the available raw frontends and derived operations.
 module Game.LambdaHack.Client.UI.Frontend
   ( -- * Connection and initialization
-    FrontReq(..), ChanFrontend(..), chanFrontendIO
+    FrontReq(..), ChanFrontend(..), chanFrontendIO, commonChanFrontendMVar
     -- * Re-exported part of the raw frontend
   , frontendName
 #ifdef EXPOSE_INTERNAL
@@ -28,6 +28,7 @@ import qualified Data.Vector.Generic as G
 import qualified Data.Vector.Unboxed as U
 import           Data.Word
 import           System.IO (hFlush, stdout)
+import           System.IO.Unsafe (unsafePerformIO)
 
 import           Game.LambdaHack.Client.UI.Content.Screen
 import           Game.LambdaHack.Client.UI.Frame
@@ -76,27 +77,37 @@ data FrontSetup = FrontSetup
   , fdelay        :: MVar Int
   }
 
+commonChanFrontendMVar :: MVar (Maybe ChanFrontend)
+{-# NOINLINE commonChanFrontendMVar #-}
+commonChanFrontendMVar = unsafePerformIO $ newMVar Nothing
+
 -- | Initialize the frontend chosen by the player via client options.
 chanFrontendIO :: ScreenContent -> ClientOptions -> IO ChanFrontend
 chanFrontendIO coscreen soptions = do
-  let startup | sfrontendNull soptions = nullStartup coscreen
-              | sfrontendLazy soptions = lazyStartup coscreen
+  mchanFrontend <- takeMVar commonChanFrontendMVar
+  case mchanFrontend of
+    Just chanFrontend -> return chanFrontend
+    Nothing -> do
+      let startup | sfrontendNull soptions = nullStartup coscreen
+                  | sfrontendLazy soptions = lazyStartup coscreen
 #ifndef REMOVE_TELETYPE
-              | sfrontendTeletype soptions = Teletype.startup coscreen
+                  | sfrontendTeletype soptions = Teletype.startup coscreen
 #endif
-              | otherwise = Chosen.startup coscreen soptions
-      maxFps = fromMaybe defaultMaxFps $ smaxFps soptions
-      delta = max 1 $ round $ intToDouble microInSec / max 0.000001 maxFps
-  rf <- startup
-  when (sdbgMsgCli soptions) $ do
-    T.hPutStr stdout "Frontend startup up.\n"  -- hPutStrLn not atomic enough
-    hFlush stdout
-  fautoYesRef <- newIORef $ not $ sdisableAutoYes soptions
-  fdelay <- newMVar 0
-  fasyncTimeout <- async $ frameTimeoutThread delta fdelay rf
-  -- Warning: not linking @fasyncTimeout@, so it'd better not crash.
-  let fs = FrontSetup{..}
-  return $ fchanFrontend fs rf
+                  | otherwise = Chosen.startup coscreen soptions
+          maxFps = fromMaybe defaultMaxFps $ smaxFps soptions
+          delta = max 1 $ round $ intToDouble microInSec / max 0.000001 maxFps
+      rf <- startup
+      when (sdbgMsgCli soptions) $ do
+        T.hPutStr stdout "Frontend startup up.\n"
+          -- hPutStrLn not atomic enough
+        hFlush stdout
+      fautoYesRef <- newIORef $ not $ sdisableAutoYes soptions
+      fdelay <- newMVar 0
+      fasyncTimeout <- async $ frameTimeoutThread delta fdelay rf
+      -- Warning: not linking @fasyncTimeout@, so it'd better not crash.
+      let fs = FrontSetup{..}
+          chanFrontend = fchanFrontend fs rf
+      return chanFrontend
 
 -- Display a frame, wait for any of the specified keys (for any key,
 -- if the list is empty). Repeat if an unexpected key received.
