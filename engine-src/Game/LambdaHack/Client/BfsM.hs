@@ -35,6 +35,7 @@ import qualified Game.LambdaHack.Common.ItemAspect as IA
 import           Game.LambdaHack.Common.Kind
 import           Game.LambdaHack.Common.Level
 import           Game.LambdaHack.Common.MonadStateRead
+import           Game.LambdaHack.Common.Perception
 import           Game.LambdaHack.Common.Point
 import qualified Game.LambdaHack.Common.PointArray as PointArray
 import           Game.LambdaHack.Common.State
@@ -508,16 +509,27 @@ unexploredDepth !up !lidCurrent = do
 closestItems :: MonadClient m => ActorId -> m [(Int, (Point, ItemBag))]
 closestItems aid = do
   body <- getsState $ getActorBody aid
-  Level{lfloor} <- getLevel $ blid body
-  mstash <- getsState $ \s -> gstash $ sfactionD s EM.! bfid body
-  -- Don't consider own stash an ordinary pile of items.
-  -- Allied stashes are fair game, though. Even when guarded by allies,
-  -- they are circled for some time and then more or less subtly highjacked,
-  -- which is fun and makes the stronger allied factions even stronger.
-  let lfloorBarStash = case mstash of
-        Just (lid, pos) | lid == blid body -> EM.delete pos lfloor
-        _ -> lfloor
-  if EM.null lfloorBarStash then return [] else do
+  Level{lfloor, lbig} <- getLevel $ blid body
+  factionD <- getsState sfactionD
+  per <- getPerFid $ blid body
+  let canSee p = ES.member p (totalVisible per)
+  -- Don't consider items at any stash location that an actor stands over
+  -- or can stand over, but it's out of our LOS.
+  -- In case of the own stash, don't consider regardless of actors and LOS.
+  -- Own stash items are already owned, enemy stash is already targetted
+  -- and allied or neutral stashes with actors on top are unlikely
+  -- to be vacated and cause AI to wonder around forever or look up,
+  -- leave, return hopeful, find a guard, repeat.
+  let stashes = map (second gstash) $ EM.assocs factionD
+      stashToRemove :: (FactionId, Maybe (LevelId, Point)) -> [Point]
+      stashToRemove (fid, Just (lid, pos))
+        | lid == blid body
+          && (fid == bfid body || pos `EM.member` lbig || not (canSee pos)) =
+            [pos]
+      stashToRemove _ = []
+      stashesToRemove = ES.fromList $ concatMap stashToRemove stashes
+      lfloorBarStashes = EM.withoutKeys lfloor stashesToRemove
+  if EM.null lfloorBarStashes then return [] else do
     bfs <- getCacheBfs aid
     let mix pbag dist =
           let maxd = subtractBfsDistance maxBfsDistance apartBfs
@@ -527,7 +539,7 @@ closestItems aid = do
               v = (maxd * 10) `div` (dist + 1)
           in (v, pbag)
     return $! mapMaybe (\(p, bag) ->
-      mix (p, bag) <$> accessBfs bfs p) (EM.assocs lfloorBarStash)
+      mix (p, bag) <$> accessBfs bfs p) (EM.assocs lfloorBarStashes)
 
 -- | Closest (wrt paths) enemy actors.
 closestFoes :: MonadClient m
