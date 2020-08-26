@@ -1872,11 +1872,11 @@ gameScenarioIncr =
 gameRestartHuman :: MonadClientUI m => m (FailOrCmd ReqUI)
 gameRestartHuman = do
   cops <- getsState scops
-  isNoConfirms <- isNoConfirmsGame
+  noConfirmsGame <- isNoConfirmsGame
   gameMode <- getGameMode
   snxtScenario <- getsClient snxtScenario
   let nxtGameName = mname $ snd $ nxtGameMode cops snxtScenario
-  b <- if isNoConfirms
+  b <- if noConfirmsGame
        then return True
        else displayYesNo ColorBW
             $ "You just requested a new" <+> nxtGameName
@@ -1907,9 +1907,9 @@ nxtGameMode COps{comode} snxtScenario =
 -- TODO: deduplicate with gameRestartHuman
 gameQuitHuman :: MonadClientUI m => m (FailOrCmd ReqUI)
 gameQuitHuman = do
-  isNoConfirms <- isNoConfirmsGame
+  noConfirmsGame <- isNoConfirmsGame
   gameMode <- getGameMode
-  b <- if isNoConfirms
+  b <- if noConfirmsGame
        then return True
        else displayYesNo ColorBW
             $ "If you quit, the progress of the ongoing" <+> mname gameMode

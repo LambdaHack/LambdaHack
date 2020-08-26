@@ -1044,8 +1044,8 @@ quitFactionUI fid toSt manalytics = do
          else msgAdd MsgDiplomacy blurb
   case (toSt, partingPart) of
     (Just status, Just pp) -> do
-      isNoConfirms <- isNoConfirmsGame
-      go <- if isNoConfirms
+      noConfirmsGame <- isNoConfirmsGame
+      go <- if noConfirmsGame
             then return False
             else displaySpaceEsc ColorFull ""  -- short, just @startingPart@
       recordHistory
@@ -1100,14 +1100,14 @@ quitFactionUI fid toSt manalytics = do
               , displayGameOverLore SCondition sexposeItems generationAn
               , displayGameOverLore SBlast True generationAn
               , displayGameOverLore SEmbed True generationAn ]
-      unless isNoConfirms $ do
+      unless noConfirmsGame $ do
         -- Show score for any UI client after any kind of game exit,
         -- even though it's saved only for human UI clients at game over
         -- (that is not a noConfirms or benchmark game).
         scoreSlides <- scoreToSlideshow total status
         void $ getConfirms ColorFull [K.spaceKM, K.escKM] scoreSlides
       -- The last prompt stays onscreen during shutdown, etc.
-      when (not isNoConfirms || camping) $
+      when (not noConfirmsGame || camping) $
         void $ displaySpaceEsc ColorFull pp  -- these are short
     _ -> return ()
 

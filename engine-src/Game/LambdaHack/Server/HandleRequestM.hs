@@ -1100,11 +1100,11 @@ reqGameRestart :: MonadServerAtomic m
 reqGameRestart aid groupName scurChalSer = do
   -- This call to `revealItems` is really needed, because the other
   -- happens only at natural game conclusion, not at forced quitting.
-  isNoConfirms <- isNoConfirmsGame
+  noConfirmsGame <- isNoConfirmsGame
   factionD <- getsState sfactionD
   let fidsUI = map fst $ filter (\(_, fact) -> fhasUI (gplayer fact))
                                 (EM.assocs factionD)
-  unless isNoConfirms $ mapM_ revealItems fidsUI
+  unless noConfirmsGame $ mapM_ revealItems fidsUI
   -- Announcing end of game, we send lore, because game is over.
   b <- getsState $ getActorBody aid
   oldSt <- getsState $ gquit . (EM.! bfid b) . sfactionD
