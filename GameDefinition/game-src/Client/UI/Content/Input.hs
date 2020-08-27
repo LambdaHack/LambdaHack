@@ -242,21 +242,24 @@ standardKeysAndMouse = InputContentRaw $ map evalKeyDef $
               , "open main menu"
               , MainMenuAutoOff ))
   , ("safe8", ( [CmdInternal]
+              , "clear msgs and open main menu"
+              , ExecuteIfClear MainMenuAutoOff ))
+  , ("safe9", ( [CmdInternal]
               , "clear msgs and cancel aiming"
               , ExecuteIfClear Cancel ))
-  , ("safe9", ( [CmdInternal]
-              , "accept target"
-              , Accept ))
   , ("safe10", ( [CmdInternal]
+               , "accept target"
+               , Accept ))
+  , ("safe11", ( [CmdInternal]
                , "show history"
                , LastHistory ))
-  , ("safe11", ( [CmdInternal]
+  , ("safe12", ( [CmdInternal]
                , "wait a turn, bracing for impact"
                , Wait ))
-  , ("safe12", ( [CmdInternal]
+  , ("safe13", ( [CmdInternal]
                , "lurk 0.1 of a turn"
                , Wait10 ))
-  , ("safe13", ( [CmdInternal]
+  , ("safe14", ( [CmdInternal]
                , "snap crosshair to enemy"
                , XhairPointerEnemy ))
   ]
