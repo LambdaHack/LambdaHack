@@ -22,6 +22,7 @@ emptyCCUI = CCUI
   { coinput = InputContent M.empty [] M.empty
   , coscreen = ScreenContent { rwidth = 0
                              , rheight = 0
+                             , rwrap = 0
                              , rmainMenuLine = ""
                              , rintroScreen = []
                              , rapplyVerbMap = EM.empty

@@ -33,11 +33,11 @@ import qualified Game.LambdaHack.Definition.Color as Color
 overlayToSlideshow :: MonadClientUI m
                    => Int -> [K.KM] -> OKX -> m Slideshow
 overlayToSlideshow y keys okx = do
-  CCUI{coscreen=ScreenContent{rwidth}} <- getsSession sccui
+  CCUI{coscreen=ScreenContent{rwrap}} <- getsSession sccui
   report <- getReportUI
   recordHistory  -- report will be shown soon, remove it to history
   fontSetup <- getFontSetup
-  return $! splitOverlay fontSetup rwidth y report keys okx
+  return $! splitOverlay fontSetup rwrap y report keys okx
 
 -- | Split current report into a slideshow.
 reportToSlideshow :: MonadClientUI m => [K.KM] -> m Slideshow
@@ -48,12 +48,12 @@ reportToSlideshow keys = do
 -- | Split current report into a slideshow. Keep report unchanged.
 reportToSlideshowKeep :: MonadClientUI m => [K.KM] -> m Slideshow
 reportToSlideshowKeep keys = do
-  CCUI{coscreen=ScreenContent{rwidth, rheight}} <- getsSession sccui
+  CCUI{coscreen=ScreenContent{rwrap, rheight}} <- getsSession sccui
   report <- getReportUI
   -- Don't do @recordHistory@; the message is important, but related
   -- to the messages that come after, so should be shown together.
   fontSetup <- getFontSetup
-  return $! splitOverlay fontSetup rwidth (rheight - 2) report keys
+  return $! splitOverlay fontSetup rwrap (rheight - 2) report keys
                          (EM.empty, [])
 
 -- | Display a message. Return value indicates if the player wants to continue.

@@ -1788,6 +1788,7 @@ challengesMenuHuman :: MonadClientUI m
                     -> m (Either MError ReqUI)
 challengesMenuHuman cmdSemInCxtOfKM = do
   cops <- getsState scops
+  CCUI{coscreen=ScreenContent{rwrap}} <- getsSession sccui
   FontSetup{..} <- getFontSetup
   svictories <- getsClient svictories
   snxtScenario <- getsClient snxtScenario
@@ -1813,9 +1814,7 @@ challengesMenuHuman cmdSemInCxtOfKM = do
             , (K.mkKM "Escape", ("back to main menu", MainMenu)) ]
       gameInfo = map T.unpack [ "Setup and start new game:"
                               , "" ]
-      -- widthProp = if isSquareFont propFont then 42 else 82
-      -- widthMono = if isSquareFont propFont then 42 else 70
-      widthMono = if isSquareFont propFont then 42 else 79
+      widthMono = if isSquareFont propFont then 42 else rwrap
       duplicateEOL '\n' = "\n\n"
       duplicateEOL c = T.singleton c
       blurb =

@@ -767,7 +767,7 @@ allHistoryHuman = eitherHistory True
 
 eitherHistory :: forall m. MonadClientUI m => Bool -> m ()
 eitherHistory showAll = do
-  CCUI{coscreen=ScreenContent{rwidth, rheight}} <- getsSession sccui
+  CCUI{coscreen=ScreenContent{rwrap, rheight}} <- getsSession sccui
   history <- getsSession shistory
   arena <- getArenaUI
   localTime <- getsState $ getLocalTime arena
@@ -826,7 +826,7 @@ eitherHistory showAll = do
               [] -> error $ "" `showFailure` histSlot
               tR : _ -> tR
             ov0 = EM.singleton propFont $ offsetOverlay
-                  $ indentSplitAttrString rwidth timeReport
+                  $ indentSplitAttrString rwrap timeReport
             prompt = makeSentence
               [ "the", MU.Ordinal $ histSlot + 1
               , "most recent record follows" ]

@@ -19,6 +19,7 @@ standardLayoutAndFeatures :: ScreenContent
 standardLayoutAndFeatures = ScreenContent
   { rwidth = 80
   , rheight = 24
+  , rwrap = 80  -- not enough height to fit longer messages if wrapped early
   , rmainMenuLine = "<lambdahack.github.io>"
   , rintroScreen = $(do
       let path = "GameDefinition/PLAYING.md"

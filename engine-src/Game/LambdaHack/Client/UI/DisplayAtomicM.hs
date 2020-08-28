@@ -472,7 +472,7 @@ displayRespUpdAtomicUI cmd = case cmd of
           [] -> True
           [(_, 1, _)] -> True
           _ -> False
-    msgAdd MsgAdmin "----------------------------------------------------------"
+    msgAdd MsgAdmin "-------------------------------------------------"
     recordHistory
     msgAdd MsgWarning $ "New game started in" <+> mname gameMode
                         <+> "mode. Press '?' for details."
