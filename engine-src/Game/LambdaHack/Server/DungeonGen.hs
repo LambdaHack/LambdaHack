@@ -264,11 +264,18 @@ placeDownStairs object cornerPermitted serverOptions lid
       (x0, y0, x1, y1) = fromArea darea
       -- Stairs in corners often enlarge next caves, so refrain from
       -- generating stairs, if only corner available (escapes special-cased).
+      -- The bottom-right corner is exempt, becuase far from messages
+      -- Also, avoid generating stairs at all on upper and left margins
+      -- to keep subsequent small levels away from messages on top-right.
+      rx = 9  -- enough to fit smallest stairs
+      ry = 6  -- enough to fit smallest stairs
+      wx = x1 - x0 + 1
+      wy = y1 - y0 + 1
       notInCorner Point{..} =
         cornerPermitted
-        || x1 - x0 + 1 < 40 || y1 - y0 + 1 < 20  -- everything is a corner
-        || px > x0 + 9 && px < x1 - 9  -- enough to fit smallest stairs
-        || py > y0 + 6 && py < y1 - 6  -- enough to fit smallest stairs
+        || wx < 3 * rx + 3 || wy < 3 * ry + 3  -- everything is a corner
+        || px > x0 + (wx - 3) `div` 3
+           && py > y0 + (wy - 3) `div` 3
       f p = case snapToStairList 0 ps p of
         Left{} -> Nothing
         Right np -> let nnp = either id id $ snapToStairList 0 boot np
