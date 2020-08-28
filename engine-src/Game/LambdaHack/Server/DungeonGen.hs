@@ -152,8 +152,8 @@ buildLevel cops@COps{coplace, corule=RuleContent{..}} serverOptions
             -- Pick minimal cave size that fits all previous stairs.
             xspan = max (lxMax - lxMin + 1) $ cXminSize kc
             yspan = max (lyMax - lyMin + 1) $ cYminSize kc
-            x0 = min lxMin $ max (lxMax - xspan + 1) $ (rXmax - xspan) `div` 2
-            y0 = min lyMin $ max (lyMax - yspan + 1) $ (rYmax - yspan) `div` 2
+            x0 = min lxMin (rXmax - xspan)
+            y0 = min lyMin (rYmax - yspan)
         in fromMaybe (error $ "" `showFailure` kc)
            $ toArea (x0, y0, x0 + xspan - 1, y0 + yspan - 1)
       (lstairsDouble, lstairsSingleUp) = splitAt doubleDownStairs stairsFromUp
