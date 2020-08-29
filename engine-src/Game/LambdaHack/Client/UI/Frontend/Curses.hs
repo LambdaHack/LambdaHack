@@ -95,6 +95,8 @@ display coscreen FrontendSession{..} SingleFrame{singleArray} = do
                       if fg /= Color.Blue
                       then (fg, Color.Blue)
                       else (fg, Color.BrBlack)
+                    Color.HighlightBrown -> (fg, Color.Black)
+                    Color.HighlightCyan -> (fg, Color.Black)
                     Color.HighlightGrey ->
                       if fg /= Color.BrBlack
                       then (fg, Color.BrBlack)

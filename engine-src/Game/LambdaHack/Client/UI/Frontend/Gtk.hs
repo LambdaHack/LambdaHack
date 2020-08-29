@@ -59,6 +59,14 @@ startupFun coscreen ClientOptions{..} rfMVar = do
           if fg /= Color.Blue
           then (fg, Color.Blue)
           else (fg, Color.BrBlack)
+        Color.HighlightBrown ->
+          if fg /= Color.Blue
+          then (fg, Color.Brown)
+          else (fg, Color.BrBlack)
+        Color.HighlightCyan ->
+          if fg /= Color.Blue
+          then (fg, Color.Cyan)
+          else (fg, Color.BrBlack)
         Color.HighlightGrey ->
           if fg /= Color.BrBlack
           then (fg, Color.BrBlack)
