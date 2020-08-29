@@ -125,6 +125,8 @@ data Highlight =
     HighlightNone
   | HighlightGreen
   | HighlightBlue
+  | HighlightBrown
+  | HighlightCyan
   | HighlightGrey
   | HighlightWhite
   | HighlightMagenta
@@ -140,14 +142,16 @@ highlightToColor hi = case hi of
   HighlightNone -> Black  -- should be transparent, but is OK in web frontend
   HighlightGreen -> Green
   HighlightBlue -> Blue
+  HighlightBrown -> Brown
+  HighlightCyan -> Cyan
   HighlightGrey -> BrBlack
-  HighlightWhite -> White  -- bright, but no saturation, so doesn't obscure
-  HighlightMagenta -> BrMagenta  -- usually around white, so bright is fine
+  HighlightWhite -> White  -- bright, but no saturation, so doesn't obscure much
+  HighlightMagenta -> BrMagenta  -- very rare, so bright is fine
   HighlightRed -> Red
   HighlightYellow -> BrYellow  -- obscures, but mostly used around bright white
   HighlightYellowAim -> BrYellow
   HighlightRedAim -> Red
-  HighlightNoneCursor -> Black
+  HighlightNoneCursor -> Black  -- used in vty for cursor via @maxIndexByA@
 
 -- | Text attributes: foreground color and highlight.
 data Attr = Attr

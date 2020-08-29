@@ -320,8 +320,8 @@ drawFrameActor drawnLevelId = do
               bg = if | mleader == Just aid -> leaderColor
                       | bwatch == WSleep -> Color.HighlightGreen
                       | dominated -> if bfid == side  -- dominated by us
-                                     then Color.HighlightWhite
-                                     else Color.HighlightMagenta
+                                     then Color.HighlightCyan
+                                     else Color.HighlightBrown
                       | ES.member aid sselected -> Color.HighlightBlue
                       | otherwise -> Color.HighlightNone
               fg | bfid /= side || bhp <= 0 = bcolor
