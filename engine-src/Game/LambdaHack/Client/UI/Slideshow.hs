@@ -1,6 +1,6 @@
 -- | Slideshows.
 module Game.LambdaHack.Client.UI.Slideshow
-  ( DisplayFont, isSquareFont, FontOverlayMap, FontSetup(..)
+  ( DisplayFont, isSquareFont, isMonoFont, FontOverlayMap, FontSetup(..)
   , multiFontSetup, monoFontSetup, singleFontSetup, textSize
   , ButtonWidth(..), KYX, OKX, Slideshow(slideshow)
   , emptySlideshow, unsnoc, toSlideshow, maxYofOverlay, menuToSlideshow
@@ -32,6 +32,10 @@ data DisplayFont = SquareFont | MonoFont | PropFont
 isSquareFont :: DisplayFont -> Bool
 isSquareFont SquareFont = True
 isSquareFont _ = False
+
+isMonoFont :: DisplayFont -> Bool
+isMonoFont MonoFont = True
+isMonoFont _ = False
 
 type FontOverlayMap = EM.EnumMap DisplayFont Overlay
 

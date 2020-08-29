@@ -111,6 +111,7 @@ startupFun coscreen soptions@ClientOptions{..} rfMVar = do
          Just (FontProportional fname fsize fhint) -> do
            sdlFont <- loadFontFile fname fsize
            setHintMode sdlFont fhint
+           -- TODO: when SDL_ttf can do it, check that not a bitmap font
            realSize <- TTF.height sdlFont
            let !_A = assert (realSize > 0) ()  -- sanity
            return $ Just (sdlFont, realSize)

@@ -57,8 +57,9 @@ drawOverlay dm onBlank ovs lid = do
   FontSetup{..} <- getFontSetup
   soptions <- getsClient soptions
   let isTeletype = Frontend.frontendName soptions == "teletype"
+      propWidth = if isMonoFont propFont then 2 * rwidth else 4 * rwidth
       ovProp | not $ isSquareFont propFont
-             = truncateOverlay False (4 * rwidth) rheight False 0 onBlank
+             = truncateOverlay False propWidth rheight False 0 onBlank
                $ EM.findWithDefault [] propFont ovs
              | isTeletype  -- hack for debug output
              = map (second attrLine) $ concat $ EM.elems ovs
@@ -82,7 +83,7 @@ drawOverlay dm onBlank ovs lid = do
       ovBackdrop =
         if not (isSquareFont propFont) && not onBlank
         then let propOutline =
-                   truncateOverlay False (4 * rwidth) rheight True 0 onBlank
+                   truncateOverlay False propWidth rheight True 0 onBlank
                    $ EM.findWithDefault [] propFont ovs
                  monoOutline =
                    truncateOverlay False (2 * rwidth) rheight True 0 onBlank
