@@ -188,20 +188,21 @@ keysOKX displayFont ystart xstart width keys =
 
 -- The font argument is for the report and keys overlay. Others already have
 -- assigned fonts.
-splitOverlay :: FontSetup -> Int -> Int -> Report -> [K.KM] -> OKX
+splitOverlay :: FontSetup -> Int -> Int -> Int -> Report -> [K.KM] -> OKX
              -> Slideshow
-splitOverlay fontSetup width height report keys (ls0, kxs0) =
+splitOverlay fontSetup width height wrap report keys (ls0, kxs0) =
   let renderedReport = renderReport True report
       msgLong = null keys && EM.null ls0 && null kxs0
                 && length renderedReport <= 2 * width
                      -- if fits in one long line, don't wrap into short lines
-  in toSlideshow fontSetup $ splitOKX fontSetup msgLong width height
+  in toSlideshow fontSetup $ splitOKX fontSetup msgLong width height wrap
                                       renderedReport keys (ls0, kxs0)
 
 -- Note that we only split wrt @White@ space, nothing else.
-splitOKX :: FontSetup -> Bool -> Int -> Int -> AttrString -> [K.KM] -> OKX
+splitOKX :: FontSetup -> Bool -> Int -> Int -> Int -> AttrString -> [K.KM]
+         -> OKX
          -> [OKX]
-splitOKX FontSetup{..} msgLong width height reportAS keys (ls0, kxs0) =
+splitOKX FontSetup{..} msgLong width height wrap reportAS keys (ls0, kxs0) =
   assert (height > 2) $
   let reportParagraphs = linesAttr reportAS
       -- TODO: until SDL support for measuring prop font text is released,
@@ -213,15 +214,22 @@ splitOKX FontSetup{..} msgLong width height reportAS keys (ls0, kxs0) =
           [] -> ([], emptyAttrLine)
           l : rest ->
             (reverse rest, attrStringToAL $ attrLine l ++ [Color.nbspAttrW32])
+      msgWrap = if msgLong && not (isSquareFont propFont)
+                then 2 * width
+                else wrap  -- TODO if with width fits on one screen, use it
       msgWidth = if msgLong && not (isSquareFont propFont)
                  then 2 * width
                  else width
       repPrep0 = offsetOverlay
-                 $ concatMap (splitAttrString msgWidth . attrLine) repPrep
+                 $ concatMap (splitAttrString msgWrap . attrLine) repPrep
+      -- If the mono portion first on the line, let it take half width,
+      -- but if previous lines shorter, match them and only buttons
+      -- are permitted to stick out.
+      monoWidth = if null repPrep then msgWidth else msgWrap
       repMono0 = map (\(PointUI x y, al) ->
                         (PointUI x (y + length repPrep0), al))
                  $ offsetOverlay
-                 $ splitAttrString msgWidth $ attrLine repMono
+                 $ splitAttrString monoWidth $ attrLine repMono
       repWhole0 = offsetOverlay $ splitAttrString msgWidth reportAS
       repWhole1 = map (\(PointUI x y, al) -> (PointUI x (y + 1), al)) repWhole0
       lenOfRep = length repPrep0 + length repMono0
@@ -299,7 +307,7 @@ highSlideshow fontSetup@FontSetup{monoFont} width height table pos
       tts = map offsetOverlay $ showNearbyScores tz pos table entries
       al = textToAS msg
       splitScreen ts =
-        splitOKX fontSetup False width height al [K.spaceKM, K.escKM]
+        splitOKX fontSetup False width height width al [K.spaceKM, K.escKM]
                  (EM.singleton monoFont ts, [])
   in toSlideshow fontSetup $ concat $ map splitScreen tts
 

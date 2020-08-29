@@ -1413,8 +1413,8 @@ helpHuman cmdSemInCxtOfKM = do
                        $ map (\t -> (spLen, t)) blurb
                 , [] ) )
       keyH = keyHelp ccui fontSetup
-      splitHelp (t, okx) = splitOKX fontSetup True rwidth rheight (textToAS t)
-                                    [K.spaceKM, K.escKM] okx
+      splitHelp (t, okx) = splitOKX fontSetup True rwidth rheight rwidth
+                                    (textToAS t) [K.spaceKM, K.escKM] okx
       sli = toSlideshow fontSetup $ concat $ map splitHelp $ modeH : keyH
   -- Thus, the whole help menu corresponds to a single menu of item or lore,
   -- e.g., shared stash menu. This is especially clear when the shared stash
@@ -1454,8 +1454,8 @@ dashboardHuman cmdSemInCxtOfKM = do
       (ov0, kxs0) = okxsN coinput monoFont propFont 0 offsetCol2 (const False)
                           False CmdDashboard ([], [], []) ([], [])
       al1 = textToAS "Dashboard"
-  let splitHelp (al, okx) = splitOKX fontSetup False rwidth (rheight - 2) al
-                                     [K.escKM] okx
+  let splitHelp (al, okx) = splitOKX fontSetup False rwidth (rheight - 2) rwidth
+                                     al [K.escKM] okx
       sli = toSlideshow fontSetup $ splitHelp (al1, (ov0, kxs0))
       extraKeys = [K.escKM]
   ekm <- displayChoiceScreen "dashboard" ColorFull False sli extraKeys
@@ -1567,7 +1567,7 @@ itemMenuHuman cmdSemInCxtOfKM = do
               al1 | null alRep = textToAS t0
                   | otherwise = alRep ++ stringToAS "\n" ++ textToAS t0
               splitHelp (al, okx) =
-                splitOKX fontSetup False rwidth (rheight - 2) al
+                splitOKX fontSetup False rwidth (rheight - 2) rwidth al
                          [K.spaceKM, K.escKM] okx
               sli = toSlideshow fontSetup
                     $ splitHelp ( al1
@@ -1662,13 +1662,9 @@ generateMenu cmdSemInCxtOfKM blurb kds gameInfo menuName = do
       (menuOvLines, mkyxs) = unzip $ zipWith generate [0..] rawLines
       kyxs = catMaybes mkyxs
       introLen = sum $ map (length . snd) blurb
-      introWidths =  -- assume worst case, that is mono font used as prop
-        concatMap (map (textSize monoFont . attrLine) . snd) blurb
-      introMaxWidth = maximum $ 30 : introWidths
       zipAttrLines :: Int -> [AttrLine] -> (Overlay, Int)
       zipAttrLines start als =
-        ( map (first $ K.PointUI (2 * rwidth - introMaxWidth - 2))
-          $ zip [start ..] als
+        ( map (first $ K.PointUI rwidth) $ zip [start ..] als
         , start + length als )
       addOverlay :: (FontOverlayMap, Int) -> (DisplayFont, [AttrLine])
                  -> (FontOverlayMap, Int)
@@ -1721,8 +1717,8 @@ mainMenuHuman cmdSemInCxtOfKM = do
       glueLines ll = ll
       backstory | isSquareFont propFont = rintroScreen
                 | otherwise = glueLines rintroScreen
-  generateMenu cmdSemInCxtOfKM [(propFont, map stringToAL backstory)]
-               kds gameInfo "main"
+      backstoryAL = map stringToAL $ map (dropWhile (== ' ')) backstory
+  generateMenu cmdSemInCxtOfKM [(propFont, backstoryAL)] kds gameInfo "main"
 
 -- * MainMenuAutoOn
 
@@ -1788,7 +1784,7 @@ challengesMenuHuman :: MonadClientUI m
                     -> m (Either MError ReqUI)
 challengesMenuHuman cmdSemInCxtOfKM = do
   cops <- getsState scops
-  CCUI{coscreen=ScreenContent{rwrap}} <- getsSession sccui
+  CCUI{coscreen=ScreenContent{rwidth, rwrap}} <- getsSession sccui
   FontSetup{..} <- getFontSetup
   svictories <- getsClient svictories
   snxtScenario <- getsClient snxtScenario
@@ -1814,12 +1810,15 @@ challengesMenuHuman cmdSemInCxtOfKM = do
             , (K.mkKM "Escape", ("back to main menu", MainMenu)) ]
       gameInfo = map T.unpack [ "Setup and start new game:"
                               , "" ]
-      widthMono = if isSquareFont propFont then 42 else rwrap
+      widthProp = if isSquareFont propFont
+                  then rwidth `div` 2
+                  else min rwrap (rwidth - 2)
+      widthMono = if isSquareFont propFont then rwidth `div` 2 else (rwidth - 2)
       duplicateEOL '\n' = "\n\n"
       duplicateEOL c = T.singleton c
       blurb =
         [ ( propFont
-          , splitAttrString widthMono
+          , splitAttrString widthProp
             $ textFgToAS Color.BrBlack
             $ T.concatMap duplicateEOL (mdesc gameMode)
               <> "\n\n" )
@@ -1829,7 +1828,7 @@ challengesMenuHuman cmdSemInCxtOfKM = do
             $ mrules gameMode
               <> "\n\n" )
         , ( propFont
-          , splitAttrString widthMono
+          , splitAttrString widthProp
             $ textToAS
             $ T.concatMap duplicateEOL (mreason gameMode) )
         ]
