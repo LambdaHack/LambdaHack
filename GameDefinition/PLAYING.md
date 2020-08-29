@@ -7,12 +7,13 @@ The following backstory blurb is a copy of the sample game intro screen:
  illustrating the roguelike game engine
  of the same name. Playing the game
  involves exploring spooky dungeons,
- alone or in a party of fearless explorers,
- avoiding and setting up ambushes,
- hiding in shadows from the gaze
- of unspeakable horrors, discovering secret
- passages and gorgeous magical treasure
- and making creative use of it all.
+ alone or in a party of fearless
+ explorers, avoiding and setting up
+ ambushes, hiding in shadows from
+ the gaze of unspeakable horrors,
+ discovering secret passages and
+ gorgeous magical treasure and making
+ creative use of it all.
 
  The madness-inspiring abominations that
  multiply in the depths perform the same
