@@ -29,12 +29,15 @@ data ScreenContent = ScreenContent
 
 -- | Catch invalid rule kind definitions.
 validateSingle :: ScreenContent -> [Text]
-validateSingle ScreenContent{rmainMenuLine} =
-  let tsGt80 = filter ((> 80) . T.length) $ map T.pack [rmainMenuLine]
-  in case tsGt80 of
-     [] -> []
-     tGt80 : _ ->
-       ["rmainMenuArt has a line with length other than 80:" <> tGt80]
+validateSingle ScreenContent{rmainMenuLine, rintroScreen} =
+  (let tsGt80 = filter ((> 80) . T.length) $ map T.pack [rmainMenuLine]
+   in case tsGt80 of
+      [] -> []
+      tGt80 : _ -> ["rmainMenuArt has a line with length over 80:" <> tGt80])
+  ++ (let tsGt41 = filter ((> 41) . T.length) $ map T.pack rintroScreen
+      in case tsGt41 of
+         [] -> []
+         tGt41 : _ -> ["rintroScreen has a line with length over 41:" <> tGt41])
 
 makeData :: ScreenContent -> ScreenContent
 makeData sc =
