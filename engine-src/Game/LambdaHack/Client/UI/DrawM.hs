@@ -318,11 +318,11 @@ drawFrameActor drawnLevelId = do
                             then Color.HighlightYellowAim
                             else Color.HighlightYellow
               bg = if | mleader == Just aid -> leaderColor
-                      | bwatch == WSleep -> Color.HighlightGreen
+                      | bwatch == WSleep -> Color.HighlightBlue
                       | dominated -> if bfid == side  -- dominated by us
                                      then Color.HighlightCyan
                                      else Color.HighlightBrown
-                      | ES.member aid sselected -> Color.HighlightBlue
+                      | ES.member aid sselected -> Color.HighlightGreen
                       | otherwise -> Color.HighlightNone
               fg | bfid /= side || bhp <= 0 = bcolor
                  | otherwise =
@@ -801,8 +801,8 @@ drawSelected drawnLevelId width selected = do
         -- Domination not considered at all, because map already shows it
         -- and so here is the only place where selection is conveyed.
         let bg = if | mleader == Just aid -> Color.HighlightYellow
-                    | bwatch == WSleep -> Color.HighlightGreen
-                    | ES.member aid selected -> Color.HighlightBlue
+                    | bwatch == WSleep -> Color.HighlightBlue
+                    | ES.member aid selected -> Color.HighlightGreen
                     | otherwise -> Color.HighlightNone
             sattr = Color.Attr {Color.fg = bcolor, bg}
         in Color.attrCharToW32 $ Color.AttrChar sattr
