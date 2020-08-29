@@ -1351,7 +1351,7 @@ helpHuman cmdSemInCxtOfKM = do
   let width = if isSquareFont propFont then 79 else 82
       duplicateEOL '\n' = "\n\n"
       duplicateEOL c = T.singleton c
-      blurb = splitAttrString width $
+      blurb = splitAttrString (width - 1) $
         textToAS
           ("\nYou are playing the '" <> mname gameMode <> "' scenario.\n\n")
         <> textFgToAS Color.Brown
@@ -1370,7 +1370,7 @@ helpHuman cmdSemInCxtOfKM = do
              "Hints, not needed unless stuck:\n"
         <> textToAS
              (T.concatMap duplicateEOL (mhint gameMode))
-      blurbEnd = splitAttrString width $
+      blurbEnd = splitAttrString (width - 1) $
         textToAS "\nScenario endings experienced so far:\n\n"
         <> intercalate (textToAS "\n\n")
                        (map renderOutcomeMsg [minBound..maxBound])
@@ -1403,7 +1403,7 @@ helpHuman cmdSemInCxtOfKM = do
       spLen = textSize monoFont " "
       modeH = ( "Press SPACE or PGDN to advance or ESC to see the map again."
               , ( if isSquareFont propFont
-                  then EM.singleton propFont
+                  then EM.singleton squareFont
                        $ offsetOverlayX
                        $ map (\t -> (spLen, t)) $ blurb ++ blurbEnd
                   else EM.insertWith (++) propFont
