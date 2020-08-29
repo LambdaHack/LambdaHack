@@ -78,8 +78,8 @@ data MsgClass =
   | MsgItemDestruction
   | MsgDeathGood
   | MsgDeathBad
-  | MsgDeath
-  | MsgDeathThreat
+  | MsgDeathBoring
+  | MsgNearDeath
   | MsgLeader
   | MsgDiplomacy
   | MsgOutcome
@@ -244,8 +244,8 @@ msgColor MsgItemCreation = Color.Blue
 msgColor MsgItemDestruction = Color.BrBlue
 msgColor MsgDeathGood = Color.Green
 msgColor MsgDeathBad = Color.Red
-msgColor MsgDeath = Color.White
-msgColor MsgDeathThreat = Color.Red
+msgColor MsgDeathBoring = Color.White
+msgColor MsgNearDeath = Color.Red
 msgColor MsgLeader = Color.White
 msgColor MsgDiplomacy = Color.BrYellow
 msgColor MsgOutcome = Color.BrWhite

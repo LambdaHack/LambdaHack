@@ -213,10 +213,10 @@ displayRespUpdAtomicUI cmd = case cmd of
              msgDie = makeSentence [MU.SubjectVerbSg subject verbDie]
              targetIsFoe = isFoe (bfid b) tfact side
              targetIsFriend = isFriend (bfid b) tfact side
-             msgClass | bproj b = MsgDeath
+             msgClass | bproj b = MsgDeathBoring
                       | targetIsFoe = MsgDeathGood
                       | targetIsFriend = MsgDeathBad
-                      | otherwise = MsgDeath
+                      | otherwise = MsgDeathBoring
          if | bproj b -> msgAdd msgClass msgDie
             | bfid b == side -> do
               msgLnAdd msgClass $ msgDie <+> "Alas!"
@@ -252,7 +252,7 @@ displayRespUpdAtomicUI cmd = case cmd of
                previousWarning <-
                  getsState $ checkWarningHP sUIOptions aid (bhp b - hpDelta)
                unless previousWarning $
-                 aidVerbMU0 MsgDeathThreat aid
+                 aidVerbMU0 MsgNearDeath aid
                             "be down to a dangerous health level"
   UpdRefillCalm _ 0 -> return ()
   UpdRefillCalm aid calmDelta -> do
@@ -293,7 +293,7 @@ displayRespUpdAtomicUI cmd = case cmd of
           unless previousWarning $
             -- This messages is not shown if impression happens after
             -- Calm is low enough. However, this is rare and HUD shows the red.
-            aidVerbMU0 MsgDeathThreat aid
+            aidVerbMU0 MsgNearDeath aid
                        "have grown agitated and impressed enough to be in danger of defecting"
   UpdTrajectory _ _ mt ->  -- if projectile dies just after, force one frame
     when (isNothing mt) pushFrame
