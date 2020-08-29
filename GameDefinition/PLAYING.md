@@ -190,7 +190,7 @@ may be permanently lit with ambient light or not.
 Actors are marked with lower and upper case letters and with
 characters `@` and `1` through `9` (but never `0`). Player-controlled
 heroes are always bright white and at game start they are selected
-(e.g., to run together) so they have a blue highlight around their symbol.
+(e.g., to run together) so they have a green highlight around their symbol.
 If player manages to take control of animals or other actors, they retain
 their letter and color, but gain a highlight as well.
 
@@ -230,10 +230,10 @@ in its most complex form, looks as follows.
 The line starts with the list of party members, with the current pointman
 highlighted in yellow. Most commands involve only the pointman, including
 movement with keyboard or keypad or `LMB` (left mouse button).
-If more heroes are selected (highlighted in blue), they run together
+If more heroes are selected (highlighted in green), they run together
 whenever `:` or `S-LMB` (LMB while holding down Shift) over map area
 is pressed, though that's usually not a precise enough method
-of controlling a team. Any sleeping hero is highlighted in green
+of controlling a team. Any sleeping hero is highlighted in blue
 and can be woken up by yelling with `%`, which also taunts
 or stresses up nearby enemies.
 
