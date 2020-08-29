@@ -460,9 +460,9 @@ drawFrameStatus drawnLevelId = do
           speedString = displaySpeed speed ++ if unknownBonus then "?" else ""
           conditionBonus = conditionSpeedBonus $ map snd kitAssRaw
           cspeed = case compare conditionBonus 0 of
+            LT -> Color.Red
             EQ -> Color.White
             GT -> Color.Green
-            LT -> Color.Red
       return $! map (Color.attrChar2ToW32 cspeed) speedString
   let speedStatus = if length speedDisplay >= speedStatusWidth
                     then []
@@ -508,7 +508,7 @@ drawFrameStatus drawnLevelId = do
                    , "stash", MU.Car ns ]
       markSleepTgtDesc
         | mxhairWatchfulness /= Just WSleep = textToAS
-        | otherwise = textFgToAS Color.Green
+        | otherwise = textFgToAS Color.Blue
       xdetail AimMode{detailLevel} =
         "x" <> tshow (1 + fromEnum detailLevel)
       xhairName aimMode = "Crosshair" <+> xdetail aimMode
@@ -647,7 +647,7 @@ drawLeaderStatus waitT = do
               = addColor Color.BrGreen
             | otherwise = stringToAS  -- only if nothing at all noteworthy
           checkSleep body resDelta
-            | bwatch body == WSleep = addColor Color.Green
+            | bwatch body == WSleep = addColor Color.Blue
             | otherwise = checkDelta resDelta
           calmAddAttr = checkSleep b $ bcalmDelta b
           -- We only show ambient light, because in fact client can't tell
@@ -744,9 +744,9 @@ drawLeaderDamage width leader = do
                           <> if unknownBonus then "%?" else "%"
             conditionBonus = conditionMeleeBonus $ map snd kitAssRaw
             cbonus = case compare conditionBonus 0 of
+              LT -> Color.Red
               EQ -> Color.White
               GT -> Color.Green
-              LT -> Color.Red
         in map (Color.attrChar2ToW32 cbonus) tbonus
   let kitAssOnlyWeapons =
         filter (IA.checkFlag Ability.Meleeable
