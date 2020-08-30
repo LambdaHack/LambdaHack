@@ -189,7 +189,7 @@ fullscreenP :: Parser Bool
 fullscreenP =
   switch (  long "fullscreen"
          <> short 'f'
-         <> help "Start game in fullscreen mode (currently, only implemented for the SDL renderer)" )
+         <> help "Start game in fullscreen mode" )
 
 stopAfterSecsP :: Parser (Maybe Int)
 stopAfterSecsP = optional $ max 0 <$>
