@@ -196,7 +196,9 @@ startupFun coscreen soptions@ClientOptions{..} rfMVar = do
   SDL.initialize [SDL.InitVideo]
   let screenV2 = SDL.V2 (toEnum $ rwidth coscreen * boxSize)
                         (toEnum $ rheight coscreen * boxSize)
-      windowConfig = SDL.defaultWindow {SDL.windowInitialSize = screenV2}
+      windowConfig = SDL.defaultWindow
+        { SDL.windowInitialSize = screenV2
+        , SDL.windowMode = if sfullscreen then SDL.Fullscreen else SDL.Windowed }
       rendererConfig = SDL.RendererConfig
         { rendererType          = if sbenchmark
                                   then SDL.AcceleratedRenderer
@@ -205,6 +207,7 @@ startupFun coscreen soptions@ClientOptions{..} rfMVar = do
         }
   swindow <- SDL.createWindow title windowConfig
   srenderer <- SDL.createRenderer swindow (-1) rendererConfig
+  when sfullscreen (SDL.rendererLogicalSize srenderer SDL.$= Just screenV2)
   -- Display black screen ASAP to hide any garbage.
   SDL.rendererRenderTarget srenderer SDL.$= Nothing
   SDL.clear srenderer  -- clear the backbuffer
