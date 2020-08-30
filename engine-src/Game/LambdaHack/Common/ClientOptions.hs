@@ -23,6 +23,8 @@ data ClientOptions = ClientOptions
       -- ^ Available fonts as defined in config file.
   , sfontsets         :: [(Text, FontSet)]
       -- ^ Available font sets as defined in config file.
+  , sfullscreen       :: Bool
+      -- ^ Whether to start in fullscreen mode --
   , slogPriority      :: Maybe Int
       -- ^ How much to log (e.g., from SDL). 1 is all, 5 is errors, the default.
   , smaxFps           :: Maybe Double
@@ -69,6 +71,7 @@ defClientOptions = ClientOptions
   , sallFontsScale = Nothing
   , sfonts = []
   , sfontsets = []
+  , sfullscreen = False
   , slogPriority = Nothing
   , smaxFps = Nothing
   , sdisableAutoYes = False

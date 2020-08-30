@@ -45,6 +45,7 @@ serverOptionsP :: Parser ServerOptions
 serverOptionsP = do
   ~(snewGameSer, scurChalSer)
                     <- serToChallenge <$> newGameP
+  sfullscreenSer    <- fullscreenP
   knowMap           <- knowMapP
   knowEvents        <- knowEventsP
   knowItems         <- knowItemsP
@@ -86,6 +87,7 @@ serverOptionsP = do
       sclientOptions = ClientOptions
         { sfonts         = []  -- comes only from config file
         , sfontsets      = []  -- comes only from config file
+        , sfullscreen    = sfullscreenSer
         , stitle         = Nothing
         , snewGameCli    = snewGameSer
         , ssavePrefixCli = ssavePrefixSer
@@ -183,6 +185,12 @@ newGameP = optional $ max 1 <$> min difficultyBound <$>
   option auto (  long "newGame"
               <> help "Start a new game, overwriting the save file, with difficulty for all UI players set to N"
               <> metavar "N" )
+
+fullscreenP :: Parser Bool
+fullscreenP =
+  switch (  long "fullscreen"
+         <> short 'f'
+         <> help "Start game in fullscreen mode (currently, only implemented for the SDL renderer)" )
 
 stopAfterSecsP :: Parser (Maybe Int)
 stopAfterSecsP = optional $ max 0 <$>
