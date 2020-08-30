@@ -224,78 +224,93 @@ bindsPronouns MsgMeleeUs = True
 bindsPronouns MsgLongerUs = True
 bindsPronouns _ = False
 
--- The assumption is that due to the bold font used for dark colours,
--- dark red, green, blue (RGB) are more pronouced that their bright versions.
--- It helps that they are saturated and the bright versions are pastel.
--- Brown is too different from yellow, so it is considered subdued,
--- and bright pink and cyan are so jarring that their dark counterparts
--- are comparatively less noticeable. So, the alarm colours are:
--- Red, Green, Blue, BrYellow, BrMagenta, BrCyan and BrWhite.
---
 -- Only initially @White@ colour in text (e.g., not highlighted @BrWhite@)
 -- gets replaced by the one indicated.
+--
+-- See the discussion of colours and the table of colours at
+-- https://github.com/LambdaHack/LambdaHack/wiki/Display#colours
+-- Another mention of colours, concerning terrain, is in PLAYING.md manual.
+-- The manual and this code should follow the wiki.
+cVeryBadEvent, cBadEvent, cRisk, cGraveRisk, cVeryGoodEvent, cGoodEvent, cVista, cSleep, cWakeUp, cGreed, cNeutralEvent, cNeutralRareEvent, cIdentification, cPrompt, cBoring, cGameOver :: Color.Color
+cVeryBadEvent = Color.Red
+cBadEvent = Color.BrRed
+cRisk = Color.Magenta
+cGraveRisk = Color.BrMagenta
+cVeryGoodEvent = Color.Green
+cGoodEvent = Color.BrGreen
+cVista = Color.BrGreen
+cSleep = Color.Blue
+cWakeUp = Color.BrBlue
+cGreed = Color.BrBlue
+cNeutralEvent = Color.Cyan
+cNeutralRareEvent = Color.BrCyan
+cIdentification = Color.Brown
+cPrompt = Color.BrYellow
+cBoring = Color.White
+cGameOver = Color.BrWhite
+
 msgColor :: MsgClass -> Color.Color
-msgColor MsgAdmin = Color.White
-msgColor MsgBecome = Color.Blue  -- similar color to cyan and role to Effect
-msgColor MsgNoLonger = Color.BrBlue
-msgColor MsgLongerUs = Color.White  -- not important enough
-msgColor MsgLonger = Color.White  -- not important enough
-msgColor MsgItemCreation = Color.Blue
-msgColor MsgItemDestruction = Color.BrBlue
-msgColor MsgDeathGood = Color.Green
-msgColor MsgDeathBad = Color.Red
-msgColor MsgDeathBoring = Color.White
-msgColor MsgNearDeath = Color.Red
-msgColor MsgLeader = Color.White
-msgColor MsgDiplomacy = Color.BrYellow
-msgColor MsgOutcome = Color.BrWhite
-msgColor MsgPlot = Color.White
-msgColor MsgLandscape = Color.White
-msgColor MsgTileDisco = Color.Magenta
-msgColor MsgItemDisco = Color.BrMagenta
-msgColor MsgActorSpot = Color.White  -- too common
-msgColor MsgFirstEnemySpot = Color.BrRed
-msgColor MsgItemMove = Color.White
-msgColor MsgItemMoveNoLog = Color.White
-msgColor MsgItemMoveLog = Color.White
-msgColor MsgAction = Color.White
-msgColor MsgActionMinor = Color.White
-msgColor MsgEffectMajor = Color.BrCyan
-msgColor MsgEffect = Color.Cyan
-msgColor MsgEffectMinor = Color.White
-msgColor MsgMisc = Color.White
-msgColor MsgHeardElsewhere = Color.White
-msgColor MsgHeardClose = Color.BrYellow
-msgColor MsgHeard = Color.Brown
-msgColor MsgFocus = Color.BrGreen
-msgColor MsgWarning = Color.BrYellow
-msgColor MsgRangedPowerfulWe = Color.BrGreen
-msgColor MsgRangedPowerfulUs = Color.BrRed
-msgColor MsgRanged = Color.White
-msgColor MsgRangedUs = Color.Brown
-msgColor MsgRare = Color.Cyan
-msgColor MsgVeryRare = Color.BrCyan
-msgColor MsgMeleePowerfulWe = Color.BrGreen
-msgColor MsgMeleePowerfulUs = Color.BrRed
-msgColor MsgMeleeInterestingWe = Color.BrGreen
-msgColor MsgMeleeInterestingUs = Color.BrRed
-msgColor MsgMelee = Color.White
-msgColor MsgMeleeUs = Color.Brown
-msgColor MsgDone = Color.White
-msgColor MsgAtFeetMajor = Color.White
-msgColor MsgAtFeet = Color.White
-msgColor MsgNumeric = Color.White
-msgColor MsgSpam = Color.White
-msgColor MsgMacro = Color.White
-msgColor MsgRunStop = Color.White
-msgColor MsgPrompt = Color.White
-msgColor MsgPromptFocus = Color.BrGreen
-msgColor MsgPromptMention = Color.Cyan
-msgColor MsgPromptWarning = Color.BrYellow
-msgColor MsgPromptThreat = Color.Red
-msgColor MsgPromptItem = Color.Blue
-msgColor MsgAlert = Color.BrYellow
-msgColor MsgStopPlayback = Color.BrYellow
+msgColor MsgAdmin = cBoring
+msgColor MsgBecome = cSleep
+msgColor MsgNoLonger = cWakeUp
+msgColor MsgLongerUs = cBoring  -- not important enough
+msgColor MsgLonger = cBoring  -- not important enough
+msgColor MsgItemCreation = cGreed
+msgColor MsgItemDestruction = cNeutralRareEvent
+msgColor MsgDeathGood = cVeryGoodEvent
+msgColor MsgDeathBad = cVeryBadEvent
+msgColor MsgDeathBoring = cBoring
+msgColor MsgNearDeath = cGraveRisk
+msgColor MsgLeader = cBoring
+msgColor MsgDiplomacy = cPrompt
+msgColor MsgOutcome = cGameOver
+msgColor MsgPlot = cBoring
+msgColor MsgLandscape = cBoring
+msgColor MsgTileDisco = cIdentification
+msgColor MsgItemDisco = cIdentification
+msgColor MsgActorSpot = cBoring  -- too common
+msgColor MsgFirstEnemySpot = cGraveRisk
+msgColor MsgItemMove = cBoring
+msgColor MsgItemMoveNoLog = cBoring
+msgColor MsgItemMoveLog = cBoring
+msgColor MsgAction = cBoring
+msgColor MsgActionMinor = cBoring
+msgColor MsgEffectMajor = cNeutralRareEvent
+msgColor MsgEffect = cNeutralEvent
+msgColor MsgEffectMinor = cBoring
+msgColor MsgMisc = cBoring
+msgColor MsgHeardElsewhere = cBoring
+msgColor MsgHeardClose = cGraveRisk
+msgColor MsgHeard = cRisk
+msgColor MsgFocus = cVista
+msgColor MsgWarning = cGraveRisk
+msgColor MsgRangedPowerfulWe = cGoodEvent
+msgColor MsgRangedPowerfulUs = cBadEvent
+msgColor MsgRanged = cBoring
+msgColor MsgRangedUs = cRisk
+msgColor MsgRare = cNeutralEvent
+msgColor MsgVeryRare = cNeutralRareEvent
+msgColor MsgMeleePowerfulWe = cGoodEvent
+msgColor MsgMeleePowerfulUs = cBadEvent
+msgColor MsgMeleeInterestingWe = cGoodEvent
+msgColor MsgMeleeInterestingUs = cBadEvent
+msgColor MsgMelee = cBoring
+msgColor MsgMeleeUs = cRisk
+msgColor MsgDone = cBoring
+msgColor MsgAtFeetMajor = cBoring
+msgColor MsgAtFeet = cBoring
+msgColor MsgNumeric = cBoring
+msgColor MsgSpam = cBoring
+msgColor MsgMacro = cBoring
+msgColor MsgRunStop = cBoring
+msgColor MsgPrompt = cBoring
+msgColor MsgPromptFocus = cVista
+msgColor MsgPromptMention = cNeutralEvent
+msgColor MsgPromptWarning = cPrompt
+msgColor MsgPromptThreat = cRisk
+msgColor MsgPromptItem = cGreed
+msgColor MsgAlert = cPrompt
+msgColor MsgStopPlayback = cPrompt
 
 -- * Report
 
