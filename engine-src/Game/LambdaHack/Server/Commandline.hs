@@ -45,7 +45,7 @@ serverOptionsP :: Parser ServerOptions
 serverOptionsP = do
   ~(snewGameSer, scurChalSer)
                     <- serToChallenge <$> newGameP
-  sfullscreenSer    <- fullscreenP
+  sfullscreen       <- fullscreenP
   knowMap           <- knowMapP
   knowEvents        <- knowEventsP
   knowItems         <- knowItemsP
@@ -86,7 +86,6 @@ serverOptionsP = do
       sclientOptions = ClientOptions
         { sfonts         = []  -- comes only from config file
         , sfontsets      = []  -- comes only from config file
-        , sfullscreen    = sfullscreenSer
         , stitle         = Nothing
         , snewGameCli    = snewGameSer
         , ssavePrefixCli = ssavePrefixSer
