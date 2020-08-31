@@ -402,7 +402,7 @@ displayRespUpdAtomicUI cmd = case cmd of
             ++ ["suddenly" | unexpected]  -- adverb
             ++ [ MU.SubjectVerbSg subject verb
                , MU.AW $ MU.Text $ TK.tname $ okind cotile toTile ]
-      msgAdd MsgTileDisco msg
+      msgAdd (if unexpected then MsgVeryRare else MsgRare) msg
   UpdAlterExplorable lid _ -> markDisplayNeeded lid
   UpdAlterGold{} -> return ()  -- not displayed on HUD
   UpdSearchTile aid _p toTile -> do
@@ -1392,7 +1392,7 @@ displayRespSfxAtomicUI sfx = case sfx of
     let subject = MU.Text $ TK.tname $ okind cotile fromTile
         verb = "shake"
         msg = makeSentence ["the", MU.SubjectVerbSg subject verb]
-    msgAdd MsgTileDisco msg
+    msgAdd MsgRare msg
   SfxShun aid _ _ _ ->
     aidVerbMU MsgAction aid "shun it"
   SfxEffect fidSource aid effect hpDelta -> do

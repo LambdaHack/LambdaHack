@@ -231,7 +231,7 @@ bindsPronouns _ = False
 -- https://github.com/LambdaHack/LambdaHack/wiki/Display#colours
 -- Another mention of colours, concerning terrain, is in PLAYING.md manual.
 -- The manual and this code should follow the wiki.
-cVeryBadEvent, cBadEvent, cRisk, cGraveRisk, cVeryGoodEvent, cGoodEvent, cVista, cSleep, cWakeUp, cGreed, cNeutralEvent, cNeutralRareEvent, cIdentification, cPrompt, cBoring, cGameOver :: Color.Color
+cVeryBadEvent, cBadEvent, cRisk, cGraveRisk, cVeryGoodEvent, cGoodEvent, cVista, cSleep, cWakeUp, cGreed, cNeutralEvent, cRareNeutralEvent, cIdentification, cPrompt, cBoring, cGameOver :: Color.Color
 cVeryBadEvent = Color.Red
 cBadEvent = Color.BrRed
 cRisk = Color.Magenta
@@ -243,7 +243,7 @@ cSleep = Color.Blue
 cWakeUp = Color.BrBlue
 cGreed = Color.BrBlue
 cNeutralEvent = Color.Cyan
-cNeutralRareEvent = Color.BrCyan
+cRareNeutralEvent = Color.BrCyan
 cIdentification = Color.Brown
 cPrompt = Color.BrYellow
 cBoring = Color.White
@@ -256,7 +256,7 @@ msgColor MsgNoLonger = cWakeUp
 msgColor MsgLongerUs = cBoring  -- not important enough
 msgColor MsgLonger = cBoring  -- not important enough
 msgColor MsgItemCreation = cGreed
-msgColor MsgItemDestruction = cNeutralRareEvent
+msgColor MsgItemDestruction = cRareNeutralEvent
 msgColor MsgDeathGood = cVeryGoodEvent
 msgColor MsgDeathBad = cVeryBadEvent
 msgColor MsgDeathBoring = cBoring
@@ -275,7 +275,7 @@ msgColor MsgItemMoveNoLog = cBoring
 msgColor MsgItemMoveLog = cBoring
 msgColor MsgAction = cBoring
 msgColor MsgActionMinor = cBoring
-msgColor MsgEffectMajor = cNeutralRareEvent
+msgColor MsgEffectMajor = cRareNeutralEvent
 msgColor MsgEffect = cNeutralEvent
 msgColor MsgEffectMinor = cBoring
 msgColor MsgMisc = cBoring
@@ -289,7 +289,7 @@ msgColor MsgRangedPowerfulUs = cBadEvent
 msgColor MsgRanged = cBoring
 msgColor MsgRangedUs = cRisk
 msgColor MsgRare = cNeutralEvent
-msgColor MsgVeryRare = cNeutralRareEvent
+msgColor MsgVeryRare = cRareNeutralEvent
 msgColor MsgMeleePowerfulWe = cGoodEvent
 msgColor MsgMeleePowerfulUs = cBadEvent
 msgColor MsgMeleeInterestingWe = cGoodEvent
