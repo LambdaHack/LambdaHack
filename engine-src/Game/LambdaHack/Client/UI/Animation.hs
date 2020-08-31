@@ -174,8 +174,8 @@ shortDeathBody pos = Animation $ map (mzipSingleton pos)
 -- | Mark actor location animation.
 actorX :: Point -> Animation
 actorX pos = Animation $ map (mzipSingleton pos)
-  [ cSym BrRed 'X'
-  , cSym BrRed 'X'
+  [ cSym BrMagenta 'X'
+  , cSym BrMagenta 'X'
   , blank
   , blank
   ]
