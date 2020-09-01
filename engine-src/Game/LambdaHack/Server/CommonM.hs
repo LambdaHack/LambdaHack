@@ -686,7 +686,8 @@ allGroupItems store grp target = do
         maybe False (> 0) $ lookup grp $ IK.ifreq $ okind coitem itemKindId
   return $! map snd $ sortBy (comparing fst) $ filter hasGroup assocsKindId
 
-addCondition :: MonadServerAtomic m => Bool -> GroupName ItemKind -> ActorId -> m ()
+addCondition :: MonadServerAtomic m
+             => Bool -> GroupName ItemKind -> ActorId -> m ()
 addCondition verbose name aid = do
   b <- getsState $ getActorBody aid
   let c = CActor aid COrgan

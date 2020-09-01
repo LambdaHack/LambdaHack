@@ -241,7 +241,7 @@ displayRespUpdAtomicUI cmd = case cmd of
            when (bhp b >= xM (Ability.getSk Ability.SkMaxHP actorMaxSk)
                  && bhp b - hpDelta < xM (Ability.getSk Ability.SkMaxHP
                                                   actorMaxSk)) $
-             msgAdd MsgVeryRare "You recover your health fully. Any further gains will be transient."
+             msgAdd MsgNeutralEventRare "You recover your health fully. Any further gains will be transient."
          when (bfid b == side && not (bproj b)) $ do
            markDisplayNeeded (blid b)
            when (hpDelta < 0) $ do
@@ -266,7 +266,7 @@ displayRespUpdAtomicUI cmd = case cmd of
              let bPrev = b {bcalm = bcalm b - calmDelta}
              when (calmEnough b actorMaxSk
                    && not (calmEnough bPrev actorMaxSk)) $
-               msgAdd MsgRare "You are again calm enough to manage your equipment outfit."
+               msgAdd MsgNeutralEvent "You are again calm enough to manage your equipment outfit."
            markDisplayNeeded (blid b)
          | calmDelta == minusM1 -> do
            fact <- getsState $ (EM.! side) . sfactionD
@@ -402,7 +402,7 @@ displayRespUpdAtomicUI cmd = case cmd of
             ++ ["suddenly" | unexpected]  -- adverb
             ++ [ MU.SubjectVerbSg subject verb
                , MU.AW $ MU.Text $ TK.tname $ okind cotile toTile ]
-      msgAdd (if unexpected then MsgVeryRare else MsgRare) msg
+      msgAdd (if unexpected then MsgNeutralEventRare else MsgNeutralEvent) msg
   UpdAlterExplorable lid _ -> markDisplayNeeded lid
   UpdAlterGold{} -> return ()  -- not displayed on HUD
   UpdSearchTile aid _p toTile -> do
@@ -415,7 +415,7 @@ displayRespUpdAtomicUI cmd = case cmd of
                            , "that the"
                            , MU.SubjectVerbSg subject2 "be"
                            , MU.AW object ]
-    unless (subject2 == object) $ msgAdd MsgTileDisco msg
+    unless (subject2 == object) $ msgAdd MsgDiscoTile msg
   UpdHideTile{} -> return ()
   UpdSpotTile{} -> return ()
   UpdLoseTile{} -> return ()
@@ -476,7 +476,7 @@ displayRespUpdAtomicUI cmd = case cmd of
     recordHistory
     msgAdd MsgWarning $ "New game started in" <+> mname gameMode
                         <+> "mode. Press '?' for details."
-    msgAdd MsgAdmin $ mdesc gameMode
+    msgAdd MsgPlot $ mdesc gameMode
     let desc = cdesc $ okind cocave $ lkind lvl
     unless (T.null desc) $ do
       msgLnAdd MsgFocus "You take in your surroundings."
@@ -493,7 +493,7 @@ displayRespUpdAtomicUI cmd = case cmd of
       , "Scarce black motes slowly settle on the ground."
       , "The ground in the immediate area is empty, as if just swiped."
       ]
-    msgLnAdd MsgFirstEnemySpot blurb
+    msgLnAdd MsgSpotThreat blurb
     when (cwolf curChal && not loneMode) $
       msgAdd MsgWarning "Being a lone wolf, you begin without companions."
     when (lengthHistory history > 1) $ fadeOutOrIn False
@@ -800,17 +800,17 @@ createActorUI born aid body = do
       unless (ES.member aid lastLost) $
         if length foes > 1
         then when (itemsSize > 0) $
-          msgAdd0 MsgFirstEnemySpot "Another armed threat!"
+          msgAdd0 MsgSpotThreat "Another armed threat!"
         else if itemsSize > 0
-             then msgAdd0 MsgFirstEnemySpot "Armed intrusion ahead!"
-             else msgAdd0 MsgFirstEnemySpot "You are not alone!"
+             then msgAdd0 MsgSpotThreat "Armed intrusion ahead!"
+             else msgAdd0 MsgSpotThreat "You are not alone!"
     stopPlayBack
   if | EM.null actorUI && bfid body == side ->
        return ()  -- don't speak about yourself in 3rd person
      | born && bproj body -> pushFrame  -- make sure first position displayed
      | ES.member aid lastLost || bproj body -> markDisplayNeeded (blid body)
      | otherwise -> do
-       aidVerbMU MsgActorSpot aid verb
+       aidVerbMU MsgSpotActor aid verb
        animate (blid body) $ actorX (bpos body)
 
 destroyActorUI :: MonadClientUI m => Bool -> ActorId -> Actor -> m ()
@@ -1052,9 +1052,7 @@ quitFactionUI fid toSt manalytics = do
     Nothing -> return ()
     Just sp ->
       let blurb = makeSentence [MU.SubjectVerb person MU.Yes fidName sp]
-      in if fid == side
-         then msgLnAdd MsgOutcome blurb
-         else msgAdd MsgDiplomacy blurb
+      in msgLnAdd MsgOutcome blurb
   case (toSt, partingPart) of
     (Just status, Just pp) -> do
       noConfirmsGame <- isNoConfirmsGame
@@ -1392,7 +1390,7 @@ displayRespSfxAtomicUI sfx = case sfx of
     let subject = MU.Text $ TK.tname $ okind cotile fromTile
         verb = "shake"
         msg = makeSentence ["the", MU.SubjectVerbSg subject verb]
-    msgAdd MsgRare msg
+    msgAdd MsgNeutralEvent msg
   SfxShun aid _ _ _ ->
     aidVerbMU MsgAction aid "shun it"
   SfxEffect fidSource aid effect hpDelta -> do
@@ -1580,7 +1578,8 @@ displayRespSfxAtomicUI sfx = case sfx of
     lvl <- getLevel $ blid sb
     spart <- partActorLeader source
     let object = MU.AW $ MU.Text $ TK.tname $ okind cotile $ lvl `at` pos
-    msgAdd MsgVeryRare $! makeSentence
+    -- Neutral message, because minor damage and we don't say, which faction.
+    msgAdd MsgNeutralEvent $! makeSentence
       [MU.SubjectVerbSg spart "collide", "painfully with", object]
   SfxTaunt voluntary aid -> do
     side <- getsClient sside
@@ -1774,8 +1773,10 @@ ppSfxMsg sfxMsg = case sfxMsg of
     if sourceSeen && targetSeen then do
       spart <- partActorLeader source
       tpart <- partActorLeader target
+      -- Neutral message, because minor damage and we don't say, which faction.
+      -- And the collision may even be intentional.
       return $
-        Just ( MsgWarning
+        Just ( MsgNeutralEventRare
              , makeSentence
                  [MU.SubjectVerbSg spart "collide", "awkwardly with", tpart] )
     else return Nothing
@@ -1967,7 +1968,7 @@ strike catch source target iid = assert (source /= target) $ do
     if | catch -> do  -- charge not needed when catching
          let msg = makeSentence
                      [MU.SubjectVerbSg spart "catch", tpart, "skillfully"]
-         msgAdd MsgVeryRare msg
+         msgAdd MsgNeutralEventRare msg
          animate (blid tb) $ blockHit ps Color.BrGreen Color.Green
        | not (hasCharge localTime kitWeapon) -> do
          -- Can easily happen with a thrown discharged item.
@@ -1988,10 +1989,10 @@ strike catch source target iid = assert (source /= target) $ do
                         <> if null weaponNameWith
                            then ", but there are no charges left."
                            else ", but it may be not readied yet."
-         msgAdd MsgVeryRare msg  -- and no animation
+         msgAdd MsgNeutralEventRare msg  -- and no animation
        | bproj sb && bproj tb -> do  -- server sends unless both are blasts
          -- Short message.
-         msgAdd MsgVeryRare $
+         msgAdd MsgNeutralEventRare $
            makeSentence [MU.SubjectVerbSg spart "intercept", tpart]
          -- Basic non-bloody animation regardless of stats.
          animate (blid tb) $ blockHit ps Color.BrBlue Color.Blue

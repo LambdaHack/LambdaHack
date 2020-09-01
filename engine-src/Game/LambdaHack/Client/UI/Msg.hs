@@ -85,10 +85,10 @@ data MsgClass =
   | MsgOutcome
   | MsgPlot
   | MsgLandscape
-  | MsgTileDisco
+  | MsgDiscoTile
   | MsgItemDisco
-  | MsgActorSpot
-  | MsgFirstEnemySpot
+  | MsgSpotActor
+  | MsgSpotThreat
   | MsgItemMove
   | MsgItemMoveNoLog
   | MsgItemMoveLog
@@ -107,8 +107,8 @@ data MsgClass =
   | MsgRangedPowerfulUs
   | MsgRanged  -- our non-projectile actors are not hit
   | MsgRangedUs
-  | MsgRare
-  | MsgVeryRare
+  | MsgNeutralEvent
+  | MsgNeutralEventRare
   | MsgMeleePowerfulWe
   | MsgMeleePowerfulUs
   | MsgMeleeInterestingWe
@@ -138,7 +138,6 @@ instance Binary MsgClass
 
 isSavedToHistory :: MsgClass -> Bool
 isSavedToHistory MsgItemMoveNoLog = False
-isSavedToHistory MsgNumeric = False
 isSavedToHistory MsgSpam = False
 isSavedToHistory MsgMacro = False
 isSavedToHistory MsgRunStop = False
@@ -162,15 +161,17 @@ isDisplayed MsgStopPlayback = False
 isDisplayed _ = True
 
 interruptsRunning :: MsgClass -> Bool
-interruptsRunning MsgHeardElsewhere = False
-  -- MsgHeardClose interrupts, even if running started while hearing close
-interruptsRunning MsgHeard = False
-interruptsRunning MsgEffectMinor = False
+interruptsRunning MsgAdmin = False
+interruptsRunning MsgLonger = False
 interruptsRunning MsgItemDisco = False
 interruptsRunning MsgItemMove = False
 interruptsRunning MsgItemMoveNoLog = False
 interruptsRunning MsgItemMoveLog = False
 interruptsRunning MsgActionMinor = False
+interruptsRunning MsgEffectMinor = False
+interruptsRunning MsgHeard = False
+  -- MsgHeardClose interrupts, even if running started while hearing close
+interruptsRunning MsgRanged = False
 interruptsRunning MsgAtFeet = False
 interruptsRunning MsgNumeric = False
 interruptsRunning MsgSpam = False
@@ -186,16 +187,19 @@ interruptsRunning MsgPromptItem = False
 interruptsRunning _ = True
 
 disturbsResting :: MsgClass -> Bool
-disturbsResting MsgHeardElsewhere = False
-disturbsResting MsgHeardClose = False -- handled separately
-disturbsResting MsgHeard = False
+disturbsResting MsgAdmin = False
+disturbsResting MsgLonger = False
 disturbsResting MsgLeader = False -- handled separately
-disturbsResting MsgEffectMinor = False
 disturbsResting MsgItemDisco = False
 disturbsResting MsgItemMove = False
 disturbsResting MsgItemMoveNoLog = False
 disturbsResting MsgItemMoveLog = False
 disturbsResting MsgActionMinor = False
+disturbsResting MsgEffectMinor = False
+disturbsResting MsgHeardElsewhere = False
+disturbsResting MsgHeardClose = False -- handled separately
+disturbsResting MsgHeard = False
+disturbsResting MsgRanged = False
 disturbsResting MsgAtFeet = False
 disturbsResting MsgNumeric = False
 disturbsResting MsgSpam = False
@@ -216,12 +220,12 @@ disturbsResting _ = True
 -- We also mark the messages that use the introduced subjects
 -- by referring to them via pronouns. They can't be moved freely either.
 bindsPronouns :: MsgClass -> Bool
+bindsPronouns MsgLongerUs = True
 bindsPronouns MsgRangedPowerfulUs = True
 bindsPronouns MsgRangedUs = True
 bindsPronouns MsgMeleePowerfulUs = True
 bindsPronouns MsgMeleeInterestingUs = True
 bindsPronouns MsgMeleeUs = True
-bindsPronouns MsgLongerUs = True
 bindsPronouns _ = False
 
 -- Only initially @White@ colour in text (e.g., not highlighted @BrWhite@)
@@ -231,7 +235,7 @@ bindsPronouns _ = False
 -- https://github.com/LambdaHack/LambdaHack/wiki/Display#colours
 -- Another mention of colours, concerning terrain, is in PLAYING.md manual.
 -- The manual and this code should follow the wiki.
-cVeryBadEvent, cBadEvent, cRisk, cGraveRisk, cVeryGoodEvent, cGoodEvent, cVista, cSleep, cWakeUp, cGreed, cNeutralEvent, cRareNeutralEvent, cIdentification, cPrompt, cBoring, cGameOver :: Color.Color
+cVeryBadEvent, cBadEvent, cRisk, cGraveRisk, cVeryGoodEvent, cGoodEvent, cVista, cSleep, cWakeUp, cGreed, cNeutralEvent, cRareNeutralEvent, cIdentification, cMeta, cBoring, cGameOver :: Color.Color
 cVeryBadEvent = Color.Red
 cBadEvent = Color.BrRed
 cRisk = Color.Magenta
@@ -245,7 +249,7 @@ cGreed = Color.BrBlue
 cNeutralEvent = Color.Cyan
 cRareNeutralEvent = Color.BrCyan
 cIdentification = Color.Brown
-cPrompt = Color.BrYellow
+cMeta = Color.BrYellow
 cBoring = Color.White
 cGameOver = Color.BrWhite
 
@@ -254,22 +258,22 @@ msgColor MsgAdmin = cBoring
 msgColor MsgBecome = cSleep
 msgColor MsgNoLonger = cWakeUp
 msgColor MsgLongerUs = cBoring  -- not important enough
-msgColor MsgLonger = cBoring  -- not important enough
+msgColor MsgLonger = cBoring  -- not important enough, no disturb even
 msgColor MsgItemCreation = cGreed
-msgColor MsgItemDestruction = cRareNeutralEvent
+msgColor MsgItemDestruction = cBoring  -- common, colourful components created
 msgColor MsgDeathGood = cVeryGoodEvent
 msgColor MsgDeathBad = cVeryBadEvent
 msgColor MsgDeathBoring = cBoring
 msgColor MsgNearDeath = cGraveRisk
 msgColor MsgLeader = cBoring
-msgColor MsgDiplomacy = cPrompt
+msgColor MsgDiplomacy = cMeta  -- good or bad
 msgColor MsgOutcome = cGameOver
 msgColor MsgPlot = cBoring
 msgColor MsgLandscape = cBoring
-msgColor MsgTileDisco = cIdentification
+msgColor MsgDiscoTile = cIdentification
 msgColor MsgItemDisco = cIdentification
-msgColor MsgActorSpot = cBoring  -- too common
-msgColor MsgFirstEnemySpot = cGraveRisk
+msgColor MsgSpotActor = cBoring  -- too common; warning in @MsgSpotThreat@
+msgColor MsgSpotThreat = cGraveRisk
 msgColor MsgItemMove = cBoring
 msgColor MsgItemMoveNoLog = cBoring
 msgColor MsgItemMoveLog = cBoring
@@ -283,13 +287,13 @@ msgColor MsgHeardElsewhere = cBoring
 msgColor MsgHeardClose = cGraveRisk
 msgColor MsgHeard = cRisk
 msgColor MsgFocus = cVista
-msgColor MsgWarning = cGraveRisk
+msgColor MsgWarning = cMeta
 msgColor MsgRangedPowerfulWe = cGoodEvent
 msgColor MsgRangedPowerfulUs = cBadEvent
 msgColor MsgRanged = cBoring
 msgColor MsgRangedUs = cRisk
-msgColor MsgRare = cNeutralEvent
-msgColor MsgVeryRare = cRareNeutralEvent
+msgColor MsgNeutralEvent = cNeutralEvent
+msgColor MsgNeutralEventRare = cRareNeutralEvent
 msgColor MsgMeleePowerfulWe = cGoodEvent
 msgColor MsgMeleePowerfulUs = cBadEvent
 msgColor MsgMeleeInterestingWe = cGoodEvent
@@ -306,11 +310,11 @@ msgColor MsgRunStop = cBoring
 msgColor MsgPrompt = cBoring
 msgColor MsgPromptFocus = cVista
 msgColor MsgPromptMention = cNeutralEvent
-msgColor MsgPromptWarning = cPrompt
+msgColor MsgPromptWarning = cMeta
 msgColor MsgPromptThreat = cRisk
 msgColor MsgPromptItem = cGreed
-msgColor MsgAlert = cPrompt
-msgColor MsgStopPlayback = cPrompt
+msgColor MsgAlert = cMeta
+msgColor MsgStopPlayback = cMeta
 
 -- * Report
 

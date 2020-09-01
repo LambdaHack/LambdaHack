@@ -694,7 +694,7 @@ lookAtPosition lidV p = do
                   || null embedsList && T.null modifyBlurb
                then ""
                else "\n"
-      ms = [ (MsgPromptWarning, stashBlurb)
+      ms = [ (MsgDiplomacy, stashBlurb)
            , (actorMsgClass, actorsBlurb)
            , (MsgPrompt, actorsDesc <> midEOL) ]
            ++ [(MsgPrompt, smellBlurb) | detail >= DetailHigh]
@@ -719,7 +719,7 @@ lookAtPosition lidV p = do
                 _ -> let n = sum $ map (fst . fst) embedsList
                          wWandW = MU.WWandW $ map (snd . fst) embedsList
                      in [(MsgPromptMention, ppEmbedName (n, wWandW)) | n > 0]
-           ++ [(MsgPromptItem, modifyBlurb) | detail == DetailAll]
+           ++ [(MsgPromptWarning, modifyBlurb) | detail == DetailAll]
   return $! if all (T.null . snd) ms && detail > DetailLow
             then [(MsgPromptFocus, tileBlurb)]
             else ms

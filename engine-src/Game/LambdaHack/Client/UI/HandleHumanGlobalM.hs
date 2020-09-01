@@ -880,6 +880,7 @@ moveItems stores (fromCStore, l) destCStore = do
         then -- @CStash@ is the implicit default; refine:
              if | not $ benInEqp $ discoBenefit EM.! iid -> retRec CStash
                 | eqpOverfull b (oldN + 1) -> do
+                  -- Action goes through, but changed, so keep in history.
                   msgAdd MsgWarning $
                     "Warning:" <+> showReqFailure EqpOverfull <> "."
                   retRec CStash
@@ -899,6 +900,7 @@ moveItems stores (fromCStore, l) destCStore = do
                   retRec CEqp
         else case destCStore of  -- player forces store, so @benInEqp@ ignored
           CEqp | eqpOverfull b (oldN + 1) -> do
+            -- Action aborted, so different colour and not in history.
             msgAdd MsgPromptItem $
               "Failure:" <+> showReqFailure EqpOverfull <> "."
             -- No recursive call here, we exit item manipulation,
