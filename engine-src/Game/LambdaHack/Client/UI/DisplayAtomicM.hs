@@ -503,7 +503,7 @@ displayRespUpdAtomicUI cmd = case cmd of
       , "Scarce black motes slowly settle on the ground."
       , "The ground in the immediate area is empty, as if just swiped."
       ]
-    msgLnAdd MsgSpotThreat blurb
+    msgLnAdd MsgBecomeHarmfulUs blurb  -- nice colour; being here is harmful
     when (cwolf curChal && not loneMode) $
       msgAdd MsgWarning "Being a lone wolf, you begin without companions."
     when (lengthHistory history > 1) $ fadeOutOrIn False
