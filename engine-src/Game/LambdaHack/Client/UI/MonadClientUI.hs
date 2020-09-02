@@ -206,10 +206,10 @@ getReportUI = do
   let newcomerHelp = True  -- TODO
       detailAtDefault = (detailLevel <$> saimMode) == Just defaultDetailLevel
       underAI = isAIFact fact
-      mem = EM.fromList <$> uMessageColors sUIOptions
+      mprefixList = uMessageColors sUIOptions
       -- Here we assume newbies don't override default keys.
-      promptAim = toMsg mem MsgPrompt $ miniHintAiming <> "\n"
-      promptAI = toMsg mem MsgAlert "<press any key for main menu>"
+      promptAim = toMsg mprefixList MsgPrompt $ miniHintAiming <> "\n"
+      promptAI = toMsg mprefixList MsgAlert "<press any key for main menu>"
   return $! if | newcomerHelp && detailAtDefault -> consReport promptAim report
                | underAI -> consReport promptAI report
                | otherwise -> report
@@ -345,8 +345,7 @@ defaultHistory = do
     timezone <- getTimeZone utcTime
     let curDate = T.pack $ take 19 $ show $ utcToLocalTime timezone utcTime
         emptyHist = emptyHistory $ uHistoryMax sUIOptions
-        mem = EM.fromList <$> uMessageColors sUIOptions
-        msg = toMsg mem MsgAdmin
+        msg = toMsg (uMessageColors sUIOptions) MsgAdmin
               $ "History log started on " <> curDate <> "."
     return $! fst $ addToReport emptyHist msg 1 timeZero
 

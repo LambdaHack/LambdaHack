@@ -8,8 +8,6 @@ import Prelude ()
 
 import Game.LambdaHack.Core.Prelude
 
-import qualified Data.EnumMap.Strict as EM
-
 import           Game.LambdaHack.Client.MonadClient
 import           Game.LambdaHack.Client.State
 import           Game.LambdaHack.Client.UI.EffectDescription
@@ -26,13 +24,12 @@ import           Game.LambdaHack.Definition.Defs
 
 -- | Add a message to the current report.
 msgAddDuplicate :: MonadClientUI m => Text -> MsgClass -> Int -> m Bool
-msgAddDuplicate msg msgClass n = do
+msgAddDuplicate t msgClass n = do
   sUIOptions <- getsSession sUIOptions
   time <- getsState stime
   history <- getsSession shistory
-  let mem = EM.fromList <$> uMessageColors sUIOptions
-      (nhistory, duplicate) =
-        addToReport history (toMsg mem msgClass msg) n time
+  let msg = toMsg (uMessageColors sUIOptions) msgClass t
+      (nhistory, duplicate) = addToReport history msg n time
   modifySession $ \sess -> sess {shistory = nhistory}
   return duplicate
 

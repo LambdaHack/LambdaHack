@@ -14,7 +14,6 @@ import GHC.Generics (Generic)
 
 import           Game.LambdaHack.Client.UI.HumanCmd
 import qualified Game.LambdaHack.Client.UI.Key as K
-import           Game.LambdaHack.Client.UI.Msg
 import           Game.LambdaHack.Common.Misc
 import qualified Game.LambdaHack.Definition.Color as Color
 
@@ -34,7 +33,9 @@ data UIOptions = UIOptions
   , uNoAnim           :: Bool
   , uhpWarningPercent :: Int
       -- ^ HP percent at which warning is emitted.
-  , uMessageColors    :: Maybe [(MsgClass, Color.Color)]
+  , uMessageColors    :: Maybe [(String, Color.Color)]
+      -- ^ Prefixes of message class constructor names paired with colors.
+      --   The first prefix that matches, wins.
   , uCmdline          :: [String]
       -- ^ Hardwired commandline arguments to process.
   , uFonts            :: [(Text, FontDefinition)]

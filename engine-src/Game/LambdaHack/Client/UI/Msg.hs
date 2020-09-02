@@ -25,9 +25,7 @@ import Prelude ()
 
 import Game.LambdaHack.Core.Prelude
 
-import           Control.DeepSeq
 import           Data.Binary
-import qualified Data.EnumMap.Strict as EM
 import           Data.Vector.Binary ()
 import qualified Data.Vector.Unboxed as U
 import           GHC.Generics (Generic)
@@ -61,10 +59,13 @@ data Msg = Msg
 
 instance Binary Msg
 
-toMsg :: Maybe (EM.EnumMap MsgClass Color.Color) -> MsgClass -> Text -> Msg
-toMsg mem msgClass l =
-  let findColorInConfig = EM.findWithDefault Color.White msgClass
-      color = maybe (msgColor msgClass) findColorInConfig mem
+toMsg :: Maybe [(String, Color.Color)] -> MsgClass -> Text -> Msg
+toMsg mprefixList msgClass l =
+  let matchPrefix msgClassString prefixList =
+        find ((`isPrefixOf` msgClassString) . fst) prefixList
+      findColorInConfig prefixList =
+        fromMaybe Color.White (snd <$> matchPrefix (show msgClass) prefixList)
+      color = maybe (msgColor msgClass) findColorInConfig mprefixList
       msgLine = textFgToAS color l
   in Msg {..}
 
@@ -136,8 +137,6 @@ data MsgClass =
   | MsgAlert
   | MsgStopPlayback
  deriving (Show, Read, Eq, Enum, Generic)
-
-instance NFData MsgClass
 
 instance Binary MsgClass
 
