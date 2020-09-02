@@ -197,9 +197,13 @@ displayRespUpdAtomicUI cmd = case cmd of
   -- Change actor attributes.
   UpdRefillHP _ 0 -> return ()
   UpdRefillHP aid hpDelta -> do
+    let coarseDelta = abs hpDelta `div` oneM
+        tDelta = if coarseDelta == 0
+                 then if hpDelta > 0 then "a little" else "a fraction of an HP"
+                 else tshow coarseDelta <+> "HP"
     aidVerbMU MsgNumeric aid $ MU.Text
                              $ (if hpDelta > 0 then "heal" else "lose")
-                               <+> tshow (abs hpDelta `divUp` oneM) <+> "HP"
+                               <+> tDelta
     b <- getsState $ getActorBody aid
     arena <- getArenaUI
     side <- getsClient sside
