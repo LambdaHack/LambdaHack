@@ -1,10 +1,13 @@
-{-# LANGUAGE DeriveGeneric, GeneralizedNewtypeDeriving #-}
+{-# LANGUAGE DeriveGeneric, FlexibleInstances, GADTs,
+             GeneralizedNewtypeDeriving, KindSignatures, StandaloneDeriving #-}
 -- | Game messages displayed on top of the screen for the player to read
 -- and then saved to player history.
 module Game.LambdaHack.Client.UI.Msg
   ( -- * Msg
-    Msg(..), toMsg
-  , MsgClass(..), interruptsRunning, disturbsResting
+    MsgShowAndSave, MsgShow, MsgSave, MsgIgnore, MsgDifferent
+  , MsgClass(..), MsgCreate, MsgSingle(..)
+  , Msg(..), toMsg
+  , interruptsRunning, disturbsResting
     -- * Report
   , Report, nullReport, consReport, addEolToNewReport
   , renderReport, anyInReport
@@ -26,6 +29,7 @@ import Prelude ()
 import Game.LambdaHack.Core.Prelude
 
 import           Data.Binary
+import           Data.Kind (Type)
 import           Data.Vector.Binary ()
 import qualified Data.Vector.Unboxed as U
 import           GHC.Generics (Generic)
@@ -59,18 +63,19 @@ data Msg = Msg
   , msgDisturbsResting   :: Bool
   , msgBindsPronouns     :: Bool
   }
-  deriving (Show, Eq, Generic)
+  deriving Generic
 
 instance Binary Msg
 
-toMsg :: Maybe [(String, Color.Color)] -> MsgClass -> Text -> Msg
-toMsg mprefixList msgClass l =
-  let matchPrefix msgClassString prefixList =
+toMsg :: MsgCreate a => Maybe [(String, Color.Color)] -> MsgClass a -> a -> Msg
+toMsg mprefixList msgClass a =
+  let (t, _) = msgCreateConvert a  -- TODO store both, instead of msgIsSavedToHistory and msgIsDisplayed
+      matchPrefix msgClassString prefixList =
         find ((`isPrefixOf` msgClassString) . fst) prefixList
       findColorInConfig prefixList =
         fromMaybe Color.White (snd <$> matchPrefix (show msgClass) prefixList)
       color = maybe (msgColor msgClass) findColorInConfig mprefixList
-      msgLine = textFgToAS color l
+      msgLine = textFgToAS color t
       msgIsSavedToHistory = isSavedToHistory msgClass
       msgIsDisplayed = isDisplayed msgClass
       msgInterruptsRunning = interruptsRunning msgClass
@@ -78,77 +83,121 @@ toMsg mprefixList msgClass l =
       msgBindsPronouns = bindsPronouns msgClass
   in Msg {..}
 
-data MsgClass =
-    MsgAdmin
-  | MsgBecomeSleep
-  | MsgBecomeBeneficialUs
-  | MsgBecomeHarmfulUs
-  | MsgBecome
-  | MsgNoLongerSleep
-  | MsgNoLongerUs
-  | MsgNoLonger
-  | MsgLongerUs
-  | MsgLonger
-  | MsgItemCreation
-  | MsgItemDestruction
-  | MsgDeathGood
-  | MsgDeathBad
-  | MsgDeathBoring
-  | MsgNearDeath
-  | MsgLeader
-  | MsgDiplomacy
-  | MsgOutcome
-  | MsgPlot
-  | MsgLandscape
-  | MsgDiscoTile
-  | MsgItemDisco
-  | MsgSpotActor
-  | MsgSpotThreat
-  | MsgItemMove
-  | MsgItemMoveNoLog
-  | MsgItemMoveLog
-  | MsgAction
-  | MsgActionMinor
-  | MsgEffectMajor
-  | MsgEffect
-  | MsgEffectMinor
-  | MsgMisc
-  | MsgHeardElsewhere
-  | MsgHeardClose
-  | MsgHeard
-  | MsgFocus
-  | MsgWarning
-  | MsgRangedPowerfulWe
-  | MsgRangedPowerfulUs
-  | MsgRanged  -- our non-projectile actors are not hit
-  | MsgRangedUs
-  | MsgNeutralEvent
-  | MsgNeutralEventRare
-  | MsgMeleePowerfulWe
-  | MsgMeleePowerfulUs
-  | MsgMeleeInterestingWe
-  | MsgMeleeInterestingUs
-  | MsgMelee  -- our non-projectile actors are not hit
-  | MsgMeleeUs
-  | MsgDone
-  | MsgAtFeetMajor
-  | MsgAtFeet
-  | MsgNumeric
-  | MsgSpam
-  | MsgMacro
-  | MsgRunStop
-  | MsgPrompt
-  | MsgPromptFocus
-  | MsgPromptMention
-  | MsgPromptWarning
-  | MsgPromptThreat
-  | MsgPromptItem
-  | MsgAlert
-  | MsgStopPlayback
- deriving (Show, Read, Eq, Enum)
+class MsgCreate a where
+  msgCreateConvert :: a -> (Text, Text)
 
-isSavedToHistory :: MsgClass -> Bool
-isSavedToHistory MsgItemMoveNoLog = False
+instance MsgCreate MsgShowAndSave where
+  msgCreateConvert t = (t, t)
+
+instance MsgCreate MsgShow where
+  msgCreateConvert (t, ()) = (t, "")
+
+instance MsgCreate MsgSave where
+  msgCreateConvert ((), t) = ("", t)
+
+instance MsgCreate MsgIgnore where
+  msgCreateConvert () = ("", "")
+
+instance MsgCreate MsgDifferent where
+  msgCreateConvert tt = tt
+
+class MsgCreate a => MsgSingle a where
+  msgSameInject :: Text -> a
+
+instance MsgSingle MsgShowAndSave where
+  msgSameInject t = t
+
+instance MsgSingle MsgShow where
+  msgSameInject t = (t, ())
+
+instance MsgSingle MsgSave where
+  msgSameInject t = ((), t)
+
+instance MsgSingle MsgIgnore where
+  msgSameInject _ = ()
+
+type MsgShowAndSave = Text
+
+type MsgShow = (Text, ())
+
+type MsgSave = ((), Text)
+
+type MsgIgnore = ()
+
+type MsgDifferent = (Text, Text)
+
+data MsgClass :: Type -> Type where
+  MsgAdmin :: MsgClass MsgShowAndSave
+  MsgBecomeSleep :: MsgClass MsgShowAndSave
+  MsgBecomeBeneficialUs :: MsgClass MsgShowAndSave
+  MsgBecomeHarmfulUs :: MsgClass MsgShowAndSave
+  MsgBecome :: MsgClass MsgShowAndSave
+  MsgNoLongerSleep :: MsgClass MsgShowAndSave
+  MsgNoLongerUs :: MsgClass MsgShowAndSave
+  MsgNoLonger :: MsgClass MsgShowAndSave
+  MsgLongerUs :: MsgClass MsgShowAndSave
+  MsgLonger :: MsgClass MsgShowAndSave
+  MsgItemCreation :: MsgClass MsgShowAndSave
+  MsgItemDestruction :: MsgClass MsgShowAndSave
+  MsgDeathGood :: MsgClass MsgShowAndSave
+  MsgDeathBad :: MsgClass MsgShowAndSave
+  MsgDeathBoring :: MsgClass MsgShowAndSave
+  MsgNearDeath :: MsgClass MsgShowAndSave
+  MsgLeader :: MsgClass MsgShowAndSave
+  MsgDiplomacy :: MsgClass MsgShowAndSave
+  MsgOutcome :: MsgClass MsgShowAndSave
+  MsgPlot :: MsgClass MsgShowAndSave
+  MsgLandscape :: MsgClass MsgShowAndSave
+  MsgDiscoTile :: MsgClass MsgShowAndSave
+  MsgItemDisco :: MsgClass MsgShowAndSave
+  MsgSpotActor :: MsgClass MsgShowAndSave
+  MsgSpotThreat :: MsgClass MsgShowAndSave
+  MsgItemMove :: MsgClass MsgShowAndSave
+  MsgItemMoveDifferent :: MsgClass MsgDifferent
+  MsgItemMoveLog :: MsgClass MsgSave  -- TODO: remove
+  MsgAction :: MsgClass MsgShowAndSave
+  MsgActionMinor :: MsgClass MsgShowAndSave
+  MsgEffectMajor :: MsgClass MsgShowAndSave
+  MsgEffect :: MsgClass MsgShowAndSave
+  MsgEffectMinor :: MsgClass MsgShowAndSave
+  MsgMisc :: MsgClass MsgShowAndSave
+  MsgHeardElsewhere :: MsgClass MsgShowAndSave
+  MsgHeardClose :: MsgClass MsgShowAndSave
+  MsgHeard :: MsgClass MsgShowAndSave
+  MsgFocus :: MsgClass MsgShowAndSave
+  MsgWarning :: MsgClass MsgShowAndSave
+  MsgRangedPowerfulWe :: MsgClass MsgShowAndSave
+  MsgRangedPowerfulUs :: MsgClass MsgShowAndSave
+  MsgRanged :: MsgClass MsgShowAndSave  -- not ours or projectiles are hit
+  MsgRangedUs :: MsgClass MsgShowAndSave
+  MsgNeutralEvent :: MsgClass MsgShowAndSave
+  MsgNeutralEventRare :: MsgClass MsgShowAndSave
+  MsgMeleePowerfulWe :: MsgClass MsgShowAndSave
+  MsgMeleePowerfulUs :: MsgClass MsgShowAndSave
+  MsgMeleeInterestingWe :: MsgClass MsgShowAndSave
+  MsgMeleeInterestingUs :: MsgClass MsgShowAndSave
+  MsgMelee :: MsgClass MsgShowAndSave  -- not ours or projectiles are hit
+  MsgMeleeUs :: MsgClass MsgShowAndSave
+  MsgDone :: MsgClass MsgShowAndSave
+  MsgAtFeetMajor :: MsgClass MsgShowAndSave
+  MsgAtFeet :: MsgClass MsgShowAndSave
+  MsgNumeric :: MsgClass MsgSave
+  MsgSpam :: MsgClass MsgIgnore
+  MsgMacro :: MsgClass MsgIgnore
+  MsgRunStop :: MsgClass MsgShow
+  MsgPrompt :: MsgClass MsgShow
+  MsgPromptFocus :: MsgClass MsgShow
+  MsgPromptMention :: MsgClass MsgShow
+  MsgPromptWarning :: MsgClass MsgShow
+  MsgPromptThreat :: MsgClass MsgShow
+  MsgPromptItem :: MsgClass MsgShow
+  MsgAlert :: MsgClass MsgShow
+  MsgStopPlayback :: MsgClass MsgIgnore
+
+deriving instance Show (MsgClass a)
+
+isSavedToHistory :: MsgClass a -> Bool
+isSavedToHistory MsgItemMoveDifferent = False
 isSavedToHistory MsgSpam = False
 isSavedToHistory MsgMacro = False
 isSavedToHistory MsgRunStop = False
@@ -162,23 +211,23 @@ isSavedToHistory MsgAlert = False
 isSavedToHistory MsgStopPlayback = False
 isSavedToHistory _ = True
 
-isDisplayed :: MsgClass -> Bool
+isDisplayed :: MsgClass a -> Bool
 isDisplayed MsgItemMoveLog = False
-isDisplayed MsgRunStop = False
 isDisplayed MsgNumeric = False
+isDisplayed MsgRunStop = False
 isDisplayed MsgSpam = False
 isDisplayed MsgMacro = False
 isDisplayed MsgStopPlayback = False
 isDisplayed _ = True
 
-interruptsRunning :: MsgClass -> Bool
+interruptsRunning :: MsgClass a -> Bool
 interruptsRunning MsgAdmin = False
 interruptsRunning MsgBecome = False
 interruptsRunning MsgNoLonger = False
 interruptsRunning MsgLonger = False
 interruptsRunning MsgItemDisco = False
 interruptsRunning MsgItemMove = False
-interruptsRunning MsgItemMoveNoLog = False
+interruptsRunning MsgItemMoveDifferent = False
 interruptsRunning MsgItemMoveLog = False
 interruptsRunning MsgActionMinor = False
 interruptsRunning MsgEffectMinor = False
@@ -199,7 +248,7 @@ interruptsRunning MsgPromptItem = False
   -- MsgAlert means something went wrong, so alarm
 interruptsRunning _ = True
 
-disturbsResting :: MsgClass -> Bool
+disturbsResting :: MsgClass a -> Bool
 disturbsResting MsgAdmin = False
 disturbsResting MsgBecome = False
 disturbsResting MsgNoLonger = False
@@ -207,7 +256,7 @@ disturbsResting MsgLonger = False
 disturbsResting MsgLeader = False -- handled separately
 disturbsResting MsgItemDisco = False
 disturbsResting MsgItemMove = False
-disturbsResting MsgItemMoveNoLog = False
+disturbsResting MsgItemMoveDifferent = False
 disturbsResting MsgItemMoveLog = False
 disturbsResting MsgActionMinor = False
 disturbsResting MsgEffectMinor = False
@@ -234,7 +283,7 @@ disturbsResting _ = True
 -- Here we also mark friends being hit, but that's a safe approximation.
 -- We also mark the messages that use the introduced subjects
 -- by referring to them via pronouns. They can't be moved freely either.
-bindsPronouns :: MsgClass -> Bool
+bindsPronouns :: MsgClass a -> Bool
 bindsPronouns MsgLongerUs = True
 bindsPronouns MsgRangedPowerfulUs = True
 bindsPronouns MsgRangedUs = True
@@ -268,7 +317,7 @@ cMeta = Color.BrYellow
 cBoring = Color.White
 cGameOver = Color.BrWhite
 
-msgColor :: MsgClass -> Color.Color
+msgColor :: MsgClass a -> Color.Color
 msgColor MsgAdmin = cBoring
 msgColor MsgBecomeSleep = cSleep
 msgColor MsgBecomeBeneficialUs = cGoodEvent
@@ -295,7 +344,7 @@ msgColor MsgItemDisco = cIdentification
 msgColor MsgSpotActor = cBoring  -- too common; warning in @MsgSpotThreat@
 msgColor MsgSpotThreat = cGraveRisk
 msgColor MsgItemMove = cBoring
-msgColor MsgItemMoveNoLog = cBoring
+msgColor MsgItemMoveDifferent = cBoring
 msgColor MsgItemMoveLog = cBoring
 msgColor MsgAction = cBoring
 msgColor MsgActionMinor = cBoring
@@ -339,13 +388,13 @@ msgColor MsgStopPlayback = cMeta
 -- * Report
 
 data RepMsgN = RepMsgN {repMsg :: Msg, _repN :: Int}
-  deriving (Show, Generic)
+  deriving Generic
 
 instance Binary RepMsgN
 
 -- | The set of messages, with repetitions, to show at the screen at once.
 newtype Report = Report [RepMsgN]
-  deriving (Show, Binary)
+  deriving Binary
 
 -- | Empty set of messages.
 emptyReport :: Report
@@ -405,7 +454,7 @@ data History = History
   , oldReport       :: Report
   , oldTime         :: Time
   , archivedHistory :: RB.RingBuffer UAttrString }
-  deriving (Show, Generic)
+  deriving Generic
 
 instance Binary History
 

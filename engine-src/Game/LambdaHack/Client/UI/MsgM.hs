@@ -1,6 +1,7 @@
 -- | Monadic operations on game messages.
 module Game.LambdaHack.Client.UI.MsgM
-  ( msgAddDuplicate, msgAdd, msgLnAdd, msgAdd0, msgLnAdd0, promptAdd, promptAdd0
+  ( msgAddDuplicate, msgAddDifferent
+  , msgAdd, msgLnAdd, msgAdd0, msgLnAdd0, promptAdd, promptAdd0
   , promptMainKeys, recordHistory
   ) where
 
@@ -23,39 +24,47 @@ import           Game.LambdaHack.Common.State
 import           Game.LambdaHack.Definition.Defs
 
 -- | Add a message to the current report.
-msgAddDuplicate :: MonadClientUI m => Text -> MsgClass -> Int -> m Bool
-msgAddDuplicate t msgClass n = do
+msgAddDuplicate :: (MonadClientUI m, MsgCreate a)
+                => MsgClass a -> a -> Int -> m Bool
+msgAddDuplicate msgClass a n = do
   sUIOptions <- getsSession sUIOptions
   time <- getsState stime
   history <- getsSession shistory
-  let msg = toMsg (uMessageColors sUIOptions) msgClass t
+  let msg = toMsg (uMessageColors sUIOptions) msgClass a
       (nhistory, duplicate) = addToReport history msg n time
   modifySession $ \sess -> sess {shistory = nhistory}
   return duplicate
 
+-- | Add a message comprising of two different texts, one to show, the other
+-- to save to messages log, to the current report. Do not report if it was
+-- a duplicate.
+msgAddDifferent :: MonadClientUI m
+                => MsgClass MsgDifferent -> (Text, Text) -> m ()
+msgAddDifferent msgClass tt = void $ msgAddDuplicate msgClass tt 1
+
 -- | Add a message to the current report. Do not report if it was a duplicate.
-msgAdd :: MonadClientUI m => MsgClass -> Text -> m ()
-msgAdd msgClass msg = void $ msgAddDuplicate msg msgClass 1
+msgAdd :: (MonadClientUI m, MsgSingle a) => MsgClass a -> Text -> m ()
+msgAdd msgClass t = void $ msgAddDuplicate msgClass (msgSameInject t) 1
 
 -- | Add a message to the current report. End previously collected report,
 -- if any, with newline.
-msgLnAdd :: MonadClientUI m => MsgClass -> Text -> m ()
-msgLnAdd msgClass msg = do
+msgLnAdd :: (MonadClientUI m, MsgSingle a) => MsgClass a -> Text -> m ()
+msgLnAdd msgClass t = do
   modifySession $ \sess -> sess {shistory = addEolToNewReport $ shistory sess}
-  msgAdd msgClass msg
+  msgAdd msgClass t
 
 -- | Add a message to the current report with 0 copies for the purpose
 -- of collating duplicates. Do not report if it was a duplicate.
-msgAdd0 :: MonadClientUI m => MsgClass -> Text -> m ()
-msgAdd0 msgClass msg = void $ msgAddDuplicate msg msgClass 0
+msgAdd0 :: (MonadClientUI m, MsgSingle a) => MsgClass a -> Text -> m ()
+msgAdd0 msgClass t = void $ msgAddDuplicate msgClass (msgSameInject t) 0
 
 -- | Add a message to the current report with 0 copies for the purpose
 -- of collating duplicates. Do not report if it was a duplicate.
 -- End previously collected report, if any, with newline.
-msgLnAdd0 :: MonadClientUI m => MsgClass -> Text -> m ()
-msgLnAdd0 msgClass msg = do
+msgLnAdd0 :: (MonadClientUI m, MsgSingle a) => MsgClass a -> Text -> m ()
+msgLnAdd0 msgClass t = do
   modifySession $ \sess -> sess {shistory = addEolToNewReport $ shistory sess}
-  msgAdd0 msgClass msg
+  msgAdd0 msgClass t
 
 -- | Add a prompt to the current report. Do not report if it was a duplicate.
 promptAdd :: MonadClientUI m => Text -> m ()

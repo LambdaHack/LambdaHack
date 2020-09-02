@@ -208,8 +208,10 @@ getReportUI = do
       underAI = isAIFact fact
       mprefixList = uMessageColors sUIOptions
       -- Here we assume newbies don't override default keys.
-      promptAim = toMsg mprefixList MsgPrompt $ miniHintAiming <> "\n"
-      promptAI = toMsg mprefixList MsgAlert "<press any key for main menu>"
+      promptAim = toMsg mprefixList MsgPrompt
+                  $ msgSameInject $ miniHintAiming <> "\n"
+      promptAI = toMsg mprefixList MsgAlert
+                 $ msgSameInject "<press any key for main menu>"
   return $! if | newcomerHelp && detailAtDefault -> consReport promptAim report
                | underAI -> consReport promptAI report
                | otherwise -> report

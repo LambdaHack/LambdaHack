@@ -607,21 +607,25 @@ lookAtMove aid = do
         adjOur = filter our adjBigAssocs
     unless (null adjOur) stopPlayBack
 
-aidVerbMU :: MonadClientUI m => MsgClass -> ActorId -> MU.Part -> m ()
+aidVerbMU :: (MonadClientUI m, MsgSingle a)
+          => MsgClass a -> ActorId -> MU.Part -> m ()
 aidVerbMU msgClass aid verb = do
   subject <- partActorLeader aid
   msgAdd msgClass $ makeSentence [MU.SubjectVerbSg subject verb]
 
-aidVerbMU0 :: MonadClientUI m => MsgClass -> ActorId -> MU.Part -> m ()
+aidVerbMU0 :: (MonadClientUI m, MsgSingle a)
+           => MsgClass a -> ActorId -> MU.Part -> m ()
 aidVerbMU0 msgClass aid verb = do
   subject <- partActorLeader aid
   msgAdd0 msgClass $ makeSentence [MU.SubjectVerbSg subject verb]
 
-aidVerbDuplicateMU :: MonadClientUI m
-                   => MsgClass -> ActorId -> MU.Part -> m Bool
+aidVerbDuplicateMU :: (MonadClientUI m, MsgSingle a)
+                   => MsgClass a -> ActorId -> MU.Part -> m Bool
 aidVerbDuplicateMU msgClass aid verb = do
   subject <- partActorLeader aid
-  msgAddDuplicate (makeSentence [MU.SubjectVerbSg subject verb]) msgClass 1
+  msgAddDuplicate msgClass
+                  (msgSameInject $ makeSentence [MU.SubjectVerbSg subject verb])
+                  1
 
 itemVerbMUGeneral :: MonadClientUI m
                   => Bool -> ItemId -> ItemQuant -> MU.Part -> Container
@@ -642,21 +646,21 @@ itemVerbMUGeneral verbose iid kit@(k, _) verb c = assert (k > 0) $ do
           | otherwise = makeSentence [MU.SubjectVerbSg subject verb]
   return $! msg
 
-itemVerbMU :: MonadClientUI m
-           => MsgClass -> ItemId -> ItemQuant -> MU.Part -> Container -> m ()
+itemVerbMU :: (MonadClientUI m, MsgSingle a)
+           => MsgClass a -> ItemId -> ItemQuant -> MU.Part -> Container -> m ()
 itemVerbMU msgClass iid kit verb c = do
   msg <- itemVerbMUGeneral True iid kit verb c
   msgAdd msgClass msg
 
-itemVerbMUShort :: MonadClientUI m
-                => MsgClass -> ItemId -> ItemQuant -> MU.Part -> Container
+itemVerbMUShort :: (MonadClientUI m, MsgSingle a)
+                => MsgClass a -> ItemId -> ItemQuant -> MU.Part -> Container
                 -> m ()
 itemVerbMUShort msgClass iid kit verb c = do
   msg <- itemVerbMUGeneral False iid kit verb c
   msgAdd msgClass msg
 
-itemAidVerbMU :: MonadClientUI m
-              => MsgClass -> ActorId -> MU.Part
+itemAidVerbMU :: (MonadClientUI m, MsgSingle a)
+              => MsgClass a -> ActorId -> MU.Part
               -> ItemId -> Either (Maybe Int) Int
               -> m ()
 itemAidVerbMU msgClass aid verb iid ek = do
@@ -684,8 +688,8 @@ itemAidVerbMU msgClass aid verb iid ek = do
       msg = makeSentence [MU.SubjectVerbSg subject verb, object]
   msgAdd msgClass msg
 
-manyItemsAidVerbMU :: MonadClientUI m
-                   => MsgClass -> ActorId -> MU.Part
+manyItemsAidVerbMU :: (MonadClientUI m, MsgSingle a)
+                   => MsgClass a -> ActorId -> MU.Part
                    -> [(ItemId, ItemQuant)] -> (Int -> Either (Maybe Int) Int)
                    -> m ()
 manyItemsAidVerbMU msgClass aid verb sortedAssocs ekf = do
@@ -935,7 +939,8 @@ spotItemBag verbose c bag = do
             msgLong = msg subjectLong
             dotsIfShorter = if msgShort == msgLong then "" else ".."
         resetXhair
-        msgAdd MsgItemMoveNoLog $ msgShort <> dotsIfShorter
+        msgAddDifferent MsgItemMoveDifferent
+                        (msgShort <> dotsIfShorter, msgLong)
         msgAdd MsgItemMoveLog $ msgLong
   case subjects of
     [] -> return ()
@@ -1605,7 +1610,8 @@ displayRespSfxAtomicUI sfx = case sfx of
       (_heardSubject, verb) <- displayTaunt voluntary rndToActionUI aid
       msgAdd MsgMisc $! makeSentence [MU.SubjectVerbSg spart (MU.Text verb)]
 
-ppSfxMsg :: MonadClientUI m => SfxMsg -> m (Maybe (MsgClass, Text))
+ppSfxMsg :: MonadClientUI m
+         => SfxMsg -> m (Maybe (MsgClass MsgShowAndSave, Text))
 ppSfxMsg sfxMsg = case sfxMsg of
   SfxUnexpected reqFailure -> return $
     Just ( MsgWarning

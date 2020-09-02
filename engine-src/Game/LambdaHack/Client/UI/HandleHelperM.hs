@@ -622,7 +622,8 @@ lookAtStash lidV p = do
 
 -- | Produces a textual description of everything at the requested
 -- level's position.
-lookAtPosition :: MonadClientUI m => LevelId -> Point -> m [(MsgClass, Text)]
+lookAtPosition :: MonadClientUI m
+               => LevelId -> Point -> m [(MsgClass MsgShow, Text)]
 lookAtPosition lidV p = do
   COps{cotile} <- getsState scops
   side <- getsClient sside
@@ -694,7 +695,7 @@ lookAtPosition lidV p = do
                   || null embedsList && T.null modifyBlurb
                then ""
                else "\n"
-      ms = [ (MsgDiplomacy, stashBlurb)
+      ms = [ (MsgPromptWarning, stashBlurb)
            , (actorMsgClass, actorsBlurb)
            , (MsgPrompt, actorsDesc <> midEOL) ]
            ++ [(MsgPrompt, smellBlurb) | detail >= DetailHigh]
