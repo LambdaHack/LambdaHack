@@ -129,7 +129,7 @@ promptGetKey dm ovs onBlank frontKeyKeys = do
   lidV <- viewedLevelUI
   keyPressed <- anyKeyPressed
   report <- getsSession $ newReport . shistory
-  let msgDisturbs = anyInReport disturbsResting report
+  let msgDisturbs = anyInReport msgDisturbsResting report
   macroFrame <- getsSession smacroFrame
   km <- case keyPending macroFrame of
     KeyMacro (km : kms) | not keyPressed

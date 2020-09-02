@@ -113,7 +113,7 @@ continueRunDir params = case params of
            , runMembers = aid : _
            , runInitial } -> do
     report <- getsSession $ newReport . shistory
-    let msgInterrupts = anyInReport interruptsRunning report
+    let msgInterrupts = anyInReport msgInterruptsRunning report
     if msgInterrupts then return $ Left "message shown"
     else do
       cops@COps{coTileSpeedup} <- getsState scops

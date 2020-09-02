@@ -3,7 +3,7 @@
 -- and then saved to player history.
 module Game.LambdaHack.Client.UI.Msg
   ( -- * Msg
-    Msg, toMsg
+    Msg(..), toMsg
   , MsgClass(..), interruptsRunning, disturbsResting
     -- * Report
   , Report, nullReport, consReport, addEolToNewReport
@@ -49,11 +49,15 @@ attrLineToU l = U.fromList $ map Color.attrCharW32 l
 
 -- | The type of a single game message.
 data Msg = Msg
-  { msgLine  :: AttrString  -- ^ the colours and characters of the message;
+  { msgLine              :: AttrString
+                            -- ^ the colours and characters of the message;
                             --   not just text, in case there was some colour
                             --   unrelated to msg class
-  , msgClass :: MsgClass    -- ^ whether message should be displayed,
-                            --   recorded in history, with what color, etc.
+  , msgIsSavedToHistory  :: Bool
+  , msgIsDisplayed       :: Bool
+  , msgInterruptsRunning :: Bool
+  , msgDisturbsResting   :: Bool
+  , msgBindsPronouns     :: Bool
   }
   deriving (Show, Eq, Generic)
 
@@ -67,6 +71,11 @@ toMsg mprefixList msgClass l =
         fromMaybe Color.White (snd <$> matchPrefix (show msgClass) prefixList)
       color = maybe (msgColor msgClass) findColorInConfig mprefixList
       msgLine = textFgToAS color l
+      msgIsSavedToHistory = isSavedToHistory msgClass
+      msgIsDisplayed = isDisplayed msgClass
+      msgInterruptsRunning = interruptsRunning msgClass
+      msgDisturbsResting = disturbsResting msgClass
+      msgBindsPronouns = bindsPronouns msgClass
   in Msg {..}
 
 data MsgClass =
@@ -136,9 +145,7 @@ data MsgClass =
   | MsgPromptItem
   | MsgAlert
   | MsgStopPlayback
- deriving (Show, Read, Eq, Enum, Generic)
-
-instance Binary MsgClass
+ deriving (Show, Read, Eq, Enum)
 
 isSavedToHistory :: MsgClass -> Bool
 isSavedToHistory MsgItemMoveNoLog = False
@@ -351,8 +358,8 @@ nullReport (Report l) = null l
 nullFilteredReport :: Report -> Bool
 nullFilteredReport (Report l) =
   null $ filter (\(RepMsgN msg n) -> n > 0
-                                     && (isSavedToHistory (msgClass msg)
-                                         || isDisplayed (msgClass msg))) l
+                                     && (msgIsSavedToHistory msg
+                                         || msgIsDisplayed msg)) l
 
 -- | Add a message to the end of the report.
 snocReport :: Report -> Msg -> Int -> Report
@@ -369,7 +376,7 @@ consReport y (Report r) = Report $ r ++ [RepMsgN y 1]
 renderReport :: Bool -> Report -> AttrString
 renderReport displaying (Report r) =
   let rep = Report $ if displaying
-                     then filter (isDisplayed . msgClass . repMsg) r
+                     then filter (msgIsDisplayed . repMsg) r
                      else r
   in renderWholeReport rep
 
@@ -384,8 +391,8 @@ renderRepetition (RepMsgN s 0) = msgLine s
 renderRepetition (RepMsgN s 1) = msgLine s
 renderRepetition (RepMsgN s n) = msgLine s ++ stringToAS ("<x" ++ show n ++ ">")
 
-anyInReport :: (MsgClass -> Bool) -> Report -> Bool
-anyInReport f (Report xns) = any (f . msgClass . repMsg) xns
+anyInReport :: (Msg -> Bool) -> Report -> Bool
+anyInReport f (Report xns) = any (f . repMsg) xns
 
 -- * History
 
@@ -420,14 +427,14 @@ scrapRepetition History{ newReport = Report newMsgs
     -- vanish from the screen. In this way the message may be passed
     -- along many reports.
     RepMsgN s1 n1 : rest1 ->
-      let commutative s = not $ bindsPronouns $ msgClass s
+      let commutative s = not $ msgBindsPronouns s
           butLastEOL [] = []
           butLastEOL s = if last s == Color.attrChar1ToW32 '\n'
                          then init s
                          else s
           f (RepMsgN s2 _) = butLastEOL (msgLine s1) == butLastEOL (msgLine s2)
-                             && msgClass s1 == msgClass s2
-                                  -- the class may not display or not save
+--                             && msgClass s1 == msgClass s2
+--                                  -- the class may not display or not save
       in case break f rest1 of
         (_, []) | commutative s1 -> case break f oldMsgs of
           (noDup, RepMsgN s2 n2 : rest2) ->
@@ -482,7 +489,7 @@ archiveReport History{newReport=Report newMsgs, ..} =
 renderTimeReport :: Time -> Report -> [AttrString]
 renderTimeReport !t (Report r) =
   let turns = t `timeFitUp` timeTurn
-      rep = Report $ filter (isSavedToHistory . msgClass . repMsg) r
+      rep = Report $ filter (msgIsSavedToHistory . repMsg) r
   in [ stringToAS (show turns ++ ": ") ++ renderReport False rep
      | not $ nullReport rep ]
 
