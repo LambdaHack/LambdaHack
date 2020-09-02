@@ -70,7 +70,12 @@ toMsg mem msgClass l =
 
 data MsgClass =
     MsgAdmin
+  | MsgBecomeSleep
+  | MsgBecomeBeneficialUs
+  | MsgBecomeHarmfulUs
   | MsgBecome
+  | MsgNoLongerSleep
+  | MsgNoLongerUs
   | MsgNoLonger
   | MsgLongerUs
   | MsgLonger
@@ -162,6 +167,8 @@ isDisplayed _ = True
 
 interruptsRunning :: MsgClass -> Bool
 interruptsRunning MsgAdmin = False
+interruptsRunning MsgBecome = False
+interruptsRunning MsgNoLonger = False
 interruptsRunning MsgLonger = False
 interruptsRunning MsgItemDisco = False
 interruptsRunning MsgItemMove = False
@@ -188,6 +195,8 @@ interruptsRunning _ = True
 
 disturbsResting :: MsgClass -> Bool
 disturbsResting MsgAdmin = False
+disturbsResting MsgBecome = False
+disturbsResting MsgNoLonger = False
 disturbsResting MsgLonger = False
 disturbsResting MsgLeader = False -- handled separately
 disturbsResting MsgItemDisco = False
@@ -255,8 +264,13 @@ cGameOver = Color.BrWhite
 
 msgColor :: MsgClass -> Color.Color
 msgColor MsgAdmin = cBoring
-msgColor MsgBecome = cSleep
-msgColor MsgNoLonger = cWakeUp
+msgColor MsgBecomeSleep = cSleep
+msgColor MsgBecomeBeneficialUs = cGoodEvent
+msgColor MsgBecomeHarmfulUs = cBadEvent
+msgColor MsgBecome = cBoring
+msgColor MsgNoLongerSleep = cWakeUp
+msgColor MsgNoLongerUs = cBoring
+msgColor MsgNoLonger = cBoring
 msgColor MsgLongerUs = cBoring  -- not important enough
 msgColor MsgLonger = cBoring  -- not important enough, no disturb even
 msgColor MsgItemCreation = cGreed

@@ -107,7 +107,10 @@ displayRespUpdAtomicUI cmd = case cmd of
             arItem <- getsState $ aspectRecordFromIid iid
             if | IA.checkFlag Ability.Blast arItem -> return ()
                | IA.checkFlag Ability.Condition arItem -> do
+                 side <- getsClient sside
+                 discoBenefit <- getsClient sdiscoBenefit
                  bag <- getsState $ getContainerBag c
+                 itemKind <- getsState $ getIidKind iid
                  let more = case EM.lookup iid bag of
                        Just (kTotal, _) | kTotal /= kAdd -> Just kTotal
                        _ -> Nothing
@@ -126,9 +129,15 @@ displayRespUpdAtomicUI cmd = case cmd of
                                  Nothing -> ""
                                  Just kTotal ->
                                    "(total:" <+> tshow kTotal <> "-fold)"
+                     msgClass = case lookup IK.S_ASLEEP $ IK.ifreq itemKind of
+                       Just n | n > 0 -> MsgBecomeSleep
+                       _ -> if | bfid b /= side -> MsgBecome
+                               | benInEqp (discoBenefit EM.! iid) ->
+                                   MsgBecomeBeneficialUs
+                               | otherwise -> MsgBecomeHarmfulUs
                  -- This describes all such items already among organs,
                  -- which is useful, because it shows "charging".
-                 itemAidVerbMU MsgBecome aid verb iid (Left Nothing)
+                 itemAidVerbMU msgClass aid verb iid (Left Nothing)
                | otherwise -> do
                  wown <- ppContainerWownW partActorLeader True c
                  itemVerbMU MsgItemCreation iid kit
@@ -181,7 +190,8 @@ displayRespUpdAtomicUI cmd = case cmd of
   UpdLoseItemBag{} -> return ()  -- rarely interesting and can be very long
   -- Move actors and items.
   UpdMoveActor aid source target -> moveActor aid source target
-  UpdWaitActor{} -> return ()
+  UpdWaitActor aid WSleep _ -> aidVerbMU MsgNoLongerSleep aid "wake up"
+  UpdWaitActor{} -> return ()  -- falling asleep handled uniformly elsewhere
   UpdDisplaceActor source target -> displaceActorUI source target
   UpdMoveItem iid k aid c1 c2 -> moveItemUI iid k aid c1 c2
   -- Change actor attributes.
@@ -1554,7 +1564,9 @@ displayRespSfxAtomicUI sfx = case sfx of
         IK.AndEffect{} -> error $ "" `showFailure` sfx
         IK.OrEffect{} -> error $ "" `showFailure` sfx
         IK.SeqEffect{} -> error $ "" `showFailure` sfx
-        IK.VerbNoLonger t -> aidVerbMU MsgNoLonger aid $ MU.Text t
+        IK.VerbNoLonger t -> do
+          let msgClass = if bfid b == side then MsgNoLongerUs else MsgNoLonger
+          aidVerbMU msgClass aid $ MU.Text t
         IK.VerbMsg t -> aidVerbMU MsgEffectMinor aid $ MU.Text t
         IK.VerbMsgFail t -> aidVerbMU MsgWarning aid $ MU.Text t
   SfxMsgFid _ sfxMsg -> do
