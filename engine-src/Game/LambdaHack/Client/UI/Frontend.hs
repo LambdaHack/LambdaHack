@@ -142,7 +142,6 @@ fchanFrontend fs@FrontSetup{..} rf =
     FrontAdd kmp -> STM.atomically $ STM.writeTQueue (fchanKey rf) kmp
     FrontAutoYes b -> writeIORef fautoYesRef b
     FrontShutdown -> do
-      putMVar commonChanFrontendMVar Nothing
       cancel fasyncTimeout
       -- In case the last frame display is pending:
       void $ tryTakeMVar $ fshowNow rf

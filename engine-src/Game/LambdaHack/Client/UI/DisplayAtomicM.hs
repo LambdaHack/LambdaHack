@@ -544,9 +544,14 @@ displayRespUpdAtomicUI cmd = case cmd of
   UpdResumeServer{} -> return ()
   UpdKillExit{} -> do
     side <- getsClient sside
-    factionD <- getsState sfactionD
-    when (side `EM.member` factionD) $  -- the active UI client
+    nframes <- getsSession snframes
+    debugPossiblyPrintUI $ "Client" <+> tshow side <+> "checking frontend."
+    -- Checking @sfactionD@ here wouldn't work, becuase client state
+    -- may be not updated after the game finishes and another starts.
+    when (nframes /= -1) $ do  -- the active UI client
+      debugPossiblyPrintUI $ "Client" <+> tshow side <+> "closing frontend."
       frontendShutdown
+      debugPossiblyPrintUI $ "Client" <+> tshow side <+> "closed frontend."
   UpdWriteSave -> msgAdd MsgSpam "Saving backup."
   UpdHearFid _ distance hearMsg -> do
     mleader <- getsClient sleader

@@ -8,7 +8,8 @@ module Game.LambdaHack.Client.UI.MonadClientUI
                  , getCachePath
                  )
     -- * Assorted primitives
-  , clientPrintUI, getSession, putSession, relinquishFrontend, displayFrames
+  , clientPrintUI, debugPossiblyPrintUI
+  , getSession, putSession, relinquishFrontend, displayFrames
   , connFrontendFrontKey, setFrontAutoYes, frontendShutdown, printScreen
   , chanFrontend, anyKeyPressed, discardPressedKey, resetPressedKeys
   , addPressedKey, addPressedControlEsc, revCmdMap
@@ -86,6 +87,13 @@ clientPrintUI t = liftIO $ do
   T.hPutStr stdout $! t <> "\n"  -- hPutStrLn not atomic enough
   hFlush stdout
 
+debugPossiblyPrintUI :: MonadClientUI m => Text -> m ()
+debugPossiblyPrintUI t = do
+  sdbgMsgCli <- getsClient $ sdbgMsgCli . soptions
+  when sdbgMsgCli $ liftIO $ do
+    T.hPutStr stdout $! t <> "\n"  -- hPutStrLn not atomic enough
+    hFlush stdout
+
 -- | The monad that gives the client access to UI operations,
 -- but not to modifying client state.
 class MonadClientRead m => MonadClientUI m where
@@ -109,6 +117,7 @@ connFrontend req = do
 
 relinquishFrontend :: MonadClientUI m => m ()
 relinquishFrontend = do
+  modifySession $ \sess -> sess {snframes = -1}  -- client disabled
   schanF <- getsSession schanF
   liftIO $ putMVar Frontend.commonChanFrontendMVar $ Just schanF
 
