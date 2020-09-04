@@ -7,19 +7,17 @@ module Game.LambdaHack.Client.UI.Msg
     MsgShowAndSave, MsgShow, MsgSave, MsgIgnore, MsgDifferent
   , MsgClass(..), MsgCreate, MsgSingle(..)
   , Msg(..), toMsg
-  , interruptsRunning, disturbsResting
     -- * Report
-  , Report, nullReport, consReport, addEolToNewReport
-  , renderReport, anyInReport
+  , Report, nullReport, consReport, renderReport, anyInReport
     -- * History
-  , History, newReport, emptyHistory, addToReport, archiveReport, lengthHistory
-  , renderHistory
+  , History, newReport, emptyHistory, addToReport, addEolToNewReport
+  , archiveReport, lengthHistory, renderHistory
 #ifdef EXPOSE_INTERNAL
     -- * Internal operations
-  , isSavedToHistory, isDisplayed, bindsPronouns, msgColor
-  , UAttrString, RepMsgN, uToAttrString, attrLineToU
-  , emptyReport, nullFilteredReport, snocReport
-  , renderWholeReport, renderRepetition
+  , UAttrString, uToAttrString, attrStringToU
+  , RepMsgNK, nullRepMsgNK
+  , interruptsRunning, disturbsResting, bindsPronouns, msgColor
+  , emptyReport, snocReport, renderWholeReport, renderRepetition
   , scrapRepetition, renderTimeReport
 #endif
   ) where
@@ -29,6 +27,7 @@ import Prelude ()
 import Game.LambdaHack.Core.Prelude
 
 import           Data.Binary
+import qualified Data.Char as Char
 import           Data.Kind (Type)
 import           Data.Vector.Binary ()
 import qualified Data.Vector.Unboxed as U
@@ -46,19 +45,20 @@ type UAttrString = U.Vector Word32
 uToAttrString :: UAttrString -> AttrString
 uToAttrString v = map Color.AttrCharW32 $ U.toList v
 
-attrLineToU :: AttrString -> UAttrString
-attrLineToU l = U.fromList $ map Color.attrCharW32 l
+attrStringToU :: AttrString -> UAttrString
+attrStringToU l = U.fromList $ map Color.attrCharW32 l
 
 -- * Msg
 
 -- | The type of a single game message.
 data Msg = Msg
-  { msgLine              :: AttrString
-                            -- ^ the colours and characters of the message;
-                            --   not just text, in case there was some colour
-                            --   unrelated to msg class
-  , msgIsSavedToHistory  :: Bool
-  , msgIsDisplayed       :: Bool
+  { msgShow              :: AttrString
+      -- ^ the colours and characters of the message
+      --   to be shown on the screen; not just text,
+      --   in case there was some colour not coming
+      --   from the message class
+  , msgSave              :: AttrString
+      -- ^ the same to be saved in the message log only
   , msgInterruptsRunning :: Bool
   , msgDisturbsResting   :: Bool
   , msgBindsPronouns     :: Bool
@@ -69,12 +69,11 @@ instance Binary Msg
 
 toMsg :: MsgCreate a => [(String, Color.Color)] -> MsgClass a -> a -> Msg
 toMsg prefixColors msgClass a =
-  let (t, _) = msgCreateConvert a  -- TODO store both, instead of msgIsSavedToHistory and msgIsDisplayed
+  let (tShow, tSave) = msgCreateConvert a
       mprefixColor = find ((`isPrefixOf` show msgClass) . fst) prefixColors
       color = maybe (msgColor msgClass) snd mprefixColor
-      msgLine = textFgToAS color t
-      msgIsSavedToHistory = isSavedToHistory msgClass
-      msgIsDisplayed = isDisplayed msgClass
+      msgShow = textFgToAS color tShow
+      msgSave = textFgToAS color tSave
       msgInterruptsRunning = interruptsRunning msgClass
       msgDisturbsResting = disturbsResting msgClass
       msgBindsPronouns = bindsPronouns msgClass
@@ -192,30 +191,6 @@ data MsgClass :: Type -> Type where
   MsgStopPlayback :: MsgClass MsgIgnore
 
 deriving instance Show (MsgClass a)
-
-isSavedToHistory :: MsgClass a -> Bool
-isSavedToHistory MsgItemMoveDifferent = False
-isSavedToHistory MsgSpam = False
-isSavedToHistory MsgMacro = False
-isSavedToHistory MsgRunStop = False
-isSavedToHistory MsgPrompt = False
-isSavedToHistory MsgPromptFocus = False
-isSavedToHistory MsgPromptMention = False
-isSavedToHistory MsgPromptWarning = False
-isSavedToHistory MsgPromptThreat = False
-isSavedToHistory MsgPromptItem = False
-isSavedToHistory MsgAlert = False
-isSavedToHistory MsgStopPlayback = False
-isSavedToHistory _ = True
-
-isDisplayed :: MsgClass a -> Bool
-isDisplayed MsgItemMoveLog = False
-isDisplayed MsgNumeric = False
-isDisplayed MsgRunStop = False
-isDisplayed MsgSpam = False
-isDisplayed MsgMacro = False
-isDisplayed MsgStopPlayback = False
-isDisplayed _ = True
 
 interruptsRunning :: MsgClass a -> Bool
 interruptsRunning MsgAdmin = False
@@ -384,58 +359,58 @@ msgColor MsgStopPlayback = cMeta
 
 -- * Report
 
-data RepMsgN = RepMsgN {repMsg :: Msg, _repN :: Int}
+data RepMsgNK = RepMsgNK {repMsg :: Msg, _repShow :: Int, _repSave :: Int}
   deriving Generic
 
-instance Binary RepMsgN
+instance Binary RepMsgNK
+
+-- | If only one of the message components is non-empty and non-whitespace,
+-- but its count is zero, the message is considered empty.
+nullRepMsgNK :: RepMsgNK -> Bool
+nullRepMsgNK (RepMsgNK Msg{..} n k) =
+  (all (Char.isSpace . Color.charFromW32) msgShow || n <= 0)
+  && (all (Char.isSpace . Color.charFromW32) msgSave || k <= 0)
 
 -- | The set of messages, with repetitions, to show at the screen at once.
-newtype Report = Report [RepMsgN]
+newtype Report = Report [RepMsgNK]
   deriving Binary
 
 -- | Empty set of messages.
 emptyReport :: Report
 emptyReport = Report []
 
--- | Test if the set of messages is empty.
+-- | Test if the list of messages is empty.
 nullReport :: Report -> Bool
 nullReport (Report l) = null l
 
-nullFilteredReport :: Report -> Bool
-nullFilteredReport (Report l) =
-  null $ filter (\(RepMsgN msg n) -> n > 0
-                                     && (msgIsSavedToHistory msg
-                                         || msgIsDisplayed msg)) l
-
--- | Add a message to the end of the report.
+-- | Add a message to the end of the report with the given repetition.
 snocReport :: Report -> Msg -> Int -> Report
-snocReport (Report !r) y n =
-  if null $ msgLine y then Report r else Report $ RepMsgN y n : r
+snocReport (Report r) msg n = Report $ RepMsgNK msg n n : r
 
 -- | Add a message to the start of report.
 consReport :: Msg -> Report -> Report
-consReport Msg{msgLine=[]} rep = rep
-consReport y (Report r) = Report $ r ++ [RepMsgN y 1]
+consReport msg (Report r) = Report $ r ++ [RepMsgNK msg 1 1]
 
 -- | Render a report as a (possibly very long) 'AttrString'. Filter out
--- messages not meant for display, unless not displaying, but recalling.
+-- messages not meant for display, unless not showing, but saving to history.
 renderReport :: Bool -> Report -> AttrString
 renderReport displaying (Report r) =
-  let rep = Report $ if displaying
-                     then filter (msgIsDisplayed . repMsg) r
-                     else r
+  let rep = map (\(RepMsgNK msg n k) -> if displaying
+                                        then (msgShow msg, n)
+                                        else (msgSave msg, k)) r
   in renderWholeReport rep
 
 -- | Render a report as a (possibly very long) 'AttrString'.
-renderWholeReport :: Report -> AttrString
-renderWholeReport (Report []) = []
-renderWholeReport (Report (x : xs)) =
-  renderWholeReport (Report xs) <+:> renderRepetition x
+renderWholeReport :: [(AttrString, Int)] -> AttrString
+renderWholeReport [] = []
+renderWholeReport (x : xs) =
+  renderWholeReport xs <+:> renderRepetition x
 
-renderRepetition :: RepMsgN -> AttrString
-renderRepetition (RepMsgN s 0) = msgLine s
-renderRepetition (RepMsgN s 1) = msgLine s
-renderRepetition (RepMsgN s n) = msgLine s ++ stringToAS ("<x" ++ show n ++ ">")
+renderRepetition :: (AttrString, Int) -> AttrString
+renderRepetition (as, n) =
+  if n <= 1 || all (Char.isSpace . Color.charFromW32) as
+  then as
+  else as ++ stringToAS ("<x" ++ show n ++ ">")
 
 anyInReport :: (Msg -> Bool) -> Report -> Bool
 anyInReport f (Report xns) = any (f . repMsg) xns
@@ -472,28 +447,30 @@ scrapRepetition History{ newReport = Report newMsgs
     -- We keep the message in the new report, because it should not
     -- vanish from the screen. In this way the message may be passed
     -- along many reports.
-    RepMsgN s1 n1 : rest1 ->
+    RepMsgNK s1 n1 _k1 : rest1 ->
       let commutative s = not $ msgBindsPronouns s
           butLastEOL [] = []
           butLastEOL s = if last s == Color.attrChar1ToW32 '\n'
                          then init s
                          else s
-          f (RepMsgN s2 _) = butLastEOL (msgLine s1) == butLastEOL (msgLine s2)
---                             && msgClass s1 == msgClass s2
---                                  -- the class may not display or not save
-      in case break f rest1 of
-        (_, []) | commutative s1 -> case break f oldMsgs of
-          (noDup, RepMsgN s2 n2 : rest2) ->
+          fn (RepMsgNK s2 _ _) =
+            butLastEOL (msgShow s1) == butLastEOL (msgShow s2)
+          _fk (RepMsgNK s2 _ _) =  -- TODO
+            butLastEOL (msgSave s1) == butLastEOL (msgSave s2)
+      in case break fn rest1 of
+        (_, []) | commutative s1 -> case break fn oldMsgs of
+          (noDup, RepMsgNK s2 n2 k2 : rest2) ->
             -- We keep the occurence of the message in the new report only.
-            let newReport = Report $ RepMsgN s2 (n1 + n2) : rest1
+            let newReport = Report $ RepMsgNK s2 (n1 + n2) k2 : rest1
                 oldReport = Report $ noDup ++ rest2
             in Just History{..}
           _ -> Nothing
-        (noDup, RepMsgN s2 n2 : rest2) | commutative s1
-                                         || all (commutative . repMsg) noDup ->
+        (noDup, RepMsgNK s2 n2 k2
+                : rest2) | commutative s1
+                           || all (commutative . repMsg) noDup ->
           -- We keep the older (and so, oldest) occurence of the message,
           -- to avoid visual disruption by moving the message around.
-          let newReport = Report $ noDup ++ RepMsgN s2 (n1 + n2) : rest2
+          let newReport = Report $ noDup ++ RepMsgNK s2 (n1 + n2) k2 : rest2
               oldReport = Report oldMsgs
           in Just History{..}
         _ -> Nothing
@@ -503,7 +480,9 @@ scrapRepetition History{ newReport = Report newMsgs
 -- duplicate and noting its existence in the result.
 addToReport :: History -> Msg -> Int -> Time -> (History, Bool)
 addToReport History{..} msg n time =
-  let newH = History{newReport = snocReport newReport msg n, newTime = time, ..}
+  let newH = History { newReport = snocReport newReport msg n
+                     , newTime = time
+                     , .. }
   in case scrapRepetition newH of
     Just scrappedH -> (scrappedH, True)
     Nothing -> (newH, False)
@@ -511,39 +490,38 @@ addToReport History{..} msg n time =
 -- | Add a newline to end of the new report of history, unless empty.
 addEolToNewReport :: History -> History
 addEolToNewReport hist =
-  if nullFilteredReport $ newReport hist
-  then hist
-  else let addEolToReport (Report []) = error "addEolToReport: empty report"
-           addEolToReport (Report (hd : tl)) = Report $ addEolToRepMsgN hd : tl
-           addEolToRepMsgN rm = rm {repMsg = addEolToMsg $ repMsg rm}
-           addEolToMsg msg = msg {msgLine = msgLine msg ++ stringToAS "\n"}
-       in hist {newReport = addEolToReport $ newReport hist}
+  let addEolToReport (Report []) = Report []
+      addEolToReport (Report (hd : tl)) = Report $ addEolToRepMsgNK hd : tl
+      addEolToRepMsgNK rm = rm {repMsg = addEolToMsg $ repMsg rm}
+      addEolToMsg msg = msg { msgShow = addEolToAS $ msgShow msg
+                            , msgSave = addEolToAS $ msgSave msg }
+      addEolToAS as = as ++ stringToAS "\n"
+  in hist {newReport = addEolToReport $ newReport hist}
 
 -- | Archive old report to history, filtering out messages with 0 duplicates
 -- and prompts. Set up new report with a new timestamp.
 archiveReport :: History -> History
 archiveReport History{newReport=Report newMsgs, ..} =
-  let f (RepMsgN _ n) = n > 0
-      newReportNon0 = Report $ filter f newMsgs
-  in if nullReport newReportNon0
+  let newReportFiltered = Report $ filter (not . nullRepMsgNK) newMsgs
+  in if nullReport newReportFiltered
      then -- Drop empty new report.
           History emptyReport timeZero oldReport oldTime archivedHistory
-     else let lU = map attrLineToU $ renderTimeReport oldTime oldReport
-          in History emptyReport timeZero newReportNon0 newTime
+     else let lU = map attrStringToU $ renderTimeReport oldTime oldReport
+          in History emptyReport timeZero newReportFiltered newTime
              $ foldl' (\ !h !v -> RB.cons v h) archivedHistory (reverse lU)
 
 renderTimeReport :: Time -> Report -> [AttrString]
-renderTimeReport !t (Report r) =
+renderTimeReport t rep =
   let turns = t `timeFitUp` timeTurn
-      rep = Report $ filter (msgIsSavedToHistory . repMsg) r
-  in [ stringToAS (show turns ++ ": ") ++ renderReport False rep
-     | not $ nullReport rep ]
+      as = renderReport False rep
+  in [ stringToAS (show turns ++ ": ") ++ as
+     | not $ all (Char.isSpace . Color.charFromW32) as ]
 
 lengthHistory :: History -> Int
 lengthHistory History{oldReport, archivedHistory} =
   RB.length archivedHistory
   + length (renderTimeReport timeZero oldReport)
-      -- matches @renderHistory@
+    -- matches @renderHistory@
 
 -- | Render history as many lines of text. New report is not rendered.
 -- It's expected to be empty when history is shown.
