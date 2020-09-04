@@ -941,7 +941,6 @@ spotItemBag verbose c bag = do
         resetXhair
         msgAddDifferent MsgItemMoveDifferent
                         (msgShort <> dotsIfShorter, msgLong)
-        msgAdd MsgItemMoveLog $ msgLong
   case subjects of
     [] -> return ()
     [(1, _, _)] -> sendMsg False

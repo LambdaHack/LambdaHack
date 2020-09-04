@@ -150,7 +150,6 @@ data MsgClass :: Type -> Type where
   MsgSpotThreat :: MsgClass MsgShowAndSave
   MsgItemMove :: MsgClass MsgShowAndSave
   MsgItemMoveDifferent :: MsgClass MsgDifferent
-  MsgItemMoveLog :: MsgClass MsgSave  -- TODO: remove
   MsgAction :: MsgClass MsgShowAndSave
   MsgActionMinor :: MsgClass MsgShowAndSave
   MsgEffectMajor :: MsgClass MsgShowAndSave
@@ -200,7 +199,6 @@ interruptsRunning MsgLonger = False
 interruptsRunning MsgItemDisco = False
 interruptsRunning MsgItemMove = False
 interruptsRunning MsgItemMoveDifferent = False
-interruptsRunning MsgItemMoveLog = False
 interruptsRunning MsgActionMinor = False
 interruptsRunning MsgEffectMinor = False
 interruptsRunning MsgHeard = False
@@ -229,7 +227,6 @@ disturbsResting MsgLeader = False -- handled separately
 disturbsResting MsgItemDisco = False
 disturbsResting MsgItemMove = False
 disturbsResting MsgItemMoveDifferent = False
-disturbsResting MsgItemMoveLog = False
 disturbsResting MsgActionMinor = False
 disturbsResting MsgEffectMinor = False
 disturbsResting MsgHeardElsewhere = False
@@ -317,7 +314,6 @@ msgColor MsgSpotActor = cBoring  -- too common; warning in @MsgSpotThreat@
 msgColor MsgSpotThreat = cGraveRisk
 msgColor MsgItemMove = cBoring
 msgColor MsgItemMoveDifferent = cBoring
-msgColor MsgItemMoveLog = cBoring
 msgColor MsgAction = cBoring
 msgColor MsgActionMinor = cBoring
 msgColor MsgEffectMajor = cRareNeutralEvent
