@@ -33,7 +33,7 @@ data UIOptions = UIOptions
   , uNoAnim           :: Bool
   , uhpWarningPercent :: Int
       -- ^ HP percent at which warning is emitted.
-  , uMessageColors    :: Maybe [(String, Color.Color)]
+  , uMessageColors    :: [(String, Color.Color)]
       -- ^ Prefixes of message class constructor names paired with colors.
       --   The first prefix that matches, wins.
   , uCmdline          :: [String]

@@ -67,14 +67,11 @@ data Msg = Msg
 
 instance Binary Msg
 
-toMsg :: MsgCreate a => Maybe [(String, Color.Color)] -> MsgClass a -> a -> Msg
-toMsg mprefixList msgClass a =
+toMsg :: MsgCreate a => [(String, Color.Color)] -> MsgClass a -> a -> Msg
+toMsg prefixColors msgClass a =
   let (t, _) = msgCreateConvert a  -- TODO store both, instead of msgIsSavedToHistory and msgIsDisplayed
-      matchPrefix msgClassString prefixList =
-        find ((`isPrefixOf` msgClassString) . fst) prefixList
-      findColorInConfig prefixList =
-        fromMaybe Color.White (snd <$> matchPrefix (show msgClass) prefixList)
-      color = maybe (msgColor msgClass) findColorInConfig mprefixList
+      mprefixColor = find ((`isPrefixOf` show msgClass) . fst) prefixColors
+      color = maybe (msgColor msgClass) snd mprefixColor
       msgLine = textFgToAS color t
       msgIsSavedToHistory = isSavedToHistory msgClass
       msgIsDisplayed = isDisplayed msgClass

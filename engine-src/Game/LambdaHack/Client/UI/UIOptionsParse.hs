@@ -59,8 +59,8 @@ parseConfig cfg =
       lookupFail optionName err =
         configError $ "config file access failed"
                       `showFailure` (err, optionName, cfg)
-      getOptionMaybe :: forall a. Read a => String -> Maybe a
-      getOptionMaybe optionName =
+      _getOptionMaybe :: forall a. Read a => String -> Maybe a
+      _getOptionMaybe optionName =
         let ms = Ini.getOption "ui" optionName cfg
         in either (lookupFail optionName) id . readEither <$> ms
       getOption :: forall a. Read a => String -> a
@@ -81,7 +81,8 @@ parseConfig cfg =
       uMaxFps = max 1 $ getOption "maxFps"
       uNoAnim = getOption "noAnim"
       uhpWarningPercent = getOption "hpWarningPercent"
-      uMessageColors = getOptionMaybe "messageColors"
+      uMessageColors = map (\(prefix, color) -> (prefix, readError color))
+                       $ Ini.allItems "message_colors" cfg
       uCmdline = glueSeed $ words $ getOption "overrideCmdline"
       uFonts =
         let toFont (ident, fontString) = (T.pack ident, readError fontString)

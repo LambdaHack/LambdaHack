@@ -207,11 +207,11 @@ getReportUI = do
   let newcomerHelp = True  -- TODO
       detailAtDefault = (detailLevel <$> saimMode) == Just defaultDetailLevel
       underAI = isAIFact fact
-      mprefixList = uMessageColors sUIOptions
+      prefixColors = uMessageColors sUIOptions
       -- Here we assume newbies don't override default keys.
-      promptAim = toMsg mprefixList MsgPrompt
+      promptAim = toMsg prefixColors MsgPrompt
                   $ msgSameInject $ miniHintAiming <> "\n"
-      promptAI = toMsg mprefixList MsgAlert
+      promptAI = toMsg prefixColors MsgAlert
                  $ msgSameInject "<press any key for main menu>"
   return $! if | newcomerHelp && detailAtDefault -> consReport promptAim report
                | underAI -> consReport promptAI report

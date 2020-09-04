@@ -55,8 +55,6 @@ historyMax = 5000
 maxFps = 24
 noAnim = False
 hpWarningPercent = 20
-; Uncomment to make all messages white.
-; messageColors = []
 overrideCmdline = ""
 
 [fonts]
@@ -103,3 +101,10 @@ ubuntuMono = FontSet {fontMapScalable = "16x16xwScalable", fontMapBitmap = "16x1
 16x16xw = FontSet {fontMapScalable = "16x16xwScalable", fontMapBitmap = "16x16xwBitmap", fontPropRegular = "", fontPropBold = "", fontMono = ""}
 8x8xb = FontSet {fontMapScalable = "", fontMapBitmap = "8x8xbBitmap", fontPropRegular = "", fontPropBold = "", fontMono = ""}
 8x8x = FontSet {fontMapScalable = "", fontMapBitmap = "8x8xBitmap", fontPropRegular = "", fontPropBold = "", fontMono = ""}
+
+[message_colors]
+; Prefixes of message class constructor names paired with colors.
+; The first prefix that matches, wins.
+;
+; E.g., uncomment to make all messages white:
+; Msg = White
