@@ -84,7 +84,7 @@ import           Game.LambdaHack.Definition.Flavour
 -- | Visualize atomic updates sent to the client. This is done
 -- in the global state after the command is executed and after
 -- the client state is modified by the command.
--- Don't modify client state (except a few fields), but only client
+-- Doesn't modify client state (except a few fields), but only client
 -- session (e.g., by displaying messages). This is enforced by types.
 displayRespUpdAtomicUI :: MonadClientUI m => UpdAtomic -> m ()
 {-# INLINE displayRespUpdAtomicUI #-}
@@ -462,11 +462,20 @@ displayRespUpdAtomicUI cmd = case cmd of
   UpdPerception{} -> return ()
   UpdRestart fid _ _ _ _ srandom -> do
     COps{cocave, corule} <- getsState scops
-    modifySession $ \sess -> sess {srandomUI = srandom}
-    sstart <- getsSession sstart
-    when (sstart == 0) resetSessionStart
-    history <- getsSession shistory
-    when (lengthHistory history == 0) $ do
+    oldSess <- getSession
+    putSession $ (emptySessionUI (sUIOptions oldSess))
+          { schanF = schanF oldSess
+          , sccui = sccui oldSess
+          , shistory = shistory oldSess
+          , sstart = sstart oldSess
+          , sgstart = sgstart oldSess
+          , sallTime = sallTime oldSess
+          , snframes = snframes oldSess
+          , sallNframes = sallNframes oldSess
+          , srandomUI = srandom
+          }
+    when (sstart oldSess == 0) resetSessionStart
+    when (lengthHistory (shistory oldSess) == 0) $ do
       let title = T.pack $ rtitle corule
       msgAdd MsgAdmin $ "Welcome to" <+> title <> "!"
       -- Generate initial history. Only for UI clients.
@@ -506,7 +515,7 @@ displayRespUpdAtomicUI cmd = case cmd of
     msgLnAdd MsgBecomeHarmfulUs blurb  -- nice colour; being here is harmful
     when (cwolf curChal && not loneMode) $
       msgAdd MsgWarning "Being a lone wolf, you begin without companions."
-    when (lengthHistory history > 1) $ fadeOutOrIn False
+    when (lengthHistory (shistory oldSess) > 1) $ fadeOutOrIn False
     setFrontAutoYes $ isAIFact fact
     -- Forget the furious keypresses when dying in the previous game.
     resetPressedKeys

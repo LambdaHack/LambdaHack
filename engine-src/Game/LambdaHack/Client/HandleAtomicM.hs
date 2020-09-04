@@ -46,10 +46,9 @@ import           Game.LambdaHack.Content.ModeKind
 import           Game.LambdaHack.Content.TileKind (TileKind)
 import           Game.LambdaHack.Definition.Defs
 
--- | Client monad for saving and restarting games.
+-- | Client monad for saving a game.
 class MonadClient m => MonadClientSetup m where
   saveClient    :: m ()
-  restartClient :: m ()
 
 -- | Effect of atomic actions on client state. It is calculated
 -- with the global state from after the command is executed
@@ -265,7 +264,6 @@ cmdAtomicSemCli oldState cmd = case cmd of
                   , stabs }
     salter <- getsState createSalter
     modifyClient $ \cli1 -> cli1 {salter}
-    restartClient
   UpdRestartServer{} -> return ()
   UpdResume _side sfperNew -> do
 #ifdef WITH_EXPENSIVE_ASSERTIONS

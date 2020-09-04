@@ -80,22 +80,6 @@ instance MonadClientSetup CliImplementation where
     cli <- gets cliClient
     msess <- gets cliSession
     IO.liftIO $ Save.saveToChan toSave (cli, msess)
-  restartClient = CliImplementation $ state $ \cliS ->
-    case cliSession cliS of
-      Just sess ->
-        let !newSess = (emptySessionUI (sUIOptions sess))
-                         { schanF = schanF sess
-                         , sccui = sccui sess
-                         , shistory = shistory sess
-                         , sstart = sstart sess
-                         , sgstart = sgstart sess
-                         , sallTime = sallTime sess
-                         , snframes = snframes sess
-                         , sallNframes = sallNframes sess
-                         }
-            !newCliS = cliS {cliSession = Just newSess}
-        in ((), newCliS)
-      Nothing -> ((), cliS)
 
 instance MonadClientUI CliImplementation where
   {-# INLINE getsSession #-}
