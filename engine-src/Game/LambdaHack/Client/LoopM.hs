@@ -111,7 +111,9 @@ loopCli ccui sUIOptions clientOptions = do
   debugPossiblyPrint $ cliendKindText <+> "client"
                        <+> tshow side <+> "started 4/4."
   loop
-  debugPossiblyPrint $ cliendKindText <+> "client" <+> tshow side <+> "stopped."
+  side2 <- getsClient sside
+  debugPossiblyPrint $ cliendKindText <+> "client" <+> tshow side2
+                       <+> "(initially" <+> tshow side <> ") stopped."
  where
   loop = do
     cmd <- receiveResponse

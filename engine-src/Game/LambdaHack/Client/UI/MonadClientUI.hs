@@ -418,11 +418,11 @@ resetGameStart = do
   sgstart <- liftIO getPOSIXTime
   time <- getsState stime
   nframes <- getsSession snframes
-  modifySession $ \cli ->
-    cli { sgstart
-        , sallTime = absoluteTimeAdd (sallTime cli) time
+  modifySession $ \sess ->
+    sess { sgstart
+        , sallTime = absoluteTimeAdd (sallTime sess) time
         , snframes = 0
-        , sallNframes = sallNframes cli + nframes }
+        , sallNframes = sallNframes sess + nframes }
 
 -- | The part of speech describing the actor or the "you" pronoun if he is
 -- the leader of the observer's faction.

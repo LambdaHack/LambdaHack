@@ -192,7 +192,11 @@ updateConn executorClient = do
       addConn :: FactionId -> Faction -> IO ChanServer
       addConn fid fact = case EM.lookup fid oldD of
         Just conns -> return conns  -- share old conns and threads
-        Nothing -> mkChanServer fact
+        Nothing | fromEnum fid < 0 -> mkChanServer fact
+        Nothing -> case filter (\(fidOld, _) -> fromEnum fidOld > 0)
+                        $ EM.assocs oldD of
+          [] -> mkChanServer fact
+          (_, conns) : _ -> return conns  -- re-use session to keep history
   factionD <- getsState sfactionD
   d <- liftIO $ mapWithKeyM addConn factionD
   let newD = d `EM.union` oldD  -- never kill old clients
@@ -205,10 +209,10 @@ updateConn executorClient = do
         forkChild childrenServer $ executorClient False fid connS
       forkClient fid conn@ChanServer{requestUIS=Nothing} =
         -- When a connection is reused, clients are not respawned,
-        -- even if UI usage changes, but it works OK thanks to UI faction
-        -- clients distinguished by positive FactionId numbers.
+        -- even if UI status of a faction changes, but it works OK thanks to
+        -- UI faction clients distinguished by positive FactionId numbers.
         forkAI fid conn
-      forkClient fid conn =
+      forkClient fid conn = when (EM.null oldD) $
         forkUI fid conn
   liftIO $ mapWithKeyM_ forkClient toSpawn
 
