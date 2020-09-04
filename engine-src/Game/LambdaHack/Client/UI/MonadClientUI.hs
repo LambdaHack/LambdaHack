@@ -8,8 +8,7 @@ module Game.LambdaHack.Client.UI.MonadClientUI
                  , getCachePath
                  )
     -- * Assorted primitives
-  , clientPrintUI, debugPossiblyPrintUI
-  , getSession, putSession, relinquishFrontend, displayFrames
+  , clientPrintUI, debugPossiblyPrintUI, getSession, putSession, displayFrames
   , connFrontendFrontKey, setFrontAutoYes, frontendShutdown, printScreen
   , chanFrontend, anyKeyPressed, discardPressedKey, resetPressedKeys
   , addPressedKey, addPressedControlEsc, revCmdMap
@@ -29,7 +28,6 @@ import Prelude ()
 
 import Game.LambdaHack.Core.Prelude
 
-import           Control.Concurrent
 import qualified Control.Monad.Trans.State.Strict as St
 import qualified Data.EnumMap.Strict as EM
 import qualified Data.Map.Strict as M
@@ -114,12 +112,6 @@ connFrontend :: MonadClientUI m => Frontend.FrontReq a -> m a
 connFrontend req = do
   Frontend.ChanFrontend f <- getsSession schanF
   liftIO $ f req
-
-relinquishFrontend :: MonadClientUI m => m ()
-relinquishFrontend = do
-  modifySession $ \sess -> sess {snframes = -1}  -- client disabled
-  schanF <- getsSession schanF
-  liftIO $ putMVar Frontend.commonChanFrontendMVar $ Just schanF
 
 displayFrame :: MonadClientUI m => Maybe Frame -> m ()
 displayFrame mf = do

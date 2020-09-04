@@ -33,10 +33,13 @@ initAI = do
   debugPossiblyPrint $ "AI client" <+> tshow side <+> "initializing."
 
 initUI :: (MonadClient m, MonadClientUI m) => CCUI -> m ()
-initUI sccui = do
+initUI sccui@CCUI{coscreen} = do
   side <- getsClient sside
+  soptions <- getsClient soptions
   debugPossiblyPrint $ "UI client" <+> tshow side <+> "initializing."
-  modifySession $ \sess -> sess {sccui}
+  -- Start the frontend.
+  schanF <- chanFrontend coscreen soptions
+  modifySession $ \sess -> sess {schanF, sccui}
 
 -- | The main game loop for an AI or UI client. It receives responses from
 -- the server, changes internal client state accordingly, analyzes

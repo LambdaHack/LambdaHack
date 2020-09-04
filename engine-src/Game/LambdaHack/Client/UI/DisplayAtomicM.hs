@@ -461,12 +461,8 @@ displayRespUpdAtomicUI cmd = case cmd of
   UpdCoverServer{} -> error "server command leaked to client"
   UpdPerception{} -> return ()
   UpdRestart fid _ _ _ _ srandom -> do
-    -- Start or take over the frontend.
-    CCUI{coscreen} <- getsSession sccui
-    soptions <- getsClient soptions
-    schanF <- chanFrontend coscreen soptions
-    modifySession $ \sess -> sess {schanF, srandomUI = srandom}
     COps{cocave, corule} <- getsState scops
+    modifySession $ \sess -> sess {srandomUI = srandom}
     sstart <- getsSession sstart
     when (sstart == 0) resetSessionStart
     history <- getsSession shistory
@@ -520,11 +516,6 @@ displayRespUpdAtomicUI cmd = case cmd of
   UpdRestartServer{} -> return ()
   UpdResume fid _ -> do
     COps{cocave} <- getsState scops
-    -- Start or take over the frontend.
-    CCUI{coscreen} <- getsSession sccui
-    soptions <- getsClient soptions
-    schanF <- chanFrontend coscreen soptions
-    modifySession $ \sess -> sess {schanF}
     resetSessionStart
     fact <- getsState $ (EM.! fid) . sfactionD
     setFrontAutoYes $ isAIFact fact
@@ -544,14 +535,9 @@ displayRespUpdAtomicUI cmd = case cmd of
   UpdResumeServer{} -> return ()
   UpdKillExit{} -> do
     side <- getsClient sside
-    nframes <- getsSession snframes
-    debugPossiblyPrintUI $ "Client" <+> tshow side <+> "checking frontend."
-    -- Checking @sfactionD@ here wouldn't work, becuase client state
-    -- may be not updated after the game finishes and another starts.
-    when (nframes /= -1) $ do  -- the active UI client
-      debugPossiblyPrintUI $ "Client" <+> tshow side <+> "closing frontend."
-      frontendShutdown
-      debugPossiblyPrintUI $ "Client" <+> tshow side <+> "closed frontend."
+    debugPossiblyPrintUI $ "Client" <+> tshow side <+> "closing frontend."
+    frontendShutdown
+    debugPossiblyPrintUI $ "Client" <+> tshow side <+> "closed frontend."
   UpdWriteSave -> msgAdd MsgSpam "Saving backup."
   UpdHearFid _ distance hearMsg -> do
     mleader <- getsClient sleader
@@ -1595,9 +1581,7 @@ displayRespSfxAtomicUI sfx = case sfx of
     case mmsg of
       Just (msgClass, msg) -> msgAdd msgClass msg
       Nothing -> return ()
-  SfxRestart -> do
-    fadeOutOrIn True
-    relinquishFrontend  -- make sure the fadeout is not interspersed with fadein
+  SfxRestart -> fadeOutOrIn True
   SfxCollideTile source pos -> do
     COps{cotile} <- getsState scops
     sb <- getsState $ getActorBody source
