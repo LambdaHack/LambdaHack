@@ -200,6 +200,7 @@ splitOverlay fontSetup uScreen1PerLine width height wrap
       msgLong = not uScreen1PerLine
                 && null keys && EM.null ls0 && null kxs0
                 && length renderedReport <= 2 * width
+                && all ((/= '\n') . Color.charFromW32) reportAS
                      -- if fits in one long line, don't wrap into short lines
   in toSlideshow fontSetup $ splitOKX fontSetup msgLong width height wrap
                                       reportAS keys (ls0, kxs0)
@@ -266,7 +267,8 @@ splitOKX FontSetup{..} msgLong width height wrap reportAS keys (ls0, kxs0) =
            else let (preX, postX) = span (\(_, pa) -> ltOffset pa) kxs
                 in (prependHdr $ lineRenumber pre, rk ++ keyRenumber preX)
                    : splitO yoffsetNew (hdrPrep, hdrMono, rk) (post, postX)
-      hdrShortened = ( [(PointUI 0 0, firstParagraph reportAS)]
+      firstParaReport = firstParagraph reportAS
+      hdrShortened = ( [(PointUI 0 0, firstParaReport)]
                          -- shortened for the main slides; in full beforehand
                      , take 3 lX1  -- 3 lines ought to be enough for everyone
                      , keysX1 )
@@ -274,8 +276,8 @@ splitOKX FontSetup{..} msgLong width height wrap reportAS keys (ls0, kxs0) =
         -- Check whether all space taken by report and keys.
         if | (lenOfRep + length lX) < height ->  -- display normally
              ((EM.empty, []), (repPrep0, lX ++ repMono0, keysX))
-           | length reportAS <= 2 * width ->  -- very crude check, but OK
-             ( (EM.empty, [])  -- already shown in full in shortened header
+           | length (attrLine firstParaReport) <= 2 * width ->  -- crude, but OK
+             ( (EM.empty, [])  -- already shown in shortened header
              , hdrShortened )
            | otherwise -> case lX0 of
                [] ->
