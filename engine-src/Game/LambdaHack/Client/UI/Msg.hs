@@ -67,6 +67,9 @@ data Msg = Msg
 
 instance Binary Msg
 
+nullMsg :: Msg -> Bool
+nullMsg Msg{..} = null msgShow && null msgSave
+
 toMsg :: MsgCreate a => [(String, Color.Color)] -> MsgClass a -> a -> Msg
 toMsg prefixColors msgClass a =
   let (tShow, tSave) = msgCreateConvert a
@@ -379,12 +382,11 @@ emptyReport = Report []
 nullReport :: Report -> Bool
 nullReport (Report l) = null l
 
--- | Add a message to the end of the report with the given repetition.
-snocReport :: Report -> Msg -> Int -> Report
-snocReport (Report r) msg n = Report $ RepMsgNK msg n n : r
-
 -- | Add a message to the start of report.
+--
+-- Empty messages are not added to make checking report emptiness easier.
 consReport :: Msg -> Report -> Report
+consReport msg rep | nullMsg msg = rep
 consReport msg (Report r) = Report $ r ++ [RepMsgNK msg 1 1]
 
 -- | Render a report as a (possibly very long) 'AttrString'. Filter out
@@ -484,19 +486,27 @@ scrapRepetition History{ newReport = Report newMsgs
                                   (makeSaveC rest1)
                                   (makeSave oldMsgs)
       in if scrapShowNeeded || scrapSaveNeeded
-         then let combineMsg msg (s, n) (t, k) =
+         then let combineMsg _ ([], _) ([], _) = Nothing
+                  combineMsg msg (s, n) (t, k) = Just $
                     RepMsgNK msg{msgShow = s, msgSave = t} n k
-                  zipMsg l1 l2 l3 =
-                    Report $ zipWith3 combineMsg (map repMsg l1) l2 l3
+                  zipMsg l1 l2 l3 = Report $ catMaybes $
+                    zipWith3 combineMsg (map repMsg l1) l2 l3
                   newReport = zipMsg newMsgs scrapShowNew scrapSaveNew
                   oldReport = zipMsg oldMsgs scrapShowOld scrapSaveOld
               in Just History{..}
          else Nothing
-    _ -> Nothing  -- empty new report
+    _ -> error "scrapRepetition: empty new report for scrapping"
+
+-- | Add a message to the end of the report with the given repetition.
+snocReport :: Report -> Msg -> Int -> Report
+snocReport (Report r) msg n = Report $ RepMsgNK msg n n : r
 
 -- | Add a message to the new report of history, eliminating a possible
 -- duplicate and noting its existence in the result.
+--
+-- Empty messages are not added to make checking report emptiness easier.
 addToReport :: History -> Msg -> Int -> Time -> (History, Bool)
+addToReport hist msg _ _ | nullMsg msg = (hist, False)
 addToReport History{..} msg n time =
   let newH = History { newReport = snocReport newReport msg n
                      , newTime = time
