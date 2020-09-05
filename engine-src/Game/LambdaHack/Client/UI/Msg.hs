@@ -59,6 +59,7 @@ data Msg = Msg
       --   from the message class
   , msgSave              :: AttrString
       -- ^ the same to be saved in the message log only
+  , msgClassName         :: String
   , msgInterruptsRunning :: Bool
   , msgDisturbsResting   :: Bool
   , msgBindsPronouns     :: Bool
@@ -73,10 +74,11 @@ nullMsg Msg{..} = null msgShow && null msgSave
 toMsg :: MsgCreate a => [(String, Color.Color)] -> MsgClass a -> a -> Msg
 toMsg prefixColors msgClass a =
   let (tShow, tSave) = msgCreateConvert a
-      mprefixColor = find ((`isPrefixOf` show msgClass) . fst) prefixColors
+      mprefixColor = find ((`isPrefixOf` msgClassName) . fst) prefixColors
       color = maybe (msgColor msgClass) snd mprefixColor
       msgShow = textFgToAS color tShow
       msgSave = textFgToAS color tSave
+      msgClassName = show msgClass
       msgInterruptsRunning = interruptsRunning msgClass
       msgDisturbsResting = disturbsResting msgClass
       msgBindsPronouns = bindsPronouns msgClass
@@ -539,14 +541,17 @@ archiveReport uHistory1PerLine History{newReport=Report newMsgs, ..} =
              $ foldl' (\ !h !v -> RB.cons v h) archivedHistory (reverse lU)
 
 renderTimeReport :: Bool -> Time -> Report -> [AttrString]
-renderTimeReport uHistory1PerLine t rep =
+renderTimeReport uHistory1PerLine t rep@(Report r) =
   let turns = t `timeFitUp` timeTurn
       repMsgs = renderReport False rep
-      ass = if uHistory1PerLine
-            then repMsgs
-            else [foldr (<+:>) [] repMsgs]
+      mgsClasses = reverse $ map (msgClassName . repMsg) r
       rederAS as = stringToAS (show turns ++ ": ") ++ as
-  in map rederAS $ filter (not . all (Char.isSpace . Color.charFromW32)) ass
+      rederASClass (as, msgClassString) =
+        stringToAS (show turns ++ ":[" ++ msgClassString ++ "] ") ++ as
+      worthSaving = not . all (Char.isSpace . Color.charFromW32)
+  in if uHistory1PerLine
+     then map rederASClass $ filter (worthSaving . fst) $ zip repMsgs mgsClasses
+     else map rederAS $ filter worthSaving $ [foldr (<+:>) [] repMsgs]
 
 lengthHistory :: Bool -> History -> Int
 lengthHistory uHistory1PerLine History{oldReport, archivedHistory} =
