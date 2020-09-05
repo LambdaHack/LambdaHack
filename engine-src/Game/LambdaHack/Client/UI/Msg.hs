@@ -547,7 +547,10 @@ renderTimeReport uHistory1PerLine t rep@(Report r) =
       mgsClasses = reverse $ map (msgClassName . repMsg) r
       rederAS as = stringToAS (show turns ++ ": ") ++ as
       rederASClass (as, msgClassString) =
-        stringToAS (show turns ++ ":[" ++ msgClassString ++ "] ") ++ as
+        stringToAS (show turns ++ ":")
+        ++ map (Color.attrChar2ToW32 Color.BrBlack)
+               ("[" ++ msgClassString ++ "]")
+        ++ [Color.spaceAttrW32] ++ as
       worthSaving = not . all (Char.isSpace . Color.charFromW32)
   in if uHistory1PerLine
      then map rederASClass $ filter (worthSaving . fst) $ zip repMsgs mgsClasses
