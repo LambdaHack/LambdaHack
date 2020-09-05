@@ -179,7 +179,7 @@ data MsgClass :: Type -> Type where
   MsgNumeric :: MsgClass MsgSave
   MsgSpam :: MsgClass MsgIgnore
   MsgMacro :: MsgClass MsgIgnore
-  MsgRunStop :: MsgClass MsgShow
+  MsgRunStop :: MsgClass MsgIgnore
   MsgPrompt :: MsgClass MsgShow
   MsgPromptFocus :: MsgClass MsgShow
   MsgPromptMention :: MsgClass MsgShow
