@@ -191,7 +191,7 @@ keysOKX displayFont ystart xstart width keys =
 splitOverlay :: FontSetup -> Int -> Int -> Int -> Report -> [K.KM] -> OKX
              -> Slideshow
 splitOverlay fontSetup width height wrap report keys (ls0, kxs0) =
-  let renderedReport = renderReport True report
+  let renderedReport = foldr (<+:>) [] $ renderReport True report
       msgLong = null keys && EM.null ls0 && null kxs0
                 && length renderedReport <= 2 * width
                      -- if fits in one long line, don't wrap into short lines

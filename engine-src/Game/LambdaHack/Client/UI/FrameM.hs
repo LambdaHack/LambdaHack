@@ -117,7 +117,7 @@ pushFrame = do
     lidV <- viewedLevelUI
     report <- getReportUI
     FontSetup{propFont} <- getFontSetup
-    let par1 = firstParagraph $ renderReport True report
+    let par1 = firstParagraph $ foldr (<+:>) [] $ renderReport True report
         truncRep = EM.fromList [(propFont, [(K.PointUI 0 0, par1)])]
     frame <- drawOverlay ColorFull False truncRep lidV
     displayFrames lidV [Just frame]
@@ -238,7 +238,7 @@ renderFrames onBlank arena anim = do
   let ovFont = if not onBlank || fromMaybe False snoAnim
                then propFont
                else squareFont
-      par1 = firstParagraph $ renderReport True report
+      par1 = firstParagraph $ foldr (<+:>) [] $ renderReport True report
       truncRep = EM.fromList [(ovFont, [(K.PointUI 0 0, par1)])]
   basicFrame <- drawOverlay ColorFull False truncRep arena
   return $! if fromMaybe False snoAnim

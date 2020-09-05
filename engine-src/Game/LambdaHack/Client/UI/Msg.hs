@@ -391,18 +391,17 @@ consReport msg (Report r) = Report $ r ++ [RepMsgNK msg 1 1]
 
 -- | Render a report as a (possibly very long) 'AttrString'. Filter out
 -- messages not meant for display, unless not showing, but saving to history.
-renderReport :: Bool -> Report -> AttrString
+renderReport :: Bool -> Report -> [AttrString]
 renderReport displaying (Report r) =
   let rep = map (\(RepMsgNK msg n k) -> if displaying
                                         then (msgShow msg, n)
                                         else (msgSave msg, k)) r
-  in renderWholeReport rep
+  in renderWholeReport rep []
 
 -- | Render a report as a (possibly very long) 'AttrString'.
-renderWholeReport :: [(AttrString, Int)] -> AttrString
-renderWholeReport [] = []
-renderWholeReport (x : xs) =
-  renderWholeReport xs <+:> renderRepetition x
+renderWholeReport :: [(AttrString, Int)] -> [AttrString] -> [AttrString]
+renderWholeReport [] acc = acc
+renderWholeReport (x : xs) acc = renderWholeReport xs (renderRepetition x : acc)
 
 renderRepetition :: (AttrString, Int) -> AttrString
 renderRepetition (as, n) =
@@ -542,9 +541,12 @@ archiveReport uHistory1PerLine History{newReport=Report newMsgs, ..} =
 renderTimeReport :: Bool -> Time -> Report -> [AttrString]
 renderTimeReport uHistory1PerLine t rep =
   let turns = t `timeFitUp` timeTurn
-      as = renderReport False rep
-  in [ stringToAS (show turns ++ ": ") ++ as
-     | not $ all (Char.isSpace . Color.charFromW32) as ]
+      repMsgs = renderReport False rep
+      ass = if uHistory1PerLine
+            then repMsgs
+            else [foldr (<+:>) [] repMsgs]
+      rederAS as = stringToAS (show turns ++ ": ") ++ as
+  in map rederAS $ filter (not . all (Char.isSpace . Color.charFromW32)) ass
 
 lengthHistory :: Bool -> History -> Int
 lengthHistory uHistory1PerLine History{oldReport, archivedHistory} =
