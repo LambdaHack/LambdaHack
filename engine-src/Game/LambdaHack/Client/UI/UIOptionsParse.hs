@@ -72,6 +72,8 @@ parseConfig cfg =
       uLeftHand = getOption "movementLeftHandKeys_axwdqezc"
       uChosenFontset = getOption "chosenFontset"
       uAllFontsScale = getOption "allFontsScale"
+      uScreen1PerLine = getOption "screenOneMessagePerLine"
+      uHistory1PerLine = getOption "historyOneMessagePerLine"
 #ifdef USE_JSFILE
       -- Local storage quota exeeded on Chrome.
       uHistoryMax = getOption "historyMax" `div` 10
