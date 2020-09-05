@@ -18,7 +18,7 @@ module Game.LambdaHack.Client.UI.Msg
   , RepMsgNK, nullRepMsgNK
   , interruptsRunning, disturbsResting, bindsPronouns, msgColor
   , emptyReport, snocReport, renderWholeReport, renderRepetition
-  , scrapRepetition, renderTimeReport
+  , scrapRepetitionSingle, scrapRepetition, renderTimeReport
 #endif
   ) where
 
@@ -433,6 +433,29 @@ emptyHistory size =
   in History emptyReport timeZero emptyReport timeZero
              (RB.empty ringBufferSize U.empty)
 
+scrapRepetitionSingle :: ((AttrString, Int), Bool)
+                      -> [((AttrString, Int), Bool)] -> [(AttrString, Int)]
+                      -> (Bool, [(AttrString, Int)], [(AttrString, Int)])
+scrapRepetitionSingle ((s1, n1), commutative1) rest1 oldMsgs =
+  let butLastEOLs = dropWhileEnd ((== '\n') . Color.charFromW32)
+      eqs1 (s2, _) = butLastEOLs s1 == butLastEOLs s2
+      noChange = (False, (s1, n1) : map fst rest1, oldMsgs)
+  in case break (eqs1 . fst) rest1 of
+    (_, []) | commutative1 -> case break eqs1 oldMsgs of
+      (noDup, (_, n2) : rest2) ->
+        -- We keep the occurence of the message in the new report only.
+        let newReport = (s1, n1 + n2) : map fst rest1
+            oldReport = noDup ++ ([], 0) : rest2
+        in (True, newReport, oldReport)
+      _ -> noChange
+    (noDup, ((s2, n2), _) : rest3) | commutative1 || all snd noDup ->
+      -- We keep the older (and so, oldest) occurence of the message,
+      -- to avoid visual disruption by moving the message around.
+      let newReport = ([], 0) : map fst noDup ++ (s2, n1 + n2) : map fst rest3
+          oldReport = oldMsgs
+      in (True, newReport, oldReport)
+    _ -> noChange
+
 scrapRepetition :: History -> Maybe History
 scrapRepetition History{ newReport = Report newMsgs
                        , oldReport = Report oldMsgs
@@ -443,30 +466,32 @@ scrapRepetition History{ newReport = Report newMsgs
     -- We keep the message in the new report, because it should not
     -- vanish from the screen. In this way the message may be passed
     -- along many reports.
-    RepMsgNK s1 n1 _k1 : rest1 ->
-      let commutative s = not $ msgBindsPronouns s
-          butLastEOLs = dropWhileEnd ((== '\n') . Color.charFromW32)
-          fn (RepMsgNK s2 _ _) =
-            butLastEOLs (msgShow s1) == butLastEOLs (msgShow s2)
-          _fk (RepMsgNK s2 _ _) =  -- TODO
-            butLastEOLs (msgSave s1) == butLastEOLs (msgSave s2)
-      in case break fn rest1 of
-        (_, []) | commutative s1 -> case break fn oldMsgs of
-          (noDup, RepMsgNK s2 n2 k2 : rest2) ->
-            -- We keep the occurence of the message in the new report only.
-            let newReport = Report $ RepMsgNK s2 (n1 + n2) k2 : rest1
-                oldReport = Report $ noDup ++ rest2
-            in Just History{..}
-          _ -> Nothing
-        (noDup, RepMsgNK s2 n2 k2
-                : rest2) | commutative s1
-                           || all (commutative . repMsg) noDup ->
-          -- We keep the older (and so, oldest) occurence of the message,
-          -- to avoid visual disruption by moving the message around.
-          let newReport = Report $ noDup ++ RepMsgNK s2 (n1 + n2) k2 : rest2
-              oldReport = Report oldMsgs
-          in Just History{..}
-        _ -> Nothing
+    RepMsgNK msg1 n1 k1 : rest1 ->
+      let commutative = not . msgBindsPronouns
+          commutative1 = commutative msg1
+          makeShow = map (\(RepMsgNK msg n _) -> (msgShow msg, n))
+          makeShowC = map (\(RepMsgNK msg n _) -> ( (msgShow msg, n)
+                                                  , commutative msg ))
+          makeSave = map (\(RepMsgNK msg _ k) -> (msgSave msg, k))
+          makeSaveC = map (\(RepMsgNK msg _ k) -> ( (msgSave msg, k)
+                                                  , commutative msg ))
+          (scrapShowNeeded, scrapShowNew, scrapShowOld) =
+            scrapRepetitionSingle ((msgShow msg1, n1), commutative1)
+                                  (makeShowC rest1)
+                                  (makeShow oldMsgs)
+          (scrapSaveNeeded, scrapSaveNew, scrapSaveOld) =
+            scrapRepetitionSingle ((msgSave msg1, k1), commutative1)
+                                  (makeSaveC rest1)
+                                  (makeSave oldMsgs)
+      in if scrapShowNeeded || scrapSaveNeeded
+         then let combineMsg msg (s, n) (t, k) =
+                    RepMsgNK msg{msgShow = s, msgSave = t} n k
+                  zipMsg l1 l2 l3 =
+                    Report $ zipWith3 combineMsg (map repMsg l1) l2 l3
+                  newReport = zipMsg newMsgs scrapShowNew scrapSaveNew
+                  oldReport = zipMsg oldMsgs scrapShowOld scrapSaveOld
+              in Just History{..}
+         else Nothing
     _ -> Nothing  -- empty new report
 
 -- | Add a message to the new report of history, eliminating a possible
