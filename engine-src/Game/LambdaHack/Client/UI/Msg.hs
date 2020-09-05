@@ -6,7 +6,7 @@ module Game.LambdaHack.Client.UI.Msg
   ( -- * Msg
     MsgShowAndSave, MsgShow, MsgSave, MsgIgnore, MsgDifferent
   , MsgClass(..), MsgCreate, MsgSingle(..)
-  , Msg(..), toMsg
+  , Msg(msgInterruptsRunning, msgDisturbsResting), toMsg
     -- * Report
   , Report, nullReport, consReport, renderReport, anyInReport
     -- * History
