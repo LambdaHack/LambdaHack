@@ -201,10 +201,10 @@ displayRespUpdAtomicUI cmd = case cmd of
         tDelta = if coarseDelta == 0
                  then if hpDelta > 0 then "a little" else "a fraction of an HP"
                  else tshow coarseDelta <+> "HP"
-    aidVerbMU MsgNumeric aid $ MU.Text
-                             $ (if hpDelta > 0 then "heal" else "lose")
-                               <+> tDelta
     b <- getsState $ getActorBody aid
+    unless (bproj b) $
+      aidVerbMU MsgNumeric aid $ MU.Text
+                ((if hpDelta > 0 then "heal" else "lose") <+> tDelta)
     arena <- getArenaUI
     side <- getsClient sside
     if | bproj b && (EM.null (beqp b) || isNothing (btrajectory b)) ->
