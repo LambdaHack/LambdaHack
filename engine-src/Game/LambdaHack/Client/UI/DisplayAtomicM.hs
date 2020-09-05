@@ -130,11 +130,11 @@ displayRespUpdAtomicUI cmd = case cmd of
                                  Just kTotal ->
                                    "(total:" <+> tshow kTotal <> "-fold)"
                      msgClass = case lookup IK.S_ASLEEP $ IK.ifreq itemKind of
-                       Just n | n > 0 -> MsgBecomeSleep
-                       _ -> if | bfid b /= side -> MsgBecome
+                       Just n | n > 0 -> MsgStatusSleep
+                       _ -> if | bfid b /= side -> MsgStatusOthers
                                | benInEqp (discoBenefit EM.! iid) ->
-                                   MsgBecomeBeneficialUs
-                               | otherwise -> MsgBecomeHarmfulUs
+                                   MsgStatusGoodUs
+                               | otherwise -> MsgStatusBadUs
                  -- This describes all such items already among organs,
                  -- which is useful, because it shows "charging".
                  itemAidVerbMU msgClass aid verb iid (Left Nothing)
@@ -161,15 +161,15 @@ displayRespUpdAtomicUI cmd = case cmd of
       CActor aid _  -> do
         b <- getsState $ getActorBody aid
         if bproj b then
-          itemVerbMUShort MsgItemDestruction iid kit "break" c
+          itemVerbMUShort MsgItemRuination iid kit "break" c
         else do
           ownW <- ppContainerWownW partActorLeader False c
           let verb = MU.Text $ makePhrase $ "vanish from" : ownW
-          itemVerbMUShort MsgItemDestruction iid kit verb c
+          itemVerbMUShort MsgItemRuination iid kit verb c
       CEmbed lid _ -> markDisplayNeeded lid
       CFloor lid _ -> do
         factionD <- getsState sfactionD
-        itemVerbMUShort MsgItemDestruction iid kit
+        itemVerbMUShort MsgItemRuination iid kit
                         (MU.Text $ "break" <+> ppContainer factionD c) c
         markDisplayNeeded lid
       CTrunk{} -> return ()
@@ -184,13 +184,13 @@ displayRespUpdAtomicUI cmd = case cmd of
     when (not (bproj b) && bhp b > 0) $ do  -- don't spam
       ownW <- ppContainerWownW partActorLeader False c
       let verb = MU.Text $ makePhrase $ "be removed from" : ownW
-      itemVerbMUShort MsgItemMove iid kit verb c
+      itemVerbMUShort MsgItemMovement iid kit verb c
   UpdLoseItem{} -> return ()
   UpdSpotItemBag verbose c bag -> spotItemBag verbose c bag
   UpdLoseItemBag{} -> return ()  -- rarely interesting and can be very long
   -- Move actors and items.
   UpdMoveActor aid source target -> moveActor aid source target
-  UpdWaitActor aid WSleep _ -> aidVerbMU MsgNoLongerSleep aid "wake up"
+  UpdWaitActor aid WSleep _ -> aidVerbMU MsgStatusWakeup aid "wake up"
   UpdWaitActor{} -> return ()  -- falling asleep handled uniformly elsewhere
   UpdDisplaceActor source target -> displaceActorUI source target
   UpdMoveItem iid k aid c1 c2 -> moveItemUI iid k aid c1 c2
@@ -203,7 +203,7 @@ displayRespUpdAtomicUI cmd = case cmd of
                  else tshow coarseDelta <+> "HP"
     b <- getsState $ getActorBody aid
     unless (bproj b) $
-      aidVerbMU MsgNumeric aid $ MU.Text
+      aidVerbMU MsgNumericReport aid $ MU.Text
                 ((if hpDelta > 0 then "heal" else "lose") <+> tDelta)
     arena <- getArenaUI
     side <- getsClient sside
@@ -228,8 +228,8 @@ displayRespUpdAtomicUI cmd = case cmd of
              targetIsFoe = isFoe (bfid b) tfact side
              targetIsFriend = isFriend (bfid b) tfact side
              msgClass | bproj b = MsgDeathBoring
-                      | targetIsFoe = MsgDeathGood
-                      | targetIsFriend = MsgDeathBad
+                      | targetIsFoe = MsgDeathVictory
+                      | targetIsFriend = MsgDeathDeafeat
                       | otherwise = MsgDeathBoring
          if | bproj b -> msgAdd msgClass msgDie
             | bfid b == side -> do
@@ -245,7 +245,7 @@ displayRespUpdAtomicUI cmd = case cmd of
          unless (bproj b) $ animate (blid b) deathAct
        | otherwise -> do
          when (hpDelta >= bhp b && bhp b > 0) $
-           aidVerbMU MsgWarning aid "return from the brink of death"
+           aidVerbMU MsgActionWarning aid "return from the brink of death"
          mleader <- getsClient sleader
          when (Just aid == mleader) $ do
            actorMaxSk <- getsState $ getActorMaxSkills aid
@@ -255,7 +255,7 @@ displayRespUpdAtomicUI cmd = case cmd of
            when (bhp b >= xM (Ability.getSk Ability.SkMaxHP actorMaxSk)
                  && bhp b - hpDelta < xM (Ability.getSk Ability.SkMaxHP
                                                   actorMaxSk)) $
-             msgAdd MsgNeutralEventRare "You recover your health fully. Any further gains will be transient."
+             msgAdd MsgSpecialEvent "You recover your health fully. Any further gains will be transient."
          when (bfid b == side && not (bproj b)) $ do
            markDisplayNeeded (blid b)
            when (hpDelta < 0) $ do
@@ -266,7 +266,7 @@ displayRespUpdAtomicUI cmd = case cmd of
                previousWarning <-
                  getsState $ checkWarningHP sUIOptions aid (bhp b - hpDelta)
                unless previousWarning $
-                 aidVerbMU0 MsgNearDeath aid
+                 aidVerbMU0 MsgRiskOfDeath aid
                             "be down to a dangerous health level"
   UpdRefillCalm _ 0 -> return ()
   UpdRefillCalm aid calmDelta -> do
@@ -293,7 +293,7 @@ displayRespUpdAtomicUI cmd = case cmd of
                anyCloseFoes = any closeFoe $ EM.assocs $ lbig
                                            $ sdungeon s EM.! blid b
            unless anyCloseFoes $ do  -- obvious where the feeling comes from
-             duplicated <- aidVerbDuplicateMU MsgHeardClose aid "hear something"
+             duplicated <- aidVerbDuplicateMU MsgHeardNearby aid "hear something"
              unless duplicated stopPlayBack
          | otherwise ->  -- low deltas from hits; displayed elsewhere
            return ()
@@ -307,7 +307,7 @@ displayRespUpdAtomicUI cmd = case cmd of
           unless previousWarning $
             -- This messages is not shown if impression happens after
             -- Calm is low enough. However, this is rare and HUD shows the red.
-            aidVerbMU0 MsgNearDeath aid
+            aidVerbMU0 MsgRiskOfDeath aid
                        "have grown agitated and impressed enough to be in danger of defecting"
   UpdTrajectory _ _ mt ->  -- if projectile dies just after, force one frame
     when (isNothing mt) pushFrame
@@ -317,12 +317,12 @@ displayRespUpdAtomicUI cmd = case cmd of
     when verbose $ do
       side <- getsClient sside
       if fid == side then
-        msgLnAdd MsgDiplomacy
+        msgLnAdd MsgFactionIntel
                  "You set up the shared inventory stash of your team."
       else do
         fact <- getsState $ (EM.! fid) . sfactionD
         let fidName = MU.Text $ gname fact
-        msgAdd MsgDiplomacy $
+        msgAdd MsgFactionIntel $
           makeSentence [ "you have found the current"
                        , MU.WownW fidName "hoard location" ]
     animate lid $ actorX pos
@@ -330,11 +330,11 @@ displayRespUpdAtomicUI cmd = case cmd of
     when verbose $ do
       side <- getsClient sside
       if fid == side then
-        msgAdd MsgDiplomacy "You've lost access to your shared inventory stash!"
+        msgAdd MsgFactionIntel "You've lost access to your shared inventory stash!"
       else do
         fact <- getsState $ (EM.! fid) . sfactionD
         let fidName = MU.Text $ gname fact
-        msgAdd MsgDiplomacy $
+        msgAdd MsgFactionIntel $
           makeSentence [fidName, "no longer control their hoard"]
     animate lid $ vanish pos
   UpdLeadFaction fid (Just source) mtgt@(Just target) -> do
@@ -355,7 +355,7 @@ displayRespUpdAtomicUI cmd = case cmd of
           tbUI <- getsSession $ getActorUI target
           let subject = partActor tbUI
               object  = partActor sbUI
-          msgAdd MsgLeader $
+          msgAdd MsgPointmanSwap $
             makeSentence [ MU.SubjectVerbSg subject "take command"
                          , "from", object ]
         _ -> return ()
@@ -372,7 +372,7 @@ displayRespUpdAtomicUI cmd = case cmd of
         showDipl Neutral = "in neutral diplomatic relations"
         showDipl Alliance = "allied"
         showDipl War = "at war"
-    msgAdd MsgDiplomacy $
+    msgAdd MsgFactionIntel $
       name1 <+> "and" <+> name2 <+> "are now" <+> showDipl toDipl <> "."
   UpdDoctrineFaction{} -> return ()
   UpdAutoFaction fid b -> do
@@ -416,7 +416,7 @@ displayRespUpdAtomicUI cmd = case cmd of
             ++ ["suddenly" | unexpected]  -- adverb
             ++ [ MU.SubjectVerbSg subject verb
                , MU.AW $ MU.Text $ TK.tname $ okind cotile toTile ]
-      msgAdd (if unexpected then MsgNeutralEventRare else MsgNeutralEvent) msg
+      msgAdd (if unexpected then MsgSpecialEvent else MsgNeutralEvent) msg
   UpdAlterExplorable lid _ -> markDisplayNeeded lid
   UpdAlterGold{} -> return ()  -- not displayed on HUD
   UpdSearchTile aid _p toTile -> do
@@ -429,7 +429,7 @@ displayRespUpdAtomicUI cmd = case cmd of
                            , "that the"
                            , MU.SubjectVerbSg subject2 "be"
                            , MU.AW object ]
-    unless (subject2 == object) $ msgAdd MsgDiscoTile msg
+    unless (subject2 == object) $ msgAdd MsgTerrainReveal msg
   UpdHideTile{} -> return ()
   UpdSpotTile{} -> return ()
   UpdLoseTile{} -> return ()
@@ -478,7 +478,7 @@ displayRespUpdAtomicUI cmd = case cmd of
     when (sstart oldSess == 0) resetSessionStart
     when (lengthHistory uHistory1PerLine (shistory oldSess) == 0) $ do
       let title = T.pack $ rtitle corule
-      msgAdd MsgAdmin $ "Welcome to" <+> title <> "!"
+      msgAdd MsgBookkeeping $ "Welcome to" <+> title <> "!"
       -- Generate initial history. Only for UI clients.
       shistory <- defaultHistory
       modifySession $ \sess -> sess {shistory}
@@ -492,15 +492,15 @@ displayRespUpdAtomicUI cmd = case cmd of
           [] -> True
           [(_, 1, _)] -> True
           _ -> False
-    msgAdd MsgAdmin "-------------------------------------------------"
+    msgAdd MsgBookkeeping "-------------------------------------------------"
     recordHistory
-    msgAdd MsgWarning $ "New game started in" <+> mname gameMode
+    msgAdd MsgActionWarning $ "New game started in" <+> mname gameMode
                         <+> "mode. Press '?' for details."
-    msgAdd MsgPlot $ mdesc gameMode
+    msgAdd MsgPlotExposition $ mdesc gameMode
     let desc = cdesc $ okind cocave $ lkind lvl
     unless (T.null desc) $ do
-      msgLnAdd MsgFocus "You take in your surroundings."
-      msgAdd MsgLandscape desc
+      msgLnAdd MsgBackdropFocus "You take in your surroundings."
+      msgAdd MsgBackdropInfo desc
     -- We can fool the player only once (per scenario), but let's not do it
     -- in the same way each time. TODO: PCG
     blurb <- rndToActionUI $ oneOf
@@ -513,9 +513,9 @@ displayRespUpdAtomicUI cmd = case cmd of
       , "Scarce black motes slowly settle on the ground."
       , "The ground in the immediate area is empty, as if just swiped."
       ]
-    msgLnAdd MsgBecomeHarmfulUs blurb  -- nice colour; being here is harmful
+    msgLnAdd MsgStatusBadUs blurb  -- nice colour; being here is harmful
     when (cwolf curChal && not loneMode) $
-      msgAdd MsgWarning "Being a lone wolf, you begin without companions."
+      msgAdd MsgActionWarning "Being a lone wolf, you begin without companions."
     when (lengthHistory uHistory1PerLine (shistory oldSess) > 1) $
       fadeOutOrIn False
     setFrontAutoYes $ isAIFact fact
@@ -534,13 +534,13 @@ displayRespUpdAtomicUI cmd = case cmd of
       lid <- getArenaUI
       lvl <- getLevel lid
       gameMode <- getGameMode
-      msgAdd MsgAlert $ "Continuing" <+> mname gameMode
+      msgAdd MsgActionAlert $ "Continuing" <+> mname gameMode
                         <> ". Press '?' for details."
-      msgAdd0 MsgPrompt $ mdesc gameMode
+      msgAdd0 MsgPromptNearby $ mdesc gameMode
       let desc = cdesc $ okind cocave $ lkind lvl
       unless (T.null desc) $ do
         msgLnAdd0 MsgPromptFocus "You remember your surroundings."
-        msgAdd0 MsgPrompt desc
+        msgAdd0 MsgPromptNearby desc
       displayMore ColorFull "\nAre you up for the challenge?"
       promptAdd0 "Prove yourself!"
   UpdResumeServer{} -> return ()
@@ -549,7 +549,7 @@ displayRespUpdAtomicUI cmd = case cmd of
     debugPossiblyPrintUI $ "Client" <+> tshow side <+> "closing frontend."
     frontendShutdown
     debugPossiblyPrintUI $ "Client" <+> tshow side <+> "closed frontend."
-  UpdWriteSave -> msgAdd MsgSpam "Saving backup."
+  UpdWriteSave -> msgAdd MsgInnerWorkSpam "Saving backup."
   UpdHearFid _ distance hearMsg -> do
     mleader <- getsClient sleader
     case mleader of
@@ -560,9 +560,9 @@ displayRespUpdAtomicUI cmd = case cmd of
         recordHistory
     msg <- ppHearMsg distance hearMsg
     let msgClass = case distance of
-          Nothing -> MsgHeardElsewhere
-          Just 0 -> MsgHeardClose
-          Just _ -> MsgHeard
+          Nothing -> MsgHeardOutside
+          Just 0 -> MsgHeardNearby
+          Just _ -> MsgHeardFaraway
     msgAdd msgClass msg
 
 updateItemSlot :: MonadClientUI m => Container -> ItemId -> m ()
@@ -595,7 +595,9 @@ lookAtMove aid = do
         && isNothing aimMode) $ do  -- aiming does a more extensive look
     stashBlurb <- lookAtStash (blid body) (bpos body)
     itemsBlurb <- lookAtItems True (bpos body) aid
-    let msgClass = if Just aid == mleader then MsgAtFeetMajor else MsgAtFeet
+    let msgClass = if Just aid == mleader
+                   then MsgAtFeetMajor
+                   else MsgAtFeetMinor
     msgAdd msgClass $ stashBlurb <+> itemsBlurb
   fact <- getsState $ (EM.! bfid body) . sfactionD
   adjBigAssocs <- getsState $ adjacentBigAssocs body
@@ -820,17 +822,17 @@ createActorUI born aid body = do
       unless (ES.member aid lastLost) $
         if length foes > 1
         then when (itemsSize > 0) $
-          msgAdd0 MsgSpotThreat "Another armed threat!"
+          msgAdd0 MsgSpottedThreat "Another armed threat!"
         else if itemsSize > 0
-             then msgAdd0 MsgSpotThreat "Armed intrusion ahead!"
-             else msgAdd0 MsgSpotThreat "You are not alone!"
+             then msgAdd0 MsgSpottedThreat "Armed intrusion ahead!"
+             else msgAdd0 MsgSpottedThreat "You are not alone!"
     stopPlayBack
   if | EM.null actorUI && bfid body == side ->
        return ()  -- don't speak about yourself in 3rd person
      | born && bproj body -> pushFrame  -- make sure first position displayed
      | ES.member aid lastLost || bproj body -> markDisplayNeeded (blid body)
      | otherwise -> do
-       aidVerbMU MsgSpotActor aid verb
+       aidVerbMU MsgSpottedActor aid verb
        animate (blid body) $ actorX (bpos body)
 
 destroyActorUI :: MonadClientUI m => Bool -> ActorId -> Actor -> m ()
@@ -941,7 +943,7 @@ spotItemBag verbose c bag = do
             msgLong = msg subjectLong
             dotsIfShorter = if msgShort == msgLong then "" else ".."
         resetXhair
-        msgAddDifferent MsgSpotItem (msgShort <> dotsIfShorter, msgLong)
+        msgAddDifferent MsgSpottedItem (msgShort <> dotsIfShorter, msgLong)
   case subjects of
     [] -> return ()
     [(1, _, _)] -> sendMsg False
@@ -954,9 +956,9 @@ spotItemBag verbose c bag = do
       let underAI = isAIFact fact
       mleader <- getsClient sleader
       if Just aid == mleader && not underAI then
-        manyItemsAidVerbMU MsgItemMove aid verb sortedAssocs Right
+        manyItemsAidVerbMU MsgItemMovement aid verb sortedAssocs Right
       else when (not (bproj b) && bhp b > 0) $  -- don't announce death drops
-        manyItemsAidVerbMU MsgItemMove aid verb sortedAssocs (Left . Just)
+        manyItemsAidVerbMU MsgItemMovement aid verb sortedAssocs (Left . Just)
     _ -> return ()
 
 recordItemLid :: MonadClientUI m => ItemId -> Container -> m ()
@@ -991,7 +993,7 @@ displaceActorUI source target = do
   spart <- partActorLeader source
   tpart <- partActorLeader target
   let msgClass = if mleader `elem` map Just [source, target]
-                 then MsgAction  -- to avoid run after displace; configurable
+                 then MsgActionMajor  -- to avoid run after displace; configurable
                  else MsgActionMinor
       msg = makeSentence [MU.SubjectVerbSg spart "displace", tpart]
   msgAdd msgClass msg
@@ -1023,9 +1025,9 @@ moveItemUI iid k aid cstore1 cstore2 = do
       -- So far organs can't be put into stash, so no need to call
       -- @updateItemSlot@ to add or reassign lore category.
       if cstore1 == CGround && Just aid == mleader && not underAI then
-        itemAidVerbMU MsgItemMove aid verb iid (Right k)
+        itemAidVerbMU MsgItemMovement aid verb iid (Right k)
       else when (not (bproj b) && bhp b > 0) $  -- don't announce death drops
-        itemAidVerbMU MsgItemMove aid verb iid (Left $ Just k)
+        itemAidVerbMU MsgItemMovement aid verb iid (Left $ Just k)
     Nothing -> error $
       "" `showFailure` (iid, k, aid, cstore1, cstore2)
 
@@ -1071,7 +1073,7 @@ quitFactionUI fid toSt manalytics = do
     Nothing -> return ()
     Just sp ->
       let blurb = makeSentence [MU.SubjectVerb person MU.Yes fidName sp]
-      in msgLnAdd MsgOutcome blurb
+      in msgLnAdd MsgFinalOutcome blurb
   case (toSt, partingPart) of
     (Just status, Just pp) -> do
       noConfirmsGame <- isNoConfirmsGame
@@ -1118,7 +1120,7 @@ quitFactionUI fid toSt manalytics = do
                        ( "\nOh, wait, who is this, hunched among your escaping crew?" <+> smartEnemySentence <+> "Suddenly, this makes your crazy story credible. Suddenly, the door of knowledge opens again."
                        , "How will you play that move?" )
                      | otherwise -> ("", "Let's see what we've got here.")
-            msgAdd MsgPlot $ sp1 <> sp2
+            msgAdd MsgPlotExposition $ sp1 <> sp2
             void $ displaySpaceEsc ColorFull escPrompt
         case manalytics of
           Nothing -> return ()
@@ -1307,7 +1309,7 @@ discover c iid = do
         , MU.SubjectVerbSg unknownName "turn out to be"
         , MU.Text knownName ]
   unless (noMsg || globalTime == timeZero) $  -- no spam about initial equipment
-    msgAdd MsgItemDisco msg
+    msgAdd MsgItemDiscovery msg
 
 ppHearMsg :: MonadClientUI m => Maybe Int -> HearMsg -> m Text
 ppHearMsg distance hearMsg = case hearMsg of
@@ -1383,27 +1385,27 @@ displayRespSfxAtomicUI sfx = case sfx of
   SfxRecoil source target _ -> do
     spart <- partActorLeader source
     tpart <- partActorLeader target
-    msgAdd MsgAction $
+    msgAdd MsgActionMajor $
       makeSentence [MU.SubjectVerbSg spart "shrink away from", tpart]
   SfxSteal source target iid ->
     strike True source target iid
   SfxRelease source target _ -> do
     spart <- partActorLeader source
     tpart <- partActorLeader target
-    msgAdd MsgAction $ makeSentence [MU.SubjectVerbSg spart "release", tpart]
+    msgAdd MsgActionMajor $ makeSentence [MU.SubjectVerbSg spart "release", tpart]
   SfxProject aid iid ->
-    itemAidVerbMU MsgAction aid "fling" iid (Left $ Just 1)
+    itemAidVerbMU MsgActionMajor aid "fling" iid (Left $ Just 1)
   SfxReceive aid iid ->
-    itemAidVerbMU MsgAction aid "receive" iid (Left $ Just 1)
+    itemAidVerbMU MsgActionMajor aid "receive" iid (Left $ Just 1)
   SfxApply aid iid -> do
     CCUI{coscreen=ScreenContent{rapplyVerbMap}} <- getsSession sccui
     ItemFull{itemKind} <- getsState $ itemToFull iid
     let actionPart = case EM.lookup (IK.isymbol itemKind) rapplyVerbMap of
           Just verb -> MU.Text verb
           Nothing -> "trigger"
-    itemAidVerbMU MsgAction aid actionPart iid (Left $ Just 1)
+    itemAidVerbMU MsgActionMajor aid actionPart iid (Left $ Just 1)
   SfxCheck aid iid ->
-    itemAidVerbMU MsgAction aid "recover" iid (Left $ Just 1)
+    itemAidVerbMU MsgActionMajor aid "recover" iid (Left $ Just 1)
   SfxTrigger _ _ _ fromTile -> do
     COps{cotile} <- getsState scops
     let subject = MU.Text $ TK.tname $ okind cotile fromTile
@@ -1411,7 +1413,7 @@ displayRespSfxAtomicUI sfx = case sfx of
         msg = makeSentence ["the", MU.SubjectVerbSg subject verb]
     msgAdd MsgNeutralEvent msg
   SfxShun aid _ _ _ ->
-    aidVerbMU MsgAction aid "shun it"
+    aidVerbMU MsgActionMajor aid "shun it"
   SfxEffect fidSource aid effect hpDelta -> do
     b <- getsState $ getActorBody aid
     bUI <- getsSession $ getActorUI aid
@@ -1421,7 +1423,7 @@ displayRespSfxAtomicUI sfx = case sfx of
         isOurCharacter = fid == side && not (bproj b)
         isOurAlive = isOurCharacter && bhp b > 0
         isOurLeader = Just aid == mleader
-        feelLookHP = feelLook MsgEffect
+        feelLookHP = feelLook MsgEffectMedium
         feelLookCalm bigAdj projAdj =
           when (bhp b > 0) $ feelLook MsgEffectMinor bigAdj projAdj
         feelLook msgClass bigAdj projAdj =
@@ -1481,7 +1483,7 @@ displayRespSfxAtomicUI sfx = case sfx of
               [MU.SubjectVerbSg subject verb, MU.Text fidSourceName, "control"]
         IK.Impress -> aidVerbMU MsgEffectMinor aid "be awestruck"
         IK.PutToSleep -> aidVerbMU MsgEffectMajor aid "be put to sleep"
-        IK.Yell -> aidVerbMU MsgMisc aid "start"
+        IK.Yell -> aidVerbMU MsgMiscellanous aid "start"
         IK.Summon grp p -> do
           let verb = if bproj b then "lure" else "summon"
               object = (if p == 1  -- works, because exact number sent, not dice
@@ -1500,49 +1502,49 @@ displayRespSfxAtomicUI sfx = case sfx of
                 lvl <- getLevel lid
                 let desc = cdesc $ okind cocave $ lkind lvl
                 unless (T.null desc) $
-                  msgAdd MsgLandscape $ desc <> "\n"
+                  msgAdd MsgBackdropInfo $ desc <> "\n"
               [] -> return ()  -- spell fizzles; normally should not be sent
         IK.Escape{} | isOurCharacter -> do
           ours <- getsState $ fidActorNotProjGlobalAssocs side
           when (length ours > 1) $ do
             let object = partActor bUI
-            msgAdd MsgOutcome $
+            msgAdd MsgFinalOutcome $
               "The team joins" <+> makePhrase [object]
               <> ", forms a perimeter, repacks its belongings and leaves triumphant."
         IK.Escape{} -> return ()
-        IK.Paralyze{} -> aidVerbMU MsgEffect aid "be paralyzed"
+        IK.Paralyze{} -> aidVerbMU MsgEffectMedium aid "be paralyzed"
         IK.ParalyzeInWater{} ->
           aidVerbMU MsgEffectMinor aid "move with difficulty"
         IK.InsertMove d ->
           if Dice.supDice d >= 10
-          then aidVerbMU MsgEffect aid "act with extreme speed"
+          then aidVerbMU MsgEffectMedium aid "act with extreme speed"
           else aidVerbMU MsgEffectMinor aid "move swiftly"
         IK.Teleport t | Dice.supDice t <= 9 ->
           aidVerbMU MsgEffectMinor aid "blink"
-        IK.Teleport{} -> aidVerbMU MsgEffect aid "teleport"
+        IK.Teleport{} -> aidVerbMU MsgEffectMedium aid "teleport"
         IK.CreateItem{} -> return ()
         IK.DestroyItem{} -> return ()
         IK.ConsumeItems{} -> return ()
         IK.DropItem _ _ COrgan _ -> return ()
-        IK.DropItem{} -> aidVerbMU MsgEffect aid "be stripped"
-        IK.Recharge{} -> aidVerbMU MsgEffect aid "heat up"
-        IK.Discharge{} -> aidVerbMU MsgEffect aid "cool down"
+        IK.DropItem{} -> aidVerbMU MsgEffectMedium aid "be stripped"
+        IK.Recharge{} -> aidVerbMU MsgEffectMedium aid "heat up"
+        IK.Discharge{} -> aidVerbMU MsgEffectMedium aid "cool down"
         IK.PolyItem -> do
           subject <- partActorLeader aid
           let ppstore = MU.Text $ ppCStoreIn CGround
-          msgAdd MsgEffect $ makeSentence
+          msgAdd MsgEffectMedium $ makeSentence
             [ MU.SubjectVerbSg subject "repurpose", "what lies", ppstore
             , "to a common item of the current level" ]
         IK.RerollItem -> do
           subject <- partActorLeader aid
           let ppstore = MU.Text $ ppCStoreIn CGround
-          msgAdd MsgEffect $ makeSentence
+          msgAdd MsgEffectMedium $ makeSentence
             [ MU.SubjectVerbSg subject "reshape", "what lies", ppstore
             , "striving for the highest possible standards" ]
         IK.DupItem -> do
           subject <- partActorLeader aid
           let ppstore = MU.Text $ ppCStoreIn CGround
-          msgAdd MsgEffect $ makeSentence
+          msgAdd MsgEffectMedium $ makeSentence
             [MU.SubjectVerbSg subject "multiply", "what lies", ppstore]
         IK.Identify -> do
           subject <- partActorLeader aid
@@ -1560,9 +1562,9 @@ displayRespSfxAtomicUI sfx = case sfx of
           -- Don't make it modal if all info remains after no longer seen.
           unless (d `elem` [IK.DetectHidden, IK.DetectExit]) $
             displayMore ColorFull ""  -- the sentence short
-        IK.SendFlying{} -> aidVerbMU MsgEffect aid "be sent flying"
-        IK.PushActor{} -> aidVerbMU MsgEffect aid "be pushed"
-        IK.PullActor{} -> aidVerbMU MsgEffect aid "be pulled"
+        IK.SendFlying{} -> aidVerbMU MsgEffectMedium aid "be sent flying"
+        IK.PushActor{} -> aidVerbMU MsgEffectMedium aid "be pushed"
+        IK.PullActor{} -> aidVerbMU MsgEffectMedium aid "be pulled"
         IK.ApplyPerfume ->
           msgAdd MsgEffectMinor
                  "The fragrance quells all scents in the vicinity."
@@ -1574,10 +1576,10 @@ displayRespSfxAtomicUI sfx = case sfx of
         IK.OrEffect{} -> error $ "" `showFailure` sfx
         IK.SeqEffect{} -> error $ "" `showFailure` sfx
         IK.VerbNoLonger t -> do
-          let msgClass = if bfid b == side then MsgNoLongerUs else MsgNoLonger
+          let msgClass = if bfid b == side then MsgStatusStopUs else MsgStatusStopThem
           aidVerbMU msgClass aid $ MU.Text t
         IK.VerbMsg t -> aidVerbMU MsgEffectMinor aid $ MU.Text t
-        IK.VerbMsgFail t -> aidVerbMU MsgWarning aid $ MU.Text t
+        IK.VerbMsgFail t -> aidVerbMU MsgActionWarning aid $ MU.Text t
   SfxMsgFid _ sfxMsg -> do
     mleader <- getsClient sleader
     case mleader of
@@ -1606,16 +1608,16 @@ displayRespSfxAtomicUI sfx = case sfx of
     unless (bproj b && bfid b == side) $ do  -- don't spam
       spart <- partActorLeader aid
       (_heardSubject, verb) <- displayTaunt voluntary rndToActionUI aid
-      msgAdd MsgMisc $! makeSentence [MU.SubjectVerbSg spart (MU.Text verb)]
+      msgAdd MsgMiscellanous $! makeSentence [MU.SubjectVerbSg spart (MU.Text verb)]
 
 ppSfxMsg :: MonadClientUI m
          => SfxMsg -> m (Maybe (MsgClass MsgShowAndSave, Text))
 ppSfxMsg sfxMsg = case sfxMsg of
   SfxUnexpected reqFailure -> return $
-    Just ( MsgWarning
+    Just ( MsgActionWarning
          , "Unexpected problem:" <+> showReqFailure reqFailure <> "." )
   SfxExpected itemName reqFailure -> return $
-    Just ( MsgWarning
+    Just ( MsgActionWarning
          , "The" <+> itemName <+> "is not triggered:"
            <+> showReqFailure reqFailure <> "." )
   SfxExpectedEmbed iid lid reqFailure -> do
@@ -1630,17 +1632,17 @@ ppSfxMsg sfxMsg = case sfxMsg of
                              itemFull quantSingle
           name = makePhrase [object1, object2]
       return $
-        Just ( MsgWarning
+        Just ( MsgActionWarning
              , "The" <+> "embedded" <+> name <+> "is not activated:"
                <+> showReqFailure reqFailure <> "." )
     else return Nothing
-  SfxFizzles -> return $ Just (MsgWarning, "It didn't work.")
-  SfxNothingHappens -> return $ Just (MsgMisc, "Nothing happens.")
+  SfxFizzles -> return $ Just (MsgActionWarning, "It didn't work.")
+  SfxNothingHappens -> return $ Just (MsgMiscellanous, "Nothing happens.")
   SfxNoItemsForTile toolsToAlterWith -> do
     revCmd <- revCmdMap
     let km = revCmd HumanCmd.AlterDir
         tItems = describeToolsAlternative toolsToAlterWith
-    return $ Just ( MsgWarning
+    return $ Just ( MsgActionWarning
                   , "To transform the terrain, prepare the following items on the ground or in equipment:"
                     <+> tItems
                     <+> "and use the <"
@@ -1648,7 +1650,7 @@ ppSfxMsg sfxMsg = case sfxMsg of
                     <> "> terrain modification command."
                   )
   SfxVoidDetection d -> return $
-    Just ( MsgMisc
+    Just ( MsgMiscellanous
          , makeSentence ["no new", MU.Text $ detectToObject d, "detected"] )
   SfxUnimpressed aid -> do
     msbUI <- getsSession $ EM.lookup aid . sactorUI
@@ -1657,7 +1659,7 @@ ppSfxMsg sfxMsg = case sfxMsg of
       Just sbUI -> do
         let subject = partActor sbUI
             verb = "be unimpressed"
-        return $ Just (MsgWarning, makeSentence [MU.SubjectVerbSg subject verb])
+        return $ Just (MsgActionWarning, makeSentence [MU.SubjectVerbSg subject verb])
   SfxSummonLackCalm aid -> do
     msbUI <- getsSession $ EM.lookup aid . sactorUI
     case msbUI of
@@ -1665,7 +1667,7 @@ ppSfxMsg sfxMsg = case sfxMsg of
       Just sbUI -> do
         let subject = partActor sbUI
             verb = "lack Calm to summon"
-        return $ Just (MsgWarning, makeSentence [MU.SubjectVerbSg subject verb])
+        return $ Just (MsgActionWarning, makeSentence [MU.SubjectVerbSg subject verb])
   SfxSummonTooManyOwn aid -> do
     msbUI <- getsSession $ EM.lookup aid . sactorUI
     case msbUI of
@@ -1673,7 +1675,7 @@ ppSfxMsg sfxMsg = case sfxMsg of
       Just sbUI -> do
         let subject = partActor sbUI
             verb = "can't keep track of their numerous friends, let alone summon any more"
-        return $ Just (MsgWarning, makeSentence [subject, verb])
+        return $ Just (MsgActionWarning, makeSentence [subject, verb])
   SfxSummonTooManyAll aid -> do
     msbUI <- getsSession $ EM.lookup aid . sactorUI
     case msbUI of
@@ -1681,7 +1683,7 @@ ppSfxMsg sfxMsg = case sfxMsg of
       Just sbUI -> do
         let subject = partActor sbUI
             verb = "can't keep track of everybody around, let alone summon anyone else"
-        return $ Just (MsgWarning, makeSentence [subject, verb])
+        return $ Just (MsgActionWarning, makeSentence [subject, verb])
   SfxSummonFailure aid -> do
     msbUI <- getsSession $ EM.lookup aid . sactorUI
     case msbUI of
@@ -1689,11 +1691,11 @@ ppSfxMsg sfxMsg = case sfxMsg of
       Just sbUI -> do
         let subject = partActor sbUI
             verb = "fail to summon anything"
-        return $ Just (MsgWarning, makeSentence [MU.SubjectVerbSg subject verb])
+        return $ Just (MsgActionWarning, makeSentence [MU.SubjectVerbSg subject verb])
   SfxLevelNoMore ->
-    return $ Just (MsgWarning, "No more levels in this direction.")
+    return $ Just (MsgActionWarning, "No more levels in this direction.")
   SfxLevelPushed ->
-    return $ Just (MsgWarning, "You notice somebody pushed to another level.")
+    return $ Just (MsgActionWarning, "You notice somebody pushed to another level.")
   SfxBracedImmune aid -> do
     msbUI <- getsSession $ EM.lookup aid . sactorUI
     case msbUI of
@@ -1701,46 +1703,46 @@ ppSfxMsg sfxMsg = case sfxMsg of
       Just sbUI -> do
         let subject = partActor sbUI
             verb = "be braced and so immune to translocation"
-        return $ Just (MsgMisc, makeSentence [MU.SubjectVerbSg subject verb])
+        return $ Just (MsgMiscellanous, makeSentence [MU.SubjectVerbSg subject verb])
                          -- too common
   SfxEscapeImpossible -> return $
-    Just ( MsgWarning
+    Just ( MsgActionWarning
          , "Escaping outside is unthinkable for members of this faction." )
   SfxStasisProtects -> return $
-    Just ( MsgMisc  -- too common
+    Just ( MsgMiscellanous  -- too common
          , "Paralysis and speed surge require recovery time." )
   SfxWaterParalysisResisted -> return Nothing  -- don't spam
   SfxTransImpossible -> return $
-    Just (MsgWarning, "Translocation not possible.")
-  SfxIdentifyNothing -> return $ Just (MsgWarning, "Nothing to identify.")
+    Just (MsgActionWarning, "Translocation not possible.")
+  SfxIdentifyNothing -> return $ Just (MsgActionWarning, "Nothing to identify.")
   SfxPurposeNothing -> return $
-    Just ( MsgWarning
+    Just ( MsgActionWarning
          , "The purpose of repurpose cannot be availed without an item"
            <+> ppCStoreIn CGround <> "." )
   SfxPurposeTooFew maxCount itemK -> return $
-    Just ( MsgWarning
+    Just ( MsgActionWarning
          , "The purpose of repurpose is served by" <+> tshow maxCount
            <+> "pieces of this item, not by" <+> tshow itemK <> "." )
   SfxPurposeUnique -> return $
-    Just (MsgWarning, "Unique items can't be repurposed.")
+    Just (MsgActionWarning, "Unique items can't be repurposed.")
   SfxPurposeNotCommon -> return $
-    Just (MsgWarning, "Only ordinary common items can be repurposed.")
+    Just (MsgActionWarning, "Only ordinary common items can be repurposed.")
   SfxRerollNothing -> return $
-    Just ( MsgWarning
+    Just ( MsgActionWarning
          , "The shape of reshape cannot be assumed without an item"
            <+> ppCStoreIn CGround <> "." )
   SfxRerollNotRandom -> return $
-    Just (MsgWarning, "Only items of variable shape can be reshaped.")
+    Just (MsgActionWarning, "Only items of variable shape can be reshaped.")
   SfxDupNothing -> return $
-    Just ( MsgWarning
+    Just ( MsgActionWarning
          , "Mutliplicity won't rise above zero without an item"
            <+> ppCStoreIn CGround <> "." )
   SfxDupUnique -> return $
-    Just (MsgWarning, "Unique items can't be multiplied.")
+    Just (MsgActionWarning, "Unique items can't be multiplied.")
   SfxDupValuable -> return $
-    Just (MsgWarning, "Valuable items can't be multiplied.")
+    Just (MsgActionWarning, "Valuable items can't be multiplied.")
   SfxColdFish -> return $
-    Just ( MsgMisc  -- repeatable
+    Just ( MsgMiscellanous  -- repeatable
          , "Healing attempt from another faction is thwarted by your cold fish attitude." )
   SfxTimerExtended aid iid cstore delta -> do
     CCUI{coscreen=ScreenContent{rwidth}} <- getsSession sccui
@@ -1770,7 +1772,7 @@ ppSfxMsg sfxMsg = case sfxMsg of
           -- the player is not notified at all. So the shorter blurb below
           -- is the middle ground.
           (msgClass, parts) | bfid b == side && not isBlast =
-            ( MsgLongerUs
+            ( MsgStatusLongerUs
             , ["the", name, powers] ++ cond ++ storeOwn ++ ["will now last"]
               ++ [MU.Text $ timeDeltaInSecondsText delta <+> "longer"]
               ++ [MU.Text $ "(total:" <+> timeDeltaInSecondsText total <> ")"] )
@@ -1781,7 +1783,7 @@ ppSfxMsg sfxMsg = case sfxMsg of
             -- Ideally we'd use a pronoun here, but the action (e.g., hit)
             -- that caused this extension can be invisible to some onlookers.
             -- So their narrative context needs to be taken into account.
-            ( MsgLonger
+            ( MsgStatusLongThem
             , [partItemShortWownW rwidth side factionD (partActor bUI) localTime
                                   itemFull quantSingle]
               ++ cond ++ ["is extended"] )
@@ -1796,7 +1798,7 @@ ppSfxMsg sfxMsg = case sfxMsg of
       -- Neutral message, because minor damage and we don't say, which faction.
       -- And the collision may even be intentional.
       return $
-        Just ( MsgNeutralEventRare
+        Just ( MsgSpecialEvent
              , makeSentence
                  [MU.SubjectVerbSg spart "collide", "awkwardly with", tpart] )
     else return Nothing
@@ -1977,8 +1979,10 @@ strike catch source target iid = assert (source /= target) $ do
                       && isFoe (bfid tb) tfact side
         targetIsFriend = isFriend (bfid tb) tfact side
                            -- warning if anybody hits our friends
-        msgClassMelee = if targetIsFriend then MsgMeleeUs else MsgMelee
-        msgClassRanged = if targetIsFriend then MsgRangedUs else MsgRanged
+        msgClassMelee =
+          if targetIsFriend then MsgMeleeNormalUs else MsgMeleeOthers
+        msgClassRanged =
+          if targetIsFriend then MsgRangedNormalUs else MsgRangedOthers
     -- The messages about parrying and immediately afterwards dying
     -- sound goofy, but there is no easy way to prevent that.
     -- And it's consistent.
@@ -1988,7 +1992,7 @@ strike catch source target iid = assert (source /= target) $ do
     if | catch -> do  -- charge not needed when catching
          let msg = makeSentence
                      [MU.SubjectVerbSg spart "catch", tpart, "skillfully"]
-         msgAdd MsgNeutralEventRare msg
+         msgAdd MsgSpecialEvent msg
          animate (blid tb) $ blockHit ps Color.BrGreen Color.Green
        | not (hasCharge localTime kitWeapon) -> do
          -- Can easily happen with a thrown discharged item.
@@ -2009,10 +2013,10 @@ strike catch source target iid = assert (source /= target) $ do
                         <> if null weaponNameWith
                            then ", but there are no charges left."
                            else ", but it may be not readied yet."
-         msgAdd MsgNeutralEventRare msg  -- and no animation
+         msgAdd MsgSpecialEvent msg  -- and no animation
        | bproj sb && bproj tb -> do  -- server sends unless both are blasts
          -- Short message.
-         msgAdd MsgNeutralEventRare $
+         msgAdd MsgSpecialEvent $
            makeSentence [MU.SubjectVerbSg spart "intercept", tpart]
          -- Basic non-bloody animation regardless of stats.
          animate (blid tb) $ blockHit ps Color.BrBlue Color.Blue
@@ -2029,8 +2033,8 @@ strike catch source target iid = assert (source /= target) $ do
          msgAdd msgClassMelee msg  -- too common for color
          animate (blid tb) $ subtleHit ps
        | bproj sb -> do  -- more terse than melee, because sometimes very spammy
-         let msgRangedPowerful | targetIsFoe = MsgRangedPowerfulWe
-                               | targetIsFriend = MsgRangedPowerfulUs
+         let msgRangedPowerful | targetIsFoe = MsgRangedMightyWe
+                               | targetIsFriend = MsgRangedMightyUs
                                | otherwise = msgClassRanged
              (attackParts, msgRanged)
                | projectileHitsWeakly =
@@ -2050,14 +2054,14 @@ strike catch source target iid = assert (source /= target) $ do
        | bproj tb -> do  -- much less emotion and the victim not active.
          let attackParts =
                [MU.SubjectVerbSg spart verb, tpart] ++ weaponNameWith
-         msgAdd MsgMelee $ makeSentence attackParts
+         msgAdd MsgMeleeOthers $ makeSentence attackParts
          animate (blid tb) basicAnim
        | otherwise -> do  -- ordinary melee
-         let msgMeleeInteresting | targetIsFoe = MsgMeleeInterestingWe
-                                 | targetIsFriend = MsgMeleeInterestingUs
+         let msgMeleeInteresting | targetIsFoe = MsgMeleeComplexWe
+                                 | targetIsFriend = MsgMeleeComplexUs
                                  | otherwise = msgClassMelee
-             msgMeleePowerful | targetIsFoe = MsgMeleePowerfulWe
-                              | targetIsFriend = MsgMeleePowerfulUs
+             msgMeleePowerful | targetIsFoe = MsgMeleeMightyWe
+                              | targetIsFriend = MsgMeleeMightyUs
                               | otherwise = msgClassMelee
              attackParts =
                [MU.SubjectVerbSg spart verb, sleepy, tpart, strongly]

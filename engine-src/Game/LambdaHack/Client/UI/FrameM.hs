@@ -139,7 +139,7 @@ promptGetKey dm ovs onBlank frontKeyKeys = do
       displayFrames lidV [Just frontKeyFrame]
       modifySession $ \sess ->
         sess {smacroFrame = (smacroFrame sess) {keyPending = KeyMacro kms}}
-      msgAdd MsgMacro $ "Voicing '" <> tshow km <> "'."
+      msgAdd MsgMacroOperation $ "Voicing '" <> tshow km <> "'."
       return km
     KeyMacro (_ : _) -> do
       -- We can't continue playback, so wipe out old keyPending, srunning, etc.

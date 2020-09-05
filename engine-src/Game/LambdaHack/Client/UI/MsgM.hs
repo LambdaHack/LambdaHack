@@ -68,12 +68,12 @@ msgLnAdd0 msgClass t = do
 
 -- | Add a prompt to the current report. Do not report if it was a duplicate.
 promptAdd :: MonadClientUI m => Text -> m ()
-promptAdd = msgAdd MsgAlert
+promptAdd = msgAdd MsgActionAlert
 
 -- | Add a prompt to the current report with 0 copies for the purpose
 -- of collating duplicates. Do not report if it was a duplicate.
 promptAdd0 :: MonadClientUI m => Text -> m ()
-promptAdd0 = msgAdd0 MsgPrompt
+promptAdd0 = msgAdd0 MsgPromptNearby
 
 -- | Add a prompt with basic keys description.
 promptMainKeys :: MonadClientUI m => m ()

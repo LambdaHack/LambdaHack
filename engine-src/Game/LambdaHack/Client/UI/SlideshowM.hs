@@ -64,7 +64,7 @@ reportToSlideshowKeep keys = do
 -- Feature: if many pages, only the last SPACE exits (but first ESC).
 displaySpaceEsc :: MonadClientUI m => ColorMode -> Text -> m Bool
 displaySpaceEsc dm prompt = do
-  unless (T.null prompt) $ msgLnAdd0 MsgPrompt prompt
+  unless (T.null prompt) $ msgLnAdd0 MsgPromptNearby prompt
   -- Two frames drawn total (unless @prompt@ very long).
   slides <- reportToSlideshow [K.spaceKM, K.escKM]
   km <- getConfirms dm [K.spaceKM, K.escKM] slides
@@ -74,14 +74,14 @@ displaySpaceEsc dm prompt = do
 -- Feature: if many pages, only the last SPACE exits (but first ESC).
 displayMore :: MonadClientUI m => ColorMode -> Text -> m ()
 displayMore dm prompt = do
-  unless (T.null prompt) $ msgLnAdd0 MsgPrompt prompt
+  unless (T.null prompt) $ msgLnAdd0 MsgPromptNearby prompt
   slides <- reportToSlideshow [K.spaceKM]
   km <- getConfirms dm [K.spaceKM, K.escKM, K.mkChar '?'] slides
   if km == K.mkChar '?' then addPressedKey $ K.mkChar '?' else return ()
 
 displayMoreKeep :: MonadClientUI m => ColorMode -> Text -> m ()
 displayMoreKeep dm prompt = do
-  unless (T.null prompt) $ msgLnAdd0 MsgPrompt prompt
+  unless (T.null prompt) $ msgLnAdd0 MsgPromptNearby prompt
   slides <- reportToSlideshowKeep [K.spaceKM]
   km <- getConfirms dm [K.spaceKM, K.escKM, K.mkChar '?'] slides
   if km == K.mkChar '?' then addPressedKey $ K.mkChar '?' else return ()
@@ -90,7 +90,7 @@ displayMoreKeep dm prompt = do
 -- and white colours to turn player's attention to the choice.
 displayYesNo :: MonadClientUI m => ColorMode -> Text -> m Bool
 displayYesNo dm prompt = do
-  unless (T.null prompt) $ msgLnAdd0 MsgPrompt prompt
+  unless (T.null prompt) $ msgLnAdd0 MsgPromptNearby prompt
   let yn = map K.mkChar ['y', 'n']
   slides <- reportToSlideshow yn
   km <- getConfirms dm (K.escKM : yn) slides

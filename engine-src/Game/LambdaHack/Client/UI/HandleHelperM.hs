@@ -165,7 +165,7 @@ pickLeader verbose aid = do
       -- Even if it's already the leader, give his proper name, not 'you'.
       let subject = partActor bodyUI
       when verbose $
-        msgAdd MsgDone $ makeSentence [subject, "picked as a pointman"]
+        msgAdd MsgPointmanSwap $ makeSentence [subject, "picked as a pointman"]
       -- Update client state.
       updateClientLeader aid
       -- Move the xhair, if active, to the new level.
@@ -174,7 +174,7 @@ pickLeader verbose aid = do
       -- Inform about items, etc.
       itemsBlurb <- lookAtItems True (bpos body) aid
       stashBlurb <- lookAtStash (blid body) (bpos body)
-      when verbose $ msgAdd MsgAtFeet $ stashBlurb <+> itemsBlurb
+      when verbose $ msgAdd MsgAtFeetMinor $ stashBlurb <+> itemsBlurb
       return True
 
 pickLeaderWithPointer :: MonadClientUI m => m MError
@@ -635,7 +635,7 @@ lookAtPosition lidV p = do
   (actorsBlurb, actorsDesc) <- lookAtActors p lidV
   inhabitants <- getsState $ posToAidAssocs p lidV
   let actorMsgClass = if (bfid . snd <$> inhabitants) == [side]
-                      then MsgPrompt  -- our single proj or non-proj; tame
+                      then MsgPromptNearby  -- our single proj or non-proj; tame
                       else MsgPromptThreat
   itemsBlurb <- lookAtItems canSee p leader
   stashBlurb <- lookAtStash lidV p
@@ -697,18 +697,18 @@ lookAtPosition lidV p = do
                else "\n"
       ms = [ (MsgPromptWarning, stashBlurb)
            , (actorMsgClass, actorsBlurb)
-           , (MsgPrompt, actorsDesc <> midEOL) ]
-           ++ [(MsgPrompt, smellBlurb) | detail >= DetailHigh]
-           ++ [(MsgPromptItem, itemsBlurb <> midEOL)]
+           , (MsgPromptNearby, actorsDesc <> midEOL) ]
+           ++ [(MsgPromptNearby, smellBlurb) | detail >= DetailHigh]
+           ++ [(MsgPromptItems, itemsBlurb <> midEOL)]
            ++ [(MsgPromptFocus, tileBlurb) | detail >= DetailHigh
                                              || detail == DetailMedium
                                                 && not (null embedsList)]
-           ++ [(MsgPrompt, placeBlurb) | detail >= DetailHigh]
+           ++ [(MsgPromptNearby, placeBlurb) | detail >= DetailHigh]
            ++ case detail of
                 DetailAll ->
                   concatMap (\(embedName, embedDesc) ->
                     [ (MsgPromptMention, ppEmbedName embedName)
-                    , (MsgPrompt, embedDesc) ]) embedsList
+                    , (MsgPromptNearby, embedDesc) ]) embedsList
                 DetailLow ->
                   [(MsgPromptMention, case embedsList of
                     [] -> ""

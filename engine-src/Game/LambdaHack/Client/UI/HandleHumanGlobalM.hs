@@ -565,12 +565,12 @@ runOnceAheadHuman = do
     Just RunParams{runMembers}
       | noRunWithMulti fact && runMembers /= [leader] -> do
       stopPlayBack
-      msgAdd MsgRunStop "run stop: automatic pointman change"
+      msgAdd MsgRunStopReason "run stop: automatic pointman change"
       return $ Left Nothing
     Just _runParams | keyPressed -> do
       discardPressedKey
       stopPlayBack
-      msgAdd MsgRunStop "run stop: key pressed"
+      msgAdd MsgRunStopReason "run stop: key pressed"
       weaveJust <$> failWith "interrupted"
     Just runParams -> do
       arena <- getArenaUI
@@ -578,7 +578,7 @@ runOnceAheadHuman = do
       case runOutcome of
         Left stopMsg -> do
           stopPlayBack
-          msgAdd MsgRunStop ("run stop:" <+> stopMsg)
+          msgAdd MsgRunStopReason ("run stop:" <+> stopMsg)
           return $ Left Nothing
         Right runCmd ->
           return $ Right runCmd
@@ -881,18 +881,18 @@ moveItems stores (fromCStore, l) destCStore = do
              if | not $ benInEqp $ discoBenefit EM.! iid -> retRec CStash
                 | eqpOverfull b (oldN + 1) -> do
                   -- Action goes through, but changed, so keep in history.
-                  msgAdd MsgWarning $
+                  msgAdd MsgActionWarning $
                     "Warning:" <+> showReqFailure EqpOverfull <> "."
                   retRec CStash
                 | eqpOverfull b (oldN + k) -> do
                   -- If this stack doesn't fit, we don't equip any part of it,
                   -- but we may equip a smaller stack later of other items
                   -- in the same pickup.
-                  msgAdd MsgWarning $
+                  msgAdd MsgActionWarning $
                     "Warning:" <+> showReqFailure EqpStackFull <> "."
                   retRec CStash
                 | not calmE -> do
-                  msgAdd MsgWarning $
+                  msgAdd MsgActionWarning $
                     "Warning:" <+> showReqFailure ItemNotCalm <> "."
                   retRec CStash
                 | otherwise ->
@@ -901,13 +901,13 @@ moveItems stores (fromCStore, l) destCStore = do
         else case destCStore of  -- player forces store, so @benInEqp@ ignored
           CEqp | eqpOverfull b (oldN + 1) -> do
             -- Action aborted, so different colour and not in history.
-            msgAdd MsgPromptItem $
+            msgAdd MsgPromptItems $
               "Failure:" <+> showReqFailure EqpOverfull <> "."
             -- No recursive call here, we exit item manipulation,
             -- but something is moved or else outer functions would not call us.
             return []
           CEqp | eqpOverfull b (oldN + k) -> do
-            msgAdd MsgPromptItem $
+            msgAdd MsgPromptItems $
               "Failure:" <+> showReqFailure EqpStackFull <> "."
             return []
           _ -> retRec destCStore
@@ -1181,7 +1181,7 @@ processTileActions bumping source tpos tas = do
                   <> "> command instead"
         if useResult then do
           merr <- failMsg msg
-          msgAdd MsgAlert $ showFailError $ fromJust merr
+          msgAdd MsgActionAlert $ showFailError $ fromJust merr
           return $ Right ()  -- effect the embed activation, though
         else failWith msg
       else failWith "unable to activate nor modify at this time"
@@ -1315,7 +1315,7 @@ msgAddDone p verb = do
       v = p `vectorToFrom` bpos b
       dir | v == Vector 0 0 = "underneath"
           | otherwise = compassText v
-  msgAdd MsgDone $ "You" <+> verb <+> "the" <+> s <+> dir <> "."
+  msgAdd MsgActionComplete $ "You" <+> verb <+> "the" <+> s <+> dir <> "."
 
 -- | Prompts user to pick a point.
 pickPoint :: MonadClientUI m

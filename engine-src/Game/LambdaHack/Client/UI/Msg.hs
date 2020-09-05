@@ -127,129 +127,130 @@ type MsgIgnore = ()
 
 type MsgDifferent = (Text, Text)
 
+-- Each constructor should have length between 14 and 17.
 data MsgClass :: Type -> Type where
-  MsgAdmin :: MsgClass MsgShowAndSave
-  MsgBecomeSleep :: MsgClass MsgShowAndSave
-  MsgBecomeBeneficialUs :: MsgClass MsgShowAndSave
-  MsgBecomeHarmfulUs :: MsgClass MsgShowAndSave
-  MsgBecome :: MsgClass MsgShowAndSave
-  MsgNoLongerSleep :: MsgClass MsgShowAndSave
-  MsgNoLongerUs :: MsgClass MsgShowAndSave
-  MsgNoLonger :: MsgClass MsgShowAndSave
-  MsgLongerUs :: MsgClass MsgShowAndSave
-  MsgLonger :: MsgClass MsgShowAndSave
+  MsgBookkeeping :: MsgClass MsgShowAndSave
+  MsgStatusSleep :: MsgClass MsgShowAndSave
+  MsgStatusGoodUs :: MsgClass MsgShowAndSave
+  MsgStatusBadUs :: MsgClass MsgShowAndSave
+  MsgStatusOthers :: MsgClass MsgShowAndSave
+  MsgStatusWakeup :: MsgClass MsgShowAndSave
+  MsgStatusStopUs :: MsgClass MsgShowAndSave
+  MsgStatusStopThem :: MsgClass MsgShowAndSave
+  MsgStatusLongerUs :: MsgClass MsgShowAndSave
+  MsgStatusLongThem :: MsgClass MsgShowAndSave
   MsgItemCreation :: MsgClass MsgShowAndSave
-  MsgItemDestruction :: MsgClass MsgShowAndSave
-  MsgDeathGood :: MsgClass MsgShowAndSave
-  MsgDeathBad :: MsgClass MsgShowAndSave
+  MsgItemRuination :: MsgClass MsgShowAndSave
+  MsgDeathVictory :: MsgClass MsgShowAndSave
+  MsgDeathDeafeat :: MsgClass MsgShowAndSave
   MsgDeathBoring :: MsgClass MsgShowAndSave
-  MsgNearDeath :: MsgClass MsgShowAndSave
-  MsgLeader :: MsgClass MsgShowAndSave
-  MsgDiplomacy :: MsgClass MsgShowAndSave
-  MsgOutcome :: MsgClass MsgShowAndSave
-  MsgPlot :: MsgClass MsgShowAndSave
-  MsgLandscape :: MsgClass MsgShowAndSave
-  MsgDiscoTile :: MsgClass MsgShowAndSave
-  MsgItemDisco :: MsgClass MsgShowAndSave
-  MsgSpotActor :: MsgClass MsgShowAndSave
-  MsgSpotThreat :: MsgClass MsgShowAndSave
-  MsgSpotItem :: MsgClass MsgDifferent
-  MsgItemMove :: MsgClass MsgShowAndSave
-  MsgAction :: MsgClass MsgShowAndSave
+  MsgRiskOfDeath :: MsgClass MsgShowAndSave
+  MsgPointmanSwap :: MsgClass MsgShowAndSave
+  MsgFactionIntel :: MsgClass MsgShowAndSave
+  MsgFinalOutcome :: MsgClass MsgShowAndSave
+  MsgPlotExposition :: MsgClass MsgShowAndSave
+  MsgBackdropInfo :: MsgClass MsgShowAndSave
+  MsgTerrainReveal :: MsgClass MsgShowAndSave
+  MsgItemDiscovery :: MsgClass MsgShowAndSave
+  MsgSpottedActor :: MsgClass MsgShowAndSave
+  MsgSpottedThreat :: MsgClass MsgShowAndSave
+  MsgSpottedItem :: MsgClass MsgDifferent
+  MsgItemMovement :: MsgClass MsgShowAndSave
+  MsgActionMajor :: MsgClass MsgShowAndSave
   MsgActionMinor :: MsgClass MsgShowAndSave
   MsgEffectMajor :: MsgClass MsgShowAndSave
-  MsgEffect :: MsgClass MsgShowAndSave
+  MsgEffectMedium :: MsgClass MsgShowAndSave
   MsgEffectMinor :: MsgClass MsgShowAndSave
-  MsgMisc :: MsgClass MsgShowAndSave
-  MsgHeardElsewhere :: MsgClass MsgShowAndSave
-  MsgHeardClose :: MsgClass MsgShowAndSave
-  MsgHeard :: MsgClass MsgShowAndSave
-  MsgFocus :: MsgClass MsgShowAndSave
-  MsgWarning :: MsgClass MsgShowAndSave
-  MsgRangedPowerfulWe :: MsgClass MsgShowAndSave
-  MsgRangedPowerfulUs :: MsgClass MsgShowAndSave
-  MsgRanged :: MsgClass MsgShowAndSave  -- not ours or projectiles are hit
-  MsgRangedUs :: MsgClass MsgShowAndSave
+  MsgMiscellanous :: MsgClass MsgShowAndSave
+  MsgHeardOutside :: MsgClass MsgShowAndSave
+  MsgHeardNearby :: MsgClass MsgShowAndSave
+  MsgHeardFaraway :: MsgClass MsgShowAndSave
+  MsgBackdropFocus :: MsgClass MsgShowAndSave
+  MsgActionWarning :: MsgClass MsgShowAndSave
+  MsgRangedMightyWe :: MsgClass MsgShowAndSave
+  MsgRangedMightyUs :: MsgClass MsgShowAndSave
+  MsgRangedOthers :: MsgClass MsgShowAndSave  -- not ours or projectiles are hit
+  MsgRangedNormalUs :: MsgClass MsgShowAndSave
   MsgNeutralEvent :: MsgClass MsgShowAndSave
-  MsgNeutralEventRare :: MsgClass MsgShowAndSave
-  MsgMeleePowerfulWe :: MsgClass MsgShowAndSave
-  MsgMeleePowerfulUs :: MsgClass MsgShowAndSave
-  MsgMeleeInterestingWe :: MsgClass MsgShowAndSave
-  MsgMeleeInterestingUs :: MsgClass MsgShowAndSave
-  MsgMelee :: MsgClass MsgShowAndSave  -- not ours or projectiles are hit
-  MsgMeleeUs :: MsgClass MsgShowAndSave
-  MsgDone :: MsgClass MsgShowAndSave
+  MsgSpecialEvent :: MsgClass MsgShowAndSave
+  MsgMeleeMightyWe :: MsgClass MsgShowAndSave
+  MsgMeleeMightyUs :: MsgClass MsgShowAndSave
+  MsgMeleeComplexWe :: MsgClass MsgShowAndSave
+  MsgMeleeComplexUs :: MsgClass MsgShowAndSave
+  MsgMeleeOthers :: MsgClass MsgShowAndSave  -- not ours or projectiles are hit
+  MsgMeleeNormalUs :: MsgClass MsgShowAndSave
+  MsgActionComplete :: MsgClass MsgShowAndSave
   MsgAtFeetMajor :: MsgClass MsgShowAndSave
-  MsgAtFeet :: MsgClass MsgShowAndSave
-  MsgNumeric :: MsgClass MsgSave
-  MsgSpam :: MsgClass MsgIgnore
-  MsgMacro :: MsgClass MsgIgnore
-  MsgRunStop :: MsgClass MsgIgnore
-  MsgPrompt :: MsgClass MsgShow
+  MsgAtFeetMinor :: MsgClass MsgShowAndSave
+  MsgNumericReport :: MsgClass MsgSave
+  MsgInnerWorkSpam :: MsgClass MsgIgnore
+  MsgMacroOperation :: MsgClass MsgIgnore
+  MsgRunStopReason :: MsgClass MsgIgnore
+  MsgPromptNearby :: MsgClass MsgShow
   MsgPromptFocus :: MsgClass MsgShow
   MsgPromptMention :: MsgClass MsgShow
   MsgPromptWarning :: MsgClass MsgShow
   MsgPromptThreat :: MsgClass MsgShow
-  MsgPromptItem :: MsgClass MsgShow
-  MsgAlert :: MsgClass MsgShow
+  MsgPromptItems :: MsgClass MsgShow
+  MsgActionAlert :: MsgClass MsgShow
   MsgStopPlayback :: MsgClass MsgIgnore
 
 deriving instance Show (MsgClass a)
 
 interruptsRunning :: MsgClass a -> Bool
-interruptsRunning MsgAdmin = False
-interruptsRunning MsgBecome = False
-interruptsRunning MsgNoLonger = False
-interruptsRunning MsgLonger = False
-interruptsRunning MsgItemDisco = False
-interruptsRunning MsgSpotItem = False
-interruptsRunning MsgItemMove = False
+interruptsRunning MsgBookkeeping = False
+interruptsRunning MsgStatusOthers = False
+interruptsRunning MsgStatusStopThem = False
+interruptsRunning MsgStatusLongThem = False
+interruptsRunning MsgItemDiscovery = False
+interruptsRunning MsgSpottedItem = False
+interruptsRunning MsgItemMovement = False
 interruptsRunning MsgActionMinor = False
 interruptsRunning MsgEffectMinor = False
-interruptsRunning MsgHeard = False
-  -- MsgHeardClose interrupts, even if running started while hearing close
-interruptsRunning MsgRanged = False
-interruptsRunning MsgAtFeet = False
-interruptsRunning MsgNumeric = False
-interruptsRunning MsgSpam = False
-interruptsRunning MsgMacro = False
-interruptsRunning MsgRunStop = False
-interruptsRunning MsgPrompt = False
+interruptsRunning MsgHeardFaraway = False
+  -- MsgHeardNearby interrupts, even if running started while hearing close
+interruptsRunning MsgRangedOthers = False
+interruptsRunning MsgAtFeetMinor = False
+interruptsRunning MsgNumericReport = False
+interruptsRunning MsgInnerWorkSpam = False
+interruptsRunning MsgMacroOperation = False
+interruptsRunning MsgRunStopReason = False
+interruptsRunning MsgPromptNearby = False
 interruptsRunning MsgPromptFocus = False
 interruptsRunning MsgPromptMention = False
 interruptsRunning MsgPromptWarning = False
 interruptsRunning MsgPromptThreat = False
-interruptsRunning MsgPromptItem = False
-  -- MsgAlert means something went wrong, so alarm
+interruptsRunning MsgPromptItems = False
+  -- MsgActionAlert means something went wrong, so alarm
 interruptsRunning _ = True
 
 disturbsResting :: MsgClass a -> Bool
-disturbsResting MsgAdmin = False
-disturbsResting MsgBecome = False
-disturbsResting MsgNoLonger = False
-disturbsResting MsgLonger = False
-disturbsResting MsgLeader = False -- handled separately
-disturbsResting MsgItemDisco = False
-disturbsResting MsgSpotItem = False
-disturbsResting MsgItemMove = False
+disturbsResting MsgBookkeeping = False
+disturbsResting MsgStatusOthers = False
+disturbsResting MsgStatusStopThem = False
+disturbsResting MsgStatusLongThem = False
+disturbsResting MsgPointmanSwap = False -- handled separately
+disturbsResting MsgItemDiscovery = False
+disturbsResting MsgSpottedItem = False
+disturbsResting MsgItemMovement = False
 disturbsResting MsgActionMinor = False
 disturbsResting MsgEffectMinor = False
-disturbsResting MsgHeardElsewhere = False
-disturbsResting MsgHeardClose = False -- handled separately
-disturbsResting MsgHeard = False
-disturbsResting MsgRanged = False
-disturbsResting MsgAtFeet = False
-disturbsResting MsgNumeric = False
-disturbsResting MsgSpam = False
-disturbsResting MsgMacro = False
-disturbsResting MsgRunStop = False
-disturbsResting MsgPrompt = False
+disturbsResting MsgHeardOutside = False
+disturbsResting MsgHeardNearby = False -- handled separately
+disturbsResting MsgHeardFaraway = False
+disturbsResting MsgRangedOthers = False
+disturbsResting MsgAtFeetMinor = False
+disturbsResting MsgNumericReport = False
+disturbsResting MsgInnerWorkSpam = False
+disturbsResting MsgMacroOperation = False
+disturbsResting MsgRunStopReason = False
+disturbsResting MsgPromptNearby = False
 disturbsResting MsgPromptFocus = False
 disturbsResting MsgPromptMention = False
 disturbsResting MsgPromptWarning = False
 disturbsResting MsgPromptThreat = False
-disturbsResting MsgPromptItem = False
-  -- MsgAlert means something went wrong, so alarm
+disturbsResting MsgPromptItems = False
+  -- MsgActionAlert means something went wrong, so alarm
 disturbsResting _ = True
 
 -- Only player's non-projectile actors getting hit introduce subjects,
@@ -258,12 +259,12 @@ disturbsResting _ = True
 -- We also mark the messages that use the introduced subjects
 -- by referring to them via pronouns. They can't be moved freely either.
 bindsPronouns :: MsgClass a -> Bool
-bindsPronouns MsgLongerUs = True
-bindsPronouns MsgRangedPowerfulUs = True
-bindsPronouns MsgRangedUs = True
-bindsPronouns MsgMeleePowerfulUs = True
-bindsPronouns MsgMeleeInterestingUs = True
-bindsPronouns MsgMeleeUs = True
+bindsPronouns MsgStatusLongerUs = True
+bindsPronouns MsgRangedMightyUs = True
+bindsPronouns MsgRangedNormalUs = True
+bindsPronouns MsgMeleeMightyUs = True
+bindsPronouns MsgMeleeComplexUs = True
+bindsPronouns MsgMeleeNormalUs = True
 bindsPronouns _ = False
 
 -- Only initially @White@ colour in text (e.g., not highlighted @BrWhite@)
@@ -292,70 +293,70 @@ cBoring = Color.White
 cGameOver = Color.BrWhite
 
 msgColor :: MsgClass a -> Color.Color
-msgColor MsgAdmin = cBoring
-msgColor MsgBecomeSleep = cSleep
-msgColor MsgBecomeBeneficialUs = cGoodEvent
-msgColor MsgBecomeHarmfulUs = cBadEvent
-msgColor MsgBecome = cBoring
-msgColor MsgNoLongerSleep = cWakeUp
-msgColor MsgNoLongerUs = cBoring
-msgColor MsgNoLonger = cBoring
-msgColor MsgLongerUs = cBoring  -- not important enough
-msgColor MsgLonger = cBoring  -- not important enough, no disturb even
+msgColor MsgBookkeeping = cBoring
+msgColor MsgStatusSleep = cSleep
+msgColor MsgStatusGoodUs = cGoodEvent
+msgColor MsgStatusBadUs = cBadEvent
+msgColor MsgStatusOthers = cBoring
+msgColor MsgStatusWakeup = cWakeUp
+msgColor MsgStatusStopUs = cBoring
+msgColor MsgStatusStopThem = cBoring
+msgColor MsgStatusLongerUs = cBoring  -- not important enough
+msgColor MsgStatusLongThem = cBoring  -- not important enough, no disturb even
 msgColor MsgItemCreation = cGreed
-msgColor MsgItemDestruction = cBoring  -- common, colourful components created
-msgColor MsgDeathGood = cVeryGoodEvent
-msgColor MsgDeathBad = cVeryBadEvent
+msgColor MsgItemRuination = cBoring  -- common, colourful components created
+msgColor MsgDeathVictory = cVeryGoodEvent
+msgColor MsgDeathDeafeat = cVeryBadEvent
 msgColor MsgDeathBoring = cBoring
-msgColor MsgNearDeath = cGraveRisk
-msgColor MsgLeader = cBoring
-msgColor MsgDiplomacy = cMeta  -- good or bad
-msgColor MsgOutcome = cGameOver
-msgColor MsgPlot = cBoring
-msgColor MsgLandscape = cBoring
-msgColor MsgDiscoTile = cIdentification
-msgColor MsgItemDisco = cIdentification
-msgColor MsgSpotActor = cBoring  -- too common; warning in @MsgSpotThreat@
-msgColor MsgSpotThreat = cGraveRisk
-msgColor MsgSpotItem = cBoring
-msgColor MsgItemMove = cBoring
-msgColor MsgAction = cBoring
+msgColor MsgRiskOfDeath = cGraveRisk
+msgColor MsgPointmanSwap = cBoring
+msgColor MsgFactionIntel = cMeta  -- good or bad
+msgColor MsgFinalOutcome = cGameOver
+msgColor MsgPlotExposition = cBoring
+msgColor MsgBackdropInfo = cBoring
+msgColor MsgTerrainReveal = cIdentification
+msgColor MsgItemDiscovery = cIdentification
+msgColor MsgSpottedActor = cBoring  -- too common; warning in @MsgSpottedThreat@
+msgColor MsgSpottedThreat = cGraveRisk
+msgColor MsgSpottedItem = cBoring
+msgColor MsgItemMovement = cBoring
+msgColor MsgActionMajor = cBoring
 msgColor MsgActionMinor = cBoring
 msgColor MsgEffectMajor = cRareNeutralEvent
-msgColor MsgEffect = cNeutralEvent
+msgColor MsgEffectMedium = cNeutralEvent
 msgColor MsgEffectMinor = cBoring
-msgColor MsgMisc = cBoring
-msgColor MsgHeardElsewhere = cBoring
-msgColor MsgHeardClose = cGraveRisk
-msgColor MsgHeard = cRisk
-msgColor MsgFocus = cVista
-msgColor MsgWarning = cMeta
-msgColor MsgRangedPowerfulWe = cGoodEvent
-msgColor MsgRangedPowerfulUs = cVeryBadEvent
-msgColor MsgRanged = cBoring
-msgColor MsgRangedUs = cBadEvent
+msgColor MsgMiscellanous = cBoring
+msgColor MsgHeardOutside = cBoring
+msgColor MsgHeardNearby = cGraveRisk
+msgColor MsgHeardFaraway = cRisk
+msgColor MsgBackdropFocus = cVista
+msgColor MsgActionWarning = cMeta
+msgColor MsgRangedMightyWe = cGoodEvent
+msgColor MsgRangedMightyUs = cVeryBadEvent
+msgColor MsgRangedOthers = cBoring
+msgColor MsgRangedNormalUs = cBadEvent
 msgColor MsgNeutralEvent = cNeutralEvent
-msgColor MsgNeutralEventRare = cRareNeutralEvent
-msgColor MsgMeleePowerfulWe = cGoodEvent
-msgColor MsgMeleePowerfulUs = cVeryBadEvent
-msgColor MsgMeleeInterestingWe = cGoodEvent
-msgColor MsgMeleeInterestingUs = cBadEvent
-msgColor MsgMelee = cBoring
-msgColor MsgMeleeUs = cBadEvent
-msgColor MsgDone = cBoring
+msgColor MsgSpecialEvent = cRareNeutralEvent
+msgColor MsgMeleeMightyWe = cGoodEvent
+msgColor MsgMeleeMightyUs = cVeryBadEvent
+msgColor MsgMeleeComplexWe = cGoodEvent
+msgColor MsgMeleeComplexUs = cBadEvent
+msgColor MsgMeleeOthers = cBoring
+msgColor MsgMeleeNormalUs = cBadEvent
+msgColor MsgActionComplete = cBoring
 msgColor MsgAtFeetMajor = cBoring
-msgColor MsgAtFeet = cBoring
-msgColor MsgNumeric = cBoring
-msgColor MsgSpam = cBoring
-msgColor MsgMacro = cBoring
-msgColor MsgRunStop = cBoring
-msgColor MsgPrompt = cBoring
+msgColor MsgAtFeetMinor = cBoring
+msgColor MsgNumericReport = cBoring
+msgColor MsgInnerWorkSpam = cBoring
+msgColor MsgMacroOperation = cBoring
+msgColor MsgRunStopReason = cBoring
+msgColor MsgPromptNearby = cBoring
 msgColor MsgPromptFocus = cVista
 msgColor MsgPromptMention = cNeutralEvent
 msgColor MsgPromptWarning = cMeta
 msgColor MsgPromptThreat = cRisk
-msgColor MsgPromptItem = cGreed
-msgColor MsgAlert = cMeta
+msgColor MsgPromptItems = cGreed
+msgColor MsgActionAlert = cMeta
 msgColor MsgStopPlayback = cMeta
 
 -- * Report

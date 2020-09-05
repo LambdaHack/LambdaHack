@@ -103,7 +103,7 @@ macroHuman ks = do
            macroHumanTransition kms (smacroFrame sess) (smacroStack sess)
     in sess { smacroFrame = smacroFrameNew
             , smacroStack = smacroStackMew }
-  msgAdd MsgMacro $ "Macro activated:" <+> T.pack (intercalate " " ks)
+  msgAdd MsgMacroOperation $ "Macro activated:" <+> T.pack (intercalate " " ks)
 
 -- | Push a new macro frame to the stack whenever repeating a macro.
 macroHumanTransition :: [K.KM] -> KeyMacroFrame -> [KeyMacroFrame]
@@ -1004,7 +1004,7 @@ aimTgtHuman = do
     let newDetail = maybe defaultDetailLevel detailLevel (saimMode sess)
     in Just $ AimMode lidV newDetail}
   doLook
-  msgAdd MsgAlert "*flinging started; press again to project*"
+  msgAdd MsgActionAlert "*flinging started; press again to project*"
 
 -- * AimFloor
 
