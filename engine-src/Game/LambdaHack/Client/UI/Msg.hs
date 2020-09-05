@@ -151,8 +151,8 @@ data MsgClass :: Type -> Type where
   MsgItemDisco :: MsgClass MsgShowAndSave
   MsgSpotActor :: MsgClass MsgShowAndSave
   MsgSpotThreat :: MsgClass MsgShowAndSave
+  MsgSpotItem :: MsgClass MsgDifferent
   MsgItemMove :: MsgClass MsgShowAndSave
-  MsgItemMoveDifferent :: MsgClass MsgDifferent
   MsgAction :: MsgClass MsgShowAndSave
   MsgActionMinor :: MsgClass MsgShowAndSave
   MsgEffectMajor :: MsgClass MsgShowAndSave
@@ -200,8 +200,8 @@ interruptsRunning MsgBecome = False
 interruptsRunning MsgNoLonger = False
 interruptsRunning MsgLonger = False
 interruptsRunning MsgItemDisco = False
+interruptsRunning MsgSpotItem = False
 interruptsRunning MsgItemMove = False
-interruptsRunning MsgItemMoveDifferent = False
 interruptsRunning MsgActionMinor = False
 interruptsRunning MsgEffectMinor = False
 interruptsRunning MsgHeard = False
@@ -228,8 +228,8 @@ disturbsResting MsgNoLonger = False
 disturbsResting MsgLonger = False
 disturbsResting MsgLeader = False -- handled separately
 disturbsResting MsgItemDisco = False
+disturbsResting MsgSpotItem = False
 disturbsResting MsgItemMove = False
-disturbsResting MsgItemMoveDifferent = False
 disturbsResting MsgActionMinor = False
 disturbsResting MsgEffectMinor = False
 disturbsResting MsgHeardElsewhere = False
@@ -315,8 +315,8 @@ msgColor MsgDiscoTile = cIdentification
 msgColor MsgItemDisco = cIdentification
 msgColor MsgSpotActor = cBoring  -- too common; warning in @MsgSpotThreat@
 msgColor MsgSpotThreat = cGraveRisk
+msgColor MsgSpotItem = cBoring
 msgColor MsgItemMove = cBoring
-msgColor MsgItemMoveDifferent = cBoring
 msgColor MsgAction = cBoring
 msgColor MsgActionMinor = cBoring
 msgColor MsgEffectMajor = cRareNeutralEvent

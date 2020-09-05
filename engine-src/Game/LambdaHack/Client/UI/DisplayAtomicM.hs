@@ -939,8 +939,7 @@ spotItemBag verbose c bag = do
             msgLong = msg subjectLong
             dotsIfShorter = if msgShort == msgLong then "" else ".."
         resetXhair
-        msgAddDifferent MsgItemMoveDifferent
-                        (msgShort <> dotsIfShorter, msgLong)
+        msgAddDifferent MsgSpotItem (msgShort <> dotsIfShorter, msgLong)
   case subjects of
     [] -> return ()
     [(1, _, _)] -> sendMsg False
