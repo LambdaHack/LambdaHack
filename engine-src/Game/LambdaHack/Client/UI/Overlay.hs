@@ -2,7 +2,8 @@
 -- | Screen overlays.
 module Game.LambdaHack.Client.UI.Overlay
   ( -- * AttrString
-    AttrString, blankAttrString, textToAS, textFgToAS, stringToAS, (<+:>)
+    AttrString, blankAttrString, textToAS, textFgToAS, stringToAS
+  , (<+:>), (<\:>)
     -- * AttrLine
   , AttrLine, attrLine, emptyAttrLine, attrStringToAL, firstParagraph, linesAttr
   , textToAL, textFgToAL, stringToAL, splitAttrString, indentSplitAttrString
@@ -59,6 +60,15 @@ infixr 6 <+:>  -- matches Monoid.<>
   if isSpace (Color.charFromW32 c2) || isSpace (Color.charFromW32 (last l1))
   then l1 ++ l2
   else l1 ++ [Color.spaceAttrW32] ++ l2
+
+infixr 6 <\:>  -- matches Monoid.<>
+(<\:>) :: AttrString -> AttrString -> AttrString
+(<\:>) [] l2 = l2
+(<\:>) l1 [] = l1
+(<\:>) l1 l2@(c2 : _) =
+  if Color.charFromW32 c2 == '\n' || Color.charFromW32 (last l1) == '\n'
+  then l1 ++ l2
+  else l1 ++ stringToAS "\n" ++ l2
 
 -- We consider only these, because they are short and form a closed category.
 nonbreakableRev :: [String]

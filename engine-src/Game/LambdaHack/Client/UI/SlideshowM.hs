@@ -26,6 +26,7 @@ import           Game.LambdaHack.Client.UI.MsgM
 import           Game.LambdaHack.Client.UI.Overlay
 import           Game.LambdaHack.Client.UI.SessionUI
 import           Game.LambdaHack.Client.UI.Slideshow
+import           Game.LambdaHack.Client.UI.UIOptions
 import qualified Game.LambdaHack.Definition.Color as Color
 
 -- | Add current report to the overlay, split the result and produce,
@@ -34,10 +35,12 @@ overlayToSlideshow :: MonadClientUI m
                    => Int -> [K.KM] -> OKX -> m Slideshow
 overlayToSlideshow y keys okx = do
   CCUI{coscreen=ScreenContent{rwidth, rwrap}} <- getsSession sccui
+  UIOptions{uScreen1PerLine} <- getsSession sUIOptions
   report <- getReportUI
   recordHistory  -- report will be shown soon, remove it to history
   fontSetup <- getFontSetup
-  return $! splitOverlay fontSetup rwidth y rwrap report keys okx
+  return $! splitOverlay fontSetup uScreen1PerLine rwidth y rwrap
+                         report keys okx
 
 -- | Split current report into a slideshow.
 reportToSlideshow :: MonadClientUI m => [K.KM] -> m Slideshow
@@ -49,12 +52,13 @@ reportToSlideshow keys = do
 reportToSlideshowKeep :: MonadClientUI m => [K.KM] -> m Slideshow
 reportToSlideshowKeep keys = do
   CCUI{coscreen=ScreenContent{rwidth, rheight, rwrap}} <- getsSession sccui
+  UIOptions{uScreen1PerLine} <- getsSession sUIOptions
   report <- getReportUI
   -- Don't do @recordHistory@; the message is important, but related
   -- to the messages that come after, so should be shown together.
   fontSetup <- getFontSetup
-  return $! splitOverlay fontSetup rwidth (rheight - 2) rwrap report keys
-                         (EM.empty, [])
+  return $! splitOverlay fontSetup uScreen1PerLine rwidth (rheight - 2) rwrap
+                         report keys (EM.empty, [])
 
 -- | Display a message. Return value indicates if the player wants to continue.
 -- Feature: if many pages, only the last SPACE exits (but first ESC).
