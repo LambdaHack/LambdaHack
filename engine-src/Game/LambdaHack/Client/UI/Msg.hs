@@ -63,7 +63,7 @@ data Msg = Msg
   , msgDisturbsResting   :: Bool
   , msgBindsPronouns     :: Bool
   }
-  deriving Generic
+  deriving (Show, Generic)
 
 instance Binary Msg
 
@@ -356,7 +356,7 @@ msgColor MsgStopPlayback = cMeta
 -- * Report
 
 data RepMsgNK = RepMsgNK {repMsg :: Msg, _repShow :: Int, _repSave :: Int}
-  deriving Generic
+  deriving (Show, Generic)
 
 instance Binary RepMsgNK
 
@@ -369,7 +369,7 @@ nullRepMsgNK (RepMsgNK Msg{..} n k) =
 
 -- | The set of messages, with repetitions, to show at the screen at once.
 newtype Report = Report [RepMsgNK]
-  deriving Binary
+  deriving (Show, Binary)
 
 -- | Empty set of messages.
 emptyReport :: Report
@@ -422,7 +422,7 @@ data History = History
   , oldReport       :: Report
   , oldTime         :: Time
   , archivedHistory :: RB.RingBuffer UAttrString }
-  deriving Generic
+  deriving (Show, Generic)
 
 instance Binary History
 
