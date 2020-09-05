@@ -546,12 +546,16 @@ renderTimeReport uHistory1PerLine t rep@(Report r) =
   let turns = t `timeFitUp` timeTurn
       repMsgs = renderReport False rep
       mgsClasses = reverse $ map (msgClassName . repMsg) r
-      rederAS as = stringToAS (show turns ++ ": ") ++ as
+      turnsString = show turns
+      rederAS as = stringToAS (turnsString ++ ": ") ++ as
       rederASClass (as, msgClassString) =
-        stringToAS (show turns ++ ":")
-        ++ map (Color.attrChar2ToW32 Color.BrBlack)
-               ("[" ++ msgClassString ++ "]")
-        ++ [Color.spaceAttrW32] ++ as
+        let lenUnderscore = 17 - length msgClassString
+                            + max 0 (3 - length turnsString)
+        in stringToAS (turnsString ++ ":")
+           ++ map (Color.attrChar2ToW32 Color.BrBlack)
+                  ("[" ++ replicate lenUnderscore '_' ++ msgClassString ++ "]")
+           ++ [Color.spaceAttrW32]
+           ++ as
       worthSaving = not . all (Char.isSpace . Color.charFromW32)
   in if uHistory1PerLine
      then map rederASClass $ filter (worthSaving . fst) $ zip repMsgs mgsClasses
