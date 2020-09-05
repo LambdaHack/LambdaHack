@@ -463,7 +463,8 @@ displayRespUpdAtomicUI cmd = case cmd of
   UpdRestart fid _ _ _ _ srandom -> do
     COps{cocave, corule} <- getsState scops
     oldSess <- getSession
-    putSession $ (emptySessionUI (sUIOptions oldSess))
+    let uiOptions@UIOptions{uHistory1PerLine} = sUIOptions oldSess
+    putSession $ (emptySessionUI uiOptions)
           { schanF = schanF oldSess
           , sccui = sccui oldSess
           , shistory = shistory oldSess
@@ -475,7 +476,7 @@ displayRespUpdAtomicUI cmd = case cmd of
           , srandomUI = srandom
           }
     when (sstart oldSess == 0) resetSessionStart
-    when (lengthHistory (shistory oldSess) == 0) $ do
+    when (lengthHistory uHistory1PerLine (shistory oldSess) == 0) $ do
       let title = T.pack $ rtitle corule
       msgAdd MsgAdmin $ "Welcome to" <+> title <> "!"
       -- Generate initial history. Only for UI clients.
@@ -515,7 +516,8 @@ displayRespUpdAtomicUI cmd = case cmd of
     msgLnAdd MsgBecomeHarmfulUs blurb  -- nice colour; being here is harmful
     when (cwolf curChal && not loneMode) $
       msgAdd MsgWarning "Being a lone wolf, you begin without companions."
-    when (lengthHistory (shistory oldSess) > 1) $ fadeOutOrIn False
+    when (lengthHistory uHistory1PerLine (shistory oldSess) > 1) $
+      fadeOutOrIn False
     setFrontAutoYes $ isAIFact fact
     -- Forget the furious keypresses when dying in the previous game.
     resetPressedKeys

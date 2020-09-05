@@ -528,31 +528,33 @@ addEolToNewReport hist =
 
 -- | Archive old report to history, filtering out messages with 0 duplicates
 -- and prompts. Set up new report with a new timestamp.
-archiveReport :: History -> History
-archiveReport History{newReport=Report newMsgs, ..} =
+archiveReport :: Bool -> History -> History
+archiveReport uHistory1PerLine History{newReport=Report newMsgs, ..} =
   let newReportFiltered = Report $ filter (not . nullRepMsgNK) newMsgs
   in if nullReport newReportFiltered
      then -- Drop empty new report.
           History emptyReport timeZero oldReport oldTime archivedHistory
-     else let lU = map attrStringToU $ renderTimeReport oldTime oldReport
+     else let lU = map attrStringToU
+                   $ renderTimeReport uHistory1PerLine oldTime oldReport
           in History emptyReport timeZero newReportFiltered newTime
              $ foldl' (\ !h !v -> RB.cons v h) archivedHistory (reverse lU)
 
-renderTimeReport :: Time -> Report -> [AttrString]
-renderTimeReport t rep =
+renderTimeReport :: Bool -> Time -> Report -> [AttrString]
+renderTimeReport uHistory1PerLine t rep =
   let turns = t `timeFitUp` timeTurn
       as = renderReport False rep
   in [ stringToAS (show turns ++ ": ") ++ as
      | not $ all (Char.isSpace . Color.charFromW32) as ]
 
-lengthHistory :: History -> Int
-lengthHistory History{oldReport, archivedHistory} =
+lengthHistory :: Bool -> History -> Int
+lengthHistory uHistory1PerLine History{oldReport, archivedHistory} =
   RB.length archivedHistory
-  + length (renderTimeReport timeZero oldReport)
+  + length (renderTimeReport uHistory1PerLine timeZero oldReport)
     -- matches @renderHistory@
 
 -- | Render history as many lines of text. New report is not rendered.
 -- It's expected to be empty when history is shown.
-renderHistory :: History -> [AttrString]
-renderHistory History{..} = renderTimeReport oldTime oldReport
-                            ++ map uToAttrString (RB.toList archivedHistory)
+renderHistory :: Bool -> History -> [AttrString]
+renderHistory uHistory1PerLine History{..} =
+  renderTimeReport uHistory1PerLine oldTime oldReport
+  ++ map uToAttrString (RB.toList archivedHistory)

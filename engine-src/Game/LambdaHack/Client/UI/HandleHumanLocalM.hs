@@ -67,6 +67,7 @@ import           Game.LambdaHack.Client.UI.Overlay
 import           Game.LambdaHack.Client.UI.SessionUI
 import           Game.LambdaHack.Client.UI.Slideshow
 import           Game.LambdaHack.Client.UI.SlideshowM
+import           Game.LambdaHack.Client.UI.UIOptions
 import           Game.LambdaHack.Common.Actor
 import           Game.LambdaHack.Common.ActorState
 import           Game.LambdaHack.Common.ClientOptions
@@ -768,12 +769,13 @@ allHistoryHuman = eitherHistory True
 eitherHistory :: forall m. MonadClientUI m => Bool -> m ()
 eitherHistory showAll = do
   CCUI{coscreen=ScreenContent{rwrap, rheight}} <- getsSession sccui
+  UIOptions{uHistory1PerLine} <- getsSession sUIOptions
   history <- getsSession shistory
   arena <- getArenaUI
   localTime <- getsState $ getLocalTime arena
   global <- getsState stime
   FontSetup{..} <- getFontSetup
-  let renderedHistory = renderHistory history
+  let renderedHistory = renderHistory uHistory1PerLine history
       histBound = length renderedHistory
       splitRow al =
         let (spNo, spYes) = span (/= Color.spaceAttrW32) al
