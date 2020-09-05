@@ -6,7 +6,8 @@ module Game.LambdaHack.Client.UI.Overlay
   , (<+:>), (<\:>)
     -- * AttrLine
   , AttrLine, attrLine, emptyAttrLine, attrStringToAL, firstParagraph, linesAttr
-  , textToAL, textFgToAL, stringToAL, splitAttrString, indentSplitAttrString
+  , textToAL, textFgToAL, stringToAL, splitAttrString
+  , indentSplitAttrString, indentSplitAttrString2
     -- * Overlay
   , Overlay, offsetOverlay, offsetOverlayX, updateLine
 #ifdef EXPOSE_INTERNAL
@@ -178,6 +179,15 @@ indentSplitAttrString w l =
   in case ts of
     [] -> []
     hd : tl -> hd : map (AttrLine . ([Color.spaceAttrW32] ++) . attrLine) tl
+
+indentSplitAttrString2 :: Int -> AttrString -> [AttrLine]
+indentSplitAttrString2 w l =
+  let ts = splitAttrString (w - 2) l
+  in case ts of
+    [] -> []
+    hd : tl -> hd : map (AttrLine
+                         . ([Color.spaceAttrW32, Color.spaceAttrW32] ++)
+                         . attrLine) tl
 
 -- We pass empty line along for the case of appended buttons, which need
 -- either space or new lines before them.

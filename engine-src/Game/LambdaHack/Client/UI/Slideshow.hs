@@ -228,7 +228,7 @@ splitOKX FontSetup{..} msgLong width height wrap reportAS keys (ls0, kxs0) =
                  then 2 * width
                  else width
       repPrep0 = offsetOverlay
-                 $ concatMap (splitAttrString msgWrap . attrLine) repPrep
+                 $ concatMap (indentSplitAttrString2 msgWrap . attrLine) repPrep
       -- If the mono portion first on the line, let it take half width,
       -- but if previous lines shorter, match them and only buttons
       -- are permitted to stick out.
@@ -236,8 +236,8 @@ splitOKX FontSetup{..} msgLong width height wrap reportAS keys (ls0, kxs0) =
       repMono0 = map (\(PointUI x y, al) ->
                         (PointUI x (y + length repPrep0), al))
                  $ offsetOverlay
-                 $ splitAttrString monoWidth $ attrLine repMono
-      repWhole0 = offsetOverlay $ splitAttrString msgWidth reportAS
+                 $ indentSplitAttrString monoWidth $ attrLine repMono
+      repWhole0 = offsetOverlay $ indentSplitAttrString2 msgWidth reportAS
       repWhole1 = map (\(PointUI x y, al) -> (PointUI x (y + 1), al)) repWhole0
       lenOfRep = length repPrep0 + length repMono0
       startOfKeys = if null repMono0
