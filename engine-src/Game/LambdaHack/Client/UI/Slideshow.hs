@@ -229,6 +229,9 @@ splitOKX FontSetup{..} msgLong width height wrap reportAS keys (ls0, kxs0) =
                  else width
       repPrep0 = offsetOverlay
                  $ concatMap (indentSplitAttrString2 msgWrap . attrLine) repPrep
+      -- TODO: refactor this ugly pile of copy-paste
+      repPrepW = offsetOverlay
+                 $ concatMap (indentSplitAttrString2 width . attrLine) repPrep
       -- If the mono portion first on the line, let it take half width,
       -- but if previous lines shorter, match them and only buttons
       -- are permitted to stick out.
@@ -237,20 +240,30 @@ splitOKX FontSetup{..} msgLong width height wrap reportAS keys (ls0, kxs0) =
                         (PointUI x (y + length repPrep0), al))
                  $ offsetOverlay
                  $ indentSplitAttrString monoWidth $ attrLine repMono
+      repMonoW = map (\(PointUI x y, al) ->
+                        (PointUI x (y + length repPrepW), al))
+                 $ offsetOverlay
+                 $ indentSplitAttrString width $ attrLine repMono
       repWhole0 = offsetOverlay
                   $ concatMap (indentSplitAttrString2 msgWidth . attrLine)
                               reportParagraphs
       repWhole1 = map (\(PointUI x y, al) -> (PointUI x (y + 1), al)) repWhole0
-      lenOfRep = length repPrep0 + length repMono0
+      lenOfRep0 = length repPrep0 + length repMono0
+      lenOfRepW = length repPrepW + length repMonoW
       startOfKeys = if null repMono0
                     then 0
                     else textSize monoFont (attrLine $ snd $ last repMono0)
+      startOfKeysW = if null repMonoW
+                     then 0
+                     else textSize monoFont (attrLine $ snd $ last repMonoW)
       pressAKey = stringToAS "A long report is shown. Press a key:"
                   ++ [Color.nbspAttrW32]
       (lX0, keysX0) = keysOKX monoFont 0 (length pressAKey) width keys
       (lX1, keysX1) = keysOKX monoFont 1 0 width keys
-      (lX, keysX) = keysOKX monoFont (lenOfRep - 1) startOfKeys
+      (lX, keysX) = keysOKX monoFont (lenOfRep0 - 1) startOfKeys
                             (2 * width) keys
+      (lXW, keysXW) = keysOKX monoFont (lenOfRepW - 1) startOfKeysW
+                              (2 * width) keys
       renumber dy (km, (PointUI x y, len)) = (km, (PointUI x (y + dy), len))
       renumberOv dy = map (\(PointUI x y, al) -> (PointUI x (y + dy), al))
       splitO :: Int -> (Overlay, Overlay, [KYX]) -> OKX -> [OKX]
@@ -278,8 +291,10 @@ splitOKX FontSetup{..} msgLong width height wrap reportAS keys (ls0, kxs0) =
                      , keysX1 )
       ((lsInit, kxsInit), (headerProp, headerMono, rkxs)) =
         -- Check whether all space taken by report and keys.
-        if | (lenOfRep + length lX) < height ->  -- display normally
+        if | (lenOfRep0 + length lX) < height ->  -- display normally
              ((EM.empty, []), (repPrep0, lX ++ repMono0, keysX))
+           | (lenOfRepW + length lXW) < height ->  -- display widely
+             ((EM.empty, []), (repPrepW, lXW ++ repMonoW, keysXW))
            | length reportParagraphs == 1
              && length (attrLine firstParaReport) <= 2 * width ->
              ( (EM.empty, [])  -- already shown in full in @hdrShortened@
