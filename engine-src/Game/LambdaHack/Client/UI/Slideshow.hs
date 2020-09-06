@@ -237,13 +237,17 @@ splitOKX FontSetup{..} msgLong width height wrap reportAS keys (ls0, kxs0) =
                         (PointUI x (y + length repPrep0), al))
                  $ offsetOverlay
                  $ indentSplitAttrString monoWidth $ attrLine repMono
-      repWhole0 = offsetOverlay $ indentSplitAttrString2 msgWidth reportAS
+      repWhole0 = offsetOverlay
+                  $ concatMap (indentSplitAttrString2 msgWidth . attrLine)
+                              reportParagraphs
       repWhole1 = map (\(PointUI x y, al) -> (PointUI x (y + 1), al)) repWhole0
       lenOfRep = length repPrep0 + length repMono0
       startOfKeys = if null repMono0
                     then 0
                     else textSize monoFont (attrLine $ snd $ last repMono0)
-      (lX0, keysX0) = keysOKX monoFont 0 0 width keys
+      pressAKey = stringToAS "A long report is shown. Press a key:"
+                  ++ [Color.nbspAttrW32]
+      (lX0, keysX0) = keysOKX monoFont 0 (length pressAKey) width keys
       (lX1, keysX1) = keysOKX monoFont 1 0 width keys
       (lX, keysX) = keysOKX monoFont (lenOfRep - 1) startOfKeys
                             (2 * width) keys
@@ -276,8 +280,9 @@ splitOKX FontSetup{..} msgLong width height wrap reportAS keys (ls0, kxs0) =
         -- Check whether all space taken by report and keys.
         if | (lenOfRep + length lX) < height ->  -- display normally
              ((EM.empty, []), (repPrep0, lX ++ repMono0, keysX))
-           | length (attrLine firstParaReport) <= 2 * width ->  -- crude, but OK
-             ( (EM.empty, [])  -- already shown in shortened header
+           | length reportParagraphs == 1
+             && length (attrLine firstParaReport) <= 2 * width ->
+             ( (EM.empty, [])  -- already shown in full in @hdrShortened@
              , hdrShortened )
            | otherwise -> case lX0 of
                [] ->
@@ -286,7 +291,8 @@ splitOKX FontSetup{..} msgLong width height wrap reportAS keys (ls0, kxs0) =
                  , hdrShortened )
                lX0first : _ ->
                  ( ( EM.insertWith (++) propFont repWhole1
-                     $ EM.singleton monoFont [lX0first]
+                     $ EM.singleton monoFont
+                         [(PointUI 0 0, firstParagraph pressAKey), lX0first]
                    , filter (\(_, (PointUI _ y, _)) -> y == 0) keysX0 )
                  , hdrShortened )
       initSlides = if EM.null lsInit

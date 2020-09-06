@@ -105,6 +105,9 @@ truncateOverlay halveXstart width rheight wipeAdjacent fillLen onBlank ov =
   let canvasLength = if onBlank then rheight else rheight - 2
       supHeight = maximum $ 0 : map (\(PointUI _ y, _) -> y) ov
       trimmedY = canvasLength - 1
+      -- Sadly, this does not trim the other, concurrent, overlays that may
+      -- obscure the last line and so contend with the "trimmed" message.
+      -- Tough luck; just avoid overrunning overlays in higher level code.
       ovTopFiltered = filter (\(PointUI _ y, _) -> y < trimmedY) ov
       trimmedAlert = ( PointUI 0 trimmedY
                      , stringToAL "--a portion of the text trimmed--" )

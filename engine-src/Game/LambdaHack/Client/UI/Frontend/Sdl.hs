@@ -562,8 +562,11 @@ drawFrame coscreen ClientOptions{..} sess@FrontendSession{..} curFrame = do
     texture <- readIORef stexture
     SDL.rendererRenderTarget srenderer SDL.$= Just texture
     SDL.copy srenderer basicTexture Nothing Nothing  -- overwrite last content
-    drawMonoOverlay $ singleMonoOverlay curFrame
+    -- Mono overlay rendered last, because more likely to come after
+    -- the proportional one and so to have a warning message about overrun
+    -- that needs to be overlaid on top of the proportional overlay.
     drawPropOverlay $ singlePropOverlay curFrame
+    drawMonoOverlay $ singleMonoOverlay curFrame
     writeIORef spreviousFrame curFrame
     SDL.rendererRenderTarget srenderer SDL.$= Nothing
     SDL.copy srenderer texture Nothing Nothing  -- overwrite the backbuffer
