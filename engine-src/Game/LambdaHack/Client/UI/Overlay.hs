@@ -166,23 +166,25 @@ linesAttr l = cons (case break (\ac -> Color.charFromW32 ac == '\n') l of
 -- and the width, in the first argument, is calculated in characters,
 -- not in UI (mono font) coordinates, so that taking and dropping characters
 -- is performed correctly.
-splitAttrString :: Int -> AttrString -> [AttrLine]
-splitAttrString w l =
-  concatMap (splitAttrPhrase w
-             . AttrLine . dropWhile (== Color.spaceAttrW32) . attrLine)
-  $ linesAttr l
+splitAttrString :: Int -> Int -> AttrString -> [AttrLine]
+splitAttrString w0 w1 l = case linesAttr l of
+  [] -> []
+  x : xs ->
+    (splitAttrPhrase w0
+     . AttrLine . dropWhile (== Color.spaceAttrW32) . attrLine) x
+    ++ concatMap (splitAttrPhrase w1
+                  . AttrLine . dropWhile (== Color.spaceAttrW32) . attrLine) xs
 
 indentSplitAttrString :: Int -> AttrString -> [AttrLine]
 indentSplitAttrString w l =
-  -- First line could be split at @w@, not @w - 1@, but it's good enough.
-  let ts = splitAttrString (w - 1) l
+  let ts = splitAttrString w (w - 1) l
   in case ts of
     [] -> []
     hd : tl -> hd : map (AttrLine . ([Color.spaceAttrW32] ++) . attrLine) tl
 
 indentSplitAttrString2 :: Int -> AttrString -> [AttrLine]
 indentSplitAttrString2 w l =
-  let ts = splitAttrString (w - 2) l
+  let ts = splitAttrString w (w - 2) l
   in case ts of
     [] -> []
     hd : tl -> hd : map (AttrLine

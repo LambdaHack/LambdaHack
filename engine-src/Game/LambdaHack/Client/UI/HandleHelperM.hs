@@ -746,9 +746,9 @@ displayItemLore itemBag meleeSkill promptFun slotIndex lSlots = do
   let descAl = itemDesc rwidth True side factionD meleeSkill
                         CGround localTime jlid itemFull2 kit2
       (descSymAl, descBlurbAl) = span (/= Color.spaceAttrW32) descAl
-      descSym = offsetOverlay $ splitAttrString rwidth descSymAl
+      descSym = offsetOverlay $ splitAttrString rwidth rwidth descSymAl
       descBlurb = offsetOverlayX $
-        case splitAttrString rwidth $ stringToAS "xx" ++ descBlurbAl of
+        case splitAttrString rwidth rwidth $ stringToAS "xx" ++ descBlurbAl of
           [] -> error "splitting AttrString loses characters"
           al1 : rest ->
             (2, attrStringToAL $ drop 2 $ attrLine al1) : map (0,) rest

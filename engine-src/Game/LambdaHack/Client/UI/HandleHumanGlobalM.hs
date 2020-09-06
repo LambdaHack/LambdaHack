@@ -1353,7 +1353,7 @@ helpHuman cmdSemInCxtOfKM = do
   let width = if isSquareFont propFont then 79 else 82
       duplicateEOL '\n' = "\n\n"
       duplicateEOL c = T.singleton c
-      blurb = splitAttrString (width - 1) $
+      blurb = splitAttrString (width - 1) (width - 1) $
         textToAS
           ("\nYou are playing the '" <> mname gameMode <> "' scenario.\n\n")
         <> textFgToAS Color.Brown
@@ -1372,7 +1372,7 @@ helpHuman cmdSemInCxtOfKM = do
              "Hints, not needed unless stuck:\n"
         <> textToAS
              (T.concatMap duplicateEOL (mhint gameMode))
-      blurbEnd = splitAttrString (width - 1) $
+      blurbEnd = splitAttrString (width - 1) (width - 1) $
         textToAS "\nScenario endings experienced so far:\n\n"
         <> intercalate (textToAS "\n\n")
                        (map renderOutcomeMsg [minBound..maxBound])
@@ -1511,15 +1511,17 @@ itemMenuHuman cmdSemInCxtOfKM = do
                                                actorCurAndMaxSk)
                                 fromCStore localTime jlid itemFull kit
               (descSymAl, descBlurbAl) = span (/= Color.spaceAttrW32) descAl
-              descSym = offsetOverlay $ splitAttrString rwidth descSymAl
+              descSym = offsetOverlay $ splitAttrString rwidth rwidth descSymAl
               descBlurb = offsetOverlayX $
-                case splitAttrString rwidth $ stringToAS "xx" ++ descBlurbAl of
+                case splitAttrString rwidth rwidth
+                     $ stringToAS "xx" ++ descBlurbAl of
                   [] -> error "splitting AttrString loses characters"
                   al1 : rest ->
                     (2, attrStringToAL $ drop 2 $ attrLine al1) : map (0,) rest
               alPrefix = map (\(K.PointUI x y, al) ->
                                 (K.PointUI x (y + length descBlurb), al))
-                         $ offsetOverlay $ splitAttrString rwidth foundPrefix
+                         $ offsetOverlay
+                         $ splitAttrString rwidth rwidth foundPrefix
               ystart = length descBlurb + length alPrefix - 1
               xstart = textSize monoFont (Color.spaceAttrW32
                                           : attrLine (snd $ last alPrefix))
@@ -1820,17 +1822,17 @@ challengesMenuHuman cmdSemInCxtOfKM = do
       duplicateEOL c = T.singleton c
       blurb =
         [ ( propFont
-          , splitAttrString widthProp
+          , splitAttrString widthProp widthProp
             $ textFgToAS Color.BrBlack
             $ T.concatMap duplicateEOL (mdesc gameMode)
               <> "\n\n" )
         , ( monoFont
-          , splitAttrString widthMono
+          , splitAttrString widthMono widthMono
             $ textToAS
             $ mrules gameMode
               <> "\n\n" )
         , ( propFont
-          , splitAttrString widthProp
+          , splitAttrString widthProp widthProp
             $ textToAS
             $ T.concatMap duplicateEOL (mreason gameMode) )
         ]
