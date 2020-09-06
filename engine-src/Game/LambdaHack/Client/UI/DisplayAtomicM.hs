@@ -993,13 +993,13 @@ displaceActorUI source target = do
   spart <- partActorLeader source
   tpart <- partActorLeader target
   let msgClass = if mleader `elem` map Just [source, target]
-                 then MsgActionMajor  -- to avoid run after displace; configurable
-                 else MsgActionMinor
+                 then MsgActionMajor  -- to interrupt run after a displace;
+                 else MsgActionMinor  -- configurable
       msg = makeSentence [MU.SubjectVerbSg spart "displace", tpart]
   msgAdd msgClass msg
-  when (bfid sb /= bfid tb) $ do
-    lookAtMove source
-    lookAtMove target
+  lookAtMove source
+  when (bfid sb /= bfid tb) $
+    lookAtMove target  -- in case only this one is ours
   side <- getsClient sside
   -- Ours involved, but definitely not requested by player via UI.
   when (side `elem` [bfid sb, bfid tb] && mleader /= Just source) stopPlayBack
