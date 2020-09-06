@@ -392,7 +392,7 @@ kindAspectToSuffix aspect =
     SetFlag Precious -> ""
     SetFlag Blast -> ""
     SetFlag Condition -> ""
-    SetFlag Unique -> ""  -- marked by capital letters in name
+    SetFlag Unique -> ""  -- named specially by the content writer
     SetFlag Periodic -> ""  -- printed specially
     SetFlag MinorEffects -> ""  -- cryptic override
     ELabel{} -> ""  -- too late

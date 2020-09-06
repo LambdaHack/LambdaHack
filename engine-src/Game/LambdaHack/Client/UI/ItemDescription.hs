@@ -101,12 +101,9 @@ partItemN3 width side factionD ranged detailLevel maxWordsToShow localTime
              in adj <+> IK.iname itemKind
            | itemSuspect = flav <+> IK.iname itemKind
            | otherwise = IK.iname itemKind
-      capName = if IA.checkFlag Ability.Unique arItem
-                then MU.Capitalize $ MU.Text name
-                else MU.Text name
-  in (orTs, capName, if displayPowers
-                     then MU.Phrase $ map MU.Text ts
-                     else MU.Text $ IA.aELabel arItem)
+  in (orTs, MU.Text name, if displayPowers
+                          then MU.Phrase $ map MU.Text ts
+                          else MU.Text $ IA.aELabel arItem)
 
 -- TODO: simplify the code a lot
 textAllPowers :: Int -> DetailLevel -> Bool -> ItemFull
@@ -310,8 +307,10 @@ partItemWsRanged width side factionD ranged detail
             in MU.Phrase [MU.Text amount, name, powers]
         | condition ->
             MU.Phrase [MU.Text $ tshow count <> "-fold", name, powers]
-        | IA.checkFlag Ability.Unique arItem && count == 1 ->
-            MU.Phrase ["the", name, powers]
+        | IA.checkFlag Ability.Unique arItem -> case count of
+            0 -> MU.Phrase ["none of", name, powers]
+            1 -> MU.Phrase [name, powers]
+            _ -> MU.Phrase [MU.Car count, "of", MU.Ws name, powers]
         | otherwise -> MU.Phrase [MU.CarAWs count name, powers]
 
 partItemWsDetail :: DetailLevel
@@ -353,9 +352,7 @@ partItemShortAW :: Int -> FactionId -> FactionDict -> Time -> ItemFull
 partItemShortAW width side factionD localTime itemFull kit =
   let (name, _) = partItemShort width side factionD localTime itemFull kit
       arItem = aspectRecordFull itemFull
-  in if IA.checkFlag Ability.Unique arItem
-     then MU.Phrase ["the", name]
-     else MU.AW name
+  in if IA.checkFlag Ability.Unique arItem then name else MU.AW name
 
 partItemMediumAW :: Int -> FactionId -> FactionDict -> Time -> ItemFull
                  -> ItemQuant
@@ -365,9 +362,8 @@ partItemMediumAW width side factionD localTime itemFull kit =
         partItemN width side factionD False DetailMedium 100 localTime
                   itemFull kit
       arItem = aspectRecordFull itemFull
-  in if IA.checkFlag Ability.Unique arItem
-     then MU.Phrase ["the", name, powers]
-     else MU.AW $ MU.Phrase [name, powers]
+      phrase = MU.Phrase [name, powers]
+  in if IA.checkFlag Ability.Unique arItem then phrase else MU.AW phrase
 
 partItemShortWownW :: Int -> FactionId -> FactionDict -> MU.Part -> Time
                    -> ItemFull -> ItemQuant

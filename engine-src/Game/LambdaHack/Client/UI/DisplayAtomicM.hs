@@ -774,11 +774,7 @@ createActorUI born aid body = do
                      _ -> "flying"
                in (makePhrase [adj, object1, object2], basePronoun)
              | baseColor /= Color.BrWhite ->
-               let name = makePhrase [object1, object2]
-               in ( if IA.checkFlag Ability.Unique arItem
-                    then makePhrase [MU.Capitalize $ MU.Text $ "the" <+> name]
-                    else name
-                  , basePronoun )
+               (makePhrase [object1, object2], basePronoun)
              | otherwise -> heroNamePronoun n
         bcolor | bproj body = if IA.checkFlag Ability.Blast arItem
                               then baseColor
