@@ -551,7 +551,8 @@ potion1 = potionTemplate
                , OnSmash ApplyPerfume, OnSmash (Explode S_FRAGRANCE) ]
   }
 potion2 = potionTemplate
-  { ifreq    = [(TREASURE, 100), (ANY_GLASS, 100)]
+  { iname    = "the Potion"
+  , ifreq    = [(TREASURE, 100), (ANY_GLASS, 100)]
   , icount   = 1
   , irarity  = [(5, 8), (10, 8)]
   , iaspects = [ SetFlag Unique, ELabel "of Attraction"
@@ -619,7 +620,8 @@ potion7 = potionTemplate
                                 , Explode S_VIOLENT_FLASH ]) ]
   }
 potion8 = potionTemplate
-  { ifreq    = [(TREASURE, 100), (ANY_GLASS, 100)]
+  { iname    = "the Potion"
+  , ifreq    = [(TREASURE, 100), (ANY_GLASS, 100)]
   , icount   = 1
   , irarity  = [(10, 5)]
   , iaspects = [ SetFlag Unique, ELabel "of Love"
@@ -738,7 +740,8 @@ scrollTemplate = ItemKind
   , ikit     = []
   }
 scroll1 = scrollTemplate
-  { ifreq    = [(TREASURE, 100), (ANY_SCROLL, 100)]
+  { iname    = "the Scroll"
+  , ifreq    = [(TREASURE, 100), (ANY_SCROLL, 100)]
   , icount   = 1
   , irarity  = [(5, 9), (10, 9)]  -- mixed blessing, so found early for a unique
   , iaspects = [SetFlag Unique, ELabel "of Reckless Beacon"]
@@ -781,7 +784,8 @@ scroll6 = scrollTemplate
   , ieffects = [PullActor (ThrowMod 800 75 1)]  -- 6 steps, 1.5 turns
   }
 scroll7 = scrollTemplate
-  { ifreq    = [(TREASURE, 100), (ANY_SCROLL, 100)]
+  { iname    = "the Scroll"
+  , ifreq    = [(TREASURE, 100), (ANY_SCROLL, 100)]
   , icount   = 1
   , irarity  = [(10, 12)]
   , iaspects = [SetFlag Unique, ELabel "of Rescue Proclamation"]
@@ -1025,7 +1029,8 @@ necklaceTemplate = ItemKind
   , ikit     = []
   }
 necklace1 = necklaceTemplate
-  { ifreq    = [(TREASURE, 100), (ANY_JEWELRY, 100)]
+  { iname    = "the Necklace"
+  , ifreq    = [(TREASURE, 100), (ANY_JEWELRY, 100)]
   , irarity  = [(10, 3)]
   , iaspects = [ SetFlag Unique, ELabel "of Aromata"
                , Timeout $ (4 - 1 `dL` 3) * 10
@@ -1036,7 +1041,8 @@ necklace1 = necklaceTemplate
   , idesc    = "A cord of freshly dried herbs and healing berries."
   }
 necklace2 = necklaceTemplate
-  { ifreq    = [(TREASURE, 100), (ANY_JEWELRY, 100)]
+  { iname    = "the Necklace"
+  , ifreq    = [(TREASURE, 100), (ANY_JEWELRY, 100)]
       -- too nasty to call it just a COMMON_ITEM
   , irarity  = [(10, 3)]
   , iaspects = [ SetFlag Unique, ELabel "of Live Bait"
@@ -1094,7 +1100,8 @@ necklace7 = necklaceTemplate
                   -- the @50@ is only for the case of very light actor, etc.
   }
 necklace8 = necklaceTemplate
-  { ifreq    = [(TREASURE, 100), (ANY_JEWELRY, 100)]
+  { iname    = "the Necklace"
+  , ifreq    = [(TREASURE, 100), (ANY_JEWELRY, 100)]
   , irarity  = [(10, 1)]  -- different gameplay for the actor that wears it
   , iaspects = [ SetFlag Unique, ELabel "of Overdrive"
                , Timeout 4
@@ -1201,7 +1208,8 @@ ring1 = ringTemplate
                ++ iaspects ringTemplate
   }
 ring2 = ringTemplate
-  { ifreq    = [(TREASURE, 100), (ANY_JEWELRY, 100)]
+  { iname    = "the Ring"
+  , ifreq    = [(TREASURE, 100), (ANY_JEWELRY, 100)]
   , iaspects = [ SetFlag Unique, ELabel "of Rush"
                , AddSkill SkSpeed $ (1 + 1 `dL` 2) * 2
                , AddSkill SkMaxHP (-20)
@@ -1527,7 +1535,7 @@ knife = ItemKind
   , ikit     = []
   }
 daggerDropBestWeapon = knife
-  { iname    = "Double Dagger"
+  { iname    = "The Double Dagger"
   , ifreq    = [(TREASURE, 20)]
   , irarity  = [(1, 3), (10, 3)]
   , iaspects = SetFlag Unique
@@ -1578,7 +1586,7 @@ hammer3 = hammerTemplate
   , idesc    = "This hammer sports a long metal handle that increases the momentum of the sharpened head's swing, at the cost of long recovery."
   }
 hammerParalyze = hammerTemplate
-  { iname    = "Brute Hammer"
+  { iname    = "The Brute Hammer"
   , ifreq    = [(TREASURE, 20)]
   , irarity  = [(5, 1), (8, 6)]
   , iaspects = [ SetFlag Unique
@@ -1589,7 +1597,7 @@ hammerParalyze = hammerTemplate
   , idesc    = "A huge shapeless lump of meteorite iron alloy on a sturdy pole. Nobody remains standing when this head connects."
   }
 hammerSpark = hammerTemplate
-  { iname    = "Grand Smithhammer"
+  { iname    = "The Grand Smithhammer"
   , ifreq    = [(TREASURE, 20)]
   , irarity  = [(5, 1), (8, 6)]
   , iweight  = 2400  -- weight gives it away
@@ -1623,7 +1631,7 @@ sword = ItemKind
   , ikit     = []
   }
 swordImpress = sword
-  { iname    = "Master's Sword"
+  { iname    = "The Master's Sword"
   , ifreq    = [(TREASURE, 20)]
   , irarity  = [(5, 1), (8, 6)]
   , iaspects = SetFlag Unique
@@ -1632,7 +1640,7 @@ swordImpress = sword
   , idesc    = "A particularly well-balance blade, lending itself to impressive shows of fencing skill."
   }
 swordNullify = sword
-  { iname    = "Gutting Sword"
+  { iname    = "The Gutting Sword"
   , ifreq    = [(TREASURE, 20)]
   , iverbHit = "pierce"
   , irarity  = [(5, 1), (8, 6)]
@@ -1685,7 +1693,7 @@ halberd3 = halberd2
   , idesc    = "The reach of a spear but the edge of an axe."
   }
 halberdPushActor = halberd
-  { iname    = "Swiss Halberd"
+  { iname    = "The Swiss Halberd"
   , ifreq    = [(TREASURE, 20)]
   , irarity  = [(7, 0), (9, 15)]
   , iaspects = SetFlag Unique
