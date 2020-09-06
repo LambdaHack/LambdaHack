@@ -127,7 +127,8 @@ type MsgIgnore = ()
 
 type MsgDifferent = (Text, Text)
 
--- Each constructor should have length between 14 and 17.
+-- Each constructor name should have length between 14 and 17. Not checked,
+-- but would look ugly in message log display (if set in config).
 data MsgClass :: Type -> Type where
   MsgBookkeeping :: MsgClass MsgShowAndSave
   MsgStatusSleep :: MsgClass MsgShowAndSave

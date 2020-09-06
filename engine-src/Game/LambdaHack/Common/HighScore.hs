@@ -136,7 +136,7 @@ showScore tz pos score =
       tturns = makePhrase [MU.CarWs turns "turn"]
   in [ tpos <> "." <+> tscore <+> gplayerName score
        <+> died <> "," <+> victims <> ","
-     , "            "
+     , "           "
        <> "after" <+> tturns <+> chalText <+> "on" <+> curDate <> "."
      ]
 
