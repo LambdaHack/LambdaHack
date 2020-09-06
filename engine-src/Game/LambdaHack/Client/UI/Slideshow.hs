@@ -227,8 +227,10 @@ splitOKX FontSetup{..} msgLong width height wrap reportAS keys (ls0, kxs0) =
       msgWidth = if msgLong && not (isSquareFont propFont)
                  then 2 * width
                  else width
-      repPrep0 = offsetOverlay
-                 $ concatMap (indentSplitAttrString2 msgWrap . attrLine) repPrep
+      repPrep0 = offsetOverlay $ case repPrep of
+        [] -> []
+        r : rs -> (indentSplitAttrString2 msgWidth . attrLine) r  -- first long
+                  ++ concatMap (indentSplitAttrString2 msgWrap . attrLine) rs
       -- TODO: refactor this ugly pile of copy-paste
       repPrepW = offsetOverlay
                  $ concatMap (indentSplitAttrString2 width . attrLine) repPrep
