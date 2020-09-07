@@ -565,7 +565,8 @@ updSpotTile :: MonadStateWrite m
 updSpotTile lid ts = assert (not $ null ts) $ do
   COps{coTileSpeedup} <- getsState scops
   let unk tileMap (p, _) = tileMap PointArray.! p == unknownId
-      adj tileMap = assert (all (unk tileMap) ts) $ tileMap PointArray.// ts
+      adj tileMap = assert (allB (unk tileMap) ts)
+                    $ tileMap PointArray.// ts
   updateLevel lid $ updateTile adj
   let f (_, t1) = when (Tile.isExplorable coTileSpeedup t1) $
         updateLevel lid $ \lvl -> lvl {lseen = lseen lvl + 1}
@@ -579,7 +580,8 @@ updLoseTile lid ts = assert (not $ null ts) $ do
   COps{coTileSpeedup} <- getsState scops
   let matches tileMap (p, ov) = tileMap PointArray.! p == ov
       tu = map (second (const unknownId)) ts
-      adj tileMap = assert (all (matches tileMap) ts) $ tileMap PointArray.// tu
+      adj tileMap = assert (allB (matches tileMap) ts)
+                    $ tileMap PointArray.// tu
   updateLevel lid $ updateTile adj
   let f (_, t1) = when (Tile.isExplorable coTileSpeedup t1) $
         updateLevel lid $ \lvl -> lvl {lseen = lseen lvl - 1}

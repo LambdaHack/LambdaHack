@@ -106,7 +106,7 @@ emptyAttrLine = AttrLine []
 attrStringToAL :: AttrString -> AttrLine
 attrStringToAL s =
 #ifdef WITH_EXPENSIVE_ASSERTIONS
-  assert (all (\ac -> Color.charFromW32 ac /= '\n') s) $  -- expensive in menus
+  assert (allB (\ac -> Color.charFromW32 ac /= '\n') s) $  -- expensive in menus
   assert (length s == 0 || last s /= Color.spaceAttrW32
           `blame` map Color.charFromW32 s) $
     -- only expensive for menus, but often violated by changes, so disabled

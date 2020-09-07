@@ -224,7 +224,7 @@ itemOverlay lSlots lid bag displayRanged = do
   stashBag <- getsState $ getFactionStashBag side
   discoBenefit <- getsClient sdiscoBenefit
   FontSetup{..} <- getFontSetup
-  let !_A = assert (all (`elem` EM.elems lSlots) (EM.keys bag)
+  let !_A = assert (allB (`elem` EM.elems lSlots) (EM.keys bag)
                     `blame` (lid, bag, lSlots)) ()
       markEqp iid t =
         if | (iid `EM.member` combOrgan
