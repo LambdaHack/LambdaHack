@@ -114,8 +114,8 @@ toMsgDistinct :: [(String, Color.Color)] -> MsgClassDistinct -> Text -> Text
 toMsgDistinct prefixColors msgClass t1 t2 =
   toMsg prefixColors $ MsgProtoDistinct msgClass t1 t2
 
--- Each constructor name should have length between 14 and 17. Not checked,
--- but would look ugly in message log display (if set in config).
+-- Each constructor name should have length as asserted in @emptyReport@,
+-- so that the message log with message classes (if set in config) looks tidy.
 data MsgClass =
     MsgClassShowAndSave MsgClassShowAndSave
   | MsgClassShow MsgClassShow
@@ -187,7 +187,7 @@ data MsgClassShowAndSave =
   | MsgActionComplete
   | MsgAtFeetMajor
   | MsgAtFeetMinor
-  deriving (Show, Generic)
+  deriving (Show, Enum, Bounded, Generic)
 
 instance Binary MsgClassShowAndSave
 
@@ -199,13 +199,13 @@ data MsgClassShow =
   | MsgPromptThreat
   | MsgPromptItems
   | MsgActionAlert
-  deriving (Show, Generic)
+  deriving (Show, Enum, Bounded, Generic)
 
 instance Binary MsgClassShow
 
 data MsgClassSave =
     MsgNumericReport
-  deriving (Show, Generic)
+  deriving (Show, Enum, Bounded, Generic)
 
 instance Binary MsgClassSave
 
@@ -214,13 +214,13 @@ data MsgClassIgnore =
   | MsgMacroOperation
   | MsgRunStopReason
   | MsgStopPlayback
-  deriving (Show, Generic)
+  deriving (Show, Enum, Bounded, Generic)
 
 instance Binary MsgClassIgnore
 
 data MsgClassDistinct =
     MsgSpottedItem
-  deriving (Show, Generic)
+  deriving (Show, Enum, Bounded, Generic)
 
 instance Binary MsgClassDistinct
 
@@ -403,7 +403,16 @@ newtype Report = Report [RepMsgNK]
 
 -- | Empty set of messages.
 emptyReport :: Report
-emptyReport = Report []
+emptyReport = assert (let checkLen msgClass =
+                            let len = length (showSimpleMsgClass msgClass)
+                            in len >= 14 && len <= 17
+                          l = map MsgClassShowAndSave [minBound .. maxBound]
+                              ++ map MsgClassShow [minBound .. maxBound]
+                              ++ map MsgClassSave [minBound .. maxBound]
+                              ++ map MsgClassIgnore [minBound .. maxBound]
+                              ++ map MsgClassDistinct [minBound .. maxBound]
+                      in allB checkLen l)
+              $ Report []  -- as good place as any to verify display lengths
 
 -- | Test if the list of messages is empty.
 nullReport :: Report -> Bool
