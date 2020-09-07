@@ -623,7 +623,7 @@ lookAtStash lidV p = do
 -- | Produces a textual description of everything at the requested
 -- level's position.
 lookAtPosition :: MonadClientUI m
-               => LevelId -> Point -> m [(MsgClass MsgShow, Text)]
+               => LevelId -> Point -> m [(MsgClassShow, Text)]
 lookAtPosition lidV p = do
   COps{cotile} <- getsState scops
   side <- getsClient sside

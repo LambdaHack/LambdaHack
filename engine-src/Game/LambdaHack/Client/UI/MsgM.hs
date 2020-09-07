@@ -1,6 +1,6 @@
 -- | Monadic operations on game messages.
 module Game.LambdaHack.Client.UI.MsgM
-  ( msgAddDuplicate, msgAddDifferent
+  ( msgAddDuplicate, msgAddDistinct
   , msgAdd, msgLnAdd, msgAdd0, msgLnAdd0, promptAdd, promptAdd0
   , promptMainKeys, recordHistory
   ) where
@@ -23,55 +23,60 @@ import           Game.LambdaHack.Common.MonadStateRead
 import           Game.LambdaHack.Common.State
 import           Game.LambdaHack.Definition.Defs
 
--- | Add a message to the current report.
-msgAddDuplicate :: (MonadClientUI m, MsgCreate a)
-                => MsgClass a -> a -> Int -> m Bool
-msgAddDuplicate msgClass a n = do
+-- | Add a shared message to the current report. Say if it was a duplicate.
+msgAddDuplicate :: (MonadClientUI m, MsgShared a)
+                => a -> Text -> Int -> m Bool
+msgAddDuplicate msgClass t n = do
   sUIOptions <- getsSession sUIOptions
   time <- getsState stime
   history <- getsSession shistory
-  let msg = toMsg (uMessageColors sUIOptions) msgClass a
+  let msg = toMsgShared (uMessageColors sUIOptions) msgClass t
       (nhistory, duplicate) = addToReport history msg n time
   modifySession $ \sess -> sess {shistory = nhistory}
   return duplicate
 
 -- | Add a message comprising of two different texts, one to show, the other
--- to save to messages log, to the current report. Do not report if it was
--- a duplicate.
-msgAddDifferent :: MonadClientUI m
-                => MsgClass MsgDifferent -> (Text, Text) -> m ()
-msgAddDifferent msgClass tt = void $ msgAddDuplicate msgClass tt 1
+-- to save to messages log, to the current report.
+msgAddDistinct :: (MonadClientUI m)
+               => MsgClassDistinct -> (Text, Text) -> m ()
+msgAddDistinct msgClass (t1, t2) = do
+  sUIOptions <- getsSession sUIOptions
+  time <- getsState stime
+  history <- getsSession shistory
+  let msg = toMsgDistinct (uMessageColors sUIOptions) msgClass t1 t2
+      (nhistory, _) = addToReport history msg 1 time
+  modifySession $ \sess -> sess {shistory = nhistory}
 
--- | Add a message to the current report. Do not report if it was a duplicate.
-msgAdd :: (MonadClientUI m, MsgSingle a) => MsgClass a -> Text -> m ()
-msgAdd msgClass t = void $ msgAddDuplicate msgClass (msgSameInject t) 1
+-- | Add a message to the current report.
+msgAdd :: (MonadClientUI m, MsgShared a) => a -> Text -> m ()
+msgAdd msgClass t = void $ msgAddDuplicate msgClass t 1
 
 -- | Add a message to the current report. End previously collected report,
 -- if any, with newline.
-msgLnAdd :: (MonadClientUI m, MsgSingle a) => MsgClass a -> Text -> m ()
+msgLnAdd :: (MonadClientUI m, MsgShared a) => a -> Text -> m ()
 msgLnAdd msgClass t = do
   modifySession $ \sess -> sess {shistory = addEolToNewReport $ shistory sess}
   msgAdd msgClass t
 
 -- | Add a message to the current report with 0 copies for the purpose
--- of collating duplicates. Do not report if it was a duplicate.
-msgAdd0 :: (MonadClientUI m, MsgSingle a) => MsgClass a -> Text -> m ()
-msgAdd0 msgClass t = void $ msgAddDuplicate msgClass (msgSameInject t) 0
+-- of collating duplicates.
+msgAdd0 :: (MonadClientUI m, MsgShared a) => a -> Text -> m ()
+msgAdd0 msgClass t = void $ msgAddDuplicate msgClass t 0
 
 -- | Add a message to the current report with 0 copies for the purpose
--- of collating duplicates. Do not report if it was a duplicate.
--- End previously collected report, if any, with newline.
-msgLnAdd0 :: (MonadClientUI m, MsgSingle a) => MsgClass a -> Text -> m ()
+-- of collating duplicates. End previously collected report, if any,
+-- with newline.
+msgLnAdd0 :: (MonadClientUI m, MsgShared a) => a -> Text -> m ()
 msgLnAdd0 msgClass t = do
   modifySession $ \sess -> sess {shistory = addEolToNewReport $ shistory sess}
   msgAdd0 msgClass t
 
--- | Add a prompt to the current report. Do not report if it was a duplicate.
+-- | Add a prompt to the current report.
 promptAdd :: MonadClientUI m => Text -> m ()
 promptAdd = msgAdd MsgActionAlert
 
 -- | Add a prompt to the current report with 0 copies for the purpose
--- of collating duplicates. Do not report if it was a duplicate.
+-- of collating duplicates.
 promptAdd0 :: MonadClientUI m => Text -> m ()
 promptAdd0 = msgAdd0 MsgPromptNearby
 

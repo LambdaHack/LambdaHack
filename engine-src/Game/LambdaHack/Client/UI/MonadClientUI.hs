@@ -209,10 +209,10 @@ getReportUI = do
       underAI = isAIFact fact
       prefixColors = uMessageColors sUIOptions
       -- Here we assume newbies don't override default keys.
-      promptAim = toMsg prefixColors MsgPromptNearby
-                  $ msgSameInject $ miniHintAiming <> "\n"
-      promptAI = toMsg prefixColors MsgActionAlert
-                 $ msgSameInject "<press any key for main menu>"
+      promptAim = toMsgShared prefixColors MsgPromptNearby
+                  $ miniHintAiming <> "\n"
+      promptAI = toMsgShared prefixColors MsgActionAlert
+                 $ "<press any key for main menu>"
   return $! if | newcomerHelp && detailAtDefault -> consReport promptAim report
                | underAI -> consReport promptAI report
                | otherwise -> report
@@ -348,7 +348,7 @@ defaultHistory = do
     timezone <- getTimeZone utcTime
     let curDate = T.pack $ take 19 $ show $ utcToLocalTime timezone utcTime
         emptyHist = emptyHistory $ uHistoryMax sUIOptions
-        msg = toMsg (uMessageColors sUIOptions) MsgBookkeeping
+        msg = toMsgShared (uMessageColors sUIOptions) MsgBookkeeping
               $ "History log started on " <> curDate <> "."
     return $! fst $ addToReport emptyHist msg 1 timeZero
 
