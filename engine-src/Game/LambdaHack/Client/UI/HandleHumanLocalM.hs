@@ -279,7 +279,7 @@ chooseItemDialogMode c = do
                   keys = [K.spaceKM, K.escKM]
                          ++ [K.upKM | slotIndex /= 0]
                          ++ [K.downKM | slotIndex /= slotListBound]
-              promptAdd0 prompt2
+              msgAdd0 MsgPromptNearby prompt2
               slides <- overlayToSlideshow (rheight - 2) keys (ov0, [])
               km <- getConfirms ColorFull keys slides
               case K.key km of
@@ -335,7 +335,7 @@ chooseItemDialogMode c = do
                   keys = [K.spaceKM, K.escKM]
                          ++ [K.upKM | slotIndex /= 0]
                          ++ [K.downKM | slotIndex /= slotListBound]
-              promptAdd0 prompt2
+              msgAdd0 MsgPromptNearby prompt2
               slides <- overlayToSlideshow (rheight - 2) keys (ov0, [])
               km <- getConfirms ColorFull keys slides
               case K.key km of
@@ -747,7 +747,7 @@ recordHuman = do
   let (smacroFrameNew, msg) = recordHumanTransition smacroFrameOld
   modifySession $ \sess -> sess {smacroFrame = smacroFrameNew}
   macroStack <- getsSession smacroStack
-  unless (T.null msg || not (null macroStack)) $ promptAdd0 msg
+  unless (T.null msg || not (null macroStack)) $ msgAdd0 MsgPromptNearby msg
 
 recordHumanTransition :: KeyMacroFrame -> (KeyMacroFrame, Text)
 recordHumanTransition macroFrame =
@@ -798,7 +798,7 @@ eitherHistory showAll = do
       kxs = [ (Right sn, ( K.PointUI 0 (slotPrefix sn)
                          , ButtonWidth propFont 1000 ))
             | sn <- take histBound intSlots ]
-  promptAdd0 msg
+  msgAdd0 MsgPromptNearby msg
   let keysAllHistory =
         K.returnKM
 #ifndef USE_JSFILE
@@ -814,11 +814,11 @@ eitherHistory showAll = do
             let t = T.unlines $ map (T.pack . map Color.charFromW32)
                                     renderedHistory
             path <- dumpTextFile t "history.txt"
-            promptAdd0 $ "All of history dumped to file" <+> T.pack path <> "."
+            msgAdd0 MsgPromptNearby $ "All of history dumped to file" <+> T.pack path <> "."
           Left km | km == K.escKM ->
-            promptAdd0 "Try to survive a few seconds more, if you can."
+            msgAdd0 MsgPromptNearby "Try to survive a few seconds more, if you can."
           Left km | km == K.spaceKM ->  -- click in any unused space
-            promptAdd0 "Steady on."
+            msgAdd0 MsgPromptNearby "Steady on."
           Right SlotChar{..} | slotChar == 'a' ->
             displayOneReport slotPrefix
           _ -> error $ "" `showFailure` ekm
@@ -835,14 +835,14 @@ eitherHistory showAll = do
             keys = [K.spaceKM, K.escKM]
                    ++ [K.upKM | histSlot /= 0]
                    ++ [K.downKM | histSlot /= histBound - 1]
-        promptAdd0 prompt
+        msgAdd0 MsgPromptNearby prompt
         slides <- overlayToSlideshow (rheight - 2) keys (ov0, [])
         km <- getConfirms ColorFull keys slides
         case K.key km of
           K.Space -> displayAllHistory
           K.Up -> displayOneReport $ histSlot - 1
           K.Down -> displayOneReport $ histSlot + 1
-          K.Esc -> promptAdd0 "Try to learn from your previous mistakes."
+          K.Esc -> msgAdd0 MsgPromptNearby "Try to learn from your previous mistakes."
           _ -> error $ "" `showFailure` km
   if showAll
   then displayAllHistory

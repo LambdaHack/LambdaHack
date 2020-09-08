@@ -1328,7 +1328,7 @@ pickPoint verb = do
       keys = K.escKM
            : K.leftButtonReleaseKM
            : map (K.KM K.NoModifier) dirKeys
-  promptAdd0 $ "Where to" <+> verb <> "? [movement key] [pointer]"
+  msgAdd0 MsgPromptNearby $ "Where to" <+> verb <> "? [movement key] [pointer]"
   slides <- reportToSlideshow [K.escKM]
   km <- getConfirms ColorFull keys slides
   case K.key km of
@@ -1931,7 +1931,7 @@ gameQuitHuman = do
 gameDropHuman :: MonadClientUI m => m ReqUI
 gameDropHuman = do
   modifySession $ \sess -> sess {sallNframes = -1}  -- hack, but we crash anyway
-  promptAdd0 "Interrupt! Trashing the unsaved game. The program exits now."
+  msgAdd0 MsgPromptNearby "Interrupt! Trashing the unsaved game. The program exits now."
   clientPrintUI "Interrupt! Trashing the unsaved game. The program exits now."
     -- this is not shown by vty frontend, but at least shown by sdl2 one
   return ReqUIGameDropAndExit
@@ -1941,7 +1941,7 @@ gameDropHuman = do
 gameExitHuman :: MonadClientUI m => m ReqUI
 gameExitHuman = do
   -- Announce before the saving started, since it can take a while.
-  promptAdd0 "Saving game. The program stops now."
+  msgAdd0 MsgPromptNearby "Saving game. The program stops now."
   return ReqUIGameSaveAndExit
 
 -- * GameSave
@@ -1949,7 +1949,7 @@ gameExitHuman = do
 gameSaveHuman :: MonadClientUI m => m ReqUI
 gameSaveHuman = do
   -- Announce before the saving started, since it can take a while.
-  promptAdd0 "Saving game backup."
+  msgAdd0 MsgPromptNearby "Saving game backup."
   return ReqUIGameSave
 
 -- * Doctrine

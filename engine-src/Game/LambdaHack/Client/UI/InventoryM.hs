@@ -26,6 +26,7 @@ import           Game.LambdaHack.Client.UI.HumanCmd
 import           Game.LambdaHack.Client.UI.ItemSlot
 import qualified Game.LambdaHack.Client.UI.Key as K
 import           Game.LambdaHack.Client.UI.MonadClientUI
+import           Game.LambdaHack.Client.UI.Msg
 import           Game.LambdaHack.Client.UI.MsgM
 import           Game.LambdaHack.Client.UI.SessionUI
 import           Game.LambdaHack.Client.UI.Slideshow
@@ -480,7 +481,7 @@ runDefItemKey keyDefs lettersDef okx slotKeys prompt cCur = do
       keyLabels = filter (not . T.null) keyLabelsRaw
       choice = T.intercalate " " $ map wrapB $ nub keyLabels
         -- switch to Data.Containers.ListUtils.nubOrd when we drop GHC 8.4.4
-  promptAdd0 $ prompt <+> choice
+  msgAdd0 MsgPromptNearby $ prompt <+> choice
   CCUI{coscreen=ScreenContent{rheight}} <- getsSession sccui
   ekm <- do
     okxs <- overlayToSlideshow (rheight - 2) keys okx

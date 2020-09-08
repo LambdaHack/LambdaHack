@@ -523,7 +523,7 @@ displayRespUpdAtomicUI cmd = case cmd of
     resetPressedKeys
     -- Help newbies when actors obscured by text and no obvious key to press:
     displayMore ColorFull "\nAre you up for the challenge?"
-    promptAdd0 "A grand story starts right here!"
+    msgAdd0 MsgPromptNearby "A grand story starts right here!"
   UpdRestartServer{} -> return ()
   UpdResume fid _ -> do
     COps{cocave} <- getsState scops
@@ -542,7 +542,7 @@ displayRespUpdAtomicUI cmd = case cmd of
         msgLnAdd0 MsgPromptFocus "You remember your surroundings."
         msgAdd0 MsgPromptNearby desc
       displayMore ColorFull "\nAre you up for the challenge?"
-      promptAdd0 "Prove yourself!"
+      msgAdd0 MsgPromptNearby "Prove yourself!"
   UpdResumeServer{} -> return ()
   UpdKillExit{} -> do
     side <- getsClient sside

@@ -364,7 +364,7 @@ pickNumber askNumber kAll = assert (kAll >= 1) $ do
       frontKeyKeys = shownKeys ++ map K.mkChar ['0'..'9']
       gatherNumber kCur = assert (1 <= kCur && kCur <= kAll) $ do
         let kprompt = "Choose number:" <+> tshow kCur
-        promptAdd0 kprompt
+        msgAdd0 MsgPromptNearby kprompt
         sli <- reportToSlideshow shownKeys
         ekkm <- displayChoiceScreen "" ColorFull False sli frontKeyKeys
         case ekkm of
@@ -757,7 +757,7 @@ displayItemLore itemBag meleeSkill promptFun slotIndex lSlots = do
       keys = [K.spaceKM, K.escKM]
              ++ [K.upKM | slotIndex /= 0]
              ++ [K.downKM | slotIndex /= lSlotsBound]
-  promptAdd0 $ promptFun iid2 itemFull2 k
+  msgAdd0 MsgPromptNearby $ promptFun iid2 itemFull2 k
   slides <- overlayToSlideshow (rheight - 2) keys (ov, [])
   km <- getConfirms ColorFull keys slides
   case K.key km of
@@ -779,7 +779,7 @@ viewLoreItems menuName lSlotsRaw trunkBag prompt examItem displayRanged = do
   itemToF <- getsState $ flip itemToFull
   let keysPre = [K.spaceKM, K.mkChar '<', K.mkChar '>', K.escKM]
       lSlots = sortSlotMap itemToF lSlotsRaw
-  promptAdd0 prompt
+  msgAdd0 MsgPromptNearby prompt
   io <- itemOverlay lSlots arena trunkBag displayRanged
   itemSlides <- overlayToSlideshow (rheight - 2) keysPre io
   let keyOfEKM (Left km) = km
