@@ -655,9 +655,9 @@ selectAid leader = do
             else ES.insert leader
   modifySession $ \sess -> sess {sselected = upd $ sselected sess}
   let subject = partActor bodyUI
-  promptAdd $ makeSentence [subject, if wasMemeber
-                                     then "deselected"
-                                     else "selected"]
+  msgAdd MsgActionAlert $ makeSentence [subject, if wasMemeber
+                                                 then "deselected"
+                                                 else "selected"]
 
 -- * SelectNone
 
@@ -674,9 +674,9 @@ selectNoneHuman = do
             else ES.difference
   modifySession $ \sess -> sess {sselected = upd (sselected sess) ours}
   let subject = "all party members on the level"
-  promptAdd $ makeSentence [subject, if wasNone
-                                     then "selected"
-                                     else "deselected"]
+  msgAdd MsgActionAlert $ makeSentence [subject, if wasNone
+                                                 then "selected"
+                                                 else "deselected"]
 
 -- * SelectWithPointer
 
@@ -883,7 +883,7 @@ markAnimHuman = do
 
 printScreenHuman :: MonadClientUI m => m ()
 printScreenHuman = do
-  promptAdd "Screenshot printed."
+  msgAdd MsgActionAlert "Screenshot printed."
   printScreen
 
 -- * Cancel
@@ -917,7 +917,7 @@ endAimingMsg = do
   subject <- partActorLeader leader
   tgt <- getsClient $ getTarget leader
   (mtargetMsg, _) <- targetDesc tgt
-  promptAdd $ case mtargetMsg of
+  msgAdd MsgActionAlert $ case mtargetMsg of
     Nothing ->
       makeSentence [MU.SubjectVerbSg subject "clear target"]
     Just targetMsg ->

@@ -95,7 +95,7 @@ loopCli ccui sUIOptions clientOptions = do
     (True, RespUpdAtomic _ UpdResume{}) -> return ()
     (True, RespUpdAtomic _ UpdRestart{}) ->
       when hasUI $
-        promptAdd "Ignoring an old savefile and starting a new game."
+        clientPrintUI "Ignoring an old savefile and starting a new game."
     (False, RespUpdAtomic _ UpdResume{}) ->
       error $ "Savefile of client " ++ show side ++ " not usable."
               `showFailure` ()
@@ -103,7 +103,7 @@ loopCli ccui sUIOptions clientOptions = do
     (True, RespUpdAtomicNoState UpdResume{}) -> undefined
     (True, RespUpdAtomicNoState UpdRestart{}) ->
       when hasUI $
-        promptAdd "Ignoring an old savefile and starting a new game."
+        clientPrintUI "Ignoring an old savefile and starting a new game."
     (False, RespUpdAtomicNoState UpdResume{}) ->
       error $ "Savefile of client " ++ show side ++ " not usable."
               `showFailure` ()

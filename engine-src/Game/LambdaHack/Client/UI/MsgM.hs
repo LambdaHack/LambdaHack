@@ -1,7 +1,7 @@
 -- | Monadic operations on game messages.
 module Game.LambdaHack.Client.UI.MsgM
   ( msgAddDuplicate, msgAddDistinct
-  , msgAdd, msgLnAdd, msgAdd0, msgLnAdd0, promptAdd, promptAdd0
+  , msgAdd, msgLnAdd, msgAdd0, msgLnAdd0, promptAdd0
   , promptMainKeys, recordHistory
   ) where
 
@@ -70,10 +70,6 @@ msgLnAdd0 :: (MonadClientUI m, MsgShared a) => a -> Text -> m ()
 msgLnAdd0 msgClass t = do
   modifySession $ \sess -> sess {shistory = addEolToNewReport $ shistory sess}
   msgAdd0 msgClass t
-
--- | Add a prompt to the current report.
-promptAdd :: MonadClientUI m => Text -> m ()
-promptAdd = msgAdd MsgActionAlert
 
 -- | Add a prompt to the current report with 0 copies for the purpose
 -- of collating duplicates.

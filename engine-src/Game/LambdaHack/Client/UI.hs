@@ -12,7 +12,7 @@ module Game.LambdaHack.Client.UI
   , CCUI(..)
   , UIOptions, applyUIOptions, uCmdline, mkUIOptions
     -- * Operations exposed for "Game.LambdaHack.Client.LoopM"
-  , ChanFrontend, chanFrontend, promptAdd, tryRestore
+  , ChanFrontend, chanFrontend, tryRestore, clientPrintUI
 #ifdef EXPOSE_INTERNAL
     -- * Internal operations
   , humanCommand
