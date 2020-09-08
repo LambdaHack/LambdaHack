@@ -606,19 +606,20 @@ renderTimeReport uHistory1PerLine t rep@(Report r) =
       repMsgs = renderReport False rep
       mgsClasses = reverse $ map (showSimpleMsgClass . msgClass . repMsg) r
       turnsString = show turns
-      rederAS as = stringToAS (turnsString ++ ": ") ++ as
-      rederASClass (as, msgClassString) =
+      isSpace32 = Char.isSpace . Color.charFromW32
+      worthSaving = not . all isSpace32
+      renderAS as = stringToAS (turnsString ++ ": ") ++ dropWhile isSpace32 as
+      renderClass (as, msgClassString) =
         let lenUnderscore = 17 - length msgClassString
                             + max 0 (3 - length turnsString)
         in stringToAS (turnsString ++ ":")
            ++ map (Color.attrChar2ToW32 Color.BrBlack)
                   ("[" ++ replicate lenUnderscore '_' ++ msgClassString ++ "]")
            ++ [Color.spaceAttrW32]
-           ++ as
-      worthSaving = not . all (Char.isSpace . Color.charFromW32)
+           ++ dropWhile isSpace32 as
   in if uHistory1PerLine
-     then map rederASClass $ filter (worthSaving . fst) $ zip repMsgs mgsClasses
-     else map rederAS $ filter worthSaving $ [foldr (<+:>) [] repMsgs]
+     then map renderClass $ filter (worthSaving . fst) $ zip repMsgs mgsClasses
+     else map renderAS $ filter worthSaving $ [foldr (<+:>) [] repMsgs]
 
 lengthHistory :: Bool -> History -> Int
 lengthHistory uHistory1PerLine History{oldReport, archivedHistory} =
