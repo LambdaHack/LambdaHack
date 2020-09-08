@@ -350,7 +350,7 @@ defaultHistory = do
         emptyHist = emptyHistory $ uHistoryMax sUIOptions
         msg = toMsgShared (uMessageColors sUIOptions) MsgBookKeeping
               $ "History log started on " <> curDate <> "."
-    return $! fst $ addToReport emptyHist msg 1 timeZero
+    return $! fst $ addToReport emptyHist msg timeZero
 
 tellAllClipPS :: MonadClientUI m => m ()
 tellAllClipPS = do

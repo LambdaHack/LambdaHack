@@ -19,7 +19,7 @@ module Game.LambdaHack.Client.UI.Msg
   , scrapsRepeats, bindsPronouns, msgColor
   , RepMsgNK, nullRepMsgNK
   , emptyReport, renderWholeReport, renderRepetition
-  , scrapRepetitionSingle, scrapRepetition, snocReport, renderTimeReport
+  , scrapRepetitionSingle, scrapRepetition, renderTimeReport
 #endif
   ) where
 
@@ -421,9 +421,9 @@ instance Binary RepMsgNK
 -- | If only one of the message components is non-empty and non-whitespace,
 -- but its count is zero, the message is considered empty.
 nullRepMsgNK :: RepMsgNK -> Bool
-nullRepMsgNK (RepMsgNK Msg{..} n k) =
-  (all (Char.isSpace . Color.charFromW32) msgShow || n <= 0)
-  && (all (Char.isSpace . Color.charFromW32) msgSave || k <= 0)
+nullRepMsgNK (RepMsgNK Msg{..} _ _) =
+  all (Char.isSpace . Color.charFromW32) msgShow
+  && all (Char.isSpace . Color.charFromW32) msgSave
 
 -- | The set of messages, with repetitions, to show at the screen at once.
 newtype Report = Report [RepMsgNK]
@@ -560,18 +560,14 @@ scrapRepetition History{ newReport = Report newMsgs
          else Nothing
     _ -> error "scrapRepetition: empty new report for scrapping"
 
--- | Add a message to the end of the report with the given repetition.
-snocReport :: Report -> Msg -> Int -> Report
-snocReport (Report r) msg n = Report $ RepMsgNK msg n n : r
-
 -- | Add a message to the new report of history, eliminating a possible
 -- duplicate and noting its existence in the result.
 --
 -- Empty messages are not added to make checking report emptiness easier.
-addToReport :: History -> Msg -> Int -> Time -> (History, Bool)
-addToReport hist msg _ _ | nullMsg msg = (hist, False)
-addToReport History{..} msg n time =
-  let newH = History { newReport = snocReport newReport msg n
+addToReport :: History -> Msg -> Time -> (History, Bool)
+addToReport hist msg _ | nullMsg msg = (hist, False)
+addToReport History{newReport = Report r, ..} msg time =
+  let newH = History { newReport = Report $ RepMsgNK msg 1 1 : r
                      , newTime = time
                      , .. }
   in if not $ scrapsRepeats $ msgClass msg

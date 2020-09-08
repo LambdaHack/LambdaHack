@@ -23,32 +23,30 @@ import           Game.LambdaHack.Common.State
 import           Game.LambdaHack.Definition.Defs
 
 -- | Add a shared message to the current report. Say if it was a duplicate.
-msgAddDuplicate :: (MonadClientUI m, MsgShared a)
-                => a -> Text -> Int -> m Bool
-msgAddDuplicate msgClass t n = do
+msgAddDuplicate :: (MonadClientUI m, MsgShared a) => a -> Text -> m Bool
+msgAddDuplicate msgClass t = do
   sUIOptions <- getsSession sUIOptions
   time <- getsState stime
   history <- getsSession shistory
   let msg = toMsgShared (uMessageColors sUIOptions) msgClass t
-      (nhistory, duplicate) = addToReport history msg n time
+      (nhistory, duplicate) = addToReport history msg time
   modifySession $ \sess -> sess {shistory = nhistory}
   return duplicate
 
 -- | Add a message comprising of two different texts, one to show, the other
 -- to save to messages log, to the current report.
-msgAddDistinct :: (MonadClientUI m)
-               => MsgClassDistinct -> (Text, Text) -> m ()
+msgAddDistinct :: (MonadClientUI m) => MsgClassDistinct -> (Text, Text) -> m ()
 msgAddDistinct msgClass (t1, t2) = do
   sUIOptions <- getsSession sUIOptions
   time <- getsState stime
   history <- getsSession shistory
   let msg = toMsgDistinct (uMessageColors sUIOptions) msgClass t1 t2
-      (nhistory, _) = addToReport history msg 1 time
+      (nhistory, _) = addToReport history msg time
   modifySession $ \sess -> sess {shistory = nhistory}
 
 -- | Add a message to the current report.
 msgAdd :: (MonadClientUI m, MsgShared a) => a -> Text -> m ()
-msgAdd msgClass t = void $ msgAddDuplicate msgClass t 1
+msgAdd msgClass t = void $ msgAddDuplicate msgClass t
 
 -- | Add a message to the current report. End previously collected report,
 -- if any, with newline.
