@@ -202,7 +202,7 @@ lastMacroFrame mf [] = mf
 lastMacroFrame _ (mf : mfs) = lastMacroFrame mf mfs
 
 stopPlayBack :: MonadClientUI m => m ()
-stopPlayBack = msgAdd0 MsgStopPlayback "!"
+stopPlayBack = msgAdd MsgStopPlayback "!"
 
 resetPlayBack :: MonadClientUI m => m ()
 resetPlayBack = do

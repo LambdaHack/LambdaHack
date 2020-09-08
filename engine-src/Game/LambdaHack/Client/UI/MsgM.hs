@@ -1,6 +1,6 @@
 -- | Monadic operations on game messages.
 module Game.LambdaHack.Client.UI.MsgM
-  ( msgAddDuplicate, msgAddDistinct, msgAdd, msgLnAdd, msgAdd0, msgLnAdd0
+  ( msgAddDuplicate, msgAddDistinct, msgAdd, msgLnAdd
   , promptMainKeys, recordHistory
   ) where
 
@@ -57,19 +57,6 @@ msgLnAdd msgClass t = do
   modifySession $ \sess -> sess {shistory = addEolToNewReport $ shistory sess}
   msgAdd msgClass t
 
--- | Add a message to the current report with 0 copies for the purpose
--- of collating duplicates.
-msgAdd0 :: (MonadClientUI m, MsgShared a) => a -> Text -> m ()
-msgAdd0 msgClass t = void $ msgAddDuplicate msgClass t 0
-
--- | Add a message to the current report with 0 copies for the purpose
--- of collating duplicates. End previously collected report, if any,
--- with newline.
-msgLnAdd0 :: (MonadClientUI m, MsgShared a) => a -> Text -> m ()
-msgLnAdd0 msgClass t = do
-  modifySession $ \sess -> sess {shistory = addEolToNewReport $ shistory sess}
-  msgAdd0 msgClass t
-
 -- | Add a prompt with basic keys description.
 promptMainKeys :: MonadClientUI m => m ()
 promptMainKeys = do
@@ -117,7 +104,7 @@ promptMainKeys = do
         <+> "with" <+> moveKeys <+> "keys or mouse."
         <+> keepTab
         <+> moreHelp
-  void $ msgAdd0 MsgPromptNearby keys
+  void $ msgAdd MsgPromptGeneric keys
 
 tgtKindVerb :: Maybe Target -> Text
 tgtKindVerb mtgt = case mtgt of

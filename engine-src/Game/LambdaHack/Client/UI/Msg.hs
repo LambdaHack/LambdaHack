@@ -15,7 +15,8 @@ module Game.LambdaHack.Client.UI.Msg
 #ifdef EXPOSE_INTERNAL
     -- * Internal operations
   , UAttrString, uToAttrString, attrStringToU
-  , nullMsg, toMsg, MsgPrototype, tripleFromProto, bindsPronouns, msgColor
+  , nullMsg, toMsg, MsgPrototype, tripleFromProto
+  , scrapsRepeats, bindsPronouns, msgColor
   , RepMsgNK, nullRepMsgNK
   , emptyReport, renderWholeReport, renderRepetition
   , scrapRepetitionSingle, scrapRepetition, snocReport, renderTimeReport
@@ -135,7 +136,7 @@ showSimpleMsgClass = \case
   MsgClassDistinct x -> show x
 
 data MsgClassShowAndSave =
-    MsgBookkeeping
+    MsgBookKeeping
   | MsgStatusSleep
   | MsgStatusGoodUs
   | MsgStatusBadUs
@@ -159,7 +160,6 @@ data MsgClassShowAndSave =
   | MsgTerrainReveal
   | MsgItemDiscovery
   | MsgSpottedActor
-  | MsgSpottedThreat
   | MsgItemMovement
   | MsgActionMajor
   | MsgActionMinor
@@ -192,13 +192,15 @@ data MsgClassShowAndSave =
 instance Binary MsgClassShowAndSave
 
 data MsgClassShow =
-    MsgPromptNearby
+    MsgPromptGeneric
   | MsgPromptFocus
   | MsgPromptMention
-  | MsgPromptWarning
-  | MsgPromptThreat
+  | MsgPromptModify
+  | MsgPromptActors
   | MsgPromptItems
+  | MsgPromptAction
   | MsgActionAlert
+  | MsgSpottedThreat
   deriving (Show, Enum, Bounded, Generic)
 
 instance Binary MsgClassShow
@@ -227,7 +229,7 @@ instance Binary MsgClassDistinct
 interruptsRunning :: MsgClass -> Bool
 interruptsRunning = \case
   MsgClassShowAndSave x -> case x of
-    MsgBookkeeping -> False
+    MsgBookKeeping -> False
     MsgStatusOthers -> False
     MsgStatusStopThem -> False
     MsgStatusLongThem -> False
@@ -241,21 +243,22 @@ interruptsRunning = \case
     MsgAtFeetMinor -> False
     _ -> True
   MsgClassShow x -> case x of
-    MsgPromptNearby -> False
+    MsgPromptGeneric -> False
     MsgPromptFocus -> False
     MsgPromptMention -> False
-    MsgPromptWarning -> False
-    MsgPromptThreat -> False
+    MsgPromptModify -> False
+    MsgPromptActors -> False
     MsgPromptItems -> False
-      -- MsgActionAlert means something went wrong, so alarm
-    _ -> True
+    MsgPromptAction -> True  -- action alerts or questions cause alarm
+    MsgActionAlert -> True
+    MsgSpottedThreat -> True
   MsgClassSave x -> case x of
     MsgNumericReport -> False
   MsgClassIgnore x -> case x of
     MsgInnerWorkSpam -> False
     MsgMacroOperation -> False
     MsgRunStopReason -> False
-    _ -> True
+    MsgStopPlayback -> True
   MsgClassDistinct x -> case x of
     MsgSpottedItem -> False
 
@@ -267,6 +270,30 @@ disturbsResting = \case
     MsgHeardNearby -> False
     _ -> interruptsRunning $ MsgClassShowAndSave x
   msgClass -> interruptsRunning msgClass
+
+scrapsRepeats :: MsgClass -> Bool
+scrapsRepeats = \case
+  MsgClassShowAndSave x -> case x of
+    MsgBookKeeping -> False  -- too important to scrap
+    MsgDeathDeafeat -> False
+    MsgRiskOfDeath -> False
+    MsgFinalOutcome -> False
+    _ -> True
+  MsgClassShow x -> case x of
+    MsgPromptGeneric -> False
+    MsgPromptFocus -> False
+    MsgPromptMention -> False
+    MsgPromptModify -> False
+    MsgPromptActors -> False
+    MsgPromptItems -> False
+    MsgPromptAction -> False
+    MsgActionAlert -> True
+    MsgSpottedThreat -> True
+  MsgClassSave x -> case x of
+    MsgNumericReport -> True
+  MsgClassIgnore _ -> False  -- ignored, so no need to scrap
+  MsgClassDistinct x -> case x of
+    MsgSpottedItem -> True
 
 -- Only player's non-projectile actors getting hit introduce subjects,
 -- because only such hits are guaranteed to be perceived.
@@ -313,7 +340,7 @@ cGameOver = Color.BrWhite
 msgColor :: MsgClass -> Color.Color
 msgColor = \case
   MsgClassShowAndSave x -> case x of
-    MsgBookkeeping -> cBoring
+    MsgBookKeeping -> cBoring
     MsgStatusSleep -> cSleep
     MsgStatusGoodUs -> cGoodEvent
     MsgStatusBadUs -> cBadEvent
@@ -337,7 +364,6 @@ msgColor = \case
     MsgTerrainReveal -> cIdentification
     MsgItemDiscovery -> cIdentification
     MsgSpottedActor -> cBoring  -- too common; warning in @MsgSpottedThreat@
-    MsgSpottedThreat -> cGraveRisk
     MsgItemMovement -> cBoring
     MsgActionMajor -> cBoring
     MsgActionMinor -> cBoring
@@ -366,13 +392,15 @@ msgColor = \case
     MsgAtFeetMajor -> cBoring
     MsgAtFeetMinor -> cBoring
   MsgClassShow x -> case x of
-    MsgPromptNearby -> cBoring
+    MsgPromptGeneric -> cBoring
     MsgPromptFocus -> cVista
     MsgPromptMention -> cNeutralEvent
-    MsgPromptWarning -> cMeta
-    MsgPromptThreat -> cRisk
+    MsgPromptModify -> cMeta
+    MsgPromptActors -> cRisk
     MsgPromptItems -> cGreed
+    MsgPromptAction -> cMeta
     MsgActionAlert -> cMeta
+    MsgSpottedThreat -> cGraveRisk
   MsgClassSave x -> case x of
     MsgNumericReport -> cBoring
   MsgClassIgnore x -> case x of
@@ -546,9 +574,11 @@ addToReport History{..} msg n time =
   let newH = History { newReport = snocReport newReport msg n
                      , newTime = time
                      , .. }
-  in case scrapRepetition newH of
-    Just scrappedH -> (scrappedH, True)
-    Nothing -> (newH, False)
+  in if not $ scrapsRepeats $ msgClass msg
+     then (newH, False)
+     else case scrapRepetition newH of
+       Just scrappedH -> (scrappedH, True)
+       Nothing -> (newH, False)
 
 -- | Add a newline to end of the new report of history, unless empty.
 addEolToNewReport :: History -> History

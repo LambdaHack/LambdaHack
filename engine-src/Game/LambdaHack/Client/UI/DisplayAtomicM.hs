@@ -330,7 +330,8 @@ displayRespUpdAtomicUI cmd = case cmd of
     when verbose $ do
       side <- getsClient sside
       if fid == side then
-        msgAdd MsgFactionIntel "You've lost access to your shared inventory stash!"
+        msgAdd MsgFactionIntel
+               "You've lost access to your shared inventory stash!"
       else do
         fact <- getsState $ (EM.! fid) . sfactionD
         let fidName = MU.Text $ gname fact
@@ -478,7 +479,7 @@ displayRespUpdAtomicUI cmd = case cmd of
     when (sstart oldSess == 0) resetSessionStart
     when (lengthHistory uHistory1PerLine (shistory oldSess) == 0) $ do
       let title = T.pack $ rtitle corule
-      msgAdd MsgBookkeeping $ "Welcome to" <+> title <> "!"
+      msgAdd MsgBookKeeping $ "Welcome to" <+> title <> "!"
       -- Generate initial history. Only for UI clients.
       shistory <- defaultHistory
       modifySession $ \sess -> sess {shistory}
@@ -492,7 +493,7 @@ displayRespUpdAtomicUI cmd = case cmd of
           [] -> True
           [(_, 1, _)] -> True
           _ -> False
-    msgAdd MsgBookkeeping "-------------------------------------------------"
+    msgAdd MsgBookKeeping "-------------------------------------------------"
     recordHistory
     msgAdd MsgActionWarning $ "New game started in" <+> mname gameMode
                         <+> "mode. Press '?' for details."
@@ -523,7 +524,7 @@ displayRespUpdAtomicUI cmd = case cmd of
     resetPressedKeys
     -- Help newbies when actors obscured by text and no obvious key to press:
     displayMore ColorFull "\nAre you up for the challenge?"
-    msgAdd0 MsgPromptNearby "A grand story starts right here!"
+    msgAdd MsgPromptGeneric "A grand story starts right here!"
   UpdRestartServer{} -> return ()
   UpdResume fid _ -> do
     COps{cocave} <- getsState scops
@@ -535,14 +536,14 @@ displayRespUpdAtomicUI cmd = case cmd of
       lvl <- getLevel lid
       gameMode <- getGameMode
       msgAdd MsgActionAlert $ "Continuing" <+> mname gameMode
-                        <> ". Press '?' for details."
-      msgAdd0 MsgPromptNearby $ mdesc gameMode
+                              <> ". Press '?' for details."
+      msgAdd MsgPromptGeneric $ mdesc gameMode
       let desc = cdesc $ okind cocave $ lkind lvl
       unless (T.null desc) $ do
-        msgLnAdd0 MsgPromptFocus "You remember your surroundings."
-        msgAdd0 MsgPromptNearby desc
+        msgLnAdd MsgPromptFocus "You remember your surroundings."
+        msgAdd MsgPromptGeneric desc
       displayMore ColorFull "\nAre you up for the challenge?"
-      msgAdd0 MsgPromptNearby "Prove yourself!"
+      msgAdd MsgPromptGeneric "Prove yourself!"
   UpdResumeServer{} -> return ()
   UpdKillExit{} -> do
     side <- getsClient sside
@@ -621,7 +622,7 @@ aidVerbMU0 :: (MonadClientUI m, MsgShared a)
            => a -> ActorId -> MU.Part -> m ()
 aidVerbMU0 msgClass aid verb = do
   subject <- partActorLeader aid
-  msgAdd0 msgClass $ makeSentence [MU.SubjectVerbSg subject verb]
+  msgAdd msgClass $ makeSentence [MU.SubjectVerbSg subject verb]
 
 aidVerbDuplicateMU :: (MonadClientUI m, MsgShared a)
                    => a -> ActorId -> MU.Part -> m Bool
@@ -816,10 +817,10 @@ createActorUI born aid body = do
       unless (ES.member aid lastLost) $
         if length foes > 1
         then when (itemsSize > 0) $
-          msgAdd0 MsgSpottedThreat "Another armed threat!"
+          msgAdd MsgSpottedThreat "Another armed threat!"
         else if itemsSize > 0
-             then msgAdd0 MsgSpottedThreat "Armed intrusion ahead!"
-             else msgAdd0 MsgSpottedThreat "You are not alone!"
+             then msgAdd MsgSpottedThreat "Armed intrusion ahead!"
+             else msgAdd MsgSpottedThreat "You are not alone!"
     stopPlayBack
   if | EM.null actorUI && bfid body == side ->
        return ()  -- don't speak about yourself in 3rd person

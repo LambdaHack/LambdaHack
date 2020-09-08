@@ -174,9 +174,6 @@ humanCommand = do
           Left Nothing -> loop $ Just leader
           Left (Just err) -> do
             -- Avoid "*never mind*<x4>".
-            let l0 = ["*never mind*", "*aiming started*"]
-                t = showFailError err
-            if t `elem` l0 then msgAdd0 MsgActionAlert t
-                           else msgAdd MsgActionAlert t
+            msgAdd MsgPromptAction $ showFailError err
             loop $ Just leader
   loop Nothing

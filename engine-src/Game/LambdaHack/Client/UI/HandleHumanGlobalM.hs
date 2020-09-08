@@ -466,7 +466,7 @@ moveSearchAlter run dir = do
        | run -> do
            -- Explicit request to examine the terrain.
            blurb <- lookAtPosition (blid sb) tpos
-           mapM_ (uncurry msgAdd0) blurb
+           mapM_ (uncurry msgAdd) blurb
            failWith $
              if | Tile.isModifiable coTileSpeedup t -> "potentially modifiable"
                 | alterable -> "potentially triggerable"
@@ -517,7 +517,7 @@ alterCommon bumping tpos = do
        && alterSkill < Tile.alterMinSkill coTileSpeedup t -> do
          -- Rather rare (requires high skill), so describe the tile.
          blurb <- lookAtPosition (blid sb) tpos
-         mapM_ (uncurry msgAdd0) blurb
+         mapM_ (uncurry msgAdd) blurb
          failSer AlterUnwalked
      | chessDist tpos (bpos sb) > 1 ->
          -- Checked late to give useful info about distant tiles.
@@ -1172,7 +1172,7 @@ processTileActions bumping source tpos tas = do
     Right (Just (useResult, bumpFailed)) -> do
       let !_A = assert (not useResult || bumpFailed) ()
       blurb <- lookAtPosition (blid sb) tpos
-      mapM_ (uncurry msgAdd0) blurb
+      mapM_ (uncurry msgAdd) blurb
       if bumpFailed then do
         revCmd <- revCmdMap
         let km = revCmd AlterDir
@@ -1181,7 +1181,7 @@ processTileActions bumping source tpos tas = do
                   <> "> command instead"
         if useResult then do
           merr <- failMsg msg
-          msgAdd MsgActionAlert $ showFailError $ fromJust merr
+          msgAdd MsgPromptAction $ showFailError $ fromJust merr
           return $ Right ()  -- effect the embed activation, though
         else failWith msg
       else failWith "unable to activate nor modify at this time"
@@ -1328,7 +1328,7 @@ pickPoint verb = do
       keys = K.escKM
            : K.leftButtonReleaseKM
            : map (K.KM K.NoModifier) dirKeys
-  msgAdd0 MsgPromptNearby $ "Where to" <+> verb <> "? [movement key] [pointer]"
+  msgAdd MsgPromptGeneric $ "Where to" <+> verb <> "? [movement key] [pointer]"
   slides <- reportToSlideshow [K.escKM]
   km <- getConfirms ColorFull keys slides
   case K.key km of
@@ -1931,7 +1931,7 @@ gameQuitHuman = do
 gameDropHuman :: MonadClientUI m => m ReqUI
 gameDropHuman = do
   modifySession $ \sess -> sess {sallNframes = -1}  -- hack, but we crash anyway
-  msgAdd0 MsgPromptNearby "Interrupt! Trashing the unsaved game. The program exits now."
+  msgAdd MsgPromptGeneric "Interrupt! Trashing the unsaved game. The program exits now."
   clientPrintUI "Interrupt! Trashing the unsaved game. The program exits now."
     -- this is not shown by vty frontend, but at least shown by sdl2 one
   return ReqUIGameDropAndExit
@@ -1941,7 +1941,7 @@ gameDropHuman = do
 gameExitHuman :: MonadClientUI m => m ReqUI
 gameExitHuman = do
   -- Announce before the saving started, since it can take a while.
-  msgAdd0 MsgPromptNearby "Saving game. The program stops now."
+  msgAdd MsgPromptGeneric "Saving game. The program stops now."
   return ReqUIGameSaveAndExit
 
 -- * GameSave
@@ -1949,7 +1949,7 @@ gameExitHuman = do
 gameSaveHuman :: MonadClientUI m => m ReqUI
 gameSaveHuman = do
   -- Announce before the saving started, since it can take a while.
-  msgAdd0 MsgPromptNearby "Saving game backup."
+  msgAdd MsgPromptGeneric "Saving game backup."
   return ReqUIGameSave
 
 -- * Doctrine

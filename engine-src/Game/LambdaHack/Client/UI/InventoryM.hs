@@ -481,7 +481,7 @@ runDefItemKey keyDefs lettersDef okx slotKeys prompt cCur = do
       keyLabels = filter (not . T.null) keyLabelsRaw
       choice = T.intercalate " " $ map wrapB $ nub keyLabels
         -- switch to Data.Containers.ListUtils.nubOrd when we drop GHC 8.4.4
-  msgAdd0 MsgPromptNearby $ prompt <+> choice
+  msgAdd MsgPromptGeneric $ prompt <+> choice
   CCUI{coscreen=ScreenContent{rheight}} <- getsSession sccui
   ekm <- do
     okxs <- overlayToSlideshow (rheight - 2) keys okx

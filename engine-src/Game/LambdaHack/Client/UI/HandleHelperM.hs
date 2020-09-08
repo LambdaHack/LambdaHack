@@ -364,7 +364,7 @@ pickNumber askNumber kAll = assert (kAll >= 1) $ do
       frontKeyKeys = shownKeys ++ map K.mkChar ['0'..'9']
       gatherNumber kCur = assert (1 <= kCur && kCur <= kAll) $ do
         let kprompt = "Choose number:" <+> tshow kCur
-        msgAdd0 MsgPromptNearby kprompt
+        msgAdd MsgPromptGeneric kprompt
         sli <- reportToSlideshow shownKeys
         ekkm <- displayChoiceScreen "" ColorFull False sli frontKeyKeys
         case ekkm of
@@ -635,8 +635,8 @@ lookAtPosition lidV p = do
   (actorsBlurb, actorsDesc) <- lookAtActors p lidV
   inhabitants <- getsState $ posToAidAssocs p lidV
   let actorMsgClass = if (bfid . snd <$> inhabitants) == [side]
-                      then MsgPromptNearby  -- our single proj or non-proj; tame
-                      else MsgPromptThreat
+                      then MsgPromptGeneric  -- our single proj or non-proj; tame
+                      else MsgPromptActors
   itemsBlurb <- lookAtItems canSee p leader
   stashBlurb <- lookAtStash lidV p
   lvl@Level{lsmell, ltime} <- getLevel lidV
@@ -695,20 +695,20 @@ lookAtPosition lidV p = do
                   || null embedsList && T.null modifyBlurb
                then ""
                else "\n"
-      ms = [ (MsgPromptWarning, stashBlurb)
+      ms = [ (MsgPromptModify, stashBlurb)
            , (actorMsgClass, actorsBlurb)
-           , (MsgPromptNearby, actorsDesc <> midEOL) ]
-           ++ [(MsgPromptNearby, smellBlurb) | detail >= DetailHigh]
+           , (MsgPromptGeneric, actorsDesc <> midEOL) ]
+           ++ [(MsgPromptGeneric, smellBlurb) | detail >= DetailHigh]
            ++ [(MsgPromptItems, itemsBlurb <> midEOL)]
            ++ [(MsgPromptFocus, tileBlurb) | detail >= DetailHigh
                                              || detail == DetailMedium
                                                 && not (null embedsList)]
-           ++ [(MsgPromptNearby, placeBlurb) | detail >= DetailHigh]
+           ++ [(MsgPromptGeneric, placeBlurb) | detail >= DetailHigh]
            ++ case detail of
                 DetailAll ->
                   concatMap (\(embedName, embedDesc) ->
                     [ (MsgPromptMention, ppEmbedName embedName)
-                    , (MsgPromptNearby, embedDesc) ]) embedsList
+                    , (MsgPromptGeneric, embedDesc) ]) embedsList
                 DetailLow ->
                   [(MsgPromptMention, case embedsList of
                     [] -> ""
@@ -720,7 +720,7 @@ lookAtPosition lidV p = do
                 _ -> let n = sum $ map (fst . fst) embedsList
                          wWandW = MU.WWandW $ map (snd . fst) embedsList
                      in [(MsgPromptMention, ppEmbedName (n, wWandW)) | n > 0]
-           ++ [(MsgPromptWarning, modifyBlurb) | detail == DetailAll]
+           ++ [(MsgPromptModify, modifyBlurb) | detail == DetailAll]
   return $! if all (T.null . snd) ms && detail > DetailLow
             then [(MsgPromptFocus, tileBlurb)]
             else ms
@@ -757,7 +757,7 @@ displayItemLore itemBag meleeSkill promptFun slotIndex lSlots = do
       keys = [K.spaceKM, K.escKM]
              ++ [K.upKM | slotIndex /= 0]
              ++ [K.downKM | slotIndex /= lSlotsBound]
-  msgAdd0 MsgPromptNearby $ promptFun iid2 itemFull2 k
+  msgAdd MsgPromptGeneric $ promptFun iid2 itemFull2 k
   slides <- overlayToSlideshow (rheight - 2) keys (ov, [])
   km <- getConfirms ColorFull keys slides
   case K.key km of
@@ -779,7 +779,7 @@ viewLoreItems menuName lSlotsRaw trunkBag prompt examItem displayRanged = do
   itemToF <- getsState $ flip itemToFull
   let keysPre = [K.spaceKM, K.mkChar '<', K.mkChar '>', K.escKM]
       lSlots = sortSlotMap itemToF lSlotsRaw
-  msgAdd0 MsgPromptNearby prompt
+  msgAdd MsgPromptGeneric prompt
   io <- itemOverlay lSlots arena trunkBag displayRanged
   itemSlides <- overlayToSlideshow (rheight - 2) keysPre io
   let keyOfEKM (Left km) = km
