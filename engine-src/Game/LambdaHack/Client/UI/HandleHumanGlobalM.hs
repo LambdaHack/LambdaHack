@@ -353,7 +353,7 @@ moveRunHuman initialStep finalGoal run runAhead dir = do
       success <- pickLeader True target
       let !_A = assert (success `blame` "bump self"
                                 `swith` (leader, target, tb)) ()
-      failWith "by bumping"
+      failWith "pointman switched by bumping"
     (target, tb) : _ | not run
                        && initialStep && finalGoal
                        && (bfid tb /= bfid sb || bproj tb) -> do
@@ -467,10 +467,10 @@ moveSearchAlter run dir = do
            -- Explicit request to examine the terrain.
            blurb <- lookAtPosition (blid sb) tpos
            mapM_ (uncurry msgAdd) blurb
-           failWith $
+           failWith $ "terrain is" <+>
              if | Tile.isModifiable coTileSpeedup t -> "potentially modifiable"
                 | alterable -> "potentially triggerable"
-                | otherwise -> "inert"
+                | otherwise -> "completely inert"
        | otherwise -> alterCommon True tpos
   return $! runStopOrCmd
 
