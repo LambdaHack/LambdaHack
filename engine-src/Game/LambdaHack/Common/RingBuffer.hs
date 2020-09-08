@@ -41,7 +41,7 @@ toList :: RingBuffer a -> [a]
 toList RingBuffer{..} =
   let l = Foldable.toList rbCarrier
       start = (rbNext + rbMaxSize - rbLength) `mod` rbMaxSize
-  in reverse $ take rbLength $ drop start $ l ++ l
+  in take rbLength $ drop start $ l ++ l
 
 length :: RingBuffer a -> Int
 length RingBuffer{rbLength} = rbLength

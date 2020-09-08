@@ -598,7 +598,7 @@ archiveReport uHistory1PerLine History{newReport=Report newMsgs, ..} =
      else let lU = map attrStringToU
                    $ renderTimeReport uHistory1PerLine oldTime oldReport
           in History emptyReport timeZero newReportFiltered newTime
-             $ foldl' (\ !h !v -> RB.cons v h) archivedHistory (reverse lU)
+             $ foldl' (\ !h !v -> RB.cons v h) archivedHistory lU
 
 renderTimeReport :: Bool -> Time -> Report -> [AttrString]
 renderTimeReport uHistory1PerLine t rep@(Report r) =
@@ -630,5 +630,5 @@ lengthHistory uHistory1PerLine History{oldReport, archivedHistory} =
 -- It's expected to be empty when history is shown.
 renderHistory :: Bool -> History -> [AttrString]
 renderHistory uHistory1PerLine History{..} =
-  renderTimeReport uHistory1PerLine oldTime oldReport
-  ++ map uToAttrString (RB.toList archivedHistory)
+  map uToAttrString (RB.toList archivedHistory)
+  ++ renderTimeReport uHistory1PerLine oldTime oldReport

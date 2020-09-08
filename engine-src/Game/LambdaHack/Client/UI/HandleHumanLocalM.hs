@@ -40,6 +40,7 @@ import Game.LambdaHack.Core.Prelude
 import           Data.Either (fromRight)
 import qualified Data.EnumMap.Strict as EM
 import qualified Data.EnumSet as ES
+import qualified Data.Map.Strict as M
 import qualified Data.Text as T
 import qualified NLP.Miniutter.English as MU
 
@@ -807,8 +808,12 @@ eitherHistory showAll = do
         : [K.escKM]
   okxs <- overlayToSlideshow (rheight - 2) keysAllHistory
                              (EM.unionWith (++) rhLab rhDesc, kxs)
+  let maxIx = length (concatMap snd $ slideshow okxs) - 1
+      menuName = "history"
+  modifySession $ \sess ->
+    sess {smenuIxMap = M.insert menuName maxIx $ smenuIxMap sess}
   let displayAllHistory = do
-        ekm <- displayChoiceScreen "history" ColorFull False okxs keysAllHistory
+        ekm <- displayChoiceScreen menuName ColorFull False okxs keysAllHistory
         case ekm of
           Left km | km == K.mkChar '.' -> do
             let t = T.unlines $ map (T.pack . map Color.charFromW32)
@@ -846,7 +851,7 @@ eitherHistory showAll = do
           _ -> error $ "" `showFailure` km
   if showAll
   then displayAllHistory
-  else displayOneReport 0
+  else displayOneReport (histBound - 1)
 
 -- * LastHistory
 
