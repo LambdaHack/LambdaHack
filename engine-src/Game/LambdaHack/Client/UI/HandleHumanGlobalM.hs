@@ -1950,7 +1950,7 @@ gameExitHuman = do
 gameSaveHuman :: MonadClientUI m => m ReqUI
 gameSaveHuman = do
   -- Announce before the saving started, since it can take a while.
-  msgAdd MsgPromptGeneric "Saving game backup."
+  msgAdd MsgInnerWorkSpam "Saving game backup."
   return ReqUIGameSave
 
 -- * Doctrine

@@ -203,14 +203,14 @@ data MsgClassShow =
 instance Binary MsgClassShow
 
 data MsgClassSave =
-    MsgNumericReport
+    MsgInnerWorkSpam
+  | MsgNumericReport
   deriving (Show, Enum, Bounded, Generic)
 
 instance Binary MsgClassSave
 
 data MsgClassIgnore =
-    MsgInnerWorkSpam
-  | MsgMacroOperation
+    MsgMacroOperation
   | MsgRunStopReason
   | MsgStopPlayback
   deriving (Show, Enum, Bounded, Generic)
@@ -250,9 +250,9 @@ interruptsRunning = \case
     MsgActionAlert -> True  -- action alerts or questions cause alarm
     MsgSpottedThreat -> True
   MsgClassSave x -> case x of
+    MsgInnerWorkSpam -> False
     MsgNumericReport -> False
   MsgClassIgnore x -> case x of
-    MsgInnerWorkSpam -> False
     MsgMacroOperation -> False
     MsgRunStopReason -> False
     MsgStopPlayback -> True
@@ -287,6 +287,7 @@ scrapsRepeats = \case
     MsgActionAlert -> True
     MsgSpottedThreat -> True
   MsgClassSave x -> case x of
+    MsgInnerWorkSpam -> True
     MsgNumericReport -> True
   MsgClassIgnore _ -> False  -- ignored, so no need to scrap
   MsgClassDistinct x -> case x of
@@ -399,9 +400,9 @@ msgColor = \case
     MsgActionAlert -> cMeta
     MsgSpottedThreat -> cGraveRisk
   MsgClassSave x -> case x of
+    MsgInnerWorkSpam -> cBoring
     MsgNumericReport -> cBoring
   MsgClassIgnore x -> case x of
-    MsgInnerWorkSpam -> cBoring
     MsgMacroOperation -> cBoring
     MsgRunStopReason -> cBoring
     MsgStopPlayback -> cMeta
