@@ -311,10 +311,10 @@ moveRunHuman initialStep finalGoal run runAhead dir = do
                             , runInitial = True
                             , runStopMsg = Nothing
                             , runWaiting = 0 }
-  when (initialStep && run) $ do
-    modifySession $ \sess ->
-      sess {srunning = Just runParams}
-    when runAhead $ macroHuman macroRun25
+      initRunning = when (initialStep && run) $ do
+        modifySession $ \sess ->
+          sess {srunning = Just runParams}
+        when runAhead $ macroHuman macroRun25
   -- When running, the invisible actor is hit (not displaced!),
   -- so that running in the presence of roving invisible
   -- actors is equivalent to moving (with visible actors
@@ -330,9 +330,10 @@ moveRunHuman initialStep finalGoal run runAhead dir = do
       runStopOrCmd <- moveSearchAlter run dir
       case runStopOrCmd of
         Left stopMsg -> return $ Left stopMsg
-        Right runCmd ->
+        Right runCmd -> do
           -- Don't check @initialStep@ and @finalGoal@
           -- and don't stop going to target: door opening is mundane enough.
+          initRunning
           return $ Right runCmd
     [(target, _)] | run
                     && initialStep
