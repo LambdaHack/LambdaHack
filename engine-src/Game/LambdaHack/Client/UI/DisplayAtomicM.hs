@@ -114,7 +114,14 @@ displayRespUpdAtomicUI cmd = case cmd of
                  let more = case EM.lookup iid bag of
                        Just (kTotal, _) | kTotal /= kAdd -> Just kTotal
                        _ -> Nothing
-                     verb = MU.Text $
+                     verbShow = MU.Text $
+                       "become"
+                       <+> case kit of
+                         (1, _ : _) -> "somewhat"
+                         (1, []) | isNothing more -> ""
+                         _ | isNothing more -> "many-fold"
+                         _ -> "additionally"
+                     verbSave = MU.Text $
                        "become"
                        <+> case kit of
                          (1, t:_) ->  -- only exceptionally not singleton list
@@ -137,7 +144,7 @@ displayRespUpdAtomicUI cmd = case cmd of
                                | otherwise -> MsgStatusBadUs
                  -- This describes all such items already among organs,
                  -- which is useful, because it shows "charging".
-                 itemAidDistinctMU msgClass aid verb iid
+                 itemAidDistinctMU msgClass aid verbShow verbSave iid
                | otherwise -> do
                  wown <- ppContainerWownW partActorLeader True c
                  itemVerbMU MsgItemCreation iid kit
@@ -687,9 +694,9 @@ itemAidVerbMU msgClass aid verb iid ek = do
   msgAdd msgClass msg
 
 itemAidDistinctMU :: (MonadClientUI m)
-                  => MsgClassDistinct -> ActorId -> MU.Part -> ItemId
+                  => MsgClassDistinct -> ActorId -> MU.Part -> MU.Part -> ItemId
                   -> m ()
-itemAidDistinctMU msgClass aid verb iid = do
+itemAidDistinctMU msgClass aid verbShow verbSave iid = do
   CCUI{coscreen=ScreenContent{rwidth}} <- getsSession sccui
   body <- getsState $ getActorBody aid
   side <- getsClient sside
@@ -703,8 +710,9 @@ itemAidDistinctMU msgClass aid verb iid = do
   let object = let (name, powers) =
                      partItem rwidth side factionD localTime itemFull fakeKit
                in MU.Phrase [name, powers]
-      t = makeSentence [MU.SubjectVerbSg subject verb, object]
-  msgAddDistinct msgClass (t, t)  -- TODO
+      t1 = makeSentence [MU.SubjectVerbSg subject verbShow, object]
+      t2 = makeSentence [MU.SubjectVerbSg subject verbSave, object]
+  msgAddDistinct msgClass (t1, t2)
 
 manyItemsAidVerbMU :: (MonadClientUI m, MsgShared a)
                    => a -> ActorId -> MU.Part
