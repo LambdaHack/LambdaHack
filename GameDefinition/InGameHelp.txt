@@ -91,7 +91,7 @@ Mouse button effects per screen area, in exploration and in aiming modes
 
  aiming mode    LMB (left mouse button)         RMB (right mouse button)
  the map area   fling at enemy under pointer    snap crosshair to enemy
- level caption  accept target                   clear msgs and cancel aiming
+ level caption  accept target                   cancel aiming
  percent seen   aim at nearest upstairs         aim at nearest downstairs
 
 

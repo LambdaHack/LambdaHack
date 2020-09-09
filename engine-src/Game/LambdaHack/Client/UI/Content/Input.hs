@@ -197,7 +197,7 @@ mouseRMB = ( [CmdMouse]
         , (CaPercentSeen, autoexplore25Cmd) ]
     , aiming = ByArea $ common ++
         [ (CaMap, XhairPointerEnemy)  -- hack; same effect, but matches LMB
-        , (CaArenaName, ExecuteIfClear Cancel)
+        , (CaArenaName, Cancel)
         , (CaPercentSeen, XhairStair False) ] }
   common =
     [ (CaMessage, Hint)

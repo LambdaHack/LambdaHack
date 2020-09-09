@@ -52,7 +52,7 @@ standardKeysAndMouse = InputContentRaw $ map evalKeyDef $
                , "clear messages/open main menu/finish aiming"
                , ByAimMode AimModeCmd
                              { exploration = ExecuteIfClear MainMenuAutoOff
-                             , aiming = ExecuteIfClear Cancel } ))
+                             , aiming = Cancel } ))
   , ("C-Escape", ([], "", MainMenuAutoOn))
       -- required by frontends; not shown
   , ("Return", ( [CmdMinimal, CmdAim]
@@ -245,8 +245,8 @@ standardKeysAndMouse = InputContentRaw $ map evalKeyDef $
               , "clear msgs and open main menu"
               , ExecuteIfClear MainMenuAutoOff ))
   , ("safe9", ( [CmdInternal]
-              , "clear msgs and cancel aiming"
-              , ExecuteIfClear Cancel ))
+              , "cancel aiming"
+              , Cancel ))
   , ("safe10", ( [CmdInternal]
                , "accept target"
                , Accept ))
