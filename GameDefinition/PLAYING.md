@@ -65,9 +65,11 @@ The game differs from classic roguelikes in a few ways:
 If the game window is too large for your screen or the game doesn't start
 or you experience other technical issues, please consult
 [README.md](https://github.com/LambdaHack/LambdaHack/blob/master/README.md)
-or describe your problem on discord/matrix/gitter or the issue tracker.
-Contributions of all kinds are welcome. Please offer feedback
-to mikolaj.konarski@funktory.com or, preferably, on any of the public forums.
+or describe your problem on [Discord](https://discord.gg/87Ghnws)
+or [Matrix](https://matrix.to/#/!HnbpAHMjOGHlYtrASl:mozilla.org?via=mozilla.modular.im)
+or the issue tracker. Contributions of all kinds are welcome.
+Please offer feedback to mikolaj.konarski@funktory.com or, preferably,
+on any of the public forums.
 
 
 Starting your adventure
