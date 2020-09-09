@@ -134,15 +134,9 @@ showSimpleMsgClass = \case
 
 data MsgClassShowAndSave =
     MsgBookKeeping
-  | MsgStatusSleep
-  | MsgStatusGoodUs
-  | MsgStatusBadUs
-  | MsgStatusOthers
   | MsgStatusWakeup
   | MsgStatusStopUs
   | MsgStatusStopThem
-  | MsgStatusLongerUs
-  | MsgStatusLongThem
   | MsgItemCreation
   | MsgItemRuination
   | MsgDeathVictory
@@ -219,6 +213,12 @@ instance Binary MsgClassIgnore
 
 data MsgClassDistinct =
     MsgSpottedItem
+  | MsgStatusSleep
+  | MsgStatusGoodUs
+  | MsgStatusBadUs
+  | MsgStatusOthers
+  | MsgStatusLongerUs
+  | MsgStatusLongThem
   deriving (Show, Enum, Bounded, Generic)
 
 instance Binary MsgClassDistinct
@@ -227,9 +227,7 @@ interruptsRunning :: MsgClass -> Bool
 interruptsRunning = \case
   MsgClassShowAndSave x -> case x of
     MsgBookKeeping -> False
-    MsgStatusOthers -> False
     MsgStatusStopThem -> False
-    MsgStatusLongThem -> False
     MsgItemDiscovery -> False
     MsgItemMovement -> False
     MsgActionMinor -> False
@@ -258,6 +256,9 @@ interruptsRunning = \case
     MsgStopPlayback -> True
   MsgClassDistinct x -> case x of
     MsgSpottedItem -> False
+    MsgStatusLongThem -> False
+    MsgStatusOthers -> False
+    _ -> True
 
 disturbsResting :: MsgClass -> Bool
 disturbsResting = \case
@@ -291,7 +292,7 @@ scrapsRepeats = \case
     MsgNumericReport -> True
   MsgClassIgnore _ -> False  -- ignored, so no need to scrap
   MsgClassDistinct x -> case x of
-    MsgSpottedItem -> True
+    _ -> True
 
 -- Only player's non-projectile actors getting hit introduce subjects,
 -- because only such hits are guaranteed to be perceived.
@@ -301,12 +302,15 @@ scrapsRepeats = \case
 bindsPronouns :: MsgClass -> Bool
 bindsPronouns = \case
   MsgClassShowAndSave x -> case x of
-    MsgStatusLongerUs -> True
     MsgRangedMightyUs -> True
     MsgRangedNormalUs -> True
     MsgMeleeMightyUs -> True
     MsgMeleeComplexUs -> True
     MsgMeleeNormalUs -> True
+    _ -> False
+  MsgClassDistinct x -> case x of
+    MsgStatusLongerUs -> True
+    MsgStatusLongThem -> True
     _ -> False
   _ -> False
 
@@ -339,15 +343,9 @@ msgColor :: MsgClass -> Color.Color
 msgColor = \case
   MsgClassShowAndSave x -> case x of
     MsgBookKeeping -> cBoring
-    MsgStatusSleep -> cSleep
-    MsgStatusGoodUs -> cGoodEvent
-    MsgStatusBadUs -> cBadEvent
-    MsgStatusOthers -> cBoring
     MsgStatusWakeup -> cWakeUp
     MsgStatusStopUs -> cBoring
     MsgStatusStopThem -> cBoring
-    MsgStatusLongerUs -> cBoring  -- not important enough
-    MsgStatusLongThem -> cBoring  -- not important enough, no disturb even
     MsgItemCreation -> cGreed
     MsgItemRuination -> cBoring  -- common, colourful components created
     MsgDeathVictory -> cVeryGoodEvent
@@ -408,6 +406,12 @@ msgColor = \case
     MsgStopPlayback -> cMeta
   MsgClassDistinct x -> case x of
     MsgSpottedItem -> cBoring
+    MsgStatusLongerUs -> cBoring  -- not important enough
+    MsgStatusLongThem -> cBoring  -- not important enough, no disturb even
+    MsgStatusSleep -> cSleep
+    MsgStatusGoodUs -> cGoodEvent
+    MsgStatusBadUs -> cBadEvent
+    MsgStatusOthers -> cBoring
 
 -- * Report
 
