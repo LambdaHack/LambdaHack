@@ -170,9 +170,9 @@ splitAttrString :: Int -> Int -> AttrString -> [AttrLine]
 splitAttrString w0 w1 l = case linesAttr l of
   [] -> []
   x : xs ->
-    (splitAttrPhrase w0
+    (splitAttrPhrase w0 w1
      . AttrLine . dropWhile (== Color.spaceAttrW32) . attrLine) x
-    ++ concatMap (splitAttrPhrase w1
+    ++ concatMap (splitAttrPhrase w1 w1
                   . AttrLine . dropWhile (== Color.spaceAttrW32) . attrLine) xs
 
 indentSplitAttrString :: Int -> AttrString -> [AttrLine]
@@ -193,11 +193,11 @@ indentSplitAttrString2 w l =
 
 -- We pass empty line along for the case of appended buttons, which need
 -- either space or new lines before them.
-splitAttrPhrase :: Int -> AttrLine -> [AttrLine]
-splitAttrPhrase w (AttrLine xs)
-  | w >= length xs = [AttrLine xs]  -- no problem, everything fits
+splitAttrPhrase :: Int -> Int -> AttrLine -> [AttrLine]
+splitAttrPhrase w0 w1 (AttrLine xs)
+  | w0 >= length xs = [AttrLine xs]  -- no problem, everything fits
   | otherwise =
-      let (pre, postRaw) = splitAt w xs
+      let (pre, postRaw) = splitAt w0 xs
           preRev = reverse pre
           ((ppre, ppost), post) = case postRaw of
             c : rest | c == Color.spaceAttrW32
@@ -206,9 +206,9 @@ splitAttrPhrase w (AttrLine xs)
             _ -> (breakAtSpace preRev, postRaw)
       in if all (== Color.spaceAttrW32) ppost
          then AttrLine (reverse $ dropWhile (== Color.spaceAttrW32) preRev) :
-              splitAttrPhrase w (AttrLine post)
+              splitAttrPhrase w1 w1 (AttrLine post)
          else AttrLine (reverse $ dropWhile (== Color.spaceAttrW32) ppost)
-              : splitAttrPhrase w (AttrLine $ reverse ppre ++ post)
+              : splitAttrPhrase w1 w1 (AttrLine $ reverse ppre ++ post)
 
 -- * Overlay
 
