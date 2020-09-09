@@ -1585,7 +1585,8 @@ displayRespSfxAtomicUI sfx = case sfx of
         recordHistory
     mmsg <- ppSfxMsg sfxMsg
     case mmsg of
-      Just (msgClass, msg) -> msgAdd msgClass msg
+      Just (Left (msgClass, msg)) -> msgAdd msgClass msg
+      Just (Right (msgClass, tt)) -> msgAddDistinct msgClass tt
       Nothing -> return ()
   SfxRestart -> fadeOutOrIn True
   SfxCollideTile source pos -> do
@@ -1605,16 +1606,23 @@ displayRespSfxAtomicUI sfx = case sfx of
       (_heardSubject, verb) <- displayTaunt voluntary rndToActionUI aid
       msgAdd MsgMiscellanous $! makeSentence [MU.SubjectVerbSg spart (MU.Text verb)]
 
+returnJustLeft :: MonadClientUI m
+               => (MsgClassShowAndSave, Text)
+               -> m (Maybe (Either (MsgClassShowAndSave, Text)
+                                   (MsgClassDistinct, (Text, Text))))
+returnJustLeft = return . Just . Left
+
 ppSfxMsg :: MonadClientUI m
-         => SfxMsg -> m (Maybe (MsgClassShowAndSave, Text))
+         => SfxMsg -> m (Maybe (Either (MsgClassShowAndSave, Text)
+                                       (MsgClassDistinct, (Text, Text))))
 ppSfxMsg sfxMsg = case sfxMsg of
-  SfxUnexpected reqFailure -> return $
-    Just ( MsgActionWarning
-         , "Unexpected problem:" <+> showReqFailure reqFailure <> "." )
-  SfxExpected itemName reqFailure -> return $
-    Just ( MsgActionWarning
-         , "The" <+> itemName <+> "is not triggered:"
-           <+> showReqFailure reqFailure <> "." )
+  SfxUnexpected reqFailure -> returnJustLeft
+    ( MsgActionWarning
+    , "Unexpected problem:" <+> showReqFailure reqFailure <> "." )
+  SfxExpected itemName reqFailure -> returnJustLeft
+    ( MsgActionWarning
+    , "The" <+> itemName <+> "is not triggered:"
+      <+> showReqFailure reqFailure <> "." )
   SfxExpectedEmbed iid lid reqFailure -> do
     iidSeen <- getsState $ EM.member iid . sitemD
     if iidSeen then do
@@ -1626,27 +1634,27 @@ ppSfxMsg sfxMsg = case sfxMsg of
             partItemShortest maxBound side factionD localTime
                              itemFull quantSingle
           name = makePhrase [object1, object2]
-      return $
-        Just ( MsgActionWarning
-             , "The" <+> "embedded" <+> name <+> "is not activated:"
-               <+> showReqFailure reqFailure <> "." )
+      returnJustLeft
+        ( MsgActionWarning
+        , "The" <+> "embedded" <+> name <+> "is not activated:"
+          <+> showReqFailure reqFailure <> "." )
     else return Nothing
-  SfxFizzles -> return $ Just (MsgActionWarning, "It didn't work.")
-  SfxNothingHappens -> return $ Just (MsgMiscellanous, "Nothing happens.")
+  SfxFizzles -> returnJustLeft (MsgActionWarning, "It didn't work.")
+  SfxNothingHappens -> returnJustLeft (MsgMiscellanous, "Nothing happens.")
   SfxNoItemsForTile toolsToAlterWith -> do
     revCmd <- revCmdMap
     let km = revCmd HumanCmd.AlterDir
         tItems = describeToolsAlternative toolsToAlterWith
-    return $ Just ( MsgActionWarning
-                  , "To transform the terrain, prepare the following items on the ground or in equipment:"
-                    <+> tItems
-                    <+> "and use the <"
-                    <> T.pack (K.showKM km)
-                    <> "> terrain modification command."
-                  )
-  SfxVoidDetection d -> return $
-    Just ( MsgMiscellanous
-         , makeSentence ["no new", MU.Text $ detectToObject d, "detected"] )
+    returnJustLeft ( MsgActionWarning
+                   , "To transform the terrain, prepare the following items on the ground or in equipment:"
+                     <+> tItems
+                     <+> "and use the <"
+                     <> T.pack (K.showKM km)
+                     <> "> terrain modification command."
+                   )
+  SfxVoidDetection d -> returnJustLeft
+    ( MsgMiscellanous
+    , makeSentence ["no new", MU.Text $ detectToObject d, "detected"] )
   SfxUnimpressed aid -> do
     msbUI <- getsSession $ EM.lookup aid . sactorUI
     case msbUI of
@@ -1654,7 +1662,8 @@ ppSfxMsg sfxMsg = case sfxMsg of
       Just sbUI -> do
         let subject = partActor sbUI
             verb = "be unimpressed"
-        return $ Just (MsgActionWarning, makeSentence [MU.SubjectVerbSg subject verb])
+        returnJustLeft ( MsgActionWarning
+                       , makeSentence [MU.SubjectVerbSg subject verb] )
   SfxSummonLackCalm aid -> do
     msbUI <- getsSession $ EM.lookup aid . sactorUI
     case msbUI of
@@ -1662,7 +1671,8 @@ ppSfxMsg sfxMsg = case sfxMsg of
       Just sbUI -> do
         let subject = partActor sbUI
             verb = "lack Calm to summon"
-        return $ Just (MsgActionWarning, makeSentence [MU.SubjectVerbSg subject verb])
+        returnJustLeft ( MsgActionWarning
+                       , makeSentence [MU.SubjectVerbSg subject verb] )
   SfxSummonTooManyOwn aid -> do
     msbUI <- getsSession $ EM.lookup aid . sactorUI
     case msbUI of
@@ -1670,7 +1680,7 @@ ppSfxMsg sfxMsg = case sfxMsg of
       Just sbUI -> do
         let subject = partActor sbUI
             verb = "can't keep track of their numerous friends, let alone summon any more"
-        return $ Just (MsgActionWarning, makeSentence [subject, verb])
+        returnJustLeft (MsgActionWarning, makeSentence [subject, verb])
   SfxSummonTooManyAll aid -> do
     msbUI <- getsSession $ EM.lookup aid . sactorUI
     case msbUI of
@@ -1678,7 +1688,7 @@ ppSfxMsg sfxMsg = case sfxMsg of
       Just sbUI -> do
         let subject = partActor sbUI
             verb = "can't keep track of everybody around, let alone summon anyone else"
-        return $ Just (MsgActionWarning, makeSentence [subject, verb])
+        returnJustLeft (MsgActionWarning, makeSentence [subject, verb])
   SfxSummonFailure aid -> do
     msbUI <- getsSession $ EM.lookup aid . sactorUI
     case msbUI of
@@ -1686,11 +1696,12 @@ ppSfxMsg sfxMsg = case sfxMsg of
       Just sbUI -> do
         let subject = partActor sbUI
             verb = "fail to summon anything"
-        return $ Just (MsgActionWarning, makeSentence [MU.SubjectVerbSg subject verb])
-  SfxLevelNoMore ->
-    return $ Just (MsgActionWarning, "No more levels in this direction.")
-  SfxLevelPushed ->
-    return $ Just (MsgActionWarning, "You notice somebody pushed to another level.")
+        returnJustLeft ( MsgActionWarning
+                       , makeSentence [MU.SubjectVerbSg subject verb] )
+  SfxLevelNoMore -> returnJustLeft
+    (MsgActionWarning, "No more levels in this direction.")
+  SfxLevelPushed -> returnJustLeft
+    (MsgActionWarning, "You notice somebody pushed to another level.")
   SfxBracedImmune aid -> do
     msbUI <- getsSession $ EM.lookup aid . sactorUI
     case msbUI of
@@ -1698,47 +1709,49 @@ ppSfxMsg sfxMsg = case sfxMsg of
       Just sbUI -> do
         let subject = partActor sbUI
             verb = "be braced and so immune to translocation"
-        return $ Just (MsgMiscellanous, makeSentence [MU.SubjectVerbSg subject verb])
+        returnJustLeft ( MsgMiscellanous
+                       , makeSentence [MU.SubjectVerbSg subject verb] )
                          -- too common
-  SfxEscapeImpossible -> return $
-    Just ( MsgActionWarning
-         , "Escaping outside is unthinkable for members of this faction." )
-  SfxStasisProtects -> return $
-    Just ( MsgMiscellanous  -- too common
-         , "Paralysis and speed surge require recovery time." )
+  SfxEscapeImpossible -> returnJustLeft
+    ( MsgActionWarning
+    , "Escaping outside is unthinkable for members of this faction." )
+  SfxStasisProtects -> returnJustLeft
+    ( MsgMiscellanous  -- too common
+    , "Paralysis and speed surge require recovery time." )
   SfxWaterParalysisResisted -> return Nothing  -- don't spam
-  SfxTransImpossible -> return $
-    Just (MsgActionWarning, "Translocation not possible.")
-  SfxIdentifyNothing -> return $ Just (MsgActionWarning, "Nothing to identify.")
-  SfxPurposeNothing -> return $
-    Just ( MsgActionWarning
-         , "The purpose of repurpose cannot be availed without an item"
-           <+> ppCStoreIn CGround <> "." )
-  SfxPurposeTooFew maxCount itemK -> return $
-    Just ( MsgActionWarning
-         , "The purpose of repurpose is served by" <+> tshow maxCount
-           <+> "pieces of this item, not by" <+> tshow itemK <> "." )
-  SfxPurposeUnique -> return $
-    Just (MsgActionWarning, "Unique items can't be repurposed.")
-  SfxPurposeNotCommon -> return $
-    Just (MsgActionWarning, "Only ordinary common items can be repurposed.")
-  SfxRerollNothing -> return $
-    Just ( MsgActionWarning
-         , "The shape of reshape cannot be assumed without an item"
-           <+> ppCStoreIn CGround <> "." )
-  SfxRerollNotRandom -> return $
-    Just (MsgActionWarning, "Only items of variable shape can be reshaped.")
-  SfxDupNothing -> return $
-    Just ( MsgActionWarning
-         , "Mutliplicity won't rise above zero without an item"
-           <+> ppCStoreIn CGround <> "." )
-  SfxDupUnique -> return $
-    Just (MsgActionWarning, "Unique items can't be multiplied.")
-  SfxDupValuable -> return $
-    Just (MsgActionWarning, "Valuable items can't be multiplied.")
-  SfxColdFish -> return $
-    Just ( MsgMiscellanous  -- repeatable
-         , "Healing attempt from another faction is thwarted by your cold fish attitude." )
+  SfxTransImpossible -> returnJustLeft
+    (MsgActionWarning, "Translocation not possible.")
+  SfxIdentifyNothing -> returnJustLeft
+    (MsgActionWarning, "Nothing to identify.")
+  SfxPurposeNothing -> returnJustLeft
+    ( MsgActionWarning
+    , "The purpose of repurpose cannot be availed without an item"
+      <+> ppCStoreIn CGround <> "." )
+  SfxPurposeTooFew maxCount itemK -> returnJustLeft
+    ( MsgActionWarning
+    , "The purpose of repurpose is served by" <+> tshow maxCount
+      <+> "pieces of this item, not by" <+> tshow itemK <> "." )
+  SfxPurposeUnique -> returnJustLeft
+    (MsgActionWarning, "Unique items can't be repurposed.")
+  SfxPurposeNotCommon -> returnJustLeft
+    (MsgActionWarning, "Only ordinary common items can be repurposed.")
+  SfxRerollNothing -> returnJustLeft
+    ( MsgActionWarning
+    , "The shape of reshape cannot be assumed without an item"
+      <+> ppCStoreIn CGround <> "." )
+  SfxRerollNotRandom -> returnJustLeft
+    (MsgActionWarning, "Only items of variable shape can be reshaped.")
+  SfxDupNothing -> returnJustLeft
+    ( MsgActionWarning
+    , "Mutliplicity won't rise above zero without an item"
+      <+> ppCStoreIn CGround <> "." )
+  SfxDupUnique -> returnJustLeft
+    (MsgActionWarning, "Unique items can't be multiplied.")
+  SfxDupValuable -> returnJustLeft
+    (MsgActionWarning, "Valuable items can't be multiplied.")
+  SfxColdFish -> returnJustLeft
+    ( MsgMiscellanous  -- repeatable
+    , "Healing attempt from another faction is thwarted by your cold fish attitude." )
   SfxTimerExtended aid iid cstore delta -> do
     CCUI{coscreen=ScreenContent{rwidth}} <- getsSession sccui
     aidSeen <- getsState $ EM.member aid . sactorD
@@ -1782,7 +1795,7 @@ ppSfxMsg sfxMsg = case sfxMsg of
             , [partItemShortWownW rwidth side factionD (partActor bUI) localTime
                                   itemFull quantSingle]
               ++ cond ++ ["is extended"] )
-      return $ Just (msgClass, makeSentence parts)
+      returnJustLeft (msgClass, makeSentence parts)
     else return Nothing
   SfxCollideActor source target -> do
     sourceSeen <- getsState $ EM.member source . sactorD
@@ -1792,10 +1805,10 @@ ppSfxMsg sfxMsg = case sfxMsg of
       tpart <- partActorLeader target
       -- Neutral message, because minor damage and we don't say, which faction.
       -- And the collision may even be intentional.
-      return $
-        Just ( MsgSpecialEvent
-             , makeSentence
-                 [MU.SubjectVerbSg spart "collide", "awkwardly with", tpart] )
+      returnJustLeft
+        ( MsgSpecialEvent
+        , makeSentence
+            [MU.SubjectVerbSg spart "collide", "awkwardly with", tpart] )
     else return Nothing
   SfxItemYield iid k lid -> do
     iidSeen <- getsState $ EM.member iid . sitemD
@@ -1804,7 +1817,7 @@ ppSfxMsg sfxMsg = case sfxMsg of
           fakeC = CFloor lid originPoint
           verb = MU.Text $ "yield" <+> makePhrase [MU.CardinalAWs k "item"]
       msg <- itemVerbMUGeneral False iid fakeKit verb fakeC
-      return $ Just (MsgItemCreation, msg)
+      returnJustLeft (MsgItemCreation, msg)
     else return Nothing
 
 strike :: MonadClientUI m => Bool -> ActorId -> ActorId -> ItemId -> m ()
