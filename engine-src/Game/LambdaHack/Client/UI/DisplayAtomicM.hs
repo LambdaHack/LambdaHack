@@ -712,7 +712,8 @@ itemAidDistinctMU msgClass aid verbShow verbSave iid = do
                in MU.Phrase [name, powers]
       t1 = makeSentence [MU.SubjectVerbSg subject verbShow, object]
       t2 = makeSentence [MU.SubjectVerbSg subject verbSave, object]
-  msgAddDistinct msgClass (t1, t2)
+      dotsIfShorter = if t1 == t2 then "" else ".."
+  msgAddDistinct msgClass (t1 <> dotsIfShorter, t2)
 
 manyItemsAidVerbMU :: (MonadClientUI m, MsgShared a)
                    => a -> ActorId -> MU.Part
@@ -1609,7 +1610,9 @@ displayRespSfxAtomicUI sfx = case sfx of
     mmsg <- ppSfxMsg sfxMsg
     case mmsg of
       Just (Left (msgClass, msg)) -> msgAdd msgClass msg
-      Just (Right (msgClass, tt)) -> msgAddDistinct msgClass tt
+      Just (Right (msgClass, (t1, t2))) -> do
+        let dotsIfShorter = if t1 == t2 then "" else ".."
+        msgAddDistinct msgClass  (t1 <> dotsIfShorter, t2)
       Nothing -> return ()
   SfxRestart -> fadeOutOrIn True
   SfxCollideTile source pos -> do
