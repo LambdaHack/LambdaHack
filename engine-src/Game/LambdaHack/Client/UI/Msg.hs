@@ -495,7 +495,8 @@ emptyHistory size =
              (RB.empty ringBufferSize U.empty)
 
 scrapRepetitionSingle :: ((AttrString, Int), Bool)
-                      -> [((AttrString, Int), Bool)] -> [(AttrString, Int)]
+                      -> [((AttrString, Int), Bool)]
+                      -> [(AttrString, Int)]
                       -> (Bool, [(AttrString, Int)], [(AttrString, Int)])
 scrapRepetitionSingle ((s1, n1), commutative1) rest1 oldMsgs =
   let butLastEOLs = dropWhileEnd ((== '\n') . Color.charFromW32)
@@ -530,6 +531,8 @@ scrapRepetition History{ newReport = Report newMsgs
     RepMsgNK msg1 n1 k1 : rest1 ->
       let commutative = not . bindsPronouns . msgClass
           commutative1 = commutative msg1
+          -- We ignore message classes and scrap even if same strings
+          -- come from different classes. Otherwise user would be confused.
           makeShow = map (\(RepMsgNK msg n _) -> (msgShow msg, n))
           makeShowC = map (\(RepMsgNK msg n _) -> ( (msgShow msg, n)
                                                   , commutative msg ))
@@ -562,10 +565,12 @@ scrapRepetition History{ newReport = Report newMsgs
 -- Empty messages are not added to make checking report emptiness easier.
 addToReport :: History -> Msg -> Time -> (History, Bool)
 addToReport History{newReport = Report r, ..} msg time =
-  let newH = History { newReport = Report $ RepMsgNK msg 1 1 : r
+  let repMsgNK = RepMsgNK msg 1 1
+      newH = History { newReport = Report $ repMsgNK : r
                      , newTime = time
                      , .. }
-  in if not $ scrapsRepeats $ msgClass msg
+  in if not (scrapsRepeats $ msgClass msg)
+        || nullRepMsgNK repMsgNK  -- don't waste time on never shown messages
      then (newH, False)
      else case scrapRepetition newH of
        Just scrappedH -> (scrappedH, True)
