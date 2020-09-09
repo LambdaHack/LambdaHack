@@ -254,7 +254,7 @@ interruptsRunning = \case
     MsgNumericReport -> False
   MsgClassIgnore x -> case x of
     MsgMacroOperation -> False
-    MsgRunStopReason -> False
+    MsgRunStopReason -> True
     MsgStopPlayback -> True
   MsgClassDistinct x -> case x of
     MsgSpottedItem -> False
@@ -264,7 +264,7 @@ disturbsResting = \case
   MsgClassShowAndSave x -> case x of
     MsgPointmanSwap -> False  -- handled separately
     MsgHeardOutside -> False  -- handled separately
-    MsgHeardNearby -> False
+    MsgHeardNearby -> False  -- handled separately; no disturbance if old
     _ -> interruptsRunning $ MsgClassShowAndSave x
   msgClass -> interruptsRunning msgClass
 

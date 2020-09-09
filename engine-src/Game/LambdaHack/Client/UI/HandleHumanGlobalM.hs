@@ -561,16 +561,14 @@ runOnceAheadHuman = do
   -- When running, stop if disturbed. If not running, stop at once.
   case srunning of
     Nothing -> do
-      stopPlayBack
+      msgAdd MsgRunStopReason "run stop: nothing to do"
       return $ Left Nothing
     Just RunParams{runMembers}
       | noRunWithMulti fact && runMembers /= [leader] -> do
-      stopPlayBack
       msgAdd MsgRunStopReason "run stop: automatic pointman change"
       return $ Left Nothing
     Just _runParams | keyPressed -> do
       discardPressedKey
-      stopPlayBack
       msgAdd MsgRunStopReason "run stop: key pressed"
       weaveJust <$> failWith "interrupted"
     Just runParams -> do
@@ -578,7 +576,6 @@ runOnceAheadHuman = do
       runOutcome <- continueRun arena runParams
       case runOutcome of
         Left stopMsg -> do
-          stopPlayBack
           msgAdd MsgRunStopReason ("run stop:" <+> stopMsg)
           return $ Left Nothing
         Right runCmd ->
