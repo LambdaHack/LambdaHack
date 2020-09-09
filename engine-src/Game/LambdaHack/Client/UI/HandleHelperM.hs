@@ -695,7 +695,7 @@ lookAtPosition lidV p = do
                   || null embedsList && T.null modifyBlurb
                then ""
                else "\n"
-      ms = [ (MsgPromptModify, stashBlurb)
+      ms = [ (MsgPromptAction, stashBlurb)
            , (actorMsgClass, actorsBlurb)
            , (MsgPromptGeneric, actorsDesc <> midEOL) ]
            ++ [(MsgPromptGeneric, smellBlurb) | detail >= DetailHigh]

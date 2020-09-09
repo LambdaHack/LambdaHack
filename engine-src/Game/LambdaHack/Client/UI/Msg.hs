@@ -249,8 +249,8 @@ interruptsRunning = \case
     MsgPromptModify -> False
     MsgPromptActors -> False
     MsgPromptItems -> False
-    MsgPromptAction -> True  -- action alerts or questions cause alarm
-    MsgActionAlert -> True
+    MsgPromptAction -> False
+    MsgActionAlert -> True  -- action alerts or questions cause alarm
     MsgSpottedThreat -> True
   MsgClassSave x -> case x of
     MsgNumericReport -> False
@@ -395,7 +395,7 @@ msgColor = \case
     MsgPromptGeneric -> cBoring
     MsgPromptFocus -> cVista
     MsgPromptMention -> cNeutralEvent
-    MsgPromptModify -> cMeta
+    MsgPromptModify -> cRareNeutralEvent
     MsgPromptActors -> cRisk
     MsgPromptItems -> cGreed
     MsgPromptAction -> cMeta
