@@ -15,7 +15,7 @@ module Game.LambdaHack.Client.UI.Msg
 #ifdef EXPOSE_INTERNAL
     -- * Internal operations
   , UAttrString, uToAttrString, attrStringToU
-  , nullMsg, toMsg, MsgPrototype, tripleFromProto
+  , toMsg, MsgPrototype, tripleFromProto
   , scrapsRepeats, bindsPronouns, msgColor
   , RepMsgNK, nullRepMsgNK
   , emptyReport, renderWholeReport, renderRepetition
@@ -62,9 +62,6 @@ data Msg = Msg
   deriving (Show, Generic)
 
 instance Binary Msg
-
-nullMsg :: Msg -> Bool
-nullMsg Msg{..} = null msgShow && null msgSave
 
 toMsg :: [(String, Color.Color)] -> MsgPrototype -> Msg
 toMsg prefixColors msgProto =
@@ -442,15 +439,14 @@ emptyReport = assert (let checkLen msgClass =
                       in allB checkLen l)
               $ Report []  -- as good place as any to verify display lengths
 
--- | Test if the list of messages is empty.
+-- | Test if the list of non-whitespace messages is empty.
 nullReport :: Report -> Bool
-nullReport (Report l) = null l
+nullReport (Report l) = all nullRepMsgNK l
 
 -- | Add a message to the start of report.
 --
 -- Empty messages are not added to make checking report emptiness easier.
 consReport :: Msg -> Report -> Report
-consReport msg rep | nullMsg msg = rep
 consReport msg (Report r) = Report $ r ++ [RepMsgNK msg 1 1]
 
 -- | Render a report as a (possibly very long) 'AttrString'. Filter out
@@ -565,7 +561,6 @@ scrapRepetition History{ newReport = Report newMsgs
 --
 -- Empty messages are not added to make checking report emptiness easier.
 addToReport :: History -> Msg -> Time -> (History, Bool)
-addToReport hist msg _ | nullMsg msg = (hist, False)
 addToReport History{newReport = Report r, ..} msg time =
   let newH = History { newReport = Report $ RepMsgNK msg 1 1 : r
                      , newTime = time
