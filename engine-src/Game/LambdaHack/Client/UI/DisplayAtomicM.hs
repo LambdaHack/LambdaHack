@@ -137,7 +137,7 @@ displayRespUpdAtomicUI cmd = case cmd of
                                | otherwise -> MsgStatusBadUs
                  -- This describes all such items already among organs,
                  -- which is useful, because it shows "charging".
-                 itemAidVerbMU msgClass aid verb iid (Left Nothing)
+                 itemAidDistinctMU msgClass aid verb iid
                | otherwise -> do
                  wown <- ppContainerWownW partActorLeader True c
                  itemVerbMU MsgItemCreation iid kit
@@ -514,7 +514,7 @@ displayRespUpdAtomicUI cmd = case cmd of
       , "Scarce black motes slowly settle on the ground."
       , "The ground in the immediate area is empty, as if just swiped."
       ]
-    msgLnAdd MsgStatusBadUs blurb  -- nice colour; being here is harmful
+    msgLnAdd MsgMeleeComplexUs blurb  -- nice colour; being here risks melee
     when (cwolf curChal && not loneMode) $
       msgAdd MsgActionWarning "Being a lone wolf, you begin without companions."
     when (lengthHistory uHistory1PerLine (shistory oldSess) > 1) $
@@ -663,8 +663,7 @@ itemVerbMUShort msgClass iid kit verb c = do
   msgAdd msgClass msg
 
 itemAidVerbMU :: (MonadClientUI m, MsgShared a)
-              => a -> ActorId -> MU.Part
-              -> ItemId -> Either (Maybe Int) Int
+              => a -> ActorId -> MU.Part -> ItemId -> Either Int Int
               -> m ()
 itemAidVerbMU msgClass aid verb iid ek = do
   CCUI{coscreen=ScreenContent{rwidth}} <- getsSession sccui
@@ -678,18 +677,34 @@ itemAidVerbMU msgClass aid verb iid ek = do
   -- The item may no longer be in @c@, but it was.
   itemFull <- getsState $ itemToFull iid
   let object = case ek of
-        Left (Just n) ->
+        Left n ->
           partItemWs rwidth side factionD n localTime itemFull fakeKit
-        Left Nothing ->
-          let (name, powers) =
-                partItem rwidth side factionD localTime itemFull fakeKit
-          in MU.Phrase [name, powers]
         Right n ->
           let (name1, powers) =
                 partItemShort rwidth side factionD localTime itemFull fakeKit
           in MU.Phrase ["the", MU.Car1Ws n name1, powers]
       msg = makeSentence [MU.SubjectVerbSg subject verb, object]
   msgAdd msgClass msg
+
+itemAidDistinctMU :: (MonadClientUI m)
+                  => MsgClassDistinct -> ActorId -> MU.Part -> ItemId
+                  -> m ()
+itemAidDistinctMU msgClass aid verb iid = do
+  CCUI{coscreen=ScreenContent{rwidth}} <- getsSession sccui
+  body <- getsState $ getActorBody aid
+  side <- getsClient sside
+  factionD <- getsState sfactionD
+  let lid = blid body
+      fakeKit = quantSingle
+  localTime <- getsState $ getLocalTime lid
+  subject <- partActorLeader aid
+  -- The item may no longer be in @c@, but it was.
+  itemFull <- getsState $ itemToFull iid
+  let object = let (name, powers) =
+                     partItem rwidth side factionD localTime itemFull fakeKit
+               in MU.Phrase [name, powers]
+      t = makeSentence [MU.SubjectVerbSg subject verb, object]
+  msgAddDistinct msgClass (t, t)  -- TODO
 
 manyItemsAidVerbMU :: (MonadClientUI m, MsgShared a)
                    => a -> ActorId -> MU.Part
@@ -1022,7 +1037,7 @@ moveItemUI iid k aid cstore1 cstore2 = do
       if cstore1 == CGround && Just aid == mleader && not underAI then
         itemAidVerbMU MsgItemMovement aid verb iid (Right k)
       else when (not (bproj b) && bhp b > 0) $  -- don't announce death drops
-        itemAidVerbMU MsgItemMovement aid verb iid (Left $ Just k)
+        itemAidVerbMU MsgItemMovement aid verb iid (Left k)
     Nothing -> error $
       "" `showFailure` (iid, k, aid, cstore1, cstore2)
 
@@ -1389,18 +1404,18 @@ displayRespSfxAtomicUI sfx = case sfx of
     tpart <- partActorLeader target
     msgAdd MsgActionMajor $ makeSentence [MU.SubjectVerbSg spart "release", tpart]
   SfxProject aid iid ->
-    itemAidVerbMU MsgActionMajor aid "fling" iid (Left $ Just 1)
+    itemAidVerbMU MsgActionMajor aid "fling" iid (Left 1)
   SfxReceive aid iid ->
-    itemAidVerbMU MsgActionMajor aid "receive" iid (Left $ Just 1)
+    itemAidVerbMU MsgActionMajor aid "receive" iid (Left 1)
   SfxApply aid iid -> do
     CCUI{coscreen=ScreenContent{rapplyVerbMap}} <- getsSession sccui
     ItemFull{itemKind} <- getsState $ itemToFull iid
     let actionPart = case EM.lookup (IK.isymbol itemKind) rapplyVerbMap of
           Just verb -> MU.Text verb
           Nothing -> "trigger"
-    itemAidVerbMU MsgActionMajor aid actionPart iid (Left $ Just 1)
+    itemAidVerbMU MsgActionMajor aid actionPart iid (Left 1)
   SfxCheck aid iid ->
-    itemAidVerbMU MsgActionMajor aid "recover" iid (Left $ Just 1)
+    itemAidVerbMU MsgActionMajor aid "recover" iid (Left 1)
   SfxTrigger _ _ _ fromTile -> do
     COps{cotile} <- getsState scops
     let subject = MU.Text $ TK.tname $ okind cotile fromTile
@@ -1604,7 +1619,8 @@ displayRespSfxAtomicUI sfx = case sfx of
     unless (bproj b && bfid b == side) $ do  -- don't spam
       spart <- partActorLeader aid
       (_heardSubject, verb) <- displayTaunt voluntary rndToActionUI aid
-      msgAdd MsgMiscellanous $! makeSentence [MU.SubjectVerbSg spart (MU.Text verb)]
+      msgAdd MsgMiscellanous $!
+        makeSentence [MU.SubjectVerbSg spart (MU.Text verb)]
 
 returnJustLeft :: MonadClientUI m
                => (MsgClassShowAndSave, Text)
@@ -1774,28 +1790,36 @@ ppSfxMsg sfxMsg = case sfxMsg of
       storeOwn <- ppContainerWownW partPronounLeader True (CActor aid cstore)
       let cond = [ "condition"
                  | IA.checkFlag Ability.Condition $ aspectRecordFull itemFull ]
-          arItem = aspectRecordFull itemFull
-          isBlast = IA.checkFlag Ability.Blast arItem
+          usShow =
+            ["the", name, powers] ++ cond
+            ++ storeOwn ++ ["will now last longer"]
+          usSave =
+            ["the", name, powers] ++ cond
+            ++ storeOwn ++ ["will now last"]
+            ++ [MU.Text $ timeDeltaInSecondsText delta <+> "longer"]
+            ++ [MU.Text $ "(total:" <+> timeDeltaInSecondsText total <> ")"]
           -- Note that when enemy actor causes the extension to himself,
-          -- the player is not notified at all. So the shorter blurb below
-          -- is the middle ground.
-          (msgClass, parts) | bfid b == side && not isBlast =
-            ( MsgStatusLongerUs
-            , ["the", name, powers] ++ cond ++ storeOwn ++ ["will now last"]
-              ++ [MU.Text $ timeDeltaInSecondsText delta <+> "longer"]
-              ++ [MU.Text $ "(total:" <+> timeDeltaInSecondsText total <> ")"] )
-                            | otherwise =
-            -- Avoid TMI for not our actors and for explosions, for which
-            -- the totals defeat merging of similar messages.
-            --
-            -- Ideally we'd use a pronoun here, but the action (e.g., hit)
-            -- that caused this extension can be invisible to some onlookers.
-            -- So their narrative context needs to be taken into account.
-            ( MsgStatusLongThem
-            , [partItemShortWownW rwidth side factionD (partActor bUI) localTime
-                                  itemFull quantSingle]
-              ++ cond ++ ["is extended"] )
-      returnJustLeft (msgClass, makeSentence parts)
+          -- the player is not notified at all. So the shorter blurb
+          -- displayed on the screen is middle ground and full is in history.
+          themShow =
+            [partItemShortWownW rwidth side factionD (partActor bUI) localTime
+                                itemFull quantSingle]
+            ++ cond ++ ["is extended"]
+          -- Ideally we'd use a pronoun here, but the action (e.g., hit)
+          -- that caused this extension can be invisible to some onlookers.
+          -- So their narrative context needs to be taken into account.
+          themSave =
+            [partItemShortWownW rwidth side factionD (partActor bUI) localTime
+                                itemFull quantSingle]
+            ++ cond ++ ["is extended by"]
+            ++ [MU.Text $ timeDeltaInSecondsText delta]
+            ++ [MU.Text $ "(total:" <+> timeDeltaInSecondsText total <> ")"]
+          (msgClass, parts1, parts2) =
+            if bfid b == side
+            then (MsgStatusLongerUs, usShow, usSave)
+            else (MsgStatusLongThem, themShow, themSave)
+      return $ Just $ Right
+        (msgClass, (makeSentence parts1, makeSentence parts2))
     else return Nothing
   SfxCollideActor source target -> do
     sourceSeen <- getsState $ EM.member source . sactorD
