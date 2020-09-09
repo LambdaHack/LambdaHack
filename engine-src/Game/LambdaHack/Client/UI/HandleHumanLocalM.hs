@@ -1,3 +1,4 @@
+{-# LANGUAGE TupleSections #-}
 -- | Semantics of "Game.LambdaHack.Client.UI.HumanCmd"
 -- client commands that do not return server requests,,
 -- but only change internal client state.
@@ -769,7 +770,7 @@ allHistoryHuman = eitherHistory True
 
 eitherHistory :: forall m. MonadClientUI m => Bool -> m ()
 eitherHistory showAll = do
-  CCUI{coscreen=ScreenContent{rwrap, rheight}} <- getsSession sccui
+  CCUI{coscreen=ScreenContent{rwidth, rheight}} <- getsSession sccui
   UIOptions{uHistory1PerLine} <- getsSession sUIOptions
   history <- getsSession shistory
   arena <- getArenaUI
@@ -832,8 +833,19 @@ eitherHistory showAll = do
         let timeReport = case drop histSlot renderedHistory of
               [] -> error $ "" `showFailure` histSlot
               tR : _ -> tR
-            ov0 = EM.singleton propFont $ offsetOverlay
-                  $ indentSplitAttrString rwrap timeReport
+            ov0 =
+              let (spNo, spYes) = span (/= Color.spaceAttrW32) timeReport
+                  lenNo = textSize monoFont spNo
+                  spYesX = case splitAttrString (rwidth - lenNo - 1) rwidth
+                                                spYes of
+                    [] -> []
+                    l : ls ->
+                      ( lenNo
+                      , firstParagraph $ Color.spaceAttrW32 : attrLine l )
+                      : map (0,) ls
+              in EM.insertWith (++) monoFont
+                               (offsetOverlay [attrStringToAL spNo])
+                 $ EM.singleton propFont $ offsetOverlayX spYesX
             prompt = makeSentence
               [ "the", MU.Ordinal $ histSlot + 1
               , "most recent record follows" ]
