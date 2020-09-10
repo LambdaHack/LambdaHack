@@ -53,6 +53,7 @@ allFontsScale = 1.0
 screenOneMessagePerLine = True
 historyOneMessagePerLine = True
 ; New historyMax takes effect after removal of savefiles.
+; Looks best if is divisble by screenful of message (rheight - 4 = 20).
 historyMax = 5000
 maxFps = 24
 noAnim = False
