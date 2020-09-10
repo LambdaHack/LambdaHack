@@ -606,7 +606,9 @@ lookAtMove aid = do
     let msgClass = if Just aid == mleader
                    then MsgAtFeetMajor
                    else MsgAtFeetMinor
-    msgAdd msgClass $ stashBlurb <+> itemsBlurb
+        blurb = stashBlurb <+> itemsBlurb
+    unless (T.null blurb) $
+      msgAdd msgClass blurb
   fact <- getsState $ (EM.! bfid body) . sfactionD
   adjBigAssocs <- getsState $ adjacentBigAssocs body
   adjProjAssocs <- getsState $ adjacentProjAssocs body
