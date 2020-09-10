@@ -1442,29 +1442,34 @@ displayRespSfxAtomicUI sfx = case sfx of
         isOurCharacter = fid == side && not (bproj b)
         isOurAlive = isOurCharacter && bhp b > 0
         isOurLeader = Just aid == mleader
-        feelLookHP = feelLook MsgEffectMedium
-        feelLookCalm bigAdj projAdj =
-          when (bhp b > 0) $ feelLook MsgEffectMinor bigAdj projAdj
-        feelLook msgClass bigAdj projAdj =
+        -- The message classes are close enough. It's melee or similar.
+        feelLookHPBad = feelLook MsgMeleeComplexUs MsgMeleeComplexWe
+        feelLookHPGood = feelLook MsgMeleeComplexWe MsgMeleeComplexUs
+        feelLookCalm bigAdj projAdj = when (bhp b > 0) $
+          feelLook MsgEffectMinor MsgEffectMinor bigAdj projAdj
+        feelLook msgClassOur msgClassTheir bigAdj projAdj =
           let (verb, adjective) =
                 if bproj b
                 then ("get", projAdj)
                 else (if isOurCharacter then "feel" else "look", bigAdj)
+              msgClass = if | bproj b -> MsgEffectMinor
+                            | isOurCharacter -> msgClassOur
+                            | otherwise -> msgClassTheir
           in aidVerbMU msgClass aid $ MU.Text $ verb <+> adjective
     case effect of
         IK.Burn{} -> do
-          feelLookHP "burned" "scorched"
+          feelLookHPBad "burned" "scorched"
           let ps = (bpos b, bpos b)
           animate (blid b) $ twirlSplash ps Color.BrRed Color.Brown
         IK.Explode{} -> return ()  -- lots of visual feedback
         IK.RefillHP p | p == 1 -> return ()  -- no spam from regeneration
         IK.RefillHP p | p == -1 -> return ()  -- no spam from poison
         IK.RefillHP{} | hpDelta > 0 -> do
-          feelLookHP "healthier" "mended"
+          feelLookHPGood "healthier" "mended"
           let ps = (bpos b, bpos b)
           animate (blid b) $ twirlSplash ps Color.BrGreen Color.Green
         IK.RefillHP{} -> do
-          feelLookHP "wounded" "broken"
+          feelLookHPBad "wounded" "broken"
           let ps = (bpos b, bpos b)
           animate (blid b) $ twirlSplash ps Color.BrRed Color.Red
         IK.RefillCalm{} | bproj b -> return ()
@@ -1852,7 +1857,7 @@ ppSfxMsg sfxMsg = case sfxMsg of
           fakeC = CFloor lid originPoint
           verb = MU.Text $ "yield" <+> makePhrase [MU.CardinalAWs k "item"]
       msg <- itemVerbMUGeneral False iid fakeKit verb fakeC
-      returnJustLeft (MsgItemCreation, msg)
+      returnJustLeft (MsgSpecialEvent, msg)  -- differentiate wrt item creation
     else return Nothing
 
 strike :: MonadClientUI m => Bool -> ActorId -> ActorId -> ItemId -> m ()
