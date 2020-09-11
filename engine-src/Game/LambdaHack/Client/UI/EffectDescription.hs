@@ -415,7 +415,7 @@ aspectToSentence feat =
     SetFlag Precious -> Just "It seems precious."
     SetFlag Blast -> Nothing
     SetFlag Condition -> Nothing
-    SetFlag Unique -> Nothing
+    SetFlag Unique -> Just "It is one of a kind."
     SetFlag Periodic -> Nothing
     SetFlag MinorEffects -> Nothing
     ELabel{} -> Nothing
