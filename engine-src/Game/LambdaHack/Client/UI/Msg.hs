@@ -8,7 +8,7 @@ module Game.LambdaHack.Client.UI.Msg
   , MsgClassIgnore(..), MsgClassDistinct(..)
   , MsgClass, interruptsRunning, disturbsResting
     -- * Report
-  , Report, nullReport, consReport, renderReport, anyInReport
+  , Report, nullVisibleReport, consReport, renderReport, anyInReport
     -- * History
   , History, newReport, emptyHistory, addToReport, addEolToNewReport
   , archiveReport, lengthHistory, renderHistory
@@ -445,8 +445,9 @@ emptyReport = assert (let checkLen msgClass =
               $ Report []  -- as good place as any to verify display lengths
 
 -- | Test if the list of non-whitespace messages is empty.
-nullReport :: Report -> Bool
-nullReport (Report l) = all nullRepMsgNK l
+nullVisibleReport :: Report -> Bool
+nullVisibleReport (Report l) =
+  all (all (Char.isSpace . Color.charFromW32) . msgShow . repMsg) l
 
 -- | Add a message to the start of report.
 --
@@ -596,13 +597,13 @@ addEolToNewReport hist =
 -- and prompts. Set up new report with a new timestamp.
 archiveReport :: Bool -> History -> History
 archiveReport uHistory1PerLine History{newReport=Report newMsgs, ..} =
-  let newReportFiltered = Report $ filter (not . nullRepMsgNK) newMsgs
-  in if nullReport newReportFiltered
+  let newFiltered@(Report r) = Report $ filter (not . nullRepMsgNK) newMsgs
+  in if null r
      then -- Drop empty new report.
           History emptyReport timeZero oldReport oldTime archivedHistory
      else let lU = map attrStringToU
                    $ renderTimeReport uHistory1PerLine oldTime oldReport
-          in History emptyReport timeZero newReportFiltered newTime
+          in History emptyReport timeZero newFiltered newTime
              $ foldl' (\ !h !v -> RB.cons v h) archivedHistory lU
 
 renderTimeReport :: Bool -> Time -> Report -> [AttrString]

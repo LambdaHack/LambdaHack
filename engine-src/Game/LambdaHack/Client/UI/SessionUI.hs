@@ -71,8 +71,9 @@ data SessionUI = SessionUI
                                     -- ^ indices of last used menu items
   , sdisplayNeeded :: Bool          -- ^ current level needs displaying
   , sturnDisplayed :: Bool          -- ^ a frame was already displayed this turn
-  , sreportNull    :: Bool          -- ^ whether no report created last UI turn
-                                    --   or the report wiped out from screen
+  , sreportNull    :: Bool          -- ^ whether no visible report created
+                                    --   last UI faction turn or the report
+                                    --   wiped out from screen since
   , sstart         :: POSIXTime     -- ^ this session start time
   , sgstart        :: POSIXTime     -- ^ this game start time
   , sallTime       :: Time          -- ^ clips from start of session

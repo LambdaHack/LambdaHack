@@ -122,7 +122,7 @@ humanCommand = do
   let loop :: Maybe ActorId -> m ReqUI
       loop mOldLeader = do
         report <- getsSession $ newReport . shistory
-        modifySession $ \sess -> sess {sreportNull = nullReport report}
+        modifySession $ \sess -> sess {sreportNull = nullVisibleReport report}
         slidesRaw <- reportToSlideshowKeep []
         over <- case unsnoc slidesRaw of
           Nothing -> return []
