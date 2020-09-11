@@ -833,11 +833,11 @@ eitherHistory showAll = do
           Left km | km == K.spaceKM ->  -- click in any unused space
             msgAdd MsgPromptGeneric "Steady on."
           Right SlotChar{..} | slotChar == 'a' ->
-            displayOneReport slotPrefix
+            displayOneReport $ max 0 $ slotPrefix - placeholderCount
           _ -> error $ "" `showFailure` ekm
       displayOneReport :: Int -> m ()
       displayOneReport histSlot = do
-        let timeReport = case drop histSlot renderedHistory of
+        let timeReport = case drop histSlot renderedHistoryRaw of
               [] -> error $ "" `showFailure` histSlot
               tR : _ -> tR
             ov0 =
@@ -858,7 +858,7 @@ eitherHistory showAll = do
               , "most recent record follows" ]
             keys = [K.spaceKM, K.escKM]
                    ++ [K.upKM | histSlot /= 0]
-                   ++ [K.downKM | histSlot /= histBound - 1]
+                   ++ [K.downKM | histSlot /= histBoundRaw - 1]
         msgAdd MsgPromptGeneric prompt
         slides <- overlayToSlideshow (rheight - 2) keys (ov0, [])
         km <- getConfirms ColorFull keys slides
@@ -870,7 +870,7 @@ eitherHistory showAll = do
           _ -> error $ "" `showFailure` km
   if showAll
   then displayAllHistory
-  else displayOneReport (histBound - 1)
+  else displayOneReport (histBoundRaw - 1)
 
 -- * LastHistory
 
