@@ -1381,15 +1381,12 @@ helpHuman cmdSemInCxtOfKM = do
       sectionsEnd = map outcomeSection [minBound..maxBound]
       outcomeSection :: Outcome -> (AttrString, Text)
       outcomeSection outcome =
-        let t = fromMaybe "" $ lookup outcome $ mendMsg gameMode
-            color | outcome `elem` deafeatOutcomes = Color.cVeryBadEvent
-                  | outcome `elem` victoryOutcomes = Color.cVeryGoodEvent
-                  | otherwise = Color.cNeutralEvent
-        in ( textFgToAS color $ renderOutcome outcome
-           , if not (outcomeSeen outcome)
-             then ""  -- a possible spoiler and lack of sense of progression
-             else T.concatMap duplicateEOL t
-           )
+        ( renderOutcome outcome
+        , if not (outcomeSeen outcome)
+          then ""  -- a possible spoiler and lack of sense of progression
+          else T.concatMap duplicateEOL
+               $ fromMaybe "" $ lookup outcome $ mendMsg gameMode
+        )
       highScoreRecords =
         maybe [] HighScore.unTable $ EM.lookup gameModeId scoreDict
       outcomeSeen :: Outcome -> Bool
@@ -1401,13 +1398,19 @@ helpHuman cmdSemInCxtOfKM = do
                     else Just $ stOutcome . HighScore.getStatus
                               $ maximumBy (comparing HighScore.getDate)
                                           highScoreRecords
-      renderOutcome :: Outcome -> Text
+      renderOutcome :: Outcome -> AttrString
       renderOutcome outcome =
-        "Game over message when" <+> nameOutcomePast outcome
-        <> if | Just outcome /= lastOutcome -> ":"
-              | outcome `elem` deafeatOutcomes -> " (last suffered ending):"
-              | outcome `elem` victoryOutcomes -> " (last achieved ending):"
-              | otherwise -> " (last seen ending):"
+        let color | outcome `elem` deafeatOutcomes = Color.cVeryBadEvent
+                  | outcome `elem` victoryOutcomes = Color.cVeryGoodEvent
+                  | otherwise = Color.cNeutralEvent
+            lastRemark
+              | Just outcome /= lastOutcome = ":"
+              | outcome `elem` deafeatOutcomes = " (last suffered ending):"
+              | outcome `elem` victoryOutcomes = " (last achieved ending):"
+              | otherwise = " (last seen ending):"
+        in textToAS "Game over message when "
+           ++ textFgToAS color (nameOutcomePast outcome)
+           ++ textToAS lastRemark
       shiftPointUI x (K.PointUI x0 y0) = K.PointUI (x0 + x) y0
       modeH = ( "Press SPACE or PGDN to advance or ESC to see the map again."
               , ( if isSquareFont propFont
