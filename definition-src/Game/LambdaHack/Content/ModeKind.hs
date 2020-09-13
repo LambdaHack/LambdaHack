@@ -6,7 +6,8 @@ module Game.LambdaHack.Content.ModeKind
   , Caves, Roster(..), Outcome(..)
   , HiCondPoly, HiSummand, HiPolynomial, HiIndeterminant(..)
   , Player(..), LeaderMode(..), AutoLeader(..)
-  , victoryOutcomes, deafeatOutcomes, genericEndMessages, screensave
+  , victoryOutcomes, deafeatOutcomes, nameOutcomePast, nameOutcomeVerb
+  , genericEndMessages, screensave
 #ifdef EXPOSE_INTERNAL
     -- * Internal operations
   , validateSingle, validateAll
@@ -153,6 +154,24 @@ victoryOutcomes = [Conquer, Escape]
 
 deafeatOutcomes :: [Outcome]
 deafeatOutcomes = [Killed, Defeated, Restart]
+
+nameOutcomePast :: Outcome -> Text
+nameOutcomePast = \case
+  Killed   -> "got eliminated"
+  Defeated -> "got decisively defeated"
+  Camping  -> "set camp"
+  Conquer  -> "vanquished all opposition"
+  Escape   -> "emerged victorious"
+  Restart  -> "resigned prematurely"
+
+nameOutcomeVerb :: Outcome -> Text
+nameOutcomeVerb = \case
+  Killed   -> "be eliminated"
+  Defeated -> "be decisively defeated"
+  Camping  -> "set camp"
+  Conquer  -> "vanquish all opposition"
+  Escape   -> "emerge victorious"
+  Restart  -> "resign prematurely"
 
 genericEndMessages :: [(Outcome, Text)]
 genericEndMessages =

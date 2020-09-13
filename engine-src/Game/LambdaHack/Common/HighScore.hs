@@ -27,7 +27,6 @@ import Game.LambdaHack.Common.Misc
 import Game.LambdaHack.Common.Time
 import Game.LambdaHack.Content.ItemKind (ItemKind)
 import Game.LambdaHack.Content.ModeKind
-  (HiCondPoly, HiIndeterminant (..), ModeKind, Outcome (..))
 import Game.LambdaHack.Definition.Defs
 
 -- | A single score record. Records are ordered in the highscore table,
@@ -114,13 +113,9 @@ register table total dungeonTotal time status@Status{stOutcome}
 showScore :: TimeZone -> Int -> ScoreRecord -> [Text]
 showScore tz pos score =
   let Status{stOutcome, stDepth} = status score
-      died = case stOutcome of
-        Killed   -> "perished on level" <+> tshow (abs stDepth)
-        Defeated -> "got defeated"
-        Camping  -> "set camp"
-        Conquer  -> "slew all opposition"
-        Escape   -> "emerged victorious"
-        Restart  -> "resigned prematurely"
+      died = nameOutcomePast stOutcome <+> case stOutcome of
+        Killed -> "on level" <+> tshow (abs stDepth)
+        _ -> ""
       curDate = T.take 19 . tshow . utcToLocalTime tz
                 . posixSecondsToUTCTime . date $ score
       turns = absoluteTimeNegate (negTime score) `timeFitUp` timeTurn

@@ -1071,16 +1071,14 @@ quitFactionUI fid toSt manalytics = do
   allNframes <- getsSession sallNframes
   let startingPart = case toSt of
         _ | horror -> Nothing  -- Ignore summoned actors' factions.
-        Just Status{stOutcome=Killed} -> Just "be eliminated"
-        Just Status{stOutcome=Defeated} -> Just "be decisively defeated"
-        Just Status{stOutcome=Camping} -> Just "order save and exit"
-        Just Status{stOutcome=Conquer} -> Just "vanquish all foes"
-        Just Status{stOutcome=Escape} -> Just "achieve victory"
-        Just Status{stOutcome=Restart, stNewGame=Just gn} ->
-          Just $ MU.Text $ "order mission restart in"
-                           <+> fromGroupName gn <+> "mode"
+        Just Status{stOutcome=stOutcome@Restart, stNewGame=Just gn} ->
+          Just $ MU.Text $ nameOutcomeVerb stOutcome
+                           <+> "to restart in" <+> fromGroupName gn <+> "mode"
+                             -- when multiplayer: "order mission restart in"
         Just Status{stOutcome=Restart, stNewGame=Nothing} ->
           error $ "" `showFailure` (fid, toSt)
+        Just Status{stOutcome} -> Just $ MU.Text $ nameOutcomeVerb stOutcome
+          -- when multiplayer, for @Camping@: "order save and exit"
         Nothing -> Nothing  -- server wipes out Camping for savefile
       middlePart = case toSt of
         _ | fid /= side -> Nothing

@@ -1409,7 +1409,7 @@ helpHuman cmdSemInCxtOfKM = do
                                           highScoreRecords
       renderOutcome :: Outcome -> Text
       renderOutcome outcome =
-        "Game over message at" <+> tshow outcome
+        "Game over message when" <+> nameOutcomePast outcome
         <+> if | Just outcome /= lastOutcome -> ""
                | outcome `elem` deafeatOutcomes -> "(last suffered ending)"
                | outcome `elem` victoryOutcomes -> "(last achieved ending)"
