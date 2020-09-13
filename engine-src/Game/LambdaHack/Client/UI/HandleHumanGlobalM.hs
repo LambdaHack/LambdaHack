@@ -1348,41 +1348,47 @@ helpHuman cmdSemInCxtOfKM = do
   gameModeId <- getsState sgameModeId
   gameMode <- getGameMode
   scoreDict <- getsState shigh
-  let width = if isSquareFont propFont then 79 else 82
-      duplicateEOL '\n' = "\n\n"
+  let duplicateEOL '\n' = "\n\n"
       duplicateEOL c = T.singleton c
-      blurb = splitAttrString (width - 1) (width - 1) $
+      sections =
+        [ ( Color.Brown
+          , "The story so far"
+          , T.concatMap duplicateEOL (mdesc gameMode) )
+        , ( Color.BrCyan
+          , "Rules of the game"
+          , mrules gameMode )
+        , ( Color.Cyan
+          , "Running commentary"
+          , T.concatMap duplicateEOL (mreason gameMode) )
+        , ( Color.BrBlue
+          , "Hints, not needed unless stuck"
+          , T.concatMap duplicateEOL (mhint gameMode) )
+        ]
+      renderSection :: (Color.Color, Text, Text) -> Maybe AttrString
+      renderSection (color, header, desc) =
+        if T.null desc
+        then Nothing
+        else Just $ textFgToAS color (header <> ":\n")
+                    <> textToAS desc
+      blurb = splitAttrString (rwidth - 2) (rwidth - 2) $
         textToAS
           ("\nYou are playing the '" <> mname gameMode <> "' scenario.\n\n")
-        <> textFgToAS Color.Brown
-             "The story so far:\n"
-        <> textToAS
-             (T.concatMap duplicateEOL (mdesc gameMode) <> "\n\n")
-        <> textFgToAS Color.BrCyan
-             "Rules of the game:\n"
-        <> textToAS
-             (mrules gameMode <> "\n\n")
-        <> textFgToAS Color.Cyan
-             "Running commentary:\n"
-        <> textToAS
-             (T.concatMap duplicateEOL (mreason gameMode) <> "\n\n")
-        <> textFgToAS Color.BrBlue
-             "Hints, not needed unless stuck:\n"
-        <> textToAS
-             (T.concatMap duplicateEOL (mhint gameMode))
-      blurbEnd = splitAttrString (width - 1) (width - 1) $
+        <> intercalate (textToAS "\n\n") (mapMaybe renderSection sections)
+      blurbEnd = splitAttrString (rwidth - 2) (rwidth - 2) $
         textToAS "\nScenario endings experienced so far:\n\n"
-        <> intercalate (textToAS "\n\n")
-                       (map renderOutcomeMsg [minBound..maxBound])
-      renderOutcomeMsg :: Outcome -> AttrString
-      renderOutcomeMsg outcome =
+        <> if null sectionsEndAS then textToAS "*none*" else sectionsEndAS
+      sectionsEndAS =
+        intercalate (textToAS "\n\n") (mapMaybe renderSection sectionsEnd)
+      sectionsEnd = map outcomeSection [minBound..maxBound]
+      outcomeSection :: Outcome -> (Color.Color, Text, Text)
+      outcomeSection outcome =
         let t = fromMaybe "" $ lookup outcome $ mendMsg gameMode
-        in textFgToAS Color.Brown
-             (renderOutcome outcome <> ":\n")
-           <> if not (outcomeSeen outcome)
-              then []  -- a possible spoiler and lack of progression
-              else textToAS
-                     (T.concatMap duplicateEOL t)
+        in ( Color.Brown
+           , renderOutcome outcome
+           , if not (outcomeSeen outcome)
+             then ""  -- a possible spoiler and lack of sense of progression
+             else T.concatMap duplicateEOL t
+           )
       highScoreRecords =
         maybe [] HighScore.unTable $ EM.lookup gameModeId scoreDict
       outcomeSeen :: Outcome -> Bool
@@ -1406,11 +1412,13 @@ helpHuman cmdSemInCxtOfKM = do
                   then EM.singleton squareFont
                        $ offsetOverlayX
                        $ map (\t -> (spLen, t)) $ blurb ++ blurbEnd
-                  else EM.insertWith (++) propFont
-                         (offsetOverlayX $ map (\t -> (81, t)) blurbEnd)
-                       $ EM.singleton propFont
-                       $ offsetOverlayX
-                       $ map (\t -> (spLen, t)) blurb
+                  else EM.unionWith (++)
+                         (EM.singleton propFont
+                          $ offsetOverlayX
+                          $ map (\t -> (81, t)) blurbEnd)
+                         (EM.singleton propFont
+                          $ offsetOverlayX
+                          $ map (\t -> (spLen, t)) blurb)
                 , [] ) )
       keyH = keyHelp ccui fontSetup
       splitHelp (t, okx) = splitOKX fontSetup True rwidth rheight rwidth
@@ -1815,7 +1823,9 @@ challengesMenuHuman cmdSemInCxtOfKM = do
       widthProp = if isSquareFont propFont
                   then rwidth `div` 2
                   else min rwrap (rwidth - 2)
-      widthMono = if isSquareFont propFont then rwidth `div` 2 else (rwidth - 2)
+      widthMono = if isSquareFont propFont
+                  then rwidth `div` 2
+                  else (rwidth - 2)
       duplicateEOL '\n' = "\n\n"
       duplicateEOL c = T.singleton c
       blurb =
