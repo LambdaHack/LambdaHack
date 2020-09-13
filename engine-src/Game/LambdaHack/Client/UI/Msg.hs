@@ -316,102 +316,79 @@ bindsPronouns = \case
 
 -- Only initially @White@ colour in text (e.g., not highlighted @BrWhite@)
 -- gets replaced by the one indicated.
---
--- See the discussion of colours and the table of colours at
--- https://github.com/LambdaHack/LambdaHack/wiki/Display#colours
--- Another mention of colours, concerning terrain, is in PLAYING.md manual.
--- The manual and this code should follow the wiki.
-cVeryBadEvent, cBadEvent, cRisk, cGraveRisk, cVeryGoodEvent, cGoodEvent, cVista, cSleep, cWakeUp, cGreed, cNeutralEvent, cRareNeutralEvent, cIdentification, cMeta, cBoring, cGameOver :: Color.Color
-cVeryBadEvent = Color.Red
-cBadEvent = Color.BrRed
-cRisk = Color.Magenta
-cGraveRisk = Color.BrMagenta
-cVeryGoodEvent = Color.Green
-cGoodEvent = Color.BrGreen
-cVista = Color.BrGreen
-cSleep = Color.Blue
-cWakeUp = Color.BrBlue
-cGreed = Color.BrBlue
-cNeutralEvent = Color.Cyan
-cRareNeutralEvent = Color.BrCyan
-cIdentification = Color.Brown
-cMeta = Color.BrYellow
-cBoring = Color.White
-cGameOver = Color.BrWhite
-
 msgColor :: MsgClass -> Color.Color
 msgColor = \case
   MsgClassShowAndSave x -> case x of
-    MsgBookKeeping -> cBoring
-    MsgStatusWakeup -> cWakeUp
-    MsgStatusStopUs -> cBoring
-    MsgStatusStopThem -> cBoring
-    MsgItemCreation -> cGreed
-    MsgItemRuination -> cBoring  -- common, colourful components created
-    MsgDeathVictory -> cVeryGoodEvent
-    MsgDeathDeafeat -> cVeryBadEvent
-    MsgDeathBoring -> cBoring
-    MsgRiskOfDeath -> cGraveRisk
-    MsgPointmanSwap -> cBoring
-    MsgFactionIntel -> cMeta  -- good or bad
-    MsgFinalOutcome -> cGameOver
-    MsgPlotExposition -> cBoring
-    MsgBackdropInfo -> cBoring
-    MsgTerrainReveal -> cIdentification
-    MsgItemDiscovery -> cIdentification
-    MsgSpottedActor -> cBoring  -- too common; warning in @MsgSpottedThreat@
-    MsgItemMovement -> cBoring
-    MsgActionMajor -> cBoring
-    MsgActionMinor -> cBoring
-    MsgEffectMajor -> cRareNeutralEvent
-    MsgEffectMedium -> cNeutralEvent
-    MsgEffectMinor -> cBoring
-    MsgMiscellanous -> cBoring
-    MsgHeardOutside -> cBoring
-    MsgHeardNearby -> cGraveRisk
-    MsgHeardFaraway -> cRisk
-    MsgBackdropFocus -> cVista
-    MsgActionWarning -> cMeta
-    MsgRangedMightyWe -> cGoodEvent
-    MsgRangedMightyUs -> cVeryBadEvent
-    MsgRangedOthers -> cBoring
-    MsgRangedNormalUs -> cBadEvent
-    MsgNeutralEvent -> cNeutralEvent
-    MsgSpecialEvent -> cRareNeutralEvent
-    MsgMeleeMightyWe -> cGoodEvent
-    MsgMeleeMightyUs -> cVeryBadEvent
-    MsgMeleeComplexWe -> cGoodEvent
-    MsgMeleeComplexUs -> cBadEvent
-    MsgMeleeOthers -> cBoring
-    MsgMeleeNormalUs -> cBadEvent
-    MsgActionComplete -> cBoring
-    MsgAtFeetMajor -> cBoring
-    MsgAtFeetMinor -> cBoring
+    MsgBookKeeping -> Color.cBoring
+    MsgStatusWakeup -> Color.cWakeUp
+    MsgStatusStopUs -> Color.cBoring
+    MsgStatusStopThem -> Color.cBoring
+    MsgItemCreation -> Color.cGreed
+    MsgItemRuination -> Color.cBoring  -- common, colourful components created
+    MsgDeathVictory -> Color.cVeryGoodEvent
+    MsgDeathDeafeat -> Color.cVeryBadEvent
+    MsgDeathBoring -> Color.cBoring
+    MsgRiskOfDeath -> Color.cGraveRisk
+    MsgPointmanSwap -> Color.cBoring
+    MsgFactionIntel -> Color.cMeta  -- good or bad
+    MsgFinalOutcome -> Color.cGameOver
+    MsgPlotExposition -> Color.cBoring
+    MsgBackdropInfo -> Color.cBoring
+    MsgTerrainReveal -> Color.cIdentification
+    MsgItemDiscovery -> Color.cIdentification
+    MsgSpottedActor -> Color.cBoring  -- common; warning in @MsgSpottedThreat@
+    MsgItemMovement -> Color.cBoring
+    MsgActionMajor -> Color.cBoring
+    MsgActionMinor -> Color.cBoring
+    MsgEffectMajor -> Color.cRareNeutralEvent
+    MsgEffectMedium -> Color.cNeutralEvent
+    MsgEffectMinor -> Color.cBoring
+    MsgMiscellanous -> Color.cBoring
+    MsgHeardOutside -> Color.cBoring
+    MsgHeardNearby -> Color.cGraveRisk
+    MsgHeardFaraway -> Color.cRisk
+    MsgBackdropFocus -> Color.cVista
+    MsgActionWarning -> Color.cMeta
+    MsgRangedMightyWe -> Color.cGoodEvent
+    MsgRangedMightyUs -> Color.cVeryBadEvent
+    MsgRangedOthers -> Color.cBoring
+    MsgRangedNormalUs -> Color.cBadEvent
+    MsgNeutralEvent -> Color.cNeutralEvent
+    MsgSpecialEvent -> Color.cRareNeutralEvent
+    MsgMeleeMightyWe -> Color.cGoodEvent
+    MsgMeleeMightyUs -> Color.cVeryBadEvent
+    MsgMeleeComplexWe -> Color.cGoodEvent
+    MsgMeleeComplexUs -> Color.cBadEvent
+    MsgMeleeOthers -> Color.cBoring
+    MsgMeleeNormalUs -> Color.cBadEvent
+    MsgActionComplete -> Color.cBoring
+    MsgAtFeetMajor -> Color.cBoring
+    MsgAtFeetMinor -> Color.cBoring
   MsgClassShow x -> case x of
-    MsgPromptGeneric -> cBoring
-    MsgPromptFocus -> cVista
-    MsgPromptMention -> cNeutralEvent
-    MsgPromptModify -> cRareNeutralEvent
-    MsgPromptActors -> cRisk
-    MsgPromptItems -> cGreed
-    MsgPromptAction -> cMeta
-    MsgActionAlert -> cMeta
-    MsgSpottedThreat -> cGraveRisk
+    MsgPromptGeneric -> Color.cBoring
+    MsgPromptFocus -> Color.cVista
+    MsgPromptMention -> Color.cNeutralEvent
+    MsgPromptModify -> Color.cRareNeutralEvent
+    MsgPromptActors -> Color.cRisk
+    MsgPromptItems -> Color.cGreed
+    MsgPromptAction -> Color.cMeta
+    MsgActionAlert -> Color.cMeta
+    MsgSpottedThreat -> Color.cGraveRisk
   MsgClassSave x -> case x of
-    MsgInnerWorkSpam -> cBoring
-    MsgNumericReport -> cBoring
+    MsgInnerWorkSpam -> Color.cBoring
+    MsgNumericReport -> Color.cBoring
   MsgClassIgnore x -> case x of
-    MsgMacroOperation -> cBoring
-    MsgRunStopReason -> cBoring
-    MsgStopPlayback -> cMeta
+    MsgMacroOperation -> Color.cBoring
+    MsgRunStopReason -> Color.cBoring
+    MsgStopPlayback -> Color.cMeta
   MsgClassDistinct x -> case x of
-    MsgSpottedItem -> cBoring
-    MsgStatusLongerUs -> cBoring  -- not important enough
-    MsgStatusLongThem -> cBoring  -- not important enough, no disturb even
-    MsgStatusSleep -> cSleep
-    MsgStatusGoodUs -> cGoodEvent
-    MsgStatusBadUs -> cBadEvent
-    MsgStatusOthers -> cBoring
+    MsgSpottedItem -> Color.cBoring
+    MsgStatusLongerUs -> Color.cBoring  -- not important enough
+    MsgStatusLongThem -> Color.cBoring  -- not important enough, no disturb even
+    MsgStatusSleep -> Color.cSleep
+    MsgStatusGoodUs -> Color.cGoodEvent
+    MsgStatusBadUs -> Color.cBadEvent
+    MsgStatusOthers -> Color.cBoring
 
 -- * Report
 

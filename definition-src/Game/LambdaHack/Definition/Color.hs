@@ -3,7 +3,11 @@
 module Game.LambdaHack.Definition.Color
   ( -- * Colours
     Color(..)
-  , defFG, isBright, darkCol, brightCol, stdCol, legalFgCol, colorToRGB
+  , defFG, isBright, darkCol, brightCol, stdCol, legalFgCol
+  , cVeryBadEvent, cBadEvent, cRisk, cGraveRisk, cVeryGoodEvent, cGoodEvent
+  , cVista, cSleep, cWakeUp, cGreed, cNeutralEvent, cRareNeutralEvent
+  , cIdentification, cMeta, cBoring, cGameOver
+  , colorToRGB
     -- * Complete text attributes
   , Highlight (..), Attr(..)
   , highlightToColor, defAttr
@@ -72,6 +76,28 @@ darkCol = [Red .. Cyan]
 brightCol = [BrRed .. BrCyan]  -- BrBlack is not really that bright
 stdCol = darkCol ++ brightCol
 legalFgCol = darkCol ++ [White, BrBlack] ++ brightCol ++ [BrWhite]
+
+-- See the discussion of colours and the table of colours at
+-- https://github.com/LambdaHack/LambdaHack/wiki/Display#colours
+-- Another mention of colours, concerning terrain, is in PLAYING.md manual.
+-- The manual and this code should follow the wiki.
+cVeryBadEvent, cBadEvent, cRisk, cGraveRisk, cVeryGoodEvent, cGoodEvent, cVista, cSleep, cWakeUp, cGreed, cNeutralEvent, cRareNeutralEvent, cIdentification, cMeta, cBoring, cGameOver :: Color
+cVeryBadEvent = Red
+cBadEvent = BrRed
+cRisk = Magenta
+cGraveRisk = BrMagenta
+cVeryGoodEvent = Green
+cGoodEvent = BrGreen
+cVista = BrGreen
+cSleep = Blue
+cWakeUp = BrBlue
+cGreed = BrBlue
+cNeutralEvent = Cyan
+cRareNeutralEvent = BrCyan
+cIdentification = Brown
+cMeta = BrYellow
+cBoring = White
+cGameOver = BrWhite
 
 -- | Translationg to heavily modified Linux console color RGB values.
 --
