@@ -6,7 +6,7 @@ module Game.LambdaHack.Content.ModeKind
   , Caves, Roster(..), Outcome(..)
   , HiCondPoly, HiSummand, HiPolynomial, HiIndeterminant(..)
   , Player(..), LeaderMode(..), AutoLeader(..)
-  , victoryOutcomes, genericEndMessages, screensave
+  , victoryOutcomes, deafeatOutcomes, genericEndMessages, screensave
 #ifdef EXPOSE_INTERNAL
     -- * Internal operations
   , validateSingle, validateAll
@@ -66,7 +66,7 @@ data Outcome =
   | Camping   -- ^ game is supended
   | Conquer   -- ^ the player won by eliminating all rivals
   | Escape    -- ^ the player escaped the dungeon alive
-  | Restart   -- ^ game is restarted
+  | Restart   -- ^ game is restarted; the quitter quit
   deriving (Show, Eq, Ord, Enum, Bounded, Generic)
 
 instance Binary Outcome
@@ -150,6 +150,9 @@ instance Binary AutoLeader
 
 victoryOutcomes :: [Outcome]
 victoryOutcomes = [Conquer, Escape]
+
+deafeatOutcomes :: [Outcome]
+deafeatOutcomes = [Killed, Defeated, Restart]
 
 genericEndMessages :: [(Outcome, Text)]
 genericEndMessages =

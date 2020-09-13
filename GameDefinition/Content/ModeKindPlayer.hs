@@ -132,7 +132,7 @@ hiHeroShort =
   , ( [(HiSprint, -500)]  -- speed matters, but only if fast enough
     , victoryOutcomes )
   , ( [(HiSurvival, 10)]  -- few points for surviving long
-    , [minBound..maxBound] \\ victoryOutcomes )
+    , deafeatOutcomes )
   ]
 
 hiHeroMedium =
@@ -145,7 +145,7 @@ hiHeroMedium =
   , ( [(HiBlitz, -100)]  -- speed matters always
     , victoryOutcomes )
   , ( [(HiSurvival, 10)]  -- few points for surviving long
-    , [minBound..maxBound] \\ victoryOutcomes )
+    , deafeatOutcomes )
   ]
 
 -- Heroes in long crawls rejoice in loot.
@@ -157,7 +157,7 @@ hiHeroLong =
   , ( [(HiBlitz, -100)]  -- speed matters always
     , victoryOutcomes )
   , ( [(HiSurvival, 10)]  -- few points for surviving long
-    , [minBound..maxBound] \\ victoryOutcomes )
+    , deafeatOutcomes )
   ]
 
 -- Spawners get no points from loot, but try to kill
@@ -171,5 +171,5 @@ hiDweller = [ ( [(HiConst, 1000)]  -- no loot, so big win reward
             , ( [(HiBlitz, -100)]  -- speed matters
               , victoryOutcomes )
             , ( [(HiSurvival, 100)]
-              , [minBound..maxBound] \\ victoryOutcomes )
+              , deafeatOutcomes )
             ]

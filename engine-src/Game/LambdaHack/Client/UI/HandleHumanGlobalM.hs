@@ -1408,8 +1408,9 @@ helpHuman cmdSemInCxtOfKM = do
       renderOutcome outcome =
         "Game over message at" <+> tshow outcome
         <+> if | Just outcome /= lastOutcome -> ""
+               | outcome `elem` deafeatOutcomes -> "(last suffered ending)"
                | outcome `elem` victoryOutcomes -> "(last achieved ending)"
-               | otherwise -> "(last suffered ending)"
+               | otherwise -> "(last seen ending)"
       shiftPointUI x (K.PointUI x0 y0) = K.PointUI (x0 + x) y0
       modeH = ( "Press SPACE or PGDN to advance or ESC to see the map again."
               , ( if isSquareFont propFont
