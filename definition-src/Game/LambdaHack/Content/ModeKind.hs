@@ -62,12 +62,12 @@ data Roster = Roster
 
 -- | Outcome of a game.
 data Outcome =
-    Killed    -- ^ the faction was eliminated
-  | Defeated  -- ^ the faction lost the game in another way
-  | Camping   -- ^ game is supended
+    Escape    -- ^ the player escaped the dungeon alive
   | Conquer   -- ^ the player won by eliminating all rivals
-  | Escape    -- ^ the player escaped the dungeon alive
+  | Defeated  -- ^ the faction lost the game in another way
+  | Killed    -- ^ the faction was eliminated
   | Restart   -- ^ game is restarted; the quitter quit
+  | Camping   -- ^ game is supended
   deriving (Show, Eq, Ord, Enum, Bounded, Generic)
 
 instance Binary Outcome
@@ -150,28 +150,28 @@ data AutoLeader = AutoLeader
 instance Binary AutoLeader
 
 victoryOutcomes :: [Outcome]
-victoryOutcomes = [Conquer, Escape]
+victoryOutcomes = [Escape, Conquer]
 
 deafeatOutcomes :: [Outcome]
-deafeatOutcomes = [Killed, Defeated, Restart]
+deafeatOutcomes = [Defeated, Killed, Restart]
 
 nameOutcomePast :: Outcome -> Text
 nameOutcomePast = \case
-  Killed   -> "got eliminated"
-  Defeated -> "got decisively defeated"
-  Camping  -> "set camp"
-  Conquer  -> "vanquished all opposition"
   Escape   -> "emerged victorious"
+  Conquer  -> "vanquished all opposition"
+  Defeated -> "got decisively defeated"
+  Killed   -> "got eliminated"
   Restart  -> "resigned prematurely"
+  Camping  -> "set camp"
 
 nameOutcomeVerb :: Outcome -> Text
 nameOutcomeVerb = \case
-  Killed   -> "be eliminated"
-  Defeated -> "be decisively defeated"
-  Camping  -> "set camp"
-  Conquer  -> "vanquish all opposition"
   Escape   -> "emerge victorious"
+  Conquer  -> "vanquish all opposition"
+  Defeated -> "be decisively defeated"
+  Killed   -> "be eliminated"
   Restart  -> "resign prematurely"
+  Camping  -> "set camp"
 
 genericEndMessages :: [(Outcome, Text)]
 genericEndMessages =
