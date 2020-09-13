@@ -1672,22 +1672,11 @@ generateMenu cmdSemInCxtOfKM blurb kds gameInfo menuName = do
       (menuOvLines, mkyxs) = unzip $ zipWith generate [0..] rawLines
       kyxs = catMaybes mkyxs
       introLen = sum $ map (length . snd) blurb
-      zipAttrLines :: Int -> [AttrLine] -> (Overlay, Int)
-      zipAttrLines start als =
-        ( map (first $ K.PointUI rwidth) $ zip [start ..] als
-        , start + length als )
-      addOverlay :: (FontOverlayMap, Int) -> (DisplayFont, [AttrLine])
-                 -> (FontOverlayMap, Int)
-      addOverlay (!em, !start) (font, als) =
-        let (als2, start2) = zipAttrLines start als
-        in ( EM.insertWith (++) font als2 em
-           , start2 )
       start0 = max 0 (rheight - introLen
                       - if isSquareFont propFont then 1 else 2)
-      (ov, _) = foldl' addOverlay
-                       ( EM.singleton squareFont $ offsetOverlayX menuOvLines
-                       , start0 )
-                       blurb
+      shiftPointUI (K.PointUI x0 y0) = K.PointUI (x0 + rwidth) y0
+      ov0 = EM.map (map (first shiftPointUI)) $ attrLinesToFontMap start0 blurb
+      ov = EM.insertWith (++) squareFont (offsetOverlayX menuOvLines) ov0
   ekm <- displayChoiceScreen menuName ColorFull True
                              (menuToSlideshow (ov, kyxs)) [K.escKM]
   case ekm of

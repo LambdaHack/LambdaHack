@@ -3,8 +3,9 @@ module Game.LambdaHack.Client.UI.Slideshow
   ( DisplayFont, isSquareFont, isMonoFont, FontOverlayMap, FontSetup(..)
   , multiFontSetup, monoFontSetup, singleFontSetup, textSize
   , ButtonWidth(..), KYX, OKX, Slideshow(slideshow)
-  , emptySlideshow, unsnoc, toSlideshow, maxYofOverlay, menuToSlideshow
-  , wrapOKX, splitOverlay, splitOKX, highSlideshow
+  , emptySlideshow, unsnoc, toSlideshow, attrLinesToFontMap
+  , maxYofOverlay, menuToSlideshow, wrapOKX, splitOverlay, splitOKX
+  , highSlideshow
 #ifdef EXPOSE_INTERNAL
     -- * Internal operations
   , moreMsg, endMsg, keysOKX, showTable, showNearbyScores
@@ -136,6 +137,21 @@ toSlideshow FontSetup{..} okxs = Slideshow $ addFooters False okxsNotNull
     let (ovs, p, font) = appendToFontOverlayMap als (stringToAL moreMsg)
     in (ovs, kxs ++ [(Left [K.safeSpaceKM], (p, ButtonWidth font 8))])
        : addFooters True rest
+
+attrLinesToFontMap :: Int -> [(DisplayFont, [AttrLine])] -> FontOverlayMap
+attrLinesToFontMap start0 blurb =
+  let zipAttrLines :: Int -> [AttrLine] -> (Overlay, Int)
+      zipAttrLines start als =
+        ( map (first $ K.PointUI 0) $ zip [start ..] als
+        , start + length als )
+      addOverlay :: (FontOverlayMap, Int) -> (DisplayFont, [AttrLine])
+                 -> (FontOverlayMap, Int)
+      addOverlay (!em, !start) (font, als) =
+        let (als2, start2) = zipAttrLines start als
+        in ( EM.insertWith (++) font als2 em
+           , start2 )
+      (ov, _) = foldl' addOverlay (EM.empty, start0) blurb
+  in ov
 
 moreMsg :: String
 moreMsg = "--more--"
