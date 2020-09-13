@@ -1352,26 +1352,20 @@ helpHuman cmdSemInCxtOfKM = do
   let duplicateEOL '\n' = "\n\n"
       duplicateEOL c = T.singleton c
       sections =
-        [ ( Color.Brown
-          , "The story so far"
+        [ ( textFgToAS Color.Brown "The story so far:"
           , T.concatMap duplicateEOL (mdesc gameMode) )
-        , ( Color.cMeta
-          , "Rules of the game"
+        , ( textFgToAS Color.cMeta "Rules of the game:"
           , mrules gameMode )
-        , ( Color.BrCyan
-          , "Running commentary"
+        , ( textFgToAS Color.BrCyan "Running commentary:"
           , T.concatMap duplicateEOL (mreason gameMode) )
-        , ( Color.cGreed
-          , "Hints, not needed unless stuck"
+        , ( textFgToAS Color.cGreed "Hints, not needed unless stuck:"
           , T.concatMap duplicateEOL (mhint gameMode) )
         ]
-      renderSection :: (Color.Color, Text, Text)
-                    -> Maybe [(DisplayFont, AttrString)]
-      renderSection (color, header, desc) =
+      renderSection :: (AttrString, Text) -> Maybe [(DisplayFont, AttrString)]
+      renderSection (header, desc) =
         if T.null desc
         then Nothing
-        else Just [ (monoFont, textFgToAS color (header <> ":"))
-                  , (propFont, textToAS desc) ]
+        else Just [(monoFont, header), (propFont, textToAS desc)]
       blurb = map (second $ splitAttrString (rwidth - 2) (rwidth - 2)) $
         (propFont, textToAS
           ("\nYou are playing the '" <> mname gameMode <> "' scenario.\n\n"))
@@ -1385,14 +1379,13 @@ helpHuman cmdSemInCxtOfKM = do
       sectionsEndAS = concat (intersperse [(monoFont, textToAS "\n")]
                                           (mapMaybe renderSection sectionsEnd))
       sectionsEnd = map outcomeSection [minBound..maxBound]
-      outcomeSection :: Outcome -> (Color.Color, Text, Text)
+      outcomeSection :: Outcome -> (AttrString, Text)
       outcomeSection outcome =
         let t = fromMaybe "" $ lookup outcome $ mendMsg gameMode
             color | outcome `elem` deafeatOutcomes = Color.cVeryBadEvent
                   | outcome `elem` victoryOutcomes = Color.cVeryGoodEvent
                   | otherwise = Color.cNeutralEvent
-        in ( color
-           , renderOutcome outcome
+        in ( textFgToAS color $ renderOutcome outcome
            , if not (outcomeSeen outcome)
              then ""  -- a possible spoiler and lack of sense of progression
              else T.concatMap duplicateEOL t
@@ -1411,10 +1404,10 @@ helpHuman cmdSemInCxtOfKM = do
       renderOutcome :: Outcome -> Text
       renderOutcome outcome =
         "Game over message when" <+> nameOutcomePast outcome
-        <+> if | Just outcome /= lastOutcome -> ""
-               | outcome `elem` deafeatOutcomes -> "(last suffered ending)"
-               | outcome `elem` victoryOutcomes -> "(last achieved ending)"
-               | otherwise -> "(last seen ending)"
+        <> if | Just outcome /= lastOutcome -> ":"
+              | outcome `elem` deafeatOutcomes -> " (last suffered ending):"
+              | outcome `elem` victoryOutcomes -> " (last achieved ending):"
+              | otherwise -> " (last seen ending):"
       shiftPointUI x (K.PointUI x0 y0) = K.PointUI (x0 + x) y0
       modeH = ( "Press SPACE or PGDN to advance or ESC to see the map again."
               , ( if isSquareFont propFont
