@@ -1364,21 +1364,25 @@ helpHuman cmdSemInCxtOfKM = do
           , "Hints, not needed unless stuck"
           , T.concatMap duplicateEOL (mhint gameMode) )
         ]
-      renderSection :: (Color.Color, Text, Text) -> Maybe AttrString
+      renderSection :: (Color.Color, Text, Text)
+                    -> Maybe [(DisplayFont, AttrString)]
       renderSection (color, header, desc) =
         if T.null desc
         then Nothing
-        else Just $ textFgToAS color (header <> ":\n")
-                    <> textToAS desc
-      blurb = splitAttrString (rwidth - 2) (rwidth - 2) $
-        textToAS
-          ("\nYou are playing the '" <> mname gameMode <> "' scenario.\n\n")
-        <> intercalate (textToAS "\n\n") (mapMaybe renderSection sections)
-      blurbEnd = splitAttrString (rwidth - 2) (rwidth - 2) $
-        textToAS "\nScenario endings experienced so far:\n\n"
-        <> if null sectionsEndAS then textToAS "*none*" else sectionsEndAS
-      sectionsEndAS =
-        intercalate (textToAS "\n\n") (mapMaybe renderSection sectionsEnd)
+        else Just [ (monoFont, textFgToAS color (header <> ":"))
+                  , (propFont, textToAS desc) ]
+      blurb = map (second $ splitAttrString (rwidth - 2) (rwidth - 2)) $
+        (propFont, textToAS
+          ("\nYou are playing the '" <> mname gameMode <> "' scenario.\n\n"))
+        : concat (intersperse [(monoFont, textToAS "\n")]
+                              (mapMaybe renderSection sections))
+      blurbEnd = map (second $ splitAttrString (rwidth - 2) (rwidth - 2)) $
+        (propFont, textToAS "\nScenario endings experienced so far:\n\n")
+        : if null sectionsEndAS
+          then [(monoFont, textToAS "*none*")]
+          else sectionsEndAS
+      sectionsEndAS = concat (intersperse [(monoFont, textToAS "\n")]
+                                          (mapMaybe renderSection sectionsEnd))
       sectionsEnd = map outcomeSection [minBound..maxBound]
       outcomeSection :: Outcome -> (Color.Color, Text, Text)
       outcomeSection outcome =
@@ -1406,19 +1410,18 @@ helpHuman cmdSemInCxtOfKM = do
         <+> if | Just outcome /= lastOutcome -> ""
                | outcome `elem` victoryOutcomes -> "(last achieved ending)"
                | otherwise -> "(last suffered ending)"
-      spLen = textSize monoFont " "
+      shiftPointUI x (K.PointUI x0 y0) = K.PointUI (x0 + x) y0
       modeH = ( "Press SPACE or PGDN to advance or ESC to see the map again."
               , ( if isSquareFont propFont
-                  then EM.singleton squareFont
+                  then EM.singleton squareFont  -- single column, single font
                        $ offsetOverlayX
-                       $ map (\t -> (spLen, t)) $ blurb ++ blurbEnd
+                       $ map (\t -> (2, t))
+                       $ concatMap snd $ blurb ++ blurbEnd
                   else EM.unionWith (++)
-                         (EM.singleton propFont
-                          $ offsetOverlayX
-                          $ map (\t -> (81, t)) blurbEnd)
-                         (EM.singleton propFont
-                          $ offsetOverlayX
-                          $ map (\t -> (spLen, t)) blurb)
+                         (EM.map (map (first $ shiftPointUI 1))
+                          $ attrLinesToFontMap 0 blurb)
+                         (EM.map (map (first $ shiftPointUI $ rwidth + 1))
+                          $ attrLinesToFontMap 0 blurbEnd)
                 , [] ) )
       keyH = keyHelp ccui fontSetup
       splitHelp (t, okx) = splitOKX fontSetup True rwidth rheight rwidth
