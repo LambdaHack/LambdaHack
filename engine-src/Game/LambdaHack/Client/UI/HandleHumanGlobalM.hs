@@ -1354,13 +1354,13 @@ helpHuman cmdSemInCxtOfKM = do
         [ ( Color.Brown
           , "The story so far"
           , T.concatMap duplicateEOL (mdesc gameMode) )
-        , ( Color.BrCyan
+        , ( Color.cMeta
           , "Rules of the game"
           , mrules gameMode )
-        , ( Color.Cyan
+        , ( Color.BrCyan
           , "Running commentary"
           , T.concatMap duplicateEOL (mreason gameMode) )
-        , ( Color.BrBlue
+        , ( Color.cGreed
           , "Hints, not needed unless stuck"
           , T.concatMap duplicateEOL (mhint gameMode) )
         ]
@@ -1387,7 +1387,10 @@ helpHuman cmdSemInCxtOfKM = do
       outcomeSection :: Outcome -> (Color.Color, Text, Text)
       outcomeSection outcome =
         let t = fromMaybe "" $ lookup outcome $ mendMsg gameMode
-        in ( Color.Brown
+            color | outcome `elem` deafeatOutcomes = Color.cVeryBadEvent
+                  | outcome `elem` victoryOutcomes = Color.cVeryGoodEvent
+                  | otherwise = Color.cNeutralEvent
+        in ( color
            , renderOutcome outcome
            , if not (outcomeSeen outcome)
              then ""  -- a possible spoiler and lack of sense of progression
