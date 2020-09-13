@@ -33,7 +33,7 @@ validateSingle ScreenContent{rmainMenuLine, rintroScreen} =
   (let tsGt80 = filter ((> 80) . T.length) $ map T.pack [rmainMenuLine]
    in case tsGt80 of
       [] -> []
-      tGt80 : _ -> ["rmainMenuArt has a line with length over 80:" <> tGt80])
+      tGt80 : _ -> ["rmainMenuLine's length is over 80:" <> tGt80])
   ++ (let tsGt41 = filter ((> 41) . T.length) $ map T.pack rintroScreen
       in case tsGt41 of
          [] -> []
