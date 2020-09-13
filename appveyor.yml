@@ -24,7 +24,7 @@ cache:
   - C:\Users\appveyor\AppData\Roaming\ghc -> appveyor.yml
 
 install:
-  - SET PATH=LambdaHackTheGame;%APPDATA%\cabal\bin;C:\msys64\mingw64\bin;C:\msys64\usr\bin;C:\ProgramData\chocolatey\lib\ghc\tools\ghc-8.4.4\bin;C:\ProgramData\chocolatey\lib\cabal\tools;%PATH%
+  - SET PATH=LambdaHackTheGame;%APPDATA%\cabal\bin;C:\msys64\mingw64\bin;C:\msys64\usr\bin;C:\ProgramData\chocolatey\lib\ghc\tools\ghc-8.10.2\bin;C:\ProgramData\chocolatey\lib\ghc\tools\ghc-8.10.3\bin;C:\ProgramData\chocolatey\lib\ghc\tools\ghc-8.10.4\bin;C:\ProgramData\chocolatey\lib\ghc\tools\ghc-8.10.4\bin;C:\ProgramData\chocolatey\lib\ghc\tools\ghc-9.0.1\bin;C:\ProgramData\chocolatey\lib\ghc\tools\ghc-9.0.2\bin;C:\ProgramData\chocolatey\lib\ghc\tools\ghc-9.0.3\bin;C:\ProgramData\chocolatey\lib\ghc\tools\ghc-9.0.4\bin;C:\ProgramData\chocolatey\lib\cabal\tools;%PATH%
   - git clone -q --branch=master https://github.com/haskell-game/sdl2
   - IF "true"=="true" (
       choco install cabal
@@ -86,7 +86,7 @@ install:
       && cd ..
     )
 
-  - SET PATH=LambdaHackTheGame;%APPDATA%\cabal\bin;C:\msys64\mingw32\bin;C:\msys64\usr\bin;C:\ProgramData\chocolatey\lib\ghc\tools\ghc-8.4.4\bin;C:\ProgramData\chocolatey\lib\cabal\tools;%PATH%
+  - SET PATH=LambdaHackTheGame;%APPDATA%\cabal\bin;C:\msys64\mingw32\bin;C:\msys64\usr\bin;C:\ProgramData\chocolatey\lib\ghc\tools\ghc-8.6.5\bin;C:\ProgramData\chocolatey\lib\ghc\tools\ghc-8.6.6\bin;C:\ProgramData\chocolatey\lib\ghc\tools\ghc-8.6.7\bin;C:\ProgramData\chocolatey\lib\cabal\tools;%PATH%
 
   - IF "%build32%"=="true" (
       choco install --force --forcex86 ghc
