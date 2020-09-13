@@ -416,6 +416,7 @@ script:
   - "if [[ \"$(uname)\" != \"Darwin\" && $GTKVTY != \"noopt\" && $GTKVTY != \"asserts_noopt\" && $GTKVTY != \"vty_opt2_lint\" && $GTKVTY != \"curses_asserts_lint\" ]] ; then (make testCrawl-medium || (tail -n 2000 /tmp/teletypetest.log ; exit 77)); else if [[ \"$(uname)\" != \"Darwin\" && $GTKVTY != \"vty_opt2_lint\" && $GTKVTY != \"curses_asserts_lint\" ]] ; then (make testCrawl-medium-double); fi; fi"
   - "if [[ \"$(uname)\" != \"Darwin\" && $GTKVTY != \"noopt\" && $GTKVTY != \"asserts_noopt\" && $GTKVTY != \"vty_opt2_lint\" && $GTKVTY != \"curses_asserts_lint\" ]] ; then (make testCrawl-medium || (tail -n 2000 /tmp/teletypetest.log ; exit 77)); else if [[ \"$(uname)\" != \"Darwin\" && $GTKVTY != \"vty_opt2_lint\" && $GTKVTY != \"curses_asserts_lint\" ]] ; then (make testCrawl-medium-double); fi; fi"
   - "if [[ $GTKVTY != \"vty_opt2_lint\" && $GTKVTY != \"curses_asserts_lint\" ]] ; then (make testDefense-medium || (tail -n 2000 /tmp/teletypetest.log ; exit 77)); fi"
+  - "if [[ $GTKVTY == \"sdl\" ]] ; then (make testMany-sdlInit || (tail -n 2000 /tmp/teletypetest.log ; exit 77)); fi"
 
 # REGENDATA ("0.10.1",["cabal.project","--osx","8.6.5","--osx","8.8.4","--osx","8.10.2","--output",".travis2.yml"])
 # EOF
