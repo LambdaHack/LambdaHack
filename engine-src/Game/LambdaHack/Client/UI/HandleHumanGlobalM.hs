@@ -38,6 +38,7 @@ import Prelude ()
 
 import Game.LambdaHack.Core.Prelude
 
+import qualified Data.Char as Char
 import           Data.Either (isLeft)
 import qualified Data.EnumMap.Strict as EM
 import qualified Data.EnumSet as ES
@@ -1894,7 +1895,8 @@ gameRestartHuman = do
     -- This ignores all but the first word of game mode names picked
     -- via main menu and assumes the fist word of such game modes
     -- is present in their frequencies.
-    let nxtGameGroup = GroupName $ head $ T.words nxtGameName
+    let (mainName, _) = T.span (\c -> Char.isAlpha c || c == ' ') nxtGameName
+        nxtGameGroup = GroupName $ T.intercalate " " $ take 2 $ T.words mainName
     return $ Right $ ReqUIGameRestart nxtGameGroup snxtChal
   else do
     msg2 <- rndToActionUI $ oneOf
