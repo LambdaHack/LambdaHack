@@ -782,7 +782,7 @@ eitherHistory showAll = do
       placeholderLine = textFgToAS Color.BrBlack
         "Newest_messages_are_at_the_bottom._Press_END_to_get_there."
       placeholderCount =
-        histBoundRaw - (rheight - 4) * (histBoundRaw `div` (rheight - 4))
+        (- histBoundRaw `mod` (rheight - 4)) `mod` (rheight - 4)
       renderedHistory = replicate placeholderCount placeholderLine
                         ++ renderedHistoryRaw
       histBound = placeholderCount + histBoundRaw
