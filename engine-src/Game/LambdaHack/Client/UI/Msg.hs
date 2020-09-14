@@ -167,6 +167,8 @@ data MsgClassShowAndSave =
   | MsgRangedMightyUs
   | MsgRangedOthers  -- not ours or projectiles are hit
   | MsgRangedNormalUs
+  | MsgGoodMiscEvent
+  | MsgBadMiscEvent
   | MsgNeutralEvent
   | MsgSpecialEvent
   | MsgMeleeMightyWe
@@ -353,6 +355,8 @@ msgColor = \case
     MsgRangedMightyUs -> Color.cVeryBadEvent
     MsgRangedOthers -> Color.cBoring
     MsgRangedNormalUs -> Color.cBadEvent
+    MsgGoodMiscEvent -> Color.cGoodEvent
+    MsgBadMiscEvent -> Color.cBadEvent
     MsgNeutralEvent -> Color.cNeutralEvent
     MsgSpecialEvent -> Color.cRareNeutralEvent
     MsgMeleeMightyWe -> Color.cGoodEvent

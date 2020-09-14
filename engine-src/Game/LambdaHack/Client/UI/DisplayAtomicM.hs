@@ -521,7 +521,7 @@ displayRespUpdAtomicUI cmd = case cmd of
       , "Scarce black motes slowly settle on the ground."
       , "The ground in the immediate area is empty, as if just swiped."
       ]
-    msgLnAdd MsgMeleeComplexUs blurb  -- nice colour; being here risks melee
+    msgLnAdd MsgBadMiscEvent blurb  -- being here is a bad turn of events
     when (cwolf curChal && not loneMode) $
       msgAdd MsgActionWarning "Being a lone wolf, you begin without companions."
     when (lengthHistory uHistory1PerLine (shistory oldSess) > 1) $
@@ -1129,8 +1129,12 @@ quitFactionUI fid toSt manalytics = do
                 bUI <- getsSession $ getActorUI enemyAid
                 return $! makePhrase [MU.Capitalize (partActor bUI)] <> "?"
             let won = maybe False ((`elem` victoryOutcomes) . stOutcome) toSt
+                lost = maybe False ((`elem` deafeatOutcomes) . stOutcome) toSt
+                msgClass | won = MsgGoodMiscEvent
+                         | lost = MsgBadMiscEvent
+                         | otherwise = MsgNeutralEvent
                 (sp2, escPrompt) =
-                  if | not won -> ("", "Accept the unacceptable?")
+                  if | lost -> ("", "Accept the unacceptable?")
                      | smartUniqueEnemyCaptured ->
                        ( "\nOh, wait, who is this, towering behind your escaping crew?" <+> smartEnemySentence <+> "This changes everything. For everybody. Everywhere. Forever. Did you plan for this? Are you sure it was your idea?"
                        , "What happens now?" )
@@ -1138,7 +1142,8 @@ quitFactionUI fid toSt manalytics = do
                        ( "\nOh, wait, who is this, hunched among your escaping crew?" <+> smartEnemySentence <+> "Suddenly, this makes your crazy story credible. Suddenly, the door of knowledge opens again."
                        , "How will you play that move?" )
                      | otherwise -> ("", "Let's see what we've got here.")
-            msgAdd MsgPlotExposition $ sp1 <> sp2
+            msgAdd msgClass sp1
+            msgAdd MsgFactionIntel sp2
             void $ displaySpaceEsc ColorFull escPrompt
         case manalytics of
           Nothing -> return ()
@@ -1442,8 +1447,8 @@ displayRespSfxAtomicUI sfx = case sfx of
         isOurAlive = isOurCharacter && bhp b > 0
         isOurLeader = Just aid == mleader
         -- The message classes are close enough. It's melee or similar.
-        feelLookHPBad = feelLook MsgMeleeComplexUs MsgMeleeComplexWe
-        feelLookHPGood = feelLook MsgMeleeComplexWe MsgMeleeComplexUs
+        feelLookHPBad = feelLook MsgBadMiscEvent MsgGoodMiscEvent
+        feelLookHPGood = feelLook MsgGoodMiscEvent MsgBadMiscEvent
         feelLookCalm bigAdj projAdj = when (bhp b > 0) $
           feelLook MsgEffectMinor MsgEffectMinor bigAdj projAdj
         feelLook msgClassOur msgClassTheir bigAdj projAdj =
