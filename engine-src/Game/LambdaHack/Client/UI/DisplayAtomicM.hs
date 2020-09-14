@@ -1531,10 +1531,14 @@ displayRespSfxAtomicUI sfx = case sfx of
         IK.Escape{} | isOurCharacter -> do
           ours <- getsState $ fidActorNotProjGlobalAssocs side
           when (length ours > 1) $ do
-            let object = partActor bUI
-            msgAdd MsgFinalOutcome $
-              "The team joins" <+> makePhrase [object]
-              <> ", forms a perimeter, repacks its belongings and leaves triumphant."
+            (_, total) <- getsState $ calculateTotal side
+            if total == 0
+            then msgAdd MsgFactionIntel $
+                   "The team joins" <+> makePhrase [partActor bUI]
+                   <> ", forms a perimeter and leaves triumphant."
+            else msgAdd MsgItemCreation $
+                   "The team joins" <+> makePhrase [partActor bUI]
+                   <> ", forms a perimeter, repacks its belongings and leaves triumphant."
         IK.Escape{} -> return ()
         IK.Paralyze{} -> aidVerbMU MsgEffectMedium aid "be paralyzed"
         IK.ParalyzeInWater{} ->
