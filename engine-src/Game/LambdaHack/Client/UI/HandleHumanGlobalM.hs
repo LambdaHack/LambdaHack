@@ -1349,6 +1349,8 @@ helpHuman cmdSemInCxtOfKM = do
   gameModeId <- getsState sgameModeId
   gameMode <- getGameMode
   scoreDict <- getsState shigh
+  scampings <- getsClient scampings
+  srestarts <- getsClient srestarts
   let duplicateEOL '\n' = "\n\n"
       duplicateEOL c = T.singleton c
       sections =
@@ -1392,24 +1394,25 @@ helpHuman cmdSemInCxtOfKM = do
         [ (Restart, "There is no shame in noble defeat and there is honour in perseverance. Sometimes there are ways and places to turn rout into victory.")
         , (Camping, "Don't fear to take breaks. While you move, others move, even on distant floors, but while you stay still, the world stays still.")
         ]
-      highScoreRecords =
-        maybe [] HighScore.unTable $ EM.lookup gameModeId scoreDict
+      scoreRecords = maybe [] HighScore.unTable $ EM.lookup gameModeId scoreDict
       outcomeSeen :: Outcome -> Bool
-      outcomeSeen outcome =
-        outcome `elem` map (stOutcome . HighScore.getStatus) highScoreRecords
-      lastOutcome :: Maybe Outcome
-      lastOutcome = if null highScoreRecords
-                    then Nothing
-                    else Just $ stOutcome . HighScore.getStatus
-                              $ maximumBy (comparing HighScore.getDate)
-                                          highScoreRecords
+      outcomeSeen outcome = case outcome of
+        Camping -> gameModeId `ES.member` scampings
+        Restart -> gameModeId `ES.member` srestarts
+        _ -> outcome `elem` map (stOutcome . HighScore.getStatus) scoreRecords
+      -- Camping not taken into account.
+      lastOutcome :: Outcome
+      lastOutcome = if null scoreRecords
+                    then Restart  -- only if nothing else
+                    else stOutcome . HighScore.getStatus
+                         $ maximumBy (comparing HighScore.getDate) scoreRecords
       renderOutcome :: Outcome -> AttrString
       renderOutcome outcome =
         let color | outcome `elem` deafeatOutcomes = Color.cVeryBadEvent
                   | outcome `elem` victoryOutcomes = Color.cVeryGoodEvent
                   | otherwise = Color.cNeutralEvent
             lastRemark
-              | Just outcome /= lastOutcome = ":"
+              | outcome /= lastOutcome = ":"
               | outcome `elem` deafeatOutcomes = " (last suffered ending):"
               | outcome `elem` victoryOutcomes = " (last achieved ending):"
               | otherwise = " (last seen ending):"
