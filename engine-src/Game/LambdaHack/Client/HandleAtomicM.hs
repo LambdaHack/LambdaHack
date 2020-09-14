@@ -120,17 +120,21 @@ cmdAtomicSemCli oldState cmd = case cmd of
   UpdTrajectory{} -> return ()
   UpdQuitFaction fid _ toSt _ -> do
     side <- getsClient sside
-    when (side == fid && maybe False ((/= Camping) . stOutcome) toSt) $ do
-      let won = case toSt of
-            Just Status{stOutcome} | stOutcome `elem` victoryOutcomes -> True
-            _ -> False
-      when won $ do
-        gameModeId <- getsState sgameModeId
+    gameModeId <- getsState sgameModeId
+    when (side == fid) $ case toSt of
+      Just Status{stOutcome=Camping} ->
+        modifyClient $ \cli ->
+          cli {scampings = ES.insert gameModeId $ scampings cli}
+      Just Status{stOutcome=Restart} ->
+        modifyClient $ \cli ->
+          cli {srestarts = ES.insert gameModeId $ srestarts cli}
+      Just Status{stOutcome} | stOutcome `elem` victoryOutcomes -> do
         scurChal <- getsClient scurChal
         let sing = M.singleton scurChal 1
             f = M.unionWith (+)
             g = EM.insertWith f gameModeId sing
         modifyClient $ \cli -> cli {svictories = g $ svictories cli}
+      _ -> return ()
   UpdSpotStashFaction{} -> return ()
   UpdLoseStashFaction{} -> return ()
   UpdLeadFaction fid source target -> do
@@ -236,6 +240,8 @@ cmdAtomicSemCli oldState cmd = case cmd of
     fact <- getsState $ (EM.! side) . sfactionD
     snxtChal <- getsClient snxtChal
     svictories <- getsClient svictories
+    scampings <- getsClient scampings
+    srestarts <- getsClient srestarts
     stabs <- getsClient stabs
     let f !acc _p !i _a = i : acc
         modes = zip [0..] $ ofoldlGroup' comode CAMPAIGN_SCENARIO f []
@@ -260,6 +266,8 @@ cmdAtomicSemCli oldState cmd = case cmd of
                   , snxtScenario
                   , scondInMelee = EM.empty
                   , svictories
+                  , scampings
+                  , srestarts
                   , soptions
                   , stabs }
     salter <- getsState createSalter

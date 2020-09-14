@@ -376,5 +376,6 @@ showNearbyScores :: TimeZone -> Int -> HighScore.ScoreTable -> Int
 showNearbyScores tz pos h entries =
   if pos <= entries
   then [showTable tz pos h 1 entries]
-  else [showTable tz pos h 1 entries,
-        showTable tz pos h (max (entries + 1) (pos - entries `div` 2)) entries]
+  else [ showTable tz pos h 1 entries
+       , showTable tz pos h (max (entries + 1) (pos - entries `div` 2))
+                   entries ]

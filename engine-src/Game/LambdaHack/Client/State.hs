@@ -70,6 +70,8 @@ data StateClient = StateClient
       --   an unbenchmarked theory that a constant shape map is faster
   , svictories    :: EM.EnumMap (ContentId ModeKind) (M.Map Challenge Int)
                                     -- ^ won games at particular difficulty lvls
+  , scampings     :: ES.EnumSet (ContentId ModeKind)  -- ^ camped games
+  , srestarts     :: ES.EnumSet (ContentId ModeKind)  -- ^ restarted games
   , soptions      :: ClientOptions  -- ^ client options
   , stabs         :: (PA.PrimArray PointI, PA.PrimArray PointI)
       -- ^ Instead of a BFS queue (list) we use these two arrays,
@@ -145,6 +147,8 @@ emptyStateClient _sside =
     , smarkSuspect = 1
     , scondInMelee = EM.empty
     , svictories = EM.empty
+    , scampings = ES.empty
+    , srestarts = ES.empty
     , soptions = defClientOptions
     , stabs = (undefined, undefined)
     }
@@ -198,6 +202,8 @@ instance Binary StateClient where
     put smarkSuspect
     put scondInMelee
     put svictories
+    put scampings
+    put srestarts
     put soptions
 #ifdef WITH_EXPENSIVE_ASSERTIONS
     put sfper
@@ -217,6 +223,8 @@ instance Binary StateClient where
     smarkSuspect <- get
     scondInMelee <- get
     svictories <- get
+    scampings <- get
+    srestarts <- get
     soptions <- get
     let sbfsD = EM.empty
         sundo = ()
