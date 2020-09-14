@@ -1390,8 +1390,9 @@ helpHuman cmdSemInCxtOfKM = do
                $ fromMaybe "" $ lookup outcome
                $ mendMsg gameMode ++ endMsgDefault  -- left-biased
         )
+      -- These are not added to @mendMsg@, because they only fit here.
       endMsgDefault =
-        [ (Restart, "There is no shame in noble defeat and there is honour in perseverance. Sometimes there are ways and places to turn rout into victory.")
+        [ (Restart, "No shame there is in noble defeat and there is honour in perseverance. Sometimes there are ways and places to turn rout into victory.")
         , (Camping, "Don't fear to take breaks. While you move, others move, even on distant floors, but while you stay still, the world stays still.")
         ]
       scoreRecords = maybe [] HighScore.unTable $ EM.lookup gameModeId scoreDict

@@ -1079,15 +1079,14 @@ quitFactionUI fid toSt manalytics = do
           error $ "" `showFailure` (fid, toSt)
         Just Status{stOutcome} -> Just $ MU.Text $ nameOutcomeVerb stOutcome
           -- when multiplayer, for @Camping@: "order save and exit"
-        Nothing -> Nothing  -- server wipes out Camping for savefile
+        Nothing -> Nothing
       middlePart = case toSt of
         _ | fid /= side -> Nothing
         Just Status{stOutcome} -> lookup stOutcome $ mendMsg gameMode
         Nothing -> Nothing
-      partingPart = case toSt of
-        _ | fid /= side || allNframes == -1 -> Nothing
-        Just Status{stOutcome} -> lookup stOutcome genericEndMessages
-        Nothing -> Nothing
+      partingPart = if fid /= side || allNframes == -1
+                    then Nothing
+                    else endMessageOutcome . stOutcome <$> toSt
   case startingPart of
     Nothing -> return ()
     Just sp ->

@@ -7,7 +7,7 @@ module Game.LambdaHack.Content.ModeKind
   , HiCondPoly, HiSummand, HiPolynomial, HiIndeterminant(..)
   , Player(..), LeaderMode(..), AutoLeader(..)
   , victoryOutcomes, deafeatOutcomes, nameOutcomePast, nameOutcomeVerb
-  , genericEndMessages, screensave
+  , endMessageOutcome, screensave
 #ifdef EXPOSE_INTERNAL
     -- * Internal operations
   , validateSingle, validateAll
@@ -38,7 +38,7 @@ data ModeKind = ModeKind
   , mroster :: Roster          -- ^ players taking part in the game
   , mcaves  :: Caves           -- ^ arena of the game
   , mendMsg :: [(Outcome, Text)]
-      -- ^ messages displayed at particular game ends; if message empty,
+      -- ^ messages displayed at each particular game ends; if message empty,
       --   the screen is skipped
   , mrules  :: Text            -- ^ rules note
   , mdesc   :: Text            -- ^ description
@@ -173,14 +173,14 @@ nameOutcomeVerb = \case
   Restart  -> "resign prematurely"
   Camping  -> "set camp"
 
-genericEndMessages :: [(Outcome, Text)]
-genericEndMessages =
-  [ (Killed, "Let's hope a rescue party arrives in time!" )
-  , (Defeated, "Let's hope your new overlords let you live." )
-  , (Camping, "See you soon, stronger and braver!" )
-  , (Conquer, "Can it be done in a better style, though?" )
-  , (Escape, "Can it be done more efficiently, though?" )
-  , (Restart, "This time for real." ) ]
+endMessageOutcome :: Outcome -> Text
+endMessageOutcome = \case
+  Escape   -> "Can it be done more efficiently, though?"
+  Conquer  -> "Can it be done in a better style, though?"
+  Defeated -> "Let's hope your new overlords let you live."
+  Killed   -> "Let's hope a rescue party arrives in time!"
+  Restart  -> "This time for real."
+  Camping  -> "See you soon, stronger and braver!"
 
 screensave :: AutoLeader -> ModeKind -> ModeKind
 screensave auto mk =
