@@ -340,6 +340,7 @@ library
                       hsini      >= 0.2,
                       keys       >= 3,
                       miniutter  >= 0.5.0.0,
+                      open-browser >= 0.2,
                       optparse-applicative >= 0.13,
                       pretty-show >= 1.6,
                       primitive  >= 0.6.1.0,
