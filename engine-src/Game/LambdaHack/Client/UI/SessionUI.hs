@@ -156,7 +156,7 @@ emptySessionUI sUIOptions =
     , swasAutomated = False
     , smarkVision = False
     , smarkSmell = True
-    , smenuIxMap = M.singleton "main" (2 - 9)  -- subtracting @initIx@
+    , smenuIxMap = M.empty
     , sdisplayNeeded = False
     , sturnDisplayed = False
     , sreportNull = True
@@ -224,7 +224,7 @@ instance Binary SessionUI where
         slastLost = ES.empty
         swaitTimes = 0
         swasAutomated = False
-        smenuIxMap = M.singleton "main" (2 - 9)  -- subtracting @initIx@
+        smenuIxMap = M.empty
         sdisplayNeeded = False  -- displayed regardless
         sturnDisplayed = False
         sreportNull = True

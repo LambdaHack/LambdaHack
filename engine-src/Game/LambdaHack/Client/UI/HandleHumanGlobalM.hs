@@ -1694,6 +1694,9 @@ generateMenu cmdSemInCxtOfKM blurb kds gameInfo menuName = do
       shiftPointUI (K.PointUI x0 y0) = K.PointUI (x0 + rwidth) y0
       ov0 = EM.map (map (first shiftPointUI)) $ attrLinesToFontMap start0 blurb
       ov = EM.insertWith (++) squareFont (offsetOverlayX menuOvLines) ov0
+  menuIxMap <- getsSession smenuIxMap
+  unless (menuName `M.member` menuIxMap) $
+    modifySession $ \sess -> sess {smenuIxMap = M.insert menuName 1 menuIxMap}
   ekm <- displayChoiceScreen menuName ColorFull True
                              (menuToSlideshow (ov, kyxs)) [K.escKM]
   case ekm of
