@@ -21,7 +21,7 @@ data ScreenContent = ScreenContent
   { rwidth        :: X         -- ^ screen width
   , rheight       :: Y         -- ^ screen height
   , rwrap         :: X         -- ^ wrap messages after this number of columns
-  , rmainMenuLine :: String    -- ^ an extra blurb line for the main menu
+  , rwebAddress   :: String    -- ^ an extra blurb line for the main menu
   , rintroScreen  :: [String]  -- ^ the intro screen (first help screen) text
   , rapplyVerbMap :: EM.EnumMap Char T.Text
                                  -- ^ verbs to use for apply actions
@@ -29,11 +29,11 @@ data ScreenContent = ScreenContent
 
 -- | Catch invalid rule kind definitions.
 validateSingle :: ScreenContent -> [Text]
-validateSingle ScreenContent{rmainMenuLine, rintroScreen} =
-  (let tsGt80 = filter ((> 80) . T.length) $ map T.pack [rmainMenuLine]
+validateSingle ScreenContent{rwebAddress, rintroScreen} =
+  (let tsGt80 = filter ((> 80) . T.length) $ map T.pack [rwebAddress]
    in case tsGt80 of
       [] -> []
-      tGt80 : _ -> ["rmainMenuLine's length is over 80:" <> tGt80])
+      tGt80 : _ -> ["rwebAddress's length is over 80:" <> tGt80])
   ++ (let tsGt41 = filter ((> 41) . T.length) $ map T.pack rintroScreen
       in case tsGt41 of
          [] -> []

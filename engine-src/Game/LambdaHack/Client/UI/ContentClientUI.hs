@@ -23,7 +23,7 @@ emptyCCUI = CCUI
   , coscreen = ScreenContent { rwidth = 0
                              , rheight = 0
                              , rwrap = 0
-                             , rmainMenuLine = ""
+                             , rwebAddress = ""
                              , rintroScreen = []
                              , rapplyVerbMap = EM.empty
                              }
