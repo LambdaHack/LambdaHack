@@ -17,7 +17,7 @@ module Game.LambdaHack.Client.UI.MonadClientUI
   , getFontSetup, scoreToSlideshow, defaultHistory
   , tellAllClipPS, tellGameClipPS, elapsedSessionTimeGT
   , resetSessionStart, resetGameStart, partActorLeader, partPronounLeader
-  , tryRestore, leaderSkillsClientUI, rndToActionUI
+  , tryRestore, leaderSkillsClientUI, rndToActionUI, tryOpenBrowser
 #ifdef EXPOSE_INTERNAL
     -- * Internal operations
   , connFrontend, displayFrame
@@ -40,6 +40,7 @@ import qualified Data.Vector.Unboxed as U
 import qualified NLP.Miniutter.English as MU
 import           System.FilePath
 import           System.IO (hFlush, stdout)
+import           Web.Browser (openBrowser)
 
 import           Game.LambdaHack.Client.Bfs
 import           Game.LambdaHack.Client.CommonM
@@ -471,3 +472,6 @@ rndToActionUI r = do
   let (a, gen2) = St.runState r gen1
   modifySession $ \sess -> sess {srandomUI = gen2}
   return a
+
+tryOpenBrowser :: MonadClientUI m => String -> m Bool
+tryOpenBrowser address = liftIO $ openBrowser address

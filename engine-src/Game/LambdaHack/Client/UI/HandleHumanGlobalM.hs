@@ -64,6 +64,7 @@ import           Game.LambdaHack.Client.UI.HandleHumanLocalM
 import           Game.LambdaHack.Client.UI.HumanCmd
 import           Game.LambdaHack.Client.UI.InventoryM
 import           Game.LambdaHack.Client.UI.ItemDescription
+import           Game.LambdaHack.Client.UI.ItemSlot (SlotChar (SlotChar))
 import qualified Game.LambdaHack.Client.UI.Key as K
 import           Game.LambdaHack.Client.UI.KeyBindings
 import           Game.LambdaHack.Client.UI.MonadClientUI
@@ -1660,7 +1661,7 @@ generateMenu :: MonadClientUI m
              -> m (Either MError ReqUI)
 generateMenu cmdSemInCxtOfKM blurb kds gameInfo menuName = do
   COps{corule} <- getsState scops
-  CCUI{coscreen=ScreenContent{rwidth, rheight, rmainMenuLine}} <-
+  CCUI{coscreen=ScreenContent{rwidth, rheight, rwebAddress}} <-
     getsSession sccui
   FontSetup{..} <- getFontSetup
   let bindings =  -- key bindings to display
@@ -1676,14 +1677,17 @@ generateMenu cmdSemInCxtOfKM blurb kds gameInfo menuName = do
                                    , ButtonWidth squareFont lenB ))
             myxx = yxx <$> mkey
         in ((2, stringToAL binding), myxx)
-      titleLine = rtitle corule
-                  ++ " " ++ showVersion (rexeVersion corule)
+      titleLine = rtitle corule ++ " "
+                  ++ showVersion (rexeVersion corule) ++ " "
       rawLines = zip (repeat Nothing)
-                     (["", titleLine ++ " " ++ rmainMenuLine, ""]
+                     (["", titleLine ++ "[" ++ rwebAddress ++ "]", ""]
                       ++ gameInfo)
                  ++ bindings
       (menuOvLines, mkyxs) = unzip $ zipWith generate [0..] rawLines
-      kyxs = catMaybes mkyxs
+      browserKey = ( Right $ SlotChar 1042 'a'
+                   , ( K.PointUI (2 + 2 * length titleLine) 1
+                     , ButtonWidth squareFont (2 + length rwebAddress) ) )
+      kyxs = browserKey : catMaybes mkyxs
       introLen = sum $ map (length . snd) blurb
       start0 = max 0 (rheight - introLen
                       - if isSquareFont propFont then 1 else 2)
@@ -1696,6 +1700,11 @@ generateMenu cmdSemInCxtOfKM blurb kds gameInfo menuName = do
     Left km -> case km `lookup` kds of
       Just (_desc, cmd) -> cmdSemInCxtOfKM km cmd
       Nothing -> weaveJust <$> failWith "never mind"
+    Right (SlotChar 1042 'a') -> do
+      success <- tryOpenBrowser rwebAddress
+      if success
+      then generateMenu cmdSemInCxtOfKM blurb kds gameInfo menuName
+      else weaveJust <$> failWith "failed to open web browser"
     Right _slot -> error $ "" `showFailure` ekm
 
 -- | Display the main menu.
