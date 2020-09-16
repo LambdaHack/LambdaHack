@@ -412,14 +412,14 @@ effectSem effApplyFlags0@EffApplyFlags{..}
   sb <- getsState $ getActorBody source
   -- @execSfx@ usually comes last in effect semantics, but not always
   -- and we are likely to introduce more variety.
-  let execSfx = execSfxAtomic $ SfxEffect (bfid sb) target effect 0
-      execSfxSource = execSfxAtomic $ SfxEffect (bfid sb) source effect 0
+  let execSfx = execSfxAtomic $ SfxEffect (bfid sb) target iid effect 0
+      execSfxSource = execSfxAtomic $ SfxEffect (bfid sb) source iid effect 0
   case effect of
-    IK.Burn nDm -> effectBurn nDm source target
+    IK.Burn nDm -> effectBurn nDm source target iid
     IK.Explode t -> effectExplode execSfx t source target
-    IK.RefillHP p -> effectRefillHP p source target
+    IK.RefillHP p -> effectRefillHP p source target iid
     IK.RefillCalm p -> effectRefillCalm execSfx p source target
-    IK.Dominate -> effectDominate source target
+    IK.Dominate -> effectDominate source target iid
     IK.Impress -> effectImpress recursiveCall execSfx source target
     IK.PutToSleep -> effectPutToSleep execSfx target
     IK.Yell -> effectYell execSfx target
@@ -468,8 +468,8 @@ effectSem effApplyFlags0@EffApplyFlags{..}
 
 -- Damage from fire. Not affected by armor.
 effectBurn :: MonadServerAtomic m
-           => Dice.Dice -> ActorId -> ActorId -> m UseResult
-effectBurn nDm source target = do
+           => Dice.Dice -> ActorId -> ActorId -> ItemId -> m UseResult
+effectBurn nDm source target iid = do
   tb <- getsState $ getActorBody target
   totalDepth <- getsState stotalDepth
   Level{ldepth} <- getLevel (blid tb)
@@ -479,7 +479,7 @@ effectBurn nDm source target = do
   sb <- getsState $ getActorBody source
   -- Display the effect more accurately.
   let reportedEffect = IK.Burn $ Dice.intToDice n
-  execSfxAtomic $ SfxEffect (bfid sb) target reportedEffect deltaHP
+  execSfxAtomic $ SfxEffect (bfid sb) target iid reportedEffect deltaHP
   refillHP source target deltaHP
   return UseUp
 
@@ -572,8 +572,8 @@ effectExplode execSfx cgroup source target = do
 
 -- Unaffected by armor.
 effectRefillHP :: MonadServerAtomic m
-               => Int -> ActorId -> ActorId -> m UseResult
-effectRefillHP power0 source target = do
+               => Int -> ActorId -> ActorId -> ItemId -> m UseResult
+effectRefillHP power0 source target iid = do
   sb <- getsState $ getActorBody source
   tb <- getsState $ getActorBody target
   curChalSer <- getsServer $ scurChalSer . soptions
@@ -586,7 +586,7 @@ effectRefillHP power0 source target = do
        return UseId
      | otherwise -> do
        let reportedEffect = IK.RefillHP power
-       execSfxAtomic $ SfxEffect (bfid sb) target reportedEffect deltaHP
+       execSfxAtomic $ SfxEffect (bfid sb) target iid reportedEffect deltaHP
        refillHP source target deltaHP
        return UseUp
 
@@ -617,8 +617,9 @@ effectRefillCalm execSfx power0 source target = do
 
 -- The is another way to trigger domination (the normal way is by zeroed Calm).
 -- Calm is here irrelevant. The other conditions are the same.
-effectDominate :: MonadServerAtomic m => ActorId -> ActorId -> m UseResult
-effectDominate source target = do
+effectDominate :: MonadServerAtomic m
+               => ActorId -> ActorId -> ItemId -> m UseResult
+effectDominate source target iid = do
   sb <- getsState $ getActorBody source
   tb <- getsState $ getActorBody target
   if | bproj tb -> return UseDud
@@ -635,7 +636,7 @@ effectDominate source target = do
                     || hiImpressionK >= 10)
                      -- to tame/hack animal/robot, impress them a lot first
        if permitted then do
-         b <- dominateFidSfx source target (bfid sb)
+         b <- dominateFidSfx source target iid (bfid sb)
          return $! if b then UseUp else UseDud
        else do
          execSfxAtomic $ SfxMsgFid (bfid sb) $ SfxUnimpressed target
@@ -661,8 +662,8 @@ highestImpression tb = do
                 $ return $ Just (fid, fst $ snd maxImpression)
 
 dominateFidSfx :: MonadServerAtomic m
-               => ActorId ->  ActorId -> FactionId -> m Bool
-dominateFidSfx source target fid = do
+               => ActorId ->  ActorId -> ItemId -> FactionId -> m Bool
+dominateFidSfx source target iid fid = do
   tb <- getsState $ getActorBody target
   let !_A = assert (not $ bproj tb) ()
   -- Actors that don't move freely can't be dominated, for otherwise,
@@ -673,7 +674,7 @@ dominateFidSfx source target fid = do
   -- A possible interesting exploit, but much help from content would be needed
   -- to make it practical.
   if isNothing (btrajectory tb) && canTra && bhp tb > 0 then do
-    let execSfx = execSfxAtomic $ SfxEffect fid target IK.Dominate 0
+    let execSfx = execSfxAtomic $ SfxEffect fid target iid IK.Dominate 0
     execSfx  -- if actor ours, possibly the last occasion to see him
     dominateFid fid source target
     -- If domination resulted in game over, the message won't be seen
@@ -899,7 +900,7 @@ effectSummon grp nDm iid source target periodic = do
              when (isNothing mleader) $ setFreshLeader (bfid b) aid
              return True
        if or bs then do
-         execSfxAtomic $ SfxEffect (bfid sb) source effect 0
+         execSfxAtomic $ SfxEffect (bfid sb) source iid effect 0
          return UseUp
        else do
          -- We don't display detailed warnings when @addAnyActor@ fails,

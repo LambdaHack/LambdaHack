@@ -220,10 +220,10 @@ hearSfxAtomic cmd =
       return $! if IA.checkFlag Ability.Blast arItem
                 then Nothing
                 else Just (HearStrike itemKindId, False, bpos b)
-    SfxEffect _ aid (IK.Summon grp p) _ -> do
+    SfxEffect _ aid _ (IK.Summon grp p) _ -> do
       b <- getsState $ getActorBody aid
       return $ Just (HearSummon (bproj b) grp p, False, bpos b)
-    SfxEffect _ aid (IK.VerbMsg verb) _ -> do
+    SfxEffect _ aid _ (IK.VerbMsg verb) _ -> do
       b <- getsState $ getActorBody aid
       discoAspect <- getsState sdiscoAspect
       let arTrunk = discoAspect EM.! btrunk b

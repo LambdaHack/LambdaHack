@@ -347,7 +347,7 @@ manageCalmAndDomination aid b = do
                -- animals/robots/human drones never Calm-dominated
              || hiImpressionK >= 10
                -- unless very high impression, e.g., in a dominated hero
-          then dominateFidSfx aid aid hiImpressionFid
+          then dominateFidSfx aid aid (btrunk b) hiImpressionFid
           else return False
   unless performedDomination $ do
     newCalmDelta <- getsState $ regenCalmDelta aid b
@@ -571,7 +571,7 @@ advanceTrajectory aid b1 = do
                else when (bhp b2 > oneM) $ do
                  execUpdAtomic $ UpdRefillHP aid minusM
                  let effect = IK.RefillHP (-2)  -- -2 is a lie to ensure display
-                 execSfxAtomic $ SfxEffect (bfid b2) aid effect (-1)
+                 execSfxAtomic $ SfxEffect (bfid b2) aid (btrunk b2) effect (-1)
     _ -> error $ "Nothing or empty trajectory" `showFailure` (aid, b1)
 
 handleActors :: (MonadServerAtomic m, MonadServerComm m)

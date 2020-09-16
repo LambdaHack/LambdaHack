@@ -1437,7 +1437,7 @@ displayRespSfxAtomicUI sfx = case sfx of
     msgAdd MsgNeutralEvent msg
   SfxShun aid _ _ _ ->
     aidVerbMU MsgActionMajor aid "shun it"
-  SfxEffect fidSource aid effect hpDelta -> do
+  SfxEffect fidSource aid iid effect hpDelta -> do
     b <- getsState $ getActorBody aid
     bUI <- getsSession $ getActorUI aid
     side <- getsClient sside

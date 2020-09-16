@@ -158,7 +158,7 @@ data SfxAtomic =
   | SfxCheck ActorId ItemId
   | SfxTrigger ActorId LevelId Point (ContentId TileKind)
   | SfxShun ActorId LevelId Point (ContentId TileKind)
-  | SfxEffect FactionId ActorId IK.Effect Int64
+  | SfxEffect FactionId ActorId ItemId IK.Effect Int64
   | SfxMsgFid FactionId SfxMsg
   | SfxRestart
   | SfxCollideTile ActorId Point
