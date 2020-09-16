@@ -1461,157 +1461,157 @@ displayRespSfxAtomicUI sfx = case sfx of
                             | otherwise -> msgClassTheir
           in aidVerbMU msgClass aid $ MU.Text $ verb <+> adjective
     case effect of
-        IK.Burn{} -> do
-          feelLookHPBad "burned" "scorched"
-          let ps = (bpos b, bpos b)
-          animate (blid b) $ twirlSplash ps Color.BrRed Color.Brown
-        IK.Explode{} -> return ()  -- lots of visual feedback
-        IK.RefillHP p | p == 1 -> return ()  -- no spam from regeneration
-        IK.RefillHP p | p == -1 -> return ()  -- no spam from poison
-        IK.RefillHP{} | hpDelta > 0 -> do
-          feelLookHPGood "healthier" "mended"
-          let ps = (bpos b, bpos b)
-          animate (blid b) $ twirlSplash ps Color.BrGreen Color.Green
-        IK.RefillHP{} -> do
-          feelLookHPBad "wounded" "broken"
-          let ps = (bpos b, bpos b)
-          animate (blid b) $ twirlSplash ps Color.BrRed Color.Red
-        IK.RefillCalm{} | bproj b -> return ()
-        IK.RefillCalm p | p == 1 -> return ()  -- no spam from regen items
-        IK.RefillCalm p | p > 0 -> feelLookCalm "calmer" "stabilized"
-        IK.RefillCalm _ -> feelLookCalm "agitated" "wobbly"
-        IK.Dominate -> do
-          -- For subsequent messages use the proper name, never "you".
-          let subject = partActor bUI
-          if fid /= fidSource then do
-            -- Before domination, possibly not seen if actor (yet) not ours.
-            if | bcalm b == 0 ->  -- sometimes only a coincidence, but nm
-                 aidVerbMU MsgEffectMinor aid
-                 $ MU.Text "yield, under extreme pressure"
-               | isOurAlive ->
-                 aidVerbMU MsgEffectMinor aid
-                 $ MU.Text "black out, dominated by foes"
-               | otherwise ->
-                 aidVerbMU MsgEffectMinor aid
-                 $ MU.Text "decide abruptly to switch allegiance"
-            fidNameRaw <- getsState $ gname . (EM.! fid) . sfactionD
-            -- Avoid "controlled by Controlled foo".
-            let fidName = T.unwords $ tail $ T.words fidNameRaw
-                verb = "be no longer controlled by"
-            msgLnAdd MsgEffectMajor $ makeSentence
-              [MU.SubjectVerbSg subject verb, MU.Text fidName]
-            when isOurAlive $ displayMoreKeep ColorFull ""  -- Ln makes it short
-          else do
-            -- After domination, possibly not seen, if actor (already) not ours.
-            fidSourceNameRaw <- getsState $ gname . (EM.! fidSource) . sfactionD
-            -- Avoid "Controlled control".
-            let fidSourceName = T.unwords $ tail $ T.words fidSourceNameRaw
-                verb = "be now under"
-            msgAdd MsgEffectMajor $ makeSentence
-              [MU.SubjectVerbSg subject verb, MU.Text fidSourceName, "control"]
-        IK.Impress -> aidVerbMU MsgEffectMinor aid "be awestruck"
-        IK.PutToSleep -> aidVerbMU MsgEffectMajor aid "be put to sleep"
-        IK.Yell -> aidVerbMU MsgMiscellanous aid "start"
-        IK.Summon grp p -> do
-          let verb = if bproj b then "lure" else "summon"
-              object = (if p == 1  -- works, because exact number sent, not dice
-                        then MU.AW
-                        else MU.Ws) $ MU.Text $ fromGroupName grp
-          aidVerbMU MsgEffectMajor aid $ MU.Phrase [verb, object]
-        IK.Ascend up -> do
-          COps{cocave} <- getsState scops
-          aidVerbMU MsgEffectMajor aid $ MU.Text $
-            "find a way" <+> if up then "upstairs" else "downstairs"
-          when isOurLeader $ do
-            destinations <- getsState $ whereTo (blid b) (bpos b) up
-                                        . sdungeon
-            case destinations of
-              (lid, _) : _ -> do  -- only works until different levels possible
-                lvl <- getLevel lid
-                let desc = cdesc $ okind cocave $ lkind lvl
-                unless (T.null desc) $
-                  msgAdd MsgBackdropInfo $ desc <> "\n"
-              [] -> return ()  -- spell fizzles; normally should not be sent
-        IK.Escape{} | isOurCharacter -> do
-          ours <- getsState $ fidActorNotProjGlobalAssocs side
-          when (length ours > 1) $ do
-            (_, total) <- getsState $ calculateTotal side
-            if total == 0
-            then msgAdd MsgFactionIntel $
-                   "The team joins" <+> makePhrase [partActor bUI]
-                   <> ", forms a perimeter and leaves triumphant."
-            else msgAdd MsgItemCreation $
-                   "The team joins" <+> makePhrase [partActor bUI]
-                   <> ", forms a perimeter, repacks its belongings and leaves triumphant."
-        IK.Escape{} -> return ()
-        IK.Paralyze{} -> aidVerbMU MsgEffectMedium aid "be paralyzed"
-        IK.ParalyzeInWater{} ->
-          aidVerbMU MsgEffectMinor aid "move with difficulty"
-        IK.InsertMove d ->
-          if Dice.supDice d >= 10
-          then aidVerbMU MsgEffectMedium aid "act with extreme speed"
-          else aidVerbMU MsgEffectMinor aid "move swiftly"
-        IK.Teleport t | Dice.supDice t <= 9 ->
-          aidVerbMU MsgEffectMinor aid "blink"
-        IK.Teleport{} -> aidVerbMU MsgEffectMedium aid "teleport"
-        IK.CreateItem{} -> return ()
-        IK.DestroyItem{} -> return ()
-        IK.ConsumeItems{} -> return ()
-        IK.DropItem _ _ COrgan _ -> return ()
-        IK.DropItem{} -> aidVerbMU MsgEffectMedium aid "be stripped"
-        IK.Recharge{} -> aidVerbMU MsgEffectMedium aid "heat up"
-        IK.Discharge{} -> aidVerbMU MsgEffectMedium aid "cool down"
-        IK.PolyItem -> do
-          subject <- partActorLeader aid
-          let ppstore = MU.Text $ ppCStoreIn CGround
-          msgAdd MsgEffectMedium $ makeSentence
-            [ MU.SubjectVerbSg subject "repurpose", "what lies", ppstore
-            , "to a common item of the current level" ]
-        IK.RerollItem -> do
-          subject <- partActorLeader aid
-          let ppstore = MU.Text $ ppCStoreIn CGround
-          msgAdd MsgEffectMedium $ makeSentence
-            [ MU.SubjectVerbSg subject "reshape", "what lies", ppstore
-            , "striving for the highest possible standards" ]
-        IK.DupItem -> do
-          subject <- partActorLeader aid
-          let ppstore = MU.Text $ ppCStoreIn CGround
-          msgAdd MsgEffectMedium $ makeSentence
-            [MU.SubjectVerbSg subject "multiply", "what lies", ppstore]
-        IK.Identify -> do
-          subject <- partActorLeader aid
-          pronoun <- partPronounLeader aid
-          msgAdd MsgEffectMinor $ makeSentence
-            [ MU.SubjectVerbSg subject "look at"
-            , MU.WownW pronoun $ MU.Text "inventory"
-            , "intensely" ]
-        IK.Detect d _ -> do
-          subject <- partActorLeader aid
-          let verb = MU.Text $ detectToVerb d
-              object = MU.Ws $ MU.Text $ detectToObject d
-          msgAdd MsgEffectMinor $
-            makeSentence [MU.SubjectVerbSg subject verb, object]
-          -- Don't make it modal if all info remains after no longer seen.
-          unless (d `elem` [IK.DetectHidden, IK.DetectExit]) $
-            displayMore ColorFull ""  -- the sentence short
-        IK.SendFlying{} -> aidVerbMU MsgEffectMedium aid "be sent flying"
-        IK.PushActor{} -> aidVerbMU MsgEffectMedium aid "be pushed"
-        IK.PullActor{} -> aidVerbMU MsgEffectMedium aid "be pulled"
-        IK.ApplyPerfume ->
-          msgAdd MsgEffectMinor
-                 "The fragrance quells all scents in the vicinity."
-        IK.OneOf{} -> return ()
-        IK.OnSmash{} -> error $ "" `showFailure` sfx
-        IK.OnCombine{} -> error $ "" `showFailure` sfx
-        IK.OnUser{} -> error $ "" `showFailure` sfx
-        IK.AndEffect{} -> error $ "" `showFailure` sfx
-        IK.OrEffect{} -> error $ "" `showFailure` sfx
-        IK.SeqEffect{} -> error $ "" `showFailure` sfx
-        IK.VerbNoLonger t -> do
-          let msgClass = if bfid b == side then MsgStatusStopUs else MsgStatusStopThem
-          aidVerbMU msgClass aid $ MU.Text t
-        IK.VerbMsg t -> aidVerbMU MsgEffectMinor aid $ MU.Text t
-        IK.VerbMsgFail t -> aidVerbMU MsgActionWarning aid $ MU.Text t
+      IK.Burn{} -> do
+        feelLookHPBad "burned" "scorched"
+        let ps = (bpos b, bpos b)
+        animate (blid b) $ twirlSplash ps Color.BrRed Color.Brown
+      IK.Explode{} -> return ()  -- lots of visual feedback
+      IK.RefillHP p | p == 1 -> return ()  -- no spam from regeneration
+      IK.RefillHP p | p == -1 -> return ()  -- no spam from poison
+      IK.RefillHP{} | hpDelta > 0 -> do
+        feelLookHPGood "healthier" "mended"
+        let ps = (bpos b, bpos b)
+        animate (blid b) $ twirlSplash ps Color.BrGreen Color.Green
+      IK.RefillHP{} -> do
+        feelLookHPBad "wounded" "broken"
+        let ps = (bpos b, bpos b)
+        animate (blid b) $ twirlSplash ps Color.BrRed Color.Red
+      IK.RefillCalm{} | bproj b -> return ()
+      IK.RefillCalm p | p == 1 -> return ()  -- no spam from regen items
+      IK.RefillCalm p | p > 0 -> feelLookCalm "calmer" "stabilized"
+      IK.RefillCalm _ -> feelLookCalm "agitated" "wobbly"
+      IK.Dominate -> do
+        -- For subsequent messages use the proper name, never "you".
+        let subject = partActor bUI
+        if fid /= fidSource then do
+          -- Before domination, possibly not seen if actor (yet) not ours.
+          if | bcalm b == 0 ->  -- sometimes only a coincidence, but nm
+               aidVerbMU MsgEffectMinor aid
+               $ MU.Text "yield, under extreme pressure"
+             | isOurAlive ->
+               aidVerbMU MsgEffectMinor aid
+               $ MU.Text "black out, dominated by foes"
+             | otherwise ->
+               aidVerbMU MsgEffectMinor aid
+               $ MU.Text "decide abruptly to switch allegiance"
+          fidNameRaw <- getsState $ gname . (EM.! fid) . sfactionD
+          -- Avoid "controlled by Controlled foo".
+          let fidName = T.unwords $ tail $ T.words fidNameRaw
+              verb = "be no longer controlled by"
+          msgLnAdd MsgEffectMajor $ makeSentence
+            [MU.SubjectVerbSg subject verb, MU.Text fidName]
+          when isOurAlive $ displayMoreKeep ColorFull ""  -- Ln makes it short
+        else do
+          -- After domination, possibly not seen, if actor (already) not ours.
+          fidSourceNameRaw <- getsState $ gname . (EM.! fidSource) . sfactionD
+          -- Avoid "Controlled control".
+          let fidSourceName = T.unwords $ tail $ T.words fidSourceNameRaw
+              verb = "be now under"
+          msgAdd MsgEffectMajor $ makeSentence
+            [MU.SubjectVerbSg subject verb, MU.Text fidSourceName, "control"]
+      IK.Impress -> aidVerbMU MsgEffectMinor aid "be awestruck"
+      IK.PutToSleep -> aidVerbMU MsgEffectMajor aid "be put to sleep"
+      IK.Yell -> aidVerbMU MsgMiscellanous aid "start"
+      IK.Summon grp p -> do
+        let verb = if bproj b then "lure" else "summon"
+            object = (if p == 1  -- works, because exact number sent, not dice
+                      then MU.AW
+                      else MU.Ws) $ MU.Text $ fromGroupName grp
+        aidVerbMU MsgEffectMajor aid $ MU.Phrase [verb, object]
+      IK.Ascend up -> do
+        COps{cocave} <- getsState scops
+        aidVerbMU MsgEffectMajor aid $ MU.Text $
+          "find a way" <+> if up then "upstairs" else "downstairs"
+        when isOurLeader $ do
+          destinations <- getsState $ whereTo (blid b) (bpos b) up
+                                      . sdungeon
+          case destinations of
+            (lid, _) : _ -> do  -- only works until different levels possible
+              lvl <- getLevel lid
+              let desc = cdesc $ okind cocave $ lkind lvl
+              unless (T.null desc) $
+                msgAdd MsgBackdropInfo $ desc <> "\n"
+            [] -> return ()  -- spell fizzles; normally should not be sent
+      IK.Escape{} | isOurCharacter -> do
+        ours <- getsState $ fidActorNotProjGlobalAssocs side
+        when (length ours > 1) $ do
+          (_, total) <- getsState $ calculateTotal side
+          if total == 0
+          then msgAdd MsgFactionIntel $
+                 "The team joins" <+> makePhrase [partActor bUI]
+                 <> ", forms a perimeter and leaves triumphant."
+          else msgAdd MsgItemCreation $
+                 "The team joins" <+> makePhrase [partActor bUI]
+                 <> ", forms a perimeter, repacks its belongings and leaves triumphant."
+      IK.Escape{} -> return ()
+      IK.Paralyze{} -> aidVerbMU MsgEffectMedium aid "be paralyzed"
+      IK.ParalyzeInWater{} ->
+        aidVerbMU MsgEffectMinor aid "move with difficulty"
+      IK.InsertMove d ->
+        if Dice.supDice d >= 10
+        then aidVerbMU MsgEffectMedium aid "act with extreme speed"
+        else aidVerbMU MsgEffectMinor aid "move swiftly"
+      IK.Teleport t | Dice.supDice t <= 9 ->
+        aidVerbMU MsgEffectMinor aid "blink"
+      IK.Teleport{} -> aidVerbMU MsgEffectMedium aid "teleport"
+      IK.CreateItem{} -> return ()
+      IK.DestroyItem{} -> return ()
+      IK.ConsumeItems{} -> return ()
+      IK.DropItem _ _ COrgan _ -> return ()
+      IK.DropItem{} -> aidVerbMU MsgEffectMedium aid "be stripped"
+      IK.Recharge{} -> aidVerbMU MsgEffectMedium aid "heat up"
+      IK.Discharge{} -> aidVerbMU MsgEffectMedium aid "cool down"
+      IK.PolyItem -> do
+        subject <- partActorLeader aid
+        let ppstore = MU.Text $ ppCStoreIn CGround
+        msgAdd MsgEffectMedium $ makeSentence
+          [ MU.SubjectVerbSg subject "repurpose", "what lies", ppstore
+          , "to a common item of the current level" ]
+      IK.RerollItem -> do
+        subject <- partActorLeader aid
+        let ppstore = MU.Text $ ppCStoreIn CGround
+        msgAdd MsgEffectMedium $ makeSentence
+          [ MU.SubjectVerbSg subject "reshape", "what lies", ppstore
+          , "striving for the highest possible standards" ]
+      IK.DupItem -> do
+        subject <- partActorLeader aid
+        let ppstore = MU.Text $ ppCStoreIn CGround
+        msgAdd MsgEffectMedium $ makeSentence
+          [MU.SubjectVerbSg subject "multiply", "what lies", ppstore]
+      IK.Identify -> do
+        subject <- partActorLeader aid
+        pronoun <- partPronounLeader aid
+        msgAdd MsgEffectMinor $ makeSentence
+          [ MU.SubjectVerbSg subject "look at"
+          , MU.WownW pronoun $ MU.Text "inventory"
+          , "intensely" ]
+      IK.Detect d _ -> do
+        subject <- partActorLeader aid
+        let verb = MU.Text $ detectToVerb d
+            object = MU.Ws $ MU.Text $ detectToObject d
+        msgAdd MsgEffectMinor $
+          makeSentence [MU.SubjectVerbSg subject verb, object]
+        -- Don't make it modal if all info remains after no longer seen.
+        unless (d `elem` [IK.DetectHidden, IK.DetectExit]) $
+          displayMore ColorFull ""  -- the sentence short
+      IK.SendFlying{} -> aidVerbMU MsgEffectMedium aid "be sent flying"
+      IK.PushActor{} -> aidVerbMU MsgEffectMedium aid "be pushed"
+      IK.PullActor{} -> aidVerbMU MsgEffectMedium aid "be pulled"
+      IK.ApplyPerfume ->
+        msgAdd MsgEffectMinor
+               "The fragrance quells all scents in the vicinity."
+      IK.OneOf{} -> return ()
+      IK.OnSmash{} -> error $ "" `showFailure` sfx
+      IK.OnCombine{} -> error $ "" `showFailure` sfx
+      IK.OnUser{} -> error $ "" `showFailure` sfx
+      IK.AndEffect{} -> error $ "" `showFailure` sfx
+      IK.OrEffect{} -> error $ "" `showFailure` sfx
+      IK.SeqEffect{} -> error $ "" `showFailure` sfx
+      IK.VerbNoLonger t -> do
+        let msgClass = if bfid b == side then MsgStatusStopUs else MsgStatusStopThem
+        aidVerbMU msgClass aid $ MU.Text t
+      IK.VerbMsg t -> aidVerbMU MsgEffectMinor aid $ MU.Text t
+      IK.VerbMsgFail t -> aidVerbMU MsgActionWarning aid $ MU.Text t
   SfxMsgFid _ sfxMsg -> do
     mleader <- getsClient sleader
     case mleader of
