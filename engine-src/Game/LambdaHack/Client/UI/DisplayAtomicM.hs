@@ -6,8 +6,8 @@ module Game.LambdaHack.Client.UI.DisplayAtomicM
     -- * Internal operations
   , ppHearMsg, ppHearDistanceAdjective, ppHearDistanceAdverb
   , updateItemSlot, markDisplayNeeded, lookAtMove
-  , aidVerbMU, aidVerbMU0, aidVerbDuplicateMU
-  , itemVerbMU, itemAidVerbMU, manyItemsAidVerbMU
+  , aidVerbMU, aidVerbDuplicateMU, itemVerbMUGeneral, itemVerbMU
+  , itemVerbMUShort, itemAidVerbMU, itemAidDistinctMU, manyItemsAidVerbMU
   , createActorUI, destroyActorUI, spotItemBag, moveActor, displaceActorUI
   , moveItemUI, quitFactionUI
   , displayGameOverLoot, displayGameOverAnalytics
@@ -273,8 +273,8 @@ displayRespUpdAtomicUI cmd = case cmd of
                previousWarning <-
                  getsState $ checkWarningHP sUIOptions aid (bhp b - hpDelta)
                unless previousWarning $
-                 aidVerbMU0 MsgRiskOfDeath aid
-                            "be down to a dangerous health level"
+                 aidVerbMU MsgRiskOfDeath aid
+                           "be down to a dangerous health level"
   UpdRefillCalm _ 0 -> return ()
   UpdRefillCalm aid calmDelta -> do
     side <- getsClient sside
@@ -314,8 +314,8 @@ displayRespUpdAtomicUI cmd = case cmd of
           unless previousWarning $
             -- This messages is not shown if impression happens after
             -- Calm is low enough. However, this is rare and HUD shows the red.
-            aidVerbMU0 MsgRiskOfDeath aid
-                       "have grown agitated and impressed enough to be in danger of defecting"
+            aidVerbMU MsgRiskOfDeath aid
+                      "have grown agitated and impressed enough to be in danger of defecting"
   UpdTrajectory _ _ mt ->  -- if projectile dies just after, force one frame
     when (isNothing mt) pushFrame
   -- Change faction attributes.
@@ -621,15 +621,8 @@ lookAtMove aid = do
         adjOur = filter our adjBigAssocs
     unless (null adjOur) stopPlayBack
 
-aidVerbMU :: (MonadClientUI m, MsgShared a)
-          => a -> ActorId -> MU.Part -> m ()
+aidVerbMU :: (MonadClientUI m, MsgShared a) => a -> ActorId -> MU.Part -> m ()
 aidVerbMU msgClass aid verb = do
-  subject <- partActorLeader aid
-  msgAdd msgClass $ makeSentence [MU.SubjectVerbSg subject verb]
-
-aidVerbMU0 :: (MonadClientUI m, MsgShared a)
-           => a -> ActorId -> MU.Part -> m ()
-aidVerbMU0 msgClass aid verb = do
   subject <- partActorLeader aid
   msgAdd msgClass $ makeSentence [MU.SubjectVerbSg subject verb]
 
