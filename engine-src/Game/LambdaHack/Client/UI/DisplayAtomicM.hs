@@ -7,7 +7,8 @@ module Game.LambdaHack.Client.UI.DisplayAtomicM
   , ppHearMsg, ppHearDistanceAdjective, ppHearDistanceAdverb
   , updateItemSlot, markDisplayNeeded, lookAtMove
   , aidVerbMU, aidVerbDuplicateMU, itemVerbMUGeneral, itemVerbMU
-  , itemVerbMUShort, itemAidVerbMU, itemAidDistinctMU, manyItemsAidVerbMU
+  , itemVerbMUShort, itemAidVerbMU, mitemAidVerbMU, itemAidDistinctMU
+  , manyItemsAidVerbMU
   , createActorUI, destroyActorUI, spotItemBag, moveActor, displaceActorUI
   , moveItemUI, quitFactionUI
   , displayGameOverLoot, displayGameOverAnalytics
@@ -300,7 +301,8 @@ displayRespUpdAtomicUI cmd = case cmd of
                anyCloseFoes = any closeFoe $ EM.assocs $ lbig
                                            $ sdungeon s EM.! blid b
            unless anyCloseFoes $ do  -- obvious where the feeling comes from
-             duplicated <- aidVerbDuplicateMU MsgHeardNearby aid "hear something"
+             duplicated <- aidVerbDuplicateMU MsgHeardNearby aid
+                                              "hear something"
              unless duplicated stopPlayBack
          | otherwise ->  -- low deltas from hits; displayed elsewhere
            return ()
@@ -687,6 +689,14 @@ itemAidVerbMU msgClass aid verb iid ek = do
           in MU.Phrase ["the", MU.Car1Ws n name1, powers]
       msg = makeSentence [MU.SubjectVerbSg subject verb, object]
   msgAdd msgClass msg
+
+mitemAidVerbMU :: (MonadClientUI m, MsgShared a)
+               => a -> ActorId -> MU.Part -> ItemId -> Maybe MU.Part
+               -> m ()
+mitemAidVerbMU msgClass aid verb iid msuffix = case msuffix of
+  Nothing -> aidVerbMU msgClass aid verb
+  Just suffix -> itemAidVerbMU msgClass aid (MU.Phrase [verb, suffix])
+                               iid (Right 1)
 
 itemAidDistinctMU :: (MonadClientUI m)
                   => MsgClassDistinct -> ActorId -> MU.Part -> MU.Part -> ItemId
@@ -1204,10 +1214,11 @@ displayGameOverLoot (heldBag, total) generationAn = do
   dungeonTotal <- getsState sgold
   let promptGold = spoilsBlurb currencyName total dungeonTotal
       -- Total number of items is meaningless in the presence of so much junk.
-      prompt = promptGold
-               <+> (if sexposeItems
-                    then "Non-positive count means none held but this many generated."
-                    else "")
+      prompt =
+        promptGold
+        <+> (if sexposeItems
+             then "Non-positive count means none held but this many generated."
+             else "")
       examItem = displayItemLore itemBag 0 promptFun
   viewLoreItems "GameOverLoot" lSlots itemBag prompt examItem True
 
@@ -1244,11 +1255,12 @@ displayGameOverAnalytics factionAn generationAn = do
         in makePhrase [ "You recall the adversary, which you killed on"
                       , MU.CarWs (max 0 k) "occasion", "while reports mention"
                       , MU.CarWs n "individual", "in total:" ]
-      prompt = makeSentence ["your team vanquished", MU.CarWs total "adversary"]
-                 -- total reported would include our own, so not given
-               <+> (if sexposeActors
-                    then "Non-positive count means none killed but this many reported."
-                    else "")
+      prompt =
+        makeSentence ["your team vanquished", MU.CarWs total "adversary"]
+          -- total reported would include our own, so not given
+        <+> (if sexposeActors
+             then "Non-positive count means none killed but this many reported."
+             else "")
       examItem = displayItemLore trunkBag 0 promptFun
   viewLoreItems "GameOverAnalytics" lSlots trunkBag prompt examItem False
 
@@ -1408,7 +1420,8 @@ displayRespSfxAtomicUI sfx = case sfx of
   SfxRelease source target _ -> do
     spart <- partActorLeader source
     tpart <- partActorLeader target
-    msgAdd MsgActionMajor $ makeSentence [MU.SubjectVerbSg spart "release", tpart]
+    msgAdd MsgActionMajor $
+      makeSentence [MU.SubjectVerbSg spart "release", tpart]
   SfxProject aid iid ->
     itemAidVerbMU MsgActionMajor aid "fling" iid (Left 1)
   SfxReceive aid iid ->
@@ -1431,6 +1444,11 @@ displayRespSfxAtomicUI sfx = case sfx of
   SfxShun aid _ _ _ ->
     aidVerbMU MsgActionMajor aid "shun it"
   SfxEffect fidSource aid iid effect hpDelta -> do
+    -- In most messages below @iid@ is ignored, because it's too common,
+    -- e.g., caused by some combat hits, or rather obvious,
+    -- e.g., in case of embedded items, or would be counterintuitive,
+    -- e.g., when actor is said to be intimidated by a particle, not explosion.
+    CCUI{coscreen=ScreenContent{rwidth}} <- getsSession sccui
     b <- getsState $ getActorBody aid
     bUI <- getsSession $ getActorUI aid
     side <- getsClient sside
@@ -1444,6 +1462,8 @@ displayRespSfxAtomicUI sfx = case sfx of
         feelLookHPGood = feelLook MsgGoodMiscEvent MsgBadMiscEvent
         feelLookCalm bigAdj projAdj = when (bhp b > 0) $
           feelLook MsgEffectMinor MsgEffectMinor bigAdj projAdj
+        -- Ignore @iid@, because it's usually obvious what item caused that
+        -- and because the effects are not particularly disortienting.
         feelLook msgClassOur msgClassTheir bigAdj projAdj =
           let (verb, adjective) =
                 if bproj b
@@ -1478,15 +1498,18 @@ displayRespSfxAtomicUI sfx = case sfx of
         let subject = partActor bUI
         if fid /= fidSource then do
           -- Before domination, possibly not seen if actor (yet) not ours.
-          if | bcalm b == 0 ->  -- sometimes only a coincidence, but nm
-               aidVerbMU MsgEffectMinor aid
-               $ MU.Text "yield, under extreme pressure"
-             | isOurAlive ->
-               aidVerbMU MsgEffectMinor aid
-               $ MU.Text "black out, dominated by foes"
-             | otherwise ->
-               aidVerbMU MsgEffectMinor aid
-               $ MU.Text "decide abruptly to switch allegiance"
+          if bcalm b == 0  -- sometimes only a coincidence, but nm
+          then aidVerbMU MsgEffectMinor aid "yield, under extreme pressure"
+          else do
+            let verb = if isOurAlive
+                       then "black out, dominated by foes"
+                       else "decide abruptly to switch allegiance"
+                msuffix = if iid == btrunk b
+                          then Nothing
+                          else Just $ if isOurAlive
+                                      then "through"
+                                      else "under the influence of"
+            mitemAidVerbMU MsgEffectMinor aid verb iid msuffix
           fidNameRaw <- getsState $ gname . (EM.! fid) . sfactionD
           -- Avoid "controlled by Controlled foo".
           let fidName = T.unwords $ tail $ T.words fidNameRaw
@@ -1503,14 +1526,19 @@ displayRespSfxAtomicUI sfx = case sfx of
           msgAdd MsgEffectMajor $ makeSentence
             [MU.SubjectVerbSg subject verb, MU.Text fidSourceName, "control"]
       IK.Impress -> aidVerbMU MsgEffectMinor aid "be awestruck"
-      IK.PutToSleep -> aidVerbMU MsgEffectMajor aid "be put to sleep"
+      IK.PutToSleep -> do
+        let verb = "be put to sleep"
+            msuffix = if iid == btrunk b then Nothing else Just "by"
+        mitemAidVerbMU MsgEffectMajor aid verb iid msuffix
       IK.Yell -> aidVerbMU MsgMiscellanous aid "start"
       IK.Summon grp p -> do
-        let verb = if bproj b then "lure" else "summon"
+        let verbBase = if bproj b then "lure" else "summon"
             object = (if p == 1  -- works, because exact number sent, not dice
                       then MU.AW
                       else MU.Ws) $ MU.Text $ fromGroupName grp
-        aidVerbMU MsgEffectMajor aid $ MU.Phrase [verb, object]
+            verb = MU.Phrase [verbBase, object]
+            msuffix = Just "with"
+        mitemAidVerbMU MsgEffectMajor aid verb iid msuffix
       IK.Ascend up -> do
         COps{cocave} <- getsState scops
         aidVerbMU MsgEffectMajor aid $ MU.Text $
@@ -1537,21 +1565,25 @@ displayRespSfxAtomicUI sfx = case sfx of
                  "The team joins" <+> makePhrase [partActor bUI]
                  <> ", forms a perimeter, repacks its belongings and leaves triumphant."
       IK.Escape{} -> return ()
-      IK.Paralyze{} -> aidVerbMU MsgEffectMedium aid "be paralyzed"
+      IK.Paralyze{} ->
+        mitemAidVerbMU MsgEffectMedium aid "be paralyzed" iid (Just "with")
       IK.ParalyzeInWater{} ->
         aidVerbMU MsgEffectMinor aid "move with difficulty"
       IK.InsertMove d ->
+        -- Usually self-inflicted of from embeds, so obvious, so no @iid@.
         if Dice.supDice d >= 10
         then aidVerbMU MsgEffectMedium aid "act with extreme speed"
         else aidVerbMU MsgEffectMinor aid "move swiftly"
       IK.Teleport t | Dice.supDice t <= 9 ->
-        aidVerbMU MsgEffectMinor aid "blink"
-      IK.Teleport{} -> aidVerbMU MsgEffectMedium aid "teleport"
+        mitemAidVerbMU MsgEffectMinor aid "blink" iid (Just "due to")
+      IK.Teleport{} ->
+        mitemAidVerbMU MsgEffectMedium aid "teleport" iid (Just "propelled by")
       IK.CreateItem{} -> return ()
       IK.DestroyItem{} -> return ()
       IK.ConsumeItems{} -> return ()
       IK.DropItem _ _ COrgan _ -> return ()
-      IK.DropItem{} -> aidVerbMU MsgEffectMedium aid "be stripped"
+      IK.DropItem{} ->  -- rare enough
+        mitemAidVerbMU MsgEffectMedium aid "be stripped" iid (Just "with")
       IK.Recharge{} -> aidVerbMU MsgEffectMedium aid "heat up"
       IK.Discharge{} -> aidVerbMU MsgEffectMedium aid "cool down"
       IK.PolyItem -> do
@@ -1580,10 +1612,21 @@ displayRespSfxAtomicUI sfx = case sfx of
           , "intensely" ]
       IK.Detect d _ -> do
         subject <- partActorLeader aid
+        factionD <- getsState sfactionD
+        localTime <- getsState $ getLocalTime $ blid b
+        itemFull <- getsState $ itemToFull iid
         let verb = MU.Text $ detectToVerb d
             object = MU.Ws $ MU.Text $ detectToObject d
+            arItem = aspectRecordFull itemFull
+            periodic = IA.checkFlag Ability.Periodic arItem
+            iidDesc =
+              let (name1, powers) = partItemShort rwidth side factionD localTime
+                                                  itemFull quantSingle
+              in makePhrase ["the", name1, powers]
+            -- If item not periodic, most likely intentiona, so don't spam.
+            means = [MU.Text $ "(via" <+> iidDesc <> ")" | periodic]
         msgAdd MsgEffectMinor $
-          makeSentence [MU.SubjectVerbSg subject verb, object]
+          makeSentence $ [MU.SubjectVerbSg subject verb] ++ means ++ [object]
         -- Don't make it modal if all info remains after no longer seen.
         unless (d `elem` [IK.DetectHidden, IK.DetectExit]) $
           displayMore ColorFull ""  -- the sentence short
@@ -1601,7 +1644,9 @@ displayRespSfxAtomicUI sfx = case sfx of
       IK.OrEffect{} -> error $ "" `showFailure` sfx
       IK.SeqEffect{} -> error $ "" `showFailure` sfx
       IK.VerbNoLonger t -> do
-        let msgClass = if bfid b == side then MsgStatusStopUs else MsgStatusStopThem
+        let msgClass = if bfid b == side
+                       then MsgStatusStopUs
+                       else MsgStatusStopThem
         aidVerbMU msgClass aid $ MU.Text t
       IK.VerbMsg t -> aidVerbMU MsgEffectMinor aid $ MU.Text t
       IK.VerbMsgFail t -> aidVerbMU MsgActionWarning aid $ MU.Text t
