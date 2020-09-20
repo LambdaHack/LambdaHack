@@ -508,7 +508,7 @@ drawFrameStatus drawnLevelId = do
                    , "stash", MU.Car ns ]
       markSleepTgtDesc
         | mxhairWatchfulness /= Just WSleep = textToAS
-        | otherwise = textFgToAS Color.Blue
+        | otherwise = textFgToAS Color.cSleep
       xdetail AimMode{detailLevel} =
         "x" <> tshow (1 + fromEnum detailLevel)
       xhairName aimMode = "Crosshair" <+> xdetail aimMode
@@ -647,7 +647,7 @@ drawLeaderStatus waitT = do
               = addColor Color.BrGreen
             | otherwise = stringToAS  -- only if nothing at all noteworthy
           checkSleep body resDelta
-            | bwatch body == WSleep = addColor Color.Blue
+            | bwatch body == WSleep = addColor Color.cSleep
             | otherwise = checkDelta resDelta
           calmAddAttr = checkSleep b $ bcalmDelta b
           -- We only show ambient light, because in fact client can't tell
