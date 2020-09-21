@@ -371,10 +371,10 @@ script:
       ${CABAL} new-build $WITHCOMPILER --only-dependencies -fsdl -w ${HC} ${TEST} ${BENCH} -j2 .;
       ${CABAL} new-build $WITHCOMPILER -v2 -fsdl -w ${HC} ${TEST} ${BENCH} -j1 .;
     elif [ $GTKVTY = "vty" ]; then
-      ${CABAL} new-build $WITHCOMPILER --only-dependencies -fvty -w ${HC} ${TEST} ${BENCH} -j2 .;
+      ${CABAL} new-build $WITHCOMPILER --only-dependencies -fvty -fwith_expensive_assertions -w ${HC} ${TEST} ${BENCH} -j2 .;
       ${CABAL} new-build $WITHCOMPILER -fvty -w ${HC} ${TEST} ${BENCH} -j1 .;
     elif [ $GTKVTY = "curses" ]; then
-      ${CABAL} new-build $WITHCOMPILER --only-dependencies -fcurses -f-release -w ${HC} ${TEST} ${BENCH} -j2 .;
+      ${CABAL} new-build $WITHCOMPILER --only-dependencies -fcurses -fwith_expensive_assertions -f-release -w ${HC} ${TEST} ${BENCH} -j2 .;
       ${CABAL} new-build $WITHCOMPILER -fcurses -f-release -w ${HC} ${TEST} ${BENCH} -j1 .;
     elif [ $GTKVTY = "noopt" ]; then
       ${CABAL} new-build $WITHCOMPILER --only-dependencies -fvty --ghc-options="-O0 -fno-ignore-asserts" -w ${HC} ${TEST} ${BENCH} -j2 .;
