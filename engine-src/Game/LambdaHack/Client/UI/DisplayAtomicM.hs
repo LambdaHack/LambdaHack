@@ -693,10 +693,20 @@ itemAidVerbMU msgClass aid verb iid ek = do
 mitemAidVerbMU :: (MonadClientUI m, MsgShared a)
                => a -> ActorId -> MU.Part -> ItemId -> Maybe MU.Part
                -> m ()
-mitemAidVerbMU msgClass aid verb iid msuffix = case msuffix of
-  Nothing -> aidVerbMU msgClass aid verb
-  Just suffix -> itemAidVerbMU msgClass aid (MU.Phrase [verb, suffix])
-                               iid (Right 1)
+mitemAidVerbMU msgClass aid verb iid msuffix = do
+  itemD <- getsState sitemD
+  case msuffix of
+    Just suffix | iid `EM.member` itemD ->
+      itemAidVerbMU msgClass aid (MU.Phrase [verb, suffix]) iid (Right 1)
+    _ ->
+#ifdef WITH_EXPENSIVE_ASSERTIONS
+      -- It's not actually expensive, but it's particularly likely
+      -- to fail with wild content, indicating server game rules logic
+      -- needs to be fixed/extended:
+      assert (isNothing msuffix `blame` "item never seen by the affected actor"
+                                `swith` (aid, verb, iid, msuffix)) $
+#endif
+        aidVerbMU msgClass aid verb
 
 itemAidDistinctMU :: (MonadClientUI m)
                   => MsgClassDistinct -> ActorId -> MU.Part -> MU.Part -> ItemId
@@ -1625,16 +1635,27 @@ displayRespSfxAtomicUI sfx = case sfx of
         subject <- partActorLeader aid
         factionD <- getsState sfactionD
         localTime <- getsState $ getLocalTime $ blid b
-        itemFull <- getsState $ itemToFull iid
         let verb = MU.Text $ detectToVerb d
             object = MU.Ws $ MU.Text $ detectToObject d
-            arItem = aspectRecordFull itemFull
-            periodic = IA.checkFlag Ability.Periodic arItem
-            iidDesc =
+        (periodic, itemFull) <-
+          if iid `EM.member` itemD then do
+            itemFull <- getsState $ itemToFull iid
+            let arItem = aspectRecordFull itemFull
+            return (IA.checkFlag Ability.Periodic arItem, itemFull)
+          else do
+#ifdef WITH_EXPENSIVE_ASSERTIONS
+            -- It's not actually expensive, but it's particularly likely
+            -- to fail with wild content, indicating server game rules logic
+            -- needs to be fixed/extended:
+            let !_A = error $ "item never seen by the affected actor"
+                              `showFailure` (aid, b, verb, iid, effect)
+#endif
+            return (False, undefined)
+        let iidDesc =
               let (name1, powers) = partItemShort rwidth side factionD localTime
                                                   itemFull quantSingle
               in makePhrase ["the", name1, powers]
-            -- If item not periodic, most likely intentiona, so don't spam.
+            -- If item not periodic, most likely intentional, so don't spam.
             means = [MU.Text $ "(via" <+> iidDesc <> ")" | periodic]
         msgAdd MsgEffectMinor $
           makeSentence $ [MU.SubjectVerbSg subject verb] ++ means ++ [object]

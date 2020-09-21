@@ -301,7 +301,7 @@ boostItemKindList initialGen l =
   let (r, _) = nextRandom (length l - 1) initialGen
   in case splitAt r l of
     (pre, i : post) -> pre ++ boostItemKind i : post
-    _               -> error $  "" `showFailure` l
+    _               -> error $ "" `showFailure` l
 
 boostItemKind :: ItemKind -> ItemKind
 boostItemKind i =
