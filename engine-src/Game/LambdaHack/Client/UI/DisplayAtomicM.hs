@@ -1453,6 +1453,7 @@ displayRespSfxAtomicUI sfx = case sfx of
     bUI <- getsSession $ getActorUI aid
     side <- getsClient sside
     mleader <- getsClient sleader
+    itemD <- getsState sitemD
     let fid = bfid b
         isOurCharacter = fid == side && not (bproj b)
         isOurAlive = isOurCharacter && bhp b > 0
@@ -1504,7 +1505,9 @@ displayRespSfxAtomicUI sfx = case sfx of
             let verb = if isOurAlive
                        then "black out, dominated by foes"
                        else "decide abruptly to switch allegiance"
-                msuffix = if iid == btrunk b
+                -- Faction is being switched, so item that caused domination
+                -- and vanished may not be known to the new faction.
+                msuffix = if iid == btrunk b || iid `EM.notMember` itemD
                           then Nothing
                           else Just $ if isOurAlive
                                       then "through"
@@ -1574,10 +1577,18 @@ displayRespSfxAtomicUI sfx = case sfx of
         if Dice.supDice d >= 10
         then aidVerbMU MsgEffectMedium aid "act with extreme speed"
         else aidVerbMU MsgEffectMinor aid "move swiftly"
-      IK.Teleport t | Dice.supDice t <= 9 ->
-        mitemAidVerbMU MsgEffectMinor aid "blink" iid (Just "due to")
-      IK.Teleport{} ->
-        mitemAidVerbMU MsgEffectMedium aid "teleport" iid (Just "propelled by")
+      IK.Teleport t | Dice.supDice t <= 9 -> do
+        -- Actor may be sent away before noticing the item that did it.
+        let msuffix = if iid `EM.notMember` itemD
+                      then Nothing
+                      else Just "due to"
+        mitemAidVerbMU MsgEffectMinor aid "blink" iid msuffix
+      IK.Teleport{} -> do
+        -- Actor may be sent away before noticing the item that did it.
+        let msuffix = if iid `EM.notMember` itemD
+                      then Nothing
+                      else Just "propelled by"
+        mitemAidVerbMU MsgEffectMedium aid "teleport" iid msuffix
       IK.CreateItem{} -> return ()
       IK.DestroyItem{} -> return ()
       IK.ConsumeItems{} -> return ()
