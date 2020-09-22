@@ -698,13 +698,23 @@ mitemAidVerbMU msgClass aid verb iid msuffix = do
   case msuffix of
     Just suffix | iid `EM.member` itemD ->
       itemAidVerbMU msgClass aid (MU.Phrase [verb, suffix]) iid (Right 1)
-    _ ->
+    _ -> do
 #ifdef WITH_EXPENSIVE_ASSERTIONS
+      side <- getsClient sside
+      b <- getsState $ getActorBody aid
+      bUI <- getsSession $ getActorUI aid
       -- It's not actually expensive, but it's particularly likely
       -- to fail with wild content, indicating server game rules logic
-      -- needs to be fixed/extended:
-      assert (isNothing msuffix `blame` "item never seen by the affected actor"
-                                `swith` (aid, verb, iid, msuffix)) $
+      -- needs to be fixed/extended.
+      -- Observer from another faction may receive the effect information
+      -- from the server, because the affected actor is visible,
+      -- but the position of the item may be out of FOV. This is fine;
+      -- the message is then shorter, because only the effect was seen,
+      -- while the cause remains misterious.
+      assert (isNothing msuffix  -- item description not requested
+              || bfid b /= side  -- not from affected faction; only observing
+              `blame` "item never seen by the affected actor"
+              `swith` (aid, b, bUI, verb, iid, msuffix)) $
 #endif
         aidVerbMU msgClass aid verb
 
@@ -1647,8 +1657,15 @@ displayRespSfxAtomicUI sfx = case sfx of
             -- It's not actually expensive, but it's particularly likely
             -- to fail with wild content, indicating server game rules logic
             -- needs to be fixed/extended:
-            let !_A = error $ "item never seen by the affected actor"
-                              `showFailure` (aid, b, verb, iid, effect)
+            -- Observer from another faction may receive the effect information
+            -- from the server, because the affected actor is visible,
+            -- but the position of the item may be out of FOV. This is fine;
+            -- the message is then shorter, because only the effect was seen,
+            -- while the cause remains misterious.
+            let !_A = if bfid b /= side  -- not from affected faction; observing
+                      then ()
+                      else error $ "item never seen by the affected actor"
+                                   `showFailure` (aid, b, bUI, verb, iid, sfx)
 #endif
             return (False, undefined)
         let iidDesc =
@@ -1676,7 +1693,7 @@ displayRespSfxAtomicUI sfx = case sfx of
       IK.OrEffect{} -> error $ "" `showFailure` sfx
       IK.SeqEffect{} -> error $ "" `showFailure` sfx
       IK.VerbNoLonger t -> do
-        let msgClass = if bfid b == side
+        let msgClass = if fid == side
                        then MsgStatusStopUs
                        else MsgStatusStopThem
         aidVerbMU msgClass aid $ MU.Text t
