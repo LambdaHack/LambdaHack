@@ -133,12 +133,13 @@ restoreScore COps{corule} = do
         if Save.compatibleVersion vlib2 Self.version
         then return $ Just s
         else do
-          let msg = "High score file from old version of game detected."
+          let msg =
+                "High score file from incompatible version of game detected."
           fail msg
       else return Nothing
     let handler :: Ex.SomeException -> m (Maybe a)
         handler e = do
-          let msg = "High score restore failed. The old file moved aside. The error message is:"
+          let msg = "High score restore failed. The wrong file moved aside. The error message is:"
                     <+> (T.unwords . T.lines) (tshow e)
           serverPrint msg
           liftIO $ renameFile (path "") (path "bkp.")

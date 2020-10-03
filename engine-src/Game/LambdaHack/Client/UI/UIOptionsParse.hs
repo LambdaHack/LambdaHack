@@ -17,7 +17,9 @@ import qualified Data.Ini.Reader as Ini
 import qualified Data.Ini.Types as Ini
 import qualified Data.Map.Strict as M
 import qualified Data.Text as T
+import           Data.Version
 import           System.FilePath
+import           Text.ParserCombinators.ReadP (readP_to_S)
 import           Text.Read
 
 import           Game.LambdaHack.Client.UI.HumanCmd
@@ -27,6 +29,7 @@ import           Game.LambdaHack.Common.ClientOptions
 import           Game.LambdaHack.Common.File
 import           Game.LambdaHack.Common.Kind
 import           Game.LambdaHack.Common.Misc
+import           Game.LambdaHack.Common.Save (compatibleVersion, delayPrint)
 import           Game.LambdaHack.Content.RuleKind
 
 configError :: String -> a
@@ -107,21 +110,43 @@ glueSeed (s : rest) = s : glueSeed rest
 mkUIOptions :: RuleContent -> Bool -> IO UIOptions
 mkUIOptions corule benchmark = do
   let cfgUIName = rcfgUIName corule
-      (_, cfgUIDefault) = rcfgUIDefault corule
+      (configString, cfgUIDefault) = rcfgUIDefault corule
   dataDir <- appDataDir
-  let userPath = dataDir </> cfgUIName
+  let path bkp = dataDir </> bkp <> cfgUIName
   cfgUser <- if benchmark then return Ini.emptyConfig else do
-    cpExists <- doesFileExist userPath
+    cpExists <- doesFileExist (path "")
     if not cpExists
       then return Ini.emptyConfig
       else do
-        sUser <- readFile userPath
+        sUser <- readFile (path "")
         return $! either (configError . ("Ini.parse sUser" `showFailure`)) id
                   $ Ini.parse sUser
   let cfgUI = M.unionWith M.union cfgUser cfgUIDefault  -- user cfg preferred
-      conf = parseConfig cfgUI
-  -- Catch syntax errors in complex expressions ASAP.
-  return $! deepseq conf conf
+      vExe1 = rexeVersion corule
+      vExe2 =
+        let optionName = "version"
+            -- Lenient to parse, and reject, old config files:
+            s = fromMaybe "" $ Ini.getOption "version" optionName cfgUser
+            dummyVersion = makeVersion []
+        in case find ((== "") . snd) $ readP_to_S parseVersion s of
+          Just (ver, "") -> ver
+          _ -> dummyVersion
+  if compatibleVersion vExe1 vExe2 then do
+    let conf = parseConfig cfgUI
+    -- Catch syntax errors in complex expressions ASAP.
+    return $! deepseq conf conf
+  else do
+    let msg = "Config file" <+> T.pack (path "")
+              <+> "from an incompatible version '"
+              <> T.pack (showVersion vExe2)
+              <> "' detected while starting"
+              <+> T.pack (showVersion vExe1)
+              <+> "game. The file has been moved aside."
+    delayPrint msg
+    renameFile (path "") (path "bkp.")
+    tryWriteFile (path "") configString
+    let confDefault = parseConfig cfgUIDefault
+    return confDefault
 
 -- | Modify client options with UI options.
 applyUIOptions :: COps -> UIOptions -> ClientOptions -> ClientOptions

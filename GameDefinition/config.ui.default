@@ -111,3 +111,10 @@ ubuntuMono = FontSet {fontMapScalable = "16x16xwScalable", fontMapBitmap = "16x1
 ;
 ; E.g., uncomment to make all messages white:
 ; Msg = White
+
+[version]
+; If an outdated config file mentions fonts that are not bundled with the game
+; any more, the game crashes. To prevent that, one of the first three components
+; of the game version should be bumped whenever fonts are changed.
+; Configs from old versions are rejected, preventing the crash.
+version = 0.10.0

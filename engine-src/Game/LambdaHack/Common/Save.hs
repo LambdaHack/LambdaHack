@@ -1,10 +1,11 @@
 -- | Saving and restoring game state, used by both server and clients.
 module Game.LambdaHack.Common.Save
-  ( ChanSave, saveToChan, wrapInSaves, restoreGame, saveNameCli, saveNameSer
-  , compatibleVersion
+  ( ChanSave, saveToChan, wrapInSaves, restoreGame
+  , compatibleVersion, delayPrint
+  , saveNameCli, saveNameSer
 #ifdef EXPOSE_INTERNAL
     -- * Internal operations
-  , loopSave, delayPrint
+  , loopSave
 #endif
   ) where
 
@@ -124,7 +125,7 @@ restoreGame cops fileName = do
     else return Nothing
   let handler :: Ex.SomeException -> IO (Maybe a)
       handler e = do
-        let msg = "Restore failed. The old file moved aside. The error message is:"
+        let msg = "Restore failed. The wrong file has been moved aside. The error message is:"
                   <+> (T.unwords . T.lines) (tshow e)
         delayPrint msg
         renameFile (path "") (path "bkp.")
