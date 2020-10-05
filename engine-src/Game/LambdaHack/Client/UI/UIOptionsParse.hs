@@ -131,7 +131,7 @@ mkUIOptions corule benchmark = do
         in case find ((== "") . snd) $ readP_to_S parseVersion s of
           Just (ver, "") -> ver
           _ -> dummyVersion
-  if compatibleVersion vExe1 vExe2 then do
+  if benchmark || compatibleVersion vExe1 vExe2 then do
     let conf = parseConfig cfgUI
     -- Catch syntax errors in complex expressions ASAP.
     return $! deepseq conf conf
