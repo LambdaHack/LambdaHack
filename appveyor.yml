@@ -72,8 +72,8 @@ install:
   - ps: if ($env:goal -eq "artifact32and64") { Push-AppveyorArtifact LambdaHack_dev_windows-x86_64.zip -FileName "LambdaHack_$($env:LH_VERSION)-dev-$($env:TIME_STRING)_windows-x86_64.zip" -DeploymentName "win64 binaries archive" }
 
   - IF "%goal%"=="artifact32and64" (
-      cabal v1-install --force-reinstalls tasty-hunit
-      && cabal v1-test
+      cabal v1-install --force-reinstalls --enable-tests
+      && dist\build\test\test.exe
       && mv LambdaHackTheGame LambdaHackTheGame64
       && rm -rf LambdaHackTheGameInstall
     )
