@@ -11,6 +11,7 @@ import Prelude ()
 
 import Game.LambdaHack.Core.Prelude
 
+import qualified Data.ByteString as BS
 import qualified Data.EnumMap.Strict as EM
 import qualified Data.Text as T
 
@@ -24,7 +25,9 @@ data ScreenContent = ScreenContent
   , rwebAddress   :: String    -- ^ an extra blurb line for the main menu
   , rintroScreen  :: [String]  -- ^ the intro screen (first help screen) text
   , rapplyVerbMap :: EM.EnumMap Char T.Text
-                                 -- ^ verbs to use for apply actions
+                               -- ^ verbs to use for apply actions
+  , rFontFiles    :: [(FilePath, BS.ByteString)]
+                               -- ^ embedded game-supplied font files
   }
 
 -- | Catch invalid rule kind definitions.

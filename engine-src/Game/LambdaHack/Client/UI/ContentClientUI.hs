@@ -26,5 +26,6 @@ emptyCCUI = CCUI
                              , rwebAddress = ""
                              , rintroScreen = []
                              , rapplyVerbMap = EM.empty
+                             , rFontFiles = []
                              }
   }

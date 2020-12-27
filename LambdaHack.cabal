@@ -437,6 +437,7 @@ library this-game-src
                       ,async
                       ,base
                       ,enummapset
+                      ,file-embed >= 0.0.11
                       ,filepath
                       ,ghc-compact
                       ,optparse-applicative

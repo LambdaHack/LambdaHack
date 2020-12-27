@@ -9,6 +9,7 @@ import Prelude ()
 import Game.LambdaHack.Core.Prelude
 
 import qualified Data.EnumMap.Strict as EM
+import           Data.FileEmbed (embedDir)
 import           Language.Haskell.TH.Syntax
 import           System.IO
 
@@ -39,4 +40,5 @@ standardLayoutAndFeatures = ScreenContent
             _ -> error "not enough paragraphs in intro screen text"
       lift intro)
   , rapplyVerbMap = EM.fromList [('!', "quaff"), (',', "eat"), ('?', "read")]
+  , rFontFiles = $(embedDir "GameDefinition/fonts")
   }
