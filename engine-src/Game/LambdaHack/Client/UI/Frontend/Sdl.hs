@@ -137,14 +137,20 @@ startupFun coscreen soptions@ClientOptions{..} rfMVar = do
            return $ Just (sdlFont, realSize + cellSizeAdd)
      loadFontFile fname fsize = do
        let fontFileName = T.unpack fname
-           fontFilePath | isRelative fontFileName =
-                          fromJust sfontDir </> fontFileName
-                        | otherwise = fontFileName
-       fontFileExists <- doesFileExist fontFilePath
-       unless fontFileExists $
-         fail $ "Font file does not exist: " ++ fontFilePath
-       TTF.load fontFilePath $
-         round $ fromJust sallFontsScale * intToDouble fsize
+           fontSize = round $ fromJust sallFontsScale * intToDouble fsize
+       if isRelative fontFileName
+       then do
+         case lookup fontFileName $ rFontFiles coscreen of
+           Nothing -> fail $ "Font file not supplied with the game: "
+                             ++ fontFileName
+                             ++ " within "
+                             ++ show (map fst $ rFontFiles coscreen)
+           Just bs -> TTF.decode bs fontSize
+       else do
+         fontFileExists <- doesFileExist fontFileName
+         if not fontFileExists
+         then fail $ "Font file does not exist: " ++ fontFileName
+         else TTF.load fontFileName fontSize
      setHintMode _ HintingHeavy = return ()  -- default
      setHintMode sdlFont HintingLight = TTF.setHinting sdlFont TTF.Light
  (squareFont, squareFontSize, mapFontIsBitmap) <-
