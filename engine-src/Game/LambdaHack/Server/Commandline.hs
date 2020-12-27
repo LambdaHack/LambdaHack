@@ -70,7 +70,6 @@ serverOptionsP = do
   sassertExplored   <- assertExploredP
   schosenFontset    <- chosenFontsetP
   sallFontsScale    <- allFontsScaleP
-  sfontDir          <- fontDirP
   slogPriority      <- logPriorityP
   smaxFps           <- maxFpsP
   sdisableAutoYes   <- disableAutoYesP
@@ -250,12 +249,6 @@ allFontsScaleP = optional $ max 0 <$>
   option auto (  long "allFontsScale"
               <> metavar "D"
               <> help "Scale all fonts by D, resizing the whole UI" )
-
-fontDirP :: Parser (Maybe FilePath)
-fontDirP = optional $
-  strOption (  long "fontDir"
-            <> metavar "FILEPATH"
-            <> help "Take font files for the SDL2 frontend from FILEPATH" )
 
 maxFpsP :: Parser (Maybe Double)
 maxFpsP = optional $ max 0 <$>

@@ -162,6 +162,4 @@ applyUIOptions COps{corule} uioptions =
      (\opts -> opts {snoAnim =
         snoAnim opts `mplus` Just (uNoAnim uioptions)}) .
      (\opts -> opts {stitle =
-        stitle opts `mplus` Just (rtitle corule)}) .
-     (\opts -> opts {sfontDir =
-        sfontDir opts `mplus` Just (rfontDir corule)})
+        stitle opts `mplus` Just (rtitle corule)})

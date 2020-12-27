@@ -24,7 +24,6 @@ data RuleContent = RuleContent
                                    --   keep equal to ScreenContent.rwidth
   , rYmax             :: Y         -- ^ maximum level height; for now,
                                    --   keep equal to ScreenContent.rheight - 3
-  , rfontDir          :: FilePath  -- ^ font directory for the game (not lib)
   , rexeVersion       :: Version   -- ^ version of the game
   , rcfgUIName        :: FilePath  -- ^ name of the UI config file
   , rcfgUIDefault     :: (String, Ini.Config)
@@ -43,7 +42,6 @@ emptyRuleContent = RuleContent
   { rtitle = ""
   , rXmax = 0
   , rYmax = 0
-  , rfontDir = ""
   , rexeVersion = makeVersion []
   , rcfgUIName = ""
   , rcfgUIDefault = ("", Ini.emptyConfig)

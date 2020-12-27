@@ -40,7 +40,6 @@ data ClientOptions = ClientOptions
   , sbenchmark        :: Bool
       -- ^ Don't create directories and files and show time stats.
   , stitle            :: Maybe String
-  , sfontDir          :: Maybe FilePath
   , ssavePrefixCli    :: String
       -- ^ Prefix of the save game file name.
   , sfrontendTeletype :: Bool
@@ -76,7 +75,6 @@ defClientOptions = ClientOptions
   , snewGameCli = False
   , sbenchmark = False
   , stitle = Nothing
-  , sfontDir = Nothing
   , ssavePrefixCli = ""
   , sfrontendTeletype = False
   , sfrontendNull = False

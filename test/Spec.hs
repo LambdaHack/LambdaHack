@@ -313,7 +313,7 @@ integrationTests = testGroup "integrationTests" $
             -- The hacky log priority 0 tells SDL frontend to init
             -- and quit at once, for testing on CIs without graphics access.
             let seed = "SMGen " ++ show (13 + 2 * n) ++ " " ++ show (15 + 4 * n)
-                args2 = words "--fontDir GameDefinition/fonts --dbgMsgSer --logPriority 0 --newGame 3 --maxFps 100000 --benchmark --stopAfterFrames 5 --automateAll --keepAutomated --gameMode battle"
+                args2 = words "--dbgMsgSer --logPriority 0 --newGame 3 --maxFps 100000 --benchmark --stopAfterFrames 5 --automateAll --keepAutomated --gameMode battle"
                         ++ [ "--setDungeonRng", seed, "--setMainRng", seed
                            , "--fontset", fontsetName ]
             serverOptions2 <- handleParseResult $ execParserPure defaultPrefs serverOptionsPI args2
