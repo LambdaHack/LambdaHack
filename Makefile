@@ -291,25 +291,6 @@ build-binary-v2:
 
 copy-directory:
 	cp GameDefinition/config.ui.default LambdaHackTheGame/GameDefinition
-	cp GameDefinition/fonts/16x16xw.woff LambdaHackTheGame/GameDefinition/fonts
-	cp GameDefinition/fonts/16x16xw.bdf LambdaHackTheGame/GameDefinition/fonts
-	cp GameDefinition/fonts/16x16x.fnt LambdaHackTheGame/GameDefinition/fonts
-	cp GameDefinition/fonts/8x8xb.fnt LambdaHackTheGame/GameDefinition/fonts
-	cp GameDefinition/fonts/8x8x.fnt LambdaHackTheGame/GameDefinition/fonts
-	cp GameDefinition/fonts/LICENSE.16x16x LambdaHackTheGame/GameDefinition/fonts
-	cp GameDefinition/fonts/BinarySansProLH-Regular.ttf.woff LambdaHackTheGame/GameDefinition/fonts
-	cp GameDefinition/fonts/BinarySansProLH-Semibold.ttf.woff LambdaHackTheGame/GameDefinition/fonts
-	cp GameDefinition/fonts/BinaryCodeProLH-Bold.ttf.woff LambdaHackTheGame/GameDefinition/fonts
-	cp GameDefinition/fonts/DejaVuLGCSans.ttf.woff LambdaHackTheGame/GameDefinition/fonts
-	cp GameDefinition/fonts/DejaVuLGCSans-Bold.ttf.woff LambdaHackTheGame/GameDefinition/fonts
-	cp GameDefinition/fonts/Hack-Bold.ttf.woff LambdaHackTheGame/GameDefinition/fonts
-	cp GameDefinition/fonts/ubuntu-v14-latin-ext_latin-regular.ttf.woff LambdaHackTheGame/GameDefinition/fonts
-	cp GameDefinition/fonts/ubuntu-v14-latin-ext_latin-500.ttf.woff LambdaHackTheGame/GameDefinition/fonts
-	cp GameDefinition/fonts/ubuntu-mono-v9-latin-ext_latin-700.ttf.woff LambdaHackTheGame/GameDefinition/fonts
-	cp GameDefinition/fonts/OFL.txt LambdaHackTheGame/GameDefinition/fonts
-	cp GameDefinition/fonts/LICENSE.DejaVu LambdaHackTheGame/GameDefinition/fonts
-	cp GameDefinition/fonts/LICENSE.Hack LambdaHackTheGame/GameDefinition/fonts
-	cp GameDefinition/fonts/UFL.txt LambdaHackTheGame/GameDefinition/fonts
 	cp GameDefinition/InGameHelp.txt LambdaHackTheGame/GameDefinition
 	cp GameDefinition/PLAYING.md LambdaHackTheGame/GameDefinition
 	cp README.md LambdaHackTheGame
