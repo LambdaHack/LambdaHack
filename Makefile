@@ -270,7 +270,7 @@ test-short-load:
 
 build-binary-v1:
 	cabal v1-install --force-reinstalls --disable-library-profiling --disable-profiling --disable-documentation --enable-optimization --only-dependencies
-	cabal v1-configure --disable-library-profiling --disable-profiling --enable-optimization --prefix=/ --datadir=. --datasubdir=.
+	cabal v1-configure --disable-library-profiling --disable-profiling --enable-optimization
 	cabal v1-build exe:LambdaHack
 	mkdir -p LambdaHackTheGame/GameDefinition
 	cabal v1-copy --destdir=LambdaHackTheGameInstall
@@ -279,10 +279,10 @@ copy-binary:
 	cp $$(cabal-plan list-bin LambdaHack) LambdaHackTheGame
 
 configure-binary-v2:
-	cabal configure --disable-tests --disable-library-profiling --disable-profiling --disable-documentation --enable-optimization --prefix=/ --datadir=. --datasubdir=.
+	cabal configure --disable-tests --disable-library-profiling --disable-profiling --disable-documentation --enable-optimization
 
 configure-binary-v2-vty:
-	cabal configure -fvty --disable-tests --disable-library-profiling --disable-profiling --disable-documentation --enable-optimization --prefix=/ --datadir=. --datasubdir=.
+	cabal configure -fvty --disable-tests --disable-library-profiling --disable-profiling --disable-documentation --enable-optimization
 
 build-binary-v2:
 	cabal build --only-dependencies .
