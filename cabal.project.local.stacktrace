@@ -1,4 +1,3 @@
-jobs: 1
 flags: +with_expensive_assertions
 profiling: True
 library-profiling: True
