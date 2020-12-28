@@ -3,26 +3,31 @@ environment:
     - goal: artifact32and64
       build32: true
       build64: true
+      APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2019
     - goal: test
       build32: true
       build64: false
+      APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2019
     - goal: test
       build32: true
       build64: false
+      APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2019
     - goal: test
       build32: true
       build64: false
+      APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2019
     - goal: test
       build32: true
       build64: false
+      APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2019
     - goal: test
       build32: false
       build64: true
+      APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2019
 
 cache:
   - C:\Users\appveyor\AppData\Roaming\cabal -> appveyor.yml
   - C:\Users\appveyor\AppData\Roaming\ghc -> appveyor.yml
-
 
 install:
   - SET PATH=LambdaHackTheGame;%APPDATA%\cabal\bin;C:\msys64\mingw64\bin;C:\msys64\usr\bin;C:\ProgramData\chocolatey\lib\ghc\tools\ghc-8.4.4\bin;C:\ProgramData\chocolatey\lib\cabal\tools;%PATH%
