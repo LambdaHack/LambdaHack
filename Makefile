@@ -272,7 +272,7 @@ build-binary-v1:
 	cabal v1-install --force-reinstalls --disable-library-profiling --disable-profiling --disable-documentation --enable-optimization --only-dependencies
 	cabal v1-configure --disable-library-profiling --disable-profiling --enable-optimization --prefix=/ --datadir=. --datasubdir=.
 	cabal v1-build exe:LambdaHack
-	mkdir -p LambdaHackTheGame/GameDefinition/fonts
+	mkdir -p LambdaHackTheGame/GameDefinition
 	cabal v1-copy --destdir=LambdaHackTheGameInstall
 
 copy-binary:
@@ -287,7 +287,7 @@ configure-binary-v2-vty:
 build-binary-v2:
 	cabal build --only-dependencies .
 	cabal build exe:LambdaHack
-	mkdir -p LambdaHackTheGame/GameDefinition/fonts
+	mkdir -p LambdaHackTheGame/GameDefinition
 
 copy-directory:
 	cp GameDefinition/config.ui.default LambdaHackTheGame/GameDefinition
