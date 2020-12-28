@@ -143,7 +143,9 @@ mkUIOptions corule benchmark = do
               <+> T.pack (showVersion vExe1)
               <+> "game. The file has been moved aside."
     delayPrint msg
-    renameFile (path "") (path "bkp.")
+    cpExists <- doesFileExist (path "")
+    when cpExists $
+      renameFile (path "") (path "bkp.")
     tryWriteFile (path "") configString
     let confDefault = parseConfig cfgUIDefault
     return confDefault
