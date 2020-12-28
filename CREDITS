@@ -22,8 +22,7 @@ Sheldon Simms III and Nick McConnell and released by them under
 GNU GPL, version 2 or any later version (confirmed at
 http://www.thangorodrim.net/development/opensource.html).
 Any further modifications by authors of LambdaHack
-are also released under GNU GPL version 2. The licence file is at
-GameDefinition/fonts/LICENSE.16x16x in the source code tree.
+are also released under GNU GPL version 2.
 
 Font 16x16xw.bdf is derived from 16x16x.fon by changing all but
 a few glyphs, converting to BDF format, extending character set
@@ -49,7 +48,6 @@ Copyright 2010-2019 Adobe (http://www.adobe.com/), with Reserved Font
 Name 'Source'. All Rights Reserved. Source is a trademark of Adobe
 in the United States and/or other countries.
 This Font Software is licensed under the SIL Open Font License, Version 1.1.
-The licence file is at GameDefinition/fonts/OFL.txt in the source code tree.
 
 The sources are modified and processed as follows (see
 https://github.com/adobe-fonts/source-sans-pro/issues/193 for background):
@@ -74,8 +72,6 @@ are downloaded from https://github.com/dejavu-fonts/dejavu-fonts
 and compresses with pyftsubset. Their copyright notice is
 DejaVu fonts 2.37 (c)2004-2016 DejaVu fonts team.
 Fonts are (c) Bitstream (see below). DejaVu changes are in public domain.
-The licence file is at GameDefinition/fonts/LICENSE.DejaVu in the source
-code tree.
 
 Font Hack-Bold.ttf.woff is downloaded from
 https://github.com/source-foundry/Hack
@@ -83,8 +79,6 @@ and compresses with pyftsubset. Its copyright notice is
 Hack work is (c) 2018 Source Foundry Authors. MIT License.
 Bitstream Vera Sans Mono (c) 2003 Bitstream, Inc. (with Reserved Font
 Names _Bitstream_ and _Vera_). Bitstream Vera License.
-The licence file is at GameDefinition/fonts/LICENSE.Hack in the source
-code tree.
 
 
 
@@ -94,7 +88,6 @@ and ubuntu-mono-v9-latin-ext_latin-700.ttf.woff
 are generated via google-webfonts-helper.herokuapp.com
 from 'Ubuntu Font Family' fonts with the following copyright notice:
 Copyright 2011 Canonical Ltd. Licensed under the Ubuntu Font Licence 1.0
-The licence file is at GameDefinition/fonts/UFL.txt in the source code tree.
 
 The files are compressed with pyftsubset to save some space and make
 sure they are created from TTF, not OTF fonts. Unfortunately, being TTF
