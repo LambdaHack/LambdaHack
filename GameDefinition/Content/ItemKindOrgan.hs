@@ -417,7 +417,7 @@ eye n grp = armoredSkin
   }
 eye3 = eye 3 S_EYE_3
 eye6 = eye 6 S_EYE_6
-eye8 = eye 8 S_EYE_8
+eye8 = eye 28 S_EYE_8
 vision :: Int -> GroupName ItemKind -> ItemKind
 vision n grp = armoredSkin
   { iname    = "vision"

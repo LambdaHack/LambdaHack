@@ -444,24 +444,34 @@ treeShade = PlaceKind
 fogClump = PlaceKind
   { psymbol  = 'f'
   , pname    = "a foggy patch"
-  , pfreq    = [(SHOOTOUT, 150), (EMPTY, 15)]
+  , pfreq    = [(SHOOTOUT, 1500000), (ROGUE, 150000)]
   , prarity  = [(1, 1)]
-  , pcover   = CMirror
-  , pfence   = FNone
+  , pcover   = CVerbatim
+  , pfence   = FWall
+  , ptopLeft = [ "..........."
+               , "########..."
+               , "..........."
+               , "..........."
+               , "..........."
+               , "......#...."
+               , "......#...."
+               , "......#...."
+               , "###...#...."
+               , "......#...."
+               , "......#...."
+               , "......#...."
+               ]
+  , poverrideDark = [('#', S_TREE_LIT), ('.', S_FLOOR_ACTOR_LIT)]
+  , poverrideLit = [('#', S_TREE_LIT), ('.', S_FLOOR_ACTOR_LIT)]
+  }
+fogClump2 = fogClump
+  { pfreq    = [(SHOOTOUT, 500), (EMPTY, 50)]
   , ptopLeft = [ "f;"
                , ";f"
                , ";X"
                ]
   , poverrideDark = [('f', FOG_CLUMP_DARK), (';', S_FOG_LIT)]
   , poverrideLit = [('f', FOG_CLUMP_LIT), (';', S_FOG_LIT)]
-  }
-fogClump2 = fogClump
-  { pfreq    = [(SHOOTOUT, 500), (EMPTY, 50)]
-  , ptopLeft = [ "X;f"
-               , "f;f"
-               , ";;f"
-               , "Xff"
-               ]
   }
 smokeClump = PlaceKind
   { psymbol  = 's'

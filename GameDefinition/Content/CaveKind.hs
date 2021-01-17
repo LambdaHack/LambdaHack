@@ -75,9 +75,9 @@ rogue = CaveKind
   , cfreq         = [(DEFAULT_RANDOM, 100), (CAVE_ROGUE, 1)]
   , cXminSize     = 80
   , cYminSize     = 21
-  , ccellSize     = DiceXY (2 `d` 4 + 10) 6
-  , cminPlaceSize = DiceXY (2 `d` 2 + 4) 5
-  , cmaxPlaceSize = DiceXY 16 40
+  , ccellSize     = DiceXY (2 `d` 2 + 11) (1 `d` 2 + 8)
+  , cminPlaceSize = DiceXY 36 30
+  , cmaxPlaceSize = DiceXY 37 31  -- favour large rooms
   , cdarkOdds     = 1 `d` 54 + 1 `dL` 20
       -- most rooms lit, to compensate for dark corridors
   , cnightOdds    = 51  -- always night
@@ -270,8 +270,6 @@ outermost = shallowRogue
   { csymbol       = 'B'
   , cname         = "Cave entrance"
   , cfreq         = [(CAVE_OUTERMOST, 100)]
-  , cXminSize     = 40
-  , cYminSize     = 21
   , cdarkOdds     = 0  -- all rooms lit, for a gentle start
   , cactorCoeff   = 80  -- already animals start there; also, pity on the noob
   , cactorFreq    = filter ((/= MONSTER) . fst) $ cactorFreq rogue
@@ -279,14 +277,11 @@ outermost = shallowRogue
   , citemFreq     = filter ((/= IK.TREASURE) . fst) $ citemFreq rogue
   , cminStairDist = 10
   , cmaxStairsNum = 1
-  , cescapeFreq   = [(INDOOR_ESCAPE_UP, 1)]
   , cskip         = [0]
   , cdesc         = "This close to the surface, the sunlight still illuminates the dungeon."
   }
 shallowRogue = rogue
   { cfreq         = [(CAVE_SHALLOW_ROGUE, 100)]
-  , cXminSize     = 60
-  , cYminSize     = 21
   , cmaxStairsNum = 1  -- ensure heroes meet initial monsters and their loot
   , cdesc         = "The snorts and grunts of savage beasts can be clearly heard."
   }
@@ -356,9 +351,9 @@ shootout = rogue  -- a scenario with strong missiles;
   { csymbol       = 'S'
   , cname         = "Misty meadow"
   , cfreq         = [(CAVE_SHOOTOUT, 1)]
-  , ccellSize     = DiceXY (1 `d` 2 + 6) 6
-  , cminPlaceSize = DiceXY 3 3
-  , cmaxPlaceSize = DiceXY 4 4
+  , ccellSize     = DiceXY (2 `d` 2 + 11) (1 `d` 2 + 8)
+  , cminPlaceSize = DiceXY 36 30
+  , cmaxPlaceSize = DiceXY 37 31  -- favour large rooms
   , cdarkOdds     = 51
   , cnightOdds    = 0
   , cauxConnects  = 1%10
