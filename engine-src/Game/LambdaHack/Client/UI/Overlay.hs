@@ -182,14 +182,14 @@ indentSplitAttrString w l =
     [] -> []
     hd : tl -> hd : map (AttrLine . ([Color.spaceAttrW32] ++) . attrLine) tl
 
-indentSplitAttrString2 :: Int -> AttrString -> [AttrLine]
-indentSplitAttrString2 w l =
+indentSplitAttrString2 :: Bool -> Int -> AttrString -> [AttrLine]
+indentSplitAttrString2 isProp w l =
   let ts = splitAttrString w (w - 2) l
+      -- Proportional spaces are very narrow.
+      spaces = replicate (if isProp then 4 else 2) Color.spaceAttrW32
   in case ts of
     [] -> []
-    hd : tl -> hd : map (AttrLine
-                         . ([Color.spaceAttrW32, Color.spaceAttrW32] ++)
-                         . attrLine) tl
+    hd : tl -> hd : map (AttrLine . (spaces ++) . attrLine) tl
 
 -- We pass empty line along for the case of appended buttons, which need
 -- either space or new lines before them.

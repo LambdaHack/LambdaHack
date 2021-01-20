@@ -227,7 +227,8 @@ splitOKX :: FontSetup -> Bool -> Int -> Int -> Int -> AttrString -> [K.KM]
          -> [OKX]
 splitOKX FontSetup{..} msgLong width height wrap reportAS keys (ls0, kxs0) =
   assert (height > 2) $
-  let reportParagraphs = linesAttr reportAS
+  let indentSplitSpaces = indentSplitAttrString2 (not $ isMonoFont propFont)
+      reportParagraphs = linesAttr reportAS
       -- TODO: until SDL support for measuring prop font text is released,
       -- we have to use MonoFont for the paragraph that ends with buttons.
       (repPrep, repMono) =
@@ -245,11 +246,11 @@ splitOKX FontSetup{..} msgLong width height wrap reportAS keys (ls0, kxs0) =
                  else width
       repPrep0 = offsetOverlay $ case repPrep of
         [] -> []
-        r : rs -> (indentSplitAttrString2 msgWidth . attrLine) r  -- first long
-                  ++ concatMap (indentSplitAttrString2 msgWrap . attrLine) rs
+        r : rs -> (indentSplitSpaces msgWidth . attrLine) r  -- first long
+                  ++ concatMap (indentSplitSpaces msgWrap . attrLine) rs
       -- TODO: refactor this ugly pile of copy-paste
       repPrepW = offsetOverlay
-                 $ concatMap (indentSplitAttrString2 width . attrLine) repPrep
+                 $ concatMap (indentSplitSpaces width . attrLine) repPrep
       -- If the mono portion first on the line, let it take half width,
       -- but if previous lines shorter, match them and only buttons
       -- are permitted to stick out.
@@ -263,7 +264,7 @@ splitOKX FontSetup{..} msgLong width height wrap reportAS keys (ls0, kxs0) =
                  $ offsetOverlay
                  $ indentSplitAttrString width $ attrLine repMono
       repWhole0 = offsetOverlay
-                  $ concatMap (indentSplitAttrString2 msgWidth . attrLine)
+                  $ concatMap (indentSplitSpaces msgWidth . attrLine)
                               reportParagraphs
       repWhole1 = map (\(PointUI x y, al) -> (PointUI x (y + 1), al)) repWhole0
       lenOfRep0 = length repPrep0 + length repMono0
