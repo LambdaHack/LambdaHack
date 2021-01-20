@@ -634,9 +634,10 @@ lookAtPosition lidV p = do
   (tileBlurb, placeBlurb, embedsList) <- lookAtTile canSee p leader lidV
   (actorsBlurb, actorsDesc) <- lookAtActors p lidV
   inhabitants <- getsState $ posToAidAssocs p lidV
-  let actorMsgClass = if (bfid . snd <$> inhabitants) == [side]
-                      then MsgPromptGeneric  -- our single proj or non-proj; tame
-                      else MsgPromptActors
+  let actorMsgClass =
+        if (bfid . snd <$> inhabitants) == [side]
+        then MsgPromptGeneric  -- our single proj or non-proj; tame
+        else MsgPromptActors
   itemsBlurb <- lookAtItems canSee p leader
   stashBlurb <- lookAtStash lidV p
   lvl@Level{lsmell, ltime} <- getLevel lidV

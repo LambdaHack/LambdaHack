@@ -1192,18 +1192,24 @@ aimAscendHuman k = do
 -- | Tweak the @eps@ parameter of the aiming digital line.
 epsIncrHuman :: (MonadClient m, MonadClientUI m) => Direction -> m ()
 epsIncrHuman d = do
-  saimMode <- getsSession saimMode
-  lidV <- viewedLevelUI
-  modifySession $ \sess -> sess {saimMode =
-    let newDetail = maybe defaultDetailLevel detailLevel saimMode
-    in Just $ AimMode lidV newDetail}
+  -- Perform the change:
   let sepsDelta = case d of
         Forward -> 1
         Backward -> -1
   modifyClient $ \cli -> cli {seps = seps cli + sepsDelta}
   invalidateBfsPathAll
+  -- Provide UI feedback:
+  -- Hack @sreportNull@ to display the new line even if no earlier messages.
+  modifySession $ \sess -> sess {sreportNull = False}
+  saimMode <- getsSession saimMode
+  lidV <- viewedLevelUI
+  modifySession $ \sess -> sess {saimMode =
+    let newDetail = maybe DetailLow detailLevel saimMode
+    in Just $ AimMode lidV newDetail}
   flashAiming
   modifySession $ \sess -> sess {saimMode}
+  -- The change may not affect the line shape, hence 'possibly'.
+  msgAdd MsgPromptAction "Aiming line (possibly) modified."
 
 -- Flash the aiming line and path.
 flashAiming :: MonadClientUI m => m ()
