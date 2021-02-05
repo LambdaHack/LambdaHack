@@ -198,7 +198,10 @@ startupFun coscreen soptions@ClientOptions{..} rfMVar = do
                         (toEnum $ rheight coscreen * boxSize)
       windowConfig = SDL.defaultWindow
         { SDL.windowInitialSize = screenV2
-        , SDL.windowMode = if sfullscreen then SDL.Fullscreen else SDL.Windowed }
+        , SDL.windowMode = case fromMaybe NotFullscreen sfullscreenMode of
+            ModeChange -> SDL.Fullscreen
+            BigBorderlessWindow -> SDL.FullscreenDesktop
+            NotFullscreen -> SDL.Windowed }
       rendererConfig = SDL.RendererConfig
         { rendererType          = if sbenchmark
                                   then SDL.AcceleratedRenderer
@@ -207,7 +210,10 @@ startupFun coscreen soptions@ClientOptions{..} rfMVar = do
         }
   swindow <- SDL.createWindow title windowConfig
   srenderer <- SDL.createRenderer swindow (-1) rendererConfig
-  when sfullscreen (SDL.rendererLogicalSize srenderer SDL.$= Just screenV2)
+  unless (fromMaybe NotFullscreen sfullscreenMode == NotFullscreen) $
+    -- This is essential to preserve game map aspect ratio in fullscreen, etc.,
+    -- if the aspect ratios of video mode and game map view don't match.
+    SDL.rendererLogicalSize srenderer SDL.$= Just screenV2
   -- Display black screen ASAP to hide any garbage.
   SDL.rendererRenderTarget srenderer SDL.$= Nothing
   SDL.clear srenderer  -- clear the backbuffer

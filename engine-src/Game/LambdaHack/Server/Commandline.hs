@@ -45,7 +45,7 @@ serverOptionsP :: Parser ServerOptions
 serverOptionsP = do
   ~(snewGameSer, scurChalSer)
                     <- serToChallenge <$> newGameP
-  sfullscreen       <- fullscreenP
+  sfullscreenMode   <- fullscreenModeP
   knowMap           <- knowMapP
   knowEvents        <- knowEventsP
   knowItems         <- knowItemsP
@@ -135,7 +135,7 @@ exposeActorsP =
 showItemSamplesP :: Parser Bool
 showItemSamplesP =
   switch (  long "showItemSamples"
-         <> help "At game over show samples of all items (--sknowEvents disables this)" )
+         <> help "At game over show samples of all items (--knowEvents disables this)" )
 
 sniffP :: Parser Bool
 sniffP =
@@ -184,11 +184,12 @@ newGameP = optional $ max 1 <$> min difficultyBound <$>
               <> help "Start a new game, overwriting the save file, with difficulty for all UI players set to N"
               <> metavar "N" )
 
-fullscreenP :: Parser Bool
-fullscreenP =
-  switch (  long "fullscreen"
-         <> short 'f'
-         <> help "Start game in fullscreen mode" )
+fullscreenModeP :: Parser (Maybe FullscreenMode)
+fullscreenModeP = optional $
+  option auto (  long "fullscreenMode"
+              <> short 'f'
+              <> metavar "MODE"
+              <> help "Display in MODE, one of NotFullscreen (default), BigBorderlessWindow (preferred), ModeChange" )
 
 stopAfterSecsP :: Parser (Maybe Int)
 stopAfterSecsP = optional $ max 0 <$>

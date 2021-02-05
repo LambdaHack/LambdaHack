@@ -1,7 +1,7 @@
 {-# LANGUAGE DeriveGeneric #-}
 -- | Options that affect the behaviour of the client.
 module Game.LambdaHack.Common.ClientOptions
-  ( ClientOptions(..), defClientOptions
+  ( FullscreenMode(..), ClientOptions(..), defClientOptions
   ) where
 
 import Prelude ()
@@ -13,6 +13,16 @@ import GHC.Generics (Generic)
 
 import Game.LambdaHack.Common.Misc
 
+-- | Kinds of fullscreen or windowed mode. See <https://hackage.haskell.org/package/sdl2-2.5.3.0/docs/SDL-Video.html#t:WindowMode>.
+data FullscreenMode =
+    NotFullscreen        -- ^ a normal window instead of fullscreen
+  | BigBorderlessWindow  -- ^ fake fullscreen; window the size of the desktop;
+                         --   this is the preferred one, if it works
+  | ModeChange           -- ^ real fullscreen with a video mode change
+  deriving (Show, Read, Eq, Generic)
+
+instance Binary FullscreenMode
+
 -- | Options that affect the behaviour of the client (but not game rules).
 data ClientOptions = ClientOptions
   { schosenFontset    :: Maybe Text
@@ -23,8 +33,8 @@ data ClientOptions = ClientOptions
       -- ^ Available fonts as defined in config file.
   , sfontsets         :: [(Text, FontSet)]
       -- ^ Available font sets as defined in config file.
-  , sfullscreen       :: Bool
-      -- ^ Whether to start in fullscreen mode --
+  , sfullscreenMode   :: Maybe FullscreenMode
+      -- ^ Whether to start in fullscreen mode and in which one.
   , slogPriority      :: Maybe Int
       -- ^ How much to log (e.g., from SDL). 1 is all, 5 is errors, the default.
   , smaxFps           :: Maybe Double
@@ -70,7 +80,7 @@ defClientOptions = ClientOptions
   , sallFontsScale = Nothing
   , sfonts = []
   , sfontsets = []
-  , sfullscreen = False
+  , sfullscreenMode = Nothing
   , slogPriority = Nothing
   , smaxFps = Nothing
   , sdisableAutoYes = False
