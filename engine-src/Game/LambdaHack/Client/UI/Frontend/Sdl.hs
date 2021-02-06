@@ -634,7 +634,9 @@ modTranslate m =
     (SDL.keyModifierLeftShift m || SDL.keyModifierRightShift m)
     (SDL.keyModifierLeftAlt m
      || SDL.keyModifierRightAlt m
-     || SDL.keyModifierAltGr m)
+     || SDL.keyModifierAltGr m
+     || SDL.keyModifierLeftGUI m
+     || SDL.keyModifierRightGUI m)
     False
 
 keyTranslate :: Bool -> SDL.Keycode -> K.Key
