@@ -214,9 +214,13 @@ startupFun coscreen soptions@ClientOptions{..} rfMVar = do
     -- This is essential to preserve game map aspect ratio in fullscreen, etc.,
     -- if the aspect ratios of video mode and game map view don't match.
     SDL.rendererLogicalSize srenderer SDL.$= Just screenV2
-  -- Display black screen ASAP to hide any garbage.
+  -- Display black screen ASAP to hide any garbage. This is also needed
+  -- to clear trash on the margins in fullscreen. No idea why the double
+  -- calls are needed, sometimes. Perhaps it's double-buffered.
   SDL.rendererRenderTarget srenderer SDL.$= Nothing
   SDL.clear srenderer  -- clear the backbuffer
+  SDL.present srenderer
+  SDL.clear srenderer  -- clear probably the other half of the double buffer
   SDL.present srenderer
   let initTexture = do
         texture <- SDL.createTexture srenderer SDL.ARGB8888
