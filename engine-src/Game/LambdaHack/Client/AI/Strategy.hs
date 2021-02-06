@@ -12,7 +12,6 @@ import Prelude ()
 import Game.LambdaHack.Core.Prelude
 
 import Control.Applicative
-import Data.Int (Int32)
 
 import Game.LambdaHack.Core.Frequency
 
@@ -27,14 +26,12 @@ import Game.LambdaHack.Core.Frequency
 newtype Strategy a = Strategy { runStrategy :: [Frequency a] }
   deriving (Show, Foldable, Traversable)
 
-_maxBound32 :: Integer
-_maxBound32 = toInteger (maxBound :: Int32)
-
 instance Monad Strategy where
   m >>= f  = normalizeStrategy $ Strategy
     [ toFreq name [
 #ifdef WITH_EXPENSIVE_ASSERTIONS
-                    assert (toInteger p * toInteger q <= _maxBound32)
+                    assert (toInteger p * toInteger q
+                            <= toInteger maxBoundInt32)
 #endif
                     (p * q, b)
                   | (p, a) <- runFrequency x

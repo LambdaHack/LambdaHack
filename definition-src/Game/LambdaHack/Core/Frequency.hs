@@ -4,7 +4,7 @@ module Game.LambdaHack.Core.Frequency
   ( -- * The @Frequency@ type
     Frequency
     -- * Construction
-  , uniformFreq, toFreq
+  , uniformFreq, toFreq, maxBoundInt32
     -- * Transformation
   , scaleFreq
     -- * Consumption
@@ -19,6 +19,9 @@ import Control.Applicative
 import Data.Int (Int32)
 import GHC.Generics (Generic)
 
+maxBoundInt32 :: Int
+maxBoundInt32 = toIntegralCrash (maxBound :: Int32)
+
 -- | The frequency distribution type. Not normalized (operations may
 -- or may not group the same elements and sum their frequencies).
 -- However, elements with zero frequency are removed upon construction.
@@ -32,14 +35,11 @@ data Frequency a = Frequency
   }
   deriving (Show, Eq, Ord, Foldable, Traversable, Generic)
 
-_maxBound32 :: Integer
-_maxBound32 = toInteger (maxBound :: Int32)
-
 instance Monad Frequency where
   Frequency xs name >>= f =
     Frequency [
 #ifdef WITH_EXPENSIVE_ASSERTIONS
-                assert (toInteger p * toInteger q <= _maxBound32
+                assert (toInteger p * toInteger q <= toInteger maxBoundInt32
                         `blame` (name, map fst xs))
 #endif
                 (p * q, y)
@@ -57,7 +57,7 @@ instance Applicative Frequency where
   Frequency fs fname <*> Frequency ys yname =
     Frequency [
 #ifdef WITH_EXPENSIVE_ASSERTIONS
-                assert (toInteger p * toInteger q <= _maxBound32
+                assert (toInteger p * toInteger q <= toInteger maxBoundInt32
                         `blame` (fname, map fst fs, yname, map fst ys))
 #endif
                 (p * q, f y)
@@ -89,7 +89,7 @@ uniformFreq name l = Frequency (map (1,) l) name
 toFreq :: Text -> [(Int, a)] -> Frequency a
 toFreq name l =
 #ifdef WITH_EXPENSIVE_ASSERTIONS
-  assert (all (\(p, _) -> toInteger p <= _maxBound32) l
+  assert (all (\(p, _) -> toInteger p <= toInteger maxBoundInt32) l
           `blame` (name, map fst l)) $
 #endif
   Frequency (filter ((> 0 ) . fst) l) name
@@ -101,7 +101,7 @@ scaleFreq n (Frequency xs name) =
   assert (n > 0 `blame` "non-positive frequency scale" `swith` (name, n, xs)) $
   let multN p =
 #ifdef WITH_EXPENSIVE_ASSERTIONS
-                assert (toInteger p * toInteger n <= _maxBound32
+                assert (toInteger p * toInteger n <= toInteger maxBoundInt32
                         `blame` (n, Frequency xs name)) $
 #endif
                 p * n

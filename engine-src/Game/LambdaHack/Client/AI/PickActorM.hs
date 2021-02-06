@@ -320,9 +320,10 @@ pickActorToMove foeAssocs friendAssocs maidToAvoid = do
                     _ -> if d < 8 then d `div` 4 else 2 + d `div` 10)
                + (if aid == oldAid then 0 else 10)
                + (if stepsIntoLight then 30 else 0)
+          -- Overheads above @maxBoundInt32@ are unlikely (and unsuppored in JS)
+          -- and also capping the value does not distort the choice too much.
           positiveOverhead abt =
-            let ov = 200 - overheadOurs abt
-            in if ov <= 0 then 1 else ov
+            min maxBoundInt32 $ max 1 $ 200 - overheadOurs abt
           candidates = [ oursAdjStash
                        , oursVulnerable
                        , oursSupport
