@@ -31,12 +31,20 @@ import qualified Game.LambdaHack.Common.PointArray as PointArray
 import           Game.LambdaHack.Common.Vector
 import           Game.LambdaHack.Definition.Defs
 
+-- @Word8@ is much faster, but in some very rare cases leads to AI loops,
+-- e.g., when a move through uknown terrain towards enemy stash
+-- goes beyond the @apartBfs@ range and makes AI abandon the stash target,
+-- only to pick it up after a step in the opposite direction.
+-- In normal LH maps, path length can get to around 200,
+-- in contrived mazes it could perhaps reach a few thousand.
+type DistanceWord = Word16
+
 -- | Weighted distance between points along shortest paths.
-newtype BfsDistance = BfsDistance {bfsDistance :: Word8}
+newtype BfsDistance = BfsDistance {bfsDistance :: DistanceWord}
   deriving (Show, Eq, Ord, Bits)
 
 instance PointArray.UnboxRepClass BfsDistance where
-  type UnboxRep BfsDistance = Word8
+  type UnboxRep BfsDistance = DistanceWord
   toUnboxRepUnsafe = bfsDistance
   fromUnboxRep = BfsDistance
 
@@ -56,7 +64,7 @@ subtractBfsDistance d1 d2 = fromEnum $ bfsDistance d1 - bfsDistance d2
 -- | The minimal distance value assigned to paths that don't enter
 -- any unknown tiles.
 minKnownBfs :: BfsDistance
-minKnownBfs = BfsDistance 128
+minKnownBfs = BfsDistance $ 1 + maxBound `div` 2
 
 -- | The distance value that denotes no legal path between points,
 -- either due to blocked tiles or pathfinding aborted at earlier tiles,
@@ -66,7 +74,7 @@ apartBfs = predBfsDistance minKnownBfs
 
 -- | Maximum value of the type.
 maxBfsDistance :: BfsDistance
-maxBfsDistance = BfsDistance (maxBound :: Word8)
+maxBfsDistance = BfsDistance (maxBound :: DistanceWord)
 
 -- | The distance value that denotes that path search was aborted
 -- at this tile due to too large actual distance
@@ -118,7 +126,7 @@ fillBfsThawed :: forall s.
               -> Word8
               -> PointI
               -> (PA.MutablePrimArray s PointI, PA.MutablePrimArray s PointI)
-              -> U.MVector s Word8
+              -> U.MVector s DistanceWord
               -> ST s ()
 fillBfsThawed !lalter !alterSkill !sourceI
               (!tabAThawed, !tabBThawed) !vThawed = do
