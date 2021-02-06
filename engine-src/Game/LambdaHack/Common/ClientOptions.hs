@@ -8,6 +8,7 @@ import Prelude ()
 
 import Game.LambdaHack.Core.Prelude
 
+import Control.DeepSeq
 import Data.Binary
 import GHC.Generics (Generic)
 
@@ -20,6 +21,8 @@ data FullscreenMode =
                          --   this is the preferred one, if it works
   | ModeChange           -- ^ real fullscreen with a video mode change
   deriving (Show, Read, Eq, Generic)
+
+instance NFData FullscreenMode
 
 instance Binary FullscreenMode
 

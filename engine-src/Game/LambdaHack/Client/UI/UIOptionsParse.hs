@@ -98,6 +98,7 @@ parseConfig cfg =
               (T.pack ident, readError fontSetString)
             section = Ini.allItems "fontsets" cfg
         in map toFontSet section
+      uFullscreenMode = getOption "fullscreenMode"
   in UIOptions{..}
 
 glueSeed :: [String] -> [String]
@@ -159,6 +160,8 @@ applyUIOptions COps{corule} uioptions =
         sallFontsScale opts `mplus` Just (uAllFontsScale uioptions)}) .
      (\opts -> opts {sfonts = uFonts uioptions}) .
      (\opts -> opts {sfontsets = uFontsets uioptions}) .
+     (\opts -> opts {sfullscreenMode =
+        sfullscreenMode opts `mplus` Just (uFullscreenMode uioptions)}) .
      (\opts -> opts {smaxFps =
         smaxFps opts `mplus` Just (uMaxFps uioptions)}) .
      (\opts -> opts {snoAnim =

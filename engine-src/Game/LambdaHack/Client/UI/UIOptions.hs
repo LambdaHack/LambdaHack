@@ -1,5 +1,5 @@
 {-# LANGUAGE DeriveGeneric #-}
--- | UI client options.
+-- | UI client options specified in the config file.
 module Game.LambdaHack.Client.UI.UIOptions
   ( UIOptions(..)
   ) where
@@ -14,10 +14,11 @@ import GHC.Generics (Generic)
 
 import           Game.LambdaHack.Client.UI.HumanCmd
 import qualified Game.LambdaHack.Client.UI.Key as K
+import           Game.LambdaHack.Common.ClientOptions (FullscreenMode)
 import           Game.LambdaHack.Common.Misc
 import qualified Game.LambdaHack.Definition.Color as Color
 
--- | Options that affect the UI of the client.
+-- | Options that affect the UI of the client, specified in the config file. More documentation is in the default config file.
 data UIOptions = UIOptions
   { -- commands
     uCommands         :: [(K.KM, CmdTriple)]
@@ -42,6 +43,7 @@ data UIOptions = UIOptions
       -- ^ Hardwired commandline arguments to process.
   , uFonts            :: [(Text, FontDefinition)]
   , uFontsets         :: [(Text, FontSet)]
+  , uFullscreenMode   :: FullscreenMode
   }
   deriving (Show, Generic)
 
