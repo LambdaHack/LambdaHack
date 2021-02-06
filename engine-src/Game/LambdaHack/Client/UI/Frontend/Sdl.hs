@@ -214,14 +214,16 @@ startupFun coscreen soptions@ClientOptions{..} rfMVar = do
     -- This is essential to preserve game map aspect ratio in fullscreen, etc.,
     -- if the aspect ratios of video mode and game map view don't match.
     SDL.rendererLogicalSize srenderer SDL.$= Just screenV2
-  -- Display black screen ASAP to hide any garbage. This is also needed
-  -- to clear trash on the margins in fullscreen. No idea why the double
-  -- calls are needed, sometimes. Perhaps it's double-buffered.
-  SDL.rendererRenderTarget srenderer SDL.$= Nothing
-  SDL.clear srenderer  -- clear the backbuffer
-  SDL.present srenderer
-  SDL.clear srenderer  -- clear probably the other half of the double buffer
-  SDL.present srenderer
+  let clearScreen = do
+        -- Display black screen ASAP to hide any garbage. This is also needed
+        -- to clear trash on the margins in fullscreen. No idea why the double
+        -- calls are needed, sometimes. Perhaps it's double-buffered.
+        SDL.rendererRenderTarget srenderer SDL.$= Nothing
+        SDL.clear srenderer  -- clear the backbuffer
+        SDL.present srenderer
+        SDL.clear srenderer  -- clear the other half of the double buffer?
+        SDL.present srenderer
+  clearScreen
   let initTexture = do
         texture <- SDL.createTexture srenderer SDL.ARGB8888
                                      SDL.TextureAccessTarget screenV2
@@ -265,9 +267,11 @@ startupFun coscreen soptions@ClientOptions{..} rfMVar = do
         SDL.destroyTexture oldTexture
         writeIORef sbasicTexture newBasicTexture
         writeIORef stexture newTexture
+        -- To clear the margins in fullscreen:
+        clearScreen
+        -- To overwrite each char:
         prevFrame <- readIORef spreviousFrame
         writeIORef spreviousFrame $ blankSingleFrame coscreen
-          -- to overwrite each char
         drawFrame coscreen soptions sess prevFrame
       loopSDL :: IO ()
       loopSDL = do
