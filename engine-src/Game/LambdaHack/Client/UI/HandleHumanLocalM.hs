@@ -953,12 +953,12 @@ endAimingMsg = do
 detailCycleHuman :: MonadClientUI m => m ()
 detailCycleHuman = do
   modifySession $ \sess -> sess {saimMode =
-    (\aimMode -> aimMode {detailLevel = detailSuccCycle $ detailLevel aimMode})
+    (\aimMode -> aimMode {detailLevel = detailCycle $ detailLevel aimMode})
                  <$> saimMode sess}
   doLook
 
-detailSuccCycle :: DetailLevel -> DetailLevel
-detailSuccCycle detail = if detail == maxBound then minBound else succ detail
+detailCycle :: DetailLevel -> DetailLevel
+detailCycle detail = if detail == minBound then maxBound else pred detail
 
 -- * ClearTargetIfItemClear
 
@@ -1298,7 +1298,7 @@ aimPointerFloorHuman = do
         sxhairMoused = sxhair /= oldXhair
         detailSucc = if sxhairMoused
                      then detailLevel
-                     else detailSuccCycle . detailLevel
+                     else detailCycle . detailLevel
     modifySession $ \sess ->
       sess { saimMode =
                let newDetail = maybe defaultDetailLevel detailSucc
@@ -1338,7 +1338,7 @@ aimPointerEnemyHuman = do
         sxhairMoused = sxhair /= oldXhair
         detailSucc = if sxhairMoused
                      then detailLevel
-                     else detailSuccCycle . detailLevel
+                     else detailCycle . detailLevel
     modifySession $ \sess ->
       sess { saimMode =
                let newDetail = maybe defaultDetailLevel detailSucc

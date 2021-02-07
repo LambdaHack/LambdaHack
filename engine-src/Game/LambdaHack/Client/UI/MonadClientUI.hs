@@ -207,6 +207,7 @@ getReportUI = do
   fact <- getsState $ (EM.! side) . sfactionD
   let newcomerHelp = True  -- TODO
       detailAtDefault = (detailLevel <$> saimMode) == Just defaultDetailLevel
+      defailMinimal = (detailLevel <$> saimMode) == Just minBound
       underAI = isAIFact fact
       prefixColors = uMessageColors sUIOptions
       -- Here we assume newbies don't override default keys.
@@ -214,12 +215,13 @@ getReportUI = do
                   $ miniHintAiming <> "\n"
       promptAI = toMsgShared prefixColors MsgPromptAction
                  $ "<press any key for main menu>"
-  return $! if | newcomerHelp && detailAtDefault -> consReport promptAim report
+  return $! if | newcomerHelp && detailAtDefault && not defailMinimal ->
+                   consReport promptAim report
                | underAI -> consReport promptAI report
                | otherwise -> report
 
 miniHintAiming :: Text
-miniHintAiming = "Aiming mode: press SPACE or RMB to increase detail, 'f' to fling, ESC to cancel."
+miniHintAiming = "Aiming mode: press SPACE or RMB to decrease detail, 'f' to fling, ESC to cancel."
 
 getLeaderUI :: MonadClientUI m => m ActorId
 getLeaderUI = do
