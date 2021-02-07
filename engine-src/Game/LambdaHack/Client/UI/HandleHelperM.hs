@@ -413,11 +413,13 @@ lookAtTile canSee p aid lidV mperson = do
   seps <- getsClient seps
   localTime <- getsState $ getLocalTime lidV
   getKind <- getsState $ flip getIidKind
-  let detail = maybe DetailAll detailLevel saimMode
+  let inhabitants = posToAidsLvl p lvl
+      detail = maybe DetailAll detailLevel saimMode
       aims = isJust $ makeLine False b p seps cops lvl
       tkid = lvl `at` p
       tile = okind cotile tkid
       vis | TK.tname tile == "unknown space" = "that is"
+          | not (null inhabitants) && bpos b /= p = "the terrain there is"
           | not canSee = "you remember"
           | not aims = "you are aware of"  -- walkable path a proxy for in LOS
           | otherwise = "you see"
