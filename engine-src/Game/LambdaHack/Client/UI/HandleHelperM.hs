@@ -172,7 +172,7 @@ pickLeader verbose aid = do
       modifySession $ \sess -> sess {saimMode =
         (\aimMode -> aimMode {aimLevelId = blid body}) <$> saimMode sess}
       -- Inform about items, etc.
-      itemsBlurb <- lookAtItems True (bpos body) aid
+      (itemsBlurb, _) <- lookAtItems True (bpos body) aid
       stashBlurb <- lookAtStash (blid body) (bpos body)
       when verbose $ msgAdd MsgAtFeetMinor $ stashBlurb <+> itemsBlurb
       return True
@@ -394,12 +394,13 @@ pickNumber askNumber kAll = assert (kAll >= 1) $ do
 
 -- | Produces a textual description of the tile at a position.
 lookAtTile :: MonadClientUI m
-           => Bool       -- ^ can be seen right now?
-           -> Point      -- ^ position to describe
-           -> ActorId    -- ^ the actor that looks
-           -> LevelId    -- ^ level the position is at
+           => Bool             -- ^ can be seen right now?
+           -> Point            -- ^ position to describe
+           -> ActorId          -- ^ the actor that looks
+           -> LevelId          -- ^ level the position is at
+           -> Maybe MU.Person  -- ^ grammatical person of the item(s), if any
            -> m (Text, Text, [((Int, MU.Part), Text)])
-lookAtTile canSee p aid lidV = do
+lookAtTile canSee p aid lidV mperson = do
   CCUI{coscreen=ScreenContent{rwidth}} <- getsSession sccui
   cops@COps{cotile, coplace} <- getsState scops
   side <- getsClient sside
@@ -420,6 +421,11 @@ lookAtTile canSee p aid lidV = do
           | not canSee = "you remember"
           | not aims = "you are aware of"  -- walkable path a proxy for in LOS
           | otherwise = "you see"
+      vperson = case mperson of
+        Nothing -> vis
+        Just MU.Sg1st -> error "an item speaks in first person"
+        Just MU.Sg3rd -> "It is laying on"
+        Just MU.PlEtc -> "They lay on"
       tilePart = MU.AW $ MU.Text $ TK.tname tile
       entrySentence pk blurb =
         makeSentence [blurb, MU.Text $ PK.pname $ okind coplace pk]
@@ -437,7 +443,7 @@ lookAtTile canSee p aid lidV = do
       embedKindList =
         map (\(iid, kit) -> (getKind iid, (iid, kit))) (EM.assocs embeds)
       embedList = map embedLook $ sortEmbeds cops tkid embedKindList
-  return (makeSentence [vis, tilePart], placeBlurb, embedList)
+  return (makeSentence [vperson, tilePart], placeBlurb, embedList)
 
 -- | Produces a textual description of actors at a position.
 lookAtActors :: MonadClientUI m
@@ -562,7 +568,7 @@ lookAtItems :: MonadClientUI m
             => Bool       -- ^ can be seen right now?
             -> Point      -- ^ position to describe
             -> ActorId    -- ^ the actor that looks
-            -> m Text
+            -> m (Text, MU.Person)
 lookAtItems canSee p aid = do
   CCUI{coscreen=ScreenContent{rwidth}} <- getsSession sccui
   side <- getsClient sside
@@ -592,20 +598,22 @@ lookAtItems canSee p aid = do
       nWs (iid, kit@(k, _)) =
         partItemWsDetail detail
                          rwidth side factionD k localTime (itemToF iid) kit
-      object = case EM.assocs is of
+      (object, person) = case EM.assocs is of
         [(_, (k, _))] | detail == DetailLow ->
-          if k == 1 then "an item" else "an item stack"
-        _ | detail == DetailLow -> "some items"
+          (if k == 1 then "an item" else "an item stack", MU.Sg3rd)
+        _ | detail == DetailLow -> ("some items", MU.PlEtc)
         ii : _ : _ : _ | detail <= DetailMedium ->
-          MU.Phrase [nWs ii, "and other items"]
-        iis -> MU.WWandW $ map nWs $ sortOn (getKind . fst) iis
+          (MU.Phrase [nWs ii, "and other items"], MU.PlEtc)
+        [ii@(_, (1, _))] -> (nWs ii, MU.Sg3rd)
+        iis -> (MU.WWandW $ map nWs $ sortOn (getKind . fst) iis, MU.PlEtc)
   -- Here @squashedWWandW@ is not needed, because identical items at the same
   -- position are already merged in the floor item bag and multiple identical
   -- messages concerning different positions are merged with <x7>
   -- to distinguish from a stack of items at a single position.
-  return $! if EM.null is || globalTime == timeZero
-            then ""
-            else makeSentence [MU.SubjectVerbSg subject verb, object]
+  return ( if EM.null is || globalTime == timeZero
+           then ""
+           else makeSentence [MU.SubjectVerbSg subject verb, object]
+         , person )
 
 lookAtStash :: MonadClientUI m => LevelId -> Point -> m Text
 lookAtStash lidV p = do
@@ -630,15 +638,15 @@ lookAtPosition lidV p = do
   leader <- getLeaderUI
   per <- getPerFid lidV
   let canSee = ES.member p (totalVisible per)
-  -- Show general info about current position.
-  (tileBlurb, placeBlurb, embedsList) <- lookAtTile canSee p leader lidV
+  (itemsBlurb, person) <- lookAtItems canSee p leader
+  let mperson = if T.null itemsBlurb then Nothing else Just person
+  (tileBlurb, placeBlurb, embedsList) <- lookAtTile canSee p leader lidV mperson
   (actorsBlurb, actorsDesc) <- lookAtActors p lidV
   inhabitants <- getsState $ posToAidAssocs p lidV
   let actorMsgClass =
         if (bfid . snd <$> inhabitants) == [side]
         then MsgPromptGeneric  -- our single proj or non-proj; tame
         else MsgPromptActors
-  itemsBlurb <- lookAtItems canSee p leader
   stashBlurb <- lookAtStash lidV p
   lvl@Level{lsmell, ltime} <- getLevel lidV
   saimMode <- getsSession saimMode
