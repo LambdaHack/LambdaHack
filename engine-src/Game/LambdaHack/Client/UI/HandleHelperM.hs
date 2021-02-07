@@ -563,7 +563,7 @@ lookAtItems :: MonadClientUI m
             => Bool       -- ^ can be seen right now?
             -> Point      -- ^ position to describe
             -> ActorId    -- ^ the actor that looks
-            -> m (Text, MU.Person)
+            -> m (Text, Maybe MU.Person)
 lookAtItems canSee p aid = do
   CCUI{coscreen=ScreenContent{rwidth}} <- getsSession sccui
   side <- getsClient sside
@@ -608,7 +608,7 @@ lookAtItems canSee p aid = do
   return ( if EM.null is || globalTime == timeZero
            then ""
            else makeSentence [MU.SubjectVerbSg subject verb, object]
-         , person )
+         , if standingOn then Nothing else Just person )
 
 lookAtStash :: MonadClientUI m => LevelId -> Point -> m Text
 lookAtStash lidV p = do
@@ -633,9 +633,9 @@ lookAtPosition lidV p = do
   leader <- getLeaderUI
   per <- getPerFid lidV
   let canSee = ES.member p (totalVisible per)
-  (itemsBlurb, person) <- lookAtItems canSee p leader
-  let mperson = if T.null itemsBlurb then Nothing else Just person
-  (tileBlurb, placeBlurb, embedsList) <- lookAtTile canSee p leader lidV mperson
+  (itemsBlurb, mperson) <- lookAtItems canSee p leader
+  let tperson = if T.null itemsBlurb then Nothing else mperson
+  (tileBlurb, placeBlurb, embedsList) <- lookAtTile canSee p leader lidV tperson
   (actorsBlurb, actorsDesc) <- lookAtActors p lidV
   inhabitants <- getsState $ posToAidAssocs p lidV
   let actorMsgClass =
