@@ -604,7 +604,7 @@ lookAtMove aid = do
         && bfid body == side
         && isNothing aimMode) $ do  -- aiming does a more extensive look
     stashBlurb <- lookAtStash (blid body) (bpos body)
-    (itemsBlurb, _) <- lookAtItems True (bpos body) aid
+    (itemsBlurb, _) <- lookAtItems True (bpos body) aid Nothing
     let msgClass = if Just aid == mleader
                    then MsgAtFeetMajor
                    else MsgAtFeetMinor

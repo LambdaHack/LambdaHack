@@ -172,7 +172,7 @@ pickLeader verbose aid = do
       modifySession $ \sess -> sess {saimMode =
         (\aimMode -> aimMode {aimLevelId = blid body}) <$> saimMode sess}
       -- Inform about items, etc.
-      (itemsBlurb, _) <- lookAtItems True (bpos body) aid
+      (itemsBlurb, _) <- lookAtItems True (bpos body) aid Nothing
       stashBlurb <- lookAtStash (blid body) (bpos body)
       when verbose $ msgAdd MsgAtFeetMinor $ stashBlurb <+> itemsBlurb
       return True
@@ -451,7 +451,7 @@ lookAtTile canSee p aid lidV mperson = do
 lookAtActors :: MonadClientUI m
              => Point      -- ^ position to describe
              -> LevelId    -- ^ level the position is at
-             -> m (Text, Text)
+             -> m (Text, Maybe (MU.Part, Bool), Text)
 lookAtActors p lidV = do
   CCUI{coscreen=ScreenContent{rwidth}} <- getsSession sccui
   side <- getsClient sside
@@ -461,8 +461,9 @@ lookAtActors p lidV = do
   saimMode <- getsSession saimMode
   let detail = maybe DetailAll detailLevel saimMode
   case inhabitants of
-    [] -> return ("", "")
-    (_, body) : rest -> do
+    [] -> return ("", Nothing, "")
+    (aid, body) : rest -> do
+      actorPronoun <- partPronounLeader aid
       itemFull <- getsState $ itemToFull $ btrunk body
       guardVerbs <- getsState $ guardItemVerbs body
       subjects <- mapM (partActorLeader . fst) inhabitants
@@ -518,8 +519,11 @@ lookAtActors p lidV = do
                    [MU.SubjectVerb personProjs MU.Yes
                                    subjectProjs "can be seen"]
             _ -> ""
+          actorAlive = bhp body >= 0
+          mactorPronounAlive =
+            if bproj body then Nothing else Just (actorPronoun, actorAlive)
       return $!
-        if | bhp body <= 0 && not (bproj body) ->
+        if | not actorAlive && not (bproj body) ->
              ( makeSentence
                  (MU.SubjectVerbSg (head subjects) "lie here"
                   : if null guardVerbs
@@ -527,18 +531,23 @@ lookAtActors p lidV = do
                     else [ MU.SubjectVVxV "and" MU.Sg3rd MU.No
                                           "and" guardVerbs
                          , "any more" ])
+             , mactorPronounAlive
              , wrapInParens desc <+> andProjectiles )
            | sameTrunks ->  -- only non-proj or several similar projectiles
              ( allBlurb
+             , mactorPronounAlive
              , desc )
            | not (bproj body) && onlyIs ->
              ( headBlurb
+             , mactorPronounAlive
              , desc <+> andProjectiles )
            | not (bproj body) ->
              ( makeSentence [subject, "can be seen"] <+> headBlurb
+             , mactorPronounAlive
              , desc )
            | otherwise -> assert (bproj body && not (null rest)) $
              ( makeSentence [subject, "can be seen"]
+             , Nothing
              , "" )
 
 guardItemVerbs :: Actor -> State -> [MU.Part]
@@ -562,11 +571,14 @@ guardItemSize body s =
 
 -- | Produces a textual description of items at a position.
 lookAtItems :: MonadClientUI m
-            => Bool       -- ^ can be seen right now?
-            -> Point      -- ^ position to describe
-            -> ActorId    -- ^ the actor that looks
+            => Bool     -- ^ can be seen right now?
+            -> Point    -- ^ position to describe
+            -> ActorId  -- ^ the actor that looks
+            -> Maybe (MU.Part, Bool)
+                        -- ^ pronoun for the big actor at the position, if any,
+                        --   and whether the big actor is alive
             -> m (Text, Maybe MU.Person)
-lookAtItems canSee p aid = do
+lookAtItems canSee p aid mactorPronounAlive = do
   CCUI{coscreen=ScreenContent{rwidth}} <- getsSession sccui
   side <- getsClient sside
   itemToF <- getsState $ flip itemToFull
@@ -582,16 +594,15 @@ lookAtItems canSee p aid = do
         if standingOn && bfid b == side then DetailMedium else DetailAll
       detail = maybe detailExploration detailLevel saimMode
   localTime <- getsState $ getLocalTime lidV
-  subject <- partActorLeader aid
+  subjectAid <- partActorLeader aid
   is <- getsState $ getFloorBag lidV p
   factionD <- getsState sfactionD
   globalTime <- getsState stime
   getKind <- getsState $ flip getIidKindId
-  let verb = MU.Text $ if | standingOn -> if bhp b > 0
-                                          then "stand over"
-                                          else "fall over"
-                          | canSee -> "notice"
-                          | otherwise -> "remember"
+  let (subject, verb) = case mactorPronounAlive of
+        Just (actorPronoun, actorAlive) ->
+          (actorPronoun, if actorAlive then "stand over" else "fall over")
+        Nothing -> (subjectAid, if canSee then "notice" else "remember")
       nWs (iid, kit@(k, _)) =
         partItemWsDetail detail
                          rwidth side factionD k localTime (itemToF iid) kit
@@ -609,8 +620,8 @@ lookAtItems canSee p aid = do
   -- to distinguish from a stack of items at a single position.
   return ( if EM.null is || globalTime == timeZero
            then ""
-           else makeSentence [MU.SubjectVerbSg subject verb, object]
-         , if standingOn then Nothing else Just person )
+           else makeSentence [MU.SubjectVerbSg subject (MU.Text verb), object]
+         , if isNothing mactorPronounAlive then Just person else Nothing )
 
 lookAtStash :: MonadClientUI m => LevelId -> Point -> m Text
 lookAtStash lidV p = do
@@ -635,10 +646,10 @@ lookAtPosition lidV p = do
   leader <- getLeaderUI
   per <- getPerFid lidV
   let canSee = ES.member p (totalVisible per)
-  (itemsBlurb, mperson) <- lookAtItems canSee p leader
+  (actorsBlurb, mactorPronounAlive, actorsDesc) <- lookAtActors p lidV
+  (itemsBlurb, mperson) <- lookAtItems canSee p leader mactorPronounAlive
   let tperson = if T.null itemsBlurb then Nothing else mperson
   (tileBlurb, placeBlurb, embedsList) <- lookAtTile canSee p leader lidV tperson
-  (actorsBlurb, actorsDesc) <- lookAtActors p lidV
   inhabitants <- getsState $ posToAidAssocs p lidV
   let actorMsgClass =
         if (bfid . snd <$> inhabitants) == [side]
