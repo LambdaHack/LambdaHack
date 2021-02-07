@@ -419,7 +419,7 @@ lookAtTile canSee p aid lidV mperson = do
       tkid = lvl `at` p
       tile = okind cotile tkid
       vis | TK.tname tile == "unknown space" = "that is"
-          | not (null inhabitants) && bpos b /= p = "the terrain there is"
+          | not (null inhabitants) && bpos b /= p = "the terrain here is"
           | not canSee = "you remember"
           | not aims = "you are aware of"  -- walkable path a proxy for in LOS
           | otherwise = "you see"
@@ -632,7 +632,7 @@ lookAtStash lidV p = do
           Just $ if fid == side
                  then "Here is the shared inventory stash of your team."
                  else gname fact
-                      <+> "set up their shared inventory stash there."
+                      <+> "set up their shared inventory stash here."
         _ -> Nothing
   return $! T.intercalate " " $ mapMaybe locateStash $ EM.assocs factionD
 
