@@ -454,9 +454,6 @@ lookAtActors p lidV = do
   CCUI{coscreen=ScreenContent{rwidth}} <- getsSession sccui
   side <- getsClient sside
   inhabitants <- getsState $ posToAidAssocs p lidV
-  sactorUI <- getsSession sactorUI
-  let inhabitantsUI = map (\(aid2, b2) ->
-                             (aid2, b2, sactorUI EM.! aid2)) inhabitants
   factionD <- getsState sfactionD
   localTime <- getsState $ getLocalTime lidV
   saimMode <- getsSession saimMode
@@ -466,10 +463,8 @@ lookAtActors p lidV = do
     (_, body) : rest -> do
       itemFull <- getsState $ itemToFull $ btrunk body
       guardVerbs <- getsState $ guardItemVerbs body
+      subjects <- mapM (partActorLeader . fst) inhabitants
       let bfact = factionD EM.! bfid body
-          -- Even if it's the leader, give his proper name, not 'you'.
-          subjects = map (\(_, _, bUI) -> partActor bUI)
-                         inhabitantsUI
           -- No "a" prefix even if singular and inanimate, to distinguish
           -- from items lying on the floor (and to simplify code).
           (subject, person) = squashedWWandW subjects
@@ -591,7 +586,7 @@ lookAtItems canSee p aid = do
   globalTime <- getsState stime
   getKind <- getsState $ flip getIidKindId
   let verb = MU.Text $ if | standingOn -> if bhp b > 0
-                                          then "stand on"
+                                          then "stand over"
                                           else "fall over"
                           | canSee -> "notice"
                           | otherwise -> "remember"
