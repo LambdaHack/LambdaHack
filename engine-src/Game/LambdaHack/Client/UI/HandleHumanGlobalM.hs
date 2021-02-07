@@ -1414,13 +1414,14 @@ helpHuman cmdSemInCxtOfKM = do
                   | outcome `elem` victoryOutcomes = Color.cVeryGoodEvent
                   | otherwise = Color.cNeutralEvent
             lastRemark
-              | outcome /= lastOutcome = ":"
-              | outcome `elem` deafeatOutcomes = " (last suffered ending):"
-              | outcome `elem` victoryOutcomes = " (last achieved ending):"
-              | otherwise = " (last seen ending):"
-        in textToAS "Game over message when "
-           ++ textFgToAS color (nameOutcomePast outcome)
-           ++ textToAS lastRemark
+              | outcome /= lastOutcome = ""
+              | outcome `elem` deafeatOutcomes = "(last suffered ending)"
+              | outcome `elem` victoryOutcomes = "(last achieved ending)"
+              | otherwise = "(last seen ending)"
+        in textToAS "Game over message when"
+           <+:> (textFgToAS color (T.toTitle $ nameOutcomePast outcome)
+                 <+:> textToAS lastRemark)
+           <> textToAS ":"
       shiftPointUI x (K.PointUI x0 y0) = K.PointUI (x0 + x) y0
       modeH = ( "Press SPACE or PGDN to advance or ESC to see the map again."
               , ( if isSquareFont propFont
