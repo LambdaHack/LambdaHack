@@ -395,14 +395,15 @@ describeMode addTitle gameModeId = do
       title = if addTitle
               then "\nYou are playing the '"
                    <> MK.mname gameMode
-                   <> "' scenario.\n"
+                   <> "' adventure.\n"
               else ""
       blurb = map (second $ splitAttrString (rwidth - 2) (rwidth - 2)) $
         (propFont, textToAS (title <> "\n"))
         : concat (intersperse [(monoFont, textToAS "\n")]
                               (mapMaybe renderSection sections))
       blurbEnd = map (second $ splitAttrString (rwidth - 2) (rwidth - 2)) $
-        (propFont, textToAS "\nScenario endings experienced so far:\n\n")
+        ( propFont
+        , textToAS "\nThis adventure's endings experienced so far:\n\n" )
         : if null sectionsEndAS
           then [(monoFont, textToAS "*none*")]
           else sectionsEndAS

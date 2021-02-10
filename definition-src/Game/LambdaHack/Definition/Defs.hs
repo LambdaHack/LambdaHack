@@ -182,7 +182,7 @@ ppItemDialogMode MOwned = ("among", "our total team belongings")
 ppItemDialogMode MSkills = ("among", "skills")
 ppItemDialogMode (MLore slore) = ("among", ppSLore slore <+> "lore")
 ppItemDialogMode MPlaces = ("among", "place lore")
-ppItemDialogMode MModes = ("among", "scenario lore")
+ppItemDialogMode MModes = ("among", "adventure lore")
 
 ppItemDialogModeIn :: ItemDialogMode -> Text
 ppItemDialogModeIn c = let (tIn, t) = ppItemDialogMode c in tIn <+> t

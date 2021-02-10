@@ -99,7 +99,7 @@ raid = ModeKind
       , "* Find exit and escape ASAP"
       ]
   , mdesc   = "An incredibly advanced typing machine worth 100 gold is buried at the exit of this maze. Be the first to find it and fund a research team that makes typing accurate and dependable forever."
-  , mreason = "In addition to initiating the (loose) game plot, this scenario serves as an introductory tutorial. Relax, explore, gather loot, find the exit and escape. With some luck, you won't even need to fight anything."
+  , mreason = "In addition to initiating the (loose) game plot, this adventure provides an introductory tutorial. Relax, explore, gather loot, find the exit and escape. With some luck, you won't even need to fight anything."
   , mhint   = "You can't use gathered items in your next encounters, so trigger any consumables at will. Feel free to scout with only one of the heroes and keep the other one immobile, e.g., standing guard over the squad's shared inventory stash. If in grave danger, retreat with the scout to join forces with the guard. The more gold collected and the faster the victory, the higher your score in this encounter."
   }
 
@@ -119,7 +119,7 @@ brawl = ModeKind  -- sparse melee in daylight, with shade for melee ambush
       ]
   , mdesc   = "Your research team disagrees over a drink with some gentlemen scientists about premises of a relative completeness theorem and there's only one way to settle that."
       -- Not enough space with square fonts and also this is more of a hint than a flavour: Remember to keep your party together when opponents are spotted, or they might be tempted to silence solitary disputants one by one and so win the altercation.
-  , mreason = "In addition to advancing game plot, this scenario trains melee, squad formation and stealth. The battle is symmetric in goals (incapacitate all enemies) and in squad capabilities (only the pointman moves, others either melee or wait). Observe and mimic enemies and savour the fairness --- you won't find any in the main crawl scenario that follows."
+  , mreason = "In addition to advancing game plot, this encounter trains melee, squad formation and stealth. The battle is symmetric in goals (incapacitate all enemies) and in squad capabilities (only the pointman moves, others either melee or wait). Observe and mimic enemies and savour the fairness --- you won't find any in the main crawl adventure that follows."
   , mhint   = "Run a short distance with Shift or LMB, switch the pointman with Tab, repeat. In open terrain, if you keep distance between teammates, this resembles the leap frog infantry tactics. For best effects, end each sprint behind a cover or concealment.\nIf you get beaten repeatedly, try using all consumables you find. Ponder the hints from the defeat message, in particular the one about keeping your party together once the opponents are spotted. However, if you want to discover a winning tactics on your own, make sure to ignore any such tips until you succeed."
   }
 
@@ -138,8 +138,8 @@ crawl = ModeKind
       , "* Find exit and escape ASAP"
       ]
   , mdesc   = "Enjoy the peaceful seclusion of these cold austere tunnels, but don't let wanton curiosity, greed and the ever-creeping abstraction madness keep you down there for too long. If you find survivors (whole or perturbed or segmented) of the past scientific missions, exercise extreme caution and engage or ignore at your discretion."
-  , mreason = "This is the main, longest and most replayable scenario of the game."
-  , mhint   = "If you keep dying, attempt the subsequent game modes as a breather (perhaps at lowered difficulty). They fill the gaps in the plot and teach particular skills that may come in handy and help you discover new tactics of your own or come up with a strategy for staving off the attrition. Also experimenting with the initial scenarios may answer some questions you didn't have when playing them originally."
+  , mreason = "This is the main, longest and most replayable adventure of the game."
+  , mhint   = "If you keep dying, attempt the subsequent adventures as a breather (perhaps at lowered difficulty). They fill the gaps in the plot and teach particular skills that may come in handy and help you discover new tactics of your own or come up with a strategy for staving off the attrition. Also experimenting with the initial adventures may answer some questions you didn't have when playing them originally."
   }
 
 -- The trajectory tip is important because of tactics of scout looking from
@@ -164,7 +164,7 @@ shootout = ModeKind  -- sparse ranged in daylight
       , "* Incapacitate all enemies ASAP"
       ]
   , mdesc   = "Whose arguments are most striking and whose ideas fly fastest? Let's scatter up, attack the problems from different angles and find out."
-  , mreason = "This scenario teaches the ranged combat skill in the simplified setup of fully symmetric battle."
+  , mreason = "This adventure teaches the ranged combat skill in the simplified setup of fully symmetric battle."
   , mhint   = "Try to come up with the best squad formation for this tactical challenge. Don't despair if you run out of ammo, because if you aim truly, enemy has few hit points left at this point. In turn, when trying to avoid enemy projectiles, you can display the trajectory of any soaring entity by pointing it with the crosshair in aiming mode."
   }
 
@@ -182,7 +182,7 @@ hunt = ModeKind  -- melee vs ranged with reaction fire in daylight
       , "* Incapacitate all enemies ASAP"
       ]
   , mdesc   = "Who is the hunter and who is the prey? The only criterion is last man standing when the chase ends."
-  , mreason = "This scenario is quite a tactical challenge, because enemies are allowed to fling their ammo simultaneously at your team, which has no such ability."
+  , mreason = "This adventure is quite a tactical challenge, because enemies are allowed to fling their ammo simultaneously at your team, which has no such ability."
   , mhint   = "Try not to outshoot the enemy, but to instead focus more on melee tactics. A useful concept here is communication overhead. Any team member that is not waiting and spotting for everybody, but acts, e.g., melees or moves or manages items, slows down all other team members by rougly 10%, because they need to keep track of his actions. Therefore, if other heroes melee, consider carefully if it makes sense to come to their aid, slowing them while you move, or if it's better to stay put and monitor the perimeter. This is true for all factions and all actors on each level separately, except the pointman of each faction, if any."  -- this also eliminates lag in big battles and helps the player to focus on combat and not get distracted by distant team members frantically trying to reach the battleground in time
   }
 
@@ -220,7 +220,7 @@ zoo = ModeKind  -- asymmetric crowd melee at night
       ]
   , mdesc   = "The heat of the dispute reaches the nearby Wonders of Science and Nature exhibition, igniting greenery, nets and cages. Crazed animals must be dissuaded from ruining precious scientific equipment and setting back the otherwise fruitful exchange of ideas."
   , mreason = "This is a crowd control exercise, at night, with a raging fire."
-  , mhint   = "Note that communication overhead, as explained in perilous hunt scenario hints, makes it impossible for any faction to hit your heroes by more than 10 normal speed actors each turn. However, this is still too much, so position is everything."
+  , mhint   = "Note that communication overhead, as explained in perilous hunt adventure hints, makes it impossible for any faction to hit your heroes by more than 10 normal speed actors each turn. However, this is still too much, so position is everything."
   }
 
 -- The tactic is to sneak in the dark, highlight enemy with thrown torches
@@ -245,7 +245,7 @@ ambush = ModeKind  -- dense ranged with reaction fire vs melee at night
       , "* Assert control of the situation ASAP"
       ]
   , mdesc   = "Prevent hijacking of your ideas at all cost! Be stealthy, be observant, be aggressive. Fast execution is what makes or breaks a creative team."
-  , mreason = "In this scenario, finally, your heroes are able to all use ranged attacks at once, given enough ammunition."
+  , mreason = "In this adventure, finally, your heroes are able to all use ranged attacks at once, given enough ammunition."
   , mhint   = ""
   }
 

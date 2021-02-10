@@ -360,7 +360,7 @@ chooseItemDialogMode c = do
                   verb = if victories > 0 then "remember" else "forsee"
                   prompt2 = makeSentence
                     [ MU.SubjectVerbSg (partActor bUI) verb
-                    , MU.Text $ "the '" <> MK.mname gameMode <> "' scenario" ]
+                    , MU.Text $ "the '" <> MK.mname gameMode <> "' adventure" ]
                   keys = [K.spaceKM, K.escKM]
                          ++ [K.upKM | slotIndex /= 0]
                          ++ [K.downKM | slotIndex /= slotListBound]

@@ -90,10 +90,10 @@ The "lone wolf" challenge mode reduces player's starting actors
 to exactly one, though later on new heroes may join the party.
 The "cold fish" challenge mode makes it impossible for player characters
 to be healed by actors from other factions (this is a significant
-restriction in the long crawl scenario).
+restriction in the long crawl adventure).
 
 The game scenarios, as ordered by their number, lead the player along
-an optional story arc. The first two scenarios double as tutorials
+an optional story arc. The first two adventures double as tutorials
 that offer rudimentary preparation for the main game, the long crawl.
 They gradually introduce exploration, stealth and melee combat,
 helping the player develop his repertoire of squad formations
@@ -102,15 +102,15 @@ When the player loses, a defeat message for the scenario appears
 with hints about strategies known to work in the given tactical context.
 Alternatively, the player may postpone reading these messages and instead
 try to puzzle out the tactics himself --- this is not so hard, as there are
-not so many moving parts to figure, at least in the short scenarios.
+not so many moving parts to figure, at least in the short adventures.
 
 As soon as the player learns to navigate initial levels of the crawl game
 and starts employing ranged combat, light sources and other means
 of gaining or denying battlefield intel, and dies a lot, it makes sense
-to return to the remaining short scenarios. They bring forth many extra
+to return to the remaining short adventures. They bring forth many extra
 game features and tactics and prevent the player from missing half the fun
 by trying to play the crawl just like a normal roguelike with spare heroes.
-The extra scenarios continue the plotline from the initial tutorial scenarios
+The extra scenarios continue the plotline from the initial tutorial adventures
 in the form of flashbacks and eventually lead up to the events that start
 the main crawl adventure. The training they provide has narrow focus,
 drilling a particular skill set, even as exotic as opportunity fire
@@ -118,7 +118,7 @@ management, a frantic race to the exit and big asymmetric melee battle.
 The challenge in the scenarios may be, accordingly, quite tough,
 particularly at the higher difficulty levels.
 
-The main scenario, the long crawl, is the only one that takes
+The main adventure, the long crawl, is the only one that takes
 place in a multi-floor setting, requiring lots of time to beat,
 with focus on resource management and survival, including food gathering
 and cooking, crafting, terrain transformation using tools, spotting
@@ -131,7 +131,7 @@ involving his whole party. On yet others, his best course of action may be
 to defend a key location until the first wave of attackers is broken.
 The large game arena calls for strategic thinking, including resource
 management, area denial and unavoidable temporary retreats to other levels.
-Thus, the crawl game mode is the most replayable one, but even the small
+Thus, the crawl adventure is the most replayable one, but even the small
 scenarios can be refreshed by striving to beat a high score and then
 ramping up the difficulty settings.
 
@@ -139,7 +139,7 @@ ramping up the difficulty settings.
 Exploring the world
 -------------------
 
-The map of any particular scenario consists of one or many
+The map of any particular adventure consists of one or many
 levels and a level consists of a number of tiles with a particular
 terrain kind on each. The game world is persistent, i.e., every time
 the player visits a level during a single game, its layout is the same
@@ -427,7 +427,7 @@ if Calm reaches zero and the actor is sufficiently impressed by his foes,
 making him defect and surrender unto their domination. Whenever the monster's
 or hero's hit points reach zero, the combatant falls down and quickly
 gets permanently incapacitated. When the last hero is disabled or dominated,
-the scenario ends in defeat.
+the adventure ends in defeat.
 
 
 Attacking from a distance
@@ -459,7 +459,7 @@ known position.
 Winning and dying
 -----------------
 
-You win a scenario if you escape the location alive (which may prove
+You win an adventure if you escape the location alive (which may prove
 difficult, because your foes tend to gradually build up the ambush squad
 blocking your escape route) or, in scenarios with no exit locations,
 if you eliminate all opposition. In the former case, your score

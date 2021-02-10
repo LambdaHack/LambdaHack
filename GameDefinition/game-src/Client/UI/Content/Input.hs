@@ -125,7 +125,7 @@ standardKeysAndMouse = InputContentRaw $ map evalKeyDef $
                 , "display place lore"
                 , ChooseItemMenu MPlaces) )
   , ("safeD98", ( [CmdInternal, CmdDashboard]
-                , "display scenario lore"
+                , "display adventure lore"
                 , ChooseItemMenu MModes) )
   , ("safeD99", ([CmdInternal, CmdDashboard], "", Cancel))  -- blank line
 

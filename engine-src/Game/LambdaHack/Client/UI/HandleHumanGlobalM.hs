@@ -1733,7 +1733,7 @@ challengesMenuHuman cmdSemInCxtOfKM = do
         Nothing -> 0
         Just cm -> fromMaybe 0 (M.lookup nxtChal cm)
       star t = if victories > 0 then "*" <> t else t
-      tnextScenario = "scenario:" <+> star (MK.mname gameMode)
+      tnextScenario = "adventure:" <+> star (MK.mname gameMode)
       offOn b = if b then "on" else "off"
       tnextDiff = "difficulty (lower easier):" <+> tshow (cdiff nxtChal)
       tnextWolf = "lone wolf (very hard):"
