@@ -121,9 +121,12 @@ standardKeysAndMouse = InputContentRaw $ map evalKeyDef $
                         , ChooseItemMenu (MLore slore) )))
       (zip [1..] [minBound..maxBound])
   ++
-  [ ("safeD98", ( [CmdInternal, CmdDashboard]
+  [ ("safeD97", ( [CmdInternal, CmdDashboard]
                 , "display place lore"
                 , ChooseItemMenu MPlaces) )
+  , ("safeD98", ( [CmdInternal, CmdDashboard]
+                , "display scenario lore"
+                , ChooseItemMenu MModes) )
   , ("safeD99", ([CmdInternal, CmdDashboard], "", Cancel))  -- blank line
 
   -- Terrain exploration and modification

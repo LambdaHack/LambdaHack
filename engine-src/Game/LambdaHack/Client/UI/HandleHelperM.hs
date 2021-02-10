@@ -3,8 +3,11 @@
 module Game.LambdaHack.Client.UI.HandleHelperM
   ( FailError, showFailError, MError, mergeMError, FailOrCmd, failWith
   , failSer, failMsg, weaveJust
-  , memberCycle, memberCycleLevel, partyAfterLeader, pickLeader, pickLeaderWithPointer
-  , itemOverlay, skillsOverlay, placesFromState, placesOverlay, describeMode
+  , memberCycle, memberCycleLevel, partyAfterLeader
+  , pickLeader, pickLeaderWithPointer
+  , itemOverlay, skillsOverlay
+  , placesFromState, placesOverlay
+  , describeMode, modesOverlay
   , pickNumber, guardItemSize, lookAtItems, lookAtStash, lookAtPosition
   , displayItemLore, viewLoreItems, cycleLore, spoilsBlurb
   , ppContainerWownW
@@ -21,6 +24,7 @@ import Game.LambdaHack.Core.Prelude
 import qualified Data.Char as Char
 import qualified Data.EnumMap.Strict as EM
 import qualified Data.EnumSet as ES
+import qualified Data.Map.Strict as M
 import qualified Data.Text as T
 import qualified NLP.Miniutter.English as MU
 
@@ -328,8 +332,8 @@ placesOverlay :: MonadClientUI m => m OKX
 placesOverlay = do
   COps{coplace} <- getsState scops
   soptions <- getsClient soptions
-  places <- getsState $ placesFromState coplace soptions
   FontSetup{..} <- getFontSetup
+  places <- getsState $ placesFromState coplace soptions
   let prSlot :: (Int, SlotChar)
              -> (ContentId PK.PlaceKind, (ES.EnumSet LevelId, Int, Int, Int))
              -> (AttrLine, (Int, AttrLine), KYX)
@@ -359,8 +363,10 @@ placesOverlay = do
       placeDesc = EM.singleton propFont $ offsetOverlayX plDesc
   return (EM.unionWith (++) placeLab placeDesc, kxs)
 
-describeMode :: MonadClientUI m => ContentId MK.ModeKind -> m OKX
-describeMode gameModeId = do
+describeMode :: MonadClientUI m
+             => Bool -> ContentId MK.ModeKind
+             -> m (EM.EnumMap DisplayFont Overlay)
+describeMode addTitle gameModeId = do
   COps{comode} <- getsState scops
   CCUI{coscreen=ScreenContent{rwidth}}
     <- getsSession sccui
@@ -386,9 +392,13 @@ describeMode gameModeId = do
         if T.null desc
         then Nothing
         else Just [(monoFont, header), (propFont, textToAS desc)]
+      title = if addTitle
+              then "\nYou are playing the '"
+                   <> MK.mname gameMode
+                   <> "' scenario.\n"
+              else ""
       blurb = map (second $ splitAttrString (rwidth - 2) (rwidth - 2)) $
-        (propFont, textToAS
-          ("\nYou are playing the '" <> MK.mname gameMode <> "' scenario.\n\n"))
+        (propFont, textToAS (title <> "\n"))
         : concat (intersperse [(monoFont, textToAS "\n")]
                               (mapMaybe renderSection sections))
       blurbEnd = map (second $ splitAttrString (rwidth - 2) (rwidth - 2)) $
@@ -440,17 +450,50 @@ describeMode gameModeId = do
                  <+:> textToAS lastRemark)
            <> textToAS ":"
       shiftPointUI x (K.PointUI x0 y0) = K.PointUI (x0 + x) y0
-  return ( if isSquareFont propFont
-           then EM.singleton squareFont  -- single column, single font
-                $ offsetOverlayX
-                $ map (\t -> (2, t))
-                $ concatMap snd $ blurb ++ blurbEnd
-           else EM.unionWith (++)
-                (EM.map (map (first $ shiftPointUI 1))
-                 $ attrLinesToFontMap 0 blurb)
-                (EM.map (map (first $ shiftPointUI $ rwidth + 1))
-                 $ attrLinesToFontMap 0 blurbEnd)
-         , [] )
+  return $! if isSquareFont propFont
+            then EM.singleton squareFont  -- single column, single font
+                 $ offsetOverlayX
+                 $ map (\t -> (2, t))
+                 $ concatMap snd $ blurb ++ blurbEnd
+            else EM.unionWith (++)
+                 (EM.map (map (first $ shiftPointUI 1))
+                  $ attrLinesToFontMap 0 blurb)
+                 (EM.map (map (first $ shiftPointUI $ rwidth + 1))
+                  $ attrLinesToFontMap 0 blurbEnd)
+
+modesOverlay :: MonadClientUI m => m OKX
+modesOverlay = do
+  COps{comode} <- getsState scops
+  FontSetup{..} <- getFontSetup
+  svictories <- getsClient svictories
+  nxtChal <- getsClient snxtChal  -- mark victories only for current difficulty
+  let f !acc _p !i !a = (i, a) : acc
+      campaignModes = ofoldlGroup' comode MK.CAMPAIGN_SCENARIO f []
+      prSlot :: (Int, SlotChar)
+             -> (ContentId MK.ModeKind, MK.ModeKind)
+             -> (AttrLine, (Int, AttrLine), KYX)
+      prSlot (y, c) (gameModeId, gameMode) =
+        let modeName = MK.mname gameMode
+            victories = case EM.lookup gameModeId svictories of
+              Nothing -> 0
+              Just cm -> fromMaybe 0 (M.lookup nxtChal cm)
+            markMode t = if victories > 0
+                         then T.snoc (T.init t) '>'
+                         else t
+            !tSlot = markMode $ slotLabel c
+            !lenSlot = 2 * T.length tSlot
+            !tBlurb = " " <> modeName
+            !lenButton = lenSlot + T.length tBlurb
+            !pButton = K.PointUI 0 y
+            !widthButton = ButtonWidth propFont lenButton
+        in ( textToAL tSlot
+           , (lenSlot, textToAL tBlurb)
+           , (Right c, (pButton, widthButton)) )
+      (plLab, plDesc, kxs) = unzip3 $ zipWith prSlot (zip [0..] allSlots)
+                                    $ campaignModes
+      placeLab = EM.singleton squareFont $ offsetOverlay plLab
+      placeDesc = EM.singleton propFont $ offsetOverlayX plDesc
+  return (EM.unionWith (++) placeLab placeDesc, kxs)
 
 pickNumber :: MonadClientUI m => Bool -> Int -> m (Either MError Int)
 pickNumber askNumber kAll = assert (kAll >= 1) $ do

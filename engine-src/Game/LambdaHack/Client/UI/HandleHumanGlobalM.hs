@@ -1347,9 +1347,9 @@ helpHuman cmdSemInCxtOfKM = do
     <- getsSession sccui
   fontSetup@FontSetup{..} <- getFontSetup
   gameModeId <- getsState sgameModeId
-  modeOKX <- describeMode gameModeId
+  modeOv <- describeMode True gameModeId
   let modeH = ( "Press SPACE or PGDN to advance or ESC to see the map again."
-              , modeOKX )
+              , (modeOv, []) )
       keyH = keyHelp ccui fontSetup
       splitHelp (t, okx) = splitOKX fontSetup True rwidth rheight rwidth
                                     (textToAS t) [K.spaceKM, K.escKM] okx

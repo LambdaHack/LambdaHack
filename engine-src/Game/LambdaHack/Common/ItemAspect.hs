@@ -198,6 +198,7 @@ loreFromMode c = case c of
   MSkills -> undefined  -- artificial slots
   MLore slore -> slore
   MPlaces -> undefined  -- artificial slots
+  MModes -> undefined  -- artificial slots
 
 loreFromContainer :: AspectRecord -> Container -> SLore
 loreFromContainer arItem c = case c of

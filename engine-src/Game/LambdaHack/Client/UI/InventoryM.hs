@@ -56,6 +56,7 @@ accessModeBag leader s MOwned = let fid = bfid $ getActorBody leader s
 accessModeBag _ _ MSkills = EM.empty
 accessModeBag _ s MLore{} = EM.map (const quantSingle) $ sitemD s
 accessModeBag _ _ MPlaces = EM.empty
+accessModeBag _ _ MModes = EM.empty
 
 -- | Let a human player choose any item from a given group.
 -- Note that this does not guarantee the chosen item belongs to the group,
@@ -104,10 +105,11 @@ getStoreItem prompt cInitial = do
   let itemCs = map MStore [CStash, CEqp, CGround]
         -- No @COrgan@, because triggerable organs are rare and,
         -- if really needed, accessible directly from the trigger menu.
-      loreCs = map MLore [minBound..maxBound] ++ [MPlaces]
+      loreCs = map MLore [minBound..maxBound] ++ [MPlaces, MModes]
       allCs = case cInitial of
         MLore{} -> loreCs
         MPlaces -> loreCs
+        MModes -> loreCs
         _ -> itemCs ++ [MOwned, MOrgans, MSkills]
       (pre, rest) = break (== cInitial) allCs
       post = dropWhile (== cInitial) rest
@@ -263,6 +265,7 @@ transition psuit prompt promptGeneric permitMulitple
                                        , newSlots EM.! SCondition ]
     MSkills -> return EM.empty
     MPlaces -> return EM.empty
+    MModes -> return EM.empty
     _ -> do
       let slore = IA.loreFromMode cCur
           newSlots = EM.adjust (sortSlotMap itemToF) slore itemSlotsPre
@@ -311,6 +314,7 @@ transition psuit prompt promptGeneric permitMulitple
       maySwitchLeader MOwned = False
       maySwitchLeader MLore{} = False
       maySwitchLeader MPlaces = False
+      maySwitchLeader MModes = False
       maySwitchLeader _ = True
       cycleKeyDef direction =
         let km = revCmd $ MemberCycle direction
@@ -447,6 +451,24 @@ transition psuit prompt promptGeneric permitMulitple
                                      `showFailure` K.showKey key
                       Right sl -> sl
                 in return (Left "places", (MPlaces, Right slot))
+            }
+      runDefItemKey keyDefs placesDef io slotKeys promptChosen cCur
+    MModes -> do
+      io <- modesOverlay
+      let slotLabels = map fst $ snd io
+          slotKeys = mapMaybe (keyOfEKM numPrefix) slotLabels
+          placesDef :: DefItemKey m
+          placesDef = DefItemKey
+            { defLabel = Left ""
+            , defCond = True
+            , defAction = \ekm ->
+                let slot = case ekm of
+                      Left K.KM{key} -> case key of
+                        K.Char l -> SlotChar numPrefix l
+                        _ -> error $ "unexpected key:"
+                                     `showFailure` K.showKey key
+                      Right sl -> sl
+                in return (Left "scenarios", (MModes, Right slot))
             }
       runDefItemKey keyDefs placesDef io slotKeys promptChosen cCur
     _ -> do

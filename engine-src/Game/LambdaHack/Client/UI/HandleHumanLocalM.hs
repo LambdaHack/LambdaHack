@@ -88,7 +88,7 @@ import           Game.LambdaHack.Common.Time
 import           Game.LambdaHack.Common.Types
 import           Game.LambdaHack.Common.Vector
 import qualified Game.LambdaHack.Content.ItemKind as IK
-import           Game.LambdaHack.Content.ModeKind (fhasGender)
+import qualified Game.LambdaHack.Content.ModeKind as MK
 import qualified Game.LambdaHack.Content.PlaceKind as PK
 import           Game.LambdaHack.Content.RuleKind
 import qualified Game.LambdaHack.Definition.Ability as Ability
@@ -208,6 +208,9 @@ chooseItemDialogMode c = do
         MPlaces ->
           makePhrase
             [ MU.Capitalize $ MU.Text t ]
+        MModes ->
+          makePhrase
+            [ MU.Capitalize $ MU.Text t ]
   ggi <- getStoreItem prompt c
   recordHistory  -- item chosen, wipe out already shown msgs
   leader <- getLeaderUI
@@ -263,6 +266,7 @@ chooseItemDialogMode c = do
           go <- displayItemLore itemBag meleeSkill promptFun ix0 lSlots
           if go then chooseItemDialogMode c2 else failWith "never mind"
         MPlaces -> error $ "" `showFailure` ggi
+        MModes -> error $ "" `showFailure` ggi
     (Left err, (MSkills, ekm)) -> case ekm of
       Right slot0 -> assert (err == "skills") $ do
         let slotListBound = length skillSlots - 1
@@ -342,6 +346,42 @@ chooseItemDialogMode c = do
               km <- getConfirms ColorFull keys slides
               case K.key km of
                 K.Space -> chooseItemDialogMode MPlaces
+                K.Up -> displayOneSlot $ slotIndex - 1
+                K.Down -> displayOneSlot $ slotIndex + 1
+                K.Esc -> failWith "never mind"
+                _ -> error $ "" `showFailure` km
+            slotIndex0 = fromMaybe (error "displayOneSlot: illegal slot")
+                         $ elemIndex slot0 allSlots
+        displayOneSlot slotIndex0
+      Left _ -> failWith "never mind"
+    (Left err, (MModes, ekm)) -> case ekm of
+      Right slot0 -> assert (err == "scenarios") $ do
+        COps{comode} <- getsState scops
+        svictories <- getsClient svictories
+        nxtChal <- getsClient snxtChal
+          -- mark victories only for current difficulty
+        let f !acc _p !i !a = (i, a) : acc
+            campaignModes = ofoldlGroup' comode MK.CAMPAIGN_SCENARIO f []
+            slotListBound = length campaignModes - 1
+            displayOneSlot slotIndex = do
+              let (gameModeId, gameMode) = campaignModes !! slotIndex
+              modeOKX <- describeMode False gameModeId
+              let victories = case EM.lookup gameModeId svictories of
+                    Nothing -> 0
+                    Just cm -> fromMaybe 0 (M.lookup nxtChal cm)
+                  verb = if victories > 0 then "remember" else "forsee"
+                  prompt2 = makeSentence
+                    [ MU.SubjectVerbSg (partActor bUI) verb
+                    , MU.Text $ "the '" <> MK.mname gameMode <> "' scenario" ]
+                  keys = [K.spaceKM, K.escKM]
+                         ++ [K.upKM | slotIndex /= 0]
+                         ++ [K.downKM | slotIndex /= slotListBound]
+              msgAdd MsgPromptGeneric prompt2
+              slides <- overlayToSlideshow (rheight - 2) keys (modeOKX, [])
+              ekm2 <- displayChoiceScreen "" ColorFull True slides keys
+              let km = either id (error $ "" `showFailure` ekm2) ekm2
+              case K.key km of
+                K.Space -> chooseItemDialogMode MModes
                 K.Up -> displayOneSlot $ slotIndex - 1
                 K.Down -> displayOneSlot $ slotIndex + 1
                 K.Esc -> failWith "never mind"
@@ -613,7 +653,7 @@ pickLeaderHuman k = do
       mactor = case drop k hs of
                  [] -> Nothing
                  (aid, b, _) : _ -> Just (aid, b)
-      mchoice = if fhasGender (gplayer fact) then mhero else mactor
+      mchoice = if MK.fhasGender (gplayer fact) then mhero else mactor
       (autoDun, _) = autoDungeonLevel fact
   case mchoice of
     Nothing -> failMsg "no such member of the party"

@@ -151,7 +151,8 @@ data ItemDialogMode =
   | MOwned         -- ^ all party's items
   | MSkills        -- ^ not items, but determined by leader's items
   | MLore SLore    -- ^ not party's items, but all known generalized items
-  | MPlaces        -- ^ not items at all, but definitely a lore
+  | MPlaces        -- ^ places; not items at all, but definitely a lore
+  | MModes         -- ^ scenarios; not items at all, but definitely a lore
   deriving (Show, Read, Eq, Ord, Generic)
 
 instance NFData ItemDialogMode
@@ -181,6 +182,7 @@ ppItemDialogMode MOwned = ("among", "our total team belongings")
 ppItemDialogMode MSkills = ("among", "skills")
 ppItemDialogMode (MLore slore) = ("among", ppSLore slore <+> "lore")
 ppItemDialogMode MPlaces = ("among", "place lore")
+ppItemDialogMode MModes = ("among", "scenario lore")
 
 ppItemDialogModeIn :: ItemDialogMode -> Text
 ppItemDialogModeIn c = let (tIn, t) = ppItemDialogMode c in tIn <+> t
