@@ -125,6 +125,12 @@ version of the game map font. Config file option `chosenFontset` governs
 not only the main game map font, but also the shape of the rectangular fonts,
 if any, in which longer texts are overlaid over the map.
 
+For high resolution displays and/or if fullscreen mode is requested
+in the configuration file, `allFontsScale` needs to be set, e.g.,
+to value 3 for 4K displays. Otherwise, the letters may be too small or,
+in fullscreen or on retina displays in OS X, the screen may be automatically
+scaled as a whole, not each letter separately, softening letter edges.
+
 If you don't have a numeric keypad, you can use the left-hand movement
 key setup (axwdqezc) or Vi editor keys (aka roguelike keys) or mouse.
 If numeric keypad doesn't work, toggling the Num Lock key sometimes helps.
