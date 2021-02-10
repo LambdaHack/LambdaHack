@@ -4,7 +4,7 @@ module Game.LambdaHack.Client.UI.HandleHelperM
   ( FailError, showFailError, MError, mergeMError, FailOrCmd, failWith
   , failSer, failMsg, weaveJust
   , memberCycle, memberCycleLevel, partyAfterLeader, pickLeader, pickLeaderWithPointer
-  , itemOverlay, skillsOverlay, placesFromState, placesOverlay
+  , itemOverlay, skillsOverlay, placesFromState, placesOverlay, describeMode
   , pickNumber, guardItemSize, lookAtItems, lookAtStash, lookAtPosition
   , displayItemLore, viewLoreItems, cycleLore, spoilsBlurb
   , ppContainerWownW
@@ -46,6 +46,7 @@ import           Game.LambdaHack.Common.Actor
 import           Game.LambdaHack.Common.ActorState
 import           Game.LambdaHack.Common.ClientOptions
 import           Game.LambdaHack.Common.Faction
+import qualified Game.LambdaHack.Common.HighScore as HighScore
 import           Game.LambdaHack.Common.Item
 import           Game.LambdaHack.Common.Kind
 import           Game.LambdaHack.Common.Level
@@ -59,6 +60,7 @@ import qualified Game.LambdaHack.Common.Tile as Tile
 import           Game.LambdaHack.Common.Time
 import           Game.LambdaHack.Common.Types
 import qualified Game.LambdaHack.Content.ItemKind as IK
+import qualified Game.LambdaHack.Content.ModeKind as MK
 import qualified Game.LambdaHack.Content.PlaceKind as PK
 import qualified Game.LambdaHack.Content.TileKind as TK
 import qualified Game.LambdaHack.Definition.Ability as Ability
@@ -356,6 +358,99 @@ placesOverlay = do
       placeLab = EM.singleton squareFont $ offsetOverlay plLab
       placeDesc = EM.singleton propFont $ offsetOverlayX plDesc
   return (EM.unionWith (++) placeLab placeDesc, kxs)
+
+describeMode :: MonadClientUI m => ContentId MK.ModeKind -> m OKX
+describeMode gameModeId = do
+  COps{comode} <- getsState scops
+  CCUI{coscreen=ScreenContent{rwidth}}
+    <- getsSession sccui
+  FontSetup{..} <- getFontSetup
+  scoreDict <- getsState shigh
+  scampings <- getsClient scampings
+  srestarts <- getsClient srestarts
+  let gameMode = okind comode gameModeId
+      duplicateEOL '\n' = "\n\n"
+      duplicateEOL c = T.singleton c
+      sections =
+        [ ( textFgToAS Color.Brown "The story so far:"
+          , T.concatMap duplicateEOL (MK.mdesc gameMode) )
+        , ( textFgToAS Color.cMeta "Rules of the game:"
+          , MK.mrules gameMode )
+        , ( textFgToAS Color.BrCyan "Running commentary:"
+          , T.concatMap duplicateEOL (MK.mreason gameMode) )
+        , ( textFgToAS Color.cGreed "Hints, not needed unless stuck:"
+          , T.concatMap duplicateEOL (MK.mhint gameMode) )
+        ]
+      renderSection :: (AttrString, Text) -> Maybe [(DisplayFont, AttrString)]
+      renderSection (header, desc) =
+        if T.null desc
+        then Nothing
+        else Just [(monoFont, header), (propFont, textToAS desc)]
+      blurb = map (second $ splitAttrString (rwidth - 2) (rwidth - 2)) $
+        (propFont, textToAS
+          ("\nYou are playing the '" <> MK.mname gameMode <> "' scenario.\n\n"))
+        : concat (intersperse [(monoFont, textToAS "\n")]
+                              (mapMaybe renderSection sections))
+      blurbEnd = map (second $ splitAttrString (rwidth - 2) (rwidth - 2)) $
+        (propFont, textToAS "\nScenario endings experienced so far:\n\n")
+        : if null sectionsEndAS
+          then [(monoFont, textToAS "*none*")]
+          else sectionsEndAS
+      sectionsEndAS = concat (intersperse [(monoFont, textToAS "\n")]
+                                          (mapMaybe renderSection sectionsEnd))
+      sectionsEnd = map outcomeSection [minBound..maxBound]
+      outcomeSection :: MK.Outcome -> (AttrString, Text)
+      outcomeSection outcome =
+        ( renderOutcome outcome
+        , if not (outcomeSeen outcome)
+          then ""  -- a possible spoiler and lack of sense of progression
+          else T.concatMap duplicateEOL
+               $ fromMaybe "" $ lookup outcome
+               $ MK.mendMsg gameMode ++ endMsgDefault  -- left-biased
+        )
+      -- These are not added to @mendMsg@, because they only fit here.
+      endMsgDefault =
+        [ (MK.Restart, "No shame there is in noble defeat and there is honour in perseverance. Sometimes there are ways and places to turn rout into victory.")
+        , (MK.Camping, "Don't fear to take breaks. While you move, others move, even on distant floors, but while you stay still, the world stays still.")
+        ]
+      scoreRecords = maybe [] HighScore.unTable $ EM.lookup gameModeId scoreDict
+      outcomeSeen :: MK.Outcome -> Bool
+      outcomeSeen outcome = case outcome of
+        MK.Camping -> gameModeId `ES.member` scampings
+        MK.Restart -> gameModeId `ES.member` srestarts
+        _ -> outcome `elem` map (stOutcome . HighScore.getStatus) scoreRecords
+      -- Camping not taken into account.
+      lastOutcome :: MK.Outcome
+      lastOutcome = if null scoreRecords
+                    then MK.Restart  -- only if nothing else
+                    else stOutcome . HighScore.getStatus
+                         $ maximumBy (comparing HighScore.getDate) scoreRecords
+      renderOutcome :: MK.Outcome -> AttrString
+      renderOutcome outcome =
+        let color | outcome `elem` MK.deafeatOutcomes = Color.cVeryBadEvent
+                  | outcome `elem` MK.victoryOutcomes = Color.cVeryGoodEvent
+                  | otherwise = Color.cNeutralEvent
+            lastRemark
+              | outcome /= lastOutcome = ""
+              | outcome `elem` MK.deafeatOutcomes = "(last suffered ending)"
+              | outcome `elem` MK.victoryOutcomes = "(last achieved ending)"
+              | otherwise = "(last seen ending)"
+        in textToAS "Game over message when"
+           <+:> (textFgToAS color (T.toTitle $ MK.nameOutcomePast outcome)
+                 <+:> textToAS lastRemark)
+           <> textToAS ":"
+      shiftPointUI x (K.PointUI x0 y0) = K.PointUI (x0 + x) y0
+  return ( if isSquareFont propFont
+           then EM.singleton squareFont  -- single column, single font
+                $ offsetOverlayX
+                $ map (\t -> (2, t))
+                $ concatMap snd $ blurb ++ blurbEnd
+           else EM.unionWith (++)
+                (EM.map (map (first $ shiftPointUI 1))
+                 $ attrLinesToFontMap 0 blurb)
+                (EM.map (map (first $ shiftPointUI $ rwidth + 1))
+                 $ attrLinesToFontMap 0 blurbEnd)
+         , [] )
 
 pickNumber :: MonadClientUI m => Bool -> Int -> m (Either MError Int)
 pickNumber askNumber kAll = assert (kAll >= 1) $ do

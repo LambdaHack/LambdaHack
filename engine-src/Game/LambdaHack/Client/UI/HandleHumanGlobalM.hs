@@ -81,7 +81,6 @@ import           Game.LambdaHack.Common.ActorState
 import           Game.LambdaHack.Common.Area
 import           Game.LambdaHack.Common.ClientOptions
 import           Game.LambdaHack.Common.Faction
-import qualified Game.LambdaHack.Common.HighScore as HighScore
 import           Game.LambdaHack.Common.Item
 import qualified Game.LambdaHack.Common.ItemAspect as IA
 import           Game.LambdaHack.Common.Kind
@@ -95,7 +94,7 @@ import qualified Game.LambdaHack.Common.Tile as Tile
 import           Game.LambdaHack.Common.Types
 import           Game.LambdaHack.Common.Vector
 import qualified Game.LambdaHack.Content.ItemKind as IK
-import           Game.LambdaHack.Content.ModeKind
+import qualified Game.LambdaHack.Content.ModeKind as MK
 import           Game.LambdaHack.Content.RuleKind
 import qualified Game.LambdaHack.Content.TileKind as TK
 import qualified Game.LambdaHack.Core.Dice as Dice
@@ -1191,7 +1190,7 @@ verifyEscape :: MonadClientUI m => m (FailOrCmd ())
 verifyEscape = do
   side <- getsClient sside
   fact <- getsState $ (EM.! side) . sfactionD
-  if not (fcanEscape $ gplayer fact)
+  if not (MK.fcanEscape $ gplayer fact)
   then failWith
          "This is the way out, but where would you go in this alien world?"
   else do
@@ -1348,93 +1347,9 @@ helpHuman cmdSemInCxtOfKM = do
     <- getsSession sccui
   fontSetup@FontSetup{..} <- getFontSetup
   gameModeId <- getsState sgameModeId
-  gameMode <- getGameMode
-  scoreDict <- getsState shigh
-  scampings <- getsClient scampings
-  srestarts <- getsClient srestarts
-  let duplicateEOL '\n' = "\n\n"
-      duplicateEOL c = T.singleton c
-      sections =
-        [ ( textFgToAS Color.Brown "The story so far:"
-          , T.concatMap duplicateEOL (mdesc gameMode) )
-        , ( textFgToAS Color.cMeta "Rules of the game:"
-          , mrules gameMode )
-        , ( textFgToAS Color.BrCyan "Running commentary:"
-          , T.concatMap duplicateEOL (mreason gameMode) )
-        , ( textFgToAS Color.cGreed "Hints, not needed unless stuck:"
-          , T.concatMap duplicateEOL (mhint gameMode) )
-        ]
-      renderSection :: (AttrString, Text) -> Maybe [(DisplayFont, AttrString)]
-      renderSection (header, desc) =
-        if T.null desc
-        then Nothing
-        else Just [(monoFont, header), (propFont, textToAS desc)]
-      blurb = map (second $ splitAttrString (rwidth - 2) (rwidth - 2)) $
-        (propFont, textToAS
-          ("\nYou are playing the '" <> mname gameMode <> "' scenario.\n\n"))
-        : concat (intersperse [(monoFont, textToAS "\n")]
-                              (mapMaybe renderSection sections))
-      blurbEnd = map (second $ splitAttrString (rwidth - 2) (rwidth - 2)) $
-        (propFont, textToAS "\nScenario endings experienced so far:\n\n")
-        : if null sectionsEndAS
-          then [(monoFont, textToAS "*none*")]
-          else sectionsEndAS
-      sectionsEndAS = concat (intersperse [(monoFont, textToAS "\n")]
-                                          (mapMaybe renderSection sectionsEnd))
-      sectionsEnd = map outcomeSection [minBound..maxBound]
-      outcomeSection :: Outcome -> (AttrString, Text)
-      outcomeSection outcome =
-        ( renderOutcome outcome
-        , if not (outcomeSeen outcome)
-          then ""  -- a possible spoiler and lack of sense of progression
-          else T.concatMap duplicateEOL
-               $ fromMaybe "" $ lookup outcome
-               $ mendMsg gameMode ++ endMsgDefault  -- left-biased
-        )
-      -- These are not added to @mendMsg@, because they only fit here.
-      endMsgDefault =
-        [ (Restart, "No shame there is in noble defeat and there is honour in perseverance. Sometimes there are ways and places to turn rout into victory.")
-        , (Camping, "Don't fear to take breaks. While you move, others move, even on distant floors, but while you stay still, the world stays still.")
-        ]
-      scoreRecords = maybe [] HighScore.unTable $ EM.lookup gameModeId scoreDict
-      outcomeSeen :: Outcome -> Bool
-      outcomeSeen outcome = case outcome of
-        Camping -> gameModeId `ES.member` scampings
-        Restart -> gameModeId `ES.member` srestarts
-        _ -> outcome `elem` map (stOutcome . HighScore.getStatus) scoreRecords
-      -- Camping not taken into account.
-      lastOutcome :: Outcome
-      lastOutcome = if null scoreRecords
-                    then Restart  -- only if nothing else
-                    else stOutcome . HighScore.getStatus
-                         $ maximumBy (comparing HighScore.getDate) scoreRecords
-      renderOutcome :: Outcome -> AttrString
-      renderOutcome outcome =
-        let color | outcome `elem` deafeatOutcomes = Color.cVeryBadEvent
-                  | outcome `elem` victoryOutcomes = Color.cVeryGoodEvent
-                  | otherwise = Color.cNeutralEvent
-            lastRemark
-              | outcome /= lastOutcome = ""
-              | outcome `elem` deafeatOutcomes = "(last suffered ending)"
-              | outcome `elem` victoryOutcomes = "(last achieved ending)"
-              | otherwise = "(last seen ending)"
-        in textToAS "Game over message when"
-           <+:> (textFgToAS color (T.toTitle $ nameOutcomePast outcome)
-                 <+:> textToAS lastRemark)
-           <> textToAS ":"
-      shiftPointUI x (K.PointUI x0 y0) = K.PointUI (x0 + x) y0
-      modeH = ( "Press SPACE or PGDN to advance or ESC to see the map again."
-              , ( if isSquareFont propFont
-                  then EM.singleton squareFont  -- single column, single font
-                       $ offsetOverlayX
-                       $ map (\t -> (2, t))
-                       $ concatMap snd $ blurb ++ blurbEnd
-                  else EM.unionWith (++)
-                         (EM.map (map (first $ shiftPointUI 1))
-                          $ attrLinesToFontMap 0 blurb)
-                         (EM.map (map (first $ shiftPointUI $ rwidth + 1))
-                          $ attrLinesToFontMap 0 blurbEnd)
-                , [] ) )
+  modeOKX <- describeMode gameModeId
+  let modeH = ( "Press SPACE or PGDN to advance or ESC to see the map again."
+              , modeOKX )
       keyH = keyHelp ccui fontSetup
       splitHelp (t, okx) = splitOKX fontSetup True rwidth rheight rwidth
                                     (textToAS t) [K.spaceKM, K.escKM] okx
@@ -1727,7 +1642,7 @@ mainMenuHuman cmdSemInCxtOfKM = do
       tcurFish = "       cold fish:" <+> offOn (cfish curChal)
       -- Key-description-command tuples.
       kds = [(km, (desc, cmd)) | (km, ([CmdMainMenu], desc, cmd)) <- bcmdList]
-      gameName = mname gameMode
+      gameName = MK.mname gameMode
       gameInfo = map T.unpack
                    [ "Now playing:" <+> gameName
                    , ""
@@ -1777,7 +1692,7 @@ settingsMenuHuman cmdSemInCxtOfKM = do
   markSmell <- getsSession smarkSmell
   noAnim <- getsClient $ fromMaybe False . snoAnim . soptions
   side <- getsClient sside
-  factDoctrine <- getsState $ fdoctrine . gplayer . (EM.! side) . sfactionD
+  factDoctrine <- getsState $ MK.fdoctrine . gplayer . (EM.! side) . sfactionD
   let offOn b = if b then "on" else "off"
       offOnAll n = case n of
         0 -> "none"
@@ -1819,7 +1734,7 @@ challengesMenuHuman cmdSemInCxtOfKM = do
         Nothing -> 0
         Just cm -> fromMaybe 0 (M.lookup nxtChal cm)
       star t = if victories > 0 then "*" <> t else t
-      tnextScenario = "scenario:" <+> star (mname gameMode)
+      tnextScenario = "scenario:" <+> star (MK.mname gameMode)
       offOn b = if b then "on" else "off"
       tnextDiff = "difficulty (lower easier):" <+> tshow (cdiff nxtChal)
       tnextWolf = "lone wolf (very hard):"
@@ -1847,17 +1762,17 @@ challengesMenuHuman cmdSemInCxtOfKM = do
         [ ( propFont
           , splitAttrString widthProp widthProp
             $ textFgToAS Color.BrBlack
-            $ T.concatMap duplicateEOL (mdesc gameMode)
+            $ T.concatMap duplicateEOL (MK.mdesc gameMode)
               <> "\n\n" )
         , ( monoFont
           , splitAttrString widthMono widthMono
             $ textToAS
-            $ mrules gameMode
+            $ MK.mrules gameMode
               <> "\n\n" )
         , ( propFont
           , splitAttrString widthProp widthProp
             $ textToAS
-            $ T.concatMap duplicateEOL (mreason gameMode) )
+            $ T.concatMap duplicateEOL (MK.mreason gameMode) )
         ]
   generateMenu cmdSemInCxtOfKM blurb kds gameInfo "challenge"
 
@@ -1900,12 +1815,12 @@ gameRestartHuman = do
   noConfirmsGame <- isNoConfirmsGame
   gameMode <- getGameMode
   snxtScenario <- getsClient snxtScenario
-  let nxtGameName = mname $ snd $ nxtGameMode cops snxtScenario
+  let nxtGameName = MK.mname $ snd $ nxtGameMode cops snxtScenario
   b <- if noConfirmsGame
        then return True
        else displayYesNo ColorBW
             $ "You just requested a new" <+> nxtGameName
-              <+> "game. The progress of the ongoing" <+> mname gameMode
+              <+> "game. The progress of the ongoing" <+> MK.mname gameMode
               <+> "game will be lost! Are you sure?"
   if b
   then do
@@ -1922,10 +1837,10 @@ gameRestartHuman = do
               , "yea, a shame to get your team stranded" ]
     failWith msg2
 
-nxtGameMode :: COps -> Int -> (ContentId ModeKind, ModeKind)
+nxtGameMode :: COps -> Int -> (ContentId MK.ModeKind, MK.ModeKind)
 nxtGameMode COps{comode} snxtScenario =
   let f !acc _p !i !a = (i, a) : acc
-      campaignModes = ofoldlGroup' comode CAMPAIGN_SCENARIO f []
+      campaignModes = ofoldlGroup' comode MK.CAMPAIGN_SCENARIO f []
   in campaignModes !! (snxtScenario `mod` length campaignModes)
 
 -- * GameQuit
@@ -1938,12 +1853,12 @@ gameQuitHuman = do
   b <- if noConfirmsGame
        then return True
        else displayYesNo ColorBW
-            $ "If you quit, the progress of the ongoing" <+> mname gameMode
+            $ "If you quit, the progress of the ongoing" <+> MK.mname gameMode
               <+> "game will be lost! Are you sure?"
   if b
   then do
     snxtChal <- getsClient snxtChal
-    return $ Right $ ReqUIGameRestart INSERT_COIN snxtChal
+    return $ Right $ ReqUIGameRestart MK.INSERT_COIN snxtChal
   else do
     msg2 <- rndToActionUI $ oneOf
               [ "yea, would be a pity to leave them to die"
@@ -1984,7 +1899,7 @@ gameSaveHuman = do
 doctrineHuman :: MonadClientUI m => m (FailOrCmd ReqUI)
 doctrineHuman = do
   fid <- getsClient sside
-  fromT <- getsState $ fdoctrine . gplayer . (EM.! fid) . sfactionD
+  fromT <- getsState $ MK.fdoctrine . gplayer . (EM.! fid) . sfactionD
   let toT = if fromT == maxBound then minBound else succ fromT
   go <- displaySpaceEsc ColorFull
         $ "(Beware, work in progress!)"
