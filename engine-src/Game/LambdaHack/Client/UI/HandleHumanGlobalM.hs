@@ -850,12 +850,11 @@ selectItemsToMove stores destCStore mverb auto = do
                     promptGeneric <+> ppItemDialogBody body actorSk cCur)
                  storesLast (not auto) True
        case ggi of
-         Right (l, (MStore fromCStore, _)) -> do
+         Right (fromCStore, l) -> do
            modifySession $ \sess ->
              sess {slastItemMove = Just (fromCStore, destCStore)}
            return $ Right (fromCStore, l)
          Left err -> failWith err
-         _ -> error $ "" `showFailure` ggi
 
 moveItems :: forall m. MonadClientUI m
           => [CStore] -> (CStore, [(ItemId, ItemQuant)]) -> CStore

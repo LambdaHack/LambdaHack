@@ -218,57 +218,45 @@ chooseItemDialogMode c = do
   let meleeSkill = Ability.getSk Ability.SkHurtMelee actorCurAndMaxSk
   bUI <- getsSession $ getActorUI leader
   case ggi of
-    (Right (iid, itemBag, lSlots), (c2, _)) ->
-      case c2 of
-        MStore fromCStore -> do
-          modifySession $ \sess ->
-            sess {sitemSel = Just (iid, fromCStore, False)}
-          return $ Right c2
-        MOrgans -> do
-          let blurb itemFull =
-                if IA.checkFlag Ability.Condition $ aspectRecordFull itemFull
-                then "condition"
-                else "organ"
-              promptFun _ itemFull _ =
-                makeSentence [ partActor bUI, "is aware of"
-                             , MU.AW $ blurb itemFull ]
-              ix0 = fromMaybe (error $ show iid)
-                    $ findIndex (== iid) $ EM.elems lSlots
-          go <- displayItemLore itemBag meleeSkill promptFun ix0 lSlots
-          if go then chooseItemDialogMode c2 else failWith "never mind"
-        MOwned -> do
-          found <- getsState $ findIid leader side iid
-          let (newAid, bestStore) = case leader `lookup` found of
-                Just (_, store) -> (leader, store)
-                Nothing -> case found of
-                  (aid, (_, store)) : _ -> (aid, store)
-                  [] -> error $ "" `showFailure` iid
-          modifySession $ \sess ->
-            sess {sitemSel = Just (iid, bestStore, False)}
-          arena <- getArenaUI
-          b2 <- getsState $ getActorBody newAid
-          let (autoDun, _) = autoDungeonLevel fact
-          if | newAid == leader -> return $ Right c2
-             | blid b2 /= arena && autoDun ->
-               failSer NoChangeDunLeader
-             | otherwise -> do
-               -- We switch leader only here, not in lore screens, because
-               -- lore is only about inspecting items, no activation submenu.
-               void $ pickLeader True newAid
-               return $ Right c2
-        MSkills -> error $ "" `showFailure` ggi
-        MLore slore -> do
-          let ix0 = fromMaybe (error $ show iid)
-                    $ findIndex (== iid) $ EM.elems lSlots
-              promptFun _ _ _ =
-                makeSentence [ MU.SubjectVerbSg (partActor bUI) "remember"
-                             , MU.AW $ MU.Text (headingSLore slore) ]
-          go <- displayItemLore itemBag meleeSkill promptFun ix0 lSlots
-          if go then chooseItemDialogMode c2 else failWith "never mind"
-        MPlaces -> error $ "" `showFailure` ggi
-        MModes -> error $ "" `showFailure` ggi
-    (Left err, (MSkills, ekm)) -> case ekm of
-      Right slot0 -> assert (err == "skills") $ do
+    Right result -> case result of
+      RStore fromCStore [iid] -> do
+        modifySession $ \sess ->
+          sess {sitemSel = Just (iid, fromCStore, False)}
+        return $ Right $ MStore fromCStore
+      RStore{} -> error $ "" `showFailure` result
+      ROrgans iid itemBag lSlots -> do
+        let blurb itemFull =
+              if IA.checkFlag Ability.Condition $ aspectRecordFull itemFull
+              then "condition"
+              else "organ"
+            promptFun _ itemFull _ =
+              makeSentence [ partActor bUI, "is aware of"
+                           , MU.AW $ blurb itemFull ]
+            ix0 = fromMaybe (error $ "" `showFailure` result)
+                  $ findIndex (== iid) $ EM.elems lSlots
+        go <- displayItemLore itemBag meleeSkill promptFun ix0 lSlots
+        if go then chooseItemDialogMode MOrgans else failWith "never mind"
+      ROwned iid -> do
+        found <- getsState $ findIid leader side iid
+        let (newAid, bestStore) = case leader `lookup` found of
+              Just (_, store) -> (leader, store)
+              Nothing -> case found of
+                (aid, (_, store)) : _ -> (aid, store)
+                [] -> error $ "" `showFailure` result
+        modifySession $ \sess ->
+          sess {sitemSel = Just (iid, bestStore, False)}
+        arena <- getArenaUI
+        b2 <- getsState $ getActorBody newAid
+        let (autoDun, _) = autoDungeonLevel fact
+        if | newAid == leader -> return $ Right MOwned
+           | blid b2 /= arena && autoDun ->
+             failSer NoChangeDunLeader
+           | otherwise -> do
+             -- We switch leader only here, not in lore screens, because
+             -- lore is only about inspecting items, no activation submenu.
+             void $ pickLeader True newAid
+             return $ Right MOwned
+      RSkills slotIndex0 -> do
         let slotListBound = length skillSlots - 1
             displayOneSlot slotIndex = do
               b <- getsState $ getActorBody leader
@@ -294,12 +282,16 @@ chooseItemDialogMode c = do
                 K.Down -> displayOneSlot $ slotIndex + 1
                 K.Esc -> failWith "never mind"
                 _ -> error $ "" `showFailure` km
-            slotIndex0 = fromMaybe (error "displayOneSlot: illegal slot")
-                         $ elemIndex slot0 allSlots
         displayOneSlot slotIndex0
-      Left _ -> failWith "never mind"
-    (Left err, (MPlaces, ekm)) -> case ekm of
-      Right slot0 -> assert (err == "places") $ do
+      RLore slore iid itemBag lSlots -> do
+        let ix0 = fromMaybe (error $ "" `showFailure` result)
+                  $ findIndex (== iid) $ EM.elems lSlots
+            promptFun _ _ _ =
+              makeSentence [ MU.SubjectVerbSg (partActor bUI) "remember"
+                           , MU.AW $ MU.Text (headingSLore slore) ]
+        go <- displayItemLore itemBag meleeSkill promptFun ix0 lSlots
+        if go then chooseItemDialogMode (MLore slore) else failWith "never mind"
+      RPlaces slotIndex0 -> do
         COps{coplace} <- getsState scops
         soptions <- getsClient soptions
         places <- getsState $ EM.assocs . placesFromState coplace soptions
@@ -350,12 +342,8 @@ chooseItemDialogMode c = do
                 K.Down -> displayOneSlot $ slotIndex + 1
                 K.Esc -> failWith "never mind"
                 _ -> error $ "" `showFailure` km
-            slotIndex0 = fromMaybe (error "displayOneSlot: illegal slot")
-                         $ elemIndex slot0 allSlots
         displayOneSlot slotIndex0
-      Left _ -> failWith "never mind"
-    (Left err, (MModes, ekm)) -> case ekm of
-      Right slot0 -> assert (err == "scenarios") $ do
+      RModes slotIndex0 -> do
         COps{comode} <- getsState scops
         svictories <- getsClient svictories
         nxtChal <- getsClient snxtChal
@@ -386,11 +374,8 @@ chooseItemDialogMode c = do
                 K.Down -> displayOneSlot $ slotIndex + 1
                 K.Esc -> failWith "never mind"
                 _ -> error $ "" `showFailure` km
-            slotIndex0 = fromMaybe (error "displayOneSlot: illegal slot")
-                         $ elemIndex slot0 allSlots
         displayOneSlot slotIndex0
-      Left _ -> failWith "never mind"
-    (Left err, _) -> failWith err
+    Left err -> failWith err
 
 -- * ChooseItemProject
 
@@ -438,12 +423,11 @@ chooseItemProjectHuman ts = do
               promptGeneric = "What to"
           ggi <- getGroupItem psuit prompt promptGeneric verb "fling" stores
           case ggi of
-            Right (iid, (MStore fromCStore, _)) -> do
+            Right (fromCStore, iid) -> do
               modifySession $ \sess ->
                 sess {sitemSel = Just (iid, fromCStore, False)}
               return Nothing
             Left err -> failMsg err
-            _ -> error $ "" `showFailure` ggi
 
 permittedProjectClient :: MonadClientUI m
                        => m (ItemFull -> Either ReqFailure Bool)
@@ -619,12 +603,11 @@ chooseItemApplyHuman ts = do
                   || IK.isymbol (itemKind itemFull) `elem` triggerSyms)
       ggi <- getGroupItem psuit prompt promptGeneric verb "trigger" stores
       case ggi of
-        Right (iid, (MStore fromCStore, _)) -> do
+        Right (fromCStore, iid) -> do
           modifySession $ \sess ->
             sess {sitemSel = Just (iid, fromCStore, False)}
           return Nothing
         Left err -> failMsg err
-        _ -> error $ "" `showFailure` ggi
 
 permittedApplyClient :: MonadClientUI m
                      => m (Maybe CStore -> ItemFull -> ItemQuant
