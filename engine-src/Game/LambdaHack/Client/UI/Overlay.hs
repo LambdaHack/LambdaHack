@@ -184,9 +184,10 @@ indentSplitAttrString w l =
 
 indentSplitAttrString2 :: Bool -> Int -> AttrString -> [AttrLine]
 indentSplitAttrString2 isProp w l =
-  let ts = splitAttrString w (w - 2) l
+  let nspaces = if isProp then 4 else 2
+      ts = splitAttrString w (w - nspaces) l
       -- Proportional spaces are very narrow.
-      spaces = replicate (if isProp then 4 else 2) Color.spaceAttrW32
+      spaces = replicate nspaces Color.spaceAttrW32
   in case ts of
     [] -> []
     hd : tl -> hd : map (AttrLine . (spaces ++) . attrLine) tl
