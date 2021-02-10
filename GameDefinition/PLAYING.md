@@ -131,8 +131,8 @@ involving his whole party. On yet others, his best course of action may be
 to defend a key location until the first wave of attackers is broken.
 The large game arena calls for strategic thinking, including resource
 management, area denial and unavoidable temporary retreats to other levels.
-Thus, the crawl adventure is the most replayable one, but even the small
-scenarios can be refreshed by striving to beat a high score and then
+Thus, the crawl scenario is the most replayable adventure, but even the small
+ones can be refreshed by striving to beat a high score and then
 ramping up the difficulty settings.
 
 

@@ -393,7 +393,7 @@ describeMode addTitle gameModeId = do
         then Nothing
         else Just [(monoFont, header), (propFont, textToAS desc)]
       title = if addTitle
-              then "\nYou are playing the '"
+              then "\nYou are surviving the '"
                    <> MK.mname gameMode
                    <> "' adventure.\n"
               else ""
