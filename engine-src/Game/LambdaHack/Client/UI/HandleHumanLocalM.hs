@@ -365,7 +365,7 @@ chooseItemDialogMode c = do
                          ++ [K.upKM | slotIndex /= 0]
                          ++ [K.downKM | slotIndex /= slotListBound]
               msgAdd MsgPromptGeneric prompt2
-              slides <- overlayToSlideshow (rheight - 2) keys (modeOKX, [])
+              slides <- overlayToSlideshow rheight keys (modeOKX, [])
               ekm2 <- displayChoiceScreen "" ColorFull True slides keys
               let km = either id (error $ "" `showFailure` ekm2) ekm2
               case K.key km of
