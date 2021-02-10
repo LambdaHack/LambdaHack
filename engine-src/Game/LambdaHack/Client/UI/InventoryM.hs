@@ -419,67 +419,37 @@ transition psuit prompt promptGeneric permitMulitple
                                  `showFailure` (slot, bagItemSlots)
               Just iid -> return $! getResult [iid]
         }
+      processSpecialOverlay :: OKX -> (Int -> ResultItemDialogMode)
+                            -> m (Either Text ResultItemDialogMode)
+      processSpecialOverlay io resultConstructor = do
+        let slotLabels = map fst $ snd io
+            slotKeys = mapMaybe (keyOfEKM numPrefix) slotLabels
+            skillsDef :: DefItemKey m
+            skillsDef = DefItemKey
+              { defLabel = Left ""
+              , defCond = True
+              , defAction = \ekm ->
+                  let slot = case ekm of
+                        Left K.KM{key} -> case key of
+                          K.Char l -> SlotChar numPrefix l
+                          _ -> error $ "unexpected key:"
+                                       `showFailure` K.showKey key
+                        Right sl -> sl
+                      slotIndex = fromMaybe (error "illegal slot")
+                                  $ elemIndex slot allSlots
+                  in return (Right (resultConstructor slotIndex))
+              }
+        runDefItemKey keyDefs skillsDef io slotKeys promptChosen cCur
   case cCur of
     MSkills -> do
       io <- skillsOverlay leader
-      let slotLabels = map fst $ snd io
-          slotKeys = mapMaybe (keyOfEKM numPrefix) slotLabels
-          skillsDef :: DefItemKey m
-          skillsDef = DefItemKey
-            { defLabel = Left ""
-            , defCond = True
-            , defAction = \ekm ->
-                let slot = case ekm of
-                      Left K.KM{key} -> case key of
-                        K.Char l -> SlotChar numPrefix l
-                        _ -> error $ "unexpected key:"
-                                     `showFailure` K.showKey key
-                      Right sl -> sl
-                    slotIndex = fromMaybe (error "illegal slot")
-                                $ elemIndex slot allSlots
-                in return (Right (RSkills slotIndex))
-            }
-      runDefItemKey keyDefs skillsDef io slotKeys promptChosen cCur
+      processSpecialOverlay io RSkills
     MPlaces -> do
       io <- placesOverlay
-      let slotLabels = map fst $ snd io
-          slotKeys = mapMaybe (keyOfEKM numPrefix) slotLabels
-          placesDef :: DefItemKey m
-          placesDef = DefItemKey
-            { defLabel = Left ""
-            , defCond = True
-            , defAction = \ekm ->
-                let slot = case ekm of
-                      Left K.KM{key} -> case key of
-                        K.Char l -> SlotChar numPrefix l
-                        _ -> error $ "unexpected key:"
-                                     `showFailure` K.showKey key
-                      Right sl -> sl
-                    slotIndex = fromMaybe (error "illegal slot")
-                                $ elemIndex slot allSlots
-                in return (Right (RPlaces slotIndex))
-            }
-      runDefItemKey keyDefs placesDef io slotKeys promptChosen cCur
+      processSpecialOverlay io RSkills
     MModes -> do
       io <- modesOverlay
-      let slotLabels = map fst $ snd io
-          slotKeys = mapMaybe (keyOfEKM numPrefix) slotLabels
-          placesDef :: DefItemKey m
-          placesDef = DefItemKey
-            { defLabel = Left ""
-            , defCond = True
-            , defAction = \ekm ->
-                let slot = case ekm of
-                      Left K.KM{key} -> case key of
-                        K.Char l -> SlotChar numPrefix l
-                        _ -> error $ "unexpected key:"
-                                     `showFailure` K.showKey key
-                      Right sl -> sl
-                    slotIndex = fromMaybe (error "illegal slot")
-                                $ elemIndex slot allSlots
-                in return (Right (RModes slotIndex))
-            }
-      runDefItemKey keyDefs placesDef io slotKeys promptChosen cCur
+      processSpecialOverlay io RModes
     _ -> do
       let displayRanged =
             cCur `notElem` [MStore COrgan, MOrgans, MLore SOrgan, MLore STrunk]
