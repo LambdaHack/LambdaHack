@@ -378,7 +378,7 @@ describeMode addTitle gameModeId = do
       duplicateEOL '\n' = "\n\n"
       duplicateEOL c = T.singleton c
       sections =
-        [ ( textFgToAS Color.Brown "The story so far:"
+        [ ( textFgToAS Color.BrGreen "The story so far:"
           , T.concatMap duplicateEOL (MK.mdesc gameMode) )
         , ( textFgToAS Color.cMeta "Rules of the game:"
           , MK.mrules gameMode )
@@ -401,12 +401,15 @@ describeMode addTitle gameModeId = do
         (propFont, textToAS (title <> "\n"))
         : concat (intersperse [(monoFont, textToAS "\n")]
                               (mapMaybe renderSection sections))
+      -- Colour is used to delimit the section when displayed in one
+      -- column, when using square fonts only.
       blurbEnd = map (second $ splitAttrString (rwidth - 2) (rwidth - 2)) $
         ( propFont
-        , textToAS "\nThis adventure's endings experienced so far:\n\n" )
-        : if null sectionsEndAS
-          then [(monoFont, textToAS "*none*")]
-          else sectionsEndAS
+        , textFgToAS Color.Brown
+                     "\nThis adventure's endings experienced so far:\n\n" )
+          : if null sectionsEndAS
+            then [(monoFont, textToAS "*none*")]
+            else sectionsEndAS
       sectionsEndAS = concat (intersperse [(monoFont, textToAS "\n")]
                                           (mapMaybe renderSection sectionsEnd))
       sectionsEnd = map outcomeSection [minBound..maxBound]
