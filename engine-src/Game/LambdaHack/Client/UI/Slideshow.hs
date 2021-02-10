@@ -227,7 +227,8 @@ splitOKX :: FontSetup -> Bool -> Int -> Int -> Int -> AttrString -> [K.KM]
          -> [OKX]
 splitOKX FontSetup{..} msgLong width height wrap reportAS keys (ls0, kxs0) =
   assert (height > 2) $
-  let indentSplitSpaces = indentSplitAttrString2 (not $ isMonoFont propFont)
+  let indentSplitSpaces = indentSplitAttrString2
+                            (not (isMonoFont propFont || isSquareFont propFont))
       reportParagraphs = linesAttr reportAS
       -- TODO: until SDL support for measuring prop font text is released,
       -- we have to use MonoFont for the paragraph that ends with buttons.
