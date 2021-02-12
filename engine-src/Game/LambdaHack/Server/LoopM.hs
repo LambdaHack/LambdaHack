@@ -107,7 +107,7 @@ loopSer serverOptions executorClient = do
       updConn
       initPer
       reinitGame
-      writeSaveAll False
+      writeSaveAll False False
   loopUpd updConn
 
 factionArena :: MonadStateRead m => Faction -> m (Maybe LevelId)
@@ -330,7 +330,7 @@ endClip updatePerFid = do
   unless breakLoop2 $  -- if by chance requested and periodic saves coincide
     -- Periodic save needs to be at the end, so that restore can start
     -- at the beginning.
-    when (clipN `mod` rwriteSaveClips corule == 0) $ writeSaveAll False
+    when (clipN `mod` rwriteSaveClips corule == 0) $ writeSaveAll False False
 #endif
 
 -- | Check if the given actor is dominated and update his calm.
@@ -727,5 +727,7 @@ restartGame updConn loop mgameMode = do
   updConn
   initPer
   reinitGame
-  writeSaveAll False
+  -- Save a just started noConfirm game to preserve history of the just
+  -- ended normal game, in case the user exits brutally.
+  writeSaveAll False True
   loop

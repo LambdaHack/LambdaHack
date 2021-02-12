@@ -404,7 +404,7 @@ endOrLoop loop restart = do
     getsServer $ sstopAfterGameOver . soptions
   when swriteSave $ do
     modifyServer $ \ser -> ser {swriteSave = False}
-    writeSaveAll True
+    writeSaveAll True False
   if | gameOver && sstopAfterGameOver -> gameExit
      | restartNeeded -> restart (listToMaybe quitters)
      | not $ null campers -> gameExit  -- and @loop@ is not called

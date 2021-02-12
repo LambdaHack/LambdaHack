@@ -214,11 +214,12 @@ deduceQuits fid0 status = do
      | otherwise -> quitF status fid0
 
 -- | Save game on server and all clients.
-writeSaveAll :: MonadServerAtomic m => Bool -> m ()
-writeSaveAll uiRequested = do
+writeSaveAll :: MonadServerAtomic m => Bool -> Bool -> m ()
+writeSaveAll uiRequested evenForNoConfirmGames= do
   bench <- getsServer $ sbenchmark . sclientOptions . soptions
   noConfirmsGame <- isNoConfirmsGame
-  when (uiRequested || not bench && not noConfirmsGame) $ do
+  when (uiRequested
+        || not bench && (not noConfirmsGame || evenForNoConfirmGames)) $ do
     execUpdAtomic UpdWriteSave
     saveServer
 #ifdef WITH_EXPENSIVE_ASSERTIONS
