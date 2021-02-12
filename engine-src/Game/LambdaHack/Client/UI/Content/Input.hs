@@ -58,23 +58,21 @@ makeData muiOptions (InputContentRaw copsClient) =
       rawContent = copsClient ++ uCommands0
       (rawContentMainMenu, rawContentNoMainMenu) =
         partition isMainMenu rawContent
-      filteredNoMainMenu =
-        filter (\(k, _) ->
-          k `notElem` map (K.KM K.NoModifier)
-                          (K.dirMoveNoModifier uVi0 uLeftHand0)
-                      ++ map (K.KM K.NoModifier)
-                             (K.dirRunNoModifier uVi0 uLeftHand0)
-                      ++ map (K.KM K.Control) K.dirRunControl
-                      ++ map (K.KM K.Shift) K.dirRunShift
-                      ++ map K.mkKM [ "KP_Begin"
-                                    , "C-KP_Begin"
-                                    , "KP_5"
-                                    , "C-KP_5" ]
-                      ++ [K.mkKM "period" | uVi0]
-                      ++ [K.mkKM "C-period" | uVi0]
-                      ++ [K.mkKM "s" | uLeftHand0]
-                      ++ [K.mkKM "S" | uLeftHand0])
-          rawContentNoMainMenu
+      movementDefinitions =
+        K.moveBinding uVi0 uLeftHand0
+          (\v -> ([CmdMove], "", moveXhairOr 1 MoveDir v))
+          (\v -> ([CmdMove], "", moveXhairOr 10 RunDir v))
+        ++ [ (K.mkKM "KP_Begin", waitTriple)
+           , (K.mkKM "C-KP_Begin", wait10Triple)
+           , (K.mkKM "KP_5", wait10Triple)
+           , (K.mkKM "C-KP_5", wait10Triple) ]
+        ++ [(K.mkKM "period", waitTriple) | uVi0]
+        ++ [(K.mkKM "C-period", wait10Triple) | uVi0]
+        ++ [(K.mkKM "s", waitTriple) | uLeftHand0]
+        ++ [(K.mkKM "S", wait10Triple) | uLeftHand0]
+      movementKeys = map fst movementDefinitions
+      filteredNoMainMenu = filter (\(k, _) -> k `notElem` movementKeys)
+                                  rawContentNoMainMenu
 #ifdef WITH_EXPENSIVE_ASSERTIONS
       -- Users are free to overwrite commands, but at least the defaults
       -- should be non-overlapping with the movement keys.
@@ -82,19 +80,7 @@ makeData muiOptions (InputContentRaw copsClient) =
                     `blame` "duplicate keys"
                     `swith` rawContentNoMainMenu \\ filteredNoMainMenu) ()
 #endif
-      bcmdList = rawContentMainMenu
-                 ++ filteredNoMainMenu
-                 ++ K.moveBinding uVi0 uLeftHand0
-                      (\v -> ([CmdMove], "", moveXhairOr 1 MoveDir v))
-                      (\v -> ([CmdMove], "", moveXhairOr 10 RunDir v))
-                 ++ [ (K.mkKM "KP_Begin", waitTriple)
-                    , (K.mkKM "C-KP_Begin", wait10Triple)
-                    , (K.mkKM "KP_5", wait10Triple)
-                    , (K.mkKM "C-KP_5", wait10Triple) ]
-                 ++ [(K.mkKM "period", waitTriple) | uVi0]
-                 ++ [(K.mkKM "C-period", wait10Triple) | uVi0]
-                 ++ [(K.mkKM "s", waitTriple) | uLeftHand0]
-                 ++ [(K.mkKM "S", wait10Triple) | uLeftHand0]
+      bcmdList = rawContentMainMenu ++ filteredNoMainMenu ++ movementDefinitions
       -- This catches repetitions inside input content definitions.
       rejectRepetitions t1 t2 =
         error $ "duplicate key" `showFailure` (t1, t2)
