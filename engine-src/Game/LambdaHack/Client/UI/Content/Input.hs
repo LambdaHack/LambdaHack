@@ -53,11 +53,7 @@ makeData muiOptions (InputContentRaw copsClient) =
       wait10Triple = ([CmdMove], "", Wait10)
       moveXhairOr n cmd v = ByAimMode $ AimModeCmd { exploration = cmd v
                                                    , aiming = MoveXhair v n }
-      isMainMenu (_, ([CmdMainMenu], _, _)) = True
-      isMainMenu _ = False
       rawContent = copsClient ++ uCommands0
-      (rawContentMainMenu, rawContentNoMainMenu) =
-        partition isMainMenu rawContent
       movementDefinitions =
         K.moveBinding uVi0 uLeftHand0
           (\v -> ([CmdMove], "", moveXhairOr 1 MoveDir v))
@@ -70,22 +66,23 @@ makeData muiOptions (InputContentRaw copsClient) =
         ++ [(K.mkKM "C-period", wait10Triple) | uVi0]
         ++ [(K.mkKM "s", waitTriple) | uLeftHand0]
         ++ [(K.mkKM "S", wait10Triple) | uLeftHand0]
-      movementKeys = map fst movementDefinitions
-      filteredNoMainMenu = filter (\(k, _) -> k `notElem` movementKeys)
-                                  rawContentNoMainMenu
-#ifdef WITH_EXPENSIVE_ASSERTIONS
-      -- Users are free to overwrite commands, but at least the defaults
-      -- should be non-overlapping with the movement keys.
-      !_A = assert (rawContentNoMainMenu == filteredNoMainMenu
-                    `blame` "duplicate keys"
-                    `swith` rawContentNoMainMenu \\ filteredNoMainMenu) ()
-#endif
-      bcmdList = rawContentMainMenu ++ filteredNoMainMenu ++ movementDefinitions
-      -- This catches repetitions inside input content definitions.
-      rejectRepetitions t1 t2 =
-        error $ "duplicate key" `showFailure` (t1, t2)
+      -- This is the most common case of duplicate keys and it usually
+      -- has an easy solution, so it's tested for first.
+      !_A = flip assert () $
+        let isNotMainMenu (_, (cats, _, _)) = all (`notElem` [CmdMainMenu]) cats
+            rawContentNoMainMenu = filter isNotMainMenu rawContent
+            movementKeys = map fst movementDefinitions
+            filteredNoMainMenu = filter (\(k, _) -> k `notElem` movementKeys)
+                                        rawContentNoMainMenu
+        in rawContentNoMainMenu == filteredNoMainMenu
+           `blame` "commands overwrite the enabled movement keys (you can disable some in config file and try again)"
+           `swith` rawContentNoMainMenu \\ filteredNoMainMenu
+      bcmdList = rawContent ++ movementDefinitions
+      -- This catches repetitions (usually) not involving movement keys.
+      rejectRepetitions k t1 t2 =
+        error $ "duplicate key among command definitions (you can instead disable some movement key sets in config file and overwrite the freed keys)" `showFailure` (k, t1, t2)
   in InputContent
-  { bcmdMap = M.fromListWith rejectRepetitions
+  { bcmdMap = M.fromListWithKey rejectRepetitions
       [ (k, triple)
       | (k, triple@(cats, _, _)) <- bcmdList
       , all (`notElem` [CmdMainMenu]) cats
