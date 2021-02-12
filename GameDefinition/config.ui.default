@@ -43,6 +43,8 @@ HeroName_5 = ("Roger Robin", "he")
 HeroName_6 = ("Christopher Flatt", "he")
 
 [ui]
+; Disable these to free up some keys, if you want to rebind commands
+; and/or to avoid moving due to accidental key presses.
 movementViKeys_hjklyubn = True
 movementLeftHandKeys_axwdqezc = True
 ; recommended: "binary" or "dejavuBold" or, if not a Debian package, "ubuntu"
