@@ -1342,7 +1342,7 @@ helpHuman :: MonadClientUI m
           => (K.KM -> HumanCmd -> m (Either MError ReqUI))
           -> m (Either MError ReqUI)
 helpHuman cmdSemInCxtOfKM = do
-  ccui@CCUI{coinput, coscreen=ScreenContent{rwidth, rheight}}
+  ccui@CCUI{coinput, coscreen=ScreenContent{rwidth, rheight, rintroScreen}}
     <- getsSession sccui
   fontSetup@FontSetup{..} <- getFontSetup
   gameModeId <- getsState sgameModeId
@@ -1350,9 +1350,54 @@ helpHuman cmdSemInCxtOfKM = do
   let modeH = ( "Press SPACE or PGDN to advance or ESC to see the map again."
               , (modeOv, []) )
       keyH = keyHelp ccui fontSetup
+      -- This takes a list of paragraphs and returns a list of screens.
+      -- Both paragraph and screen is a list of lines.
+      --
+      -- This would be faster, but less clear, if paragraphs were stored
+      -- reversed in content. Not worth it, until we have huge manuals
+      -- or run on weak mobiles. Even then, precomputation during
+      -- compilation may be better.
+      glueIntoScreens :: [[String]] -> [[String]] -> Int -> [[String]]
+      glueIntoScreens [] acc _ = [intercalate [""] (reverse acc)]
+      glueIntoScreens ([] : ls) [] _  =
+        -- Ignore empty paragraphs at the start of screen.
+        glueIntoScreens ls [] 0
+      glueIntoScreens (l : ls) [] h = assert (h == 0) $
+        -- If a paragraph, even alone, is longer than screen height, it's split.
+        if length l <= rheight - 3
+        then glueIntoScreens ls [l] (length l)
+        else let (screen, rest) = splitAt (rheight - 3) l
+             in screen : glueIntoScreens (rest : ls) [] 0
+      glueIntoScreens (l : ls) acc h =
+        -- The extra @+ 1@ comes from the empty line separating paragraphs,
+        -- as added in @intercalate@.
+        if length l + 1 + h <= rheight - 3
+        then glueIntoScreens ls (l : acc) (length l + 1 + h)
+        else intercalate [""] (reverse acc) : glueIntoScreens (l : ls) [] 0
+      manualScreens = glueIntoScreens (snd rintroScreen) [] 0
+      shiftPointUI x (K.PointUI x0 y0) = K.PointUI (x0 + x) y0
+      sideBySide =
+        if isSquareFont monoFont
+        then \(screen1, screen2) ->  -- single column, two screens
+          map offsetOverlay [screen1, screen2]
+        else \(screen1, screen2) ->  -- two columns, single screen
+          [offsetOverlay screen1
+           ++ map (first $ shiftPointUI rwidth) (offsetOverlay screen2)]
+      listPairs (a : b : rest) = (a, b) : listPairs rest
+      listPairs [a] = [(a, [])]
+      listPairs [] = []
+      -- Each screen begins with an empty line, to separate the header.
+      manualOvs = map (EM.singleton monoFont)
+                  $ concatMap sideBySide $ listPairs
+                  $ map ((emptyAttrLine :) . map stringToAL) manualScreens
+      addMnualHeader ov =
+        ( "Showing PLAYING.md (best viewed in the browser)."
+        , (ov, []) )
+      manualH = map addMnualHeader manualOvs
       splitHelp (t, okx) = splitOKX fontSetup True rwidth rheight rwidth
                                     (textToAS t) [K.spaceKM, K.escKM] okx
-      sli = toSlideshow fontSetup $ concat $ map splitHelp $ modeH : keyH
+      sli = toSlideshow fontSetup $ concat $ map splitHelp
+            $ modeH : keyH ++ manualH
   -- Thus, the whole help menu corresponds to a single menu of item or lore,
   -- e.g., shared stash menu. This is especially clear when the shared stash
   -- menu contains many pages.
