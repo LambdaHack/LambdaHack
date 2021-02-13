@@ -1654,8 +1654,8 @@ mainMenuHuman cmdSemInCxtOfKM = do
            | null l2 -> l1 : l2 : glueLines rest
            | otherwise -> (l1 ++ l2) : glueLines rest
       glueLines ll = ll
-      backstory | isSquareFont propFont = rintroScreen
-                | otherwise = glueLines rintroScreen
+      backstory | isSquareFont propFont = fst rintroScreen
+                | otherwise = glueLines $ fst rintroScreen
       backstoryAL = map stringToAL $ map (dropWhile (== ' ')) backstory
   generateMenu cmdSemInCxtOfKM [(propFont, backstoryAL)] kds gameInfo "main"
 

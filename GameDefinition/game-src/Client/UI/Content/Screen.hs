@@ -42,8 +42,8 @@ standardLayoutAndFeatures = ScreenContent
             _ -> reverse rows : paragraphs ls []
           paragraphs (l : ls) rows = paragraphs ls (l : rows)
           intro = case paragraphs (lines x) [] of
-            _titleAndBlurb : par1 : par2 : _rest ->
-              par1 ++ [""] ++ par2
+            _titleAndBlurb : par1 : par2 : rest ->
+              (par1 ++ [""] ++ par2, rest)
             _ -> error "not enough paragraphs in intro screen text"
       lift intro)
   , rapplyVerbMap = EM.fromList [('!', "quaff"), (',', "eat"), ('?', "read")]
