@@ -180,6 +180,7 @@ data MsgClassShowAndSave =
   | MsgActionComplete
   | MsgAtFeetMajor
   | MsgAtFeetMinor
+  | MsgTutorialHint
   deriving (Show, Enum, Bounded, Generic)
 
 instance Binary MsgClassShowAndSave
@@ -319,7 +320,7 @@ bindsPronouns = \case
 tutorialHint :: MsgClass -> Bool
 tutorialHint = \case
   MsgClassShowAndSave x -> case x of  -- show and save: least surprise
-    _ -> True
+    MsgTutorialHint -> True
     _ -> False
   MsgClassShow _ -> False
   MsgClassSave _ -> False
@@ -378,6 +379,7 @@ msgColor = \case
     MsgActionComplete -> Color.cBoring
     MsgAtFeetMajor -> Color.cBoring
     MsgAtFeetMinor -> Color.cBoring
+    MsgTutorialHint -> Color.cTutorialHint
   MsgClassShow x -> case x of
     MsgPromptGeneric -> Color.cBoring
     MsgPromptFocus -> Color.cVista

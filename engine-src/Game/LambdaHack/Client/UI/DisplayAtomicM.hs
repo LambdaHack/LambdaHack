@@ -838,7 +838,8 @@ createActorUI born aid body = do
         bUI = ActorUI{..}
     modifySession $ \sess ->
       sess {sactorUI = EM.insert aid bUI actorUI}
-  let verb = MU.Text $
+  let joinYou = born && bfid body == side
+      verb = MU.Text $
         if born
         then if bfid body == side then "join you" else "appear suddenly"
         else "be spotted"
@@ -883,6 +884,9 @@ createActorUI born aid body = do
      | ES.member aid lastLost || bproj body -> markDisplayNeeded (blid body)
      | otherwise -> do
        aidVerbMU MsgSpottedActor aid verb
+       when joinYou $
+         msgAdd MsgTutorialHint
+                "In this mission you are not alone. Every other party member is surrounded with a green box. After a few moves, feel free to switch the controlled teammate (marked with the yellow box) using the TAB key."  -- assuming newbies don't remap their keys
        animate (blid body) $ actorX (bpos body)
 
 destroyActorUI :: MonadClientUI m => Bool -> ActorId -> Actor -> m ()
