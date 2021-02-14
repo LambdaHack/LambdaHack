@@ -478,6 +478,7 @@ displayRespUpdAtomicUI cmd = case cmd of
           { schanF = schanF oldSess
           , sccui = sccui oldSess
           , shistory = shistory oldSess
+          , soverrideTut = soverrideTut oldSess
           , sstart = sstart oldSess
           , sgstart = sgstart oldSess
           , sallTime = sallTime oldSess
