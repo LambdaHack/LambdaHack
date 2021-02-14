@@ -168,6 +168,7 @@ data HumanCmd =
   | MarkSmell
   | MarkSuspect
   | MarkAnim
+  | OverrideTut
   | SettingsMenu
   | ChallengesMenu
   | PrintScreen

@@ -17,6 +17,7 @@ module Game.LambdaHack.Client.UI.HandleHumanLocalM
   , recordHuman, recordHumanTransition
   , allHistoryHuman, lastHistoryHuman
   , markVisionHuman, markSmellHuman, markSuspectHuman, markAnimHuman
+  , overrideTutHuman
   , printScreenHuman
     -- * Commands specific to aiming
   , cancelHuman, acceptHuman, detailCycleHuman
@@ -925,6 +926,11 @@ markAnimHuman = do
   noAnim <- getsClient $ fromMaybe False . snoAnim . soptions
   modifyClient $ \cli ->
     cli {soptions = (soptions cli) {snoAnim = Just $ not noAnim}}
+
+-- * OverrideTut
+
+overrideTutHuman :: MonadClientUI m => m ()
+overrideTutHuman = modifySession cycleOverrideTut
 
 -- * PrintScreen
 

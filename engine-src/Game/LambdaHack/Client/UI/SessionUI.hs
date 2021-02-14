@@ -4,7 +4,7 @@ module Game.LambdaHack.Client.UI.SessionUI
   ( SessionUI(..), ItemDictUI, AimMode(..), KeyMacro(..), KeyMacroFrame(..)
   , RunParams(..)
   , emptySessionUI, emptyMacroFrame
-  , toggleMarkVision, toggleMarkSmell, getActorUI
+  , toggleMarkVision, toggleMarkSmell, cycleOverrideTut, getActorUI
   ) where
 
 import Prelude ()
@@ -67,6 +67,7 @@ data SessionUI = SessionUI
   , swasAutomated  :: Bool          -- ^ the player just exited AI automation
   , smarkVision    :: Bool          -- ^ mark leader and party FOV
   , smarkSmell     :: Bool          -- ^ mark smell, if the leader can smell
+  , soverrideTut   :: Maybe Bool    -- ^ override display of tutorial hints
   , smenuIxMap     :: M.Map String Int
                                     -- ^ indices of last used menu items
   , sdisplayNeeded :: Bool          -- ^ current level needs displaying
@@ -156,6 +157,7 @@ emptySessionUI sUIOptions =
     , swasAutomated = False
     , smarkVision = False
     , smarkSmell = True
+    , soverrideTut = Nothing
     , smenuIxMap = M.empty
     , sdisplayNeeded = False
     , sturnDisplayed = False
@@ -172,10 +174,16 @@ emptyMacroFrame :: KeyMacroFrame
 emptyMacroFrame = KeyMacroFrame (Right mempty) mempty Nothing
 
 toggleMarkVision :: SessionUI -> SessionUI
-toggleMarkVision s@SessionUI{smarkVision} = s {smarkVision = not smarkVision}
+toggleMarkVision sess = sess {smarkVision = not (smarkVision sess)}
 
 toggleMarkSmell :: SessionUI -> SessionUI
-toggleMarkSmell s@SessionUI{smarkSmell} = s {smarkSmell = not smarkSmell}
+toggleMarkSmell sess = sess {smarkSmell = not (smarkSmell sess)}
+
+cycleOverrideTut :: SessionUI -> SessionUI
+cycleOverrideTut sess = sess {soverrideTut = case soverrideTut sess of
+                                Nothing -> Just False
+                                Just False -> Just True
+                                Just True -> Nothing}
 
 getActorUI :: ActorId -> SessionUI -> ActorUI
 getActorUI aid sess =
@@ -196,6 +204,7 @@ instance Binary SessionUI where
     put shistory
     put smarkVision
     put smarkSmell
+    put soverrideTut
     put (show srandomUI)
   get = do
     sxhair <- get
@@ -211,6 +220,7 @@ instance Binary SessionUI where
     shistory <- get
     smarkVision <- get
     smarkSmell <- get
+    soverrideTut <- get
     g <- get
     let sxhairGoTo = Nothing
         slastItemMove = Nothing

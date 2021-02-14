@@ -151,6 +151,7 @@ cmdSemantics cmd = case cmd of
   MarkSmell -> markSmellHuman >> settingsMenuHuman cmdSemInCxtOfKM
   MarkSuspect -> markSuspectHuman >> settingsMenuHuman cmdSemInCxtOfKM
   MarkAnim -> markAnimHuman >> settingsMenuHuman cmdSemInCxtOfKM
+  OverrideTut -> overrideTutHuman >> settingsMenuHuman cmdSemInCxtOfKM
   SettingsMenu -> settingsMenuHuman cmdSemInCxtOfKM
   ChallengesMenu -> challengesMenuHuman cmdSemInCxtOfKM
   PrintScreen -> addNoError printScreenHuman

@@ -1738,7 +1738,11 @@ settingsMenuHuman cmdSemInCxtOfKM = do
   noAnim <- getsClient $ fromMaybe False . snoAnim . soptions
   side <- getsClient sside
   factDoctrine <- getsState $ MK.fdoctrine . gplayer . (EM.! side) . sfactionD
+  overrideTut <- getsSession soverrideTut
   let offOn b = if b then "on" else "off"
+      offOnUnset mb = case mb of
+        Nothing -> "no override"
+        Just b -> if b then "force on" else "force off"
       offOnAll n = case n of
         0 -> "none"
         1 -> "untried"
@@ -1749,12 +1753,14 @@ settingsMenuHuman cmdSemInCxtOfKM = do
       tsmell = "display smell clues:" <+> offOn markSmell
       tanim = "play animations:" <+> offOn (not noAnim)
       tdoctrine = "squad doctrine:" <+> Ability.nameDoctrine factDoctrine
+      toverride = "override tutorial hints:" <+> offOnUnset overrideTut
       -- Key-description-command tuples.
       kds = [ (K.mkKM "s", (tsuspect, MarkSuspect))
             , (K.mkKM "v", (tvisible, MarkVision))
             , (K.mkKM "c", (tsmell, MarkSmell))
             , (K.mkKM "a", (tanim, MarkAnim))
             , (K.mkKM "t", (tdoctrine, Doctrine))
+            , (K.mkKM "o", (toverride, OverrideTut))
             , (K.mkKM "Escape", ("back to main menu", MainMenu)) ]
       gameInfo = map T.unpack
                    [ "Tweak convenience settings:"
