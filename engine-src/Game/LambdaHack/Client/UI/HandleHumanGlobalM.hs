@@ -1858,8 +1858,13 @@ gameFishToggle =
 -- * GameScenarioIncr
 
 gameScenarioIncr :: MonadClient m => m ()
-gameScenarioIncr =
-  modifyClient $ \cli -> cli {snxtScenario = snxtScenario cli + 1}
+gameScenarioIncr = do
+  cops <- getsState scops
+  oldScenario <- getsClient snxtScenario
+  let snxtScenario = oldScenario + 1
+      nxtGameTutorial = MK.mtutorial $ snd $ nxtGameMode cops snxtScenario
+  modifyClient $ \cli -> cli { snxtScenario
+                             , snxtTutorial = nxtGameTutorial }
 
 -- * GameRestart
 
