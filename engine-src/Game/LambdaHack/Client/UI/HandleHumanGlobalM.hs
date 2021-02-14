@@ -1779,7 +1779,7 @@ challengesMenuHuman cmdSemInCxtOfKM = do
   FontSetup{..} <- getFontSetup
   svictories <- getsClient svictories
   snxtScenario <- getsClient snxtScenario
-  nxtTutorial <- getsClient snxtTutorial
+  nxtTutorial <- getsSession snxtTutorial
   overrideTut <- getsSession soverrideTut
   nxtChal <- getsClient snxtChal
   let (gameModeId, gameMode) = nxtGameMode cops snxtScenario
@@ -1836,13 +1836,13 @@ challengesMenuHuman cmdSemInCxtOfKM = do
 
 -- * GameTutorialToggle
 
-gameTutorialToggle :: (MonadClient m, MonadClientUI m) => m ()
+gameTutorialToggle :: MonadClientUI m  => m ()
 gameTutorialToggle = do
-  nxtTutorial <- getsClient snxtTutorial
+  nxtTutorial <- getsSession snxtTutorial
   overrideTut <- getsSession soverrideTut
   let overridenTutorial = fromMaybe nxtTutorial overrideTut
-  modifyClient $ \cli -> cli {snxtTutorial = not overridenTutorial}
-  modifySession $ \sess -> sess {soverrideTut = Nothing}
+  modifySession $ \sess -> sess { snxtTutorial = not overridenTutorial
+                                , soverrideTut = Nothing }
 
 -- * GameDifficultyIncr
 
@@ -1871,14 +1871,14 @@ gameFishToggle =
 
 -- * GameScenarioIncr
 
-gameScenarioIncr :: MonadClient m => m ()
+gameScenarioIncr :: (MonadClient m, MonadClientUI m) => m ()
 gameScenarioIncr = do
   cops <- getsState scops
   oldScenario <- getsClient snxtScenario
   let snxtScenario = oldScenario + 1
       nxtGameTutorial = MK.mtutorial $ snd $ nxtGameMode cops snxtScenario
-  modifyClient $ \cli -> cli { snxtScenario
-                             , snxtTutorial = nxtGameTutorial }
+  modifyClient $ \cli -> cli {snxtScenario}
+  modifySession $ \sess -> sess {snxtTutorial = nxtGameTutorial}
 
 -- * GameRestart
 

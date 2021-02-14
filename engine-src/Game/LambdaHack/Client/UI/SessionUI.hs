@@ -67,6 +67,8 @@ data SessionUI = SessionUI
   , swasAutomated  :: Bool          -- ^ the player just exited AI automation
   , smarkVision    :: Bool          -- ^ mark leader and party FOV
   , smarkSmell     :: Bool          -- ^ mark smell, if the leader can smell
+  , scurTutorial   :: Bool           -- ^ whether current game is a tutorial
+  , snxtTutorial   :: Bool           -- ^ whether next game is to be tutorial
   , soverrideTut   :: Maybe Bool    -- ^ override display of tutorial hints
   , smenuIxMap     :: M.Map String Int
                                     -- ^ indices of last used menu items
@@ -157,6 +159,8 @@ emptySessionUI sUIOptions =
     , swasAutomated = False
     , smarkVision = False
     , smarkSmell = True
+    , scurTutorial = False
+    , snxtTutorial = False
     , soverrideTut = Nothing
     , smenuIxMap = M.empty
     , sdisplayNeeded = False
@@ -204,6 +208,8 @@ instance Binary SessionUI where
     put shistory
     put smarkVision
     put smarkSmell
+    put scurTutorial
+    put snxtTutorial
     put soverrideTut
     put (show srandomUI)
   get = do
@@ -220,6 +226,8 @@ instance Binary SessionUI where
     shistory <- get
     smarkVision <- get
     smarkSmell <- get
+    scurTutorial <- get
+    snxtTutorial <- get
     soverrideTut <- get
     g <- get
     let sxhairGoTo = Nothing
