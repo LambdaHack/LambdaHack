@@ -1146,7 +1146,9 @@ verifyAssertExplored = do
       -- with disabled spawning.
       snumSpawned <- getsServer snumSpawned
       let !_A = assert (toEnum lvlN `EM.member` snumSpawned
-                        || toEnum (- lvlN) `EM.member` snumSpawned) ()
+                        || toEnum (- lvlN) `EM.member` snumSpawned
+                        `blame` "by game end, exploration haven't reached the expected level depth, indicating stuck AI (or just very busy initial levels)"
+                        `swith` lvlN) ()
       return ()
 
 -- * ReqGameSaveAndExit
