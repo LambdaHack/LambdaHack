@@ -474,11 +474,14 @@ displayRespUpdAtomicUI cmd = case cmd of
     COps{cocave, corule} <- getsState scops
     oldSess <- getSession
     let uiOptions@UIOptions{uHistory1PerLine} = sUIOptions oldSess
+    noConfirmsGame <- isNoConfirmsGame
     putSession $ (emptySessionUI uiOptions)
           { schanF = schanF oldSess
           , sccui = sccui oldSess
           , shistory = shistory oldSess
-          , scurTutorial = snxtTutorial oldSess
+          , scurTutorial = if noConfirmsGame  -- screensaver mode
+                           then scurTutorial oldSess  -- no tutorial spam
+                           else snxtTutorial oldSess
           , snxtTutorial = snxtTutorial oldSess
           , soverrideTut = soverrideTut oldSess
           , sstart = sstart oldSess

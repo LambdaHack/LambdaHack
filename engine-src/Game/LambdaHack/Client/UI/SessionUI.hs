@@ -160,7 +160,7 @@ emptySessionUI sUIOptions =
     , smarkVision = False
     , smarkSmell = True
     , scurTutorial = False
-    , snxtTutorial = False
+    , snxtTutorial = True  -- matches @snxtScenario = 0@
     , soverrideTut = Nothing
     , smenuIxMap = M.empty
     , sdisplayNeeded = False
@@ -214,7 +214,6 @@ instance Binary SessionUI where
     put (show srandomUI)
   get = do
     sxhair <- get
-
     sactorUI <- get
     sitemUI <- get
     sslots <- get
