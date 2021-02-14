@@ -16,7 +16,7 @@ module Game.LambdaHack.Client.UI.Msg
     -- * Internal operations
   , UAttrString, uToAttrString, attrStringToU
   , toMsg, MsgPrototype, tripleFromProto
-  , scrapsRepeats, bindsPronouns, msgColor
+  , scrapsRepeats, bindsPronouns, tutorialHint, msgColor
   , RepMsgNK, nullRepMsgNK
   , emptyReport, renderWholeReport, renderRepetition
   , scrapRepetitionSingle, scrapRepetition, renderTimeReport
@@ -316,6 +316,16 @@ bindsPronouns = \case
     _ -> False
   _ -> False
 
+tutorialHint :: MsgClass -> Bool
+tutorialHint = \case
+  MsgClassShowAndSave x -> case x of  -- show and save: least surprise
+    _ -> True
+    _ -> False
+  MsgClassShow _ -> False
+  MsgClassSave _ -> False
+  MsgClassIgnore _ -> False
+  MsgClassDistinct _ -> False
+
 -- Only initially @White@ colour in text (e.g., not highlighted @BrWhite@)
 -- gets replaced by the one indicated.
 msgColor :: MsgClass -> Color.Color
@@ -550,18 +560,22 @@ scrapRepetition History{ newReport = Report newMsgs
 -- duplicate and noting its existence in the result.
 --
 -- Empty messages are not added to make checking report emptiness easier.
-addToReport :: History -> Msg -> Time -> (History, Bool)
-addToReport History{newReport = Report r, ..} msg time =
+addToReport :: Bool -> History -> Msg -> Time -> (History, Bool)
+addToReport displayTutorialHints oldHistory@History{newReport = Report r, ..}
+            msg time =
   let repMsgNK = RepMsgNK msg 1 1
       newH = History { newReport = Report $ repMsgNK : r
                      , newTime = time
                      , .. }
-  in if not (scrapsRepeats $ msgClass msg)
-        || nullRepMsgNK repMsgNK  -- don't waste time on never shown messages
-     then (newH, False)
-     else case scrapRepetition newH of
-       Just scrappedH -> (scrappedH, True)
-       Nothing -> (newH, False)
+  in if | not displayTutorialHints && tutorialHint (msgClass msg) ->
+          (oldHistory, False)
+        | not (scrapsRepeats $ msgClass msg)
+          || nullRepMsgNK repMsgNK ->
+          -- Don't waste time on never shown messages.
+          (newH, False)
+        | otherwise -> case scrapRepetition newH of
+            Just scrappedH -> (scrappedH, True)
+            Nothing -> (newH, False)
 
 -- | Add a newline to end of the new report of history, unless empty.
 addEolToNewReport :: History -> History

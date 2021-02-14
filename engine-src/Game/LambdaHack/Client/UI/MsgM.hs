@@ -28,8 +28,11 @@ msgAddDuplicate msgClass t = do
   sUIOptions <- getsSession sUIOptions
   time <- getsState stime
   history <- getsSession shistory
-  let msg = toMsgShared (uMessageColors sUIOptions) msgClass t
-      (nhistory, duplicate) = addToReport history msg time
+  nxtTutorial <- getsSession snxtTutorial
+  overrideTut <- getsSession soverrideTut
+  let displayTutorialHints = fromMaybe nxtTutorial overrideTut
+      msg = toMsgShared (uMessageColors sUIOptions) msgClass t
+      (nhistory, duplicate) = addToReport displayTutorialHints history msg time
   modifySession $ \sess -> sess {shistory = nhistory}
   return duplicate
 
@@ -40,8 +43,11 @@ msgAddDistinct msgClass (t1, t2) = do
   sUIOptions <- getsSession sUIOptions
   time <- getsState stime
   history <- getsSession shistory
-  let msg = toMsgDistinct (uMessageColors sUIOptions) msgClass t1 t2
-      (nhistory, _) = addToReport history msg time
+  nxtTutorial <- getsSession snxtTutorial
+  overrideTut <- getsSession soverrideTut
+  let displayTutorialHints = fromMaybe nxtTutorial overrideTut
+      msg = toMsgDistinct (uMessageColors sUIOptions) msgClass t1 t2
+      (nhistory, _) = addToReport displayTutorialHints history msg time
   modifySession $ \sess -> sess {shistory = nhistory}
 
 -- | Add a message to the current report.

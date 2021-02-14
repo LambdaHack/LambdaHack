@@ -1790,9 +1790,9 @@ challengesMenuHuman cmdSemInCxtOfKM = do
       tnextScenario = "adventure:" <+> star (MK.mname gameMode)
       offOn b = if b then "on" else "off"
       starTut t = if isJust overrideTut then "*" <> t else t
-      overridenTutorial = fromMaybe nxtTutorial overrideTut
+      displayTutorialHints = fromMaybe nxtTutorial overrideTut
       tnextTutorial = "tutorial hints (in pink):"
-                      <+> starTut (offOn overridenTutorial)
+                      <+> starTut (offOn displayTutorialHints)
       tnextDiff = "difficulty (lower easier):" <+> tshow (cdiff nxtChal)
       tnextWolf = "lone wolf (very hard):"
                   <+> offOn (cwolf nxtChal)
@@ -1840,8 +1840,8 @@ gameTutorialToggle :: MonadClientUI m  => m ()
 gameTutorialToggle = do
   nxtTutorial <- getsSession snxtTutorial
   overrideTut <- getsSession soverrideTut
-  let overridenTutorial = fromMaybe nxtTutorial overrideTut
-  modifySession $ \sess -> sess { snxtTutorial = not overridenTutorial
+  let displayTutorialHints = fromMaybe nxtTutorial overrideTut
+  modifySession $ \sess -> sess { snxtTutorial = not displayTutorialHints
                                 , soverrideTut = Nothing }
 
 -- * GameDifficultyIncr
