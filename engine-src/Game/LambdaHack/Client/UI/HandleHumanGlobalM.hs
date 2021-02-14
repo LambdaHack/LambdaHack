@@ -19,7 +19,8 @@ module Game.LambdaHack.Client.UI.HandleHumanGlobalM
   , helpHuman, hintHuman, dashboardHuman, itemMenuHuman, chooseItemMenuHuman
   , mainMenuHuman, mainMenuAutoOnHuman, mainMenuAutoOffHuman
   , settingsMenuHuman, challengesMenuHuman
-  , gameDifficultyIncr, gameWolfToggle, gameFishToggle, gameScenarioIncr
+  , gameTutorialToggle, gameDifficultyIncr, gameWolfToggle, gameFishToggle
+  , gameScenarioIncr
     -- * Global commands that never take time
   , gameRestartHuman, gameQuitHuman, gameDropHuman, gameExitHuman, gameSaveHuman
   , doctrineHuman, automateHuman, automateToggleHuman, automateBackHuman
@@ -1772,6 +1773,7 @@ challengesMenuHuman cmdSemInCxtOfKM = do
   FontSetup{..} <- getFontSetup
   svictories <- getsClient svictories
   snxtScenario <- getsClient snxtScenario
+  nxtTutorial <- getsClient snxtTutorial
   nxtChal <- getsClient snxtChal
   let (gameModeId, gameMode) = nxtGameMode cops snxtScenario
       victories = case EM.lookup gameModeId svictories of
@@ -1780,6 +1782,7 @@ challengesMenuHuman cmdSemInCxtOfKM = do
       star t = if victories > 0 then "*" <> t else t
       tnextScenario = "adventure:" <+> star (MK.mname gameMode)
       offOn b = if b then "on" else "off"
+      tnextTutorial = "tutorial hints (in pink):" <+> offOn nxtTutorial
       tnextDiff = "difficulty (lower easier):" <+> tshow (cdiff nxtChal)
       tnextWolf = "lone wolf (very hard):"
                   <+> offOn (cwolf nxtChal)
@@ -1787,6 +1790,7 @@ challengesMenuHuman cmdSemInCxtOfKM = do
                   <+> offOn (cfish nxtChal)
       -- Key-description-command tuples.
       kds = [ (K.mkKM "s", (tnextScenario, GameScenarioIncr))
+            , (K.mkKM "t", (tnextTutorial, GameTutorialToggle))
             , (K.mkKM "d", (tnextDiff, GameDifficultyIncr))
             , (K.mkKM "w", (tnextWolf, GameWolfToggle))
             , (K.mkKM "f", (tnextFish, GameFishToggle))
@@ -1819,6 +1823,12 @@ challengesMenuHuman cmdSemInCxtOfKM = do
             $ T.concatMap duplicateEOL (MK.mreason gameMode) )
         ]
   generateMenu cmdSemInCxtOfKM blurb kds gameInfo "challenge"
+
+-- * GameTutorialToggle
+
+gameTutorialToggle :: MonadClient m => m ()
+gameTutorialToggle = do
+  modifyClient $ \cli -> cli {snxtTutorial = not (snxtTutorial cli)}
 
 -- * GameDifficultyIncr
 

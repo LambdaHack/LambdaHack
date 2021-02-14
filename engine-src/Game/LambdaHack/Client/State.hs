@@ -61,6 +61,8 @@ data StateClient = StateClient
                                     --   Faction.gleader is the old leader
   , _sside        :: FactionId      -- ^ faction controlled by the client
   , squit         :: Bool           -- ^ exit the game loop
+  , scurTutorial  :: Bool           -- ^ whether current game is a tutorial
+  , snxtTutorial  :: Bool           -- ^ whether next game is to be tutorial
   , scurChal      :: Challenge      -- ^ current game challenge setup
   , snxtChal      :: Challenge      -- ^ next game challenge setup
   , snxtScenario  :: Int            -- ^ next game scenario number
@@ -141,6 +143,8 @@ emptyStateClient _sside =
     , _sleader = Nothing  -- no heroes yet alive
     , _sside
     , squit = False
+    , scurTutorial = False
+    , snxtTutorial = False
     , scurChal = defaultChallenge
     , snxtChal = defaultChallenge
     , snxtScenario = 0
@@ -196,6 +200,8 @@ instance Binary StateClient where
     put (show srandom)
     put _sleader
     put _sside
+    put scurTutorial
+    put snxtTutorial
     put scurChal
     put snxtChal
     put snxtScenario
@@ -217,6 +223,8 @@ instance Binary StateClient where
     g <- get
     _sleader <- get
     _sside <- get
+    scurTutorial <- get
+    snxtTutorial <- get
     scurChal <- get
     snxtChal <- get
     snxtScenario <- get

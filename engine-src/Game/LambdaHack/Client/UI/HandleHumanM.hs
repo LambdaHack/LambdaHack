@@ -114,6 +114,8 @@ cmdSemantics cmd = case cmd of
   MainMenuAutoOn -> mainMenuAutoOnHuman cmdSemInCxtOfKM
   MainMenuAutoOff -> mainMenuAutoOffHuman cmdSemInCxtOfKM
   Dashboard -> dashboardHuman cmdSemInCxtOfKM
+  GameTutorialToggle -> gameTutorialToggle
+                        >> challengesMenuHuman cmdSemInCxtOfKM
   GameDifficultyIncr -> gameDifficultyIncr
                         >> challengesMenuHuman cmdSemInCxtOfKM
   GameWolfToggle -> gameWolfToggle >> challengesMenuHuman cmdSemInCxtOfKM

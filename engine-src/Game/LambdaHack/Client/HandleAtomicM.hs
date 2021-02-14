@@ -238,6 +238,7 @@ cmdAtomicSemCli oldState cmd = case cmd of
   UpdRestart side sfper s scurChal soptions srandom -> do
     COps{cocave, comode} <- getsState scops
     fact <- getsState $ (EM.! side) . sfactionD
+    snxtTutorial <- getsClient snxtTutorial
     snxtChal <- getsClient snxtChal
     svictories <- getsClient svictories
     scampings <- getsClient scampings
@@ -261,6 +262,8 @@ cmdAtomicSemCli oldState cmd = case cmd of
                   -- , sundo = [UpdAtomic cmd]
                   , sfper
                   , srandom
+                  , scurTutorial = snxtTutorial
+                  , snxtTutorial
                   , scurChal
                   , snxtChal
                   , snxtScenario
