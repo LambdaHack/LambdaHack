@@ -1780,6 +1780,7 @@ challengesMenuHuman cmdSemInCxtOfKM = do
   svictories <- getsClient svictories
   snxtScenario <- getsClient snxtScenario
   nxtTutorial <- getsClient snxtTutorial
+  overrideTut <- getsSession soverrideTut
   nxtChal <- getsClient snxtChal
   let (gameModeId, gameMode) = nxtGameMode cops snxtScenario
       victories = case EM.lookup gameModeId svictories of
@@ -1788,7 +1789,10 @@ challengesMenuHuman cmdSemInCxtOfKM = do
       star t = if victories > 0 then "*" <> t else t
       tnextScenario = "adventure:" <+> star (MK.mname gameMode)
       offOn b = if b then "on" else "off"
-      tnextTutorial = "tutorial hints (in pink):" <+> offOn nxtTutorial
+      starTut t = if isJust overrideTut then "*" <> t else t
+      overridenTutorial = fromMaybe nxtTutorial overrideTut
+      tnextTutorial = "tutorial hints (in pink):"
+                      <+> starTut (offOn overridenTutorial)
       tnextDiff = "difficulty (lower easier):" <+> tshow (cdiff nxtChal)
       tnextWolf = "lone wolf (very hard):"
                   <+> offOn (cwolf nxtChal)
@@ -1832,9 +1836,13 @@ challengesMenuHuman cmdSemInCxtOfKM = do
 
 -- * GameTutorialToggle
 
-gameTutorialToggle :: MonadClient m => m ()
+gameTutorialToggle :: (MonadClient m, MonadClientUI m) => m ()
 gameTutorialToggle = do
-  modifyClient $ \cli -> cli {snxtTutorial = not (snxtTutorial cli)}
+  nxtTutorial <- getsClient snxtTutorial
+  overrideTut <- getsSession soverrideTut
+  let overridenTutorial = fromMaybe nxtTutorial overrideTut
+  modifyClient $ \cli -> cli {snxtTutorial = not overridenTutorial}
+  modifySession $ \sess -> sess {soverrideTut = Nothing}
 
 -- * GameDifficultyIncr
 
