@@ -32,18 +32,19 @@ import           Game.LambdaHack.Definition.Defs
 
 -- | Game mode specification.
 data ModeKind = ModeKind
-  { msymbol :: Char            -- ^ a symbol
-  , mname   :: Text            -- ^ short description
-  , mfreq   :: Freqs ModeKind  -- ^ frequency within groups
-  , mroster :: Roster          -- ^ players taking part in the game
-  , mcaves  :: Caves           -- ^ arena of the game
-  , mendMsg :: [(Outcome, Text)]
+  { msymbol   :: Char            -- ^ a symbol
+  , mname     :: Text            -- ^ short description
+  , mfreq     :: Freqs ModeKind  -- ^ frequency within groups
+  , mtutorial :: Bool            -- ^ whether to show tutorial messages, etc.
+  , mroster   :: Roster          -- ^ players taking part in the game
+  , mcaves    :: Caves           -- ^ arena of the game
+  , mendMsg   :: [(Outcome, Text)]
       -- ^ messages displayed at each particular game ends; if message empty,
       --   the screen is skipped
-  , mrules  :: Text            -- ^ rules note
-  , mdesc   :: Text            -- ^ description
-  , mreason :: Text            -- ^ why/when the mode should be played
-  , mhint   :: Text            -- ^ hints in case the player faces difficulties
+  , mrules    :: Text            -- ^ rules note
+  , mdesc     :: Text            -- ^ description
+  , mreason   :: Text            -- ^ why/when the mode should be played
+  , mhint     :: Text            -- ^ hints in case the player faces difficulties
   }
   deriving Show
 
