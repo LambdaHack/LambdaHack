@@ -121,7 +121,7 @@ blaXY eps (Point x0 y0) (Point x1 y1) =
       walk w xy = xy : walk (tail w) (step (head w) xy)
   in map (uncurry Point) $ walk bw (x0, y0)
 
--- | See <http://roguebasin.roguelikedevelopment.org/index.php/Digital_lines>.
+-- | See <http://roguebasin.roguelikedevelopment.org/index.php/index.php?title=Digital_lines>.
 balancedWord :: Int -> Int -> Int -> [Int]
 balancedWord p q eps | eps + p < q = 0 : balancedWord p q (eps + p)
 balancedWord p q eps               = 1 : balancedWord p q (eps + p - q)
