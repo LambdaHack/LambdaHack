@@ -1743,7 +1743,7 @@ displayRespSfxAtomicUI sfx = case sfx of
                        then MsgStatusStopUs
                        else MsgStatusStopThem
         aidVerbMU msgClass aid $ MU.Text t
-      IK.VerbMsg t -> aidVerbMU MsgEffectMinor aid $ MU.Text t
+      IK.VerbMsg t -> aidVerbMU MsgEffectMedium aid $ MU.Text t
       IK.VerbMsgFail t -> aidVerbMU MsgActionWarning aid $ MU.Text t
   SfxMsgFid _ sfxMsg -> do
     mleader <- getsClient sleader
