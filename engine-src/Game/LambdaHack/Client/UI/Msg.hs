@@ -235,6 +235,7 @@ interruptsRunning = \case
     MsgItemMovement -> False
     MsgActionMinor -> False
     MsgEffectMinor -> False
+    MsgMiscellanous -> False  -- taunts are colourful, but spammy
     MsgHeardFaraway -> False
     -- MsgHeardNearby interrupts, even if running started while hearing close
     MsgRangedOthers -> False
