@@ -115,12 +115,12 @@ cmdSemantics cmd = case cmd of
   MainMenuAutoOff -> mainMenuAutoOffHuman cmdSemInCxtOfKM
   Dashboard -> dashboardHuman cmdSemInCxtOfKM
   GameTutorialToggle -> gameTutorialToggle
-                        >> challengesMenuHuman cmdSemInCxtOfKM
+                        >> challengeMenuHuman cmdSemInCxtOfKM
   GameDifficultyIncr -> gameDifficultyIncr
-                        >> challengesMenuHuman cmdSemInCxtOfKM
-  GameWolfToggle -> gameWolfToggle >> challengesMenuHuman cmdSemInCxtOfKM
-  GameFishToggle -> gameFishToggle >> challengesMenuHuman cmdSemInCxtOfKM
-  GameScenarioIncr -> gameScenarioIncr >> challengesMenuHuman cmdSemInCxtOfKM
+                        >> challengeMenuHuman cmdSemInCxtOfKM
+  GameWolfToggle -> gameWolfToggle >> challengeMenuHuman cmdSemInCxtOfKM
+  GameFishToggle -> gameFishToggle >> challengeMenuHuman cmdSemInCxtOfKM
+  GameScenarioIncr -> gameScenarioIncr >> challengeMenuHuman cmdSemInCxtOfKM
 
   GameRestart -> weaveJust <$> gameRestartHuman
   GameQuit -> weaveJust <$> gameQuitHuman
@@ -153,7 +153,7 @@ cmdSemantics cmd = case cmd of
   MarkAnim -> markAnimHuman >> settingsMenuHuman cmdSemInCxtOfKM
   OverrideTut -> overrideTutHuman >> settingsMenuHuman cmdSemInCxtOfKM
   SettingsMenu -> settingsMenuHuman cmdSemInCxtOfKM
-  ChallengesMenu -> challengesMenuHuman cmdSemInCxtOfKM
+  ChallengeMenu -> challengeMenuHuman cmdSemInCxtOfKM
   PrintScreen -> addNoError printScreenHuman
 
   Cancel -> addNoError cancelHuman

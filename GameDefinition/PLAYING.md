@@ -403,7 +403,7 @@ below -95%, so excessively strong armor acts only as a buffer against
 high melee skill of opponents.
 
 The current pointman's melee bonus, armor modifier and other detailed
-stats can be viewed in the skills menu, accessible via the `#` command,
+stats can be viewed in the skill menu, accessible via the `#` command,
 which summarizes all the stats conferred by organs and conditions listed
 in the organ menu, invoked by `@`.
 

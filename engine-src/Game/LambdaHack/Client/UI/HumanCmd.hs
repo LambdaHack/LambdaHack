@@ -170,7 +170,7 @@ data HumanCmd =
   | MarkAnim
   | OverrideTut
   | SettingsMenu
-  | ChallengesMenu
+  | ChallengeMenu
   | PrintScreen
     -- These are mostly related to aiming.
   | Cancel

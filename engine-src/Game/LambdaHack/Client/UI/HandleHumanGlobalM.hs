@@ -18,7 +18,7 @@ module Game.LambdaHack.Client.UI.HandleHumanGlobalM
   , alterDirHuman, alterWithPointerHuman, closeDirHuman
   , helpHuman, hintHuman, dashboardHuman, itemMenuHuman, chooseItemMenuHuman
   , mainMenuHuman, mainMenuAutoOnHuman, mainMenuAutoOffHuman
-  , settingsMenuHuman, challengesMenuHuman
+  , settingsMenuHuman, challengeMenuHuman
   , gameTutorialToggle, gameDifficultyIncr, gameWolfToggle, gameFishToggle
   , gameScenarioIncr
     -- * Global commands that never take time
@@ -1767,13 +1767,13 @@ settingsMenuHuman cmdSemInCxtOfKM = do
                    , "" ]
   generateMenu cmdSemInCxtOfKM [] kds gameInfo "settings"
 
--- * ChallengesMenu
+-- * ChallengeMenu
 
--- | Display the challenges menu.
-challengesMenuHuman :: MonadClientUI m
+-- | Display the challenge menu.
+challengeMenuHuman :: MonadClientUI m
                     => (K.KM -> HumanCmd -> m (Either MError ReqUI))
                     -> m (Either MError ReqUI)
-challengesMenuHuman cmdSemInCxtOfKM = do
+challengeMenuHuman cmdSemInCxtOfKM = do
   cops <- getsState scops
   CCUI{coscreen=ScreenContent{rwidth, rwrap}} <- getsSession sccui
   FontSetup{..} <- getFontSetup

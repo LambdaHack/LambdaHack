@@ -78,7 +78,7 @@ drawOverlay dm onBlank ovs lid = do
               | otherwise
               = truncateOverlay True rwidth rheight True 20 onBlank
                 $ concat $ EM.elems ovs
-                    -- 20 needed not to leave gaps in skills menu
+                    -- 20 needed not to leave gaps in skill menu
                     -- in the absence of backdrop
       ovBackdrop =
         if not (isSquareFont propFont) && not onBlank
