@@ -741,7 +741,10 @@ lookAtItems canSee p aid mactorPronounAlive = do
   factionD <- getsState sfactionD
   globalTime <- getsState stime
   getKind <- getsState $ flip getIidKindId
-  let (subject, verb) = case mactorPronounAlive of
+  leaderPronoun <- partPronounLeader aid
+  let mLeader = if standingOn then Just (leaderPronoun, bhp b >= 0) else Nothing
+      mactorPronounAliveLeader = maybe mLeader Just mactorPronounAlive
+      (subject, verb) = case mactorPronounAliveLeader of
         Just (actorPronoun, actorAlive) ->
           (actorPronoun, if actorAlive then "stand over" else "fall over")
         Nothing -> (subjectAid, if canSee then "notice" else "remember")
