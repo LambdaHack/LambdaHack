@@ -274,6 +274,7 @@ displayRespUpdAtomicUI cmd = case cmd of
          when (bfid b == side && not (bproj b)) $ do
            markDisplayNeeded (blid b)
            when (hpDelta < 0) $ do
+             when (hpDelta <= xM (-3)) $ msgAdd MsgTutorialHint "You took a lot of damage in one kinetic hit. Consider retreating towards your teammates or buffing up or an instant escape, if consumables permit."
              sUIOptions <- getsSession sUIOptions
              currentWarning <-
                getsState $ checkWarningHP sUIOptions aid (bhp b)
@@ -1519,7 +1520,9 @@ displayRespSfxAtomicUI sfx = case sfx of
         isOurAlive = isOurCharacter && bhp b > 0
         isOurLeader = Just aid == mleader
         -- The message classes are close enough. It's melee or similar.
-        feelLookHPBad = feelLook MsgBadMiscEvent MsgGoodMiscEvent
+        feelLookHPBad bigAdj projAdj = do
+          feelLook MsgBadMiscEvent MsgGoodMiscEvent bigAdj projAdj
+          when isOurCharacter $ msgAdd MsgTutorialHint "You took damage from a source different than a kinetic hit. Normally, your HP (hit points, health) do not regenerate, so losing them is a big deal. Apply healing concoctions or take a long sleep to replenish your HP (but in this hectic environment not even uninterrupted resting that leads to sleep is easy)."
         feelLookHPGood = feelLook MsgGoodMiscEvent MsgBadMiscEvent
         feelLookCalm bigAdj projAdj = when (bhp b > 0) $
           feelLook MsgEffectMinor MsgEffectMinor bigAdj projAdj
@@ -1703,7 +1706,7 @@ displayRespSfxAtomicUI sfx = case sfx of
             -- but the position of the item may be out of FOV. This is fine;
             -- the message is then shorter, because only the effect was seen,
             -- while the cause remains misterious.
-            let !_A = if bfid b /= side  -- not from affected faction; observing
+            let !_A = if fid /= side  -- not from affected faction; observing
                       then ()
                       else error $ "item never seen by the affected actor"
                                    `showFailure` (aid, b, bUI, verb, iid, sfx)
