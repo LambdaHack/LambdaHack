@@ -594,6 +594,8 @@ displayRespUpdAtomicUI cmd = case cmd of
     case hearMsg of
       HearUpd UpdDestroyActor{} ->
         msgAdd MsgTutorialHint "Events out of your sight radius (as listed in the '#' skill menu) can sometimes be heard, depending on your hearing radius. Some, such as death shrieks, can always be heard regardless of skill and distance, including when they come from a different floor."
+      HearTaunt{} ->
+        msgAdd MsgTutorialHint "Enemies you can't see are sometimes heard yelling and emitting other noises. Whether you can hear them, depends on their distance and your hearing radius, as listed in the '#' skill menu."
       _ -> return ()
 
 updateItemSlot :: MonadClientUI m => Container -> ItemId -> m ()
@@ -1776,7 +1778,6 @@ displayRespSfxAtomicUI sfx = case sfx of
       (_heardSubject, verb) <- displayTaunt voluntary rndToActionUI aid
       msgAdd MsgMiscellanous $!
         makeSentence [MU.SubjectVerbSg spart (MU.Text verb)]
-      msgAdd MsgTutorialHint "Enemies you can't see are sometimes heard yelling and emitting other noises. Whether you can hear them, depends on their distance and your hearing radius, as listed in the '#' skill menu."
 
 returnJustLeft :: MonadClientUI m
                => (MsgClassShowAndSave, Text)
