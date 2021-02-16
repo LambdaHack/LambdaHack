@@ -484,22 +484,23 @@ displayRespUpdAtomicUI cmd = case cmd of
     oldSess <- getSession
     let uiOptions@UIOptions{uHistory1PerLine} = sUIOptions oldSess
     noConfirmsGame <- isNoConfirmsGame
-    putSession $ (emptySessionUI uiOptions)
-          { schanF = schanF oldSess
-          , sccui = sccui oldSess
-          , shistory = shistory oldSess
-          , scurTutorial = if noConfirmsGame  -- screensaver mode
-                           then scurTutorial oldSess  -- no tutorial spam
-                           else snxtTutorial oldSess
-          , snxtTutorial = snxtTutorial oldSess
-          , soverrideTut = soverrideTut oldSess
-          , sstart = sstart oldSess
-          , sgstart = sgstart oldSess
-          , sallTime = sallTime oldSess
-          , snframes = snframes oldSess
-          , sallNframes = sallNframes oldSess
-          , srandomUI = srandom
-          }
+    putSession $
+      (emptySessionUI uiOptions)
+        { schanF = schanF oldSess
+        , sccui = sccui oldSess
+        , shistory = shistory oldSess
+        , scurTutorial = if noConfirmsGame  -- screensaver mode
+                         then scurTutorial oldSess  -- no tutorial spam
+                         else snxtTutorial oldSess
+        , snxtTutorial = snxtTutorial oldSess
+        , soverrideTut = soverrideTut oldSess
+        , sstart = sstart oldSess
+        , sgstart = sgstart oldSess
+        , sallTime = sallTime oldSess
+        , snframes = snframes oldSess
+        , sallNframes = sallNframes oldSess
+        , srandomUI = srandom
+        }
     when (sstart oldSess == 0) resetSessionStart
     when (lengthHistory uHistory1PerLine (shistory oldSess) == 0) $ do
       let title = T.pack $ rtitle corule
@@ -520,7 +521,7 @@ displayRespUpdAtomicUI cmd = case cmd of
     msgAdd MsgBookKeeping "-------------------------------------------------"
     recordHistory
     msgAdd MsgActionWarning $ "New game started in" <+> mname gameMode
-                        <+> "mode. Press '?' for details."
+                              <+> "mode. Press '?' for details."
     msgAdd MsgPlotExposition $ mdesc gameMode
     let desc = cdesc $ okind cocave $ lkind lvl
     unless (T.null desc) $ do

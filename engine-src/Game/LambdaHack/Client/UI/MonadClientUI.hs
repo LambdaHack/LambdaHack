@@ -346,9 +346,9 @@ scoreToSlideshow total status = do
 defaultHistory :: MonadClientUI m => m History
 defaultHistory = do
   sUIOptions <- getsSession sUIOptions
-  nxtTutorial <- getsSession snxtTutorial
+  curTutorial <- getsSession scurTutorial
   overrideTut <- getsSession soverrideTut
-  let displayTutorialHints = fromMaybe nxtTutorial overrideTut
+  let displayTutorialHints = fromMaybe curTutorial overrideTut
   liftIO $ do
     utcTime <- getCurrentTime
     timezone <- getTimeZone utcTime
