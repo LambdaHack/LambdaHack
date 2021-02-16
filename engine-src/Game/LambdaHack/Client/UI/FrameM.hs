@@ -122,7 +122,7 @@ pushFrame = do
     frame <- drawOverlay ColorFull False truncRep lidV
     displayFrames lidV [Just frame]
 
-promptGetKey :: MonadClientUI m
+promptGetKey :: (MonadClient m, MonadClientUI m)
              => ColorMode -> FontOverlayMap -> Bool -> [K.KM]
              -> m K.KM
 promptGetKey dm ovs onBlank frontKeyKeys = do
@@ -201,7 +201,7 @@ lastMacroFrame :: KeyMacroFrame -> [KeyMacroFrame] -> KeyMacroFrame
 lastMacroFrame mf [] = mf
 lastMacroFrame _ (mf : mfs) = lastMacroFrame mf mfs
 
-stopPlayBack :: MonadClientUI m => m ()
+stopPlayBack :: (MonadClient m, MonadClientUI m) => m ()
 stopPlayBack = msgAdd MsgStopPlayback "!"
 
 resetPlayBack :: MonadClientUI m => m ()

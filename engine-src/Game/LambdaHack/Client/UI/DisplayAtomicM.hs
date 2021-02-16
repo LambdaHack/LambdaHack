@@ -87,7 +87,7 @@ import           Game.LambdaHack.Definition.Flavour
 -- the client state is modified by the command.
 -- Doesn't modify client state (except a few fields), but only client
 -- session (e.g., by displaying messages). This is enforced by types.
-displayRespUpdAtomicUI :: MonadClientUI m => UpdAtomic -> m ()
+displayRespUpdAtomicUI :: (MonadClient m, MonadClientUI m) => UpdAtomic -> m ()
 {-# INLINE displayRespUpdAtomicUI #-}
 displayRespUpdAtomicUI cmd = case cmd of
   -- Create/destroy actors and items.
@@ -614,7 +614,7 @@ markDisplayNeeded lid = do
   lidV <- viewedLevelUI
   when (lidV == lid) $ modifySession $ \sess -> sess {sdisplayNeeded = True}
 
-lookAtMove :: MonadClientUI m => ActorId -> m ()
+lookAtMove :: (MonadClient m, MonadClientUI m) => ActorId -> m ()
 lookAtMove aid = do
   mleader <- getsClient sleader
   body <- getsState $ getActorBody aid
@@ -643,12 +643,12 @@ lookAtMove aid = do
         adjOur = filter our adjBigAssocs
     unless (null adjOur) stopPlayBack
 
-aidVerbMU :: (MonadClientUI m, MsgShared a) => a -> ActorId -> MU.Part -> m ()
+aidVerbMU :: (MonadClient m, MonadClientUI m, MsgShared a) => a -> ActorId -> MU.Part -> m ()
 aidVerbMU msgClass aid verb = do
   subject <- partActorLeader aid
   msgAdd msgClass $ makeSentence [MU.SubjectVerbSg subject verb]
 
-aidVerbDuplicateMU :: (MonadClientUI m, MsgShared a)
+aidVerbDuplicateMU :: (MonadClient m, MonadClientUI m, MsgShared a)
                    => a -> ActorId -> MU.Part -> m Bool
 aidVerbDuplicateMU msgClass aid verb = do
   subject <- partActorLeader aid
@@ -673,20 +673,20 @@ itemVerbMUGeneral verbose iid kit@(k, _) verb c = assert (k > 0) $ do
           | otherwise = makeSentence [MU.SubjectVerbSg subject verb]
   return $! msg
 
-itemVerbMU :: (MonadClientUI m, MsgShared a)
+itemVerbMU :: (MonadClient m, MonadClientUI m, MsgShared a)
            => a -> ItemId -> ItemQuant -> MU.Part -> Container -> m ()
 itemVerbMU msgClass iid kit verb c = do
   msg <- itemVerbMUGeneral True iid kit verb c
   msgAdd msgClass msg
 
-itemVerbMUShort :: (MonadClientUI m, MsgShared a)
+itemVerbMUShort :: (MonadClient m, MonadClientUI m, MsgShared a)
                 => a -> ItemId -> ItemQuant -> MU.Part -> Container
                 -> m ()
 itemVerbMUShort msgClass iid kit verb c = do
   msg <- itemVerbMUGeneral False iid kit verb c
   msgAdd msgClass msg
 
-itemAidVerbMU :: (MonadClientUI m, MsgShared a)
+itemAidVerbMU :: (MonadClient m, MonadClientUI m, MsgShared a)
               => a -> ActorId -> MU.Part -> ItemId -> Either Int Int
               -> m ()
 itemAidVerbMU msgClass aid verb iid ek = do
@@ -710,7 +710,7 @@ itemAidVerbMU msgClass aid verb iid ek = do
       msg = makeSentence [MU.SubjectVerbSg subject verb, object]
   msgAdd msgClass msg
 
-mitemAidVerbMU :: (MonadClientUI m, MsgShared a)
+mitemAidVerbMU :: (MonadClient m, MonadClientUI m, MsgShared a)
                => a -> ActorId -> MU.Part -> ItemId -> Maybe MU.Part
                -> m ()
 mitemAidVerbMU msgClass aid verb iid msuffix = do
@@ -738,7 +738,7 @@ mitemAidVerbMU msgClass aid verb iid msuffix = do
 #endif
         aidVerbMU msgClass aid verb
 
-itemAidDistinctMU :: (MonadClientUI m)
+itemAidDistinctMU :: (MonadClient m, MonadClientUI m)
                   => MsgClassDistinct -> ActorId -> MU.Part -> MU.Part -> ItemId
                   -> m ()
 itemAidDistinctMU msgClass aid verbShow verbSave iid = do
@@ -760,7 +760,7 @@ itemAidDistinctMU msgClass aid verbShow verbSave iid = do
       dotsIfShorter = if t1 == t2 then "" else ".."
   msgAddDistinct msgClass (t1 <> dotsIfShorter, t2)
 
-manyItemsAidVerbMU :: (MonadClientUI m, MsgShared a)
+manyItemsAidVerbMU :: (MonadClient m, MonadClientUI m, MsgShared a)
                    => a -> ActorId -> MU.Part
                    -> [(ItemId, ItemQuant)] -> (Int -> Either (Maybe Int) Int)
                    -> m ()
@@ -792,7 +792,8 @@ manyItemsAidVerbMU msgClass aid verb sortedAssocs ekf = do
                          , MU.WWandW $ map object sortedAssocs]
   msgAdd msgClass msg
 
-createActorUI :: MonadClientUI m => Bool -> ActorId -> Actor -> m ()
+createActorUI :: (MonadClient m, MonadClientUI m)
+              => Bool -> ActorId -> Actor -> m ()
 createActorUI born aid body = do
   CCUI{coscreen=ScreenContent{rwidth}} <- getsSession sccui
   side <- getsClient sside
@@ -914,7 +915,8 @@ createActorUI born aid body = do
           | otherwise -> return ()
        animate (blid body) $ actorX (bpos body)
 
-destroyActorUI :: MonadClientUI m => Bool -> ActorId -> Actor -> m ()
+destroyActorUI :: (MonadClient m, MonadClientUI m)
+               => Bool -> ActorId -> Actor -> m ()
 destroyActorUI destroy aid b = do
   trunk <- getsState $ getItemBody $ btrunk b
   let baseColor = flavourToColor $ jflavour trunk
@@ -952,7 +954,8 @@ destroyActorUI destroy aid b = do
     -- If pushed, animate spotting again, to draw attention to pushing.
     markDisplayNeeded (blid b)
 
-spotItemBag :: forall m. MonadClientUI m => Bool -> Container -> ItemBag -> m ()
+spotItemBag :: forall m. (MonadClient m, MonadClientUI m)
+            => Bool -> Container -> ItemBag -> m ()
 spotItemBag verbose c bag = do
   -- This is due to a move, or similar, which will be displayed,
   -- so no extra @markDisplayNeeded@ needed here and in similar places.
@@ -1048,7 +1051,8 @@ recordItemLid iid c = do
     modifySession $ \sess ->
       sess {sitemUI = EM.insert iid lid $ sitemUI sess}
 
-moveActor :: MonadClientUI m => ActorId -> Point -> Point -> m ()
+moveActor :: (MonadClient m, MonadClientUI m)
+          => ActorId -> Point -> Point -> m ()
 moveActor aid source target = do
   -- If source and target tile distant, assume it's a teleportation
   -- and display an animation. Note: jumps and pushes go through all
@@ -1064,7 +1068,8 @@ moveActor aid source target = do
     animate (blid body) $ teleport ps
   lookAtMove aid
 
-displaceActorUI :: MonadClientUI m => ActorId -> ActorId -> m ()
+displaceActorUI :: (MonadClient m, MonadClientUI m)
+                => ActorId -> ActorId -> m ()
 displaceActorUI source target = do
   mleader <- getsClient sleader
   sb <- getsState $ getActorBody source
@@ -1089,7 +1094,7 @@ displaceActorUI source target = do
 -- but it ensures that even if only one of the stores is visible
 -- (e.g., stash floor is not or actor posision is not), some messages
 -- will be printed (via verbose @UpdLoseItem@).
-moveItemUI :: MonadClientUI m
+moveItemUI :: (MonadClient m, MonadClientUI m)
            => ItemId -> Int -> ActorId -> CStore -> CStore
            -> m ()
 moveItemUI iid k aid cstore1 cstore2 = do
@@ -1110,7 +1115,7 @@ moveItemUI iid k aid cstore1 cstore2 = do
     Nothing -> error $
       "" `showFailure` (iid, k, aid, cstore1, cstore2)
 
-quitFactionUI :: MonadClientUI m
+quitFactionUI :: (MonadClient m, MonadClientUI m)
               => FactionId -> Maybe Status
               -> Maybe (FactionAnalytics, GenerationAnalytics)
               -> m ()
@@ -1224,7 +1229,7 @@ quitFactionUI fid toSt manalytics = do
         void $ displaySpaceEsc ColorFull pp  -- these are short
     _ -> return ()
 
-displayGameOverLoot :: MonadClientUI m
+displayGameOverLoot :: (MonadClient m, MonadClientUI m)
                     => (ItemBag, Int) -> GenerationAnalytics -> m K.KM
 displayGameOverLoot (heldBag, total) generationAn = do
   ClientOptions{sexposeItems} <- getsClient soptions
@@ -1277,7 +1282,7 @@ displayGameOverLoot (heldBag, total) generationAn = do
       examItem = displayItemLore itemBag 0 promptFun
   viewLoreItems "GameOverLoot" lSlots itemBag prompt examItem True
 
-displayGameOverAnalytics :: MonadClientUI m
+displayGameOverAnalytics :: (MonadClient m, MonadClientUI m)
                          => FactionAnalytics -> GenerationAnalytics
                          -> m K.KM
 displayGameOverAnalytics factionAn generationAn = do
@@ -1319,7 +1324,7 @@ displayGameOverAnalytics factionAn generationAn = do
       examItem = displayItemLore trunkBag 0 promptFun
   viewLoreItems "GameOverAnalytics" lSlots trunkBag prompt examItem False
 
-displayGameOverLore :: MonadClientUI m
+displayGameOverLore :: (MonadClient m, MonadClientUI m)
                     => SLore -> Bool -> GenerationAnalytics -> m K.KM
 displayGameOverLore slore exposeCount generationAn = do
   let generationLore = generationAn EM.! slore
@@ -1346,7 +1351,7 @@ displayGameOverLore slore exposeCount generationAn = do
 
 -- The item may be used up already and so not present in the container,
 -- e.g., if the item destroyed itself. This is OK. Message is still needed.
-discover :: MonadClientUI m => Container -> ItemId -> m ()
+discover :: (MonadClient m, MonadClientUI m) => Container -> ItemId -> m ()
 discover c iid = do
   COps{coitem} <- getsState scops
   CCUI{coscreen=ScreenContent{rwidth}} <- getsSession sccui
@@ -1460,7 +1465,7 @@ ppHearDistanceAdverb (Just _) = "barely"
 -- | Display special effects (text, animation) sent to the client.
 -- Don't modify client state (except a few fields), but only client
 -- session (e.g., by displaying messages). This is enforced by types.
-displayRespSfxAtomicUI :: MonadClientUI m => SfxAtomic -> m ()
+displayRespSfxAtomicUI :: (MonadClient m, MonadClientUI m) => SfxAtomic -> m ()
 {-# INLINE displayRespSfxAtomicUI #-}
 displayRespSfxAtomicUI sfx = case sfx of
   SfxStrike source target iid ->
@@ -1992,7 +1997,8 @@ ppSfxMsg sfxMsg = case sfxMsg of
       returnJustLeft (MsgSpecialEvent, msg)  -- differentiate wrt item creation
     else return Nothing
 
-strike :: MonadClientUI m => Bool -> ActorId -> ActorId -> ItemId -> m ()
+strike :: (MonadClient m, MonadClientUI m)
+       => Bool -> ActorId -> ActorId -> ItemId -> m ()
 strike catch source target iid = assert (source /= target) $ do
   CCUI{coscreen=ScreenContent{rwidth}} <- getsSession sccui
   tb <- getsState $ getActorBody target

@@ -4,7 +4,6 @@ module Game.LambdaHack.Client.AI.ConditionM
   , condAimEnemyOrStashM
   , condAimEnemyOrRememberedM
   , condAimNonEnemyPresentM
-  , condInMeleeM
   , condAimCrucialM
   , condTgtNonmovingEnemyM
   , condAdjTriggerableM
@@ -94,19 +93,6 @@ condAimNonEnemyPresentM aid = do
   return $ case btarget of
     Just (TNonEnemy _) -> True
     _ -> False
-
-condInMeleeM :: MonadClient m => LevelId -> m Bool
-condInMeleeM lid = do
-  condInMelee <- getsClient scondInMelee
-  case EM.lookup lid condInMelee of
-    Just inM -> return inM
-    Nothing -> do
-      side <- getsClient sside
-      actorMaxSkills <- getsState sactorMaxSkills
-      inM <- getsState $ inMelee actorMaxSkills side lid
-      modifyClient $ \cli ->
-        cli {scondInMelee = EM.insert lid inM condInMelee}
-      return inM
 
 -- | Require that the target is crucial to success, e.g., an item,
 -- or that it's not too far away and so the changes to get it are high.

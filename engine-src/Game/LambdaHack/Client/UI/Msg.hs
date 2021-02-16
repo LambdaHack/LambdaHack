@@ -562,14 +562,26 @@ scrapRepetition History{ newReport = Report newMsgs
 -- duplicate and noting its existence in the result.
 --
 -- Empty messages are not added to make checking report emptiness easier.
-addToReport :: Bool -> History -> Msg -> Time -> (History, Bool)
-addToReport displayTutorialHints oldHistory@History{newReport = Report r, ..}
-            msg time =
-  let repMsgNK = RepMsgNK msg 1 1
+addToReport :: Bool -> Bool -> History -> Msg -> Time -> (History, Bool)
+addToReport inMelee displayTutorialHints
+            oldHistory@History{newReport = Report r, ..} msgRaw time =
+  -- When each turn we lose HP, stuff that wouldn't interrupt
+  -- running should go at most to message log, not onto the screen,
+  -- unless it goes only onto screen, so the message would be lost.
+  let isMsgClassShow = \case
+        MsgClassShow{} -> True
+        _ -> False
+      msg = if inMelee
+               && not (interruptsRunning (msgClass msgRaw))
+               && not (isMsgClassShow $ msgClass msgRaw)
+            then msgRaw {msgShow = []}
+            else msgRaw
+      repMsgNK = RepMsgNK msg 1 1
       newH = History { newReport = Report $ repMsgNK : r
                      , newTime = time
                      , .. }
-  in if | not displayTutorialHints && tutorialHint (msgClass msg) ->
+  in -- Tutorial hints shown only when tutorial enabled.
+     if | not displayTutorialHints && tutorialHint (msgClass msg) ->
           (oldHistory, False)
         | not (scrapsRepeats $ msgClass msg)
           || nullRepMsgNK repMsgNK ->

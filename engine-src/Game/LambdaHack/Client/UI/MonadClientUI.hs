@@ -343,11 +343,13 @@ scoreToSlideshow total status = do
             then sli
             else emptySlideshow
 
-defaultHistory :: MonadClientUI m => m History
+defaultHistory :: (MonadClient m, MonadClientUI m) => m History
 defaultHistory = do
   sUIOptions <- getsSession sUIOptions
   curTutorial <- getsSession scurTutorial
   overrideTut <- getsSession soverrideTut
+  lid <- getArenaUI
+  condInMelee <- condInMeleeM lid
   let displayTutorialHints = fromMaybe curTutorial overrideTut
   liftIO $ do
     utcTime <- getCurrentTime
@@ -356,7 +358,8 @@ defaultHistory = do
         emptyHist = emptyHistory $ uHistoryMax sUIOptions
         msg = toMsgShared (uMessageColors sUIOptions) MsgBookKeeping
               $ "History log started on " <> curDate <> "."
-    return $! fst $ addToReport displayTutorialHints emptyHist msg timeZero
+    return $! fst $ addToReport condInMelee displayTutorialHints
+                                emptyHist msg timeZero
 
 tellAllClipPS :: MonadClientUI m => m ()
 tellAllClipPS = do

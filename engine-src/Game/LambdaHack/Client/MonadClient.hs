@@ -7,7 +7,7 @@ module Game.LambdaHack.Client.MonadClient
   , MonadClient(modifyClient)
     -- * Assorted primitives
   , getClient, putClient
-  , debugPossiblyPrint, createTabBFS, dumpTextFile, rndToAction
+  , debugPossiblyPrint, createTabBFS, dumpTextFile, rndToAction, condInMeleeM
   ) where
 
 import Prelude ()
@@ -16,12 +16,14 @@ import Game.LambdaHack.Core.Prelude
 
 import           Control.Monad.ST.Strict (stToIO)
 import qualified Control.Monad.Trans.State.Strict as St
+import qualified Data.EnumMap.Strict as EM
 import qualified Data.Primitive.PrimArray as PA
 import qualified Data.Text.IO as T
 import           System.FilePath
 import           System.IO (hFlush, stdout)
 
 import Game.LambdaHack.Client.State
+import Game.LambdaHack.Common.ActorState
 import Game.LambdaHack.Common.ClientOptions
 import Game.LambdaHack.Common.File
 import Game.LambdaHack.Common.Kind
@@ -29,6 +31,7 @@ import Game.LambdaHack.Common.Misc
 import Game.LambdaHack.Common.MonadStateRead
 import Game.LambdaHack.Common.Point
 import Game.LambdaHack.Common.State
+import Game.LambdaHack.Common.Types
 import Game.LambdaHack.Content.RuleKind
 import Game.LambdaHack.Core.Random
 
@@ -78,3 +81,16 @@ rndToAction r = do
   let (a, gen2) = St.runState r gen1
   modifyClient $ \cli -> cli {srandom = gen2}
   return a
+
+condInMeleeM :: MonadClient m => LevelId -> m Bool
+condInMeleeM lid = do
+  condInMelee <- getsClient scondInMelee
+  case EM.lookup lid condInMelee of
+    Just inM -> return inM
+    Nothing -> do
+      side <- getsClient sside
+      actorMaxSkills <- getsState sactorMaxSkills
+      inM <- getsState $ inMelee actorMaxSkills side lid
+      modifyClient $ \cli ->
+        cli {scondInMelee = EM.insert lid inM condInMelee}
+      return inM

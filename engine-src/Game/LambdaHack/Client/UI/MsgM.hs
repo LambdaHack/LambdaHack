@@ -23,46 +23,54 @@ import           Game.LambdaHack.Common.State
 import           Game.LambdaHack.Definition.Defs
 
 -- | Add a shared message to the current report. Say if it was a duplicate.
-msgAddDuplicate :: (MonadClientUI m, MsgShared a) => a -> Text -> m Bool
+msgAddDuplicate :: (MonadClient m, MonadClientUI m, MsgShared a)
+                => a -> Text -> m Bool
 msgAddDuplicate msgClass t = do
   sUIOptions <- getsSession sUIOptions
   time <- getsState stime
   history <- getsSession shistory
   curTutorial <- getsSession scurTutorial
   overrideTut <- getsSession soverrideTut
+  lid <- getArenaUI
+  condInMelee <- condInMeleeM lid
   let displayTutorialHints = fromMaybe curTutorial overrideTut
       msg = toMsgShared (uMessageColors sUIOptions) msgClass t
-      (nhistory, duplicate) = addToReport displayTutorialHints history msg time
+      (nhistory, duplicate) = addToReport condInMelee displayTutorialHints
+                                          history msg time
   modifySession $ \sess -> sess {shistory = nhistory}
   return duplicate
 
 -- | Add a message comprising of two different texts, one to show, the other
 -- to save to messages log, to the current report.
-msgAddDistinct :: (MonadClientUI m) => MsgClassDistinct -> (Text, Text) -> m ()
+msgAddDistinct :: (MonadClient m, MonadClientUI m)
+               => MsgClassDistinct -> (Text, Text) -> m ()
 msgAddDistinct msgClass (t1, t2) = do
   sUIOptions <- getsSession sUIOptions
   time <- getsState stime
   history <- getsSession shistory
   curTutorial <- getsSession scurTutorial
   overrideTut <- getsSession soverrideTut
+  lid <- getArenaUI
+  condInMelee <- condInMeleeM lid
   let displayTutorialHints = fromMaybe curTutorial overrideTut
       msg = toMsgDistinct (uMessageColors sUIOptions) msgClass t1 t2
-      (nhistory, _) = addToReport displayTutorialHints history msg time
+      (nhistory, _) = addToReport condInMelee displayTutorialHints
+                                  history msg time
   modifySession $ \sess -> sess {shistory = nhistory}
 
 -- | Add a message to the current report.
-msgAdd :: (MonadClientUI m, MsgShared a) => a -> Text -> m ()
+msgAdd :: (MonadClient m, MonadClientUI m, MsgShared a) => a -> Text -> m ()
 msgAdd msgClass t = void $ msgAddDuplicate msgClass t
 
 -- | Add a message to the current report. End previously collected report,
 -- if any, with newline.
-msgLnAdd :: (MonadClientUI m, MsgShared a) => a -> Text -> m ()
+msgLnAdd :: (MonadClient m, MonadClientUI m, MsgShared a) => a -> Text -> m ()
 msgLnAdd msgClass t = do
   modifySession $ \sess -> sess {shistory = addEolToNewReport $ shistory sess}
   msgAdd msgClass t
 
 -- | Add a prompt with basic keys description.
-promptMainKeys :: MonadClientUI m => m ()
+promptMainKeys :: (MonadClient m, MonadClientUI m) => m ()
 promptMainKeys = do
   side <- getsClient sside
   ours <- getsState $ fidActorNotProjGlobalAssocs side

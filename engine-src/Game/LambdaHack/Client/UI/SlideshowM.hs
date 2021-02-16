@@ -14,6 +14,7 @@ import qualified Data.EnumMap.Strict as EM
 import qualified Data.Map.Strict as M
 import qualified Data.Text as T
 
+import           Game.LambdaHack.Client.MonadClient
 import           Game.LambdaHack.Client.UI.Content.Screen
 import           Game.LambdaHack.Client.UI.ContentClientUI
 import           Game.LambdaHack.Client.UI.Frame
@@ -62,7 +63,8 @@ reportToSlideshowKeep keys = do
 
 -- | Display a message. Return value indicates if the player wants to continue.
 -- Feature: if many pages, only the last SPACE exits (but first ESC).
-displaySpaceEsc :: MonadClientUI m => ColorMode -> Text -> m Bool
+displaySpaceEsc :: (MonadClient m, MonadClientUI m)
+                => ColorMode -> Text -> m Bool
 displaySpaceEsc dm prompt = do
   unless (T.null prompt) $ msgLnAdd MsgPromptGeneric prompt
   -- Two frames drawn total (unless @prompt@ very long).
@@ -72,14 +74,14 @@ displaySpaceEsc dm prompt = do
 
 -- | Display a message. Ignore keypresses.
 -- Feature: if many pages, only the last SPACE exits (but first ESC).
-displayMore :: MonadClientUI m => ColorMode -> Text -> m ()
+displayMore :: (MonadClient m, MonadClientUI m) => ColorMode -> Text -> m ()
 displayMore dm prompt = do
   unless (T.null prompt) $ msgLnAdd MsgPromptGeneric prompt
   slides <- reportToSlideshow [K.spaceKM]
   km <- getConfirms dm [K.spaceKM, K.escKM, K.mkChar '?'] slides
   if km == K.mkChar '?' then addPressedKey $ K.mkChar '?' else return ()
 
-displayMoreKeep :: MonadClientUI m => ColorMode -> Text -> m ()
+displayMoreKeep :: (MonadClient m, MonadClientUI m) => ColorMode -> Text -> m ()
 displayMoreKeep dm prompt = do
   unless (T.null prompt) $ msgLnAdd MsgPromptGeneric prompt
   slides <- reportToSlideshowKeep [K.spaceKM]
@@ -88,7 +90,7 @@ displayMoreKeep dm prompt = do
 
 -- | Print a yes/no question and return the player's answer. Use black
 -- and white colours to turn player's attention to the choice.
-displayYesNo :: MonadClientUI m => ColorMode -> Text -> m Bool
+displayYesNo :: (MonadClient m, MonadClientUI m) => ColorMode -> Text -> m Bool
 displayYesNo dm prompt = do
   unless (T.null prompt) $ msgLnAdd MsgPromptGeneric prompt
   let yn = map K.mkChar ['y', 'n']
@@ -96,7 +98,7 @@ displayYesNo dm prompt = do
   km <- getConfirms dm (K.escKM : yn) slides
   return $! km == K.mkChar 'y'
 
-getConfirms :: MonadClientUI m
+getConfirms :: (MonadClient m, MonadClientUI m)
             => ColorMode -> [K.KM] -> Slideshow -> m K.KM
 getConfirms dm extraKeys slides = do
   ekm <- displayChoiceScreen "" dm False slides extraKeys
@@ -107,7 +109,7 @@ getConfirms dm extraKeys slides = do
 -- can again be placed at that spot next time menu is displayed).
 --
 -- This function is the only source of menus and so, effectively, UI modes.
-displayChoiceScreen :: forall m . MonadClientUI m
+displayChoiceScreen :: forall m . (MonadClient m, MonadClientUI m)
                     => String -> ColorMode -> Bool -> Slideshow -> [K.KM]
                     -> m (Either K.KM SlotChar)
 displayChoiceScreen menuName dm sfBlank frsX extraKeys = do

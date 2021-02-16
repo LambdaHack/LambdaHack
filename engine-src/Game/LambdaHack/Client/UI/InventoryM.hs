@@ -71,7 +71,7 @@ accessModeBag _ _ MModes = EM.empty
 -- Note that this does not guarantee the chosen item belongs to the group,
 -- as the player can override the choice.
 -- Used e.g., for applying and projecting.
-getGroupItem :: MonadClientUI m
+getGroupItem :: (MonadClient m, MonadClientUI m)
              => m Suitability
                           -- ^ which items to consider suitable
              -> Text      -- ^ specific prompt for only suitable items
@@ -104,7 +104,7 @@ getGroupItem psuit prompt promptGeneric verb verbGeneric stores = do
 -- | Display all items from a store and let the human player choose any
 -- or switch to any other store.
 -- Used, e.g., for viewing inventory and item descriptions.
-getStoreItem :: MonadClientUI m
+getStoreItem :: (MonadClient m, MonadClientUI m)
              => (Actor -> ActorUI -> Ability.Skills -> ItemDialogMode -> State
                  -> Text)        -- ^ how to describe suitable items
              -> ItemDialogMode   -- ^ initial mode
@@ -127,7 +127,7 @@ getStoreItem prompt cInitial = do
 -- | Let the human player choose a single, preferably suitable,
 -- item from a list of items. Don't display stores empty for all actors.
 -- Start with a non-empty store.
-getFull :: MonadClientUI m
+getFull :: (MonadClient m, MonadClientUI m)
         => m Suitability    -- ^ which items to consider suitable
         -> (Actor -> ActorUI -> Ability.Skills -> ItemDialogMode -> State
             -> Text)        -- ^ specific prompt for only suitable items
@@ -179,7 +179,7 @@ getFull psuit prompt promptGeneric stores askWhenLone permitMulitple = do
 
 -- | Let the human player choose a single, preferably suitable,
 -- item from a list of items.
-getItem :: MonadClientUI m
+getItem :: (MonadClient m, MonadClientUI m)
         => m Suitability    -- ^ which items to consider suitable
         -> (Actor -> ActorUI -> Ability.Skills -> ItemDialogMode -> State
             -> Text)        -- ^ specific prompt for only suitable items
@@ -212,7 +212,7 @@ data Suitability =
     SuitsEverything
   | SuitsSomething (Maybe CStore -> ItemFull -> ItemQuant -> Bool)
 
-transition :: forall m. MonadClientUI m
+transition :: forall m. (MonadClient m, MonadClientUI m)
            => m Suitability
            -> (Actor -> ActorUI -> Ability.Skills -> ItemDialogMode -> State
                -> Text)
@@ -466,7 +466,7 @@ keyOfEKM _ _ = Nothing
 
 -- We don't create keys from slots in @okx@, so they have to be
 -- exolicitly given in @slotKeys@.
-runDefItemKey :: MonadClientUI m
+runDefItemKey :: (MonadClient m, MonadClientUI m)
               => [(K.KM, DefItemKey m)]
               -> DefItemKey m
               -> OKX
