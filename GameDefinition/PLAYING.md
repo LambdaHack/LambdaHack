@@ -77,7 +77,7 @@ Starting your adventure
 
 Commands for starting a new game, saving and exiting the current game,
 configuring convenience settings and toggling AI control of the party
-are listed in the main menu, brought up by the `ESC` key. Of the convenience
+are listed in the main menu, brought up by the Esc key. Of the convenience
 settings, the `suspect terrain` choice is of particular interest,
 because it determines not only screen display of the level map,
 but also whether suspect tiles are considered for auto-explore
@@ -160,8 +160,8 @@ items on the level and another (`*` and keypad `*`, with default keybinding)
 through all foes. Also, pointing at a map position with `MMB`
 (middle mouse button) displays a short description of its contents.
 The same with `RMB` enters aiming mode, in which repeated pointing
-at the same position increases detail level of the description,
-the same as when pressing `SPACE`. The basic terrain kinds are as follows.
+at the same position increases detail level of the description, the same
+as when pressing the Space key. The basic terrain kinds are as follows.
 
     terrain type                          on-screen symbol
 
@@ -216,7 +216,7 @@ extremely weakened) and symbols `@` and `1` through `9` (never `0`).
 The currently chosen party pointman is highlighted on the map with yellow.
 The easiest way to control your team is to run a short distance
 with your pointman using Shift-direction or LMB, switch the pointman
-with Tab, repeat.
+with the Tab key, repeat.
 
 In open terrain, if you keep consistent distance between teammates,
 this resembles the leap frog infantry tactics, in which the immobile

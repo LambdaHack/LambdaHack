@@ -909,7 +909,7 @@ createActorUI born aid body = do
      | ES.member aid lastLost || bproj body -> markDisplayNeeded (blid body)
      | otherwise -> do
        aidVerbMU MsgSpottedActor aid verb
-       if | joinYou -> msgAdd MsgTutorialHint "You survive this mission, or die trying, as a team. After a few moves, feel free to switch the controlled teammate (marked on the map with the yellow box) using the TAB key to another party member (marked with a green box)."  -- assuming newbies don't remap their keys
+       if | joinYou -> msgAdd MsgTutorialHint "You survive this mission, or die trying, as a team. After a few moves, feel free to switch the controlled teammate (marked on the map with the yellow box) using the Tab key to another party member (marked with a green box)."  -- assuming newbies don't remap their keys
           | firstEnemy -> msgAdd MsgTutorialHint "Enemies can be dealt with using melee (by bumping), ranged combat, terrain effects, stealth (not being seen) or hasty retreat (particularly if they are asleep)."
           | otherwise -> return ()
        animate (blid body) $ actorX (bpos body)

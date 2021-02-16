@@ -83,6 +83,9 @@ promptMainKeys = do
                | otherwise = "keypad"
       manyTeammates = length ours > 1
       detailAtDefault = (detailLevel <$> saimMode) == Just defaultDetailLevel
+      -- @Tab@ here is not a button, which we would write consistently
+      -- as @TAB@, just as in our internal in-game key naming, but a key name
+      -- as written on the keyboard, hence most useful to a newbie.
       keepTab = if manyTeammates
                 then "Switch to another teammate with Tab, while all others auto-melee foes, if adjacent, but normally don't chase them."
                 else ""
