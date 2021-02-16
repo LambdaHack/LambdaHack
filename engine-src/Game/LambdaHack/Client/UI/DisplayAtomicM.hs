@@ -448,7 +448,7 @@ displayRespUpdAtomicUI cmd = case cmd of
                            , MU.AW object ]
     unless (subject2 == object) $ do
       msgAdd MsgTerrainReveal msg
-      msgAdd MsgTutorialHint "Solid terrain drawn in pink is not fully known until searched. This is usually done by bumping into it, which also triggers effects and transformations the terrain is capable of."
+      msgAdd MsgTutorialHint "Solid terrain drawn in pink is not fully known until searched. This is usually done by bumping into it, which also triggers effects and transformations the terrain is capable of. Once revealed, the terrain can be inspected in aiming mode started with the '*' key or with mouse."
   UpdHideTile{} -> return ()
   UpdSpotTile{} -> return ()
   UpdLoseTile{} -> return ()
@@ -1610,6 +1610,7 @@ displayRespSfxAtomicUI sfx = case sfx of
               let desc = cdesc $ okind cocave $ lkind lvl
               unless (T.null desc) $
                 msgAdd MsgBackdropInfo $ desc <> "\n"
+              msgAdd MsgTutorialHint "New floor is new opportunities, though the old level is still there and others may roam it after you left. Viewing all floors, without moving between them, can be done using the '<' and '>' keys."
             [] -> return ()  -- spell fizzles; normally should not be sent
       IK.Escape{} | isOurCharacter -> do
         ours <- getsState $ fidActorNotProjGlobalAssocs side
@@ -2172,6 +2173,8 @@ strike catch source target iid = assert (source /= target) $ do
          let msg = makeSentence
                      [MU.SubjectVerbSg spart "catch", tpart, "skillfully"]
          msgAdd MsgSpecialEvent msg
+         when (bfid sb == side) $
+           msgAdd MsgTutorialHint "You managed to catch a projectile, thanks to being braced and hitting it exactly when it was at arm's reach. The obtained item has been put into the shared stash of the party."
          animate (blid tb) $ blockHit ps Color.BrGreen Color.Green
        | not (hasCharge localTime kitWeapon) -> do
          -- Can easily happen with a thrown discharged item.
@@ -2273,4 +2276,8 @@ strike catch source target iid = assert (source /= target) $ do
                         else msgClassInfluence
          msgAdd msgClass $ makePhrase [MU.Capitalize $ MU.Phrase attackParts]
                            <> msgArmor <> tmpInfluenceBlurb <> "."
+         actorMaxSkills <- getsState sactorMaxSkills
+         when (bfid sb == side
+               && not (actorCanMeleeToHarm actorMaxSkills target tb)) $
+           msgAdd MsgTutorialHint "This enemy can't harm you. Left alone could it possibly be of some use?"
          animate (blid tb) basicAnim

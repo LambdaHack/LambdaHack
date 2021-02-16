@@ -496,6 +496,7 @@ alterCommon bumping tpos = do
   getKind <- getsState $ flip getIidKind
   let t = lvl `at` tpos
       underFeet = tpos == spos  -- if enter and alter, be more permissive
+      modificationFailureHint = msgAdd MsgTutorialHint "Some doors can be opened, stairs unbarred, treasures recovered, only if you find tools that increase your terrain modification ability and act as keys to the puzzle. To gather clues about the keys, listen to what's around you, examine items, inspect terrain, trigger, bump and harass. Once you uncover a likely tool, wield it, return and try to break through again."
   if | not alterable -> do
          let name = MU.Text $ TK.tname $ okind cotile t
              itemLook (iid, kit@(k, _)) =
@@ -514,13 +515,16 @@ alterCommon bumping tpos = do
            -- raw damage, with no chance of altering the tile
      | Tile.isSuspect coTileSpeedup t
        && not underFeet
-       && alterSkill <= 1 -> failSer AlterUnskilled
+       && alterSkill <= 1 -> do
+         modificationFailureHint
+         failSer AlterUnskilled
      | not (Tile.isSuspect coTileSpeedup t)
        && not underFeet
        && alterSkill < Tile.alterMinSkill coTileSpeedup t -> do
          -- Rather rare (requires high skill), so describe the tile.
          blurb <- lookAtPosition (blid sb) tpos
          mapM_ (uncurry msgAdd) blurb
+         modificationFailureHint
          failSer AlterUnwalked
      | chessDist tpos (bpos sb) > 1 ->
          -- Checked late to give useful info about distant tiles.
