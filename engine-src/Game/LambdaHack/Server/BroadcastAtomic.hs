@@ -113,9 +113,10 @@ handleAndBroadcast ps atomicBroken atomic = do
                       Nothing -> return Nothing
                       Just leader -> do
                         b <- getsState $ getActorBody leader
-                        -- Leader's hearing irrelevant, which prevents
-                        -- changing leader just to get hearing intel.
-                        -- However, leader's position affects accuracy.
+                        -- Leader's hearing as relevant as of any other actor,
+                        -- which prevents changing leader just to get hearing
+                        -- intel. However, leader's position affects accuracy
+                        -- of the distance to noise hints.
                         return $ Just $ min 5 $ chessDist pos (bpos b) `div` 10
               -- Projectiles never hear, for speed and simplicity,
               -- even though they sometimes see. There are flying cameras,

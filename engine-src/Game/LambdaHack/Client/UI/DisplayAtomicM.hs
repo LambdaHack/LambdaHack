@@ -146,6 +146,8 @@ displayRespUpdAtomicUI cmd = case cmd of
                  -- This describes all such items already among organs,
                  -- which is useful, because it shows "charging".
                  itemAidDistinctMU msgClass aid verbShow verbSave iid
+                 when (bfid b == side) $  -- others get conditions too often
+                   msgAdd MsgTutorialHint "Temporary conditions pass after a few turns. They are listed in the '@' organ menu and the effects of most of them are seen in the '#' skill menu."
                | otherwise -> do
                  wown <- ppContainerWownW partActorLeader True c
                  itemVerbMU MsgItemCreation iid kit
@@ -198,7 +200,12 @@ displayRespUpdAtomicUI cmd = case cmd of
   UpdLoseItemBag{} -> return ()  -- rarely interesting and can be very long
   -- Move actors and items.
   UpdMoveActor aid source target -> moveActor aid source target
-  UpdWaitActor aid WSleep _ -> aidVerbMU MsgStatusWakeup aid "wake up"
+  UpdWaitActor aid WSleep _ -> do
+    aidVerbMU MsgStatusWakeup aid "wake up"
+    side <- getsClient sside
+    b <- getsState $ getActorBody aid
+    unless (bfid b == side) $
+      msgAdd MsgTutorialHint "Woken up actors regain stats and skills, including sight radius and melee armor, over several turns. To avoid waking them up, make sure they don't lose HP nor too much Calm through noises, particularly close ones. Beware, however, that they slowly regenerate HP as they sleep and eventually wake up at full HP."
   UpdWaitActor{} -> return ()  -- falling asleep handled uniformly elsewhere
   UpdDisplaceActor source target -> displaceActorUI source target
   UpdMoveItem iid k aid c1 c2 -> moveItemUI iid k aid c1 c2
@@ -439,7 +446,9 @@ displayRespUpdAtomicUI cmd = case cmd of
                            , "that the"
                            , MU.SubjectVerbSg subject2 "be"
                            , MU.AW object ]
-    unless (subject2 == object) $ msgAdd MsgTerrainReveal msg
+    unless (subject2 == object) $ do
+      msgAdd MsgTerrainReveal msg
+      msgAdd MsgTutorialHint "Solid terrain drawn in pink is not fully known until searched. This is usually done by bumping into it, which also triggers effects and transformations the terrain is capable of."
   UpdHideTile{} -> return ()
   UpdSpotTile{} -> return ()
   UpdLoseTile{} -> return ()
@@ -580,6 +589,10 @@ displayRespUpdAtomicUI cmd = case cmd of
           Just 0 -> MsgHeardNearby
           Just _ -> MsgHeardFaraway
     msgAdd msgClass msg
+    case hearMsg of
+      HearUpd UpdDestroyActor{} ->
+        msgAdd MsgTutorialHint "Events out of your sight radius (as listed in the '#' skill menu) can sometimes be heard, depending on your hearing radius. Some, such as death shrieks, can always be heard regardless of skill and distance, including when they come from a different floor."
+      _ -> return ()
 
 updateItemSlot :: MonadClientUI m => Container -> ItemId -> m ()
 updateItemSlot c iid = do
@@ -838,11 +851,12 @@ createActorUI born aid body = do
         bUI = ActorUI{..}
     modifySession $ \sess ->
       sess {sactorUI = EM.insert aid bUI actorUI}
-  let joinYou = born && bfid body == side
-      verb = MU.Text $
+  let (verb, joinYou) =
         if born
-        then if bfid body == side then "join you" else "appear suddenly"
-        else "be spotted"
+        then if bfid body == side
+             then ("join you", True)
+             else ("appear suddenly", False)
+        else ("be spotted", False)
   mapM_ (\(iid, store) -> do
            let c = if not (bproj body) && iid == btrunk body
                    then CTrunk (bfid body) (blid body) (bpos body)
@@ -855,38 +869,48 @@ createActorUI born aid body = do
   -- invisible this turn (in that case move is broken down to lose+spot)
   -- or on a distant tile, via teleport while the observer teleported, too).
   lastLost <- getsSession slastLost
-  when (bfid body /= side) $ do
-    when (not (bproj body) && isFoe (bfid body) fact side) $ do
-      -- Aim even if nobody can shoot at the enemy. Let's home in on him
-      -- and then we can aim or melee. We set permit to False, because it's
-      -- technically very hard to check aimability here, because we are
-      -- in-between turns and, e.g., leader's move has not yet been taken
-      -- into account.
-      xhair <- getsSession sxhair
-      case xhair of
-        Just (TVector _) -> return ()  -- explicitly set; keep it
-        _ -> modifySession $ \sess ->
-               sess { sxhair = Just $ TEnemy aid
-                    , sitemSel = Nothing } -- reset flinging totally
-      foes <- getsState $ foeRegularList side (blid body)
-      itemsSize <- getsState $ guardItemSize body
-      unless (ES.member aid lastLost) $
-        if length foes > 1
-        then when (itemsSize > 0) $
-          msgAdd MsgSpottedThreat "Another armed threat!"
-        else if itemsSize > 0
-             then msgAdd MsgSpottedThreat "Armed intrusion ahead!"
-             else msgAdd MsgSpottedThreat "You are not alone!"
-    stopPlayBack
+  firstEnemy <-
+    if bfid body /= side then do
+      firstE <-
+        if not (bproj body) && isFoe (bfid body) fact side then do
+          -- Aim even if nobody can shoot at the enemy. Let's home in on him
+          -- and then we can aim or melee. We set permit to False, because it's
+          -- technically very hard to check aimability here, because we are
+          -- in-between turns and, e.g., leader's move has not yet been taken
+          -- into account.
+          xhair <- getsSession sxhair
+          case xhair of
+            Just (TVector _) -> return ()  -- explicitly set; keep it
+            _ -> modifySession $ \sess ->
+                   sess { sxhair = Just $ TEnemy aid
+                        , sitemSel = Nothing } -- reset flinging totally
+          foes <- getsState $ foeRegularList side (blid body)
+          itemsSize <- getsState $ guardItemSize body
+          if ES.member aid lastLost
+          then return False
+          else if length foes > 1
+               then do
+                 when (itemsSize > 0) $ do
+                   msgAdd MsgSpottedThreat "Another armed threat!"
+                 return False
+               else do
+                 if itemsSize > 0
+                 then msgAdd MsgSpottedThreat "Armed intrusion ahead!"
+                 else msgAdd MsgSpottedThreat "You are not alone!"
+                 return True
+        else return False
+      stopPlayBack
+      return firstE
+    else return False
   if | EM.null actorUI && bfid body == side ->
        return ()  -- don't speak about yourself in 3rd person
      | born && bproj body -> pushFrame  -- make sure first position displayed
      | ES.member aid lastLost || bproj body -> markDisplayNeeded (blid body)
      | otherwise -> do
        aidVerbMU MsgSpottedActor aid verb
-       when joinYou $
-         msgAdd MsgTutorialHint
-                "In this mission you are not alone. Every other party member is surrounded with a green box. After a few moves, feel free to switch the controlled teammate (marked with the yellow box) using the TAB key."  -- assuming newbies don't remap their keys
+       if | joinYou -> msgAdd MsgTutorialHint "You survive this mission, or die trying, as a team. After a few moves, feel free to switch the controlled teammate (marked on the map with the yellow box) using the TAB key to another party member (marked with a green box)."  -- assuming newbies don't remap their keys
+          | firstEnemy -> msgAdd MsgTutorialHint "Enemies can be dealt with using melee (by bumping), ranged combat, terrain effects, stealth (not being seen) or hasty retreat (particularly if they are asleep)."
+          | otherwise -> return ()
        animate (blid body) $ actorX (bpos body)
 
 destroyActorUI :: MonadClientUI m => Bool -> ActorId -> Actor -> m ()
@@ -1742,6 +1766,7 @@ displayRespSfxAtomicUI sfx = case sfx of
       (_heardSubject, verb) <- displayTaunt voluntary rndToActionUI aid
       msgAdd MsgMiscellanous $!
         makeSentence [MU.SubjectVerbSg spart (MU.Text verb)]
+      msgAdd MsgTutorialHint "Enemies you can't see are sometimes heard yelling and emitting other noises. Whether you can hear them, depends on their distance and your hearing radius, as listed in the '#' skill menu."
 
 returnJustLeft :: MonadClientUI m
                => (MsgClassShowAndSave, Text)
@@ -1785,9 +1810,9 @@ ppSfxMsg sfxMsg = case sfxMsg of
     returnJustLeft ( MsgActionWarning
                    , "To transform the terrain, prepare the following items on the ground or in equipment:"
                      <+> tItems
-                     <+> "and use the <"
+                     <+> "and use the '"
                      <> T.pack (K.showKM km)
-                     <> "> terrain modification command."
+                     <> "' terrain modification command."
                    )
   SfxVoidDetection d -> returnJustLeft
     ( MsgMiscellanous
