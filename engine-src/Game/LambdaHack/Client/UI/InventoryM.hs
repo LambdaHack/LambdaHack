@@ -446,7 +446,7 @@ transition psuit prompt promptGeneric permitMulitple
       processSpecialOverlay io RSkills
     MPlaces -> do
       io <- placesOverlay
-      processSpecialOverlay io RSkills
+      processSpecialOverlay io RPlaces
     MModes -> do
       io <- modesOverlay
       processSpecialOverlay io RModes
