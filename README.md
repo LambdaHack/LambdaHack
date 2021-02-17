@@ -183,6 +183,7 @@ Alternatively, if you'd like to develop in this codebase,
 the following speeds up the turn-around a lot
 
     cp cabal.project.local.development cabal.project.local
+    cabal install cabal-plan
 
 and then compile with
 
