@@ -284,7 +284,7 @@ before_install:
   - CABALHOME=$HOME/.cabal
   - export PATH="$CABALHOME/bin:/opt/ghc/bin:$HOME/.ghc-install/ghc/bin:$PATH"
   - TOP=$(pwd)
-  - if [ "$TRAVIS_OS_NAME" = "osx" ]; then curl https://haskell.futurice.com/haskell-on-macos.py | python3 - --make-dirs --install-dir=$HOME/.ghc-install --cabal-alias=3.2.0.0 install cabal-install-3.4.0.0 ${TRAVIS_COMPILER}; fi
+  - if [ "$TRAVIS_OS_NAME" = "osx" ]; then curl https://haskell.futurice.com/haskell-on-macos.py | python3 - --make-dirs --install-dir=$HOME/.ghc-install --cabal-alias=head install cabal-install-head ${TRAVIS_COMPILER}; fi
   - if [ "$TRAVIS_OS_NAME" = "osx" ]; then HC=$HOME/.ghc-install/ghc/bin/$TRAVIS_COMPILER; WITHCOMPILER="-w $HC"; HCPKG=$HOME/.ghc-install/ghc/bin/${TRAVIS_COMPILER/ghc/ghc-pkg}; CABAL=$HOME/.ghc-install/ghc/bin/cabal; fi
   - "HCNUMVER=$(${HC} --numeric-version|perl -ne '/^(\\d+)\\.(\\d+)\\.(\\d+)(\\.(\\d+))?$/; print(10000 * $1 + 100 * $2 + ($3 == 0 ? $5 != 1 : $3))')"
   - echo $HCNUMVER
