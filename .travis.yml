@@ -280,7 +280,7 @@ before_install:
   - if [ "$TRAVIS_OS_NAME" = "osx" ]; then HADDOCK=$(echo $HADDOCK | sed "s:^/opt:$HOME/.ghc-install:"); fi
   - HCPKG="$HC-pkg"
   - unset CC
-  - CABAL=/opt/ghc/bin/cabal
+  - CABAL=cabal
   - CABALHOME=$HOME/.cabal
   - export PATH="$CABALHOME/bin:/opt/ghc/bin:$HOME/.ghc-install/ghc/bin:$PATH"
   - TOP=$(pwd)
@@ -327,7 +327,7 @@ install:
   - if [ -f "./configure.ac" ]; then (cd "." && autoreconf -i); fi
 # Can't freeze nor build deps here, because the flags that determine
 # the deps are not provided.
-# TODO: in GTKVTY given the exact flags instead of a keyword
+# TODO: in GTKVTY give the exact flags instead of a keyword
 #  - ${CABAL} v2-freeze $WITHCOMPILER ${TEST} ${BENCH}
 #  - "cat cabal.project.freeze | sed -E 's/^(constraints: *| *)//' | sed 's/any.//'"
 #  - rm  cabal.project.freeze
