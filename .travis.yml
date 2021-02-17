@@ -347,6 +347,10 @@ script:
 
   - cd LambdaHack-*
 
+  - cabal -v2 list-bin exe:LambdaHack
+  - cabal -v2 list-bin $WITHCOMPILER exe:LambdaHack
+  - ${CABAL} -v2 list-bin $WITHCOMPILER exe:LambdaHack
+
   - cp $TOP/cabal.project .
   - cp $TOP/cabal.project.local .
   - cp $TOP/Makefile .
