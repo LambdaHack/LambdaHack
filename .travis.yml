@@ -282,7 +282,7 @@ before_install:
   - unset CC
   - CABAL=/opt/ghc/bin/cabal
   - CABALHOME=$HOME/.cabal
-  - export PATH="$CABALHOME/bin:$PATH"
+  - export PATH="$CABALHOME/bin:/opt/ghc/bin:$HOME/.ghc-install/ghc/bin:$PATH"
   - TOP=$(pwd)
   - if [ "$TRAVIS_OS_NAME" = "osx" ]; then curl https://haskell.futurice.com/haskell-on-macos.py | python3 - --make-dirs --install-dir=$HOME/.ghc-install --cabal-alias=3.2.0.0 install cabal-install-3.4.0.0 ${TRAVIS_COMPILER}; fi
   - if [ "$TRAVIS_OS_NAME" = "osx" ]; then HC=$HOME/.ghc-install/ghc/bin/$TRAVIS_COMPILER; WITHCOMPILER="-w $HC"; HCPKG=$HOME/.ghc-install/ghc/bin/${TRAVIS_COMPILER/ghc/ghc-pkg}; CABAL=$HOME/.ghc-install/ghc/bin/cabal; fi
