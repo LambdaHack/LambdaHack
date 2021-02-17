@@ -143,6 +143,11 @@ truncateOverlay halveXstart width rheight wipeAdjacent fillLen onBlank ov =
             : map (g 0 0 0) rest
       g lenPrev lenNext fillL (xstartRaw, (p, layerLine)) =
         let xstart = if halveXstart then xstartRaw `div` 2 else xstartRaw
+            -- TODO: lenPrev and lenNext is from the same kind of font;
+            -- if fonts are mixed, too few spaces are added.
+            -- We'd need to keep a global store of line lengths
+            -- for every position on the screen, filled first going
+            -- over all texts and only afterwards texts rendered.
             maxLen = if wipeAdjacent then max lenPrev lenNext else 0
             fillFromStart = max fillL (1 + maxLen) - xstart
             available = width - xstart
