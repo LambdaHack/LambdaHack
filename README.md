@@ -257,6 +257,11 @@ If minor ones have comments, they should not be haddocks
 and they are permitted to describe implementation details and be out of date.
 Prefer assertions instead of comments, unless too verbose.
 
+The 'pointman' from game manual and UI is called 'leader' in the source code
+and there are a few more mismatches, though the source code naming
+and the UI naming should each be consistent in separation.
+If the UI names stick, perhaps source code will be renamed at some point.
+
 
 Further information
 -------------------
