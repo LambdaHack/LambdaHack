@@ -452,6 +452,9 @@ drawFrame coscreen ClientOptions{..} sess@FrontendSession{..} curFrame = do
         -- We crop surface rather than texture to set the resulting
         -- texture as @TextureAccessStatic@ via @createTextureFromSurface@,
         -- which otherwise we wouldn't be able to do.
+        -- This is not essential for proportional font, for which we have
+        -- no texture atlas, but it's consistent with other fonts
+        -- and the bottleneck is the square font, anyway.
         void $ SDL.surfaceBlit textSurfaceRaw (Just srcR)
                                textSurface (Just tgtR)
         SDL.freeSurface textSurfaceRaw
