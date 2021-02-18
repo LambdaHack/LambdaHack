@@ -274,7 +274,7 @@ jobs:
       os: linux
 
 before_install:
-  - HC=$(echo "/opt/$CC/bin/ghc" | sed 's/-/\//')
+  - export HC=$(echo "/opt/$CC/bin/ghc" | sed 's/-/\//')
   - export WITHCOMPILER="-w $HC"
   - HADDOCK=$(echo "/opt/$CC/bin/haddock" | sed 's/-/\//')
   - if [ "$TRAVIS_OS_NAME" = "osx" ]; then HADDOCK=$(echo $HADDOCK | sed "s:^/opt:$HOME/.ghc-install:"); fi
@@ -346,10 +346,6 @@ script:
   - find . -maxdepth 1 -type f -name '*.tar.gz' -exec rm       '{}' \;
 
   - cd LambdaHack-*
-
-  - cabal -v2 list-bin exe:LambdaHack
-  - cabal -v2 list-bin $WITHCOMPILER exe:LambdaHack
-  - ${CABAL} -v2 list-bin $WITHCOMPILER exe:LambdaHack
 
   - cp $TOP/cabal.project .
   - cp $TOP/cabal.project.local .

@@ -1,4 +1,4 @@
-# needs cabal version >= 3.4
+# needs installed cabal-plan
 play:
 	$$(cabal-plan list-bin exe:LambdaHack) --dbgMsgSer --logPriority 4 --savePrefix play --dumpInitRngs
 
@@ -236,9 +236,6 @@ testDefense-appveyor:
 	dist/build/LambdaHack/LambdaHack --dbgMsgSer --logPriority 4 --newGame 9 --noAnim --maxFps 100000 --frontendLazy --benchmark --stopAfterSeconds 800 --dumpInitRngs --automateAll --keepAutomated --gameMode defense
 
 test-short-new:
-	which cabal
-	cabal --version
-	echo $$WITHCOMPILER
 	$$(cabal-plan list-bin exe:LambdaHack) --dbgMsgSer --logPriority 4 --boostRandomItem --newGame 5 --savePrefix raid --dumpInitRngs --automateAll --keepAutomated --gameMode raid --frontendTeletype --stopAfterSeconds 2 2> /tmp/teletypetest.log
 	$$(cabal-plan list-bin exe:LambdaHack) --dbgMsgSer --logPriority 4 --boostRandomItem --newGame 5 --savePrefix brawl --dumpInitRngs --automateAll --keepAutomated --gameMode brawl --showItemSamples --frontendTeletype --stopAfterSeconds 2 2> /tmp/teletypetest.log
 	$$(cabal-plan list-bin exe:LambdaHack) --dbgMsgSer --logPriority 4 --boostRandomItem --newGame 5 --savePrefix shootout --dumpInitRngs --automateAll --keepAutomated --gameMode shootout --showItemSamples --frontendTeletype --stopAfterSeconds 2 2> /tmp/teletypetest.log
