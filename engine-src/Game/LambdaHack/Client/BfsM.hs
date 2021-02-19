@@ -432,8 +432,8 @@ embedBenefit fleeVia aid pbags = do
           else 0
       underFeet p = p == bpos b  -- if enter and alter, be more permissive
       -- Only actors with high enough @SkAlter@ can trigger terrain.
-      -- If apply skill not high enough for embedded items, AI will only
-      -- guard such tiles, assuming they must be advanced and so crucial.
+      -- Blocking actors and items not checked, because they can be moved
+      -- before the actor gets to the location, or after.
       f (p, _) = underFeet p || alterSkill >= fromEnum (alterMinSkill p)
       benFeats = map (\pbag -> (bens pbag, pbag)) $ filter f pbags
       considered (benefitAndSacrifice, (p, _bag)) =

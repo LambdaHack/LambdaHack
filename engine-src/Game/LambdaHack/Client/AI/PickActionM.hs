@@ -811,11 +811,12 @@ meleeAny aid = do
 
 -- The level the actor is on is either explored or the actor already
 -- has a weapon equipped, so no need to explore further, he tries to find
--- enemies on other levels.
+-- enemies on other levels, hence triggering terrain.
 -- We don't verify any embedded item is targeted by the actor, but at least
 -- the actor doesn't target a visible enemy at this point.
 -- TODO: In @actionStrategy@ we require minimal @SkAlter@ even for the case
--- of triggerable tile underfoot. A quirk; a specialization of AI actors.
+-- of triggerable tile underfoot. Let's say this quirk is a specialization
+-- of AI actors, because there are usually many, so not all need to trigger.
 trigger :: MonadClient m
         => ActorId -> FleeViaStairsOrEscape
         -> m (Strategy RequestTimed)
@@ -829,7 +830,12 @@ trigger aid fleeVia = do
   efeat <- embedBenefit fleeVia aid pbags
   return $! liftFrequency $ toFreq "trigger"
     [ (ceiling benefit, ReqAlter pos)
-    | (benefit, (pos, _)) <- efeat ]
+    | (benefit, (pos, _)) <- efeat
+    , let underFeet = pos == bpos b
+    , underFeet
+      || not (occupiedBigLvl pos lvl)
+         && not (occupiedProjLvl pos lvl) -- AlterBlockActor
+         && EM.notMember pos (lfloor lvl) ]  -- AlterBlockItem
 
 projectItem :: MonadClient m
             => Ability.Skills -> ActorId -> m (Strategy RequestTimed)
@@ -1259,7 +1265,7 @@ moveOrRunAid actorSk source dir = do
          -- Only possible if items allowed inside unwalkable tiles:
          && EM.notMember tpos (lfloor lvl) ->  -- AlterBlockItem
       -- Not walkable, but alter skill suffices, so search or alter the tile.
-      -- We assume that unalterable unwalkable tiles are protected
-      -- by high skill req. We don't alter walkable tiles (e.g., close doors).
+      -- We assume that unalterable unwalkable tiles are protected by high
+      -- skill req. We don't alter walkable tiles (e.g., to close doors).
       return $ Just $ ReqAlter tpos
     _ -> return Nothing  -- can't displace, move nor alter
