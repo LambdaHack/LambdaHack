@@ -434,7 +434,10 @@ embedBenefit fleeVia aid pbags = do
       -- Only actors with high enough @SkAlter@ can trigger terrain.
       -- Blocking actors and items not checked, because they can be moved
       -- before the actor gets to the location, or after.
-      f (p, _) = underFeet p || alterSkill >= fromEnum (alterMinSkill p)
+      f (p, _) = underFeet p
+                 || alterSkill >= fromEnum (alterMinSkill p)
+                 || Tile.isSuspect coTileSpeedup (lvl `at` p)
+                    && alterSkill >= 2
       benFeats = map (\pbag -> (bens pbag, pbag)) $ filter f pbags
       considered (benefitAndSacrifice, (p, _bag)) =
         benefitAndSacrifice > 0
