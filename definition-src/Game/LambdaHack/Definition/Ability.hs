@@ -86,16 +86,27 @@ data Flag =
                   --   which doesn't guarantee display as a condition,
                   --   but governs removal by items that drop @CONDITION@
   | Unique        -- ^ at most one copy can ever be generated
-  | Periodic      -- ^ at most one of any copies without cooldown (timeout)
+  | MinorEffects  -- ^ override: the effects on this item are considered
+                  --   minor and so not causing identification on use,
+                  --   and so this item will identify on pick-up
+  | -- The flags below specify all conditions under which the item activates,
+    -- charges permitting, in addition to universal conditions, which are
+    -- hitting with the item and explicitly applying the item by an actor
+    -- (item destruction and combining only pertain to select effects).
+    Periodic      -- ^ at most one of any copies without cooldown (timeout)
                   --   activates each turn; the cooldown required after
                   --   activation is specified in @Timeout@ (or is zero);
                   --   the initial cooldown can also be specified
                   --   as @TimerDice@ in @CreateItem@ effect; uniquely, this
                   --   activation never destroys a copy, unless item is fragile;
-                  --   all this happens only for items in equipment or organs
-  | MinorEffects  -- ^ override: the effects on this item are considered
-                  --   minor and so not causing identification on use,
-                  --   and so this item will identify on pick-up
+                  --   all this happens only for items in equipment or organs;
+                  --   kinetic damage is not applied
+  | UnderRanged   -- ^ activates when non-projectile actor with this item
+                  --   as equipment or organ is under ranged attack;
+                  --   kinetic damage is not applied
+  | UnderMelee    -- ^ activates when non-projectile actor with this item
+                  --   as equipment or organ is under melee attack;
+                  --   kinetic damage is not applied
   deriving (Show, Eq, Enum, Bounded, Generic)
 
 newtype Flags = Flags {flags :: ES.EnumSet Flag}

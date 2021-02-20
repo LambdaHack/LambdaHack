@@ -73,7 +73,7 @@ data State = State
   , _sdiscoAspect    :: DiscoveryAspect
                                    -- ^ item aspect data; could be recomputed
   , _sactorMaxSkills :: ActorMaxSkills
-                                   -- ^ actor aspect records; is recomputed
+                                   -- ^ actor maximal skills; is recomputed
   }
   deriving (Show, Eq)
 

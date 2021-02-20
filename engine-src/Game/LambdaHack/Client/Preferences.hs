@@ -399,6 +399,8 @@ aspectToBenefit asp =
     IK.AddSkill Ability.SkOdor p -> - Dice.meanDice p / 4
       -- rarely, if big enough, determines if one is trackable
     IK.SetFlag{} -> 0
+      -- valuing @UnderRanged@ and @UnderMelee@ vs retaining the charge
+      -- and explicit applying is too hard, hence ignored
     IK.ELabel{} -> 0
     IK.ToThrow{} -> 0  -- counted elsewhere
     IK.PresentAs{} -> 0

@@ -393,8 +393,10 @@ kindAspectToSuffix aspect =
     SetFlag Blast -> ""
     SetFlag Condition -> ""
     SetFlag Unique -> ""  -- named specially by the content writer
-    SetFlag Periodic -> ""  -- printed specially
     SetFlag MinorEffects -> ""  -- cryptic override
+    SetFlag Periodic -> ""  -- printed specially
+    SetFlag UnderRanged -> wrapInChevrons "applied under ranged attack"
+    SetFlag UnderMelee -> wrapInChevrons "applied under melee attack"
     ELabel{} -> ""  -- too late
     ToThrow tmod -> wrapInChevrons $ tmodToSuff "flies" tmod
     PresentAs{} -> ""
@@ -416,8 +418,10 @@ aspectToSentence feat =
     SetFlag Blast -> Nothing
     SetFlag Condition -> Nothing
     SetFlag Unique -> Just "It is one of a kind."
-    SetFlag Periodic -> Nothing
     SetFlag MinorEffects -> Nothing
+    SetFlag Periodic -> Nothing
+    SetFlag UnderRanged -> Nothing
+    SetFlag UnderMelee -> Nothing
     ELabel{} -> Nothing
     ToThrow{} -> Nothing
     PresentAs{} -> Nothing

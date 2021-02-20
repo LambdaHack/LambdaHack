@@ -231,7 +231,7 @@ data Effect =
       -- ^ trigger the effect when item smashed (not when applied nor meleed)
   | OnCombine Effect
       -- ^ trigger the effect only when the actor explicitly desires
-      --   to combine items items and otherwise subtly tinker with an
+      --   to combine items or otherwise subtly tinker with an
       --   item or a tile, e.g., craft items from other items in a worshop;
       --   in particular, don't trigger the effects when entering a tile;
       --   trigger exclusively the effects when activating walkable terrain
