@@ -248,6 +248,8 @@ skillName SkNocto = "noctovision radius"
 skillName SkHearing = "hearing radius"
 skillName SkAggression = "aggression level"
 skillName SkOdor = "odor level"
+skillName SkDeflectRanged = "ranged deflection"
+skillName SkDeflectMelee = "melee deflection"
 
 skillDesc :: Skill -> Text
 skillDesc skill =
@@ -301,6 +303,10 @@ skillDesc skill =
       "represents the willingness of the actor to engage in combat, especially close quarters, and conversely, to break engagement when overpowered."
     SkOdor -> "The '" <> skName <> "' property" <+>
       "represents the ability to communicate (more specifically, communicate one's presence) through personal odor. Zero or less means the odor is not trackable."
+    SkDeflectRanged -> "The '" <> skName <> "' property" <+>
+      "tells whether complete invulnerability to ranged attacks, kinetic and of every other kind, is effective, and from how many sources."
+    SkDeflectMelee -> "The '" <> skName <> "' property" <+>
+      "tells whether complete invulnerability to melee attacks, kinetic and of every other kind, is effective, and from how many sources."
 
 skillToDecorator :: Skill -> Actor -> Int -> Text
 skillToDecorator skill b t =
@@ -340,6 +346,8 @@ skillToDecorator skill b t =
     SkHearing -> tshowRadius t
     SkAggression -> tshow t
     SkOdor -> tshow t
+    SkDeflectRanged -> tshow t
+    SkDeflectMelee -> tshow t
 
 skillSlots :: [Skill]
 skillSlots = [minBound .. maxBound]
@@ -383,6 +391,8 @@ kindAspectToSuffix aspect =
     AddSkill SkHearing t -> wrapInParens $ affixDice t <+> "hearing"
     AddSkill SkAggression t -> wrapInParens $ affixDice t <+> "aggression"
     AddSkill SkOdor t -> wrapInParens $ affixDice t <+> "odor"
+    AddSkill SkDeflectRanged t -> wrapInParens $ affixDice t <+> "ranged deflection source(s)"
+    AddSkill SkDeflectMelee t -> wrapInParens $ affixDice t <+> "melee deflection source(s)"
     SetFlag Fragile -> wrapInChevrons "fragile"
     SetFlag Lobable -> wrapInChevrons "can be lobbed"
     SetFlag Durable -> wrapInChevrons "durable"

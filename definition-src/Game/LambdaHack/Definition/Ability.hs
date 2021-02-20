@@ -51,6 +51,10 @@ data Skill =
   | SkHearing
   | SkAggression
   | SkOdor
+  | SkDeflectRanged  -- ^ intended to reflect how many items granting complete
+                     --   invulnerability are among organs and equipment;
+                     --   this is not strength of deflection nor duration, etc.
+  | SkDeflectMelee   -- ^ see above
   deriving (Show, Eq, Enum, Bounded, Generic)
 
 -- | Strength of particular skills. This is cumulative from actor

@@ -398,6 +398,10 @@ aspectToBenefit asp =
     IK.AddSkill Ability.SkAggression _ -> 0  -- dunno
     IK.AddSkill Ability.SkOdor p -> - Dice.meanDice p / 4
       -- rarely, if big enough, determines if one is trackable
+    IK.AddSkill Ability.SkDeflectRanged p ->
+      if Dice.meanDice p > 0 then 50 else 0
+    IK.AddSkill Ability.SkDeflectMelee p ->
+      if Dice.meanDice p > 0 then 50 else 0
     IK.SetFlag{} -> 0
       -- valuing @UnderRanged@ and @UnderMelee@ vs retaining the charge
       -- and explicit applying is too hard, hence ignored
