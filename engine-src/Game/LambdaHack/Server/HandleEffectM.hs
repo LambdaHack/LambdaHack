@@ -3,12 +3,12 @@
 -- but sometimes also caused by projectiles or periodically activated items.
 module Game.LambdaHack.Server.HandleEffectM
   ( UseResult(..), EffToUse(..), EffApplyFlags(..)
-  , applyItem, kineticEffectAndDestroy, effectAndDestroyAndAddKill
+  , applyItem, cutCalm, kineticEffectAndDestroy, effectAndDestroyAndAddKill
   , itemEffectEmbedded, highestImpression, dominateFidSfx
   , dropAllEquippedItems, pickDroppable, consumeItems, dropCStoreItem
 #ifdef EXPOSE_INTERNAL
     -- * Internal operations
-  , applyKineticDamage, refillHP, cutCalm, effectAndDestroy, imperishableKit
+  , applyKineticDamage, refillHP, effectAndDestroy, imperishableKit
   , itemEffectDisco, effectSem
   , effectBurn, effectExplode, effectRefillHP, effectRefillCalm
   , effectDominate, dominateFid, effectImpress, effectPutToSleep, effectYell

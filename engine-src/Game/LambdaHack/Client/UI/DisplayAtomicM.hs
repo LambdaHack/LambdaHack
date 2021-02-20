@@ -1477,7 +1477,7 @@ displayRespSfxAtomicUI sfx = case sfx of
     spart <- partActorLeader source
     tpart <- partActorLeader target
     msgAdd MsgActionMajor $
-      makeSentence [MU.SubjectVerbSg spart "shrink away from", tpart]
+      makeSentence [MU.SubjectVerbSg spart "deflect", tpart]
   SfxSteal source target iid ->
     strike True source target iid
   SfxRelease source target _ -> do

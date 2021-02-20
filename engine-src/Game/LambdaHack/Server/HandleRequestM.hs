@@ -508,33 +508,49 @@ reqMeleeChecked voluntary source target iid cstore = do
         unless (bproj tb) $
           autoApply effApplyFlagsTarget killer target tb
           $ if bproj sb then Ability.UnderRanged else Ability.UnderMelee
-        -- This might have changed the actor.
+        -- This might have changed the actors.
         sb2 <- getsState $ getActorBody source
-        -- Msgs inside @SfxStrike@ describe the source part of the strike.
-        execSfxAtomic $ SfxStrike source target iid
-        let c = CActor source cstore
-            mayDestroySource = not (bproj sb2) || bhp sb2 <= oneM
-              -- piercing projectiles may not have their weapon destroyed
-        -- Msgs inside @itemEffect@ describe the target part of the strike.
-        -- If any effects and aspects, this is also where they are identified.
-        -- Here also the kinetic damage is applied, before any effects are.
-        --
-        -- Note: that "hornet swarm detect items" via a scrolls is intentional,
-        -- even though unrealistic and funny. Otherwise actors could protect
-        -- themselves from some projectiles by lowering their apply stat.
-        -- Also, the animal faction won't have too much benefit from that info,
-        -- so the problem is not balance, but the goofy message.
-        let effApplyFlagsSource = EffApplyFlags
-              { effToUse            = EffBare
-              , effVoluntary        = voluntary
-              , effIgnoreCharging   = False
-              , effUseAllCopies     = False
-              , effKineticPerformed = False
-              , effPeriodic         = False
-              , effMayDestroy       = mayDestroySource
-              }
-        void $ kineticEffectAndDestroy effApplyFlagsSource killer source target
-                                       iid c
+        targetMaxSk <- getsState $ getActorMaxSkills target
+        if | bproj sb2
+             && Ability.getSk Ability.SkDeflectRanged targetMaxSk > 0 -> do
+               cutCalm target
+               execSfxAtomic $ SfxRecoil source target iid
+           | Ability.getSk Ability.SkDeflectMelee targetMaxSk > 0 -> do
+               cutCalm target
+               execSfxAtomic $ SfxRecoil source target iid
+           | otherwise -> do
+               -- Msgs inside @SfxStrike@ describe the source part
+               -- of the strike.
+               execSfxAtomic $ SfxStrike source target iid
+               let c = CActor source cstore
+                   mayDestroySource = not (bproj sb2) || bhp sb2 <= oneM
+                     -- piercing projectiles may not have their weapon destroyed
+               -- Msgs inside @itemEffect@ describe the target part
+               -- of the strike.
+               -- If any effects and aspects, this is also where they are
+               -- identified.
+               -- Here also the kinetic damage is applied,
+               -- before any effects are.
+               --
+               -- Note: that "hornet swarm detect items" via a scrolls
+               -- is intentional,
+               -- even though unrealistic and funny. Otherwise actors
+               -- could protect
+               -- themselves from some projectiles by lowering their apply stat.
+               -- Also, the animal faction won't have too much benefit
+               -- from that info,
+               -- so the problem is not balance, but the goofy message.
+               let effApplyFlagsSource = EffApplyFlags
+                     { effToUse            = EffBare
+                     , effVoluntary        = voluntary
+                     , effIgnoreCharging   = False
+                     , effUseAllCopies     = False
+                     , effKineticPerformed = False
+                     , effPeriodic         = False
+                     , effMayDestroy       = mayDestroySource
+                     }
+               void $ kineticEffectAndDestroy effApplyFlagsSource killer
+                                              source target iid c
       sb2 <- getsState $ getActorBody source
       case btrajectory sb2 of
         Just{} | not voluntary -> do
