@@ -494,11 +494,26 @@ reqMeleeChecked voluntary source target iid cstore = do
                 && IA.checkFlag Ability.Blast arTrunk) $
           execSfxAtomic $ SfxStrike source target iid
       else do
-        -- Normal hit, with effects. Msgs inside @SfxStrike@ describe
-        -- the source part of the strike.
+        -- Normal hit, with effects, but first auto-apply defences.
+        let mayDestroyTarget = not (bproj tb) || bhp tb <= oneM
+            effApplyFlagsTarget = EffApplyFlags
+              { effToUse            = EffBare
+              , effVoluntary        = voluntary
+              , effIgnoreCharging   = False
+              , effUseAllCopies     = False
+              , effKineticPerformed = False
+              , effPeriodic         = False
+              , effMayDestroy       = mayDestroyTarget
+              }
+        unless (bproj tb) $
+          autoApply effApplyFlagsTarget killer target tb
+          $ if bproj sb then Ability.UnderRanged else Ability.UnderMelee
+        -- This might have changed the actor.
+        sb2 <- getsState $ getActorBody source
+        -- Msgs inside @SfxStrike@ describe the source part of the strike.
         execSfxAtomic $ SfxStrike source target iid
         let c = CActor source cstore
-            mayDestroy = not (bproj sb) || bhp sb <= oneM
+            mayDestroySource = not (bproj sb2) || bhp sb2 <= oneM
               -- piercing projectiles may not have their weapon destroyed
         -- Msgs inside @itemEffect@ describe the target part of the strike.
         -- If any effects and aspects, this is also where they are identified.
@@ -509,16 +524,17 @@ reqMeleeChecked voluntary source target iid cstore = do
         -- themselves from some projectiles by lowering their apply stat.
         -- Also, the animal faction won't have too much benefit from that info,
         -- so the problem is not balance, but the goofy message.
-        let effApplyFlags = EffApplyFlags
+        let effApplyFlagsSource = EffApplyFlags
               { effToUse            = EffBare
               , effVoluntary        = voluntary
               , effIgnoreCharging   = False
               , effUseAllCopies     = False
               , effKineticPerformed = False
               , effPeriodic         = False
-              , effMayDestroy       = mayDestroy
+              , effMayDestroy       = mayDestroySource
               }
-        void $ kineticEffectAndDestroy effApplyFlags killer source target iid c
+        void $ kineticEffectAndDestroy effApplyFlagsSource killer source target
+                                       iid c
       sb2 <- getsState $ getActorBody source
       case btrajectory sb2 of
         Just{} | not voluntary -> do
@@ -550,6 +566,19 @@ reqMeleeChecked voluntary source target iid cstore = do
               || isFoe sfid sfact tfid  -- already at war
               || isFriend sfid sfact tfid) $  -- allies never at war
         execUpdAtomic $ UpdDiplFaction sfid tfid fromDipl War
+
+autoApply :: MonadServerAtomic m
+          => EffApplyFlags -> ActorId -> ActorId -> Actor -> Ability.Flag
+          -> m ()
+autoApply effApplyFlags killer target tb flag = do
+  let autoApplyIid c iid = do
+        itemFull <- getsState $ itemToFull iid
+        let arItem = aspectRecordFull itemFull
+        when (IA.checkFlag flag arItem) $
+          void $ effectAndDestroyAndAddKill effApplyFlags killer target target
+                                            iid c itemFull
+  mapM_ (autoApplyIid $ CActor target CEqp) $ EM.keys $ beqp tb
+  mapM_ (autoApplyIid $ CActor target COrgan) $ EM.keys $ borgan tb
 
 -- * ReqDisplace
 
