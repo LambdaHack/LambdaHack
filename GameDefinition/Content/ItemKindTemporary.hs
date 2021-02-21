@@ -3,7 +3,7 @@ module Content.ItemKindTemporary
   ( -- * Group name patterns
     pattern S_IMMOBILE, pattern S_PACIFIED, pattern S_IRREPLACEABLE, pattern S_RETAINING, pattern S_IMPATIENT, pattern S_DISPOSSESSED, pattern S_WITHHOLDING, pattern S_PARSIMONIOUS
   , pattern S_MORE_MOBILE, pattern S_MORE_COMBATIVE, pattern S_MORE_DISPLACING, pattern S_MORE_MODIFYING, pattern S_MORE_PATIENT, pattern S_MORE_TIDY, pattern S_MORE_PROJECTING, pattern S_MORE_PRACTICAL
-  , pattern S_STRENGTHENED, pattern S_WEAKENED, pattern S_PROTECTED_FROM_MELEE, pattern S_PROTECTED_FROM_RANGED, pattern S_DEFENSELESS, pattern S_RESOLUTE, pattern S_HASTED, pattern S_SLOWED, pattern S_FAR_SIGHTED, pattern S_BLIND, pattern S_KEEN_SMELLING, pattern S_FOUL_SMELLING, pattern S_ROSE_SMELLING, pattern S_SHINY_EYED, pattern S_DEAFENED, pattern S_DEAF, pattern S_DRUNK, pattern S_FRENZIED, pattern S_REGENERATING, pattern S_POISONED, pattern S_SLOW_RESISTANT, pattern S_POISON_RESISTANT
+  , pattern S_STRENGTHENED, pattern S_WEAKENED, pattern S_PROTECTED_FROM_MELEE, pattern S_PROTECTED_FROM_RANGED, pattern S_DEFENSELESS, pattern S_RESOLUTE, pattern S_HASTED, pattern S_SLOWED, pattern S_FAR_SIGHTED, pattern S_BLIND, pattern S_KEEN_SMELLING, pattern S_FOUL_SMELLING, pattern S_ROSE_SMELLING, pattern S_RANGED_DEFLECTING, pattern S_MELEE_DEFLECTING, pattern S_SHINY_EYED, pattern S_DEAFENED, pattern S_DEAF, pattern S_DRUNK, pattern S_FRENZIED, pattern S_REGENERATING, pattern S_POISONED, pattern S_SLOW_RESISTANT, pattern S_POISON_RESISTANT
   , temporariesGNSingleton, noStatGN, bonusStatGN
   , -- * Content
     temporaries
@@ -32,14 +32,14 @@ bonusStatGN =
 
 temporariesGNSingleton :: [GroupName ItemKind]
 temporariesGNSingleton =
-       [S_STRENGTHENED, S_WEAKENED, S_PROTECTED_FROM_MELEE, S_PROTECTED_FROM_RANGED, S_DEFENSELESS, S_RESOLUTE, S_HASTED, S_SLOWED, S_FAR_SIGHTED, S_BLIND, S_KEEN_SMELLING, S_FOUL_SMELLING, S_ROSE_SMELLING, S_SHINY_EYED, S_DEAFENED, S_DEAF, S_DRUNK, S_FRENZIED, S_REGENERATING, S_POISONED, S_SLOW_RESISTANT, S_POISON_RESISTANT]
+       [S_STRENGTHENED, S_WEAKENED, S_PROTECTED_FROM_MELEE, S_PROTECTED_FROM_RANGED, S_DEFENSELESS, S_RESOLUTE, S_HASTED, S_SLOWED, S_FAR_SIGHTED, S_BLIND, S_KEEN_SMELLING, S_FOUL_SMELLING, S_ROSE_SMELLING, S_RANGED_DEFLECTING, S_MELEE_DEFLECTING, S_SHINY_EYED, S_DEAFENED, S_DEAF, S_DRUNK, S_FRENZIED, S_REGENERATING, S_POISONED, S_SLOW_RESISTANT, S_POISON_RESISTANT]
     ++ noStatGN ++ bonusStatGN
 
 pattern S_IMMOBILE, S_PACIFIED, S_IRREPLACEABLE, S_RETAINING, S_IMPATIENT, S_DISPOSSESSED, S_WITHHOLDING, S_PARSIMONIOUS :: GroupName ItemKind
 
 pattern S_MORE_MOBILE, S_MORE_COMBATIVE, S_MORE_DISPLACING, S_MORE_MODIFYING, S_MORE_PATIENT, S_MORE_TIDY, S_MORE_PROJECTING, S_MORE_PRACTICAL :: GroupName ItemKind
 
-pattern S_STRENGTHENED, S_WEAKENED, S_PROTECTED_FROM_MELEE, S_PROTECTED_FROM_RANGED, S_DEFENSELESS, S_RESOLUTE, S_HASTED, S_SLOWED, S_FAR_SIGHTED, S_BLIND, S_KEEN_SMELLING, S_FOUL_SMELLING, S_ROSE_SMELLING, S_SHINY_EYED, S_DEAFENED, S_DEAF, S_DRUNK, S_FRENZIED, S_REGENERATING, S_POISONED, S_SLOW_RESISTANT, S_POISON_RESISTANT :: GroupName ItemKind
+pattern S_STRENGTHENED, S_WEAKENED, S_PROTECTED_FROM_MELEE, S_PROTECTED_FROM_RANGED, S_DEFENSELESS, S_RESOLUTE, S_HASTED, S_SLOWED, S_FAR_SIGHTED, S_BLIND, S_KEEN_SMELLING, S_FOUL_SMELLING, S_ROSE_SMELLING, S_RANGED_DEFLECTING, S_MELEE_DEFLECTING, S_SHINY_EYED, S_DEAFENED, S_DEAF, S_DRUNK, S_FRENZIED, S_REGENERATING, S_POISONED, S_SLOW_RESISTANT, S_POISON_RESISTANT :: GroupName ItemKind
 
 pattern S_STRENGTHENED = GroupName "strengthened"
 pattern S_WEAKENED = GroupName "weakened"
@@ -54,6 +54,8 @@ pattern S_BLIND = GroupName "blind"
 pattern S_KEEN_SMELLING = GroupName "keen-smelling"
 pattern S_FOUL_SMELLING = GroupName "foul-smelling"
 pattern S_ROSE_SMELLING = GroupName "rose-smelling"
+pattern S_RANGED_DEFLECTING = GroupName "ranged-deflecting"
+pattern S_MELEE_DEFLECTING = GroupName "melee-deflecting"
 pattern S_SHINY_EYED = GroupName "shiny-eyed"
 pattern S_DEAFENED = GroupName "deafened"
 pattern S_DEAF = GroupName "deaf"
@@ -84,9 +86,9 @@ pattern S_MORE_PRACTICAL = GroupName "more practical"
 
 temporaries :: [ItemKind]
 temporaries =
-  [tmpStrengthened, tmpWeakened, tmpProtectedMelee, tmpProtectedRanged, tmpDefenseless, tmpResolute, tmpFast20, tmpSlow10, tmpFarSighted, tmpBlind, tmpKeenSmelling, tmpFoulSmelling, tmpRoseSmelling, tmpNoctovision, tmpDeafened, tmpDeaf, tmpDrunk, tmpBonusSkAggresion, tmpRegenerating, tmpPoisoned, tmpSlow10Resistant, tmpPoisonResistant, tmpNoSkMove, tmpNoSkMelee, tmpNoSkDisplace, tmpNoSkAlter, tmpNoSkWait, tmpNoSkMoveItem, tmpNoSkProject, tmpNoSkApply, tmpBonusSkMove, tmpBonusSkMelee, tmpBonusSkDisplace, tmpBonusSkAlter, tmpBonusSkWait, tmpBonusSkMoveItem, tmpBonusSkProject, tmpBonusSkApply]
+  [tmpStrengthened, tmpWeakened, tmpProtectedMelee, tmpProtectedRanged, tmpDefenseless, tmpResolute, tmpFast20, tmpSlow10, tmpFarSighted, tmpBlind, tmpKeenSmelling, tmpFoulSmelling, tmpRoseSmelling, tmpRangedDeflecting, tmpMeleeDeflecting, tmpNoctovision, tmpDeafened, tmpDeaf, tmpDrunk, tmpBonusSkAggresion, tmpRegenerating, tmpPoisoned, tmpSlow10Resistant, tmpPoisonResistant, tmpNoSkMove, tmpNoSkMelee, tmpNoSkDisplace, tmpNoSkAlter, tmpNoSkWait, tmpNoSkMoveItem, tmpNoSkProject, tmpNoSkApply, tmpBonusSkMove, tmpBonusSkMelee, tmpBonusSkDisplace, tmpBonusSkAlter, tmpBonusSkWait, tmpBonusSkMoveItem, tmpBonusSkProject, tmpBonusSkApply]
 
-tmpStrengthened,    tmpWeakened, tmpProtectedMelee, tmpProtectedRanged, tmpDefenseless, tmpResolute, tmpFast20, tmpSlow10, tmpFarSighted, tmpBlind, tmpKeenSmelling, tmpFoulSmelling, tmpRoseSmelling, tmpNoctovision, tmpDeafened, tmpDeaf, tmpDrunk, tmpBonusSkAggresion, tmpRegenerating, tmpPoisoned, tmpSlow10Resistant, tmpPoisonResistant, tmpNoSkMove, tmpNoSkMelee, tmpNoSkDisplace, tmpNoSkAlter, tmpNoSkWait, tmpNoSkMoveItem, tmpNoSkProject, tmpNoSkApply, tmpBonusSkMove, tmpBonusSkMelee, tmpBonusSkDisplace, tmpBonusSkAlter, tmpBonusSkWait, tmpBonusSkMoveItem, tmpBonusSkProject, tmpBonusSkApply :: ItemKind
+tmpStrengthened,    tmpWeakened, tmpProtectedMelee, tmpProtectedRanged, tmpDefenseless, tmpResolute, tmpFast20, tmpSlow10, tmpFarSighted, tmpBlind, tmpKeenSmelling, tmpFoulSmelling, tmpRoseSmelling, tmpRangedDeflecting, tmpMeleeDeflecting, tmpNoctovision, tmpDeafened, tmpDeaf, tmpDrunk, tmpBonusSkAggresion, tmpRegenerating, tmpPoisoned, tmpSlow10Resistant, tmpPoisonResistant, tmpNoSkMove, tmpNoSkMelee, tmpNoSkDisplace, tmpNoSkAlter, tmpNoSkWait, tmpNoSkMoveItem, tmpNoSkProject, tmpNoSkApply, tmpBonusSkMove, tmpBonusSkMelee, tmpBonusSkDisplace, tmpBonusSkAlter, tmpBonusSkWait, tmpBonusSkMoveItem, tmpBonusSkProject, tmpBonusSkApply :: ItemKind
 
 -- The @name@ is be used in item description, so it should be an adjective
 -- describing the temporary set of aspects.
@@ -142,6 +144,10 @@ tmpBlind = tmpAspects S_BLIND [ AddSkill SkSight (-99)
 tmpKeenSmelling = tmpAspects S_KEEN_SMELLING [AddSkill SkSmell 2]
 tmpFoulSmelling = tmpAspects S_FOUL_SMELLING [AddSkill SkOdor 2]
 tmpRoseSmelling = tmpAspects S_ROSE_SMELLING [AddSkill SkOdor (-4)]
+tmpRangedDeflecting =
+  tmpAspects S_RANGED_DEFLECTING [AddSkill SkDeflectRanged 1]
+tmpMeleeDeflecting =
+  tmpAspects S_MELEE_DEFLECTING [AddSkill SkDeflectMelee 1]
 tmpNoctovision = tmpAspects S_SHINY_EYED [AddSkill SkNocto 2]
 tmpDeafened = tmpAspects S_DEAFENED [AddSkill SkHearing (-6)]
 tmpDeaf = tmpAspects S_DEAF [ AddSkill SkHearing (-99)
