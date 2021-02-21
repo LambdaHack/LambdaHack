@@ -46,7 +46,8 @@ homepage:      https://lambdahack.github.io
 bug-reports:   http://github.com/LambdaHack/LambdaHack/issues
 license:       BSD-3-Clause
 license-file:  COPYLEFT
-tested-with:   GHC==8.2.2, GHC==8.4.4, GHC==8.6.5, GHC==8.8.4, GHC==8.10.4
+tested-with:   GHC==8.2.2, GHC==8.4.4, GHC==8.6.5, GHC==8.8.4, GHC==8.10.4,
+               GHC==9.0.1
 extra-source-files: GameDefinition/config.ui.default,
                     GameDefinition/PLAYING.md,
                     GameDefinition/fonts/16x16xw.woff,
