@@ -398,8 +398,8 @@ aspectToBenefit asp =
     IK.AddSkill Ability.SkAggression _ -> 0  -- dunno
     IK.AddSkill Ability.SkOdor p -> - Dice.meanDice p / 4
       -- rarely, if big enough, determines if one is trackable
-    IK.AddSkill Ability.SkDeflectRanged p -> Dice.meanDice p * 50
-    IK.AddSkill Ability.SkDeflectMelee p -> Dice.meanDice p * 50
+    IK.AddSkill Ability.SkDeflectRanged p -> Dice.meanDice p * 100
+    IK.AddSkill Ability.SkDeflectMelee p -> Dice.meanDice p * 100
     IK.SetFlag{} -> 0
       -- valuing @UnderRanged@ and @UnderMelee@ vs retaining the charge
       -- and explicit applying is too hard, hence ignored
@@ -550,7 +550,7 @@ totalUsefulness cops fid factionD itemFull@ItemFull{itemKind, itemSuspect} =
       -- value those competently against any equally enormous bonuses
       -- the item might provide to compensate and so be even considered.
       cripplingDrawback = not (null aspectBenefits)
-                          && minimum aspectBenefits < -20
+                          && minimum aspectBenefits < -25
       eqpSum = eqpBens - if cripplingDrawback then 100 else 0
       -- If a weapon heals enemy at impact, given choice, it won't be used
       -- for melee, but can be equipped anyway, for beneficial aspects.
