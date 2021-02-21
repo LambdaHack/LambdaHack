@@ -448,10 +448,7 @@ script:
       ${CABAL} new-build $WITHCOMPILER --allow-newer --only-dependencies -fvty -fwith_expensive_assertions --ghc-options="-O2 -fno-ignore-asserts" ${TEST} ${BENCH} -j2 .;
       ${CABAL} new-build $WITHCOMPILER --allow-newer -fvty -fwith_expensive_assertions --ghc-options="-O2 -fno-ignore-asserts" ${TEST} ${BENCH} -j1 .;
     elif [ $GTKVTY = "brew-sdl2-osx" ]; then
-      brew install sdl2_ttf
-#      ${CABAL} new-install $WITHCOMPILER --allow-newer -j2 --constraint='cabal-plan +exe' cabal-plan;
-#      ${CABAL} new-build $WITHCOMPILER --allow-newer --only-dependencies ${TEST} ${BENCH} -j2 .;
-#      ${CABAL} new-build $WITHCOMPILER --allow-newer ${TEST} ${BENCH} -j1 .;
+      brew install sdl2_ttf;
     elif [ $GTKVTY = "asserts-osx" ]; then
       ${CABAL} new-install $WITHCOMPILER --allow-newer -j2 --constraint='cabal-plan +exe' cabal-plan;
       ${CABAL} new-build $WITHCOMPILER --allow-newer --only-dependencies -fvty -fwith_expensive_assertions ${TEST} ${BENCH} -j2 .;
