@@ -75,10 +75,6 @@ jobs:
       compiler: ghc-8.10.4
       addons: {"apt":{"sources":[{"sourceline":"deb http://ppa.launchpad.net/hvr/ghc/ubuntu xenial main","key_url":"https://keyserver.ubuntu.com/pks/lookup?op=get&search=0x063dab2bdc0b3f9fcebc378bff3aeacef6f88286"}],"packages":["ghc-8.10.4","cabal-install-3.4"]}}
       os: osx
-    - env: GTKVTY=brew-sdl2-osx
-      compiler: ghc-8.10.4
-      addons: {"apt":{"sources":[{"sourceline":"deb http://ppa.launchpad.net/hvr/ghc/ubuntu xenial main","key_url":"https://keyserver.ubuntu.com/pks/lookup?op=get&search=0x063dab2bdc0b3f9fcebc378bff3aeacef6f88286"}],"packages":["ghc-8.10.4","cabal-install-3.4"]}}
-      os: osx
     - env: GTKVTY=asserts-osx
       compiler: ghc-9.0.1
       addons: {"apt":{"sources":[{"sourceline":"deb http://ppa.launchpad.net/hvr/ghc/ubuntu xenial main","key_url":"https://keyserver.ubuntu.com/pks/lookup?op=get&search=0x063dab2bdc0b3f9fcebc378bff3aeacef6f88286"}],"packages":["ghc-9.0.1","cabal-install-3.4"]}}
@@ -385,7 +381,6 @@ install:
 #  - travis_wait 40 ${CABAL} v2-build $WITHCOMPILER --disable-tests --disable-benchmarks --dep -j2 all
 
 script:
-  - (cd .. && ${CABAL} new-install $WITHCOMPILER --allow-newer -j2 --constraint='cabal-plan +exe' cabal-plan)
   - DISTDIR=$(mktemp -d /tmp/dist-test.XXXX)
   # Packaging...
   - ${CABAL} v2-sdist all
@@ -409,46 +404,60 @@ script:
       ${CABAL} new-build $WITHCOMPILER --allow-newer --only-dependencies -fcurses -fwith_expensive_assertions --ghc-options="-dcore-lint -dstg-lint -dcmm-lint" ${TEST} ${BENCH} -j1 .;
       ${CABAL} new-build $WITHCOMPILER --allow-newer -fcurses -fwith_expensive_assertions --ghc-options="-dcore-lint -dstg-lint -dcmm-lint" ${TEST} ${BENCH} -j1 .;
     elif [ $GTKVTY = "gtk" ]; then
+      ${CABAL} new-install $WITHCOMPILER --allow-newer -j2 --constraint='cabal-plan +exe' cabal-plan;
       ${CABAL} new-build $WITHCOMPILER --allow-newer --only-dependencies -fgtk ${TEST} ${BENCH} -j2 .;
       ${CABAL} new-build $WITHCOMPILER --allow-newer -fgtk ${TEST} ${BENCH} -j1 .;
     elif [ $GTKVTY = "gtk-v2" ]; then
+      ${CABAL} new-install $WITHCOMPILER --allow-newer -j2 --constraint='cabal-plan +exe' cabal-plan;
       ${CABAL} new-build $WITHCOMPILER --allow-newer --only-dependencies -fgtk ${TEST} ${BENCH} -j2 .;
       ${CABAL} new-build $WITHCOMPILER --allow-newer -v2 -fgtk ${TEST} ${BENCH} -j1 .;
     elif [ $GTKVTY = "sdl" ]; then
+      ${CABAL} new-install $WITHCOMPILER --allow-newer -j2 --constraint='cabal-plan +exe' cabal-plan;
       ${CABAL} new-build $WITHCOMPILER --allow-newer --only-dependencies -fsdl ${TEST} ${BENCH} -j2 .;
       ${CABAL} new-build $WITHCOMPILER --allow-newer -fsdl ${TEST} ${BENCH} -j1 .;
     elif [ $GTKVTY = "sdl-v2" ]; then
+      ${CABAL} new-install $WITHCOMPILER --allow-newer -j2 --constraint='cabal-plan +exe' cabal-plan;
       ${CABAL} new-build $WITHCOMPILER --allow-newer --only-dependencies -fsdl ${TEST} ${BENCH} -j2 .;
       ${CABAL} new-build $WITHCOMPILER --allow-newer -v2 -fsdl ${TEST} ${BENCH} -j1 .;
     elif [ $GTKVTY = "vty" ]; then
+      ${CABAL} new-install $WITHCOMPILER --allow-newer -j2 --constraint='cabal-plan +exe' cabal-plan;
       ${CABAL} new-build $WITHCOMPILER --allow-newer --only-dependencies -fvty -fwith_expensive_assertions ${TEST} ${BENCH} -j2 .;
       ${CABAL} new-build $WITHCOMPILER --allow-newer -fvty ${TEST} ${BENCH} -j1 .;
     elif [ $GTKVTY = "curses" ]; then
+      ${CABAL} new-install $WITHCOMPILER --allow-newer -j2 --constraint='cabal-plan +exe' cabal-plan;
       ${CABAL} new-build $WITHCOMPILER --allow-newer --only-dependencies -fcurses -fwith_expensive_assertions -f-release ${TEST} ${BENCH} -j2 .;
       ${CABAL} new-build $WITHCOMPILER --allow-newer -fcurses -f-release ${TEST} ${BENCH} -j1 .;
     elif [ $GTKVTY = "noopt" ]; then
+      ${CABAL} new-install $WITHCOMPILER --allow-newer --ghc-options="-O0" -j2 --constraint='cabal-plan +exe' cabal-plan;
       ${CABAL} new-build $WITHCOMPILER --allow-newer --only-dependencies -fvty --ghc-options="-O0 -fno-ignore-asserts" ${TEST} ${BENCH} -j2 .;
       ${CABAL} new-build $WITHCOMPILER --allow-newer -fvty --ghc-options="-O0 -fno-ignore-asserts" ${TEST} ${BENCH} -j1 .;
     elif [ $GTKVTY = "opt2" ]; then
+      ${CABAL} new-install $WITHCOMPILER --allow-newer --ghc-options="-O2" -j2 --constraint='cabal-plan +exe' cabal-plan;
       ${CABAL} new-build $WITHCOMPILER --allow-newer --only-dependencies -fcurses --ghc-options="-O2 -fno-ignore-asserts" ${TEST} ${BENCH} -j2 .;
       ${CABAL} new-build $WITHCOMPILER --allow-newer -fcurses --ghc-options="-O2 -fno-ignore-asserts" ${TEST} ${BENCH} -j1 .;
     elif [ $GTKVTY = "asserts" ]; then
+      ${CABAL} new-install $WITHCOMPILER --allow-newer -j2 --constraint='cabal-plan +exe' cabal-plan;
       ${CABAL} new-build $WITHCOMPILER --allow-newer --only-dependencies -fvty -fwith_expensive_assertions ${TEST} ${BENCH} -j2 .;
       ${CABAL} new-build $WITHCOMPILER --allow-newer -fvty -fwith_expensive_assertions ${TEST} ${BENCH} -j1 .;
     elif [ $GTKVTY = "asserts_noopt" ]; then
+      ${CABAL} new-install $WITHCOMPILER --allow-newer --ghc-options="-O0" -j2 --constraint='cabal-plan +exe' cabal-plan;
       ${CABAL} new-build $WITHCOMPILER --allow-newer --only-dependencies -fcurses -fwith_expensive_assertions --ghc-options="-O0 -fno-ignore-asserts" ${TEST} ${BENCH} -j2 .;
       ${CABAL} new-build $WITHCOMPILER --allow-newer -fcurses -fwith_expensive_assertions --ghc-options="-O0 -fno-ignore-asserts" ${TEST} ${BENCH} -j1 .;
     elif [ $GTKVTY = "asserts_opt2" ]; then
+      ${CABAL} new-install $WITHCOMPILER --allow-newer --ghc-options="-O2" -j2 --constraint='cabal-plan +exe' cabal-plan;
       ${CABAL} new-build $WITHCOMPILER --allow-newer --only-dependencies -fvty -fwith_expensive_assertions --ghc-options="-O2 -fno-ignore-asserts" ${TEST} ${BENCH} -j2 .;
       ${CABAL} new-build $WITHCOMPILER --allow-newer -fvty -fwith_expensive_assertions --ghc-options="-O2 -fno-ignore-asserts" ${TEST} ${BENCH} -j1 .;
     elif [ $GTKVTY = "brew-sdl2-osx" ]; then
+      ${CABAL} new-install $WITHCOMPILER --allow-newer -j2 --constraint='cabal-plan +exe' cabal-plan;
       brew install sdl2_ttf
       ${CABAL} new-build $WITHCOMPILER --allow-newer --only-dependencies ${TEST} ${BENCH} -j2 .;
       ${CABAL} new-build $WITHCOMPILER --allow-newer ${TEST} ${BENCH} -j1 .;
     elif [ $GTKVTY = "asserts-osx" ]; then
+      ${CABAL} new-install $WITHCOMPILER --allow-newer -j2 --constraint='cabal-plan +exe' cabal-plan;
       ${CABAL} new-build $WITHCOMPILER --allow-newer --only-dependencies -fvty -fwith_expensive_assertions ${TEST} ${BENCH} -j2 .;
       ${CABAL} new-build $WITHCOMPILER --allow-newer -fvty -fwith_expensive_assertions ${TEST} ${BENCH} -j1 .;
     elif [ $GTKVTY = "asserts-osx_noopt" ]; then
+      ${CABAL} new-install $WITHCOMPILER --allow-newer --ghc-options="-O0" -j2 --constraint='cabal-plan +exe' cabal-plan;
       ${CABAL} new-build $WITHCOMPILER --allow-newer --only-dependencies -fcurses -fwith_expensive_assertions --ghc-options="-O0 -fno-ignore-asserts" ${TEST} ${BENCH} -j2 .;
       ${CABAL} new-build $WITHCOMPILER --allow-newer -fcurses -fwith_expensive_assertions --ghc-options="-O0 -fno-ignore-asserts" ${TEST} ${BENCH} -j1 .;
     else exit 7;
