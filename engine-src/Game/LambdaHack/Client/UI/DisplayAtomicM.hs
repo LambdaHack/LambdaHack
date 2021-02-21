@@ -1476,28 +1476,32 @@ displayRespSfxAtomicUI sfx = case sfx of
   SfxStrike source target iid ->
     strike False source target iid
   SfxRecoil source target iid -> do
-    CCUI{coscreen=ScreenContent{rwidth}} <- getsSession sccui
-    sb <- getsState $ getActorBody source
-    tb <- getsState $ getActorBody source
-    spart <- partActorLeader source
-    tpart <- partActorLeader target
-    side <- getsClient sside
-    factionD <- getsState sfactionD
-    localTime <- getsState $ getLocalTime (blid tb)
-    itemFullWeapon <- getsState $ itemToFull iid
-    let kitWeapon = quantSingle
-        (weaponName, _) = partItemShort rwidth side factionD localTime
-                                        itemFullWeapon kitWeapon
-        weaponNameOwn = partItemShortWownW rwidth side factionD spart localTime
-                                           itemFullWeapon kitWeapon
-        verb = if bproj sb then "deflect" else "fend off"
-        objects | iid == btrunk sb = ["the", spart]
-                | iid `EM.member` borgan sb =  ["the", weaponNameOwn]
-                | otherwise = ["the", weaponName, "of", spart]
-    msgAdd MsgActionMajor $ makeSentence $ MU.SubjectVerbSg tpart verb : objects
-    let ps = (bpos tb, bpos sb)
-        basicAnim = blockMiss ps
-    animate (blid tb) basicAnim
+    sourceSeen <- getsState $ EM.member source . sactorD
+    if not sourceSeen then do
+      tb <- getsState $ getActorBody target
+      animate (blid tb) $ blockMiss (bpos tb, bpos tb)
+    else do
+      CCUI{coscreen=ScreenContent{rwidth}} <- getsSession sccui
+      sb <- getsState $ getActorBody source
+      tb <- getsState $ getActorBody source
+      spart <- partActorLeader source
+      tpart <- partActorLeader target
+      side <- getsClient sside
+      factionD <- getsState sfactionD
+      localTime <- getsState $ getLocalTime (blid tb)
+      itemFullWeapon <- getsState $ itemToFull iid
+      let kitWeapon = quantSingle
+          (weaponName, _) = partItemShort rwidth side factionD
+                                          localTime itemFullWeapon kitWeapon
+          weaponNameOwn = partItemShortWownW rwidth side factionD spart
+                                             localTime itemFullWeapon kitWeapon
+          verb = if bproj sb then "deflect" else "fend off"
+          objects | iid == btrunk sb = ["the", spart]
+                  | iid `EM.member` borgan sb =  ["the", weaponNameOwn]
+                  | otherwise = ["the", weaponName, "of", spart]
+      msgAdd MsgActionMajor $
+        makeSentence $ MU.SubjectVerbSg tpart verb : objects
+      animate (blid tb) $ blockMiss (bpos tb, bpos sb)
   SfxSteal source target iid ->
     strike True source target iid
   SfxRelease source target _ -> do
@@ -2024,12 +2028,13 @@ ppSfxMsg sfxMsg = case sfxMsg of
 strike :: (MonadClient m, MonadClientUI m)
        => Bool -> ActorId -> ActorId -> ItemId -> m ()
 strike catch source target iid = assert (source /= target) $ do
-  CCUI{coscreen=ScreenContent{rwidth}} <- getsSession sccui
-  tb <- getsState $ getActorBody target
   sourceSeen <- getsState $ EM.member source . sactorD
-  if not sourceSeen then
+  if not sourceSeen then do
+    tb <- getsState $ getActorBody target
     animate (blid tb) $ blockMiss (bpos tb, bpos tb)
   else do
+    CCUI{coscreen=ScreenContent{rwidth}} <- getsSession sccui
+    tb <- getsState $ getActorBody target
     hurtMult <- getsState $ armorHurtBonus source target
     sb <- getsState $ getActorBody source
     sMaxSk <- getsState $ getActorMaxSkills source
