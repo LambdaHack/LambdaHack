@@ -137,17 +137,19 @@ displayRespUpdAtomicUI cmd = case cmd of
                                  Nothing -> ""
                                  Just kTotal ->
                                    "(total:" <+> tshow kTotal <> "-fold)"
+                     good = benInEqp (discoBenefit EM.! iid)
                      msgClass = case lookup IK.S_ASLEEP $ IK.ifreq itemKind of
                        Just n | n > 0 -> MsgStatusSleep
                        _ -> if | bfid b /= side -> MsgStatusOthers
-                               | benInEqp (discoBenefit EM.! iid) ->
-                                   MsgStatusGoodUs
+                               | good -> MsgStatusGoodUs
                                | otherwise -> MsgStatusBadUs
                  -- This describes all such items already among organs,
                  -- which is useful, because it shows "charging".
                  itemAidDistinctMU msgClass aid verbShow verbSave iid
-                 when (bfid b == side) $  -- others get conditions too often
-                   msgAdd MsgTutorialHint "Temporary conditions pass after a few turns. They are listed in the '@' organ menu and the effects of most of them are seen in the '#' skill menu."
+                 when (bfid b == side && not good) $
+                   -- Others get conditions too often and good ones are not
+                   -- dire enough and also too common.
+                   msgAdd MsgTutorialHint "Temporary conditions, especially the bad ones, pass quickly, usually after just a few turns. While active, they are listed in the '@' organ menu and the effects of most of them are seen in the '#' skill menu."
                | otherwise -> do
                  wown <- ppContainerWownW partActorLeader True c
                  itemVerbMU MsgItemCreation iid kit
