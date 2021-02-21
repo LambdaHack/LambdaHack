@@ -1473,11 +1473,29 @@ displayRespSfxAtomicUI :: (MonadClient m, MonadClientUI m) => SfxAtomic -> m ()
 displayRespSfxAtomicUI sfx = case sfx of
   SfxStrike source target iid ->
     strike False source target iid
-  SfxRecoil source target _ -> do
+  SfxRecoil source target iid -> do
+    CCUI{coscreen=ScreenContent{rwidth}} <- getsSession sccui
+    sb <- getsState $ getActorBody source
+    tb <- getsState $ getActorBody source
     spart <- partActorLeader source
     tpart <- partActorLeader target
-    msgAdd MsgActionMajor $
-      makeSentence [MU.SubjectVerbSg spart "deflect", tpart]
+    side <- getsClient sside
+    factionD <- getsState sfactionD
+    localTime <- getsState $ getLocalTime (blid tb)
+    itemFullWeapon <- getsState $ itemToFull iid
+    let kitWeapon = quantSingle
+        (weaponName, _) = partItemShort rwidth side factionD localTime
+                                        itemFullWeapon kitWeapon
+        weaponNameOwn = partItemShortWownW rwidth side factionD spart localTime
+                                           itemFullWeapon kitWeapon
+        verb = if bproj sb then "deflect" else "fend off"
+        objects | iid == btrunk sb = ["the", spart]
+                | iid `EM.member` borgan sb =  ["the", weaponNameOwn]
+                | otherwise = ["the", weaponName, "of", spart]
+    msgAdd MsgActionMajor $ makeSentence $ MU.SubjectVerbSg tpart verb : objects
+    let ps = (bpos tb, bpos sb)
+        basicAnim = blockMiss ps
+    animate (blid tb) basicAnim
   SfxSteal source target iid ->
     strike True source target iid
   SfxRelease source target _ -> do
@@ -2058,7 +2076,7 @@ strike catch source target iid = assert (source /= target) $ do
           if iid `EM.member` borgan sb
           then partItemShortWownW rwidth side factionD spronoun localTime
           else partItemShortAW rwidth side factionD localTime
-        weaponNameWith = if iid == btrunk tb
+        weaponNameWith = if iid == btrunk sb
                          then []
                          else ["with", partItemChoice itemFullWeapon kitWeapon]
         sleepy = if bwatch tb `elem` [WSleep, WWake]
@@ -2122,6 +2140,7 @@ strike catch source target iid = assert (source /= target) $ do
                               | otherwise -> "bemusedly"
           | otherwise = "almost completely"
               -- a fraction gets through, but if fast missile, can be deadly
+        avertVerb = if actorWaits tb then "avert it" else "ward it off"
         blockPhrase =
           let (subjectBlock, verbBlock) =
                 if | not $ bproj sb ->
@@ -2131,13 +2150,8 @@ strike catch source target iid = assert (source /= target) $ do
                    | tpronoun == "it"
                      || projectileHitsWeakly && tpronoun /= "you" ->
                      -- Avoid ambiguity.
-                     (partActor tbUI, if actorWaits tb
-                                      then "deflect it"
-                                      else "fend it off")
-                   | otherwise ->
-                     (tpronoun, if actorWaits tb
-                                then "avert it"
-                                else "ward it off")
+                     (partActor tbUI, avertVerb)
+                   | otherwise -> (tpronoun, avertVerb)
           in MU.SubjectVerbSg subjectBlock verbBlock
         surprisinglyGoodDefense = deadliness >= 20 && hurtMult <= 70
         surprisinglyBadDefense = deadliness < 20 && hurtMult > 70
