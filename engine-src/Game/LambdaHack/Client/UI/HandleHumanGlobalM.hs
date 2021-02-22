@@ -19,7 +19,8 @@ module Game.LambdaHack.Client.UI.HandleHumanGlobalM
   , helpHuman, hintHuman, dashboardHuman, itemMenuHuman, chooseItemMenuHuman
   , mainMenuHuman, mainMenuAutoOnHuman, mainMenuAutoOffHuman
   , settingsMenuHuman, challengeMenuHuman
-  , gameTutorialToggle, gameDifficultyIncr, gameWolfToggle, gameFishToggle
+  , gameTutorialToggle, gameDifficultyIncr
+  , gameFishToggle, gameGoodsToggle, gameWolfToggle, gameKeeperToggle
   , gameScenarioIncr
     -- * Global commands that never take time
   , gameRestartHuman, gameQuitHuman, gameDropHuman, gameExitHuman, gameSaveHuman
@@ -1685,9 +1686,11 @@ mainMenuHuman cmdSemInCxtOfKM = do
   gameMode <- getGameMode
   curChal <- getsClient scurChal
   let offOn b = if b then "on" else "off"
-      tcurDiff = "  with difficulty:" <+> tshow (cdiff curChal)
-      tcurWolf = "       lone wolf:" <+> offOn (cwolf curChal)
-      tcurFish = "       cold fish:" <+> offOn (cfish curChal)
+      tcurDiff   = "   with difficulty:" <+> tshow (cdiff curChal)
+      tcurFish   = "       cold fish:" <+> offOn (cfish curChal)
+      tcurGoods  = "     ready goods:" <+> offOn (cgoods curChal)
+      tcurWolf   = "       lone wolf:" <+> offOn (cwolf curChal)
+      tcurKeeper = "   finder keeper:" <+> offOn (ckeeper curChal)
       -- Key-description-command tuples.
       kds = [(km, (desc, cmd)) | (km, ([CmdMainMenu], desc, cmd)) <- bcmdList]
       gameName = MK.mname gameMode
@@ -1695,8 +1698,10 @@ mainMenuHuman cmdSemInCxtOfKM = do
                    [ "Now playing:" <+> gameName
                    , ""
                    , tcurDiff
-                   , tcurWolf
                    , tcurFish
+                   , tcurGoods
+                   , tcurWolf
+                   , tcurKeeper
                    , "" ]
       glueLines (l1 : l2 : rest) =
         if | null l1 -> l1 : glueLines (l2 : rest)
@@ -1797,16 +1802,22 @@ challengeMenuHuman cmdSemInCxtOfKM = do
       tnextTutorial = "tutorial hints (in pink):"
                       <+> starTut (offOn displayTutorialHints)
       tnextDiff = "difficulty (lower easier):" <+> tshow (cdiff nxtChal)
-      tnextWolf = "lone wolf (very hard):"
-                  <+> offOn (cwolf nxtChal)
-      tnextFish = "cold fish (hard):"
-                  <+> offOn (cfish nxtChal)
+      tnextFish   = "cold fish (rather hard):"
+                    <+> offOn (cfish nxtChal)
+      tnextGoods  = "ready goods (hard):"
+                    <+> offOn (cgoods nxtChal)
+      tnextWolf   = "lone wolf (very hard):"
+                    <+> offOn (cwolf nxtChal)
+      tnextKeeper = "finder keeper (hard):"
+                    <+> offOn (ckeeper nxtChal)
       -- Key-description-command tuples.
       kds = [ (K.mkKM "s", (tnextScenario, GameScenarioIncr))
             , (K.mkKM "t", (tnextTutorial, GameTutorialToggle))
             , (K.mkKM "d", (tnextDiff, GameDifficultyIncr))
-            , (K.mkKM "w", (tnextWolf, GameWolfToggle))
             , (K.mkKM "f", (tnextFish, GameFishToggle))
+            , (K.mkKM "r", (tnextGoods, GameGoodsToggle))
+            , (K.mkKM "w", (tnextWolf, GameWolfToggle))
+            , (K.mkKM "k", (tnextKeeper, GameKeeperToggle))
             , (K.mkKM "g", ("start new game", GameRestart))
             , (K.mkKM "Escape", ("back to main menu", MainMenu)) ]
       gameInfo = map T.unpack [ "Setup and start new game:"
@@ -1858,6 +1869,20 @@ gameDifficultyIncr = do
         | otherwise = nxtDiff + delta
   modifyClient $ \cli -> cli {snxtChal = (snxtChal cli) {cdiff = d} }
 
+-- * GameFishToggle
+
+gameFishToggle :: MonadClient m => m ()
+gameFishToggle =
+  modifyClient $ \cli ->
+    cli {snxtChal = (snxtChal cli) {cfish = not (cfish (snxtChal cli))} }
+
+-- * GameGoodsToggle
+
+gameGoodsToggle :: MonadClient m => m ()
+gameGoodsToggle =
+  modifyClient $ \cli ->
+    cli {snxtChal = (snxtChal cli) {cgoods = not (cgoods (snxtChal cli))} }
+
 -- * GameWolfToggle
 
 gameWolfToggle :: MonadClient m => m ()
@@ -1865,12 +1890,12 @@ gameWolfToggle =
   modifyClient $ \cli ->
     cli {snxtChal = (snxtChal cli) {cwolf = not (cwolf (snxtChal cli))} }
 
--- * GameFishToggle
+-- * GameKeeperToggle
 
-gameFishToggle :: MonadClient m => m ()
-gameFishToggle =
+gameKeeperToggle :: MonadClient m => m ()
+gameKeeperToggle =
   modifyClient $ \cli ->
-    cli {snxtChal = (snxtChal cli) {cfish = not (cfish (snxtChal cli))} }
+    cli {snxtChal = (snxtChal cli) {ckeeper = not (ckeeper (snxtChal cli))} }
 
 -- * GameScenarioIncr
 

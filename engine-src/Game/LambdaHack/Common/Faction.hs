@@ -81,10 +81,14 @@ data Status = Status
 
 instance Binary Status
 
+-- | The difficulty level influencess HP of either the human player or the AI.
+-- The challenges restrict some abilities of the human player only.
 data Challenge = Challenge
-  { cdiff :: Int   -- ^ game difficulty level (HP bonus or malus)
-  , cwolf :: Bool  -- ^ lone wolf challenge (only one starting character)
-  , cfish :: Bool  -- ^ cold fish challenge (no healing from enemies)
+  { cdiff   :: Int   -- ^ game difficulty level (HP bonus or malus)
+  , cfish   :: Bool  -- ^ cold fish challenge (no healing from enemies)
+  , cgoods  :: Bool  -- ^ ready goods challenge (crafting disabled)
+  , cwolf   :: Bool  -- ^ lone wolf challenge (only one starting character)
+  , ckeeper :: Bool  -- ^ finder keeper challenge (ranged attacks disabled)
   }
   deriving (Show, Eq, Ord, Generic)
 
@@ -95,8 +99,10 @@ tshowChallenge Challenge{..} =
   "("
   <> T.intercalate ", "
     (["difficulty" <+> tshow cdiff | cdiff /= difficultyDefault]
+     ++ ["cold fish" | cfish]
+     ++ ["ready goods" | cgoods]
      ++ ["lone wolf" | cwolf]
-     ++ ["cold fish" | cfish])
+     ++ ["finder keeper" | ckeeper])
   <> ")"
 
 gleader :: Faction -> Maybe ActorId
@@ -180,8 +186,10 @@ difficultyInverse n = difficultyBound + 1 - n
 
 defaultChallenge :: Challenge
 defaultChallenge = Challenge { cdiff = difficultyDefault
+                             , cfish = False
+                             , cgoods = False
                              , cwolf = False
-                             , cfish = False }
+                             , ckeeper = False }
 
 possibleActorFactions :: ItemKind -> FactionDict -> [(FactionId, Faction)]
 possibleActorFactions itemKind factionD =

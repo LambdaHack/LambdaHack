@@ -118,8 +118,10 @@ cmdSemantics cmd = case cmd of
                         >> challengeMenuHuman cmdSemInCxtOfKM
   GameDifficultyIncr -> gameDifficultyIncr
                         >> challengeMenuHuman cmdSemInCxtOfKM
-  GameWolfToggle -> gameWolfToggle >> challengeMenuHuman cmdSemInCxtOfKM
   GameFishToggle -> gameFishToggle >> challengeMenuHuman cmdSemInCxtOfKM
+  GameGoodsToggle -> gameGoodsToggle >> challengeMenuHuman cmdSemInCxtOfKM
+  GameWolfToggle -> gameWolfToggle >> challengeMenuHuman cmdSemInCxtOfKM
+  GameKeeperToggle -> gameKeeperToggle >> challengeMenuHuman cmdSemInCxtOfKM
   GameScenarioIncr -> gameScenarioIncr >> challengeMenuHuman cmdSemInCxtOfKM
 
   GameRestart -> weaveJust <$> gameRestartHuman

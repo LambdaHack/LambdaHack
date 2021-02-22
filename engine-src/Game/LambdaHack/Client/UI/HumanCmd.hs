@@ -135,8 +135,10 @@ data HumanCmd =
     -- Below this line, commands do not take time.
   | GameTutorialToggle
   | GameDifficultyIncr
-  | GameWolfToggle
   | GameFishToggle
+  | GameGoodsToggle
+  | GameWolfToggle
+  | GameKeeperToggle
   | GameScenarioIncr
   | GameRestart
   | GameQuit
