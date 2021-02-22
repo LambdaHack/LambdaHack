@@ -3,5 +3,10 @@ packages: ./
 package sdl2
     flags: +no-linear
 
+source-repository-package
+  type: git
+  location: https://github.com/haskell-game/sdl2-ttf.git
+  tag: 90a9da6e9c4923cc20b567b8d478abc1f2b3a362
+
 package splitmix
     flags: +optimised-mixer
