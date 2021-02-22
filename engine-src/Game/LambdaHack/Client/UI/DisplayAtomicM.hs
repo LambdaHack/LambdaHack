@@ -1949,6 +1949,9 @@ ppSfxMsg sfxMsg = case sfxMsg of
   SfxColdFish -> returnJustLeft
     ( MsgMiscellanous  -- repeatable
     , "Healing attempt from another faction is thwarted by your cold fish attitude." )
+  SfxReadyGoods -> returnJustLeft
+    ( MsgMiscellanous  -- repeatable
+    , "Crafting is alien to you, accustomed to buying ready goods all your life." )
   SfxTimerExtended aid iid cstore delta -> do
     CCUI{coscreen=ScreenContent{rwidth}} <- getsSession sccui
     aidSeen <- getsState $ EM.member aid . sactorD

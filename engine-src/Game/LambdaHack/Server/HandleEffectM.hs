@@ -19,7 +19,7 @@ module Game.LambdaHack.Server.HandleEffectM
   , effectRecharge, effectPolyItem, effectRerollItem, effectDupItem
   , effectIdentify, identifyIid, effectDetect, effectDetectX, effectSendFlying
   , sendFlyingVector, effectApplyPerfume, effectOneOf
-  , effectAndEffect, effectOrEffect, effectSeqEffect
+  , effectAndEffect, effectAndEffectSem, effectOrEffect, effectSeqEffect
   , effectVerbNoLonger, effectVerbMsg, effectVerbMsgFail
 #endif
   ) where
@@ -455,7 +455,7 @@ effectSem effApplyFlags0@EffApplyFlags{..}
     IK.OnSmash _ -> return UseDud  -- ignored under normal circumstances
     IK.OnCombine _ -> return UseDud  -- ignored under normal circumstances
     IK.OnUser eff -> effectSem effApplyFlags0 source source iid c eff
-    IK.AndEffect eff1 eff2 -> effectAndEffect recursiveCall eff1 eff2
+    IK.AndEffect eff1 eff2 -> effectAndEffect recursiveCall source eff1 eff2
     IK.OrEffect eff1 eff2 -> effectOrEffect recursiveCall eff1 eff2
     IK.SeqEffect effs -> effectSeqEffect recursiveCall effs
     IK.VerbNoLonger _ -> effectVerbNoLonger effUseAllCopies execSfxSource source
@@ -2115,9 +2115,28 @@ effectOneOf recursiveCall l = do
 -- ** AndEffect
 
 effectAndEffect :: forall m. MonadServerAtomic m
-                => (IK.Effect -> m UseResult) -> IK.Effect -> IK.Effect
+                => (IK.Effect -> m UseResult) -> ActorId
+                -> IK.Effect -> IK.Effect
                 -> m UseResult
-effectAndEffect recursiveCall eff1 eff2 = do
+effectAndEffect recursiveCall source eff1@IK.ConsumeItems{} eff2 = do
+  -- So far, this is the only idiom used for crafting. If others appear,
+  -- either formalize it by a specialized crafting effect constructor
+  -- or add here and to effect printing code.
+  sb <- getsState $ getActorBody source
+  curChalSer <- getsServer $ scurChalSer . soptions
+  fact <- getsState $ (EM.! bfid sb) . sfactionD
+  if cgoods curChalSer && fhasUI (gplayer fact) then do
+    execSfxAtomic $ SfxMsgFid (bfid sb) SfxReadyGoods
+    return UseId
+  else effectAndEffectSem recursiveCall eff1 eff2
+
+effectAndEffect recursiveCall _ eff1 eff2 =
+  effectAndEffectSem recursiveCall eff1 eff2
+
+effectAndEffectSem :: forall m. MonadServerAtomic m
+                   => (IK.Effect -> m UseResult) -> IK.Effect -> IK.Effect
+                   -> m UseResult
+effectAndEffectSem recursiveCall eff1 eff2 = do
   ur1 <- recursiveCall eff1
   if ur1 == UseUp
   then recursiveCall eff2
