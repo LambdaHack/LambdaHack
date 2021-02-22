@@ -71,6 +71,7 @@ data ReqFailure =
   | ProjectBlockActor
   | ProjectLobable
   | ProjectOutOfReach
+  | ProjectFinderKeeper
   | NoChangeDunLeader
   deriving (Show, Eq, Generic)
 
@@ -124,6 +125,7 @@ impossibleReqFailure reqFailure = case reqFailure of
   ProjectBlockActor -> True  -- adjacent actor always visible
   ProjectLobable -> False  -- unidentified skill items
   ProjectOutOfReach -> True
+  ProjectFinderKeeper -> False
   NoChangeDunLeader -> True
 
 showReqFailure :: ReqFailure -> Text
@@ -174,6 +176,7 @@ showReqFailure reqFailure = case reqFailure of
   ProjectBlockActor -> "aiming blocked by an actor"
   ProjectLobable -> "flinging a lobable item that stops at target position requires fling stat 3"
   ProjectOutOfReach -> "cannot aim an item out of reach"
+  ProjectFinderKeeper -> "flinging any projectile you've found is out of the question; you prefer to keep them pristine and safe"
   NoChangeDunLeader -> "no manual level change for your team"
 
 -- The item should not be applied nor thrown because it's too delicate

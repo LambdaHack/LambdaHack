@@ -1102,12 +1102,16 @@ reqProject :: MonadServerAtomic m
 reqProject source tpxy eps iid cstore = do
   let req = ReqProject tpxy eps iid cstore
   b <- getsState $ getActorBody source
+  curChalSer <- getsServer $ scurChalSer . soptions
+  fact <- getsState $ (EM.! bfid b) . sfactionD
   actorMaxSk <- getsState $ getActorMaxSkills source
   let calmE = calmEnough b actorMaxSk
-  if cstore == CEqp && not calmE then execFailure source req ItemNotCalm
-  else do
-    mfail <- projectFail source source tpxy eps False iid cstore False
-    maybe (return ()) (execFailure source req) mfail
+  if | ckeeper curChalSer && fhasUI (gplayer fact) ->
+        execFailure source req ProjectFinderKeeper
+     | cstore == CEqp && not calmE -> execFailure source req ItemNotCalm
+     | otherwise -> do
+         mfail <- projectFail source source tpxy eps False iid cstore False
+         maybe (return ()) (execFailure source req) mfail
 
 -- * ReqApply
 

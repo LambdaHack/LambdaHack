@@ -926,25 +926,28 @@ moveItems stores (fromCStore, l) destCStore = do
 
 projectHuman :: (MonadClient m, MonadClientUI m) => m (FailOrCmd RequestTimed)
 projectHuman = do
+  curChal <- getsClient $ scurChal
   actorCurAndMaxSk <- leaderSkillsClientUI
-  if Ability.getSk Ability.SkProject
-                   actorCurAndMaxSk <= 0 then  -- detailed check later
-    failSer ProjectUnskilled
-  else do
-    itemSel <- getsSession sitemSel
-    case itemSel of
-      Just (_, COrgan, _) -> failWith "can't fling an organ"
-      Just (iid, fromCStore, _) -> do
-        leader <- getLeaderUI
-        b <- getsState $ getActorBody leader
-        bag <- getsState $ getBodyStoreBag b fromCStore
-        case iid `EM.lookup` bag of
-          Nothing -> failWith "no item to fling"
-          Just _kit -> do
-            itemFull <- getsState $ itemToFull iid
-            let i = (fromCStore, (iid, itemFull))
-            projectItem i
-      Nothing -> failWith "no item to fling"
+  if | ckeeper curChal ->
+       failSer ProjectFinderKeeper
+     | Ability.getSk Ability.SkProject actorCurAndMaxSk <= 0 ->
+       -- Detailed are check later.
+       failSer ProjectUnskilled
+     | otherwise -> do
+       itemSel <- getsSession sitemSel
+       case itemSel of
+         Just (_, COrgan, _) -> failWith "can't fling an organ"
+         Just (iid, fromCStore, _) -> do
+           leader <- getLeaderUI
+           b <- getsState $ getActorBody leader
+           bag <- getsState $ getBodyStoreBag b fromCStore
+           case iid `EM.lookup` bag of
+             Nothing -> failWith "no item to fling"
+             Just _kit -> do
+               itemFull <- getsState $ itemToFull iid
+               let i = (fromCStore, (iid, itemFull))
+               projectItem i
+         Nothing -> failWith "no item to fling"
 
 projectItem :: (MonadClient m, MonadClientUI m)
             => (CStore, (ItemId, ItemFull))
