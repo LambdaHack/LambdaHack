@@ -391,8 +391,14 @@ kindAspectToSuffix aspect =
     AddSkill SkHearing t -> wrapInParens $ affixDice t <+> "hearing"
     AddSkill SkAggression t -> wrapInParens $ affixDice t <+> "aggression"
     AddSkill SkOdor t -> wrapInParens $ affixDice t <+> "odor"
-    AddSkill SkDeflectRanged t -> wrapInParens $ affixDice t <+> "ranged deflection source(s)"
-    AddSkill SkDeflectMelee t -> wrapInParens $ affixDice t <+> "melee deflection source(s)"
+    AddSkill SkDeflectRanged d ->
+      if | Dice.infDice d >= 1 -> wrapInChevrons "deflecting ranged attacks"
+         | Dice.supDice d <= -1 -> wrapInChevrons "vulnerable to ranged attacks"
+         | otherwise -> ""  -- bad content?
+    AddSkill SkDeflectMelee d ->
+      if | Dice.infDice d >= 1 -> wrapInChevrons "deflecting melee attacks"
+         | Dice.supDice d <= -1 -> wrapInChevrons "vulnerable to melee attacks"
+         | otherwise -> ""  -- bad content?
     SetFlag Fragile -> wrapInChevrons "fragile"
     SetFlag Lobable -> wrapInChevrons "can be lobbed"
     SetFlag Durable -> wrapInChevrons "durable"

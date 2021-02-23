@@ -1340,7 +1340,7 @@ gloveFencing = ItemKind
                , EqpSlot EqpSlotHurtMelee
                , toVelocity 50 ]  -- flaps and flutters
   , ieffects = []
-  , idesc    = "A fencing glove from rough leather ensuring a good grip. Also quite effective in deflecting or even catching slow projectiles."
+  , idesc    = "A fencing glove from rough leather ensuring a good grip. Also quite effective in averting or even catching slow projectiles."
   , ikit     = []
   }
 gloveGauntlet = gloveFencing
