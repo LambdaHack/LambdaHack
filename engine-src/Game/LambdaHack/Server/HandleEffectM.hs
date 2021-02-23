@@ -2,7 +2,7 @@
 -- | Handle effects. They are most often caused by requests sent by clients
 -- but sometimes also caused by projectiles or periodically activated items.
 module Game.LambdaHack.Server.HandleEffectM
-  ( UseResult(..), EffToUse(..), EffApplyFlags(..)
+  ( UseResult(..), EffToUse(..), EffActivation(..), EffApplyFlags(..)
   , applyItem, cutCalm, kineticEffectAndDestroy, effectAndDestroyAndAddKill
   , itemEffectEmbedded, highestImpression, dominateFidSfx
   , dropAllEquippedItems, pickDroppable, consumeItems, dropCStoreItem
@@ -79,13 +79,16 @@ data UseResult = UseDud | UseId | UseUp
 data EffToUse = EffBare | EffBareAndOnCombine | EffOnCombine | EffOnSmash
   deriving Eq
 
+data EffActivation = EffNormal | EffPeriodic | EffUnderAttack
+  deriving Eq
+
 data EffApplyFlags = EffApplyFlags
   { effToUse            :: EffToUse
   , effVoluntary        :: Bool
   , effIgnoreCharging   :: Bool
   , effUseAllCopies     :: Bool
   , effKineticPerformed :: Bool
-  , effPeriodic         :: Bool
+  , effActivation       :: EffActivation
   , effMayDestroy       :: Bool
   }
 
@@ -102,7 +105,7 @@ applyItem aid iid cstore = do
         , effIgnoreCharging   = False
         , effUseAllCopies     = False
         , effKineticPerformed = False
-        , effPeriodic         = False
+        , effActivation       = EffNormal
         , effMayDestroy       = True
         }
   void $ kineticEffectAndDestroy effApplyFlags aid aid aid iid c
@@ -271,7 +274,8 @@ effectAndDestroy effApplyFlags0@EffApplyFlags{..} source target iid container
     let timeoutTurns = timeDeltaScale (Delta timeTurn) timeout
         newItemTimer = createItemTimer localTime timeoutTurns
         it2 = if timeout /= 0 && recharged
-              then if effPeriodic && IA.checkFlag Ability.Fragile arItem
+              then if effActivation == EffPeriodic
+                      && IA.checkFlag Ability.Fragile arItem
                    then replicate (itemK - length it1) newItemTimer ++ it1
                            -- copies are spares only; one fires, all discharge
                    else take (itemK - length it1) [newItemTimer] ++ it1
@@ -290,17 +294,20 @@ effectAndDestroy effApplyFlags0@EffApplyFlags{..} source target iid container
     -- This is OK, because we don't remove the item type from various
     -- item dictionaries, just an individual copy from the container,
     -- so, e.g., the item can be identified after it's removed.
-    let imperishable = not effMayDestroy || imperishableKit effPeriodic itemFull
+    let imperishable = not effMayDestroy
+                       || imperishableKit effActivation itemFull
     unless imperishable $
       execUpdAtomic $ UpdLoseItem False iid kit2 container
     -- At this point, the item is potentially no longer in container
     -- @container@, therefore beware of assuming so in the code below.
     -- If the item activation is not periodic, but the item itself is,
     -- only the first effect gets activated (and the item may be destroyed,
-    -- unlike with periodic activations).
-    let effsManual = if not effPeriodic
+    -- unlike with periodic activations). The same if item activation
+    -- is due to being attacked.
+    let effsManual = if effActivation /= EffPeriodic
                         && IA.checkFlag Ability.Periodic arItem
                         && not (IA.checkFlag Ability.Condition arItem)
+                        || effActivation == EffUnderAttack
                      then take 1 effs  -- may be empty
                      else effs
     triggeredEffect <- itemEffectDisco effApplyFlags0 source target iid
@@ -313,7 +320,8 @@ effectAndDestroy effApplyFlags0@EffApplyFlags{..} source target iid container
     -- Announce no effect, which is rare and wastes time, so noteworthy.
     unless (triggered == UseUp  -- effects triggered; feedback comes from them
             || effToUse == EffOnSmash
-            || effPeriodic  -- periodic effects repeat and so spam
+            || effActivation == EffPeriodic
+                 -- periodic effects repeat and so spam
             || bproj sb  -- projectiles can be very numerous
             || isEmbed   -- embeds may be just flavour
             ) $
@@ -329,11 +337,12 @@ effectAndDestroy effApplyFlags0@EffApplyFlags{..} source target iid container
       execUpdAtomic $ UpdSpotItem False iid kit2 container
     return triggered
 
-imperishableKit :: Bool -> ItemFull -> Bool
-imperishableKit periodic itemFull =
+imperishableKit :: EffActivation -> ItemFull -> Bool
+imperishableKit effActivation itemFull =
   let arItem = aspectRecordFull itemFull
   in IA.checkFlag Ability.Durable arItem
-     || periodic && not (IA.checkFlag Ability.Fragile arItem)
+     || effActivation == EffPeriodic
+        && not (IA.checkFlag Ability.Fragile arItem)
 
 -- The item is triggered exactly once. If there are more copies,
 -- they are left to be triggered next time.
@@ -360,7 +369,7 @@ itemEffectEmbedded effToUse effVoluntary aid lid tpos iid = do
           , effIgnoreCharging   = False
           , effUseAllCopies     = False
           , effKineticPerformed = False
-          , effPeriodic         = False
+          , effActivation       = EffNormal
           , effMayDestroy       = True
           }
     kineticEffectAndDestroy effApplyFlags aid aid aid iid c
@@ -423,7 +432,7 @@ effectSem effApplyFlags0@EffApplyFlags{..}
     IK.Impress -> effectImpress recursiveCall execSfx source target
     IK.PutToSleep -> effectPutToSleep execSfx target
     IK.Yell -> effectYell execSfx target
-    IK.Summon grp nDm -> effectSummon grp nDm iid source target effPeriodic
+    IK.Summon grp nDm -> effectSummon grp nDm iid source target effActivation
     IK.Ascend p -> effectAscend recursiveCall execSfx p source target c
     IK.Escape{} -> effectEscape execSfx source target
     IK.Paralyze nDm -> effectParalyze execSfx nDm source target
@@ -824,9 +833,9 @@ effectYell execSfx target = do
 -- Note that the Calm expended doesn't depend on the number of actors summoned.
 effectSummon :: MonadServerAtomic m
              => GroupName ItemKind -> Dice.Dice -> ItemId
-             -> ActorId -> ActorId -> Bool
+             -> ActorId -> ActorId -> EffActivation
              -> m UseResult
-effectSummon grp nDm iid source target periodic = do
+effectSummon grp nDm iid source target effActivation = do
   -- Obvious effect, nothing announced.
   cops@COps{coTileSpeedup} <- getsState scops
   sb <- getsState $ getActorBody source
@@ -859,7 +868,7 @@ effectSummon grp nDm iid source target periodic = do
   if | bproj tb
        || source /= target && not (isFoe (bfid sb) fact (bfid tb)) ->
        return UseDud  -- hitting friends or projectiles to summon is too cheap
-     | (periodic || durable) && not (bproj sb)
+     | (effActivation == EffPeriodic || durable) && not (bproj sb)
        && (bcalm sb < - deltaCalm || not (calmEnough sb sMaxSk)) -> do
        warnBothActors $ SfxSummonLackCalm source
        return UseId
@@ -1448,7 +1457,7 @@ dropCStoreItem verbose destroy store aid b kMax iid (k, _) = do
           , effIgnoreCharging   = False
           , effUseAllCopies     = kMax >= k
           , effKineticPerformed = False
-          , effPeriodic         = False
+          , effActivation       = EffNormal
           , effMayDestroy       = True
           }
     void $ effectAndDestroyAndAddKill effApplyFlags aid aid aid iid c itemFull
@@ -1568,7 +1577,7 @@ consumeItems target bagsToLose iidsToApply = do
                 , effIgnoreCharging   = True
                 , effUseAllCopies     = False
                 , effKineticPerformed = False
-                , effPeriodic         = False
+                , effActivation       = EffNormal
                 , effMayDestroy       = False
                 }
           void $ effectAndDestroyAndAddKill effApplyFlags

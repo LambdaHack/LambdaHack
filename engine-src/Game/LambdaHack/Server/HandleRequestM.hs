@@ -502,7 +502,7 @@ reqMeleeChecked voluntary source target iid cstore = do
               , effIgnoreCharging   = False
               , effUseAllCopies     = False
               , effKineticPerformed = False
-              , effPeriodic         = False
+              , effActivation       = EffUnderAttack
               , effMayDestroy       = mayDestroyTarget
               }
         unless (bproj tb) $
@@ -546,7 +546,7 @@ reqMeleeChecked voluntary source target iid cstore = do
                      , effIgnoreCharging   = False
                      , effUseAllCopies     = False
                      , effKineticPerformed = False
-                     , effPeriodic         = False
+                     , effActivation       = EffNormal
                      , effMayDestroy       = mayDestroySource
                      }
                void $ kineticEffectAndDestroy effApplyFlagsSource killer
