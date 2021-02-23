@@ -2052,12 +2052,18 @@ effectSendFlying execSfx IK.ThrowMod{..} source target container modePush = do
           -- because it's the first one, so almost no delay is needed.
           localTime <- getsState $ getLocalTime (blid tb)
           -- But add a slight overhead to avoid displace-slide loops
-          -- of 3 actors in a line.
+          -- of 3 actors in a line. However, add even more overhead
+          -- to normal actor move, so that it doesn't manage to land
+          -- a hit before it flies away safely.
           let overheadTime = timeShift localTime (Delta timeClip)
+              doubleClip = timeDeltaScale (Delta timeClip) 2
           modifyServer $ \ser ->
-            ser {strajTime =
-                   updateActorTime (bfid tb) (blid tb) target overheadTime
-                   $ strajTime ser}
+            ser { strajTime =
+                    updateActorTime (bfid tb) (blid tb) target overheadTime
+                    $ strajTime ser
+                , sactorTime =
+                    ageActor (bfid tb) (blid tb) target doubleClip
+                    $ sactorTime ser }
         return UseUp
 
 sendFlyingVector :: MonadServerAtomic m
