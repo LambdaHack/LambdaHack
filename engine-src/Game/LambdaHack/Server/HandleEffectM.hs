@@ -721,8 +721,8 @@ dominateFid fid source target = do
       dropAllImpressions = EM.filterWithKey (\iid _ -> not $ isImpression iid)
       borganNoImpression = dropAllImpressions $ borgan tb
   -- Actor is not pushed nor projectile, so @sactorTime@ suffices.
-  btime <-
-    getsServer $ (EM.! target) . (EM.! blid tb) . (EM.! bfid tb) . sactorTime
+  btime <- getsServer
+           $ fromJust . lookupActorTime (bfid tb) (blid tb) target . sactorTime
   execUpdAtomic $ UpdLoseActor target tb
   let maxCalm = Ability.getSk Ability.SkMaxCalm actorMaxSk
       maxHp = Ability.getSk Ability.SkMaxHP actorMaxSk

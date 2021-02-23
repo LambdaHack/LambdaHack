@@ -236,9 +236,11 @@ swapTime source target = do
   slvl <- getsState $ getLocalTime (blid sb)
   tlvl <- getsState $ getLocalTime (blid tb)
   btime_sb <-
-    getsServer $ (EM.! source) . (EM.! blid sb) . (EM.! bfid sb) . sactorTime
+    getsServer
+    $ fromJust . lookupActorTime (bfid sb) (blid sb) source . sactorTime
   btime_tb <-
-    getsServer $ (EM.! target) . (EM.! blid tb) . (EM.! bfid tb) . sactorTime
+    getsServer
+    $ fromJust . lookupActorTime (bfid tb) (blid tb) target . sactorTime
   let lvlDelta = slvl `timeDeltaToFrom` tlvl
       bDelta = btime_sb `timeDeltaToFrom` btime_tb
       sdelta = timeDeltaSubtract lvlDelta bDelta
