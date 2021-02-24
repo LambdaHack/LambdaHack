@@ -90,6 +90,7 @@ data Flag =
                   --   which doesn't guarantee display as a condition,
                   --   but governs removal by items that drop @CONDITION@
   | Unique        -- ^ at most one copy can ever be generated
+  | MetaGame      -- ^ once identified, the item is known until savefile deleted
   | MinorEffects  -- ^ override: the effects on this item are considered
                   --   minor and so not causing identification on use,
                   --   and so this item will identify on pick-up

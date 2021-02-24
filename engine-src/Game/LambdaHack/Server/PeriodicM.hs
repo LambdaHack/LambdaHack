@@ -256,9 +256,11 @@ swapTime source target = do
                        `blame` ( slvl, tlvl, btime_sb, btime_tb
                                , sdelta, sdelta', tdelta, tdelta' )) ()
   when (sdelta /= Delta timeZero) $ modifyServer $ \ser ->
-    ser {sactorTime = ageActor (bfid sb) (blid sb) source sdelta $ sactorTime ser}
+    ser {sactorTime = ageActor (bfid sb) (blid sb) source sdelta
+                      $ sactorTime ser}
   when (tdelta /= Delta timeZero) $ modifyServer $ \ser ->
-    ser {sactorTime = ageActor (bfid tb) (blid tb) target tdelta $ sactorTime ser}
+    ser {sactorTime = ageActor (bfid tb) (blid tb) target tdelta
+                      $ sactorTime ser}
 
 updateCalm :: MonadServerAtomic m => ActorId -> Int64 -> m ()
 updateCalm target deltaCalm = do
