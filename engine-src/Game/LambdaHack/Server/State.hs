@@ -12,6 +12,7 @@ import           Data.Binary
 import qualified Data.EnumMap.Strict as EM
 import qualified Data.EnumSet as ES
 import qualified Data.HashMap.Strict as HM
+import qualified Data.IntMap.Strict as IM
 import qualified System.Random.SplitMix32 as SM
 
 import Game.LambdaHack.Common.Analytics
@@ -19,6 +20,8 @@ import Game.LambdaHack.Common.Perception
 import Game.LambdaHack.Common.State
 import Game.LambdaHack.Common.Time
 import Game.LambdaHack.Common.Types
+import Game.LambdaHack.Content.ItemKind (ItemKind)
+import Game.LambdaHack.Definition.Defs
 import Game.LambdaHack.Server.Fov
 import Game.LambdaHack.Server.ItemRev
 import Game.LambdaHack.Server.ServerOptions
@@ -29,6 +32,10 @@ data StateServer = StateServer
   { sactorTime    :: ActorTime      -- ^ absolute times of actors next actions
   , strajTime     :: ActorTime      -- ^ and same for actors with trajectories
   , strajPushedBy :: ActorPushedBy  -- ^ culprits for actors with trajectories
+  , sheroGear     :: IM.IntMap [(GroupName ItemKind, ContentId ItemKind)]
+                                    -- ^ metagame persistent personal
+                                    --   characteristics and favourite gear
+                                    --   of each numbered human hero
   , sfactionAn    :: FactionAnalytics
                                     -- ^ various past events data for factions
   , sactorAn      :: ActorAnalytics -- ^ various past events data for actors
@@ -82,6 +89,7 @@ emptyStateServer =
     { sactorTime = EM.empty
     , strajTime = EM.empty
     , strajPushedBy = EM.empty
+    , sheroGear = IM.empty
     , sfactionAn = EM.empty
     , sactorAn = EM.empty
     , sgenerationAn = EM.fromDistinctAscList
@@ -136,6 +144,7 @@ instance Binary StateServer where
     put sactorTime
     put strajTime
     put strajPushedBy
+    put sheroGear
     put sfactionAn
     put sactorAn
     put sgenerationAn
@@ -155,6 +164,7 @@ instance Binary StateServer where
     sactorTime <- get
     strajTime <- get
     strajPushedBy <- get
+    sheroGear <- get
     sfactionAn <- get
     sactorAn <- get
     sgenerationAn <- get

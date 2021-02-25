@@ -259,6 +259,7 @@ gameReset serverOptions mGameMode mrandom = do
   scoreTable <- restoreScore cops
   factionDold <- getsState sfactionD
   gameModeIdOld <- getsState sgameModeId
+  heroGearOld <- getsServer sheroGear
   flavourOld <- getsServer sflavour
   discoKindRevOld <- getsServer sdiscoKindRev
   curChalSer <- getsServer $ scurChalSer . soptions
@@ -293,7 +294,7 @@ gameReset serverOptions mGameMode mrandom = do
       defSer = emptyStateServer { srandom
                                 , srngs }
   putServer defSer
-  modifyServer $ \ser -> ser {sdiscoKindRev, sflavour}
+  modifyServer $ \ser -> ser {sheroGear = heroGearOld, sdiscoKindRev, sflavour}
   return $! defState
 
 -- Spawn initial actors. Clients should notice this, to set their leaders.
