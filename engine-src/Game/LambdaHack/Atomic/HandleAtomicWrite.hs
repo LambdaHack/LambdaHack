@@ -750,6 +750,7 @@ updCoverServer iid arItem =
     assert (discoAspect1 EM.! iid == arItem)
     $ EM.delete iid discoAspect1
 
+-- This is ever run only on clients.
 updRestart :: MonadStateWrite m => State -> m ()
 updRestart s = do
   COps{coitem} <- getsState scops
@@ -757,10 +758,20 @@ updRestart s = do
   let inMetaGame kindId =
         IK.SetFlag Ability.Blast `elem` IK.iaspects (okind coitem kindId)
       discoMetaGame = EM.filter inMetaGame disco
+  -- Some item kinds preserve their identity and flavour throughout
+  -- the whole metagame, until the savefiles is removed.
+  -- These are usually not man-made items, because these can be made
+  -- in many flavours so it may be hard to recognize them.
+  -- However, the exact properties of even natural items may vary,
+  -- so the random aspects of items, stored in @sdiscoAspect@
+  -- are not preserved (a lot of other state components would need
+  -- to be partially preserved, too, both on server and clients).
   putState $ updateDiscoKind (discoMetaGame `EM.union`) s
 
+-- This is ever run only on the server.
 updRestartServer :: MonadStateWrite m => State -> m ()
 updRestartServer = putState
 
+-- This is ever run only on the server.
 updResumeServer :: MonadStateWrite m => State -> m ()
 updResumeServer = putState
