@@ -146,14 +146,11 @@ serverDiscos :: COps -> Rnd (DiscoveryKind, DiscoveryKindRev)
 serverDiscos COps{coitem} = do
   let ixs = [toEnum 0..toEnum (olength coitem - 1)]
   shuffled <- shuffle ixs
-  let f (!ikMap, !ikRev, (!ix) : rest) !kmKind _ =
-        (EM.insert ix kmKind ikMap, EM.insert kmKind ix ikRev, rest)
-      f (ikMap, _, []) ik _ =
-        error $ "too short ixs" `showFailure` (ik, ikMap)
-      (discoS, discoRev, _) =
-        ofoldlWithKey' coitem f (EM.empty, EM.empty, shuffled)
+  let f (!ikMap, (!ix) : rest) !kmKind _ = (EM.insert ix kmKind ikMap, rest)
+      f (ikMap, []) ik _ = error $ "too short ixs" `showFailure` (ik, ikMap)
+      (discoS, _) = ofoldlWithKey' coitem f (EM.empty, shuffled)
       udiscoRev = U.fromListN (olength coitem)
-                  $ map (toEnum . fromEnum) $ EM.elems discoRev
+                  $ map (toEnum . fromEnum) shuffled
   return (discoS, DiscoveryKindRev udiscoRev)
 
 -- | Flavours assigned by the server to item kinds, in this particular game.
