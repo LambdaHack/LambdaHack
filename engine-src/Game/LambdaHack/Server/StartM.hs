@@ -259,6 +259,7 @@ gameReset serverOptions mGameMode mrandom = do
   scoreTable <- restoreScore cops
   factionDold <- getsState sfactionD
   gameModeIdOld <- getsState sgameModeId
+  flavourOld <- getsServer sflavour
   discoKindRevOld <- getsServer sdiscoKindRev
   curChalSer <- getsServer $ scurChalSer . soptions
   let gameMode = fromMaybe INSERT_COIN
@@ -275,14 +276,14 @@ gameReset serverOptions mGameMode mrandom = do
             players = if sautomateAll serverOptions
                       then automatePS $ mroster mode
                       else mroster mode
-        sflavour <- dungeonFlavourMap cops
+        flavour <- dungeonFlavourMap cops flavourOld
         (discoKind, sdiscoKindRev) <- serverDiscos cops discoKindRevOld
         freshDng <- DungeonGen.dungeonGen cops serverOptions $ mcaves mode
         factionD <- resetFactions factionDold gameModeIdOld
                                   (cdiff curChalSer)
                                   (DungeonGen.freshTotalDepth freshDng)
                                   players
-        return ( factionD, sflavour, discoKind
+        return ( factionD, flavour, discoKind
                , sdiscoKindRev, freshDng, modeKindId )
   let ( factionD, sflavour, discoKind
        ,sdiscoKindRev, DungeonGen.FreshDungeon{..}, modeKindId ) =

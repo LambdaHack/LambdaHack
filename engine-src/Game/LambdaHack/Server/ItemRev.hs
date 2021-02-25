@@ -176,35 +176,55 @@ stdFlav = ES.fromList [ Flavour fn bc
 
 -- | Assigns flavours to item kinds. Assures no flavor is repeated for the same
 -- symbol, except for items with only one permitted flavour.
-rollFlavourMap :: Rnd ( EM.EnumMap (ContentId ItemKind) Flavour
+rollFlavourMap :: (U.Vector Word16)
+               -> Rnd ( EM.EnumMap (ContentId ItemKind) Flavour
                       , EM.EnumMap Char (ES.EnumSet Flavour) )
                -> ContentId ItemKind -> ItemKind
                -> Rnd ( EM.EnumMap (ContentId ItemKind) Flavour
                       , EM.EnumMap Char (ES.EnumSet Flavour) )
-rollFlavourMap !rnd !key !ik = case IK.iflavour ik of
+rollFlavourMap uFlavMeta !rnd !key !ik = case IK.iflavour ik of
   [] -> error "empty iflavour"
   [flavour] -> do
     (!assocs, !availableMap) <- rnd
     return ( EM.insert key flavour assocs
-           , availableMap)
+           , availableMap )
   flvs -> do
     (!assocs, !availableMap) <- rnd
-    let available =
-          EM.findWithDefault stdFlav (IK.isymbol ik) availableMap
-        proper = ES.fromList flvs `ES.intersection` available
-    assert (not (ES.null proper)
-            `blame` "not enough flavours for items"
-            `swith` (flvs, available, ik, availableMap)) $ do
-      flavour <- oneOf $ ES.elems proper
-      let availableReduced = ES.delete flavour available
-      return ( EM.insert key flavour assocs
-             , EM.insert (IK.isymbol ik) availableReduced availableMap)
+    let a0 = uFlavMeta U.! toEnum (fromEnum key)
+    if a0 == maxBound then do
+      let available = availableMap EM.! IK.isymbol ik
+          proper = ES.fromList flvs `ES.intersection` available
+      assert (not (ES.null proper)
+              `blame` "not enough flavours for items"
+              `swith` (flvs, available, ik, availableMap)) $ do
+        flavour <- oneOf $ ES.elems proper
+        let availableReduced = ES.delete flavour available
+        return ( EM.insert key flavour assocs
+               , EM.insert (IK.isymbol ik) availableReduced availableMap )
+    else return ( EM.insert key (toEnum $ fromEnum a0) assocs
+                , availableMap )
 
 -- | Randomly chooses flavour for all item kinds for this game.
-dungeonFlavourMap :: COps -> Rnd FlavourMap
-dungeonFlavourMap COps{coitem} = do
-  (assocsFlav, _) <- ofoldlWithKey' coitem rollFlavourMap
-                                    (return (EM.empty, EM.empty))
+dungeonFlavourMap :: COps -> FlavourMap -> Rnd FlavourMap
+dungeonFlavourMap COps{coitem} (FlavourMap uFlav0) = do
+  let inMetaGame kindId =
+        IK.SetFlag Ability.Blast `elem` IK.iaspects (okind coitem kindId)
+      keepMeta i fl = if inMetaGame (toEnum i) then fl else maxBound
+      uFlavMeta = if U.null uFlav0
+                  then U.replicate (olength coitem) maxBound
+                  else U.imap keepMeta uFlav0
+      flavToAvailable :: EM.EnumMap Char (ES.EnumSet Flavour) -> Int -> Word16
+                      -> EM.EnumMap Char (ES.EnumSet Flavour)
+      flavToAvailable em i fl =
+        let ik = okind coitem (toEnum i)
+            setBase = EM.findWithDefault stdFlav (IK.isymbol ik) em
+            setMeta = if fl == maxBound
+                      then setBase
+                      else ES.delete (toEnum $ fromEnum fl) setBase
+        in EM.insert (IK.isymbol ik) setMeta em
+      availableMap = U.ifoldl' flavToAvailable EM.empty uFlavMeta
+  (assocsFlav, _) <- ofoldlWithKey' coitem (rollFlavourMap uFlavMeta)
+                                    (return (EM.empty, availableMap))
   let uFlav = U.fromListN (olength coitem)
               $ map (toEnum . fromEnum) $ EM.elems assocsFlav
   return $! FlavourMap uFlav

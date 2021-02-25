@@ -206,7 +206,8 @@ omapVector :: ContentData a -> (a -> b) -> V.Vector b
 omapVector d f = V.map f $ contentVector d
 
 oimapVector :: ContentData a -> (ContentId a -> a -> b) -> V.Vector b
-oimapVector d f = V.imap (\i a -> f (toContentId $ toEnum i) a) $ contentVector d
+oimapVector d f = V.imap (\i a -> f (toContentId $ toEnum i) a)
+                         (contentVector d)
 
 -- | Size of content @a@.
 olength :: ContentData a -> Int
