@@ -3,7 +3,8 @@ module Game.LambdaHack.Core.Random
   ( -- * The @Rng@ monad
     Rnd
     -- * Random operations
-  , randomR, randomR0, nextRandom, randomWord32, oneOf, shuffle, frequency
+  , randomR, randomR0, nextRandom, randomWord32
+  , oneOf, shuffle, shuffleExcept, frequency
     -- * Fractional chance
   , Chance, chance
     -- * Casting dice scaled with level
@@ -23,7 +24,8 @@ import Game.LambdaHack.Core.Prelude
 import qualified Control.Monad.Trans.State.Strict as St
 import           Data.Int (Int32)
 import           Data.Ratio
-import           Data.Word (Word32)
+import qualified Data.Vector.Unboxed as U
+import           Data.Word (Word16, Word32)
 import qualified System.Random.SplitMix32 as SM
 
 import qualified Game.LambdaHack.Core.Dice as Dice
@@ -87,6 +89,21 @@ shuffle [] = return []
 shuffle l = do
   x <- oneOf l
   (x :) <$> shuffle (delete x l)
+
+-- | Generates a random permutation, except for the existing mapping.
+shuffleExcept :: U.Vector Word16 -> Int -> [Word16] -> Rnd [Word16]
+shuffleExcept v len l0 = assert (len == length l0) $
+  shuffleE 0 (l0 \\ filter (/= maxBound) (U.toList v))
+ where
+  shuffleE :: Int -> [Word16] -> Rnd [Word16]
+  shuffleE i _ | i == len = return []
+  shuffleE i l = do
+    let a0 = v U.! i
+    if a0 == maxBound then do
+      a <- oneOf l
+      (a :) <$> shuffleE (succ i) l
+    else
+      (a0 :) <$> shuffleE (succ i) (delete a0 l)
 
 -- | Gen an element according to a frequency distribution.
 frequency :: Show a => Frequency a -> Rnd a

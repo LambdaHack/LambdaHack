@@ -70,7 +70,7 @@ buildItem COps{coitem} arItem (FlavourMap flavourMap)
         Just grp ->
           let kindHidden = ouniqGroup coitem grp
           in IdentityCovered
-               (toEnum $ fromEnum $ discoRev U.! contentIdIndex ikChosen)
+               (toItemKindIx $ discoRev U.! contentIdIndex ikChosen)
                kindHidden
         Nothing -> IdentityObvious ikChosen
       jfid     = Nothing  -- the default
@@ -142,15 +142,23 @@ newtype DiscoveryKindRev = DiscoveryKindRev (U.Vector Word16)
 emptyDiscoveryKindRev :: DiscoveryKindRev
 emptyDiscoveryKindRev = DiscoveryKindRev U.empty
 
-serverDiscos :: COps -> Rnd (DiscoveryKind, DiscoveryKindRev)
-serverDiscos COps{coitem} = do
-  let ixs = [toEnum 0..toEnum (olength coitem - 1)]
-  shuffled <- shuffle ixs
-  let f (!ikMap, (!ix) : rest) !kmKind _ = (EM.insert ix kmKind ikMap, rest)
-      f (ikMap, []) ik _ = error $ "too short ixs" `showFailure` (ik, ikMap)
+serverDiscos :: COps -> DiscoveryKindRev
+             -> Rnd (DiscoveryKind, DiscoveryKindRev)
+serverDiscos COps{coitem} (DiscoveryKindRev discoRev0) = do
+  let ixs = [0..toEnum (olength coitem - 1)]
+      inMetaGame kindId =
+        IK.SetFlag Ability.Blast `elem` IK.iaspects (okind coitem kindId)
+      keepMeta i ix = if inMetaGame (toEnum i) then ix else maxBound
+  shuffled <-
+    if U.null discoRev0
+    then shuffle ixs
+    else shuffleExcept (U.imap keepMeta discoRev0) (olength coitem) ixs
+  let f (!ikMap, (!ix) : rest) !kmKind _ =
+        (EM.insert (toItemKindIx ix) kmKind ikMap, rest)
+      f (ikMap, []) ik _ =
+        error $ "too short ixs" `showFailure` (ik, ikMap)
       (discoS, _) = ofoldlWithKey' coitem f (EM.empty, shuffled)
-      udiscoRev = U.fromListN (olength coitem)
-                  $ map (toEnum . fromEnum) shuffled
+      udiscoRev = U.fromListN (olength coitem) shuffled
   return (discoS, DiscoveryKindRev udiscoRev)
 
 -- | Flavours assigned by the server to item kinds, in this particular game.

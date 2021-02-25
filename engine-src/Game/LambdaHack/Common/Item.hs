@@ -5,7 +5,7 @@ module Game.LambdaHack.Common.Item
   , ItemKindIx, ItemDisco(..), ItemFull(..), ItemFullKit
   , DiscoveryKind, DiscoveryAspect, ItemIxMap, Benefit(..), DiscoveryBenefit
   , ItemTimer, ItemTimers, ItemQuant, ItemBag, ItemDict
-  , quantSingle, itemToFull6, aspectRecordFull, strongestSlot
+  , toItemKindIx, quantSingle, itemToFull6, aspectRecordFull, strongestSlot
   , itemTimerZero, createItemTimer, shiftItemTimer
   , deltaOfItemTimer, charging, ncharges, hasCharge
   , strongestMelee, unknownMeleeBonus, unknownSpeedBonus
@@ -170,6 +170,10 @@ type ItemBag = EM.EnumMap ItemId ItemQuant
 -- | All items in the dungeon (including those carried by actors),
 -- indexed by item identifier.
 type ItemDict = EM.EnumMap ItemId Item
+
+toItemKindIx :: Word16 -> ItemKindIx
+{-# INLINE toItemKindIx #-}
+toItemKindIx = ItemKindIx
 
 quantSingle :: ItemQuant
 quantSingle = (1, [])

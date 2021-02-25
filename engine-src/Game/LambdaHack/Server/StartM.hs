@@ -77,7 +77,10 @@ reinitGame = do
   s <- getState
   discoS <- getsState sdiscoKind
   -- Thanks to the following, for any item with not hidden identity,
-  -- the client has its kind from the start.
+  -- the client has its kind from the start. The client needs to know this
+  -- to have a fast way (faster that looking for @PresentAs@ flag on a list)
+  -- of determining whether an item kind is already identified
+  -- or needs identification.
   let discoKindFiltered =
         let f kindId = isNothing $ IK.getMandatoryPresentAsFromKind
                                  $ okind coitem kindId
@@ -256,6 +259,7 @@ gameReset serverOptions mGameMode mrandom = do
   scoreTable <- restoreScore cops
   factionDold <- getsState sfactionD
   gameModeIdOld <- getsState sgameModeId
+  discoKindRevOld <- getsServer sdiscoKindRev
   curChalSer <- getsServer $ scurChalSer . soptions
   let gameMode = fromMaybe INSERT_COIN
                  $ mGameMode `mplus` sgameMode serverOptions
@@ -272,7 +276,7 @@ gameReset serverOptions mGameMode mrandom = do
                       then automatePS $ mroster mode
                       else mroster mode
         sflavour <- dungeonFlavourMap cops
-        (discoKind, sdiscoKindRev) <- serverDiscos cops
+        (discoKind, sdiscoKindRev) <- serverDiscos cops discoKindRevOld
         freshDng <- DungeonGen.dungeonGen cops serverOptions $ mcaves mode
         factionD <- resetFactions factionDold gameModeIdOld
                                   (cdiff curChalSer)

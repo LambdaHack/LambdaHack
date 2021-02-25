@@ -50,6 +50,7 @@ import           Game.LambdaHack.Common.Time
 import           Game.LambdaHack.Common.Types
 import           Game.LambdaHack.Common.Vector
 import           Game.LambdaHack.Content.ItemKind (ItemKind)
+import qualified Game.LambdaHack.Content.ItemKind as IK
 import           Game.LambdaHack.Content.ModeKind
 import qualified Game.LambdaHack.Content.PlaceKind as PK
 import           Game.LambdaHack.Content.TileKind (TileKind, unknownId)
@@ -750,7 +751,13 @@ updCoverServer iid arItem =
     $ EM.delete iid discoAspect1
 
 updRestart :: MonadStateWrite m => State -> m ()
-updRestart = putState
+updRestart s = do
+  COps{coitem} <- getsState scops
+  disco <- getsState sdiscoKind
+  let inMetaGame kindId =
+        IK.SetFlag Ability.Blast `elem` IK.iaspects (okind coitem kindId)
+      discoMetaGame = EM.filter inMetaGame disco
+  putState $ updateDiscoKind (discoMetaGame `EM.union`) s
 
 updRestartServer :: MonadStateWrite m => State -> m ()
 updRestartServer = putState
