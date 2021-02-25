@@ -45,6 +45,7 @@ import qualified Game.LambdaHack.Content.ItemKind as IK
 import           Game.LambdaHack.Content.ModeKind
 import qualified Game.LambdaHack.Core.Dice as Dice
 import           Game.LambdaHack.Core.Random
+import qualified Game.LambdaHack.Definition.Ability as Ability
 import qualified Game.LambdaHack.Definition.Color as Color
 import           Game.LambdaHack.Definition.Defs
 import           Game.LambdaHack.Definition.Flavour
@@ -89,8 +90,26 @@ reinitGame = do
            | otherwise = localFromGlobal s
       defLocal = updateDiscoKind (const discoKindFiltered) defL
   factionD <- getsState sfactionD
-  modifyServer $ \ser -> ser {sclientStates = EM.map (const defLocal) factionD}
-  let updRestart fid = UpdRestart fid (pers EM.! fid) defLocal
+  clientStatesOld <- getsServer sclientStates
+  -- Some item kinds preserve their identity and flavour throughout
+  -- the whole metagame, until the savefiles is removed.
+  -- These are usually not man-made items, because these can be made
+  -- in many flavours so it may be hard to recognize them.
+  -- However, the exact properties of even natural items may vary,
+  -- so the random aspects of items, stored in @sdiscoAspect@
+  -- are not preserved (a lot of other state components would need
+  -- to be partially preserved, too, both on server and clients).
+  let includeMetaGame fid = case fid `EM.lookup` clientStatesOld of
+        Nothing -> defLocal
+        Just sOld ->
+          let disco = sdiscoKind sOld
+              inMetaGame kindId = IK.SetFlag Ability.Blast
+                                  `elem` IK.iaspects (okind coitem kindId)
+              discoMetaGame = EM.filter inMetaGame disco
+          in updateDiscoKind (discoMetaGame `EM.union`) defLocal
+  modifyServer $ \ser ->
+    ser {sclientStates = EM.mapWithKey (\fid _ -> includeMetaGame fid) factionD}
+  let updRestart fid = UpdRestart fid (pers EM.! fid) (includeMetaGame fid)
                                   scurChalSer sclientOptions
   mapWithKeyM_ (\fid _ -> do
     -- Different seed for each client, to make sure behaviour is varied.
