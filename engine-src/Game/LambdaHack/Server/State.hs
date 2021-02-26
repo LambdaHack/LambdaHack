@@ -39,6 +39,9 @@ data StateServer = StateServer
                                     -- ^ metagame persistent personal
                                     --   characteristics and favourite gear
                                     --   of each numbered continued team member
+  , stcounter     :: EM.EnumMap TeamContinuity Int
+                                    -- ^ stores next continued team character
+                                    --   identity index number this game
   , sfactionAn    :: FactionAnalytics
                                     -- ^ various past events data for factions
   , sactorAn      :: ActorAnalytics -- ^ various past events data for actors
@@ -93,6 +96,7 @@ emptyStateServer =
     , strajTime = EM.empty
     , strajPushedBy = EM.empty
     , steamGear = EM.empty
+    , stcounter = EM.empty
     , sfactionAn = EM.empty
     , sactorAn = EM.empty
     , sgenerationAn = EM.fromDistinctAscList
@@ -148,6 +152,7 @@ instance Binary StateServer where
     put strajTime
     put strajPushedBy
     put steamGear
+    put stcounter
     put sfactionAn
     put sactorAn
     put sgenerationAn
@@ -168,6 +173,7 @@ instance Binary StateServer where
     strajTime <- get
     strajPushedBy <- get
     steamGear <- get
+    stcounter <- get
     sfactionAn <- get
     sactorAn <- get
     sgenerationAn <- get
