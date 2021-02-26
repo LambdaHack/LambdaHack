@@ -209,7 +209,7 @@ resetFactions :: FactionDict -> ContentId ModeKind -> Int -> Dice.AbsDepth
               -> Roster
               -> Rnd FactionDict
 resetFactions factionDold gameModeIdOld curDiffSerOld totalDepth players = do
-  let rawCreate (ix, (gplayer@Player{..}, _mteamContinuity, initialActors)) = do
+  let rawCreate (ix, (gplayer@Player{..}, gteamCont, initialActors)) = do
         let castInitialActors (ln, d, actorGroup) = do
               n <- castDice (Dice.AbsDepth $ abs ln) totalDepth d
               return (ln, n, actorGroup)

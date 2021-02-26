@@ -41,6 +41,9 @@ data Faction = Faction
   { gname     :: Text            -- ^ individual name
   , gcolor    :: Color.Color     -- ^ color of actors or their frames
   , gplayer   :: Player          -- ^ the player spec for this faction
+  , gteamCont :: Maybe TeamContinuity
+                                 -- ^ identity of this faction across games
+                                 --   and scenarios
   , ginitial  :: [(Int, Int, GroupName ItemKind)]  -- ^ initial actors
   , gdipl     :: Dipl            -- ^ diplomatic standing
   , gquit     :: Maybe Status    -- ^ cause of game end/exit

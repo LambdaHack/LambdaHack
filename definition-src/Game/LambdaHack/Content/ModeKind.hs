@@ -44,7 +44,7 @@ data ModeKind = ModeKind
   , mrules    :: Text            -- ^ rules note
   , mdesc     :: Text            -- ^ description
   , mreason   :: Text            -- ^ why/when the mode should be played
-  , mhint     :: Text            -- ^ hints in case the player faces difficulties
+  , mhint     :: Text            -- ^ hints in case player faces difficulties
   }
   deriving Show
 
@@ -64,7 +64,9 @@ data Roster = Roster
   deriving Show
 
 newtype TeamContinuity = TeamContinuity Int
-  deriving Show
+  deriving (Show, Eq, Ord, Generic)
+
+instance Binary TeamContinuity
 
 -- | Outcome of a game.
 data Outcome =
@@ -216,6 +218,10 @@ validateSingleRoster caves Roster{..} =
   | all (\(pl, _, _) -> not $ fneverEmpty pl) rosterList ]
   ++ [ "not exactly one UI client"
      | length (filter (\(pl, _, _) -> fhasUI pl) rosterList) /= 1 ]
+  ++ let tokens = mapMaybe (\(_, tc, _) -> tc) rosterList
+         nubTokens = nub $ sort tokens
+     in [ "duplicate team continuity token"
+        | length tokens /= length nubTokens ]
   ++ concatMap (\(pl, _, _) -> validateSinglePlayer pl) rosterList
   ++ let checkPl field plName =
            [ plName <+> "is not a player name in" <+> field
