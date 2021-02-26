@@ -101,9 +101,9 @@ shuffleExcept v len l0 = assert (len == length l0) $
     let a0 = v U.! i
     if a0 == maxBound then do
       a <- oneOf l
-      (a :) <$> shuffleE (succ i) l
+      (a :) <$> shuffleE (succ i) (delete a l)
     else
-      (a0 :) <$> shuffleE (succ i) (delete a0 l)
+      (a0 :) <$> shuffleE (succ i) l
 
 -- | Gen an element according to a frequency distribution.
 frequency :: Show a => Frequency a -> Rnd a
