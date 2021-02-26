@@ -480,17 +480,24 @@ screensaverSafari = screensave (AutoLeader False True) $ safari
   , mfreq   = [(INSERT_COIN, 1), (NO_CONFIRMS, 1)]
   }
 
+teamExplorer, teamCompetitor :: TeamContinuity
+teamExplorer = TeamContinuity 0
+teamCompetitor = TeamContinuity 1
+
 rosterRaid, rosterBrawl, rosterCrawl, rosterShootout, rosterHunt, rosterEscape, rosterZoo, rosterAmbush, rosterSafari, rosterCrawlEmpty, rosterCrawlSurvival, rosterSafariSurvival, rosterBattle, rosterBattleDefense, rosterBattleSurvival, rosterDefense, rosterDefenseEmpty :: Roster
 
 rosterRaid = Roster
   { rosterList = [ ( playerHero {fhiCondPoly = hiHeroShort}
+                   , Just teamExplorer
                    , [(-2, 2, HERO)] )
                  , ( playerAntiHero { fname = "Indigo Founder"
                                     , fhiCondPoly = hiHeroShort }
+                   , Just teamCompetitor
                    , [(-2, 1, HERO)] )
                  , ( playerAnimal  -- starting over escape
+                   , Nothing
                    , [(-2, 2, ANIMAL)] )
-                 , (playerHorror, []) ]  -- for summoned monsters
+                 , (playerHorror, Nothing, []) ]  -- for summoned monsters
   , rosterEnemy = [ ("Explorer", "Animal Kingdom")
                   , ("Explorer", "Horror Den")
                   , ("Indigo Founder", "Animal Kingdom")
@@ -500,12 +507,14 @@ rosterRaid = Roster
 rosterBrawl = Roster
   { rosterList = [ ( playerHero { fcanEscape = False
                                 , fhiCondPoly = hiHeroMedium }
+                   , Just teamExplorer
                    , [(-2, 3, BRAWLER_HERO)] )
                  , ( playerAntiHero { fname = "Indigo Researcher"
                                     , fcanEscape = False
                                     , fhiCondPoly = hiHeroMedium }
+                   , Just teamCompetitor
                    , [(-2, 3, BRAWLER_HERO)] )
-                 , (playerHorror, []) ]
+                 , (playerHorror, Nothing, []) ]
   , rosterEnemy = [ ("Explorer", "Indigo Researcher")
                   , ("Explorer", "Horror Den")
                   , ("Indigo Researcher", "Horror Den") ]
@@ -513,10 +522,13 @@ rosterBrawl = Roster
 
 rosterCrawl = Roster
   { rosterList = [ ( playerHero
+                   , Just teamExplorer
                    , [(-1, 3, HERO)] )
                  , ( playerMonster
+                   , Nothing
                    , [(-4, 1, SCOUT_MONSTER), (-4, 3, MONSTER)] )
                  , ( playerAnimal
+                   , Nothing
                    , -- Fun from the start to avoid empty initial level:
                      [ (-1, 1 + 1 `d` 2, ANIMAL)
                      -- Huge battle at the end:
@@ -532,12 +544,14 @@ rosterCrawl = Roster
 rosterShootout = Roster
   { rosterList = [ ( playerHero { fcanEscape = False
                                 , fhiCondPoly = hiHeroMedium }
+                   , Just teamExplorer
                    , [(-5, 1, SCOUT_HERO), (-5, 2, RANGER_HERO)] )
                  , ( playerAntiHero { fname = "Indigo Researcher"
                                     , fcanEscape = False
                                     , fhiCondPoly = hiHeroMedium }
+                   , Just teamCompetitor
                    , [(-5, 1, SCOUT_HERO), (-5, 2, RANGER_HERO)] )
-                 , (playerHorror, []) ]
+                 , (playerHorror, Nothing, []) ]
   , rosterEnemy = [ ("Explorer", "Indigo Researcher")
                   , ("Explorer", "Horror Den")
                   , ("Indigo Researcher", "Horror Den") ]
@@ -546,12 +560,14 @@ rosterShootout = Roster
 rosterHunt = Roster
   { rosterList = [ ( playerHero { fcanEscape = False
                                 , fhiCondPoly = hiHeroMedium }
+                   , Just teamExplorer
                    , [(-6, 7, SOLDIER_HERO)] )
                  , ( playerAntiHero { fname = "Indigo Researcher"
                                     , fcanEscape = False
                                     , fhiCondPoly = hiHeroMedium }
+                   , Just teamCompetitor
                    , [(-6, 1, SCOUT_HERO), (-6, 6, AMBUSHER_HERO)] )
-                 , (playerHorror, []) ]
+                 , (playerHorror, Nothing, []) ]
   , rosterEnemy = [ ("Explorer", "Indigo Researcher")
                   , ("Explorer", "Horror Den")
                   , ("Indigo Researcher", "Horror Den") ]
@@ -562,11 +578,13 @@ rosterEscape = Roster
                                     , fcanEscape = False  -- start on escape
                                     , fneverEmpty = False  -- loot after killing
                                     , fhiCondPoly = hiHeroMedium }
+                   , Just teamCompetitor
                    , [(-7, 1, SCOUT_HERO), (-7, 6, AMBUSHER_HERO)] )
                  , ( playerHero {fhiCondPoly = hiHeroMedium}
+                   , Just teamExplorer
                    , [(-7, 1, SCOUT_HERO), (-7, 2, ESCAPIST_HERO)] )
                      -- second on the list to let foes occupy the exit
-                 , (playerHorror, []) ]
+                 , (playerHorror, Nothing, []) ]
   , rosterEnemy = [ ("Explorer", "Indigo Researcher")
                   , ("Explorer", "Horror Den")
                   , ("Indigo Researcher", "Horror Den") ]
@@ -575,10 +593,12 @@ rosterEscape = Roster
 rosterZoo = Roster
   { rosterList = [ ( playerHero { fcanEscape = False
                                 , fhiCondPoly = hiHeroLong }
+                   , Just teamExplorer
                    , [(-8, 5, SOLDIER_HERO)] )
                  , ( playerAnimal {fneverEmpty = True}
+                   , Nothing
                    , [(-8, 100, MOBILE_ANIMAL)] )
-                 , (playerHorror, []) ]  -- for summoned monsters
+                 , (playerHorror, Nothing, []) ]  -- for summoned monsters
   , rosterEnemy = [ ("Explorer", "Animal Kingdom")
                   , ("Explorer", "Horror Den") ]
   , rosterAlly = [] }
@@ -586,12 +606,14 @@ rosterZoo = Roster
 rosterAmbush = Roster
   { rosterList = [ ( playerHero { fcanEscape = False
                                 , fhiCondPoly = hiHeroMedium }
+                   , Just teamExplorer
                    , [(-9, 1, SCOUT_HERO), (-9, 5, AMBUSHER_HERO)] )
                  , ( playerAntiHero { fname = "Indigo Researcher"
                                     , fcanEscape = False
                                     , fhiCondPoly = hiHeroMedium }
+                   , Just teamCompetitor
                    , [(-9, 12, SOLDIER_HERO)] )
-                 , (playerHorror, []) ]
+                 , (playerHorror, Nothing, []) ]
   , rosterEnemy = [ ("Explorer", "Indigo Researcher")
                   , ("Explorer", "Horror Den")
                   , ("Indigo Researcher", "Horror Den") ]
@@ -600,12 +622,16 @@ rosterAmbush = Roster
 -- No horrors faction needed, because spawned heroes land in civilian faction.
 rosterSafari = Roster
   { rosterList = [ ( playerMonsterTourist
+                   , Nothing
                    , [(-4, 15, MONSTER)] )
                  , ( playerHunamConvict
+                   , Nothing
                    , [(-4, 2, CIVILIAN)] )
                  , ( playerAnimalMagnificent
+                   , Nothing
                    , [(-7, 15, MOBILE_ANIMAL)] )
                  , ( playerAnimalExquisite  -- start on escape
+                   , Nothing
                    , [(-10, 20, MOBILE_ANIMAL)] ) ]
   , rosterEnemy = [ ("Monster Tourist Office", "Hunam Convict")
                   , ( "Monster Tourist Office"
@@ -621,17 +647,22 @@ rosterSafari = Roster
 
 rosterCrawlEmpty = Roster
   { rosterList = [ ( playerHero
+                   , Nothing
                    , [(-1, 1, HERO)] )
-                 , (playerHorror, []) ]  -- for spawned and summoned monsters
+                 , (playerHorror, Nothing, []) ]
+                     -- for spawned and summoned monsters
   , rosterEnemy = []
   , rosterAlly = [] }
 
 rosterCrawlSurvival = rosterCrawl
   { rosterList = [ ( playerAntiHero
+                   , Nothing
                    , [(-1, 3, HERO)] )
                  , ( playerMonster
+                   , Nothing
                    , [(-4, 1, SCOUT_MONSTER), (-4, 3, MONSTER)] )
                  , ( playerAnimal {fhasUI = True}
+                   , Nothing
                    , -- Fun from the start to avoid empty initial level:
                      [ (-1, 1 + 1 `d` 2, ANIMAL)
                      -- Huge battle at the end:
@@ -641,23 +672,30 @@ rosterSafariSurvival = rosterSafari
   { rosterList = [ ( playerMonsterTourist
                        { fleaderMode = LeaderAI $ AutoLeader True True
                        , fhasUI = False }
+                   , Nothing
                    , [(-4, 15, MONSTER)] )
                  , ( playerHunamConvict
+                   , Nothing
                    , [(-4, 3, CIVILIAN)] )
                  , ( playerAnimalMagnificent
                        { fleaderMode = LeaderUI $ AutoLeader True False
                        , fhasUI = True }
+                   , Nothing
                    , [(-7, 20, MOBILE_ANIMAL)] )
                  , ( playerAnimalExquisite
+                   , Nothing
                    , [(-10, 30, MOBILE_ANIMAL)] ) ] }
 
 rosterBattle = Roster
   { rosterList = [ ( playerHero { fcanEscape = False
                                 , fhiCondPoly = hiHeroLong }
+                   , Nothing
                    , [(-5, 5, SOLDIER_HERO)] )
                  , ( playerMonster {fneverEmpty = True}
+                   , Nothing
                    , [(-5, 35, MOBILE_MONSTER)] )
                  , ( playerAnimal {fneverEmpty = True}
+                   , Nothing
                    , [(-5, 30, MOBILE_ANIMAL)] ) ]
   , rosterEnemy = [ ("Explorer", "Monster Hive")
                   , ("Explorer", "Animal Kingdom") ]
@@ -669,11 +707,14 @@ rosterBattleDefense = rosterBattle
                                 , fleaderMode =
                                     LeaderAI $ AutoLeader False False
                                 , fhasUI = False }
+                   , Nothing
                    , [(-5, 5, SOLDIER_HERO)] )
                  , ( playerMonster { fneverEmpty = True
                                    , fhasUI = True }
+                   , Nothing
                    , [(-5, 35, MOBILE_MONSTER)] )
                  , ( playerAnimal {fneverEmpty = True}
+                   , Nothing
                    , [(-5, 30, MOBILE_ANIMAL)] ) ] }
 
 rosterBattleSurvival = rosterBattle
@@ -682,26 +723,34 @@ rosterBattleSurvival = rosterBattle
                                 , fleaderMode =
                                     LeaderAI $ AutoLeader False False
                                 , fhasUI = False }
+                   , Nothing
                    , [(-5, 5, SOLDIER_HERO)] )
                  , ( playerMonster {fneverEmpty = True}
+                   , Nothing
                    , [(-5, 35, MOBILE_MONSTER)] )
                  , ( playerAnimal { fneverEmpty = True
                                   , fhasUI = True }
+                   , Nothing
                    , [(-5, 30, MOBILE_ANIMAL)] ) ] }
 
 rosterDefense = rosterCrawl
   { rosterList = [ ( playerAntiHero
+                   , Nothing
                    , [(-1, 3, HERO)] )
                  , ( playerAntiMonster
+                   , Nothing
                    , [(-4, 1, SCOUT_MONSTER), (-4, 3, MONSTER)] )
                  , ( playerAnimal
+                   , Nothing
                    , [ (-1, 1 + 1 `d` 2, ANIMAL)
                      , (-10, 100, MOBILE_ANIMAL) ] ) ] }
 
 rosterDefenseEmpty = rosterCrawl
   { rosterList = [ ( playerAntiMonster {fneverEmpty = True}
+                   , Nothing
                    , [(-4, 1, SCOUT_MONSTER)] )
-                 , (playerHorror, []) ]  -- for spawned and summoned animals
+                 , (playerHorror, Nothing, []) ]
+                     -- for spawned and summoned animals
   , rosterEnemy = []
   , rosterAlly = [] }
 

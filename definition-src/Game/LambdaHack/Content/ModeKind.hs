@@ -3,7 +3,7 @@
 module Game.LambdaHack.Content.ModeKind
   ( pattern CAMPAIGN_SCENARIO, pattern INSERT_COIN, pattern NO_CONFIRMS
   , ModeKind(..), makeData
-  , Caves, Roster(..), Outcome(..)
+  , Caves, Roster(..), TeamContinuity(..), Outcome(..)
   , HiCondPoly, HiSummand, HiPolynomial, HiIndeterminant(..)
   , Player(..), LeaderMode(..), AutoLeader(..)
   , victoryOutcomes, deafeatOutcomes, nameOutcomePast, nameOutcomeVerb
@@ -53,12 +53,17 @@ type Caves = [([Int], [GroupName CaveKind])]
 
 -- | The specification of players for the game mode.
 data Roster = Roster
-  { rosterList  :: [(Player, [(Int, Dice.Dice, GroupName ItemKind)])]
+  { rosterList  :: [( Player
+                    , Maybe TeamContinuity
+                    , [(Int, Dice.Dice, GroupName ItemKind)] )]
       -- ^ players in the particular team and levels, numbers and groups
       --   of their initial members
   , rosterEnemy :: [(Text, Text)]  -- ^ the initial enmity matrix
   , rosterAlly  :: [(Text, Text)]  -- ^ the initial aliance matrix
   }
+  deriving Show
+
+newtype TeamContinuity = TeamContinuity Int
   deriving Show
 
 -- | Outcome of a game.
@@ -185,8 +190,9 @@ endMessageOutcome = \case
 
 screensave :: AutoLeader -> ModeKind -> ModeKind
 screensave auto mk =
-  let f x@(Player{fleaderMode = LeaderAI{}}, _) = x
-      f (player, initial) = (player {fleaderMode = LeaderAI auto}, initial)
+  let f x@(Player{fleaderMode = LeaderAI{}}, _, _) = x
+      f (player, teamContinuity, initial) =
+          (player {fleaderMode = LeaderAI auto}, teamContinuity, initial)
   in mk { mroster = (mroster mk) {rosterList = map f $ rosterList $ mroster mk}
         , mreason = "This is one of the screensaver scenarios, not available from the main menu, with all factions controlled by AI. Feel free to take over or relinquish control at any moment, but to register a legitimate high score, choose a standard scenario instead.\n" <> mreason mk
         }
@@ -207,13 +213,13 @@ validateSingle ModeKind{..} =
 validateSingleRoster :: Caves -> Roster -> [Text]
 validateSingleRoster caves Roster{..} =
   [ "no player keeps the dungeon alive"
-  | all (not . fneverEmpty . fst) rosterList ]
+  | all (\(pl, _, _) -> not $ fneverEmpty pl) rosterList ]
   ++ [ "not exactly one UI client"
-     | length (filter (fhasUI . fst) rosterList) /= 1 ]
-  ++ concatMap (validateSinglePlayer . fst) rosterList
-  ++ let checkPl field pl =
-           [ pl <+> "is not a player name in" <+> field
-           | all ((/= pl) . fname . fst) rosterList ]
+     | length (filter (\(pl, _, _) -> fhasUI pl) rosterList) /= 1 ]
+  ++ concatMap (\(pl, _, _) -> validateSinglePlayer pl) rosterList
+  ++ let checkPl field plName =
+           [ plName <+> "is not a player name in" <+> field
+           | all (\(pl, _, _) -> fname pl /= plName) rosterList ]
          checkDipl field (pl1, pl2) =
            [ "self-diplomacy in" <+> field | pl1 == pl2 ]
            ++ checkPl field pl1
@@ -221,7 +227,7 @@ validateSingleRoster caves Roster{..} =
      in concatMap (checkDipl "rosterEnemy") rosterEnemy
         ++ concatMap (checkDipl "rosterAlly") rosterAlly
   ++ let keys = concatMap fst caves
-         f (_, l) = concatMap g l
+         f (_, _, l) = concatMap g l
          g i3@(ln, _, _) =
            [ "initial actor levels not among caves:" <+> tshow i3
            | ln `notElem` keys ]

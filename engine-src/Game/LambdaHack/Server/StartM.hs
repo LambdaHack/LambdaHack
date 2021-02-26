@@ -209,7 +209,7 @@ resetFactions :: FactionDict -> ContentId ModeKind -> Int -> Dice.AbsDepth
               -> Roster
               -> Rnd FactionDict
 resetFactions factionDold gameModeIdOld curDiffSerOld totalDepth players = do
-  let rawCreate (ix, (gplayer@Player{..}, initialActors)) = do
+  let rawCreate (ix, (gplayer@Player{..}, _mteamContinuity, initialActors)) = do
         let castInitialActors (ln, d, actorGroup) = do
               n <- castDice (Dice.AbsDepth $ abs ln) totalDepth d
               return (ln, n, actorGroup)
@@ -292,7 +292,8 @@ gameReset serverOptions mGameMode mrandom = do
           <$> opick comode gameMode (const True)
         let mode = okind comode modeKindId
             automatePS ps = ps {rosterList =
-              map (first $ automatePlayer True) $ rosterList ps}
+              map (\(pl, tc, l) -> (automatePlayer True pl, tc, l))
+                  (rosterList ps)}
             players = if sautomateAll serverOptions
                       then automatePS $ mroster mode
                       else mroster mode
