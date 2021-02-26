@@ -1,4 +1,4 @@
-{-# LANGUAGE DeriveGeneric #-}
+{-# LANGUAGE DeriveGeneric, GeneralizedNewtypeDeriving #-}
 -- | The type of kinds of game modes.
 module Game.LambdaHack.Content.ModeKind
   ( pattern CAMPAIGN_SCENARIO, pattern INSERT_COIN, pattern NO_CONFIRMS
@@ -64,7 +64,7 @@ data Roster = Roster
   deriving Show
 
 newtype TeamContinuity = TeamContinuity Int
-  deriving (Show, Eq, Ord, Generic)
+  deriving (Show, Eq, Ord, Enum, Generic)
 
 instance Binary TeamContinuity
 
