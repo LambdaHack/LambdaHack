@@ -147,7 +147,7 @@ serverDiscos :: COps -> DiscoveryKindRev
 serverDiscos COps{coitem} (DiscoveryKindRev discoRev0) = do
   let ixs = [0..toEnum (olength coitem - 1)]
       inMetaGame kindId =
-        IK.SetFlag Ability.Blast `elem` IK.iaspects (okind coitem kindId)
+        IK.SetFlag Ability.MetaGame `elem` IK.iaspects (okind coitem kindId)
       keepMeta i ix = if inMetaGame (toEnum i) then ix else maxBound
   shuffled <-
     if U.null discoRev0
@@ -208,7 +208,7 @@ rollFlavourMap uFlavMeta !rnd !key !ik = case IK.iflavour ik of
 dungeonFlavourMap :: COps -> FlavourMap -> Rnd FlavourMap
 dungeonFlavourMap COps{coitem} (FlavourMap uFlav0) = do
   let inMetaGame kindId =
-        IK.SetFlag Ability.Blast `elem` IK.iaspects (okind coitem kindId)
+        IK.SetFlag Ability.MetaGame `elem` IK.iaspects (okind coitem kindId)
       keepMeta i fl = if inMetaGame (toEnum i) then fl else maxBound
       uFlavMeta = if U.null uFlav0
                   then U.replicate (olength coitem) maxBound

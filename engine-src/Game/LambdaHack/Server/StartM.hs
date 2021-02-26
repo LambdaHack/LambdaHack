@@ -103,7 +103,7 @@ reinitGame = do
         Nothing -> defLocal
         Just sOld ->
           let disco = sdiscoKind sOld
-              inMetaGame kindId = IK.SetFlag Ability.Blast
+              inMetaGame kindId = IK.SetFlag Ability.MetaGame
                                   `elem` IK.iaspects (okind coitem kindId)
               discoMetaGame = EM.filter inMetaGame disco
           in updateDiscoKind (discoMetaGame `EM.union`) defLocal
