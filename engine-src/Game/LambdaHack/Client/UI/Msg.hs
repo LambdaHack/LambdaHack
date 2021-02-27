@@ -231,7 +231,6 @@ interruptsRunning = \case
   MsgClassShowAndSave x -> case x of
     MsgBookKeeping -> False
     MsgStatusStopThem -> False
-    MsgItemDiscovery -> False
     MsgItemMovement -> False
     MsgActionMinor -> False
     MsgEffectMinor -> False
@@ -268,6 +267,7 @@ disturbsResting :: MsgClass -> Bool
 disturbsResting = \case
   MsgClassShowAndSave x -> case x of
     MsgPointmanSwap -> False  -- handled separately
+    MsgItemDiscovery -> False  -- medium importance
     MsgHeardOutside -> False  -- handled separately
     MsgHeardNearby -> False  -- handled separately; no disturbance if old
     _ -> interruptsRunning $ MsgClassShowAndSave x
