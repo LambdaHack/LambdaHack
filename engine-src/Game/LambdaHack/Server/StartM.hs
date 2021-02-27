@@ -314,7 +314,10 @@ gameReset serverOptions mGameMode mrandom = do
       defSer = emptyStateServer { srandom
                                 , srngs }
   putServer defSer
-  modifyServer $ \ser -> ser {steamGear = teamGearOld, sdiscoKindRev, sflavour}
+  modifyServer $ \ser -> ser { steamGear = teamGearOld
+                             , steamGearCur = teamGearOld
+                             , sdiscoKindRev
+                             , sflavour }
   return $! defState
 
 -- Spawn initial actors. Clients should notice this, to set their leaders.

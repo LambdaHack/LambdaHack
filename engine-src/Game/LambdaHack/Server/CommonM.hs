@@ -583,11 +583,11 @@ addActorIid trunkId ItemFull{itemBase, itemKind, itemDisco=ItemDiscoFull arItem}
   modifyServer $ \ser -> ser {sacounter = succ aid}
   execUpdAtomic $ UpdCreateActor aid bodyTweaked [(trunkId, itemBase)]
   unless bproj $ do
-    steamGear <- getsServer steamGear
+    steamGearCur <- getsServer steamGearCur
     let gearList = case bnumberTeam of
           Nothing -> []
           Just (number, teamContinuity) ->
-            case teamContinuity `EM.lookup` steamGear of
+            case teamContinuity `EM.lookup` steamGearCur of
               Nothing -> []
               Just im -> IM.findWithDefault [] number im
     -- Create, register and insert all initial actor items, including
@@ -606,7 +606,7 @@ addActorIid trunkId ItemFull{itemBase, itemKind, itemDisco=ItemDiscoFull arItem}
               (number, teamContinuity) = fromJust bnumberTeam
               adj im = IM.insert number gearListNew im
           modifyServer $ \ser ->
-            ser {steamGear = EM.adjust adj teamContinuity steamGear}
+            ser {steamGearCur = EM.adjust adj teamContinuity steamGearCur}
           let itemKind2 = okind coitem itemKindId2
               freq = pure (itemKindId2, itemKind2)
           rollAndRegisterItem False lid freq container mk

@@ -33,12 +33,11 @@ data StateServer = StateServer
   { sactorTime    :: ActorTime      -- ^ absolute times of actors next actions
   , strajTime     :: ActorTime      -- ^ and same for actors with trajectories
   , strajPushedBy :: ActorPushedBy  -- ^ culprits for actors with trajectories
-  , steamGear     :: EM.EnumMap
-                       TeamContinuity
-                       (IM.IntMap [(GroupName ItemKind, ContentId ItemKind)])
-                                    -- ^ metagame persistent personal
+  , steamGear     :: GearOfTeams    -- ^ metagame persistent personal
                                     --   characteristics and favourite gear
                                     --   of each numbered continued team member
+  , steamGearCur  :: GearOfTeams    -- ^ gear preferences to be taken into
+                                    --   account in the current game
   , stcounter     :: EM.EnumMap TeamContinuity Int
                                     -- ^ stores next continued team character
                                     --   identity index number in this game
@@ -88,6 +87,10 @@ type ActorTime =
 -- | Record who last propelled a given actor with trajectory.
 type ActorPushedBy = EM.EnumMap ActorId ActorId
 
+type GearOfTeams = EM.EnumMap
+                     TeamContinuity
+                     (IM.IntMap [(GroupName ItemKind, ContentId ItemKind)])
+
 -- | Initial, empty game server state.
 emptyStateServer :: StateServer
 emptyStateServer =
@@ -96,6 +99,7 @@ emptyStateServer =
     , strajTime = EM.empty
     , strajPushedBy = EM.empty
     , steamGear = EM.empty
+    , steamGearCur = EM.empty
     , stcounter = EM.empty
     , sfactionAn = EM.empty
     , sactorAn = EM.empty
@@ -152,6 +156,7 @@ instance Binary StateServer where
     put strajTime
     put strajPushedBy
     put steamGear
+    put steamGearCur
     put stcounter
     put sfactionAn
     put sactorAn
@@ -173,6 +178,7 @@ instance Binary StateServer where
     strajTime <- get
     strajPushedBy <- get
     steamGear <- get
+    steamGearCur <- get
     stcounter <- get
     sfactionAn <- get
     sactorAn <- get
