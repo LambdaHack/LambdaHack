@@ -502,7 +502,9 @@ effectExplode execSfx cgroup source target = do
   let itemFreq = [(cgroup, 1)]
       -- Explosion particles are placed among organs of the victim:
       container = CActor target COrgan
-  m2 <- rollAndRegisterItem False (blid tb) itemFreq container Nothing
+  -- Power depth of new items unaffected by number of spawned actors.
+  freq <- prepareItemKind 0 (blid tb) itemFreq
+  m2 <- rollAndRegisterItem False (blid tb) freq container Nothing
   let (iid, (ItemFull{itemKind}, (itemK, _))) =
         fromMaybe (error $ "" `showFailure` cgroup) m2
       Point x y = bpos tb

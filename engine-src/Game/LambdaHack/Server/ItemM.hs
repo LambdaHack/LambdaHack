@@ -147,14 +147,18 @@ createCaveItem pos lid = do
   Level{lkind} <- getLevel lid
   let container = CFloor lid pos
       litemFreq = citemFreq $ okind cocave lkind
-  mIidEtc <- rollAndRegisterItem True lid litemFreq container Nothing
+  -- Power depth of new items unaffected by number of spawned actors.
+  freq <- prepareItemKind 0 lid litemFreq
+  mIidEtc <- rollAndRegisterItem True lid freq container Nothing
   createKitItems lid pos mIidEtc
 
 createEmbedItem :: MonadServerAtomic m
                 => LevelId -> Point -> GroupName ItemKind -> m ()
 createEmbedItem lid pos grp = do
   let container = CEmbed lid pos
-  mIidEtc <- rollAndRegisterItem True lid [(grp, 1)] container Nothing
+  -- Power depth of new items unaffected by number of spawned actors.
+  freq <- prepareItemKind 0 lid [(grp, 1)]
+  mIidEtc <- rollAndRegisterItem True lid freq container Nothing
   createKitItems lid pos mIidEtc
 
 -- Create, register and insert all initial kit items.
@@ -178,7 +182,9 @@ createKitItems lid pos mIidEtc = case mIidEtc of
                       then CFloor lid p
                       else CEmbed lid pos
           itemFreq = [(ikGrp, 1)]
-      mresult <- rollAndRegisterItem False lid itemFreq container Nothing
+      -- Power depth of new items unaffected by number of spawned actors.
+      freq <- prepareItemKind 0 lid itemFreq
+      mresult <- rollAndRegisterItem False lid freq container Nothing
       assert (isJust mresult) $ return ()
 
 -- Tiles already placed, so it's possible to scatter companion items
@@ -219,12 +225,13 @@ rollItemAspect freq lid = do
   return m2
 
 rollAndRegisterItem :: MonadServerAtomic m
-                    => Bool -> LevelId -> Freqs ItemKind -> Container
+                    => Bool
+                    -> LevelId
+                    -> Frequency (ContentId IK.ItemKind, ItemKind)
+                    -> Container
                     -> Maybe Int
                     -> m (Maybe (ItemId, ItemFullKit))
-rollAndRegisterItem verbose lid itemFreq container mk = do
-  -- Power depth of new items unaffected by number of spawned actors.
-  freq <- prepareItemKind 0 lid itemFreq
+rollAndRegisterItem verbose lid freq container mk = do
   m2 <- rollItemAspect freq lid
   case m2 of
     NoNewItem -> return Nothing

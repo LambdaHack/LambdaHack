@@ -19,6 +19,7 @@ import Prelude ()
 import Game.LambdaHack.Core.Prelude
 
 import qualified Data.EnumMap.Strict as EM
+import qualified Data.IntMap.Strict as IM
 import           Data.Ratio
 
 import           Game.LambdaHack.Atomic
@@ -522,6 +523,7 @@ addActorIid :: MonadServerAtomic m
             -> m ActorId
 addActorIid trunkId ItemFull{itemBase, itemKind, itemDisco=ItemDiscoFull arItem}
             bproj fid pos lid tweakBody = do
+  COps{coitem} <- getsState scops
   -- Initial HP and Calm is based only on trunk and ignores organs.
   let trunkMaxHP = max 2 $ IA.getSkill Ability.SkMaxHP arItem
       hp = xM trunkMaxHP `div` 2
@@ -533,14 +535,16 @@ addActorIid trunkId ItemFull{itemBase, itemKind, itemDisco=ItemDiscoFull arItem}
   -- Create actor.
   factionD <- getsState sfactionD
   curChalSer <- getsServer $ scurChalSer . soptions
-  bnumber <- case gteamCont $ factionD EM.! fid of
+  let fact = factionD EM.! fid
+  bnumberTeam <- case gteamCont fact of
     Nothing -> return Nothing
     Just teamContinuity -> do
       stcounter <- getsServer stcounter
       let number = EM.findWithDefault 0 teamContinuity stcounter
       modifyServer $ \ser -> ser {stcounter =
         EM.insert teamContinuity (succ number) stcounter}
-      return $ Just number
+      return $ Just (number, teamContinuity)
+  let bnumber = fst <$> bnumberTeam
   -- If difficulty is below standard, HP is added to the UI factions,
   -- otherwise HP is added to their enemies.
   -- If no UI factions, their role is taken by the escapees (for testing).
@@ -578,16 +582,36 @@ addActorIid trunkId ItemFull{itemBase, itemKind, itemDisco=ItemDiscoFull arItem}
   aid <- getsServer sacounter
   modifyServer $ \ser -> ser {sacounter = succ aid}
   execUpdAtomic $ UpdCreateActor aid bodyTweaked [(trunkId, itemBase)]
-  unless bproj $
+  unless bproj $ do
+    steamGear <- getsServer steamGear
+    let gearList = case bnumberTeam of
+          Nothing -> []
+          Just (number, teamContinuity) ->
+            case teamContinuity `EM.lookup` steamGear of
+              Nothing -> []
+              Just im -> IM.findWithDefault [] number im
     -- Create, register and insert all initial actor items, including
     -- the bonus health organs from difficulty setting.
     forM_ (healthOrgans ++ map (Nothing,) (IK.ikit itemKind))
           $ \(mk, (ikGrp, cstore)) -> do
       let container = CActor aid cstore
-          itemFreq = [(ikGrp, 1)]
-      mIidEtc <- rollAndRegisterItem False lid itemFreq container mk
+      mIidEtc <- case lookup ikGrp gearList of
+        Nothing -> do
+          let itemFreq = [(ikGrp, 1)]
+          -- Power depth of new items unaffected by number of spawned actors.
+          freq <- prepareItemKind 0 lid itemFreq
+          rollAndRegisterItem False lid freq container mk
+        Just itemKindId2 -> do
+          let gearListNew = delete (ikGrp, itemKindId2) gearList
+              (number, teamContinuity) = fromJust bnumberTeam
+              adj im = IM.insert number gearListNew im
+          modifyServer $ \ser ->
+            ser {steamGear = EM.adjust adj teamContinuity steamGear}
+          let itemKind2 = okind coitem itemKindId2
+              freq = pure (itemKindId2, itemKind2)
+          rollAndRegisterItem False lid freq container mk
       case mIidEtc of
-        Nothing -> error $ "" `showFailure` (lid, itemFreq, container, mk)
+        Nothing -> error $ "" `showFailure` (lid, ikGrp, container, mk)
         Just (iid, (itemFull2, _)) ->
           when (cstore /= CGround) $
             -- The items are created owned by actors, so won't be picked up,
@@ -700,7 +724,9 @@ addCondition :: MonadServerAtomic m
 addCondition verbose name aid = do
   b <- getsState $ getActorBody aid
   let c = CActor aid COrgan
-  mresult <- rollAndRegisterItem verbose (blid b) [(name, 1)] c Nothing
+  -- Power depth of new items unaffected by number of spawned actors.
+  freq <- prepareItemKind 0 (blid b) [(name, 1)]
+  mresult <- rollAndRegisterItem verbose (blid b) freq c Nothing
   assert (isJust mresult) $ return ()
 
 removeConditionSingle :: MonadServerAtomic m
