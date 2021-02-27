@@ -1373,8 +1373,13 @@ discover c iid = do
       name <- if bproj bOwner
               then return []
               else ppContainerWownW partActorLeader True c
-      let isOurOrgan = bfid bOwner == side && storeOwner == COrgan
-            -- assume own faction organs known intuitively
+      let arItem = aspectRecordFull itemFull
+          inMetaGame = IA.checkFlag Ability.MetaGame arItem
+          isOurOrgan = bfid bOwner == side
+                       && storeOwner == COrgan
+                       && not inMetaGame
+            -- assume own faction organs known intuitively,
+            -- except backstories and other meta game items
       return (isOurOrgan, name)
     CTrunk _ _ p | p == originPoint -> return (True, [])
       -- the special reveal at game over, using fake @CTrunk@; don't spam
