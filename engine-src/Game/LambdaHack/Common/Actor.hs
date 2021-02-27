@@ -49,6 +49,8 @@ import           Game.LambdaHack.Definition.Defs
 data Actor = Actor
   { -- The trunk of the actor's body (present also in @borgan@ or @beqp@)
     btrunk      :: ItemId       -- ^ the trunk organ of the actor's body
+  , bnumber     :: Maybe Int    -- ^ continued team character identity
+                                --   index number in this game
 
     -- Resources
   , bhp         :: Int64        -- ^ current hit points * 1M
@@ -169,10 +171,10 @@ gearSpeed :: Ability.Skills -> Speed
 gearSpeed actorMaxSk = toSpeed $
   max minSpeed (Ability.getSk Ability.SkSpeed actorMaxSk)  -- see @minimalSpeed@
 
-actorTemplate :: ItemId -> Int64 -> Int64 -> Point -> LevelId -> FactionId
-              -> Bool
+actorTemplate :: ItemId -> Maybe Int -> Int64 -> Int64 -> Point -> LevelId
+              -> FactionId -> Bool
               -> Actor
-actorTemplate btrunk bhp bcalm bpos blid bfid bproj =
+actorTemplate btrunk bnumber bhp bcalm bpos blid bfid bproj =
   let btrajectory = Nothing
       boldpos = Nothing
       borgan = EM.empty

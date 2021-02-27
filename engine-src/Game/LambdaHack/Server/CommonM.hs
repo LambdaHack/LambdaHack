@@ -533,6 +533,14 @@ addActorIid trunkId ItemFull{itemBase, itemKind, itemDisco=ItemDiscoFull arItem}
   -- Create actor.
   factionD <- getsState sfactionD
   curChalSer <- getsServer $ scurChalSer . soptions
+  bnumber <- case gteamCont $ factionD EM.! fid of
+    Nothing -> return Nothing
+    Just teamContinuity -> do
+      stcounter <- getsServer stcounter
+      let number = EM.findWithDefault 0 teamContinuity stcounter
+      modifyServer $ \ser -> ser {stcounter =
+        EM.insert teamContinuity (succ number) stcounter}
+      return $ Just number
   -- If difficulty is below standard, HP is added to the UI factions,
   -- otherwise HP is added to their enemies.
   -- If no UI factions, their role is taken by the escapees (for testing).
@@ -560,7 +568,7 @@ addActorIid trunkId ItemFull{itemBase, itemKind, itemDisco=ItemDiscoFull arItem}
       maxHP = min (finalHP + xM 100) (2 * finalHP)
       bonusHP = fromEnum (maxHP `div` oneM) - trunkMaxHP
       healthOrgans = [(Just bonusHP, (IK.S_BONUS_HP, COrgan)) | bonusHP /= 0]
-      b = actorTemplate trunkId finalHP calm pos lid fid bproj
+      b = actorTemplate trunkId bnumber finalHP calm pos lid fid bproj
       withTrunk =
         b { bweapon = if IA.checkFlag Ability.Meleeable arItem then 1 else 0
           , bweapBenign =

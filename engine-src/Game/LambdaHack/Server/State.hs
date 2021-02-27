@@ -41,7 +41,7 @@ data StateServer = StateServer
                                     --   of each numbered continued team member
   , stcounter     :: EM.EnumMap TeamContinuity Int
                                     -- ^ stores next continued team character
-                                    --   identity index number this game
+                                    --   identity index number in this game
   , sfactionAn    :: FactionAnalytics
                                     -- ^ various past events data for factions
   , sactorAn      :: ActorAnalytics -- ^ various past events data for actors
