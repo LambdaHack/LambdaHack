@@ -647,7 +647,7 @@ rosterSafari = Roster
 
 rosterCrawlEmpty = Roster
   { rosterList = [ ( playerHero
-                   , Nothing
+                   , Just teamExplorer
                    , [(-1, 1, HERO)] )
                  , (playerHorror, Nothing, []) ]
                      -- for spawned and summoned monsters
@@ -656,7 +656,7 @@ rosterCrawlEmpty = Roster
 
 rosterCrawlSurvival = rosterCrawl
   { rosterList = [ ( playerAntiHero
-                   , Nothing
+                   , Just teamExplorer
                    , [(-1, 3, HERO)] )
                  , ( playerMonster
                    , Nothing
@@ -689,7 +689,7 @@ rosterSafariSurvival = rosterSafari
 rosterBattle = Roster
   { rosterList = [ ( playerHero { fcanEscape = False
                                 , fhiCondPoly = hiHeroLong }
-                   , Nothing
+                   , Just teamExplorer
                    , [(-5, 5, SOLDIER_HERO)] )
                  , ( playerMonster {fneverEmpty = True}
                    , Nothing
@@ -707,7 +707,7 @@ rosterBattleDefense = rosterBattle
                                 , fleaderMode =
                                     LeaderAI $ AutoLeader False False
                                 , fhasUI = False }
-                   , Nothing
+                   , Just teamExplorer
                    , [(-5, 5, SOLDIER_HERO)] )
                  , ( playerMonster { fneverEmpty = True
                                    , fhasUI = True }
@@ -723,7 +723,7 @@ rosterBattleSurvival = rosterBattle
                                 , fleaderMode =
                                     LeaderAI $ AutoLeader False False
                                 , fhasUI = False }
-                   , Nothing
+                   , Just teamExplorer
                    , [(-5, 5, SOLDIER_HERO)] )
                  , ( playerMonster {fneverEmpty = True}
                    , Nothing
@@ -735,7 +735,7 @@ rosterBattleSurvival = rosterBattle
 
 rosterDefense = rosterCrawl
   { rosterList = [ ( playerAntiHero
-                   , Nothing
+                   , Just teamExplorer
                    , [(-1, 3, HERO)] )
                  , ( playerAntiMonster
                    , Nothing
