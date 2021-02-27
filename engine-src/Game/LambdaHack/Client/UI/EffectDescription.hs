@@ -435,7 +435,7 @@ aspectToSentence feat =
     SetFlag Blast -> Nothing
     SetFlag Condition -> Nothing
     SetFlag Unique -> Just "It is one of a kind."
-    SetFlag MetaGame -> Just "Once it's known, it's easy to recognize again."
+    SetFlag MetaGame -> Just "It's characteristic to a person and easy to recognize once learned, even under very different circumstances."
     SetFlag MinorEffects -> Nothing
     SetFlag Periodic -> Nothing
     SetFlag UnderRanged -> Nothing
