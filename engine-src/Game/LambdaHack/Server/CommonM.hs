@@ -600,7 +600,21 @@ addActorIid trunkId ItemFull{itemBase, itemKind, itemDisco=ItemDiscoFull arItem}
           let itemFreq = [(ikGrp, 1)]
           -- Power depth of new items unaffected by number of spawned actors.
           freq <- prepareItemKind 0 lid itemFreq
-          rollAndRegisterItem False lid freq container mk
+          mIidEtc <- rollAndRegisterItem False lid freq container mk
+          -- This could be faster by looking up in aspect record,
+          -- but this is called very rarely and this is simpler.
+          let inMetaGame kindId = IK.SetFlag Ability.MetaGame
+                                  `elem` IK.iaspects (okind coitem kindId)
+          case (bnumberTeam, mIidEtc) of
+            (Just (number, teamContinuity), Just (_, (itemFull2, _))) -> do
+              let itemKindId2 = itemKindId itemFull2
+              when (inMetaGame itemKindId2) $ do
+                let gearListNew = (ikGrp, itemKindId2) : gearList
+                    adj im = IM.insert number gearListNew im
+                modifyServer $ \ser ->
+                  ser {steamGear = EM.adjust adj teamContinuity $ steamGear ser}
+            _ -> return ()
+          return mIidEtc
         Just itemKindId2 -> do
           let gearListNew = delete (ikGrp, itemKindId2) gearList
               (number, teamContinuity) = fromJust bnumberTeam
