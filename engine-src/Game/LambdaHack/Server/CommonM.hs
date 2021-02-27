@@ -609,8 +609,8 @@ addActorIid trunkId ItemFull{itemBase, itemKind, itemDisco=ItemDiscoFull arItem}
             (Just (number, teamContinuity), Just (_, (itemFull2, _))) -> do
               let itemKindId2 = itemKindId itemFull2
               when (inMetaGame itemKindId2) $ do
-                let gearListNew = (ikGrp, itemKindId2) : gearList
-                    adj im = IM.insert number gearListNew im
+                let alt ml = Just $ (ikGrp, itemKindId2) : fromMaybe [] ml
+                    adj im = IM.alter alt number im
                 modifyServer $ \ser ->
                   ser {steamGear = EM.adjust adj teamContinuity $ steamGear ser}
             _ -> return ()
