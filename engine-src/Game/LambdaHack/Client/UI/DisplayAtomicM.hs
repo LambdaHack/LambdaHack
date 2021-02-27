@@ -826,19 +826,19 @@ createActorUI born aid body = do
           then (nameFromNumber (fname $ gplayer fact) k, "he")
           else fromMaybe (nameFromNumber (fname $ gplayer fact) k, "he")
                $ lookup k uHeroNames
-    (n, bsymbol) <-
-      if | bproj body -> return (0, if IA.checkFlag Ability.Blast arItem
-                                    then IK.isymbol itemKind
-                                    else '*')
-         | baseColor /= Color.BrWhite -> return (0, IK.isymbol itemKind)
-         | otherwise -> do
-           let hasNameK k bUI = bname bUI == fst (heroNamePronoun k)
-                                && bcolor bUI == gcolor fact
-               findHeroK k = isJust $ find (hasNameK k) (EM.elems actorUI)
-               mhs = map findHeroK [0..]
-               n = fromMaybe (error $ show mhs) $ elemIndex False mhs
-           return (n, if 0 < n && n < 10 then Char.intToDigit n else '@')
-    let (object1, object2) =
+        (n, bsymbol) =
+          if | bproj body -> (0, if IA.checkFlag Ability.Blast arItem
+                                 then IK.isymbol itemKind
+                                 else '*')
+             | baseColor /= Color.BrWhite -> (0, IK.isymbol itemKind)
+             | otherwise -> case bnumber body of
+                 Nothing ->
+                   error $ "numbered actor without server-assigned number"
+                           `showFailure` (aid, body)
+                 Just bn -> (bn, if 0 < bn && bn < 10
+                                 then Char.intToDigit bn
+                                 else '@')
+        (object1, object2) =
           partItemShortest rwidth (bfid body) factionD localTime
                            itemFull quantSingle
         (bname, bpronoun) =
