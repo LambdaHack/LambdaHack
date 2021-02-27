@@ -609,18 +609,20 @@ addActorIid trunkId ItemFull{itemBase, itemKind, itemDisco=ItemDiscoFull arItem}
             (Just (number, teamContinuity), Just (_, (itemFull2, _))) -> do
               let itemKindId2 = itemKindId itemFull2
               when (inMetaGame itemKindId2) $ do
-                let alt ml = Just $ (ikGrp, itemKindId2) : fromMaybe [] ml
-                    adj im = IM.alter alt number im
+                let altInner ml = Just $ (ikGrp, itemKindId2) : fromMaybe [] ml
+                    alt mim =
+                      Just $ IM.alter altInner number $ fromMaybe IM.empty mim
                 modifyServer $ \ser ->
-                  ser {steamGear = EM.adjust adj teamContinuity $ steamGear ser}
+                  ser {steamGear = EM.alter alt teamContinuity $ steamGear ser}
             _ -> return ()
           return mIidEtc
         Just itemKindId2 -> do
           let gearListNew = delete (ikGrp, itemKindId2) gearList
               (number, teamContinuity) = fromJust bnumberTeam
-              adj im = IM.insert number gearListNew im
+              alt mim =
+                Just $ IM.insert number gearListNew $ fromMaybe IM.empty mim
           modifyServer $ \ser ->
-            ser {steamGearCur = EM.adjust adj teamContinuity steamGearCur}
+            ser {steamGearCur = EM.alter alt teamContinuity steamGearCur}
           let itemKind2 = okind coitem itemKindId2
               freq = pure (itemKindId2, itemKind2)
           rollAndRegisterItem False lid freq container mk
