@@ -4,7 +4,7 @@ module Game.LambdaHack.Definition.Flavour
   ( -- * The @Flavour@ type
     Flavour(Flavour)
   , -- * Constructors
-    zipPlain, zipFancy, zipLiquid, zipGlassPlain, zipGlassFancy
+    zipPlain, zipFancy, zipLiquid, zipGlassPlain, zipGlassFancy, zipStory
   , -- * Accessors
     flavourToColor, flavourToName
     -- * Assorted
@@ -26,7 +26,7 @@ import GHC.Generics (Generic)
 
 import Game.LambdaHack.Definition.Color
 
-data FancyName = Plain | Fancy | Liquid | GlassPlain | GlassFancy
+data FancyName = Plain | Fancy | Liquid | GlassPlain | GlassFancy | Story
   deriving (Show, Eq, Ord, Enum, Bounded, Generic)
 
 -- | The type of item flavours.
@@ -50,12 +50,13 @@ instance Binary Flavour where
   get = fmap (toEnum . (intCast :: Word16 -> Int)) get
 
 -- | Turn a colour set into a flavour set.
-zipPlain, zipFancy, zipLiquid, zipGlassPlain, zipGlassFancy :: [Color] -> [Flavour]
+zipPlain, zipFancy, zipLiquid, zipGlassPlain, zipGlassFancy, zipStory :: [Color] -> [Flavour]
 zipPlain = map (Flavour Plain)
 zipFancy = map (Flavour Fancy)
 zipLiquid = map (Flavour Liquid)
 zipGlassPlain = map (Flavour GlassPlain)
 zipGlassFancy = map (Flavour GlassFancy)
+zipStory = map (Flavour Story)
 
 -- | Get the underlying base colour of a flavour.
 flavourToColor :: Flavour -> Color
@@ -70,6 +71,8 @@ flavourToName Flavour{fancyName=GlassPlain, ..} =
   colorToGlassPlainName baseColor
 flavourToName Flavour{fancyName=GlassFancy, ..} =
   colorToGlassFancyName baseColor
+flavourToName Flavour{fancyName=Story, ..} =
+  colorToStoryName baseColor
 
 -- | Human-readable names for item colors. The plain set.
 colorToPlainName :: Color -> Text
@@ -138,6 +141,26 @@ colorToGlassPlainName color = colorToPlainName color <+> "glass"
 -- | Human-readable names for item colors. The fancy glass set.
 colorToGlassFancyName :: Color -> Text
 colorToGlassFancyName color = colorToFancyName color <+> "crystal"
+
+-- | Human-readable names for story item colors.
+colorToStoryName :: Color -> Text
+colorToStoryName Black     = "unfathomable"
+colorToStoryName Red       = "depressing"
+colorToStoryName Green     = "confidence-boosting"
+colorToStoryName Brown     = "mundane"
+colorToStoryName Blue      = "fleeting"
+colorToStoryName Magenta   = "complex"
+colorToStoryName Cyan      = "wierd"
+colorToStoryName White     = "obvious"
+colorToStoryName AltWhite  = error "colorToStoryName: illegal color"
+colorToStoryName BrBlack   = "inconclusive"
+colorToStoryName BrRed     = "troubling"
+colorToStoryName BrGreen   = "cherished"
+colorToStoryName BrYellow  = "glaring"
+colorToStoryName BrBlue    = "profound"
+colorToStoryName BrMagenta = "torturous"
+colorToStoryName BrCyan    = "peculiar"
+colorToStoryName BrWhite   = "explosive"
 
 -- | Simple names for team colors (bright colours preferred).
 colorToTeamName :: Color -> Text
