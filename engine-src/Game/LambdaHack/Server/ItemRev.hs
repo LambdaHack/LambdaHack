@@ -192,15 +192,20 @@ rollFlavourMap uFlavMeta !rnd !key !ik = case IK.iflavour ik of
     (!assocs, !availableMap) <- rnd
     let a0 = uFlavMeta U.! toEnum (fromEnum key)
     if a0 == maxBound then do
-      let available = availableMap EM.! IK.isymbol ik
-          proper = ES.fromList flvs `ES.intersection` available
-      assert (not (ES.null proper)
-              `blame` "not enough flavours for items"
-              `swith` (flvs, available, ik, availableMap)) $ do
-        flavour <- oneOf $ ES.elems proper
-        let availableReduced = ES.delete flavour available
+      if length flvs <= 6 then do  -- too few to even attempt unique assignment
+        flavour <- oneOf flvs
         return ( EM.insert key flavour assocs
-               , EM.insert (IK.isymbol ik) availableReduced availableMap )
+               , availableMap )
+      else do
+        let available = availableMap EM.! IK.isymbol ik
+            proper = ES.fromList flvs `ES.intersection` available
+        assert (not (ES.null proper)
+                `blame` "not enough flavours for items"
+                `swith` (flvs, available, ik, availableMap)) $ do
+          flavour <- oneOf $ ES.elems proper
+          let availableReduced = ES.delete flavour available
+          return ( EM.insert key flavour assocs
+                 , EM.insert (IK.isymbol ik) availableReduced availableMap )
     else return ( EM.insert key (toEnum $ fromEnum a0) assocs
                 , availableMap )
 

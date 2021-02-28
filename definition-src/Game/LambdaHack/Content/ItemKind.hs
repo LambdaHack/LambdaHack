@@ -232,7 +232,7 @@ data Effect =
   | OnCombine Effect
       -- ^ trigger the effect only when the actor explicitly desires
       --   to combine items or otherwise subtly tinker with an
-      --   item or a tile, e.g., craft items from other items in a worshop;
+      --   item or a tile, e.g., craft items from other items in a workshop;
       --   in particular, don't trigger the effects when entering a tile;
       --   trigger exclusively the effects when activating walkable terrain
   | OnUser Effect  -- ^ apply the effect to the user, not the victim
