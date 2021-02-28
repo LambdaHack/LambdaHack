@@ -763,8 +763,9 @@ dominateFid fid source target = do
 -- | Drop all actor's equipped items.
 dropAllEquippedItems :: MonadServerAtomic m => ActorId -> Actor -> m ()
 dropAllEquippedItems aid b =
-  mapActorCStore_ CEqp (void
-                        <$$> dropCStoreItem False False CEqp aid b maxBound) b
+  mapActorCStore_ CEqp
+                  (void <$$> dropCStoreItem False False CEqp aid b maxBound)
+                  b
 
 -- ** Impress
 
@@ -1142,8 +1143,8 @@ effectParalyze :: MonadServerAtomic m
                => m () -> Dice.Dice -> ActorId -> ActorId -> m UseResult
 effectParalyze execSfx nDm source target = do
   tb <- getsState $ getActorBody target
-  if bproj tb then return UseDud else  -- shortcut for speed
-    paralyze execSfx nDm source target
+  if bproj tb then return UseDud  -- shortcut for speed
+  else paralyze execSfx nDm source target
 
 paralyze :: MonadServerAtomic m
          => m () -> Dice.Dice -> ActorId -> ActorId -> m UseResult
@@ -1693,8 +1694,7 @@ effectRecharge reducingCooldown execSfx iidOriginal n0 dice target = do
     foldM (addToCooldown CEqp) (nOrganWeapons, urOrganWeapons) eqpAssOthers
   (_nOrganOthers, urOrganOthers) <-
     foldM (addToCooldown COrgan) (nEqpOthers, urEqpOthers) organAssOthers
-  if urOrganOthers == UseDud
-  then return UseDud
+  if urOrganOthers == UseDud then return UseDud
   else do
     execSfx
     return UseUp

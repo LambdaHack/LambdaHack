@@ -44,6 +44,7 @@ import           Game.LambdaHack.Definition.Defs
 import           Game.LambdaHack.Server.CommonM
 import           Game.LambdaHack.Server.HandleEffectM
 import           Game.LambdaHack.Server.HandleRequestM
+import           Game.LambdaHack.Server.ItemM
 import           Game.LambdaHack.Server.MonadServer
 import           Game.LambdaHack.Server.PeriodicM
 import           Game.LambdaHack.Server.ProtocolM
@@ -692,13 +693,16 @@ dieSer aid b2 = do
   -- If the actor was a projectile and no effect was triggered by hitting
   -- an enemy, the item still exists and @OnSmash@ effects will be triggered.
   dropAllEquippedItems aid b3
-  -- Also destroy the trunk (but not other organs, to save time) for effects.
-  case btrunk b3 `EM.lookup` borgan b3 of
-    Nothing -> return ()  -- a projectile, most probably
-    Just kit ->
-      void $ dropCStoreItem False True COrgan aid b3 maxBound (btrunk b3) kit
+  -- Also destroy, not just drop, all organs, to trigger any effects.
+  -- Note that some effects may be invoked on an actor that has
+  -- no trunk any more.
+  mapActorCStore_ COrgan
+                  (void <$$> dropCStoreItem False True COrgan aid b3 maxBound)
+                  b3
   -- As the last act of heroism, the actor (even if projectile)
   -- changes the terrain with its embedded items, if possible.
+  -- Note that all the resulting effects are invoked on an actor that has
+  -- no trunk any more.
   when (not spentProj && not isBlast) $
     void $ reqAlterFail bumping effScope False aid (bpos b2)
       -- old bpos; OK, safer
