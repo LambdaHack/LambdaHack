@@ -1767,6 +1767,8 @@ displayRespSfxAtomicUI sfx = case sfx of
       IK.AndEffect{} -> error $ "" `showFailure` sfx
       IK.OrEffect{} -> error $ "" `showFailure` sfx
       IK.SeqEffect{} -> error $ "" `showFailure` sfx
+      IK.When{} -> error $ "" `showFailure` sfx
+      IK.IfThenElse{} -> error $ "" `showFailure` sfx
       IK.VerbNoLonger t -> do
         let msgClass = if fid == side
                        then MsgStatusStopUs

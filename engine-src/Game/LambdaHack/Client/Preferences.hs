@@ -202,6 +202,12 @@ effectToBenefit cops fid factionD eff =
       -- effect with the main thing
     IK.OrEffect eff1 _ -> effectToBenefit cops fid factionD eff1
     IK.SeqEffect effs -> effectToBenefits cops fid factionD effs
+    IK.When _cond eff1 ->
+      -- Assuming the condition met most of the time. Really, too hard for AI.
+      effectToBenefit cops fid factionD eff1
+    IK.IfThenElse _cond eff1 _eff2 ->
+      -- Assuming the first is much more common. Really, too hard for AI.
+      effectToBenefit cops fid factionD eff1
     IK.VerbNoLonger{} -> delta 0  -- flavour only, no benefit
     IK.VerbMsg{} -> delta 0  -- flavour only, no benefit
     IK.VerbMsgFail{} -> delta 0

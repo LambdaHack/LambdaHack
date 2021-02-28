@@ -5,7 +5,8 @@ module Game.LambdaHack.Content.ItemKind
   , pattern CRAWL_ITEM, pattern TREASURE, pattern ANY_SCROLL, pattern ANY_GLASS, pattern ANY_POTION, pattern ANY_FLASK, pattern EXPLOSIVE, pattern ANY_JEWELRY, pattern S_SINGLE_SPARK, pattern S_SPARK, pattern S_FRAGRANCE
   , pattern HORROR, pattern VALUABLE, pattern UNREPORTED_INVENTORY, pattern AQUATIC
   , ItemKind(..), makeData
-  , Aspect(..), Effect(..), DetectKind(..), TimerDice, ThrowMod(..)
+  , Aspect(..), Effect(..), Condition(..), DetectKind(..)
+  , TimerDice, ThrowMod(..)
   , boostItemKindList, forApplyEffect, forDamageEffect, isDamagingKind
   , strengthOnCombine, strengthOnSmash, getDropOrgans
   , getMandatoryPresentAsFromKind, isEffEscape, isEffEscapeOrAscend
@@ -239,6 +240,11 @@ data Effect =
   | AndEffect Effect Effect  -- ^ only fire second effect if first activated
   | OrEffect Effect Effect   -- ^ only fire second effect if first not activated
   | SeqEffect [Effect]       -- ^ fire all effects in order; always suceed
+  | When Condition Effect    -- ^ if condition not met. fail without a message;
+                             --   please avoid, since AI can't value it properly
+  | IfThenElse Condition Effect Effect
+                             -- ^ conditional effect;
+                             --   please avoid, since AI can't value it properly
   | VerbNoLonger Text
       -- ^ a sentence with the actor causing the effect as subject and the given
       --   text as verb that is emitted when an activation causes an item
@@ -249,6 +255,13 @@ data Effect =
       --   no spam is emitted if a projectile
   | VerbMsgFail Text
       -- ^ as @VerbMsg@, but a failed effect (returns @UseDud@)
+  deriving (Show, Eq, Generic)
+
+data Condition =
+    HpLeq Int
+  | HpGeq Int
+  | CalmLeq Int
+  | CalmGeq Int
   deriving (Show, Eq, Generic)
 
 data DetectKind =
@@ -287,6 +300,8 @@ data ThrowMod = ThrowMod
 
 instance Binary Effect
 
+instance Binary Condition
+
 instance Binary DetectKind
 
 instance Binary TimerDice
@@ -324,6 +339,8 @@ forApplyEffect eff = case eff of
   AndEffect eff1 eff2 -> forApplyEffect eff1 || forApplyEffect eff2
   OrEffect eff1 eff2 -> forApplyEffect eff1 || forApplyEffect eff2
   SeqEffect effs -> or $ map forApplyEffect effs
+  When _ eff1 -> forApplyEffect eff1
+  IfThenElse _ eff1 eff2 -> forApplyEffect eff1 || forApplyEffect eff2
   VerbNoLonger{} -> False
   VerbMsg{} -> False
   VerbMsgFail{} -> False
@@ -348,9 +365,11 @@ isEffEscape Escape{} = True
 isEffEscape (OneOf l) = any isEffEscape l
 isEffEscape (OnCombine eff) = isEffEscape eff
 isEffEscape (OnUser eff) = isEffEscape eff
-isEffEscape (AndEffect eff1 eff2) = isEffEscape eff1 ||  isEffEscape eff2
-isEffEscape (OrEffect eff1 eff2) = isEffEscape eff1 ||  isEffEscape eff2
+isEffEscape (AndEffect eff1 eff2) = isEffEscape eff1 || isEffEscape eff2
+isEffEscape (OrEffect eff1 eff2) = isEffEscape eff1 || isEffEscape eff2
 isEffEscape (SeqEffect effs) = or $ map isEffEscape effs
+isEffEscape (When _ eff) = isEffEscape eff
+isEffEscape (IfThenElse _ eff1 eff2) = isEffEscape eff1 || isEffEscape eff2
 isEffEscape _ = False
 
 isEffEscapeOrAscend :: Effect -> Bool
@@ -365,6 +384,9 @@ isEffEscapeOrAscend (OrEffect eff1 eff2) =
   isEffEscapeOrAscend eff1 || isEffEscapeOrAscend eff2
 isEffEscapeOrAscend (SeqEffect effs) =
   or $ map isEffEscapeOrAscend effs
+isEffEscapeOrAscend (When _ eff) = isEffEscapeOrAscend eff
+isEffEscapeOrAscend (IfThenElse _ eff1 eff2) =
+  isEffEscapeOrAscend eff1 || isEffEscapeOrAscend eff2
 isEffEscapeOrAscend _ = False
 
 timeoutAspect :: Aspect -> Bool
@@ -410,6 +432,8 @@ getDropOrgans =
       f (AndEffect eff1 eff2) = f eff1 ++ f eff2  -- not certain, but accepted
       f (OrEffect eff1 eff2) = f eff1 ++ f eff2  -- not certain, but accepted
       f (SeqEffect effs) = concatMap f effs
+      f (When _ eff) = f eff
+      f (IfThenElse _ eff1 eff2) = f eff1 ++ f eff2
       f _ = []
   in concatMap f . ieffects
 
@@ -594,6 +618,8 @@ validateNotNested effs t f =
       g (AndEffect eff1 eff2) = h eff1 || h eff2
       g (OrEffect eff1 eff2) = h eff1 || h eff2
       g (SeqEffect effs2) = or $ map h effs2
+      g (When _ effect) = h effect
+      g (IfThenElse _ eff1 eff2) = h eff1 || h eff2
       g _ = False
       h effect = f effect || g effect
       ts = filter g effs
@@ -609,6 +635,8 @@ checkSubEffectProp f eff =
       g (AndEffect eff1 eff2) = h eff1 || h eff2
       g (OrEffect eff1 eff2) = h eff1 || h eff2
       g (SeqEffect effs) = or $ map h effs
+      g (When _ effect) = h effect
+      g (IfThenElse _ eff1 eff2) = h eff1 || h eff2
       g _ = False
       h effect = f effect || g effect
   in h eff

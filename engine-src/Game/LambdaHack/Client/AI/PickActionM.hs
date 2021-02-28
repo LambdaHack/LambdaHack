@@ -929,6 +929,9 @@ applyItem actorSk aid applyGroup = do
       disqualify durable (IK.OrEffect eff1 eff2) =
         disqualify durable eff1 || disqualify durable eff2
       disqualify durable (IK.SeqEffect effs) = any (disqualify durable) effs
+      disqualify durable (IK.When _ eff) = disqualify durable eff
+      disqualify durable (IK.IfThenElse _ eff1 eff2) =
+        disqualify durable eff1 || disqualify durable eff2
       disqualify _ _ = False
       q (Benefit{benInEqp}, cstore, _, itemFull@ItemFull{itemKind}, kit) =
         let arItem = aspectRecordFull itemFull
@@ -978,6 +981,8 @@ applyItem actorSk aid applyGroup = do
             getHP (IK.AndEffect eff1 eff2) = getHP eff1 + getHP eff2
             getHP (IK.OrEffect eff1 _) = getHP eff1
             getHP (IK.SeqEffect effs) = sum $ map getHP effs
+            getHP (IK.When _ eff) = getHP eff
+            getHP (IK.IfThenElse _ eff1 eff2) = getHP eff1 + getHP eff2
             getHP _ = 0
             healPower = sum $ map getHP $ IK.ieffects itemKind
             wastesHP = xM healPower

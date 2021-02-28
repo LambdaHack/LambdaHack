@@ -8,7 +8,7 @@ module Game.LambdaHack.Client.UI.EffectDescription
   , describeToolsAlternative, describeCrafting, wrapInParens
 #ifdef EXPOSE_INTERNAL
     -- * Internal operations
-  , slotToSentence, tmodToSuff, affixBonus, wrapInChevrons
+  , conditionToObject, slotToSentence, tmodToSuff, affixBonus, wrapInChevrons
 #endif
   ) where
 
@@ -177,9 +177,23 @@ effectToSuffix detailLevel effect =
               $ nub $ filter (not . T.null)
               $ map (effectToSuffix detailLevel) effs
       in if T.null t then "of sequential processing" else t
+    When cond eff ->
+      let object = conditionToObject cond
+      in "when" <+> object <+> "then" <+> effectToSuffix detailLevel eff
+    IfThenElse cond eff1 eff2 ->
+      let object = conditionToObject cond
+      in "if" <+> object <+> "then" <+> effectToSuffix detailLevel eff1
+                         <+> "else" <+> effectToSuffix detailLevel eff2
     VerbNoLonger _ -> ""  -- no description for a flavour effect
     VerbMsg _ -> ""  -- no description for an effect that prints a description
     VerbMsgFail _ -> ""
+
+conditionToObject :: Condition -> Text
+conditionToObject = \case
+  HpLeq n -> "HP <=" <+> tshow n
+  HpGeq n -> "HP >=" <+> tshow n
+  CalmLeq n -> "Calm <=" <+> tshow n
+  CalmGeq n -> "Calm >=" <+> tshow n
 
 detectToObject :: DetectKind -> Text
 detectToObject d = case d of
