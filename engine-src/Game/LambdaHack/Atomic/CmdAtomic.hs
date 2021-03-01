@@ -159,6 +159,7 @@ data SfxAtomic =
   | SfxTrigger ActorId LevelId Point (ContentId TileKind)
   | SfxShun ActorId LevelId Point (ContentId TileKind)
   | SfxEffect FactionId ActorId ItemId IK.Effect Int64
+  | SfxItemApplied ItemId Container
   | SfxMsgFid FactionId SfxMsg
   | SfxRestart
   | SfxCollideTile ActorId Point
@@ -286,6 +287,7 @@ undoSfxAtomic cmd = case cmd of
   SfxTrigger aid lid p tile -> SfxShun aid lid p tile
   SfxShun aid lid p tile -> SfxTrigger aid lid p tile
   SfxEffect{} -> cmd  -- not ideal?
+  SfxItemApplied{} -> cmd
   SfxMsgFid{} -> cmd
   SfxRestart -> cmd
   SfxCollideTile{} -> cmd

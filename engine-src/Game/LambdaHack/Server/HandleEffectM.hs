@@ -318,17 +318,20 @@ effectAndDestroy effApplyFlags0@EffApplyFlags{..} source target iid container
           CEmbed{} -> True
           _ -> False
     -- Announce no effect, which is rare and wastes time, so noteworthy.
-    unless (triggered == UseUp  -- effects triggered; feedback comes from them
-            || effToUse == EffOnSmash
-            || effActivation == EffPeriodic
-                 -- periodic effects repeat and so spam
-            || bproj sb  -- projectiles can be very numerous
-            || isEmbed   -- embeds may be just flavour
-            ) $
-      execSfxAtomic $ SfxMsgFid (bfid sb) $
-        if any IK.forApplyEffect effsManual
-        then SfxFizzles  -- something didn't work, despite promising effects
-        else SfxNothingHappens  -- fully expected
+    if | triggered == UseUp ->
+           -- Effects triggered; main feedback comes from them,
+           -- but send info so that clients can log it.
+           execSfxAtomic $ SfxItemApplied iid container
+       | effToUse == EffOnSmash
+         || effActivation == EffPeriodic  -- periodic effects repeat and so spam
+         || bproj sb  -- projectiles can be very numerous
+         || isEmbed  ->  -- embeds may be just flavour
+           return ()
+       | otherwise ->
+           execSfxAtomic $ SfxMsgFid (bfid sb) $
+             if any IK.forApplyEffect effsManual
+             then SfxFizzles  -- something didn't work despite promising effects
+             else SfxNothingHappens  -- fully expected
     -- If none of item's effects nor a kinetic hit were performed,
     -- we recreate the item (assuming we deleted the item above).
     -- Regardless, we don't rewind the time, because some info is gained

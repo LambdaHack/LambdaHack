@@ -189,6 +189,7 @@ posSfxAtomic cmd = case cmd of
     body <- getsState $ getActorBody aid
     return $! PosSightLevels [(lid, p), (blid body, bpos body)]
   SfxEffect _ aid _ _ _ -> singleAid aid  -- sometimes we don't see source, OK
+  SfxItemApplied _ c -> singleContainerActor c
   SfxMsgFid fid _ -> return $! PosFid fid
   SfxRestart -> return PosAll
   SfxCollideTile aid _ -> singleAid aid
@@ -269,6 +270,7 @@ iidSfxAtomic cmd = case cmd of
   SfxTrigger{} -> []
   SfxShun{} -> []
   SfxEffect{} -> []
+  SfxItemApplied iid _ -> [iid]
   SfxMsgFid{} -> []
   SfxRestart{} -> []
   SfxCollideTile{} -> []
