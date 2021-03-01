@@ -281,6 +281,7 @@ gameReset serverOptions mGameMode mrandom = do
   teamGearOld <- getsServer steamGear
   flavourOld <- getsServer sflavour
   discoKindRevOld <- getsServer sdiscoKindRev
+  clientStatesOld <- getsServer sclientStates
   curChalSer <- getsServer $ scurChalSer . soptions
   let gameMode = fromMaybe INSERT_COIN
                  $ mGameMode `mplus` sgameMode serverOptions
@@ -316,6 +317,7 @@ gameReset serverOptions mGameMode mrandom = do
   putServer defSer
   modifyServer $ \ser -> ser { steamGear = teamGearOld
                              , steamGearCur = teamGearOld
+                             , sclientStates = clientStatesOld  -- reset later
                              , sdiscoKindRev
                              , sflavour }
   return $! defState
