@@ -44,7 +44,6 @@ import           Game.LambdaHack.Definition.Defs
 import           Game.LambdaHack.Server.CommonM
 import           Game.LambdaHack.Server.HandleEffectM
 import           Game.LambdaHack.Server.HandleRequestM
-import           Game.LambdaHack.Server.ItemM
 import           Game.LambdaHack.Server.MonadServer
 import           Game.LambdaHack.Server.PeriodicM
 import           Game.LambdaHack.Server.ProtocolM
@@ -695,10 +694,12 @@ dieSer aid b2 = do
   dropAllEquippedItems aid b3
   -- Also destroy, not just drop, all organs, to trigger any effects.
   -- Note that some effects may be invoked on an actor that has
-  -- no trunk any more.
-  mapActorCStore_ COrgan
-                  (void <$$> dropCStoreItem False True COrgan aid b3 maxBound)
-                  b3
+  -- no trunk any more. Conditions are ignored to avoid spam about them ending.
+  bag <- getsState $ getBodyStoreBag b3 COrgan
+  getKind <- getsState $ flip getIidKindServer
+  let f = void <$$> dropCStoreItem False True COrgan aid b3 maxBound
+      isCondition = isJust . lookup IK.CONDITION . IK.ifreq . getKind
+  mapM_ (uncurry f) $ filter (not . isCondition . fst) $ EM.assocs bag
   -- As the last act of heroism, the actor (even if projectile)
   -- changes the terrain with its embedded items, if possible.
   -- Note that all the resulting effects are invoked on an actor that has
