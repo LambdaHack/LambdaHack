@@ -6,8 +6,8 @@ module Game.LambdaHack.Content.ModeKind
   , Caves, Roster(..), TeamContinuity(..), Outcome(..)
   , HiCondPoly, HiSummand, HiPolynomial, HiIndeterminant(..)
   , Player(..), LeaderMode(..), AutoLeader(..)
-  , victoryOutcomes, deafeatOutcomes, nameOutcomePast, nameOutcomeVerb
-  , endMessageOutcome, screensave
+  , teamExplorer, victoryOutcomes, deafeatOutcomes, nameOutcomePast
+  , nameOutcomeVerb, endMessageOutcome, screensave
 #ifdef EXPOSE_INTERNAL
     -- * Internal operations
   , validateSingle, validateAll
@@ -156,6 +156,9 @@ data AutoLeader = AutoLeader
   deriving (Show, Eq, Generic)
 
 instance Binary AutoLeader
+
+teamExplorer :: TeamContinuity
+teamExplorer = TeamContinuity 0
 
 victoryOutcomes :: [Outcome]
 victoryOutcomes = [Escape, Conquer]

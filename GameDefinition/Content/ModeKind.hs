@@ -480,8 +480,7 @@ screensaverSafari = screensave (AutoLeader False True) $ safari
   , mfreq   = [(INSERT_COIN, 1), (NO_CONFIRMS, 1)]
   }
 
-teamExplorer, teamCompetitor, teamCivilian :: TeamContinuity
-teamExplorer = TeamContinuity 0
+teamCompetitor, teamCivilian :: TeamContinuity
 teamCompetitor = TeamContinuity 1
 teamCivilian = TeamContinuity 2
 

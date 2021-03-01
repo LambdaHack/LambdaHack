@@ -10,7 +10,7 @@ module Game.LambdaHack.Server.CommonM
 #ifdef EXPOSE_INTERNAL
     -- * Internal operations
   , containerMoveItem, quitF, keepArenaFact, anyActorsAlive, projectBla
-  , addProjectile, addActorIid, getCacheLucid, getCacheTotal
+  , addProjectile, addNonProjectile, addActorIid, getCacheLucid, getCacheTotal
 #endif
   ) where
 
@@ -438,7 +438,7 @@ projectBla propeller source pos rest iid cstore blast = do
 addActorFromGroup :: MonadServerAtomic m
                   => GroupName ItemKind -> FactionId -> Point -> LevelId -> Time
                   -> m (Maybe ActorId)
-addActorFromGroup actorGroup bfid pos lid time = do
+addActorFromGroup actorGroup fid pos lid time = do
   -- We bootstrap the actor by first creating the trunk of the actor's body
   -- that contains the fixed properties of all actors of that kind.
   freq <- prepareItemKind 0 lid [(actorGroup, 1)]
@@ -447,7 +447,7 @@ addActorFromGroup actorGroup bfid pos lid time = do
     NoNewItem -> return Nothing
     NewItem itemKnown itemFull itemQuant -> do
       let itemFullKit = (itemFull, itemQuant)
-      Just <$> registerActor False itemKnown itemFullKit bfid pos lid time
+      Just <$> registerActor False itemKnown itemFullKit fid pos lid time
 
 registerActor :: MonadServerAtomic m
               => Bool -> ItemKnown -> ItemFullKit
