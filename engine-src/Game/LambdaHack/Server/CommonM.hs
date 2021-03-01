@@ -60,12 +60,14 @@ revealItems fid = do
   COps{coitem} <- getsState scops
   ServerOptions{sclientOptions} <- getsServer soptions
   discoAspect <- getsState sdiscoAspect
-  let discover aid store iid _ = do
+  let keptSecret kind ar = IA.isHumanTrinket kind
+                           || IA.checkFlag Ability.MetaGame ar
+      discover aid store iid _ = do
         itemKindId <- getsState $ getIidKindIdServer iid
         let arItem = discoAspect EM.! iid
             c = CActor aid store
             itemKind = okind coitem itemKindId
-        unless (IA.isHumanTrinket itemKind) $  -- a hack
+        unless (keptSecret itemKind arItem) $  -- a hack
           execUpdAtomic $ UpdDiscover c iid itemKindId arItem
       f (aid, b) =
         -- CStash is IDed for each actor of each faction, which is fine,
@@ -82,7 +84,7 @@ revealItems fid = do
         let arItem = discoAspect EM.! iid
             cdummy = CTrunk fid minLid originPoint  -- only @fid@ matters here
             itemKind = okind coitem itemKindId
-        execUpdAtomic $ if IA.isHumanTrinket itemKind  -- a hack
+        execUpdAtomic $ if keptSecret itemKind arItem  -- a hack
                         then UpdSpotItem False iid quantSingle cdummy
                         else UpdDiscover cdummy iid itemKindId arItem
   generationAn <- getsServer sgenerationAn
