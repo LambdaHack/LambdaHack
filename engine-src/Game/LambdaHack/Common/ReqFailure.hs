@@ -245,6 +245,7 @@ permittedApply localTime skill calmE mstore
      -- somewhat alarming though).
      | not $ hasCharge localTime kit -> Left ApplyCharging
      | otherwise ->
-       if null (IK.ieffects itemKind) && not itemSuspect
+       if null (IK.ieffects itemKind)
+          && (not itemSuspect || IA.isHumanTrinket itemKind)
        then Left ApplyNoEffects
        else permittedPrecious False calmE itemFull
