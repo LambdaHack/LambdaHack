@@ -107,9 +107,9 @@ reinitGame = do
                                   `elem` IK.iaspects (okind coitem kindId)
               discoMetaGame = EM.filter inMetaGame disco
           in updateDiscoKind (discoMetaGame `EM.union`) defLocal
-  modifyServer $ \ser ->
-    ser {sclientStates = EM.mapWithKey (\fid _ -> includeMetaGame fid) factionD}
-  let updRestart fid = UpdRestart fid (pers EM.! fid) (includeMetaGame fid)
+      clientStatesNew = EM.mapWithKey (\fid _ -> includeMetaGame fid) factionD
+  modifyServer $ \ser -> ser {sclientStates = clientStatesNew}
+  let updRestart fid = UpdRestart fid (pers EM.! fid) (clientStatesNew EM.! fid)
                                   scurChalSer sclientOptions
   mapWithKeyM_ (\fid _ -> do
     -- Different seed for each client, to make sure behaviour is varied.
