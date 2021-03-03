@@ -245,15 +245,19 @@ data Effect =
   | IfThenElse Condition Effect Effect
                              -- ^ conditional effect;
                              --   please avoid, since AI can't value it properly
-  | VerbNoLonger Text
-      -- ^ a sentence with the actor causing the effect as subject and the given
-      --   text as verb that is emitted when an activation causes an item
-      --   to expire; no spam is emitted if a projectile
-  | VerbMsg Text
-      -- ^ a sentence with the actor causing the effect as subject and the given
-      --   text as verb that is emitted whenever the item is activated;
+  | VerbNoLonger Text Text
+      -- ^ a sentence with the actor causing the effect as subject, the given
+      --   texts as the verb and the ending of the sentence (that may be
+      --   ignored when the message is cited, e.g., as heard by someone)
+      --   that is emitted when an activation causes an item to expire;
       --   no spam is emitted if a projectile
-  | VerbMsgFail Text
+  | VerbMsg Text Text
+      -- ^ a sentence with the actor causing the effect as subject, the given
+      --   texts as the verb and the ending of the sentence (that may be
+      --   ignored when the message is cited, e.g., as heard by someone)
+      --   that is emitted whenever the item is activated;
+      --   no spam is emitted if a projectile
+  | VerbMsgFail Text Text
       -- ^ as @VerbMsg@, but a failed effect (returns @UseDud@)
   deriving (Show, Eq, Generic)
 
@@ -450,10 +454,10 @@ damageUsefulness itemKind =
   in assert (v >= 0) v
 
 verbMsgNoLonger :: Text -> Effect
-verbMsgNoLonger name = VerbNoLonger $ "be no longer" <+> name
+verbMsgNoLonger name = VerbNoLonger ("be no longer" <+> name) "."
 
 verbMsgLess :: Text -> Effect
-verbMsgLess name = VerbMsg $ "appear less" <+> name
+verbMsgLess name = VerbMsg ("appear less" <+> name) "."
 
 toVelocity :: Int -> Aspect
 toVelocity n = ToThrow $ ThrowMod n 100 1

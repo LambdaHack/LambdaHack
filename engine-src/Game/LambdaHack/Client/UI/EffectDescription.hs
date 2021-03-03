@@ -184,9 +184,9 @@ effectToSuffix detailLevel effect =
       let object = conditionToObject cond
       in "if" <+> object <+> "then" <+> effectToSuffix detailLevel eff1
                          <+> "else" <+> effectToSuffix detailLevel eff2
-    VerbNoLonger _ -> ""  -- no description for a flavour effect
-    VerbMsg _ -> ""  -- no description for an effect that prints a description
-    VerbMsgFail _ -> ""
+    VerbNoLonger{} -> ""  -- no description for a flavour effect
+    VerbMsg{} -> ""  -- no description for an effect that prints a description
+    VerbMsgFail{} -> ""
 
 conditionToObject :: Condition -> Text
 conditionToObject = \case

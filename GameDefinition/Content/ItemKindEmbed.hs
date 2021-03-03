@@ -86,7 +86,7 @@ scratchOnWall = ItemKind
   , iweight  = 1000
   , idamage  = 0
   , iaspects = [SetFlag Durable]
-  , ieffects = [ VerbMsg "start making sense of the scratches"
+  , ieffects = [ VerbMsg "start making sense of the scratches" "."
                , Detect DetectHidden 3 ]
   , idesc    = "A seemingly random series of scratches, carved deep into the wall."
   , ikit     = []
@@ -102,7 +102,7 @@ obscenePictogram = ItemKind
   , iweight  = 1000
   , idamage  = 0
   , iaspects = [Timeout 7, SetFlag Durable]
-  , ieffects = [ VerbMsg "enter destructive rage at the sight of an obscene pictogram"
+  , ieffects = [ VerbMsg "enter destructive rage at the sight of an obscene pictogram" "."
                , RefillCalm (-20)
                , OneOf [ toOrganGood S_STRENGTHENED (3 + 1 `d` 2)
                        , CreateItem Nothing CGround S_SANDSTONE_ROCK timerNone ]
@@ -121,7 +121,7 @@ subtleFresco = ItemKind
   , iweight  = 1000
   , idamage  = 0
   , iaspects = [Timeout 7, SetFlag Durable]
-  , ieffects = [ VerbMsg "feel refreshed by the subtle fresco"
+  , ieffects = [ VerbMsg "feel refreshed by the subtle fresco" "."
                , toOrganGood S_FAR_SIGHTED (3 + 1 `d` 2)
                , toOrganGood S_KEEN_SMELLING (3 + 1 `d` 2) ]
                  -- hearing gets a boost through bracing, so no need here
@@ -144,7 +144,7 @@ treasureCache = ItemKind
   , ikit     = []
   }
 reliefMsg :: Effect
-reliefMsg = VerbMsg "sigh with relief when nothing explodes in your face"
+reliefMsg = VerbMsg "sigh with relief when nothing explodes in your face!" ""
 treasureCacheTrap = ItemKind
   { isymbol  = '^'
   , iname    = "cache trap"
@@ -330,7 +330,7 @@ stairsTrapUp = ItemKind
   , iweight  = 10000
   , idamage  = 0
   , iaspects = []  -- not Durable, springs at most once
-  , ieffects = [ VerbMsgFail "be caught in an updraft"
+  , ieffects = [ VerbMsgFail "be caught in an updraft" "."
                , Teleport $ 3 + 1 `dL` 10 ]
   , idesc    = "A hidden spring, to help the unwary soar."
   , ikit     = []
@@ -341,7 +341,7 @@ stairsTrapUp = ItemKind
 stairsTrapDown = stairsTrapUp
   { ifreq    = [(STAIRS_TRAP_DOWN, 1)]
   , iverbHit = "open up under"
-  , ieffects = [ VerbMsgFail "tumble down the stairwell"
+  , ieffects = [ VerbMsgFail "tumble down the stairwell" "."
                , toOrganGood S_DRUNK (20 + 1 `d` 5) ]
   , idesc    = "A treacherous slab, to teach those who are too proud."
   }

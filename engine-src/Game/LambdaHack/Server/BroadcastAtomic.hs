@@ -224,12 +224,13 @@ hearSfxAtomic cmd =
     SfxEffect _ aid _ (IK.Summon grp p) _ -> do
       b <- getsState $ getActorBody aid
       return $ Just (HearSummon (bproj b) grp p, False, bpos b)
-    SfxEffect _ aid _ (IK.VerbMsg verb) _ -> do
+    SfxEffect _ aid _ (IK.VerbMsg verb ending) _ -> do
       b <- getsState $ getActorBody aid
       discoAspect <- getsState sdiscoAspect
       let arTrunk = discoAspect EM.! btrunk b
-          phrase = makePhrase [MU.SubjectVerbSg "noises of someone that"
-                                                (MU.Text verb)]
+          phrase = makePhrase [ MU.SubjectVerbSg "noises of someone that"
+                                                 (MU.Text verb)
+                              , MU.Text ending ]
       return $! if IA.checkFlag Ability.Unique arTrunk
                 then Just (HearTaunt phrase, True, bpos b)
                 else Nothing

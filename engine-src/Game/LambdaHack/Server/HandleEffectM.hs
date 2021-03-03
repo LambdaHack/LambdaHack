@@ -480,9 +480,9 @@ effectSem effApplyFlags0@EffApplyFlags{..}
     IK.When cond eff -> effectWhen recursiveCall source cond eff
     IK.IfThenElse cond eff1 eff2 ->
       effectIfThenElse recursiveCall source cond eff1 eff2
-    IK.VerbNoLonger _ -> effectVerbNoLonger effUseAllCopies execSfxSource source
-    IK.VerbMsg _ -> effectVerbMsg execSfxSource source
-    IK.VerbMsgFail _ -> effectVerbMsgFail execSfxSource source
+    IK.VerbNoLonger{} -> effectVerbNoLonger effUseAllCopies execSfxSource source
+    IK.VerbMsg{} -> effectVerbMsg execSfxSource source
+    IK.VerbMsgFail{} -> effectVerbMsgFail execSfxSource source
 
 conditionSem :: MonadServer m => ActorId -> IK.Condition -> m Bool
 conditionSem source cond = do

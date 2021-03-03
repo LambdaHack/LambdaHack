@@ -118,7 +118,7 @@ thorn = fist
   , iverbHit = "puncture"
   , idamage  = 2 `d` 1
   , iaspects = [SetFlag Meleeable]  -- not Durable
-  , ieffects = [VerbNoLonger "be not so thorny any more"]
+  , ieffects = [VerbNoLonger "be not so thorny any more" "."]
   , idesc    = "Sharp yet brittle."
   }
 tip = fist
@@ -353,7 +353,7 @@ sulfurFissure = boilingFissure
   , idamage  = 0  -- heal not via (negative) idamage, for armour would block it
   , iaspects = SetFlag Benign : iaspects boilingFissure
   , ieffects = [ RefillHP 5
-               , VerbNoLonger "run out of the healing fumes" ]
+               , VerbNoLonger "run out of the healing fumes" "."]
   , idesc    = ""
   }
 boilingFissure = fist
@@ -365,7 +365,7 @@ boilingFissure = fist
   , iaspects = [ AddSkill SkHurtMelee 20  -- decreasing as count decreases
                , SetFlag Meleeable ]  -- not Durable
   , ieffects = [ DropItem 1 1 COrgan CONDITION  -- useful; limited
-               , VerbNoLonger "widen the crack, releasing pressure" ]
+               , VerbNoLonger "widen the crack, releasing pressure" "."]
   , idesc    = "A deep crack to the underworld."
   }
 arsenicFissure = boilingFissure
@@ -375,7 +375,7 @@ arsenicFissure = boilingFissure
   , idamage  = 2 `d` 1
   , ieffects = [ toOrganBad S_PARSIMONIOUS (5 + 1 `d` 3)
                -- weaken/poison, impacting intellectual abilities first
-               , VerbNoLonger "stop exuding stupefying vapours" ]
+               , VerbNoLonger "stop exuding stupefying vapours" "."]
   , idesc    = ""
   }
 
@@ -523,7 +523,7 @@ scentGland = armoredSkin
   , iverbHit = "spray at"
   , iaspects = [ Timeout $ (1 `d` 3) * 10
                , SetFlag Periodic, SetFlag Fragile ]  -- not Durable
-  , ieffects = [ VerbNoLonger "look spent"
+  , ieffects = [ VerbNoLonger "look spent" "."
                , ApplyPerfume
                , Explode S_DISTRESSING_ODOR ]
                    -- keep explosion at the end to avoid the ambiguity of
