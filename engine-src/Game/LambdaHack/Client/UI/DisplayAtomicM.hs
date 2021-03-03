@@ -1778,7 +1778,7 @@ displayRespSfxAtomicUI sfx = case sfx of
       IK.VerbMsg t -> aidVerbMU MsgEffectMedium aid $ MU.Text t
       IK.VerbMsgFail t -> aidVerbMU MsgActionWarning aid $ MU.Text t
   SfxItemApplied iid c ->
-    itemVerbMU MsgInnerWorkSpam iid (1, []) "get triggered" c
+    itemVerbMU MsgInnerWorkSpam iid (1, []) "have been triggered" c
   SfxMsgFid _ sfxMsg -> do
     mleader <- getsClient sleader
     case mleader of
