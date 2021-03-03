@@ -319,7 +319,10 @@ effectAndDestroy effApplyFlags0@EffApplyFlags{..} source target iid container
           _ -> Nothing
     -- Announce no effect, which is rare and wastes time, so noteworthy.
     if | triggered == UseUp
-         && mEmbedPos /= Just (bpos sb) ->  -- water, etc.
+         && mEmbedPos /= Just (bpos sb)  -- treading water, etc.
+         && (effToUse /= EffOnSmash  -- triggers that only tells condition ends
+             && effActivation /= EffPeriodic
+             || not (IA.checkFlag Ability.Condition arItem)) ->
            -- Effects triggered; main feedback comes from them,
            -- but send info so that clients can log it.
            execSfxAtomic $ SfxItemApplied iid container

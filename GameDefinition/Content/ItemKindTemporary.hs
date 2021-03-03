@@ -111,8 +111,9 @@ tmpAspects grp aspects =
                  -- depending on initial timer setting
                  aspects
                  ++ [SetFlag Periodic, SetFlag Fragile, SetFlag Condition]
-    , ieffects = [ OnSmash $ verbMsgLess name  -- announce partial neutralization
-                 -- not spamming for normal periodic wear each turn
+    , ieffects = [ OnSmash $ verbMsgLess name
+                   -- announce partial neutralization, but don't spam
+                   -- about normal periodic wear each turn
                  , OnSmash $ verbMsgNoLonger name  -- for forced neutralization
                  , verbMsgNoLonger name ]  -- for periodic wear of last copy
     , idesc    = ""  -- no description needed; powers are enough
