@@ -817,7 +817,8 @@ effectPutToSleep :: MonadServerAtomic m => m () -> ActorId -> m UseResult
 effectPutToSleep execSfx target = do
   tb <- getsState $ getActorBody target
   if | bproj tb -> return UseDud
-     | bwatch tb `elem` [WSleep, WWake] -> return UseId  -- can't increase sleep
+     | bwatch tb `elem` [WSleep, WWake] ->
+         return UseDud  -- can't increase sleep
      | otherwise -> do
        actorMaxSk <- getsState $ getActorMaxSkills target
        let maxCalm = xM $ Ability.getSk Ability.SkMaxCalm actorMaxSk
