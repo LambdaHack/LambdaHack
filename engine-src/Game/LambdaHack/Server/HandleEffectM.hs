@@ -79,7 +79,7 @@ data UseResult = UseDud | UseId | UseUp
 data EffToUse = EffBare | EffBareAndOnCombine | EffOnCombine | EffOnSmash
   deriving Eq
 
-data EffActivation = EffNormal | EffPeriodic | EffUnderAttack
+data EffActivation = EffExplicit | EffNormal | EffPeriodic | EffUnderAttack
   deriving Eq
 
 data EffApplyFlags = EffApplyFlags
@@ -105,7 +105,7 @@ applyItem aid iid cstore = do
         , effIgnoreCharging   = False
         , effUseAllCopies     = False
         , effKineticPerformed = False
-        , effActivation       = EffNormal
+        , effActivation       = EffExplicit
         , effMayDestroy       = True
         }
   void $ kineticEffectAndDestroy effApplyFlags aid aid aid iid c
@@ -320,6 +320,7 @@ effectAndDestroy effApplyFlags0@EffApplyFlags{..} source target iid container
     -- Announce no effect, which is rare and wastes time, so noteworthy.
     if | triggered == UseUp
          && mEmbedPos /= Just (bpos sb)  -- treading water, etc.
+         && effActivation /= EffExplicit  -- do not repeat almost the same msg
          && (effToUse /= EffOnSmash  -- triggers that only tells condition ends
              && effActivation /= EffPeriodic
              || not (IA.checkFlag Ability.Condition arItem)) ->

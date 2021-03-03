@@ -546,7 +546,7 @@ reqMeleeChecked voluntary source target iid cstore = do
                      , effIgnoreCharging   = False
                      , effUseAllCopies     = False
                      , effKineticPerformed = False
-                     , effActivation       = EffNormal
+                     , effActivation       = EffExplicit
                      , effMayDestroy       = mayDestroySource
                      }
                void $ kineticEffectAndDestroy effApplyFlagsSource killer
