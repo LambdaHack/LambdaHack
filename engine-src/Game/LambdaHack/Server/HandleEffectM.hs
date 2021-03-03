@@ -314,18 +314,19 @@ effectAndDestroy effApplyFlags0@EffApplyFlags{..} source target iid container
                                        itemKindId itemKind container effsManual
     sb <- getsState $ getActorBody source
     let triggered = if effKineticPerformed then UseUp else triggeredEffect
-        isEmbed = case container of
-          CEmbed{} -> True
-          _ -> False
+        mEmbedPos = case container of
+          CEmbed _ p -> Just p
+          _ -> Nothing
     -- Announce no effect, which is rare and wastes time, so noteworthy.
-    if | triggered == UseUp ->
+    if | triggered == UseUp
+         && mEmbedPos /= Just (bpos sb) ->  -- water, etc.
            -- Effects triggered; main feedback comes from them,
            -- but send info so that clients can log it.
            execSfxAtomic $ SfxItemApplied iid container
        | effToUse == EffOnSmash
          || effActivation == EffPeriodic  -- periodic effects repeat and so spam
          || bproj sb  -- projectiles can be very numerous
-         || isEmbed  ->  -- embeds may be just flavour
+         || isJust mEmbedPos  ->  -- embeds may be just flavour
            return ()
        | otherwise ->
            execSfxAtomic $ SfxMsgFid (bfid sb) $
