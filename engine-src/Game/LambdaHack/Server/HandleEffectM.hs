@@ -327,18 +327,18 @@ effectAndDestroy effApplyFlags0@EffApplyFlags{..} source target iid container
            -- Effects triggered; main feedback comes from them,
            -- but send info so that clients can log it.
            execSfxAtomic $ SfxItemApplied iid container
-       | effToUse == EffOnSmash
-         || effActivation == EffPeriodic  -- periodic effects repeat and so spam
-         || effActivation == EffUnderAttack  -- and so do effects under attack
-         || bproj sb  -- projectiles can be very numerous
-         || isJust mEmbedPos  ->  -- embeds may be just flavour
-           return ()
-       | otherwise ->
+       | triggered /= UseUp
+         && effToUse /= EffOnSmash
+         && effActivation /= EffPeriodic  -- periodic effects repeat and so spam
+         && effActivation /= EffUnderAttack  -- and so do effects under attack
+         && not (bproj sb)  -- projectiles can be very numerous
+         && isNothing mEmbedPos  ->  -- embeds may be just flavour
            execSfxAtomic $ SfxMsgFid (bfid sb) $
              if any IK.forApplyEffect effsManual
              then SfxFizzles iid container
                     -- something didn't work despite promising effects
              else SfxNothingHappens iid container  -- fully expected
+       | otherwise -> return ()
     -- If none of item's effects nor a kinetic hit were performed,
     -- we recreate the item (assuming we deleted the item above).
     -- Regardless, we don't rewind the time, because some info is gained
