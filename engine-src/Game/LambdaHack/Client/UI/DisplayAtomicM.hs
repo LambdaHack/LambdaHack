@@ -648,7 +648,8 @@ lookAtMove aid = do
         adjOur = filter our adjBigAssocs
     unless (null adjOur) stopPlayBack
 
-aidVerbMU :: (MonadClient m, MonadClientUI m, MsgShared a) => a -> ActorId -> MU.Part -> m ()
+aidVerbMU :: (MonadClient m, MonadClientUI m, MsgShared a)
+          => a -> ActorId -> MU.Part -> m ()
 aidVerbMU msgClass aid verb = do
   subject <- partActorLeader aid
   msgAdd msgClass $ makeSentence [MU.SubjectVerbSg subject verb]
@@ -1845,8 +1846,12 @@ ppSfxMsg sfxMsg = case sfxMsg of
         , "The" <+> "embedded" <+> name <+> "is not activated:"
           <+> showReqFailure reqFailure <> "." )
     else return Nothing
-  SfxFizzles -> returnJustLeft (MsgActionWarning, "It didn't work.")
-  SfxNothingHappens -> returnJustLeft (MsgMiscellanous, "Nothing happens.")
+  SfxFizzles iid c -> do
+    msg <- itemVerbMUGeneral True iid (1, []) "do not work" c
+    return $ Just $ Right (MsgStatusWarning, ("It didn't work.", msg))
+  SfxNothingHappens iid c -> do
+    msg <- itemVerbMUGeneral True iid (1, []) "do nothing, predictably" c
+    return $ Just $ Right (MsgStatusBenign, ("Nothing happens.", msg))
   SfxNoItemsForTile toolsToAlterWith -> do
     revCmd <- revCmdMap
     let km = revCmd HumanCmd.AlterDir

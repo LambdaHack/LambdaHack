@@ -220,6 +220,8 @@ data MsgClassDistinct =
   | MsgStatusGoodUs
   | MsgStatusBadUs
   | MsgStatusOthers
+  | MsgStatusBenign
+  | MsgStatusWarning
   | MsgStatusLongerUs
   | MsgStatusLongThem
   deriving (Show, Enum, Bounded, Generic)
@@ -261,6 +263,8 @@ interruptsRunning = \case
     MsgSpottedItem -> False
     MsgStatusLongThem -> False
     MsgStatusOthers -> False
+    MsgStatusBenign -> False
+    MsgStatusWarning -> False
     _ -> True
 
 disturbsResting :: MsgClass -> Bool
@@ -400,12 +404,14 @@ msgColor = \case
     MsgStopPlayback -> Color.cMeta
   MsgClassDistinct x -> case x of
     MsgSpottedItem -> Color.cBoring
-    MsgStatusLongerUs -> Color.cBoring  -- not important enough
-    MsgStatusLongThem -> Color.cBoring  -- not important enough, no disturb even
     MsgStatusSleep -> Color.cSleep
     MsgStatusGoodUs -> Color.cGoodEvent
     MsgStatusBadUs -> Color.cBadEvent
     MsgStatusOthers -> Color.cBoring
+    MsgStatusBenign -> Color.cBoring
+    MsgStatusWarning -> Color.cMeta
+    MsgStatusLongerUs -> Color.cBoring  -- not important enough
+    MsgStatusLongThem -> Color.cBoring  -- not important enough, no disturb even
 
 -- * Report
 
