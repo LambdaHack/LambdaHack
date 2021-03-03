@@ -1626,7 +1626,7 @@ displayRespSfxAtomicUI sfx = case sfx of
       IK.Impress -> aidVerbMU MsgEffectMinor aid "be awestruck"
       IK.PutToSleep -> do
         let verb = "be put to sleep"
-            msuffix = if iid == btrunk b then Nothing else Just "by"
+            msuffix = Just $ if fidSource == bfid b then "due to" else "by"
         mitemAidVerbMU MsgEffectMajor aid verb iid msuffix
       IK.Yell -> aidVerbMU MsgMiscellanous aid "start"
       IK.Summon grp p -> do
