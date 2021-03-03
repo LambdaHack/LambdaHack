@@ -325,6 +325,7 @@ effectAndDestroy effApplyFlags0@EffApplyFlags{..} source target iid container
            execSfxAtomic $ SfxItemApplied iid container
        | effToUse == EffOnSmash
          || effActivation == EffPeriodic  -- periodic effects repeat and so spam
+         || effActivation == EffUnderAttack  -- and so do effects under attack
          || bproj sb  -- projectiles can be very numerous
          || isJust mEmbedPos  ->  -- embeds may be just flavour
            return ()
