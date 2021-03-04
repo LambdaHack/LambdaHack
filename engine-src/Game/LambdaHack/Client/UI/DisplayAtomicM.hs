@@ -1451,7 +1451,7 @@ ppHearMsg distance hearMsg = case hearMsg of
     return $! makeSentence ["you", adverb, "hear someone crash into something"]
   HearTaunt t -> do
     let adverb = MU.Text $ ppHearDistanceAdverb distance
-    return $! makePhrase ["you", adverb, "overhear", MU.Text t]
+    return $! makePhrase ["You", adverb, "overhear", MU.Text t]
 
 ppHearDistanceAdjective :: Maybe Int -> Text
 ppHearDistanceAdjective Nothing = "indistinct"
@@ -1776,15 +1776,18 @@ displayRespSfxAtomicUI sfx = case sfx of
                        else MsgStatusStopThem
         subject <- partActorLeader aid
         msgAdd msgClass $
-          makePhrase [MU.SubjectVerbSg subject $ MU.Text verb, MU.Text ending]
+          makePhrase [ MU.Capitalize $ MU.SubjectVerbSg subject $ MU.Text verb
+                     , MU.Text ending ]
       IK.VerbMsg verb ending -> do
         subject <- partActorLeader aid
         msgAdd MsgEffectMedium $
-          makePhrase [MU.SubjectVerbSg subject $ MU.Text verb, MU.Text ending]
+          makePhrase [ MU.Capitalize $ MU.SubjectVerbSg subject $ MU.Text verb
+                     , MU.Text ending ]
       IK.VerbMsgFail verb ending -> do
         subject <- partActorLeader aid
         msgAdd MsgActionWarning $
-          makePhrase [MU.SubjectVerbSg subject $ MU.Text verb, MU.Text ending]
+          makePhrase [ MU.Capitalize $ MU.SubjectVerbSg subject $ MU.Text verb
+                     , MU.Text ending ]
   SfxItemApplied iid c ->
     itemVerbMU MsgInnerWorkSpam iid (1, []) "have been triggered" c
   SfxMsgFid _ sfxMsg -> do
