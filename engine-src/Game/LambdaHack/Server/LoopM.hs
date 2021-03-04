@@ -696,9 +696,9 @@ dieSer aid b2 = do
   -- Note that some effects may be invoked on an actor that has
   -- no trunk any more. Conditions are ignored to avoid spam about them ending.
   bag <- getsState $ getBodyStoreBag b3 COrgan
-  getKind <- getsState $ flip getIidKindServer
+  discoAspect <- getsState sdiscoAspect
   let f = void <$$> dropCStoreItem False True COrgan aid b3 maxBound
-      isCondition = isJust . lookup IK.CONDITION . IK.ifreq . getKind
+      isCondition = IA.checkFlag Ability.Condition . (discoAspect EM.!)
   mapM_ (uncurry f) $ filter (not . isCondition . fst) $ EM.assocs bag
   -- As the last act of heroism, the actor (even if projectile)
   -- changes the terrain with its embedded items, if possible.
