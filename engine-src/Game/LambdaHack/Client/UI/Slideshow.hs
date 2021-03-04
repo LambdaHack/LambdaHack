@@ -247,8 +247,15 @@ splitOKX FontSetup{..} msgLong width height wrap reportAS keys (ls0, kxs0) =
                  else width
       repProp0 = offsetOverlay $ case repProp of
         [] -> []
-        r : rs -> (indentSplitSpaces msgWidth . attrLine) r  -- first long
-                  ++ concatMap (indentSplitSpaces msgWrap . attrLine) rs
+        r : rs ->
+          -- Make lines of first paragraph long if it has 2 lines at most.
+          -- The first line does not obscure anything and the second line
+          -- is often short anyway.
+          let firstWidth = if length (attrLine r) <= 2 * msgWidth
+                           then msgWidth
+                           else msgWrap
+          in (indentSplitSpaces firstWidth . attrLine) r  -- first possibly long
+             ++ concatMap (indentSplitSpaces msgWrap . attrLine) rs
       -- TODO: refactor this ugly pile of copy-paste
       repPropW = offsetOverlay
                  $ concatMap (indentSplitSpaces width . attrLine) repProp
