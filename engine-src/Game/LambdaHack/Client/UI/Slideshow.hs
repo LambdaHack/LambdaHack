@@ -215,7 +215,7 @@ splitOverlay fontSetup uScreen1PerLine width height wrap
                  else foldr (<+:>) [] renderedReport
       msgLong = not uScreen1PerLine
                 && null keys && EM.null ls0 && null kxs0
-                && length renderedReport <= 2 * width
+                && length reportAS <= 2 * width
                 && all ((/= '\n') . Color.charFromW32) reportAS
                      -- if fits in one long line, don't wrap into short lines
   in toSlideshow fontSetup $ splitOKX fontSetup msgLong width height wrap
