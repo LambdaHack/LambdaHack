@@ -232,7 +232,7 @@ splitOKX FontSetup{..} msgLong width height wrap reportAS keys (ls0, kxs0) =
       reportParagraphs = linesAttr reportAS
       -- TODO: until SDL support for measuring prop font text is released,
       -- we have to use MonoFont for the paragraph that ends with buttons.
-      (repPrep, repMono) =
+      (repProp, repMono) =
         if null keys
         then (reportParagraphs, emptyAttrLine)
         else case reverse reportParagraphs of
@@ -245,31 +245,31 @@ splitOKX FontSetup{..} msgLong width height wrap reportAS keys (ls0, kxs0) =
       msgWidth = if msgLong && not (isSquareFont propFont)
                  then 2 * width
                  else width
-      repPrep0 = offsetOverlay $ case repPrep of
+      repProp0 = offsetOverlay $ case repProp of
         [] -> []
         r : rs -> (indentSplitSpaces msgWidth . attrLine) r  -- first long
                   ++ concatMap (indentSplitSpaces msgWrap . attrLine) rs
       -- TODO: refactor this ugly pile of copy-paste
-      repPrepW = offsetOverlay
-                 $ concatMap (indentSplitSpaces width . attrLine) repPrep
+      repPropW = offsetOverlay
+                 $ concatMap (indentSplitSpaces width . attrLine) repProp
       -- If the mono portion first on the line, let it take half width,
       -- but if previous lines shorter, match them and only buttons
       -- are permitted to stick out.
-      monoWidth = if null repPrep then msgWidth else msgWrap
+      monoWidth = if null repProp then msgWidth else msgWrap
       repMono0 = map (\(PointUI x y, al) ->
-                        (PointUI x (y + length repPrep0), al))
+                        (PointUI x (y + length repProp0), al))
                  $ offsetOverlay
                  $ indentSplitAttrString monoWidth $ attrLine repMono
       repMonoW = map (\(PointUI x y, al) ->
-                        (PointUI x (y + length repPrepW), al))
+                        (PointUI x (y + length repPropW), al))
                  $ offsetOverlay
                  $ indentSplitAttrString width $ attrLine repMono
       repWhole0 = offsetOverlay
                   $ concatMap (indentSplitSpaces msgWidth . attrLine)
                               reportParagraphs
       repWhole1 = map (\(PointUI x y, al) -> (PointUI x (y + 1), al)) repWhole0
-      lenOfRep0 = length repPrep0 + length repMono0
-      lenOfRepW = length repPrepW + length repMonoW
+      lenOfRep0 = length repProp0 + length repMono0
+      lenOfRepW = length repPropW + length repMonoW
       startOfKeys = if null repMono0
                     then 0
                     else textSize monoFont (attrLine $ snd $ last repMono0)
@@ -287,8 +287,8 @@ splitOKX FontSetup{..} msgLong width height wrap reportAS keys (ls0, kxs0) =
       renumber dy (km, (PointUI x y, len)) = (km, (PointUI x (y + dy), len))
       renumberOv dy = map (\(PointUI x y, al) -> (PointUI x (y + dy), al))
       splitO :: Int -> (Overlay, Overlay, [KYX]) -> OKX -> [OKX]
-      splitO yoffset (hdrPrep, hdrMono, rk) (ls, kxs) =
-        let hdrOff | null hdrPrep && null hdrMono = 0
+      splitO yoffset (hdrProp, hdrMono, rk) (ls, kxs) =
+        let hdrOff | null hdrProp && null hdrMono = 0
                    | otherwise = 1 + maxYofOverlay hdrMono
             keyRenumber = map $ renumber (hdrOff - yoffset)
             lineRenumber = EM.map $ renumberOv (hdrOff - yoffset)
@@ -297,13 +297,13 @@ splitOKX FontSetup{..} msgLong width height wrap reportAS keys (ls0, kxs0) =
             ltOffset (PointUI _ y, _) = y < yoffsetNew
             (pre, post) = ( filter ltOffset <$> ls
                           , filter (not . ltOffset) <$> ls )
-            prependHdr = EM.insertWith (++) propFont hdrPrep
+            prependHdr = EM.insertWith (++) propFont hdrProp
                          . EM.insertWith (++) monoFont hdrMono
         in if all null $ EM.elems post  -- all fits on one screen
            then [(prependHdr $ lineRenumber pre, rk ++ keyRenumber kxs)]
            else let (preX, postX) = span (\(_, pa) -> ltOffset pa) kxs
                 in (prependHdr $ lineRenumber pre, rk ++ keyRenumber preX)
-                   : splitO yoffsetNew (hdrPrep, hdrMono, rk) (post, postX)
+                   : splitO yoffsetNew (hdrProp, hdrMono, rk) (post, postX)
       firstParaReport = firstParagraph reportAS
       hdrShortened = ( [(PointUI 0 0, firstParaReport)]
                          -- shortened for the main slides; in full beforehand
@@ -312,9 +312,9 @@ splitOKX FontSetup{..} msgLong width height wrap reportAS keys (ls0, kxs0) =
       ((lsInit, kxsInit), (headerProp, headerMono, rkxs)) =
         -- Check whether all space taken by report and keys.
         if | (lenOfRep0 + length lX) < height ->  -- display normally
-             ((EM.empty, []), (repPrep0, lX ++ repMono0, keysX))
+             ((EM.empty, []), (repProp0, lX ++ repMono0, keysX))
            | (lenOfRepW + length lXW) < height ->  -- display widely
-             ((EM.empty, []), (repPrepW, lXW ++ repMonoW, keysXW))
+             ((EM.empty, []), (repPropW, lXW ++ repMonoW, keysXW))
            | length reportParagraphs == 1
              && length (attrLine firstParaReport) <= 2 * width ->
              ( (EM.empty, [])  -- already shown in full in @hdrShortened@
