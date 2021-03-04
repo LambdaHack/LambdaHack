@@ -68,7 +68,8 @@ irregular = MU.Irregular
   { irrPlural =
       M.fromList
         [ ("merchandise", "merchandise")
-        , ("Merchandise", "Merchandise") ]
+        , ("Merchandise", "Merchandise")
+        , ("stomach", "stomachs") ]
             -- this is both countable and uncountable, but I use it here
             -- only as uncountable, do I overwrite the default
       `M.union` MU.irrPlural MU.defIrregular
