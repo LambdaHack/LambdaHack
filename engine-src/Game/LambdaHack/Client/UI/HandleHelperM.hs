@@ -52,6 +52,7 @@ import           Game.LambdaHack.Common.ClientOptions
 import           Game.LambdaHack.Common.Faction
 import qualified Game.LambdaHack.Common.HighScore as HighScore
 import           Game.LambdaHack.Common.Item
+import qualified Game.LambdaHack.Common.ItemAspect as IA
 import           Game.LambdaHack.Common.Kind
 import           Game.LambdaHack.Common.Level
 import           Game.LambdaHack.Common.Misc
@@ -247,8 +248,9 @@ itemOverlay lSlots lid bag displayRanged = do
           Nothing -> Nothing
           Just kit@(k, _) ->
             let itemFull = itemToF iid
+                arItem = aspectRecordFull itemFull
                 colorSymbol =
-                  if isJust $ lookup IK.CONDITION $ IK.ifreq $ itemKind itemFull
+                  if IA.checkFlag Ability.Condition arItem
                   then let color = if benInEqp (discoBenefit EM.! iid)
                                    then Color.BrGreen
                                    else Color.BrRed

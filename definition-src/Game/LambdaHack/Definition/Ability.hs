@@ -85,9 +85,9 @@ data Flag =
                   --   also may be used for UI flavour or AI hints
   | Blast         -- ^ the item is an explosion blast particle
   | Condition     -- ^ item is a condition (buff or de-buff) of an actor
-                  --   and is displayed as such;
+                  --   and is displayed as such and activated on drop;
                   --   this differs from belonging to the @CONDITION@ group,
-                  --   which doesn't guarantee display as a condition,
+                  --   which doesn't guarantee any behaviour or display,
                   --   but governs removal by items that drop @CONDITION@
   | Unique        -- ^ at most one copy can ever be generated
   | MetaGame      -- ^ once identified, the item is known until savefile deleted

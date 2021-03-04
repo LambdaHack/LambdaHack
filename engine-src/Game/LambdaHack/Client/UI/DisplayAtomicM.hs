@@ -2079,7 +2079,7 @@ strike catch source target iid = assert (source /= target) $ do
     let notCond (_, (itemFullArmor, _)) =
           not $ IA.checkFlag Ability.Condition $ aspectRecordFull itemFullArmor
         isOrdinaryCond (_, (itemFullArmor, _)) =
-          isJust $ lookup IK.CONDITION $ IK.ifreq $ itemKind itemFullArmor
+          IA.checkFlag Ability.Condition $ aspectRecordFull itemFullArmor
         relevantSkArmor =
           if bproj sb then Ability.SkArmorRanged else Ability.SkArmorMelee
         rateArmor (iidArmor, (itemFullArmor, (k, _))) =
