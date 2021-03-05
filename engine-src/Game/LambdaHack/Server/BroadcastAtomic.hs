@@ -228,9 +228,9 @@ hearSfxAtomic cmd =
       b <- getsState $ getActorBody aid
       discoAspect <- getsState sdiscoAspect
       let arTrunk = discoAspect EM.! btrunk b
-          phrase = makePhrase [ MU.SubjectVerbSg "noises of someone that"
-                                                 (MU.Text verb)
-                              , MU.Text ending ]
+          subject = "noises of someone that"
+          phrase = makePhrase [MU.SubjectVerbSg subject (MU.Text verb)]
+                   <> ending
       return $! if IA.checkFlag Ability.Unique arTrunk
                 then Just (HearTaunt phrase, True, bpos b)
                 else Nothing

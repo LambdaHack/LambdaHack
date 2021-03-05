@@ -1776,18 +1776,18 @@ displayRespSfxAtomicUI sfx = case sfx of
                        else MsgStatusStopThem
         subject <- partActorLeader aid
         msgAdd msgClass $
-          makePhrase [ MU.Capitalize $ MU.SubjectVerbSg subject $ MU.Text verb
-                     , MU.Text ending ]
+          makePhrase [MU.Capitalize $ MU.SubjectVerbSg subject $ MU.Text verb]
+          <> ending
       IK.VerbMsg verb ending -> do
         subject <- partActorLeader aid
         msgAdd MsgEffectMedium $
-          makePhrase [ MU.Capitalize $ MU.SubjectVerbSg subject $ MU.Text verb
-                     , MU.Text ending ]
+          makePhrase [MU.Capitalize $ MU.SubjectVerbSg subject $ MU.Text verb]
+          <> ending
       IK.VerbMsgFail verb ending -> do
         subject <- partActorLeader aid
         msgAdd MsgActionWarning $
-          makePhrase [ MU.Capitalize $ MU.SubjectVerbSg subject $ MU.Text verb
-                     , MU.Text ending ]
+          makePhrase [MU.Capitalize $ MU.SubjectVerbSg subject $ MU.Text verb]
+          <> ending
   SfxItemApplied iid c ->
     itemVerbMU MsgInnerWorkSpam iid (1, []) "have been triggered" c
   SfxMsgFid _ sfxMsg -> do

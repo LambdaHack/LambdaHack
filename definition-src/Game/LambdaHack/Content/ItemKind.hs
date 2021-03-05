@@ -250,13 +250,10 @@ data Effect =
       --   texts as the verb and the ending of the sentence (that may be
       --   ignored when the message is cited, e.g., as heard by someone)
       --   that is emitted when an activation causes an item to expire;
-      --   no spam is emitted if a projectile
+      --   no spam is emitted if a projectile; the ending is appended
+      --   without a space in-between
   | VerbMsg Text Text
-      -- ^ a sentence with the actor causing the effect as subject, the given
-      --   texts as the verb and the ending of the sentence (that may be
-      --   ignored when the message is cited, e.g., as heard by someone)
-      --   that is emitted whenever the item is activated;
-      --   no spam is emitted if a projectile
+      -- ^ as @VerbNoLonger@ but that is emitted whenever the item is activated;
   | VerbMsgFail Text Text
       -- ^ as @VerbMsg@, but a failed effect (returns @UseDud@)
   deriving (Show, Eq, Generic)
