@@ -468,12 +468,27 @@ itemDesc width markParagraphs side factionD aHurtMeleeOfOwner store localTime
             "Coming from" <+> whose fid
             <> "." <+> discoFirst
           _ -> discoFirst
-      ikitNames = map (fromGroupName . fst) $ filter ((== COrgan) . snd)
-                                            $ IK.ikit itemKind
-      ikitDesc | null ikitNames = ""
-               | otherwise = makeSentence
-        [ "the actor also has organs of this kind:"
-        , MU.Text $ T.intercalate ", " ikitNames ]
+      -- Organs are almost always either empty or more than singular,
+      -- so the "organs" below is fine. Also, some organs come in pairs
+      -- or more, so we don't know the number without much more work,
+      -- so @squashedWWandW@ would be out of place. Also, mentioning
+      -- two hands and two legs is not that enlightening and the number
+      -- is not shown in organ lore, so this should wait until we add
+      -- proper hyperlinks both ways instead of relying of names.
+      ikitToPart = MU.Text . T.intercalate ", " . map (fromGroupName . fst)
+      (ikitOrganNames, ikitOtherNames) =
+        partition ((== COrgan) . snd) $ IK.ikit itemKind
+      ikitDesc | null ikitOrganNames = ""
+               | otherwise =
+        makeSentence
+          [ "the actor has organs of this kind:"
+          , ikitToPart ikitOrganNames ]
+        <> if null ikitOtherNames
+           then ""
+           else "\n\n"
+                <> makeSentence
+                     [ "the actor starts in possession of the following:"
+                     , ikitToPart ikitOtherNames ]
       colorSymbol = viewItem itemFull
       blurb =
        (((" "
@@ -484,9 +499,9 @@ itemDesc width markParagraphs side factionD aHurtMeleeOfOwner store localTime
           <> desc
           <> (if markParagraphs && not (T.null desc) then "\n\n" else ""))
         <+> (if weight > 0
-              then makeSentence
-                     ["Weighs around", MU.Text scaledWeight <> unitWeight]
-              else ""))
+             then makeSentence
+                    ["Weighs around", MU.Text scaledWeight <> unitWeight]
+             else ""))
         <+> aspectSentences
         <+> sourceDesc
         <+> damageAnalysis)
