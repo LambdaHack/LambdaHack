@@ -209,7 +209,7 @@ resetFactions :: FactionDict -> ContentId ModeKind -> Int -> Dice.AbsDepth
               -> Roster
               -> Rnd FactionDict
 resetFactions factionDold gameModeIdOld curDiffSerOld totalDepth players = do
-  let rawCreate (ix, (gplayer@Player{..}, gteamCont, initialActors)) = do
+  let rawCreate (ixRaw, (gplayer@Player{..}, gteamCont, initialActors)) = do
         let castInitialActors (ln, d, actorGroup) = do
               n <- castDice (Dice.AbsDepth $ abs ln) totalDepth d
               return (ln, n, actorGroup)
@@ -240,8 +240,12 @@ resetFactions factionDold gameModeIdOld curDiffSerOld totalDepth players = do
             gvictims = EM.empty
             gvictimsD = gvictimsDnew
             gstash = Nothing
+            ix = case gteamCont of
+              Just (TeamContinuity k) -> k
+              _ -> ixRaw
         return $ (toEnum $ if fhasUI then ix else -ix, Faction{..})
-  lFs <- mapM rawCreate $ zip [1..] $ rosterList players
+  -- We assume @TeamContinuity@ are small integers.
+  lFs <- mapM rawCreate $ zip [1000..] $ rosterList players
   let swapIx l =
         let findPlayerName name = find ((name ==) . fname . gplayer . snd)
             f (name1, name2) =
