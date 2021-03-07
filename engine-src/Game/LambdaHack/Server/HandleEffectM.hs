@@ -2143,16 +2143,14 @@ effectApplyPerfume execSfx target = do
 effectOneOf :: MonadServerAtomic m
             => (IK.Effect -> m UseResult) -> [IK.Effect] -> m UseResult
 effectOneOf recursiveCall l = do
-  let call1 = do
-        ef <- rndToAction $ oneOf l
-        recursiveCall ef
-      call99 = replicate 99 call1
-      f call result = do
-        ur <- call
-        -- We avoid 99 calls to a fizzling effect that only prints
-        -- a failure message and IDs the item.
+  shuffled <- rndToAction $ shuffle l
+  let f eff result = do
+        ur <- recursiveCall eff
+        -- We stop at @UseId@ activation and in this ways avoid potentially
+        -- many calls to fizzling effects that only spam a failure message
+        -- and ID the item.
         if ur == UseDud then result else return ur
-  foldr f (return UseDud) call99
+  foldr f (return UseDud) shuffled
   -- no @execSfx@, because individual effects sent them
 
 -- ** AndEffect

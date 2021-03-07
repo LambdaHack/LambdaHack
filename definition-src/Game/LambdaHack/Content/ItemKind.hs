@@ -227,7 +227,8 @@ data Effect =
   | PushActor ThrowMod    -- ^ push an actor
   | PullActor ThrowMod    -- ^ pull an actor
   | ApplyPerfume          -- ^ remove all smell on the level
-  | OneOf [Effect]        -- ^ trigger one of the effects with equal probability
+  | OneOf [Effect]        -- ^ trigger, with equal probability,
+                          --   one of the effects that don't end with @UseDud@
   | OnSmash Effect
       -- ^ trigger the effect when item smashed (not when applied nor meleed)
   | OnCombine Effect
@@ -255,7 +256,7 @@ data Effect =
   | VerbMsg Text Text
       -- ^ as @VerbNoLonger@ but that is emitted whenever the item is activated;
   | VerbMsgFail Text Text
-      -- ^ as @VerbMsg@, but a failed effect (returns @UseDud@)
+      -- ^ as @VerbMsg@, but a failed effect (returns @UseId@)
   deriving (Show, Eq, Generic)
 
 data Condition =
