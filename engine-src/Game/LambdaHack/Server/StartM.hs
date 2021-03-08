@@ -245,7 +245,7 @@ resetFactions factionDold gameModeIdOld curDiffSerOld totalDepth players = do
               _ -> ixRaw
         return $ (toEnum $ if fhasUI then ix else -ix, Faction{..})
   -- We assume @TeamContinuity@ are small integers.
-  lFs <- mapM rawCreate $ zip [1000..] $ rosterList players
+  lFs <- mapM rawCreate $ zip [100..] $ rosterList players
   let swapIx l =
         let findPlayerName name = find ((name ==) . fname . gplayer . snd)
             f (name1, name2) =

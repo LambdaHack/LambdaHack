@@ -174,7 +174,7 @@ executorSer cops ccui soptionsNxtCmdline sUIOptions = do
       bkpAllSaves = unless (sbenchmark $ sclientOptions soptionsNxt) $ do
         T.hPutStrLn stdout "The game crashed, so savefiles are moved aside."
         bkpOneSave $ defPrefix <> Save.saveNameSer cops
-        forM_ [-99..99] $ \n ->
+        forM_ [-199..199] $ \n ->
           bkpOneSave $ defPrefix <> Save.saveNameCli cops (toEnum n)
   -- Wait for clients to exit even in case of server crash
   -- (or server and client crash), which gives them time to save
