@@ -63,6 +63,7 @@ data Roster = Roster
   }
   deriving Show
 
+-- | Team continuity index. Starting with 1, lower than 100.
 newtype TeamContinuity = TeamContinuity Int
   deriving (Show, Eq, Ord, Enum, Generic)
 
@@ -158,7 +159,7 @@ data AutoLeader = AutoLeader
 instance Binary AutoLeader
 
 teamExplorer :: TeamContinuity
-teamExplorer = TeamContinuity 0
+teamExplorer = TeamContinuity 1
 
 victoryOutcomes :: [Outcome]
 victoryOutcomes = [Escape, Conquer]
