@@ -239,6 +239,7 @@ data Effect =
       --   in particular, don't trigger the effects when entering a tile;
       --   trigger exclusively the effects when activating walkable terrain
   | OnUser Effect  -- ^ apply the effect to the user, not the victim
+  | NopEffect                -- ^ nothing happens, @UseDud@, no description
   | AndEffect Effect Effect  -- ^ only fire second effect if first activated
   | OrEffect Effect Effect   -- ^ only fire second effect if first not activated
   | SeqEffect [Effect]       -- ^ fire all effects in order; always suceed
@@ -339,6 +340,7 @@ forApplyEffect eff = case eff of
   OnSmash{} -> False
   OnCombine{} -> False
   OnUser eff1 -> forApplyEffect eff1
+  NopEffect -> False
   AndEffect eff1 eff2 -> forApplyEffect eff1 || forApplyEffect eff2
   OrEffect eff1 eff2 -> forApplyEffect eff1 || forApplyEffect eff2
   SeqEffect effs -> or $ map forApplyEffect effs

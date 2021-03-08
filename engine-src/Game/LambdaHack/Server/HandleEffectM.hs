@@ -475,6 +475,7 @@ effectSem effApplyFlags0@EffApplyFlags{..}
     IK.OnSmash _ -> return UseDud  -- ignored under normal circumstances
     IK.OnCombine _ -> return UseDud  -- ignored under normal circumstances
     IK.OnUser eff -> effectSem effApplyFlags0 source source iid c eff
+    IK.NopEffect -> return UseDud  -- all there is
     IK.AndEffect eff1 eff2 -> effectAndEffect recursiveCall source eff1 eff2
     IK.OrEffect eff1 eff2 -> effectOrEffect recursiveCall eff1 eff2
     IK.SeqEffect effs -> effectSeqEffect recursiveCall effs

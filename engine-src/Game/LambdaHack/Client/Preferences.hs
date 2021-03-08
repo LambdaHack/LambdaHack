@@ -200,6 +200,7 @@ effectToBenefit cops fid factionD eff =
            -- in a way, this should be double-counted, because the effect
            -- not only hinders (or enhances) applying the item,
            -- but meleeing with it, too
+    IK.NopEffect -> delta 0
     IK.AndEffect eff1 _ -> effectToBenefit cops fid factionD eff1
       -- for simplicity; so in content make sure to place initial animations
       -- among normal effects, not at the start of composite effect

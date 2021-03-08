@@ -166,6 +166,7 @@ effectToSuffix detailLevel effect =
     OnCombine _ -> ""  -- printed inside a separate section
     OnUser eff -> let t = effectToSuffix detailLevel eff
                   in if T.null t then "" else "(on user:" <+> t <> ")"
+    NopEffect -> ""  -- never printed
     AndEffect (ConsumeItems tools raw) eff -> case detailLevel of
       DetailAll ->
        let (tcraft, traw, ttools) = describeCrafting tools raw eff
