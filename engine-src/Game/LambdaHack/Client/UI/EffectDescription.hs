@@ -142,9 +142,19 @@ effectToSuffix detailLevel effect =
     SendFlying tmod -> "of impact" <+> tmodToSuff "" tmod
     PushActor tmod -> "of pushing" <+> tmodToSuff "" tmod
     PullActor tmod -> "of pulling" <+> tmodToSuff "" tmod
+    AtMostOneOf effs ->
+      let ts = filter (/= "") $ map (effectToSuffix detailLevel) effs
+          subject = "marvel"
+          header = makePhrase ["of", MU.CardinalWs (length ts) subject]
+          sometimes = if length effs > length ts then "(sometimes)" else ""
+      in case ts of
+        [] -> ""
+        [wonder] -> wonder <+> sometimes
+        _ | detailLevel < DetailAll -> header
+        _ -> header <+> "[" <> T.intercalate ", " ts <> "]" <+> sometimes
     OneOf effs ->
       let ts = filter (/= "") $ map (effectToSuffix detailLevel) effs
-          subject = if length ts <= 5 then "marvel" else "wonder"
+          subject = "wonder"
           header = makePhrase ["of", MU.CardinalWs (length ts) subject]
           sometimes = if length effs > length ts then "(sometimes)" else ""
       in case ts of

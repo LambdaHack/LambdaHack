@@ -18,7 +18,7 @@ module Game.LambdaHack.Server.HandleEffectM
   , effectDestroyItem, effectDropItem, effectConsumeItems
   , effectRecharge, effectPolyItem, effectRerollItem, effectDupItem
   , effectIdentify, identifyIid, effectDetect, effectDetectX, effectSendFlying
-  , sendFlyingVector, effectApplyPerfume, effectOneOf
+  , sendFlyingVector, effectApplyPerfume, effectAtMostOneOf, effectOneOf
   , effectAndEffect, effectAndEffectSem, effectOrEffect, effectSeqEffect
   , effectWhen, effectIfThenElse, effectVerbNoLonger, effectVerbMsg, effectVerbMsgFail
 #endif
@@ -470,6 +470,7 @@ effectSem effApplyFlags0@EffApplyFlags{..}
     IK.PullActor tmod ->
       effectSendFlying execSfx tmod source target c (Just False)
     IK.ApplyPerfume -> effectApplyPerfume execSfx target
+    IK.AtMostOneOf l -> effectAtMostOneOf recursiveCall l
     IK.OneOf l -> effectOneOf recursiveCall l
     IK.OnSmash _ -> return UseDud  -- ignored under normal circumstances
     IK.OnCombine _ -> return UseDud  -- ignored under normal circumstances
@@ -1925,6 +1926,7 @@ effectDetect execSfx d radius target container = do
       effectHasLoot IK.PolyItem = True
       effectHasLoot IK.RerollItem = True
       effectHasLoot IK.DupItem = True
+      effectHasLoot (IK.AtMostOneOf l) = any effectHasLoot l
       effectHasLoot (IK.OneOf l) = any effectHasLoot l
       effectHasLoot (IK.OnSmash eff) = effectHasLoot eff
       effectHasLoot (IK.OnUser eff) = effectHasLoot eff
@@ -2138,6 +2140,15 @@ effectApplyPerfume execSfx target = do
     mapWithKeyM_ f lsmell
   return UseUp  -- even if no smell before, the perfume is noticeable
 
+-- ** AtMostOneOf
+
+effectAtMostOneOf :: MonadServerAtomic m
+                  => (IK.Effect -> m UseResult) -> [IK.Effect] -> m UseResult
+effectAtMostOneOf recursiveCall l = do
+  chosen <- rndToAction $ oneOf l
+  recursiveCall chosen
+  -- no @execSfx@, because the individual effect sents it
+
 -- ** OneOf
 
 effectOneOf :: MonadServerAtomic m
@@ -2151,7 +2162,7 @@ effectOneOf recursiveCall l = do
         -- and ID the item.
         if ur == UseDud then result else return ur
   foldr f (return UseDud) shuffled
-  -- no @execSfx@, because individual effects sent them
+  -- no @execSfx@, because the individual effect sents it
 
 -- ** AndEffect
 

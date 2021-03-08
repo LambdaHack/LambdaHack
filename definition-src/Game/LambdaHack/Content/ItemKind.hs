@@ -227,6 +227,7 @@ data Effect =
   | PushActor ThrowMod    -- ^ push an actor
   | PullActor ThrowMod    -- ^ pull an actor
   | ApplyPerfume          -- ^ remove all smell on the level
+  | AtMostOneOf [Effect]  -- ^ try to trigger a single random effect of the list
   | OneOf [Effect]        -- ^ trigger, with equal probability,
                           --   one of the effects that don't end with @UseDud@
   | OnSmash Effect
@@ -364,6 +365,7 @@ isDamagingKind itemKind = Dice.infDice (idamage itemKind) > 0
 
 isEffEscape :: Effect -> Bool
 isEffEscape Escape{} = True
+isEffEscape (AtMostOneOf l) = any isEffEscape l
 isEffEscape (OneOf l) = any isEffEscape l
 isEffEscape (OnCombine eff) = isEffEscape eff
 isEffEscape (OnUser eff) = isEffEscape eff
@@ -377,6 +379,7 @@ isEffEscape _ = False
 isEffEscapeOrAscend :: Effect -> Bool
 isEffEscapeOrAscend Ascend{} = True
 isEffEscapeOrAscend Escape{} = True
+isEffEscapeOrAscend (AtMostOneOf l) = any isEffEscapeOrAscend l
 isEffEscapeOrAscend (OneOf l) = any isEffEscapeOrAscend l
 isEffEscapeOrAscend (OnCombine eff) = isEffEscapeOrAscend eff
 isEffEscapeOrAscend (OnUser eff) = isEffEscapeOrAscend eff
@@ -429,6 +432,7 @@ getDropOrgans =
   let f (DestroyItem _ _ COrgan grp) = [grp]
       f (DropItem _ _ COrgan grp) = [grp]
       f Impress = [S_IMPRESSED]
+      f (AtMostOneOf l) = concatMap f l  -- even remote possibility accepted
       f (OneOf l) = concatMap f l  -- even remote possibility accepted
       f (OnUser eff) = f eff  -- no OnCombine, because checked for potions, etc.
       f (AndEffect eff1 eff2) = f eff1 ++ f eff2  -- not certain, but accepted
@@ -564,10 +568,12 @@ validateSingle ik@ItemKind{..} =
      in [ "effects with non-positive Burn:" <+> tshow containingNonPositiveBurn
         | not $ null containingNonPositiveBurn ]
   ++ let emptyOneOf :: Effect -> Bool
+         emptyOneOf (AtMostOneOf []) = True
          emptyOneOf (OneOf []) = True
          emptyOneOf _ = False
          containingEmptyOneOf = filter (checkSubEffectProp emptyOneOf) ieffects
-     in [ "effects with empty OneOf:" <+> tshow containingEmptyOneOf
+     in [ "effects with empty AtMostOneOf or OneOf:"
+          <+> tshow containingEmptyOneOf
         | not $ null containingEmptyOneOf ]
   ++ (let nonPositiveEffect :: Effect -> Bool
           nonPositiveEffect (CreateItem (Just n) _ _ _) | n <= 0 = True
@@ -613,7 +619,8 @@ validateOnlyOne effs t f =
 -- We check it's not nested one nor more levels.
 validateNotNested :: [Effect] -> Text -> (Effect -> Bool) -> [Text]
 validateNotNested effs t f =
-  let g (OneOf l) = any h l
+  let g (AtMostOneOf l) = any h l
+      g (OneOf l) = any h l
       g (OnSmash effect) = h effect
       g (OnCombine effect) = h effect
       g (OnUser effect) = h effect
@@ -630,7 +637,8 @@ validateNotNested effs t f =
 
 checkSubEffectProp :: (Effect -> Bool) -> Effect -> Bool
 checkSubEffectProp f eff =
-  let g (OneOf l) = any h l
+  let g (AtMostOneOf l) = any h l
+      g (OneOf l) = any h l
       g (OnSmash effect) = h effect
       g (OnCombine effect) = h effect
       g (OnUser effect) = h effect

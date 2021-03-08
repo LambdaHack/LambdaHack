@@ -1761,6 +1761,7 @@ displayRespSfxAtomicUI sfx = case sfx of
       IK.ApplyPerfume ->
         msgAdd MsgEffectMinor
                "The fragrance quells all scents in the vicinity."
+      IK.AtMostOneOf{} -> return ()
       IK.OneOf{} -> return ()
       IK.OnSmash{} -> error $ "" `showFailure` sfx
       IK.OnCombine{} -> error $ "" `showFailure` sfx

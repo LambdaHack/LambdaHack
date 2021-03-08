@@ -177,6 +177,11 @@ effectToBenefit cops fid factionD eff =
     IK.PushActor _ -> (0, -100)  -- pushing others may crush them against wall
                                  -- and give us time to fling at them
     IK.ApplyPerfume -> delta 0  -- depends on smell sense of friends and foes
+    IK.AtMostOneOf effs ->
+      let bs = map (effectToBenefit cops fid factionD) effs
+          f (self, foe) (accSelf, accFoe) = (self + accSelf, foe + accFoe)
+          (effSelf, effFoe) = foldr f (0, 0) bs
+      in (effSelf / intToDouble (length bs), effFoe / intToDouble (length bs))
     IK.OneOf effs ->
       let bs = map (effectToBenefit cops fid factionD) effs
           f (self, foe) (accSelf, accFoe) = (self + accSelf, foe + accFoe)
