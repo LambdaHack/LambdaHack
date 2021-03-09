@@ -1986,7 +1986,6 @@ ppSfxMsg sfxMsg = case sfxMsg of
     if aidSeen && iidSeen then do
       b <- getsState $ getActorBody aid
       bUI <- getsSession $ getActorUI aid
-        -- assume almost always a prior message mentions the object
       factionD <- getsState sfactionD
       localTime <- getsState $ getLocalTime (blid b)
       itemFull <- getsState $ itemToFull iid
@@ -1999,6 +1998,11 @@ ppSfxMsg sfxMsg = case sfxMsg of
             (_, t:_) -> deltaOfItemTimer localTime t
               -- only exceptionally not singleton list
       storeOwn <- ppContainerWownW partPronounLeader True (CActor aid cstore)
+      -- Ideally we'd use a pronoun here, but the action (e.g., hit)
+      -- that caused this extension can be invisible to some onlookers.
+      -- So their narrative context needs to be taken into account.
+      -- The upside is that the messages do not bind pronouns
+      -- and so commute and so repetitions can be squashed.
       let cond = [ "condition"
                  | IA.checkFlag Ability.Condition $ aspectRecordFull itemFull ]
           usShow =
@@ -2016,9 +2020,6 @@ ppSfxMsg sfxMsg = case sfxMsg of
             [partItemShortWownW rwidth side factionD (partActor bUI) localTime
                                 itemFull quantSingle]
             ++ cond ++ ["is extended"]
-          -- Ideally we'd use a pronoun here, but the action (e.g., hit)
-          -- that caused this extension can be invisible to some onlookers.
-          -- So their narrative context needs to be taken into account.
           themSave =
             [partItemShortWownW rwidth side factionD (partActor bUI) localTime
                                 itemFull quantSingle]

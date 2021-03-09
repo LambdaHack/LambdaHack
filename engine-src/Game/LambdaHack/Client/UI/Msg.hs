@@ -305,8 +305,8 @@ scrapsRepeats = \case
 -- Only player's non-projectile actors getting hit introduce subjects,
 -- because only such hits are guaranteed to be perceived.
 -- Here we also mark friends being hit, but that's a safe approximation.
--- We also mark the messages that use the introduced subjects
--- by referring to them via pronouns. They can't be moved freely either.
+-- The following messages introduce and use the introduced subjects
+-- by referring to them via pronouns. They can't be moved freely.
 bindsPronouns :: MsgClass -> Bool
 bindsPronouns = \case
   MsgClassShowAndSave x -> case x of
@@ -315,10 +315,6 @@ bindsPronouns = \case
     MsgMeleeMightyUs -> True
     MsgMeleeComplexUs -> True
     MsgMeleeNormalUs -> True
-    _ -> False
-  MsgClassDistinct x -> case x of
-    MsgStatusLongerUs -> True
-    MsgStatusLongThem -> True
     _ -> False
   _ -> False
 
