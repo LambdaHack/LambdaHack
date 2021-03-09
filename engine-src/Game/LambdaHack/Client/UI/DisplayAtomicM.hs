@@ -1441,10 +1441,11 @@ ppHearMsg distance hearMsg = case hearMsg of
     return $! msg
   HearSummon isProj grp p -> do
     let verb = if isProj then "something lure" else "somebody summon"
-        adverb = MU.Text $ ppHearDistanceAdverb distance
+        part = MU.Text $ fromGroupName grp
         object = if p == 1  -- works, because exact number sent, not dice
-                 then MU.Text $ fromGroupName grp
-                 else MU.Ws $ MU.Text $ fromGroupName grp
+                 then MU.AW part
+                 else MU.Ws part
+        adverb = MU.Text $ ppHearDistanceAdverb distance
     return $! makeSentence ["you", adverb, "hear", verb, object]
   HearCollideTile -> do
     let adverb = MU.Text $ ppHearDistanceAdverb distance
@@ -1631,9 +1632,10 @@ displayRespSfxAtomicUI sfx = case sfx of
       IK.Yell -> aidVerbMU MsgMiscellanous aid "start"
       IK.Summon grp p -> do
         let verbBase = if bproj b then "lure" else "summon"
-            object = (if p == 1  -- works, because exact number sent, not dice
-                      then MU.AW
-                      else MU.Ws) $ MU.Text $ fromGroupName grp
+            part = MU.Text $ fromGroupName grp
+            object = if p == 1  -- works, because exact number sent, not dice
+                     then MU.AW part
+                     else MU.Ws part
             verb = MU.Phrase [verbBase, object]
             msuffix = Just "with"
         mitemAidVerbMU MsgEffectMajor aid verb iid msuffix
