@@ -16,7 +16,7 @@ module Game.LambdaHack.Client.UI.Msg
     -- * Internal operations
   , UAttrString, uToAttrString, attrStringToU
   , toMsg, MsgPrototype, tripleFromProto
-  , scrapsRepeats, bindsPronouns, tutorialHint, msgColor
+  , scrapsRepeats, tutorialHint, msgColor
   , RepMsgNK, nullRepMsgNK
   , emptyReport, renderWholeReport, renderRepetition
   , scrapRepetitionSingle, scrapRepetition, renderTimeReport
@@ -302,22 +302,6 @@ scrapsRepeats = \case
   MsgClassDistinct x -> case x of
     _ -> True
 
--- Only player's non-projectile actors getting hit introduce subjects,
--- because only such hits are guaranteed to be perceived.
--- Here we also mark friends being hit, but that's a safe approximation.
--- The following messages introduce and use the introduced subjects
--- by referring to them via pronouns. They can't be moved freely.
-bindsPronouns :: MsgClass -> Bool
-bindsPronouns = \case
-  MsgClassShowAndSave x -> case x of
-    MsgRangedMightyUs -> True
-    MsgRangedNormalUs -> True
-    MsgMeleeMightyUs -> True
-    MsgMeleeComplexUs -> True
-    MsgMeleeNormalUs -> True
-    _ -> False
-  _ -> False
-
 tutorialHint :: MsgClass -> Bool
 tutorialHint = \case
   MsgClassShowAndSave x -> case x of  -- show and save: least surprise
@@ -496,29 +480,27 @@ emptyHistory size =
   in History emptyReport timeZero emptyReport timeZero
              (RB.empty ringBufferSize U.empty)
 
-scrapRepetitionSingle :: ((AttrString, Int), Bool)
-                      -> [((AttrString, Int), Bool)]
+scrapRepetitionSingle :: (AttrString, Int)
+                      -> [(AttrString, Int)]
                       -> [(AttrString, Int)]
                       -> (Bool, [(AttrString, Int)], [(AttrString, Int)])
-scrapRepetitionSingle ((s1, n1), commutative1) rest1 oldMsgs =
+scrapRepetitionSingle (s1, n1) rest1 oldMsgs =
   let butLastEOLs = dropWhileEnd ((== '\n') . Color.charFromW32)
       eqs1 (s2, _) = butLastEOLs s1 == butLastEOLs s2
-      noChange = (False, (s1, n1) : map fst rest1, oldMsgs)
-  in case break (eqs1 . fst) rest1 of
-    (_, []) | commutative1 -> case break eqs1 oldMsgs of
+  in case break eqs1 rest1 of
+    (_, []) -> case break eqs1 oldMsgs of
       (noDup, (_, n2) : rest2) ->
         -- We keep the occurence of the message in the new report only.
-        let newReport = (s1, n1 + n2) : map fst rest1
+        let newReport = (s1, n1 + n2) : rest1
             oldReport = noDup ++ ([], 0) : rest2
         in (True, newReport, oldReport)
-      _ -> noChange
-    (noDup, ((s2, n2), _) : rest3) | commutative1 || all snd noDup ->
+      _ -> (False, (s1, n1) : rest1, oldMsgs)
+    (noDup, (s2, n2) : rest3) ->
       -- We keep the older (and so, oldest) occurence of the message,
       -- to avoid visual disruption by moving the message around.
-      let newReport = ([], 0) : map fst noDup ++ (s2, n1 + n2) : map fst rest3
+      let newReport = ([], 0) : noDup ++ (s2, n1 + n2) : rest3
           oldReport = oldMsgs
       in (True, newReport, oldReport)
-    _ -> noChange
 
 scrapRepetition :: History -> Maybe History
 scrapRepetition History{ newReport = Report newMsgs
@@ -531,23 +513,17 @@ scrapRepetition History{ newReport = Report newMsgs
     -- vanish from the screen. In this way the message may be passed
     -- along many reports.
     RepMsgNK msg1 n1 k1 : rest1 ->
-      let commutative = not . bindsPronouns . msgClass
-          commutative1 = commutative msg1
-          -- We ignore message classes and scrap even if same strings
+      let -- We ignore message classes and scrap even if same strings
           -- come from different classes. Otherwise user would be confused.
           makeShow = map (\(RepMsgNK msg n _) -> (msgShow msg, n))
-          makeShowC = map (\(RepMsgNK msg n _) -> ( (msgShow msg, n)
-                                                  , commutative msg ))
           makeSave = map (\(RepMsgNK msg _ k) -> (msgSave msg, k))
-          makeSaveC = map (\(RepMsgNK msg _ k) -> ( (msgSave msg, k)
-                                                  , commutative msg ))
           (scrapShowNeeded, scrapShowNew, scrapShowOld) =
-            scrapRepetitionSingle ((msgShow msg1, n1), commutative1)
-                                  (makeShowC rest1)
+            scrapRepetitionSingle (msgShow msg1, n1)
+                                  (makeShow rest1)
                                   (makeShow oldMsgs)
           (scrapSaveNeeded, scrapSaveNew, scrapSaveOld) =
-            scrapRepetitionSingle ((msgSave msg1, k1), commutative1)
-                                  (makeSaveC rest1)
+            scrapRepetitionSingle (msgSave msg1, k1)
+                                  (makeSave rest1)
                                   (makeSave oldMsgs)
       in if scrapShowNeeded || scrapSaveNeeded
          then let combineMsg _ ([], _) ([], _) = Nothing
