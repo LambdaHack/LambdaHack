@@ -126,7 +126,7 @@ install:
     )
 
   - IF "%goal%"=="artifact32and64" (
-      && cp LambdaHackTheGameInstall/Users/appveyor/AppData/Roaming/cabal/bin/LambdaHack.exe LambdaHackTheGame
+      cp LambdaHackTheGameInstall/Users/appveyor/AppData/Roaming/cabal/bin/LambdaHack.exe LambdaHackTheGame
       && 7z a -ssc -tzip LambdaHack_dev_windows-i686.zip LambdaHackTheGame
     )
 
