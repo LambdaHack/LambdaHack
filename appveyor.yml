@@ -138,7 +138,7 @@ install:
   - ps: if ($env:goal -eq "artifact32and64") { Push-AppveyorArtifact LambdaHack_dev_windows-installer.exe -FileName "LambdaHack_$($env:LH_VERSION)-dev-$($env:TIME_STRING)_windows-installer.exe" -DeploymentName "win64 and win32 installer" }
 
   - IF "%goal%"=="test" (
-      co Makefile LambdaHackTheGame
+      cp Makefile LambdaHackTheGame
       cd LambdaHackTheGame
     )
 #  - IF "%goal%"=="test" (
