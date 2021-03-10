@@ -140,7 +140,6 @@ install:
   - IF "%goal%"=="test" (
       cp Makefile LambdaHackTheGame
       && cd LambdaHackTheGame
-      && cp LambdaHack.exe LambdaHack
     )
 #  - IF "%goal%"=="test" (
 #      make test-short || (tail -n 200 %APPDATA%\LambdaHack\stderr.txt & tail -n 200 %APPDATA%\LambdaHack\stdout.txt & exit 77)
