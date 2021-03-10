@@ -30,7 +30,7 @@ cache:
   - C:\Users\appveyor\AppData\Roaming\ghc -> appveyor.yml
 
 install:
-  - SET PATH=LambdaHackTheGame;%APPDATA%\cabal\bin;C:\msys64\mingw64\bin;C:\msys64\usr\bin;C:\ProgramData\chocolatey\lib\ghc\tools\ghc-8.4.4\bin;C:\ProgramData\chocolatey\lib\cabal\tools;%PATH%
+  - SET PATH=%APPDATA%\cabal\bin;C:\msys64\mingw64\bin;C:\msys64\usr\bin;C:\ProgramData\chocolatey\lib\ghc\tools\ghc-8.4.4\bin;C:\ProgramData\chocolatey\lib\cabal\tools;%PATH%
   - git clone -q --branch=master https://github.com/haskell-game/sdl2
   - IF "true"=="true" (
       choco install cabal --version 2.4.1.0
@@ -65,11 +65,11 @@ install:
       && cp /c/msys64/mingw64/bin/libpcre-1.dll LambdaHackTheGame
       && cp /c/msys64/mingw64/bin/libstdc++-6.dll LambdaHackTheGame
       && cp /c/msys64/mingw64/bin/libiconv-2.dll LambdaHackTheGame
+      && cp LambdaHackTheGameInstall/Users/appveyor/AppData/Roaming/cabal/bin/LambdaHack.exe LambdaHackTheGame
     )
 
   - IF "%goal%"=="artifact32and64" (
-      cp LambdaHackTheGameInstall/Users/appveyor/AppData/Roaming/cabal/bin/LambdaHack.exe LambdaHackTheGame
-      && LambdaHack --version
+      LambdaHackTheGame\LambdaHack --version
       && SET /p LH_VERSION=<%APPDATA%\LambdaHack\stdout.txt
       && 7z a -ssc -tzip LambdaHack_dev_windows-x86_64.zip LambdaHackTheGame
     )
@@ -92,7 +92,7 @@ install:
       && cd ..
     )
 
-  - SET PATH=LambdaHackTheGame;%APPDATA%\cabal\bin;C:\msys64\mingw32\bin;C:\msys64\usr\bin;C:\ProgramData\chocolatey\lib\ghc\tools\ghc-8.4.4\bin;C:\ProgramData\chocolatey\lib\cabal\tools;%PATH%
+  - SET PATH=%APPDATA%\cabal\bin;C:\msys64\mingw32\bin;C:\msys64\usr\bin;C:\ProgramData\chocolatey\lib\ghc\tools\ghc-8.4.4\bin;C:\ProgramData\chocolatey\lib\cabal\tools;%PATH%
 
   - IF "%build32%"=="true" (
       choco install --force --forcex86 ghc --version 8.4.4 | grep -v '^Extracting '
@@ -123,11 +123,11 @@ install:
       && cp /c/msys64/mingw32/bin/libpcre-1.dll LambdaHackTheGame
       && cp /c/msys64/mingw32/bin/libstdc++-6.dll LambdaHackTheGame
       && cp /c/msys64/mingw32/bin/libiconv-2.dll LambdaHackTheGame
+      && cp LambdaHackTheGameInstall/Users/appveyor/AppData/Roaming/cabal/bin/LambdaHack.exe LambdaHackTheGame
     )
 
   - IF "%goal%"=="artifact32and64" (
-      cp LambdaHackTheGameInstall/Users/appveyor/AppData/Roaming/cabal/bin/LambdaHack.exe LambdaHackTheGame
-      && 7z a -ssc -tzip LambdaHack_dev_windows-i686.zip LambdaHackTheGame
+      7z a -ssc -tzip LambdaHack_dev_windows-i686.zip LambdaHackTheGame
     )
 
   - ps: if ($env:goal -eq "artifact32and64") { Push-AppveyorArtifact LambdaHack_dev_windows-i686.zip -FileName "LambdaHack_$($env:LH_VERSION)-dev-$($env:TIME_STRING)_windows-i686.zip" -DeploymentName "win32 binaries archive" }
@@ -139,7 +139,6 @@ install:
 
   - IF "%goal%"=="test" (
       cp Makefile LambdaHackTheGame
-      && cp dist/build/LambdaHack/LambdaHack.exe LambdaHackTheGame
       && cd LambdaHackTheGame
     )
 #  - IF "%goal%"=="test" (
