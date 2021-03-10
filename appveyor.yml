@@ -137,7 +137,10 @@ install:
   - ps: if ($env:goal -eq "artifact32and64") { C:\"Program Files (x86)"\NSIS\makensis.exe .windows.installer.nsi }
   - ps: if ($env:goal -eq "artifact32and64") { Push-AppveyorArtifact LambdaHack_dev_windows-installer.exe -FileName "LambdaHack_$($env:LH_VERSION)-dev-$($env:TIME_STRING)_windows-installer.exe" -DeploymentName "win64 and win32 installer" }
 
-  - cd LambdaHackTheGame
+  - IF "%goal%"=="test" (
+      co Makefile LambdaHackTheGame
+      cd LambdaHackTheGame
+    )
 #  - IF "%goal%"=="test" (
 #      make test-short || (tail -n 200 %APPDATA%\LambdaHack\stderr.txt & tail -n 200 %APPDATA%\LambdaHack\stdout.txt & exit 77)
 #    )
@@ -177,7 +180,9 @@ install:
   - IF "%goal%"=="test" (
       make testDefense-appveyor || (tail -n 200 %APPDATA%\LambdaHack\stderr.txt & tail -n 200 %APPDATA%\LambdaHack\stdout.txt & exit 77)
     )
-  - cd ..
+  - IF "%goal%"=="test" (
+      cd ..
+    )
   - cabal clean
 
 build: off
