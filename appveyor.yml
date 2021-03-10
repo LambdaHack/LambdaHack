@@ -50,10 +50,7 @@ install:
       && cd ..
       && pwd
       && make build-binary-common
-    )
-
-  - IF "%goal%"=="artifact32and64" (
-      cp /c/msys64/mingw64/bin/zlib1.dll LambdaHackTheGame
+      && cp /c/msys64/mingw64/bin/zlib1.dll LambdaHackTheGame
       && cp /c/msys64/mingw64/bin/SDL2.dll LambdaHackTheGame
       && cp /c/msys64/mingw64/bin/SDL2_ttf.dll LambdaHackTheGame
       && cp /c/msys64/mingw64/bin/libfreetype-6.dll LambdaHackTheGame
@@ -68,7 +65,10 @@ install:
       && cp /c/msys64/mingw64/bin/libpcre-1.dll LambdaHackTheGame
       && cp /c/msys64/mingw64/bin/libstdc++-6.dll LambdaHackTheGame
       && cp /c/msys64/mingw64/bin/libiconv-2.dll LambdaHackTheGame
-      && cp LambdaHackTheGameInstall/Users/appveyor/AppData/Roaming/cabal/bin/LambdaHack.exe LambdaHackTheGame
+    )
+
+  - IF "%goal%"=="artifact32and64" (
+      cp LambdaHackTheGameInstall/Users/appveyor/AppData/Roaming/cabal/bin/LambdaHack.exe LambdaHackTheGame
       && LambdaHack --version
       && SET /p LH_VERSION=<%APPDATA%\LambdaHack\stdout.txt
       && 7z a -ssc -tzip LambdaHack_dev_windows-x86_64.zip LambdaHackTheGame
@@ -108,10 +108,7 @@ install:
       && cd ..
       && pwd
       && make build-binary-common
-    )
-
-  - IF "%goal%"=="artifact32and64" (
-      cp /c/msys64/mingw32/bin/zlib1.dll LambdaHackTheGame
+      && cp /c/msys64/mingw32/bin/zlib1.dll LambdaHackTheGame
       && cp /c/msys64/mingw32/bin/SDL2.dll LambdaHackTheGame
       && cp /c/msys64/mingw32/bin/SDL2_ttf.dll LambdaHackTheGame
       && cp /c/msys64/mingw32/bin/libfreetype-6.dll LambdaHackTheGame
@@ -126,6 +123,9 @@ install:
       && cp /c/msys64/mingw32/bin/libpcre-1.dll LambdaHackTheGame
       && cp /c/msys64/mingw32/bin/libstdc++-6.dll LambdaHackTheGame
       && cp /c/msys64/mingw32/bin/libiconv-2.dll LambdaHackTheGame
+    )
+
+  - IF "%goal%"=="artifact32and64" (
       && cp LambdaHackTheGameInstall/Users/appveyor/AppData/Roaming/cabal/bin/LambdaHack.exe LambdaHackTheGame
       && 7z a -ssc -tzip LambdaHack_dev_windows-i686.zip LambdaHackTheGame
     )
@@ -139,6 +139,7 @@ install:
 
   - IF "%goal%"=="test" (
       cp Makefile LambdaHackTheGame
+      && cp dist/build/LambdaHack/LambdaHack.exe LambdaHackTheGame
       && cd LambdaHackTheGame
     )
 #  - IF "%goal%"=="test" (
