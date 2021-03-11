@@ -92,8 +92,10 @@ data Flag =
   | Unique        -- ^ at most one copy can ever be generated
   | MetaGame      -- ^ once identified, the item is known until savefile deleted
   | MinorEffects  -- ^ override: the effects on this item are considered
-                  --   minor and so not causing identification on use,
+                  --   minor and so possibly not causing identification on use,
                   --   and so this item will identify on pick-up
+  | MinorAspects  -- ^ override: don't show questions marks by weapons in HUD
+                  --   even when unidentified item with this flag equipped
   | -- The flags below specify all conditions under which the item activates,
     -- charges permitting, in addition to universal conditions, which are
     -- hitting with the item and explicitly applying the item by an actor

@@ -436,6 +436,7 @@ kindAspectToSuffix aspect =
     SetFlag Unique -> ""  -- named specially by the content writer
     SetFlag MetaGame -> ""
     SetFlag MinorEffects -> ""  -- cryptic override
+    SetFlag MinorAspects -> ""  -- cryptic override
     SetFlag Periodic -> ""  -- printed specially
     SetFlag UnderRanged -> wrapInChevrons "applied under ranged attack"
     SetFlag UnderMelee -> wrapInChevrons "applied under melee attack"
@@ -462,6 +463,7 @@ aspectToSentence feat =
     SetFlag Unique -> Just "It is one of a kind."
     SetFlag MetaGame -> Just "It's characteristic to a person and easy to recognize once learned, even under very different circumstances."
     SetFlag MinorEffects -> Nothing
+    SetFlag MinorAspects -> Nothing
     SetFlag Periodic -> Nothing
     SetFlag UnderRanged -> Nothing
     SetFlag UnderMelee -> Nothing
