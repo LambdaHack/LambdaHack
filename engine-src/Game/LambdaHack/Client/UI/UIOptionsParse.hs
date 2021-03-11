@@ -137,16 +137,16 @@ mkUIOptions corule benchmark = do
     -- Catch syntax errors in complex expressions ASAP.
     return $! deepseq conf conf
   else do
-    let msg = "Config file" <+> T.pack (path "")
-              <+> "from an incompatible version '"
-              <> T.pack (showVersion vExe2)
-              <> "' detected while starting"
-              <+> T.pack (showVersion vExe1)
-              <+> "game. The file has been moved aside."
-    delayPrint msg
     cpExists <- doesFileExist (path "")
-    when cpExists $
+    when cpExists $ do
       renameFile (path "") (path "bkp.")
+      let msg = "Config file" <+> T.pack (path "")
+                <+> "from an incompatible version '"
+                <> T.pack (showVersion vExe2)
+                <> "' detected while starting"
+                <+> T.pack (showVersion vExe1)
+                <+> "game. The file has been moved aside."
+      delayPrint msg
     tryWriteFile (path "") configString
     let confDefault = parseConfig cfgUIDefault
     return confDefault
