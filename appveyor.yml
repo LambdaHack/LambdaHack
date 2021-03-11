@@ -87,7 +87,7 @@ install:
   - SET PATH=C:\msys64\usr\bin;%OLDPATH%
 
   - IF "%goal%"=="artifact32and64" (
-      && cp dist\build\test\test.exe LambdaHackTheGame
+      cp dist\build\test\test.exe LambdaHackTheGame
       && cp Makefile LambdaHackTheGame
       && cd LambdaHackTheGame
       && test
