@@ -30,6 +30,7 @@ cache:
   - C:\Users\appveyor\AppData\Roaming\ghc -> appveyor.yml
 
 install:
+  - SET OLDPATH=%PATH%
   - SET PATH=%APPDATA%\cabal\bin;C:\msys64\mingw64\bin;C:\msys64\usr\bin;C:\ProgramData\chocolatey\lib\ghc\tools\ghc-8.4.4\bin;C:\ProgramData\chocolatey\lib\cabal\tools;%PATH%
   - git clone -q --branch=master https://github.com/haskell-game/sdl2
   - IF "true"=="true" (
@@ -65,6 +66,8 @@ install:
       && cp /c/msys64/mingw64/bin/libpcre-1.dll LambdaHackTheGame
       && cp /c/msys64/mingw64/bin/libstdc++-6.dll LambdaHackTheGame
       && cp /c/msys64/mingw64/bin/libiconv-2.dll LambdaHackTheGame
+      && cp /c/msys64/mingw64/bin/libbrotlicommon.dll LambdaHackTheGame
+      && cp /c/msys64/mingw64/bin/libbrotlidec.dll LambdaHackTheGame
       && cp LambdaHackTheGameInstall/Users/appveyor/AppData/Roaming/cabal/bin/LambdaHack.exe LambdaHackTheGame
     )
 
@@ -79,7 +82,12 @@ install:
 
   - IF "%goal%"=="artifact32and64" (
       cabal v1-install --force-reinstalls --enable-tests
-      && dist\build\test\test.exe
+      && SET PATH=C:\msys64\usr\bin;%OLDPATH%
+      && cp dist\build\test\test.exe LambdaHackTheGame
+      && Makefile LambdaHackTheGame
+      && cd LambdaHackTheGame
+      && test
+      && cd ..
       && mv LambdaHackTheGame LambdaHackTheGame64
       && rm -rf LambdaHackTheGameInstall
     )
@@ -123,6 +131,8 @@ install:
       && cp /c/msys64/mingw32/bin/libpcre-1.dll LambdaHackTheGame
       && cp /c/msys64/mingw32/bin/libstdc++-6.dll LambdaHackTheGame
       && cp /c/msys64/mingw32/bin/libiconv-2.dll LambdaHackTheGame
+      && cp /c/msys64/mingw32/bin/libbrotlicommon.dll LambdaHackTheGame
+      && cp /c/msys64/mingw32/bin/libbrotlidec.dll LambdaHackTheGame
       && cp LambdaHackTheGameInstall/Users/appveyor/AppData/Roaming/cabal/bin/LambdaHack.exe LambdaHackTheGame
     )
 
@@ -138,7 +148,8 @@ install:
   - ps: if ($env:goal -eq "artifact32and64") { Push-AppveyorArtifact LambdaHack_dev_windows-installer.exe -FileName "LambdaHack_$($env:LH_VERSION)-dev-$($env:TIME_STRING)_windows-installer.exe" -DeploymentName "win64 and win32 installer" }
 
   - IF "%goal%"=="test" (
-      cp Makefile LambdaHackTheGame
+      SET PATH=C:\msys64\usr\bin;%OLDPATH%
+      && cp Makefile LambdaHackTheGame
       && cd LambdaHackTheGame
     )
 #  - IF "%goal%"=="test" (
