@@ -80,9 +80,10 @@ install:
   - ps: if ($env:goal -eq "artifact32and64") { $env:TIME_STRING=(get-date -UFormat "%Y-%m-%d").ToString() }
   - ps: if ($env:goal -eq "artifact32and64") { Push-AppveyorArtifact LambdaHack_dev_windows-x86_64.zip -FileName "LambdaHack_$($env:LH_VERSION)-dev-$($env:TIME_STRING)_windows-x86_64.zip" -DeploymentName "win64 binaries archive" }
 
+  - SET PATH=C:\msys64\usr\bin;%OLDPATH%
+
   - IF "%goal%"=="artifact32and64" (
       cabal v1-install --force-reinstalls --enable-tests
-      && SET PATH=C:\msys64\usr\bin;%OLDPATH%
       && cp dist\build\test\test.exe LambdaHackTheGame
       && cp Makefile LambdaHackTheGame
       && cd LambdaHackTheGame
@@ -147,9 +148,10 @@ install:
   - ps: if ($env:goal -eq "artifact32and64") { C:\"Program Files (x86)"\NSIS\makensis.exe .windows.installer.nsi }
   - ps: if ($env:goal -eq "artifact32and64") { Push-AppveyorArtifact LambdaHack_dev_windows-installer.exe -FileName "LambdaHack_$($env:LH_VERSION)-dev-$($env:TIME_STRING)_windows-installer.exe" -DeploymentName "win64 and win32 installer" }
 
+  - SET PATH=C:\msys64\usr\bin;%OLDPATH%
+
   - IF "%goal%"=="test" (
-      SET PATH=C:\msys64\usr\bin;%OLDPATH%
-      && cp Makefile LambdaHackTheGame
+      cp Makefile LambdaHackTheGame
       && cd LambdaHackTheGame
     )
 #  - IF "%goal%"=="test" (
