@@ -84,7 +84,7 @@ install:
       cabal v1-install --force-reinstalls --enable-tests
       && SET PATH=C:\msys64\usr\bin;%OLDPATH%
       && cp dist\build\test\test.exe LambdaHackTheGame
-      && Makefile LambdaHackTheGame
+      && cp Makefile LambdaHackTheGame
       && cd LambdaHackTheGame
       && test
       && cd ..
