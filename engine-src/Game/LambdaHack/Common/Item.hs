@@ -318,12 +318,14 @@ strongestMelee ignoreCharges mdiscoBenefit localTime kitAss =
             (mapMaybe f kitAss)
 
 unknownAspect :: (IK.Aspect -> [Dice.Dice]) -> ItemFull -> Bool
-unknownAspect f ItemFull{itemKind=IK.ItemKind{iaspects}, ..} =
+unknownAspect f itemFull@ItemFull{itemKind=IK.ItemKind{iaspects}, ..} =
   case itemDisco of
     ItemDiscoMean IA.KindMean{kmConst} ->
-      let unknown x = let (minD, maxD) = Dice.infsupDice x
+      let arItem = aspectRecordFull itemFull
+          unknown x = let (minD, maxD) = Dice.infsupDice x
                       in minD /= maxD
-      in itemSuspect || not kmConst && or (concatMap (map unknown . f) iaspects)
+      in itemSuspect && not (IA.checkFlag Ability.MinorAspects arItem)
+         || not kmConst && or (concatMap (map unknown . f) iaspects)
     ItemDiscoFull{} -> False  -- all known
 
 -- We assume @SkHurtMelee@ never appears inside @Odds@. If it does,
