@@ -290,7 +290,6 @@ build-binary-v2:
 	mkdir -p LambdaHackTheGame/GameDefinition
 
 copy-directory:
-	cp GameDefinition/config.ui.default LambdaHackTheGame/GameDefinition
 	cp GameDefinition/InGameHelp.txt LambdaHackTheGame/GameDefinition
 	cp GameDefinition/PLAYING.md LambdaHackTheGame/GameDefinition
 	cp README.md LambdaHackTheGame

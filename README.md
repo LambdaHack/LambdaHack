@@ -102,9 +102,10 @@ Screen and keyboard configuration
 
 The game UI can be configured via a config file.
 The default settings, the same that are built into the binary,
-are in [GameDefinition/config.ui.default](https://github.com/LambdaHack/LambdaHack/blob/master/GameDefinition/config.ui.default).
-When the game is run for the first time, the file is written to the default
-user data location, which is `~/.LambdaHack/` on Linux,
+are on github at [GameDefinition/config.ui.default](https://github.com/LambdaHack/LambdaHack/blob/master/GameDefinition/config.ui.default).
+When the game is run for the first time, or whenever the settings file
+is deleted, the file is written to the default user data location,
+which is `~/.Allure/` on Linux,
 `C:\Users\<username>\AppData\Roaming\LambdaHack\`
 (or `C:\Documents And Settings\user\Application Data\LambdaHack\`
 or something else altogether) on Windows
