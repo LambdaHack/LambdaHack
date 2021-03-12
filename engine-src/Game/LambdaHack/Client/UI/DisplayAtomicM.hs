@@ -523,8 +523,8 @@ displayRespUpdAtomicUI cmd = case cmd of
           _ -> False
     msgAdd MsgBookKeeping "-------------------------------------------------"
     recordHistory
-    msgAdd MsgActionWarning $ "New game started in" <+> mname gameMode
-                              <+> "mode. Press '?' for details."
+    msgAdd MsgActionWarning
+           ("New game started in" <+> mname gameMode <+> "mode.")
     msgAdd MsgPlotExposition $ mdesc gameMode
     let desc = cdesc $ okind cocave $ lkind lvl
     unless (T.null desc) $ do
@@ -552,7 +552,7 @@ displayRespUpdAtomicUI cmd = case cmd of
     resetPressedKeys
     -- Help newbies when actors obscured by text and no obvious key to press:
     displayMore ColorFull "\nAre you up for the challenge?"
-    msgAdd MsgPromptGeneric "A grand story starts right here!"
+    msgAdd MsgPromptGeneric "A grand story starts right here! (Press '?' for context and help.)"
   UpdRestartServer{} -> return ()
   UpdResume fid _ -> do
     COps{cocave} <- getsState scops
