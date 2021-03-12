@@ -294,7 +294,7 @@ scrapsRepeats = \case
     MsgPromptActors -> False
     MsgPromptItems -> False
     MsgPromptAction -> False
-    MsgActionAlert -> True
+    MsgActionAlert -> False
     MsgSpottedThreat -> True
   MsgClassSave x -> case x of
     MsgInnerWorkSpam -> True

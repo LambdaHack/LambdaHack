@@ -173,7 +173,6 @@ humanCommand = do
             return cmdS
           Left Nothing -> loop $ Just leader
           Left (Just err) -> do
-            -- Avoid "*never mind*<x4>".
-            msgAdd MsgPromptAction $ showFailError err
+            msgAdd MsgActionAlert $ showFailError err
             loop $ Just leader
   loop Nothing
