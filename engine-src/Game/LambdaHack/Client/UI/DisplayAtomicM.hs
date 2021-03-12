@@ -276,7 +276,7 @@ displayRespUpdAtomicUI cmd = case cmd of
          when (bfid b == side && not (bproj b)) $ do
            markDisplayNeeded (blid b)
            when (hpDelta < 0) $ do
-             when (hpDelta <= xM (-3)) $ msgAdd MsgTutorialHint "You took a lot of damage from one piercing attack. Consider retreating towards your teammates or buffing up or an instant escape, if consumables permit."
+             when (hpDelta <= xM (-3)) $ msgAdd MsgTutorialHint "You took a lot of damage from one source. If the danger persists, consider retreating towards your teammates or buffing up or an instant escape, if consumables permit."
              sUIOptions <- getsSession sUIOptions
              currentWarning <-
                getsState $ checkWarningHP sUIOptions aid (bhp b)
