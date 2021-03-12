@@ -29,6 +29,7 @@ import Game.LambdaHack.Core.Prelude
 
 import           Data.Binary
 import qualified Data.Char as Char
+import qualified Data.Set as S
 import           Data.Vector.Binary ()
 import qualified Data.Vector.Unboxed as U
 import           GHC.Generics (Generic)
@@ -59,7 +60,7 @@ data Msg = Msg
   , msgSave  :: AttrString  -- ^ the same to be saved in the message log only
   , msgClass :: MsgClass
   }
-  deriving (Show, Generic)
+  deriving (Show, Eq, Ord, Generic)
 
 instance Binary Msg
 
@@ -120,7 +121,7 @@ data MsgClass =
   | MsgClassSave MsgClassSave
   | MsgClassIgnore MsgClassIgnore
   | MsgClassDistinct MsgClassDistinct
-  deriving (Show, Generic)
+  deriving (Show, Eq, Ord, Generic)
 
 instance Binary MsgClass
 
@@ -181,7 +182,7 @@ data MsgClassShowAndSave =
   | MsgAtFeetMajor
   | MsgAtFeetMinor
   | MsgTutorialHint
-  deriving (Show, Enum, Bounded, Generic)
+  deriving (Show, Eq, Ord, Enum, Bounded, Generic)
 
 instance Binary MsgClassShowAndSave
 
@@ -195,14 +196,14 @@ data MsgClassShow =
   | MsgPromptAction
   | MsgActionAlert
   | MsgSpottedThreat
-  deriving (Show, Enum, Bounded, Generic)
+  deriving (Show, Eq, Ord, Enum, Bounded, Generic)
 
 instance Binary MsgClassShow
 
 data MsgClassSave =
     MsgInnerWorkSpam
   | MsgNumericReport
-  deriving (Show, Enum, Bounded, Generic)
+  deriving (Show, Eq, Ord, Enum, Bounded, Generic)
 
 instance Binary MsgClassSave
 
@@ -210,7 +211,7 @@ data MsgClassIgnore =
     MsgMacroOperation
   | MsgRunStopReason
   | MsgStopPlayback
-  deriving (Show, Enum, Bounded, Generic)
+  deriving (Show, Eq, Ord, Enum, Bounded, Generic)
 
 instance Binary MsgClassIgnore
 
@@ -224,7 +225,7 @@ data MsgClassDistinct =
   | MsgStatusWarning
   | MsgStatusLongerUs
   | MsgStatusLongThem
-  deriving (Show, Enum, Bounded, Generic)
+  deriving (Show, Eq, Ord, Enum, Bounded, Generic)
 
 instance Binary MsgClassDistinct
 
@@ -541,8 +542,9 @@ scrapRepetition History{ newReport = Report newMsgs
 -- duplicate and noting its existence in the result.
 --
 -- Empty messages are not added to make checking report emptiness easier.
-addToReport :: Bool -> Bool -> History -> Msg -> Time -> (History, Bool)
-addToReport inMelee displayTutorialHints
+addToReport :: S.Set Msg -> Bool -> Bool -> History -> Msg -> Time
+            -> (S.Set Msg, History, Bool)
+addToReport usedHints displayHints inMelee
             oldHistory@History{newReport = Report r, ..} msgRaw time =
   -- When each turn we lose HP, stuff that wouldn't interrupt
   -- running should go at most to message log, not onto the screen,
@@ -559,16 +561,18 @@ addToReport inMelee displayTutorialHints
       newH = History { newReport = Report $ repMsgNK : r
                      , newTime = time
                      , .. }
-  in -- Tutorial hints shown only when tutorial enabled.
-     if | not displayTutorialHints && tutorialHint (msgClass msg) ->
-          (oldHistory, False)
+      nusedHints = S.insert msg usedHints
+  in -- Tutorial hint shown only when tutorial enabled and hint not yet shown.
+     if | tutorialHint (msgClass msg)
+          && (not displayHints || S.member msg usedHints) ->
+          (usedHints, oldHistory, False)
         | not (scrapsRepeats $ msgClass msg)
           || nullRepMsgNK repMsgNK ->
           -- Don't waste time on never shown messages.
-          (newH, False)
+          (nusedHints, newH, False)
         | otherwise -> case scrapRepetition newH of
-            Just scrappedH -> (scrappedH, True)
-            Nothing -> (newH, False)
+            Just scrappedH -> (nusedHints, scrappedH, True)
+            Nothing -> (nusedHints, newH, False)
 
 -- | Add a newline to end of the new report of history, unless empty.
 addEolToNewReport :: History -> History

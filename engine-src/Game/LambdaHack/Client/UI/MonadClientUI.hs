@@ -31,6 +31,7 @@ import Game.LambdaHack.Core.Prelude
 import qualified Control.Monad.Trans.State.Strict as St
 import qualified Data.EnumMap.Strict as EM
 import qualified Data.Map.Strict as M
+import qualified Data.Set as S
 import qualified Data.Text as T
 import qualified Data.Text.IO as T
 import           Data.Time.Clock
@@ -348,9 +349,7 @@ defaultHistory = do
   sUIOptions <- getsSession sUIOptions
   curTutorial <- getsSession scurTutorial
   overrideTut <- getsSession soverrideTut
-  lid <- getArenaUI
-  condInMelee <- condInMeleeM lid
-  let displayTutorialHints = fromMaybe curTutorial overrideTut
+  let displayHints = fromMaybe curTutorial overrideTut
   liftIO $ do
     utcTime <- getCurrentTime
     timezone <- getTimeZone utcTime
@@ -358,8 +357,10 @@ defaultHistory = do
         emptyHist = emptyHistory $ uHistoryMax sUIOptions
         msg = toMsgShared (uMessageColors sUIOptions) MsgBookKeeping
               $ "History log started on " <> curDate <> "."
-    return $! fst $ addToReport condInMelee displayTutorialHints
-                                emptyHist msg timeZero
+        -- Tuturial hints from initial message can be repeated.
+        (_, nhistory, _) =
+          addToReport S.empty displayHints False emptyHist msg timeZero
+    return nhistory
 
 tellAllClipPS :: MonadClientUI m => m ()
 tellAllClipPS = do

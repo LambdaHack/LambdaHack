@@ -15,6 +15,7 @@ import           Data.Binary
 import qualified Data.EnumMap.Strict as EM
 import qualified Data.EnumSet as ES
 import qualified Data.Map.Strict as M
+import qualified Data.Set as S
 import           Data.Time.Clock.POSIX
 import           GHC.Generics (Generic)
 
@@ -70,6 +71,7 @@ data SessionUI = SessionUI
   , scurTutorial   :: Bool          -- ^ whether current game is a tutorial
   , snxtTutorial   :: Bool          -- ^ whether next game is to be tutorial
   , soverrideTut   :: Maybe Bool    -- ^ override display of tutorial hints
+  , susedHints     :: S.Set Msg     -- ^ tutorial hints already shown this game
   , smenuIxMap     :: M.Map String Int
                                     -- ^ indices of last used menu items
   , sdisplayNeeded :: Bool          -- ^ current level needs displaying
@@ -162,6 +164,7 @@ emptySessionUI sUIOptions =
     , scurTutorial = False
     , snxtTutorial = True  -- matches @snxtScenario = 0@
     , soverrideTut = Nothing
+    , susedHints = S.empty
     , smenuIxMap = M.empty
     , sdisplayNeeded = False
     , sturnDisplayed = False
@@ -211,6 +214,7 @@ instance Binary SessionUI where
     put scurTutorial
     put snxtTutorial
     put soverrideTut
+    put susedHints
     put (show srandomUI)
   get = do
     sxhair <- get
@@ -228,6 +232,7 @@ instance Binary SessionUI where
     scurTutorial <- get
     snxtTutorial <- get
     soverrideTut <- get
+    susedHints <- get
     g <- get
     let sxhairGoTo = Nothing
         slastItemMove = Nothing
