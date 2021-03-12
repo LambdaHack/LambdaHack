@@ -32,7 +32,7 @@ module Game.LambdaHack.Client.UI.HandleHumanGlobalM
   , multiActorGoTo, moveOrSelectItem, selectItemsToMove, moveItems
   , projectItem, applyItem, alterTileAtPos, verifyAlters, processTileActions
   , verifyEscape, verifyToolEffect, closeTileAtPos, msgAddDone, pickPoint
-  , generateMenu, nxtGameMode
+  , generateMenu
 #endif
   ) where
 
@@ -1907,8 +1907,8 @@ gameScenarioIncr = do
   cops <- getsState scops
   oldScenario <- getsSession snxtScenario
   let snxtScenario = oldScenario + 1
-      nxtGameTutorial = MK.mtutorial $ snd $ nxtGameMode cops snxtScenario
-  modifySession $ \sess -> sess {snxtScenario, snxtTutorial = nxtGameTutorial}
+      snxtTutorial = MK.mtutorial $ snd $ nxtGameMode cops snxtScenario
+  modifySession $ \sess -> sess {snxtScenario, snxtTutorial}
 
 -- * GameRestart
 
@@ -1939,12 +1939,6 @@ gameRestartHuman = do
               [ "yea, would be a pity to leave them to die"
               , "yea, a shame to get your team stranded" ]
     failWith msg2
-
-nxtGameMode :: COps -> Int -> (ContentId MK.ModeKind, MK.ModeKind)
-nxtGameMode COps{comode} snxtScenario =
-  let f !acc _p !i !a = (i, a) : acc
-      campaignModes = ofoldlGroup' comode MK.CAMPAIGN_SCENARIO f []
-  in campaignModes !! (snxtScenario `mod` length campaignModes)
 
 -- * GameQuit
 

@@ -71,6 +71,7 @@ import           Game.LambdaHack.Common.Types
 import           Game.LambdaHack.Content.CaveKind (cdesc)
 import qualified Game.LambdaHack.Content.ItemKind as IK
 import           Game.LambdaHack.Content.ModeKind
+import qualified Game.LambdaHack.Content.ModeKind as MK
 import           Game.LambdaHack.Content.RuleKind
 import qualified Game.LambdaHack.Content.TileKind as TK
 import qualified Game.LambdaHack.Core.Dice as Dice
@@ -484,7 +485,7 @@ displayRespUpdAtomicUI cmd = case cmd of
   UpdCoverServer{} -> error "server command leaked to client"
   UpdPerception{} -> return ()
   UpdRestart fid _ _ _ _ srandom -> do
-    COps{cocave, comode, corule} <- getsState scops
+    cops@COps{cocave, comode, corule} <- getsState scops
     oldSess <- getSession
     svictories <- getsClient svictories
     snxtChal <- getsClient snxtChal
@@ -496,17 +497,15 @@ displayRespUpdAtomicUI cmd = case cmd of
           Nothing -> 0
           Just cm -> fromMaybe 0 (M.lookup snxtChal cm)
         (snxtScenario, _) = minimumBy (comparing g) modes
-    noConfirmsGame <- isNoConfirmsGame
+        nxtGameTutorial = MK.mtutorial $ snd $ nxtGameMode cops snxtScenario
     putSession $
       (emptySessionUI uiOptions)
         { schanF = schanF oldSess
         , sccui = sccui oldSess
         , shistory = shistory oldSess
         , snxtScenario
-        , scurTutorial = if noConfirmsGame  -- screensaver mode
-                         then scurTutorial oldSess  -- no tutorial spam
-                         else snxtTutorial oldSess
-        , snxtTutorial = snxtTutorial oldSess
+        , scurTutorial = snxtTutorial oldSess  -- quite random for screensavers
+        , snxtTutorial = nxtGameTutorial
         , soverrideTut = soverrideTut oldSess
         , sstart = sstart oldSess
         , sgstart = sgstart oldSess

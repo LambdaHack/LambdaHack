@@ -10,7 +10,7 @@ module Game.LambdaHack.Client.UI.HandleHelperM
   , describeMode, modesOverlay
   , pickNumber, guardItemSize, lookAtItems, lookAtStash, lookAtPosition
   , displayItemLore, viewLoreItems, cycleLore, spoilsBlurb
-  , ppContainerWownW
+  , ppContainerWownW, nxtGameMode
 #ifdef EXPOSE_INTERNAL
     -- * Internal operations
   , lookAtTile, lookAtActors, guardItemVerbs
@@ -1015,3 +1015,9 @@ ppContainerWownW ownerFun addPrepositions c = case c of
                 else [MU.Text noun]
       _ -> [MU.WownW owner (MU.Text noun)]
   CTrunk{} -> error $ "" `showFailure` c
+
+nxtGameMode :: COps -> Int -> (ContentId MK.ModeKind, MK.ModeKind)
+nxtGameMode COps{comode} snxtScenario =
+  let f !acc _p !i !a = (i, a) : acc
+      campaignModes = ofoldlGroup' comode MK.CAMPAIGN_SCENARIO f []
+  in campaignModes !! (snxtScenario `mod` length campaignModes)
