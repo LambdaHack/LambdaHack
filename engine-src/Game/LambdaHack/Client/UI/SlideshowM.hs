@@ -78,15 +78,13 @@ displayMore :: (MonadClient m, MonadClientUI m) => ColorMode -> Text -> m ()
 displayMore dm prompt = do
   unless (T.null prompt) $ msgLnAdd MsgPromptGeneric prompt
   slides <- reportToSlideshow [K.spaceKM]
-  km <- getConfirms dm [K.spaceKM, K.escKM, K.mkChar '?'] slides
-  if km == K.mkChar '?' then addPressedKey $ K.mkChar '?' else return ()
+  void $ getConfirms dm [K.spaceKM, K.escKM] slides
 
 displayMoreKeep :: (MonadClient m, MonadClientUI m) => ColorMode -> Text -> m ()
 displayMoreKeep dm prompt = do
   unless (T.null prompt) $ msgLnAdd MsgPromptGeneric prompt
   slides <- reportToSlideshowKeep [K.spaceKM]
-  km <- getConfirms dm [K.spaceKM, K.escKM, K.mkChar '?'] slides
-  if km == K.mkChar '?' then addPressedKey $ K.mkChar '?' else return ()
+  void $ getConfirms dm [K.spaceKM, K.escKM] slides
 
 -- | Print a yes/no question and return the player's answer. Use black
 -- and white colours to turn player's attention to the choice.
