@@ -80,7 +80,11 @@ registerItem verbose (itemFull@ItemFull{itemBase, itemKindId, itemKind}, kit)
   mapM_ execUpdAtomic moveStash
   execUpdAtomic $ UpdCreateItem verbose iid itemBase kit container
   let worth = itemPrice (fst kit) itemKind
-  unless (worth == 0) $ execUpdAtomic $ UpdAlterGold worth
+  case container of
+    _ | worth == 0 -> return ()
+    CActor _ COrgan -> return ()  -- destroyed on drop
+    CTrunk{} -> return ()  -- we assume any valuables in CEmbed can be dug out
+    _ -> execUpdAtomic $ UpdAlterGold worth
   knowItems <- getsServer $ sknowItems . soptions
   when knowItems $ case container of
     CTrunk{} -> return ()
