@@ -1233,7 +1233,9 @@ quitFactionUI fid toSt manalytics = do
       -- The last prompt stays onscreen during shutdown, etc.
       when (not noConfirmsGame || camping) $
         void $ displaySpaceEsc ColorFull pp  -- these are short
-    _ -> return ()
+    _ -> when (isJust startingPart && (stOutcome <$> toSt) == Just Killed) $
+      -- Needed not to overlook the competitor dying in raid scenario.
+      displayMore ColorFull ""
 
 displayGameOverLoot :: (MonadClient m, MonadClientUI m)
                     => (ItemBag, Int) -> GenerationAnalytics -> m K.KM
