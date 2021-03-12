@@ -704,7 +704,7 @@ guardItemVerbs body s =
   -- UI mode beyond a couple of items per actor.
   let itemsSize = guardItemSize body s
       belongingsVerbs | itemsSize == 1 = ["fondle a trinket"]
-                      | itemsSize > 1 = ["guard a hoard"]
+                      | itemsSize > 1 = ["haul a hoard"]
                       | otherwise = []
   in if bproj body then [] else belongingsVerbs
 
