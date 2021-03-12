@@ -4,7 +4,7 @@ module Game.LambdaHack.Client.UI.FrameM
   , stopPlayBack, animate, fadeOutOrIn
 #ifdef EXPOSE_INTERNAL
     -- * Internal operations
-  , drawOverlay, renderFrames, resetPlayBack
+  , drawOverlay, renderAnimFrames, resetPlayBack
 #endif
   ) where
 
@@ -229,12 +229,15 @@ resetPlayBack = do
       modifySession (\sess -> sess {srunning = Nothing})
 
 -- | Render animations on top of the current screen frame.
-renderFrames :: MonadClientUI m => Bool -> LevelId -> Animation -> m PreFrames3
-renderFrames onBlank arena anim = do
+renderAnimFrames :: MonadClientUI m
+                 => Bool -> LevelId -> Animation -> m PreFrames3
+renderAnimFrames onBlank arena anim = do
   CCUI{coscreen=ScreenContent{rwidth}} <- getsSession sccui
   snoAnim <- getsClient $ snoAnim . soptions
   report <- getReportUI
   FontSetup{..} <- getFontSetup
+  -- This hack is needed so that the prop part of the overlay does not
+  -- overwrite the fadeout animation.
   let ovFont = if not onBlank || fromMaybe False snoAnim
                then propFont
                else squareFont
@@ -253,7 +256,7 @@ animate arena anim = do
   -- projectiles hitting actors, so frames need to be skipped.
   keyPressed <- anyKeyPressed
   unless keyPressed $ do
-    frames <- renderFrames False arena anim
+    frames <- renderAnimFrames False arena anim
     displayFrames arena frames
 
 fadeOutOrIn :: MonadClientUI m => Bool -> m ()
@@ -261,5 +264,5 @@ fadeOutOrIn out = do
   arena <- getArenaUI
   CCUI{coscreen} <- getsSession sccui
   animMap <- rndToActionUI $ fadeout coscreen out 2
-  animFrs <- renderFrames True arena animMap
+  animFrs <- renderAnimFrames True arena animMap
   displayFrames arena (tail animFrs)  -- no basic frame between fadeout and in
