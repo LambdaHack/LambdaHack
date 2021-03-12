@@ -329,9 +329,9 @@ skillDesc skill =
     SkOdor -> "The '" <> skName <> "' property" <+>
       "represents the ability to communicate (more specifically, communicate one's presence) through personal odor. Zero or less means the odor is not trackable."
     SkDeflectRanged -> "The '" <> skName <> "' property" <+>
-      "tells whether complete invulnerability to ranged attacks, kinetic and of every other kind, is effective, and from how many sources."
+      "tells whether complete invulnerability to ranged attacks, piercing and of every other kind, is effective, and from how many sources."
     SkDeflectMelee -> "The '" <> skName <> "' property" <+>
-      "tells whether complete invulnerability to melee attacks, kinetic and of every other kind, is effective, and from how many sources."
+      "tells whether complete invulnerability to melee attacks, piercing and of every other kind, is effective, and from how many sources."
 
 skillToDecorator :: Skill -> Actor -> Int -> Text
 skillToDecorator skill b t =
