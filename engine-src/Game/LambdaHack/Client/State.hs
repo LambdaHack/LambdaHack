@@ -63,7 +63,6 @@ data StateClient = StateClient
   , squit         :: Bool           -- ^ exit the game loop
   , scurChal      :: Challenge      -- ^ current game challenge setup
   , snxtChal      :: Challenge      -- ^ next game challenge setup
-  , snxtScenario  :: Int            -- ^ next game scenario number
   , smarkSuspect  :: Int            -- ^ whether to mark suspect features
   , scondInMelee  :: EM.EnumMap LevelId Bool
       -- ^ whether we are in melee, per level; this is not a set, due to
@@ -143,7 +142,6 @@ emptyStateClient _sside =
     , squit = False
     , scurChal = defaultChallenge
     , snxtChal = defaultChallenge
-    , snxtScenario = 0
     , smarkSuspect = 1
     , scondInMelee = EM.empty
     , svictories = EM.empty
@@ -198,7 +196,6 @@ instance Binary StateClient where
     put _sside
     put scurChal
     put snxtChal
-    put snxtScenario
     put smarkSuspect
     put scondInMelee
     put svictories
@@ -219,7 +216,6 @@ instance Binary StateClient where
     _sside <- get
     scurChal <- get
     snxtChal <- get
-    snxtScenario <- get
     smarkSuspect <- get
     scondInMelee <- get
     svictories <- get

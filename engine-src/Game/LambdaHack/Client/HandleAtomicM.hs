@@ -236,21 +236,14 @@ cmdAtomicSemCli oldState cmd = case cmd of
   UpdCoverServer{} -> error "server command leaked to client"
   UpdPerception lid outPer inPer -> perception lid outPer inPer
   UpdRestart side sfper s scurChal soptions srandom -> do
-    COps{cocave, comode} <- getsState scops
+    COps{cocave} <- getsState scops
     fact <- getsState $ (EM.! side) . sfactionD
     snxtChal <- getsClient snxtChal
     svictories <- getsClient svictories
     scampings <- getsClient scampings
     srestarts <- getsClient srestarts
     stabs <- getsClient stabs
-    let f !acc _p !i _a = i : acc
-        modes = zip [0..] $ ofoldlGroup' comode CAMPAIGN_SCENARIO f []
-        g :: (Int, ContentId ModeKind) -> Int
-        g (_, mode) = case EM.lookup mode svictories of
-          Nothing -> 0
-          Just cm -> fromMaybe 0 (M.lookup snxtChal cm)
-        (snxtScenario, _) = minimumBy (comparing g) modes
-        h lvl = CK.labyrinth (okind cocave $ lkind lvl)
+    let h lvl = CK.labyrinth (okind cocave $ lkind lvl)
                 && not (fhasGender $ gplayer fact)
           -- Not to burrow through a labyrinth instead of leaving it for
           -- the human player and to prevent AI losing time there instead
@@ -263,7 +256,6 @@ cmdAtomicSemCli oldState cmd = case cmd of
                   , srandom
                   , scurChal
                   , snxtChal
-                  , snxtScenario
                   , scondInMelee = EM.empty
                   , svictories
                   , scampings

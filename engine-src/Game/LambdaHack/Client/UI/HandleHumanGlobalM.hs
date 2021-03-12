@@ -1789,7 +1789,7 @@ challengeMenuHuman cmdSemInCxtOfKM = do
   CCUI{coscreen=ScreenContent{rwidth, rwrap}} <- getsSession sccui
   FontSetup{..} <- getFontSetup
   svictories <- getsClient svictories
-  snxtScenario <- getsClient snxtScenario
+  snxtScenario <- getsSession snxtScenario
   nxtTutorial <- getsSession snxtTutorial
   overrideTut <- getsSession soverrideTut
   nxtChal <- getsClient snxtChal
@@ -1905,11 +1905,10 @@ gameKeeperToggle =
 gameScenarioIncr :: (MonadClient m, MonadClientUI m) => m ()
 gameScenarioIncr = do
   cops <- getsState scops
-  oldScenario <- getsClient snxtScenario
+  oldScenario <- getsSession snxtScenario
   let snxtScenario = oldScenario + 1
       nxtGameTutorial = MK.mtutorial $ snd $ nxtGameMode cops snxtScenario
-  modifyClient $ \cli -> cli {snxtScenario}
-  modifySession $ \sess -> sess {snxtTutorial = nxtGameTutorial}
+  modifySession $ \sess -> sess {snxtScenario, snxtTutorial = nxtGameTutorial}
 
 -- * GameRestart
 
@@ -1918,7 +1917,7 @@ gameRestartHuman = do
   cops <- getsState scops
   noConfirmsGame <- isNoConfirmsGame
   gameMode <- getGameMode
-  snxtScenario <- getsClient snxtScenario
+  snxtScenario <- getsSession snxtScenario
   let nxtGameName = MK.mname $ snd $ nxtGameMode cops snxtScenario
   b <- if noConfirmsGame
        then return True

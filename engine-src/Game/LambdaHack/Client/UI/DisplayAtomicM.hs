@@ -23,6 +23,7 @@ import Game.LambdaHack.Core.Prelude
 import qualified Data.Char as Char
 import qualified Data.EnumMap.Strict as EM
 import qualified Data.EnumSet as ES
+import qualified Data.Map.Strict as M
 import qualified Data.Text as T
 import           Data.Tuple
 import           GHC.Exts (inline)
@@ -483,15 +484,25 @@ displayRespUpdAtomicUI cmd = case cmd of
   UpdCoverServer{} -> error "server command leaked to client"
   UpdPerception{} -> return ()
   UpdRestart fid _ _ _ _ srandom -> do
-    COps{cocave, corule} <- getsState scops
+    COps{cocave, comode, corule} <- getsState scops
     oldSess <- getSession
+    svictories <- getsClient svictories
+    snxtChal <- getsClient snxtChal
     let uiOptions@UIOptions{uHistory1PerLine} = sUIOptions oldSess
+        f !acc _p !i _a = i : acc
+        modes = zip [0..] $ ofoldlGroup' comode CAMPAIGN_SCENARIO f []
+        g :: (Int, ContentId ModeKind) -> Int
+        g (_, mode) = case EM.lookup mode svictories of
+          Nothing -> 0
+          Just cm -> fromMaybe 0 (M.lookup snxtChal cm)
+        (snxtScenario, _) = minimumBy (comparing g) modes
     noConfirmsGame <- isNoConfirmsGame
     putSession $
       (emptySessionUI uiOptions)
         { schanF = schanF oldSess
         , sccui = sccui oldSess
         , shistory = shistory oldSess
+        , snxtScenario
         , scurTutorial = if noConfirmsGame  -- screensaver mode
                          then scurTutorial oldSess  -- no tutorial spam
                          else snxtTutorial oldSess

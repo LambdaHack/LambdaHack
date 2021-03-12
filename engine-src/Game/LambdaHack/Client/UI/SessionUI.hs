@@ -68,6 +68,7 @@ data SessionUI = SessionUI
   , swasAutomated  :: Bool          -- ^ the player just exited AI automation
   , smarkVision    :: Bool          -- ^ mark leader and party FOV
   , smarkSmell     :: Bool          -- ^ mark smell, if the leader can smell
+  , snxtScenario   :: Int            -- ^ next game scenario number
   , scurTutorial   :: Bool          -- ^ whether current game is a tutorial
   , snxtTutorial   :: Bool          -- ^ whether next game is to be tutorial
   , soverrideTut   :: Maybe Bool    -- ^ override display of tutorial hints
@@ -161,6 +162,7 @@ emptySessionUI sUIOptions =
     , swasAutomated = False
     , smarkVision = False
     , smarkSmell = True
+    , snxtScenario = 0
     , scurTutorial = False
     , snxtTutorial = True  -- matches @snxtScenario = 0@
     , soverrideTut = Nothing
@@ -211,6 +213,7 @@ instance Binary SessionUI where
     put shistory
     put smarkVision
     put smarkSmell
+    put snxtScenario
     put scurTutorial
     put snxtTutorial
     put soverrideTut
@@ -229,6 +232,7 @@ instance Binary SessionUI where
     shistory <- get
     smarkVision <- get
     smarkSmell <- get
+    snxtScenario <- get
     scurTutorial <- get
     snxtTutorial <- get
     soverrideTut <- get
