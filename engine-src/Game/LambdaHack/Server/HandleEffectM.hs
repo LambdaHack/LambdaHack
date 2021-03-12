@@ -1474,7 +1474,8 @@ dropCStoreItem verbose destroy store aid b kMax iid (k, _) = do
       durable = IA.checkFlag Ability.Durable arItem
       isDestroyed = destroy
                     || bproj b && (bhp b <= 0 && not durable || fragile)
-                    || IA.checkFlag Ability.Condition arItem
+                    || store == COrgan  -- just as organs are destroyed at death
+                                        -- but also includes conditions
   if isDestroyed then do
     let effApplyFlags = EffApplyFlags
           { effToUse            = EffOnSmash
