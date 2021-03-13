@@ -1,4 +1,4 @@
-{-# LANGUAGE DeriveFoldable, DeriveGeneric, DeriveTraversable, TupleSections #-}
+{-# LANGUAGE DeriveGeneric, DeriveTraversable, TupleSections #-}
 -- | A list of entities with relative frequencies of appearance.
 module Game.LambdaHack.Core.Frequency
   ( -- * The @Frequency@ type

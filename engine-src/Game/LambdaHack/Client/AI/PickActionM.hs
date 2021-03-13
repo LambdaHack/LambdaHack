@@ -908,7 +908,7 @@ applyItem actorSk aid applyGroup = do
       hind = hinders condShineWouldBetray uneasy actorSk
       canEsc = fcanEscape (gplayer fact)
       permittedActor cstore itemFull kit =
-        either (const False) id
+        fromRight False
         $ permittedApply localTime skill calmE cstore itemFull kit
       disqualify :: Bool -> IK.Effect -> Bool
       -- These effects tweak items, which is only situationally beneficial

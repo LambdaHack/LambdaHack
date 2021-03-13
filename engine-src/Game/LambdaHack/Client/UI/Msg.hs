@@ -617,7 +617,7 @@ renderTimeReport uHistory1PerLine t rep@(Report r) =
            ++ dropWhile isSpace32 as
   in if uHistory1PerLine
      then map renderClass $ filter (worthSaving . fst) $ zip repMsgs mgsClasses
-     else map renderAS $ filter worthSaving $ [foldr (<+:>) [] repMsgs]
+     else map renderAS $ filter worthSaving [foldr (<+:>) [] repMsgs]
 
 lengthHistory :: Bool -> History -> Int
 lengthHistory uHistory1PerLine History{oldReport, archivedHistory} =

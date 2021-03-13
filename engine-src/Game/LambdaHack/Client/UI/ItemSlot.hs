@@ -54,7 +54,7 @@ allSlots :: [SlotChar]
 allSlots = concatMap (\n -> map (SlotChar n) allChars) [0..]
 
 intSlots :: [SlotChar]
-intSlots = map (flip SlotChar 'a') [0..]
+intSlots = map (`SlotChar` 'a') [0..]
 
 slotLabel :: SlotChar -> Text
 slotLabel x =

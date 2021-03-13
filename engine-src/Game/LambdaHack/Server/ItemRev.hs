@@ -176,7 +176,7 @@ stdFlav = ES.fromList [ Flavour fn bc
 
 -- | Assigns flavours to item kinds. Assures no flavor is repeated for the same
 -- symbol, except for items with only one permitted flavour.
-rollFlavourMap :: (U.Vector Word16)
+rollFlavourMap :: U.Vector Word16
                -> Rnd ( EM.EnumMap (ContentId ItemKind) Flavour
                       , EM.EnumMap Char (ES.EnumSet Flavour) )
                -> ContentId ItemKind -> ItemKind

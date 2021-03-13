@@ -496,8 +496,8 @@ modesOverlay = do
         in ( textToAL tSlot
            , (lenSlot, textToAL tBlurb)
            , (Right c, (pButton, widthButton)) )
-      (plLab, plDesc, kxs) = unzip3 $ zipWith prSlot (zip [0..] allSlots)
-                                    $ campaignModes
+      (plLab, plDesc, kxs) =
+        unzip3 $ zipWith prSlot (zip [0..] allSlots) campaignModes
       placeLab = EM.singleton squareFont $ offsetOverlay plLab
       placeDesc = EM.singleton propFont $ offsetOverlayX plDesc
   return (EM.unionWith (++) placeLab placeDesc, kxs)
@@ -691,7 +691,7 @@ lookAtActors p lidV = do
              ( makeSentence [subject, "can be seen"] <+> headBlurb
              , mactorPronounAlive
              , desc )
-           | otherwise -> assert (bproj body && not (null rest)) $
+           | otherwise -> assert (bproj body && not (null rest))
              ( makeSentence [subject, "can be seen"]
              , Nothing
              , "" )

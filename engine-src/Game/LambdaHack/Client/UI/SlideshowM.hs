@@ -112,7 +112,7 @@ displayChoiceScreen :: forall m . (MonadClient m, MonadClientUI m)
                     -> m (Either K.KM SlotChar)
 displayChoiceScreen menuName dm sfBlank frsX extraKeys = do
   let frs = slideshow frsX
-      keys = concatMap (concatMap (either id (const []) . fst) . snd) frs
+      keys = concatMap (concatMap (fromLeft [] . fst) . snd) frs
              ++ extraKeys
       !_A = assert (K.escKM `elem` extraKeys) ()
       navigationKeys = [ K.leftButtonReleaseKM, K.rightButtonReleaseKM

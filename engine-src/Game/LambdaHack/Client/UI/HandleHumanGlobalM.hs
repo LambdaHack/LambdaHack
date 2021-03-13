@@ -926,7 +926,7 @@ moveItems stores (fromCStore, l) destCStore = do
 
 projectHuman :: (MonadClient m, MonadClientUI m) => m (FailOrCmd RequestTimed)
 projectHuman = do
-  curChal <- getsClient $ scurChal
+  curChal <- getsClient scurChal
   actorCurAndMaxSk <- leaderSkillsClientUI
   if | ckeeper curChal ->
        failSer ProjectFinderKeeper
@@ -1830,7 +1830,7 @@ challengeMenuHuman cmdSemInCxtOfKM = do
                   else min rwrap (rwidth - 2)
       widthMono = if isSquareFont propFont
                   then rwidth `div` 2
-                  else (rwidth - 2)
+                  else rwidth - 2
       duplicateEOL '\n' = "\n\n"
       duplicateEOL c = T.singleton c
       blurb =

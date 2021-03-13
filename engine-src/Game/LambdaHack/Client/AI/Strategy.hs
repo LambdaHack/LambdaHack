@@ -1,4 +1,4 @@
-{-# LANGUAGE DeriveFoldable, DeriveTraversable, TupleSections #-}
+{-# LANGUAGE DeriveTraversable, TupleSections #-}
 -- | AI strategies to direct actors not controlled directly by human players.
 -- No operation in this module involves the @State@ type or any of our
 -- client/server monads types.

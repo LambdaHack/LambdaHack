@@ -170,14 +170,12 @@ unfoldrNA axsize aysize fm b =
 -- | Fold right over an array.
 foldrA :: UnboxRepClass c => (c -> a -> a) -> a -> Array c -> a
 {-# INLINE foldrA #-}
-foldrA f z0 Array{..} =
-  U.foldr (\c a-> f (fromUnboxRep c) a) z0 avector
+foldrA f z0 Array{..} = U.foldr (f . fromUnboxRep) z0 avector
 
 -- | Fold right strictly over an array.
 foldrA' :: UnboxRepClass c => (c -> a -> a) -> a -> Array c -> a
 {-# INLINE foldrA' #-}
-foldrA' f z0 Array{..} =
-  U.foldr' (\c a-> f (fromUnboxRep c) a) z0 avector
+foldrA' f z0 Array{..} = U.foldr' (f . fromUnboxRep) z0 avector
 
 -- | Fold left strictly over an array.
 foldlA' :: UnboxRepClass c => (a -> c -> a) -> a -> Array c -> a

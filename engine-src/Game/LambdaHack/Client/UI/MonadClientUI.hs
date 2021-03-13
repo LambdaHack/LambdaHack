@@ -214,7 +214,7 @@ getReportUI = do
       promptAim = toMsgShared prefixColors MsgPromptGeneric
                   $ miniHintAiming <> "\n"
       promptAI = toMsgShared prefixColors MsgPromptAction
-                 $ "<press any key for main menu>"
+                             "<press any key for main menu>"
   return $! if | newcomerHelp && detailAtDefault && not defailMinimal ->
                    consReport promptAim report
                | underAI -> consReport promptAI report

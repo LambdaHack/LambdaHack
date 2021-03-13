@@ -86,8 +86,8 @@ parseConfig cfg =
       uMaxFps = max 1 $ getOption "maxFps"
       uNoAnim = getOption "noAnim"
       uhpWarningPercent = getOption "hpWarningPercent"
-      uMessageColors = map (\(prefix, color) -> (prefix, readError color))
-                       $ Ini.allItems "message_colors" cfg
+      uMessageColors =
+        map (second readError) $ Ini.allItems "message_colors" cfg
       uCmdline = glueSeed $ words $ getOption "overrideCmdline"
       uFonts =
         let toFont (ident, fontString) = (T.pack ident, readError fontString)

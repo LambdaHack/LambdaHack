@@ -243,7 +243,7 @@ resetFactions factionDold gameModeIdOld curDiffSerOld totalDepth players = do
             ix = case gteamCont of
               Just (TeamContinuity k) -> k
               _ -> ixRaw
-        return $ (toEnum $ if fhasUI then ix else -ix, Faction{..})
+        return (toEnum $ if fhasUI then ix else -ix, Faction{..})
   -- We assume @TeamContinuity@ are small integers.
   lFs <- mapM rawCreate $ zip [100..] $ rosterList players
   let swapIx l =
@@ -357,7 +357,7 @@ populateDungeon = do
         when (length entryPoss < length arenaFactions) $ debugPossiblyPrint
           "Server: populateDungeon: failed to find enough distinct faction starting positions; some factions share positions"
         let usedPoss = EM.fromList $ zip arenaFactions $ cycle entryPoss
-        return $ (lid, usedPoss)
+        return (lid, usedPoss)
   factionPositions <- EM.fromDistinctAscList
                       <$> mapM initialActorPositions arenas
   let initialActors :: (FactionId, Faction) -> m ()

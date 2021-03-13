@@ -167,7 +167,7 @@ computeTarget foeAssocs friendAssocs aid = do
         maybe False (\(_, time) -> timeRecent5 localTime time) mfled
       recentlyFled20 =
         maybe False (\(_, time) -> timeRecent5 localTime time) mfled
-      actorTurn = (ticksPerMeter $ gearSpeed actorMaxSk)
+      actorTurn = ticksPerMeter $ gearSpeed actorMaxSk
   let canEscape = fcanEscape (gplayer fact)
       canSmell = Ability.getSk Ability.SkSmell actorMaxSk > 0
       meleeNearby | canEscape = rnearby `div` 2

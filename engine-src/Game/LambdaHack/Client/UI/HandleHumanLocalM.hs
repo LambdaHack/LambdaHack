@@ -390,7 +390,7 @@ chooseItemProjectHuman ts = do
   let overStash = mstash == Just (blid b, bpos b)
       storesBase = [CStash, CEqp]
       stores | overStash = storesBase ++ [CGround]
-             | otherwise = [CGround] ++ storesBase
+             | otherwise = CGround : storesBase
       (verb1, object1) = case ts of
         [] -> ("aim", "item")
         tr : _ -> (HumanCmd.tiverb tr, HumanCmd.tiobject tr)
@@ -571,7 +571,7 @@ chooseItemApplyHuman ts = do
   let overStash = mstash == Just (blid b, bpos b)
       storesBase = [CStash, CEqp, COrgan]
       stores | overStash = storesBase ++ [CGround]
-             | otherwise = [CGround] ++ storesBase
+             | otherwise = CGround : storesBase
       (verb1, object1) = case ts of
         [] -> ("trigger", "item")
         tr : _ -> (HumanCmd.tiverb tr, HumanCmd.tiobject tr)
