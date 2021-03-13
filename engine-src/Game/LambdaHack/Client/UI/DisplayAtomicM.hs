@@ -2096,10 +2096,13 @@ strike catch source target iid = assert (source /= target) $ do
     tfact <- getsState $ (EM.! bfid tb) . sfactionD
     eqpOrgKit <- getsState $ kitAssocs target [CEqp, COrgan]
     orgKit <- getsState $ kitAssocs target [COrgan]
-    let notCond (_, (itemFullArmor, _)) =
+    let isCond (_, (itemFullArmor, _)) =
           not $ IA.checkFlag Ability.Condition $ aspectRecordFull itemFullArmor
+        -- We exclude genetic flaws, backstory items, etc., because they
+        -- can't be easily taken off, so no point spamming the player.
         isOrdinaryCond (_, (itemFullArmor, _)) =
-          IA.checkFlag Ability.Condition $ aspectRecordFull itemFullArmor
+          not (IA.checkFlag Ability.MetaGame (aspectRecordFull itemFullArmor))
+          || IA.checkFlag Ability.Condition (aspectRecordFull itemFullArmor)
         relevantSkArmor =
           if bproj sb then Ability.SkArmorRanged else Ability.SkArmorMelee
         rateArmor (iidArmor, (itemFullArmor, (k, _))) =
@@ -2109,7 +2112,8 @@ strike catch source target iid = assert (source /= target) $ do
         abs15 (v, _) = abs v >= 15
         condArmor = filter abs15 $ map rateArmor $ filter isOrdinaryCond orgKit
         fstGt0 (v, _) = v > 0
-        wornArmor = filter fstGt0 $ map rateArmor $ filter notCond eqpOrgKit
+        wornArmor =
+          filter fstGt0 $ map rateArmor $ filter (not . isCond) eqpOrgKit
     mblockArmor <- case wornArmor of
       [] -> return Nothing
       _ -> Just
