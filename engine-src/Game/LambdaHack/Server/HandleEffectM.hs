@@ -521,20 +521,18 @@ effectBurn nDm source target iid = do
 effectExplode :: MonadServerAtomic m
               => m () -> GroupName ItemKind -> ActorId -> ActorId -> Container
               -> m UseResult
-effectExplode execSfx cgroup source target containerOrigin = do
+effectExplode execSfx cgroup source target container = do
   execSfx
   tb <- getsState $ getActorBody target
+  oxy@(Point x y) <- getsState $ posFromC container
   let itemFreq = [(cgroup, 1)]
-      -- Explosion particles are placed among organs of the victim:
-      container = CActor target COrgan
   -- Power depth of new items unaffected by number of spawned actors.
   freq <- prepareItemKind 0 (blid tb) itemFreq
+  -- Explosion particles are placed among inside the container from which
+  -- the effect originates.
   m2 <- rollAndRegisterItem False (blid tb) freq container Nothing
   let (iid, (ItemFull{itemKind}, (itemK, _))) =
         fromMaybe (error $ "" `showFailure` cgroup) m2
-      oxy@(Point x y) = case containerOrigin of
-        CEmbed elid epos -> assert (elid == blid tb) epos
-        _ -> bpos tb
       semirandom = T.length (IK.idesc itemKind)
       projectN k100 n = do
         -- We pick a point at the border, not inside, to have a uniform
