@@ -349,35 +349,35 @@ recomputeCachePer fid lid = do
 -- went into effect (no failure occured).
 projectFail :: MonadServerAtomic m
             => ActorId    -- ^ actor causing the projection
-            -> ActorId    -- ^ actor projecting the item (is on current lvl)
+            -> ActorId    -- ^ actor projecting the item (is on current level)
             -> Point      -- ^ target position of the projectile
             -> Int        -- ^ digital line parameter
-            -> Bool       -- ^ whether to start at the source position
+            -> Bool       -- ^ whether to start at the origin's position
             -> ItemId     -- ^ the item to be projected
             -> CStore     -- ^ which store the items comes from
             -> Bool       -- ^ whether the item is a blast
             -> m (Maybe ReqFailure)
-projectFail propeller source tpxy eps center iid cstore blast = do
+projectFail propeller origin tpxy eps center iid cstore blast = do
   COps{corule=RuleContent{rXmax, rYmax}, coTileSpeedup} <- getsState scops
-  sb <- getsState $ getActorBody source
-  let lid = blid sb
-      spos = bpos sb
+  body <- getsState $ getActorBody origin
+  let lid = blid body
+      oxy = bpos body
   lvl <- getLevel lid
-  case bla rXmax rYmax eps spos tpxy of
+  case bla rXmax rYmax eps oxy tpxy of
     Nothing -> return $ Just ProjectAimOnself
     Just [] -> error $ "projecting from the edge of level"
-                       `showFailure` (spos, tpxy)
+                       `showFailure` (oxy, tpxy)
     Just (pos : restUnlimited) -> do
-      bag <- getsState $ getBodyStoreBag sb cstore
+      bag <- getsState $ getBodyStoreBag body cstore
       case EM.lookup iid bag of
         Nothing -> return $ Just ProjectOutOfReach
         Just _kit -> do
           itemFull <- getsState $ itemToFull iid
-          actorSk <- currentSkillsServer source
-          actorMaxSk <- getsState $ getActorMaxSkills source
+          actorSk <- currentSkillsServer origin
+          actorMaxSk <- getsState $ getActorMaxSkills origin
           let skill = Ability.getSk Ability.SkProject actorSk
-              forced = blast || bproj sb
-              calmE = calmEnough sb actorMaxSk
+              forced = blast || bproj body
+              calmE = calmEnough body actorMaxSk
               legal = permittedProject forced skill calmE itemFull
               arItem = aspectRecordFull itemFull
           case legal of
@@ -385,26 +385,27 @@ projectFail propeller source tpxy eps center iid cstore blast = do
             Right _ -> do
               let lobable = IA.checkFlag Ability.Lobable arItem
                   rest = if lobable
-                         then take (chessDist spos tpxy - 1) restUnlimited
+                         then take (chessDist oxy tpxy - 1) restUnlimited
                          else restUnlimited
                   t = lvl `at` pos
               if | not $ Tile.isWalkable coTileSpeedup t ->
                    return $ Just ProjectBlockTerrain
                  | occupiedBigLvl pos lvl ->
-                   if blast && bproj sb then do
+                   if blast && bproj body then do
                       -- Hit the blocking actor.
-                      projectBla propeller source spos (pos:rest)
+                      projectBla propeller origin oxy (pos:rest)
                                  iid cstore blast
                       return Nothing
                    else return $ Just ProjectBlockActor
                  | otherwise -> do
                    -- Make the explosion less regular and weaker at edges.
-                   if blast && bproj sb && center then
+                   if blast && bproj body && center then
                      -- Start in the center, not around.
-                     projectBla propeller source spos (pos:rest)
+                     projectBla propeller origin oxy (pos:rest)
                                 iid cstore blast
                    else
-                     projectBla propeller source pos rest iid cstore blast
+                     projectBla propeller origin pos rest
+                                iid cstore blast
                    return Nothing
 
 projectBla :: MonadServerAtomic m
@@ -416,23 +417,23 @@ projectBla :: MonadServerAtomic m
            -> CStore     -- ^ which store the items comes from
            -> Bool       -- ^ whether the item is a blast
            -> m ()
-projectBla propeller source pos rest iid cstore blast = do
-  sb <- getsState $ getActorBody source
-  let lid = blid sb
+projectBla propeller origin pos rest iid cstore blast = do
+  body <- getsState $ getActorBody origin
+  let lid = blid body
   localTime <- getsState $ getLocalTime lid
-  unless blast $ execSfxAtomic $ SfxProject source iid
-  bag <- getsState $ getBodyStoreBag sb cstore
+  unless blast $ execSfxAtomic $ SfxProject origin iid
+  bag <- getsState $ getBodyStoreBag body cstore
   ItemFull{itemKind} <- getsState $ itemToFull iid
   case iid `EM.lookup` bag of
-    Nothing -> error $ "" `showFailure` (source, pos, rest, iid, cstore)
+    Nothing -> error $ "" `showFailure` (origin, pos, rest, iid, cstore)
     Just kit@(_, it) -> do
       let delay =
             if IK.iweight itemKind == 0
             then timeTurn  -- big delay at start, e.g., to easily read hologram
             else timeZero  -- avoid running into own projectiles
           btime = absoluteTimeAdd delay localTime
-      addProjectile propeller pos rest iid kit lid (bfid sb) btime
-      let c = CActor source cstore
+      addProjectile propeller pos rest iid kit lid (bfid body) btime
+      let c = CActor origin cstore
       execUpdAtomic $ UpdLoseItem False iid (1, take 1 it) c
 
 addActorFromGroup :: MonadServerAtomic m
