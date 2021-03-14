@@ -1110,7 +1110,8 @@ reqProject source tpxy eps iid cstore = do
         execFailure source req ProjectFinderKeeper
      | cstore == CEqp && not calmE -> execFailure source req ItemNotCalm
      | otherwise -> do
-         mfail <- projectFail source source tpxy eps False iid cstore False
+         mfail <-
+           projectFail source source (bpos b) tpxy eps False iid cstore False
          maybe (return ()) (execFailure source req) mfail
 
 -- * ReqApply

@@ -350,6 +350,8 @@ recomputeCachePer fid lid = do
 projectFail :: MonadServerAtomic m
             => ActorId    -- ^ actor causing the projection
             -> ActorId    -- ^ actor projecting the item (is on current level)
+            -> Point      -- ^ starting position of the projectile;
+                          --   usually, but not always, position of @origin@
             -> Point      -- ^ target position of the projectile
             -> Int        -- ^ digital line parameter
             -> Bool       -- ^ whether to start at the origin's position
@@ -357,11 +359,10 @@ projectFail :: MonadServerAtomic m
             -> CStore     -- ^ which store the items comes from
             -> Bool       -- ^ whether the item is a blast
             -> m (Maybe ReqFailure)
-projectFail propeller origin tpxy eps center iid cstore blast = do
+projectFail propeller origin oxy tpxy eps center iid cstore blast = do
   COps{corule=RuleContent{rXmax, rYmax}, coTileSpeedup} <- getsState scops
   body <- getsState $ getActorBody origin
   let lid = blid body
-      oxy = bpos body
   lvl <- getLevel lid
   case bla rXmax rYmax eps oxy tpxy of
     Nothing -> return $ Just ProjectAimOnself
@@ -391,15 +392,15 @@ projectFail propeller origin tpxy eps center iid cstore blast = do
               if | not $ Tile.isWalkable coTileSpeedup t ->
                    return $ Just ProjectBlockTerrain
                  | occupiedBigLvl pos lvl ->
-                   if blast && bproj body then do
-                      -- Hit the blocking actor.
-                      projectBla propeller origin oxy (pos:rest)
-                                 iid cstore blast
-                      return Nothing
+                   if blast && bproj body && oxy == bpos body then do
+                     -- Hit the blocking actor.
+                     projectBla propeller origin oxy (pos:rest)
+                                iid cstore blast
+                     return Nothing
                    else return $ Just ProjectBlockActor
                  | otherwise -> do
-                   -- Make the explosion less regular and weaker at edges.
-                   if blast && bproj body && center then
+                   -- Make the explosion less regular and weaker at the edges.
+                   if blast && bproj body && center && oxy == bpos body then
                      -- Start in the center, not around.
                      projectBla propeller origin oxy (pos:rest)
                                 iid cstore blast

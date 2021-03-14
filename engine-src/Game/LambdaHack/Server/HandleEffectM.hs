@@ -435,7 +435,7 @@ effectSem effApplyFlags0@EffApplyFlags{..}
       execSfxSource = execSfxAtomic $ SfxEffect (bfid sb) source iid effect 0
   case effect of
     IK.Burn nDm -> effectBurn nDm source target iid
-    IK.Explode t -> effectExplode execSfx t source target
+    IK.Explode t -> effectExplode execSfx t source target c
     IK.RefillHP p -> effectRefillHP p source target iid
     IK.RefillCalm p -> effectRefillCalm execSfx p source target
     IK.Dominate -> effectDominate source target iid
@@ -519,8 +519,9 @@ effectBurn nDm source target iid = do
 -- ** Explode
 
 effectExplode :: MonadServerAtomic m
-              => m () -> GroupName ItemKind -> ActorId -> ActorId -> m UseResult
-effectExplode execSfx cgroup source target = do
+              => m () -> GroupName ItemKind -> ActorId -> ActorId -> Container
+              -> m UseResult
+effectExplode execSfx cgroup source target containerOrigin = do
   execSfx
   tb <- getsState $ getActorBody target
   let itemFreq = [(cgroup, 1)]
@@ -531,7 +532,9 @@ effectExplode execSfx cgroup source target = do
   m2 <- rollAndRegisterItem False (blid tb) freq container Nothing
   let (iid, (ItemFull{itemKind}, (itemK, _))) =
         fromMaybe (error $ "" `showFailure` cgroup) m2
-      Point x y = bpos tb
+      oxy@(Point x y) = case containerOrigin of
+        CEmbed elid epos -> assert (elid == blid tb) epos
+        _ -> bpos tb
       semirandom = T.length (IK.idesc itemKind)
       projectN k100 n = do
         -- We pick a point at the border, not inside, to have a uniform
@@ -574,7 +577,7 @@ effectExplode execSfx cgroup source target = do
                   $ take 8 (drop ((k100 + fuzz) `mod` 8) $ cycle psFuzz)]
         forM_ ps $ \(centerRaw, tpxy) -> do
           let center = centerRaw && itemK >= 8  -- if few, keep them regular
-          mfail <- projectFail source target tpxy veryrandom center
+          mfail <- projectFail source target oxy tpxy veryrandom center
                                iid COrgan True
           case mfail of
             Nothing -> return ()
