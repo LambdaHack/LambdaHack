@@ -521,15 +521,18 @@ effectBurn nDm source target iid = do
 effectExplode :: MonadServerAtomic m
               => m () -> GroupName ItemKind -> ActorId -> ActorId -> Container
               -> m UseResult
-effectExplode execSfx cgroup source target container = do
+effectExplode execSfx cgroup source target containerOrigin = do
   execSfx
   tb <- getsState $ getActorBody target
-  oxy@(Point x y) <- getsState $ posFromC container
+  oxy@(Point x y) <- getsState $ posFromC containerOrigin
   let itemFreq = [(cgroup, 1)]
+      -- Explosion particles are placed among organs of the victim.
+      -- TODO: when changing this code, perhaps use @containerOrigin@
+      -- in place of @container@, but then remove @borgan@ from several
+      -- functions that have the store hardwired.
+      container = CActor target COrgan
   -- Power depth of new items unaffected by number of spawned actors.
   freq <- prepareItemKind 0 (blid tb) itemFreq
-  -- Explosion particles are placed among inside the container from which
-  -- the effect originates.
   m2 <- rollAndRegisterItem False (blid tb) freq container Nothing
   let (iid, (ItemFull{itemKind}, (itemK, _))) =
         fromMaybe (error $ "" `showFailure` cgroup) m2
