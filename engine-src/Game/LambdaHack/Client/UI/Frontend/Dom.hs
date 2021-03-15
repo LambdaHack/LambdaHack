@@ -123,7 +123,7 @@ runWeb coscreen ClientOptions{..} rfMVar = do
         modMeta <- ask >>= getMetaKey
         modAltG <- ask >>= getAltGraphKey
         return $! modifierTranslate modCtrl modShift (modAlt || modAltG) modMeta
-  void doc `on` keyDown $ do
+  void $ doc `on` keyDown $ do
     keyId <- ask >>= getKey
     modifier <- readMod
 --  This is currently broken at least for Shift-F1, etc., so won't be used:
@@ -203,18 +203,18 @@ handleMouse rf (cell, _) cx cy = do
         -- IO.liftIO $ putStrLn $
         --   "m: " ++ show but ++ show modifier ++ show pointer
         IO.liftIO $ saveKMP rf modifier key pointer
-  void cell `on` wheel $ do
+  void $ cell `on` wheel $ do
     saveWheel
     preventDefault
     stopPropagation
-  void cell `on` contextMenu $ do
+  void $ cell `on` contextMenu $ do
     preventDefault
     stopPropagation
-  void cell `on` mouseUp $ do
+  void $ cell `on` mouseUp $ do
     saveMouse
     preventDefault
     stopPropagation
-  void cell `on` mouseDown $ do
+  void $ cell `on` mouseDown $ do
     -- Just disable selecting a region.
     preventDefault
     stopPropagation
