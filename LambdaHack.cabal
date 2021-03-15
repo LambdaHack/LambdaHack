@@ -382,6 +382,7 @@ library
 
   if impl(ghcjs) {
     other-modules:    Game.LambdaHack.Common.JSFile
+    build-depends:    ghcjs-base
   } else {
     other-modules:    Game.LambdaHack.Common.HSFile
     build-depends:    zlib >= 0.5.3.1
