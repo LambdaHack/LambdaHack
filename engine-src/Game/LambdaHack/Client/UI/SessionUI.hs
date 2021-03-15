@@ -210,7 +210,8 @@ instance Binary SessionUI where
     put sitemSel
     put sselected
     put srunning
-    put shistory
+    put $ archiveReport True shistory
+      -- avoid displaying ending messages again at game start
     put smarkVision
     put smarkSmell
     put snxtScenario

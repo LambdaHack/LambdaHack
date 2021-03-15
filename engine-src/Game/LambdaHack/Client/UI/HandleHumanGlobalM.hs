@@ -1974,10 +1974,8 @@ gameDropHuman = do
 
 -- * GameExit
 
-gameExitHuman :: (MonadClient m, MonadClientUI m) => m ReqUI
-gameExitHuman = do
-  -- Announce before the saving started, since it can take a while.
-  msgAdd MsgPromptGeneric "Saving game. The program stops now."
+gameExitHuman :: Monad m => m ReqUI
+gameExitHuman =
   return ReqUIGameSaveAndExit
 
 -- * GameSave

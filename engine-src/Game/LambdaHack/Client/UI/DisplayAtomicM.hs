@@ -584,6 +584,8 @@ displayRespUpdAtomicUI cmd = case cmd of
       msgAdd MsgPromptGeneric "Prove yourself!"
   UpdResumeServer{} -> return ()
   UpdKillExit{} -> do
+    -- The prompt is necessary to force frontend to show this before exiting.
+    void $ displayMore ColorBW "Done."  -- in case it follows "Saving..."
     side <- getsClient sside
     debugPossiblyPrintUI $ "Client" <+> tshow side <+> "closing frontend."
     frontendShutdown
@@ -1241,8 +1243,10 @@ quitFactionUI fid toSt manalytics = do
         scoreSlides <- scoreToSlideshow total status
         void $ getConfirms ColorFull [K.spaceKM, K.escKM] scoreSlides
       -- The last prompt stays onscreen during shutdown, etc.
-      when (not noConfirmsGame || camping) $
-        void $ displaySpaceEsc ColorFull pp  -- these are short
+      when (not noConfirmsGame || camping) $ do
+        msgAdd MsgPromptGeneric pp
+        when camping $ msgAdd MsgPromptGeneric "Saving..."
+        pushFrame  -- don't leave frozen prompts on the browser screen
     _ -> when (isJust startingPart && (stOutcome <$> toSt) == Just Killed) $
       -- Needed not to overlook the competitor dying in raid scenario.
       displayMore ColorFull ""
