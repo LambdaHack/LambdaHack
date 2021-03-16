@@ -77,12 +77,7 @@ parseConfig cfg =
       uAllFontsScale = getOption "allFontsScale"
       uScreen1PerLine = getOption "screenOneMessagePerLine"
       uHistory1PerLine = getOption "historyOneMessagePerLine"
-#ifdef USE_JSFILE
-      -- Local storage quota exeeded on Chrome.
-      uHistoryMax = getOption "historyMax" `div` 10
-#else
       uHistoryMax = getOption "historyMax"
-#endif
       uMaxFps = max 1 $ getOption "maxFps"
       uNoAnim = getOption "noAnim"
       uhpWarningPercent = getOption "hpWarningPercent"
