@@ -155,7 +155,7 @@ runWeb coscreen ClientOptions{..} rfMVar = do
   -- Handle mouseclicks, per-cell.
   let setupMouse i a =
         let Point{..} = punindex (rwidth coscreen) i
-        in handleMouse rf a px py
+        in handleMouse rf a (2 * px) py
   V.imapM_ setupMouse scharCells
   -- Display at the end to avoid redraw. Replace "Please wait".
   pleaseWait <- getElementByIdUnsafe doc ("pleaseWait" :: Text)
