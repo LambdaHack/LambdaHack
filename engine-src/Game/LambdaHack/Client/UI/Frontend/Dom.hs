@@ -31,9 +31,9 @@ import GHCJS.DOM.EventM
   , preventDefault
   , stopPropagation
   )
-import GHCJS.DOM.GlobalEventHandlers
-  (contextMenu, keyDown, mouseDown, mouseUp, wheel)
+import GHCJS.DOM.GlobalEventHandlers (contextMenu, keyDown, mouseUp, wheel)
 import GHCJS.DOM.HTMLCollection (itemUnsafe)
+import GHCJS.DOM.HTMLElement (focus)
 import GHCJS.DOM.HTMLTableElement
   ( HTMLTableElement (HTMLTableElement)
   , getRows
@@ -123,7 +123,10 @@ runWeb coscreen ClientOptions{..} rfMVar = do
         modMeta <- ask >>= getMetaKey
         modAltG <- ask >>= getAltGraphKey
         return $! modifierTranslate modCtrl modShift (modAlt || modAltG) modMeta
-  void $ doc `on` keyDown $ do
+  gameMap <- getElementByIdUnsafe doc ("gameMap" :: Text)
+  divMap <- unsafeCastTo HTMLDivElement gameMap
+  focus divMap
+  void $ divMap `on` keyDown $ do
     keyId <- ask >>= getKey
     modifier <- readMod
 --  This is currently broken at least for Shift-F1, etc., so won't be used:
@@ -155,7 +158,6 @@ runWeb coscreen ClientOptions{..} rfMVar = do
         in handleMouse rf a px py
   V.imapM_ setupMouse scharCells
   -- Display at the end to avoid redraw. Replace "Please wait".
-  gameMap <- getElementByIdUnsafe doc ("gameMap" :: Text)
   pleaseWait <- getElementByIdUnsafe doc ("pleaseWait" :: Text)
   replaceChild_ gameMap divBlock pleaseWait
   IO.liftIO $ putMVar rfMVar rf
@@ -212,10 +214,6 @@ handleMouse rf (cell, _) cx cy = do
     stopPropagation
   void $ cell `on` mouseUp $ do
     saveMouse
-    preventDefault
-    stopPropagation
-  void $ cell `on` mouseDown $ do
-    -- Just disable selecting a region.
     preventDefault
     stopPropagation
 
