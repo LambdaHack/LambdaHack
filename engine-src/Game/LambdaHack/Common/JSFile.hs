@@ -21,10 +21,10 @@ import           GHCJS.DOM.Storage (getItem, removeItem, setItem)
 import           GHCJS.DOM.Types (JSString, runDOM)
 import           GHCJS.DOM.Window (getLocalStorage)
 
-foreign import javascript unsafe "$r = LZString.compressToUTF16($1);"
+foreign import javascript safe "$r = LZString.compressToUTF16($1);"
   compressToUTF16 :: JSString -> IO JSString
 
-foreign import javascript unsafe "$r = LZString.decompressFromUTF16($1);"
+foreign import javascript safe "$r = LZString.decompressFromUTF16($1);"
   decompressFromUTF16 :: JSString -> IO JSString
 
 -- | Serialize and save data with an EOF marker, compressing.
