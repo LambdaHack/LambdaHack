@@ -20,6 +20,7 @@ import Prelude ()
 
 import Game.LambdaHack.Core.Prelude
 
+import           Control.Concurrent (threadDelay)
 import qualified Data.Char as Char
 import qualified Data.EnumMap.Strict as EM
 import qualified Data.EnumSet as ES
@@ -584,6 +585,16 @@ displayRespUpdAtomicUI cmd = case cmd of
       msgAdd MsgPromptGeneric "Prove yourself!"
   UpdResumeServer{} -> return ()
   UpdKillExit{} -> do
+#ifdef USE_JSFILE
+      -- Some browsers seem to trash Local Storage when page reloaded or closed
+      -- or the browser closed, while they still internally finish the saving
+      -- in the background, so wait 2s. If the exit is without a save,
+      -- the wait is spurious, but it's not supposed to be common.
+      -- TODO: replace the @liftIO@ with a @MonadClientUI@ delay function.
+    liftIO $ threadDelay 2000000
+#else
+    liftIO $ threadDelay 200000
+#endif
     -- The prompt is necessary to force frontend to show this before exiting.
     void $ displayMore ColorBW "Done."  -- in case it follows "Saving..."
     side <- getsClient sside
