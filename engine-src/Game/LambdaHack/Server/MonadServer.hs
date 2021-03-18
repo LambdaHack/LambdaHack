@@ -131,7 +131,7 @@ restoreScore COps{corule} = do
       if configExists then do
         (vlib2, s) <- strictDecodeEOF (path "")
         if Save.compatibleVersion vlib2 Self.version
-        then return $ Just s
+        then return $! s `seq` Just s
         else do
           let msg =
                 "High score file from incompatible version of game detected."

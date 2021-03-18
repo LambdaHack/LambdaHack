@@ -113,7 +113,7 @@ restoreGame cops fileName = do
       let vExe1 = rexeVersion $ corule cops
       (vExe2, s) <- strictDecodeEOF (path "")
       if compatibleVersion vExe1 vExe2
-      then return $ Just s
+      then return $! s `seq` Just s
       else do
         let msg = "Savefile" <+> T.pack (path "")
                   <+> "from an incompatible version"
