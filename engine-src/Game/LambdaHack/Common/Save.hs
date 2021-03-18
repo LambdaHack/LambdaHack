@@ -144,8 +144,8 @@ delayPrint t = do
   T.hPutStr stdout $! t <> "\n"  -- hPutStrLn not atomic enough
   hFlush stdout
 
-saveNameCli :: COps -> FactionId -> String
-saveNameCli COps{corule} side =
+saveNameCli :: RuleContent -> FactionId -> String
+saveNameCli corule side =
   let gameShortName =
         case words $ rtitle corule of
           w : _ -> w
@@ -157,8 +157,8 @@ saveNameCli COps{corule} side =
          else ".computer_" ++ show (-n))
      ++ ".sav"
 
-saveNameSer :: COps -> String
-saveNameSer COps{corule} =
+saveNameSer :: RuleContent -> String
+saveNameSer corule =
   let gameShortName =
         case words $ rtitle corule of
           w : _ -> w

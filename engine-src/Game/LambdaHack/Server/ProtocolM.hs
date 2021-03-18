@@ -224,7 +224,7 @@ tryRestore = do
   if bench then return Nothing
   else do
     let prefix = ssavePrefixSer soptions
-        fileName = prefix <> Save.saveNameSer cops
+        fileName = prefix <> Save.saveNameSer corule
     res <- liftIO $ Save.restoreGame cops fileName
     let cfgUIName = rcfgUIName corule
         (configString, _) = rcfgUIDefault corule

@@ -141,7 +141,7 @@ instance MonadServerAtomic SerImplementation where
 -- | Run the main server loop, with the given arguments and empty
 -- initial states, in the @IO@ monad.
 executorSer :: COps -> CCUI -> ServerOptions -> UIOptions -> IO ()
-executorSer cops ccui soptionsNxtCmdline sUIOptions = do
+executorSer cops@COps{corule} ccui soptionsNxtCmdline sUIOptions = do
   soptionsNxtRaw <- case uCmdline sUIOptions of
     []   -> return soptionsNxtCmdline
     args -> handleParseResult $ execParserPure defaultPrefs serverOptionsPI args
@@ -154,7 +154,7 @@ executorSer cops ccui soptionsNxtCmdline sUIOptions = do
   -- Wire together game content, the main loop of game clients
   -- and the game server loop.
   let stateToFileName (_, ser) =
-        ssavePrefixSer (soptions ser) <> Save.saveNameSer cops
+        ssavePrefixSer (soptions ser) <> Save.saveNameSer corule
       totalState serToSave = SerState
         { serState = updateCOpsAndCachedData (const cops) emptyState
             -- state is empty, so the cached data is left empty and untouched
@@ -173,9 +173,9 @@ executorSer cops ccui soptionsNxtCmdline sUIOptions = do
         when b $ renameFile (path "") (path "bkp.")
       bkpAllSaves = unless (sbenchmark $ sclientOptions soptionsNxt) $ do
         T.hPutStrLn stdout "The game crashed, so savefiles are moved aside."
-        bkpOneSave $ defPrefix <> Save.saveNameSer cops
+        bkpOneSave $ defPrefix <> Save.saveNameSer corule
         forM_ [-199..199] $ \n ->
-          bkpOneSave $ defPrefix <> Save.saveNameCli cops (toEnum n)
+          bkpOneSave $ defPrefix <> Save.saveNameCli corule (toEnum n)
   -- Wait for clients to exit even in case of server crash
   -- (or server and client crash), which gives them time to save
   -- and report their own inconsistencies, if any.

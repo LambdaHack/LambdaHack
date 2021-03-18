@@ -126,11 +126,11 @@ executorCli :: CCUI -> UIOptions -> ClientOptions
             -> FactionId
             -> ChanServer
             -> IO ()
-executorCli ccui sUIOptions clientOptions cops isUI fid cliDict =
+executorCli ccui sUIOptions clientOptions cops@COps{corule} isUI fid cliDict =
   let cliSession | isUI = Just $ emptySessionUI sUIOptions
                  | otherwise = Nothing
       stateToFileName (cli, _) =
-        ssavePrefixCli (soptions cli) <> Save.saveNameCli cops (sside cli)
+        ssavePrefixCli (soptions cli) <> Save.saveNameCli corule (sside cli)
       totalState cliToSave = CliState
         { cliState = updateCOpsAndCachedData (const cops) emptyState
             -- state is empty, so the cached data is left empty and untouched

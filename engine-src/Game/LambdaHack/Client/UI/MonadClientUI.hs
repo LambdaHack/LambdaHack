@@ -458,7 +458,7 @@ tryRestore = do
   else do
     side <- getsClient sside
     prefix <- getsClient $ ssavePrefixCli . soptions
-    let fileName = prefix <> Save.saveNameCli cops side
+    let fileName = prefix <> Save.saveNameCli corule side
     res <- liftIO $ Save.restoreGame cops fileName
     let cfgUIName = rcfgUIName corule
         (configString, _) = rcfgUIDefault corule

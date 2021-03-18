@@ -30,6 +30,7 @@ import           Game.LambdaHack.Common.File
 import           Game.LambdaHack.Common.Kind
 import           Game.LambdaHack.Common.Misc
 import           Game.LambdaHack.Common.Save (compatibleVersion, delayPrint)
+import qualified Game.LambdaHack.Common.Save as Save
 import           Game.LambdaHack.Content.RuleKind
 
 configError :: String -> a
@@ -133,14 +134,23 @@ mkUIOptions corule benchmark = do
     return $! deepseq conf conf
   else do
     cpExists <- doesFileExist (path "")
+    let bkpOneSave name = do
+          let pathSave bkp = dataDir </> "saves" </> bkp <> name
+          b <- doesFileExist (pathSave "")
+          when b $ renameFile (pathSave "") (pathSave "bkp.")
+        bkpAllSaves = do
+          bkpOneSave $ Save.saveNameSer corule
+          forM_ [-199..199] $ \n ->
+            bkpOneSave $ Save.saveNameCli corule (toEnum n)
     when cpExists $ do
       renameFile (path "") (path "bkp.")
+      bkpAllSaves
       let msg = "Config file" <+> T.pack (path "")
                 <+> "from an incompatible version '"
                 <> T.pack (showVersion vExe2)
                 <> "' detected while starting"
                 <+> T.pack (showVersion vExe1)
-                <+> "game. The file has been moved aside."
+                <+> "game. The config file and savefiles have been moved aside."
       delayPrint msg
     tryWriteFile (path "") configString
     let confDefault = parseConfig cfgUIDefault
