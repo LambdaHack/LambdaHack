@@ -19,6 +19,7 @@ import           Game.LambdaHack.Client.UI.Content.Screen
 import           Game.LambdaHack.Client.UI.Frame
 import           Game.LambdaHack.Client.UI.Frontend.Common
 import qualified Game.LambdaHack.Client.UI.Key as K
+import           Game.LambdaHack.Client.UI.PointUI
 import           Game.LambdaHack.Common.ClientOptions
 import qualified Game.LambdaHack.Common.PointArray as PointArray
 import qualified Game.LambdaHack.Definition.Color as Color
@@ -55,7 +56,7 @@ startup coscreen _soptions = do
   let storeKeys :: IO ()
       storeKeys = do
         K.KM{..} <- keyTranslate <$> C.getKey C.refresh
-        saveKMP rf modifier key (K.PointUI 0 0)
+        saveKMP rf modifier key (PointUI 0 0)
         storeKeys
   void $ async storeKeys
   return $! rf

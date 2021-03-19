@@ -23,6 +23,7 @@ import           Game.LambdaHack.Client.UI.Content.Screen
 import           Game.LambdaHack.Client.UI.Frame
 import           Game.LambdaHack.Client.UI.Frontend.Common
 import qualified Game.LambdaHack.Client.UI.Key as K
+import           Game.LambdaHack.Client.UI.PointUI
 import           Game.LambdaHack.Common.ClientOptions
 import qualified Game.LambdaHack.Definition.Color as Color
 import           Game.LambdaHack.Definition.Defs
@@ -119,7 +120,7 @@ startupFun coscreen ClientOptions{..} rfMVar = do
           K.ControlShift -> K.Control
           _ -> modifier
     when (key == K.Esc) $ IO.liftIO $ resetChanKey (fchanKey rf)
-    IO.liftIO $ saveKMP rf modifier key (K.PointUI 0 0)
+    IO.liftIO $ saveKMP rf modifier key (PointUI 0 0)
     return True
   -- Set the font specified in config, if any.
   -- The list are monospace fonts that have fixed size regardless
@@ -143,7 +144,7 @@ startupFun coscreen ClientOptions{..} rfMVar = do
       (iter, _) <- textViewGetIterAtPosition sview bx by
       cx <- textIterGetLineOffset iter
       cy <- textIterGetLine iter
-      let pointer = K.PointUI cx cy
+      let pointer = PointUI cx cy
           -- Store the mouse event coords in the keypress channel.
           storeK key = saveKMP rf modifier key pointer
       case scrollDir of
@@ -193,7 +194,7 @@ startupFun coscreen ClientOptions{..} rfMVar = do
             MiddleButton -> Just K.MiddleButtonRelease
             RightButton -> Just K.RightButtonRelease
             _ -> Nothing  -- probably a glitch
-          pointer = K.PointUI cx cy
+          pointer = PointUI cx cy
       -- Store the mouse event coords in the keypress channel.
       maybe (return ())
             (\key -> IO.liftIO $ saveKMP rf modifier key pointer) mkey

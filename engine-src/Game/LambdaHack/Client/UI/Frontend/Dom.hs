@@ -65,6 +65,7 @@ import           Game.LambdaHack.Client.UI.Content.Screen
 import           Game.LambdaHack.Client.UI.Frame
 import           Game.LambdaHack.Client.UI.Frontend.Common
 import qualified Game.LambdaHack.Client.UI.Key as K
+import           Game.LambdaHack.Client.UI.PointUI
 import           Game.LambdaHack.Common.Area
 import           Game.LambdaHack.Common.ClientOptions
 import           Game.LambdaHack.Common.Point
@@ -144,7 +145,7 @@ runWeb coscreen ClientOptions{..} rfMVar = do
     --   putStrLn $ "key: " ++ K.showKey key
     --   putStrLn $ "modifier: " ++ show modifier
     when (key == K.Esc) $ IO.liftIO $ resetChanKey (fchanKey rf)
-    IO.liftIO $ saveKMP rf modifierNoShift key (K.PointUI 0 0)
+    IO.liftIO $ saveKMP rf modifierNoShift key (PointUI 0 0)
     -- Pass through C-+ and others, but disable special behaviour on Tab, etc.
     let browserKeys = "+-0tTnNdxcv"
     unless (modifier == K.Alt
@@ -189,7 +190,7 @@ handleMouse rf (cell, _) cx cy = do
         let mkey = if | wheelY < -0.01 -> Just K.WheelNorth
                       | wheelY > 0.01 -> Just K.WheelSouth
                       | otherwise -> Nothing  -- probably a glitch
-            pointer = K.PointUI cx cy
+            pointer = PointUI cx cy
         maybe (return ())
               (\key -> IO.liftIO $ saveKMP rf modifier key pointer) mkey
       saveMouse = do
@@ -201,7 +202,7 @@ handleMouse rf (cell, _) cx cy = do
               1 -> K.MiddleButtonRelease
               2 -> K.RightButtonRelease  -- not handled in contextMenu
               _ -> K.LeftButtonRelease  -- any other is alternate left
-            pointer = K.PointUI cx cy
+            pointer = PointUI cx cy
         -- IO.liftIO $ putStrLn $
         --   "m: " ++ show but ++ show modifier ++ show pointer
         IO.liftIO $ saveKMP rf modifier key pointer

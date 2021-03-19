@@ -16,6 +16,7 @@ import           Game.LambdaHack.Client.UI.Content.Screen
 import           Game.LambdaHack.Client.UI.Frame
 import           Game.LambdaHack.Client.UI.Frontend.Common
 import qualified Game.LambdaHack.Client.UI.Key as K
+import           Game.LambdaHack.Client.UI.PointUI
 import           Game.LambdaHack.Common.ClientOptions
 import           Game.LambdaHack.Common.Point
 import qualified Game.LambdaHack.Common.PointArray as PointArray
@@ -42,7 +43,7 @@ startup coscreen _soptions = do
         e <- nextEvent svty  -- blocks here, so no polling
         case e of
           EvKey n mods ->
-            saveKMP rf (modTranslate mods) (keyTranslate n) (K.PointUI 0 0)
+            saveKMP rf (modTranslate mods) (keyTranslate n) (PointUI 0 0)
           _ -> return ()
         storeKeys
   void $ async storeKeys
