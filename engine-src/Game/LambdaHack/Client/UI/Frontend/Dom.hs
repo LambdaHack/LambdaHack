@@ -156,7 +156,9 @@ runWeb coscreen ClientOptions{..} rfMVar = do
   -- Handle mouseclicks, per-cell.
   let setupMouse i a =
         let Point{..} = punindex (rwidth coscreen) i
-        in handleMouse rf a (2 * px) py
+              -- abuse of convention in that @Point@ used for screen, not map
+            pUI = squareToUI $ PointSquare px py
+        in handleMouse rf a pUI
   V.imapM_ setupMouse scharCells
   -- Display at the end to avoid redraw. Replace "Please wait".
   pleaseWait <- getElementByIdUnsafe doc ("pleaseWait" :: Text)
@@ -174,9 +176,9 @@ setProp style propRef propValue =
 
 -- | Let each table cell handle mouse events inside.
 handleMouse :: RawFrontend
-            -> (HTMLTableCellElement, CSSStyleDeclaration) -> Int -> Int
+            -> (HTMLTableCellElement, CSSStyleDeclaration) -> PointUI
             -> DOM ()
-handleMouse rf (cell, _) cx cy = do
+handleMouse rf (cell, _) pUI = do
   let readMod :: IsMouseEvent e => EventM HTMLTableCellElement e K.Modifier
       readMod = do
         modCtrl <- mouseCtrlKey
@@ -190,9 +192,8 @@ handleMouse rf (cell, _) cx cy = do
         let mkey = if | wheelY < -0.01 -> Just K.WheelNorth
                       | wheelY > 0.01 -> Just K.WheelSouth
                       | otherwise -> Nothing  -- probably a glitch
-            pointer = PointUI cx cy
         maybe (return ())
-              (\key -> IO.liftIO $ saveKMP rf modifier key pointer) mkey
+              (\key -> IO.liftIO $ saveKMP rf modifier key pUI) mkey
       saveMouse = do
         -- <https://hackage.haskell.org/package/ghcjs-dom-0.2.1.0/docs/GHCJS-DOM-EventM.html>
         but <- mouseButton
@@ -202,10 +203,9 @@ handleMouse rf (cell, _) cx cy = do
               1 -> K.MiddleButtonRelease
               2 -> K.RightButtonRelease  -- not handled in contextMenu
               _ -> K.LeftButtonRelease  -- any other is alternate left
-            pointer = PointUI cx cy
         -- IO.liftIO $ putStrLn $
-        --   "m: " ++ show but ++ show modifier ++ show pointer
-        IO.liftIO $ saveKMP rf modifier key pointer
+        --   "m: " ++ show but ++ show modifier ++ show pUI
+        IO.liftIO $ saveKMP rf modifier key pUI
   void $ cell `on` wheel $ do
     saveWheel
     preventDefault
