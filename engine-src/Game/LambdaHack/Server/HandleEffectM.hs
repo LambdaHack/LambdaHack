@@ -827,20 +827,23 @@ effectPutToSleep execSfx target = do
          return UseDud  -- can't increase sleep
      | otherwise -> do
        actorMaxSk <- getsState $ getActorMaxSkills target
-       let maxCalm = xM $ Ability.getSk Ability.SkMaxCalm actorMaxSk
-           deltaCalm = maxCalm - bcalm tb
-       when (deltaCalm > 0) $
-         updateCalm target deltaCalm  -- max Calm, but asleep vulnerability
-       execSfx
-       case bwatch tb of
-         WWait n | n > 0 -> do
-           nAll <- removeConditionSingle IK.S_BRACED target
-           let !_A = assert (nAll == 0) ()
-           return ()
-         _ -> return ()
-       -- Forced sleep. No check if the actor can sleep naturally.
-       addSleep target
-       return UseUp
+       if not $ canSleep actorMaxSk then
+         return UseId  -- no message about the cause, so at least ID
+       else do
+         let maxCalm = xM $ Ability.getSk Ability.SkMaxCalm actorMaxSk
+             deltaCalm = maxCalm - bcalm tb
+         when (deltaCalm > 0) $
+           updateCalm target deltaCalm  -- max Calm, but asleep vulnerability
+         execSfx
+         case bwatch tb of
+           WWait n | n > 0 -> do
+             nAll <- removeConditionSingle IK.S_BRACED target
+             let !_A = assert (nAll == 0) ()
+             return ()
+           _ -> return ()
+         -- Forced sleep. No check if the actor can sleep naturally.
+         addSleep target
+         return UseUp
 
 -- ** Yell
 
