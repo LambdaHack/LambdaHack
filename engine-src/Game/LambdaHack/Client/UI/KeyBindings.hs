@@ -19,6 +19,7 @@ import           Game.LambdaHack.Client.UI.HumanCmd
 import           Game.LambdaHack.Client.UI.ItemSlot
 import qualified Game.LambdaHack.Client.UI.Key as K
 import           Game.LambdaHack.Client.UI.Overlay
+import           Game.LambdaHack.Client.UI.PointUI
 import           Game.LambdaHack.Client.UI.Slideshow
 import qualified Game.LambdaHack.Definition.Color as Color
 
@@ -101,15 +102,15 @@ keyHelp CCUI{ coinput=coinput@InputContent{..}
     keyCaption = fmt offsetCol2 "keys" "command"
     mouseOverviewCaption = fmt offsetCol2 "keys" "command (exploration/aiming)"
     spLen = textSize monoFont " "
-    pamoveRight :: Int -> (K.PointUI, a) -> (K.PointUI, a)
-    pamoveRight xoff (K.PointUI x y, a) = (K.PointUI (x + xoff) y, a)
+    pamoveRight :: Int -> (PointUI, a) -> (PointUI, a)
+    pamoveRight xoff (PointUI x y, a) = (PointUI (x + xoff) y, a)
     okxs cat headers footers =
       let (ovs, kyx) = okxsN coinput monoFont propFont 0 offsetCol2
                              (const False) True cat headers footers
       in ( EM.map (map (pamoveRight spLen)) ovs
          , map (second $ pamoveRight spLen) kyx )
-    renumber dy (km, (K.PointUI x y, len)) = (km, (K.PointUI x (y + dy), len))
-    renumberOv dy = map (\(K.PointUI x y, al) -> (K.PointUI x (y + dy), al))
+    renumber dy (km, (PointUI x y, len)) = (km, (PointUI x (y + dy), len))
+    renumberOv dy = map (\(PointUI x y, al) -> (PointUI x (y + dy), al))
     mergeOKX :: OKX -> OKX -> OKX
     mergeOKX (ovs1, ks1) (ovs2, ks2) =
       let off = 1 + EM.foldr (\ov acc -> max acc (maxYofOverlay ov)) 0 ovs1
@@ -155,9 +156,9 @@ keyHelp CCUI{ coinput=coinput@InputContent{..}
           kst2 = keySel sel key2
           f (ca1, Left km1, _) (ca2, Left km2, _) y =
             assert (ca1 == ca2 `blame` (ca1, ca2, km1, km2, kst1, kst2))
-              [ (Left [km1], ( K.PointUI (doubleIfSquare $ keyM + 3) y
+              [ (Left [km1], ( PointUI (doubleIfSquare $ keyM + 3) y
                              , ButtonWidth monoFont keyB ))
-              , (Left [km2], ( K.PointUI (doubleIfSquare $ keyB + keyM + 5) y
+              , (Left [km2], ( PointUI (doubleIfSquare $ keyB + keyM + 5) y
                              , ButtonWidth monoFont keyB )) ]
           f c d e = error $ "" `showFailure` (c, d, e)
           kxs = concat $ zipWith3 f kst1 kst2 [1 + length header..]
@@ -182,12 +183,12 @@ keyHelp CCUI{ coinput=coinput@InputContent{..}
                     . map (\t -> (spLen, textToAL t))
     typesetXY :: (Int, Int) -> [Text] -> Overlay
     typesetXY (xoffset, yoffset) =
-      map (\(y, t) -> (K.PointUI xoffset (y + yoffset), textToAL t)) . zip [0..]
+      map (\(y, t) -> (PointUI xoffset (y + yoffset), textToAL t)) . zip [0..]
     sideBySide :: [(Text, OKX)] -> [(Text, OKX)]
     sideBySide ((_t1, (ovs1, kyx1)) : (t2, (ovs2, kyx2)) : rest)
       | not $ isSquareFont propFont =
         (t2, ( EM.unionWith (++) ovs1 (EM.map (map (pamoveRight rwidth)) ovs2)
-             , sortOn (\(_, (K.PointUI x y, _)) -> (y, x))
+             , sortOn (\(_, (PointUI x y, _)) -> (y, x))
                $ kyx1 ++ map (second $ pamoveRight rwidth) kyx2 ))
         : sideBySide rest
     sideBySide l = l
@@ -326,12 +327,12 @@ okxsN InputContent{..} keyFont descFont offset offsetCol2 greyedOut
              , desc /= "" || CmdInternal `elem` cats]
       spLen = textSize keyFont " "
       f (ks, (_, (_, t2))) y =
-        (ks, ( K.PointUI spLen y
+        (ks, ( PointUI spLen y
              , ButtonWidth keyFont (offsetCol2 + 2 + T.length t2 - 1)))
       kxs = zipWith f keys [offset + length headerMono1
                                    + length headerProp
                                    + length headerMono2 ..]
-      renumberOv = map (\(K.PointUI x y, al) -> (K.PointUI x (y + offset), al))
+      renumberOv = map (\(PointUI x y, al) -> (PointUI x (y + offset), al))
       ts = map (\t -> (False, (t, ""))) headerMono1
            ++ map (\t -> (False, ("", t))) headerProp
            ++ map (\t -> (False, (t, ""))) headerMono2

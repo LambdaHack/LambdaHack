@@ -18,13 +18,13 @@ import           Data.Bits (xor)
 import qualified Data.EnumMap.Strict as EM
 import           Data.Word (Word32)
 
-import           Game.LambdaHack.Client.UI.Content.Screen
-import           Game.LambdaHack.Client.UI.Frame
-import qualified Game.LambdaHack.Client.UI.Key as K
-import           Game.LambdaHack.Client.UI.Overlay
-import           Game.LambdaHack.Common.Point
-import           Game.LambdaHack.Core.Random
-import           Game.LambdaHack.Definition.Color
+import Game.LambdaHack.Client.UI.Content.Screen
+import Game.LambdaHack.Client.UI.Frame
+import Game.LambdaHack.Client.UI.Overlay
+import Game.LambdaHack.Client.UI.PointUI
+import Game.LambdaHack.Common.Point
+import Game.LambdaHack.Core.Random
+import Game.LambdaHack.Definition.Color
 
 -- | Animation is a list of frame modifications to play one by one,
 -- where each modification if a map from positions to level map symbols.
@@ -50,9 +50,9 @@ blank = Nothing
 cSym :: Color -> Char -> Maybe AttrCharW32
 cSym color symbol = Just $ attrChar2ToW32 color symbol
 
-mapPosToOffset :: (Point, AttrCharW32) -> (K.PointUI, AttrString)
+mapPosToOffset :: (Point, AttrCharW32) -> (PointUI, AttrString)
 mapPosToOffset (Point{..}, attr) =
-  (K.PointUI (px * 2) (py + K.mapStartY), [attr])
+  (PointUI (px * 2) (py + mapStartY), [attr])
 
 mzipSingleton :: Point -> Maybe AttrCharW32 -> OverlaySpace
 mzipSingleton p1 mattr1 =
@@ -250,8 +250,8 @@ fadeout ScreenContent{rwidth, rheight} out step = do
                   x2 :: Int
                   {-# INLINE x2 #-}
                   x2 = max 0 (xbound - (n - 2 * y))
-              in [ (K.PointUI 0 y, map (fadeAttr y) [0..x1])
-                 , (K.PointUI (2 * x2) y, map (fadeAttr y) [x2..xbound]) ]
+              in [ (PointUI 0 y, map (fadeAttr y) [0..x1])
+                 , (PointUI (2 * x2) y, map (fadeAttr y) [x2..xbound]) ]
         return $! concatMap fadeLine [0..ybound]
       fs | out = [3, 3 + step .. rwidth - margin]
          | otherwise = [rwidth - margin, rwidth - margin - step .. 1]

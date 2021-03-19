@@ -27,6 +27,7 @@ import           Game.LambdaHack.Client.UI.Frontend
 import           Game.LambdaHack.Client.UI.ItemSlot
 import qualified Game.LambdaHack.Client.UI.Key as K
 import           Game.LambdaHack.Client.UI.Msg
+import           Game.LambdaHack.Client.UI.PointUI
 import           Game.LambdaHack.Client.UI.UIOptions
 import           Game.LambdaHack.Common.Time
 import           Game.LambdaHack.Common.Types
@@ -58,7 +59,7 @@ data SessionUI = SessionUI
   , srunning       :: Maybe RunParams
                                     -- ^ parameters of the current run, if any
   , shistory       :: History       -- ^ history of messages
-  , spointer       :: K.PointUI     -- ^ mouse pointer position
+  , spointer       :: PointUI       -- ^ mouse pointer position
   , smacroFrame    :: KeyMacroFrame -- ^ the head of the key macro stack
   , smacroStack    :: [KeyMacroFrame]
                                     -- ^ the tail of the key macro stack
@@ -68,7 +69,7 @@ data SessionUI = SessionUI
   , swasAutomated  :: Bool          -- ^ the player just exited AI automation
   , smarkVision    :: Bool          -- ^ mark leader and party FOV
   , smarkSmell     :: Bool          -- ^ mark smell, if the leader can smell
-  , snxtScenario   :: Int            -- ^ next game scenario number
+  , snxtScenario   :: Int           -- ^ next game scenario number
   , scurTutorial   :: Bool          -- ^ whether current game is a tutorial
   , snxtTutorial   :: Bool          -- ^ whether next game is to be tutorial
   , soverrideTut   :: Maybe Bool    -- ^ override display of tutorial hints
@@ -154,7 +155,7 @@ emptySessionUI sUIOptions =
     , sselected = ES.empty
     , srunning = Nothing
     , shistory = emptyHistory 0
-    , spointer = K.PointUI 0 0
+    , spointer = PointUI 0 0
     , smacroFrame = emptyMacroFrame
     , smacroStack = []
     , slastLost = ES.empty
@@ -245,7 +246,7 @@ instance Binary SessionUI where
           error $ "Binary: ChanFrontend" `showFailure` ()
         sccui = emptyCCUI
         sxhairMoused = True
-        spointer = K.PointUI 0 0
+        spointer = PointUI 0 0
         smacroFrame = emptyMacroFrame
         smacroStack = []
         slastLost = ES.empty

@@ -24,8 +24,8 @@ import qualified Data.Vector.Unboxed.Mutable as VM
 import           Data.Word
 
 import           Game.LambdaHack.Client.UI.Content.Screen
-import           Game.LambdaHack.Client.UI.Key (PointUI (..))
 import           Game.LambdaHack.Client.UI.Overlay
+import           Game.LambdaHack.Client.UI.PointUI
 import qualified Game.LambdaHack.Common.PointArray as PointArray
 import qualified Game.LambdaHack.Definition.Color as Color
 

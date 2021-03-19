@@ -256,6 +256,7 @@ library
                       Game.LambdaHack.Client.UI.Msg
                       Game.LambdaHack.Client.UI.MsgM
                       Game.LambdaHack.Client.UI.Overlay
+                      Game.LambdaHack.Client.UI.PointUI
                       Game.LambdaHack.Client.UI.RunM
                       Game.LambdaHack.Client.UI.SessionUI
                       Game.LambdaHack.Client.UI.Slideshow

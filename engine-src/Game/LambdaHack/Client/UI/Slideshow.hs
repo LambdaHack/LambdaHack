@@ -20,10 +20,10 @@ import qualified Data.EnumMap.Strict as EM
 import           Data.Time.LocalTime
 
 import           Game.LambdaHack.Client.UI.ItemSlot
-import           Game.LambdaHack.Client.UI.Key (PointUI (..))
 import qualified Game.LambdaHack.Client.UI.Key as K
 import           Game.LambdaHack.Client.UI.Msg
 import           Game.LambdaHack.Client.UI.Overlay
+import           Game.LambdaHack.Client.UI.PointUI
 import qualified Game.LambdaHack.Common.HighScore as HighScore
 import qualified Game.LambdaHack.Definition.Color as Color
 
@@ -142,7 +142,7 @@ attrLinesToFontMap :: Int -> [(DisplayFont, [AttrLine])] -> FontOverlayMap
 attrLinesToFontMap start0 blurb =
   let zipAttrLines :: Int -> [AttrLine] -> (Overlay, Int)
       zipAttrLines start als =
-        ( map (first $ K.PointUI 0) $ zip [start ..] als
+        ( map (first $ PointUI 0) $ zip [start ..] als
         , start + length als )
       addOverlay :: (FontOverlayMap, Int) -> (DisplayFont, [AttrLine])
                  -> (FontOverlayMap, Int)

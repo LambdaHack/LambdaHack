@@ -25,6 +25,7 @@ import           Game.LambdaHack.Client.UI.MonadClientUI
 import           Game.LambdaHack.Client.UI.Msg
 import           Game.LambdaHack.Client.UI.MsgM
 import           Game.LambdaHack.Client.UI.Overlay
+import           Game.LambdaHack.Client.UI.PointUI
 import           Game.LambdaHack.Client.UI.SessionUI
 import           Game.LambdaHack.Client.UI.Slideshow
 import           Game.LambdaHack.Client.UI.UIOptions
@@ -147,7 +148,7 @@ displayChoiceScreen menuName dm sfBlank frsX extraKeys = do
       page pointer = assert (pointer >= 0) $ case findKYX pointer frs of
         Nothing -> error $ "no menu keys" `showFailure` frs
         Just ( (ovs, kyxs)
-             , (ekm, (K.PointUI x1 y, ButtonWidth fontX1 len))
+             , (ekm, (PointUI x1 y, ButtonWidth fontX1 len))
              , ixOnPage ) -> do
           let highableAttrs =
                 [Color.defAttr, Color.defAttr {Color.fg = Color.BrBlack}]
@@ -181,7 +182,7 @@ displayChoiceScreen menuName dm sfBlank frsX extraKeys = do
               ignoreKey = page pointer
               pageLen = length kyxs
               xix :: KYX -> Bool
-              xix (_, (K.PointUI x1' _, _)) = x1' <= x1 + 2 && x1' >= x1 - 2
+              xix (_, (PointUI x1' _, _)) = x1' <= x1 + 2 && x1' >= x1 - 2
               firstRowOfNextPage = pointer + pageLen - ixOnPage
               restOKX = drop firstRowOfNextPage allOKX
               firstItemOfNextPage = case findIndex (isRight . fst) restOKX of
@@ -202,8 +203,8 @@ displayChoiceScreen menuName dm sfBlank frsX extraKeys = do
                     Left [] -> error $ "" `showFailure` ikm
                     Right c -> return (Right c, pointer)
                   K.LeftButtonRelease -> do
-                    K.PointUI mx my <- getsSession spointer
-                    let onChoice (_, (K.PointUI cx cy, ButtonWidth font clen)) =
+                    PointUI mx my <- getsSession spointer
+                    let onChoice (_, (PointUI cx cy, ButtonWidth font clen)) =
                           let blen | isSquareFont font = 2 * clen
                                    | otherwise = clen
                           in my == cy && mx >= cx && mx < cx + blen

@@ -73,6 +73,7 @@ import           Game.LambdaHack.Client.UI.MonadClientUI
 import           Game.LambdaHack.Client.UI.Msg
 import           Game.LambdaHack.Client.UI.MsgM
 import           Game.LambdaHack.Client.UI.Overlay
+import           Game.LambdaHack.Client.UI.PointUI
 import           Game.LambdaHack.Client.UI.RunM
 import           Game.LambdaHack.Client.UI.SessionUI
 import           Game.LambdaHack.Client.UI.Slideshow
@@ -115,7 +116,7 @@ byAreaHuman :: (MonadClient m, MonadClientUI m)
             -> m (Either MError ReqUI)
 byAreaHuman cmdSemInCxtOfKM l = do
   CCUI{coinput=InputContent{brevMap}} <- getsSession sccui
-  K.PointUI x y <- getsSession spointer
+  PointUI x y <- getsSession spointer
   let (px, py) = (x `div` 2, y)
       pointerInArea a = do
         rs <- areaToRectangles a
@@ -141,16 +142,16 @@ areaToRectangles ca = map toArea <$> do
     leader <- getLeaderUI
     b <- getsState $ getActorBody leader
     let Point{..} = bpos b
-    return [(px, K.mapStartY + py, px, K.mapStartY + py)]
+    return [(px, mapStartY + py, px, mapStartY + py)]
   CaMapParty -> do  -- takes preference over @CaMap@
     lidV <- viewedLevelUI
     side <- getsClient sside
     ours <- getsState $ filter (not . bproj) . map snd
                         . actorAssocs (== side) lidV
-    let rectFromB Point{..} = (px, K.mapStartY + py, px, K.mapStartY + py)
+    let rectFromB Point{..} = (px, mapStartY + py, px, mapStartY + py)
     return $! map (rectFromB . bpos) ours
   CaMap -> return
-    [( 0, K.mapStartY, rwidth - 1, K.mapStartY + rheight - 4 )]
+    [( 0, mapStartY, rwidth - 1, mapStartY + rheight - 4 )]
   CaLevelNumber -> let y = rheight - 2
                    in return [(0, y, 1, y)]
   CaArenaName -> let y = rheight - 2
@@ -1248,8 +1249,8 @@ alterWithPointerHuman :: (MonadClient m, MonadClientUI m)
                       => m (FailOrCmd RequestTimed)
 alterWithPointerHuman = do
   COps{corule=RuleContent{rXmax, rYmax}} <- getsState scops
-  K.PointUI x y <- getsSession spointer
-  let (px, py) = (x `div` 2, y - K.mapStartY)
+  PointUI x y <- getsSession spointer
+  let (px, py) = (x `div` 2, y - mapStartY)
       tpos = Point px py
   if px >= 0 && py >= 0 && px < rXmax && py < rYmax
   then alterTileAtPos tpos
@@ -1339,8 +1340,8 @@ pickPoint verb = do
   km <- getConfirms ColorFull keys slides
   case K.key km of
     K.LeftButtonRelease -> do
-      K.PointUI x y <- getsSession spointer
-      return $ Just $ Point (x `div` 2) (y - K.mapStartY)
+      PointUI x y <- getsSession spointer
+      return $ Just $ Point (x `div` 2) (y - mapStartY)
     _ -> return $ shift (bpos b) <$> K.handleDir dirKeys km
 
 -- * Help
@@ -1383,7 +1384,7 @@ helpHuman cmdSemInCxtOfKM = do
         then glueIntoScreens ls (l : acc) (length l + 1 + h)
         else intercalate [""] (reverse acc) : glueIntoScreens (l : ls) [] 0
       manualScreens = glueIntoScreens (snd rintroScreen) [] 0
-      shiftPointUI x (K.PointUI x0 y0) = K.PointUI (x0 + x) y0
+      shiftPointUI x (PointUI x0 y0) = PointUI (x0 + x) y0
       sideBySide =
         if isSquareFont monoFont
         then \(screen1, screen2) ->  -- single column, two screens
@@ -1506,8 +1507,8 @@ itemMenuHuman cmdSemInCxtOfKM = do
                   [] -> error "splitting AttrString loses characters"
                   al1 : rest ->
                     (2, attrStringToAL $ drop 2 $ attrLine al1) : map (0,) rest
-              alPrefix = map (\(K.PointUI x y, al) ->
-                                (K.PointUI x (y + length descBlurb), al))
+              alPrefix = map (\(PointUI x y, al) ->
+                                (PointUI x (y + length descBlurb), al))
                          $ offsetOverlay
                          $ splitAttrString rwidth rwidth foundPrefix
               ystart = length descBlurb + length alPrefix - 1
@@ -1641,7 +1642,7 @@ generateMenu cmdSemInCxtOfKM blurb kds gameInfo menuName = do
       generate :: Int -> (Maybe K.KM, String) -> ((Int, AttrLine), Maybe KYX)
       generate y (mkey, binding) =
         let lenB = length binding
-            yxx key = (Left [key], ( K.PointUI 2 y
+            yxx key = (Left [key], ( PointUI 2 y
                                    , ButtonWidth squareFont lenB ))
             myxx = yxx <$> mkey
         in ((2, stringToAL binding), myxx)
@@ -1653,13 +1654,13 @@ generateMenu cmdSemInCxtOfKM blurb kds gameInfo menuName = do
                  ++ bindings
       (menuOvLines, mkyxs) = unzip $ zipWith generate [0..] rawLines
       browserKey = ( Right $ SlotChar 1042 'a'
-                   , ( K.PointUI (2 + 2 * length titleLine) 1
+                   , ( PointUI (2 + 2 * length titleLine) 1
                      , ButtonWidth squareFont (2 + length rwebAddress) ) )
       kyxs = browserKey : catMaybes mkyxs
       introLen = sum $ map (length . snd) blurb
       start0 = max 0 (rheight - introLen
                       - if isSquareFont propFont then 1 else 2)
-      shiftPointUI (K.PointUI x0 y0) = K.PointUI (x0 + rwidth) y0
+      shiftPointUI (PointUI x0 y0) = PointUI (x0 + rwidth) y0
       ov0 = EM.map (map (first shiftPointUI)) $ attrLinesToFontMap start0 blurb
       ov = EM.insertWith (++) squareFont (offsetOverlayX menuOvLines) ov0
   menuIxMap <- getsSession smenuIxMap

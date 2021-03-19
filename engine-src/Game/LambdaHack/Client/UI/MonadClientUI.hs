@@ -57,6 +57,7 @@ import qualified Game.LambdaHack.Client.UI.Frontend as Frontend
 import qualified Game.LambdaHack.Client.UI.HumanCmd as HumanCmd
 import qualified Game.LambdaHack.Client.UI.Key as K
 import           Game.LambdaHack.Client.UI.Msg
+import           Game.LambdaHack.Client.UI.PointUI
 import           Game.LambdaHack.Client.UI.SessionUI
 import           Game.LambdaHack.Client.UI.Slideshow
 import           Game.LambdaHack.Client.UI.UIOptions
@@ -187,7 +188,7 @@ addPressedKey = connFrontend . Frontend.FrontAdd
 
 addPressedControlEsc :: MonadClientUI m => m ()
 addPressedControlEsc = addPressedKey K.KMP { K.kmpKeyMod = K.controlEscKM
-                                           , K.kmpPointer = K.PointUI 0 0 }
+                                           , K.kmpPointer = PointUI 0 0 }
 
 revCmdMap :: MonadClientUI m => m (HumanCmd.HumanCmd -> K.KM)
 revCmdMap = do

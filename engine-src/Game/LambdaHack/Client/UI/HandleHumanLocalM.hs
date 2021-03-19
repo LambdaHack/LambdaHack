@@ -67,6 +67,7 @@ import           Game.LambdaHack.Client.UI.MonadClientUI
 import           Game.LambdaHack.Client.UI.Msg
 import           Game.LambdaHack.Client.UI.MsgM
 import           Game.LambdaHack.Client.UI.Overlay
+import           Game.LambdaHack.Client.UI.PointUI
 import           Game.LambdaHack.Client.UI.SessionUI
 import           Game.LambdaHack.Client.UI.Slideshow
 import           Game.LambdaHack.Client.UI.SlideshowM
@@ -719,8 +720,8 @@ selectWithPointerHuman = do
   sactorUI <- getsSession sactorUI
   let oursUI = map (\(aid, b) -> (aid, b, sactorUI EM.! aid)) ours
       viewed = sortOn keySelected oursUI
-  K.PointUI x y <- getsSession spointer
-  let (px, py) = (x `div` 2, y - K.mapStartY)
+  PointUI x y <- getsSession spointer
+  let (px, py) = (x `div` 2, y - mapStartY)
   -- Select even if no space in status line for the actor's symbol.
   if | py == rYmax + 1 && px == 0 -> selectNoneHuman >> return Nothing
      | py == rYmax + 1 ->
@@ -830,7 +831,7 @@ eitherHistory showAll = do
         , MU.CarWs turnsGlobal "half-second turn"
         , "(this level:"
         , MU.Car turnsLocal <> ")" ]
-      kxs = [ (Right sn, ( K.PointUI 0 (slotPrefix sn)
+      kxs = [ (Right sn, ( PointUI 0 (slotPrefix sn)
                          , ButtonWidth propFont 1000 ))
             | sn <- take histBound intSlots ]
   msgAdd MsgPromptGeneric msg
@@ -1320,8 +1321,8 @@ aimPointerFloorHuman = do
   COps{corule=RuleContent{rXmax, rYmax}} <- getsState scops
   lidV <- viewedLevelUI
   -- Not @ScreenContent@, because not drawing here.
-  K.PointUI x y <- getsSession spointer
-  let (px, py) = (x `div` 2, y - K.mapStartY)
+  PointUI x y <- getsSession spointer
+  let (px, py) = (x `div` 2, y - mapStartY)
   if px >= 0 && py >= 0 && px < rXmax && py < rYmax
   then do
     oldXhair <- getsSession sxhair
@@ -1347,8 +1348,8 @@ aimPointerEnemyHuman = do
   COps{corule=RuleContent{rXmax, rYmax}} <- getsState scops
   lidV <- viewedLevelUI
   -- Not @ScreenContent@, because not drawing here.
-  K.PointUI x y <- getsSession spointer
-  let (px, py) = (x `div` 2, y - K.mapStartY)
+  PointUI x y <- getsSession spointer
+  let (px, py) = (x `div` 2, y - mapStartY)
   if px >= 0 && py >= 0 && px < rXmax && py < rYmax
   then do
     bsAll <- getsState $ actorAssocs (const True) lidV

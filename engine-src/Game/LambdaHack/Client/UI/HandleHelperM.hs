@@ -43,6 +43,7 @@ import           Game.LambdaHack.Client.UI.MonadClientUI
 import           Game.LambdaHack.Client.UI.Msg
 import           Game.LambdaHack.Client.UI.MsgM
 import           Game.LambdaHack.Client.UI.Overlay
+import           Game.LambdaHack.Client.UI.PointUI
 import           Game.LambdaHack.Client.UI.SessionUI
 import           Game.LambdaHack.Client.UI.Slideshow
 import           Game.LambdaHack.Client.UI.SlideshowM
@@ -204,8 +205,8 @@ pickLeaderWithPointer = do
            | otherwise -> do
                void $ pickLeader True aid
                return Nothing
-  K.PointUI x y <- getsSession spointer
-  let (px, py) = (x `div` 2, y - K.mapStartY)
+  PointUI x y <- getsSession spointer
+  let (px, py) = (x `div` 2, y - mapStartY)
   -- Pick even if no space in status line for the actor's symbol.
   if | py == rheight - 2 && px == 0 -> memberCycle True Forward
      | py == rheight - 2 ->
@@ -266,14 +267,14 @@ itemOverlay lSlots lid bag displayRanged = do
                         ++ [colorSymbol]
                 xal2 = ( textSize squareFont $ attrLine al1
                        , attrStringToAL $ Color.spaceAttrW32 : textToAS phrase )
-                kx = (Right l, ( K.PointUI 0 0
+                kx = (Right l, ( PointUI 0 0
                                , ButtonWidth propFont (5 + T.length phrase) ))
             in Just ((al1, xal2), kx)
       (ts, kxs) = unzip $ mapMaybe pr $ EM.assocs lSlots
       (tsLab, tsDesc) = unzip ts
       ovsLab = EM.singleton squareFont $ offsetOverlay tsLab
       ovsDesc = EM.singleton propFont $ offsetOverlayX tsDesc
-      renumber y (km, (K.PointUI x _, len)) = (km, (K.PointUI x y, len))
+      renumber y (km, (PointUI x _, len)) = (km, (PointUI x y, len))
   return (EM.unionWith (++) ovsLab ovsDesc, zipWith renumber [0..] kxs )
 
 skillsOverlay :: MonadClientUI m => ActorId -> m OKX
@@ -294,7 +295,7 @@ skillsOverlay aid = do
             triple = ( lab
                      , (labLen, textToAL skName)
                      , (labLen + indentation, textToAL valueText) )
-        in (triple, (Right c, ( K.PointUI 0 y
+        in (triple, (Right c, ( PointUI 0 y
                               , ButtonWidth propFont (28 + T.length slotLab) )))
       (ts, kxs) = unzip $ zipWith prSlot (zip [0..] allSlots) skillSlots
       (skLab, skDescr, skValue) = unzip3 ts
@@ -355,7 +356,7 @@ placesOverlay = do
                                <> makePhrase [MU.CarWs (ES.size es) "level"]
                                <> ")"
             !lenButton = lenSlot + T.length tBlurb
-            !pButton = K.PointUI 0 y
+            !pButton = PointUI 0 y
             !widthButton = ButtonWidth propFont lenButton
         in ( textToAL tSlot
            , (lenSlot, textToAL tBlurb)
@@ -456,7 +457,7 @@ describeMode addTitle gameModeId = do
            <+:> (textFgToAS color (T.toTitle $ MK.nameOutcomePast outcome)
                  <+:> textToAS lastRemark)
            <> textToAS ":"
-      shiftPointUI x (K.PointUI x0 y0) = K.PointUI (x0 + x) y0
+      shiftPointUI x (PointUI x0 y0) = PointUI (x0 + x) y0
   return $! if isSquareFont propFont
             then EM.singleton squareFont  -- single column, single font
                  $ offsetOverlayX
@@ -491,7 +492,7 @@ modesOverlay = do
             !lenSlot = 2 * T.length tSlot
             !tBlurb = " " <> modeName
             !lenButton = lenSlot + T.length tBlurb
-            !pButton = K.PointUI 0 y
+            !pButton = PointUI 0 y
             !widthButton = ButtonWidth propFont lenButton
         in ( textToAL tSlot
            , (lenSlot, textToAL tBlurb)

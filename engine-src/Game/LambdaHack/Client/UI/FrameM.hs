@@ -32,6 +32,7 @@ import           Game.LambdaHack.Client.UI.MonadClientUI
 import           Game.LambdaHack.Client.UI.Msg
 import           Game.LambdaHack.Client.UI.MsgM
 import           Game.LambdaHack.Client.UI.Overlay
+import           Game.LambdaHack.Client.UI.PointUI
 import           Game.LambdaHack.Client.UI.SessionUI
 import           Game.LambdaHack.Client.UI.Slideshow
 import           Game.LambdaHack.Common.ActorState
@@ -91,10 +92,10 @@ drawOverlay dm onBlank ovs lid = do
                  g x al Nothing = Just (x, x + length al - 1)
                  g x al (Just (xmin, xmax)) =
                    Just (min xmin x, max xmax (x + length al - 1))
-                 f em (K.PointUI x y, al) = EM.alter (g x al) y em
+                 f em (PointUI x y, al) = EM.alter (g x al) y em
                  extentMap = foldl' f EM.empty $ propOutline ++ monoOutline
                  listBackdrop (y, (xmin, xmax)) =
-                   ( K.PointUI (2 * (xmin `div` 2)) y
+                   ( PointUI (2 * (xmin `div` 2)) y
                    , blankAttrString
                      $ min (rwidth - 2 * (xmin `div` 2))
                            (1 + xmax `divUp` 2 - xmin `div` 2) )
@@ -118,7 +119,7 @@ pushFrame = do
     report <- getReportUI
     FontSetup{propFont} <- getFontSetup
     let par1 = firstParagraph $ foldr (<+:>) [] $ renderReport True report
-        truncRep = EM.fromList [(propFont, [(K.PointUI 0 0, par1)])]
+        truncRep = EM.fromList [(propFont, [(PointUI 0 0, par1)])]
     frame <- drawOverlay ColorFull False truncRep lidV
     displayFrames lidV [Just frame]
 
@@ -146,7 +147,7 @@ promptGetKey dm ovs onBlank frontKeyKeys = do
       resetPlayBack
       resetPressedKeys
       FontSetup{propFont} <- getFontSetup
-      let ovWarn = [ ( K.PointUI 0 0
+      let ovWarn = [ ( PointUI 0 0
                      , textFgToAL Color.cMeta "*interrupted*" )
                    | keyPressed ]
           ovs2 = EM.insertWith (++) propFont ovWarn ovs
@@ -242,7 +243,7 @@ renderAnimFrames onBlank arena anim = do
                then propFont
                else squareFont
       par1 = firstParagraph $ foldr (<+:>) [] $ renderReport True report
-      truncRep = EM.fromList [(ovFont, [(K.PointUI 0 0, par1)])]
+      truncRep = EM.fromList [(ovFont, [(PointUI 0 0, par1)])]
   basicFrame <- drawOverlay ColorFull False truncRep arena
   return $! if fromMaybe False snoAnim
             then [Just basicFrame]

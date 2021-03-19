@@ -23,7 +23,7 @@ import Game.LambdaHack.Core.Prelude
 import           Data.Char (isSpace)
 import qualified Data.Text as T
 
-import           Game.LambdaHack.Client.UI.Key (PointUI (..))
+import           Game.LambdaHack.Client.UI.PointUI
 import qualified Game.LambdaHack.Definition.Color as Color
 
 -- * AttrString

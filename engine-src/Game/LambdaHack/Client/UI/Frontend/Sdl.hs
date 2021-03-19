@@ -44,6 +44,7 @@ import           Game.LambdaHack.Client.UI.Frame
 import           Game.LambdaHack.Client.UI.Frontend.Common
 import qualified Game.LambdaHack.Client.UI.Key as K
 import           Game.LambdaHack.Client.UI.Overlay
+import           Game.LambdaHack.Client.UI.PointUI
 import           Game.LambdaHack.Common.ClientOptions
 import           Game.LambdaHack.Common.File
 import           Game.LambdaHack.Common.Misc
@@ -248,9 +249,9 @@ startupFun coscreen soptions@ClientOptions{..} rfMVar = do
     createRawFrontend coscreen (display sess) (shutdown sess)
   let rf = rfWithoutPrintScreen {fprintScreen = printScreen sess}
   putMVar rfMVar rf
-  let pointTranslate :: forall i. (Enum i) => Vect.Point Vect.V2 i -> K.PointUI
+  let pointTranslate :: forall i. (Enum i) => Vect.Point Vect.V2 i -> PointUI
       pointTranslate (SDL.P (SDL.V2 x y)) =
-        K.PointUI (fromEnum x `div` halfSize) (fromEnum y `div` boxSize)
+        PointUI (fromEnum x `div` halfSize) (fromEnum y `div` boxSize)
       redraw = do
         -- Textures may be trashed and even invalid, especially on Windows.
         atlas <- readIORef squareAtlas
@@ -503,7 +504,7 @@ drawFrame coscreen ClientOptions{..} sess@FrontendSession{..} curFrame = do
           return $! i + 1
       drawMonoOverlay :: OverlaySpace -> IO ()
       drawMonoOverlay =
-        mapM_ (\(K.PointUI x y, al) ->
+        mapM_ (\(PointUI x y, al) ->
                  let lineCut = take (2 * rwidth coscreen - x) al
                  in drawMonoLine (x * halfSize) y lineCut)
       drawMonoLine :: Int -> Int -> AttrString -> IO ()
@@ -535,7 +536,7 @@ drawFrame coscreen ClientOptions{..} sess@FrontendSession{..} curFrame = do
         SDL.copy srenderer textTexture Nothing (Just tgtR)
       drawPropOverlay :: OverlaySpace -> IO ()
       drawPropOverlay =
-        mapM_ (\(K.PointUI x y, al) ->
+        mapM_ (\(PointUI x y, al) ->
                  drawPropLine (x * halfSize) y al)
       drawPropLine :: Int -> Int -> AttrString -> IO ()
       drawPropLine _ _ [] = return ()
