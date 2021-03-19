@@ -51,8 +51,9 @@ cSym :: Color -> Char -> Maybe AttrCharW32
 cSym color symbol = Just $ attrChar2ToW32 color symbol
 
 mapPosToOffset :: (Point, AttrCharW32) -> (PointUI, AttrString)
-mapPosToOffset (Point{..}, attr) =
-  (PointUI (px * 2) (py + mapStartY), [attr])
+mapPosToOffset (p, attr) =
+  let pUI = squareToUI $ mapToSquare p
+  in (pUI, [attr])
 
 mzipSingleton :: Point -> Maybe AttrCharW32 -> OverlaySpace
 mzipSingleton p1 mattr1 =

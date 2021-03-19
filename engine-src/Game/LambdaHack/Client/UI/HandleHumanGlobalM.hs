@@ -116,11 +116,13 @@ byAreaHuman :: (MonadClient m, MonadClientUI m)
             -> m (Either MError ReqUI)
 byAreaHuman cmdSemInCxtOfKM l = do
   CCUI{coinput=InputContent{brevMap}} <- getsSession sccui
-  PointUI x y <- getsSession spointer
-  let (px, py) = (x `div` 2, y)
+  pUI <- getsSession spointer
+  let PointSquare px py = uiToSquare pUI
+      p = Point {..}  -- abuse of convention: @Point@, not @PointSquare@ used
+                      -- for the whole UI screen in square font coordinates
       pointerInArea a = do
         rs <- areaToRectangles a
-        return $! any (inside $ Point {..}) $ catMaybes rs
+        return $! any (inside p) $ catMaybes rs
   cmds <- filterM (pointerInArea . fst) l
   case cmds of
     [] -> do
@@ -141,17 +143,21 @@ areaToRectangles ca = map toArea <$> do
   CaMapLeader -> do  -- takes preference over @CaMapParty@ and @CaMap@
     leader <- getLeaderUI
     b <- getsState $ getActorBody leader
-    let Point{..} = bpos b
-    return [(px, mapStartY + py, px, mapStartY + py)]
+    let PointSquare x y = mapToSquare $ bpos b
+    return [(x, y, x, y)]
   CaMapParty -> do  -- takes preference over @CaMap@
     lidV <- viewedLevelUI
     side <- getsClient sside
     ours <- getsState $ filter (not . bproj) . map snd
                         . actorAssocs (== side) lidV
-    let rectFromB Point{..} = (px, mapStartY + py, px, mapStartY + py)
+    let rectFromB p =
+          let PointSquare x y = mapToSquare p
+          in (x, y, x, y)
     return $! map (rectFromB . bpos) ours
-  CaMap -> return
-    [( 0, mapStartY, rwidth - 1, mapStartY + rheight - 4 )]
+  CaMap ->
+    let PointSquare xo yo = mapToSquare originPoint
+        PointSquare xe ye = mapToSquare $ Point (rwidth - 1) (rheight - 4)
+    in return [(xo, yo, xe, ye)]
   CaLevelNumber -> let y = rheight - 2
                    in return [(0, y, 1, y)]
   CaArenaName -> let y = rheight - 2
@@ -1249,11 +1255,10 @@ alterWithPointerHuman :: (MonadClient m, MonadClientUI m)
                       => m (FailOrCmd RequestTimed)
 alterWithPointerHuman = do
   COps{corule=RuleContent{rXmax, rYmax}} <- getsState scops
-  PointUI x y <- getsSession spointer
-  let (px, py) = (x `div` 2, y - mapStartY)
-      tpos = Point px py
+  pUI <- getsSession spointer
+  let p@(Point px py) = squareToMap $ uiToSquare pUI
   if px >= 0 && py >= 0 && px < rXmax && py < rYmax
-  then alterTileAtPos tpos
+  then alterTileAtPos p
   else failWith "never mind"
 
 -- * CloseDir
@@ -1340,8 +1345,9 @@ pickPoint verb = do
   km <- getConfirms ColorFull keys slides
   case K.key km of
     K.LeftButtonRelease -> do
-      PointUI x y <- getsSession spointer
-      return $ Just $ Point (x `div` 2) (y - mapStartY)
+      pUI <- getsSession spointer
+      let p = squareToMap $ uiToSquare pUI
+      return $ Just p
     _ -> return $ shift (bpos b) <$> K.handleDir dirKeys km
 
 -- * Help

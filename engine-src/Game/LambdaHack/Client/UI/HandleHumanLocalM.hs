@@ -720,8 +720,8 @@ selectWithPointerHuman = do
   sactorUI <- getsSession sactorUI
   let oursUI = map (\(aid, b) -> (aid, b, sactorUI EM.! aid)) ours
       viewed = sortOn keySelected oursUI
-  PointUI x y <- getsSession spointer
-  let (px, py) = (x `div` 2, y - mapStartY)
+  pUI <- getsSession spointer
+  let p@(Point px py) = squareToMap $ uiToSquare pUI
   -- Select even if no space in status line for the actor's symbol.
   if | py == rYmax + 1 && px == 0 -> selectNoneHuman >> return Nothing
      | py == rYmax + 1 ->
@@ -729,7 +729,7 @@ selectWithPointerHuman = do
            [] -> failMsg "not pointing at an actor"
            (aid, _, _) : _ -> selectAid aid >> return Nothing
      | otherwise ->
-         case find (\(_, b) -> bpos b == Point px py) ours of
+         case find (\(_, b) -> bpos b == p) ours of
            Nothing -> failMsg "not pointing at an actor"
            Just (aid, _) -> selectAid aid >> return Nothing
 
@@ -1321,12 +1321,12 @@ aimPointerFloorHuman = do
   COps{corule=RuleContent{rXmax, rYmax}} <- getsState scops
   lidV <- viewedLevelUI
   -- Not @ScreenContent@, because not drawing here.
-  PointUI x y <- getsSession spointer
-  let (px, py) = (x `div` 2, y - mapStartY)
+  pUI <- getsSession spointer
+  let p@(Point px py) = squareToMap $ uiToSquare pUI
   if px >= 0 && py >= 0 && px < rXmax && py < rYmax
   then do
     oldXhair <- getsSession sxhair
-    let sxhair = Just $ TPoint TUnknown lidV $ Point px py
+    let sxhair = Just $ TPoint TUnknown lidV p
         sxhairMoused = sxhair /= oldXhair
         detailSucc = if sxhairMoused
                      then detailLevel
@@ -1348,25 +1348,24 @@ aimPointerEnemyHuman = do
   COps{corule=RuleContent{rXmax, rYmax}} <- getsState scops
   lidV <- viewedLevelUI
   -- Not @ScreenContent@, because not drawing here.
-  PointUI x y <- getsSession spointer
-  let (px, py) = (x `div` 2, y - mapStartY)
+  pUI <- getsSession spointer
+  let p@(Point px py) = squareToMap $ uiToSquare pUI
   if px >= 0 && py >= 0 && px < rXmax && py < rYmax
   then do
     bsAll <- getsState $ actorAssocs (const True) lidV
     oldXhair <- getsSession sxhair
     side <- getsClient sside
     fact <- getsState $ (EM.! side) . sfactionD
-    let newPos = Point px py
-        sxhair =
+    let sxhair =
           -- If many actors, we pick here the first that would be picked
           -- by '*', so that all other projectiles on the tile come next,
           -- when pressing '*', without any intervening actors from other tiles.
           -- This is why we use @actorAssocs@ above instead of @posToAidAssocs@.
-          case find (\(_, b) -> bpos b == newPos) bsAll of
+          case find (\(_, b) -> bpos b == p) bsAll of
             Just (aid, b) -> Just $ if isFoe side fact (bfid b)
                                     then TEnemy aid
                                     else TNonEnemy aid
-            Nothing -> Just $ TPoint TUnknown lidV newPos
+            Nothing -> Just $ TPoint TUnknown lidV p
         sxhairMoused = sxhair /= oldXhair
         detailSucc = if sxhairMoused
                      then detailLevel

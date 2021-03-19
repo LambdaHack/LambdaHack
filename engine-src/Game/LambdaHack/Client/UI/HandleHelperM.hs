@@ -205,8 +205,8 @@ pickLeaderWithPointer = do
            | otherwise -> do
                void $ pickLeader True aid
                return Nothing
-  PointUI x y <- getsSession spointer
-  let (px, py) = (x `div` 2, y - mapStartY)
+  pUI <- getsSession spointer
+  let p@(Point px py) = squareToMap $ uiToSquare pUI
   -- Pick even if no space in status line for the actor's symbol.
   if | py == rheight - 2 && px == 0 -> memberCycle True Forward
      | py == rheight - 2 ->
@@ -215,7 +215,7 @@ pickLeaderWithPointer = do
              -- relaxed, due to subtleties of display of selected actors
            (aid, b, _) : _ -> pick (aid, b)
      | otherwise ->
-         case find (\(_, b, _) -> bpos b == Point px py) oursUI of
+         case find (\(_, b, _) -> bpos b == p) oursUI of
            Nothing -> failMsg "not pointing at an actor"
            Just (aid, b, _) -> pick (aid, b)
 

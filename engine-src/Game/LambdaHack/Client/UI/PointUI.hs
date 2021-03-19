@@ -1,7 +1,11 @@
 -- | UI screen coordinates.
 module Game.LambdaHack.Client.UI.PointUI
   ( PointUI(..), PointSquare(..), squareToUI, uiToSquare
-  , mapStartY, squareToMap, mapToSquare
+  , squareToMap, mapToSquare
+#ifdef EXPOSE_INTERNAL
+    -- * Internal operations
+  , mapStartY
+#endif
   ) where
 
 import Prelude ()
