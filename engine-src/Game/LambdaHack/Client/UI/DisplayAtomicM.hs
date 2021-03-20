@@ -2130,12 +2130,12 @@ strike catch source target iid = assert (source /= target) $ do
     eqpOrgKit <- getsState $ kitAssocs target [CEqp, COrgan]
     orgKit <- getsState $ kitAssocs target [COrgan]
     let isCond (_, (itemFullArmor, _)) =
-          not $ IA.checkFlag Ability.Condition $ aspectRecordFull itemFullArmor
+          IA.checkFlag Ability.Condition $ aspectRecordFull itemFullArmor
         -- We exclude genetic flaws, backstory items, etc., because they
         -- can't be easily taken off, so no point spamming the player.
-        isOrdinaryCond (_, (itemFullArmor, _)) =
+        isOrdinaryCond ikit@(_, (itemFullArmor, _)) =
           not (IA.checkFlag Ability.MetaGame (aspectRecordFull itemFullArmor))
-          || IA.checkFlag Ability.Condition (aspectRecordFull itemFullArmor)
+          && isCond ikit
         relevantSkArmor =
           if bproj sb then Ability.SkArmorRanged else Ability.SkArmorMelee
         rateArmor (iidArmor, (itemFullArmor, (k, _))) =
