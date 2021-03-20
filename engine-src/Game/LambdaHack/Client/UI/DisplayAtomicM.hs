@@ -2372,8 +2372,7 @@ strike catch source target iid = assert (source /= target) $ do
                                         itemFullArmor quantSingle
                      name = makePhrase [object1, object2]
                      msgText =
-                       if hurtMult > 20 && not surprisinglyGoodDefense
-                          || surprisinglyBadDefense
+                       if hurtMult > 70
                        then (if armor <= -15
                              then ", due to being"
                              else assert (armor >= 15) ", regardless of being")
