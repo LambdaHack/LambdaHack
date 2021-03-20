@@ -577,8 +577,8 @@ totalUsefulness cops fid factionD itemFull@ItemFull{itemKind, itemSuspect} =
           , eqpSum
             + maximum [benApply, - benMeleeAvg, 0] )  -- apply or melee or not
         | (IA.goesIntoEqp arItem
-          || isJust (lookup IK.CONDITION $ IK.ifreq itemKind))
-               -- hack to record benefit, to use it in calculations later on
+           || IA.checkFlag Ability.Condition arItem)
+                -- hack to record benefit, to use, e.g., to assign colour
           && (eqpSum > 0 || itemSuspect) =  -- weapon or other equippable
           ( True  -- equip; long time bonus usually outweighs fling or apply
           , eqpSum  -- possibly spent turn equipping, so reap the benefits
