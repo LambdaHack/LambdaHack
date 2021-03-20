@@ -91,6 +91,7 @@ install:
       && cp Makefile LambdaHackTheGame
       && cd LambdaHackTheGame
       && test
+      && rm test.exe
       && cd ..
       && mv LambdaHackTheGame LambdaHackTheGame64
       && rm -rf LambdaHackTheGameInstall
