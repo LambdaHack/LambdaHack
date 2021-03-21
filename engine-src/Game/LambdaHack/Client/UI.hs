@@ -122,12 +122,17 @@ humanCommand = do
   let loop :: Maybe ActorId -> m ReqUI
       loop mOldLeader = do
         report <- getsSession $ newReport . shistory
+        modifySession $ \sess -> sess {sreportNull = nullVisibleReport report}
         keyPressed <- anyKeyPressed
         let msgDisturbs = anyInReport disturbsResting report
             interrupted = keyPressed || msgDisturbs
-        modifySession $ \sess -> sess {sreportNull = nullVisibleReport report}
-        slidesRaw <- reportToSlideshowKeep []
-        over <- case unsnoc slidesRaw of
+        macroFrame <- getsSession smacroFrame
+        let haltingForKey = interrupted
+                            || null (unKeyMacro (keyPending macroFrame))
+        slides <- if haltingForKey
+                  then reportToSlideshowKeepHalt []
+                  else reportToSlideshowKeepPar
+        over <- case unsnoc slides of
           Nothing -> return []
           Just (allButLast, (ov, _)) ->
             if allButLast == emptySlideshow
@@ -137,8 +142,9 @@ humanCommand = do
               let ovProp = ov EM.! propFont
               return $! if EM.size ov > 1 then ovProp else init ovProp
             else do
+              let !_A = assert haltingForKey ()
               -- Show, one by one, all slides, awaiting confirmation for each.
-              void $ getConfirms ColorFull [K.spaceKM, K.escKM] slidesRaw
+              void $ getConfirms ColorFull [K.spaceKM, K.escKM] slides
               -- Indicate that report wiped out.
               modifySession $ \sess -> sess {sreportNull = True}
               -- Display base frame at the end.
