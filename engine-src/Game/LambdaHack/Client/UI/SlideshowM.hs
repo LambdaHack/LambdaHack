@@ -255,7 +255,8 @@ displayChoiceScreen menuName dm sfBlank frsX extraKeys = do
                              then page clearIx
                              else page maxIx
                   _ -> error $ "unknown key" `showFailure` ikm
-          pkm <- promptGetKey dm ovs1 sfBlank legalKeys
+          keyPressed <- anyKeyPressed
+          pkm <- promptGetKey keyPressed dm ovs1 sfBlank legalKeys
           interpretKey pkm
   menuIxMap <- getsSession smenuIxMap
   -- Beware, values in @menuIxMap@ may be negative (meaning: a key, not slot).

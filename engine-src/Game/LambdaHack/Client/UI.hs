@@ -122,6 +122,9 @@ humanCommand = do
   let loop :: Maybe ActorId -> m ReqUI
       loop mOldLeader = do
         report <- getsSession $ newReport . shistory
+        keyPressed <- anyKeyPressed
+        let msgDisturbs = anyInReport disturbsResting report
+            interrupted = keyPressed || msgDisturbs
         modifySession $ \sess -> sess {sreportNull = nullVisibleReport report}
         slidesRaw <- reportToSlideshowKeep []
         over <- case unsnoc slidesRaw of
@@ -144,7 +147,8 @@ humanCommand = do
         b <- getsState $ getActorBody leader
         when (bhp b <= 0 && Just leader /= mOldLeader) $ displayMore ColorBW
           "If you move, the exertion will kill you. Consider asking for first aid instead."
-        km <- promptGetKey ColorFull (EM.fromList [(propFont, over)]) False []
+        km <- promptGetKey interrupted ColorFull
+                           (EM.fromList [(propFont, over)]) False []
         abortOrCmd <- do
           -- Look up the key.
           CCUI{coinput=InputContent{bcmdMap}} <- getsSession sccui

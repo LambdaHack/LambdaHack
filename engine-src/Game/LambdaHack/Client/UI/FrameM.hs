@@ -128,18 +128,14 @@ pushFrame = do
     displayFrames lidV [Just frame]
 
 promptGetKey :: (MonadClient m, MonadClientUI m)
-             => ColorMode -> FontOverlayMap -> Bool -> [K.KM]
+             => Bool -> ColorMode -> FontOverlayMap -> Bool -> [K.KM]
              -> m K.KM
-promptGetKey dm ovs onBlank frontKeyKeys = do
+promptGetKey interrupted dm ovs onBlank frontKeyKeys = do
   lidV <- viewedLevelUI
-  keyPressed <- anyKeyPressed
-  report <- getsSession $ newReport . shistory
-  let msgDisturbs = anyInReport disturbsResting report
   macroFrame <- getsSession smacroFrame
   km <- case keyPending macroFrame of
-    KeyMacro (km : kms) | not keyPressed
-                          && (null frontKeyKeys || km `elem` frontKeyKeys)
-                          && not msgDisturbs -> do
+    KeyMacro (km : kms) | (null frontKeyKeys || km `elem` frontKeyKeys)
+                          && not interrupted -> do
       frontKeyFrame <- drawOverlay dm onBlank ovs lidV
       displayFrames lidV [Just frontKeyFrame]
       modifySession $ \sess ->
@@ -153,7 +149,7 @@ promptGetKey dm ovs onBlank frontKeyKeys = do
       FontSetup{propFont} <- getFontSetup
       let ovWarn = [ ( PointUI 0 0
                      , textFgToAL Color.cMeta "*interrupted*" )
-                   | keyPressed ]
+                   | interrupted ]
           ovs2 = EM.insertWith (++) propFont ovWarn ovs
       frontKeyFrame <- drawOverlay dm onBlank ovs2 lidV
       recordHistory
