@@ -1800,7 +1800,7 @@ displayRespSfxAtomicUI sfx = case sfx of
         msgAdd MsgEffectMinor $
           makeSentence $ [MU.SubjectVerbSg subject verb] ++ means ++ [object]
         -- Don't make it modal if all info remains after no longer seen.
-        unless (d `elem` [IK.DetectHidden, IK.DetectExit]) $
+        unless (fid /= side || d `elem` [IK.DetectHidden, IK.DetectExit]) $
           displayMore ColorFull ""  -- the sentence short
       IK.SendFlying{} | not isAlive -> return ()
       IK.SendFlying{} -> aidVerbMU MsgEffectMedium aid "be sent flying"
