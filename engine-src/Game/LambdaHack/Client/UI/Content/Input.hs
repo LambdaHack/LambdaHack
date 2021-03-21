@@ -194,12 +194,14 @@ mouseRMB = ( [CmdMouse]
     , (CaLeaderDesc, ComposeUnlessError ClearTargetIfItemClear ItemClear) ]
 
 -- This is duplicated wrt content, instead of included via @semicolon@,
--- because the C- commands are less likely to be modified by the player.
+-- because the C- commands are less likely to be modified by the player
+-- and so more dependable than @semicolon@, @colon@, etc.
 goToCmd :: HumanCmd
 goToCmd = Macro ["MiddleButtonRelease", "C-semicolon", "C-quotedbl", "C-v"]
 
 -- This is duplicated wrt content, instead of included via @colon@,
--- because the C- commands are less likely to be modified by the player.
+-- because the C- commands are less likely to be modified by the player
+-- and so more dependable than @semicolon@, @colon@, etc.
 runToAllCmd :: HumanCmd
 runToAllCmd = Macro ["MiddleButtonRelease", "C-colon", "C-quotedbl", "C-v"]
 
