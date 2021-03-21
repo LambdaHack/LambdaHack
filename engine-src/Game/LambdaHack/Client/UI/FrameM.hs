@@ -136,7 +136,6 @@ promptGetKey dm ovs onBlank frontKeyKeys = do
   -- This message, in particular, disturbs.
   when keyPressed $ msgAdd MsgActionWarning "*interrupted*"
   report <- getsSession $ newReport . shistory
-  modifySession $ \sess -> sess {sreportNull = nullVisibleReport report}
   let interrupted = anyInReport disturbsResting report
   macroFrame <- getsSession smacroFrame
   km <- case keyPending macroFrame of
