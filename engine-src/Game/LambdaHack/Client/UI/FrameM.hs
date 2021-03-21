@@ -130,12 +130,15 @@ pushFrame = do
 promptGetKey :: (MonadClient m, MonadClientUI m)
              => Bool -> PreFrame3 -> [K.KM]-> m K.KM
 promptGetKey interrupted frontKeyFrame frontKeyKeys = do
-  lidV <- viewedLevelUI
   macroFrame <- getsSession smacroFrame
   km <- case keyPending macroFrame of
     KeyMacro (km : kms) | (null frontKeyKeys || km `elem` frontKeyKeys)
                           && not interrupted -> do
-      displayFrames lidV [Just frontKeyFrame]
+      -- No need to display the frame, because a frame was displayed
+      -- when the player chose to play a macro and each turn or more often
+      -- a frame is displayed elsewhere.
+      -- The only excepton is when navigating menus through macros,
+      -- but there the speed is particularly welcome.
       modifySession $ \sess ->
         sess {smacroFrame = (smacroFrame sess) {keyPending = KeyMacro kms}}
       msgAdd MsgMacroOperation $ "Voicing '" <> tshow km <> "'."
