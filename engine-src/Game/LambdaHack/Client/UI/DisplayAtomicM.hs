@@ -277,7 +277,7 @@ displayRespUpdAtomicUI cmd = case cmd of
                                                   actorMaxSk)) $
              msgAdd MsgSpecialEvent "You recover your health fully. Any further gains will be transient."
          when (bfid b == side && not (bproj b)) $ do
-           markDisplayNeeded (blid b)
+           when (abs hpDelta >= oneM) $ markDisplayNeeded (blid b)
            when (hpDelta < 0) $ do
              when (hpDelta <= xM (-3)) $ msgAdd MsgTutorialHint "You took a lot of damage from one source. If the danger persists, consider retreating towards your teammates or buffing up or an instant escape, if consumables permit."
              sUIOptions <- getsSession sUIOptions
@@ -302,7 +302,11 @@ displayRespUpdAtomicUI cmd = case cmd of
              when (calmEnough b actorMaxSk
                    && not (calmEnough bPrev actorMaxSk)) $
                msgAdd MsgNeutralEvent "You are again calm enough to manage your equipment outfit."
-           markDisplayNeeded (blid b)
+           -- If the leader regenerates Calm more often than once per
+           -- standard game turn, this will not be refected, for smoother
+           -- and faster display. However, every halt for keypress
+           -- shows Calm, so this only matters for macros, where speed is good.
+           when (abs calmDelta > oneM) $ markDisplayNeeded (blid b)
          | calmDelta == minusM1 -> do
            fact <- getsState $ (EM.! side) . sfactionD
            s <- getState
