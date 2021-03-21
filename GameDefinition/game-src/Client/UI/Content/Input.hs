@@ -209,6 +209,7 @@ standardKeysAndMouse = InputContentRaw $ map evalKeyDef $
   , ("C-RightButtonRelease", replaceDesc "" mouseMMB)
   , ( "C-S-LeftButtonRelease", let (_, _, cmd) = mouseMMB
                                in ([], "", cmd) )
+  , ("A-MiddleButtonRelease", mouseMMBMute)
   , ("WheelNorth", ([CmdMouse], "swerve the aiming line", Macro ["+"]))
   , ("WheelSouth", ([CmdMouse], "unswerve the aiming line", Macro ["-"]))
 

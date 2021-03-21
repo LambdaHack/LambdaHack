@@ -25,7 +25,7 @@ module Game.LambdaHack.Client.UI.HandleHumanLocalM
   , moveXhairHuman, aimTgtHuman, aimFloorHuman, aimEnemyHuman, aimItemHuman
   , aimAscendHuman, epsIncrHuman
   , xhairUnknownHuman, xhairItemHuman, xhairStairHuman
-  , xhairPointerFloorHuman, xhairPointerEnemyHuman
+  , xhairPointerFloorHuman, xhairPointerMuteHuman, xhairPointerEnemyHuman
   , aimPointerFloorHuman, aimPointerEnemyHuman
 #ifdef EXPOSE_INTERNAL
     -- * Internal operations
@@ -1305,6 +1305,15 @@ xhairPointerFloorHuman = do
   when (isNothing saimMode) $
     modifySession $ \sess -> sess {saimMode}
 
+-- * XhairPointerMute
+
+xhairPointerMuteHuman :: (MonadClient m, MonadClientUI m) => m ()
+xhairPointerMuteHuman = do
+  saimMode <- getsSession saimMode
+  aimPointerFloorLoud False
+  when (isNothing saimMode) $
+    modifySession $ \sess -> sess {saimMode}
+
 -- * XhairPointerEnemy
 
 xhairPointerEnemyHuman :: (MonadClient m, MonadClientUI m) => m ()
@@ -1317,7 +1326,10 @@ xhairPointerEnemyHuman = do
 -- * AimPointerFloor
 
 aimPointerFloorHuman :: (MonadClient m, MonadClientUI m) => m ()
-aimPointerFloorHuman = do
+aimPointerFloorHuman = aimPointerFloorLoud True
+
+aimPointerFloorLoud :: (MonadClient m, MonadClientUI m) => Bool -> m ()
+aimPointerFloorLoud loud = do
   COps{corule=RuleContent{rXmax, rYmax}} <- getsState scops
   lidV <- viewedLevelUI
   -- Not @ScreenContent@, because not drawing here.
@@ -1338,7 +1350,7 @@ aimPointerFloorHuman = do
                in Just $ AimMode lidV newDetail
            , sxhairMoused }
     setXHairFromGUI sxhair
-    doLook
+    when loud doLook
   else stopPlayBack
 
 -- * AimPointerEnemy

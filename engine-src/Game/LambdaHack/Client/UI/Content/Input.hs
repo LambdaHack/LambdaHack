@@ -4,7 +4,7 @@ module Game.LambdaHack.Client.UI.Content.Input
   ( InputContentRaw(..), InputContent(..), makeData
   , evalKeyDef
   , addCmdCategory, replaceDesc, moveItemTriple, repeatTriple, repeatLastTriple
-  , mouseLMB, mouseMMB, mouseRMB
+  , mouseLMB, mouseMMB, mouseMMBMute, mouseRMB
   , goToCmd, runToAllCmd, autoexploreCmd, autoexplore25Cmd
   , aimFlingCmd, projectI, projectA, flingTs, applyIK, applyI
   , grabItems, dropItems, descIs, defaultHeroSelect, macroRun25
@@ -166,6 +166,9 @@ mouseMMB = ( [CmdMouse]
            , "snap crosshair to floor under pointer/cycle detail level"
            , XhairPointerFloor )
 
+mouseMMBMute :: CmdTriple
+mouseMMBMute = ([CmdMouse], "", XhairPointerMute)
+
 mouseRMB :: CmdTriple
 mouseRMB = ( [CmdMouse]
            , "start aiming at enemy under pointer/cycle detail level"
@@ -197,13 +200,13 @@ mouseRMB = ( [CmdMouse]
 -- because the C- commands are less likely to be modified by the player
 -- and so more dependable than @semicolon@, @colon@, etc.
 goToCmd :: HumanCmd
-goToCmd = Macro ["MiddleButtonRelease", "C-semicolon", "C-quotedbl", "C-v"]
+goToCmd = Macro ["A-MiddleButtonRelease", "C-semicolon", "C-quotedbl", "C-v"]
 
 -- This is duplicated wrt content, instead of included via @colon@,
 -- because the C- commands are less likely to be modified by the player
 -- and so more dependable than @semicolon@, @colon@, etc.
 runToAllCmd :: HumanCmd
-runToAllCmd = Macro ["MiddleButtonRelease", "C-colon", "C-quotedbl", "C-v"]
+runToAllCmd = Macro ["A-MiddleButtonRelease", "C-colon", "C-quotedbl", "C-v"]
 
 autoexploreCmd :: HumanCmd
 autoexploreCmd = Macro ["C-?", "C-quotedbl", "C-v"]

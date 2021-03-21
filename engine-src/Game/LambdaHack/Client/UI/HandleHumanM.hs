@@ -174,6 +174,7 @@ cmdSemantics cmd = case cmd of
   XhairItem -> Left <$> xhairItemHuman
   XhairStair up -> Left <$> xhairStairHuman up
   XhairPointerFloor -> addNoError xhairPointerFloorHuman
+  XhairPointerMute -> addNoError xhairPointerMuteHuman
   XhairPointerEnemy -> addNoError xhairPointerEnemyHuman
   AimPointerFloor -> addNoError aimPointerFloorHuman
   AimPointerEnemy -> addNoError aimPointerEnemyHuman

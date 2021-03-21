@@ -191,6 +191,7 @@ data HumanCmd =
   | XhairItem
   | XhairStair Bool
   | XhairPointerFloor
+  | XhairPointerMute
   | XhairPointerEnemy
   | AimPointerFloor
   | AimPointerEnemy
