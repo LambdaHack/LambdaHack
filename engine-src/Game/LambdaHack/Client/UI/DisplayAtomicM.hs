@@ -1798,7 +1798,7 @@ displayRespSfxAtomicUI sfx = case sfx of
             -- If item not periodic, most likely intentional, so don't spam.
             means = [MU.Text $ "(via" <+> iidDesc <> ")" | periodic]
         msgAdd MsgEffectMinor $
-          makeSentence $ [MU.SubjectVerbSg subject verb] ++ means ++ [object]
+          makeSentence $ [MU.SubjectVerbSg subject verb] ++ [object] ++ means
         -- Don't make it modal if all info remains after no longer seen.
         unless (fid /= side || d `elem` [IK.DetectHidden, IK.DetectExit]) $
           displayMore ColorFull ""  -- the sentence short
