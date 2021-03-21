@@ -128,15 +128,13 @@ pushFrame = do
     displayFrames lidV [Just frame]
 
 promptGetKey :: (MonadClient m, MonadClientUI m)
-             => Bool -> ColorMode -> FontOverlayMap -> Bool -> [K.KM]
-             -> m K.KM
-promptGetKey interrupted dm ovs onBlank frontKeyKeys = do
+             => Bool -> PreFrame3 -> [K.KM]-> m K.KM
+promptGetKey interrupted frontKeyFrame frontKeyKeys = do
   lidV <- viewedLevelUI
   macroFrame <- getsSession smacroFrame
   km <- case keyPending macroFrame of
     KeyMacro (km : kms) | (null frontKeyKeys || km `elem` frontKeyKeys)
                           && not interrupted -> do
-      frontKeyFrame <- drawOverlay dm onBlank ovs lidV
       displayFrames lidV [Just frontKeyFrame]
       modifySession $ \sess ->
         sess {smacroFrame = (smacroFrame sess) {keyPending = KeyMacro kms}}
@@ -146,12 +144,6 @@ promptGetKey interrupted dm ovs onBlank frontKeyKeys = do
       -- We can't continue playback, so wipe out old keyPending, srunning, etc.
       resetPlayBack
       resetPressedKeys
-      FontSetup{propFont} <- getFontSetup
-      let ovWarn = [ ( PointUI 0 0
-                     , textFgToAL Color.cMeta "*interrupted*" )
-                   | interrupted ]
-          ovs2 = EM.insertWith (++) propFont ovWarn ovs
-      frontKeyFrame <- drawOverlay dm onBlank ovs2 lidV
       recordHistory
       connFrontendFrontKey frontKeyKeys frontKeyFrame
     KeyMacro [] -> do
@@ -159,8 +151,7 @@ promptGetKey interrupted dm ovs onBlank frontKeyKeys = do
       -- and we want to avoid changing leader back to initial run leader
       -- at the nearest @stopPlayBack@, etc.
       modifySession $ \sess -> sess {srunning = Nothing}
-      frontKeyFrame <- drawOverlay dm onBlank ovs lidV
-      when (dm /= ColorFull) $ do
+      when interrupted $ do
         side <- getsClient sside
         fact <- getsState $ (EM.! side) . sfactionD
         unless (isAIFact fact) -- don't forget special autoplay keypresses

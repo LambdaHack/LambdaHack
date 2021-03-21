@@ -153,8 +153,10 @@ humanCommand = do
         b <- getsState $ getActorBody leader
         when (bhp b <= 0 && Just leader /= mOldLeader) $ displayMore ColorBW
           "If you move, the exertion will kill you. Consider asking for first aid instead."
-        km <- promptGetKey interrupted ColorFull
-                           (EM.fromList [(propFont, over)]) False []
+        lidV <- viewedLevelUI
+        frontKeyFrame <-
+          drawOverlay ColorFull False (EM.fromList [(propFont, over)]) lidV
+        km <- promptGetKey interrupted frontKeyFrame []
         abortOrCmd <- do
           -- Look up the key.
           CCUI{coinput=InputContent{bcmdMap}} <- getsSession sccui
