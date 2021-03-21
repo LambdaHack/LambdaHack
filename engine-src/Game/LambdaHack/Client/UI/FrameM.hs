@@ -141,7 +141,7 @@ promptGetKey interrupted frontKeyFrame frontKeyKeys = do
       msgAdd MsgMacroOperation $ "Voicing '" <> tshow km <> "'."
       return km
     KeyMacro (_ : _) -> do
-      -- We can't continue playback, so wipe out old keyPending, srunning, etc.
+      -- We can't continue playback, so wipe out macros, etc.
       resetPlayBack
       resetPressedKeys
       recordHistory

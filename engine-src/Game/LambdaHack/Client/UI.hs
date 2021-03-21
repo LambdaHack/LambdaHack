@@ -121,11 +121,12 @@ humanCommand = do
   modifySession $ \sess -> sess {slastLost = ES.empty}
   let loop :: Maybe ActorId -> m ReqUI
       loop mOldLeader = do
+        keyPressed <- anyKeyPressed
+        -- This message, in particular, disturbs.
+        when keyPressed $ msgAdd MsgActionWarning "*interrupted*"
         report <- getsSession $ newReport . shistory
         modifySession $ \sess -> sess {sreportNull = nullVisibleReport report}
-        keyPressed <- anyKeyPressed
-        let msgDisturbs = anyInReport disturbsResting report
-            interrupted = keyPressed || msgDisturbs
+        let interrupted = anyInReport disturbsResting report
         macroFrame <- getsSession smacroFrame
         let haltingForKey = interrupted
                             || null (unKeyMacro (keyPending macroFrame))
