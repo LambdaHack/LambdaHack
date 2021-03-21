@@ -1,7 +1,6 @@
 -- | Monadic operations on slideshows and related data.
 module Game.LambdaHack.Client.UI.SlideshowM
-  ( overlayToSlideshow, reportToSlideshow
-  , reportToSlideshowKeepHalt, reportToSlideshowKeepPar
+  ( overlayToSlideshow, reportToSlideshow, reportToSlideshowKeepHalt
   , displaySpaceEsc, displayMore, displayMoreKeep, displayYesNo, getConfirms
   , displayChoiceScreen
   ) where
@@ -52,7 +51,11 @@ reportToSlideshow keys = do
   overlayToSlideshow (rheight - 2) keys (EM.empty, [])
 
 -- | Split current report into a slideshow. Keep report unchanged.
--- Assume the game halts waiting for a key after this is shown.
+-- Assume the game either halts waiting for a key after this is shown,
+-- or many slides are produced, all but the last are displayed
+-- with player promts between and the last is either shown
+-- in full or ignored if inside macro (can be recovered from history,
+-- if important). Unless the prompts interrupt the macro, which is as well.
 reportToSlideshowKeepHalt :: MonadClientUI m => [K.KM] -> m Slideshow
 reportToSlideshowKeepHalt keys = do
   CCUI{coscreen=ScreenContent{rwidth, rheight, rwrap}} <- getsSession sccui
@@ -63,22 +66,6 @@ reportToSlideshowKeepHalt keys = do
   fontSetup <- getFontSetup
   return $! splitOverlay fontSetup uScreen1PerLine rwidth (rheight - 2) rwrap
                          report keys (EM.empty, [])
-
--- | Split current report into a slideshow. Keep report unchanged.
--- Assume this is shown while inside a macro and so don't obscure
--- the map by the report, but display only the first paragraph
--- and only in one line.
-reportToSlideshowKeepPar :: MonadClientUI m => m Slideshow
-reportToSlideshowKeepPar = do
-  report <- getReportUI
-  FontSetup{propFont} <- getFontSetup
-  -- The same as in @oneLineBasicFrame@:
-  let par1 = firstParagraph $ foldr (<+:>) [] $ renderReport True report
-      truncRep = EM.fromList [(propFont, [(PointUI 0 0, par1)])]
-  -- Don't do @recordHistory@; the message is important, but related
-  -- to the messages that come after, so should be shown together.
-  fontSetup <- getFontSetup
-  return $! toSlideshow fontSetup [(truncRep, [])]
 
 -- | Display a message. Return value indicates if the player wants to continue.
 -- Feature: if many pages, only the last SPACE exits (but first ESC).
@@ -273,10 +260,7 @@ displayChoiceScreen menuName dm sfBlank frsX extraKeys = do
                              then page clearIx
                              else page maxIx
                   _ -> error $ "unknown key" `showFailure` ikm
-          keyPressed <- anyKeyPressed
-          lidV <- viewedLevelUI
-          frontKeyFrame <- drawOverlay dm sfBlank ovs1 lidV
-          pkm <- promptGetKey keyPressed frontKeyFrame legalKeys
+          pkm <- promptGetKey dm ovs1 sfBlank legalKeys
           interpretKey pkm
   menuIxMap <- getsSession smenuIxMap
   -- Beware, values in @menuIxMap@ may be negative (meaning: a key, not slot).

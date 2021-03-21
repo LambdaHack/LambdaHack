@@ -128,8 +128,16 @@ pushFrame = do
     displayFrames lidV [Just frame]
 
 promptGetKey :: (MonadClient m, MonadClientUI m)
-             => Bool -> PreFrame3 -> [K.KM]-> m K.KM
-promptGetKey interrupted frontKeyFrame frontKeyKeys = do
+             => ColorMode -> FontOverlayMap -> Bool -> [K.KM]
+             -> m K.KM
+promptGetKey dm ovs onBlank frontKeyKeys = do
+  lidV <- viewedLevelUI
+  keyPressed <- anyKeyPressed
+  -- This message, in particular, disturbs.
+  when keyPressed $ msgAdd MsgActionWarning "*interrupted*"
+  report <- getsSession $ newReport . shistory
+  modifySession $ \sess -> sess {sreportNull = nullVisibleReport report}
+  let interrupted = anyInReport disturbsResting report
   macroFrame <- getsSession smacroFrame
   km <- case keyPending macroFrame of
     KeyMacro (km : kms) | (null frontKeyKeys || km `elem` frontKeyKeys)
@@ -144,17 +152,19 @@ promptGetKey interrupted frontKeyFrame frontKeyKeys = do
       msgAdd MsgMacroOperation $ "Voicing '" <> tshow km <> "'."
       return km
     KeyMacro (_ : _) -> do
+      frontKeyFrame <- drawOverlay dm onBlank ovs lidV
       -- We can't continue playback, so wipe out macros, etc.
       resetPlayBack
       resetPressedKeys
       recordHistory
       connFrontendFrontKey frontKeyKeys frontKeyFrame
     KeyMacro [] -> do
+      frontKeyFrame <- drawOverlay dm onBlank ovs lidV
       -- If we ask for a key, then we don't want to run any more
       -- and we want to avoid changing leader back to initial run leader
       -- at the nearest @stopPlayBack@, etc.
       modifySession $ \sess -> sess {srunning = Nothing}
-      when interrupted $ do
+      when (dm /= ColorFull || interrupted) $ do
         side <- getsClient sside
         fact <- getsState $ (EM.! side) . sfactionD
         unless (isAIFact fact) -- don't forget special autoplay keypresses

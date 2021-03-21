@@ -121,18 +121,9 @@ humanCommand = do
   modifySession $ \sess -> sess {slastLost = ES.empty}
   let loop :: Maybe ActorId -> m ReqUI
       loop mOldLeader = do
-        keyPressed <- anyKeyPressed
-        -- This message, in particular, disturbs.
-        when keyPressed $ msgAdd MsgActionWarning "*interrupted*"
         report <- getsSession $ newReport . shistory
         modifySession $ \sess -> sess {sreportNull = nullVisibleReport report}
-        let interrupted = anyInReport disturbsResting report
-        macroFrame <- getsSession smacroFrame
-        let haltingForKey = interrupted
-                            || null (unKeyMacro (keyPending macroFrame))
-        slides <- if haltingForKey
-                  then reportToSlideshowKeepHalt []
-                  else reportToSlideshowKeepPar
+        slides <- reportToSlideshowKeepHalt []
         over <- case unsnoc slides of
           Nothing -> return []
           Just (allButLast, (ov, _)) ->
@@ -143,7 +134,6 @@ humanCommand = do
               let ovProp = ov EM.! propFont
               return $! if EM.size ov > 1 then ovProp else init ovProp
             else do
-              let !_A = assert haltingForKey ()
               -- Show, one by one, all slides, awaiting confirmation for each.
               void $ getConfirms ColorFull [K.spaceKM, K.escKM] slides
               -- Indicate that report wiped out.
@@ -154,10 +144,8 @@ humanCommand = do
         b <- getsState $ getActorBody leader
         when (bhp b <= 0 && Just leader /= mOldLeader) $ displayMore ColorBW
           "If you move, the exertion will kill you. Consider asking for first aid instead."
-        lidV <- viewedLevelUI
-        frontKeyFrame <-
-          drawOverlay ColorFull False (EM.fromList [(propFont, over)]) lidV
-        km <- promptGetKey interrupted frontKeyFrame []
+        let ovs = EM.fromList [(propFont, over)]
+        km <- promptGetKey ColorFull ovs False []
         abortOrCmd <- do
           -- Look up the key.
           CCUI{coinput=InputContent{bcmdMap}} <- getsSession sccui
