@@ -4,7 +4,7 @@ module Game.LambdaHack.Client.UI.FrameM
   , stopPlayBack, animate, fadeOutOrIn
 #ifdef EXPOSE_INTERNAL
     -- * Internal operations
-  , drawOverlay, renderAnimFrames, resetPlayBack
+  , drawOverlay, oneLineBasicFrame, renderAnimFrames, resetPlayBack
 #endif
   ) where
 
@@ -105,6 +105,13 @@ drawOverlay dm onBlank ovs lid = do
                        $ overlayFrame rwidth ovBackdrop basicFrame
   return (overlayedFrame, (ovProp, ovMono))
 
+oneLineBasicFrame :: MonadClientUI m => LevelId -> DisplayFont -> m PreFrame3
+oneLineBasicFrame arena font = do
+  report <- getReportUI
+  let par1 = firstParagraph $ foldr (<+:>) [] $ renderReport True report
+      truncRep = EM.fromList [(font, [(PointUI 0 0, par1)])]
+  drawOverlay ColorFull False truncRep arena
+
 -- | Push the frame depicting the current level to the frame queue.
 -- Only one line of the report is shown, as in animations,
 -- because it may not be our turn, so we can't clear the message
@@ -116,11 +123,8 @@ pushFrame = do
   keyPressed <- anyKeyPressed
   unless keyPressed $ do
     lidV <- viewedLevelUI
-    report <- getReportUI
     FontSetup{propFont} <- getFontSetup
-    let par1 = firstParagraph $ foldr (<+:>) [] $ renderReport True report
-        truncRep = EM.fromList [(propFont, [(PointUI 0 0, par1)])]
-    frame <- drawOverlay ColorFull False truncRep lidV
+    frame <- oneLineBasicFrame lidV propFont
     displayFrames lidV [Just frame]
 
 promptGetKey :: (MonadClient m, MonadClientUI m)
@@ -235,16 +239,13 @@ renderAnimFrames :: MonadClientUI m
 renderAnimFrames onBlank arena anim = do
   CCUI{coscreen=ScreenContent{rwidth}} <- getsSession sccui
   snoAnim <- getsClient $ snoAnim . soptions
-  report <- getReportUI
   FontSetup{..} <- getFontSetup
   -- This hack is needed so that the prop part of the overlay does not
   -- overwrite the fadeout animation.
   let ovFont = if not onBlank || fromMaybe False snoAnim
                then propFont
                else squareFont
-      par1 = firstParagraph $ foldr (<+:>) [] $ renderReport True report
-      truncRep = EM.fromList [(ovFont, [(PointUI 0 0, par1)])]
-  basicFrame <- drawOverlay ColorFull False truncRep arena
+  basicFrame <- oneLineBasicFrame arena ovFont
   return $! if fromMaybe False snoAnim
             then [Just basicFrame]
             else map (fmap (\fr -> (fr, snd basicFrame)))
