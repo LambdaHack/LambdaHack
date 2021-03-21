@@ -263,6 +263,11 @@ and there are a few more mismatches, though the source code naming
 and the UI naming should each be consistent in separation.
 If the UI names stick, perhaps source code will be renamed at some point.
 
+This codebase is an experiment in extensive use of states without lens.
+So far, it works, doesn't result in much larger files or lots
+of repetition and has the added benefits that newcomers don't need
+to learn any lens library. Record punning, etc., definitely helps.
+
 
 Further information
 -------------------
