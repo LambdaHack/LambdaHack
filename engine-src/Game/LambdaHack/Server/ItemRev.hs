@@ -192,7 +192,7 @@ rollFlavourMap uFlavMeta !rnd !key !ik = case IK.iflavour ik of
     (!assocs, !availableMap) <- rnd
     let a0 = uFlavMeta U.! toEnum (fromEnum key)
     if a0 == maxBound then do
-      if length flvs <= 6 then do  -- too few to even attempt unique assignment
+      if length flvs < 6 then do  -- too few to even attempt unique assignment
         flavour <- oneOf flvs
         return ( EM.insert key flavour assocs
                , availableMap )
