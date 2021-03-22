@@ -1598,12 +1598,7 @@ itemMenuHuman cmdSemInCxtOfKM = do
               Just (_desc, _cats, cmd) -> do
                 modifySession $ \sess ->
                   sess {sitemSel = Just (iid, fromCStore, True)}
-                res <- cmdSemInCxtOfKM km cmd
-                modifySession $ \sess ->
-                  sess {sitemSel = case res of
-                          Left Just{} -> Nothing
-                          _ -> Just (iid, fromCStore, False)}
-                return res
+                cmdSemInCxtOfKM km cmd
               Nothing -> weaveJust <$> failWith "never mind"
             Right _slot -> error $ "" `showFailure` ekm
     Nothing -> weaveJust <$> failWith "no item to open item menu for"
