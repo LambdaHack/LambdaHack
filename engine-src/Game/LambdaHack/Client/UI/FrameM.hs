@@ -163,7 +163,7 @@ promptGetKey dm ovs onBlank frontKeyKeys = do
       -- and we want to avoid changing leader back to initial run leader
       -- at the nearest @stopPlayBack@, etc.
       modifySession $ \sess -> sess {srunning = Nothing}
-      when (dm /= ColorFull || interrupted) $ do
+      when (dm /= ColorFull) $ do
         side <- getsClient sside
         fact <- getsState $ (EM.! side) . sfactionD
         unless (isAIFact fact) -- don't forget special autoplay keypresses
