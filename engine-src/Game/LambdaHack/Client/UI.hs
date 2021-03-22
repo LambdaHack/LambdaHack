@@ -121,6 +121,11 @@ humanCommand = do
   modifySession $ \sess -> sess {slastLost = ES.empty}
   let loop :: Maybe ActorId -> m ReqUI
       loop mOldLeader = do
+        keyPressed <- anyKeyPressed
+        macroFrame <- getsSession smacroFrame
+        -- This message, in particular, disturbs.
+        when (keyPressed && not (null (unKeyMacro (keyPending macroFrame)))) $
+          msgAdd MsgActionWarning "*interrupted*"
         report <- getsSession $ newReport . shistory
         modifySession $ \sess -> sess {sreportNull = nullVisibleReport report}
         slides <- reportToSlideshowKeepHalt []

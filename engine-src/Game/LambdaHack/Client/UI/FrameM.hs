@@ -132,13 +132,9 @@ promptGetKey :: (MonadClient m, MonadClientUI m)
              -> m K.KM
 promptGetKey dm ovs onBlank frontKeyKeys = do
   lidV <- viewedLevelUI
-  keyPressed <- anyKeyPressed
-  macroFrame <- getsSession smacroFrame
-  -- This message, in particular, disturbs.
-  when (keyPressed && not (null (unKeyMacro (keyPending macroFrame)))) $
-    msgAdd MsgActionWarning "*interrupted*"
   report <- getsSession $ newReport . shistory
   let interrupted = anyInReport disturbsResting report
+  macroFrame <- getsSession smacroFrame
   km <- case keyPending macroFrame of
     KeyMacro (km : kms) | (null frontKeyKeys || km `elem` frontKeyKeys)
                           && not interrupted -> do
