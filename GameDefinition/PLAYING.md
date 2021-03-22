@@ -166,9 +166,11 @@ with default keybinding) cycles through all visible and remembered
 items on the level and another (`*` and keypad `*`, with default keybinding)
 through all foes. Also, pointing at a map position with `MMB`
 (middle mouse button) displays a short description of its contents.
-The same with `RMB` enters aiming mode, in which repeated pointing
-at the same position increases detail level of the description, the same
-as when pressing the Space key. The basic terrain kinds are as follows.
+
+Pointing with `RMB` enters aiming mode, in which pointing again
+or pressing Space key or `MMB` decreases detail level of the description.
+If a foe or interesting terrain is being pointed at, tilde key `~` shows
+the relevant lore details. The basic terrain kinds are as follows.
 
     terrain type                          on-screen symbol
 
