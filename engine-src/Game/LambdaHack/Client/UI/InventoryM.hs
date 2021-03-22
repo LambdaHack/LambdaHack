@@ -1,10 +1,10 @@
 -- | UI of inventory management.
 module Game.LambdaHack.Client.UI.InventoryM
   ( Suitability(..), ResultItemDialogMode(..)
-  , getFull, getGroupItem, getStoreItem
+  , slotsOfItemDialogMode, getFull, getGroupItem, getStoreItem
 #ifdef EXPOSE_INTERNAL
     -- * Internal operations
-  , ItemDialogState(..), slotsOfItemDialogMode, accessModeBag, getItem
+  , ItemDialogState(..), accessModeBag, getItem
   , DefItemKey(..), transition, keyOfEKM, runDefItemKey
 #endif
   ) where

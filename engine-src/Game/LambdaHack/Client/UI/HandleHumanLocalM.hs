@@ -214,7 +214,35 @@ chooseItemDialogMode c = do
         MModes ->
           makePhrase
             [ MU.Capitalize $ MU.Text t ]
-  ggi <- getStoreItem prompt c
+  saimMode <- getsSession saimMode
+  mxhairPos <- xhairToPos
+  leader0 <- getLeaderUI
+  b0 <- getsState $ getActorBody leader0
+  let xhairPos = fromMaybe (bpos b0) mxhairPos
+  ggi <- case saimMode of
+    Just aimMode | c == MLore SItem -> do
+      bagAll <- getsState $ EM.map (const quantSingle) . sitemD
+      let lidAim = aimLevelId aimMode
+          isOurs (_, b) = bfid b == bfid b0
+      inhabitants <- getsState $ posToAidAssocs xhairPos lidAim
+      case filter (not . isOurs) inhabitants of
+        (_, b) : _ -> do
+          let iid = btrunk b
+          arItem <- getsState $ aspectRecordFromIid iid
+          let slore | not $ bproj b = STrunk
+                    | IA.checkFlag Ability.Blast arItem = SBlast
+                    | otherwise = SItem
+          lSlots <- slotsOfItemDialogMode $ MLore slore
+          return $ Right $ RLore slore iid bagAll lSlots
+        [] -> do
+          embeds <- getsState $ EM.assocs . getEmbedBag lidAim xhairPos
+          case embeds of
+            (iid, _) : _ -> do
+              let slore = SEmbed
+              lSlots <- slotsOfItemDialogMode $ MLore slore
+              return $ Right $ RLore slore iid bagAll lSlots
+            [] -> getStoreItem prompt c
+    _ -> getStoreItem prompt c
   recordHistory  -- item chosen, wipe out already shown msgs
   leader <- getLeaderUI
   actorCurAndMaxSk <- leaderSkillsClientUI
