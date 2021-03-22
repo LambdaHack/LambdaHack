@@ -164,7 +164,7 @@ Assorted commands
  %            yell or yawn and stop sleeping
  @            describe organs of the pointman
  #            show skill summary of the pointman
- ~            display known lore
+ ~            display relevant lore
  C-s          start new game
  C-x          save and exit to desktop
  C-q          quit game and start autoplay

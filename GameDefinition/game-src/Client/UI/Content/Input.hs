@@ -108,7 +108,7 @@ standardKeysAndMouse = InputContentRaw $ map evalKeyDef $
           , "show skill summary of the pointman"
           , ChooseItemMenu MSkills ))
   , ("~", ( [CmdMeta]
-          , "display known lore"
+          , "display relevant lore"
           , ChooseItemMenu (MLore SItem) ))
 
   -- Dashboard, in addition to commands marked above
