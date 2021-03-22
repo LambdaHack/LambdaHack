@@ -431,8 +431,6 @@ nullVisibleReport (Report l) =
   all (all (Char.isSpace . Color.charFromW32) . msgShow . repMsg) l
 
 -- | Add a message to the start of report.
---
--- Empty messages are not added to make checking report emptiness easier.
 consReport :: Msg -> Report -> Report
 consReport msg (Report r) = Report $ r ++ [RepMsgNK msg 1 1]
 
@@ -540,8 +538,6 @@ scrapRepetition History{ newReport = Report newMsgs
 
 -- | Add a message to the new report of history, eliminating a possible
 -- duplicate and noting its existence in the result.
---
--- Empty messages are not added to make checking report emptiness easier.
 addToReport :: S.Set Msg -> Bool -> Bool -> History -> Msg -> Time
             -> (S.Set Msg, History, Bool)
 addToReport usedHints displayHints inMelee

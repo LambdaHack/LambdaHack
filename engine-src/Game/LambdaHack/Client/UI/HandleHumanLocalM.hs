@@ -223,7 +223,7 @@ chooseItemDialogMode c = do
     Just aimMode | c == MLore SItem -> do
       bagAll <- getsState $ EM.map (const quantSingle) . sitemD
       let lidAim = aimLevelId aimMode
-          isOurs (_, b) = bfid b == bfid b0
+          isOurs (_, b) = bfid b == side
       inhabitants <- getsState $ posToAidAssocs xhairPos lidAim
       case filter (not . isOurs) inhabitants of
         (_, b) : _ -> do

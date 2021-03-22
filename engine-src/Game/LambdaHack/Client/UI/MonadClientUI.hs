@@ -11,8 +11,9 @@ module Game.LambdaHack.Client.UI.MonadClientUI
   , clientPrintUI, debugPossiblyPrintUI, getSession, putSession, displayFrames
   , connFrontendFrontKey, setFrontAutoYes, frontendShutdown, printScreen
   , chanFrontend, anyKeyPressed, discardPressedKey, resetPressedKeys
-  , addPressedControlEsc, revCmdMap
-  , getReportUI, miniHintAiming, getLeaderUI, getArenaUI, viewedLevelUI
+  , addPressedControlEsc, revCmdMap, getReportUI
+  , miniHintAimingBare, miniHintAimingLore
+  , getLeaderUI, getArenaUI, viewedLevelUI
   , xhairToPos, setXHairFromGUI, clearAimMode
   , getFontSetup, scoreToSlideshow, defaultHistory
   , tellAllClipPS, tellGameClipPS, elapsedSessionTimeGT
@@ -201,28 +202,49 @@ revCmdMap = do
 
 getReportUI :: MonadClientUI m => m Report
 getReportUI = do
+  side <- getsClient sside
+  saimMode <- getsSession saimMode
+  -- Copy-pasted from @chooseItemDialogMode@.
+  loreIsRelevant <- case saimMode of
+    Just aimMode -> do
+      mxhairPos <- xhairToPos
+      leader0 <- getLeaderUI
+      b0 <- getsState $ getActorBody leader0
+      let xhairPos = fromMaybe (bpos b0) mxhairPos
+          lidAim = aimLevelId aimMode
+          isOurs (_, b) = bfid b == side
+      inhabitants <- getsState $ posToAidAssocs xhairPos lidAim
+      case filter (not . isOurs) inhabitants of
+        [] -> do
+          embeds <- getsState $ getEmbedBag lidAim xhairPos
+          return $! not $ EM.null embeds
+        _ -> return True
+    _ -> return False
   sUIOptions <- getsSession sUIOptions
   report <- getsSession $ newReport . shistory
-  saimMode <- getsSession saimMode
-  side <- getsClient sside
   fact <- getsState $ (EM.! side) . sfactionD
   let newcomerHelp = True  -- TODO
       detailAtDefault = (detailLevel <$> saimMode) == Just defaultDetailLevel
-      defailMinimal = (detailLevel <$> saimMode) == Just minBound
+      detailMinimal = (detailLevel <$> saimMode) == Just minBound
       underAI = isAIFact fact
       prefixColors = uMessageColors sUIOptions
       -- Here we assume newbies don't override default keys.
+      miniHintAiming =
+        if loreIsRelevant then miniHintAimingLore else miniHintAimingBare
       promptAim = toMsgShared prefixColors MsgPromptGeneric
                   $ miniHintAiming <> "\n"
       promptAI = toMsgShared prefixColors MsgPromptAction
                              "<press any key for main menu>"
-  return $! if | newcomerHelp && detailAtDefault && not defailMinimal ->
+  return $! if | newcomerHelp && detailAtDefault && not detailMinimal ->
                    consReport promptAim report
                | underAI -> consReport promptAI report
                | otherwise -> report
 
-miniHintAiming :: Text
-miniHintAiming = "Aiming mode: press SPACE or RMB to decrease detail, 'f' to fling, ESC to cancel."
+miniHintAimingBare :: Text
+miniHintAimingBare = "Aiming mode: press 'f' to fling, SPACE or RMB to decrease detail, ESC to cancel."
+
+miniHintAimingLore :: Text
+miniHintAimingLore = "Aiming mode: '~' for lore, 'f' to fling, SPACE or RMB to hush, ESC to cancel."
 
 getLeaderUI :: MonadClientUI m => m ActorId
 getLeaderUI = do

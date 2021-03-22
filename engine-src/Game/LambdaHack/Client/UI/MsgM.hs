@@ -116,7 +116,7 @@ promptMainKeys = do
         <+> keepTab
         <+> moreHelp
            | otherwise =
-        (if detailAtDefault then "" else miniHintAiming)
+        (if detailAtDefault then "" else miniHintAimingBare)
         <+> tgtKindVerb xhair
         <+> "with" <+> moveKeys <+> "keys or mouse."
         <+> keepTab
