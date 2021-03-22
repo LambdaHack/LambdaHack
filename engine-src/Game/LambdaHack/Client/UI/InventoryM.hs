@@ -2,6 +2,11 @@
 module Game.LambdaHack.Client.UI.InventoryM
   ( Suitability(..), ResultItemDialogMode(..)
   , getFull, getGroupItem, getStoreItem
+#ifdef EXPOSE_INTERNAL
+    -- * Internal operations
+  , ItemDialogState(..), slotsOfItemDialogMode, accessModeBag, getItem
+  , DefItemKey(..), transition, keyOfEKM, runDefItemKey
+#endif
   ) where
 
 import Prelude ()
@@ -66,6 +71,33 @@ accessModeBag _ _ MSkills = EM.empty
 accessModeBag _ s MLore{} = EM.map (const quantSingle) $ sitemD s
 accessModeBag _ _ MPlaces = EM.empty
 accessModeBag _ _ MModes = EM.empty
+
+-- This is the only place slots are sorted. As a side-effect,
+-- slots in inventories always agree with slots of item lore.
+-- Not so for organ menu, because many lore maps point there.
+-- Sorting in @updateItemSlot@ would not be enough, because, e.g.,
+-- identifying an item should change its slot position.
+slotsOfItemDialogMode :: MonadClientUI m => ItemDialogMode -> m SingleItemSlots
+slotsOfItemDialogMode cCur = do
+  itemToF <- getsState $ flip itemToFull
+  ItemSlots itemSlotsPre <- getsSession sslots
+  case cCur of
+    MOrgans -> do
+      let newSlots = EM.adjust (sortSlotMap itemToF) SOrgan
+                     $ EM.adjust (sortSlotMap itemToF) STrunk
+                     $ EM.adjust (sortSlotMap itemToF) SCondition itemSlotsPre
+      modifySession $ \sess -> sess {sslots = ItemSlots newSlots}
+      return $! mergeItemSlots itemToF [ newSlots EM.! SOrgan
+                                       , newSlots EM.! STrunk
+                                       , newSlots EM.! SCondition ]
+    MSkills -> return EM.empty
+    MPlaces -> return EM.empty
+    MModes -> return EM.empty
+    _ -> do
+      let slore = IA.loreFromMode cCur
+          newSlots = EM.adjust (sortSlotMap itemToF) slore itemSlotsPre
+      modifySession $ \sess -> sess {sslots = ItemSlots newSlots}
+      return $! newSlots EM.! slore
 
 -- | Let a human player choose any item from a given group.
 -- Note that this does not guarantee the chosen item belongs to the group,
@@ -227,7 +259,6 @@ transition :: forall m. (MonadClient m, MonadClientUI m)
 transition psuit prompt promptGeneric permitMulitple
            numPrefix cCur cRest itemDialogState = do
   let recCall = transition psuit prompt promptGeneric permitMulitple
-  ItemSlots itemSlotsPre <- getsSession sslots
   leader <- getLeaderUI
   actorCurAndMaxSk <- leaderSkillsClientUI
   body <- getsState $ getActorBody leader
@@ -242,28 +273,7 @@ transition psuit prompt promptGeneric permitMulitple
     SuitsEverything -> return $ \_ _ _ -> True
     SuitsSomething f -> return f  -- When throwing, this function takes
                                   -- missile range into accout.
-  -- This is the only place slots are sorted. As a side-effect,
-  -- slots in inventories always agree with slots of item lore.
-  -- Not so for organ menu, because many lore maps point there.
-  -- Sorting in @updateItemSlot@ would not be enough, because, e.g.,
-  -- identifying an item should change its slot position.
-  lSlots <- case cCur of
-    MOrgans -> do
-      let newSlots = EM.adjust (sortSlotMap itemToF) SOrgan
-                     $ EM.adjust (sortSlotMap itemToF) STrunk
-                     $ EM.adjust (sortSlotMap itemToF) SCondition itemSlotsPre
-      modifySession $ \sess -> sess {sslots = ItemSlots newSlots}
-      return $! mergeItemSlots itemToF [ newSlots EM.! SOrgan
-                                       , newSlots EM.! STrunk
-                                       , newSlots EM.! SCondition ]
-    MSkills -> return EM.empty
-    MPlaces -> return EM.empty
-    MModes -> return EM.empty
-    _ -> do
-      let slore = IA.loreFromMode cCur
-          newSlots = EM.adjust (sortSlotMap itemToF) slore itemSlotsPre
-      modifySession $ \sess -> sess {sslots = ItemSlots newSlots}
-      return $! newSlots EM.! slore
+  lSlots <- slotsOfItemDialogMode cCur
   let getResult :: [ItemId] -> Either Text ResultItemDialogMode
       getResult iids = Right $ case cCur of
         MStore rstore -> RStore rstore iids
