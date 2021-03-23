@@ -534,16 +534,22 @@ effectExplode execSfx cgroup source target containerOrigin = do
   -- Power depth of new items unaffected by number of spawned actors.
   freq <- prepareItemKind 0 (blid tb) itemFreq
   m2 <- rollAndRegisterItem False (blid tb) freq container Nothing
+  acounter <- getsServer $ fromEnum . sacounter
   let (iid, (ItemFull{itemKind}, (itemK, _))) =
         fromMaybe (error $ "" `showFailure` cgroup) m2
-      semirandom = T.length (IK.idesc itemKind)
+      semiRandom = T.length (IK.idesc itemKind)
+      -- We pick a point at the border, not inside, to have a uniform
+      -- distribution for the points the line goes through at each distance
+      -- from the source. Otherwise, e.g., the points on cardinal
+      -- and diagonal lines from the source would be more common.
       projectN k100 n = do
-        -- We pick a point at the border, not inside, to have a uniform
-        -- distribution for the points the line goes through at each distance
-        -- from the source. Otherwise, e.g., the points on cardinal
-        -- and diagonal lines from the source would be more common.
-        let veryrandom = (k100 `xor` (semirandom + n)) `mod` 5
-            fuzz = 5 + veryrandom
+        -- Shape is deterministic for the explosion kind, except that is has
+        -- two variants chosen according to time-dependent @veryRandom@.
+        -- Choice from the variants prevents diagonal or cardinal directions
+        -- being always safe for a given explosion kind.
+        let shapeRandom = k100 `xor` (semiRandom + n)
+            veryRandom = shapeRandom + acounter + acounter `div` 3
+            fuzz = 5 + shapeRandom `mod` 5
             k | n < 16 && n >= 12 = 12
               | n < 12 && n >= 8 = 8
               | n < 8 && n >= 4 = 4
@@ -567,7 +573,7 @@ effectExplode execSfx cgroup source target containerOrigin = do
               , flip Point (y + 12) $ x + fuzz
               , flip Point (y - 12) $ x - fuzz
               , flip Point (y + 12) $ x - fuzz ]
-            randomReverse = if veryrandom `mod` 2 == 0 then id else reverse
+            randomReverse = if veryRandom `mod` 2 == 0 then id else reverse
             ps = take k $ concat $
               randomReverse
                 [ zip (repeat True)  -- diagonal particles don't reach that far
@@ -578,7 +584,7 @@ effectExplode execSfx cgroup source target containerOrigin = do
                   $ take 8 (drop ((k100 + fuzz) `mod` 8) $ cycle psFuzz)]
         forM_ ps $ \(centerRaw, tpxy) -> do
           let center = centerRaw && itemK >= 8  -- if few, keep them regular
-          mfail <- projectFail source target oxy tpxy veryrandom center
+          mfail <- projectFail source target oxy tpxy shapeRandom center
                                iid COrgan True
           case mfail of
             Nothing -> return ()
