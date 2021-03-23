@@ -1374,24 +1374,27 @@ helpHuman cmdSemInCxtOfKM = do
       -- reversed in content. Not worth it, until we have huge manuals
       -- or run on weak mobiles. Even then, precomputation during
       -- compilation may be better.
-      glueIntoScreens :: [[String]] -> [[String]] -> Int -> [[String]]
-      glueIntoScreens [] acc _ = [intercalate [""] (reverse acc)]
-      glueIntoScreens ([] : ls) [] _  =
+      --
+      -- Empty lines may appear at the end of pages, but it's fine,
+      -- it means there is a new section on the next page.
+      packIntoScreens :: [[String]] -> [[String]] -> Int -> [[String]]
+      packIntoScreens [] acc _ = [intercalate [""] (reverse acc)]
+      packIntoScreens ([] : ls) [] _  =
         -- Ignore empty paragraphs at the start of screen.
-        glueIntoScreens ls [] 0
-      glueIntoScreens (l : ls) [] h = assert (h == 0) $
+        packIntoScreens ls [] 0
+      packIntoScreens (l : ls) [] h = assert (h == 0) $
         -- If a paragraph, even alone, is longer than screen height, it's split.
         if length l <= rheight - 3
-        then glueIntoScreens ls [l] (length l)
+        then packIntoScreens ls [l] (length l)
         else let (screen, rest) = splitAt (rheight - 3) l
-             in screen : glueIntoScreens (rest : ls) [] 0
-      glueIntoScreens (l : ls) acc h =
+             in screen : packIntoScreens (rest : ls) [] 0
+      packIntoScreens (l : ls) acc h =
         -- The extra @+ 1@ comes from the empty line separating paragraphs,
         -- as added in @intercalate@.
         if length l + 1 + h <= rheight - 3
-        then glueIntoScreens ls (l : acc) (length l + 1 + h)
-        else intercalate [""] (reverse acc) : glueIntoScreens (l : ls) [] 0
-      manualScreens = glueIntoScreens (snd rintroScreen) [] 0
+        then packIntoScreens ls (l : acc) (length l + 1 + h)
+        else intercalate [""] (reverse acc) : packIntoScreens (l : ls) [] 0
+      manualScreens = packIntoScreens (snd rintroScreen) [] 0
       shiftPointUI x (PointUI x0 y0) = PointUI (x0 + x) y0
       sideBySide =
         if isSquareFont monoFont
