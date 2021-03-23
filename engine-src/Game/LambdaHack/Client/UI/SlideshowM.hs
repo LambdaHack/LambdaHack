@@ -38,7 +38,7 @@ overlayToSlideshow :: MonadClientUI m
 overlayToSlideshow y keys okx = do
   CCUI{coscreen=ScreenContent{rwidth, rwrap}} <- getsSession sccui
   UIOptions{uScreen1PerLine} <- getsSession sUIOptions
-  report <- getReportUI
+  report <- getReportUI True
   recordHistory  -- report will be shown soon, remove it to history
   fontSetup <- getFontSetup
   return $! splitOverlay fontSetup uScreen1PerLine rwidth y rwrap
@@ -56,11 +56,11 @@ reportToSlideshow keys = do
 -- with player promts between and the last is either shown
 -- in full or ignored if inside macro (can be recovered from history,
 -- if important). Unless the prompts interrupt the macro, which is as well.
-reportToSlideshowKeepHalt :: MonadClientUI m => [K.KM] -> m Slideshow
-reportToSlideshowKeepHalt keys = do
+reportToSlideshowKeepHalt :: MonadClientUI m => Bool -> [K.KM] -> m Slideshow
+reportToSlideshowKeepHalt insideMenu keys = do
   CCUI{coscreen=ScreenContent{rwidth, rheight, rwrap}} <- getsSession sccui
   UIOptions{uScreen1PerLine} <- getsSession sUIOptions
-  report <- getReportUI
+  report <- getReportUI insideMenu
   -- Don't do @recordHistory@; the message is important, but related
   -- to the messages that come after, so should be shown together.
   fontSetup <- getFontSetup
@@ -89,7 +89,7 @@ displayMore dm prompt = do
 displayMoreKeep :: (MonadClient m, MonadClientUI m) => ColorMode -> Text -> m ()
 displayMoreKeep dm prompt = do
   unless (T.null prompt) $ msgLnAdd MsgPromptGeneric prompt
-  slides <- reportToSlideshowKeepHalt [K.spaceKM]
+  slides <- reportToSlideshowKeepHalt True [K.spaceKM]
   void $ getConfirms dm [K.spaceKM, K.escKM] slides
 
 -- | Print a yes/no question and return the player's answer. Use black

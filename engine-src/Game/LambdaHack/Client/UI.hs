@@ -128,7 +128,7 @@ humanCommand = do
           msgAdd MsgActionWarning "*interrupted*"
         report <- getsSession $ newReport . shistory
         modifySession $ \sess -> sess {sreportNull = nullVisibleReport report}
-        slides <- reportToSlideshowKeepHalt []
+        slides <- reportToSlideshowKeepHalt False []
         over <- case unsnoc slides of
           Nothing -> return []
           Just (allButLast, (ov, _)) ->

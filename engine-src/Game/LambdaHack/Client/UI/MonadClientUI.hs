@@ -200,8 +200,8 @@ revCmdMap = do
         Just [] -> error $ "" `showFailure` brevMap
   return revCmd
 
-getReportUI :: MonadClientUI m => m Report
-getReportUI = do
+getReportUI :: MonadClientUI m => Bool -> m Report
+getReportUI insideMenu = do
   side <- getsClient sside
   saimMode <- getsSession saimMode
   -- Copy-pasted from @chooseItemDialogMode@.
@@ -235,7 +235,8 @@ getReportUI = do
                   $ miniHintAiming <> "\n"
       promptAI = toMsgShared prefixColors MsgPromptAction
                              "<press any key for main menu>"
-  return $! if | newcomerHelp && detailAtDefault && not detailMinimal ->
+  return $! if | newcomerHelp && not insideMenu
+                 && detailAtDefault && not detailMinimal ->
                    consReport promptAim report
                | underAI -> consReport promptAI report
                | otherwise -> report

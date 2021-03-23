@@ -1526,7 +1526,7 @@ itemMenuHuman cmdSemInCxtOfKM = do
               width = if isSquareFont monoFont then 2 * rwidth else rwidth
               (ovFoundRaw, kxsFound) = wrapOKX monoFont ystart xstart width ks
               ovFound = alPrefix ++ ovFoundRaw
-          report <- getReportUI
+          report <- getReportUI True
           CCUI{coinput} <- getsSession sccui
           mstash <- getsState $ \s -> gstash $ sfactionD s EM.! bfid b
           let calmE = calmEnough b actorCurAndMaxSk

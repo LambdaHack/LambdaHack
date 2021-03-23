@@ -107,7 +107,7 @@ drawOverlay dm onBlank ovs lid = do
 
 oneLineBasicFrame :: MonadClientUI m => LevelId -> DisplayFont -> m PreFrame3
 oneLineBasicFrame arena font = do
-  report <- getReportUI
+  report <- getReportUI False
   let par1 = firstParagraph $ foldr (<+:>) [] $ renderReport True report
       truncRep = EM.fromList [(font, [(PointUI 0 0, par1)])]
   drawOverlay ColorFull False truncRep arena
