@@ -1396,7 +1396,7 @@ helpHuman cmdSemInCxtOfKM = do
       sideBySide =
         if isSquareFont monoFont
         then \(screen1, screen2) ->  -- single column, two screens
-          map offsetOverlay [screen1, screen2]
+          map offsetOverlay $ filter (not . null) [screen1, screen2]
         else \(screen1, screen2) ->  -- two columns, single screen
           [offsetOverlay screen1
            ++ map (first $ shiftPointUI rwidth) (offsetOverlay screen2)]
