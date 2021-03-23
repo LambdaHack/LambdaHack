@@ -101,8 +101,9 @@ blankSingleFrame ScreenContent{rwidth, rheight} =
 -- is performed correctly.
 truncateOverlay :: Bool -> Int -> Int -> Bool -> Int -> Bool -> Overlay
                 -> OverlaySpace
-truncateOverlay halveXstart width rheight wipeAdjacent fillLen onBlank ov =
-  let canvasLength = if onBlank then rheight else rheight - 2
+truncateOverlay halveXstart width rheight wipeAdjacentRaw fillLen onBlank ov =
+  let wipeAdjacent = wipeAdjacentRaw && not onBlank
+      canvasLength = if onBlank then rheight else rheight - 2
       supHeight = maximum $ 0 : map (\(PointUI _ y, _) -> y) ov
       trimmedY = canvasLength - 1
       -- Sadly, this does not trim the other, concurrent, overlays that may
@@ -113,8 +114,7 @@ truncateOverlay halveXstart width rheight wipeAdjacent fillLen onBlank ov =
                      , stringToAL "--a portion of the text trimmed--" )
       extraLine | supHeight < 3
                   || supHeight >= trimmedY
-                  || not wipeAdjacent
-                  || onBlank = []
+                  || not wipeAdjacent = []
                 | otherwise =
         let supHs = filter (\(PointUI _ y, _) -> y == supHeight) ov
         in if null supHs
@@ -160,7 +160,7 @@ truncateOverlay halveXstart width rheight wipeAdjacent fillLen onBlank ov =
       g2 (p@(PointUI xstartRaw _), layerLine) =
         let xstart = if halveXstart then xstartRaw `div` 2 else xstartRaw
             available = width - xstart
-        in (p, truncateAttrLine wipeAdjacent available 0 layerLine)
+        in (p, truncateAttrLine False available 0 layerLine)
   in concat $ if onBlank
               then map f2 ovTop
               else zipWith3 f (0 : lens) (drop 1 lens ++ [0]) ovTop
