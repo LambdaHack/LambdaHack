@@ -119,8 +119,11 @@ actionStrategy foeAssocs friendAssocs aid retry = do
   explored <- getsClient sexplored
   -- This doesn't treat actors guarding stash specially, so on such levels
   -- man sleeping actors may reside for a long time. Variety, OK.
-  let anyFriendOnLevelAwake = any (\(_, b) ->
-        bwatch b /= WSleep && bpos b /= bpos body) friendAssocs
+  let awakeAndNotGuarding (_, b) =
+        bpos b /= bpos body
+        && bwatch b /= WSleep
+        && Just (blid b, bpos b) /= gstash fact
+      anyFriendOnLevelAwake = any awakeAndNotGuarding friendAssocs
       actorMaxSk = actorMaxSkills EM.! aid
       recentlyFled = maybe False (\(_, time) -> timeRecent5 localTime time)
                            (aid `EM.lookup` oldFleeD)
