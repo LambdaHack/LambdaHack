@@ -107,7 +107,7 @@ targetDesc mtarget = do
           then do
             bag <- getsState $ getFloorBag lid p
             case EM.assocs bag of
-              [] -> return $! "exact spot" <+> tshow p
+              [] -> return $! "spot" <+> tshow p
               [(iid, kit@(k, _))] -> do
                 localTime <- getsState $ getLocalTime lid
                 itemFull <- getsState $ itemToFull iid
