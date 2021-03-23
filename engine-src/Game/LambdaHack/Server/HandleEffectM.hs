@@ -583,7 +583,7 @@ effectExplode execSfx cgroup source target containerOrigin = do
           case mfail of
             Nothing -> return ()
             Just ProjectBlockTerrain -> return ()
-            Just ProjectBlockActor | not $ bproj tb -> return ()
+            Just ProjectBlockActor -> return ()
             Just failMsg ->
               execSfxAtomic $ SfxMsgFid (bfid tb) $ SfxUnexpected failMsg
       tryFlying 0 = return ()

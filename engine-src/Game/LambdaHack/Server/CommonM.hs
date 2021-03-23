@@ -392,16 +392,24 @@ projectFail propeller origin oxy tpxy eps center iid cstore blast = do
               if | not $ Tile.isWalkable coTileSpeedup t ->
                    return $ Just ProjectBlockTerrain
                  | occupiedBigLvl pos lvl ->
-                   if blast && bproj body && oxy == bpos body then do
-                     -- Hit the blocking actor.
+                   if blast then do
+                     -- Hit the blocking actor by starting the explosion
+                     -- particle where the projectile landed, not a step away.
+                     -- The same when the spot has the explosive embed,
+                     -- regardless if it's walkable (@pos@ is, that's enough).
+                     -- No problem even if there's a big actor where
+                     -- the projectile starts, though it's wierd it may get
+                     -- away unharmed sometimes.
                      projectBla propeller origin oxy (pos:rest)
                                 iid cstore blast
                      return Nothing
                    else return $ Just ProjectBlockActor
                  | otherwise -> do
                    -- Make the explosion less regular and weaker at the edges.
-                   if blast && bproj body && center && oxy == bpos body then
-                     -- Start in the center, not around.
+                   if blast && center then
+                     -- Start in the center, not around, even if the center
+                     -- is a non-walkable tile with the exploding embed
+                     -- or if a big actor is there.
                      projectBla propeller origin oxy (pos:rest)
                                 iid cstore blast
                    else
