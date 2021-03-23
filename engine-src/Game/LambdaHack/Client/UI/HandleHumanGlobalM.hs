@@ -1210,6 +1210,7 @@ verifyEscape = do
   if not (MK.fcanEscape $ gplayer fact)
   then failWith
          "This is the way out, but where would you go in this alien world?"
+           -- exceptionally a full sentence, because a real question
   else do
     (_, total) <- getsState $ calculateTotal side
     dungeonTotal <- getsState sgold
@@ -1226,7 +1227,7 @@ verifyEscape = do
     -- or he is focused on winning only.
     go <- displayYesNo ColorBW prompt
     if not go
-    then failWith "here's your chance!"
+    then failWith "here's your chance"
     else return $ Right ()
 
 verifyToolEffect :: (MonadClient m, MonadClientUI m)
@@ -1244,8 +1245,9 @@ verifyToolEffect lid store itemFull = do
                <+> "that may cause substantial side-effects?"
   go <- displayYesNo ColorBW prompt
   if not go
-  then failWith $ "Replace" <+> object <+> ppCStoreIn store
-                  <+> "and try again."
+  then failWith $ "replace" <+> object <+> ppCStoreIn store
+                  <+> "and try again"
+         -- question capitalized and ended with a dot, answer neither
   else return $ Right ()
 
 -- * AlterWithPointer
