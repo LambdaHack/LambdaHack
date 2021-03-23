@@ -567,7 +567,8 @@ displayRespUpdAtomicUI cmd = case cmd of
     resetPressedKeys
     -- Help newbies when actors obscured by text and no obvious key to press:
     displayMore ColorFull "\nAre you up for the challenge?"
-    msgAdd MsgPromptGeneric "A grand story starts right here! (Press '?' for context and help.)"
+    msgAdd MsgPromptGeneric
+           "A grand story starts right here! (Press '?' for context and help.)"
   UpdRestartServer{} -> return ()
   UpdResume fid _ -> do
     COps{cocave} <- getsState scops
@@ -578,15 +579,15 @@ displayRespUpdAtomicUI cmd = case cmd of
       lid <- getArenaUI
       lvl <- getLevel lid
       gameMode <- getGameMode
-      msgAdd MsgActionAlert $ "Continuing" <+> mname gameMode
-                              <> ". Press '?' for details."
+      msgAdd MsgActionAlert $ "Continuing" <+> mname gameMode <> "."
       msgAdd MsgPromptGeneric $ mdesc gameMode
       let desc = cdesc $ okind cocave $ lkind lvl
       unless (T.null desc) $ do
         msgLnAdd MsgPromptFocus "You remember your surroundings."
         msgAdd MsgPromptGeneric desc
       displayMore ColorFull "\nAre you up for the challenge?"
-      msgAdd MsgPromptGeneric "Prove yourself!"
+      msgAdd MsgPromptGeneric
+             "Prove yourself! (Press '?' for context and help.)"
   UpdResumeServer{} -> return ()
   UpdKillExit{} -> do
 #ifdef USE_JSFILE
