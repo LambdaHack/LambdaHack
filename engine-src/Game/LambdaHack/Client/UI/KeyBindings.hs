@@ -156,7 +156,7 @@ keyHelp CCUI{ coinput=coinput@InputContent{..}
           kst2 = keySel sel key2
           f (ca1, Left km1, _) (ca2, Left km2, _) y =
             assert (ca1 == ca2 `blame` (ca1, ca2, km1, km2, kst1, kst2))
-              [ (Left [km1], ( PointUI (doubleIfSquare $ keyM + 3) y
+              [ (Left [km1], ( PointUI (doubleIfSquare $ keyM + 4) y
                              , ButtonWidth monoFont keyB ))
               , (Left [km2], ( PointUI (doubleIfSquare $ keyB + keyM + 5) y
                              , ButtonWidth monoFont keyB )) ]
@@ -168,9 +168,12 @@ keyHelp CCUI{ coinput=coinput@InputContent{..}
           y0 = 1 + length header
       in ( EM.unionsWith (++)
              [ typesetInMono $ "" : header
-             , EM.singleton monoFont $ typesetXY (2, y0) menuLeft
-             , EM.singleton propFont $ typesetXY (17, y0) menuMiddle
-             , EM.singleton propFont $ typesetXY (49, y0) menuRight ]
+             , EM.singleton monoFont
+               $ typesetXY (doubleIfSquare 2, y0) menuLeft
+             , EM.singleton propFont
+               $ typesetXY (doubleIfSquare $ keyM + 4, y0) menuMiddle
+             , EM.singleton propFont
+               $ typesetXY (doubleIfSquare $ keyB + keyM + 5, y0) menuRight ]
          , kxs )
     typesetInSquare :: [Text] -> FontOverlayMap
     typesetInSquare = EM.singleton squareFont . offsetOverlayX
