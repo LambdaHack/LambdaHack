@@ -1237,16 +1237,16 @@ verifyToolEffect lid store itemFull = do
   side <- getsClient sside
   localTime <- getsState $ getLocalTime lid
   factionD <- getsState sfactionD
-  let object = makePhrase
-                 [partItemWsShort rwidth side factionD 1 localTime
-                                  itemFull quantSingle]
+  let (name1, powers) = partItemShort rwidth side factionD localTime
+                                      itemFull quantSingle
+      objectA = makePhrase [MU.AW name1, powers]
       prompt = "Do you really want to transform the terrain using"
-               <+> object
+               <+> objectA <+> ppCStoreIn store
                <+> "that may cause substantial side-effects?"
+      objectThe = makePhrase ["the", name1]
   go <- displayYesNo ColorBW prompt
   if not go
-  then failWith $ "replace" <+> object <+> ppCStoreIn store
-                  <+> "and try again"
+  then failWith $ "replace" <+> objectThe <+> "and try again"
          -- question capitalized and ended with a dot, answer neither
   else return $ Right ()
 
