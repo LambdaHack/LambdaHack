@@ -11,9 +11,6 @@ games of arbitrary theme, size and complexity, with optional
 tactical squad combat. It's packaged together with a sample
 dungeon crawler in a quirky fantasy setting. The sample game can be
 tried out in the browser at http://lambdahack.github.io.
-The browser version runs fastest on Chrome, keyboard commands
-and savefiles are supported only on recent enough versions
-of browsers, but mouse should work everywhere.
 
 As an example of the engine's capabilities, here is a showcase
 of shooting down explosive projectiles. A couple were shot down close
@@ -37,7 +34,7 @@ Using the engine
 ----------------
 
 To use the engine, you need to specify the content to be
-procedurally generated. You specify what the game world
+procedurally generated. You declare what the game world
 is made of (entities, their relations, physics and lore)
 and the engine builds the world and runs it.
 The library lets you compile a ready-to-play game binary,
@@ -60,13 +57,12 @@ on any of the public forums.
 Other games known to use the LambdaHack library:
 
 * Allure of the Stars[6], a near-future Sci-Fi game
-* Space Privateers[8], an adventure game set in far future
 
 Note: the engine and the sample game are bundled together in a single
 Hackage[3] package released under the permissive `BSD3` license.
 You are welcome to create your own games by forking and modifying
 the single package, but please consider eventually splitting your changes
-into a separate content-only package that depends on the upstream
+into a separate content-heavy package that depends on the upstream
 engine library. This will help us exchange ideas and share improvements
 to the common codebase. Alternatively, you can already start the development
 in separation by cloning and rewriting Allure of the Stars[10]
@@ -111,8 +107,9 @@ which is `~/.Allure/` on Linux,
 or something else altogether) on Windows
 and `Inspect/Application/Local Storage` under RMB menu
 when run inside the Chrome browser.
-If the user config file is outdated or corrupted, removing it guarantees
-that the new default file would be put in its place.
+If the user config file is outdated or corrupted, it's automatically
+moved away together with old savefiles, which guarantees that the new
+default config file is ultimately put in its place.
 
 Screen fonts and, consequently, window size can be changed by editing
 the config file in the user data folder. The default bitmap font
@@ -127,10 +124,12 @@ not only the main game map font, but also the shape of the rectangular fonts,
 if any, in which longer texts are overlaid over the map.
 
 For high resolution displays and/or if fullscreen mode is requested
-in the configuration file, `allFontsScale` needs to be set, e.g.,
-to value 3 for 4K displays. Otherwise, the letters may be too small or,
-in fullscreen or on retina displays in OS X, the screen may be automatically
-scaled as a whole, not each letter separately, softening letter edges.
+in the configuration file, `allFontsScale` needs to be set.
+E.g., scale 3 works for 4K displays. Otherwise, the letters may be
+too small or, in fullscreen or on retina displays in OS X,
+the screen may be automatically scaled as a whole, not each letter
+separately, softening letter edges of the square fonts that should
+be pixel-perfect and crisp.
 
 If you don't have a numeric keypad, you can use the left-hand movement
 key setup (axwdqezc) or Vi editor keys (aka roguelike keys) or mouse.
@@ -138,7 +137,7 @@ If numeric keypad doesn't work, toggling the Num Lock key sometimes helps.
 If running with the Shift key and keypad keys doesn't work,
 try the Control key instead. The game is fully playable with mouse only,
 as well as with keyboard only, but the most efficient combination
-may be mouse for menus, go-to, inspecting the map, and aiming at distant
+may be mouse for menus, go-to, inspecting the map, aiming at distant
 positions and keyboard for everything else.
 
 If you are using a terminal frontend, e.g. the best supported vty frontend,
@@ -195,7 +194,8 @@ and run the game with
 
 There is a built-in black and white line terminal frontend, suitable
 for teletype terminals or a keyboard and a printer (but it's going to use
-a lot of paper, unless you disable animations with `--noAnim`). To compile
+a lot of paper, unless you disable animations with `--noAnim`). It is used
+in CI and for some tests and benchmarks defined in Makefile. To compile
 with one of the less rudimentary terminal frontends (in which case you are
 on your own regarding font choice and color setup and you won't have
 the spiffy colorful squares outlining special positions that exist in SDL2
@@ -213,8 +213,8 @@ contains many sample test commands.
 Numerous tests that use the screensaver game modes (AI vs. AI)
 and the teletype frontend are gathered in `make test`.
 Of these, travis runs `test-travis` on each push to github.
-Test commands with prefix `frontend` start AI vs. AI games
-with the standard, user-friendly frontend.
+Test commands with prefix `frontend` start AI vs. AI games with
+the standard, user-friendly frontend and auto-locating the game binary.
 
 Run `LambdaHack --help` to see a brief description of all debug options.
 Of these, the `--sniff` option is very useful (though verbose
@@ -288,7 +288,6 @@ Have fun!
 [5]: https://github.com/LambdaHack/LambdaHack
 [6]: http://allureofthestars.com
 [7]: https://www.haskell.org/platform
-[8]: https://github.com/tuturto/space-privateers
 [9]: https://github.com/LambdaHack/LambdaHack/wiki/Sample-dungeon-crawler
 [10]: https://github.com/AllureOfTheStars/Allure
 [11]: https://github.com/LambdaHack/LambdaHack/releases

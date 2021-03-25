@@ -13,9 +13,6 @@ description: LambdaHack is a Haskell game engine library for ASCII roguelike
              tactical squad combat. It's packaged together with a sample
              dungeon crawler in a quirky fantasy setting. The sample game can be
              tried out in the browser at <http://lambdahack.github.io>.
-             The browser version runs fastest on Chrome, keyboard commands
-             and savefiles are supported only on recent enough versions
-             of browsers, but mouse should work everywhere.
              .
              Please see the changelog file for recent improvements
              and the issue tracker for short-term plans. Long term goals
@@ -27,9 +24,6 @@ description: LambdaHack is a Haskell game engine library for ASCII roguelike
              .
              * Allure of the Stars, a near-future Sci-Fi game,
              <http://hackage.haskell.org/package/Allure>
-             .
-             * Space Privateers, an adventure game set in far future,
-             <http://hackage.haskell.org/package/SpacePrivateers>
              .
              Note: All modules in this library are kept visible,
              to let games override and reuse them.

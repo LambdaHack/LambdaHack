@@ -68,7 +68,7 @@ keyHelp CCUI{ coinput=coinput@InputContent{..}
       [ "Note how lower case item commands (stash item, equip item) place items"
       , "into a particular item store, while upper case item commands (manage Inventory,"
       , "manage Outfit) open management menu for a store. Once a store menu is opened,"
-      , "you can switch stores with '<' and '>', so the multiple commands only determine"
+      , "you can switch stores with `<` and `>`, so the multiple commands only determine"
       , "the starting item store. Each store is accessible from the dashboard as well."
       ]
     mouseBasicsBlurb =
