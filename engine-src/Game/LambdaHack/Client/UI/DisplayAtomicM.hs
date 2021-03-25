@@ -2191,13 +2191,14 @@ strike catch source target iid = assert (source /= target) $ do
             _ -> - rawDeltaHP
         burnDmg = - (sum $ map Dice.supDice
                      $ mapMaybe unBurn $ IK.ieffects $ itemKind itemFullWeapon)
-        hpDmg =
+        fillDmg =
           - (sum $ mapMaybe unRefillHP $ IK.ieffects $ itemKind itemFullWeapon)
         -- For variety, attack adverb is based on attacker's and weapon's
         -- damage potential as compared to victim's current HP.
         -- We are not taking into account victim's armor yet.
         sHurt = armorHurtCalculation (bproj sb) sMaxSk Ability.zeroSkills
-        sDamage = min 0 $ kineticDmg + xM (burnDmg + hpDmg)
+        nonPiercingDmg = burnDmg + fillDmg
+        sDamage = min 0 $ kineticDmg + xM nonPiercingDmg
         deadliness = 1000 * (- sDamage) `div` max 1 (bhp tb)
         strongly
           | deadliness >= 10000 = "artfully"
@@ -2222,7 +2223,8 @@ strike catch source target iid = assert (source /= target) $ do
           | hurtMult > 90 = "incompetently"
           | hurtMult > 80 = "too late"
           | hurtMult > 70 = "too slowly"
-          | hurtMult > 20 = if | deadliness >= 2000 -> "marginally"
+          | hurtMult > 20 || nonPiercingDmg < 0 =
+                            if | deadliness >= 2000 -> "marginally"
                                | deadliness >= 1000 -> "partially"
                                | deadliness >= 100 -> "partly"  -- common
                                | deadliness >= 50 -> "to an extent"
@@ -2271,7 +2273,7 @@ strike catch source target iid = assert (source /= target) $ do
         ps = (bpos tb, bpos sb)
         basicAnim
           | hurtMult > 70 = twirlSplash ps Color.BrRed Color.Red
-          | hurtMult > 1 = if burnDmg >= 0 && hpDmg >= 0  -- no extra anim
+          | hurtMult > 1 = if nonPiercingDmg >= 0  -- no extra anim
                            then blockHit ps Color.BrRed Color.Red
                            else blockMiss ps
           | otherwise = blockMiss ps
@@ -2324,7 +2326,7 @@ strike catch source target iid = assert (source /= target) $ do
          animate (blid tb) $ blockHit ps Color.BrBlue Color.Blue
        | kineticDmg >= -1000  -- -1/1000 HP
          -- We ignore nested effects, because they are, in general, avoidable.
-         && burnDmg >= 0 && hpDmg >= 0 -> do
+         && nonPiercingDmg >= 0 -> do
          let adverb | itemSuspect itemFullWeapon && bfid sb == side =
                         "tentatively"  -- we didn't identify the weapon before
                     | bproj sb = "lightly"
