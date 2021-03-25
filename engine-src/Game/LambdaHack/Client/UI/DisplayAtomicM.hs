@@ -2230,7 +2230,9 @@ strike catch source target iid = assert (source /= target) $ do
                                | deadliness >= 5 -> "for the major part"
                                | otherwise -> "for the most part"
           | hurtMult > 1 = if | actorWaits tb -> "doggedly"
-                              | hurtMult > 10 -> "nonchalantly"
+                              | deadliness >= 50 -> "easily"  -- common
+                              | deadliness >= 20 -> "effortlessly"
+                              | deadliness >= 5 -> "nonchalantly"
                               | otherwise -> "bemusedly"
           | otherwise = "almost completely"
               -- a fraction gets through, but if fast missile, can be deadly
