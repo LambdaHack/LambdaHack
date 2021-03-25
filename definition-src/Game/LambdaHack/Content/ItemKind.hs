@@ -10,8 +10,8 @@ module Game.LambdaHack.Content.ItemKind
   , boostItemKindList, forApplyEffect, forDamageEffect, isDamagingKind
   , strengthOnCombine, strengthOnSmash, getDropOrgans
   , getMandatoryPresentAsFromKind, isEffEscape, isEffEscapeOrAscend
-  , timeoutAspect, orEffect, onSmashEffect, onCombineEffect, damageUsefulness
-  , verbMsgNoLonger, verbMsgLess, toVelocity, toLinger
+  , timeoutAspect, orEffect, onSmashEffect, onCombineEffect, alwaysDudEffect
+  , damageUsefulness, verbMsgNoLonger, verbMsgLess, toVelocity, toLinger
   , timerNone, isTimerNone, foldTimer, toOrganBad, toOrganGood, toOrganNoTimer
 #ifdef EXPOSE_INTERNAL
     -- * Internal operations
@@ -416,6 +416,12 @@ onSmashOrCombineEffect :: Effect -> Bool
 onSmashOrCombineEffect OnSmash{} = True
 onSmashOrCombineEffect OnCombine{} = True
 onSmashOrCombineEffect _ = False
+
+alwaysDudEffect :: Effect -> Bool
+alwaysDudEffect OnSmash{} = True
+alwaysDudEffect OnCombine{} = True
+alwaysDudEffect NopEffect = True
+alwaysDudEffect _ = False
 
 strengthOnSmash :: ItemKind -> [Effect]
 strengthOnSmash =

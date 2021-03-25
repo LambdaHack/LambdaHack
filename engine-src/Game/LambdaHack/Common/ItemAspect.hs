@@ -168,7 +168,7 @@ meanAspect kind = foldl' addMeanAspect emptyAspectRecord (IK.iaspects kind)
 onlyMinorEffects :: AspectRecord -> IK.ItemKind -> Bool
 onlyMinorEffects ar kind =
   checkFlag Ability.MinorEffects ar  -- override
-  || not (any (not . IK.onSmashEffect) $ IK.ieffects kind)
+  || not (any (not . IK.alwaysDudEffect) $ IK.ieffects kind)
        -- exhibits no major effects
 
 itemTrajectory :: AspectRecord -> IK.ItemKind -> [Point]

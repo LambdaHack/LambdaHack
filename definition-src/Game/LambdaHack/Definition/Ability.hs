@@ -94,7 +94,7 @@ data Flag =
   | MinorEffects  -- ^ override: the effects on this item are considered
                   --   minor and so possibly not causing identification on use,
                   --   and so this item will identify on pick-up
-  | MinorAspects  -- ^ override: don't show questions marks by weapons in HUD
+  | MinorAspects  -- ^ override: don't show question marks by weapons in HUD
                   --   even when unidentified item with this flag equipped
   | -- The flags below specify all conditions under which the item activates,
     -- charges permitting, in addition to universal conditions, which are
