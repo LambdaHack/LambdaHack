@@ -115,7 +115,7 @@ data ItemKind = ItemKind
                                 -- ^ accompanying organs and equipment
   , idesc    :: Text            -- ^ description
   }
-  deriving (Show, Generic)  -- No Eq and Ord to make extending logically sound
+  deriving Show  -- No Eq and Ord to make extending logically sound
 
 -- | Aspects of items. Aspect @AddSkill@ is additive (starting at 0)
 -- for all items wielded by an actor and it affects the actor.
@@ -145,7 +145,7 @@ data Aspect =
   | Odds Dice.Dice [Aspect] [Aspect]
                        -- ^ if level-scaled dice roll > 50,
                        --   pick the former aspects, otherwise the latter
-  deriving (Show, Eq, Generic)
+  deriving (Show, Eq)
 
 -- | Effects of items. Can be invoked by the item wielder to affect
 -- another actor or the wielder himself. Many occurences in the same item
@@ -259,14 +259,14 @@ data Effect =
       -- ^ as @VerbNoLonger@ but that is emitted whenever the item is activated;
   | VerbMsgFail Text Text
       -- ^ as @VerbMsg@, but a failed effect (returns @UseId@)
-  deriving (Show, Eq, Generic)
+  deriving (Show, Eq)
 
 data Condition =
     HpLeq Int
   | HpGeq Int
   | CalmLeq Int
   | CalmGeq Int
-  deriving (Show, Eq, Generic)
+  deriving (Show, Eq)
 
 data DetectKind =
     DetectAll
@@ -276,7 +276,7 @@ data DetectKind =
   | DetectHidden
   | DetectEmbed
   | DetectStash
-  deriving (Show, Eq, Generic)
+  deriving (Show, Eq)
 
 -- | Specification of how to randomly roll a timer at item creation
 -- to obtain a fixed timer for the item's lifetime.
@@ -284,7 +284,7 @@ data TimerDice =
     TimerNone
   | TimerGameTurn Dice.Dice
   | TimerActorTurn Dice.Dice
-  deriving (Eq, Generic)
+  deriving Eq
 
 instance Show TimerDice where
   show TimerNone = "0"
@@ -301,14 +301,6 @@ data ThrowMod = ThrowMod
   , throwHP       :: Int  -- ^ start flight with this many HP
   }
   deriving (Show, Eq, Ord, Generic)
-
-instance Binary Effect
-
-instance Binary Condition
-
-instance Binary DetectKind
-
-instance Binary TimerDice
 
 instance Binary ThrowMod
 

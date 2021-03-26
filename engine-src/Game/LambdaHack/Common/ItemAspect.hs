@@ -59,7 +59,7 @@ data KindMean = KindMean
   { kmConst :: Bool  -- ^ whether the item doesn't need second identification
   , kmMean  :: AspectRecord  -- ^ mean value of item's possible aspect records
   }
-  deriving (Show, Eq, Ord, Generic)
+  deriving (Show, Eq, Ord)
 
 emptyAspectRecord :: AspectRecord
 emptyAspectRecord = AspectRecord

@@ -1,4 +1,4 @@
-{-# LANGUAGE DeriveGeneric, GeneralizedNewtypeDeriving #-}
+{-# LANGUAGE GeneralizedNewtypeDeriving #-}
 -- | Representation of dice scaled with current level depth.
 module Game.LambdaHack.Core.Dice
   ( -- * Frequency distribution for casting dice scaled with level depth
@@ -13,8 +13,6 @@ import Prelude ()
 import Game.LambdaHack.Core.Prelude
 
 import Data.Binary
-import Data.Hashable (Hashable)
-import GHC.Generics (Generic)
 
 -- | Multiple dice rolls, some scaled with current level depth, in which case
 -- the sum of all rolls is scaled in proportion to current depth
@@ -36,7 +34,7 @@ data Dice =
   | DiceNegate Dice
   | DiceMin Dice Dice
   | DiceMax Dice Dice
-  deriving (Eq, Generic)
+  deriving Eq
 
 instance Show Dice where
   show = stripOuterParens . showDiceWithParens
@@ -71,8 +69,6 @@ wrapInParens :: String -> String
 wrapInParens "" = ""
 wrapInParens t = "(" <> t <> ")"
 
-instance Binary Dice
-
 instance Num Dice where
   d1 + d2 = DicePlus d1 d2
   d1 * d2 = DiceTimes d1 d2
@@ -87,7 +83,7 @@ instance Num Dice where
 -- e.g., when the dungeon is branched, and it can even be different
 -- than the length of the longest branch, if levels at some depths are missing.
 newtype AbsDepth = AbsDepth Int
-  deriving (Show, Eq, Ord, Hashable, Binary)
+  deriving (Show, Eq, Ord, Binary)
 
 -- | Cast dice scaled with current level depth. When scaling, we round up,
 -- so that the value of @1 `dL` 1@ is @1@ even at the lowest level,
@@ -254,9 +250,7 @@ reduceDice d1 =
 -- | Dice for rolling a pair of integer parameters pertaining to,
 -- respectively, the X and Y cartesian 2D coordinates.
 data DiceXY = DiceXY Dice Dice
-  deriving (Show, Generic)
-
-instance Binary DiceXY
+  deriving Show
 
 -- | Maximal value of DiceXY.
 supDiceXY :: DiceXY -> (Int, Int)

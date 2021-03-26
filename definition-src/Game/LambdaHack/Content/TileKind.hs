@@ -1,4 +1,3 @@
-{-# LANGUAGE DeriveGeneric #-}
 -- | The type of tile kinds. Every terrain tile in the game is
 -- an instantiated tile kind.
 module Game.LambdaHack.Content.TileKind
@@ -19,10 +18,7 @@ import Prelude ()
 
 import Game.LambdaHack.Core.Prelude
 
-import Control.DeepSeq
-import Data.Binary
-import Data.Hashable
-import GHC.Generics (Generic)
+import Data.Word (Word8)
 
 import Game.LambdaHack.Content.ItemKind (ItemKind)
 import Game.LambdaHack.Definition.Color
@@ -98,24 +94,12 @@ data Feature =
                          --   is rolled per place and then, once for each
                          --   position, one of the two is semi-randomly chosen
                          --   (according to their individual frequencies only)
-  deriving (Show, Eq, Generic)
-
-instance Binary Feature
-
-instance Hashable Feature
-
-instance NFData Feature
+  deriving (Show, Eq)
 
 -- | Marks whether projectiles are permitted to trigger the tile transformation
 -- action.
 data ProjectileTriggers = ProjYes | ProjNo
-  deriving (Show, Eq, Generic)
-
-instance Binary ProjectileTriggers
-
-instance Hashable ProjectileTriggers
-
-instance NFData ProjectileTriggers
+  deriving (Show, Eq)
 
 -- | Validate a single tile kind.
 validateSingle :: TileKind -> [Text]

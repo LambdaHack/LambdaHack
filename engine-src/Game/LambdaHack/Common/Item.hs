@@ -60,8 +60,6 @@ data Item = Item
   }
   deriving (Show, Eq, Generic)
 
-instance Hashable Item
-
 instance Binary Item
 
 -- | Either the explicit obvious kind of the item or the kind it's hidden under,

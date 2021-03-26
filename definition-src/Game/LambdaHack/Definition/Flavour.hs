@@ -21,7 +21,6 @@ import Game.LambdaHack.Core.Prelude
 
 import Data.Binary
 import Data.Bits (unsafeShiftL, unsafeShiftR, (.&.))
-import Data.Hashable (Hashable (hashWithSalt), hashUsing)
 import GHC.Generics (Generic)
 
 import Game.LambdaHack.Definition.Color
@@ -41,9 +40,6 @@ instance Enum Flavour where
     unsafeShiftL (fromEnum fancyName) 8 + fromEnum baseColor
   toEnum n = Flavour (toEnum $ unsafeShiftR n 8)
                      (toEnum $ n .&. (2 ^ (8 :: Int) - 1))
-
-instance Hashable Flavour where
-  hashWithSalt = hashUsing fromEnum
 
 instance Binary Flavour where
   put = put . (toIntegralCrash :: Int -> Word16) . fromEnum

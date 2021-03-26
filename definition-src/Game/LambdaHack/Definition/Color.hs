@@ -27,7 +27,6 @@ import           Control.DeepSeq
 import           Data.Binary
 import           Data.Bits (unsafeShiftL, unsafeShiftR, (.&.))
 import qualified Data.Char as Char
-import           Data.Hashable (Hashable)
 import           GHC.Exts (Int (I#))
 import           GHC.Generics (Generic)
 import           GHC.Prim (int2Word#)
@@ -57,8 +56,6 @@ data Color =
 instance Binary Color where
   put = putWord8 . toEnum . fromEnum
   get = fmap (toEnum . fromEnum) getWord8
-
-instance Hashable Color
 
 instance NFData Color
 
@@ -162,7 +159,7 @@ data Highlight =
   | HighlightYellowAim
   | HighlightRedAim
   | HighlightNoneCursor
-  deriving (Show, Eq, Ord, Enum, Bounded, Generic)
+  deriving (Show, Eq, Ord, Enum, Bounded)
 
 highlightToColor :: Highlight -> Color
 highlightToColor hi = case hi of

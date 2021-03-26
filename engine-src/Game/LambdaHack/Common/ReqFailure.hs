@@ -1,4 +1,3 @@
-{-# LANGUAGE DeriveGeneric #-}
 -- | Possible causes of failure of request.
 module Game.LambdaHack.Common.ReqFailure
   ( ReqFailure(..)
@@ -12,9 +11,6 @@ module Game.LambdaHack.Common.ReqFailure
 import Prelude ()
 
 import Game.LambdaHack.Core.Prelude
-
-import Data.Binary
-import GHC.Generics (Generic)
 
 import           Game.LambdaHack.Common.Item
 import qualified Game.LambdaHack.Common.ItemAspect as IA
@@ -73,9 +69,7 @@ data ReqFailure =
   | ProjectOutOfReach
   | ProjectFinderKeeper
   | NoChangeDunLeader
-  deriving (Show, Eq, Generic)
-
-instance Binary ReqFailure
+  deriving (Show, Eq)
 
 impossibleReqFailure :: ReqFailure -> Bool
 impossibleReqFailure reqFailure = case reqFailure of
