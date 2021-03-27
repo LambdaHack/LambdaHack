@@ -116,8 +116,8 @@ oneLineBasicFrame arena font = do
 -- Only one line of the report is shown, as in animations,
 -- because it may not be our turn, so we can't clear the message
 -- to see what is underneath.
-pushFrame :: MonadClientUI m => m ()
-pushFrame = do
+pushFrame :: MonadClientUI m => Bool -> m ()
+pushFrame delay = do
   -- The delay before reaction to keypress was too long in case of many
   -- projectiles flying and ending flight, so frames need to be skipped.
   keyPressed <- anyKeyPressed
@@ -125,7 +125,10 @@ pushFrame = do
     lidV <- viewedLevelUI
     FontSetup{propFont} <- getFontSetup
     frame <- oneLineBasicFrame lidV propFont
-    displayFrames lidV [Just frame]
+    -- Pad with delay before and after to let player see, e.g., door being
+    -- opened a few ticks after it came into vision, the same turn.
+    displayFrames lidV $
+      if delay then [Nothing, Just frame, Nothing] else [Just frame]
 
 promptGetKey :: (MonadClient m, MonadClientUI m)
              => ColorMode -> FontOverlayMap -> Bool -> [K.KM]

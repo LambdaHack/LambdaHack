@@ -336,7 +336,7 @@ displayRespUpdAtomicUI cmd = case cmd of
             aidVerbMU MsgRiskOfDeath aid
                       "have grown agitated and impressed enough to be in danger of defecting"
   UpdTrajectory _ _ mt ->  -- if projectile dies just after, force one frame
-    when (isNothing mt) pushFrame
+    when (isNothing mt) $ pushFrame False
   -- Change faction attributes.
   UpdQuitFaction fid _ toSt manalytics -> quitFactionUI fid toSt manalytics
   UpdSpotStashFaction verbose fid lid pos -> do
@@ -476,7 +476,9 @@ displayRespUpdAtomicUI cmd = case cmd of
     let clipN = time `timeFit` timeClip
         clipMod = clipN `mod` clipsInTurn
         turnPing = clipMod == 0  -- e.g., to see resting counter
-    when (sdisplayNeeded || turnPing && not sturnDisplayed) pushFrame
+    when (sdisplayNeeded || turnPing && not sturnDisplayed) $ pushFrame True
+      -- adds delay, because it's not an extra animation-like frame,
+      -- but showing some real information accumulated up to this point
     when turnPing $
       modifySession $ \sess -> sess {sturnDisplayed = False}
   UpdUnAgeGame{} -> return ()
@@ -940,7 +942,8 @@ createActorUI born aid body = do
     else return False
   if | EM.null actorUI && bfid body == side ->
        return ()  -- don't speak about yourself in 3rd person
-     | born && bproj body -> pushFrame  -- make sure first position displayed
+     | born && bproj body ->
+         pushFrame False  -- make sure first position displayed
      | ES.member aid lastLost || bproj body -> markDisplayNeeded (blid body)
      | otherwise -> do
        aidVerbMU MsgSpottedActor aid verb
@@ -1262,7 +1265,7 @@ quitFactionUI fid toSt manalytics = do
       when (not noConfirmsGame || camping) $ do
         msgAdd MsgPromptGeneric pp
         when camping $ msgAdd MsgPromptGeneric "Saving..."
-        pushFrame  -- don't leave frozen prompts on the browser screen
+        pushFrame False  -- don't leave frozen prompts on the browser screen
     _ -> when (isJust startingPart && (stOutcome <$> toSt) == Just Killed) $
       -- Needed not to overlook the competitor dying in raid scenario.
       displayMore ColorFull ""
