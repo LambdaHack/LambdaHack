@@ -418,19 +418,21 @@ reqMeleeChecked :: forall m. MonadServerAtomic m
 reqMeleeChecked voluntary source target iid cstore = do
   sb <- getsState $ getActorBody source
   tb <- getsState $ getActorBody target
+  discoAspect <- getsState sdiscoAspect
   let req = ReqMelee target iid cstore
+      arWeapon = discoAspect EM.! iid
+      meleeableEnough = bproj sb || IA.checkFlag Ability.Meleeable arWeapon
   if source == target then execFailure source req MeleeSelf
   else if not (checkAdjacent sb tb) then execFailure source req MeleeDistant
+  else if not meleeableEnough then execFailure source req MeleeNotWeapon
   else do
     -- If @voluntary@ is set, blame is exact, otherwise, an approximation.
     killer <- if | voluntary -> assert (not (bproj sb)) $ return source
                  | bproj sb -> getsServer $ EM.findWithDefault source source
                                . strajPushedBy
                  | otherwise -> return source
-    discoAspect <- getsState sdiscoAspect
     actorSk <- currentSkillsServer source
     let arTrunk = discoAspect EM.! btrunk tb
-        arWeapon = discoAspect EM.! iid
         sfid = bfid sb
         tfid = bfid tb
         -- Let the missile drop down, but don't remove its trajectory

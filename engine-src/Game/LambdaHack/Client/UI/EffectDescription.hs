@@ -428,7 +428,6 @@ kindAspectToSuffix aspect =
     SetFlag Lobable -> wrapInChevrons "can be lobbed"
     SetFlag Durable -> wrapInChevrons "durable"
     SetFlag Equipable -> ""
-    SetFlag Meleeable -> ""
     SetFlag Benign -> ""
     SetFlag Precious -> ""
     SetFlag Blast -> ""
@@ -437,6 +436,7 @@ kindAspectToSuffix aspect =
     SetFlag MetaGame -> ""
     SetFlag MinorEffects -> ""  -- cryptic override
     SetFlag MinorAspects -> ""  -- cryptic override
+    SetFlag Meleeable -> ""
     SetFlag Periodic -> ""  -- printed specially
     SetFlag UnderRanged -> wrapInChevrons "applied under ranged attack"
     SetFlag UnderMelee -> wrapInChevrons "applied under melee attack"
@@ -455,7 +455,6 @@ aspectToSentence feat =
     SetFlag Lobable -> Nothing
     SetFlag Durable -> Nothing
     SetFlag Equipable -> Nothing
-    SetFlag Meleeable -> Just "It is considered for melee strikes by default."
     SetFlag Benign -> Just "It affects the opponent in a benign way."
     SetFlag Precious -> Just "It seems precious."
     SetFlag Blast -> Nothing
@@ -464,6 +463,7 @@ aspectToSentence feat =
     SetFlag MetaGame -> Just "It's characteristic to a person and easy to recognize once learned, even under very different circumstances."
     SetFlag MinorEffects -> Nothing
     SetFlag MinorAspects -> Nothing
+    SetFlag Meleeable -> Just "It is considered for melee strikes."
     SetFlag Periodic -> Nothing
     SetFlag UnderRanged -> Nothing
     SetFlag UnderMelee -> Nothing

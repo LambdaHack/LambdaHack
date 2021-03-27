@@ -78,7 +78,6 @@ data Flag =
   | Durable       -- ^ don't break even when hitting or applying
   | Equipable     -- ^ AI and UI flag: consider equipping (may or may not
                   --   have 'EqpSlot', e.g., if the benefit is periodic)
-  | Meleeable     -- ^ AI and UI flag: consider meleeing with
   | Benign        -- ^ AI and UI flag: the item is not meant to harm
   | Precious      -- ^ AI and UI flag: don't risk identifying by use;
                   --   also, can't throw or apply if not calm enough;
@@ -98,9 +97,12 @@ data Flag =
                   --   even when unidentified item with this flag equipped
   | -- The flags below specify all conditions under which the item activates,
     -- charges permitting, in addition to universal conditions, which are
-    -- hitting with the item and explicitly applying the item by an actor
-    -- (item destruction and combining only pertain to select effects).
-    Periodic      -- ^ at most one of any copies without cooldown (timeout)
+    -- hitting an actor as projectiles and being explicitly triggered
+    -- by an actor (item destruction and combining only pertain
+    -- to explicitly listed effects).
+    Meleeable     -- ^ meleeing with the item is permitted and so the item
+                  --   activates when meleed with
+  | Periodic      -- ^ at most one of any copies without cooldown (timeout)
                   --   activates each turn; the cooldown required after
                   --   activation is specified in @Timeout@ (or is zero);
                   --   the initial cooldown can also be specified
