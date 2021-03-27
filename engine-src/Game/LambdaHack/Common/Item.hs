@@ -311,8 +311,10 @@ strongestMelee ignoreCharges mdiscoBenefit localTime kitAss =
   in sortOn (\(value, timeout, _, _, (itemFull, _)) ->
                 -- Weapon with higher timeout activated first to increase
                 -- the chance of using it again during this fight.
+                -- No timeout is ever better, because no wait incurred.
                 -- Optimal packing problem: start with the biggest.
-                (value, - timeout, itemKindId itemFull))
+                let timN = if timeout == 0 then -99999 else - timeout
+                in (value, timN, itemKindId itemFull))
             (mapMaybe f kitAss)
 
 unknownAspect :: (IK.Aspect -> [Dice.Dice]) -> ItemFull -> Bool
