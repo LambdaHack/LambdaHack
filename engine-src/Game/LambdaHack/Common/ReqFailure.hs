@@ -27,6 +27,7 @@ data ReqFailure =
   | MeleeUnskilled
   | MeleeSelf
   | MeleeDistant
+  | MeleeNotWeapon
   | DisplaceUnskilled
   | DisplaceDistant
   | DisplaceAccess
@@ -79,6 +80,7 @@ impossibleReqFailure reqFailure = case reqFailure of
   MeleeUnskilled -> False  -- unidentified skill items
   MeleeSelf -> True
   MeleeDistant -> True
+  MeleeNotWeapon -> False  -- unidentified items
   DisplaceUnskilled -> False  -- unidentified skill items
   DisplaceDistant -> True
   DisplaceAccess -> True
@@ -130,6 +132,7 @@ showReqFailure reqFailure = case reqFailure of
   MeleeUnskilled -> "too low melee combat stat"
   MeleeSelf -> "trying to melee oneself"
   MeleeDistant -> "trying to melee a distant foe"
+  MeleeNotWeapon -> "trying to melee with not a weapon"
   DisplaceUnskilled -> "too low actor displacing stat"
   DisplaceDistant -> "trying to displace a distant actor"
   DisplaceAccess -> "trying to switch places without access"
