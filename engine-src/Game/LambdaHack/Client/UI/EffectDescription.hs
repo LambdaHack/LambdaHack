@@ -8,7 +8,8 @@ module Game.LambdaHack.Client.UI.EffectDescription
   , describeToolsAlternative, describeCrafting, wrapInParens
 #ifdef EXPOSE_INTERNAL
     -- * Internal operations
-  , conditionToObject, slotToSentence, tmodToSuff, affixBonus, wrapInChevrons
+  , conditionToObject, activationFlagToObject, slotToSentence, tmodToSuff
+  , affixBonus, wrapInChevrons
 #endif
   ) where
 
@@ -208,7 +209,21 @@ conditionToObject = \case
   HpGeq n -> "HP >=" <+> tshow n
   CalmLeq n -> "Calm <=" <+> tshow n
   CalmGeq n -> "Calm >=" <+> tshow n
-  TriggeredBy activationFlag -> tshow activationFlag
+  TriggeredBy activationFlag ->
+    "activated" <+> activationFlagToObject activationFlag
+
+activationFlagToObject :: ActivationFlag -> Text
+activationFlagToObject = \case
+  ActivationMeleeable -> "by meleeing"
+  ActivationPeriodic -> "periodically"
+  ActivationUnderRanged -> "under ranged attack"
+  ActivationUnderMelee -> "under melee attack"
+  ActivationProjectile -> "when flung"
+  ActivationTrigger -> "by triggering"
+  ActivationOnSmash -> "on smash"
+  ActivationOnCombine -> "when combined"
+  ActivationEmbed -> "embedded in terrain"
+  ActivationConsume -> "when consumed"
 
 detectToObject :: DetectKind -> Text
 detectToObject d = case d of
