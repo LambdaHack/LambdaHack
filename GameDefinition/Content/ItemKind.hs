@@ -1034,10 +1034,10 @@ necklace1 = necklaceTemplate
   , irarity  = [(10, 3)]
   , iaspects = [ SetFlag Unique, ELabel "of Aromata"
                , Timeout $ (4 - 1 `dL` 3) * 10
-                   -- priceless, so worth the long wait
+                   -- priceless, so worth the long wait and Calm drain
                , SetFlag Durable ]
                ++ iaspects_necklaceTemplate
-  , ieffects = [RefillHP 1]
+  , ieffects = [RefillCalm (-5), RefillHP 1]
   , idesc    = "A cord of freshly dried herbs and healing berries."
   }
 necklace2 = necklaceTemplate
