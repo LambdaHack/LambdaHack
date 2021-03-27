@@ -376,7 +376,6 @@ applyPeriodicLevel = do
               let effApplyFlags = EffApplyFlags
                     { effToUse            = EffBare  -- no periodic crafting
                     , effVoluntary        = True
-                    , effIgnoreCharging   = False
                     , effUseAllCopies     = k <= 1
                     , effKineticPerformed = False
                     , effActivation       = Ability.ActivationPeriodic

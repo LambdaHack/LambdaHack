@@ -84,7 +84,6 @@ data EffToUse = EffBare | EffBareAndOnCombine | EffOnCombine
 data EffApplyFlags = EffApplyFlags
   { effToUse            :: EffToUse
   , effVoluntary        :: Bool
-  , effIgnoreCharging   :: Bool
   , effUseAllCopies     :: Bool
   , effKineticPerformed :: Bool
   , effActivation       :: Ability.ActivationFlag
@@ -101,7 +100,6 @@ applyItem aid iid cstore = do
   let effApplyFlags = EffApplyFlags
         { effToUse            = EffBareAndOnCombine
         , effVoluntary        = True
-        , effIgnoreCharging   = False
         , effUseAllCopies     = False
         , effKineticPerformed = False
         , effActivation       = ActivationTrigger
@@ -265,12 +263,11 @@ effectAndDestroy effApplyFlags0@EffApplyFlags{..} source target iid container
   let it1 = filter (charging localTime) itemTimers
       len = length it1
       recharged = len < itemK
-                  || effActivation == ActivationOnSmash
-                  || effIgnoreCharging
+                  || effActivation `elem` [ActivationOnSmash, ActivationConsume]
   -- If the item has no charges and the special cases don't apply
   -- we speed up by shortcutting early, because we don't need to activate
   -- effects and we know kinetic hit was not performed (no charges to do so
-  -- and in case of @OnSmash@ and @effIgnoreCharging@,
+  -- and in case of @OnSmash@ and @ActivationConsume@,
   -- only effects are triggered).
   if not recharged then return UseDud else do
     let timeoutTurns = timeDeltaScale (Delta timeTurn) timeout
@@ -372,7 +369,6 @@ itemEffectEmbedded effToUse effVoluntary aid lid tpos iid = do
     let effApplyFlags = EffApplyFlags
           { effToUse
           , effVoluntary
-          , effIgnoreCharging   = False
           , effUseAllCopies     = False
           , effKineticPerformed = False
           , effActivation       = if effToUse == EffOnCombine
@@ -1499,7 +1495,6 @@ dropCStoreItem verbose destroy store aid b kMax iid (k, _) = do
           , effVoluntary        = True
               -- we don't know if it's effVoluntary, so we conservatively assume
               -- it is and we blame @aid@
-          , effIgnoreCharging   = False
           , effUseAllCopies     = kMax >= k
           , effKineticPerformed = False
           , effActivation       = ActivationOnSmash
@@ -1619,7 +1614,6 @@ consumeItems target bagsToLose iidsToApply = do
           let effApplyFlags = EffApplyFlags
                 { effToUse            = EffBare  -- crafting not intended
                 , effVoluntary        = True
-                , effIgnoreCharging   = True
                 , effUseAllCopies     = False
                 , effKineticPerformed = False
                 , effActivation       = ActivationConsume
