@@ -385,7 +385,9 @@ itemEffectEmbedded effToUse effVoluntary aid lid tpos iid = do
           , effIgnoreCharging   = False
           , effUseAllCopies     = False
           , effKineticPerformed = False
-          , effActivation       = ActivationEmbed
+          , effActivation       = if effToUse == EffOnCombine
+                                  then ActivationOnCombine
+                                  else ActivationEmbed
           , effMayDestroy       = True
           }
     kineticEffectAndDestroy effApplyFlags aid aid aid iid c
