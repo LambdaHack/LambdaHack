@@ -379,7 +379,7 @@ applyPeriodicLevel = do
                     , effIgnoreCharging   = False
                     , effUseAllCopies     = k <= 1
                     , effKineticPerformed = False
-                    , effActivation       = EffPeriodic
+                    , effActivation       = Ability.ActivationPeriodic
                     , effMayDestroy       = True
                     }
               void $ effectAndDestroyAndAddKill

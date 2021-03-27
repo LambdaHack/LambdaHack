@@ -504,7 +504,9 @@ reqMeleeChecked voluntary source target iid cstore = do
               , effIgnoreCharging   = False
               , effUseAllCopies     = False
               , effKineticPerformed = False
-              , effActivation       = EffUnderAttack
+              , effActivation       = if bproj sb
+                                      then Ability.ActivationUnderRanged
+                                      else Ability.ActivationUnderMelee
               , effMayDestroy       = mayDestroyTarget
               }
         unless (bproj tb) $
@@ -548,7 +550,7 @@ reqMeleeChecked voluntary source target iid cstore = do
                      , effIgnoreCharging   = False
                      , effUseAllCopies     = False
                      , effKineticPerformed = False
-                     , effActivation       = EffExplicit
+                     , effActivation       = Ability.ActivationMeleeable
                      , effMayDestroy       = mayDestroySource
                      }
                void $ kineticEffectAndDestroy effApplyFlagsSource killer

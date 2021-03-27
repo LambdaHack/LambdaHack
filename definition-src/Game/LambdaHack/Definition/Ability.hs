@@ -1,7 +1,8 @@
 {-# LANGUAGE DeriveGeneric, GeneralizedNewtypeDeriving #-}
 -- | Abilities of items, actors and factions.
 module Game.LambdaHack.Definition.Ability
-  ( Skill(..), Skills, Flag(..), Flags(..), Doctrine(..), EqpSlot(..)
+  ( Skill(..), Skills, Flag(..), ActivationFlag(..), Flags(..)
+  , Doctrine(..), EqpSlot(..)
   , getSk, addSk, checkFl, skillsToList
   , zeroSkills, addSkills, sumScaledSkills
   , nameDoctrine, describeDoctrine, doctrineSkills
@@ -117,6 +118,23 @@ data Flag =
                   --   as equipment or organ is under melee attack;
                   --   kinetic damage is not applied
   deriving (Show, Eq, Enum, Bounded, Generic)
+
+-- These correspond to the last cases of @Flag@ and any additional circumstances
+-- of item activation, including the universal ones, under which every effect
+-- activates and special ones that effects normally don't activate under.
+data ActivationFlag =
+    ActivationMeleeable
+  | ActivationPeriodic
+  | ActivationUnderRanged
+  | ActivationUnderMelee
+  | ActivationProjectile
+  | ActivationTrigger
+  | ActivationOnSmash
+  | ActivationOnCombine
+  | ActivationEmbed
+  | ActivationDrop
+  | ActivationConsume
+  deriving (Show, Eq)
 
 newtype Flags = Flags {flags :: ES.EnumSet Flag}
   deriving (Show, Eq, Ord, Hashable, Binary)
