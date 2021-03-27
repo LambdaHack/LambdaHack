@@ -208,6 +208,7 @@ conditionToObject = \case
   HpGeq n -> "HP >=" <+> tshow n
   CalmLeq n -> "Calm <=" <+> tshow n
   CalmGeq n -> "Calm >=" <+> tshow n
+  TriggeredBy activationFlag -> tshow activationFlag
 
 detectToObject :: DetectKind -> Text
 detectToObject d = case d of

@@ -482,22 +482,26 @@ effectSem effApplyFlags0@EffApplyFlags{..}
     IK.AndEffect eff1 eff2 -> effectAndEffect recursiveCall source eff1 eff2
     IK.OrEffect eff1 eff2 -> effectOrEffect recursiveCall eff1 eff2
     IK.SeqEffect effs -> effectSeqEffect recursiveCall effs
-    IK.When cond eff -> effectWhen recursiveCall source cond eff
-    IK.Unless cond eff -> effectUnless recursiveCall source cond eff
+    IK.When cond eff ->
+      effectWhen recursiveCall source cond eff effActivation
+    IK.Unless cond eff ->
+      effectUnless recursiveCall source cond eff effActivation
     IK.IfThenElse cond eff1 eff2 ->
-      effectIfThenElse recursiveCall source cond eff1 eff2
+      effectIfThenElse recursiveCall source cond eff1 eff2 effActivation
     IK.VerbNoLonger{} -> effectVerbNoLonger effUseAllCopies execSfxSource source
     IK.VerbMsg{} -> effectVerbMsg execSfxSource source
     IK.VerbMsgFail{} -> effectVerbMsgFail execSfxSource source
 
-conditionSem :: MonadServer m => ActorId -> IK.Condition -> m Bool
-conditionSem source cond = do
+conditionSem :: MonadServer m
+             => ActorId -> IK.Condition -> ActivationFlag -> m Bool
+conditionSem source cond effActivation = do
   sb <- getsState $ getActorBody source
   return $! case cond of
     IK.HpLeq n -> bhp sb <= xM n
     IK.HpGeq n -> bhp sb >= xM n
     IK.CalmLeq n -> bcalm sb <= xM n
     IK.CalmGeq n -> bcalm sb >= xM n
+    IK.TriggeredBy activationFlag -> activationFlag == effActivation
 
 -- * Individual semantic functions for effects
 
@@ -2241,30 +2245,30 @@ effectSeqEffect recursiveCall effs = do
 
 effectWhen :: forall m. MonadServerAtomic m
            => (IK.Effect -> m UseResult) -> ActorId
-           -> IK.Condition -> IK.Effect
+           -> IK.Condition -> IK.Effect -> ActivationFlag
            -> m UseResult
-effectWhen recursiveCall source cond eff = do
-  c <- conditionSem source cond
+effectWhen recursiveCall source cond eff effActivation = do
+  c <- conditionSem source cond effActivation
   if c then recursiveCall eff else return UseDud
 
 -- ** Unless
 
 effectUnless :: forall m. MonadServerAtomic m
              => (IK.Effect -> m UseResult) -> ActorId
-             -> IK.Condition -> IK.Effect
+             -> IK.Condition -> IK.Effect -> ActivationFlag
              -> m UseResult
-effectUnless recursiveCall source cond eff = do
-  c <- conditionSem source cond
+effectUnless recursiveCall source cond eff effActivation = do
+  c <- conditionSem source cond effActivation
   if c then recursiveCall eff else return UseDud
 
 -- ** IfThenElse
 
 effectIfThenElse :: forall m. MonadServerAtomic m
                  => (IK.Effect -> m UseResult) -> ActorId
-                 -> IK.Condition -> IK.Effect -> IK.Effect
+                 -> IK.Condition -> IK.Effect -> IK.Effect -> ActivationFlag
                  -> m UseResult
-effectIfThenElse recursiveCall source cond eff1 eff2 = do
-  c <- conditionSem source cond
+effectIfThenElse recursiveCall source cond eff1 eff2 effActivation = do
+  c <- conditionSem source cond effActivation
   if c then recursiveCall eff1 else recursiveCall eff2
 
 -- ** VerbNoLonger

@@ -268,6 +268,7 @@ data Condition =
   | HpGeq Int
   | CalmLeq Int
   | CalmGeq Int
+  | TriggeredBy Ability.ActivationFlag
   deriving (Show, Eq)
 
 data DetectKind =
