@@ -211,6 +211,10 @@ effectToBenefit cops fid factionD eff =
     IK.When _cond eff1 ->
       -- Assuming the condition met most of the time. Really, too hard for AI.
       effectToBenefit cops fid factionD eff1
+    IK.Unless _cond eff1 ->
+      -- Assuming the condition *not* met most of the time.
+      -- Really, too hard for AI.
+      effectToBenefit cops fid factionD eff1
     IK.IfThenElse _cond eff1 _eff2 ->
       -- Assuming the first is much more common. Really, too hard for AI.
       effectToBenefit cops fid factionD eff1

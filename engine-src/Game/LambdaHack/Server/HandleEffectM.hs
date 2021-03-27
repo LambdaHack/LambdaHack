@@ -20,7 +20,8 @@ module Game.LambdaHack.Server.HandleEffectM
   , effectIdentify, identifyIid, effectDetect, effectDetectX, effectSendFlying
   , sendFlyingVector, effectApplyPerfume, effectAtMostOneOf, effectOneOf
   , effectAndEffect, effectAndEffectSem, effectOrEffect, effectSeqEffect
-  , effectWhen, effectIfThenElse, effectVerbNoLonger, effectVerbMsg, effectVerbMsgFail
+  , effectWhen, effectUnless, effectIfThenElse
+  , effectVerbNoLonger, effectVerbMsg, effectVerbMsgFail
 #endif
   ) where
 
@@ -482,6 +483,7 @@ effectSem effApplyFlags0@EffApplyFlags{..}
     IK.OrEffect eff1 eff2 -> effectOrEffect recursiveCall eff1 eff2
     IK.SeqEffect effs -> effectSeqEffect recursiveCall effs
     IK.When cond eff -> effectWhen recursiveCall source cond eff
+    IK.Unless cond eff -> effectUnless recursiveCall source cond eff
     IK.IfThenElse cond eff1 eff2 ->
       effectIfThenElse recursiveCall source cond eff1 eff2
     IK.VerbNoLonger{} -> effectVerbNoLonger effUseAllCopies execSfxSource source
@@ -1954,6 +1956,7 @@ effectDetect execSfx d radius target container = do
       effectHasLoot (IK.SeqEffect effs) =
         or $ map effectHasLoot effs
       effectHasLoot (IK.When _ eff) = effectHasLoot eff
+      effectHasLoot (IK.Unless _ eff) = effectHasLoot eff
       effectHasLoot (IK.IfThenElse _ eff1 eff2) =
         effectHasLoot eff1 || effectHasLoot eff2
       effectHasLoot _ = False
@@ -2241,6 +2244,16 @@ effectWhen :: forall m. MonadServerAtomic m
            -> IK.Condition -> IK.Effect
            -> m UseResult
 effectWhen recursiveCall source cond eff = do
+  c <- conditionSem source cond
+  if c then recursiveCall eff else return UseDud
+
+-- ** Unless
+
+effectUnless :: forall m. MonadServerAtomic m
+             => (IK.Effect -> m UseResult) -> ActorId
+             -> IK.Condition -> IK.Effect
+             -> m UseResult
+effectUnless recursiveCall source cond eff = do
   c <- conditionSem source cond
   if c then recursiveCall eff else return UseDud
 

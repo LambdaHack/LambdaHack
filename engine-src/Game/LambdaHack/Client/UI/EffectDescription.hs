@@ -191,6 +191,9 @@ effectToSuffix detailLevel effect =
     When cond eff ->
       let object = conditionToObject cond
       in "when" <+> object <+> "then" <+> effectToSuffix detailLevel eff
+    Unless cond eff ->
+      let object = conditionToObject cond
+      in "unless" <+> object <+> "then" <+> effectToSuffix detailLevel eff
     IfThenElse cond eff1 eff2 ->
       let object = conditionToObject cond
       in "if" <+> object <+> "then" <+> effectToSuffix detailLevel eff1

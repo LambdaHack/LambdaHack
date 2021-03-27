@@ -243,11 +243,13 @@ data Effect =
   | AndEffect Effect Effect  -- ^ only fire second effect if first activated
   | OrEffect Effect Effect   -- ^ only fire second effect if first not activated
   | SeqEffect [Effect]       -- ^ fire all effects in order; always suceed
-  | When Condition Effect    -- ^ if condition not met. fail without a message;
-                             --   please avoid, since AI can't value it properly
+  | When Condition Effect    -- ^ if condition not met, fail without a message;
+                             --   better avoided, since AI can't value it well
+  | Unless Condition Effect  -- ^ if condition met, fail without a message;
+                             --   better avoided, since AI can't value it well
   | IfThenElse Condition Effect Effect
                              -- ^ conditional effect;
-                             --   please avoid, since AI can't value it properly
+                             --   better avoided, since AI can't value it well
   | VerbNoLonger Text Text
       -- ^ a sentence with the actor causing the effect as subject, the given
       --   texts as the verb and the ending of the sentence (that may be
@@ -337,6 +339,7 @@ forApplyEffect eff = case eff of
   OrEffect eff1 eff2 -> forApplyEffect eff1 || forApplyEffect eff2
   SeqEffect effs -> or $ map forApplyEffect effs
   When _ eff1 -> forApplyEffect eff1
+  Unless _ eff1 -> forApplyEffect eff1
   IfThenElse _ eff1 eff2 -> forApplyEffect eff1 || forApplyEffect eff2
   VerbNoLonger{} -> False
   VerbMsg{} -> False
@@ -367,6 +370,7 @@ isEffEscape (AndEffect eff1 eff2) = isEffEscape eff1 || isEffEscape eff2
 isEffEscape (OrEffect eff1 eff2) = isEffEscape eff1 || isEffEscape eff2
 isEffEscape (SeqEffect effs) = or $ map isEffEscape effs
 isEffEscape (When _ eff) = isEffEscape eff
+isEffEscape (Unless _ eff) = isEffEscape eff
 isEffEscape (IfThenElse _ eff1 eff2) = isEffEscape eff1 || isEffEscape eff2
 isEffEscape _ = False
 
@@ -384,6 +388,7 @@ isEffEscapeOrAscend (OrEffect eff1 eff2) =
 isEffEscapeOrAscend (SeqEffect effs) =
   or $ map isEffEscapeOrAscend effs
 isEffEscapeOrAscend (When _ eff) = isEffEscapeOrAscend eff
+isEffEscapeOrAscend (Unless _ eff) = isEffEscapeOrAscend eff
 isEffEscapeOrAscend (IfThenElse _ eff1 eff2) =
   isEffEscapeOrAscend eff1 || isEffEscapeOrAscend eff2
 isEffEscapeOrAscend _ = False
@@ -439,6 +444,7 @@ getDropOrgans =
       f (OrEffect eff1 eff2) = f eff1 ++ f eff2  -- not certain, but accepted
       f (SeqEffect effs) = concatMap f effs
       f (When _ eff) = f eff
+      f (Unless _ eff) = f eff
       f (IfThenElse _ eff1 eff2) = f eff1 ++ f eff2
       f _ = []
   in concatMap f . ieffects
@@ -628,6 +634,7 @@ validateNotNested effs t f =
       g (OrEffect eff1 eff2) = h eff1 || h eff2
       g (SeqEffect effs2) = or $ map h effs2
       g (When _ effect) = h effect
+      g (Unless _ effect) = h effect
       g (IfThenElse _ eff1 eff2) = h eff1 || h eff2
       g _ = False
       h effect = f effect || g effect
@@ -646,6 +653,7 @@ checkSubEffectProp f eff =
       g (OrEffect eff1 eff2) = h eff1 || h eff2
       g (SeqEffect effs) = or $ map h effs
       g (When _ effect) = h effect
+      g (Unless _ effect) = h effect
       g (IfThenElse _ eff1 eff2) = h eff1 || h eff2
       g _ = False
       h effect = f effect || g effect

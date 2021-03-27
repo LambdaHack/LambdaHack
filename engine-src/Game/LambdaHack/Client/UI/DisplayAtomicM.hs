@@ -1822,6 +1822,7 @@ displayRespSfxAtomicUI sfx = case sfx of
       IK.OrEffect{} -> error $ "" `showFailure` sfx
       IK.SeqEffect{} -> error $ "" `showFailure` sfx
       IK.When{} -> error $ "" `showFailure` sfx
+      IK.Unless{} -> error $ "" `showFailure` sfx
       IK.IfThenElse{} -> error $ "" `showFailure` sfx
       IK.VerbNoLonger{} | not isAlive -> return ()
       IK.VerbNoLonger verb ending -> do
