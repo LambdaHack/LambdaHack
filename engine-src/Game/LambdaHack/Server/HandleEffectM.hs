@@ -302,17 +302,8 @@ effectAndDestroy effApplyFlags0@EffApplyFlags{..} source target iid container
       execUpdAtomic $ UpdLoseItem False iid kit2 container
     -- At this point, the item is potentially no longer in container
     -- @container@, therefore beware of assuming so in the code below.
-    -- If the item activation is not periodic, but the item itself is,
-    -- only the first effect gets activated (and the item may be destroyed,
-    -- unlike with periodic activations). The same if item activation
-    -- is due to being attacked.
-    let effsManual = if effActivation /= ActivationPeriodic
-                        && IA.checkFlag Ability.Periodic arItem
-                        && not (IA.checkFlag Ability.Condition arItem)
-                     then take 1 effs  -- may be empty
-                     else effs
     triggeredEffect <- itemEffectDisco effApplyFlags0 source target iid
-                                       itemKindId itemKind container effsManual
+                                       itemKindId itemKind container effs
     sb <- getsState $ getActorBody source
     let triggered = if effKineticPerformed then UseUp else triggeredEffect
         mEmbedPos = case container of
@@ -339,7 +330,7 @@ effectAndDestroy effApplyFlags0@EffApplyFlags{..} source target iid container
          && not (bproj sb)  -- projectiles can be very numerous
          && isNothing mEmbedPos  ->  -- embeds may be just flavour
            execSfxAtomic $ SfxMsgFid (bfid sb) $
-             if any IK.forApplyEffect effsManual
+             if any IK.forApplyEffect effs
              then SfxFizzles iid container
                     -- something didn't work despite promising effects
              else SfxNothingHappens iid container  -- fully expected

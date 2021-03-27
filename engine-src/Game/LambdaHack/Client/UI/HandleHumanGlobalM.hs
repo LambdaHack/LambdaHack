@@ -1036,7 +1036,7 @@ applyItem (fromCStore, (iid, (itemFull, kit))) = do
              -- No warning if item durable, because activation weak,
              -- but price low, due to no destruction.
              displayYesNo ColorFull
-                          "Using this periodic item will produce only the first of its effects and moreover, because it's not durable, will destroy it. Are you sure?"
+                          "Triggering this periodic item may not produce all its effects (check item description) and moreover, because it's not durable, will destroy it. Are you sure?"
            | benApply < 0 ->
              displayYesNo ColorFull
                           "The item appears harmful. Do you really want to trigger it?"

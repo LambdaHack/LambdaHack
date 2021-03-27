@@ -1037,7 +1037,8 @@ necklace1 = necklaceTemplate
                    -- priceless, so worth the long wait and Calm drain
                , SetFlag Durable ]
                ++ iaspects_necklaceTemplate
-  , ieffects = [RefillCalm (-5), RefillHP 1]
+  , ieffects = [ RefillCalm (-5)
+               , When (TriggeredBy ActivationPeriodic) $ RefillHP 1 ]
   , idesc    = "A cord of freshly dried herbs and healing berries."
   }
 necklace2 = necklaceTemplate
@@ -1051,9 +1052,10 @@ necklace2 = necklaceTemplate
                , SetFlag Durable ]
                ++ iaspects_necklaceTemplate
   , ieffects = [ DropItem 1 1 COrgan CONDITION  -- mildly useful when applied
-               , Impress
-               , Summon MOBILE_ANIMAL $ 1 `dL` 2
-               , Explode S_WASTE ]
+               , When (TriggeredBy ActivationPeriodic) $ SeqEffect
+                   [ Impress
+                   , Summon MOBILE_ANIMAL $ 1 `dL` 2
+                   , Explode S_WASTE ] ]
   , idesc    = "A cord hung with lumps of decaying meat. It's better not to think about the source."
   }
 necklace3 = necklaceTemplate
@@ -1065,7 +1067,7 @@ necklace3 = necklaceTemplate
                , AddSkill SkHearing 6 ]
                ++ iaspects_necklaceTemplate
   , ieffects = [ Detect DetectActor 20  -- can be applied; destroys the item
-               , RefillCalm (-30) ]
+               , When (TriggeredBy ActivationPeriodic) $ RefillCalm (-30) ]
   }
 necklace4 = necklaceTemplate
   { ifreq    = [(COMMON_ITEM, 100), (ANY_JEWELRY, 100)]
@@ -1083,8 +1085,8 @@ necklace5 = necklaceTemplate
                , Timeout ((2 + 1 `d` 3) * 10) ]
                ++ iaspects_necklaceTemplate
   , ieffects = [ Detect DetectLoot 20
-               , Teleport 40  -- risky
-               , toOrganBad S_PARSIMONIOUS (5 + 1 `d` 3) ]  -- hard to flee
+               , toOrganBad S_PARSIMONIOUS (5 + 1 `d` 3)  -- hard to flee
+               , When (TriggeredBy ActivationPeriodic) $ Teleport 40 ]  -- risky
   }
 necklace6 = necklaceTemplate
   { ifreq    = [(COMMON_ITEM, 100), (ANY_JEWELRY, 100)]
@@ -1822,8 +1824,9 @@ seeingItem = ItemKind
                , AddSkill SkShine 2  -- to lit corridors when flying
                , SetFlag Periodic ]
   , ieffects = [ Detect DetectActor 20  -- rare enough
-               , toOrganNoTimer S_POISONED  -- really can't be worn
-               , Summon MOBILE_MONSTER 1 ]
+               , When (TriggeredBy ActivationPeriodic) $ SeqEffect
+                   [ toOrganNoTimer S_POISONED  -- really can't be worn
+                   , Summon MOBILE_MONSTER 1 ] ]
   , idesc    = "A slimy, dilated green pupil torn out from some giant eye. Clear and focused, as if still alive."
   , ikit     = []
   }
