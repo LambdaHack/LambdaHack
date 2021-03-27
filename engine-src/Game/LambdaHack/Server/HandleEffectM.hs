@@ -309,7 +309,6 @@ effectAndDestroy effApplyFlags0@EffApplyFlags{..} source target iid container
     let effsManual = if effActivation /= ActivationPeriodic
                         && IA.checkFlag Ability.Periodic arItem
                         && not (IA.checkFlag Ability.Condition arItem)
-                        || effActivation `elem` [ActivationUnderRanged, ActivationUnderMelee]
                      then take 1 effs  -- may be empty
                      else effs
     triggeredEffect <- itemEffectDisco effApplyFlags0 source target iid
