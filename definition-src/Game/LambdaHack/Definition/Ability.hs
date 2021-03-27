@@ -119,15 +119,16 @@ data Flag =
                   --   kinetic damage is not applied
   deriving (Show, Eq, Enum, Bounded, Generic)
 
--- These correspond to the last cases of @Flag@ and any additional circumstances
--- of item activation, including the universal ones, under which every effect
--- activates and special ones that effects normally don't activate under.
+-- | These flags correspond to the last cases of @Flag@ and addtionally
+-- to all the universal circumstances of item activation,
+-- under which every item activates (even if vacuusly).
 data ActivationFlag =
     ActivationMeleeable
   | ActivationPeriodic
   | ActivationUnderRanged
   | ActivationUnderMelee
-  | ActivationProjectile
+  | -- | From here on, all items affected regardless of their `Flag` content.
+    ActivationProjectile
   | ActivationTrigger
   | ActivationOnSmash
   | ActivationOnCombine

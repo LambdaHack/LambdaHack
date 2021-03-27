@@ -148,8 +148,16 @@ data Aspect =
   deriving (Show, Eq)
 
 -- | Effects of items. Can be invoked by the item wielder to affect
--- another actor or the wielder himself. Many occurences in the same item
--- are possible.
+-- another actor or the wielder himself.
+--
+-- Various effects of an item kind are all groupped in one list,
+-- at the cost of conditionals, sequences, etc., to ensure brevity
+-- and simplicity of content definitions. Most effects fire regardless
+-- of activation kind (the only exceptions are @OnSmash@ and @OnCombine@
+-- effects) so the deviations, handled via the conditionals, are rare
+-- and the definitions remain simple. Whether an item can be activated
+-- in any particular way, OTOH, is specified via simple flags elsewhere,
+-- again, by default, assuming that most activations are possible for all.
 data Effect =
     Burn Dice.Dice     -- ^ burn with this damage
   | Explode (GroupName ItemKind)
