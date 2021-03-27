@@ -78,7 +78,7 @@ import           Game.LambdaHack.Server.State
 data UseResult = UseDud | UseId | UseUp
   deriving (Eq, Ord)
 
-data EffToUse = EffBare | EffBareAndOnCombine | EffOnCombine | EffOnSmash
+data EffToUse = EffBare | EffBareAndOnCombine | EffOnCombine
   deriving Eq
 
 data EffApplyFlags = EffApplyFlags
@@ -250,11 +250,12 @@ effectAndDestroy effApplyFlags0@EffApplyFlags{..} source target iid container
   bag <- getsState $ getContainerBag container
   let (itemK, itemTimers) = bag EM.! iid
       effs = case effToUse of
-        EffBare -> IK.ieffects itemKind
+        EffBare -> if effActivation == ActivationOnSmash
+                   then IK.strengthOnSmash itemKind
+                   else IK.ieffects itemKind
         EffBareAndOnCombine ->
           IK.ieffects itemKind ++ IK.strengthOnCombine itemKind
         EffOnCombine -> IK.strengthOnCombine itemKind
-        EffOnSmash -> IK.strengthOnSmash itemKind
       arItem = case itemDisco of
         ItemDiscoFull itemAspect -> itemAspect
         _ -> error "effectAndDestroy: server ignorant about an item"
@@ -263,7 +264,9 @@ effectAndDestroy effApplyFlags0@EffApplyFlags{..} source target iid container
   localTime <- getsState $ getLocalTime lid
   let it1 = filter (charging localTime) itemTimers
       len = length it1
-      recharged = len < itemK || effToUse == EffOnSmash || effIgnoreCharging
+      recharged = len < itemK
+                  || effActivation == ActivationOnSmash
+                  || effIgnoreCharging
   -- If the item has no charges and the special cases don't apply
   -- we speed up by shortcutting early, because we don't need to activate
   -- effects and we know kinetic hit was not performed (no charges to do so
@@ -321,14 +324,14 @@ effectAndDestroy effApplyFlags0@EffApplyFlags{..} source target iid container
          && mEmbedPos /= Just (bpos sb)  -- treading water, etc.
          && effActivation `notElem` [ActivationTrigger, ActivationMeleeable]
               -- do not repeat almost the same msg
-         && (effToUse /= EffOnSmash  -- triggers that only tells condition ends
+         && (effActivation /= ActivationOnSmash  -- only tells condition ends
              && effActivation /= ActivationPeriodic
              || not (IA.checkFlag Ability.Condition arItem)) ->
            -- Effects triggered; main feedback comes from them,
            -- but send info so that clients can log it.
            execSfxAtomic $ SfxItemApplied iid container
        | triggered /= UseUp
-         && effToUse /= EffOnSmash
+         && effActivation /= ActivationOnSmash
          && effActivation /= ActivationPeriodic
               -- periodic effects repeat and so spam
          && effActivation
@@ -1499,7 +1502,7 @@ dropCStoreItem verbose destroy store aid b kMax iid (k, _) = do
                                         -- but also includes conditions
   if isDestroyed then do
     let effApplyFlags = EffApplyFlags
-          { effToUse            = EffOnSmash
+          { effToUse            = EffBare
               -- the embed could be combined at this point but @iid@ cannot
           , effVoluntary        = True
               -- we don't know if it's effVoluntary, so we conservatively assume
@@ -1507,7 +1510,7 @@ dropCStoreItem verbose destroy store aid b kMax iid (k, _) = do
           , effIgnoreCharging   = False
           , effUseAllCopies     = kMax >= k
           , effKineticPerformed = False
-          , effActivation       = ActivationDrop
+          , effActivation       = ActivationOnSmash
           , effMayDestroy       = True
           }
     void $ effectAndDestroyAndAddKill effApplyFlags aid aid aid iid c itemFull

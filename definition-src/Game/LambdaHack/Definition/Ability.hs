@@ -132,7 +132,6 @@ data ActivationFlag =
   | ActivationOnSmash
   | ActivationOnCombine
   | ActivationEmbed
-  | ActivationDrop
   | ActivationConsume
   deriving (Show, Eq)
 
