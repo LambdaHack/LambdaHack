@@ -698,12 +698,9 @@ drawLeaderDamage width leader = do
       unBurn _ = Nothing
       unRefillHP (IK.RefillHP n) = Just n
       unRefillHP _ = Nothing
-      haNonDamagesEffect itemFull =
-        any (\eff -> IK.forApplyEffect eff && not (IK.forDamageEffect eff))
-            (IK.ieffects $ itemKind itemFull)
-      ppDice :: Bool -> (Int, Int, ItemFullKit)
+      ppDice :: Bool -> (Bool, Int, Int, ItemFullKit)
              -> [(Bool, (AttrString, AttrString))]
-      ppDice showInBrief (timeout, nch, (itemFull, (k, _))) =
+      ppDice showInBrief (hasEffect, timeout, nch, (itemFull, (k, _))) =
         let dice = IK.idamage $ itemKind itemFull
             tdice = case Dice.reduceDice dice of
               Just d | showInBrief -> show d
@@ -716,7 +713,7 @@ drawLeaderDamage width leader = do
                                         $ IK.ieffects $ itemKind itemFull
             tRefillHP | nRefillHP < 0 = '+' : show (- nRefillHP)
                       | otherwise = ""
-            tdiceEffect = if haNonDamagesEffect itemFull
+            tdiceEffect = if hasEffect
                           then map Char.toUpper tdice
                           else tdice
             ldice color = map (Color.attrChar2ToW32 color) tdiceEffect
@@ -753,10 +750,11 @@ drawLeaderDamage width leader = do
                 . aspectRecordFull . fst . snd) kitAssRaw
   discoBenefit <- getsClient sdiscoBenefit
   strongest <-
-    map (\(_, timeout, ncha, _, itemFullKit) -> (timeout, ncha, itemFullKit))
+    map (\(_, hasEffect, timeout, ncha, _, itemFullKit) ->
+          (hasEffect, timeout, ncha, itemFullKit))
     <$> pickWeaponM True (Just discoBenefit) kitAssOnlyWeapons
                     actorCurAndMaxSk leader
-  let possiblyHasTimeout (timeout, _, (itemFull, _)) =
+  let possiblyHasTimeout (_, timeout, _, (itemFull, _)) =
         timeout > 0 || itemSuspect itemFull
       (lT, lTrest) = span possiblyHasTimeout strongest
       strongestToDisplay = lT ++ case lTrest of

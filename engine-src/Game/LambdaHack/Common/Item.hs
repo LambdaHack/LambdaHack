@@ -285,13 +285,13 @@ hasCharge localTime kit = ncharges localTime kit > 0
 
 strongestMelee :: Bool -> Maybe DiscoveryBenefit -> Time
                -> [(ItemId, ItemFullKit)]
-               -> [(Double, Int, Int, ItemId, ItemFullKit)]
+               -> [(Double, Bool, Int, Int, ItemId, ItemFullKit)]
 strongestMelee _ _ _ [] = []
 strongestMelee ignoreCharges mdiscoBenefit localTime kitAss =
   -- For fighting, as opposed to equipping, we value weapon only for
   -- its raw damage and harming effects and at this very moment only,
   -- not in the future. Hehce, we exclude discharged weapons.
-  let f (iid, (itemFull, kit)) =
+  let f (iid, ifk@(itemFull, kit)) =
         let rawDmg = IK.damageUsefulness $ itemKind itemFull
             unIDedBonus = if itemSuspect itemFull then 1000 else 0
             totalValue = case mdiscoBenefit of
@@ -301,20 +301,25 @@ strongestMelee ignoreCharges mdiscoBenefit localTime kitAss =
               Nothing -> - rawDmg  -- special case: not interested about ID
             arItem = aspectRecordFull itemFull
             timeout = IA.aTimeout arItem
+            -- This is crucial for weapons for which AI is too silly
+            -- to value the effects at more than 0, even though they are strong.
+            hasEffect = any (\eff -> IK.forApplyEffect eff
+                                     && not (IK.forDamageEffect eff))
+                            (IK.ieffects $ itemKind itemFull)
             ncha = ncharges localTime kit
         in if ignoreCharges || ncha > 0
-           then Just (totalValue, timeout, ncha, iid, (itemFull, kit))
+           then Just (totalValue, hasEffect, timeout, ncha, iid, ifk)
            else Nothing
   -- We can't filter out weapons that are not harmful to victim
   -- (@benMelee >= 0), because actors use them if nothing else available,
   -- e.g., geysers, bees. This is intended and fun.
-  in sortOn (\(value, timeout, _, _, (itemFull, _)) ->
+  in sortOn (\(value, hasEffect, timeout, _, _, (itemFull, _)) ->
                 -- Weapon with higher timeout activated first to increase
                 -- the chance of using it again during this fight.
                 -- No timeout is ever better, because no wait incurred.
                 -- Optimal packing problem: start with the biggest.
                 let timN = if timeout == 0 then -99999 else - timeout
-                in (value, timN, itemKindId itemFull))
+                in (value, not hasEffect, timN, itemKindId itemFull))
             (mapMaybe f kitAss)
 
 unknownAspect :: (IK.Aspect -> [Dice.Dice]) -> ItemFull -> Bool
