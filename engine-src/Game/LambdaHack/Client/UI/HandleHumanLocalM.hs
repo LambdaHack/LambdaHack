@@ -29,7 +29,8 @@ module Game.LambdaHack.Client.UI.HandleHumanLocalM
   , aimPointerFloorHuman, aimPointerEnemyHuman
 #ifdef EXPOSE_INTERNAL
     -- * Internal operations
-  , permittedProjectClient, projectCheck, xhairLegalEps, posFromXhair
+  , chooseItemDialogModeLore, permittedProjectClient, projectCheck
+  , xhairLegalEps, posFromXhair
   , permittedApplyClient, selectAid, eitherHistory, endAiming, endAimingMsg
   , doLook, flashAiming
 #endif
@@ -124,91 +125,6 @@ chooseItemHuman :: (MonadClient m, MonadClientUI m)
                 => ItemDialogMode -> m MError
 chooseItemHuman c = either Just (const Nothing) <$> chooseItemDialogMode c
 
-chooseItemDialogModePrompt
-  :: FactionId -> Actor -> ActorUI -> Ability.Skills -> ItemDialogMode -> State
-  -> Text
-chooseItemDialogModePrompt side body bodyUI actorCurAndMaxSk c2 s =
-  let COps{coitem} = scops s
-      fact = sfactionD s EM.! side
-      (tIn, t) = ppItemDialogMode c2
-      subject = partActor bodyUI
-      f (k, _) acc = k + acc
-      countItems store = EM.foldr' f 0 $ getBodyStoreBag body store s
-  in case c2 of
-    MStore CGround ->
-      let n = countItems CGround
-          nItems = MU.CarAWs n "item"
-          verbGround = if gstash fact == Just (blid body, bpos body)
-                       then "fondle greedily"
-                       else "notice"
-      in makePhrase
-           [ MU.Capitalize $ MU.SubjectVerbSg subject verbGround
-           , nItems, "at"
-           , MU.WownW (MU.Text $ bpronoun bodyUI) $ MU.Text "feet" ]
-    MStore CEqp ->
-      let n = countItems CEqp
-          (verbEqp, nItems) =
-            if | n == 0 -> ("find nothing", "")
-               | calmEnough body actorCurAndMaxSk ->
-                   ("find", MU.CarAWs n "item")
-               | otherwise -> ("paw distractedly at", MU.CarAWs n "item")
-      in makePhrase
-           [ MU.Capitalize $ MU.SubjectVerbSg subject verbEqp
-           , nItems, MU.Text tIn
-           , MU.WownW (MU.Text $ bpronoun bodyUI) $ MU.Text t ]
-    MStore cstore ->
-      let n = countItems cstore
-          nItems = MU.CarAWs n "item"
-          (verb, onLevel) = case cstore of
-            COrgan -> ("feel", [])
-            CStash ->
-              ( "notice"
-              , case gstash fact of
-                  Just (lid, _) ->
-                    map MU.Text ["on level", tshow $ abs $ fromEnum lid]
-                  Nothing -> [] )
-            _ -> ("see", [])
-          ownObject = case cstore of
-            CStash -> ["our", MU.Text t]
-            _ -> [MU.WownW (MU.Text $ bpronoun bodyUI) $ MU.Text t]
-      in makePhrase $
-           [ MU.Capitalize $ MU.SubjectVerbSg subject verb
-           , nItems, MU.Text tIn ] ++ ownObject ++ onLevel
-    MOrgans ->
-      makePhrase
-        [ MU.Capitalize $ MU.SubjectVerbSg subject "feel"
-        , MU.Text tIn
-        , MU.WownW (MU.Text $ bpronoun bodyUI) $ MU.Text t ]
-    MOwned ->
-      -- We assume "gold grain", not "grain" with label "of gold":
-      let currencyName = IK.iname $ okind coitem
-                         $ ouniqGroup coitem IK.S_CURRENCY
-          dungeonTotal = sgold s
-          (_, total) = calculateTotal side s
-          n = countItems CStash
-          verbOwned = if | n == 0 -> "find nothing among"
-                         | otherwise -> "review"
-      in makePhrase
-           [ MU.Text $ spoilsBlurb currencyName total dungeonTotal
-           , MU.Capitalize $ MU.SubjectVerbSg subject verbOwned
-           , MU.Text t ]
-    MSkills ->
-      makePhrase
-        [ MU.Capitalize $ MU.SubjectVerbSg subject "estimate"
-        , MU.WownW (MU.Text $ bpronoun bodyUI) $ MU.Text t ]
-    MLore slore ->
-      makePhrase
-        [ MU.Capitalize $ MU.Text $
-            if slore == SEmbed
-            then "terrain (including crafting recipes)"
-            else t ]
-    MPlaces ->
-      makePhrase
-        [ MU.Capitalize $ MU.Text t ]
-    MModes ->
-      makePhrase
-        [ MU.Capitalize $ MU.Text t ]
-
 chooseItemDialogModeLore :: (MonadClient m, MonadClientUI m)
                          => m (Maybe ResultItemDialogMode)
 chooseItemDialogModeLore = do
@@ -256,13 +172,12 @@ chooseItemDialogMode c = do
   FontSetup{..} <- getFontSetup
   side <- getsClient sside
   fact <- getsState $ (EM.! side) . sfactionD
-  let prompt = chooseItemDialogModePrompt side
   mggiLore <- chooseItemDialogModeLore
   ggi <- if c == MLore SItem
          then case mggiLore of
            Just rlore -> return $ Right rlore
-           Nothing -> getStoreItem prompt c
-         else getStoreItem prompt c
+           Nothing -> getStoreItem c
+         else getStoreItem c
   recordHistory  -- item chosen, wipe out already shown msgs
   leader <- getLeaderUI
   actorCurAndMaxSk <- leaderSkillsClientUI

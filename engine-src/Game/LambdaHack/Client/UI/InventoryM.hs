@@ -4,7 +4,7 @@ module Game.LambdaHack.Client.UI.InventoryM
   , slotsOfItemDialogMode, getFull, getGroupItem, getStoreItem
 #ifdef EXPOSE_INTERNAL
     -- * Internal operations
-  , ItemDialogState(..), accessModeBag, getItem
+  , ItemDialogState(..), accessModeBag, storeItemPrompt, getItem
   , DefItemKey(..), transition, keyOfEKM, runDefItemKey
 #endif
   ) where
@@ -40,10 +40,12 @@ import           Game.LambdaHack.Common.ActorState
 import           Game.LambdaHack.Common.Faction
 import           Game.LambdaHack.Common.Item
 import qualified Game.LambdaHack.Common.ItemAspect as IA
+import           Game.LambdaHack.Common.Kind
 import           Game.LambdaHack.Common.Misc
 import           Game.LambdaHack.Common.MonadStateRead
 import           Game.LambdaHack.Common.State
 import           Game.LambdaHack.Common.Types
+import qualified Game.LambdaHack.Content.ItemKind as IK
 import qualified Game.LambdaHack.Definition.Ability as Ability
 import           Game.LambdaHack.Definition.Defs
 
@@ -137,11 +139,10 @@ getGroupItem psuit prompt promptGeneric verb verbGeneric stores = do
 -- or switch to any other store.
 -- Used, e.g., for viewing inventory and item descriptions.
 getStoreItem :: (MonadClient m, MonadClientUI m)
-             => (Actor -> ActorUI -> Ability.Skills -> ItemDialogMode -> State
-                 -> Text)        -- ^ how to describe suitable items
-             -> ItemDialogMode   -- ^ initial mode
+             => ItemDialogMode   -- ^ initial mode
              -> m (Either Text ResultItemDialogMode)
-getStoreItem prompt cInitial = do
+getStoreItem cInitial = do
+  side <- getsClient sside
   let itemCs = map MStore [CStash, CEqp, CGround]
         -- No @COrgan@, because triggerable organs are rare and,
         -- if really needed, accessible directly from the trigger menu.
@@ -154,7 +155,93 @@ getStoreItem prompt cInitial = do
       (pre, rest) = break (== cInitial) allCs
       post = dropWhile (== cInitial) rest
       remCs = post ++ pre
+      prompt = storeItemPrompt side
   getItem (return SuitsEverything) prompt prompt cInitial remCs True False
+
+storeItemPrompt :: FactionId
+                -> Actor -> ActorUI -> Ability.Skills -> ItemDialogMode -> State
+                -> Text
+storeItemPrompt side body bodyUI actorCurAndMaxSk c2 s =
+  let COps{coitem} = scops s
+      fact = sfactionD s EM.! side
+      (tIn, t) = ppItemDialogMode c2
+      subject = partActor bodyUI
+      f (k, _) acc = k + acc
+      countItems store = EM.foldr' f 0 $ getBodyStoreBag body store s
+  in case c2 of
+    MStore CGround ->
+      let n = countItems CGround
+          nItems = MU.CarAWs n "item"
+          verbGround = if gstash fact == Just (blid body, bpos body)
+                       then "fondle greedily"
+                       else "notice"
+      in makePhrase
+           [ MU.Capitalize $ MU.SubjectVerbSg subject verbGround
+           , nItems, "at"
+           , MU.WownW (MU.Text $ bpronoun bodyUI) $ MU.Text "feet" ]
+    MStore CEqp ->
+      let n = countItems CEqp
+          (verbEqp, nItems) =
+            if | n == 0 -> ("find nothing", "")
+               | calmEnough body actorCurAndMaxSk ->
+                   ("find", MU.CarAWs n "item")
+               | otherwise -> ("paw distractedly at", MU.CarAWs n "item")
+      in makePhrase
+           [ MU.Capitalize $ MU.SubjectVerbSg subject verbEqp
+           , nItems, MU.Text tIn
+           , MU.WownW (MU.Text $ bpronoun bodyUI) $ MU.Text t ]
+    MStore cstore ->
+      let n = countItems cstore
+          nItems = MU.CarAWs n "item"
+          (verb, onLevel) = case cstore of
+            COrgan -> ("feel", [])
+            CStash ->
+              ( "notice"
+              , case gstash fact of
+                  Just (lid, _) ->
+                    map MU.Text ["on level", tshow $ abs $ fromEnum lid]
+                  Nothing -> [] )
+            _ -> ("see", [])
+          ownObject = case cstore of
+            CStash -> ["our", MU.Text t]
+            _ -> [MU.WownW (MU.Text $ bpronoun bodyUI) $ MU.Text t]
+      in makePhrase $
+           [ MU.Capitalize $ MU.SubjectVerbSg subject verb
+           , nItems, MU.Text tIn ] ++ ownObject ++ onLevel
+    MOrgans ->
+      makePhrase
+        [ MU.Capitalize $ MU.SubjectVerbSg subject "feel"
+        , MU.Text tIn
+        , MU.WownW (MU.Text $ bpronoun bodyUI) $ MU.Text t ]
+    MOwned ->
+      -- We assume "gold grain", not "grain" with label "of gold":
+      let currencyName = IK.iname $ okind coitem
+                         $ ouniqGroup coitem IK.S_CURRENCY
+          dungeonTotal = sgold s
+          (_, total) = calculateTotal side s
+          n = countItems CStash
+          verbOwned = if | n == 0 -> "find nothing among"
+                         | otherwise -> "review"
+      in makePhrase
+           [ MU.Text $ spoilsBlurb currencyName total dungeonTotal
+           , MU.Capitalize $ MU.SubjectVerbSg subject verbOwned
+           , MU.Text t ]
+    MSkills ->
+      makePhrase
+        [ MU.Capitalize $ MU.SubjectVerbSg subject "estimate"
+        , MU.WownW (MU.Text $ bpronoun bodyUI) $ MU.Text t ]
+    MLore slore ->
+      makePhrase
+        [ MU.Capitalize $ MU.Text $
+            if slore == SEmbed
+            then "terrain (including crafting recipes)"
+            else t ]
+    MPlaces ->
+      makePhrase
+        [ MU.Capitalize $ MU.Text t ]
+    MModes ->
+      makePhrase
+        [ MU.Capitalize $ MU.Text t ]
 
 -- | Let the human player choose a single, preferably suitable,
 -- item from a list of items. Don't display stores empty for all actors.
