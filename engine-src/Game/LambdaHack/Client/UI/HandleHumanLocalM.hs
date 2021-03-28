@@ -214,20 +214,19 @@ chooseItemDialogMode c = do
         MModes ->
           makePhrase
             [ MU.Capitalize $ MU.Text t ]
-  saimMode <- getsSession saimMode
-  mxhairPos <- xhairToPos
-  leader0 <- getLeaderUI
-  b0 <- getsState $ getActorBody leader0
-  let xhairPos = fromMaybe (bpos b0) mxhairPos
-  ggi <- case saimMode of
-    Just aimMode | c == MLore SItem -> do
+  ggi <-
+    if c == MLore SItem then do
+      mxhairPos <- xhairToPos
+      leader0 <- getLeaderUI
+      b0 <- getsState $ getActorBody leader0
+      let xhairPos = fromMaybe (bpos b0) mxhairPos
+      lidV <- viewedLevelUI
       schosenLore <- getsSession schosenLore
       bagAll <- getsState $ EM.map (const quantSingle) . sitemD
-      let lidAim = aimLevelId aimMode
-          isOurs (_, b) = bfid b == side
+      let isOurs (_, b) = bfid b == side
       inhabitants0 <- getsState $ filter (not . isOurs)
-                                  . posToAidAssocs xhairPos lidAim
-      embeds0 <- getsState $ EM.assocs . getEmbedBag lidAim xhairPos
+                                  . posToAidAssocs xhairPos lidV
+      embeds0 <- getsState $ EM.assocs . getEmbedBag lidV xhairPos
       let (inhabitants, embeds) = case schosenLore of
             ChosenActor inh -> (inh, embeds0)
             ChosenEmbed emb -> ([], emb)
@@ -252,7 +251,7 @@ chooseItemDialogMode c = do
             [] -> do
               modifySession $ \sess -> sess {schosenLore = ChosenNothing}
               getStoreItem prompt c
-    _ -> getStoreItem prompt c
+    else getStoreItem prompt c
   recordHistory  -- item chosen, wipe out already shown msgs
   leader <- getLeaderUI
   actorCurAndMaxSk <- leaderSkillsClientUI
