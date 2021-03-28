@@ -221,11 +221,18 @@ chooseItemDialogMode c = do
   let xhairPos = fromMaybe (bpos b0) mxhairPos
   ggi <- case saimMode of
     Just aimMode | c == MLore SItem -> do
+      schosenLore <- getsSession schosenLore
       bagAll <- getsState $ EM.map (const quantSingle) . sitemD
       let lidAim = aimLevelId aimMode
           isOurs (_, b) = bfid b == side
-      inhabitants <- getsState $ posToAidAssocs xhairPos lidAim
-      case filter (not . isOurs) inhabitants of
+      inhabitants0 <- getsState $ filter (not . isOurs)
+                                  . posToAidAssocs xhairPos lidAim
+      embeds0 <- getsState $ EM.assocs . getEmbedBag lidAim xhairPos
+      let (inhabitants, embeds) = case schosenLore of
+            ChosenActor inh -> (inh, embeds0)
+            ChosenEmbed emb -> ([], emb)
+            ChosenNothing -> (inhabitants0, embeds0)
+      case inhabitants of
         (_, b) : rest -> do
           let iid = btrunk b
           arItem <- getsState $ aspectRecordFromIid iid
@@ -235,15 +242,16 @@ chooseItemDialogMode c = do
           lSlots <- slotsOfItemDialogMode $ MLore slore
           modifySession $ \sess -> sess {schosenLore = ChosenActor rest}
           return $ Right $ RLore slore iid bagAll lSlots
-        [] -> do
-          embeds <- getsState $ EM.assocs . getEmbedBag lidAim xhairPos
+        [] ->
           case embeds of
             (iid, _) : rest -> do
               let slore = SEmbed
               lSlots <- slotsOfItemDialogMode $ MLore slore
               modifySession $ \sess -> sess {schosenLore = ChosenEmbed rest}
               return $ Right $ RLore slore iid bagAll lSlots
-            [] -> getStoreItem prompt c
+            [] -> do
+              modifySession $ \sess -> sess {schosenLore = ChosenNothing}
+              getStoreItem prompt c
     _ -> getStoreItem prompt c
   recordHistory  -- item chosen, wipe out already shown msgs
   leader <- getLeaderUI
