@@ -568,6 +568,7 @@ totalUsefulness cops fid factionD itemFull@ItemFull{itemKind, itemSuspect} =
       cripplingDrawback = not (null aspectBenefits)
                           && minimum aspectBenefits < -25
       eqpSum = eqpBens - if cripplingDrawback then 100 else 0
+      vApplyFling = max benApply (- benFling)
       -- If a weapon heals enemy at impact, given choice, it won't be used
       -- for melee, but can be equipped anyway, for beneficial aspects.
       -- OTOH, cif it harms wearer too much, it won't be worn
@@ -577,9 +578,18 @@ totalUsefulness cops fid factionD itemFull@ItemFull{itemKind, itemSuspect} =
             -- the flag probably known even if item not identified
           && (benMelee < 0 || itemSuspect)
           && eqpSum >= -20 =
-          ( True  -- equip, melee crucial and only weapons in eqp can be used
-          , eqpSum
-            + maximum [benApply, - benMeleeAvg, 0] )  -- apply or melee or not
+            let vEqp = eqpSum + maximum [benApply, - benMeleeAvg, 0]
+                      -- equip plus apply or melee or not
+                v = if | vEqp > 0 -> vEqp
+                           -- pick up to equip; melee is crucial
+                       | vApplyFling > 0 -> vApplyFling
+                           -- at least pick up to apply or fling, if feasible,
+                           -- and equip just in case interesting effect;
+                           -- will be taken off if very harmful
+                       | otherwise -> vEqp
+                           -- do not pick up, but if forced, the best bet
+                           -- is equip anyway
+            in (True, v)
         | (IA.goesIntoEqp arItem
            || IA.checkFlag Ability.Condition arItem)
                 -- hack to record benefit, to use, e.g., to assign colour
@@ -589,8 +599,7 @@ totalUsefulness cops fid factionD itemFull@ItemFull{itemKind, itemSuspect} =
             + if durable
               then benApply  -- apply or not but don't fling
               else 0)  -- don't remove from equipment by using up
-        | otherwise =
-          (False, max benApply (- benFling))  -- apply or fling
+        | otherwise = (False, vApplyFling)  -- apply or fling
       benPickupRaw2 = max benPickupRaw $ if itemSuspect then 10 else 0
       -- If periodic, pick up to deny to foes and sometimes to apply
       -- to activate the first effect only (easier than computing if the first
