@@ -9,7 +9,8 @@ module Game.LambdaHack.Client.UI.HandleHelperM
   , placesFromState, placesOverlay
   , describeMode, modesOverlay
   , pickNumber, guardItemSize, lookAtItems, lookAtStash, lookAtPosition
-  , displayItemLore, viewLoreItems, cycleLore, spoilsBlurb
+  , displayItemLore, displayItemLorePointedAt
+  , viewLoreItems, cycleLore, spoilsBlurb
   , ppContainerWownW, nxtGameMode
 #ifdef EXPOSE_INTERNAL
     -- * Internal operations
@@ -892,11 +893,25 @@ lookAtPosition lidV p = do
             then [(MsgPromptFocus, tileBlurb)]
             else ms
 
-displayItemLore ::(MonadClient m, MonadClientUI m)
+displayItemLore :: (MonadClient m, MonadClientUI m)
                 => ItemBag -> Int -> (ItemId -> ItemFull -> Int -> Text) -> Int
                 -> SingleItemSlots
                 -> m Bool
 displayItemLore itemBag meleeSkill promptFun slotIndex lSlots = do
+  km <- displayItemLorePointedAt itemBag meleeSkill promptFun slotIndex
+                                 lSlots False
+  case K.key km of
+    K.Space -> return True
+    K.Esc -> return False
+    _ -> error $ "" `showFailure` km
+
+displayItemLorePointedAt
+  :: (MonadClient m, MonadClientUI m)
+  => ItemBag -> Int -> (ItemId -> ItemFull -> Int -> Text) -> Int
+  -> SingleItemSlots -> Bool
+  -> m K.KM
+displayItemLorePointedAt itemBag meleeSkill promptFun slotIndex
+                         lSlots addTilde = do
   CCUI{coscreen=ScreenContent{rwidth, rheight}} <- getsSession sccui
   side <- getsClient sside
   arena <- getArenaUI
@@ -922,19 +937,20 @@ displayItemLore itemBag meleeSkill promptFun slotIndex lSlots = do
       ov = EM.insertWith (++) squareFont descSym
            $ EM.singleton propFont descBlurb
       keys = [K.spaceKM, K.escKM]
+             ++ [K.mkChar '~' | addTilde]
              ++ [K.upKM | slotIndex /= 0]
              ++ [K.downKM | slotIndex /= lSlotsBound]
   msgAdd MsgPromptGeneric $ promptFun iid2 itemFull2 k
   slides <- overlayToSlideshow (rheight - 2) keys (ov, [])
   km <- getConfirms ColorFull keys slides
   case K.key km of
-    K.Space -> return True
     K.Up ->
-      displayItemLore itemBag meleeSkill promptFun (slotIndex - 1) lSlots
+      displayItemLorePointedAt itemBag meleeSkill promptFun (slotIndex - 1)
+                               lSlots addTilde
     K.Down ->
-      displayItemLore itemBag meleeSkill promptFun (slotIndex + 1) lSlots
-    K.Esc -> return False
-    _ -> error $ "" `showFailure` km
+      displayItemLorePointedAt itemBag meleeSkill promptFun (slotIndex + 1)
+                               lSlots addTilde
+    _ -> return km
 
 viewLoreItems :: (MonadClient m, MonadClientUI m)
               => String -> SingleItemSlots -> ItemBag -> Text

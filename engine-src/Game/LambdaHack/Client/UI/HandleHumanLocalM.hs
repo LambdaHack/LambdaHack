@@ -255,8 +255,13 @@ chooseItemDialogMode c = do
             promptFun _ _ _ =
               makeSentence [ MU.SubjectVerbSg (partActor bUI) "remember"
                            , MU.AW $ MU.Text (headingSLore slore) ]
-        go <- displayItemLore itemBag meleeSkill promptFun ix0 lSlots
-        if go then chooseItemDialogMode (MLore slore) else failWith "never mind"
+        km <- displayItemLorePointedAt itemBag meleeSkill promptFun ix0
+                                       lSlots True
+        case K.key km of
+          K.Space -> chooseItemDialogMode (MLore slore)
+          K.Char '~' -> chooseItemDialogMode c
+          K.Esc -> failWith "never mind"
+          _ -> error $ "" `showFailure` km
       RPlaces slotIndex0 -> do
         COps{coplace} <- getsState scops
         soptions <- getsClient soptions
