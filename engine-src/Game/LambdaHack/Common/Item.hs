@@ -302,9 +302,10 @@ strongestMelee ignoreCharges mdiscoBenefit localTime kitAss =
             arItem = aspectRecordFull itemFull
             timeout = IA.aTimeout arItem
             -- This is crucial for weapons for which AI is too silly
-            -- to value the effects at more than 0, even though they are strong.
-            hasEffect = any (\eff -> IK.forApplyEffect eff
-                                     && not (IK.forDamageEffect eff))
+            -- to value the effects at more than 0, even though they are strong
+            -- and also to prefer weapons with burn or wound over pure damage,
+            -- which is a good rule of thumb before late game at least.
+            hasEffect = any (\eff -> IK.forApplyEffect eff)
                             (IK.ieffects $ itemKind itemFull)
             ncha = ncharges localTime kit
         in if ignoreCharges || ncha > 0

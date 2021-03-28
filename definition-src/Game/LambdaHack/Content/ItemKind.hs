@@ -330,7 +330,8 @@ boostItemKind i =
   let mainlineLabel (label, _) =
         label `elem` [COMMON_ITEM, CRAWL_ITEM, TREASURE]
   in if any mainlineLabel (ifreq i)
-     then i { ifreq = (COMMON_ITEM, 10000) : filter (not . mainlineLabel) (ifreq i)
+     then i { ifreq = (COMMON_ITEM, 10000) : filter (not . mainlineLabel)
+                                                    (ifreq i)
             , iaspects = delete (SetFlag Ability.Unique) $ iaspects i
             }
      else i

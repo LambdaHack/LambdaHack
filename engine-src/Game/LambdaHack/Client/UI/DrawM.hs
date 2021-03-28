@@ -698,6 +698,9 @@ drawLeaderDamage width leader = do
       unBurn _ = Nothing
       unRefillHP (IK.RefillHP n) = Just n
       unRefillHP _ = Nothing
+      hasNonDamagesEffect itemFull =
+        any (\eff -> IK.forApplyEffect eff && not (IK.forDamageEffect eff))
+            (IK.ieffects $ itemKind itemFull)
       ppDice :: Bool -> (Bool, Int, Int, ItemFullKit)
              -> [(Bool, (AttrString, AttrString))]
       ppDice showInBrief (hasEffect, timeout, nch, (itemFull, (k, _))) =
@@ -713,7 +716,7 @@ drawLeaderDamage width leader = do
                                         $ IK.ieffects $ itemKind itemFull
             tRefillHP | nRefillHP < 0 = '+' : show (- nRefillHP)
                       | otherwise = ""
-            tdiceEffect = if hasEffect
+            tdiceEffect = if hasEffect && hasNonDamagesEffect itemFull
                           then map Char.toUpper tdice
                           else tdice
             ldice color = map (Color.attrChar2ToW32 color) tdiceEffect
