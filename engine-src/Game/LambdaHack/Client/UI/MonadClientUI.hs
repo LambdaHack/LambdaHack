@@ -290,8 +290,12 @@ xhairToPos = do
                   -- e.g., xhair on another level
 
 setXHairFromGUI :: MonadClientUI m => Maybe Target -> m ()
-setXHairFromGUI sxhair =
-  modifySession $ \sess -> sess {sxhair, sxhairGoTo = Nothing}
+setXHairFromGUI xhair2 = do
+  xhair0 <- getsSession sxhair
+  modifySession $ \sess -> sess {sxhairGoTo = Nothing}
+  when (xhair0 /= xhair2) $
+    modifySession $ \sess -> sess { sxhair = xhair2
+                                  , schosenLore = ChosenNothing }
 
 -- If aim mode is exited, usually the player had the opportunity to deal
 -- with xhair on a foe spotted on another level, so now move xhair

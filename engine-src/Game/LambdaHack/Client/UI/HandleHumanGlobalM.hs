@@ -1614,16 +1614,18 @@ chooseItemMenuHuman :: (MonadClient m, MonadClientUI m)
                     => (K.KM -> HumanCmd -> m (Either MError ReqUI))
                     -> ItemDialogMode
                     -> m (Either MError ReqUI)
-chooseItemMenuHuman cmdSemInCxtOfKM c = do
-  res <- chooseItemDialogMode c
-  case res of
-    Right c2 -> do
-      res2 <- itemMenuHuman cmdSemInCxtOfKM
-      backToList <- failMsg "back to list"
-      case res2 of
-        Left err | err == backToList -> chooseItemMenuHuman cmdSemInCxtOfKM c2
-        _ -> return res2
-    Left err -> return $ Left $ Just err
+chooseItemMenuHuman cmdSemInCxtOfKM c0 = do
+  let chooseItemMenu c1 = do
+        res <- chooseItemDialogMode c1
+        case res of
+          Right c2 -> do
+            res2 <- itemMenuHuman cmdSemInCxtOfKM
+            backToList <- failMsg "back to list"
+            case res2 of
+              Left err | err == backToList -> chooseItemMenu c2
+              _ -> return res2
+          Left err -> return $ Left $ Just err
+  chooseItemMenu c0
 
 -- * MainMenu
 
