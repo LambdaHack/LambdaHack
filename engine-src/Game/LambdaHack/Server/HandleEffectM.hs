@@ -2238,8 +2238,8 @@ effectWhen :: forall m. MonadServerAtomic m
            -> IK.Condition -> IK.Effect -> ActivationFlag
            -> m UseResult
 effectWhen recursiveCall source cond eff effActivation = do
-  c <- conditionSem source cond effActivation
-  if c then recursiveCall eff else return UseDud
+  go <- conditionSem source cond effActivation
+  if go then recursiveCall eff else return UseDud
 
 -- ** Unless
 
@@ -2248,8 +2248,8 @@ effectUnless :: forall m. MonadServerAtomic m
              -> IK.Condition -> IK.Effect -> ActivationFlag
              -> m UseResult
 effectUnless recursiveCall source cond eff effActivation = do
-  c <- conditionSem source cond effActivation
-  if c then recursiveCall eff else return UseDud
+  go <- conditionSem source cond effActivation
+  if not go then recursiveCall eff else return UseDud
 
 -- ** IfThenElse
 
