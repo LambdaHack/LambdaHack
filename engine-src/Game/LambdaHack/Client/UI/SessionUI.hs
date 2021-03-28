@@ -2,7 +2,7 @@
 -- | The client UI session state.
 module Game.LambdaHack.Client.UI.SessionUI
   ( SessionUI(..), ItemDictUI, AimMode(..), KeyMacro(..), KeyMacroFrame(..)
-  , RunParams(..)
+  , RunParams(..), ChosenLore(..)
   , emptySessionUI, emptyMacroFrame
   , toggleMarkVision, toggleMarkSmell, cycleOverrideTut, getActorUI
   ) where
@@ -29,6 +29,8 @@ import qualified Game.LambdaHack.Client.UI.Key as K
 import           Game.LambdaHack.Client.UI.Msg
 import           Game.LambdaHack.Client.UI.PointUI
 import           Game.LambdaHack.Client.UI.UIOptions
+import           Game.LambdaHack.Common.Actor
+import           Game.LambdaHack.Common.Item
 import           Game.LambdaHack.Common.Time
 import           Game.LambdaHack.Common.Types
 import           Game.LambdaHack.Definition.Defs
@@ -76,6 +78,7 @@ data SessionUI = SessionUI
   , susedHints     :: S.Set Msg     -- ^ tutorial hints already shown this game
   , smenuIxMap     :: M.Map String Int
                                     -- ^ indices of last used menu items
+  , schosenLore    :: ChosenLore    -- ^ last lore chosen to display
   , sdisplayNeeded :: Bool          -- ^ current level needs displaying
   , sturnDisplayed :: Bool          -- ^ a frame was already displayed this turn
   , sreportNull    :: Bool          -- ^ whether no visible report created
@@ -135,6 +138,12 @@ data RunParams = RunParams
   }
   deriving (Show)
 
+-- | Last lore being aimed at.
+data ChosenLore =
+    ChosenActor [(ActorId, Actor)]
+  | ChosenEmbed [(ItemId, ItemQuant)]
+  | ChosenNothing
+
 emptySessionUI :: UIOptions -> SessionUI
 emptySessionUI sUIOptions =
   SessionUI
@@ -169,6 +178,7 @@ emptySessionUI sUIOptions =
     , soverrideTut = Nothing
     , susedHints = S.empty
     , smenuIxMap = M.empty
+    , schosenLore = ChosenNothing
     , sdisplayNeeded = False
     , sturnDisplayed = False
     , sreportNull = True
@@ -253,6 +263,7 @@ instance Binary SessionUI where
         swaitTimes = 0
         swasAutomated = False
         smenuIxMap = M.empty
+        schosenLore = ChosenNothing
         sdisplayNeeded = False  -- displayed regardless
         sturnDisplayed = False
         sreportNull = True

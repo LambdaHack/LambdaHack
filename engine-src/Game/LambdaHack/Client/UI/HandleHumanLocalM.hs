@@ -226,20 +226,22 @@ chooseItemDialogMode c = do
           isOurs (_, b) = bfid b == side
       inhabitants <- getsState $ posToAidAssocs xhairPos lidAim
       case filter (not . isOurs) inhabitants of
-        (_, b) : _ -> do
+        (_, b) : rest -> do
           let iid = btrunk b
           arItem <- getsState $ aspectRecordFromIid iid
           let slore | not $ bproj b = STrunk
                     | IA.checkFlag Ability.Blast arItem = SBlast
                     | otherwise = SItem
           lSlots <- slotsOfItemDialogMode $ MLore slore
+          modifySession $ \sess -> sess {schosenLore = ChosenActor rest}
           return $ Right $ RLore slore iid bagAll lSlots
         [] -> do
           embeds <- getsState $ EM.assocs . getEmbedBag lidAim xhairPos
           case embeds of
-            (iid, _) : _ -> do
+            (iid, _) : rest -> do
               let slore = SEmbed
               lSlots <- slotsOfItemDialogMode $ MLore slore
+              modifySession $ \sess -> sess {schosenLore = ChosenEmbed rest}
               return $ Right $ RLore slore iid bagAll lSlots
             [] -> getStoreItem prompt c
     _ -> getStoreItem prompt c
