@@ -240,6 +240,10 @@ actionStrategy foeAssocs friendAssocs aid retry = do
             -- Note that we don't know how far ranged threats are or if,
             -- in fact, they hit from all sides or are hidden. Hence we can't
             -- do much except hide in darkness or take off light (elsewhere).
+            -- We tend to flee even when over stash (on lit terrain at least),
+            -- but only if we can't fling at enemy (e.g., not visible).
+            -- This is OK, since otherwise we'd be killed for free
+            -- and the stash would be taken just a little later on.
             -- Note: a part of this condition appears in @actorVulnerable@.
             not condFastThreatAdj
             && fleeingMakesSense
