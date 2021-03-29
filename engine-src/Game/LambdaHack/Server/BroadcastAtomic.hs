@@ -242,8 +242,8 @@ hearSfxAtomic cmd =
       discoAspect <- getsState sdiscoAspect
       let arTrunk = discoAspect EM.! btrunk b
           unique = if IA.checkFlag Ability.Unique arTrunk then "big" else ""
-      return $ Just (HearTaunt $ subject <+> unique <+> verb, True, bpos b)
-        -- intentional
+          phrase = subject <+> unique <+> verb <> "."
+      return $ Just (HearTaunt phrase, True, bpos b)  -- intentional
     _ -> return Nothing
 
 filterHear :: MonadStateRead m => Point -> [(ActorId, Actor)] -> m [ActorId]
