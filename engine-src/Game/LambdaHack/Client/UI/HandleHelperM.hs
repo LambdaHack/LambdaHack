@@ -547,7 +547,7 @@ lookAtTile :: MonadClientUI m
            -> ActorId          -- ^ the actor that looks
            -> LevelId          -- ^ level the position is at
            -> Maybe MU.Person  -- ^ grammatical person of the item(s), if any
-           -> m (Text, Text, [((Int, MU.Part), Text)])
+           -> m (Text, Text, [(Int, MU.Part)])
 lookAtTile canSee p aid lidV mperson = do
   CCUI{coscreen=ScreenContent{rwidth}} <- getsSession sccui
   cops@COps{cotile, coplace} <- getsState scops
@@ -588,8 +588,7 @@ lookAtTile canSee p aid lidV mperson = do
         let itemFull = itemToF iid
             nWs = partItemWsDetail detail
                                    rwidth side factionD k localTime itemFull kit
-            desc = IK.idesc $ itemKind itemFull
-        in ((k, nWs), desc)
+        in (k, nWs)
       embedKindList =
         map (\(iid, kit) -> (getKind iid, (iid, kit))) (EM.assocs embeds)
       embedList = map embedLook $ sortEmbeds cops tkid embedKindList
@@ -873,20 +872,16 @@ lookAtPosition lidV p = do
                                                 && not (null embedsList)]
            ++ [(MsgPromptGeneric, placeBlurb) | detail >= DetailHigh]
            ++ case detail of
-                DetailAll ->
-                  concatMap (\(embedName, embedDesc) ->
-                    [ (MsgPromptMention, ppEmbedName embedName)
-                    , (MsgPromptGeneric, embedDesc) ]) embedsList
                 DetailLow ->
                   [(MsgPromptMention, case embedsList of
                     [] -> ""
-                    [((k, _), _)] ->
+                    [(k, _)] ->
                       ppEmbedName (1, if k == 1
                                       then "an embedded item"
                                       else "a stack of embedded items")
                     _ -> ppEmbedName (9, "some embedded items"))]
-                _ -> let n = sum $ map (fst . fst) embedsList
-                         wWandW = MU.WWandW $ map (snd . fst) embedsList
+                _ -> let n = sum $ map fst embedsList
+                         wWandW = MU.WWandW $ map snd embedsList
                      in [(MsgPromptMention, ppEmbedName (n, wWandW)) | n > 0]
            ++ [(MsgPromptModify, modifyBlurb) | detail == DetailAll]
   return $! if all (T.null . snd) ms && detail > DetailLow
