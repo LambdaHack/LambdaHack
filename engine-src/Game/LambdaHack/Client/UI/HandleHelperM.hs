@@ -872,7 +872,8 @@ lookAtPosition lidV p = do
                                                 && not (null embedsList)]
            ++ [(MsgPromptGeneric, placeBlurb) | detail >= DetailHigh]
            ++ case detail of
-                DetailLow ->
+                DetailLow -> []  -- not to obscure aiming line
+                DetailMedium ->
                   [(MsgPromptMention, case embedsList of
                     [] -> ""
                     [(k, _)] ->
