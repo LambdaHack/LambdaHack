@@ -238,6 +238,7 @@ interruptsRunning = \case
     MsgActionMinor -> False
     MsgEffectMinor -> False
     MsgMiscellanous -> False  -- taunts are colourful, but spammy
+    MsgHeardOutside -> False  -- cause must be 'profound', but even taunts are
     MsgHeardFaraway -> False
     -- MsgHeardNearby interrupts, even if running started while hearing close
     MsgRangedOthers -> False
@@ -273,7 +274,6 @@ disturbsResting = \case
   MsgClassShowAndSave x -> case x of
     MsgPointmanSwap -> False  -- handled separately
     MsgItemDiscovery -> False  -- medium importance
-    MsgHeardOutside -> False  -- handled separately
     MsgHeardNearby -> False  -- handled separately; no disturbance if old
     _ -> interruptsRunning $ MsgClassShowAndSave x
   msgClass -> interruptsRunning msgClass
