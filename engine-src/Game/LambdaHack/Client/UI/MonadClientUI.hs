@@ -242,7 +242,7 @@ getReportUI insideMenu = do
                | otherwise -> report
 
 miniHintAimingBare :: Text
-miniHintAimingBare = "Aiming mode: press 'f' to fling, SPACE or RMB to decrease detail, ESC to cancel."
+miniHintAimingBare = "Aiming mode: press 'f' to fling, SPACE or RMB to cycle detail, ESC to cancel."
 
 miniHintAimingLore :: Text
 miniHintAimingLore = "Aiming mode: '~' for lore, 'f' to fling, SPACE or RMB to hush, ESC to cancel."
