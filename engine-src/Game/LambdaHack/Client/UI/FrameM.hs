@@ -156,13 +156,12 @@ promptGetKey dm ovs onBlank frontKeyKeys = do
       resetPlayBack
       resetPressedKeys
       recordHistory
+      modifySession $ \sess ->
+        sess { sdisplayNeeded = False
+             , sturnDisplayed = True }
       connFrontendFrontKey frontKeyKeys frontKeyFrame
     KeyMacro [] -> do
       frontKeyFrame <- drawOverlay dm onBlank ovs lidV
-      -- If we ask for a key, then we don't want to run any more
-      -- and we want to avoid changing leader back to initial run leader
-      -- at the nearest @stopPlayBack@, etc.
-      modifySession $ \sess -> sess {srunning = Nothing}
       when (dm /= ColorFull) $ do
         side <- getsClient sside
         fact <- getsState $ (EM.! side) . sfactionD
@@ -170,6 +169,13 @@ promptGetKey dm ovs onBlank frontKeyKeys = do
           -- Forget the furious keypresses just before a special event.
           resetPressedKeys
       recordHistory
+      -- If we ask for a key, then we don't want to run any more
+      -- and we want to avoid changing leader back to initial run leader
+      -- at the nearest @stopPlayBack@, etc.
+      modifySession $ \sess ->
+        sess { srunning = Nothing
+             , sdisplayNeeded = False
+             , sturnDisplayed = True }
       connFrontendFrontKey frontKeyKeys frontKeyFrame
   -- In-game macros need to be recorded here, not in @UI.humanCommand@,
   -- to also capture choice of items from menus, etc.
@@ -177,9 +183,7 @@ promptGetKey dm ovs onBlank frontKeyKeys = do
   -- are recorded as well and this is well defined and essential.
   CCUI{coinput=InputContent{bcmdMap}} <- getsSession sccui
   modifySession $ \sess ->
-    sess { sdisplayNeeded = False
-         , sturnDisplayed = True
-         , smacroFrame = addToMacro bcmdMap km $ smacroFrame sess }
+    sess {smacroFrame = addToMacro bcmdMap km $ smacroFrame sess}
   return km
 
 addToMacro :: M.Map K.KM HumanCmd.CmdTriple -> K.KM -> KeyMacroFrame

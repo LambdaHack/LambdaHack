@@ -303,7 +303,7 @@ displayRespUpdAtomicUI cmd = case cmd of
                    && not (calmEnough bPrev actorMaxSk)) $
                msgAdd MsgNeutralEvent "You are again calm enough to manage your equipment outfit."
            -- If the leader regenerates Calm more often than once per
-           -- standard game turn, this will not be refected, for smoother
+           -- standard game turn, this will not be reflected, for smoother
            -- and faster display. However, every halt for keypress
            -- shows Calm, so this only matters for macros, where speed is good.
            when (abs calmDelta > oneM) $ markDisplayNeeded (blid b)
@@ -476,9 +476,11 @@ displayRespUpdAtomicUI cmd = case cmd of
     let clipN = time `timeFit` timeClip
         clipMod = clipN `mod` clipsInTurn
         turnPing = clipMod == 0  -- e.g., to see resting counter
-    when (sdisplayNeeded || turnPing && not sturnDisplayed) $ pushFrame True
-      -- adds delay, because it's not an extra animation-like frame,
-      -- but showing some real information accumulated up to this point
+    if | sdisplayNeeded -> pushFrame True
+           -- adds delay, because it's not an extra animation-like frame,
+           -- but showing some real information accumulated up to this point
+       | turnPing && not sturnDisplayed -> pushFrame False
+       | otherwise -> return ()
     when turnPing $
       modifySession $ \sess -> sess {sturnDisplayed = False}
   UpdUnAgeGame{} -> return ()
