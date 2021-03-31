@@ -121,8 +121,8 @@ dumpRngs rngs = liftIO $ do
 -- | Read the high scores dictionary. Return the empty table if no file.
 restoreScore :: forall m. MonadServer m => COps -> m HighScore.ScoreDict
 restoreScore COps{corule} = do
-  bench <- getsServer $ sbenchmark . sclientOptions . soptions
-  mscore <- if bench then return Nothing else do
+  benchmark <- getsServer $ sbenchmark . sclientOptions . soptions
+  mscore <- if benchmark then return Nothing else do
     let scoresFile = rscoresFile corule
     dataDir <- liftIO appDataDir
     let path bkp = dataDir </> bkp <> scoresFile
@@ -137,12 +137,20 @@ restoreScore COps{corule} = do
                 "High score file from incompatible version of game detected."
           fail msg
       else return Nothing
-    let handler :: Ex.SomeException -> m (Maybe a)
+    savePrefix <- getsServer $ ssavePrefixSer . soptions
+    let defPrefix = ssavePrefixSer defServerOptions
+        moveAside = savePrefix == defPrefix
+        handler :: Ex.SomeException -> m (Maybe a)
         handler e = do
-          let msg = "High score restore failed. The wrong file moved aside. The error message is:"
+          when moveAside $
+            liftIO $ renameFile (path "") (path "bkp.")
+          let msg = "High score restore failed."
+                    <+> (if moveAside
+                        then "The wrong file moved aside."
+                        else "")
+                    <+> "The error message is:"
                     <+> (T.unwords . T.lines) (tshow e)
           serverPrint msg
-          liftIO $ renameFile (path "") (path "bkp.")
           return Nothing
     either handler return res
   maybe (return HighScore.empty) return mscore

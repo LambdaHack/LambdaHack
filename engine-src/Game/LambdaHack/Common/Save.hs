@@ -2,7 +2,7 @@
 module Game.LambdaHack.Common.Save
   ( ChanSave, saveToChan, wrapInSaves, restoreGame
   , compatibleVersion, delayPrint
-  , saveNameCli, saveNameSer
+  , saveNameCli, saveNameSer, bkpAllSaves
 #ifdef EXPOSE_INTERNAL
     -- * Internal operations
   , loopSave
@@ -24,6 +24,7 @@ import           System.FilePath
 import           System.IO (hFlush, stdout)
 import qualified System.Random.SplitMix32 as SM
 
+import Game.LambdaHack.Common.ClientOptions
 import Game.LambdaHack.Common.File
 import Game.LambdaHack.Common.Kind
 import Game.LambdaHack.Common.Misc
@@ -96,8 +97,8 @@ wrapInSaves cops stateToFileName exe = do
 
 -- | Restore a saved game, if it exists. Initialize directory structure
 -- and copy over data files, if needed.
-restoreGame :: Binary a => COps -> FilePath -> IO (Maybe a)
-restoreGame cops fileName = do
+restoreGame :: Binary a => COps -> FilePath -> Bool -> IO (Maybe a)
+restoreGame cops fileName moveAside = do
   -- Create user data directory and copy files, if not already there.
   dataDir <- appDataDir
   tryCreateDir dataDir
@@ -125,10 +126,14 @@ restoreGame cops fileName = do
     else return Nothing
   let handler :: Ex.SomeException -> IO (Maybe a)
       handler e = do
-        let msg = "Restore failed. The wrong file has been moved aside. The error message is:"
+        when moveAside $ renameFile (path "") (path "bkp.")
+        let msg = "Restore failed."
+                  <+> (if moveAside
+                      then "The wrong file has been moved aside."
+                      else "")
+                  <+> "The error message is:"
                   <+> (T.unwords . T.lines) (tshow e)
         delayPrint msg
-        renameFile (path "") (path "bkp.")
         return Nothing
   either handler return res
 
@@ -164,3 +169,20 @@ saveNameSer corule =
           w : _ -> w
           _ -> "Game"
   in gameShortName ++ ".server.sav"
+
+bkpAllSaves :: RuleContent -> ClientOptions -> IO Bool
+bkpAllSaves corule clientOptions = do
+  dataDir <- appDataDir
+  let benchmark = sbenchmark clientOptions
+      defPrefix = ssavePrefixCli defClientOptions
+      moveAside = not benchmark && ssavePrefixCli clientOptions == defPrefix
+      bkpOneSave name = do
+        let pathSave bkp = dataDir </> "saves" </> bkp <> defPrefix <> name
+        b <- doesFileExist (pathSave "")
+        when b $ renameFile (pathSave "") (pathSave "bkp.")
+      bkpAll = do
+        bkpOneSave $ saveNameSer corule
+        forM_ [-199..199] $ \n ->
+          bkpOneSave $ saveNameCli corule (toEnum n)
+  when moveAside bkpAll
+  return moveAside

@@ -481,13 +481,14 @@ partPronounLeader aid = do
 tryRestore :: MonadClientUI m => m (Maybe (StateClient, Maybe SessionUI))
 tryRestore = do
   cops@COps{corule} <- getsState scops
-  bench <- getsClient $ sbenchmark . soptions
-  if bench then return Nothing
+  benchmark <- getsClient $ sbenchmark . soptions
+  if benchmark then return Nothing
   else do
     side <- getsClient sside
     prefix <- getsClient $ ssavePrefixCli . soptions
-    let fileName = prefix <> Save.saveNameCli corule side
-    res <- liftIO $ Save.restoreGame cops fileName
+    let defPrefix = ssavePrefixCli defClientOptions
+        fileName = prefix <> Save.saveNameCli corule side
+    res <- liftIO $ Save.restoreGame cops fileName (prefix == defPrefix)
     let cfgUIName = rcfgUIName corule
         (configString, _) = rcfgUIDefault corule
     dataDir <- liftIO appDataDir

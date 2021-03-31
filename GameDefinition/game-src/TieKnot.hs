@@ -19,7 +19,6 @@ import           Game.LambdaHack.Client
 import qualified Game.LambdaHack.Client.UI.Content.Input as IC
 import qualified Game.LambdaHack.Client.UI.Content.Screen as SC
 import           Game.LambdaHack.Client.UI.ContentClientUI
-import           Game.LambdaHack.Common.ClientOptions (sbenchmark)
 import           Game.LambdaHack.Common.Kind
 import           Game.LambdaHack.Common.Misc
 import           Game.LambdaHack.Common.Point (speedupHackXSize)
@@ -98,7 +97,6 @@ tieKnotForAsync options@ServerOptions{ sallClear
         , coItemSpeedup
         , coTileSpeedup
         }
-      benchmark = sbenchmark $ sclientOptions soptionsNxt
   -- Evaluating for compact regions catches all kinds of errors in content ASAP,
   -- even in unused items.
   --
@@ -113,7 +111,7 @@ tieKnotForAsync options@ServerOptions{ sallClear
   -- It is reparsed at each start of the game executable.
   -- Fail here, not inside client code, so that savefiles are not removed,
   -- because they are not the source of the failure.
-  sUIOptions <- mkUIOptions (corule cops) benchmark
+  sUIOptions <- mkUIOptions (corule cops) (sclientOptions soptionsNxt)
   -- Client content operations containing default keypresses
   -- and command descriptions.
   let !ccui = CCUI

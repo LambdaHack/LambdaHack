@@ -22,15 +22,11 @@ import qualified Data.Text.IO as T
 import           Options.Applicative
   (defaultPrefs, execParserPure, handleParseResult)
 import           System.Exit (ExitCode (ExitSuccess))
-import           System.FilePath
 import           System.IO (hFlush, stdout)
 
 import           Game.LambdaHack.Atomic
 import           Game.LambdaHack.Client
-import           Game.LambdaHack.Common.ClientOptions (sbenchmark)
-import           Game.LambdaHack.Common.File
 import           Game.LambdaHack.Common.Kind
-import           Game.LambdaHack.Common.Misc
 import           Game.LambdaHack.Common.MonadStateRead
 import qualified Game.LambdaHack.Common.Save as Save
 import           Game.LambdaHack.Common.State
@@ -40,7 +36,6 @@ import           Game.LambdaHack.Server.BroadcastAtomic
 import           Game.LambdaHack.Server.HandleAtomicM
 import           Game.LambdaHack.Server.MonadServer
 import           Game.LambdaHack.Server.ProtocolM
-import           Game.LambdaHack.Server.ServerOptions
 import           Game.LambdaHack.Server.State
 
 import Implementation.MonadClientImplementation (executorCli)
@@ -165,17 +160,6 @@ executorSer cops@COps{corule} ccui soptionsNxtCmdline sUIOptions = do
       m = loopSer soptionsNxt executorClient
       exe = evalStateT (runSerImplementation m) . totalState
       exeWithSaves = Save.wrapInSaves cops stateToFileName exe
-      defPrefix = ssavePrefixSer defServerOptions
-      bkpOneSave name = do
-        dataDir <- appDataDir
-        let path bkp = dataDir </> "saves" </> bkp <> name
-        b <- doesFileExist (path "")
-        when b $ renameFile (path "") (path "bkp.")
-      bkpAllSaves = unless (sbenchmark $ sclientOptions soptionsNxt) $ do
-        T.hPutStrLn stdout "The game crashed, so savefiles are moved aside."
-        bkpOneSave $ defPrefix <> Save.saveNameSer corule
-        forM_ [-199..199] $ \n ->
-          bkpOneSave $ defPrefix <> Save.saveNameCli corule (toEnum n)
   -- Wait for clients to exit even in case of server crash
   -- (or server and client crash), which gives them time to save
   -- and report their own inconsistencies, if any.
@@ -187,7 +171,10 @@ executorSer cops@COps{corule} ccui soptionsNxtCmdline sUIOptions = do
                _ -> do
                  Ex.uninterruptibleMask_ $ threadDelay 1000000
                    -- let clients report their errors and save
-                 when (ssavePrefixSer soptionsNxt == defPrefix) bkpAllSaves
+                 moveAside <- Save.bkpAllSaves corule clientOptions
+                 when moveAside $
+                   T.hPutStrLn stdout
+                               "The game crashed, so savefiles are moved aside."
                  hFlush stdout
                  Ex.throwIO ex  -- crash eventually, which kills clients
             )
