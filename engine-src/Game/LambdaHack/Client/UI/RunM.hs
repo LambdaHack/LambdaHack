@@ -235,14 +235,17 @@ checkAndRun aid dir = do
       rightTilesLast = map (lvl `at`) rightPsLast
       leftForwardTileHere = lvl `at` leftForwardPosHere
       rightForwardTileHere = lvl `at` rightForwardPosHere
-      tilePropAt :: ContentId TileKind -> (Bool, Bool, Bool)
+      tilePropAt :: ContentId TileKind -> (Bool, Bool, Bool, Bool, Bool, Bool)
       tilePropAt tile =
         let suspect =
               smarkSuspect > 0 && Tile.isSuspect coTileSpeedup tile
               || smarkSuspect > 1 && Tile.isHideAs coTileSpeedup tile
             embed = Tile.isEmbed coTileSpeedup tile  -- no matter if embeds left
             walkable = Tile.isWalkable coTileSpeedup tile
-        in (suspect, embed, walkable)
+            openable = Tile.isOpenable coTileSpeedup tile
+            closable = Tile.isClosable coTileSpeedup tile
+            modifiable = Tile.isModifiable coTileSpeedup tile
+        in (suspect, embed, walkable, openable, closable, modifiable)
       terrainChangeMiddle = tilePropAt tileThere
                             `notElem` map tilePropAt [tileLast, tileHere]
       terrainChangeLeft = tilePropAt leftForwardTileHere
