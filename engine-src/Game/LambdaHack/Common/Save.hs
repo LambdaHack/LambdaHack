@@ -97,13 +97,14 @@ wrapInSaves cops stateToFileName exe = do
 
 -- | Restore a saved game, if it exists. Initialize directory structure
 -- and copy over data files, if needed.
-restoreGame :: Binary a => COps -> FilePath -> Bool -> IO (Maybe a)
-restoreGame cops fileName moveAside = do
+restoreGame :: Binary a
+            => RuleContent -> ClientOptions -> FilePath -> IO (Maybe a)
+restoreGame corule clientOptions fileName = do
   -- Create user data directory and copy files, if not already there.
   dataDir <- appDataDir
   tryCreateDir dataDir
-  let path bkp = dataDir </> "saves" </> bkp <> fileName
-  saveExists <- doesFileExist (path "")
+  let path = dataDir </> "saves" </> fileName
+  saveExists <- doesFileExist path
   -- If the savefile exists but we get IO or decoding errors,
   -- we show them and start a new game. If the savefile was randomly
   -- corrupted or made read-only, that should solve the problem.
@@ -111,12 +112,12 @@ restoreGame cops fileName moveAside = do
   -- terminate the program with an exception.
   res <- Ex.try $
     if saveExists then do
-      let vExe1 = rexeVersion $ corule cops
-      (vExe2, s) <- strictDecodeEOF (path "")
+      let vExe1 = rexeVersion corule
+      (vExe2, s) <- strictDecodeEOF path
       if compatibleVersion vExe1 vExe2
       then return $! s `seq` Just s
       else do
-        let msg = "Savefile" <+> T.pack (path "")
+        let msg = "Savefile" <+> T.pack path
                   <+> "from an incompatible version"
                   <+> T.pack (showVersion vExe2)
                   <+> "detected while trying to restore"
@@ -126,7 +127,7 @@ restoreGame cops fileName moveAside = do
     else return Nothing
   let handler :: Ex.SomeException -> IO (Maybe a)
       handler e = do
-        when moveAside $ renameFile (path "") (path "bkp.")
+        moveAside <- bkpAllSaves corule clientOptions
         let msg = "Restore failed."
                   <+> (if moveAside
                       then "The wrong file has been moved aside."

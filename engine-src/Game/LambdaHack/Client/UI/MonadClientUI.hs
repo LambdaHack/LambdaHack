@@ -480,15 +480,14 @@ partPronounLeader aid = do
 -- | Try to read saved client game state from the file system.
 tryRestore :: MonadClientUI m => m (Maybe (StateClient, Maybe SessionUI))
 tryRestore = do
-  cops@COps{corule} <- getsState scops
-  benchmark <- getsClient $ sbenchmark . soptions
-  if benchmark then return Nothing
+  COps{corule} <- getsState scops
+  clientOptions <- getsClient soptions
+  if sbenchmark clientOptions then return Nothing
   else do
     side <- getsClient sside
     prefix <- getsClient $ ssavePrefixCli . soptions
-    let defPrefix = ssavePrefixCli defClientOptions
-        fileName = prefix <> Save.saveNameCli corule side
-    res <- liftIO $ Save.restoreGame cops fileName (prefix == defPrefix)
+    let fileName = prefix <> Save.saveNameCli corule side
+    res <- liftIO $ Save.restoreGame corule clientOptions fileName
     let cfgUIName = rcfgUIName corule
         (configString, _) = rcfgUIDefault corule
     dataDir <- liftIO appDataDir
