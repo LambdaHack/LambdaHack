@@ -94,7 +94,7 @@ dejavuBold = FontSet {fontMapScalable = "16x16xwScalable", fontMapBitmap = "16x1
 
 ; Warning: the Ubuntu Font Family fonts are considered non-free by Debian
 ; and so we don't include them in Debian and some other GNU/Linux packages.
-; If you use such a package, feel free to download the fonts from the web
+; If you use such a package, feel free to download the fonts from our github
 ; or create links to their locations in non-free Debian package fonts-ubuntu.
 ubuntu = FontSet {fontMapScalable = "16x16xwScalable", fontMapBitmap = "16x16xwBitmap", fontPropRegular = "ubuntuRegular", fontPropBold = "ubuntuBold", fontMono = "ubuntuMono"}
 

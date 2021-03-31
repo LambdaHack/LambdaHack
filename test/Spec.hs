@@ -319,4 +319,6 @@ integrationTests = testGroup "integrationTests" $
                            , "--fontset", fontsetName ]
             serverOptions2 <- handleParseResult $ execParserPure defaultPrefs serverOptionsPI args2
             tieKnot serverOptions2
-  in map testFontset $ zip [0..] $ map (T.unpack . fst) $ uFontsets uiOptions
+      isUbuntu = ("ubuntu" `T.isPrefixOf`)
+  in map testFontset $ zip [0..] $ map T.unpack $ filter (not . isUbuntu)
+     $ map fst $ uFontsets uiOptions
