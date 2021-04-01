@@ -358,8 +358,7 @@ actionStrategy foeAssocs friendAssocs aid retry = do
           , stratToFreq (if condTgtNonmovingEnemy then 100 else 30)
               -- not too common, to leave missiles for pre-melee dance
             $ projectItem actorSk aid
-                -- equivalent of @condCanProject@ called inside
-          , condAimEnemyTargeted && not condInMelee )
+          , condAimEnemyTargeted && not condInMelee && condCanProject )
         , ( [SkApply]  -- common, because animals have that
           , stratToFreq 10
             $ applyItem actorSk aid ApplyAll  -- use any potion or scroll

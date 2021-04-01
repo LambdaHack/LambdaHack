@@ -190,8 +190,14 @@ condNoEqpWeaponM aid =
 
 -- | Require that the actor can project any items.
 condCanProjectM :: MonadClient m => Int -> ActorId -> m Bool
-condCanProjectM skill aid =
-  if skill < 1 then return False else  -- shortcut
+condCanProjectM skill aid = do
+  side <- getsClient sside
+  curChal <- getsClient $ scurChal
+  fact <- getsState $ (EM.! side) . sfactionD
+  if skill < 1
+     || ckeeper curChal && fhasUI (gplayer fact)
+  then return False
+  else  -- shortcut
     -- Compared to conditions in @projectItem@, range and charge are ignored,
     -- because they may change by the time the position for the fling
     -- is reached.
