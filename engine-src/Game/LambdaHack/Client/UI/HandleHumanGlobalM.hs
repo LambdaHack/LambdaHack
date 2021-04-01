@@ -1066,7 +1066,13 @@ alterDirHuman = pickPoint "modify" >>= \case
 alterTileAtPos :: (MonadClient m, MonadClientUI m)
                => Point
                -> m (FailOrCmd RequestTimed)
-alterTileAtPos = alterCommon False
+alterTileAtPos pos = do
+  leader <- getLeaderUI
+  sb <- getsState $ getActorBody leader
+  let sxhair = Just $ TPoint TUnknown (blid sb) pos
+  -- Point xhair to see details with `~`.
+  setXHairFromGUI sxhair
+  alterCommon False pos
 
 -- | Verify that the tile can be transformed or any embedded item effect
 -- triggered and the player is aware if the effect is dangerous or grave,
