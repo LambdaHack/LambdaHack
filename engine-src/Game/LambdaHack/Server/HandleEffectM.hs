@@ -471,7 +471,7 @@ effectSem effApplyFlags0@EffApplyFlags{..}
     IK.OnUser eff -> effectSem effApplyFlags0 source source iid c eff
     IK.NopEffect -> return UseDud  -- all there is
     IK.AndEffect eff1 eff2 -> effectAndEffect recursiveCall source eff1 eff2
-    IK.OrEffect eff1 eff2 -> effectOrEffect recursiveCall eff1 eff2
+    IK.OrEffect eff1 eff2 -> effectOrEffect recursiveCall (bfid sb) eff1 eff2
     IK.SeqEffect effs -> effectSeqEffect recursiveCall effs
     IK.When cond eff ->
       effectWhen recursiveCall source cond eff effActivation
@@ -2212,14 +2212,24 @@ effectAndEffectSem recursiveCall eff1 eff2 = do
 -- ** OrEffect
 
 effectOrEffect :: forall m. MonadServerAtomic m
-               => (IK.Effect -> m UseResult) -> IK.Effect -> IK.Effect
+               => (IK.Effect -> m UseResult)
+               -> FactionId -> IK.Effect -> IK.Effect
                -> m UseResult
-effectOrEffect recursiveCall eff1 eff2 = do
-  ur1 <- recursiveCall eff1
-  if ur1 == UseUp
-  then return UseUp
-  else recursiveCall eff2
-  -- no @execSfx@, because individual effects sent them
+effectOrEffect recursiveCall fid eff1 eff2 = do
+  curChalSer <- getsServer $ scurChalSer . soptions
+  fact <- getsState $ (EM.! fid) . sfactionD
+  case eff1 of
+    IK.AndEffect IK.ConsumeItems{} _ | cgoods curChalSer
+                                       && fhasUI (gplayer fact) -> do
+      -- Stop forbidden crafting ASAP to avoid spam.
+      execSfxAtomic $ SfxMsgFid fid SfxReadyGoods
+      return UseId
+    _ -> do
+      ur1 <- recursiveCall eff1
+      if ur1 == UseUp
+      then return UseUp
+      else recursiveCall eff2
+             -- no @execSfx@, because individual effects sent them
 
 -- ** SeqEffect
 
