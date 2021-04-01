@@ -465,24 +465,25 @@ moveSearchAlter run dir = do
   lvl <- getLevel $ blid sb
   let t = lvl `at` tpos
   runStopOrCmd <-
-    if -- Movement requires full access.
-       | Tile.isWalkable coTileSpeedup t ->
-           if | moveSkill > 0 ->
-                -- A potential invisible actor is hit. War started without
-                -- asking.
-                return $ Right $ ReqMove dir
-              | bwatch sb == WSleep -> failSer MoveUnskilledAsleep
-              | otherwise -> failSer MoveUnskilled
-       -- Not walkable, so search and/or alter the tile.
-       | run -> do
-           -- Explicit request to examine the terrain.
-           blurb <- lookAtPosition (blid sb) tpos
-           mapM_ (uncurry msgAdd) blurb
-           failWith $ "the terrain is" <+>
-             if | Tile.isModifiable coTileSpeedup t -> "potentially modifiable"
-                | alterable -> "potentially triggerable"
-                | otherwise -> "completely inert"
-       | otherwise -> alterCommon True tpos
+    if Tile.isWalkable coTileSpeedup t then  -- Movement requires full access.
+      if | moveSkill > 0 ->
+             -- A potential invisible actor is hit. War started without asking.
+             return $ Right $ ReqMove dir
+         | bwatch sb == WSleep -> failSer MoveUnskilledAsleep
+         | otherwise -> failSer MoveUnskilled
+    else do  -- Not walkable, so search and/or alter the tile.
+      let sxhair = Just $ TPoint TUnknown (blid sb) tpos
+      -- Point xhair to see details with `~`.
+      setXHairFromGUI sxhair
+      if run then do
+        -- Explicit request to examine the terrain.
+        blurb <- lookAtPosition (blid sb) tpos
+        mapM_ (uncurry msgAdd) blurb
+        failWith $ "the terrain is" <+>
+          if | Tile.isModifiable coTileSpeedup t -> "potentially modifiable"
+             | alterable -> "potentially triggerable"
+             | otherwise -> "completely inert"
+      else alterCommon True tpos
   return $! runStopOrCmd
 
 alterCommon :: (MonadClient m, MonadClientUI m)
