@@ -109,7 +109,8 @@ attrStringToAL s =
   assert (allB (\ac -> Color.charFromW32 ac /= '\n') s) $  -- expensive in menus
   assert (length s == 0 || last s /= Color.spaceAttrW32
           `blame` map Color.charFromW32 s) $
-    -- only expensive for menus, but often violated by changes, so disabled
+    -- only expensive for menus, but often violated by code changes, so disabled
+    -- outside test runs
 #endif
     AttrLine s
 

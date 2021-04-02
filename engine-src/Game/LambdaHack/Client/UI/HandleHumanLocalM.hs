@@ -781,9 +781,9 @@ eitherHistory showAll = do
       renderedHistory = replicate placeholderCount placeholderLine
                         ++ renderedHistoryRaw
       histBound = placeholderCount + histBoundRaw
-      splitRow al =
-        let (spNo, spYes) = span (/= Color.spaceAttrW32) al
-            par1 = case linesAttr spYes of
+      splitRow as =
+        let (spNo, spYes) = span (/= Color.spaceAttrW32) as
+            par1 = case filter (/= emptyAttrLine) $ linesAttr spYes of
               [] -> emptyAttrLine
               [l] -> l
               ls -> attrStringToAL $ intercalate [Color.spaceAttrW32]
