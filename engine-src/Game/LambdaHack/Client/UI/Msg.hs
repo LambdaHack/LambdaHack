@@ -558,18 +558,21 @@ addToReport usedHints displayHints inMelee
       newH = History { newReport = Report $ repMsgNK : r
                      , newTime = time
                      , .. }
-      nusedHints = S.insert msg usedHints
+      msgIsHint = tutorialHint (msgClass msg)
+      msgUsedAsHit = S.member msg usedHints
+      newUsedHints = if msgIsHint && displayHints && not msgUsedAsHit
+                     then S.insert msg usedHints
+                     else usedHints
   in -- Tutorial hint shown only when tutorial enabled and hint not yet shown.
-     if | tutorialHint (msgClass msg)
-          && (not displayHints || S.member msg usedHints) ->
+     if | msgIsHint && (not displayHints || msgUsedAsHit) ->
           (usedHints, oldHistory, False)
         | not (scrapsRepeats $ msgClass msg)
           || nullRepMsgNK repMsgNK ->
           -- Don't waste time on never shown messages.
-          (nusedHints, newH, False)
+          (newUsedHints, newH, False)
         | otherwise -> case scrapRepetition newH of
-            Just scrappedH -> (nusedHints, scrappedH, True)
-            Nothing -> (nusedHints, newH, False)
+            Just scrappedH -> (newUsedHints, scrappedH, True)
+            Nothing -> (newUsedHints, newH, False)
 
 -- | Add a newline to end of the new report of history, unless empty.
 addEolToNewReport :: History -> History
