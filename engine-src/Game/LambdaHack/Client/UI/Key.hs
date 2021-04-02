@@ -74,6 +74,7 @@ instance NFData Key
 data Modifier =
     NoModifier
   | ControlShift
+  | AltShift
   | Shift
   | Control
   | Alt
@@ -137,6 +138,7 @@ showKey DeadKey      = "DEADKEY"
 showKM :: KM -> String
 showKM KM{modifier=NoModifier, key} = showKey key
 showKM KM{modifier=ControlShift, key} = "C-S-" ++ showKey key
+showKM KM{modifier=AltShift, key} = "A-S-" ++ showKey key
 showKM KM{modifier=Shift, key} = "S-" ++ showKey key
 showKM KM{modifier=Control, key} = "C-" ++ showKey key
 showKM KM{modifier=Alt, key} = "A-" ++ showKey key
@@ -282,6 +284,8 @@ mkKM s = let mkKey sk =
          in case s of
            'C':'-':'S':'-':rest -> KM ControlShift (mkKey rest)
            'S':'-':'C':'-':rest -> KM ControlShift (mkKey rest)
+           'A':'-':'S':'-':rest -> KM AltShift (mkKey rest)
+           'S':'-':'A':'-':rest -> KM AltShift (mkKey rest)
            'S':'-':rest -> KM Shift (mkKey rest)
            'C':'-':rest -> KM Control (mkKey rest)
            'A':'-':rest -> KM Alt (mkKey rest)

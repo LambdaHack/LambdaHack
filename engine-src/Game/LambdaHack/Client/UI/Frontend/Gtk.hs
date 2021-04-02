@@ -118,6 +118,7 @@ startupFun coscreen ClientOptions{..} rfMVar = do
         modifier = case modifier of  -- to prevent S-!, etc.
           K.Shift -> K.NoModifier
           K.ControlShift -> K.Control
+          K.AltShift -> K.Alt
           _ -> modifier
     when (key == K.Esc) $ IO.liftIO $ resetChanKey (fchanKey rf)
     IO.liftIO $ saveKMP rf modifier key (PointUI 0 0)

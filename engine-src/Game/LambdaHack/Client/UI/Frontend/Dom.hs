@@ -139,6 +139,7 @@ runWeb coscreen ClientOptions{..} rfMVar = do
         modifierNoShift = case modifier of  -- to prevent S-!, etc.
           K.Shift -> K.NoModifier
           K.ControlShift -> K.Control
+          K.AltShift -> K.Alt
           _ -> modifier
     -- IO.liftIO $ do
     --   putStrLn $ "keyId: " ++ keyId

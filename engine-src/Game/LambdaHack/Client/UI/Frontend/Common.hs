@@ -86,6 +86,7 @@ saveKMP !rf !modifier !key !kmpPointer = do
 -- | Translates modifiers to our own encoding.
 modifierTranslate :: Bool -> Bool -> Bool -> Bool -> K.Modifier
 modifierTranslate modCtrl modShift modAlt modMeta
+  | (modAlt || modMeta) && modShift = K.AltShift
   | modAlt || modMeta = K.Alt
   | modCtrl && modShift = K.ControlShift
   | modCtrl = K.Control

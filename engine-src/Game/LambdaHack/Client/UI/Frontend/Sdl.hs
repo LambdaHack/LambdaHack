@@ -318,6 +318,7 @@ startupFun coscreen soptions@ClientOptions{..} rfMVar = do
                 modifierNoShift = case modifier of  -- to prevent S-!, etc.
                   K.Shift -> K.NoModifier
                   K.ControlShift -> K.Control
+                  K.AltShift -> K.Alt
                   _ -> modifier
             p <- SDL.getAbsoluteMouseLocation
             when (key == K.Esc) $ resetChanKey (fchanKey rf)
