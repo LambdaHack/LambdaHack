@@ -1,5 +1,555 @@
-## [v0.10.0.0](https://github.com/LambdaHack/LambdaHack/compare/v0.9.5.0...v0.10.0.0)
+## [v0.10.2.0](https://github.com/LambdaHack/LambdaHack/compare/v0.9.5.0...v0.10.2.0)
 
+- Let '?' scroll help
+- Handle Alt and Shift modifiers together
+- Advertise the C- Tab command instead of A-
+- Ignore empty lines in history, just in case
+- Don't keep trailing endlines in history
+- Don't include placeholders in history.txt
+- Retry explosions 10 instead of 100 times
+- Point crosshair to a modified tile to easily get lore info
+- Point crosshair to a bumped tile to easily get lore info
+- Don't spam when reporting that crafting is forbidden
+- Prevent AI from attempting to fling when challenge forbids it
+- Hint about absolute paths to fonts
+- Disable testing ubuntu fonts, because they can't be distributed in Debian
+- If any savefile corrupted, move aside all
+- Be more consistent about moving corrupted files aside
+- Stop running when passing a door, etc.
+- Make the game over lore headers sound more natual
+- Do not mention embeds in minimal detail
+- Tweak detail in one step to minimal
+- Don't let distant taunts interrupt running
+- Add a comment about fleeing from stash
+- Help AI not to leave a scout guarding the stash
+- Ensure some gems in escape scenario
+- Don't show embed descriptions by default now that ~ does that easily
+- Add one more typical organ symbol
+- Avoid cut off descriptions of conditional effects
+- Prefer weapons with burn or wound
+- Pick up bad weapons if decent projectiles
+- Slightly prefer weapons that have any effects
+- Permit cycling through pointed-at lore with tilde
+- Split chooseItemDialogMode into several functions
+- Permit pointed-at lore display also outside aiming mode
+- Reset the pointed at lore display sequence
+- Maintain current state of lore display
+- Save current state of being-aimed-at lore display
+- Don't use timeout weapon if non-timeout as strong
+- Add delay to pushed frames, to notice things shorter than a turn
+- Temporarily bring back compatibility with v0.10.1
+- Pretty-print activationFlag to make it more understandable
+- Replace the special periodic activation handling with effect conditions
+- Replace the special effect handling under ranged with effect condition
+- Set ActivationOnCombine in one case for now
+- Replace EffOnSmash by ActivationOnSmash
+- Add effect condition based on activation method
+- Add Unless effect
+- Introduce ActivationFlag in place of EffActivation type
+- Make server check that melee is done with a legal weapon
+- Add a failure about meleeing with not a weapon
+- Get rid of a lot of spurious instances
+- Don't say a hit was amusing if non-piercing damage was high
+- Vary also the block messages when high armor
+- Use 'a' and 'the' in dangerous item use confirmations
+- Prevent safe spots near centres of big explosions
+- Permit explosions to sometimes go off inside unwalkable terrain
+- Don't sleep if the only friend on level is guarding the stash
+- Shorten mreason text for crawl to fit in main menu with square fonts
+- Don't hint to press '?' when it does nothing yet
+- Avoid empty manual page at the end with square font
+- Make sure spot crosshair description fits on the status line
+- Don't display the aim mode prefix when inside a menu
+- Experiment with item menu not insisting on selecting an item
+- Talk about the relevant lore command in manual
+- Hint about the relevant lore command
+- Make lore display context sensitive in aiming mode
+- Signal that lore command is sometimes context-sensitive
+- Don't add the interruption message unless useful
+- Don't wipe key status that opens main menu after automation
+- Permit random flavour assignment with brightCol, etc.
+- Don't make detection modal if not performed by player's faction
+- Don't describe the goal tile when performing mouse goto
+- Simplify turn display code, removing most of the newest additions
+- Remove another spurious source of frames
+- Remove spurious sources of frames
+- Re-add refined *interrupted* via messages
+- Ensure all frames when inside macro have one-line report only
+- Display *interrupted* also when messages interrupt macros
+- Factor out oneLineBasicFrame
+- Declare the codebase lens-free
+- Avoid distributing test.exe in Windows packages
+- Use squareToUI for mouse handling in the browser
+- Introduce game map coordinates: PointSquare
+- Update wrt PointUI transition in other frontends
+- Define UI screen coords in a separate file
+- Silence messages about dead actors activating most embeds
+- Make it possible to prevent the sleep effect
+- Remove savefiles if config file too old
+- Force savegame load result to catch errors ASAP
+- Wait until browser finalizes Local Storage in the background
+- Throw a Haskel exception when JS decompression fails on an old savefile
+- Now that browser compresses savefiles, permit full history size
+- Limit DOM keyboard focus highjacking, etc.
+- Tell player when browser can be closed
+- Use lz-string.js externs for minification
+- Compress savefiles in GHCJS
+- Bump base-compat bound to include Data.Semigroup compat
+- Simplify containers for explosions
+- Start embedded explosions inside the tile, not inside projectile
+- Exclude meta game items from combat messages
+- Move snxtScenario to session
+- Avoid 'you are less more tidy'
+- Don't count valuables inside organs to dungeon total
+- Clarify that normal damage is piercing, as opposed to blunt wounding
+- Change the misleading 'guards a hoard'
+- When dropped, destroy any organs, not only conditions
+- Don't hint to press ? when it would skip some messages
+- Explain why the fadeout report is rendered in square font
+- Show each tutorial hint at most once per game
+- Require keypress when another faction killed off
+- Don't show question marks in HUD for MinorAspects items
+- Add MinorAspects flag
+- Get rid of the mechanism for referring expressions across messages
+- Commute freely messages about conditions lasting longer
+- Add NopEffect
+- Add AtMostOneOf effect constructor
+- Assign stable faction IDs to teams with continuity
+- Display also actor initial items, not only organs
+- Use Condition flag, not group, for speed and simplicity
+- Keep paragraphs of the same width, unless the first really short
+- Add the 'stomachs' irregular plural
+- Don't identify item if PutToSleep applied to sleeping actor
+- Permit question marks in verb effects
+- Do not announce item trigger if explicit and so already told
+- Do not report conditions triggered when they vanish
+- Inform differently when sleep induced by own organ, etc.
+- Reflect that item triggering message appears after the fact
+- Do not spam when backstory can't trigger yet
+- Give more details in logs when item triggering does not work
+- Do not spam about water being activated
+- Prevent server failure when triggering a gold piece
+- Log item application even from, e.g., periodic activation
+- Don't announce that a dying actors stopped being hungry
+- Add a temporary hack that prevents AI from stealing backstories in Allure
+- Hardwire the player team continuity token
+- Don't identify meta game items at game end
+- Implement conditional effects
+- At death, destroy all organs, not just the trunk
+- Permit non-unique non-singleton flavours
+- Render story flavours specially
+- Announce identification even during melee
+- Inform about discovering meta game organs
+- Make sure heroes spawned in safari mode are properly numbered
+- Add a few more hero names
+- Improve the descritpion of MetaGame flag
+- Record meta game gear for future games
+- Consume current, not persistent team gear
+- Create gear according to character preferences, if any
+- Use server-assigned actor numbers in the client
+- Assign index numbers to actors from continued teams
+- Add continued team character counter
+- Generalize hero gear to each team with continuity
+- Store team continuity in a faction
+- Add team continuity across scenarios to content
+- Add persistent sheroGear to server state
+- Add a comment about why aspects of meta game items are not preserved
+- Keep flavour of MetaGame items between games
+- Keep identity of MetaGame items between games
+- Simplify and speed up serverDiscos
+- Add a flag to keep item identified between games
+- Make sure pushed actors never hit before flying away
+- Use lookupActorTime instead of manually inlining
+- Only activate the first effect with UnderRanged and UnderMelee
+- Simplify deflection descriptions given they don't stack in practice, after all
+- Describe the new challenges in the manual
+- Implement disabled flinging challenge
+- Implement disabled crafting challenge
+- Add two more challenges
+- Display tutorial hint only for bad temporary conditions
+- Let AI use items with -1 speed, e.g., shields
+- Improve valuing of SkDeflectRanged and SkDeflectMelee
+- Try not to recompile dependencies between cabal-plan and LambdaHack
+- Try to work around packages not updated for GHC 9.0.1
+- Add deflection temporary conditions
+- Add GHC 9.0.1 to travis and .cabal
+- Implement skills for ranged and melee invulnerability
+- Add skills for ranged and melee invulnerability
+- Implement flags for applying when under attack
+- Add flags for auto-activation when under attack
+- Let AI with low skill target suspect terrain
+- Prevent AI from trying to trigger blocked tiles
+- Explain why we crop surface, not texture, even for prop font
+- Explain the pointman/leader discrepancy
+- Gut out the last remain of 'cabal list-bin'
+- Add some list-bin debug to travis script
+- Explain away a text rendering artifact
+- Make sure speaking unique messages are not ignored
+- Don't interrupt for taunt messages
+- Move the tutorial hint about hearing taunts to the correct place
+- Add tutorial hints about taking damage
+- Only save to log any interruptible messages while in melee
+- Add some more tutorial hint messages
+- Write key names as on the keyboard, button names as in the button
+- When leader stands over an item, say so, not 'notices item'
+- Unify pluralization of skills and challenges
+- Add some tutorial hint messages
+- Add the first tutorial hint
+- Start with tutorial hints, but not in screensaver mode
+- Ignore tutorial hints, as needed
+- Give a more informative message when detecting that AI stuck
+- Move tutorial hint options from state to session because they are UI-only
+- Keep the tutorial override option from game to game
+- Implement the convenience option to override tutorial hint display
+- Add a convenience option to override tutorial hint display
+- Set tutorial messages according to game mode
+- Toggle tutorial messages when starting a game
+- Mark some game modes as tutorials
+- Display manual at the end of help
+- Keep the rest of the manual in content
+- Split manual into paragraphs aware of some markdown formatting
+- Simplify an address in manual not to spill over 80 columns
+- Make duplicate errors more informative (fixes #204)
+- Factor out movementDefinitions
+- Hint in config file to disable the special movement keys
+- Hint that stealth if possible and AI vs player symmetric
+- Save after game over, to preserve history
+- Limit mentions of 'playing' not to break immersion
+- Delimit with colour the known endings section of F1 screen
+- Change 'scenario' to 'adventure' to be more immersive
+- Dedupe special item and lore menu overlay handling
+- Strenghten the types in item and lore menu code
+- Display scenario lore (fixes #157)
+- Factor our scenario description code
+- Mention that scale needs to be configured for high dpi displays, see #164
+- Shorten some travis tests
+- Make full map position info mode the default
+- Refer to the inspected map position as 'here', not 'there'
+- Use the actor pronoun when describing items at the same position (fixes #215)
+- Don't switch the subject from enemy actor to self for the same map position
+- Don't chain dependent sentences when examining map position
+- Improve the wording of actor blurbs when inspecting map postions
+- When inspecting map locations, make items subjects (see #215)
+- Make it more obvious the game outcomes are fixed terms
+- Compute BFS with Word16, not Word8; slower, but some paths are longs
+- Be more careful avoiding 32bit overflows in frequencies (for JS)
+- Don't interpret the common desktop-switching key combinations
+- Clear the margins also when redrawing after viewpane changed
+- Specify fullscreen in config file and override on commandline
+- Implement both kinds of fullscreen
+- Name variable same as record field
+- Remove help comment regarding SDL-only
+- Add fullscreen CLI option for SDL renderer
+- Indent by 4, not 2, proportional spaces
+- Disable brew-sdl2-osx in travis that now takes too long
+- Don't configure the unused data directories when invoking cabal
+- When installing don't create the now empty GameDefinition/fonts/
+- Don't limit jobs to 1 now that cabal shows errors fine
+- Don't embed the fonts in the web frontend version
+- Get rid of datafiles from .cabal
+- Kill the font license files that are duplicated in COPYLEFT file
+- Get rid of the now unused fontDir option
+- Use embedded fonts, unless absolute path is given
+- Embed game-supplied font files
+- Try to be more verbose where running cabal test in appveyor
+- Don't create ~/.test directory when testing
+- Version config file; fixes #220
+- Don't error out if the effect-causing item is not seen by strangers
+- Add assertionz that, normally, items are known by actors affected by them
+- Hardwire a few less colours
+- Mention the item responsible for an effect, unless spammy
+- Get rid of a left over no-repetition message helper
+- Pass on the item responsible for an effect
+- Start main menus at the first normal item
+- Open game homepage when clicked in Main Menu
+- Write the homepage address in full in Main Menu
+- Depend on open-browser package
+- Make the game over messages more colourful; fixes #213
+- Tweak the display of game over messages
+- Make one kind of ending message more precise and colourful
+- Display camped and restarted endings in F1 scenario screen
+- Save which games are camped or restarted
+- Add default messages for Restart and Camping; fixes #212
+- Sort outcome constructors for best display in F1 scenario screen
+- Colour only outcome name in game over header
+- Refactor renderSection in preparation of multi-color lines
+- Avoid 'restart in foggy mode'
+- Unify rendering of game outcomes; fixes #210
+- Remove a leftover mention of rmainMenuArt
+- Improve the colours of the F1 scenario description screen
+- Expose the meaning of colours for the use in other modules
+- Specify also defeat endings
+- Make headers in F1 scenario screen monospace
+- Factor out attrLinesToFontMap
+- Render F1 scenario screen better; fixes #208
+- Add tests for many game modes in one session; fixes #228
+- Add slowCrawl make target to observe AI in detail
+- Mention in item description it's unique, because name may not underscore it
+- Ignore the placeholder messages when displaying one message
+- Don't overwrite prop with mono overlay even if the latter empty
+- Add placeholders to history display, fixing #236
+- Add a comment about historyMax divisible by screenful
+- Improve message class of HP-affecting effects display
+- Mark with dots if the show distinct messages different than the longer
+- Implement distinct messages for becoming more affected by a condition
+- Implement distinct messages for SfxTimerExtended
+- Move messages that are hard to scrap to Distinct class, to fix it
+- Prepare ppSfxMsg for Distinct messages
+- Don't let ESC clear messages in aiming mode; was confusing
+- Add Discord and Matrix addresses to the manual
+- Add links to discord and matrix chat
+- Let MsgRunStopReason suffice for running interruption
+- Save spam, but don't show
+- Clean up scraping messages
+- Don't run if ordered to run into solid tile
+- Reword the short post-action messages
+- Don't show both terrain description and a warning about it in yellow
+- Typeset one line of history view the same as whole history
+- Make some messages longer to look better on a separate line
+- Reverse history to match the order of messages shown on screen normally
+- No longer specify initial repetition of a message
+- Eliminate not saving and not repeating messages using counts
+- Use allB in a couple more asserts
+- Assert message constructors have proper length
+- Get rid of message class GADT as designed by Alex Byaly, simplifying code
+- Wrap first line of overlay at half the screen, not earlier
+- Make indentSplitAttrString more accurate
+- Tweak unique entities in content, adding 'the' as needed; fixes #214
+- Don't capitalize and add 'the' to unique entities
+- Be more verbose when displacing over laying items
+- Align single high score lines
+- Copy-paste-hacked enlarging line-wrap treshold if too long headers then fit
+- Fine-tune display of too long reports
+- Display message classes aligned
+- Rename message class constructors for better display
+- Display message class in grey
+- Indent wrapped messages
+- In messages, replace some magenta risks by bright red harms
+- Be careful measuring length of multi-line texts for wrapping
+- Use the config option for one message per line on screen
+- Hide the implementation of Msg, again
+- Display message class in history if one per line
+- Don't report HP changes of projectiles
+- Use the config option for one message per line in history
+- Pass along the config option for one message per line in history
+- Add config options for one message per line
+- Rename the item spotting message
+- Bring back filtering empty messages, to fix checking if report empty
+- Add Show instance to history and its components for debugging
+- Improve removing EOLs when deduplicating messages
+- Remove MsgItemMoveLog now that one message class suffices for two components
+- Get rid of isSavedToHistory and isDisplayed encoded now in the GADT
+- Customize messages more comfortably
+- Simplify restarting client
+- Remove the code enabling multiple UI clients
+- Don't spawn many UI clients, but re-assign a single one
+- Make MsgClass a GADT
+- Eliminate Binary instance of MsgClass in preparation of GADT
+- In config file, specify prefixes of message class names
+- Change colour of game start message to a nicer one
+- Issue special messages when actor fall to sleep or wake up
+- Tweak message class use and colour assignment again
+- Remove abuse of MsgTileDisco
+- Recolour enemy spotted animation according to colour meaning table
+- Redo colour assignment to messages
+- Update frontends to highlight changes
+- Change the colour of names of sleeping actors to blue
+- Reflect changes in highlighting in the manual
+- Swap blue and green highlights
+- Highlight dominated actors more distinctly, as proposed by @bulbousBullfrog
+- Rename confusing message classes
+- Make sure indented texts are wrapped at earlier position
+- Make most texts wrap before full screen width
+- Extend UI.Content.Screen validation
+- Tweak texts to fit on screen easily with square font
+- Permit wrapping messages after N columns
+- Prefer stairs in bottom right corners to leave space for messages
+- Prefer levels in bottom right corners to leave space for messages
+- Update documentation to the config changes
+- Prevent friendly AI from wasting time nosing around our stash
+- Rename an identifier to a consistent form
+- Limit the size of monospace prompts when keypress requested
+- Redo message colours given that some colours get a very thin font, possibly
+- Use a mixture of fonts in the challenges menu
+- Comment the config file some more
+- Render all titles in mono font
+- Typeset mouse command table in varied font
+- Gut out Ubuntu Family Fonts from Debian package, because non-free
+- Beautify CREDITS
+- Rand the fontsets differently
+- Make the fontset tests more random
+- Don't run noopt travis tests on normal length crawl
+- Test all fontsets
+- Extend client logging
+- Make the game reentrant
+- Prevent mangled newlines in concurrent screen writes
+- Permit text usage in tests
+- Refactor mkUIOptions to require less content
+- Settile on 'auxiliary fonts' instead of 'long text'
+- Hardwire GTK font size to fix breakage from config format change
+- Simplify FontSetup
+- Implement scaling all fonts easily and safely
+- Add font scaling option to config and commandline
+- Prevent overspill when prop font is, in fact, mono
+- Remove the now unused portions of config and commandline
+- Make getFontSetup more accurate (not used yet)
+- Eliminate really the last dependency on old config file fields
+- Add a comment about lack of optimization for duplicated fonts
+- Eliminate one last dependency on old config file fields
+- Hardwire the font families to use for GTK frontend
+- Use the two weights of prop font
+- Recover old SDL frontend functionality using new config
+- Move font types to make importing them in ClientOptions legal
+- Let fontset be chosen on commandline as well
+- Extend config file with font and fontset definitions
+- Molify Debian's lintian
+- Legalize all the long text fonts even more
+- Legalize all the long text fonts
+- Add the ubuntu font family set of long text fonts
+- Add another set of long text fonts
+- Add new long text fonts based Adobe Source
+- Remove old long text fonts
+- Add commented out TTF.setHinting directive
+- Crop too high fonts more at the top than bottom
+- Get rid of the last traces of 'exploiting' terrain
+- Simplify and speed up linearInterpolation (not benchmarked)
+- Change which test is run in -O0 travis
+- Make final version of integer casts hardening, using the type-level int-cast
+- Explain the communication overhead concept
+- Use toIntegralSized to crash when int wrap would occur during conversion
+- Parse config at compile time
+- Let foes occupiy exit in escape scenario, etc.
+- Add missing cskip specifications
+- If more info in history, end message with three dots
+- Bump GHC versions for testing
+- Bring back SPACE as clearning messages
+- Update the default config wrt changes to RET keybinding
+- Let ESC cancel the aiming line as well
+- Keep the order, modulo abs, of factions as in the roster
+- Don't switch level away from melee when positions not taken yet
+- Improve valuing AI displace action a bit
+- Increase expressiveness of initial actor generation
+- Permit tiny rooms if no stairs variety
+- Pick the sole actor for cwolf games ignoring empty specs
+- Remove length that forces the whole psFree, even though most unused
+- Don't drop initial actors if not enough initial faction positions
+- Remove a code check that is already in mode content check
+- Generate initial actors in the order given in content
+- Prepare types for more faithful initial actor generation
+- Rename ES.toList
+- Simplify populateDungeon and catch similar overcomplications
+- Generate initial actors in per-faction positions, not in alliances
+- Make the use of integral conversion easier to verify
+- Reword ESC description again
+- Settle on apostrophes to denote one-letter keyboard keys
+- Update command docs to command help changes
+- Let only ESC clear messages
+- Show newcomer aim mode help also when pressing ? in non-default detail level
+- Simplify how the hint prompt works
+- Align newcomer aiming help with ? help when aiming
+- Try harder to display errors in appveyor runs
+- Simplify and slightly fix linearInterpolation
+- Extend debug information when summoning fails for lack of space
+- Except for DetailLow, always show any description when examining
+- Give feedback of detail level also when item selected
+- Show item symbol in item lore view in square font
+- Tweak and fix item examination messages one last time
+- Change display of terrain more gradually as detail level rises
+- Simplify two cases of sortBy emulating sortOn performance-wise
+- Improve describing of items with words limit 1
+- Use partItemWsDetail for item description when examining
+- Make the second detail level the default
+- Fine-tune shortest item examination message once more
+- Move SPACE to CmdAim category
+- Document that MMB and RMB cycle detail level
+- Let RMB and MMB cycle detail level
+- Add aiming help line for newcomers with SPACE hint
+- Don't warn about our own actors
+- Reformat lookAtActors
+- Implement detail level for actor descriptions at position
+- Show position description components according to detail level
+- Show detail level in HUD
+- Redraw after detail level changed
+- Implement detail level for item descriptions at position
+- Match the new order of descriptions in a couple more places
+- Bind SPACE to cycle detail level in aiming mode
+- Add DetailCycle human command
+- Record detail level in the aiming mode state
+- Add and improve headers for scenario endings messages
+- Change sortBy to sortOn in a couple of places
+- Optimize truncateOverlay with the best of the sortOn and sortBy worlds
+- Replace some performance-wise wrong uses of sortOn with sortBy
+- Mark the last major outcome in F1 scenario screen
+- Change unique actor names to match the upcoming new convention
+- Don't show even deafeat messages in F1 if not experienced
+- Update the '?' hints to the new Tab semantics
+- Add dumping history to a text file
+- Advise to replay initial scenarios
+- Adjust the order of spotting to match the order when exploring
+- Swap the order of intrusion warning and enemy spotted message
+- Announce specially foes that have non-trivial items equipped
+- Clean up Content.Input.makeData
+- Destroy the trunk when actor dies, for death effects
+- Make sure embedded item desc stands out from the following activation info
+- Make unique speech heard regardless of distance
+- Let uniques taunt in a big way
+- Add type signatures to AI action picking functions
+- Reorder consistenly mode kind component definitions in the file
+- Extend rarity specs to above 10 logical levels
+- Improve comments and messages about Rarity datatype
+- Avoid spoiling victory game over messges, until seen
+- Factor out victoryOutcomes
+- Display game over messages in F1 scenario screen
+- Shorten a field name to avoid >80 length lines
+- Colour header in the F1 scenario screen
+- Disable a travis test that still panics
+- Revert the scenario choice font frop prop to mono, for typographic consistency
+- Shorten a flavour blurb to make it fit when font is square
+- Extend wrong line break avoidance to colourful texts
+- Display also flavour in scenario choice screen
+- Don't attempt to display F1 scenario blurb in square fonts with two columns
+- Don't display the extra TAB commands in item menu headers
+- Mention the new TAB commands in manual and keys sheet
+- Represent a key not appearing in help by empty categories, not CmdNoHelp
+- Enable pointman cycling key bindings with Control
+- Factor out the pointman cycling key bindings
+- Make sure item spotting messages are of proper length
+- When spotting new items, write short message to screen and long to history
+- Don't merge messages with different classes
+- Enable messages that are not displayed unless from history
+- When spotting items, sort them only once
+- Don't report each item located in stash in a separate sentence
+- Add verbosity flag to UpdSpotItemBag and UpdLoseItemBag
+- Make new Direction type more general so that it can be used in other cases
+- Add direction type to make cycle function less verbose
+- Add functionality of back-tabbing both across floors and within single levels
+- Add bool flag to cyclying so that direction will be possible
+- Change naming of member cycling in-code to be keypress agnostic
+- Swap S-Tab for A-Tab as new binding for cycling members on the same level
+- Swap descriptions in help file so that tab functionality matches description
+- Swap funcionality of Tab and S-Tab without renaming in-code
+- Reverse order of S-Tab so that it doesn't first cycle to another level
+- Add up to two EOLs in tile examination message
+- Order tile examination message elements by decreasing importance
+- Make terrain names harder to confuse with items
+- Improve messages and order of stores when moving items
+- Make ItemNotCalm message applicable to flinging and triggering, too
+- Tighten the result type of moveItems
+- Add a comment to the default config with an example for rebinding a key
+- Clarify that nominal values of burning and wounding are used
+- Don't call robots living
+- Don't display TMI about total condition time if come from explosions
+- Let AI prefer a buckler over a fist
+- Nag about the F1 screen when starting or resuming
+- Display info about scenario in F1 screen
+- Split mode note into motivation and hints to choose where text is displayed
+- Restructure text displayed on challenge menu to make it more clear
+- Add scenario rule notes to be displayed instead of full notes
+- Don't let crosshair obscure terrain, items and actors
+- Work around SDL treating tilde as paragraph on some Mac keyboards
+- Speed up DOM rendering by ignoring highlights if possible
+- Permit specifying seeds in the config file
+- Make attacking animation more subtle to distinguish from harm animation
 - Even in the subtle hit animation indicate who is the victim
 - Add a missing space between 'modify terrain stat' and '5' with square font
 - Make Burn as valuable as other damage for consistent UI display
@@ -788,6 +1338,84 @@
 - Simplify and fix placement of --more- prompts
 - Change the AttrString word gluing operation and fix drawFrameStatus
 - Slightly fix speed calculation to agree with what's on the wiki
+- Fix a memory leak from tutorial hints repetition avoidance
+- Fix no frames displayed while resting
+- Fix missing dot at the end of taunt message
+- Fix heroes starting on exit in escape scenario
+- Fix the healing necklace better used from the backpack
+- Fix which are considered minor effects
+- Fix spurious double space suffix when rendring on blank
+- Fix mouse in area help, wrongly typeset with square font
+- Fix interruption message not appearing on screen, only in history
+- Fix wrong order of words in the detection effect message
+- Fix and simplify armor conditions message choice
+- Fix good conditions displayed in red
+- Fix broken combat description condition about armor
+- Fix not updated tutorial switch when game won
+- Fix a hint wrongly guessing the damage was piercing
+- Fix failures not stopping macro playback
+- Fix the lack of 'a' when hearing distant summoning
+- Fix using the reserved number 0 for faction ID
+- Fix backing up broken savegames
+- Fix a spurious space before a sentence ending dot
+- Fix lack of capitalization in verb messages
+- Fix genetic flaw activated at death
+- Fix a typo in identifier names
+- Fix first lines of message wrapped too late
+- Fix botched conditions for SfxFizzles, etc.
+- Fix includeMetaGame computed twice
+- Fix meta game identification not carrying through to the next game
+- Fix accumulating meta game item kinds
+- Fix scenarios with numbered actors but without continued team
+- Fix an optimization two lines too low in shuffleExcept
+- Fix a triple copy-pasto with Ability.MetaGame
+- Fix discoMetaGame for clients with state held by server
+- Fix displaying deflection when the perpetrator is not seen
+- Fix tutorial hints disabling
+- Fix a link to roguebasin
+- Fix short wrapping of adventure lore
+- Fix overflowing messages with more than 2 spaces
+- Fix 4 spaces message indentation with square font
+- Fix trash on fullscreen borders
+- Fix not showing aiming line when changing epsilon
+- Fix trying to describe an item that is not seen by the actor hit with it
+- Fix whitespace in displayRespSfxAtomicUI
+- Fix display of message log aligned to newest message
+- Fix extra SPACE needed to see history after game save command
+- Fix running broken due to vacuus MsgAtFeetMajor messages
+- Fix MsgStopPlayback not stopping running
+- Fix usage of two different widths in splitAttrString
+- Fix history lines starting with EOL
+- Fix monospace overlay whitespace spilling onto proportional
+- Fix wrongly enabled display of MsgRunStop message class
+- Fix deduplicating shown and saved messages separately
+- Fix, again, leftover UI clients killing frontend after already killed
+- Fix the numeric display of HP gain/loss
+- Fix wrong SDL wrapping markers when using mono fonts only
+- Fix a missing mouse command description
+- Fix Tasty tests broken by frontend fixes
+- Fix screensavers broken by UI faction not being the first
+- Fix a bug with two UI clients interspersing frames
+- Fix 'open main menu' command of Dashboard
+- Fix the GTK frontend again
+- Fix a syntax error in travis script
+- Fix license name
+- Fix linearInterpolation for inflated dungeon depths once more
+- Fix running disturbed by many boring tiles at open levels
+- Fix MsgItemMove messages not saved to history
+- Fix unintentional cap on actor generation level
+- Fix calling gameover and 'endgame'
+- Fix lack of EOL before initial separation line of history
+- Fix mouse coordinates in the browser
+- Fix assigning number symbols to hero faction projectiles
+- Fix and improve how deflections are displayed
+- Fix a 32bit system bug that intCast detected
+- Fix damage not displayed when other attributes are
+- Fix flinging from item menu cancelling item selection
+- Fix the comment about users able to overwrite keys
+- Fix a crash when impossible command chosen
+- Fix bitrot that corrupted curses frontend
+- Fix 'the fallen falling' projectiles
 - Fix wrong alignment of level percent seen
 - Fix autoexplore with changing crosshair
 - Fix goto not interrupted change of crosshair
