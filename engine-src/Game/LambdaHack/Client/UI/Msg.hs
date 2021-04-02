@@ -449,10 +449,11 @@ renderWholeReport [] acc = acc
 renderWholeReport (x : xs) acc = renderWholeReport xs (renderRepetition x : acc)
 
 renderRepetition :: (AttrString, Int) -> AttrString
-renderRepetition (as, n) =
-  if n <= 1 || all (Char.isSpace . Color.charFromW32) as
-  then as
-  else as ++ stringToAS ("<x" ++ show n ++ ">")
+renderRepetition (asRaw, n) =
+  let as = dropWhileEnd (Char.isSpace . Color.charFromW32) asRaw
+  in if n <= 1 || null as
+     then as
+     else as ++ stringToAS ("<x" ++ show n ++ ">")
 
 anyInReport :: (MsgClass -> Bool) -> Report -> Bool
 anyInReport f (Report xns) = any (f . msgClass. repMsg) xns

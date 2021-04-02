@@ -237,6 +237,9 @@ displayRespUpdAtomicUI cmd = case cmd of
                (False, True) -> ("plummet", "crash")
                (False, False) -> ("collapse", "be reduced to a bloody pulp")
              verbDie = if alreadyDeadBefore then hurtExtra else firstFall
+             -- Rarely, this is wrong, because 2 other actors hit the victim
+             -- at exactly the same time. No big problem. Doubled "dies"
+             -- messages appears instead of "dies; is mutilated".
              alreadyDeadBefore = bhp b - hpDelta <= 0
          tfact <- getsState $ (EM.! bfid b) . sfactionD
          bUI <- getsSession $ getActorUI aid
