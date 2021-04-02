@@ -1430,8 +1430,8 @@ helpHuman cmdSemInCxtOfKM = do
   -- menu contains many pages.
   ekm <- displayChoiceScreen "help" ColorFull True sli [K.spaceKM, K.escKM]
   case ekm of
+    Left km | km `elem` [K.escKM, K.spaceKM] -> return $ Left Nothing
     Left km -> case km `M.lookup` bcmdMap coinput of
-      _ | km `elem` [K.escKM, K.spaceKM] -> return $ Left Nothing
       Just (_desc, _cats, cmd) -> cmdSemInCxtOfKM km cmd
       Nothing -> weaveJust <$> failWith "never mind"
     Right _slot -> error $ "" `showFailure` ekm

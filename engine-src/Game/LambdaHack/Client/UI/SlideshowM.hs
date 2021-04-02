@@ -126,6 +126,7 @@ displayChoiceScreen menuName dm sfBlank frsX extraKeys = do
                        , K.upKM, K.leftKM, K.downKM, K.rightKM
                        , K.pgupKM, K.pgdnKM, K.wheelNorthKM, K.wheelSouthKM
                        , K.homeKM, K.endKM, K.controlP ]
+                       ++ [K.mkChar '?' | menuName == "help"]  -- a hack
       legalKeys = keys ++ navigationKeys
       -- The arguments go from first menu line and menu page to the last,
       -- in order. Their indexing is from 0. We select the nearest item
@@ -230,6 +231,9 @@ displayChoiceScreen menuName dm sfBlank frsX extraKeys = do
                        | K.escKM `elem` keys -> return (Left K.escKM, pointer)
                        | otherwise -> ignoreKey
                   K.Space | firstItemOfNextPage <= maxIx ->
+                    page firstItemOfNextPage
+                  K.Char '?' | firstItemOfNextPage <= maxIx
+                               && menuName == "help" ->  -- a hack
                     page firstItemOfNextPage
                   K.Unknown "SAFE_SPACE" ->
                     if firstItemOfNextPage <= maxIx
