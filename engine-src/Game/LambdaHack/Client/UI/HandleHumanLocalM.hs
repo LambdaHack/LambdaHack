@@ -820,7 +820,7 @@ eitherHistory showAll = do
         case ekm of
           Left km | km == K.mkChar '.' -> do
             let t = T.unlines $ map (T.pack . map Color.charFromW32)
-                                    renderedHistory
+                                    renderedHistoryRaw
             path <- dumpTextFile t "history.txt"
             msgAdd MsgPromptGeneric $ "All of history dumped to file" <+> T.pack path <> "."
           Left km | km == K.escKM ->
