@@ -541,12 +541,12 @@ effectExplode execSfx cgroup source target containerOrigin = do
       -- distribution for the points the line goes through at each distance
       -- from the source. Otherwise, e.g., the points on cardinal
       -- and diagonal lines from the source would be more common.
-      projectN k100 n = do
+      projectN k10 n = do
         -- Shape is deterministic for the explosion kind, except that is has
         -- two variants chosen according to time-dependent @veryRandom@.
         -- Choice from the variants prevents diagonal or cardinal directions
         -- being always safe for a given explosion kind.
-        let shapeRandom = k100 `xor` (semiRandom + n)
+        let shapeRandom = k10 `xor` (semiRandom + n)
             veryRandom = shapeRandom + acounter + acounter `div` 3
             fuzz = 5 + shapeRandom `mod` 5
             k | n < 16 && n >= 12 = 12
@@ -576,11 +576,11 @@ effectExplode execSfx cgroup source target containerOrigin = do
             ps = take k $ concat $
               randomReverse
                 [ zip (repeat True)  -- diagonal particles don't reach that far
-                  $ take 4 (drop ((k100 + itemK + fuzz) `mod` 4) $ cycle psDir4)
+                  $ take 4 (drop ((k10 + itemK + fuzz) `mod` 4) $ cycle psDir4)
                 , zip (repeat False)  -- only some cardinal reach far
-                  $ take 4 (drop ((k100 + n) `mod` 4) $ cycle psDir8) ]
+                  $ take 4 (drop ((k10 + n) `mod` 4) $ cycle psDir8) ]
               ++ [zip (repeat True)
-                  $ take 8 (drop ((k100 + fuzz) `mod` 8) $ cycle psFuzz)]
+                  $ take 8 (drop ((k10 + fuzz) `mod` 8) $ cycle psFuzz)]
         forM_ ps $ \(centerRaw, tpxy) -> do
           let center = centerRaw && itemK >= 8  -- if few, keep them regular
           mfail <- projectFail source target oxy tpxy shapeRandom center
@@ -592,19 +592,19 @@ effectExplode execSfx cgroup source target containerOrigin = do
             Just failMsg ->
               execSfxAtomic $ SfxMsgFid (bfid tb) $ SfxUnexpected failMsg
       tryFlying 0 = return ()
-      tryFlying k100 = do
+      tryFlying k10 = do
         -- Explosion particles were placed among organs of the victim:
         bag2 <- getsState $ borgan . getActorBody target
         -- We stop bouncing old particles when less than two thirds remain,
         -- to prevent hoarding explosives to use only in cramped spaces.
         case EM.lookup iid bag2 of
           Just (n2, _) | n2 * 2 >= itemK `div` 3 -> do
-            projectN k100 n2
-            tryFlying $ k100 - 1
+            projectN k10 n2
+            tryFlying $ k10 - 1
           _ -> return ()
   -- Some of the particles that fail to take off, bounce off obstacles
-  -- up to 100 times in total, trying to fly in different directions.
-  tryFlying 100
+  -- up to 10 times in total, trying to fly in different directions.
+  tryFlying 10
   bag3 <- getsState $ borgan . getActorBody target
   let mn3 = EM.lookup iid bag3
   -- Give up and destroy the remaining particles, if any.
