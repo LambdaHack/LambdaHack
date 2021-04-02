@@ -123,8 +123,8 @@ Terrain exploration and modification commands
  keys         command
  TAB          cycle among all party members
  S-TAB        cycle backwards among all party members
- A-TAB        cycle among party members on the level
- A-S-TAB      cycle backwards among party members on the level
+ C-TAB        cycle among party members on the level
+ C-S-TAB      cycle backwards among party members on the level
  m            modify door by closing it
  M            modify any admissible terrain
  =            select (or deselect) party member

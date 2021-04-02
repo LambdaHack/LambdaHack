@@ -66,10 +66,10 @@ standardKeysAndMouse = InputContentRaw $ map evalKeyDef $
   , ("Tab", memberCycle Forward [CmdMinimal, CmdMove])
       -- listed here to keep proper order of the minimal cheat sheet
   , ("BackTab", memberCycle Backward [CmdMove])
-  , ("A-Tab", memberCycleLevel Forward [CmdMove])
-  , ("A-BackTab", memberCycleLevel Backward [CmdMove])
-  , ("C-Tab", memberCycleLevel Forward [])
-  , ("C-BackTab", memberCycleLevel Backward [])
+  , ("A-Tab", memberCycleLevel Forward [])
+  , ("A-BackTab", memberCycleLevel Backward [])
+  , ("C-Tab", memberCycleLevel Forward [CmdMove])
+  , ("C-BackTab", memberCycleLevel Backward [CmdMove])
       -- TODO: the keys are too long to fit in help menu, unless vertically
   , ("*", ( [CmdMinimal, CmdAim]
           , "cycle crosshair among enemies"
