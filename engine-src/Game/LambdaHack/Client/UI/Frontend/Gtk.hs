@@ -115,7 +115,8 @@ startupFun coscreen _ rfMVar = do
     n <- eventKeyName
     mods <- eventModifier
     let key = K.keyTranslate $ T.unpack n
-        modifierNoShift = case mods of  -- to prevent S-!, etc.
+        modifier = modTranslate mods  -- Shift included
+        modifierNoShift = case modifier of  -- to prevent S-!, etc.
           K.Shift -> K.NoModifier
           K.ControlShift -> K.Control
           K.AltShift -> K.Alt
