@@ -135,8 +135,8 @@ setAttr Color.Attr{..} =
           if fg /= Color.BrBlack
           then (fg, Color.BrBlack)
           else (fg, Color.defFG)
-        Color.HighlightWhite -> (fg, Color.Black)
-        Color.HighlightMagenta -> (fg, Color.Black)
+        Color.HighlightWhite -> (fg, Color.Magenta)
+        Color.HighlightMagenta -> (fg, Color.Magenta)
         Color.HighlightRed ->
           if fg /= Color.Red
           then (fg, Color.Red)
