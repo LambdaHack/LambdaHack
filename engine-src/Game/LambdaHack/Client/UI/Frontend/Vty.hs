@@ -8,7 +8,6 @@ import Prelude ()
 import Game.LambdaHack.Core.Prelude
 
 import           Control.Concurrent.Async
-import           Data.Ord (comparing)
 import           Graphics.Vty
 import qualified Graphics.Vty as Vty
 

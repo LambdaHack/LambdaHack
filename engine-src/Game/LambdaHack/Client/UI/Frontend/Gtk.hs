@@ -46,7 +46,7 @@ startup :: ScreenContent -> ClientOptions -> IO RawFrontend
 startup coscreen soptions = startupBound $ startupFun coscreen soptions
 
 startupFun :: ScreenContent -> ClientOptions -> MVar RawFrontend -> IO ()
-startupFun coscreen ClientOptions{..} rfMVar = do
+startupFun coscreen _ rfMVar = do
   -- Init GUI.
   unsafeInitGUIForThreadedRTS
   -- Text attributes.
@@ -115,13 +115,13 @@ startupFun coscreen ClientOptions{..} rfMVar = do
     n <- eventKeyName
     mods <- eventModifier
     let key = K.keyTranslate $ T.unpack n
-        modifier = case modifier of  -- to prevent S-!, etc.
+        modifierNoShift = case mods of  -- to prevent S-!, etc.
           K.Shift -> K.NoModifier
           K.ControlShift -> K.Control
           K.AltShift -> K.Alt
           _ -> modifier
     when (key == K.Esc) $ IO.liftIO $ resetChanKey (fchanKey rf)
-    IO.liftIO $ saveKMP rf modifier key (PointUI 0 0)
+    IO.liftIO $ saveKMP rf modifierNoShift key (PointUI 0 0)
     return True
   -- Set the font specified in config, if any.
   -- The list are monospace fonts that have fixed size regardless
