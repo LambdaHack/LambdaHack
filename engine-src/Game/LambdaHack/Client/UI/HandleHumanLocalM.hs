@@ -123,27 +123,16 @@ macroHumanTransition kms macroFrame macroFrames =
 -- chose one.
 chooseItemHuman :: (MonadClient m, MonadClientUI m)
                 => ItemDialogMode -> m MError
-chooseItemHuman c = either Just (const Nothing) <$> chooseItemDialogMode c
+chooseItemHuman c = either Just (const Nothing) <$> chooseItemDialogMode False c
 
 chooseItemDialogModeLore :: (MonadClient m, MonadClientUI m)
                          => m (Maybe ResultItemDialogMode)
 chooseItemDialogModeLore = do
-  side <- getsClient sside
-  mxhairPos <- xhairToPos
-  leader0 <- getLeaderUI
-  b0 <- getsState $ getActorBody leader0
-  let xhairPos = fromMaybe (bpos b0) mxhairPos
-  lidV <- viewedLevelUI
   schosenLore <- getsSession schosenLore
+  (inhabitants, embeds) <- case schosenLore of
+    ChosenLore inh emb -> return (inh, emb)
+    ChosenNothing -> computeChosenLore
   bagAll <- getsState $ EM.map (const quantSingle) . sitemD
-  let isOurs (_, b) = bfid b == side
-  inhabitants0 <- getsState $ filter (not . isOurs)
-                              . posToAidAssocs xhairPos lidV
-  embeds0 <- getsState $ EM.assocs . getEmbedBag lidV xhairPos
-  let (inhabitants, embeds) = case schosenLore of
-        ChosenActor inh -> (inh, embeds0)
-        ChosenEmbed emb -> ([], emb)
-        ChosenNothing -> (inhabitants0, embeds0)
   case inhabitants of
     (_, b) : rest -> do
       let iid = btrunk b
@@ -152,32 +141,36 @@ chooseItemDialogModeLore = do
                 | IA.checkFlag Ability.Blast arItem = SBlast
                 | otherwise = SItem
       lSlots <- slotsOfItemDialogMode $ MLore slore
-      modifySession $ \sess -> sess {schosenLore = ChosenActor rest}
+      modifySession $ \sess -> sess {schosenLore = ChosenLore rest embeds}
       return $ Just $ RLore slore iid bagAll lSlots
     [] ->
       case embeds of
         (iid, _) : rest -> do
           let slore = SEmbed
           lSlots <- slotsOfItemDialogMode $ MLore slore
-          modifySession $ \sess -> sess {schosenLore = ChosenEmbed rest}
+          modifySession $ \sess ->
+            sess {schosenLore = ChosenLore inhabitants rest}
           return $ Just $ RLore slore iid bagAll lSlots
         [] -> do
           modifySession $ \sess -> sess {schosenLore = ChosenNothing}
           return Nothing
 
 chooseItemDialogMode :: (MonadClient m, MonadClientUI m)
-                     => ItemDialogMode -> m (FailOrCmd ItemDialogMode)
-chooseItemDialogMode c = do
+                     => Bool -> ItemDialogMode -> m (FailOrCmd ItemDialogMode)
+chooseItemDialogMode permitLoreCycle c = do
   CCUI{coscreen=ScreenContent{rwidth, rheight}} <- getsSession sccui
   FontSetup{..} <- getFontSetup
   side <- getsClient sside
   fact <- getsState $ (EM.! side) . sfactionD
-  mggiLore <- chooseItemDialogModeLore
-  ggi <- if c == MLore SItem
-         then case mggiLore of
-           Just rlore -> return $ Right rlore
-           Nothing -> getStoreItem c
-         else getStoreItem c
+  (ggi, loreFound) <- do
+    mggiLore <- if permitLoreCycle && c == MLore SItem
+                then chooseItemDialogModeLore
+                else return Nothing
+    case mggiLore of
+      Just rlore -> return (Right rlore, True)
+      Nothing -> do
+        ggi <- getStoreItem c
+        return (ggi, False)
   recordHistory  -- item chosen, wipe out already shown msgs
   leader <- getLeaderUI
   actorCurAndMaxSk <- leaderSkillsClientUI
@@ -201,7 +194,7 @@ chooseItemDialogMode c = do
             ix0 = fromMaybe (error $ "" `showFailure` result)
                   $ findIndex (== iid) $ EM.elems lSlots
         go <- displayItemLore itemBag meleeSkill promptFun ix0 lSlots
-        if go then chooseItemDialogMode MOrgans else failWith "never mind"
+        if go then chooseItemDialogMode False MOrgans else failWith "never mind"
       ROwned iid -> do
         found <- getsState $ findIid leader side iid
         let (newAid, bestStore) = case leader `lookup` found of
@@ -243,7 +236,7 @@ chooseItemDialogMode c = do
               slides <- overlayToSlideshow (rheight - 2) keys (ov0, [])
               km <- getConfirms ColorFull keys slides
               case K.key km of
-                K.Space -> chooseItemDialogMode MSkills
+                K.Space -> chooseItemDialogMode False MSkills
                 K.Up -> displayOneSlot $ slotIndex - 1
                 K.Down -> displayOneSlot $ slotIndex + 1
                 K.Esc -> failWith "never mind"
@@ -255,12 +248,20 @@ chooseItemDialogMode c = do
             promptFun _ _ _ =
               makeSentence [ MU.SubjectVerbSg (partActor bUI) "remember"
                            , MU.AW $ MU.Text (headingSLore slore) ]
+        schosenLore <- getsSession schosenLore
+        let lorePending = loreFound && case schosenLore of
+              ChosenLore [] [] -> False
+              _ -> True
         km <- displayItemLorePointedAt itemBag meleeSkill promptFun ix0
-                                       lSlots True
+                                       lSlots lorePending
         case K.key km of
-          K.Space -> chooseItemDialogMode (MLore slore)
-          K.Char '~' -> chooseItemDialogMode c
-          K.Esc -> failWith "never mind"
+          K.Space -> do
+            modifySession $ \sess -> sess {schosenLore = ChosenNothing}
+            chooseItemDialogMode False (MLore slore)
+          K.Char '~' -> chooseItemDialogMode True c
+          K.Esc -> do
+            modifySession $ \sess -> sess {schosenLore = ChosenNothing}
+            failWith "never mind"
           _ -> error $ "" `showFailure` km
       RPlaces slotIndex0 -> do
         COps{coplace} <- getsState scops
@@ -308,7 +309,7 @@ chooseItemDialogMode c = do
               slides <- overlayToSlideshow (rheight - 2) keys (ov0, [])
               km <- getConfirms ColorFull keys slides
               case K.key km of
-                K.Space -> chooseItemDialogMode MPlaces
+                K.Space -> chooseItemDialogMode False MPlaces
                 K.Up -> displayOneSlot $ slotIndex - 1
                 K.Down -> displayOneSlot $ slotIndex + 1
                 K.Esc -> failWith "never mind"
@@ -340,7 +341,7 @@ chooseItemDialogMode c = do
               ekm2 <- displayChoiceScreen "" ColorFull True slides keys
               let km = either id (error $ "" `showFailure` ekm2) ekm2
               case K.key km of
-                K.Space -> chooseItemDialogMode MModes
+                K.Space -> chooseItemDialogMode False MModes
                 K.Up -> displayOneSlot $ slotIndex - 1
                 K.Down -> displayOneSlot $ slotIndex + 1
                 K.Esc -> failWith "never mind"

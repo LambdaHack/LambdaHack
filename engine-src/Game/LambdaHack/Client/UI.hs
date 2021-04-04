@@ -118,8 +118,7 @@ queryUI = do
 humanCommand :: forall m. (MonadClient m, MonadClientUI m) => m ReqUI
 humanCommand = do
   FontSetup{propFont} <- getFontSetup
-  modifySession $ \sess -> sess { slastLost = ES.empty
-                                , schosenLore = ChosenNothing }
+  modifySession $ \sess -> sess {slastLost = ES.empty}
   let loop :: Maybe ActorId -> m ReqUI
       loop mOldLeader = do
         keyPressed <- anyKeyPressed

@@ -11,7 +11,7 @@ module Game.LambdaHack.Client.UI.MonadClientUI
   , clientPrintUI, debugPossiblyPrintUI, getSession, putSession, displayFrames
   , connFrontendFrontKey, setFrontAutoYes, frontendShutdown, printScreen
   , chanFrontend, anyKeyPressed, discardPressedKey, resetPressedKeys
-  , addPressedControlEsc, revCmdMap, getReportUI
+  , addPressedControlEsc, revCmdMap, getReportUI, computeChosenLore
   , miniHintAimingBare, miniHintAimingLore
   , getLeaderUI, getArenaUI, viewedLevelUI
   , xhairToPos, setXHairFromGUI, clearAimMode
@@ -68,6 +68,7 @@ import           Game.LambdaHack.Common.ClientOptions
 import           Game.LambdaHack.Common.Faction
 import           Game.LambdaHack.Common.File
 import qualified Game.LambdaHack.Common.HighScore as HighScore
+import           Game.LambdaHack.Common.Item
 import           Game.LambdaHack.Common.Kind
 import           Game.LambdaHack.Common.Misc
 import           Game.LambdaHack.Common.MonadStateRead
@@ -204,22 +205,8 @@ getReportUI :: MonadClientUI m => Bool -> m Report
 getReportUI insideMenu = do
   side <- getsClient sside
   saimMode <- getsSession saimMode
-  -- Copy-pasted from @chooseItemDialogMode@.
-  loreIsRelevant <- case saimMode of
-    Just aimMode -> do
-      mxhairPos <- xhairToPos
-      leader0 <- getLeaderUI
-      b0 <- getsState $ getActorBody leader0
-      let xhairPos = fromMaybe (bpos b0) mxhairPos
-          lidAim = aimLevelId aimMode
-          isOurs (_, b) = bfid b == side
-      inhabitants <- getsState $ posToAidAssocs xhairPos lidAim
-      case filter (not . isOurs) inhabitants of
-        [] -> do
-          embeds <- getsState $ getEmbedBag lidAim xhairPos
-          return $! not $ EM.null embeds
-        _ -> return True
-    _ -> return False
+  (inhabitants, embeds) <-
+    if isJust saimMode then computeChosenLore else return ([], [])
   sUIOptions <- getsSession sUIOptions
   report <- getsSession $ newReport . shistory
   fact <- getsState $ (EM.! side) . sfactionD
@@ -229,8 +216,9 @@ getReportUI insideMenu = do
       underAI = isAIFact fact
       prefixColors = uMessageColors sUIOptions
       -- Here we assume newbies don't override default keys.
-      miniHintAiming =
-        if loreIsRelevant then miniHintAimingLore else miniHintAimingBare
+      miniHintAiming = if null inhabitants && null embeds
+                       then miniHintAimingBare
+                       else miniHintAimingLore
       promptAim = toMsgShared prefixColors MsgPromptGeneric
                   $ miniHintAiming <> "\n"
       promptAI = toMsgShared prefixColors MsgPromptAction
@@ -240,6 +228,21 @@ getReportUI insideMenu = do
                    consReport promptAim report
                | underAI -> consReport promptAI report
                | otherwise -> report
+
+computeChosenLore :: MonadClientUI m
+                  => m ([(ActorId, Actor)], [(ItemId, ItemQuant)])
+computeChosenLore = do
+  side <- getsClient sside
+  mxhairPos <- xhairToPos
+  leader0 <- getLeaderUI
+  b0 <- getsState $ getActorBody leader0
+  let xhairPos = fromMaybe (bpos b0) mxhairPos
+  lidV <- viewedLevelUI
+  let isOurs (_, b) = bfid b == side
+  inhabitants0 <- getsState $ filter (not . isOurs)
+                  . posToAidAssocs xhairPos lidV
+  embeds0 <- getsState $ EM.assocs . getEmbedBag lidV xhairPos
+  return (inhabitants0, embeds0)
 
 miniHintAimingBare :: Text
 miniHintAimingBare = "Aiming mode: press 'f' to fling, SPACE or RMB to cycle detail, ESC to cancel."
@@ -293,9 +296,7 @@ setXHairFromGUI :: MonadClientUI m => Maybe Target -> m ()
 setXHairFromGUI xhair2 = do
   xhair0 <- getsSession sxhair
   modifySession $ \sess -> sess {sxhairGoTo = Nothing}
-  when (xhair0 /= xhair2) $
-    modifySession $ \sess -> sess { sxhair = xhair2
-                                  , schosenLore = ChosenNothing }
+  when (xhair0 /= xhair2) $ modifySession $ \sess -> sess {sxhair = xhair2}
 
 -- If aim mode is exited, usually the player had the opportunity to deal
 -- with xhair on a foe spotted on another level, so now move xhair

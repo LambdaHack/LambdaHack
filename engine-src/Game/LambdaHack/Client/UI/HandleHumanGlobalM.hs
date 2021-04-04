@@ -1623,7 +1623,7 @@ chooseItemMenuHuman :: (MonadClient m, MonadClientUI m)
                     -> m (Either MError ReqUI)
 chooseItemMenuHuman cmdSemInCxtOfKM c0 = do
   let chooseItemMenu c1 = do
-        res <- chooseItemDialogMode c1
+        res <- chooseItemDialogMode True c1
         case res of
           Right c2 -> do
             res2 <- itemMenuHuman cmdSemInCxtOfKM

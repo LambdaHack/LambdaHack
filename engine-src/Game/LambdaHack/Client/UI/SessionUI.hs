@@ -136,12 +136,11 @@ data RunParams = RunParams
   , runStopMsg :: Maybe Text      -- ^ message with the next stop reason
   , runWaiting :: Int             -- ^ waiting for others to move out of the way
   }
-  deriving (Show)
+  deriving Show
 
 -- | Last lore being aimed at.
 data ChosenLore =
-    ChosenActor [(ActorId, Actor)]
-  | ChosenEmbed [(ItemId, ItemQuant)]
+    ChosenLore [(ActorId, Actor)] [(ItemId, ItemQuant)]
   | ChosenNothing
 
 emptySessionUI :: UIOptions -> SessionUI
