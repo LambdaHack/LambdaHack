@@ -43,7 +43,7 @@ minificForNode:
 # specially and add their extra delay.
 create-gif :
 	find ~/.LambdaHack/screenshots/ -name 'prtscn*.bmp' -print0 | xargs -0 -r mogrify -format gif
-	../gifsicle/src/gifsicle -O3 --careful -d2 --colors 256 -l ~/.LambdaHack/screenshots/prtscn*.gif -o ~/.LambdaHack/screenshots/screenshot.gif
+	../gifsicle/src/gifsicle -O3 --careful -d2 --colors 255 --no-extensions --no-conserve-memory -l ~/.LambdaHack/screenshots/prtscn*.gif -o ~/.LambdaHack/screenshots/screenshot.gif
 
 frontendRaid:
 	$$(cabal-plan list-bin exe:LambdaHack) --dbgMsgSer --logPriority 4 --savePrefix test --newGame 5 --dumpInitRngs --automateAll --gameMode raid --exposeActors
