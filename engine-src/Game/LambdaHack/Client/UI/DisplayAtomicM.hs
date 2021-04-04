@@ -260,12 +260,10 @@ displayRespUpdAtomicUI cmd = case cmd of
               displayMore ColorBW ""
             | otherwise -> msgLnAdd msgClass msgDie
          -- We show death anims only if not dead already before this refill.
-         let deathAct
-               | alreadyDeadBefore =
-                 twirlSplash (bpos b, bpos b) Color.Red Color.Red
-               | bfid b == side = deathBody (bpos b)
-               | otherwise = shortDeathBody (bpos b)
-         unless (bproj b) $ animate (blid b) deathAct
+         let deathAct = if bfid b == side
+                        then deathBody (bpos b)
+                        else shortDeathBody (bpos b)
+         unless (bproj b || alreadyDeadBefore) $ animate (blid b) deathAct
        | otherwise -> do
          when (hpDelta >= bhp b && bhp b > 0) $
            aidVerbMU MsgActionWarning aid "return from the brink of death"
@@ -2297,6 +2295,10 @@ strike catch source target iid = assert (source /= target) $ do
           if targetIsFriend then MsgMeleeNormalUs else MsgMeleeOthers
         msgClassRanged =
           if targetIsFriend then MsgRangedNormalUs else MsgRangedOthers
+        animateAlive lid anim =
+          if bhp tb > 0
+          then animate lid anim
+          else animate lid $ twirlSplashShort ps Color.BrRed Color.Red
     -- The messages about parrying and immediately afterwards dying
     -- sound goofy, but there is no easy way to prevent that.
     -- And it's consistent.
@@ -2335,7 +2337,7 @@ strike catch source target iid = assert (source /= target) $ do
          msgAdd MsgSpecialEvent $
            makeSentence [MU.SubjectVerbSg spart "intercept", tpart]
          -- Basic non-bloody animation regardless of stats.
-         animate (blid tb) $ blockHit ps Color.BrBlue Color.Blue
+         animateAlive (blid tb) $ blockHit ps Color.BrBlue Color.Blue
        | kineticDmg >= -1000  -- -1/1000 HP
          -- We ignore nested effects, because they are, in general, avoidable.
          && nonPiercingDmg >= 0 -> do
@@ -2366,12 +2368,12 @@ strike catch source target iid = assert (source /= target) $ do
                  , msgClassRanged )
          msgAdd msgRanged $ makePhrase [MU.Capitalize $ MU.Phrase attackParts]
                             <> msgArmor <> "."
-         animate (blid tb) basicAnim
+         animateAlive (blid tb) basicAnim
        | bproj tb -> do  -- much less emotion and the victim not active.
          let attackParts =
                [MU.SubjectVerbSg spart verb, tpart] ++ weaponNameWith
          msgAdd MsgMeleeOthers $ makeSentence attackParts
-         animate (blid tb) basicAnim
+         animateAlive (blid tb) basicAnim
        | otherwise -> do  -- ordinary melee
          let msgMeleeInteresting | targetIsFoe = MsgMeleeComplexWe
                                  | targetIsFriend = MsgMeleeComplexUs
@@ -2413,4 +2415,4 @@ strike catch source target iid = assert (source /= target) $ do
          when (bfid sb == side
                && not (actorCanMeleeToHarm actorMaxSkills target tb)) $
            msgAdd MsgTutorialHint "This enemy can't harm you. Left alone could it possibly be of some use?"
-         animate (blid tb) basicAnim
+         animateAlive (blid tb) basicAnim

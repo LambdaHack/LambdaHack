@@ -2,7 +2,7 @@
 -- | Screen frames and animations.
 module Game.LambdaHack.Client.UI.Animation
   ( Animation, renderAnim
-  , pushAndDelay, twirlSplash, blockHit, blockMiss, subtleHit
+  , pushAndDelay, twirlSplash, twirlSplashShort, blockHit, blockMiss, subtleHit
   , deathBody, shortDeathBody, actorX, teleport, vanish, swapPlaces, fadeout
 #ifdef EXPOSE_INTERNAL
     -- * Internal operations
@@ -88,6 +88,16 @@ twirlSplash poss c1 c2 = Animation $ map (mzipPairs poss)
   , (cSym c1      '-', blank)
   , (cSym c1      '\\',blank)
   , (cSym c2      '|', blank)
+  , (cSym c2      '%', blank)
+  ]
+
+-- | Short attack animation.
+twirlSplashShort :: (Point, Point) -> Color -> Color -> Animation
+twirlSplashShort poss c1 c2 = Animation $ map (mzipPairs poss)
+  [ (blank           , cSym BrCyan '&')
+  , (blank           , cSym BrCyan '&')
+  , (cSym c1      '\\',blank)
+  , (cSym c1      '|', cSym BrCyan '&')
   , (cSym c2      '%', blank)
   ]
 
