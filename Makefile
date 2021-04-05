@@ -273,6 +273,9 @@ build-binary-v1:
 	cabal v1-configure --disable-library-profiling --disable-profiling --enable-optimization
 	cabal v1-build exe:LambdaHack
 
+copy-binary-v1:
+	cabal v1-copy --destdir=LambdaHackTheGameInstall
+
 copy-binary:
 	cp $$(cabal-plan list-bin exe:LambdaHack) LambdaHackTheGame
 
@@ -296,7 +299,7 @@ copy-directory:
 	cp COPYLEFT LambdaHackTheGame
 	cp CREDITS LambdaHackTheGame
 
-build-binary-common: build-binary-v1 copy-directory
+build-binary-common: build-binary-v1 copy-directory copy-binary-v1
 
 build-binary-windows: configure-binary-v2 build-binary-v2 copy-directory
 
