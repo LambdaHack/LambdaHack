@@ -272,8 +272,6 @@ build-binary-v1:
 	cabal v1-install --force-reinstalls --disable-library-profiling --disable-profiling --disable-documentation --enable-optimization --only-dependencies
 	cabal v1-configure --disable-library-profiling --disable-profiling --enable-optimization
 	cabal v1-build exe:LambdaHack
-	mkdir -p LambdaHackTheGame/GameDefinition
-	cabal v1-copy --destdir=LambdaHackTheGameInstall
 
 copy-binary:
 	cp $$(cabal-plan list-bin exe:LambdaHack) LambdaHackTheGame
@@ -287,9 +285,9 @@ configure-binary-v2-vty:
 build-binary-v2:
 	cabal build --only-dependencies .
 	cabal build exe:LambdaHack
-	mkdir -p LambdaHackTheGame/GameDefinition
 
 copy-directory:
+	mkdir -p LambdaHackTheGame/GameDefinition
 	cp GameDefinition/InGameHelp.txt LambdaHackTheGame/GameDefinition
 	cp GameDefinition/PLAYING.md LambdaHackTheGame/GameDefinition
 	cp README.md LambdaHackTheGame
