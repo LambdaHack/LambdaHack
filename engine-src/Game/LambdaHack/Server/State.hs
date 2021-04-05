@@ -2,6 +2,9 @@
 module Game.LambdaHack.Server.State
   ( StateServer(..), ActorTime, ActorPushedBy
   , emptyStateServer, updateActorTime, lookupActorTime, ageActor
+#ifdef EXPOSE_INTERNAL
+  , GearOfTeams
+#endif
   ) where
 
 import Prelude ()
@@ -87,6 +90,7 @@ type ActorTime =
 -- | Record who last propelled a given actor with trajectory.
 type ActorPushedBy = EM.EnumMap ActorId ActorId
 
+-- | Per-team, per-actor metagame persistent favourite organs and gear.
 type GearOfTeams = EM.EnumMap
                      TeamContinuity
                      (IM.IntMap [(GroupName ItemKind, ContentId ItemKind)])
