@@ -300,7 +300,7 @@ build-binary-common: build-binary-v1 copy-directory
 
 build-binary-windows: configure-binary-v2 build-binary-v2 copy-directory
 
-build-directory: configure-binary-v2 build-binary-v2 copy-binary copy-directory
+build-directory: configure-binary-v2 build-binary-v2 copy-directory copy-binary
 
 build-binary-ubuntu: build-directory
 	LambdaHackTheGame/LambdaHack --version > /dev/null; \
