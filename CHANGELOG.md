@@ -37,7 +37,6 @@
 - Save current state of being-aimed-at lore display
 - Don't use timeout weapon if non-timeout as strong
 - Add delay to pushed frames, to notice things shorter than a turn
-- Temporarily bring back compatibility with v0.10.1
 - Pretty-print activationFlag to make it more understandable
 - Replace the special periodic activation handling with effect conditions
 - Replace the special effect handling under ranged with effect condition
