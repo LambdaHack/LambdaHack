@@ -279,7 +279,7 @@ copy-binary:
 	cp $$(cabal-plan list-bin exe:LambdaHack) LambdaHackTheGame
 
 configure-binary-v2:
-	cabal configure --disable-tests --disable-library-profiling --disable-profiling --disable-documentation --enable-optimization
+	cabal configure --disable-tests --disable-library-profiling --disable-profiling --enable-optimization
 
 configure-binary-v2-vty:
 	cabal configure -fvty --disable-tests --disable-library-profiling --disable-profiling --disable-documentation --enable-optimization
