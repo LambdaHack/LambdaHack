@@ -42,8 +42,9 @@ license:       BSD-3-Clause
 license-file:  COPYLEFT
 tested-with:   GHC==8.2.2, GHC==8.4.4, GHC==8.6.5, GHC==8.8.4, GHC==8.10.4,
                GHC==9.0.1
--- Enough files is included to build and run CI and manual test,
--- but not enough to create a user-friendly binary package.
+-- Enough files is included to build and run CI and manual tests
+-- and be presentable on Hackage, but not enough to create
+-- a user-friendly binary package, e.g., no InGameHelp.txt.
 extra-source-files: GameDefinition/config.ui.default,
                     GameDefinition/PLAYING.md,
                     GameDefinition/fonts/16x16xw.woff,
@@ -60,7 +61,9 @@ extra-source-files: GameDefinition/config.ui.default,
                     GameDefinition/fonts/ubuntu-v14-latin-ext_latin-regular.ttf.woff,
                     GameDefinition/fonts/ubuntu-v14-latin-ext_latin-500.ttf.woff,
                     GameDefinition/fonts/ubuntu-mono-v9-latin-ext_latin-700.ttf.woff,
-                    Makefile
+                    Makefile,
+                    CHANGELOG.md,
+                    README.md
 author:        Andres Loeh, Mikolaj Konarski and others
 maintainer:    Mikolaj Konarski <mikolaj.konarski@funktory.com>
 category:      Game Engine, Game
