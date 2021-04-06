@@ -316,7 +316,7 @@ build-binary-macosx: build-directory
 	OS_VERSION=$$(sw_vers -productVersion); \
 	tar -czf LambdaHack_$${LH_VERSION}_macosx-$${OS_VERSION}-amd64.tar.gz LambdaHackTheGame
 
-build-directory-vty: configure-binary-v2-vty build-binary-v2 copy-binary copy-directory
+build-directory-vty: configure-binary-v2-vty build-binary-v2 copy-directory copy-binary
 
 build-binary-screen-reader-ubuntu: build-directory-vty
 	LambdaHackTheGame/LambdaHack --version > /dev/null; \
