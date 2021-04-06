@@ -410,7 +410,7 @@ script:
       ${CABAL} new-build $WITHCOMPILER --allow-newer -fvty --ghc-options="-O0 -fno-ignore-asserts" ${TEST} ${BENCH} -j1 .;
     elif [ $GTKVTY = "opt2" ]; then
       ${CABAL} new-build $WITHCOMPILER --allow-newer --only-dependencies -fcurses --ghc-options="-O2 -fno-ignore-asserts" ${TEST} ${BENCH} -j2 .;
-      ${CABAL} new-build $WITHCOMPILER --allow-newer -fcurses --ghc-options="-O2 -fno-ignore-asserts" ${TEST} ${BENCH} -j1 .;
+      travis_retry ${CABAL} new-build $WITHCOMPILER --allow-newer -fcurses --ghc-options="-O2 -fno-ignore-asserts" ${TEST} ${BENCH} -j1 .;
     elif [ $GTKVTY = "asserts" ]; then
       ${CABAL} new-build $WITHCOMPILER --allow-newer --only-dependencies -fvty -fwith_expensive_assertions ${TEST} ${BENCH} -j2 .;
       ${CABAL} new-build $WITHCOMPILER --allow-newer -fvty -fwith_expensive_assertions ${TEST} ${BENCH} -j1 .;
@@ -419,7 +419,7 @@ script:
       ${CABAL} new-build $WITHCOMPILER --allow-newer -fcurses -fwith_expensive_assertions --ghc-options="-O0 -fno-ignore-asserts" ${TEST} ${BENCH} -j1 .;
     elif [ $GTKVTY = "asserts_opt2" ]; then
       ${CABAL} new-build $WITHCOMPILER --allow-newer --only-dependencies -fvty -fwith_expensive_assertions --ghc-options="-O2 -fno-ignore-asserts" ${TEST} ${BENCH} -j2 .;
-      ${CABAL} new-build $WITHCOMPILER --allow-newer -fvty -fwith_expensive_assertions --ghc-options="-O2 -fno-ignore-asserts" ${TEST} ${BENCH} -j1 .;
+      travis_retry ${CABAL} new-build $WITHCOMPILER --allow-newer -fvty -fwith_expensive_assertions --ghc-options="-O2 -fno-ignore-asserts" ${TEST} ${BENCH} -j1 .;
     elif [ $GTKVTY = "brew-sdl2-osx" ]; then
       brew install sdl2_ttf;
     elif [ $GTKVTY = "asserts-osx" ]; then
