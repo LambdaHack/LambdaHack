@@ -16,6 +16,7 @@ As an example of the engine's capabilities, here is a showcase
 of shooting down explosive projectiles. A couple were shot down close
 enough to enemies to harm them. Others exploded closer to our party members
 and took out of the air the projectiles that would otherwise harm them.
+Actual in-game footage.
 
 ![gameplay screenshot](https://raw.githubusercontent.com/LambdaHack/media/master/screenshot/allureofthestars.com.shooting.down.explosives.gif)
 
