@@ -155,7 +155,7 @@ As a side effect of screen reader support, there is no aiming line
 nor path in vty frontend and some of map position highlighting
 is performed using the terminal cursor. Screen readers may also work
 better with animations turned off, using `--noAnim` or the corresponding
-config file option.
+config file or main game menu options.
 
 
 Compilation of the library and sample game from source
