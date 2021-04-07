@@ -63,7 +63,8 @@ extra-source-files: GameDefinition/config.ui.default,
                     GameDefinition/fonts/ubuntu-mono-v9-latin-ext_latin-700.ttf.woff,
                     Makefile,
                     CHANGELOG.md,
-                    README.md
+                    README.md,
+                    cabal.project
 author:        Andres Loeh, Mikolaj Konarski and others
 maintainer:    Mikolaj Konarski <mikolaj.konarski@funktory.com>
 category:      Game Engine, Game
