@@ -1,4 +1,4 @@
-cabal-version: 2.2
+cabal-version: 3.0
 name:          LambdaHack
 -- The package version. See the Haskell package versioning policy (PVP)
 -- for standards guiding when and how versions should be incremented.
@@ -117,7 +117,7 @@ flag supportNodeJS
 
 common options
   default-language:   Haskell2010
-  default-extensions: MonoLocalBinds, ScopedTypeVariables, OverloadedStrings
+  default-extensions: MonoLocalBinds, ScopedTypeVariables, OverloadedStrings,
                       BangPatterns, RecordWildCards, NamedFieldPuns, MultiWayIf,
                       LambdaCase, DefaultSignatures, InstanceSigs,
                       PatternSynonyms, StrictData, CPP
