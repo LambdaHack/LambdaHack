@@ -128,7 +128,7 @@ common options
                       DeriveFoldable, DeriveTraversable,
                       ExistentialQuantification, GADTs, StandaloneDeriving,
                       DataKinds, KindSignatures, DeriveGeneric, DeriveLift
-  ghc-options:        -Wall -Wcompat -Worphans -Wincomplete-uni-patterns -Wincomplete-record-updates -Wimplicit-prelude -Wmissing-home-modules -Widentities -Wredundant-constraints -Wmissing-export-lists -Wpartial-fields
+  ghc-options:        -Wall -Wcompat -Worphans -Wincomplete-uni-patterns -Wincomplete-record-updates -Wimplicit-prelude -Wmissing-home-modules -Widentities -Wredundant-constraints -Wmissing-export-lists -Wpartial-fields -Wunused-packages
   ghc-options:        -Wall-missed-specialisations
   ghc-options:        -fno-ignore-asserts -fexpose-all-unfoldings -fspecialise-aggressively -fsimpl-tick-factor=200
 
@@ -199,7 +199,6 @@ library definition
                       ,transformers
                       ,unordered-containers
                       ,vector
-                      ,vector-binary-instances
 
 library
   import: options
@@ -333,7 +332,6 @@ library
                       assert-failure >= 0.1.2 && < 0.2,
                       async      >= 2,
                       base       >= 4.10 && < 99,
-                      base-compat >= 0.10.0,
                       binary     >= 0.8,
                       bytestring >= 0.9.2 ,
                       containers >= 0.5.3.0,
@@ -428,7 +426,6 @@ library this-game-src
                       ,base
                       ,enummapset
                       ,file-embed >= 0.0.11
-                      ,filepath
                       ,ghc-compact
                       ,optparse-applicative
                       ,primitive
@@ -459,7 +456,6 @@ test-suite test
                       ,async
                       ,base
                       ,containers
-                      ,filepath
                       ,optparse-applicative
                       ,tasty >= 1.0
                       ,tasty-hunit
