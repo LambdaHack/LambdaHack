@@ -393,10 +393,8 @@ test-suite test
   main-is:            Spec.hs
   other-modules:      SessionUIMock
   build-depends:      ,LambdaHack
-                      ,async
                       ,base
                       ,containers
-                      ,filepath
                       ,optparse-applicative
                       ,tasty >= 1.0
                       ,tasty-hunit

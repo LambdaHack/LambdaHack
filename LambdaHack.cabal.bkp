@@ -453,7 +453,6 @@ test-suite test
   build-depends:      ,LambdaHack
                       ,this-game-content
                       ,this-game-src
-                      ,async
                       ,base
                       ,containers
                       ,optparse-applicative
