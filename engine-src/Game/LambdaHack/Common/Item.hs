@@ -51,12 +51,12 @@ import           Game.LambdaHack.Definition.Flavour
 -- is available elsewhere (both @IdentityObvious@ and @IdentityCovered@
 -- items may or may not need identification of their aspect record).
 data Item = Item
-  { jkind    :: ItemIdentity  -- ^ the kind of the item, or an indiretion
-  , jfid     :: Maybe FactionId
-                              -- ^ the faction that created the item, if any
-  , jflavour :: Flavour       -- ^ flavour, always the real one, not hidden;
-                              --   people may not recognize shape, but they
-                              --   remember colour and old vs fancy look
+  { jkind    :: ItemIdentity     -- ^ the kind of the item, or an indirection
+  , jfid     :: Maybe FactionId  -- ^ the faction that created the item, if any
+  , jflavour :: Flavour          -- ^ flavour, always the real one,
+                                 --   it's not hidden; people may not recognize
+                                 --   shape, but they remember colour and old
+                                 --   vs fancy look
   }
   deriving (Show, Eq, Generic)
 
