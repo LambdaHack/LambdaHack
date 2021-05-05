@@ -1,4 +1,4 @@
-cabal-version: 3.0
+cabal-version: 2.4
 name:          LambdaHack
 -- The package version. See the Haskell package versioning policy (PVP)
 -- for standards guiding when and how versions should be incremented.
@@ -164,7 +164,6 @@ common exe-options
 
 library definition
   import: options
-  visibility: public
   hs-source-dirs:     definition-src
   exposed-modules:    Game.LambdaHack.Core.Dice
                       Game.LambdaHack.Core.Frequency
@@ -313,6 +312,21 @@ library
                       Game.LambdaHack.Server.ServerOptions
                       Game.LambdaHack.Server.StartM
                       Game.LambdaHack.Server.State
+  reexported-modules: ,Game.LambdaHack.Core.Dice
+                      ,Game.LambdaHack.Core.Frequency
+                      ,Game.LambdaHack.Core.Prelude
+                      ,Game.LambdaHack.Core.Random
+                      ,Game.LambdaHack.Definition.Ability
+                      ,Game.LambdaHack.Definition.Color
+                      ,Game.LambdaHack.Definition.ContentData
+                      ,Game.LambdaHack.Definition.Defs
+                      ,Game.LambdaHack.Definition.Flavour
+                      ,Game.LambdaHack.Content.CaveKind
+                      ,Game.LambdaHack.Content.ItemKind
+                      ,Game.LambdaHack.Content.ModeKind
+                      ,Game.LambdaHack.Content.PlaceKind
+                      ,Game.LambdaHack.Content.RuleKind
+                      ,Game.LambdaHack.Content.TileKind
   other-modules:      Paths_LambdaHack
   autogen-modules:    Paths_LambdaHack
   build-depends:      definition,
@@ -407,8 +421,7 @@ library this-game-src
   other-modules:      Client.UI.Content.Screen
                       Implementation.MonadClientImplementation
                       Implementation.MonadServerImplementation
-  build-depends:      ,definition
-                      ,LambdaHack
+  build-depends:      ,LambdaHack
                       ,this-game-content
                       ,async
                       ,base
@@ -425,8 +438,7 @@ library this-game-src
 executable LambdaHack
   import: options, exe-options
   main-is:            GameDefinition/Main.hs
-  build-depends:      ,definition
-                      ,LambdaHack
+  build-depends:      ,LambdaHack
                       ,this-game-src
                       ,async
                       ,base
@@ -439,8 +451,7 @@ test-suite test
   hs-source-dirs:     test
   main-is:            Spec.hs
   other-modules:      SessionUIMock
-  build-depends:      ,definition
-                      ,LambdaHack
+  build-depends:      ,LambdaHack
                       ,this-game-content
                       ,this-game-src
                       ,base
