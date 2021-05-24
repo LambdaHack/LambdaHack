@@ -2,7 +2,9 @@ resolver: lts-13.18
 
 packages: ['.']
 
-extra-deps: []
+extra-deps: 
+- int-cast-0.2.0.0@sha256:476efda6910f17509038962ee474ea8b21341a3e5464377d34e9c1c53ba629ad,1608
+- splitmix-0.1.0.3
 
 flags: {}
 
