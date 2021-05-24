@@ -382,52 +382,52 @@ script:
 
   - |
     if [ $GTKVTY = "vty_opt2_lint" ]; then
-      ${CABAL} new-build $WITHCOMPILER --allow-newer --only-dependencies -fvty --ghc-options="-O2 -fno-ignore-asserts -dcore-lint -dstg-lint -dcmm-lint" ${TEST} ${BENCH} -j1 .;
-      ${CABAL} new-build $WITHCOMPILER --allow-newer -fvty --ghc-options="-O2 -fno-ignore-asserts -dcore-lint -dstg-lint -dcmm-lint" ${TEST} ${BENCH} -j1 .;
+      ${CABAL} new-build $WITHCOMPILER --only-dependencies -fvty --ghc-options="-O2 -fno-ignore-asserts -dcore-lint -dstg-lint -dcmm-lint" ${TEST} ${BENCH} -j1 .;
+      ${CABAL} new-build $WITHCOMPILER -fvty --ghc-options="-O2 -fno-ignore-asserts -dcore-lint -dstg-lint -dcmm-lint" ${TEST} ${BENCH} -j1 .;
     elif [ $GTKVTY = "curses_asserts_lint" ]; then
-      ${CABAL} new-build $WITHCOMPILER --allow-newer --only-dependencies -fcurses -fwith_expensive_assertions --ghc-options="-dcore-lint -dstg-lint -dcmm-lint" ${TEST} ${BENCH} -j1 .;
-      ${CABAL} new-build $WITHCOMPILER --allow-newer -fcurses -fwith_expensive_assertions --ghc-options="-dcore-lint -dstg-lint -dcmm-lint" ${TEST} ${BENCH} -j1 .;
+      ${CABAL} new-build $WITHCOMPILER --only-dependencies -fcurses -fwith_expensive_assertions --ghc-options="-dcore-lint -dstg-lint -dcmm-lint" ${TEST} ${BENCH} -j1 .;
+      ${CABAL} new-build $WITHCOMPILER -fcurses -fwith_expensive_assertions --ghc-options="-dcore-lint -dstg-lint -dcmm-lint" ${TEST} ${BENCH} -j1 .;
     elif [ $GTKVTY = "gtk" ]; then
-      ${CABAL} new-build $WITHCOMPILER --allow-newer --only-dependencies -fgtk ${TEST} ${BENCH} -j2 .;
-      ${CABAL} new-build $WITHCOMPILER --allow-newer -fgtk ${TEST} ${BENCH} -j1 .;
+      ${CABAL} new-build $WITHCOMPILER --only-dependencies -fgtk ${TEST} ${BENCH} -j2 .;
+      ${CABAL} new-build $WITHCOMPILER -fgtk ${TEST} ${BENCH} -j1 .;
     elif [ $GTKVTY = "gtk-v2" ]; then
-      ${CABAL} new-build $WITHCOMPILER --allow-newer --only-dependencies -fgtk ${TEST} ${BENCH} -j2 .;
-      ${CABAL} new-build $WITHCOMPILER --allow-newer -v2 -fgtk ${TEST} ${BENCH} -j1 .;
+      ${CABAL} new-build $WITHCOMPILER --only-dependencies -fgtk ${TEST} ${BENCH} -j2 .;
+      ${CABAL} new-build $WITHCOMPILER -v2 -fgtk ${TEST} ${BENCH} -j1 .;
     elif [ $GTKVTY = "sdl" ]; then
-      ${CABAL} new-build $WITHCOMPILER --allow-newer --only-dependencies -fsdl ${TEST} ${BENCH} -j2 .;
-      ${CABAL} new-build $WITHCOMPILER --allow-newer -fsdl ${TEST} ${BENCH} -j1 .;
+      ${CABAL} new-build $WITHCOMPILER --only-dependencies -fsdl ${TEST} ${BENCH} -j2 .;
+      ${CABAL} new-build $WITHCOMPILER -fsdl ${TEST} ${BENCH} -j1 .;
     elif [ $GTKVTY = "sdl-v2" ]; then
-      ${CABAL} new-build $WITHCOMPILER --allow-newer --only-dependencies -fsdl ${TEST} ${BENCH} -j2 .;
-      ${CABAL} new-build $WITHCOMPILER --allow-newer -v2 -fsdl ${TEST} ${BENCH} -j1 .;
+      ${CABAL} new-build $WITHCOMPILER --only-dependencies -fsdl ${TEST} ${BENCH} -j2 .;
+      ${CABAL} new-build $WITHCOMPILER -v2 -fsdl ${TEST} ${BENCH} -j1 .;
     elif [ $GTKVTY = "vty" ]; then
-      ${CABAL} new-build $WITHCOMPILER --allow-newer --only-dependencies -fvty -fwith_expensive_assertions ${TEST} ${BENCH} -j2 .;
-      ${CABAL} new-build $WITHCOMPILER --allow-newer -fvty ${TEST} ${BENCH} -j1 .;
+      ${CABAL} new-build $WITHCOMPILER --only-dependencies -fvty -fwith_expensive_assertions ${TEST} ${BENCH} -j2 .;
+      ${CABAL} new-build $WITHCOMPILER -fvty ${TEST} ${BENCH} -j1 .;
     elif [ $GTKVTY = "curses" ]; then
-      ${CABAL} new-build $WITHCOMPILER --allow-newer --only-dependencies -fcurses -fwith_expensive_assertions -f-release ${TEST} ${BENCH} -j2 .;
-      ${CABAL} new-build $WITHCOMPILER --allow-newer -fcurses -f-release ${TEST} ${BENCH} -j1 .;
+      ${CABAL} new-build $WITHCOMPILER --only-dependencies -fcurses -fwith_expensive_assertions -f-release ${TEST} ${BENCH} -j2 .;
+      ${CABAL} new-build $WITHCOMPILER -fcurses -f-release ${TEST} ${BENCH} -j1 .;
     elif [ $GTKVTY = "noopt" ]; then
-      ${CABAL} new-build $WITHCOMPILER --allow-newer --only-dependencies -fvty --ghc-options="-O0 -fno-ignore-asserts" ${TEST} ${BENCH} -j2 .;
-      ${CABAL} new-build $WITHCOMPILER --allow-newer -fvty --ghc-options="-O0 -fno-ignore-asserts" ${TEST} ${BENCH} -j1 .;
+      ${CABAL} new-build $WITHCOMPILER --only-dependencies -fvty --ghc-options="-O0 -fno-ignore-asserts" ${TEST} ${BENCH} -j2 .;
+      ${CABAL} new-build $WITHCOMPILER -fvty --ghc-options="-O0 -fno-ignore-asserts" ${TEST} ${BENCH} -j1 .;
     elif [ $GTKVTY = "opt2" ]; then
-      ${CABAL} new-build $WITHCOMPILER --allow-newer --only-dependencies -fcurses --ghc-options="-O2 -fno-ignore-asserts" ${TEST} ${BENCH} -j2 .;
-      travis_retry ${CABAL} new-build $WITHCOMPILER --allow-newer -fcurses --ghc-options="-O2 -fno-ignore-asserts" ${TEST} ${BENCH} -j1 .;
+      ${CABAL} new-build $WITHCOMPILER --only-dependencies -fcurses --ghc-options="-O2 -fno-ignore-asserts" ${TEST} ${BENCH} -j2 .;
+      travis_retry ${CABAL} new-build $WITHCOMPILER -fcurses --ghc-options="-O2 -fno-ignore-asserts" ${TEST} ${BENCH} -j1 .;
     elif [ $GTKVTY = "asserts" ]; then
-      ${CABAL} new-build $WITHCOMPILER --allow-newer --only-dependencies -fvty -fwith_expensive_assertions ${TEST} ${BENCH} -j2 .;
-      ${CABAL} new-build $WITHCOMPILER --allow-newer -fvty -fwith_expensive_assertions ${TEST} ${BENCH} -j1 .;
+      ${CABAL} new-build $WITHCOMPILER --only-dependencies -fvty -fwith_expensive_assertions ${TEST} ${BENCH} -j2 .;
+      ${CABAL} new-build $WITHCOMPILER -fvty -fwith_expensive_assertions ${TEST} ${BENCH} -j1 .;
     elif [ $GTKVTY = "asserts_noopt" ]; then
-      ${CABAL} new-build $WITHCOMPILER --allow-newer --only-dependencies -fcurses -fwith_expensive_assertions --ghc-options="-O0 -fno-ignore-asserts" ${TEST} ${BENCH} -j2 .;
-      ${CABAL} new-build $WITHCOMPILER --allow-newer -fcurses -fwith_expensive_assertions --ghc-options="-O0 -fno-ignore-asserts" ${TEST} ${BENCH} -j1 .;
+      ${CABAL} new-build $WITHCOMPILER --only-dependencies -fcurses -fwith_expensive_assertions --ghc-options="-O0 -fno-ignore-asserts" ${TEST} ${BENCH} -j2 .;
+      ${CABAL} new-build $WITHCOMPILER -fcurses -fwith_expensive_assertions --ghc-options="-O0 -fno-ignore-asserts" ${TEST} ${BENCH} -j1 .;
     elif [ $GTKVTY = "asserts_opt2" ]; then
-      ${CABAL} new-build $WITHCOMPILER --allow-newer --only-dependencies -fvty -fwith_expensive_assertions --ghc-options="-O2 -fno-ignore-asserts" ${TEST} ${BENCH} -j2 .;
-      travis_retry ${CABAL} new-build $WITHCOMPILER --allow-newer -fvty -fwith_expensive_assertions --ghc-options="-O2 -fno-ignore-asserts" ${TEST} ${BENCH} -j1 .;
+      ${CABAL} new-build $WITHCOMPILER --only-dependencies -fvty -fwith_expensive_assertions --ghc-options="-O2 -fno-ignore-asserts" ${TEST} ${BENCH} -j2 .;
+      travis_retry ${CABAL} new-build $WITHCOMPILER -fvty -fwith_expensive_assertions --ghc-options="-O2 -fno-ignore-asserts" ${TEST} ${BENCH} -j1 .;
     elif [ $GTKVTY = "brew-sdl2-osx" ]; then
       brew install sdl2_ttf;
     elif [ $GTKVTY = "asserts-osx" ]; then
-      ${CABAL} new-build $WITHCOMPILER --allow-newer --only-dependencies -fvty -fwith_expensive_assertions ${TEST} ${BENCH} -j2 .;
-      ${CABAL} new-build $WITHCOMPILER --allow-newer -fvty -fwith_expensive_assertions ${TEST} ${BENCH} -j1 .;
+      ${CABAL} new-build $WITHCOMPILER --only-dependencies -fvty -fwith_expensive_assertions ${TEST} ${BENCH} -j2 .;
+      ${CABAL} new-build $WITHCOMPILER -fvty -fwith_expensive_assertions ${TEST} ${BENCH} -j1 .;
     elif [ $GTKVTY = "asserts-osx_noopt" ]; then
-      ${CABAL} new-build $WITHCOMPILER --allow-newer --only-dependencies -fcurses -fwith_expensive_assertions --ghc-options="-O0 -fno-ignore-asserts" ${TEST} ${BENCH} -j2 .;
-      ${CABAL} new-build $WITHCOMPILER --allow-newer -fcurses -fwith_expensive_assertions --ghc-options="-O0 -fno-ignore-asserts" ${TEST} ${BENCH} -j1 .;
+      ${CABAL} new-build $WITHCOMPILER --only-dependencies -fcurses -fwith_expensive_assertions --ghc-options="-O0 -fno-ignore-asserts" ${TEST} ${BENCH} -j2 .;
+      ${CABAL} new-build $WITHCOMPILER -fcurses -fwith_expensive_assertions --ghc-options="-O0 -fno-ignore-asserts" ${TEST} ${BENCH} -j1 .;
     else exit 7;
     fi
 
