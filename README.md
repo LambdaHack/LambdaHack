@@ -294,3 +294,5 @@ Have fun!
 [11]: https://github.com/LambdaHack/LambdaHack/releases
 [15]: https://github.com/ghcjs/ghcjs
 [16]: https://www.npmjs.com/package/google-closure-compiler
+
+Jamie was here.
