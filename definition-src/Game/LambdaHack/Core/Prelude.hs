@@ -12,7 +12,7 @@ module Game.LambdaHack.Core.Prelude
   , module Control.Exception.Assert.Sugar
 
   , Text, (<+>), tshow, divUp, sum, (<$$>), partitionM, length, null, comparing
-  , intCast, fromIntegralWrap, toIntegralCrash, intToDouble, int64ToDouble
+  , into, fromIntegralWrap, toIntegralCrash, intToDouble, int64ToDouble
   , mapM_, forM_
 
   , (***), (&&&), first, second
@@ -61,7 +61,7 @@ import qualified Data.Time as Time
 import           NLP.Miniutter.English ((<+>))
 import qualified NLP.Miniutter.English as MU
 import qualified Prelude.Compat
-import           Witch (From, into)
+import           Witch (into)
 
 -- | Show and pack the result.
 tshow :: Show a => a -> Text
@@ -168,9 +168,6 @@ instance NFData MU.Part
 instance NFData MU.Person
 
 instance NFData MU.Polarity
-
-intCast :: forall target source. From source target => source -> target
-intCast = into
 
 -- | Re-exported 'Prelude.fromIntegral', but please give it explicit type
 -- to make it obvious if wrapping, etc., may occur. Use `toIntegralCrash`

@@ -191,7 +191,7 @@ library definition
                       ,ghc-prim
                       ,hashable
                       ,hsini
-                      ,witch >= 0.3
+                      ,witch >= 0.2
                       ,keys
                       ,miniutter
                       ,splitmix

@@ -142,18 +142,18 @@ timeDeltaReverse (Delta (Time t)) = Delta (Time (-t))
 -- | Scale the time vector by an @Int@ scalar value.
 timeDeltaScale :: Delta Time -> Int -> Delta Time
 {-# INLINE timeDeltaScale #-}
-timeDeltaScale (Delta (Time t)) s = Delta (Time (t * intCast s))
+timeDeltaScale (Delta (Time t)) s = Delta (Time (t * into s))
 
 -- | Take the given percent of the time vector.
 timeDeltaPercent :: Delta Time -> Int -> Delta Time
 {-# INLINE timeDeltaPercent #-}
 timeDeltaPercent (Delta (Time t)) s =
-  Delta (Time (t * intCast s `div` 100))
+  Delta (Time (t * into s `div` 100))
 
 -- | Divide a time vector.
 timeDeltaDiv :: Delta Time -> Int -> Delta Time
 {-# INLINE timeDeltaDiv #-}
-timeDeltaDiv (Delta (Time t)) n = Delta (Time (t `div` intCast n))
+timeDeltaDiv (Delta (Time t)) n = Delta (Time (t `div` into n))
 
 -- | Represent the main 10 thresholds of a time range by digits,
 -- given the total length of the time range.
@@ -190,7 +190,7 @@ sInMs = 1000000
 -- | Constructor for content definitions.
 toSpeed :: Int -> Speed
 {-# INLINE toSpeed #-}
-toSpeed s = Speed $ intCast s * sInMs `div` 10
+toSpeed s = Speed $ into s * sInMs `div` 10
 
 -- | Readable representation of speed in the format used in content definitions.
 fromSpeed :: Speed -> Int
@@ -281,12 +281,12 @@ ticksPerMeter (Speed v) =
 -- See <https://github.com/LambdaHack/LambdaHack/wiki/Item-statistics>.
 speedFromWeight :: Int -> Int -> Speed
 speedFromWeight !weight !throwVelocity =
-  let w = intCast weight
+  let w = into weight
       mpMs | w < 250 = sInMs * 20
            | w < 1500 = sInMs * 20 * 1250 `div` (w + 1000)
            | w < 10500 = sInMs * (11500 - w) `div` 1000
            | otherwise = minimalSpeed * 2  -- move one step and drop
-      v = mpMs * intCast throwVelocity `div` 100
+      v = mpMs * into throwVelocity `div` 100
       -- We round down to the nearest multiple of 2M (unless the speed
       -- is very low), to ensure both turns of flight cover the same distance
       -- and that the speed matches the distance traveled exactly.

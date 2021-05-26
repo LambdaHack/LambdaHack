@@ -117,7 +117,7 @@ applyKineticDamage source target iid = do
     totalDepth <- getsState stotalDepth
     Level{ldepth} <- getLevel (blid sb)
     dmg <- rndToAction $ castDice ldepth totalDepth $ IK.idamage itemKind
-    let rawDeltaHP = intCast hurtMult * xM dmg `divUp` 100
+    let rawDeltaHP = into hurtMult * xM dmg `divUp` 100
         speedDeltaHP = case btrajectory sb of
           Just (_, speed) | bproj sb -> - modifyDamageBySpeed rawDeltaHP speed
           _ -> - rawDeltaHP
