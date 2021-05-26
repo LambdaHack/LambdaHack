@@ -45,7 +45,9 @@ data Vector = Vector
 
 instance Binary Vector where
   put = put . (toIntegralCrash :: Int -> Int32) . fromEnum
-  get = fmap (toEnum . (intCast :: Int32 -> Int)) get
+  get = fmap (toEnum . (fromIntegralWrap :: Int32 -> Int)) get
+    -- `fromIntegralWrap` is fine here, because we converted the integer
+    -- in the opposite direction first, so it fits in 32bit positive `Int`
 
 -- Note that the conversion is not monotonic wrt the natural @Ord@ instance,
 -- to keep it in sync with Point.

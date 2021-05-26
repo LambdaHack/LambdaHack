@@ -56,18 +56,14 @@ randomR0 h = St.state $ nextRandom h
 -- to keep it working for arbitrary fixed number of bits.
 nextRandom :: forall a. (Integral a) => a -> SM.SMGen -> (a, SM.SMGen)
 {-# INLINE nextRandom #-}
-nextRandom h g = assert ((intCast :: a -> Integer) h
-                         <= (intCast :: Int32 -> Integer) maxBound) $
+nextRandom h g = assert (toInteger h <= (intCast :: Int32 -> Integer) maxBound) $
   let (w32, g') = SM.bitmaskWithRejection32'
                     ((fromIntegralWrap :: a -> Word32) h) g
       -- `fromIntegralWrap` is fine here, because wrapping is OK.
       x = (fromIntegralWrap :: Word32 -> a) w32
   in if x > h
      then error $ "nextRandom internal error"
-                  `showFailure`
-                    ( (intCast :: a -> Integer) x
-                    , (intCast :: a -> Integer) h
-                    , w32 )
+                  `showFailure` (toInteger x, toInteger h, w32)
      else (x, g')
 
 -- | Get a random 'Word32' using full range.

@@ -49,7 +49,6 @@ import qualified Data.Fixed as Fixed
 import           Data.Hashable
 import qualified Data.HashMap.Strict as HM
 import           Data.Int (Int64)
-import           Data.IntCast (intCast)
 import           Data.Key
 import           Data.List.Compat hiding (foldl, foldl1, length, null, sum)
 import qualified Data.List.Compat as List
@@ -62,6 +61,7 @@ import qualified Data.Time as Time
 import           NLP.Miniutter.English ((<+>))
 import qualified NLP.Miniutter.English as MU
 import qualified Prelude.Compat
+import           Witch (From, into)
 
 -- | Show and pack the result.
 tshow :: Show a => a -> Text
@@ -168,6 +168,9 @@ instance NFData MU.Part
 instance NFData MU.Person
 
 instance NFData MU.Polarity
+
+intCast :: forall target source. From source target => source -> target
+intCast = into
 
 -- | Re-exported 'Prelude.fromIntegral', but please give it explicit type
 -- to make it obvious if wrapping, etc., may occur. Use `toIntegralCrash`
