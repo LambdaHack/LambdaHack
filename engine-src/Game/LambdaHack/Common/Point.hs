@@ -54,7 +54,7 @@ instance Binary Point where
   put = put . (toIntegralCrash :: Int -> Int32) . fromEnum
   get = fmap (toEnum . (fromIntegralWrap :: Int32 -> Int)) get
     -- `fromIntegralWrap` is fine here, because we converted the integer
-    -- in the opposite direction first, so it fits in 32bit positive `Int`
+    -- in the opposite direction first, so it fits even in 31 bit `Int`
 
 -- Note that @Ord@ on @Int@ is not monotonic wrt @Ord@ on @Point@.
 -- We need to keep it that way, because we want close xs to have close indexes,
