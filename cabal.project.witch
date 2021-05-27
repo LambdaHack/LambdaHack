@@ -1,0 +1,7 @@
+packages: ./ ../witch/
+
+package sdl2
+    flags: +no-linear
+
+package splitmix
+    flags: +optimised-mixer

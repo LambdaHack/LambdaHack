@@ -374,9 +374,11 @@ script:
   - find . -maxdepth 1 -type f -name '*.tar.gz' -exec tar -xvf '{}' \;
   - find . -maxdepth 1 -type f -name '*.tar.gz' -exec rm       '{}' \;
 
+  - git clone --depth=50 --branch=gh28-ghc-8.6 git://github.com/tfausak/witch.git
+
   - cd LambdaHack-*
 
-  - cp $TOP/cabal.project .
+  - cp $TOP/cabal.project.witch cabal.project
   - cp $TOP/cabal.project.local .
   - cp $TOP/Makefile .
 

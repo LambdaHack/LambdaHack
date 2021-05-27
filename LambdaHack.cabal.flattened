@@ -328,7 +328,7 @@ library
                       ghc-prim,
                       hashable   >= 1.1.2.5,
                       hsini      >= 0.2,
-                      witch      >= 0.2
+                      witch      >= 0.3
                       keys       >= 3,
                       miniutter  >= 0.5.0.0,
                       open-browser >= 0.2,
