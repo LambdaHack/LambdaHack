@@ -377,7 +377,7 @@ script:
   - cd LambdaHack-*
 
   - cp $TOP/cabal.project .
-  - cp $TOP/cabal.project.local .
+  - cp $TOP/cabal.project.local . || true
   - cp $TOP/Makefile .
 
   - |
