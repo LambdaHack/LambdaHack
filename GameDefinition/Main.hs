@@ -56,13 +56,9 @@ main = do
   -- because they are not the source of the failure.
   !serverOptions <- OA.execParser serverOptionsPI
   resOrEx :: Either Ex.SomeException () <- Ex.try $ tieKnot serverOptions
-  let unwrapEx e =
-#if MIN_VERSION_async(2,2,1)
-        case Ex.fromException e of
-          Just (ExceptionInLinkedThread _ ex) -> unwrapEx ex
-          _ ->
-#endif
-               e
+  let unwrapEx e = case Ex.fromException e of
+        Just (ExceptionInLinkedThread _ ex) -> unwrapEx ex
+        _ -> e
   case resOrEx of
     Right () -> return ()
     Left e -> case Ex.fromException $ unwrapEx e of

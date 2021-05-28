@@ -331,7 +331,7 @@ library
   autogen-modules:    Paths_LambdaHack
   build-depends:      definition,
                       assert-failure >= 0.1.2 && < 0.2,
-                      async      >= 2,
+                      async      >= 2.2.1,
                       base       >= 4.10 && < 99,
                       binary     >= 0.8,
                       bytestring >= 0.9.2 ,

@@ -314,7 +314,7 @@ library
   other-modules:      Paths_LambdaHack
   autogen-modules:    Paths_LambdaHack
   build-depends:      assert-failure >= 0.1.2 && < 0.2,
-                      async      >= 2,
+                      async      >= 2.2.1,
                       base       >= 4.10 && < 99,
                       base-compat >= 0.10.0,
                       binary     >= 0.8,
