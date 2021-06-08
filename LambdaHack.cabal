@@ -120,7 +120,7 @@ common options
   default-extensions: MonoLocalBinds, ScopedTypeVariables, OverloadedStrings,
                       BangPatterns, RecordWildCards, NamedFieldPuns, MultiWayIf,
                       LambdaCase, DefaultSignatures, InstanceSigs,
-                      PatternSynonyms, StrictData, CPP
+                      PatternSynonyms, StrictData, CPP, TypeApplications
   other-extensions:   TemplateHaskell, MultiParamTypeClasses, RankNTypes,
                       TypeFamilies, FlexibleContexts, FlexibleInstances,
                       DeriveFunctor, FunctionalDependencies,
