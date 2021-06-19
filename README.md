@@ -206,11 +206,12 @@ to switch to the vty console frontend optimized for screen readers, run
     cabal run -fvty LambdaHack
 
 
-Building and running under Windows
-----------------------------------
+Building and running under Windows with stack
+---------------------------------------------
 I managed to build and run it by using the stack build rather than the cabal build. I installed sdl2, sdl-ttf, and sdl-mixer using the technique here (https://www.reddit.com/r/haskellgamedev/comments/4jpthu/windows_sdl2_is_now_almost_painless_via_stack/) _for each library_, not just for sdl2.
 
 Then
+
     stack update
     stack build
 
@@ -219,7 +220,9 @@ You won't be able to run the game yet because the sdl dlls are missing. These ca
 Then I used Everything (https://www.voidtools.com/) to find out exactly where the LambdaHack.exe was being put and added the dll's there. Kinda gross, but it works.
 
 At that point:
+
     stack exec LambdaHack
+
 worked.
 (-Jamie)
 
