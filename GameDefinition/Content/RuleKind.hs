@@ -46,4 +46,5 @@ standardRules = RuleContent
   , rnearby = 20
   , rstairWordCarried = ["staircase"]  -- only one, so inert
   , rsymbolProjectile = '|'
+  , rsymbolGold = '£'
   }

@@ -98,7 +98,7 @@ _symbolLauncher  = '}'
 symbolLight      = '('
 symbolTool       = '('
 symbolSpecial    = '*'  -- don't overuse, because it clashes with projectiles
-symbolGold       = '$'  -- also gems
+symbolGold       = rsymbolGold standardRules -- also gems -- '$'
 symbolNecklace   = '"'
 symbolRing       = '='
 symbolPotion     = '!'  -- concoction, bottle, jar, vial, canister
