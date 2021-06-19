@@ -35,6 +35,7 @@ data RuleContent = RuleContent
   , rstairWordCarried :: [Text]    -- ^ words that can't be dropped from stair
                                    --   name as it goes through levels
   , rsymbolProjectile :: Char
+  , rsymbolGold       :: Char
   }
 
 emptyRuleContent :: RuleContent
@@ -51,6 +52,7 @@ emptyRuleContent = RuleContent
   , rnearby = 0
   , rstairWordCarried = []
   , rsymbolProjectile = '0'
+  , rsymbolGold = '£'
   }
 
 -- | Catch invalid rule kind definitions.
