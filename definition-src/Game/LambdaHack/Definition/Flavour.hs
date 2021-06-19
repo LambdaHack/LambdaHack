@@ -43,7 +43,7 @@ instance Enum Flavour where
 
 instance Binary Flavour where
   put = put . (toIntegralCrash :: Int -> Word16) . fromEnum
-  get = fmap (toEnum . (intCast :: Word16 -> Int)) get
+  get = fmap (toEnum . (into :: Word16 -> Int)) get  -- @Int doesn't suffice
 
 -- | Turn a colour set into a flavour set.
 zipPlain, zipFancy, zipLiquid, zipGlassPlain, zipGlassFancy, zipStory :: [Color] -> [Flavour]

@@ -24,6 +24,7 @@ import           Control.Concurrent (threadDelay)
 import qualified Data.Char as Char
 import qualified Data.EnumMap.Strict as EM
 import qualified Data.EnumSet as ES
+import           Data.Int (Int64)
 import qualified Data.Map.Strict as M
 import qualified Data.Text as T
 import           Data.Tuple
@@ -2194,7 +2195,7 @@ strike catch source target iid = assert (source /= target) $ do
         unRefillHP _ = Nothing
         kineticDmg =
           let dmg = Dice.supDice $ IK.idamage $ itemKind itemFullWeapon
-              rawDeltaHP = intCast sHurt * xM dmg `divUp` 100
+              rawDeltaHP = into @Int64 sHurt * xM dmg `divUp` 100
           in case btrajectory sb of
             Just (_, speed) | bproj sb ->
               - modifyDamageBySpeed rawDeltaHP speed

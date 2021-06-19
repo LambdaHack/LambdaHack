@@ -12,7 +12,7 @@ module Game.LambdaHack.Core.Prelude
   , module Control.Exception.Assert.Sugar
 
   , Text, (<+>), tshow, divUp, sum, (<$$>), partitionM, length, null, comparing
-  , intCast, fromIntegralWrap, toIntegralCrash, intToDouble, int64ToDouble
+  , into, fromIntegralWrap, toIntegralCrash, intToDouble, int64ToDouble
   , mapM_, forM_
 
   , (***), (&&&), first, second
@@ -49,7 +49,6 @@ import qualified Data.Fixed as Fixed
 import           Data.Hashable
 import qualified Data.HashMap.Strict as HM
 import           Data.Int (Int64)
-import           Data.IntCast (intCast)
 import           Data.Key
 import           Data.List.Compat hiding (foldl, foldl1, length, null, sum)
 import qualified Data.List.Compat as List
@@ -62,6 +61,7 @@ import qualified Data.Time as Time
 import           NLP.Miniutter.English ((<+>))
 import qualified NLP.Miniutter.English as MU
 import qualified Prelude.Compat
+import           Witch (into)
 
 -- | Show and pack the result.
 tshow :: Show a => a -> Text

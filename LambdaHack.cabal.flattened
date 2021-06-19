@@ -124,7 +124,7 @@ common options
   default-extensions: MonoLocalBinds, ScopedTypeVariables, OverloadedStrings,
                       BangPatterns, RecordWildCards, NamedFieldPuns, MultiWayIf,
                       LambdaCase, DefaultSignatures, InstanceSigs,
-                      PatternSynonyms, StrictData, CPP
+                      PatternSynonyms, StrictData, CPP, TypeApplications
   other-extensions:   TemplateHaskell, MultiParamTypeClasses, RankNTypes,
                       TypeFamilies, FlexibleContexts, FlexibleInstances,
                       DeriveFunctor, FunctionalDependencies,
@@ -314,7 +314,7 @@ library
   other-modules:      Paths_LambdaHack
   autogen-modules:    Paths_LambdaHack
   build-depends:      assert-failure >= 0.1.2 && < 0.2,
-                      async      >= 2,
+                      async      >= 2.2.1,
                       base       >= 4.10 && < 99,
                       base-compat >= 0.10.0,
                       binary     >= 0.8,
@@ -328,7 +328,7 @@ library
                       ghc-prim,
                       hashable   >= 1.1.2.5,
                       hsini      >= 0.2,
-                      int-cast   >= 0.2,
+                      witch      >= 0.3
                       keys       >= 3,
                       miniutter  >= 0.5.0.0,
                       open-browser >= 0.2,

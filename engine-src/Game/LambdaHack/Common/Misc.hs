@@ -103,7 +103,7 @@ appDataDir = do
   getAppUserDataDirectory name
 
 xM :: Int -> Int64
-xM k = intCast k * 1000000
+xM k = into @Int64 k * 1000000
 
 xD :: Double -> Double
 xD k = k * 1000000

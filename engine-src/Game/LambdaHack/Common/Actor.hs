@@ -285,7 +285,7 @@ monsterGenChance (Dice.AbsDepth ldepth) (Dice.AbsDepth totalDepth)
         -- Never spawn too rarely so that camping is never safe.
         maxCoeff = 100 * 30  -- safe level after 30 spawns flattens out
         coeff = min maxCoeff $ actorCoeff * (lvlSpawned - scaledDepth - 2)
-    in chance $ 3 % intCast (coeff `max` 1)
+    in chance $ 3 % toInteger (coeff `max` 1)
          -- 3 --- trebled
 
 -- | How long until an actor's smell vanishes from a tile.
