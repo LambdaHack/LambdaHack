@@ -211,6 +211,7 @@ Building and running under Windows
 I managed to build and run it by using the stack build rather than the cabal build. I installed sdl2, sdl-ttf, and sdl-mixer using the technique here (https://www.reddit.com/r/haskellgamedev/comments/4jpthu/windows_sdl2_is_now_almost_painless_via_stack/) _for each library_, not just for sdl2.
 
 Then
+
     stack update
     stack build
 
