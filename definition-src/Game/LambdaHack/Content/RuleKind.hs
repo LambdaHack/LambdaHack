@@ -35,7 +35,24 @@ data RuleContent = RuleContent
   , rstairWordCarried :: [Text]    -- ^ words that can't be dropped from stair
                                    --   name as it goes through levels
   , rsymbolProjectile :: Char
+  , rsymbolLight      :: Char
+  , rsymbolTool       :: Char
+  , rsymbolSpecial    :: Char  -- don't overuse, because it clashes with projectiles
   , rsymbolGold       :: Char
+  , rsymbolNecklace   :: Char
+  , rsymbolRing       :: Char
+  , rsymbolPotion     :: Char  -- concoction, bottle, jar, vial, canister
+  , rsymbolFlask      :: Char
+  , rsymbolScroll     :: Char  -- book, note, tablet, remote, chip, card
+  , rsymbolTorsoArmor :: Char
+  , rsymbolMiscArmor  :: Char
+  , rsymbolClothes    :: Char
+  , rsymbolShield     :: Char
+  , rsymbolPolearm    :: Char
+  , rsymbolEdged      :: Char
+  , rsymbolHafted     :: Char
+  , rsymbolWand       :: Char  -- magical rod, transmitter, pistol, rifle, instrument
+  , rsymbolFood       :: Char  -- also body part; distinct from floor: not middle dot
   }
 
 emptyRuleContent :: RuleContent
@@ -52,7 +69,24 @@ emptyRuleContent = RuleContent
   , rnearby = 0
   , rstairWordCarried = []
   , rsymbolProjectile = '0'
-  , rsymbolGold = '£'
+  , rsymbolLight      = '0'
+  , rsymbolTool       = '0'
+  , rsymbolSpecial    = '0'  -- don't overuse, because it clashes with projectiles
+  , rsymbolGold       = '0'  -- also gems -- '$'
+  , rsymbolNecklace   = '0'
+  , rsymbolRing       = '0'
+  , rsymbolPotion     = '0'  -- concoction, bottle, jar, vial, canister
+  , rsymbolFlask      = '0'
+  , rsymbolScroll     = '0'  -- book, note, tablet, remote, chip, card
+  , rsymbolTorsoArmor = '0'
+  , rsymbolMiscArmor  = '0'
+  , rsymbolClothes    = '0'
+  , rsymbolShield     = '0'
+  , rsymbolPolearm    = '0'
+  , rsymbolEdged      = '0'
+  , rsymbolHafted     = '0'
+  , rsymbolWand       = '0'  -- magical rod, transmitter, pistol, rifle, instrument
+  , rsymbolFood       = '0'  -- also body part; distinct from floor: not middle dot
   }
 
 -- | Catch invalid rule kind definitions.
