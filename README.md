@@ -185,7 +185,7 @@ the following speeds up the turn-around a lot
     cp cabal.project.local.development cabal.project.local
     cabal install cabal-plan
 
-and then compile with
+and then compile (and recompile) with
 
     cabal build .
 
