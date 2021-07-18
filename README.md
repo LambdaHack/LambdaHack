@@ -171,9 +171,10 @@ and optionally the Google Closure Compiler[16].
 
 The latest official version of the LambdaHack library can be downloaded,
 compiled for SDL2 and installed automatically using the Cabal tool,
-which is already a part of your OS distribution, or available within
-The Haskell Platform[7] (version 2.4.1 or later of cabal is required).
-Get the library from Hackage[3] as follows
+which may already be a part of your OS distribution, but if it's too old,
+you can get it from The Haskell Platform[7] or using ghcup[19] or others.
+Version 2.4.1 or later of cabal is required and the newer the GHC, the better.
+Get the LambdaHack package from Hackage[3] as follows
 
     cabal update
     cabal run LambdaHack
@@ -295,3 +296,4 @@ Have fun!
 [11]: https://github.com/LambdaHack/LambdaHack/releases
 [15]: https://github.com/ghcjs/ghcjs
 [16]: https://www.npmjs.com/package/google-closure-compiler
+[19]: https://www.haskell.org/ghcup/
