@@ -19,6 +19,7 @@ import           Game.LambdaHack.Client.UI.SessionUI
 import           Game.LambdaHack.Client.UI.UIOptions
 import           Game.LambdaHack.Client.UI.UIOptionsParse
 import           Game.LambdaHack.Common.ClientOptions
+import           Game.LambdaHack.Common.Point
 import qualified Game.LambdaHack.Content.RuleKind as RK
 import           Game.LambdaHack.Server
 
@@ -32,7 +33,7 @@ main :: IO ()
 main = defaultMain tests
 
 tests :: TestTree
-tests = testGroup "Tests" [macroTests, integrationTests]
+tests = testGroup "Tests" [macroTests, integrationTests, pointUnitTests]
 
 macroTests :: TestTree
 macroTests = testGroup "macroTests" $
@@ -322,3 +323,17 @@ integrationTests = testGroup "integrationTests" $
       isUbuntu = ("ubuntu" `T.isPrefixOf`)
   in map testFontset $ zip [0..] $ map T.unpack $ filter (not . isUbuntu)
      $ map fst $ uFontsets uiOptions
+
+pointUnitTests :: TestTree
+pointUnitTests = testGroup "pointUnitTests" 
+  [  testCase "originToOrigin_chessDist_equals0" $
+        chessDist (Point 0 0) (Point 0 0) @?= 0
+  ,  testCase "neg1To1_chessDist_equals2" $
+        chessDist (Point (-1) (-1)) (Point 1 1) @?= 2
+  ,  testCase "sameColumn_chessDist_equals1" $
+        chessDist (Point (-1) 0) (Point (-1) 1) @?= 1
+  ,  testCase "sameRow_chessDist_equals1" $
+        chessDist (Point (-1) 0) (Point 0 0) @?= 1
+  ,  testCase "knightMove_chessDist_equals2" $
+        chessDist (Point 1 1) (Point 3 2) @?= 2
+  ]
