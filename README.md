@@ -172,7 +172,8 @@ and optionally the Google Closure Compiler[16].
 The latest official version of the LambdaHack library can be downloaded,
 compiled for SDL2 and installed automatically using the Cabal tool,
 which is already a part of your OS distribution, or available within
-The Haskell Platform[7]. Get the library from Hackage[3] as follows
+The Haskell Platform[7] (version 2.4.1 or later of cabal is required).
+Get the library from Hackage[3] as follows
 
     cabal update
     cabal run LambdaHack
