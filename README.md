@@ -214,7 +214,7 @@ Testing and debugging
 The [Makefile](https://github.com/LambdaHack/LambdaHack/blob/master/Makefile)
 contains many sample test commands.
 Numerous tests that use the screensaver game modes (AI vs. AI)
-and the teletype frontend are gathered in `make test`.
+and the teletype frontend are gathered in `make test-locally`.
 Of these, travis runs `test-travis` on each push to github.
 Test commands with prefix `frontend` start AI vs. AI games with
 the standard, user-friendly frontend and auto-locating the game binary.
@@ -227,11 +227,11 @@ though they mostly overlap with commandline options (and will be totally
 merged at some point).
 
 You can use HPC with the game as follows (details vary according
-to HPC version).
+to HPC version and you may need to use LambdaHack.cabal.flattened).
 
     cabal clean
-    cabal build --enable-coverage
-    make test
+    cabal build --enable-coverage .
+    make test-locally
     hpc report --hpcdir=dist/hpc/dyn/mix/LambdaHack --hpcdir=dist/hpc/dyn/mix/LambdaHack-xxx/ LambdaHack
     hpc markup --hpcdir=dist/hpc/dyn/mix/LambdaHack --hpcdir=dist/hpc/dyn/mix/LambdaHack-xxx/ LambdaHack
 

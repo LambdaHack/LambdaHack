@@ -159,6 +159,11 @@ test-travis2: test-sniff benchNull
 
 test: test-sniff test-short test-medium benchNull
 
+copyBinaryHere:
+	cp $$(cabal-plan list-bin exe:LambdaHack) .
+
+test-locally: copyBinaryHere test
+
 test-short: test-short-new test-short-load
 
 test-medium: testRaid-medium testBrawl-medium testShootout-medium testHunt-medium testEscape-medium testZoo-medium testAmbush-medium testCrawlEmpty-medium testCrawl-medium-know testSafari-medium testSafariSurvival-medium testBattle-medium testBattleDefense-medium testBattleSurvival-medium testDig-medium testDefenseEmpty-medium testMany-teletype
