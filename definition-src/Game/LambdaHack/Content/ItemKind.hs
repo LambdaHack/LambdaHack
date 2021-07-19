@@ -24,12 +24,16 @@ module Game.LambdaHack.Content.ItemKind
 import Prelude ()
 
 import Game.LambdaHack.Core.Prelude
+import qualified Game.LambdaHack.Content.RuleKind as RK
 
 import           Data.Binary
 import           Data.Hashable (Hashable)
+import qualified Data.Ini as Ini
 import qualified Data.Text as T
+import           Data.Version
 import           GHC.Generics (Generic)
 import qualified System.Random.SplitMix32 as SM
+
 
 import qualified Game.LambdaHack.Core.Dice as Dice
 import           Game.LambdaHack.Core.Random (nextRandom)
@@ -505,8 +509,9 @@ toOrganNoTimer :: GroupName ItemKind -> Effect
 toOrganNoTimer grp = CreateItem Nothing COrgan grp TimerNone
 
 -- | Catch invalid item kind definitions.
-validateSingle :: ItemKind -> [Text]
-validateSingle ik@ItemKind{..} =
+validateSingle :: RK.RuleContent -> ItemKind -> [Text]
+validateSingle ruleContent
+               ik@ItemKind{..} =
   ["iname longer than 23" | T.length iname > 23]
   ++ ["icount < 0" | Dice.infDice icount < 0]
   ++ validateRarity irarity
@@ -526,7 +531,7 @@ validateSingle ik@ItemKind{..} =
           likelyTemplate = case ifreq of
             [(grp, 1)] -> "unknown" `T.isSuffixOf` fromGroupName grp
             _ -> False
-          likelyException = isymbol `elem` [',', '"', '-'] || likelyTemplate
+          likelyException = isymbol `elem` [RK.rsymbolFood ruleContent, RK.rsymbolNecklace ruleContent, '-'] || likelyTemplate 
       in [ "EqpSlot specified but not Equipable nor Meleeable"
          | length ts == 1 && not equipable && not meleeable ]
          ++ [ "EqpSlot not specified but Equipable or Meleeable and not a likely organ or necklace or template"
@@ -696,14 +701,45 @@ validateAll content coitem =
   in [ "PresentAs groups not singletons:" <+> tshow wrongPresentAsGroups
      | not $ null wrongPresentAsGroups ]
 
-makeData :: [ItemKind] -> [GroupName ItemKind] -> [GroupName ItemKind]
+makeData :: [ItemKind] -> [GroupName ItemKind] -> [GroupName ItemKind] -> RK.RuleContent
          -> ContentData ItemKind
-makeData content groupNamesSingleton groupNames =
+makeData content groupNamesSingleton groupNames ruleContent =
   let allGroupNamesTooLong = filter ((> 23) . T.length . fromGroupName)
                              $ groupNamesSingleton ++ groupNames
+      -- testRuleContent = RK.RuleContent{ rtitle = ""
+      --                   , rXmax = 0
+      --                   , rYmax = 0
+      --                   , rexeVersion = makeVersion []
+      --                   , rcfgUIName = ""
+      --                   , rcfgUIDefault = ("", Ini.emptyConfig)
+      --                   , rwriteSaveClips = 0
+      --                   , rleadLevelClips = 0
+      --                   , rscoresFile = ""
+      --                   , rnearby = 0
+      --                   , rstairWordCarried = []
+      --                   , rsymbolProjectile = '0'
+      --                   , rsymbolLight      = '0'
+      --                   , rsymbolTool       = '0'
+      --                   , rsymbolSpecial    = '0'  -- don't overuse, because it clashes with projectiles
+      --                   , rsymbolGold       = '0'  -- also gems -- '$'
+      --                   , rsymbolNecklace   = '"'
+      --                   , rsymbolRing       = '0'
+      --                   , rsymbolPotion     = '0'  -- concoction, bottle, jar, vial, canister
+      --                   , rsymbolFlask      = '0'
+      --                   , rsymbolScroll     = '0'  -- book, note, tablet, remote, chip, card
+      --                   , rsymbolTorsoArmor = '0'
+      --                   , rsymbolMiscArmor  = '0'
+      --                   , rsymbolClothes    = '0'
+      --                   , rsymbolShield     = '0'
+      --                   , rsymbolPolearm    = '0'
+      --                   , rsymbolEdged      = '0'
+      --                   , rsymbolHafted     = '0'
+      --                   , rsymbolWand       = '0'  -- magical rod, transmitter, pistol, rifle, instrument
+      --                   , rsymbolFood       = ','  -- also body part; distinct from floor: not middle dot
+      --                   }
   in assert (null allGroupNamesTooLong
              `blame` "ItemKind: some item group names too long"
              `swith` allGroupNamesTooLong) $
-     makeContentData "ItemKind" iname ifreq validateSingle validateAll content
+     makeContentData "ItemKind" iname ifreq (validateSingle ruleContent) validateAll content
                      (mandatoryGroupsSingleton ++ groupNamesSingleton)
                      (mandatoryGroups ++ groupNames)
