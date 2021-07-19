@@ -706,37 +706,6 @@ makeData :: [ItemKind] -> [GroupName ItemKind] -> [GroupName ItemKind] -> RK.Rul
 makeData content groupNamesSingleton groupNames ruleContent =
   let allGroupNamesTooLong = filter ((> 23) . T.length . fromGroupName)
                              $ groupNamesSingleton ++ groupNames
-      -- testRuleContent = RK.RuleContent{ rtitle = ""
-      --                   , rXmax = 0
-      --                   , rYmax = 0
-      --                   , rexeVersion = makeVersion []
-      --                   , rcfgUIName = ""
-      --                   , rcfgUIDefault = ("", Ini.emptyConfig)
-      --                   , rwriteSaveClips = 0
-      --                   , rleadLevelClips = 0
-      --                   , rscoresFile = ""
-      --                   , rnearby = 0
-      --                   , rstairWordCarried = []
-      --                   , rsymbolProjectile = '0'
-      --                   , rsymbolLight      = '0'
-      --                   , rsymbolTool       = '0'
-      --                   , rsymbolSpecial    = '0'  -- don't overuse, because it clashes with projectiles
-      --                   , rsymbolGold       = '0'  -- also gems -- '$'
-      --                   , rsymbolNecklace   = '"'
-      --                   , rsymbolRing       = '0'
-      --                   , rsymbolPotion     = '0'  -- concoction, bottle, jar, vial, canister
-      --                   , rsymbolFlask      = '0'
-      --                   , rsymbolScroll     = '0'  -- book, note, tablet, remote, chip, card
-      --                   , rsymbolTorsoArmor = '0'
-      --                   , rsymbolMiscArmor  = '0'
-      --                   , rsymbolClothes    = '0'
-      --                   , rsymbolShield     = '0'
-      --                   , rsymbolPolearm    = '0'
-      --                   , rsymbolEdged      = '0'
-      --                   , rsymbolHafted     = '0'
-      --                   , rsymbolWand       = '0'  -- magical rod, transmitter, pistol, rifle, instrument
-      --                   , rsymbolFood       = ','  -- also body part; distinct from floor: not middle dot
-      --                   }
   in assert (null allGroupNamesTooLong
              `blame` "ItemKind: some item group names too long"
              `swith` allGroupNamesTooLong) $
