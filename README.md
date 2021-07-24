@@ -226,21 +226,6 @@ and the server. Some options in the config file may prove useful too,
 though they mostly overlap with commandline options (and will be totally
 merged at some point).
 
-You can use HPC with the game as follows (details vary according
-to HPC version and you may need to use LambdaHack.cabal.flattened).
-
-    cabal clean
-    cabal build --enable-coverage .
-    make test-locally
-    hpc report --hpcdir=dist/hpc/dyn/mix/LambdaHack --hpcdir=dist/hpc/dyn/mix/LambdaHack-xxx/ LambdaHack
-    hpc markup --hpcdir=dist/hpc/dyn/mix/LambdaHack --hpcdir=dist/hpc/dyn/mix/LambdaHack-xxx/ LambdaHack
-
-A quick manual playing session, after the automated tests, would be
-in order as well, since the tests don't touch the topmost UI layer.
-Note that a debug option of the form `--stopAfter*` is required to cleanly
-terminate any automated test. This is needed to gather any HPC info,
-because HPC requires a clean exit to save data files.
-
 
 Coding style
 ------------
