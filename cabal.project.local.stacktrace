@@ -1,12 +1,10 @@
-flags: +with_expensive_assertions
 profiling: True
 library-profiling: True
-tests: False
-coverage: False
-library-coverage: False
-optimization: False
-documentation: False
 profiling-detail: all-functions
+
+flags: +with_expensive_assertions
+tests: False
+optimization: False
 
 package *
   documentation: True
