@@ -327,28 +327,3 @@ build-binary-screen-reader-ubuntu: build-directory-vty
 	LambdaHackTheGame/LambdaHack --version > /dev/null; \
 	LH_VERSION=$$(cat ~/.LambdaHack/stdout.txt); \
 	tar -czf LambdaHack_$${LH_VERSION}_screen-reader-ubuntu-16.04-amd64.tar.gz LambdaHackTheGame
-
-
-# sdl would need to be added to
-# https://github.com/utdemir/ghc-musl/blob/master/Dockerfile
-# (or compatible libraries stored in local directory and added to options)
-# in order to compile LH statically with the scripts below
-configure-static-binary-v2:
-	cabal configure --disable-tests --disable-library-profiling --disable-profiling --enable-optimization --enable-executable-stripping --enable-executable-static
-
-configure-static-binary-v2-vty:
-	cabal configure -fvty --disable-tests --disable-library-profiling --disable-profiling --disable-documentation --enable-optimization --enable-executable-stripping --enable-executable-static
-
-build-static-directory: configure-static-binary-v2 build-binary-v2 copy-directory copy-binary
-
-build-static-binary-ubuntu: build-static-directory
-	LambdaHackTheGame/LambdaHack --version > /dev/null; \
-	LH_VERSION=$$(cat ~/.LambdaHack/stdout.txt); \
-	tar -czf LambdaHack_$${LH_VERSION}_ubuntu-16.04-amd64.tar.gz LambdaHackTheGame
-
-build-static-directory-vty: configure-static-binary-v2-vty build-binary-v2 copy-directory copy-binary
-
-build-static-binary-screen-reader-ubuntu: build-static-directory-vty
-	LambdaHackTheGame/LambdaHack --version > /dev/null; \
-	LH_VERSION=$$(cat ~/.LambdaHack/stdout.txt); \
-	tar -czf LambdaHack_$${LH_VERSION}_screen-reader-ubuntu-16.04-amd64.tar.gz LambdaHackTheGame
