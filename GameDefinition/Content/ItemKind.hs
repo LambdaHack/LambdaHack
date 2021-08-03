@@ -97,15 +97,15 @@ symbolProjectile = rsymbolProjectile standardRules  -- '|'
 _symbolLauncher  = '}'
 symbolLight      = rsymbolLight standardRules
 symbolTool       = rsymbolTool standardRules
-symbolSpecial    = rsymbolSpecial standardRules
+symbolSpecial    = rsymbolSpecial standardRules  -- don't overuse, because it clashes with projectiles
 symbolGold       = rsymbolGold standardRules -- also gems -- '$'
 symbolNecklace   = rsymbolNecklace standardRules
 symbolRing       = rsymbolRing standardRules
-symbolPotion     = rsymbolPotion standardRules
+symbolPotion     = rsymbolPotion standardRules  -- concoction, bottle, jar, vial, canister
 symbolFlask      = rsymbolFlask standardRules
-symbolScroll     = rsymbolScroll standardRules
+symbolScroll     = rsymbolScroll standardRules  -- book, note, tablet, remote, chip, card
 symbolTorsoArmor = rsymbolTorsoArmor standardRules
-symbolMiscArmor  = rsymbolTorsoArmor standardRules
+symbolMiscArmor  = rsymbolMiscArmor standardRules
 symbolClothes    = rsymbolClothes standardRules
 symbolShield     = rsymbolShield standardRules
 symbolPolearm    = rsymbolPolearm standardRules
@@ -113,7 +113,7 @@ symbolEdged      = rsymbolEdged standardRules
 symbolHafted     = rsymbolHafted standardRules
 symbolWand       = rsymbolWand standardRules
 _symbolStaff     = '_'  -- scanner
-symbolFood       = rsymbolFood standardRules
+symbolFood       = rsymbolFood standardRules  -- also body part; distinct from floor: not middle dot
 
 -- ** Thrown weapons
 

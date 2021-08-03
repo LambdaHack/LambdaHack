@@ -52,7 +52,7 @@ standardRules = RuleContent
   , rsymbolGold       = '$'
   , rsymbolNecklace   = '"'
   , rsymbolRing       = '='
-  , rsymbolPotion     = '+'  -- concoction, bottle, jar, vial, canister
+  , rsymbolPotion     = '!'  -- concoction, bottle, jar, vial, canister
   , rsymbolFlask      = '!'
   , rsymbolScroll     = '?'  -- book, note, tablet, remote, chip, card
   , rsymbolTorsoArmor = '['

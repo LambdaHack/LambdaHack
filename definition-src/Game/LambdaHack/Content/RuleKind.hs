@@ -71,13 +71,13 @@ emptyRuleContent = RuleContent
   , rsymbolProjectile = '0'
   , rsymbolLight      = '0'
   , rsymbolTool       = '0'
-  , rsymbolSpecial    = '0'  -- don't overuse, because it clashes with projectiles
-  , rsymbolGold       = '0'  -- also gems -- '$'
+  , rsymbolSpecial    = '0'
+  , rsymbolGold       = '0'
   , rsymbolNecklace   = '0'
   , rsymbolRing       = '0'
-  , rsymbolPotion     = '0'  -- concoction, bottle, jar, vial, canister
+  , rsymbolPotion     = '0'
   , rsymbolFlask      = '0'
-  , rsymbolScroll     = '0'  -- book, note, tablet, remote, chip, card
+  , rsymbolScroll     = '0'
   , rsymbolTorsoArmor = '0'
   , rsymbolMiscArmor  = '0'
   , rsymbolClothes    = '0'
@@ -85,8 +85,8 @@ emptyRuleContent = RuleContent
   , rsymbolPolearm    = '0'
   , rsymbolEdged      = '0'
   , rsymbolHafted     = '0'
-  , rsymbolWand       = '0'  -- magical rod, transmitter, pistol, rifle, instrument
-  , rsymbolFood       = '0'  -- also body part; distinct from floor: not middle dot
+  , rsymbolWand       = '0'
+  , rsymbolFood       = '0'
   }
 
 -- | Catch invalid rule kind definitions.
