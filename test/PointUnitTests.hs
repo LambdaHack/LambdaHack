@@ -1,4 +1,10 @@
-module PointUnitTests where
+module PointUnitTests 
+      ( pointUnitTests   
+      ) where
+
+import Prelude ()
+
+import Game.LambdaHack.Core.Prelude
 
 import           Test.Tasty
 import           Test.Tasty.HUnit

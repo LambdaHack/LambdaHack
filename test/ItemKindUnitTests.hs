@@ -1,5 +1,9 @@
-module ItemKindUnitTests where
-    
+module ItemKindUnitTests (itemKindUnitTests) where
+
+import Prelude ()
+
+import Game.LambdaHack.Core.Prelude
+
 import           Test.Tasty
 import           Test.Tasty.HUnit
 
@@ -48,8 +52,8 @@ itemKindUnitTests = testGroup "itemKindUnitTests" $
   , testCase "equipableNoSlot\"Symbol_validateSingle_noErr" $
       validateSingle Content.RuleKind.standardRules testItemKind { isymbol = '"', iaspects = [ SetFlag Ability.Equipable ] }
       @?= []
-  , testCase "equipableNoSlot-Symbol_validateSingle_noErr" $
-      validateSingle Content.RuleKind.standardRules testItemKind { isymbol = '-', iaspects = [ SetFlag Ability.Equipable ] }
+  , testCase "equipableNoSlot/Symbol_validateSingle_noErr" $
+      validateSingle Content.RuleKind.standardRules testItemKind { isymbol = '/', iaspects = [ SetFlag Ability.Equipable ] }
       @?= []   
   , testCase "equipableNoSlot*CustomRules_validateSingle_noErr" $
       validateSingle customRules testItemKind { isymbol = '*', iaspects = [ SetFlag Ability.Equipable ] }

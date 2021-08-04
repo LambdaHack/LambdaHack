@@ -530,7 +530,7 @@ validateSingle ruleContent
           likelyTemplate = case ifreq of
             [(grp, 1)] -> "unknown" `T.isSuffixOf` fromGroupName grp
             _ -> False
-          likelyException = isymbol `elem` [RK.rsymbolFood ruleContent, RK.rsymbolNecklace ruleContent, '-'] || likelyTemplate 
+          likelyException = isymbol `elem` [RK.rsymbolFood ruleContent, RK.rsymbolNecklace ruleContent, RK.rsymbolWand ruleContent] || likelyTemplate 
       in [ "EqpSlot specified but not Equipable nor Meleeable"
          | length ts == 1 && not equipable && not meleeable ]
          ++ [ "EqpSlot not specified but Equipable or Meleeable and not a likely organ or necklace or template"
