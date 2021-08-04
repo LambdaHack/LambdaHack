@@ -34,7 +34,6 @@ import           Data.Version
 import           GHC.Generics (Generic)
 import qualified System.Random.SplitMix32 as SM
 
-
 import qualified Game.LambdaHack.Core.Dice as Dice
 import           Game.LambdaHack.Core.Random (nextRandom)
 import qualified Game.LambdaHack.Definition.Ability as Ability

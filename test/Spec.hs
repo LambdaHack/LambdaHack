@@ -333,178 +333,48 @@ integrationTests = testGroup "integrationTests" $
 
 itemKindUnitTests :: TestTree
 itemKindUnitTests = testGroup "itemKindUnitTests" $
-  let customRules = RK.RuleContent
-                        { rtitle = ""
-                        , rXmax = 0
-                        , rYmax = 0
-                        , rexeVersion = makeVersion []
-                        , rcfgUIName = ""
-                        , rcfgUIDefault = ("", Ini.emptyConfig)
-                        , rwriteSaveClips = 0
-                        , rleadLevelClips = 0
-                        , rscoresFile = ""
-                        , rnearby = 0
-                        , rstairWordCarried = []
-                        , rsymbolProjectile = '0'
-                        , rsymbolLight      = '0'
-                        , rsymbolTool       = '0'
-                        , rsymbolSpecial    = '0'  -- don't overuse, because it clashes with projectiles
-                        , rsymbolGold       = '0'  -- also gems -- '$'
-                        , rsymbolNecklace   = '*'
-                        , rsymbolRing       = '0'
-                        , rsymbolPotion     = '0'  -- concoction, bottle, jar, vial, canister
-                        , rsymbolFlask      = '0'
-                        , rsymbolScroll     = '0'  -- book, note, tablet, remote, chip, card
-                        , rsymbolTorsoArmor = '0'
-                        , rsymbolMiscArmor  = '0'
-                        , rsymbolClothes    = '0'
-                        , rsymbolShield     = '0'
-                        , rsymbolPolearm    = '0'
-                        , rsymbolEdged      = '0'
-                        , rsymbolHafted     = '0'
-                        , rsymbolWand       = '0'  
-                        , rsymbolFood       = ','  -- also body part; distinct from floor: not middle dot
-                        }
+  let customRules = RK.emptyRuleContent { RK.rsymbolNecklace='*' }
+      testItemKind = ItemKind
+        { isymbol  = 'x'
+        , iname    = "12345678901234567890123"
+        , ifreq    = [ (UNREPORTED_INVENTORY, 1) ]  
+        , iflavour = zipPlain [Green]
+        , icount   = 1 + 1 `d` 2 
+        , irarity  = [(1, 50), (10, 1)]
+        , iverbHit = "hit"
+        , iweight  = 300
+        , idamage  = 1 `d` 1
+        , iaspects = [ AddSkill Ability.SkHurtMelee $ -16 * 5
+                    , SetFlag Ability.Fragile
+                    , toVelocity 70 ] 
+        , ieffects = []
+        , idesc    = "A lump of brittle sandstone rock."
+        , ikit     = []
+        }
   in 
   [ testCase "overlonginame_validateSingle_errs" $
-      validateSingle Content.RuleKind.standardRules ItemKind
-        { isymbol  = 'x'
-        , iname    = "123456789012345678901234"
-        , ifreq    = [ (UNREPORTED_INVENTORY, 1) ]  
-        , iflavour = zipPlain [Green]
-        , icount   = 1 + 1 `d` 2 
-        , irarity  = [(1, 50), (10, 1)]
-        , iverbHit = "hit"
-        , iweight  = 300
-        , idamage  = 1 `d` 1
-        , iaspects = [ AddSkill Ability.SkHurtMelee $ -16 * 5
-                    , SetFlag Ability.Fragile
-                    , toVelocity 70 ] 
-        , ieffects = []
-        , idesc    = "A lump of brittle sandstone rock."
-        , ikit     = []
-        }
+      validateSingle Content.RuleKind.standardRules testItemKind { iname = "123456789012345678901234" }
       @?= ["iname longer than 23"]
   , testCase "shortEnoughiname_validateSingle_noErr" $
-      validateSingle Content.RuleKind.standardRules ItemKind
-        { isymbol  = 'x'
-        , iname    = "12345678901234567890123"
-        , ifreq    = [ (UNREPORTED_INVENTORY, 1) ]  
-        , iflavour = zipPlain [Green]
-        , icount   = 1 + 1 `d` 2 
-        , irarity  = [(1, 50), (10, 1)]
-        , iverbHit = "hit"
-        , iweight  = 300
-        , idamage  = 1 `d` 1
-        , iaspects = [ AddSkill Ability.SkHurtMelee $ -16 * 5
-                    , SetFlag Ability.Fragile
-                    , toVelocity 70 ] 
-        , ieffects = []
-        , idesc    = "A lump of brittle sandstone rock."
-        , ikit     = []
-        }
+      validateSingle Content.RuleKind.standardRules testItemKind
       @?= []
   , testCase "equipableNoSlotxSymbol_validateSingle_errs" $
-      validateSingle Content.RuleKind.standardRules ItemKind
-        { isymbol  = 'x'
-        , iname    = "12345678901234567890123"
-        , ifreq    = [ (UNREPORTED_INVENTORY, 1) ]  
-        , iflavour = zipPlain [Green]
-        , icount   = 1 + 1 `d` 2 
-        , irarity  = [(1, 50), (10, 1)]
-        , iverbHit = "hit"
-        , iweight  = 300
-        , idamage  = 1 `d` 1
-        , iaspects = [ SetFlag Ability.Equipable ] 
-        , ieffects = []
-        , idesc    = "A lump of brittle sandstone rock."
-        , ikit     = []
-        }
+      validateSingle Content.RuleKind.standardRules testItemKind { iaspects = [ SetFlag Ability.Equipable ] }
       @?= ["EqpSlot not specified but Equipable or Meleeable and not a likely organ or necklace or template"]
   , testCase "equipableNoSlot,Symbol_validateSingle_noErr" $
-      validateSingle Content.RuleKind.standardRules ItemKind
-        { isymbol  = ','
-        , iname    = "12345678901234567890123"
-        , ifreq    = [ (UNREPORTED_INVENTORY, 1) ]  
-        , iflavour = zipPlain [Green]
-        , icount   = 1 + 1 `d` 2 
-        , irarity  = [(1, 50), (10, 1)]
-        , iverbHit = "hit"
-        , iweight  = 300
-        , idamage  = 1 `d` 1
-        , iaspects = [ SetFlag Ability.Equipable ] 
-        , ieffects = []
-        , idesc    = "A lump of brittle sandstone rock."
-        , ikit     = []
-        }
+      validateSingle Content.RuleKind.standardRules testItemKind { isymbol = ',', iaspects = [ SetFlag Ability.Equipable ] }
       @?= []
   , testCase "equipableNoSlot\"Symbol_validateSingle_noErr" $
-      validateSingle Content.RuleKind.standardRules ItemKind
-        { isymbol  = '"'
-        , iname    = "12345678901234567890123"
-        , ifreq    = [ (UNREPORTED_INVENTORY, 1) ]  
-        , iflavour = zipPlain [Green]
-        , icount   = 1 + 1 `d` 2 
-        , irarity  = [(1, 50), (10, 1)]
-        , iverbHit = "hit"
-        , iweight  = 300
-        , idamage  = 1 `d` 1
-        , iaspects = [ SetFlag Ability.Equipable ] 
-        , ieffects = []
-        , idesc    = "A lump of brittle sandstone rock."
-        , ikit     = []
-        }
+      validateSingle Content.RuleKind.standardRules testItemKind { isymbol = '"', iaspects = [ SetFlag Ability.Equipable ] }
       @?= []
   , testCase "equipableNoSlot-Symbol_validateSingle_noErr" $
-      validateSingle Content.RuleKind.standardRules ItemKind
-        { isymbol  = '-'
-        , iname    = "12345678901234567890123"
-        , ifreq    = [ (UNREPORTED_INVENTORY, 1) ]  
-        , iflavour = zipPlain [Green]
-        , icount   = 1 + 1 `d` 2 
-        , irarity  = [(1, 50), (10, 1)]
-        , iverbHit = "hit"
-        , iweight  = 300
-        , idamage  = 1 `d` 1
-        , iaspects = [ SetFlag Ability.Equipable ] 
-        , ieffects = []
-        , idesc    = "A lump of brittle sandstone rock."
-        , ikit     = []
-        }
+      validateSingle Content.RuleKind.standardRules testItemKind { isymbol = '-', iaspects = [ SetFlag Ability.Equipable ] }
       @?= []   
   , testCase "equipableNoSlot*CustomRules_validateSingle_noErr" $
-      validateSingle customRules ItemKind
-            { isymbol  = '*'
-            , iname    = "12345678901234567890123"
-            , ifreq    = [ (UNREPORTED_INVENTORY, 1) ]  
-            , iflavour = zipPlain [Green]
-            , icount   = 1 + 1 `d` 2 
-            , irarity  = [(1, 50), (10, 1)]
-            , iverbHit = "hit"
-            , iweight  = 300
-            , idamage  = 1 `d` 1
-            , iaspects = [ SetFlag Ability.Equipable ] 
-            , ieffects = []
-            , idesc    = "A lump of brittle sandstone rock."
-            , ikit     = []
-            }
+      validateSingle customRules testItemKind { isymbol = '*', iaspects = [ SetFlag Ability.Equipable ] }
         @?= []  
   , testCase "equipableNoSlot\"CustomRules_validateSingle_errs" $                
-      validateSingle customRules ItemKind
-        { isymbol  = '"'
-        , iname    = "12345678901234567890123"
-        , ifreq    = [ (UNREPORTED_INVENTORY, 1) ]  
-        , iflavour = zipPlain [Green]
-        , icount   = 1 + 1 `d` 2 
-        , irarity  = [(1, 50), (10, 1)]
-        , iverbHit = "hit"
-        , iweight  = 300
-        , idamage  = 1 `d` 1
-        , iaspects = [ SetFlag Ability.Equipable ] 
-        , ieffects = []
-        , idesc    = "A lump of brittle sandstone rock."
-        , ikit     = []
-        }
+      validateSingle customRules testItemKind { isymbol = '"', iaspects = [ SetFlag Ability.Equipable ] }
       @?= ["EqpSlot not specified but Equipable or Meleeable and not a likely organ or necklace or template"]
   ]
 

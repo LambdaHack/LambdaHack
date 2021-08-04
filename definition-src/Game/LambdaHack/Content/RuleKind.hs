@@ -37,13 +37,13 @@ data RuleContent = RuleContent
   , rsymbolProjectile :: Char
   , rsymbolLight      :: Char
   , rsymbolTool       :: Char
-  , rsymbolSpecial    :: Char  -- don't overuse, because it clashes with projectiles
+  , rsymbolSpecial    :: Char
   , rsymbolGold       :: Char
   , rsymbolNecklace   :: Char
   , rsymbolRing       :: Char
-  , rsymbolPotion     :: Char  -- concoction, bottle, jar, vial, canister
+  , rsymbolPotion     :: Char
   , rsymbolFlask      :: Char
-  , rsymbolScroll     :: Char  -- book, note, tablet, remote, chip, card
+  , rsymbolScroll     :: Char
   , rsymbolTorsoArmor :: Char
   , rsymbolMiscArmor  :: Char
   , rsymbolClothes    :: Char
@@ -51,8 +51,8 @@ data RuleContent = RuleContent
   , rsymbolPolearm    :: Char
   , rsymbolEdged      :: Char
   , rsymbolHafted     :: Char
-  , rsymbolWand       :: Char  -- magical rod, transmitter, pistol, rifle, instrument
-  , rsymbolFood       :: Char  -- also body part; distinct from floor: not middle dot
+  , rsymbolWand       :: Char
+  , rsymbolFood       :: Char
   }
 
 emptyRuleContent :: RuleContent
