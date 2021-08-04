@@ -16,6 +16,7 @@ import           Game.LambdaHack.Common.Item
 import qualified Game.LambdaHack.Common.ItemAspect as IA
 import           Game.LambdaHack.Common.Time
 import qualified Game.LambdaHack.Content.ItemKind as IK
+import qualified Game.LambdaHack.Content.RuleKind as RK
 import qualified Game.LambdaHack.Definition.Ability as Ability
 import           Game.LambdaHack.Definition.Defs
 
@@ -220,13 +221,13 @@ permittedProjectAI skill calmE itemFull =
          && skill < 3 -> False
        | otherwise -> permittedPreciousAI calmE itemFull
 
-permittedApply :: Time -> Int -> Bool -> Maybe CStore -> ItemFull -> ItemQuant
+permittedApply :: RK.RuleContent -> Time -> Int -> Bool -> Maybe CStore -> ItemFull -> ItemQuant
                -> Either ReqFailure Bool
-permittedApply localTime skill calmE mstore
+permittedApply ruleContent localTime skill calmE mstore
                itemFull@ItemFull{itemKind, itemSuspect} kit =
   if | skill < 1 -> Left ApplyUnskilled
      | skill < 2
-       && IK.isymbol itemKind /= '"'
+       && IK.isymbol itemKind /= RK.rsymbolNecklace ruleContent
        && (IK.isymbol itemKind /= ','
            || mstore /= Just CGround) -> Left ApplyFood
      | skill < 3 && IK.isymbol itemKind == '?' -> Left ApplyRead

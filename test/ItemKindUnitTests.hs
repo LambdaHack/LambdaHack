@@ -33,7 +33,7 @@ itemKindUnitTests = testGroup "itemKindUnitTests" $
                     , SetFlag Ability.Fragile
                     , toVelocity 70 ] 
         , ieffects = []
-        , idesc    = "A lump of brittle sandstone rock."
+        , idesc    = "A really cool test item."
         , ikit     = []
         }
   in 

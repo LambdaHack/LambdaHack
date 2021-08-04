@@ -28,13 +28,14 @@ import           TieKnot
 
 import ItemKindUnitTests
 import PointUnitTests
+import ReqFailureUnitTests
 import SessionUIMock
 
 main :: IO ()
 main = defaultMain tests
 
 tests :: TestTree
-tests = testGroup "Tests" [macroTests, integrationTests, itemKindUnitTests, pointUnitTests]
+tests = testGroup "Tests" [macroTests, integrationTests, itemKindUnitTests, pointUnitTests, reqFailureUnitTests]
 
 macroTests :: TestTree
 macroTests = testGroup "macroTests" $

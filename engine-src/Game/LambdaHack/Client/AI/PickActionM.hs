@@ -49,6 +49,7 @@ import           Game.LambdaHack.Common.Types
 import           Game.LambdaHack.Common.Vector
 import qualified Game.LambdaHack.Content.ItemKind as IK
 import           Game.LambdaHack.Content.ModeKind
+import qualified Game.LambdaHack.Content.RuleKind as RK
 import           Game.LambdaHack.Core.Frequency
 import           Game.LambdaHack.Core.Random
 import           Game.LambdaHack.Definition.Ability
@@ -902,6 +903,7 @@ applyItem actorSk aid applyGroup = do
   condShineWouldBetray <- condShineWouldBetrayM aid
   condAimEnemyOrRemembered <- condAimEnemyOrRememberedM aid
   localTime <- getsState $ getLocalTime (blid b)
+  cops <- getsState scops
   let calmE = calmEnough b actorSk
       heavilyDistressed =  -- Actor hit by a projectile or similarly distressed.
         deltasSerious (bcalmDelta b)
@@ -915,7 +917,7 @@ applyItem actorSk aid applyGroup = do
       canEsc = fcanEscape (gplayer fact)
       permittedActor cstore itemFull kit =
         fromRight False
-        $ permittedApply localTime skill calmE cstore itemFull kit
+        $ permittedApply (corule cops) localTime skill calmE cstore itemFull kit
       disqualify :: Bool -> IK.Effect -> Bool
       -- These effects tweak items, which is only situationally beneficial
       -- and not really the best idea while in combat.

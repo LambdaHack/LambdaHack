@@ -452,6 +452,7 @@ test-suite test
   main-is:            Spec.hs
   other-modules:      ItemKindUnitTests
                       PointUnitTests
+                      ReqFailureUnitTests
                       SessionUIMock
   build-depends:      ,LambdaHack
                       ,this-game-content
