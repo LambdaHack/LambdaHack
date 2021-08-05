@@ -49,7 +49,6 @@ import           Game.LambdaHack.Common.Types
 import           Game.LambdaHack.Common.Vector
 import qualified Game.LambdaHack.Content.ItemKind as IK
 import           Game.LambdaHack.Content.ModeKind
-import qualified Game.LambdaHack.Content.RuleKind as RK
 import           Game.LambdaHack.Core.Frequency
 import           Game.LambdaHack.Core.Random
 import           Game.LambdaHack.Definition.Ability

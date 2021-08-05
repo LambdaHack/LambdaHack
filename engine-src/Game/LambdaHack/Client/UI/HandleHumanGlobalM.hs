@@ -1484,6 +1484,7 @@ itemMenuHuman :: (MonadClient m, MonadClientUI m)
 itemMenuHuman cmdSemInCxtOfKM = do
   itemSel <- getsSession sitemSel
   fontSetup@FontSetup{..} <- getFontSetup
+  cops <- getsState scops
   case itemSel of
     Just (iid, fromCStore, _) -> do
       leader <- getLeaderUI
@@ -1559,7 +1560,7 @@ itemMenuHuman cmdSemInCxtOfKM = do
                 Apply{} ->
                   let skill = Ability.getSk Ability.SkApply actorCurAndMaxSk
                   in not $ either (const False) id
-                     $ permittedApply localTime skill calmE (Just fromCStore)
+                     $ permittedApply (corule cops) localTime skill calmE (Just fromCStore)
                                       itemFull kit
                 Project{} ->
                   let skill = Ability.getSk Ability.SkProject actorCurAndMaxSk
