@@ -49,7 +49,7 @@ standardRules = RuleContent
   , rsymbolLight      = '('
   , rsymbolTool       = '('
   , rsymbolSpecial    = '*'  -- don't overuse, because it clashes with projectiles
-  , rsymbolGold       = '$'
+  , rsymbolGold       = '$'  -- also gems
   , rsymbolNecklace   = '"'
   , rsymbolRing       = '='
   , rsymbolPotion     = '!'  -- concoction, bottle, jar, vial, canister

@@ -93,17 +93,17 @@ sandstoneRock,    dart, spike, spike2, slingStone, slingBullet, paralizingProj, 
 
 symbolProjectile, _symbolLauncher, symbolLight, symbolTool, symbolSpecial, symbolGold, symbolNecklace, symbolRing, symbolPotion, symbolFlask, symbolScroll, symbolTorsoArmor, symbolMiscArmor, symbolClothes, symbolShield, symbolPolearm, symbolEdged, symbolHafted, symbolWand, _symbolStaff, symbolFood :: Char
 
-symbolProjectile = rsymbolProjectile standardRules  -- '|'
+symbolProjectile = rsymbolProjectile standardRules
 _symbolLauncher  = '}'
 symbolLight      = rsymbolLight standardRules
 symbolTool       = rsymbolTool standardRules
-symbolSpecial    = rsymbolSpecial standardRules  -- don't overuse, because it clashes with projectiles
-symbolGold       = rsymbolGold standardRules -- also gems -- '$'
+symbolSpecial    = rsymbolSpecial standardRules
+symbolGold       = rsymbolGold standardRules
 symbolNecklace   = rsymbolNecklace standardRules
 symbolRing       = rsymbolRing standardRules
-symbolPotion     = rsymbolPotion standardRules  -- concoction, bottle, jar, vial, canister
+symbolPotion     = rsymbolPotion standardRules
 symbolFlask      = rsymbolFlask standardRules
-symbolScroll     = rsymbolScroll standardRules  -- book, note, tablet, remote, chip, card
+symbolScroll     = rsymbolScroll standardRules
 symbolTorsoArmor = rsymbolTorsoArmor standardRules
 symbolMiscArmor  = rsymbolMiscArmor standardRules
 symbolClothes    = rsymbolClothes standardRules
@@ -113,7 +113,7 @@ symbolEdged      = rsymbolEdged standardRules
 symbolHafted     = rsymbolHafted standardRules
 symbolWand       = rsymbolWand standardRules
 _symbolStaff     = '_'  -- scanner
-symbolFood       = rsymbolFood standardRules  -- also body part; distinct from floor: not middle dot
+symbolFood       = rsymbolFood standardRules
 
 -- ** Thrown weapons
 
