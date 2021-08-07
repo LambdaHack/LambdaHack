@@ -1,6 +1,9 @@
 flags: +with_expensive_assertions
 tests: False
 optimization: False
+profiling: False
+library-profiling: False
+documentation: False
 
 package *
   documentation: True
