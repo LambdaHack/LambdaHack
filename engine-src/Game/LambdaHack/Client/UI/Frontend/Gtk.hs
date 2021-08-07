@@ -1,6 +1,9 @@
 {-# OPTIONS_GHC -Wno-unused-do-bind #-}
 -- | Text frontend based on Gtk.
 module Game.LambdaHack.Client.UI.Frontend.Gtk
+#ifndef USE_GTK
+  () where  -- to molify doctest
+#else
   ( startup, frontendName
   ) where
 
@@ -11,8 +14,8 @@ import Game.LambdaHack.Core.Prelude
 import           Control.Concurrent
 import qualified Control.Monad.IO.Class as IO
 import           Data.Bits (unsafeShiftL)
-import qualified Data.IntMap.Strict as IM
 import           Data.IORef
+import qualified Data.IntMap.Strict as IM
 import qualified Data.Text as T
 import           Data.Word (Word32)
 import qualified Game.LambdaHack.Common.PointArray as PointArray
@@ -277,3 +280,4 @@ display coscreen FrontendSession{..} SingleFrame{singleArray} = do
     textIterSetOffset ie lx
     when (previous /= defEnum) $
       textBufferApplyTag tb (stags IM.! fromEnum previous) ib ie
+#endif

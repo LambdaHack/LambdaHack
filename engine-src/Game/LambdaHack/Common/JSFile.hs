@@ -1,6 +1,9 @@
 {-# LANGUAGE JavaScriptFFI #-}
 -- | Saving/loading to JS storeage, mimicking operations on files.
 module Game.LambdaHack.Common.JSFile
+#ifndef USE_JSFILE
+  () where  -- to molify doctest
+#else
   ( encodeEOF, strictDecodeEOF
   , tryCreateDir, doesFileExist, tryWriteFile, readFile, renameFile
   ) where
@@ -100,3 +103,4 @@ renameFile path path2 = flip runDOM undefined $ do
     Just item -> do
       setItem storage path2 item  -- overwrites
       removeItem storage path
+#endif

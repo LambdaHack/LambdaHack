@@ -1,5 +1,8 @@
 -- | Text frontend based on Vty.
 module Game.LambdaHack.Client.UI.Frontend.Vty
+#ifndef USE_VTY
+  () where  -- to molify doctest
+#else
   ( startup, frontendName
   ) where
 
@@ -173,3 +176,4 @@ aToc Color.BrBlue    = brightBlue
 aToc Color.BrMagenta = brightMagenta
 aToc Color.BrCyan    = brightCyan
 aToc Color.BrWhite   = brightWhite
+#endif
