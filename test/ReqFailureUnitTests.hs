@@ -44,7 +44,7 @@ reqFailureUnitTests = testGroup "reqFailureUnitTests" $
             { itemBase = Item 
                 { jkind = IdentityObvious (toContentId 667)
                 , jfid = Nothing
-                , jflavour = head (zipPlain [Black])  -- is there a less indirect way to do that?
+                , jflavour = head (zipPlain [Black])
                 }
             , itemKindId = toContentId 667
             , itemKind = testItemKind
