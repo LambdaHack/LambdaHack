@@ -350,6 +350,7 @@ library
                       optparse-applicative >= 0.13,
                       pretty-show >= 1.6,
                       primitive  >= 0.6.1.0,
+                      QuickCheck,
                       splitmix   >= 0.0.3,
                       stm        >= 2.4,
                       time       >= 1.4,
@@ -459,6 +460,7 @@ test-suite test
                       ,containers
                       ,optparse-applicative
                       ,tasty >= 1.0
+                      ,tasty-quickcheck
                       ,tasty-hunit
                       ,text
                       ,transformers
@@ -471,3 +473,4 @@ test-suite doctests
   ghc-options:        -Wno-unused-packages
   build-depends:      ,base
                       ,doctest >= 0.13
+                      ,QuickCheck

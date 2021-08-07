@@ -10,6 +10,7 @@ import           Options.Applicative
 import           System.IO.Unsafe (unsafePerformIO)
 import           Test.Tasty
 import           Test.Tasty.HUnit
+import           Test.Tasty.QuickCheck
 
 import qualified Game.LambdaHack.Client.UI.Content.Input as IC
 import           Game.LambdaHack.Client.UI.Frontend.Chosen
