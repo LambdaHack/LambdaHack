@@ -80,6 +80,12 @@ install:
   - ps: if ($env:goal -eq "artifact32and64") { $env:TIME_STRING=(get-date -UFormat "%Y-%m-%d").ToString() }
   - ps: if ($env:goal -eq "artifact32and64") { Push-AppveyorArtifact LambdaHack_dev_windows-x86_64.zip -FileName "LambdaHack_$($env:LH_VERSION)-dev-$($env:TIME_STRING)_windows-x86_64.zip" -DeploymentName "win64 binaries archive" }
 
+  - IF "%goal%"=="artifact32and64" (
+      cp Makefile LambdaHackTheGame
+      && mv LambdaHackTheGame LambdaHackTheGame64
+      && rm -rf LambdaHackTheGameInstall
+    )
+
   - SET PATH=%APPDATA%\cabal\bin;C:\msys64\mingw32\bin;C:\msys64\usr\bin;C:\ProgramData\chocolatey\lib\ghc\tools\ghc-8.4.4\bin;C:\ProgramData\chocolatey\lib\cabal\tools;%PATH%
 
   - IF "%build32%"=="true" (
