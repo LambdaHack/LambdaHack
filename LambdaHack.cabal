@@ -461,3 +461,11 @@ test-suite test
                       ,tasty-hunit
                       ,text
                       ,transformers
+
+test-suite doctests
+  import: options, exe-options
+  type:               exitcode-stdio-1.0
+  main-is:            test/doctests.hs
+  ghc-options:        -Wno-unused-packages
+  build-depends:      ,base
+                      ,doctest >= 0.8

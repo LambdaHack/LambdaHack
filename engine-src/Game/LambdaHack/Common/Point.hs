@@ -80,6 +80,11 @@ instance Enum Point where
 type PointI = Int
 
 -- | The distance between two points in the chessboard metric.
+--
+-- >>> chessDist (Point 0 0) (Point 0 0)
+-- 0
+-- >>> chessDist (Point (-1) (-1)) (Point 1 1)
+-- 2
 chessDist :: Point -> Point -> Int
 chessDist (Point x0 y0) (Point x1 y1) = max (abs (x1 - x0)) (abs (y1 - y0))
 
