@@ -455,6 +455,7 @@ test-suite test
   other-modules:      ItemKindUnitTests
                       ReqFailureUnitTests
                       SessionUIMock
+                      SessionUIUnitTests
   build-depends:      ,LambdaHack
                       ,this-game-content
                       ,this-game-src
