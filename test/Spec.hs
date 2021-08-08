@@ -28,7 +28,7 @@ main :: IO ()
 main = defaultMain tests
 
 tests :: TestTree
-tests = testGroup "Tests" [integrationTests, itemKindUnitTests, reqFailureUnitTests, macroTests]
+tests = testGroup "Tests" [itemKindUnitTests, reqFailureUnitTests, macroTests, integrationTests]
 
 integrationTests :: TestTree
 integrationTests = testGroup "integrationTests" $
