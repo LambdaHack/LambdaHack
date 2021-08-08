@@ -31,7 +31,7 @@ groupNamesSingleton :: [GroupName ItemKind]
 groupNamesSingleton =
        [S_FRAGRANCE, S_SINGLE_SPARK, S_SPARK]
     ++ [FLASK_UNKNOWN, POTION_UNKNOWN, EDIBLE_PLANT_UNKNOWN, SCROLL_UNKNOWN, NECKLACE_UNKNOWN, RING_UNKNOWN, HAMMER_UNKNOWN, GEM_UNKNOWN, CURRENCY_UNKNOWN]
-    ++ embedsGNSingleton ++ actorsGNSingleton ++ organsGNSingleton
+    ++ actorsGNSingleton ++ organsGNSingleton
     ++ blastsGNSingleton ++ temporariesGNSingleton
 
 pattern FLASK_UNKNOWN, POTION_UNKNOWN, EDIBLE_PLANT_UNKNOWN, SCROLL_UNKNOWN, NECKLACE_UNKNOWN, RING_UNKNOWN, HAMMER_UNKNOWN, GEM_UNKNOWN, CURRENCY_UNKNOWN :: GroupName ItemKind

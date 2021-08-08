@@ -2,8 +2,7 @@
 module Content.ItemKindEmbed
   ( -- * Group name patterns
     pattern SCRATCH_ON_WALL, pattern OBSCENE_PICTOGRAM, pattern SUBTLE_FRESCO, pattern TREASURE_CACHE, pattern TREASURE_CACHE_TRAP, pattern SIGNAGE, pattern SMALL_FIRE, pattern BIG_FIRE, pattern FROST, pattern RUBBLE, pattern DOORWAY_TRAP_UNKNOWN, pattern DOORWAY_TRAP, pattern STAIRS_UP, pattern STAIRS_DOWN, pattern ESCAPE, pattern STAIRS_TRAP_UP, pattern STAIRS_TRAP_DOWN, pattern LECTERN, pattern SHALLOW_WATER, pattern STRAIGHT_PATH, pattern FROZEN_GROUND
-  , pattern S_SANDSTONE_ROCK
-  , embedsGNSingleton, embedsGN
+  , embedsGN
   , -- * Content
     embeds
   ) where
@@ -23,11 +22,6 @@ import Game.LambdaHack.Definition.Defs
 import Game.LambdaHack.Definition.Flavour
 
 -- * Group name patterns
-
-embedsGNSingleton :: [GroupName ItemKind]
-embedsGNSingleton = [S_SANDSTONE_ROCK]
-
-pattern S_SANDSTONE_ROCK :: GroupName ItemKind
 
 embedsGN :: [GroupName ItemKind]
 embedsGN =
@@ -56,8 +50,6 @@ pattern LECTERN = GroupName "lectern"
 pattern SHALLOW_WATER = GroupName "shallow water"
 pattern STRAIGHT_PATH = GroupName "straight path"
 pattern FROZEN_GROUND = GroupName "frozen ground"
-
-pattern S_SANDSTONE_ROCK = GroupName "sandstone rock"
 
 -- * Content
 
