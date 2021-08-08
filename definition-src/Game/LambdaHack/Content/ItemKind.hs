@@ -28,9 +28,7 @@ import           Game.LambdaHack.Core.Prelude
 
 import           Data.Binary
 import           Data.Hashable (Hashable)
-import qualified Data.Ini as Ini
 import qualified Data.Text as T
-import           Data.Version
 import           GHC.Generics (Generic)
 import qualified System.Random.SplitMix32 as SM
 

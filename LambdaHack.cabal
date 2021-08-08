@@ -460,7 +460,6 @@ test-suite test
                       ,this-game-src
                       ,base
                       ,containers
-                      ,hsini
                       ,optparse-applicative
                       ,tasty >= 1.0
                       ,tasty-quickcheck

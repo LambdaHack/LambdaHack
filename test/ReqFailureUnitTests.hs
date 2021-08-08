@@ -12,7 +12,6 @@ import           Game.LambdaHack.Common.ItemAspect
 import           Game.LambdaHack.Common.ReqFailure
 import           Game.LambdaHack.Common.Time
 import           Game.LambdaHack.Content.ItemKind
-import qualified Game.LambdaHack.Content.RuleKind as RK
 import           Game.LambdaHack.Core.Dice
 import qualified Game.LambdaHack.Definition.Ability as Ability
 import           Game.LambdaHack.Definition.Color
