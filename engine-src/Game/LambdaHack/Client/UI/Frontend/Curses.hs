@@ -2,9 +2,14 @@
 -- due to the limitations of the curses library (keys, colours, last character
 -- of the last line).
 module Game.LambdaHack.Client.UI.Frontend.Curses
-  ( startup, frontendName
+  (
+#ifdef USE_CURSES
+-- to molify doctest, but don't break stylish-haskell parsing
+   startup, frontendName
+#endif
   ) where
 
+#ifdef USE_CURSES
 import Prelude ()
 
 import Game.LambdaHack.Core.Prelude
@@ -186,3 +191,4 @@ toBColor Color.Magenta   = C.PurpleB
 toBColor Color.Cyan      = C.DarkCyanB
 toBColor Color.White     = C.WhiteB
 toBColor _               = C.BlackB  -- a limitation of curses
+#endif

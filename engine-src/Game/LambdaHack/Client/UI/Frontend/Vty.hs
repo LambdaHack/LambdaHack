@@ -1,8 +1,13 @@
 -- | Text frontend based on Vty.
 module Game.LambdaHack.Client.UI.Frontend.Vty
-  ( startup, frontendName
+  (
+#ifdef USE_VTY
+-- to molify doctest, but don't break stylish-haskell parsing
+   startup, frontendName
+#endif
   ) where
 
+#ifdef USE_VTY
 import Prelude ()
 
 import Game.LambdaHack.Core.Prelude
@@ -173,3 +178,4 @@ aToc Color.BrBlue    = brightBlue
 aToc Color.BrMagenta = brightMagenta
 aToc Color.BrCyan    = brightCyan
 aToc Color.BrWhite   = brightWhite
+#endif

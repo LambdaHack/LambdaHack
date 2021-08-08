@@ -1,8 +1,13 @@
 -- | Text frontend running in a browser.
 module Game.LambdaHack.Client.UI.Frontend.Dom
-  ( startup, frontendName
+  (
+#ifdef USE_BROWSER
+-- to molify doctest, but don't break stylish-haskell parsing
+   startup, frontendName
+#endif
   ) where
 
+#ifdef USE_BROWSER
 import Prelude ()
 
 import Game.LambdaHack.Core.Prelude
@@ -35,11 +40,7 @@ import GHCJS.DOM.GlobalEventHandlers (contextMenu, keyDown, mouseUp, wheel)
 import GHCJS.DOM.HTMLCollection (itemUnsafe)
 import GHCJS.DOM.HTMLElement (focus)
 import GHCJS.DOM.HTMLTableElement
-  ( HTMLTableElement (HTMLTableElement)
-  , getRows
-  , setCellPadding
-  , setCellSpacing
-  )
+  (HTMLTableElement (HTMLTableElement), getRows, setCellPadding, setCellSpacing)
 import GHCJS.DOM.HTMLTableRowElement
   (HTMLTableRowElement (HTMLTableRowElement), getCells)
 import GHCJS.DOM.KeyboardEvent
@@ -275,3 +276,4 @@ display FrontendSession{..} !curFrame = flip runDOM undefined $ do
   -- This attempts to ensure no redraws while callback executes
   -- and a single redraw when it completes.
   requestAnimationFrame_ scurrentWindow callback
+#endif

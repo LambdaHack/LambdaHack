@@ -312,6 +312,8 @@ library
                       Game.LambdaHack.Server.ServerOptions
                       Game.LambdaHack.Server.StartM
                       Game.LambdaHack.Server.State
+-- for doctest:
+                      Paths_LambdaHack
   reexported-modules: ,Game.LambdaHack.Core.Dice
                       ,Game.LambdaHack.Core.Frequency
                       ,Game.LambdaHack.Core.Prelude
@@ -327,7 +329,6 @@ library
                       ,Game.LambdaHack.Content.PlaceKind
                       ,Game.LambdaHack.Content.RuleKind
                       ,Game.LambdaHack.Content.TileKind
-  other-modules:      Paths_LambdaHack
   autogen-modules:    Paths_LambdaHack
   build-depends:      definition,
                       assert-failure >= 0.1.2 && < 0.2,
@@ -349,6 +350,7 @@ library
                       optparse-applicative >= 0.13,
                       pretty-show >= 1.6,
                       primitive  >= 0.6.1.0,
+                      QuickCheck,
                       splitmix   >= 0.0.3,
                       stm        >= 2.4,
                       time       >= 1.4,
@@ -462,6 +464,17 @@ test-suite test
                       ,hsini
                       ,optparse-applicative
                       ,tasty >= 1.0
+                      ,tasty-quickcheck
                       ,tasty-hunit
                       ,text
                       ,transformers
+
+test-suite doctests
+  import: options, exe-options
+  type:               exitcode-stdio-1.0
+  main-is:            test/doctest-driver.hs
+  build-tool-depends: doctest-driver-gen:doctest-driver-gen
+  ghc-options:        -Wno-unused-packages
+  build-depends:      ,base
+                      ,doctest >= 0.13
+                      ,QuickCheck

@@ -211,8 +211,21 @@ to switch to the vty console frontend optimized for screen readers, run
 Testing and debugging
 ---------------------
 
+Unit tests and integration tests can be run and displayed with
+
+    cabal test test --enable-tests --test-show-details=direct
+
+To prepare doctests[7], set `tests: True` in your `cabal.project.local`.
+Afterwards, doctests can be executed with
+
+    cabal build . && cabal exec cabal test doctests
+
+and their detailed results observed in a log file.
+(Repeating `cabal build` before each testsuite run is requied
+due to bug https://github.com/haskell/cabal/issues/7522.)
+
 The [Makefile](https://github.com/LambdaHack/LambdaHack/blob/master/Makefile)
-contains many sample test commands.
+contains many sample automated play test commands.
 Numerous tests that use the screensaver game modes (AI vs. AI)
 and the teletype frontend are gathered in `make test-locally`.
 Of these, travis runs `test-travis` on each push to github.
@@ -275,6 +288,7 @@ Have fun!
 [4]: https://github.com/LambdaHack/LambdaHack/wiki
 [5]: https://github.com/LambdaHack/LambdaHack
 [6]: http://allureofthestars.com
+[7]: https://github.com/sol/doctest
 [9]: https://github.com/LambdaHack/LambdaHack/wiki/Sample-dungeon-crawler
 [10]: https://github.com/AllureOfTheStars/Allure
 [11]: https://github.com/LambdaHack/LambdaHack/releases

@@ -19,6 +19,7 @@ import           Data.Binary
 import           Data.Int (Int32)
 import qualified Data.Primitive.PrimArray as PA
 import           GHC.Generics (Generic)
+import           Test.QuickCheck
 
 import Game.LambdaHack.Definition.Defs
 
@@ -39,8 +40,11 @@ speedupHackXSize :: PA.PrimArray X
 speedupHackXSize = PA.primArrayFromList [80]  -- updated at program startup
 
 -- | 2D points in cartesian representation. Coordinates grow to the right
--- and down, so that the (0, 0) point is in the top-left corner of the screen.
--- Coordinates are never negative.
+-- and down, so that the (0, 0) point is in the top-left corner
+-- of the screen. Coordinates are never negative
+-- (unlike for 'Game.LambdaHack.Common.Vector.Vector')
+-- and the @X@ coordinate never reaches the screen width as read
+-- from 'speedupHackXSize'.
 data Point = Point
   { px :: X
   , py :: Y
@@ -76,10 +80,30 @@ instance Enum Point where
                  (py, px) = n `quotRem` xsize
              in Point{..}
 
+instance Arbitrary Point where
+  arbitrary = do
+    let xsize = PA.indexPrimArray speedupHackXSize 0
+    n <- getSize
+    Point <$> choose (0, min n (xsize - 1))
+          <*> choose (0, n)
+
 -- | Enumeration representation of @Point@.
 type PointI = Int
 
+-- This is hidden from Haddock, but run by doctest:
+-- $
+-- prop> (toEnum :: PointI -> Point) (fromEnum p) == p
+-- prop> (fromEnum :: Point -> PointI) (toEnum p) == p
+
 -- | The distance between two points in the chessboard metric.
+--
+-- >>> chessDist (Point 0 0) (Point 0 0)
+-- 0
+-- >>> chessDist (Point (-1) (-1)) (Point 1 1)
+-- 2
+--
+-- prop> chessDist p1 p2 >= 0
+-- prop> chessDist p1 p2 ^ (2 :: Int) <= euclidDistSq p1 p2
 chessDist :: Point -> Point -> Int
 chessDist (Point x0 y0) (Point x1 y1) = max (abs (x1 - x0)) (abs (y1 - y0))
 
