@@ -1127,7 +1127,7 @@ reqApply aid iid cstore = do
   let req = ReqApply iid cstore
   b <- getsState $ getActorBody aid
   actorMaxSk <- getsState $ getActorMaxSkills aid
-  cops <- getsState scops 
+  cops <- getsState scops
   let calmE = calmEnough b actorMaxSk
   if cstore == CEqp && not calmE then execFailure aid req ItemNotCalm
   else do
