@@ -4,8 +4,8 @@ import Prelude ()
 
 import Game.LambdaHack.Core.Prelude
 
-import           Test.Tasty
-import           Test.Tasty.HUnit
+import Test.Tasty
+import Test.Tasty.HUnit
 
 import           Game.LambdaHack.Content.ItemKind
 import qualified Game.LambdaHack.Content.RuleKind as RK

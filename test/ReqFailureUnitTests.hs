@@ -4,8 +4,8 @@ import Prelude ()
 
 import Game.LambdaHack.Core.Prelude
 
-import           Test.Tasty
-import           Test.Tasty.HUnit
+import Test.Tasty
+import Test.Tasty.HUnit
 
 import           Game.LambdaHack.Common.Item
 import           Game.LambdaHack.Common.ItemAspect

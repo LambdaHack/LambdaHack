@@ -23,8 +23,8 @@ module Game.LambdaHack.Content.ItemKind
 
 import Prelude ()
 
-import Game.LambdaHack.Core.Prelude
 import qualified Game.LambdaHack.Content.RuleKind as RK
+import           Game.LambdaHack.Core.Prelude
 
 import           Data.Binary
 import           Data.Hashable (Hashable)
