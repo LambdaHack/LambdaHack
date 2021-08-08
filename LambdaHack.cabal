@@ -180,6 +180,9 @@ library definition
                       Game.LambdaHack.Content.PlaceKind
                       Game.LambdaHack.Content.RuleKind
                       Game.LambdaHack.Content.TileKind
+-- for doctest:
+                      Paths_LambdaHack
+  autogen-modules:    Paths_LambdaHack
   build-depends:
                       ,assert-failure
                       ,base
@@ -312,8 +315,6 @@ library
                       Game.LambdaHack.Server.ServerOptions
                       Game.LambdaHack.Server.StartM
                       Game.LambdaHack.Server.State
--- for doctest:
-                      Paths_LambdaHack
   reexported-modules: ,Game.LambdaHack.Core.Dice
                       ,Game.LambdaHack.Core.Frequency
                       ,Game.LambdaHack.Core.Prelude
@@ -329,7 +330,6 @@ library
                       ,Game.LambdaHack.Content.PlaceKind
                       ,Game.LambdaHack.Content.RuleKind
                       ,Game.LambdaHack.Content.TileKind
-  autogen-modules:    Paths_LambdaHack
   build-depends:      definition,
                       assert-failure >= 0.1.2 && < 0.2,
                       async      >= 2.2.1,
