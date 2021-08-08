@@ -28,7 +28,6 @@ import qualified Content.RuleKind
 import           TieKnot
 
 import ItemKindUnitTests
-import PointUnitTests
 import ReqFailureUnitTests
 import SessionUIMock
 
@@ -36,7 +35,7 @@ main :: IO ()
 main = defaultMain tests
 
 tests :: TestTree
-tests = testGroup "Tests" [macroTests, integrationTests, itemKindUnitTests, pointUnitTests, reqFailureUnitTests]
+tests = testGroup "Tests" [macroTests, integrationTests, itemKindUnitTests, reqFailureUnitTests]
 
 macroTests :: TestTree
 macroTests = testGroup "macroTests" $
