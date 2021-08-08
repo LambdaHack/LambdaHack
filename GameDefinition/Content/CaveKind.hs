@@ -88,10 +88,10 @@ rogue = CaveKind
   , chidden       = 7
   , cactorCoeff   = 65  -- the maze requires time to explore
   , cactorFreq    = [(MONSTER, 60), (ANIMAL, 40)]
-  , citemNum      = 6 `d` 5 + 10 - 10 `dL` 1  -- deep down quality over quantity
+  , citemNum      = 6 `d` 5 + 10 - 10 `dL` 1
+      -- deep down quality over quantity; generally quite random,
+      -- for interesting replays at the cost of unreliable balance
   , citemFreq     = [(IK.COMMON_ITEM, 40), (IK.TREASURE, 60)]
-    -- note that the groups are flattened; e.g., if an item is moved to another
-    -- group included here with the same weight, the outcome wouldn't change
   , cplaceFreq    = [(ROGUE, 1)]
   , cpassable     = False
   , labyrinth     = False
@@ -312,6 +312,7 @@ raid = rogue
   , cmaxStairsNum = 0
   , cescapeFreq   = [(INDOOR_ESCAPE_UP, 1)]
   , cstairFreq    = []
+  , cstairAllowed = []
   , cskip         = [0]
   , cdesc         = ""
   }
