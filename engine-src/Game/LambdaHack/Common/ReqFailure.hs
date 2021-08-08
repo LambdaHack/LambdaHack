@@ -223,11 +223,11 @@ permittedProjectAI skill calmE itemFull =
 
 permittedApply :: RK.RuleContent -> Time -> Int -> Bool -> Maybe CStore -> ItemFull -> ItemQuant
                -> Either ReqFailure Bool
-permittedApply ruleContent localTime skill calmE mstore
+permittedApply corule localTime skill calmE mstore
                itemFull@ItemFull{itemKind, itemSuspect} kit =
   if | skill < 1 -> Left ApplyUnskilled
      | skill < 2
-       && IK.isymbol itemKind /= RK.rsymbolNecklace ruleContent
+       && IK.isymbol itemKind /= RK.rsymbolNecklace corule
        && (IK.isymbol itemKind /= ','
            || mstore /= Just CGround) -> Left ApplyFood
      | skill < 3 && IK.isymbol itemKind == '?' -> Left ApplyRead

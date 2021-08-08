@@ -23,8 +23,7 @@ module Game.LambdaHack.Content.ItemKind
 
 import Prelude ()
 
-import qualified Game.LambdaHack.Content.RuleKind as RK
-import           Game.LambdaHack.Core.Prelude
+import Game.LambdaHack.Core.Prelude
 
 import           Data.Binary
 import           Data.Hashable (Hashable)
@@ -32,6 +31,7 @@ import qualified Data.Text as T
 import           GHC.Generics (Generic)
 import qualified System.Random.SplitMix32 as SM
 
+import qualified Game.LambdaHack.Content.RuleKind as RK
 import qualified Game.LambdaHack.Core.Dice as Dice
 import           Game.LambdaHack.Core.Random (nextRandom)
 import qualified Game.LambdaHack.Definition.Ability as Ability
@@ -507,8 +507,7 @@ toOrganNoTimer grp = CreateItem Nothing COrgan grp TimerNone
 
 -- | Catch invalid item kind definitions.
 validateSingle :: RK.RuleContent -> ItemKind -> [Text]
-validateSingle ruleContent
-               ik@ItemKind{..} =
+validateSingle corule ik@ItemKind{..} =
   ["iname longer than 23" | T.length iname > 23]
   ++ ["icount < 0" | Dice.infDice icount < 0]
   ++ validateRarity irarity
@@ -528,7 +527,10 @@ validateSingle ruleContent
           likelyTemplate = case ifreq of
             [(grp, 1)] -> "unknown" `T.isSuffixOf` fromGroupName grp
             _ -> False
-          likelyException = isymbol `elem` [RK.rsymbolFood ruleContent, RK.rsymbolNecklace ruleContent, RK.rsymbolWand ruleContent] || likelyTemplate
+          likelyException = isymbol `elem` [ RK.rsymbolFood corule
+                                           , RK.rsymbolNecklace corule
+                                           , RK.rsymbolWand corule ]
+                            || likelyTemplate
       in [ "EqpSlot specified but not Equipable nor Meleeable"
          | length ts == 1 && not equipable && not meleeable ]
          ++ [ "EqpSlot not specified but Equipable or Meleeable and not a likely organ or necklace or template"
@@ -698,14 +700,16 @@ validateAll content coitem =
   in [ "PresentAs groups not singletons:" <+> tshow wrongPresentAsGroups
      | not $ null wrongPresentAsGroups ]
 
-makeData :: [ItemKind] -> [GroupName ItemKind] -> [GroupName ItemKind] -> RK.RuleContent
+makeData :: [ItemKind] -> [GroupName ItemKind] -> [GroupName ItemKind]
+         -> RK.RuleContent
          -> ContentData ItemKind
-makeData content groupNamesSingleton groupNames ruleContent =
+makeData content groupNamesSingleton groupNames corule =
   let allGroupNamesTooLong = filter ((> 23) . T.length . fromGroupName)
                              $ groupNamesSingleton ++ groupNames
   in assert (null allGroupNamesTooLong
              `blame` "ItemKind: some item group names too long"
              `swith` allGroupNamesTooLong) $
-     makeContentData "ItemKind" iname ifreq (validateSingle ruleContent) validateAll content
+     makeContentData "ItemKind" iname ifreq
+                     (validateSingle corule) validateAll content
                      (mandatoryGroupsSingleton ++ groupNamesSingleton)
                      (mandatoryGroups ++ groupNames)
