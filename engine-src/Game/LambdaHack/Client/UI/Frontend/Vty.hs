@@ -1,11 +1,13 @@
 -- | Text frontend based on Vty.
 module Game.LambdaHack.Client.UI.Frontend.Vty
-#ifndef USE_VTY
-  () where  -- to molify doctest
-#else
-  ( startup, frontendName
+  (
+#ifdef USE_VTY
+-- to molify doctest, but don't break stylish-haskell parsing
+   startup, frontendName
+#endif
   ) where
 
+#ifdef USE_VTY
 import Prelude ()
 
 import Game.LambdaHack.Core.Prelude

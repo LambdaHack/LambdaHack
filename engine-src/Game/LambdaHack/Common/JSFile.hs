@@ -1,13 +1,15 @@
 {-# LANGUAGE JavaScriptFFI #-}
 -- | Saving/loading to JS storeage, mimicking operations on files.
 module Game.LambdaHack.Common.JSFile
-#ifndef USE_JSFILE
-  () where  -- to molify doctest
-#else
-  ( encodeEOF, strictDecodeEOF
+  (
+#ifdef USE_JSFILE
+-- to molify doctest, but don't break stylish-haskell parsing
+    encodeEOF, strictDecodeEOF
   , tryCreateDir, doesFileExist, tryWriteFile, readFile, renameFile
+#endif
   ) where
 
+#ifdef USE_JSFILE
 import Prelude ()
 
 import Game.LambdaHack.Core.Prelude

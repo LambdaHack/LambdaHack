@@ -1,12 +1,14 @@
 {-# OPTIONS_GHC -Wno-unused-do-bind #-}
 -- | Text frontend based on Gtk.
 module Game.LambdaHack.Client.UI.Frontend.Gtk
-#ifndef USE_GTK
-  () where  -- to molify doctest
-#else
-  ( startup, frontendName
+  (
+#ifdef USE_GTK
+-- to molify doctest, but don't break stylish-haskell parsing
+   startup, frontendName
+#endif
   ) where
 
+#ifdef USE_GTK
 import Prelude ()
 
 import Game.LambdaHack.Core.Prelude

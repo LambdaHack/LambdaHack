@@ -1,11 +1,13 @@
 -- | Text frontend running in a browser.
 module Game.LambdaHack.Client.UI.Frontend.Dom
-#ifndef USE_BROWSER
-  () where  -- to molify doctest
-#else
-  ( startup, frontendName
+  (
+#ifdef USE_BROWSER
+-- to molify doctest, but don't break stylish-haskell parsing
+   startup, frontendName
+#endif
   ) where
 
+#ifdef USE_BROWSER
 import Prelude ()
 
 import Game.LambdaHack.Core.Prelude
