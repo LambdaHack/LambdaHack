@@ -102,9 +102,11 @@ appDataDir = do
   let name = takeWhile Char.isAlphaNum progName
   getAppUserDataDirectory name
 
+-- | Multiplies by a million.
 xM :: Int -> Int64
 xM k = into @Int64 k * 1000000
 
+-- | Multiplies by a million, double precision.
 xD :: Double -> Double
 xD k = k * 1000000
 

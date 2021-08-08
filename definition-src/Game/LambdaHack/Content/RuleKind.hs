@@ -35,6 +35,24 @@ data RuleContent = RuleContent
   , rstairWordCarried :: [Text]    -- ^ words that can't be dropped from stair
                                    --   name as it goes through levels
   , rsymbolProjectile :: Char
+  , rsymbolLight      :: Char
+  , rsymbolTool       :: Char
+  , rsymbolSpecial    :: Char
+  , rsymbolGold       :: Char
+  , rsymbolNecklace   :: Char
+  , rsymbolRing       :: Char
+  , rsymbolPotion     :: Char
+  , rsymbolFlask      :: Char
+  , rsymbolScroll     :: Char
+  , rsymbolTorsoArmor :: Char
+  , rsymbolMiscArmor  :: Char
+  , rsymbolClothes    :: Char
+  , rsymbolShield     :: Char
+  , rsymbolPolearm    :: Char
+  , rsymbolEdged      :: Char
+  , rsymbolHafted     :: Char
+  , rsymbolWand       :: Char
+  , rsymbolFood       :: Char
   }
 
 emptyRuleContent :: RuleContent
@@ -51,6 +69,24 @@ emptyRuleContent = RuleContent
   , rnearby = 0
   , rstairWordCarried = []
   , rsymbolProjectile = '0'
+  , rsymbolLight      = '0'
+  , rsymbolTool       = '0'
+  , rsymbolSpecial    = '0'
+  , rsymbolGold       = '0'
+  , rsymbolNecklace   = '0'
+  , rsymbolRing       = '0'
+  , rsymbolPotion     = '0'
+  , rsymbolFlask      = '0'
+  , rsymbolScroll     = '0'
+  , rsymbolTorsoArmor = '0'
+  , rsymbolMiscArmor  = '0'
+  , rsymbolClothes    = '0'
+  , rsymbolShield     = '0'
+  , rsymbolPolearm    = '0'
+  , rsymbolEdged      = '0'
+  , rsymbolHafted     = '0'
+  , rsymbolWand       = '0'
+  , rsymbolFood       = '0'
   }
 
 -- | Catch invalid rule kind definitions.

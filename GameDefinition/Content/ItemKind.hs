@@ -93,27 +93,27 @@ sandstoneRock,    dart, spike, spike2, slingStone, slingBullet, paralizingProj, 
 
 symbolProjectile, _symbolLauncher, symbolLight, symbolTool, symbolSpecial, symbolGold, symbolNecklace, symbolRing, symbolPotion, symbolFlask, symbolScroll, symbolTorsoArmor, symbolMiscArmor, symbolClothes, symbolShield, symbolPolearm, symbolEdged, symbolHafted, symbolWand, _symbolStaff, symbolFood :: Char
 
-symbolProjectile = rsymbolProjectile standardRules  -- '|'
+symbolProjectile = rsymbolProjectile standardRules
 _symbolLauncher  = '}'
-symbolLight      = '('
-symbolTool       = '('
-symbolSpecial    = '*'  -- don't overuse, because it clashes with projectiles
-symbolGold       = '$'  -- also gems
-symbolNecklace   = '"'
-symbolRing       = '='
-symbolPotion     = '!'  -- concoction, bottle, jar, vial, canister
-symbolFlask      = '!'
-symbolScroll     = '?'  -- book, note, tablet, remote, chip, card
-symbolTorsoArmor = '['
-symbolMiscArmor  = '['
-symbolClothes    = '['
-symbolShield     = ']'
-symbolPolearm    = ')'
-symbolEdged      = ')'
-symbolHafted     = ')'
-symbolWand       = '/'  -- magical rod, transmitter, pistol, rifle, instrument
+symbolLight      = rsymbolLight standardRules
+symbolTool       = rsymbolTool standardRules
+symbolSpecial    = rsymbolSpecial standardRules
+symbolGold       = rsymbolGold standardRules
+symbolNecklace   = rsymbolNecklace standardRules
+symbolRing       = rsymbolRing standardRules
+symbolPotion     = rsymbolPotion standardRules
+symbolFlask      = rsymbolFlask standardRules
+symbolScroll     = rsymbolScroll standardRules
+symbolTorsoArmor = rsymbolTorsoArmor standardRules
+symbolMiscArmor  = rsymbolMiscArmor standardRules
+symbolClothes    = rsymbolClothes standardRules
+symbolShield     = rsymbolShield standardRules
+symbolPolearm    = rsymbolPolearm standardRules
+symbolEdged      = rsymbolEdged standardRules
+symbolHafted     = rsymbolHafted standardRules
+symbolWand       = rsymbolWand standardRules
 _symbolStaff     = '_'  -- scanner
-symbolFood       = ','  -- also body part; distinct from floor: not middle dot
+symbolFood       = rsymbolFood standardRules
 
 -- ** Thrown weapons
 

@@ -452,12 +452,15 @@ test-suite test
   type:               exitcode-stdio-1.0
   hs-source-dirs:     test
   main-is:            Spec.hs
-  other-modules:      SessionUIMock
+  other-modules:      ItemKindUnitTests
+                      ReqFailureUnitTests
+                      SessionUIMock
   build-depends:      ,LambdaHack
                       ,this-game-content
                       ,this-game-src
                       ,base
                       ,containers
+                      ,hsini
                       ,optparse-applicative
                       ,tasty >= 1.0
                       ,tasty-quickcheck

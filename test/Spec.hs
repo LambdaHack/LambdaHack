@@ -27,13 +27,15 @@ import qualified Client.UI.Content.Input as Content.Input
 import qualified Content.RuleKind
 import           TieKnot
 
+import ItemKindUnitTests
+import ReqFailureUnitTests
 import SessionUIMock
 
 main :: IO ()
 main = defaultMain tests
 
 tests :: TestTree
-tests = testGroup "Tests" [macroTests, integrationTests]
+tests = testGroup "Tests" [macroTests, integrationTests, itemKindUnitTests, reqFailureUnitTests]
 
 macroTests :: TestTree
 macroTests = testGroup "macroTests" $
