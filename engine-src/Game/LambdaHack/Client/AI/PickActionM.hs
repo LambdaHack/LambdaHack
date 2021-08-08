@@ -897,12 +897,12 @@ applyItem :: MonadClient m
           => Ability.Skills -> ActorId -> ApplyItemGroup
           -> m (Strategy RequestTimed)
 applyItem actorSk aid applyGroup = do
+  COps{corule} <- getsState scops
   b <- getsState $ getActorBody aid
   fact <- getsState $ (EM.! bfid b) . sfactionD
   condShineWouldBetray <- condShineWouldBetrayM aid
   condAimEnemyOrRemembered <- condAimEnemyOrRememberedM aid
   localTime <- getsState $ getLocalTime (blid b)
-  cops <- getsState scops
   let calmE = calmEnough b actorSk
       heavilyDistressed =  -- Actor hit by a projectile or similarly distressed.
         deltasSerious (bcalmDelta b)
@@ -916,7 +916,7 @@ applyItem actorSk aid applyGroup = do
       canEsc = fcanEscape (gplayer fact)
       permittedActor cstore itemFull kit =
         fromRight False
-        $ permittedApply (corule cops) localTime skill calmE cstore itemFull kit
+        $ permittedApply corule localTime skill calmE cstore itemFull kit
       disqualify :: Bool -> IK.Effect -> Bool
       -- These effects tweak items, which is only situationally beneficial
       -- and not really the best idea while in combat.

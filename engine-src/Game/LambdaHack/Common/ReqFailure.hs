@@ -221,7 +221,8 @@ permittedProjectAI skill calmE itemFull =
          && skill < 3 -> False
        | otherwise -> permittedPreciousAI calmE itemFull
 
-permittedApply :: RK.RuleContent -> Time -> Int -> Bool -> Maybe CStore -> ItemFull -> ItemQuant
+permittedApply :: RK.RuleContent -> Time -> Int -> Bool -> Maybe CStore
+               -> ItemFull -> ItemQuant
                -> Either ReqFailure Bool
 permittedApply corule localTime skill calmE mstore
                itemFull@ItemFull{itemKind, itemSuspect} kit =

@@ -585,14 +585,14 @@ permittedApplyClient :: MonadClientUI m
                      => m (Maybe CStore -> ItemFull -> ItemQuant
                            -> Either ReqFailure Bool)
 permittedApplyClient = do
+  COps{corule} <- getsState scops
   leader <- getLeaderUI
   actorCurAndMaxSk <- leaderSkillsClientUI
   b <- getsState $ getActorBody leader
-  cops <- getsState scops
   let skill = Ability.getSk Ability.SkApply actorCurAndMaxSk
       calmE = calmEnough b actorCurAndMaxSk
   localTime <- getsState $ getLocalTime (blid b)
-  return $ permittedApply (corule cops) localTime skill calmE
+  return $ permittedApply corule localTime skill calmE
 
 -- * PickLeader
 

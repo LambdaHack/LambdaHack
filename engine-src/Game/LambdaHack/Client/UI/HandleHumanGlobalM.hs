@@ -1018,16 +1018,16 @@ applyItem :: (MonadClient m, MonadClientUI m)
           => (CStore, (ItemId, ItemFullKit))
           -> m (FailOrCmd RequestTimed)
 applyItem (fromCStore, (iid, (itemFull, kit))) = do
+  COps{corule} <- getsState scops
   leader <- getLeaderUI
   actorCurAndMaxSk <- leaderSkillsClientUI
   b <- getsState $ getActorBody leader
   localTime <- getsState $ getLocalTime (blid b)
-  cops <- getsState scops
   let skill = Ability.getSk Ability.SkApply actorCurAndMaxSk
       calmE = calmEnough b actorCurAndMaxSk
       arItem = aspectRecordFull itemFull
   if fromCStore == CEqp && not calmE then failSer ItemNotCalm
-  else case permittedApply (corule cops) localTime skill calmE (Just fromCStore)
+  else case permittedApply corule localTime skill calmE (Just fromCStore)
                            itemFull kit of
     Left reqFail -> failSer reqFail
     Right _ -> do
@@ -1482,9 +1482,9 @@ itemMenuHuman :: (MonadClient m, MonadClientUI m)
               => (K.KM -> HumanCmd -> m (Either MError ReqUI))
               -> m (Either MError ReqUI)
 itemMenuHuman cmdSemInCxtOfKM = do
+  COps{corule} <- getsState scops
   itemSel <- getsSession sitemSel
   fontSetup@FontSetup{..} <- getFontSetup
-  cops <- getsState scops
   case itemSel of
     Just (iid, fromCStore, _) -> do
       leader <- getLeaderUI
@@ -1560,8 +1560,8 @@ itemMenuHuman cmdSemInCxtOfKM = do
                 Apply{} ->
                   let skill = Ability.getSk Ability.SkApply actorCurAndMaxSk
                   in not $ either (const False) id
-                     $ permittedApply (corule cops) localTime skill calmE (Just fromCStore)
-                                      itemFull kit
+                     $ permittedApply corule localTime skill calmE
+                                      (Just fromCStore) itemFull kit
                 Project{} ->
                   let skill = Ability.getSk Ability.SkProject actorCurAndMaxSk
                   in not $ either (const False) id
