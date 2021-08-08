@@ -99,7 +99,13 @@ type PointI = Int
 --
 -- >>> chessDist (Point 0 0) (Point 0 0)
 -- 0
--- >>> chessDist (Point (-1) (-1)) (Point 1 1)
+-- >>> chessDist (Point (-1) 0) (Point 0 0)
+-- 1
+-- >>> chessDist (Point (-1) 0) (Point (-1) 1)
+-- 1
+-- >>> chessDist (Point (-1) 0) (Point 0 1)
+-- 1
+-- >>> chessDist (Point (-1) 0) (Point 1 1)
 -- 2
 --
 -- prop> chessDist p1 p2 >= 0
