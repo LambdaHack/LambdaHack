@@ -52,9 +52,9 @@ standardRules = RuleContent
   , rsymbolGold       = '$'  -- also gems
   , rsymbolNecklace   = '"'
   , rsymbolRing       = '='
-  , rsymbolPotion     = '!'  -- concoction, bottle, jar, vial
+  , rsymbolPotion     = '!'  -- also concoction, bottle, jar, vial
   , rsymbolFlask      = '!'
-  , rsymbolScroll     = '?'  -- scroll, book, note, tablet, card
+  , rsymbolScroll     = '?'  -- also book, note, tablet, card
   , rsymbolTorsoArmor = '['
   , rsymbolMiscArmor  = '['
   , rsymbolClothes    = '['
@@ -62,7 +62,7 @@ standardRules = RuleContent
   , rsymbolPolearm    = ')'
   , rsymbolEdged      = ')'
   , rsymbolHafted     = ')'
-  , rsymbolWand       = '/'  -- magical rod, pistol, instrument
+  , rsymbolWand       = '/'  -- also magical rod, pistol, instrument
   , rsymbolFood       = ','  -- also body part;
                              -- distinct from floor: not middle dot
   }
