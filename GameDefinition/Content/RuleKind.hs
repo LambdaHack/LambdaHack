@@ -48,13 +48,13 @@ standardRules = RuleContent
   , rsymbolProjectile = '|'
   , rsymbolLight      = '('
   , rsymbolTool       = '('
-  , rsymbolSpecial    = '*'  -- don't overuse, because it clashes with projectiles
+  , rsymbolSpecial    = '*'  -- don't overuse; it clashes with projectiles
   , rsymbolGold       = '$'  -- also gems
   , rsymbolNecklace   = '"'
   , rsymbolRing       = '='
-  , rsymbolPotion     = '!'  -- concoction, bottle, jar, vial, canister
+  , rsymbolPotion     = '!'  -- concoction, bottle, jar, vial
   , rsymbolFlask      = '!'
-  , rsymbolScroll     = '?'  -- book, note, tablet, remote, chip, card
+  , rsymbolScroll     = '?'  -- scroll, book, note, tablet, card
   , rsymbolTorsoArmor = '['
   , rsymbolMiscArmor  = '['
   , rsymbolClothes    = '['
@@ -62,6 +62,7 @@ standardRules = RuleContent
   , rsymbolPolearm    = ')'
   , rsymbolEdged      = ')'
   , rsymbolHafted     = ')'
-  , rsymbolWand       = '/'  -- magical rod, transmitter, pistol, rifle, instrument
-  , rsymbolFood       = ','  -- also body part; distinct from floor: not middle dot
+  , rsymbolWand       = '/'  -- magical rod, pistol, instrument
+  , rsymbolFood       = ','  -- also body part;
+                             -- distinct from floor: not middle dot
   }
