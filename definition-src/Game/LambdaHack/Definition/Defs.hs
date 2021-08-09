@@ -4,6 +4,7 @@ module Game.LambdaHack.Definition.Defs
   ( X, Y, GroupName(..)
   , Freqs, Rarity, linearInterpolation
   , ContentId, toContentId, fromContentId, contentIdIndex
+  , ContentSymbol, toContentSymbol, displayContentSymbol
   , CStore(..), ppCStore, ppCStoreIn, verbCStore
   , SLore(..), ItemDialogMode(..), ppSLore, headingSLore
   , ppItemDialogMode, ppItemDialogModeIn, ppItemDialogModeFrom
@@ -103,6 +104,24 @@ fromContentId (ContentId k) = k
 contentIdIndex :: ContentId k -> Int
 {-# INLINE contentIdIndex #-}
 contentIdIndex (ContentId k) = fromEnum k
+
+-- | An abstract view on the symbol of a content item definition.
+-- Hiding the constructor prevents hardwiring symbols inside the engine
+-- by accident (this is still possible via conversion functions,
+-- if one insists, so the abstraction is leaky, but that's fine).
+newtype ContentSymbol a = ContentSymbol Char
+  deriving (Show, Eq, Ord)
+
+-- | This is a 1-1 inclusion.
+toContentSymbol :: Char -> ContentSymbol c
+{-# INLINE toContentSymbol #-}
+toContentSymbol = ContentSymbol
+
+-- | This does not need to be 1-1, so should not be used in place of the
+-- 'Eq' instance, etc.
+displayContentSymbol :: ContentSymbol c -> Char
+{-# INLINE displayContentSymbol #-}
+displayContentSymbol (ContentSymbol c) = c
 
 -- | Actor's item stores.
 data CStore =
