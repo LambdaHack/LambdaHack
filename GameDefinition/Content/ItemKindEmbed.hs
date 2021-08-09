@@ -59,7 +59,6 @@ embeds =
 
 scratchOnWall,    obscenePictogram, subtleFresco, treasureCache, treasureCacheTrap, signageExit, signageEmbed, signageMerchandise, fireSmall, fireBig, frost, rubble, doorwayTrapTemplate, doorwayTrap1, doorwayTrap2, doorwayTrap3, stairsUp, stairsDown, escape, stairsTrapUp, stairsTrapDown, lectern, shallowWater, straightPath, frozenGround :: ItemKind
 
--- * Embedded items
 
 -- Make sure very few walls are substantially useful, e.g., caches,
 -- and none that are secret. Otherwise the player will spend a lot of time
@@ -158,8 +157,8 @@ treasureCacheTrap = ItemKind
 signageExit = ItemKind
   { isymbol  = toContentSymbol '?'
   , iname    = "inscription"
-  , ifreq    = [(SIGNAGE, 50)]
-  , iflavour = zipPlain [BrMagenta]
+  , ifreq    = [(SIGNAGE, 100)]
+  , iflavour = zipPlain [BrGreen]
   , icount   = 1
   , irarity  = [(1, 1)]
   , iverbHit = "whack"
@@ -172,13 +171,15 @@ signageExit = ItemKind
   }
 signageEmbed = signageExit
   { iname    = "notice"
-  , ifreq    = [(SIGNAGE, 50)]
+  , ifreq    = [(SIGNAGE, 100)]
+  , iflavour = zipPlain [Cyan]
   , ieffects = [Detect DetectEmbed 12]
   , idesc    = "The battered poster is untitled and unsigned."
   }
 signageMerchandise = signageExit
   { iname    = "treasure map"
-  , ifreq    = [(SIGNAGE, 50)]
+  , ifreq    = [(SIGNAGE, 100)]
+  , iflavour = zipPlain [BrCyan]
   , ieffects = [Detect DetectLoot 20]
   , idesc    = "In equal parts cryptic and promising."
   }
@@ -201,6 +202,7 @@ fireBig = fireSmall
   { isymbol  = toContentSymbol '0'
   , iname    = "big fire"
   , ifreq    = [(BIG_FIRE, 1)]
+  , iflavour = zipPlain [Red]
   , ieffects = [ Burn 2
                , CreateItem Nothing CGround S_WOODEN_TORCH timerNone
                , Explode S_SPARK ]
@@ -301,10 +303,10 @@ stairsDown = stairsUp
   , idesc    = ""
   }
 escape = stairsUp
-  { isymbol  = toContentSymbol 'E'
+  { isymbol  = toContentSymbol '>'
   , iname    = "way"
   , ifreq    = [(ESCAPE, 1)]
-  , iflavour = zipPlain [BrYellow]
+  , iflavour = zipPlain [BrGreen]
   , iaspects = [SetFlag Durable]
   , ieffects = [Escape]
   , idesc    = "May this nightmare have an end?"
@@ -315,7 +317,7 @@ stairsTrapUp = ItemKind
   { isymbol  = toContentSymbol '^'
   , iname    = "staircase trap"
   , ifreq    = [(STAIRS_TRAP_UP, 1)]
-  , iflavour = zipPlain [Red]
+  , iflavour = zipPlain [BrRed]
   , icount   = 1
   , irarity  = [(1, 1)]
   , iverbHit = "buffet"
@@ -332,6 +334,7 @@ stairsTrapUp = ItemKind
 -- so that effects are invoked in the proper order and, e.g., teleport works.
 stairsTrapDown = stairsTrapUp
   { ifreq    = [(STAIRS_TRAP_DOWN, 1)]
+  , iflavour = zipPlain [Red]
   , iverbHit = "open up under"
   , ieffects = [ VerbMsgFail "tumble down the stairwell" "."
                , toOrganGood S_DRUNK (20 + 1 `d` 5) ]
