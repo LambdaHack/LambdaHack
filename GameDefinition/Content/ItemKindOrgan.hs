@@ -2,8 +2,8 @@
 module Content.ItemKindOrgan
   ( -- * Group name patterns
     pattern S_FIST, pattern S_FOOT, pattern S_HOOKED_CLAW, pattern S_SMALL_CLAW, pattern S_SNOUT, pattern S_SMALL_JAW, pattern S_JAW, pattern S_LARGE_JAW, pattern S_ANTLER, pattern S_HORN, pattern S_RHINO_HORN, pattern S_TENTACLE, pattern S_TIP, pattern S_LIP, pattern S_THORN, pattern S_BOILING_FISSURE, pattern S_ARSENIC_FISSURE, pattern S_SULFUR_FISSURE, pattern S_BEE_STING, pattern S_STING, pattern S_VENOM_TOOTH, pattern S_VENOM_FANG, pattern S_SCREECHING_BEAK, pattern S_LARGE_TAIL, pattern S_HUGE_TAIL, pattern S_ARMORED_SKIN, pattern S_BARK, pattern S_NOSTRIL, pattern S_RATLLE, pattern S_INSECT_MORTALITY, pattern S_SAPIENT_BRAIN, pattern S_ANIMAL_BRAIN, pattern S_SCENT_GLAND, pattern S_BOILING_VENT, pattern S_ARSENIC_VENT, pattern S_SULFUR_VENT, pattern S_EYE_3, pattern S_EYE_6, pattern S_EYE_8, pattern S_VISION_6, pattern S_VISION_12, pattern S_VISION_16, pattern S_EAR_3, pattern S_EAR_6, pattern S_EAR_8, pattern S_SPEED_GLAND_5, pattern S_SPEED_GLAND_10
-  , pattern S_TOOTH, pattern S_LASH, pattern S_RIGHT_TORSION, pattern S_LEFT_TORSION, pattern S_PUPIL
   , pattern SCAVENGER
+  , pattern S_TOOTH, pattern S_LASH, pattern S_RIGHT_TORSION, pattern S_LEFT_TORSION, pattern S_PUPIL
   , organsGNSingleton, organsGN
   , -- * Content
     organs
@@ -15,7 +15,9 @@ import Game.LambdaHack.Core.Prelude
 
 import Content.ItemKindBlast
 import Content.ItemKindTemporary
+import Content.RuleKind
 import Game.LambdaHack.Content.ItemKind
+import Game.LambdaHack.Content.RuleKind
 import Game.LambdaHack.Core.Dice
 import Game.LambdaHack.Definition.Ability
 import Game.LambdaHack.Definition.Color
@@ -87,14 +89,14 @@ pattern S_EAR_8 = GroupName "ear 8"
 pattern S_SPEED_GLAND_5 = GroupName "speed gland 5"
 pattern S_SPEED_GLAND_10 = GroupName "speed gland 10"
 
+pattern SCAVENGER = GroupName "scavenger"
+
 -- * LH-specific
 pattern S_TOOTH = GroupName "tooth"
 pattern S_LASH = GroupName "lash"
 pattern S_RIGHT_TORSION = GroupName "right torsion"
 pattern S_LEFT_TORSION = GroupName "left torsion"
 pattern S_PUPIL = GroupName "pupil"
-
-pattern SCAVENGER = GroupName "scavenger"
 
 -- * Content
 
@@ -108,11 +110,14 @@ fist,    foot, hookedClaw, smallClaw, snout, smallJaw, jaw, largeJaw, antler, ho
 -- LH-specific
 tooth, lash, torsionRight, torsionLeft, pupil :: ItemKind
 
+symbolWand :: Char
+symbolWand = rsymbolWand standardRules
 
 -- * No-cooldown melee damage organs without effects
 
 thorn = fist
-  { iname    = "thorn"
+  { isymbol  = symbolWand
+  , iname    = "thorn"
   , ifreq    = [(S_THORN, 1)]
   , icount   = 2 + 1 `d` 2  -- unrealistic, but not boring
   , iverbHit = "puncture"
@@ -202,7 +207,7 @@ horn = fist
   , ifreq    = [(S_HORN, 1)]
   , iverbHit = "impale"
   , idamage  = 5 `d` 1
-  , iaspects = [ AddSkill SkHurtMelee 10
+  , iaspects = [ Timeout 7  -- no effect, but limit raw damage; two copies
                , AddSkill SkArmorMelee 10 ]  -- bonus doubled
                ++ iaspects fist
   , idesc    = "Sharp and long, for defence or attack."
@@ -221,7 +226,8 @@ largeJaw = fist
 -- * Direct damage organs with effects
 
 beeSting = fist
-  { iname    = "bee sting"
+  { isymbol  = symbolWand
+  , iname    = "bee sting"
   , ifreq    = [(S_BEE_STING, 1)]
   , icount   = 1
   , iverbHit = "sting"
@@ -233,7 +239,8 @@ beeSting = fist
   , idesc    = "Painful, but beneficial."
   }
 sting = fist
-  { iname    = "sting"
+  { isymbol  = symbolWand
+  , iname    = "sting"
   , ifreq    = [(S_STING, 1)]
   , icount   = 1
   , iverbHit = "inject"
@@ -255,7 +262,8 @@ lip = fist
   , idesc    = ""
   }
 venomTooth = fist
-  { iname    = "venom tooth"
+  { isymbol  = symbolWand
+  , iname    = "venom tooth"
   , ifreq    = [(S_VENOM_TOOTH, 1)]
   , iverbHit = "bite"
   , idamage  = 1 `d` 1
@@ -265,7 +273,8 @@ venomTooth = fist
   , idesc    = "A chilling numbness spreads from its bite."
   }
 hookedClaw = fist
-  { iname    = "hooked claw"
+  { isymbol  = symbolWand
+  , iname    = "hooked claw"
   , ifreq    = [(S_HOOKED_CLAW, 1)]
   , icount   = 2  -- even if more, only the fore claws used for fighting
   , iverbHit = "hook"
@@ -276,7 +285,8 @@ hookedClaw = fist
   , idesc    = "A curved talon."
   }
 screechingBeak = fist
-  { iname    = "screeching beak"
+  { isymbol  = symbolWand
+  , iname    = "screeching beak"
   , ifreq    = [(S_SCREECHING_BEAK, 1)]
   , icount   = 1
   , iverbHit = "peck"
@@ -287,7 +297,8 @@ screechingBeak = fist
   , idesc    = "Both a weapon and a beacon, calling more scavengers to the meal."
   }
 antler = fist
-  { iname    = "antler"
+  { isymbol  = symbolWand
+  , iname    = "antler"
   , ifreq    = [(S_ANTLER, 1)]
   , iverbHit = "ram"
   , idamage  = 4 `d` 1
@@ -298,7 +309,8 @@ antler = fist
   , idesc    = ""
   }
 rhinoHorn = fist
-  { iname    = "ugly horn"  -- made of keratin, unlike real horns
+  { isymbol  = symbolWand
+  , iname    = "ugly horn"  -- made of keratin, unlike real horns
   , ifreq    = [(S_RHINO_HORN, 1)]
   , icount   = 1  -- single, unlike real horns
   , iverbHit = "gore"
@@ -309,7 +321,8 @@ rhinoHorn = fist
   , idesc    = "Very solid, considering it has the same composition as fingernails."
   }
 largeTail = fist
-  { iname    = "large tail"
+  { isymbol  = symbolWand
+  , iname    = "large tail"
   , ifreq    = [(S_LARGE_TAIL, 1)]
   , icount   = 1
   , iverbHit = "knock"
@@ -321,7 +334,8 @@ largeTail = fist
   , idesc    = "Almost as long as the trunk."
   }
 hugeTail = largeTail
-  { iname    = "huge tail"
+  { isymbol  = symbolWand
+  , iname    = "huge tail"
   , ifreq    = [(S_HUGE_TAIL, 1)]
   , iverbHit = "upend"
   , iaspects = [Timeout $ 3 + 1 `d` 2, AddSkill SkHurtMelee 20]
@@ -334,7 +348,8 @@ hugeTail = largeTail
 -- * Melee weapons without direct damage
 
 venomFang = fist
-  { iname    = "venom fang"
+  { isymbol  = symbolWand
+  , iname    = "venom fang"
   , ifreq    = [(S_VENOM_FANG, 1)]
   , iverbHit = "bite"
   , idamage  = 0
@@ -357,7 +372,8 @@ sulfurFissure = boilingFissure
   , idesc    = ""
   }
 boilingFissure = fist
-  { iname    = "fissure"
+  { isymbol  = symbolWand
+  , iname    = "fissure"
   , ifreq    = [(S_BOILING_FISSURE, 1)]
   , icount   = 5 + 1 `d` 5
   , iverbHit = "hiss at"
@@ -505,11 +521,12 @@ animalBrain = armoredSkin
   }
 speedGland :: Int -> GroupName ItemKind -> ItemKind
 speedGland n grp = armoredSkin
-  { iname    = "speed gland"
+  { isymbol  = symbolWand
+  , iname    = "speed gland"
   , ifreq    = [(grp, 1)]
   , iverbHit = "spit at"
-  , iaspects = [ AddSkill SkSpeed $ intToDice n
-               , Timeout $ intToDice (100 `div` n)
+  , iaspects = [ Timeout $ intToDice (100 `div` n)
+               , AddSkill SkSpeed $ intToDice n
                , SetFlag Periodic, SetFlag Durable ]
   , ieffects = [RefillHP 1]
   , idesc    = ""
@@ -517,7 +534,8 @@ speedGland n grp = armoredSkin
 speedGland5 = speedGland 5 S_SPEED_GLAND_5
 speedGland10 = speedGland 10 S_SPEED_GLAND_10
 scentGland = armoredSkin
-  { iname    = "scent gland"
+  { isymbol  = symbolWand
+  , iname    = "scent gland"
   , ifreq    = [(S_SCENT_GLAND, 1)]
   , icount   = 10 + 1 `d` 3  -- runs out
   , iverbHit = "spray at"
@@ -531,7 +549,8 @@ scentGland = armoredSkin
   , idesc    = ""
   }
 sulfurVent = armoredSkin
-  { iname    = "vent"
+  { isymbol  = toContentSymbol 'v'
+  , iname    = "vent"
   , ifreq    = [(S_SULFUR_VENT, 1)]
   , iflavour = zipPlain [BrYellow]
   , iverbHit = "menace"
@@ -541,7 +560,8 @@ sulfurVent = armoredSkin
   , idesc    = ""
   }
 boilingVent = armoredSkin
-  { iname    = "vent"
+  { isymbol  = toContentSymbol 'v'
+  , iname    = "vent"
   , ifreq    = [(S_BOILING_VENT, 1)]
   , iflavour = zipPlain [Blue]
   , iverbHit = "menace"
@@ -551,7 +571,8 @@ boilingVent = armoredSkin
   , idesc    = ""
   }
 arsenicVent = armoredSkin
-  { iname    = "vent"
+  { isymbol  = toContentSymbol 'v'
+  , iname    = "vent"
   , ifreq    = [(S_ARSENIC_VENT, 1)]
   , iflavour = zipPlain [Cyan]
   , iverbHit = "menace"
