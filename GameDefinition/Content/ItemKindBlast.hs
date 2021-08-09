@@ -122,12 +122,12 @@ spreadBurningOil n grp = ItemKind
   , iname    = "burning oil"
   , ifreq    = [(grp, 1)]
   , iflavour = zipPlain [BrYellow]
-  , icount   = intToDice (4 + n * 3)
+  , icount   = intToDice (4 + n * 2)
   , irarity  = [(1, 1)]
   , iverbHit = "sear"
   , iweight  = 1
   , idamage  = 0
-  , iaspects = [ toVelocity (min 100 $ n `div` 2 * 10)
+  , iaspects = [ toVelocity (max 10 $ min 100 $ n `div` 2 * 10)
                , SetFlag Fragile, SetFlag Blast
                , AddSkill SkShine 2 ]
   , ieffects = [ Burn 1
@@ -144,7 +144,7 @@ spreadBurningOil4 = spreadBurningOil 4 S_VIOLENT_BURNING_OIL_4
                       -- 4 steps, 2 turns
 spreadBurningOil8 :: Int -> GroupName ItemKind -> ItemKind
 spreadBurningOil8 n grp = (spreadBurningOil (n `div` 2) grp)
-  { icount   = 7
+  { icount   = 7  -- 8 was too deadly
   }
 spreadBurningOil82 = spreadBurningOil8 2 S_BURNING_OIL_2
 spreadBurningOil83 = spreadBurningOil8 3 S_BURNING_OIL_3
@@ -154,7 +154,8 @@ focusedBurningOil n grp grpExplode = ItemKind
   { isymbol  = toContentSymbol '`'
   , iname    = "igniting oil"
   , ifreq    = [(grp, 1)]
-  , iflavour = zipPlain [Brown]
+  , iflavour = zipPlain [BrYellow]  -- all ignitions yellow to avoid appearing
+                                    -- as a small vial explosion
   , icount   = intToDice n
   , irarity  = [(1, 1)]
   , iverbHit = "ignite"
@@ -206,7 +207,7 @@ spreadFragmentation = ItemKind
   , iname    = "fragmentation burst"
   , ifreq    = [(S_VIOLENT_FRAGMENTATION, 1)]
   , iflavour = zipPlain [Red]
-  , icount   = 16  -- strong but few, so not always hits target
+  , icount   = 8  -- strong but few, so not always hits target
   , irarity  = [(1, 1)]
   , iverbHit = "tear apart"
   , iweight  = 1
@@ -221,7 +222,7 @@ spreadFragmentation = ItemKind
   }
 spreadFragmentation8 = spreadFragmentation
   { ifreq    = [(S_FRAGMENTATION, 1)]
-  , icount   = 8
+  , icount   = 5
   , iaspects = [ ToThrow $ ThrowMod 100 10 2  -- 2 steps, 1 turn
                , SetFlag Lobable, SetFlag Fragile, SetFlag Blast
                , AddSkill SkShine 3, AddSkill SkHurtMelee $ -12 * 5 ]
@@ -232,7 +233,7 @@ focusedFragmentation = ItemKind
   , iname    = "deflagration ignition"  -- black powder
   , ifreq    = [(S_FOCUSED_FRAGMENTATION, 1)]
   , iflavour = zipPlain [BrYellow]
-  , icount   = 4  -- 32 in total vs 16; on average 4 hits
+  , icount   = 3  -- 15 in total vs 8, higher spread
   , irarity  = [(1, 1)]
   , iverbHit = "ignite"
   , iweight  = 1
@@ -250,7 +251,8 @@ spreadConcussion = ItemKind
   , iname    = "concussion blast"
   , ifreq    = [(S_VIOLENT_CONCUSSION, 1)]
   , iflavour = zipPlain [Magenta]
-  , icount   = 16
+  , icount   = 12  -- pushing sometimes gets the victim out of attacker range,
+                   -- but also sometimes moves to a position hit again later
   , irarity  = [(1, 1)]
   , iverbHit = "shock"
   , iweight  = 1
@@ -272,7 +274,7 @@ spreadConcussion = ItemKind
   }
 spreadConcussion8 = spreadConcussion
   { ifreq    = [(S_CONCUSSION, 1)]
-  , icount   = 8
+  , icount   = 6
   , iaspects = [ ToThrow $ ThrowMod 100 10 2  -- 2 steps, 1 turn
                , SetFlag Lobable, SetFlag Fragile, SetFlag Blast
                , AddSkill SkShine 3, AddSkill SkHurtMelee $ -8 * 5 ]
@@ -282,7 +284,7 @@ focusedConcussion = ItemKind
   , iname    = "detonation ignition"  -- nitroglycerine
   , ifreq    = [(S_FOCUSED_CONCUSSION, 1)]
   , iflavour = zipPlain [BrYellow]
-  , icount   = 4
+  , icount   = 4  -- 24 in total vs 12, higher spread, less harm from pushing
   , irarity  = [(1, 1)]
   , iverbHit = "ignite"
   , iweight  = 1
@@ -298,7 +300,7 @@ spreadFlash = ItemKind
   , iname    = "magnesium flash"
   , ifreq    = [(S_VIOLENT_FLASH, 1)]
   , iflavour = zipPlain [BrWhite]
-  , icount   = 16
+  , icount   = 13
   , irarity  = [(1, 1)]
   , iverbHit = "dazzle"
   , iweight  = 1
@@ -306,16 +308,17 @@ spreadFlash = ItemKind
   , iaspects = [ ToThrow $ ThrowMod 100 20 4  -- 4 steps, 1 turn
                , SetFlag Fragile, SetFlag Blast
                , AddSkill SkShine 5 ]
-  , ieffects = [toOrganBad S_BLIND 5, toOrganBad S_WEAKENED 20]
+  , ieffects = [ toOrganBad S_BLIND 5
+               , toOrganBad S_WEAKENED 20 ]
                  -- Wikipedia says: blind for five seconds and afterimage
                  -- for much longer, harming aim
-  , idesc    = "A very bright flash of fire."
+  , idesc    = "A very bright flash of fire, causing long-lasting afterimages."
   , ikit     = []
   }
 spreadFlash8 = spreadFlash
   { iname    = "spark"
   , ifreq    = [(S_SPARK, 1)]
-  , icount   = 8
+  , icount   = 5
   , iverbHit = "singe"
   , iaspects = [ ToThrow $ ThrowMod 100 10 2  -- 2 steps, 1 turn
                , SetFlag Fragile, SetFlag Blast
@@ -326,7 +329,7 @@ focusedFlash = ItemKind
   , iname    = "magnesium ignition"
   , ifreq    = [(S_FOCUSED_FLASH, 1)]
   , iflavour = zipPlain [BrYellow]
-  , icount   = 4
+  , icount   = 5  -- 25 in total vs 13, higher spread
   , irarity  = [(1, 1)]
   , iverbHit = "ignite"
   , iweight  = 1
@@ -339,7 +342,7 @@ focusedFlash = ItemKind
   }
 singleSpark = spreadFlash
   { iname    = "single spark"
-  , ifreq    = [(S_SINGLE_SPARK, 1)]
+  , ifreq    = [(S_SINGLE_SPARK, 1)]  -- too weak to start a fire
   , icount   = 1
   , iverbHit = "spark"
   , iaspects = [ toLinger 5  -- 1 step, 1 turn
@@ -354,12 +357,12 @@ glassPiece = ItemKind
   , iname    = "glass piece"
   , ifreq    = [(S_GLASS_HAIL, 1)]
   , iflavour = zipPlain [Blue]
-  , icount   = 8
+  , icount   = 6
   , irarity  = [(1, 1)]
   , iverbHit = "cut"
   , iweight  = 1
   , idamage  = 2 `d` 1
-  , iaspects = [ ToThrow $ ThrowMod 100 20 4  -- 4 steps, 1 turn
+  , iaspects = [ ToThrow $ ThrowMod 100 10 4  -- 2 steps, 1 turn
                , SetFlag Fragile, SetFlag Blast
                , AddSkill SkHurtMelee $ -15 * 5 ]
                  -- brittle, not too dense; armor blocks
@@ -369,7 +372,7 @@ glassPiece = ItemKind
   }
 focusedGlass = glassPiece  -- when blowing up windows
   { ifreq    = [(S_FOCUSED_GLASS_HAIL, 1)]
-  , icount   = 4
+  , icount   = 2
   , iaspects = [ toLinger 0  -- 0 steps, 1 turn
                , SetFlag Fragile, SetFlag Blast
                , AddSkill SkHurtMelee $ -15 * 5 ]
@@ -555,7 +558,7 @@ glue = ItemKind
   , iverbHit = "glue"
   , iweight  = 1
   , idamage  = 0
-  , iaspects = [ toVelocity 20  -- 4 steps, 2 turns
+  , iaspects = [ toVelocity 10  -- 2 steps, 2 turns
                , SetFlag Fragile, SetFlag Blast ]
   , ieffects = [Paralyze 10]
   , idesc    = "Thick and clinging."
@@ -668,12 +671,13 @@ protectingBalmMelee = ItemKind
   , iname    = "balm droplet"
   , ifreq    = [(S_MELEE_PROTECTIVE_BALM, 1)]
   , iflavour = zipFancy [Brown]
-  , icount   = 16
+  , icount   = 6
   , irarity  = [(1, 1)]
   , iverbHit = "balm"
   , iweight  = 1
   , idamage  = 0
-  , iaspects = [toLinger 10, SetFlag Fragile, SetFlag Blast]
+  , iaspects = [ toLinger 0  -- 0 steps, 1 turn
+               , SetFlag Fragile, SetFlag Blast ]
   , ieffects = [toOrganGood S_PROTECTED_FROM_MELEE (3 + 1 `d` 3)]
   , idesc    = "A thick ointment that hardens the skin."
   , ikit     = []
@@ -874,7 +878,7 @@ poisonCloud = ItemKind
   , iname    = "poison cloud"
   , ifreq    = [(S_POISON_CLOUD, 1)]
   , iflavour = zipFancy [BrMagenta]
-  , icount   = 16
+  , icount   = 11  -- low, to be less deadly in a tunnel, compared to single hit
   , irarity  = [(1, 1)]
   , iverbHit = "poison"
   , iweight  = 0  -- lingers, blocking path
@@ -895,7 +899,7 @@ pingFlash = ItemKind
   , iverbHit = "ping"
   , iweight  = 1  -- to prevent blocking the way
   , idamage  = 0
-  , iaspects = [ toLinger 0
+  , iaspects = [ ToThrow $ ThrowMod 200 0 1  -- 1 step, .5 turn (necklaces)
                , SetFlag Fragile, SetFlag Blast
                , AddSkill SkShine 2 ]
   , ieffects = [OnSmash Yell]
