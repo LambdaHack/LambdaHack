@@ -92,7 +92,7 @@ humanOrgans = [ (S_FIST, COrgan), (S_FOOT, COrgan)
               , (S_EYE_6, COrgan), (S_EAR_3, COrgan)
               , (S_SAPIENT_BRAIN, COrgan) ]
 warrior = ItemKind
-  { isymbol  = '@'
+  { isymbol  = toContentSymbol '@'
   , iname    = "warrior"  -- modified if initial actors in hero faction
   , ifreq    = [(HERO, 100), (MOBILE, 1)]
   , iflavour = zipPlain [BrWhite]
@@ -218,7 +218,7 @@ civilian5 = civilian
 -- They have bright colours, because they are not natural.
 
 eye = ItemKind
-  { isymbol  = 'e'
+  { isymbol  = toContentSymbol 'e'
   , iname    = "reducible eye"
   , ifreq    = [ (MONSTER, 100), (MOBILE, 1)
                , (MOBILE_MONSTER, 100), (SCOUT_MONSTER, 10) ]
@@ -240,7 +240,7 @@ eye = ItemKind
                , (S_SAPIENT_BRAIN, COrgan) ]  -- no hearing, it's all eyes
   }
 fastEye = ItemKind
-  { isymbol  = 'j'
+  { isymbol  = toContentSymbol 'j'
   , iname    = "injective jaw"
   , ifreq    = [ (MONSTER, 100), (MOBILE, 1)
                , (MOBILE_MONSTER, 100), (SCOUT_MONSTER, 60) ]
@@ -262,7 +262,7 @@ fastEye = ItemKind
                , (S_SAPIENT_BRAIN, COrgan) ]
   }
 nose = ItemKind  -- depends solely on smell
-  { isymbol  = 'n'
+  { isymbol  = toContentSymbol 'n'
   , iname    = "point-free nose"
   , ifreq    = [(MONSTER, 100), (MOBILE, 1), (MOBILE_MONSTER, 100)]
   , iflavour = zipFancy [BrGreen]
@@ -283,7 +283,7 @@ nose = ItemKind  -- depends solely on smell
                , (S_SAPIENT_BRAIN, COrgan) ]  -- no sight nor hearing
   }
 elbow = ItemKind
-  { isymbol  = 'e'
+  { isymbol  = toContentSymbol 'e'
   , iname    = "commutative elbow"
   , ifreq    = [ (MONSTER, 100), (MOBILE, 1)
                , (MOBILE_MONSTER, 100), (SCOUT_MONSTER, 30) ]
@@ -309,7 +309,7 @@ elbow = ItemKind
                , (WEAK_ARROW, CStash), (WEAK_ARROW, CStash) ]
   }
 torsor = ItemKind
-  { isymbol  = 'T'
+  { isymbol  = toContentSymbol 'T'
   , iname    = "The Forgetful Torsor"
   , ifreq    = [(MONSTER, 100), (MOBILE, 1)]
   , iflavour = zipFancy [BrCyan]
@@ -347,7 +347,7 @@ torsor = ItemKind
 -- They have dull colors, except for yellow, because there is no dull variant.
 
 goldenJackal = ItemKind  -- basically a much smaller, slower and nosy hyena
-  { isymbol  = 'j'
+  { isymbol  = toContentSymbol 'j'
   , iname    = "golden jackal"
   , ifreq    = [ (ANIMAL, 100), (MOBILE, 1), (MOBILE_ANIMAL, 100)
                , (SCAVENGER, 50) ]
@@ -369,7 +369,7 @@ goldenJackal = ItemKind  -- basically a much smaller, slower and nosy hyena
                , (S_ANIMAL_BRAIN, COrgan) ]
   }
 griffonVulture = ItemKind  -- keep it boring and weak, because it summons
-  { isymbol  = 'v'
+  { isymbol  = toContentSymbol 'v'
   , iname    = "griffon vulture"
   , ifreq    = [ (ANIMAL, 100), (MOBILE, 1), (MOBILE_ANIMAL, 100)
                , (SCAVENGER, 30) ]
@@ -398,7 +398,7 @@ griffonVulture = ItemKind  -- keep it boring and weak, because it summons
                , (S_ANIMAL_BRAIN, COrgan) ]
   }
 skunk = ItemKind
-  { isymbol  = 's'
+  { isymbol  = toContentSymbol 's'
   , iname    = "hog-nosed skunk"
   , ifreq    = [(ANIMAL, 100), (MOBILE, 1), (MOBILE_ANIMAL, 100)]
   , iflavour = zipPlain [White]
@@ -420,7 +420,7 @@ skunk = ItemKind
                , (S_ANIMAL_BRAIN, COrgan) ]
   }
 armadillo = ItemKind
-  { isymbol  = 'a'
+  { isymbol  = toContentSymbol 'a'
   , iname    = "giant armadillo"
   , ifreq    = [(ANIMAL, 100), (MOBILE, 1), (MOBILE_ANIMAL, 100)]
   , iflavour = zipPlain [Brown]
@@ -442,7 +442,7 @@ armadillo = ItemKind
                , (S_ANIMAL_BRAIN, COrgan) ]
   }
 gilaMonster = ItemKind
-  { isymbol  = 'g'
+  { isymbol  = toContentSymbol 'g'
   , iname    = "Gila monster"
   , ifreq    = [(ANIMAL, 100), (MOBILE, 1), (MOBILE_ANIMAL, 100)]
   , iflavour = zipPlain [Magenta]
@@ -462,7 +462,7 @@ gilaMonster = ItemKind
                , (S_ANIMAL_BRAIN, COrgan) ]
   }
 rattlesnake = ItemKind
-  { isymbol  = 's'
+  { isymbol  = toContentSymbol 's'
   , iname    = "rattlesnake"
   , ifreq    = [(ANIMAL, 100), (MOBILE, 1), (MOBILE_ANIMAL, 100)]
   , iflavour = zipPlain [Brown]
@@ -484,7 +484,7 @@ rattlesnake = ItemKind
                , (S_ANIMAL_BRAIN, COrgan) ]
   }
 hyena = ItemKind
-  { isymbol  = 'h'
+  { isymbol  = toContentSymbol 'h'
   , iname    = "spotted hyena"
   , ifreq    = [ (ANIMAL, 100), (MOBILE, 1), (MOBILE_ANIMAL, 100)
                , (SCAVENGER, 20) ]
@@ -505,7 +505,7 @@ hyena = ItemKind
                , (S_ANIMAL_BRAIN, COrgan) ]
   }
 komodoDragon = ItemKind
-  { isymbol  = 'k'
+  { isymbol  = toContentSymbol 'k'
   , iname    = "Komodo dragon"
   , ifreq    = [(ANIMAL, 100), (MOBILE, 1), (MOBILE_ANIMAL, 100)]
   , iflavour = zipPlain [BrRed]  -- speedy, so bright red
@@ -529,7 +529,7 @@ komodoDragon = ItemKind
   }
 alligator = ItemKind  -- late, slow, deadly semi-tank with some armor;
                       -- too deadly to get more HP; bombs the only recourse
-  { isymbol  = 'a'
+  { isymbol  = toContentSymbol 'a'
   , iname    = "alligator"
   , ifreq    = [(ANIMAL, 100), (MOBILE, 1), (MOBILE_ANIMAL, 100)]
   , iflavour = zipPlain [Blue]
@@ -552,7 +552,7 @@ alligator = ItemKind  -- late, slow, deadly semi-tank with some armor;
                , (S_ANIMAL_BRAIN, COrgan) ]
   }
 rhinoceros = ItemKind
-  { isymbol  = 'R'
+  { isymbol  = toContentSymbol 'R'
   , iname    = "The Maddened Rhinoceros"
   , ifreq    = [(ANIMAL, 100), (MOBILE, 1)]
   , iflavour = zipPlain [Brown]
@@ -579,7 +579,7 @@ rhinoceros = ItemKind
 -- * Non-animal animals
 
 beeSwarm = ItemKind
-  { isymbol  = 'b'
+  { isymbol  = toContentSymbol 'b'
   , iname    = "bee swarm"
   , ifreq    = [(ANIMAL, 100), (MOBILE, 1)]
   , iflavour = zipPlain [Brown]
@@ -601,7 +601,7 @@ beeSwarm = ItemKind
                , (S_INSECT_MORTALITY, COrgan), (S_ANIMAL_BRAIN, COrgan) ]
   }
 hornetSwarm = ItemKind  -- kind of tank with armor, but short-lived
-  { isymbol  = 'h'
+  { isymbol  = toContentSymbol 'h'
   , iname    = "hornet swarm"
   , ifreq    = [(ANIMAL, 100), (MOBILE, 1), (MOBILE_ANIMAL, 100)]
   , iflavour = zipPlain [Magenta]
@@ -626,7 +626,7 @@ hornetSwarm = ItemKind  -- kind of tank with armor, but short-lived
                , (S_INSECT_MORTALITY, COrgan), (S_ANIMAL_BRAIN, COrgan) ]
   }
 thornbush = ItemKind  -- the wimpiest kind of early tank
-  { isymbol  = 't'
+  { isymbol  = toContentSymbol 't'
   , iname    = "thornbush"
   , ifreq    = [(ANIMAL, 20), (IMMOBILE_ANIMAL, 20)]
   , iflavour = zipPlain [Brown]
@@ -645,7 +645,7 @@ thornbush = ItemKind  -- the wimpiest kind of early tank
                , (S_BARK, COrgan) ]
   }
 geyserBoiling = ItemKind
-  { isymbol  = 'g'
+  { isymbol  = toContentSymbol 'g'
   , iname    = "geyser"
   , ifreq    = [(ANIMAL, 8), (IMMOBILE_ANIMAL, 30)]
   , iflavour = zipPlain [Blue]
@@ -663,7 +663,7 @@ geyserBoiling = ItemKind
   , ikit     = [(S_BOILING_VENT, COrgan), (S_BOILING_FISSURE, COrgan)]
   }
 geyserArsenic = ItemKind
-  { isymbol  = 'g'
+  { isymbol  = toContentSymbol 'g'
   , iname    = "arsenic geyser"
   , ifreq    = [(ANIMAL, 8), (IMMOBILE_ANIMAL, 40)]
   , iflavour = zipPlain [Cyan]
@@ -681,7 +681,7 @@ geyserArsenic = ItemKind
   , ikit     = [(S_ARSENIC_VENT, COrgan), (S_ARSENIC_FISSURE, COrgan)]
   }
 geyserSulfur = ItemKind
-  { isymbol  = 'g'
+  { isymbol  = toContentSymbol 'g'
   , iname    = "sulfur geyser"
   , ifreq    = [(ANIMAL, 8), (IMMOBILE_ANIMAL, 120)]
   , iflavour = zipPlain [BrYellow]  -- exception, animal with bright color

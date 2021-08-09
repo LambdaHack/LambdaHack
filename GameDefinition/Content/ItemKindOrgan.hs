@@ -130,7 +130,7 @@ tip = fist
   , idesc    = ""
   }
 fist = ItemKind
-  { isymbol  = ','
+  { isymbol  = toContentSymbol ','
   , iname    = "fist"
   , ifreq    = [(S_FIST, 1)]
   , iflavour = zipPlain [Red]
@@ -382,7 +382,7 @@ arsenicFissure = boilingFissure
 -- * Armor organs
 
 armoredSkin = ItemKind
-  { isymbol  = ','
+  { isymbol  = toContentSymbol ','
   , iname    = "armored skin"
   , ifreq    = [(S_ARMORED_SKIN, 1)]
   , iflavour = zipPlain [Red]
@@ -564,7 +564,7 @@ arsenicVent = armoredSkin
 -- * Special
 
 bonusHP = armoredSkin
-  { isymbol  = 'H'  -- '+' reserved for conditions
+  { isymbol  = toContentSymbol 'H'  -- '+' reserved for conditions
   , iname    = "bonus HP"
   , ifreq    = [(S_BONUS_HP, 1)]
   , iflavour = zipPlain [BrBlue]
@@ -574,7 +574,7 @@ bonusHP = armoredSkin
   , idesc    = "Growing up in a privileged background gave you the training and the discrete garment accessories that improve your posture and resilience."
   }
 braced = armoredSkin
-  { isymbol  = 'B'
+  { isymbol  = toContentSymbol 'B'
   , iname    = "braced"
   , ifreq    = [(S_BRACED, 1)]
   , iflavour = zipPlain [BrGreen]
@@ -586,7 +586,7 @@ braced = armoredSkin
   , idesc    = "Apart of increased resilience to attacks, being braced protects from displacement by foes and other forms of forced translocation, e.g., pushing or pulling."
   }
 asleep = armoredSkin
-  { isymbol  = 'S'
+  { isymbol  = toContentSymbol 'S'
   , iname    = "asleep"
   , ifreq    = [(S_ASLEEP, 1)]
   , iflavour = zipPlain [BrGreen]  -- regenerates HP (very slowly)
@@ -600,7 +600,7 @@ asleep = armoredSkin
   , idesc    = "Sleep helps to regain health, albeit extremely slowly. Being asleep makes you vulnerable, with gradually diminishing effects as the slumber wears off over several turns. Any non-idle action, not only combat but even yawning or stretching removes a sizable portion of the sleepiness."
   }
 impressed = armoredSkin
-  { isymbol  = 'I'
+  { isymbol  = toContentSymbol 'I'
   , iname    = "impressed"  -- keep the same as in @ifreq@, to simplify code
   , ifreq    = [(S_IMPRESSED, 1), (CONDITION, 1)]
   , iflavour = zipPlain [BrRed]

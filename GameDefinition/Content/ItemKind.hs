@@ -94,7 +94,7 @@ sandstoneRock,    dart, spike, spike2, slingStone, slingBullet, paralizingProj, 
 symbolProjectile, _symbolLauncher, symbolLight, symbolTool, symbolSpecial, symbolGold, symbolNecklace, symbolRing, symbolPotion, symbolFlask, symbolScroll, symbolTorsoArmor, symbolMiscArmor, symbolClothes, symbolShield, symbolPolearm, symbolEdged, symbolHafted, symbolWand, _symbolStaff, symbolFood :: Char
 
 symbolProjectile = rsymbolProjectile standardRules
-_symbolLauncher  = '}'
+_symbolLauncher  = toContentSymbol '}'
 symbolLight      = rsymbolLight standardRules
 symbolTool       = rsymbolTool standardRules
 symbolSpecial    = rsymbolSpecial standardRules
@@ -112,7 +112,7 @@ symbolPolearm    = rsymbolPolearm standardRules
 symbolEdged      = rsymbolEdged standardRules
 symbolHafted     = rsymbolHafted standardRules
 symbolWand       = rsymbolWand standardRules
-_symbolStaff     = '_'  -- scanner
+_symbolStaff     = toContentSymbol '_'  -- scanner
 symbolFood       = rsymbolFood standardRules
 
 -- ** Thrown weapons

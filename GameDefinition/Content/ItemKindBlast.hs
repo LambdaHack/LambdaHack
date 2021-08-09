@@ -118,7 +118,7 @@ spreadBurningOil2,    spreadBurningOil3, spreadBurningOil4, spreadBurningOil82, 
 
 spreadBurningOil :: Int -> GroupName ItemKind -> ItemKind
 spreadBurningOil n grp = ItemKind
-  { isymbol  = '*'
+  { isymbol  = toContentSymbol '*'
   , iname    = "burning oil"
   , ifreq    = [(grp, 1)]
   , iflavour = zipPlain [BrYellow]
@@ -151,7 +151,7 @@ spreadBurningOil83 = spreadBurningOil8 3 S_BURNING_OIL_3
 spreadBurningOil84 = spreadBurningOil8 4 S_BURNING_OIL_4
 focusedBurningOil :: Int -> GroupName ItemKind -> GroupName ItemKind -> ItemKind
 focusedBurningOil n grp grpExplode = ItemKind
-  { isymbol  = '`'
+  { isymbol  = toContentSymbol '`'
   , iname    = "igniting oil"
   , ifreq    = [(grp, 1)]
   , iflavour = zipPlain [Brown]
@@ -173,7 +173,7 @@ focusedBurningOil3 = focusedBurningOil 3 S_FOCUSED_BURNING_OIL_3 S_BURNING_OIL_3
 focusedBurningOil4 = focusedBurningOil 4 S_FOCUSED_BURNING_OIL_4 S_BURNING_OIL_4
 firecracker :: Int -> ItemKind
 firecracker n = ItemKind
-  { isymbol  = '*'
+  { isymbol  = toContentSymbol '*'
   , iname    = "firecracker"
   , ifreq    = [(if n == 5
                  then S_FIRECRACKER
@@ -202,7 +202,7 @@ firecracker1 = firecracker 1
 -- * Focused blasts
 
 spreadFragmentation = ItemKind
-  { isymbol  = '*'
+  { isymbol  = toContentSymbol '*'
   , iname    = "fragmentation burst"
   , ifreq    = [(S_VIOLENT_FRAGMENTATION, 1)]
   , iflavour = zipPlain [Red]
@@ -228,7 +228,7 @@ spreadFragmentation8 = spreadFragmentation
       -- smaller radius, so worse for area effect, but twice the direct damage
   }
 focusedFragmentation = ItemKind
-  { isymbol  = '`'
+  { isymbol  = toContentSymbol '`'
   , iname    = "deflagration ignition"  -- black powder
   , ifreq    = [(S_FOCUSED_FRAGMENTATION, 1)]
   , iflavour = zipPlain [BrYellow]
@@ -246,7 +246,7 @@ focusedFragmentation = ItemKind
   , ikit     = []
   }
 spreadConcussion = ItemKind
-  { isymbol  = '*'
+  { isymbol  = toContentSymbol '*'
   , iname    = "concussion blast"
   , ifreq    = [(S_VIOLENT_CONCUSSION, 1)]
   , iflavour = zipPlain [Magenta]
@@ -278,7 +278,7 @@ spreadConcussion8 = spreadConcussion
                , AddSkill SkShine 3, AddSkill SkHurtMelee $ -8 * 5 ]
   }
 focusedConcussion = ItemKind
-  { isymbol  = '`'
+  { isymbol  = toContentSymbol '`'
   , iname    = "detonation ignition"  -- nitroglycerine
   , ifreq    = [(S_FOCUSED_CONCUSSION, 1)]
   , iflavour = zipPlain [BrYellow]
@@ -294,7 +294,7 @@ focusedConcussion = ItemKind
   , ikit     = []
   }
 spreadFlash = ItemKind
-  { isymbol  = '`'
+  { isymbol  = toContentSymbol '`'
   , iname    = "magnesium flash"
   , ifreq    = [(S_VIOLENT_FLASH, 1)]
   , iflavour = zipPlain [BrWhite]
@@ -322,7 +322,7 @@ spreadFlash8 = spreadFlash
                , AddSkill SkShine 5 ]
   }
 focusedFlash = ItemKind
-  { isymbol  = '`'
+  { isymbol  = toContentSymbol '`'
   , iname    = "magnesium ignition"
   , ifreq    = [(S_FOCUSED_FLASH, 1)]
   , iflavour = zipPlain [BrYellow]
@@ -350,7 +350,7 @@ singleSpark = spreadFlash
   , ikit     = []
   }
 glassPiece = ItemKind
-  { isymbol  = '*'
+  { isymbol  = toContentSymbol '*'
   , iname    = "glass piece"
   , ifreq    = [(S_GLASS_HAIL, 1)]
   , iflavour = zipPlain [Blue]
@@ -379,7 +379,7 @@ focusedGlass = glassPiece  -- when blowing up windows
 -- * Assorted blasts that don't induce conditions or not used mainly for them
 
 fragrance = ItemKind
-  { isymbol  = '`'
+  { isymbol  = toContentSymbol '`'
   , iname    = "fragrance"  -- instant, fast fragrance
   , ifreq    = [(S_FRAGRANCE, 1)]
   , iflavour = zipPlain [Magenta]
@@ -397,7 +397,7 @@ fragrance = ItemKind
   , ikit     = []
   }
 pheromone = ItemKind
-  { isymbol  = '`'
+  { isymbol  = toContentSymbol '`'
   , iname    = "musky whiff"  -- a kind of mist rather than fragrance
   , ifreq    = [(S_PHEROMONE, 1)]
   , iflavour = zipPlain [BrMagenta]
@@ -413,7 +413,7 @@ pheromone = ItemKind
   , ikit     = []
   }
 mistCalming = ItemKind  -- unused
-  { isymbol  = '`'
+  { isymbol  = toContentSymbol '`'
   , iname    = "mist"
   , ifreq    = [(S_CALMING_MIST, 1)]
   , iflavour = zipPlain [BrGreen]
@@ -429,7 +429,7 @@ mistCalming = ItemKind  -- unused
   , ikit     = []
   }
 odorDistressing = ItemKind
-  { isymbol  = '`'
+  { isymbol  = toContentSymbol '`'
   , iname    = "distressing whiff"
   , ifreq    = [(S_DISTRESSING_ODOR, 1)]
   , iflavour = zipFancy [BrRed]  -- salmon
@@ -447,7 +447,7 @@ odorDistressing = ItemKind
   , ikit     = []
   }
 mistHealing = ItemKind
-  { isymbol  = '`'
+  { isymbol  = toContentSymbol '`'
   , iname    = "mist"  -- powerful, so slow and narrow
   , ifreq    = [(S_HEALING_MIST, 1)]
   , iflavour = zipFancy [BrGreen]
@@ -464,7 +464,7 @@ mistHealing = ItemKind
   , ikit     = []
   }
 mistHealing2 = ItemKind
-  { isymbol  = '`'
+  { isymbol  = toContentSymbol '`'
   , iname    = "mist"
   , ifreq    = [(S_HEALING_MIST_2, 1)]
   , iflavour = zipPlain [Green]
@@ -481,7 +481,7 @@ mistHealing2 = ItemKind
   , ikit     = []
   }
 mistWounding = ItemKind
-  { isymbol  = '`'
+  { isymbol  = toContentSymbol '`'
   , iname    = "mist"
   , ifreq    = [(S_WOUNDING_MIST, 1)]
   , iflavour = zipPlain [BrRed]
@@ -497,7 +497,7 @@ mistWounding = ItemKind
   , ikit     = []
   }
 distortion = ItemKind
-  { isymbol  = 'v'
+  { isymbol  = toContentSymbol 'v'
   , iname    = "vortex"
   , ifreq    = [(S_DISTORTION, 1)]
   , iflavour = zipPlain [White]
@@ -513,7 +513,7 @@ distortion = ItemKind
   , ikit     = []
   }
 smoke = ItemKind  -- when stuff burns out  -- unused
-  { isymbol  = '`'
+  { isymbol  = toContentSymbol '`'
   , iname    = "smoke fume"  -- pluralizes better than 'smokes'
   , ifreq    = [(S_SMOKE, 1)]
   , iflavour = zipPlain [BrBlack]
@@ -530,7 +530,7 @@ smoke = ItemKind  -- when stuff burns out  -- unused
   , ikit     = []
   }
 boilingWater = ItemKind
-  { isymbol  = '*'
+  { isymbol  = toContentSymbol '*'
   , iname    = "boiling water"
   , ifreq    = [(S_BOILING_WATER, 1)]
   , iflavour = zipPlain [White]
@@ -546,7 +546,7 @@ boilingWater = ItemKind
   , ikit     = []
   }
 glue = ItemKind
-  { isymbol  = '*'
+  { isymbol  = toContentSymbol '*'
   , iname    = "hoof glue"
   , ifreq    = [(S_GLUE, 1)]
   , iflavour = zipPlain [Cyan]
@@ -562,7 +562,7 @@ glue = ItemKind
   , ikit     = []
   }
 waste = ItemKind
-  { isymbol  = '*'
+  { isymbol  = toContentSymbol '*'
   , iname    = "waste piece"
   , ifreq    = [(S_WASTE, 1)]
   , iflavour = zipPlain [Brown]
@@ -578,7 +578,7 @@ waste = ItemKind
   , ikit     = []
   }
 mistAntiSlow = ItemKind
-  { isymbol  = '`'
+  { isymbol  = toContentSymbol '`'
   , iname    = "mist"
   , ifreq    = [(S_ANTI_SLOW_MIST, 1)]
   , iflavour = zipFancy [BrYellow]
@@ -594,7 +594,7 @@ mistAntiSlow = ItemKind
   , ikit     = []
   }
 mistAntidote = ItemKind
-  { isymbol  = '`'
+  { isymbol  = toContentSymbol '`'
   , iname    = "mist"
   , ifreq    = [(S_ANTIDOTE_MIST, 1)]
   , iflavour = zipFancy [BrBlue]
@@ -610,7 +610,7 @@ mistAntidote = ItemKind
   , ikit     = []
   }
 mistSleep = ItemKind
-  { isymbol  = '`'
+  { isymbol  = toContentSymbol '`'
   , iname    = "mist"
   , ifreq    = [(S_SLEEP_MIST, 1)]
   , iflavour = zipFancy [BrMagenta]
@@ -634,7 +634,7 @@ mistSleep = ItemKind
 -- A few are slower 'mists'.
 
 denseShower = ItemKind
-  { isymbol  = '`'
+  { isymbol  = toContentSymbol '`'
   , iname    = "dense shower"
   , ifreq    = [(S_DENSE_SHOWER, 1)]
   , iflavour = zipFancy [Green]
@@ -649,7 +649,7 @@ denseShower = ItemKind
   , ikit     = []
   }
 sparseShower = ItemKind
-  { isymbol  = '`'
+  { isymbol  = toContentSymbol '`'
   , iname    = "sparse shower"
   , ifreq    = [(S_SPARSE_SHOWER, 1)]
   , iflavour = zipFancy [Red]
@@ -664,7 +664,7 @@ sparseShower = ItemKind
   , ikit     = []
   }
 protectingBalmMelee = ItemKind
-  { isymbol  = '`'
+  { isymbol  = toContentSymbol '`'
   , iname    = "balm droplet"
   , ifreq    = [(S_MELEE_PROTECTIVE_BALM, 1)]
   , iflavour = zipFancy [Brown]
@@ -679,7 +679,7 @@ protectingBalmMelee = ItemKind
   , ikit     = []
   }
 protectingBalmRanged = ItemKind
-  { isymbol  = '`'
+  { isymbol  = toContentSymbol '`'
   , iname    = "balm droplet"
   , ifreq    = [(S_RANGE_PROTECTIVE_BALM, 1)]
   , iflavour = zipPlain [BrYellow]
@@ -694,7 +694,7 @@ protectingBalmRanged = ItemKind
   , ikit     = []
   }
 defenselessnessRunout = ItemKind
-  { isymbol  = '?'
+  { isymbol  = toContentSymbol '?'
   , iname    = "PhD defense question"
   , ifreq    = [(S_DEFENSELESSNESS_RUNOUT, 1)]
   , iflavour = zipFancy [BrRed]
@@ -709,7 +709,7 @@ defenselessnessRunout = ItemKind
   , ikit     = []
   }
 resolutionDust = ItemKind
-  { isymbol  = '`'
+  { isymbol  = toContentSymbol '`'
   , iname    = "resolution dust"
   , ifreq    = [(S_RESOLUTION_DUST, 1)]
   , iflavour = zipPlain [Brown]
@@ -725,7 +725,7 @@ resolutionDust = ItemKind
   , ikit     = []
   }
 hasteSpray = ItemKind
-  { isymbol  = '`'
+  { isymbol  = toContentSymbol '`'
   , iname    = "haste spray"
   , ifreq    = [(S_HASTE_SPRAY, 1)]
   , iflavour = zipFancy [BrYellow]
@@ -740,7 +740,7 @@ hasteSpray = ItemKind
   , ikit     = []
   }
 spreadNitrogen = ItemKind
-  { isymbol  = '`'
+  { isymbol  = toContentSymbol '`'
   , iname    = "slowness mist"
   , ifreq    = [(S_VIOLENT_SLOWNESS_MIST, 1)]
   , iflavour = zipPlain [BrBlack]
@@ -762,7 +762,7 @@ spreadNitrogen8 = spreadNitrogen
                , SetFlag Fragile, SetFlag Blast ]
   }
 focusedNitrogen = ItemKind
-  { isymbol  = '`'
+  { isymbol  = toContentSymbol '`'
   , iname    = "slowness mist droplet"
   , ifreq    = [(S_FOCUSED_SLOWNESS_MIST, 1)]
   , iflavour = zipFancy [White]
@@ -779,7 +779,7 @@ focusedNitrogen = ItemKind
   , ikit     = []
   }
 eyeDrop = ItemKind
-  { isymbol  = '`'
+  { isymbol  = toContentSymbol '`'
   , iname    = "eye drop"
   , ifreq    = [(S_EYE_DROP, 1)]
   , iflavour = zipFancy [BrCyan]
@@ -794,7 +794,7 @@ eyeDrop = ItemKind
   , ikit     = []
   }
 ironFiling = ItemKind  -- fast, short, strongly blinding blast
-  { isymbol  = '`'
+  { isymbol  = toContentSymbol '`'
   , iname    = "iron filing"
   , ifreq    = [(S_IRON_FILING, 1)]
   , iflavour = zipPlain [Red]
@@ -809,7 +809,7 @@ ironFiling = ItemKind  -- fast, short, strongly blinding blast
   , ikit     = []
   }
 smellyDroplet = ItemKind
-  { isymbol  = '`'
+  { isymbol  = toContentSymbol '`'
   , iname    = "smelly droplet"
   , ifreq    = [(S_SMELLY_DROPLET, 1)]
   , iflavour = zipFancy [Blue]
@@ -824,7 +824,7 @@ smellyDroplet = ItemKind
   , ikit     = []
   }
 eyeShine = ItemKind
-  { isymbol  = '`'
+  { isymbol  = toContentSymbol '`'
   , iname    = "eye shine"
   , ifreq    = [(S_EYE_SHINE, 1)]
   , iflavour = zipFancy [Cyan]
@@ -839,7 +839,7 @@ eyeShine = ItemKind
   , ikit     = []
   }
 whiskeySpray = ItemKind
-  { isymbol  = '`'
+  { isymbol  = toContentSymbol '`'
   , iname    = "whiskey spray"
   , ifreq    = [(S_WHISKEY_SPRAY, 1)]
   , iflavour = zipFancy [Brown]
@@ -854,7 +854,7 @@ whiskeySpray = ItemKind
   , ikit     = []
   }
 youthSprinkle = ItemKind
-  { isymbol  = '`'
+  { isymbol  = toContentSymbol '`'
   , iname    = "youth sprinkle"
   , ifreq    = [(S_YOUTH_SPRINKLE, 1)]
   , iflavour = zipFancy [BrGreen]
@@ -870,7 +870,7 @@ youthSprinkle = ItemKind
   , ikit     = []
   }
 poisonCloud = ItemKind
-  { isymbol  = '`'
+  { isymbol  = toContentSymbol '`'
   , iname    = "poison cloud"
   , ifreq    = [(S_POISON_CLOUD, 1)]
   , iflavour = zipFancy [BrMagenta]
@@ -886,7 +886,7 @@ poisonCloud = ItemKind
   , ikit     = []
   }
 pingFlash = ItemKind
-  { isymbol  = '`'
+  { isymbol  = toContentSymbol '`'
   , iname    = "flash"
   , ifreq    = [(S_PING_PLASH, 1)]
   , iflavour = zipFancy [Green]
@@ -904,7 +904,7 @@ pingFlash = ItemKind
   }
 blastNoStat :: GroupName ItemKind -> ItemKind
 blastNoStat grp = ItemKind
-  { isymbol  = '`'
+  { isymbol  = toContentSymbol '`'
   , iname    = "mist"
   , ifreq    = [(blastNoStatOf grp, 1)]
   , iflavour = zipFancy [White]
@@ -929,7 +929,7 @@ blastNoSkProject = blastNoStat S_WITHHOLDING
 blastNoSkApply = blastNoStat S_PARSIMONIOUS
 blastBonusStat :: GroupName ItemKind -> ItemKind
 blastBonusStat grp = ItemKind
-  { isymbol  = '`'
+  { isymbol  = toContentSymbol '`'
   , iname    = "dew"
   , ifreq    = [(blastBonusStatOf grp, 1)]
   , iflavour = zipFancy [White]

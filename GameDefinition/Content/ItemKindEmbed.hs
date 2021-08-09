@@ -68,7 +68,7 @@ scratchOnWall,    obscenePictogram, subtleFresco, treasureCache, treasureCacheTr
 -- and foregoing the fun of guessing how to find entrance to a disjoint part
 -- of the level by bumping the least number of secret walls.
 scratchOnWall = ItemKind
-  { isymbol  = '?'
+  { isymbol  = toContentSymbol '?'
   , iname    = "claw mark"
   , ifreq    = [(SCRATCH_ON_WALL, 1)]
   , iflavour = zipPlain [BrBlack]
@@ -84,7 +84,7 @@ scratchOnWall = ItemKind
   , ikit     = []
   }
 obscenePictogram = ItemKind
-  { isymbol  = '*'
+  { isymbol  = toContentSymbol '*'
   , iname    = "obscene pictogram"
   , ifreq    = [(OBSCENE_PICTOGRAM, 1)]
   , iflavour = zipPlain [BrMagenta]
@@ -103,7 +103,7 @@ obscenePictogram = ItemKind
   , ikit     = []
   }
 subtleFresco = ItemKind
-  { isymbol  = '*'
+  { isymbol  = toContentSymbol '*'
   , iname    = "subtle fresco"
   , ifreq    = [(SUBTLE_FRESCO, 1)]
   , iflavour = zipPlain [BrGreen]
@@ -121,7 +121,7 @@ subtleFresco = ItemKind
   , ikit     = []
   }
 treasureCache = ItemKind
-  { isymbol  = 'o'
+  { isymbol  = toContentSymbol 'o'
   , iname    = "treasure cache"
   , ifreq    = [(TREASURE_CACHE, 1)]
   , iflavour = zipPlain [BrBlue]
@@ -138,7 +138,7 @@ treasureCache = ItemKind
 reliefMsg :: Effect
 reliefMsg = VerbMsg "sigh with relief when nothing explodes in your face!" ""
 treasureCacheTrap = ItemKind
-  { isymbol  = '^'
+  { isymbol  = toContentSymbol '^'
   , iname    = "cache trap"
   , ifreq    = [(TREASURE_CACHE_TRAP, 1)]
   , iflavour = zipPlain [Red]
@@ -156,7 +156,7 @@ treasureCacheTrap = ItemKind
   , ikit     = []
   }
 signageExit = ItemKind
-  { isymbol  = '?'
+  { isymbol  = toContentSymbol '?'
   , iname    = "inscription"
   , ifreq    = [(SIGNAGE, 50)]
   , iflavour = zipPlain [BrMagenta]
@@ -183,7 +183,7 @@ signageMerchandise = signageExit
   , idesc    = "In equal parts cryptic and promising."
   }
 fireSmall = ItemKind
-  { isymbol  = 'o'
+  { isymbol  = toContentSymbol 'o'
   , iname    = "small fire"
   , ifreq    = [(SMALL_FIRE, 1)]
   , iflavour = zipPlain [BrRed]
@@ -198,7 +198,7 @@ fireSmall = ItemKind
   , ikit     = []
   }
 fireBig = fireSmall
-  { isymbol  = '0'
+  { isymbol  = toContentSymbol '0'
   , iname    = "big fire"
   , ifreq    = [(BIG_FIRE, 1)]
   , ieffects = [ Burn 2
@@ -208,7 +208,7 @@ fireBig = fireSmall
   , ikit     = []
   }
 frost = ItemKind
-  { isymbol  = '^'
+  { isymbol  = toContentSymbol '^'
   , iname    = "frost"
   , ifreq    = [(FROST, 1)]
   , iflavour = zipPlain [BrBlue]
@@ -225,7 +225,7 @@ frost = ItemKind
   , ikit     = []
   }
 rubble = ItemKind
-  { isymbol  = '&'
+  { isymbol  = toContentSymbol '&'
   , iname    = "rubble"
   , ifreq    = [(RUBBLE, 1)]
   , iflavour = zipPlain [BrYellow]
@@ -246,7 +246,7 @@ rubble = ItemKind
   , ikit     = []
   }
 doorwayTrapTemplate = ItemKind
-  { isymbol  = '+'
+  { isymbol  = toContentSymbol '+'
   , iname    = "doorway trap"
   , ifreq    = [(DOORWAY_TRAP_UNKNOWN, 1), (DOORWAY_TRAP, 0)]
       -- the void group needed to pick the item for tile triggering
@@ -279,7 +279,7 @@ doorwayTrap3 = doorwayTrapTemplate
   -- , idesc    = ""
   }
 stairsUp = ItemKind
-  { isymbol  = '<'
+  { isymbol  = toContentSymbol '<'
   , iname    = "flight"
   , ifreq    = [(STAIRS_UP, 1)]
   , iflavour = zipPlain [BrWhite]
@@ -295,13 +295,13 @@ stairsUp = ItemKind
   , ikit     = []
   }
 stairsDown = stairsUp
-  { isymbol  = '>'
+  { isymbol  = toContentSymbol '>'
   , ifreq    = [(STAIRS_DOWN, 1)]
   , ieffects = [Ascend False]
   , idesc    = ""
   }
 escape = stairsUp
-  { isymbol  = 'E'
+  { isymbol  = toContentSymbol 'E'
   , iname    = "way"
   , ifreq    = [(ESCAPE, 1)]
   , iflavour = zipPlain [BrYellow]
@@ -312,7 +312,7 @@ escape = stairsUp
                  -- for moon outdoors, spaceship, everywhere
   }
 stairsTrapUp = ItemKind
-  { isymbol  = '^'
+  { isymbol  = toContentSymbol '^'
   , iname    = "staircase trap"
   , ifreq    = [(STAIRS_TRAP_UP, 1)]
   , iflavour = zipPlain [Red]
@@ -338,7 +338,7 @@ stairsTrapDown = stairsTrapUp
   , idesc    = "A treacherous slab, to teach those who are too proud."
   }
 lectern = ItemKind
-  { isymbol  = '?'
+  { isymbol  = toContentSymbol '?'
   , iname    = "lectern"
   , ifreq    = [(LECTERN, 1)]
   , iflavour = zipFancy [BrYellow]
@@ -357,7 +357,7 @@ lectern = ItemKind
   , ikit     = []
   }
 shallowWater = ItemKind
-  { isymbol  = '~'
+  { isymbol  = toContentSymbol '~'
   , iname    = "shallow water"
   , ifreq    = [(SHALLOW_WATER, 1)]
   , iflavour = zipFancy [BrCyan]
@@ -372,7 +372,7 @@ shallowWater = ItemKind
   , ikit     = []
   }
 straightPath = ItemKind
-  { isymbol  = '.'
+  { isymbol  = toContentSymbol '.'
   , iname    = "straight path"
   , ifreq    = [(STRAIGHT_PATH, 1)]
   , iflavour = zipFancy [BrRed]
@@ -387,7 +387,7 @@ straightPath = ItemKind
   , ikit     = []
   }
 frozenGround = ItemKind
-  { isymbol  = '.'
+  { isymbol  = toContentSymbol '.'
   , iname    = "shade"
   , ifreq    = [(FROZEN_GROUND, 1)]
   , iflavour = zipFancy [BrBlue]

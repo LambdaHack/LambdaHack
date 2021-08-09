@@ -98,7 +98,7 @@ tmpAspects :: GroupName ItemKind -> [Aspect] -> ItemKind
 tmpAspects grp aspects =
   let name = fromGroupName grp  -- @iname@ must match @ifreq@, see @myBadGrps@
   in ItemKind
-    { isymbol  = '+'
+    { isymbol  = toContentSymbol '+'
     , iname    = name
     , ifreq    = [(grp, 1), (CONDITION, 1)]
     , iflavour = zipPlain [BrWhite]

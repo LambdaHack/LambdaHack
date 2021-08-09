@@ -113,9 +113,15 @@ newtype ContentSymbol a = ContentSymbol Char
   deriving (Show, Eq, Ord)
 
 -- | This is a 1-1 inclusion.
-toContentSymbol :: Char -> ContentSymbol c
+-- toContentSymbol :: Char -> ContentSymbol c
+-- {-# INLINE toContentSymbol #-}
+-- toContentSymbol = ContentSymbol
+
+-- TODO: temporary, not to break compilation while content is coverted
+-- to use toContentSymbol:
+toContentSymbol :: Char -> Char
 {-# INLINE toContentSymbol #-}
-toContentSymbol = ContentSymbol
+toContentSymbol = id
 
 -- | This does not need to be 1-1, so should not be used in place of the
 -- 'Eq' instance, etc.
