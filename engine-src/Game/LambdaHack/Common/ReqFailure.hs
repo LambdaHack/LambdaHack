@@ -228,7 +228,7 @@ permittedApply corule localTime skill calmE mstore
                itemFull@ItemFull{itemKind, itemSuspect} kit =
   if | skill < 1 -> Left ApplyUnskilled
      | skill < 2
-       && IK.isymbol itemKind /= RK.rsymbolNecklace corule
+       && IK.isymbol itemKind /= IK.rsymbolNecklace (RK.ritemSymbols corule)
        && (IK.isymbol itemKind /= ','
            || mstore /= Just CGround) -> Left ApplyFood
      | skill < 3 && IK.isymbol itemKind == '?' -> Left ApplyRead

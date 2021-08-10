@@ -7,6 +7,7 @@ module Game.LambdaHack.Content.ItemKind
   , ItemKind(..), makeData
   , Aspect(..), Effect(..), Condition(..), DetectKind(..)
   , TimerDice, ThrowMod(..)
+  , ItemSymbolsUsedInEngine(..), emptyItemSymbolsUsedInEngine
   , boostItemKindList, forApplyEffect, forDamageEffect, isDamagingKind
   , strengthOnCombine, strengthOnSmash, getDropOrgans
   , getMandatoryPresentAsFromKind, isEffEscape, isEffEscapeOrAscend
@@ -31,7 +32,6 @@ import qualified Data.Text as T
 import           GHC.Generics (Generic)
 import qualified System.Random.SplitMix32 as SM
 
-import qualified Game.LambdaHack.Content.RuleKind as RK
 import qualified Game.LambdaHack.Core.Dice as Dice
 import           Game.LambdaHack.Core.Random (nextRandom)
 import qualified Game.LambdaHack.Definition.Ability as Ability
@@ -101,7 +101,8 @@ pattern HORROR = GroupName "horror"
 -- Of these, aspects and effects are jointly called item powers.
 -- Note that this type is mutually recursive with 'Effect' and `Aspect`.
 data ItemKind = ItemKind
-  { isymbol  :: Char            -- ^ map symbol
+  { isymbol  :: ContentSymbol ItemKind
+                                -- ^ map symbol
   , iname    :: Text            -- ^ generic name; is pluralized if needed
   , ifreq    :: Freqs ItemKind  -- ^ frequency within groups
   , iflavour :: [Flavour]       -- ^ possible flavours
@@ -318,6 +319,51 @@ instance Binary ThrowMod
 
 instance Hashable ThrowMod
 
+data ItemSymbolsUsedInEngine = ItemSymbolsUsedInEngine
+  { rsymbolProjectile :: ContentSymbol ItemKind
+  , rsymbolLight      :: ContentSymbol ItemKind
+  , rsymbolTool       :: ContentSymbol ItemKind
+  , rsymbolSpecial    :: ContentSymbol ItemKind
+  , rsymbolGold       :: ContentSymbol ItemKind
+  , rsymbolNecklace   :: ContentSymbol ItemKind
+  , rsymbolRing       :: ContentSymbol ItemKind
+  , rsymbolPotion     :: ContentSymbol ItemKind
+  , rsymbolFlask      :: ContentSymbol ItemKind
+  , rsymbolScroll     :: ContentSymbol ItemKind
+  , rsymbolTorsoArmor :: ContentSymbol ItemKind
+  , rsymbolMiscArmor  :: ContentSymbol ItemKind
+  , rsymbolClothes    :: ContentSymbol ItemKind
+  , rsymbolShield     :: ContentSymbol ItemKind
+  , rsymbolPolearm    :: ContentSymbol ItemKind
+  , rsymbolEdged      :: ContentSymbol ItemKind
+  , rsymbolHafted     :: ContentSymbol ItemKind
+  , rsymbolWand       :: ContentSymbol ItemKind
+  , rsymbolFood       :: ContentSymbol ItemKind
+  }
+
+emptyItemSymbolsUsedInEngine :: ItemSymbolsUsedInEngine
+emptyItemSymbolsUsedInEngine = ItemSymbolsUsedInEngine
+  { rsymbolProjectile = '0'
+  , rsymbolLight      = '0'
+  , rsymbolTool       = '0'
+  , rsymbolSpecial    = '0'
+  , rsymbolGold       = '0'
+  , rsymbolNecklace   = '0'
+  , rsymbolRing       = '0'
+  , rsymbolPotion     = '0'
+  , rsymbolFlask      = '0'
+  , rsymbolScroll     = '0'
+  , rsymbolTorsoArmor = '0'
+  , rsymbolMiscArmor  = '0'
+  , rsymbolClothes    = '0'
+  , rsymbolShield     = '0'
+  , rsymbolPolearm    = '0'
+  , rsymbolEdged      = '0'
+  , rsymbolHafted     = '0'
+  , rsymbolWand       = '0'
+  , rsymbolFood       = '0'
+  }
+
 boostItemKindList :: SM.SMGen -> [ItemKind] -> [ItemKind]
 boostItemKindList _ [] = []
 boostItemKindList initialGen l =
@@ -506,7 +552,7 @@ toOrganNoTimer :: GroupName ItemKind -> Effect
 toOrganNoTimer grp = CreateItem Nothing COrgan grp TimerNone
 
 -- | Catch invalid item kind definitions.
-validateSingle :: RK.RuleContent -> ItemKind -> [Text]
+validateSingle :: ItemSymbolsUsedInEngine -> ItemKind -> [Text]
 validateSingle corule ik@ItemKind{..} =
   ["iname longer than 23" | T.length iname > 23]
   ++ ["icount < 0" | Dice.infDice icount < 0]
@@ -527,9 +573,9 @@ validateSingle corule ik@ItemKind{..} =
           likelyTemplate = case ifreq of
             [(grp, 1)] -> "unknown" `T.isSuffixOf` fromGroupName grp
             _ -> False
-          likelyException = isymbol `elem` [ RK.rsymbolFood corule
-                                           , RK.rsymbolNecklace corule
-                                           , RK.rsymbolWand corule ]
+          likelyException = isymbol `elem` [ rsymbolFood corule
+                                           , rsymbolNecklace corule
+                                           , rsymbolWand corule ]
                             || likelyTemplate
       in [ "EqpSlot specified but not Equipable nor Meleeable"
          | length ts == 1 && not equipable && not meleeable ]
@@ -701,15 +747,15 @@ validateAll content coitem =
      | not $ null wrongPresentAsGroups ]
 
 makeData :: [ItemKind] -> [GroupName ItemKind] -> [GroupName ItemKind]
-         -> RK.RuleContent
+         -> ItemSymbolsUsedInEngine
          -> ContentData ItemKind
-makeData content groupNamesSingleton groupNames corule =
+makeData content groupNamesSingleton groupNames itemSymbols =
   let allGroupNamesTooLong = filter ((> 23) . T.length . fromGroupName)
                              $ groupNamesSingleton ++ groupNames
   in assert (null allGroupNamesTooLong
              `blame` "ItemKind: some item group names too long"
              `swith` allGroupNamesTooLong) $
      makeContentData "ItemKind" iname ifreq
-                     (validateSingle corule) validateAll content
+                     (validateSingle itemSymbols) validateAll content
                      (mandatoryGroupsSingleton ++ groupNamesSingleton)
                      (mandatoryGroups ++ groupNames)

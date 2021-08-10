@@ -18,6 +18,7 @@ import           System.IO
 -- Cabal
 import qualified Paths_LambdaHack as Self (version)
 
+import Game.LambdaHack.Content.ItemKind (ItemSymbolsUsedInEngine (..))
 import Game.LambdaHack.Content.RuleKind
 
 standardRules :: RuleContent
@@ -45,24 +46,26 @@ standardRules = RuleContent
   , rscoresFile = "LambdaHack.scores"
   , rnearby = 20
   , rstairWordCarried = ["staircase"]  -- only one, so inert
-  , rsymbolProjectile = '|'
-  , rsymbolLight      = '('
-  , rsymbolTool       = '('
-  , rsymbolSpecial    = '*'  -- don't overuse; it clashes with projectiles
-  , rsymbolGold       = '$'  -- also gems
-  , rsymbolNecklace   = '"'
-  , rsymbolRing       = '='
-  , rsymbolPotion     = '!'  -- also concoction, bottle, jar, vial
-  , rsymbolFlask      = '!'
-  , rsymbolScroll     = '?'  -- also book, note, tablet, card
-  , rsymbolTorsoArmor = '['
-  , rsymbolMiscArmor  = '['
-  , rsymbolClothes    = '['
-  , rsymbolShield     = ']'
-  , rsymbolPolearm    = ')'
-  , rsymbolEdged      = ')'
-  , rsymbolHafted     = ')'
-  , rsymbolWand       = '/'  -- also magical rod, pistol, instrument
-  , rsymbolFood       = ','  -- also body part;
-                             -- distinct from floor: not middle dot
+  , ritemSymbols = ItemSymbolsUsedInEngine
+      { rsymbolProjectile = '|'
+      , rsymbolLight      = '('
+      , rsymbolTool       = '('
+      , rsymbolSpecial    = '*'  -- don't overuse; it clashes with projectiles
+      , rsymbolGold       = '$'  -- also gems
+      , rsymbolNecklace   = '"'
+      , rsymbolRing       = '='
+      , rsymbolPotion     = '!'  -- also concoction, bottle, jar, vial
+      , rsymbolFlask      = '!'
+      , rsymbolScroll     = '?'  -- also book, note, tablet, card
+      , rsymbolTorsoArmor = '['
+      , rsymbolMiscArmor  = '['
+      , rsymbolClothes    = '['
+      , rsymbolShield     = ']'
+      , rsymbolPolearm    = ')'
+      , rsymbolEdged      = ')'
+      , rsymbolHafted     = ')'
+      , rsymbolWand       = '/'  -- also magical rod, pistol, instrument
+      , rsymbolFood       = ','  -- also body part;
+                                 -- distinct from floor: not middle dot
+      }
   }

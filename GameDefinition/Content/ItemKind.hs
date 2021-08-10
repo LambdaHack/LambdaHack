@@ -91,29 +91,29 @@ sandstoneRock,    dart, spike, spike2, slingStone, slingBullet, paralizingProj, 
 
 -- * Item group symbols, partially from Nethack
 
-symbolProjectile, _symbolLauncher, symbolLight, symbolTool, symbolSpecial, symbolGold, symbolNecklace, symbolRing, symbolPotion, symbolFlask, symbolScroll, symbolTorsoArmor, symbolMiscArmor, symbolClothes, symbolShield, symbolPolearm, symbolEdged, symbolHafted, symbolWand, _symbolStaff, symbolFood :: Char
+symbolProjectile, _symbolLauncher, symbolLight, symbolTool, symbolSpecial, symbolGold, symbolNecklace, symbolRing, symbolPotion, symbolFlask, symbolScroll, symbolTorsoArmor, symbolMiscArmor, symbolClothes, symbolShield, symbolPolearm, symbolEdged, symbolHafted, symbolWand, _symbolStaff, symbolFood :: ContentSymbol ItemKind
 
-symbolProjectile = rsymbolProjectile standardRules
+symbolProjectile = rsymbolProjectile $ ritemSymbols standardRules
 _symbolLauncher  = toContentSymbol '}'
-symbolLight      = rsymbolLight standardRules
-symbolTool       = rsymbolTool standardRules
-symbolSpecial    = rsymbolSpecial standardRules
-symbolGold       = rsymbolGold standardRules
-symbolNecklace   = rsymbolNecklace standardRules
-symbolRing       = rsymbolRing standardRules
-symbolPotion     = rsymbolPotion standardRules
-symbolFlask      = rsymbolFlask standardRules
-symbolScroll     = rsymbolScroll standardRules
-symbolTorsoArmor = rsymbolTorsoArmor standardRules
-symbolMiscArmor  = rsymbolMiscArmor standardRules
-symbolClothes    = rsymbolClothes standardRules
-symbolShield     = rsymbolShield standardRules
-symbolPolearm    = rsymbolPolearm standardRules
-symbolEdged      = rsymbolEdged standardRules
-symbolHafted     = rsymbolHafted standardRules
-symbolWand       = rsymbolWand standardRules
+symbolLight      = rsymbolLight $ ritemSymbols standardRules
+symbolTool       = rsymbolTool $ ritemSymbols standardRules
+symbolSpecial    = rsymbolSpecial $ ritemSymbols standardRules
+symbolGold       = rsymbolGold $ ritemSymbols standardRules
+symbolNecklace   = rsymbolNecklace $ ritemSymbols standardRules
+symbolRing       = rsymbolRing $ ritemSymbols standardRules
+symbolPotion     = rsymbolPotion $ ritemSymbols standardRules
+symbolFlask      = rsymbolFlask $ ritemSymbols standardRules
+symbolScroll     = rsymbolScroll $ ritemSymbols standardRules
+symbolTorsoArmor = rsymbolTorsoArmor $ ritemSymbols standardRules
+symbolMiscArmor  = rsymbolMiscArmor $ ritemSymbols standardRules
+symbolClothes    = rsymbolClothes $ ritemSymbols standardRules
+symbolShield     = rsymbolShield $ ritemSymbols standardRules
+symbolPolearm    = rsymbolPolearm $ ritemSymbols standardRules
+symbolEdged      = rsymbolEdged $ ritemSymbols standardRules
+symbolHafted     = rsymbolHafted $ ritemSymbols standardRules
+symbolWand       = rsymbolWand $ ritemSymbols standardRules
 _symbolStaff     = toContentSymbol '_'
-symbolFood       = rsymbolFood standardRules
+symbolFood       = rsymbolFood $ ritemSymbols standardRules
 
 -- ** Thrown weapons
 

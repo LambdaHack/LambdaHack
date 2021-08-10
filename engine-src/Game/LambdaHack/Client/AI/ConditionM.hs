@@ -50,7 +50,7 @@ import           Game.LambdaHack.Common.Types
 import           Game.LambdaHack.Common.Vector
 import qualified Game.LambdaHack.Content.ItemKind as IK
 import           Game.LambdaHack.Content.ModeKind
-import           Game.LambdaHack.Content.RuleKind
+import qualified Game.LambdaHack.Content.RuleKind as RK
 import qualified Game.LambdaHack.Core.Dice as Dice
 import qualified Game.LambdaHack.Definition.Ability as Ability
 import           Game.LambdaHack.Definition.Defs
@@ -303,12 +303,13 @@ benGroundItems aid = do
 
 desirableItem :: COps -> Bool -> Double -> IA.AspectRecord -> IK.ItemKind -> Int
               -> Bool
-desirableItem COps{corule=RuleContent{rsymbolProjectile}}
+desirableItem COps{corule}
               canEsc benPickup arItem itemKind k =
-  let loneProjectile = IK.isymbol itemKind == rsymbolProjectile
-                       && k == 1
-                       && Dice.infDice (IK.icount itemKind) > 1
-                            -- never generated as lone; usually means weak
+  let loneProjectile =
+        IK.isymbol itemKind == IK.rsymbolProjectile (RK.ritemSymbols corule)
+        && k == 1
+        && Dice.infDice (IK.icount itemKind) > 1
+             -- never generated as lone; usually means weak
       useful = if canEsc
                then benPickup > 0
                     || IA.checkFlag Ability.Precious arItem

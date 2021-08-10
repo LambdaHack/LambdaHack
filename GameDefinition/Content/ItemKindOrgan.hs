@@ -110,8 +110,8 @@ fist,    foot, hookedClaw, smallClaw, snout, smallJaw, jaw, largeJaw, antler, ho
 -- LH-specific
 tooth, lash, torsionRight, torsionLeft, pupil :: ItemKind
 
-symbolWand :: Char
-symbolWand = rsymbolWand standardRules
+symbolWand :: ContentSymbol ItemKind
+symbolWand = rsymbolWand $ ritemSymbols standardRules
 
 -- * No-cooldown melee damage organs without effects
 

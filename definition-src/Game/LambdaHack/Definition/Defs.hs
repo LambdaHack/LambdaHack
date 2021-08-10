@@ -109,8 +109,12 @@ contentIdIndex (ContentId k) = fromEnum k
 -- Hiding the constructor prevents hardwiring symbols inside the engine
 -- by accident (this is still possible via conversion functions,
 -- if one insists, so the abstraction is leaky, but that's fine).
-newtype ContentSymbol a = ContentSymbol Char
-  deriving (Show, Eq, Ord)
+type ContentSymbol a = Char
+
+-- TODO: temporary, not to break compilation while content is coverted
+-- to use toContentSymbol:
+-- newtype ContentSymbol a = ContentSymbol Char
+--  deriving (Show, Eq, Ord)
 
 -- | This is a 1-1 inclusion.
 -- toContentSymbol :: Char -> ContentSymbol c
@@ -119,7 +123,7 @@ newtype ContentSymbol a = ContentSymbol Char
 
 -- TODO: temporary, not to break compilation while content is coverted
 -- to use toContentSymbol:
-toContentSymbol :: Char -> Char
+toContentSymbol :: Char -> ContentSymbol c
 {-# INLINE toContentSymbol #-}
 toContentSymbol = id
 
@@ -127,7 +131,8 @@ toContentSymbol = id
 -- 'Eq' instance, etc.
 displayContentSymbol :: ContentSymbol c -> Char
 {-# INLINE displayContentSymbol #-}
-displayContentSymbol (ContentSymbol c) = c
+displayContentSymbol = id
+-- displayContentSymbol (ContentSymbol c) = c
 
 -- | Actor's item stores.
 data CStore =

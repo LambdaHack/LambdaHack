@@ -15,6 +15,7 @@ import qualified Data.ByteString as BS
 import qualified Data.EnumMap.Strict as EM
 import qualified Data.Text as T
 
+import Game.LambdaHack.Content.ItemKind (ItemKind)
 import Game.LambdaHack.Definition.Defs
 
 -- | Screen layout and features definition.
@@ -26,7 +27,7 @@ data ScreenContent = ScreenContent
   , rintroScreen  :: ([String], [[String]])
                                -- ^ the intro screen (first help screen) text
                                --   and the rest of the manual
-  , rapplyVerbMap :: EM.EnumMap Char T.Text
+  , rapplyVerbMap :: EM.EnumMap (ContentSymbol ItemKind) T.Text
                                -- ^ verbs to use for apply actions
   , rFontFiles    :: [(FilePath, BS.ByteString)]
                                -- ^ embedded game-supplied font files

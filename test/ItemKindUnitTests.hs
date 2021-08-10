@@ -18,7 +18,8 @@ import qualified Content.RuleKind
 
 itemKindUnitTests :: TestTree
 itemKindUnitTests = testGroup "itemKindUnitTests" $
-  let customRules = RK.emptyRuleContent { RK.rsymbolNecklace = '*' }
+  let standardSymbols = RK.ritemSymbols Content.RuleKind.standardRules
+      customSymbols = emptyItemSymbolsUsedInEngine {rsymbolNecklace ='*'}
       testItemKind = ItemKind
         { isymbol  = 'x'
         , iname    = "12345678901234567890123"
@@ -38,39 +39,39 @@ itemKindUnitTests = testGroup "itemKindUnitTests" $
         }
   in
   [ testCase "overlonginame_validateSingle_errs" $
-      validateSingle Content.RuleKind.standardRules
+      validateSingle standardSymbols
                      testItemKind { iname = "123456789012345678901234" }
       @?= ["iname longer than 23"]
   , testCase "shortEnoughiname_validateSingle_noErr" $
-      validateSingle Content.RuleKind.standardRules
+      validateSingle standardSymbols
                      testItemKind
       @?= []
   , testCase "equipableNoSlotxSymbol_validateSingle_errs" $
-      validateSingle Content.RuleKind.standardRules
+      validateSingle standardSymbols
                      testItemKind { iaspects = [ SetFlag Ability.Equipable ] }
       @?= ["EqpSlot not specified but Equipable or Meleeable and not a likely organ or necklace or template"]
   , testCase "equipableNoSlot,Symbol_validateSingle_noErr" $
-      validateSingle Content.RuleKind.standardRules
+      validateSingle standardSymbols
                      testItemKind { isymbol = ','
                                   , iaspects = [ SetFlag Ability.Equipable ] }
       @?= []
   , testCase "equipableNoSlot\"Symbol_validateSingle_noErr" $
-      validateSingle Content.RuleKind.standardRules
+      validateSingle standardSymbols
                      testItemKind { isymbol = '"'
                                   , iaspects = [ SetFlag Ability.Equipable ] }
       @?= []
   , testCase "equipableNoSlot/Symbol_validateSingle_noErr" $
-      validateSingle Content.RuleKind.standardRules
+      validateSingle standardSymbols
                      testItemKind { isymbol = '/'
                                   , iaspects = [ SetFlag Ability.Equipable ] }
       @?= []
   , testCase "equipableNoSlot*CustomRules_validateSingle_noErr" $
-      validateSingle customRules
+      validateSingle customSymbols
                      testItemKind { isymbol = '*'
                                   , iaspects = [ SetFlag Ability.Equipable ] }
       @?= []
   , testCase "equipableNoSlot\"CustomRules_validateSingle_errs" $
-      validateSingle customRules
+      validateSingle customSymbols
                      testItemKind { isymbol = '"'
                                   , iaspects = [ SetFlag Ability.Equipable ] }
       @?= ["EqpSlot not specified but Equipable or Meleeable and not a likely organ or necklace or template"]
