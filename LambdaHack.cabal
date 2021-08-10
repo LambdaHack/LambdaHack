@@ -173,6 +173,7 @@ library definition
                       Game.LambdaHack.Definition.Color
                       Game.LambdaHack.Definition.ContentData
                       Game.LambdaHack.Definition.Defs
+                      Game.LambdaHack.Definition.DefsInternal
                       Game.LambdaHack.Definition.Flavour
                       Game.LambdaHack.Content.CaveKind
                       Game.LambdaHack.Content.ItemKind
@@ -322,6 +323,7 @@ library
                       ,Game.LambdaHack.Definition.Color
                       ,Game.LambdaHack.Definition.ContentData
                       ,Game.LambdaHack.Definition.Defs
+                      ,Game.LambdaHack.Definition.DefsInternal
                       ,Game.LambdaHack.Definition.Flavour
                       ,Game.LambdaHack.Content.CaveKind
                       ,Game.LambdaHack.Content.ItemKind

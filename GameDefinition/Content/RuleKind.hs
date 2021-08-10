@@ -20,7 +20,7 @@ import qualified Paths_LambdaHack as Self (version)
 
 import Game.LambdaHack.Content.ItemKind (ItemSymbolsUsedInEngine (..))
 import Game.LambdaHack.Content.RuleKind
-import Game.LambdaHack.Definition.Defs
+import Game.LambdaHack.Definition.DefsInternal
 
 standardRules :: RuleContent
 standardRules = RuleContent

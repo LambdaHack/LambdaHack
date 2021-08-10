@@ -97,6 +97,7 @@ import           Game.LambdaHack.Content.RuleKind
 import qualified Game.LambdaHack.Definition.Ability as Ability
 import qualified Game.LambdaHack.Definition.Color as Color
 import           Game.LambdaHack.Definition.Defs
+import           Game.LambdaHack.Definition.DefsInternal
 
 -- * Macro
 

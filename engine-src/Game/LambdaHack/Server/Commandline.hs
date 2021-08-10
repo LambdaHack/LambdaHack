@@ -28,6 +28,7 @@ import Game.LambdaHack.Common.ClientOptions
 import Game.LambdaHack.Common.Faction
 import Game.LambdaHack.Content.ModeKind
 import Game.LambdaHack.Definition.Defs
+import Game.LambdaHack.Definition.DefsInternal
 import Game.LambdaHack.Server.ServerOptions
 
 -- | Parser for server options from commandline arguments.

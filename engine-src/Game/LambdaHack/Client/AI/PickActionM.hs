@@ -54,6 +54,7 @@ import           Game.LambdaHack.Core.Random
 import           Game.LambdaHack.Definition.Ability
 import qualified Game.LambdaHack.Definition.Ability as Ability
 import           Game.LambdaHack.Definition.Defs
+import           Game.LambdaHack.Definition.DefsInternal
 
 -- | Pick the most desirable AI ation for the actor.
 pickAction :: MonadClient m

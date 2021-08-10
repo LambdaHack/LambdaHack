@@ -48,6 +48,7 @@ import           Game.LambdaHack.Content.RuleKind
 import           Game.LambdaHack.Core.Random
 import qualified Game.LambdaHack.Definition.Ability as Ability
 import           Game.LambdaHack.Definition.Defs
+import           Game.LambdaHack.Definition.DefsInternal
 import           Game.LambdaHack.Server.Fov
 import           Game.LambdaHack.Server.ItemM
 import           Game.LambdaHack.Server.ItemRev

@@ -22,6 +22,7 @@ import           GHC.Generics (Generic)
 import Game.LambdaHack.Content.TileKind (TileKind)
 import Game.LambdaHack.Definition.ContentData
 import Game.LambdaHack.Definition.Defs
+import Game.LambdaHack.Definition.DefsInternal
 
 -- | Parameters for the generation of small areas within a dungeon level.
 data PlaceKind = PlaceKind

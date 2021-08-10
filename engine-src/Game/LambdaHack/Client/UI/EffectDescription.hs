@@ -29,6 +29,7 @@ import           Game.LambdaHack.Content.ItemKind
 import qualified Game.LambdaHack.Core.Dice as Dice
 import           Game.LambdaHack.Definition.Ability
 import           Game.LambdaHack.Definition.Defs
+import           Game.LambdaHack.Definition.DefsInternal
 
 data DetailLevel = DetailLow | DetailMedium | DetailHigh | DetailAll
   deriving (Show, Eq, Ord, Enum, Bounded, Generic)

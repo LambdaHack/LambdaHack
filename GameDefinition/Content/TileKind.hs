@@ -23,6 +23,7 @@ import Content.ItemKindEmbed
 import Game.LambdaHack.Content.TileKind
 import Game.LambdaHack.Definition.Color
 import Game.LambdaHack.Definition.Defs
+import Game.LambdaHack.Definition.DefsInternal
 
 -- * Group name patterns
 

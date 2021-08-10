@@ -28,6 +28,7 @@ import qualified Data.Vector as V
 import Game.LambdaHack.Core.Frequency
 import Game.LambdaHack.Core.Random
 import Game.LambdaHack.Definition.Defs
+import Game.LambdaHack.Definition.DefsInternal
 
 -- | Verified and preprocessed content data of a particular kind.
 data ContentData c = ContentData

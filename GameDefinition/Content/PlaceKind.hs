@@ -19,6 +19,7 @@ import Content.TileKind hiding (content, groupNames, groupNamesSingleton)
 import Game.LambdaHack.Content.PlaceKind
 import Game.LambdaHack.Content.TileKind (TileKind)
 import Game.LambdaHack.Definition.Defs
+import Game.LambdaHack.Definition.DefsInternal
 
 -- * Group name patterns
 

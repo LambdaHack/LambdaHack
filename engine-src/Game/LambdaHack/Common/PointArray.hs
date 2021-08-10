@@ -25,6 +25,7 @@ import qualified Data.Vector.Unboxed as U
 import           Game.LambdaHack.Common.Point
 import qualified Game.LambdaHack.Definition.Color as Color
 import           Game.LambdaHack.Definition.Defs
+import           Game.LambdaHack.Definition.DefsInternal
 
 class ( Ord c, Eq (UnboxRep c), Ord (UnboxRep c), Bounded (UnboxRep c)
       , Binary (UnboxRep c), U.Unbox (UnboxRep c) )
