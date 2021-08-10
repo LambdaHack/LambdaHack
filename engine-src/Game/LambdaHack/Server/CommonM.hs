@@ -608,10 +608,10 @@ addActorIid trunkId ItemFull{itemBase, itemKind, itemDisco=ItemDiscoFull arItem}
     forM_ (healthOrgans ++ map (Nothing,) (IK.ikit itemKind))
           $ \(mk, (ikGrp, cstore)) -> do
      -- TODO: remove ASAP. This is a hack that prevents AI from stealing
-     -- backstories until there is enough of the in Allure.
+     -- backstories until there is enough of them in Allure.
      -- Instead, pre-generate 20 player heroes to make sure all unique
      -- backstories are available to the player and so that the order
-     -- of games played doesn't affect their avilability.
+     -- of games played doesn't affect their availability.
      if ikGrp == GroupName "backstory"
         && isJust bnumberTeam
         && (snd <$> bnumberTeam) /= Just teamExplorer

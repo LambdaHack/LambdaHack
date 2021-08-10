@@ -16,7 +16,6 @@ import           Game.LambdaHack.Core.Dice
 import qualified Game.LambdaHack.Definition.Ability as Ability
 import           Game.LambdaHack.Definition.Color
 import           Game.LambdaHack.Definition.Defs
-import           Game.LambdaHack.Definition.DefsInternal
 import           Game.LambdaHack.Definition.Flavour
 
 import qualified Content.RuleKind
@@ -42,11 +41,11 @@ reqFailureUnitTests = testGroup "reqFailureUnitTests" $
         }
       testItemFull = ItemFull
         { itemBase = Item
-            { jkind = IdentityObvious (toContentId 667)
+            { jkind = IdentityObvious (toEnum 667)
             , jfid = Nothing
             , jflavour = head (zipPlain [Black])
             }
-        , itemKindId = toContentId 667
+        , itemKindId = toEnum 667
         , itemKind = testItemKind
         , itemDisco = ItemDiscoFull emptyAspectRecord
         , itemSuspect = True
