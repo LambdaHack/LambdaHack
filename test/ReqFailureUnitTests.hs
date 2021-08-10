@@ -43,7 +43,7 @@ reqFailureUnitTests = testGroup "reqFailureUnitTests" $
         { itemBase = Item
             { jkind = IdentityObvious (toEnum 667)
             , jfid = Nothing
-            , jflavour = head (zipPlain [Black])
+            , jflavour = dummyFlavour
             }
         , itemKindId = toEnum 667
         , itemKind = testItemKind

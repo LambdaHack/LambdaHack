@@ -2,9 +2,10 @@
 -- | The appearance of in-game items, as communicated to the player.
 module Game.LambdaHack.Definition.Flavour
   ( -- * The @Flavour@ type
-    Flavour(Flavour)
+    Flavour
   , -- * Constructors
     zipPlain, zipFancy, zipLiquid, zipGlassPlain, zipGlassFancy, zipStory
+  , dummyFlavour, stdFlavList
   , -- * Accessors
     flavourToColor, flavourToName
     -- * Assorted
@@ -44,6 +45,12 @@ instance Enum Flavour where
 instance Binary Flavour where
   put = put . (toIntegralCrash :: Int -> Word16) . fromEnum
   get = fmap (toEnum . (into :: Word16 -> Int)) get  -- @Int doesn't suffice
+
+dummyFlavour :: Flavour
+dummyFlavour = Flavour Story Black
+
+stdFlavList :: [Flavour]
+stdFlavList = [Flavour fn bc | fn <- [minBound..maxBound], bc <- stdCol]
 
 -- | Turn a colour set into a flavour set.
 zipPlain, zipFancy, zipLiquid, zipGlassPlain, zipGlassFancy, zipStory :: [Color] -> [Flavour]

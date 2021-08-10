@@ -17,8 +17,8 @@ import Game.LambdaHack.Core.Prelude
 import           Data.Binary
 import qualified Data.EnumMap.Strict as EM
 import qualified Data.EnumSet as ES
-import           Data.Hashable (Hashable)
 import qualified Data.HashMap.Strict as HM
+import           Data.Hashable (Hashable)
 import           Data.Vector.Binary ()
 import qualified Data.Vector.Unboxed as U
 import           GHC.Generics (Generic)
@@ -33,7 +33,6 @@ import qualified Game.LambdaHack.Core.Dice as Dice
 import           Game.LambdaHack.Core.Frequency
 import           Game.LambdaHack.Core.Random
 import qualified Game.LambdaHack.Definition.Ability as Ability
-import qualified Game.LambdaHack.Definition.Color as Color
 import           Game.LambdaHack.Definition.Defs
 import           Game.LambdaHack.Definition.Flavour
 
@@ -171,8 +170,7 @@ emptyFlavourMap :: FlavourMap
 emptyFlavourMap = FlavourMap U.empty
 
 stdFlav :: ES.EnumSet Flavour
-stdFlav = ES.fromList [ Flavour fn bc
-                      | fn <- [minBound..maxBound], bc <- Color.stdCol ]
+stdFlav = ES.fromList stdFlavList
 
 -- | Assigns flavours to item kinds. Assures no flavor is repeated for the same
 -- symbol, except for items with only one permitted flavour.
