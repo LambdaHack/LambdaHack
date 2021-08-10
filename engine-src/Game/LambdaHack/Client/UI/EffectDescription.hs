@@ -29,7 +29,6 @@ import           Game.LambdaHack.Content.ItemKind
 import qualified Game.LambdaHack.Core.Dice as Dice
 import           Game.LambdaHack.Definition.Ability
 import           Game.LambdaHack.Definition.Defs
-import           Game.LambdaHack.Definition.DefsInternal
 
 data DetailLevel = DetailLow | DetailMedium | DetailHigh | DetailAll
   deriving (Show, Eq, Ord, Enum, Bounded, Generic)
@@ -54,7 +53,7 @@ effectToSuffix detailLevel effect =
   case effect of
     Burn d -> wrapInParens (tshow d
                             <+> if Dice.supDice d > 1 then "burns" else "burn")
-    Explode t -> "of" <+> fromGroupName t <+> "explosion"
+    Explode t -> "of" <+> displayGroupName t <+> "explosion"
     RefillHP p | p > 0 -> "of healing" <+> wrapInParens (affixBonus p)
     RefillHP 0 -> error $ "" `showFailure` effect
     RefillHP p -> "of wounding" <+> wrapInParens (affixBonus p)
@@ -68,7 +67,7 @@ effectToSuffix detailLevel effect =
     Summon grp d -> makePhrase
       [ "of summoning"
       , if Dice.supDice d <= 1 then "" else MU.Text $ tshow d
-      , MU.Ws $ MU.Text $ fromGroupName grp ]
+      , MU.Ws $ MU.Text $ displayGroupName grp ]
     ApplyPerfume -> "of smell removal"
     Ascend True -> "of ascending"
     Ascend False -> "of descending"
@@ -101,9 +100,9 @@ effectToSuffix detailLevel effect =
     Teleport dice -> "of teleport" <+> wrapInParens (tshow dice)
     CreateItem _ COrgan grp tim ->
       let stime = if isTimerNone tim then "" else "for" <+> tshow tim <> ":"
-      in "(keep" <+> stime <+> fromGroupName grp <> ")"
+      in "(keep" <+> stime <+> displayGroupName grp <> ")"
     CreateItem _ _ grp _ ->
-      makePhrase ["of gain", MU.AW $ MU.Text $ fromGroupName grp]
+      makePhrase ["of gain", MU.AW $ MU.Text $ displayGroupName grp]
     DestroyItem{} -> "of loss"
     ConsumeItems{} -> "of consumption from the ground"
       -- too much noise from crafting
@@ -118,7 +117,7 @@ effectToSuffix detailLevel effect =
             if store == COrgan
             then ("nullify", "")
             else ("drop", "from" <+> snd (ppCStore store))
-      in "of" <+> verb <+> preT <+> fromGroupName grp <+> postT <+> fromStore
+      in "of" <+> verb <+> preT <+> displayGroupName grp <+> postT <+> fromStore
     Recharge n dice ->
       let times = if n == 1 then "" else tshow n <+> "times"
       in case Dice.reduceDice dice of
@@ -521,7 +520,7 @@ affixDice d = maybe "+?" affixBonus $ Dice.reduceDice d
 
 describeTools :: [(Int, GroupName ItemKind)] -> MU.Part
 describeTools =
-  let carAWs (k, grp) = MU.CarAWs k (MU.Text $ fromGroupName grp)
+  let carAWs (k, grp) = MU.CarAWs k (MU.Text $ displayGroupName grp)
   in MU.WWandW . map carAWs
 
 describeToolsAlternative :: [[(Int, GroupName ItemKind)]] -> Text

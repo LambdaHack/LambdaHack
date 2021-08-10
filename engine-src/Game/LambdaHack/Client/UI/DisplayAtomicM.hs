@@ -82,7 +82,6 @@ import           Game.LambdaHack.Core.Random
 import qualified Game.LambdaHack.Definition.Ability as Ability
 import qualified Game.LambdaHack.Definition.Color as Color
 import           Game.LambdaHack.Definition.Defs
-import           Game.LambdaHack.Definition.DefsInternal
 import           Game.LambdaHack.Definition.Flavour
 
 -- * RespUpdAtomicUI
@@ -1178,7 +1177,9 @@ quitFactionUI fid toSt manalytics = do
         _ | horror -> Nothing  -- Ignore summoned actors' factions.
         Just Status{stOutcome=stOutcome@Restart, stNewGame=Just gn} ->
           Just $ MU.Text $ nameOutcomeVerb stOutcome
-                           <+> "to restart in" <+> fromGroupName gn <+> "mode"
+                           <+> "to restart in"
+                           <+> displayGroupName gn
+                           <+> "mode"
                              -- when multiplayer: "order mission restart in"
         Just Status{stOutcome=Restart, stNewGame=Nothing} ->
           error $ "" `showFailure` (fid, toSt)
@@ -1484,7 +1485,7 @@ ppHearMsg distance hearMsg = case hearMsg of
     return $! msg
   HearSummon isProj grp p -> do
     let verb = if isProj then "something lure" else "somebody summon"
-        part = MU.Text $ fromGroupName grp
+        part = MU.Text $ displayGroupName grp
         object = if p == 1  -- works, because exact number sent, not dice
                  then MU.AW part
                  else MU.Ws part
@@ -1683,7 +1684,7 @@ displayRespSfxAtomicUI sfx = case sfx of
       IK.Yell -> aidVerbMU MsgMiscellanous aid "start"
       IK.Summon grp p -> do
         let verbBase = if bproj b then "lure" else "summon"
-            part = MU.Text $ fromGroupName grp
+            part = MU.Text $ displayGroupName grp
             object = if p == 1  -- works, because exact number sent, not dice
                      then MU.AW part
                      else MU.Ws part

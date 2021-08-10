@@ -34,7 +34,6 @@ import qualified Game.LambdaHack.Core.Dice as Dice
 import qualified Game.LambdaHack.Definition.Ability as Ability
 import qualified Game.LambdaHack.Definition.Color as Color
 import           Game.LambdaHack.Definition.Defs
-import           Game.LambdaHack.Definition.DefsInternal
 import           Game.LambdaHack.Definition.Flavour
 
 partItemN :: Int -> FactionId -> FactionDict -> Bool -> DetailLevel -> Int
@@ -477,7 +476,7 @@ itemDesc width markParagraphs side factionD aHurtMeleeOfOwner store localTime
       -- two hands and two legs is not that enlightening and the number
       -- is not shown in organ lore, so this should wait until we add
       -- proper hyperlinks both ways instead of relying of names.
-      ikitToPart = MU.Text . T.intercalate ", " . map (fromGroupName . fst)
+      ikitToPart = MU.Text . T.intercalate ", " . map (displayGroupName . fst)
       (ikitOrganNames, ikitOtherNames) =
         partition ((== COrgan) . snd) $ IK.ikit itemKind
       ikitDesc | null ikitOrganNames = ""

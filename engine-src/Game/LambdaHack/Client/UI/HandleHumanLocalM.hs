@@ -97,7 +97,6 @@ import           Game.LambdaHack.Content.RuleKind
 import qualified Game.LambdaHack.Definition.Ability as Ability
 import qualified Game.LambdaHack.Definition.Color as Color
 import           Game.LambdaHack.Definition.Defs
-import           Game.LambdaHack.Definition.DefsInternal
 
 -- * Macro
 
@@ -276,7 +275,7 @@ chooseItemDialogMode permitLoreCycle c = do
                     [ MU.SubjectVerbSg (partActor bUI) "remember"
                     , MU.Text $ PK.pname pkind ]
                   freqsText = "Frequencies:" <+> T.intercalate " "
-                    (map (\(grp, n) -> "(" <> fromGroupName grp
+                    (map (\(grp, n) -> "(" <> displayGroupName grp
                                        <> ", " <> tshow n <> ")")
                      $ PK.pfreq pkind)
                   onLevels | ES.null es = []
