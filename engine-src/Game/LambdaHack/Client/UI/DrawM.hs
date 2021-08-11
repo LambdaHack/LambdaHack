@@ -381,7 +381,7 @@ drawFrameExtra dm drawnLevelId = do
       backlightVision :: Color.AttrChar -> Color.AttrChar
       backlightVision ac = case ac of
         Color.AttrChar (Color.Attr fg _) ch ->
-          Color.AttrChar (Color.Attr fg Color.HighlightGrey) ch
+          Color.AttrChar (Color.Attr fg Color.HighlightBackground) ch
       writeSquare !hi (Color.AttrChar (Color.Attr fg bg) ch) =
         let hiUnlessLeader | bg == Color.HighlightYellow = bg
                            | otherwise = hi

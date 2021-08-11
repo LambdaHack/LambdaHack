@@ -119,7 +119,8 @@ display coscreen FrontendSession{..} SingleFrame{singleArray} = do
                       if fg /= Color.Red
                       then (fg, Color.Red)
                       else (fg, Color.defFG)
-                    Color.HighlightNoneCursor -> (fg, Color.Black) ]
+                    Color.HighlightNoneCursor -> (fg, Color.Black)
+                    Color.HighlightBackground -> (fg, Color.BrBlack) ]
   C.refresh
 
 keyTranslate :: C.Key -> K.KM

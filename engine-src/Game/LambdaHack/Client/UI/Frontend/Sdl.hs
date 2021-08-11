@@ -230,7 +230,7 @@ startupFun coscreen soptions@ClientOptions{..} rfMVar = do
                                      SDL.TextureAccessTarget screenV2
         SDL.rendererRenderTarget srenderer SDL.$= Just texture
         SDL.rendererDrawBlendMode srenderer SDL.$= SDL.BlendNone
-        SDL.rendererDrawColor srenderer SDL.$= colorToRGBA Color.Black
+        SDL.rendererDrawColor srenderer SDL.$= blackRGBA
         SDL.clear srenderer  -- clear the texture
         return texture
   basicTexture <- initTexture
@@ -400,11 +400,12 @@ drawFrame coscreen ClientOptions{..} sess@FrontendSession{..} curFrame = do
         let tt2Square = Vect.V2 (toEnum boxSize) (toEnum boxSize)
             rect = SDL.Rectangle (vp (x * boxSize) (y * boxSize)) tt2Square
         SDL.drawRect srenderer $ Just rect
-        SDL.rendererDrawColor srenderer SDL.$= colorToRGBA Color.Black
+        SDL.rendererDrawColor srenderer SDL.$= blackRGBA
           -- reset back to black
       chooseAndDrawHighlight !x !y !bg = case bg of
         Color.HighlightNone -> return ()
         Color.HighlightNoneCursor -> return ()
+        Color.HighlightBackground -> return ()
         _ -> drawHighlight x y $ Color.highlightToColor bg
       -- This also frees the surface it gets.
       scaleSurfaceToTexture :: Int -> SDL.Surface -> IO SDL.Texture
@@ -421,7 +422,7 @@ drawFrame coscreen ClientOptions{..} sess@FrontendSession{..} curFrame = do
             tgtR = vp xtgt ytgt
             tt2 = Vect.V2 (toEnum xsize) (toEnum boxSize)
         textSurface <- SDL.createRGBSurface tt2 SDL.ARGB8888
-        SDL.surfaceFillRect textSurface Nothing (colorToRGBA Color.Black)
+        SDL.surfaceFillRect textSurface Nothing blackRGBA
         -- We crop surface rather than texture to set the resulting
         -- texture as @TextureAccessStatic@ via @createTextureFromSurface@,
         -- which otherwise we wouldn't be able to do.
@@ -450,7 +451,7 @@ drawFrame coscreen ClientOptions{..} sess@FrontendSession{..} curFrame = do
             tgtR = vp xtgt ytgt
             tt2Prop = Vect.V2 (toEnum width) (toEnum boxSize)
         textSurface <- SDL.createRGBSurface tt2Prop SDL.ARGB8888
-        SDL.surfaceFillRect textSurface Nothing (colorToRGBA Color.Black)
+        SDL.surfaceFillRect textSurface Nothing blackRGBA
         -- We crop surface rather than texture to set the resulting
         -- texture as @TextureAccessStatic@ via @createTextureFromSurface@,
         -- which otherwise we wouldn't be able to do.
@@ -480,7 +481,9 @@ drawFrame coscreen ClientOptions{..} sess@FrontendSession{..} curFrame = do
                 Color.attrCharFromW32 $ Color.AttrCharW32 w
               fg | py `mod` 2 == 0 && fgRaw == Color.White = Color.AltWhite
                  | otherwise = fgRaw
-              ac = Color.attrChar2ToW32 fg acCharRaw
+              ac = if bg == Color.HighlightBackground
+                   then Color.AttrCharW32 w
+                   else Color.attrChar2ToW32 fg acCharRaw
           textTexture <- case EM.lookup ac atlas of
             Nothing -> do
               -- Make all visible floors bold (no bold fold variant for 16x16x,
@@ -491,8 +494,11 @@ drawFrame coscreen ClientOptions{..} sess@FrontendSession{..} curFrame = do
                                 then '\x0007'
                                 else '\x22C5'
                            else acCharRaw
+                  background = if bg == Color.HighlightBackground
+                               then greyRGBA
+                               else blackRGBA
               textSurfaceRaw <- TTF.shadedGlyph squareFont (colorToRGBA fg)
-                                                (colorToRGBA Color.Black) acChar
+                                                background acChar
               textTexture <- scaleSurfaceToTexture boxSize textSurfaceRaw
               writeIORef squareAtlas $ EM.insert ac textTexture atlas
               return textTexture
@@ -527,7 +533,7 @@ drawFrame coscreen ClientOptions{..} sess@FrontendSession{..} curFrame = do
           Nothing -> do
             textSurfaceRaw <-
               TTF.shadedGlyph (fromJust smonoFont) (colorToRGBA fg)
-                              (colorToRGBA Color.Black) acChar
+                              blackRGBA acChar
             textTexture <- scaleSurfaceToTexture halfSize textSurfaceRaw
             writeIORef smonoAtlas $ EM.insert ac textTexture atlas
             return textTexture
@@ -569,7 +575,7 @@ drawFrame coscreen ClientOptions{..} sess@FrontendSession{..} curFrame = do
                    then spropFont
                    else sboldFont
         textSurfaceRaw <- TTF.shaded (fromJust font) (colorToRGBA fg)
-                                     (colorToRGBA Color.Black) t
+                                     blackRGBA t
         (width, textTexture) <- scaleSurfaceToTextureProp x row textSurfaceRaw
         let tgtR = SDL.Rectangle (vp x (row * boxSize))
                                  (Vect.V2 (toEnum width) (toEnum boxSize))
@@ -757,9 +763,17 @@ keyTranslate shiftPressed n = case n of
 sDL_ALPHA_OPAQUE :: Word8
 sDL_ALPHA_OPAQUE = 255
 
+blackRGBA :: SDL.V4 Word8
+blackRGBA = SDL.V4 0 0 0 sDL_ALPHA_OPAQUE
+
+-- A third of @colorToRGBA Color.BrBlack@ to compensate for the use
+-- as background (high area) as opposed to glyphs (usually small area).
+greyRGBA :: SDL.V4 Word8
+greyRGBA = SDL.V4 0x25 0x1F 0x1F sDL_ALPHA_OPAQUE
+
 -- This code is sadly duplicated from "Game.LambdaHack.Definition.Color".
 colorToRGBA :: Color.Color -> SDL.V4 Word8
-colorToRGBA Color.Black     = SDL.V4 0 0 0 sDL_ALPHA_OPAQUE
+colorToRGBA Color.Black     = blackRGBA
 colorToRGBA Color.Red       = SDL.V4 0xD5 0x05 0x05 sDL_ALPHA_OPAQUE
 colorToRGBA Color.Green     = SDL.V4 0x05 0x9D 0x05 sDL_ALPHA_OPAQUE
 colorToRGBA Color.Brown     = SDL.V4 0xCA 0x4A 0x05 sDL_ALPHA_OPAQUE

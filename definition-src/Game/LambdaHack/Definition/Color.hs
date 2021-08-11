@@ -156,6 +156,7 @@ data Highlight =
   | HighlightYellowAim
   | HighlightRedAim
   | HighlightNoneCursor
+  | HighlightBackground
   deriving (Show, Eq, Ord, Enum, Bounded)
 
 highlightToColor :: Highlight -> Color
@@ -173,6 +174,7 @@ highlightToColor hi = case hi of
   HighlightYellowAim -> BrYellow
   HighlightRedAim -> Red
   HighlightNoneCursor -> Black  -- used in vty for cursor via @maxIndexByA@
+  HighlightBackground -> undefined  -- gets a special colour
 
 -- | Text attributes: foreground color and highlight.
 data Attr = Attr
