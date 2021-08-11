@@ -263,7 +263,11 @@ display FrontendSession{..} !curFrame = flip runDOM undefined $ do
            | otherwise -> setTextContent cell $ Just [acChar]
         setProp style "color" $ Color.colorToRGB fg
         let bgPrev = Color.bgFromW32 $ Color.AttrCharW32 wPrev
-        when (bg /= bgPrev) $
+        when (bg /= bgPrev) $ do
+          let background = if bg == Color.HighlightBackground
+                           then "#251F1F"
+                           else Color.colorToRGB Color.Black
+          setProp style "background-color" background
           setProp style "border-color"
                         (Color.colorToRGB $ Color.highlightToColor bg)
         return $! i + 1

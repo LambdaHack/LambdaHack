@@ -174,7 +174,7 @@ highlightToColor hi = case hi of
   HighlightYellowAim -> BrYellow
   HighlightRedAim -> Red
   HighlightNoneCursor -> Black  -- used in vty for cursor via @maxIndexByA@
-  HighlightBackground -> undefined  -- gets a special colour
+  HighlightBackground -> Black  -- gets a special colour, but as a background
 
 -- | Text attributes: foreground color and highlight.
 data Attr = Attr
