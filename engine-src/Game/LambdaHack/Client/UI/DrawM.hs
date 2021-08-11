@@ -377,8 +377,9 @@ drawFrameExtra dm drawnLevelId = do
   let visionMarks = IS.toList $ ES.enumSetToIntSet totVisible
       backlightVision :: Color.AttrChar -> Color.AttrChar
       backlightVision ac = case ac of
-        Color.AttrChar (Color.Attr fg _) ch ->
+        Color.AttrChar (Color.Attr fg Color.HighlightNone) ch ->
           Color.AttrChar (Color.Attr fg Color.HighlightBackground) ch
+        _ -> ac
       writeSquare !hi (Color.AttrChar (Color.Attr fg bg) ch) =
         let hiUnlessLeader | bg == Color.HighlightYellow = bg
                            | otherwise = hi
