@@ -41,7 +41,7 @@ import qualified Game.LambdaHack.Content.TileKind as TK
 import qualified Game.LambdaHack.Core.Dice as Dice
 import           Game.LambdaHack.Core.Random
 import           Game.LambdaHack.Definition.Defs
-import           Game.LambdaHack.Definition.DefsInternal
+import qualified Game.LambdaHack.Definition.DefsInternal as DefsInternal
 import           Game.LambdaHack.Server.DungeonGen.AreaRnd
 import           Game.LambdaHack.Server.DungeonGen.Cave
 import           Game.LambdaHack.Server.DungeonGen.Place
@@ -191,7 +191,8 @@ buildLevel cops@COps{coplace, corule=RuleContent{..}} serverOptions
           Nothing -> return acc  -- calling again won't change anything
   pstairsSingleDown <- addSingleDown [] singleDownStairs
   let freqDouble carried =
-        filter (\(gn, _) -> carried `elem` T.words (fromGroupName gn))
+        filter (\(gn, _) ->
+                  carried `elem` T.words (DefsInternal.fromGroupName gn))
         $ cstairFreq kc ++ cstairAllowed kc
       fixedStairsDouble = map (second freqDouble) lstairsDouble
       freqUp carried = renameFreqs (<+> "up") $ freqDouble carried

@@ -25,7 +25,7 @@ import qualified Data.Vector.Unboxed as U
 import           Game.LambdaHack.Common.Point
 import qualified Game.LambdaHack.Definition.Color as Color
 import           Game.LambdaHack.Definition.Defs
-import           Game.LambdaHack.Definition.DefsInternal
+import qualified Game.LambdaHack.Definition.DefsInternal as DefsInternal
 
 class ( Ord c, Eq (UnboxRep c), Ord (UnboxRep c), Bounded (UnboxRep c)
       , Binary (UnboxRep c), U.Unbox (UnboxRep c) )
@@ -45,8 +45,8 @@ instance UnboxRepClass Word8 where
 
 instance UnboxRepClass (ContentId k) where
   type UnboxRep (ContentId k) = Word16
-  toUnboxRepUnsafe = fromContentId
-  fromUnboxRep = toContentId
+  toUnboxRepUnsafe = DefsInternal.fromContentId
+  fromUnboxRep = DefsInternal.toContentId
 
 instance UnboxRepClass Color.AttrCharW32 where
   type UnboxRep Color.AttrCharW32 = Word32

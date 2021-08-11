@@ -54,7 +54,7 @@ import           Game.LambdaHack.Core.Random
 import           Game.LambdaHack.Definition.Ability
 import qualified Game.LambdaHack.Definition.Ability as Ability
 import           Game.LambdaHack.Definition.Defs
-import           Game.LambdaHack.Definition.DefsInternal
+import qualified Game.LambdaHack.Definition.DefsInternal as DefsInternal
 
 -- | Pick the most desirable AI ation for the actor.
 pickAction :: MonadClient m
@@ -964,9 +964,9 @@ applyItem actorSk aid applyGroup = do
         let itemKind = getKind iid
         in if maybe False (> 0) $ lookup IK.CONDITION $ IK.ifreq itemKind
            then Just $ if benInEqp (discoBenefit EM.! iid)
-                       then Right $ GroupName $ IK.iname itemKind
+                       then Right $ DefsInternal.GroupName $ IK.iname itemKind
                          -- conveniently, @iname@ matches @ifreq@
-                       else Left $ GroupName $ IK.iname itemKind
+                       else Left $ DefsInternal.GroupName $ IK.iname itemKind
            else Nothing) (EM.keys $ borgan b)
       fTool benAv@( Benefit{benApply}, cstore, iid
                   , itemFull@ItemFull{itemKind}, _ ) =

@@ -48,7 +48,7 @@ import           Game.LambdaHack.Content.RuleKind
 import           Game.LambdaHack.Core.Random
 import qualified Game.LambdaHack.Definition.Ability as Ability
 import           Game.LambdaHack.Definition.Defs
-import           Game.LambdaHack.Definition.DefsInternal
+import qualified Game.LambdaHack.Definition.DefsInternal as DefsInternal
 import           Game.LambdaHack.Server.Fov
 import           Game.LambdaHack.Server.ItemM
 import           Game.LambdaHack.Server.ItemRev
@@ -612,7 +612,7 @@ addActorIid trunkId ItemFull{itemBase, itemKind, itemDisco=ItemDiscoFull arItem}
      -- Instead, pre-generate 20 player heroes to make sure all unique
      -- backstories are available to the player and so that the order
      -- of games played doesn't affect their availability.
-     if ikGrp == GroupName "backstory"
+     if ikGrp == DefsInternal.GroupName "backstory"
         && isJust bnumberTeam
         && (snd <$> bnumberTeam) /= Just teamExplorer
      then return ()

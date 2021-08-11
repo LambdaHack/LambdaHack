@@ -24,12 +24,12 @@ import qualified System.Random.SplitMix32 as SM
 -- remaining commandline should be passed and parsed by the client to extract
 -- client and ui options from and singnal an error if anything was left.
 
-import Game.LambdaHack.Common.ClientOptions
-import Game.LambdaHack.Common.Faction
-import Game.LambdaHack.Content.ModeKind
-import Game.LambdaHack.Definition.Defs
-import Game.LambdaHack.Definition.DefsInternal
-import Game.LambdaHack.Server.ServerOptions
+import           Game.LambdaHack.Common.ClientOptions
+import           Game.LambdaHack.Common.Faction
+import           Game.LambdaHack.Content.ModeKind
+import           Game.LambdaHack.Definition.Defs
+import qualified Game.LambdaHack.Definition.DefsInternal as DefsInternal
+import           Game.LambdaHack.Server.ServerOptions
 
 -- | Parser for server options from commandline arguments.
 serverOptionsPI :: ParserInfo ServerOptions
@@ -163,7 +163,7 @@ gameModeP = optional $ toGameMode <$>
   -- This ignores all but the first word of a game mode name
   -- and assumes the fist word is present among its frequencies.
   toGameMode :: String -> GroupName ModeKind
-  toGameMode = GroupName . head . T.words . T.pack
+  toGameMode = DefsInternal.GroupName . head . T.words . T.pack
   nonEmptyStr :: ReadM String
   nonEmptyStr = eitherReader $ \case
     "" -> Left "name of game mode cannot be empty"

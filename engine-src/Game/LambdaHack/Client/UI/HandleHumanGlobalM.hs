@@ -105,7 +105,7 @@ import           Game.LambdaHack.Core.Random
 import qualified Game.LambdaHack.Definition.Ability as Ability
 import qualified Game.LambdaHack.Definition.Color as Color
 import           Game.LambdaHack.Definition.Defs
-import           Game.LambdaHack.Definition.DefsInternal
+import qualified Game.LambdaHack.Definition.DefsInternal as DefsInternal
 
 -- * ByArea
 
@@ -1951,7 +1951,8 @@ gameRestartHuman = do
     -- via main menu and assumes the fist word of such game modes
     -- is present in their frequencies.
     let (mainName, _) = T.span (\c -> Char.isAlpha c || c == ' ') nxtGameName
-        nxtGameGroup = GroupName $ T.intercalate " " $ take 2 $ T.words mainName
+        nxtGameGroup = DefsInternal.GroupName $ T.intercalate " "
+                       $ take 2 $ T.words mainName
     return $ Right $ ReqUIGameRestart nxtGameGroup snxtChal
   else do
     msg2 <- rndToActionUI $ oneOf

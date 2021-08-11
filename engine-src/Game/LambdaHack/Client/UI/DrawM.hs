@@ -72,7 +72,7 @@ import qualified Game.LambdaHack.Core.Dice as Dice
 import qualified Game.LambdaHack.Definition.Ability as Ability
 import qualified Game.LambdaHack.Definition.Color as Color
 import           Game.LambdaHack.Definition.Defs
-import           Game.LambdaHack.Definition.DefsInternal
+import qualified Game.LambdaHack.Definition.DefsInternal as DefsInternal
 
 targetDesc :: MonadClientUI m => Maybe Target -> m (Maybe Text, Maybe Text)
 targetDesc mtarget = do
@@ -175,7 +175,7 @@ drawFrameTerrain drawnLevelId = do
                | otherwise = tcolor2
         in Color.attrChar2ToW32 fg tsymbol
       g :: PointI -> Word16 -> Word32
-      g !pI !tile = Color.attrCharW32 $ dis pI (toContentId tile)
+      g !pI !tile = Color.attrCharW32 $ dis pI (DefsInternal.toContentId tile)
       caveVector :: U.Vector Word32
       caveVector = U.imap g avector
       messageVector =
@@ -288,7 +288,7 @@ drawFramePath drawnLevelId = do
             g !p0 = do
               let pI = fromEnum p0
                   tile = avector U.! pI
-                  w = Color.attrCharW32 $ f p0 (toContentId tile)
+                  w = Color.attrCharW32 $ f p0 (DefsInternal.toContentId tile)
               VM.write v (pI + rXmax) w
         mapM_ g l
       upd :: FrameForall
