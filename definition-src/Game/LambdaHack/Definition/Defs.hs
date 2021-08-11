@@ -4,7 +4,9 @@ module Game.LambdaHack.Definition.Defs
   ( GroupName, displayGroupName
   , ContentId, contentIdIndex
   , ContentSymbol, displayContentSymbol
-  , X, Y, Freqs, Rarity, linearInterpolation
+  , X, Y
+  , Freqs, renameFreqs
+  , Rarity, linearInterpolation
   , CStore(..), ppCStore, ppCStoreIn, verbCStore
   , SLore(..), ItemDialogMode(..), ppSLore, headingSLore
   , ppItemDialogMode, ppItemDialogModeIn, ppItemDialogModeFrom
@@ -30,7 +32,10 @@ type Y = Int
 -- | For each group that the kind belongs to, denoted by a @GroupName@
 -- in the first component of a pair, the second component of a pair shows
 -- how common the kind is within the group.
-type Freqs a = [(GroupName a, Int)]
+type Freqs c = [(GroupName c, Int)]
+
+renameFreqs :: (Text -> Text) -> Freqs c -> Freqs c
+renameFreqs f = map (first (GroupName . f . fromGroupName))
 
 -- | Rarity on given depths. The first element of the pair is normally
 -- in (0, 10] interval and, e.g., if there are 20 levels, 0.5 represents

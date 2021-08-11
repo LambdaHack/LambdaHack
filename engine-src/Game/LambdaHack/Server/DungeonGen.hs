@@ -194,13 +194,9 @@ buildLevel cops@COps{coplace, corule=RuleContent{..}} serverOptions
         filter (\(gn, _) -> carried `elem` T.words (fromGroupName gn))
         $ cstairFreq kc ++ cstairAllowed kc
       fixedStairsDouble = map (second freqDouble) lstairsDouble
-      freqUp carried =
-        map (first (\gn -> GroupName $ fromGroupName gn <+> "up"))
-        $ freqDouble carried
+      freqUp carried = renameFreqs (<+> "up") $ freqDouble carried
       fixedStairsUp = map (second freqUp) lstairsSingleUp
-      freqDown =
-        map (first (\gn -> GroupName $ fromGroupName gn <+> "down"))
-        $ cstairFreq kc
+      freqDown = renameFreqs (<+> "down") $ cstairFreq kc
       fixedStairsDown = map (, freqDown) pstairsSingleDown
       pallExits = pallUpAndEscape ++ pstairsSingleDown
       fixedCenters = EM.fromList $
