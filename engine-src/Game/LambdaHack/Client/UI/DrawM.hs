@@ -374,10 +374,7 @@ drawFrameExtra dm drawnLevelId = do
         getsState $ aidTgtToPos leader drawnLevelId mtgt
   side <- getsClient sside
   factionD <- getsState sfactionD
-  let visionMarks =
-        if smarkVision
-        then IS.toList $ ES.enumSetToIntSet totVisible
-        else []
+  let visionMarks = IS.toList $ ES.enumSetToIntSet totVisible
       backlightVision :: Color.AttrChar -> Color.AttrChar
       backlightVision ac = case ac of
         Color.AttrChar (Color.Attr fg _) ch ->
@@ -413,7 +410,8 @@ drawFrameExtra dm drawnLevelId = do
       stashesToDisplay = mapMaybe locateStash $ EM.assocs factionD
       upd :: FrameForall
       upd = FrameForall $ \v -> do
-        when (isJust saimMode) $ mapVL backlightVision visionMarks v
+        when (isJust saimMode || smarkVision) $
+          mapVL backlightVision visionMarks v
         case mtgtPos of
           Nothing -> return ()
           Just p -> mapVL (writeSquare Color.HighlightGrey) [fromEnum p] v
