@@ -1,21 +1,20 @@
-# some of this (not the parts run by CI) needs 'cabal install cabal-plan'
 play:
-	$$(cabal-plan list-bin exe:LambdaHack) --dbgMsgSer --logPriority 4 --savePrefix play --dumpInitRngs
+	$$(cabal list-bin exe:LambdaHack) --dbgMsgSer --logPriority 4 --savePrefix play --dumpInitRngs
 
 shot:
-	$$(cabal-plan list-bin exe:LambdaHack) --dbgMsgSer --logPriority 4 --savePrefix play --dumpInitRngs --printEachScreen
+	$$(cabal list-bin exe:LambdaHack) --dbgMsgSer --logPriority 4 --savePrefix play --dumpInitRngs --printEachScreen
 
 expose-lore:
-	$$(cabal-plan list-bin exe:LambdaHack) --dbgMsgSer --logPriority 4 --savePrefix know --newGame 5 --dumpInitRngs --gameMode crawl --knowItems --exposePlaces --exposeItems --exposeActors --showItemSamples --benchmark --noAnim --maxFps 1000
+	$$(cabal list-bin exe:LambdaHack) --dbgMsgSer --logPriority 4 --savePrefix know --newGame 5 --dumpInitRngs --gameMode crawl --knowItems --exposePlaces --exposeItems --exposeActors --showItemSamples --benchmark --noAnim --maxFps 1000
 
 dig-lore:
-	$$(cabal-plan list-bin exe:LambdaHack) --dbgMsgSer --logPriority 4 --savePrefix know --newGame 5 --dumpInitRngs --gameMode dig --knowItems --exposePlaces --exposeItems --exposeActors --showItemSamples --benchmark --noAnim --maxFps 1000
+	$$(cabal list-bin exe:LambdaHack) --dbgMsgSer --logPriority 4 --savePrefix know --newGame 5 --dumpInitRngs --gameMode dig --knowItems --exposePlaces --exposeItems --exposeActors --showItemSamples --benchmark --noAnim --maxFps 1000
 
 see-caves:
-	$$(cabal-plan list-bin exe:LambdaHack) --dbgMsgSer --logPriority 4 --savePrefix know --newGame 5 --dumpInitRngs --gameMode see --knowItems --exposePlaces --exposeItems --exposeActors --showItemSamples --benchmark --noAnim --maxFps 1000
+	$$(cabal list-bin exe:LambdaHack) --dbgMsgSer --logPriority 4 --savePrefix know --newGame 5 --dumpInitRngs --gameMode see --knowItems --exposePlaces --exposeItems --exposeActors --showItemSamples --benchmark --noAnim --maxFps 1000
 
 short-caves:
-	$$(cabal-plan list-bin exe:LambdaHack) --dbgMsgSer --logPriority 4 --savePrefix know --newGame 5 --dumpInitRngs --gameMode short --knowItems --exposePlaces --exposeItems --exposeActors --showItemSamples --benchmark --noAnim --maxFps 1000
+	$$(cabal list-bin exe:LambdaHack) --dbgMsgSer --logPriority 4 --savePrefix know --newGame 5 --dumpInitRngs --gameMode short --knowItems --exposePlaces --exposeItems --exposeActors --showItemSamples --benchmark --noAnim --maxFps 1000
 
 configure-debug:
 	cabal configure --enable-profiling --profiling-detail=all-functions -fwith_expensive_assertions --disable-optimization
@@ -46,61 +45,61 @@ create-gif :
 	../gifsicle/src/gifsicle -O3 --careful -d2 --colors 255 --no-extensions --no-conserve-memory -l ~/.LambdaHack/screenshots/prtscn*.gif -o ~/.LambdaHack/screenshots/screenshot.gif
 
 frontendRaid:
-	$$(cabal-plan list-bin exe:LambdaHack) --dbgMsgSer --logPriority 4 --savePrefix test --newGame 5 --dumpInitRngs --automateAll --gameMode raid --exposeActors
+	$$(cabal list-bin exe:LambdaHack) --dbgMsgSer --logPriority 4 --savePrefix test --newGame 5 --dumpInitRngs --automateAll --gameMode raid --exposeActors
 
 frontendBrawl:
-	$$(cabal-plan list-bin exe:LambdaHack) --dbgMsgSer --logPriority 4 --savePrefix test --newGame 5 --dumpInitRngs --automateAll --gameMode brawl
+	$$(cabal list-bin exe:LambdaHack) --dbgMsgSer --logPriority 4 --savePrefix test --newGame 5 --dumpInitRngs --automateAll --gameMode brawl
 
 frontendShootout:
-	$$(cabal-plan list-bin exe:LambdaHack) --dbgMsgSer --logPriority 4 --savePrefix test --newGame 5 --dumpInitRngs --automateAll --gameMode shootout
+	$$(cabal list-bin exe:LambdaHack) --dbgMsgSer --logPriority 4 --savePrefix test --newGame 5 --dumpInitRngs --automateAll --gameMode shootout
 
 frontendHunt:
-	$$(cabal-plan list-bin exe:LambdaHack) --dbgMsgSer --logPriority 4 --savePrefix test --newGame 5 --dumpInitRngs --automateAll --gameMode hunt
+	$$(cabal list-bin exe:LambdaHack) --dbgMsgSer --logPriority 4 --savePrefix test --newGame 5 --dumpInitRngs --automateAll --gameMode hunt
 
 frontendEscape:
-	$$(cabal-plan list-bin exe:LambdaHack) --dbgMsgSer --logPriority 4 --savePrefix test --newGame 3 --dumpInitRngs --automateAll --gameMode escape
+	$$(cabal list-bin exe:LambdaHack) --dbgMsgSer --logPriority 4 --savePrefix test --newGame 3 --dumpInitRngs --automateAll --gameMode escape
 
 frontendZoo:
-	$$(cabal-plan list-bin exe:LambdaHack) --dbgMsgSer --logPriority 4 --savePrefix test --newGame 2 --dumpInitRngs --automateAll --gameMode zoo --exposeActors
+	$$(cabal list-bin exe:LambdaHack) --dbgMsgSer --logPriority 4 --savePrefix test --newGame 2 --dumpInitRngs --automateAll --gameMode zoo --exposeActors
 
 frontendAmbush:
-	$$(cabal-plan list-bin exe:LambdaHack) --dbgMsgSer --logPriority 4 --savePrefix test --newGame 5 --dumpInitRngs --automateAll --gameMode ambush
+	$$(cabal list-bin exe:LambdaHack) --dbgMsgSer --logPriority 4 --savePrefix test --newGame 5 --dumpInitRngs --automateAll --gameMode ambush
 
 frontendCrawl:
-	$$(cabal-plan list-bin exe:LambdaHack) --dbgMsgSer --logPriority 4 --savePrefix test --newGame 1 --dumpInitRngs --automateAll --gameMode crawl --exposeItems --exposeActors
+	$$(cabal list-bin exe:LambdaHack) --dbgMsgSer --logPriority 4 --savePrefix test --newGame 1 --dumpInitRngs --automateAll --gameMode crawl --exposeItems --exposeActors
 
 frontendCrawlEmpty:
-	$$(cabal-plan list-bin exe:LambdaHack) --dbgMsgSer --logPriority 4 --savePrefix test --newGame 1 --dumpInitRngs --automateAll --gameMode crawlEmpty
+	$$(cabal list-bin exe:LambdaHack) --dbgMsgSer --logPriority 4 --savePrefix test --newGame 1 --dumpInitRngs --automateAll --gameMode crawlEmpty
 
 frontendCrawlSurvival:
-	$$(cabal-plan list-bin exe:LambdaHack) --dbgMsgSer --logPriority 4 --savePrefix test --newGame 9 --dumpInitRngs --automateAll --gameMode crawlSurvival --maxFps 1000
+	$$(cabal list-bin exe:LambdaHack) --dbgMsgSer --logPriority 4 --savePrefix test --newGame 9 --dumpInitRngs --automateAll --gameMode crawlSurvival --maxFps 1000
 
 frontendSafari:
-	$$(cabal-plan list-bin exe:LambdaHack) --dbgMsgSer --logPriority 4 --savePrefix test --newGame 5 --dumpInitRngs --automateAll --gameMode safari --exposeActors
+	$$(cabal list-bin exe:LambdaHack) --dbgMsgSer --logPriority 4 --savePrefix test --newGame 5 --dumpInitRngs --automateAll --gameMode safari --exposeActors
 
 frontendSafariSurvival:
-	$$(cabal-plan list-bin exe:LambdaHack) --dbgMsgSer --logPriority 4 --savePrefix test --newGame 5 --dumpInitRngs --automateAll --gameMode safariSurvival --exposeActors
+	$$(cabal list-bin exe:LambdaHack) --dbgMsgSer --logPriority 4 --savePrefix test --newGame 5 --dumpInitRngs --automateAll --gameMode safariSurvival --exposeActors
 
 frontendBattle:
-	$$(cabal-plan list-bin exe:LambdaHack) --dbgMsgSer --logPriority 4 --savePrefix test --newGame 4 --dumpInitRngs --automateAll --gameMode battle --exposeActors
+	$$(cabal list-bin exe:LambdaHack) --dbgMsgSer --logPriority 4 --savePrefix test --newGame 4 --dumpInitRngs --automateAll --gameMode battle --exposeActors
 
 frontendBattleDefense:
-	$$(cabal-plan list-bin exe:LambdaHack) --dbgMsgSer --logPriority 4 --savePrefix test --newGame 6 --dumpInitRngs --automateAll --gameMode battleDefense --exposeActors
+	$$(cabal list-bin exe:LambdaHack) --dbgMsgSer --logPriority 4 --savePrefix test --newGame 6 --dumpInitRngs --automateAll --gameMode battleDefense --exposeActors
 
 frontendBattleSurvival:
-	$$(cabal-plan list-bin exe:LambdaHack) --dbgMsgSer --logPriority 4 --savePrefix test --newGame 6 --dumpInitRngs --automateAll --gameMode battleSurvival --exposeActors
+	$$(cabal list-bin exe:LambdaHack) --dbgMsgSer --logPriority 4 --savePrefix test --newGame 6 --dumpInitRngs --automateAll --gameMode battleSurvival --exposeActors
 
 frontendDefense:
-	$$(cabal-plan list-bin exe:LambdaHack) --dbgMsgSer --logPriority 4 --savePrefix test --newGame 9 --dumpInitRngs --automateAll --gameMode defense --exposeItems --exposeActors
+	$$(cabal list-bin exe:LambdaHack) --dbgMsgSer --logPriority 4 --savePrefix test --newGame 9 --dumpInitRngs --automateAll --gameMode defense --exposeItems --exposeActors
 
 frontendDefenseEmpty:
-	$$(cabal-plan list-bin exe:LambdaHack) --dbgMsgSer --logPriority 4 --savePrefix test --newGame 9 --dumpInitRngs --automateAll --gameMode defenseEmpty
+	$$(cabal list-bin exe:LambdaHack) --dbgMsgSer --logPriority 4 --savePrefix test --newGame 9 --dumpInitRngs --automateAll --gameMode defenseEmpty
 
 fastCrawl:
-	$$(cabal-plan list-bin exe:LambdaHack) --dbgMsgSer --logPriority 4 --savePrefix test --newGame 1 --dumpInitRngs --automateAll --gameMode crawl --exposeItems --exposeActors --showItemSamples --noAnim --maxFps 100000 --benchmark
+	$$(cabal list-bin exe:LambdaHack) --dbgMsgSer --logPriority 4 --savePrefix test --newGame 1 --dumpInitRngs --automateAll --gameMode crawl --exposeItems --exposeActors --showItemSamples --noAnim --maxFps 100000 --benchmark
 
 slowCrawl:
-	$$(cabal-plan list-bin exe:LambdaHack) --dbgMsgSer --logPriority 4 --savePrefix test --newGame 1 --dumpInitRngs --automateAll --gameMode crawl --exposeItems --exposeActors --showItemSamples
+	$$(cabal list-bin exe:LambdaHack) --dbgMsgSer --logPriority 4 --savePrefix test --newGame 1 --dumpInitRngs --automateAll --gameMode crawl --exposeItems --exposeActors --showItemSamples
 
 # different benchmarks use different arguments
 RNGOPTS=--setDungeonRng "SMGen 123 123" --setMainRng "SMGen 123 125"
@@ -108,7 +107,7 @@ RNGOPTS1=--setDungeonRng "SMGen 127 123" --setMainRng "SMGen 127 125"
 RNGOPTS2=--setDungeonRng "SMGen 129 123" --setMainRng "SMGen 129 125"
 
 benchMemoryAnim:
-	$$(cabal-plan list-bin exe:LambdaHack) --dbgMsgSer --logPriority 4 --newGame 1 --maxFps 100000 --benchmark --stopAfterFrames 33000 --automateAll --keepAutomated --gameMode crawl $(RNGOPTS2)  --frontendNull --noAnim +RTS -s -A1M -RTS
+	$$(cabal list-bin exe:LambdaHack) --dbgMsgSer --logPriority 4 --newGame 1 --maxFps 100000 --benchmark --stopAfterFrames 33000 --automateAll --keepAutomated --gameMode crawl $(RNGOPTS2)  --frontendNull --noAnim +RTS -s -A1M -RTS
 
 benchBattle:
 	./LambdaHack --dbgMsgSer --logPriority 4 --newGame 3 --noAnim --maxFps 100000 --frontendNull --benchmark --stopAfterFrames 1500 --automateAll --keepAutomated --gameMode battle $(RNGOPTS1)
@@ -133,18 +132,18 @@ benchNull: benchBattle benchAnimBattle benchCrawl
 bench: benchBattle benchAnimBattle benchFrontendBattle benchCrawl benchFrontendCrawl
 
 nativeBenchCrawl:
-	$$(cabal-plan list-bin exe:LambdaHack)		   --dbgMsgSer --logPriority 4 --newGame 1 --noAnim --maxFps 100000 --frontendNull --benchmark --stopAfterFrames 2000 --automateAll --keepAutomated --gameMode crawl $(RNGOPTS)
+	$$(cabal list-bin exe:LambdaHack)		   --dbgMsgSer --logPriority 4 --newGame 1 --noAnim --maxFps 100000 --frontendNull --benchmark --stopAfterFrames 2000 --automateAll --keepAutomated --gameMode crawl $(RNGOPTS)
 
 nativeBenchBattle:
-	$$(cabal-plan list-bin exe:LambdaHack)		   --dbgMsgSer --logPriority 4 --newGame 3 --noAnim --maxFps 100000 --frontendNull --benchmark --stopAfterFrames 1000 --automateAll --keepAutomated --gameMode battle $(RNGOPTS)
+	$$(cabal list-bin exe:LambdaHack)		   --dbgMsgSer --logPriority 4 --newGame 3 --noAnim --maxFps 100000 --frontendNull --benchmark --stopAfterFrames 1000 --automateAll --keepAutomated --gameMode battle $(RNGOPTS)
 
 nativeBench: nativeBenchBattle nativeBenchCrawl
 
 nodeBenchCrawl:
-	node $$(cabal-plan list-bin exe:LambdaHack).jsexe/all.js --dbgMsgSer --logPriority 4 --newGame 1 --noAnim --maxFps 100000 --frontendNull --benchmark --stopAfterFrames 2000 --automateAll --keepAutomated --gameMode crawl $(RNGOPTS)
+	node $$(cabal list-bin exe:LambdaHack).jsexe/all.js --dbgMsgSer --logPriority 4 --newGame 1 --noAnim --maxFps 100000 --frontendNull --benchmark --stopAfterFrames 2000 --automateAll --keepAutomated --gameMode crawl $(RNGOPTS)
 
 nodeBenchBattle:
-	node $$(cabal-plan list-bin exe:LambdaHack).jsexe/all.js --dbgMsgSer --logPriority 4 --newGame 3 --noAnim --maxFps 100000 --frontendNull --benchmark --stopAfterFrames 1000 --automateAll --keepAutomated --gameMode battle $(RNGOPTS)
+	node $$(cabal list-bin exe:LambdaHack).jsexe/all.js --dbgMsgSer --logPriority 4 --newGame 3 --noAnim --maxFps 100000 --frontendNull --benchmark --stopAfterFrames 1000 --automateAll --keepAutomated --gameMode battle $(RNGOPTS)
 
 nodeBench: nodeBenchBattle nodeBenchCrawl
 
@@ -160,7 +159,7 @@ test-travis2: test-sniff benchNull
 test: test-sniff test-short test-medium benchNull
 
 copyBinaryHere:
-	cp $$(cabal-plan list-bin exe:LambdaHack) .
+	cp $$(cabal list-bin exe:LambdaHack) .
 
 test-locally: copyBinaryHere test
 
@@ -282,7 +281,7 @@ copy-binary-v1:
 	cabal v1-copy --destdir=LambdaHackTheGameInstall
 
 copy-binary:
-	cp $$(cabal-plan list-bin exe:LambdaHack) LambdaHackTheGame
+	cp $$(cabal list-bin exe:LambdaHack) LambdaHackTheGame
 
 configure-binary-v2:
 	cabal configure --disable-tests --disable-library-profiling --disable-profiling --enable-optimization
