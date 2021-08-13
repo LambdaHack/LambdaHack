@@ -919,9 +919,7 @@ light1 = ItemKind
   , iverbHit = "scorch"
   , iweight  = 1000
   , idamage  = 0
-  , iaspects = [ AddSkill SkShine 3, AddSkill SkSight (-2)
-                   -- not only flashes, but also sparks,
-                   -- so unused by AI due to the mixed blessing
+  , iaspects = [ AddSkill SkShine 3  -- no malus, to lessen micromanagement
                , SetFlag Lobable, SetFlag Equipable
                , EqpSlot EqpSlotShine ]
                    -- not Fragile; reusable flare
@@ -939,12 +937,12 @@ light2 = ItemKind
   , iverbHit = "burn"
   , iweight  = 1500
   , idamage  = 1 `d` 1
-  , iaspects = [ AddSkill SkShine 3, AddSkill SkSight (-1)
+  , iaspects = [ AddSkill SkShine 3
                , SetFlag Lobable, SetFlag Fragile, SetFlag Equipable
                , EqpSlot EqpSlotShine ]
   , ieffects = [ Explode S_FOCUSED_BURNING_OIL_2
                , OnSmash (Explode S_VIOLENT_BURNING_OIL_2) ]
-  , idesc    = "A clay lamp filled with plant oil feeding a tiny wick."
+  , idesc    = "A small clay lamp filled with plant oil feeding a tiny wick."
   , ikit     = []
   }
 light3 = ItemKind
@@ -957,7 +955,7 @@ light3 = ItemKind
   , iverbHit = "burn"
   , iweight  = 3000
   , idamage  = 2 `d` 1
-  , iaspects = [ AddSkill SkShine 4, AddSkill SkSight (-1)
+  , iaspects = [ AddSkill SkShine 4
                , SetFlag Lobable, SetFlag Fragile, SetFlag Equipable
                , EqpSlot EqpSlotShine ]
   , ieffects = [ Explode S_FOCUSED_BURNING_OIL_4
@@ -1166,7 +1164,7 @@ imageItensifier = ItemKind
   , iverbHit = "bang"
   , iweight  = 500
   , idamage  = 0
-  , iaspects = [ AddSkill SkNocto 1, AddSkill SkSight (-1)
+  , iaspects = [ AddSkill SkNocto 1
                , AddSkill SkArmorMelee $ (-6 + 1 `dL` 3) * 5
                , SetFlag Precious, SetFlag Equipable
                , EqpSlot EqpSlotMiscBonus ]
@@ -1454,7 +1452,7 @@ helmArmored = ItemKind
   , idamage  = 0
   , iaspects = [ AddSkill SkArmorMelee $ (1 + 1 `dL` 4) * 5
                , AddSkill SkArmorRanged $ (2 + 1 `dL` 2) * 3  -- headshot
-               , AddSkill SkSight (-1)
+               , AddSkill SkSight (-2)
                , AddSkill SkHearing (-3), AddSkill SkSmell (-5)
                , SetFlag Durable, SetFlag Equipable
                , EqpSlot EqpSlotArmorRanged ]
