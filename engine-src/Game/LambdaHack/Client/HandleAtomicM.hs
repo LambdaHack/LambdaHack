@@ -239,6 +239,7 @@ cmdAtomicSemCli oldState cmd = case cmd of
     COps{cocave} <- getsState scops
     fact <- getsState $ (EM.! side) . sfactionD
     snxtChal <- getsClient snxtChal
+    smarkSuspect <- getsClient smarkSuspect
     svictories <- getsClient svictories
     scampings <- getsClient scampings
     srestarts <- getsClient srestarts
@@ -256,6 +257,7 @@ cmdAtomicSemCli oldState cmd = case cmd of
                   , srandom
                   , scurChal
                   , snxtChal
+                  , smarkSuspect
                   , scondInMelee = EM.empty
                   , svictories
                   , scampings

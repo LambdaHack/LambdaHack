@@ -514,6 +514,8 @@ displayRespUpdAtomicUI cmd = case cmd of
         { schanF = schanF oldSess
         , sccui = sccui oldSess
         , shistory = shistory oldSess
+        , smarkVision = smarkVision oldSess
+        , smarkSmell = smarkSmell oldSess
         , snxtScenario
         , scurTutorial = snxtTutorial oldSess  -- quite random for screensavers
         , snxtTutorial = nxtGameTutorial
