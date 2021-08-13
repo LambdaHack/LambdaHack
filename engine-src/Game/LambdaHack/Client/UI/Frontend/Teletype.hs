@@ -33,13 +33,11 @@ startup coscreen = do
   rf <- createRawFrontend coscreen (display coscreen) shutdown
   let storeKeys :: IO ()
       storeKeys = do
-        l <- SIO.getLine  -- blocks here, so no polling
-        let c = case l of
-              [] -> '\n'  -- empty line counts as RET
-              hd : _ -> hd
-            K.KM{..} = keyTranslate c
+        c <- SIO.getChar  -- blocks here, so no polling
+        let K.KM{..} = keyTranslate c
         saveKMP rf modifier key (PointUI 0 0)
         storeKeys
+  SIO.hSetBuffering SIO.stdin SIO.NoBuffering
   void $ async storeKeys
   return $! rf
 
