@@ -232,8 +232,8 @@ projectA ts =
                 (projectI ts)
 
 flingTs :: [TriggerItem]
-flingTs = [TriggerItem { tiverb = "start flinging"
-                       , tiobject = "projectiles"
+flingTs = [TriggerItem { tiverb = "fling"
+                       , tiobject = "in-range projectile"
                        , tisymbols = "" }]
 
 applyIK :: [TriggerItem] -> CmdTriple
