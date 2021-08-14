@@ -40,7 +40,7 @@ import Prelude ()
 
 import Game.LambdaHack.Core.Prelude
 
-import           Data.Either (fromRight)
+import           Data.Either
 import qualified Data.EnumMap.Strict as EM
 import qualified Data.EnumSet as ES
 import qualified Data.Map.Strict as M
@@ -380,7 +380,9 @@ chooseItemProjectHuman ts = do
           itemFull <- getsState $ itemToFull iid
           bag <- getsState $ getBodyStoreBag b fromCStore
           case iid `EM.lookup` bag of
-            Just _ | either (const False) snd (psuitReqFun itemFull) ->
+            Just _ | isRight (psuitReqFun itemFull) ->
+              -- The player knows what he's doing. We warn him about range
+              -- and experimenting with unknown precious items is fine.
               return Nothing
             _ -> do
               modifySession $ \sess -> sess {sitemSel = Nothing}
@@ -388,6 +390,8 @@ chooseItemProjectHuman ts = do
         Nothing -> do
           let psuit =
                 return $ SuitsSomething $ \_ itemFull _kit ->
+                  -- Here the player does not explicitly pick an item,
+                  -- so we may exclude precious unknown items, etc.
                   either (const False) snd (psuitReqFun itemFull)
                   && (null triggerSyms
                       || IK.isymbol (itemKind itemFull) `elem` triggerSyms)
