@@ -987,7 +987,23 @@ doLook = do
       b <- getsState $ getActorBody leader
       let xhairPos = fromMaybe (bpos b) mxhairPos
       blurb <- lookAtPosition lidV xhairPos
-      mapM_ (uncurry msgAdd) blurb
+      itemSel <- getsSession sitemSel
+      outOfRangeBlurb <-
+        if detailLevel aimMode < DetailAll then return [] else do
+          mpos <- posFromXhair
+          case mpos of
+            Left{} -> return []
+            Right pos -> case itemSel of
+              Just (iid, _, _) -> do
+                itemFull <- getsState $ itemToFull iid
+                let arItem = aspectRecordFull itemFull
+                return $!
+                  if 1 + IA.totalRange arItem (itemKind itemFull)
+                     >= chessDist (bpos b) pos
+                  then []
+                  else [(MsgPromptGeneric, "This position is out of range when flinging the selected item.")]
+              Nothing -> return []
+      mapM_ (uncurry msgAdd) $ blurb ++ outOfRangeBlurb
 
 -- * ItemClear
 
