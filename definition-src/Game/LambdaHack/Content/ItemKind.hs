@@ -14,10 +14,11 @@ module Game.LambdaHack.Content.ItemKind
   , timeoutAspect, orEffect, onSmashEffect, onCombineEffect, alwaysDudEffect
   , damageUsefulness, verbMsgNoLonger, verbMsgLess, toVelocity, toLinger
   , timerNone, isTimerNone, foldTimer, toOrganBad, toOrganGood, toOrganNoTimer
+  , validateSingle
 #ifdef EXPOSE_INTERNAL
     -- * Internal operations
   , boostItemKind, onSmashOrCombineEffect
-  , validateSingle, validateAll, validateDups, validateDamage
+  , validateAll, validateDups, validateDamage
   , mandatoryGroups, mandatoryGroupsSingleton
 #endif
   ) where
