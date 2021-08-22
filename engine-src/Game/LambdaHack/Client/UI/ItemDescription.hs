@@ -377,7 +377,7 @@ viewItem :: ItemFull -> Color.AttrCharW32
 {-# INLINE viewItem #-}
 viewItem itemFull =
   Color.attrChar2ToW32 (flavourToColor $ jflavour $ itemBase itemFull)
-                       (IK.isymbol $ itemKind itemFull)
+                       (displayContentSymbol $ IK.isymbol $ itemKind itemFull)
 
 itemDesc :: Int -> Bool -> FactionId -> FactionDict -> Int -> CStore -> Time
          -> LevelId -> ItemFull -> ItemQuant
