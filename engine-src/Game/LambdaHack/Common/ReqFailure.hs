@@ -229,9 +229,9 @@ permittedApply corule localTime skill calmE mstore
   if | skill < 1 -> Left ApplyUnskilled
      | skill < 2
        && IK.isymbol itemKind /= IK.rsymbolNecklace (RK.ritemSymbols corule)
-       && (IK.isymbol itemKind /= ','
+       && (IK.isymbol itemKind /= IK.rsymbolFood (RK.ritemSymbols corule)
            || mstore /= Just CGround) -> Left ApplyFood
-     | skill < 3 && IK.isymbol itemKind == '?' -> Left ApplyRead
+     | skill < 3 && IK.isymbol itemKind == IK.rsymbolScroll (RK.ritemSymbols corule) -> Left ApplyRead
      | skill < 4
        && let arItem = aspectRecordFull itemFull
           in IA.checkFlag Ability.Periodic arItem -> Left ApplyPeriodic

@@ -71,4 +71,9 @@ reqFailureUnitTests = testGroup "reqFailureUnitTests" $
                      testItemFull {itemKind = testItemKind{isymbol = '?'}}
                      quantSingle
       @?= Left ApplyRead
+  , testCase "twoSkillAnd,symbol_premittedApply_True" $
+      permittedApply standardRules timeZero 2 True Nothing
+                     testItemFull {itemKind = testItemKind{isymbol = ','}}
+                     quantSingle
+      @?= Right True
   ]
