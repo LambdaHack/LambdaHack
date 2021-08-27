@@ -99,34 +99,29 @@ toSlideshow FontSetup{..} okxs = Slideshow $ addFooters False okxsNotNull
   okxFilter (ov, kyxs) =
     (ov, filter (either (not . null) (const True) . fst) kyxs)
   okxsNotNull = map okxFilter okxs
-  pofOv :: Overlay -> PointUI
-  pofOv [] = PointUI 0 0
-  pofOv l = let pyAfterLast = 1 + maxYofOverlay l  -- append after last line
-            in PointUI 0 pyAfterLast
   atEnd = flip (++)
   appendToFontOverlayMap :: FontOverlayMap -> String
                          -> (FontOverlayMap, PointUI, DisplayFont, Int)
   appendToFontOverlayMap ovs msg =
-    let maxYminXofOverlay ov = let ymxOfOverlay (PointUI x y, _) = (- y, x)
-                               in minimum $ maxBound : map ymxOfOverlay ov
-        -- @SortOn@ less efficient here, because function cheap.
+    let maxYminXofOverlay ov =
+          let ymxOfOverlay (PointUI x y, _) = (- y, x)
+          in minimum $ maxBound : map ymxOfOverlay ov
+        -- @sortOn@ less efficient here, because function cheap.
         assocsYX = sortBy (comparing snd)
                    $ EM.assocs $ EM.map maxYminXofOverlay ovs
-        (fontMax, unique) = case assocsYX of
-          [] -> (monoFont, False)
-          (font, (y, _x)) : rest -> (font, all (\(_, (y2, _)) -> y /= y2) rest)
-        insertAl ovF =
-          let p = pofOv ovF
-              displayFont = case fontMax of
-                SquareFont | unique -> SquareFont
-                _ -> monoFont
-          in ( EM.insertWith atEnd displayFont [(p, stringToAL msg)] ovs
-             , p
-             , displayFont
-             , length msg )
-    in case EM.lookup fontMax ovs of
-      Just ovF -> insertAl ovF
-      Nothing -> insertAl []
+        (fontMax, yMax) = case assocsYX of
+          [] -> (monoFont, 0)
+          (font, (yNeg, _x)) : rest ->
+            let unique = all (\(_, (yNeg2, _)) -> yNeg /= yNeg2) rest
+            in ( if font == SquareFont && unique
+                 then font
+                 else monoFont
+               , - yNeg )
+        pMax = PointUI 0 (yMax + 1)  -- append after last line
+    in ( EM.insertWith atEnd fontMax [(pMax, stringToAL msg)] ovs
+       , pMax
+       , fontMax
+       , length msg )
   addFooters :: Bool -> [OKX] -> [OKX]
   addFooters _ [] = error $ "" `showFailure` okxsNotNull
   addFooters _ [(als, [])] =
