@@ -8,7 +8,7 @@ module Game.LambdaHack.Client.UI.Slideshow
   , highSlideshow
 #ifdef EXPOSE_INTERNAL
     -- * Internal operations
-  , moreMsg, endMsg, keysOKX, showTable, showNearbyScores
+  , keysOKX, showTable, showNearbyScores
 #endif
   ) where
 
@@ -104,9 +104,9 @@ toSlideshow FontSetup{..} okxs = Slideshow $ addFooters False okxsNotNull
   pofOv l = let pyAfterLast = 1 + maxYofOverlay l  -- append after last line
             in PointUI 0 pyAfterLast
   atEnd = flip (++)
-  appendToFontOverlayMap :: FontOverlayMap -> AttrLine
-                         -> (FontOverlayMap, PointUI, DisplayFont)
-  appendToFontOverlayMap ovs al =
+  appendToFontOverlayMap :: FontOverlayMap -> String
+                         -> (FontOverlayMap, PointUI, DisplayFont, Int)
+  appendToFontOverlayMap ovs msg =
     let maxYminXofOverlay ov = let ymxOfOverlay (PointUI x y, _) = (- y, x)
                                in minimum $ (0, 0) : map ymxOfOverlay ov
         -- @SortOn@ less efficient here, because function cheap.
@@ -120,22 +120,27 @@ toSlideshow FontSetup{..} okxs = Slideshow $ addFooters False okxsNotNull
               displayFont = case fontMax of
                 SquareFont | unique -> SquareFont
                 _ -> monoFont
-          in (EM.insertWith atEnd displayFont [(p, al)] ovs, p, displayFont)
+          in ( EM.insertWith atEnd displayFont [(p, stringToAL msg)] ovs
+             , p
+             , displayFont
+             , length msg )
     in case EM.lookup fontMax ovs of
       Just ovF -> insertAl ovF
       Nothing -> insertAl []
   addFooters :: Bool -> [OKX] -> [OKX]
   addFooters _ [] = error $ "" `showFailure` okxsNotNull
   addFooters _ [(als, [])] =
-    let (ovs, p, font) = appendToFontOverlayMap als (stringToAL endMsg)
-    in [(ovs, [(Left [K.safeSpaceKM], (p, ButtonWidth font 15))])]
+    -- TODO: make sure this case never coincides with the space button
+    -- actually returning to top, as opposed to finishing preview.
+    let (ovs, p, font, width) = appendToFontOverlayMap als "--end--"
+    in [(ovs, [(Left [K.safeSpaceKM], (p, ButtonWidth font width))])]
   addFooters False [(als, kxs)] = [(als, kxs)]
   addFooters True [(als, kxs)] =
-    let (ovs, p, font) = appendToFontOverlayMap als (stringToAL endMsg)
-    in [(ovs, kxs ++ [(Left [K.safeSpaceKM], (p, ButtonWidth font 15))])]
+    let (ovs, p, font, width) = appendToFontOverlayMap als "--back to top--"
+    in [(ovs, kxs ++ [(Left [K.safeSpaceKM], (p, ButtonWidth font width))])]
   addFooters _ ((als, kxs) : rest) =
-    let (ovs, p, font) = appendToFontOverlayMap als (stringToAL moreMsg)
-    in (ovs, kxs ++ [(Left [K.safeSpaceKM], (p, ButtonWidth font 8))])
+    let (ovs, p, font, width) = appendToFontOverlayMap als "--more--"
+    in (ovs, kxs ++ [(Left [K.safeSpaceKM], (p, ButtonWidth font width))])
        : addFooters True rest
 
 attrLinesToFontMap :: Int -> [(DisplayFont, [AttrLine])] -> FontOverlayMap
@@ -152,12 +157,6 @@ attrLinesToFontMap start0 blurb =
            , start2 )
       (ov, _) = foldl' addOverlay (EM.empty, start0) blurb
   in ov
-
-moreMsg :: String
-moreMsg = "--more--"
-
-endMsg :: String
-endMsg = "--back to top--"
 
 maxYofOverlay :: Overlay -> Int
 maxYofOverlay ov = let yOfOverlay (PointUI _ y, _) = y
