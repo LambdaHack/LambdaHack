@@ -18,6 +18,8 @@ import qualified Client.UI.Content.Input as Content.Input
 
 import SessionUIMock
 
+-- Run @test -p "In-game" --quickcheck-verbose@ to verify that quickcheck
+-- properties are not too often satisfied voidly.
 macroTests :: TestTree
 macroTests = testGroup "macroTests" $
   let coinput = IC.makeData Nothing Content.Input.standardKeysAndMouse
@@ -273,4 +275,38 @@ macroTests = testGroup "macroTests" $
          snd (last (unwindMacros (bindInput [("a", "xyV")] coinput)
                                  (stringToKeyMacro "'a'v")))
          @?= "xyxy"
+     , testProperty "In-game macro and equivalent predefined macro agree" $
+         forAll (listOf (elements "`ABvV")) $
+           \macro ->
+             let bindings = bindInput [("a", macro)] coinput
+                 inGameResult =
+                   snd (last (unwindMacros coinput
+                                           (stringToKeyMacro macro)))
+             in inGameResult
+                === snd (last (unwindMacros bindings
+                                            (stringToKeyMacro "a")))
+                .&&. inGameResult =/= "Macro looped"  -- may not loop
+     , testProperty "In-game and predefined with limited minimal bindings" $
+         forAll (listOf (elements "````''''ABCABCABCABCvVvVvVa")) $  -- may loop
+           \macro ->
+             let bindings = bindInput [("a", macro)] coinput
+             in snd (last (unwindMacros bindings
+                                        (stringToKeyMacro macro)))
+                === snd (last (unwindMacros bindings
+                                            (stringToKeyMacro "a")))
+     , testProperty "In-game and predefined with limited multiple bindings" $
+         forAll (listOf (elements "```ABCDvVabccc")) $
+           \macro ->
+             -- The macros may still loop due to mutual recursion,
+             -- even though direct recursion is ruled out by filtering.
+             let macroA = filter (/= 'a') macro
+                 macroB = filter (/= 'b') $ take 5 $ reverse macro
+                 bindings = bindInput [ ("a", macroA)
+                                      , ("b", macroB)
+                                      , ("c", "A'B''CD'") ]
+                                      coinput
+             in snd (last (unwindMacros bindings
+                                        (stringToKeyMacro macroA)))
+                === snd (last (unwindMacros bindings
+                                            (stringToKeyMacro "a")))
      ]
