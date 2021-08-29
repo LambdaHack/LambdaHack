@@ -2,7 +2,10 @@ module ItemDescriptionUnitTests (itemDescriptionUnitTests) where
 
 import Prelude ()
 
+
 import Game.LambdaHack.Core.Prelude
+
+import qualified Data.EnumMap.Strict as EM
 
 import Test.Tasty
 import Test.Tasty.HUnit
@@ -10,13 +13,10 @@ import Test.Tasty.HUnit
 import           Game.LambdaHack.Client.UI.ItemDescription
 import           Game.LambdaHack.Common.Item
 import           Game.LambdaHack.Common.ItemAspect
--- import           Game.LambdaHack.Common.ReqFailure
--- import           Game.LambdaHack.Common.Time
 import           Game.LambdaHack.Content.ItemKind
 import           Game.LambdaHack.Core.Dice
 import qualified Game.LambdaHack.Definition.Ability as Ability
 import           Game.LambdaHack.Definition.Color
--- import           Game.LambdaHack.Definition.Defs
 import           Game.LambdaHack.Definition.Flavour
 
 itemDescriptionUnitTests :: TestTree
@@ -50,9 +50,15 @@ itemDescriptionUnitTests = testGroup "itemDescriptionUnitTests" $
         , itemSuspect = True
         }
   in
-  [ testCase "testItem_viewItem_BlackX" $
+  [ testCase "testItem_viewItem_Blackx" $
       viewItem testItemFull @?= (attrChar2ToW32 Black 'x')
   , testCase "testItem!_viewItem_Black!" $
       viewItem testItemFull { itemKind = testItemKind { isymbol = '!' }}
       @?= (attrChar2ToW32 Black '!')
+  , testCase "testItem_viewItemWithEquipColor_isEquip_Greenx" $
+      viewItemWithEquipColor (EM.singleton (toEnum 42) (Benefit True 0 0 0 0)) (toEnum 42) testItemFull
+      @?= (attrChar2ToW32 BrGreen 'x')
+  , testCase "testItem_viewItemWithEquipColor_isNotEquip_Redx" $
+      viewItemWithEquipColor (EM.singleton (toEnum 42) (Benefit False 0 0 0 0)) (toEnum 42) testItemFull
+      @?= (attrChar2ToW32 BrRed 'x')
   ]

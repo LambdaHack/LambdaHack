@@ -453,8 +453,7 @@ test-suite test
   type:               exitcode-stdio-1.0
   hs-source-dirs:     test
   main-is:            Spec.hs
-  other-modules:      HandleHelperMUnitTests
-                      ItemDescriptionUnitTests
+  other-modules:      ItemDescriptionUnitTests
                       ItemKindUnitTests
                       ReqFailureUnitTests
                       SessionUIMock
@@ -464,6 +463,7 @@ test-suite test
                       ,this-game-src
                       ,base
                       ,containers
+                      ,enummapset
                       ,optparse-applicative
                       ,tasty >= 1.0
                       ,tasty-quickcheck
