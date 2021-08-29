@@ -1,5 +1,5 @@
 module SessionUIMock
-  ( unwindMacros, unwindMacrosAcc
+  ( unwindMacros
   ) where
 
 import Prelude ()
@@ -119,8 +119,8 @@ promptGetKeyMock = do
         return (Just km)
     KeyMacro [] -> return Nothing
 
-unwindMacros :: IC.InputContent -> KeyMacro -> [(BufferTrace, ActionLog)]
-unwindMacros coinput keyPending =
+unwindMacrosFull :: IC.InputContent -> KeyMacro -> [(BufferTrace, ActionLog)]
+unwindMacrosFull coinput keyPending =
   let initSession = SessionUIMock
         { smacroFrame = emptyMacroFrame {keyPending}
         , smacroStack = []
@@ -132,11 +132,13 @@ accumulateActions :: [(BufferTrace, ActionLog)] -> [(BufferTrace, ActionLog)]
 accumulateActions ba =
   let (buffers, actions) = unzip ba
       actionlog = concat <$> inits actions
-  in zip buffers actionlog
+  in if snd (last ba) == "Macro looped"
+     then ba
+     else zip buffers actionlog
 
-unwindMacrosAcc :: IC.InputContent -> KeyMacro -> [(BufferTrace, ActionLog)]
-unwindMacrosAcc coinput keyPending =
-  accumulateActions $ unwindMacros coinput keyPending
+unwindMacros :: IC.InputContent -> KeyMacro -> [(BufferTrace, ActionLog)]
+unwindMacros coinput keyPending =
+  accumulateActions $ unwindMacrosFull coinput keyPending
 
 renderTrace :: [KeyMacroFrame] -> BufferTrace
 renderTrace macroFrames =
