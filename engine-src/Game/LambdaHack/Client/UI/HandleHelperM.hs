@@ -252,11 +252,7 @@ itemOverlay lSlots lid bag displayRanged = do
                 arItem = aspectRecordFull itemFull
                 colorSymbol =
                   if IA.checkFlag Ability.Condition arItem
-                  then let color = if benInEqp (discoBenefit EM.! iid)
-                                   then Color.BrGreen
-                                   else Color.BrRed
-                       in Color.attrChar2ToW32 color
-                                               (IK.isymbol $ itemKind itemFull)
+                  then viewItemWithEquipColor discoBenefit iid itemFull
                   else viewItem itemFull
                 phrase = makePhrase
                   [partItemWsRanged rwidth side factionD displayRanged
@@ -304,11 +300,12 @@ skillsOverlay aid = do
       skillValue = EM.singleton monoFont $ offsetOverlayX skValue
   return (EM.unionsWith (++) [skillLab, skillDescr, skillValue], kxs)
 
+-- extract a set of places for each level, counting number of each kind of PlaceEntry
 placesFromState :: ContentData PK.PlaceKind -> ClientOptions -> State
                 -> EM.EnumMap (ContentId PK.PlaceKind)
                               (ES.EnumSet LevelId, Int, Int, Int)
 placesFromState coplace ClientOptions{sexposePlaces} s =
-  let addEntries (!es1, !ne1, !na1, !nd1) (!es2, !ne2, !na2, !nd2) =
+  let addEntries (!es1, !ne1, !na1, !nd1) (!es2, !ne2, !na2, !nd2) =  -- enum set, number entries, number arounds, number exists (dunno why it starts with d)
         let !es = ES.union es1 es2
             !ne = ne1 + ne2
             !na = na1 + na2
@@ -324,13 +321,15 @@ placesFromState coplace ClientOptions{sexposePlaces} s =
               EM.insertWith addEntries pk (ES.singleton lid, 0, 1, 0) em
             f (PK.PExists pk) em =
               EM.insertWith addEntries pk (ES.singleton lid, 0, 0, 1) em
-        in EM.foldr' f EM.empty lentry
+        in EM.foldr' f EM.empty lentry  -- go through place entrances and depending on place add an entry for whether Entry/Around/Exists - effect being we're counting #s of each type
       insertZeros !em !pk _ = EM.insert pk (ES.empty, 0, 0, 0) em
-      initialPlaces | not sexposePlaces = EM.empty
-                    | otherwise = ofoldlWithKey' coplace insertZeros EM.empty
+      initialPlaces | not sexposePlaces = EM.empty                                -- if not exposing places, don't list them
+                    | otherwise = ofoldlWithKey' coplace insertZeros EM.empty     -- otherwise do
   in EM.unionWith addEntries
        initialPlaces
-       (EM.unionsWith addEntries $ map placesFromLevel $ EM.assocs $ sdungeon s)
+       (EM.unionsWith addEntries $ map placesFromLevel $ EM.assocs $ sdungeon s)  
+        -- flatten the dungeon (which is a map of levelId -> level)
+        -- and accumulate the places for each level with counts
 
 placesOverlay :: MonadClientUI m => m OKX
 placesOverlay = do
