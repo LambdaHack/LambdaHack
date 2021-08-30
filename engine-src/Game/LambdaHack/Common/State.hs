@@ -1,4 +1,5 @@
--- | The common server and client basic game state type and its operations.
+-- | The common, for server and clients, main game state type
+-- and its operations.
 module Game.LambdaHack.Common.State
   ( -- * Basic game state, local or global
     State
@@ -48,12 +49,20 @@ import qualified Game.LambdaHack.Core.Dice as Dice
 import qualified Game.LambdaHack.Definition.Ability as Ability
 import           Game.LambdaHack.Definition.Defs
 
--- | View on the basic game state.
--- The @remembered@ fields, in client copies of the state, carry only
--- a subset of the full information that the server keeps.
--- Clients never directly change their @State@, but apply
--- atomic actions sent by the server to do so (and/or the server applies
--- the actions to each client state in turn).
+-- | The main game state, the basic one, pertaining to a single game,
+-- not to a single playing session or an intersection of both.
+-- This state persists between playing sessions, until the particular game ends.
+-- Anything that persists between games is stored in server state,
+-- client state or client UI session state.
+--
+-- Another differentiating property of this state is that it's kept
+-- separately on the server and each of the clients (players, human or AI)
+-- and separately updated, according to what each player can observe.
+-- It's never updated directly, but always through atomic commands
+-- ("CmdAtomic") that are filtered and interpreted differently
+-- on server and on each client. Therefore, the type is a view on the
+-- game state, not the real game state, except on the server that
+-- alone stores the full game information.
 data State = State
   { _sdungeon        :: Dungeon    -- ^ remembered dungeon
   , _stotalDepth     :: Dice.AbsDepth
