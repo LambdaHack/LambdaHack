@@ -166,12 +166,15 @@ buildPlace cops@COps{coplace, coTileSpeedup}
   let qarea = fromMaybe (error $ "" `showFailure` (kr, r))
               $ interiorArea kr rBetter
       override = if dark then poverrideDark kr else poverrideLit kr
-  (mOneIn, m) <- pover cops override
+  mOneIn <- pover cops override
   cmap <- tilePlace qarea kr
   let lookupOneIn :: Point -> Char -> ContentId TileKind
-      lookupOneIn xy c = case EM.lookup c mOneIn of
-        Just (k, n, tk) | isChancePos k n dsecret xy -> tk
-        _ -> EM.findWithDefault (error $ "" `showFailure` (c, mOneIn, m)) c m
+      lookupOneIn xy c =
+        let tktk = EM.findWithDefault
+                     (error $ "" `showFailure` (c, mOneIn)) c mOneIn
+        in case tktk of
+          (Just (k, n, tkSpice), _) | isChancePos k n dsecret xy -> tkSpice
+          (_, tk) -> tk
       qmap = EM.mapWithKey lookupOneIn cmap
   qfence <- buildFence cops kc dnight darkCorTile litCorTile
                        dark (pfence kr) qarea
@@ -213,25 +216,30 @@ olegend COps{cotile} cgroup =
       legend = ES.foldr' getLegend (return (EM.empty, EM.empty)) symbols
   in legend
 
+-- This can be optimized by memoization (storing these results per place,
+-- because they never change). If places appear often in all scenarios,
+-- precomputation may be a good idea, too, and then the place to store
+-- the results is @coPlaceSpeedup@ in @COps@.
 pover :: COps -> [(Char, GroupName TileKind)]
-      -> Rnd ( EM.EnumMap Char (Int, Int, ContentId TileKind)
-             , EM.EnumMap Char (ContentId TileKind) )
+      -> Rnd ( EM.EnumMap Char ( Maybe (Int, Int, ContentId TileKind)
+                               , ContentId TileKind ) )
 pover COps{cotile} poverride =
   let getLegend (s, cgroup) acc = do
-        (mOneIn, m) <- acc
+        m <- acc
         mtkSpice <- opick cotile cgroup (Tile.kindHasFeature TK.Spice)
         tk <- fromMaybe (error $ "" `showFailure` (s, cgroup, poverride))
               <$> opick cotile cgroup (not . Tile.kindHasFeature TK.Spice)
-        return $! case mtkSpice of
-          Nothing -> (mOneIn, EM.insert s tk m)
-          Just tkSpice ->
-            -- Very likely that overrides have spice.
-            let n = fromMaybe (error $ show cgroup)
-                              (lookup cgroup (TK.tfreq (okind cotile tk)))
-                k = fromMaybe (error $ show cgroup)
-                              (lookup cgroup (TK.tfreq (okind cotile tkSpice)))
-            in (EM.insert s (k, n, tkSpice) mOneIn, EM.insert s tk m)
-  in foldr getLegend (return (EM.empty, EM.empty)) poverride
+        let assignKN tkSpice =
+              -- Very likely that overrides have spice.
+              let n = fromMaybe
+                        (error $ show cgroup)
+                        (lookup cgroup (TK.tfreq (okind cotile tk)))
+                  k = fromMaybe
+                        (error $ show cgroup)
+                        (lookup cgroup (TK.tfreq (okind cotile tkSpice)))
+              in (k, n, tkSpice)
+        return $! EM.insert s (assignKN <$> mtkSpice, tk) m
+  in foldr getLegend (return EM.empty) poverride
 
 -- | Construct a fence around a place.
 buildFence :: COps -> CaveKind -> Bool
