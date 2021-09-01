@@ -220,26 +220,28 @@ olegend COps{cotile} cgroup =
 -- because they never change). If places appear often in all scenarios,
 -- precomputation may be a good idea, too, and then the place to store
 -- the results is @coPlaceSpeedup@ in @COps@.
-pover :: COps -> [(Char, GroupName TileKind)]
+pover :: COps -> EM.EnumMap Char (GroupName TileKind)
       -> Rnd ( EM.EnumMap Char ( Maybe (Int, Int, ContentId TileKind)
                                , ContentId TileKind ) )
 pover COps{cotile} poverride =
-  let getLegend (s, cgroup) acc = do
-        m <- acc
+  let assignKN :: GroupName TileKind -> ContentId TileKind -> ContentId TileKind
+               -> (Int, Int, ContentId TileKind)
+      assignKN cgroup tk tkSpice =
+        -- Very likely that overrides have spice.
+        let n = fromMaybe (error $ show cgroup)
+                          (lookup cgroup (TK.tfreq (okind cotile tk)))
+            k = fromMaybe (error $ show cgroup)
+                          (lookup cgroup (TK.tfreq (okind cotile tkSpice)))
+        in (k, n, tkSpice)
+      getLegend :: GroupName TileKind
+                -> Rnd ( Maybe (Int, Int, ContentId TileKind)
+                       , ContentId TileKind )
+      getLegend cgroup = do
         mtkSpice <- opick cotile cgroup (Tile.kindHasFeature TK.Spice)
-        tk <- fromMaybe (error $ "" `showFailure` (s, cgroup, poverride))
+        tk <- fromMaybe (error $ "" `showFailure` (cgroup, poverride))
               <$> opick cotile cgroup (not . Tile.kindHasFeature TK.Spice)
-        let assignKN tkSpice =
-              -- Very likely that overrides have spice.
-              let n = fromMaybe
-                        (error $ show cgroup)
-                        (lookup cgroup (TK.tfreq (okind cotile tk)))
-                  k = fromMaybe
-                        (error $ show cgroup)
-                        (lookup cgroup (TK.tfreq (okind cotile tkSpice)))
-              in (k, n, tkSpice)
-        return $! EM.insert s (assignKN <$> mtkSpice, tk) m
-  in foldr getLegend (return EM.empty) poverride
+        return (assignKN cgroup tk <$> mtkSpice, tk)
+  in mapM getLegend poverride
 
 -- | Construct a fence around a place.
 buildFence :: COps -> CaveKind -> Bool

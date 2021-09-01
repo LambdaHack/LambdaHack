@@ -411,6 +411,7 @@ library this-game-content
   autogen-modules:    Paths_LambdaHack
   build-depends:      ,definition
                       ,base
+                      ,enummapset
                       ,filepath
                       ,hsini
                       ,template-haskell

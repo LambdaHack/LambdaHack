@@ -13,6 +13,7 @@ import Prelude ()
 
 import Game.LambdaHack.Core.Prelude
 
+import qualified Data.EnumMap.Strict as EM
 import qualified Data.Text as T
 
 import Content.TileKind hiding (content, groupNames, groupNamesSingleton)
@@ -104,27 +105,29 @@ generatedEscapes =
       outdoorEscapes = map switchEscapeToOutdoorDown escapeDownBasic
   in upEscapes ++ outdoorEscapes
 
-defaultLegendLit :: [(Char, GroupName TileKind)]
-defaultLegendLit = [ (' ', FILLER_WALL)
-                   , ('|', S_WALL_LIT)
-                   , ('-', S_WALL_HORIZONTAL_LIT)
-                   , ('0', S_PILLAR)
-                   , ('&', S_RUBBLE_PILE)
-                   , ('<', ESCAPE_UP)
-                   , ('>', ESCAPE_DOWN)
-                   , (floorSymbol, FLOOR_ACTOR_ITEM_LIT)
-                   , ('~', S_SHALLOW_WATER_LIT) ]
+defaultLegendLit :: EM.EnumMap Char (GroupName TileKind)
+defaultLegendLit = EM.fromList
+  [ (' ', FILLER_WALL)
+  , ('|', S_WALL_LIT)
+  , ('-', S_WALL_HORIZONTAL_LIT)
+  , ('0', S_PILLAR)
+  , ('&', S_RUBBLE_PILE)
+  , ('<', ESCAPE_UP)
+  , ('>', ESCAPE_DOWN)
+  , (floorSymbol, FLOOR_ACTOR_ITEM_LIT)
+  , ('~', S_SHALLOW_WATER_LIT) ]
 
-defaultLegendDark :: [(Char, GroupName TileKind)]
-defaultLegendDark = [ (' ', FILLER_WALL)
-                    , ('|', S_WALL_DARK)
-                    , ('-', S_WALL_HORIZONTAL_DARK)
-                    , ('0', S_PILLAR)
-                    , ('&', S_RUBBLE_PILE)
-                    , ('<', ESCAPE_UP)
-                    , ('>', ESCAPE_DOWN)
-                    , (floorSymbol, FLOOR_ACTOR_ITEM_DARK)
-                    , ('~', S_SHALLOW_WATER_DARK) ]
+defaultLegendDark :: EM.EnumMap Char (GroupName TileKind)
+defaultLegendDark = EM.fromList
+  [ (' ', FILLER_WALL)
+  , ('|', S_WALL_DARK)
+  , ('-', S_WALL_HORIZONTAL_DARK)
+  , ('0', S_PILLAR)
+  , ('&', S_RUBBLE_PILE)
+  , ('<', ESCAPE_UP)
+  , ('>', ESCAPE_DOWN)
+  , (floorSymbol, FLOOR_ACTOR_ITEM_DARK)
+  , ('~', S_SHALLOW_WATER_DARK) ]
 
 -- The dots below are @'\x00B7'@, as defined in @TileKind.floorSymbol@.
 deadEnd = PlaceKind  -- needs to have index 0
@@ -158,12 +161,14 @@ rect2 = rect
 rect3 = rect
   { pname    = "a shed"
   , pfreq    = [(BRAWL, 10), (SHOOTOUT, 1)]
-  , poverrideDark = [ ('|', S_WALL_LIT)  -- visible from afar
-                    , ('-', S_WALL_HORIZONTAL_LIT) ]
-                    ++ defaultLegendDark
-  , poverrideLit = [ ('|', S_WALL_LIT)
-                   , ('-', S_WALL_HORIZONTAL_LIT) ]
-                   ++ defaultLegendLit
+  , poverrideDark = EM.fromList
+                      [ ('|', S_WALL_LIT)  -- visible from afar
+                      , ('-', S_WALL_HORIZONTAL_LIT) ]
+                    `EM.union` defaultLegendDark
+  , poverrideLit = EM.fromList
+                     [ ('|', S_WALL_LIT)
+                     , ('-', S_WALL_HORIZONTAL_LIT) ]
+                   `EM.union` defaultLegendLit
   }
 rect4 = rect3
   { pname    = "cabinet"
@@ -179,12 +184,14 @@ rectWindows = PlaceKind
   , ptopLeft = [ "-="
                , "!·"
                ]
-  , poverrideDark = [ ('=', RECT_WINDOWS_HORIZONTAL_DARK)
-                    , ('!', RECT_WINDOWS_VERTICAL_DARK) ]
-                    ++ defaultLegendDark
-  , poverrideLit = [ ('=', RECT_WINDOWS_HORIZONTAL_LIT)
-                   , ('!', RECT_WINDOWS_VERTICAL_LIT) ]
-                   ++ defaultLegendLit
+  , poverrideDark = EM.fromList
+                      [ ('=', RECT_WINDOWS_HORIZONTAL_DARK)
+                      , ('!', RECT_WINDOWS_VERTICAL_DARK) ]
+                    `EM.union` defaultLegendDark
+  , poverrideLit = EM.fromList
+                     [ ('=', RECT_WINDOWS_HORIZONTAL_LIT)
+                     , ('!', RECT_WINDOWS_VERTICAL_LIT) ]
+                   `EM.union` defaultLegendLit
   }
 glasshouse = PlaceKind
   { psymbol  = 'g'
@@ -196,22 +203,26 @@ glasshouse = PlaceKind
   , ptopLeft = [ "=="
                , "!·"
                ]
-  , poverrideDark = [ ('=', GLASSHOUSE_HORIZONTAL_LIT)  -- visible from afar
-                    , ('!', GLASSHOUSE_VERTICAL_LIT) ]
-                    ++ defaultLegendDark
-  , poverrideLit = [ ('=', GLASSHOUSE_HORIZONTAL_LIT)
-                   , ('!', GLASSHOUSE_VERTICAL_LIT) ]
-                   ++ defaultLegendLit
+  , poverrideDark = EM.fromList
+                      [ ('=', GLASSHOUSE_HORIZONTAL_LIT)  -- visible from afar
+                      , ('!', GLASSHOUSE_VERTICAL_LIT) ]
+                    `EM.union` defaultLegendDark
+  , poverrideLit = EM.fromList
+                     [ ('=', GLASSHOUSE_HORIZONTAL_LIT)
+                     , ('!', GLASSHOUSE_VERTICAL_LIT) ]
+                   `EM.union` defaultLegendLit
   }
 glasshouse2 = glasshouse
   { pname    = "a glass cage"
   , pfreq    = [(ZOO, 10)]
-  , poverrideDark = [ ('=', GLASSHOUSE_HORIZONTAL_DARK)
-                    , ('!', GLASSHOUSE_VERTICAL_DARK) ]
-                    ++ defaultLegendDark
-  , poverrideLit = [ ('=', GLASSHOUSE_HORIZONTAL_LIT)
-                   , ('!', GLASSHOUSE_VERTICAL_LIT) ]
-                   ++ defaultLegendLit
+  , poverrideDark = EM.fromList
+                      [ ('=', GLASSHOUSE_HORIZONTAL_DARK)
+                      , ('!', GLASSHOUSE_VERTICAL_DARK) ]
+                    `EM.union` defaultLegendDark
+  , poverrideLit = EM.fromList
+                     [ ('=', GLASSHOUSE_HORIZONTAL_LIT)
+                     , ('!', GLASSHOUSE_VERTICAL_LIT) ]
+                   `EM.union` defaultLegendLit
   }
 glasshouse3 = glasshouse
   { pname    = "a reading room"
@@ -228,14 +239,16 @@ pulpit = PlaceKind
                , "!··"
                , "··0"
                ]
-  , poverrideDark = [ ('=', GLASSHOUSE_HORIZONTAL_LIT)
-                    , ('!', GLASSHOUSE_VERTICAL_LIT)
-                    , ('0', S_PULPIT) ]
-                    ++ defaultLegendDark
-  , poverrideLit = [ ('=', GLASSHOUSE_HORIZONTAL_LIT)
-                   , ('!', GLASSHOUSE_VERTICAL_LIT)
-                   , ('0', S_PULPIT) ]
-                   ++ defaultLegendLit
+  , poverrideDark = EM.fromList
+                      [ ('=', GLASSHOUSE_HORIZONTAL_LIT)
+                      , ('!', GLASSHOUSE_VERTICAL_LIT)
+                      , ('0', S_PULPIT) ]
+                    `EM.union` defaultLegendDark
+  , poverrideLit = EM.fromList
+                     [ ('=', GLASSHOUSE_HORIZONTAL_LIT)
+                     , ('!', GLASSHOUSE_VERTICAL_LIT)
+                     , ('0', S_PULPIT) ]
+                   `EM.union` defaultLegendLit
       -- except for floor, this will all be lit, regardless of night/dark; OK
   }
 ruin = PlaceKind
@@ -254,12 +267,14 @@ ruin = PlaceKind
 ruin2 = ruin
   { pname    = "blasted walls"
   , pfreq    = [(AMBUSH, 50)]
-  , poverrideDark = [ ('|', S_WALL_LIT)  -- visible from afar
-                    , ('-', S_WALL_HORIZONTAL_LIT) ]
-                    ++ defaultLegendDark
-  , poverrideLit = [ ('|', S_WALL_LIT)
-                   , ('-', S_WALL_HORIZONTAL_LIT) ]
-                   ++ defaultLegendLit
+  , poverrideDark = EM.fromList
+                      [ ('|', S_WALL_LIT)  -- visible from afar
+                      , ('-', S_WALL_HORIZONTAL_LIT) ]
+                    `EM.union` defaultLegendDark
+  , poverrideLit = EM.fromList
+                     [ ('|', S_WALL_LIT)
+                     , ('-', S_WALL_HORIZONTAL_LIT) ]
+                   `EM.union` defaultLegendLit
   }
 collapsed = PlaceKind
   { psymbol  = 'c'
@@ -356,10 +371,12 @@ pillar4 = pillar
                , "|0·0·"
                , "|····"
                ]
-  , poverrideDark = [('&', CACHE)]
-                    ++ defaultLegendDark
-  , poverrideLit = [('&', CACHE)]
-                   ++ defaultLegendLit
+  , poverrideDark = EM.fromList
+                      [('&', CACHE)]
+                    `EM.union` defaultLegendDark
+  , poverrideLit = EM.fromList
+                     [('&', CACHE)]
+                   `EM.union` defaultLegendLit
   }
 pillar5 = pillar
   { pname    = "a decorated hall"
@@ -370,10 +387,12 @@ pillar5 = pillar
                , "|0···"
                , "|····"
                ]
-  , poverrideDark = [('&', CACHE)]
-                    ++ defaultLegendDark
-  , poverrideLit = [('&', CACHE)]
-                   ++ defaultLegendLit
+  , poverrideDark = EM.fromList
+                      [('&', CACHE)]
+                    `EM.union` defaultLegendDark
+  , poverrideLit = EM.fromList
+                     [('&', CACHE)]
+                   `EM.union` defaultLegendLit
   }
 colonnade = PlaceKind
   { psymbol  = 'c'
@@ -434,10 +453,12 @@ lampPost = PlaceKind
                , "·0·"
                , "X·X"
                ]
-  , poverrideDark = [('0', S_LAMP_POST), ('·', S_FLOOR_ACTOR_LIT)]
-                    ++ defaultLegendDark
-  , poverrideLit = [('0', S_LAMP_POST), ('·', S_FLOOR_ACTOR_LIT)]
-                   ++ defaultLegendLit
+  , poverrideDark = EM.fromList
+                      [('0', S_LAMP_POST), ('·', S_FLOOR_ACTOR_LIT)]
+                    `EM.union` defaultLegendDark
+  , poverrideLit = EM.fromList
+                     [('0', S_LAMP_POST), ('·', S_FLOOR_ACTOR_LIT)]
+                   `EM.union` defaultLegendLit
   }
 lampPost2 = lampPost
   { ptopLeft = [ "···"
@@ -475,14 +496,16 @@ treeShade = PlaceKind
                , "s0·"
                , "Xs·"
                ]
-  , poverrideDark = [ ('0', S_TREE_DARK)
-                    , ('s', TREE_SHADE_WALKABLE_DARK)
-                    , ('·', S_SHADED_GROUND) ]
-                    ++ defaultLegendDark
-  , poverrideLit = [ ('0', S_TREE_LIT)
-                   , ('s', TREE_SHADE_WALKABLE_LIT)
-                   , ('·', S_SHADED_GROUND) ]
-                   ++ defaultLegendLit
+  , poverrideDark = EM.fromList
+                      [ ('0', S_TREE_DARK)
+                      , ('s', TREE_SHADE_WALKABLE_DARK)
+                      , ('·', S_SHADED_GROUND) ]
+                    `EM.union` defaultLegendDark
+  , poverrideLit = EM.fromList
+                     [ ('0', S_TREE_LIT)
+                     , ('s', TREE_SHADE_WALKABLE_LIT)
+                     , ('·', S_SHADED_GROUND) ]
+                   `EM.union` defaultLegendLit
   }
 fogClump = PlaceKind
   { psymbol  = 'f'
@@ -495,10 +518,12 @@ fogClump = PlaceKind
                , ";f"
                , ";X"
                ]
-  , poverrideDark = [('f', FOG_CLUMP_DARK), (';', S_FOG_LIT)]
-                    ++ defaultLegendDark
-  , poverrideLit = [('f', FOG_CLUMP_LIT), (';', S_FOG_LIT)]
-                   ++ defaultLegendLit
+  , poverrideDark = EM.fromList
+                      [('f', FOG_CLUMP_DARK), (';', S_FOG_LIT)]
+                    `EM.union` defaultLegendDark
+  , poverrideLit = EM.fromList
+                     [('f', FOG_CLUMP_LIT), (';', S_FOG_LIT)]
+                   `EM.union` defaultLegendLit
   }
 fogClump2 = fogClump
   { pfreq    = [(SHOOTOUT, 500), (EMPTY, 50)]
@@ -519,12 +544,14 @@ smokeClump = PlaceKind
                , ";f"
                , ";X"
                ]
-  , poverrideDark = [ ('f', SMOKE_CLUMP_DARK), (';', S_SMOKE_LIT)
-                    , ('·', S_FLOOR_ACTOR_DARK) ]
-                    ++ defaultLegendDark
-  , poverrideLit = [ ('f', SMOKE_CLUMP_LIT), (';', S_SMOKE_LIT)
-                   , ('·', S_FLOOR_ACTOR_LIT) ]
-                   ++ defaultLegendLit
+  , poverrideDark = EM.fromList
+                      [ ('f', SMOKE_CLUMP_DARK), (';', S_SMOKE_LIT)
+                      , ('·', S_FLOOR_ACTOR_DARK) ]
+                    `EM.union` defaultLegendDark
+  , poverrideLit = EM.fromList
+                     [ ('f', SMOKE_CLUMP_LIT), (';', S_SMOKE_LIT)
+                     , ('·', S_FLOOR_ACTOR_LIT) ]
+                   `EM.union` defaultLegendLit
   }
 smokeClump2 = smokeClump
   { pfreq    = [(ZOO, 500)]
@@ -559,10 +586,12 @@ bushClump = PlaceKind
                , ";X"
                , ";;"
                ]
-  , poverrideDark = [('f', BUSH_CLUMP_DARK), (';', S_BUSH_LIT)]
-                    ++ defaultLegendDark
-  , poverrideLit = [('f', BUSH_CLUMP_LIT), (';', S_BUSH_LIT)]
-                   ++ defaultLegendLit
+  , poverrideDark = EM.fromList
+                      [('f', BUSH_CLUMP_DARK), (';', S_BUSH_LIT)]
+                    `EM.union` defaultLegendDark
+  , poverrideLit = EM.fromList
+                     [('f', BUSH_CLUMP_LIT), (';', S_BUSH_LIT)]
+                   `EM.union` defaultLegendLit
       -- should not be used in caves with trails, because bushes can't
       -- grow over such artificial trails
   }
@@ -583,12 +612,14 @@ escapeDown = PlaceKind
   , pfence   = FGround
   , ptopLeft = [ ">"
                ]
-  , poverrideDark = [ ('|', S_WALL_LIT)  -- visible from afar
-                    , ('-', S_WALL_HORIZONTAL_LIT) ]
-                    ++ defaultLegendDark
-  , poverrideLit = [ ('|', S_WALL_LIT)
-                   , ('-', S_WALL_HORIZONTAL_LIT) ]
-                   ++ defaultLegendLit
+  , poverrideDark = EM.fromList
+                      [ ('|', S_WALL_LIT)  -- visible from afar
+                      , ('-', S_WALL_HORIZONTAL_LIT) ]
+                    `EM.union` defaultLegendDark
+  , poverrideLit = EM.fromList
+                     [ ('|', S_WALL_LIT)
+                     , ('-', S_WALL_HORIZONTAL_LIT) ]
+                   `EM.union` defaultLegendLit
   }
 escapeDown2 = escapeDown
   { pfreq    = [(INDOOR_ESCAPE_DOWN, 1000)]
@@ -637,16 +668,18 @@ staircase = PlaceKind
   , pfence   = FGround
   , ptopLeft = [ "<·>"
                ]
-  , poverrideDark = [ ('<', STAIRCASE_UP), ('>', STAIRCASE_DOWN)
-                    , ('I', SIGNBOARD)
-                    , ('|', S_WALL_LIT), ('-', S_WALL_HORIZONTAL_LIT) ]
-                      -- seen from afar
-                    ++ defaultLegendDark
-  , poverrideLit = [ ('<', STAIRCASE_UP), ('>', STAIRCASE_DOWN)
-                   , ('I', SIGNBOARD)
-                   , ('|', S_WALL_LIT), ('-', S_WALL_HORIZONTAL_LIT) ]
-                     -- seen from afar
-                   ++ defaultLegendLit
+  , poverrideDark = EM.fromList
+                      [ ('<', STAIRCASE_UP), ('>', STAIRCASE_DOWN)
+                      , ('I', SIGNBOARD)
+                      , ('|', S_WALL_LIT), ('-', S_WALL_HORIZONTAL_LIT) ]
+                        -- seen from afar
+                    `EM.union` defaultLegendDark
+  , poverrideLit = EM.fromList
+                     [ ('<', STAIRCASE_UP), ('>', STAIRCASE_DOWN)
+                     , ('I', SIGNBOARD)
+                     , ('|', S_WALL_LIT), ('-', S_WALL_HORIZONTAL_LIT) ]
+                       -- seen from afar
+                   `EM.union` defaultLegendLit
   }
 staircase1 = staircase
   { prarity  = [(1, 1)]  -- no cover when arriving; so low rarity
@@ -1024,10 +1057,12 @@ switchStaircaseToUp s = s
  { psymbol   = '<'
  , pname     = pname s <+> "up"
  , pfreq     = renameFreqs (<+> "up") $ pfreq s
- , poverrideDark = ('>', STAIR_TERMINAL_DARK)
-                   : filter ((/= '>') . fst) (poverrideDark s)
- , poverrideLit = ('>', STAIR_TERMINAL_LIT)
-                  : filter ((/= '>') . fst) (poverrideLit s)
+ , poverrideDark = EM.fromList
+                     [('>', STAIR_TERMINAL_DARK)]
+                   `EM.union` poverrideDark s
+ , poverrideLit = EM.fromList
+                     [('>', STAIR_TERMINAL_LIT)]
+                  `EM.union` poverrideLit s
  }
 
 switchStaircaseToDown :: PlaceKind -> PlaceKind
@@ -1035,14 +1070,16 @@ switchStaircaseToDown s = s
  { psymbol   = '>'
  , pname     = pname s <+> "down"
  , pfreq     = renameFreqs (<+> "down") $ pfreq s
- , poverrideDark = ('<', STAIR_TERMINAL_DARK)
-                   : filter ((/= '<') . fst) (poverrideDark s)
- , poverrideLit = ('<', STAIR_TERMINAL_LIT)
-                  : filter ((/= '<') . fst) (poverrideLit s)
+ , poverrideDark = EM.fromList
+                     [('<', STAIR_TERMINAL_DARK)]
+                   `EM.union` poverrideDark s
+ , poverrideLit = EM.fromList
+                    [('<', STAIR_TERMINAL_LIT)]
+                  `EM.union` poverrideLit s
  }
 
-overrideGated :: [(Char, GroupName TileKind)]
-overrideGated =
+overrideGated :: EM.EnumMap Char (GroupName TileKind)
+overrideGated = EM.fromList
   [ ('<', GATED_STAIRCASE_UP), ('>', GATED_STAIRCASE_DOWN)
   , ('I', SIGNBOARD)
   , ('|', S_WALL_LIT), ('-', S_WALL_HORIZONTAL_LIT) ]  -- visible from afar
@@ -1053,13 +1090,13 @@ switchStaircaseToGated s = s
  , pname     = T.unwords $ "a gated" : tail (T.words (pname s))
  , pfreq     = renameFreqs ("gated" <+>) $ pfreq s
  , poverrideDark = overrideGated
-                   ++ defaultLegendDark
+                   `EM.union` defaultLegendDark
  , poverrideLit = overrideGated
-                  ++ defaultLegendLit
+                  `EM.union` defaultLegendLit
  }
 
-overrideOutdoor :: [(Char, GroupName TileKind)]
-overrideOutdoor =
+overrideOutdoor :: EM.EnumMap Char (GroupName TileKind)
+overrideOutdoor = EM.fromList
   [ ('<', STAIRCASE_OUTDOOR_UP), ('>', STAIRCASE_OUTDOOR_DOWN)
   , ('I', SIGNBOARD)
   , ('|', S_WALL_LIT), ('-', S_WALL_HORIZONTAL_LIT) ]  -- visible from afar
@@ -1070,9 +1107,9 @@ switchStaircaseToOutdoor s = s
  , pname     = "an outdoor area exit"
  , pfreq     = renameFreqs ("outdoor" <+>) $ pfreq s
  , poverrideDark = overrideOutdoor
-                   ++ defaultLegendDark
+                   `EM.union` defaultLegendDark
  , poverrideLit = overrideOutdoor
-                  ++ defaultLegendLit
+                  `EM.union` defaultLegendLit
  }
 
 switchEscapeToUp :: PlaceKind -> PlaceKind
@@ -1080,14 +1117,22 @@ switchEscapeToUp s = s
  { psymbol   = '<'
  , pname     = "an escape up"
  , pfreq     = map (\(_, n) -> (INDOOR_ESCAPE_UP, n)) $ pfreq s
- , poverrideDark = ('>', ESCAPE_UP) : poverrideDark s
- , poverrideLit = ('>', ESCAPE_UP) : poverrideLit s
+ , poverrideDark = EM.fromList
+                     [('>', ESCAPE_UP)]
+                   `EM.union` defaultLegendDark
+ , poverrideLit = EM.fromList
+                    [('>', ESCAPE_UP)]
+                  `EM.union` defaultLegendLit
  }
 
 switchEscapeToOutdoorDown :: PlaceKind -> PlaceKind
 switchEscapeToOutdoorDown s = s
  { pname     = "outdoor escape route"
  , pfreq     = map (\(_, n) -> (OUTDOOR_ESCAPE_DOWN, n)) $ pfreq s
- , poverrideDark = ('>', ESCAPE_OUTDOOR_DOWN) : poverrideDark s
- , poverrideLit = ('>', ESCAPE_OUTDOOR_DOWN) : poverrideLit s
+ , poverrideDark = EM.fromList
+                     [('>', ESCAPE_OUTDOOR_DOWN)]
+                   `EM.union` defaultLegendDark
+ , poverrideLit = EM.fromList
+                    [('>', ESCAPE_OUTDOOR_DOWN)]
+                  `EM.union` defaultLegendLit
  }

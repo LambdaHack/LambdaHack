@@ -16,6 +16,7 @@ import Prelude ()
 import Game.LambdaHack.Core.Prelude
 
 import           Data.Binary
+import qualified Data.EnumMap.Strict as EM
 import qualified Data.Text as T
 import           GHC.Generics (Generic)
 
@@ -33,8 +34,8 @@ data PlaceKind = PlaceKind
   , pcover        :: Cover         -- ^ how to fill whole place using the corner
   , pfence        :: Fence         -- ^ whether to fence place with solid border
   , ptopLeft      :: [Text]        -- ^ plan of the top-left corner of the place
-  , poverrideDark :: [(Char, GroupName TileKind)]  -- ^ dark legend override
-  , poverrideLit  :: [(Char, GroupName TileKind)]  -- ^ lit legend override
+  , poverrideDark :: EM.EnumMap Char (GroupName TileKind)  -- ^ dark legend
+  , poverrideLit  :: EM.EnumMap Char (GroupName TileKind)  -- ^ lit legend
   }
   deriving Show  -- No Eq and Ord to make extending logically sound
 
@@ -69,14 +70,6 @@ deadEndId :: ContentId PlaceKind
 {-# INLINE deadEndId #-}
 deadEndId = toContentId 0
 
-validateOverride :: [(Char, GroupName TileKind)] -> [Text]
-validateOverride ov =
-  let symbols = sort $ map fst ov
-      duplicated = filter (uncurry (==)) $ zip symbols ('\0' : symbols)
-  in [ "duplicated override symbols:"
-        <+> T.pack (intersperse ' ' $ map fst duplicated)
-     | not (null duplicated) ]
-
 -- | Catch invalid place kind definitions. In particular, verify that
 -- the top-left corner map is rectangular and not empty.
 validateSingle :: PlaceKind -> [Text]
@@ -88,8 +81,6 @@ validateSingle PlaceKind{..} =
      ++ [ "top-left corner not rectangular"
         | any (/= dxcorner) (map T.length ptopLeft) ]
      ++ validateRarity prarity
---     ++ validateOverride poverrideDark
---     ++ validateOverride poverrideLit
 
 -- | Validate all place kinds.
 validateAll :: [PlaceKind] -> ContentData PlaceKind -> [Text]
