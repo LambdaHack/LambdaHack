@@ -148,7 +148,6 @@ buildPlace cops@COps{coplace, coTileSpeedup}
                  || pfence kr == FNone && smallPattern)
           then return dnight
           else oddsDice levelDepth totalDepth cdarkOdds
-  let qlegend = if dark then clegendDarkTile else clegendLitTile
   rBetter <- case minnerArea of
     Just innerArea | pcover kr `elem` [CVerbatim, CMirror] -> do
       -- A hack: if a verbatim place was rolled, redo computing the area
@@ -167,14 +166,9 @@ buildPlace cops@COps{coplace, coTileSpeedup}
   let qarea = fromMaybe (error $ "" `showFailure` (kr, r))
               $ interiorArea kr rBetter
       override = if dark then poverrideDark kr else poverrideLit kr
-  (overrideOneIn, overDefault) <- pover cops override
-  (legendOneIn, legend) <- return (EM.empty, EM.empty)  -- olegend cops qlegend
+  (mOneIn, m) <- pover cops override
   cmap <- tilePlace qarea kr
-  let mOneIn :: EM.EnumMap Char (Int, Int, ContentId TileKind)
-      mOneIn = EM.union overrideOneIn legendOneIn
-      m :: EM.EnumMap Char (ContentId TileKind)
-      m = EM.union overDefault legend
-      lookupOneIn :: Point -> Char -> ContentId TileKind
+  let lookupOneIn :: Point -> Char -> ContentId TileKind
       lookupOneIn xy c = case EM.lookup c mOneIn of
         Just (k, n, tk) | isChancePos k n dsecret xy -> tk
         _ -> EM.findWithDefault (error $ "" `showFailure` (c, mOneIn, m)) c m

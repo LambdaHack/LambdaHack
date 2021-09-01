@@ -1,7 +1,7 @@
 -- | The type of tile kinds. Every terrain tile in the game is
 -- an instantiated tile kind.
 module Game.LambdaHack.Content.TileKind
-  ( pattern S_UNKNOWN_SPACE, pattern LEGEND_LIT, pattern LEGEND_DARK, pattern S_UNKNOWN_OUTER_FENCE, pattern S_BASIC_OUTER_FENCE, pattern AQUATIC
+  ( pattern S_UNKNOWN_SPACE, pattern S_UNKNOWN_OUTER_FENCE, pattern S_BASIC_OUTER_FENCE, pattern AQUATIC
   , TileKind(..), ProjectileTriggers(..), Feature(..)
   , makeData
   , isUknownSpace, unknownId
@@ -190,16 +190,11 @@ mandatoryGroupsSingleton =
 pattern S_UNKNOWN_SPACE, S_UNKNOWN_OUTER_FENCE, S_BASIC_OUTER_FENCE :: GroupName TileKind
 
 mandatoryGroups :: [GroupName TileKind]
-mandatoryGroups =
-       [LEGEND_LIT, LEGEND_DARK]
-
-pattern LEGEND_LIT, LEGEND_DARK :: GroupName TileKind
+mandatoryGroups = []
 
 pattern S_UNKNOWN_SPACE = GroupName "unknown space"
 pattern S_UNKNOWN_OUTER_FENCE = GroupName "unknown outer fence"
 pattern S_BASIC_OUTER_FENCE = GroupName "basic outer fence"
-pattern LEGEND_LIT = GroupName "legendLit"
-pattern LEGEND_DARK = GroupName "legendDark"
 
 -- * Optional item groups
 

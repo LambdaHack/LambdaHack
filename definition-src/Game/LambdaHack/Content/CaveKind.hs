@@ -27,53 +27,51 @@ import           Game.LambdaHack.Definition.DefsInternal
 -- | Parameters for the generation of dungeon levels.
 -- Warning: for efficiency, avoid embedded items in any of the common tiles.
 data CaveKind = CaveKind
-  { csymbol         :: Char             -- ^ a symbol
-  , cname           :: Text             -- ^ short description
-  , cfreq           :: Freqs CaveKind   -- ^ frequency within groups
-  , cXminSize       :: X                -- ^ minimal X size of the whole cave
-  , cYminSize       :: Y                -- ^ minimal Y size of the whole cave
-  , ccellSize       :: Dice.DiceXY      -- ^ size of a map cell holding a place
-  , cminPlaceSize   :: Dice.DiceXY      -- ^ minimal size of places; for merging
-  , cmaxPlaceSize   :: Dice.DiceXY      -- ^ maximal size of places; for growing
-  , cdarkOdds       :: Dice.Dice        -- ^ the odds a place is dark
+  { csymbol       :: Char             -- ^ a symbol
+  , cname         :: Text             -- ^ short description
+  , cfreq         :: Freqs CaveKind   -- ^ frequency within groups
+  , cXminSize     :: X                -- ^ minimal X size of the whole cave
+  , cYminSize     :: Y                -- ^ minimal Y size of the whole cave
+  , ccellSize     :: Dice.DiceXY      -- ^ size of a map cell holding a place
+  , cminPlaceSize :: Dice.DiceXY      -- ^ minimal size of places; for merging
+  , cmaxPlaceSize :: Dice.DiceXY      -- ^ maximal size of places; for growing
+  , cdarkOdds     :: Dice.Dice        -- ^ the odds a place is dark
                                         --   (level-scaled dice roll > 50)
-  , cnightOdds      :: Dice.Dice        -- ^ the odds the cave is dark
+  , cnightOdds    :: Dice.Dice        -- ^ the odds the cave is dark
                                         --   (level-scaled dice roll > 50)
-  , cauxConnects    :: Rational         -- ^ a proportion of extra connections
-  , cmaxVoid        :: Rational
+  , cauxConnects  :: Rational         -- ^ a proportion of extra connections
+  , cmaxVoid      :: Rational
       -- ^ at most this proportion of rooms may be void
-  , cdoorChance     :: Chance           -- ^ the chance of a door in an opening
-  , copenChance     :: Chance           -- ^ if there's a door, is it open?
-  , chidden         :: Int              -- ^ if not open, hidden one in n times
-  , cactorCoeff     :: Int              -- ^ the lower, the more monsters spawn
-  , cactorFreq      :: Freqs ItemKind   -- ^ actor groups to consider
-  , citemNum        :: Dice.Dice        -- ^ number of initial items in the cave
-  , citemFreq       :: Freqs ItemKind   -- ^ item groups to consider;
+  , cdoorChance   :: Chance           -- ^ the chance of a door in an opening
+  , copenChance   :: Chance           -- ^ if there's a door, is it open?
+  , chidden       :: Int              -- ^ if not open, hidden one in n times
+  , cactorCoeff   :: Int              -- ^ the lower, the more monsters spawn
+  , cactorFreq    :: Freqs ItemKind   -- ^ actor groups to consider
+  , citemNum      :: Dice.Dice        -- ^ number of initial items in the cave
+  , citemFreq     :: Freqs ItemKind   -- ^ item groups to consider;
       -- note that the groups are flattened; e.g., if an item is moved to another
       -- included group with the same weight, the outcome doesn't change
-  , cplaceFreq      :: Freqs PlaceKind  -- ^ place groups to consider
-  , cpassable       :: Bool
+  , cplaceFreq    :: Freqs PlaceKind  -- ^ place groups to consider
+  , cpassable     :: Bool
       -- ^ are passable default tiles permitted
-  , labyrinth       :: Bool                -- ^ waste of time for AI to explore
-  , cdefTile        :: GroupName TileKind  -- ^ the default cave tile
-  , cdarkCorTile    :: GroupName TileKind  -- ^ the dark cave corridor tile
-  , clitCorTile     :: GroupName TileKind  -- ^ the lit cave corridor tile
-  , cwallTile       :: GroupName TileKind  -- ^ the tile used for @FWall@ fence
-  , ccornerTile     :: GroupName TileKind  -- ^ tile used for the fence corners
-  , cfenceTileN     :: GroupName TileKind  -- ^ the outer fence N wall
-  , cfenceTileE     :: GroupName TileKind  -- ^ the outer fence E wall
-  , cfenceTileS     :: GroupName TileKind  -- ^ the outer fence S wall
-  , cfenceTileW     :: GroupName TileKind  -- ^ the outer fence W wall
-  , cfenceApart     :: Bool                -- ^ are places touching fence banned
-  , clegendDarkTile :: GroupName TileKind  -- ^ the dark place plan legend
-  , clegendLitTile  :: GroupName TileKind  -- ^ the lit place plan legend
-  , cminStairDist   :: Int                 -- ^ minimal distance between stairs
-  , cmaxStairsNum   :: Dice.Dice           -- ^ maximum number of stairs
-  , cescapeFreq     :: Freqs PlaceKind     -- ^ escape groups, if any
-  , cstairFreq      :: Freqs PlaceKind     -- ^ place groups for created stairs
-  , cstairAllowed   :: Freqs PlaceKind     -- ^ extra groups for inherited
-  , cskip           :: [Int]  -- ^ which faction starting positions to skip
-  , cdesc           :: Text   -- ^ full cave description
+  , labyrinth     :: Bool                -- ^ waste of time for AI to explore
+  , cdefTile      :: GroupName TileKind  -- ^ the default cave tile
+  , cdarkCorTile  :: GroupName TileKind  -- ^ the dark cave corridor tile
+  , clitCorTile   :: GroupName TileKind  -- ^ the lit cave corridor tile
+  , cwallTile     :: GroupName TileKind  -- ^ the tile used for @FWall@ fence
+  , ccornerTile   :: GroupName TileKind  -- ^ tile used for the fence corners
+  , cfenceTileN   :: GroupName TileKind  -- ^ the outer fence N wall
+  , cfenceTileE   :: GroupName TileKind  -- ^ the outer fence E wall
+  , cfenceTileS   :: GroupName TileKind  -- ^ the outer fence S wall
+  , cfenceTileW   :: GroupName TileKind  -- ^ the outer fence W wall
+  , cfenceApart   :: Bool                -- ^ are places touching fence banned
+  , cminStairDist :: Int                 -- ^ minimal distance between stairs
+  , cmaxStairsNum :: Dice.Dice           -- ^ maximum number of stairs
+  , cescapeFreq   :: Freqs PlaceKind     -- ^ escape groups, if any
+  , cstairFreq    :: Freqs PlaceKind     -- ^ place groups for created stairs
+  , cstairAllowed :: Freqs PlaceKind     -- ^ extra groups for inherited
+  , cskip         :: [Int]  -- ^ which faction starting positions to skip
+  , cdesc         :: Text   -- ^ full cave description
   }
   deriving Show  -- No Eq and Ord to make extending logically sound
 
