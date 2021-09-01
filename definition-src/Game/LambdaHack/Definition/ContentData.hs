@@ -121,9 +121,9 @@ makeContentData contentName getName getFreq validateSingle validateAll
      assert (null allGroupNamesNonUnique
              `blame` contentName ++ ": some group names duplicated"
              `swith` allGroupNamesNonUnique) $
-     assert (null missingGroups
-             `blame` contentName ++ ": some group names pertain to no content"
-             `swith` missingGroups) $
+--     assert (null missingGroups
+--             `blame` contentName ++ ": some group names pertain to no content"
+--             `swith` missingGroups) $
      assert (null groupsMoreThanOne
              `blame` contentName ++ ": some group names refer to more than one content, while they shouldn't"
              `swith` groupsMoreThanOne) $

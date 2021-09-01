@@ -88,8 +88,8 @@ validateSingle PlaceKind{..} =
      ++ [ "top-left corner not rectangular"
         | any (/= dxcorner) (map T.length ptopLeft) ]
      ++ validateRarity prarity
-     ++ validateOverride poverrideDark
-     ++ validateOverride poverrideLit
+--     ++ validateOverride poverrideDark
+--     ++ validateOverride poverrideLit
 
 -- | Validate all place kinds.
 validateAll :: [PlaceKind] -> ContentData PlaceKind -> [Text]

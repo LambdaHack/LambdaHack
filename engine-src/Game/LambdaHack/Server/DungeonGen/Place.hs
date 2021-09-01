@@ -168,7 +168,7 @@ buildPlace cops@COps{coplace, coTileSpeedup}
               $ interiorArea kr rBetter
       override = if dark then poverrideDark kr else poverrideLit kr
   (overrideOneIn, overDefault) <- pover cops override
-  (legendOneIn, legend) <- olegend cops qlegend
+  (legendOneIn, legend) <- return (EM.empty, EM.empty)  -- olegend cops qlegend
   cmap <- tilePlace qarea kr
   let mOneIn :: EM.EnumMap Char (Int, Int, ContentId TileKind)
       mOneIn = EM.union overrideOneIn legendOneIn

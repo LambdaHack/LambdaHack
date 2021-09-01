@@ -135,8 +135,8 @@ deadEnd = PlaceKind  -- needs to have index 0
   , pcover   = CStretch
   , pfence   = FNone
   , ptopLeft = ["·"]
-  , poverrideDark = []
-  , poverrideLit = []
+  , poverrideDark = defaultLegendDark
+  , poverrideLit = defaultLegendLit
   }
 rect = PlaceKind  -- Valid for any nonempty area, hence low frequency.
   { psymbol  = 'r'
@@ -148,8 +148,8 @@ rect = PlaceKind  -- Valid for any nonempty area, hence low frequency.
   , ptopLeft = [ "--"
                , "|·"
                ]
-  , poverrideDark = []
-  , poverrideLit = []
+  , poverrideDark = defaultLegendDark
+  , poverrideLit = defaultLegendLit
   }
 rect2 = rect
   { pname    = "a pen"
@@ -160,8 +160,10 @@ rect3 = rect
   , pfreq    = [(BRAWL, 10), (SHOOTOUT, 1)]
   , poverrideDark = [ ('|', S_WALL_LIT)  -- visible from afar
                     , ('-', S_WALL_HORIZONTAL_LIT) ]
+                    ++ defaultLegendDark
   , poverrideLit = [ ('|', S_WALL_LIT)
                    , ('-', S_WALL_HORIZONTAL_LIT) ]
+                   ++ defaultLegendLit
   }
 rect4 = rect3
   { pname    = "cabinet"
@@ -179,8 +181,10 @@ rectWindows = PlaceKind
                ]
   , poverrideDark = [ ('=', RECT_WINDOWS_HORIZONTAL_DARK)
                     , ('!', RECT_WINDOWS_VERTICAL_DARK) ]
+                    ++ defaultLegendDark
   , poverrideLit = [ ('=', RECT_WINDOWS_HORIZONTAL_LIT)
                    , ('!', RECT_WINDOWS_VERTICAL_LIT) ]
+                   ++ defaultLegendLit
   }
 glasshouse = PlaceKind
   { psymbol  = 'g'
@@ -194,16 +198,20 @@ glasshouse = PlaceKind
                ]
   , poverrideDark = [ ('=', GLASSHOUSE_HORIZONTAL_LIT)  -- visible from afar
                     , ('!', GLASSHOUSE_VERTICAL_LIT) ]
+                    ++ defaultLegendDark
   , poverrideLit = [ ('=', GLASSHOUSE_HORIZONTAL_LIT)
                    , ('!', GLASSHOUSE_VERTICAL_LIT) ]
+                   ++ defaultLegendLit
   }
 glasshouse2 = glasshouse
   { pname    = "a glass cage"
   , pfreq    = [(ZOO, 10)]
   , poverrideDark = [ ('=', GLASSHOUSE_HORIZONTAL_DARK)
                     , ('!', GLASSHOUSE_VERTICAL_DARK) ]
+                    ++ defaultLegendDark
   , poverrideLit = [ ('=', GLASSHOUSE_HORIZONTAL_LIT)
                    , ('!', GLASSHOUSE_VERTICAL_LIT) ]
+                   ++ defaultLegendLit
   }
 glasshouse3 = glasshouse
   { pname    = "a reading room"
@@ -223,9 +231,11 @@ pulpit = PlaceKind
   , poverrideDark = [ ('=', GLASSHOUSE_HORIZONTAL_LIT)
                     , ('!', GLASSHOUSE_VERTICAL_LIT)
                     , ('0', S_PULPIT) ]
+                    ++ defaultLegendDark
   , poverrideLit = [ ('=', GLASSHOUSE_HORIZONTAL_LIT)
                    , ('!', GLASSHOUSE_VERTICAL_LIT)
                    , ('0', S_PULPIT) ]
+                   ++ defaultLegendLit
       -- except for floor, this will all be lit, regardless of night/dark; OK
   }
 ruin = PlaceKind
@@ -238,16 +248,18 @@ ruin = PlaceKind
   , ptopLeft = [ "--"
                , "|X"
                ]
-  , poverrideDark = []
-  , poverrideLit = []
+  , poverrideDark = defaultLegendDark
+  , poverrideLit = defaultLegendLit
   }
 ruin2 = ruin
   { pname    = "blasted walls"
   , pfreq    = [(AMBUSH, 50)]
   , poverrideDark = [ ('|', S_WALL_LIT)  -- visible from afar
                     , ('-', S_WALL_HORIZONTAL_LIT) ]
+                    ++ defaultLegendDark
   , poverrideLit = [ ('|', S_WALL_LIT)
                    , ('-', S_WALL_HORIZONTAL_LIT) ]
+                   ++ defaultLegendLit
   }
 collapsed = PlaceKind
   { psymbol  = 'c'
@@ -260,8 +272,8 @@ collapsed = PlaceKind
   , pfence   = FNone
   , ptopLeft = [ "0"
                ]
-  , poverrideDark = []
-  , poverrideLit = []
+  , poverrideDark = defaultLegendDark
+  , poverrideLit = defaultLegendLit
   }
 collapsed2 = collapsed
   { pfreq    = [(NOISE, 1000), (BATTLE, 200)]
@@ -315,8 +327,8 @@ pillar = PlaceKind
                , "|·0·"
                , "|···"
                ]
-  , poverrideDark = []
-  , poverrideLit = []
+  , poverrideDark = defaultLegendDark
+  , poverrideLit = defaultLegendLit
   }
 pillar2 = pillar
   { pfreq    = [(ROGUE, 60), (LABORATORY, 200)]
@@ -345,7 +357,9 @@ pillar4 = pillar
                , "|····"
                ]
   , poverrideDark = [('&', CACHE)]
+                    ++ defaultLegendDark
   , poverrideLit = [('&', CACHE)]
+                   ++ defaultLegendLit
   }
 pillar5 = pillar
   { pname    = "a decorated hall"
@@ -357,7 +371,9 @@ pillar5 = pillar
                , "|····"
                ]
   , poverrideDark = [('&', CACHE)]
+                    ++ defaultLegendDark
   , poverrideLit = [('&', CACHE)]
+                   ++ defaultLegendLit
   }
 colonnade = PlaceKind
   { psymbol  = 'c'
@@ -371,8 +387,8 @@ colonnade = PlaceKind
   , ptopLeft = [ "0·"
                , "··"
                ]
-  , poverrideDark = []
-  , poverrideLit = []
+  , poverrideDark = defaultLegendDark
+  , poverrideLit = defaultLegendLit
   }
 colonnade2 = colonnade
   { prarity  = [(1, 15), (10, 15)]
@@ -419,7 +435,9 @@ lampPost = PlaceKind
                , "X·X"
                ]
   , poverrideDark = [('0', S_LAMP_POST), ('·', S_FLOOR_ACTOR_LIT)]
+                    ++ defaultLegendDark
   , poverrideLit = [('0', S_LAMP_POST), ('·', S_FLOOR_ACTOR_LIT)]
+                   ++ defaultLegendLit
   }
 lampPost2 = lampPost
   { ptopLeft = [ "···"
@@ -460,9 +478,11 @@ treeShade = PlaceKind
   , poverrideDark = [ ('0', S_TREE_DARK)
                     , ('s', TREE_SHADE_WALKABLE_DARK)
                     , ('·', S_SHADED_GROUND) ]
+                    ++ defaultLegendDark
   , poverrideLit = [ ('0', S_TREE_LIT)
                    , ('s', TREE_SHADE_WALKABLE_LIT)
                    , ('·', S_SHADED_GROUND) ]
+                   ++ defaultLegendLit
   }
 fogClump = PlaceKind
   { psymbol  = 'f'
@@ -476,7 +496,9 @@ fogClump = PlaceKind
                , ";X"
                ]
   , poverrideDark = [('f', FOG_CLUMP_DARK), (';', S_FOG_LIT)]
+                    ++ defaultLegendDark
   , poverrideLit = [('f', FOG_CLUMP_LIT), (';', S_FOG_LIT)]
+                   ++ defaultLegendLit
   }
 fogClump2 = fogClump
   { pfreq    = [(SHOOTOUT, 500), (EMPTY, 50)]
@@ -499,8 +521,10 @@ smokeClump = PlaceKind
                ]
   , poverrideDark = [ ('f', SMOKE_CLUMP_DARK), (';', S_SMOKE_LIT)
                     , ('·', S_FLOOR_ACTOR_DARK) ]
+                    ++ defaultLegendDark
   , poverrideLit = [ ('f', SMOKE_CLUMP_LIT), (';', S_SMOKE_LIT)
                    , ('·', S_FLOOR_ACTOR_LIT) ]
+                   ++ defaultLegendLit
   }
 smokeClump2 = smokeClump
   { pfreq    = [(ZOO, 500)]
@@ -536,7 +560,9 @@ bushClump = PlaceKind
                , ";;"
                ]
   , poverrideDark = [('f', BUSH_CLUMP_DARK), (';', S_BUSH_LIT)]
+                    ++ defaultLegendDark
   , poverrideLit = [('f', BUSH_CLUMP_LIT), (';', S_BUSH_LIT)]
+                   ++ defaultLegendLit
       -- should not be used in caves with trails, because bushes can't
       -- grow over such artificial trails
   }
@@ -559,8 +585,10 @@ escapeDown = PlaceKind
                ]
   , poverrideDark = [ ('|', S_WALL_LIT)  -- visible from afar
                     , ('-', S_WALL_HORIZONTAL_LIT) ]
+                    ++ defaultLegendDark
   , poverrideLit = [ ('|', S_WALL_LIT)
                    , ('-', S_WALL_HORIZONTAL_LIT) ]
+                   ++ defaultLegendLit
   }
 escapeDown2 = escapeDown
   { pfreq    = [(INDOOR_ESCAPE_DOWN, 1000)]
@@ -613,10 +641,12 @@ staircase = PlaceKind
                     , ('I', SIGNBOARD)
                     , ('|', S_WALL_LIT), ('-', S_WALL_HORIZONTAL_LIT) ]
                       -- seen from afar
+                    ++ defaultLegendDark
   , poverrideLit = [ ('<', STAIRCASE_UP), ('>', STAIRCASE_DOWN)
                    , ('I', SIGNBOARD)
                    , ('|', S_WALL_LIT), ('-', S_WALL_HORIZONTAL_LIT) ]
                      -- seen from afar
+                   ++ defaultLegendLit
   }
 staircase1 = staircase
   { prarity  = [(1, 1)]  -- no cover when arriving; so low rarity
@@ -1023,7 +1053,9 @@ switchStaircaseToGated s = s
  , pname     = T.unwords $ "a gated" : tail (T.words (pname s))
  , pfreq     = renameFreqs ("gated" <+>) $ pfreq s
  , poverrideDark = overrideGated
+                   ++ defaultLegendDark
  , poverrideLit = overrideGated
+                  ++ defaultLegendLit
  }
 
 overrideOutdoor :: [(Char, GroupName TileKind)]
@@ -1038,7 +1070,9 @@ switchStaircaseToOutdoor s = s
  , pname     = "an outdoor area exit"
  , pfreq     = renameFreqs ("outdoor" <+>) $ pfreq s
  , poverrideDark = overrideOutdoor
+                   ++ defaultLegendDark
  , poverrideLit = overrideOutdoor
+                  ++ defaultLegendLit
  }
 
 switchEscapeToUp :: PlaceKind -> PlaceKind
