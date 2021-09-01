@@ -17,7 +17,7 @@ import qualified Data.Text as T
 
 import Content.TileKind hiding (content, groupNames, groupNamesSingleton)
 import Game.LambdaHack.Content.PlaceKind
-import Game.LambdaHack.Content.TileKind (TileKind)
+import Game.LambdaHack.Content.TileKind (TileKind, floorSymbol)
 import Game.LambdaHack.Definition.Defs
 import Game.LambdaHack.Definition.DefsInternal
 
@@ -103,6 +103,28 @@ generatedEscapes =
   let upEscapes = map switchEscapeToUp escapeDownBasic
       outdoorEscapes = map switchEscapeToOutdoorDown escapeDownBasic
   in upEscapes ++ outdoorEscapes
+
+defaultLegendLit :: [(Char, GroupName TileKind)]
+defaultLegendLit = [ (' ', FILLER_WALL)
+                   , ('|', S_WALL_LIT)
+                   , ('-', S_WALL_HORIZONTAL_LIT)
+                   , ('0', S_PILLAR)
+                   , ('&', S_RUBBLE_PILE)
+                   , ('<', ESCAPE_UP)
+                   , ('>', ESCAPE_DOWN)
+                   , (floorSymbol, FLOOR_ACTOR_ITEM_LIT)
+                   , ('~', S_SHALLOW_WATER_LIT) ]
+
+defaultLegendDark :: [(Char, GroupName TileKind)]
+defaultLegendDark = [ (' ', FILLER_WALL)
+                    , ('|', S_WALL_DARK)
+                    , ('-', S_WALL_HORIZONTAL_DARK)
+                    , ('0', S_PILLAR)
+                    , ('&', S_RUBBLE_PILE)
+                    , ('<', ESCAPE_UP)
+                    , ('>', ESCAPE_DOWN)
+                    , (floorSymbol, FLOOR_ACTOR_ITEM_DARK)
+                    , ('~', S_SHALLOW_WATER_DARK) ]
 
 -- The dots below are @'\x00B7'@, as defined in @TileKind.floorSymbol@.
 deadEnd = PlaceKind  -- needs to have index 0
