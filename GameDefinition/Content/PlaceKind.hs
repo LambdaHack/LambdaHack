@@ -1078,8 +1078,8 @@ switchStaircaseToDown s = s
                  `EM.union` plegendLit s
   }
 
-legendGated :: EM.EnumMap Char (GroupName TileKind)
-legendGated = EM.fromList
+overrideGated :: EM.EnumMap Char (GroupName TileKind)
+overrideGated = EM.fromList
   [ ('<', GATED_STAIRCASE_UP), ('>', GATED_STAIRCASE_DOWN)
   , ('I', SIGNBOARD)
   , ('|', S_WALL_LIT), ('-', S_WALL_HORIZONTAL_LIT) ]  -- visible from afar
@@ -1089,14 +1089,14 @@ switchStaircaseToGated s = s
   { psymbol   = 'g'
   , pname     = T.unwords $ "a gated" : tail (T.words (pname s))
   , pfreq     = renameFreqs ("gated" <+>) $ pfreq s
-  , plegendDark = legendGated
+  , plegendDark = overrideGated
                   `EM.union` plegendDark s
-  , plegendLit = legendGated
+  , plegendLit = overrideGated
                  `EM.union` plegendLit s
   }
 
-legendOutdoor :: EM.EnumMap Char (GroupName TileKind)
-legendOutdoor = EM.fromList
+overrideOutdoor :: EM.EnumMap Char (GroupName TileKind)
+overrideOutdoor = EM.fromList
   [ ('<', STAIRCASE_OUTDOOR_UP), ('>', STAIRCASE_OUTDOOR_DOWN)
   , ('I', SIGNBOARD)
   , ('|', S_WALL_LIT), ('-', S_WALL_HORIZONTAL_LIT) ]  -- visible from afar
@@ -1106,9 +1106,9 @@ switchStaircaseToOutdoor s = s
   { psymbol   = 'o'
   , pname     = "an outdoor area exit"
   , pfreq     = renameFreqs ("outdoor" <+>) $ pfreq s
-  , plegendDark = legendOutdoor
+  , plegendDark = overrideOutdoor
                   `EM.union` plegendDark s
-  , plegendLit = legendOutdoor
+  , plegendLit = overrideOutdoor
                  `EM.union` plegendLit s
   }
 
