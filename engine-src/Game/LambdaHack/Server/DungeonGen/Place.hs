@@ -216,10 +216,14 @@ olegend COps{cotile} cgroup =
       legend = ES.foldr' getLegend (return (EM.empty, EM.empty)) symbols
   in legend
 
--- This can be optimized by memoization (storing these results per place,
--- because they never change). If places appear often in all scenarios,
--- precomputation may be a good idea, too, and then the place to store
--- the results is @coPlaceSpeedup@ in @COps@.
+-- This can't be optimized by memoization (storing these results per place),
+-- because it would fix random assignment of tiles to groups
+-- for all instances of a place throughout dungeon. Right now the assignment
+-- is fixed for any single place instance and it's consistent and interesting.
+-- Even fixing this per level would make levels less interesting.
+--
+-- This could be precomputed for groups that contain only one tile,
+-- but for these, no random rolls are performed, so little would be saved.
 pover :: COps -> EM.EnumMap Char (GroupName TileKind)
       -> Rnd ( EM.EnumMap Char ( Maybe (Int, Int, ContentId TileKind)
                                , ContentId TileKind ) )
