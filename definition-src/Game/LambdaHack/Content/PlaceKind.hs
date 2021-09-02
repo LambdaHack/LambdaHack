@@ -27,15 +27,15 @@ import Game.LambdaHack.Definition.DefsInternal
 
 -- | Parameters for the generation of small areas within a dungeon level.
 data PlaceKind = PlaceKind
-  { psymbol       :: Char          -- ^ a symbol
-  , pname         :: Text          -- ^ short description, singular or plural
-  , pfreq         :: Freqs PlaceKind  -- ^ frequency within groups
-  , prarity       :: Rarity        -- ^ rarity on given depths
-  , pcover        :: Cover         -- ^ how to fill whole place using the corner
-  , pfence        :: Fence         -- ^ whether to fence place with solid border
-  , ptopLeft      :: [Text]        -- ^ plan of the top-left corner of the place
-  , poverrideDark :: EM.EnumMap Char (GroupName TileKind)  -- ^ dark legend
-  , poverrideLit  :: EM.EnumMap Char (GroupName TileKind)  -- ^ lit legend
+  { psymbol     :: Char          -- ^ a symbol
+  , pname       :: Text          -- ^ short description, singular or plural
+  , pfreq       :: Freqs PlaceKind  -- ^ frequency within groups
+  , prarity     :: Rarity        -- ^ rarity on given depths
+  , pcover      :: Cover         -- ^ how to fill whole place using the corner
+  , pfence      :: Fence         -- ^ whether to fence place with solid border
+  , ptopLeft    :: [Text]        -- ^ plan of the top-left corner of the place
+  , plegendDark :: EM.EnumMap Char (GroupName TileKind)  -- ^ dark legend
+  , plegendLit  :: EM.EnumMap Char (GroupName TileKind)  -- ^ lit legend
   }
   deriving Show  -- No Eq and Ord to make extending logically sound
 

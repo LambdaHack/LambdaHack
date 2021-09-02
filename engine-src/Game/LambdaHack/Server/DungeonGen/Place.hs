@@ -165,8 +165,8 @@ buildPlace cops@COps{coplace, coTileSpeedup}
     _ -> return r
   let qarea = fromMaybe (error $ "" `showFailure` (kr, r))
               $ interiorArea kr rBetter
-      override = if dark then poverrideDark kr else poverrideLit kr
-  mOneIn <- pover cops override
+      plegend = if dark then plegendDark kr else plegendLit kr
+  mOneIn <- pover cops plegend
   cmap <- tilePlace qarea kr
   let lookupOneIn :: Point -> Char -> ContentId TileKind
       lookupOneIn xy c =
@@ -227,11 +227,11 @@ olegend COps{cotile} cgroup =
 pover :: COps -> EM.EnumMap Char (GroupName TileKind)
       -> Rnd ( EM.EnumMap Char ( Maybe (Int, Int, ContentId TileKind)
                                , ContentId TileKind ) )
-pover COps{cotile} poverride =
+pover COps{cotile} plegend =
   let assignKN :: GroupName TileKind -> ContentId TileKind -> ContentId TileKind
                -> (Int, Int, ContentId TileKind)
       assignKN cgroup tk tkSpice =
-        -- Very likely that overrides have spice.
+        -- Very likely that legends have spice.
         let n = fromMaybe (error $ show cgroup)
                           (lookup cgroup (TK.tfreq (okind cotile tk)))
             k = fromMaybe (error $ show cgroup)
@@ -242,10 +242,10 @@ pover COps{cotile} poverride =
                        , ContentId TileKind )
       getLegend cgroup = do
         mtkSpice <- opick cotile cgroup (Tile.kindHasFeature TK.Spice)
-        tk <- fromMaybe (error $ "" `showFailure` (cgroup, poverride))
+        tk <- fromMaybe (error $ "" `showFailure` (cgroup, plegend))
               <$> opick cotile cgroup (not . Tile.kindHasFeature TK.Spice)
         return (assignKN cgroup tk <$> mtkSpice, tk)
-  in mapM getLegend poverride
+  in mapM getLegend plegend
 
 -- | Construct a fence around a place.
 buildFence :: COps -> CaveKind -> Bool
