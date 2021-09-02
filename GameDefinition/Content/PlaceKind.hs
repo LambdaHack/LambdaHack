@@ -1090,9 +1090,9 @@ switchStaircaseToGated s = s
   , pname     = T.unwords $ "a gated" : tail (T.words (pname s))
   , pfreq     = renameFreqs ("gated" <+>) $ pfreq s
   , plegendDark = legendGated
-                  `EM.union` defaultLegendDark
+                  `EM.union` plegendDark s
   , plegendLit = legendGated
-                 `EM.union` defaultLegendLit
+                 `EM.union` plegendLit s
   }
 
 legendOutdoor :: EM.EnumMap Char (GroupName TileKind)
@@ -1107,9 +1107,9 @@ switchStaircaseToOutdoor s = s
   , pname     = "an outdoor area exit"
   , pfreq     = renameFreqs ("outdoor" <+>) $ pfreq s
   , plegendDark = legendOutdoor
-                  `EM.union` defaultLegendDark
+                  `EM.union` plegendDark s
   , plegendLit = legendOutdoor
-                 `EM.union` defaultLegendLit
+                 `EM.union` plegendLit s
   }
 
 switchEscapeToUp :: PlaceKind -> PlaceKind
@@ -1119,10 +1119,10 @@ switchEscapeToUp s = s
   , pfreq     = map (\(_, n) -> (INDOOR_ESCAPE_UP, n)) $ pfreq s
   , plegendDark = EM.fromList
                     [('>', ESCAPE_UP)]
-                  `EM.union` defaultLegendDark
+                  `EM.union` plegendDark s
   , plegendLit = EM.fromList
                    [('>', ESCAPE_UP)]
-                 `EM.union` defaultLegendLit
+                 `EM.union` plegendLit s
   }
 
 switchEscapeToOutdoorDown :: PlaceKind -> PlaceKind
@@ -1131,8 +1131,8 @@ switchEscapeToOutdoorDown s = s
   , pfreq     = map (\(_, n) -> (OUTDOOR_ESCAPE_DOWN, n)) $ pfreq s
   , plegendDark = EM.fromList
                     [('>', ESCAPE_OUTDOOR_DOWN)]
-                  `EM.union` defaultLegendDark
+                  `EM.union` plegendDark s
   , plegendLit = EM.fromList
                    [('>', ESCAPE_OUTDOOR_DOWN)]
-                 `EM.union` defaultLegendLit
+                 `EM.union` plegendLit s
   }
