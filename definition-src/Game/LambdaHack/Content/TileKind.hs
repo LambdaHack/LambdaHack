@@ -233,7 +233,7 @@ talterForStairs :: Word8
 talterForStairs = 3
 
 floorSymbol :: Char
-floorSymbol = '\x00B7'
+floorSymbol = '·'  -- '\x00B7'
 
 -- Alter skill schema:
 -- 0  can be altered by everybody (escape)
