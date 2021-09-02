@@ -4,7 +4,7 @@
 module Game.LambdaHack.Content.PlaceKind
   ( PlaceKind(..), makeData
   , Cover(..), Fence(..)
-  , PlaceEntry(..), deadEndId
+  , PlaceEntry(..), deadEndId, overridePlaceKind, override2PlaceKind
 #ifdef EXPOSE_INTERNAL
     -- * Internal operations
   , validateSingle, validateAll
@@ -69,6 +69,19 @@ instance Binary PlaceEntry
 deadEndId :: ContentId PlaceKind
 {-# INLINE deadEndId #-}
 deadEndId = toContentId 0
+
+overridePlaceKind :: [(Char, GroupName TileKind)] -> PlaceKind -> PlaceKind
+overridePlaceKind l pk = pk
+  { plegendDark = EM.fromList l `EM.union` plegendDark pk
+  , plegendLit = EM.fromList l `EM.union` plegendLit pk }
+
+override2PlaceKind :: [(Char, GroupName TileKind)]
+                   -> [(Char, GroupName TileKind)]
+                   -> PlaceKind
+                   -> PlaceKind
+override2PlaceKind lDark lLit pk = pk
+  { plegendDark = EM.fromList lDark `EM.union` plegendDark pk
+  , plegendLit = EM.fromList lLit `EM.union` plegendLit pk }
 
 -- | Catch invalid place kind definitions. In particular, verify that
 -- the top-left corner map is rectangular and not empty.

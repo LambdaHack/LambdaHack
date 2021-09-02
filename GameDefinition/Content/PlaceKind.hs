@@ -158,23 +158,20 @@ rect2 = rect
   { pname    = "a pen"
   , pfreq    = [(ZOO, 3)]
   }
-rect3 = rect
+rect3 = overridePlaceKind [ ('|', S_WALL_LIT)  -- visible from afar
+                          , ('-', S_WALL_HORIZONTAL_LIT) ] $ rect
   { pname    = "a shed"
   , pfreq    = [(BRAWL, 10), (SHOOTOUT, 1)]
-  , plegendDark = EM.fromList
-                    [ ('|', S_WALL_LIT)  -- visible from afar
-                    , ('-', S_WALL_HORIZONTAL_LIT) ]
-                  `EM.union` defaultLegendDark
-  , plegendLit = EM.fromList
-                   [ ('|', S_WALL_LIT)
-                   , ('-', S_WALL_HORIZONTAL_LIT) ]
-                 `EM.union` defaultLegendLit
   }
 rect4 = rect3
   { pname    = "cabinet"
   , pfreq    = [(ARENA, 10)]
   }
-rectWindows = PlaceKind
+rectWindows = override2PlaceKind
+                [ ('=', RECT_WINDOWS_HORIZONTAL_DARK)
+                , ('!', RECT_WINDOWS_VERTICAL_DARK) ]
+                [ ('=', RECT_WINDOWS_HORIZONTAL_LIT)
+                , ('!', RECT_WINDOWS_VERTICAL_LIT) ] $ PlaceKind
   { psymbol  = 'w'
   , pname    = "a hut"
   , pfreq    = [(ESCAPE, 10), (AMBUSH, 7)]
@@ -184,16 +181,12 @@ rectWindows = PlaceKind
   , ptopLeft = [ "-="
                , "!·"
                ]
-  , plegendDark = EM.fromList
-                    [ ('=', RECT_WINDOWS_HORIZONTAL_DARK)
-                    , ('!', RECT_WINDOWS_VERTICAL_DARK) ]
-                  `EM.union` defaultLegendDark
-  , plegendLit = EM.fromList
-                   [ ('=', RECT_WINDOWS_HORIZONTAL_LIT)
-                   , ('!', RECT_WINDOWS_VERTICAL_LIT) ]
-                 `EM.union` defaultLegendLit
+  , plegendDark = defaultLegendDark
+  , plegendLit = defaultLegendLit
   }
-glasshouse = PlaceKind
+glasshouse = overridePlaceKind
+               [ ('=', GLASSHOUSE_HORIZONTAL_LIT)  -- visible from afar
+               , ('!', GLASSHOUSE_VERTICAL_LIT) ] $ PlaceKind
   { psymbol  = 'g'
   , pname    = "a glasshouse"
   , pfreq    = [(SHOOTOUT, 4)]
@@ -203,32 +196,24 @@ glasshouse = PlaceKind
   , ptopLeft = [ "=="
                , "!·"
                ]
-  , plegendDark = EM.fromList
-                    [ ('=', GLASSHOUSE_HORIZONTAL_LIT)  -- visible from afar
-                    , ('!', GLASSHOUSE_VERTICAL_LIT) ]
-                  `EM.union` defaultLegendDark
-  , plegendLit = EM.fromList
-                   [ ('=', GLASSHOUSE_HORIZONTAL_LIT)
-                   , ('!', GLASSHOUSE_VERTICAL_LIT) ]
-                 `EM.union` defaultLegendLit
+  , plegendDark = defaultLegendDark
+  , plegendLit = defaultLegendLit
   }
-glasshouse2 = glasshouse
+glasshouse2 = override2PlaceKind [ ('=', GLASSHOUSE_HORIZONTAL_DARK)
+                                 , ('!', GLASSHOUSE_VERTICAL_DARK) ]
+                                 [ ('=', GLASSHOUSE_HORIZONTAL_LIT)
+                                 , ('!', GLASSHOUSE_VERTICAL_LIT) ] $ glasshouse
   { pname    = "a glass cage"
   , pfreq    = [(ZOO, 10)]
-  , plegendDark = EM.fromList
-                    [ ('=', GLASSHOUSE_HORIZONTAL_DARK)
-                    , ('!', GLASSHOUSE_VERTICAL_DARK) ]
-                  `EM.union` defaultLegendDark
-  , plegendLit = EM.fromList
-                   [ ('=', GLASSHOUSE_HORIZONTAL_LIT)
-                   , ('!', GLASSHOUSE_VERTICAL_LIT) ]
-                 `EM.union` defaultLegendLit
   }
 glasshouse3 = glasshouse
   { pname    = "a reading room"
   , pfreq    = [(ARENA, 40)]
   }
-pulpit = PlaceKind
+pulpit = overridePlaceKind [ ('=', GLASSHOUSE_HORIZONTAL_LIT)
+                           , ('!', GLASSHOUSE_VERTICAL_LIT)
+                           , ('0', S_PULPIT) ] $ PlaceKind
+           -- except for floor, all will be lit, regardless of night/dark; OK
   { psymbol  = 'p'
   , pname    = "a stand dais"
   , pfreq    = [(ARENA, 200), (ZOO, 200)]
@@ -239,17 +224,8 @@ pulpit = PlaceKind
                , "!··"
                , "··0"
                ]
-  , plegendDark = EM.fromList
-                    [ ('=', GLASSHOUSE_HORIZONTAL_LIT)
-                    , ('!', GLASSHOUSE_VERTICAL_LIT)
-                    , ('0', S_PULPIT) ]
-                  `EM.union` defaultLegendDark
-  , plegendLit = EM.fromList
-                   [ ('=', GLASSHOUSE_HORIZONTAL_LIT)
-                   , ('!', GLASSHOUSE_VERTICAL_LIT)
-                   , ('0', S_PULPIT) ]
-                 `EM.union` defaultLegendLit
-      -- except for floor, this will all be lit, regardless of night/dark; OK
+  , plegendDark = defaultLegendDark
+  , plegendLit = defaultLegendLit
   }
 ruin = PlaceKind
   { psymbol  = 'R'
@@ -264,17 +240,10 @@ ruin = PlaceKind
   , plegendDark = defaultLegendDark
   , plegendLit = defaultLegendLit
   }
-ruin2 = ruin
+ruin2 = overridePlaceKind [ ('|', S_WALL_LIT)  -- visible from afar
+                          , ('-', S_WALL_HORIZONTAL_LIT) ] $ ruin
   { pname    = "blasted walls"
   , pfreq    = [(AMBUSH, 50)]
-  , plegendDark = EM.fromList
-                    [ ('|', S_WALL_LIT)  -- visible from afar
-                    , ('-', S_WALL_HORIZONTAL_LIT) ]
-                  `EM.union` defaultLegendDark
-  , plegendLit = EM.fromList
-                   [ ('|', S_WALL_LIT)
-                   , ('-', S_WALL_HORIZONTAL_LIT) ]
-                 `EM.union` defaultLegendLit
   }
 collapsed = PlaceKind
   { psymbol  = 'c'
@@ -362,7 +331,7 @@ pillar3 = pillar
                , "|····"
                ]
   }
-pillar4 = pillar
+pillar4 = overridePlaceKind [('&', CACHE)] $ pillar
   { pname    = "an exquisite hall"
   , pfreq    = [(ROGUE, 30000), (LABORATORY, 100000)]
   , ptopLeft = [ "-----"
@@ -371,14 +340,8 @@ pillar4 = pillar
                , "|0·0·"
                , "|····"
                ]
-  , plegendDark = EM.fromList
-                    [('&', CACHE)]
-                  `EM.union` defaultLegendDark
-  , plegendLit = EM.fromList
-                   [('&', CACHE)]
-                 `EM.union` defaultLegendLit
   }
-pillar5 = pillar
+pillar5 = overridePlaceKind [('&', CACHE)] $ pillar
   { pname    = "a decorated hall"
   , pfreq    = [(ROGUE, 30000), (LABORATORY, 100000)]
   , ptopLeft = [ "-----"
@@ -387,12 +350,6 @@ pillar5 = pillar
                , "|0···"
                , "|····"
                ]
-  , plegendDark = EM.fromList
-                    [('&', CACHE)]
-                  `EM.union` defaultLegendDark
-  , plegendLit = EM.fromList
-                   [('&', CACHE)]
-                 `EM.union` defaultLegendLit
   }
 colonnade = PlaceKind
   { psymbol  = 'c'
@@ -442,7 +399,8 @@ colonnade6 = colonnade
                , "·0"
                ]
   }
-lampPost = PlaceKind
+lampPost = overridePlaceKind [ ('0', S_LAMP_POST)
+                             , ('·', S_FLOOR_ACTOR_LIT) ] $ PlaceKind
   { psymbol  = 'l'
   , pname    = "a lamp-lit area"
   , pfreq    = [(ESCAPE, 200), (AMBUSH, 200), (ZOO, 100), (BATTLE, 100)]
@@ -453,12 +411,8 @@ lampPost = PlaceKind
                , "·0·"
                , "X·X"
                ]
-  , plegendDark = EM.fromList
-                    [('0', S_LAMP_POST), ('·', S_FLOOR_ACTOR_LIT)]
-                  `EM.union` defaultLegendDark
-  , plegendLit = EM.fromList
-                   [('0', S_LAMP_POST), ('·', S_FLOOR_ACTOR_LIT)]
-                 `EM.union` defaultLegendLit
+  , plegendDark = defaultLegendDark
+  , plegendLit = defaultLegendLit
   }
 lampPost2 = lampPost
   { ptopLeft = [ "···"
@@ -485,7 +439,11 @@ lampPost4 = lampPost
                , "X···X"
                ]
   }
-treeShade = PlaceKind
+treeShade = override2PlaceKind [ ('0', S_TREE_DARK)
+                               , ('s', TREE_SHADE_WALKABLE_DARK) ]
+                               [ ('0', S_TREE_LIT)
+                               , ('s', TREE_SHADE_WALKABLE_LIT) ] $
+            overridePlaceKind [('·', S_SHADED_GROUND)] $ PlaceKind
   { psymbol  = 't'
   , pname    = "a tree shade"
   , pfreq    = [(BRAWL, 1000)]
@@ -496,18 +454,12 @@ treeShade = PlaceKind
                , "s0·"
                , "Xs·"
                ]
-  , plegendDark = EM.fromList
-                    [ ('0', S_TREE_DARK)
-                    , ('s', TREE_SHADE_WALKABLE_DARK)
-                    , ('·', S_SHADED_GROUND) ]
-                  `EM.union` defaultLegendDark
-  , plegendLit = EM.fromList
-                   [ ('0', S_TREE_LIT)
-                   , ('s', TREE_SHADE_WALKABLE_LIT)
-                   , ('·', S_SHADED_GROUND) ]
-                 `EM.union` defaultLegendLit
+  , plegendDark = defaultLegendDark
+  , plegendLit = defaultLegendLit
   }
-fogClump = PlaceKind
+fogClump = override2PlaceKind [('f', FOG_CLUMP_DARK)]
+                              [('f', FOG_CLUMP_LIT)] $
+           overridePlaceKind [(';', S_FOG_LIT)] $ PlaceKind
   { psymbol  = 'f'
   , pname    = "a foggy patch"
   , pfreq    = [(SHOOTOUT, 150), (EMPTY, 15)]
@@ -518,12 +470,8 @@ fogClump = PlaceKind
                , ";f"
                , ";X"
                ]
-  , plegendDark = EM.fromList
-                    [('f', FOG_CLUMP_DARK), (';', S_FOG_LIT)]
-                  `EM.union` defaultLegendDark
-  , plegendLit = EM.fromList
-                   [('f', FOG_CLUMP_LIT), (';', S_FOG_LIT)]
-                 `EM.union` defaultLegendLit
+  , plegendDark = defaultLegendDark
+  , plegendLit = defaultLegendLit
   }
 fogClump2 = fogClump
   { pfreq    = [(SHOOTOUT, 500), (EMPTY, 50)]
@@ -533,7 +481,11 @@ fogClump2 = fogClump
                , "Xff"
                ]
   }
-smokeClump = PlaceKind
+smokeClump = override2PlaceKind [ ('f', SMOKE_CLUMP_DARK)
+                                , ('·', S_FLOOR_ACTOR_DARK) ]
+                                [ ('f', SMOKE_CLUMP_LIT)
+                                , ('·', S_FLOOR_ACTOR_LIT) ] $
+             overridePlaceKind [(';', S_SMOKE_LIT)] $ PlaceKind
   { psymbol  = 's'
   , pname    = "a smoky patch"
   , pfreq    = [(ZOO, 50)]
@@ -544,14 +496,8 @@ smokeClump = PlaceKind
                , ";f"
                , ";X"
                ]
-  , plegendDark = EM.fromList
-                    [ ('f', SMOKE_CLUMP_DARK), (';', S_SMOKE_LIT)
-                    , ('·', S_FLOOR_ACTOR_DARK) ]
-                  `EM.union` defaultLegendDark
-  , plegendLit = EM.fromList
-                   [ ('f', SMOKE_CLUMP_LIT), (';', S_SMOKE_LIT)
-                   , ('·', S_FLOOR_ACTOR_LIT) ]
-                 `EM.union` defaultLegendLit
+  , plegendDark = defaultLegendDark
+  , plegendLit = defaultLegendLit
   }
 smokeClump2 = smokeClump
   { pfreq    = [(ZOO, 500)]
@@ -575,7 +521,9 @@ smokeClump3FGround = smokeClump
       -- should not be used in caves with trails, because bushes should
       -- not grow over such artificial trails
   }
-bushClump = PlaceKind
+bushClump = override2PlaceKind [('f', BUSH_CLUMP_DARK)]
+                               [('f', BUSH_CLUMP_LIT)] $
+            overridePlaceKind [(';', S_BUSH_LIT)] $ PlaceKind
   { psymbol  = 'b'
   , pname    = "a bushy patch"
   , pfreq    = [(SHOOTOUT, 40)]
@@ -586,12 +534,8 @@ bushClump = PlaceKind
                , ";X"
                , ";;"
                ]
-  , plegendDark = EM.fromList
-                    [('f', BUSH_CLUMP_DARK), (';', S_BUSH_LIT)]
-                  `EM.union` defaultLegendDark
-  , plegendLit = EM.fromList
-                   [('f', BUSH_CLUMP_LIT), (';', S_BUSH_LIT)]
-                 `EM.union` defaultLegendLit
+  , plegendDark = defaultLegendDark
+  , plegendLit = defaultLegendLit
       -- should not be used in caves with trails, because bushes can't
       -- grow over such artificial trails
   }
@@ -603,7 +547,8 @@ bushClump2 = bushClump
                , ";;"
                ]
   }
-escapeDown = PlaceKind
+escapeDown = overridePlaceKind [ ('|', S_WALL_LIT)  -- visible from afar
+                               , ('-', S_WALL_HORIZONTAL_LIT) ] $ PlaceKind
   { psymbol  = '>'
   , pname    = "an escape down"
   , pfreq    = [(INDOOR_ESCAPE_DOWN, 1)]
@@ -612,14 +557,8 @@ escapeDown = PlaceKind
   , pfence   = FGround
   , ptopLeft = [ ">"
                ]
-  , plegendDark = EM.fromList
-                    [ ('|', S_WALL_LIT)  -- visible from afar
-                    , ('-', S_WALL_HORIZONTAL_LIT) ]
-                  `EM.union` defaultLegendDark
-  , plegendLit = EM.fromList
-                   [ ('|', S_WALL_LIT)
-                   , ('-', S_WALL_HORIZONTAL_LIT) ]
-                 `EM.union` defaultLegendLit
+  , plegendDark = defaultLegendDark
+  , plegendLit = defaultLegendLit
   }
 escapeDown2 = escapeDown
   { pfreq    = [(INDOOR_ESCAPE_DOWN, 1000)]
@@ -659,7 +598,11 @@ escapeDown5 = escapeDown
                , "-----"
                ]
   }
-staircase = PlaceKind
+staircase = overridePlaceKind [ ('<', STAIRCASE_UP)
+                              , ('>', STAIRCASE_DOWN)
+                              , ('I', SIGNBOARD)
+                              , ('|', S_WALL_LIT)  -- visible from afar
+                              , ('-', S_WALL_HORIZONTAL_LIT) ] $ PlaceKind
   { psymbol  = '/'
   , pname    = "a staircase"
   , pfreq    = [(TINY_STAIRCASE, 1)]  -- no cover when arriving; low freq
@@ -668,18 +611,8 @@ staircase = PlaceKind
   , pfence   = FGround
   , ptopLeft = [ "<·>"
                ]
-  , plegendDark = EM.fromList
-                    [ ('<', STAIRCASE_UP), ('>', STAIRCASE_DOWN)
-                    , ('I', SIGNBOARD)
-                    , ('|', S_WALL_LIT), ('-', S_WALL_HORIZONTAL_LIT) ]
-                      -- seen from afar
-                  `EM.union` defaultLegendDark
-  , plegendLit = EM.fromList
-                   [ ('<', STAIRCASE_UP), ('>', STAIRCASE_DOWN)
-                   , ('I', SIGNBOARD)
-                   , ('|', S_WALL_LIT), ('-', S_WALL_HORIZONTAL_LIT) ]
-                     -- seen from afar
-                 `EM.union` defaultLegendLit
+  , plegendDark = defaultLegendDark
+  , plegendLit = defaultLegendLit
   }
 staircase1 = staircase
   { prarity  = [(1, 1)]  -- no cover when arriving; so low rarity
@@ -1053,86 +986,56 @@ staircase37 = staircase
   }
 
 switchStaircaseToUp :: PlaceKind -> PlaceKind
-switchStaircaseToUp s = s
+switchStaircaseToUp s = override2PlaceKind [('>', STAIR_TERMINAL_DARK)]
+                                           [('>', STAIR_TERMINAL_LIT)] $ s
   { psymbol   = '<'
   , pname     = pname s <+> "up"
   , pfreq     = renameFreqs (<+> "up") $ pfreq s
-  , plegendDark = EM.fromList
-                    [('>', STAIR_TERMINAL_DARK)]
-                  `EM.union` plegendDark s
-  , plegendLit = EM.fromList
-                    [('>', STAIR_TERMINAL_LIT)]
-                 `EM.union` plegendLit s
   }
 
 switchStaircaseToDown :: PlaceKind -> PlaceKind
-switchStaircaseToDown s = s
+switchStaircaseToDown s = override2PlaceKind [('<', STAIR_TERMINAL_DARK)]
+                                             [('<', STAIR_TERMINAL_LIT)] $ s
   { psymbol   = '>'
   , pname     = pname s <+> "down"
   , pfreq     = renameFreqs (<+> "down") $ pfreq s
-  , plegendDark = EM.fromList
-                    [('<', STAIR_TERMINAL_DARK)]
-                  `EM.union` plegendDark s
-  , plegendLit = EM.fromList
-                   [('<', STAIR_TERMINAL_LIT)]
-                 `EM.union` plegendLit s
   }
 
-overrideGated :: EM.EnumMap Char (GroupName TileKind)
-overrideGated = EM.fromList
+overrideGated :: [(Char, GroupName TileKind)]
+overrideGated =
   [ ('<', GATED_STAIRCASE_UP), ('>', GATED_STAIRCASE_DOWN)
   , ('I', SIGNBOARD)
   , ('|', S_WALL_LIT), ('-', S_WALL_HORIZONTAL_LIT) ]  -- visible from afar
 
 switchStaircaseToGated :: PlaceKind -> PlaceKind
-switchStaircaseToGated s = s
+switchStaircaseToGated s = overridePlaceKind overrideGated $ s
   { psymbol   = 'g'
   , pname     = T.unwords $ "a gated" : tail (T.words (pname s))
   , pfreq     = renameFreqs ("gated" <+>) $ pfreq s
-  , plegendDark = overrideGated
-                  `EM.union` plegendDark s
-  , plegendLit = overrideGated
-                 `EM.union` plegendLit s
   }
 
-overrideOutdoor :: EM.EnumMap Char (GroupName TileKind)
-overrideOutdoor = EM.fromList
+overrideOutdoor :: [(Char, GroupName TileKind)]
+overrideOutdoor =
   [ ('<', STAIRCASE_OUTDOOR_UP), ('>', STAIRCASE_OUTDOOR_DOWN)
   , ('I', SIGNBOARD)
   , ('|', S_WALL_LIT), ('-', S_WALL_HORIZONTAL_LIT) ]  -- visible from afar
 
 switchStaircaseToOutdoor :: PlaceKind -> PlaceKind
-switchStaircaseToOutdoor s = s
+switchStaircaseToOutdoor s = overridePlaceKind overrideOutdoor $ s
   { psymbol   = 'o'
   , pname     = "an outdoor area exit"
   , pfreq     = renameFreqs ("outdoor" <+>) $ pfreq s
-  , plegendDark = overrideOutdoor
-                  `EM.union` plegendDark s
-  , plegendLit = overrideOutdoor
-                 `EM.union` plegendLit s
   }
 
 switchEscapeToUp :: PlaceKind -> PlaceKind
-switchEscapeToUp s = s
+switchEscapeToUp s = overridePlaceKind [('>', ESCAPE_UP)] $ s
   { psymbol   = '<'
   , pname     = "an escape up"
   , pfreq     = map (\(_, n) -> (INDOOR_ESCAPE_UP, n)) $ pfreq s
-  , plegendDark = EM.fromList
-                    [('>', ESCAPE_UP)]
-                  `EM.union` plegendDark s
-  , plegendLit = EM.fromList
-                   [('>', ESCAPE_UP)]
-                 `EM.union` plegendLit s
   }
 
 switchEscapeToOutdoorDown :: PlaceKind -> PlaceKind
-switchEscapeToOutdoorDown s = s
+switchEscapeToOutdoorDown s = overridePlaceKind [('>', ESCAPE_OUTDOOR_DOWN)] $ s
   { pname     = "outdoor escape route"
   , pfreq     = map (\(_, n) -> (OUTDOOR_ESCAPE_DOWN, n)) $ pfreq s
-  , plegendDark = EM.fromList
-                    [('>', ESCAPE_OUTDOOR_DOWN)]
-                  `EM.union` plegendDark s
-  , plegendLit = EM.fromList
-                   [('>', ESCAPE_OUTDOOR_DOWN)]
-                 `EM.union` plegendLit s
   }
