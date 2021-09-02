@@ -116,7 +116,8 @@ defaultLegendLit = EM.fromList
   , ('<', ESCAPE_UP)
   , ('>', ESCAPE_DOWN)
   , ('·', FLOOR_ACTOR_ITEM_LIT)
-  , ('~', S_SHALLOW_WATER_LIT) ]
+  , ('~', S_SHALLOW_WATER_LIT)
+  , ('I', SIGNBOARD) ]
 
 defaultLegendDark :: EM.EnumMap Char (GroupName TileKind)
 defaultLegendDark = EM.fromList
@@ -128,7 +129,8 @@ defaultLegendDark = EM.fromList
   , ('<', ESCAPE_UP)
   , ('>', ESCAPE_DOWN)
   , ('·', FLOOR_ACTOR_ITEM_DARK)
-  , ('~', S_SHALLOW_WATER_DARK) ]
+  , ('~', S_SHALLOW_WATER_DARK)
+  , ('I', SIGNBOARD) ]
 
 deadEnd = PlaceKind  -- needs to have index 0
   { psymbol  = 'd'
@@ -600,7 +602,6 @@ escapeDown5 = escapeDown
   }
 staircase = overridePlaceKind [ ('<', STAIRCASE_UP)
                               , ('>', STAIRCASE_DOWN)
-                              , ('I', SIGNBOARD)
                               , ('|', S_WALL_LIT)  -- visible from afar
                               , ('-', S_WALL_HORIZONTAL_LIT) ] $ PlaceKind
   { psymbol  = '/'
@@ -1004,7 +1005,6 @@ switchStaircaseToDown s = override2PlaceKind [('<', STAIR_TERMINAL_DARK)]
 overrideGated :: [(Char, GroupName TileKind)]
 overrideGated =
   [ ('<', GATED_STAIRCASE_UP), ('>', GATED_STAIRCASE_DOWN)
-  , ('I', SIGNBOARD)
   , ('|', S_WALL_LIT), ('-', S_WALL_HORIZONTAL_LIT) ]  -- visible from afar
 
 switchStaircaseToGated :: PlaceKind -> PlaceKind
@@ -1017,7 +1017,6 @@ switchStaircaseToGated s = overridePlaceKind overrideGated $ s
 overrideOutdoor :: [(Char, GroupName TileKind)]
 overrideOutdoor =
   [ ('<', STAIRCASE_OUTDOOR_UP), ('>', STAIRCASE_OUTDOOR_DOWN)
-  , ('I', SIGNBOARD)
   , ('|', S_WALL_LIT), ('-', S_WALL_HORIZONTAL_LIT) ]  -- visible from afar
 
 switchStaircaseToOutdoor :: PlaceKind -> PlaceKind
