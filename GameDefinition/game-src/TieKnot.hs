@@ -90,7 +90,8 @@ tieKnotForAsync options@ServerOptions{ sallClear
         , comode = MK.makeData Content.ModeKind.content
                                Content.ModeKind.groupNamesSingleton
                                Content.ModeKind.groupNames
-        , coplace = PK.makeData Content.PlaceKind.content
+        , coplace = PK.makeData cotile
+                                Content.PlaceKind.content
                                 Content.PlaceKind.groupNamesSingleton
                                 Content.PlaceKind.groupNames
         , corule = RK.makeData Content.RuleKind.standardRules

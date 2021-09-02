@@ -11,7 +11,7 @@ module Game.LambdaHack.Definition.ContentData
   ( ContentData
   , validateRarity, validFreqs
   , emptyContentData, makeContentData
-  , okind, omemberGroup, oisSingletonGroup, ouniqGroup, opick
+  , okind, omemberGroup, oexistsGroup, oisSingletonGroup, ouniqGroup, opick
   , ofoldlWithKey', ofoldlGroup', omapVector, oimapVector, olength
   ) where
 
@@ -150,6 +150,11 @@ okind ContentData{contentVector} !i = contentVector V.! contentIdIndex i
 
 omemberGroup :: ContentData a -> GroupName a -> Bool
 omemberGroup ContentData{groupFreq} cgroup = cgroup `M.member` groupFreq
+
+oexistsGroup :: ContentData a -> GroupName a -> Bool
+oexistsGroup ContentData{groupFreq} cgroup = case M.lookup cgroup groupFreq of
+  Nothing -> False
+  Just l -> all ((> 0) . fst) l
 
 oisSingletonGroup :: ContentData a -> GroupName a -> Bool
 oisSingletonGroup ContentData{groupFreq} cgroup =

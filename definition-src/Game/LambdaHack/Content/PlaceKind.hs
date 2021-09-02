@@ -72,20 +72,34 @@ deadEndId = toContentId 0
 
 -- | Catch invalid place kind definitions. In particular, verify that
 -- the top-left corner map is rectangular and not empty.
-validateSingle :: PlaceKind -> [Text]
-validateSingle PlaceKind{..} =
+validateSingle :: ContentData TileKind -> PlaceKind -> [Text]
+validateSingle cotile PlaceKind{..} =
   let dxcorner = case ptopLeft of
         [] -> 0
         l : _ -> T.length l
+      inLegend :: Text -> EM.EnumMap Char (GroupName TileKind) -> Char -> [Text]
+      inLegend _ _ 'X' = []  -- special placeholder symbol; TODO: unhardwire
+      inLegend legendName m c = case EM.lookup c m of
+        Nothing -> [tshow c <+> "tile code not found in" <+> legendName]
+        Just grp -> [ tshow c <+> "tile code has group"
+                      <+> displayGroupName grp
+                      <+> "with null frequency in tile content"
+                    | not $ oexistsGroup cotile grp ]
+      inLegendAll legendName m = concatMap (inLegend legendName m)
+                                           (concatMap T.unpack ptopLeft)
   in [ "top-left corner empty" | dxcorner == 0 ]
      ++ [ "top-left corner not rectangular"
         | any (/= dxcorner) (map T.length ptopLeft) ]
+     ++ inLegendAll "plegendDark" plegendDark
+     ++ inLegendAll "plegendLit" plegendLit
      ++ validateRarity prarity
 
 -- | Validate all place kinds.
 validateAll :: [PlaceKind] -> ContentData PlaceKind -> [Text]
 validateAll _ _ = []  -- so far, always valid
 
-makeData :: [PlaceKind] -> [GroupName PlaceKind] -> [GroupName PlaceKind]
+makeData :: ContentData TileKind
+         -> [PlaceKind] -> [GroupName PlaceKind] -> [GroupName PlaceKind]
          -> ContentData PlaceKind
-makeData = makeContentData "PlaceKind" pname pfreq validateSingle validateAll
+makeData cotile = makeContentData "PlaceKind" pname pfreq
+                                  (validateSingle cotile) validateAll
