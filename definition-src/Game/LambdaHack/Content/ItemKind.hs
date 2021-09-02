@@ -555,7 +555,7 @@ toOrganNoTimer grp = CreateItem Nothing COrgan grp TimerNone
 
 -- | Catch invalid item kind definitions.
 validateSingle :: ItemSymbolsUsedInEngine -> ItemKind -> [Text]
-validateSingle corule ik@ItemKind{..} =
+validateSingle itemSymbols ik@ItemKind{..} =
   ["iname longer than 23" | T.length iname > 23]
   ++ ["icount < 0" | Dice.infDice icount < 0]
   ++ validateRarity irarity
@@ -575,9 +575,9 @@ validateSingle corule ik@ItemKind{..} =
           likelyTemplate = case ifreq of
             [(grp, 1)] -> "unknown" `T.isSuffixOf` fromGroupName grp
             _ -> False
-          likelyException = isymbol `elem` [ rsymbolFood corule
-                                           , rsymbolNecklace corule
-                                           , rsymbolWand corule ]
+          likelyException = isymbol `elem` [ rsymbolFood itemSymbols
+                                           , rsymbolNecklace itemSymbols
+                                           , rsymbolWand itemSymbols ]
                             || likelyTemplate
       in [ "EqpSlot specified but not Equipable nor Meleeable"
          | length ts == 1 && not equipable && not meleeable ]
@@ -748,10 +748,10 @@ validateAll content coitem =
   in [ "PresentAs groups not singletons:" <+> tshow wrongPresentAsGroups
      | not $ null wrongPresentAsGroups ]
 
-makeData :: [ItemKind] -> [GroupName ItemKind] -> [GroupName ItemKind]
-         -> ItemSymbolsUsedInEngine
+makeData :: ItemSymbolsUsedInEngine
+         -> [ItemKind] -> [GroupName ItemKind] -> [GroupName ItemKind]
          -> ContentData ItemKind
-makeData content groupNamesSingleton groupNames itemSymbols =
+makeData itemSymbols content groupNamesSingleton groupNames =
   let allGroupNamesTooLong = filter ((> 23) . T.length . fromGroupName)
                              $ groupNamesSingleton ++ groupNames
   in assert (null allGroupNamesTooLong
