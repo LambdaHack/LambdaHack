@@ -4,7 +4,7 @@ module Game.LambdaHack.Server.DungeonGen.Place
   ( Place(..), TileMapEM, buildPlace, isChancePos, buildFenceRnd
 #ifdef EXPOSE_INTERNAL
     -- * Internal operations
-  , placeCheck, interiorArea, olegend, pover, buildFence, buildFenceMap
+  , placeCheck, interiorArea, pover, buildFence, buildFenceMap
   , tilePlace
 #endif
   ) where
@@ -15,7 +15,6 @@ import Game.LambdaHack.Core.Prelude
 
 import qualified Data.Bits as Bits
 import qualified Data.EnumMap.Strict as EM
-import qualified Data.EnumSet as ES
 import qualified Data.Text as T
 import           Data.Word (Word32)
 
@@ -190,31 +189,6 @@ isChancePos k' n' dsecret (Point x' y') = k' > 0 && n' > 0 &&
   in if k < n
      then z `mod` ((n + k) `divUp` k) == 0
      else z `mod` ((n + k) `divUp` n) /= 0
-
--- | Roll a legend of a place plan: a map from plan symbols to tile kinds.
-olegend :: COps -> GroupName TileKind
-        -> Rnd ( EM.EnumMap Char (Int, Int, ContentId TileKind)
-               , EM.EnumMap Char (ContentId TileKind) )
-olegend COps{cotile} cgroup =
-  let getSymbols !acc _ _ !tk = ES.insert (TK.tsymbol tk) acc
-      symbols = ofoldlGroup' cotile cgroup getSymbols ES.empty
-      getLegend s !acc = do
-        (mOneIn, m) <- acc
-        let p f t = TK.tsymbol t == s && f (Tile.kindHasFeature TK.Spice t)
-        tk <- fmap (fromMaybe $ error $ "" `showFailure` (cgroup, s))
-              $ opick cotile cgroup (p not)
-        mtkSpice <- opick cotile cgroup (p id)
-        return $! case mtkSpice of
-          Nothing -> (mOneIn, EM.insert s tk m)
-          Just tkSpice ->
-            -- Unlikely, but possible that ordinary legend has spice.
-            let n = fromMaybe (error $ show cgroup)
-                              (lookup cgroup (TK.tfreq (okind cotile tk)))
-                k = fromMaybe (error $ show cgroup)
-                              (lookup cgroup (TK.tfreq (okind cotile tkSpice)))
-            in (EM.insert s (k, n, tkSpice) mOneIn, EM.insert s tk m)
-      legend = ES.foldr' getLegend (return (EM.empty, EM.empty)) symbols
-  in legend
 
 -- This can't be optimized by memoization (storing these results per place),
 -- because it would fix random assignment of tiles to groups
