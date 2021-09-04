@@ -321,7 +321,7 @@ skillDesc skill =
     SkWait -> capStatName <+>
       "determines whether the character can wait, brace for combat (potentially blocking the effects of some attacks), sleep and lurk."
     SkMoveItem -> capStatName <+>
-      "determines whether the character can pick up items and manage inventory."
+      "determines whether the character can pick up items and manage inventory. Addtionally, it increases the cap for potential bonuses when reshaping items and crafting items (for the latter, also permits rarer item kinds)."
     SkProject -> capStatName <+>
       "determines which kinds of items the character can propel. Items that can be lobbed to explode at a precise location, such as flasks, require skill 3. Other items travel until they meet an obstacle and skill 1 is enough to fling them. In some cases, e.g., of too intricate or two awkward items at low Calm, throwing is not possible regardless of the skill value."
     SkApply -> capStatName <+>

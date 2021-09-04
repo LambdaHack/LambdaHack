@@ -1337,21 +1337,23 @@ effectCreateItem jfidRaw mcount source target miidOriginal store grp tim = do
  else do
   cops <- getsState scops
   sb <- getsState $ getActorBody source
+  actorMaxSk <- getsState $ getActorMaxSkills target
   totalDepth <- getsState stotalDepth
   lvlTb <- getLevel (blid tb)
   let -- If the number of items independent of depth in @mcount@,
       -- make also the timer, the item kind choice and aspects
       -- independent of depth, via fixing the generation depth of the item
       -- to @totalDepth@. Prime example of provided @mcount@ is crafting.
-      -- TODO: base this on skill.
-      depth = if isJust mcount then totalDepth else ldepth lvlTb
+      moveItemSkill = Ability.getSk Ability.SkMove actorMaxSk
+      depth = if isJust mcount
+              then depthFromSkill moveItemSkill totalDepth
+              else ldepth lvlTb
       fscale unit nDm = do
         k0 <- rndToAction $ castDice depth totalDepth nDm
         let k = max 1 k0  -- KISS, don't freak out if dice permit 0
         return $! timeDeltaScale unit k
       fgame = fscale (Delta timeTurn)
       factor nDm = do
-        actorMaxSk <- getsState $ getActorMaxSkills target
         -- A bit added to make sure length 1 effect doesn't randomly
         -- end, or not, before the end of first turn, which would make,
         -- e.g., hasting, useless. This needs to be higher than 10%
@@ -1440,6 +1442,19 @@ effectCreateItem jfidRaw mcount source target miidOriginal store grp tim = do
           else when (store /= CGround) $
             discoverIfMinorEffects c iid (itemKindId itemFull)
           return UseUp
+
+-- | Compute the effective depth at which an item is (re)generated
+-- from total depth of the dungeon and a relevant skill value.
+depthFromSkill :: Int -> Dice.AbsDepth -> Dice.AbsDepth
+depthFromSkill moveItemSkill (Dice.AbsDepth totalDepth) =
+  let -- No bonus to depth from the standard skill value, the one
+      -- that is needed to pick up and manage items at all.
+      lowestSkill = 1
+      -- If no bonus from skill, the produced depth is slightly lower
+      -- than the total depth given as argument.
+      defaultRestriction = 2
+  in Dice.AbsDepth $ totalDepth - defaultRestriction
+                     + moveItemSkill - lowestSkill
 
 -- ** DestroyItem
 
@@ -1783,6 +1798,7 @@ effectRerollItem :: forall m . MonadServerAtomic m
 effectRerollItem execSfx iidOriginal target = do
   COps{coItemSpeedup} <- getsState scops
   tb <- getsState $ getActorBody target
+  actorMaxSk <- getsState $ getActorMaxSkills target
   let cstore = CGround  -- if ever changed, call @discoverIfMinorEffects@
   kitAss <- getsState $ kitAssocs target [cstore]
   case filter ((/= iidOriginal) . fst) kitAss of
@@ -1804,11 +1820,13 @@ effectRerollItem execSfx iidOriginal target = do
            identifyIid iid c itemKindId itemKind
            execUpdAtomic $ UpdDestroyItem False iid itemBase kit c
            totalDepth <- getsState stotalDepth
-           let roll100 :: Int -> m (ItemKnown, ItemFull)
+           let moveItemSkill = Ability.getSk Ability.SkMove actorMaxSk
+               depth = depthFromSkill moveItemSkill totalDepth
+               roll100 :: Int -> m (ItemKnown, ItemFull)
                roll100 n = do
                  -- Not only rerolled, but at highest depth possible,
                  -- resulting in highest potential for bonuses.
-                 m2 <- rollItemAspect freq totalDepth
+                 m2 <- rollItemAspect freq depth
                  case m2 of
                    NoNewItem ->
                      error "effectRerollItem: can't create rerolled item"
