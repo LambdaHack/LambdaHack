@@ -342,7 +342,7 @@ actionStrategy foeAssocs friendAssocs aid retry = do
       -- is being chosen so, e.g., none of them can be @flee@ or the actor
       -- would be marked in state as fleeing even when the strategy is
       -- not chosen. TODO: introduce @MonadClientRead@ and so ensure with types
-      -- that none of these actions modifie state.
+      -- that none of these actions modify state.
       distant :: [([Skill], m (Frequency RequestTimed), Bool)]
       distant =
         [ ( [SkMoveItem]

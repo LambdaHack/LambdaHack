@@ -56,7 +56,7 @@ data CmdAtomic =
   | SfxAtomic SfxAtomic  -- ^ atomic special effects
   deriving Show
 
--- TODO: needed in the future, if efect, to save undo information:
+-- TODO: needed in the future, if ever, to save undo information:
 --
 --  deriving (Show, Eq, Generic)
 --
