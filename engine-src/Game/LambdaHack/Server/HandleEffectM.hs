@@ -1339,13 +1339,12 @@ effectCreateItem jfidRaw mcount source target miidOriginal store grp tim = do
   sb <- getsState $ getActorBody source
   totalDepth <- getsState stotalDepth
   lvlTb <- getLevel (blid tb)
-  dungeon <- getsState sdungeon
-  let maxLidLvl = maximumBy (comparing (ldepth . snd)) $ EM.assocs dungeon
-      -- If the number of items independent of depth, make also the timer
-      -- the item kind choice and aspects independent of depth.
-      -- Prime example is crafting. TODO: base this on skill.
-      (_, lvl) = if isJust mcount then maxLidLvl else (blid tb, lvlTb)
-      depth = ldepth lvl
+  let -- If the number of items independent of depth in @mcount@,
+      -- make also the timer, the item kind choice and aspects
+      -- independent of depth, via fixing the generation depth of the item
+      -- to @totalDepth@. Prime example of provided @mcount@ is crafting.
+      -- TODO: base this on skill.
+      depth = if isJust mcount then totalDepth else ldepth lvlTb
       fscale unit nDm = do
         k0 <- rndToAction $ castDice depth totalDepth nDm
         let k = max 1 k0  -- KISS, don't freak out if dice permit 0
@@ -1680,7 +1679,7 @@ effectRecharge reducingCooldown execSfx iidOriginal n0 dice target = do
  if bproj tb then return UseDud else do  -- slows down, but rarely any effect
   localTime <- getsState $ getLocalTime (blid tb)
   totalDepth <- getsState stotalDepth
-  Level{ldepth} <- getLevel (blid tb)
+  Level{ldepth} <- getLevel $ blid tb
   power <- rndToAction $ castDice ldepth totalDepth dice
   let timeUnit = if reducingCooldown
                  then absoluteTimeNegate timeClip
@@ -1804,11 +1803,12 @@ effectRerollItem execSfx iidOriginal target = do
            execSfx
            identifyIid iid c itemKindId itemKind
            execUpdAtomic $ UpdDestroyItem False iid itemBase kit c
-           dungeon <- getsState sdungeon
-           let maxDepth = maximum $ map (ldepth . snd) $ EM.assocs dungeon
-               roll100 :: Int -> m (ItemKnown, ItemFull)
+           totalDepth <- getsState stotalDepth
+           let roll100 :: Int -> m (ItemKnown, ItemFull)
                roll100 n = do
-                 m2 <- rollItemAspect freq maxDepth
+                 -- Not only rerolled, but at highest depth possible,
+                 -- resulting in highest potential for bonuses.
+                 m2 <- rollItemAspect freq totalDepth
                  case m2 of
                    NoNewItem ->
                      error "effectRerollItem: can't create rerolled item"
