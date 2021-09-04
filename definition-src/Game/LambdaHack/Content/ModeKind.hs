@@ -238,11 +238,17 @@ validateSingleRoster caves Roster{..} =
      in concatMap (checkDipl "rosterEnemy") rosterEnemy
         ++ concatMap (checkDipl "rosterAlly") rosterAlly
   ++ let keys = concatMap fst caves
+         minD = minimum keys
+         maxD = maximum keys
          f (_, _, l) = concatMap g l
          g i3@(ln, _, _) =
            [ "initial actor levels not among caves:" <+> tshow i3
            | ln `notElem` keys ]
      in concatMap f rosterList
+        ++ [ "player confused by both positive and negative level numbers"
+           | signum minD /= signum maxD ]
+        ++ [ "player confused by level numer zero"
+           | any (== 0) keys ]
 
 validateSinglePlayer :: Player -> [Text]
 validateSinglePlayer Player{..} =

@@ -346,12 +346,8 @@ dungeonGen cops@COps{cocave} serverOptions caves = do
         return $! zip ns lShuffled
   cavesShuffled <- mapM shuffleSegment caves
   let cavesFlat = concat cavesShuffled
-      keys = map fst cavesFlat
-      minD = minimum keys
-      maxD = maximum keys
-      freshTotalDepth = assert (signum minD == signum maxD)
-                        $ Dice.AbsDepth
-                        $ max 10 $ max (abs minD) (abs maxD)
+      absKeys = map (abs . fst) cavesFlat
+      freshTotalDepth = Dice.AbsDepth $ maximum $ 10 : absKeys
       getCaveKindNum :: (Int, GroupName CaveKind)
                      -> Rnd ((LevelId, ContentId CaveKind, CaveKind), Int)
       getCaveKindNum (ln, genName) = do

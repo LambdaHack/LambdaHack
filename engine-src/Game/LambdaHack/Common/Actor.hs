@@ -271,7 +271,7 @@ getCarriedIidCStore b =
 monsterGenChance :: Dice.AbsDepth -> Dice.AbsDepth -> Int -> Int -> Rnd Bool
 monsterGenChance (Dice.AbsDepth ldepth) (Dice.AbsDepth totalDepth)
                  lvlSpawned actorCoeff =
-  assert (totalDepth > 0 && ldepth > 0) $
+  assert (totalDepth > 0 && ldepth > 0) $  -- ensured by content validation
     -- The sustained spawn speed is now trebled compared to the comment below,
     -- to compensate for some monsters generated asleep:
     --
