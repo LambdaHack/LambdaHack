@@ -450,10 +450,11 @@ addActorFromGroup :: MonadServerAtomic m
                   => GroupName ItemKind -> FactionId -> Point -> LevelId -> Time
                   -> m (Maybe ActorId)
 addActorFromGroup actorGroup fid pos lid time = do
+  Level{ldepth} <- getLevel lid
   -- We bootstrap the actor by first creating the trunk of the actor's body
   -- that contains the fixed properties of all actors of that kind.
-  freq <- prepareItemKind 0 lid [(actorGroup, 1)]
-  m2 <- rollItemAspect freq lid
+  freq <- prepareItemKind 0 ldepth [(actorGroup, 1)]
+  m2 <- rollItemAspect freq ldepth
   case m2 of
     NoNewItem -> return Nothing
     NewItem itemKnown itemFull itemQuant -> do
@@ -618,12 +619,13 @@ addActorIid trunkId ItemFull{itemBase, itemKind, itemDisco=ItemDiscoFull arItem}
      then return ()
      else do
       let container = CActor aid cstore
+      Level{ldepth} <- getLevel lid
       mIidEtc <- case lookup ikGrp gearList of
         Nothing -> do
           let itemFreq = [(ikGrp, 1)]
           -- Power depth of new items unaffected by number of spawned actors.
-          freq <- prepareItemKind 0 lid itemFreq
-          mIidEtc <- rollAndRegisterItem False lid freq container mk
+          freq <- prepareItemKind 0 ldepth itemFreq
+          mIidEtc <- rollAndRegisterItem False ldepth freq container mk
           case (bnumberTeam, mIidEtc) of
             (Just (number, teamContinuity), Just (_, (itemFull2, _))) -> do
               let arItem2 = aspectRecordFull itemFull2
@@ -646,7 +648,7 @@ addActorIid trunkId ItemFull{itemBase, itemKind, itemDisco=ItemDiscoFull arItem}
             ser {steamGearCur = EM.alter alt teamContinuity steamGearCur}
           let itemKind2 = okind coitem itemKindId2
               freq = pure (itemKindId2, itemKind2)
-          rollAndRegisterItem False lid freq container mk
+          rollAndRegisterItem False ldepth freq container mk
       case mIidEtc of
         Nothing -> error $ "" `showFailure` (lid, ikGrp, container, mk)
         Just (iid, (itemFull2, _)) ->
@@ -762,10 +764,11 @@ addCondition :: MonadServerAtomic m
              => Bool -> GroupName ItemKind -> ActorId -> m ()
 addCondition verbose name aid = do
   b <- getsState $ getActorBody aid
+  Level{ldepth} <- getLevel $ blid b
   let c = CActor aid COrgan
   -- Power depth of new items unaffected by number of spawned actors.
-  freq <- prepareItemKind 0 (blid b) [(name, 1)]
-  mresult <- rollAndRegisterItem verbose (blid b) freq c Nothing
+  freq <- prepareItemKind 0 ldepth [(name, 1)]
+  mresult <- rollAndRegisterItem verbose ldepth freq c Nothing
   assert (isJust mresult) $ return ()
 
 removeConditionSingle :: MonadServerAtomic m

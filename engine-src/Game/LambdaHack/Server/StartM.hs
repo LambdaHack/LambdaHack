@@ -151,7 +151,8 @@ sampleTrunks dungeon = do
       trunkKindIds = ES.elems $ foldl' addGroupToSet ES.empty groups
       minLid = fst $ minimumBy (comparing (ldepth . snd))
                    $ EM.assocs dungeon
-      regItem itemKindId = do
+  Level{ldepth} <- getLevel minLid
+  let regItem itemKindId = do
         let itemKind = okind coitem itemKindId
             freq = pure (itemKindId, itemKind)
         case possibleActorFactions itemKind factionD of
@@ -159,7 +160,7 @@ sampleTrunks dungeon = do
           (fid, _) : _ -> do
             let c = CTrunk fid minLid originPoint
                 jfid = Just fid
-            m2 <- rollItemAspect freq minLid
+            m2 <- rollItemAspect freq ldepth
             case m2 of
               NoNewItem -> error "sampleTrunks: can't create actor trunk"
               NewItem (ItemKnown kindIx ar _) itemFullRaw itemQuant -> do
@@ -184,11 +185,12 @@ sampleItems dungeon = do
       itemKindIds = ES.elems $ foldl' addGroupToSet ES.empty groups
       minLid = fst $ minimumBy (comparing (ldepth . snd))
                    $ EM.assocs dungeon
-      regItem itemKindId = do
+  Level{ldepth} <- getLevel minLid
+  let regItem itemKindId = do
         let itemKind = okind coitem itemKindId
             freq = pure (itemKindId, itemKind)
             c = CFloor minLid originPoint
-        m2 <- rollItemAspect freq minLid
+        m2 <- rollItemAspect freq ldepth
         case m2 of
           NoNewItem -> error "sampleItems: can't create sample item"
           NewItem itemKnown itemFull _ ->

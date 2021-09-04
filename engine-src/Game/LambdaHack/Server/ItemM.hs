@@ -36,6 +36,7 @@ import           Game.LambdaHack.Content.CaveKind (citemFreq, citemNum)
 import           Game.LambdaHack.Content.ItemKind (ItemKind)
 import qualified Game.LambdaHack.Content.ItemKind as IK
 import           Game.LambdaHack.Content.TileKind (TileKind)
+import qualified Game.LambdaHack.Core.Dice as Dice
 import           Game.LambdaHack.Core.Frequency
 import           Game.LambdaHack.Core.Random
 import qualified Game.LambdaHack.Definition.Ability as Ability
@@ -148,21 +149,22 @@ computeRndTimeout _ _ = error "computeRndTimeout: server ignorant about an item"
 createCaveItem :: MonadServerAtomic m => Point -> LevelId -> m ()
 createCaveItem pos lid = do
   COps{cocave} <- getsState scops
-  Level{lkind} <- getLevel lid
+  Level{lkind, ldepth} <- getLevel lid
   let container = CFloor lid pos
       litemFreq = citemFreq $ okind cocave lkind
   -- Power depth of new items unaffected by number of spawned actors.
-  freq <- prepareItemKind 0 lid litemFreq
-  mIidEtc <- rollAndRegisterItem True lid freq container Nothing
+  freq <- prepareItemKind 0 ldepth litemFreq
+  mIidEtc <- rollAndRegisterItem True ldepth freq container Nothing
   createKitItems lid pos mIidEtc
 
 createEmbedItem :: MonadServerAtomic m
                 => LevelId -> Point -> GroupName ItemKind -> m ()
 createEmbedItem lid pos grp = do
+  Level{ldepth} <- getLevel lid
   let container = CEmbed lid pos
   -- Power depth of new items unaffected by number of spawned actors.
-  freq <- prepareItemKind 0 lid [(grp, 1)]
-  mIidEtc <- rollAndRegisterItem True lid freq container Nothing
+  freq <- prepareItemKind 0 ldepth [(grp, 1)]
+  mIidEtc <- rollAndRegisterItem True ldepth freq container Nothing
   createKitItems lid pos mIidEtc
 
 -- Create, register and insert all initial kit items.
@@ -172,7 +174,7 @@ createKitItems lid pos mIidEtc = case mIidEtc of
   Nothing -> error $ "" `showFailure` (lid, pos, mIidEtc)
   Just (_, (itemFull, _)) -> do
     cops <- getsState scops
-    lvl <- getLevel lid
+    lvl@Level{ldepth} <- getLevel lid
     let ikit = IK.ikit $ itemKind itemFull
         nearbyPassable = take (20 + length ikit)
                          $ nearbyPassablePoints cops lvl pos
@@ -187,8 +189,8 @@ createKitItems lid pos mIidEtc = case mIidEtc of
                       else CEmbed lid pos
           itemFreq = [(ikGrp, 1)]
       -- Power depth of new items unaffected by number of spawned actors.
-      freq <- prepareItemKind 0 lid itemFreq
-      mresult <- rollAndRegisterItem False lid freq container Nothing
+      freq <- prepareItemKind 0 ldepth itemFreq
+      mresult <- rollAndRegisterItem False ldepth freq container Nothing
       assert (isJust mresult) $ return ()
 
 -- Tiles already placed, so it's possible to scatter companion items
@@ -201,24 +203,22 @@ embedItemOnPos lid pos tk = do
   mapM_ (createEmbedItem lid pos) embedGroups
 
 prepareItemKind :: MonadServerAtomic m
-                => Int -> LevelId -> Freqs ItemKind
+                => Int -> Dice.AbsDepth -> Freqs ItemKind
                 -> m (Frequency (ContentId IK.ItemKind, ItemKind))
-prepareItemKind lvlSpawned lid itemFreq = do
+prepareItemKind lvlSpawned ldepth itemFreq = do
   cops <- getsState scops
   uniqueSet <- getsServer suniqueSet
   totalDepth <- getsState stotalDepth
-  Level{ldepth} <- getLevel lid
   return $! newItemKind cops uniqueSet itemFreq ldepth totalDepth lvlSpawned
 
 rollItemAspect :: MonadServerAtomic m
-               => Frequency (ContentId IK.ItemKind, ItemKind) -> LevelId
+               => Frequency (ContentId IK.ItemKind, ItemKind) -> Dice.AbsDepth
                -> m NewItem
-rollItemAspect freq lid = do
+rollItemAspect freq ldepth = do
   cops <- getsState scops
   flavour <- getsServer sflavour
   discoRev <- getsServer sdiscoKindRev
   totalDepth <- getsState stotalDepth
-  Level{ldepth} <- getLevel lid
   m2 <- rndToAction $ newItem cops freq flavour discoRev ldepth totalDepth
   case m2 of
     NewItem (ItemKnown _ arItem _) ItemFull{itemKindId} _ -> do
@@ -230,13 +230,13 @@ rollItemAspect freq lid = do
 
 rollAndRegisterItem :: MonadServerAtomic m
                     => Bool
-                    -> LevelId
+                    -> Dice.AbsDepth
                     -> Frequency (ContentId IK.ItemKind, ItemKind)
                     -> Container
                     -> Maybe Int
                     -> m (Maybe (ItemId, ItemFullKit))
-rollAndRegisterItem verbose lid freq container mk = do
-  m2 <- rollItemAspect freq lid
+rollAndRegisterItem verbose ldepth freq container mk = do
+  m2 <- rollItemAspect freq ldepth
   case m2 of
     NoNewItem -> return Nothing
     NewItem itemKnown itemFull kit -> do

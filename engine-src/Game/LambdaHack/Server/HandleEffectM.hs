@@ -531,8 +531,9 @@ effectExplode execSfx cgroup source target containerOrigin = do
       -- functions that have the store hardwired.
       container = CActor target COrgan
   -- Power depth of new items unaffected by number of spawned actors.
-  freq <- prepareItemKind 0 (blid tb) itemFreq
-  m2 <- rollAndRegisterItem False (blid tb) freq container Nothing
+  Level{ldepth} <- getLevel $ blid tb
+  freq <- prepareItemKind 0 ldepth itemFreq
+  m2 <- rollAndRegisterItem False ldepth freq container Nothing
   acounter <- getsServer $ fromEnum . sacounter
   let (iid, (ItemFull{itemKind}, (itemK, _))) =
         fromMaybe (error $ "" `showFailure` cgroup) m2
@@ -1343,7 +1344,7 @@ effectCreateItem jfidRaw mcount source target miidOriginal store grp tim = do
       -- If the number of items independent of depth, make also the timer
       -- the item kind choice and aspects independent of depth.
       -- Prime example is crafting. TODO: base this on skill.
-      (lid, lvl) = if isJust mcount then maxLidLvl else (blid tb, lvlTb)
+      (_, lvl) = if isJust mcount then maxLidLvl else (blid tb, lvlTb)
       depth = ldepth lvl
       fscale unit nDm = do
         k0 <- rndToAction $ castDice depth totalDepth nDm
@@ -1365,7 +1366,7 @@ effectCreateItem jfidRaw mcount source target miidOriginal store grp tim = do
   uniqueSet <- getsServer suniqueSet
   -- Power depth of new items unaffected by number of spawned actors, so 0.
   let freq = newItemKind cops uniqueSet [(grp, 1)] depth totalDepth 0
-  m2 <- rollItemAspect freq lid
+  m2 <- rollItemAspect freq depth
   case m2 of
     NoNewItem -> return UseDud  -- e.g., unique already generated
     NewItem itemKnownRaw itemFullRaw (kRaw, itRaw) -> do
@@ -1804,11 +1805,10 @@ effectRerollItem execSfx iidOriginal target = do
            identifyIid iid c itemKindId itemKind
            execUpdAtomic $ UpdDestroyItem False iid itemBase kit c
            dungeon <- getsState sdungeon
-           let maxLid = fst $ maximumBy (comparing (ldepth . snd))
-                            $ EM.assocs dungeon
+           let maxDepth = maximum $ map (ldepth . snd) $ EM.assocs dungeon
                roll100 :: Int -> m (ItemKnown, ItemFull)
                roll100 n = do
-                 m2 <- rollItemAspect freq maxLid
+                 m2 <- rollItemAspect freq maxDepth
                  case m2 of
                    NoNewItem ->
                      error "effectRerollItem: can't create rerolled item"

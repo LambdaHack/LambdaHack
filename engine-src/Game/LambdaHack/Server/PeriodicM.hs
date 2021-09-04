@@ -94,10 +94,10 @@ addAnyActor summoned lvlSpawned actorFreq lid time mpos = do
   -- We bootstrap the actor by first creating the trunk of the actor's body
   -- that contains the fixed properties of all actors of that kind.
   cops <- getsState scops
-  lvl <- getLevel lid
+  lvl@Level{ldepth} <- getLevel lid
   factionD <- getsState sfactionD
-  freq <- prepareItemKind lvlSpawned lid actorFreq
-  m2 <- rollItemAspect freq lid
+  freq <- prepareItemKind lvlSpawned ldepth actorFreq
+  m2 <- rollItemAspect freq ldepth
   case m2 of
     NoNewItem -> do
       debugPossiblyPrint $ T.pack $
