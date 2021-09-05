@@ -1337,13 +1337,17 @@ effectCreateItem jfidRaw mcount source target miidOriginal store grp tim = do
  else do
   cops <- getsState scops
   sb <- getsState $ getActorBody source
+  actorMaxSk <- getsState $ getActorMaxSkills target
   totalDepth <- getsState stotalDepth
   lvlTb <- getLevel (blid tb)
   let -- If the number of items independent of depth in @mcount@,
       -- make also the timer, the item kind choice and aspects
       -- independent of depth, via fixing the generation depth of the item
       -- to @totalDepth@. Prime example of provided @mcount@ is crafting.
-      -- TODO: base this on skill.
+      -- TODO: base this on a resource that can be consciously spent,
+      -- not on a skill that grows over time or that only one actor
+      -- maxes out and so needs to always be chosen for crafting.
+      -- See https://www.reddit.com/r/roguelikedev/comments/phukcq/game_design_question_how_to_base_item_generation/
       depth = if isJust mcount then totalDepth else ldepth lvlTb
       fscale unit nDm = do
         k0 <- rndToAction $ castDice depth totalDepth nDm
@@ -1351,7 +1355,6 @@ effectCreateItem jfidRaw mcount source target miidOriginal store grp tim = do
         return $! timeDeltaScale unit k
       fgame = fscale (Delta timeTurn)
       factor nDm = do
-        actorMaxSk <- getsState $ getActorMaxSkills target
         -- A bit added to make sure length 1 effect doesn't randomly
         -- end, or not, before the end of first turn, which would make,
         -- e.g., hasting, useless. This needs to be higher than 10%
