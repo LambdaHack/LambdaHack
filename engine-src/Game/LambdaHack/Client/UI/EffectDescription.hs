@@ -36,7 +36,7 @@ data DetailLevel = DetailLow | DetailMedium | DetailHigh | DetailAll
 instance Binary DetailLevel
 
 defaultDetailLevel :: DetailLevel
-defaultDetailLevel = DetailAll  -- TODO: take from config file
+defaultDetailLevel = DetailAll  -- TODO: take from config file, #217
 
 -- | Suffix to append to a basic content name if the content causes the effect.
 --

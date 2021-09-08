@@ -210,7 +210,10 @@ getReportUI insideMenu = do
   sUIOptions <- getsSession sUIOptions
   report <- getsSession $ newReport . shistory
   fact <- getsState $ (EM.! side) . sfactionD
-  let newcomerHelp = True  -- TODO
+  curTutorial <- getsSession scurTutorial
+  overrideTut <- getsSession soverrideTut
+  -- Different from ordinary tutorial hints in that shown more than once.
+  let newcomerHelp = fromMaybe curTutorial overrideTut
       detailAtDefault = (detailLevel <$> saimMode) == Just defaultDetailLevel
       detailMinimal = (detailLevel <$> saimMode) == Just minBound
       underAI = isAIFact fact

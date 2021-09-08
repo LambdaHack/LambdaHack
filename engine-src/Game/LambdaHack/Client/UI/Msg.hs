@@ -559,12 +559,12 @@ addToReport usedHints displayHints inMelee
                      , newTime = time
                      , .. }
       msgIsHint = tutorialHint (msgClass msg)
-      msgUsedAsHit = S.member msg usedHints
-      newUsedHints = if msgIsHint && displayHints && not msgUsedAsHit
+      msgUsedAsHint = S.member msg usedHints
+      newUsedHints = if msgIsHint && displayHints && not msgUsedAsHint
                      then S.insert msg usedHints
                      else usedHints
   in -- Tutorial hint shown only when tutorial enabled and hint not yet shown.
-     if | msgIsHint && (not displayHints || msgUsedAsHit) ->
+     if | msgIsHint && (not displayHints || msgUsedAsHint) ->
           (usedHints, oldHistory, False)
         | not (scrapsRepeats $ msgClass msg)
           || nullRepMsgNK repMsgNK ->
