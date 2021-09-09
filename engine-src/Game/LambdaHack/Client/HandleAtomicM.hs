@@ -60,12 +60,12 @@ cmdAtomicSemCli oldState cmd = case cmd of
   UpdCreateActor aid b ais -> createActor aid b ais
   UpdDestroyActor aid b _ -> destroyActor aid b True
   UpdCreateItem _ iid _ _ (CActor aid store) -> do
-    wipeBfsIfItemAffectsSkills [store] aid
+    wipeBfsIfItemAffectsSkills store aid
     addItemToDiscoBenefit iid
     updateInMeleeDueToItem aid store
   UpdCreateItem _ iid _ _ _ -> addItemToDiscoBenefit iid
   UpdDestroyItem _ _ _ _ (CActor aid store) -> do
-    wipeBfsIfItemAffectsSkills [store] aid
+    wipeBfsIfItemAffectsSkills store aid
     updateInMeleeDueToItem aid store
   UpdDestroyItem{} -> return ()
   UpdSpotActor aid b -> do
@@ -73,30 +73,30 @@ cmdAtomicSemCli oldState cmd = case cmd of
     createActor aid b ais
   UpdLoseActor aid b -> destroyActor aid b False
   UpdSpotItem _ iid _ (CActor aid store) -> do
-    wipeBfsIfItemAffectsSkills [store] aid
+    wipeBfsIfItemAffectsSkills store aid
     addItemToDiscoBenefit iid
     updateInMeleeDueToItem aid store
   UpdSpotItem _ iid _ _ -> addItemToDiscoBenefit iid
   UpdLoseItem _ _ _ (CActor aid store) -> do
-    wipeBfsIfItemAffectsSkills [store] aid
+    wipeBfsIfItemAffectsSkills store aid
     updateInMeleeDueToItem aid store
   UpdLoseItem{} -> return ()
   UpdSpotItemBag _ (CActor aid store) bag -> do
-    wipeBfsIfItemAffectsSkills [store] aid
+    wipeBfsIfItemAffectsSkills store aid
     mapM_ addItemToDiscoBenefit $ EM.keys bag
     updateInMeleeDueToItem aid store
   UpdSpotItemBag _ _ bag ->
     mapM_ addItemToDiscoBenefit $ EM.keys bag
   UpdLoseItemBag _ (CActor aid store) _ -> do
-    wipeBfsIfItemAffectsSkills [store] aid
+    wipeBfsIfItemAffectsSkills store aid
     updateInMeleeDueToItem aid store
   UpdLoseItemBag{} -> return ()
   UpdMoveActor aid _ _ -> do
     invalidateBfsAid aid
-    b <- getsState $ getActorBody aid
-    -- BFS not invalidated, because distant actors may still move out
+    -- other BFSes not invalidated, because distant actors may still move out
     -- of the way and close actors are considered when attempting to move
     -- and then BFS is invalidated, if needed.
+    b <- getsState $ getActorBody aid
     updateInMeleeDueToActor b
   UpdWaitActor aid _fromW toW -> do
     -- So that we can later ignore such actors when updating targets
@@ -108,13 +108,14 @@ cmdAtomicSemCli oldState cmd = case cmd of
   UpdDisplaceActor source target -> do
     invalidateBfsAid source
     invalidateBfsAid target
-    b <- getsState $ getActorBody source
-    -- BFS not invalidated, because distant actors may still move out
+    -- other BFSes not invalidated, because distant actors may still move out
     -- of the way and close actors are considered when attempting to move
     -- and then BFS is invalidated, if needed.
+    b <- getsState $ getActorBody source
     updateInMeleeDueToActor b
   UpdMoveItem _ _ aid s1 s2 -> do
-    wipeBfsIfItemAffectsSkills [s1, s2] aid
+    wipeBfsIfItemAffectsSkills s1 aid
+    wipeBfsIfItemAffectsSkills s2 aid
     updateInMeleeDueToItem aid s1
     updateInMeleeDueToItem aid s2
   UpdRefillHP _ 0 -> return ()
@@ -156,7 +157,9 @@ cmdAtomicSemCli oldState cmd = case cmd of
                         `blame` "unexpected leader"
                         `swith` (cmd, mleader)) ()
       modifyClient $ \cli -> cli {_sleader = target}
-  UpdDiplFaction{} -> updateInMeleeInDungeon
+  UpdDiplFaction{} ->
+    -- Depends on who is a foe as opposed to a neutral actor.
+    updateInMeleeInDungeon
   UpdAutoFaction{} ->
     -- @condBFS@ depends on the setting we change here (e.g., smarkSuspect).
     invalidateBfsAll
@@ -306,9 +309,10 @@ updateInMeleeInDungeon = do
   mapM_ insertInMeleeM $ EM.keys dungeon
 
 -- For now, only checking the stores.
-wipeBfsIfItemAffectsSkills :: MonadClient m => [CStore] -> ActorId -> m ()
-wipeBfsIfItemAffectsSkills stores aid =
-  unless (null $ intersect stores [CEqp, COrgan]) $ invalidateBfsAid aid
+wipeBfsIfItemAffectsSkills :: MonadClient m => CStore -> ActorId -> m ()
+wipeBfsIfItemAffectsSkills store aid =
+  when (store `elem` [CEqp, COrgan]) $
+    invalidateBfsAid aid
 
 tileChangeAffectsBfs :: COps
                      -> ContentId TileKind -> ContentId TileKind
