@@ -98,11 +98,13 @@ cmdAtomicSemCli oldState cmd = case cmd of
     -- of the way and close actors are considered when attempting to move
     -- and then BFS is invalidated, if needed.
     invalidateInMelee (blid b)
-  UpdWaitActor aid _fromW toW ->
+  UpdWaitActor aid _fromW toW -> do
     -- So that we can later ignore such actors when updating targets
     -- and not risk they being pushed/displaced and targets getting illegal.
     when (toW == WSleep) $
       modifyClient $ updateTarget aid (const Nothing)
+    b <- getsState $ getActorBody aid
+    invalidateInMelee (blid b)  -- @bwatch@ checked in several places
   UpdDisplaceActor source target -> do
     invalidateBfsAid source
     invalidateBfsAid target
@@ -115,7 +117,10 @@ cmdAtomicSemCli oldState cmd = case cmd of
     wipeBfsIfItemAffectsSkills [s1, s2] aid
     invalidateInMeleeDueToItem aid s1
     invalidateInMeleeDueToItem aid s2
-  UpdRefillHP{} -> return ()
+  UpdRefillHP _ 0 -> return ()
+  UpdRefillHP aid _ -> do
+    b <- getsState $ getActorBody aid
+    invalidateInMelee (blid b)  -- @bhp@ checked in several places
   UpdRefillCalm{} -> return ()
   UpdTrajectory{} -> return ()
   UpdQuitFaction fid _ toSt _ -> do
@@ -148,7 +153,8 @@ cmdAtomicSemCli oldState cmd = case cmd of
                         `blame` "unexpected leader"
                         `swith` (cmd, mleader)) ()
       modifyClient $ \cli -> cli {_sleader = target}
-  UpdDiplFaction{} -> return ()
+  UpdDiplFaction{} ->
+    modifyClient $ \cli -> cli {scondInMelee = EM.empty}
   UpdAutoFaction{} ->
     -- @condBFS@ depends on the setting we change here (e.g., smarkSuspect).
     invalidateBfsAll
