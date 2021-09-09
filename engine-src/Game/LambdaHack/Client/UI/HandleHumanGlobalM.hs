@@ -1921,7 +1921,7 @@ gameKeeperToggle =
 
 -- * GameScenarioIncr
 
-gameScenarioIncr :: (MonadClient m, MonadClientUI m) => m ()
+gameScenarioIncr :: MonadClientUI m => m ()
 gameScenarioIncr = do
   cops <- getsState scops
   oldScenario <- getsSession snxtScenario

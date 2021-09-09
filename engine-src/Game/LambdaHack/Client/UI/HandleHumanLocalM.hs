@@ -125,8 +125,7 @@ chooseItemHuman :: (MonadClient m, MonadClientUI m)
                 => ItemDialogMode -> m MError
 chooseItemHuman c = either Just (const Nothing) <$> chooseItemDialogMode False c
 
-chooseItemDialogModeLore :: (MonadClient m, MonadClientUI m)
-                         => m (Maybe ResultItemDialogMode)
+chooseItemDialogModeLore :: MonadClientUI m => m (Maybe ResultItemDialogMode)
 chooseItemDialogModeLore = do
   schosenLore <- getsSession schosenLore
   (inhabitants, embeds) <- case schosenLore of

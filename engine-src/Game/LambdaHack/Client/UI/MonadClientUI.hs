@@ -375,7 +375,7 @@ scoreToSlideshow total status = do
             then sli
             else emptySlideshow
 
-defaultHistory :: (MonadClient m, MonadClientUI m) => m History
+defaultHistory :: MonadClientUI m => m History
 defaultHistory = do
   sUIOptions <- getsSession sUIOptions
   curTutorial <- getsSession scurTutorial
