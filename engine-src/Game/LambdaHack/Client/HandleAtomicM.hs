@@ -4,7 +4,7 @@ module Game.LambdaHack.Client.HandleAtomicM
   , cmdAtomicSemCli
 #ifdef EXPOSE_INTERNAL
     -- * Internal operations
-  , invalidateInMelee, invalidateInMeleeDueToItem
+  , updateInMeleeDueToActor, invalidateInMeleeDueToItem
   , wipeBfsIfItemAffectsSkills, tileChangeAffectsBfs
   , createActor, destroyActor
   , addItemToDiscoBenefit, perception
@@ -97,14 +97,14 @@ cmdAtomicSemCli oldState cmd = case cmd of
     -- BFS not invalidated, because distant actors may still move out
     -- of the way and close actors are considered when attempting to move
     -- and then BFS is invalidated, if needed.
-    invalidateInMelee (blid b)
+    updateInMeleeDueToActor b
   UpdWaitActor aid _fromW toW -> do
     -- So that we can later ignore such actors when updating targets
     -- and not risk they being pushed/displaced and targets getting illegal.
     when (toW == WSleep) $
       modifyClient $ updateTarget aid (const Nothing)
     b <- getsState $ getActorBody aid
-    invalidateInMelee (blid b)  -- @bwatch@ checked in several places
+    updateInMeleeDueToActor b  -- @bwatch@ checked in several places
   UpdDisplaceActor source target -> do
     invalidateBfsAid source
     invalidateBfsAid target
@@ -112,15 +112,18 @@ cmdAtomicSemCli oldState cmd = case cmd of
     -- BFS not invalidated, because distant actors may still move out
     -- of the way and close actors are considered when attempting to move
     -- and then BFS is invalidated, if needed.
-    invalidateInMelee (blid b)
+    updateInMeleeDueToActor b
   UpdMoveItem _ _ aid s1 s2 -> do
     wipeBfsIfItemAffectsSkills [s1, s2] aid
     invalidateInMeleeDueToItem aid s1
     invalidateInMeleeDueToItem aid s2
   UpdRefillHP _ 0 -> return ()
-  UpdRefillHP aid _ -> do
+  UpdRefillHP aid delta -> do
     b <- getsState $ getActorBody aid
-    invalidateInMelee (blid b)  -- @bhp@ checked in several places
+    unless (bproj b
+            || signum (bhp b)  -- new HP
+               == signum (bhp b - delta)) $  -- old HP
+      insertInMeleeM (blid b)  -- @bhp@ checked in several places
   UpdRefillCalm{} -> return ()
   UpdTrajectory{} -> return ()
   UpdQuitFaction fid _ toSt _ -> do
@@ -286,15 +289,16 @@ cmdAtomicSemCli oldState cmd = case cmd of
   UpdWriteSave -> saveClient
   UpdHearFid{} -> return ()
 
-invalidateInMelee :: MonadClient m => LevelId -> m ()
-invalidateInMelee lid =
-  insertInMeleeM lid
+updateInMeleeDueToActor :: MonadClient m => Actor -> m ()
+updateInMeleeDueToActor b =
+  unless (bproj b) $
+    insertInMeleeM (blid b)
 
 invalidateInMeleeDueToItem :: MonadClient m => ActorId -> CStore -> m ()
 invalidateInMeleeDueToItem aid store =
   when (store `elem` [CEqp, COrgan]) $ do
     b <- getsState $ getActorBody aid
-    invalidateInMelee (blid b)
+    updateInMeleeDueToActor b
 
 dungeonInMelee :: MonadClient m => m ()
 dungeonInMelee = do
@@ -326,7 +330,7 @@ createActor aid b ais = do
   modifyClient $ \cli -> cli {stargetD = EM.map affect3 (stargetD cli)}
   mapM_ (addItemToDiscoBenefit . fst) ais
   unless (bproj b) $ invalidateBfsPathLid b
-  invalidateInMelee (blid b)
+  updateInMeleeDueToActor b
 
 destroyActor :: MonadClient m => ActorId -> Actor -> Bool -> m ()
 destroyActor aid b destroy = do
@@ -364,7 +368,7 @@ destroyActor aid b destroy = do
         in TgtAndPath (affect aid3 tapTgt) newMPath
   modifyClient $ \cli -> cli {stargetD = EM.mapWithKey affect3 (stargetD cli)}
   unless (bproj b) $ invalidateBfsPathLid b
-  invalidateInMelee (blid b)
+  updateInMeleeDueToActor b
 
 addItemToDiscoBenefit :: MonadClient m => ItemId -> m ()
 addItemToDiscoBenefit iid = do
