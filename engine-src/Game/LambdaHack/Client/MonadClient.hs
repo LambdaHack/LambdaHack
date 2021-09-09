@@ -17,7 +17,7 @@ import Game.LambdaHack.Core.Prelude
 
 import           Control.Monad.ST.Strict (stToIO)
 import qualified Control.Monad.Trans.State.Strict as St
-import qualified Data.EnumMap.Strict as EM
+import qualified Data.EnumSet as ES
 import qualified Data.Primitive.PrimArray as PA
 import qualified Data.Text.IO as T
 import           System.FilePath
@@ -86,7 +86,7 @@ rndToAction r = do
 condInMeleeM :: MonadClientRead m => LevelId -> m Bool
 condInMeleeM lid = do
   condInMelee <- getsClient scondInMelee
-  return $! condInMelee EM.! lid
+  return $! lid `ES.member` condInMelee
 
 insertInMeleeM :: MonadClient m => LevelId -> m ()
 insertInMeleeM lid = do
@@ -94,4 +94,7 @@ insertInMeleeM lid = do
   actorMaxSkills <- getsState sactorMaxSkills
   inM <- getsState $ inMelee actorMaxSkills side lid
   modifyClient $ \cli ->
-    cli {scondInMelee = EM.insert lid inM $ scondInMelee cli}
+--    cli {scondInMelee = ES.alterF (const inM) lid $ scondInMelee cli}
+    cli {scondInMelee = if inM
+                        then ES.insert lid $ scondInMelee cli
+                        else ES.delete lid $ scondInMelee cli}

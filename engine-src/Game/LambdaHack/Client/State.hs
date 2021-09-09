@@ -64,9 +64,8 @@ data StateClient = StateClient
   , scurChal      :: Challenge      -- ^ current game challenge setup
   , snxtChal      :: Challenge      -- ^ next game challenge setup
   , smarkSuspect  :: Int            -- ^ whether to mark suspect features
-  , scondInMelee  :: EM.EnumMap LevelId Bool
-      -- ^ whether we are in melee, per level; this is not a set, due to
-      --   an unbenchmarked theory that a constant shape map is faster
+  , scondInMelee  :: ES.EnumSet LevelId
+                                    -- ^ whether we are in melee, per level
   , svictories    :: EM.EnumMap (ContentId ModeKind) (M.Map Challenge Int)
                                     -- ^ won games at particular difficulty lvls
   , scampings     :: ES.EnumSet (ContentId ModeKind)  -- ^ camped games
@@ -143,7 +142,7 @@ emptyStateClient _sside =
     , scurChal = defaultChallenge
     , snxtChal = defaultChallenge
     , smarkSuspect = 1
-    , scondInMelee = EM.empty
+    , scondInMelee = ES.empty
     , svictories = EM.empty
     , scampings = ES.empty
     , srestarts = ES.empty
