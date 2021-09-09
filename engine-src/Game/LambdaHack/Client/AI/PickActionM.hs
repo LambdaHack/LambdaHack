@@ -69,7 +69,7 @@ pickAction foeAssocs friendAssocs aid retry = do
   let !_A = assert (not (bproj body)
                     `blame` "AI gets to manually move its projectiles"
                     `swith` (aid, bfid body, side)) ()
-  stratAction <- actionStrategy foeAssocs friendAssocs aid retry
+  stratAction <- actionStrategy foeAssocs friendAssocs (blid body) aid retry
   let bestAction = bestVariant stratAction
       !_A = assert (not (nullFreq bestAction)  -- equiv to nullStrategy
                     `blame` "no AI action for actor"
@@ -79,16 +79,36 @@ pickAction foeAssocs friendAssocs aid retry = do
 
 -- AI strategy based on actor's sight, smell, etc.
 -- Never empty.
-actionStrategy :: forall m. MonadClient m
-               => [(ActorId, Actor)] -> [(ActorId, Actor)] -> ActorId -> Bool
+actionStrategy :: MonadClient m
+               => [(ActorId, Actor)] -> [(ActorId, Actor)]
+               -> LevelId -> ActorId -> Bool
                -> m (Strategy RequestTimed)
-actionStrategy foeAssocs friendAssocs aid retry = do
+actionStrategy foeAssocs friendAssocs lid aid retry = do
+  condInMelee <- condInMeleeM lid
+  randomAggressionThreshold <- rndToAction $ randomR0 10
+  actionStrategyRead condInMelee foeAssocs friendAssocs
+                     randomAggressionThreshold lid aid retry
+
+-- This is close to being in @MonadClientRead@, but not quite, due to
+-- random numbers used explicitly in a couple of places (e.g., weapon choice),
+-- which should be fixed and expressed via @Strategy@ instead,
+-- and due to recoding the fleeing preference, which should be
+-- factored out and done in the @actionStrategy@ wrapper.
+--
+-- After the AI code is totally rewritten soon, this should be revisited.
+actionStrategyRead :: forall m. MonadClient m
+                   => Bool
+                   -> [(ActorId, Actor)] -> [(ActorId, Actor)]
+                   -> Int -> LevelId -> ActorId -> Bool
+                   -> m (Strategy RequestTimed)
+actionStrategyRead condInMelee foeAssocs friendAssocs
+                   randomAggressionThreshold lid aid retry = do
   COps{coTileSpeedup} <- getsState scops
   mleader <- getsClient sleader
   body <- getsState $ getActorBody aid
-  lvl <- getLevel (blid body)
-  localTime <- getsState $ getLocalTime (blid body)
-  condInMelee <- condInMeleeM $ blid body
+  let !_A = assert (blid body == lid) ()
+  lvl <- getLevel lid
+  localTime <- getsState $ getLocalTime lid
   condAimEnemyTargeted <- condAimEnemyTargetedM aid
   condAimEnemyOrStash <- condAimEnemyOrStashM aid
   condAimEnemyOrRemembered <- condAimEnemyOrRememberedM aid
@@ -116,14 +136,13 @@ actionStrategy foeAssocs friendAssocs aid retry = do
   condFloorWeapon <- condFloorWeaponM aid
   condDesirableFloorItem <- condDesirableFloorItemM aid
   condTgtNonmovingEnemy <- condTgtNonmovingEnemyM aid
-  randomAggressionThreshold <- rndToAction $ randomR0 10
   explored <- getsClient sexplored
   -- This doesn't treat actors guarding stash specially, so on such levels
   -- man sleeping actors may reside for a long time. Variety, OK.
   let awakeAndNotGuarding (_, b) =
         bpos b /= bpos body
         && bwatch b /= WSleep
-        && Just (blid b, bpos b) /= gstash fact
+        && Just (lid, bpos b) /= gstash fact
       anyFriendOnLevelAwake = any awakeAndNotGuarding friendAssocs
       actorMaxSk = actorMaxSkills EM.! aid
       recentlyFled = maybe False (\(_, time) -> timeRecent5 localTime time)
@@ -146,7 +165,7 @@ actionStrategy foeAssocs friendAssocs aid retry = do
                 _ -> False
               && mayFallAsleep
               && Just aid /= mleader  -- best teammate for a task so stop dozing
-      lidExplored = ES.member (blid body) explored
+      lidExplored = ES.member lid explored
       panicFleeL = fleeL ++ badVic
       condHpTooLow = hpTooLow body actorMaxSk
       heavilyDistressed =  -- actor hit by a proj or similarly distressed
@@ -256,9 +275,9 @@ actionStrategy foeAssocs friendAssocs aid retry = do
                     || condManyThreatsAdj && not condSupport1 && not condSolo
                   | case gstash fact of
                       Nothing -> False
-                      Just (lid, pos) ->
-                        lid == blid body
-                        && chessDist pos (bpos body) <= 2 -> False
+                      Just (lid2, pos) ->
+                        lid2 == lid && chessDist pos (bpos body) <= 2
+                        -> False
                   | condInMelee -> False
                       -- No fleeing when others melee and no critical threat
                       -- (otherwise no target nor action would be possible).
@@ -341,8 +360,7 @@ actionStrategy foeAssocs friendAssocs aid retry = do
       -- Note that all monadic actions here are performed when the strategy
       -- is being chosen so, e.g., none of them can be @flee@ or the actor
       -- would be marked in state as fleeing even when the strategy is
-      -- not chosen. TODO: introduce @MonadClientRead@ and so ensure with types
-      -- that none of these actions modify state.
+      -- not chosen.
       distant :: [([Skill], m (Frequency RequestTimed), Bool)]
       distant =
         [ ( [SkMoveItem]
@@ -376,7 +394,7 @@ actionStrategy foeAssocs friendAssocs aid retry = do
                               200)
             $ chase actorSk aid avoidAmbient retry
           , condCanMelee
-            && Just (blid body, bpos body) /= gstash fact
+            && Just (lid, bpos body) /= gstash fact
             && (if condInMelee then condAimEnemyOrStash
                 else (condAimEnemyOrRemembered
                       || condAimNonEnemyPresent)
@@ -411,7 +429,7 @@ actionStrategy foeAssocs friendAssocs aid retry = do
             && if condInMelee
                then condCanMelee && condAimEnemyOrStash
                else (not (condThreat 2) || not condMeleeBad)
-                    && (Just (blid body, bpos body) /= gstash fact
+                    && (Just (lid, bpos body) /= gstash fact
                         || heavilyDistressed  -- guard strictly, until harmed
                         || length oursExploring <= 1
                         || condOurAdj  -- or if teammates adjacent
@@ -478,13 +496,13 @@ actionStrategy foeAssocs friendAssocs aid retry = do
   then return $! returN "sleep" ReqWait
   else tryStrategies sums
 
-waitBlockNow :: MonadClient m => m (Strategy RequestTimed)
+waitBlockNow :: MonadClientRead m => m (Strategy RequestTimed)
 waitBlockNow = return $! returN "wait" ReqWait
 
-yellNow :: MonadClient m => m (Strategy RequestTimed)
+yellNow :: MonadClientRead m => m (Strategy RequestTimed)
 yellNow = return $! returN "yell" ReqYell
 
-pickup :: MonadClient m => ActorId -> Bool -> m (Strategy RequestTimed)
+pickup :: MonadClientRead m => ActorId -> Bool -> m (Strategy RequestTimed)
 pickup aid onlyWeapon = do
   benItemL <- benGroundItems aid
   b <- getsState $ getActorBody aid
@@ -516,7 +534,7 @@ pickup aid onlyWeapon = do
 -- and with @benInEqp@ (which implies @goesIntoEqp@).
 -- Such items are moved between any stores, as needed. In this case,
 -- from stash to eqp.
-equipItems :: MonadClient m => ActorId -> m (Strategy RequestTimed)
+equipItems :: MonadClientRead m => ActorId -> m (Strategy RequestTimed)
 equipItems aid = do
   body <- getsState $ getActorBody aid
   actorMaxSk <- getsState $ getActorMaxSkills aid
@@ -587,7 +605,7 @@ equipItems aid = do
             then reject
             else returN "equipItems" $ ReqMoveItems prepared
 
-yieldUnneeded :: MonadClient m => ActorId -> m (Strategy RequestTimed)
+yieldUnneeded :: MonadClientRead m => ActorId -> m (Strategy RequestTimed)
 yieldUnneeded aid = do
   body <- getsState $ getActorBody aid
   actorMaxSk <- getsState $ getActorMaxSkills aid
@@ -624,7 +642,7 @@ yieldUnneeded aid = do
 
 -- This only concerns items that @equipItems@ handles, that is
 -- with a slot and with @benInEqp@ (which implies @goesIntoEqp@).
-unEquipItems :: MonadClient m => ActorId -> m (Strategy RequestTimed)
+unEquipItems :: MonadClientRead m => ActorId -> m (Strategy RequestTimed)
 unEquipItems aid = do
   body <- getsState $ getActorBody aid
   actorMaxSk <- getsState $ getActorMaxSkills aid
@@ -824,7 +842,7 @@ meleeAny aid = do
 -- TODO: In @actionStrategy@ we require minimal @SkAlter@ even for the case
 -- of triggerable tile underfoot. Let's say this quirk is a specialization
 -- of AI actors, because there are usually many, so not all need to trigger.
-trigger :: MonadClient m
+trigger :: MonadClientRead m
         => ActorId -> FleeViaStairsOrEscape
         -> m (Strategy RequestTimed)
 trigger aid fleeVia = do
@@ -844,7 +862,7 @@ trigger aid fleeVia = do
          && not (occupiedProjLvl pos lvl) -- AlterBlockActor
          && EM.notMember pos (lfloor lvl) ]  -- AlterBlockItem
 
-projectItem :: MonadClient m
+projectItem :: MonadClientRead m
             => Ability.Skills -> ActorId -> m (Strategy RequestTimed)
 projectItem actorSk aid = do
   btarget <- getsClient $ getTarget aid
@@ -894,7 +912,7 @@ projectItem actorSk aid = do
 data ApplyItemGroup = ApplyAll | ApplyFirstAid
   deriving Eq
 
-applyItem :: MonadClient m
+applyItem :: MonadClientRead m
           => Ability.Skills -> ActorId -> ApplyItemGroup
           -> m (Strategy RequestTimed)
 applyItem actorSk aid applyGroup = do
@@ -1061,7 +1079,7 @@ flee actorSk aid avoidAmbient fleeL = do
 
 -- The result of all these conditions is that AI displaces rarely,
 -- but it can't be helped as long as the enemy is smart enough to form fronts.
-displaceFoe :: MonadClient m => ActorId -> m (Strategy RequestTimed)
+displaceFoe :: MonadClientRead m => ActorId -> m (Strategy RequestTimed)
 displaceFoe aid = do
   COps{coTileSpeedup} <- getsState scops
   b <- getsState $ getActorBody aid
@@ -1095,7 +1113,7 @@ displaceFoe aid = do
   foes <- mapM qualifyActor adjFoes
   return $! liftFrequency $ toFreq "displaceFoe" $ catMaybes foes
 
-displaceBlocker :: MonadClient m => ActorId -> Bool -> m (Strategy RequestTimed)
+displaceBlocker :: MonadClientRead m => ActorId -> Bool -> m (Strategy RequestTimed)
 displaceBlocker aid retry = do
   b <- getsState $ getActorBody aid
   mtgtMPath <- getsClient $ EM.lookup aid . stargetD
@@ -1111,7 +1129,7 @@ displaceBlocker aid retry = do
         displaceTgt aid q retry
     _ -> return reject  -- goal reached
 
-displaceTgt :: MonadClient m
+displaceTgt :: MonadClientRead m
             => ActorId -> Point -> Bool -> m (Strategy RequestTimed)
 displaceTgt source tpos retry = do
   COps{coTileSpeedup} <- getsState scops
@@ -1167,7 +1185,7 @@ displaceTgt source tpos retry = do
                  else reject
     _ -> return reject  -- DisplaceProjectiles and no blocker at all
 
-chase :: MonadClient m
+chase :: MonadClientRead m
       => Ability.Skills -> ActorId -> Bool -> Bool -> m (Strategy RequestTimed)
 chase actorSk aid avoidAmbient retry = do
   body <- getsState $ getActorBody aid
@@ -1187,7 +1205,7 @@ chase actorSk aid avoidAmbient retry = do
          else return strAvoided
   mapStrategyM (moveOrRunAid actorSk aid) str
 
-moveTowards :: MonadClient m
+moveTowards :: MonadClientRead m
             => Ability.Skills -> ActorId -> Bool -> Point -> Point -> Bool
             -> m (Strategy Vector)
 moveTowards actorSk aid avoidAmbient target goal relaxed = do
@@ -1242,7 +1260,7 @@ moveTowards actorSk aid avoidAmbient target goal relaxed = do
 -- Actor moves or searches or alters or attacks.
 -- This function is very general, even though it's often used in contexts
 -- when only one or two of the many cases can possibly occur.
-moveOrRunAid :: MonadClient m
+moveOrRunAid :: MonadClientRead m
              => Ability.Skills -> ActorId -> Vector -> m (Maybe RequestTimed)
 moveOrRunAid actorSk source dir = do
   COps{coTileSpeedup} <- getsState scops

@@ -59,7 +59,7 @@ import           Game.LambdaHack.Definition.Defs
 -- used in the strict monadic computations they are in.
 
 -- | Require that a target enemy is visible by the party.
-condAimEnemyTargetedM :: MonadClient m => ActorId -> m Bool
+condAimEnemyTargetedM :: MonadClientRead m => ActorId -> m Bool
 condAimEnemyTargetedM aid = do
   btarget <- getsClient $ getTarget aid
   return $ case btarget of
@@ -67,7 +67,7 @@ condAimEnemyTargetedM aid = do
     _ -> False
 
 -- | Require that a target enemy or enemy stash is visible by the party.
-condAimEnemyOrStashM :: MonadClient m => ActorId -> m Bool
+condAimEnemyOrStashM :: MonadClientRead m => ActorId -> m Bool
 condAimEnemyOrStashM aid = do
   btarget <- getsClient $ getTarget aid
   return $ case btarget of
@@ -76,7 +76,7 @@ condAimEnemyOrStashM aid = do
     _ -> False
 
 -- | Require that a target enemy is remembered on the actor's level.
-condAimEnemyOrRememberedM :: MonadClient m => ActorId -> m Bool
+condAimEnemyOrRememberedM :: MonadClientRead m => ActorId -> m Bool
 condAimEnemyOrRememberedM aid = do
   b <- getsState $ getActorBody aid
   btarget <- getsClient $ getTarget aid
@@ -87,7 +87,7 @@ condAimEnemyOrRememberedM aid = do
     _ -> False
 
 -- | Require that a target non-enemy is visible by the party.
-condAimNonEnemyPresentM :: MonadClient m => ActorId -> m Bool
+condAimNonEnemyPresentM :: MonadClientRead m => ActorId -> m Bool
 condAimNonEnemyPresentM aid = do
   btarget <- getsClient $ getTarget aid
   return $ case btarget of
@@ -96,7 +96,7 @@ condAimNonEnemyPresentM aid = do
 
 -- | Require that the target is crucial to success, e.g., an item,
 -- or that it's not too far away and so the changes to get it are high.
-condAimCrucialM :: MonadClient m => ActorId -> m Bool
+condAimCrucialM :: MonadClientRead m => ActorId -> m Bool
 condAimCrucialM aid = do
   b <- getsState $ getActorBody aid
   mtgtMPath <- getsClient $ EM.lookup aid . stargetD
@@ -114,7 +114,7 @@ condAimCrucialM aid = do
     _ -> False  -- includes the case of target with no path
 
 -- | Check if the target is a nonmoving enemy.
-condTgtNonmovingEnemyM :: MonadClient m => ActorId -> m Bool
+condTgtNonmovingEnemyM :: MonadClientRead m => ActorId -> m Bool
 condTgtNonmovingEnemyM aid = do
   btarget <- getsClient $ getTarget aid
   case btarget of
@@ -125,7 +125,7 @@ condTgtNonmovingEnemyM aid = do
 
 -- | Require the actor stands on or adjacent to a triggerable tile
 -- (e.g., stairs).
-condAdjTriggerableM :: MonadClient m => Ability.Skills -> ActorId -> m Bool
+condAdjTriggerableM :: MonadClientRead m => Ability.Skills -> ActorId -> m Bool
 condAdjTriggerableM actorSk aid = do
   COps{coTileSpeedup} <- getsState scops
   b <- getsState $ getActorBody aid
@@ -164,7 +164,7 @@ meleeThreatDistList foeAssocs aid s =
   in sortBy (comparing fst) $ map addDist allThreats
 
 -- | Require the actor blocks the paths of any of his party members.
-condBlocksFriendsM :: MonadClient m => ActorId -> m Bool
+condBlocksFriendsM :: MonadClientRead m => ActorId -> m Bool
 condBlocksFriendsM aid = do
   b <- getsState $ getActorBody aid
   targetD <- getsClient stargetD
@@ -189,7 +189,7 @@ condNoEqpWeaponM aid =
     getsState (fullAssocs aid [CEqp])
 
 -- | Require that the actor can project any items.
-condCanProjectM :: MonadClient m => Int -> ActorId -> m Bool
+condCanProjectM :: MonadClientRead m => Int -> ActorId -> m Bool
 condCanProjectM skill aid = do
   side <- getsClient sside
   curChal <- getsClient $ scurChal
@@ -203,7 +203,7 @@ condCanProjectM skill aid = do
     -- is reached.
     not . null <$> condProjectListM skill aid
 
-condProjectListM :: MonadClient m
+condProjectListM :: MonadClientRead m
                  => Int -> ActorId
                  -> m [(Double, CStore, ItemId, ItemFull, ItemQuant)]
 condProjectListM skill aid = do
@@ -280,12 +280,12 @@ hinders condShineWouldBetray uneasy actorMaxSk itemFull =
         && 0 > IA.getSkill Ability.SkHurtMelee arItem
 
 -- | Require that the actor stands over a desirable item.
-condDesirableFloorItemM :: MonadClient m => ActorId -> m Bool
+condDesirableFloorItemM :: MonadClientRead m => ActorId -> m Bool
 condDesirableFloorItemM aid = not . null <$> benGroundItems aid
 
 -- | Produce the list of items on the ground beneath the actor
 -- that are worth picking up.
-benGroundItems :: MonadClient m
+benGroundItems :: MonadClientRead m
                => ActorId
                -> m [(Benefit, CStore, ItemId, ItemFull, ItemQuant)]
 benGroundItems aid = do
@@ -319,7 +319,8 @@ desirableItem COps{corule}
                  in benPickup > 0 && not preciousNotUseful
   in useful && not loneProjectile
 
-condSupport :: MonadClient m => [(ActorId, Actor)] -> Int -> ActorId -> m Bool
+condSupport :: MonadClientRead m
+            => [(ActorId, Actor)] -> Int -> ActorId -> m Bool
 {-# INLINE condSupport #-}
 condSupport friendAssocs param aid = do
   mtgtMPath <- getsClient $ EM.lookup aid . stargetD
@@ -349,7 +350,7 @@ strongSupport friendAssocs param aid mtgtMPath s =
 -- The numbers reflect fleeing AI conditions for non-aggresive actors
 -- so that actors don't wait for support that is not possible due to not
 -- enough friends on the level, even counting sleeping ones.
-condAloneM :: MonadClient m => [(ActorId, Actor)] -> ActorId -> m Bool
+condAloneM :: MonadClientRead m => [(ActorId, Actor)] -> ActorId -> m Bool
 condAloneM friendAssocs aid = do
   b <- getsState $ getActorBody aid
   mstash <- getsState $ \s -> gstash $ sfactionD s EM.! bfid b
@@ -367,7 +368,7 @@ condShineWouldBetrayM aid = do
   return $ not aInAmbient  -- tile is dark, so actor could hide
 
 -- | Produce a list of acceptable adjacent points to flee to.
-fleeList :: MonadClient m
+fleeList :: MonadClientRead m
          => [(ActorId, Actor)] -> ActorId -> m ([(Int, Point)], [(Int, Point)])
 fleeList foeAssocs aid = do
   COps{coTileSpeedup} <- getsState scops
