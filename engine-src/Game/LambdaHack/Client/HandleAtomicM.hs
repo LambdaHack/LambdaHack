@@ -153,8 +153,7 @@ cmdAtomicSemCli oldState cmd = case cmd of
                         `blame` "unexpected leader"
                         `swith` (cmd, mleader)) ()
       modifyClient $ \cli -> cli {_sleader = target}
-  UpdDiplFaction{} ->
-    modifyClient $ \cli -> cli {scondInMelee = EM.empty}
+  UpdDiplFaction{} -> dungeonInMelee
   UpdAutoFaction{} ->
     -- @condBFS@ depends on the setting we change here (e.g., smarkSuspect).
     invalidateBfsAll
@@ -241,7 +240,7 @@ cmdAtomicSemCli oldState cmd = case cmd of
   UpdDiscoverServer{} -> error "server command leaked to client"
   UpdCoverServer{} -> error "server command leaked to client"
   UpdPerception lid outPer inPer -> perception lid outPer inPer
-  UpdRestart side sfper s scurChal soptions srandom -> do
+  UpdRestart side sfper _ scurChal soptions srandom -> do
     COps{cocave} <- getsState scops
     fact <- getsState $ (EM.! side) . sfactionD
     snxtChal <- getsClient snxtChal
@@ -255,8 +254,8 @@ cmdAtomicSemCli oldState cmd = case cmd of
           -- Not to burrow through a labyrinth instead of leaving it for
           -- the human player and to prevent AI losing time there instead
           -- of congregating at exits.
-        sexplored = EM.keysSet $ EM.filter h $ sdungeon s
-        cli = emptyStateClient side
+    sexplored <- getsState $ EM.keysSet . EM.filter h . sdungeon
+    let cli = emptyStateClient side
     putClient cli { sexplored
                   -- , sundo = [UpdAtomic cmd]
                   , sfper
@@ -264,7 +263,6 @@ cmdAtomicSemCli oldState cmd = case cmd of
                   , scurChal
                   , snxtChal
                   , smarkSuspect
-                  , scondInMelee = EM.empty
                   , svictories
                   , scampings
                   , srestarts
@@ -272,6 +270,7 @@ cmdAtomicSemCli oldState cmd = case cmd of
                   , stabs }
     salter <- getsState createSalter
     modifyClient $ \cli1 -> cli1 {salter}
+    dungeonInMelee
   UpdRestartServer{} -> return ()
   UpdResume _side sfperNew -> do
 #ifdef WITH_EXPENSIVE_ASSERTIONS
@@ -287,17 +286,20 @@ cmdAtomicSemCli oldState cmd = case cmd of
   UpdWriteSave -> saveClient
   UpdHearFid{} -> return ()
 
--- This field is only needed in AI client, but it's on-demand for each level
--- and so fairly cheap.
 invalidateInMelee :: MonadClient m => LevelId -> m ()
 invalidateInMelee lid =
-  modifyClient $ \cli -> cli {scondInMelee = EM.delete lid (scondInMelee cli)}
+  insertInMeleeM lid
 
 invalidateInMeleeDueToItem :: MonadClient m => ActorId -> CStore -> m ()
 invalidateInMeleeDueToItem aid store =
   when (store `elem` [CEqp, COrgan]) $ do
     b <- getsState $ getActorBody aid
     invalidateInMelee (blid b)
+
+dungeonInMelee :: MonadClient m => m ()
+dungeonInMelee = do
+  dungeon <- getsState sdungeon
+  mapM_ insertInMeleeM $ EM.keys dungeon
 
 -- For now, only checking the stores.
 wipeBfsIfItemAffectsSkills :: MonadClient m => [CStore] -> ActorId -> m ()

@@ -7,7 +7,8 @@ module Game.LambdaHack.Client.MonadClient
   , MonadClient(modifyClient)
     -- * Assorted primitives
   , getClient, putClient
-  , debugPossiblyPrint, createTabBFS, dumpTextFile, rndToAction, condInMeleeM
+  , debugPossiblyPrint, createTabBFS, dumpTextFile, rndToAction
+  , condInMeleeM, insertInMeleeM
   ) where
 
 import Prelude ()
@@ -82,15 +83,15 @@ rndToAction r = do
   modifyClient $ \cli -> cli {srandom = gen2}
   return a
 
-condInMeleeM :: MonadClient m => LevelId -> m Bool
+condInMeleeM :: MonadClientRead m => LevelId -> m Bool
 condInMeleeM lid = do
   condInMelee <- getsClient scondInMelee
-  case EM.lookup lid condInMelee of
-    Just inM -> return inM
-    Nothing -> do
-      side <- getsClient sside
-      actorMaxSkills <- getsState sactorMaxSkills
-      inM <- getsState $ inMelee actorMaxSkills side lid
-      modifyClient $ \cli ->
-        cli {scondInMelee = EM.insert lid inM condInMelee}
-      return inM
+  return $! condInMelee EM.! lid
+
+insertInMeleeM :: MonadClient m => LevelId -> m ()
+insertInMeleeM lid = do
+  side <- getsClient sside
+  actorMaxSkills <- getsState sactorMaxSkills
+  inM <- getsState $ inMelee actorMaxSkills side lid
+  modifyClient $ \cli ->
+    cli {scondInMelee = EM.insert lid inM $ scondInMelee cli}
