@@ -106,8 +106,7 @@ weaveJust (Left ferr) = Left $ Just ferr
 weaveJust (Right a) = Right a
 
 -- | Switches current member to the next on the level, if any, wrapping.
-memberCycleLevel :: (MonadClient m, MonadClientUI m)
-                 => Bool -> Direction -> m MError
+memberCycleLevel :: MonadClientUI m => Bool -> Direction -> m MError
 memberCycleLevel verbose direction = do
   side <- getsClient sside
   fact <- getsState $ (EM.! side) . sfactionD
@@ -130,7 +129,7 @@ memberCycleLevel verbose direction = do
       return Nothing
 
 -- | Switches current member to the previous in the whole dungeon, wrapping.
-memberCycle :: (MonadClient m, MonadClientUI m) => Bool -> Direction -> m MError
+memberCycle :: MonadClientUI m => Bool -> Direction -> m MError
 memberCycle verbose direction = do
   side <- getsClient sside
   fact <- getsState $ (EM.! side) . sfactionD
@@ -161,7 +160,7 @@ partyAfterLeader leader = do
   return $! gt ++ lt
 
 -- | Select a faction leader. False, if nothing to do.
-pickLeader :: (MonadClient m, MonadClientUI m) => Bool -> ActorId -> m Bool
+pickLeader :: MonadClientUI m => Bool -> ActorId -> m Bool
 pickLeader verbose aid = do
   leader <- getLeaderUI
   if leader == aid
@@ -187,7 +186,7 @@ pickLeader verbose aid = do
       when verbose $ msgAdd MsgAtFeetMinor $ stashBlurb <+> itemsBlurb
       return True
 
-pickLeaderWithPointer :: (MonadClient m, MonadClientUI m) => m MError
+pickLeaderWithPointer :: MonadClientUI m => m MError
 pickLeaderWithPointer = do
   CCUI{coscreen=ScreenContent{rheight}} <- getsSession sccui
   lidV <- viewedLevelUI
@@ -504,8 +503,7 @@ modesOverlay = do
       placeDesc = EM.singleton propFont $ offsetOverlayX plDesc
   return (EM.unionWith (++) placeLab placeDesc, kxs)
 
-pickNumber :: (MonadClient m, MonadClientUI m)
-           => Bool -> Int -> m (Either MError Int)
+pickNumber :: MonadClientUI m => Bool -> Int -> m (Either MError Int)
 pickNumber askNumber kAll = assert (kAll >= 1) $ do
   let shownKeys = [ K.returnKM, K.spaceKM, K.mkChar '+', K.mkChar '-'
                   , K.backspaceKM, K.escKM ]
@@ -889,7 +887,7 @@ lookAtPosition lidV p = do
             then [(MsgPromptFocus, tileBlurb)]
             else ms
 
-displayItemLore :: (MonadClient m, MonadClientUI m)
+displayItemLore :: MonadClientUI m
                 => ItemBag -> Int -> (ItemId -> ItemFull -> Int -> Text) -> Int
                 -> SingleItemSlots
                 -> m Bool
@@ -902,7 +900,7 @@ displayItemLore itemBag meleeSkill promptFun slotIndex lSlots = do
     _ -> error $ "" `showFailure` km
 
 displayItemLorePointedAt
-  :: (MonadClient m, MonadClientUI m)
+  :: MonadClientUI m
   => ItemBag -> Int -> (ItemId -> ItemFull -> Int -> Text) -> Int
   -> SingleItemSlots -> Bool
   -> m K.KM
@@ -948,7 +946,7 @@ displayItemLorePointedAt itemBag meleeSkill promptFun slotIndex
                                lSlots addTilde
     _ -> return km
 
-viewLoreItems :: (MonadClient m, MonadClientUI m)
+viewLoreItems :: MonadClientUI m
               => String -> SingleItemSlots -> ItemBag -> Text
               -> (Int -> SingleItemSlots -> m Bool) -> Bool
               -> m K.KM

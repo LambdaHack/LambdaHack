@@ -130,7 +130,7 @@ pushFrame delay = do
     displayFrames lidV $
       if delay then [Nothing, Just frame, Nothing] else [Just frame]
 
-promptGetKey :: (MonadClient m, MonadClientUI m)
+promptGetKey :: MonadClientUI m
              => ColorMode -> FontOverlayMap -> Bool -> [K.KM]
              -> m K.KM
 promptGetKey dm ovs onBlank frontKeyKeys = do
@@ -209,7 +209,7 @@ lastMacroFrame :: KeyMacroFrame -> [KeyMacroFrame] -> KeyMacroFrame
 lastMacroFrame mf [] = mf
 lastMacroFrame _ (mf : mfs) = lastMacroFrame mf mfs
 
-stopPlayBack :: (MonadClient m, MonadClientUI m) => m ()
+stopPlayBack :: MonadClientUI m => m ()
 stopPlayBack = msgAdd MsgStopPlayback "!"
 
 resetPlayBack :: MonadClientUI m => m ()

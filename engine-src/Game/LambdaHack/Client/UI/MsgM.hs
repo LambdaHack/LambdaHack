@@ -23,8 +23,7 @@ import           Game.LambdaHack.Common.State
 import           Game.LambdaHack.Definition.Defs
 
 -- | Add a shared message to the current report. Say if it was a duplicate.
-msgAddDuplicate :: (MonadClient m, MonadClientUI m, MsgShared a)
-                => a -> Text -> m Bool
+msgAddDuplicate :: (MonadClientUI m, MsgShared a) => a -> Text -> m Bool
 msgAddDuplicate msgClass t = do
   sUIOptions <- getsSession sUIOptions
   time <- getsState stime
@@ -43,8 +42,7 @@ msgAddDuplicate msgClass t = do
 
 -- | Add a message comprising of two different texts, one to show, the other
 -- to save to messages log, to the current report.
-msgAddDistinct :: (MonadClient m, MonadClientUI m)
-               => MsgClassDistinct -> (Text, Text) -> m ()
+msgAddDistinct :: MonadClientUI m => MsgClassDistinct -> (Text, Text) -> m ()
 msgAddDistinct msgClass (t1, t2) = do
   sUIOptions <- getsSession sUIOptions
   time <- getsState stime
@@ -61,18 +59,18 @@ msgAddDistinct msgClass (t1, t2) = do
   modifySession $ \sess -> sess {shistory = nhistory, susedHints = nusedHints}
 
 -- | Add a message to the current report.
-msgAdd :: (MonadClient m, MonadClientUI m, MsgShared a) => a -> Text -> m ()
+msgAdd :: (MonadClientUI m, MsgShared a) => a -> Text -> m ()
 msgAdd msgClass t = void $ msgAddDuplicate msgClass t
 
 -- | Add a message to the current report. End previously collected report,
 -- if any, with newline.
-msgLnAdd :: (MonadClient m, MonadClientUI m, MsgShared a) => a -> Text -> m ()
+msgLnAdd :: (MonadClientUI m, MsgShared a) => a -> Text -> m ()
 msgLnAdd msgClass t = do
   modifySession $ \sess -> sess {shistory = addEolToNewReport $ shistory sess}
   msgAdd msgClass t
 
 -- | Add a prompt with basic keys description.
-promptMainKeys :: (MonadClient m, MonadClientUI m) => m ()
+promptMainKeys :: MonadClientUI m => m ()
 promptMainKeys = do
   side <- getsClient sside
   ours <- getsState $ fidActorNotProjGlobalAssocs side

@@ -111,7 +111,7 @@ import qualified Game.LambdaHack.Definition.DefsInternal as DefsInternal
 
 -- | Pick command depending on area the mouse pointer is in.
 -- The first matching area is chosen. If none match, only interrupt.
-byAreaHuman :: (MonadClient m, MonadClientUI m)
+byAreaHuman :: MonadClientUI m
             => (K.KM -> HumanCmd -> m (Either MError ReqUI))
             -> [(CmdArea, HumanCmd)]
             -> m (Either MError ReqUI)
@@ -452,7 +452,7 @@ displaceAid target = do
        else failSer DisplaceAccess
 
 -- | Leader moves or searches or alters. No visible actor at the position.
-moveSearchAlter :: (MonadClient m, MonadClientUI m)
+moveSearchAlter :: MonadClientUI m
                 => Bool -> Vector -> m (FailOrCmd RequestTimed)
 moveSearchAlter run dir = do
   COps{coTileSpeedup} <- getsState scops
@@ -487,7 +487,7 @@ moveSearchAlter run dir = do
       else alterCommon True tpos
   return $! runStopOrCmd
 
-alterCommon :: (MonadClient m, MonadClientUI m)
+alterCommon :: MonadClientUI m
             => Bool -> Point -> m (FailOrCmd RequestTimed)
 alterCommon bumping tpos = do
   CCUI{coscreen=ScreenContent{rwidth}} <- getsSession sccui
@@ -568,7 +568,7 @@ alterCommon bumping tpos = do
 
 -- * RunOnceAhead
 
-runOnceAheadHuman :: (MonadClient m, MonadClientUI m)
+runOnceAheadHuman :: MonadClientUI m
                   => m (Either MError RequestTimed)
 runOnceAheadHuman = do
   side <- getsClient sside
@@ -722,7 +722,7 @@ continueToXhairHuman = goToXhair False False{-irrelevant-}
 
 -- * MoveItem
 
-moveItemHuman :: forall m. (MonadClient m, MonadClientUI m)
+moveItemHuman :: forall m. MonadClientUI m
               => [CStore] -> CStore -> Maybe Text -> Bool
               -> m (FailOrCmd RequestTimed)
 moveItemHuman stores destCStore mverb auto = do
@@ -736,7 +736,7 @@ moveItemHuman stores destCStore mverb auto = do
 -- and @ChooseItemToMove@, because at least in case of grabbing items,
 -- more than one item is chosen, which doesn't fit @sitemSel@. Separating
 -- grabbing of multiple items as a distinct command is too high a price.
-moveOrSelectItem :: forall m. (MonadClient m, MonadClientUI m)
+moveOrSelectItem :: forall m. MonadClientUI m
                  => [CStore] -> CStore -> Maybe Text -> Bool
                  -> m (FailOrCmd RequestTimed)
 moveOrSelectItem storesRaw destCStore mverb auto = do
@@ -797,7 +797,7 @@ moveOrSelectItem storesRaw destCStore mverb auto = do
              | fromCStore == CGround && overStash -> failSer ItemOverStash
              | otherwise -> Right <$> moveItems stores is destCStore
 
-selectItemsToMove :: forall m. (MonadClient m, MonadClientUI m)
+selectItemsToMove :: forall m. MonadClientUI m
                   => [CStore] -> CStore -> Maybe Text -> Bool
                   -> m (FailOrCmd (CStore, [(ItemId, ItemQuant)]))
 selectItemsToMove stores destCStore mverb auto = do
@@ -873,7 +873,7 @@ selectItemsToMove stores destCStore mverb auto = do
            return $ Right (fromCStore, l)
          Left err -> failWith err
 
-moveItems :: forall m. (MonadClient m, MonadClientUI m)
+moveItems :: forall m. MonadClientUI m
           => [CStore] -> (CStore, [(ItemId, ItemQuant)]) -> CStore
           -> m RequestTimed
 moveItems stores (fromCStore, l) destCStore = do
@@ -995,7 +995,7 @@ projectItem (fromCStore, (iid, itemFull)) = do
 
 -- * Apply
 
-applyHuman :: (MonadClient m, MonadClientUI m) => m (FailOrCmd RequestTimed)
+applyHuman :: MonadClientUI m => m (FailOrCmd RequestTimed)
 applyHuman = do
   actorCurAndMaxSk <- leaderSkillsClientUI
   if Ability.getSk Ability.SkApply
@@ -1015,7 +1015,7 @@ applyHuman = do
             applyItem (fromCStore, (iid, (itemFull, kit)))
       Nothing -> failWith "no item to trigger"
 
-applyItem :: (MonadClient m, MonadClientUI m)
+applyItem :: MonadClientUI m
           => (CStore, (ItemId, ItemFullKit))
           -> m (FailOrCmd RequestTimed)
 applyItem (fromCStore, (iid, (itemFull, kit))) = do
@@ -1053,8 +1053,7 @@ applyItem (fromCStore, (iid, (itemFull, kit))) = do
 -- * AlterDir
 
 -- | Ask for a direction and alter a tile, if possible.
-alterDirHuman :: (MonadClient m, MonadClientUI m)
-              => m (FailOrCmd RequestTimed)
+alterDirHuman :: MonadClientUI m => m (FailOrCmd RequestTimed)
 alterDirHuman = pickPoint "modify" >>= \case
   Just p -> alterTileAtPos p
   Nothing -> failWith "never mind"
@@ -1065,9 +1064,7 @@ alterDirHuman = pickPoint "modify" >>= \case
 -- item can be triggered, because the player explicitely requested
 -- the action. Consequently, even if all embedded items are recharching,
 -- the time will be wasted and the server will describe the failure in detail.
-alterTileAtPos :: (MonadClient m, MonadClientUI m)
-               => Point
-               -> m (FailOrCmd RequestTimed)
+alterTileAtPos :: MonadClientUI m => Point -> m (FailOrCmd RequestTimed)
 alterTileAtPos pos = do
   leader <- getLeaderUI
   sb <- getsState $ getActorBody leader
@@ -1079,7 +1076,7 @@ alterTileAtPos pos = do
 -- | Verify that the tile can be transformed or any embedded item effect
 -- triggered and the player is aware if the effect is dangerous or grave,
 -- such as ending the game.
-verifyAlters :: forall m. (MonadClient m, MonadClientUI m)
+verifyAlters :: forall m. MonadClientUI m
              => Bool -> ActorId -> Point -> m (FailOrCmd ())
 verifyAlters bumping source tpos = do
   COps{cotile, coTileSpeedup} <- getsState scops
@@ -1109,7 +1106,7 @@ verifyAlters bumping source tpos = do
   then failSer AlterBlockItem
   else processTileActions bumping source tpos tileActions
 
-processTileActions :: forall m. (MonadClient m, MonadClientUI m)
+processTileActions :: forall m. MonadClientUI m
                    => Bool -> ActorId -> Point -> [Tile.TileAction]
                    -> m (FailOrCmd ())
 processTileActions bumping source tpos tas = do
@@ -1212,7 +1209,7 @@ processTileActions bumping source tpos tas = do
       else failWith "unable to activate nor modify at this time"
         -- related to, among others, @SfxNoItemsForTile@ on the server
 
-verifyEscape :: (MonadClient m, MonadClientUI m) => m (FailOrCmd ())
+verifyEscape :: MonadClientUI m => m (FailOrCmd ())
 verifyEscape = do
   side <- getsClient sside
   fact <- getsState $ (EM.! side) . sfactionD
@@ -1239,7 +1236,7 @@ verifyEscape = do
     then failWith "here's your chance"
     else return $ Right ()
 
-verifyToolEffect :: (MonadClient m, MonadClientUI m)
+verifyToolEffect :: MonadClientUI m
                  => LevelId -> CStore -> ItemFull -> m (FailOrCmd ())
 verifyToolEffect lid store itemFull = do
   CCUI{coscreen=ScreenContent{rwidth}} <- getsSession sccui
@@ -1262,7 +1259,7 @@ verifyToolEffect lid store itemFull = do
 -- * AlterWithPointer
 
 -- | Try to alter a tile using a feature under the pointer.
-alterWithPointerHuman :: (MonadClient m, MonadClientUI m)
+alterWithPointerHuman :: MonadClientUI m
                       => m (FailOrCmd RequestTimed)
 alterWithPointerHuman = do
   COps{corule=RuleContent{rXmax, rYmax}} <- getsState scops
@@ -1275,7 +1272,7 @@ alterWithPointerHuman = do
 -- * CloseDir
 
 -- | Close nearby open tile; ask for direction, if there is more than one.
-closeDirHuman :: (MonadClient m, MonadClientUI m)
+closeDirHuman :: MonadClientUI m
               => m (FailOrCmd RequestTimed)
 closeDirHuman = do
   COps{coTileSpeedup} <- getsState scops
@@ -1292,7 +1289,7 @@ closeDirHuman = do
       Just p -> closeTileAtPos p
 
 -- | Close tile at given position.
-closeTileAtPos :: (MonadClient m, MonadClientUI m)
+closeTileAtPos :: MonadClientUI m
                => Point -> m (FailOrCmd RequestTimed)
 closeTileAtPos tpos = do
   COps{coTileSpeedup} <- getsState scops
@@ -1325,7 +1322,7 @@ closeTileAtPos tpos = do
              return $ Right (ReqAlter tpos)
 
 -- | Adds message with proper names.
-msgAddDone :: (MonadClient m, MonadClientUI m) => Point -> Text -> m ()
+msgAddDone :: MonadClientUI m => Point -> Text -> m ()
 msgAddDone p verb = do
   COps{cotile} <- getsState scops
   leader <- getLeaderUI
@@ -1342,7 +1339,7 @@ msgAddDone p verb = do
   msgAdd MsgActionComplete $ "You" <+> verb <+> "the" <+> s <+> dir <> "."
 
 -- | Prompts user to pick a point.
-pickPoint :: (MonadClient m, MonadClientUI m) => Text -> m (Maybe Point)
+pickPoint :: MonadClientUI m => Text -> m (Maybe Point)
 pickPoint verb = do
   leader <- getLeaderUI
   b <- getsState $ getActorBody leader
@@ -1364,7 +1361,7 @@ pickPoint verb = do
 -- * Help
 
 -- | Display command help.
-helpHuman :: (MonadClient m, MonadClientUI m)
+helpHuman :: MonadClientUI m
           => (K.KM -> HumanCmd -> m (Either MError ReqUI))
           -> m (Either MError ReqUI)
 helpHuman cmdSemInCxtOfKM = do
@@ -1441,7 +1438,7 @@ helpHuman cmdSemInCxtOfKM = do
 -- * Hint
 
 -- | Display hint or, if already displayed, display help.
-hintHuman :: (MonadClient m, MonadClientUI m)
+hintHuman :: MonadClientUI m
           => (K.KM -> HumanCmd -> m (Either MError ReqUI))
           -> m (Either MError ReqUI)
 hintHuman cmdSemInCxtOfKM = do
@@ -1455,7 +1452,7 @@ hintHuman cmdSemInCxtOfKM = do
 -- * Dashboard
 
 -- | Display the dashboard.
-dashboardHuman :: (MonadClient m, MonadClientUI m)
+dashboardHuman :: MonadClientUI m
                => (K.KM -> HumanCmd -> m (Either MError ReqUI))
                -> m (Either MError ReqUI)
 dashboardHuman cmdSemInCxtOfKM = do
@@ -1479,7 +1476,7 @@ dashboardHuman cmdSemInCxtOfKM = do
 
 -- * ItemMenu
 
-itemMenuHuman :: (MonadClient m, MonadClientUI m)
+itemMenuHuman :: MonadClientUI m
               => (K.KM -> HumanCmd -> m (Either MError ReqUI))
               -> m (Either MError ReqUI)
 itemMenuHuman cmdSemInCxtOfKM = do
@@ -1620,7 +1617,7 @@ itemMenuHuman cmdSemInCxtOfKM = do
 
 -- * ChooseItemMenu
 
-chooseItemMenuHuman :: (MonadClient m, MonadClientUI m)
+chooseItemMenuHuman :: MonadClientUI m
                     => (K.KM -> HumanCmd -> m (Either MError ReqUI))
                     -> ItemDialogMode
                     -> m (Either MError ReqUI)
@@ -1639,7 +1636,7 @@ chooseItemMenuHuman cmdSemInCxtOfKM c0 = do
 
 -- * MainMenu
 
-generateMenu :: (MonadClient m, MonadClientUI m)
+generateMenu :: MonadClientUI m
              => (K.KM -> HumanCmd -> m (Either MError ReqUI))
              -> [(DisplayFont, [AttrLine])]
              -> [(K.KM, (Text, HumanCmd))]
@@ -1698,7 +1695,7 @@ generateMenu cmdSemInCxtOfKM blurb kds gameInfo menuName = do
     Right _slot -> error $ "" `showFailure` ekm
 
 -- | Display the main menu.
-mainMenuHuman :: (MonadClient m, MonadClientUI m)
+mainMenuHuman :: MonadClientUI m
               => (K.KM -> HumanCmd -> m (Either MError ReqUI))
               -> m (Either MError ReqUI)
 mainMenuHuman cmdSemInCxtOfKM = do
@@ -1738,7 +1735,7 @@ mainMenuHuman cmdSemInCxtOfKM = do
 -- * MainMenuAutoOn
 
 -- | Display the main menu and set @swasAutomated@.
-mainMenuAutoOnHuman :: (MonadClient m, MonadClientUI m)
+mainMenuAutoOnHuman :: MonadClientUI m
                     => (K.KM -> HumanCmd -> m (Either MError ReqUI))
                     -> m (Either MError ReqUI)
 mainMenuAutoOnHuman cmdSemInCxtOfKM = do
@@ -1748,7 +1745,7 @@ mainMenuAutoOnHuman cmdSemInCxtOfKM = do
 -- * MainMenuAutoOff
 
 -- | Display the main menu and unset @swasAutomated@.
-mainMenuAutoOffHuman :: (MonadClient m, MonadClientUI m)
+mainMenuAutoOffHuman :: MonadClientUI m
                      => (K.KM -> HumanCmd -> m (Either MError ReqUI))
                      -> m (Either MError ReqUI)
 mainMenuAutoOffHuman cmdSemInCxtOfKM = do
@@ -1758,7 +1755,7 @@ mainMenuAutoOffHuman cmdSemInCxtOfKM = do
 -- * SettingsMenu
 
 -- | Display the settings menu.
-settingsMenuHuman :: (MonadClient m, MonadClientUI m)
+settingsMenuHuman :: MonadClientUI m
                   => (K.KM -> HumanCmd -> m (Either MError ReqUI))
                   -> m (Either MError ReqUI)
 settingsMenuHuman cmdSemInCxtOfKM = do
@@ -1800,9 +1797,9 @@ settingsMenuHuman cmdSemInCxtOfKM = do
 -- * ChallengeMenu
 
 -- | Display the challenge menu.
-challengeMenuHuman :: (MonadClient m, MonadClientUI m)
-                    => (K.KM -> HumanCmd -> m (Either MError ReqUI))
-                    -> m (Either MError ReqUI)
+challengeMenuHuman :: MonadClientUI m
+                   => (K.KM -> HumanCmd -> m (Either MError ReqUI))
+                   -> m (Either MError ReqUI)
 challengeMenuHuman cmdSemInCxtOfKM = do
   cops <- getsState scops
   CCUI{coscreen=ScreenContent{rwidth, rwrap}} <- getsSession sccui
@@ -1931,7 +1928,7 @@ gameScenarioIncr = do
 
 -- * GameRestart
 
-gameRestartHuman :: (MonadClient m, MonadClientUI m) => m (FailOrCmd ReqUI)
+gameRestartHuman :: MonadClientUI m => m (FailOrCmd ReqUI)
 gameRestartHuman = do
   cops <- getsState scops
   noConfirmsGame <- isNoConfirmsGame
@@ -1963,7 +1960,7 @@ gameRestartHuman = do
 -- * GameQuit
 
 -- TODO: deduplicate with gameRestartHuman
-gameQuitHuman :: (MonadClient m, MonadClientUI m) => m (FailOrCmd ReqUI)
+gameQuitHuman :: MonadClientUI m => m (FailOrCmd ReqUI)
 gameQuitHuman = do
   noConfirmsGame <- isNoConfirmsGame
   gameMode <- getGameMode
@@ -1984,7 +1981,7 @@ gameQuitHuman = do
 
 -- * GameDrop
 
-gameDropHuman :: (MonadClient m, MonadClientUI m) => m ReqUI
+gameDropHuman :: MonadClientUI m => m ReqUI
 gameDropHuman = do
   modifySession $ \sess -> sess {sallNframes = -1}  -- hack, but we crash anyway
   msgAdd MsgPromptGeneric "Interrupt! Trashing the unsaved game. The program exits now."
@@ -2000,7 +1997,7 @@ gameExitHuman =
 
 -- * GameSave
 
-gameSaveHuman :: (MonadClient m, MonadClientUI m) => m ReqUI
+gameSaveHuman :: MonadClientUI m => m ReqUI
 gameSaveHuman = do
   -- Announce before the saving started, since it can take a while.
   msgAdd MsgInnerWorkSpam "Saving game backup."
@@ -2011,7 +2008,7 @@ gameSaveHuman = do
 -- Note that the difference between seek-target and follow-the-leader doctrine
 -- can influence even a faction with passive actors. E.g., if a passive actor
 -- has an extra active skill from equipment, he moves every turn.
-doctrineHuman :: (MonadClient m, MonadClientUI m) => m (FailOrCmd ReqUI)
+doctrineHuman :: MonadClientUI m => m (FailOrCmd ReqUI)
 doctrineHuman = do
   fid <- getsClient sside
   fromT <- getsState $ MK.fdoctrine . gplayer . (EM.! fid) . sfactionD
@@ -2030,7 +2027,7 @@ doctrineHuman = do
 
 -- * Automate
 
-automateHuman :: (MonadClient m, MonadClientUI m) => m (FailOrCmd ReqUI)
+automateHuman :: MonadClientUI m => m (FailOrCmd ReqUI)
 automateHuman = do
   clearAimMode
   proceed <- displayYesNo ColorBW "Do you really want to cede control to AI?"
@@ -2040,7 +2037,7 @@ automateHuman = do
 
 -- * AutomateToggle
 
-automateToggleHuman :: (MonadClient m, MonadClientUI m) => m (FailOrCmd ReqUI)
+automateToggleHuman :: MonadClientUI m => m (FailOrCmd ReqUI)
 automateToggleHuman = do
   swasAutomated <- getsSession swasAutomated
   if swasAutomated

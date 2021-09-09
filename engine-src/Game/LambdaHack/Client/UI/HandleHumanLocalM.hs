@@ -100,7 +100,7 @@ import           Game.LambdaHack.Definition.Defs
 
 -- * Macro
 
-macroHuman :: (MonadClient m, MonadClientUI m) => [String] -> m ()
+macroHuman :: MonadClientUI m => [String] -> m ()
 macroHuman ks = do
   modifySession $ \sess ->
     let kms = K.mkKM <$> ks
@@ -121,8 +121,7 @@ macroHumanTransition kms macroFrame macroFrames =
 
 -- | Display items from a given container store and possibly let the user
 -- chose one.
-chooseItemHuman :: (MonadClient m, MonadClientUI m)
-                => ItemDialogMode -> m MError
+chooseItemHuman :: MonadClientUI m => ItemDialogMode -> m MError
 chooseItemHuman c = either Just (const Nothing) <$> chooseItemDialogMode False c
 
 chooseItemDialogModeLore :: MonadClientUI m => m (Maybe ResultItemDialogMode)
@@ -154,7 +153,7 @@ chooseItemDialogModeLore = do
           modifySession $ \sess -> sess {schosenLore = ChosenNothing}
           return Nothing
 
-chooseItemDialogMode :: (MonadClient m, MonadClientUI m)
+chooseItemDialogMode :: MonadClientUI m
                      => Bool -> ItemDialogMode -> m (FailOrCmd ItemDialogMode)
 chooseItemDialogMode permitLoreCycle c = do
   CCUI{coscreen=ScreenContent{rwidth, rheight}} <- getsSession sccui
@@ -535,7 +534,7 @@ triggerSymbols (HumanCmd.TriggerItem{tisymbols} : ts) =
 
 -- * ChooseItemApply
 
-chooseItemApplyHuman :: forall m. (MonadClient m, MonadClientUI m)
+chooseItemApplyHuman :: forall m. MonadClientUI m
                      => [HumanCmd.TriggerItem] -> m MError
 chooseItemApplyHuman ts = do
   leader <- getLeaderUI
@@ -599,7 +598,7 @@ permittedApplyClient = do
 
 -- * PickLeader
 
-pickLeaderHuman :: (MonadClient m, MonadClientUI m) => Int -> m MError
+pickLeaderHuman :: MonadClientUI m => Int -> m MError
 pickLeaderHuman k = do
   side <- getsClient sside
   fact <- getsState $ (EM.! side) . sfactionD
@@ -625,30 +624,29 @@ pickLeaderHuman k = do
 
 -- * PickLeaderWithPointer
 
-pickLeaderWithPointerHuman :: (MonadClient m, MonadClientUI m) => m MError
+pickLeaderWithPointerHuman :: MonadClientUI m => m MError
 pickLeaderWithPointerHuman = pickLeaderWithPointer
 
 -- * MemberCycle
 
 -- | Switch current member to the next on the viewed level, if any, wrapping.
-memberCycleLevelHuman :: (MonadClient m, MonadClientUI m)
-                      => Direction -> m MError
+memberCycleLevelHuman :: MonadClientUI m => Direction -> m MError
 memberCycleLevelHuman = memberCycleLevel True
 
 -- * MemberBack
 
 -- | Switch current member to the previous in the whole dungeon, wrapping.
-memberCycleHuman :: (MonadClient m, MonadClientUI m) => Direction -> m MError
+memberCycleHuman :: MonadClientUI m => Direction -> m MError
 memberCycleHuman = memberCycle True
 
 -- * SelectActor
 
-selectActorHuman :: (MonadClient m, MonadClientUI m) => m ()
+selectActorHuman :: MonadClientUI m => m ()
 selectActorHuman = do
   leader <- getLeaderUI
   selectAid leader
 
-selectAid :: (MonadClient m, MonadClientUI m) => ActorId -> m ()
+selectAid :: MonadClientUI m => ActorId -> m ()
 selectAid leader = do
   bodyUI <- getsSession $ getActorUI leader
   wasMemeber <- getsSession $ ES.member leader . sselected
@@ -663,7 +661,7 @@ selectAid leader = do
 
 -- * SelectNone
 
-selectNoneHuman :: (MonadClient m, MonadClientUI m) => m ()
+selectNoneHuman :: MonadClientUI m => m ()
 selectNoneHuman = do
   side <- getsClient sside
   lidV <- viewedLevelUI
@@ -682,7 +680,7 @@ selectNoneHuman = do
 
 -- * SelectWithPointer
 
-selectWithPointerHuman :: (MonadClient m, MonadClientUI m) => m MError
+selectWithPointerHuman :: MonadClientUI m => m MError
 selectWithPointerHuman = do
   COps{corule=RuleContent{rYmax}} <- getsState scops
   lidV <- viewedLevelUI
@@ -743,7 +741,7 @@ repeatLastHumanTransition n macroFrame =
 -- * Record
 
 -- | Starts and stops recording of macros.
-recordHuman :: (MonadClient m, MonadClientUI m) => m ()
+recordHuman :: MonadClientUI m => m ()
 recordHuman = do
   smacroFrameOld <- getsSession smacroFrame
   let (smacroFrameNew, msg) = recordHumanTransition smacroFrameOld
@@ -765,10 +763,10 @@ recordHumanTransition macroFrame =
 
 -- * AllHistory
 
-allHistoryHuman :: (MonadClient m, MonadClientUI m) => m ()
+allHistoryHuman :: MonadClientUI m => m ()
 allHistoryHuman = eitherHistory True
 
-eitherHistory :: forall m. (MonadClient m, MonadClientUI m) => Bool -> m ()
+eitherHistory :: forall m. MonadClientUI m => Bool -> m ()
 eitherHistory showAll = do
   CCUI{coscreen=ScreenContent{rwidth, rheight}} <- getsSession sccui
   UIOptions{uHistory1PerLine} <- getsSession sUIOptions
@@ -874,7 +872,7 @@ eitherHistory showAll = do
 
 -- * LastHistory
 
-lastHistoryHuman :: (MonadClient m, MonadClientUI m) => m ()
+lastHistoryHuman :: MonadClientUI m => m ()
 lastHistoryHuman = eitherHistory False
 
 -- * MarkVision
@@ -910,7 +908,7 @@ overrideTutHuman = modifySession cycleOverrideTut
 
 -- * PrintScreen
 
-printScreenHuman :: (MonadClient m, MonadClientUI m) => m ()
+printScreenHuman :: MonadClientUI m => m ()
 printScreenHuman = do
   msgAdd MsgActionAlert "Screenshot printed."
   printScreen
@@ -940,7 +938,7 @@ endAiming = do
   sxhair <- getsSession sxhair
   modifyClient $ updateTarget leader $ const sxhair
 
-endAimingMsg :: (MonadClient m, MonadClientUI m) => m ()
+endAimingMsg :: MonadClientUI m => m ()
 endAimingMsg = do
   leader <- getLeaderUI
   subject <- partActorLeader leader
@@ -955,7 +953,7 @@ endAimingMsg = do
 -- * DetailCycle
 
 -- | Cycle detail level of aiming mode descriptions, starting up.
-detailCycleHuman :: (MonadClient m, MonadClientUI m) => m ()
+detailCycleHuman :: MonadClientUI m => m ()
 detailCycleHuman = do
   modifySession $ \sess -> sess {saimMode =
     (\aimMode -> aimMode {detailLevel = detailCycle $ detailLevel aimMode})
@@ -978,7 +976,7 @@ clearTargetIfItemClearHuman = do
 
 -- | Perform look around in the current position of the xhair.
 -- Does nothing outside aiming mode.
-doLook :: (MonadClient m, MonadClientUI m) => m ()
+doLook :: MonadClientUI m => m ()
 doLook = do
   saimMode <- getsSession saimMode
   case saimMode of
@@ -1017,7 +1015,7 @@ itemClearHuman = modifySession $ \sess -> sess {sitemSel = Nothing}
 -- * MoveXhair
 
 -- | Move the xhair. Assumes aiming mode.
-moveXhairHuman :: (MonadClient m, MonadClientUI m) => Vector -> Int -> m MError
+moveXhairHuman :: MonadClientUI m => Vector -> Int -> m MError
 moveXhairHuman dir n = do
   COps{corule=RuleContent{rXmax, rYmax}} <- getsState scops
   leader <- getLeaderUI
@@ -1042,7 +1040,7 @@ moveXhairHuman dir n = do
 -- * AimTgt
 
 -- | Start aiming.
-aimTgtHuman :: (MonadClient m, MonadClientUI m) => m ()
+aimTgtHuman :: MonadClientUI m => m ()
 aimTgtHuman = do
   -- (Re)start aiming at the current level.
   lidV <- viewedLevelUI
@@ -1056,7 +1054,7 @@ aimTgtHuman = do
 
 -- | Cycle aiming mode. Do not change position of the xhair,
 -- switch among things at that position.
-aimFloorHuman :: (MonadClient m, MonadClientUI m) => m ()
+aimFloorHuman :: MonadClientUI m => m ()
 aimFloorHuman = do
   lidV <- viewedLevelUI
   leader <- getLeaderUI
@@ -1094,7 +1092,7 @@ aimFloorHuman = do
 
 -- * AimEnemy
 
-aimEnemyHuman :: (MonadClient m, MonadClientUI m) => m ()
+aimEnemyHuman :: MonadClientUI m => m ()
 aimEnemyHuman = do
   lidV <- viewedLevelUI
   leader <- getLeaderUI
@@ -1138,7 +1136,7 @@ aimEnemyHuman = do
 
 -- * AimItem
 
-aimItemHuman :: (MonadClient m, MonadClientUI m) => m ()
+aimItemHuman :: MonadClientUI m => m ()
 aimItemHuman = do
   side <- getsClient sside
   lidV <- viewedLevelUI
@@ -1185,7 +1183,7 @@ aimItemHuman = do
 
 -- | Change the displayed level in aiming mode to (at most)
 -- k levels shallower. Enters aiming mode, if not already in one.
-aimAscendHuman :: (MonadClient m, MonadClientUI m) => Int -> m MError
+aimAscendHuman :: MonadClientUI m => Int -> m MError
 aimAscendHuman k = do
   dungeon <- getsState sdungeon
   lidV <- viewedLevelUI
@@ -1288,7 +1286,7 @@ xhairStairHuman up = do
 
 -- * XhairPointerFloor
 
-xhairPointerFloorHuman :: (MonadClient m, MonadClientUI m) => m ()
+xhairPointerFloorHuman :: MonadClientUI m => m ()
 xhairPointerFloorHuman = do
   saimMode <- getsSession saimMode
   aimPointerFloorHuman
@@ -1297,7 +1295,7 @@ xhairPointerFloorHuman = do
 
 -- * XhairPointerMute
 
-xhairPointerMuteHuman :: (MonadClient m, MonadClientUI m) => m ()
+xhairPointerMuteHuman :: MonadClientUI m => m ()
 xhairPointerMuteHuman = do
   saimMode <- getsSession saimMode
   aimPointerFloorLoud False
@@ -1306,7 +1304,7 @@ xhairPointerMuteHuman = do
 
 -- * XhairPointerEnemy
 
-xhairPointerEnemyHuman :: (MonadClient m, MonadClientUI m) => m ()
+xhairPointerEnemyHuman :: MonadClientUI m => m ()
 xhairPointerEnemyHuman = do
   saimMode <- getsSession saimMode
   aimPointerEnemyHuman
@@ -1315,10 +1313,10 @@ xhairPointerEnemyHuman = do
 
 -- * AimPointerFloor
 
-aimPointerFloorHuman :: (MonadClient m, MonadClientUI m) => m ()
+aimPointerFloorHuman :: MonadClientUI m => m ()
 aimPointerFloorHuman = aimPointerFloorLoud True
 
-aimPointerFloorLoud :: (MonadClient m, MonadClientUI m) => Bool -> m ()
+aimPointerFloorLoud :: MonadClientUI m => Bool -> m ()
 aimPointerFloorLoud loud = do
   COps{corule=RuleContent{rXmax, rYmax}} <- getsState scops
   lidV <- viewedLevelUI
@@ -1345,7 +1343,7 @@ aimPointerFloorLoud loud = do
 
 -- * AimPointerEnemy
 
-aimPointerEnemyHuman :: (MonadClient m, MonadClientUI m) => m ()
+aimPointerEnemyHuman :: MonadClientUI m => m ()
 aimPointerEnemyHuman = do
   COps{corule=RuleContent{rXmax, rYmax}} <- getsState scops
   lidV <- viewedLevelUI
