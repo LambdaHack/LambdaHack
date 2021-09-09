@@ -111,8 +111,9 @@ cmdAtomicSemCli oldState cmd = case cmd of
     -- other BFSes not invalidated, because distant actors may still move out
     -- of the way and close actors are considered when attempting to move
     -- and then BFS is invalidated, if needed.
-    b <- getsState $ getActorBody source
-    updateInMeleeDueToActor b
+    sb <- getsState $ getActorBody source
+    -- At least one of these is not a projectile and both move, so update.
+    insertInMeleeM (blid sb)
   UpdMoveItem _ _ aid s1 s2 -> do
     wipeBfsIfItemAffectsSkills s1 aid
     wipeBfsIfItemAffectsSkills s2 aid
