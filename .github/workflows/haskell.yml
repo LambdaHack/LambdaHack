@@ -154,6 +154,11 @@ jobs:
         uses: actions/checkout@v2
         with:
           path: source
+      - name: initial cabal.project for sdist
+        run: |
+          touch cabal.project
+          echo "packages: $GITHUB_WORKSPACE/source/LambdaHack" >> cabal.project
+          cat cabal.project
       - name: sdist
         run: |
           mkdir -p sdist
