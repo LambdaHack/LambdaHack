@@ -133,7 +133,7 @@ jobs:
       - name: cache (tools)
         uses: actions/cache@v2
         with:
-          key: ${{ runner.os }}-${{ matrix.compiler }}-tools-803c0a4b
+          key: ${{ runner.os }}-${{ matrix.compilerVersion }}-tools-803c0a4b
           path: ~/.haskell-ci-tools
       - name: install doctest
         run: |
