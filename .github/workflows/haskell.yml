@@ -172,7 +172,6 @@ jobs:
             echo "CABAL_EXE=/opt/cabal/3.4/bin/cabal" >> "$GITHUB_ENV"
             echo "CABAL=$CABAL_EXE -vnormal+nowrap" >> "$GITHUB_ENV"
           fi
-          cp $CABAL_EXE $HOME/.cabal/bin/
           HCNUMVER=$(${HC} --numeric-version|perl -ne '/^(\d+)\.(\d+)\.(\d+)(\.(\d+))?$/; print(10000 * $1 + 100 * $2 + ($3 == 0 ? $5 != 1 : $3))')
           echo "HCNUMVER=$HCNUMVER" >> "$GITHUB_ENV"
           echo "ARG_TESTS=--enable-tests" >> "$GITHUB_ENV"
@@ -191,6 +190,7 @@ jobs:
           env
       - name: write cabal config
         run: |
+          cp $CABAL_EXE $HOME/.cabal/bin/
           mkdir -p $CABAL_DIR
           cat >> $CABAL_CONFIG <<EOF
           remote-build-reporting: anonymous
