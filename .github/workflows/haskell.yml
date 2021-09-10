@@ -191,7 +191,7 @@ jobs:
       - name: write cabal config
         run: |
           mkdir -p $HOME/.cabal/bin/
-          cp $CABAL_EXE $HOME/.cabal/bin/cabal
+          ln -s $CABAL_EXE $HOME/.cabal/bin/cabal
           mkdir -p $CABAL_DIR
           cat >> $CABAL_CONFIG <<EOF
           remote-build-reporting: anonymous
