@@ -11,7 +11,7 @@ import Control.Concurrent.Async
 import Control.Concurrent.MVar
 
 -- Swiped from <http://www.haskell.org/ghc/docs/latest/html/libraries/base/Control-Concurrent.html>
--- Ported to Async to link exceptions, to let travis tests fail.
+-- Ported to Async to link exceptions, to let CI tests fail.
 
 forkChild :: MVar [Async ()] -> IO () -> IO ()
 forkChild children io = do
