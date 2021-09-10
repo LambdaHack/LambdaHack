@@ -59,6 +59,7 @@
 - ignore: {name: Reduce duplication}
 - ignore: {name: Use String }
 - ignore: {name: Use camelCase }
+- ignore: {name: Use LANGUAGE pragmas }
 
 
 # Define some custom infix operators

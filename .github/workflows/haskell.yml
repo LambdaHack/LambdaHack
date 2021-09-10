@@ -166,6 +166,7 @@ jobs:
         run: |
           PKGDIR_haskell_ci="$(find "$GITHUB_WORKSPACE/unpacked" -maxdepth 1 -type d -regex '.*/LambdaHack-[0-9.]*')"
           echo "PKGDIR_haskell_ci=${PKGDIR_haskell_ci}" >> "$GITHUB_ENV"
+          cp ${PKGDIR_haskell_ci}/cabal.project .
           if $HEADHACKAGE; then
           echo "allow-newer: $($HCPKG list --simple-output | sed -E 's/([a-zA-Z-]+)-[0-9.]+/*:\1,/g')" >> cabal.project
           fi
@@ -191,7 +192,7 @@ jobs:
           $CABAL v2-test $ARG_COMPILER $ARG_TESTS $ARG_BENCH all --test-show-details=direct
       - name: hlint
         run: |
-          if [ $((HCNUMVER >= 90000 && HCNUMVER < 90002)) -ne 0 ] ; then (cd ${PKGDIR_haskell_ci} && hlint .) ; fi
+          if [ $((HCNUMVER >= 90000 && HCNUMVER < 90002)) -ne 0 ] ; then (cd ${PKGDIR_haskell_ci} && hlint -h ${GITHUB_WORKSPACE}/source/.hlint.yaml .) ; fi
       - name: cabal check
         run: |
           cd ${PKGDIR_haskell_ci} || false
