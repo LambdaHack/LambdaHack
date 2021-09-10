@@ -190,6 +190,7 @@ jobs:
           env
       - name: write cabal config
         run: |
+          mkdir -p $HOME/.cabal/bin/
           cp $CABAL_EXE $HOME/.cabal/bin/
           mkdir -p $CABAL_DIR
           cat >> $CABAL_CONFIG <<EOF
