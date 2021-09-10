@@ -192,7 +192,7 @@ condNoEqpWeaponM aid =
 condCanProjectM :: MonadClientRead m => Int -> ActorId -> m Bool
 condCanProjectM skill aid = do
   side <- getsClient sside
-  curChal <- getsClient $ scurChal
+  curChal <- getsClient scurChal
   fact <- getsState $ (EM.! side) . sfactionD
   if skill < 1
      || ckeeper curChal && fhasUI (gplayer fact)

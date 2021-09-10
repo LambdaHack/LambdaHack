@@ -1049,7 +1049,7 @@ spotItemBag verbose c bag = do
           _ -> return Nothing  -- this item or another with the same @iid@
                                -- seen already (has a slot assigned); old news
       -- @SortOn@ less efficient here, because function cheap.
-      sortItems iis = sortOn (getKind . fst) iis
+      sortItems = sortOn (getKind . fst)
       sortedAssocs = sortItems $ EM.assocs bag
   subjectMaybes <- mapM subjectMaybe sortedAssocs
   let subjects = catMaybes subjectMaybes
@@ -1564,9 +1564,10 @@ displayRespSfxAtomicUI sfx = case sfx of
   SfxApply aid iid -> do
     CCUI{coscreen=ScreenContent{rapplyVerbMap}} <- getsSession sccui
     ItemFull{itemKind} <- getsState $ itemToFull iid
-    let actionPart = case EM.lookup (IK.isymbol itemKind) rapplyVerbMap of
-          Just verb -> MU.Text verb
-          Nothing -> "trigger"
+    let actionPart =
+          maybe "trigger"
+                MU.Text
+                (EM.lookup (IK.isymbol itemKind) rapplyVerbMap)
     itemAidVerbMU MsgActionMajor aid actionPart iid (Left 1)
   SfxCheck aid iid ->
     itemAidVerbMU MsgActionMajor aid "recover" iid (Left 1)

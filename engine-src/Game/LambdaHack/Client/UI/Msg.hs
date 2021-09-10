@@ -18,7 +18,7 @@ module Game.LambdaHack.Client.UI.Msg
   , toMsg, MsgPrototype, tripleFromProto
   , scrapsRepeats, tutorialHint, msgColor
   , RepMsgNK, nullRepMsgNK
-  , emptyReport, renderWholeReport, renderRepetition
+  , emptyReport, renderRepetition
   , scrapRepetitionSingle, scrapRepetition, renderTimeReport
 #endif
   ) where
@@ -300,8 +300,7 @@ scrapsRepeats = \case
     MsgInnerWorkSpam -> True
     MsgNumericReport -> True
   MsgClassIgnore _ -> False  -- ignored, so no need to scrap
-  MsgClassDistinct x -> case x of
-    _ -> True
+  MsgClassDistinct _x -> True
 
 tutorialHint :: MsgClass -> Bool
 tutorialHint = \case
@@ -434,19 +433,13 @@ nullVisibleReport (Report l) =
 consReport :: Msg -> Report -> Report
 consReport msg (Report r) = Report $ r ++ [RepMsgNK msg 1 1]
 
--- | Render a report as a (possibly very long) 'AttrString'. Filter out
--- messages not meant for display, unless not showing, but saving to history.
+-- | Render a report as a (possibly very long) list of 'AttrString'.
 renderReport :: Bool -> Report -> [AttrString]
 renderReport displaying (Report r) =
   let rep = map (\(RepMsgNK msg n k) -> if displaying
                                         then (msgShow msg, n)
                                         else (msgSave msg, k)) r
-  in renderWholeReport rep []
-
--- | Render a report as a (possibly very long) 'AttrString'.
-renderWholeReport :: [(AttrString, Int)] -> [AttrString] -> [AttrString]
-renderWholeReport [] acc = acc
-renderWholeReport (x : xs) acc = renderWholeReport xs (renderRepetition x : acc)
+  in reverse $ map renderRepetition rep
 
 renderRepetition :: (AttrString, Int) -> AttrString
 renderRepetition (asRaw, n) =

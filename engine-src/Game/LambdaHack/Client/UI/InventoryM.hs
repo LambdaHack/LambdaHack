@@ -220,8 +220,7 @@ storeItemPrompt side body bodyUI actorCurAndMaxSk c2 s =
           dungeonTotal = sgold s
           (_, total) = calculateTotal side s
           n = countItems CStash
-          verbOwned = if | n == 0 -> "find nothing among"
-                         | otherwise -> "review"
+          verbOwned = if n == 0 then "find nothing among" else "review"
       in makePhrase
            [ MU.Text $ spoilsBlurb currencyName total dungeonTotal
            , MU.Capitalize $ MU.SubjectVerbSg subject verbOwned

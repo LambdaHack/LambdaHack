@@ -149,10 +149,10 @@ assertSparseItems m =
           `blame` "null floors found" `swith` m) m
 
 hashConsSingle :: ItemFloor -> ItemFloor
-hashConsSingle m =
+hashConsSingle =
   EM.map (EM.map (\case
                     (1, []) -> quantSingle
-                    kit -> kit)) m
+                    kit -> kit))
 
 assertSparseProjectiles :: ProjectileMap -> ProjectileMap
 assertSparseProjectiles m =

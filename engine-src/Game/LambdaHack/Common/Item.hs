@@ -305,7 +305,7 @@ strongestMelee ignoreCharges mdiscoBenefit localTime kitAss =
             -- to value the effects at more than 0, even though they are strong
             -- and also to prefer weapons with burn or wound over pure damage,
             -- which is a good rule of thumb before late game at least.
-            hasEffect = any (\eff -> IK.forApplyEffect eff)
+            hasEffect = any IK.forApplyEffect
                             (IK.ieffects $ itemKind itemFull)
             ncha = ncharges localTime kit
         in if ignoreCharges || ncha > 0

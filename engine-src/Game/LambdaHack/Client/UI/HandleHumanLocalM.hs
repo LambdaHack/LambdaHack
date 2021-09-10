@@ -108,7 +108,7 @@ macroHuman ks = do
            macroHumanTransition kms (smacroFrame sess) (smacroStack sess)
     in sess { smacroFrame = smacroFrameNew
             , smacroStack = smacroStackMew }
-  msgAdd MsgMacroOperation $ "Macro activated:" <+> T.pack (intercalate " " ks)
+  msgAdd MsgMacroOperation $ "Macro activated:" <+> T.pack (unwords ks)
 
 -- | Push a new macro frame to the stack whenever repeating a macro.
 macroHumanTransition :: [K.KM] -> KeyMacroFrame -> [KeyMacroFrame]
@@ -190,7 +190,7 @@ chooseItemDialogMode permitLoreCycle c = do
               makeSentence [ partActor bUI, "is aware of"
                            , MU.AW $ blurb itemFull ]
             ix0 = fromMaybe (error $ "" `showFailure` result)
-                  $ findIndex (== iid) $ EM.elems lSlots
+                  $ elemIndex iid $ EM.elems lSlots
         go <- displayItemLore itemBag meleeSkill promptFun ix0 lSlots
         if go then chooseItemDialogMode False MOrgans else failWith "never mind"
       ROwned iid -> do
@@ -242,7 +242,7 @@ chooseItemDialogMode permitLoreCycle c = do
         displayOneSlot slotIndex0
       RLore slore iid itemBag lSlots -> do
         let ix0 = fromMaybe (error $ "" `showFailure` result)
-                  $ findIndex (== iid) $ EM.elems lSlots
+                  $ elemIndex iid $ EM.elems lSlots
             promptFun _ _ _ =
               makeSentence [ MU.SubjectVerbSg (partActor bUI) "remember"
                            , MU.AW $ MU.Text (headingSLore slore) ]
@@ -561,8 +561,7 @@ chooseItemApplyHuman ts = do
       bag <- getsState $ getBodyStoreBag b fromCStore
       mp <- permittedApplyClient
       case iid `EM.lookup` bag of
-        Just kit | either (const False) id
-                          (mp (Just fromCStore) itemFull kit) ->
+        Just kit | fromRight False (mp (Just fromCStore) itemFull kit) ->
           return Nothing
         _ -> do
           modifySession $ \sess -> sess {sitemSel = Nothing}
@@ -572,7 +571,7 @@ chooseItemApplyHuman ts = do
           psuit = do
             mp <- permittedApplyClient
             return $ SuitsSomething $ \cstore itemFull kit ->
-              either (const False) id (mp cstore itemFull kit)
+              fromRight False (mp cstore itemFull kit)
               && (null triggerSyms
                   || IK.isymbol (itemKind itemFull) `elem` triggerSyms)
       ggi <- getGroupItem psuit prompt promptGeneric verb "trigger" stores
@@ -999,11 +998,9 @@ doLook = do
             Just (iid, _, _) -> do
               itemFull <- getsState $ itemToFull iid
               let arItem = aspectRecordFull itemFull
-              return $!
-                if 1 + IA.totalRange arItem (itemKind itemFull)
-                   >= chessDist (bpos b) pos
-                then []
-                else [(MsgPromptGeneric, "This position is out of range when flinging the selected item.")]
+              return [ (MsgPromptGeneric, "This position is out of range when flinging the selected item.")
+                     | 1 + IA.totalRange arItem (itemKind itemFull)
+                       < chessDist (bpos b) pos ]
             Nothing -> return []
       mapM_ (uncurry msgAdd) $ blurb ++ outOfRangeBlurb
 
@@ -1161,11 +1158,11 @@ aimItemHuman = do
       (lt, gt) = case xhair of
         Just (TPoint _ lid pos)
           | isJust saimMode && lid == lidV ->  -- pick next item
-            let i = fromMaybe (-1) $ findIndex (== pos) dbs
+            let i = fromMaybe (-1) $ elemIndex pos dbs
             in splitAt (i + 1) dbs
         Just (TPoint _ lid pos)
           | lid == lidV ->  -- first key press, retarget old item
-            let i = fromMaybe (-1) $ findIndex (== pos) dbs
+            let i = fromMaybe (-1) $ elemIndex pos dbs
             in splitAt i dbs
         _ -> pickUnderXhair
       gtlt = gt ++ lt
