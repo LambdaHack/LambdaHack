@@ -189,15 +189,9 @@ jobs:
       - name: tests
         run: |
           $CABAL v2-test $ARG_COMPILER $ARG_TESTS $ARG_BENCH all --test-show-details=direct
-      - name: doctest
-        run: |
-          perl -i -e 'while (<ARGV>) { print unless /package-id\s+(base-compat-batteries|bs-cmpt-bttrs)-\d+(\.\d+)*/; }' .ghc.environment.*
-          if [ $((HCNUMVER < 90000)) -ne 0 ] ; then cd ${PKGDIR_haskell_ci} || false ; fi
-          if [ $((HCNUMVER < 90000)) -ne 0 ] ; then doctest --fast -XNoImplicitPrelude -XBangPatterns -XDeriveAnyClass -XDeriveFoldable -XDeriveFunctor -XDeriveGeneric -XDeriveTraversable -XDerivingStrategies -XGeneralizedNewtypeDeriving -XScopedTypeVariables src ; fi
       - name: hlint
         run: |
-          if [ $((HCNUMVER >= 90000 && HCNUMVER < 90002)) -ne 0 ] ; then (cd ${PKGDIR_haskell_ci} && hlint -h ${GITHUB_WORKSPACE}/source/.hlint.yaml -XNoImplicitPrelude -XBangPatterns -XDeriveAnyClass -XDeriveFoldable -XDeriveFunctor -XDeriveGeneric -XDeriveTraversable -XDerivingStrategies -XGeneralizedNewtypeDeriving -XScopedTypeVariables src) ; fi
-          if [ $((HCNUMVER >= 90000 && HCNUMVER < 90002)) -ne 0 ] ; then (cd ${PKGDIR_haskell_ci} && hlint -h ${GITHUB_WORKSPACE}/source/.hlint.yaml cli) ; fi
+          if [ $((HCNUMVER >= 90000 && HCNUMVER < 90002)) -ne 0 ] ; then (cd ${PKGDIR_haskell_ci} && hlint .) ; fi
       - name: cabal check
         run: |
           cd ${PKGDIR_haskell_ci} || false
