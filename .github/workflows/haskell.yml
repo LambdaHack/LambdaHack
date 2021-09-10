@@ -22,16 +22,109 @@ jobs:
       matrix:
         include:
           - compiler: ghc-9.0.1
+            projectFlags:
+            compilerKind: ghc
+            compilerVersion: 9.0.1
+            setup-method: ghcup
+            allow-failure: false
+          - compiler: ghc-9.0.1-asserts
+            projectFlags: -fwith_expensive_assertions
+            compilerKind: ghc
+            compilerVersion: 9.0.1
+            setup-method: ghcup
+            allow-failure: false
+          - compiler: ghc-9.0.1-noopt
+            projectFlags: --ghc-options="-O0 -fno-ignore-asserts"
+            compilerKind: ghc
+            compilerVersion: 9.0.1
+            setup-method: ghcup
+            allow-failure: false
+          - compiler: ghc-9.0.1-opt2
+            projectFlags: --ghc-options="-O2 -fno-ignore-asserts"
+            compilerKind: ghc
+            compilerVersion: 9.0.1
+            setup-method: ghcup
+            allow-failure: false
+          - compiler: ghc-9.0.1-vty
+            projectFlags: -fvty -fwith_expensive_assertions
+            compilerKind: ghc
+            compilerVersion: 9.0.1
+            setup-method: ghcup
+            allow-failure: false
+          - compiler: ghc-9.0.1-curses
+            projectFlags: -fcurses -f-release -fwith_expensive_assertions
             compilerKind: ghc
             compilerVersion: 9.0.1
             setup-method: ghcup
             allow-failure: false
           - compiler: ghc-8.10.7
+            projectFlags:
+            compilerKind: ghc
+            compilerVersion: 8.10.7
+            setup-method: ghcup
+            allow-failure: false
+          - compiler: ghc-8.10.7-asserts
+            projectFlags: -fwith_expensive_assertions
+            compilerKind: ghc
+            compilerVersion: 8.10.7
+            setup-method: ghcup
+            allow-failure: false
+          - compiler: ghc-8.10.7-noopt
+            projectFlags: --ghc-options="-O0 -fno-ignore-asserts"
+            compilerKind: ghc
+            compilerVersion: 8.10.7
+            setup-method: ghcup
+            allow-failure: false
+          - compiler: ghc-8.10.7-opt2
+            projectFlags: --ghc-options="-O2 -fno-ignore-asserts"
+            compilerKind: ghc
+            compilerVersion: 8.10.7
+            setup-method: ghcup
+            allow-failure: false
+          - compiler: ghc-8.10.7-vty
+            projectFlags: -fvty -fwith_expensive_assertions
+            compilerKind: ghc
+            compilerVersion: 8.10.7
+            setup-method: ghcup
+            allow-failure: false
+          - compiler: ghc-8.10.7-curses
+            projectFlags: -fcurses -f-release -fwith_expensive_assertions
             compilerKind: ghc
             compilerVersion: 8.10.7
             setup-method: ghcup
             allow-failure: false
           - compiler: ghc-8.8.4
+            projectFlags:
+            compilerKind: ghc
+            compilerVersion: 8.8.4
+            setup-method: hvr-ppa
+            allow-failure: false
+          - compiler: ghc-8.8.4-asserts
+            projectFlags: -fwith_expensive_assertions
+            compilerKind: ghc
+            compilerVersion: 8.8.4
+            setup-method: hvr-ppa
+            allow-failure: false
+          - compiler: ghc-8.8.4-noopt
+            projectFlags: --ghc-options="-O0 -fno-ignore-asserts"
+            compilerKind: ghc
+            compilerVersion: 8.8.4
+            setup-method: hvr-ppa
+            allow-failure: false
+          - compiler: ghc-8.8.4-opt2
+            projectFlags: --ghc-options="-O2 -fno-ignore-asserts"
+            compilerKind: ghc
+            compilerVersion: 8.8.4
+            setup-method: hvr-ppa
+            allow-failure: false
+          - compiler: ghc-8.8.4-vty
+            projectFlags: -fvty -fwith_expensive_assertions
+            compilerKind: ghc
+            compilerVersion: 8.8.4
+            setup-method: hvr-ppa
+            allow-failure: false
+          - compiler: ghc-8.8.4-curses
+            projectFlags: -fcurses -f-release -fwith_expensive_assertions
             compilerKind: ghc
             compilerVersion: 8.8.4
             setup-method: hvr-ppa
@@ -51,7 +144,7 @@ jobs:
           else
             apt-add-repository -y 'ppa:hvr/ghc'
             apt-get update
-            apt-get install -y "$HCNAME" cabal-install-3.4
+            apt-get install -y "$HCKIND"-"$HCVER" cabal-install-3.4
           fi
         env:
           HCKIND: ${{ matrix.compilerKind }}
@@ -82,12 +175,14 @@ jobs:
           echo "ARG_TESTS=--enable-tests" >> "$GITHUB_ENV"
           echo "ARG_BENCH=--enable-benchmarks" >> "$GITHUB_ENV"
           if [ $((HCNUMVER > 90001)) -ne 0 ] ; then echo "HEADHACKAGE=true" >> "$GITHUB_ENV" ; else echo "HEADHACKAGE=false" >> "$GITHUB_ENV" ; fi
-          echo "ARG_COMPILER=--$HCKIND --with-compiler=$HC" >> "$GITHUB_ENV"
+          echo "ARG_COMPILER_TOOL=--$HCKIND --with-compiler=$HC" >> "$GITHUB_ENV"
+          echo "ARG_COMPILER=$HCFLAGS --$HCKIND --with-compiler=$HC" >> "$GITHUB_ENV"
           echo "GHCJSARITH=0" >> "$GITHUB_ENV"
         env:
           HCKIND: ${{ matrix.compilerKind }}
           HCNAME: ${{ matrix.compiler }}
           HCVER: ${{ matrix.compilerVersion }}
+          HCFLAGS: ${{ matrix.projectFlags }}
       - name: env
         run: |
           env
@@ -137,11 +232,11 @@ jobs:
           path: ~/.haskell-ci-tools
       - name: install doctest
         run: |
-          if [ $((HCNUMVER < 90000)) -ne 0 ] ; then $CABAL --store-dir=$HOME/.haskell-ci-tools/store v2-install $ARG_COMPILER --ignore-project -j2 doctest --constraint='doctest ^>=0.17' ; fi
+          if [ $((HCNUMVER < 90000)) -ne 0 ] ; then $CABAL --store-dir=$HOME/.haskell-ci-tools/store v2-install $ARG_COMPILER_TOOL --ignore-project -j2 doctest --constraint='doctest ^>=0.17' ; fi
           if [ $((HCNUMVER < 90000)) -ne 0 ] ; then doctest --version ; fi
       - name: install hlint
         run: |
-          if [ $((HCNUMVER >= 90000 && HCNUMVER < 90002)) -ne 0 ] ; then HLINTVER=$(cd /tmp && (${CABAL} v2-install -v $ARG_COMPILER --dry-run hlint  --constraint='hlint >=3.3 && <3.4' |  perl -ne 'if (/\bhlint-(\d+(\.\d+)*)\b/) { print "$1"; last; }')); echo "HLint version $HLINTVER" ; fi
+          if [ $((HCNUMVER >= 90000 && HCNUMVER < 90002)) -ne 0 ] ; then HLINTVER=$(cd /tmp && (${CABAL} v2-install -v $ARG_COMPILER_TOOL --dry-run hlint  --constraint='hlint >=3.3 && <3.4' |  perl -ne 'if (/\bhlint-(\d+(\.\d+)*)\b/) { print "$1"; last; }')); echo "HLint version $HLINTVER" ; fi
           if [ $((HCNUMVER >= 90000 && HCNUMVER < 90002)) -ne 0 ] ; then if [ ! -e $HOME/.haskell-ci-tools/hlint-$HLINTVER/hlint ]; then echo "Downloading HLint version $HLINTVER"; mkdir -p $HOME/.haskell-ci-tools; curl --write-out 'Status Code: %{http_code} Redirects: %{num_redirects} Total time: %{time_total} Total Dsize: %{size_download}\n' --silent --location --output $HOME/.haskell-ci-tools/hlint-$HLINTVER.tar.gz "https://github.com/ndmitchell/hlint/releases/download/v$HLINTVER/hlint-$HLINTVER-x86_64-linux.tar.gz"; tar -xzv -f $HOME/.haskell-ci-tools/hlint-$HLINTVER.tar.gz -C $HOME/.haskell-ci-tools; fi ; fi
           if [ $((HCNUMVER >= 90000 && HCNUMVER < 90002)) -ne 0 ] ; then mkdir -p $CABAL_DIR/bin && ln -sf "$HOME/.haskell-ci-tools/hlint-$HLINTVER/hlint" $CABAL_DIR/bin/hlint ; fi
           if [ $((HCNUMVER >= 90000 && HCNUMVER < 90002)) -ne 0 ] ; then hlint --version ; fi
