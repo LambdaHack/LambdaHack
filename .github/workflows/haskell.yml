@@ -170,7 +170,7 @@ jobs:
             echo "HCPKG=$HCDIR/bin/$HCKIND-pkg" >> "$GITHUB_ENV"
             echo "HADDOCK=$HCDIR/bin/haddock" >> "$GITHUB_ENV"
             echo "CABAL_EXE=/opt/cabal/3.4/bin/cabal" >> "$GITHUB_ENV"
-            echo "CABAL=CABAL_EXE -vnormal+nowrap" >> "$GITHUB_ENV"
+            echo "CABAL=$CABAL_EXE -vnormal+nowrap" >> "$GITHUB_ENV"
           fi
           cp $CABAL_EXE $HOME/.cabal/bin/
           HCNUMVER=$(${HC} --numeric-version|perl -ne '/^(\d+)\.(\d+)\.(\d+)(\.(\d+))?$/; print(10000 * $1 + 100 * $2 + ($3 == 0 ? $5 != 1 : $3))')
