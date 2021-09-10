@@ -283,10 +283,18 @@ jobs:
           $CABAL v2-build $ARG_COMPILER --disable-tests --disable-benchmarks all
       - name: build
         run: |
-          $CABAL v2-build $ARG_COMPILER $ARG_TESTS $ARG_BENCH all --write-ghc-environment-files=always
+          if [[ $HCFLAGS == -fvty* ]] || [[ $HCFLAGS == -fcurses* ]] ; then
+            $CABAL v2-build $ARG_COMPILER $ARG_TESTS $ARG_BENCH all --write-ghc-environment-files=always
+          fi
+        env:
+          HCFLAGS: ${{ matrix.projectFlags }}
       - name: tests
         run: |
-          $CABAL v2-test $ARG_COMPILER $ARG_TESTS $ARG_BENCH all --test-show-details=direct
+          if [[ $HCFLAGS == -fvty* ]] || [[ $HCFLAGS == -fcurses* ]] ; then
+            $CABAL v2-test $ARG_COMPILER $ARG_TESTS $ARG_BENCH all --test-show-details=direct
+          fi
+        env:
+          HCFLAGS: ${{ matrix.projectFlags }}
       - name: gameplay tests
         run: |
           make test-gha || (tail -n 2000 /tmp/teletypetest.log ; exit 77)
