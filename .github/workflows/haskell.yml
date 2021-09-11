@@ -21,7 +21,7 @@ jobs:
     strategy:
       matrix:
         include:
-          - compiler: ghc-9.0.1
+          - compiler: ghc-9.0.1-vanilla
             projectFlags:
             compilerKind: ghc
             compilerVersion: 9.0.1
@@ -57,7 +57,7 @@ jobs:
             compilerVersion: 9.0.1
             setup-method: ghcup
             allow-failure: false
-          - compiler: ghc-8.10.7
+          - compiler: ghc-8.10.7-vanilla
             projectFlags:
             compilerKind: ghc
             compilerVersion: 8.10.7
@@ -93,7 +93,7 @@ jobs:
             compilerVersion: 8.10.7
             setup-method: ghcup
             allow-failure: false
-          - compiler: ghc-8.8.4
+          - compiler: ghc-8.8.4-vanilla
             projectFlags:
             compilerKind: ghc
             compilerVersion: 8.8.4
