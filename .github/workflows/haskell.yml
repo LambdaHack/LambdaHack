@@ -294,7 +294,7 @@ jobs:
             $CABAL v2-test $ARG_COMPILER $ARG_TESTS $ARG_BENCH all --test-show-details=direct
           esac
       - name: gameplay tests
-        run: |
+        shell: 'script -q -e -c "bash --noprofile --norc -eo pipefail {0}"'             run: |
           make -f ${PKGDIR_haskell_ci}/Makefile test-gha || (tail -n 2000 /tmp/teletypetest.log ; exit 77)
       - name: hlint
         run: |
