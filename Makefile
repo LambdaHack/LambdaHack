@@ -152,9 +152,9 @@ nodeMinifiedBench:
 	node ../lambdahack.github.io/lambdahack.all.js --dbgMsgSer --logPriority 4 --newGame 1 --noAnim --maxFps 100000 --frontendNull --benchmark --stopAfterFrames 2000 --automateAll --keepAutomated --gameMode crawl $(RNGOPTS)
 
 
-test: test-sniff test-short test-medium benchNull
+test: test-short test-medium benchNull
 
-test-gha: test testCrawl-medium testDefense-medium
+test-gha: test testCrawl-medium testDefense-medium test-sniff
 
 test-short: test-short-new test-short-load
 
