@@ -303,8 +303,9 @@ jobs:
           ${CABAL} -vnormal check
       - name: prepare artifact
         run: |
-          (cd ${PKGDIR_haskell_ci} && make copy-directory copy-binary)
+          (cd ${PKGDIR_haskell_ci} && make copy-directory)
           mv ${PKGDIR_haskell_ci}/LambdaHackTheGame .
+          make -f ${PKGDIR_haskell_ci}/Makefile copy-binary
       - uses: actions/upload-artifact@v2
         with:
           name: LambdaHack-on-Linux
