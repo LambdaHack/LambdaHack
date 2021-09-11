@@ -304,6 +304,13 @@ jobs:
         run: |
           cd ${PKGDIR_haskell_ci} || false
           ${CABAL} -vnormal check
+      - name: prepare artifact
+        run: |
+          make -f ${PKGDIR_haskell_ci}/Makefile copy-directory copy-binary
+      - uses: actions/upload-artifact@v2
+        with:
+            name: LambdaHack-on-Linux
+            path: LambdaHackTheGame/
       - name: haddock
         run: |
           $CABAL v2-haddock $ARG_COMPILER --with-haddock $HADDOCK $ARG_TESTS $ARG_BENCH all
