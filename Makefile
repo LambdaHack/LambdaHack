@@ -224,10 +224,10 @@ testDefenseEmpty-medium:
 	$$(cabal list-bin exe:LambdaHack) --dbgMsgSer --logPriority 4 --boostRandomItem --newGame 9 --noAnim --maxFps 100000 --frontendTeletype --benchmark --stopAfterSeconds 40 --dumpInitRngs --automateAll --keepAutomated --gameMode defenseEmpty 2> /tmp/teletypetest.log
 
 testCrawl-appveyor:
-	$$(cabal list-bin exe:LambdaHack) --dbgMsgSer --logPriority 4 --newGame 1 --noAnim --maxFps 100000 --frontendNull --benchmark --stopAfterGameOver --stopAfterSeconds 300 --dumpInitRngs --automateAll --keepAutomated --gameMode crawl --assertExplored 5
+	./LambdaHack --dbgMsgSer --logPriority 4 --newGame 1 --noAnim --maxFps 100000 --frontendNull --benchmark --stopAfterGameOver --stopAfterSeconds 300 --dumpInitRngs --automateAll --keepAutomated --gameMode crawl --assertExplored 5
 
 testDefense-appveyor:
-	$$(cabal list-bin exe:LambdaHack) --dbgMsgSer --logPriority 4 --newGame 9 --noAnim --maxFps 100000 --frontendLazy --benchmark --stopAfterSeconds 600 --dumpInitRngs --automateAll --keepAutomated --gameMode defense
+	./LambdaHack --dbgMsgSer --logPriority 4 --newGame 9 --noAnim --maxFps 100000 --frontendLazy --benchmark --stopAfterSeconds 600 --dumpInitRngs --automateAll --keepAutomated --gameMode defense
 
 test-short-new:
 	$$(cabal list-bin exe:LambdaHack) --dbgMsgSer --logPriority 4 --boostRandomItem --newGame 5 --savePrefix raid --dumpInitRngs --automateAll --keepAutomated --gameMode raid --frontendTeletype --stopAfterSeconds 2 2> /tmp/teletypetest.log
