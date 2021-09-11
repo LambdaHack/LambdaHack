@@ -285,14 +285,14 @@ jobs:
           $CABAL v2-build $ARG_COMPILER --disable-tests --disable-benchmarks all
       - name: build
         run: |
-          case $MY_HCFLAGS in -fvty* | -fcurses* )
+          if case $MY_HCFLAGS in -fvty* | -fcurses* ) false;; esac; then
             $CABAL v2-build $ARG_COMPILER $ARG_TESTS $ARG_BENCH all --write-ghc-environment-files=always
-          esac
+          fi
       - name: tests
         run: |
-          case $MY_HCFLAGS in -fvty* | -fcurses* )
+          if case $MY_HCFLAGS in -fvty* | -fcurses* ) false;; esac; then
             $CABAL v2-test $ARG_COMPILER $ARG_TESTS $ARG_BENCH all --test-show-details=direct
-          esac
+          fi
       - name: gameplay tests
         shell: 'script -q -e -c "bash --noprofile --norc -eo pipefail {0}"'
         run: |
