@@ -264,7 +264,6 @@ jobs:
         run: |
           PKGDIR_haskell_ci="$(find "$GITHUB_WORKSPACE/unpacked" -maxdepth 1 -type d -regex '.*/LambdaHack-[0-9.]*')"
           echo "PKGDIR_haskell_ci=${PKGDIR_haskell_ci}" >> "$GITHUB_ENV"
-          cp ${PKGDIR_haskell_ci}/Makefile .
           tail -n +2 ${PKGDIR_haskell_ci}/cabal.project > cabal.project
           echo "packages: $GITHUB_WORKSPACE/source/." >> cabal.project
           if $HEADHACKAGE; then
@@ -296,7 +295,7 @@ jobs:
           fi
       - name: gameplay tests
         run: |
-          make test-gha || (tail -n 2000 /tmp/teletypetest.log ; exit 77)
+          make -f ${PKGDIR_haskell_ci}/Makefile test-gha || (tail -n 2000 /tmp/teletypetest.log ; exit 77)
       - name: hlint
         run: |
           if [ $((HCNUMVER >= 90000 && HCNUMVER < 90002)) -ne 0 ] ; then (cd ${PKGDIR_haskell_ci} && hlint -h ${GITHUB_WORKSPACE}/source/.hlint.yaml .) ; fi
