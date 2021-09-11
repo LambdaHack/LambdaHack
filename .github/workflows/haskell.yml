@@ -152,7 +152,7 @@ jobs:
           HCVER: ${{ matrix.compilerVersion }}
       - name: Set PATH and environment variables
         run: |
-          echo "$HOME/.cabal/bin" >> $GITHUB_PATH
+          echo "$HOME/.cabal/bin:$HOME/.ghcup/bin:/opt/cabal/3.4/bin" >> $GITHUB_PATH
           echo "LANG=C.UTF-8" >> "$GITHUB_ENV"
           echo "CABAL_DIR=$HOME/.cabal" >> "$GITHUB_ENV"
           echo "CABAL_CONFIG=$HOME/.cabal/config" >> "$GITHUB_ENV"
@@ -163,6 +163,7 @@ jobs:
             echo "HCPKG=$HOME/.ghcup/bin/$HCKIND-pkg-$HCVER" >> "$GITHUB_ENV"
             echo "HADDOCK=$HOME/.ghcup/bin/haddock-$HCVER" >> "$GITHUB_ENV"
             echo "CABAL=$HOME/.ghcup/bin/cabal-3.4.0.0 -vnormal+nowrap" >> "$GITHUB_ENV"
+            cp $HOME/.ghcup/bin/cabal-3.4.0.0 $HOME/.ghcup/bin/cabal
           else
             HC=$HCDIR/bin/$HCKIND
             echo "HC=$HC" >> "$GITHUB_ENV"
