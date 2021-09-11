@@ -153,7 +153,7 @@ jobs:
       - name: Set PATH and environment variables
         run: |
           HCDIR=/opt/$HCKIND/$HCVER
-          echo "$HOME/.cabal/bin:$HOME/.ghcup/bin:/opt/cabal/3.4/bin:$HCDIR" >> $GITHUB_PATH
+          echo "$HOME/.cabal/bin:$HOME/.ghcup/bin:/opt/cabal/3.4/bin:$HCDIR/bin" >> $GITHUB_PATH
           echo "LANG=C.UTF-8" >> "$GITHUB_ENV"
           echo "CABAL_DIR=$HOME/.cabal" >> "$GITHUB_ENV"
           echo "CABAL_CONFIG=$HOME/.cabal/config" >> "$GITHUB_ENV"
