@@ -42,7 +42,7 @@ data RawFrontend = RawFrontend
 -- https://github.com/AllureOfTheStars/Allure/issues/79
 -- In case any other exotic architecture requires the main thread,
 -- we make the hack the default for all (on frontends that require a bound
--- thread, e.g., SLD2 or GTK).
+-- thread, e.g., SLD2).
 startupBound :: (MVar RawFrontend -> IO ()) -> IO RawFrontend
 startupBound k = do
   rfMVar <- newEmptyMVar
