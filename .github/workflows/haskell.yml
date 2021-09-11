@@ -178,6 +178,7 @@ jobs:
           echo "ARG_COMPILER_TOOL=--$HCKIND --with-compiler=$HC" >> "$GITHUB_ENV"
           echo "ARG_COMPILER=$HCFLAGS --$HCKIND --with-compiler=$HC" >> "$GITHUB_ENV"
           echo "GHCJSARITH=0" >> "$GITHUB_ENV"
+          echo "MY_HCFLAGS=$HCFLAGS" >> "$GITHUB_ENV"
         env:
           HCKIND: ${{ matrix.compilerKind }}
           HCNAME: ${{ matrix.compiler }}
@@ -283,18 +284,14 @@ jobs:
           $CABAL v2-build $ARG_COMPILER --disable-tests --disable-benchmarks all
       - name: build
         run: |
-          if [[ $HCFLAGS == -fvty* ]] || [[ $HCFLAGS == -fcurses* ]] ; then
+          if [[ $MY_HCFLAGS == -fvty* ]] || [[ $MY_HCFLAGS == -fcurses* ]] ; then
             $CABAL v2-build $ARG_COMPILER $ARG_TESTS $ARG_BENCH all --write-ghc-environment-files=always
           fi
-        env:
-          HCFLAGS: ${{ matrix.projectFlags }}
       - name: tests
         run: |
-          if [[ $HCFLAGS == -fvty* ]] || [[ $HCFLAGS == -fcurses* ]] ; then
+          if [[ $MY_HCFLAGS == -fvty* ]] || [[ $MY_HCFLAGS == -fcurses* ]] ; then
             $CABAL v2-test $ARG_COMPILER $ARG_TESTS $ARG_BENCH all --test-show-details=direct
           fi
-        env:
-          HCFLAGS: ${{ matrix.projectFlags }}
       - name: gameplay tests
         run: |
           make test-gha || (tail -n 2000 /tmp/teletypetest.log ; exit 77)
