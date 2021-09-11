@@ -1,7 +1,4 @@
 # stolen from https://github.com/haskell-CI/haskell-ci/blob/master/.github/workflows/haskell-ci.yml
-#
-#image: buildpack-deps:focal
-#
 
 name: Haskell CI
 
@@ -14,9 +11,9 @@ on:
 jobs:
   linux:
     name: Haskell-CI - Linux - ${{ matrix.compiler }}
-    runs-on: ubuntu-18.04
+    runs-on: ubuntu-latest
     container:
-      image: buildpack-deps:bionic
+      image: buildpack-deps:focal
     continue-on-error: ${{ matrix.allow-failure }}
     strategy:
       matrix:
@@ -309,8 +306,8 @@ jobs:
           make -f ${PKGDIR_haskell_ci}/Makefile copy-directory copy-binary
       - uses: actions/upload-artifact@v2
         with:
-            name: LambdaHack-on-Linux
-            path: LambdaHackTheGame/
+          name: LambdaHack-on-Linux
+          path: LambdaHackTheGame/
       - name: haddock
         run: |
           $CABAL v2-haddock $ARG_COMPILER --with-haddock $HADDOCK $ARG_TESTS $ARG_BENCH all
