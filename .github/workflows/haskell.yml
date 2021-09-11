@@ -308,7 +308,7 @@ jobs:
           make -f ${PKGDIR_haskell_ci}/Makefile copy-binary
       - uses: actions/upload-artifact@v2
         with:
-          name: LambdaHack-on-Linux
+          name: LambdaHack-on-Linux-${{ matrix.compiler }}
           path: LambdaHackTheGame/
       - name: haddock
         run: |
