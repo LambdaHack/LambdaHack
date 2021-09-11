@@ -160,6 +160,7 @@ jobs:
           if [ "${{ matrix.setup-method }}" = ghcup ]; then
             HC=$HOME/.ghcup/bin/$HCKIND-$HCVER
             cp $HC $HOME/.ghcup/bin/$HCKIND
+            cp $HOME/.ghcup/bin/$HCKIND-pkg-$HCVER $HOME/.ghcup/bin/$HCKIND-pkg
             echo "HC=$HC" >> "$GITHUB_ENV"
             echo "HCPKG=$HOME/.ghcup/bin/$HCKIND-pkg-$HCVER" >> "$GITHUB_ENV"
             echo "HADDOCK=$HOME/.ghcup/bin/haddock-$HCVER" >> "$GITHUB_ENV"
@@ -295,8 +296,6 @@ jobs:
           fi
       - name: gameplay tests
         run: |
-          which cabal
-          which ghc
           make test-gha || (tail -n 2000 /tmp/teletypetest.log ; exit 77)
       - name: hlint
         run: |
