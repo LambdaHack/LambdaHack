@@ -79,7 +79,7 @@ scratchOnWall = ItemKind
   , idamage  = 0
   , iaspects = [SetFlag Durable]
   , ieffects = [ VerbMsg "start making sense of the scratches" "."
-               , Detect DetectHidden 3 ]
+               , Detect DetectHidden 4 ]
   , idesc    = "A seemingly random series of scratches, carved deep into the wall."
   , ikit     = []
   }
