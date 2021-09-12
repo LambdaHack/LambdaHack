@@ -833,6 +833,14 @@ manyItemsAidVerbMU msgClass aid verb sortedAssocs ekf = do
                          , MU.WWandW $ map object sortedAssocs]
   msgAdd msgClass msg
 
+data Threat =
+    ThreatNone
+  | ThreatUnarmed
+  | ThreatArmed
+  | ThreatAnotherUnarmed
+  | ThreatAnotherArmed
+  deriving Eq
+
 createActorUI :: MonadClientUI m => Bool -> ActorId -> Actor -> m ()
 createActorUI born aid body = do
   CCUI{coscreen=ScreenContent{rwidth}} <- getsSession sccui
@@ -923,7 +931,7 @@ createActorUI born aid body = do
        else do
          stopPlayBack
          let verb = if born then "appear suddenly" else "be spotted"
-         firstEnemy <-
+         threat <-
            if isFoe (bfid body) fact side then do
              -- Aim even if nobody can shoot at the enemy.
              -- Let's home in on him and then we can aim or melee.
@@ -939,20 +947,33 @@ createActorUI born aid body = do
                            , sitemSel = Nothing } -- reset flinging totally
              foes <- getsState $ foeRegularList side (blid body)
              itemsSize <- getsState $ guardItemSize body
-             if length foes > 1
-             then do
-               when (itemsSize > 0) $ do
-                 msgAdd MsgSpottedThreat "Another armed threat!"
-               return False
-             else do
-               if itemsSize > 0
-               then msgAdd MsgSpottedThreat "Armed intrusion ahead!"
-               else msgAdd MsgSpottedThreat "You are not alone!"
-               return True
-           else return False  -- member of neutral faction
+             if length foes <= 1 then
+               if itemsSize == 0 then do
+                 msgAdd MsgSpottedThreat "You are not alone!"
+                 return ThreatUnarmed
+               else do
+                 msgAdd MsgSpottedThreat "Armed intrusion ahead!"
+                 return ThreatArmed
+             else
+               if itemsSize == 0 then
+                 return ThreatAnotherUnarmed
+               else do
+                 msgAdd MsgSpottedThreat "Another threat, armed."
+                 return ThreatAnotherArmed
+           else return ThreatNone  -- member of neutral faction
          aidVerbMU MsgSpottedActor aid verb
-         when firstEnemy $
-           msgAdd MsgTutorialHint "Enemies can be dealt with using melee (by bumping), ranged combat, terrain effects, stealth (not being seen) or hasty retreat (particularly if they are asleep)."
+         friendAssocs <- getsState $ friendRegularAssocs side (blid body)
+         case threat of
+           ThreatNone -> return ()  -- too rare to care ATM
+           ThreatUnarmed ->
+             msgAdd MsgTutorialHint "Enemies are normally dealt with using melee (by bumping when adjacent) or ranged combat (by 'f'linging items at them)."  -- assuming newbies don't remap their keys
+           ThreatArmed ->
+             msgAdd MsgTutorialHint "Enemies can be dealt with not only via combat, but also with clever use of terrain effects, stealth (not emitting nor reflecting light) or hasty retreat (particularly when foes are asleep or drowsy)."
+           _ | length friendAssocs <= 1 -> return ()  -- one member on level
+           ThreatAnotherUnarmed ->
+             msgAdd MsgTutorialHint "When dealing with groups of enemies, remember than you fight as a team. After a few moves, switch the controlled teammate (marked on the map with the yellow box) using the Tab key to another party member (marked with a green box). Avoid meleeing alone."
+           ThreatAnotherArmed ->
+             msgAdd MsgTutorialHint "When dealing with groups of armed enemies, remember than you fight as a team. After a few moves, switch the controlled teammate (marked on the map with the yellow box) using the Tab key to another party member (marked with a green box). Retreat, if necessary to form a front line. Soften the foes with missiles, especially exploding ones."
          animate (blid body) $ actorX (bpos body)
 
 destroyActorUI :: MonadClientUI m => Bool -> ActorId -> Actor -> m ()
