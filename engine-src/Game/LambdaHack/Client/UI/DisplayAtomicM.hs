@@ -837,9 +837,6 @@ createActorUI :: MonadClientUI m => Bool -> ActorId -> Actor -> m ()
 createActorUI born aid body = do
   CCUI{coscreen=ScreenContent{rwidth}} <- getsSession sccui
   side <- getsClient sside
-  when (bfid body == side && not (bproj body)) $ do
-    let upd = ES.insert aid
-    modifySession $ \sess -> sess {sselected = upd $ sselected sess}
   factionD <- getsState sfactionD
   let fact = factionD EM.! bfid body
   localTime <- getsState $ getLocalTime $ blid body
@@ -893,11 +890,6 @@ createActorUI born aid body = do
         bUI = ActorUI{..}
     modifySession $ \sess ->
       sess {sactorUI = EM.insert aid bUI actorUI}
-  let verb = if born
-             then if bfid body == side
-                  then "join you"
-                  else "appear suddenly"
-             else "be spotted"
   mapM_ (\(iid, store) -> do
            let c = if not (bproj body) && iid == btrunk body
                    then CTrunk (bfid body) (blid body) (bpos body)
@@ -906,30 +898,48 @@ createActorUI born aid body = do
            recordItemLid iid c)
         ((btrunk body, CEqp)  -- store will be overwritten, unless projectile
          : filter ((/= btrunk body) . fst) (getCarriedIidCStore body))
-  -- Don't spam if the actor was already visible (but, e.g., on a tile that is
-  -- invisible this turn (in that case move is broken down to lose+spot)
-  -- or on a distant tile, via teleport while the observer teleported, too).
-  lastLost <- getsSession slastLost
-  firstEnemy <-
-    if bfid body /= side then do
-      stopPlayBack
-      if not (bproj body) && isFoe (bfid body) fact side then do
-        -- Aim even if nobody can shoot at the enemy. Let's home in on him
-        -- and then we can aim or melee. We set permit to False, because it's
-        -- technically very hard to check aimability here, because we are
-        -- in-between turns and, e.g., leader's move has not yet been taken
-        -- into account.
-        xhair <- getsSession sxhair
-        case xhair of
-          Just (TVector _) -> return ()  -- explicitly set; keep it
-          _ -> modifySession $ \sess ->
-                 sess { sxhair = Just $ TEnemy aid
-                      , sitemSel = Nothing } -- reset flinging totally
-        foes <- getsState $ foeRegularList side (blid body)
-        itemsSize <- getsState $ guardItemSize body
-        if ES.member aid lastLost
-        then return False
-        else if length foes > 1
+  if | bproj body -> do
+       when (bfid body /= side) $
+         stopPlayBack
+       pushFrame False  -- make sure first (seen (again)) position displayed
+     | bfid body == side -> do
+       let upd = ES.insert aid
+       modifySession $ \sess -> sess {sselected = upd $ sselected sess}
+       unless (EM.null actorUI) $ do  -- don't speak about self in 3rd person
+         let verb = if born then "join you" else "be spotted"
+         aidVerbMU MsgSpottedActor aid verb
+         when born $
+           msgAdd MsgTutorialHint "You survive this mission, or die trying, as a team. After a few moves, feel free to switch the controlled teammate (marked on the map with the yellow box) using the Tab key to another party member (marked with a green box)."  -- assuming newbies don't remap their keys
+         animate (blid body) $ actorX (bpos body)
+     | otherwise -> do
+       -- Don't spam if the actor was already visible
+       -- (but, e.g., on a tile that is invisible this turn
+       -- (in that case move is broken down to lose+spot)
+       -- or on a distant tile, via teleport while the observer
+       -- teleported, too).
+       lastLost <- getsSession slastLost
+       if ES.member aid lastLost
+       then markDisplayNeeded (blid body)
+       else do
+         stopPlayBack
+         let verb = if born then "appear suddenly" else "be spotted"
+         firstEnemy <-
+           if isFoe (bfid body) fact side then do
+             -- Aim even if nobody can shoot at the enemy.
+             -- Let's home in on him and then we can aim or melee.
+             -- We set permit to False, because it's technically
+             -- very hard to check aimability here, because we are
+             -- in-between turns and, e.g., leader's move has not yet
+             -- been taken into account.
+             xhair <- getsSession sxhair
+             case xhair of
+               Just (TVector _) -> return ()  -- explicitly set; keep it
+               _ -> modifySession $ \sess ->
+                      sess { sxhair = Just $ TEnemy aid
+                           , sitemSel = Nothing } -- reset flinging totally
+             foes <- getsState $ foeRegularList side (blid body)
+             itemsSize <- getsState $ guardItemSize body
+             if length foes > 1
              then do
                when (itemsSize > 0) $ do
                  msgAdd MsgSpottedThreat "Another armed threat!"
@@ -939,23 +949,11 @@ createActorUI born aid body = do
                then msgAdd MsgSpottedThreat "Armed intrusion ahead!"
                else msgAdd MsgSpottedThreat "You are not alone!"
                return True
-      else return False
-    else return False
-  if | EM.null actorUI && bfid body == side ->
-       return ()  -- don't speak about yourself in 3rd person
-     | born && bproj body ->
-         pushFrame False  -- make sure first position displayed
-     | ES.member aid lastLost || bproj body -> markDisplayNeeded (blid body)
-     | otherwise -> do
-       aidVerbMU MsgSpottedActor aid verb
-       if bfid body == side
-       then if born
-            then msgAdd MsgTutorialHint "You survive this mission, or die trying, as a team. After a few moves, feel free to switch the controlled teammate (marked on the map with the yellow box) using the Tab key to another party member (marked with a green box)."  -- assuming newbies don't remap their keys
-            else return ()
-       else if firstEnemy
-            then msgAdd MsgTutorialHint "Enemies can be dealt with using melee (by bumping), ranged combat, terrain effects, stealth (not being seen) or hasty retreat (particularly if they are asleep)."
-            else return ()
-       animate (blid body) $ actorX (bpos body)
+           else return False  -- member of neutral faction
+         aidVerbMU MsgSpottedActor aid verb
+         when firstEnemy $
+           msgAdd MsgTutorialHint "Enemies can be dealt with using melee (by bumping), ranged combat, terrain effects, stealth (not being seen) or hasty retreat (particularly if they are asleep)."
+         animate (blid body) $ actorX (bpos body)
 
 destroyActorUI :: MonadClientUI m => Bool -> ActorId -> Actor -> m ()
 destroyActorUI destroy aid b = do
@@ -976,7 +974,7 @@ destroyActorUI destroy aid b = do
         Just (TNonEnemy a) | a == aid -> Just dummyTarget
         _ -> tgt
   modifySession $ \sess -> sess {sxhair = affect $ sxhair sess}
-  unless (bproj b) $
+  unless (bproj b || destroy) $
     modifySession $ \sess -> sess {slastLost = ES.insert aid $ slastLost sess}
   side <- getsClient sside
   fact <- getsState $ (EM.! side) . sfactionD
