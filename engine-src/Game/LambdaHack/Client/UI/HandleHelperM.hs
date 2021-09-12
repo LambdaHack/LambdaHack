@@ -378,6 +378,9 @@ describeMode addTitle gameModeId = do
   scoreDict <- getsState shigh
   scampings <- getsClient scampings
   srestarts <- getsClient srestarts
+  side <- getsClient sside
+  total <- getsState $ snd . calculateTotal side
+  dungeonTotal <- getsState sgold
   let gameMode = okind comode gameModeId
       duplicateEOL '\n' = "\n\n"
       duplicateEOL c = T.singleton c
@@ -396,8 +399,13 @@ describeMode addTitle gameModeId = do
         if T.null desc
         then Nothing
         else Just [(monoFont, header), (propFont, textToAS desc)]
+      survivingHow = if | total == 0 -> "(barely)"
+                        | total < dungeonTotal `div` 2 -> "(so far)"
+                        | otherwise -> ""
       title = if addTitle
-              then "\nYou are surviving the '"
+              then "\nYou are"
+                   <+> survivingHow
+                   <+> "surviving the '"
                    <> MK.mname gameMode
                    <> "' adventure.\n"
               else ""
