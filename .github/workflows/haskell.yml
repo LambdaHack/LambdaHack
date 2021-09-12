@@ -296,7 +296,11 @@ jobs:
           make -f ${PKGDIR_haskell_ci}/Makefile test-gha || (tail -n 2000 /tmp/teletypetest.log ; exit 77)
       - name: hlint
         run: |
-          if [ $((HCNUMVER >= 90000 && HCNUMVER < 90002)) -ne 0 ] ; then (cd ${PKGDIR_haskell_ci} && hlint -h ${GITHUB_WORKSPACE}/source/.hlint.yaml .) ; fi
+          if [ $((HCNUMVER >= 90000 && HCNUMVER < 90002)) -ne 0 ] ; then
+            if ! case $MY_HCFLAGS in -fvty* ) false;; esac; then
+              (cd ${PKGDIR_haskell_ci} && hlint -h ${GITHUB_WORKSPACE}/source/.hlint.yaml .)
+            fi
+          fi
       - name: cabal check
         run: |
           cd ${PKGDIR_haskell_ci} || false
