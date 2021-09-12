@@ -1921,6 +1921,8 @@ effectDetect execSfx d radius target container = do
   COps{coitem, coTileSpeedup} <- getsState scops
   b <- getsState $ getActorBody target
   lvl <- getLevel $ blid b
+  sClient <- getsServer $ (EM.! (bfid b)) . sclientStates
+  let lvlClient = (EM.! blid b) . sdungeon $ sClient
   s <- getState
   getKind <- getsState $ flip getIidKindServer
   factionD <- getsState sfactionD
@@ -1969,7 +1971,13 @@ effectDetect execSfx d radius target container = do
           let (ls1, ls2) = lstair lvl
           in ((`elem` ls1 ++ ls2 ++ lescape lvl), const $ return False)
         IK.DetectHidden ->
-          let predicateH p = Tile.isHideAs coTileSpeedup $ lvl `at` p
+          let predicateH p = let tClient = lvlClient `at` p
+                                 tServer = lvl `at` p
+                             in Tile.isHideAs coTileSpeedup tServer
+                                && tClient /= tServer
+                -- the actor searches only tiles he doesn't know already,
+                -- preventing misleading messages (and giving less information
+                -- to eavesdropping parties)
               revealEmbed p = do
                 embeds <- getsState $ getEmbedBag (blid b) p
                 unless (EM.null embeds) $
@@ -1987,7 +1995,7 @@ effectDetect execSfx d radius target container = do
                         Just entry ->
                           execUpdAtomic $ UpdSpotEntry (blid b) [(p, entry)]
                 mapM_ f l
-                return $! not $ null l  -- KISS, even if client knows all
+                return $! not $ null l
           in (predicateH, actionH)
         IK.DetectEmbed -> ((`EM.member` lembed lvl), const $ return False)
         IK.DetectStash -> (stashPredicate, const $ return False)

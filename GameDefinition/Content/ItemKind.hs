@@ -178,7 +178,7 @@ spike2 = spike
   , iflavour = zipPlain [Cyan]
   , iverbHit = "penetrate"
   , iweight  = 200
-  , idamage = 4 `d` 1
+  , idamage  = 4 `d` 1
   , iaspects = [ AddSkill SkHurtMelee $ (-10 + 1 `d` 2 + 1 `dL` 3) * 5
                , SetFlag MinorEffects
                , Odds (10 * 1 `dL` 10) [] [toVelocity 70] ]
