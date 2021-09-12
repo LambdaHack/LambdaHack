@@ -50,7 +50,7 @@ HeroName_9 = ("Oleg Cracker", "he")
 ; and/or to avoid moving due to accidental key presses.
 movementViKeys_hjklyubn = True
 movementLeftHandKeys_axwdqezc = True
-; recommended: "binary" or "dejavuBold" or, if not a Debian package, "ubuntu"
+; recommended: "binary" or "dejavuBold"
 chosenFontset = "dejavuBold"
 ; 1.0 means don't scale; 1.5, 2.0, 3.0 give good results, <0.7 very bad
 ; for scales < 1 try fontsets with bolder auxiliary fonts and/or HintingLight
@@ -76,9 +76,6 @@ binaryMono = FontMonospace "BinaryCodeProLH-Bold.ttf.woff" 14 HintingHeavy
 dejavuRegular = FontProportional "DejaVuLGCSans.ttf.woff" 15 HintingHeavy
 dejavuBold = FontProportional "DejaVuLGCSans-Bold.ttf.woff" 13 HintingHeavy
 dejavuMono = FontMonospace "Hack-Bold.ttf.woff" 13 HintingHeavy
-ubuntuRegular = FontProportional "ubuntu-v14-latin-ext_latin-regular.ttf.woff" 16 HintingLight
-ubuntuBold = FontProportional "ubuntu-v14-latin-ext_latin-500.ttf.woff" 16 HintingLight
-ubuntuMono = FontMonospace "ubuntu-mono-v9-latin-ext_latin-700.ttf.woff" 16 HintingLight
 ; the map fonts (the format is: kind name size hinting cellSizeAdd):
 ; with allFontsScale < 1, try HintingLight for fuzzy, but less distorted shapes:
 16x16xwScalable = FontMapScalable "16x16xw.woff" 16 HintingHeavy 0
@@ -92,22 +89,13 @@ ubuntuMono = FontMonospace "ubuntu-mono-v9-latin-ext_latin-700.ttf.woff" 16 Hint
 binary = FontSet {fontMapScalable = "16x16xwScalable", fontMapBitmap = "16x16xwBitmap", fontPropRegular = "binaryRegular", fontPropBold = "binaryBold", fontMono = "binaryMono"}
 dejavuBold = FontSet {fontMapScalable = "16x16xwScalable", fontMapBitmap = "16x16xwBitmap", fontPropRegular = "dejavuBold", fontPropBold = "dejavuBold", fontMono = "dejavuMono"}
 
-; Warning: the Ubuntu Font Family fonts are considered non-free by Debian
-; and so we don't include them in Debian and some other GNU/Linux packages.
-; If you use such a package, feel free to download the fonts from our github
-; repository or specify absolute paths to their locations in non-free Debian
-; package fonts-ubuntu.
-ubuntu = FontSet {fontMapScalable = "16x16xwScalable", fontMapBitmap = "16x16xwBitmap", fontPropRegular = "ubuntuRegular", fontPropBold = "ubuntuBold", fontMono = "ubuntuMono"}
-
 ; decent proportional:
 binaryBold = FontSet {fontMapScalable = "16x16xwScalable", fontMapBitmap = "16x16xwBitmap", fontPropRegular = "binaryBold", fontPropBold = "binaryBold", fontMono = "binaryMono"}
 dejavu = FontSet {fontMapScalable = "16x16xwScalable", fontMapBitmap = "16x16xwBitmap", fontPropRegular = "dejavuRegular", fontPropBold = "dejavuBold", fontMono = "dejavuMono"}
-ubuntuThin = FontSet {fontMapScalable = "16x16xwScalable", fontMapBitmap = "16x16xwBitmap", fontPropRegular = "ubuntuRegular", fontPropBold = "ubuntuRegular", fontMono = "ubuntuMono"}
 
 ; monospace, for people that don't like proportional or many fonts:
 binaryMono = FontSet {fontMapScalable = "16x16xwScalable", fontMapBitmap = "16x16xwBitmap", fontPropRegular = "binaryMono", fontPropBold = "binaryMono", fontMono = "binaryMono"}
 dejavuMono = FontSet {fontMapScalable = "16x16xwScalable", fontMapBitmap = "16x16xwBitmap", fontPropRegular = "dejavuMono", fontPropBold = "dejavuMono", fontMono = "dejavuMono"}
-ubuntuMono = FontSet {fontMapScalable = "16x16xwScalable", fontMapBitmap = "16x16xwBitmap", fontPropRegular = "ubuntuMono", fontPropBold = "ubuntuMono", fontMono = "ubuntuMono"}
 
 ; square:
 16x16xw = FontSet {fontMapScalable = "16x16xwScalable", fontMapBitmap = "16x16xwBitmap", fontPropRegular = "", fontPropBold = "", fontMono = ""}

@@ -57,10 +57,7 @@ extra-source-files: GameDefinition/config.ui.default,
                     GameDefinition/fonts/BinaryCodeProLH-Bold.ttf.woff,
                     GameDefinition/fonts/DejaVuLGCSans.ttf.woff,
                     GameDefinition/fonts/DejaVuLGCSans-Bold.ttf.woff,
-                    GameDefinition/fonts/Hack-Bold.ttf.woff,
-                    GameDefinition/fonts/ubuntu-v14-latin-ext_latin-regular.ttf.woff,
-                    GameDefinition/fonts/ubuntu-v14-latin-ext_latin-500.ttf.woff,
-                    GameDefinition/fonts/ubuntu-mono-v9-latin-ext_latin-700.ttf.woff
+                    GameDefinition/fonts/Hack-Bold.ttf.woff
 extra-doc-files:    GameDefinition/InGameHelp.txt,
                     README.md,
                     CHANGELOG.md,

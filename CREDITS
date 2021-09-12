@@ -82,20 +82,21 @@ Names _Bitstream_ and _Vera_). Bitstream Vera License.
 
 
 
-Fonts ubuntu-v14-latin-ext_latin-regular.ttf.woff,
+The Ubuntu Font Family fonts are currently removed, because they are
+a little too tall (some glyphs on consecutive lines are touching)
+and also considered non-free by Debian and so we can't include them
+in Debian and some other GNU/Linux distributions anyway.
+If there is sufficient interest, they may be brought back.
+
+They were fonts ubuntu-v14-latin-ext_latin-regular.ttf.woff,
 ubuntu-v14-latin-ext_latin-500.ttf.woff
 and ubuntu-mono-v9-latin-ext_latin-700.ttf.woff
-are generated via google-webfonts-helper.herokuapp.com
+that were generated via google-webfonts-helper.herokuapp.com
 from 'Ubuntu Font Family' fonts with the following copyright notice:
 Copyright 2011 Canonical Ltd. Licensed under the Ubuntu Font Licence 1.0
 
-The files are compressed with pyftsubset to save some space and make
-sure they are created from TTF, not OTF fonts. Unfortunately, being TTF
-fonts and having broken hinting in the mono variant, they require
-forcing TTF.Light hinting in the SDL frontend. If ever OTF fonts
+The files were compressed with pyftsubset to save some space and make
+sure they are created from TTF, not coverted OTF fonts. Unfortunately,
+being TTF fonts and having broken hinting in the mono variant, they
+require forcing TTF.Light hinting in the SDL frontend. If ever OTF fonts
 emerge, they should be used instead (similarly compressed).
-
-Warning: the Ubuntu Font Family fonts are considered non-free by Debian
-and so we don't include them in Debian and some other GNU/Linux packages.
-If you use such a package, feel free to download the fonts from the web
-or create links to their locations in non-free Debian package fonts-ubuntu.
