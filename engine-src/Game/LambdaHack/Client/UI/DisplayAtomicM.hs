@@ -907,7 +907,7 @@ createActorUI born aid body = do
         ((btrunk body, CEqp)  -- store will be overwritten, unless projectile
          : filter ((/= btrunk body) . fst) (getCarriedIidCStore body))
   if | bproj body -> do
-       when (bfid body /= side) $
+       when (bfid body /= side)
          stopPlayBack
        pushFrame False  -- make sure first (seen (again)) position displayed
      | bfid body == side -> do

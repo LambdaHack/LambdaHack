@@ -1921,7 +1921,7 @@ effectDetect execSfx d radius target container = do
   COps{coitem, coTileSpeedup} <- getsState scops
   b <- getsState $ getActorBody target
   lvl <- getLevel $ blid b
-  sClient <- getsServer $ (EM.! (bfid b)) . sclientStates
+  sClient <- getsServer $ (EM.! bfid b) . sclientStates
   let lvlClient = (EM.! blid b) . sdungeon $ sClient
   s <- getState
   getKind <- getsState $ flip getIidKindServer
