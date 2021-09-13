@@ -1624,6 +1624,10 @@ displayRespSfxAtomicUI sfx = case sfx of
           -- about armor before the player has the most basic one.
           -- for melee. Most of the time the first hit in the game is,
           -- in fact, from melee, so that's a sensible default.
+          --
+          -- Note that the @idamage@ is called piercing (or edged) damage,
+          -- even though the distinction from impact damage is fleshed
+          -- out only in Allure.
           when (isOurCharacter
                 && Ability.getSk Ability.SkArmorMelee actorMaxSk > 0) $
             msgAdd MsgTutorialHint "You took damage of a different kind than the normal piercing hit, which means your armor couldn't block any part of it. Normally, your HP (hit points, health) do not regenerate, so losing them is a big deal. Apply healing concoctions or take a long sleep to replenish your HP (but in this hectic environment not even uninterrupted resting that leads to sleep is easy)."
@@ -2382,6 +2386,8 @@ strike catch source target iid = assert (source /= target) $ do
                [MU.SubjectVerbSg spart verb, tpart, adverb]
                ++ if bproj sb then [] else weaponNameWith
          msgAdd msgClassMelee msg  -- too common for color
+         when (bfid sb == side) $
+           msgAdd MsgTutorialHint "Some hits don't cause any piercing, impact, burning nor any other direct damage. However, they can have other effects, bad, good or both."
          animate (blid tb) $ subtleHit ps
        | bproj sb -> do  -- more terse than melee, because sometimes very spammy
          let msgRangedPowerful | targetIsFoe = MsgRangedMightyWe
