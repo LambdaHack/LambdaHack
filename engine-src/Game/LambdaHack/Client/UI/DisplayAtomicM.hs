@@ -1291,7 +1291,7 @@ quitFactionUI fid toSt manalytics = do
         pushFrame False  -- don't leave frozen prompts on the browser screen
     _ ->
       when (isJust startingPart && (stOutcome <$> toSt) == Just Killed) $ do
-        msgAdd MsgTutorialHint "When a whole faction gets eliminated, no new members of the party will ever appear and its stashed belongings may wait somewhere, unclaimed and undefended. While some adventures may require eliminating a faction (as seen in the adventure description screen in the help menu), for others it's only an optional task. In the latter case, finding an exit may be necessary instead. It's enough if one character finds and triggers the exit. Others automatically follow, duly hauling all party belongings."
+        msgAdd MsgTutorialHint "When a whole faction gets eliminated, no new members of the party will ever appear and its stashed belongings may await far off, unclaimed and undefended. While some adventures require eliminating a faction (as seen in the adventure description screen in the help menu), for others it's an optional task, if possible at all. Instead, finding an exit may be necessary to win. It's enough if one character finds and triggers the exit. Others automatically follow, duly hauling all party belongings."
         -- Needed not to overlook the competitor dying in raid scenario.
         displayMore ColorFull ""
 
@@ -2389,7 +2389,7 @@ strike catch source target iid = assert (source /= target) $ do
                ++ if bproj sb then [] else weaponNameWith
          msgAdd msgClassMelee msg  -- too common for color
          when (bfid sb == side || bfid tb == side) $
-           msgAdd MsgTutorialHint "Some hits don't cause any piercing, impact, burning nor any other direct damage. However, they can have other effects, bad, good or both."
+           msgAdd MsgTutorialHint "Some hits don't cause piercing, impact, burning nor any other direct damage. However, they can have other effects, bad, good or both."
          animate (blid tb) $ subtleHit ps
        | bproj sb -> do  -- more terse than melee, because sometimes very spammy
          let msgRangedPowerful | targetIsFoe = MsgRangedMightyWe
