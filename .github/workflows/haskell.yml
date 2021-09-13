@@ -297,9 +297,9 @@ jobs:
       - name: hlint
         run: |
           if [ $((HCNUMVER >= 90000 && HCNUMVER < 90002)) -ne 0 ] ; then
-            if ! case $MY_HCFLAGS in -fvty* ) false;; esac; then
+            case $MY_HCFLAGS in -fvty*)
               (cd ${PKGDIR_haskell_ci} && hlint -h ${GITHUB_WORKSPACE}/source/.hlint.yaml .)
-            fi
+            esac
           fi
       - name: cabal check
         run: |
