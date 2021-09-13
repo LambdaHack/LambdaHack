@@ -2388,7 +2388,7 @@ strike catch source target iid = assert (source /= target) $ do
                [MU.SubjectVerbSg spart verb, tpart, adverb]
                ++ if bproj sb then [] else weaponNameWith
          msgAdd msgClassMelee msg  -- too common for color
-         when (bfid sb == side) $
+         when (bfid sb == side || bfid tb == side) $
            msgAdd MsgTutorialHint "Some hits don't cause any piercing, impact, burning nor any other direct damage. However, they can have other effects, bad, good or both."
          animate (blid tb) $ subtleHit ps
        | bproj sb -> do  -- more terse than melee, because sometimes very spammy
