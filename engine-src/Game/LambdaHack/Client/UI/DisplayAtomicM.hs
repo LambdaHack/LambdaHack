@@ -1610,6 +1610,7 @@ displayRespSfxAtomicUI sfx = case sfx of
     side <- getsClient sside
     mleader <- getsClient sleader
     itemD <- getsState sitemD
+    actorMaxSk <- getsState $ getActorMaxSkills aid
     let fid = bfid b
         isOurCharacter = fid == side && not (bproj b)
         isAlive = bhp b > 0
@@ -1618,7 +1619,14 @@ displayRespSfxAtomicUI sfx = case sfx of
         -- The message classes are close enough. It's melee or similar.
         feelLookHPBad bigAdj projAdj = do
           feelLook MsgBadMiscEvent MsgGoodMiscEvent bigAdj projAdj
-          when isOurCharacter $ msgAdd MsgTutorialHint "You took damage of a different kind than the normal piercing hit, which means you armor didn't block any part of it. Normally, your HP (hit points, health) do not regenerate, so losing them is a big deal. Apply healing concoctions or take a long sleep to replenish your HP (but in this hectic environment not even uninterrupted resting that leads to sleep is easy)."
+          -- We can't know here if the hit was in melee, ranged or
+          -- even triggering a harmful item. However, let's not talk
+          -- about armor before the player has the most basic one.
+          -- for melee. Most of the time the first hit in the game is,
+          -- in fact, from melee, so that's a sensible default.
+          when (isOurCharacter
+                && Ability.getSk Ability.SkArmorMelee actorMaxSk > 0) $
+            msgAdd MsgTutorialHint "You took damage of a different kind than the normal piercing hit, which means your armor couldn't block any part of it. Normally, your HP (hit points, health) do not regenerate, so losing them is a big deal. Apply healing concoctions or take a long sleep to replenish your HP (but in this hectic environment not even uninterrupted resting that leads to sleep is easy)."
         feelLookHPGood = feelLook MsgGoodMiscEvent MsgBadMiscEvent
         feelLookCalm bigAdj projAdj = when isAlive $
           feelLook MsgEffectMinor MsgEffectMinor bigAdj projAdj
