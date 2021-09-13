@@ -2194,6 +2194,7 @@ strike catch source target iid = assert (source /= target) $ do
       [] -> return Nothing
       _ -> Just
            <$> rndToActionUI (frequency $ toFreq "msg armor" wornArmor)
+    actorMaxSkills <- getsState sactorMaxSkills
     let (blockWithWhat, blockWithWeapon) = case mblockArmor of
           Just (iidArmor, itemFullArmor) | iidArmor /= btrunk tb ->
             let (object1, object2) =
@@ -2327,6 +2328,10 @@ strike catch source target iid = assert (source /= target) $ do
           if bhp tb > 0
           then animate lid anim
           else animate lid $ twirlSplashShort ps Color.BrRed Color.Red
+        tutorialHintBenignFoe =
+          when (bfid sb == side
+                && not (actorCanMeleeToHarm actorMaxSkills target tb)) $
+            msgAdd MsgTutorialHint "This enemy can't harm you in melee. Left alone could it possibly be of some use?"
     -- The messages about parrying and immediately afterwards dying
     -- sound goofy, but there is no easy way to prevent that.
     -- And it's consistent.
@@ -2338,7 +2343,7 @@ strike catch source target iid = assert (source /= target) $ do
                      [MU.SubjectVerbSg spart "catch", tpart, "skillfully"]
          msgAdd MsgSpecialEvent msg
          when (bfid sb == side) $
-           msgAdd MsgTutorialHint "You managed to catch a projectile, thanks to being braced and hitting it exactly when it was at arm's reach. The obtained item has been put into the shared stash of the party."
+           msgAdd MsgTutorialHint "You managed to catch a projectile, thanks to being braced and hitting it exactly when it was at arm's reach. The obtained item has been put into the shared stash of your party."
          animate (blid tb) $ blockHit ps Color.BrGreen Color.Green
        | not (hasCharge localTime kitWeapon) -> do
          -- Can easily happen with a thrown discharged item.
@@ -2396,6 +2401,7 @@ strike catch source target iid = assert (source /= target) $ do
                  , msgClassRanged )
          msgAdd msgRanged $ makePhrase [MU.Capitalize $ MU.Phrase attackParts]
                             <> msgArmor <> "."
+         tutorialHintBenignFoe
          animateAlive (blid tb) basicAnim
        | bproj tb -> do  -- much less emotion and the victim not active.
          let attackParts =
@@ -2439,8 +2445,5 @@ strike catch source target iid = assert (source /= target) $ do
                         else msgClassInfluence
          msgAdd msgClass $ makePhrase [MU.Capitalize $ MU.Phrase attackParts]
                            <> msgArmor <> tmpInfluenceBlurb <> "."
-         actorMaxSkills <- getsState sactorMaxSkills
-         when (bfid sb == side
-               && not (actorCanMeleeToHarm actorMaxSkills target tb)) $
-           msgAdd MsgTutorialHint "This enemy can't harm you. Left alone could it possibly be of some use?"
+         tutorialHintBenignFoe
          animateAlive (blid tb) basicAnim
