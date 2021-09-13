@@ -631,7 +631,7 @@ displayRespUpdAtomicUI cmd = case cmd of
     msgAdd msgClass msg
     case hearMsg of
       HearUpd UpdDestroyActor{} ->
-        msgAdd MsgTutorialHint "Events out of your sight radius (as listed in the '#' skill menu) can sometimes be heard, depending on your hearing radius. Some, such as death shrieks, can always be heard regardless of skill and distance, including when they come from a different floor."
+        msgAdd MsgTutorialHint "Events out of your sight radius (as listed in the '#' skill menu) can sometimes be heard, depending on your hearing radius skill. Some, such as death shrieks, can always be heard regardless of skill and distance, including when they come from a different floor."
       HearTaunt{} ->
         msgAdd MsgTutorialHint "Enemies you can't see are sometimes heard yelling and emitting other noises. Whether you can hear them, depends on their distance and your hearing radius, as listed in the '#' skill menu."
       _ -> return ()
@@ -958,7 +958,7 @@ createActorUI born aid body = do
                if itemsSize == 0 then
                  return ThreatAnotherUnarmed
                else do
-                 msgAdd MsgSpottedThreat "Another threat, armed."
+                 msgAdd MsgSpottedThreat "Another threat, armed!"
                  return ThreatAnotherArmed
            else return ThreatNone  -- member of neutral faction
          aidVerbMU MsgSpottedActor aid verb
@@ -973,7 +973,7 @@ createActorUI born aid body = do
            ThreatAnotherUnarmed ->
              msgAdd MsgTutorialHint "When dealing with groups of enemies, remember than you fight as a team. After a few moves, switch the controlled teammate (marked on the map with the yellow box) using the Tab key to another party member (marked with a green box). Avoid meleeing alone."
            ThreatAnotherArmed ->
-             msgAdd MsgTutorialHint "When dealing with groups of armed enemies, remember than you fight as a team. After a few moves, switch the controlled teammate (marked on the map with the yellow box) using the Tab key to another party member (marked with a green box). Retreat, if necessary to form a front line. Soften the foes with missiles, especially exploding ones."
+             msgAdd MsgTutorialHint "When dealing with groups of armed enemies, remember than you fight as a team. After a few moves, switch the controlled teammate (marked on the map with the yellow box) using the Tab key to another party member (marked with a green box). Retreat, if necessary to form a front line. Soften the foes with missiles, especially of exploding kind."
          animate (blid body) $ actorX (bpos body)
 
 destroyActorUI :: MonadClientUI m => Bool -> ActorId -> Actor -> m ()
@@ -1759,7 +1759,7 @@ displayRespSfxAtomicUI sfx = case sfx of
         -- Actor may be sent away before noticing the item that did it.
         let msuffix = if iid `EM.notMember` itemD
                       then Nothing
-                      else Just "propelled by"
+                      else Just "by the power of"
         mitemAidVerbMU MsgEffectMedium aid "teleport" iid msuffix
       IK.CreateItem{} -> return ()
       IK.DestroyItem{} -> return ()
