@@ -80,7 +80,7 @@ spawnMonster = do
        -- to compensate for some monsters generated asleep.
        k <- rndToAction $ randomR (1, million)
        when (k <= 3 * perMillion) $ do
-         let numToSpawn | 4 * k <= perMillion = 3
+         let numToSpawn | 6 * k <= perMillion = 3
                         | 2 * k <= perMillion = 2
                         | otherwise = 1
              alt Nothing = Just 1
