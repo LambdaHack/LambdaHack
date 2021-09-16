@@ -878,13 +878,12 @@ effectSummon :: MonadServerAtomic m
              -> m UseResult
 effectSummon grp nDm iid source target effActivation = do
   -- Obvious effect, nothing announced.
-  cops@COps{coTileSpeedup} <- getsState scops
   sb <- getsState $ getActorBody source
   tb <- getsState $ getActorBody target
   sMaxSk <- getsState $ getActorMaxSkills source
   tMaxSk <- getsState $ getActorMaxSkills target
   totalDepth <- getsState stotalDepth
-  lvl@Level{ldepth, lbig} <- getLevel (blid tb)
+  Level{ldepth, lbig} <- getLevel (blid tb)
   nFriends <- getsState $ length . friendRegularAssocs (bfid sb) (blid sb)
   discoAspect <- getsState sdiscoAspect
   power0 <- rndToAction $ castDice ldepth totalDepth nDm
@@ -927,29 +926,16 @@ effectSummon grp nDm iid source target effActivation = do
        return UseId
      | otherwise -> do
        unless (bproj sb) $ updateCalm source deltaCalm
-       let validTile t = not $ Tile.isNoActor coTileSpeedup t
-           ps = nearbyFreePoints cops lvl validTile (bpos tb)
        localTime <- getsState $ getLocalTime (blid tb)
        -- Make sure summoned actors start acting after the victim.
        let actorTurn = ticksPerMeter $ gearSpeed tMaxSk
            targetTime = timeShift localTime actorTurn
            afterTime = timeShift targetTime $ Delta timeClip
-       when (length (take power ps) < power) $
-          debugPossiblyPrint $
-            "Server: effectSummon: failed to find enough free positions at"
-            <+> tshow (blid tb, bpos tb)
-       bs <- forM (take power ps) $ \p -> do
-         -- Mark as summoned to prevent immediate chain summoning.
-         -- Summon from current depth, not deeper due to many spawns already.
-         maidpos <- addAnyActor True 0 [(grp, 1)] (blid tb) afterTime (Just p)
-         case maidpos of
-           Nothing -> return False  -- suspect content; server debug elsewhere
-           Just (aid, _) -> do
-             b <- getsState $ getActorBody aid
-             mleader <- getsState $ gleader . (EM.! bfid b) . sfactionD
-             when (isNothing mleader) $ setFreshLeader (bfid b) aid
-             return True
-       if or bs then do
+       -- Mark as summoned to prevent immediate chain summoning.
+       -- Summon from current depth, not deeper due to many spawns already.
+       anySummoned <- addManyActors True 0 [(grp, 1)] (blid tb) afterTime
+                                    (Just $ bpos tb) power
+       if anySummoned then do
          execSfxAtomic $ SfxEffect (bfid sb) source iid effect 0
          return UseUp
        else do
