@@ -82,18 +82,18 @@ spawnMonster = do
            ser {snumSpawned = EM.insert arena (lvlSpawned + 1)
                               $ snumSpawned ser}
          localTime <- getsState $ getLocalTime arena
-         maid <- addAnyActor False lvlSpawned (CK.cactorFreq ck) arena
+         maidpos <- addAnyActor False lvlSpawned (CK.cactorFreq ck) arena
                              localTime Nothing
-         case maid of
+         case maidpos of
            Nothing -> return ()  -- suspect content; server debug elsewhere
-           Just aid -> do
+           Just (aid, _) -> do
              b <- getsState $ getActorBody aid
              mleader <- getsState $ gleader . (EM.! bfid b) . sfactionD
              when (isNothing mleader) $ setFreshLeader (bfid b) aid
 
 addAnyActor :: MonadServerAtomic m
             => Bool -> Int -> Freqs ItemKind -> LevelId -> Time -> Maybe Point
-            -> m (Maybe ActorId)
+            -> m (Maybe (ActorId, Point))
 addAnyActor summoned lvlSpawned actorFreq lid time mpos = do
   -- We bootstrap the actor by first creating the trunk of the actor's body
   -- that contains the fixed properties of all actors of that kind.
@@ -127,8 +127,9 @@ addAnyActor summoned lvlSpawned actorFreq lid time mpos = do
           rndToAction rollPos
       case mrolledPos of
         Just pos ->
-          Just <$> registerActor summoned itemKnownRaw (itemFullRaw, itemQuant)
-                                 fid pos lid time
+          Just . (\aid -> (aid, pos))
+          <$> registerActor summoned itemKnownRaw (itemFullRaw, itemQuant)
+                            fid pos lid time
         Nothing -> do
           debugPossiblyPrint
             "Server: addAnyActor: failed to find any free position"
