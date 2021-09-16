@@ -173,6 +173,7 @@ registerScore status fid = do
   factionD <- getsState sfactionD
   bench <- getsServer $ sbenchmark . sclientOptions . soptions
   noConfirmsGame <- isNoConfirmsGame
+  sbandSpawned <- getsServer sbandSpawned
   let fact = factionD EM.! fid
       path = dataDir </> scoresFile
       outputScore (worthMentioning, (ntable, pos)) =
@@ -181,6 +182,8 @@ registerScore status fid = do
         if bench || noConfirmsGame || isAIFact fact then
           debugPossiblyPrint $ T.intercalate "\n"
           $ HighScore.showScore tz pos (HighScore.getRecord pos ntable)
+            ++ ["           Spawned groups:"
+                <+> T.unwords (tail (T.words (tshow sbandSpawned)))]
         else
           let nScoreDict = EM.insert gameModeId ntable scoreDict
           in when worthMentioning $ liftIO $
