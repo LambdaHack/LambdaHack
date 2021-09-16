@@ -18,6 +18,7 @@ import Game.LambdaHack.Core.Prelude
 import qualified Data.EnumMap.Strict as EM
 import qualified Data.EnumSet as ES
 import           Data.Int (Int64)
+import qualified Data.IntMap.Strict as IM
 import qualified Data.Text as T
 
 import           Game.LambdaHack.Atomic
@@ -82,9 +83,13 @@ spawnMonster = do
          let numToSpawn | 4 * k <= perMillion = 3
                         | 2 * k <= perMillion = 2
                         | otherwise = 1
+             alt Nothing = Just 1
+             alt (Just n) = Just $ n + 1
          modifyServer $ \ser ->
-           ser {snumSpawned = EM.insert arena (lvlSpawned + numToSpawn)
-                              $ snumSpawned ser}
+           ser { snumSpawned = EM.insert arena (lvlSpawned + numToSpawn)
+                               $ snumSpawned ser
+               , sbandSpawned = IM.alter alt numToSpawn
+                                $ sbandSpawned ser }
          localTime <- getsState $ getLocalTime arena
          void $ addManyActors False lvlSpawned (CK.cactorFreq ck) arena localTime
                               Nothing numToSpawn
