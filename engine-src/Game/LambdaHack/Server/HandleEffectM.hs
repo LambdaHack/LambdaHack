@@ -941,10 +941,10 @@ effectSummon grp nDm iid source target effActivation = do
        bs <- forM (take power ps) $ \p -> do
          -- Mark as summoned to prevent immediate chain summoning.
          -- Summon from current depth, not deeper due to many spawns already.
-         maid <- addAnyActor True 0 [(grp, 1)] (blid tb) afterTime (Just p)
-         case maid of
+         maidpos <- addAnyActor True 0 [(grp, 1)] (blid tb) afterTime (Just p)
+         case maidpos of
            Nothing -> return False  -- suspect content; server debug elsewhere
-           Just aid -> do
+           Just (aid, _) -> do
              b <- getsState $ getActorBody aid
              mleader <- getsState $ gleader . (EM.! bfid b) . sfactionD
              when (isNothing mleader) $ setFreshLeader (bfid b) aid
