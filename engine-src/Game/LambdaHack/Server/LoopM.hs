@@ -293,16 +293,17 @@ endClip updatePerFid = do
     execUpdAtomic $ UpdAgeGame arenas
     -- Perform periodic dungeon maintenance.
     when (clipN `mod` rleadLevelClips corule == 0) leadLevelSwitch
-    when (clipN `mod` clipsInTurn == 2)
-      -- Periodic activation only once per turn, for speed,
-      -- but on all active arenas. Calm updates and domination
-      -- happen there as well. Once per turn is too rare for accurate
-      -- expiration of short conditions, e.g., 1-turn haste. TODO.
-      applyPeriodicLevel
-    when (clipN `mod` (5 * clipsInTurn) == 4)
-      -- Add monsters every few turns, not each clip or turn.
-      -- To compensate, they sometimes spawned in groups.
-      spawnMonster
+    case clipN `mod` clipsInTurn of
+      2 ->
+        -- Periodic activation only once per turn, for speed,
+        -- but on all active arenas. Calm updates and domination
+        -- happen there as well. Once per turn is too rare for accurate
+        -- expiration of short conditions, e.g., 1-turn haste. TODO.
+        applyPeriodicLevel
+      4 ->
+        -- Spawn monsters at most once per turn.
+        spawnMonster
+      _ -> return ()
   -- @applyPeriodicLevel@ might have, e.g., dominated actors, ending the game.
   -- It could not have unended the game, though.
   breakLoop2 <- getsServer sbreakLoop
