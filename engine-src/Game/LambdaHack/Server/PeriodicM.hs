@@ -56,8 +56,9 @@ import           Game.LambdaHack.Server.State
 -- We assume heroes are never spawned.
 spawnMonster :: MonadServerAtomic m => m ()
 spawnMonster = do
-  COps{cocave} <- getsState scops
-  arenas <- getsServer sarenas
+ COps{cocave} <- getsState scops
+ arenas <- getsServer sarenas
+ unless (ES.null arenas) $ do
   -- Do this on only one of the arenas to prevent micromanagement,
   -- e.g., spreading leaders across levels to bump monster generation.
   arena <- rndToAction $ oneOf $ ES.elems arenas
