@@ -60,6 +60,8 @@ data StateServer = StateServer
   , sacounter     :: ActorId        -- ^ stores next actor index
   , sicounter     :: ItemId         -- ^ stores next item index
   , snumSpawned   :: EM.EnumMap LevelId Int
+                                    -- ^ how many spawned so far on the level
+  , sbandSpawned  :: IM.IntMap Int  -- ^ how many times such group spawned
   , sundo         :: () -- [CmdAtomic] -- ^ atomic commands performed to date
   , sclientStates :: EM.EnumMap FactionId State
                                     -- ^ each faction state, as seen by clients
@@ -117,6 +119,7 @@ emptyStateServer =
     , sacounter = toEnum 0
     , sicounter = toEnum 0
     , snumSpawned = EM.empty
+    , sbandSpawned = IM.empty
     , sundo = ()
     , sclientStates = EM.empty
     , sperFid = EM.empty
@@ -173,6 +176,7 @@ instance Binary StateServer where
     put sacounter
     put sicounter
     put snumSpawned
+    put sbandSpawned
     put sclientStates
     put (show srandom)
     put srngs
@@ -195,6 +199,7 @@ instance Binary StateServer where
     sacounter <- get
     sicounter <- get
     snumSpawned <- get
+    sbandSpawned <- get
     sclientStates <- get
     g <- get
     srngs <- get
