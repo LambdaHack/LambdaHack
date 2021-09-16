@@ -76,12 +76,10 @@ spawnMonster = do
        let perMillion =
              monsterGenChance ldepth totalDepth lvlSpawned (CK.cactorCoeff ck)
            million = 1000000
-       -- The sustained spawn speed is now trebled, hence @3@ below,
-       -- to compensate for some monsters generated asleep.
        k <- rndToAction $ randomR (1, million)
-       when (k <= 3 * perMillion) $ do
-         let numToSpawn | 6 * k <= perMillion = 3
-                        | 2 * k <= perMillion = 2
+       when (k <= perMillion) $ do
+         let numToSpawn | 10 * k <= perMillion = 3
+                        | 4 * k <= perMillion = 2
                         | otherwise = 1
              alt Nothing = Just 1
              alt (Just n) = Just $ n + 1
