@@ -18,6 +18,7 @@ import Game.LambdaHack.Core.Prelude
 import qualified Data.EnumMap.Strict as EM
 import qualified Data.EnumSet as ES
 import           Data.Int (Int64)
+import           Data.Ratio
 import qualified Data.Text as T
 
 import           Game.LambdaHack.Atomic
@@ -71,8 +72,12 @@ spawnMonster = do
      | otherwise -> do
        totalDepth <- getsState stotalDepth
        lvlSpawned <- getsServer $ fromMaybe 0 . EM.lookup arena . snumSpawned
-       rc <- rndToAction
-             $ monsterGenChance ldepth totalDepth lvlSpawned (CK.cactorCoeff ck)
+       let perMillion =
+             monsterGenChance ldepth totalDepth lvlSpawned (CK.cactorCoeff ck)
+           million = 1000000
+       -- The sustained spawn speed is now trebled, hence @3@ below,
+       -- to compensate for some monsters generated asleep.
+       rc <- rndToAction $ chance $ 3 * toInteger perMillion % million
        when rc $ do
          modifyServer $ \ser ->
            ser {snumSpawned = EM.insert arena (lvlSpawned + 1)
