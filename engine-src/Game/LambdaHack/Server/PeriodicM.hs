@@ -78,12 +78,15 @@ spawnMonster = do
        -- to compensate for some monsters generated asleep.
        k <- rndToAction $ randomR (1, million)
        when (k <= 3 * perMillion) $ do
+         let numToSpawn | 4 * k <= perMillion = 3
+                        | 2 * k <= perMillion = 2
+                        | otherwise = 1
          modifyServer $ \ser ->
-           ser {snumSpawned = EM.insert arena (lvlSpawned + 1)
+           ser {snumSpawned = EM.insert arena (lvlSpawned + numToSpawn)
                               $ snumSpawned ser}
          localTime <- getsState $ getLocalTime arena
          void $ addManyActors False lvlSpawned (CK.cactorFreq ck) arena localTime
-                              Nothing 1
+                              Nothing numToSpawn
 
 addAnyActor :: MonadServerAtomic m
             => Bool -> Int -> Freqs ItemKind -> LevelId -> Time -> Maybe Point
