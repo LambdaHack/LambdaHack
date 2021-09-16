@@ -18,7 +18,6 @@ import Game.LambdaHack.Core.Prelude
 import qualified Data.EnumMap.Strict as EM
 import qualified Data.EnumSet as ES
 import           Data.Int (Int64)
-import           Data.Ratio
 import qualified Data.Text as T
 
 import           Game.LambdaHack.Atomic
@@ -77,8 +76,8 @@ spawnMonster = do
            million = 1000000
        -- The sustained spawn speed is now trebled, hence @3@ below,
        -- to compensate for some monsters generated asleep.
-       rc <- rndToAction $ chance $ 3 * toInteger perMillion % million
-       when rc $ do
+       k <- rndToAction $ randomR (1, million)
+       when (k <= 3 * perMillion) $ do
          modifyServer $ \ser ->
            ser {snumSpawned = EM.insert arena (lvlSpawned + 1)
                               $ snumSpawned ser}
