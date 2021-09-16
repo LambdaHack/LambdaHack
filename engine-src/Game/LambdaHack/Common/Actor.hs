@@ -267,22 +267,26 @@ getCarriedIidCStore b =
 -- | Chance, in parts per million, that a new monster is generated.
 -- Depends on the number of monsters already present, and on the level depth
 -- and its cave kind.
+--
+-- Note that sometimes monsters spawn in groups, increasing danger,
+-- but many monsters are generated asleep, decreasing initial danger.
 monsterGenChance :: Dice.AbsDepth -> Dice.AbsDepth -> Int -> Int -> Int
 monsterGenChance (Dice.AbsDepth ldepth) (Dice.AbsDepth totalDepth)
                  lvlSpawned actorCoeff =
   assert (totalDepth > 0 && ldepth > 0) $  -- ensured by content validation
-    -- Heroes have to endure a level depth-sized wave of immediate
-    -- spawners for each level and only then the monsters start
+    -- Heroes have to endure a level-depth-proportional wave of immediate
+    -- spawners for each level. Then the monsters start
     -- to trickle more and more slowly, at the speed dictated
-    -- by @actorCoeff@ specified in cave kind.
-    -- On level 1/10, first 4 monsters spawn immediately, at level 5/10,
-    -- 8 spawn immediately. In general at level n, n+3 spawn at once.
+    -- by @actorCoeff@ specified in cave kind. Finally, spawning flattens out.
     let scaledDepth = ldepth * 10 `div` totalDepth
         -- Never spawn too rarely so that camping is never safe.
-        maxCoeff = 100 * 30  -- a safe level, after 30 spawns, flattens out
+        maxCoeff = 100 * 30  -- spawning on a level with benign @actorCoeff@
+                             -- flattens out after 30 spawns
         coeff = max 1 $ min maxCoeff $ actorCoeff * (lvlSpawned - scaledDepth - 2)
         million = 1000000
-    in million `div` coeff
+    in 2 * million `div` coeff
+         -- @2@ added to compensate for monsters generated asleep,
+         -- without decreasing each @actorCoeff@ in content
 
 -- | How long until an actor's smell vanishes from a tile.
 smellTimeout :: Delta Time
