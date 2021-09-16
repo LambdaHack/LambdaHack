@@ -1,13 +1,13 @@
 -- | Server operations performed periodically in the game loop
 -- and related operations.
 module Game.LambdaHack.Server.PeriodicM
-  ( spawnMonster, addAnyActor
+  ( spawnMonster, addManyActors
   , advanceTime, advanceTimeTraj, overheadActorTime, swapTime
   , updateCalm, leadLevelSwitch
   , endOrLoop
 #ifdef EXPOSE_INTERNAL
     -- * Internal operations
-  , rollSpawnPos, gameExit
+  , addAnyActor, rollSpawnPos, gameExit
 #endif
   ) where
 
@@ -82,14 +82,8 @@ spawnMonster = do
            ser {snumSpawned = EM.insert arena (lvlSpawned + 1)
                               $ snumSpawned ser}
          localTime <- getsState $ getLocalTime arena
-         maidpos <- addAnyActor False lvlSpawned (CK.cactorFreq ck) arena
-                             localTime Nothing
-         case maidpos of
-           Nothing -> return ()  -- suspect content; server debug elsewhere
-           Just (aid, _) -> do
-             b <- getsState $ getActorBody aid
-             mleader <- getsState $ gleader . (EM.! bfid b) . sfactionD
-             when (isNothing mleader) $ setFreshLeader (bfid b) aid
+         void $ addManyActors False lvlSpawned (CK.cactorFreq ck) arena localTime
+                              Nothing 1
 
 addAnyActor :: MonadServerAtomic m
             => Bool -> Int -> Freqs ItemKind -> LevelId -> Time -> Maybe Point
@@ -134,6 +128,39 @@ addAnyActor summoned lvlSpawned actorFreq lid time mpos = do
           debugPossiblyPrint
             "Server: addAnyActor: failed to find any free position"
           return Nothing
+
+addManyActors :: MonadServerAtomic m
+              => Bool -> Int -> Freqs ItemKind -> LevelId -> Time -> Maybe Point
+              -> Int
+              -> m Bool
+addManyActors summoned lvlSpawned actorFreq lid time mpos
+              howMany = assert (howMany >= 1) $ do
+  mInitialLAidPos <- case mpos of
+    Just pos -> return $ Just ([], pos)
+    Nothing ->
+      (\(aid, pos) -> ([aid], pos))
+      <$$> addAnyActor summoned lvlSpawned actorFreq lid time Nothing
+  case mInitialLAidPos of
+    Nothing -> return False  -- suspect content; server debug elsewhere
+    Just (laid, pos) -> do
+      cops@COps{coTileSpeedup} <- getsState scops
+      lvl <- getLevel lid
+      let validTile t = not $ Tile.isNoActor coTileSpeedup t
+          ps = nearbyFreePoints cops lvl validTile pos
+          psNeeded = take (howMany - length laid) ps
+      when (length psNeeded < howMany - length laid) $
+        debugPossiblyPrint $
+          "Server: addManyActors: failed to find enough free positions at"
+          <+> tshow (lid, pos)
+      maidposs <- forM psNeeded $
+        addAnyActor summoned lvlSpawned actorFreq lid time . Just
+      case laid ++ map fst (catMaybes maidposs) of
+        [] -> return False
+        aid : _ -> do
+          b <- getsState $ getActorBody aid
+          mleader <- getsState $ gleader . (EM.! bfid b) . sfactionD
+          when (isNothing mleader) $ setFreshLeader (bfid b) aid
+          return True
 
 rollSpawnPos :: COps -> ES.EnumSet Point
              -> Bool -> Bool -> LevelId -> Level -> FactionId -> State
