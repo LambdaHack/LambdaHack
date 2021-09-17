@@ -22,73 +22,73 @@ jobs:
             projectFlags:
             compilerKind: ghc
             compilerVersion: 9.0.1
-            setup-method: preinstalled
+            setup-method: ghcup
             allow-failure: false
           - compiler: ghc-9.0.1-asserts
             projectFlags: -fwith_expensive_assertions
             compilerKind: ghc
             compilerVersion: 9.0.1
-            setup-method: preinstalled
+            setup-method: ghcup
             allow-failure: false
           - compiler: ghc-9.0.1-noopt
             projectFlags: --ghc-option=-O0 --ghc-option=-fno-ignore-asserts
             compilerKind: ghc
             compilerVersion: 9.0.1
-            setup-method: preinstalled
+            setup-method: ghcup
             allow-failure: false
           - compiler: ghc-9.0.1-opt2
             projectFlags: --ghc-option=-O2 --ghc-option=-fno-ignore-asserts
             compilerKind: ghc
             compilerVersion: 9.0.1
-            setup-method: preinstalled
+            setup-method: ghcup
             allow-failure: false
           - compiler: ghc-9.0.1-vty
             projectFlags: -fvty -fwith_expensive_assertions
             compilerKind: ghc
             compilerVersion: 9.0.1
-            setup-method: preinstalled
+            setup-method: ghcup
             allow-failure: false
           - compiler: ghc-9.0.1-curses
             projectFlags: -fcurses -f-release -fwith_expensive_assertions
             compilerKind: ghc
             compilerVersion: 9.0.1
-            setup-method: preinstalled
+            setup-method: ghcup
             allow-failure: false
           - compiler: ghc-8.10.7-vanilla
             projectFlags:
             compilerKind: ghc
             compilerVersion: 8.10.7
-            setup-method: preinstalled
+            setup-method: ghcup
             allow-failure: false
           - compiler: ghc-8.10.7-asserts
             projectFlags: -fwith_expensive_assertions
             compilerKind: ghc
             compilerVersion: 8.10.7
-            setup-method: preinstalled
+            setup-method: ghcup
             allow-failure: false
           - compiler: ghc-8.10.7-noopt
             projectFlags: --ghc-option=-O0 --ghc-option=-fno-ignore-asserts
             compilerKind: ghc
             compilerVersion: 8.10.7
-            setup-method: preinstalled
+            setup-method: ghcup
             allow-failure: false
           - compiler: ghc-8.10.7-opt2
             projectFlags: --ghc-options=-O2 --ghc-option=-fno-ignore-asserts
             compilerKind: ghc
             compilerVersion: 8.10.7
-            setup-method: preinstalled
+            setup-method: ghcup
             allow-failure: false
           - compiler: ghc-8.10.7-vty
             projectFlags: -fvty -fwith_expensive_assertions
             compilerKind: ghc
             compilerVersion: 8.10.7
-            setup-method: preinstalled
+            setup-method: ghcup
             allow-failure: false
           - compiler: ghc-8.10.7-curses
             projectFlags: -fcurses -f-release -fwith_expensive_assertions
             compilerKind: ghc
             compilerVersion: 8.10.7
-            setup-method: preinstalled
+            setup-method: ghcup
             allow-failure: false
           - compiler: ghc-8.8.4-vanilla
             projectFlags:
@@ -138,7 +138,7 @@ jobs:
             chmod a+x "$HOME/.ghcup/bin/ghcup"
             "$HOME/.ghcup/bin/ghcup" install ghc "$HCVER"
             "$HOME/.ghcup/bin/ghcup" install cabal 3.4.0.0
-          elif [ "${{ matrix.setup-method }}" = hvr-ppa ]; then
+          else
             apt-add-repository -y 'ppa:hvr/ghc'
             apt-get update
             apt-get install -y "$HCKIND"-"$HCVER" cabal-install-3.4
