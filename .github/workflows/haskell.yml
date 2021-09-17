@@ -128,8 +128,8 @@ jobs:
     steps:
       - name: apt
         run: |
-          apt-get update
-          apt-get install -y --no-install-recommends gnupg ca-certificates dirmngr curl git software-properties-common libtinfo5 libsdl2-ttf-dev
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends gnupg ca-certificates dirmngr curl git software-properties-common libtinfo5 libsdl2-ttf-dev
           if [ "${{ matrix.setup-method }}" = ghcup ]; then
             mkdir -p "$HOME/.ghcup/bin"
             curl -sL https://downloads.haskell.org/ghcup/0.1.16.2/x86_64-linux-ghcup-0.1.16.2 > "$HOME/.ghcup/bin/ghcup"
@@ -138,8 +138,8 @@ jobs:
             "$HOME/.ghcup/bin/ghcup" install cabal 3.4.0.0
           elif [ "${{ matrix.setup-method }}" = hvr-ppa ]; then
             apt-add-repository -y 'ppa:hvr/ghc'
-            apt-get update
-            apt-get install -y "$HCKIND"-"$HCVER" cabal-install-3.4
+            sudo apt-get update
+            sudo apt-get install -y "$HCKIND"-"$HCVER" cabal-install-3.4
           fi
         env:
           HCKIND: ${{ matrix.compilerKind }}
