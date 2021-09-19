@@ -65,5 +65,7 @@ handleResponse cmd = case cmd of
   RespSfxAtomic sfx ->
     displayRespSfxAtomicUI sfx
   RespQueryUI -> do
+    modifySession $ \sess -> sess {sreqQueried = True}
     cmdH <- queryUI
+    modifySession $ \sess -> sess {sreqQueried = False}
     sendRequestUI cmdH
