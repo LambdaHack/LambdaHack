@@ -913,12 +913,12 @@ createActorUI born aid body = do
      | bfid body == side -> do
        let upd = ES.insert aid
        modifySession $ \sess -> sess {sselected = upd $ sselected sess}
-       unless (EM.null actorUI) $ do  -- don't speak about self in 3rd person
-         let verb = if born then "join you" else "be spotted"
-         aidVerbMU MsgSpottedActor aid verb
-         when born $
+       unless (EM.null actorUI) $ do  -- don't announce the very first party member
+         when born $ do
+           let verb = "join you"
+           aidVerbMU MsgSpottedActor aid verb
            msgAdd MsgTutorialHint "You survive this mission, or die trying, as a team. After a few moves, feel free to switch the controlled teammate (marked on the map with the yellow box) using the Tab key to another party member (marked with a green box)."  -- assuming newbies don't remap their keys
-         animate (blid body) $ actorX (bpos body)
+           animate (blid body) $ actorX (bpos body)
      | otherwise -> do
        -- Don't spam if the actor was already visible
        -- (but, e.g., on a tile that is invisible this turn
