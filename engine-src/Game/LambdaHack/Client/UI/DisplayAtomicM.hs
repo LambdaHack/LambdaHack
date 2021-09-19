@@ -342,8 +342,8 @@ displayRespUpdAtomicUI cmd = case cmd of
   -- Change faction attributes.
   UpdQuitFaction fid _ toSt manalytics -> quitFactionUI fid toSt manalytics
   UpdSpotStashFaction verbose fid lid pos -> do
+    side <- getsClient sside
     when verbose $ do
-      side <- getsClient sside
       if fid == side then
         msgLnAdd MsgFactionIntel
                  "You set up the shared inventory stash of your team."
@@ -353,7 +353,8 @@ displayRespUpdAtomicUI cmd = case cmd of
         msgAdd MsgFactionIntel $
           makeSentence [ "you have found the current"
                        , MU.WownW fidName "hoard location" ]
-    animate lid $ actorX pos
+    unless (fid == side) $
+      animate lid $ actorX pos
   UpdLoseStashFaction verbose fid lid pos -> do
     when verbose $ do
       side <- getsClient sside
