@@ -147,11 +147,21 @@ promptGetKey :: MonadClientUI m
 promptGetKey dm ovs onBlank frontKeyKeys = do
   lidV <- viewedLevelUI
   report <- getsSession $ newReport . shistory
-  let interrupted = anyInReport disturbsResting report
+  sreqQueried <- getsSession sreqQueried
+  let interrupted =
+        -- If server is not querying for request, then the key is needed due to
+        -- a special event, not ordinary querying the player for command,
+        -- so interrupt.
+        not sreqQueried
+        -- Any alarming message interupts macros.
+        || anyInReport disturbsResting report
+
   macroFrame <- getsSession smacroFrame
   km <- case keyPending macroFrame of
-    KeyMacro (km : kms) | (null frontKeyKeys || km `elem` frontKeyKeys)
-                          && not interrupted -> do
+    KeyMacro (km : kms) | not interrupted
+                          -- A faulty key in a macro is a good reason
+                          -- to interrupt it, as well.
+                          && (null frontKeyKeys || km `elem` frontKeyKeys) -> do
       -- No need to display the frame, because a frame was displayed
       -- when the player chose to play a macro and each turn or more often
       -- a frame is displayed elsewhere.
@@ -161,30 +171,33 @@ promptGetKey dm ovs onBlank frontKeyKeys = do
         sess {smacroFrame = (smacroFrame sess) {keyPending = KeyMacro kms}}
       msgAdd MsgMacroOperation $ "Voicing '" <> tshow km <> "'."
       return km
-    KeyMacro (_ : _) -> do
+    KeyMacro kms -> do
+      if null kms then do
+        -- There was no macro. Not important if there was a reason
+        -- for interrupt or not.
+        when (dm /= ColorFull) $ do
+          -- This marks a special event, regardless of @sreqQueried@.
+          side <- getsClient sside
+          fact <- getsState $ (EM.! side) . sfactionD
+          unless (isAIFact fact) -- don't forget special autoplay keypresses
+            -- Forget the furious keypresses just before a special event.
+            resetPressedKeys
+        -- Running, if any, must have ended naturally, because no macro.
+        -- Therefore no need to restore leader back to initial run leader,
+        -- but running itself is cancelled below.
+      else do
+        -- The macro was not empty, but not played, so it must have been
+        -- interrupted, so we can't continue playback, so wipe out the macro.
+        resetPlayBack
+        -- This might have been an unexpected end of a run, too.
+        restoreLeaderFromRun
+        -- Macro was killed, so emergency, so reset input, too.
+        resetPressedKeys
       frontKeyFrame <- drawOverlay dm onBlank ovs lidV
-      -- We can't continue playback, so wipe out macros, etc.
-      resetPlayBack
-      resetPressedKeys
       recordHistory
-      modifySession $ \sess ->
-        sess { sdisplayNeeded = False
-             , sturnDisplayed = True }
-      connFrontendFrontKey frontKeyKeys frontKeyFrame
-    KeyMacro [] -> do
-      frontKeyFrame <- drawOverlay dm onBlank ovs lidV
-      when (dm /= ColorFull) $ do
-        side <- getsClient sside
-        fact <- getsState $ (EM.! side) . sfactionD
-        unless (isAIFact fact) -- don't forget special autoplay keypresses
-          -- Forget the furious keypresses just before a special event.
-          resetPressedKeys
-      recordHistory
-      -- If we ask for a key, then we don't want to run any more
-      -- and we want to avoid changing leader back to initial run leader
-      -- at the nearest @stopPlayBack@, etc.
       modifySession $ \sess ->
         sess { srunning = Nothing
+             , sxhairGoTo = Nothing
              , sdisplayNeeded = False
              , sturnDisplayed = True }
       connFrontendFrontKey frontKeyKeys frontKeyFrame
@@ -192,9 +205,12 @@ promptGetKey dm ovs onBlank frontKeyKeys = do
   -- to also capture choice of items from menus, etc.
   -- Notice that keys coming from macros (from content, in-game, config)
   -- are recorded as well and this is well defined and essential.
-  CCUI{coinput=InputContent{bcmdMap}} <- getsSession sccui
-  modifySession $ \sess ->
-    sess {smacroFrame = addToMacro bcmdMap km $ smacroFrame sess}
+  --
+  -- Only keys pressed when player is queried for a command are recorded.
+  when sreqQueried $ do
+    CCUI{coinput=InputContent{bcmdMap}} <- getsSession sccui
+    modifySession $ \sess ->
+      sess {smacroFrame = addToMacro bcmdMap km $ smacroFrame sess}
   return km
 
 addToMacro :: M.Map K.KM HumanCmd.CmdTriple -> K.KM -> KeyMacroFrame
@@ -223,15 +239,17 @@ lastMacroFrame _ (mf : mfs) = lastMacroFrame mf mfs
 stopPlayBack :: MonadClientUI m => m ()
 stopPlayBack = msgAdd MsgStopPlayback "!"
 
+-- | We wipe any actions in progress, but keep the data needed to repeat
+-- the last global macros and the last command.
 resetPlayBack :: MonadClientUI m => m ()
-resetPlayBack = do
-  -- We wipe any actions in progress, but keep the data needed to repeat
-  -- the last global macros and the last command.
+resetPlayBack =
   modifySession $ \sess ->
     let lastFrame = lastMacroFrame (smacroFrame sess) (smacroStack sess)
     in sess { smacroFrame = lastFrame {keyPending = mempty}
-            , smacroStack = []
-            , sxhairGoTo = Nothing }
+            , smacroStack = [] }
+
+restoreLeaderFromRun :: MonadClientUI m => m ()
+restoreLeaderFromRun = do
   srunning <- getsSession srunning
   case srunning of
     Nothing -> return ()
@@ -245,7 +263,6 @@ resetPlayBack = do
       memA <- getsState $ memActor runLeader arena
       when (memA && not (noRunWithMulti fact)) $
         updateClientLeader runLeader
-      modifySession (\sess -> sess {srunning = Nothing})
 
 -- | Render animations on top of the current screen frame.
 renderAnimFrames :: MonadClientUI m
