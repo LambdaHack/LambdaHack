@@ -62,4 +62,4 @@ handleResponse cmd = case cmd of
     let !_A = assert (hasUI && not sreqQueried
                       `blame` "server queries without UI or ignores own query"
                       `swith` (hasUI, sreqQueried)) ()
-    queryUI
+    modifySession $ \sess -> sess {sreqQueried = True}

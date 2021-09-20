@@ -66,7 +66,6 @@ class MonadClient m => MonadClientWriteRequest m where
 -- | Handle the move of a human player.
 queryUI :: (MonadClient m, MonadClientUI m, MonadClientWriteRequest m ) => m ()
 queryUI = do
-  modifySession $ \sess -> sess {sreqQueried = True}
   mreq <- queryUINoSend
   case mreq of
     Nothing -> return ()
