@@ -99,6 +99,9 @@ instance MonadClientReadResponse CliImplementation where
   receiveResponse = CliImplementation $ do
     ChanServer{responseS} <- gets cliDict
     IO.liftIO $ takeMVar responseS
+  tryReceiveResponse = CliImplementation $ do
+    ChanServer{responseS} <- gets cliDict
+    IO.liftIO $ tryTakeMVar responseS
 
 instance MonadClientWriteRequest CliImplementation where
   sendRequestAI scmd = CliImplementation $ do

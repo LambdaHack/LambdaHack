@@ -26,6 +26,7 @@ import Game.LambdaHack.Common.ClientOptions
 -- | Client monad in which one can receive responses from the server.
 class MonadClient m => MonadClientReadResponse m where
   receiveResponse :: m Response
+  tryReceiveResponse :: m (Maybe Response)
 
 initAI :: MonadClient m => m ()
 initAI = do
@@ -110,6 +111,22 @@ loopCli ccui sUIOptions clientOptions = do
     (False, RespUpdAtomicNoState UpdRestart{}) -> return ()
     _ -> error $ "unexpected command" `showFailure` (side, restored, cmd1)
   handleResponse cmd1
+  let loop = do
+        mcmd <- tryReceiveResponse
+        case mcmd of
+          Nothing -> return ()
+          Just cmd -> handleResponse cmd
+        quit <- getsClient squit
+        unless quit $ do
+          loopQueryUI
+          quit2 <- getsClient squit
+          unless quit2 loop
+      loopQueryUI | not hasUI = return ()
+                  | otherwise = do
+        sreqQueried <- getsSession sreqQueried
+        when sreqQueried $ do
+          queryUI
+          loopQueryUI
   -- State and client state now valid.
   debugPossiblyPrint $ cliendKindText <+> "client"
                        <+> tshow side <+> "started 4/4."
@@ -117,17 +134,3 @@ loopCli ccui sUIOptions clientOptions = do
   side2 <- getsClient sside
   debugPossiblyPrint $ cliendKindText <+> "client" <+> tshow side2
                        <+> "(initially" <+> tshow side <> ") stopped."
- where
-  loop = do
-    cmd <- receiveResponse
-    handleResponse cmd
-    let loopQueryUI = do
-          sreqQueried <- getsSession sreqQueried
-          when sreqQueried $ do
-            queryUI
-            loopQueryUI
-    quit <- getsClient squit
-    unless quit $ do
-      hasUI <- clientHasUI
-      when hasUI loopQueryUI
-      loop
