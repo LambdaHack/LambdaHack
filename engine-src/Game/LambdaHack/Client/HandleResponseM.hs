@@ -1,8 +1,7 @@
 {-# LANGUAGE FlexibleContexts #-}
 -- | Semantics of responses sent by the server to clients.
 module Game.LambdaHack.Client.HandleResponseM
-  ( MonadClientWriteRequest(..)
-  , MonadClientAtomic(..)
+  ( MonadClientAtomic(..)
   , handleResponse
   ) where
 
@@ -14,17 +13,10 @@ import Game.LambdaHack.Atomic (UpdAtomic)
 import Game.LambdaHack.Client.AI
 import Game.LambdaHack.Client.HandleAtomicM
 import Game.LambdaHack.Client.MonadClient
-import Game.LambdaHack.Client.Request
 import Game.LambdaHack.Client.Response
 import Game.LambdaHack.Client.UI
 import Game.LambdaHack.Common.MonadStateRead
 import Game.LambdaHack.Common.State
-
--- | Client monad in which one can send requests to the client.
-class MonadClient m => MonadClientWriteRequest m where
-  sendRequestAI :: RequestAI -> m ()
-  sendRequestUI :: RequestUI -> m ()
-  clientHasUI   :: m Bool
 
 -- | Monad for executing atomic game state transformations on a client.
 class MonadClient m => MonadClientAtomic m where
@@ -64,8 +56,5 @@ handleResponse cmd = case cmd of
     sendRequestAI cmdC
   RespSfxAtomic sfx ->
     displayRespSfxAtomicUI sfx
-  RespQueryUI -> do
-    modifySession $ \sess -> sess {sreqQueried = True}
-    cmdH <- queryUI
-    modifySession $ \sess -> sess {sreqQueried = False}
-    sendRequestUI cmdH
+  RespQueryUI ->
+    queryUI

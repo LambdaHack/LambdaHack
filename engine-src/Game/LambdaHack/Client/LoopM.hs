@@ -121,5 +121,13 @@ loopCli ccui sUIOptions clientOptions = do
   loop = do
     cmd <- receiveResponse
     handleResponse cmd
+    let loopQueryUI = do
+          sreqQueried <- getsSession sreqQueried
+          when sreqQueried $ do
+            queryUI
+            loopQueryUI
     quit <- getsClient squit
-    unless quit loop
+    unless quit $ do
+      hasUI <- clientHasUI
+      when hasUI loopQueryUI
+      loop

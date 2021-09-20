@@ -15,6 +15,7 @@ module Game.LambdaHack.Client.UI
   , ChanFrontend, chanFrontend, tryRestore, clientPrintUI
 #ifdef EXPOSE_INTERNAL
     -- * Internal operations
+  , MonadClientWriteRequest(..)
   , humanCommand
 #endif
   ) where
@@ -56,9 +57,25 @@ import           Game.LambdaHack.Common.MonadStateRead
 import           Game.LambdaHack.Common.State
 import           Game.LambdaHack.Content.ModeKind
 
+-- | Client monad in which one can send requests to the client.
+class MonadClient m => MonadClientWriteRequest m where
+  sendRequestAI :: RequestAI -> m ()
+  sendRequestUI :: RequestUI -> m ()
+  clientHasUI   :: m Bool
+
 -- | Handle the move of a human player.
-queryUI :: (MonadClient m, MonadClientUI m) => m RequestUI
+queryUI :: (MonadClient m, MonadClientUI m, MonadClientWriteRequest m ) => m ()
 queryUI = do
+  modifySession $ \sess -> sess {sreqQueried = True}
+  mreq <- queryUINoSend
+  case mreq of
+    Nothing -> return ()
+    Just req -> do
+      modifySession $ \sess -> sess {sreqQueried = False}
+      sendRequestUI req
+
+queryUINoSend :: (MonadClient m, MonadClientUI m) => m (Maybe RequestUI)
+queryUINoSend = do
   side <- getsClient sside
   fact <- getsState $ (EM.! side) . sfactionD
   if isAIFact fact then do
@@ -71,7 +88,7 @@ queryUI = do
       modifyClient $ \cli ->
         cli {soptions = (soptions cli) { sstopAfterSeconds = Nothing
                                        , sstopAfterFrames = Nothing }}
-      return (ReqUIAutomate, Nothing)  -- stop AI
+      return $ Just (ReqUIAutomate, Nothing)  -- stop AI
     else do
       -- As long as UI faction is under AI control, check, once per move,
       -- for benchmark game stop.
@@ -82,42 +99,45 @@ queryUI = do
         Nothing -> do
           stopAfterSeconds <- getsClient $ sstopAfterSeconds . soptions
           case stopAfterSeconds of
-            Nothing -> return (ReqUINop, Nothing)
+            Nothing -> return $ Just (ReqUINop, Nothing)
             Just stopS -> do
               exit <- elapsedSessionTimeGT stopS
               if exit then do
                 tellAllClipPS
-                return (exitCmd, Nothing)  -- ask server to exit
-              else return (ReqUINop, Nothing)
+                return $ Just (exitCmd, Nothing)  -- ask server to exit
+              else return $ Just (ReqUINop, Nothing)
         Just stopF -> do
           allNframes <- getsSession sallNframes
           gnframes <- getsSession snframes
           if allNframes + gnframes >= stopF then do
             tellAllClipPS
-            return (exitCmd, Nothing)  -- ask server to exit
-          else return (ReqUINop, Nothing)
+            return $ Just (exitCmd, Nothing)  -- ask server to exit
+          else return $ Just (ReqUINop, Nothing)
   else do
     let mleader = gleader fact
         !_A = assert (isJust mleader) ()
-    req <- humanCommand
-    leader2 <- getLeaderUI
-    -- Don't send the leader switch to the server with these commands,
-    -- to avoid leader death at resume if his HP <= 0. That would violate
-    -- the principle that save and reload doesn't change game state.
-    let saveCmd cmd = case cmd of
-          ReqUIGameDropAndExit -> True
-          ReqUIGameSaveAndExit -> True
-          ReqUIGameSave -> True
-          _ -> False
-    return (req, if mleader /= Just leader2 && not (saveCmd req)
-                 then Just leader2
-                 else Nothing)
+    mreq <- humanCommand
+    case mreq of
+      Nothing -> return Nothing
+      Just req -> do
+        leader2 <- getLeaderUI
+        -- Don't send the leader switch to the server with these commands,
+        -- to avoid leader death at resume if his HP <= 0. That would violate
+        -- the principle that save and reload doesn't change game state.
+        let saveCmd cmd = case cmd of
+              ReqUIGameDropAndExit -> True
+              ReqUIGameSaveAndExit -> True
+              ReqUIGameSave -> True
+              _ -> False
+        return $ Just (req, if mleader /= Just leader2 && not (saveCmd req)
+                            then Just leader2
+                            else Nothing)
 
 -- | Let the human player issue commands until any command takes time.
-humanCommand :: forall m. (MonadClient m, MonadClientUI m) => m ReqUI
+humanCommand :: forall m. (MonadClient m, MonadClientUI m) => m (Maybe ReqUI)
 humanCommand = do
   FontSetup{propFont} <- getFontSetup
-  let loop :: m ReqUI
+  let loop :: m (Maybe ReqUI)
       loop = do
         keyPressed <- anyKeyPressed
         macroFrame <- getsSession smacroFrame
@@ -181,9 +201,9 @@ humanCommand = do
           Right cmdS ->
             -- Exit the loop and let other actors act. No next key needed
             -- and no report could have been generated.
-            return cmdS
-          Left Nothing -> loop
+            return $ Just cmdS
+          Left Nothing -> return Nothing
           Left (Just err) -> do
             msgAdd MsgActionAlert $ showFailError err
-            loop
+            return Nothing
   loop
