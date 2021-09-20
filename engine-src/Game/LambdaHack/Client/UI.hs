@@ -137,73 +137,70 @@ queryUINoSend = do
 humanCommand :: forall m. (MonadClient m, MonadClientUI m) => m (Maybe ReqUI)
 humanCommand = do
   FontSetup{propFont} <- getFontSetup
-  let loop :: m (Maybe ReqUI)
-      loop = do
-        keyPressed <- anyKeyPressed
-        macroFrame <- getsSession smacroFrame
-        -- This message, in particular, disturbs.
-        when (keyPressed && not (null (unKeyMacro (keyPending macroFrame)))) $
-          msgAdd MsgActionWarning "*interrupted*"
-        report <- getsSession $ newReport . shistory
-        modifySession $ \sess -> sess {sreportNull = nullVisibleReport report}
-        slides <- reportToSlideshowKeepHalt False []
-        over <- case unsnoc slides of
-          Nothing -> return []
-          Just (allButLast, (ov, _)) ->
-            if allButLast == emptySlideshow
-            then do
-              -- Display the only generated slide while waiting for next key.
-              -- Strip the "--end-" prompt from it, by ignoring @MonoFont@.
-              let ovProp = ov EM.! propFont
-              return $! if EM.size ov > 1 then ovProp else init ovProp
-            else do
-              -- Show, one by one, all slides, awaiting confirmation for each.
-              void $ getConfirms ColorFull [K.spaceKM, K.escKM] slides
-              -- Indicate that report wiped out.
-              modifySession $ \sess -> sess {sreportNull = True}
-              -- Display base frame at the end.
-              return []
-        leader <- getLeaderUI
-        b <- getsState $ getActorBody leader
-        lastLost <- getsSession slastLost
-        if bhp b <= 0 then
-          when (leader `ES.notMember` lastLost) $ do
-            -- Hacky reuse of @slastLost@ for near-death spam prevention.
-            modifySession $ \sess ->
-              sess {slastLost = ES.insert leader lastLost}
-            displayMore ColorBW "If you move, the exertion will kill you. Consider asking for first aid instead."
-        else
-          modifySession $ \sess -> sess {slastLost = ES.empty}
-        let ovs = EM.fromList [(propFont, over)]
-        km <- promptGetKey ColorFull ovs False []
-        abortOrCmd <- do
-          -- Look up the key.
-          CCUI{coinput=InputContent{bcmdMap}} <- getsSession sccui
-          case km `M.lookup` bcmdMap of
-            Just (_, _, cmd) -> do
-              modifySession $ \sess -> sess {swaitTimes = if swaitTimes sess > 0
-                                                          then - swaitTimes sess
-                                                          else 0}
-              restrictedCmdSemInCxtOfKM km cmd
-            _ -> let msgKey = "unknown command '" <> K.showKM km <> "'"
-                 in weaveJust <$> failWith (T.pack msgKey)
-        -- GC macro stack if there are no actions left to handle,
-        -- removing all unnecessary macro frames at once,
-        -- but leaving the last one for user's in-game macros.
-        modifySession $ \sess ->
-          let (smacroFrameNew, smacroStackMew) =
-                dropEmptyMacroFrames (smacroFrame sess) (smacroStack sess)
-          in sess { smacroFrame = smacroFrameNew
-                  , smacroStack = smacroStackMew }
-        -- The command was failed or successful and if the latter,
-        -- possibly took some time.
-        case abortOrCmd of
-          Right cmdS ->
-            -- Exit the loop and let other actors act. No next key needed
-            -- and no report could have been generated.
-            return $ Just cmdS
-          Left Nothing -> return Nothing
-          Left (Just err) -> do
-            msgAdd MsgActionAlert $ showFailError err
-            return Nothing
-  loop
+  keyPressed <- anyKeyPressed
+  macroFrame <- getsSession smacroFrame
+  -- This message, in particular, disturbs.
+  when (keyPressed && not (null (unKeyMacro (keyPending macroFrame)))) $
+    msgAdd MsgActionWarning "*interrupted*"
+  report <- getsSession $ newReport . shistory
+  modifySession $ \sess -> sess {sreportNull = nullVisibleReport report}
+  slides <- reportToSlideshowKeepHalt False []
+  over <- case unsnoc slides of
+    Nothing -> return []
+    Just (allButLast, (ov, _)) ->
+      if allButLast == emptySlideshow
+      then do
+        -- Display the only generated slide while waiting for next key.
+        -- Strip the "--end-" prompt from it, by ignoring @MonoFont@.
+        let ovProp = ov EM.! propFont
+        return $! if EM.size ov > 1 then ovProp else init ovProp
+      else do
+        -- Show, one by one, all slides, awaiting confirmation for each.
+        void $ getConfirms ColorFull [K.spaceKM, K.escKM] slides
+        -- Indicate that report wiped out.
+        modifySession $ \sess -> sess {sreportNull = True}
+        -- Display base frame at the end.
+        return []
+  leader <- getLeaderUI
+  b <- getsState $ getActorBody leader
+  lastLost <- getsSession slastLost
+  if bhp b <= 0 then
+    when (leader `ES.notMember` lastLost) $ do
+      -- Hacky reuse of @slastLost@ for near-death spam prevention.
+      modifySession $ \sess ->
+        sess {slastLost = ES.insert leader lastLost}
+      displayMore ColorBW "If you move, the exertion will kill you. Consider asking for first aid instead."
+  else
+    modifySession $ \sess -> sess {slastLost = ES.empty}
+  let ovs = EM.fromList [(propFont, over)]
+  km <- promptGetKey ColorFull ovs False []
+  abortOrCmd <- do
+    -- Look up the key.
+    CCUI{coinput=InputContent{bcmdMap}} <- getsSession sccui
+    case km `M.lookup` bcmdMap of
+      Just (_, _, cmd) -> do
+        modifySession $ \sess -> sess {swaitTimes = if swaitTimes sess > 0
+                                                    then - swaitTimes sess
+                                                    else 0}
+        restrictedCmdSemInCxtOfKM km cmd
+      _ -> let msgKey = "unknown command '" <> K.showKM km <> "'"
+           in weaveJust <$> failWith (T.pack msgKey)
+  -- GC macro stack if there are no actions left to handle,
+  -- removing all unnecessary macro frames at once,
+  -- but leaving the last one for user's in-game macros.
+  modifySession $ \sess ->
+    let (smacroFrameNew, smacroStackMew) =
+          dropEmptyMacroFrames (smacroFrame sess) (smacroStack sess)
+    in sess { smacroFrame = smacroFrameNew
+            , smacroStack = smacroStackMew }
+  -- The command was failed or successful and if the latter,
+  -- possibly took some time.
+  case abortOrCmd of
+    Right cmdS ->
+      -- Exit the loop and let other actors act. No next key needed
+      -- and no report could have been generated.
+      return $ Just cmdS
+    Left Nothing -> return Nothing
+    Left (Just err) -> do
+      msgAdd MsgActionAlert $ showFailError err
+      return Nothing
