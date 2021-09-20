@@ -14,6 +14,8 @@ import Prelude ()
 
 import Game.LambdaHack.Core.Prelude
 
+import Control.Concurrent (threadDelay)
+
 import Game.LambdaHack.Atomic
 import Game.LambdaHack.Client.HandleAtomicM
 import Game.LambdaHack.Client.HandleResponseM
@@ -50,11 +52,11 @@ initUI sccui@CCUI{coscreen} = do
 --
 -- The loop is started in client state that is empty except for
 -- the @sside@ and @seps@ fields, see 'emptyStateClient'.
-loopCli :: ( MonadClientSetup m
-           , MonadClientUI m
-           , MonadClientAtomic m
-           , MonadClientReadResponse m
-           , MonadClientWriteRequest m )
+loopCli :: forall m. ( MonadClientSetup m
+                     , MonadClientUI m
+                     , MonadClientAtomic m
+                     , MonadClientReadResponse m
+                     , MonadClientWriteRequest m )
         => CCUI -> UIOptions -> ClientOptions -> m ()
 loopCli ccui sUIOptions clientOptions = do
   modifyClient $ \cli -> cli {soptions = clientOptions}
@@ -111,26 +113,38 @@ loopCli ccui sUIOptions clientOptions = do
     (False, RespUpdAtomicNoState UpdRestart{}) -> return ()
     _ -> error $ "unexpected command" `showFailure` (side, restored, cmd1)
   handleResponse cmd1
-  let loop = do
+  let loop :: Int -> m ()
+      loop pollingDelay = do
         mcmd <- tryReceiveResponse
-        case mcmd of
-          Nothing -> return ()
-          Just cmd -> handleResponse cmd
+        progress <- case mcmd of
+          Nothing -> return False
+          Just cmd -> do
+            handleResponse cmd
+            return True
         quit <- getsClient squit
         unless quit $ do
-          performQueryUI
+          progress2 <- performQueryUI
           quit2 <- getsClient squit
-          unless quit2  -- TODO: optimize away if not hasUI
-            loop
-      performQueryUI | not hasUI = return ()
+          unless quit2 $  -- TODO: optimize away if not hasUI
+            if progress || progress2 then
+              loop 0
+            else do
+              liftIO $ threadDelay pollingDelay
+              -- At lest 60 polls per second, so keyboard snappy enough
+              let longestDelay = 15000
+              loop $! max 150 $ min longestDelay $ 2 * pollingDelay
+      performQueryUI :: m Bool
+      performQueryUI | not hasUI = return False
                      | otherwise = do
         sreqQueried <- getsSession sreqQueried
-        when sreqQueried
+        if sreqQueried then do
           queryUI
+          return True
+        else return False
   -- State and client state now valid.
   debugPossiblyPrint $ cliendKindText <+> "client"
                        <+> tshow side <+> "started 4/4."
-  loop
+  loop 0
   side2 <- getsClient sside
   debugPossiblyPrint $ cliendKindText <+> "client" <+> tshow side2
                        <+> "(initially" <+> tshow side <> ") stopped."
