@@ -118,15 +118,15 @@ loopCli ccui sUIOptions clientOptions = do
           Just cmd -> handleResponse cmd
         quit <- getsClient squit
         unless quit $ do
-          loopQueryUI
+          performQueryUI
           quit2 <- getsClient squit
-          unless quit2 loop
-      loopQueryUI | not hasUI = return ()
-                  | otherwise = do
+          unless quit2  -- TODO: optimize away if not hasUI
+            loop
+      performQueryUI | not hasUI = return ()
+                     | otherwise = do
         sreqQueried <- getsSession sreqQueried
-        when sreqQueried $ do
+        when sreqQueried
           queryUI
-          loopQueryUI
   -- State and client state now valid.
   debugPossiblyPrint $ cliendKindText <+> "client"
                        <+> tshow side <+> "started 4/4."
