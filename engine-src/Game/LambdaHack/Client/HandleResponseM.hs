@@ -58,8 +58,8 @@ handleResponse cmd = case cmd of
     displayRespSfxAtomicUI sfx
   RespQueryUI -> do
     hasUI <- clientHasUI
-    sreqQueried <- getsSession sreqQueried
-    let !_A = assert (hasUI && not sreqQueried
-                      `blame` "server queries without UI or ignores own query"
-                      `swith` (hasUI, sreqQueried)) ()
-    modifySession $ \sess -> sess {sreqQueried = True}
+    sreqExpected <- getsSession sreqExpected
+    let !_A = assert (hasUI && not sreqExpected
+                      `blame` "server expects a command from a client without UI or doesn't wait for its previously expected command"
+                      `swith` (hasUI, sreqExpected)) ()
+    modifySession $ \sess -> sess {sreqExpected = True}

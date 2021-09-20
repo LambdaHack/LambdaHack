@@ -14,15 +14,18 @@ import Prelude ()
 
 import Game.LambdaHack.Core.Prelude
 
-import Control.Concurrent (threadDelay)
+import Control.Concurrent
 
 import Game.LambdaHack.Atomic
 import Game.LambdaHack.Client.HandleAtomicM
 import Game.LambdaHack.Client.HandleResponseM
 import Game.LambdaHack.Client.MonadClient
+import Game.LambdaHack.Client.Request
 import Game.LambdaHack.Client.Response
 import Game.LambdaHack.Client.State
 import Game.LambdaHack.Client.UI
+import Game.LambdaHack.Client.UI.Msg
+import Game.LambdaHack.Client.UI.MsgM
 import Game.LambdaHack.Common.ClientOptions
 
 -- | Client monad in which one can receive responses from the server.
@@ -112,9 +115,13 @@ loopCli ccui sUIOptions clientOptions = do
               `showFailure` ()
     (False, RespUpdAtomicNoState UpdRestart{}) -> return ()
     _ -> error $ "unexpected command" `showFailure` (side, restored, cmd1)
+  -- At least 60 polls per second, so keyboard snappy enough
+  let longestDelay = 15000
+      smallDelay = 1500
+      minimalDelay = 150
   handleResponse cmd1
-  let loop :: Int -> m ()
-      loop pollingDelay = do
+  let loop :: Int -> Maybe RequestUI -> m ()
+      loop pollingDelay mreq = do
         mcmd <- tryReceiveResponse
         progress <- case mcmd of
           Nothing -> return False
@@ -123,30 +130,39 @@ loopCli ccui sUIOptions clientOptions = do
             return True
         quit <- getsClient squit
         unless quit $ do
-          sreqQueried <- getsSession sreqQueried
-          progress2 <-
-            if hasUI && sreqQueried then do
-              mreq <- queryUI
+          (progress3, mreq3) <-
+            if hasUI then do
+              sreqExpected <- getsSession sreqExpected
               case mreq of
-                Nothing -> return True
-                Just req -> do
-                  modifySession $ \sess -> sess {sreqQueried = False}
+                Nothing | sreqExpected -> do
+                  mreq2 <- queryUI
+                  return (True, mreq2)
+                Nothing | pollingDelay > smallDelay -> do
+                  msgAdd MsgActionAlert "Server has not updated reality in time. Regardless, making UI accessible. Press ESC to listen to server some more."
+                  mreq2 <- queryUI
+                  return (True, mreq2)
+                Nothing -> return (False, Nothing)
+                Just req | sreqExpected -> do
+                  modifySession $ \sess -> sess {sreqExpected = False}
                   sendRequestUI req
-                  return True
-            else return False
+                  return (True, Nothing)
+                Just{} | pollingDelay == longestDelay -> do
+                  msgAdd MsgActionAlert "Server not ready in time. Cancelling the action. Issue a new one."
+                  mreq2 <- queryUI
+                  return (True, mreq2)
+                Just{} -> return (False, mreq)
+            else return (False, Nothing)
           quit2 <- getsClient squit
           unless quit2 $  -- TODO: optimize away if not hasUI
-            if progress || progress2 then
-              loop 0
+            if progress || progress3 then
+              loop minimalDelay mreq3
             else do
               liftIO $ threadDelay pollingDelay
-              -- At lest 60 polls per second, so keyboard snappy enough
-              let longestDelay = 15000
-              loop $! max 150 $ min longestDelay $ 2 * pollingDelay
+              loop (min longestDelay $ 2 * pollingDelay) mreq3
   -- State and client state now valid.
   debugPossiblyPrint $ cliendKindText <+> "client"
                        <+> tshow side <+> "started 4/4."
-  loop 0
+  loop minimalDelay Nothing
   side2 <- getsClient sside
   debugPossiblyPrint $ cliendKindText <+> "client" <+> tshow side2
                        <+> "(initially" <+> tshow side <> ") stopped."

@@ -155,7 +155,6 @@ promptGetKey dm ovs onBlank frontKeyKeys = do
         not sreqQueried
         -- Any alarming message interupts macros.
         || anyInReport disturbsResting report
-
   macroFrame <- getsSession smacroFrame
   km <- case keyPending macroFrame of
     KeyMacro (km : kms) | not interrupted

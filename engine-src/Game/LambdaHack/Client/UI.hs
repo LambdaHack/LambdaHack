@@ -16,7 +16,7 @@ module Game.LambdaHack.Client.UI
 #ifdef EXPOSE_INTERNAL
     -- * Internal operations
   , MonadClientWriteRequest(..)
-  , humanCommand
+  , queryUIMain, humanCommand
 #endif
   ) where
 
@@ -66,6 +66,15 @@ class MonadClient m => MonadClientWriteRequest m where
 -- | Handle the move of a human player.
 queryUI :: (MonadClient m, MonadClientUI m) => m (Maybe RequestUI)
 queryUI = do
+  sreqQueried <- getsSession sreqQueried
+  let !_A = assert (not sreqQueried) ()  -- querying not nested
+  modifySession $ \sess -> sess {sreqQueried = True}
+  res <- queryUIMain
+  modifySession $ \sess -> sess {sreqQueried = False}
+  return res
+
+queryUIMain :: (MonadClient m, MonadClientUI m) => m (Maybe RequestUI)
+queryUIMain = do
   side <- getsClient sside
   fact <- getsState $ (EM.! side) . sfactionD
   if isAIFact fact then do

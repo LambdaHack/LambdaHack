@@ -41,9 +41,9 @@ import qualified System.Random.SplitMix32 as SM
 -- Some of it is saved, some is reset when a new playing session starts.
 -- An important component is the frontend session.
 data SessionUI = SessionUI
-  { sreqQueried    :: Bool          -- ^ response from server has been received
-                                    --   so server now queries for RequestUI
-                                    --   and so player is queried for a command
+  { sreqExpected   :: Bool          -- ^ response from server has been received
+                                    --   so server now expectts a @RequestUI@
+  , sreqQueried    :: Bool          -- ^ player is now queried for a command
   , sxhair         :: Maybe Target  -- ^ the common xhair
   , sxhairGoTo     :: Maybe Target  -- ^ xhair set for last GoTo
   , sactorUI       :: ActorDictUI   -- ^ assigned actor UI presentations
@@ -149,7 +149,8 @@ data ChosenLore =
 emptySessionUI :: UIOptions -> SessionUI
 emptySessionUI sUIOptions =
   SessionUI
-    { sreqQueried = False
+    { sreqExpected = False
+    , sreqQueried = False
     , sxhair = Nothing
     , sxhairGoTo = Nothing
     , sactorUI = EM.empty
@@ -253,7 +254,8 @@ instance Binary SessionUI where
     soverrideTut <- get
     susedHints <- get
     g <- get
-    let sreqQueried = False
+    let sreqExpected = False
+        sreqQueried = False
         sxhairGoTo = Nothing
         slastItemMove = Nothing
         schanF = ChanFrontend $ const $
