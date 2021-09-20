@@ -56,5 +56,10 @@ handleResponse cmd = case cmd of
     sendRequestAI cmdC
   RespSfxAtomic sfx ->
     displayRespSfxAtomicUI sfx
-  RespQueryUI ->
+  RespQueryUI -> do
+    hasUI <- clientHasUI
+    sreqQueried <- getsSession sreqQueried
+    let !_A = assert (hasUI && not sreqQueried
+                      `blame` "server queries without UI or ignores own query"
+                      `swith` (hasUI, sreqQueried)) ()
     queryUI
