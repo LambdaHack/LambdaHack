@@ -123,7 +123,17 @@ loopCli ccui sUIOptions clientOptions = do
             return True
         quit <- getsClient squit
         unless quit $ do
-          progress2 <- performQueryUI
+          sreqQueried <- getsSession sreqQueried
+          progress2 <-
+            if hasUI && sreqQueried then do
+              mreq <- queryUI
+              case mreq of
+                Nothing -> return True
+                Just req -> do
+                  modifySession $ \sess -> sess {sreqQueried = False}
+                  sendRequestUI req
+                  return True
+            else return False
           quit2 <- getsClient squit
           unless quit2 $  -- TODO: optimize away if not hasUI
             if progress || progress2 then
@@ -133,19 +143,6 @@ loopCli ccui sUIOptions clientOptions = do
               -- At lest 60 polls per second, so keyboard snappy enough
               let longestDelay = 15000
               loop $! max 150 $ min longestDelay $ 2 * pollingDelay
-      performQueryUI :: m Bool
-      performQueryUI | not hasUI = return False
-                     | otherwise = do
-        sreqQueried <- getsSession sreqQueried
-        if sreqQueried then do
-          mreq <- queryUI
-          case mreq of
-            Nothing -> return True
-            Just req -> do
-              modifySession $ \sess -> sess {sreqQueried = False}
-              sendRequestUI req
-              return True
-        else return False
   -- State and client state now valid.
   debugPossiblyPrint $ cliendKindText <+> "client"
                        <+> tshow side <+> "started 4/4."
