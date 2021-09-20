@@ -54,7 +54,6 @@ import           Game.LambdaHack.Common.ClientOptions
 import           Game.LambdaHack.Common.Faction
 import           Game.LambdaHack.Common.MonadStateRead
 import           Game.LambdaHack.Common.State
-import           Game.LambdaHack.Common.Types
 import           Game.LambdaHack.Content.ModeKind
 
 -- | Handle the move of a human player.
@@ -118,9 +117,8 @@ queryUI = do
 humanCommand :: forall m. (MonadClient m, MonadClientUI m) => m ReqUI
 humanCommand = do
   FontSetup{propFont} <- getFontSetup
-  modifySession $ \sess -> sess {slastLost = ES.empty}
-  let loop :: Maybe ActorId -> m ReqUI
-      loop mOldLeader = do
+  let loop :: m ReqUI
+      loop = do
         keyPressed <- anyKeyPressed
         macroFrame <- getsSession smacroFrame
         -- This message, in particular, disturbs.
@@ -147,8 +145,15 @@ humanCommand = do
               return []
         leader <- getLeaderUI
         b <- getsState $ getActorBody leader
-        when (bhp b <= 0 && Just leader /= mOldLeader) $ displayMore ColorBW
-          "If you move, the exertion will kill you. Consider asking for first aid instead."
+        lastLost <- getsSession slastLost
+        if bhp b <= 0 then
+          when (leader `ES.notMember` lastLost) $ do
+            -- Hacky reuse of @slastLost@ for near-death spam prevention.
+            modifySession $ \sess ->
+              sess {slastLost = ES.insert leader lastLost}
+            displayMore ColorBW "If you move, the exertion will kill you. Consider asking for first aid instead."
+        else
+          modifySession $ \sess -> sess {slastLost = ES.empty}
         let ovs = EM.fromList [(propFont, over)]
         km <- promptGetKey ColorFull ovs False []
         abortOrCmd <- do
@@ -177,8 +182,8 @@ humanCommand = do
             -- Exit the loop and let other actors act. No next key needed
             -- and no report could have been generated.
             return cmdS
-          Left Nothing -> loop $ Just leader
+          Left Nothing -> loop
           Left (Just err) -> do
             msgAdd MsgActionAlert $ showFailError err
-            loop $ Just leader
-  loop Nothing
+            loop
+  loop
