@@ -138,8 +138,13 @@ loopCli ccui sUIOptions clientOptions = do
                      | otherwise = do
         sreqQueried <- getsSession sreqQueried
         if sreqQueried then do
-          queryUI
-          return True
+          mreq <- queryUI
+          case mreq of
+            Nothing -> return True
+            Just req -> do
+              modifySession $ \sess -> sess {sreqQueried = False}
+              sendRequestUI req
+              return True
         else return False
   -- State and client state now valid.
   debugPossiblyPrint $ cliendKindText <+> "client"

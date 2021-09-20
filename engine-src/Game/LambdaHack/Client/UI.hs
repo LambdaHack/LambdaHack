@@ -64,17 +64,8 @@ class MonadClient m => MonadClientWriteRequest m where
   clientHasUI   :: m Bool
 
 -- | Handle the move of a human player.
-queryUI :: (MonadClient m, MonadClientUI m, MonadClientWriteRequest m ) => m ()
+queryUI :: (MonadClient m, MonadClientUI m) => m (Maybe RequestUI)
 queryUI = do
-  mreq <- queryUINoSend
-  case mreq of
-    Nothing -> return ()
-    Just req -> do
-      modifySession $ \sess -> sess {sreqQueried = False}
-      sendRequestUI req
-
-queryUINoSend :: (MonadClient m, MonadClientUI m) => m (Maybe RequestUI)
-queryUINoSend = do
   side <- getsClient sside
   fact <- getsState $ (EM.! side) . sfactionD
   if isAIFact fact then do
