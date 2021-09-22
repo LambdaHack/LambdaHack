@@ -119,7 +119,9 @@ loopCli ccui sUIOptions clientOptions = do
   -- State and client state now valid.
   debugPossiblyPrint $ cliendKindText <+> "client"
                        <+> tshow side <+> "started 4/4."
-  loop hasUI minimalDelay Nothing
+  if hasUI
+  then loopUI minimalDelay Nothing
+  else loopAI
   side2 <- getsClient sside
   debugPossiblyPrint $ cliendKindText <+> "client" <+> tshow side2
                        <+> "(initially" <+> tshow side <> ") stopped."
@@ -128,13 +130,26 @@ loopCli ccui sUIOptions clientOptions = do
 minimalDelay :: Int
 minimalDelay = 150
 
-loop :: forall m. ( MonadClientSetup m
-                  , MonadClientUI m
-                  , MonadClientAtomic m
-                  , MonadClientReadResponse m
-                  , MonadClientWriteRequest m )
-     => Bool -> Int -> Maybe RequestUI -> m ()
-loop hasUI pollingDelay mreq = do
+loopAI :: forall m. ( MonadClientSetup m
+                    , MonadClientUI m
+                    , MonadClientAtomic m
+                    , MonadClientReadResponse m
+                    , MonadClientWriteRequest m )
+       => m ()
+loopAI = do
+  cmd <- receiveResponse
+  handleResponse cmd
+  quit <- getsClient squit
+  unless quit
+    loopAI
+
+loopUI :: forall m. ( MonadClientSetup m
+                    , MonadClientUI m
+                    , MonadClientAtomic m
+                    , MonadClientReadResponse m
+                    , MonadClientWriteRequest m )
+       => Int -> Maybe RequestUI -> m ()
+loopUI pollingDelay mreq = do
   let longestDelay = 10 * smallDelay
       smallDelay = 10 * minimalDelay
   mcmd <- tryReceiveResponse
@@ -145,8 +160,7 @@ loop hasUI pollingDelay mreq = do
       return True
   quit <- getsClient squit
   unless quit $ do
-    (progress3, mreq3) <-
-      if hasUI then do
+    (progress3, mreq3) <- do
         sreqExpected <- getsSession sreqExpected
         case mreq of
           Nothing | sreqExpected -> do
@@ -166,11 +180,10 @@ loop hasUI pollingDelay mreq = do
             mreq2 <- queryUI
             return (True, mreq2)
           Just{} -> return (False, mreq)
-      else return (False, Nothing)
     quit2 <- getsClient squit
-    unless quit2 $  -- TODO: optimize away if not hasUI
+    unless quit2 $
       if progress || progress3 then
-        loop hasUI minimalDelay mreq3
+        loopUI minimalDelay mreq3
       else do
         liftIO $ threadDelay pollingDelay
-        loop hasUI (min longestDelay $ 2 * pollingDelay) mreq3
+        loopUI (min longestDelay $ 2 * pollingDelay) mreq3
