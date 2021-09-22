@@ -115,54 +115,62 @@ loopCli ccui sUIOptions clientOptions = do
               `showFailure` ()
     (False, RespUpdAtomicNoState UpdRestart{}) -> return ()
     _ -> error $ "unexpected command" `showFailure` (side, restored, cmd1)
-  -- At least 60 polls per second, so keyboard snappy enough
-  let longestDelay = 15000
-      smallDelay = 1500
-      minimalDelay = 150
   handleResponse cmd1
-  let loop :: Int -> Maybe RequestUI -> m ()
-      loop pollingDelay mreq = do
-        mcmd <- tryReceiveResponse
-        progress <- case mcmd of
-          Nothing -> return False
-          Just cmd -> do
-            handleResponse cmd
-            return True
-        quit <- getsClient squit
-        unless quit $ do
-          (progress3, mreq3) <-
-            if hasUI then do
-              sreqExpected <- getsSession sreqExpected
-              case mreq of
-                Nothing | sreqExpected -> do
-                  mreq2 <- queryUI
-                  return (True, mreq2)
-                Nothing | pollingDelay > smallDelay -> do
-                  msgAdd MsgActionAlert "Server has not updated reality in time. Regardless, making UI accessible. Press ESC to listen to server some more."
-                  mreq2 <- queryUI
-                  return (True, mreq2)
-                Nothing -> return (False, Nothing)
-                Just req | sreqExpected -> do
-                  modifySession $ \sess -> sess {sreqExpected = False}
-                  sendRequestUI req
-                  return (True, Nothing)
-                Just{} | pollingDelay == longestDelay -> do
-                  msgAdd MsgActionAlert "Server not ready in time. Cancelling the action. Issue a new one."
-                  mreq2 <- queryUI
-                  return (True, mreq2)
-                Just{} -> return (False, mreq)
-            else return (False, Nothing)
-          quit2 <- getsClient squit
-          unless quit2 $  -- TODO: optimize away if not hasUI
-            if progress || progress3 then
-              loop minimalDelay mreq3
-            else do
-              liftIO $ threadDelay pollingDelay
-              loop (min longestDelay $ 2 * pollingDelay) mreq3
   -- State and client state now valid.
   debugPossiblyPrint $ cliendKindText <+> "client"
                        <+> tshow side <+> "started 4/4."
-  loop minimalDelay Nothing
+  loop hasUI minimalDelay Nothing
   side2 <- getsClient sside
   debugPossiblyPrint $ cliendKindText <+> "client" <+> tshow side2
                        <+> "(initially" <+> tshow side <> ") stopped."
+
+-- | @100@ times that is 60 polls per second, which feels snappy.
+minimalDelay :: Int
+minimalDelay = 150
+
+loop :: forall m. ( MonadClientSetup m
+                  , MonadClientUI m
+                  , MonadClientAtomic m
+                  , MonadClientReadResponse m
+                  , MonadClientWriteRequest m )
+     => Bool -> Int -> Maybe RequestUI -> m ()
+loop hasUI pollingDelay mreq = do
+  let longestDelay = 10 * smallDelay
+      smallDelay = 10 * minimalDelay
+  mcmd <- tryReceiveResponse
+  progress <- case mcmd of
+    Nothing -> return False
+    Just cmd -> do
+      handleResponse cmd
+      return True
+  quit <- getsClient squit
+  unless quit $ do
+    (progress3, mreq3) <-
+      if hasUI then do
+        sreqExpected <- getsSession sreqExpected
+        case mreq of
+          Nothing | sreqExpected -> do
+            mreq2 <- queryUI
+            return (True, mreq2)
+          Nothing | pollingDelay > smallDelay -> do
+            msgAdd MsgActionAlert "Server has not updated reality in time. Regardless, making UI accessible. Press ESC to listen to server some more."
+            mreq2 <- queryUI
+            return (True, mreq2)
+          Nothing -> return (False, Nothing)
+          Just req | sreqExpected -> do
+            modifySession $ \sess -> sess {sreqExpected = False}
+            sendRequestUI req
+            return (True, Nothing)
+          Just{} | pollingDelay == longestDelay -> do
+            msgAdd MsgActionAlert "Server not ready in time. Cancelling the action. Issue a new one."
+            mreq2 <- queryUI
+            return (True, mreq2)
+          Just{} -> return (False, mreq)
+      else return (False, Nothing)
+    quit2 <- getsClient squit
+    unless quit2 $  -- TODO: optimize away if not hasUI
+      if progress || progress3 then
+        loop hasUI minimalDelay mreq3
+      else do
+        liftIO $ threadDelay pollingDelay
+        loop hasUI (min longestDelay $ 2 * pollingDelay) mreq3
