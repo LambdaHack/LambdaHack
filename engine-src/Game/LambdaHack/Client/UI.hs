@@ -15,7 +15,6 @@ module Game.LambdaHack.Client.UI
   , ChanFrontend, chanFrontend, tryRestore, clientPrintUI
 #ifdef EXPOSE_INTERNAL
     -- * Internal operations
-  , MonadClientWriteRequest(..)
   , queryUIMain, humanCommand
 #endif
   ) where
@@ -56,12 +55,6 @@ import           Game.LambdaHack.Common.Faction
 import           Game.LambdaHack.Common.MonadStateRead
 import           Game.LambdaHack.Common.State
 import           Game.LambdaHack.Content.ModeKind
-
--- | Client monad in which one can send requests to the client.
-class MonadClient m => MonadClientWriteRequest m where
-  sendRequestAI :: RequestAI -> m ()
-  sendRequestUI :: RequestUI -> m ()
-  clientHasUI   :: m Bool
 
 -- | Handle the move of a human player.
 queryUI :: (MonadClient m, MonadClientUI m) => m (Maybe RequestUI)

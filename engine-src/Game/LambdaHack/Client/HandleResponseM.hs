@@ -1,7 +1,7 @@
 {-# LANGUAGE FlexibleContexts #-}
 -- | Semantics of responses sent by the server to clients.
 module Game.LambdaHack.Client.HandleResponseM
-  ( MonadClientAtomic(..)
+  ( MonadClientAtomic(..), MonadClientWriteRequest(..)
   , handleResponse
   ) where
 
@@ -13,6 +13,7 @@ import Game.LambdaHack.Atomic (UpdAtomic)
 import Game.LambdaHack.Client.AI
 import Game.LambdaHack.Client.HandleAtomicM
 import Game.LambdaHack.Client.MonadClient
+import Game.LambdaHack.Client.Request
 import Game.LambdaHack.Client.Response
 import Game.LambdaHack.Client.UI
 import Game.LambdaHack.Common.MonadStateRead
@@ -25,6 +26,12 @@ class MonadClient m => MonadClientAtomic m where
   -- | Put state that is intended to be the result of performing
   -- an atomic update by the server on its copy of the client's 'State'.
   execPutState :: State -> m ()
+
+-- | Client monad in which one can send requests to the client.
+class MonadClient m => MonadClientWriteRequest m where
+  sendRequestAI :: RequestAI -> m ()
+  sendRequestUI :: RequestUI -> m ()
+  clientHasUI   :: m Bool
 
 -- | Handle server responses.
 --
