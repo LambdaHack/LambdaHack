@@ -6,7 +6,7 @@ module Game.LambdaHack.Client.LoopM
   , loopCli
 #ifdef EXPOSE_INTERNAL
     -- * Internal operations
-  , initAI, initUI
+  , initAI, initUI, loopAI, minimalDelay, loopUI
 #endif
   ) where
 
@@ -126,10 +126,6 @@ loopCli ccui sUIOptions clientOptions = do
   debugPossiblyPrint $ cliendKindText <+> "client" <+> tshow side2
                        <+> "(initially" <+> tshow side <> ") stopped."
 
--- | @100@ times that is 60 polls per second, which feels snappy.
-minimalDelay :: Int
-minimalDelay = 150
-
 loopAI :: forall m. ( MonadClientSetup m
                     , MonadClientUI m
                     , MonadClientAtomic m
@@ -143,6 +139,10 @@ loopAI = do
   unless quit
     loopAI
 
+-- | @100@ times that is 60 polls per second, which feels snappy.
+minimalDelay :: Int
+minimalDelay = 150
+
 loopUI :: forall m. ( MonadClientSetup m
                     , MonadClientUI m
                     , MonadClientAtomic m
@@ -150,40 +150,39 @@ loopUI :: forall m. ( MonadClientSetup m
                     , MonadClientWriteRequest m )
        => Int -> Maybe RequestUI -> m ()
 loopUI pollingDelay mreq = do
-  let longestDelay = 10 * smallDelay
-      smallDelay = 10 * minimalDelay
+  let smallDelay = 10 * minimalDelay
+      longestDelay = 10 * smallDelay
   mcmd <- tryReceiveResponse
-  progress <- case mcmd of
-    Nothing -> return False
+  case mcmd of
     Just cmd -> do
       handleResponse cmd
-      return True
-  quit <- getsClient squit
-  unless quit $ do
-    (progress3, mreq3) <- do
+      -- @squit@ can be changed only in @handleResponse@, so this is the only
+      -- place where it needs to be checked.
+      quit <- getsClient squit
+      unless quit $
+        loopUI minimalDelay mreq  -- shortcut
+    Nothing -> do
+      let query = do
+            mreqNew <- queryUI
+            return (True, mreqNew)
+      (progress, mreq2) <- do
         sreqExpected <- getsSession sreqExpected
         case mreq of
-          Nothing | sreqExpected -> do
-            mreq2 <- queryUI
-            return (True, mreq2)
+          Nothing | sreqExpected ->
+            query
           Nothing | pollingDelay > smallDelay -> do
             msgAdd MsgActionAlert "Server has not updated reality in time. Regardless, making UI accessible. Press ESC to listen to server some more."
-            mreq2 <- queryUI
-            return (True, mreq2)
-          Nothing -> return (False, Nothing)
+            query
           Just req | sreqExpected -> do
             modifySession $ \sess -> sess {sreqExpected = False}
-            sendRequestUI req
+            sendRequestUI req  -- old req sent and not needed any more
             return (True, Nothing)
           Just{} | pollingDelay == longestDelay -> do
             msgAdd MsgActionAlert "Server not ready in time. Cancelling the action. Issue a new one."
-            mreq2 <- queryUI
-            return (True, mreq2)
-          Just{} -> return (False, mreq)
-    quit2 <- getsClient squit
-    unless quit2 $
-      if progress || progress3 then
-        loopUI minimalDelay mreq3
+            query  -- old req dropped
+          _ -> return (False, mreq)
+      if progress then
+        loopUI minimalDelay mreq2
       else do
         liftIO $ threadDelay pollingDelay
-        loopUI (min longestDelay $ 2 * pollingDelay) mreq3
+        loopUI (min longestDelay $ 2 * pollingDelay) mreq2
