@@ -157,7 +157,11 @@ loopUI pollingDelay = do
       -- @squit@ can be changed only in @handleResponse@, so this is the only
       -- place where it needs to be checked.
       quit <- getsClient squit
-      unless quit $
+      unless quit $ do
+        sreqPending <- getsSession sreqPending
+        when (isJust sreqPending) $ case cmd of
+          RespQueryUI -> return ()
+          _ -> msgAdd MsgActionAlert "Warning: server updated game state after current command was issued but before it was received."
         loopUI minimalDelay  -- shortcut
     Nothing -> do
       let queryAndReset = do
