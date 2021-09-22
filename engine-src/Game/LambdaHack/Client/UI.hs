@@ -15,7 +15,7 @@ module Game.LambdaHack.Client.UI
   , ChanFrontend, chanFrontend, tryRestore, clientPrintUI
 #ifdef EXPOSE_INTERNAL
     -- * Internal operations
-  , queryUIMain, humanCommand
+  , queryUnderAI, humanCommandWithLeader, humanCommand
 #endif
   ) where
 
@@ -59,74 +59,82 @@ import           Game.LambdaHack.Content.ModeKind
 -- | Handle the move of a human player.
 queryUI :: (MonadClient m, MonadClientUI m) => m (Maybe RequestUI)
 queryUI = do
-  sreqQueried <- getsSession sreqQueried
-  let !_A = assert (not sreqQueried) ()  -- querying not nested
-  modifySession $ \sess -> sess {sreqQueried = True}
-  res <- queryUIMain
-  modifySession $ \sess -> sess {sreqQueried = False}
-  return res
-
-queryUIMain :: (MonadClient m, MonadClientUI m) => m (Maybe RequestUI)
-queryUIMain = do
   side <- getsClient sside
   fact <- getsState $ (EM.! side) . sfactionD
-  if isAIFact fact then do
-    recordHistory
-    keyPressed <- anyKeyPressed
-    if keyPressed && fleaderMode (gplayer fact) /= LeaderNull then do
-      -- Menu is entered in @displayRespUpdAtomicUI@ at @UpdAutoFaction@.
-      discardPressedKey
-      -- Regaining control of faction cancels some --stopAfter*.
-      modifyClient $ \cli ->
-        cli {soptions = (soptions cli) { sstopAfterSeconds = Nothing
-                                       , sstopAfterFrames = Nothing }}
-      return $ Just (ReqUIAutomate, Nothing)  -- stop AI
-    else do
-      -- As long as UI faction is under AI control, check, once per move,
-      -- for benchmark game stop.
-      stopAfterFrames <- getsClient $ sstopAfterFrames . soptions
-      bench <- getsClient $ sbenchmark . soptions
-      let exitCmd = if bench then ReqUIGameDropAndExit else ReqUIGameSaveAndExit
-      case stopAfterFrames of
-        Nothing -> do
-          stopAfterSeconds <- getsClient $ sstopAfterSeconds . soptions
-          case stopAfterSeconds of
-            Nothing -> return $ Just (ReqUINop, Nothing)
-            Just stopS -> do
-              exit <- elapsedSessionTimeGT stopS
-              if exit then do
-                tellAllClipPS
-                return $ Just (exitCmd, Nothing)  -- ask server to exit
-              else return $ Just (ReqUINop, Nothing)
-        Just stopF -> do
-          allNframes <- getsSession sallNframes
-          gnframes <- getsSession snframes
-          if allNframes + gnframes >= stopF then do
-            tellAllClipPS
-            return $ Just (exitCmd, Nothing)  -- ask server to exit
-          else return $ Just (ReqUINop, Nothing)
+  if isAIFact fact then
+    queryUnderAI
   else do
-    let mleader = gleader fact
-        !_A = assert (isJust mleader) ()
-    mreq <- humanCommand
-    case mreq of
-      Nothing -> return Nothing
-      Just req -> do
-        leader2 <- getLeaderUI
-        -- Don't send the leader switch to the server with these commands,
-        -- to avoid leader death at resume if his HP <= 0. That would violate
-        -- the principle that save and reload doesn't change game state.
-        let saveCmd cmd = case cmd of
-              ReqUIGameDropAndExit -> True
-              ReqUIGameSaveAndExit -> True
-              ReqUIGameSave -> True
-              _ -> False
-        return $ Just (req, if mleader /= Just leader2 && not (saveCmd req)
-                            then Just leader2
-                            else Nothing)
+    sreqQueried <- getsSession sreqQueried
+    let !_A = assert (not sreqQueried) ()  -- querying not nested
+    modifySession $ \sess -> sess {sreqQueried = True}
+    res <- humanCommandWithLeader
+    modifySession $ \sess -> sess {sreqQueried = False}
+    return res
+
+queryUnderAI :: (MonadClient m, MonadClientUI m) => m (Maybe RequestUI)
+queryUnderAI = do
+  side <- getsClient sside
+  fact <- getsState $ (EM.! side) . sfactionD
+  recordHistory
+  keyPressed <- anyKeyPressed
+  if keyPressed && fleaderMode (gplayer fact) /= LeaderNull then do
+    -- Menu is entered in @displayRespUpdAtomicUI@ at @UpdAutoFaction@.
+    discardPressedKey
+    -- Regaining control of faction cancels some --stopAfter*.
+    modifyClient $ \cli ->
+      cli {soptions = (soptions cli) { sstopAfterSeconds = Nothing
+                                     , sstopAfterFrames = Nothing }}
+    return $ Just (ReqUIAutomate, Nothing)  -- stop AI
+  else do
+    -- As long as UI faction is under AI control, check, once per move,
+    -- for benchmark game stop.
+    stopAfterFrames <- getsClient $ sstopAfterFrames . soptions
+    bench <- getsClient $ sbenchmark . soptions
+    let exitCmd = if bench then ReqUIGameDropAndExit else ReqUIGameSaveAndExit
+    case stopAfterFrames of
+      Nothing -> do
+        stopAfterSeconds <- getsClient $ sstopAfterSeconds . soptions
+        case stopAfterSeconds of
+          Nothing -> return $ Just (ReqUINop, Nothing)
+          Just stopS -> do
+            exit <- elapsedSessionTimeGT stopS
+            if exit then do
+              tellAllClipPS
+              return $ Just (exitCmd, Nothing)  -- ask server to exit
+            else return $ Just (ReqUINop, Nothing)
+      Just stopF -> do
+        allNframes <- getsSession sallNframes
+        gnframes <- getsSession snframes
+        if allNframes + gnframes >= stopF then do
+          tellAllClipPS
+          return $ Just (exitCmd, Nothing)  -- ask server to exit
+        else return $ Just (ReqUINop, Nothing)
+
+humanCommandWithLeader :: (MonadClient m, MonadClientUI m) => m (Maybe RequestUI)
+humanCommandWithLeader = do
+  side <- getsClient sside
+  fact <- getsState $ (EM.! side) . sfactionD
+  let mleader = gleader fact
+      !_A = assert (isJust mleader) ()
+  mreq <- humanCommand
+  case mreq of
+    Nothing -> return Nothing
+    Just req -> do
+      leader2 <- getLeaderUI
+      -- Don't send the leader switch to the server with these commands,
+      -- to avoid leader death at resume if his HP <= 0. That would violate
+      -- the principle that save and reload doesn't change game state.
+      let saveCmd cmd = case cmd of
+            ReqUIGameDropAndExit -> True
+            ReqUIGameSaveAndExit -> True
+            ReqUIGameSave -> True
+            _ -> False
+      return $ Just (req, if mleader /= Just leader2 && not (saveCmd req)
+                          then Just leader2
+                          else Nothing)
 
 -- | Let the human player issue commands until any command takes time.
-humanCommand :: forall m. (MonadClient m, MonadClientUI m) => m (Maybe ReqUI)
+humanCommand :: (MonadClient m, MonadClientUI m) => m (Maybe ReqUI)
 humanCommand = do
   FontSetup{propFont} <- getFontSetup
   keyPressed <- anyKeyPressed
