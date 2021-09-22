@@ -64,9 +64,17 @@ handleResponse cmd = case cmd of
   RespSfxAtomic sfx ->
     displayRespSfxAtomicUI sfx
   RespQueryUI -> do
-    hasUI <- clientHasUI
-    sreqExpected <- getsSession sreqExpected
-    let !_A = assert (hasUI && not sreqExpected
-                      `blame` "server expects a command from a client without UI or doesn't wait for its previously expected command"
-                      `swith` (hasUI, sreqExpected)) ()
-    modifySession $ \sess -> sess {sreqExpected = True}
+    sreqPending <- getsSession sreqPending
+    req <- case sreqPending of
+      Nothing -> do
+        -- Server sending @RespQueryUI@ means that it's sent everything
+        -- and is now ready to receive a request ASAP, so no point polling
+        -- and instead query the player repeatedly until request generated.
+        let loop = do
+              mreq <- queryUI
+              maybe loop pure mreq
+        loop
+      Just reqPending -> do
+        modifySession $ \sess -> sess {sreqPending = Nothing}
+        return reqPending
+    sendRequestUI req

@@ -20,7 +20,6 @@ import Game.LambdaHack.Atomic
 import Game.LambdaHack.Client.HandleAtomicM
 import Game.LambdaHack.Client.HandleResponseM
 import Game.LambdaHack.Client.MonadClient
-import Game.LambdaHack.Client.Request
 import Game.LambdaHack.Client.Response
 import Game.LambdaHack.Client.State
 import Game.LambdaHack.Client.UI
@@ -120,7 +119,7 @@ loopCli ccui sUIOptions clientOptions = do
   debugPossiblyPrint $ cliendKindText <+> "client"
                        <+> tshow side <+> "started 4/4."
   if hasUI
-  then loopUI minimalDelay Nothing
+  then loopUI minimalDelay
   else loopAI
   side2 <- getsClient sside
   debugPossiblyPrint $ cliendKindText <+> "client" <+> tshow side2
@@ -148,8 +147,8 @@ loopUI :: forall m. ( MonadClientSetup m
                     , MonadClientAtomic m
                     , MonadClientReadResponse m
                     , MonadClientWriteRequest m )
-       => Int -> Maybe RequestUI -> m ()
-loopUI pollingDelay mreq = do
+       => Int -> m ()
+loopUI pollingDelay = do
   let smallDelay = 10 * minimalDelay
       longestDelay = 10 * smallDelay
   mcmd <- tryReceiveResponse
@@ -160,29 +159,20 @@ loopUI pollingDelay mreq = do
       -- place where it needs to be checked.
       quit <- getsClient squit
       unless quit $
-        loopUI minimalDelay mreq  -- shortcut
+        loopUI minimalDelay  -- shortcut
     Nothing -> do
-      let query = do
+      let queryAndReset = do
             mreqNew <- queryUI
-            return (True, mreqNew)
-      (progress, mreq2) <- do
-        sreqExpected <- getsSession sreqExpected
-        case mreq of
-          Nothing | sreqExpected ->
-            query
-          Nothing | pollingDelay > smallDelay -> do
-            msgAdd MsgActionAlert "Server has not updated reality in time. Regardless, making UI accessible. Press ESC to listen to server some more."
-            query
-          Just req | sreqExpected -> do
-            modifySession $ \sess -> sess {sreqExpected = False}
-            sendRequestUI req  -- old req sent and not needed any more
-            return (True, Nothing)
-          Just{} | pollingDelay == longestDelay -> do
-            msgAdd MsgActionAlert "Server not ready in time. Cancelling the action. Issue a new one."
-            query  -- old req dropped
-          _ -> return (False, mreq)
-      if progress then
-        loopUI minimalDelay mreq2
-      else do
-        liftIO $ threadDelay pollingDelay
-        loopUI (min longestDelay $ 2 * pollingDelay) mreq2
+            modifySession $ \sess -> sess {sreqPending = mreqNew}
+            loopUI minimalDelay  -- resetting delay
+      sreqPending <- getsSession sreqPending
+      case sreqPending of
+        Nothing | pollingDelay > smallDelay -> do
+          msgAdd MsgActionAlert "Server hasn't updated game state soon enough. Regardless, making UI accessible. Press ESC to listen to server some more."
+          queryAndReset
+        Just{} | pollingDelay == longestDelay -> do
+          msgAdd MsgActionAlert "Server not ready to receive a command. Cancelling the command. Issue a new one."
+          queryAndReset  -- old req dropped
+        _ -> do
+          liftIO $ threadDelay pollingDelay
+          loopUI (min longestDelay $ 2 * pollingDelay)

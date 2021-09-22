@@ -18,7 +18,9 @@ import qualified Data.Map.Strict as M
 import qualified Data.Set as S
 import           Data.Time.Clock.POSIX
 import           GHC.Generics (Generic)
+import qualified System.Random.SplitMix32 as SM
 
+import           Game.LambdaHack.Client.Request
 import           Game.LambdaHack.Client.State
 import           Game.LambdaHack.Client.UI.ActorUI
 import           Game.LambdaHack.Client.UI.ContentClientUI
@@ -34,15 +36,15 @@ import           Game.LambdaHack.Common.Item
 import           Game.LambdaHack.Common.Time
 import           Game.LambdaHack.Common.Types
 import           Game.LambdaHack.Definition.Defs
-import qualified System.Random.SplitMix32 as SM
 
 -- | The information that is used across a client playing session,
 -- including many consecutive games in a single session.
 -- Some of it is saved, some is reset when a new playing session starts.
 -- An important component is the frontend session.
 data SessionUI = SessionUI
-  { sreqExpected   :: Bool          -- ^ response from server has been received
-                                    --   so server now expectts a @RequestUI@
+  { sreqPending    :: Maybe RequestUI
+                                    -- ^ request created by a UI query
+                                    --   but not yet sent to the server
   , sreqQueried    :: Bool          -- ^ player is now queried for a command
   , sxhair         :: Maybe Target  -- ^ the common xhair
   , sxhairGoTo     :: Maybe Target  -- ^ xhair set for last GoTo
@@ -149,7 +151,7 @@ data ChosenLore =
 emptySessionUI :: UIOptions -> SessionUI
 emptySessionUI sUIOptions =
   SessionUI
-    { sreqExpected = False
+    { sreqPending = Nothing
     , sreqQueried = False
     , sxhair = Nothing
     , sxhairGoTo = Nothing
@@ -254,7 +256,7 @@ instance Binary SessionUI where
     soverrideTut <- get
     susedHints <- get
     g <- get
-    let sreqExpected = False
+    let sreqPending = Nothing
         sreqQueried = False
         sxhairGoTo = Nothing
         slastItemMove = Nothing
