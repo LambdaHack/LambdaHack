@@ -119,7 +119,7 @@ loopCli ccui sUIOptions clientOptions = do
   debugPossiblyPrint $ cliendKindText <+> "client"
                        <+> tshow side <+> "started 4/4."
   if hasUI
-  then loopUI minimalDelay
+  then loopUI minimalDelay 0
   else loopAI
   side2 <- getsClient sside
   debugPossiblyPrint $ cliendKindText <+> "client" <+> tshow side2
@@ -147,8 +147,8 @@ loopUI :: forall m. ( MonadClientSetup m
                     , MonadClientAtomic m
                     , MonadClientReadResponse m
                     , MonadClientWriteRequest m )
-       => Int -> m ()
-loopUI pollingDelay = do
+       => Int -> Int -> m ()
+loopUI pollingDelay queryTimer = do
   let longestDelay = 100 * minimalDelay
   mcmd <- tryReceiveResponse
   case mcmd of
@@ -157,24 +157,26 @@ loopUI pollingDelay = do
       -- @squit@ can be changed only in @handleResponse@, so this is the only
       -- place where it needs to be checked.
       quit <- getsClient squit
-      unless quit $ do
-        sreqPending <- getsSession sreqPending
-        when (isJust sreqPending) $ case cmd of
-          RespQueryUI -> return ()
-          _ -> msgAdd MsgActionAlert "Warning: server updated game state after current command was issued but before it was received."
-        loopUI minimalDelay  -- shortcut
+      unless quit $ case cmd of
+        RespQueryUI -> loopUI minimalDelay 0  -- resetting delay and timer
+        _ -> do
+          sreqPending <- getsSession sreqPending
+          when (isJust sreqPending) $ do
+            msgAdd MsgActionAlert "Warning: server updated game state after current command was issued but before it was received."
+          loopUI minimalDelay queryTimer  -- shortcut
     Nothing -> do
       let queryAndReset = do
             mreqNew <- queryUI
             modifySession $ \sess -> sess {sreqPending = mreqNew}
-            loopUI minimalDelay  -- resetting delay
-      if pollingDelay == longestDelay then do
+            loopUI minimalDelay 0  -- resetting delay and timer
+      if queryTimer > longestDelay then do
         sreqPending <- getsSession sreqPending
         let msg = if isNothing sreqPending
-                  then "Server hasn't updated game state soon enough. Regardless, making UI accessible. Press ESC to listen to server some more."
+                  then "Server delayed asking us for a command. Regardless, UI is made accessible. Press ESC to listen to server some more."
                   else "Server delayed receiving a command from us. The command is cancelled. Issue a new one."
         msgAdd MsgActionAlert msg
         queryAndReset
       else do
         liftIO $ threadDelay pollingDelay
         loopUI (min longestDelay $ 2 * pollingDelay)
+               (queryTimer + pollingDelay)  -- only the waiting time considered
