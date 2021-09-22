@@ -149,8 +149,7 @@ loopUI :: forall m. ( MonadClientSetup m
                     , MonadClientWriteRequest m )
        => Int -> m ()
 loopUI pollingDelay = do
-  let smallDelay = 10 * minimalDelay
-      longestDelay = 10 * smallDelay
+  let longestDelay = 100 * minimalDelay
   mcmd <- tryReceiveResponse
   case mcmd of
     Just cmd -> do
@@ -165,14 +164,13 @@ loopUI pollingDelay = do
             mreqNew <- queryUI
             modifySession $ \sess -> sess {sreqPending = mreqNew}
             loopUI minimalDelay  -- resetting delay
-      sreqPending <- getsSession sreqPending
-      case sreqPending of
-        Nothing | pollingDelay > smallDelay -> do
-          msgAdd MsgActionAlert "Server hasn't updated game state soon enough. Regardless, making UI accessible. Press ESC to listen to server some more."
-          queryAndReset
-        Just{} | pollingDelay == longestDelay -> do
-          msgAdd MsgActionAlert "Server not ready to receive a command. Cancelling the command. Issue a new one."
-          queryAndReset  -- old req dropped
-        _ -> do
-          liftIO $ threadDelay pollingDelay
-          loopUI (min longestDelay $ 2 * pollingDelay)
+      if pollingDelay == longestDelay then do
+        sreqPending <- getsSession sreqPending
+        let msg = if isNothing sreqPending
+                  then "Server hasn't updated game state soon enough. Regardless, making UI accessible. Press ESC to listen to server some more."
+                  else "Server delayed receiving a command from us. The command is cancelled. Issue a new one."
+        msgAdd MsgActionAlert msg
+        queryAndReset
+      else do
+        liftIO $ threadDelay pollingDelay
+        loopUI (min longestDelay $ 2 * pollingDelay)

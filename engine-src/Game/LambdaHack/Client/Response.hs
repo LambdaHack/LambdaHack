@@ -11,8 +11,8 @@ import Prelude ()
 import Game.LambdaHack.Core.Prelude
 
 import Game.LambdaHack.Atomic
-import Game.LambdaHack.Common.Types
 import Game.LambdaHack.Common.State
+import Game.LambdaHack.Common.Types
 
 -- | Abstract syntax of responses sent by server to an AI or UI client
 -- (or a universal client that can handle both roles, which is why

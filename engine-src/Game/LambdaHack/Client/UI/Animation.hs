@@ -29,7 +29,7 @@ import Game.LambdaHack.Definition.Color
 -- | Animation is a list of frame modifications to play one by one,
 -- where each modification if a map from positions to level map symbols.
 newtype Animation = Animation [OverlaySpace]
-  deriving (Eq, Show)
+  deriving (Show, Eq)
 
 -- | Render animations on top of a screen frame.
 --
