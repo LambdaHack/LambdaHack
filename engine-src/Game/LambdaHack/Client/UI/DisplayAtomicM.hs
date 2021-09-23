@@ -342,8 +342,8 @@ displayRespUpdAtomicUI cmd = case cmd of
   -- Change faction attributes.
   UpdQuitFaction fid _ toSt manalytics -> quitFactionUI fid toSt manalytics
   UpdSpotStashFaction verbose fid lid pos -> do
+    side <- getsClient sside
     when verbose $ do
-      side <- getsClient sside
       if fid == side then
         msgLnAdd MsgFactionIntel
                  "You set up the shared inventory stash of your team."
@@ -353,7 +353,8 @@ displayRespUpdAtomicUI cmd = case cmd of
         msgAdd MsgFactionIntel $
           makeSentence [ "you have found the current"
                        , MU.WownW fidName "hoard location" ]
-    animate lid $ actorX pos
+    unless (fid == side) $
+      animate lid $ actorX pos
   UpdLoseStashFaction verbose fid lid pos -> do
     when verbose $ do
       side <- getsClient sside
@@ -631,7 +632,7 @@ displayRespUpdAtomicUI cmd = case cmd of
     msgAdd msgClass msg
     case hearMsg of
       HearUpd UpdDestroyActor{} ->
-        msgAdd MsgTutorialHint "Events out of your sight radius (as listed in the '#' skill menu) can sometimes be heard, depending on your hearing radius. Some, such as death shrieks, can always be heard regardless of skill and distance, including when they come from a different floor."
+        msgAdd MsgTutorialHint "Events out of your sight radius (as listed in the '#' skill menu) can sometimes be heard, depending on your hearing radius skill. Some, such as death shrieks, can always be heard regardless of skill and distance, including when they come from a different floor."
       HearTaunt{} ->
         msgAdd MsgTutorialHint "Enemies you can't see are sometimes heard yelling and emitting other noises. Whether you can hear them, depends on their distance and your hearing radius, as listed in the '#' skill menu."
       _ -> return ()
@@ -913,12 +914,12 @@ createActorUI born aid body = do
      | bfid body == side -> do
        let upd = ES.insert aid
        modifySession $ \sess -> sess {sselected = upd $ sselected sess}
-       unless (EM.null actorUI) $ do  -- don't speak about self in 3rd person
-         let verb = if born then "join you" else "be spotted"
-         aidVerbMU MsgSpottedActor aid verb
-         when born $
+       unless (EM.null actorUI) $ do  -- don't announce the very first party member
+         when born $ do
+           let verb = "join you"
+           aidVerbMU MsgSpottedActor aid verb
            msgAdd MsgTutorialHint "You survive this mission, or die trying, as a team. After a few moves, feel free to switch the controlled teammate (marked on the map with the yellow box) using the Tab key to another party member (marked with a green box)."  -- assuming newbies don't remap their keys
-         animate (blid body) $ actorX (bpos body)
+           animate (blid body) $ actorX (bpos body)
      | otherwise -> do
        -- Don't spam if the actor was already visible
        -- (but, e.g., on a tile that is invisible this turn
@@ -958,7 +959,7 @@ createActorUI born aid body = do
                if itemsSize == 0 then
                  return ThreatAnotherUnarmed
                else do
-                 msgAdd MsgSpottedThreat "Another threat, armed."
+                 msgAdd MsgSpottedThreat "Another threat, armed!"
                  return ThreatAnotherArmed
            else return ThreatNone  -- member of neutral faction
          aidVerbMU MsgSpottedActor aid verb
@@ -973,7 +974,7 @@ createActorUI born aid body = do
            ThreatAnotherUnarmed ->
              msgAdd MsgTutorialHint "When dealing with groups of enemies, remember than you fight as a team. After a few moves, switch the controlled teammate (marked on the map with the yellow box) using the Tab key to another party member (marked with a green box). Avoid meleeing alone."
            ThreatAnotherArmed ->
-             msgAdd MsgTutorialHint "When dealing with groups of armed enemies, remember than you fight as a team. After a few moves, switch the controlled teammate (marked on the map with the yellow box) using the Tab key to another party member (marked with a green box). Retreat, if necessary to form a front line. Soften the foes with missiles, especially exploding ones."
+             msgAdd MsgTutorialHint "When dealing with groups of armed enemies, remember than you fight as a team. After a few moves, switch the controlled teammate (marked on the map with the yellow box) using the Tab key to another party member (marked with a green box). Retreat, if necessary to form a front line. Soften the foes with missiles, especially of exploding kind."
          animate (blid body) $ actorX (bpos body)
 
 destroyActorUI :: MonadClientUI m => Bool -> ActorId -> Actor -> m ()
@@ -1289,9 +1290,11 @@ quitFactionUI fid toSt manalytics = do
         msgAdd MsgPromptGeneric pp
         when camping $ msgAdd MsgPromptGeneric "Saving..."
         pushFrame False  -- don't leave frozen prompts on the browser screen
-    _ -> when (isJust startingPart && (stOutcome <$> toSt) == Just Killed) $
-      -- Needed not to overlook the competitor dying in raid scenario.
-      displayMore ColorFull ""
+    _ ->
+      when (isJust startingPart && (stOutcome <$> toSt) == Just Killed) $ do
+        msgAdd MsgTutorialHint "When a whole faction gets eliminated, no new members of the party will ever appear and its stashed belongings may await far off, unclaimed and undefended. While some adventures require eliminating a faction (as seen in the adventure description screen in the help menu), for others it's an optional task, if possible at all. Instead, finding an exit may be necessary to win. It's enough if one character finds and triggers the exit. Others automatically follow, duly hauling all party belongings."
+        -- Needed not to overlook the competitor dying in raid scenario.
+        displayMore ColorFull ""
 
 displayGameOverLoot :: MonadClientUI m
                     => (ItemBag, Int) -> GenerationAnalytics -> m K.KM
@@ -1610,6 +1613,7 @@ displayRespSfxAtomicUI sfx = case sfx of
     side <- getsClient sside
     mleader <- getsClient sleader
     itemD <- getsState sitemD
+    actorMaxSk <- getsState $ getActorMaxSkills aid
     let fid = bfid b
         isOurCharacter = fid == side && not (bproj b)
         isAlive = bhp b > 0
@@ -1618,7 +1622,18 @@ displayRespSfxAtomicUI sfx = case sfx of
         -- The message classes are close enough. It's melee or similar.
         feelLookHPBad bigAdj projAdj = do
           feelLook MsgBadMiscEvent MsgGoodMiscEvent bigAdj projAdj
-          when isOurCharacter $ msgAdd MsgTutorialHint "You took damage of a different kind than the normal piercing hit, which means you armor didn't block any part of it. Normally, your HP (hit points, health) do not regenerate, so losing them is a big deal. Apply healing concoctions or take a long sleep to replenish your HP (but in this hectic environment not even uninterrupted resting that leads to sleep is easy)."
+          -- We can't know here if the hit was in melee, ranged or
+          -- even triggering a harmful item. However, let's not talk
+          -- about armor before the player has the most basic one.
+          -- for melee. Most of the time the first hit in the game is,
+          -- in fact, from melee, so that's a sensible default.
+          --
+          -- Note that the @idamage@ is called piercing (or edged) damage,
+          -- even though the distinction from impact damage is fleshed
+          -- out only in Allure.
+          when (isOurCharacter
+                && Ability.getSk Ability.SkArmorMelee actorMaxSk > 0) $
+            msgAdd MsgTutorialHint "You took damage of a different kind than the normal piercing hit, which means your armor couldn't block any part of it. Normally, your HP (hit points, health) do not regenerate, so losing them is a big deal. Apply healing concoctions or take a long sleep to replenish your HP (but in this hectic environment not even uninterrupted resting that leads to sleep is easy)."
         feelLookHPGood = feelLook MsgGoodMiscEvent MsgBadMiscEvent
         feelLookCalm bigAdj projAdj = when isAlive $
           feelLook MsgEffectMinor MsgEffectMinor bigAdj projAdj
@@ -1759,7 +1774,7 @@ displayRespSfxAtomicUI sfx = case sfx of
         -- Actor may be sent away before noticing the item that did it.
         let msuffix = if iid `EM.notMember` itemD
                       then Nothing
-                      else Just "propelled by"
+                      else Just "by the power of"
         mitemAidVerbMU MsgEffectMedium aid "teleport" iid msuffix
       IK.CreateItem{} -> return ()
       IK.DestroyItem{} -> return ()
@@ -2186,6 +2201,7 @@ strike catch source target iid = assert (source /= target) $ do
       [] -> return Nothing
       _ -> Just
            <$> rndToActionUI (frequency $ toFreq "msg armor" wornArmor)
+    actorMaxSkills <- getsState sactorMaxSkills
     let (blockWithWhat, blockWithWeapon) = case mblockArmor of
           Just (iidArmor, itemFullArmor) | iidArmor /= btrunk tb ->
             let (object1, object2) =
@@ -2319,6 +2335,10 @@ strike catch source target iid = assert (source /= target) $ do
           if bhp tb > 0
           then animate lid anim
           else animate lid $ twirlSplashShort ps Color.BrRed Color.Red
+        tutorialHintBenignFoe =
+          when (bfid sb == side
+                && not (actorCanMeleeToHarm actorMaxSkills target tb)) $
+            msgAdd MsgTutorialHint "This enemy can't harm you in melee. Left alone could it possibly be of some use?"
     -- The messages about parrying and immediately afterwards dying
     -- sound goofy, but there is no easy way to prevent that.
     -- And it's consistent.
@@ -2330,7 +2350,7 @@ strike catch source target iid = assert (source /= target) $ do
                      [MU.SubjectVerbSg spart "catch", tpart, "skillfully"]
          msgAdd MsgSpecialEvent msg
          when (bfid sb == side) $
-           msgAdd MsgTutorialHint "You managed to catch a projectile, thanks to being braced and hitting it exactly when it was at arm's reach. The obtained item has been put into the shared stash of the party."
+           msgAdd MsgTutorialHint "You managed to catch a projectile, thanks to being braced and hitting it exactly when it was at arm's reach. The obtained item has been put into the shared stash of your party."
          animate (blid tb) $ blockHit ps Color.BrGreen Color.Green
        | not (hasCharge localTime kitWeapon) -> do
          -- Can easily happen with a thrown discharged item.
@@ -2369,6 +2389,8 @@ strike catch source target iid = assert (source /= target) $ do
                [MU.SubjectVerbSg spart verb, tpart, adverb]
                ++ if bproj sb then [] else weaponNameWith
          msgAdd msgClassMelee msg  -- too common for color
+         when (bfid sb == side || bfid tb == side) $
+           msgAdd MsgTutorialHint "Some hits don't cause piercing, impact, burning nor any other direct damage. However, they can have other effects, bad, good or both."
          animate (blid tb) $ subtleHit ps
        | bproj sb -> do  -- more terse than melee, because sometimes very spammy
          let msgRangedPowerful | targetIsFoe = MsgRangedMightyWe
@@ -2388,6 +2410,7 @@ strike catch source target iid = assert (source /= target) $ do
                  , msgClassRanged )
          msgAdd msgRanged $ makePhrase [MU.Capitalize $ MU.Phrase attackParts]
                             <> msgArmor <> "."
+         tutorialHintBenignFoe
          animateAlive (blid tb) basicAnim
        | bproj tb -> do  -- much less emotion and the victim not active.
          let attackParts =
@@ -2431,8 +2454,5 @@ strike catch source target iid = assert (source /= target) $ do
                         else msgClassInfluence
          msgAdd msgClass $ makePhrase [MU.Capitalize $ MU.Phrase attackParts]
                            <> msgArmor <> tmpInfluenceBlurb <> "."
-         actorMaxSkills <- getsState sactorMaxSkills
-         when (bfid sb == side
-               && not (actorCanMeleeToHarm actorMaxSkills target tb)) $
-           msgAdd MsgTutorialHint "This enemy can't harm you. Left alone could it possibly be of some use?"
+         tutorialHintBenignFoe
          animateAlive (blid tb) basicAnim

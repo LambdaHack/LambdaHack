@@ -1,13 +1,13 @@
 -- | Server operations performed periodically in the game loop
 -- and related operations.
 module Game.LambdaHack.Server.PeriodicM
-  ( spawnMonster, addAnyActor
+  ( spawnMonster, addManyActors
   , advanceTime, advanceTimeTraj, overheadActorTime, swapTime
   , updateCalm, leadLevelSwitch
   , endOrLoop
 #ifdef EXPOSE_INTERNAL
     -- * Internal operations
-  , rollSpawnPos, gameExit
+  , addAnyActor, rollSpawnPos, gameExit
 #endif
   ) where
 
@@ -18,6 +18,7 @@ import Game.LambdaHack.Core.Prelude
 import qualified Data.EnumMap.Strict as EM
 import qualified Data.EnumSet as ES
 import           Data.Int (Int64)
+import qualified Data.IntMap.Strict as IM
 import qualified Data.Text as T
 
 import           Game.LambdaHack.Atomic
@@ -56,8 +57,9 @@ import           Game.LambdaHack.Server.State
 -- We assume heroes are never spawned.
 spawnMonster :: MonadServerAtomic m => m ()
 spawnMonster = do
-  COps{cocave} <- getsState scops
-  arenas <- getsServer sarenas
+ COps{cocave} <- getsState scops
+ arenas <- getsServer sarenas
+ unless (ES.null arenas) $ do
   -- Do this on only one of the arenas to prevent micromanagement,
   -- e.g., spreading leaders across levels to bump monster generation.
   arena <- rndToAction $ oneOf $ ES.elems arenas
@@ -71,25 +73,28 @@ spawnMonster = do
      | otherwise -> do
        totalDepth <- getsState stotalDepth
        lvlSpawned <- getsServer $ fromMaybe 0 . EM.lookup arena . snumSpawned
-       rc <- rndToAction
-             $ monsterGenChance ldepth totalDepth lvlSpawned (CK.cactorCoeff ck)
-       when rc $ do
+       let perMillion =
+             monsterGenChance ldepth totalDepth lvlSpawned (CK.cactorCoeff ck)
+           million = 1000000
+       k <- rndToAction $ randomR (1, million)
+       when (k <= perMillion) $ do
+         let numToSpawn | 10 * k <= perMillion = 3
+                        | 4 * k <= perMillion = 2
+                        | otherwise = 1
+             alt Nothing = Just 1
+             alt (Just n) = Just $ n + 1
          modifyServer $ \ser ->
-           ser {snumSpawned = EM.insert arena (lvlSpawned + 1)
-                              $ snumSpawned ser}
+           ser { snumSpawned = EM.insert arena (lvlSpawned + numToSpawn)
+                               $ snumSpawned ser
+               , sbandSpawned = IM.alter alt numToSpawn
+                                $ sbandSpawned ser }
          localTime <- getsState $ getLocalTime arena
-         maid <- addAnyActor False lvlSpawned (CK.cactorFreq ck) arena
-                             localTime Nothing
-         case maid of
-           Nothing -> return ()  -- suspect content; server debug elsewhere
-           Just aid -> do
-             b <- getsState $ getActorBody aid
-             mleader <- getsState $ gleader . (EM.! bfid b) . sfactionD
-             when (isNothing mleader) $ setFreshLeader (bfid b) aid
+         void $ addManyActors False lvlSpawned (CK.cactorFreq ck) arena localTime
+                              Nothing numToSpawn
 
 addAnyActor :: MonadServerAtomic m
             => Bool -> Int -> Freqs ItemKind -> LevelId -> Time -> Maybe Point
-            -> m (Maybe ActorId)
+            -> m (Maybe (ActorId, Point))
 addAnyActor summoned lvlSpawned actorFreq lid time mpos = do
   -- We bootstrap the actor by first creating the trunk of the actor's body
   -- that contains the fixed properties of all actors of that kind.
@@ -123,12 +128,46 @@ addAnyActor summoned lvlSpawned actorFreq lid time mpos = do
           rndToAction rollPos
       case mrolledPos of
         Just pos ->
-          Just <$> registerActor summoned itemKnownRaw (itemFullRaw, itemQuant)
-                                 fid pos lid time
+          Just . (\aid -> (aid, pos))
+          <$> registerActor summoned itemKnownRaw (itemFullRaw, itemQuant)
+                            fid pos lid time
         Nothing -> do
           debugPossiblyPrint
             "Server: addAnyActor: failed to find any free position"
           return Nothing
+
+addManyActors :: MonadServerAtomic m
+              => Bool -> Int -> Freqs ItemKind -> LevelId -> Time -> Maybe Point
+              -> Int
+              -> m Bool
+addManyActors summoned lvlSpawned actorFreq lid time mpos
+              howMany = assert (howMany >= 1) $ do
+  mInitialLAidPos <- case mpos of
+    Just pos -> return $ Just ([], pos)
+    Nothing ->
+      (\(aid, pos) -> ([aid], pos))
+      <$$> addAnyActor summoned lvlSpawned actorFreq lid time Nothing
+  case mInitialLAidPos of
+    Nothing -> return False  -- suspect content; server debug elsewhere
+    Just (laid, pos) -> do
+      cops@COps{coTileSpeedup} <- getsState scops
+      lvl <- getLevel lid
+      let validTile t = not $ Tile.isNoActor coTileSpeedup t
+          ps = nearbyFreePoints cops lvl validTile pos
+          psNeeded = take (howMany - length laid) ps
+      when (length psNeeded < howMany - length laid) $
+        debugPossiblyPrint $
+          "Server: addManyActors: failed to find enough free positions at"
+          <+> tshow (lid, pos)
+      maidposs <- forM psNeeded $
+        addAnyActor summoned lvlSpawned actorFreq lid time . Just
+      case laid ++ map fst (catMaybes maidposs) of
+        [] -> return False
+        aid : _ -> do
+          b <- getsState $ getActorBody aid
+          mleader <- getsState $ gleader . (EM.! bfid b) . sfactionD
+          when (isNothing mleader) $ setFreshLeader (bfid b) aid
+          return True
 
 rollSpawnPos :: COps -> ES.EnumSet Point
              -> Bool -> Bool -> LevelId -> Level -> FactionId -> State

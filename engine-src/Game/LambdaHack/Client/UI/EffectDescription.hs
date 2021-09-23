@@ -56,10 +56,10 @@ effectToSuffix detailLevel effect =
     Explode t -> "of" <+> displayGroupName t <+> "explosion"
     RefillHP p | p > 0 -> "of healing" <+> wrapInParens (affixBonus p)
     RefillHP 0 -> error $ "" `showFailure` effect
-    RefillHP p -> "of wounding" <+> wrapInParens (affixBonus p)
+    RefillHP p -> "of wounding" <+> wrapInParens (affixBonus $ - p)
     RefillCalm p | p > 0 -> "of soothing" <+> wrapInParens (affixBonus p)
     RefillCalm 0 -> error $ "" `showFailure` effect
-    RefillCalm p -> "of dismaying" <+> wrapInParens (affixBonus p)
+    RefillCalm p -> "of dismaying" <+> wrapInParens (affixBonus $ - p)
     Dominate -> "of domination"
     Impress -> "of impression"
     PutToSleep -> "of sleep"

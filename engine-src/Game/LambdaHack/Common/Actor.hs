@@ -21,7 +21,6 @@ import Game.LambdaHack.Core.Prelude
 import           Data.Binary
 import qualified Data.EnumMap.Strict as EM
 import           Data.Int (Int64)
-import           Data.Ratio
 import           GHC.Generics (Generic)
 
 import           Game.LambdaHack.Common.Item
@@ -31,7 +30,6 @@ import           Game.LambdaHack.Common.Time
 import           Game.LambdaHack.Common.Types
 import           Game.LambdaHack.Common.Vector
 import qualified Game.LambdaHack.Core.Dice as Dice
-import           Game.LambdaHack.Core.Random
 import qualified Game.LambdaHack.Definition.Ability as Ability
 import           Game.LambdaHack.Definition.Defs
 
@@ -266,27 +264,29 @@ getCarriedIidCStore b =
   let bagCarried (cstore, bag) = map (,cstore) $ EM.keys bag
   in concatMap bagCarried [(CEqp, beqp b), (COrgan, borgan b)]
 
--- | Chance that a new monster is generated. Depends on the number
--- of monsters already present, and on the level depth and its cave kind.
-monsterGenChance :: Dice.AbsDepth -> Dice.AbsDepth -> Int -> Int -> Rnd Bool
+-- | Chance, in parts per million, that a new monster is generated.
+-- Depends on the number of monsters already present, and on the level depth
+-- and its cave kind.
+--
+-- Note that sometimes monsters spawn in groups, increasing danger,
+-- but many monsters are generated asleep, decreasing initial danger.
+monsterGenChance :: Dice.AbsDepth -> Dice.AbsDepth -> Int -> Int -> Int
 monsterGenChance (Dice.AbsDepth ldepth) (Dice.AbsDepth totalDepth)
                  lvlSpawned actorCoeff =
   assert (totalDepth > 0 && ldepth > 0) $  -- ensured by content validation
-    -- The sustained spawn speed is now trebled compared to the comment below,
-    -- to compensate for some monsters generated asleep:
-    --
-    -- Heroes have to endure a level depth-sized wave of immediate
-    -- spawners for each level and only then the monsters start
+    -- Heroes have to endure a level-depth-proportional wave of immediate
+    -- spawners for each level. Then the monsters start
     -- to trickle more and more slowly, at the speed dictated
-    -- by @actorCoeff@ specified in cave kind.
-    -- On level 1/10, first 4 monsters spawn immediately, at level 5/10,
-    -- 8 spawn immediately. In general at level n, n+3 spawn at once.
+    -- by @actorCoeff@ specified in cave kind. Finally, spawning flattens out.
     let scaledDepth = ldepth * 10 `div` totalDepth
         -- Never spawn too rarely so that camping is never safe.
-        maxCoeff = 100 * 30  -- safe level after 30 spawns flattens out
-        coeff = min maxCoeff $ actorCoeff * (lvlSpawned - scaledDepth - 2)
-    in chance $ 3 % toInteger (coeff `max` 1)
-         -- 3 --- trebled
+        maxCoeff = 100 * 30  -- spawning on a level with benign @actorCoeff@
+                             -- flattens out after 30 spawns
+        coeff = max 1 $ min maxCoeff $ actorCoeff * (lvlSpawned - scaledDepth - 2)
+        million = 1000000
+    in 2 * million `div` coeff
+         -- @2@ added to compensate for monsters generated asleep,
+         -- without decreasing each @actorCoeff@ in content
 
 -- | How long until an actor's smell vanishes from a tile.
 smellTimeout :: Delta Time

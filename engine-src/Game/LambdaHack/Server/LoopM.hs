@@ -301,8 +301,8 @@ endClip updatePerFid = do
         -- expiration of short conditions, e.g., 1-turn haste. TODO.
         applyPeriodicLevel
       4 ->
-        -- Add monsters each turn, not each clip.
-        unless (ES.null arenas) spawnMonster
+        -- Spawn monsters at most once per turn.
+        spawnMonster
       _ -> return ()
   -- @applyPeriodicLevel@ might have, e.g., dominated actors, ending the game.
   -- It could not have unended the game, though.

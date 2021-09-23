@@ -38,6 +38,8 @@ startup coscreen = do
         saveKMP rf modifier key (PointUI 0 0)
         storeKeys
   SIO.hSetBuffering SIO.stdin SIO.NoBuffering
+  SIO.hSetBuffering SIO.stderr $ SIO.BlockBuffering $
+    Just $ 2 * rwidth coscreen * rheight coscreen
   void $ async storeKeys
   return $! rf
 
@@ -57,9 +59,10 @@ display coscreen SingleFrame{..} = do
       chunk [] = []
       chunk l = let (ch, r) = splitAt (rwidth coscreen) l
                 in ch : chunk r
-  SIO.hPutStrLn SIO.stderr $ unlines levelChar
+  SIO.hPutStr SIO.stderr $ unlines levelChar
   mapM_ (SIO.hPutStrLn SIO.stderr) $
     map (map Color.charFromW32 . snd) singlePropOverlay
+  SIO.hFlush SIO.stderr
 
 keyTranslate :: Char -> K.KM
 keyTranslate e = (\(key, modifier) -> K.KM modifier key) $

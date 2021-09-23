@@ -4,7 +4,7 @@ module Game.LambdaHack.Client.UI.FrameM
   , stopPlayBack, animate, fadeOutOrIn
 #ifdef EXPOSE_INTERNAL
     -- * Internal operations
-  , drawOverlay, oneLineBasicFrame, renderAnimFrames, resetPlayBack
+  , drawOverlay, basicFrameWithoutReport, renderAnimFrames, resetPlayBack
 #endif
   ) where
 
@@ -105,11 +105,22 @@ drawOverlay dm onBlank ovs lid = do
                        $ overlayFrame rwidth ovBackdrop basicFrame
   return (overlayedFrame, (ovProp, ovMono))
 
-oneLineBasicFrame :: MonadClientUI m => LevelId -> DisplayFont -> m PreFrame3
-oneLineBasicFrame arena font = do
+-- This is not our turn, so we can't obstruct screen with messages
+-- and message reformatting causes distraction, so there's no point
+-- trying to squeeze the report into the single available line,
+-- except when it's not our turn permanently, because AI runs UI.
+--
+-- The only real drawback of this is that when resting for longer time
+-- I can't see the boring messages accumulate until a non-boring interrupts me.
+basicFrameWithoutReport :: MonadClientUI m => LevelId -> DisplayFont -> m PreFrame3
+basicFrameWithoutReport arena font = do
+  side <- getsClient sside
+  fact <- getsState $ (EM.! side) . sfactionD
   report <- getReportUI False
   let par1 = firstParagraph $ foldr (<+:>) [] $ renderReport True report
-      truncRep = EM.fromList [(font, [(PointUI 0 0, par1)])]
+      underAI = isAIFact fact
+      truncRep | underAI = EM.fromList [(font, [(PointUI 0 0, par1)])]
+               | otherwise = EM.empty
   drawOverlay ColorFull False truncRep arena
 
 -- | Push the frame depicting the current level to the frame queue.
@@ -124,7 +135,7 @@ pushFrame delay = do
   unless keyPressed $ do
     lidV <- viewedLevelUI
     FontSetup{propFont} <- getFontSetup
-    frame <- oneLineBasicFrame lidV propFont
+    frame <- basicFrameWithoutReport lidV propFont
     -- Pad with delay before and after to let player see, e.g., door being
     -- opened a few ticks after it came into vision, the same turn.
     displayFrames lidV $
@@ -248,7 +259,7 @@ renderAnimFrames onBlank arena anim = do
   let ovFont = if not onBlank || fromMaybe False snoAnim
                then propFont
                else squareFont
-  basicFrame <- oneLineBasicFrame arena ovFont
+  basicFrame <- basicFrameWithoutReport arena ovFont
   return $! if fromMaybe False snoAnim
             then [Just basicFrame]
             else map (fmap (\fr -> (fr, snd basicFrame)))

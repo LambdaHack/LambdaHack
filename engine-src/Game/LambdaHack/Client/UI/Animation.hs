@@ -72,6 +72,10 @@ mzipPairs (p1, p2) (mattr1, mattr2) =
                         -- not the action.
                         [mzip (p1, mattr1)]
 
+-- | Empty animation with a frame of delay, to be used to momentarily display
+-- something for the player to see, e.g., the aiming line when swerving it.
+-- Don't use this if there are multi-line messages on the screen,
+-- because the text blinking is going to be distracting.
 pushAndDelay :: Animation
 pushAndDelay = Animation [[]]
 
