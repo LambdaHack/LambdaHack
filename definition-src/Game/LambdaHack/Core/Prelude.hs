@@ -52,6 +52,7 @@ import           Data.Int (Int64)
 import           Data.Key
 import           Data.List.Compat hiding (foldl, foldl1, length, null, sum)
 import qualified Data.List.Compat as List
+import qualified Data.List.NonEmpty as DLNE
 import           Data.Maybe
 import           Data.Ord (comparing)
 import           Data.Semigroup.Compat (Semigroup ((<>)))

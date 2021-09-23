@@ -124,8 +124,8 @@ cmdSemantics cmd = case cmd of
   GameKeeperToggle -> gameKeeperToggle >> challengeMenuHuman cmdSemInCxtOfKM
   GameScenarioIncr -> gameScenarioIncr >> challengeMenuHuman cmdSemInCxtOfKM
 
-  GameRestart -> weaveJust <$> gameRestartHuman
-  GameQuit -> weaveJust <$> gameQuitHuman
+  GameRestart -> weaveJust <$> (gameExitWithHuman Restart)
+  GameQuit -> weaveJust <$> (gameExitWithHuman Quit)
   GameDrop -> weaveJust <$> fmap Right gameDropHuman
   GameExit -> weaveJust <$> fmap Right gameExitHuman
   GameSave -> weaveJust <$> fmap Right gameSaveHuman
