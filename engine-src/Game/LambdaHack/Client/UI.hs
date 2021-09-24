@@ -70,6 +70,7 @@ queryUIunderAI :: (MonadClient m, MonadClientUI m) => m RequestUI
 queryUIunderAI = do
   side <- getsClient sside
   fact <- getsState $ (EM.! side) . sfactionD
+  -- Record history so the player can browse it later on.
   recordHistory
   keyPressed <- anyKeyPressed
   if keyPressed && fleaderMode (gplayer fact) /= LeaderNull then do

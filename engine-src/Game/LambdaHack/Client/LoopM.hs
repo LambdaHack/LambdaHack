@@ -185,6 +185,8 @@ loopUI queryTimeout = do
       if keyPressed then do
         -- Stop displaying the prompt, if any, but keep UI simple.
         modifySession $ \sess -> sess {sreqDelayed = ReqDelayedHandled}
+        -- The key pressed to gain control is not considered a command.
+        discardPressedKey
         let msg = if isNothing sreqPending
                   then "Server delayed asking us for a command. Regardless, UI is made accessible. Press ESC twice to listen to server some more."
                   else "Server delayed receiving a command from us. The command is cancelled. Issue a new one."
