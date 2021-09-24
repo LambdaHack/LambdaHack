@@ -67,6 +67,8 @@ handleResponse cmd = case cmd of
     req <- queryUIunderAI
     sendRequestUI req
   RespQueryUI -> do
+    -- Stop displaying the prompt, if any.
+    modifySession $ \sess -> sess {sreqDelayed = False}
     sreqPending <- getsSession sreqPending
     req <- case sreqPending of
       Nothing -> do

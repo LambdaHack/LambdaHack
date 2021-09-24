@@ -159,13 +159,6 @@ loopUI :: forall m. ( MonadClientSetup m
                     , MonadClientWriteRequest m )
        => Int -> m ()
 loopUI queryTimeout = do
-  let loopReset = do
-        -- We may yet not know if server is ready, but perhaps server
-        -- tried hard to contact us while we took control and now it sleeps
-        -- for a bit, so let's give it the benefit of the doubt
-        -- and a slight pause before we alarm the player again.
-        modifySession $ \sess -> sess {sreqDelayed = False}
-        loopUI longestDelay  -- resetting timeout
   sreqPending <- getsSession sreqPending
   mcmd <- if queryTimeout <= 0
           then return Nothing
@@ -177,7 +170,7 @@ loopUI queryTimeout = do
       -- place where it needs to be checked.
       quit <- getsClient squit
       unless quit $ case cmd of
-        RespQueryUI -> loopReset
+        RespQueryUI -> loopUI longestDelay  -- resetting timeout
         _ -> do
           when (isJust sreqPending) $ do
             msgAdd MsgActionAlert "Warning: server updated game state after current command was issued by the client but before it was received by the server."
@@ -189,13 +182,19 @@ loopUI queryTimeout = do
                    -- or was reached when waiting for the server
       keyPressed <- anyKeyPressed
       if keyPressed then do
+        -- Stop displaying the prompt, if any.
+        modifySession $ \sess -> sess {sreqDelayed = False}
         let msg = if isNothing sreqPending
                   then "Server delayed asking us for a command. Regardless, UI is made accessible. Press ESC to listen to server some more."
                   else "Server delayed receiving a command from us. The command is cancelled. Issue a new one."
         msgAdd MsgActionAlert msg
         mreqNew <- queryUI
         modifySession $ \sess -> sess {sreqPending = mreqNew}
-        loopReset
+        -- We may yet not know if server is ready, but perhaps server
+        -- tried hard to contact us while we took control and now it sleeps
+        -- for a bit, so let's give it the benefit of the doubt
+        -- and a slight pause before we alarm the player again.
+        loopUI longestDelay
       else do
         -- We know server is not ready.
         modifySession $ \sess -> sess {sreqDelayed = True}
