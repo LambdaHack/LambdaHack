@@ -119,7 +119,7 @@ loopCli ccui sUIOptions clientOptions = do
   debugPossiblyPrint $ cliendKindText <+> "client"
                        <+> tshow side <+> "started 4/4."
   if hasUI
-  then loopUI minimalDelay 0
+  then loopUI minimalDelay longestDelay
   else loopAI
   side2 <- getsClient sside
   debugPossiblyPrint $ cliendKindText <+> "client" <+> tshow side2
@@ -142,14 +142,16 @@ loopAI = do
 minimalDelay :: Int
 minimalDelay = 150
 
+longestDelay :: Int
+longestDelay = 100 * minimalDelay
+
 loopUI :: forall m. ( MonadClientSetup m
                     , MonadClientUI m
                     , MonadClientAtomic m
                     , MonadClientReadResponse m
                     , MonadClientWriteRequest m )
        => Int -> Int -> m ()
-loopUI pollingDelay queryTimer = do
-  let longestDelay = 100 * minimalDelay
+loopUI pollingDelay queryTimeout = do
   mcmd <- tryReceiveResponse
   case mcmd of
     Just cmd -> do
@@ -158,18 +160,19 @@ loopUI pollingDelay queryTimer = do
       -- place where it needs to be checked.
       quit <- getsClient squit
       unless quit $ case cmd of
-        RespQueryUI -> loopUI minimalDelay 0  -- resetting delay and timer
+        RespQueryUI ->
+          loopUI minimalDelay longestDelay  -- resetting delay and timeout
         _ -> do
           sreqPending <- getsSession sreqPending
           when (isJust sreqPending) $ do
             msgAdd MsgActionAlert "Warning: server updated game state after current command was issued but before it was received."
-          loopUI minimalDelay queryTimer  -- shortcut
+          loopUI minimalDelay queryTimeout  -- shortcut
     Nothing -> do
       let queryAndReset = do
             mreqNew <- queryUI
             modifySession $ \sess -> sess {sreqPending = mreqNew}
-            loopUI minimalDelay 0  -- resetting delay and timer
-      if queryTimer > longestDelay then do
+            loopUI minimalDelay longestDelay  -- resetting delay and timeout
+      if queryTimeout < 0 then do
         sreqPending <- getsSession sreqPending
         let msg = if isNothing sreqPending
                   then "Server delayed asking us for a command. Regardless, UI is made accessible. Press ESC to listen to server some more."
@@ -179,4 +182,4 @@ loopUI pollingDelay queryTimer = do
       else do
         liftIO $ threadDelay pollingDelay
         loopUI (min longestDelay $ 2 * pollingDelay)
-               (queryTimer + pollingDelay)  -- only the waiting time considered
+               (queryTimeout - pollingDelay)  -- only the waiting time considered
