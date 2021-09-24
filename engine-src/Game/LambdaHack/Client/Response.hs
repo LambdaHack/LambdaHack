@@ -28,6 +28,8 @@ data Response =
     -- ^ compute an AI move for the actor and send (the semantics of) it
   | RespSfxAtomic SfxAtomic
     -- ^ perform special effects (animations, messages, etc.)
+  | RespQueryUIunderAI
+    -- ^ check if the UI client wants to regain control
   | RespQueryUI
     -- ^ prompt the human player for a command and send (the semantics of) it
   deriving Show

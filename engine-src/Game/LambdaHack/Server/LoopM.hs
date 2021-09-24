@@ -19,7 +19,7 @@ import qualified Data.EnumMap.Strict as EM
 import qualified Data.EnumSet as ES
 
 import           Game.LambdaHack.Atomic
-import           Game.LambdaHack.Client (ReqUI (..))
+import           Game.LambdaHack.Client (ReqUI (..), Response (..))
 import           Game.LambdaHack.Common.Actor
 import           Game.LambdaHack.Common.ActorState
 import           Game.LambdaHack.Common.Analytics
@@ -616,7 +616,7 @@ hActors as@(aid : rest) = do
       -- the same moment as natural game over was detected.
       mainUIunderAI = mainUIactor && isAIFact fact && not breakLoop
   when mainUIunderAI $ do
-    cmdS <- sendQueryUI side aid
+    cmdS <- sendQueryUI RespQueryUIunderAI side aid
     case fst cmdS of
       ReqUINop -> return ()
       ReqUIAutomate -> execUpdAtomic $ UpdAutoFaction side False
@@ -641,7 +641,7 @@ hActors as@(aid : rest) = do
         mtimed <- handleRequestAI cmd
         return (aidNew, mtimed)
       else do
-        (cmd, maid) <- sendQueryUI side aid
+        (cmd, maid) <- sendQueryUI RespQueryUI side aid
         aidNew <- mswitchLeader maid
         mtimed <- handleRequestUI side aidNew cmd
         return (aidNew, mtimed)

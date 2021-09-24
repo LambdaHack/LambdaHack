@@ -63,6 +63,9 @@ handleResponse cmd = case cmd of
     sendRequestAI cmdC
   RespSfxAtomic sfx ->
     displayRespSfxAtomicUI sfx
+  RespQueryUIunderAI -> do
+    req <- queryUIunderAI
+    sendRequestUI req
   RespQueryUI -> do
     sreqPending <- getsSession sreqPending
     req <- case sreqPending of

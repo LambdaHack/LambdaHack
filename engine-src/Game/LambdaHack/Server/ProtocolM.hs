@@ -147,9 +147,8 @@ sendQueryAI fid aid = do
   return req
 
 sendQueryUI :: (MonadServerAtomic m, MonadServerComm m)
-            => FactionId -> ActorId -> m RequestUI
-sendQueryUI fid _aid = do
-  let respUI = RespQueryUI
+            => Response -> FactionId -> ActorId -> m RequestUI
+sendQueryUI respUI fid _aid = do
   debug <- getsServer $ sniff . soptions
   when debug $ debugResponse fid respUI
   chan <- getsDict (EM.! fid)
