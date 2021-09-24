@@ -203,20 +203,18 @@ revCmdMap = do
 
 getReportUI :: MonadClientUI m => Bool -> m Report
 getReportUI insideMenu = do
-  side <- getsClient sside
   saimMode <- getsSession saimMode
   (inhabitants, embeds) <-
     if isJust saimMode then computeChosenLore else return ([], [])
   sUIOptions <- getsSession sUIOptions
   report <- getsSession $ newReport . shistory
-  fact <- getsState $ (EM.! side) . sfactionD
   curTutorial <- getsSession scurTutorial
   overrideTut <- getsSession soverrideTut
+  sreqDelayed <- getsSession sreqDelayed
   -- Different from ordinary tutorial hints in that shown more than once.
   let newcomerHelp = fromMaybe curTutorial overrideTut
       detailAtDefault = (detailLevel <$> saimMode) == Just defaultDetailLevel
       detailMinimal = (detailLevel <$> saimMode) == Just minBound
-      underAI = isAIFact fact
       prefixColors = uMessageColors sUIOptions
       -- Here we assume newbies don't override default keys.
       miniHintAiming = if null inhabitants && null embeds
@@ -224,12 +222,12 @@ getReportUI insideMenu = do
                        else miniHintAimingLore
       promptAim = toMsgShared prefixColors MsgPromptGeneric
                   $ miniHintAiming <> "\n"
-      promptAI = toMsgShared prefixColors MsgPromptAction
-                             "<press any key for main menu>"
+      promptDelayed = toMsgShared prefixColors MsgPromptAction
+                                  "<press any key to regain control>"
   return $! if | newcomerHelp && not insideMenu
                  && detailAtDefault && not detailMinimal ->
                    consReport promptAim report
-               | underAI -> consReport promptAI report
+               | sreqDelayed -> consReport promptDelayed report
                | otherwise -> report
 
 computeChosenLore :: MonadClientUI m

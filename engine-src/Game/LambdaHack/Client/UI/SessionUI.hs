@@ -45,6 +45,8 @@ data SessionUI = SessionUI
   { sreqPending    :: Maybe RequestUI
                                     -- ^ request created by a UI query
                                     --   but not yet sent to the server
+  , sreqDelayed    :: Bool          -- ^ server delayed sending query to client
+                                    --   or receiving request from client
   , sreqQueried    :: Bool          -- ^ player is now queried for a command
   , sxhair         :: Maybe Target  -- ^ the common xhair
   , sxhairGoTo     :: Maybe Target  -- ^ xhair set for last GoTo
@@ -152,6 +154,7 @@ emptySessionUI :: UIOptions -> SessionUI
 emptySessionUI sUIOptions =
   SessionUI
     { sreqPending = Nothing
+    , sreqDelayed = False
     , sreqQueried = False
     , sxhair = Nothing
     , sxhairGoTo = Nothing
@@ -257,6 +260,7 @@ instance Binary SessionUI where
     susedHints <- get
     g <- get
     let sreqPending = Nothing
+        sreqDelayed = False
         sreqQueried = False
         sxhairGoTo = Nothing
         slastItemMove = Nothing
