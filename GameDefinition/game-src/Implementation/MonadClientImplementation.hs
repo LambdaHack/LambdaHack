@@ -16,6 +16,7 @@ import Game.LambdaHack.Core.Prelude
 import           Control.Concurrent
 import qualified Control.Monad.IO.Class as IO
 import           Control.Monad.Trans.State.Strict hiding (State)
+import           System.Timeout
 
 import           Game.LambdaHack.Atomic (MonadStateWrite (..))
 import           Game.LambdaHack.Client
@@ -99,9 +100,9 @@ instance MonadClientReadResponse CliImplementation where
   receiveResponse = CliImplementation $ do
     ChanServer{responseS} <- gets cliDict
     IO.liftIO $ takeMVar responseS
-  tryReceiveResponse = CliImplementation $ do
+  receiveResponseWithTimeout t = CliImplementation $ do
     ChanServer{responseS} <- gets cliDict
-    IO.liftIO $ tryTakeMVar responseS
+    IO.liftIO $ timeout t $ takeMVar responseS
 
 instance MonadClientWriteRequest CliImplementation where
   sendRequestAI scmd = CliImplementation $ do

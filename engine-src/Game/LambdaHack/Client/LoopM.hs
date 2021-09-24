@@ -6,15 +6,13 @@ module Game.LambdaHack.Client.LoopM
   , loopCli
 #ifdef EXPOSE_INTERNAL
     -- * Internal operations
-  , initAI, initUI, loopAI, minimalDelay, loopUI
+  , initAI, initUI, loopAI, longestDelay, loopUI
 #endif
   ) where
 
 import Prelude ()
 
 import Game.LambdaHack.Core.Prelude
-
-import Control.Concurrent
 
 import Game.LambdaHack.Atomic
 import Game.LambdaHack.Client.HandleAtomicM
@@ -30,7 +28,7 @@ import Game.LambdaHack.Common.ClientOptions
 -- | Client monad in which one can receive responses from the server.
 class MonadClient m => MonadClientReadResponse m where
   receiveResponse :: m Response
-  tryReceiveResponse :: m (Maybe Response)
+  receiveResponseWithTimeout :: Int -> m (Maybe Response)
 
 initAI :: MonadClient m => m ()
 initAI = do
@@ -119,7 +117,7 @@ loopCli ccui sUIOptions clientOptions = do
   debugPossiblyPrint $ cliendKindText <+> "client"
                        <+> tshow side <+> "started 4/4."
   if hasUI
-  then loopUI minimalDelay longestDelay
+  then loopUI longestDelay
   else loopAI
   side2 <- getsClient sside
   debugPossiblyPrint $ cliendKindText <+> "client" <+> tshow side2
@@ -138,48 +136,51 @@ loopAI = do
   unless quit
     loopAI
 
--- | @100@ times that is 60 polls per second, which feels snappy.
-minimalDelay :: Int
-minimalDelay = 150
-
+-- | This is over 60 ticks per second, which feels snappy.
 longestDelay :: Int
-longestDelay = 100 * minimalDelay
+longestDelay = 15000
 
+-- | The argument represents, with some arbitrary approximation,
+-- how long the client is still willing to wait for a UI query from the server,
+-- before the client considers itself ignored (at which point, it gives
+-- direct control to the player, no longer waiting for the server
+-- to prompt it to do so).
 loopUI :: forall m. ( MonadClientSetup m
                     , MonadClientUI m
                     , MonadClientAtomic m
                     , MonadClientReadResponse m
                     , MonadClientWriteRequest m )
-       => Int -> Int -> m ()
-loopUI pollingDelay queryTimeout = do
-  mcmd <- tryReceiveResponse
-  case mcmd of
-    Just cmd -> do
-      handleResponse cmd
-      -- @squit@ can be changed only in @handleResponse@, so this is the only
-      -- place where it needs to be checked.
-      quit <- getsClient squit
-      unless quit $ case cmd of
-        RespQueryUI ->
-          loopUI minimalDelay longestDelay  -- resetting delay and timeout
-        _ -> do
-          sreqPending <- getsSession sreqPending
-          when (isJust sreqPending) $ do
-            msgAdd MsgActionAlert "Warning: server updated game state after current command was issued but before it was received."
-          loopUI minimalDelay queryTimeout  -- shortcut
-    Nothing -> do
-      let queryAndReset = do
-            mreqNew <- queryUI
-            modifySession $ \sess -> sess {sreqPending = mreqNew}
-            loopUI minimalDelay longestDelay  -- resetting delay and timeout
-      if queryTimeout < 0 then do
-        sreqPending <- getsSession sreqPending
-        let msg = if isNothing sreqPending
-                  then "Server delayed asking us for a command. Regardless, UI is made accessible. Press ESC to listen to server some more."
-                  else "Server delayed receiving a command from us. The command is cancelled. Issue a new one."
-        msgAdd MsgActionAlert msg
-        queryAndReset
-      else do
-        liftIO $ threadDelay pollingDelay
-        loopUI (min longestDelay $ 2 * pollingDelay)
-               (queryTimeout - pollingDelay)  -- only the waiting time considered
+       => Int -> m ()
+loopUI queryTimeout =
+  if queryTimeout <= 0 then do
+    sreqPending <- getsSession sreqPending
+    let msg = if isNothing sreqPending
+              then "Server delayed asking us for a command. Regardless, UI is made accessible. Press ESC to listen to server some more."
+              else "Server delayed receiving a command from us. The command is cancelled. Issue a new one."
+    msgAdd MsgActionAlert msg
+    mreqNew <- queryUI
+    modifySession $ \sess -> sess {sreqPending = mreqNew}
+    loopUI longestDelay  -- resetting timeout
+  else do
+    mcmd <- receiveResponseWithTimeout queryTimeout
+    case mcmd of
+      Just cmd -> do
+        handleResponse cmd
+        -- @squit@ can be changed only in @handleResponse@, so this is the only
+        -- place where it needs to be checked.
+        quit <- getsClient squit
+        unless quit $ case cmd of
+          RespQueryUI ->
+            loopUI longestDelay  -- resetting timeout
+          _ -> do
+            sreqPending <- getsSession sreqPending
+            when (isJust sreqPending) $ do
+              msgAdd MsgActionAlert "Warning: server updated game state after current command was issued by the client but before it was received by the server."
+            -- Rule of thumb: after 100 game state change commands
+            -- without any UI query, the client assumes it's being ignored.
+            let virtualDelay = longestDelay `div` 100
+            loopUI (queryTimeout - virtualDelay)
+      Nothing ->  -- timeout reached when waiting for server
+        -- After @longestDelay@ without any command,
+        -- the client assumes it's being ignored.
+        loopUI 0
