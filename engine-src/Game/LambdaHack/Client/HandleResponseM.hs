@@ -16,6 +16,7 @@ import Game.LambdaHack.Client.MonadClient
 import Game.LambdaHack.Client.Request
 import Game.LambdaHack.Client.Response
 import Game.LambdaHack.Client.UI
+import Game.LambdaHack.Client.UI.SessionUI
 import Game.LambdaHack.Common.MonadStateRead
 import Game.LambdaHack.Common.State
 
@@ -68,7 +69,7 @@ handleResponse cmd = case cmd of
     sendRequestUI req
   RespQueryUI -> do
     -- Stop displaying the prompt, if any.
-    modifySession $ \sess -> sess {sreqDelayed = False}
+    modifySession $ \sess -> sess {sreqDelayed = ReqDelayedNot}
     sreqPending <- getsSession sreqPending
     req <- case sreqPending of
       Nothing -> do

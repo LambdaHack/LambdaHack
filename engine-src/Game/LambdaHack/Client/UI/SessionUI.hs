@@ -1,8 +1,8 @@
 {-# LANGUAGE DeriveGeneric, GeneralizedNewtypeDeriving #-}
 -- | The client UI session state.
 module Game.LambdaHack.Client.UI.SessionUI
-  ( SessionUI(..), ItemDictUI, AimMode(..), KeyMacro(..), KeyMacroFrame(..)
-  , RunParams(..), ChosenLore(..)
+  ( SessionUI(..), ReqDelayed(..), ItemDictUI, AimMode(..), KeyMacro(..)
+  , KeyMacroFrame(..), RunParams(..), ChosenLore(..)
   , emptySessionUI, emptyMacroFrame
   , toggleMarkVision, toggleMarkSmell, cycleOverrideTut, getActorUI
   ) where
@@ -45,7 +45,7 @@ data SessionUI = SessionUI
   { sreqPending    :: Maybe RequestUI
                                     -- ^ request created by a UI query
                                     --   but not yet sent to the server
-  , sreqDelayed    :: Bool          -- ^ server delayed sending query to client
+  , sreqDelayed    :: ReqDelayed    -- ^ server delayed sending query to client
                                     --   or receiving request from client
   , sreqQueried    :: Bool          -- ^ player is now queried for a command
   , sxhair         :: Maybe Target  -- ^ the common xhair
@@ -101,6 +101,9 @@ data SessionUI = SessionUI
   , srandomUI      :: SM.SMGen      -- ^ current random generator for UI
   }
 
+data ReqDelayed = ReqDelayedNot | ReqDelayedHandled | ReqDelayedAlarm
+  deriving Eq
+
 -- | Local macro buffer frame. Predefined macros have their own in-game macro
 -- buffer, allowing them to record in-game macro, queue actions and repeat
 -- the last macro's action.
@@ -111,7 +114,7 @@ data KeyMacroFrame = KeyMacroFrame
                                              --   repeat from Right
   , keyPending     :: KeyMacro               -- ^ actions pending to be handled
   , keyLast        :: Maybe K.KM             -- ^ last pressed key
-  } deriving (Show)
+  } deriving Show
 
 -- This can stay a map forever, not a vector, because it's added to often,
 -- but never read from, except when the user requests item details.
@@ -154,7 +157,7 @@ emptySessionUI :: UIOptions -> SessionUI
 emptySessionUI sUIOptions =
   SessionUI
     { sreqPending = Nothing
-    , sreqDelayed = False
+    , sreqDelayed = ReqDelayedNot
     , sreqQueried = False
     , sxhair = Nothing
     , sxhairGoTo = Nothing
@@ -260,7 +263,7 @@ instance Binary SessionUI where
     susedHints <- get
     g <- get
     let sreqPending = Nothing
-        sreqDelayed = False
+        sreqDelayed = ReqDelayedNot
         sreqQueried = False
         sxhairGoTo = Nothing
         slastItemMove = Nothing

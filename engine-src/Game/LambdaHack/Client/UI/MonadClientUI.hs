@@ -227,7 +227,8 @@ getReportUI insideMenu = do
   return $! if | newcomerHelp && not insideMenu
                  && detailAtDefault && not detailMinimal ->
                    consReport promptAim report
-               | sreqDelayed -> consReport promptDelayed report
+               | sreqDelayed == ReqDelayedAlarm ->
+                   consReport promptDelayed report
                | otherwise -> report
 
 computeChosenLore :: MonadClientUI m

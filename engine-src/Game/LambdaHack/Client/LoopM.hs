@@ -24,6 +24,7 @@ import Game.LambdaHack.Client.UI
 import Game.LambdaHack.Client.UI.MonadClientUI
 import Game.LambdaHack.Client.UI.Msg
 import Game.LambdaHack.Client.UI.MsgM
+import Game.LambdaHack.Client.UI.SessionUI
 import Game.LambdaHack.Common.ClientOptions
 
 -- | Client monad in which one can receive responses from the server.
@@ -182,14 +183,16 @@ loopUI queryTimeout = do
                    -- or was reached when waiting for the server
       keyPressed <- anyKeyPressed
       if keyPressed then do
-        -- Stop displaying the prompt, if any.
-        modifySession $ \sess -> sess {sreqDelayed = False}
+        -- Stop displaying the prompt, if any, but keep UI simple.
+        modifySession $ \sess -> sess {sreqDelayed = ReqDelayedHandled}
         let msg = if isNothing sreqPending
-                  then "Server delayed asking us for a command. Regardless, UI is made accessible. Press ESC to listen to server some more."
+                  then "Server delayed asking us for a command. Regardless, UI is made accessible. Press ESC twice to listen to server some more."
                   else "Server delayed receiving a command from us. The command is cancelled. Issue a new one."
         msgAdd MsgActionAlert msg
         mreqNew <- queryUI
         modifySession $ \sess -> sess {sreqPending = mreqNew}
+        -- Relax completely.
+        modifySession $ \sess -> sess {sreqDelayed = ReqDelayedNot}
         -- We may yet not know if server is ready, but perhaps server
         -- tried hard to contact us while we took control and now it sleeps
         -- for a bit, so let's give it the benefit of the doubt
@@ -197,7 +200,7 @@ loopUI queryTimeout = do
         loopUI longestDelay
       else do
         -- We know server is not ready.
-        modifySession $ \sess -> sess {sreqDelayed = True}
+        modifySession $ \sess -> sess {sreqDelayed = ReqDelayedAlarm}
         -- We take a slight pause during which we display encouragement
         -- to press a key and receive game state changes and after which
         -- we check @keyPressed@ (which is cumulative) again.
