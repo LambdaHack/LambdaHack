@@ -54,7 +54,6 @@ import           Game.LambdaHack.Common.ClientOptions
 import           Game.LambdaHack.Common.Faction
 import           Game.LambdaHack.Common.MonadStateRead
 import           Game.LambdaHack.Common.State
-import           Game.LambdaHack.Content.ModeKind
 
 -- | Handle the move of a human player.
 queryUI :: (MonadClient m, MonadClientUI m) => m (Maybe RequestUI)
@@ -68,39 +67,31 @@ queryUI = do
 
 queryUIunderAI :: (MonadClient m, MonadClientUI m) => m RequestUI
 queryUIunderAI = do
-  side <- getsClient sside
-  fact <- getsState $ (EM.! side) . sfactionD
   -- Record history so the player can browse it later on.
   recordHistory
-  keyPressed <- anyKeyPressed
-  if keyPressed && fleaderMode (gplayer fact) /= LeaderNull then do
-    -- Menu is entered in @displayRespUpdAtomicUI@ at @UpdAutoFaction@.
-    discardPressedKey
-    return (ReqUIAutomate, Nothing)  -- stop AI
-  else do
-    -- As long as UI faction is under AI control, check, once per move,
-    -- for benchmark game stop.
-    stopAfterFrames <- getsClient $ sstopAfterFrames . soptions
-    bench <- getsClient $ sbenchmark . soptions
-    let exitCmd = if bench then ReqUIGameDropAndExit else ReqUIGameSaveAndExit
-    case stopAfterFrames of
-      Nothing -> do
-        stopAfterSeconds <- getsClient $ sstopAfterSeconds . soptions
-        case stopAfterSeconds of
-          Nothing -> return (ReqUINop, Nothing)
-          Just stopS -> do
-            exit <- elapsedSessionTimeGT stopS
-            if exit then do
-              tellAllClipPS
-              return (exitCmd, Nothing)  -- ask server to exit
-            else return (ReqUINop, Nothing)
-      Just stopF -> do
-        allNframes <- getsSession sallNframes
-        gnframes <- getsSession snframes
-        if allNframes + gnframes >= stopF then do
-          tellAllClipPS
-          return (exitCmd, Nothing)  -- ask server to exit
-        else return (ReqUINop, Nothing)
+  -- As long as UI faction is under AI control, check, once per move,
+  -- for benchmark game stop.
+  stopAfterFrames <- getsClient $ sstopAfterFrames . soptions
+  bench <- getsClient $ sbenchmark . soptions
+  let exitCmd = if bench then ReqUIGameDropAndExit else ReqUIGameSaveAndExit
+  case stopAfterFrames of
+    Nothing -> do
+      stopAfterSeconds <- getsClient $ sstopAfterSeconds . soptions
+      case stopAfterSeconds of
+        Nothing -> return (ReqUINop, Nothing)
+        Just stopS -> do
+          exit <- elapsedSessionTimeGT stopS
+          if exit then do
+            tellAllClipPS
+            return (exitCmd, Nothing)  -- ask server to exit
+          else return (ReqUINop, Nothing)
+    Just stopF -> do
+      allNframes <- getsSession sallNframes
+      gnframes <- getsSession snframes
+      if allNframes + gnframes >= stopF then do
+        tellAllClipPS
+        return (exitCmd, Nothing)  -- ask server to exit
+      else return (ReqUINop, Nothing)
 
 humanCommandWithLeader :: (MonadClient m, MonadClientUI m)
                        => m (Maybe RequestUI)

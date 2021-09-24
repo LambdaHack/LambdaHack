@@ -7,6 +7,7 @@ module Game.LambdaHack.Client.LoopM
 #ifdef EXPOSE_INTERNAL
     -- * Internal operations
   , initAI, initUI, loopAI, longestDelay, loopUI
+  , handleUIunderAIunderServerTimeout
 #endif
   ) where
 
@@ -14,10 +15,13 @@ import Prelude ()
 
 import Game.LambdaHack.Core.Prelude
 
+import qualified Data.EnumMap.Strict as EM
+
 import Game.LambdaHack.Atomic
 import Game.LambdaHack.Client.HandleAtomicM
 import Game.LambdaHack.Client.HandleResponseM
 import Game.LambdaHack.Client.MonadClient
+import Game.LambdaHack.Client.Request
 import Game.LambdaHack.Client.Response
 import Game.LambdaHack.Client.State
 import Game.LambdaHack.Client.UI
@@ -26,6 +30,10 @@ import Game.LambdaHack.Client.UI.Msg
 import Game.LambdaHack.Client.UI.MsgM
 import Game.LambdaHack.Client.UI.SessionUI
 import Game.LambdaHack.Common.ClientOptions
+import Game.LambdaHack.Common.Faction
+import Game.LambdaHack.Common.MonadStateRead
+import Game.LambdaHack.Common.State
+import Game.LambdaHack.Content.ModeKind
 
 -- | Client monad in which one can receive responses from the server.
 class MonadClient m => MonadClientReadResponse m where
@@ -183,16 +191,24 @@ loopUI queryTimeout = do
                    -- or was reached when waiting for the server
       keyPressed <- anyKeyPressed
       if keyPressed then do
-        -- Stop displaying the prompt, if any, but keep UI simple.
-        modifySession $ \sess -> sess {sreqDelayed = ReqDelayedHandled}
         -- The key pressed to gain control is not considered a command.
         discardPressedKey
-        let msg = if isNothing sreqPending
-                  then "Server delayed asking us for a command. Regardless, UI is made accessible. Press ESC twice to listen to server some more."
-                  else "Server delayed receiving a command from us. The command is cancelled. Issue a new one."
-        msgAdd MsgActionAlert msg
-        mreqNew <- queryUI
-        modifySession $ \sess -> sess {sreqPending = mreqNew}
+        -- Special case for UI under AI control, because the default
+        -- behaviour is too alarming for the player, especially during
+        -- the insert coing demo before game is started.
+        side <- getsClient sside
+        fact <- getsState $ (EM.! side) . sfactionD
+        if isAIFact fact && fleaderMode (gplayer fact) /= LeaderNull then do
+          handleUIunderAIunderServerTimeout
+        else do
+          -- Stop displaying the prompt, if any, but keep UI simple.
+          modifySession $ \sess -> sess {sreqDelayed = ReqDelayedHandled}
+          let msg = if isNothing sreqPending
+                    then "Server delayed asking us for a command. Regardless, UI is made accessible. Press ESC twice to listen to server some more."
+                    else "Server delayed receiving a command from us. The command is cancelled. Issue a new one."
+          msgAdd MsgActionAlert msg
+          mreqNew <- queryUI
+          modifySession $ \sess -> sess {sreqPending = mreqNew}
         -- Relax completely.
         modifySession $ \sess -> sess {sreqDelayed = ReqDelayedNot}
         -- We may yet not know if server is ready, but perhaps server
@@ -207,3 +223,37 @@ loopUI queryTimeout = do
         -- to press a key and receive game state changes and after which
         -- we check @keyPressed@ (which is cumulative) again.
         loopUI longestDelay
+
+-- This is messy, becuase there is no client-server channel
+-- where client could ask to regain control and instead client
+-- has to hunt for the @RespQueryUIunderAI@ response to send
+-- a request in response to it, requesting to regain control.
+-- This will get simpler in a more general, multiplayer-like setting
+-- with more active clients.
+handleUIunderAIunderServerTimeout :: forall m. ( MonadClientSetup m
+                                               , MonadClientUI m
+                                               , MonadClientAtomic m
+                                               , MonadClientReadResponse m
+                                               , MonadClientWriteRequest m )
+                                  => m ()
+handleUIunderAIunderServerTimeout = do
+  let loop = do
+        cmd <- receiveResponse
+        case cmd of
+          RespQueryUIunderAI ->
+            -- Intercept the command and respond below,
+            -- not in "Game.LambdaHack.Client.HandleResponseM".
+            return ()
+          _ -> do
+            handleResponse cmd
+            -- Deferring @squit@, if any, until UI control restored
+            -- or until the next @RespQueryUIunderAI@ at least.
+            -- This can potentially break if the player presses a key
+            -- at the last moment before session quit due to game end.
+            loop
+  loop
+  -- Menu is entered in @displayRespUpdAtomicUI@ at @UpdAutoFaction@
+  -- and @stopAfter@ is canceled in @cmdAtomicSemCli@
+  -- when handling the results of the request below.
+  sendRequestUI (ReqUIAutomate, Nothing)  -- stop AI
+  modifySession $ \sess -> sess {sreqPending = Nothing}  -- who knows
