@@ -410,8 +410,10 @@ displayRespUpdAtomicUI cmd = case cmd of
     lidV <- viewedLevelUI
     markDisplayNeeded lidV
     when (fid == side) $ do
-      unless b addPressedControlEsc  -- sets @swasAutomated@, enters main menu
-      setFrontAutoYes b  -- now can stop auto-accepting prompts
+      unless b $ do
+        resetPressedKeys  -- important moment, so clear mashed keys
+        addPressedControlEsc  -- sets @swasAutomated@, enters main menu
+      setFrontAutoYes b  -- now can start/stop auto-accepting prompts
   UpdRecordKill{} -> return ()
   -- Alter map.
   UpdAlterTile lid p fromTile toTile -> do

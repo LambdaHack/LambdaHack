@@ -52,7 +52,7 @@ data FrontReq :: Type -> Type where
   FrontKey :: [K.KM] -> Frame -> FrontReq KMP
   -- | Tell if a keypress is pending.
   FrontPressed :: FrontReq Bool
-  -- | Discard a key in the queue, if any.
+  -- | Discard a single key in the queue, if any.
   FrontDiscardKey :: FrontReq ()
   -- | Discard all keys in the queue.
   FrontResetKeys :: FrontReq ()

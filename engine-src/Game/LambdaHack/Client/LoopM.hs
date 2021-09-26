@@ -193,8 +193,8 @@ loopUI timeOfLastQuery = do
            loopUI timeOfLastQuery
      | not sregainControl && (keyPressed || isJust sreqPending) -> do
          -- ignore keypress if will be handled by special AI control regain case
-       -- The key pressed to gain control is not considered a command.
-       discardPressedKey
+       -- The keys mashed to gain control are not considered a command.
+       resetPressedKeys
        -- Special case for UI under AI control, because the default
        -- behaviour is too alarming for the player, especially during
        -- the insert coin demo before game is started.
