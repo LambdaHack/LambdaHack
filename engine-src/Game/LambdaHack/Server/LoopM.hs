@@ -7,7 +7,7 @@ module Game.LambdaHack.Server.LoopM
   , factionArena, arenasForLoop, handleFidUpd, loopUpd, endClip
   , manageCalmAndDomination, applyPeriodicLevel
   , handleTrajectories, hTrajectories, advanceTrajectory
-  , handleActors, hActors, dieSer, restartGame
+  , handleActors, hActors, handleUIunderAI, dieSer, restartGame
 #endif
   ) where
 
@@ -615,14 +615,8 @@ hActors as@(aid : rest) = do
       -- in case AI-controlled UI client asks to exit game at exactly
       -- the same moment as natural game over was detected.
       mainUIunderAI = mainUIactor && isAIFact fact && not breakLoop
-  when mainUIunderAI $ do
-    cmdS <- sendQueryUI RespQueryUIunderAI side aid
-    case fst cmdS of
-      ReqUINop -> return ()
-      ReqUIAutomate -> execUpdAtomic $ UpdAutoFaction side False
-      ReqUIGameDropAndExit -> reqGameDropAndExit aid
-      ReqUIGameSaveAndExit -> reqGameSaveAndExit aid
-      _ -> error $ "" `showFailure` cmdS
+  when mainUIunderAI $
+    handleUIunderAI side aid
   factNew <- getsState $ (EM.! side) . sfactionD
   let doQueryAI = not mainUIactor || isAIFact factNew
   breakASAP <- getsServer sbreakASAP
@@ -657,6 +651,17 @@ hActors as@(aid : rest) = do
         breakASAP2 <- getsServer sbreakASAP
         -- If breaking out of the game lopp, pretend there was a non-wait move.
         if breakASAP2 then return True else hActors as
+
+handleUIunderAI :: (MonadServerAtomic m, MonadServerComm m)
+                => FactionId -> ActorId -> m ()
+handleUIunderAI side aid = do
+  cmdS <- sendQueryUI RespQueryUIunderAI side aid
+  case fst cmdS of
+    ReqUINop -> return ()
+    ReqUIAutomate -> execUpdAtomic $ UpdAutoFaction side False
+    ReqUIGameDropAndExit -> reqGameDropAndExit aid
+    ReqUIGameSaveAndExit -> reqGameSaveAndExit aid
+    _ -> error $ "" `showFailure` cmdS
 
 dieSer :: MonadServerAtomic m => ActorId -> Actor -> m ()
 dieSer aid b2 = do
