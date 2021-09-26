@@ -210,7 +210,7 @@ getReportUI insideMenu = do
   report <- getsSession $ newReport . shistory
   curTutorial <- getsSession scurTutorial
   overrideTut <- getsSession soverrideTut
-  sreqDelayed <- getsSession sreqDelayed
+  sreqDelay <- getsSession sreqDelay
   -- Different from ordinary tutorial hints in that shown more than once.
   let newcomerHelp = fromMaybe curTutorial overrideTut
       detailAtDefault = (detailLevel <$> saimMode) == Just defaultDetailLevel
@@ -222,13 +222,13 @@ getReportUI insideMenu = do
                        else miniHintAimingLore
       promptAim = toMsgShared prefixColors MsgPromptGeneric
                   $ miniHintAiming <> "\n"
-      promptDelayed = toMsgShared prefixColors MsgPromptAction
+      promptDelay = toMsgShared prefixColors MsgPromptAction
                                   "<press any key to regain control>"
   return $! if | newcomerHelp && not insideMenu
                  && detailAtDefault && not detailMinimal ->
                    consReport promptAim report
-               | sreqDelayed == ReqDelayedAlarm ->
-                   consReport promptDelayed report
+               | sreqDelay == ReqDelayAlarm ->
+                   consReport promptDelay report
                | otherwise -> report
 
 computeChosenLore :: MonadClientUI m

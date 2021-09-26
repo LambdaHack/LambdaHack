@@ -1,7 +1,7 @@
 {-# LANGUAGE DeriveGeneric, GeneralizedNewtypeDeriving #-}
 -- | The client UI session state.
 module Game.LambdaHack.Client.UI.SessionUI
-  ( SessionUI(..), ReqDelayed(..), ItemDictUI, AimMode(..), KeyMacro(..)
+  ( SessionUI(..), ReqDelay(..), ItemDictUI, AimMode(..), KeyMacro(..)
   , KeyMacroFrame(..), RunParams(..), ChosenLore(..)
   , emptySessionUI, emptyMacroFrame
   , toggleMarkVision, toggleMarkSmell, cycleOverrideTut, getActorUI
@@ -45,7 +45,7 @@ data SessionUI = SessionUI
   { sreqPending    :: Maybe RequestUI
                                     -- ^ request created by a UI query
                                     --   but not yet sent to the server
-  , sreqDelayed    :: ReqDelayed    -- ^ server delayed sending query to client
+  , sreqDelay      :: ReqDelay    -- ^ server delayed sending query to client
                                     --   or receiving request from client
   , sreqQueried    :: Bool          -- ^ player is now queried for a command
   , sregainControl :: Bool          -- ^ player requested to regain control
@@ -103,7 +103,7 @@ data SessionUI = SessionUI
   , srandomUI      :: SM.SMGen      -- ^ current random generator for UI
   }
 
-data ReqDelayed = ReqDelayedNot | ReqDelayedHandled | ReqDelayedAlarm
+data ReqDelay = ReqDelayNot | ReqDelayHandled | ReqDelayAlarm
   deriving Eq
 
 -- | Local macro buffer frame. Predefined macros have their own in-game macro
@@ -159,7 +159,7 @@ emptySessionUI :: UIOptions -> SessionUI
 emptySessionUI sUIOptions =
   SessionUI
     { sreqPending = Nothing
-    , sreqDelayed = ReqDelayedNot
+    , sreqDelay = ReqDelayNot
     , sreqQueried = False
     , sregainControl = False
     , sxhair = Nothing
@@ -266,7 +266,7 @@ instance Binary SessionUI where
     susedHints <- get
     g <- get
     let sreqPending = Nothing
-        sreqDelayed = ReqDelayedNot
+        sreqDelay = ReqDelayNot
         sreqQueried = False
         sregainControl = False
         sxhairGoTo = Nothing

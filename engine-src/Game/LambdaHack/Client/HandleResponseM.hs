@@ -69,7 +69,7 @@ handleResponse cmd = case cmd of
     sendRequestUI req
   RespQueryUI -> do
     -- Stop displaying the prompt, if any.
-    modifySession $ \sess -> sess {sreqDelayed = ReqDelayedNot}
+    modifySession $ \sess -> sess {sreqDelay = ReqDelayNot}
     sreqPending <- getsSession sreqPending
     req <- case sreqPending of
       Nothing -> do

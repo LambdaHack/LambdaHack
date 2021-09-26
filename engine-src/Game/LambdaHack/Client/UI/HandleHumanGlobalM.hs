@@ -259,10 +259,10 @@ executeIfClearHuman :: MonadClientUI m
                     -> m (Either MError ReqUI)
 executeIfClearHuman c1 = do
   sreportNull <- getsSession sreportNull
-  sreqDelayed <- getsSession sreqDelayed
+  sreqDelay <- getsSession sreqDelay
   -- When server query delay is handled, don't complicate things by clearing
   -- screen instead of running the command.
-  if sreportNull || sreqDelayed == ReqDelayedHandled
+  if sreportNull || sreqDelay == ReqDelayHandled
   then c1
   else return $ Left Nothing
 
