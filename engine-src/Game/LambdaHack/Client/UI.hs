@@ -80,7 +80,8 @@ queryUIunderAI = do
       case stopAfterSeconds of
         Nothing -> return (ReqUINop, Nothing)
         Just stopS -> do
-          exit <- elapsedSessionTimeGT stopS
+          sstartPOSIX <- getsSession sstart
+          exit <- elapsedSessionTimeGT sstartPOSIX stopS
           if exit then do
             tellAllClipPS
             return (exitCmd, Nothing)  -- ask server to exit

@@ -431,10 +431,13 @@ tellGameClipPS = do
         <+> "Average clips per second:" <+> tshow cps <> "."
         <+> "Average FPS:" <+> tshow fps <> "."
 
-elapsedSessionTimeGT :: MonadClientUI m => Int -> m Bool
-elapsedSessionTimeGT stopAfter = do
+-- TODO: for speed and resolutiion use
+-- https://hackage.haskell.org/package/chronos
+-- or the number_of_nanonseconds functionality
+-- in Data.Time.Clock.System, once it arrives there
+elapsedSessionTimeGT :: MonadClientUI m => POSIXTime -> Int -> m Bool
+elapsedSessionTimeGT sstartPOSIX stopAfter = do
   current <- liftIO getPOSIXTime
-  sstartPOSIX <- getsSession sstart
   return $! (fromIntegralWrap :: Int -> NominalDiffTime) stopAfter
             + sstartPOSIX
             <= current

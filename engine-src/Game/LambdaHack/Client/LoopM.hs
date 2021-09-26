@@ -16,6 +16,7 @@ import Prelude ()
 import Game.LambdaHack.Core.Prelude
 
 import qualified Data.EnumMap.Strict as EM
+import           Data.Time.Clock.POSIX
 
 import Game.LambdaHack.Atomic
 import Game.LambdaHack.Client.HandleAtomicM
@@ -126,7 +127,7 @@ loopCli ccui sUIOptions clientOptions = do
   debugPossiblyPrint $ cliendKindText <+> "client"
                        <+> tshow side <+> "started 4/4."
   if hasUI
-  then loopUI longestDelay
+  then loopUIwithResetTimeout
   else loopAI
   side2 <- getsClient sside
   debugPossiblyPrint $ cliendKindText <+> "client" <+> tshow side2
@@ -145,45 +146,47 @@ loopAI = do
   unless quit
     loopAI
 
--- | This is over 60 ticks per second, which feels snappy.
+-- | Alarm after this many seconds without server querying us for a command.
 longestDelay :: Int
-longestDelay = 15000
+longestDelay = 1  -- rather high to accomodate slow browsers
 
--- | The argument represents, with some arbitrary approximation,
--- how long the client is still willing to wait for a UI query from the server,
--- before the client considers itself ignored (at which point, it gives
+loopUIwithResetTimeout :: forall m. ( MonadClientSetup m
+                                    , MonadClientUI m
+                                    , MonadClientAtomic m
+                                    , MonadClientReadResponse m
+                                    , MonadClientWriteRequest m )
+                       => m ()
+loopUIwithResetTimeout = do
+  current <- liftIO getPOSIXTime
+  loopUI current
+
+-- | The argument is the time of last UI query from the server.
+-- After @longestDelay@ seconds past this date, the client considers itself
+-- ignored and displays a warning and, at a keypress, gives
 -- direct control to the player, no longer waiting for the server
--- to prompt it to do so).
---
--- In particular, after `longestDelay` without any command, the client
--- assumes it's being ignored. With each game state change command
--- received form the server, this timeout shrinks, because there is
--- evidence that the delay is not caused by shortage of computational power
--- at server's disposal (e.g, due to running inside a browser).
+-- to prompt it to do so.
 loopUI :: forall m. ( MonadClientSetup m
                     , MonadClientUI m
                     , MonadClientAtomic m
                     , MonadClientReadResponse m
                     , MonadClientWriteRequest m )
-       => Int -> m ()
-loopUI queryTimeout = do
+       => POSIXTime -> m ()
+loopUI timeOfLastQuery = do
   sreqPending <- getsSession sreqPending
-  if queryTimeout > 0 then do
+  alarm <- elapsedSessionTimeGT timeOfLastQuery longestDelay
+  if not alarm then do
     cmd <- receiveResponse
     handleResponse cmd
     -- @squit@ can be changed only in @handleResponse@, so this is the only
     -- place where it needs to be checked.
     quit <- getsClient squit
     unless quit $ case cmd of
-      RespQueryUI -> loopUI longestDelay  -- resetting timeout
+      RespQueryUI -> loopUIwithResetTimeout
       _ -> do
         when (isJust sreqPending) $ do
           msgAdd MsgActionAlert "Warning: server updated game state after current command was issued by the client but before it was received by the server."
-        -- Rule of thumb: after 100 game state change commands
-        -- without any UI query, the client assumes it's being ignored.
-        let virtualDelay = longestDelay `div` 100
-        loopUI (queryTimeout - virtualDelay)
-  else do  -- timeout was not positive
+        loopUI timeOfLastQuery
+  else do  -- timeout reached
     keyPressed <- anyKeyPressed
     if keyPressed then do
       -- The key pressed to gain control is not considered a command.
@@ -210,14 +213,14 @@ loopUI queryTimeout = do
       -- tried hard to contact us while we took control and now it sleeps
       -- for a bit, so let's give it the benefit of the doubt
       -- and a slight pause before we alarm the player again.
-      loopUI longestDelay
+      loopUIwithResetTimeout
     else do
       -- We know server is not ready.
       modifySession $ \sess -> sess {sreqDelayed = ReqDelayedAlarm}
       -- We take a slight pause during which we display encouragement
       -- to press a key and receive game state changes and after which
       -- we check @keyPressed@ (which is cumulative) again.
-      loopUI longestDelay
+      loopUIwithResetTimeout
 
 -- This is messy, becuase there is no client-server channel
 -- where client could ask to regain control and instead client
