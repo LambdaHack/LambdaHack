@@ -171,6 +171,8 @@ loopUI :: ( MonadClientSetup m
        => POSIXTime -> m ()
 loopUI timeOfLastQuery = do
   sreqPending <- getsSession sreqPending
+  sregainControl <- getsSession sregainControl
+  keyPressed <- anyKeyPressed
   alarm <- elapsedSessionTimeGT timeOfLastQuery longestDelay
   if not alarm then do
     cmd <- receiveResponse
@@ -184,11 +186,8 @@ loopUI timeOfLastQuery = do
         when (isJust sreqPending) $ do
           msgAdd MsgActionAlert "Warning: server updated game state after current command was issued by the client but before it was received by the server."
         loopUI timeOfLastQuery
-  else do  -- timeout reached
-    sregainControl <- getsSession sregainControl
-    -- Ignore keypress if will be handled by special AI control regain case.
-    keyPressed <- if sregainControl then return False else anyKeyPressed
-    if keyPressed || isJust sreqPending then do
+  else if not sregainControl && (keyPressed || isJust sreqPending) then do
+    -- ignore keypress if will be handled by special AI control regain case
       -- The key pressed to gain control is not considered a command.
       discardPressedKey
       -- Special case for UI under AI control, because the default
@@ -219,7 +218,7 @@ loopUI timeOfLastQuery = do
       -- for a bit, so let's give it the benefit of the doubt
       -- and a slight pause before we alarm the player again.
       loopUIwithResetTimeout
-    else do
+  else do
       -- We know server is not ready.
       modifySession $ \sess -> sess {sreqDelay = ReqDelayAlarm}
       -- We take a slight pause during which we display encouragement
