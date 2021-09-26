@@ -176,10 +176,10 @@ stdFlav = ES.fromList stdFlavList
 -- symbol, except for items with only one permitted flavour.
 rollFlavourMap :: U.Vector Word16
                -> Rnd ( EM.EnumMap (ContentId ItemKind) Flavour
-                      , EM.EnumMap Char (ES.EnumSet Flavour) )
+                      , EM.EnumMap (ContentSymbol ItemKind) (ES.EnumSet Flavour) )
                -> ContentId ItemKind -> ItemKind
                -> Rnd ( EM.EnumMap (ContentId ItemKind) Flavour
-                      , EM.EnumMap Char (ES.EnumSet Flavour) )
+                      , EM.EnumMap (ContentSymbol ItemKind) (ES.EnumSet Flavour) )
 rollFlavourMap uFlavMeta !rnd !key !ik = case IK.iflavour ik of
   [] -> error "empty iflavour"
   [flavour] -> do

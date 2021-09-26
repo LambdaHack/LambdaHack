@@ -4,7 +4,7 @@ module Game.LambdaHack.Client.UI.ItemDescription
   , partItemWsDetail, partItemWs, partItemWsShortest, partItemWsShort
   , partItemWsLong, partItemWsRanged
   , partItemShortAW, partItemMediumAW, partItemShortWownW
-  , viewItem, viewItemWithEquipColor, itemDesc
+  , viewItem, viewItemBenefitColored, itemDesc
 #ifdef EXPOSE_INTERNAL
     -- * Internal operations
   , partItemN, textAllPowers
@@ -379,8 +379,8 @@ viewItem itemFull =
   Color.attrChar2ToW32 (flavourToColor $ jflavour $ itemBase itemFull)
                        (displayContentSymbol $ IK.isymbol $ itemKind itemFull)
 
-viewItemWithEquipColor :: DiscoveryBenefit -> ItemId -> ItemFull -> Color.AttrCharW32
-viewItemWithEquipColor discoBenefit iid itemFull = 
+viewItemBenefitColored :: DiscoveryBenefit -> ItemId -> ItemFull -> Color.AttrCharW32
+viewItemBenefitColored discoBenefit iid itemFull = 
   let color = if benInEqp (discoBenefit EM.! iid)
                   then Color.BrGreen
                   else Color.BrRed

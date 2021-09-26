@@ -22,6 +22,7 @@ import           TieKnot
 
 import ItemDescriptionUnitTests
 import ItemKindUnitTests
+import ItemRevUnitTests
 import ReqFailureUnitTests
 import SessionUIUnitTests
 
@@ -31,6 +32,7 @@ main = defaultMain tests
 tests :: TestTree
 tests = testGroup "Tests" [ itemDescriptionUnitTests
                           , itemKindUnitTests
+                          , itemRevUnitTests
                           , reqFailureUnitTests
                           , macroTests
                           , integrationTests ]

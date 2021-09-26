@@ -1,4 +1,4 @@
-module ItemDescriptionUnitTests (itemDescriptionUnitTests) where
+module ItemRevUnitTests (itemRevUnitTests) where
 
 import Prelude ()
 
@@ -19,8 +19,8 @@ import qualified Game.LambdaHack.Definition.Ability as Ability
 import           Game.LambdaHack.Definition.Color
 import           Game.LambdaHack.Definition.Flavour
 
-itemDescriptionUnitTests :: TestTree
-itemDescriptionUnitTests = testGroup "itemDescriptionUnitTests" $
+itemRevUnitTests :: TestTree
+itemRevUnitTests = testGroup "itemRevUnitTests" $
   let testItemBase = Item { jkind = IdentityObvious (toEnum 667)
             , jfid = Nothing
             , jflavour = dummyFlavour
