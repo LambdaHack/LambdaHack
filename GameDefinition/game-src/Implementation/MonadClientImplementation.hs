@@ -99,6 +99,38 @@ instance MonadClientReadResponse CliImplementation where
   receiveResponse = CliImplementation $ do
     ChanServer{responseS} <- gets cliDict
     IO.liftIO $ takeMVar responseS
+{-
+
+For the future: correct receiveResponseWithTimeout can be implemented
+in the way Douglas Wilson suggested:
+
+import Control.Concurrent
+import Control.Exception
+import System.Timeout
+
+main :: IO ()
+main = do
+  mv <- newMVar True
+  tmp_mv <- newEmptyMVar
+  let loopTake c = do
+        mb <- do
+          timeout 1 $ do
+            mask_ $ takeMVar mv >>= putMVar tmp_mv
+          tryTakeMVar tmp_mv
+        case mb of
+          Just True -> print c
+          Just False -> loopTake (c + 1)
+          Nothing -> loopTake c
+      loopPut n =
+        if n == 0 then return () else do
+          putMVar mv False
+          loopPut (n - 1)
+      oneMillion = 1000000
+  loopTake 0
+  forkIO $ loopPut oneMillion >> putMVar mv True
+  loopTake 0
+
+-}
 
 instance MonadClientWriteRequest CliImplementation where
   sendRequestAI scmd = CliImplementation $ do
