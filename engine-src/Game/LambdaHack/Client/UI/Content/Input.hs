@@ -233,7 +233,7 @@ projectA ts =
 
 -- | flingTs - list containing one flingable projectile
 -- >>> flingTs
--- [TriggerItem { tiverb = "flung", tiobject = "in-range projectile", tisymbols = ""}]
+-- [TriggerItem {tiverb = Text "fling", tiobject = Text "in-range projectile", tisymbols = ""}]
 --
 -- I question the value of that test. But would Bob Martin like it on the grounds it's like double-bookkeeping?
 flingTs :: [TriggerItem]
