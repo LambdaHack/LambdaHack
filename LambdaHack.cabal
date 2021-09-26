@@ -471,6 +471,7 @@ test-suite test
                       ,tasty-hunit
                       ,text
                       ,transformers
+                      ,vector
 
 test-suite doctests
   import: options, exe-options

@@ -231,10 +231,15 @@ projectA ts =
                                       , aiming = flingICmd })
                 (projectI ts)
 
+-- | flingTs - list containing one flingable projectile
+-- >>> flingTs
+-- [TriggerItem { tiverb = "flung", tiobject = "in-range projectile", tisymbols = ""}]
+--
+-- I question the value of that test. But would Bob Martin like it on the grounds it's like double-bookkeeping?
 flingTs :: [TriggerItem]
 flingTs = [TriggerItem { tiverb = "fling"
                        , tiobject = "in-range projectile"
-                       , tisymbols = "" }]
+                       , tisymbols = [] }]
 
 applyIK :: [TriggerItem] -> CmdTriple
 applyIK ts =
