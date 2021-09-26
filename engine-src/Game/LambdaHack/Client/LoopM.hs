@@ -60,11 +60,11 @@ initUI sccui@CCUI{coscreen} = do
 --
 -- The loop is started in client state that is empty except for
 -- the @sside@ and @seps@ fields, see 'emptyStateClient'.
-loopCli :: forall m. ( MonadClientSetup m
-                     , MonadClientUI m
-                     , MonadClientAtomic m
-                     , MonadClientReadResponse m
-                     , MonadClientWriteRequest m )
+loopCli :: ( MonadClientSetup m
+           , MonadClientUI m
+           , MonadClientAtomic m
+           , MonadClientReadResponse m
+           , MonadClientWriteRequest m )
         => CCUI -> UIOptions -> ClientOptions -> m ()
 loopCli ccui sUIOptions clientOptions = do
   modifyClient $ \cli -> cli {soptions = clientOptions}
@@ -131,11 +131,11 @@ loopCli ccui sUIOptions clientOptions = do
   debugPossiblyPrint $ cliendKindText <+> "client" <+> tshow side2
                        <+> "(initially" <+> tshow side <> ") stopped."
 
-loopAI :: forall m. ( MonadClientSetup m
-                    , MonadClientUI m
-                    , MonadClientAtomic m
-                    , MonadClientReadResponse m
-                    , MonadClientWriteRequest m )
+loopAI :: ( MonadClientSetup m
+          , MonadClientUI m
+          , MonadClientAtomic m
+          , MonadClientReadResponse m
+          , MonadClientWriteRequest m )
        => m ()
 loopAI = do
   cmd <- receiveResponse
@@ -148,11 +148,11 @@ loopAI = do
 longestDelay :: Int
 longestDelay = 1  -- rather high to accomodate slow browsers
 
-loopUIwithResetTimeout :: forall m. ( MonadClientSetup m
-                                    , MonadClientUI m
-                                    , MonadClientAtomic m
-                                    , MonadClientReadResponse m
-                                    , MonadClientWriteRequest m )
+loopUIwithResetTimeout :: ( MonadClientSetup m
+                          , MonadClientUI m
+                          , MonadClientAtomic m
+                          , MonadClientReadResponse m
+                          , MonadClientWriteRequest m )
                        => m ()
 loopUIwithResetTimeout = do
   current <- liftIO getPOSIXTime
@@ -163,11 +163,11 @@ loopUIwithResetTimeout = do
 -- ignored and displays a warning and, at a keypress, gives
 -- direct control to the player, no longer waiting for the server
 -- to prompt it to do so.
-loopUI :: forall m. ( MonadClientSetup m
-                    , MonadClientUI m
-                    , MonadClientAtomic m
-                    , MonadClientReadResponse m
-                    , MonadClientWriteRequest m )
+loopUI :: ( MonadClientSetup m
+          , MonadClientUI m
+          , MonadClientAtomic m
+          , MonadClientReadResponse m
+          , MonadClientWriteRequest m )
        => POSIXTime -> m ()
 loopUI timeOfLastQuery = do
   sreqPending <- getsSession sreqPending

@@ -435,7 +435,7 @@ tellGameClipPS = do
 -- https://hackage.haskell.org/package/chronos
 -- or the number_of_nanonseconds functionality
 -- in Data.Time.Clock.System, once it arrives there
-elapsedSessionTimeGT :: MonadClientUI m => POSIXTime -> Int -> m Bool
+elapsedSessionTimeGT :: MonadClientRead m => POSIXTime -> Int -> m Bool
 elapsedSessionTimeGT sstartPOSIX stopAfter = do
   current <- liftIO getPOSIXTime
   return $! (fromIntegralWrap :: Int -> NominalDiffTime) stopAfter

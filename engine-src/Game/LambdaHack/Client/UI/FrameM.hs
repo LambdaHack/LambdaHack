@@ -4,7 +4,8 @@ module Game.LambdaHack.Client.UI.FrameM
   , stopPlayBack, animate, fadeOutOrIn
 #ifdef EXPOSE_INTERNAL
     -- * Internal operations
-  , drawOverlay, basicFrameWithoutReport, renderAnimFrames, resetPlayBack
+  , drawOverlay, basicFrameWithoutReport, renderAnimFrames
+  , resetPlayBack, restoreLeaderFromRun
 #endif
   ) where
 
