@@ -43,17 +43,17 @@ contentIdIndex :: ContentId c -> Int
 contentIdIndex (ContentId k) = fromEnum k
 
 -- TODO: temporary, not to break compilation too soon:
--- type ContentSymbol c = Char
--- toContentSymbol :: Char -> ContentSymbol c
--- toContentSymbol = id
--- displayContentSymbol :: ContentSymbol c -> Char
--- displayContentSymbol = id
+type ContentSymbol c = Char
+toContentSymbol :: Char -> ContentSymbol c
+toContentSymbol = id
+displayContentSymbol :: ContentSymbol c -> Char
+displayContentSymbol = id
 
 -- TODO: The intended definitions. Error they are going to cause will
 -- point out all the remaining item symbols hardwired in the engine
 -- and make any future accidental hardwiring harder.
 -- TODO2: extend to other content kinds than item kinds.
---{-
+{-
 -- | An abstract view on the symbol of a content item definition.
 -- Hiding the constructor prevents hardwiring symbols inside the engine
 -- by accident (this is still possible via conversion functions,

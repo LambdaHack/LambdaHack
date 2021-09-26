@@ -6,26 +6,27 @@ import Prelude ()
 import Game.LambdaHack.Core.Prelude
 
 import qualified Data.EnumMap.Strict as EM
+import qualified Data.Vector.Unboxed as U
 
 import Test.Tasty
 import Test.Tasty.HUnit
 
-import           Game.LambdaHack.Client.UI.ItemDescription
-import           Game.LambdaHack.Common.Item
-import           Game.LambdaHack.Common.ItemAspect
+-- import           Game.LambdaHack.Client.UI.ItemDescription
+-- import           Game.LambdaHack.Common.ItemAspect
+
+import           Game.LambdaHack.Common.Kind
 import           Game.LambdaHack.Content.ItemKind
 import           Game.LambdaHack.Core.Dice
 import qualified Game.LambdaHack.Definition.Ability as Ability
 import           Game.LambdaHack.Definition.Color
 import           Game.LambdaHack.Definition.Flavour
+import           Game.LambdaHack.Core.Random
+import           Game.LambdaHack.Server.ItemRev
 
 itemRevUnitTests :: TestTree
 itemRevUnitTests = testGroup "itemRevUnitTests" $
-  let testItemBase = Item { jkind = IdentityObvious (toEnum 667)
-            , jfid = Nothing
-            , jflavour = dummyFlavour
-            }
-      testItemKind = ItemKind
+  [
+  let testItemKind = ItemKind
         { isymbol  = 'x'
         , iname    = "12345678901234567890123"
         , ifreq    = [ (UNREPORTED_INVENTORY, 1) ]
@@ -42,23 +43,14 @@ itemRevUnitTests = testGroup "itemRevUnitTests" $
         , idesc    = "A really cool test item."
         , ikit     = []
         }
-      testItemFull = ItemFull
-        { itemBase = testItemBase
-        , itemKindId = toEnum 667
-        , itemKind = testItemKind
-        , itemDisco = ItemDiscoFull emptyAspectRecord
-        , itemSuspect = True
-        }
-  in
-  [ testCase "testItem_viewItem_Blackx" $
-      viewItem testItemFull @?= (attrChar2ToW32 Black 'x')
-  , testCase "testItem!_viewItem_Black!" $
-      viewItem testItemFull { itemKind = testItemKind { isymbol = '!' }}
-      @?= (attrChar2ToW32 Black '!')
-  , testCase "testItem_viewItemBenefitColored_isEquip_Greenx" $
-      viewItemBenefitColored (EM.singleton (toEnum 42) (Benefit True 0 0 0 0)) (toEnum 42) testItemFull
-      @?= (attrChar2ToW32 BrGreen 'x')
-  , testCase "testItem_viewItemBenefitColored_isNotEquip_Redx" $
-      viewItemBenefitColored (EM.singleton (toEnum 42) (Benefit False 0 0 0 0)) (toEnum 42) testItemFull
-      @?= (attrChar2ToW32 BrRed 'x')
+      emptyIdToFlavourSymbolToFlavourSetPair = ( EM.empty, EM.empty )
+  in testCase "rollFlavourMap_xxx_xxx" $
+    do 
+      let rndMapPair0 = return emptyIdToFlavourSymbolToFlavourSetPair
+      (idToFlavourMap, symbolToFlavourSetMap) <- rollFlavourMap U.empty rndMapPair0 0 testItemKind 
+      idToFlavourMap @?= EM.empty
+      symbolToFlavourSetMap @?= EM.empty
+    --  testCase "dungeonFlavourMap_emptyFlavourMap_isEmpty" $
+    --   dungeonFlavourMap emptyCOps emptyFlavourMap
+    --   @?= Rnd emptyFlavourMap 
   ]
