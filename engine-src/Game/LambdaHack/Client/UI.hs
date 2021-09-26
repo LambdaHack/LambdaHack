@@ -67,10 +67,19 @@ queryUI = do
 
 queryUIunderAI :: (MonadClient m, MonadClientUI m) => m RequestUI
 queryUIunderAI = do
-  -- Record history so the player can browse it later on.
-  recordHistory
-  -- As long as UI faction is under AI control, check, once per move,
-  -- for benchmark game stop.
+ -- Record history so the player can browse it later on.
+ recordHistory
+ -- As long as UI faction is under AI control, check, once per move,
+ -- for immediate control regain or benchmark game stop.
+ sregainControl <- getsSession sregainControl
+ if sregainControl then do
+   modifySession $ \sess -> sess { sregainControl = False
+                                 , sreqPending = Nothing }  -- just in case
+   -- Menu is entered in @displayRespUpdAtomicUI@ at @UpdAutoFaction@
+   -- and @stopAfter@ is canceled in @cmdAtomicSemCli@
+   -- when handling the results of the request below.
+   return (ReqUIAutomate, Nothing)
+ else do
   stopAfterFrames <- getsClient $ sstopAfterFrames . soptions
   bench <- getsClient $ sbenchmark . soptions
   let exitCmd = if bench then ReqUIGameDropAndExit else ReqUIGameSaveAndExit

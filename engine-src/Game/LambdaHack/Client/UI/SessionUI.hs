@@ -48,6 +48,8 @@ data SessionUI = SessionUI
   , sreqDelayed    :: ReqDelayed    -- ^ server delayed sending query to client
                                     --   or receiving request from client
   , sreqQueried    :: Bool          -- ^ player is now queried for a command
+  , sregainControl :: Bool          -- ^ player requested to regain control
+                                    --   from AI ASAP
   , sxhair         :: Maybe Target  -- ^ the common xhair
   , sxhairGoTo     :: Maybe Target  -- ^ xhair set for last GoTo
   , sactorUI       :: ActorDictUI   -- ^ assigned actor UI presentations
@@ -159,6 +161,7 @@ emptySessionUI sUIOptions =
     { sreqPending = Nothing
     , sreqDelayed = ReqDelayedNot
     , sreqQueried = False
+    , sregainControl = False
     , sxhair = Nothing
     , sxhairGoTo = Nothing
     , sactorUI = EM.empty
@@ -265,6 +268,7 @@ instance Binary SessionUI where
     let sreqPending = Nothing
         sreqDelayed = ReqDelayedNot
         sreqQueried = False
+        sregainControl = False
         sxhairGoTo = Nothing
         slastItemMove = Nothing
         schanF = ChanFrontend $ const $
