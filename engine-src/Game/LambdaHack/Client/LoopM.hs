@@ -174,54 +174,54 @@ loopUI timeOfLastQuery = do
   sregainControl <- getsSession sregainControl
   keyPressed <- anyKeyPressed
   alarm <- elapsedSessionTimeGT timeOfLastQuery longestDelay
-  if not alarm then do
-    cmd <- receiveResponse
-    handleResponse cmd
-    -- @squit@ can be changed only in @handleResponse@, so this is the only
-    -- place where it needs to be checked.
-    quit <- getsClient squit
-    unless quit $ case cmd of
-      RespQueryUI -> loopUIwithResetTimeout
-      _ -> do
-        when (isJust sreqPending) $ do
-          msgAdd MsgActionAlert "Warning: server updated game state after current command was issued by the client but before it was received by the server."
-        loopUI timeOfLastQuery
-  else if not sregainControl && (keyPressed || isJust sreqPending) then do
-    -- ignore keypress if will be handled by special AI control regain case
-      -- The key pressed to gain control is not considered a command.
-      discardPressedKey
-      -- Special case for UI under AI control, because the default
-      -- behaviour is too alarming for the player, especially during
-      -- the insert coin demo before game is started.
-      side <- getsClient sside
-      fact <- getsState $ (EM.! side) . sfactionD
-      if isAIFact fact && fleaderMode (gplayer fact) /= LeaderNull then
-        -- Mark for immediate control regain from AI.
-        modifySession $ \sess -> sess {sregainControl = True}
-      else do
-        -- Stop displaying the prompt, if any, but keep UI simple.
-        modifySession $ \sess -> sess {sreqDelay = ReqDelayHandled}
-        let msg = if isNothing sreqPending
-                  then "Server delayed asking us for a command. Regardless, UI is made accessible. Press ESC twice to listen to server some more."
-                  else "Server delayed receiving a command from us. The command is cancelled. Issue a new one."
-        msgAdd MsgActionAlert msg
-        mreqNew <- queryUI
-        -- TODO: once this is really used, verify that if a request
-        -- overwritten, nothing breaks due to some things in our ClientState
-        -- and SessionUI (but fortunately not in State nor ServerState)
-        -- already set as if it was performed.
-        modifySession $ \sess -> sess {sreqPending = mreqNew}
-        -- Relax completely.
-        modifySession $ \sess -> sess {sreqDelay = ReqDelayNot}
-      -- We may yet not know if server is ready, but perhaps server
-      -- tried hard to contact us while we took control and now it sleeps
-      -- for a bit, so let's give it the benefit of the doubt
-      -- and a slight pause before we alarm the player again.
-      loopUIwithResetTimeout
-  else do
-      -- We know server is not ready.
-      modifySession $ \sess -> sess {sreqDelay = ReqDelayAlarm}
-      -- We take a slight pause during which we display encouragement
-      -- to press a key and receive game state changes and after which
-      -- we check @keyPressed@ (which is cumulative) again.
-      loopUIwithResetTimeout
+  if | not alarm -> do
+       cmd <- receiveResponse
+       handleResponse cmd
+       -- @squit@ can be changed only in @handleResponse@, so this is the only
+       -- place where it needs to be checked.
+       quit <- getsClient squit
+       unless quit $ case cmd of
+         RespQueryUI -> loopUIwithResetTimeout
+         _ -> do
+           when (isJust sreqPending) $ do
+             msgAdd MsgActionAlert "Warning: server updated game state after current command was issued by the client but before it was received by the server."
+           loopUI timeOfLastQuery
+     | not sregainControl && (keyPressed || isJust sreqPending) -> do
+         -- ignore keypress if will be handled by special AI control regain case
+       -- The key pressed to gain control is not considered a command.
+       discardPressedKey
+       -- Special case for UI under AI control, because the default
+       -- behaviour is too alarming for the player, especially during
+       -- the insert coin demo before game is started.
+       side <- getsClient sside
+       fact <- getsState $ (EM.! side) . sfactionD
+       if isAIFact fact && fleaderMode (gplayer fact) /= LeaderNull then
+         -- Mark for immediate control regain from AI.
+         modifySession $ \sess -> sess {sregainControl = True}
+       else do
+         -- Stop displaying the prompt, if any, but keep UI simple.
+         modifySession $ \sess -> sess {sreqDelay = ReqDelayHandled}
+         let msg = if isNothing sreqPending
+                   then "Server delayed asking us for a command. Regardless, UI is made accessible. Press ESC twice to listen to server some more."
+                   else "Server delayed receiving a command from us. The command is cancelled. Issue a new one."
+         msgAdd MsgActionAlert msg
+         mreqNew <- queryUI
+         -- TODO: once this is really used, verify that if a request
+         -- overwritten, nothing breaks due to some things in our ClientState
+         -- and SessionUI (but fortunately not in State nor ServerState)
+         -- already set as if it was performed.
+         modifySession $ \sess -> sess {sreqPending = mreqNew}
+         -- Relax completely.
+         modifySession $ \sess -> sess {sreqDelay = ReqDelayNot}
+       -- We may yet not know if server is ready, but perhaps server
+       -- tried hard to contact us while we took control and now it sleeps
+       -- for a bit, so let's give it the benefit of the doubt
+       -- and a slight pause before we alarm the player again.
+       loopUIwithResetTimeout
+     | otherwise -> do
+       -- We know server is not ready.
+       modifySession $ \sess -> sess {sreqDelay = ReqDelayAlarm}
+       -- We take a slight pause during which we display encouragement
+       -- to press a key and receive game state changes and after which
+       -- we check @keyPressed@ (which is cumulative) again.
+       loopUIwithResetTimeout
