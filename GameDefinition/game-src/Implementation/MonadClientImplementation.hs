@@ -103,6 +103,71 @@ instance MonadClientReadResponse CliImplementation where
   receiveResponseWithTimeout t = CliImplementation $ do
     ChanServer{responseS} <- gets cliDict
     IO.liftIO $ timeout t $ takeMVar responseS
+      -- TODO: this loses values sometimes, see https://stackoverflow.com/questions/22171895/using-tchan-with-timeout
+      -- it will probably require STM to be fixed, either internally or even the variable can't be a simple MVar, which is a pity;
+      -- here is a program that loses values and locks up occasionally, just as LH with this feature:
+{-
+
+import Control.Concurrent
+import Control.Exception
+import System.Timeout
+
+main :: IO ()
+main = do
+  mv <- newMVar True
+  let loopTake c = do
+        mb <- timeout 1 (mask_ $ takeMVar mv)
+        case mb of
+          Just True -> print c
+          Just False -> loopTake (c + 1)
+          Nothing -> loopTake c
+      loopPut n =
+        if n == 0 then return () else do
+          putMVar mv False
+          loopPut (n - 1)
+      oneMillion = 10000
+  loopTake 0
+  forkIO $ loopPut oneMillion >> putMVar mv True
+  loopTake 0
+
+
+remaining things to do if going the timeout way:
+
+time out after real time spend without a query, not after a given number
+of game state change commands
+
+wrong: I gave server command, it ignored it and I didn't get control back
+automatically, but messages scrolled too fast
+this should be:
+if command given then any game state change command causes interrupt
+>
+test this by disabling underAI keys eating
+
+benchmark and check that results identical and if much slower
+
+use this stuff to make UI available in AI mode
+but only in game with no leader-having faction
+this will also simplify code for games with leader
+>
+but possibly a bigger problem and more code is to permit
+doing UI stuff without a leader
+>
+so perhaps a better start is to permit spectacors
+though that's also no leader
+but I can make a fake leader with full Per, etc.
+and let the leader change levels
+so the spectacor would probably be an extra faction
+
+save sreqPending, etc.?
+not, but make sure
+
+mark in UI that server ready and allude to that in the msg?
+
+problem: when command dropped, some things in our ClientState and SessionUI
+may already be set as if it was performed
+(though not in State and ServerState)
+
+-}
 
 instance MonadClientWriteRequest CliImplementation where
   sendRequestAI scmd = CliImplementation $ do
