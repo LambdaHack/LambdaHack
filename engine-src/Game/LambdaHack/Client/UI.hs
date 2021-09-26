@@ -74,6 +74,7 @@ queryUIunderAI = do
  sregainControl <- getsSession sregainControl
  if sregainControl then do
    modifySession $ \sess -> sess { sregainControl = False
+                                 , sreqDelay = ReqDelayNot
                                  , sreqPending = Nothing }  -- just in case
    -- Menu is entered in @displayRespUpdAtomicUI@ at @UpdAutoFaction@
    -- and @stopAfter@ is canceled in @cmdAtomicSemCli@

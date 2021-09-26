@@ -171,10 +171,15 @@ loopUI :: ( MonadClientSetup m
        => POSIXTime -> m ()
 loopUI timeOfLastQuery = do
   sreqPending <- getsSession sreqPending
+  sreqDelay <- getsSession sreqDelay
   sregainControl <- getsSession sregainControl
   keyPressed <- anyKeyPressed
   alarm <- elapsedSessionTimeGT timeOfLastQuery longestDelay
-  if | not alarm -> do
+  if | not alarm  -- no alarm starting right now
+       && -- no need to mark AI for control regain ASAP:
+          (sreqDelay /= ReqDelayAlarm  -- no old alarm still in effect
+           || sregainControl  -- AI control already marked for regain
+           || not keyPressed) -> do  -- player does not insist
        cmd <- receiveResponse
        handleResponse cmd
        -- @squit@ can be changed only in @handleResponse@, so this is the only
