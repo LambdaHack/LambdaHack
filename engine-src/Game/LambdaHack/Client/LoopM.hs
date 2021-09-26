@@ -38,7 +38,6 @@ import Game.LambdaHack.Content.ModeKind
 -- | Client monad in which one can receive responses from the server.
 class MonadClient m => MonadClientReadResponse m where
   receiveResponse :: m Response
-  receiveResponseWithTimeout :: Int -> m (Maybe Response)
 
 initAI :: MonadClient m => m ()
 initAI = do
@@ -169,11 +168,8 @@ loopUI :: forall m. ( MonadClientSetup m
        => Int -> m ()
 loopUI queryTimeout = do
   sreqPending <- getsSession sreqPending
-  mcmd <- if queryTimeout <= 0
-          then return Nothing
-          else receiveResponseWithTimeout queryTimeout
-  case mcmd of
-    Just cmd -> do
+  if queryTimeout > 0 then do
+      cmd <- receiveResponse
       handleResponse cmd
       -- @squit@ can be changed only in @handleResponse@, so this is the only
       -- place where it needs to be checked.
@@ -187,8 +183,8 @@ loopUI queryTimeout = do
           -- without any UI query, the client assumes it's being ignored.
           let virtualDelay = longestDelay `div` 100
           loopUI (queryTimeout - virtualDelay)
-    Nothing -> do  -- timeout was not positive
-                   -- or was reached when waiting for the server
+  else do  -- timeout was not positive
+           -- or was reached when waiting for the server
       keyPressed <- anyKeyPressed
       if keyPressed then do
         -- The key pressed to gain control is not considered a command.
