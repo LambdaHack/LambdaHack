@@ -188,7 +188,7 @@ loopUI timeOfLastQuery = do
     sregainControl <- getsSession sregainControl
     -- Ignore keypress if will be handled by special AI control regain case.
     keyPressed <- if sregainControl then return False else anyKeyPressed
-    if keyPressed then do
+    if keyPressed || isJust sreqPending then do
       -- The key pressed to gain control is not considered a command.
       discardPressedKey
       -- Special case for UI under AI control, because the default
