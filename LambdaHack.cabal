@@ -455,6 +455,7 @@ test-suite test
   main-is:            Spec.hs
   other-modules:      ItemDescriptionUnitTests
                       ItemKindUnitTests
+                      ItemRevUnitTests
                       ReqFailureUnitTests
                       SessionUIMock
                       SessionUIUnitTests

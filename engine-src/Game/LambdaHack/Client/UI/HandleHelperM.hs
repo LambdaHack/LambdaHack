@@ -252,7 +252,7 @@ itemOverlay lSlots lid bag displayRanged = do
                 arItem = aspectRecordFull itemFull
                 colorSymbol =
                   if IA.checkFlag Ability.Condition arItem
-                  then viewItemWithEquipColor discoBenefit iid itemFull
+                  then viewItemBenefitColored discoBenefit iid itemFull
                   else viewItem itemFull
                 phrase = makePhrase
                   [partItemWsRanged rwidth side factionD displayRanged
