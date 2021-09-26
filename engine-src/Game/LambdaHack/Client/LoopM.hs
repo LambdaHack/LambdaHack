@@ -207,6 +207,10 @@ loopUI timeOfLastQuery = do
                   else "Server delayed receiving a command from us. The command is cancelled. Issue a new one."
         msgAdd MsgActionAlert msg
         mreqNew <- queryUI
+        -- TODO: once this is really used, verify that if a request
+        -- overwritten, nothing breaks due to some things in our ClientState
+        -- and SessionUI (but fortunately not in State nor ServerState)
+        -- already set as if it was performed.
         modifySession $ \sess -> sess {sreqPending = mreqNew}
         -- Relax completely.
         modifySession $ \sess -> sess {sreqDelayed = ReqDelayedNot}
