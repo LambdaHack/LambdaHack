@@ -59,7 +59,7 @@ contentIdIndex (ContentId k) = fromEnum k
 -- by accident (this is still possible via conversion functions,
 -- if one insists, so the abstraction is leaky, but that's fine).
 newtype ContentSymbol c = ContentSymbol Char
-  deriving (Show, Eq, Ord, Generic, NFData)
+  deriving (Show, Eq, Ord, Generic, Binary, NFData)
 
 -- | This is a 1-1 inclusion. Don't use, if an equal named symbol already
 -- exists in rules content.
