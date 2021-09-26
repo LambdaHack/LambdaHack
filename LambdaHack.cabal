@@ -466,6 +466,7 @@ test-suite test
                       ,containers
                       ,enummapset
                       ,optparse-applicative
+                      ,splitmix
                       ,tasty >= 1.0
                       ,tasty-quickcheck
                       ,tasty-hunit
