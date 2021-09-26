@@ -17,8 +17,8 @@ import           GHC.Generics (Generic)
 import qualified NLP.Miniutter.English as MU
 
 import Game.LambdaHack.Common.Vector
+import Game.LambdaHack.Content.ItemKind (ItemKind)
 import Game.LambdaHack.Definition.Defs
-
 data CmdCategory =
     CmdMainMenu | CmdDashboard | CmdItemMenu
   | CmdMove | CmdItem | CmdAim | CmdMeta | CmdMouse
@@ -204,7 +204,7 @@ instance Binary HumanCmd
 -- | Description of how item manipulation is triggered and communicated
 -- to the player.
 data TriggerItem =
-  TriggerItem {tiverb :: MU.Part, tiobject :: MU.Part, tisymbols :: [Char]}
+  TriggerItem {tiverb :: MU.Part, tiobject :: MU.Part, tisymbols :: [ContentSymbol ItemKind]}
   deriving (Show, Eq, Ord, Generic)
 
 instance Read TriggerItem where
