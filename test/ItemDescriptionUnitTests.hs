@@ -51,14 +51,15 @@ itemDescriptionUnitTests = testGroup "itemDescriptionUnitTests" $
         }
   in
   [ testCase "testItem_viewItem_Blackx" $
-      viewItem testItemFull @?= (attrChar2ToW32 Black 'x')
+      viewItem testItemFull 
+      @?= attrChar2ToW32 Black 'x'
   , testCase "testItem!_viewItem_Black!" $
       viewItem testItemFull { itemKind = testItemKind { isymbol = '!' }}
-      @?= (attrChar2ToW32 Black '!')
+      @?= attrChar2ToW32 Black '!'
   , testCase "testItem_viewItemBenefitColored_isEquip_Greenx" $
       viewItemBenefitColored (EM.singleton (toEnum 42) (Benefit True 0 0 0 0)) (toEnum 42) testItemFull
-      @?= (attrChar2ToW32 BrGreen 'x')
+      @?= attrChar2ToW32 BrGreen 'x'
   , testCase "testItem_viewItemBenefitColored_isNotEquip_Redx" $
       viewItemBenefitColored (EM.singleton (toEnum 42) (Benefit False 0 0 0 0)) (toEnum 42) testItemFull
-      @?= (attrChar2ToW32 BrRed 'x')
+      @?= attrChar2ToW32 BrRed 'x'
   ]
