@@ -1,4 +1,4 @@
-{-# LANGUAGE GeneralizedNewtypeDeriving, DeriveGeneric #-}
+{-# LANGUAGE GeneralizedNewtypeDeriving #-}
 -- | Very basic types for content definitions with their internals exposed.
 module Game.LambdaHack.Definition.DefsInternal
   ( GroupName(..), displayGroupName
@@ -13,7 +13,6 @@ import Game.LambdaHack.Core.Prelude
 import Control.DeepSeq
 import Data.Binary
 import Data.Hashable
-import GHC.Generics (Generic)
 
 -- If ever needed, we can use a symbol table here, since content
 -- is never serialized. But we'd need to cover the few cases
