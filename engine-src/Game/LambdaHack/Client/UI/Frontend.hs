@@ -54,8 +54,6 @@ data FrontReq :: Type -> Type where
   FrontDiscardKey :: FrontReq ()
   -- | Discard all keys in the queue.
   FrontResetKeys :: FrontReq ()
-  -- | Add a key to the queue.
-  FrontAdd :: KMP -> FrontReq ()
   -- | Shut the frontend down.
   FrontShutdown :: FrontReq ()
   -- | Take screenshot.
@@ -120,7 +118,6 @@ fchanFrontend fs@FrontSetup{..} rf =
     FrontDiscardKey ->
       void $ STM.atomically $ STM.tryReadTQueue (fchanKey rf)
     FrontResetKeys -> resetChanKey (fchanKey rf)
-    FrontAdd kmp -> STM.atomically $ STM.writeTQueue (fchanKey rf) kmp
     FrontShutdown -> do
       cancel fasyncTimeout
       -- In case the last frame display is pending:

@@ -21,7 +21,7 @@ module Game.LambdaHack.Client.UI.MonadClientUI
   , tryRestore, leaderSkillsClientUI, rndToActionUI, tryOpenBrowser
 #ifdef EXPOSE_INTERNAL
     -- * Internal operations
-  , connFrontend, displayFrame, addPressedKey
+  , connFrontend, displayFrame
 #endif
   ) where
 
@@ -188,9 +188,6 @@ discardPressedKey = connFrontend Frontend.FrontDiscardKey
 
 resetPressedKeys :: MonadClientUI m => m ()
 resetPressedKeys = connFrontend Frontend.FrontResetKeys
-
-addPressedKey :: MonadClientUI m => K.KMP -> m ()
-addPressedKey = connFrontend . Frontend.FrontAdd
 
 revCmdMap :: MonadClientUI m => m (HumanCmd.HumanCmd -> K.KM)
 revCmdMap = do
