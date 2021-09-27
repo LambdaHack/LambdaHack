@@ -410,9 +410,13 @@ displayRespUpdAtomicUI cmd = case cmd of
     lidV <- viewedLevelUI
     markDisplayNeeded lidV
     when (fid == side) $ do
-      unless b $ do
-        resetPressedKeys  -- important moment, so clear mashed keys
-        addPressedControlEsc  -- sets @swasAutomated@, enters main menu
+      unless b $
+        -- Clear macros and invoke a special main menu entrance macro
+        -- that sets @swasAutomated@, preparing for AI control at exit.
+        modifySession $ \sess ->
+          sess { smacroFrame =
+                   emptyMacroFrame {keyPending = KeyMacro [K.controlEscKM]}
+               , smacroStack = [] }
       setFrontAutoYes b  -- now can start/stop auto-accepting prompts
   UpdRecordKill{} -> return ()
   -- Alter map.
