@@ -203,7 +203,9 @@ loopUI timeOfLastQuery = do
        if isAIFact fact && fleaderMode (gplayer fact) /= LeaderNull then
          -- Mark for immediate control regain from AI.
          modifySession $ \sess -> sess {sregainControl = True}
-       else do
+       else when (isJust $ gleader fact) $ do
+              -- don't give control to client if no leader, e.g., game just
+              -- ended and new one not yet started
          -- Stop displaying the prompt, if any, but keep UI simple.
          modifySession $ \sess -> sess {sreqDelay = ReqDelayHandled}
          let msg = if isNothing sreqPending

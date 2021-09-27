@@ -45,7 +45,7 @@ data SessionUI = SessionUI
   { sreqPending    :: Maybe RequestUI
                                     -- ^ request created by a UI query
                                     --   but not yet sent to the server
-  , sreqDelay      :: ReqDelay    -- ^ server delayed sending query to client
+  , sreqDelay      :: ReqDelay      -- ^ server delayed sending query to client
                                     --   or receiving request from client
   , sreqQueried    :: Bool          -- ^ player is now queried for a command
   , sregainControl :: Bool          -- ^ player requested to regain control
