@@ -7,8 +7,7 @@ module Game.LambdaHack.Server.ItemRev
     -- * Item discovery types
   , DiscoveryKindRev, emptyDiscoveryKindRev, serverDiscos
     -- * The @FlavourMap@ type
-  , FlavourMap, emptyFlavourMap, dungeonFlavourMap
-  , rollFlavourMap -- for test
+  , FlavourMap, emptyFlavourMap, dungeonFlavourMap, rollFlavourMap
   ) where
 
 import Prelude ()
@@ -89,17 +88,17 @@ newItemKind COps{coitem, coItemSpeedup} uniqueSet itemFreq
   -- each 10 spawns adds 5 depth.
   let numSpawnedCoeff = max 0 $ lvlSpawned `div` 2 - 5
       ldSpawned = ldepth + numSpawnedCoeff
-      f _ acc _ itemKind _ | itemKind `ES.member` uniqueSet = acc
-      f !q !acc !p !itemKind !kind =
+      f _ acc _ ik _ | ik `ES.member` uniqueSet = acc
+      f !q !acc !p !ik !kind =
         -- Don't consider lvlSpawned for uniques, except those that have
         -- @Unique@ under @Odds@.
         let ld = if IA.checkFlag Ability.Unique
-                    $ IA.kmMean $ getKindMean itemKind coItemSpeedup
+                    $ IA.kmMean $ getKindMean ik coItemSpeedup
                  then ldepth
                  else ldSpawned
             rarity = linearInterpolation ld totalDepth (IK.irarity kind)
             !fr = q * p * rarity
-        in (fr, (itemKind, kind)) : acc
+        in (fr, (ik, kind)) : acc
       g (!itemGroup, !q) = ofoldlGroup' coitem itemGroup (f q) []
       freqDepth = concatMap g itemFreq
   in toFreq "newItemKind" freqDepth
@@ -148,15 +147,15 @@ serverDiscos COps{coitem} (DiscoveryKindRev discoRev0) = do
   let ixs = [0..toEnum (olength coitem - 1)]
       inMetaGame kindId =
         IK.SetFlag Ability.MetaGame `elem` IK.iaspects (okind coitem kindId)
-      keepMeta idx ix = if inMetaGame (toEnum idx) then ix else maxBound
+      keepMeta i ix = if inMetaGame (toEnum i) then ix else maxBound
   shuffled <-
     if U.null discoRev0
     then shuffle ixs
     else shuffleExcept (U.imap keepMeta discoRev0) (olength coitem) ixs
   let f (!ikMap, (!ix) : rest) !kmKind _ =
         (EM.insert (toItemKindIx ix) kmKind ikMap, rest)
-      f (ikMap, []) itemKind _ =
-        error $ "too short ixs" `showFailure` (itemKind, ikMap)
+      f (ikMap, []) ik _ =
+        error $ "too short ixs" `showFailure` (ik, ikMap)
       (discoS, _) = ofoldlWithKey' coitem f (EM.empty, shuffled)
       udiscoRev = U.fromListN (olength coitem) shuffled
   return (discoS, DiscoveryKindRev udiscoRev)
@@ -170,8 +169,8 @@ newtype FlavourMap = FlavourMap (U.Vector Word16)
 emptyFlavourMap :: FlavourMap
 emptyFlavourMap = FlavourMap U.empty
 
-stdFlavSet :: ES.EnumSet Flavour
-stdFlavSet = ES.fromList stdFlavList
+stdFlav :: ES.EnumSet Flavour
+stdFlav = ES.fromList stdFlavList
 
 -- | Assigns flavours to item kinds. Assures no flavor is repeated for the same
 -- symbol, except for items with only one permitted flavour.
@@ -181,7 +180,7 @@ rollFlavourMap :: U.Vector Word16
                -> ContentId ItemKind -> ItemKind
                -> Rnd ( EM.EnumMap (ContentId ItemKind) Flavour
                       , EM.EnumMap (ContentSymbol ItemKind) (ES.EnumSet Flavour) )
-rollFlavourMap uFlavMeta !rnd !key !itemKind = case IK.iflavour itemKind of
+rollFlavourMap uFlavMeta !rnd !key !ik = case IK.iflavour ik of
   [] -> error "empty iflavour"
   [flavour] -> do
     (!assocs, !availableMap) <- rnd
@@ -196,46 +195,39 @@ rollFlavourMap uFlavMeta !rnd !key !itemKind = case IK.iflavour itemKind of
         return ( EM.insert key flavour assocs
                , availableMap )
       else do
-        let available = availableMap EM.! IK.isymbol itemKind
+        let available = availableMap EM.! IK.isymbol ik
             proper = ES.fromList flvs `ES.intersection` available
         assert (not (ES.null proper)
                 `blame` "not enough flavours for items"
-                `swith` (flvs, available, itemKind, availableMap)) $ do
+                `swith` (flvs, available, ik, availableMap)) $ do
           flavour <- oneOf $ ES.elems proper
           let availableReduced = ES.delete flavour available
           return ( EM.insert key flavour assocs
-                 , EM.insert (IK.isymbol itemKind) availableReduced availableMap )
+                 , EM.insert (IK.isymbol ik) availableReduced availableMap )
     else return ( EM.insert key (toEnum $ fromEnum a0) assocs
                 , availableMap )
 
 -- | Randomly chooses flavour for all item kinds for this game.
 dungeonFlavourMap :: COps -> FlavourMap -> Rnd FlavourMap
-dungeonFlavourMap COps{coitem} (FlavourMap uFlav0) = 
-  let contentItemsData = coitem
-      invalidFlavourCode = maxBound 
-      inMetaGame kindId = --do
-        IK.SetFlag Ability.MetaGame `elem` IK.iaspects (okind contentItemsData kindId)
-      keepMeta idx flavour = if inMetaGame (toEnum idx) then flavour else invalidFlavourCode
-      uFlavMeta = if U.null uFlav0  -- if not created
-                  then U.replicate (olength contentItemsData) invalidFlavourCode -- create a vector of n invalidFlavours
-                  else U.imap keepMeta uFlav0  -- create a vector masked with invalidFlavours by whether "inMetaGame" or not
-      -- convert the uFlavMeta item vector to an availability map
+dungeonFlavourMap COps{coitem} (FlavourMap uFlav0) = do
+  let inMetaGame kindId =
+        IK.SetFlag Ability.MetaGame `elem` IK.iaspects (okind coitem kindId)
+      keepMeta i fl = if inMetaGame (toEnum i) then fl else maxBound
+      uFlavMeta = if U.null uFlav0
+                  then U.replicate (olength coitem) maxBound
+                  else U.imap keepMeta uFlav0
       flavToAvailable :: EM.EnumMap Char (ES.EnumSet Flavour) -> Int -> Word16
                       -> EM.EnumMap Char (ES.EnumSet Flavour)
-      flavToAvailable symbolToFlavourSetMap idx flavour =
-        let itemKind = okind contentItemsData (toEnum idx)
-            setBase = EM.findWithDefault stdFlavSet (IK.isymbol itemKind) symbolToFlavourSetMap 
-            setMeta = if flavour == invalidFlavourCode
-                      then setBase -- return an untouched set from the map
-                      else ES.delete (toEnum $ fromEnum flavour) setBase -- return a set from the map with this flavour removed
-        in EM.insert (IK.isymbol itemKind) setMeta symbolToFlavourSetMap
-      availableMap = U.ifoldl' flavToAvailable EM.empty uFlavMeta  
-  -- (assocsFlav, _) <- ofoldlWithKey' contentItemsData (rollFlavourMap uFlavMeta)
-  --                                   (return (EM.empty, availableMap))
-  -- let uFlav = U.fromListN (olength contentItemsData)
-  --             $ map (toEnum . fromEnum) $ EM.elems assocsFlav
-  -- return $! FlavourMap uFlav
-  in ofoldlWithKey' contentItemsData (rollFlavourMap uFlavMeta) (return (EM.empty, availableMap)) >>= (\(assocsFlav, _) ->
-                                      let uFlav = U.fromListN (olength contentItemsData)
-                                                  $ map (toEnum . fromEnum) $ EM.elems assocsFlav
-                                      in return $! FlavourMap uFlav)
+      flavToAvailable em i fl =
+        let ik = okind coitem (toEnum i)
+            setBase = EM.findWithDefault stdFlav (IK.isymbol ik) em
+            setMeta = if fl == maxBound
+                      then setBase
+                      else ES.delete (toEnum $ fromEnum fl) setBase
+        in EM.insert (IK.isymbol ik) setMeta em
+      availableMap = U.ifoldl' flavToAvailable EM.empty uFlavMeta
+  (assocsFlav, _) <- ofoldlWithKey' coitem (rollFlavourMap uFlavMeta)
+                                    (return (EM.empty, availableMap))
+  let uFlav = U.fromListN (olength coitem)
+              $ map (toEnum . fromEnum) $ EM.elems assocsFlav
+  return $! FlavourMap uFlav
