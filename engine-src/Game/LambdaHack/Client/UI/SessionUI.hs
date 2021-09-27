@@ -71,6 +71,7 @@ data SessionUI = SessionUI
                                     -- ^ parameters of the current run, if any
   , shistory       :: History       -- ^ history of messages
   , spointer       :: PointUI       -- ^ mouse pointer position
+  , sautoYes       :: Bool          -- ^ whether to auto-clear prompts
   , smacroFrame    :: KeyMacroFrame -- ^ the head of the key macro stack
   , smacroStack    :: [KeyMacroFrame]
                                     -- ^ the tail of the key macro stack
@@ -180,6 +181,7 @@ emptySessionUI sUIOptions =
     , srunning = Nothing
     , shistory = emptyHistory 0
     , spointer = PointUI 0 0
+    , sautoYes = False
     , smacroFrame = emptyMacroFrame
     , smacroStack = []
     , slastLost = ES.empty
@@ -276,6 +278,7 @@ instance Binary SessionUI where
         sccui = emptyCCUI
         sxhairMoused = True
         spointer = PointUI 0 0
+        sautoYes = False
         smacroFrame = emptyMacroFrame
         smacroStack = []
         slastLost = ES.empty

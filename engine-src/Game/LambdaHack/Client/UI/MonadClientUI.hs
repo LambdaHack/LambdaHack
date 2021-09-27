@@ -157,12 +157,17 @@ displayFrames lid frs = do
 connFrontendFrontKey :: MonadClientUI m => [K.KM] -> PreFrame3 -> m K.KM
 connFrontendFrontKey frontKeyKeys ((bfr, ffr), (ovProp, ovMono)) = do
   let frontKeyFrame = ((FrameBase $ U.unsafeThaw bfr, ffr), (ovProp, ovMono))
-  kmp <- connFrontend $ Frontend.FrontKey frontKeyKeys frontKeyFrame
-  modifySession $ \sess -> sess {spointer = K.kmpPointer kmp}
-  return $! K.kmpKeyMod kmp
+  sautoYes <- getsSession sautoYes
+  if sautoYes && (null frontKeyKeys || K.spaceKM `elem` frontKeyKeys) then do
+    connFrontend $ Frontend.FrontFrame frontKeyFrame
+    return K.spaceKM
+  else do
+    kmp <- connFrontend $ Frontend.FrontKey frontKeyKeys frontKeyFrame
+    modifySession $ \sess -> sess {spointer = K.kmpPointer kmp}
+    return $! K.kmpKeyMod kmp
 
 setFrontAutoYes :: MonadClientUI m => Bool -> m ()
-setFrontAutoYes b = connFrontend $ Frontend.FrontAutoYes b
+setFrontAutoYes b = modifySession $ \sess -> sess {sautoYes = b}
 
 frontendShutdown :: MonadClientUI m => m ()
 frontendShutdown = connFrontend Frontend.FrontShutdown
