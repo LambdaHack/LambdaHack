@@ -192,12 +192,12 @@ loopUI timeOfLastQuery = do
              msgAdd MsgActionAlert "Warning: server updated game state after current command was issued by the client but before it was received by the server."
            loopUI timeOfLastQuery
      | not sregainControl && (keyPressed || isJust sreqPending) -> do
-         -- ignore keypress if will be handled by special AI control regain case
+         -- ignore alarm if to be handled by AI control regain code elsewhere
        -- The keys mashed to gain control are not considered a command.
        resetPressedKeys
-       -- Special case for UI under AI control, because the default
-       -- behaviour is too alarming for the player, especially during
-       -- the insert coin demo before game is started.
+       -- Checking for special case for UI under AI control, because the default
+       -- behaviour is in this case too alarming for the player, especially
+       -- during the insert coin demo before game is started.
        side <- getsClient sside
        fact <- getsState $ (EM.! side) . sfactionD
        if isAIFact fact && fleaderMode (gplayer fact) /= LeaderNull then
@@ -216,17 +216,18 @@ loopUI timeOfLastQuery = do
          -- and SessionUI (but fortunately not in State nor ServerState)
          -- already set as if it was performed.
          modifySession $ \sess -> sess {sreqPending = mreqNew}
-         -- Relax completely.
+         -- Now relax completely.
          modifySession $ \sess -> sess {sreqDelay = ReqDelayNot}
-       -- We may yet not know if server is ready, but perhaps server
-       -- tried hard to contact us while we took control and now it sleeps
-       -- for a bit, so let's give it the benefit of the doubt
-       -- and a slight pause before we alarm the player again.
+         -- We may yet not know if server is ready, but perhaps server
+         -- tried hard to contact us while we took control and now it sleeps
+         -- for a bit, so let's give it the benefit of the doubt
+         -- and a slight pause before we alarm the player again.
        loopUIwithResetTimeout
      | otherwise -> do
        -- We know server is not ready.
        modifySession $ \sess -> sess {sreqDelay = ReqDelayAlarm}
        -- We take a slight pause during which we display encouragement
-       -- to press a key and receive game state changes and after which
-       -- we check @keyPressed@ (which is cumulative) again.
+       -- to press a key and we receive game state changes.
+       -- The pause is cut short by any keypress, so it does not
+       -- make UI reaction any less snappy (animations do, but that's fine).
        loopUIwithResetTimeout
