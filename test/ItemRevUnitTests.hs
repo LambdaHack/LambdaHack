@@ -14,8 +14,6 @@ import qualified System.Random.SplitMix32 as SM
 import Test.Tasty
 import Test.Tasty.HUnit
 
--- import           Game.LambdaHack.Client.UI.ItemDescription
--- import           Game.LambdaHack.Common.ItemAspect
 
 import           Game.LambdaHack.Common.Kind
 import           Game.LambdaHack.Content.ItemKind
