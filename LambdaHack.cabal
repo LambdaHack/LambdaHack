@@ -141,6 +141,8 @@ common options
     ghcjs-options:    -DREMOVE_TELETYPE
 
 common exe-options
+  if flag(vty)
+    ghc-options:      -threaded
   ghc-options:        -rtsopts
 -- (Ignored by GHCJS) Minimize median lag at the cost of occasional bigger
 -- GC lag, which fortunately sometimes fits into idle time between turns):
