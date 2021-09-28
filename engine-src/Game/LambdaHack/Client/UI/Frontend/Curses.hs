@@ -27,6 +27,7 @@ import qualified Game.LambdaHack.Client.UI.Key as K
 import           Game.LambdaHack.Client.UI.PointUI
 import           Game.LambdaHack.Common.ClientOptions
 import qualified Game.LambdaHack.Common.PointArray as PointArray
+import           Game.LambdaHack.Content.TileKind (floorSymbol)
 import qualified Game.LambdaHack.Definition.Color as Color
 
 -- | Session data maintained by the frontend.
@@ -91,7 +92,7 @@ display coscreen FrontendSession{..} SingleFrame{singleArray} = do
       chunk l = let (ch, r) = splitAt (rwidth coscreen) l
                 in ch : chunk r
   sequence_ [ C.setStyle (M.findWithDefault defaultStyle acAttr2 sstyles)
-              >> C.mvWAddStr swin y x [acChar]
+              >> C.mvWAddStr swin y x [squashChar acChar]
             | (y, line) <- nm
             , (x, Color.AttrChar{acAttr=Color.Attr{..}, ..}) <- line
             , let acAttr2 = case bg of
@@ -162,6 +163,9 @@ keyTranslate e = (\(key, modifier) -> K.KM modifier key) $
       | c `elem` ['1'..'9'] -> (K.KP c, K.NoModifier)
       | otherwise           -> (K.Char c, K.NoModifier)
     _                       -> (K.Unknown (show e), K.NoModifier)
+
+squashChar :: Char -> Char
+squashChar c = if c == floorSymbol then '.' else c
 
 toFColor :: Color.Color -> C.ForegroundColor
 toFColor Color.Black     = C.BlackF
