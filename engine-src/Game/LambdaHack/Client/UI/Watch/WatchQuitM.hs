@@ -11,8 +11,8 @@ module Game.LambdaHack.Client.UI.DisplayAtomicM
   , manyItemsAidVerbMU
   , createActorUI, destroyActorUI, spotItemBag, moveActor, displaceActorUI
   , moveItemUI, quitFactionUI
-  , displayGameOverLoot, displayGameOverAnalytics
-  , discover, ppSfxMsg, strike
+  , displayGameOverLoot, displayGameOverAnalytics, viewLoreItems
+  , discover, ppSfxMsg, strike, pushFrame, fadeOutOrIn
 #endif
   ) where
 
@@ -51,6 +51,7 @@ import           Game.LambdaHack.Client.UI.MonadClientUI
 import           Game.LambdaHack.Client.UI.Msg
 import           Game.LambdaHack.Client.UI.MsgM
 import           Game.LambdaHack.Client.UI.SessionUI
+import           Game.LambdaHack.Client.UI.Slideshow
 import           Game.LambdaHack.Client.UI.SlideshowM
 import           Game.LambdaHack.Client.UI.UIOptions
 import           Game.LambdaHack.Common.Actor
@@ -1425,6 +1426,40 @@ displayGameOverLore slore exposeCount generationAn = do
   viewLoreItems ("GameOverLore" ++ show slore)
                 slots generationBag prompt examItem displayRanged
 
+viewLoreItems :: MonadClientUI m
+              => String -> SingleItemSlots -> ItemBag -> Text
+              -> (Int -> SingleItemSlots -> m Bool) -> Bool
+              -> m K.KM
+viewLoreItems menuName lSlotsRaw trunkBag prompt examItem displayRanged = do
+  CCUI{coscreen=ScreenContent{rheight}} <- getsSession sccui
+  arena <- getArenaUI
+  itemToF <- getsState $ flip itemToFull
+  let keysPre = [K.spaceKM, K.mkChar '<', K.mkChar '>', K.escKM]
+      lSlots = sortSlotMap itemToF lSlotsRaw
+  msgAdd MsgPromptGeneric prompt
+  io <- itemOverlay lSlots arena trunkBag displayRanged
+  itemSlides <- overlayToSlideshow (rheight - 2) keysPre io
+  let keyOfEKM (Left km) = km
+      keyOfEKM (Right SlotChar{slotChar}) = [K.mkChar slotChar]
+      allOKX = concatMap snd $ slideshow itemSlides
+      keysMain = keysPre ++ concatMap (keyOfEKM . fst) allOKX
+      viewAtSlot slot = do
+        let ix0 = fromMaybe (error $ show slot)
+                            (findIndex (== slot) $ EM.keys lSlots)
+        go2 <- examItem ix0 lSlots
+        if go2
+        then viewLoreItems menuName lSlots trunkBag prompt
+                           examItem displayRanged
+        else return K.escKM
+  ekm <- displayChoiceScreen menuName ColorFull False itemSlides keysMain
+  case ekm of
+    Left km | km `elem` [K.spaceKM, K.mkChar '<', K.mkChar '>', K.escKM] ->
+      return km
+    Left K.KM{key=K.Char l} -> viewAtSlot $ SlotChar 0 l
+      -- other prefixes are not accessible via keys; tough luck; waste of effort
+    Left km -> error $ "" `showFailure` km
+    Right slot -> viewAtSlot slot
+
 -- The item may be used up already and so not present in the container,
 -- e.g., if the item destroyed itself. This is OK. Message is still needed.
 discover :: MonadClientUI m => Container -> ItemId -> m ()
@@ -2462,3 +2497,29 @@ strike catch source target iid = assert (source /= target) $ do
                            <> msgArmor <> tmpInfluenceBlurb <> "."
          tutorialHintBenignFoe
          animateAlive (blid tb) basicAnim
+
+-- | Push the frame depicting the current level to the frame queue.
+-- Only one line of the report is shown, as in animations,
+-- because it may not be our turn, so we can't clear the message
+-- to see what is underneath.
+pushFrame :: MonadClientUI m => Bool -> m ()
+pushFrame delay = do
+  -- The delay before reaction to keypress was too long in case of many
+  -- projectiles flying and ending flight, so frames need to be skipped.
+  keyPressed <- anyKeyPressed
+  unless keyPressed $ do
+    lidV <- viewedLevelUI
+    FontSetup{propFont} <- getFontSetup
+    frame <- basicFrameWithoutReport lidV propFont
+    -- Pad with delay before and after to let player see, e.g., door being
+    -- opened a few ticks after it came into vision, the same turn.
+    displayFrames lidV $
+      if delay then [Nothing, Just frame, Nothing] else [Just frame]
+
+fadeOutOrIn :: MonadClientUI m => Bool -> m ()
+fadeOutOrIn out = do
+  arena <- getArenaUI
+  CCUI{coscreen} <- getsSession sccui
+  animMap <- rndToActionUI $ fadeout coscreen out 2
+  animFrs <- renderAnimFrames True arena animMap
+  displayFrames arena (tail animFrs)  -- no basic frame between fadeout and in

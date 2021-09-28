@@ -1,10 +1,10 @@
 -- | A set of Frame monad operations.
 module Game.LambdaHack.Client.UI.FrameM
-  ( pushFrame, promptGetKey, addToMacro, dropEmptyMacroFrames, lastMacroFrame
-  , stopPlayBack, animate, fadeOutOrIn
+  ( basicFrameWithoutReport, promptGetKey, addToMacro, dropEmptyMacroFrames
+  , lastMacroFrame, stopPlayBack, renderAnimFrames, animate
 #ifdef EXPOSE_INTERNAL
     -- * Internal operations
-  , drawOverlay, basicFrameWithoutReport, renderAnimFrames
+  , drawOverlay
   , resetPlayBack, restoreLeaderFromRun
 #endif
   ) where
@@ -123,24 +123,6 @@ basicFrameWithoutReport arena font = do
       truncRep | underAI = EM.fromList [(font, [(PointUI 0 0, par1)])]
                | otherwise = EM.empty
   drawOverlay ColorFull False truncRep arena
-
--- | Push the frame depicting the current level to the frame queue.
--- Only one line of the report is shown, as in animations,
--- because it may not be our turn, so we can't clear the message
--- to see what is underneath.
-pushFrame :: MonadClientUI m => Bool -> m ()
-pushFrame delay = do
-  -- The delay before reaction to keypress was too long in case of many
-  -- projectiles flying and ending flight, so frames need to be skipped.
-  keyPressed <- anyKeyPressed
-  unless keyPressed $ do
-    lidV <- viewedLevelUI
-    FontSetup{propFont} <- getFontSetup
-    frame <- basicFrameWithoutReport lidV propFont
-    -- Pad with delay before and after to let player see, e.g., door being
-    -- opened a few ticks after it came into vision, the same turn.
-    displayFrames lidV $
-      if delay then [Nothing, Just frame, Nothing] else [Just frame]
 
 promptGetKey :: MonadClientUI m
              => ColorMode -> FontOverlayMap -> Bool -> [K.KM]
@@ -291,11 +273,3 @@ animate arena anim = do
   unless keyPressed $ do
     frames <- renderAnimFrames False arena anim
     displayFrames arena frames
-
-fadeOutOrIn :: MonadClientUI m => Bool -> m ()
-fadeOutOrIn out = do
-  arena <- getArenaUI
-  CCUI{coscreen} <- getsSession sccui
-  animMap <- rndToActionUI $ fadeout coscreen out 2
-  animFrs <- renderAnimFrames True arena animMap
-  displayFrames arena (tail animFrs)  -- no basic frame between fadeout and in
