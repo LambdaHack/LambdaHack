@@ -7,7 +7,7 @@ module Game.LambdaHack.Client.UI
     -- * UI monad and session type
   , MonadClientUI(..), SessionUI(..)
     -- * Updating UI state wrt game state changes
-  , displayRespUpdAtomicUI, displayRespSfxAtomicUI
+  , watchRespUpdAtomicUI, watchRespSfxAtomicUI
     -- * Startup and initialization
   , CCUI(..)
   , UIOptions, applyUIOptions, uCmdline, mkUIOptions
@@ -33,7 +33,6 @@ import           Game.LambdaHack.Client.Request
 import           Game.LambdaHack.Client.State
 import           Game.LambdaHack.Client.UI.Content.Input
 import           Game.LambdaHack.Client.UI.ContentClientUI
-import           Game.LambdaHack.Client.UI.DisplayAtomicM
 import           Game.LambdaHack.Client.UI.Frame
 import           Game.LambdaHack.Client.UI.FrameM
 import           Game.LambdaHack.Client.UI.Frontend
@@ -48,6 +47,7 @@ import           Game.LambdaHack.Client.UI.Slideshow
 import           Game.LambdaHack.Client.UI.SlideshowM
 import           Game.LambdaHack.Client.UI.UIOptions
 import           Game.LambdaHack.Client.UI.UIOptionsParse
+import           Game.LambdaHack.Client.UI.Watch
 import           Game.LambdaHack.Common.Actor
 import           Game.LambdaHack.Common.ActorState
 import           Game.LambdaHack.Common.ClientOptions

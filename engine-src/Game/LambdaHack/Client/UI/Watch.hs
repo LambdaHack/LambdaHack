@@ -1,7 +1,9 @@
 -- | Display atomic commands received by the client.
-module Game.LambdaHack.Client.UI.DisplayAtomicM
+module Game.LambdaHack.Client.UI.Watch
   ( watchRespUpdAtomicUI, watchRespSfxAtomicUI
   ) where
 
-import Game.LambdaHack.Client.UI.WatchSfxAtomicM
-import Game.LambdaHack.Client.UI.WatchUpdAtomicM
+import Prelude ()
+
+import Game.LambdaHack.Client.UI.Watch.WatchSfxAtomicM
+import Game.LambdaHack.Client.UI.Watch.WatchUpdAtomicM
