@@ -19,12 +19,12 @@ import Game.LambdaHack.Common.Point
 -- on odd coordinates). These are not game map coordinates,
 -- becuse UI is larger and more fine-grained than just the game map.
 data PointUI = PointUI Int Int
-  deriving (Eq, Show)
+  deriving (Show, Eq)
 
 -- | Coordinates of the big square fonts. These are not game map coordinates,
 -- because the latter are offset by @mapStartY@ and represented by @Point@.
 data PointSquare = PointSquare Int Int
-  deriving (Eq, Show)
+  deriving (Show, Eq)
 
 squareToUI :: PointSquare -> PointUI
 {-# INLINE squareToUI #-}

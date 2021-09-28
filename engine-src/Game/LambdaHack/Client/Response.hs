@@ -11,8 +11,8 @@ import Prelude ()
 import Game.LambdaHack.Core.Prelude
 
 import Game.LambdaHack.Atomic
-import Game.LambdaHack.Common.Types
 import Game.LambdaHack.Common.State
+import Game.LambdaHack.Common.Types
 
 -- | Abstract syntax of responses sent by server to an AI or UI client
 -- (or a universal client that can handle both roles, which is why
@@ -28,6 +28,8 @@ data Response =
     -- ^ compute an AI move for the actor and send (the semantics of) it
   | RespSfxAtomic SfxAtomic
     -- ^ perform special effects (animations, messages, etc.)
+  | RespQueryUIunderAI
+    -- ^ check if the UI client wants to regain control
   | RespQueryUI
     -- ^ prompt the human player for a command and send (the semantics of) it
   deriving Show

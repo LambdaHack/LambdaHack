@@ -141,7 +141,9 @@ common options
     ghcjs-options:    -DREMOVE_TELETYPE
 
 common exe-options
-  ghc-options:        -threaded -rtsopts
+  if flag(vty)
+    ghc-options:      -threaded
+  ghc-options:        -rtsopts
 -- (Ignored by GHCJS) Minimize median lag at the cost of occasional bigger
 -- GC lag, which fortunately sometimes fits into idle time between turns):
 -- (Ignored by GHCJS) Avoid frequent GCs. Only idle-GC during a break in
@@ -231,7 +233,6 @@ library
                       Game.LambdaHack.Client.UI.Content.Screen
                       Game.LambdaHack.Client.UI.ContentClientUI
                       Game.LambdaHack.Client.UI.DrawM
-                      Game.LambdaHack.Client.UI.DisplayAtomicM
                       Game.LambdaHack.Client.UI.EffectDescription
                       Game.LambdaHack.Client.UI.Frame
                       Game.LambdaHack.Client.UI.FrameM
@@ -260,6 +261,11 @@ library
                       Game.LambdaHack.Client.UI.SlideshowM
                       Game.LambdaHack.Client.UI.UIOptions
                       Game.LambdaHack.Client.UI.UIOptionsParse
+                      Game.LambdaHack.Client.UI.Watch
+                      Game.LambdaHack.Client.UI.Watch.WatchCommonM
+                      Game.LambdaHack.Client.UI.Watch.WatchQuitM
+                      Game.LambdaHack.Client.UI.Watch.WatchSfxAtomicM
+                      Game.LambdaHack.Client.UI.Watch.WatchUpdAtomicM
                       Game.LambdaHack.Common.Analytics
                       Game.LambdaHack.Common.Area
                       Game.LambdaHack.Common.Actor

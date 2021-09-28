@@ -25,7 +25,7 @@ jobs:
             setup-method: ghcup
             allow-failure: false
           - compiler: ghc-9.0.1-asserts
-            projectFlags: -fwith_expensive_assertions
+            projectFlags: -f-release -fwith_expensive_assertions
             compilerKind: ghc
             compilerVersion: 9.0.1
             setup-method: ghcup
@@ -61,7 +61,7 @@ jobs:
             setup-method: ghcup
             allow-failure: false
           - compiler: ghc-8.10.7-asserts
-            projectFlags: -fwith_expensive_assertions
+            projectFlags: -f-release -fwith_expensive_assertions
             compilerKind: ghc
             compilerVersion: 8.10.7
             setup-method: ghcup
@@ -97,7 +97,7 @@ jobs:
             setup-method: hvr-ppa
             allow-failure: false
           - compiler: ghc-8.8.4-asserts
-            projectFlags: -fwith_expensive_assertions
+            projectFlags: -f-release -fwith_expensive_assertions
             compilerKind: ghc
             compilerVersion: 8.8.4
             setup-method: hvr-ppa

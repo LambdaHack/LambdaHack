@@ -63,6 +63,7 @@ debugResponse fid resp = case resp of
   RespSfxAtomic sfx -> do  -- not so crucial so no details
     ps <- posSfxAtomic sfx
     serverPrint $ debugShow (fid, "RespSfxAtomic" :: Text, ps)
+  RespQueryUIunderAI -> serverPrint "RespQueryUIunderAI"
   RespQueryUI -> serverPrint "RespQueryUI"
 
 debugPretty :: MonadServer m => FactionId -> Text -> UpdAtomic -> m ()

@@ -153,7 +153,7 @@ setAttr Color.Attr{..} =
           then (fg, Color.Red)
           else (fg, Color.defFG)
         Color.HighlightNoneCursor -> (fg, Color.Black)
-        Color.HighlightNoneCursor -> (fg, Color.BrBlack)
+        Color.HighlightBackground -> (fg, Color.BrBlack)
   in hack fg1 $ hack bg1 $
        defAttr { attrForeColor = SetTo (aToc fg1)
                , attrBackColor = SetTo (aToc bg1) }

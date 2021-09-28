@@ -32,7 +32,7 @@ import Game.LambdaHack.Common.Types
 -- faction is under human or computer control).
 queryAI :: MonadClient m => ActorId -> m RequestAI
 queryAI aid = do
-  -- @sleader@ may be different from @gleader@ due to @stopPlayBack@,
+  -- @sleader@ may be different from @gleader@ due to @restoreLeaderFromRun@,
   -- but only leaders may change faction leader, so we fix that beforehand:
   body <- getsState $ getActorBody aid
   foeAssocs <- getsState $ foeRegularAssocs (bfid body) (blid body)

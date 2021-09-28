@@ -1,8 +1,7 @@
 {-# LANGUAGE FlexibleContexts #-}
 -- | Semantics of responses sent by the server to clients.
 module Game.LambdaHack.Client.HandleResponseM
-  ( MonadClientWriteRequest(..)
-  , MonadClientAtomic(..)
+  ( MonadClientAtomic(..), MonadClientWriteRequest(..)
   , handleResponse
   ) where
 
@@ -17,14 +16,9 @@ import Game.LambdaHack.Client.MonadClient
 import Game.LambdaHack.Client.Request
 import Game.LambdaHack.Client.Response
 import Game.LambdaHack.Client.UI
+import Game.LambdaHack.Client.UI.SessionUI
 import Game.LambdaHack.Common.MonadStateRead
 import Game.LambdaHack.Common.State
-
--- | Client monad in which one can send requests to the client.
-class MonadClient m => MonadClientWriteRequest m where
-  sendRequestAI :: RequestAI -> m ()
-  sendRequestUI :: RequestUI -> m ()
-  clientHasUI   :: m Bool
 
 -- | Monad for executing atomic game state transformations on a client.
 class MonadClient m => MonadClientAtomic m where
@@ -33,6 +27,12 @@ class MonadClient m => MonadClientAtomic m where
   -- | Put state that is intended to be the result of performing
   -- an atomic update by the server on its copy of the client's 'State'.
   execPutState :: State -> m ()
+
+-- | Client monad in which one can send requests to the client.
+class MonadClient m => MonadClientWriteRequest m where
+  sendRequestAI :: RequestAI -> m ()
+  sendRequestUI :: RequestUI -> m ()
+  clientHasUI   :: m Bool
 
 -- | Handle server responses.
 --
@@ -52,18 +52,35 @@ handleResponse cmd = case cmd of
     execPutState newState
     cmdAtomicSemCli oldState cmdA
     hasUI <- clientHasUI
-    when hasUI $ displayRespUpdAtomicUI cmdA
+    when hasUI $ watchRespUpdAtomicUI cmdA
   RespUpdAtomicNoState cmdA -> do
     oldState <- getState
     execUpdAtomic cmdA
     cmdAtomicSemCli oldState cmdA
     hasUI <- clientHasUI
-    when hasUI $ displayRespUpdAtomicUI cmdA
+    when hasUI $ watchRespUpdAtomicUI cmdA
   RespQueryAI aid -> do
     cmdC <- queryAI aid
     sendRequestAI cmdC
   RespSfxAtomic sfx ->
-    displayRespSfxAtomicUI sfx
+    watchRespSfxAtomicUI sfx
+  RespQueryUIunderAI -> do
+    req <- queryUIunderAI
+    sendRequestUI req
   RespQueryUI -> do
-    cmdH <- queryUI
-    sendRequestUI cmdH
+    -- Stop displaying the prompt, if any.
+    modifySession $ \sess -> sess {sreqDelay = ReqDelayNot}
+    sreqPending <- getsSession sreqPending
+    req <- case sreqPending of
+      Nothing -> do
+        -- Server sending @RespQueryUI@ means that it's sent everything
+        -- and is now ready to receive a request ASAP, so no point polling
+        -- and instead query the player repeatedly until request generated.
+        let loop = do
+              mreq <- queryUI
+              maybe loop pure mreq
+        loop
+      Just reqPending -> do
+        modifySession $ \sess -> sess {sreqPending = Nothing}
+        return reqPending
+    sendRequestUI req

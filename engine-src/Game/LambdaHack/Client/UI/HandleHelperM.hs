@@ -9,8 +9,7 @@ module Game.LambdaHack.Client.UI.HandleHelperM
   , placesFromState, placesOverlay
   , describeMode, modesOverlay
   , pickNumber, guardItemSize, lookAtItems, lookAtStash, lookAtPosition
-  , displayItemLore, displayItemLorePointedAt
-  , viewLoreItems, cycleLore, spoilsBlurb
+  , displayItemLore, displayItemLorePointedAt, cycleLore, spoilsBlurb
   , ppContainerWownW, nxtGameMode
 #ifdef EXPOSE_INTERNAL
     -- * Internal operations
@@ -953,40 +952,6 @@ displayItemLorePointedAt itemBag meleeSkill promptFun slotIndex
       displayItemLorePointedAt itemBag meleeSkill promptFun (slotIndex + 1)
                                lSlots addTilde
     _ -> return km
-
-viewLoreItems :: MonadClientUI m
-              => String -> SingleItemSlots -> ItemBag -> Text
-              -> (Int -> SingleItemSlots -> m Bool) -> Bool
-              -> m K.KM
-viewLoreItems menuName lSlotsRaw trunkBag prompt examItem displayRanged = do
-  CCUI{coscreen=ScreenContent{rheight}} <- getsSession sccui
-  arena <- getArenaUI
-  itemToF <- getsState $ flip itemToFull
-  let keysPre = [K.spaceKM, K.mkChar '<', K.mkChar '>', K.escKM]
-      lSlots = sortSlotMap itemToF lSlotsRaw
-  msgAdd MsgPromptGeneric prompt
-  io <- itemOverlay lSlots arena trunkBag displayRanged
-  itemSlides <- overlayToSlideshow (rheight - 2) keysPre io
-  let keyOfEKM (Left km) = km
-      keyOfEKM (Right SlotChar{slotChar}) = [K.mkChar slotChar]
-      allOKX = concatMap snd $ slideshow itemSlides
-      keysMain = keysPre ++ concatMap (keyOfEKM . fst) allOKX
-      viewAtSlot slot = do
-        let ix0 = fromMaybe (error $ show slot)
-                            (findIndex (== slot) $ EM.keys lSlots)
-        go2 <- examItem ix0 lSlots
-        if go2
-        then viewLoreItems menuName lSlots trunkBag prompt
-                           examItem displayRanged
-        else return K.escKM
-  ekm <- displayChoiceScreen menuName ColorFull False itemSlides keysMain
-  case ekm of
-    Left km | km `elem` [K.spaceKM, K.mkChar '<', K.mkChar '>', K.escKM] ->
-      return km
-    Left K.KM{key=K.Char l} -> viewAtSlot $ SlotChar 0 l
-      -- other prefixes are not accessible via keys; tough luck; waste of effort
-    Left km -> error $ "" `showFailure` km
-    Right slot -> viewAtSlot slot
 
 cycleLore :: MonadClientUI m => [m K.KM] -> [m K.KM] -> m ()
 cycleLore _ [] = return ()

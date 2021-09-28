@@ -31,6 +31,7 @@ import           Game.LambdaHack.Client.Preferences
 import           Game.LambdaHack.Client.State
 import           Game.LambdaHack.Common.Actor
 import           Game.LambdaHack.Common.ActorState
+import           Game.LambdaHack.Common.ClientOptions
 import           Game.LambdaHack.Common.Faction
 import           Game.LambdaHack.Common.Item
 import           Game.LambdaHack.Common.Kind
@@ -161,7 +162,13 @@ cmdAtomicSemCli oldState cmd = case cmd of
   UpdDiplFaction{} ->
     -- Depends on who is a foe as opposed to a neutral actor.
     updateInMeleeInDungeon
-  UpdAutoFaction{} ->
+  UpdAutoFaction{} -> do
+    -- Regaining control of faction cancels some --stopAfter*.
+    -- This is really a UI client issue, but is in general client state
+    -- to make it simpler to set this via commandline.
+    modifyClient $ \cli ->
+      cli {soptions = (soptions cli) { sstopAfterSeconds = Nothing
+                                     , sstopAfterFrames = Nothing }}
     -- @condBFS@ depends on the setting we change here (e.g., smarkSuspect).
     invalidateBfsAll
   UpdRecordKill{} -> return ()

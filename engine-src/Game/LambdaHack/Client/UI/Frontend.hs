@@ -21,7 +21,6 @@ import           Control.Concurrent
 import           Control.Concurrent.Async
 import qualified Control.Concurrent.STM as STM
 import           Control.Monad.ST.Strict
-import           Data.IORef
 import           Data.Kind (Type)
 import qualified Data.Text.IO as T
 import qualified Data.Vector.Generic as G
@@ -36,7 +35,6 @@ import           Game.LambdaHack.Client.UI.Frontend.Common
 import qualified Game.LambdaHack.Client.UI.Frontend.Teletype as Teletype
 import           Game.LambdaHack.Client.UI.Key (KMP (..))
 import qualified Game.LambdaHack.Client.UI.Key as K
-import           Game.LambdaHack.Client.UI.PointUI
 import           Game.LambdaHack.Common.ClientOptions
 import qualified Game.LambdaHack.Common.PointArray as PointArray
 import qualified Game.LambdaHack.Definition.Color as Color
@@ -52,14 +50,10 @@ data FrontReq :: Type -> Type where
   FrontKey :: [K.KM] -> Frame -> FrontReq KMP
   -- | Tell if a keypress is pending.
   FrontPressed :: FrontReq Bool
-  -- | Discard a key in the queue, if any.
+  -- | Discard a single key in the queue, if any.
   FrontDiscardKey :: FrontReq ()
   -- | Discard all keys in the queue.
   FrontResetKeys :: FrontReq ()
-  -- | Add a key to the queue.
-  FrontAdd :: KMP -> FrontReq ()
-  -- | Set in the frontend that it should auto-answer prompts.
-  FrontAutoYes :: Bool -> FrontReq ()
   -- | Shut the frontend down.
   FrontShutdown :: FrontReq ()
   -- | Take screenshot.
@@ -72,8 +66,7 @@ newtype ChanFrontend = ChanFrontend (forall a. FrontReq a -> IO a)
 -- | Machinery allocated for an individual frontend at its startup,
 -- unchanged for its lifetime.
 data FrontSetup = FrontSetup
-  { fautoYesRef   :: IORef Bool
-  , fasyncTimeout :: Async ()
+  { fasyncTimeout :: Async ()
   , fdelay        :: MVar Int
   }
 
@@ -93,7 +86,6 @@ chanFrontendIO coscreen soptions = do
     T.hPutStr stdout "Frontend startup up.\n"
       -- hPutStrLn not atomic enough
     hFlush stdout
-  fautoYesRef <- newIORef $ not $ sdisableAutoYes soptions
   fdelay <- newMVar 0
   fasyncTimeout <- async $ frameTimeoutThread delta fdelay rf
   -- Warning: not linking @fasyncTimeout@, so it'd better not crash.
@@ -105,17 +97,12 @@ chanFrontendIO coscreen soptions = do
 -- if the list is empty). Repeat if an unexpected key received.
 getKey :: FrontSetup -> RawFrontend -> [K.KM] -> Frame -> IO KMP
 getKey fs rf@RawFrontend{fchanKey} keys frame = do
-  autoYes <- readIORef $ fautoYesRef fs
-  if autoYes && (null keys || K.spaceKM `elem` keys) then do
-    display rf frame
-    return $! KMP {kmpKeyMod = K.spaceKM, kmpPointer = PointUI 0 0}
-  else do
-    -- Wait until timeout is up, not to skip the last frame of animation.
-    display rf frame
-    kmp <- STM.atomically $ STM.readTQueue fchanKey
-    if null keys || kmpKeyMod kmp `elem` keys
-    then return kmp
-    else getKey fs rf keys frame
+  -- Wait until timeout is up, not to skip the last frame of animation.
+  display rf frame
+  kmp <- STM.atomically $ STM.readTQueue fchanKey
+  if null keys || kmpKeyMod kmp `elem` keys
+  then return kmp
+  else getKey fs rf keys frame
 
 -- Read UI requests from the client and send them to the frontend,
 fchanFrontend :: FrontSetup -> RawFrontend -> ChanFrontend
@@ -131,8 +118,6 @@ fchanFrontend fs@FrontSetup{..} rf =
     FrontDiscardKey ->
       void $ STM.atomically $ STM.tryReadTQueue (fchanKey rf)
     FrontResetKeys -> resetChanKey (fchanKey rf)
-    FrontAdd kmp -> STM.atomically $ STM.writeTQueue (fchanKey rf) kmp
-    FrontAutoYes b -> writeIORef fautoYesRef b
     FrontShutdown -> do
       cancel fasyncTimeout
       -- In case the last frame display is pending:

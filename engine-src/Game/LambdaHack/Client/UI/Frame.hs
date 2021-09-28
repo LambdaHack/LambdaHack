@@ -84,7 +84,7 @@ data SingleFrame = SingleFrame
   { singleArray       :: PointArray.Array Color.AttrCharW32
   , singlePropOverlay :: OverlaySpace
   , singleMonoOverlay :: OverlaySpace }
-  deriving (Eq, Show)
+  deriving (Show, Eq)
 
 type OverlaySpace = [(PointUI, AttrString)]
 

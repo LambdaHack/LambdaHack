@@ -6,13 +6,16 @@ module Game.LambdaHack.Client.LoopM
   , loopCli
 #ifdef EXPOSE_INTERNAL
     -- * Internal operations
-  , initAI, initUI
+  , initAI, initUI, loopAI, longestDelay, loopUIwithResetTimeout, loopUI
 #endif
   ) where
 
 import Prelude ()
 
 import Game.LambdaHack.Core.Prelude
+
+import qualified Data.EnumMap.Strict as EM
+import           Data.Time.Clock.POSIX
 
 import Game.LambdaHack.Atomic
 import Game.LambdaHack.Client.HandleAtomicM
@@ -21,7 +24,15 @@ import Game.LambdaHack.Client.MonadClient
 import Game.LambdaHack.Client.Response
 import Game.LambdaHack.Client.State
 import Game.LambdaHack.Client.UI
+import Game.LambdaHack.Client.UI.MonadClientUI
+import Game.LambdaHack.Client.UI.Msg
+import Game.LambdaHack.Client.UI.MsgM
+import Game.LambdaHack.Client.UI.SessionUI
 import Game.LambdaHack.Common.ClientOptions
+import Game.LambdaHack.Common.Faction
+import Game.LambdaHack.Common.MonadStateRead
+import Game.LambdaHack.Common.State
+import Game.LambdaHack.Content.ModeKind
 
 -- | Client monad in which one can receive responses from the server.
 class MonadClient m => MonadClientReadResponse m where
@@ -113,13 +124,112 @@ loopCli ccui sUIOptions clientOptions = do
   -- State and client state now valid.
   debugPossiblyPrint $ cliendKindText <+> "client"
                        <+> tshow side <+> "started 4/4."
-  loop
+  if hasUI
+  then loopUIwithResetTimeout
+  else loopAI
   side2 <- getsClient sside
   debugPossiblyPrint $ cliendKindText <+> "client" <+> tshow side2
                        <+> "(initially" <+> tshow side <> ") stopped."
- where
-  loop = do
-    cmd <- receiveResponse
-    handleResponse cmd
-    quit <- getsClient squit
-    unless quit loop
+
+loopAI :: ( MonadClientSetup m
+          , MonadClientUI m
+          , MonadClientAtomic m
+          , MonadClientReadResponse m
+          , MonadClientWriteRequest m )
+       => m ()
+loopAI = do
+  cmd <- receiveResponse
+  handleResponse cmd
+  quit <- getsClient squit
+  unless quit
+    loopAI
+
+-- | Alarm after this many seconds without server querying us for a command.
+longestDelay :: Int
+longestDelay = 1  -- rather high to accomodate slow browsers
+
+loopUIwithResetTimeout :: ( MonadClientSetup m
+                          , MonadClientUI m
+                          , MonadClientAtomic m
+                          , MonadClientReadResponse m
+                          , MonadClientWriteRequest m )
+                       => m ()
+loopUIwithResetTimeout = do
+  current <- liftIO getPOSIXTime
+  loopUI current
+
+-- | The argument is the time of last UI query from the server.
+-- After @longestDelay@ seconds past this date, the client considers itself
+-- ignored and displays a warning and, at a keypress, gives
+-- direct control to the player, no longer waiting for the server
+-- to prompt it to do so.
+loopUI :: ( MonadClientSetup m
+          , MonadClientUI m
+          , MonadClientAtomic m
+          , MonadClientReadResponse m
+          , MonadClientWriteRequest m )
+       => POSIXTime -> m ()
+loopUI timeOfLastQuery = do
+  sreqPending <- getsSession sreqPending
+  sreqDelay <- getsSession sreqDelay
+  sregainControl <- getsSession sregainControl
+  keyPressed <- anyKeyPressed
+  alarm <- elapsedSessionTimeGT timeOfLastQuery longestDelay
+  if | not alarm  -- no alarm starting right now
+       && -- no need to mark AI for control regain ASAP:
+          (sreqDelay /= ReqDelayAlarm  -- no old alarm still in effect
+           || sregainControl  -- AI control already marked for regain
+           || not keyPressed) -> do  -- player does not insist
+       cmd <- receiveResponse
+       handleResponse cmd
+       -- @squit@ can be changed only in @handleResponse@, so this is the only
+       -- place where it needs to be checked.
+       quit <- getsClient squit
+       unless quit $ case cmd of
+         RespQueryUI -> loopUIwithResetTimeout
+         _ -> do
+           when (isJust sreqPending) $ do
+             msgAdd MsgActionAlert "Warning: server updated game state after current command was issued by the client but before it was received by the server."
+           loopUI timeOfLastQuery
+     | not sregainControl && (keyPressed || isJust sreqPending) -> do
+         -- ignore alarm if to be handled by AI control regain code elsewhere
+       -- The keys mashed to gain control are not considered a command.
+       resetPressedKeys
+       -- Checking for special case for UI under AI control, because the default
+       -- behaviour is in this case too alarming for the player, especially
+       -- during the insert coin demo before game is started.
+       side <- getsClient sside
+       fact <- getsState $ (EM.! side) . sfactionD
+       if isAIFact fact && fleaderMode (gplayer fact) /= LeaderNull then
+         -- Mark for immediate control regain from AI.
+         modifySession $ \sess -> sess {sregainControl = True}
+       else when (isJust $ gleader fact) $ do
+              -- don't give control to client if no leader, e.g., game just
+              -- ended and new one not yet started
+         -- Stop displaying the prompt, if any, but keep UI simple.
+         modifySession $ \sess -> sess {sreqDelay = ReqDelayHandled}
+         let msg = if isNothing sreqPending
+                   then "Server delayed asking us for a command. Regardless, UI is made accessible. Press ESC twice to listen to server some more."
+                   else "Server delayed receiving a command from us. The command is cancelled. Issue a new one."
+         msgAdd MsgActionAlert msg
+         mreqNew <- queryUI
+         -- TODO: once this is really used, verify that if a request
+         -- overwritten, nothing breaks due to some things in our ClientState
+         -- and SessionUI (but fortunately not in State nor ServerState)
+         -- already set as if it was performed.
+         modifySession $ \sess -> sess {sreqPending = mreqNew}
+         -- Now relax completely.
+         modifySession $ \sess -> sess {sreqDelay = ReqDelayNot}
+         -- We may yet not know if server is ready, but perhaps server
+         -- tried hard to contact us while we took control and now it sleeps
+         -- for a bit, so let's give it the benefit of the doubt
+         -- and a slight pause before we alarm the player again.
+       loopUIwithResetTimeout
+     | otherwise -> do
+       -- We know server is not ready.
+       modifySession $ \sess -> sess {sreqDelay = ReqDelayAlarm}
+       -- We take a slight pause during which we display encouragement
+       -- to press a key and we receive game state changes.
+       -- The pause is cut short by any keypress, so it does not
+       -- make UI reaction any less snappy (animations do, but that's fine).
+       loopUIwithResetTimeout

@@ -11,7 +11,7 @@ module Game.LambdaHack.Client.UI.MonadClientUI
   , clientPrintUI, debugPossiblyPrintUI, getSession, putSession, displayFrames
   , connFrontendFrontKey, setFrontAutoYes, frontendShutdown, printScreen
   , chanFrontend, anyKeyPressed, discardPressedKey, resetPressedKeys
-  , addPressedControlEsc, revCmdMap, getReportUI, computeChosenLore
+  , revCmdMap, getReportUI, computeChosenLore
   , miniHintAimingBare, miniHintAimingLore
   , getLeaderUI, getArenaUI, viewedLevelUI
   , xhairToPos, setXHairFromGUI, clearAimMode
@@ -21,7 +21,7 @@ module Game.LambdaHack.Client.UI.MonadClientUI
   , tryRestore, leaderSkillsClientUI, rndToActionUI, tryOpenBrowser
 #ifdef EXPOSE_INTERNAL
     -- * Internal operations
-  , connFrontend, displayFrame, addPressedKey
+  , connFrontend, displayFrame
 #endif
   ) where
 
@@ -58,7 +58,6 @@ import qualified Game.LambdaHack.Client.UI.Frontend as Frontend
 import qualified Game.LambdaHack.Client.UI.HumanCmd as HumanCmd
 import qualified Game.LambdaHack.Client.UI.Key as K
 import           Game.LambdaHack.Client.UI.Msg
-import           Game.LambdaHack.Client.UI.PointUI
 import           Game.LambdaHack.Client.UI.SessionUI
 import           Game.LambdaHack.Client.UI.Slideshow
 import           Game.LambdaHack.Client.UI.UIOptions
@@ -157,12 +156,17 @@ displayFrames lid frs = do
 connFrontendFrontKey :: MonadClientUI m => [K.KM] -> PreFrame3 -> m K.KM
 connFrontendFrontKey frontKeyKeys ((bfr, ffr), (ovProp, ovMono)) = do
   let frontKeyFrame = ((FrameBase $ U.unsafeThaw bfr, ffr), (ovProp, ovMono))
-  kmp <- connFrontend $ Frontend.FrontKey frontKeyKeys frontKeyFrame
-  modifySession $ \sess -> sess {spointer = K.kmpPointer kmp}
-  return $! K.kmpKeyMod kmp
+  sautoYes <- getsSession sautoYes
+  if sautoYes && (null frontKeyKeys || K.spaceKM `elem` frontKeyKeys) then do
+    connFrontend $ Frontend.FrontFrame frontKeyFrame
+    return K.spaceKM
+  else do
+    kmp <- connFrontend $ Frontend.FrontKey frontKeyKeys frontKeyFrame
+    modifySession $ \sess -> sess {spointer = K.kmpPointer kmp}
+    return $! K.kmpKeyMod kmp
 
 setFrontAutoYes :: MonadClientUI m => Bool -> m ()
-setFrontAutoYes b = connFrontend $ Frontend.FrontAutoYes b
+setFrontAutoYes b = modifySession $ \sess -> sess {sautoYes = b}
 
 frontendShutdown :: MonadClientUI m => m ()
 frontendShutdown = connFrontend Frontend.FrontShutdown
@@ -185,13 +189,6 @@ discardPressedKey = connFrontend Frontend.FrontDiscardKey
 resetPressedKeys :: MonadClientUI m => m ()
 resetPressedKeys = connFrontend Frontend.FrontResetKeys
 
-addPressedKey :: MonadClientUI m => K.KMP -> m ()
-addPressedKey = connFrontend . Frontend.FrontAdd
-
-addPressedControlEsc :: MonadClientUI m => m ()
-addPressedControlEsc = addPressedKey K.KMP { K.kmpKeyMod = K.controlEscKM
-                                           , K.kmpPointer = PointUI 0 0 }
-
 revCmdMap :: MonadClientUI m => m (HumanCmd.HumanCmd -> K.KM)
 revCmdMap = do
   CCUI{coinput=InputContent{brevMap}} <- getsSession sccui
@@ -203,20 +200,18 @@ revCmdMap = do
 
 getReportUI :: MonadClientUI m => Bool -> m Report
 getReportUI insideMenu = do
-  side <- getsClient sside
   saimMode <- getsSession saimMode
   (inhabitants, embeds) <-
     if isJust saimMode then computeChosenLore else return ([], [])
   sUIOptions <- getsSession sUIOptions
   report <- getsSession $ newReport . shistory
-  fact <- getsState $ (EM.! side) . sfactionD
   curTutorial <- getsSession scurTutorial
   overrideTut <- getsSession soverrideTut
+  sreqDelay <- getsSession sreqDelay
   -- Different from ordinary tutorial hints in that shown more than once.
   let newcomerHelp = fromMaybe curTutorial overrideTut
       detailAtDefault = (detailLevel <$> saimMode) == Just defaultDetailLevel
       detailMinimal = (detailLevel <$> saimMode) == Just minBound
-      underAI = isAIFact fact
       prefixColors = uMessageColors sUIOptions
       -- Here we assume newbies don't override default keys.
       miniHintAiming = if null inhabitants && null embeds
@@ -224,12 +219,13 @@ getReportUI insideMenu = do
                        else miniHintAimingLore
       promptAim = toMsgShared prefixColors MsgPromptGeneric
                   $ miniHintAiming <> "\n"
-      promptAI = toMsgShared prefixColors MsgPromptAction
-                             "<press any key for main menu>"
+      promptDelay = toMsgShared prefixColors MsgPromptAction
+                                  "<press any key to regain control>"
   return $! if | newcomerHelp && not insideMenu
                  && detailAtDefault && not detailMinimal ->
                    consReport promptAim report
-               | underAI -> consReport promptAI report
+               | sreqDelay == ReqDelayAlarm ->
+                   consReport promptDelay report
                | otherwise -> report
 
 computeChosenLore :: MonadClientUI m
@@ -432,10 +428,13 @@ tellGameClipPS = do
         <+> "Average clips per second:" <+> tshow cps <> "."
         <+> "Average FPS:" <+> tshow fps <> "."
 
-elapsedSessionTimeGT :: MonadClientUI m => Int -> m Bool
-elapsedSessionTimeGT stopAfter = do
+-- TODO: for speed and resolutiion use
+-- https://hackage.haskell.org/package/chronos
+-- or the number_of_nanonseconds functionality
+-- in Data.Time.Clock.System, once it arrives there
+elapsedSessionTimeGT :: MonadClientRead m => POSIXTime -> Int -> m Bool
+elapsedSessionTimeGT sstartPOSIX stopAfter = do
   current <- liftIO getPOSIXTime
-  sstartPOSIX <- getsSession sstart
   return $! (fromIntegralWrap :: Int -> NominalDiffTime) stopAfter
             + sstartPOSIX
             <= current

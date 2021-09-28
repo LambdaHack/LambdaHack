@@ -1,8 +1,8 @@
 {-# LANGUAGE DeriveGeneric, GeneralizedNewtypeDeriving #-}
 -- | The client UI session state.
 module Game.LambdaHack.Client.UI.SessionUI
-  ( SessionUI(..), ItemDictUI, AimMode(..), KeyMacro(..), KeyMacroFrame(..)
-  , RunParams(..), ChosenLore(..)
+  ( SessionUI(..), ReqDelay(..), ItemDictUI, AimMode(..), KeyMacro(..)
+  , KeyMacroFrame(..), RunParams(..), ChosenLore(..)
   , emptySessionUI, emptyMacroFrame
   , toggleMarkVision, toggleMarkSmell, cycleOverrideTut, getActorUI
   ) where
@@ -18,7 +18,9 @@ import qualified Data.Map.Strict as M
 import qualified Data.Set as S
 import           Data.Time.Clock.POSIX
 import           GHC.Generics (Generic)
+import qualified System.Random.SplitMix32 as SM
 
+import           Game.LambdaHack.Client.Request
 import           Game.LambdaHack.Client.State
 import           Game.LambdaHack.Client.UI.ActorUI
 import           Game.LambdaHack.Client.UI.ContentClientUI
@@ -34,25 +36,32 @@ import           Game.LambdaHack.Common.Item
 import           Game.LambdaHack.Common.Time
 import           Game.LambdaHack.Common.Types
 import           Game.LambdaHack.Definition.Defs
-import qualified System.Random.SplitMix32 as SM
 
 -- | The information that is used across a client playing session,
 -- including many consecutive games in a single session.
 -- Some of it is saved, some is reset when a new playing session starts.
 -- An important component is the frontend session.
 data SessionUI = SessionUI
-  { sxhair         :: Maybe Target       -- ^ the common xhair
-  , sxhairGoTo     :: Maybe Target       -- ^ xhair set for last GoTo
-  , sactorUI       :: ActorDictUI        -- ^ assigned actor UI presentations
-  , sitemUI        :: ItemDictUI         -- ^ assigned item first seen level
-  , sslots         :: ItemSlots          -- ^ map from slots to items
+  { sreqPending    :: Maybe RequestUI
+                                    -- ^ request created by a UI query
+                                    --   but not yet sent to the server
+  , sreqDelay      :: ReqDelay      -- ^ server delayed sending query to client
+                                    --   or receiving request from client
+  , sreqQueried    :: Bool          -- ^ player is now queried for a command
+  , sregainControl :: Bool          -- ^ player requested to regain control
+                                    --   from AI ASAP
+  , sxhair         :: Maybe Target  -- ^ the common xhair
+  , sxhairGoTo     :: Maybe Target  -- ^ xhair set for last GoTo
+  , sactorUI       :: ActorDictUI   -- ^ assigned actor UI presentations
+  , sitemUI        :: ItemDictUI    -- ^ assigned item first seen level
+  , sslots         :: ItemSlots     -- ^ map from slots to items
   , slastItemMove  :: Maybe (CStore, CStore)
-                                         -- ^ last item move stores
-  , schanF         :: ChanFrontend       -- ^ connection with the frontend
-  , sccui          :: CCUI               -- ^ UI client content
-  , sUIOptions     :: UIOptions          -- ^ UI options as set by the player
-  , saimMode       :: Maybe AimMode      -- ^ aiming mode
-  , sxhairMoused   :: Bool               -- ^ last mouse aiming not vacuus
+                                    -- ^ last item move stores
+  , schanF         :: ChanFrontend  -- ^ connection with the frontend
+  , sccui          :: CCUI          -- ^ UI client content
+  , sUIOptions     :: UIOptions     -- ^ UI options as set by the player
+  , saimMode       :: Maybe AimMode -- ^ aiming mode
+  , sxhairMoused   :: Bool          -- ^ last mouse aiming not vacuus
   , sitemSel       :: Maybe (ItemId, CStore, Bool)
                                     -- ^ selected item, if any, it's store and
                                     --   whether to override suitability check
@@ -62,6 +71,7 @@ data SessionUI = SessionUI
                                     -- ^ parameters of the current run, if any
   , shistory       :: History       -- ^ history of messages
   , spointer       :: PointUI       -- ^ mouse pointer position
+  , sautoYes       :: Bool          -- ^ whether to auto-clear prompts
   , smacroFrame    :: KeyMacroFrame -- ^ the head of the key macro stack
   , smacroStack    :: [KeyMacroFrame]
                                     -- ^ the tail of the key macro stack
@@ -94,6 +104,9 @@ data SessionUI = SessionUI
   , srandomUI      :: SM.SMGen      -- ^ current random generator for UI
   }
 
+data ReqDelay = ReqDelayNot | ReqDelayHandled | ReqDelayAlarm
+  deriving Eq
+
 -- | Local macro buffer frame. Predefined macros have their own in-game macro
 -- buffer, allowing them to record in-game macro, queue actions and repeat
 -- the last macro's action.
@@ -104,7 +117,7 @@ data KeyMacroFrame = KeyMacroFrame
                                              --   repeat from Right
   , keyPending     :: KeyMacro               -- ^ actions pending to be handled
   , keyLast        :: Maybe K.KM             -- ^ last pressed key
-  } deriving (Show)
+  } deriving Show
 
 -- This can stay a map forever, not a vector, because it's added to often,
 -- but never read from, except when the user requests item details.
@@ -146,7 +159,11 @@ data ChosenLore =
 emptySessionUI :: UIOptions -> SessionUI
 emptySessionUI sUIOptions =
   SessionUI
-    { sxhair = Nothing
+    { sreqPending = Nothing
+    , sreqDelay = ReqDelayNot
+    , sreqQueried = False
+    , sregainControl = False
+    , sxhair = Nothing
     , sxhairGoTo = Nothing
     , sactorUI = EM.empty
     , sitemUI = EM.empty
@@ -164,6 +181,7 @@ emptySessionUI sUIOptions =
     , srunning = Nothing
     , shistory = emptyHistory 0
     , spointer = PointUI 0 0
+    , sautoYes = False
     , smacroFrame = emptyMacroFrame
     , smacroStack = []
     , slastLost = ES.empty
@@ -249,13 +267,18 @@ instance Binary SessionUI where
     soverrideTut <- get
     susedHints <- get
     g <- get
-    let sxhairGoTo = Nothing
+    let sreqPending = Nothing
+        sreqDelay = ReqDelayNot
+        sreqQueried = False
+        sregainControl = False
+        sxhairGoTo = Nothing
         slastItemMove = Nothing
         schanF = ChanFrontend $ const $
           error $ "Binary: ChanFrontend" `showFailure` ()
         sccui = emptyCCUI
         sxhairMoused = True
         spointer = PointUI 0 0
+        sautoYes = False
         smacroFrame = emptyMacroFrame
         smacroStack = []
         slastLost = ES.empty
