@@ -1,4 +1,3 @@
-{-# LANGUAGE TupleSections #-}
 -- | Display atomic SFX commands received by the client.
 module Game.LambdaHack.Client.UI.Watch.WatchSfxAtomicM
   ( watchRespSfxAtomicUI

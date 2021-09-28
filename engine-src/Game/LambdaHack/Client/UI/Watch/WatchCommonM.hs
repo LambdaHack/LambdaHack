@@ -1,4 +1,3 @@
-{-# LANGUAGE TupleSections #-}
 -- | Common code for displaying atomic update and SFX commands.
 module Game.LambdaHack.Client.UI.Watch.WatchCommonM
   ( pushFrame, fadeOutOrIn, markDisplayNeeded, lookAtMove
