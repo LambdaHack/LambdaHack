@@ -3,7 +3,8 @@ module Game.LambdaHack.Client.UI.HandleHumanM
   ( restrictedCmdSemInCxtOfKM, updateKeyLast
 #ifdef EXPOSE_INTERNAL
     -- * Internal operations
-  , noRemoteHumanCmd, cmdSemInCxtOfKM, cmdSemantics, addNoError
+  , noRemoteHumanCmd, cmdSemInCxtOfKM, cmdSemantics
+  , addNoError, addLeader, weaveLeader
 #endif
   ) where
 
@@ -21,6 +22,7 @@ import           Game.LambdaHack.Client.UI.HumanCmd
 import qualified Game.LambdaHack.Client.UI.Key as K
 import           Game.LambdaHack.Client.UI.MonadClientUI
 import           Game.LambdaHack.Client.UI.SessionUI
+import           Game.LambdaHack.Common.Types
 
 -- | The semantics of human player commands in terms of the client monad,
 -- in context of the given @km@ as the last action.
@@ -74,119 +76,157 @@ cmdSemInCxtOfKM km cmd = do
     sess {smacroFrame = updateKeyLast km cmd $ smacroFrame sess}
   cmdSemantics cmd
 
+data CmdLeaderNeed m =
+    CmdNoNeed (m (Either MError ReqUI))
+  | CmdNeed (ActorId -> m (Either MError ReqUI))
+
 cmdSemantics :: (MonadClient m, MonadClientUI m)
              => HumanCmd -> m (Either MError ReqUI)
-cmdSemantics cmd = do
- leader <- getsClient $ fromJust . sleader
- case cmd of
+cmdSemantics cmd = case cmdSemanticsLeader cmd of
+  CmdNoNeed mreq -> mreq
+  CmdNeed f -> do
+    mleader <- getsClient sleader
+    case mleader of
+      Nothing -> weaveJust <$> failWith
+        "command disabled when no pointman designated, choose another command"
+      Just leader -> f leader
+
+cmdSemanticsLeader :: (MonadClient m, MonadClientUI m)
+                   => HumanCmd -> CmdLeaderNeed m
+cmdSemanticsLeader cmd = case cmd of
   Macro kms -> addNoError $ macroHuman kms
-  ByArea l -> byAreaHuman cmdSemInCxtOfKM l
+  ByArea l -> CmdNoNeed $ byAreaHuman cmdSemInCxtOfKM l
   ByAimMode AimModeCmd{..} ->
-    byAimModeHuman (cmdSemantics exploration) (cmdSemantics aiming)
+    CmdNoNeed $ byAimModeHuman (cmdSemantics exploration) (cmdSemantics aiming)
   ComposeIfLocal cmd1 cmd2 ->
-    composeIfLocalHuman (cmdSemantics cmd1) (cmdSemantics cmd2)
+    CmdNoNeed $ composeIfLocalHuman (cmdSemantics cmd1) (cmdSemantics cmd2)
   ComposeUnlessError cmd1 cmd2 ->
-    composeUnlessErrorHuman (cmdSemantics cmd1) (cmdSemantics cmd2)
+    CmdNoNeed $ composeUnlessErrorHuman (cmdSemantics cmd1) (cmdSemantics cmd2)
   Compose2ndLocal cmd1 cmd2 ->
-    compose2ndLocalHuman (cmdSemantics cmd1) (cmdSemantics cmd2)
-  LoopOnNothing cmd1 -> loopOnNothingHuman (cmdSemantics cmd1)
-  ExecuteIfClear cmd1 -> executeIfClearHuman (cmdSemantics cmd1)
+    CmdNoNeed $ compose2ndLocalHuman (cmdSemantics cmd1) (cmdSemantics cmd2)
+  LoopOnNothing cmd1 -> CmdNoNeed $ loopOnNothingHuman (cmdSemantics cmd1)
+  ExecuteIfClear cmd1 -> CmdNoNeed $ executeIfClearHuman (cmdSemantics cmd1)
 
-  Wait -> weaveJust <$> (ReqUITimed <$$> waitHuman leader)
-  Wait10 -> weaveJust <$> (ReqUITimed <$$> waitHuman10 leader)
-  Yell -> weaveJust <$> (ReqUITimed <$$> yellHuman leader)
-  MoveDir v ->
-    weaveJust <$> (ReqUITimed <$$> moveRunHuman leader True True False False v)
-  RunDir v ->
-    weaveJust <$> (ReqUITimed <$$> moveRunHuman leader True True True True v)
-  RunOnceAhead -> ReqUITimed <$$> runOnceAheadHuman leader
-  MoveOnceToXhair -> weaveJust <$> (ReqUITimed <$$> moveOnceToXhairHuman leader)
-  RunOnceToXhair  -> weaveJust <$> (ReqUITimed <$$> runOnceToXhairHuman leader)
-  ContinueToXhair -> weaveJust <$> (ReqUITimed <$$> continueToXhairHuman leader)
+  Wait -> weaveLeader $ \leader -> (ReqUITimed <$$> waitHuman leader)
+  Wait10 -> weaveLeader $ \leader -> (ReqUITimed <$$> waitHuman10 leader)
+  Yell -> weaveLeader $ \leader -> (ReqUITimed <$$> yellHuman leader)
+  MoveDir v -> weaveLeader $ \leader ->
+                 (ReqUITimed <$$> moveRunHuman leader True True False False v)
+  RunDir v -> weaveLeader $ \leader ->
+                (ReqUITimed <$$> moveRunHuman leader True True True True v)
+  RunOnceAhead -> CmdNeed $ \leader -> ReqUITimed <$$> runOnceAheadHuman leader
+  MoveOnceToXhair -> weaveLeader $ \leader ->
+                       (ReqUITimed <$$> moveOnceToXhairHuman leader)
+  RunOnceToXhair  -> weaveLeader $ \leader ->
+                       (ReqUITimed <$$> runOnceToXhairHuman leader)
+  ContinueToXhair -> weaveLeader $ \leader ->
+                       (ReqUITimed <$$> continueToXhairHuman leader)
   MoveItem stores toCStore mverb auto ->
-    weaveJust
-    <$> (ReqUITimed <$$> moveItemHuman leader stores toCStore mverb auto)
-  Project -> weaveJust <$> (ReqUITimed <$$> projectHuman leader)
-  Apply -> weaveJust <$> (ReqUITimed <$$> applyHuman leader)
-  AlterDir -> weaveJust <$> (ReqUITimed <$$> alterDirHuman leader)
+    weaveLeader $ \leader ->
+      (ReqUITimed <$$> moveItemHuman leader stores toCStore mverb auto)
+  Project -> weaveLeader $ \leader -> (ReqUITimed <$$> projectHuman leader)
+  Apply -> weaveLeader $ \leader -> (ReqUITimed <$$> applyHuman leader)
+  AlterDir -> weaveLeader $ \leader -> (ReqUITimed <$$> alterDirHuman leader)
   AlterWithPointer ->
-    weaveJust <$> (ReqUITimed <$$> alterWithPointerHuman leader)
-  CloseDir -> weaveJust <$> (ReqUITimed <$$> closeDirHuman leader)
-  Help -> helpHuman cmdSemInCxtOfKM
-  Hint -> hintHuman cmdSemInCxtOfKM
-  ItemMenu -> itemMenuHuman leader cmdSemInCxtOfKM
+    weaveLeader $ \leader -> (ReqUITimed <$$> alterWithPointerHuman leader)
+  CloseDir -> weaveLeader $ \leader -> (ReqUITimed <$$> closeDirHuman leader)
+  Help -> CmdNoNeed $ helpHuman cmdSemInCxtOfKM
+  Hint -> CmdNoNeed $ hintHuman cmdSemInCxtOfKM
+  ItemMenu -> CmdNeed $ \leader -> itemMenuHuman leader cmdSemInCxtOfKM
   ChooseItemMenu dialogMode ->
-    chooseItemMenuHuman leader cmdSemInCxtOfKM dialogMode
-  MainMenu -> mainMenuHuman cmdSemInCxtOfKM
-  MainMenuAutoOn -> mainMenuAutoOnHuman cmdSemInCxtOfKM
-  MainMenuAutoOff -> mainMenuAutoOffHuman cmdSemInCxtOfKM
-  Dashboard -> dashboardHuman cmdSemInCxtOfKM
-  GameTutorialToggle -> gameTutorialToggle
-                        >> challengeMenuHuman cmdSemInCxtOfKM
-  GameDifficultyIncr -> gameDifficultyIncr
-                        >> challengeMenuHuman cmdSemInCxtOfKM
-  GameFishToggle -> gameFishToggle >> challengeMenuHuman cmdSemInCxtOfKM
-  GameGoodsToggle -> gameGoodsToggle >> challengeMenuHuman cmdSemInCxtOfKM
-  GameWolfToggle -> gameWolfToggle >> challengeMenuHuman cmdSemInCxtOfKM
-  GameKeeperToggle -> gameKeeperToggle >> challengeMenuHuman cmdSemInCxtOfKM
-  GameScenarioIncr -> gameScenarioIncr >> challengeMenuHuman cmdSemInCxtOfKM
+    CmdNeed $ \leader -> chooseItemMenuHuman leader cmdSemInCxtOfKM dialogMode
+  MainMenu -> CmdNoNeed $ mainMenuHuman cmdSemInCxtOfKM
+  MainMenuAutoOn -> CmdNoNeed $ mainMenuAutoOnHuman cmdSemInCxtOfKM
+  MainMenuAutoOff -> CmdNoNeed $ mainMenuAutoOffHuman cmdSemInCxtOfKM
+  Dashboard -> CmdNoNeed $ dashboardHuman cmdSemInCxtOfKM
+  GameTutorialToggle ->
+    CmdNoNeed $ gameTutorialToggle >> challengeMenuHuman cmdSemInCxtOfKM
+  GameDifficultyIncr ->
+    CmdNoNeed $ gameDifficultyIncr >> challengeMenuHuman cmdSemInCxtOfKM
+  GameFishToggle ->
+    CmdNoNeed $ gameFishToggle >> challengeMenuHuman cmdSemInCxtOfKM
+  GameGoodsToggle ->
+    CmdNoNeed $ gameGoodsToggle >> challengeMenuHuman cmdSemInCxtOfKM
+  GameWolfToggle ->
+    CmdNoNeed $ gameWolfToggle >> challengeMenuHuman cmdSemInCxtOfKM
+  GameKeeperToggle ->
+    CmdNoNeed $ gameKeeperToggle >> challengeMenuHuman cmdSemInCxtOfKM
+  GameScenarioIncr ->
+    CmdNoNeed $ gameScenarioIncr >> challengeMenuHuman cmdSemInCxtOfKM
 
-  GameRestart -> weaveJust <$> gameRestartHuman
-  GameQuit -> weaveJust <$> gameQuitHuman
-  GameDrop -> weaveJust <$> fmap Right gameDropHuman
-  GameExit -> weaveJust <$> fmap Right gameExitHuman
-  GameSave -> weaveJust <$> fmap Right gameSaveHuman
-  Doctrine -> weaveJust <$> doctrineHuman
-  Automate -> weaveJust <$> automateHuman
-  AutomateToggle -> weaveJust <$> automateToggleHuman
-  AutomateBack -> automateBackHuman
+  GameRestart -> CmdNoNeed $ weaveJust <$> gameRestartHuman
+  GameQuit -> CmdNoNeed $ weaveJust <$> gameQuitHuman
+  GameDrop -> CmdNoNeed $ weaveJust <$> fmap Right gameDropHuman
+  GameExit -> CmdNoNeed $ weaveJust <$> fmap Right gameExitHuman
+  GameSave -> CmdNoNeed $ weaveJust <$> fmap Right gameSaveHuman
+  Doctrine -> CmdNoNeed $ weaveJust <$> doctrineHuman
+  Automate -> CmdNoNeed $ weaveJust <$> automateHuman
+  AutomateToggle -> CmdNoNeed $ weaveJust <$> automateToggleHuman
+  AutomateBack -> CmdNoNeed $ automateBackHuman
 
-  ChooseItem dialogMode -> Left <$> chooseItemHuman leader dialogMode
-  ChooseItemProject ts -> Left <$> chooseItemProjectHuman leader ts
-  ChooseItemApply ts -> Left <$> chooseItemApplyHuman leader ts
-  PickLeader k -> Left <$> pickLeaderHuman k
-  PickLeaderWithPointer -> Left <$> pickLeaderWithPointerHuman leader
+  ChooseItem dialogMode ->
+    CmdNeed $ \leader -> Left <$> chooseItemHuman leader dialogMode
+  ChooseItemProject ts ->
+    CmdNeed $ \leader -> Left <$> chooseItemProjectHuman leader ts
+  ChooseItemApply ts ->
+    CmdNeed $ \leader -> Left <$> chooseItemApplyHuman leader ts
+  PickLeader k -> CmdNoNeed $ Left <$> pickLeaderHuman k
+  PickLeaderWithPointer ->
+    CmdNeed $ \leader -> Left <$> pickLeaderWithPointerHuman leader
   PointmanCycle direction ->
-    Left <$> pointmanCycleHuman leader direction
+    CmdNeed $ \leader -> Left <$> pointmanCycleHuman leader direction
   PointmanCycleLevel direction ->
-    Left <$> pointmanCycleLevelHuman leader direction
-  SelectActor -> addNoError $ selectActorHuman leader
+    CmdNeed $ \leader -> Left <$> pointmanCycleLevelHuman leader direction
+  SelectActor -> addLeader selectActorHuman
   SelectNone -> addNoError selectNoneHuman
-  SelectWithPointer -> Left <$> selectWithPointerHuman
+  SelectWithPointer -> CmdNoNeed $ Left <$> selectWithPointerHuman
   Repeat n -> addNoError $ repeatHuman n
   RepeatLast n -> addNoError $ repeatLastHuman n
   Record -> addNoError recordHuman
   AllHistory -> addNoError allHistoryHuman
   LastHistory -> addNoError lastHistoryHuman
-  MarkVision -> markVisionHuman >> settingsMenuHuman cmdSemInCxtOfKM
-  MarkSmell -> markSmellHuman >> settingsMenuHuman cmdSemInCxtOfKM
-  MarkSuspect -> markSuspectHuman >> settingsMenuHuman cmdSemInCxtOfKM
-  MarkAnim -> markAnimHuman >> settingsMenuHuman cmdSemInCxtOfKM
-  OverrideTut -> overrideTutHuman >> settingsMenuHuman cmdSemInCxtOfKM
-  SettingsMenu -> settingsMenuHuman cmdSemInCxtOfKM
-  ChallengeMenu -> challengeMenuHuman cmdSemInCxtOfKM
+  MarkVision ->
+    CmdNoNeed $ markVisionHuman >> settingsMenuHuman cmdSemInCxtOfKM
+  MarkSmell ->
+    CmdNoNeed $ markSmellHuman >> settingsMenuHuman cmdSemInCxtOfKM
+  MarkSuspect ->
+    CmdNoNeed $ markSuspectHuman >> settingsMenuHuman cmdSemInCxtOfKM
+  MarkAnim ->
+    CmdNoNeed $ markAnimHuman >> settingsMenuHuman cmdSemInCxtOfKM
+  OverrideTut ->
+    CmdNoNeed $ overrideTutHuman >> settingsMenuHuman cmdSemInCxtOfKM
+  SettingsMenu -> CmdNoNeed $ settingsMenuHuman cmdSemInCxtOfKM
+  ChallengeMenu -> CmdNoNeed $ challengeMenuHuman cmdSemInCxtOfKM
   PrintScreen -> addNoError printScreenHuman
 
   Cancel -> addNoError cancelHuman
-  Accept -> addNoError $ acceptHuman leader
-  DetailCycle -> addNoError $ detailCycleHuman leader
-  ClearTargetIfItemClear -> addNoError $ clearTargetIfItemClearHuman leader
+  Accept -> addLeader acceptHuman
+  DetailCycle -> addLeader detailCycleHuman
+  ClearTargetIfItemClear -> addLeader $ clearTargetIfItemClearHuman
   ItemClear -> addNoError itemClearHuman
-  MoveXhair v k -> Left <$> moveXhairHuman leader v k
-  AimTgt -> addNoError $ aimTgtHuman leader
-  AimFloor -> addNoError $ aimFloorHuman leader
-  AimEnemy -> addNoError $ aimEnemyHuman leader
-  AimItem -> addNoError $ aimItemHuman leader
-  AimAscend k -> Left <$> aimAscendHuman leader k
+  MoveXhair v k -> CmdNeed $ \leader -> Left <$> moveXhairHuman leader v k
+  AimTgt -> addLeader $ aimTgtHuman
+  AimFloor -> addLeader aimFloorHuman
+  AimEnemy -> addLeader aimEnemyHuman
+  AimItem -> addLeader aimItemHuman
+  AimAscend k -> CmdNeed $ \leader -> Left <$> aimAscendHuman leader k
   EpsIncr b -> addNoError $ epsIncrHuman b
-  XhairUnknown -> Left <$> xhairUnknownHuman leader
-  XhairItem -> Left <$> xhairItemHuman leader
-  XhairStair up -> Left <$> xhairStairHuman leader up
-  XhairPointerFloor -> addNoError $ xhairPointerFloorHuman leader
-  XhairPointerMute -> addNoError $ xhairPointerMuteHuman leader
-  XhairPointerEnemy -> addNoError $ xhairPointerEnemyHuman leader
-  AimPointerFloor -> addNoError $ aimPointerFloorHuman leader
-  AimPointerEnemy -> addNoError $ aimPointerEnemyHuman leader
+  XhairUnknown -> CmdNeed $ \leader -> Left <$> xhairUnknownHuman leader
+  XhairItem -> CmdNeed $ \leader -> Left <$> xhairItemHuman leader
+  XhairStair up -> CmdNeed $ \leader -> Left <$> xhairStairHuman leader up
+  XhairPointerFloor -> addLeader xhairPointerFloorHuman
+  XhairPointerMute -> addLeader xhairPointerMuteHuman
+  XhairPointerEnemy -> addLeader xhairPointerEnemyHuman
+  AimPointerFloor -> addLeader aimPointerFloorHuman
+  AimPointerEnemy -> addLeader aimPointerEnemyHuman
 
-addNoError :: Monad m => m () -> m (Either MError ReqUI)
-addNoError cmdCli = cmdCli >> return (Left Nothing)
+addNoError :: Monad m => m () -> CmdLeaderNeed m
+addNoError cmdCli = CmdNoNeed $ cmdCli >> return (Left Nothing)
+
+addLeader :: Monad m => (ActorId -> m ()) -> CmdLeaderNeed m
+addLeader cmdCli =
+  CmdNeed $ \leader -> cmdCli leader >> return (Left Nothing)
+
+weaveLeader :: Monad m => (ActorId -> m (FailOrCmd ReqUI)) -> CmdLeaderNeed m
+weaveLeader cmdCli =
+  CmdNeed $ \leader -> weaveJust <$> cmdCli leader
