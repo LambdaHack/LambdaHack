@@ -946,12 +946,12 @@ endAimingMsg leader = do
 -- * DetailCycle
 
 -- | Cycle detail level of aiming mode descriptions, starting up.
-detailCycleHuman :: MonadClientUI m => ActorId -> m ()
-detailCycleHuman leader = do
+detailCycleHuman :: MonadClientUI m => m ()
+detailCycleHuman = do
   modifySession $ \sess -> sess {saimMode =
     (\aimMode -> aimMode {detailLevel = detailCycle $ detailLevel aimMode})
                  <$> saimMode sess}
-  doLook leader
+  doLook
 
 detailCycle :: DetailLevel -> DetailLevel
 detailCycle detail = if detail == maxBound then minBound else succ detail
@@ -965,16 +965,16 @@ clearTargetIfItemClearHuman leader = do
   when (isNothing itemSel) $ do
     setXHairFromGUI Nothing
     modifyClient $ updateTarget leader (const Nothing)
-    doLook leader
+    doLook
 
 -- | Perform look around in the current position of the xhair.
 -- Does nothing outside aiming mode.
-doLook :: MonadClientUI m => ActorId -> m ()
-doLook leader = do
+doLook :: MonadClientUI m => m ()
+doLook = do
   saimMode <- getsSession saimMode
-  case saimMode of
-    Nothing -> return ()
-    Just aimMode -> do
+  mleader <- getsClient sleader
+  case (saimMode, mleader) of
+    (Just aimMode, Just leader) -> do
       let lidV = aimLevelId aimMode
       mxhairPos <- mxhairToPos
       xhairPos <- xhairToPos
@@ -996,6 +996,7 @@ doLook leader = do
                        < chessDist (bpos b) pos ]
             Nothing -> return []
       mapM_ (uncurry msgAdd) $ blurb ++ outOfRangeBlurb
+    _ -> return ()
 
 -- * ItemClear
 
@@ -1022,20 +1023,20 @@ moveXhairHuman leader dir n = do
           Just TVector{} -> Just $ TVector $ newPos `vectorToFrom` lpos
           _ -> Just $ TPoint TKnown lidV newPos
     setXHairFromGUI sxhair
-    doLook leader
+    doLook
     return Nothing
 
 -- * AimTgt
 
 -- | Start aiming.
-aimTgtHuman :: MonadClientUI m => ActorId -> m ()
-aimTgtHuman leader = do
+aimTgtHuman :: MonadClientUI m => m ()
+aimTgtHuman = do
   -- (Re)start aiming at the current level.
   lidV <- viewedLevelUI
   modifySession $ \sess -> sess {saimMode =
     let newDetail = maybe defaultDetailLevel detailLevel (saimMode sess)
     in Just $ AimMode lidV newDetail}
-  doLook leader
+  doLook
   msgAdd MsgPromptAction "*flinging started; press again to project*"
 
 -- * AimFloor
@@ -1074,7 +1075,7 @@ aimFloorHuman leader = do
     let newDetail = maybe defaultDetailLevel detailLevel saimMode
     in Just $ AimMode lidV newDetail}
   setXHairFromGUI sxhair
-  doLook leader
+  doLook
 
 -- * AimEnemy
 
@@ -1117,7 +1118,7 @@ aimEnemyHuman leader = do
     let newDetail = maybe defaultDetailLevel detailLevel saimMode
     in Just $ AimMode lidV newDetail}
   setXHairFromGUI sxhair
-  doLook leader
+  doLook
 
 -- * AimItem
 
@@ -1161,14 +1162,14 @@ aimItemHuman leader = do
     let newDetail = maybe defaultDetailLevel detailLevel saimMode
     in Just $ AimMode lidV newDetail}
   setXHairFromGUI sxhair
-  doLook leader
+  doLook
 
 -- * AimAscend
 
 -- | Change the displayed level in aiming mode to (at most)
 -- k levels shallower. Enters aiming mode, if not already in one.
-aimAscendHuman :: MonadClientUI m => ActorId -> Int -> m MError
-aimAscendHuman leader k = do
+aimAscendHuman :: MonadClientUI m => Int -> m MError
+aimAscendHuman k = do
   dungeon <- getsState sdungeon
   lidV <- viewedLevelUI
   let up = k > 0
@@ -1185,7 +1186,7 @@ aimAscendHuman leader k = do
         let newDetail = maybe defaultDetailLevel detailLevel (saimMode sess)
         in Just $ AimMode lidK newDetail}
       setXHairFromGUI sxhair
-      doLook leader
+      doLook
       return Nothing
 
 -- * EpsIncr
@@ -1229,7 +1230,7 @@ xhairUnknownHuman leader = do
     Just p -> do
       let sxhair = Just $ TPoint TUnknown (blid b) p
       setXHairFromGUI sxhair
-      doLook leader
+      doLook
       return Nothing
 
 -- * XhairItem
@@ -1244,7 +1245,7 @@ xhairItemHuman leader = do
       let (_, (p, bag)) = maximumBy (comparing fst) items
           sxhair = Just $ TPoint (TItem bag) (blid b) p
       setXHairFromGUI sxhair
-      doLook leader
+      doLook
       return Nothing
 
 -- * XhairStair
@@ -1260,43 +1261,43 @@ xhairStairHuman leader up = do
       let (_, (p, (p0, bag))) = maximumBy (comparing fst) stairs
           sxhair = Just $ TPoint (TEmbed bag p0) (blid b) p
       setXHairFromGUI sxhair
-      doLook leader
+      doLook
       return Nothing
 
 -- * XhairPointerFloor
 
-xhairPointerFloorHuman :: MonadClientUI m => ActorId -> m ()
-xhairPointerFloorHuman leader = do
+xhairPointerFloorHuman :: MonadClientUI m => m ()
+xhairPointerFloorHuman = do
   saimMode <- getsSession saimMode
-  aimPointerFloorHuman leader
+  aimPointerFloorHuman
   when (isNothing saimMode) $
     modifySession $ \sess -> sess {saimMode}
 
 -- * XhairPointerMute
 
-xhairPointerMuteHuman :: MonadClientUI m => ActorId -> m ()
-xhairPointerMuteHuman leader = do
+xhairPointerMuteHuman :: MonadClientUI m => m ()
+xhairPointerMuteHuman = do
   saimMode <- getsSession saimMode
-  aimPointerFloorLoud leader False
+  aimPointerFloorLoud False
   when (isNothing saimMode) $
     modifySession $ \sess -> sess {saimMode}
 
 -- * XhairPointerEnemy
 
-xhairPointerEnemyHuman :: MonadClientUI m => ActorId -> m ()
-xhairPointerEnemyHuman leader = do
+xhairPointerEnemyHuman :: MonadClientUI m => m ()
+xhairPointerEnemyHuman = do
   saimMode <- getsSession saimMode
-  aimPointerEnemyHuman leader
+  aimPointerEnemyHuman
   when (isNothing saimMode) $
     modifySession $ \sess -> sess {saimMode}
 
 -- * AimPointerFloor
 
-aimPointerFloorHuman :: MonadClientUI m => ActorId -> m ()
-aimPointerFloorHuman leader = aimPointerFloorLoud leader True
+aimPointerFloorHuman :: MonadClientUI m => m ()
+aimPointerFloorHuman = aimPointerFloorLoud True
 
-aimPointerFloorLoud :: MonadClientUI m => ActorId -> Bool -> m ()
-aimPointerFloorLoud leader loud = do
+aimPointerFloorLoud :: MonadClientUI m => Bool -> m ()
+aimPointerFloorLoud loud = do
   COps{corule=RuleContent{rXmax, rYmax}} <- getsState scops
   lidV <- viewedLevelUI
   -- Not @ScreenContent@, because not drawing here.
@@ -1318,13 +1319,13 @@ aimPointerFloorLoud leader loud = do
            , sxhairMoused }
     setXHairFromGUI sxhair
     when loud $
-      doLook leader
+      doLook
   else stopPlayBack
 
 -- * AimPointerEnemy
 
-aimPointerEnemyHuman :: MonadClientUI m => ActorId -> m ()
-aimPointerEnemyHuman leader = do
+aimPointerEnemyHuman :: MonadClientUI m => m ()
+aimPointerEnemyHuman = do
   COps{corule=RuleContent{rXmax, rYmax}} <- getsState scops
   lidV <- viewedLevelUI
   -- Not @ScreenContent@, because not drawing here.
@@ -1357,5 +1358,5 @@ aimPointerEnemyHuman leader = do
                in Just $ AimMode lidV newDetail
            , sxhairMoused }
     setXHairFromGUI sxhair
-    doLook leader
+    doLook
   else stopPlayBack

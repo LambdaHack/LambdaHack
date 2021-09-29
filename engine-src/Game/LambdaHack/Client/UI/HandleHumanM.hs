@@ -197,24 +197,24 @@ cmdSemanticsLeader cmd = case cmd of
 
   Cancel -> addNoError cancelHuman
   Accept -> addLeader acceptHuman
-  DetailCycle -> addLeader detailCycleHuman
+  DetailCycle -> addNoError detailCycleHuman
   ClearTargetIfItemClear -> addLeader $ clearTargetIfItemClearHuman
   ItemClear -> addNoError itemClearHuman
   MoveXhair v k -> CmdNeed $ \leader -> Left <$> moveXhairHuman leader v k
-  AimTgt -> addLeader $ aimTgtHuman
+  AimTgt -> addNoError aimTgtHuman
   AimFloor -> addLeader aimFloorHuman
   AimEnemy -> addLeader aimEnemyHuman
   AimItem -> addLeader aimItemHuman
-  AimAscend k -> CmdNeed $ \leader -> Left <$> aimAscendHuman leader k
+  AimAscend k -> CmdNoNeed $ Left <$> aimAscendHuman k
   EpsIncr b -> addNoError $ epsIncrHuman b
   XhairUnknown -> CmdNeed $ \leader -> Left <$> xhairUnknownHuman leader
   XhairItem -> CmdNeed $ \leader -> Left <$> xhairItemHuman leader
   XhairStair up -> CmdNeed $ \leader -> Left <$> xhairStairHuman leader up
-  XhairPointerFloor -> addLeader xhairPointerFloorHuman
-  XhairPointerMute -> addLeader xhairPointerMuteHuman
-  XhairPointerEnemy -> addLeader xhairPointerEnemyHuman
-  AimPointerFloor -> addLeader aimPointerFloorHuman
-  AimPointerEnemy -> addLeader aimPointerEnemyHuman
+  XhairPointerFloor -> addNoError xhairPointerFloorHuman
+  XhairPointerMute -> addNoError xhairPointerMuteHuman
+  XhairPointerEnemy -> addNoError xhairPointerEnemyHuman
+  AimPointerFloor -> addNoError aimPointerFloorHuman
+  AimPointerEnemy -> addNoError aimPointerEnemyHuman
 
 addNoError :: Monad m => m () -> CmdLeaderNeed m
 addNoError cmdCli = CmdNoNeed $ cmdCli >> return (Left Nothing)

@@ -610,7 +610,7 @@ watchRespUpdAtomicUI cmd = case cmd of
   UpdHearFid _ distance hearMsg -> do
     mleader <- getsClient sleader
     case mleader of
-      Just{} -> return ()  -- will display stuff when leader moves
+      Just{} -> return ()  -- will flush messages when leader moves
       Nothing -> do
         lidV <- viewedLevelUI
         markDisplayNeeded lidV
