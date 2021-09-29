@@ -108,14 +108,12 @@ humanCommandWithLeader :: (MonadClient m, MonadClientUI m)
                        => m (Maybe RequestUI)
 humanCommandWithLeader = do
   side <- getsClient sside
-  fact <- getsState $ (EM.! side) . sfactionD
-  let mleader = gleader fact
-      !_A = assert (isJust mleader) ()
+  mleader <- getsState $ gleader . (EM.! side) . sfactionD
   mreq <- humanCommand
   case mreq of
     Nothing -> return Nothing
     Just req -> do
-      leader2 <- getLeaderUI
+      mleader2 <- getsClient sleader
       -- Don't send the leader switch to the server with these commands,
       -- to avoid leader death at resume if his HP <= 0. That would violate
       -- the principle that save and reload doesn't change game state.
@@ -124,8 +122,8 @@ humanCommandWithLeader = do
             ReqUIGameSaveAndExit -> True
             ReqUIGameSave -> True
             _ -> False
-      return $ Just (req, if mleader /= Just leader2 && not (saveCmd req)
-                          then Just leader2
+      return $ Just (req, if mleader /= mleader2 && not (saveCmd req)
+                          then mleader2
                           else Nothing)
 
 -- | Let the human player issue commands until any command takes time.
@@ -156,17 +154,20 @@ humanCommand = do
         modifySession $ \sess -> sess {sreportNull = True}
         -- Display base frame at the end.
         return []
-  leader <- getLeaderUI
-  b <- getsState $ getActorBody leader
-  lastLost <- getsSession slastLost
-  if bhp b <= 0 then
-    when (leader `ES.notMember` lastLost) $ do
-      -- Hacky reuse of @slastLost@ for near-death spam prevention.
-      modifySession $ \sess ->
-        sess {slastLost = ES.insert leader lastLost}
-      displayMore ColorBW "If you move, the exertion will kill you. Consider asking for first aid instead."
-  else
-    modifySession $ \sess -> sess {slastLost = ES.empty}
+  mleader <- getsClient sleader
+  case mleader of
+    Nothing -> return ()
+    Just leader -> do
+      body <- getsState $ getActorBody leader
+      lastLost <- getsSession slastLost
+      if bhp body <= 0 then
+        when (leader `ES.notMember` lastLost) $ do
+          -- Hacky reuse of @slastLost@ for near-death spam prevention.
+          modifySession $ \sess ->
+            sess {slastLost = ES.insert leader lastLost}
+          displayMore ColorBW "If you move, the exertion will kill you. Consider asking for first aid instead."
+      else
+        modifySession $ \sess -> sess {slastLost = ES.empty}
   let ovs = EM.fromList [(propFont, over)]
   km <- promptGetKey ColorFull ovs False []
   abortOrCmd <- do
