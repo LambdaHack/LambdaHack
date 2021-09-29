@@ -640,8 +640,8 @@ goToXhairGoTo :: (MonadClient m, MonadClientUI m)
 goToXhairGoTo initialStep run = do
   leader <- getLeaderUI
   b <- getsState $ getActorBody leader
-  xhairPos <- xhairToPos
-  case xhairPos of
+  mxhairPos <- mxhairToPos
+  case mxhairPos of
     Nothing -> failWith "crosshair position invalid"
     Just c -> do
       running <- getsSession srunning
@@ -681,8 +681,8 @@ multiActorGoTo arena c paramOld =
     RunParams{runMembers = r : rs, runWaiting} -> do
       onLevel <- getsState $ memActor r arena
       b <- getsState $ getActorBody r
-      xhairPos <- xhairToPos
-      if not onLevel || xhairPos == Just (bpos b) then do
+      mxhairPos <- mxhairToPos
+      if not onLevel || mxhairPos == Just (bpos b) then do
         let paramNew = paramOld {runMembers = rs}
         multiActorGoTo arena c paramNew
       else do

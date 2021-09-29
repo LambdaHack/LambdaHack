@@ -493,9 +493,9 @@ posFromXhair = do
     Right newEps -> do
       -- Modify @seps@, permanently.
       modifyClient $ \cli -> cli {seps = newEps}
-      mpos <- xhairToPos
-      case mpos of
-        Nothing -> error $ "" `showFailure` mpos
+      mxhairPos <- mxhairToPos
+      case mxhairPos of
+        Nothing -> error $ "" `showFailure` mxhairPos
         Just pos -> do
           munit <- projectCheck pos
           case munit of
@@ -983,9 +983,9 @@ doLook = do
     Just aimMode -> do
       leader <- getLeaderUI
       let lidV = aimLevelId aimMode
-      mxhairPos <- xhairToPos
+      mxhairPos <- mxhairToPos
+      xhairPos <- xhairToPos
       b <- getsState $ getActorBody leader
-      let xhairPos = fromMaybe (bpos b) mxhairPos
       blurb <- lookAtPosition lidV xhairPos
       itemSel <- getsSession sitemSel
       outOfRangeBlurb <-
@@ -1021,9 +1021,8 @@ moveXhairHuman dir n = do
   -- Not @ScreenContent@, because not drawing here.
   lpos <- getsState $ bpos . getActorBody leader
   xhair <- getsSession sxhair
-  mxhairPos <- xhairToPos
-  let xhairPos = fromMaybe lpos mxhairPos
-      shiftB pos = shiftBounded rXmax rYmax pos dir
+  xhairPos <- xhairToPos
+  let shiftB pos = shiftBounded rXmax rYmax pos dir
       newPos = iterate shiftB xhairPos !! n
   if newPos == xhairPos then failMsg "never mind"
   else do
@@ -1056,14 +1055,13 @@ aimFloorHuman = do
   lidV <- viewedLevelUI
   leader <- getLeaderUI
   lpos <- getsState $ bpos . getActorBody leader
-  mxhairPos <- xhairToPos
+  xhairPos <- xhairToPos
   xhair <- getsSession sxhair
   saimMode <- getsSession saimMode
   bsAll <- getsState $ actorAssocs (const True) lidV
   side <- getsClient sside
   fact <- getsState $ (EM.! side) . sfactionD
-  let xhairPos = fromMaybe lpos mxhairPos
-      sxhair = case xhair of
+  let sxhair = case xhair of
         _ | isNothing saimMode ->  -- first key press: keep target
           xhair
         Just TEnemy{} -> Just $ TPoint TKnown lidV xhairPos
@@ -1075,7 +1073,7 @@ aimFloorHuman = do
           -- by '*', so that all other projectiles on the tile come next,
           -- when pressing '*', without any intervening actors from other tiles.
           -- This is why we use @actorAssocs@ above instead of @posToAidAssocs@.
-          case find (\(_, b) -> Just (bpos b) == mxhairPos) bsAll of
+          case find (\(_, b) -> bpos b == xhairPos) bsAll of
             Just (aid, b) -> Just $ if isFoe side fact (bfid b)
                                     then TEnemy aid
                                     else TNonEnemy aid
@@ -1094,7 +1092,7 @@ aimEnemyHuman = do
   lidV <- viewedLevelUI
   leader <- getLeaderUI
   lpos <- getsState $ bpos . getActorBody leader
-  mxhairPos <- xhairToPos
+  mxhairPos <- mxhairToPos
   xhair <- getsSession sxhair
   saimMode <- getsSession saimMode
   side <- getsClient sside
@@ -1139,7 +1137,7 @@ aimItemHuman = do
   lidV <- viewedLevelUI
   leader <- getLeaderUI
   lpos <- getsState $ bpos . getActorBody leader
-  mxhairPos <- xhairToPos
+  mxhairPos <- mxhairToPos
   xhair <- getsSession sxhair
   saimMode <- getsSession saimMode
   Level{lfloor} <- getLevel lidV
@@ -1192,11 +1190,8 @@ aimAscendHuman k = do
             [] -> lid
             nlid : _ -> nlid
           lidK = iterate ascendOne lidV !! abs k
-      leader <- getLeaderUI
-      lpos <- getsState $ bpos . getActorBody leader
-      mxhairPos <- xhairToPos
-      let xhairPos = fromMaybe lpos mxhairPos
-          sxhair = Just $ TPoint TKnown lidK xhairPos
+      xhairPos <- xhairToPos
+      let sxhair = Just $ TPoint TKnown lidK xhairPos
       modifySession $ \sess -> sess {saimMode =
         let newDetail = maybe defaultDetailLevel detailLevel (saimMode sess)
         in Just $ AimMode lidK newDetail}

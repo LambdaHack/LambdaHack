@@ -14,7 +14,7 @@ module Game.LambdaHack.Client.UI.MonadClientUI
   , revCmdMap, getReportUI, computeChosenLore
   , miniHintAimingBare, miniHintAimingLore
   , getLeaderUI, getArenaUI, viewedLevelUI
-  , xhairToPos, setXHairFromGUI, clearAimMode
+  , mxhairToPos, xhairToPos, setXHairFromGUI, clearAimMode
   , getFontSetup, scoreToSlideshow, defaultHistory
   , tellAllClipPS, tellGameClipPS, elapsedSessionTimeGT
   , resetSessionStart, resetGameStart, partActorLeader, partPronounLeader
@@ -232,10 +232,7 @@ computeChosenLore :: MonadClientUI m
                   => m ([(ActorId, Actor)], [(ItemId, ItemQuant)])
 computeChosenLore = do
   side <- getsClient sside
-  mxhairPos <- xhairToPos
-  leader0 <- getLeaderUI
-  b0 <- getsState $ getActorBody leader0
-  let xhairPos = fromMaybe (bpos b0) mxhairPos
+  xhairPos <- xhairToPos
   lidV <- viewedLevelUI
   let isOurs (_, b) = bfid b == side
   inhabitants0 <- getsState $ filter (not . isOurs)
@@ -281,8 +278,8 @@ viewedLevelUI = do
   saimMode <- getsSession saimMode
   return $! maybe arena aimLevelId saimMode
 
-xhairToPos :: MonadClientUI m => m (Maybe Point)
-xhairToPos = do
+mxhairToPos :: MonadClientUI m => m (Maybe Point)
+mxhairToPos = do
   lidV <- viewedLevelUI
   mleader <- getsClient sleader
   sxhair <- getsSession sxhair
@@ -290,6 +287,15 @@ xhairToPos = do
     Nothing -> return Nothing  -- e.g., when game start and no leader yet
     Just aid -> getsState $ aidTgtToPos aid lidV sxhair
                   -- e.g., xhair on another level
+
+xhairToPos :: MonadClientUI m => m Point
+xhairToPos = do
+  mxhairPos <- mxhairToPos
+  mleader <- getsClient sleader
+  fallback <- case mleader of
+    Nothing -> return originPoint
+    Just leader -> getsState $ bpos . getActorBody leader
+  return $! fromMaybe fallback mxhairPos
 
 setXHairFromGUI :: MonadClientUI m => Maybe Target -> m ()
 setXHairFromGUI xhair2 = do
@@ -303,15 +309,12 @@ setXHairFromGUI xhair2 = do
 clearAimMode :: MonadClientUI m => m ()
 clearAimMode = do
   lidVOld <- viewedLevelUI  -- not in aiming mode at this point
-  mxhairPos <- xhairToPos  -- computed while still in aiming mode
+  xhairPos <- xhairToPos  -- computed while still in aiming mode
   modifySession $ \sess -> sess {saimMode = Nothing}
   lidV <- viewedLevelUI  -- not in aiming mode at this point
   when (lidVOld /= lidV) $ do
-    leader <- getLeaderUI
-    lpos <- getsState $ bpos . getActorBody leader
     sxhairOld <- getsSession sxhair
-    let xhairPos = fromMaybe lpos mxhairPos
-        sxhair = case sxhairOld of
+    let sxhair = case sxhairOld of
           Just TPoint{} -> Just $ TPoint TUnknown lidV xhairPos
             -- the point is possibly unknown on this level; unimportant anyway
           _ -> sxhairOld

@@ -240,9 +240,7 @@ drawFramePath drawnLevelId = do
   Level{ltile=PointArray.Array{avector}} <- getLevel drawnLevelId
   totVisible <- totalVisible <$> getPerFid drawnLevelId
   mleader <- getsClient sleader
-  mpos <- getsState $ \s -> bpos . (`getActorBody` s) <$> mleader
-  xhairPosRaw <- xhairToPos
-  let xhairPos = fromMaybe (fromMaybe originPoint mpos) xhairPosRaw
+  xhairPos <- xhairToPos
   bline <- case mleader of
     Just leader -> do
       Actor{bpos, blid} <- getsState $ getActorBody leader
@@ -364,7 +362,7 @@ drawFrameExtra dm drawnLevelId = do
   SessionUI{saimMode, smarkVision} <- getSession
   -- Not @ScreenContent@, because indexing in level's data.
   totVisible <- totalVisible <$> getPerFid drawnLevelId
-  mxhairPos <- xhairToPos
+  mxhairPos <- mxhairToPos
   mtgtPos <- do
     mleader <- getsClient sleader
     case mleader of
@@ -429,7 +427,7 @@ drawFrameStatus drawnLevelId = do
   cops@COps{corule=RuleContent{rXmax=_rXmax}} <- getsState scops
   SessionUI{sselected, saimMode, swaitTimes, sitemSel} <- getSession
   mleader <- getsClient sleader
-  xhairPos <- xhairToPos
+  mxhairPos <- mxhairToPos
   mbfs <- maybe (return Nothing) (\aid -> Just <$> getCacheBfs aid) mleader
   (mhairDesc, mxhairHP, mxhairWatchfulness) <- targetDescXhair
   lvl <- getLevel drawnLevelId
@@ -482,7 +480,7 @@ drawFrameStatus drawnLevelId = do
             text = fromMaybe (pText <+> lText) mt
         in if T.null text then "" else " " <> text
       -- The indicators must fit, they are the actual information.
-      pathCsr = displayPathText xhairPos mxhairHP
+      pathCsr = displayPathText mxhairPos mxhairHP
       trimTgtDesc n t = assert (not (T.null t) && n > 2 `blame` (t, n)) $
         if T.length t <= n then t else T.take (n - 3) t <> "..."
       -- The indicators must fit, they are the actual information.
