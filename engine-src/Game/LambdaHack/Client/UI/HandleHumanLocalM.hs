@@ -121,8 +121,9 @@ macroHumanTransition kms macroFrame macroFrames =
 
 -- | Display items from a given container store and possibly let the user
 -- chose one.
-chooseItemHuman :: MonadClientUI m => ItemDialogMode -> m MError
-chooseItemHuman c = either Just (const Nothing) <$> chooseItemDialogMode False c
+chooseItemHuman :: MonadClientUI m => ActorId -> ItemDialogMode -> m MError
+chooseItemHuman leader c =
+  either Just (const Nothing) <$> chooseItemDialogMode leader False c
 
 chooseItemDialogModeLore :: MonadClientUI m => m (Maybe ResultItemDialogMode)
 chooseItemDialogModeLore = do
@@ -154,13 +155,13 @@ chooseItemDialogModeLore = do
           return Nothing
 
 chooseItemDialogMode :: MonadClientUI m
-                     => Bool -> ItemDialogMode -> m (FailOrCmd ItemDialogMode)
-chooseItemDialogMode permitLoreCycle c = do
+                     => ActorId -> Bool -> ItemDialogMode
+                     -> m (FailOrCmd ItemDialogMode)
+chooseItemDialogMode leader permitLoreCycle c = do
   CCUI{coscreen=ScreenContent{rwidth, rheight}} <- getsSession sccui
   FontSetup{..} <- getFontSetup
   side <- getsClient sside
   fact <- getsState $ (EM.! side) . sfactionD
-  leader <- getLeaderUI
   (ggi, loreFound) <- do
     mggiLore <- if permitLoreCycle && c == MLore SItem
                 then chooseItemDialogModeLore
@@ -192,7 +193,9 @@ chooseItemDialogMode permitLoreCycle c = do
             ix0 = fromMaybe (error $ "" `showFailure` result)
                   $ elemIndex iid $ EM.elems lSlots
         go <- displayItemLore itemBag meleeSkill promptFun ix0 lSlots
-        if go then chooseItemDialogMode False MOrgans else failWith "never mind"
+        if go
+        then chooseItemDialogMode leader False MOrgans
+        else failWith "never mind"
       ROwned iid -> do
         found <- getsState $ findIid leader side iid
         let (newAid, bestStore) = case leader `lookup` found of
@@ -234,7 +237,7 @@ chooseItemDialogMode permitLoreCycle c = do
               slides <- overlayToSlideshow (rheight - 2) keys (ov0, [])
               km <- getConfirms ColorFull keys slides
               case K.key km of
-                K.Space -> chooseItemDialogMode False MSkills
+                K.Space -> chooseItemDialogMode leader False MSkills
                 K.Up -> displayOneSlot $ slotIndex - 1
                 K.Down -> displayOneSlot $ slotIndex + 1
                 K.Esc -> failWith "never mind"
@@ -255,8 +258,8 @@ chooseItemDialogMode permitLoreCycle c = do
         case K.key km of
           K.Space -> do
             modifySession $ \sess -> sess {schosenLore = ChosenNothing}
-            chooseItemDialogMode False (MLore slore)
-          K.Char '~' -> chooseItemDialogMode True c
+            chooseItemDialogMode leader False (MLore slore)
+          K.Char '~' -> chooseItemDialogMode leader True c
           K.Esc -> do
             modifySession $ \sess -> sess {schosenLore = ChosenNothing}
             failWith "never mind"
@@ -307,7 +310,7 @@ chooseItemDialogMode permitLoreCycle c = do
               slides <- overlayToSlideshow (rheight - 2) keys (ov0, [])
               km <- getConfirms ColorFull keys slides
               case K.key km of
-                K.Space -> chooseItemDialogMode False MPlaces
+                K.Space -> chooseItemDialogMode leader False MPlaces
                 K.Up -> displayOneSlot $ slotIndex - 1
                 K.Down -> displayOneSlot $ slotIndex + 1
                 K.Esc -> failWith "never mind"
@@ -339,7 +342,7 @@ chooseItemDialogMode permitLoreCycle c = do
               ekm2 <- displayChoiceScreen "" ColorFull True slides keys
               let km = either id (error $ "" `showFailure` ekm2) ekm2
               case K.key km of
-                K.Space -> chooseItemDialogMode False MModes
+                K.Space -> chooseItemDialogMode leader False MModes
                 K.Up -> displayOneSlot $ slotIndex - 1
                 K.Down -> displayOneSlot $ slotIndex + 1
                 K.Esc -> failWith "never mind"
@@ -350,9 +353,8 @@ chooseItemDialogMode permitLoreCycle c = do
 -- * ChooseItemProject
 
 chooseItemProjectHuman :: forall m. (MonadClient m, MonadClientUI m)
-                       => [HumanCmd.TriggerItem] -> m MError
-chooseItemProjectHuman ts = do
-  leader <- getLeaderUI
+                       => ActorId -> [HumanCmd.TriggerItem] -> m MError
+chooseItemProjectHuman leader ts = do
   b <- getsState $ getActorBody leader
   mstash <- getsState $ \s -> gstash $ sfactionD s EM.! bfid b
   let overStash = mstash == Just (blid b, bpos b)
@@ -364,7 +366,7 @@ chooseItemProjectHuman ts = do
         tr : _ -> (HumanCmd.tiverb tr, HumanCmd.tiobject tr)
       verb = makePhrase [verb1]
       triggerSyms = triggerSymbols ts
-  mpsuitReq <- psuitReq
+  mpsuitReq <- psuitReq leader
   case mpsuitReq of
     -- If xhair aim invalid, no item is considered a (suitable) missile.
     Left err -> failMsg err
@@ -384,7 +386,7 @@ chooseItemProjectHuman ts = do
               return Nothing
             _ -> do
               modifySession $ \sess -> sess {sitemSel = Nothing}
-              chooseItemProjectHuman ts
+              chooseItemProjectHuman leader ts
         Nothing -> do
           let psuit =
                 return $ SuitsSomething $ \_ itemFull _kit ->
@@ -405,19 +407,17 @@ chooseItemProjectHuman ts = do
             Left err -> failMsg err
 
 permittedProjectClient :: MonadClientUI m
-                       => m (ItemFull -> Either ReqFailure Bool)
-permittedProjectClient = do
-  leader <- getLeaderUI
+                       => ActorId -> m (ItemFull -> Either ReqFailure Bool)
+permittedProjectClient leader = do
   actorCurAndMaxSk <- getsState $ getActorMaxSkills leader
   b <- getsState $ getActorBody leader
   let skill = Ability.getSk Ability.SkProject actorCurAndMaxSk
       calmE = calmEnough b actorCurAndMaxSk
   return $ permittedProject False skill calmE
 
-projectCheck :: MonadClientUI m => Point -> m (Maybe ReqFailure)
-projectCheck tpos = do
+projectCheck :: MonadClientUI m => ActorId -> Point -> m (Maybe ReqFailure)
+projectCheck leader tpos = do
   COps{corule=RuleContent{rXmax, rYmax}, coTileSpeedup} <- getsState scops
-  leader <- getLeaderUI
   eps <- getsClient seps
   sb <- getsState $ getActorBody leader
   let lid = blid sb
@@ -444,10 +444,9 @@ projectCheck tpos = do
 --
 -- Note: Simple Perception check is not enough for the check,
 -- e.g., because the target actor can be obscured by a glass wall.
-xhairLegalEps :: MonadClientUI m => m (Either Text Int)
-xhairLegalEps = do
+xhairLegalEps :: MonadClientUI m => ActorId -> m (Either Text Int)
+xhairLegalEps leader = do
   cops@COps{corule=RuleContent{rXmax, rYmax}} <- getsState scops
-  leader <- getLeaderUI
   b <- getsState $ getActorBody leader
   lidV <- viewedLevelUI
   let !_A = assert (lidV == blid b) ()
@@ -487,9 +486,10 @@ xhairLegalEps = do
       then return $ Left "selected translation is void"
       else findNewEps True shifted  -- @True@, because the goal is vague anyway
 
-posFromXhair :: (MonadClient m, MonadClientUI m) => m (Either Text Point)
-posFromXhair = do
-  canAim <- xhairLegalEps
+posFromXhair :: (MonadClient m, MonadClientUI m)
+             => ActorId -> m (Either Text Point)
+posFromXhair leader = do
+  canAim <- xhairLegalEps leader
   case canAim of
     Right newEps -> do
       -- Modify @seps@, permanently.
@@ -498,7 +498,7 @@ posFromXhair = do
       case mxhairPos of
         Nothing -> error $ "" `showFailure` mxhairPos
         Just pos -> do
-          munit <- projectCheck pos
+          munit <- projectCheck leader pos
           case munit of
             Nothing -> return $ Right pos
             Just reqFail -> return $ Left $ showReqFailure reqFail
@@ -507,16 +507,16 @@ posFromXhair = do
 -- | On top of `permittedProjectClient`, it also checks legality
 -- of aiming at the target and projection range. It also modifies @eps@.
 psuitReq :: (MonadClient m, MonadClientUI m)
-         => m (Either Text (ItemFull -> Either ReqFailure (Point, Bool)))
-psuitReq = do
-  leader <- getLeaderUI
+         => ActorId
+         -> m (Either Text (ItemFull -> Either ReqFailure (Point, Bool)))
+psuitReq leader = do
   b <- getsState $ getActorBody leader
   lidV <- viewedLevelUI
   if lidV /= blid b
   then return $ Left "can't fling on remote level"
   else do
-    mpos <- posFromXhair
-    p <- permittedProjectClient
+    mpos <- posFromXhair leader
+    p <- permittedProjectClient leader
     case mpos of
       Left err -> return $ Left err
       Right pos -> return $ Right $ \itemFull ->
@@ -536,9 +536,8 @@ triggerSymbols (HumanCmd.TriggerItem{tisymbols} : ts) =
 -- * ChooseItemApply
 
 chooseItemApplyHuman :: forall m. MonadClientUI m
-                     => [HumanCmd.TriggerItem] -> m MError
-chooseItemApplyHuman ts = do
-  leader <- getLeaderUI
+                     => ActorId -> [HumanCmd.TriggerItem] -> m MError
+chooseItemApplyHuman leader ts = do
   b <- getsState $ getActorBody leader
   mstash <- getsState $ \s -> gstash $ sfactionD s EM.! bfid b
   let overStash = mstash == Just (blid b, bpos b)
@@ -560,17 +559,17 @@ chooseItemApplyHuman ts = do
       -- this item, so he knows what he's doing (unless really absurd).
       itemFull <- getsState $ itemToFull iid
       bag <- getsState $ getBodyStoreBag b fromCStore
-      mp <- permittedApplyClient
+      mp <- permittedApplyClient leader
       case iid `EM.lookup` bag of
         Just kit | fromRight False (mp (Just fromCStore) itemFull kit) ->
           return Nothing
         _ -> do
           modifySession $ \sess -> sess {sitemSel = Nothing}
-          chooseItemApplyHuman ts
+          chooseItemApplyHuman leader ts
     Nothing -> do
       let psuit :: m Suitability
           psuit = do
-            mp <- permittedApplyClient
+            mp <- permittedApplyClient leader
             return $ SuitsSomething $ \cstore itemFull kit ->
               fromRight False (mp cstore itemFull kit)
               && (null triggerSyms
@@ -585,11 +584,11 @@ chooseItemApplyHuman ts = do
         Left err -> failMsg err
 
 permittedApplyClient :: MonadClientUI m
-                     => m (Maybe CStore -> ItemFull -> ItemQuant
+                     => ActorId
+                     -> m (Maybe CStore -> ItemFull -> ItemQuant
                            -> Either ReqFailure Bool)
-permittedApplyClient = do
+permittedApplyClient leader = do
   COps{corule} <- getsState scops
-  leader <- getLeaderUI
   actorCurAndMaxSk <- getsState $ getActorMaxSkills leader
   b <- getsState $ getActorBody leader
   let skill = Ability.getSk Ability.SkApply actorCurAndMaxSk
@@ -921,22 +920,20 @@ cancelHuman = do
 
 -- | Accept the current crosshair position as target, ending
 -- aiming mode, if active.
-acceptHuman :: (MonadClient m, MonadClientUI m) => m ()
-acceptHuman = do
-  endAiming
-  endAimingMsg
+acceptHuman :: (MonadClient m, MonadClientUI m) => ActorId -> m ()
+acceptHuman leader = do
+  endAiming leader
+  endAimingMsg leader
   clearAimMode
 
 -- | End aiming mode, accepting the current position.
-endAiming :: (MonadClient m, MonadClientUI m) => m ()
-endAiming = do
-  leader <- getLeaderUI
+endAiming :: (MonadClient m, MonadClientUI m) => ActorId -> m ()
+endAiming leader = do
   sxhair <- getsSession sxhair
   modifyClient $ updateTarget leader $ const sxhair
 
-endAimingMsg :: MonadClientUI m => m ()
-endAimingMsg = do
-  leader <- getLeaderUI
+endAimingMsg :: MonadClientUI m => ActorId -> m ()
+endAimingMsg leader = do
   subject <- partActorLeader leader
   tgt <- getsClient $ getTarget leader
   (mtargetMsg, _) <- targetDesc tgt
@@ -949,36 +946,35 @@ endAimingMsg = do
 -- * DetailCycle
 
 -- | Cycle detail level of aiming mode descriptions, starting up.
-detailCycleHuman :: MonadClientUI m => m ()
-detailCycleHuman = do
+detailCycleHuman :: MonadClientUI m => ActorId -> m ()
+detailCycleHuman leader = do
   modifySession $ \sess -> sess {saimMode =
     (\aimMode -> aimMode {detailLevel = detailCycle $ detailLevel aimMode})
                  <$> saimMode sess}
-  doLook
+  doLook leader
 
 detailCycle :: DetailLevel -> DetailLevel
 detailCycle detail = if detail == maxBound then minBound else succ detail
 
 -- * ClearTargetIfItemClear
 
-clearTargetIfItemClearHuman :: (MonadClient m, MonadClientUI m) => m ()
-clearTargetIfItemClearHuman = do
+clearTargetIfItemClearHuman :: (MonadClient m, MonadClientUI m)
+                            => ActorId -> m ()
+clearTargetIfItemClearHuman leader = do
   itemSel <- getsSession sitemSel
   when (isNothing itemSel) $ do
     setXHairFromGUI Nothing
-    leader <- getLeaderUI
     modifyClient $ updateTarget leader (const Nothing)
-    doLook
+    doLook leader
 
 -- | Perform look around in the current position of the xhair.
 -- Does nothing outside aiming mode.
-doLook :: MonadClientUI m => m ()
-doLook = do
+doLook :: MonadClientUI m => ActorId -> m ()
+doLook leader = do
   saimMode <- getsSession saimMode
   case saimMode of
     Nothing -> return ()
     Just aimMode -> do
-      leader <- getLeaderUI
       let lidV = aimLevelId aimMode
       mxhairPos <- mxhairToPos
       xhairPos <- xhairToPos
@@ -1009,10 +1005,9 @@ itemClearHuman = modifySession $ \sess -> sess {sitemSel = Nothing}
 -- * MoveXhair
 
 -- | Move the xhair. Assumes aiming mode.
-moveXhairHuman :: MonadClientUI m => Vector -> Int -> m MError
-moveXhairHuman dir n = do
+moveXhairHuman :: MonadClientUI m => ActorId -> Vector -> Int -> m MError
+moveXhairHuman leader dir n = do
   COps{corule=RuleContent{rXmax, rYmax}} <- getsState scops
-  leader <- getLeaderUI
   saimMode <- getsSession saimMode
   let lidV = maybe (error $ "" `showFailure` leader) aimLevelId saimMode
   -- Not @ScreenContent@, because not drawing here.
@@ -1027,30 +1022,29 @@ moveXhairHuman dir n = do
           Just TVector{} -> Just $ TVector $ newPos `vectorToFrom` lpos
           _ -> Just $ TPoint TKnown lidV newPos
     setXHairFromGUI sxhair
-    doLook
+    doLook leader
     return Nothing
 
 -- * AimTgt
 
 -- | Start aiming.
-aimTgtHuman :: MonadClientUI m => m ()
-aimTgtHuman = do
+aimTgtHuman :: MonadClientUI m => ActorId -> m ()
+aimTgtHuman leader = do
   -- (Re)start aiming at the current level.
   lidV <- viewedLevelUI
   modifySession $ \sess -> sess {saimMode =
     let newDetail = maybe defaultDetailLevel detailLevel (saimMode sess)
     in Just $ AimMode lidV newDetail}
-  doLook
+  doLook leader
   msgAdd MsgPromptAction "*flinging started; press again to project*"
 
 -- * AimFloor
 
 -- | Cycle aiming mode. Do not change position of the xhair,
 -- switch among things at that position.
-aimFloorHuman :: MonadClientUI m => m ()
-aimFloorHuman = do
+aimFloorHuman :: MonadClientUI m => ActorId -> m ()
+aimFloorHuman leader = do
   lidV <- viewedLevelUI
-  leader <- getLeaderUI
   lpos <- getsState $ bpos . getActorBody leader
   xhairPos <- xhairToPos
   xhair <- getsSession sxhair
@@ -1080,14 +1074,13 @@ aimFloorHuman = do
     let newDetail = maybe defaultDetailLevel detailLevel saimMode
     in Just $ AimMode lidV newDetail}
   setXHairFromGUI sxhair
-  doLook
+  doLook leader
 
 -- * AimEnemy
 
-aimEnemyHuman :: MonadClientUI m => m ()
-aimEnemyHuman = do
+aimEnemyHuman :: MonadClientUI m => ActorId -> m ()
+aimEnemyHuman leader = do
   lidV <- viewedLevelUI
-  leader <- getLeaderUI
   lpos <- getsState $ bpos . getActorBody leader
   mxhairPos <- mxhairToPos
   xhair <- getsSession sxhair
@@ -1124,15 +1117,14 @@ aimEnemyHuman = do
     let newDetail = maybe defaultDetailLevel detailLevel saimMode
     in Just $ AimMode lidV newDetail}
   setXHairFromGUI sxhair
-  doLook
+  doLook leader
 
 -- * AimItem
 
-aimItemHuman :: MonadClientUI m => m ()
-aimItemHuman = do
+aimItemHuman :: MonadClientUI m => ActorId -> m ()
+aimItemHuman leader = do
   side <- getsClient sside
   lidV <- viewedLevelUI
-  leader <- getLeaderUI
   lpos <- getsState $ bpos . getActorBody leader
   mxhairPos <- mxhairToPos
   xhair <- getsSession sxhair
@@ -1169,14 +1161,14 @@ aimItemHuman = do
     let newDetail = maybe defaultDetailLevel detailLevel saimMode
     in Just $ AimMode lidV newDetail}
   setXHairFromGUI sxhair
-  doLook
+  doLook leader
 
 -- * AimAscend
 
 -- | Change the displayed level in aiming mode to (at most)
 -- k levels shallower. Enters aiming mode, if not already in one.
-aimAscendHuman :: MonadClientUI m => Int -> m MError
-aimAscendHuman k = do
+aimAscendHuman :: MonadClientUI m => ActorId -> Int -> m MError
+aimAscendHuman leader k = do
   dungeon <- getsState sdungeon
   lidV <- viewedLevelUI
   let up = k > 0
@@ -1193,7 +1185,7 @@ aimAscendHuman k = do
         let newDetail = maybe defaultDetailLevel detailLevel (saimMode sess)
         in Just $ AimMode lidK newDetail}
       setXHairFromGUI sxhair
-      doLook
+      doLook leader
       return Nothing
 
 -- * EpsIncr
@@ -1228,9 +1220,8 @@ flashAiming = do
 
 -- * XhairUnknown
 
-xhairUnknownHuman :: (MonadClient m, MonadClientUI m) => m MError
-xhairUnknownHuman = do
-  leader <- getLeaderUI
+xhairUnknownHuman :: (MonadClient m, MonadClientUI m) => ActorId -> m MError
+xhairUnknownHuman leader = do
   b <- getsState $ getActorBody leader
   mpos <- closestUnknown leader
   case mpos of
@@ -1238,14 +1229,13 @@ xhairUnknownHuman = do
     Just p -> do
       let sxhair = Just $ TPoint TUnknown (blid b) p
       setXHairFromGUI sxhair
-      doLook
+      doLook leader
       return Nothing
 
 -- * XhairItem
 
-xhairItemHuman :: (MonadClient m, MonadClientUI m) => m MError
-xhairItemHuman = do
-  leader <- getLeaderUI
+xhairItemHuman :: (MonadClient m, MonadClientUI m) => ActorId -> m MError
+xhairItemHuman leader = do
   b <- getsState $ getActorBody leader
   items <- closestItems leader
   case items of
@@ -1254,14 +1244,14 @@ xhairItemHuman = do
       let (_, (p, bag)) = maximumBy (comparing fst) items
           sxhair = Just $ TPoint (TItem bag) (blid b) p
       setXHairFromGUI sxhair
-      doLook
+      doLook leader
       return Nothing
 
 -- * XhairStair
 
-xhairStairHuman :: (MonadClient m, MonadClientUI m) => Bool -> m MError
-xhairStairHuman up = do
-  leader <- getLeaderUI
+xhairStairHuman :: (MonadClient m, MonadClientUI m)
+                => ActorId -> Bool -> m MError
+xhairStairHuman leader up = do
   b <- getsState $ getActorBody leader
   stairs <- closestTriggers (if up then ViaStairsUp else ViaStairsDown) leader
   case stairs of
@@ -1270,43 +1260,43 @@ xhairStairHuman up = do
       let (_, (p, (p0, bag))) = maximumBy (comparing fst) stairs
           sxhair = Just $ TPoint (TEmbed bag p0) (blid b) p
       setXHairFromGUI sxhair
-      doLook
+      doLook leader
       return Nothing
 
 -- * XhairPointerFloor
 
-xhairPointerFloorHuman :: MonadClientUI m => m ()
-xhairPointerFloorHuman = do
+xhairPointerFloorHuman :: MonadClientUI m => ActorId -> m ()
+xhairPointerFloorHuman leader = do
   saimMode <- getsSession saimMode
-  aimPointerFloorHuman
+  aimPointerFloorHuman leader
   when (isNothing saimMode) $
     modifySession $ \sess -> sess {saimMode}
 
 -- * XhairPointerMute
 
-xhairPointerMuteHuman :: MonadClientUI m => m ()
-xhairPointerMuteHuman = do
+xhairPointerMuteHuman :: MonadClientUI m => ActorId -> m ()
+xhairPointerMuteHuman leader = do
   saimMode <- getsSession saimMode
-  aimPointerFloorLoud False
+  aimPointerFloorLoud leader False
   when (isNothing saimMode) $
     modifySession $ \sess -> sess {saimMode}
 
 -- * XhairPointerEnemy
 
-xhairPointerEnemyHuman :: MonadClientUI m => m ()
-xhairPointerEnemyHuman = do
+xhairPointerEnemyHuman :: MonadClientUI m => ActorId -> m ()
+xhairPointerEnemyHuman leader = do
   saimMode <- getsSession saimMode
-  aimPointerEnemyHuman
+  aimPointerEnemyHuman leader
   when (isNothing saimMode) $
     modifySession $ \sess -> sess {saimMode}
 
 -- * AimPointerFloor
 
-aimPointerFloorHuman :: MonadClientUI m => m ()
-aimPointerFloorHuman = aimPointerFloorLoud True
+aimPointerFloorHuman :: MonadClientUI m => ActorId -> m ()
+aimPointerFloorHuman leader = aimPointerFloorLoud leader True
 
-aimPointerFloorLoud :: MonadClientUI m => Bool -> m ()
-aimPointerFloorLoud loud = do
+aimPointerFloorLoud :: MonadClientUI m => ActorId -> Bool -> m ()
+aimPointerFloorLoud leader loud = do
   COps{corule=RuleContent{rXmax, rYmax}} <- getsState scops
   lidV <- viewedLevelUI
   -- Not @ScreenContent@, because not drawing here.
@@ -1327,13 +1317,14 @@ aimPointerFloorLoud loud = do
                in Just $ AimMode lidV newDetail
            , sxhairMoused }
     setXHairFromGUI sxhair
-    when loud doLook
+    when loud $
+      doLook leader
   else stopPlayBack
 
 -- * AimPointerEnemy
 
-aimPointerEnemyHuman :: MonadClientUI m => m ()
-aimPointerEnemyHuman = do
+aimPointerEnemyHuman :: MonadClientUI m => ActorId -> m ()
+aimPointerEnemyHuman leader = do
   COps{corule=RuleContent{rXmax, rYmax}} <- getsState scops
   lidV <- viewedLevelUI
   -- Not @ScreenContent@, because not drawing here.
@@ -1366,5 +1357,5 @@ aimPointerEnemyHuman = do
                in Just $ AimMode lidV newDetail
            , sxhairMoused }
     setXHairFromGUI sxhair
-    doLook
+    doLook leader
   else stopPlayBack

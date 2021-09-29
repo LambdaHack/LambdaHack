@@ -12,8 +12,7 @@ module Game.LambdaHack.Client.UI.MonadClientUI
   , connFrontendFrontKey, setFrontAutoYes, frontendShutdown, printScreen
   , chanFrontend, anyKeyPressed, discardPressedKey, resetPressedKeys
   , revCmdMap, getReportUI, computeChosenLore
-  , miniHintAimingBare, miniHintAimingLore
-  , getLeaderUI, getArenaUI, viewedLevelUI
+  , miniHintAimingBare, miniHintAimingLore, getArenaUI, viewedLevelUI
   , mxhairToPos, xhairToPos, setXHairFromGUI, clearAimMode
   , getFontSetup, scoreToSlideshow, defaultHistory
   , tellAllClipPS, tellGameClipPS, elapsedSessionTimeGT
@@ -244,13 +243,6 @@ miniHintAimingBare = "Aiming mode: press 'f' to fling, SPACE or RMB to cycle det
 
 miniHintAimingLore :: Text
 miniHintAimingLore = "Aiming mode: '~' for lore, 'f' to fling, SPACE or RMB to hush, ESC to cancel."
-
-getLeaderUI :: MonadClientUI m => m ActorId
-getLeaderUI = do
-  cli <- getClient
-  case sleader cli of
-    Nothing -> error $ "leader expected but not found" `showFailure` cli
-    Just leader -> return leader
 
 getArenaUI :: MonadClientUI m => m LevelId
 getArenaUI = do

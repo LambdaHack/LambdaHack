@@ -13,6 +13,7 @@ import Game.LambdaHack.Core.Prelude
 
 import           Game.LambdaHack.Client.MonadClient
 import           Game.LambdaHack.Client.Request
+import           Game.LambdaHack.Client.State
 import           Game.LambdaHack.Client.UI.HandleHelperM
 import           Game.LambdaHack.Client.UI.HandleHumanGlobalM
 import           Game.LambdaHack.Client.UI.HandleHumanLocalM
@@ -76,7 +77,7 @@ cmdSemInCxtOfKM km cmd = do
 cmdSemantics :: (MonadClient m, MonadClientUI m)
              => HumanCmd -> m (Either MError ReqUI)
 cmdSemantics cmd = do
- leader <- getLeaderUI
+ leader <- getsClient $ fromJust . sleader
  case cmd of
   Macro kms -> addNoError $ macroHuman kms
   ByArea l -> byAreaHuman cmdSemInCxtOfKM l
@@ -91,27 +92,31 @@ cmdSemantics cmd = do
   LoopOnNothing cmd1 -> loopOnNothingHuman (cmdSemantics cmd1)
   ExecuteIfClear cmd1 -> executeIfClearHuman (cmdSemantics cmd1)
 
-  Wait -> weaveJust <$> (ReqUITimed <$$> waitHuman)
-  Wait10 -> weaveJust <$> (ReqUITimed <$$> waitHuman10)
-  Yell -> weaveJust <$> (ReqUITimed <$$> yellHuman)
+  Wait -> weaveJust <$> (ReqUITimed <$$> waitHuman leader)
+  Wait10 -> weaveJust <$> (ReqUITimed <$$> waitHuman10 leader)
+  Yell -> weaveJust <$> (ReqUITimed <$$> yellHuman leader)
   MoveDir v ->
-    weaveJust <$> (ReqUITimed <$$> moveRunHuman True True False False v)
-  RunDir v -> weaveJust <$> (ReqUITimed <$$> moveRunHuman True True True True v)
-  RunOnceAhead -> ReqUITimed <$$> runOnceAheadHuman
-  MoveOnceToXhair -> weaveJust <$> (ReqUITimed <$$> moveOnceToXhairHuman)
-  RunOnceToXhair  -> weaveJust <$> (ReqUITimed <$$> runOnceToXhairHuman)
-  ContinueToXhair -> weaveJust <$> (ReqUITimed <$$> continueToXhairHuman)
+    weaveJust <$> (ReqUITimed <$$> moveRunHuman leader True True False False v)
+  RunDir v ->
+    weaveJust <$> (ReqUITimed <$$> moveRunHuman leader True True True True v)
+  RunOnceAhead -> ReqUITimed <$$> runOnceAheadHuman leader
+  MoveOnceToXhair -> weaveJust <$> (ReqUITimed <$$> moveOnceToXhairHuman leader)
+  RunOnceToXhair  -> weaveJust <$> (ReqUITimed <$$> runOnceToXhairHuman leader)
+  ContinueToXhair -> weaveJust <$> (ReqUITimed <$$> continueToXhairHuman leader)
   MoveItem stores toCStore mverb auto ->
-    weaveJust <$> (ReqUITimed <$$> moveItemHuman stores toCStore mverb auto)
-  Project -> weaveJust <$> (ReqUITimed <$$> projectHuman)
-  Apply -> weaveJust <$> (ReqUITimed <$$> applyHuman)
-  AlterDir -> weaveJust <$> (ReqUITimed <$$> alterDirHuman)
-  AlterWithPointer -> weaveJust <$> (ReqUITimed <$$> alterWithPointerHuman)
-  CloseDir -> weaveJust <$> (ReqUITimed <$$> closeDirHuman)
+    weaveJust
+    <$> (ReqUITimed <$$> moveItemHuman leader stores toCStore mverb auto)
+  Project -> weaveJust <$> (ReqUITimed <$$> projectHuman leader)
+  Apply -> weaveJust <$> (ReqUITimed <$$> applyHuman leader)
+  AlterDir -> weaveJust <$> (ReqUITimed <$$> alterDirHuman leader)
+  AlterWithPointer ->
+    weaveJust <$> (ReqUITimed <$$> alterWithPointerHuman leader)
+  CloseDir -> weaveJust <$> (ReqUITimed <$$> closeDirHuman leader)
   Help -> helpHuman cmdSemInCxtOfKM
   Hint -> hintHuman cmdSemInCxtOfKM
-  ItemMenu -> itemMenuHuman cmdSemInCxtOfKM
-  ChooseItemMenu dialogMode -> chooseItemMenuHuman cmdSemInCxtOfKM dialogMode
+  ItemMenu -> itemMenuHuman leader cmdSemInCxtOfKM
+  ChooseItemMenu dialogMode ->
+    chooseItemMenuHuman leader cmdSemInCxtOfKM dialogMode
   MainMenu -> mainMenuHuman cmdSemInCxtOfKM
   MainMenuAutoOn -> mainMenuAutoOnHuman cmdSemInCxtOfKM
   MainMenuAutoOff -> mainMenuAutoOffHuman cmdSemInCxtOfKM
@@ -136,9 +141,9 @@ cmdSemantics cmd = do
   AutomateToggle -> weaveJust <$> automateToggleHuman
   AutomateBack -> automateBackHuman
 
-  ChooseItem dialogMode -> Left <$> chooseItemHuman dialogMode
-  ChooseItemProject ts -> Left <$> chooseItemProjectHuman ts
-  ChooseItemApply ts -> Left <$> chooseItemApplyHuman ts
+  ChooseItem dialogMode -> Left <$> chooseItemHuman leader dialogMode
+  ChooseItemProject ts -> Left <$> chooseItemProjectHuman leader ts
+  ChooseItemApply ts -> Left <$> chooseItemApplyHuman leader ts
   PickLeader k -> Left <$> pickLeaderHuman k
   PickLeaderWithPointer -> Left <$> pickLeaderWithPointerHuman leader
   PointmanCycle direction ->
@@ -163,25 +168,25 @@ cmdSemantics cmd = do
   PrintScreen -> addNoError printScreenHuman
 
   Cancel -> addNoError cancelHuman
-  Accept -> addNoError acceptHuman
-  DetailCycle -> addNoError detailCycleHuman
-  ClearTargetIfItemClear -> addNoError clearTargetIfItemClearHuman
+  Accept -> addNoError $ acceptHuman leader
+  DetailCycle -> addNoError $ detailCycleHuman leader
+  ClearTargetIfItemClear -> addNoError $ clearTargetIfItemClearHuman leader
   ItemClear -> addNoError itemClearHuman
-  MoveXhair v k -> Left <$> moveXhairHuman v k
-  AimTgt -> addNoError aimTgtHuman
-  AimFloor -> addNoError aimFloorHuman
-  AimEnemy -> addNoError aimEnemyHuman
-  AimItem -> addNoError aimItemHuman
-  AimAscend k -> Left <$> aimAscendHuman k
+  MoveXhair v k -> Left <$> moveXhairHuman leader v k
+  AimTgt -> addNoError $ aimTgtHuman leader
+  AimFloor -> addNoError $ aimFloorHuman leader
+  AimEnemy -> addNoError $ aimEnemyHuman leader
+  AimItem -> addNoError $ aimItemHuman leader
+  AimAscend k -> Left <$> aimAscendHuman leader k
   EpsIncr b -> addNoError $ epsIncrHuman b
-  XhairUnknown -> Left <$> xhairUnknownHuman
-  XhairItem -> Left <$> xhairItemHuman
-  XhairStair up -> Left <$> xhairStairHuman up
-  XhairPointerFloor -> addNoError xhairPointerFloorHuman
-  XhairPointerMute -> addNoError xhairPointerMuteHuman
-  XhairPointerEnemy -> addNoError xhairPointerEnemyHuman
-  AimPointerFloor -> addNoError aimPointerFloorHuman
-  AimPointerEnemy -> addNoError aimPointerEnemyHuman
+  XhairUnknown -> Left <$> xhairUnknownHuman leader
+  XhairItem -> Left <$> xhairItemHuman leader
+  XhairStair up -> Left <$> xhairStairHuman leader up
+  XhairPointerFloor -> addNoError $ xhairPointerFloorHuman leader
+  XhairPointerMute -> addNoError $ xhairPointerMuteHuman leader
+  XhairPointerEnemy -> addNoError $ xhairPointerEnemyHuman leader
+  AimPointerFloor -> addNoError $ aimPointerFloorHuman leader
+  AimPointerEnemy -> addNoError $ aimPointerEnemyHuman leader
 
 addNoError :: Monad m => m () -> m (Either MError ReqUI)
 addNoError cmdCli = cmdCli >> return (Left Nothing)

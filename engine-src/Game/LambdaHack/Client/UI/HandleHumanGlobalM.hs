@@ -142,18 +142,20 @@ areaToRectangles ca = map toArea <$> do
  case ca of
   CaMessage -> return [(0, 0, rwidth - 1, 0)]
   CaMapLeader -> do  -- takes preference over @CaMapParty@ and @CaMap@
-    leader <- getLeaderUI
-    b <- getsState $ getActorBody leader
-    let PointSquare x y = mapToSquare $ bpos b
-    return [(x, y, x, y)]
+    mleader <- getsClient sleader
+    case mleader of
+      Nothing -> return []
+      Just leader -> do
+        b <- getsState $ getActorBody leader
+        let PointSquare x y = mapToSquare $ bpos b
+        return [(x, y, x, y)]
   CaMapParty -> do  -- takes preference over @CaMap@
     lidV <- viewedLevelUI
     side <- getsClient sside
     ours <- getsState $ filter (not . bproj) . map snd
                         . actorAssocs (== side) lidV
-    let rectFromB p =
-          let PointSquare x y = mapToSquare p
-          in (x, y, x, y)
+    let rectFromB p = let PointSquare x y = mapToSquare p
+                      in (x, y, x, y)
     return $! map (rectFromB . bpos) ours
   CaMap ->
     let PointSquare xo yo = mapToSquare originPoint
@@ -269,9 +271,8 @@ executeIfClearHuman c1 = do
 -- * Wait
 
 -- | Leader waits a turn (and blocks, etc.).
-waitHuman :: MonadClientUI m => m (FailOrCmd RequestTimed)
-waitHuman = do
-  leader <- getLeaderUI
+waitHuman :: MonadClientUI m => ActorId -> m (FailOrCmd RequestTimed)
+waitHuman leader = do
   actorCurAndMaxSk <- getsState $ getActorMaxSkills leader
   if Ability.getSk Ability.SkWait actorCurAndMaxSk > 0 then do
     modifySession $ \sess -> sess {swaitTimes = abs (swaitTimes sess) + 1}
@@ -281,9 +282,8 @@ waitHuman = do
 -- * Wait10
 
 -- | Leader waits a 1/10th of a turn (and doesn't block, etc.).
-waitHuman10 :: MonadClientUI m => m (FailOrCmd RequestTimed)
-waitHuman10 = do
-  leader <- getLeaderUI
+waitHuman10 :: MonadClientUI m => ActorId -> m (FailOrCmd RequestTimed)
+waitHuman10 leader = do
   actorCurAndMaxSk <- getsState $ getActorMaxSkills leader
   if Ability.getSk Ability.SkWait actorCurAndMaxSk >= 4 then do
     modifySession $ \sess -> sess {swaitTimes = abs (swaitTimes sess) + 1}
@@ -293,9 +293,8 @@ waitHuman10 = do
 -- * Yell
 
 -- | Leader yells or yawns, if sleeping.
-yellHuman :: MonadClientUI m => m (FailOrCmd RequestTimed)
-yellHuman = do
-  leader <- getLeaderUI
+yellHuman :: MonadClientUI m => ActorId -> m (FailOrCmd RequestTimed)
+yellHuman leader = do
   actorCurAndMaxSk <- getsState $ getActorMaxSkills leader
   if Ability.getSk Ability.SkWait actorCurAndMaxSk > 0
      -- If waiting drained and really, potentially, no other possible action,
@@ -309,10 +308,9 @@ yellHuman = do
 -- * MoveDir and RunDir
 
 moveRunHuman :: (MonadClient m, MonadClientUI m)
-             => Bool -> Bool -> Bool -> Bool -> Vector
+             => ActorId -> Bool -> Bool -> Bool -> Bool -> Vector
              -> m (FailOrCmd RequestTimed)
-moveRunHuman initialStep finalGoal run runAhead dir = do
-  leader <- getLeaderUI
+moveRunHuman leader initialStep finalGoal run runAhead dir = do
   actorCurAndMaxSk <- getsState $ getActorMaxSkills leader
   arena <- getArenaUI
   sb <- getsState $ getActorBody leader
@@ -346,7 +344,7 @@ moveRunHuman initialStep finalGoal run runAhead dir = do
   tgts <- getsState $ posToAidAssocs tpos arena
   case tgts of
     [] -> do  -- move or search or alter
-      runStopOrCmd <- moveSearchAlter run dir
+      runStopOrCmd <- moveSearchAlter leader run dir
       case runStopOrCmd of
         Left stopMsg -> return $ Left stopMsg
         Right runCmd -> do
@@ -359,7 +357,7 @@ moveRunHuman initialStep finalGoal run runAhead dir = do
                     && Ability.getSk Ability.SkDisplace actorCurAndMaxSk > 0 ->
       -- No @stopPlayBack@: initial displace is benign enough.
       -- Displacing requires accessibility, but it's checked later on.
-      displaceAid target
+      displaceAid leader target
     _ : _ : _ | run
                 && initialStep
                 && Ability.getSk Ability.SkDisplace actorCurAndMaxSk > 0 ->
@@ -381,15 +379,14 @@ moveRunHuman initialStep finalGoal run runAhead dir = do
       if Ability.getSk Ability.SkMelee actorCurAndMaxSk > 0
       then -- No problem if there are many projectiles at the spot. We just
            -- attack the first one.
-           meleeAid target
+           meleeAid leader target
       else failSer MeleeUnskilled
     _ : _ -> failWith "actor in the way"
 
 -- | Actor attacks an enemy actor or his own projectile.
 meleeAid :: (MonadClient m, MonadClientUI m)
-         => ActorId -> m (FailOrCmd RequestTimed)
-meleeAid target = do
-  leader <- getLeaderUI
+         => ActorId -> ActorId -> m (FailOrCmd RequestTimed)
+meleeAid leader target = do
   side <- getsClient sside
   tb <- getsState $ getActorBody target
   sfact <- getsState $ (EM.! side) . sfactionD
@@ -423,10 +420,9 @@ meleeAid target = do
 
 -- | Actor swaps position with another.
 displaceAid :: MonadClientUI m
-            => ActorId -> m (FailOrCmd RequestTimed)
-displaceAid target = do
+            => ActorId -> ActorId -> m (FailOrCmd RequestTimed)
+displaceAid leader target = do
   COps{coTileSpeedup} <- getsState scops
-  leader <- getLeaderUI
   sb <- getsState $ getActorBody leader
   tb <- getsState $ getActorBody target
   tfact <- getsState $ (EM.! bfid tb) . sfactionD
@@ -461,10 +457,9 @@ displaceAid target = do
 
 -- | Leader moves or searches or alters. No visible actor at the position.
 moveSearchAlter :: MonadClientUI m
-                => Bool -> Vector -> m (FailOrCmd RequestTimed)
-moveSearchAlter run dir = do
+                => ActorId -> Bool -> Vector -> m (FailOrCmd RequestTimed)
+moveSearchAlter leader run dir = do
   COps{coTileSpeedup} <- getsState scops
-  leader <- getLeaderUI
   actorCurAndMaxSk <- getsState $ getActorMaxSkills leader
   sb <- getsState $ getActorBody leader
   let moveSkill = Ability.getSk Ability.SkMove actorCurAndMaxSk
@@ -492,17 +487,16 @@ moveSearchAlter run dir = do
           if | Tile.isModifiable coTileSpeedup t -> "potentially modifiable"
              | alterable -> "potentially triggerable"
              | otherwise -> "completely inert"
-      else alterCommon True tpos
+      else alterCommon leader True tpos
   return $! runStopOrCmd
 
 alterCommon :: MonadClientUI m
-            => Bool -> Point -> m (FailOrCmd RequestTimed)
-alterCommon bumping tpos = do
+            => ActorId -> Bool -> Point -> m (FailOrCmd RequestTimed)
+alterCommon leader bumping tpos = do
   CCUI{coscreen=ScreenContent{rwidth}} <- getsSession sccui
   cops@COps{cotile, coTileSpeedup} <- getsState scops
   side <- getsClient sside
   factionD <- getsState sfactionD
-  leader <- getLeaderUI
   actorCurAndMaxSk <- getsState $ getActorMaxSkills leader
   sb <- getsState $ getActorBody leader
   let alterSkill = Ability.getSk Ability.SkAlter actorCurAndMaxSk
@@ -559,7 +553,7 @@ alterCommon bumping tpos = do
              if bumping then
                return $ Right $ ReqMove $ vectorToFrom tpos spos
              else do
-               msgAddDone tpos "modify"
+               msgAddDone leader tpos "modify"
                return $ Right $ ReqAlter tpos
            Left err -> return $ Left err
          -- Even when bumping, we don't use ReqMove, because we don't want
@@ -577,11 +571,10 @@ alterCommon bumping tpos = do
 -- * RunOnceAhead
 
 runOnceAheadHuman :: MonadClientUI m
-                  => m (Either MError RequestTimed)
-runOnceAheadHuman = do
+                  => ActorId -> m (Either MError RequestTimed)
+runOnceAheadHuman leader = do
   side <- getsClient sside
   fact <- getsState $ (EM.! side) . sfactionD
-  leader <- getLeaderUI
   keyPressed <- anyKeyPressed
   srunning <- getsSession srunning
   -- When running, stop if disturbed. If not running, stop at once.
@@ -610,21 +603,22 @@ runOnceAheadHuman = do
 -- * MoveOnceToXhair
 
 moveOnceToXhairHuman :: (MonadClient m, MonadClientUI m)
-                     => m (FailOrCmd RequestTimed)
-moveOnceToXhairHuman = goToXhair True False
+                     => ActorId -> m (FailOrCmd RequestTimed)
+moveOnceToXhairHuman leader = goToXhair leader True False
 
 goToXhair :: (MonadClient m, MonadClientUI m)
-          => Bool -> Bool -> m (FailOrCmd RequestTimed)
-goToXhair initialStep run = do
+          => ActorId -> Bool -> Bool -> m (FailOrCmd RequestTimed)
+goToXhair leader initialStep run = do
   aimMode <- getsSession saimMode
   -- Movement is legal only outside aiming mode.
   if isJust aimMode
   then failWith "cannot move in aiming mode"
-  else goToXhairExplorationMode initialStep run
+  else goToXhairExplorationMode leader initialStep run
 
 goToXhairExplorationMode :: (MonadClient m, MonadClientUI m)
-                         => Bool -> Bool -> m (FailOrCmd RequestTimed)
-goToXhairExplorationMode initialStep run = do
+                         => ActorId -> Bool -> Bool
+                         -> m (FailOrCmd RequestTimed)
+goToXhairExplorationMode leader initialStep run = do
   xhair <- getsSession sxhair
   xhairGoTo <- getsSession sxhairGoTo
   mfail <-
@@ -633,15 +627,14 @@ goToXhairExplorationMode initialStep run = do
     else do
       when (isNothing xhairGoTo) $  -- set it up for next steps
         modifySession $ \sess -> sess {sxhairGoTo = xhair}
-      goToXhairGoTo initialStep run
+      goToXhairGoTo leader initialStep run
   when (isLeft mfail) $
     modifySession $ \sess -> sess {sxhairGoTo = Nothing}
   return mfail
 
 goToXhairGoTo :: (MonadClient m, MonadClientUI m)
-              => Bool -> Bool -> m (FailOrCmd RequestTimed)
-goToXhairGoTo initialStep run = do
-  leader <- getLeaderUI
+              => ActorId -> Bool -> Bool -> m (FailOrCmd RequestTimed)
+goToXhairGoTo leader initialStep run = do
   b <- getsState $ getActorBody leader
   mxhairPos <- mxhairToPos
   case mxhairPos of
@@ -656,7 +649,7 @@ goToXhairGoTo initialStep run = do
           case runOutcome of
             Left stopMsg -> return $ Left stopMsg
             Right (finalGoal, dir) ->
-              moveRunHuman initialStep finalGoal run False dir
+              moveRunHuman leader initialStep finalGoal run False dir
         _ | c == bpos b -> failWith "position reached"
         _ -> do
           let !_A = assert (initialStep || not run) ()
@@ -668,13 +661,13 @@ goToXhairGoTo initialStep run = do
                 "no route to crosshair (press again to go there anyway)"
             _ | initialStep && adjacent (bpos b) c -> do
               let dir = towards (bpos b) c
-              moveRunHuman initialStep True run False dir
+              moveRunHuman leader initialStep True run False dir
             Nothing -> failWith "no route to crosshair"
             Just AndPath{pathList=[]} -> failWith "almost there"
             Just AndPath{pathList = p1 : _} -> do
               let finalGoal = p1 == c
                   dir = towards (bpos b) p1
-              moveRunHuman initialStep finalGoal run False dir
+              moveRunHuman leader initialStep finalGoal run False dir
 
 multiActorGoTo :: (MonadClient m, MonadClientUI m)
                => LevelId -> Point -> RunParams -> m (FailOrCmd (Bool, Vector))
@@ -719,26 +712,25 @@ multiActorGoTo arena c paramOld =
 -- * RunOnceToXhair
 
 runOnceToXhairHuman :: (MonadClient m, MonadClientUI m)
-                    => m (FailOrCmd RequestTimed)
-runOnceToXhairHuman = goToXhair True True
+                    => ActorId -> m (FailOrCmd RequestTimed)
+runOnceToXhairHuman leader = goToXhair leader True True
 
 -- * ContinueToXhair
 
 continueToXhairHuman :: (MonadClient m, MonadClientUI m)
-                     => m (FailOrCmd RequestTimed)
-continueToXhairHuman = goToXhair False False{-irrelevant-}
+                     => ActorId -> m (FailOrCmd RequestTimed)
+continueToXhairHuman leader = goToXhair leader False False{-irrelevant-}
 
 -- * MoveItem
 
 moveItemHuman :: forall m. MonadClientUI m
-              => [CStore] -> CStore -> Maybe Text -> Bool
+              => ActorId -> [CStore] -> CStore -> Maybe Text -> Bool
               -> m (FailOrCmd RequestTimed)
-moveItemHuman stores destCStore mverb auto = do
+moveItemHuman leader stores destCStore mverb auto = do
   let !_A = assert (destCStore `notElem` stores) ()
-  leader <- getLeaderUI
   actorCurAndMaxSk <- getsState $ getActorMaxSkills leader
   if Ability.getSk Ability.SkMoveItem actorCurAndMaxSk > 0
-  then moveOrSelectItem stores destCStore mverb auto
+  then moveOrSelectItem leader stores destCStore mverb auto
   else failSer MoveItemUnskilled
 
 -- This cannot be structured as projecting or applying, with @ByItemMode@
@@ -746,10 +738,9 @@ moveItemHuman stores destCStore mverb auto = do
 -- more than one item is chosen, which doesn't fit @sitemSel@. Separating
 -- grabbing of multiple items as a distinct command is too high a price.
 moveOrSelectItem :: forall m. MonadClientUI m
-                 => [CStore] -> CStore -> Maybe Text -> Bool
+                 => ActorId -> [CStore] -> CStore -> Maybe Text -> Bool
                  -> m (FailOrCmd RequestTimed)
-moveOrSelectItem storesRaw destCStore mverb auto = do
-  leader <- getLeaderUI
+moveOrSelectItem leader storesRaw destCStore mverb auto = do
   b <- getsState $ getActorBody leader
   actorCurAndMaxSk <- getsState $ getActorMaxSkills leader
   mstash <- getsState $ \s -> gstash $ sfactionD s EM.! bfid b
@@ -777,7 +768,7 @@ moveOrSelectItem storesRaw destCStore mverb auto = do
       bag <- getsState $ getBodyStoreBag b fromCStore
       case iid `EM.lookup` bag of
         Nothing ->  -- the case of old selection or selection from another actor
-          moveOrSelectItem stores destCStore mverb auto
+          moveOrSelectItem leader stores destCStore mverb auto
         Just (k, it) -> assert (k > 0) $ do
           let eqpFree = eqpFreeN b
               kToPick | destCStore == CEqp = min eqpFree k
@@ -788,30 +779,30 @@ moveOrSelectItem storesRaw destCStore mverb auto = do
              | otherwise -> do
                socK <- pickNumber (not auto) kToPick
                case socK of
-                 Left Nothing -> moveOrSelectItem stores destCStore mverb auto
+                 Left Nothing ->
+                   moveOrSelectItem leader stores destCStore mverb auto
                  Left (Just err) -> return $ Left err
                  Right kChosen ->
                    let is = (fromCStore, [(iid, (kChosen, take kChosen it))])
-                   in Right <$> moveItems stores is destCStore
+                   in Right <$> moveItems leader stores is destCStore
     _ -> do
-      mis <- selectItemsToMove stores destCStore mverb auto
+      mis <- selectItemsToMove leader stores destCStore mverb auto
       case mis of
         Left err -> return $ Left err
         Right (fromCStore, [(iid, _)]) | stores /= [CGround] -> do
           modifySession $ \sess ->
             sess {sitemSel = Just (iid, fromCStore, False)}
-          moveOrSelectItem stores destCStore mverb auto
+          moveOrSelectItem leader stores destCStore mverb auto
         Right is@(fromCStore, _) ->
           if | fromCStore == CEqp && not calmE -> failSer ItemNotCalm
              | fromCStore == CGround && overStash -> failSer ItemOverStash
-             | otherwise -> Right <$> moveItems stores is destCStore
+             | otherwise -> Right <$> moveItems leader stores is destCStore
 
 selectItemsToMove :: forall m. MonadClientUI m
-                  => [CStore] -> CStore -> Maybe Text -> Bool
+                  => ActorId -> [CStore] -> CStore -> Maybe Text -> Bool
                   -> m (FailOrCmd (CStore, [(ItemId, ItemQuant)]))
-selectItemsToMove stores destCStore mverb auto = do
+selectItemsToMove leader stores destCStore mverb auto = do
   let verb = fromMaybe (verbCStore destCStore) mverb
-  leader <- getLeaderUI
   actorCurAndMaxSk <- getsState $ getActorMaxSkills leader
   b <- getsState $ getActorBody leader
   mstash <- getsState $ \s -> gstash $ sfactionD s EM.! bfid b
@@ -883,11 +874,10 @@ selectItemsToMove stores destCStore mverb auto = do
          Left err -> failWith err
 
 moveItems :: forall m. MonadClientUI m
-          => [CStore] -> (CStore, [(ItemId, ItemQuant)]) -> CStore
+          => ActorId -> [CStore] -> (CStore, [(ItemId, ItemQuant)]) -> CStore
           -> m RequestTimed
-moveItems stores (fromCStore, l) destCStore = do
+moveItems leader stores (fromCStore, l) destCStore = do
   let !_A = assert (fromCStore /= destCStore && fromCStore `elem` stores) ()
-  leader <- getLeaderUI
   actorCurAndMaxSk <- getsState $ getActorMaxSkills leader
   b <- getsState $ getActorBody leader
   discoBenefit <- getsClient sdiscoBenefit
@@ -942,10 +932,10 @@ moveItems stores (fromCStore, l) destCStore = do
 
 -- * Project
 
-projectHuman :: (MonadClient m, MonadClientUI m) => m (FailOrCmd RequestTimed)
-projectHuman = do
+projectHuman :: (MonadClient m, MonadClientUI m)
+             => ActorId -> m (FailOrCmd RequestTimed)
+projectHuman leader = do
   curChal <- getsClient scurChal
-  leader <- getLeaderUI
   actorCurAndMaxSk <- getsState $ getActorMaxSkills leader
   if | ckeeper curChal ->
        failSer ProjectFinderKeeper
@@ -964,20 +954,19 @@ projectHuman = do
              Just _kit -> do
                itemFull <- getsState $ itemToFull iid
                let i = (fromCStore, (iid, itemFull))
-               projectItem i
+               projectItem leader i
          Nothing -> failWith "no item to fling"
 
 projectItem :: (MonadClient m, MonadClientUI m)
-            => (CStore, (ItemId, ItemFull))
+            => ActorId -> (CStore, (ItemId, ItemFull))
             -> m (FailOrCmd RequestTimed)
-projectItem (fromCStore, (iid, itemFull)) = do
-  leader <- getLeaderUI
+projectItem leader (fromCStore, (iid, itemFull)) = do
   actorCurAndMaxSk <- getsState $ getActorMaxSkills leader
   b <- getsState $ getActorBody leader
   let calmE = calmEnough b actorCurAndMaxSk
   if fromCStore == CEqp && not calmE then failSer ItemNotCalm
   else do
-    mpsuitReq <- psuitReq
+    mpsuitReq <- psuitReq leader
     case mpsuitReq of
       Left err -> failWith err
       Right psuitReqFun ->
@@ -1004,9 +993,8 @@ projectItem (fromCStore, (iid, itemFull)) = do
 
 -- * Apply
 
-applyHuman :: MonadClientUI m => m (FailOrCmd RequestTimed)
-applyHuman = do
-  leader <- getLeaderUI
+applyHuman :: MonadClientUI m => ActorId -> m (FailOrCmd RequestTimed)
+applyHuman leader = do
   actorCurAndMaxSk <- getsState $ getActorMaxSkills leader
   if Ability.getSk Ability.SkApply
                    actorCurAndMaxSk <= 0 then  -- detailed check later
@@ -1021,15 +1009,14 @@ applyHuman = do
           Nothing -> failWith "no item to trigger"
           Just kit -> do
             itemFull <- getsState $ itemToFull iid
-            applyItem (fromCStore, (iid, (itemFull, kit)))
+            applyItem leader (fromCStore, (iid, (itemFull, kit)))
       Nothing -> failWith "no item to trigger"
 
 applyItem :: MonadClientUI m
-          => (CStore, (ItemId, ItemFullKit))
+          => ActorId -> (CStore, (ItemId, ItemFullKit))
           -> m (FailOrCmd RequestTimed)
-applyItem (fromCStore, (iid, (itemFull, kit))) = do
+applyItem leader (fromCStore, (iid, (itemFull, kit))) = do
   COps{corule} <- getsState scops
-  leader <- getLeaderUI
   actorCurAndMaxSk <- getsState $ getActorMaxSkills leader
   b <- getsState $ getActorBody leader
   localTime <- getsState $ getLocalTime (blid b)
@@ -1062,9 +1049,9 @@ applyItem (fromCStore, (iid, (itemFull, kit))) = do
 -- * AlterDir
 
 -- | Ask for a direction and alter a tile, if possible.
-alterDirHuman :: MonadClientUI m => m (FailOrCmd RequestTimed)
-alterDirHuman = pickPoint "modify" >>= \case
-  Just p -> alterTileAtPos p
+alterDirHuman :: MonadClientUI m => ActorId -> m (FailOrCmd RequestTimed)
+alterDirHuman leader = pickPoint leader "modify" >>= \case
+  Just p -> alterTileAtPos leader p
   Nothing -> failWith "never mind"
 
 -- | Try to alter a tile using a feature at the given position.
@@ -1073,14 +1060,14 @@ alterDirHuman = pickPoint "modify" >>= \case
 -- item can be triggered, because the player explicitely requested
 -- the action. Consequently, even if all embedded items are recharching,
 -- the time will be wasted and the server will describe the failure in detail.
-alterTileAtPos :: MonadClientUI m => Point -> m (FailOrCmd RequestTimed)
-alterTileAtPos pos = do
-  leader <- getLeaderUI
+alterTileAtPos :: MonadClientUI m
+               => ActorId -> Point -> m (FailOrCmd RequestTimed)
+alterTileAtPos leader pos = do
   sb <- getsState $ getActorBody leader
   let sxhair = Just $ TPoint TUnknown (blid sb) pos
   -- Point xhair to see details with `~`.
   setXHairFromGUI sxhair
-  alterCommon False pos
+  alterCommon leader False pos
 
 -- | Verify that the tile can be transformed or any embedded item effect
 -- triggered and the player is aware if the effect is dangerous or grave,
@@ -1269,40 +1256,38 @@ verifyToolEffect lid store itemFull = do
 
 -- | Try to alter a tile using a feature under the pointer.
 alterWithPointerHuman :: MonadClientUI m
-                      => m (FailOrCmd RequestTimed)
-alterWithPointerHuman = do
+                      => ActorId -> m (FailOrCmd RequestTimed)
+alterWithPointerHuman leader = do
   COps{corule=RuleContent{rXmax, rYmax}} <- getsState scops
   pUI <- getsSession spointer
   let p@(Point px py) = squareToMap $ uiToSquare pUI
   if px >= 0 && py >= 0 && px < rXmax && py < rYmax
-  then alterTileAtPos p
+  then alterTileAtPos leader p
   else failWith "never mind"
 
 -- * CloseDir
 
 -- | Close nearby open tile; ask for direction, if there is more than one.
 closeDirHuman :: MonadClientUI m
-              => m (FailOrCmd RequestTimed)
-closeDirHuman = do
+              => ActorId -> m (FailOrCmd RequestTimed)
+closeDirHuman leader = do
   COps{coTileSpeedup} <- getsState scops
-  leader <- getLeaderUI
   b <- getsState $ getActorBody leader
   lvl <- getLevel $ blid b
   let vPts = vicinityUnsafe $ bpos b
       openPts = filter (Tile.isClosable coTileSpeedup . at lvl) vPts
   case openPts of
     []  -> failSer CloseNothing
-    [o] -> closeTileAtPos o
-    _   -> pickPoint "close" >>= \case
+    [o] -> closeTileAtPos leader o
+    _   -> pickPoint leader "close" >>= \case
       Nothing -> failWith "never mind"
-      Just p -> closeTileAtPos p
+      Just p -> closeTileAtPos leader p
 
 -- | Close tile at given position.
 closeTileAtPos :: MonadClientUI m
-               => Point -> m (FailOrCmd RequestTimed)
-closeTileAtPos tpos = do
+               => ActorId -> Point -> m (FailOrCmd RequestTimed)
+closeTileAtPos leader tpos = do
   COps{coTileSpeedup} <- getsState scops
-  leader <- getLeaderUI
   actorCurAndMaxSk <- getsState $ getActorMaxSkills leader
   b <- getsState $ getActorBody leader
   alterable <- getsState $ tileAlterable (blid b) tpos
@@ -1327,14 +1312,13 @@ closeTileAtPos tpos = do
           -> failSer AlterBlockActor
          | otherwise
           -> do
-             msgAddDone tpos "close"
+             msgAddDone leader tpos "close"
              return $ Right (ReqAlter tpos)
 
 -- | Adds message with proper names.
-msgAddDone :: MonadClientUI m => Point -> Text -> m ()
-msgAddDone p verb = do
+msgAddDone :: MonadClientUI m => ActorId -> Point -> Text -> m ()
+msgAddDone leader p verb = do
   COps{cotile} <- getsState scops
-  leader <- getLeaderUI
   b <- getsState $ getActorBody leader
   lvl <- getLevel $ blid b
   let tname = TK.tname $ okind cotile $ lvl `at` p
@@ -1348,9 +1332,8 @@ msgAddDone p verb = do
   msgAdd MsgActionComplete $ "You" <+> verb <+> "the" <+> s <+> dir <> "."
 
 -- | Prompts user to pick a point.
-pickPoint :: MonadClientUI m => Text -> m (Maybe Point)
-pickPoint verb = do
-  leader <- getLeaderUI
+pickPoint :: MonadClientUI m => ActorId -> Text -> m (Maybe Point)
+pickPoint leader verb = do
   b <- getsState $ getActorBody leader
   UIOptions{uVi, uLeftHand} <- getsSession sUIOptions
   let dirKeys = K.dirAllKey uVi uLeftHand
@@ -1486,15 +1469,14 @@ dashboardHuman cmdSemInCxtOfKM = do
 -- * ItemMenu
 
 itemMenuHuman :: MonadClientUI m
-              => (K.KM -> HumanCmd -> m (Either MError ReqUI))
+              => ActorId -> (K.KM -> HumanCmd -> m (Either MError ReqUI))
               -> m (Either MError ReqUI)
-itemMenuHuman cmdSemInCxtOfKM = do
+itemMenuHuman leader cmdSemInCxtOfKM = do
   COps{corule} <- getsState scops
   itemSel <- getsSession sitemSel
   fontSetup@FontSetup{..} <- getFontSetup
   case itemSel of
     Just (iid, fromCStore, _) -> do
-      leader <- getLeaderUI
       b <- getsState $ getActorBody leader
       bUI <- getsSession $ getActorUI leader
       bag <- getsState $ getBodyStoreBag b fromCStore
@@ -1614,7 +1596,7 @@ itemMenuHuman cmdSemInCxtOfKM = do
                        void $ pickLeader True newAid
                        modifySession $ \sess ->
                          sess {sitemSel = Just (iid, newCStore, False)}
-                       itemMenuHuman cmdSemInCxtOfKM
+                       itemMenuHuman leader cmdSemInCxtOfKM
                 _ -> error $ "" `showFailure` km
               Just (_desc, _cats, cmd) -> do
                 modifySession $ \sess ->
@@ -1627,15 +1609,16 @@ itemMenuHuman cmdSemInCxtOfKM = do
 -- * ChooseItemMenu
 
 chooseItemMenuHuman :: MonadClientUI m
-                    => (K.KM -> HumanCmd -> m (Either MError ReqUI))
+                    => ActorId
+                    -> (K.KM -> HumanCmd -> m (Either MError ReqUI))
                     -> ItemDialogMode
                     -> m (Either MError ReqUI)
-chooseItemMenuHuman cmdSemInCxtOfKM c0 = do
+chooseItemMenuHuman leader cmdSemInCxtOfKM c0 = do
   let chooseItemMenu c1 = do
-        res <- chooseItemDialogMode True c1
+        res <- chooseItemDialogMode leader True c1
         case res of
           Right c2 -> do
-            res2 <- itemMenuHuman cmdSemInCxtOfKM
+            res2 <- itemMenuHuman leader cmdSemInCxtOfKM
             backToList <- failMsg "back to list"
             case res2 of
               Left err | err == backToList -> chooseItemMenu c2
