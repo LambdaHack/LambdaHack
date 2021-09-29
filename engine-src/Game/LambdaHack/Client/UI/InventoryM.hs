@@ -417,23 +417,23 @@ transition psuit prompt promptGeneric permitMulitple
       maySwitchLeader MModes = False
       maySwitchLeader _ = True
       cycleKeyDef direction =
-        let km = revCmd $ MemberCycle direction
+        let km = revCmd $  PointmanCycle direction
         in (km, DefItemKey
                { defLabel = if direction == Forward then Right km else Left ""
                , defCond = maySwitchLeader cCur && not (autoDun || null hs)
                , defAction = \_ -> do
-                   err <- memberCycle False direction
+                   err <- pointmanCycle False direction
                    let !_A = assert (isNothing err `blame` err) ()
                    recCall numPrefix cCur cRest itemDialogState
                })
       cycleLevelKeyDef direction =
-        let km = revCmd $ MemberCycleLevel direction
+        let km = revCmd $ PointmanCycleLevel direction
         in (km, DefItemKey
                 { defLabel = Left ""
                 , defCond = maySwitchLeader cCur
                             && any (\(_, b, _) -> blid b == blid body) hs
                 , defAction = \_ -> do
-                    err <- memberCycleLevel False direction
+                    err <- pointmanCycleLevel False direction
                     let !_A = assert (isNothing err `blame` err) ()
                     recCall numPrefix cCur cRest itemDialogState
                 })

@@ -273,11 +273,11 @@ memberCycle d cats = ( cats
                      , "cycle"
                        <+> (if d == Backward then "backwards" else "")
                        <+> "among all party members"
-                     , MemberCycle d )
+                     , PointmanCycle d )
 
 memberCycleLevel :: Direction -> [CmdCategory] -> CmdTriple
 memberCycleLevel d cats = ( cats
                           , "cycle"
                             <+> (if d == Backward then "backwards" else "")
                             <+> " among party members on the level"
-                          , MemberCycleLevel d )
+                          , PointmanCycleLevel d )

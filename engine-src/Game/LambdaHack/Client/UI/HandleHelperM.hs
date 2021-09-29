@@ -3,7 +3,7 @@
 module Game.LambdaHack.Client.UI.HandleHelperM
   ( FailError, showFailError, MError, mergeMError, FailOrCmd, failWith
   , failSer, failMsg, weaveJust
-  , memberCycle, memberCycleLevel, partyAfterLeader
+  , pointmanCycle, pointmanCycleLevel, partyAfterLeader
   , pickLeader, pickLeaderWithPointer
   , itemOverlay, skillsOverlay
   , placesFromState, placesOverlay
@@ -104,9 +104,9 @@ weaveJust :: FailOrCmd a -> Either MError a
 weaveJust (Left ferr) = Left $ Just ferr
 weaveJust (Right a) = Right a
 
--- | Switches current member to the next on the level, if any, wrapping.
-memberCycleLevel :: MonadClientUI m => Bool -> Direction -> m MError
-memberCycleLevel verbose direction = do
+-- | Switches current pointman to the next on the level, if any, wrapping.
+pointmanCycleLevel :: MonadClientUI m => Bool -> Direction -> m MError
+pointmanCycleLevel verbose direction = do
   side <- getsClient sside
   fact <- getsState $ (EM.! side) . sfactionD
   lidV <- viewedLevelUI
@@ -120,16 +120,16 @@ memberCycleLevel verbose direction = do
   case filter (\(_, b, _) -> blid b == lidV) hsSort of
     _ | autoDun && lidV /= blid body ->
       failMsg $ showReqFailure NoChangeDunLeader
-    [] -> failMsg "cannot pick any other member on this level"
+    [] -> failMsg "cannot pick any other pointman on this level"
     (np, b, _) : _ -> do
       success <- pickLeader verbose np
       let !_A = assert (success `blame` "same leader"
                                 `swith` (leader, np, b)) ()
       return Nothing
 
--- | Switches current member to the previous in the whole dungeon, wrapping.
-memberCycle :: MonadClientUI m => Bool -> Direction -> m MError
-memberCycle verbose direction = do
+-- | Switches current pointman to the previous in the whole dungeon, wrapping.
+pointmanCycle :: MonadClientUI m => Bool -> Direction -> m MError
+pointmanCycle verbose direction = do
   side <- getsClient sside
   fact <- getsState $ (EM.! side) . sfactionD
   leader <- getLeaderUI
@@ -207,7 +207,7 @@ pickLeaderWithPointer = do
   pUI <- getsSession spointer
   let p@(Point px py) = squareToMap $ uiToSquare pUI
   -- Pick even if no space in status line for the actor's symbol.
-  if | py == rheight - 2 && px == 0 -> memberCycle True Forward
+  if | py == rheight - 2 && px == 0 -> pointmanCycle True Forward
      | py == rheight - 2 ->
          case drop (px - 1) viewed of
            [] -> return Nothing

@@ -156,8 +156,8 @@ data HumanCmd =
   | ChooseItemApply [TriggerItem]
   | PickLeader Int
   | PickLeaderWithPointer
-  | MemberCycle Direction
-  | MemberCycleLevel Direction
+  | PointmanCycle Direction
+  | PointmanCycleLevel Direction
   | SelectActor
   | SelectNone
   | SelectWithPointer
