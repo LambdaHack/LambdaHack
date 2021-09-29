@@ -31,7 +31,7 @@ module Game.LambdaHack.Client.UI.HandleHumanLocalM
     -- * Internal operations
   , chooseItemDialogModeLore, permittedProjectClient, projectCheck
   , xhairLegalEps, posFromXhair
-  , permittedApplyClient, selectAid, eitherHistory, endAiming, endAimingMsg
+  , permittedApplyClient, eitherHistory, endAiming, endAimingMsg
   , doLook, flashAiming
 #endif
   ) where
@@ -640,13 +640,8 @@ pointmanCycleHuman leader = pointmanCycle leader True
 
 -- * SelectActor
 
-selectActorHuman :: MonadClientUI m => m ()
-selectActorHuman = do
-  leader <- getLeaderUI
-  selectAid leader
-
-selectAid :: MonadClientUI m => ActorId -> m ()
-selectAid leader = do
+selectActorHuman :: MonadClientUI m => ActorId -> m ()
+selectActorHuman leader = do
   bodyUI <- getsSession $ getActorUI leader
   wasMemeber <- getsSession $ ES.member leader . sselected
   let upd = if wasMemeber
@@ -697,11 +692,11 @@ selectWithPointerHuman = do
      | py == rYmax + 1 ->
          case drop (px - 1) viewed of
            [] -> failMsg "not pointing at an actor"
-           (aid, _, _) : _ -> selectAid aid >> return Nothing
+           (aid, _, _) : _ -> selectActorHuman aid >> return Nothing
      | otherwise ->
          case find (\(_, b) -> bpos b == p) ours of
            Nothing -> failMsg "not pointing at an actor"
-           Just (aid, _) -> selectAid aid >> return Nothing
+           Just (aid, _) -> selectActorHuman aid >> return Nothing
 
 -- * Repeat
 

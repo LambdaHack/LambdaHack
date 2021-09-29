@@ -161,14 +161,14 @@ partyAfterLeader leader = do
 -- | Select a faction leader. False, if nothing to do.
 pickLeader :: MonadClientUI m => Bool -> ActorId -> m Bool
 pickLeader verbose aid = do
-  leader <- getLeaderUI
-  if leader == aid
+  mleader <- getsClient sleader
+  if mleader == Just aid
     then return False -- already picked
     else do
       body <- getsState $ getActorBody aid
       bodyUI <- getsSession $ getActorUI aid
       let !_A = assert (not (bproj body)
-                        `blame` "projectile chosen as the leader"
+                        `blame` "projectile chosen as the pointman"
                         `swith` (aid, body)) ()
       -- Even if it's already the leader, give his proper name, not 'you'.
       let subject = partActor bodyUI

@@ -145,7 +145,7 @@ cmdSemantics cmd = do
     Left <$> pointmanCycleHuman leader direction
   PointmanCycleLevel direction ->
     Left <$> pointmanCycleLevelHuman leader direction
-  SelectActor -> addNoError selectActorHuman
+  SelectActor -> addNoError $ selectActorHuman leader
   SelectNone -> addNoError selectNoneHuman
   SelectWithPointer -> Left <$> selectWithPointerHuman
   Repeat n -> addNoError $ repeatHuman n
