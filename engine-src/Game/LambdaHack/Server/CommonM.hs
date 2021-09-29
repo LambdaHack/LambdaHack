@@ -150,7 +150,6 @@ quitF status fid = do
           keepAutomated <- getsServer $ skeepAutomated . soptions
           -- Try to remove AI control of the UI faction, to show gameover info.
           when (isAIFact fact
-                && fleaderMode (gplayer fact) /= LeaderNull
                 && not keepAutomated) $
             execUpdAtomic $ UpdAutoFaction fid False
           revealItems fid
@@ -274,7 +273,7 @@ verifyCaches = do
 -- So, leaderless factions and spawner factions do not keep an arena,
 -- even though the latter usually has a leader for most of the game.
 keepArenaFact :: Faction -> Bool
-keepArenaFact fact = fleaderMode (gplayer fact) /= LeaderNull
+keepArenaFact fact = fleaderMode (gplayer fact) /= Nothing
                      && fneverEmpty (gplayer fact)
 
 -- We assume the actor in the second argument has HP <= 0 or is going to be
@@ -314,7 +313,7 @@ electLeader fid lid aidToReplace = do
 setFreshLeader :: MonadServerAtomic m => FactionId -> ActorId -> m ()
 setFreshLeader fid aid = do
   fact <- getsState $ (EM.! fid) . sfactionD
-  unless (fleaderMode (gplayer fact) == LeaderNull) $ do
+  unless (fleaderMode (gplayer fact) == Nothing) $ do
     -- First update and send Perception so that the new leader
     -- may report his environment.
     b <- getsState $ getActorBody aid

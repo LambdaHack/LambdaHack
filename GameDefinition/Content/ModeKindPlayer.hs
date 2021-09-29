@@ -28,13 +28,15 @@ playerHero = Player
   , fhiCondPoly = hiHeroLong
   , fhasGender = True
   , fdoctrine = TExplore
-  , fleaderMode = LeaderUI $ AutoLeader False False
+  , fleaderMode = Just $ AutoLeader False False
   , fhasUI = True
+  , funderAI = False
   }
 
 playerAntiHero = playerHero
-  { fleaderMode = LeaderAI $ AutoLeader True False
+  { fleaderMode = Just $ AutoLeader True False
   , fhasUI = False
+  , funderAI = True
   }
 
 playerCivilian = Player
@@ -46,8 +48,9 @@ playerCivilian = Player
   , fhiCondPoly = hiHeroMedium
   , fhasGender = True
   , fdoctrine = TPatrol
-  , fleaderMode = LeaderNull  -- unorganized
+  , fleaderMode = Nothing  -- unorganized
   , fhasUI = False
+  , funderAI = True
   }
 
 playerMonster = Player
@@ -62,13 +65,15 @@ playerMonster = Player
   , fleaderMode =
       -- No point changing leader on level, since all move and they
       -- don't follow the leader.
-      LeaderAI $ AutoLeader True True
+      Just $ AutoLeader True True
   , fhasUI = False
+  , funderAI = True
   }
 
 playerAntiMonster = playerMonster
-  { fleaderMode = LeaderUI $ AutoLeader True True
+  { fleaderMode = Just $ AutoLeader True True
   , fhasUI = True
+  , funderAI = False
   }
 
 playerAnimal = Player
@@ -80,8 +85,9 @@ playerAnimal = Player
   , fhiCondPoly = hiDweller
   , fhasGender = False
   , fdoctrine = TRoam  -- can't pick up, so no point exploring
-  , fleaderMode = LeaderNull
+  , fleaderMode = Nothing
   , fhasUI = False
+  , funderAI = True
   }
 
 -- | A special player, for summoned actors that don't belong to any
@@ -98,8 +104,9 @@ playerHorror = Player
   , fhiCondPoly = []
   , fhasGender = False
   , fdoctrine = TPatrol  -- disoriented
-  , fleaderMode = LeaderNull
+  , fleaderMode = Nothing
   , fhasUI = False
+  , funderAI = True
   }
 
 playerMonsterTourist =
@@ -108,11 +115,13 @@ playerMonsterTourist =
                     , fneverEmpty = True  -- no spawning
                     , fhiCondPoly = hiHeroMedium
                     , fdoctrine = TFollow  -- follow-the-guide, as tourists do
-                    , fleaderMode = LeaderUI $ AutoLeader False False }
+                    , fleaderMode = Just $ AutoLeader False False
+                    , funderAI = False }
 
 playerHunamConvict =
   playerCivilian { fname = "Hunam Convict"
-                 , fleaderMode = LeaderAI $ AutoLeader True False }
+                 , fleaderMode = Just $ AutoLeader True False
+                 , funderAI = True }
 
 playerAnimalMagnificent =
   playerAnimal { fname = "Animal Magnificent Specimen Variety"

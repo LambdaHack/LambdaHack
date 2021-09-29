@@ -5,7 +5,7 @@ module Game.LambdaHack.Content.ModeKind
   , ModeKind(..), makeData
   , Caves, Roster(..), TeamContinuity(..), Outcome(..)
   , HiCondPoly, HiSummand, HiPolynomial, HiIndeterminant(..)
-  , Player(..), LeaderMode(..), AutoLeader(..)
+  , Player(..), AutoLeader(..)
   , teamExplorer, victoryOutcomes, deafeatOutcomes, nameOutcomePast
   , nameOutcomeVerb, endMessageOutcome, screensave
 #ifdef EXPOSE_INTERNAL
@@ -119,22 +119,16 @@ data Player = Player
   , fdoctrine    :: Ability.Doctrine
                                 -- ^ non-leaders behave according to this
                                 --   doctrine; can be changed during the game
-  , fleaderMode  :: LeaderMode  -- ^ the mode of switching the leader
+  , fleaderMode  :: Maybe AutoLeader
+                                -- ^ whether the faction can have a leader
+                                --   and what's its switching mode;
   , fhasUI       :: Bool        -- ^ does the faction have a UI client
                                 --   (for control or passive observation)
+  , funderAI     :: Bool        -- ^ is the faction under AI control
   }
   deriving (Show, Eq, Generic)
 
 instance Binary Player
-
--- | If a faction with @LeaderUI@ and @LeaderAI@ has any actor, it has a leader.
-data LeaderMode =
-    LeaderNull  -- ^ faction can have no leader, is whole under AI control
-  | LeaderAI AutoLeader -- ^ leader under AI control
-  | LeaderUI AutoLeader -- ^ leader under UI control, assumes @fhasUI@
-  deriving (Show, Eq, Generic)
-
-instance Binary LeaderMode
 
 data AutoLeader = AutoLeader
   { autoDungeon :: Bool
@@ -197,9 +191,12 @@ endMessageOutcome = \case
 
 screensave :: AutoLeader -> ModeKind -> ModeKind
 screensave auto mk =
-  let f x@(Player{fleaderMode = LeaderAI{}}, _, _) = x
+  let f x@(Player{funderAI=True}, _, _) = x
       f (player, teamContinuity, initial) =
-          (player {fleaderMode = LeaderAI auto}, teamContinuity, initial)
+          ( player { funderAI = True
+                   , fleaderMode = Just auto }
+          , teamContinuity
+          , initial )
   in mk { mroster = (mroster mk) {rosterList = map f $ rosterList $ mroster mk}
         , mreason = "This is one of the screensaver scenarios, not available from the main menu, with all factions controlled by AI. Feel free to take over or relinquish control at any moment, but to register a legitimate high score, choose a standard scenario instead.\n" <> mreason mk
         }
@@ -253,10 +250,6 @@ validateSingleRoster caves Roster{..} =
 validateSinglePlayer :: Player -> [Text]
 validateSinglePlayer Player{..} =
   [ "fname empty:" <+> fname | T.null fname ]
-  ++ [ "no UI client, but UI leader:" <+> fname
-     | not fhasUI && case fleaderMode of
-                       LeaderUI _ -> True
-                       _ -> False ]
   ++ [ "fskillsOther not negative:" <+> fname
      | any ((>= 0) . snd) $ Ability.skillsToList fskillsOther ]
 

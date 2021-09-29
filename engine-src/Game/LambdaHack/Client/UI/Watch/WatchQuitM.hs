@@ -109,7 +109,7 @@ quitFactionUI fid toSt manalytics = do
             let getTrunkFull (aid, b) = (aid, itemToF $ btrunk b)
             ourTrunks <- getsState $ map getTrunkFull
                                      . fidActorNotProjGlobalAssocs side
-            let smartFaction fact2 = fleaderMode (gplayer fact2) /= LeaderNull
+            let smartFaction fact2 = fleaderMode (gplayer fact2) /= Nothing
                 canBeSmart = any (smartFaction . snd)
                 canBeOurFaction = any (\(fid2, _) -> fid2 == side)
                 smartEnemy trunkFull =

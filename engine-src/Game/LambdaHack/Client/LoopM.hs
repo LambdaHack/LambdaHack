@@ -32,7 +32,6 @@ import Game.LambdaHack.Common.ClientOptions
 import Game.LambdaHack.Common.Faction
 import Game.LambdaHack.Common.MonadStateRead
 import Game.LambdaHack.Common.State
-import Game.LambdaHack.Content.ModeKind
 
 -- | Client monad in which one can receive responses from the server.
 class MonadClient m => MonadClientReadResponse m where
@@ -200,12 +199,12 @@ loopUI timeOfLastQuery = do
        -- during the insert coin demo before game is started.
        side <- getsClient sside
        fact <- getsState $ (EM.! side) . sfactionD
-       if isAIFact fact && fleaderMode (gplayer fact) /= LeaderNull then
+       if isAIFact fact then
          -- Mark for immediate control regain from AI.
          modifySession $ \sess -> sess {sregainControl = True}
        else when (isJust $ gleader fact) $ do
-              -- don't give control to client if no leader, e.g., game just
-              -- ended and new one not yet started
+              -- don't give control to client if temporarily no leader,
+              -- e.g., game just ended and new one not yet started
          -- Stop displaying the prompt, if any, but keep UI simple.
          modifySession $ \sess -> sess {sreqDelay = ReqDelayHandled}
          let msg = if isNothing sreqPending

@@ -323,10 +323,8 @@ leadLevelSwitch = do
   factionD <- getsState sfactionD
   let canSwitch fact = fst (autoDungeonLevel fact)
                        -- a hack to help AI, until AI client can switch levels
-                       || case fleaderMode (gplayer fact) of
-                            LeaderNull -> False
-                            LeaderAI _ -> True
-                            LeaderUI _ -> False
+                       || funderAI (gplayer fact)
+                          && isJust (fleaderMode (gplayer fact))
       flipFaction (_, fact) | not $ canSwitch fact = return ()
       flipFaction (fid, fact) =
         case gleader fact of

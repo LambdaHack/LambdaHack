@@ -148,7 +148,7 @@ refillHP source target speedDeltaHP = assert (speedDeltaHP /= 0) $ do
   when serious $ cutCalm target
   tb <- getsState $ getActorBody target
   fact <- getsState $ (EM.! bfid tb) . sfactionD
-  unless (bproj tb || fleaderMode (gplayer fact) == LeaderNull) $
+  unless (bproj tb || fleaderMode (gplayer fact) == Nothing) $
     -- If leader just lost all HP, change the leader early (not when destroying
     -- the actor), to let players rescue him, especially if he's slowed
     -- by the attackers.
@@ -677,7 +677,7 @@ effectDominate source target iid = do
              Just (hiImpressionFid, hiImpressionK) ->
                 hiImpressionFid == bfid sb
                   -- highest impression needs to be by us
-                && (fleaderMode (gplayer fact) /= LeaderNull
+                && (fleaderMode (gplayer fact) /= Nothing
                     || hiImpressionK >= 10)
                      -- to tame/hack animal/robot, impress them a lot first
        if permitted then do
