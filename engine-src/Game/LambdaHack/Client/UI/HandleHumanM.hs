@@ -1,9 +1,9 @@
 -- | Semantics of human player commands.
 module Game.LambdaHack.Client.UI.HandleHumanM
-  ( restrictedCmdSemInCxtOfKM, updateKeyLast
+  ( cmdSemInCxtOfKM, updateKeyLast
 #ifdef EXPOSE_INTERNAL
     -- * Internal operations
-  , noRemoteHumanCmd, cmdSemInCxtOfKM, cmdSemantics
+  , noRemoteHumanCmd, cmdSemantics, cmdSemanticsLeader
   , addNoError, addLeader, weaveLeader
 #endif
   ) where
@@ -23,26 +23,6 @@ import qualified Game.LambdaHack.Client.UI.Key as K
 import           Game.LambdaHack.Client.UI.MonadClientUI
 import           Game.LambdaHack.Client.UI.SessionUI
 import           Game.LambdaHack.Common.Types
-
--- | The semantics of human player commands in terms of the client monad,
--- in context of the given @km@ as the last action.
---
--- Some time cosuming commands are enabled even in aiming mode, but cannot be
--- invoked in aiming mode on a remote level (level different than
--- the level of the leader), which is caught here.
-restrictedCmdSemInCxtOfKM :: (MonadClient m, MonadClientUI m)
-                          => K.KM -> HumanCmd -> m (Either MError ReqUI)
-restrictedCmdSemInCxtOfKM km cmd =
-  if noRemoteHumanCmd cmd then do
-    -- If in aiming mode, check if the current level is the same
-    -- as player level and refuse performing the action otherwise.
-    arena <- getArenaUI
-    lidV <- viewedLevelUI
-    if arena /= lidV then
-      weaveJust <$> failWith
-        "command disabled on a remote level, press ESC to switch back"
-    else cmdSemInCxtOfKM km cmd
-  else cmdSemInCxtOfKM km cmd
 
 -- | Commands that are forbidden on a remote level, because they
 -- would usually take time when invoked on one, but not necessarily do
@@ -68,7 +48,13 @@ updateKeyLast km cmd macroFrame = case cmd of
   Record{} -> macroFrame
   _ -> macroFrame {keyLast = Just km}
 
--- Semantics of the command in context of the given @km@ as the last action.
+-- | The semantics of human player commands in terms of the client monad,
+-- in context of the given @km@ as the last action.
+--
+-- Some time cosuming commands are enabled even in aiming mode, but cannot be
+-- invoked in aiming mode on a remote level (level different than
+-- the level of the leader). Commands that require a pointman fail
+-- when no leader is designated.
 cmdSemInCxtOfKM :: (MonadClient m, MonadClientUI m)
                 => K.KM -> HumanCmd -> m (Either MError ReqUI)
 cmdSemInCxtOfKM km cmd = do
@@ -89,7 +75,17 @@ cmdSemantics cmd = case cmdSemanticsLeader cmd of
     case mleader of
       Nothing -> weaveJust <$> failWith
         "command disabled when no pointman designated, choose another command"
-      Just leader -> f leader
+      Just leader -> do
+        if noRemoteHumanCmd cmd then do
+          -- If in aiming mode, check if the current level is the same
+          -- as player level and refuse performing the action otherwise.
+          arena <- getArenaUI
+          lidV <- viewedLevelUI
+          if arena /= lidV then
+            weaveJust <$> failWith
+              "command disabled on a remote level, press ESC to switch back"
+          else f leader
+        else f leader
 
 cmdSemanticsLeader :: (MonadClient m, MonadClientUI m)
                    => HumanCmd -> CmdLeaderNeed m

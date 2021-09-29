@@ -178,7 +178,7 @@ humanCommand = do
         modifySession $ \sess -> sess {swaitTimes = if swaitTimes sess > 0
                                                     then - swaitTimes sess
                                                     else 0}
-        restrictedCmdSemInCxtOfKM km cmd
+        cmdSemInCxtOfKM km cmd
       _ -> let msgKey = "unknown command '" <> K.showKM km <> "'"
            in weaveJust <$> failWith (T.pack msgKey)
   -- GC macro stack if there are no actions left to handle,
