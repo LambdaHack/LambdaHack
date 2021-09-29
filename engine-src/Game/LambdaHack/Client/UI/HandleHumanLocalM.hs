@@ -160,6 +160,7 @@ chooseItemDialogMode permitLoreCycle c = do
   FontSetup{..} <- getFontSetup
   side <- getsClient sside
   fact <- getsState $ (EM.! side) . sfactionD
+  leader <- getLeaderUI
   (ggi, loreFound) <- do
     mggiLore <- if permitLoreCycle && c == MLore SItem
                 then chooseItemDialogModeLore
@@ -167,10 +168,9 @@ chooseItemDialogMode permitLoreCycle c = do
     case mggiLore of
       Just rlore -> return (Right rlore, True)
       Nothing -> do
-        ggi <- getStoreItem c
+        ggi <- getStoreItem leader c
         return (ggi, False)
   recordHistory  -- item chosen, wipe out already shown msgs
-  leader <- getLeaderUI
   actorCurAndMaxSk <- getsState $ getActorMaxSkills leader
   let meleeSkill = Ability.getSk Ability.SkHurtMelee actorCurAndMaxSk
   bUI <- getsSession $ getActorUI leader
@@ -395,7 +395,8 @@ chooseItemProjectHuman ts = do
                       || IK.isymbol (itemKind itemFull) `elem` triggerSyms)
               prompt = makePhrase ["What", object1, "to"]
               promptGeneric = "What to"
-          ggi <- getGroupItem psuit prompt promptGeneric verb "fling" stores
+          ggi <- getGroupItem leader psuit prompt promptGeneric verb "fling"
+                              stores
           case ggi of
             Right (fromCStore, iid) -> do
               modifySession $ \sess ->
@@ -574,7 +575,8 @@ chooseItemApplyHuman ts = do
               fromRight False (mp cstore itemFull kit)
               && (null triggerSyms
                   || IK.isymbol (itemKind itemFull) `elem` triggerSyms)
-      ggi <- getGroupItem psuit prompt promptGeneric verb "trigger" stores
+      ggi <- getGroupItem leader psuit prompt promptGeneric verb "trigger"
+                          stores
       case ggi of
         Right (fromCStore, iid) -> do
           modifySession $ \sess ->

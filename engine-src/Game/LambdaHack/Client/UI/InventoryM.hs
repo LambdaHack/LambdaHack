@@ -106,7 +106,8 @@ slotsOfItemDialogMode cCur = do
 -- as the player can override the choice.
 -- Used e.g., for applying and projecting.
 getGroupItem :: MonadClientUI m
-             => m Suitability
+             => ActorId
+             -> m Suitability
                           -- ^ which items to consider suitable
              -> Text      -- ^ specific prompt for only suitable items
              -> Text      -- ^ generic prompt
@@ -114,7 +115,7 @@ getGroupItem :: MonadClientUI m
              -> Text      -- ^ the generic verb to use
              -> [CStore]  -- ^ stores to cycle through
              -> m (Either Text (CStore, ItemId))
-getGroupItem psuit prompt promptGeneric verb verbGeneric stores = do
+getGroupItem leader psuit prompt promptGeneric verb verbGeneric stores = do
   side <- getsClient sside
   mstash <- getsState $ \s -> gstash $ sfactionD s EM.! side
   let ppItemDialogBody v body actorSk cCur = case cCur of
@@ -123,7 +124,7 @@ getGroupItem psuit prompt promptGeneric verb verbGeneric stores = do
         MStore CGround | mstash == Just (blid body, bpos body) ->
           "greedily attempt to" <+> v <+> ppItemDialogModeIn cCur
         _ -> v <+> ppItemDialogModeFrom cCur
-  soc <- getFull psuit
+  soc <- getFull leader psuit
                  (\body _ actorSk cCur _ ->
                     prompt <+> ppItemDialogBody verb body actorSk cCur)
                  (\body _ actorSk cCur _ ->
@@ -139,9 +140,10 @@ getGroupItem psuit prompt promptGeneric verb verbGeneric stores = do
 -- or switch to any other store.
 -- Used, e.g., for viewing inventory and item descriptions.
 getStoreItem :: MonadClientUI m
-             => ItemDialogMode   -- ^ initial mode
+             => ActorId         -- ^ the pointman
+             -> ItemDialogMode  -- ^ initial mode
              -> m (Either Text ResultItemDialogMode)
-getStoreItem cInitial = do
+getStoreItem leader cInitial = do
   side <- getsClient sside
   let itemCs = map MStore [CStash, CEqp, CGround]
         -- No @COrgan@, because triggerable organs are rare and,
@@ -156,7 +158,8 @@ getStoreItem cInitial = do
       post = dropWhile (== cInitial) rest
       remCs = post ++ pre
       prompt = storeItemPrompt side
-  getItem (return SuitsEverything) prompt prompt cInitial remCs True False
+  getItem leader (return SuitsEverything) prompt prompt cInitial remCs
+          True False
 
 storeItemPrompt :: FactionId
                 -> Actor -> ActorUI -> Ability.Skills -> ItemDialogMode -> State
@@ -246,7 +249,8 @@ storeItemPrompt side body bodyUI actorCurAndMaxSk c2 s =
 -- item from a list of items. Don't display stores empty for all actors.
 -- Start with a non-empty store.
 getFull :: MonadClientUI m
-        => m Suitability    -- ^ which items to consider suitable
+        => ActorId
+        -> m Suitability    -- ^ which items to consider suitable
         -> (Actor -> ActorUI -> Ability.Skills -> ItemDialogMode -> State
             -> Text)        -- ^ specific prompt for only suitable items
         -> (Actor -> ActorUI -> Ability.Skills -> ItemDialogMode -> State
@@ -256,8 +260,7 @@ getFull :: MonadClientUI m
                             --   in the starting mode is suitable
         -> Bool             -- ^ whether to permit multiple items as a result
         -> m (Either Text (CStore, [(ItemId, ItemQuant)]))
-getFull psuit prompt promptGeneric stores askWhenLone permitMulitple = do
-  leader <- getLeaderUI
+getFull leader psuit prompt promptGeneric stores askWhenLone permitMulitple = do
   mpsuit <- psuit
   let psuitFun = case mpsuit of
         SuitsEverything -> \_ _ _ -> True
@@ -285,7 +288,7 @@ getFull psuit prompt promptGeneric stores askWhenLone permitMulitple = do
                 post = dropWhile (== cInit) rest
             in (MStore cInit, map MStore $ post ++ pre)
           (modeFirst, modeRest) = breakStores firstStore
-      res <- getItem psuit prompt promptGeneric modeFirst modeRest
+      res <- getItem leader psuit prompt promptGeneric modeFirst modeRest
                      askWhenLone permitMulitple
       case res of
         Left t -> return $ Left t
@@ -298,7 +301,8 @@ getFull psuit prompt promptGeneric stores askWhenLone permitMulitple = do
 -- | Let the human player choose a single, preferably suitable,
 -- item from a list of items.
 getItem :: MonadClientUI m
-        => m Suitability    -- ^ which items to consider suitable
+        => ActorId
+        -> m Suitability    -- ^ which items to consider suitable
         -> (Actor -> ActorUI -> Ability.Skills -> ItemDialogMode -> State
             -> Text)        -- ^ specific prompt for only suitable items
         -> (Actor -> ActorUI -> Ability.Skills -> ItemDialogMode -> State
@@ -309,15 +313,15 @@ getItem :: MonadClientUI m
                             --   in the starting mode is suitable
         -> Bool             -- ^ whether to permit multiple items as a result
         -> m (Either Text ResultItemDialogMode)
-getItem psuit prompt promptGeneric cCur cRest askWhenLone permitMulitple = do
-  leader <- getLeaderUI
+getItem leader psuit prompt promptGeneric cCur cRest askWhenLone
+        permitMulitple = do
   accessCBag <- getsState $ accessModeBag leader
   let storeAssocs = EM.assocs . accessCBag
       allAssocs = concatMap storeAssocs (cCur : cRest)
   case (allAssocs, cCur) of
     ([(iid, _)], MStore rstore) | null cRest && not askWhenLone ->
       return $ Right $ RStore rstore [iid]
-    _ -> transition psuit prompt promptGeneric permitMulitple
+    _ -> transition leader psuit prompt promptGeneric permitMulitple
                     0 cCur cRest ISuitable
 
 data DefItemKey m = DefItemKey
@@ -331,7 +335,8 @@ data Suitability =
   | SuitsSomething (Maybe CStore -> ItemFull -> ItemQuant -> Bool)
 
 transition :: forall m. MonadClientUI m
-           => m Suitability
+           => ActorId
+           -> m Suitability
            -> (Actor -> ActorUI -> Ability.Skills -> ItemDialogMode -> State
                -> Text)
            -> (Actor -> ActorUI -> Ability.Skills -> ItemDialogMode -> State
@@ -342,10 +347,9 @@ transition :: forall m. MonadClientUI m
            -> [ItemDialogMode]
            -> ItemDialogState
            -> m (Either Text ResultItemDialogMode)
-transition psuit prompt promptGeneric permitMulitple
+transition leader psuit prompt promptGeneric permitMulitple
            numPrefix cCur cRest itemDialogState = do
-  let recCall = transition psuit prompt promptGeneric permitMulitple
-  leader <- getLeaderUI
+  let recCall = transition leader psuit prompt promptGeneric permitMulitple
   actorCurAndMaxSk <- getsState $ getActorMaxSkills leader
   body <- getsState $ getActorBody leader
   bodyUI <- getsSession $ getActorUI leader

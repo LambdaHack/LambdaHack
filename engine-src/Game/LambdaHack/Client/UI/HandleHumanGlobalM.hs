@@ -869,7 +869,7 @@ selectItemsToMove stores destCStore mverb auto = do
                     IA.goesIntoEqp $ aspectRecordFull itemFull)
              else (prompt, return SuitsEverything)
        ggi <-
-         getFull psuit
+         getFull leader psuit
                  (\body _ actorSk cCur _ ->
                     prompt <+> ppItemDialogBody body actorSk cCur)
                  (\body _ actorSk cCur _ ->
