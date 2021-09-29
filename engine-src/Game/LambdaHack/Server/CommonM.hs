@@ -705,8 +705,7 @@ pickWeaponServer source = do
 currentSkillsServer :: MonadServer m => ActorId -> m Ability.Skills
 currentSkillsServer aid  = do
   body <- getsState $ getActorBody aid
-  fact <- getsState $ (EM.! bfid body) . sfactionD
-  let mleader = gleader fact
+  mleader <- getsState $ gleader . (EM.! bfid body) . sfactionD
   getsState $ actorCurrentSkills mleader aid
 
 getCacheLucid :: MonadServer m => LevelId -> m FovLucid

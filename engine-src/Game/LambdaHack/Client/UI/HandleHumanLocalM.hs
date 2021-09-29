@@ -623,20 +623,20 @@ pickLeaderHuman k = do
 
 -- * PickLeaderWithPointer
 
-pickLeaderWithPointerHuman :: MonadClientUI m => m MError
+pickLeaderWithPointerHuman :: MonadClientUI m => ActorId -> m MError
 pickLeaderWithPointerHuman = pickLeaderWithPointer
 
 -- * PointmanCycle
 
 -- | Switch current pointman to the next on the viewed level, if any, wrapping.
-pointmanCycleLevelHuman :: MonadClientUI m => Direction -> m MError
-pointmanCycleLevelHuman = pointmanCycleLevel True
+pointmanCycleLevelHuman :: MonadClientUI m => ActorId -> Direction -> m MError
+pointmanCycleLevelHuman leader = pointmanCycleLevel leader True
 
 -- * PointmanBack
 
 -- | Switch current pointman to the previous in the whole dungeon, wrapping.
-pointmanCycleHuman :: MonadClientUI m => Direction -> m MError
-pointmanCycleHuman = pointmanCycle True
+pointmanCycleHuman :: MonadClientUI m => ActorId -> Direction -> m MError
+pointmanCycleHuman leader = pointmanCycle leader True
 
 -- * SelectActor
 

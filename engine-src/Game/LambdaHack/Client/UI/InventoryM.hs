@@ -422,7 +422,7 @@ transition psuit prompt promptGeneric permitMulitple
                { defLabel = if direction == Forward then Right km else Left ""
                , defCond = maySwitchLeader cCur && not (autoDun || null hs)
                , defAction = \_ -> do
-                   err <- pointmanCycle False direction
+                   err <- pointmanCycle leader False direction
                    let !_A = assert (isNothing err `blame` err) ()
                    recCall numPrefix cCur cRest itemDialogState
                })
@@ -433,7 +433,7 @@ transition psuit prompt promptGeneric permitMulitple
                 , defCond = maySwitchLeader cCur
                             && any (\(_, b, _) -> blid b == blid body) hs
                 , defAction = \_ -> do
-                    err <- pointmanCycleLevel False direction
+                    err <- pointmanCycleLevel leader False direction
                     let !_A = assert (isNothing err `blame` err) ()
                     recCall numPrefix cCur cRest itemDialogState
                 })
@@ -464,7 +464,7 @@ transition psuit prompt promptGeneric permitMulitple
            { defLabel = Left ""
            , defCond = maySwitchLeader cCur && not (null hs)
            , defAction = \_ -> do
-               merror <- pickLeaderWithPointer
+               merror <- pickLeaderWithPointer leader
                case merror of
                  Nothing -> recCall numPrefix cCur cRest itemDialogState
                  Just{} -> return $ Left "not a menu item nor teammate position"

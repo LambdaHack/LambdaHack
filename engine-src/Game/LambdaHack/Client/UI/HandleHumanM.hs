@@ -75,7 +75,9 @@ cmdSemInCxtOfKM km cmd = do
 
 cmdSemantics :: (MonadClient m, MonadClientUI m)
              => HumanCmd -> m (Either MError ReqUI)
-cmdSemantics cmd = case cmd of
+cmdSemantics cmd = do
+ leader <- getLeaderUI
+ case cmd of
   Macro kms -> addNoError $ macroHuman kms
   ByArea l -> byAreaHuman cmdSemInCxtOfKM l
   ByAimMode AimModeCmd{..} ->
@@ -138,9 +140,11 @@ cmdSemantics cmd = case cmd of
   ChooseItemProject ts -> Left <$> chooseItemProjectHuman ts
   ChooseItemApply ts -> Left <$> chooseItemApplyHuman ts
   PickLeader k -> Left <$> pickLeaderHuman k
-  PickLeaderWithPointer -> Left <$> pickLeaderWithPointerHuman
-  PointmanCycle direction -> Left <$> pointmanCycleHuman direction
-  PointmanCycleLevel direction -> Left <$> pointmanCycleLevelHuman direction
+  PickLeaderWithPointer -> Left <$> pickLeaderWithPointerHuman leader
+  PointmanCycle direction ->
+    Left <$> pointmanCycleHuman leader direction
+  PointmanCycleLevel direction ->
+    Left <$> pointmanCycleLevelHuman leader direction
   SelectActor -> addNoError selectActorHuman
   SelectNone -> addNoError selectNoneHuman
   SelectWithPointer -> Left <$> selectWithPointerHuman

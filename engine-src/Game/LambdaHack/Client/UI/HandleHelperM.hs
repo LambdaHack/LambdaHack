@@ -105,12 +105,12 @@ weaveJust (Left ferr) = Left $ Just ferr
 weaveJust (Right a) = Right a
 
 -- | Switches current pointman to the next on the level, if any, wrapping.
-pointmanCycleLevel :: MonadClientUI m => Bool -> Direction -> m MError
-pointmanCycleLevel verbose direction = do
+pointmanCycleLevel :: MonadClientUI m
+                   => ActorId -> Bool -> Direction -> m MError
+pointmanCycleLevel leader verbose direction = do
   side <- getsClient sside
   fact <- getsState $ (EM.! side) . sfactionD
   lidV <- viewedLevelUI
-  leader <- getLeaderUI
   body <- getsState $ getActorBody leader
   hs <- partyAfterLeader leader
   let (autoDun, _) = autoDungeonLevel fact
@@ -128,11 +128,11 @@ pointmanCycleLevel verbose direction = do
       return Nothing
 
 -- | Switches current pointman to the previous in the whole dungeon, wrapping.
-pointmanCycle :: MonadClientUI m => Bool -> Direction -> m MError
-pointmanCycle verbose direction = do
+pointmanCycle :: MonadClientUI m
+              => ActorId -> Bool -> Direction -> m MError
+pointmanCycle leader verbose direction = do
   side <- getsClient sside
   fact <- getsState $ (EM.! side) . sfactionD
-  leader <- getLeaderUI
   hs <- partyAfterLeader leader
   let (autoDun, _) = autoDungeonLevel fact
   let hsSort = case direction of
@@ -149,7 +149,7 @@ pointmanCycle verbose direction = do
 
 partyAfterLeader :: MonadClientUI m => ActorId -> m [(ActorId, Actor, ActorUI)]
 partyAfterLeader leader = do
-  side <- getsState $ bfid . getActorBody leader
+  side <- getsClient sside
   sactorUI <- getsSession sactorUI
   allOurs <- getsState $ fidActorNotProjGlobalAssocs side -- not only on level
   let allOursUI = map (\(aid, b) -> (aid, b, sactorUI EM.! aid)) allOurs
@@ -185,8 +185,8 @@ pickLeader verbose aid = do
       when verbose $ msgAdd MsgAtFeetMinor $ stashBlurb <+> itemsBlurb
       return True
 
-pickLeaderWithPointer :: MonadClientUI m => m MError
-pickLeaderWithPointer = do
+pickLeaderWithPointer :: MonadClientUI m => ActorId -> m MError
+pickLeaderWithPointer leader = do
   CCUI{coscreen=ScreenContent{rheight}} <- getsSession sccui
   lidV <- viewedLevelUI
   side <- getsClient sside
@@ -207,7 +207,7 @@ pickLeaderWithPointer = do
   pUI <- getsSession spointer
   let p@(Point px py) = squareToMap $ uiToSquare pUI
   -- Pick even if no space in status line for the actor's symbol.
-  if | py == rheight - 2 && px == 0 -> pointmanCycle True Forward
+  if | py == rheight - 2 && px == 0 -> pointmanCycle leader True Forward
      | py == rheight - 2 ->
          case drop (px - 1) viewed of
            [] -> return Nothing
