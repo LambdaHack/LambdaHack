@@ -171,7 +171,7 @@ chooseItemDialogMode permitLoreCycle c = do
         return (ggi, False)
   recordHistory  -- item chosen, wipe out already shown msgs
   leader <- getLeaderUI
-  actorCurAndMaxSk <- leaderSkillsClientUI
+  actorCurAndMaxSk <- getsState $ getActorMaxSkills leader
   let meleeSkill = Ability.getSk Ability.SkHurtMelee actorCurAndMaxSk
   bUI <- getsSession $ getActorUI leader
   case ggi of
@@ -407,7 +407,7 @@ permittedProjectClient :: MonadClientUI m
                        => m (ItemFull -> Either ReqFailure Bool)
 permittedProjectClient = do
   leader <- getLeaderUI
-  actorCurAndMaxSk <- leaderSkillsClientUI
+  actorCurAndMaxSk <- getsState $ getActorMaxSkills leader
   b <- getsState $ getActorBody leader
   let skill = Ability.getSk Ability.SkProject actorCurAndMaxSk
       calmE = calmEnough b actorCurAndMaxSk
@@ -588,7 +588,7 @@ permittedApplyClient :: MonadClientUI m
 permittedApplyClient = do
   COps{corule} <- getsState scops
   leader <- getLeaderUI
-  actorCurAndMaxSk <- leaderSkillsClientUI
+  actorCurAndMaxSk <- getsState $ getActorMaxSkills leader
   b <- getsState $ getActorBody leader
   let skill = Ability.getSk Ability.SkApply actorCurAndMaxSk
       calmE = calmEnough b actorCurAndMaxSk

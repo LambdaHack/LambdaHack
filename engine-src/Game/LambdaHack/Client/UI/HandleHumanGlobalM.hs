@@ -271,7 +271,8 @@ executeIfClearHuman c1 = do
 -- | Leader waits a turn (and blocks, etc.).
 waitHuman :: MonadClientUI m => m (FailOrCmd RequestTimed)
 waitHuman = do
-  actorCurAndMaxSk <- leaderSkillsClientUI
+  leader <- getLeaderUI
+  actorCurAndMaxSk <- getsState $ getActorMaxSkills leader
   if Ability.getSk Ability.SkWait actorCurAndMaxSk > 0 then do
     modifySession $ \sess -> sess {swaitTimes = abs (swaitTimes sess) + 1}
     return $ Right ReqWait
@@ -282,7 +283,8 @@ waitHuman = do
 -- | Leader waits a 1/10th of a turn (and doesn't block, etc.).
 waitHuman10 :: MonadClientUI m => m (FailOrCmd RequestTimed)
 waitHuman10 = do
-  actorCurAndMaxSk <- leaderSkillsClientUI
+  leader <- getLeaderUI
+  actorCurAndMaxSk <- getsState $ getActorMaxSkills leader
   if Ability.getSk Ability.SkWait actorCurAndMaxSk >= 4 then do
     modifySession $ \sess -> sess {swaitTimes = abs (swaitTimes sess) + 1}
     return $ Right ReqWait10
@@ -293,7 +295,8 @@ waitHuman10 = do
 -- | Leader yells or yawns, if sleeping.
 yellHuman :: MonadClientUI m => m (FailOrCmd RequestTimed)
 yellHuman = do
-  actorCurAndMaxSk <- leaderSkillsClientUI
+  leader <- getLeaderUI
+  actorCurAndMaxSk <- getsState $ getActorMaxSkills leader
   if Ability.getSk Ability.SkWait actorCurAndMaxSk > 0
      -- If waiting drained and really, potentially, no other possible action,
      -- still allow yelling.
@@ -310,7 +313,7 @@ moveRunHuman :: (MonadClient m, MonadClientUI m)
              -> m (FailOrCmd RequestTimed)
 moveRunHuman initialStep finalGoal run runAhead dir = do
   leader <- getLeaderUI
-  actorCurAndMaxSk <- leaderSkillsClientUI
+  actorCurAndMaxSk <- getsState $ getActorMaxSkills leader
   arena <- getArenaUI
   sb <- getsState $ getActorBody leader
   fact <- getsState $ (EM.! bfid sb) . sfactionD
@@ -462,7 +465,7 @@ moveSearchAlter :: MonadClientUI m
 moveSearchAlter run dir = do
   COps{coTileSpeedup} <- getsState scops
   leader <- getLeaderUI
-  actorCurAndMaxSk <- leaderSkillsClientUI
+  actorCurAndMaxSk <- getsState $ getActorMaxSkills leader
   sb <- getsState $ getActorBody leader
   let moveSkill = Ability.getSk Ability.SkMove actorCurAndMaxSk
       spos = bpos sb           -- source position
@@ -500,7 +503,7 @@ alterCommon bumping tpos = do
   side <- getsClient sside
   factionD <- getsState sfactionD
   leader <- getLeaderUI
-  actorCurAndMaxSk <- leaderSkillsClientUI
+  actorCurAndMaxSk <- getsState $ getActorMaxSkills leader
   sb <- getsState $ getActorBody leader
   let alterSkill = Ability.getSk Ability.SkAlter actorCurAndMaxSk
       spos = bpos sb
@@ -732,7 +735,8 @@ moveItemHuman :: forall m. MonadClientUI m
               -> m (FailOrCmd RequestTimed)
 moveItemHuman stores destCStore mverb auto = do
   let !_A = assert (destCStore `notElem` stores) ()
-  actorCurAndMaxSk <- leaderSkillsClientUI
+  leader <- getLeaderUI
+  actorCurAndMaxSk <- getsState $ getActorMaxSkills leader
   if Ability.getSk Ability.SkMoveItem actorCurAndMaxSk > 0
   then moveOrSelectItem stores destCStore mverb auto
   else failSer MoveItemUnskilled
@@ -747,7 +751,7 @@ moveOrSelectItem :: forall m. MonadClientUI m
 moveOrSelectItem storesRaw destCStore mverb auto = do
   leader <- getLeaderUI
   b <- getsState $ getActorBody leader
-  actorCurAndMaxSk <- leaderSkillsClientUI
+  actorCurAndMaxSk <- getsState $ getActorMaxSkills leader
   mstash <- getsState $ \s -> gstash $ sfactionD s EM.! bfid b
   let calmE = calmEnough b actorCurAndMaxSk
       overStash = mstash == Just (blid b, bpos b)
@@ -808,7 +812,7 @@ selectItemsToMove :: forall m. MonadClientUI m
 selectItemsToMove stores destCStore mverb auto = do
   let verb = fromMaybe (verbCStore destCStore) mverb
   leader <- getLeaderUI
-  actorCurAndMaxSk <- leaderSkillsClientUI
+  actorCurAndMaxSk <- getsState $ getActorMaxSkills leader
   b <- getsState $ getActorBody leader
   mstash <- getsState $ \s -> gstash $ sfactionD s EM.! bfid b
   lastItemMove <- getsSession slastItemMove
@@ -884,7 +888,7 @@ moveItems :: forall m. MonadClientUI m
 moveItems stores (fromCStore, l) destCStore = do
   let !_A = assert (fromCStore /= destCStore && fromCStore `elem` stores) ()
   leader <- getLeaderUI
-  actorCurAndMaxSk <- leaderSkillsClientUI
+  actorCurAndMaxSk <- getsState $ getActorMaxSkills leader
   b <- getsState $ getActorBody leader
   discoBenefit <- getsClient sdiscoBenefit
   let calmE = calmEnough b actorCurAndMaxSk
@@ -941,7 +945,8 @@ moveItems stores (fromCStore, l) destCStore = do
 projectHuman :: (MonadClient m, MonadClientUI m) => m (FailOrCmd RequestTimed)
 projectHuman = do
   curChal <- getsClient scurChal
-  actorCurAndMaxSk <- leaderSkillsClientUI
+  leader <- getLeaderUI
+  actorCurAndMaxSk <- getsState $ getActorMaxSkills leader
   if | ckeeper curChal ->
        failSer ProjectFinderKeeper
      | Ability.getSk Ability.SkProject actorCurAndMaxSk <= 0 ->
@@ -952,7 +957,6 @@ projectHuman = do
        case itemSel of
          Just (_, COrgan, _) -> failWith "can't fling an organ"
          Just (iid, fromCStore, _) -> do
-           leader <- getLeaderUI
            b <- getsState $ getActorBody leader
            bag <- getsState $ getBodyStoreBag b fromCStore
            case iid `EM.lookup` bag of
@@ -968,7 +972,7 @@ projectItem :: (MonadClient m, MonadClientUI m)
             -> m (FailOrCmd RequestTimed)
 projectItem (fromCStore, (iid, itemFull)) = do
   leader <- getLeaderUI
-  actorCurAndMaxSk <- leaderSkillsClientUI
+  actorCurAndMaxSk <- getsState $ getActorMaxSkills leader
   b <- getsState $ getActorBody leader
   let calmE = calmEnough b actorCurAndMaxSk
   if fromCStore == CEqp && not calmE then failSer ItemNotCalm
@@ -1002,7 +1006,8 @@ projectItem (fromCStore, (iid, itemFull)) = do
 
 applyHuman :: MonadClientUI m => m (FailOrCmd RequestTimed)
 applyHuman = do
-  actorCurAndMaxSk <- leaderSkillsClientUI
+  leader <- getLeaderUI
+  actorCurAndMaxSk <- getsState $ getActorMaxSkills leader
   if Ability.getSk Ability.SkApply
                    actorCurAndMaxSk <= 0 then  -- detailed check later
     failSer ApplyUnskilled
@@ -1010,7 +1015,6 @@ applyHuman = do
     itemSel <- getsSession sitemSel
     case itemSel of
       Just (iid, fromCStore, _) -> do
-        leader <- getLeaderUI
         b <- getsState $ getActorBody leader
         bag <- getsState $ getBodyStoreBag b fromCStore
         case iid `EM.lookup` bag of
@@ -1026,7 +1030,7 @@ applyItem :: MonadClientUI m
 applyItem (fromCStore, (iid, (itemFull, kit))) = do
   COps{corule} <- getsState scops
   leader <- getLeaderUI
-  actorCurAndMaxSk <- leaderSkillsClientUI
+  actorCurAndMaxSk <- getsState $ getActorMaxSkills leader
   b <- getsState $ getActorBody leader
   localTime <- getsState $ getLocalTime (blid b)
   let skill = Ability.getSk Ability.SkApply actorCurAndMaxSk
@@ -1299,7 +1303,7 @@ closeTileAtPos :: MonadClientUI m
 closeTileAtPos tpos = do
   COps{coTileSpeedup} <- getsState scops
   leader <- getLeaderUI
-  actorCurAndMaxSk <- leaderSkillsClientUI
+  actorCurAndMaxSk <- getsState $ getActorMaxSkills leader
   b <- getsState $ getActorBody leader
   alterable <- getsState $ tileAlterable (blid b) tpos
   lvl <- getLevel $ blid b
@@ -1498,7 +1502,7 @@ itemMenuHuman cmdSemInCxtOfKM = do
         Nothing -> weaveJust <$> failWith "no item to open item menu for"
         Just kit -> do
           CCUI{coscreen=ScreenContent{rwidth, rheight}} <- getsSession sccui
-          actorCurAndMaxSk <- leaderSkillsClientUI
+          actorCurAndMaxSk <- getsState $ getActorMaxSkills leader
           itemFull <- getsState $ itemToFull iid
           localTime <- getsState $ getLocalTime (blid b)
           found <- getsState $ findIid leader (bfid b) iid

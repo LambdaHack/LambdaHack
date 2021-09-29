@@ -18,7 +18,7 @@ module Game.LambdaHack.Client.UI.MonadClientUI
   , getFontSetup, scoreToSlideshow, defaultHistory
   , tellAllClipPS, tellGameClipPS, elapsedSessionTimeGT
   , resetSessionStart, resetGameStart, partActorLeader, partPronounLeader
-  , tryRestore, leaderSkillsClientUI, rndToActionUI, tryOpenBrowser
+  , tryRestore, rndToActionUI, tryOpenBrowser
 #ifdef EXPOSE_INTERNAL
     -- * Internal operations
   , connFrontend, displayFrame
@@ -80,7 +80,6 @@ import           Game.LambdaHack.Common.Types
 import           Game.LambdaHack.Content.ModeKind
 import           Game.LambdaHack.Content.RuleKind
 import           Game.LambdaHack.Core.Random
-import qualified Game.LambdaHack.Definition.Ability as Ability
 
 -- Assumes no interleaving with other clients, because each UI client
 -- in a different terminal/window/machine.
@@ -499,13 +498,6 @@ tryRestore = do
     dataDir <- liftIO appDataDir
     liftIO $ tryWriteFile (dataDir </> cfgUIName) configString
     return res
-
--- For a leader, the skills are both current and max skills.
-leaderSkillsClientUI :: MonadClientUI m => m Ability.Skills
-{-# INLINE leaderSkillsClientUI #-}
-leaderSkillsClientUI = do
-  leader <- getLeaderUI
-  getsState $ getActorMaxSkills leader
 
 -- | Invoke pseudo-random computation with the generator kept in the session.
 rndToActionUI :: MonadClientUI m => Rnd a -> m a

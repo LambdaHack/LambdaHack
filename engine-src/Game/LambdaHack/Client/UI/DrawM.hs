@@ -691,7 +691,7 @@ drawLeaderStatus waitT = do
 drawLeaderDamage :: MonadClientUI m => Int -> ActorId -> m AttrString
 drawLeaderDamage width leader = do
   kitAssRaw <- getsState $ kitAssocs leader [CEqp, COrgan]
-  actorCurAndMaxSk <- leaderSkillsClientUI
+  actorCurAndMaxSk <- getsState $ getActorMaxSkills leader
   let unBurn (IK.Burn d) = Just d
       unBurn _ = Nothing
       unRefillHP (IK.RefillHP n) = Just n

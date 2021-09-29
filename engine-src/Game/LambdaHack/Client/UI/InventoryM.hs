@@ -346,7 +346,7 @@ transition psuit prompt promptGeneric permitMulitple
            numPrefix cCur cRest itemDialogState = do
   let recCall = transition psuit prompt promptGeneric permitMulitple
   leader <- getLeaderUI
-  actorCurAndMaxSk <- leaderSkillsClientUI
+  actorCurAndMaxSk <- getsState $ getActorMaxSkills leader
   body <- getsState $ getActorBody leader
   bodyUI <- getsSession $ getActorUI leader
   fact <- getsState $ (EM.! bfid body) . sfactionD
