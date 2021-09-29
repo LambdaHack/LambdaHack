@@ -486,7 +486,7 @@ moveSearchAlter run dir = do
       setXHairFromGUI sxhair
       if run then do
         -- Explicit request to examine the terrain.
-        blurb <- lookAtPosition (blid sb) tpos
+        blurb <- lookAtPosition leader (blid sb) tpos
         mapM_ (uncurry msgAdd) blurb
         failWith $ "the terrain is" <+>
           if | Tile.isModifiable coTileSpeedup t -> "potentially modifiable"
@@ -541,7 +541,7 @@ alterCommon bumping tpos = do
        && not underFeet
        && alterSkill < Tile.alterMinSkill coTileSpeedup t -> do
          -- Rather rare (requires high skill), so describe the tile.
-         blurb <- lookAtPosition (blid sb) tpos
+         blurb <- lookAtPosition leader (blid sb) tpos
          mapM_ (uncurry msgAdd) blurb
          modificationFailureHint
          failSer AlterUnwalked
@@ -553,7 +553,7 @@ alterCommon bumping tpos = do
          -- Don't mislead describing terrain, if other actor is to blame.
          failSer AlterBlockActor
      | otherwise -> do  -- promising
-         verAlters <- verifyAlters bumping leader tpos
+         verAlters <- verifyAlters leader bumping tpos
          case verAlters of
            Right () ->
              if bumping then
@@ -1086,10 +1086,10 @@ alterTileAtPos pos = do
 -- triggered and the player is aware if the effect is dangerous or grave,
 -- such as ending the game.
 verifyAlters :: forall m. MonadClientUI m
-             => Bool -> ActorId -> Point -> m (FailOrCmd ())
-verifyAlters bumping source tpos = do
+             => ActorId -> Bool -> Point -> m (FailOrCmd ())
+verifyAlters leader bumping tpos = do
   COps{cotile, coTileSpeedup} <- getsState scops
-  sb <- getsState $ getActorBody source
+  sb <- getsState $ getActorBody leader
   arItem <- getsState $ aspectRecordFromIid $ btrunk sb
   embeds <- getsState $ getEmbedBag (blid sb) tpos
   lvl <- getLevel $ blid sb
@@ -1113,18 +1113,18 @@ verifyAlters bumping source tpos = do
      && not underFeet
      && Tile.isModifiable coTileSpeedup tile
   then failSer AlterBlockItem
-  else processTileActions bumping source tpos tileActions
+  else processTileActions leader bumping tpos tileActions
 
 processTileActions :: forall m. MonadClientUI m
-                   => Bool -> ActorId -> Point -> [Tile.TileAction]
+                   => ActorId -> Bool -> Point -> [Tile.TileAction]
                    -> m (FailOrCmd ())
-processTileActions bumping source tpos tas = do
+processTileActions leader bumping tpos tas = do
   COps{coTileSpeedup} <- getsState scops
   getKind <- getsState $ flip getIidKind
-  sb <- getsState $ getActorBody source
+  sb <- getsState $ getActorBody leader
   lvl <- getLevel $ blid sb
   sar <- getsState $ aspectRecordFromIid $ btrunk sb
-  let sourceIsMist = IA.checkFlag Ability.Blast sar
+  let leaderIsMist = IA.checkFlag Ability.Blast sar
                      && Dice.infDice (IK.idamage $ getKind $ btrunk sb) <= 0
       tileMinSkill = Tile.alterMinSkill coTileSpeedup $ lvl `at` tpos
       processTA :: Maybe Bool -> [Tile.TileAction] -> Bool
@@ -1150,7 +1150,7 @@ processTileActions bumping source tpos tas = do
           -- take the risk of wasted turn to verify the assumption.
           -- If the item recharges, the wasted turns let the player wait.
           let useResult = fromMaybe False museResult
-          if | sourceIsMist
+          if | leaderIsMist
                || bproj sb && tileMinSkill > 0 ->  -- local skill check
                processTA (Just useResult) rest bumpFailed
                  -- embed won't fire; try others
@@ -1175,8 +1175,8 @@ processTileActions bumping source tpos tas = do
           if not bumping || null tools0 then
             if fromMaybe True museResult then do
               -- UI requested, so this is voluntary, so item loss is fine.
-              kitAssG <- getsState $ kitAssocs source [CGround]
-              kitAssE <- getsState $ kitAssocs source [CEqp]
+              kitAssG <- getsState $ kitAssocs leader [CGround]
+              kitAssE <- getsState $ kitAssocs leader [CEqp]
               let kitAss = listToolsToConsume kitAssG kitAssE
                   grps0 = map (\(x, y) -> (False, x, y)) tools0
                     -- apply if durable
@@ -1202,7 +1202,7 @@ processTileActions bumping source tpos tas = do
     Right Nothing -> return $ Right ()
     Right (Just (useResult, bumpFailed)) -> do
       let !_A = assert (not useResult || bumpFailed) ()
-      blurb <- lookAtPosition (blid sb) tpos
+      blurb <- lookAtPosition leader (blid sb) tpos
       mapM_ (uncurry msgAdd) blurb
       if bumpFailed then do
         revCmd <- revCmdMap

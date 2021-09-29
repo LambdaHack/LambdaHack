@@ -981,7 +981,7 @@ doLook = do
       mxhairPos <- mxhairToPos
       xhairPos <- xhairToPos
       b <- getsState $ getActorBody leader
-      blurb <- lookAtPosition lidV xhairPos
+      blurb <- lookAtPosition leader lidV xhairPos
       itemSel <- getsSession sitemSel
       outOfRangeBlurb <-
         if lidV /= blid b  -- no range warnings on remote levels

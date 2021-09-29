@@ -794,11 +794,10 @@ lookAtStash lidV p = do
 -- | Produces a textual description of everything at the requested
 -- level's position.
 lookAtPosition :: MonadClientUI m
-               => LevelId -> Point -> m [(MsgClassShow, Text)]
-lookAtPosition lidV p = do
+               => ActorId -> LevelId -> Point -> m [(MsgClassShow, Text)]
+lookAtPosition leader lidV p = do
   COps{cotile} <- getsState scops
   side <- getsClient sside
-  leader <- getLeaderUI
   per <- getPerFid lidV
   let canSee = ES.member p (totalVisible per)
   (actorsBlurb, mactorPronounAlive, actorsDesc) <- lookAtActors p lidV
