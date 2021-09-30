@@ -935,6 +935,7 @@ moveActor aid source target = do
     let ps = (source, target)
     animate (blid body) $ teleport ps
   lookAtMove aid
+  stopAtMove aid
 
 displaceActorUI :: MonadClientUI m => ActorId -> ActorId -> m ()
 displaceActorUI source target = do
@@ -949,8 +950,10 @@ displaceActorUI source target = do
       msg = makeSentence [MU.SubjectVerbSg spart "displace", tpart]
   msgAdd msgClass msg
   lookAtMove source
-  when (bfid sb /= bfid tb) $
+  stopAtMove source
+  when (bfid sb /= bfid tb) $ do
     lookAtMove target  -- in case only this one is ours
+    stopAtMove target
   side <- getsClient sside
   -- Ours involved, but definitely not requested by player via UI.
   when (side `elem` [bfid sb, bfid tb] && mleader /= Just source) stopPlayBack

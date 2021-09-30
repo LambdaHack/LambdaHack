@@ -1,6 +1,6 @@
 -- | Common code for displaying atomic update and SFX commands.
 module Game.LambdaHack.Client.UI.Watch.WatchCommonM
-  ( pushFrame, fadeOutOrIn, markDisplayNeeded, lookAtMove
+  ( pushFrame, fadeOutOrIn, markDisplayNeeded, lookAtMove, stopAtMove
   , aidVerbMU, aidVerbDuplicateMU, itemVerbMUGeneral, itemVerbMU
   , itemVerbMUShort, itemAidVerbMU, mitemAidVerbMU, itemAidDistinctMU
   , manyItemsAidVerbMU
@@ -89,6 +89,11 @@ lookAtMove aid = do
         blurb = stashBlurb <+> itemsBlurb
     unless (T.null blurb) $
       msgAdd msgClass blurb
+
+stopAtMove :: MonadClientUI m => ActorId -> m ()
+stopAtMove aid = do
+  body <- getsState $ getActorBody aid
+  side <- getsClient sside
   fact <- getsState $ (EM.! bfid body) . sfactionD
   adjBigAssocs <- getsState $ adjacentBigAssocs body
   adjProjAssocs <- getsState $ adjacentProjAssocs body
