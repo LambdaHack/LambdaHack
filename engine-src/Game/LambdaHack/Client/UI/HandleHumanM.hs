@@ -64,13 +64,13 @@ cmdSemInCxtOfKM km cmd = do
 
 data CmdLeaderNeed m =
     CmdNoNeed (m (Either MError ReqUI))
-  | CmdNeed (ActorId -> m (Either MError ReqUI))
+  | CmdLeader (ActorId -> m (Either MError ReqUI))
 
 cmdSemantics :: (MonadClient m, MonadClientUI m)
              => HumanCmd -> m (Either MError ReqUI)
 cmdSemantics cmd = case cmdSemanticsLeader cmd of
   CmdNoNeed mreq -> mreq
-  CmdNeed f -> do
+  CmdLeader f -> do
     mleader <- getsClient sleader
     case mleader of
       Nothing -> weaveJust <$> failWith
@@ -110,7 +110,8 @@ cmdSemanticsLeader cmd = case cmd of
                  (ReqUITimed <$$> moveRunHuman leader True True False False v)
   RunDir v -> weaveLeader $ \leader ->
                 (ReqUITimed <$$> moveRunHuman leader True True True True v)
-  RunOnceAhead -> CmdNeed $ \leader -> ReqUITimed <$$> runOnceAheadHuman leader
+  RunOnceAhead ->
+    CmdLeader $ \leader -> ReqUITimed <$$> runOnceAheadHuman leader
   MoveOnceToXhair -> weaveLeader $ \leader ->
                        (ReqUITimed <$$> moveOnceToXhairHuman leader)
   RunOnceToXhair  -> weaveLeader $ \leader ->
@@ -128,9 +129,9 @@ cmdSemanticsLeader cmd = case cmd of
   CloseDir -> weaveLeader $ \leader -> (ReqUITimed <$$> closeDirHuman leader)
   Help -> CmdNoNeed $ helpHuman cmdSemInCxtOfKM
   Hint -> CmdNoNeed $ hintHuman cmdSemInCxtOfKM
-  ItemMenu -> CmdNeed $ \leader -> itemMenuHuman leader cmdSemInCxtOfKM
+  ItemMenu -> CmdLeader $ \leader -> itemMenuHuman leader cmdSemInCxtOfKM
   ChooseItemMenu dialogMode ->
-    CmdNeed $ \leader -> chooseItemMenuHuman leader cmdSemInCxtOfKM dialogMode
+    CmdLeader $ \leader -> chooseItemMenuHuman leader cmdSemInCxtOfKM dialogMode
   MainMenu -> CmdNoNeed $ mainMenuHuman cmdSemInCxtOfKM
   MainMenuAutoOn -> CmdNoNeed $ mainMenuAutoOnHuman cmdSemInCxtOfKM
   MainMenuAutoOff -> CmdNoNeed $ mainMenuAutoOffHuman cmdSemInCxtOfKM
@@ -161,18 +162,18 @@ cmdSemanticsLeader cmd = case cmd of
   AutomateBack -> CmdNoNeed $ automateBackHuman
 
   ChooseItem dialogMode ->
-    CmdNeed $ \leader -> Left <$> chooseItemHuman leader dialogMode
+    CmdLeader $ \leader -> Left <$> chooseItemHuman leader dialogMode
   ChooseItemProject ts ->
-    CmdNeed $ \leader -> Left <$> chooseItemProjectHuman leader ts
+    CmdLeader $ \leader -> Left <$> chooseItemProjectHuman leader ts
   ChooseItemApply ts ->
-    CmdNeed $ \leader -> Left <$> chooseItemApplyHuman leader ts
+    CmdLeader $ \leader -> Left <$> chooseItemApplyHuman leader ts
   PickLeader k -> CmdNoNeed $ Left <$> pickLeaderHuman k
   PickLeaderWithPointer ->
-    CmdNeed $ \leader -> Left <$> pickLeaderWithPointerHuman leader
+    CmdLeader $ \leader -> Left <$> pickLeaderWithPointerHuman leader
   PointmanCycle direction ->
-    CmdNeed $ \leader -> Left <$> pointmanCycleHuman leader direction
+    CmdLeader $ \leader -> Left <$> pointmanCycleHuman leader direction
   PointmanCycleLevel direction ->
-    CmdNeed $ \leader -> Left <$> pointmanCycleLevelHuman leader direction
+    CmdLeader $ \leader -> Left <$> pointmanCycleLevelHuman leader direction
   SelectActor -> addLeader selectActorHuman
   SelectNone -> addNoError selectNoneHuman
   SelectWithPointer -> CmdNoNeed $ Left <$> selectWithPointerHuman
@@ -207,9 +208,9 @@ cmdSemanticsLeader cmd = case cmd of
   AimItem -> addLeader aimItemHuman
   AimAscend k -> CmdNoNeed $ Left <$> aimAscendHuman k
   EpsIncr b -> addNoError $ epsIncrHuman b
-  XhairUnknown -> CmdNeed $ \leader -> Left <$> xhairUnknownHuman leader
-  XhairItem -> CmdNeed $ \leader -> Left <$> xhairItemHuman leader
-  XhairStair up -> CmdNeed $ \leader -> Left <$> xhairStairHuman leader up
+  XhairUnknown -> CmdLeader $ \leader -> Left <$> xhairUnknownHuman leader
+  XhairItem -> CmdLeader $ \leader -> Left <$> xhairItemHuman leader
+  XhairStair up -> CmdLeader $ \leader -> Left <$> xhairStairHuman leader up
   XhairPointerFloor -> addNoError xhairPointerFloorHuman
   XhairPointerMute -> addNoError xhairPointerMuteHuman
   XhairPointerEnemy -> addNoError xhairPointerEnemyHuman
@@ -221,8 +222,8 @@ addNoError cmdCli = CmdNoNeed $ cmdCli >> return (Left Nothing)
 
 addLeader :: Monad m => (ActorId -> m ()) -> CmdLeaderNeed m
 addLeader cmdCli =
-  CmdNeed $ \leader -> cmdCli leader >> return (Left Nothing)
+  CmdLeader $ \leader -> cmdCli leader >> return (Left Nothing)
 
 weaveLeader :: Monad m => (ActorId -> m (FailOrCmd ReqUI)) -> CmdLeaderNeed m
 weaveLeader cmdCli =
-  CmdNeed $ \leader -> weaveJust <$> cmdCli leader
+  CmdLeader $ \leader -> weaveJust <$> cmdCli leader
