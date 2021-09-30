@@ -978,23 +978,21 @@ doLook = do
       let lidV = aimLevelId aimMode
       mxhairPos <- mxhairToPos
       xhairPos <- xhairToPos
-      b <- getsState $ getActorBody leader
       blurb <- lookAtPosition leader lidV xhairPos
       itemSel <- getsSession sitemSel
-      outOfRangeBlurb <-
-        if lidV /= blid b  -- no range warnings on remote levels
-           || detailLevel aimMode < DetailAll  -- no spam
-        then return []
-        else case mxhairPos of
-          Nothing -> return []
-          Just pos -> case itemSel of
-            Just (iid, _, _) -> do
-              itemFull <- getsState $ itemToFull iid
-              let arItem = aspectRecordFull itemFull
-              return [ (MsgPromptGeneric, "This position is out of range when flinging the selected item.")
-                     | 1 + IA.totalRange arItem (itemKind itemFull)
-                       < chessDist (bpos b) pos ]
-            Nothing -> return []
+      outOfRangeBlurb <- case (itemSel, mxhairPos) of
+        (Just (iid, _, _), Just pos) -> do
+          b <- getsState $ getActorBody leader
+          if lidV /= blid b  -- no range warnings on remote levels
+             || detailLevel aimMode < DetailAll  -- no spam
+          then return []
+          else do
+            itemFull <- getsState $ itemToFull iid
+            let arItem = aspectRecordFull itemFull
+            return [ (MsgPromptGeneric, "This position is out of range when flinging the selected item.")
+                   | 1 + IA.totalRange arItem (itemKind itemFull)
+                     < chessDist (bpos b) pos ]
+        _ -> return []
       mapM_ (uncurry msgAdd) $ blurb ++ outOfRangeBlurb
     _ -> return ()
 
