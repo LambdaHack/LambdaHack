@@ -180,8 +180,9 @@ pickLeader verbose aid = do
       modifySession $ \sess -> sess {saimMode =
         (\aimMode -> aimMode {aimLevelId = blid body}) <$> saimMode sess}
       -- Inform about items, etc.
-      (itemsBlurb, _) <- lookAtItems True (bpos body) (Just aid) Nothing
-      stashBlurb <- lookAtStash (blid body) (bpos body)
+      (itemsBlurb, _) <-
+        lookAtItems True (bpos body) (blid body) (Just aid) Nothing
+      stashBlurb <- lookAtStash (bpos body) (blid body)
       when verbose $ msgAdd MsgAtFeetMinor $ stashBlurb <+> itemsBlurb
       return True
 
@@ -549,11 +550,11 @@ pickNumber askNumber kAll = assert (kAll >= 1) $ do
 lookAtTile :: MonadClientUI m
            => Bool             -- ^ can be seen right now?
            -> Point            -- ^ position to describe
-           -> Maybe ActorId    -- ^ the actor that looks
            -> LevelId          -- ^ level the position is at
+           -> Maybe ActorId    -- ^ the actor that looks
            -> Maybe MU.Person  -- ^ grammatical person of the item(s), if any
            -> m (Text, Text, [(Int, MU.Part)])
-lookAtTile canSee p maid lidV mperson = do
+lookAtTile canSee p lidV maid mperson = do
   CCUI{coscreen=ScreenContent{rwidth}} <- getsSession sccui
   cops@COps{cotile, coplace} <- getsState scops
   side <- getsClient sside
@@ -726,13 +727,14 @@ guardItemSize body s =
 lookAtItems :: MonadClientUI m
             => Bool     -- ^ can be seen right now?
             -> Point    -- ^ position to describe
+            -> LevelId  -- ^ level the position is at
             -> Maybe ActorId
                         -- ^ the actor that looks
             -> Maybe (MU.Part, Bool)
                         -- ^ pronoun for the big actor at the position, if any,
                         --   and whether the big actor is alive
             -> m (Text, Maybe MU.Person)
-lookAtItems canSee p maid mactorPronounAlive = do
+lookAtItems canSee p lidV maid mactorPronounAlive = do
   -- tmp hack:
   let aid = fromJust maid
   b <- getsState $ getActorBody aid
@@ -743,8 +745,7 @@ lookAtItems canSee p maid mactorPronounAlive = do
   mb <- getsState $ \s -> flip getActorBody s <$> maid
   -- Not using @viewedLevelUI@, because @aid@ may be temporarily not a leader.
   saimMode <- getsSession saimMode
-  let lidV = maybe (blid b) aimLevelId saimMode
-      standingOn = p == bpos b && lidV == blid b
+  let standingOn = p == bpos b && lidV == blid b
       -- In exploration mode the detail level depends on whether the actor
       -- that looks stand over the items, because then he can check details
       -- with inventory commands (or look in aiming mode).
@@ -791,8 +792,8 @@ lookAtItems canSee p maid mactorPronounAlive = do
            else makeSentence [MU.SubjectVerbSg subject (MU.Text verb), object]
          , if isNothing mactorPronounAlive then Just person else Nothing )
 
-lookAtStash :: MonadClientUI m => LevelId -> Point -> m Text
-lookAtStash lidV p = do
+lookAtStash :: MonadClientUI m => Point -> LevelId -> m Text
+lookAtStash p lidV = do
   side <- getsClient sside
   factionD <- getsState sfactionD
   let locateStash (fid, fact) = case gstash fact of
@@ -807,23 +808,24 @@ lookAtStash lidV p = do
 -- | Produces a textual description of everything at the requested
 -- level's position.
 lookAtPosition :: MonadClientUI m
-               => ActorId -> LevelId -> Point -> m [(MsgClassShow, Text)]
-lookAtPosition leader lidV p = do
+               => ActorId -> Point -> LevelId -> m [(MsgClassShow, Text)]
+lookAtPosition leader p lidV = do
   COps{cotile} <- getsState scops
   side <- getsClient sside
   per <- getPerFid lidV
   let canSee = ES.member p (totalVisible per)
   (actorsBlurb, mactorPronounAlive, actorsDesc) <- lookAtActors p lidV
-  (itemsBlurb, mperson) <- lookAtItems canSee p (Just leader) mactorPronounAlive
+  (itemsBlurb, mperson) <-
+    lookAtItems canSee p lidV (Just leader) mactorPronounAlive
   let tperson = if T.null itemsBlurb then Nothing else mperson
   (tileBlurb, placeBlurb, embedsList) <-
-    lookAtTile canSee p (Just leader) lidV tperson
+    lookAtTile canSee p lidV (Just leader) tperson
   inhabitants <- getsState $ posToAidAssocs p lidV
   let actorMsgClass =
         if (bfid . snd <$> inhabitants) == [side]
         then MsgPromptGeneric  -- our single proj or non-proj; tame
         else MsgPromptActors
-  stashBlurb <- lookAtStash lidV p
+  stashBlurb <- lookAtStash p lidV
   lvl@Level{lsmell, ltime} <- getLevel lidV
   saimMode <- getsSession saimMode
   let detail = maybe DetailAll detailLevel saimMode

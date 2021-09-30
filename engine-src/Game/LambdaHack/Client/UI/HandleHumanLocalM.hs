@@ -978,7 +978,7 @@ doLook = do
       let lidV = aimLevelId aimMode
       mxhairPos <- mxhairToPos
       xhairPos <- xhairToPos
-      blurb <- lookAtPosition leader lidV xhairPos
+      blurb <- lookAtPosition leader xhairPos lidV
       itemSel <- getsSession sitemSel
       outOfRangeBlurb <- case (itemSel, mxhairPos) of
         (Just (iid, _, _), Just pos) -> do
