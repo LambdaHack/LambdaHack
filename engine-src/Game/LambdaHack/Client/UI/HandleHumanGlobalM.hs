@@ -481,7 +481,7 @@ moveSearchAlter leader run dir = do
       setXHairFromGUI sxhair
       if run then do
         -- Explicit request to examine the terrain.
-        blurb <- lookAtPosition leader tpos (blid sb)
+        blurb <- lookAtPosition tpos (blid sb)
         mapM_ (uncurry msgAdd) blurb
         failWith $ "the terrain is" <+>
           if | Tile.isModifiable coTileSpeedup t -> "potentially modifiable"
@@ -535,7 +535,7 @@ alterCommon leader bumping tpos = do
        && not underFeet
        && alterSkill < Tile.alterMinSkill coTileSpeedup t -> do
          -- Rather rare (requires high skill), so describe the tile.
-         blurb <- lookAtPosition leader tpos (blid sb)
+         blurb <- lookAtPosition tpos (blid sb)
          mapM_ (uncurry msgAdd) blurb
          modificationFailureHint
          failSer AlterUnwalked
@@ -1189,7 +1189,7 @@ processTileActions leader bumping tpos tas = do
     Right Nothing -> return $ Right ()
     Right (Just (useResult, bumpFailed)) -> do
       let !_A = assert (not useResult || bumpFailed) ()
-      blurb <- lookAtPosition leader tpos (blid sb)
+      blurb <- lookAtPosition tpos (blid sb)
       mapM_ (uncurry msgAdd) blurb
       if bumpFailed then do
         revCmd <- revCmdMap

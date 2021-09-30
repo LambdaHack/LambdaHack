@@ -805,18 +805,19 @@ lookAtStash p lidV = do
 -- | Produces a textual description of everything at the requested
 -- level's position.
 lookAtPosition :: MonadClientUI m
-               => ActorId -> Point -> LevelId -> m [(MsgClassShow, Text)]
-lookAtPosition leader p lidV = do
+               => Point -> LevelId -> m [(MsgClassShow, Text)]
+lookAtPosition p lidV = do
   COps{cotile} <- getsState scops
   side <- getsClient sside
   per <- getPerFid lidV
   let canSee = ES.member p (totalVisible per)
   (actorsBlurb, mactorPronounAlive, actorsDesc) <- lookAtActors p lidV
+  mleader <- getsClient sleader
   (itemsBlurb, mperson) <-
-    lookAtItems canSee p lidV (Just leader) mactorPronounAlive
+    lookAtItems canSee p lidV mleader mactorPronounAlive
   let tperson = if T.null itemsBlurb then Nothing else mperson
   (tileBlurb, placeBlurb, embedsList) <-
-    lookAtTile canSee p lidV (Just leader) tperson
+    lookAtTile canSee p lidV mleader tperson
   inhabitants <- getsState $ posToAidAssocs p lidV
   let actorMsgClass =
         if (bfid . snd <$> inhabitants) == [side]

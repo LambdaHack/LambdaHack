@@ -972,16 +972,16 @@ clearTargetIfItemClearHuman leader = do
 doLook :: MonadClientUI m => m ()
 doLook = do
   saimMode <- getsSession saimMode
-  mleader <- getsClient sleader
-  case (saimMode, mleader) of
-    (Just aimMode, Just leader) -> do
+  case saimMode of
+    Just aimMode -> do
       let lidV = aimLevelId aimMode
       mxhairPos <- mxhairToPos
       xhairPos <- xhairToPos
-      blurb <- lookAtPosition leader xhairPos lidV
+      blurb <- lookAtPosition xhairPos lidV
       itemSel <- getsSession sitemSel
-      outOfRangeBlurb <- case (itemSel, mxhairPos) of
-        (Just (iid, _, _), Just pos) -> do
+      mleader <- getsClient sleader
+      outOfRangeBlurb <- case (itemSel, mxhairPos, mleader) of
+        (Just (iid, _, _), Just pos, Just leader) -> do
           b <- getsState $ getActorBody leader
           if lidV /= blid b  -- no range warnings on remote levels
              || detailLevel aimMode < DetailAll  -- no spam
