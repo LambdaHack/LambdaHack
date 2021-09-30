@@ -45,9 +45,9 @@ getPerFid lid = do
 
 -- | Calculate the position of an actor's target.
 -- This matches @pathGoal@, but sometimes path is not defined.
-aidTgtToPos :: ActorId -> LevelId -> Maybe Target -> State -> Maybe Point
+aidTgtToPos :: Maybe ActorId -> LevelId -> Maybe Target -> State -> Maybe Point
 aidTgtToPos _ _ Nothing _ = Nothing
-aidTgtToPos aid lidV (Just tgt) s = case tgt of
+aidTgtToPos maid lidV (Just tgt) s = case tgt of
   TEnemy a ->
     let body = getActorBody a s
     in if blid body == lidV then Just (bpos body) else Nothing
@@ -56,11 +56,13 @@ aidTgtToPos aid lidV (Just tgt) s = case tgt of
     in if blid body == lidV then Just (bpos body) else Nothing
   TPoint _ lid p ->
     if lid == lidV then Just p else Nothing
-  TVector v ->
-    let COps{corule=RuleContent{rXmax, rYmax}} = scops s
-        b = getActorBody aid s
-        shifted = shiftBounded rXmax rYmax (bpos b) v
-    in if shifted == bpos b && v /= Vector 0 0 then Nothing else Just shifted
+  TVector v -> case maid of
+    Nothing -> Nothing
+    Just aid ->
+      let COps{corule=RuleContent{rXmax, rYmax}} = scops s
+          b = getActorBody aid s
+          shifted = shiftBounded rXmax rYmax (bpos b) v
+      in if shifted == bpos b && v /= Vector 0 0 then Nothing else Just shifted
 
 -- | Counts the number of steps until the projectile would hit a non-projectile
 -- actor or obstacle. Starts searching with the given eps and returns

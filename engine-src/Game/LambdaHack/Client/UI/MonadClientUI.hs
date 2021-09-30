@@ -274,10 +274,7 @@ mxhairToPos = do
   lidV <- viewedLevelUI
   mleader <- getsClient sleader
   sxhair <- getsSession sxhair
-  case mleader of
-    Nothing -> return Nothing  -- e.g., when game start and no leader yet
-    Just aid -> getsState $ aidTgtToPos aid lidV sxhair
-                  -- e.g., xhair on another level
+  getsState $ aidTgtToPos mleader lidV sxhair
 
 xhairToPos :: MonadClientUI m => m Point
 xhairToPos = do

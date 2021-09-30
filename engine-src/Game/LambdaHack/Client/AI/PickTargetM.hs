@@ -109,7 +109,7 @@ computeTarget foeAssocs friendAssocs aid = do
       -- This is also triggered by @UpdLeadFaction@.
       Just <$> createPath aid tapTgt
     Just tap@TgtAndPath{tapTgt,tapPath=Just AndPath{..}} -> do
-      mvalidPos <- getsState $ aidTgtToPos aid (blid b) (Just tapTgt)
+      mvalidPos <- getsState $ aidTgtToPos (Just aid) (blid b) (Just tapTgt)
       return $!
         if | isNothing mvalidPos -> Nothing  -- wrong level
            | bpos b == pathGoal ->

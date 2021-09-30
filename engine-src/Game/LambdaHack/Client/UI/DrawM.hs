@@ -121,14 +121,11 @@ targetDesc mtarget = do
               _ -> return $! "many items at" <+> tshow p
           else return $! "an exact spot on level" <+> tshow (abs $ fromEnum lid)
         return (Just pointedText, Nothing)
-    Just TVector{} ->
-      case mleader of
-        Nothing -> return (Just "a relative shift", Nothing)
-        Just aid -> do
-          mtgtPos <- getsState $ aidTgtToPos aid lidV mtarget
-          let invalidMsg = "an invalid relative shift"
-              validMsg p = "shift to" <+> tshow p
-          return (Just $ maybe invalidMsg validMsg mtgtPos, Nothing)
+    Just TVector{} -> do
+      mtgtPos <- getsState $ aidTgtToPos mleader lidV mtarget
+      let invalidMsg = "a relative shift"
+          validMsg p = "shift to" <+> tshow p
+      return (Just $ maybe invalidMsg validMsg mtgtPos, Nothing)
     Nothing -> return (Nothing, Nothing)
 
 targetDescXhair :: MonadClientUI m
@@ -365,11 +362,8 @@ drawFrameExtra dm drawnLevelId = do
   mxhairPos <- mxhairToPos
   mtgtPos <- do
     mleader <- getsClient sleader
-    case mleader of
-      Nothing -> return Nothing
-      Just leader -> do
-        mtgt <- getsClient $ getTarget leader
-        getsState $ aidTgtToPos leader drawnLevelId mtgt
+    mtgt <- getsClient $ maybe (const Nothing) getTarget mleader
+    getsState $ aidTgtToPos mleader drawnLevelId mtgt
   side <- getsClient sside
   factionD <- getsState sfactionD
   let visionMarks = IS.toList $ ES.enumSetToIntSet totVisible

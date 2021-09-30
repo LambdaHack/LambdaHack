@@ -1008,6 +1008,7 @@ itemClearHuman = modifySession $ \sess -> sess {sitemSel = Nothing}
 -- | Move the xhair. Assumes aiming mode.
 moveXhairHuman :: MonadClientUI m => Vector -> Int -> m MError
 moveXhairHuman dir n = do
+  -- Not @ScreenContent@, because not drawing here.
   COps{corule=RuleContent{rXmax, rYmax}} <- getsState scops
   saimMode <- getsSession saimMode
   let lidV = maybe (error $ "" `showFailure` (dir, n)) aimLevelId saimMode
