@@ -1152,13 +1152,15 @@ reqGameRestart :: MonadServerAtomic m
                => ActorId -> GroupName ModeKind -> Challenge
                -> m ()
 reqGameRestart aid groupName scurChalSer = do
-  -- This call to `revealItems` is really needed, because the other
-  -- happens only at natural game conclusion, not at forced quitting.
   noConfirmsGame <- isNoConfirmsGame
   factionD <- getsState sfactionD
   let fidsUI = map fst $ filter (\(_, fact) -> fhasUI (gplayer fact))
                                 (EM.assocs factionD)
-  unless noConfirmsGame $ mapM_ revealItems fidsUI
+  -- This call to `revealItems` and `revealPerception` is really needed,
+  -- because the other happens only at natural game conclusion,
+  -- not at forced quitting.
+  unless noConfirmsGame $
+    mapM_ revealAll fidsUI
   -- Announcing end of game, we send lore, because game is over.
   b <- getsState $ getActorBody aid
   oldSt <- getsState $ gquit . (EM.! bfid b) . sfactionD

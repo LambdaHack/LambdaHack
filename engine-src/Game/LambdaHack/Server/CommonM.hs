@@ -1,16 +1,18 @@
 {-# LANGUAGE TupleSections #-}
 -- | Server operations common to many modules.
 module Game.LambdaHack.Server.CommonM
-  ( revealItems, generalMoveItem, deduceQuits, writeSaveAll, verifyCaches
-  , deduceKilled, electLeader, setFreshLeader, updatePer, recomputeCachePer
+  ( revealAll, generalMoveItem, deduceQuits
+  , writeSaveAll, verifyCaches, deduceKilled, electLeader, setFreshLeader
+  , updatePer, recomputeCachePer
   , projectFail, addActorFromGroup, registerActor, discoverIfMinorEffects
   , pickWeaponServer, currentSkillsServer, allGroupItems
   , addCondition, removeConditionSingle, addSleep, removeSleepSingle
   , addKillToAnalytics
 #ifdef EXPOSE_INTERNAL
     -- * Internal operations
-  , containerMoveItem, quitF, keepArenaFact, anyActorsAlive, projectBla
-  , addProjectile, addNonProjectile, addActorIid, getCacheLucid, getCacheTotal
+  , revealItems, revealPerceptionLid, containerMoveItem, quitF, keepArenaFact
+  , anyActorsAlive, projectBla, addProjectile, addNonProjectile
+  , addActorIid, getCacheLucid, getCacheTotal
 #endif
   ) where
 
@@ -19,6 +21,7 @@ import Prelude ()
 import Game.LambdaHack.Core.Prelude
 
 import qualified Data.EnumMap.Strict as EM
+import qualified Data.EnumSet as ES
 import qualified Data.IntMap.Strict as IM
 import           Data.Ratio
 
@@ -26,6 +29,7 @@ import           Game.LambdaHack.Atomic
 import           Game.LambdaHack.Common.Actor
 import           Game.LambdaHack.Common.ActorState
 import           Game.LambdaHack.Common.Analytics
+import           Game.LambdaHack.Common.Area
 import           Game.LambdaHack.Common.ClientOptions
 import           Game.LambdaHack.Common.Faction
 import           Game.LambdaHack.Common.Item
@@ -110,6 +114,30 @@ revealItems fid = do
   mapM_ discoverSample $ EM.keys $ nonDupGen EM.! SCondition
   mapM_ discoverSample $ EM.keys $ nonDupGen EM.! SBlast
 
+revealAll :: MonadServerAtomic m => FactionId -> m ()
+revealAll fid = do
+  revealItems fid
+  dungeon <- getsState sdungeon
+  mapM_ (revealPerceptionLid fid) $ EM.assocs dungeon
+
+revealPerceptionLid :: MonadServerAtomic m
+                    => FactionId -> (LevelId, Level) -> m ()
+revealPerceptionLid fid (lid, lvl) = do
+  modifyServer $ \ser ->
+    ser {sperValidFid = EM.adjust (EM.insert lid True) fid $ sperValidFid ser}
+  sperFidOld <- getsServer sperFid
+  let perOld = sperFidOld EM.! fid EM.! lid
+      (x0, y0, x1, y1) = fromArea $ larea lvl
+      fullSet = ES.fromAscList [Point x y | y <- [y0 .. y1], x <- [x0 .. x1]]
+      perNew = Perception
+        { psight = PerVisible fullSet
+        , psmell = PerSmelled ES.empty  -- don't obscure
+        }
+      inPer = diffPer perNew perOld
+      outPer = diffPer perOld perNew
+  unless (nullPer outPer && nullPer inPer) $
+    execSendPer fid lid outPer inPer perNew
+
 -- | Generate the atomic updates that jointly perform a given item move.
 generalMoveItem :: MonadStateRead m
                 => Bool -> ItemId -> Int -> Container -> Container
@@ -149,10 +177,9 @@ quitF status fid = do
         if fhasUI $ gplayer fact then do
           keepAutomated <- getsServer $ skeepAutomated . soptions
           -- Try to remove AI control of the UI faction, to show gameover info.
-          when (isAIFact fact
-                && not keepAutomated) $
+          when (isAIFact fact && not keepAutomated) $
             execUpdAtomic $ UpdAutoFaction fid False
-          revealItems fid
+          revealAll fid
           -- Likely, by this time UI faction is no longer AI-controlled,
           -- so the score will get registered.
           registerScore status fid
