@@ -200,7 +200,7 @@ cmdSemanticsLeader cmd = case cmd of
   DetailCycle -> addNoError detailCycleHuman
   ClearTargetIfItemClear -> addLeader $ clearTargetIfItemClearHuman
   ItemClear -> addNoError itemClearHuman
-  MoveXhair v k -> CmdNeed $ \leader -> Left <$> moveXhairHuman leader v k
+  MoveXhair v k -> CmdNoNeed $ Left <$> moveXhairHuman v k
   AimTgt -> addNoError aimTgtHuman
   AimFloor -> addLeader aimFloorHuman
   AimEnemy -> addLeader aimEnemyHuman

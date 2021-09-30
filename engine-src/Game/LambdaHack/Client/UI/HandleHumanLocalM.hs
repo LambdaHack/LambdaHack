@@ -1006,22 +1006,23 @@ itemClearHuman = modifySession $ \sess -> sess {sitemSel = Nothing}
 -- * MoveXhair
 
 -- | Move the xhair. Assumes aiming mode.
-moveXhairHuman :: MonadClientUI m => ActorId -> Vector -> Int -> m MError
-moveXhairHuman leader dir n = do
+moveXhairHuman :: MonadClientUI m => Vector -> Int -> m MError
+moveXhairHuman dir n = do
   COps{corule=RuleContent{rXmax, rYmax}} <- getsState scops
   saimMode <- getsSession saimMode
-  let lidV = maybe (error $ "" `showFailure` leader) aimLevelId saimMode
-  -- Not @ScreenContent@, because not drawing here.
-  lpos <- getsState $ bpos . getActorBody leader
+  let lidV = maybe (error $ "" `showFailure` (dir, n)) aimLevelId saimMode
   xhair <- getsSession sxhair
   xhairPos <- xhairToPos
   let shiftB pos = shiftBounded rXmax rYmax pos dir
       newPos = iterate shiftB xhairPos !! n
   if newPos == xhairPos then failMsg "never mind"
   else do
-    let sxhair = case xhair of
-          Just TVector{} -> Just $ TVector $ newPos `vectorToFrom` lpos
-          _ -> Just $ TPoint TKnown lidV newPos
+    mleader <- getsClient sleader
+    sxhair <- case (xhair, mleader) of
+     (Just TVector{}, Just leader) -> do
+       lpos <- getsState $ bpos . getActorBody leader
+       return $ Just $ TVector $ newPos `vectorToFrom` lpos
+     _ -> return $ Just $ TPoint TKnown lidV newPos
     setXHairFromGUI sxhair
     doLook
     return Nothing
@@ -1042,7 +1043,7 @@ aimTgtHuman = do
 -- * AimFloor
 
 -- | Cycle aiming mode. Do not change position of the xhair,
--- switch among things at that position.
+-- switch target to point at different things at that position.
 aimFloorHuman :: MonadClientUI m => ActorId -> m ()
 aimFloorHuman leader = do
   lidV <- viewedLevelUI
