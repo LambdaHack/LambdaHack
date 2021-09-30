@@ -1937,10 +1937,11 @@ gameExitWithHuman exitStrategy = do
   noConfirmsGame <- isNoConfirmsGame
   gameMode       <- getGameMode
   snxtScenario   <- getsSession snxtScenario
-  let nxtGameName = MK.mname $ snd $ nxtGameMode cops snxtScenario
+  let nxtGameName  = MK.mname $ snd $ nxtGameMode cops snxtScenario
+      exitReturn x = return $ Right $ ReqUIGameRestart x snxtChal
    in ifM (if' noConfirmsGame
-          (return True)
-          (case exitStrategy of 
+          (return True)         -- true case
+          (case exitStrategy of -- false case
              Restart ->
                displayYesNo ColorBW
                  $ "You just requested a new" <+> nxtGameName
@@ -1950,16 +1951,16 @@ gameExitWithHuman exitStrategy = do
                displayYesNo ColorBW
                  $ "If you quit, the progress of the ongoing" <+> MK.mname gameMode
                  <+> "game will be lost! Are you sure?"))
-      (case exitStrategy of
+      (case exitStrategy of -- ifM true case
          Restart ->
            do let { (mainName, _) = T.span (\c -> Char.isAlpha c || c == ' ') nxtGameName
                   ; nxtGameGroup = DefsInternal.GroupName $ T.intercalate " "
                     $ take 2 $ T.words mainName
                   }
-              return $ Right $ ReqUIGameRestart nxtGameGroup snxtChal
+              exitReturn nxtGameGroup 
          Quit -> 
-           do return $ Right $ ReqUIGameRestart MK.INSERT_COIN snxtChal)
-      (do rndToActionUI $ oneOf -- this do is necessary! -nks
+           do exitReturn MK.INSERT_COIN)
+      (do rndToActionUI $ oneOf -- ifM false case; this do is necessary! -nks
             [ "yea, would be a pity to leave them to die"
             , "yea, a shame to get your team stranded" ]
           >>= failWith)
