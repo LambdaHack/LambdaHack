@@ -1045,10 +1045,13 @@ aimTgtHuman = do
 
 -- | Cycle aiming mode. Do not change position of the xhair,
 -- switch target to point at different things at that position.
-aimFloorHuman :: MonadClientUI m => ActorId -> m ()
-aimFloorHuman leader = do
+aimFloorHuman :: MonadClientUI m => m ()
+aimFloorHuman = do
   lidV <- viewedLevelUI
-  lpos <- getsState $ bpos . getActorBody leader
+  mleader <- getsClient sleader
+  mlpos <- case mleader of
+    Nothing -> return Nothing
+    Just leader -> getsState $ Just . bpos . getActorBody leader
   xhairPos <- xhairToPos
   xhair <- getsSession sxhair
   saimMode <- getsSession saimMode
@@ -1060,7 +1063,7 @@ aimFloorHuman leader = do
           xhair
         Just TEnemy{} -> Just $ TPoint TKnown lidV xhairPos
         Just TNonEnemy{} -> Just $ TPoint TKnown lidV xhairPos
-        Just TPoint{} | xhairPos /= lpos ->
+        Just TPoint{} | Just lpos <- mlpos, xhairPos /= lpos ->
           Just $ TVector $ xhairPos `vectorToFrom` lpos
         Just TVector{} ->
           -- If many actors, we pick here the first that would be picked
@@ -1081,10 +1084,13 @@ aimFloorHuman leader = do
 
 -- * AimEnemy
 
-aimEnemyHuman :: MonadClientUI m => ActorId -> m ()
-aimEnemyHuman leader = do
+aimEnemyHuman :: MonadClientUI m => m ()
+aimEnemyHuman = do
   lidV <- viewedLevelUI
-  lpos <- getsState $ bpos . getActorBody leader
+  mleader <- getsClient sleader
+  mlpos <- case mleader of
+    Nothing -> return Nothing
+    Just leader -> getsState $ Just . bpos . getActorBody leader
   mxhairPos <- mxhairToPos
   xhair <- getsSession sxhair
   saimMode <- getsSession saimMode
@@ -1092,8 +1098,10 @@ aimEnemyHuman leader = do
   fact <- getsState $ (EM.! side) . sfactionD
   bsAll <- getsState $ actorAssocs (const True) lidV
   let -- On the same position, big actors come before projectiles.
-      ordPos (_, b) = (chessDist lpos $ bpos b, bpos b, bproj b)
-      dbs = sortOn ordPos bsAll
+      ordPos lpos (_, b) = (chessDist lpos $ bpos b, bpos b, bproj b)
+      dbs = case mlpos of
+        Nothing -> bsAll
+        Just lpos -> sortOn (ordPos lpos) bsAll
       pickUnderXhair =  -- switch to the actor under xhair, if any
         fromMaybe (-1) $ findIndex ((== mxhairPos) . Just . bpos . snd) dbs
       (pickEnemies, i) = case xhair of
@@ -1124,11 +1132,14 @@ aimEnemyHuman leader = do
 
 -- * AimItem
 
-aimItemHuman :: MonadClientUI m => ActorId -> m ()
-aimItemHuman leader = do
+aimItemHuman :: MonadClientUI m => m ()
+aimItemHuman = do
   side <- getsClient sside
   lidV <- viewedLevelUI
-  lpos <- getsState $ bpos . getActorBody leader
+  mleader <- getsClient sleader
+  mlpos <- case mleader of
+    Nothing -> return Nothing
+    Just leader -> getsState $ Just . bpos . getActorBody leader
   mxhairPos <- mxhairToPos
   xhair <- getsSession sxhair
   saimMode <- getsSession saimMode
@@ -1139,8 +1150,10 @@ aimItemHuman leader = do
         Just (lid, pos) | lid == lidV -> EM.delete pos lfloor
         _ -> lfloor
       bsAll = EM.keys lfloorBarStash
-      ordPos p = (chessDist lpos p, p)
-      dbs = sortOn ordPos bsAll
+      ordPos lpos p = (chessDist lpos p, p)
+      dbs = case mlpos of
+        Nothing -> bsAll
+        Just lpos -> sortOn (ordPos lpos) bsAll
       pickUnderXhair =  -- switch to the item under xhair, if any
         let i = fromMaybe (-1)
                 $ findIndex ((== mxhairPos) . Just) dbs

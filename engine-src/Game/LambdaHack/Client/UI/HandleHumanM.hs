@@ -203,9 +203,9 @@ cmdSemanticsLeader cmd = case cmd of
   ItemClear -> addNoError itemClearHuman
   MoveXhair v k -> CmdNoNeed $ Left <$> moveXhairHuman v k
   AimTgt -> addNoError aimTgtHuman
-  AimFloor -> addLeader aimFloorHuman
-  AimEnemy -> addLeader aimEnemyHuman
-  AimItem -> addLeader aimItemHuman
+  AimFloor -> addNoError aimFloorHuman
+  AimEnemy -> addNoError aimEnemyHuman
+  AimItem -> addNoError aimItemHuman
   AimAscend k -> CmdNoNeed $ Left <$> aimAscendHuman k
   EpsIncr b -> addNoError $ epsIncrHuman b
   XhairUnknown -> CmdLeader $ \leader -> Left <$> xhairUnknownHuman leader
