@@ -735,22 +735,19 @@ lookAtItems :: MonadClientUI m
                         --   and whether the big actor is alive
             -> m (Text, Maybe MU.Person)
 lookAtItems canSee p lidV maid mactorPronounAlive = do
-  -- tmp hack:
-  let aid = fromJust maid
-  b <- getsState $ getActorBody aid
-
   CCUI{coscreen=ScreenContent{rwidth}} <- getsSession sccui
   side <- getsClient sside
   itemToF <- getsState $ flip itemToFull
   mb <- getsState $ \s -> flip getActorBody s <$> maid
   -- Not using @viewedLevelUI@, because @aid@ may be temporarily not a leader.
   saimMode <- getsSession saimMode
-  let standingOn = p == bpos b && lidV == blid b
+  let standingOn = Just p == (bpos <$> mb) && Just lidV == (blid <$> mb)
       -- In exploration mode the detail level depends on whether the actor
       -- that looks stand over the items, because then he can check details
       -- with inventory commands (or look in aiming mode).
-      detailExploration =
-        if standingOn && bfid b == side then DetailMedium else DetailAll
+      detailExploration = if standingOn && Just side == (bfid <$> mb)
+                          then DetailMedium
+                          else DetailAll
       detail = maybe detailExploration detailLevel saimMode
   localTime <- getsState $ getLocalTime lidV
   is <- getsState $ getFloorBag lidV p
@@ -760,7 +757,7 @@ lookAtItems canSee p lidV maid mactorPronounAlive = do
   mLeader <- case maid of
     Just aid | standingOn -> do
       leaderPronoun <- partPronounLeader aid
-      return $ Just (leaderPronoun, bhp b >= 0)
+      return $ Just (leaderPronoun, (bhp <$> mb) >= Just 0)
     _ -> return Nothing
   let mactorPronounAliveLeader = maybe mLeader Just mactorPronounAlive
   (subject, verb) <- case mactorPronounAliveLeader of
