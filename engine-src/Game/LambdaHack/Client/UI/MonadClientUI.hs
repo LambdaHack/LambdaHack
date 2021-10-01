@@ -127,6 +127,7 @@ displayFrame mf = do
 -- | Push frames or delays to the frame queue. The frames depict
 -- the @lid@ level.
 displayFrames :: MonadClientUI m => LevelId -> PreFrames3 -> m ()
+displayFrames _ [] = return ()
 displayFrames lid frs = do
   let framesRaw = case frs of
         [] -> []
