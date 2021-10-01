@@ -22,6 +22,9 @@ import           Game.LambdaHack.Common.MonadStateRead
 import           Game.LambdaHack.Common.State
 import           Game.LambdaHack.Definition.Defs
 
+sniffMessages :: Bool
+sniffMessages = False
+
 -- | Add a shared message to the current report. Say if it was a duplicate.
 msgAddDuplicate :: (MonadClientUI m, MsgShared a) => a -> Text -> m Bool
 msgAddDuplicate msgClass t = do
@@ -38,8 +41,9 @@ msgAddDuplicate msgClass t = do
       msg = toMsgShared (uMessageColors sUIOptions) msgClass t
       (nusedHints, nhistory, duplicate) =
         addToReport usedHints displayHints condInMelee history msg time
-  unless smuteMessages $
+  unless smuteMessages $ do
     modifySession $ \sess -> sess {shistory = nhistory, susedHints = nusedHints}
+    when sniffMessages $ clientPrintUI t
   return duplicate
 
 -- | Add a message comprising of two different texts, one to show, the other
@@ -59,8 +63,9 @@ msgAddDistinct msgClass (t1, t2) = do
       msg = toMsgDistinct (uMessageColors sUIOptions) msgClass t1 t2
       (nusedHints, nhistory, _) =
         addToReport usedHints displayHints condInMelee history msg time
-  unless smuteMessages $
+  unless smuteMessages $ do
     modifySession $ \sess -> sess {shistory = nhistory, susedHints = nusedHints}
+    when sniffMessages $ clientPrintUI t1
 
 -- | Add a message to the current report.
 msgAdd :: (MonadClientUI m, MsgShared a) => a -> Text -> m ()
