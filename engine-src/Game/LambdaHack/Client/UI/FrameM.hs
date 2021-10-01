@@ -113,14 +113,16 @@ drawOverlay dm onBlank ovs lid = do
 --
 -- The only real drawback of this is that when resting for longer time
 -- I can't see the boring messages accumulate until a non-boring interrupts me.
-basicFrameWithoutReport :: MonadClientUI m => LevelId -> DisplayFont -> m PreFrame3
-basicFrameWithoutReport arena font = do
+basicFrameWithoutReport :: MonadClientUI m
+                        => LevelId -> DisplayFont -> Bool -> m PreFrame3
+basicFrameWithoutReport arena font forceReport = do
   side <- getsClient sside
   fact <- getsState $ (EM.! side) . sfactionD
   report <- getReportUI False
   let par1 = firstParagraph $ foldr (<+:>) [] $ renderReport True report
       underAI = isAIFact fact
-      truncRep | underAI = EM.fromList [(font, [(PointUI 0 0, par1)])]
+      truncRep | underAI || forceReport =
+                   EM.fromList [(font, [(PointUI 0 0, par1)])]
                | otherwise = EM.empty
   drawOverlay ColorFull False truncRep arena
 
@@ -258,7 +260,7 @@ renderAnimFrames onBlank arena anim = do
   let ovFont = if not onBlank || fromMaybe False snoAnim
                then propFont
                else squareFont
-  basicFrame <- basicFrameWithoutReport arena ovFont
+  basicFrame <- basicFrameWithoutReport arena ovFont False
   smuteMessages <- getsSession smuteMessages
   return $! if | smuteMessages -> []
                | fromMaybe False snoAnim -> [Just basicFrame]

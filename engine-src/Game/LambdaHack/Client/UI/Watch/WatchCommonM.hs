@@ -1,6 +1,7 @@
 -- | Common code for displaying atomic update and SFX commands.
 module Game.LambdaHack.Client.UI.Watch.WatchCommonM
-  ( pushFrame, fadeOutOrIn, markDisplayNeeded, lookAtMove, stopAtMove
+  ( pushFrame, pushReportFrame, fadeOutOrIn, markDisplayNeeded
+  , lookAtMove, stopAtMove
   , aidVerbMU, aidVerbDuplicateMU, itemVerbMUGeneral, itemVerbMU
   , itemVerbMUShort, itemAidVerbMU, mitemAidVerbMU, itemAidDistinctMU
   , manyItemsAidVerbMU
@@ -53,11 +54,18 @@ pushFrame delay = do
   unless keyPressed $ do
     lidV <- viewedLevelUI
     FontSetup{propFont} <- getFontSetup
-    frame <- basicFrameWithoutReport lidV propFont
+    frame <- basicFrameWithoutReport lidV propFont False
     -- Pad with delay before and after to let player see, e.g., door being
     -- opened a few ticks after it came into vision, the same turn.
     displayFrames lidV $
       if delay then [Nothing, Just frame, Nothing] else [Just frame]
+
+pushReportFrame :: MonadClientUI m => m ()
+pushReportFrame = do
+  lidV <- viewedLevelUI
+  FontSetup{propFont} <- getFontSetup
+  frame <- basicFrameWithoutReport lidV propFont True
+  displayFrames lidV [Just frame]
 
 fadeOutOrIn :: MonadClientUI m => Bool -> m ()
 fadeOutOrIn out = do

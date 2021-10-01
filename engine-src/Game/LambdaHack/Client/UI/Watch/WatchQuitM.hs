@@ -164,7 +164,7 @@ quitFactionUI fid toSt manalytics = do
       when (not noConfirmsGame || camping) $ do
         msgAdd MsgPromptGeneric pp
         when camping $ msgAdd MsgPromptGeneric "Saving..."
-        pushFrame False  -- don't leave frozen prompts on the browser screen
+        pushReportFrame  -- don't leave frozen prompts on the browser screen
     _ ->
       when (isJust startingPart && (stOutcome <$> toSt) == Just Killed) $ do
         msgAdd MsgTutorialHint "When a whole faction gets eliminated, no new members of the party will ever appear and its stashed belongings may await far off, unclaimed and undefended. While some adventures require eliminating a faction (as seen in the adventure description screen in the help menu), for others it's an optional task, if possible at all. Instead, finding an exit may be necessary to win. It's enough if one character finds and triggers the exit. Others automatically follow, duly hauling all party belongings."
