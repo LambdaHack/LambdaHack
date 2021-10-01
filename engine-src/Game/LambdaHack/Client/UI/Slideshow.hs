@@ -281,9 +281,9 @@ splitOKX FontSetup{..} msgLong width height wrap reportAS keys (ls0, kxs0) =
                   ++ [Color.nbspAttrW32]
       (lX0, keysX0) = keysOKX monoFont 0 (length pressAKey) width keys
       (lX1, keysX1) = keysOKX monoFont 1 0 width keys
-      (lX, keysX) = keysOKX monoFont (lenOfRep0 - 1) startOfKeys
+      (lX, keysX) = keysOKX monoFont (max 0 $ lenOfRep0 - 1) startOfKeys
                             (2 * width) keys
-      (lXW, keysXW) = keysOKX monoFont (lenOfRepW - 1) startOfKeysW
+      (lXW, keysXW) = keysOKX monoFont (max 0 $ lenOfRepW - 1) startOfKeysW
                               (2 * width) keys
       renumber dy (km, (PointUI x y, len)) = (km, (PointUI x (y + dy), len))
       renumberOv dy = map (\(PointUI x y, al) -> (PointUI x (y + dy), al))
