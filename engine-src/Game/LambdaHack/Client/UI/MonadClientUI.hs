@@ -222,7 +222,7 @@ getReportUI insideMenu = do
   return $! if | newcomerHelp && not insideMenu
                  && detailAtDefault && not detailMinimal ->
                    consReport promptAim report
-               | sreqDelay == ReqDelayAlarm ->
+               | sreqDelay == ReqDelayAlarm && not insideMenu ->
                    consReport promptDelay report
                | otherwise -> report
 
