@@ -146,8 +146,8 @@ loopAI = do
 
 -- | Alarm after this many seconds without server querying us for a command.
 longestDelay :: POSIXTime
-longestDelay = secondsToNominalDiffTime 0.01
-                 -- rather high to accomodate slow browsers
+longestDelay = secondsToNominalDiffTime 1
+                 -- really high to accomodate slow browsers
 
 -- | The argument is the time of last UI query from the server.
 -- After @longestDelay@ seconds past this date, the client considers itself
@@ -180,6 +180,8 @@ loopUI timeSinceLastQuery = do
        quit <- getsClient squit
        unless quit $ case cmd of
          RespQueryUI -> loopUI 0
+         RespQueryUIunderAI ->
+           loopUI $ succ longestDelay  -- permit fast AI control regain
          _ -> do
            when (isJust sreqPending) $ do
              msgAdd MsgActionAlert "Warning: server updated game state after current command was issued by the client but before it was received by the server."
