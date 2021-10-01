@@ -259,10 +259,11 @@ renderAnimFrames onBlank arena anim = do
                then propFont
                else squareFont
   basicFrame <- basicFrameWithoutReport arena ovFont
-  return $! if fromMaybe False snoAnim
-            then [Just basicFrame]
-            else map (fmap (\fr -> (fr, snd basicFrame)))
-                 $ renderAnim rwidth (fst basicFrame) anim
+  smuteMessages <- getsSession smuteMessages
+  return $! if | smuteMessages -> []
+               | fromMaybe False snoAnim -> [Just basicFrame]
+               | otherwise -> map (fmap (\fr -> (fr, snd basicFrame)))
+                              $ renderAnim rwidth (fst basicFrame) anim
 
 -- | Render and display animations on top of the current screen frame.
 animate :: MonadClientUI m => LevelId -> Animation -> m ()
