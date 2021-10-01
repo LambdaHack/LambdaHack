@@ -6,7 +6,7 @@ module Game.LambdaHack.Client.LoopM
   , loopCli
 #ifdef EXPOSE_INTERNAL
     -- * Internal operations
-  , initAI, initUI, loopAI, longestDelay, loopUIwithResetTimeout, loopUI
+  , initAI, initUI, loopAI, longestDelay, loopUI
 #endif
   ) where
 
@@ -15,6 +15,7 @@ import Prelude ()
 import Game.LambdaHack.Core.Prelude
 
 import qualified Data.EnumMap.Strict as EM
+import           Data.Time.Clock
 import           Data.Time.Clock.POSIX
 
 import Game.LambdaHack.Atomic
@@ -124,7 +125,7 @@ loopCli ccui sUIOptions clientOptions = do
   debugPossiblyPrint $ cliendKindText <+> "client"
                        <+> tshow side <+> "started 4/4."
   if hasUI
-  then loopUIwithResetTimeout
+  then loopUI 0
   else loopAI
   side2 <- getsClient sside
   debugPossiblyPrint $ cliendKindText <+> "client" <+> tshow side2
@@ -144,18 +145,9 @@ loopAI = do
     loopAI
 
 -- | Alarm after this many seconds without server querying us for a command.
-longestDelay :: Int
-longestDelay = 1  -- rather high to accomodate slow browsers
-
-loopUIwithResetTimeout :: ( MonadClientSetup m
-                          , MonadClientUI m
-                          , MonadClientAtomic m
-                          , MonadClientReadResponse m
-                          , MonadClientWriteRequest m )
-                       => m ()
-loopUIwithResetTimeout = do
-  current <- liftIO getPOSIXTime
-  loopUI current
+longestDelay :: POSIXTime
+longestDelay = secondsToNominalDiffTime 0.01
+                 -- rather high to accomodate slow browsers
 
 -- | The argument is the time of last UI query from the server.
 -- After @longestDelay@ seconds past this date, the client considers itself
@@ -168,28 +160,31 @@ loopUI :: ( MonadClientSetup m
           , MonadClientReadResponse m
           , MonadClientWriteRequest m )
        => POSIXTime -> m ()
-loopUI timeOfLastQuery = do
+loopUI timeSinceLastQuery = do
   sreqPending <- getsSession sreqPending
   sreqDelay <- getsSession sreqDelay
   sregainControl <- getsSession sregainControl
   keyPressed <- anyKeyPressed
-  alarm <- elapsedSessionTimeGT timeOfLastQuery longestDelay
+  let alarm = timeSinceLastQuery > longestDelay
   if | not alarm  -- no alarm starting right now
        && -- no need to mark AI for control regain ASAP:
           (sreqDelay /= ReqDelayAlarm  -- no old alarm still in effect
            || sregainControl  -- AI control already marked for regain
            || not keyPressed) -> do  -- player does not insist
+       timeBefore <- liftIO getPOSIXTime
        cmd <- receiveResponse
+       timeAfter <- liftIO getPOSIXTime
        handleResponse cmd
        -- @squit@ can be changed only in @handleResponse@, so this is the only
        -- place where it needs to be checked.
        quit <- getsClient squit
        unless quit $ case cmd of
-         RespQueryUI -> loopUIwithResetTimeout
+         RespQueryUI -> loopUI 0
          _ -> do
            when (isJust sreqPending) $ do
              msgAdd MsgActionAlert "Warning: server updated game state after current command was issued by the client but before it was received by the server."
-           loopUI timeOfLastQuery
+           -- This measures only the server's delay.
+           loopUI $ timeSinceLastQuery - timeBefore + timeAfter
      | not sregainControl && (keyPressed || isJust sreqPending) -> do
          -- ignore alarm if to be handled by AI control regain code elsewhere
        -- The keys mashed to gain control are not considered a command.
@@ -223,7 +218,7 @@ loopUI timeOfLastQuery = do
          -- tried hard to contact us while we took control and now it sleeps
          -- for a bit, so let's give it the benefit of the doubt
          -- and a slight pause before we alarm the player again.
-       loopUIwithResetTimeout
+       loopUI 0
      | otherwise -> do
        -- We know server is not ready.
        modifySession $ \sess -> sess {sreqDelay = ReqDelayAlarm}
@@ -231,4 +226,4 @@ loopUI timeOfLastQuery = do
        -- to press a key and we receive game state changes.
        -- The pause is cut short by any keypress, so it does not
        -- make UI reaction any less snappy (animations do, but that's fine).
-       loopUIwithResetTimeout
+       loopUI 0
