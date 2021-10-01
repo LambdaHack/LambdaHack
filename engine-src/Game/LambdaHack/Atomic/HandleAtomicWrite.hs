@@ -132,6 +132,7 @@ handleUpdAtomic cmd = case cmd of
   UpdKillExit{} -> return ()
   UpdWriteSave -> return ()
   UpdHearFid{} -> return ()
+  UpdMuteMessages{} -> return ()
 
 -- Actor's items may or may not be already present in @sitemD@,
 -- regardless if they are already present otherwise in the dungeon.

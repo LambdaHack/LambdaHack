@@ -135,6 +135,7 @@ data UpdAtomic =
   | UpdWriteSave
   | UpdHearFid FactionId (Maybe Int) HearMsg
       -- in @UpdAtomic@ to let AI analyze and count
+  | UpdMuteMessages FactionId Bool
   deriving Show
 
 -- | Symbolic representation of text messages about heard noises,
@@ -275,6 +276,7 @@ undoUpdAtomic cmd = case cmd of
   UpdKillExit{} -> Nothing
   UpdWriteSave -> Nothing
   UpdHearFid{} -> Nothing
+  UpdMuteMessages fid b -> Just $ UpdMuteMessages fid $ not b
 
 undoSfxAtomic :: SfxAtomic -> SfxAtomic
 undoSfxAtomic cmd = case cmd of

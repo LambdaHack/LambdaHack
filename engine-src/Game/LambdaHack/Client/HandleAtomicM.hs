@@ -299,6 +299,7 @@ cmdAtomicSemCli oldState cmd = case cmd of
   UpdKillExit _fid -> killExit
   UpdWriteSave -> saveClient
   UpdHearFid{} -> return ()
+  UpdMuteMessages{} -> return ()
 
 updateInMeleeDueToActor :: MonadClient m => Actor -> m ()
 updateInMeleeDueToActor b =

@@ -169,6 +169,7 @@ posUpdAtomic cmd = case cmd of
   UpdKillExit fid -> return $! PosFid fid
   UpdWriteSave -> return PosAll
   UpdHearFid fid _ _ -> return $! PosFid fid
+  UpdMuteMessages fid _ -> return $! PosFid fid
 
 -- | Produce the positions where the atomic special effect takes place.
 posSfxAtomic :: MonadStateRead m => SfxAtomic -> m PosAtomic
@@ -255,6 +256,7 @@ iidUpdAtomic cmd = case cmd of
   UpdKillExit{} -> []
   UpdWriteSave -> []
   UpdHearFid{} -> []
+  UpdMuteMessages{} -> []
 
 -- | All items introduced by the atomic special effect, to be used in it.
 iidSfxAtomic :: SfxAtomic -> [ItemId]

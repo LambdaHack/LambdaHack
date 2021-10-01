@@ -234,6 +234,7 @@ cmdAtomicSemSer oldState cmd = case cmd of
   UpdKillExit{} -> return ()
   UpdWriteSave{} -> return ()
   UpdHearFid{} -> return ()
+  UpdMuteMessages{} -> return ()
 
 validateFloor :: MonadServer m => ItemId -> LevelId -> m ()
 validateFloor iid lid = do

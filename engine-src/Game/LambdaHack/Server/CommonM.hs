@@ -117,8 +117,10 @@ revealItems fid = do
 revealAll :: MonadServerAtomic m => FactionId -> m ()
 revealAll fid = do
   revealItems fid
+  execUpdAtomic $ UpdMuteMessages fid True
   dungeon <- getsState sdungeon
   mapM_ (revealPerceptionLid fid) $ EM.assocs dungeon
+  execUpdAtomic $ UpdMuteMessages fid False
 
 revealPerceptionLid :: MonadServerAtomic m
                     => FactionId -> (LevelId, Level) -> m ()

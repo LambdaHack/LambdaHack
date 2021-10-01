@@ -627,6 +627,8 @@ watchRespUpdAtomicUI cmd = case cmd of
       HearTaunt{} ->
         msgAdd MsgTutorialHint "Enemies you can't see are sometimes heard yelling and emitting other noises. Whether you can hear them, depends on their distance and your hearing radius, as listed in the '#' skill menu."
       _ -> return ()
+  UpdMuteMessages _ smuteMessages ->
+    modifySession $ \sess -> sess {smuteMessages}
 
 updateItemSlot :: MonadClientUI m => Container -> ItemId -> m ()
 updateItemSlot c iid = do
