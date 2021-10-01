@@ -329,8 +329,9 @@ endClip updatePerFid = do
 #ifndef USE_JSFILE
   unless breakLoop2 $  -- if by chance requested and periodic saves coincide
     -- Periodic save needs to be at the end, so that restore can start
-    -- at the beginning.
-    when (clipN `mod` rwriteSaveClips corule == 0) $ writeSaveAll False False
+    -- at the beginning. Double save on first turn is avoided with @succ@.
+    when (succ clipN `mod` rwriteSaveClips corule == 0) $
+      writeSaveAll False False
 #endif
 
 -- | Check if the given actor is dominated and update his calm.
