@@ -86,6 +86,7 @@ data SessionUI = SessionUI
   , snxtTutorial   :: Bool          -- ^ whether next game is to be tutorial
   , soverrideTut   :: Maybe Bool    -- ^ override display of tutorial hints
   , susedHints     :: S.Set Msg     -- ^ tutorial hints already shown this game
+  , smuteMessages  :: Bool          -- ^ whether to mute all new messages
   , smenuIxMap     :: M.Map String Int
                                     -- ^ indices of last used menu items
   , schosenLore    :: ChosenLore    -- ^ last lore chosen to display
@@ -194,6 +195,7 @@ emptySessionUI sUIOptions =
     , snxtTutorial = True  -- matches @snxtScenario = 0@
     , soverrideTut = Nothing
     , susedHints = S.empty
+    , smuteMessages = False
     , smenuIxMap = M.empty
     , schosenLore = ChosenNothing
     , sdisplayNeeded = False
@@ -284,6 +286,7 @@ instance Binary SessionUI where
         slastLost = ES.empty
         swaitTimes = 0
         swasAutomated = False
+        smuteMessages = False
         smenuIxMap = M.empty
         schosenLore = ChosenNothing
         sdisplayNeeded = False  -- displayed regardless

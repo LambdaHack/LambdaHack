@@ -33,11 +33,13 @@ msgAddDuplicate msgClass t = do
   usedHints <- getsSession susedHints
   lid <- getArenaUI
   condInMelee <- condInMeleeM lid
+  smuteMessages <- getsSession smuteMessages
   let displayHints = fromMaybe curTutorial overrideTut
       msg = toMsgShared (uMessageColors sUIOptions) msgClass t
       (nusedHints, nhistory, duplicate) =
         addToReport usedHints displayHints condInMelee history msg time
-  modifySession $ \sess -> sess {shistory = nhistory, susedHints = nusedHints}
+  unless smuteMessages $
+    modifySession $ \sess -> sess {shistory = nhistory, susedHints = nusedHints}
   return duplicate
 
 -- | Add a message comprising of two different texts, one to show, the other
@@ -52,11 +54,13 @@ msgAddDistinct msgClass (t1, t2) = do
   usedHints <- getsSession susedHints
   lid <- getArenaUI
   condInMelee <- condInMeleeM lid
+  smuteMessages <- getsSession smuteMessages
   let displayHints = fromMaybe curTutorial overrideTut
       msg = toMsgDistinct (uMessageColors sUIOptions) msgClass t1 t2
       (nusedHints, nhistory, _) =
         addToReport usedHints displayHints condInMelee history msg time
-  modifySession $ \sess -> sess {shistory = nhistory, susedHints = nusedHints}
+  unless smuteMessages $
+    modifySession $ \sess -> sess {shistory = nhistory, susedHints = nusedHints}
 
 -- | Add a message to the current report.
 msgAdd :: (MonadClientUI m, MsgShared a) => a -> Text -> m ()
@@ -66,7 +70,9 @@ msgAdd msgClass t = void $ msgAddDuplicate msgClass t
 -- if any, with newline.
 msgLnAdd :: (MonadClientUI m, MsgShared a) => a -> Text -> m ()
 msgLnAdd msgClass t = do
-  modifySession $ \sess -> sess {shistory = addEolToNewReport $ shistory sess}
+  smuteMessages <- getsSession smuteMessages
+  unless smuteMessages $
+    modifySession $ \sess -> sess {shistory = addEolToNewReport $ shistory sess}
   msgAdd msgClass t
 
 -- | Add a prompt with basic keys description.
