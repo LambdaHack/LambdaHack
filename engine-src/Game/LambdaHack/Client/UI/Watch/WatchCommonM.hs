@@ -30,7 +30,6 @@ import           Game.LambdaHack.Client.UI.MonadClientUI
 import           Game.LambdaHack.Client.UI.Msg
 import           Game.LambdaHack.Client.UI.MsgM
 import           Game.LambdaHack.Client.UI.SessionUI
-import           Game.LambdaHack.Client.UI.Slideshow
 import           Game.LambdaHack.Common.Actor
 import           Game.LambdaHack.Common.ActorState
 import           Game.LambdaHack.Common.Faction
@@ -53,8 +52,7 @@ pushFrame delay = do
   keyPressed <- anyKeyPressed
   unless keyPressed $ do
     lidV <- viewedLevelUI
-    FontSetup{propFont} <- getFontSetup
-    frame <- basicFrameWithoutReport lidV propFont False
+    frame <- basicFrameWithoutReport lidV Nothing
     -- Pad with delay before and after to let player see, e.g., door being
     -- opened a few ticks after it came into vision, the same turn.
     displayFrames lidV $
@@ -63,8 +61,7 @@ pushFrame delay = do
 pushReportFrame :: MonadClientUI m => m ()
 pushReportFrame = do
   lidV <- viewedLevelUI
-  FontSetup{propFont} <- getFontSetup
-  frame <- basicFrameWithoutReport lidV propFont True
+  frame <- basicFrameWithoutReport lidV (Just True)
   displayFrames lidV [Just frame]
 
 fadeOutOrIn :: MonadClientUI m => Bool -> m ()
@@ -72,7 +69,7 @@ fadeOutOrIn out = do
   arena <- getArenaUI
   CCUI{coscreen} <- getsSession sccui
   animMap <- rndToActionUI $ fadeout coscreen out 2
-  animFrs <- renderAnimFrames True arena animMap
+  animFrs <- renderAnimFrames arena animMap (Just False)
   displayFrames arena (tail animFrs)  -- no basic frame between fadeout and in
 
 markDisplayNeeded :: MonadClientUI m => LevelId -> m ()

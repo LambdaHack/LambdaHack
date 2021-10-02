@@ -114,15 +114,16 @@ drawOverlay dm onBlank ovs lid = do
 -- The only real drawback of this is that when resting for longer time
 -- I can't see the boring messages accumulate until a non-boring interrupts me.
 basicFrameWithoutReport :: MonadClientUI m
-                        => LevelId -> DisplayFont -> Bool -> m PreFrame3
-basicFrameWithoutReport arena font forceReport = do
+                        => LevelId -> Maybe Bool -> m PreFrame3
+basicFrameWithoutReport arena forceReport = do
+  FontSetup{propFont} <- getFontSetup
   side <- getsClient sside
   fact <- getsState $ (EM.! side) . sfactionD
   report <- getReportUI False
   let par1 = firstParagraph $ foldr (<+:>) [] $ renderReport True report
       underAI = isAIFact fact
-      truncRep | underAI || forceReport =
-                   EM.fromList [(font, [(PointUI 0 0, par1)])]
+      truncRep | fromMaybe underAI forceReport =
+                   EM.fromList [(propFont, [(PointUI 0 0, par1)])]
                | otherwise = EM.empty
   drawOverlay ColorFull False truncRep arena
 
@@ -250,17 +251,11 @@ restoreLeaderFromRun = do
 
 -- | Render animations on top of the current screen frame.
 renderAnimFrames :: MonadClientUI m
-                 => Bool -> LevelId -> Animation -> m PreFrames3
-renderAnimFrames onBlank arena anim = do
+                 => LevelId -> Animation -> Maybe Bool -> m PreFrames3
+renderAnimFrames arena anim forceReport = do
   CCUI{coscreen=ScreenContent{rwidth}} <- getsSession sccui
   snoAnim <- getsClient $ snoAnim . soptions
-  FontSetup{..} <- getFontSetup
-  -- This hack is needed so that the prop part of the overlay does not
-  -- overwrite the fadeout animation.
-  let ovFont = if not onBlank || fromMaybe False snoAnim
-               then propFont
-               else squareFont
-  basicFrame <- basicFrameWithoutReport arena ovFont False
+  basicFrame <- basicFrameWithoutReport arena forceReport
   smuteMessages <- getsSession smuteMessages
   return $! if | smuteMessages -> []
                | fromMaybe False snoAnim -> [Just basicFrame]
@@ -274,5 +269,5 @@ animate arena anim = do
   -- projectiles hitting actors, so frames need to be skipped.
   keyPressed <- anyKeyPressed
   unless keyPressed $ do
-    frames <- renderAnimFrames False arena anim
+    frames <- renderAnimFrames arena anim Nothing
     displayFrames arena frames
