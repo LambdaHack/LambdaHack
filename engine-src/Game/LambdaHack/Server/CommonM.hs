@@ -3,16 +3,16 @@
 module Game.LambdaHack.Server.CommonM
   ( revealAll, generalMoveItem, deduceQuits
   , writeSaveAll, verifyCaches, deduceKilled, electLeader, setFreshLeader
-  , updatePer, recomputeCachePer
-  , projectFail, addActorFromGroup, registerActor, discoverIfMinorEffects
-  , pickWeaponServer, currentSkillsServer, allGroupItems
+  , updatePer, projectFail, addActorFromGroup, registerActor
+  , discoverIfMinorEffects, pickWeaponServer, currentSkillsServer, allGroupItems
   , addCondition, removeConditionSingle, addSleep, removeSleepSingle
   , addKillToAnalytics
 #ifdef EXPOSE_INTERNAL
     -- * Internal operations
   , revealItems, revealPerceptionLid, containerMoveItem, quitF, keepArenaFact
-  , anyActorsAlive, projectBla, addProjectile, addNonProjectile
-  , addActorIid, getCacheLucid, getCacheTotal
+  , anyActorsAlive, updatePerFromNew, recomputeCachePer
+  , projectBla, addProjectile, addNonProjectile, addActorIid
+  , getCacheLucid, getCacheTotal
 #endif
   ) where
 
@@ -125,11 +125,7 @@ revealAll fid = do
 revealPerceptionLid :: MonadServerAtomic m
                     => FactionId -> (LevelId, Level) -> m ()
 revealPerceptionLid fid (lid, lvl) = do
-  modifyServer $ \ser ->
-    ser {sperValidFid = EM.adjust (EM.insert lid True) fid $ sperValidFid ser}
-  sperFidOld <- getsServer sperFid
-  let perOld = sperFidOld EM.! fid EM.! lid
-      (x0, y0, x1, y1) = fromArea $ larea lvl
+  let (x0, y0, x1, y1) = fromArea $ larea lvl
       fullSet = ES.fromDistinctAscList [ Point x y
                                        | y <- [y0 .. y1]
                                        , x <- [x0 .. x1] ]
@@ -137,14 +133,7 @@ revealPerceptionLid fid (lid, lvl) = do
         { psight = PerVisible fullSet
         , psmell = PerSmelled ES.empty  -- don't obscure
         }
-      inPer = diffPer perNew perOld
-      outPer = diffPer perOld perNew
-  unless (nullPer outPer && nullPer inPer) $ do
-    -- Perception is modified on the server and sent to the client
-    -- together with all the revealed info.
-    let fper = EM.adjust (EM.insert lid perNew) fid
-    modifyServer $ \ser -> ser {sperFid = fper $ sperFid ser}
-    execSendPer fid lid outPer inPer perNew
+  updatePerFromNew fid lid perNew
 
 -- | Generate the atomic updates that jointly perform a given item move.
 generalMoveItem :: MonadStateRead m
@@ -358,27 +347,33 @@ setFreshLeader fid aid = do
     execUpdAtomic $ UpdLeadFaction fid (gleader fact) (Just aid)
 
 updatePer :: MonadServerAtomic m => FactionId -> LevelId -> m ()
-{-# INLINE updatePer #-}
 updatePer fid lid = do
-  modifyServer $ \ser ->
-    ser {sperValidFid = EM.adjust (EM.insert lid True) fid $ sperValidFid ser}
-  sperFidOld <- getsServer sperFid
-  let perOld = sperFidOld EM.! fid EM.! lid
   -- Performed in the State after action, e.g., with a new actor.
   perNew <- recomputeCachePer fid lid
-  let inPer = diffPer perNew perOld
+  updatePerFromNew fid lid perNew
+
+updatePerFromNew :: MonadServerAtomic m
+                 => FactionId -> LevelId -> Perception -> m ()
+updatePerFromNew fid lid perNew = do
+  sperFidOld <- getsServer sperFid
+  let perOld = sperFidOld EM.! fid EM.! lid
+      inPer = diffPer perNew perOld
       outPer = diffPer perOld perNew
-  unless (nullPer outPer && nullPer inPer) $
+  unless (nullPer outPer && nullPer inPer) $ do
+    -- Perception is modified on the server and sent to the client
+    -- together with all the revealed info.
+    let fper = EM.adjust (EM.insert lid perNew) fid
+    modifyServer $ \ser ->
+      ser { sperFid = fper $ sperFid ser
+          , sperValidFid = EM.adjust (EM.insert lid True) fid
+                           $ sperValidFid ser }
     execSendPer fid lid outPer inPer perNew
 
 recomputeCachePer :: MonadServer m => FactionId -> LevelId -> m Perception
 recomputeCachePer fid lid = do
   total <- getCacheTotal fid lid
   fovLucid <- getCacheLucid lid
-  perNew <- getsState $ perceptionFromPTotal fid lid fovLucid total
-  let fper = EM.adjust (EM.insert lid perNew) fid
-  modifyServer $ \ser -> ser {sperFid = fper $ sperFid ser}
-  return perNew
+  getsState $ perceptionFromPTotal fid lid fovLucid total
 
 -- The missile item is removed from the store only if the projection
 -- went into effect (no failure occured).
