@@ -21,6 +21,7 @@ import           Game.LambdaHack.Client.State
 import           Game.LambdaHack.Client.UI.ActorUI
 import           Game.LambdaHack.Client.UI.Content.Screen
 import           Game.LambdaHack.Client.UI.ContentClientUI
+import           Game.LambdaHack.Client.UI.EffectDescription
 import           Game.LambdaHack.Client.UI.Frame
 import           Game.LambdaHack.Client.UI.HandleHelperM
 import           Game.LambdaHack.Client.UI.ItemSlot
@@ -170,8 +171,12 @@ quitFactionUI fid toSt manalytics = do
         slides <-
           reportToSlideshowKeepHalt True [K.returnKM, K.spaceKM, K.escKM]
         km <- getConfirms ColorFull [K.returnKM, K.spaceKM, K.escKM] slides
-        if km == K.returnKM then
-          modifySession $ \sess -> sess {sreqDelay = ReqDelayHandled}
+        if km == K.returnKM then do
+          -- Enter aiming mode. At exit, game arena is wiped out.
+          lidV <- viewedLevelUI
+          let saimMode = Just $ AimMode lidV defaultDetailLevel
+          modifySession $ \sess -> sess { sreqDelay = ReqDelayHandled
+                                        , saimMode }
         else epilogue
       else do
         when (not noConfirmsGame || camping) $ do

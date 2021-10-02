@@ -61,9 +61,15 @@ queryUI = do
   sreqQueried <- getsSession sreqQueried
   let !_A = assert (not sreqQueried) ()  -- querying not nested
   modifySession $ \sess -> sess {sreqQueried = True}
-  res <- humanCommandWithLeader
+  let loop = do
+        mres <- humanCommandWithLeader
+        saimMode <- getsSession saimMode
+        case mres of
+          Nothing | isJust saimMode -> loop  -- loop until aiming finished
+          _ -> return mres
+  mres <- loop
   modifySession $ \sess -> sess {sreqQueried = False}
-  return res
+  return mres
 
 queryUIunderAI :: (MonadClient m, MonadClientUI m) => m RequestUI
 queryUIunderAI = do
