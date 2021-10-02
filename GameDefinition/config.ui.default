@@ -55,8 +55,8 @@ chosenFontset = "dejavuBold"
 ; 1.0 means don't scale; 1.5, 2.0, 3.0 give good results, <0.7 very bad
 ; for scales < 1 try fontsets with bolder auxiliary fonts and/or HintingLight
 allFontsScale = 1.0
-; NotFullscreen (default), BigBorderlessWindow (preferred), ModeChange
-; for 1920×1080 fullscreen, set allFontsScale = 1.5 above
+; NotFullscreen (default), BigBorderlessWindow (preferred), ModeChange.
+; For 1920×1080 fullscreen, set allFontsScale = 1.5 above.
 fullscreenMode = NotFullscreen
 screenOneMessagePerLine = True
 historyOneMessagePerLine = True
