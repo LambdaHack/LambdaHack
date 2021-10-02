@@ -72,7 +72,6 @@ import           Game.LambdaHack.Client.UI.PointUI
 import           Game.LambdaHack.Client.UI.SessionUI
 import           Game.LambdaHack.Client.UI.Slideshow
 import           Game.LambdaHack.Client.UI.SlideshowM
-import           Game.LambdaHack.Client.UI.UIOptions
 import           Game.LambdaHack.Common.Actor
 import           Game.LambdaHack.Common.ActorState
 import           Game.LambdaHack.Common.ClientOptions
@@ -764,13 +763,12 @@ allHistoryHuman = eitherHistory True
 eitherHistory :: forall m. MonadClientUI m => Bool -> m ()
 eitherHistory showAll = do
   CCUI{coscreen=ScreenContent{rwidth, rheight}} <- getsSession sccui
-  UIOptions{uHistory1PerLine} <- getsSession sUIOptions
   history <- getsSession shistory
   arena <- getArenaUI
   localTime <- getsState $ getLocalTime arena
   global <- getsState stime
   FontSetup{..} <- getFontSetup
-  let renderedHistoryRaw = renderHistory uHistory1PerLine history
+  let renderedHistoryRaw = renderHistory history
       histBoundRaw = length renderedHistoryRaw
       placeholderLine = textFgToAS Color.BrBlack
         "Newest_messages_are_at_the_bottom._Press_END_to_get_there."

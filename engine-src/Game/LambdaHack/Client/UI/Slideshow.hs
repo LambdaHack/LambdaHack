@@ -198,21 +198,13 @@ keysOKX displayFont ystart xstart width keys =
 
 -- The font argument is for the report and keys overlay. Others already have
 -- assigned fonts.
-splitOverlay :: FontSetup -> Bool -> Int -> Int -> Int
-             -> Report -> [K.KM] -> OKX
+splitOverlay :: FontSetup -> Int -> Int -> Int -> Report -> [K.KM] -> OKX
              -> Slideshow
-splitOverlay fontSetup uScreen1PerLine width height wrap
+splitOverlay fontSetup width height wrap
              report keys (ls0, kxs0) =
   let renderedReport = renderReport True report
-      reportAS = if uScreen1PerLine
-                 then foldr (<\:>) [] renderedReport
-                 else foldr (<+:>) [] renderedReport
-      msgLong = not uScreen1PerLine
-                && null keys && EM.null ls0 && null kxs0
-                && length reportAS <= 2 * width
-                && all ((/= '\n') . Color.charFromW32) reportAS
-                     -- if fits in one long line, don't wrap into short lines
-  in toSlideshow fontSetup $ splitOKX fontSetup msgLong width height wrap
+      reportAS = foldr (<\:>) [] renderedReport
+  in toSlideshow fontSetup $ splitOKX fontSetup False width height wrap
                                       reportAS keys (ls0, kxs0)
 
 -- Note that we only split wrt @White@ space, nothing else.

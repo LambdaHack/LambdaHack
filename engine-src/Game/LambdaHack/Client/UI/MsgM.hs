@@ -141,7 +141,5 @@ tgtKindVerb mtgt = case mtgt of
 
 -- | Store new report in the history and archive old report.
 recordHistory :: MonadClientUI m => m ()
-recordHistory = do
-  UIOptions{uHistory1PerLine} <- getsSession sUIOptions
-  modifySession $ \sess ->
-    sess {shistory = archiveReport uHistory1PerLine $ shistory sess}
+recordHistory =
+  modifySession $ \sess -> sess {shistory = archiveReport $ shistory sess}

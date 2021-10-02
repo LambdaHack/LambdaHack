@@ -29,8 +29,6 @@ data UIOptions = UIOptions
   , uLeftHand         :: Bool
   , uChosenFontset    :: Text
   , uAllFontsScale    :: Double
-  , uScreen1PerLine   :: Bool
-  , uHistory1PerLine  :: Bool
   , uHistoryMax       :: Int
   , uMaxFps           :: Double
   , uNoAnim           :: Bool

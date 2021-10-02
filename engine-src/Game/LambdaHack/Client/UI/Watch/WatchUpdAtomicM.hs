@@ -492,7 +492,7 @@ watchRespUpdAtomicUI cmd = case cmd of
     oldSess <- getSession
     svictories <- getsClient svictories
     snxtChal <- getsClient snxtChal
-    let uiOptions@UIOptions{uHistory1PerLine} = sUIOptions oldSess
+    let uiOptions = sUIOptions oldSess
         f !acc _p !i _a = i : acc
         modes = zip [0..] $ ofoldlGroup' comode CAMPAIGN_SCENARIO f []
         g :: (Int, ContentId ModeKind) -> Int
@@ -520,7 +520,7 @@ watchRespUpdAtomicUI cmd = case cmd of
         , srandomUI = srandom
         }
     when (sstart oldSess == 0) resetSessionStart
-    when (lengthHistory uHistory1PerLine (shistory oldSess) == 0) $ do
+    when (lengthHistory (shistory oldSess) == 0) $ do
       let title = T.pack $ rtitle corule
       msgAdd MsgBookKeeping $ "Welcome to" <+> title <> "!"
       -- Generate initial history. Only for UI clients.
@@ -560,7 +560,7 @@ watchRespUpdAtomicUI cmd = case cmd of
     msgLnAdd MsgBadMiscEvent blurb  -- being here is a bad turn of events
     when (cwolf curChal && not loneMode) $
       msgAdd MsgActionWarning "Being a lone wolf, you begin without companions."
-    when (lengthHistory uHistory1PerLine (shistory oldSess) > 1) $
+    when (lengthHistory (shistory oldSess) > 1) $
       fadeOutOrIn False
     setFrontAutoYes $ isAIFact fact
     -- Forget the furious keypresses when dying in the previous game.

@@ -580,26 +580,25 @@ addEolToNewReport hist =
 
 -- | Archive old report to history, filtering out messages with 0 duplicates
 -- and prompts. Set up new report with a new timestamp.
-archiveReport :: Bool -> History -> History
-archiveReport uHistory1PerLine History{newReport=Report newMsgs, ..} =
+archiveReport :: History -> History
+archiveReport History{newReport=Report newMsgs, ..} =
   let newFiltered@(Report r) = Report $ filter (not . nullRepMsgNK) newMsgs
   in if null r
      then -- Drop empty new report.
           History emptyReport timeZero oldReport oldTime archivedHistory
      else let lU = map attrStringToU
-                   $ renderTimeReport uHistory1PerLine oldTime oldReport
+                   $ renderTimeReport oldTime oldReport
           in History emptyReport timeZero newFiltered newTime
              $ foldl' (\ !h !v -> RB.cons v h) archivedHistory lU
 
-renderTimeReport :: Bool -> Time -> Report -> [AttrString]
-renderTimeReport uHistory1PerLine t rep@(Report r) =
+renderTimeReport :: Time -> Report -> [AttrString]
+renderTimeReport t rep@(Report r) =
   let turns = t `timeFitUp` timeTurn
       repMsgs = renderReport False rep
       mgsClasses = reverse $ map (showSimpleMsgClass . msgClass . repMsg) r
       turnsString = show turns
       isSpace32 = Char.isSpace . Color.charFromW32
       worthSaving = not . all isSpace32
-      renderAS as = stringToAS (turnsString ++ ": ") ++ dropWhile isSpace32 as
       renderClass (as, msgClassString) =
         let lenUnderscore = 17 - length msgClassString
                             + max 0 (3 - length turnsString)
@@ -608,19 +607,17 @@ renderTimeReport uHistory1PerLine t rep@(Report r) =
                   ("[" ++ replicate lenUnderscore '_' ++ msgClassString ++ "]")
            ++ [Color.spaceAttrW32]
            ++ dropWhile isSpace32 as
-  in if uHistory1PerLine
-     then map renderClass $ filter (worthSaving . fst) $ zip repMsgs mgsClasses
-     else map renderAS $ filter worthSaving [foldr (<+:>) [] repMsgs]
+  in map renderClass $ filter (worthSaving . fst) $ zip repMsgs mgsClasses
 
-lengthHistory :: Bool -> History -> Int
-lengthHistory uHistory1PerLine History{oldReport, archivedHistory} =
+lengthHistory :: History -> Int
+lengthHistory History{oldReport, archivedHistory} =
   RB.length archivedHistory
-  + length (renderTimeReport uHistory1PerLine timeZero oldReport)
-    -- matches @renderHistory@
+  + length (renderTimeReport timeZero oldReport)
+      -- matches @renderHistory@
 
 -- | Render history as many lines of text. New report is not rendered.
 -- It's expected to be empty when history is shown.
-renderHistory :: Bool -> History -> [AttrString]
-renderHistory uHistory1PerLine History{..} =
+renderHistory :: History -> [AttrString]
+renderHistory History{..} =
   map uToAttrString (RB.toList archivedHistory)
-  ++ renderTimeReport uHistory1PerLine oldTime oldReport
+  ++ renderTimeReport oldTime oldReport
