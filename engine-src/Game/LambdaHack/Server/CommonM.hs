@@ -130,14 +130,20 @@ revealPerceptionLid fid (lid, lvl) = do
   sperFidOld <- getsServer sperFid
   let perOld = sperFidOld EM.! fid EM.! lid
       (x0, y0, x1, y1) = fromArea $ larea lvl
-      fullSet = ES.fromAscList [Point x y | y <- [y0 .. y1], x <- [x0 .. x1]]
+      fullSet = ES.fromDistinctAscList [ Point x y
+                                       | y <- [y0 .. y1]
+                                       , x <- [x0 .. x1] ]
       perNew = Perception
         { psight = PerVisible fullSet
         , psmell = PerSmelled ES.empty  -- don't obscure
         }
       inPer = diffPer perNew perOld
       outPer = diffPer perOld perNew
-  unless (nullPer outPer && nullPer inPer) $
+  unless (nullPer outPer && nullPer inPer) $ do
+    -- Perception is modified on the server and sent to the client
+    -- together with all the revealed info.
+    let fper = EM.adjust (EM.insert lid perNew) fid
+    modifyServer $ \ser -> ser {sperFid = fper $ sperFid ser}
     execSendPer fid lid outPer inPer perNew
 
 -- | Generate the atomic updates that jointly perform a given item move.
