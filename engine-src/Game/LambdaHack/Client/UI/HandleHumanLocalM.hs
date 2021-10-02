@@ -92,7 +92,7 @@ import           Game.LambdaHack.Content.RuleKind
 import qualified Game.LambdaHack.Definition.Ability as Ability
 import qualified Game.LambdaHack.Definition.Color as Color
 import           Game.LambdaHack.Definition.Defs
-
+import           Game.LambdaHack.Definition.DefsInternal
 -- * Macro
 
 macroHuman :: MonadClientUI m => [String] -> m ()
@@ -520,7 +520,16 @@ psuitReq leader = do
             in Right (pos, 1 + IA.totalRange arItem (itemKind itemFull)
                            >= chessDist (bpos b) pos)
 
-triggerSymbols :: [HumanCmd.TriggerItem] -> [Char]
+-- | triggerSymbols
+--
+-- >>> let trigger1 = HumanCmd.TriggerItem{tiverb="verb", tiobject="object", tisymbols=[toContentSymbol 'a', toContentSymbol 'b']}
+-- >>> let trigger2 = HumanCmd.TriggerItem{tiverb="verb2", tiobject="object2", tisymbols=[toContentSymbol 'c']}
+-- >>> triggerSymbols [trigger1, trigger2]
+-- "abc"
+--
+-- >>> triggerSymbols []
+-- ""
+triggerSymbols :: [HumanCmd.TriggerItem] -> [ContentSymbol IK.ItemKind]
 triggerSymbols [] = []
 triggerSymbols (HumanCmd.TriggerItem{tisymbols} : ts) =
   tisymbols ++ triggerSymbols ts

@@ -52,7 +52,8 @@ itemRevUnitTests = testGroup "itemRevUnitTests" $
   in
   [ testCase "empty & default initializers -> first is single dummy result" $
       let rndMapPair0 = return emptyIdToFlavourSymbolToFlavourSetPair
-          (mapPair1, _) = St.runState (rollFlavourMap U.empty rndMapPair0 (toContentId 0) testItemKind) $ SM.mkSMGen 1
+          mapPair1 = St.evalState (rollFlavourMap U.empty rndMapPair0 (toContentId 0) testItemKind) $ SM.mkSMGen 1
+--          (mapPair1, _) = St.runState (rollFlavourMap U.empty rndMapPair0 (toContentId 0) testItemKind) $ SM.mkSMGen 1
         in fst mapPair1 @?= EM.singleton (toContentId 0) dummyFlavour
   , testCase "empty & default initializers -> second is empty" $
       let rndMapPair0 = return emptyIdToFlavourSymbolToFlavourSetPair

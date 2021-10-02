@@ -19,6 +19,7 @@ import           Game.LambdaHack.Server
 import qualified Content.RuleKind
 import           TieKnot
 
+import HandleHumanLocalMUnitTests
 import ItemDescriptionUnitTests
 import ItemKindUnitTests
 import ItemRevUnitTests
@@ -29,7 +30,8 @@ main :: IO ()
 main = defaultMain tests
 
 tests :: TestTree
-tests = testGroup "Tests" [ itemDescriptionUnitTests
+tests = testGroup "Tests" [ handleHumanLocalMUnitTests
+                          , itemDescriptionUnitTests
                           , itemKindUnitTests
                           , itemRevUnitTests
                           , reqFailureUnitTests
