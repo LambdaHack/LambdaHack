@@ -14,7 +14,7 @@ module Game.LambdaHack.Client
   , Response (..)
     -- * Re-exported from "Game.LambdaHack.Client.UI"
   , CCUI
-  , UIOptions, applyUIOptions, uCmdline, mkUIOptions
+  , UIOptions, applyUIOptions, uOverrideCmdline, mkUIOptions
   ) where
 
 import Prelude ()

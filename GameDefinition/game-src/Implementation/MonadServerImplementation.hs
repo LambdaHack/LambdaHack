@@ -137,7 +137,7 @@ instance MonadServerAtomic SerImplementation where
 -- initial states, in the @IO@ monad.
 executorSer :: COps -> CCUI -> ServerOptions -> UIOptions -> IO ()
 executorSer cops@COps{corule} ccui soptionsNxtCmdline sUIOptions = do
-  soptionsNxtRaw <- case uCmdline sUIOptions of
+  soptionsNxtRaw <- case uOverrideCmdline sUIOptions of
     []   -> return soptionsNxtCmdline
     args -> handleParseResult $ execParserPure defaultPrefs serverOptionsPI args
   -- Options for the clients modified with the configuration file.

@@ -58,12 +58,16 @@ allFontsScale = 1.0
 ; NotFullscreen (default), BigBorderlessWindow (preferred), ModeChange.
 ; For 1920×1080 fullscreen, set allFontsScale = 1.5 above.
 fullscreenMode = NotFullscreen
+; HP percent at which warning is emitted.
+hpWarningPercent = 20
 ; New historyMax takes effect after removal of savefiles.
 ; Looks best if is divisble by screenful of message (rheight - 4 = 20).
 historyMax = 5000
+; Frames per second throttled at this value.
 maxFps = 24
+; Animations when actors act are not displayed.
 noAnim = False
-hpWarningPercent = 20
+; Hardwired commandline arguments to process.
 overrideCmdline = ""
 
 [fonts]

@@ -10,7 +10,7 @@ module Game.LambdaHack.Client.UI
   , watchRespUpdAtomicUI, watchRespSfxAtomicUI
     -- * Startup and initialization
   , CCUI(..)
-  , UIOptions, applyUIOptions, uCmdline, mkUIOptions
+  , UIOptions, applyUIOptions, uOverrideCmdline, mkUIOptions
     -- * Operations exposed for "Game.LambdaHack.Client.LoopM"
   , ChanFrontend, chanFrontend, tryRestore, clientPrintUI
 #ifdef EXPOSE_INTERNAL

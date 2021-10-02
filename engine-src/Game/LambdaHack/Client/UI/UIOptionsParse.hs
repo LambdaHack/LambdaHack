@@ -76,13 +76,12 @@ parseConfig cfg =
       uLeftHand = getOption "movementLeftHandKeys_axwdqezc"
       uChosenFontset = getOption "chosenFontset"
       uAllFontsScale = getOption "allFontsScale"
+      uFullscreenMode = getOption "fullscreenMode"
+      uhpWarningPercent = getOption "hpWarningPercent"
       uHistoryMax = getOption "historyMax"
       uMaxFps = max 1 $ getOption "maxFps"
       uNoAnim = getOption "noAnim"
-      uhpWarningPercent = getOption "hpWarningPercent"
-      uMessageColors =
-        map (second readError) $ Ini.allItems "message_colors" cfg
-      uCmdline = glueSeed $ words $ getOption "overrideCmdline"
+      uOverrideCmdline = glueSeed $ words $ getOption "overrideCmdline"
       uFonts =
         let toFont (ident, fontString) = (T.pack ident, readError fontString)
             section = Ini.allItems "fonts" cfg
@@ -92,7 +91,8 @@ parseConfig cfg =
               (T.pack ident, readError fontSetString)
             section = Ini.allItems "fontsets" cfg
         in map toFontSet section
-      uFullscreenMode = getOption "fullscreenMode"
+      uMessageColors =
+        map (second readError) $ Ini.allItems "message_colors" cfg
   in UIOptions{..}
 
 glueSeed :: [String] -> [String]
@@ -157,8 +157,6 @@ applyUIOptions COps{corule} uioptions =
         schosenFontset opts `mplus` Just (uChosenFontset uioptions)}) .
      (\opts -> opts {sallFontsScale =
         sallFontsScale opts `mplus` Just (uAllFontsScale uioptions)}) .
-     (\opts -> opts {sfonts = uFonts uioptions}) .
-     (\opts -> opts {sfontsets = uFontsets uioptions}) .
      (\opts -> opts {sfullscreenMode =
         sfullscreenMode opts `mplus` Just (uFullscreenMode uioptions)}) .
      (\opts -> opts {smaxFps =
@@ -166,4 +164,7 @@ applyUIOptions COps{corule} uioptions =
      (\opts -> opts {snoAnim =
         snoAnim opts `mplus` Just (uNoAnim uioptions)}) .
      (\opts -> opts {stitle =
-        stitle opts `mplus` Just (rtitle corule)})
+        stitle opts `mplus` Just (rtitle corule)}) .
+     (\opts -> opts {sfonts = uFonts uioptions}) .
+     (\opts -> opts {sfontsets = uFontsets uioptions}) .
+     id

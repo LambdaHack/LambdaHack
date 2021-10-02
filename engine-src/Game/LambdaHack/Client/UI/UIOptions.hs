@@ -18,30 +18,24 @@ import           Game.LambdaHack.Common.ClientOptions (FullscreenMode)
 import           Game.LambdaHack.Common.Misc
 import qualified Game.LambdaHack.Definition.Color as Color
 
--- | Options that affect the UI of the client, specified in the config file. More documentation is in the default config file.
+-- | Options that affect the UI of the client, specified in the config file.
+-- More documentation is in the default config file.
 data UIOptions = UIOptions
-  { -- commands
-    uCommands         :: [(K.KM, CmdTriple)]
-    -- hero names
+  { uCommands         :: [(K.KM, CmdTriple)]
   , uHeroNames        :: [(Int, (Text, Text))]
-    -- ui
   , uVi               :: Bool
   , uLeftHand         :: Bool
   , uChosenFontset    :: Text
   , uAllFontsScale    :: Double
+  , uFullscreenMode   :: FullscreenMode
+  , uhpWarningPercent :: Int
   , uHistoryMax       :: Int
   , uMaxFps           :: Double
   , uNoAnim           :: Bool
-  , uhpWarningPercent :: Int
-      -- ^ HP percent at which warning is emitted.
-  , uMessageColors    :: [(String, Color.Color)]
-      -- ^ Prefixes of message class constructor names paired with colors.
-      --   The first prefix that matches, wins.
-  , uCmdline          :: [String]
-      -- ^ Hardwired commandline arguments to process.
+  , uOverrideCmdline  :: [String]
   , uFonts            :: [(Text, FontDefinition)]
   , uFontsets         :: [(Text, FontSet)]
-  , uFullscreenMode   :: FullscreenMode
+  , uMessageColors    :: [(String, Color.Color)]
   }
   deriving (Show, Generic)
 
