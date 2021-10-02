@@ -10,7 +10,6 @@ import Game.LambdaHack.Core.Prelude
 
 import           Game.LambdaHack.Client.MonadClient
 import           Game.LambdaHack.Client.State
-import           Game.LambdaHack.Client.UI.EffectDescription
 import qualified Game.LambdaHack.Client.UI.HumanCmd as HumanCmd
 import qualified Game.LambdaHack.Client.UI.Key as K
 import           Game.LambdaHack.Client.UI.MonadClientUI
@@ -94,6 +93,7 @@ promptMainKeys = do
   saimMode <- getsSession saimMode
   UIOptions{uVi, uLeftHand} <- getsSession sUIOptions
   xhair <- getsSession sxhair
+  miniHintAiming <- getMiniHintAiming
   -- The silly "axwdqezc" name of keys is chosen to match "hjklyubn",
   -- which the usual way of writing them.
   let moveKeys | uVi && uLeftHand = "keypad or axwdqezc or hjklyubn"
@@ -101,7 +101,6 @@ promptMainKeys = do
                | uVi = "keypad or hjklyubn"
                | otherwise = "keypad"
       manyTeammates = length ours > 1
-      detailAtDefault = (detailLevel <$> saimMode) == Just defaultDetailLevel
       -- @Tab@ here is not a button, which we would write consistently
       -- as @TAB@, just as in our internal in-game key naming, but a key name
       -- as written on the keyboard, hence most useful to a newbie.
@@ -125,7 +124,7 @@ promptMainKeys = do
         <+> keepTab
         <+> moreHelp
            | otherwise =
-        (if detailAtDefault then "" else miniHintAimingBare)
+        miniHintAiming
         <+> tgtKindVerb xhair
         <+> "with" <+> moveKeys <+> "keys or mouse."
         <+> keepTab

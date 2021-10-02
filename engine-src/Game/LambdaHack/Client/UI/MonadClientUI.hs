@@ -11,10 +11,9 @@ module Game.LambdaHack.Client.UI.MonadClientUI
   , clientPrintUI, debugPossiblyPrintUI, getSession, putSession, displayFrames
   , connFrontendFrontKey, setFrontAutoYes, frontendShutdown, printScreen
   , chanFrontend, anyKeyPressed, discardPressedKey, resetPressedKeys
-  , revCmdMap, getReportUI, computeChosenLore
-  , miniHintAimingBare, miniHintAimingLore, getArenaUI, viewedLevelUI
-  , mxhairToPos, xhairToPos, setXHairFromGUI, clearAimMode
-  , getFontSetup, scoreToSlideshow, defaultHistory
+  , revCmdMap, getReportUI, getMiniHintAiming, computeChosenLore
+  , getArenaUI, viewedLevelUI, mxhairToPos, xhairToPos, setXHairFromGUI
+  , clearAimMode, getFontSetup, scoreToSlideshow, defaultHistory
   , tellAllClipPS, tellGameClipPS, elapsedSessionTimeGT
   , resetSessionStart, resetGameStart, partActorLeader, partPronounLeader
   , tryRestore, rndToActionUI, tryOpenBrowser
@@ -200,32 +199,46 @@ revCmdMap = do
 getReportUI :: MonadClientUI m => Bool -> m Report
 getReportUI insideMenu = do
   saimMode <- getsSession saimMode
-  (inhabitants, embeds) <-
-    if isJust saimMode then computeChosenLore else return ([], [])
   sUIOptions <- getsSession sUIOptions
   report <- getsSession $ newReport . shistory
   curTutorial <- getsSession scurTutorial
   overrideTut <- getsSession soverrideTut
   sreqDelay <- getsSession sreqDelay
+  miniHintAiming <- getMiniHintAiming
   -- Different from ordinary tutorial hints in that shown more than once.
   let newcomerHelp = fromMaybe curTutorial overrideTut
       detailAtDefault = (detailLevel <$> saimMode) == Just defaultDetailLevel
       detailMinimal = (detailLevel <$> saimMode) == Just minBound
       prefixColors = uMessageColors sUIOptions
-      -- Here we assume newbies don't override default keys.
-      miniHintAiming = if null inhabitants && null embeds
-                       then miniHintAimingBare
-                       else miniHintAimingLore
       promptAim = toMsgShared prefixColors MsgPromptGeneric
-                  $ miniHintAiming <> "\n"
+                              (miniHintAiming <> "\n")
       promptDelay = toMsgShared prefixColors MsgPromptAction
-                                  "<press any key to regain control>"
-  return $! if | newcomerHelp && not insideMenu
-                 && detailAtDefault && not detailMinimal ->
+                                "<press any key to regain control>"
+  return $! if | (newcomerHelp || sreqDelay == ReqDelayHandled)
+                 && not insideMenu && detailAtDefault && not detailMinimal ->
                    consReport promptAim report
                | sreqDelay == ReqDelayAlarm && not insideMenu ->
                    consReport promptDelay report
                | otherwise -> report
+
+getMiniHintAiming :: MonadClientUI m => m Text
+getMiniHintAiming = do
+  saimMode <- getsSession saimMode
+  (inhabitants, embeds) <-
+    if isJust saimMode then computeChosenLore else return ([], [])
+  sreqDelay <- getsSession sreqDelay
+  mleader <- getsClient sleader
+  let loreCommandAvailable = not (null inhabitants && null embeds)
+                             && isJust mleader
+  -- Here we assume newbies don't override default keys.
+  return $! T.unwords $ concat
+    [ ["Aiming mode:"]
+    , ["'~' for lore," | loreCommandAvailable ]
+    , ["'f' to fling," | sreqDelay /= ReqDelayHandled]
+    , [if loreCommandAvailable && sreqDelay /= ReqDelayHandled
+       then "SPACE or RMB to hush,"  -- shorter, because less space left
+       else "SPACE or RMB to cycle detail,"]
+    , ["ESC to cancel."] ]
 
 computeChosenLore :: MonadClientUI m
                   => m ([(ActorId, Actor)], [(ItemId, ItemQuant)])
@@ -238,12 +251,6 @@ computeChosenLore = do
                   . posToAidAssocs xhairPos lidV
   embeds0 <- getsState $ EM.assocs . getEmbedBag lidV xhairPos
   return (inhabitants0, embeds0)
-
-miniHintAimingBare :: Text
-miniHintAimingBare = "Aiming mode: press 'f' to fling, SPACE or RMB to cycle detail, ESC to cancel."
-
-miniHintAimingLore :: Text
-miniHintAimingLore = "Aiming mode: '~' for lore, 'f' to fling, SPACE or RMB to hush, ESC to cancel."
 
 getArenaUI :: MonadClientUI m => m LevelId
 getArenaUI = do
