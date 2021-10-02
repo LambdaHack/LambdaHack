@@ -355,6 +355,9 @@ updatePer fid lid = do
 updatePerFromNew :: MonadServerAtomic m
                  => FactionId -> LevelId -> Perception -> m ()
 updatePerFromNew fid lid perNew = do
+  -- Even if nothing needed to be done, perception is now validated.
+  modifyServer $ \ser ->
+    ser {sperValidFid = EM.adjust (EM.insert lid True) fid $ sperValidFid ser}
   sperFidOld <- getsServer sperFid
   let perOld = sperFidOld EM.! fid EM.! lid
       inPer = diffPer perNew perOld
@@ -363,10 +366,7 @@ updatePerFromNew fid lid perNew = do
     -- Perception is modified on the server and sent to the client
     -- together with all the revealed info.
     let fper = EM.adjust (EM.insert lid perNew) fid
-    modifyServer $ \ser ->
-      ser { sperFid = fper $ sperFid ser
-          , sperValidFid = EM.adjust (EM.insert lid True) fid
-                           $ sperValidFid ser }
+    modifyServer $ \ser -> ser {sperFid = fper $ sperFid ser}
     execSendPer fid lid outPer inPer perNew
 
 recomputeCachePer :: MonadServer m => FactionId -> LevelId -> m Perception
