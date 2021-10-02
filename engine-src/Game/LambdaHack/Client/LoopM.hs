@@ -168,9 +168,10 @@ loopUI timeSinceLastQuery = do
   let alarm = timeSinceLastQuery > longestDelay
   if | not alarm  -- no alarm starting right now
        && -- no need to mark AI for control regain ASAP:
-          (sreqDelay /= ReqDelayAlarm  -- no old alarm still in effect
+          (sreqDelay == ReqDelayNot  -- no old alarm still in effect
            || sregainControl  -- AI control already marked for regain
-           || not keyPressed) -> do  -- player does not insist
+           || (not keyPressed  -- player does not insist by keypress
+               && sreqDelay /= ReqDelayHandled)) -> do  -- or by hack
        timeBefore <- liftIO getPOSIXTime
        cmd <- receiveResponse
        timeAfter <- liftIO getPOSIXTime
@@ -187,7 +188,9 @@ loopUI timeSinceLastQuery = do
              msgAdd MsgActionAlert "Warning: server updated game state after current command was issued by the client but before it was received by the server."
            -- This measures only the server's delay.
            loopUI $ timeSinceLastQuery - timeBefore + timeAfter
-     | not sregainControl && (keyPressed || isJust sreqPending) -> do
+     | not sregainControl && (keyPressed
+                              || sreqDelay == ReqDelayHandled
+                              || isJust sreqPending) -> do
          -- ignore alarm if to be handled by AI control regain code elsewhere
        -- The keys mashed to gain control are not considered a command.
        resetPressedKeys

@@ -154,17 +154,30 @@ quitFactionUI fid toSt manalytics = do
               , displayGameOverLore SCondition sexposeItems generationAn
               , displayGameOverLore SBlast True generationAn
               , displayGameOverLore SEmbed True generationAn ]
-      unless noConfirmsGame $ do
+      go2 <- if noConfirmsGame then return False else do
         -- Show score for any UI client after any kind of game exit,
         -- even though it's saved only for human UI clients at game over
         -- (that is not a noConfirms or benchmark game).
         scoreSlides <- scoreToSlideshow total status
-        void $ getConfirms ColorFull [K.spaceKM, K.escKM] scoreSlides
-      -- The last prompt stays onscreen during shutdown, etc.
-      when (not noConfirmsGame || camping) $ do
-        msgAdd MsgPromptGeneric pp
-        when camping $ msgAdd MsgPromptGeneric "Saving..."
-        pushReportFrame  -- don't leave frozen prompts on the browser screen
+        km <- getConfirms ColorFull [K.spaceKM, K.escKM] scoreSlides
+        return $! km == K.spaceKM
+      let epilogue = do
+            when camping $ msgAdd MsgPromptGeneric "Saving..."
+            -- Don't leave frozen old prompts on the browser screen.
+            pushReportFrame
+      if go2 && not noConfirmsGame && not camping then do
+        msgAdd MsgPromptGeneric $ pp <+> "(Press RET to have one last look at the arena of your struggle before it gets forgotten.)"
+        slides <-
+          reportToSlideshowKeepHalt True [K.returnKM, K.spaceKM, K.escKM]
+        km <- getConfirms ColorFull [K.returnKM, K.spaceKM, K.escKM] slides
+        if km == K.returnKM then
+          modifySession $ \sess -> sess {sreqDelay = ReqDelayHandled}
+        else epilogue
+      else do
+        when (not noConfirmsGame || camping) $ do
+          -- The last prompt stays onscreen during shutdown, etc.
+          msgAdd MsgPromptGeneric pp
+          epilogue
     _ ->
       when (isJust startingPart && (stOutcome <$> toSt) == Just Killed) $ do
         msgAdd MsgTutorialHint "When a whole faction gets eliminated, no new members of the party will ever appear and its stashed belongings may await far off, unclaimed and undefended. While some adventures require eliminating a faction (as seen in the adventure description screen in the help menu), for others it's an optional task, if possible at all. Instead, finding an exit may be necessary to win. It's enough if one character finds and triggers the exit. Others automatically follow, duly hauling all party belongings."
