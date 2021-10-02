@@ -17,6 +17,7 @@ import qualified Game.LambdaHack.Client.UI.Key as K
 import           Game.LambdaHack.Common.ClientOptions (FullscreenMode)
 import           Game.LambdaHack.Common.Misc
 import qualified Game.LambdaHack.Definition.Color as Color
+import           Game.LambdaHack.Definition.Defs
 
 -- | Options that affect the UI of the client, specified in the config file.
 -- More documentation is in the default config file.
@@ -29,6 +30,7 @@ data UIOptions = UIOptions
   , uAllFontsScale    :: Double
   , uFullscreenMode   :: FullscreenMode
   , uhpWarningPercent :: Int
+  , uMsgWrapColumn    :: X
   , uHistoryMax       :: Int
   , uMaxFps           :: Double
   , uNoAnim           :: Bool

@@ -22,7 +22,6 @@ import Game.LambdaHack.Definition.Defs
 data ScreenContent = ScreenContent
   { rwidth        :: X         -- ^ screen width
   , rheight       :: Y         -- ^ screen height
-  , rwrap         :: X         -- ^ wrap messages after this number of columns
   , rwebAddress   :: String    -- ^ an extra blurb line for the main menu
   , rintroScreen  :: ([String], [[String]])
                                -- ^ the intro screen (first help screen) text

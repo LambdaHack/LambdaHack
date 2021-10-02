@@ -78,6 +78,7 @@ parseConfig cfg =
       uAllFontsScale = getOption "allFontsScale"
       uFullscreenMode = getOption "fullscreenMode"
       uhpWarningPercent = getOption "hpWarningPercent"
+      uMsgWrapColumn = getOption "msgWrapColumn"
       uHistoryMax = getOption "historyMax"
       uMaxFps = max 1 $ getOption "maxFps"
       uNoAnim = getOption "noAnim"

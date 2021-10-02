@@ -22,7 +22,6 @@ emptyCCUI = CCUI
   { coinput = InputContent M.empty [] M.empty
   , coscreen = ScreenContent { rwidth = 0
                              , rheight = 0
-                             , rwrap = 0
                              , rwebAddress = ""
                              , rintroScreen = ([], [])
                              , rapplyVerbMap = EM.empty

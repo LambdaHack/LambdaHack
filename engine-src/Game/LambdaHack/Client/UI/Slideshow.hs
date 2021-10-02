@@ -200,8 +200,7 @@ keysOKX displayFont ystart xstart width keys =
 -- assigned fonts.
 splitOverlay :: FontSetup -> Int -> Int -> Int -> Report -> [K.KM] -> OKX
              -> Slideshow
-splitOverlay fontSetup width height wrap
-             report keys (ls0, kxs0) =
+splitOverlay fontSetup width height wrap report keys (ls0, kxs0) =
   let renderedReport = renderReport True report
       reportAS = foldr (<\:>) [] renderedReport
   in toSlideshow fontSetup $ splitOKX fontSetup False width height wrap

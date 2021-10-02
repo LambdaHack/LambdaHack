@@ -1794,7 +1794,8 @@ challengeMenuHuman :: MonadClientUI m
                    -> m (Either MError ReqUI)
 challengeMenuHuman cmdSemInCxtOfKM = do
   cops <- getsState scops
-  CCUI{coscreen=ScreenContent{rwidth, rwrap}} <- getsSession sccui
+  CCUI{coscreen=ScreenContent{rwidth}} <- getsSession sccui
+  UIOptions{uMsgWrapColumn} <- getsSession sUIOptions
   FontSetup{..} <- getFontSetup
   svictories <- getsClient svictories
   snxtScenario <- getsSession snxtScenario
@@ -1835,7 +1836,7 @@ challengeMenuHuman cmdSemInCxtOfKM = do
                               , "" ]
       widthProp = if isSquareFont propFont
                   then rwidth `div` 2
-                  else min rwrap (rwidth - 2)
+                  else min uMsgWrapColumn (rwidth - 2)
       widthMono = if isSquareFont propFont
                   then rwidth `div` 2
                   else rwidth - 2

@@ -27,6 +27,7 @@ import           Game.LambdaHack.Client.UI.Overlay
 import           Game.LambdaHack.Client.UI.PointUI
 import           Game.LambdaHack.Client.UI.SessionUI
 import           Game.LambdaHack.Client.UI.Slideshow
+import           Game.LambdaHack.Client.UI.UIOptions
 import qualified Game.LambdaHack.Definition.Color as Color
 
 -- | Add current report to the overlay, split the result and produce,
@@ -34,11 +35,12 @@ import qualified Game.LambdaHack.Definition.Color as Color
 overlayToSlideshow :: MonadClientUI m
                    => Int -> [K.KM] -> OKX -> m Slideshow
 overlayToSlideshow y keys okx = do
-  CCUI{coscreen=ScreenContent{rwidth, rwrap}} <- getsSession sccui
+  CCUI{coscreen=ScreenContent{rwidth}} <- getsSession sccui
+  UIOptions{uMsgWrapColumn} <- getsSession sUIOptions
   report <- getReportUI True
   recordHistory  -- report will be shown soon, remove it to history
   fontSetup <- getFontSetup
-  return $! splitOverlay fontSetup rwidth y rwrap report keys okx
+  return $! splitOverlay fontSetup rwidth y uMsgWrapColumn report keys okx
 
 -- | Split current report into a slideshow.
 reportToSlideshow :: MonadClientUI m => [K.KM] -> m Slideshow
@@ -54,12 +56,13 @@ reportToSlideshow keys = do
 -- if important). Unless the prompts interrupt the macro, which is as well.
 reportToSlideshowKeepHalt :: MonadClientUI m => Bool -> [K.KM] -> m Slideshow
 reportToSlideshowKeepHalt insideMenu keys = do
-  CCUI{coscreen=ScreenContent{rwidth, rheight, rwrap}} <- getsSession sccui
+  CCUI{coscreen=ScreenContent{rwidth, rheight}} <- getsSession sccui
+  UIOptions{uMsgWrapColumn} <- getsSession sUIOptions
   report <- getReportUI insideMenu
   -- Don't do @recordHistory@; the message is important, but related
   -- to the messages that come after, so should be shown together.
   fontSetup <- getFontSetup
-  return $! splitOverlay fontSetup rwidth (rheight - 2) rwrap
+  return $! splitOverlay fontSetup rwidth (rheight - 2) uMsgWrapColumn
                          report keys (EM.empty, [])
 
 -- | Display a message. Return value indicates if the player wants to continue.
