@@ -1329,8 +1329,7 @@ aimPointerFloorLoud loud = do
                in Just $ AimMode lidV newDetail
            , sxhairMoused }
     setXHairFromGUI sxhair
-    when loud $
-      doLook
+    when loud doLook
   else stopPlayBack
 
 -- * AimPointerEnemy

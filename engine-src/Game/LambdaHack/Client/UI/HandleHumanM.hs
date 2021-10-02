@@ -103,30 +103,30 @@ cmdSemanticsLeader cmd = case cmd of
   LoopOnNothing cmd1 -> CmdNoNeed $ loopOnNothingHuman (cmdSemantics cmd1)
   ExecuteIfClear cmd1 -> CmdNoNeed $ executeIfClearHuman (cmdSemantics cmd1)
 
-  Wait -> weaveLeader $ \leader -> (ReqUITimed <$$> waitHuman leader)
-  Wait10 -> weaveLeader $ \leader -> (ReqUITimed <$$> waitHuman10 leader)
-  Yell -> weaveLeader $ \leader -> (ReqUITimed <$$> yellHuman leader)
+  Wait -> weaveLeader $ \leader -> ReqUITimed <$$> waitHuman leader
+  Wait10 -> weaveLeader $ \leader -> ReqUITimed <$$> waitHuman10 leader
+  Yell -> weaveLeader $ \leader -> ReqUITimed <$$> yellHuman leader
   MoveDir v -> weaveLeader $ \leader ->
-                 (ReqUITimed <$$> moveRunHuman leader True True False False v)
+                 ReqUITimed <$$> moveRunHuman leader True True False False v
   RunDir v -> weaveLeader $ \leader ->
-                (ReqUITimed <$$> moveRunHuman leader True True True True v)
+                ReqUITimed <$$> moveRunHuman leader True True True True v
   RunOnceAhead ->
     CmdLeader $ \leader -> ReqUITimed <$$> runOnceAheadHuman leader
   MoveOnceToXhair -> weaveLeader $ \leader ->
-                       (ReqUITimed <$$> moveOnceToXhairHuman leader)
+                       ReqUITimed <$$> moveOnceToXhairHuman leader
   RunOnceToXhair  -> weaveLeader $ \leader ->
-                       (ReqUITimed <$$> runOnceToXhairHuman leader)
+                       ReqUITimed <$$> runOnceToXhairHuman leader
   ContinueToXhair -> weaveLeader $ \leader ->
-                       (ReqUITimed <$$> continueToXhairHuman leader)
+                       ReqUITimed <$$> continueToXhairHuman leader
   MoveItem stores toCStore mverb auto ->
     weaveLeader $ \leader ->
-      (ReqUITimed <$$> moveItemHuman leader stores toCStore mverb auto)
-  Project -> weaveLeader $ \leader -> (ReqUITimed <$$> projectHuman leader)
-  Apply -> weaveLeader $ \leader -> (ReqUITimed <$$> applyHuman leader)
-  AlterDir -> weaveLeader $ \leader -> (ReqUITimed <$$> alterDirHuman leader)
+      ReqUITimed <$$> moveItemHuman leader stores toCStore mverb auto
+  Project -> weaveLeader $ \leader -> ReqUITimed <$$> projectHuman leader
+  Apply -> weaveLeader $ \leader -> ReqUITimed <$$> applyHuman leader
+  AlterDir -> weaveLeader $ \leader -> ReqUITimed <$$> alterDirHuman leader
   AlterWithPointer ->
-    weaveLeader $ \leader -> (ReqUITimed <$$> alterWithPointerHuman leader)
-  CloseDir -> weaveLeader $ \leader -> (ReqUITimed <$$> closeDirHuman leader)
+    weaveLeader $ \leader -> ReqUITimed <$$> alterWithPointerHuman leader
+  CloseDir -> weaveLeader $ \leader -> ReqUITimed <$$> closeDirHuman leader
   Help -> CmdNoNeed $ helpHuman cmdSemInCxtOfKM
   Hint -> CmdNoNeed $ hintHuman cmdSemInCxtOfKM
   ItemMenu -> CmdLeader $ \leader -> itemMenuHuman leader cmdSemInCxtOfKM
@@ -159,7 +159,7 @@ cmdSemanticsLeader cmd = case cmd of
   Doctrine -> CmdNoNeed $ weaveJust <$> doctrineHuman
   Automate -> CmdNoNeed $ weaveJust <$> automateHuman
   AutomateToggle -> CmdNoNeed $ weaveJust <$> automateToggleHuman
-  AutomateBack -> CmdNoNeed $ automateBackHuman
+  AutomateBack -> CmdNoNeed automateBackHuman
 
   ChooseItem dialogMode ->
     CmdLeader $ \leader -> Left <$> chooseItemHuman leader dialogMode
@@ -199,7 +199,7 @@ cmdSemanticsLeader cmd = case cmd of
   Cancel -> addNoError cancelHuman
   Accept -> addLeader acceptHuman
   DetailCycle -> addNoError detailCycleHuman
-  ClearTargetIfItemClear -> addLeader $ clearTargetIfItemClearHuman
+  ClearTargetIfItemClear -> addLeader clearTargetIfItemClearHuman
   ItemClear -> addNoError itemClearHuman
   MoveXhair v k -> CmdNoNeed $ Left <$> moveXhairHuman v k
   AimTgt -> addNoError aimTgtHuman
