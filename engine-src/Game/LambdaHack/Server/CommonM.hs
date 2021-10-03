@@ -119,6 +119,10 @@ revealAll fid = do
   revealItems fid
   execUpdAtomic $ UpdMuteMessages fid True
   dungeon <- getsState sdungeon
+  -- Perception needs to be sent explicitly, because normal management
+  -- assumes an action must happen on a level to invalidate and regenerate
+  -- perception on the level. Also, we'd rather hack here and in `verifyCaches`
+  -- that complicate the already complex perception creation and caching code.
   mapM_ (revealPerceptionLid fid) $ EM.assocs dungeon
   execUpdAtomic $ UpdMuteMessages fid False
 
@@ -268,7 +272,15 @@ verifyCaches = do
   ( fovLitLid, fovClearLid, fovLucidLid
    ,perValidFid, perCacheFid, perFid ) <- getsState perFidInDungeon
   rngs <- getsServer srngs  -- initial display may scroll off terminal memory
-  let !_A7 = assert (sfovLitLid == fovLitLid
+  factionD <- getsState sfactionD
+  -- Perception off UI faction at game over is illegal (revealed to the player
+  -- in 'revealAll'), which is fine, because it's never used.
+  -- Don't verify perception in such cases. All the caches from which
+  -- it's created are legal and verified, which is almost as tight.
+  let gameOverUI fact = fhasUI (gplayer fact)
+                        && maybe False ((/= Camping) . stOutcome) (gquit fact)
+      isGameOverUI = any gameOverUI $ EM.elems factionD
+      !_A7 = assert (sfovLitLid == fovLitLid
                      `blame` "wrong accumulated sfovLitLid"
                      `swith` (sfovLitLid, fovLitLid, rngs)) ()
       !_A6 = assert (sfovClearLid == fovClearLid
@@ -286,7 +298,7 @@ verifyCaches = do
       !_A2 = assert (sperCacheFid == perCacheFid
                      `blame` "wrong accumulated sperCacheFid"
                      `swith` (sperCacheFid, perCacheFid, rngs)) ()
-      !_A1 = assert (sperFid == perFid
+      !_A1 = assert (isGameOverUI || sperFid == perFid
                      `blame` "wrong accumulated perception"
                      `swith` (sperFid, perFid, rngs)) ()
   return ()
