@@ -154,7 +154,7 @@ nodeMinifiedBench:
 
 test: test-short test-medium benchNull
 
-test-gha: test testCrawl-medium testDefense-medium test-sniff
+test-gha: test testCrawl-medium testCrawl-stopAfterGameOver testDefense-medium test-sniff
 
 test-short: test-short-new test-short-load
 
@@ -192,6 +192,10 @@ testAmbush-medium:
 
 testCrawl-medium:
 	$$(cabal list-bin exe:LambdaHack) --dbgMsgSer --logPriority 4 --newGame 1 --noAnim --maxFps 100000 --frontendTeletype --benchmark --stopAfterSeconds 600 --dumpInitRngs --automateAll --keepAutomated --gameMode crawl --assertExplored 5 2> /tmp/teletypetest.log
+
+
+testCrawl-stopAfterGameOver:
+	$$(cabal list-bin exe:LambdaHack) --dbgMsgSer --logPriority 4 --boostRandomItem --newGame 9 --maxFps 100000 --frontendTeletype --benchmark --stopAfterSeconds 100 --dumpInitRngs --automateAll --keepAutomated --gameMode crawl --stopAfterGameOver 2> /tmp/teletypetest.log
 
 testCrawlEmpty-medium:
 	$$(cabal list-bin exe:LambdaHack) --dbgMsgSer --logPriority 4 --newGame 1 --noAnim --maxFps 100000 --frontendTeletype --benchmark --stopAfterSeconds 40 --dumpInitRngs --automateAll --keepAutomated --gameMode crawlEmpty 2> /tmp/teletypetest.log
