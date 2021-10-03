@@ -3,6 +3,7 @@
 -- component of the library, this implementation can be substituted.
 module MonadClientMock
   ( emptyCliState
+  , executorCli
 -- #ifdef EXPOSE_INTERNAL
 --     -- * Internal operations
   , MonadClientMock(..)
@@ -16,7 +17,7 @@ import Game.LambdaHack.Core.Prelude
 import           Control.Concurrent
 --import qualified Control.Monad.IO.Class as IO
 import Control.Monad.Trans.State.Strict
-    ( StateT(StateT), gets, state )
+    ( StateT(StateT), gets, state, evalStateT )
 
 import           Game.LambdaHack.Atomic (MonadStateWrite (..))
 import           Game.LambdaHack.Client
@@ -25,7 +26,8 @@ import           Game.LambdaHack.Client.HandleAtomicM
 import           Game.LambdaHack.Client.HandleResponseM
 import           Game.LambdaHack.Client.LoopM
 import           Game.LambdaHack.Client.MonadClient
-import           Game.LambdaHack.Client.State
+import Game.LambdaHack.Client.State
+
 import           Game.LambdaHack.Client.UI
 import           Game.LambdaHack.Client.UI.SessionUI
 import           Game.LambdaHack.Common.ClientOptions
@@ -40,9 +42,8 @@ data CliState = CliState
   { cliState   :: State            -- ^ current global state
   , cliClient  :: StateClient      -- ^ current client state
   , cliSession :: Maybe SessionUI  -- ^ UI state, empty for AI clients
-  -- , cliDict    :: ChanServer       -- ^ this client connection information
-  -- , cliToSave  :: Save.ChanSave (StateClient, Maybe SessionUI)
-  --                                  -- ^ connection to the save thread
+  , cliDict    :: ChanServer       -- ^ this client connection information
+  , cliToSave  :: Save.ChanSave (StateClient, Maybe SessionUI)
   }
 
 emptyCliState :: CliState
@@ -50,11 +51,13 @@ emptyCliState = CliState
   { cliState = emptyState 
   , cliClient = emptyStateClient $ toEnum 0
   , cliSession = Nothing 
+  , cliDict = undefined 
+  , cliToSave = undefined 
   }  
 
 -- | Client state transformation monad.
 newtype MonadClientMock a = MonadClientMock
-  { runMonadClientMock :: StateT CliState Maybe a }  -- say goodbye to IO, say hello to an arbitrary monad?
+  { runMonadClientMock :: StateT CliState IO a }  -- we build off io so we can compile but we don't want to use it
   deriving (Monad, Functor, Applicative)
 
 instance MonadStateRead MonadClientMock where
@@ -74,7 +77,7 @@ instance MonadStateWrite MonadClientMock where
 instance MonadClientRead MonadClientMock where
   {-# INLINE getsClient #-}
   getsClient f = MonadClientMock $ gets $ f . cliClient
-  --liftIO = MonadClientMock . IO.liftIO
+  liftIO = return undefined
 
 instance MonadClient MonadClientMock where
   {-# INLINE modifyClient #-}
@@ -126,27 +129,36 @@ instance MonadClientAtomic MonadClientMock where
   {-# INLINE execPutState #-}
   execPutState = putState
 
+-- cliStubFn :: ( MonadClientSetup m
+--            , MonadClientUI m
+--            , MonadClientAtomic m
+--            , MonadClientReadResponse m
+--            , MonadClientWriteRequest m )
+--         => CCUI -> UIOptions -> ClientOptions -> m ()
+-- cliStubFn ccui sUIOptions clientOptions = return undefined 
+
 -- | Run the main client loop, with the given arguments and empty
--- initial states, in the @IO@ monad.
--- executorCli :: CCUI -> UIOptions -> ClientOptions
---             -> COps
---             -> Bool
---             -> FactionId
---             -> ChanServer
---             -> IO ()
--- executorCli ccui sUIOptions clientOptions cops@COps{corule} isUI fid cliDict =
---   let cliSession | isUI = Just $ emptySessionUI sUIOptions
---                  | otherwise = Nothing
---       stateToFileName (cli, _) =
---         ssavePrefixCli (soptions cli) <> Save.saveNameCli corule (sside cli)
---       totalState cliToSave = CliState
---         { cliState = updateCOpsAndCachedData (const cops) emptyState
---             -- state is empty, so the cached data is left empty and untouched
---         , cliClient = emptyStateClient fid
---         , cliDict
---         , cliToSave
---         , cliSession
---         }
---       m = loopCli ccui sUIOptions clientOptions
---       exe = evalStateT (runCliImplementation m) . totalState
---   in Save.wrapInSaves cops stateToFileName exe
+-- initial states
+executorCli :: CCUI -> UIOptions -> ClientOptions
+            -> COps
+            -> Bool
+            -> FactionId
+            -> ChanServer
+            -> IO ()
+executorCli ccui sUIOptions clientOptions cops@COps{corule} isUI fid cliDict =
+--  return Just True
+  let cliSession | isUI = Just $ emptySessionUI sUIOptions
+                 | otherwise = Nothing
+      stateToFileName (cli, _) =
+        ssavePrefixCli (soptions cli) <> Save.saveNameCli corule (sside cli)
+      totalState cliToSave = CliState
+        { cliState = updateCOpsAndCachedData (const cops) emptyState
+            -- state is empty, so the cached data is left empty and untouched
+        , cliClient = emptyStateClient fid
+        , cliDict
+        , cliToSave
+        , cliSession
+        }
+      m = loopCli ccui sUIOptions clientOptions
+      exe = evalStateT (runMonadClientMock m) . totalState
+  in Save.wrapInSaves cops stateToFileName exe
