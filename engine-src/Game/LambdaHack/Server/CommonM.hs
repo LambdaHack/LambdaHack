@@ -174,6 +174,9 @@ quitF status fid = do
     Just Conquer -> return ()
     Just Escape -> return ()
     _ -> do
+      let !_A = assert (stOutcome status `notElem` [Camping, Restart]
+                        `blame` "Camping and Restart are handled separately"
+                        `swith` (stOutcome <$> oldSt, status, fid)) ()
       -- This runs regardless of the _new_ status.
       manalytics <-
         if fhasUI $ gplayer fact then do
