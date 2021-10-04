@@ -121,8 +121,9 @@ revealAll fid = do
   dungeon <- getsState sdungeon
   -- Perception needs to be sent explicitly, because normal management
   -- assumes an action must happen on a level to invalidate and regenerate
-  -- perception on the level. Also, we'd rather hack here and in `verifyCaches`
-  -- that complicate the already complex perception creation and caching code.
+  -- perception on the level (and actors must survive!).
+  -- Also, we'd rather hack here and in `verifyCaches` that complicate
+  -- the already complex perception creation and caching code.
   mapM_ (revealPerceptionLid fid) $ EM.assocs dungeon
   execUpdAtomic $ UpdMuteMessages fid False
 
@@ -276,7 +277,8 @@ verifyCaches = do
   -- Perception off UI faction at game over is illegal (revealed to the player
   -- in 'revealAll'), which is fine, because it's never used.
   -- Don't verify perception in such cases. All the caches from which
-  -- it's created are legal and verified, which is almost as tight.
+  -- legal perception would be created at that point are legal and verified,
+  -- which is almost as tight.
   let gameOverUI fact = fhasUI (gplayer fact)
                         && maybe False ((/= Camping) . stOutcome) (gquit fact)
       isGameOverUI = any gameOverUI $ EM.elems factionD
