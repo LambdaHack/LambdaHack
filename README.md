@@ -276,7 +276,9 @@ First steps reading the codebase
 --------------------------------
 
 I'd start with
+
 https://github.com/LambdaHack/LambdaHack/blob/master/GameDefinition/game-src/Client/UI/Content/Input.hs
+
 That's where keypresses are assigned commands, help texts and categories
 (including special categories indicating that a group of keypresses
 form one of the in-game menus). This file is specific to a particular game
@@ -287,6 +289,7 @@ partially overwrite it.
 The commands assigned to keypresses are interpreted by the UI client here
 (each faction in the game uses a client, the player's client additionally
 has UI capabilities):
+
 https://github.com/LambdaHack/LambdaHack/blob/master/engine-src/Game/LambdaHack/Client/UI/HandleHumanM.hs
 
 By this point you've seen one of the six major command sets
@@ -294,8 +297,8 @@ By this point you've seen one of the six major command sets
 and one of around ten distinct interpreters for the commands
 (mostly in `Handle*` modules). You've also seen a bit of UI client code,
 but not the AI client nor the server (game arbiter).
-Here's not entirely outdated further reading about the client-server:
-https://github.com/LambdaHack/LambdaHack/wiki/Client-server-architecture
+The wiki[17] contains not entirely outdated further reading about
+the client-server architecture.
 
 At this point, before trying to grasp anything more, it's probably best
 to pick up a few `good first issue`-labeled tickets and get hands-on
@@ -343,3 +346,4 @@ Have fun!
 [11]: https://github.com/LambdaHack/LambdaHack/releases
 [15]: https://github.com/ghcjs/ghcjs
 [16]: https://www.npmjs.com/package/google-closure-compiler
+[17]: https://github.com/LambdaHack/LambdaHack/wiki/Client-server-architecture
