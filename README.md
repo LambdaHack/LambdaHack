@@ -281,14 +281,14 @@ https://github.com/LambdaHack/LambdaHack/blob/master/GameDefinition/game-src/Cli
 
 That's where keypresses are assigned commands, help texts and categories
 (including special categories indicating that a group of keypresses
-form one of the in-game menus). This file is specific to a particular game
+forms an in-game menu). This file is specific to a particular game
 (hence `GameDefinition` in the path) and the engine dynamically creates
-the in-game help screens based on this file and player config that can
-partially overwrite it.
+in-game help screens based on this file and on player config file
+that can partially overwrite it.
 
-The commands assigned to keypresses are interpreted by the UI client here
-(each faction in the game uses a client, the player's client additionally
-has UI capabilities):
+The commands assigned to keypresses are interpreted by the UI client
+(each faction in the game uses a client and the player's client additionally
+has UI capabilities) in the following module:
 
 https://github.com/LambdaHack/LambdaHack/blob/master/engine-src/Game/LambdaHack/Client/UI/HandleHumanM.hs
 
@@ -296,17 +296,17 @@ By this point you've seen one of the six major command sets
 (`HumanCmd`, `Effect`, `UpdAtomic`, `Request`, `Response`, `FrontReq`)
 and one of around ten distinct interpreters for the commands
 (mostly in `Handle*` modules). You've also seen a bit of UI client code,
-but not the AI client nor the server (game arbiter).
+but not the AI client nor the server (game arbiter) code.
 The wiki[17] contains not entirely outdated further reading about
 the client-server architecture.
 
-At this point, before trying to grasp anything more, it's probably best
-to pick up a few `good first issue`-labeled tickets and get hands-on
-experience with the codebase.
+At this point, before trying to grasp anything more and drown in abstraction,
+you are welcome to pick up a few `good first issue`-labeled tickets
+and get hands-on experience with the codebase.
 
-For further study, most of the commands are interpreted in monads.
+For further study, note that most of the commands are interpreted in monads.
 Server and clients share some of the customized monadic API, but their
-monads are interpreted differently (in `*Implementation` modules).
+monads are implemented differently (in `*Implementation` modules).
 All these monads are state monads (keeping various aspects of game state),
 therefore the semantics of a command is a state transformer with extra
 side effects (e.g., frontend drawing is such a side effect).
@@ -315,7 +315,7 @@ The "main loop" is the following: the UI client receives keystrokes
 and interprets the commands they correspond to. As soon as one of the commands
 is not just local UI manipulation, but a request to change the game state,
 such a request is packaged and sent to the server (e.g., a request
-to move a hero to the north). The the server responds "not possible,
+to move a hero to the north). The server responds "not possible,
 there is a wall" or reacts by sending to clients (to all UI and AI clients
 that can see the event) a series of game state changing responses.
 AI clients, likewise, send to the server requests, generated based
