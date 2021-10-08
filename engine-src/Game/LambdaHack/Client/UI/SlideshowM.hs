@@ -118,10 +118,10 @@ displayChoiceScreen menuName dm sfBlank frsX extraKeys = do
     stepChoiceScreen menuName dm sfBlank frsX extraKeys
   let loop :: Int -> m (Either K.KM SlotChar, Int)
       loop pointer = do
-        (mkm, pointer1) <- m pointer
-        case mkm of
-          Nothing -> loop pointer1
-          Just km -> return (km, pointer1)
+        (final, km, pointer1) <- m pointer
+        if final
+        then return (km, pointer1)
+        else loop pointer1
   wrapInMenuIx menuName maxIx initIx clearIx loop
 
 wrapInMenuIx :: MonadClientUI m
@@ -155,7 +155,7 @@ stepChoiceScreen :: forall m . MonadClientUI m
                  -> m ( Int
                       , Int
                       , Int
-                      , Int -> m (Maybe (Either K.KM SlotChar), Int) )
+                      , Int -> m (Bool, Either K.KM SlotChar, Int) )
 stepChoiceScreen menuName dm sfBlank frsX extraKeys = do
   let !_A = assert (K.escKM `elem` extraKeys) ()
       frs = slideshow frsX
@@ -170,14 +170,14 @@ stepChoiceScreen menuName dm sfBlank frsX extraKeys = do
         _ -> 0  -- can't be @length allOKX@ or a multi-page item menu
                 -- mangles saved index of other item munus
       clearIx = if initIx > maxIx then 0 else initIx
-      page :: Int -> m (Maybe (Either K.KM SlotChar), Int)
+      page :: Int -> m (Bool, Either K.KM SlotChar, Int)
       page pointer = assert (pointer >= 0) $ case findKYX pointer frs of
         Nothing -> error $ "no menu keys" `showFailure` frs
         Just ( (ovs, kyxs)
              , (ekm, (PointUI x1 y, buttonWidth))
              , ixOnPage ) -> do
           let ovs1 = EM.map (updateLine y $ drawHighlight x1 buttonWidth) ovs
-              tmpResult pointer1 = return (Nothing, pointer1)
+              tmpResult pointer1 = return (False, ekm, pointer1)
               ignoreKey = tmpResult pointer
               pageLen = length kyxs
               xix :: KYX -> Bool
@@ -187,7 +187,7 @@ stepChoiceScreen menuName dm sfBlank frsX extraKeys = do
               firstItemOfNextPage = case findIndex (isRight . fst) restOKX of
                 Just p -> p + firstRowOfNextPage
                 _ -> firstRowOfNextPage
-              interpretKey :: K.KM -> m (Maybe (Either K.KM SlotChar), Int)
+              interpretKey :: K.KM -> m (Bool, Either K.KM SlotChar, Int)
               interpretKey ikm =
                 case K.key ikm of
                   _ | ikm == K.controlP -> do
@@ -197,9 +197,9 @@ stepChoiceScreen menuName dm sfBlank frsX extraKeys = do
                   K.Return -> case ekm of
                     Left km ->
                       if K.key km == K.Return && km `elem` keys
-                      then return (Just $ Left km, pointer)
+                      then return (True, Left km, pointer)
                       else interpretKey km
-                    Right c -> return (Just $ Right c, pointer)
+                    Right c -> return (True, Right c, pointer)
                   K.LeftButtonRelease -> do
                     PointUI mx my <- getsSession spointer
                     let onChoice (_, (PointUI cx cy, ButtonWidth font clen)) =
@@ -208,20 +208,20 @@ stepChoiceScreen menuName dm sfBlank frsX extraKeys = do
                           in my == cy && mx >= cx && mx < cx + blen
                     case find onChoice kyxs of
                       Nothing | ikm `elem` keys ->
-                        return (Just $ Left ikm, pointer)
+                        return (True, Left ikm, pointer)
                       Nothing -> if K.spaceKM `elem` keys
-                                 then return (Just $ Left K.spaceKM, pointer)
+                                 then return (True, Left K.spaceKM, pointer)
                                  else ignoreKey
                       Just (ckm, _) -> case ckm of
                         Left km ->
                           if K.key km == K.Return && km `elem` keys
-                          then return (Just $ Left km, pointer)
+                          then return (True, Left km, pointer)
                           else interpretKey km
-                        Right c  -> return (Just $ Right c, pointer)
+                        Right c  -> return (True, Right c, pointer)
                   K.RightButtonRelease ->
-                    if | ikm `elem` keys -> return (Just $ Left ikm, pointer)
+                    if | ikm `elem` keys -> return (True, Left ikm, pointer)
                        | K.escKM `elem` keys ->
-                           return (Just $ Left K.escKM, pointer)
+                           return (True, Left K.escKM, pointer)
                        | otherwise -> ignoreKey
                   K.Space | firstItemOfNextPage <= maxIx ->
                     tmpResult firstItemOfNextPage
@@ -233,7 +233,7 @@ stepChoiceScreen menuName dm sfBlank frsX extraKeys = do
                     then tmpResult firstItemOfNextPage
                     else tmpResult clearIx
                   _ | ikm `elem` keys ->
-                    return (Just $ Left ikm, pointer)
+                    return (True, Left ikm, pointer)
                   K.Up -> case findIndex xix $ reverse $ take ixOnPage kyxs of
                     Nothing -> interpretKey ikm{K.key=K.Left}
                     Just ix -> tmpResult (max 0 (pointer - ix - 1))
@@ -261,12 +261,12 @@ stepChoiceScreen menuName dm sfBlank frsX extraKeys = do
           interpretKey pkm
       m pointer =
         if null frs
-        then return (Just $ Left K.escKM, pointer)
+        then return (True, Left K.escKM, pointer)
         else do
-          (mkm, pointer1) <- page pointer
-          let !_A = assert (maybe True (either (`elem` keys) (const True)) mkm) ()
+          (final, km, pointer1) <- page pointer
+          let !_A1 = assert (either (`elem` keys) (const True) km) ()
           let !_A2 = assert (clearIx <= pointer1 && pointer1 <= maxIx) ()
-          return (mkm, pointer1)
+          return (final, km, pointer1)
   return (maxIx, initIx, clearIx, m)
 
 navigationKeys :: [K.KM]
