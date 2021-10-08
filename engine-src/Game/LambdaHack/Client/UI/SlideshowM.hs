@@ -168,7 +168,7 @@ displayChoiceScreen :: forall m . MonadClientUI m
                     => String -> ColorMode -> Bool -> Slideshow -> [K.KM]
                     -> m (Either K.KM SlotChar)
 displayChoiceScreen menuName dm sfBlank frsX extraKeys = do
-  (initIx, clearIx, m) <-
+  (maxIx, initIx, clearIx, m) <-
     stepChoiceScreen menuName dm sfBlank frsX extraKeys
   let loop :: Int -> m (Either K.KM SlotChar, Int)
       loop pointer = do
@@ -176,16 +176,19 @@ displayChoiceScreen menuName dm sfBlank frsX extraKeys = do
         case mkm of
           Nothing -> loop pointer1
           Just km -> return (km, pointer1)
-  wrapInMenuIx menuName initIx clearIx loop
+  wrapInMenuIx menuName maxIx initIx clearIx loop
 
--- There is a limited looping involved to return a changed position
+-- | This is one step of UI menu management user session.
+--
+-- There is limited looping involved to return a changed position
 -- in the menu each time so that the surrounding code has anything
 -- interesting to do. The exception is when finally confirming a selection,
 -- in which case it's usually not changed compared to last step,
--- but it's presented differently to indicate it was confirmed
+-- but it's presented differently to indicate it was confirmed.
 stepChoiceScreen :: forall m . MonadClientUI m
                  => String -> ColorMode -> Bool -> Slideshow -> [K.KM]
                  -> m ( Int
+                      , Int
                       , Int
                       , Int -> m (Maybe (Either K.KM SlotChar), Int) )
 stepChoiceScreen menuName dm sfBlank frsX extraKeys = do
@@ -298,26 +301,26 @@ stepChoiceScreen menuName dm sfBlank frsX extraKeys = do
         if null frs
         then return (Just $ Left K.escKM, pointer)
         else do
-          (mkm, pointer1) <-
-            page $ max clearIx $ min maxIx pointer
-                     -- clamping needed, because the saved menu index could be
-                     -- from different context; not needed in recursive calls
-          assert (maybe True (either (`elem` keys) (const True)) mkm) $
-            return (mkm, pointer1)
-  return (initIx, clearIx, m)
+          (mkm, pointer1) <- page pointer
+          let !_A = assert (maybe True (either (`elem` keys) (const True)) mkm) ()
+          let !_A2 = assert (clearIx <= pointer1 && pointer1 <= maxIx) ()
+          return (mkm, pointer1)
+  return (maxIx, initIx, clearIx, m)
 
 wrapInMenuIx :: MonadClientUI m
-             => String -> Int -> Int
+             => String -> Int -> Int -> Int
              -> (Int -> m (Either K.KM SlotChar, Int))
              -> m (Either K.KM SlotChar)
-wrapInMenuIx menuName initIx clearIx m = do
+wrapInMenuIx menuName maxIx initIx clearIx m = do
   menuIxMap <- getsSession smenuIxMap
   -- Beware, values in @menuIxMap@ may be negative (meaning: a key, not slot).
-  let menuIx | menuName == "" = clearIx
-             | otherwise =
-               maybe clearIx (+ initIx) (M.lookup menuName menuIxMap)
-                 -- this may be negative and from different context
-  (km, pointer) <- m menuIx
+  let menuIx = if menuName == ""
+               then clearIx
+               else maybe clearIx (+ initIx) (M.lookup menuName menuIxMap)
+  (km, pointer) <- m $ max clearIx $ min maxIx menuIx
+                     -- clamping needed, because the saved menu index could be
+                     -- from different context
+  let !_A = assert (clearIx <= pointer && pointer <= maxIx) ()
   unless (menuName == "") $
     modifySession $ \sess ->
       sess {smenuIxMap = M.insert menuName (pointer - initIx) menuIxMap}
