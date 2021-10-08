@@ -164,18 +164,31 @@ navigationKeys = [ K.leftButtonReleaseKM, K.rightButtonReleaseKM
 -- can again be placed at that spot next time menu is displayed).
 --
 -- This function is the only source of menus and so, effectively, UI modes.
-displayChoiceScreen :: MonadClientUI m
+displayChoiceScreen :: forall m . MonadClientUI m
                     => String -> ColorMode -> Bool -> Slideshow -> [K.KM]
                     -> m (Either K.KM SlotChar)
 displayChoiceScreen menuName dm sfBlank frsX extraKeys = do
   (initIx, clearIx, m) <-
-    simpleLoopChoiceScreen menuName dm sfBlank frsX extraKeys
-  wrapInMenuIx menuName initIx clearIx m
+    stepChoiceScreen menuName dm sfBlank frsX extraKeys
+  let loop :: Int -> m (Either K.KM SlotChar, Int)
+      loop pointer = do
+        (mkm, pointer1) <- m pointer
+        case mkm of
+          Nothing -> loop pointer1
+          Just km -> return (km, pointer1)
+  wrapInMenuIx menuName initIx clearIx loop
 
-simpleLoopChoiceScreen :: forall m . MonadClientUI m
-                       => String -> ColorMode -> Bool -> Slideshow -> [K.KM]
-                       -> m (Int, Int, Int -> m (Either K.KM SlotChar, Int))
-simpleLoopChoiceScreen menuName dm sfBlank frsX extraKeys = do
+-- There is a limited looping involved to return a changed position
+-- in the menu each time so that the surrounding code has anything
+-- interesting to do. The exception is when finally confirming a selection,
+-- in which case it's usually not changed compared to last step,
+-- but it's presented differently to indicate it was confirmed
+stepChoiceScreen :: forall m . MonadClientUI m
+                 => String -> ColorMode -> Bool -> Slideshow -> [K.KM]
+                 -> m ( Int
+                      , Int
+                      , Int -> m (Maybe (Either K.KM SlotChar), Int) )
+stepChoiceScreen menuName dm sfBlank frsX extraKeys = do
   let !_A = assert (K.escKM `elem` extraKeys) ()
       frs = slideshow frsX
       keys = concatMap (concatMap (fromLeft [] . fst) . snd) frs
@@ -281,18 +294,16 @@ simpleLoopChoiceScreen menuName dm sfBlank frsX extraKeys = do
                   _ -> error $ "unknown key" `showFailure` ikm
           pkm <- promptGetKey dm ovs1 sfBlank legalKeys
           interpretKey pkm
-      loop :: Int -> m (Either K.KM SlotChar, Int)
-      loop pointer = do
-        (mkm, pointer1) <- page pointer
-        case mkm of
-          Nothing -> loop pointer1
-          Just km -> assert (either (`elem` keys) (const True) km)
-                     $ return (km, pointer1)
-      m menuIx =
+      m pointer =
         if null frs
-        then return (Left K.escKM, menuIx)
-        else loop $ max clearIx $ min maxIx menuIx
-                      -- the saved index could be from different context
+        then return (Just $ Left K.escKM, pointer)
+        else do
+          (mkm, pointer1) <-
+            page $ max clearIx $ min maxIx pointer
+                     -- clamping needed, because the saved menu index could be
+                     -- from different context; not needed in recursive calls
+          assert (maybe True (either (`elem` keys) (const True)) mkm) $
+            return (mkm, pointer1)
   return (initIx, clearIx, m)
 
 wrapInMenuIx :: MonadClientUI m
@@ -305,7 +316,7 @@ wrapInMenuIx menuName initIx clearIx m = do
   let menuIx | menuName == "" = clearIx
              | otherwise =
                maybe clearIx (+ initIx) (M.lookup menuName menuIxMap)
-                 -- this may be negative, from different context
+                 -- this may be negative and from different context
   (km, pointer) <- m menuIx
   unless (menuName == "") $
     modifySession $ \sess ->
