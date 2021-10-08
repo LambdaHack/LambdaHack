@@ -105,60 +105,6 @@ getConfirms dm extraKeys slides = do
   ekm <- displayChoiceScreen "" dm False slides extraKeys
   return $! either id (error $ "" `showFailure` ekm) ekm
 
--- | Find a position in a menu.
--- The arguments go from first menu line and menu page to the last,
--- in order. Their indexing is from 0. We select the nearest item
--- with the index equal or less to the pointer.
-findKYX :: Int -> [OKX] -> Maybe (OKX, KYX, Int)
-findKYX _ [] = Nothing
-findKYX pointer (okx@(_, kyxs) : frs2) =
-  case drop pointer kyxs of
-    [] ->  -- not enough menu items on this page
-      case findKYX (pointer - length kyxs) frs2 of
-        Nothing ->  -- no more menu items in later pages
-          case reverse kyxs of
-            [] -> Nothing
-            kyx : _ -> Just (okx, kyx, length kyxs - 1)
-        res -> res
-    kyx : _ -> Just (okx, kyx, pointer)
-
-drawHighlight :: Int -> ButtonWidth -> Int -> AttrString -> AttrString
-drawHighlight x1 (ButtonWidth font len) xstart as =
-  let highableAttrs = [Color.defAttr, Color.defAttr {Color.fg = Color.BrBlack}]
-      highAttr c | Color.acAttr c `notElem` highableAttrs
-                   || Color.acChar c == ' ' = c
-      highAttr c = c {Color.acAttr =
-                        (Color.acAttr c) {Color.fg = Color.BrWhite}}
-      cursorAttr c = c {Color.acAttr =
-                          (Color.acAttr c)
-                            {Color.bg = Color.HighlightNoneCursor}}
-      -- This also highlights dull white item symbols, but who cares.
-      lenUI = if isSquareFont font then len * 2 else len
-      x1MinusXStartChars = if isSquareFont font
-                           then (x1 - xstart) `div` 2
-                           else x1 - xstart
-      (as1, asRest) = splitAt x1MinusXStartChars as
-      (as2, as3) = splitAt len asRest
-      highW32 = Color.attrCharToW32
-                . highAttr
-                . Color.attrCharFromW32
-      cursorW32 = Color.attrCharToW32
-                  . cursorAttr
-                  . Color.attrCharFromW32
-      as2High = case map highW32 as2 of
-        [] -> []
-        ch : chrest -> cursorW32 ch : chrest
-  in if x1 + lenUI < xstart
-     then as
-     else as1 ++ as2High ++ as3
-
-navigationKeys :: [K.KM]
-navigationKeys = [ K.leftButtonReleaseKM, K.rightButtonReleaseKM
-                 , K.returnKM, K.spaceKM
-                 , K.upKM, K.leftKM, K.downKM, K.rightKM
-                 , K.pgupKM, K.pgdnKM, K.wheelNorthKM, K.wheelSouthKM
-                 , K.homeKM, K.endKM, K.controlP ]
-
 -- | Display a, potentially, multi-screen menu and return the chosen
 -- key or item slot label (and the index in the whole menu so that the cursor
 -- can again be placed at that spot next time menu is displayed).
@@ -177,6 +123,25 @@ displayChoiceScreen menuName dm sfBlank frsX extraKeys = do
           Nothing -> loop pointer1
           Just km -> return (km, pointer1)
   wrapInMenuIx menuName maxIx initIx clearIx loop
+
+wrapInMenuIx :: MonadClientUI m
+             => String -> Int -> Int -> Int
+             -> (Int -> m (Either K.KM SlotChar, Int))
+             -> m (Either K.KM SlotChar)
+wrapInMenuIx menuName maxIx initIx clearIx m = do
+  menuIxMap <- getsSession smenuIxMap
+  -- Beware, values in @menuIxMap@ may be negative (meaning: a key, not slot).
+  let menuIx = if menuName == ""
+               then clearIx
+               else maybe clearIx (+ initIx) (M.lookup menuName menuIxMap)
+  (km, pointer) <- m $ max clearIx $ min maxIx menuIx
+                     -- clamping needed, because the saved menu index could be
+                     -- from different context
+  let !_A = assert (clearIx <= pointer && pointer <= maxIx) ()
+  unless (menuName == "") $
+    modifySession $ \sess ->
+      sess {smenuIxMap = M.insert menuName (pointer - initIx) menuIxMap}
+  return km
 
 -- | This is one step of UI menu management user session.
 --
@@ -304,21 +269,56 @@ stepChoiceScreen menuName dm sfBlank frsX extraKeys = do
           return (mkm, pointer1)
   return (maxIx, initIx, clearIx, m)
 
-wrapInMenuIx :: MonadClientUI m
-             => String -> Int -> Int -> Int
-             -> (Int -> m (Either K.KM SlotChar, Int))
-             -> m (Either K.KM SlotChar)
-wrapInMenuIx menuName maxIx initIx clearIx m = do
-  menuIxMap <- getsSession smenuIxMap
-  -- Beware, values in @menuIxMap@ may be negative (meaning: a key, not slot).
-  let menuIx = if menuName == ""
-               then clearIx
-               else maybe clearIx (+ initIx) (M.lookup menuName menuIxMap)
-  (km, pointer) <- m $ max clearIx $ min maxIx menuIx
-                     -- clamping needed, because the saved menu index could be
-                     -- from different context
-  let !_A = assert (clearIx <= pointer && pointer <= maxIx) ()
-  unless (menuName == "") $
-    modifySession $ \sess ->
-      sess {smenuIxMap = M.insert menuName (pointer - initIx) menuIxMap}
-  return km
+navigationKeys :: [K.KM]
+navigationKeys = [ K.leftButtonReleaseKM, K.rightButtonReleaseKM
+                 , K.returnKM, K.spaceKM
+                 , K.upKM, K.leftKM, K.downKM, K.rightKM
+                 , K.pgupKM, K.pgdnKM, K.wheelNorthKM, K.wheelSouthKM
+                 , K.homeKM, K.endKM, K.controlP ]
+
+-- | Find a position in a menu.
+-- The arguments go from first menu line and menu page to the last,
+-- in order. Their indexing is from 0. We select the nearest item
+-- with the index equal or less to the pointer.
+findKYX :: Int -> [OKX] -> Maybe (OKX, KYX, Int)
+findKYX _ [] = Nothing
+findKYX pointer (okx@(_, kyxs) : frs2) =
+  case drop pointer kyxs of
+    [] ->  -- not enough menu items on this page
+      case findKYX (pointer - length kyxs) frs2 of
+        Nothing ->  -- no more menu items in later pages
+          case reverse kyxs of
+            [] -> Nothing
+            kyx : _ -> Just (okx, kyx, length kyxs - 1)
+        res -> res
+    kyx : _ -> Just (okx, kyx, pointer)
+
+drawHighlight :: Int -> ButtonWidth -> Int -> AttrString -> AttrString
+drawHighlight x1 (ButtonWidth font len) xstart as =
+  let highableAttrs = [Color.defAttr, Color.defAttr {Color.fg = Color.BrBlack}]
+      highAttr c | Color.acAttr c `notElem` highableAttrs
+                   || Color.acChar c == ' ' = c
+      highAttr c = c {Color.acAttr =
+                        (Color.acAttr c) {Color.fg = Color.BrWhite}}
+      cursorAttr c = c {Color.acAttr =
+                          (Color.acAttr c)
+                            {Color.bg = Color.HighlightNoneCursor}}
+      -- This also highlights dull white item symbols, but who cares.
+      lenUI = if isSquareFont font then len * 2 else len
+      x1MinusXStartChars = if isSquareFont font
+                           then (x1 - xstart) `div` 2
+                           else x1 - xstart
+      (as1, asRest) = splitAt x1MinusXStartChars as
+      (as2, as3) = splitAt len asRest
+      highW32 = Color.attrCharToW32
+                . highAttr
+                . Color.attrCharFromW32
+      cursorW32 = Color.attrCharToW32
+                  . cursorAttr
+                  . Color.attrCharFromW32
+      as2High = case map highW32 as2 of
+        [] -> []
+        ch : chrest -> cursorW32 ch : chrest
+  in if x1 + lenUI < xstart
+     then as
+     else as1 ++ as2High ++ as3
