@@ -123,35 +123,34 @@ findKYX pointer (okx@(_, kyxs) : frs2) =
     kyx : _ -> Just (okx, kyx, pointer)
 
 drawHighlight :: Int -> ButtonWidth -> Int -> AttrString -> AttrString
-drawHighlight x1 (ButtonWidth fontX1 len) xstart xs =
-  let highableAttrs =
-        [Color.defAttr, Color.defAttr {Color.fg = Color.BrBlack}]
-      highAttr x | Color.acAttr x `notElem` highableAttrs
-                   || Color.acChar x == ' ' = x
-      highAttr x = x {Color.acAttr =
-                        (Color.acAttr x) {Color.fg = Color.BrWhite}}
-      cursorAttr x = x {Color.acAttr =
-                          (Color.acAttr x)
+drawHighlight x1 (ButtonWidth font len) xstart as =
+  let highableAttrs = [Color.defAttr, Color.defAttr {Color.fg = Color.BrBlack}]
+      highAttr c | Color.acAttr c `notElem` highableAttrs
+                   || Color.acChar c == ' ' = c
+      highAttr c = c {Color.acAttr =
+                        (Color.acAttr c) {Color.fg = Color.BrWhite}}
+      cursorAttr c = c {Color.acAttr =
+                          (Color.acAttr c)
                             {Color.bg = Color.HighlightNoneCursor}}
       -- This also highlights dull white item symbols, but who cares.
-      lenUI = if isSquareFont fontX1 then len * 2 else len
-      x1MinusXStartChars = if isSquareFont fontX1
+      lenUI = if isSquareFont font then len * 2 else len
+      x1MinusXStartChars = if isSquareFont font
                            then (x1 - xstart) `div` 2
                            else x1 - xstart
-      (xs1, xsRest) = splitAt x1MinusXStartChars xs
-      (xs2, xs3) = splitAt len xsRest
+      (as1, asRest) = splitAt x1MinusXStartChars as
+      (as2, as3) = splitAt len asRest
       highW32 = Color.attrCharToW32
                 . highAttr
                 . Color.attrCharFromW32
       cursorW32 = Color.attrCharToW32
                   . cursorAttr
                   . Color.attrCharFromW32
-      xs2High = case map highW32 xs2 of
+      as2High = case map highW32 as2 of
         [] -> []
-        xh : xhrest -> cursorW32 xh : xhrest
+        ch : chrest -> cursorW32 ch : chrest
   in if x1 + lenUI < xstart
-     then xs
-     else xs1 ++ xs2High ++ xs3
+     then as
+     else as1 ++ as2High ++ as3
 
 -- | Display a, potentially, multi-screen menu and return the chosen
 -- key or item slot label (and the index in the whole menu so that the cursor
