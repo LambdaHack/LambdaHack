@@ -15,7 +15,7 @@ module Game.LambdaHack.Client.UI
   , ChanFrontend, chanFrontend, tryRestore, clientPrintUI
 #ifdef EXPOSE_INTERNAL
     -- * Internal operations
-  , humanCommandWithLeader, humanCommand
+  , stepQueryUIwithLeader, stepQueryUI
 #endif
   ) where
 
@@ -62,7 +62,7 @@ queryUI = do
   let !_A = assert (not sreqQueried) ()  -- querying not nested
   modifySession $ \sess -> sess {sreqQueried = True}
   let loop = do
-        mres <- humanCommandWithLeader
+        mres <- stepQueryUIwithLeader
         saimMode <- getsSession saimMode
         case mres of
           Nothing | isJust saimMode -> loop  -- loop until aiming finished
@@ -110,12 +110,12 @@ queryUIunderAI = do
         return (exitCmd, Nothing)  -- ask server to exit
       else return (ReqUINop, Nothing)
 
-humanCommandWithLeader :: (MonadClient m, MonadClientUI m)
+stepQueryUIwithLeader :: (MonadClient m, MonadClientUI m)
                        => m (Maybe RequestUI)
-humanCommandWithLeader = do
+stepQueryUIwithLeader = do
   side <- getsClient sside
   mleader <- getsState $ gleader . (EM.! side) . sfactionD
-  mreq <- humanCommand
+  mreq <- stepQueryUI
   case mreq of
     Nothing -> return Nothing
     Just req -> do
@@ -133,8 +133,8 @@ humanCommandWithLeader = do
                           else Nothing)
 
 -- | Let the human player issue commands until any command takes time.
-humanCommand :: (MonadClient m, MonadClientUI m) => m (Maybe ReqUI)
-humanCommand = do
+stepQueryUI :: (MonadClient m, MonadClientUI m) => m (Maybe ReqUI)
+stepQueryUI = do
   FontSetup{propFont} <- getFontSetup
   keyPressed <- anyKeyPressed
   macroFrame <- getsSession smacroFrame
