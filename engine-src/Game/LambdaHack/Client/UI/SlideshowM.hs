@@ -122,6 +122,37 @@ findKYX pointer (okx@(_, kyxs) : frs2) =
         res -> res
     kyx : _ -> Just (okx, kyx, pointer)
 
+drawHighlight :: Int -> ButtonWidth -> Int -> AttrString -> AttrString
+drawHighlight x1 (ButtonWidth fontX1 len) xstart xs =
+  let highableAttrs =
+        [Color.defAttr, Color.defAttr {Color.fg = Color.BrBlack}]
+      highAttr x | Color.acAttr x `notElem` highableAttrs
+                   || Color.acChar x == ' ' = x
+      highAttr x = x {Color.acAttr =
+                        (Color.acAttr x) {Color.fg = Color.BrWhite}}
+      cursorAttr x = x {Color.acAttr =
+                          (Color.acAttr x)
+                            {Color.bg = Color.HighlightNoneCursor}}
+      -- This also highlights dull white item symbols, but who cares.
+      lenUI = if isSquareFont fontX1 then len * 2 else len
+      x1MinusXStartChars = if isSquareFont fontX1
+                           then (x1 - xstart) `div` 2
+                           else x1 - xstart
+      (xs1, xsRest) = splitAt x1MinusXStartChars xs
+      (xs2, xs3) = splitAt len xsRest
+      highW32 = Color.attrCharToW32
+                . highAttr
+                . Color.attrCharFromW32
+      cursorW32 = Color.attrCharToW32
+                  . cursorAttr
+                  . Color.attrCharFromW32
+      xs2High = case map highW32 xs2 of
+        [] -> []
+        xh : xhrest -> cursorW32 xh : xhrest
+  in if x1 + lenUI < xstart
+     then xs
+     else xs1 ++ xs2High ++ xs3
+
 -- | Display a, potentially, multi-screen menu and return the chosen
 -- key or item slot label (and the index in the whole menu so that the cursor
 -- can again be placed at that spot next time menu is displayed).
@@ -153,37 +184,9 @@ displayChoiceScreen menuName dm sfBlank frsX extraKeys = do
       page pointer = assert (pointer >= 0) $ case findKYX pointer frs of
         Nothing -> error $ "no menu keys" `showFailure` frs
         Just ( (ovs, kyxs)
-             , (ekm, (PointUI x1 y, ButtonWidth fontX1 len))
+             , (ekm, (PointUI x1 y, buttonWidth))
              , ixOnPage ) -> do
-          let highableAttrs =
-                [Color.defAttr, Color.defAttr {Color.fg = Color.BrBlack}]
-              highAttr x | Color.acAttr x `notElem` highableAttrs
-                           || Color.acChar x == ' ' = x
-              highAttr x = x {Color.acAttr =
-                                (Color.acAttr x) {Color.fg = Color.BrWhite}}
-              cursorAttr x = x {Color.acAttr =
-                                  (Color.acAttr x)
-                                    {Color.bg = Color.HighlightNoneCursor}}
-              -- This also highlights dull white item symbols, but who cares.
-              lenUI = if isSquareFont fontX1 then len * 2 else len
-              drawHighlight xstart xs | x1 + lenUI < xstart = xs
-                                      | otherwise =
-                let x1MinusXStartChars = if isSquareFont fontX1
-                                         then (x1 - xstart) `div` 2
-                                         else x1 - xstart
-                    (xs1, xsRest) = splitAt x1MinusXStartChars xs
-                    (xs2, xs3) = splitAt len xsRest
-                    highW32 = Color.attrCharToW32
-                              . highAttr
-                              . Color.attrCharFromW32
-                    cursorW32 = Color.attrCharToW32
-                                . cursorAttr
-                                . Color.attrCharFromW32
-                    xs2High = case map highW32 xs2 of
-                      [] -> []
-                      xh : xhrest -> cursorW32 xh : xhrest
-                in xs1 ++ xs2High ++ xs3
-              ovs1 = EM.map (updateLine y drawHighlight) ovs
+          let ovs1 = EM.map (updateLine y $ drawHighlight x1 buttonWidth) ovs
               ignoreKey = page pointer
               pageLen = length kyxs
               xix :: KYX -> Bool
