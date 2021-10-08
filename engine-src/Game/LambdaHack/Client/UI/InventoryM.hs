@@ -565,7 +565,7 @@ transition leader psuit prompt promptGeneric permitMulitple
                      $ EM.keys bagItemSlots
       runDefItemKey keyDefs lettersDef io slotKeys promptChosen cCur
 
-keyOfEKM :: Int -> Either [K.KM] SlotChar -> Maybe K.KM
+keyOfEKM :: Int -> Either K.KM SlotChar -> Maybe K.KM
 keyOfEKM _ (Left kms) = error $ "" `showFailure` kms
 keyOfEKM numPrefix (Right SlotChar{..}) | slotPrefix == numPrefix =
   Just $ K.mkChar slotChar

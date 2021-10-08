@@ -194,8 +194,7 @@ stepChoiceScreen :: forall m . MonadClientUI m
 stepChoiceScreen menuName dm sfBlank frsX extraKeys = do
   let !_A = assert (K.escKM `elem` extraKeys) ()
       frs = slideshow frsX
-      keys = concatMap (concatMap (fromLeft [] . fst) . snd) frs
-             ++ extraKeys
+      keys = concatMap (lefts . map fst . snd) frs ++ extraKeys
       legalKeys = keys
                   ++ navigationKeys
                   ++ [K.mkChar '?' | menuName == "help"]  -- a hack
@@ -231,11 +230,10 @@ stepChoiceScreen menuName dm sfBlank frsX extraKeys = do
                     printScreen
                     ignoreKey
                   K.Return -> case ekm of
-                    Left (km : _) ->
+                    Left km ->
                       if K.key km == K.Return && km `elem` keys
                       then return (Just $ Left km, pointer)
                       else interpretKey km
-                    Left [] -> error $ "" `showFailure` ikm
                     Right c -> return (Just $ Right c, pointer)
                   K.LeftButtonRelease -> do
                     PointUI mx my <- getsSession spointer
@@ -250,11 +248,10 @@ stepChoiceScreen menuName dm sfBlank frsX extraKeys = do
                                  then return (Just $ Left K.spaceKM, pointer)
                                  else ignoreKey
                       Just (ckm, _) -> case ckm of
-                        Left (km : _) ->
+                        Left km ->
                           if K.key km == K.Return && km `elem` keys
                           then return (Just $ Left km, pointer)
                           else interpretKey km
-                        Left [] -> error $ "" `showFailure` ikm
                         Right c  -> return (Just $ Right c, pointer)
                   K.RightButtonRelease ->
                     if | ikm `elem` keys -> return (Just $ Left ikm, pointer)

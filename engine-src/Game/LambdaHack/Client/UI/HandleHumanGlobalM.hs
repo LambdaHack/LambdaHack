@@ -1649,8 +1649,8 @@ generateMenu cmdSemInCxtOfKM blurb kds gameInfo menuName = do
       generate :: Int -> (Maybe K.KM, String) -> ((Int, AttrLine), Maybe KYX)
       generate y (mkey, binding) =
         let lenB = length binding
-            yxx key = (Left [key], ( PointUI 2 y
-                                   , ButtonWidth squareFont lenB ))
+            yxx key = (Left key, ( PointUI 2 y
+                                 , ButtonWidth squareFont lenB ))
             myxx = yxx <$> mkey
         in ((2, stringToAL binding), myxx)
       titleLine = rtitle corule ++ " "

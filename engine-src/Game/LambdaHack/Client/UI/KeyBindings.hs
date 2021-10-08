@@ -156,10 +156,10 @@ keyHelp CCUI{ coinput=coinput@InputContent{..}
           kst2 = keySel sel key2
           f (ca1, Left km1, _) (ca2, Left km2, _) y =
             assert (ca1 == ca2 `blame` (ca1, ca2, km1, km2, kst1, kst2))
-              [ (Left [km1], ( PointUI (doubleIfSquare $ keyM + 4) y
-                             , ButtonWidth monoFont keyB ))
-              , (Left [km2], ( PointUI (doubleIfSquare $ keyB + keyM + 5) y
-                             , ButtonWidth monoFont keyB )) ]
+              [ (Left km1, ( PointUI (doubleIfSquare $ keyM + 4) y
+                           , ButtonWidth monoFont keyB ))
+              , (Left km2, ( PointUI (doubleIfSquare $ keyB + keyM + 5) y
+                           , ButtonWidth monoFont keyB )) ]
           f c d e = error $ "" `showFailure` (c, d, e)
           kxs = concat $ zipWith3 f kst1 kst2 [1 + length header..]
           menuLeft = map (\(ca1, _, _) -> areaDescription ca1) kst1
@@ -318,14 +318,17 @@ okxsN InputContent{..} keyFont descFont offset offsetCol2 greyedOut
       keyKnown km = case K.key km of
         K.Unknown{} -> False
         _ -> True
-      keys :: [(Either [K.KM] SlotChar, (Bool, (Text, Text)))]
-      keys = [ (Left kmsRes, (greyedOut cmd, fmt keyNames desc))
+      keys :: [(Either K.KM SlotChar, (Bool, (Text, Text)))]
+      keys = [ (Left km, (greyedOut cmd, fmt keyNames desc))
              | (_, (cats, desc, cmd)) <- bcmdList
              , let kms = coImage cmd
                    knownKeys = filter keyKnown kms
                    keyNames =
                      disp $ (if showManyKeys then id else take 1) knownKeys
                    kmsRes = if desc == "" then knownKeys else kms
+                   km = case kmsRes of
+                     [] -> K.escKM
+                     km1 : _ -> km1
              , cat `elem` cats
              , desc /= "" || CmdInternal `elem` cats]
       spLen = textSize keyFont " "

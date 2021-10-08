@@ -327,9 +327,9 @@ viewLoreItems menuName lSlotsRaw trunkBag prompt examItem displayRanged = do
   io <- itemOverlay lSlots arena trunkBag displayRanged
   itemSlides <- overlayToSlideshow (rheight - 2) keysPre io
   let keyOfEKM (Left km) = km
-      keyOfEKM (Right SlotChar{slotChar}) = [K.mkChar slotChar]
+      keyOfEKM (Right SlotChar{slotChar}) = K.mkChar slotChar
       allOKX = concatMap snd $ slideshow itemSlides
-      keysMain = keysPre ++ concatMap (keyOfEKM . fst) allOKX
+      keysMain = keysPre ++ map (keyOfEKM . fst) allOKX
       viewAtSlot slot = do
         let ix0 = fromMaybe (error $ show slot)
                             (findIndex (== slot) $ EM.keys lSlots)

@@ -72,7 +72,7 @@ data ButtonWidth = ButtonWidth
   deriving (Show, Eq)
 
 -- | A key or an item slot label at a given position on the screen.
-type KYX = (Either [K.KM] SlotChar, (PointUI, ButtonWidth))
+type KYX = (Either K.KM SlotChar, (PointUI, ButtonWidth))
 
 -- | An Overlay of text with an associated list of keys or slots
 -- that activated when the specified screen position is pointed at.
@@ -94,11 +94,8 @@ unsnoc Slideshow{slideshow} =
     okx : rest -> Just (Slideshow $ reverse rest, okx)
 
 toSlideshow :: FontSetup -> [OKX] -> Slideshow
-toSlideshow FontSetup{..} okxs = Slideshow $ addFooters False okxsNotNull
+toSlideshow FontSetup{..} okxs = Slideshow $ addFooters False okxs
  where
-  okxFilter (ov, kyxs) =
-    (ov, filter (either (not . null) (const True) . fst) kyxs)
-  okxsNotNull = map okxFilter okxs
   atEnd = flip (++)
   appendToFontOverlayMap :: FontOverlayMap -> String
                          -> (FontOverlayMap, PointUI, DisplayFont, Int)
@@ -123,19 +120,19 @@ toSlideshow FontSetup{..} okxs = Slideshow $ addFooters False okxsNotNull
        , fontMax
        , length msg )
   addFooters :: Bool -> [OKX] -> [OKX]
-  addFooters _ [] = error $ "" `showFailure` okxsNotNull
+  addFooters _ [] = error $ "" `showFailure` okxs
   addFooters _ [(als, [])] =
     -- TODO: make sure this case never coincides with the space button
     -- actually returning to top, as opposed to finishing preview.
     let (ovs, p, font, width) = appendToFontOverlayMap als "--end--"
-    in [(ovs, [(Left [K.safeSpaceKM], (p, ButtonWidth font width))])]
+    in [(ovs, [(Left K.safeSpaceKM, (p, ButtonWidth font width))])]
   addFooters False [(als, kxs)] = [(als, kxs)]
   addFooters True [(als, kxs)] =
     let (ovs, p, font, width) = appendToFontOverlayMap als "--back to top--"
-    in [(ovs, kxs ++ [(Left [K.safeSpaceKM], (p, ButtonWidth font width))])]
+    in [(ovs, kxs ++ [(Left K.safeSpaceKM, (p, ButtonWidth font width))])]
   addFooters _ ((als, kxs) : rest) =
     let (ovs, p, font, width) = appendToFontOverlayMap als "--more--"
-    in (ovs, kxs ++ [(Left [K.safeSpaceKM], (p, ButtonWidth font width))])
+    in (ovs, kxs ++ [(Left K.safeSpaceKM, (p, ButtonWidth font width))])
        : addFooters True rest
 
 attrLinesToFontMap :: Int -> [(DisplayFont, [AttrLine])] -> FontOverlayMap
@@ -181,8 +178,8 @@ wrapOKX displayFont ystart xstart width ks =
                 , ( xlineStart
                   , s : kL
                   , kV
-                  , (Left [key], ( PointUI x y
-                                 , ButtonWidth displayFont (length s) ))
+                  , (Left key, ( PointUI x y
+                               , ButtonWidth displayFont (length s) ))
                     : kX ) )
       ((ystop, _), (xlineStop, kL1, kV1, kX1)) =
         foldl' f ((ystart, xstart), (xstart, [], [], [])) ks
