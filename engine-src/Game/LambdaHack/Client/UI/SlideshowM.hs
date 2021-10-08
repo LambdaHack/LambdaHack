@@ -164,10 +164,18 @@ navigationKeys = [ K.leftButtonReleaseKM, K.rightButtonReleaseKM
 -- can again be placed at that spot next time menu is displayed).
 --
 -- This function is the only source of menus and so, effectively, UI modes.
-displayChoiceScreen :: forall m . MonadClientUI m
+displayChoiceScreen :: MonadClientUI m
                     => String -> ColorMode -> Bool -> Slideshow -> [K.KM]
                     -> m (Either K.KM SlotChar)
 displayChoiceScreen menuName dm sfBlank frsX extraKeys = do
+  (initIx, clearIx, m) <-
+    simpleLoopChoiceScreen menuName dm sfBlank frsX extraKeys
+  wrapInMenuIx menuName initIx clearIx m
+
+simpleLoopChoiceScreen :: forall m . MonadClientUI m
+                       => String -> ColorMode -> Bool -> Slideshow -> [K.KM]
+                       -> m (Int, Int, Int -> m (Either K.KM SlotChar, Int))
+simpleLoopChoiceScreen menuName dm sfBlank frsX extraKeys = do
   let !_A = assert (K.escKM `elem` extraKeys) ()
       frs = slideshow frsX
       keys = concatMap (concatMap (fromLeft [] . fst) . snd) frs
@@ -275,21 +283,31 @@ displayChoiceScreen menuName dm sfBlank frsX extraKeys = do
           interpretKey pkm
       loop :: Int -> m (Either K.KM SlotChar, Int)
       loop pointer = do
-        (mresult, pointer1) <- page pointer
-        case mresult of
+        (mkm, pointer1) <- page pointer
+        case mkm of
           Nothing -> loop pointer1
-          Just result -> return (result, pointer1)
+          Just km -> assert (either (`elem` keys) (const True) km)
+                     $ return (km, pointer1)
+      m menuIx =
+        if null frs
+        then return (Left K.escKM, menuIx)
+        else loop $ max clearIx $ min maxIx menuIx
+                      -- the saved index could be from different context
+  return (initIx, clearIx, m)
+
+wrapInMenuIx :: MonadClientUI m
+             => String -> Int -> Int
+             -> (Int -> m (Either K.KM SlotChar, Int))
+             -> m (Either K.KM SlotChar)
+wrapInMenuIx menuName initIx clearIx m = do
   menuIxMap <- getsSession smenuIxMap
   -- Beware, values in @menuIxMap@ may be negative (meaning: a key, not slot).
   let menuIx | menuName == "" = clearIx
              | otherwise =
                maybe clearIx (+ initIx) (M.lookup menuName menuIxMap)
                  -- this may be negative, from different context
-  (km, pointer) <- if null frs
-                   then return (Left K.escKM, menuIx)
-                   else loop $ max clearIx $ min maxIx menuIx
-                          -- the saved index could be from different context
+  (km, pointer) <- m menuIx
   unless (menuName == "") $
     modifySession $ \sess ->
       sess {smenuIxMap = M.insert menuName (pointer - initIx) menuIxMap}
-  assert (either (`elem` keys) (const True) km) $ return km
+  return km
