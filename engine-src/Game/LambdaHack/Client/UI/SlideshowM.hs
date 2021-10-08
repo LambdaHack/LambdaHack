@@ -152,6 +152,13 @@ drawHighlight x1 (ButtonWidth font len) xstart as =
      then as
      else as1 ++ as2High ++ as3
 
+navigationKeys :: [K.KM]
+navigationKeys = [ K.leftButtonReleaseKM, K.rightButtonReleaseKM
+                 , K.returnKM, K.spaceKM
+                 , K.upKM, K.leftKM, K.downKM, K.rightKM
+                 , K.pgupKM, K.pgdnKM, K.wheelNorthKM, K.wheelSouthKM
+                 , K.homeKM, K.endKM, K.controlP ]
+
 -- | Display a, potentially, multi-screen menu and return the chosen
 -- key or item slot label (and the index in the whole menu so that the cursor
 -- can again be placed at that spot next time menu is displayed).
@@ -165,13 +172,9 @@ displayChoiceScreen menuName dm sfBlank frsX extraKeys = do
       frs = slideshow frsX
       keys = concatMap (concatMap (fromLeft [] . fst) . snd) frs
              ++ extraKeys
-      navigationKeys = [ K.leftButtonReleaseKM, K.rightButtonReleaseKM
-                       , K.returnKM, K.spaceKM
-                       , K.upKM, K.leftKM, K.downKM, K.rightKM
-                       , K.pgupKM, K.pgdnKM, K.wheelNorthKM, K.wheelSouthKM
-                       , K.homeKM, K.endKM, K.controlP ]
-                       ++ [K.mkChar '?' | menuName == "help"]  -- a hack
-      legalKeys = keys ++ navigationKeys
+      legalKeys = keys
+                  ++ navigationKeys
+                  ++ [K.mkChar '?' | menuName == "help"]  -- a hack
       maxIx = length (concatMap snd frs) - 1
       allOKX = concatMap snd frs
       initIx = case findIndex (isRight . fst) allOKX of
