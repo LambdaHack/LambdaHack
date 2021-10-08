@@ -105,6 +105,23 @@ getConfirms dm extraKeys slides = do
   ekm <- displayChoiceScreen "" dm False slides extraKeys
   return $! either id (error $ "" `showFailure` ekm) ekm
 
+-- | Find a position in a menu.
+-- The arguments go from first menu line and menu page to the last,
+-- in order. Their indexing is from 0. We select the nearest item
+-- with the index equal or less to the pointer.
+findKYX :: Int -> [OKX] -> Maybe (OKX, KYX, Int)
+findKYX _ [] = Nothing
+findKYX pointer (okx@(_, kyxs) : frs2) =
+  case drop pointer kyxs of
+    [] ->  -- not enough menu items on this page
+      case findKYX (pointer - length kyxs) frs2 of
+        Nothing ->  -- no more menu items in later pages
+          case reverse kyxs of
+            [] -> Nothing
+            kyx : _ -> Just (okx, kyx, length kyxs - 1)
+        res -> res
+    kyx : _ -> Just (okx, kyx, pointer)
+
 -- | Display a, potentially, multi-screen menu and return the chosen
 -- key or item slot label (and the index in the whole menu so that the cursor
 -- can again be placed at that spot next time menu is displayed).
@@ -125,21 +142,6 @@ displayChoiceScreen menuName dm sfBlank frsX extraKeys = do
                        , K.homeKM, K.endKM, K.controlP ]
                        ++ [K.mkChar '?' | menuName == "help"]  -- a hack
       legalKeys = keys ++ navigationKeys
-      -- The arguments go from first menu line and menu page to the last,
-      -- in order. Their indexing is from 0. We select the nearest item
-      -- with the index equal or less to the pointer.
-      findKYX :: Int -> [OKX] -> Maybe (OKX, KYX, Int)
-      findKYX _ [] = Nothing
-      findKYX pointer (okx@(_, kyxs) : frs2) =
-        case drop pointer kyxs of
-          [] ->  -- not enough menu items on this page
-            case findKYX (pointer - length kyxs) frs2 of
-              Nothing ->  -- no more menu items in later pages
-                case reverse kyxs of
-                  [] -> Nothing
-                  kyx : _ -> Just (okx, kyx, length kyxs - 1)
-              res -> res
-          kyx : _ -> Just (okx, kyx, pointer)
       maxIx = length (concatMap snd frs) - 1
       allOKX = concatMap snd frs
       initIx = case findIndex (isRight . fst) allOKX of
