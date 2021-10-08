@@ -2,7 +2,7 @@
 module Game.LambdaHack.Client.UI.Slideshow
   ( DisplayFont, isSquareFont, isMonoFont, FontOverlayMap, FontSetup(..)
   , multiFontSetup, monoFontSetup, singleFontSetup, textSize
-  , ButtonWidth(..), KYX, OKX, Slideshow(slideshow)
+  , KeyOrSlot, ButtonWidth(..), KYX, OKX, Slideshow(slideshow)
   , emptySlideshow, unsnoc, toSlideshow, attrLinesToFontMap
   , maxYofOverlay, menuToSlideshow, wrapOKX, splitOverlay, splitOKX
   , highSlideshow
@@ -60,6 +60,8 @@ textSize SquareFont l = 2 * length l
 textSize MonoFont l = length l
 textSize PropFont _ = error "size of proportional font texts is not defined"
 
+type KeyOrSlot = Either K.KM SlotChar
+
 -- TODO: probably best merge the PointUI into that and represent
 -- the position as characters, too, translating to UI positions as needed.
 -- The problem is that then I need to do a lot of reverse translation
@@ -72,7 +74,7 @@ data ButtonWidth = ButtonWidth
   deriving (Show, Eq)
 
 -- | A key or an item slot label at a given position on the screen.
-type KYX = (Either K.KM SlotChar, (PointUI, ButtonWidth))
+type KYX = (KeyOrSlot, (PointUI, ButtonWidth))
 
 -- | An Overlay of text with an associated list of keys or slots
 -- that activated when the specified screen position is pointed at.

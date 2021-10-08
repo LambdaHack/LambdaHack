@@ -327,7 +327,7 @@ getItem leader psuit prompt promptGeneric cCur cRest askWhenLone
 data DefItemKey m = DefItemKey
   { defLabel  :: Either Text K.KM
   , defCond   :: Bool
-  , defAction :: Either K.KM SlotChar -> m (Either Text ResultItemDialogMode)
+  , defAction :: KeyOrSlot -> m (Either Text ResultItemDialogMode)
   }
 
 data Suitability =
@@ -565,7 +565,7 @@ transition leader psuit prompt promptGeneric permitMulitple
                      $ EM.keys bagItemSlots
       runDefItemKey keyDefs lettersDef io slotKeys promptChosen cCur
 
-keyOfEKM :: Int -> Either K.KM SlotChar -> Maybe K.KM
+keyOfEKM :: Int -> KeyOrSlot -> Maybe K.KM
 keyOfEKM _ (Left kms) = error $ "" `showFailure` kms
 keyOfEKM numPrefix (Right SlotChar{..}) | slotPrefix == numPrefix =
   Just $ K.mkChar slotChar

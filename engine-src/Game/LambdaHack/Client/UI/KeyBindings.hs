@@ -16,7 +16,6 @@ import           Game.LambdaHack.Client.UI.Content.Input
 import           Game.LambdaHack.Client.UI.Content.Screen
 import           Game.LambdaHack.Client.UI.ContentClientUI
 import           Game.LambdaHack.Client.UI.HumanCmd
-import           Game.LambdaHack.Client.UI.ItemSlot
 import qualified Game.LambdaHack.Client.UI.Key as K
 import           Game.LambdaHack.Client.UI.Overlay
 import           Game.LambdaHack.Client.UI.PointUI
@@ -126,7 +125,7 @@ keyHelp CCUI{ coinput=coinput@InputContent{..}
     fmm a b c = fmt (keyM + 1) a $ fmt0 keyB (truncatem b) (truncatem c)
     areaCaption t = fmm t "LMB (left mouse button)" "RMB (right mouse button)"
     keySel :: (forall a. (a, a) -> a) -> K.KM
-           -> [(CmdArea, Either K.KM SlotChar, Text)]
+           -> [(CmdArea, KeyOrSlot, Text)]
     keySel sel key =
       let cmd = case M.lookup key bcmdMap of
             Just (_, _, cmd2) -> cmd2
@@ -318,7 +317,7 @@ okxsN InputContent{..} keyFont descFont offset offsetCol2 greyedOut
       keyKnown km = case K.key km of
         K.Unknown{} -> False
         _ -> True
-      keys :: [(Either K.KM SlotChar, (Bool, (Text, Text)))]
+      keys :: [(KeyOrSlot, (Bool, (Text, Text)))]
       keys = [ (Left km, (greyedOut cmd, fmt keyNames desc))
              | (_, (cats, desc, cmd)) <- bcmdList
              , let kms = coImage cmd

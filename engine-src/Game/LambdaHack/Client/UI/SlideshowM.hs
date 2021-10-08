@@ -18,7 +18,6 @@ import           Game.LambdaHack.Client.UI.Content.Screen
 import           Game.LambdaHack.Client.UI.ContentClientUI
 import           Game.LambdaHack.Client.UI.Frame
 import           Game.LambdaHack.Client.UI.FrameM
-import           Game.LambdaHack.Client.UI.ItemSlot
 import qualified Game.LambdaHack.Client.UI.Key as K
 import           Game.LambdaHack.Client.UI.MonadClientUI
 import           Game.LambdaHack.Client.UI.Msg
@@ -112,11 +111,11 @@ getConfirms dm extraKeys slides = do
 -- This function is the only source of menus and so, effectively, UI modes.
 displayChoiceScreen :: forall m . MonadClientUI m
                     => String -> ColorMode -> Bool -> Slideshow -> [K.KM]
-                    -> m (Either K.KM SlotChar)
+                    -> m KeyOrSlot
 displayChoiceScreen menuName dm sfBlank frsX extraKeys = do
   (maxIx, initIx, clearIx, m) <-
     stepChoiceScreen menuName dm sfBlank frsX extraKeys
-  let loop :: Int -> m (Either K.KM SlotChar, Int)
+  let loop :: Int -> m (KeyOrSlot, Int)
       loop pointer = do
         (final, km, pointer1) <- m pointer
         if final
@@ -126,8 +125,8 @@ displayChoiceScreen menuName dm sfBlank frsX extraKeys = do
 
 wrapInMenuIx :: MonadClientUI m
              => String -> Int -> Int -> Int
-             -> (Int -> m (Either K.KM SlotChar, Int))
-             -> m (Either K.KM SlotChar)
+             -> (Int -> m (KeyOrSlot, Int))
+             -> m KeyOrSlot
 wrapInMenuIx menuName maxIx initIx clearIx m = do
   menuIxMap <- getsSession smenuIxMap
   -- Beware, values in @menuIxMap@ may be negative (meaning: a key, not slot).
@@ -152,10 +151,8 @@ wrapInMenuIx menuName maxIx initIx clearIx m = do
 -- but it's presented differently to indicate it was confirmed.
 stepChoiceScreen :: forall m . MonadClientUI m
                  => String -> ColorMode -> Bool -> Slideshow -> [K.KM]
-                 -> m ( Int
-                      , Int
-                      , Int
-                      , Int -> m (Bool, Either K.KM SlotChar, Int) )
+                 -> m ( Int, Int, Int
+                      , Int -> m (Bool, KeyOrSlot, Int) )
 stepChoiceScreen menuName dm sfBlank frsX extraKeys = do
   let !_A = assert (K.escKM `elem` extraKeys) ()
       frs = slideshow frsX
@@ -170,7 +167,7 @@ stepChoiceScreen menuName dm sfBlank frsX extraKeys = do
         _ -> 0  -- can't be @length allOKX@ or a multi-page item menu
                 -- mangles saved index of other item munus
       clearIx = if initIx > maxIx then 0 else initIx
-      page :: Int -> m (Bool, Either K.KM SlotChar, Int)
+      page :: Int -> m (Bool, KeyOrSlot, Int)
       page pointer = assert (pointer >= 0) $ case findKYX pointer frs of
         Nothing -> error $ "no menu keys" `showFailure` frs
         Just ( (ovs, kyxs)
@@ -187,7 +184,7 @@ stepChoiceScreen menuName dm sfBlank frsX extraKeys = do
               firstItemOfNextPage = case findIndex (isRight . fst) restOKX of
                 Just p -> p + firstRowOfNextPage
                 _ -> firstRowOfNextPage
-              interpretKey :: K.KM -> m (Bool, Either K.KM SlotChar, Int)
+              interpretKey :: K.KM -> m (Bool, KeyOrSlot, Int)
               interpretKey ikm =
                 case K.key ikm of
                   _ | ikm == K.controlP -> do
