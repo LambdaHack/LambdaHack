@@ -210,12 +210,16 @@ stepChoiceScreen menuName dm sfBlank frsX extraKeys = do
              , (ekm, (PointUI x1 y, buttonWidth))
              , ixOnPage ) -> do
           let ovs = EM.map (updateLine y $ drawHighlight x1 buttonWidth) ovs0
-              -- Translating by @rwidth + 1@, because it looks better when
-              -- two last characters of a line vanish off-screen than
+              -- Translating by @rwidth + 2@, because it looks better when
+              -- a couple last characters of a line vanish off-screen than
               -- when characters touch in the middle of the screen.
               -- The code producing right panes should take care
-              -- to generate lines one shorter than usually.
-              (ovs2, kyxs2) = sideBySideOKX (rwidth + 2) (ovs, kyxs) okxRight
+              -- to generate lines two shorter than usually.
+              --
+              -- We move the pane two characters down, because normally
+              -- reports should not be longer than two lines or at most
+              -- three, but the last one short.
+              (ovs2, kyxs2) = sideBySideOKX (rwidth + 2) 2 (ovs, kyxs) okxRight
               tmpResult pointer1 = case findKYX pointer1 frs of
                 Nothing -> error $ "no menu keys" `showFailure` frs
                 Just (_, (ekm1, _), _) -> return (False, ekm1, pointer1)

@@ -184,7 +184,7 @@ keyHelp CCUI{ coinput=coinput@InputContent{..}
       map (\(y, t) -> (PointUI xoffset (y + yoffset), textToAL t)) . zip [0..]
     sideBySide :: [(Text, OKX)] -> [(Text, OKX)]
     sideBySide ((_t1, okx1) : (t2, okx2) : rest) | not $ isSquareFont propFont =
-      (t2, sideBySideOKX rwidth okx1 okx2) : sideBySide rest
+      (t2, sideBySideOKX rwidth 0 okx1 okx2) : sideBySide rest
     sideBySide l = l
   in sideBySide $ concat
     [ if catLength CmdMinimal

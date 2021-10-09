@@ -94,11 +94,15 @@ type OKX = (FontOverlayMap, [KYX])
 emptyOKX :: OKX
 emptyOKX = (EM.empty, [])
 
-sideBySideOKX :: Int -> OKX -> OKX -> OKX
-sideBySideOKX dx (ovs1, kyx1) (ovs2, kyx2) =
-  ( EM.unionWith (++) ovs1 (EM.map (xtranslateOverlay dx) ovs2)
-  , sortOn (\(_, (PointUI x y, _)) -> (y, x))
-    $ kyx1 ++ map (xtranslateKXY dx) kyx2 )
+sideBySideOKX :: Int -> Int -> OKX -> OKX -> OKX
+sideBySideOKX dx dy (ovs1, kyx1) (ovs2, kyx2) =
+  let xytranslateOverlay =
+        map (\(PointUI x y, al) -> (PointUI (x + dx) (y + dy), al))
+      xytranslateKXY (km, (PointUI x y, len)) =
+        (km, (PointUI (x + dx) (y + dy), len))
+  in ( EM.unionWith (++) ovs1 (EM.map xytranslateOverlay ovs2)
+     , sortOn (\(_, (PointUI x y, _)) -> (y, x))
+       $ kyx1 ++ map xytranslateKXY kyx2 )
 
 -- | A list of active screenfulls to be shown one after another.
 -- Each screenful has an independent numbering of rows and columns.
