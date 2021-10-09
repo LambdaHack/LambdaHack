@@ -217,10 +217,12 @@ stepChoiceScreen menuName dm sfBlank frsX extraKeys = do
               -- The code producing right panes should take care
               -- to generate lines two shorter than usually.
               --
-              -- We move the pane two characters down, because normally
+              -- We move the pane one character down and expect the text
+              -- to start with an empty line or two, because normally
               -- reports should not be longer than two lines or at most
-              -- three, but the last one short.
-              (ovs2, kyxs2) = sideBySideOKX (rwidth + 2) 2 (ovs, kyxs) okxRight
+              -- three, but the last one short, but menu lines can be
+              -- very long an should not peek from under the right pane text.
+              (ovs2, kyxs2) = sideBySideOKX (rwidth + 2) 1 (ovs, kyxs) okxRight
               tmpResult pointer1 = case findKYX pointer1 frs of
                 Nothing -> error $ "no menu keys" `showFailure` frs
                 Just (_, (ekm1, _), _) -> return (False, ekm1, pointer1)
