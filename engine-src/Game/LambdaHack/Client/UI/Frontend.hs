@@ -127,7 +127,7 @@ fchanFrontend fs@FrontSetup{..} rf =
 
 display :: RawFrontend -> Frame -> IO ()
 display rf@RawFrontend{fshowNow, fcoscreen=ScreenContent{rwidth, rheight}}
-        ((m, upd), (ovProp, ovMono)) = do
+        ((m, upd), (ovProp, ovSquare, ovMono)) = do
   let new :: forall s. ST s (G.Mutable U.Vector s Word32)
       new = do
         v <- unFrameBase m
@@ -135,7 +135,7 @@ display rf@RawFrontend{fshowNow, fcoscreen=ScreenContent{rwidth, rheight}}
         return v
       singleArray = PointArray.Array rwidth rheight (U.create new)
   putMVar fshowNow () -- 1. wait for permission to display; 3. ack
-  fdisplay rf $ SingleFrame singleArray ovProp ovMono
+  fdisplay rf $ SingleFrame singleArray ovProp ovSquare ovMono
 
 defaultMaxFps :: Double
 defaultMaxFps = 24

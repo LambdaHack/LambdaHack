@@ -70,13 +70,13 @@ drawOverlay dm onBlank ovs lid = do
                then truncateOverlay False (2 * rwidth) rheight False 0 onBlank
                     $ EM.findWithDefault [] monoFont ovs
                else []
-      ovOther | not $ isSquareFont propFont
-              = truncateOverlay True rwidth rheight True 0 onBlank
-                $ EM.findWithDefault [] squareFont ovs
-                  -- no backdrop for square font, so @wipeAdjacent@
-                  -- needs to be @True@ or the extra blank line starts too late
-              | isTeletype  -- hack for debug output
-              = []
+      ovSquare | not $ isSquareFont propFont
+               = truncateOverlay True rwidth rheight True 0 onBlank
+                 $ EM.findWithDefault [] squareFont ovs
+                   -- no backdrop for square font, so @wipeAdjacent@
+                   -- needs to be @True@ or the extra blank line starts too late
+              | otherwise = []
+      ovOther | not $ isSquareFont propFont = []
               | otherwise
               = truncateOverlay True rwidth rheight True 20 onBlank
                 $ concat $ EM.elems ovs
@@ -104,7 +104,7 @@ drawOverlay dm onBlank ovs lid = do
         else []
       overlayedFrame = overlayFrame rwidth ovOther
                        $ overlayFrame rwidth ovBackdrop basicFrame
-  return (overlayedFrame, (ovProp, ovMono))
+  return (overlayedFrame, (ovProp, ovSquare, ovMono))
 
 -- This is not our turn, so we can't obstruct screen with messages
 -- and message reformatting causes distraction, so there's no point

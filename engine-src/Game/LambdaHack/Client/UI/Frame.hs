@@ -47,11 +47,12 @@ newtype FrameBase = FrameBase
   {unFrameBase :: forall s. ST s (G.Mutable U.Vector s Word32)}
 
 -- | A frame, that is, a base frame and all its modifications.
-type Frame = ((FrameBase, FrameForall), (OverlaySpace, OverlaySpace))
+type Frame = ( (FrameBase, FrameForall)
+             , (OverlaySpace, OverlaySpace, OverlaySpace) )
 
 -- | Components of a frame, before it's decided if the first can be overwritten
 -- in-place or needs to be copied.
-type PreFrame3 = (PreFrame, (OverlaySpace, OverlaySpace))
+type PreFrame3 = (PreFrame, (OverlaySpace, OverlaySpace, OverlaySpace))
 
 -- | Sequence of screen frames, including delays. Potentially based on a single
 -- base frame.
@@ -74,16 +75,17 @@ writeLine offset al = FrameForall $ \v -> do
         writeAt (off + 1) rest
   writeAt offset al
 
--- | A frame that is padded to fill the whole screen with an optional
--- overlay to display in proportional font.
+-- | A frame that is padded to fill the whole screen with optional
+-- overlays to display in proportional, square and monospace fonts.
 --
 -- Note that we don't provide a list of color-highlighed box positions
 -- to be drawn separately, because overlays need to obscure not only map,
 -- but the highlights as well, so highlights need to be included earlier.
 data SingleFrame = SingleFrame
-  { singleArray       :: PointArray.Array Color.AttrCharW32
-  , singlePropOverlay :: OverlaySpace
-  , singleMonoOverlay :: OverlaySpace }
+  { singleArray         :: PointArray.Array Color.AttrCharW32
+  , singlePropOverlay   :: OverlaySpace
+  , singleSquareOverlay :: OverlaySpace
+  , singleMonoOverlay   :: OverlaySpace }
   deriving (Show, Eq)
 
 type OverlaySpace = [(PointUI, AttrString)]
@@ -91,6 +93,7 @@ type OverlaySpace = [(PointUI, AttrString)]
 blankSingleFrame :: ScreenContent -> SingleFrame
 blankSingleFrame ScreenContent{rwidth, rheight} =
   SingleFrame (PointArray.replicateA rwidth rheight Color.spaceAttrW32)
+              []
               []
               []
 
