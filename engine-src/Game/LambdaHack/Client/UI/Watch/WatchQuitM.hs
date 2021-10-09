@@ -334,7 +334,7 @@ viewLoreItems menuName lSlotsRaw trunkBag prompt promptFun displayRanged = do
         Right slot -> do
          let ix0 = fromMaybe (error $ show slot)
                              (findIndex (== slot) $ EM.keys lSlots)
-         okxItemLorePointedAt (rwidth - 2) trunkBag 0 ix0 lSlots
+         okxItemLorePointedAt (rwidth - 2) True trunkBag 0 promptFun ix0 lSlots
       viewAtSlot :: SlotChar -> m K.KM
       viewAtSlot slot = do
         let ix0 = fromMaybe (error $ show slot)

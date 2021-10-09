@@ -950,15 +950,12 @@ displayItemLorePointedAt itemBag meleeSkill promptFun slotIndex
   CCUI{coscreen=ScreenContent{rwidth, rheight}} <- getsSession sccui
   let lSlotsElems = EM.elems lSlots
       lSlotsBound = length lSlotsElems - 1
-      iid2 = lSlotsElems !! slotIndex
-      (k, _) = itemBag EM.! iid2
-  itemFull2 <- getsState $ itemToFull iid2
   let keys = [K.spaceKM, K.escKM]
              ++ [K.mkChar '~' | addTilde]
              ++ [K.upKM | slotIndex /= 0]
              ++ [K.downKM | slotIndex /= lSlotsBound]
-  msgAdd MsgPromptGeneric $ promptFun iid2 itemFull2 k
-  okx <- okxItemLorePointedAt rwidth itemBag meleeSkill slotIndex lSlots
+  okx <- okxItemLorePointedAt
+           rwidth False itemBag meleeSkill promptFun slotIndex lSlots
   slides <- overlayToSlideshow (rheight - 2) keys okx
   km <- getConfirms ColorFull keys slides
   case K.key km of
@@ -971,13 +968,17 @@ displayItemLorePointedAt itemBag meleeSkill promptFun slotIndex
     _ -> return km
 
 okxItemLorePointedAt :: MonadClientUI m
-                     => Int -> ItemBag -> Int -> Int -> SingleItemSlots -> m OKX
-okxItemLorePointedAt width itemBag meleeSkill slotIndex lSlots = do
+                     => Int -> Bool -> ItemBag -> Int
+                     -> (ItemId -> ItemFull -> Int -> Text)
+                     -> Int -> SingleItemSlots
+                     -> m OKX
+okxItemLorePointedAt width inlineMsg itemBag meleeSkill promptFun slotIndex
+                     lSlots = do
   side <- getsClient sside
   arena <- getArenaUI
   let lSlotsElems = EM.elems lSlots
       iid2 = lSlotsElems !! slotIndex
-      kit2 = itemBag EM.! iid2
+      kit2@(k, _) = itemBag EM.! iid2
   itemFull2 <- getsState $ itemToFull iid2
   localTime <- getsState $ getLocalTime arena
   factionD <- getsState sfactionD
@@ -993,8 +994,23 @@ okxItemLorePointedAt width itemBag meleeSkill slotIndex lSlots = do
           [] -> error "splitting AttrString loses characters"
           al1 : rest ->
             (2, attrStringToAL $ drop 2 $ attrLine al1) : map (0,) rest
-      ov = EM.insertWith (++) squareFont descSym
-           $ EM.singleton propFont descBlurb
+      prompt = promptFun iid2 itemFull2 k
+      -- Extra vertical space at the start, because gameover menu
+      -- prompts are sometimes wide and/or long.
+      promptBlurb = offsetOverlay $ splitAttrString width width
+                                  $ textFgToAS Color.Brown
+                                  $ "\n" <> prompt <> "\n\n"
+  (descSym2, descBlurb2) <-
+    if inlineMsg
+    then do
+      let len = length promptBlurb
+      return ( ytranslateOverlay len descSym
+             , promptBlurb ++ ytranslateOverlay len descBlurb )
+    else do
+      msgAdd MsgPromptGeneric prompt
+      return (descSym, descBlurb)
+  let ov = EM.insertWith (++) squareFont descSym2
+           $ EM.singleton propFont descBlurb2
   return (ov, [])
 
 cycleLore :: MonadClientUI m => [m K.KM] -> [m K.KM] -> m ()

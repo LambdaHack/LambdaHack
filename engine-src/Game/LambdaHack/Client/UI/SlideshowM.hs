@@ -204,7 +204,8 @@ stepChoiceScreen menuName dm sfBlank frsX extraKeys = do
                 -- mangles saved index of other item munus
       clearIx = if initIx > maxIx then 0 else initIx
       page :: Int -> OKX -> m (Bool, KeyOrSlot, Int)
-      page pointer okxRight = assert (pointer >= 0) $ case findKYX pointer frs of
+      page pointer okxRight = assert (pointer >= 0)
+                              $ case findKYX pointer frs of
         Nothing -> error $ "no menu keys" `showFailure` frs
         Just ( (ovs0, kyxs)
              , (ekm, (PointUI x1 y, buttonWidth))
