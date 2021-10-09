@@ -330,7 +330,7 @@ viewLoreItems menuName lSlotsRaw trunkBag prompt promptFun displayRanged = do
       keysMain = keysPre ++ map (keyOfEKM . fst) allOKX
       displayInRightPane :: KeyOrSlot -> m OKX
       displayInRightPane ekm = case ekm of
-        Left{} -> return (EM.empty, [])
+        Left{} -> return emptyOKX
         Right slot -> do
          let ix0 = fromMaybe (error $ show slot)
                              (findIndex (== slot) $ EM.keys lSlots)

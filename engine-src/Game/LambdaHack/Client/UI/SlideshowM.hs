@@ -50,7 +50,7 @@ overlayToSlideshow y keys okx = do
 reportToSlideshow :: MonadClientUI m => [K.KM] -> m Slideshow
 reportToSlideshow keys = do
   CCUI{coscreen=ScreenContent{rheight}} <- getsSession sccui
-  overlayToSlideshow (rheight - 2) keys (EM.empty, [])
+  overlayToSlideshow (rheight - 2) keys emptyOKX
 
 -- | Split current report into a slideshow. Keep report unchanged.
 -- Assume the game either halts waiting for a key after this is shown,
@@ -67,7 +67,7 @@ reportToSlideshowKeepHalt insideMenu keys = do
   -- to the messages that come after, so should be shown together.
   fontSetup <- getFontSetup
   return $! splitOverlay fontSetup rwidth (rheight - 2) uMsgWrapColumn
-                         report keys (EM.empty, [])
+                         report keys emptyOKX
 
 -- | Display a message. Return value indicates if the player wants to continue.
 -- Feature: if many pages, only the last SPACE exits (but first ESC).
@@ -119,7 +119,7 @@ displayChoiceScreen :: forall m . MonadClientUI m
                     => String -> ColorMode -> Bool -> Slideshow -> [K.KM]
                     -> m KeyOrSlot
 displayChoiceScreen =
-  displayChoiceScreenWithRightPane $ const $ return (EM.empty, [])
+  displayChoiceScreenWithRightPane $ const $ return emptyOKX
 
 -- | Display a, potentially, multi-screen menu and return the chosen
 -- key or item slot label (and save the index in the whole menu so that the cursor
@@ -138,7 +138,7 @@ displayChoiceScreenWithRightPane displayInRightPane
                                  menuName dm sfBlank frsX extraKeys = do
   FontSetup{propFont} <- getFontSetup
   let displayInRightUnlessSquare km = if isSquareFont propFont
-                                      then return (EM.empty, [])
+                                      then return emptyOKX
                                       else displayInRightPane km
   (maxIx, initIx, clearIx, m) <-
     stepChoiceScreen menuName dm sfBlank frsX extraKeys

@@ -3,7 +3,7 @@ module Game.LambdaHack.Client.UI.Slideshow
   ( DisplayFont, isSquareFont, isMonoFont, FontOverlayMap, FontSetup(..)
   , multiFontSetup, monoFontSetup, singleFontSetup, textSize
   , KeyOrSlot, ButtonWidth(..), KYX, xtranslateKXY, ytranslateKXY, yrenumberKXY
-  , OKX, sideBySideOKX, Slideshow(slideshow)
+  , OKX, emptyOKX, sideBySideOKX, Slideshow(slideshow)
   , emptySlideshow, unsnoc, toSlideshow, attrLinesToFontMap
   , maxYofOverlay, menuToSlideshow, wrapOKX, splitOverlay, splitOKX
   , highSlideshow
@@ -90,6 +90,9 @@ yrenumberKXY ynew (km, (PointUI x _, len)) = (km, (PointUI x ynew, len))
 -- that activate when the specified screen position is pointed at.
 -- The list should be sorted wrt rows and then columns.
 type OKX = (FontOverlayMap, [KYX])
+
+emptyOKX :: OKX
+emptyOKX = (EM.empty, [])
 
 sideBySideOKX :: Int -> OKX -> OKX -> OKX
 sideBySideOKX dx (ovs1, kyx1) (ovs2, kyx2) =
@@ -315,12 +318,12 @@ splitOKX FontSetup{..} msgLong width height wrap reportAS keys (ls0, kxs0) =
       ((lsInit, kxsInit), (headerProp, headerMono, rkxs)) =
         -- Check whether all space taken by report and keys.
         if | (lenOfRep0 + length lX) < height ->  -- display normally
-             ((EM.empty, []), (repProp0, lX ++ repMono0, keysX))
+             (emptyOKX, (repProp0, lX ++ repMono0, keysX))
            | (lenOfRepW + length lXW) < height ->  -- display widely
-             ((EM.empty, []), (repPropW, lXW ++ repMonoW, keysXW))
+             (emptyOKX, (repPropW, lXW ++ repMonoW, keysXW))
            | length reportParagraphs == 1
              && length (attrLine firstParaReport) <= 2 * width ->
-             ( (EM.empty, [])  -- already shown in full in @hdrShortened@
+             ( emptyOKX  -- already shown in full in @hdrShortened@
              , hdrShortened )
            | otherwise -> case lX0 of
                [] ->
