@@ -121,26 +121,25 @@ displayChoiceScreen menuName dm sfBlank frsX extraKeys = do
         if final
         then return (km, pointer1)
         else loop pointer1
-  wrapInMenuIx menuName maxIx initIx clearIx loop
+  pointer0 <- getMenuIx menuName maxIx initIx clearIx
+  (km, pointer) <- loop pointer0
+  saveMenuIx menuName initIx pointer
+  return km
 
-wrapInMenuIx :: MonadClientUI m
-             => String -> Int -> Int -> Int
-             -> (Int -> m (KeyOrSlot, Int))
-             -> m KeyOrSlot
-wrapInMenuIx menuName maxIx initIx clearIx m = do
+getMenuIx :: MonadClientUI m => String -> Int -> Int -> Int -> m Int
+getMenuIx menuName maxIx initIx clearIx = do
   menuIxMap <- getsSession smenuIxMap
   -- Beware, values in @menuIxMap@ may be negative (meaning: a key, not slot).
   let menuIx = if menuName == ""
                then clearIx
                else maybe clearIx (+ initIx) (M.lookup menuName menuIxMap)
-  (km, pointer) <- m $ max clearIx $ min maxIx menuIx
-                     -- clamping needed, because the saved menu index could be
-                     -- from different context
-  let !_A = assert (clearIx <= pointer && pointer <= maxIx) ()
+  return $! max clearIx $ min maxIx menuIx
+
+saveMenuIx :: MonadClientUI m => String -> Int -> Int -> m ()
+saveMenuIx menuName initIx pointer =
   unless (menuName == "") $
     modifySession $ \sess ->
-      sess {smenuIxMap = M.insert menuName (pointer - initIx) menuIxMap}
-  return km
+      sess {smenuIxMap = M.insert menuName (pointer - initIx) $ smenuIxMap sess}
 
 -- | This is one step of UI menu management user session.
 --
@@ -173,8 +172,7 @@ stepChoiceScreen menuName dm sfBlank frsX extraKeys = do
         Just ( (ovs, kyxs)
              , (ekm, (PointUI x1 y, buttonWidth))
              , ixOnPage ) -> do
-          let ovs1 = EM.map (updateLine y $ drawHighlight x1 buttonWidth) ovs
-              tmpResult pointer1 = return (False, ekm, pointer1)
+          let tmpResult pointer1 = return (False, ekm, pointer1)
               ignoreKey = tmpResult pointer
               pageLen = length kyxs
               xix :: KYX -> Bool
@@ -254,6 +252,7 @@ stepChoiceScreen menuName dm sfBlank frsX extraKeys = do
                              then tmpResult clearIx
                              else tmpResult maxIx
                   _ -> error $ "unknown key" `showFailure` ikm
+              ovs1 = EM.map (updateLine y $ drawHighlight x1 buttonWidth) ovs
           pkm <- promptGetKey dm ovs1 sfBlank legalKeys
           interpretKey pkm
       m pointer =
