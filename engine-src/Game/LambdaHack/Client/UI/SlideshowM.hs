@@ -164,7 +164,8 @@ getMenuIx menuName maxIx initIx clearIx = do
   let menuIx = if menuName == ""
                then clearIx
                else maybe clearIx (+ initIx) (M.lookup menuName menuIxMap)
-  return $! max clearIx $ min maxIx menuIx
+                      -- this may still be negative, from different context
+  return $! max clearIx $ min maxIx menuIx  -- so clamp to point at item, not key
 
 saveMenuIx :: MonadClientUI m => String -> Int -> Int -> m ()
 saveMenuIx menuName initIx pointer =
@@ -304,7 +305,9 @@ stepChoiceScreen menuName dm sfBlank frsX extraKeys = do
         else do
           (final, km, pointer1) <- page pointer okxRight
           let !_A1 = assert (either (`elem` keys) (const True) km) ()
-          let !_A2 = assert (clearIx <= pointer1 && pointer1 <= maxIx) ()
+          -- Pointer at a button included, hence greater than 0, not @clearIx@.
+          let !_A2 = assert (0 <= pointer1 && pointer1 <= maxIx
+                             `blame`  (pointer1, maxIx)) ()
           return (final, km, pointer1)
   return (maxIx, initIx, clearIx, m)
 
