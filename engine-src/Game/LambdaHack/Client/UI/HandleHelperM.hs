@@ -9,7 +9,8 @@ module Game.LambdaHack.Client.UI.HandleHelperM
   , placesFromState, placesOverlay
   , describeMode, modesOverlay
   , pickNumber, guardItemSize, lookAtItems, lookAtStash, lookAtPosition
-  , displayItemLore, displayItemLorePointedAt, cycleLore, spoilsBlurb
+  , displayItemLore, displayItemLorePointedAt, okxItemLorePointedAt
+  , cycleLore, spoilsBlurb
   , ppContainerWownW, nxtGameMode
 #ifdef EXPOSE_INTERNAL
     -- * Internal operations

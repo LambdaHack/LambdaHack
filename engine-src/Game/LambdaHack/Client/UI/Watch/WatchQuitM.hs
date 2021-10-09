@@ -328,6 +328,13 @@ viewLoreItems menuName lSlotsRaw trunkBag prompt promptFun displayRanged = do
       keyOfEKM (Right SlotChar{slotChar}) = K.mkChar slotChar
       allOKX = concatMap snd $ slideshow itemSlides
       keysMain = keysPre ++ map (keyOfEKM . fst) allOKX
+      displayInRightPane :: KeyOrSlot -> m OKX
+      displayInRightPane ekm = case ekm of
+        Left{} -> return (EM.empty, [])
+        Right slot -> do
+         let ix0 = fromMaybe (error $ show slot)
+                             (findIndex (== slot) $ EM.keys lSlots)
+         okxItemLorePointedAt trunkBag 0 ix0 lSlots
       viewAtSlot :: SlotChar -> m K.KM
       viewAtSlot slot = do
         let ix0 = fromMaybe (error $ show slot)
@@ -337,7 +344,8 @@ viewLoreItems menuName lSlotsRaw trunkBag prompt promptFun displayRanged = do
         then viewLoreItems menuName lSlots trunkBag prompt
                            promptFun displayRanged
         else return K.escKM
-  ekm <- displayChoiceScreen menuName ColorFull False itemSlides keysMain
+  ekm <- displayChoiceScreenWithRightPane displayInRightPane
+           menuName ColorFull False itemSlides keysMain
   case ekm of
     Left km | km `elem` [K.spaceKM, K.mkChar '<', K.mkChar '>', K.escKM] ->
       return km
