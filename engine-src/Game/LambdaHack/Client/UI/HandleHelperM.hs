@@ -946,13 +946,38 @@ displayItemLorePointedAt
   -> m K.KM
 displayItemLorePointedAt itemBag meleeSkill promptFun slotIndex
                          lSlots addTilde = do
-  CCUI{coscreen=ScreenContent{rwidth, rheight}} <- getsSession sccui
-  side <- getsClient sside
-  arena <- getArenaUI
+  CCUI{coscreen=ScreenContent{rheight}} <- getsSession sccui
   let lSlotsElems = EM.elems lSlots
       lSlotsBound = length lSlotsElems - 1
       iid2 = lSlotsElems !! slotIndex
-      kit2@(k, _) = itemBag EM.! iid2
+      (k, _) = itemBag EM.! iid2
+  itemFull2 <- getsState $ itemToFull iid2
+  let keys = [K.spaceKM, K.escKM]
+             ++ [K.mkChar '~' | addTilde]
+             ++ [K.upKM | slotIndex /= 0]
+             ++ [K.downKM | slotIndex /= lSlotsBound]
+  msgAdd MsgPromptGeneric $ promptFun iid2 itemFull2 k
+  okx <- okxItemLorePointedAt itemBag meleeSkill slotIndex lSlots
+  slides <- overlayToSlideshow (rheight - 2) keys okx
+  km <- getConfirms ColorFull keys slides
+  case K.key km of
+    K.Up ->
+      displayItemLorePointedAt itemBag meleeSkill promptFun (slotIndex - 1)
+                               lSlots addTilde
+    K.Down ->
+      displayItemLorePointedAt itemBag meleeSkill promptFun (slotIndex + 1)
+                               lSlots addTilde
+    _ -> return km
+
+okxItemLorePointedAt :: MonadClientUI m
+                     => ItemBag -> Int -> Int -> SingleItemSlots -> m OKX
+okxItemLorePointedAt itemBag meleeSkill slotIndex lSlots = do
+  CCUI{coscreen=ScreenContent{rwidth}} <- getsSession sccui
+  side <- getsClient sside
+  arena <- getArenaUI
+  let lSlotsElems = EM.elems lSlots
+      iid2 = lSlotsElems !! slotIndex
+      kit2 = itemBag EM.! iid2
   itemFull2 <- getsState $ itemToFull iid2
   localTime <- getsState $ getLocalTime arena
   factionD <- getsState sfactionD
@@ -970,21 +995,7 @@ displayItemLorePointedAt itemBag meleeSkill promptFun slotIndex
             (2, attrStringToAL $ drop 2 $ attrLine al1) : map (0,) rest
       ov = EM.insertWith (++) squareFont descSym
            $ EM.singleton propFont descBlurb
-      keys = [K.spaceKM, K.escKM]
-             ++ [K.mkChar '~' | addTilde]
-             ++ [K.upKM | slotIndex /= 0]
-             ++ [K.downKM | slotIndex /= lSlotsBound]
-  msgAdd MsgPromptGeneric $ promptFun iid2 itemFull2 k
-  slides <- overlayToSlideshow (rheight - 2) keys (ov, [])
-  km <- getConfirms ColorFull keys slides
-  case K.key km of
-    K.Up ->
-      displayItemLorePointedAt itemBag meleeSkill promptFun (slotIndex - 1)
-                               lSlots addTilde
-    K.Down ->
-      displayItemLorePointedAt itemBag meleeSkill promptFun (slotIndex + 1)
-                               lSlots addTilde
-    _ -> return km
+  return (ov, [])
 
 cycleLore :: MonadClientUI m => [m K.KM] -> [m K.KM] -> m ()
 cycleLore _ [] = return ()
