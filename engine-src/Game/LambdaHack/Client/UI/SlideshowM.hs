@@ -215,7 +215,7 @@ stepChoiceScreen menuName dm sfBlank frsX extraKeys = do
               -- when characters touch in the middle of the screen.
               -- The code producing right panes should take care
               -- to generate lines one shorter than usually.
-              (ovs2, kyxs2) = sideBySideOKX (rwidth + 1) (ovs, kyxs) okxRight
+              (ovs2, kyxs2) = sideBySideOKX (rwidth + 2) (ovs, kyxs) okxRight
               tmpResult pointer1 = case findKYX pointer1 frs of
                 Nothing -> error $ "no menu keys" `showFailure` frs
                 Just (_, (ekm1, _), _) -> return (False, ekm1, pointer1)

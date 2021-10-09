@@ -947,7 +947,7 @@ displayItemLorePointedAt
   -> m K.KM
 displayItemLorePointedAt itemBag meleeSkill promptFun slotIndex
                          lSlots addTilde = do
-  CCUI{coscreen=ScreenContent{rheight}} <- getsSession sccui
+  CCUI{coscreen=ScreenContent{rwidth, rheight}} <- getsSession sccui
   let lSlotsElems = EM.elems lSlots
       lSlotsBound = length lSlotsElems - 1
       iid2 = lSlotsElems !! slotIndex
@@ -958,7 +958,7 @@ displayItemLorePointedAt itemBag meleeSkill promptFun slotIndex
              ++ [K.upKM | slotIndex /= 0]
              ++ [K.downKM | slotIndex /= lSlotsBound]
   msgAdd MsgPromptGeneric $ promptFun iid2 itemFull2 k
-  okx <- okxItemLorePointedAt itemBag meleeSkill slotIndex lSlots
+  okx <- okxItemLorePointedAt rwidth itemBag meleeSkill slotIndex lSlots
   slides <- overlayToSlideshow (rheight - 2) keys okx
   km <- getConfirms ColorFull keys slides
   case K.key km of
@@ -971,9 +971,8 @@ displayItemLorePointedAt itemBag meleeSkill promptFun slotIndex
     _ -> return km
 
 okxItemLorePointedAt :: MonadClientUI m
-                     => ItemBag -> Int -> Int -> SingleItemSlots -> m OKX
-okxItemLorePointedAt itemBag meleeSkill slotIndex lSlots = do
-  CCUI{coscreen=ScreenContent{rwidth}} <- getsSession sccui
+                     => Int -> ItemBag -> Int -> Int -> SingleItemSlots -> m OKX
+okxItemLorePointedAt width itemBag meleeSkill slotIndex lSlots = do
   side <- getsClient sside
   arena <- getArenaUI
   let lSlotsElems = EM.elems lSlots
@@ -985,12 +984,12 @@ okxItemLorePointedAt itemBag meleeSkill slotIndex lSlots = do
   -- The hacky level 0 marks items never seen, but sent by server at gameover.
   jlid <- getsSession $ fromMaybe (toEnum 0) <$> EM.lookup iid2 . sitemUI
   FontSetup{..} <- getFontSetup
-  let descAl = itemDesc rwidth True side factionD meleeSkill
+  let descAl = itemDesc width True side factionD meleeSkill
                         CGround localTime jlid itemFull2 kit2
       (descSymAl, descBlurbAl) = span (/= Color.spaceAttrW32) descAl
-      descSym = offsetOverlay $ splitAttrString rwidth rwidth descSymAl
+      descSym = offsetOverlay $ splitAttrString width width descSymAl
       descBlurb = offsetOverlayX $
-        case splitAttrString rwidth rwidth $ stringToAS "xx" ++ descBlurbAl of
+        case splitAttrString width width $ stringToAS "xx" ++ descBlurbAl of
           [] -> error "splitting AttrString loses characters"
           al1 : rest ->
             (2, attrStringToAL $ drop 2 $ attrLine al1) : map (0,) rest
