@@ -216,8 +216,10 @@ stepChoiceScreen menuName dm sfBlank frsX extraKeys = do
               -- The code producing right panes should take care
               -- to generate lines one shorter than usually.
               (ovs2, kyxs2) = sideBySideOKX (rwidth + 1) (ovs, kyxs) okxRight
-              tmpResult pointer1 = return (False, ekm, pointer1)
-              ignoreKey = tmpResult pointer
+              tmpResult pointer1 = case findKYX pointer1 frs of
+                Nothing -> error $ "no menu keys" `showFailure` frs
+                Just (_, (ekm1, _), _) -> return (False, ekm1, pointer1)
+              ignoreKey = return (False, ekm, pointer)
               pageLen = length kyxs2
               xix :: KYX -> Bool
               xix (_, (PointUI x1' _, _)) = x1' <= x1 + 2 && x1' >= x1 - 2
