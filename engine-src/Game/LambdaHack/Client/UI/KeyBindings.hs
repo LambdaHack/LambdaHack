@@ -101,20 +101,16 @@ keyHelp CCUI{ coinput=coinput@InputContent{..}
     keyCaption = fmt offsetCol2 "keys" "command"
     mouseOverviewCaption = fmt offsetCol2 "keys" "command (exploration/aiming)"
     spLen = textSize monoFont " "
-    pamoveRight :: Int -> (PointUI, a) -> (PointUI, a)
-    pamoveRight xoff (PointUI x y, a) = (PointUI (x + xoff) y, a)
     okxs cat headers footers =
       let (ovs, kyx) = okxsN coinput monoFont propFont 0 offsetCol2
                              (const False) True cat headers footers
-      in ( EM.map (map (pamoveRight spLen)) ovs
-         , map (second $ pamoveRight spLen) kyx )
-    renumber dy (km, (PointUI x y, len)) = (km, (PointUI x (y + dy), len))
-    renumberOv dy = map (\(PointUI x y, al) -> (PointUI x (y + dy), al))
+      in ( EM.map (xtranslateOverlay spLen) ovs
+         , map (xtranslateKXY spLen) kyx )
     mergeOKX :: OKX -> OKX -> OKX
     mergeOKX (ovs1, ks1) (ovs2, ks2) =
       let off = 1 + EM.foldr (\ov acc -> max acc (maxYofOverlay ov)) 0 ovs1
-      in ( EM.unionWith (++) ovs1 $ EM.map (renumberOv off) ovs2
-         , ks1 ++ map (renumber off) ks2 )
+      in ( EM.unionWith (++) ovs1 $ EM.map (ytranslateOverlay off) ovs2
+         , ks1 ++ map (ytranslateKXY off) ks2 )
     catLength cat = length $ filter (\(_, (cats, desc, _)) ->
       cat `elem` cats && (desc /= "" || CmdInternal `elem` cats)) bcmdList
     keyM = 13
@@ -187,12 +183,8 @@ keyHelp CCUI{ coinput=coinput@InputContent{..}
     typesetXY (xoffset, yoffset) =
       map (\(y, t) -> (PointUI xoffset (y + yoffset), textToAL t)) . zip [0..]
     sideBySide :: [(Text, OKX)] -> [(Text, OKX)]
-    sideBySide ((_t1, (ovs1, kyx1)) : (t2, (ovs2, kyx2)) : rest)
-      | not $ isSquareFont propFont =
-        (t2, ( EM.unionWith (++) ovs1 (EM.map (map (pamoveRight rwidth)) ovs2)
-             , sortOn (\(_, (PointUI x y, _)) -> (y, x))
-               $ kyx1 ++ map (second $ pamoveRight rwidth) kyx2 ))
-        : sideBySide rest
+    sideBySide ((_t1, okx1) : (t2, okx2) : rest) | not $ isSquareFont propFont =
+      (t2, sideBySideOKX rwidth okx1 okx2) : sideBySide rest
     sideBySide l = l
   in sideBySide $ concat
     [ if catLength CmdMinimal
@@ -337,7 +329,6 @@ okxsN InputContent{..} keyFont descFont offset offsetCol2 greyedOut
       kxs = zipWith f keys [offset + length headerMono1
                                    + length headerProp
                                    + length headerMono2 ..]
-      renumberOv = map (\(PointUI x y, al) -> (PointUI x (y + offset), al))
       ts = map (\t -> (False, (t, ""))) headerMono1
            ++ map (\t -> (False, ("", t))) headerProp
            ++ map (\t -> (False, (t, ""))) headerMono2
@@ -353,6 +344,7 @@ okxsN InputContent{..} keyFont descFont offset offsetCol2 greyedOut
              in (al1, ( if T.null t1 then 0 else spLen * (offsetCol2 + 2)
                       , textToAL t2 ))
       (greyLab, greyDesc) = unzip $ map greyToAL ts
-  in ( EM.insertWith (++) descFont (renumberOv (offsetOverlayX greyDesc))
-       $ EM.singleton keyFont $ renumberOv $ offsetOverlay greyLab
+  in ( EM.insertWith (++) descFont (ytranslateOverlay offset
+                                                      (offsetOverlayX greyDesc))
+       $ EM.singleton keyFont $ ytranslateOverlay offset (offsetOverlay greyLab)
      , kxs )

@@ -2,7 +2,8 @@
 module Game.LambdaHack.Client.UI.Slideshow
   ( DisplayFont, isSquareFont, isMonoFont, FontOverlayMap, FontSetup(..)
   , multiFontSetup, monoFontSetup, singleFontSetup, textSize
-  , KeyOrSlot, ButtonWidth(..), KYX, OKX, Slideshow(slideshow)
+  , KeyOrSlot, ButtonWidth(..), KYX, xtranslateKXY, ytranslateKXY, yrenumberKXY
+  , OKX, sideBySideOKX, Slideshow(slideshow)
   , emptySlideshow, unsnoc, toSlideshow, attrLinesToFontMap
   , maxYofOverlay, menuToSlideshow, wrapOKX, splitOverlay, splitOKX
   , highSlideshow
@@ -76,10 +77,25 @@ data ButtonWidth = ButtonWidth
 -- | A key or an item slot label at a given position on the screen.
 type KYX = (KeyOrSlot, (PointUI, ButtonWidth))
 
+xtranslateKXY :: Int -> KYX -> KYX
+xtranslateKXY dx (km, (PointUI x y, len)) = (km, (PointUI (x + dx) y, len))
+
+ytranslateKXY :: Int -> KYX -> KYX
+ytranslateKXY dy (km, (PointUI x y, len)) = (km, (PointUI x (y + dy), len))
+
+yrenumberKXY :: Int -> KYX -> KYX
+yrenumberKXY ynew (km, (PointUI x _, len)) = (km, (PointUI x ynew, len))
+
 -- | An Overlay of text with an associated list of keys or slots
--- that activated when the specified screen position is pointed at.
+-- that activate when the specified screen position is pointed at.
 -- The list should be sorted wrt rows and then columns.
 type OKX = (FontOverlayMap, [KYX])
+
+sideBySideOKX :: Int -> OKX -> OKX -> OKX
+sideBySideOKX dx (ovs1, kyx1) (ovs2, kyx2) =
+  ( EM.unionWith (++) ovs1 (EM.map (xtranslateOverlay dx) ovs2)
+  , sortOn (\(_, (PointUI x y, _)) -> (y, x))
+    $ kyx1 ++ map (xtranslateKXY dx) kyx2 )
 
 -- | A list of active screenfulls to be shown one after another.
 -- Each screenful has an independent numbering of rows and columns.
@@ -247,18 +263,16 @@ splitOKX FontSetup{..} msgLong width height wrap reportAS keys (ls0, kxs0) =
       -- but if previous lines shorter, match them and only buttons
       -- are permitted to stick out.
       monoWidth = if null repProp then msgWidth else msgWrap
-      repMono0 = map (\(PointUI x y, al) ->
-                        (PointUI x (y + length repProp0), al))
+      repMono0 = ytranslateOverlay (length repProp0)
                  $ offsetOverlay
                  $ indentSplitAttrString monoWidth $ attrLine repMono
-      repMonoW = map (\(PointUI x y, al) ->
-                        (PointUI x (y + length repPropW), al))
+      repMonoW = ytranslateOverlay (length repPropW)
                  $ offsetOverlay
                  $ indentSplitAttrString width $ attrLine repMono
       repWhole0 = offsetOverlay
                   $ concatMap (indentSplitSpaces msgWidth . attrLine)
                               reportParagraphs
-      repWhole1 = map (\(PointUI x y, al) -> (PointUI x (y + 1), al)) repWhole0
+      repWhole1 = ytranslateOverlay 1 repWhole0
       lenOfRep0 = length repProp0 + length repMono0
       lenOfRepW = length repPropW + length repMonoW
       startOfKeys = if null repMono0
@@ -275,14 +289,12 @@ splitOKX FontSetup{..} msgLong width height wrap reportAS keys (ls0, kxs0) =
                             (2 * width) keys
       (lXW, keysXW) = keysOKX monoFont (max 0 $ lenOfRepW - 1) startOfKeysW
                               (2 * width) keys
-      renumber dy (km, (PointUI x y, len)) = (km, (PointUI x (y + dy), len))
-      renumberOv dy = map (\(PointUI x y, al) -> (PointUI x (y + dy), al))
       splitO :: Int -> (Overlay, Overlay, [KYX]) -> OKX -> [OKX]
       splitO yoffset (hdrProp, hdrMono, rk) (ls, kxs) =
         let hdrOff | null hdrProp && null hdrMono = 0
                    | otherwise = 1 + maxYofOverlay hdrMono
-            keyRenumber = map $ renumber (hdrOff - yoffset)
-            lineRenumber = EM.map $ renumberOv (hdrOff - yoffset)
+            keyTranslate = map $ ytranslateKXY (hdrOff - yoffset)
+            lineTranslate = EM.map $ ytranslateOverlay (hdrOff - yoffset)
             yoffsetNew = yoffset + height - hdrOff - 1
             ltOffset :: (PointUI, a) -> Bool
             ltOffset (PointUI _ y, _) = y < yoffsetNew
@@ -291,9 +303,9 @@ splitOKX FontSetup{..} msgLong width height wrap reportAS keys (ls0, kxs0) =
             prependHdr = EM.insertWith (++) propFont hdrProp
                          . EM.insertWith (++) monoFont hdrMono
         in if all null $ EM.elems post  -- all fits on one screen
-           then [(prependHdr $ lineRenumber pre, rk ++ keyRenumber kxs)]
+           then [(prependHdr $ lineTranslate pre, rk ++ keyTranslate kxs)]
            else let (preX, postX) = span (\(_, pa) -> ltOffset pa) kxs
-                in (prependHdr $ lineRenumber pre, rk ++ keyRenumber preX)
+                in (prependHdr $ lineTranslate pre, rk ++ keyTranslate preX)
                    : splitO yoffsetNew (hdrProp, hdrMono, rk) (post, postX)
       firstParaReport = firstParagraph reportAS
       hdrShortened = ( [(PointUI 0 0, firstParaReport)]

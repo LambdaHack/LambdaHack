@@ -281,8 +281,7 @@ itemOverlayFromState lSlots lid bag displayRanged
       (tsLab, tsDesc) = unzip ts
       ovsLab = EM.singleton squareFont $ offsetOverlay tsLab
       ovsDesc = EM.singleton propFont $ offsetOverlayX tsDesc
-      renumber y (km, (PointUI x _, len)) = (km, (PointUI x y, len))
-  in (EM.unionWith (++) ovsLab ovsDesc, zipWith renumber [0..] kxs )
+  in (EM.unionWith (++) ovsLab ovsDesc, zipWith yrenumberKXY [0..] kxs)
 
 skillsOverlay :: MonadClientUI m => ActorId -> m OKX
 skillsOverlay aid = do
@@ -487,16 +486,15 @@ describeMode addTitle gameModeId = do
            <+:> (textFgToAS color (T.toTitle $ MK.nameOutcomePast outcome)
                  <+:> textToAS lastRemark)
            <> textToAS ":"
-      shiftPointUI x (PointUI x0 y0) = PointUI (x0 + x) y0
   return $! if isSquareFont propFont
             then EM.singleton squareFont  -- single column, single font
                  $ offsetOverlayX
                  $ map (\t -> (2, t))
                  $ concatMap snd $ blurb ++ blurbEnd
             else EM.unionWith (++)
-                 (EM.map (map (first $ shiftPointUI 1))
+                 (EM.map (xtranslateOverlay 1)
                   $ attrLinesToFontMap 0 blurb)
-                 (EM.map (map (first $ shiftPointUI $ rwidth + 1))
+                 (EM.map (xtranslateOverlay $ rwidth + 1)
                   $ attrLinesToFontMap 0 blurbEnd)
 
 modesOverlay :: MonadClientUI m => m OKX

@@ -9,7 +9,8 @@ module Game.LambdaHack.Client.UI.Overlay
   , textToAL, textFgToAL, stringToAL, splitAttrString
   , indentSplitAttrString, indentSplitAttrString2
     -- * Overlay
-  , Overlay, offsetOverlay, offsetOverlayX, updateLine
+  , Overlay, xtranslateOverlay, ytranslateOverlay
+  , offsetOverlay, offsetOverlayX, updateLine
 #ifdef EXPOSE_INTERNAL
     -- * Internal operations
   , splitAttrPhrase
@@ -223,6 +224,12 @@ splitAttrPhrase w0 w1 (AttrLine xs)
 -- the length of the screen, too, unlike in @SingleFrame@. Then they are
 -- simply not shown.
 type Overlay = [(PointUI, AttrLine)]
+
+xtranslateOverlay :: Int -> Overlay -> Overlay
+xtranslateOverlay dx = map (\(PointUI x y, al) -> (PointUI (x + dx) y, al))
+
+ytranslateOverlay :: Int -> Overlay -> Overlay
+ytranslateOverlay dy = map (\(PointUI x y, al) -> (PointUI x (y + dy), al))
 
 offsetOverlay :: [AttrLine] -> Overlay
 offsetOverlay l = map (first $ PointUI 0) $ zip [0..] l

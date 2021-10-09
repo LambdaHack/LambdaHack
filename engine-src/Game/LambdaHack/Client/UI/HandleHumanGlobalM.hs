@@ -1393,14 +1393,13 @@ helpHuman cmdSemInCxtOfKM = do
         then packIntoScreens ls (l : acc) (length l + 1 + h)
         else intercalate [""] (reverse acc) : packIntoScreens (l : ls) [] 0
       manualScreens = packIntoScreens (snd rintroScreen) [] 0
-      shiftPointUI x (PointUI x0 y0) = PointUI (x0 + x) y0
       sideBySide =
         if isSquareFont monoFont
         then \(screen1, screen2) ->  -- single column, two screens
           map offsetOverlay $ filter (not . null) [screen1, screen2]
         else \(screen1, screen2) ->  -- two columns, single screen
           [offsetOverlay screen1
-           ++ map (first $ shiftPointUI rwidth) (offsetOverlay screen2)]
+           ++ xtranslateOverlay rwidth (offsetOverlay screen2)]
       listPairs (a : b : rest) = (a, b) : listPairs rest
       listPairs [a] = [(a, [])]
       listPairs [] = []
@@ -1516,8 +1515,7 @@ itemMenuHuman leader cmdSemInCxtOfKM = do
                   [] -> error "splitting AttrString loses characters"
                   al1 : rest ->
                     (2, attrStringToAL $ drop 2 $ attrLine al1) : map (0,) rest
-              alPrefix = map (\(PointUI x y, al) ->
-                                (PointUI x (y + length descBlurb), al))
+              alPrefix = ytranslateOverlay (length descBlurb)
                          $ offsetOverlay
                          $ splitAttrString rwidth rwidth foundPrefix
               ystart = length descBlurb + length alPrefix - 1
@@ -1667,8 +1665,7 @@ generateMenu cmdSemInCxtOfKM blurb kds gameInfo menuName = do
       introLen = sum $ map (length . snd) blurb
       start0 = max 0 (rheight - introLen
                       - if isSquareFont propFont then 1 else 2)
-      shiftPointUI (PointUI x0 y0) = PointUI (x0 + rwidth) y0
-      ov0 = EM.map (map (first shiftPointUI)) $ attrLinesToFontMap start0 blurb
+      ov0 = EM.map (xtranslateOverlay rwidth) $ attrLinesToFontMap start0 blurb
       ov = EM.insertWith (++) squareFont (offsetOverlayX menuOvLines) ov0
   menuIxMap <- getsSession smenuIxMap
   unless (menuName `M.member` menuIxMap) $
