@@ -239,8 +239,7 @@ displayGameOverLoot (heldBag, total) generationAn = do
         <+> (if sexposeItems
              then "Non-positive count means none held but this many generated."
              else "")
-      examItem = displayItemLore itemBag 0 promptFun
-  viewLoreItems "GameOverLoot" lSlots itemBag prompt examItem True
+  viewLoreItems "GameOverLoot" lSlots itemBag prompt promptFun True
 
 displayGameOverAnalytics :: MonadClientUI m
                          => FactionAnalytics -> GenerationAnalytics
@@ -281,8 +280,7 @@ displayGameOverAnalytics factionAn generationAn = do
         <+> (if sexposeActors
              then "Non-positive count means none killed but this many reported."
              else "")
-      examItem = displayItemLore trunkBag 0 promptFun
-  viewLoreItems "GameOverAnalytics" lSlots trunkBag prompt examItem False
+  viewLoreItems "GameOverAnalytics" lSlots trunkBag prompt promptFun False
 
 displayGameOverLore :: MonadClientUI m
                     => SLore -> Bool -> GenerationAnalytics -> m K.KM
@@ -308,16 +306,16 @@ displayGameOverLore slore exposeCount generationAn = do
                           , MU.Text (headingSLore slore) ]
         _ -> makeSentence [ "you", verb, "the following variety of"
                           , MU.CarWs total $ MU.Text (headingSLore slore) ]
-      examItem = displayItemLore generationBag 0 promptFun
       displayRanged = slore `notElem` [SOrgan, STrunk]
   viewLoreItems ("GameOverLore" ++ show slore)
-                slots generationBag prompt examItem displayRanged
+                slots generationBag prompt promptFun displayRanged
 
-viewLoreItems :: MonadClientUI m
+viewLoreItems :: forall m . MonadClientUI m
               => String -> SingleItemSlots -> ItemBag -> Text
-              -> (Int -> SingleItemSlots -> m Bool) -> Bool
+              -> (ItemId -> ItemFull -> Int -> Text)
+              -> Bool
               -> m K.KM
-viewLoreItems menuName lSlotsRaw trunkBag prompt examItem displayRanged = do
+viewLoreItems menuName lSlotsRaw trunkBag prompt promptFun displayRanged = do
   CCUI{coscreen=ScreenContent{rheight}} <- getsSession sccui
   arena <- getArenaUI
   itemToF <- getsState $ flip itemToFull
@@ -330,13 +328,14 @@ viewLoreItems menuName lSlotsRaw trunkBag prompt examItem displayRanged = do
       keyOfEKM (Right SlotChar{slotChar}) = K.mkChar slotChar
       allOKX = concatMap snd $ slideshow itemSlides
       keysMain = keysPre ++ map (keyOfEKM . fst) allOKX
+      viewAtSlot :: SlotChar -> m K.KM
       viewAtSlot slot = do
         let ix0 = fromMaybe (error $ show slot)
                             (findIndex (== slot) $ EM.keys lSlots)
-        go2 <- examItem ix0 lSlots
+        go2 <- displayItemLore trunkBag 0 promptFun ix0 lSlots
         if go2
         then viewLoreItems menuName lSlots trunkBag prompt
-                           examItem displayRanged
+                           promptFun displayRanged
         else return K.escKM
   ekm <- displayChoiceScreen menuName ColorFull False itemSlides keysMain
   case ekm of
