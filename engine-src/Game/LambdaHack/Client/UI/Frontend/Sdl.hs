@@ -475,39 +475,7 @@ drawFrame coscreen ClientOptions{..} sess@FrontendSession{..} curFrame = do
         then return $! i + 1
         else do
           let Point{..} = toEnum i
-          atlas <- readIORef squareAtlas
-          let Color.AttrChar{ acAttr=Color.Attr{fg=fgRaw, bg}
-                            , acChar=acCharRaw } =
-                Color.attrCharFromW32 $ Color.AttrCharW32 w
-              fg | py `mod` 2 == 0 && fgRaw == Color.White = Color.AltWhite
-                 | otherwise = fgRaw
-              ac = if bg == Color.HighlightBackground
-                   then Color.AttrCharW32 w
-                   else Color.attrChar2ToW32 fg acCharRaw
-          textTexture <- case EM.lookup ac atlas of
-            Nothing -> do
-              -- Make all visible floors bold (no bold fold variant for 16x16x,
-              -- so only the dot can be bold).
-              let acChar = if not (Color.isBright fg)
-                              && acCharRaw == floorSymbol  -- '\x00B7'
-                           then if mapFontIsBitmap
-                                then '\x0007'
-                                else '\x22C5'
-                           else acCharRaw
-                  background = if bg == Color.HighlightBackground
-                               then greyRGBA
-                               else blackRGBA
-              textSurfaceRaw <- TTF.shadedGlyph squareFont (colorToRGBA fg)
-                                                background acChar
-              textTexture <- scaleSurfaceToTexture boxSize textSurfaceRaw
-              writeIORef squareAtlas $ EM.insert ac textTexture atlas
-              return textTexture
-            Just textTexture -> return textTexture
-          let tt2Square = Vect.V2 (toEnum boxSize) (toEnum boxSize)
-              tgtR = SDL.Rectangle (vp (px * boxSize) (py * boxSize)) tt2Square
-          SDL.copy srenderer textTexture Nothing (Just tgtR)
-          -- Potentially overwrite a portion of the glyph.
-          chooseAndDrawHighlight px py bg
+          setSquareChar px py (Color.AttrCharW32 w)
           return $! i + 1
       drawMonoOverlay :: OverlaySpace -> IO ()
       drawMonoOverlay =
@@ -541,6 +509,51 @@ drawFrame coscreen ClientOptions{..} sess@FrontendSession{..} curFrame = do
         let tt2Mono = Vect.V2 (toEnum halfSize) (toEnum boxSize)
             tgtR = SDL.Rectangle (vp x (row * boxSize)) tt2Mono
         SDL.copy srenderer textTexture Nothing (Just tgtR)
+      drawSquareOverlay :: OverlaySpace -> IO ()
+      drawSquareOverlay =
+        mapM_ (\(PointUI x y, al) ->
+                 let lineCut = take (2 * rwidth coscreen - x) al
+                 in drawSquareLine (x `div` 2) y lineCut)
+      drawSquareLine :: Int -> Int -> AttrString -> IO ()
+      drawSquareLine _ _ [] = return ()
+      drawSquareLine px row (w : rest) = do
+        setSquareChar px row w
+        drawSquareLine (px + 1) row rest
+      setSquareChar :: Int -> Int -> Color.AttrCharW32 -> IO ()
+      setSquareChar !px !row !w = do
+        atlas <- readIORef squareAtlas
+        let Color.AttrChar{ acAttr=Color.Attr{fg=fgRaw, bg}
+                          , acChar=acCharRaw } =
+              Color.attrCharFromW32 w
+            fg | row `mod` 2 == 0 && fgRaw == Color.White = Color.AltWhite
+               | otherwise = fgRaw
+            ac = if bg == Color.HighlightBackground
+                 then w
+                 else Color.attrChar2ToW32 fg acCharRaw
+        textTexture <- case EM.lookup ac atlas of
+          Nothing -> do
+            -- Make all visible floors bold (no bold font variant for 16x16x,
+            -- so only the dot can be bold).
+            let acChar = if not (Color.isBright fg)
+                            && acCharRaw == floorSymbol  -- '\x00B7'
+                         then if mapFontIsBitmap
+                              then '\x0007'
+                              else '\x22C5'
+                         else acCharRaw
+                background = if bg == Color.HighlightBackground
+                             then greyRGBA
+                             else blackRGBA
+            textSurfaceRaw <- TTF.shadedGlyph squareFont (colorToRGBA fg)
+                                              background acChar
+            textTexture <- scaleSurfaceToTexture boxSize textSurfaceRaw
+            writeIORef squareAtlas $ EM.insert ac textTexture atlas
+            return textTexture
+          Just textTexture -> return textTexture
+        let tt2Square = Vect.V2 (toEnum boxSize) (toEnum boxSize)
+            tgtR = SDL.Rectangle (vp (px * boxSize) (row * boxSize)) tt2Square
+        SDL.copy srenderer textTexture Nothing (Just tgtR)
+        -- Potentially overwrite a portion of the glyph.
+        chooseAndDrawHighlight px row bg
       drawPropOverlay :: OverlaySpace -> IO ()
       drawPropOverlay =
         mapM_ (\(PointUI x y, al) ->
@@ -586,6 +599,7 @@ drawFrame coscreen ClientOptions{..} sess@FrontendSession{..} curFrame = do
   let arraysEqual = singleArray curFrame == singleArray prevFrame
       overlaysEqual =
         singleMonoOverlay curFrame == singleMonoOverlay prevFrame
+        && singleSquareOverlay curFrame == singleSquareOverlay prevFrame
         && singlePropOverlay curFrame == singlePropOverlay prevFrame
   basicTexture <- readIORef sbasicTexture  -- previous content still present
   unless arraysEqual $ do
@@ -600,6 +614,7 @@ drawFrame coscreen ClientOptions{..} sess@FrontendSession{..} curFrame = do
     -- the proportional one and so to have a warning message about overrun
     -- that needs to be overlaid on top of the proportional overlay.
     drawPropOverlay $ singlePropOverlay curFrame
+    drawSquareOverlay $ singleSquareOverlay curFrame
     drawMonoOverlay $ singleMonoOverlay curFrame
     writeIORef spreviousFrame curFrame
     SDL.rendererRenderTarget srenderer SDL.$= Nothing
