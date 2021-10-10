@@ -18,7 +18,7 @@ import           Game.LambdaHack.Client.State
 import           Game.LambdaHack.Client.UI.HandleHumanLocalM
 import qualified Game.LambdaHack.Client.UI.HumanCmd as HumanCmd
 import           Game.LambdaHack.Common.Types
-import           Game.LambdaHack.Definition.DefsInternal
+import Game.LambdaHack.Definition.DefsInternal ( toContentSymbol )
 
 import           MonadClientMock
 
@@ -29,14 +29,13 @@ toFactionId = toEnum
 handleHumanLocalMUnitTests :: TestTree 
 handleHumanLocalMUnitTests = testGroup "handleHumanLocalMUnitTests" [
    testCase "chooseItemProjectHuman" $
-    let triggerItems = 
-            [ HumanCmd.TriggerItem{tiverb="verb", tiobject="object", tisymbols=[toContentSymbol 'a', toContentSymbol 'b']}
-            , HumanCmd.TriggerItem{tiverb="verb2", tiobject="object2", tisymbols=[toContentSymbol 'c']}
-            ]
-        stateTransform :: forall m. (MonadClient m, MonadClientUI m) => m MError
-        stateTransform = chooseItemProjectHuman (toEnum 0) triggerItems
-        result = St.runState stateTransform emptyCliState
-    in fst result @?= Nothing 
+    -- let triggerItems = 
+    --         [ HumanCmd.TriggerItem{tiverb="verb", tiobject="object", tisymbols=[toContentSymbol 'a', toContentSymbol 'b']}
+    --         , HumanCmd.TriggerItem{tiverb="verb2", tiobject="object2", tisymbols=[toContentSymbol 'c']}
+    --         ]
+    do 
+      result <- executorCli 
+      result @?= Nothing 
   ]
 
 -- chooseItemProjectHuman :: forall m. (MonadClient m, MonadClientUI m) -- line 395
