@@ -465,12 +465,12 @@ drawFrame coscreen ClientOptions{..} sess@FrontendSession{..} curFrame = do
         SDL.freeSurface textSurface
         when (width /= widthRaw) $ do
           let greyDollar = Color.trimmedLineAttrW32
-          void $ setChar (fromEnum Point{px = rwidth coscreen - 1, py = row})
-                         (Color.attrCharW32 greyDollar, 0)
+          void $ setMapChar (fromEnum Point{px = rwidth coscreen - 1, py = row})
+                            (Color.attrCharW32 greyDollar, 0)
         return (width, textTexture)
       -- <https://www.libsdl.org/projects/SDL_ttf/docs/SDL_ttf_42.html#SEC42>
-      setChar :: PointI -> (Word32, Word32) -> IO Int
-      setChar !i (!w, !wPrev) =
+      setMapChar :: PointI -> (Word32, Word32) -> IO Int
+      setMapChar !i (!w, !wPrev) =
         if w == wPrev
         then return $! i + 1
         else do
@@ -481,12 +481,12 @@ drawFrame coscreen ClientOptions{..} sess@FrontendSession{..} curFrame = do
       drawMonoOverlay =
         mapM_ (\(PointUI x y, al) ->
                  let lineCut = take (2 * rwidth coscreen - x) al
-                 in drawMonoLine (x * halfSize) y lineCut)
+                 in drawMonoLine x y lineCut)
       drawMonoLine :: Int -> Int -> AttrString -> IO ()
       drawMonoLine _ _ [] = return ()
       drawMonoLine x row (w : rest) = do
         setMonoChar x row w
-        drawMonoLine (x + halfSize) row rest
+        drawMonoLine (x + 1) row rest
       setMonoChar :: Int -> Int -> Color.AttrCharW32 -> IO ()
       setMonoChar !x !row !w = do
         atlas <- readIORef smonoAtlas
@@ -507,7 +507,7 @@ drawFrame coscreen ClientOptions{..} sess@FrontendSession{..} curFrame = do
             return textTexture
           Just textTexture -> return textTexture
         let tt2Mono = Vect.V2 (toEnum halfSize) (toEnum boxSize)
-            tgtR = SDL.Rectangle (vp x (row * boxSize)) tt2Mono
+            tgtR = SDL.Rectangle (vp (x * halfSize) (row * boxSize)) tt2Mono
         SDL.copy srenderer textTexture Nothing (Just tgtR)
       drawSquareOverlay :: OverlaySpace -> IO ()
       drawSquareOverlay =
@@ -604,8 +604,8 @@ drawFrame coscreen ClientOptions{..} sess@FrontendSession{..} curFrame = do
   basicTexture <- readIORef sbasicTexture  -- previous content still present
   unless arraysEqual $ do
     SDL.rendererRenderTarget srenderer SDL.$= Just basicTexture
-    U.foldM'_ setChar 0 $ U.zip (PointArray.avector $ singleArray curFrame)
-                                (PointArray.avector $ singleArray prevFrame)
+    U.foldM'_ setMapChar 0 $ U.zip (PointArray.avector $ singleArray curFrame)
+                                   (PointArray.avector $ singleArray prevFrame)
   unless (arraysEqual && overlaysEqual) $ do
     texture <- readIORef stexture
     SDL.rendererRenderTarget srenderer SDL.$= Just texture
