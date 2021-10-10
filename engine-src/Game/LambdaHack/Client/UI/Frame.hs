@@ -1,5 +1,10 @@
 {-# LANGUAGE RankNTypes #-}
 -- | Screen frames.
+--
+-- Note that @PointArray.Array@ here represents a screen frame and so
+-- screen positions are denoted by @Point@, contrary to the convention
+-- that @Point@ refers to game map coordinates, as outlined
+-- in description of 'PointSquare' that should normally be used in that role.
 module Game.LambdaHack.Client.UI.Frame
   ( ColorMode(..)
   , FrameST, FrameForall(..), FrameBase(..), Frame
@@ -81,6 +86,10 @@ writeLine offset al = FrameForall $ \v -> do
 -- Note that we don't provide a list of color-highlighed box positions
 -- to be drawn separately, because overlays need to obscure not only map,
 -- but the highlights as well, so highlights need to be included earlier.
+--
+-- See the description of 'PointSquare' for explanation of why screen
+-- coordinates in @singleArray@ are @Point@ even though they should be
+-- 'PointSquare'.
 data SingleFrame = SingleFrame
   { singleArray         :: PointArray.Array Color.AttrCharW32
   , singlePropOverlay   :: OverlaySpace

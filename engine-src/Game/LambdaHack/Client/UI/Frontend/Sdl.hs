@@ -467,6 +467,10 @@ drawFrame coscreen ClientOptions{..} sess@FrontendSession{..} curFrame = do
           setSquareChar (rwidth coscreen - 1) row Color.trimmedLineAttrW32
         return (width, textTexture)
       -- <https://www.libsdl.org/projects/SDL_ttf/docs/SDL_ttf_42.html#SEC42>
+      -- Note that @Point@ here refers to screen coordinates with square font
+      -- (as @PointSquare@ normally should) and not game map coordinates.
+      -- See "Game.LambdaHack.Client.UI.Frame" for explanation of this
+      -- irregularity.
       setMapChar :: PointI -> (Word32, Word32) -> IO Int
       setMapChar !i (!w, !wPrev) =
         if w == wPrev
