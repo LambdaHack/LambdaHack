@@ -71,10 +71,8 @@ drawOverlay dm onBlank ovs lid = do
                     $ EM.findWithDefault [] monoFont ovs
                else []
       ovSquare | not $ isSquareFont propFont
-               = truncateOverlay True rwidth rheight True 0 onBlank
+               = truncateOverlay False (2 * rwidth) rheight False 0 onBlank
                  $ EM.findWithDefault [] squareFont ovs
-                   -- no backdrop for square font, so @wipeAdjacent@
-                   -- needs to be @True@ or the extra blank line starts too late
               | otherwise = []
       ovOther | not $ isSquareFont propFont = []
               | otherwise
@@ -90,11 +88,15 @@ drawOverlay dm onBlank ovs lid = do
                  monoOutline =
                    truncateOverlay False (2 * rwidth) rheight True 0 onBlank
                    $ EM.findWithDefault [] monoFont ovs
+                 squareOutline =
+                   truncateOverlay False (2 * rwidth) rheight True 0 onBlank
+                   $ EM.findWithDefault [] squareFont ovs
                  g x al Nothing = Just (x, x + length al - 1)
                  g x al (Just (xmin, xmax)) =
                    Just (min xmin x, max xmax (x + length al - 1))
                  f em (PointUI x y, al) = EM.alter (g x al) y em
-                 extentMap = foldl' f EM.empty $ propOutline ++ monoOutline
+                 extentMap = foldl' f EM.empty
+                             $ propOutline ++ monoOutline ++ squareOutline
                  listBackdrop (y, (xmin, xmax)) =
                    ( PointUI (2 * (xmin `div` 2)) y
                    , blankAttrString
