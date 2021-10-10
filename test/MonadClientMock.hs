@@ -27,6 +27,7 @@ import           Game.LambdaHack.Client.HandleAtomicM
 import           Game.LambdaHack.Client.HandleResponseM
 import           Game.LambdaHack.Client.LoopM
 import           Game.LambdaHack.Client.MonadClient
+
 import Game.LambdaHack.Client.State
 
 import           Game.LambdaHack.Client.UI
@@ -139,12 +140,7 @@ instance MonadClientAtomic CliMock where
   execPutState = putState
 
 
-executorCli :: IO MError 
-executorCli = 
-  let triggerItems = 
-            [ HumanCmd.TriggerItem{tiverb="verb", tiobject="object", tisymbols=[toContentSymbol 'a', toContentSymbol 'b']}
-            , HumanCmd.TriggerItem{tiverb="verb2", tiobject="object2", tisymbols=[toContentSymbol 'c']}
-            ]
-      m = chooseItemProjectHuman (toEnum 1) triggerItems
-  in evalStateT (runCliMock m) emptyCliState 
+executorCli :: CliMock a -> IO a 
+executorCli testFn = 
+  evalStateT (runCliMock testFn) emptyCliState 
   

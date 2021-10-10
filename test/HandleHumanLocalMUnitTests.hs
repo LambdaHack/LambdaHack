@@ -29,12 +29,13 @@ toFactionId = toEnum
 handleHumanLocalMUnitTests :: TestTree 
 handleHumanLocalMUnitTests = testGroup "handleHumanLocalMUnitTests" [
    testCase "chooseItemProjectHuman" $
-    -- let triggerItems = 
-    --         [ HumanCmd.TriggerItem{tiverb="verb", tiobject="object", tisymbols=[toContentSymbol 'a', toContentSymbol 'b']}
-    --         , HumanCmd.TriggerItem{tiverb="verb2", tiobject="object2", tisymbols=[toContentSymbol 'c']}
-    --         ]
     do 
-      result <- executorCli 
+      let testFn = let triggerItems = 
+                        [ HumanCmd.TriggerItem{tiverb="verb", tiobject="object", tisymbols=[toContentSymbol 'a', toContentSymbol 'b']}
+                        , HumanCmd.TriggerItem{tiverb="verb2", tiobject="object2", tisymbols=[toContentSymbol 'c']}
+                        ]
+                    in chooseItemProjectHuman (toEnum 1) triggerItems
+      result <- executorCli testFn
       result @?= Nothing 
   ]
 
