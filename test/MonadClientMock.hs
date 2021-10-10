@@ -20,6 +20,8 @@ import qualified Control.Monad.IO.Class as IO
 import Control.Monad.Trans.State.Strict
     ( StateT(StateT, runStateT), gets, state, evalStateT )
 
+import qualified Data.EnumMap.Strict as EM
+
 import           Game.LambdaHack.Atomic (MonadStateWrite (..))
 import           Game.LambdaHack.Client
 import qualified Game.LambdaHack.Client.BfsM as BfsM
@@ -33,18 +35,26 @@ import Game.LambdaHack.Client.State
 import           Game.LambdaHack.Client.UI
 import           Game.LambdaHack.Client.UI.SessionUI
 import           Game.LambdaHack.Common.ClientOptions
+import           Game.LambdaHack.Common.Faction
 import           Game.LambdaHack.Common.Kind
 import           Game.LambdaHack.Common.MonadStateRead
 import qualified Game.LambdaHack.Common.Save as Save
 import           Game.LambdaHack.Common.State
 import           Game.LambdaHack.Common.Types
+
+
+import           Game.LambdaHack.Content.ModeKind
+import           Game.LambdaHack.Definition.Color
 import           Game.LambdaHack.Server (ChanServer (..))
 
+import Content.ModeKindPlayer
+
+
 -- just for test code
-import           Game.LambdaHack.Client.UI.HandleHelperM
-import qualified Game.LambdaHack.Client.UI.HumanCmd as HumanCmd
-import           Game.LambdaHack.Client.UI.HandleHumanLocalM
-import Game.LambdaHack.Definition.DefsInternal ( toContentSymbol )
+-- import           Game.LambdaHack.Client.UI.HandleHelperM
+-- import qualified Game.LambdaHack.Client.UI.HumanCmd as HumanCmd
+-- import           Game.LambdaHack.Client.UI.HandleHumanLocalM
+-- import Game.LambdaHack.Definition.DefsInternal ( toContentSymbol )
 
 
 
@@ -56,6 +66,44 @@ data CliState = CliState
   -- , cliToSave  :: Save.ChanSave (StateClient, Maybe SessionUI)
   }
 
+
+-- minimalPlayer :: Player
+-- minimalPlayer = Player
+--     { fname = ""
+--     , fgroups = []
+--     , fskillsOther = [] -- :: Ability.Skills
+--     , fcanEscape = False
+--     , fneverEmpty = False
+--     , fhiCondPoly = []
+--     , fhasGender = False
+--     , fdoctrine = TExplore
+--     , fleaderMode = Nothing
+--     , fhasUI = False
+--     , funderAI = False
+--     }
+
+testFaction :: Faction
+testFaction =
+  Faction
+    { gname = ""
+    , gcolor = Black
+    , gplayer = playerAnimal
+    , gteamCont = Nothing
+    , ginitial = []
+    , gdipl = EM.empty
+    , gquit = Nothing
+    , _gleader = Nothing
+    , gstash = Nothing
+    , gvictims = EM.empty
+    , gvictimsD = EM.empty
+    }
+
+
+-- stublike state instance that should barely function for testing
+testState :: State
+testState = let singletonFactionUpdate _ = EM.singleton (toEnum 0) testFaction
+            in updateFactionD singletonFactionUpdate emptyState 
+
 emptyCliState :: CliState
 emptyCliState = CliState
   { cliState = emptyState 
@@ -64,6 +112,12 @@ emptyCliState = CliState
   -- , cliDict = undefined 
   -- , cliToSave = undefined 
   }  
+
+testCliState = CliState
+  { cliState = testState
+  , cliClient = emptyStateClient $ toEnum 0
+  , cliSession = Nothing
+  }
 
 -- | Client state transformation monad.
 newtype CliMock a = CliMock
@@ -87,7 +141,7 @@ instance MonadStateWrite CliMock where
 instance MonadClientRead CliMock where
   {-# INLINE getsClient #-}
   getsClient f = CliMock $ gets $ f . cliClient
-  liftIO = CliMock . IO.liftIO
+  liftIO = return undefined --CliMock . IO.liftIO
 
 instance MonadClient CliMock where
   {-# INLINE modifyClient #-}
@@ -142,5 +196,5 @@ instance MonadClientAtomic CliMock where
 
 executorCli :: CliMock a -> IO a 
 executorCli testFn = 
-  evalStateT (runCliMock testFn) emptyCliState 
+  evalStateT (runCliMock testFn) testCliState 
   
