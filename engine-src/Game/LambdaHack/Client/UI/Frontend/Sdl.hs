@@ -395,18 +395,18 @@ drawFrame coscreen ClientOptions{..} sess@FrontendSession{..} curFrame = do
       boxSize = 2 * halfSize
       vp :: Int -> Int -> Vect.Point Vect.V2 CInt
       vp x y = Vect.P $ Vect.V2 (toEnum x) (toEnum y)
-      drawHighlight !x !y !color = do
+      drawHighlight !col !row !color = do
         SDL.rendererDrawColor srenderer SDL.$= colorToRGBA color
         let tt2Square = Vect.V2 (toEnum boxSize) (toEnum boxSize)
-            rect = SDL.Rectangle (vp (x * boxSize) (y * boxSize)) tt2Square
+            rect = SDL.Rectangle (vp (col * boxSize) (row * boxSize)) tt2Square
         SDL.drawRect srenderer $ Just rect
         SDL.rendererDrawColor srenderer SDL.$= blackRGBA
           -- reset back to black
-      chooseAndDrawHighlight !x !y !bg = case bg of
+      chooseAndDrawHighlight !col !row !bg = case bg of
         Color.HighlightNone -> return ()
         Color.HighlightNoneCursor -> return ()
         Color.HighlightBackground -> return ()
-        _ -> drawHighlight x y $ Color.highlightToColor bg
+        _ -> drawHighlight col row $ Color.highlightToColor bg
       -- This also frees the surface it gets.
       scaleSurfaceToTexture :: Int -> SDL.Surface -> IO SDL.Texture
       scaleSurfaceToTexture xsize textSurfaceRaw = do
@@ -463,10 +463,8 @@ drawFrame coscreen ClientOptions{..} sess@FrontendSession{..} curFrame = do
         SDL.freeSurface textSurfaceRaw
         textTexture <- SDL.createTextureFromSurface srenderer textSurface
         SDL.freeSurface textSurface
-        when (width /= widthRaw) $ do
-          let greyDollar = Color.trimmedLineAttrW32
-          void $ setMapChar (fromEnum Point{px = rwidth coscreen - 1, py = row})
-                            (Color.attrCharW32 greyDollar, 0)
+        when (width /= widthRaw) $
+          setSquareChar (rwidth coscreen - 1) row Color.trimmedLineAttrW32
         return (width, textTexture)
       -- <https://www.libsdl.org/projects/SDL_ttf/docs/SDL_ttf_42.html#SEC42>
       setMapChar :: PointI -> (Word32, Word32) -> IO Int
@@ -511,16 +509,17 @@ drawFrame coscreen ClientOptions{..} sess@FrontendSession{..} curFrame = do
         SDL.copy srenderer textTexture Nothing (Just tgtR)
       drawSquareOverlay :: OverlaySpace -> IO ()
       drawSquareOverlay =
-        mapM_ (\(PointUI x y, al) ->
-                 let lineCut = take (2 * rwidth coscreen - x) al
-                 in drawSquareLine (x `div` 2) y lineCut)
+        mapM_ (\(pUI, al) ->
+                 let PointSquare col row = uiToSquare pUI
+                     lineCut = take (rwidth coscreen - col) al
+                 in drawSquareLine col row lineCut)
       drawSquareLine :: Int -> Int -> AttrString -> IO ()
       drawSquareLine _ _ [] = return ()
-      drawSquareLine px row (w : rest) = do
-        setSquareChar px row w
-        drawSquareLine (px + 1) row rest
+      drawSquareLine col row (w : rest) = do
+        setSquareChar col row w
+        drawSquareLine (col + 1) row rest
       setSquareChar :: Int -> Int -> Color.AttrCharW32 -> IO ()
-      setSquareChar !px !row !w = do
+      setSquareChar !col !row !w = do
         atlas <- readIORef squareAtlas
         let Color.AttrChar{ acAttr=Color.Attr{fg=fgRaw, bg}
                           , acChar=acCharRaw } =
@@ -550,10 +549,10 @@ drawFrame coscreen ClientOptions{..} sess@FrontendSession{..} curFrame = do
             return textTexture
           Just textTexture -> return textTexture
         let tt2Square = Vect.V2 (toEnum boxSize) (toEnum boxSize)
-            tgtR = SDL.Rectangle (vp (px * boxSize) (row * boxSize)) tt2Square
+            tgtR = SDL.Rectangle (vp (col * boxSize) (row * boxSize)) tt2Square
         SDL.copy srenderer textTexture Nothing (Just tgtR)
         -- Potentially overwrite a portion of the glyph.
-        chooseAndDrawHighlight px row bg
+        chooseAndDrawHighlight col row bg
       drawPropOverlay :: OverlaySpace -> IO ()
       drawPropOverlay =
         mapM_ (\(PointUI x y, al) ->
