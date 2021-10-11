@@ -2,7 +2,6 @@ module ItemDescriptionUnitTests (itemDescriptionUnitTests) where
 
 import Prelude ()
 
-
 import Game.LambdaHack.Core.Prelude
 
 import qualified Data.EnumMap.Strict as EM
@@ -22,10 +21,11 @@ import           Game.LambdaHack.Definition.Flavour
 itemDescriptionUnitTests :: TestTree
 itemDescriptionUnitTests = testGroup "itemDescriptionUnitTests" $
   let greenFlavour = head $ zipPlain [Green]
-      testItemBase = Item { jkind = IdentityObvious (toEnum 667)
-            , jfid = Nothing
-            , jflavour = greenFlavour
-            }
+      testItemBase = Item
+        { jkind = IdentityObvious (toEnum 667)
+        , jfid = Nothing
+        , jflavour = greenFlavour
+        }
       testItemKind = ItemKind
         { isymbol  = 'x'
         , iname    = "12345678901234567890123"
@@ -52,7 +52,7 @@ itemDescriptionUnitTests = testGroup "itemDescriptionUnitTests" $
         }
   in
   [ testCase "testItem_viewItem_Blackx" $
-      viewItem testItemFull 
+      viewItem testItemFull
       @?= attrChar2ToW32 Green 'x'
   , testCase "testItem!_viewItem_Black!" $
       viewItem testItemFull { itemKind = testItemKind { isymbol = '!' }}

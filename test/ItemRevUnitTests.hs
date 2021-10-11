@@ -2,7 +2,6 @@ module ItemRevUnitTests (itemRevUnitTests) where
 
 import Prelude ()
 
-
 import Game.LambdaHack.Core.Prelude
 
 import qualified Control.Monad.Trans.State.Strict as St
@@ -13,7 +12,6 @@ import qualified System.Random.SplitMix32 as SM
 
 import Test.Tasty
 import Test.Tasty.HUnit
-
 
 import           Game.LambdaHack.Content.ItemKind
 import           Game.LambdaHack.Core.Dice
@@ -45,7 +43,9 @@ itemRevUnitTests = testGroup "itemRevUnitTests" $
       testItemKind2Flavours = testItemKind
         { iflavour = zipStory [Black,Green] }
       emptyIdToFlavourSymbolToFlavourSetPair = ( EM.empty, EM.empty )
-      singletonIdToFlavourSymbolToFlavourSetPair = ( EM.singleton (toContentId 0) dummyFlavour, EM.singleton 'x' (ES.singleton dummyFlavour) )
+      singletonIdToFlavourSymbolToFlavourSetPair =
+        ( EM.singleton (toContentId 0) dummyFlavour
+        , EM.singleton 'x' (ES.singleton dummyFlavour) )
       flavourBlack = head $ zipStory [Black]
       flavourGreen = head $ zipStory [Green]
   in

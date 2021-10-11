@@ -379,13 +379,14 @@ viewItem itemFull =
   Color.attrChar2ToW32 (flavourToColor $ jflavour $ itemBase itemFull)
                        (displayContentSymbol $ IK.isymbol $ itemKind itemFull)
 
-viewItemBenefitColored :: DiscoveryBenefit -> ItemId -> ItemFull -> Color.AttrCharW32
-viewItemBenefitColored discoBenefit iid itemFull = 
+viewItemBenefitColored :: DiscoveryBenefit -> ItemId -> ItemFull
+                       -> Color.AttrCharW32
+viewItemBenefitColored discoBenefit iid itemFull =
   let color = if benInEqp (discoBenefit EM.! iid)
                   then Color.BrGreen
                   else Color.BrRed
-  in Color.attrChar2ToW32 color
-                          (displayContentSymbol $ IK.isymbol $ itemKind itemFull)
+  in Color.attrChar2ToW32
+       color (displayContentSymbol $ IK.isymbol $ itemKind itemFull)
 
 itemDesc :: Int -> Bool -> FactionId -> FactionDict -> Int -> CStore -> Time
          -> LevelId -> ItemFull -> ItemQuant

@@ -19,6 +19,7 @@ import qualified NLP.Miniutter.English as MU
 import Game.LambdaHack.Common.Vector
 import Game.LambdaHack.Content.ItemKind (ItemKind)
 import Game.LambdaHack.Definition.Defs
+
 data CmdCategory =
     CmdMainMenu | CmdDashboard | CmdItemMenu
   | CmdMove | CmdItem | CmdAim | CmdMeta | CmdMouse

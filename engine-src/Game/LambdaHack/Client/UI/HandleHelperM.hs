@@ -300,13 +300,16 @@ skillsOverlay aid = do
       skillValue = EM.singleton monoFont $ offsetOverlayX skValue
   return (EM.unionsWith (++) [skillLab, skillDescr, skillValue], kxs)
 
--- Extract whole-dungeon statistics for each place kind, counting the number of occurrences of each type of @PlaceEntry@ 
--- for the given place kind and gathering the set of levels on which any entry for that place kind can be found
+-- | Extract whole-dungeon statistics for each place kind,
+-- counting the number of occurrences of each type of `PlaceEntry`
+-- for the given place kind and gathering the set of levels
+-- on which any entry for that place kind can be found.
 placesFromState :: ContentData PK.PlaceKind -> ClientOptions -> State
                 -> EM.EnumMap (ContentId PK.PlaceKind)
                               (ES.EnumSet LevelId, Int, Int, Int)
 placesFromState coplace ClientOptions{sexposePlaces} s =
-  let addEntries (!es1, !nEntries1, !nArounds1, !nExists1) (!es2, !nEntries2, !nArounds2, !nExists2) =
+  let addEntries (!es1, !nEntries1, !nArounds1, !nExists1)
+                 (!es2, !nEntries2, !nArounds2, !nExists2) =
         let !es = ES.union es1 es2
             !nEntries = nEntries1 + nEntries2
             !nArounds = nArounds1 + nArounds2
@@ -322,15 +325,23 @@ placesFromState coplace ClientOptions{sexposePlaces} s =
               EM.insertWith addEntries pk (ES.singleton lid, 0, 1, 0) em
             f (PK.PExists pk) em =
               EM.insertWith addEntries pk (ES.singleton lid, 0, 0, 1) em
-        in EM.foldr' f EM.empty lentry  -- go through place entrances and depending on place add an entry for whether Entry/Around/Exists - effect being we're counting #s of each type
+        in EM.foldr' f EM.empty lentry
+             -- go through place entrances and depending on the place
+             -- add an entry for it, whether Entry/Around/Exists,
+             -- the effect being we're counting #s of each type
       insertZeros !em !pk _ = EM.insert pk (ES.empty, 0, 0, 0) em
-      initialPlaces | not sexposePlaces = EM.empty  -- places that have no entries in the dungeon at all, otherwise do even though the stats will be zeros (which may be valuable warning!)
+      -- The initial places are overwritten except for those
+      -- that have no entries in the dungeon at all,
+      -- and in `sexposePlaces` debug mode these will be shown even though
+      -- the stats will be zeros (which is a valuable warning!).
+      initialPlaces | not sexposePlaces = EM.empty
                     | otherwise = ofoldlWithKey' coplace insertZeros EM.empty
   in EM.unionWith addEntries
        initialPlaces
-       (EM.unionsWith addEntries $ map placesFromLevel $ EM.assocs $ sdungeon s)  
-        -- gather per-place-kind statistics for each level, then aggregate them over all levels, 
-        -- remembering that the place appeared on the given level (but not how man times)
+       (EM.unionsWith addEntries $ map placesFromLevel $ EM.assocs $ sdungeon s)
+        -- gather per-place-kind statistics for each level,
+        -- then aggregate them over all levels, remembering that the place
+        -- appeared on the given level (but not how man times)
 
 placesOverlay :: MonadClientUI m => m OKX
 placesOverlay = do
