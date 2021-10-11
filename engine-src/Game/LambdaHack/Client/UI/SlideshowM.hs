@@ -190,6 +190,7 @@ stepChoiceScreen :: forall m . MonadClientUI m
                       , Int -> OKX -> m (Bool, KeyOrSlot, Int) )
 stepChoiceScreen menuName dm sfBlank frsX extraKeys = do
   CCUI{coscreen=ScreenContent{rwidth}} <- getsSession sccui
+  FontSetup{propFont} <- getFontSetup
   let !_A = assert (K.escKM `elem` extraKeys) ()
       frs = slideshow frsX
       keys = concatMap (lefts . map fst . snd) frs ++ extraKeys
@@ -204,30 +205,42 @@ stepChoiceScreen menuName dm sfBlank frsX extraKeys = do
                 -- mangles saved index of other item munus
       clearIx = if initIx > maxIx then 0 else initIx
       page :: Int -> OKX -> m (Bool, KeyOrSlot, Int)
-      page pointer okxRight = assert (pointer >= 0)
-                              $ case findKYX pointer frs of
+      page pointer (ovsRight0, kyxsRight) = assert (pointer >= 0)
+                                            $ case findKYX pointer frs of
         Nothing -> error $ "no menu keys" `showFailure` frs
-        Just ( (ovs0, kyxs)
+        Just ( (ovs0, kyxs1)
              , (ekm, (PointUI x1 y, buttonWidth))
              , ixOnPage ) -> do
-          let ovs = EM.map (updateLine y $ drawHighlight x1 buttonWidth) ovs0
-              -- Translating by @rwidth + 2@, because it looks better when
-              -- a couple last characters of a line vanish off-screen than
-              -- when characters touch in the middle of the screen.
-              -- The code producing right panes should take care
+          let ovs1 = EM.map (updateLine y $ drawHighlight x1 buttonWidth) ovs0
+              -- We add spaces in proportional font under the report rendered
+              -- in mono font and the right pane text in prop font,
+              -- but over menu lines in proportional font that can be
+              -- very long an should not peek from under the right pane text.
+              --
+              -- We translate the pane by two characters right, because it looks
+              -- better when a couple last characters of a line vanish
+              -- off-screen than when characters touch in the middle
+              -- of the screen. The code producing right panes should take care
               -- to generate lines two shorter than usually.
               --
-              -- We move the pane one character down and expect the text
-              -- to start with an empty line or two, because normally
-              -- reports should not be longer than two lines or at most
-              -- three, but the last one short, but menu lines can be
-              -- very long an should not peek from under the right pane text.
-              (ovs2, kyxs2) = sideBySideOKX (rwidth + 2) 1 (ovs, kyxs) okxRight
+              -- We move the pane two characters down, because normally
+              -- reports should not be longer than two lines
+              -- and only the first can be longer than half width.
+              -- We also add two to three lines of backdrop at the bottom.
+              ymax = maximum $ 0 : map maxYofOverlay (EM.elems ovsRight0)
+              spaceRectangle = rectangleOfSpaces (rwidth * 2) (ymax + 5)
+              ovsRight = EM.unionWith (++)
+                          (EM.singleton propFont spaceRectangle)
+                          (EM.map (xytranslateOverlay 2 2) ovsRight0)
+              (ovs, kyxs) =
+                if EM.null ovsRight0
+                then (ovs1, kyxs1)
+                else sideBySideOKX rwidth 0 (ovs1, kyxs1) (ovsRight, kyxsRight)
               tmpResult pointer1 = case findKYX pointer1 frs of
                 Nothing -> error $ "no menu keys" `showFailure` frs
                 Just (_, (ekm1, _), _) -> return (False, ekm1, pointer1)
               ignoreKey = return (False, ekm, pointer)
-              pageLen = length kyxs2
+              pageLen = length kyxs
               xix :: KYX -> Bool
               xix (_, (PointUI x1' _, _)) = x1' <= x1 + 2 && x1' >= x1 - 2
               firstRowOfNextPage = pointer + pageLen - ixOnPage
@@ -255,7 +268,7 @@ stepChoiceScreen menuName dm sfBlank frsX extraKeys = do
                           let blen | isSquareFont font = 2 * clen
                                    | otherwise = clen
                           in my == cy && mx >= cx && mx < cx + blen
-                    case find onChoice kyxs2 of
+                    case find onChoice kyxs of
                       Nothing | ikm `elem` keys ->
                         return (True, Left ikm, pointer)
                       Nothing -> if K.spaceKM `elem` keys
@@ -283,12 +296,12 @@ stepChoiceScreen menuName dm sfBlank frsX extraKeys = do
                     else tmpResult clearIx
                   _ | ikm `elem` keys ->
                     return (True, Left ikm, pointer)
-                  K.Up -> case findIndex xix $ reverse $ take ixOnPage kyxs2 of
+                  K.Up -> case findIndex xix $ reverse $ take ixOnPage kyxs of
                     Nothing -> interpretKey ikm{K.key=K.Left}
                     Just ix -> tmpResult (max 0 (pointer - ix - 1))
                   K.Left -> if pointer == 0 then tmpResult maxIx
                             else tmpResult (max 0 (pointer - 1))
-                  K.Down -> case findIndex xix $ drop (ixOnPage + 1) kyxs2 of
+                  K.Down -> case findIndex xix $ drop (ixOnPage + 1) kyxs of
                     Nothing -> interpretKey ikm{K.key=K.Right}
                     Just ix -> tmpResult (pointer + ix + 1)
                   K.Right -> if pointer == maxIx then tmpResult 0
@@ -306,7 +319,7 @@ stepChoiceScreen menuName dm sfBlank frsX extraKeys = do
                              then tmpResult clearIx
                              else tmpResult maxIx
                   _ -> error $ "unknown key" `showFailure` ikm
-          pkm <- promptGetKey dm ovs2 sfBlank legalKeys
+          pkm <- promptGetKey dm ovs sfBlank legalKeys
           interpretKey pkm
       m pointer okxRight =
         if null frs

@@ -999,7 +999,7 @@ okxItemLorePointedAt width inlineMsg itemBag meleeSkill promptFun slotIndex
       -- prompts are sometimes wide and/or long.
       promptBlurb = offsetOverlay $ splitAttrString width width
                                   $ textFgToAS Color.Brown
-                                  $ "\n" <> prompt <> "\n\n"
+                                  $ prompt <> "\n\n"
   (descSym2, descBlurb2) <-
     if inlineMsg
     then do
