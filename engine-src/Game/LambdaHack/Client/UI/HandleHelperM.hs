@@ -13,7 +13,7 @@ module Game.LambdaHack.Client.UI.HandleHelperM
   , ppContainerWownW, nxtGameMode
 #ifdef EXPOSE_INTERNAL
     -- * Internal operations
-  , lookAtTile, lookAtActors, guardItemVerbs
+  , itemOverlayFromState, lookAtTile, lookAtActors, guardItemVerbs
 #endif
   ) where
 
@@ -222,18 +222,29 @@ pickLeaderWithPointer leader = do
 itemOverlay :: MonadClientUI m
             => SingleItemSlots -> LevelId -> ItemBag -> Bool -> m OKX
 itemOverlay lSlots lid bag displayRanged = do
-  CCUI{coscreen=ScreenContent{rwidth}} <- getsSession sccui
-  localTime <- getsState $ getLocalTime lid
-  itemToF <- getsState $ flip itemToFull
+  sccui <- getsSession sccui
   side <- getsClient sside
-  factionD <- getsState sfactionD
-  combGround <- getsState $ combinedGround side
-  combOrgan <- getsState $ combinedOrgan side
-  combEqp <- getsState $ combinedEqp side
-  stashBag <- getsState $ getFactionStashBag side
   discoBenefit <- getsClient sdiscoBenefit
-  FontSetup{..} <- getFontSetup
-  let !_A = assert (allB (`elem` EM.elems lSlots) (EM.keys bag)
+  fontSetup <- getFontSetup
+  okx <- getsState $ itemOverlayFromState lSlots lid bag displayRanged
+                                          sccui side discoBenefit fontSetup
+  return $! okx
+
+itemOverlayFromState :: SingleItemSlots -> LevelId -> ItemBag -> Bool
+                     -> CCUI -> FactionId -> DiscoveryBenefit -> FontSetup
+                     -> State
+                     -> OKX
+itemOverlayFromState lSlots lid bag displayRanged
+                     sccui side discoBenefit FontSetup{..} s =
+  let CCUI{coscreen=ScreenContent{rwidth}} = sccui
+      localTime = getLocalTime lid s
+      itemToF = flip itemToFull s
+      factionD = sfactionD s
+      combGround = combinedGround side s
+      combOrgan = combinedOrgan side s
+      combEqp = combinedEqp side s
+      stashBag = getFactionStashBag side s
+      !_A = assert (allB (`elem` EM.elems lSlots) (EM.keys bag)
                     `blame` (lid, bag, lSlots)) ()
       markEqp iid t =
         if | (iid `EM.member` combOrgan
@@ -271,7 +282,7 @@ itemOverlay lSlots lid bag displayRanged = do
       ovsLab = EM.singleton squareFont $ offsetOverlay tsLab
       ovsDesc = EM.singleton propFont $ offsetOverlayX tsDesc
       renumber y (km, (PointUI x _, len)) = (km, (PointUI x y, len))
-  return (EM.unionWith (++) ovsLab ovsDesc, zipWith renumber [0..] kxs )
+  in (EM.unionWith (++) ovsLab ovsDesc, zipWith renumber [0..] kxs )
 
 skillsOverlay :: MonadClientUI m => ActorId -> m OKX
 skillsOverlay aid = do
