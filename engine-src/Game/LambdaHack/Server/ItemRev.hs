@@ -7,7 +7,8 @@ module Game.LambdaHack.Server.ItemRev
     -- * Item discovery types
   , DiscoveryKindRev, emptyDiscoveryKindRev, serverDiscos
     -- * The @FlavourMap@ type
-  , FlavourMap, emptyFlavourMap, dungeonFlavourMap, rollFlavourMap, invalidFlavourCode
+  , FlavourMap, emptyFlavourMap, dungeonFlavourMap, rollFlavourMap
+  , invalidFlavourCode
   ) where
 
 import Prelude ()
@@ -143,15 +144,16 @@ emptyDiscoveryKindRev = DiscoveryKindRev U.empty
 
 serverDiscos :: COps -> DiscoveryKindRev
              -> Rnd (DiscoveryKind, DiscoveryKindRev)
-serverDiscos COps{coitem} (DiscoveryKindRev discoRev0) = do
+serverDiscos COps{coitem} (DiscoveryKindRev discoRevFromPreviousGame) = do
   let ixs = [0..toEnum (olength coitem - 1)]
       inMetaGame kindId =
         IK.SetFlag Ability.MetaGame `elem` IK.iaspects (okind coitem kindId)
       keepMeta i ix = if inMetaGame (toEnum i) then ix else maxBound
   shuffled <-
-    if U.null discoRev0
+    if U.null discoRevFromPreviousGame
     then shuffle ixs
-    else shuffleExcept (U.imap keepMeta discoRev0) (olength coitem) ixs
+    else shuffleExcept (U.imap keepMeta discoRevFromPreviousGame)
+                       (olength coitem) ixs
   let f (!ikMap, (!ix) : rest) !kmKind _ =
         (EM.insert (toItemKindIx ix) kmKind ikMap, rest)
       f (ikMap, []) ik _ =
@@ -173,8 +175,7 @@ stdFlav :: ES.EnumSet Flavour
 stdFlav = ES.fromList stdFlavList
 
 invalidFlavourCode :: Word16
-invalidFlavourCode = maxBound 
-
+invalidFlavourCode = maxBound
 
 -- | Assigns flavours to item kinds. Assures no flavor is repeated for the same
 -- symbol, except for items with only one permitted flavour.
@@ -216,7 +217,7 @@ dungeonFlavourMap :: COps -> FlavourMap -> Rnd FlavourMap
 dungeonFlavourMap COps{coitem} (FlavourMap flavourMapFromPreviousGame) = do
   let inMetaGame kindId =
         IK.SetFlag Ability.MetaGame `elem` IK.iaspects (okind coitem kindId)
-      keepMeta i fl = if inMetaGame (toEnum i) then fl else invalidFlavourCode
+      keepMeta i ix = if inMetaGame (toEnum i) then ix else invalidFlavourCode
       uFlavMeta = if U.null flavourMapFromPreviousGame
                   then U.replicate (olength coitem) invalidFlavourCode
                   else U.imap keepMeta flavourMapFromPreviousGame
