@@ -7,7 +7,7 @@ module Game.LambdaHack.Server.ItemRev
     -- * Item discovery types
   , DiscoveryKindRev, emptyDiscoveryKindRev, serverDiscos
     -- * The @FlavourMap@ type
-  , FlavourMap, emptyFlavourMap, dungeonFlavourMap, rollFlavourMap
+  , FlavourMap, emptyFlavourMap, dungeonFlavourMap, rollFlavourMap, invalidFlavourCode
   ) where
 
 import Prelude ()
@@ -172,6 +172,10 @@ emptyFlavourMap = FlavourMap U.empty
 stdFlav :: ES.EnumSet Flavour
 stdFlav = ES.fromList stdFlavList
 
+invalidFlavourCode :: Word16
+invalidFlavourCode = maxBound 
+
+
 -- | Assigns flavours to item kinds. Assures no flavor is repeated for the same
 -- symbol, except for items with only one permitted flavour.
 rollFlavourMap :: U.Vector Word16
@@ -189,7 +193,7 @@ rollFlavourMap uFlavMeta !rnd !key !ik = case IK.iflavour ik of
   flvs -> do
     (!assocs, !availableMap) <- rnd
     let a0 = uFlavMeta U.! toEnum (fromEnum key)
-    if a0 == maxBound then do
+    if a0 == invalidFlavourCode then do
       if length flvs < 6 then do  -- too few to even attempt unique assignment
         flavour <- oneOf flvs
         return ( EM.insert key flavour assocs
@@ -209,19 +213,19 @@ rollFlavourMap uFlavMeta !rnd !key !ik = case IK.iflavour ik of
 
 -- | Randomly chooses flavour for all item kinds for this game.
 dungeonFlavourMap :: COps -> FlavourMap -> Rnd FlavourMap
-dungeonFlavourMap COps{coitem} (FlavourMap uFlav0) = do
+dungeonFlavourMap COps{coitem} (FlavourMap flavourMapFromPreviousGame) = do
   let inMetaGame kindId =
         IK.SetFlag Ability.MetaGame `elem` IK.iaspects (okind coitem kindId)
-      keepMeta i fl = if inMetaGame (toEnum i) then fl else maxBound
-      uFlavMeta = if U.null uFlav0
-                  then U.replicate (olength coitem) maxBound
-                  else U.imap keepMeta uFlav0
+      keepMeta i fl = if inMetaGame (toEnum i) then fl else invalidFlavourCode
+      uFlavMeta = if U.null flavourMapFromPreviousGame
+                  then U.replicate (olength coitem) invalidFlavourCode
+                  else U.imap keepMeta flavourMapFromPreviousGame
       flavToAvailable :: EM.EnumMap Char (ES.EnumSet Flavour) -> Int -> Word16
                       -> EM.EnumMap Char (ES.EnumSet Flavour)
       flavToAvailable em i fl =
         let ik = okind coitem (toEnum i)
             setBase = EM.findWithDefault stdFlav (IK.isymbol ik) em
-            setMeta = if fl == maxBound
+            setMeta = if fl == invalidFlavourCode
                       then setBase
                       else ES.delete (toEnum $ fromEnum fl) setBase
         in EM.insert (IK.isymbol ik) setMeta em

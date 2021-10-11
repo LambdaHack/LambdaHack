@@ -58,7 +58,7 @@ data Fence =
   | FNone   -- ^ skip the fence and fill all with the place proper
   deriving (Show, Eq)
 
--- Places are rooms and other dungeon features, their names can be seen on a level map by aiming at a position that is an entry to the place 
+-- | Places are rooms and other dungeon features, their names can be seen on a level map by aiming at a position that is an entry to the place 
 -- (an individual entrance point, an approach area around the place or a phantom entry not on the map, but only used for statistics to witness the place exists), 
 -- entries are proxies for initial places created on the level (which may be otherwise eradicated by burrowing the walls, etc.) and so used 
 -- for dungeon statistics

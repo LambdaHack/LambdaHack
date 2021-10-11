@@ -44,8 +44,12 @@ itemRevUnitTests = testGroup "itemRevUnitTests" $
         , idesc    = "A really cool test item."
         , ikit     = []
         }
+      testItemKind2Flavours = testItemKind
+        { iflavour = zipStory [Black,Green] }
       emptyIdToFlavourSymbolToFlavourSetPair = ( EM.empty, EM.empty )
       singletonIdToFlavourSymbolToFlavourSetPair = ( EM.singleton (toContentId 0) dummyFlavour, EM.singleton 'x' (ES.singleton dummyFlavour) )
+      flavourBlack = head $ zipStory [Black]
+      flavourGreen = head $ zipStory [Green]
   in
   [ testCase "empty & default initializers -> first is single dummy result" $
       let rndMapPair0 = return emptyIdToFlavourSymbolToFlavourSetPair
@@ -63,8 +67,12 @@ itemRevUnitTests = testGroup "itemRevUnitTests" $
       let rndMapPair0 = return singletonIdToFlavourSymbolToFlavourSetPair
           (mapPair1, _) = St.runState (rollFlavourMap U.empty rndMapPair0 (toContentId 0) testItemKind) $ SM.mkSMGen 1
         in snd mapPair1 @?= EM.singleton 'x' (ES.singleton dummyFlavour)
-      
-    --  testCase "dungeonFlavourMap_emptyFlavourMap_isEmpty" $
-    --   dungeonFlavourMap emptyCOps emptyFlavourMap
-    --   @?= Rnd emptyFlavourMap 
+  , testCase "rollFlavourMap on two flavours -> first flavour can be rolled" $  -- relies on us not messing with RNG
+      let rndMapPair0 = return singletonIdToFlavourSymbolToFlavourSetPair
+          (mapPair1, _) = St.runState (rollFlavourMap (U.singleton invalidFlavourCode) rndMapPair0 (toContentId 0) testItemKind2Flavours) $ SM.mkSMGen 1
+        in fst mapPair1 @?= EM.singleton (toContentId 0) flavourBlack
+  , testCase "rollFlavourMap on two flavours -> second flavour can be rolled" $  -- relies on us not messing with RNG
+      let rndMapPair0 = return singletonIdToFlavourSymbolToFlavourSetPair
+          (mapPair1, _) = St.runState (rollFlavourMap (U.singleton invalidFlavourCode) rndMapPair0 (toContentId 0) testItemKind2Flavours) $ SM.mkSMGen 2
+        in fst mapPair1 @?= EM.singleton (toContentId 0) flavourGreen
   ]
