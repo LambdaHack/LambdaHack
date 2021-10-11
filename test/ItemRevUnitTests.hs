@@ -67,10 +67,10 @@ itemRevUnitTests = testGroup "itemRevUnitTests" $
         in snd mapPair1 @?= EM.singleton 'x' (ES.singleton dummyFlavour)
   , testCase "rollFlavourMap on two flavours -> first flavour can be rolled" $  -- relies on us not messing with RNG
       let rndMapPair0 = return singletonIdToFlavourSymbolToFlavourSetPair
-          (mapPair1, _) = St.runState (rollFlavourMap (U.singleton invalidFlavourCode) rndMapPair0 (toContentId 0) testItemKind2Flavours) $ SM.mkSMGen 1
+          (mapPair1, _) = St.runState (rollFlavourMap (U.singleton invalidInformationCode) rndMapPair0 (toContentId 0) testItemKind2Flavours) $ SM.mkSMGen 1
         in fst mapPair1 @?= EM.singleton (toContentId 0) flavourBlack
   , testCase "rollFlavourMap on two flavours -> second flavour can be rolled" $  -- relies on us not messing with RNG
       let rndMapPair0 = return singletonIdToFlavourSymbolToFlavourSetPair
-          (mapPair1, _) = St.runState (rollFlavourMap (U.singleton invalidFlavourCode) rndMapPair0 (toContentId 0) testItemKind2Flavours) $ SM.mkSMGen 2
+          (mapPair1, _) = St.runState (rollFlavourMap (U.singleton invalidInformationCode) rndMapPair0 (toContentId 0) testItemKind2Flavours) $ SM.mkSMGen 2
         in fst mapPair1 @?= EM.singleton (toContentId 0) flavourGreen
   ]

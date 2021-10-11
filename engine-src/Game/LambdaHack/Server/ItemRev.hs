@@ -8,10 +8,11 @@ module Game.LambdaHack.Server.ItemRev
   , DiscoveryKindRev, emptyDiscoveryKindRev, serverDiscos
     -- * The @FlavourMap@ type
   , FlavourMap, emptyFlavourMap, dungeonFlavourMap
-  , rollFlavourMap  -- exposed for tests; that is fine
+    -- * Important implementation parts, exposed for tests
+  , rollFlavourMap, invalidInformationCode
 #ifdef EXPOSE_INTERNAL
     -- * Internal operations
-  , buildItem, keepMetaGameInformation, invalidFlavourCode
+  , buildItem, keepMetaGameInformation
 #endif
   ) where
 
@@ -143,6 +144,13 @@ newItem cops freq flavourMap discoRev levelDepth totalDepth =
 newtype DiscoveryKindRev = DiscoveryKindRev (U.Vector Word16)
   deriving (Show, Binary)
 
+-- | Code that means the information (e.g., flavour or hidden kind index)
+-- should be regenerated, because it could not be transferred from
+-- previous playthrough (it's random in each playthrough or there was
+-- no previous playthrough).
+invalidInformationCode :: Word16
+invalidInformationCode = maxBound
+
 emptyDiscoveryKindRev :: DiscoveryKindRev
 emptyDiscoveryKindRev = DiscoveryKindRev U.empty
 
@@ -175,7 +183,9 @@ keepMetaGameInformation coitem informationFromPreviousGame =
       inMetaGame kindId =
         IK.SetFlag Ability.MetaGame `elem` IK.iaspects (okind coitem kindId)
       keepMeta :: Int -> Word16 -> Word16
-      keepMeta i ix = if inMetaGame (toEnum i) then ix else invalidFlavourCode
+      keepMeta i ix = if inMetaGame (toEnum i)
+                      then ix
+                      else invalidInformationCode
   in U.imap keepMeta informationFromPreviousGame
 
 -- | Flavours assigned by the server to item kinds, in this particular game.
@@ -186,11 +196,6 @@ newtype FlavourMap = FlavourMap (U.Vector Word16)
 
 emptyFlavourMap :: FlavourMap
 emptyFlavourMap = FlavourMap U.empty
-
--- | Code that means the flavour should be regenerated, because it could
--- not be transferred from previous playthrough.
-invalidFlavourCode :: Word16
-invalidFlavourCode = maxBound
 
 -- | Assigns flavours to item kinds. Assures no flavor is repeated for the same
 -- symbol, except for items with only one permitted flavour.
@@ -210,7 +215,7 @@ rollFlavourMap uFlavMeta !rnd !key !ik = case IK.iflavour ik of
   flvs -> do
     (!assocs, !availableMap) <- rnd
     let a0 = uFlavMeta U.! toEnum (fromEnum key)
-    if a0 == invalidFlavourCode then do
+    if a0 == invalidInformationCode then do
       if length flvs < 6 then do  -- too few to even attempt unique assignment
         flavour <- oneOf flvs
         return ( EM.insert key flavour assocs
@@ -232,7 +237,7 @@ rollFlavourMap uFlavMeta !rnd !key !ik = case IK.iflavour ik of
 dungeonFlavourMap :: COps -> FlavourMap -> Rnd FlavourMap
 dungeonFlavourMap COps{coitem} (FlavourMap flavourMapFromPreviousGame) = do
   let uFlavMeta = if U.null flavourMapFromPreviousGame
-                  then U.replicate (olength coitem) invalidFlavourCode
+                  then U.replicate (olength coitem) invalidInformationCode
                   else keepMetaGameInformation coitem flavourMapFromPreviousGame
       flavToAvailable :: EM.EnumMap Char (ES.EnumSet Flavour) -> Int -> Word16
                       -> EM.EnumMap Char (ES.EnumSet Flavour)
@@ -241,7 +246,7 @@ dungeonFlavourMap COps{coitem} (FlavourMap flavourMapFromPreviousGame) = do
             setBase = EM.findWithDefault (ES.fromList stdFlavList)
                                          (IK.isymbol ik)
                                          em
-            setMeta = if fl == invalidFlavourCode
+            setMeta = if fl == invalidInformationCode
                       then setBase
                       else ES.delete (toEnum $ fromEnum fl) setBase
         in EM.insert (IK.isymbol ik) setMeta em
