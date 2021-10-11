@@ -1596,7 +1596,7 @@ itemMenuHuman leader cmdSemInCxtOfKM = do
                        void $ pickLeader True newAid
                        modifySession $ \sess ->
                          sess {sitemSel = Just (iid, newCStore, False)}
-                       itemMenuHuman leader cmdSemInCxtOfKM
+                       itemMenuHuman newAid cmdSemInCxtOfKM
                 _ -> error $ "" `showFailure` km
               Just (_desc, _cats, cmd) -> do
                 modifySession $ \sess ->
