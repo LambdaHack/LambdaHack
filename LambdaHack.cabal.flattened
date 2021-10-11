@@ -6,7 +6,7 @@ name:          LambdaHack
 -- PVP summary:+-+------- breaking API changes
 --             | |  +----- minor or non-breaking API additions
 --             | |  | +--- code changes with no API change
-version:       0.10.2.0
+version:       0.10.3.0
 synopsis:      A game engine library for tactical squad ASCII roguelike dungeon crawlers
 description: LambdaHack is a Haskell game engine library for ASCII roguelike
              games of arbitrary theme, size and complexity, with optional
@@ -61,13 +61,14 @@ extra-source-files: GameDefinition/config.ui.default,
                     GameDefinition/fonts/BinaryCodeProLH-Bold.ttf.woff,
                     GameDefinition/fonts/DejaVuLGCSans.ttf.woff,
                     GameDefinition/fonts/DejaVuLGCSans-Bold.ttf.woff,
-                    GameDefinition/fonts/Hack-Bold.ttf.woff,
-                    GameDefinition/fonts/ubuntu-v14-latin-ext_latin-regular.ttf.woff,
-                    GameDefinition/fonts/ubuntu-v14-latin-ext_latin-500.ttf.woff,
-                    GameDefinition/fonts/ubuntu-mono-v9-latin-ext_latin-700.ttf.woff,
-                    cabal.project
-extra-doc-files:    CHANGELOG.md,
+                    GameDefinition/fonts/Hack-Bold.ttf.woff
+extra-doc-files:    GameDefinition/InGameHelp.txt,
                     README.md,
+                    CHANGELOG.md,
+                    LICENSE,
+                    COPYLEFT,
+                    CREDITS,
+                    cabal.project,
                     Makefile
 author:        Andres Loeh, Mikolaj Konarski and others
 maintainer:    Mikolaj Konarski <mikolaj.konarski@funktory.com>
@@ -85,11 +86,6 @@ flag vty
 
 flag curses
   description:        switch to the curses frontend (not fully supported)
-  default:            False
-  manual:             True
-
-flag gtk
-  description:        switch to the GTK frontend (not fully supported)
   default:            False
   manual:             True
 
@@ -133,6 +129,7 @@ common options
                       ExistentialQuantification, GADTs, StandaloneDeriving,
                       DataKinds, KindSignatures, DeriveGeneric, DeriveLift
   ghc-options:        -Wall -Wcompat -Worphans -Wincomplete-uni-patterns -Wincomplete-record-updates -Wimplicit-prelude -Wmissing-home-modules -Widentities -Wredundant-constraints -Wmissing-export-lists -Wpartial-fields -Wunused-packages -Winvalid-haddock
+-- TODO: remove -Winvalid-haddock when added to -Wall in a GHC I use for haddock
   ghc-options:        -Wall-missed-specialisations
   ghc-options:        -fno-ignore-asserts -fexpose-all-unfoldings -fspecialise-aggressively -fsimpl-tick-factor=200
 
@@ -148,7 +145,9 @@ common options
     ghcjs-options:    -DREMOVE_TELETYPE
 
 common exe-options
-  ghc-options:        -threaded -rtsopts
+  if flag(vty)
+    ghc-options:      -threaded
+  ghc-options:        -rtsopts
 -- (Ignored by GHCJS) Minimize median lag at the cost of occasional bigger
 -- GC lag, which fortunately sometimes fits into idle time between turns):
 -- (Ignored by GHCJS) Avoid frequent GCs. Only idle-GC during a break in
@@ -179,6 +178,7 @@ library
                       Game.LambdaHack.Definition.Color
                       Game.LambdaHack.Definition.ContentData
                       Game.LambdaHack.Definition.Defs
+                      Game.LambdaHack.Definition.DefsInternal
                       Game.LambdaHack.Definition.Flavour
                       Game.LambdaHack.Content.CaveKind
                       Game.LambdaHack.Content.ItemKind
@@ -216,7 +216,6 @@ library
                       Game.LambdaHack.Client.UI.Content.Screen
                       Game.LambdaHack.Client.UI.ContentClientUI
                       Game.LambdaHack.Client.UI.DrawM
-                      Game.LambdaHack.Client.UI.DisplayAtomicM
                       Game.LambdaHack.Client.UI.EffectDescription
                       Game.LambdaHack.Client.UI.Frame
                       Game.LambdaHack.Client.UI.FrameM
@@ -245,6 +244,11 @@ library
                       Game.LambdaHack.Client.UI.SlideshowM
                       Game.LambdaHack.Client.UI.UIOptions
                       Game.LambdaHack.Client.UI.UIOptionsParse
+                      Game.LambdaHack.Client.UI.Watch
+                      Game.LambdaHack.Client.UI.Watch.WatchCommonM
+                      Game.LambdaHack.Client.UI.Watch.WatchQuitM
+                      Game.LambdaHack.Client.UI.Watch.WatchSfxAtomicM
+                      Game.LambdaHack.Client.UI.Watch.WatchUpdAtomicM
                       Game.LambdaHack.Common.Analytics
                       Game.LambdaHack.Common.Area
                       Game.LambdaHack.Common.Actor
@@ -294,6 +298,8 @@ library
                       Game.LambdaHack.Server.ServerOptions
                       Game.LambdaHack.Server.StartM
                       Game.LambdaHack.Server.State
+-- for doctest:
+                      Paths_LambdaHack
   exposed-modules:    Content.CaveKind
                       Content.ItemKind
                       Content.ItemKindEmbed
@@ -311,7 +317,6 @@ library
                       Client.UI.Content.Screen
                       Implementation.MonadClientImplementation
                       Implementation.MonadServerImplementation
-  other-modules:      Paths_LambdaHack
   autogen-modules:    Paths_LambdaHack
   build-depends:      assert-failure >= 0.1.2 && < 0.2,
                       async      >= 2.2.1,
@@ -328,13 +333,14 @@ library
                       ghc-prim,
                       hashable   >= 1.1.2.5,
                       hsini      >= 0.2,
-                      witch      >= 0.3
+                      witch      >= 0.3,
                       keys       >= 3,
                       miniutter  >= 0.5.0.0,
                       open-browser >= 0.2,
                       optparse-applicative >= 0.13,
                       pretty-show >= 1.6,
                       primitive  >= 0.6.1.0,
+                      QuickCheck,
                       splitmix   >= 0.0.3,
                       stm        >= 2.4,
                       time       >= 1.4,
@@ -359,10 +365,6 @@ library
     exposed-modules:    Game.LambdaHack.Client.UI.Frontend.Curses
     build-depends:    hscurses >= 1.4.1
     cpp-options:      -DUSE_CURSES
-  } elif flag(gtk) {
-    exposed-modules:    Game.LambdaHack.Client.UI.Frontend.Gtk
-    build-depends:    gtk3 >= 0.12.1
-    cpp-options:      -DUSE_GTK
   } else {
     exposed-modules:    Game.LambdaHack.Client.UI.Frontend.Sdl
     build-depends:    sdl2 >= 2, sdl2-ttf >= 2
@@ -391,12 +393,26 @@ test-suite test
   type:               exitcode-stdio-1.0
   hs-source-dirs:     test
   main-is:            Spec.hs
-  other-modules:      SessionUIMock
+  other-modules:      ItemKindUnitTests
+                      ReqFailureUnitTests
+                      SessionUIMock
+                      SessionUIUnitTests
   build-depends:      ,LambdaHack
                       ,base
                       ,containers
                       ,optparse-applicative
                       ,tasty >= 1.0
+                      ,tasty-quickcheck
                       ,tasty-hunit
                       ,text
                       ,transformers
+
+test-suite doctests
+  import: options, exe-options
+  type:               exitcode-stdio-1.0
+  main-is:            test/doctest-driver.hs
+  build-tool-depends: doctest-driver-gen:doctest-driver-gen
+  ghc-options:        -Wno-unused-packages
+  build-depends:      ,base
+                      ,doctest >= 0.13
+                      ,QuickCheck
