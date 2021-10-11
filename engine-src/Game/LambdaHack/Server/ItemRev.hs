@@ -3,12 +3,16 @@
 -- server state nor our custom monads.
 module Game.LambdaHack.Server.ItemRev
   ( ItemKnown(..), NewItem(..), ItemRev, UniqueSet
-  , buildItem, newItemKind, newItem
+  , newItemKind, newItem
     -- * Item discovery types
   , DiscoveryKindRev, emptyDiscoveryKindRev, serverDiscos
     -- * The @FlavourMap@ type
-  , FlavourMap, emptyFlavourMap, dungeonFlavourMap, rollFlavourMap
-  , invalidFlavourCode
+  , FlavourMap, emptyFlavourMap, dungeonFlavourMap
+  , rollFlavourMap  -- exposed for tests; that is fine
+#ifdef EXPOSE_INTERNAL
+    -- * Internal operations
+  , buildItem, keepMetaGameInformation, invalidFlavourCode
+#endif
   ) where
 
 import Prelude ()
@@ -146,13 +150,10 @@ serverDiscos :: COps -> DiscoveryKindRev
              -> Rnd (DiscoveryKind, DiscoveryKindRev)
 serverDiscos COps{coitem} (DiscoveryKindRev discoRevFromPreviousGame) = do
   let ixs = [0..toEnum (olength coitem - 1)]
-      inMetaGame kindId =
-        IK.SetFlag Ability.MetaGame `elem` IK.iaspects (okind coitem kindId)
-      keepMeta i ix = if inMetaGame (toEnum i) then ix else maxBound
   shuffled <-
     if U.null discoRevFromPreviousGame
     then shuffle ixs
-    else shuffleExcept (U.imap keepMeta discoRevFromPreviousGame)
+    else shuffleExcept (keepMetaGameInformation coitem discoRevFromPreviousGame)
                        (olength coitem) ixs
   let f (!ikMap, (!ix) : rest) !kmKind _ =
         (EM.insert (toItemKindIx ix) kmKind ikMap, rest)
@@ -161,6 +162,21 @@ serverDiscos COps{coitem} (DiscoveryKindRev discoRevFromPreviousGame) = do
       (discoS, _) = ofoldlWithKey' coitem f (EM.empty, shuffled)
       udiscoRev = U.fromListN (olength coitem) shuffled
   return (discoS, DiscoveryKindRev udiscoRev)
+
+-- | Keep in a vector the information that is retained from playthrough
+-- to playthrough. The information being, e.g., @ItemKindIx@ or @Flavour@.
+-- The information is morally indexed by @ContentId ItemKind@ and its @Enum@
+-- instance fits in @Word16@.
+keepMetaGameInformation :: ContentData ItemKind
+                        -> U.Vector Word16
+                        -> U.Vector Word16
+keepMetaGameInformation coitem informationFromPreviousGame =
+  let inMetaGame :: ContentId ItemKind -> Bool
+      inMetaGame kindId =
+        IK.SetFlag Ability.MetaGame `elem` IK.iaspects (okind coitem kindId)
+      keepMeta :: Int -> Word16 -> Word16
+      keepMeta i ix = if inMetaGame (toEnum i) then ix else invalidFlavourCode
+  in U.imap keepMeta informationFromPreviousGame
 
 -- | Flavours assigned by the server to item kinds, in this particular game.
 -- This is total and never changes, hence implemented as vector.
@@ -171,20 +187,20 @@ newtype FlavourMap = FlavourMap (U.Vector Word16)
 emptyFlavourMap :: FlavourMap
 emptyFlavourMap = FlavourMap U.empty
 
-stdFlav :: ES.EnumSet Flavour
-stdFlav = ES.fromList stdFlavList
-
+-- | Code that means the flavour should be regenerated, because it could
+-- not be transferred from previous playthrough.
 invalidFlavourCode :: Word16
 invalidFlavourCode = maxBound
 
 -- | Assigns flavours to item kinds. Assures no flavor is repeated for the same
 -- symbol, except for items with only one permitted flavour.
-rollFlavourMap :: U.Vector Word16
-               -> Rnd ( EM.EnumMap (ContentId ItemKind) Flavour
-                      , EM.EnumMap (ContentSymbol ItemKind) (ES.EnumSet Flavour) )
-               -> ContentId ItemKind -> ItemKind
-               -> Rnd ( EM.EnumMap (ContentId ItemKind) Flavour
-                      , EM.EnumMap (ContentSymbol ItemKind) (ES.EnumSet Flavour) )
+rollFlavourMap
+  :: U.Vector Word16
+  -> Rnd ( EM.EnumMap (ContentId ItemKind) Flavour
+         , EM.EnumMap (ContentSymbol ItemKind) (ES.EnumSet Flavour) )
+  -> ContentId ItemKind -> ItemKind
+  -> Rnd ( EM.EnumMap (ContentId ItemKind) Flavour
+         , EM.EnumMap (ContentSymbol ItemKind) (ES.EnumSet Flavour) )
 rollFlavourMap uFlavMeta !rnd !key !ik = case IK.iflavour ik of
   [] -> error "empty iflavour"
   [flavour] -> do
@@ -215,17 +231,16 @@ rollFlavourMap uFlavMeta !rnd !key !ik = case IK.iflavour ik of
 -- | Randomly chooses flavour for all item kinds for this game.
 dungeonFlavourMap :: COps -> FlavourMap -> Rnd FlavourMap
 dungeonFlavourMap COps{coitem} (FlavourMap flavourMapFromPreviousGame) = do
-  let inMetaGame kindId =
-        IK.SetFlag Ability.MetaGame `elem` IK.iaspects (okind coitem kindId)
-      keepMeta i ix = if inMetaGame (toEnum i) then ix else invalidFlavourCode
-      uFlavMeta = if U.null flavourMapFromPreviousGame
+  let uFlavMeta = if U.null flavourMapFromPreviousGame
                   then U.replicate (olength coitem) invalidFlavourCode
-                  else U.imap keepMeta flavourMapFromPreviousGame
+                  else keepMetaGameInformation coitem flavourMapFromPreviousGame
       flavToAvailable :: EM.EnumMap Char (ES.EnumSet Flavour) -> Int -> Word16
                       -> EM.EnumMap Char (ES.EnumSet Flavour)
       flavToAvailable em i fl =
         let ik = okind coitem (toEnum i)
-            setBase = EM.findWithDefault stdFlav (IK.isymbol ik) em
+            setBase = EM.findWithDefault (ES.fromList stdFlavList)
+                                         (IK.isymbol ik)
+                                         em
             setMeta = if fl == invalidFlavourCode
                       then setBase
                       else ES.delete (toEnum $ fromEnum fl) setBase
