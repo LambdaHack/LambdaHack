@@ -116,7 +116,7 @@ truncateOverlay :: Bool -> Int -> Int -> Bool -> Int -> Bool -> Overlay
 truncateOverlay halveXstart width rheight wipeAdjacentRaw fillLen onBlank ov =
   let wipeAdjacent = wipeAdjacentRaw && not onBlank
       canvasLength = if onBlank then rheight else rheight - 2
-      supHeight = maximum $ 0 : map (\(PointUI _ y, _) -> y) ov
+      supHeight = maxYofOverlay ov
       trimmedY = canvasLength - 1
       -- Sadly, this does not trim the other, concurrent, overlays that may
       -- obscure the last line and so contend with the "trimmed" message.

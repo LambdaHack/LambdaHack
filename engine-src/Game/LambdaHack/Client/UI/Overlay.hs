@@ -9,8 +9,8 @@ module Game.LambdaHack.Client.UI.Overlay
   , textToAL, textFgToAL, stringToAL, splitAttrString
   , indentSplitAttrString, indentSplitAttrString2
     -- * Overlay
-  , Overlay, xtranslateOverlay, ytranslateOverlay
-  , offsetOverlay, offsetOverlayX, updateLine
+  , Overlay, xytranslateOverlay, xtranslateOverlay, ytranslateOverlay
+  , offsetOverlay, offsetOverlayX, updateLine, rectangleOfSpaces, maxYofOverlay
 #ifdef EXPOSE_INTERNAL
     -- * Internal operations
   , splitAttrPhrase
@@ -225,11 +225,15 @@ splitAttrPhrase w0 w1 (AttrLine xs)
 -- simply not shown.
 type Overlay = [(PointUI, AttrLine)]
 
+xytranslateOverlay :: Int -> Int -> Overlay -> Overlay
+xytranslateOverlay dx dy =
+  map (\(PointUI x y, al) -> (PointUI (x + dx) (y + dy), al))
+
 xtranslateOverlay :: Int -> Overlay -> Overlay
-xtranslateOverlay dx = map (\(PointUI x y, al) -> (PointUI (x + dx) y, al))
+xtranslateOverlay dx = xytranslateOverlay dx 0
 
 ytranslateOverlay :: Int -> Overlay -> Overlay
-ytranslateOverlay dy = map (\(PointUI x y, al) -> (PointUI x (y + dy), al))
+ytranslateOverlay dy = xytranslateOverlay 0 dy
 
 offsetOverlay :: [AttrLine] -> Overlay
 offsetOverlay l = map (first $ PointUI 0) $ zip [0..] l
@@ -244,3 +248,12 @@ updateLine y f ov =
   let upd (p@(PointUI px py), AttrLine l) =
         if py == y then (p, AttrLine $ f px l) else (p, AttrLine l)
   in map upd ov
+
+rectangleOfSpaces :: Int -> Int -> Overlay
+rectangleOfSpaces x y =
+  let blankAttrLine = AttrLine $ replicate x Color.nbspAttrW32
+  in offsetOverlay $ replicate y blankAttrLine
+
+maxYofOverlay :: Overlay -> Int
+maxYofOverlay ov = let yOfOverlay (PointUI _ y, _) = y
+                   in maximum $ 0 : map yOfOverlay ov
