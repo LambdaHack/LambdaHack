@@ -21,9 +21,10 @@ import           Game.LambdaHack.Definition.Flavour
 
 itemDescriptionUnitTests :: TestTree
 itemDescriptionUnitTests = testGroup "itemDescriptionUnitTests" $
-  let testItemBase = Item { jkind = IdentityObvious (toEnum 667)
+  let greenFlavour = head $ zipPlain [Green]
+      testItemBase = Item { jkind = IdentityObvious (toEnum 667)
             , jfid = Nothing
-            , jflavour = dummyFlavour
+            , jflavour = greenFlavour
             }
       testItemKind = ItemKind
         { isymbol  = 'x'
@@ -52,10 +53,10 @@ itemDescriptionUnitTests = testGroup "itemDescriptionUnitTests" $
   in
   [ testCase "testItem_viewItem_Blackx" $
       viewItem testItemFull 
-      @?= attrChar2ToW32 Black 'x'
+      @?= attrChar2ToW32 Green 'x'
   , testCase "testItem!_viewItem_Black!" $
       viewItem testItemFull { itemKind = testItemKind { isymbol = '!' }}
-      @?= attrChar2ToW32 Black '!'
+      @?= attrChar2ToW32 Green '!'
   , testCase "testItem_viewItemBenefitColored_isEquip_Greenx" $
       viewItemBenefitColored (EM.singleton (toEnum 42) (Benefit True 0 0 0 0)) (toEnum 42) testItemFull
       @?= attrChar2ToW32 BrGreen 'x'
