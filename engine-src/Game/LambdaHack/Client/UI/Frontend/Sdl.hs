@@ -433,14 +433,15 @@ drawFrame coscreen ClientOptions{..} sess@FrontendSession{..} curFrame = do
         SDL.freeSurface textSurface
         return textTexture
       -- This also frees the surface it gets.
-      scaleSurfaceToTextureProp :: Int -> Int -> SDL.Surface
+      scaleSurfaceToTextureProp :: Int -> Int -> SDL.Surface -> Bool
                                 -> IO (Int, SDL.Texture)
-      scaleSurfaceToTextureProp x row textSurfaceRaw = do
+      scaleSurfaceToTextureProp x row textSurfaceRaw allSpace = do
         Vect.V2 sw sh <- SDL.surfaceDimensions textSurfaceRaw
         let widthRaw = fromEnum sw
-            width = if widthRaw > rwidth coscreen * boxSize - x
-                    then (rwidth coscreen - 1) * boxSize - x
-                    else widthRaw
+            remainingWidth = rwidth coscreen * boxSize - x
+            width | widthRaw <= remainingWidth = widthRaw
+                  | allSpace = remainingWidth
+                  | otherwise = remainingWidth - boxSize
             height = min boxSize $ fromEnum sh
             xsrc = 0
             ysrc = max 0 (fromEnum sh - height) `divUp` 2
@@ -463,7 +464,7 @@ drawFrame coscreen ClientOptions{..} sess@FrontendSession{..} curFrame = do
         SDL.freeSurface textSurfaceRaw
         textTexture <- SDL.createTextureFromSurface srenderer textSurface
         SDL.freeSurface textSurface
-        when (width /= widthRaw) $
+        when (width /= widthRaw && not allSpace) $
           setSquareChar (rwidth coscreen - 1) row Color.trimmedLineAttrW32
         return (width, textTexture)
       -- <https://www.libsdl.org/projects/SDL_ttf/docs/SDL_ttf_42.html#SEC42>
@@ -590,9 +591,11 @@ drawFrame coscreen ClientOptions{..} sess@FrontendSession{..} curFrame = do
         let font = if fg >= Color.White && fg /= Color.BrBlack
                    then spropFont
                    else sboldFont
+            allSpace = T.all Char.isSpace t
         textSurfaceRaw <- TTF.shaded (fromJust font) (colorToRGBA fg)
                                      blackRGBA t
-        (width, textTexture) <- scaleSurfaceToTextureProp x row textSurfaceRaw
+        (width, textTexture) <-
+          scaleSurfaceToTextureProp x row textSurfaceRaw allSpace
         let tgtR = SDL.Rectangle (vp x (row * boxSize))
                                  (Vect.V2 (toEnum width) (toEnum boxSize))
         -- Potentially overwrite some of the screen.
