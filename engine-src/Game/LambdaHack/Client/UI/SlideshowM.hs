@@ -224,8 +224,8 @@ stepChoiceScreen menuName dm sfBlank frsX extraKeys = do
               -- to generate lines two shorter than usually.
               --
               -- We move the pane two characters down, because normally
-              -- reports should not be longer than two lines
-              -- and only the first can be longer than half width.
+              -- reports should not be longer than three lines
+              -- and the third no longer than half width.
               -- We also add two to three lines of backdrop at the bottom.
               ymax = maximum $ 0 : map maxYofOverlay (EM.elems ovsRight0)
               spaceRectangle = rectangleOfSpaces (rwidth * 2) (ymax + 5)
