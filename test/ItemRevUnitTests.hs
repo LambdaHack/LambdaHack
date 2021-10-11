@@ -15,14 +15,12 @@ import Test.Tasty
 import Test.Tasty.HUnit
 
 
-import           Game.LambdaHack.Common.Kind
 import           Game.LambdaHack.Content.ItemKind
 import           Game.LambdaHack.Core.Dice
 import qualified Game.LambdaHack.Definition.Ability as Ability
 import           Game.LambdaHack.Definition.Color
 import           Game.LambdaHack.Definition.DefsInternal
 import           Game.LambdaHack.Definition.Flavour
-import           Game.LambdaHack.Core.Random
 import           Game.LambdaHack.Server.ItemRev
 
 itemRevUnitTests :: TestTree
