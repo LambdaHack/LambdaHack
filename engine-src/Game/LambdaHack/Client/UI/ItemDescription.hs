@@ -382,6 +382,12 @@ viewItem itemFull =
 viewItemBenefitColored :: DiscoveryBenefit -> ItemId -> ItemFull
                        -> Color.AttrCharW32
 viewItemBenefitColored discoBenefit iid itemFull =
+  -- The map @discoBenefit@ is normally used by AI to tell it in what role
+  -- an item can be employed. In particular, ` benInEqp` says if an item
+  -- buffs stats enough (and nerfs not too much) to be worth equipping.
+  -- Here it's (ab)used to tell if an item (only a status effect item
+  -- in this case, marked with `Ability.Condition`) is beneficial or not
+  -- and to signal that in the organs UI menu.
   let color = if benInEqp (discoBenefit EM.! iid)
                   then Color.BrGreen
                   else Color.BrRed

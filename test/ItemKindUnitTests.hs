@@ -19,7 +19,7 @@ import qualified Content.RuleKind
 itemKindUnitTests :: TestTree
 itemKindUnitTests = testGroup "itemKindUnitTests" $
   let standardSymbols = RK.ritemSymbols Content.RuleKind.standardRules
-      customSymbols = emptyItemSymbolsUsedInEngine {rsymbolNecklace ='*'}
+      customSymbols = emptyItemSymbolsUsedInEngine {rsymbolNecklace = '*'}
       testItemKind = ItemKind
         { isymbol  = 'x'
         , iname    = "12345678901234567890123"
