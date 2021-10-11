@@ -94,7 +94,10 @@ debugPossiblyPrintUI t = do
     hFlush stdout
 
 -- | The monad that gives the client access to UI operations,
--- but not to modifying client state.
+-- but not to modifying client state, except for the client-side pointman
+-- (as opposed to pointman stores in faction data in main game state),
+-- which is more of a UI concept, but is shared with AI to be able
+-- to keep it when switching AI on/off and to save on typing.
 class MonadClientRead m => MonadClientUI m where
   getsSession :: (SessionUI -> a) -> m a
   modifySession :: (SessionUI -> SessionUI) -> m ()

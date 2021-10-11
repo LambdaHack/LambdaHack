@@ -125,7 +125,7 @@ condTgtNonmovingEnemyM aid = do
 
 -- | Require the actor stands on or adjacent to a triggerable tile
 -- (e.g., stairs).
-condAdjTriggerableM :: MonadClientRead m => Ability.Skills -> ActorId -> m Bool
+condAdjTriggerableM :: MonadStateRead m => Ability.Skills -> ActorId -> m Bool
 condAdjTriggerableM actorSk aid = do
   COps{coTileSpeedup} <- getsState scops
   b <- getsState $ getActorBody aid
@@ -350,7 +350,7 @@ strongSupport friendAssocs param aid mtgtMPath s =
 -- The numbers reflect fleeing AI conditions for non-aggresive actors
 -- so that actors don't wait for support that is not possible due to not
 -- enough friends on the level, even counting sleeping ones.
-condAloneM :: MonadClientRead m => [(ActorId, Actor)] -> ActorId -> m Bool
+condAloneM :: MonadStateRead m => [(ActorId, Actor)] -> ActorId -> m Bool
 condAloneM friendAssocs aid = do
   b <- getsState $ getActorBody aid
   mstash <- getsState $ \s -> gstash $ sfactionD s EM.! bfid b

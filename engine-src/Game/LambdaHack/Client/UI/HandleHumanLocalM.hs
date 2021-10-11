@@ -156,7 +156,7 @@ chooseItemDialogModeLore = do
 chooseItemDialogMode :: MonadClientUI m
                      => ActorId -> Bool -> ItemDialogMode
                      -> m (FailOrCmd ItemDialogMode)
-chooseItemDialogMode leader permitLoreCycle c = do
+chooseItemDialogMode leader0 permitLoreCycle c = do
   CCUI{coscreen=ScreenContent{rwidth, rheight}} <- getsSession sccui
   FontSetup{..} <- getFontSetup
   side <- getsClient sside
@@ -168,8 +168,11 @@ chooseItemDialogMode leader permitLoreCycle c = do
     case mggiLore of
       Just rlore -> return (Right rlore, True)
       Nothing -> do
-        ggi <- getStoreItem leader c
+        ggi <- getStoreItem leader0 c
         return (ggi, False)
+  -- Pointman could have been changed in @getStoreItem@ above.
+  mleader <- getsClient sleader
+  let leader = fromMaybe (error "UI manipulation killed the pointman") mleader
   recordHistory  -- item chosen, wipe out already shown msgs
   actorCurAndMaxSk <- getsState $ getActorMaxSkills leader
   let meleeSkill = Ability.getSk Ability.SkHurtMelee actorCurAndMaxSk

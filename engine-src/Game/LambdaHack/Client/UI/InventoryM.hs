@@ -349,7 +349,14 @@ transition :: forall m. MonadClientUI m
            -> m (Either Text ResultItemDialogMode)
 transition leader psuit prompt promptGeneric permitMulitple
            numPrefix cCur cRest itemDialogState = do
-  let recCall = transition leader psuit prompt promptGeneric permitMulitple
+  let recCall numPrefix2 cCur2 cRest2 itemDialogState2 = do
+        -- Pointman could have been changed by keypresses near the end of
+        -- the current recursive call, so refresh it for the next call.
+        mleader <- getsClient sleader
+        let leader2 = fromMaybe (error "UI manipulation killed the pointman")
+                                mleader
+        transition leader2 psuit prompt promptGeneric permitMulitple
+                   numPrefix2 cCur2 cRest2 itemDialogState2
   actorCurAndMaxSk <- getsState $ getActorMaxSkills leader
   body <- getsState $ getActorBody leader
   bodyUI <- getsSession $ getActorUI leader
@@ -421,7 +428,7 @@ transition leader psuit prompt promptGeneric permitMulitple
       maySwitchLeader MModes = False
       maySwitchLeader _ = True
       cycleKeyDef direction =
-        let km = revCmd $  PointmanCycle direction
+        let km = revCmd $ PointmanCycle direction
         in (km, DefItemKey
                { defLabel = if direction == Forward then Right km else Left ""
                , defCond = maySwitchLeader cCur && not (autoDun || null hs)
