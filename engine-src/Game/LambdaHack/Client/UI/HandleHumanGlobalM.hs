@@ -1832,17 +1832,17 @@ challengeMenuHuman cmdSemInCxtOfKM = do
                     <+> offOn (cwolf nxtChal)
       tnextKeeper = "finder keeper (hard):"
                     <+> offOn (ckeeper nxtChal)
-      widthProp = if isSquareFont propFont
-                  then rwidth `div` 2
-                  else min uMsgWrapColumn (rwidth - 2)
+      width = if isSquareFont propFont
+              then rwidth `div` 2
+              else min uMsgWrapColumn (rwidth - 2)
       widthMono = if isSquareFont propFont
                   then rwidth `div` 2
                   else rwidth - 2
       duplicateEOL '\n' = "\n\n"
       duplicateEOL c = T.singleton c
-      blurb = attrLinesToFontMap
+      blurb = Just $ attrLinesToFontMap
         [ ( propFont
-          , splitAttrString widthProp widthProp
+          , splitAttrString width width
             $ textFgToAS Color.BrBlack
             $ T.concatMap duplicateEOL (MK.mdesc gameMode)
               <> "\n\n" )
@@ -1852,33 +1852,33 @@ challengeMenuHuman cmdSemInCxtOfKM = do
             $ MK.mrules gameMode
               <> "\n\n" )
         , ( propFont
-          , splitAttrString widthProp widthProp
+          , splitAttrString width width
             $ textToAS
             $ T.concatMap duplicateEOL (MK.mreason gameMode) )
         ]
       textToBlurb t = Just $ attrLinesToFontMap
         [ ( monoFont
-          , splitAttrString widthProp widthProp
+          , splitAttrString width width  -- not widthMono!
             $ textToAS t ) ]
-      -- Key-description-command-blurb tuples.
-      kds = [ (K.mkKM "s", (tnextScenario, GameScenarioIncr, Nothing))
+      -- Key-description-command-text tuples.
+      kds = [ (K.mkKM "s", (tnextScenario, GameScenarioIncr, blurb))
             , (K.mkKM "t", ( tnextTutorial, GameTutorialToggle
                            , textToBlurb "* tutorial hints\nThis determines whether tutorial hint messages will be shown in the next game that's about to be started. They are rendered in pink and can be re-read from message history. Display of tutorial hints in the current game can be overridden from the convenience settings menu."))
             , (K.mkKM "d", ( tnextDiff, GameDifficultyIncr
                            , textToBlurb "* difficulty level\nThis determines the difficulty of survival in the next game that's about to be started. Lower numbers result in easier game. In particular, difficulty below 5 multiplies hitpoints of player characters and difficulty over 5 multiplies hitpoints of their enemies. Game score scales with difficulty."))
             , (K.mkKM "f", ( tnextFish, GameFishToggle
-                           , textToBlurb "* cold fish\nThis challenge mode makes it impossible for player characters to be healed by actors from other factions (this is a significant restriction in the long crawl adventure)."))
+                           , textToBlurb "* cold fish\nThis challenge mode setting will affect the next game that's about to be started. When on, it makes it impossible for player characters to be healed by actors from other factions (this is a significant restriction in the long crawl adventure)."))
             , (K.mkKM "r", ( tnextGoods, GameGoodsToggle
-                           , textToBlurb "* ready goods\nThis challenge mode disables crafting for the player, making the selection of equipment, especially melee weapons, very limited, unless the player has the luck to find the rare powerful ready weapons (this applies only if the chosen adventure supports crafting at all)."))
+                           , textToBlurb "* ready goods\nThis challenge mode setting will affect the next game that's about to be started. When on, it disables crafting for the player, making the selection of equipment, especially melee weapons, very limited, unless the player has the luck to find the rare powerful ready weapons (this applies only if the chosen adventure supports crafting at all)."))
             , (K.mkKM "w", ( tnextWolf, GameWolfToggle
-                           , textToBlurb "* lone wolf\nThis challenge mode reduces player's starting actors to exactly one, though later on new heroes may join the party. This makes the game very hard in the long run."))
+                           , textToBlurb "* lone wolf\nThis challenge mode setting will affect the next game that's about to be started. When on, it reduces player's starting actors to exactly one, though later on new heroes may join the party. This makes the game very hard in the long run."))
             , (K.mkKM "k", ( tnextKeeper, GameKeeperToggle
-                           , textToBlurb "* finder keeper\nThis challenge mode completely disables flinging projectiles by the player, which affects not only ranged damage dealing, but also throwing of consumables that buff teammates engaged in melee combat, weaken and distract enemies, light dark corners, etc."))
-            , (K.mkKM "g", ("start new game", GameRestart, Nothing))
+                           , textToBlurb "* finder keeper\nThis challenge mode setting will affect the next game that's about to be started. When on, it completely disables flinging projectiles by the player, which affects not only ranged damage dealing, but also throwing of consumables that buff teammates engaged in melee combat, weaken and distract enemies, light dark corners, etc."))
+            , (K.mkKM "g", ("start new game", GameRestart, blurb))
             , (K.mkKM "Escape", ("back to main menu", MainMenu, Nothing)) ]
       gameInfo = map T.unpack [ "Setup and start new game:"
                               , "" ]
-  generateMenu cmdSemInCxtOfKM blurb kds gameInfo "challenge"
+  generateMenu cmdSemInCxtOfKM EM.empty kds gameInfo "challenge"
 
 -- * GameTutorialToggle
 
