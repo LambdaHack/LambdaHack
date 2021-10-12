@@ -1859,8 +1859,7 @@ challengeMenuHuman cmdSemInCxtOfKM = do
       textToBlurb t = Just $ attrLinesToFontMap
         [ ( monoFont
           , splitAttrString widthProp widthProp
-            $ textToAS
-            $ t ) ]
+            $ textToAS t ) ]
       -- Key-description-command-blurb tuples.
       kds = [ (K.mkKM "s", (tnextScenario, GameScenarioIncr, Nothing))
             , (K.mkKM "t", ( tnextTutorial, GameTutorialToggle

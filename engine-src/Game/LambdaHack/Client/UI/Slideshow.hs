@@ -98,7 +98,7 @@ xtranslateKXY :: Int -> KYX -> KYX
 xtranslateKXY dx = xytranslateKXY dx 0
 
 ytranslateKXY :: Int -> KYX -> KYX
-ytranslateKXY dy = xytranslateKXY 0 dy
+ytranslateKXY = xytranslateKXY 0
 
 yrenumberKXY :: Int -> KYX -> KYX
 yrenumberKXY ynew (km, (PointUI x _, len)) = (km, (PointUI x ynew, len))

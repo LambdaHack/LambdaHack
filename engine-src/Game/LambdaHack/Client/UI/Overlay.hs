@@ -233,7 +233,7 @@ xtranslateOverlay :: Int -> Overlay -> Overlay
 xtranslateOverlay dx = xytranslateOverlay dx 0
 
 ytranslateOverlay :: Int -> Overlay -> Overlay
-ytranslateOverlay dy = xytranslateOverlay 0 dy
+ytranslateOverlay = xytranslateOverlay 0
 
 offsetOverlay :: [AttrLine] -> Overlay
 offsetOverlay l = map (first $ PointUI 0) $ zip [0..] l
