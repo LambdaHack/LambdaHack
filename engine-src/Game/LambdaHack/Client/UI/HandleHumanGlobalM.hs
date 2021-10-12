@@ -1669,7 +1669,9 @@ generateMenu cmdSemInCxtOfKM blurb kds gameInfo menuName = do
         let introLen = 1 + maxYofFontOverlayMap ovs
             start0 = max 0 (rheight - introLen
                             - if isSquareFont propFont then 1 else 2)
-        in EM.map (ytranslateOverlay start0) ovs
+        in EM.map (xytranslateOverlay (-2) (start0 - 2)) ovs
+          -- subtracting 2 from X and Y to negate the indentation in
+          -- @displayChoiceScreenWithRightPane@
       returnDefaultOKS = return (prepareBlurb blurb, [])
       displayInRightPane (Right _) = returnDefaultOKS
       displayInRightPane (Left km) = case km `lookup` kds of
