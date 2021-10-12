@@ -1628,7 +1628,7 @@ chooseItemMenuHuman leader cmdSemInCxtOfKM c0 = do
 
 generateMenu :: MonadClientUI m
              => (K.KM -> HumanCmd -> m (Either MError ReqUI))
-             -> [(DisplayFont, [AttrLine])]
+             -> FontOverlayMap
              -> [(K.KM, (Text, HumanCmd))]
              -> [String]
              -> String
@@ -1662,10 +1662,10 @@ generateMenu cmdSemInCxtOfKM blurb kds gameInfo menuName = do
                    , ( PointUI (2 + 2 * length titleLine) 1
                      , ButtonWidth squareFont (2 + length rwebAddress) ) )
       kyxs = browserKey : catMaybes mkyxs
-      introLen = sum $ map (length . snd) blurb
+      introLen = 1 + maximum (0 : map maxYofOverlay (EM.elems blurb))
       start0 = max 0 (rheight - introLen
                       - if isSquareFont propFont then 1 else 2)
-      ov0 = EM.map (xytranslateOverlay rwidth start0) $ attrLinesToFontMap blurb
+      ov0 = EM.map (xytranslateOverlay rwidth start0) blurb
       ov = EM.insertWith (++) squareFont (offsetOverlayX menuOvLines) ov0
   menuIxMap <- getsSession smenuIxMap
   unless (menuName `M.member` menuIxMap) $
@@ -1719,7 +1719,8 @@ mainMenuHuman cmdSemInCxtOfKM = do
       backstory | isSquareFont propFont = fst rintroScreen
                 | otherwise = glueLines $ fst rintroScreen
       backstoryAL = map stringToAL $ map (dropWhile (== ' ')) backstory
-  generateMenu cmdSemInCxtOfKM [(propFont, backstoryAL)] kds gameInfo "main"
+      blurb = attrLinesToFontMap [(propFont, backstoryAL)]
+  generateMenu cmdSemInCxtOfKM blurb kds gameInfo "main"
 
 -- * MainMenuAutoOn
 
@@ -1781,7 +1782,7 @@ settingsMenuHuman cmdSemInCxtOfKM = do
       gameInfo = map T.unpack
                    [ "Tweak convenience settings:"
                    , "" ]
-  generateMenu cmdSemInCxtOfKM [] kds gameInfo "settings"
+  generateMenu cmdSemInCxtOfKM EM.empty kds gameInfo "settings"
 
 -- * ChallengeMenu
 
@@ -1839,7 +1840,7 @@ challengeMenuHuman cmdSemInCxtOfKM = do
                   else rwidth - 2
       duplicateEOL '\n' = "\n\n"
       duplicateEOL c = T.singleton c
-      blurb =
+      blurb = attrLinesToFontMap
         [ ( propFont
           , splitAttrString widthProp widthProp
             $ textFgToAS Color.BrBlack

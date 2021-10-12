@@ -170,6 +170,11 @@ toSlideshow FontSetup{..} okxs = Slideshow $ addFooters False okxs
     in (ovs, kxs ++ [(Left K.safeSpaceKM, (p, ButtonWidth font width))])
        : addFooters True rest
 
+-- | This appends vertically a list of blurbs into a single font overlay map.
+-- Not to be used if some blurbs need to be places overlapping vertically,
+-- e.g., when the square font symbol needs to be in the same line
+-- as the start of the descritpion of the denoted item
+-- or when mono font buttons need to be after a prompt.
 attrLinesToFontMap :: [(DisplayFont, [AttrLine])] -> FontOverlayMap
 attrLinesToFontMap blurb =
   let zipAttrLines :: Int -> [AttrLine] -> (Overlay, Int)
