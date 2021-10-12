@@ -1760,6 +1760,9 @@ settingsMenuHuman :: MonadClientUI m
                   => (K.KM -> HumanCmd -> m (Either MError ReqUI))
                   -> m (Either MError ReqUI)
 settingsMenuHuman cmdSemInCxtOfKM = do
+  CCUI{coscreen=ScreenContent{rwidth}} <- getsSession sccui
+  UIOptions{uMsgWrapColumn} <- getsSession sUIOptions
+  FontSetup{..} <- getFontSetup
   markSuspect <- getsClient smarkSuspect
   markVision <- getsSession smarkVision
   markSmell <- getsSession smarkSmell
@@ -1782,15 +1785,28 @@ settingsMenuHuman cmdSemInCxtOfKM = do
       tanim = "play animations:" <+> offOn (not noAnim)
       tdoctrine = "squad doctrine:" <+> Ability.nameDoctrine factDoctrine
       toverride = "override tutorial hints:" <+> offOnUnset overrideTut
-      -- Key-description-command tuples.
-      kds = [ (K.mkKM "s", (tsuspect, MarkSuspect, Just EM.empty))
-            , (K.mkKM "v", (tvisible, MarkVision, Just EM.empty))
-            , (K.mkKM "c", (tsmell, MarkSmell, Just EM.empty))
-            , (K.mkKM "a", (tanim, MarkAnim, Just EM.empty))
-            , (K.mkKM "t", (tdoctrine, Doctrine, Just EM.empty))
-            , (K.mkKM "o", (toverride, OverrideTut, Just EM.empty))
-            , ( K.mkKM "Escape"
-              , ("back to main menu", MainMenu, Just EM.empty) ) ]
+      width = if isSquareFont propFont
+              then rwidth `div` 2
+              else min uMsgWrapColumn (rwidth - 2)
+      textToBlurb t = Just $ attrLinesToFontMap
+        [ ( monoFont
+          , splitAttrString width width
+            $ textToAS t ) ]
+      -- Key-description-command-text tuples.
+      kds = [ (K.mkKM "s", ( tsuspect, MarkSuspect
+                           , textToBlurb "* mark suspect terrain\nThis setting affects the ongoing and the next games. It determines which suspect terrain is marked in special color on the map: none, untried (not searched nor revealed), all. It correspondingly determines which, if any, suspect tiles are considered for mouse go-to, auto-explore and for the command that marks the nearest unexplored position." ))
+            , (K.mkKM "v", (tvisible, MarkVision
+                           , textToBlurb "* show visible zone\nThis setting affects the ongoing and the next games. It determines the conditions under which the area visible to the party is marked on the map via a gray background: never, when aiming, always." ))
+            , (K.mkKM "c", (tsmell, MarkSmell
+                           , textToBlurb "* display smell clues\nThis setting affects the ongoing and the next games. It determines whether the map displays any smell traces (regardless of who left them) detected by a party member that can track via smell (as determined by the smell radius skill; not common among humans)." ))
+            , (K.mkKM "a", (tanim, MarkAnim
+                           , textToBlurb "* play animations\nThis setting affects the ongoing and the next games. It determines whether important events, such combat, are highlighted by animations. This overrides the corresponding config file setting." ))
+            , (K.mkKM "t", (tdoctrine, Doctrine
+                           , textToBlurb "* squad doctrine\nThis setting affects the ongoing game, but does not persist to the next games. It determines the behaviour of henchmen (non-pointman characters) in the party and, in particular, if they are permitted to move autonomously or fire opportunistically (assuming they are able to, usually due to rare equipment). This setting has a poor UI that will be improved in the future." ))
+            , (K.mkKM "o", (toverride, OverrideTut
+                           , textToBlurb "* override tutorial hints\nThis setting affects the ongoing and the next games. It determines whether tutorial hints are, respectively, not overridden with respect to the setting that was chosen when starting the current game, forced to be off, forced to be on." ))
+            , (K.mkKM "Escape", ( "back to main menu", MainMenu
+                                , Just EM.empty )) ]
       gameInfo = map T.unpack
                    [ "Tweak convenience settings:"
                    , "" ]
