@@ -948,6 +948,7 @@ displayItemLorePointedAt
 displayItemLorePointedAt itemBag meleeSkill promptFun slotIndex
                          lSlots addTilde = do
   CCUI{coscreen=ScreenContent{rwidth, rheight}} <- getsSession sccui
+  FontSetup{propFont} <- getFontSetup
   let lSlotsElems = EM.elems lSlots
       lSlotsBound = length lSlotsElems - 1
   let keys = [K.spaceKM, K.escKM]
@@ -955,7 +956,7 @@ displayItemLorePointedAt itemBag meleeSkill promptFun slotIndex
              ++ [K.upKM | slotIndex /= 0]
              ++ [K.downKM | slotIndex /= lSlotsBound]
   okx <- okxItemLorePointedAt
-           rwidth False itemBag meleeSkill promptFun slotIndex lSlots
+           propFont rwidth False itemBag meleeSkill promptFun slotIndex lSlots
   slides <- overlayToSlideshow (rheight - 2) keys okx
   km <- getConfirms ColorFull keys slides
   case K.key km of
@@ -968,12 +969,13 @@ displayItemLorePointedAt itemBag meleeSkill promptFun slotIndex
     _ -> return km
 
 okxItemLorePointedAt :: MonadClientUI m
-                     => Int -> Bool -> ItemBag -> Int
+                     => DisplayFont -> Int -> Bool -> ItemBag -> Int
                      -> (ItemId -> ItemFull -> Int -> Text)
                      -> Int -> SingleItemSlots
                      -> m OKX
-okxItemLorePointedAt width inlineMsg itemBag meleeSkill promptFun slotIndex
-                     lSlots = do
+okxItemLorePointedAt font width inlineMsg itemBag meleeSkill promptFun
+                     slotIndex lSlots = do
+  FontSetup{squareFont} <- getFontSetup
   side <- getsClient sside
   arena <- getArenaUI
   let lSlotsElems = EM.elems lSlots
@@ -984,7 +986,6 @@ okxItemLorePointedAt width inlineMsg itemBag meleeSkill promptFun slotIndex
   factionD <- getsState sfactionD
   -- The hacky level 0 marks items never seen, but sent by server at gameover.
   jlid <- getsSession $ fromMaybe (toEnum 0) <$> EM.lookup iid2 . sitemUI
-  FontSetup{..} <- getFontSetup
   let descAl = itemDesc width True side factionD meleeSkill
                         CGround localTime jlid itemFull2 kit2
       (descSymAl, descBlurbAl) = span (/= Color.spaceAttrW32) descAl
@@ -1010,7 +1011,7 @@ okxItemLorePointedAt width inlineMsg itemBag meleeSkill promptFun slotIndex
       msgAdd MsgPromptGeneric prompt
       return (descSym, descBlurb)
   let ov = EM.insertWith (++) squareFont descSym2
-           $ EM.singleton propFont descBlurb2
+           $ EM.singleton font descBlurb2
   return (ov, [])
 
 cycleLore :: MonadClientUI m => [m K.KM] -> [m K.KM] -> m ()

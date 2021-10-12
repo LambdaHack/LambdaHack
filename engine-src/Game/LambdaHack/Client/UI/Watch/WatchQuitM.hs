@@ -317,6 +317,7 @@ viewLoreItems :: forall m . MonadClientUI m
               -> m K.KM
 viewLoreItems menuName lSlotsRaw trunkBag prompt promptFun displayRanged = do
   CCUI{coscreen=ScreenContent{rwidth, rheight}} <- getsSession sccui
+  FontSetup{monoFont} <- getFontSetup
   arena <- getArenaUI
   itemToF <- getsState $ flip itemToFull
   let keysPre = [K.spaceKM, K.mkChar '<', K.mkChar '>', K.escKM]
@@ -334,7 +335,11 @@ viewLoreItems menuName lSlotsRaw trunkBag prompt promptFun displayRanged = do
         Right slot -> do
          let ix0 = fromMaybe (error $ show slot)
                              (findIndex (== slot) $ EM.keys lSlots)
-         okxItemLorePointedAt (rwidth - 2) True trunkBag 0 promptFun ix0 lSlots
+         -- Mono font used, because lots of numbers in these blurbs
+         -- and because some prop fonts wider than mono (e.g., in the
+         -- dejavuBold font set).
+         okxItemLorePointedAt
+           monoFont (rwidth - 2) True trunkBag 0 promptFun ix0 lSlots
       viewAtSlot :: SlotChar -> m K.KM
       viewAtSlot slot = do
         let ix0 = fromMaybe (error $ show slot)
