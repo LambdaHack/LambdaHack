@@ -874,7 +874,7 @@ lastHistoryHuman = eitherHistory False
 -- * MarkVision
 
 markVisionHuman :: MonadClientUI m => m ()
-markVisionHuman = modifySession toggleMarkVision
+markVisionHuman = modifySession cycleMarkVision
 
 -- * MarkSmell
 

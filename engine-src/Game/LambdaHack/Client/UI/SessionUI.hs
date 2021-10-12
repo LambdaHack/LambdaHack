@@ -4,7 +4,7 @@ module Game.LambdaHack.Client.UI.SessionUI
   ( SessionUI(..), ReqDelay(..), ItemDictUI, AimMode(..), KeyMacro(..)
   , KeyMacroFrame(..), RunParams(..), ChosenLore(..)
   , emptySessionUI, emptyMacroFrame
-  , toggleMarkVision, toggleMarkSmell, cycleOverrideTut, getActorUI
+  , cycleMarkVision, toggleMarkSmell, cycleOverrideTut, getActorUI
   ) where
 
 import Prelude ()
@@ -79,7 +79,7 @@ data SessionUI = SessionUI
                                     -- ^ actors that just got out of sight
   , swaitTimes     :: Int           -- ^ player just waited this many times
   , swasAutomated  :: Bool          -- ^ the player just exited AI automation
-  , smarkVision    :: Bool          -- ^ mark leader and party FOV
+  , smarkVision    :: Int           -- ^ mark leader and party FOV
   , smarkSmell     :: Bool          -- ^ mark smell, if the leader can smell
   , snxtScenario   :: Int           -- ^ next game scenario number
   , scurTutorial   :: Bool          -- ^ whether current game is a tutorial
@@ -188,7 +188,7 @@ emptySessionUI sUIOptions =
     , slastLost = ES.empty
     , swaitTimes = 0
     , swasAutomated = False
-    , smarkVision = False
+    , smarkVision = 1
     , smarkSmell = True
     , snxtScenario = 0
     , scurTutorial = False
@@ -212,8 +212,8 @@ emptySessionUI sUIOptions =
 emptyMacroFrame :: KeyMacroFrame
 emptyMacroFrame = KeyMacroFrame (Right mempty) mempty Nothing
 
-toggleMarkVision :: SessionUI -> SessionUI
-toggleMarkVision sess = sess {smarkVision = not (smarkVision sess)}
+cycleMarkVision :: SessionUI -> SessionUI
+cycleMarkVision sess = sess {smarkVision = succ (smarkVision sess) `mod` 3}
 
 toggleMarkSmell :: SessionUI -> SessionUI
 toggleMarkSmell sess = sess {smarkSmell = not (smarkSmell sess)}

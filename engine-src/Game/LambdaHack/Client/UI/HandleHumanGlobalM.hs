@@ -1771,16 +1771,21 @@ settingsMenuHuman cmdSemInCxtOfKM = do
   factDoctrine <- getsState $ MK.fdoctrine . gplayer . (EM.! side) . sfactionD
   overrideTut <- getsSession soverrideTut
   let offOn b = if b then "on" else "off"
-      offOnUnset mb = case mb of
-        Nothing -> "no override"
-        Just b -> if b then "force on" else "force off"
       offOnAll n = case n of
         0 -> "none"
         1 -> "untried"
         2 -> "all"
         _ -> error $ "" `showFailure` n
+      neverEver n = case n of
+        0 -> "never"
+        1 -> "aiming"
+        2 -> "always"
+        _ -> error $ "" `showFailure` n
+      offOnUnset mb = case mb of
+        Nothing -> "no override"
+        Just b -> if b then "force on" else "force off"
       tsuspect = "mark suspect terrain:" <+> offOnAll markSuspect
-      tvisible = "show visible zone:" <+> offOn markVision
+      tvisible = "show visible zone:" <+> neverEver markVision
       tsmell = "display smell clues:" <+> offOn markSmell
       tanim = "play animations:" <+> offOn (not noAnim)
       tdoctrine = "squad doctrine:" <+> Ability.nameDoctrine factDoctrine
