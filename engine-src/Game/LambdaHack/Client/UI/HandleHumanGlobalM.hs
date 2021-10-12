@@ -1635,8 +1635,7 @@ generateMenu :: MonadClientUI m
              -> m (Either MError ReqUI)
 generateMenu cmdSemInCxtOfKM blurb kds gameInfo menuName = do
   COps{corule} <- getsState scops
-  CCUI{coscreen=ScreenContent{rwidth, rheight, rwebAddress}} <-
-    getsSession sccui
+  CCUI{coscreen=ScreenContent{rheight, rwebAddress}} <- getsSession sccui
   FontSetup{..} <- getFontSetup
   let bindings =  -- key bindings to display
         let fmt (k, (d, _, _)) =
@@ -1662,16 +1661,25 @@ generateMenu cmdSemInCxtOfKM blurb kds gameInfo menuName = do
                    , ( PointUI (2 + 2 * length titleLine) 1
                      , ButtonWidth squareFont (2 + length rwebAddress) ) )
       kyxs = browserKey : catMaybes mkyxs
-      introLen = 1 + maxYofFontOverlayMap blurb
-      start0 = max 0 (rheight - introLen
-                      - if isSquareFont propFont then 1 else 2)
-      ov0 = EM.map (xytranslateOverlay rwidth start0) blurb
-      ov = EM.insertWith (++) squareFont (offsetOverlayX menuOvLines) ov0
+      ov = EM.singleton squareFont (offsetOverlayX menuOvLines)
   menuIxMap <- getsSession smenuIxMap
   unless (menuName `M.member` menuIxMap) $
     modifySession $ \sess -> sess {smenuIxMap = M.insert menuName 1 menuIxMap}
-  ekm <- displayChoiceScreen menuName ColorFull True
-                             (menuToSlideshow (ov, kyxs)) [K.escKM]
+  let prepareBlurb ovs =
+        let introLen = 1 + maxYofFontOverlayMap ovs
+            start0 = max 0 (rheight - introLen
+                            - if isSquareFont propFont then 1 else 2)
+        in EM.map (ytranslateOverlay start0) ovs
+      returnDefaultOKS = return (prepareBlurb blurb, [])
+      displayInRightPane (Right _) = returnDefaultOKS
+      displayInRightPane (Left km) = case km `lookup` kds of
+        Just (_, _, mblurbRight) -> case mblurbRight of
+          Nothing -> returnDefaultOKS
+          Just blurbRight -> return (prepareBlurb blurbRight, [])
+        Nothing -> error "displayInRightPane: unexpected key"
+  ekm <- displayChoiceScreenWithRightPane displayInRightPane
+                                          menuName ColorFull True
+                                          (menuToSlideshow (ov, kyxs)) [K.escKM]
   case ekm of
     Left km -> case km `lookup` kds of
       Just (_desc, cmd, _) -> cmdSemInCxtOfKM km cmd
