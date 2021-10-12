@@ -1629,7 +1629,7 @@ chooseItemMenuHuman leader cmdSemInCxtOfKM c0 = do
 generateMenu :: MonadClientUI m
              => (K.KM -> HumanCmd -> m (Either MError ReqUI))
              -> FontOverlayMap
-             -> [(K.KM, (Text, HumanCmd))]
+             -> [(K.KM, (Text, HumanCmd, Maybe FontOverlayMap))]
              -> [String]
              -> String
              -> m (Either MError ReqUI)
@@ -1639,7 +1639,7 @@ generateMenu cmdSemInCxtOfKM blurb kds gameInfo menuName = do
     getsSession sccui
   FontSetup{..} <- getFontSetup
   let bindings =  -- key bindings to display
-        let fmt (k, (d, _)) =
+        let fmt (k, (d, _, _)) =
               ( Just k
               , T.unpack
                 $  T.justifyLeft 3 ' ' (T.pack $ K.showKM k) <> " " <> d )
@@ -1674,7 +1674,7 @@ generateMenu cmdSemInCxtOfKM blurb kds gameInfo menuName = do
                              (menuToSlideshow (ov, kyxs)) [K.escKM]
   case ekm of
     Left km -> case km `lookup` kds of
-      Just (_desc, cmd) -> cmdSemInCxtOfKM km cmd
+      Just (_desc, cmd, _) -> cmdSemInCxtOfKM km cmd
       Nothing -> weaveJust <$> failWith "never mind"
     Right (SlotChar 1042 'a') -> do
       success <- tryOpenBrowser rwebAddress
@@ -1700,7 +1700,8 @@ mainMenuHuman cmdSemInCxtOfKM = do
       tcurWolf   = "       lone wolf:" <+> offOn (cwolf curChal)
       tcurKeeper = "   finder keeper:" <+> offOn (ckeeper curChal)
       -- Key-description-command tuples.
-      kds = [(km, (desc, cmd)) | (km, ([CmdMainMenu], desc, cmd)) <- bcmdList]
+      kds = [ (km, (desc, cmd, Nothing))
+            | (km, ([CmdMainMenu], desc, cmd)) <- bcmdList ]
       gameName = MK.mname gameMode
       gameInfo = map T.unpack
                    [ "Now playing:" <+> gameName
@@ -1772,13 +1773,14 @@ settingsMenuHuman cmdSemInCxtOfKM = do
       tdoctrine = "squad doctrine:" <+> Ability.nameDoctrine factDoctrine
       toverride = "override tutorial hints:" <+> offOnUnset overrideTut
       -- Key-description-command tuples.
-      kds = [ (K.mkKM "s", (tsuspect, MarkSuspect))
-            , (K.mkKM "v", (tvisible, MarkVision))
-            , (K.mkKM "c", (tsmell, MarkSmell))
-            , (K.mkKM "a", (tanim, MarkAnim))
-            , (K.mkKM "t", (tdoctrine, Doctrine))
-            , (K.mkKM "o", (toverride, OverrideTut))
-            , (K.mkKM "Escape", ("back to main menu", MainMenu)) ]
+      kds = [ (K.mkKM "s", (tsuspect, MarkSuspect, Just EM.empty))
+            , (K.mkKM "v", (tvisible, MarkVision, Just EM.empty))
+            , (K.mkKM "c", (tsmell, MarkSmell, Just EM.empty))
+            , (K.mkKM "a", (tanim, MarkAnim, Just EM.empty))
+            , (K.mkKM "t", (tdoctrine, Doctrine, Just EM.empty))
+            , (K.mkKM "o", (toverride, OverrideTut, Just EM.empty))
+            , ( K.mkKM "Escape"
+              , ("back to main menu", MainMenu, Just EM.empty) ) ]
       gameInfo = map T.unpack
                    [ "Tweak convenience settings:"
                    , "" ]
@@ -1820,18 +1822,6 @@ challengeMenuHuman cmdSemInCxtOfKM = do
                     <+> offOn (cwolf nxtChal)
       tnextKeeper = "finder keeper (hard):"
                     <+> offOn (ckeeper nxtChal)
-      -- Key-description-command tuples.
-      kds = [ (K.mkKM "s", (tnextScenario, GameScenarioIncr))
-            , (K.mkKM "t", (tnextTutorial, GameTutorialToggle))
-            , (K.mkKM "d", (tnextDiff, GameDifficultyIncr))
-            , (K.mkKM "f", (tnextFish, GameFishToggle))
-            , (K.mkKM "r", (tnextGoods, GameGoodsToggle))
-            , (K.mkKM "w", (tnextWolf, GameWolfToggle))
-            , (K.mkKM "k", (tnextKeeper, GameKeeperToggle))
-            , (K.mkKM "g", ("start new game", GameRestart))
-            , (K.mkKM "Escape", ("back to main menu", MainMenu)) ]
-      gameInfo = map T.unpack [ "Setup and start new game:"
-                              , "" ]
       widthProp = if isSquareFont propFont
                   then rwidth `div` 2
                   else min uMsgWrapColumn (rwidth - 2)
@@ -1856,6 +1846,18 @@ challengeMenuHuman cmdSemInCxtOfKM = do
             $ textToAS
             $ T.concatMap duplicateEOL (MK.mreason gameMode) )
         ]
+      -- Key-description-command-blurb tuples.
+      kds = [ (K.mkKM "s", (tnextScenario, GameScenarioIncr, Just blurb))
+            , (K.mkKM "t", (tnextTutorial, GameTutorialToggle, Just EM.empty))
+            , (K.mkKM "d", (tnextDiff, GameDifficultyIncr, Just EM.empty))
+            , (K.mkKM "f", (tnextFish, GameFishToggle, Just EM.empty))
+            , (K.mkKM "r", (tnextGoods, GameGoodsToggle, Just EM.empty))
+            , (K.mkKM "w", (tnextWolf, GameWolfToggle, Just EM.empty))
+            , (K.mkKM "k", (tnextKeeper, GameKeeperToggle, Just EM.empty))
+            , (K.mkKM "g", ("start new game", GameRestart, Nothing))
+            , (K.mkKM "Escape", ("back to main menu", MainMenu, Nothing)) ]
+      gameInfo = map T.unpack [ "Setup and start new game:"
+                              , "" ]
   generateMenu cmdSemInCxtOfKM blurb kds gameInfo "challenge"
 
 -- * GameTutorialToggle
