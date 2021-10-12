@@ -231,7 +231,7 @@ stepChoiceScreen menuName dm sfBlank frsX extraKeys = do
               -- reports should not be longer than three lines
               -- and the third no longer than half width.
               -- We also add two to three lines of backdrop at the bottom.
-              ymax = maximum $ 0 : map maxYofOverlay (EM.elems ovsRight0)
+              ymax = maxYofFontOverlayMap ovsRight0
               spaceRectangle = rectangleOfSpaces (rwidth * 2)
                                                  (min canvasLength $ ymax + 5)
               trim = filter (\(PointUI _ yRight, _) -> yRight < trimmedY)

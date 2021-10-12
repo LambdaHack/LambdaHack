@@ -1662,7 +1662,7 @@ generateMenu cmdSemInCxtOfKM blurb kds gameInfo menuName = do
                    , ( PointUI (2 + 2 * length titleLine) 1
                      , ButtonWidth squareFont (2 + length rwebAddress) ) )
       kyxs = browserKey : catMaybes mkyxs
-      introLen = 1 + maximum (0 : map maxYofOverlay (EM.elems blurb))
+      introLen = 1 + maxYofFontOverlayMap blurb
       start0 = max 0 (rheight - introLen
                       - if isSquareFont propFont then 1 else 2)
       ov0 = EM.map (xytranslateOverlay rwidth start0) blurb

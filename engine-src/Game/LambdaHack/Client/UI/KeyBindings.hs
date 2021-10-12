@@ -108,7 +108,7 @@ keyHelp CCUI{ coinput=coinput@InputContent{..}
          , map (xtranslateKXY spLen) kyx )
     mergeOKX :: OKX -> OKX -> OKX
     mergeOKX (ovs1, ks1) (ovs2, ks2) =
-      let off = 1 + EM.foldr (\ov acc -> max acc (maxYofOverlay ov)) 0 ovs1
+      let off = 1 + maxYofFontOverlayMap ovs1
       in ( EM.unionWith (++) ovs1 $ EM.map (ytranslateOverlay off) ovs2
          , ks1 ++ map (ytranslateKXY off) ks2 )
     catLength cat = length $ filter (\(_, (cats, desc, _)) ->
