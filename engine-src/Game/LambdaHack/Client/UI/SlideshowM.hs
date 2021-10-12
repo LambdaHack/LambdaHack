@@ -189,8 +189,8 @@ stepChoiceScreen :: forall m . MonadClientUI m
                  -> m ( Int, Int, Int
                       , Int -> OKX -> m (Bool, KeyOrSlot, Int) )
 stepChoiceScreen menuName dm sfBlank frsX extraKeys = do
-  CCUI{coscreen=ScreenContent{rwidth}} <- getsSession sccui
-  FontSetup{propFont} <- getFontSetup
+  CCUI{coscreen=ScreenContent{rwidth, rheight}} <- getsSession sccui
+  FontSetup{..} <- getFontSetup
   let !_A = assert (K.escKM `elem` extraKeys) ()
       frs = slideshow frsX
       keys = concatMap (lefts . map fst . snd) frs ++ extraKeys
@@ -204,6 +204,10 @@ stepChoiceScreen menuName dm sfBlank frsX extraKeys = do
         _ -> 0  -- can't be @length allOKX@ or a multi-page item menu
                 -- mangles saved index of other item munus
       clearIx = if initIx > maxIx then 0 else initIx
+      canvasLength = if sfBlank then rheight else rheight - 2
+      trimmedY = canvasLength - 1 - 2  -- will be translated down 2 lines
+      trimmedAlert = ( PointUI 0 trimmedY
+                     , stringToAL "--a portion of the text trimmed--" )
       page :: Int -> OKX -> m (Bool, KeyOrSlot, Int)
       page pointer (ovsRight0, kyxsRight) = assert (pointer >= 0)
                                             $ case findKYX pointer frs of
@@ -228,10 +232,19 @@ stepChoiceScreen menuName dm sfBlank frsX extraKeys = do
               -- and the third no longer than half width.
               -- We also add two to three lines of backdrop at the bottom.
               ymax = maximum $ 0 : map maxYofOverlay (EM.elems ovsRight0)
-              spaceRectangle = rectangleOfSpaces (rwidth * 2) (ymax + 5)
+              spaceRectangle = rectangleOfSpaces (rwidth * 2)
+                                                 (min canvasLength $ ymax + 5)
+              trim = filter (\(PointUI _ yRight, _) -> yRight < trimmedY)
+              -- The alert not clickable, because the player can enter
+              -- the menu entry and scroll through the unabridged blurb.
+              ovsRight1 = if ymax <= trimmedY
+                          then ovsRight0
+                          else EM.unionWith (++)
+                                 (EM.map trim ovsRight0)
+                                 (EM.singleton monoFont [trimmedAlert])
               ovsRight = EM.unionWith (++)
                           (EM.singleton propFont spaceRectangle)
-                          (EM.map (xytranslateOverlay 2 2) ovsRight0)
+                          (EM.map (xytranslateOverlay 2 2) ovsRight1)
               (ovs, kyxs) =
                 if EM.null ovsRight0
                 then (ovs1, kyxs1)
