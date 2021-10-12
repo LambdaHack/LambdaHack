@@ -82,22 +82,9 @@ settings, the `suspect terrain` choice is of particular interest,
 because it determines not only screen display of the level map,
 but also whether suspect tiles are considered for mouse go-to, auto-explore
 and for the `C-?` command that marks the nearest unexplored position.
-Game difficulty, from the game setup menu, determines hitpoints at birth:
-difficulty below 5 multiplies hitpoints of player characters, difficulty
-over 5 multiplies hitpoints of their enemies. Each of the several named
-optional challenges make the game much harder, but usually simpler, as well.
-
-The "cold fish" challenge mode makes it impossible for player
-characters to be healed by actors from other factions (this is
-a significant restriction in the long crawl adventure).
-The "ready goods" challenge mode disables crafting for the player,
-which is however not a part of the LambdaHack game, so has no effect.
-The "lone wolf" challenge mode reduces player's starting actors
-to exactly one, though later on new heroes may join the party.
-The "finder keeper" completely disables flinging projectiles
-by the player, which affects not only ranged damage dealing,
-but also throwing of consumables that buff teammates engaged in melee combat,
-weaken and distract enemies, light dark corners, etc.
+Game difficulty level, from the game setup menu, determines how hard
+the survival in the game is. Each of the several named optional challenges
+make the game additionally much harder, but usually simpler, as well.
 
 The game scenarios, as ordered by their number, lead the player along
 an optional story arc. The first two adventures double as tutorials

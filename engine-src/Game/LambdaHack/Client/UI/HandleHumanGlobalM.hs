@@ -1821,9 +1821,9 @@ challengeMenuHuman cmdSemInCxtOfKM = do
       offOn b = if b then "on" else "off"
       starTut t = if isJust overrideTut then "*" <> t else t
       displayTutorialHints = fromMaybe nxtTutorial overrideTut
-      tnextTutorial = "tutorial hints (in pink):"
+      tnextTutorial = "tutorial hints:"
                       <+> starTut (offOn displayTutorialHints)
-      tnextDiff = "difficulty (lower easier):" <+> tshow (cdiff nxtChal)
+      tnextDiff = "difficulty level:" <+> tshow (cdiff nxtChal)
       tnextFish   = "cold fish (rather hard):"
                     <+> offOn (cfish nxtChal)
       tnextGoods  = "ready goods (hard):"
@@ -1856,14 +1856,25 @@ challengeMenuHuman cmdSemInCxtOfKM = do
             $ textToAS
             $ T.concatMap duplicateEOL (MK.mreason gameMode) )
         ]
+      textToBlurb t = Just $ attrLinesToFontMap
+        [ ( monoFont
+          , splitAttrString widthProp widthProp
+            $ textToAS
+            $ t ) ]
       -- Key-description-command-blurb tuples.
-      kds = [ (K.mkKM "s", (tnextScenario, GameScenarioIncr, Just blurb))
-            , (K.mkKM "t", (tnextTutorial, GameTutorialToggle, Just EM.empty))
-            , (K.mkKM "d", (tnextDiff, GameDifficultyIncr, Just EM.empty))
-            , (K.mkKM "f", (tnextFish, GameFishToggle, Just EM.empty))
-            , (K.mkKM "r", (tnextGoods, GameGoodsToggle, Just EM.empty))
-            , (K.mkKM "w", (tnextWolf, GameWolfToggle, Just EM.empty))
-            , (K.mkKM "k", (tnextKeeper, GameKeeperToggle, Just EM.empty))
+      kds = [ (K.mkKM "s", (tnextScenario, GameScenarioIncr, Nothing))
+            , (K.mkKM "t", ( tnextTutorial, GameTutorialToggle
+                           , textToBlurb "* tutorial hints\nThis determines whether tutorial hint messages will be shown in the next game that's about to be started. They are rendered in pink and can be re-read from message history. Display of tutorial hints in the current game can be overridden from the convenience settings menu."))
+            , (K.mkKM "d", ( tnextDiff, GameDifficultyIncr
+                           , textToBlurb "* difficulty level\nThis determines the difficulty of survival in the next game that's about to be started. Lower numbers result in easier game. In particular, difficulty below 5 multiplies hitpoints of player characters and difficulty over 5 multiplies hitpoints of their enemies. Game score scales with difficulty."))
+            , (K.mkKM "f", ( tnextFish, GameFishToggle
+                           , textToBlurb "* cold fish\nThis challenge mode makes it impossible for player characters to be healed by actors from other factions (this is a significant restriction in the long crawl adventure)."))
+            , (K.mkKM "r", ( tnextGoods, GameGoodsToggle
+                           , textToBlurb "* ready goods\nThis challenge mode disables crafting for the player, making the selection of equipment, especially melee weapons, very limited, unless the player has the luck to find the rare powerful ready weapons (this applies only if the chosen adventure supports crafting at all)."))
+            , (K.mkKM "w", ( tnextWolf, GameWolfToggle
+                           , textToBlurb "* lone wolf\nThis challenge mode reduces player's starting actors to exactly one, though later on new heroes may join the party. This makes the game very hard in the long run."))
+            , (K.mkKM "k", ( tnextKeeper, GameKeeperToggle
+                           , textToBlurb "* finder keeper\nThis challenge mode completely disables flinging projectiles by the player, which affects not only ranged damage dealing, but also throwing of consumables that buff teammates engaged in melee combat, weaken and distract enemies, light dark corners, etc."))
             , (K.mkKM "g", ("start new game", GameRestart, Nothing))
             , (K.mkKM "Escape", ("back to main menu", MainMenu, Nothing)) ]
       gameInfo = map T.unpack [ "Setup and start new game:"
