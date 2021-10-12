@@ -1665,7 +1665,7 @@ generateMenu cmdSemInCxtOfKM blurb kds gameInfo menuName = do
       introLen = sum $ map (length . snd) blurb
       start0 = max 0 (rheight - introLen
                       - if isSquareFont propFont then 1 else 2)
-      ov0 = EM.map (xtranslateOverlay rwidth) $ attrLinesToFontMap start0 blurb
+      ov0 = EM.map (xytranslateOverlay rwidth start0) $ attrLinesToFontMap blurb
       ov = EM.insertWith (++) squareFont (offsetOverlayX menuOvLines) ov0
   menuIxMap <- getsSession smenuIxMap
   unless (menuName `M.member` menuIxMap) $

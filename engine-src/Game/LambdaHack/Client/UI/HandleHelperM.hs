@@ -494,9 +494,9 @@ describeMode addTitle gameModeId = do
                  $ concatMap snd $ blurb ++ blurbEnd
             else EM.unionWith (++)
                  (EM.map (xtranslateOverlay 1)
-                  $ attrLinesToFontMap 0 blurb)
+                  $ attrLinesToFontMap blurb)
                  (EM.map (xtranslateOverlay $ rwidth + 1)
-                  $ attrLinesToFontMap 0 blurbEnd)
+                  $ attrLinesToFontMap blurbEnd)
 
 modesOverlay :: MonadClientUI m => m OKX
 modesOverlay = do

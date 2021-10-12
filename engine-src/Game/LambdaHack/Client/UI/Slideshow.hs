@@ -170,8 +170,8 @@ toSlideshow FontSetup{..} okxs = Slideshow $ addFooters False okxs
     in (ovs, kxs ++ [(Left K.safeSpaceKM, (p, ButtonWidth font width))])
        : addFooters True rest
 
-attrLinesToFontMap :: Int -> [(DisplayFont, [AttrLine])] -> FontOverlayMap
-attrLinesToFontMap start0 blurb =
+attrLinesToFontMap :: [(DisplayFont, [AttrLine])] -> FontOverlayMap
+attrLinesToFontMap blurb =
   let zipAttrLines :: Int -> [AttrLine] -> (Overlay, Int)
       zipAttrLines start als =
         ( map (first $ PointUI 0) $ zip [start ..] als
@@ -182,7 +182,7 @@ attrLinesToFontMap start0 blurb =
         let (als2, start2) = zipAttrLines start als
         in ( EM.insertWith (++) font als2 em
            , start2 )
-      (ov, _) = foldl' addOverlay (EM.empty, start0) blurb
+      (ov, _) = foldl' addOverlay (EM.empty, 0) blurb
   in ov
 
 menuToSlideshow :: OKX -> Slideshow
