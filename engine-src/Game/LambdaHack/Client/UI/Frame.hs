@@ -22,7 +22,7 @@ import Prelude ()
 import Game.LambdaHack.Core.Prelude
 
 import           Control.Monad.ST.Strict
-import qualified Data.IntMap.Strict as IM
+import           Data.Function
 import qualified Data.Vector.Generic as G
 import qualified Data.Vector.Unboxed as U
 import qualified Data.Vector.Unboxed.Mutable as VM
@@ -134,8 +134,13 @@ truncateOverlay halveXstart width rheight wipeAdjacentRaw fillLen onBlank ov =
            else let (PointUI xLast yLast, _) =
                       minimumBy (comparing $ \(PointUI x _, _) -> x) supHs
                 in [(PointUI xLast (yLast + 1), emptyAttrLine)]
-      ovTop = IM.elems $ IM.fromListWith (++)
-              $ map (\pal@(PointUI _ y, _) -> (y, [pal]))
+      -- This is crude, because an al at lower x may be longer, but KISS.
+      -- This also gives a solid rule which al overwrite others
+      -- when merging overlays, independent of the order of merging
+      -- (except for duplicate x, for which initial order is retained).
+      -- The order functions is cheap, we use @sortBy@, not @sortOn@.
+      ovTop = groupBy ((==) `on` \(PointUI _ y, _) -> y)
+              $ sortBy (comparing $ \(PointUI x y, _) -> (y, x))
               $ if supHeight >= canvasLength
                 then ovTopFiltered ++ [trimmedAlert]
                 else ov ++ extraLine
@@ -143,17 +148,10 @@ truncateOverlay halveXstart width rheight wipeAdjacentRaw fillLen onBlank ov =
       -- on there being no gaps and a natural order.
       -- Probably also gives messy results when X offsets are not all the same.
       -- Below we at least mitigate the case of multiple lines per row.
-      f lenPrev lenNext lal =
-        -- This is crude, because an al at lower x may be longer, but KISS.
-        -- @sortOn@ is significantly faster than @SortBy@ here,
-        -- though it takes more memory. The below is an explicit compromise.
-        let xlal = map (\pll@(PointUI x _, _) -> (x, pll)) lal
-        in case sortBy (comparing fst) xlal of
-          [] -> error "empty list of overlay lines at the given row"
-          minAl : rest ->
-            g lenPrev lenNext fillLen minAl
-            : map (g 0 0 0) rest
-      g lenPrev lenNext fillL (xstartRaw, (p, layerLine)) =
+      f _ _ [] = error "empty list of overlay lines at the given row"
+      f lenPrev lenNext (minAl : rest) =
+        g lenPrev lenNext fillLen minAl : map (g 0 0 0) rest
+      g lenPrev lenNext fillL (p@(PointUI xstartRaw _), layerLine) =
         let xstart = if halveXstart then xstartRaw `div` 2 else xstartRaw
             -- TODO: lenPrev and lenNext is from the same kind of font;
             -- if fonts are mixed, too few spaces are added.
