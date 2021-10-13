@@ -193,10 +193,11 @@ chooseItemDialogMode leader0 permitLoreCycle c = do
                            , MU.AW $ blurb itemFull ]
             ix0 = fromMaybe (error $ "" `showFailure` result)
                   $ elemIndex iid $ EM.elems lSlots
-        go <- displayItemLore itemBag meleeSkill promptFun ix0 lSlots
-        if go
-        then chooseItemDialogMode leader False MOrgans
-        else failWith "never mind"
+        km <- displayItemLore itemBag meleeSkill promptFun ix0 lSlots False
+        case K.key km of
+          K.Space -> chooseItemDialogMode leader False MOrgans
+          K.Esc -> failWith "never mind"
+          _ -> error $ "" `showFailure` km
       ROwned iid -> do
         found <- getsState $ findIid leader side iid
         let (newAid, bestStore) = case leader `lookup` found of
@@ -213,8 +214,8 @@ chooseItemDialogMode leader0 permitLoreCycle c = do
            | blid b2 /= arena && autoDun ->
              failSer NoChangeDunLeader
            | otherwise -> do
-             -- We switch leader only here, not in lore screens, because
-             -- lore is only about inspecting items, no activation submenu.
+             -- We switch leader only here, not when processing results
+             -- of lore screens, because lore is only about inspecting items.
              void $ pickLeader True newAid
              return $ Right MOwned
       RSkills slotIndex0 -> do
@@ -250,8 +251,8 @@ chooseItemDialogMode leader0 permitLoreCycle c = do
         let lorePending = loreFound && case schosenLore of
               ChosenLore [] [] -> False
               _ -> True
-        km <- displayItemLorePointedAt itemBag meleeSkill promptFun ix0
-                                       lSlots lorePending
+        km <- displayItemLore itemBag meleeSkill promptFun ix0
+                              lSlots lorePending
         case K.key km of
           K.Space -> do
             modifySession $ \sess -> sess {schosenLore = ChosenNothing}

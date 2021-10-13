@@ -346,11 +346,12 @@ viewLoreItems menuName lSlotsRaw trunkBag prompt promptFun displayRanged = do
       viewAtSlot slot = do
         let ix0 = fromMaybe (error $ show slot)
                             (findIndex (== slot) $ EM.keys lSlots)
-        go2 <- displayItemLore trunkBag 0 promptFun ix0 lSlots
-        if go2
-        then viewLoreItems menuName lSlots trunkBag prompt
-                           promptFun displayRanged
-        else return K.escKM
+        km <- displayItemLore trunkBag 0 promptFun ix0 lSlots False
+        case K.key km of
+          K.Space -> viewLoreItems menuName lSlots trunkBag prompt
+                                   promptFun displayRanged
+          K.Esc -> return km
+          _ -> error $ "" `showFailure` km
   ekm <- displayChoiceScreenWithRightPane displayInRightPane
            menuName ColorFull False itemSlides keysMain
   case ekm of

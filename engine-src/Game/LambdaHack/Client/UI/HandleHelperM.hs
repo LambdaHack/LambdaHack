@@ -9,8 +9,7 @@ module Game.LambdaHack.Client.UI.HandleHelperM
   , placesFromState, placesOverlay
   , describeMode, modesOverlay
   , pickNumber, guardItemSize, lookAtItems, lookAtStash, lookAtPosition
-  , displayItemLore, displayItemLorePointedAt, okxItemLorePointedAt
-  , cycleLore, spoilsBlurb
+  , displayItemLore, okxItemLorePointedAt, cycleLore, spoilsBlurb
   , ppContainerWownW, nxtGameMode
 #ifdef EXPOSE_INTERNAL
     -- * Internal operations
@@ -930,23 +929,9 @@ lookAtPosition p lidV = do
 
 displayItemLore :: MonadClientUI m
                 => ItemBag -> Int -> (ItemId -> ItemFull -> Int -> Text) -> Int
-                -> SingleItemSlots
-                -> m Bool
-displayItemLore itemBag meleeSkill promptFun slotIndex lSlots = do
-  km <- displayItemLorePointedAt itemBag meleeSkill promptFun slotIndex
-                                 lSlots False
-  case K.key km of
-    K.Space -> return True
-    K.Esc -> return False
-    _ -> error $ "" `showFailure` km
-
-displayItemLorePointedAt
-  :: MonadClientUI m
-  => ItemBag -> Int -> (ItemId -> ItemFull -> Int -> Text) -> Int
-  -> SingleItemSlots -> Bool
-  -> m K.KM
-displayItemLorePointedAt itemBag meleeSkill promptFun slotIndex
-                         lSlots addTilde = do
+                -> SingleItemSlots -> Bool
+                -> m K.KM
+displayItemLore itemBag meleeSkill promptFun slotIndex lSlots addTilde = do
   CCUI{coscreen=ScreenContent{rwidth, rheight}} <- getsSession sccui
   FontSetup{propFont} <- getFontSetup
   let lSlotsElems = EM.elems lSlots
@@ -960,12 +945,10 @@ displayItemLorePointedAt itemBag meleeSkill promptFun slotIndex
   slides <- overlayToSlideshow (rheight - 2) keys okx
   km <- getConfirms ColorFull keys slides
   case K.key km of
-    K.Up ->
-      displayItemLorePointedAt itemBag meleeSkill promptFun (slotIndex - 1)
-                               lSlots addTilde
-    K.Down ->
-      displayItemLorePointedAt itemBag meleeSkill promptFun (slotIndex + 1)
-                               lSlots addTilde
+    K.Up -> displayItemLore itemBag meleeSkill promptFun (slotIndex - 1)
+                            lSlots addTilde
+    K.Down -> displayItemLore itemBag meleeSkill promptFun (slotIndex + 1)
+                              lSlots addTilde
     _ -> return km
 
 okxItemLorePointedAt :: MonadClientUI m
