@@ -54,6 +54,8 @@ data ClientOptions = ClientOptions
       -- ^ Start a new game, overwriting the save file.
   , sbenchmark        :: Bool
       -- ^ Don't create directories and files and show time stats.
+  , sbenchMessages    :: Bool
+      -- ^ Display messages in realistic was under AI control (e.g., for benchmarking).
   , stitle            :: Maybe String
   , ssavePrefixCli    :: String
       -- ^ Prefix of the save game file name.
@@ -90,6 +92,7 @@ defClientOptions = ClientOptions
   , snoAnim = Nothing
   , snewGameCli = False
   , sbenchmark = False
+  , sbenchMessages = False
   , stitle = Nothing
   , ssavePrefixCli = ""
   , sfrontendTeletype = False
