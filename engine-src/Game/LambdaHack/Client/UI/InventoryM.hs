@@ -5,7 +5,7 @@ module Game.LambdaHack.Client.UI.InventoryM
 #ifdef EXPOSE_INTERNAL
     -- * Internal operations
   , ItemDialogState(..), accessModeBag, storeItemPrompt, getItem
-  , DefItemKey(..), transition, keyOfEKM, runDefItemKey
+  , DefItemKey(..), transition, keyOfEKM, runDefItemKey, inventoryInRightPane
 #endif
   ) where
 
@@ -546,7 +546,8 @@ transition leader psuit prompt promptGeneric permitMulitple
                                   $ elemIndex slot allSlots
                   in return (Right (resultConstructor slotIndex))
               }
-        runDefItemKey keyDefs skillsDef io slotKeys promptChosen cCur
+        runDefItemKey lSlots bagFiltered keyDefs skillsDef io slotKeys
+                      promptChosen cCur
   case cCur of
     MSkills -> do
       io <- skillsOverlay leader
@@ -563,7 +564,8 @@ transition leader psuit prompt promptGeneric permitMulitple
       io <- itemOverlay lSlots (blid body) bagFiltered displayRanged
       let slotKeys = mapMaybe (keyOfEKM numPrefix . Right)
                      $ EM.keys bagItemSlots
-      runDefItemKey keyDefs lettersDef io slotKeys promptChosen cCur
+      runDefItemKey lSlots bagFiltered keyDefs lettersDef io slotKeys
+                    promptChosen cCur
 
 keyOfEKM :: Int -> KeyOrSlot -> Maybe K.KM
 keyOfEKM _ (Left kms) = error $ "" `showFailure` kms
@@ -574,14 +576,16 @@ keyOfEKM _ _ = Nothing
 -- We don't create keys from slots in @okx@, so they have to be
 -- exolicitly given in @slotKeys@.
 runDefItemKey :: MonadClientUI m
-              => [(K.KM, DefItemKey m)]
+              => SingleItemSlots
+              -> ItemBag
+              -> [(K.KM, DefItemKey m)]
               -> DefItemKey m
               -> OKX
               -> [K.KM]
               -> Text
               -> ItemDialogMode
               -> m (Either Text ResultItemDialogMode)
-runDefItemKey keyDefs lettersDef okx slotKeys prompt cCur = do
+runDefItemKey lSlots bag keyDefs lettersDef okx slotKeys prompt cCur = do
   let itemKeys = slotKeys ++ map fst keyDefs
       wrapB s = "[" <> s <> "]"
       (keyLabelsRaw, keys) = partitionEithers $ map (defLabel . snd) keyDefs
@@ -592,9 +596,36 @@ runDefItemKey keyDefs lettersDef okx slotKeys prompt cCur = do
   CCUI{coscreen=ScreenContent{rheight}} <- getsSession sccui
   ekm <- do
     okxs <- overlayToSlideshow (rheight - 2) keys okx
-    displayChoiceScreen (show cCur) ColorFull False okxs itemKeys
+    displayChoiceScreenWithRightPane (inventoryInRightPane lSlots bag cCur)
+                                     (show cCur) ColorFull False okxs itemKeys
   case ekm of
     Left km -> case km `lookup` keyDefs of
       Just keyDef -> defAction keyDef ekm
       Nothing -> defAction lettersDef ekm  -- pressed; with current prefix
     Right _slot -> defAction lettersDef ekm  -- selected; with the given prefix
+
+inventoryInRightPane :: MonadClientUI m
+                     => SingleItemSlots -> ItemBag -> ItemDialogMode
+                     -> KeyOrSlot
+                     -> m OKX
+inventoryInRightPane lSlots bag c ekm = case ekm of
+  Left{} -> return emptyOKX
+  Right slot -> case c of
+    MSkills -> return emptyOKX
+    MPlaces -> return emptyOKX
+    MModes -> return emptyOKX
+    _ -> do
+      CCUI{coscreen=ScreenContent{rwidth}} <- getsSession sccui
+      FontSetup{monoFont} <- getFontSetup
+      let ix0 = fromMaybe (error $ show slot)
+                          (findIndex (== slot) $ EM.keys lSlots)
+          promptFun _iid _itemFull _k = ""
+            -- TODO, e.g., if the party still owns any copies, if the actor
+            -- was ever killed by us or killed ours, etc.
+            -- This can be the same prompt or longer than what entering
+            -- the item screen shows.
+      -- Mono font used, because lots of numbers in these blurbs
+      -- and because some prop fonts wider than mono (e.g., in the
+      -- dejavuBold font set).
+      okxItemLorePointedAt
+        monoFont (rwidth - 2) True bag 0 promptFun ix0 lSlots

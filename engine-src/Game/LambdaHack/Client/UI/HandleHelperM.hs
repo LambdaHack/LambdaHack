@@ -998,9 +998,10 @@ okxItemLorePointedAt font width inlineMsg itemBag meleeSkill promptFun
       prompt = promptFun iid2 itemFull2 k
       -- Extra vertical space at the start, because gameover menu
       -- prompts are sometimes wide and/or long.
-      promptBlurb = offsetOverlay $ splitAttrString width width
-                                  $ textFgToAS Color.Brown
-                                  $ prompt <> "\n\n"
+      promptBlurb | T.null prompt = []
+                  | otherwise = offsetOverlay $ splitAttrString width width
+                                              $ textFgToAS Color.Brown
+                                              $ prompt <> "\n\n"
   (descSym2, descBlurb2) <-
     if inlineMsg
     then do
