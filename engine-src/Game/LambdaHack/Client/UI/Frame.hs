@@ -149,8 +149,12 @@ truncateOverlay halveXstart width rheight wipeAdjacentRaw fillLen onBlank ov =
       -- Probably also gives messy results when X offsets are not all the same.
       -- Below we at least mitigate the case of multiple lines per row.
       f _ _ [] = error "empty list of overlay lines at the given row"
-      f lenPrev lenNext (minAl : rest) =
-        g lenPrev lenNext fillLen minAl : map (g 0 0 0) rest
+      f (yPrev, lenPrev) (yNext, lenNext) (minAl@(PointUI _ yCur, _) : rest) =
+        g (if yPrev == yCur - 1 then lenPrev else 0)
+          (if yNext == yCur + 1 then lenNext else 0)
+          fillLen
+          minAl
+        : map (g 0 0 0) rest
       g lenPrev lenNext fillL (p@(PointUI xstartRaw _), layerLine) =
         let xstart = if halveXstart then xstartRaw `div` 2 else xstartRaw
             -- TODO: lenPrev and lenNext is from the same kind of font;
@@ -158,6 +162,9 @@ truncateOverlay halveXstart width rheight wipeAdjacentRaw fillLen onBlank ov =
             -- We'd need to keep a global store of line lengths
             -- for every position on the screen, filled first going
             -- over all texts and only afterwards texts rendered.
+            -- And prop font measure would still make this imprecise.
+            -- TODO: rewrite ovBackdrop according to this idea,
+            -- but then process square font only mode with the same mechanism.
             maxLen = if wipeAdjacent then max lenPrev lenNext else 0
             fillFromStart = max fillL (1 + maxLen) - xstart
             available = width - xstart
@@ -165,7 +172,10 @@ truncateOverlay halveXstart width rheight wipeAdjacentRaw fillLen onBlank ov =
       rightExtentOfLine (PointUI xstartRaw _, al) =
         let xstart = if halveXstart then xstartRaw `div` 2 else xstartRaw
         in min (width - 1) (xstart + length (attrLine al))
-      lens = map (maximum . map rightExtentOfLine) ovTop
+      yAndLen [] = (-99, 0)
+      yAndLen als@((PointUI _ y, _) : _) =
+        (y, maximum $ map rightExtentOfLine als)
+      lens = map yAndLen ovTop
       f2 = map g2
       g2 (p@(PointUI xstartRaw _), layerLine) =
         let xstart = if halveXstart then xstartRaw `div` 2 else xstartRaw
@@ -173,7 +183,7 @@ truncateOverlay halveXstart width rheight wipeAdjacentRaw fillLen onBlank ov =
         in (p, truncateAttrLine False available 0 layerLine)
   in concat $ if onBlank
               then map f2 ovTop
-              else zipWith3 f (0 : lens) (drop 1 lens ++ [0]) ovTop
+              else zipWith3 f ((-9, 0) : lens) (drop 1 lens ++ [(999, 0)]) ovTop
 
 -- | Add a space at the message end, for display overlayed over the level map.
 -- Also trim (do not wrap!) too long lines. Also add many spaces when under
