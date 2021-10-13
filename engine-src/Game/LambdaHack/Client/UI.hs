@@ -144,22 +144,23 @@ stepQueryUI = do
   report <- getsSession $ newReport . shistory
   modifySession $ \sess -> sess {sreportNull = nullVisibleReport report}
   slides <- reportToSlideshowKeepHalt False []
-  over <- case unsnoc slides of
-    Nothing -> return []
+  ovs <- case unsnoc slides of
+    Nothing -> return EM.empty
     Just (allButLast, (ov, _)) ->
       if allButLast == emptySlideshow
       then do
         -- Display the only generated slide while waiting for next key.
         -- Strip the "--end-" prompt from it, by ignoring @MonoFont@.
         let ovProp = ov EM.! propFont
-        return $! if EM.size ov > 1 then ovProp else init ovProp
+        return $!
+          EM.singleton propFont $ if EM.size ov > 1 then ovProp else init ovProp
       else do
         -- Show, one by one, all slides, awaiting confirmation for each.
         void $ getConfirms ColorFull [K.spaceKM, K.escKM] slides
         -- Indicate that report wiped out.
         modifySession $ \sess -> sess {sreportNull = True}
         -- Display base frame at the end.
-        return []
+        return EM.empty
   mleader <- getsClient sleader
   case mleader of
     Nothing -> return ()
@@ -174,7 +175,6 @@ stepQueryUI = do
           displayMore ColorBW "If you move, the exertion will kill you. Consider asking for first aid instead."
       else
         modifySession $ \sess -> sess {slastLost = ES.empty}
-  let ovs = EM.fromList [(propFont, over)]
   km <- promptGetKey ColorFull ovs False []
   abortOrCmd <- do
     -- Look up the key.
