@@ -333,13 +333,15 @@ viewLoreItems menuName lSlotsRaw trunkBag prompt promptFun displayRanged = do
       displayInRightPane ekm = case ekm of
         Left{} -> return emptyOKX
         Right slot -> do
-         let ix0 = fromMaybe (error $ show slot)
-                             (findIndex (== slot) $ EM.keys lSlots)
-         -- Mono font used, because lots of numbers in these blurbs
-         -- and because some prop fonts wider than mono (e.g., in the
-         -- dejavuBold font set).
-         okxItemLorePointedAt
-           monoFont (rwidth - 2) True trunkBag 0 promptFun ix0 lSlots
+          let ix0 = fromMaybe (error $ show slot)
+                              (findIndex (== slot) $ EM.keys lSlots)
+          -- Mono font used, because lots of numbers in these blurbs
+          -- and because some prop fonts wider than mono (e.g., in the
+          -- dejavuBold font set).
+          -- Lower width, to permit extra vertical space at the start,
+          -- because gameover menu prompts are sometimes wide and/or long.
+          okxItemLorePointedAt
+            monoFont (rwidth - 2) True trunkBag 0 promptFun ix0 lSlots
       viewAtSlot :: SlotChar -> m K.KM
       viewAtSlot slot = do
         let ix0 = fromMaybe (error $ show slot)

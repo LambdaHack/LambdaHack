@@ -996,8 +996,6 @@ okxItemLorePointedAt font width inlineMsg itemBag meleeSkill promptFun
           al1 : rest ->
             (2, attrStringToAL $ drop 2 $ attrLine al1) : map (0,) rest
       prompt = promptFun iid2 itemFull2 k
-      -- Extra vertical space at the start, because gameover menu
-      -- prompts are sometimes wide and/or long.
       promptBlurb | T.null prompt = []
                   | otherwise = offsetOverlay $ splitAttrString width width
                                               $ textFgToAS Color.Brown

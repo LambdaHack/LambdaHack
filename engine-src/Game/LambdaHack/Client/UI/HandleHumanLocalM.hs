@@ -219,19 +219,15 @@ chooseItemDialogMode leader0 permitLoreCycle c = do
              void $ pickLeader True newAid
              return $ Right MOwned
       RSkills slotIndex0 -> do
+        -- This can be used in the future, e.g., to increase stats from
+        -- level-up stat points, so let's keep it even if it shows
+        -- no extra info compared to right pane display in menu.
         let slotListBound = length skillSlots - 1
             displayOneSlot slotIndex = do
-              b <- getsState $ getActorBody leader
-              let skill = skillSlots !! slotIndex
-                  valueText = skillToDecorator skill b
-                              $ Ability.getSk skill actorCurAndMaxSk
-                  prompt2 = makeSentence
-                    [ MU.WownW (partActor bUI) (MU.Text $ skillName skill)
-                    , "is", MU.Text valueText ]
-                  ov0 = EM.singleton propFont
+              (prompt2, attrString) <- skillCloseUp leader slotIndex
+              let ov0 = EM.singleton propFont
                         $ offsetOverlay
-                        $ indentSplitAttrString rwidth
-                        $ textToAS $ skillDesc skill
+                        $ indentSplitAttrString rwidth attrString
                   keys = [K.spaceKM, K.escKM]
                          ++ [K.upKM | slotIndex /= 0]
                          ++ [K.downKM | slotIndex /= slotListBound]

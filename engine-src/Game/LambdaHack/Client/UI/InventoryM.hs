@@ -1,7 +1,7 @@
 -- | UI of inventory management.
 module Game.LambdaHack.Client.UI.InventoryM
   ( Suitability(..), ResultItemDialogMode(..)
-  , slotsOfItemDialogMode, getFull, getGroupItem, getStoreItem
+  , slotsOfItemDialogMode, getFull, getGroupItem, getStoreItem, skillCloseUp
 #ifdef EXPOSE_INTERNAL
     -- * Internal operations
   , ItemDialogState(..), accessModeBag, storeItemPrompt, getItem
@@ -24,6 +24,7 @@ import           Game.LambdaHack.Client.State
 import           Game.LambdaHack.Client.UI.ActorUI
 import           Game.LambdaHack.Client.UI.Content.Screen
 import           Game.LambdaHack.Client.UI.ContentClientUI
+import           Game.LambdaHack.Client.UI.EffectDescription
 import           Game.LambdaHack.Client.UI.Frame
 import           Game.LambdaHack.Client.UI.HandleHelperM
 import           Game.LambdaHack.Client.UI.HumanCmd
@@ -32,6 +33,7 @@ import qualified Game.LambdaHack.Client.UI.Key as K
 import           Game.LambdaHack.Client.UI.MonadClientUI
 import           Game.LambdaHack.Client.UI.Msg
 import           Game.LambdaHack.Client.UI.MsgM
+import           Game.LambdaHack.Client.UI.Overlay
 import           Game.LambdaHack.Client.UI.SessionUI
 import           Game.LambdaHack.Client.UI.Slideshow
 import           Game.LambdaHack.Client.UI.SlideshowM
@@ -47,6 +49,7 @@ import           Game.LambdaHack.Common.State
 import           Game.LambdaHack.Common.Types
 import qualified Game.LambdaHack.Content.ItemKind as IK
 import qualified Game.LambdaHack.Definition.Ability as Ability
+import qualified Game.LambdaHack.Definition.Color as Color
 import           Game.LambdaHack.Definition.Defs
 
 data ItemDialogState = ISuitable | IAll
@@ -546,7 +549,7 @@ transition leader psuit prompt promptGeneric permitMulitple
                                   $ elemIndex slot allSlots
                   in return (Right (resultConstructor slotIndex))
               }
-        runDefItemKey lSlots bagFiltered keyDefs skillsDef io slotKeys
+        runDefItemKey leader lSlots bagFiltered keyDefs skillsDef io slotKeys
                       promptChosen cCur
   case cCur of
     MSkills -> do
@@ -564,7 +567,7 @@ transition leader psuit prompt promptGeneric permitMulitple
       io <- itemOverlay lSlots (blid body) bagFiltered displayRanged
       let slotKeys = mapMaybe (keyOfEKM numPrefix . Right)
                      $ EM.keys bagItemSlots
-      runDefItemKey lSlots bagFiltered keyDefs lettersDef io slotKeys
+      runDefItemKey leader lSlots bagFiltered keyDefs lettersDef io slotKeys
                     promptChosen cCur
 
 keyOfEKM :: Int -> KeyOrSlot -> Maybe K.KM
@@ -576,7 +579,8 @@ keyOfEKM _ _ = Nothing
 -- We don't create keys from slots in @okx@, so they have to be
 -- exolicitly given in @slotKeys@.
 runDefItemKey :: MonadClientUI m
-              => SingleItemSlots
+              => ActorId
+              -> SingleItemSlots
               -> ItemBag
               -> [(K.KM, DefItemKey m)]
               -> DefItemKey m
@@ -585,7 +589,7 @@ runDefItemKey :: MonadClientUI m
               -> Text
               -> ItemDialogMode
               -> m (Either Text ResultItemDialogMode)
-runDefItemKey lSlots bag keyDefs lettersDef okx slotKeys prompt cCur = do
+runDefItemKey leader lSlots bag keyDefs lettersDef okx slotKeys prompt cCur = do
   let itemKeys = slotKeys ++ map fst keyDefs
       wrapB s = "[" <> s <> "]"
       (keyLabelsRaw, keys) = partitionEithers $ map (defLabel . snd) keyDefs
@@ -595,9 +599,10 @@ runDefItemKey lSlots bag keyDefs lettersDef okx slotKeys prompt cCur = do
   msgAdd MsgPromptGeneric $ prompt <+> choice
   CCUI{coscreen=ScreenContent{rheight}} <- getsSession sccui
   ekm <- do
-    okxs <- overlayToSlideshow (rheight - 2) keys okx
-    displayChoiceScreenWithRightPane (inventoryInRightPane lSlots bag cCur)
-                                     (show cCur) ColorFull False okxs itemKeys
+    sli <- overlayToSlideshow (rheight - 2) keys okx
+    displayChoiceScreenWithRightPane
+      (inventoryInRightPane leader lSlots bag cCur)
+      (show cCur) ColorFull False sli itemKeys
   case ekm of
     Left km -> case km `lookup` keyDefs of
       Just keyDef -> defAction keyDef ekm
@@ -605,27 +610,55 @@ runDefItemKey lSlots bag keyDefs lettersDef okx slotKeys prompt cCur = do
     Right _slot -> defAction lettersDef ekm  -- selected; with the given prefix
 
 inventoryInRightPane :: MonadClientUI m
-                     => SingleItemSlots -> ItemBag -> ItemDialogMode
+                     => ActorId -> SingleItemSlots -> ItemBag -> ItemDialogMode
                      -> KeyOrSlot
                      -> m OKX
-inventoryInRightPane lSlots bag c ekm = case ekm of
+inventoryInRightPane leader lSlots bag c ekm = case ekm of
   Left{} -> return emptyOKX
-  Right slot -> case c of
-    MSkills -> return emptyOKX
-    MPlaces -> return emptyOKX
-    MModes -> return emptyOKX
-    _ -> do
-      CCUI{coscreen=ScreenContent{rwidth}} <- getsSession sccui
-      FontSetup{monoFont} <- getFontSetup
-      let ix0 = fromMaybe (error $ show slot)
-                          (findIndex (== slot) $ EM.keys lSlots)
-          promptFun _iid _itemFull _k = ""
-            -- TODO, e.g., if the party still owns any copies, if the actor
-            -- was ever killed by us or killed ours, etc.
-            -- This can be the same prompt or longer than what entering
-            -- the item screen shows.
-      -- Mono font used, because lots of numbers in these blurbs
-      -- and because some prop fonts wider than mono (e.g., in the
-      -- dejavuBold font set).
-      okxItemLorePointedAt
-        monoFont (rwidth - 2) True bag 0 promptFun ix0 lSlots
+  Right slot -> do
+    CCUI{coscreen=ScreenContent{rwidth}} <- getsSession sccui
+    FontSetup{..} <- getFontSetup
+    case c of
+      MSkills -> do
+        let slotIndex = fromMaybe (error "illegal slot")
+                        $ elemIndex slot allSlots
+        (prompt, attrString) <- skillCloseUp leader slotIndex
+        let promptAS | T.null prompt = []
+                     | otherwise = textFgToAS Color.Brown $ prompt <> "\n\n"
+            -- Lower width, to permit extra vertical space at the start,
+            -- because gameover menu prompts are sometimes wide and/or long.
+            width = rwidth - 2
+            ov = EM.singleton propFont $ offsetOverlay
+                                       $ splitAttrString width width
+                                       $ promptAS ++ attrString
+        return (ov, [])
+      MPlaces -> return emptyOKX
+      MModes -> return emptyOKX
+        -- modes cover the right part of screen, so let's keep it empty
+      _ -> do
+        let ix0 = fromMaybe (error $ show slot)
+                            (findIndex (== slot) $ EM.keys lSlots)
+            promptFun _iid _itemFull _k = ""
+              -- TODO, e.g., if the party still owns any copies, if the actor
+              -- was ever killed by us or killed ours, etc.
+              -- This can be the same prompt or longer than what entering
+              -- the item screen shows.
+        -- Mono font used, because lots of numbers in these blurbs
+        -- and because some prop fonts wider than mono (e.g., in the
+        -- dejavuBold font set).
+        okxItemLorePointedAt
+          monoFont (rwidth - 2) True bag 0 promptFun ix0 lSlots
+
+skillCloseUp :: MonadClientUI m => ActorId -> Int -> m (Text, AttrString)
+skillCloseUp leader slotIndex = do
+  b <- getsState $ getActorBody leader
+  bUI <- getsSession $ getActorUI leader
+  actorCurAndMaxSk <- getsState $ getActorMaxSkills leader
+  let skill = skillSlots !! slotIndex
+      valueText = skillToDecorator skill b
+                  $ Ability.getSk skill actorCurAndMaxSk
+      prompt = makeSentence
+        [ MU.WownW (partActor bUI) (MU.Text $ skillName skill)
+        , "is", MU.Text valueText ]
+      attrString = textToAS $ skillDesc skill
+  return (prompt, attrString)
