@@ -1,7 +1,8 @@
 -- | UI of inventory management.
 module Game.LambdaHack.Client.UI.InventoryM
   ( Suitability(..), ResultItemDialogMode(..)
-  , slotsOfItemDialogMode, getFull, getGroupItem, getStoreItem, skillCloseUp
+  , slotsOfItemDialogMode, getFull, getGroupItem, getStoreItem
+  , skillCloseUp, placeCloseUp
 #ifdef EXPOSE_INTERNAL
     -- * Internal operations
   , ItemDialogState(..), accessModeBag, storeItemPrompt, getItem
@@ -16,6 +17,7 @@ import Game.LambdaHack.Core.Prelude
 import qualified Data.Char as Char
 import           Data.Either
 import qualified Data.EnumMap.Strict as EM
+import qualified Data.EnumSet as ES
 import qualified Data.Text as T
 import qualified NLP.Miniutter.English as MU
 
@@ -39,6 +41,7 @@ import           Game.LambdaHack.Client.UI.Slideshow
 import           Game.LambdaHack.Client.UI.SlideshowM
 import           Game.LambdaHack.Common.Actor
 import           Game.LambdaHack.Common.ActorState
+import           Game.LambdaHack.Common.ClientOptions
 import           Game.LambdaHack.Common.Faction
 import           Game.LambdaHack.Common.Item
 import qualified Game.LambdaHack.Common.ItemAspect as IA
@@ -48,6 +51,7 @@ import           Game.LambdaHack.Common.MonadStateRead
 import           Game.LambdaHack.Common.State
 import           Game.LambdaHack.Common.Types
 import qualified Game.LambdaHack.Content.ItemKind as IK
+import qualified Game.LambdaHack.Content.PlaceKind as PK
 import qualified Game.LambdaHack.Definition.Ability as Ability
 import qualified Game.LambdaHack.Definition.Color as Color
 import           Game.LambdaHack.Definition.Defs
@@ -618,6 +622,9 @@ inventoryInRightPane leader lSlots bag c ekm = case ekm of
   Right slot -> do
     CCUI{coscreen=ScreenContent{rwidth}} <- getsSession sccui
     FontSetup{..} <- getFontSetup
+    let -- Lower width, to permit extra vertical space at the start,
+        -- because gameover menu prompts are sometimes wide and/or long.
+       width = rwidth - 2
     case c of
       MSkills -> do
         let slotIndex = fromMaybe (error "illegal slot")
@@ -625,14 +632,30 @@ inventoryInRightPane leader lSlots bag c ekm = case ekm of
         (prompt, attrString) <- skillCloseUp leader slotIndex
         let promptAS | T.null prompt = []
                      | otherwise = textFgToAS Color.Brown $ prompt <> "\n\n"
-            -- Lower width, to permit extra vertical space at the start,
-            -- because gameover menu prompts are sometimes wide and/or long.
-            width = rwidth - 2
             ov = EM.singleton propFont $ offsetOverlay
                                        $ splitAttrString width width
                                        $ promptAS ++ attrString
         return (ov, [])
-      MPlaces -> return emptyOKX
+      MPlaces -> do
+        COps{coplace} <- getsState scops
+        soptions <- getsClient soptions
+        -- This is very slow when many places are exposed,
+        -- because this is computed once per place menu keypress.
+        -- Fortunately, the mode after entering a place and with pressing
+        -- up and down arrow keys is not quadratic, so should be used instead,
+        -- particularly with @sexposePlaces@.
+        places <- getsState $ EM.assocs
+                              . placesFromState coplace (sexposePlaces soptions)
+        let slotIndex = fromMaybe (error "illegal slot")
+                        $ elemIndex slot allSlots
+        (prompt, attrStrings) <-
+          placeCloseUp places (sexposePlaces soptions) slotIndex
+        let promptAS | T.null prompt = []
+                     | otherwise = textFgToAS Color.Brown $ prompt <> "\n\n"
+            ov = EM.singleton monoFont $ offsetOverlay
+                                       $ concatMap (splitAttrString width width)
+                                       $ promptAS : attrStrings
+        return (ov, [])
       MModes -> return emptyOKX
         -- modes cover the right part of screen, so let's keep it empty
       _ -> do
@@ -662,3 +685,41 @@ skillCloseUp leader slotIndex = do
         , "is", MU.Text valueText ]
       attrString = textToAS $ skillDesc skill
   return (prompt, attrString)
+
+placeCloseUp :: MonadClientUI m
+             => [(ContentId PK.PlaceKind, (ES.EnumSet LevelId, Int, Int, Int))]
+             -> Bool
+             -> Int
+             -> m (Text, [AttrString])
+placeCloseUp places sexposePlaces slotIndex = do
+  COps{coplace} <- getsState scops
+  let (pk, (es, ne, na, _)) = places !! slotIndex
+      pkind = okind coplace pk
+      prompt = makeSentence ["you remember", MU.Text $ PK.pname pkind]
+      freqsText = "Frequencies:" <+> T.intercalate " "
+        (map (\(grp, n) -> "(" <> displayGroupName grp
+                           <> ", " <> tshow n <> ")")
+         $ PK.pfreq pkind)
+      onLevels | ES.null es = []
+               | otherwise =
+        [makeSentence
+           [ "Appears on"
+           , MU.CarWs (ES.size es) "level" <> ":"
+           , MU.WWandW $ map MU.Car $ sort
+                       $ map (abs . fromEnum) $ ES.elems es ]]
+      placeParts = ["it has" | ne > 0 || na > 0]
+                   ++ [MU.CarWs ne "entrance" | ne > 0]
+                   ++ ["and" | ne > 0 && na > 0]
+                   ++ [MU.CarWs na "surrounding" | na > 0]
+      partsSentence | null placeParts = ""
+                    | otherwise = makeSentence placeParts
+      -- Ideally, place layout would be in SquareFont and the rest
+      -- in PropFont, but this is mostly a debug screen, so KISS.
+      attrStrings = map textToAS
+                    $ ["", partsSentence]
+                      ++ (if sexposePlaces
+                          then [ "", freqsText
+                               , "" ] ++ PK.ptopLeft pkind
+                          else [])
+                      ++ [""] ++ onLevels
+  return (prompt, attrStrings)

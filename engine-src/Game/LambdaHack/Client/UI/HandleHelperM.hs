@@ -315,10 +315,10 @@ skillsOverlay aid = do
 -- counting the number of occurrences of each type of `PlaceEntry`
 -- for the given place kind and gathering the set of levels
 -- on which any entry for that place kind can be found.
-placesFromState :: ContentData PK.PlaceKind -> ClientOptions -> State
+placesFromState :: ContentData PK.PlaceKind -> Bool -> State
                 -> EM.EnumMap (ContentId PK.PlaceKind)
                               (ES.EnumSet LevelId, Int, Int, Int)
-placesFromState coplace ClientOptions{sexposePlaces} s =
+placesFromState coplace sexposePlaces s =
   let addEntries (!es1, !nEntries1, !nArounds1, !nExists1)
                  (!es2, !nEntries2, !nArounds2, !nExists2) =
         let !es = ES.union es1 es2
@@ -359,7 +359,7 @@ placesOverlay = do
   COps{coplace} <- getsState scops
   soptions <- getsClient soptions
   FontSetup{..} <- getFontSetup
-  places <- getsState $ placesFromState coplace soptions
+  places <- getsState $ placesFromState coplace (sexposePlaces soptions)
   let prSlot :: (Int, SlotChar)
              -> (ContentId PK.PlaceKind, (ES.EnumSet LevelId, Int, Int, Int))
              -> (AttrLine, (Int, AttrLine), KYX)

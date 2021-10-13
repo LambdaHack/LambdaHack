@@ -91,7 +91,6 @@ import           Game.LambdaHack.Common.Types
 import           Game.LambdaHack.Common.Vector
 import qualified Game.LambdaHack.Content.ItemKind as IK
 import qualified Game.LambdaHack.Content.ModeKind as MK
-import qualified Game.LambdaHack.Content.PlaceKind as PK
 import           Game.LambdaHack.Content.RuleKind
 import qualified Game.LambdaHack.Definition.Ability as Ability
 import qualified Game.LambdaHack.Definition.Color as Color
@@ -265,42 +264,19 @@ chooseItemDialogMode leader0 permitLoreCycle c = do
       RPlaces slotIndex0 -> do
         COps{coplace} <- getsState scops
         soptions <- getsClient soptions
-        places <- getsState $ EM.assocs . placesFromState coplace soptions
+        -- This is computed just once for the whole series of up and down arrow
+        -- navigations, avoid quadratic blowup.
+        places <- getsState $ EM.assocs
+                              . placesFromState coplace (sexposePlaces soptions)
         let slotListBound = length places - 1
             displayOneSlot slotIndex = do
-              let (pk, (es, ne, na, _)) = places !! slotIndex
-                  pkind = okind coplace pk
-                  prompt2 = makeSentence
-                    [ MU.SubjectVerbSg (partActor bUI) "remember"
-                    , MU.Text $ PK.pname pkind ]
-                  freqsText = "Frequencies:" <+> T.intercalate " "
-                    (map (\(grp, n) -> "(" <> displayGroupName grp
-                                       <> ", " <> tshow n <> ")")
-                     $ PK.pfreq pkind)
-                  onLevels | ES.null es = []
-                           | otherwise =
-                    [makeSentence
-                       [ "Appears on"
-                       , MU.CarWs (ES.size es) "level" <> ":"
-                       , MU.WWandW $ map MU.Car $ sort
-                                   $ map (abs . fromEnum) $ ES.elems es ]]
-                  placeParts = ["it has" | ne > 0 || na > 0]
-                               ++ [MU.CarWs ne "entrance" | ne > 0]
-                               ++ ["and" | ne > 0 && na > 0]
-                               ++ [MU.CarWs na "surrounding" | na > 0]
-                  partsSentence | null placeParts = ""
-                                | otherwise = makeSentence placeParts
-                  -- Ideally, place layout would be in SquareFont and the rest
+              (prompt2, attrStrings) <-
+                placeCloseUp places (sexposePlaces soptions) slotIndex
+              let -- Ideally, place layout would be in SquareFont and the rest
                   -- in PropFont, but this is mostly a debug screen, so KISS.
                   ov0 = EM.singleton monoFont
                         $ offsetOverlay
-                        $ concatMap (indentSplitAttrString rwidth . textToAS)
-                        $ ["", partsSentence]
-                          ++ (if sexposePlaces soptions
-                              then [ "", freqsText
-                                   , "" ] ++ PK.ptopLeft pkind
-                              else [])
-                          ++ [""] ++ onLevels
+                        $ concatMap (indentSplitAttrString rwidth) attrStrings
                   keys = [K.spaceKM, K.escKM]
                          ++ [K.upKM | slotIndex /= 0]
                          ++ [K.downKM | slotIndex /= slotListBound]
@@ -330,7 +306,7 @@ chooseItemDialogMode leader0 permitLoreCycle c = do
                     Just cm -> fromMaybe 0 (M.lookup nxtChal cm)
                   verb = if victories > 0 then "remember" else "forsee"
                   prompt2 = makeSentence
-                    [ MU.SubjectVerbSg (partActor bUI) verb
+                    [ MU.SubjectVerbSg "you" verb
                     , MU.Text $ "the '" <> MK.mname gameMode <> "' adventure" ]
                   keys = [K.spaceKM, K.escKM]
                          ++ [K.upKM | slotIndex /= 0]
