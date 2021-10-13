@@ -270,13 +270,12 @@ chooseItemDialogMode leader0 permitLoreCycle c = do
                               . placesFromState coplace (sexposePlaces soptions)
         let slotListBound = length places - 1
             displayOneSlot slotIndex = do
-              (prompt2, attrStrings) <-
+              (prompt2, blurbs) <-
                 placeCloseUp places (sexposePlaces soptions) slotIndex
-              let -- Ideally, place layout would be in SquareFont and the rest
-                  -- in PropFont, but this is mostly a debug screen, so KISS.
-                  ov0 = EM.singleton monoFont
-                        $ offsetOverlay
-                        $ concatMap (indentSplitAttrString rwidth) attrStrings
+              let ov0 =
+                    attrLinesToFontMap
+                    $ map (second $ concatMap (indentSplitAttrString rwidth))
+                    $ map (second $ map textToAS) blurbs
                   keys = [K.spaceKM, K.escKM]
                          ++ [K.upKM | slotIndex /= 0]
                          ++ [K.downKM | slotIndex /= slotListBound]

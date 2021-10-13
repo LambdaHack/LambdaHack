@@ -648,13 +648,13 @@ inventoryInRightPane leader lSlots bag c ekm = case ekm of
                               . placesFromState coplace (sexposePlaces soptions)
         let slotIndex = fromMaybe (error "illegal slot")
                         $ elemIndex slot allSlots
-        (prompt, attrStrings) <-
+        (prompt, blurbs) <-
           placeCloseUp places (sexposePlaces soptions) slotIndex
         let promptAS | T.null prompt = []
                      | otherwise = textFgToAS Color.Brown $ prompt <> "\n\n"
-            ov = EM.singleton monoFont $ offsetOverlay
-                                       $ concatMap (splitAttrString width width)
-                                       $ promptAS : attrStrings
+            ov = attrLinesToFontMap
+                 $ map (second $ concatMap (splitAttrString width width))
+                 $ (propFont, [promptAS]) : map (second $ map textToAS) blurbs
         return (ov, [])
       MModes -> return emptyOKX
         -- modes cover the right part of screen, so let's keep it empty
@@ -690,9 +690,10 @@ placeCloseUp :: MonadClientUI m
              => [(ContentId PK.PlaceKind, (ES.EnumSet LevelId, Int, Int, Int))]
              -> Bool
              -> Int
-             -> m (Text, [AttrString])
+             -> m (Text, [(DisplayFont, [Text])])
 placeCloseUp places sexposePlaces slotIndex = do
   COps{coplace} <- getsState scops
+  FontSetup{..} <- getFontSetup
   let (pk, (es, ne, na, _)) = places !! slotIndex
       pkind = okind coplace pk
       prompt = makeSentence ["you remember", MU.Text $ PK.pname pkind]
@@ -701,25 +702,21 @@ placeCloseUp places sexposePlaces slotIndex = do
                            <> ", " <> tshow n <> ")")
          $ PK.pfreq pkind)
       onLevels | ES.null es = []
-               | otherwise =
-        [makeSentence
-           [ "Appears on"
-           , MU.CarWs (ES.size es) "level" <> ":"
-           , MU.WWandW $ map MU.Car $ sort
-                       $ map (abs . fromEnum) $ ES.elems es ]]
+               | otherwise = [makeSentence
+                               [ "Appears on"
+                               , MU.CarWs (ES.size es) "level" <> ":"
+                               , MU.WWandW $ map MU.Car $ sort
+                                 $ map (abs . fromEnum) $ ES.elems es ]]
       placeParts = ["it has" | ne > 0 || na > 0]
                    ++ [MU.CarWs ne "entrance" | ne > 0]
                    ++ ["and" | ne > 0 && na > 0]
                    ++ [MU.CarWs na "surrounding" | na > 0]
-      partsSentence | null placeParts = ""
-                    | otherwise = makeSentence placeParts
+      partsSentence | null placeParts = []
+                    | otherwise = [makeSentence placeParts, "\n"]
       -- Ideally, place layout would be in SquareFont and the rest
       -- in PropFont, but this is mostly a debug screen, so KISS.
-      attrStrings = map textToAS
-                    $ ["", partsSentence]
-                      ++ (if sexposePlaces
-                          then [ "", freqsText
-                               , "" ] ++ PK.ptopLeft pkind
-                          else [])
-                      ++ [""] ++ onLevels
-  return (prompt, attrStrings)
+      blurbs = [(propFont, partsSentence)]
+               ++ [(monoFont, [freqsText, "\n"]) | sexposePlaces]
+               ++ [(squareFont, PK.ptopLeft pkind ++ ["\n"]) | sexposePlaces]
+               ++ [(propFont, onLevels)]
+  return (prompt, blurbs)
