@@ -232,7 +232,8 @@ stepChoiceScreen menuName dm sfBlank frsX extraKeys = do
               -- and the third no longer than half width.
               -- We also add two to three lines of backdrop at the bottom.
               ymax = maxYofFontOverlayMap ovsRight0
-              spaceRectangle = rectangleOfSpaces (rwidth * 2)
+              -- Apparently spaces can be really narrow, hence so many.
+              spaceRectangle = rectangleOfSpaces (rwidth * 4)
                                                  (min canvasLength $ ymax + 5)
               trim = filter (\(PointUI _ yRight, _) -> yRight < trimmedY)
               -- The alert not clickable, because the player can enter
