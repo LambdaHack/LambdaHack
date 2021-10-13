@@ -209,7 +209,7 @@ displayGameOverLoot (heldBag, total) generationAn = do
       promptFun iid itemFull2 k =
         let worth = itemPrice 1 $ itemKind itemFull2
             lootMsg = if worth == 0 then "" else
-              let pile = if k == 1 then "exemplar" else "hoard"
+              let pile = if k <= 1 then "exemplar" else "hoard"
               in makeSentence $
                    ["this treasure", pile, "is worth"]
                    ++ (if k > 1 then [ MU.Cardinal k, "times"] else [])
