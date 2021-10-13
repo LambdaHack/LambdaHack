@@ -273,10 +273,9 @@ chooseItemDialogMode leader0 permitLoreCycle c = do
             displayOneSlot slotIndex = do
               (prompt2, blurbs) <-
                 placeCloseUp places (sexposePlaces soptions) slotIndex
-              let ov0 =
-                    attrLinesToFontMap
-                    $ map (second $ concatMap (indentSplitAttrString rwidth))
-                    $ map (second $ map textToAS) blurbs
+              let splitText = indentSplitAttrString rwidth . textToAS
+                  ov0 = attrLinesToFontMap
+                        $ map (second (concatMap splitText)) blurbs
                   keys = [K.spaceKM, K.escKM]
                          ++ [K.upKM | slotIndex /= 0]
                          ++ [K.downKM | slotIndex /= slotListBound]

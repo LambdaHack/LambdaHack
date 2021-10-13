@@ -334,7 +334,7 @@ viewLoreItems menuName lSlotsRaw trunkBag prompt promptFun displayRanged = do
         Left{} -> return emptyOKX
         Right slot -> do
           let ix0 = fromMaybe (error $ show slot)
-                              (findIndex (== slot) $ EM.keys lSlots)
+                              (elemIndex slot $ EM.keys lSlots)
           -- Mono font used, because lots of numbers in these blurbs
           -- and because some prop fonts wider than mono (e.g., in the
           -- dejavuBold font set).
@@ -345,7 +345,7 @@ viewLoreItems menuName lSlotsRaw trunkBag prompt promptFun displayRanged = do
       viewAtSlot :: SlotChar -> m K.KM
       viewAtSlot slot = do
         let ix0 = fromMaybe (error $ show slot)
-                            (findIndex (== slot) $ EM.keys lSlots)
+                            (elemIndex slot $ EM.keys lSlots)
         km <- displayItemLore trunkBag 0 promptFun ix0 lSlots False
         case K.key km of
           K.Space -> viewLoreItems menuName lSlots trunkBag prompt

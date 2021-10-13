@@ -657,7 +657,7 @@ inventoryInRightPane leader lSlots bag c ekm = case ekm of
         -- modes cover the right part of screen, so let's keep it empty
       _ -> do
         let ix0 = fromMaybe (error $ show slot)
-                            (findIndex (== slot) $ EM.keys lSlots)
+                            (elemIndex slot $ EM.keys lSlots)
             promptFun _iid _itemFull _k = ""
               -- TODO, e.g., if the party still owns any copies, if the actor
               -- was ever killed by us or killed ours, etc.
