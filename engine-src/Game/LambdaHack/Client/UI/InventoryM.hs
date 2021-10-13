@@ -625,10 +625,9 @@ inventoryInRightPane leader lSlots bag c ekm = case ekm of
     let -- Lower width, to permit extra vertical space at the start,
         -- because gameover menu prompts are sometimes wide and/or long.
        width = rwidth - 2
+       slotIndex = fromMaybe (error "illegal slot") $ elemIndex slot allSlots
     case c of
       MSkills -> do
-        let slotIndex = fromMaybe (error "illegal slot")
-                        $ elemIndex slot allSlots
         (prompt, attrString) <- skillCloseUp leader slotIndex
         let promptAS | T.null prompt = []
                      | otherwise = textFgToAS Color.Brown $ prompt <> "\n\n"
@@ -646,8 +645,6 @@ inventoryInRightPane leader lSlots bag c ekm = case ekm of
         -- particularly with @sexposePlaces@.
         places <- getsState $ EM.assocs
                               . placesFromState coplace (sexposePlaces soptions)
-        let slotIndex = fromMaybe (error "illegal slot")
-                        $ elemIndex slot allSlots
         (prompt, blurbs) <-
           placeCloseUp places (sexposePlaces soptions) slotIndex
         let promptAS | T.null prompt = []
