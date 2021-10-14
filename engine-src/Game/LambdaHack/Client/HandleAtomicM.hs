@@ -254,7 +254,7 @@ cmdAtomicSemCli oldState cmd = case cmd of
   UpdDiscoverServer{} -> error "server command leaked to client"
   UpdCoverServer{} -> error "server command leaked to client"
   UpdPerception lid outPer inPer -> perception lid outPer inPer
-  UpdRestart side sfper _ scurChal soptions srandom -> do
+  UpdRestart side sfper _ scurChal soptionsNew srandom -> do
     COps{cocave} <- getsState scops
     fact <- getsState $ (EM.! side) . sfactionD
     snxtChal <- getsClient snxtChal
@@ -263,6 +263,7 @@ cmdAtomicSemCli oldState cmd = case cmd of
     scampings <- getsClient scampings
     srestarts <- getsClient srestarts
     stabs <- getsClient stabs
+    soptionsOld <- getsClient soptions
     let h lvl = CK.labyrinth (okind cocave $ lkind lvl)
                 && not (fhasGender $ gplayer fact)
           -- Not to burrow through a labyrinth instead of leaving it for
@@ -280,7 +281,9 @@ cmdAtomicSemCli oldState cmd = case cmd of
                   , svictories
                   , scampings
                   , srestarts
-                  , soptions
+                  , soptions =
+                      soptionsNew {snoAnim =  -- persist @snoAnim@ between games
+                        snoAnim soptionsOld `mplus` snoAnim soptionsNew}
                   , stabs }
     salter <- getsState createSalter
     modifyClient $ \cli1 -> cli1 {salter}

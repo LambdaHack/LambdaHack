@@ -152,8 +152,7 @@ emptyStateClient _sside =
 
 -- | Cycle the 'smarkSuspect' setting.
 cycleMarkSuspect :: StateClient -> StateClient
-cycleMarkSuspect s@StateClient{smarkSuspect} =
-  s {smarkSuspect = (smarkSuspect + 1) `mod` 3}
+cycleMarkSuspect cli = cli {smarkSuspect = succ (smarkSuspect cli) `mod` 3}
 
 -- | Update target parameters within client state.
 updateTarget :: ActorId -> (Maybe Target -> Maybe Target) -> StateClient

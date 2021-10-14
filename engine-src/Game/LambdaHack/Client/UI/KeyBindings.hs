@@ -16,7 +16,6 @@ import           Game.LambdaHack.Client.UI.Content.Input
 import           Game.LambdaHack.Client.UI.Content.Screen
 import           Game.LambdaHack.Client.UI.ContentClientUI
 import           Game.LambdaHack.Client.UI.HumanCmd
-import           Game.LambdaHack.Client.UI.ItemSlot
 import qualified Game.LambdaHack.Client.UI.Key as K
 import           Game.LambdaHack.Client.UI.Overlay
 import           Game.LambdaHack.Client.UI.PointUI
@@ -102,20 +101,16 @@ keyHelp CCUI{ coinput=coinput@InputContent{..}
     keyCaption = fmt offsetCol2 "keys" "command"
     mouseOverviewCaption = fmt offsetCol2 "keys" "command (exploration/aiming)"
     spLen = textSize monoFont " "
-    pamoveRight :: Int -> (PointUI, a) -> (PointUI, a)
-    pamoveRight xoff (PointUI x y, a) = (PointUI (x + xoff) y, a)
     okxs cat headers footers =
       let (ovs, kyx) = okxsN coinput monoFont propFont 0 offsetCol2
                              (const False) True cat headers footers
-      in ( EM.map (map (pamoveRight spLen)) ovs
-         , map (second $ pamoveRight spLen) kyx )
-    renumber dy (km, (PointUI x y, len)) = (km, (PointUI x (y + dy), len))
-    renumberOv dy = map (\(PointUI x y, al) -> (PointUI x (y + dy), al))
+      in ( EM.map (xtranslateOverlay spLen) ovs
+         , map (xtranslateKXY spLen) kyx )
     mergeOKX :: OKX -> OKX -> OKX
     mergeOKX (ovs1, ks1) (ovs2, ks2) =
-      let off = 1 + EM.foldr (\ov acc -> max acc (maxYofOverlay ov)) 0 ovs1
-      in ( EM.unionWith (++) ovs1 $ EM.map (renumberOv off) ovs2
-         , ks1 ++ map (renumber off) ks2 )
+      let off = 1 + maxYofFontOverlayMap ovs1
+      in ( EM.unionWith (++) ovs1 $ EM.map (ytranslateOverlay off) ovs2
+         , ks1 ++ map (ytranslateKXY off) ks2 )
     catLength cat = length $ filter (\(_, (cats, desc, _)) ->
       cat `elem` cats && (desc /= "" || CmdInternal `elem` cats)) bcmdList
     keyM = 13
@@ -126,7 +121,7 @@ keyHelp CCUI{ coinput=coinput@InputContent{..}
     fmm a b c = fmt (keyM + 1) a $ fmt0 keyB (truncatem b) (truncatem c)
     areaCaption t = fmm t "LMB (left mouse button)" "RMB (right mouse button)"
     keySel :: (forall a. (a, a) -> a) -> K.KM
-           -> [(CmdArea, Either K.KM SlotChar, Text)]
+           -> [(CmdArea, KeyOrSlot, Text)]
     keySel sel key =
       let cmd = case M.lookup key bcmdMap of
             Just (_, _, cmd2) -> cmd2
@@ -156,10 +151,10 @@ keyHelp CCUI{ coinput=coinput@InputContent{..}
           kst2 = keySel sel key2
           f (ca1, Left km1, _) (ca2, Left km2, _) y =
             assert (ca1 == ca2 `blame` (ca1, ca2, km1, km2, kst1, kst2))
-              [ (Left [km1], ( PointUI (doubleIfSquare $ keyM + 4) y
-                             , ButtonWidth monoFont keyB ))
-              , (Left [km2], ( PointUI (doubleIfSquare $ keyB + keyM + 5) y
-                             , ButtonWidth monoFont keyB )) ]
+              [ (Left km1, ( PointUI (doubleIfSquare $ keyM + 4) y
+                           , ButtonWidth monoFont keyB ))
+              , (Left km2, ( PointUI (doubleIfSquare $ keyB + keyM + 5) y
+                           , ButtonWidth monoFont keyB )) ]
           f c d e = error $ "" `showFailure` (c, d, e)
           kxs = concat $ zipWith3 f kst1 kst2 [1 + length header..]
           menuLeft = map (\(ca1, _, _) -> areaDescription ca1) kst1
@@ -188,12 +183,8 @@ keyHelp CCUI{ coinput=coinput@InputContent{..}
     typesetXY (xoffset, yoffset) =
       map (\(y, t) -> (PointUI xoffset (y + yoffset), textToAL t)) . zip [0..]
     sideBySide :: [(Text, OKX)] -> [(Text, OKX)]
-    sideBySide ((_t1, (ovs1, kyx1)) : (t2, (ovs2, kyx2)) : rest)
-      | not $ isSquareFont propFont =
-        (t2, ( EM.unionWith (++) ovs1 (EM.map (map (pamoveRight rwidth)) ovs2)
-             , sortOn (\(_, (PointUI x y, _)) -> (y, x))
-               $ kyx1 ++ map (second $ pamoveRight rwidth) kyx2 ))
-        : sideBySide rest
+    sideBySide ((_t1, okx1) : (t2, okx2) : rest) | not $ isSquareFont propFont =
+      (t2, sideBySideOKX rwidth 0 okx1 okx2) : sideBySide rest
     sideBySide l = l
   in sideBySide $ concat
     [ if catLength CmdMinimal
@@ -318,14 +309,17 @@ okxsN InputContent{..} keyFont descFont offset offsetCol2 greyedOut
       keyKnown km = case K.key km of
         K.Unknown{} -> False
         _ -> True
-      keys :: [(Either [K.KM] SlotChar, (Bool, (Text, Text)))]
-      keys = [ (Left kmsRes, (greyedOut cmd, fmt keyNames desc))
+      keys :: [(KeyOrSlot, (Bool, (Text, Text)))]
+      keys = [ (Left km, (greyedOut cmd, fmt keyNames desc))
              | (_, (cats, desc, cmd)) <- bcmdList
              , let kms = coImage cmd
                    knownKeys = filter keyKnown kms
                    keyNames =
                      disp $ (if showManyKeys then id else take 1) knownKeys
                    kmsRes = if desc == "" then knownKeys else kms
+                   km = case kmsRes of
+                     [] -> K.escKM
+                     km1 : _ -> km1
              , cat `elem` cats
              , desc /= "" || CmdInternal `elem` cats]
       spLen = textSize keyFont " "
@@ -335,7 +329,6 @@ okxsN InputContent{..} keyFont descFont offset offsetCol2 greyedOut
       kxs = zipWith f keys [offset + length headerMono1
                                    + length headerProp
                                    + length headerMono2 ..]
-      renumberOv = map (\(PointUI x y, al) -> (PointUI x (y + offset), al))
       ts = map (\t -> (False, (t, ""))) headerMono1
            ++ map (\t -> (False, ("", t))) headerProp
            ++ map (\t -> (False, (t, ""))) headerMono2
@@ -351,6 +344,7 @@ okxsN InputContent{..} keyFont descFont offset offsetCol2 greyedOut
              in (al1, ( if T.null t1 then 0 else spLen * (offsetCol2 + 2)
                       , textToAL t2 ))
       (greyLab, greyDesc) = unzip $ map greyToAL ts
-  in ( EM.insertWith (++) descFont (renumberOv (offsetOverlayX greyDesc))
-       $ EM.singleton keyFont $ renumberOv $ offsetOverlay greyLab
+  in ( EM.insertWith (++) descFont (ytranslateOverlay offset
+                                                      (offsetOverlayX greyDesc))
+       $ EM.singleton keyFont $ ytranslateOverlay offset (offsetOverlay greyLab)
      , kxs )

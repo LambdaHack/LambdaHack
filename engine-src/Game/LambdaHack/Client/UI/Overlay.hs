@@ -6,10 +6,10 @@ module Game.LambdaHack.Client.UI.Overlay
   , (<+:>), (<\:>)
     -- * AttrLine
   , AttrLine, attrLine, emptyAttrLine, attrStringToAL, firstParagraph, linesAttr
-  , textToAL, textFgToAL, stringToAL, splitAttrString
-  , indentSplitAttrString, indentSplitAttrString2
+  , textToAL, textFgToAL, stringToAL, splitAttrString, indentSplitAttrString
     -- * Overlay
-  , Overlay, offsetOverlay, offsetOverlayX, updateLine
+  , Overlay, xytranslateOverlay, xtranslateOverlay, ytranslateOverlay
+  , offsetOverlay, offsetOverlayX, updateLine, rectangleOfSpaces, maxYofOverlay
 #ifdef EXPOSE_INTERNAL
     -- * Internal operations
   , splitAttrPhrase
@@ -176,15 +176,10 @@ splitAttrString w0 w1 l = case linesAttr l of
     ++ concatMap (splitAttrPhrase w1 w1
                   . AttrLine . dropWhile (== Color.spaceAttrW32) . attrLine) xs
 
-indentSplitAttrString :: Int -> AttrString -> [AttrLine]
-indentSplitAttrString w l =
-  let ts = splitAttrString w (w - 1) l
-  in case ts of
-    [] -> []
-    hd : tl -> hd : map (AttrLine . ([Color.spaceAttrW32] ++) . attrLine) tl
-
-indentSplitAttrString2 :: Bool -> Int -> AttrString -> [AttrLine]
-indentSplitAttrString2 isProp w l =
+indentSplitAttrString :: Bool -> Int -> AttrString -> [AttrLine]
+indentSplitAttrString isProp w l =
+  -- Sadly this depends on how wide the space is in propotional font,
+  -- which varies wildly, so we err on the side of larger indent.
   let nspaces = if isProp then 4 else 2
       ts = splitAttrString w (w - nspaces) l
       -- Proportional spaces are very narrow.
@@ -224,6 +219,16 @@ splitAttrPhrase w0 w1 (AttrLine xs)
 -- simply not shown.
 type Overlay = [(PointUI, AttrLine)]
 
+xytranslateOverlay :: Int -> Int -> Overlay -> Overlay
+xytranslateOverlay dx dy =
+  map (\(PointUI x y, al) -> (PointUI (x + dx) (y + dy), al))
+
+xtranslateOverlay :: Int -> Overlay -> Overlay
+xtranslateOverlay dx = xytranslateOverlay dx 0
+
+ytranslateOverlay :: Int -> Overlay -> Overlay
+ytranslateOverlay = xytranslateOverlay 0
+
 offsetOverlay :: [AttrLine] -> Overlay
 offsetOverlay l = map (first $ PointUI 0) $ zip [0..] l
 
@@ -237,3 +242,12 @@ updateLine y f ov =
   let upd (p@(PointUI px py), AttrLine l) =
         if py == y then (p, AttrLine $ f px l) else (p, AttrLine l)
   in map upd ov
+
+rectangleOfSpaces :: Int -> Int -> Overlay
+rectangleOfSpaces x y =
+  let blankAttrLine = AttrLine $ replicate x Color.nbspAttrW32
+  in offsetOverlay $ replicate y blankAttrLine
+
+maxYofOverlay :: Overlay -> Int
+maxYofOverlay ov = let yOfOverlay (PointUI _ y, _) = y
+                   in maximum $ 0 : map yOfOverlay ov

@@ -58,13 +58,14 @@
 # - ignore: {name: Use let}
 # - ignore: {name: Use const, within: SpecialModule} # Only within certain modules
 - ignore: {name: Reduce duplication}
-- ignore: {name: Use String }
-- ignore: {name: Use camelCase }
-- ignore: {name: Use LANGUAGE pragmas }
-- ignore: {name: Use tuple-section }
-- ignore: {name: Use fewer imports, within: Game.LambdaHack.Client.UI.Frontend.Chosen }
-- ignore: {name: Redundant $, within: Game.LambdaHack.Client.UI.Frontend.Dom }
-- ignore: {name: "Use :", within: Main }
+- ignore: {name: Use String}
+- ignore: {name: Use camelCase}
+- ignore: {name: Use LANGUAGE pragmas}
+- ignore: {name: Use tuple-section}
+- ignore: {name: Use sortOn}
+- ignore: {name: Use fewer imports, within: Game.LambdaHack.Client.UI.Frontend.Chosen}
+- ignore: {name: Redundant $, within: Game.LambdaHack.Client.UI.Frontend.Dom}
+- ignore: {name: "Use :", within: Main}
 
 
 # Define some custom infix operators

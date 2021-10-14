@@ -1,11 +1,10 @@
 -- | A set of Frame monad operations.
 module Game.LambdaHack.Client.UI.FrameM
-  ( basicFrameWithoutReport, promptGetKey, addToMacro, dropEmptyMacroFrames
+  ( drawOverlay, promptGetKey, addToMacro, dropEmptyMacroFrames
   , lastMacroFrame, stopPlayBack, renderAnimFrames, animate
 #ifdef EXPOSE_INTERNAL
     -- * Internal operations
-  , drawOverlay
-  , resetPlayBack, restoreLeaderFromRun
+  , resetPlayBack, restoreLeaderFromRun, basicFrameForAnimation
 #endif
   ) where
 
@@ -26,7 +25,6 @@ import           Game.LambdaHack.Client.UI.Content.Screen
 import           Game.LambdaHack.Client.UI.ContentClientUI
 import           Game.LambdaHack.Client.UI.DrawM
 import           Game.LambdaHack.Client.UI.Frame
-import qualified Game.LambdaHack.Client.UI.Frontend as Frontend
 import qualified Game.LambdaHack.Client.UI.HumanCmd as HumanCmd
 import qualified Game.LambdaHack.Client.UI.Key as K
 import           Game.LambdaHack.Client.UI.MonadClientUI
@@ -57,26 +55,20 @@ drawOverlay dm onBlank ovs lid = do
                   return (m, FrameForall $ \_v -> return ())
                 else drawHudFrame dm lid
   FontSetup{..} <- getFontSetup
-  soptions <- getsClient soptions
-  let isTeletype = Frontend.frontendName soptions == "teletype"
-      propWidth = if isMonoFont propFont then 2 * rwidth else 4 * rwidth
+  let propWidth = if isMonoFont propFont then 2 * rwidth else 4 * rwidth
       ovProp | not $ isSquareFont propFont
              = truncateOverlay False propWidth rheight False 0 onBlank
                $ EM.findWithDefault [] propFont ovs
-             | isTeletype  -- hack for debug output
-             = map (second attrLine) $ concat $ EM.elems ovs
              | otherwise = []
       ovMono = if not $ isSquareFont monoFont
                then truncateOverlay False (2 * rwidth) rheight False 0 onBlank
                     $ EM.findWithDefault [] monoFont ovs
                else []
-      ovOther | not $ isSquareFont propFont
-              = truncateOverlay True rwidth rheight True 0 onBlank
-                $ EM.findWithDefault [] squareFont ovs
-                  -- no backdrop for square font, so @wipeAdjacent@
-                  -- needs to be @True@ or the extra blank line starts too late
-              | isTeletype  -- hack for debug output
-              = []
+      ovSquare | not $ isSquareFont propFont
+               = truncateOverlay False (2 * rwidth) rheight False 0 onBlank
+                 $ EM.findWithDefault [] squareFont ovs
+              | otherwise = []
+      ovOther | not $ isSquareFont propFont = []
               | otherwise
               = truncateOverlay True rwidth rheight True 20 onBlank
                 $ concat $ EM.elems ovs
@@ -90,11 +82,15 @@ drawOverlay dm onBlank ovs lid = do
                  monoOutline =
                    truncateOverlay False (2 * rwidth) rheight True 0 onBlank
                    $ EM.findWithDefault [] monoFont ovs
+                 squareOutline =
+                   truncateOverlay False (2 * rwidth) rheight True 0 onBlank
+                   $ EM.findWithDefault [] squareFont ovs
                  g x al Nothing = Just (x, x + length al - 1)
                  g x al (Just (xmin, xmax)) =
                    Just (min xmin x, max xmax (x + length al - 1))
                  f em (PointUI x y, al) = EM.alter (g x al) y em
-                 extentMap = foldl' f EM.empty $ propOutline ++ monoOutline
+                 extentMap = foldl' f EM.empty
+                             $ propOutline ++ monoOutline ++ squareOutline
                  listBackdrop (y, (xmin, xmax)) =
                    ( PointUI (2 * (xmin `div` 2)) y
                    , blankAttrString
@@ -104,28 +100,7 @@ drawOverlay dm onBlank ovs lid = do
         else []
       overlayedFrame = overlayFrame rwidth ovOther
                        $ overlayFrame rwidth ovBackdrop basicFrame
-  return (overlayedFrame, (ovProp, ovMono))
-
--- This is not our turn, so we can't obstruct screen with messages
--- and message reformatting causes distraction, so there's no point
--- trying to squeeze the report into the single available line,
--- except when it's not our turn permanently, because AI runs UI.
---
--- The only real drawback of this is that when resting for longer time
--- I can't see the boring messages accumulate until a non-boring interrupts me.
-basicFrameWithoutReport :: MonadClientUI m
-                        => LevelId -> Maybe Bool -> m PreFrame3
-basicFrameWithoutReport arena forceReport = do
-  FontSetup{propFont} <- getFontSetup
-  side <- getsClient sside
-  fact <- getsState $ (EM.! side) . sfactionD
-  report <- getReportUI False
-  let par1 = firstParagraph $ foldr (<+:>) [] $ renderReport True report
-      underAI = isAIFact fact
-      truncRep | fromMaybe underAI forceReport =
-                   EM.fromList [(propFont, [(PointUI 0 0, par1)])]
-               | otherwise = EM.empty
-  drawOverlay ColorFull False truncRep arena
+  return (overlayedFrame, (ovProp, ovSquare, ovMono))
 
 promptGetKey :: MonadClientUI m
              => ColorMode -> FontOverlayMap -> Bool -> [K.KM]
@@ -249,13 +224,34 @@ restoreLeaderFromRun = do
       when (memA && not (noRunWithMulti fact)) $
         updateClientLeader runLeader
 
+-- This is not our turn, so we can't obstruct screen with messages
+-- and message reformatting causes distraction, so there's no point
+-- trying to squeeze the report into the single available line,
+-- except when it's not our turn permanently, because AI runs UI.
+basicFrameForAnimation :: MonadClientUI m
+                        => LevelId -> Maybe Bool -> m PreFrame3
+basicFrameForAnimation arena forceReport = do
+  FontSetup{propFont} <- getFontSetup
+  sbenchMessages <- getsClient $ sbenchMessages . soptions
+  side <- getsClient sside
+  fact <- getsState $ (EM.! side) . sfactionD
+  report <- getReportUI False
+  let par1 = firstParagraph $ foldr (<+:>) [] $ renderReport True report
+      underAI = isAIFact fact
+      -- If messages are benchmarked, they can't be displayed under AI,
+      -- because this is not realistic when player is in control.
+      truncRep | not sbenchMessages && fromMaybe underAI forceReport =
+                   EM.fromList [(propFont, [(PointUI 0 0, par1)])]
+               | otherwise = EM.empty
+  drawOverlay ColorFull False truncRep arena
+
 -- | Render animations on top of the current screen frame.
 renderAnimFrames :: MonadClientUI m
                  => LevelId -> Animation -> Maybe Bool -> m PreFrames3
 renderAnimFrames arena anim forceReport = do
   CCUI{coscreen=ScreenContent{rwidth}} <- getsSession sccui
   snoAnim <- getsClient $ snoAnim . soptions
-  basicFrame <- basicFrameWithoutReport arena forceReport
+  basicFrame <- basicFrameForAnimation arena forceReport
   smuteMessages <- getsSession smuteMessages
   return $! if | smuteMessages -> []
                | fromMaybe False snoAnim -> [Just basicFrame]

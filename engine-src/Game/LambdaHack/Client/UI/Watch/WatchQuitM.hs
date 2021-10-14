@@ -209,7 +209,7 @@ displayGameOverLoot (heldBag, total) generationAn = do
       promptFun iid itemFull2 k =
         let worth = itemPrice 1 $ itemKind itemFull2
             lootMsg = if worth == 0 then "" else
-              let pile = if k == 1 then "exemplar" else "hoard"
+              let pile = if k <= 1 then "exemplar" else "hoard"
               in makeSentence $
                    ["this treasure", pile, "is worth"]
                    ++ (if k > 1 then [ MU.Cardinal k, "times"] else [])
@@ -239,8 +239,7 @@ displayGameOverLoot (heldBag, total) generationAn = do
         <+> (if sexposeItems
              then "Non-positive count means none held but this many generated."
              else "")
-      examItem = displayItemLore itemBag 0 promptFun
-  viewLoreItems "GameOverLoot" lSlots itemBag prompt examItem True
+  viewLoreItems "GameOverLoot" lSlots itemBag prompt promptFun True
 
 displayGameOverAnalytics :: MonadClientUI m
                          => FactionAnalytics -> GenerationAnalytics
@@ -281,8 +280,7 @@ displayGameOverAnalytics factionAn generationAn = do
         <+> (if sexposeActors
              then "Non-positive count means none killed but this many reported."
              else "")
-      examItem = displayItemLore trunkBag 0 promptFun
-  viewLoreItems "GameOverAnalytics" lSlots trunkBag prompt examItem False
+  viewLoreItems "GameOverAnalytics" lSlots trunkBag prompt promptFun False
 
 displayGameOverLore :: MonadClientUI m
                     => SLore -> Bool -> GenerationAnalytics -> m K.KM
@@ -308,17 +306,18 @@ displayGameOverLore slore exposeCount generationAn = do
                           , MU.Text (headingSLore slore) ]
         _ -> makeSentence [ "you", verb, "the following variety of"
                           , MU.CarWs total $ MU.Text (headingSLore slore) ]
-      examItem = displayItemLore generationBag 0 promptFun
       displayRanged = slore `notElem` [SOrgan, STrunk]
   viewLoreItems ("GameOverLore" ++ show slore)
-                slots generationBag prompt examItem displayRanged
+                slots generationBag prompt promptFun displayRanged
 
-viewLoreItems :: MonadClientUI m
+viewLoreItems :: forall m . MonadClientUI m
               => String -> SingleItemSlots -> ItemBag -> Text
-              -> (Int -> SingleItemSlots -> m Bool) -> Bool
+              -> (ItemId -> ItemFull -> Int -> Text)
+              -> Bool
               -> m K.KM
-viewLoreItems menuName lSlotsRaw trunkBag prompt examItem displayRanged = do
-  CCUI{coscreen=ScreenContent{rheight}} <- getsSession sccui
+viewLoreItems menuName lSlotsRaw trunkBag prompt promptFun displayRanged = do
+  CCUI{coscreen=ScreenContent{rwidth, rheight}} <- getsSession sccui
+  FontSetup{..} <- getFontSetup
   arena <- getArenaUI
   itemToF <- getsState $ flip itemToFull
   let keysPre = [K.spaceKM, K.mkChar '<', K.mkChar '>', K.escKM]
@@ -327,18 +326,35 @@ viewLoreItems menuName lSlotsRaw trunkBag prompt examItem displayRanged = do
   io <- itemOverlay lSlots arena trunkBag displayRanged
   itemSlides <- overlayToSlideshow (rheight - 2) keysPre io
   let keyOfEKM (Left km) = km
-      keyOfEKM (Right SlotChar{slotChar}) = [K.mkChar slotChar]
+      keyOfEKM (Right SlotChar{slotChar}) = K.mkChar slotChar
       allOKX = concatMap snd $ slideshow itemSlides
-      keysMain = keysPre ++ concatMap (keyOfEKM . fst) allOKX
+      keysMain = keysPre ++ map (keyOfEKM . fst) allOKX
+      displayInRightPane :: KeyOrSlot -> m OKX
+      displayInRightPane ekm = case ekm of
+        _ | isSquareFont propFont -> return emptyOKX
+        Left{} -> return emptyOKX
+        Right slot -> do
+          let ix0 = fromMaybe (error $ show slot)
+                              (elemIndex slot $ EM.keys lSlots)
+          -- Mono font used, because lots of numbers in these blurbs
+          -- and because some prop fonts wider than mono (e.g., in the
+          -- dejavuBold font set).
+          -- Lower width, to permit extra vertical space at the start,
+          -- because gameover menu prompts are sometimes wide and/or long.
+          okxItemLorePointedAt
+            monoFont (rwidth - 2) True trunkBag 0 promptFun ix0 lSlots
+      viewAtSlot :: SlotChar -> m K.KM
       viewAtSlot slot = do
         let ix0 = fromMaybe (error $ show slot)
-                            (findIndex (== slot) $ EM.keys lSlots)
-        go2 <- examItem ix0 lSlots
-        if go2
-        then viewLoreItems menuName lSlots trunkBag prompt
-                           examItem displayRanged
-        else return K.escKM
-  ekm <- displayChoiceScreen menuName ColorFull False itemSlides keysMain
+                            (elemIndex slot $ EM.keys lSlots)
+        km <- displayItemLore trunkBag 0 promptFun ix0 lSlots False
+        case K.key km of
+          K.Space -> viewLoreItems menuName lSlots trunkBag prompt
+                                   promptFun displayRanged
+          K.Esc -> return km
+          _ -> error $ "" `showFailure` km
+  ekm <- displayChoiceScreenWithRightPane displayInRightPane
+           menuName ColorFull False itemSlides keysMain
   case ekm of
     Left km | km `elem` [K.spaceKM, K.mkChar '<', K.mkChar '>', K.escKM] ->
       return km

@@ -32,7 +32,7 @@ standardKeysAndMouse = InputContentRaw $ map evalKeyDef $
   -- Main menu
   [ ("s", ([CmdMainMenu], "setup and start new game>", ChallengeMenu))
   , ("x", ([CmdMainMenu], "save and exit to desktop", GameExit))
-  , ("v", ([CmdMainMenu], "tweak convenience settings>", SettingsMenu))
+  , ("c", ([CmdMainMenu], "tweak convenience settings>", SettingsMenu))
   , ("t", ([CmdMainMenu], "toggle autoplay", AutomateToggle))
   , ("?", ([CmdMainMenu], "see command help", Help))
   , ("F12", ([CmdMainMenu], "switch to dashboard", Dashboard))

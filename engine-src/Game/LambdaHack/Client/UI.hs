@@ -15,7 +15,7 @@ module Game.LambdaHack.Client.UI
   , ChanFrontend, chanFrontend, tryRestore, clientPrintUI
 #ifdef EXPOSE_INTERNAL
     -- * Internal operations
-  , humanCommandWithLeader, humanCommand
+  , stepQueryUIwithLeader, stepQueryUI
 #endif
   ) where
 
@@ -54,6 +54,7 @@ import           Game.LambdaHack.Common.ClientOptions
 import           Game.LambdaHack.Common.Faction
 import           Game.LambdaHack.Common.MonadStateRead
 import           Game.LambdaHack.Common.State
+import           Game.LambdaHack.Content.ModeKind
 
 -- | Handle the move of a human player.
 queryUI :: (MonadClient m, MonadClientUI m) => m (Maybe RequestUI)
@@ -62,7 +63,7 @@ queryUI = do
   let !_A = assert (not sreqQueried) ()  -- querying not nested
   modifySession $ \sess -> sess {sreqQueried = True}
   let loop = do
-        mres <- humanCommandWithLeader
+        mres <- stepQueryUIwithLeader
         saimMode <- getsSession saimMode
         case mres of
           Nothing | isJust saimMode -> loop  -- loop until aiming finished
@@ -110,12 +111,12 @@ queryUIunderAI = do
         return (exitCmd, Nothing)  -- ask server to exit
       else return (ReqUINop, Nothing)
 
-humanCommandWithLeader :: (MonadClient m, MonadClientUI m)
+stepQueryUIwithLeader :: (MonadClient m, MonadClientUI m)
                        => m (Maybe RequestUI)
-humanCommandWithLeader = do
+stepQueryUIwithLeader = do
   side <- getsClient sside
   mleader <- getsState $ gleader . (EM.! side) . sfactionD
-  mreq <- humanCommand
+  mreq <- stepQueryUI
   case mreq of
     Nothing -> return Nothing
     Just req -> do
@@ -133,8 +134,8 @@ humanCommandWithLeader = do
                           else Nothing)
 
 -- | Let the human player issue commands until any command takes time.
-humanCommand :: (MonadClient m, MonadClientUI m) => m (Maybe ReqUI)
-humanCommand = do
+stepQueryUI :: (MonadClient m, MonadClientUI m) => m (Maybe ReqUI)
+stepQueryUI = do
   FontSetup{propFont} <- getFontSetup
   keyPressed <- anyKeyPressed
   macroFrame <- getsSession smacroFrame
@@ -144,37 +145,40 @@ humanCommand = do
   report <- getsSession $ newReport . shistory
   modifySession $ \sess -> sess {sreportNull = nullVisibleReport report}
   slides <- reportToSlideshowKeepHalt False []
-  over <- case unsnoc slides of
-    Nothing -> return []
+  ovs <- case unsnoc slides of
+    Nothing -> return EM.empty
     Just (allButLast, (ov, _)) ->
       if allButLast == emptySlideshow
       then do
         -- Display the only generated slide while waiting for next key.
         -- Strip the "--end-" prompt from it, by ignoring @MonoFont@.
         let ovProp = ov EM.! propFont
-        return $! if EM.size ov > 1 then ovProp else init ovProp
+        return $!
+          EM.singleton propFont $ if EM.size ov > 1 then ovProp else init ovProp
       else do
         -- Show, one by one, all slides, awaiting confirmation for each.
         void $ getConfirms ColorFull [K.spaceKM, K.escKM] slides
         -- Indicate that report wiped out.
         modifySession $ \sess -> sess {sreportNull = True}
         -- Display base frame at the end.
-        return []
+        return EM.empty
   mleader <- getsClient sleader
   case mleader of
     Nothing -> return ()
     Just leader -> do
       body <- getsState $ getActorBody leader
       lastLost <- getsSession slastLost
-      if bhp body <= 0 then
-        when (leader `ES.notMember` lastLost) $ do
+      if bhp body <= 0 then do
+        side <- getsClient sside
+        fact <- getsState $ (EM.! side) . sfactionD
+        let gameOver = maybe False ((/= Camping) . stOutcome) (gquit fact)
+        when (not gameOver && leader `ES.notMember` lastLost) $ do
           -- Hacky reuse of @slastLost@ for near-death spam prevention.
           modifySession $ \sess ->
             sess {slastLost = ES.insert leader lastLost}
           displayMore ColorBW "If you move, the exertion will kill you. Consider asking for first aid instead."
       else
         modifySession $ \sess -> sess {slastLost = ES.empty}
-  let ovs = EM.fromList [(propFont, over)]
   km <- promptGetKey ColorFull ovs False []
   abortOrCmd <- do
     -- Look up the key.

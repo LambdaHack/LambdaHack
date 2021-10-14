@@ -1,5 +1,10 @@
 {-# LANGUAGE RankNTypes #-}
 -- | Screen frames.
+--
+-- Note that @PointArray.Array@ here represents a screen frame and so
+-- screen positions are denoted by @Point@, contrary to the convention
+-- that @Point@ refers to game map coordinates, as outlined
+-- in description of 'PointSquare' that should normally be used in that role.
 module Game.LambdaHack.Client.UI.Frame
   ( ColorMode(..)
   , FrameST, FrameForall(..), FrameBase(..), Frame
@@ -17,7 +22,7 @@ import Prelude ()
 import Game.LambdaHack.Core.Prelude
 
 import           Control.Monad.ST.Strict
-import qualified Data.IntMap.Strict as IM
+import           Data.Function
 import qualified Data.Vector.Generic as G
 import qualified Data.Vector.Unboxed as U
 import qualified Data.Vector.Unboxed.Mutable as VM
@@ -47,11 +52,12 @@ newtype FrameBase = FrameBase
   {unFrameBase :: forall s. ST s (G.Mutable U.Vector s Word32)}
 
 -- | A frame, that is, a base frame and all its modifications.
-type Frame = ((FrameBase, FrameForall), (OverlaySpace, OverlaySpace))
+type Frame = ( (FrameBase, FrameForall)
+             , (OverlaySpace, OverlaySpace, OverlaySpace) )
 
 -- | Components of a frame, before it's decided if the first can be overwritten
 -- in-place or needs to be copied.
-type PreFrame3 = (PreFrame, (OverlaySpace, OverlaySpace))
+type PreFrame3 = (PreFrame, (OverlaySpace, OverlaySpace, OverlaySpace))
 
 -- | Sequence of screen frames, including delays. Potentially based on a single
 -- base frame.
@@ -74,16 +80,21 @@ writeLine offset al = FrameForall $ \v -> do
         writeAt (off + 1) rest
   writeAt offset al
 
--- | A frame that is padded to fill the whole screen with an optional
--- overlay to display in proportional font.
+-- | A frame that is padded to fill the whole screen with optional
+-- overlays to display in proportional, square and monospace fonts.
 --
 -- Note that we don't provide a list of color-highlighed box positions
 -- to be drawn separately, because overlays need to obscure not only map,
 -- but the highlights as well, so highlights need to be included earlier.
+--
+-- See the description of 'PointSquare' for explanation of why screen
+-- coordinates in @singleArray@ are @Point@ even though they should be
+-- 'PointSquare'.
 data SingleFrame = SingleFrame
-  { singleArray       :: PointArray.Array Color.AttrCharW32
-  , singlePropOverlay :: OverlaySpace
-  , singleMonoOverlay :: OverlaySpace }
+  { singleArray         :: PointArray.Array Color.AttrCharW32
+  , singlePropOverlay   :: OverlaySpace
+  , singleSquareOverlay :: OverlaySpace
+  , singleMonoOverlay   :: OverlaySpace }
   deriving (Show, Eq)
 
 type OverlaySpace = [(PointUI, AttrString)]
@@ -91,6 +102,7 @@ type OverlaySpace = [(PointUI, AttrString)]
 blankSingleFrame :: ScreenContent -> SingleFrame
 blankSingleFrame ScreenContent{rwidth, rheight} =
   SingleFrame (PointArray.replicateA rwidth rheight Color.spaceAttrW32)
+              []
               []
               []
 
@@ -104,7 +116,7 @@ truncateOverlay :: Bool -> Int -> Int -> Bool -> Int -> Bool -> Overlay
 truncateOverlay halveXstart width rheight wipeAdjacentRaw fillLen onBlank ov =
   let wipeAdjacent = wipeAdjacentRaw && not onBlank
       canvasLength = if onBlank then rheight else rheight - 2
-      supHeight = maximum $ 0 : map (\(PointUI _ y, _) -> y) ov
+      supHeight = maxYofOverlay ov
       trimmedY = canvasLength - 1
       -- Sadly, this does not trim the other, concurrent, overlays that may
       -- obscure the last line and so contend with the "trimmed" message.
@@ -122,8 +134,13 @@ truncateOverlay halveXstart width rheight wipeAdjacentRaw fillLen onBlank ov =
            else let (PointUI xLast yLast, _) =
                       minimumBy (comparing $ \(PointUI x _, _) -> x) supHs
                 in [(PointUI xLast (yLast + 1), emptyAttrLine)]
-      ovTop = IM.elems $ IM.fromListWith (++)
-              $ map (\pal@(PointUI _ y, _) -> (y, [pal]))
+      -- This is crude, because an al at lower x may be longer, but KISS.
+      -- This also gives a solid rule which al overwrite others
+      -- when merging overlays, independent of the order of merging
+      -- (except for duplicate x, for which initial order is retained).
+      -- The order functions is cheap, we use @sortBy@, not @sortOn@.
+      ovTop = groupBy ((==) `on` \(PointUI _ y, _) -> y)
+              $ sortBy (comparing $ \(PointUI x y, _) -> (y, x))
               $ if supHeight >= canvasLength
                 then ovTopFiltered ++ [trimmedAlert]
                 else ov ++ extraLine
@@ -131,23 +148,23 @@ truncateOverlay halveXstart width rheight wipeAdjacentRaw fillLen onBlank ov =
       -- on there being no gaps and a natural order.
       -- Probably also gives messy results when X offsets are not all the same.
       -- Below we at least mitigate the case of multiple lines per row.
-      f lenPrev lenNext lal =
-        -- This is crude, because an al at lower x may be longer, but KISS.
-        -- @sortOn@ is significantly faster than @SortBy@ here,
-        -- though it takes more memory. The below is an explicit compromise.
-        let xlal = map (\pll@(PointUI x _, _) -> (x, pll)) lal
-        in case sortBy (comparing fst) xlal of
-          [] -> error "empty list of overlay lines at the given row"
-          minAl : rest ->
-            g lenPrev lenNext fillLen minAl
-            : map (g 0 0 0) rest
-      g lenPrev lenNext fillL (xstartRaw, (p, layerLine)) =
+      f _ _ [] = error "empty list of overlay lines at the given row"
+      f (yPrev, lenPrev) (yNext, lenNext) (minAl@(PointUI _ yCur, _) : rest) =
+        g (if yPrev == yCur - 1 then lenPrev else 0)
+          (if yNext == yCur + 1 then lenNext else 0)
+          fillLen
+          minAl
+        : map (g 0 0 0) rest
+      g lenPrev lenNext fillL (p@(PointUI xstartRaw _), layerLine) =
         let xstart = if halveXstart then xstartRaw `div` 2 else xstartRaw
             -- TODO: lenPrev and lenNext is from the same kind of font;
             -- if fonts are mixed, too few spaces are added.
             -- We'd need to keep a global store of line lengths
             -- for every position on the screen, filled first going
             -- over all texts and only afterwards texts rendered.
+            -- And prop font measure would still make this imprecise.
+            -- TODO: rewrite ovBackdrop according to this idea,
+            -- but then process square font only mode with the same mechanism.
             maxLen = if wipeAdjacent then max lenPrev lenNext else 0
             fillFromStart = max fillL (1 + maxLen) - xstart
             available = width - xstart
@@ -155,7 +172,10 @@ truncateOverlay halveXstart width rheight wipeAdjacentRaw fillLen onBlank ov =
       rightExtentOfLine (PointUI xstartRaw _, al) =
         let xstart = if halveXstart then xstartRaw `div` 2 else xstartRaw
         in min (width - 1) (xstart + length (attrLine al))
-      lens = map (maximum . map rightExtentOfLine) ovTop
+      yAndLen [] = (-99, 0)
+      yAndLen als@((PointUI _ y, _) : _) =
+        (y, maximum $ map rightExtentOfLine als)
+      lens = map yAndLen ovTop
       f2 = map g2
       g2 (p@(PointUI xstartRaw _), layerLine) =
         let xstart = if halveXstart then xstartRaw `div` 2 else xstartRaw
@@ -163,7 +183,7 @@ truncateOverlay halveXstart width rheight wipeAdjacentRaw fillLen onBlank ov =
         in (p, truncateAttrLine False available 0 layerLine)
   in concat $ if onBlank
               then map f2 ovTop
-              else zipWith3 f (0 : lens) (drop 1 lens ++ [0]) ovTop
+              else zipWith3 f ((-9, 0) : lens) (drop 1 lens ++ [(999, 0)]) ovTop
 
 -- | Add a space at the message end, for display overlayed over the level map.
 -- Also trim (do not wrap!) too long lines. Also add many spaces when under

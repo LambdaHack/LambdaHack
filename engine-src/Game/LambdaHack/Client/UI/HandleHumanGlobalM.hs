@@ -1393,14 +1393,13 @@ helpHuman cmdSemInCxtOfKM = do
         then packIntoScreens ls (l : acc) (length l + 1 + h)
         else intercalate [""] (reverse acc) : packIntoScreens (l : ls) [] 0
       manualScreens = packIntoScreens (snd rintroScreen) [] 0
-      shiftPointUI x (PointUI x0 y0) = PointUI (x0 + x) y0
       sideBySide =
         if isSquareFont monoFont
         then \(screen1, screen2) ->  -- single column, two screens
           map offsetOverlay $ filter (not . null) [screen1, screen2]
         else \(screen1, screen2) ->  -- two columns, single screen
           [offsetOverlay screen1
-           ++ map (first $ shiftPointUI rwidth) (offsetOverlay screen2)]
+           ++ xtranslateOverlay rwidth (offsetOverlay screen2)]
       listPairs (a : b : rest) = (a, b) : listPairs rest
       listPairs [a] = [(a, [])]
       listPairs [] = []
@@ -1516,8 +1515,7 @@ itemMenuHuman leader cmdSemInCxtOfKM = do
                   [] -> error "splitting AttrString loses characters"
                   al1 : rest ->
                     (2, attrStringToAL $ drop 2 $ attrLine al1) : map (0,) rest
-              alPrefix = map (\(PointUI x y, al) ->
-                                (PointUI x (y + length descBlurb), al))
+              alPrefix = ytranslateOverlay (length descBlurb)
                          $ offsetOverlay
                          $ splitAttrString rwidth rwidth foundPrefix
               ystart = length descBlurb + length alPrefix - 1
@@ -1630,18 +1628,17 @@ chooseItemMenuHuman leader cmdSemInCxtOfKM c0 = do
 
 generateMenu :: MonadClientUI m
              => (K.KM -> HumanCmd -> m (Either MError ReqUI))
-             -> [(DisplayFont, [AttrLine])]
-             -> [(K.KM, (Text, HumanCmd))]
+             -> FontOverlayMap
+             -> [(K.KM, (Text, HumanCmd, Maybe FontOverlayMap))]
              -> [String]
              -> String
              -> m (Either MError ReqUI)
 generateMenu cmdSemInCxtOfKM blurb kds gameInfo menuName = do
   COps{corule} <- getsState scops
-  CCUI{coscreen=ScreenContent{rwidth, rheight, rwebAddress}} <-
-    getsSession sccui
+  CCUI{coscreen=ScreenContent{rheight, rwebAddress}} <- getsSession sccui
   FontSetup{..} <- getFontSetup
   let bindings =  -- key bindings to display
-        let fmt (k, (d, _)) =
+        let fmt (k, (d, _, _)) =
               ( Just k
               , T.unpack
                 $  T.justifyLeft 3 ' ' (T.pack $ K.showKM k) <> " " <> d )
@@ -1649,8 +1646,8 @@ generateMenu cmdSemInCxtOfKM blurb kds gameInfo menuName = do
       generate :: Int -> (Maybe K.KM, String) -> ((Int, AttrLine), Maybe KYX)
       generate y (mkey, binding) =
         let lenB = length binding
-            yxx key = (Left [key], ( PointUI 2 y
-                                   , ButtonWidth squareFont lenB ))
+            yxx key = (Left key, ( PointUI 2 y
+                                 , ButtonWidth squareFont lenB ))
             myxx = yxx <$> mkey
         in ((2, stringToAL binding), myxx)
       titleLine = rtitle corule ++ " "
@@ -1664,20 +1661,30 @@ generateMenu cmdSemInCxtOfKM blurb kds gameInfo menuName = do
                    , ( PointUI (2 + 2 * length titleLine) 1
                      , ButtonWidth squareFont (2 + length rwebAddress) ) )
       kyxs = browserKey : catMaybes mkyxs
-      introLen = sum $ map (length . snd) blurb
-      start0 = max 0 (rheight - introLen
-                      - if isSquareFont propFont then 1 else 2)
-      shiftPointUI (PointUI x0 y0) = PointUI (x0 + rwidth) y0
-      ov0 = EM.map (map (first shiftPointUI)) $ attrLinesToFontMap start0 blurb
-      ov = EM.insertWith (++) squareFont (offsetOverlayX menuOvLines) ov0
+      ov = EM.singleton squareFont (offsetOverlayX menuOvLines)
   menuIxMap <- getsSession smenuIxMap
   unless (menuName `M.member` menuIxMap) $
     modifySession $ \sess -> sess {smenuIxMap = M.insert menuName 1 menuIxMap}
-  ekm <- displayChoiceScreen menuName ColorFull True
-                             (menuToSlideshow (ov, kyxs)) [K.escKM]
+  let prepareBlurb ovs =
+        let introLen = 1 + maxYofFontOverlayMap ovs
+            start0 = max 0 (rheight - introLen
+                            - if isSquareFont propFont then 1 else 2)
+        in EM.map (xytranslateOverlay (-2) (start0 - 2)) ovs
+          -- subtracting 2 from X and Y to negate the indentation in
+          -- @displayChoiceScreenWithRightPane@
+      returnDefaultOKS = return (prepareBlurb blurb, [])
+      displayInRightPane (Right _) = returnDefaultOKS
+      displayInRightPane (Left km) = case km `lookup` kds of
+        Just (_, _, mblurbRight) -> case mblurbRight of
+          Nothing -> returnDefaultOKS
+          Just blurbRight -> return (prepareBlurb blurbRight, [])
+        Nothing -> error "displayInRightPane: unexpected key"
+  ekm <- displayChoiceScreenWithRightPane displayInRightPane
+                                          menuName ColorFull True
+                                          (menuToSlideshow (ov, kyxs)) [K.escKM]
   case ekm of
     Left km -> case km `lookup` kds of
-      Just (_desc, cmd) -> cmdSemInCxtOfKM km cmd
+      Just (_desc, cmd, _) -> cmdSemInCxtOfKM km cmd
       Nothing -> weaveJust <$> failWith "never mind"
     Right (SlotChar 1042 'a') -> do
       success <- tryOpenBrowser rwebAddress
@@ -1703,7 +1710,8 @@ mainMenuHuman cmdSemInCxtOfKM = do
       tcurWolf   = "       lone wolf:" <+> offOn (cwolf curChal)
       tcurKeeper = "   finder keeper:" <+> offOn (ckeeper curChal)
       -- Key-description-command tuples.
-      kds = [(km, (desc, cmd)) | (km, ([CmdMainMenu], desc, cmd)) <- bcmdList]
+      kds = [ (km, (desc, cmd, Nothing))
+            | (km, ([CmdMainMenu], desc, cmd)) <- bcmdList ]
       gameName = MK.mname gameMode
       gameInfo = map T.unpack
                    [ "Now playing:" <+> gameName
@@ -1722,7 +1730,8 @@ mainMenuHuman cmdSemInCxtOfKM = do
       backstory | isSquareFont propFont = fst rintroScreen
                 | otherwise = glueLines $ fst rintroScreen
       backstoryAL = map stringToAL $ map (dropWhile (== ' ')) backstory
-  generateMenu cmdSemInCxtOfKM [(propFont, backstoryAL)] kds gameInfo "main"
+      blurb = attrLinesToFontMap [(propFont, backstoryAL)]
+  generateMenu cmdSemInCxtOfKM blurb kds gameInfo "main"
 
 -- * MainMenuAutoOn
 
@@ -1751,6 +1760,9 @@ settingsMenuHuman :: MonadClientUI m
                   => (K.KM -> HumanCmd -> m (Either MError ReqUI))
                   -> m (Either MError ReqUI)
 settingsMenuHuman cmdSemInCxtOfKM = do
+  CCUI{coscreen=ScreenContent{rwidth}} <- getsSession sccui
+  UIOptions{uMsgWrapColumn} <- getsSession sUIOptions
+  FontSetup{..} <- getFontSetup
   markSuspect <- getsClient smarkSuspect
   markVision <- getsSession smarkVision
   markSmell <- getsSession smarkSmell
@@ -1759,32 +1771,51 @@ settingsMenuHuman cmdSemInCxtOfKM = do
   factDoctrine <- getsState $ MK.fdoctrine . gplayer . (EM.! side) . sfactionD
   overrideTut <- getsSession soverrideTut
   let offOn b = if b then "on" else "off"
-      offOnUnset mb = case mb of
-        Nothing -> "no override"
-        Just b -> if b then "force on" else "force off"
       offOnAll n = case n of
         0 -> "none"
         1 -> "untried"
         2 -> "all"
         _ -> error $ "" `showFailure` n
+      neverEver n = case n of
+        0 -> "never"
+        1 -> "aiming"
+        2 -> "always"
+        _ -> error $ "" `showFailure` n
+      offOnUnset mb = case mb of
+        Nothing -> "pass"
+        Just b -> if b then "force on" else "force off"
       tsuspect = "mark suspect terrain:" <+> offOnAll markSuspect
-      tvisible = "show visible zone:" <+> offOn markVision
+      tvisible = "show visible zone:" <+> neverEver markVision
       tsmell = "display smell clues:" <+> offOn markSmell
       tanim = "play animations:" <+> offOn (not noAnim)
       tdoctrine = "squad doctrine:" <+> Ability.nameDoctrine factDoctrine
       toverride = "override tutorial hints:" <+> offOnUnset overrideTut
-      -- Key-description-command tuples.
-      kds = [ (K.mkKM "s", (tsuspect, MarkSuspect))
-            , (K.mkKM "v", (tvisible, MarkVision))
-            , (K.mkKM "c", (tsmell, MarkSmell))
-            , (K.mkKM "a", (tanim, MarkAnim))
-            , (K.mkKM "t", (tdoctrine, Doctrine))
-            , (K.mkKM "o", (toverride, OverrideTut))
-            , (K.mkKM "Escape", ("back to main menu", MainMenu)) ]
+      width = if isSquareFont propFont
+              then rwidth `div` 2
+              else min uMsgWrapColumn (rwidth - 2)
+      textToBlurb t = Just $ attrLinesToFontMap
+        [ ( monoFont
+          , splitAttrString width width
+            $ textToAS t ) ]
+      -- Key-description-command-text tuples.
+      kds = [ (K.mkKM "s", ( tsuspect, MarkSuspect
+                           , textToBlurb "* mark suspect terrain\nThis setting affects the ongoing and the next games. It determines which suspect terrain is marked in special color on the map: none, untried (not searched nor revealed), all. It correspondingly determines which, if any, suspect tiles are considered for mouse go-to, auto-explore and for the command that marks the nearest unexplored position." ))
+            , (K.mkKM "v", (tvisible, MarkVision
+                           , textToBlurb "* show visible zone\nThis setting affects the ongoing and the next games. It determines the conditions under which the area visible to the party is marked on the map via a gray background: never, when aiming, always." ))
+            , (K.mkKM "c", (tsmell, MarkSmell
+                           , textToBlurb "* display smell clues\nThis setting affects the ongoing and the next games. It determines whether the map displays any smell traces (regardless of who left them) detected by a party member that can track via smell (as determined by the smell radius skill; not common among humans)." ))
+            , (K.mkKM "a", (tanim, MarkAnim
+                           , textToBlurb "* play animations\nThis setting affects the ongoing and the next games. It determines whether important events, such combat, are highlighted by animations. This overrides the corresponding config file setting." ))
+            , (K.mkKM "d", (tdoctrine, Doctrine
+                           , textToBlurb "* squad doctrine\nThis setting affects the ongoing game, but does not persist to the next games. It determines the behaviour of henchmen (non-pointman characters) in the party and, in particular, if they are permitted to move autonomously or fire opportunistically (assuming they are able to, usually due to rare equipment). This setting has a poor UI that will be improved in the future." ))
+            , (K.mkKM "t", (toverride, OverrideTut
+                           , textToBlurb "* override tutorial hints\nThis setting affects the ongoing and the next games. It determines whether tutorial hints are, respectively, not overridden with respect to the setting that was chosen when starting the current game, forced to be off, forced to be on." ))
+            , (K.mkKM "Escape", ( "back to main menu", MainMenu
+                                , Just EM.empty )) ]
       gameInfo = map T.unpack
                    [ "Tweak convenience settings:"
                    , "" ]
-  generateMenu cmdSemInCxtOfKM [] kds gameInfo "settings"
+  generateMenu cmdSemInCxtOfKM EM.empty kds gameInfo "settings"
 
 -- * ChallengeMenu
 
@@ -1811,9 +1842,9 @@ challengeMenuHuman cmdSemInCxtOfKM = do
       offOn b = if b then "on" else "off"
       starTut t = if isJust overrideTut then "*" <> t else t
       displayTutorialHints = fromMaybe nxtTutorial overrideTut
-      tnextTutorial = "tutorial hints (in pink):"
+      tnextTutorial = "tutorial hints:"
                       <+> starTut (offOn displayTutorialHints)
-      tnextDiff = "difficulty (lower easier):" <+> tshow (cdiff nxtChal)
+      tnextDiff = "difficulty level:" <+> tshow (cdiff nxtChal)
       tnextFish   = "cold fish (rather hard):"
                     <+> offOn (cfish nxtChal)
       tnextGoods  = "ready goods (hard):"
@@ -1822,29 +1853,17 @@ challengeMenuHuman cmdSemInCxtOfKM = do
                     <+> offOn (cwolf nxtChal)
       tnextKeeper = "finder keeper (hard):"
                     <+> offOn (ckeeper nxtChal)
-      -- Key-description-command tuples.
-      kds = [ (K.mkKM "s", (tnextScenario, GameScenarioIncr))
-            , (K.mkKM "t", (tnextTutorial, GameTutorialToggle))
-            , (K.mkKM "d", (tnextDiff, GameDifficultyIncr))
-            , (K.mkKM "f", (tnextFish, GameFishToggle))
-            , (K.mkKM "r", (tnextGoods, GameGoodsToggle))
-            , (K.mkKM "w", (tnextWolf, GameWolfToggle))
-            , (K.mkKM "k", (tnextKeeper, GameKeeperToggle))
-            , (K.mkKM "g", ("start new game", GameRestart))
-            , (K.mkKM "Escape", ("back to main menu", MainMenu)) ]
-      gameInfo = map T.unpack [ "Setup and start new game:"
-                              , "" ]
-      widthProp = if isSquareFont propFont
-                  then rwidth `div` 2
-                  else min uMsgWrapColumn (rwidth - 2)
+      width = if isSquareFont propFont
+              then rwidth `div` 2
+              else min uMsgWrapColumn (rwidth - 2)
       widthMono = if isSquareFont propFont
                   then rwidth `div` 2
                   else rwidth - 2
       duplicateEOL '\n' = "\n\n"
       duplicateEOL c = T.singleton c
-      blurb =
+      blurb = Just $ attrLinesToFontMap
         [ ( propFont
-          , splitAttrString widthProp widthProp
+          , splitAttrString width width
             $ textFgToAS Color.BrBlack
             $ T.concatMap duplicateEOL (MK.mdesc gameMode)
               <> "\n\n" )
@@ -1854,11 +1873,33 @@ challengeMenuHuman cmdSemInCxtOfKM = do
             $ MK.mrules gameMode
               <> "\n\n" )
         , ( propFont
-          , splitAttrString widthProp widthProp
+          , splitAttrString width width
             $ textToAS
             $ T.concatMap duplicateEOL (MK.mreason gameMode) )
         ]
-  generateMenu cmdSemInCxtOfKM blurb kds gameInfo "challenge"
+      textToBlurb t = Just $ attrLinesToFontMap
+        [ ( monoFont
+          , splitAttrString width width  -- not widthMono!
+            $ textToAS t ) ]
+      -- Key-description-command-text tuples.
+      kds = [ (K.mkKM "s", (tnextScenario, GameScenarioIncr, blurb))
+            , (K.mkKM "t", ( tnextTutorial, GameTutorialToggle
+                           , textToBlurb "* tutorial hints\nThis determines whether tutorial hint messages will be shown in the next game that's about to be started. They are rendered in pink and can be re-read from message history. Display of tutorial hints in the current game can be overridden from the convenience settings menu."))
+            , (K.mkKM "d", ( tnextDiff, GameDifficultyIncr
+                           , textToBlurb "* difficulty level\nThis determines the difficulty of survival in the next game that's about to be started. Lower numbers result in easier game. In particular, difficulty below 5 multiplies hitpoints of player characters and difficulty over 5 multiplies hitpoints of their enemies. Game score scales with difficulty."))
+            , (K.mkKM "f", ( tnextFish, GameFishToggle
+                           , textToBlurb "* cold fish\nThis challenge mode setting will affect the next game that's about to be started. When on, it makes it impossible for player characters to be healed by actors from other factions (this is a significant restriction in the long crawl adventure)."))
+            , (K.mkKM "r", ( tnextGoods, GameGoodsToggle
+                           , textToBlurb "* ready goods\nThis challenge mode setting will affect the next game that's about to be started. When on, it disables crafting for the player, making the selection of equipment, especially melee weapons, very limited, unless the player has the luck to find the rare powerful ready weapons (this applies only if the chosen adventure supports crafting at all)."))
+            , (K.mkKM "w", ( tnextWolf, GameWolfToggle
+                           , textToBlurb "* lone wolf\nThis challenge mode setting will affect the next game that's about to be started. When on, it reduces player's starting actors to exactly one, though later on new heroes may join the party. This makes the game very hard in the long run."))
+            , (K.mkKM "k", ( tnextKeeper, GameKeeperToggle
+                           , textToBlurb "* finder keeper\nThis challenge mode setting will affect the next game that's about to be started. When on, it completely disables flinging projectiles by the player, which affects not only ranged damage dealing, but also throwing of consumables that buff teammates engaged in melee combat, weaken and distract enemies, light dark corners, etc."))
+            , (K.mkKM "g", ("start new game", GameRestart, blurb))
+            , (K.mkKM "Escape", ("back to main menu", MainMenu, Nothing)) ]
+      gameInfo = map T.unpack [ "Setup and start new game:"
+                              , "" ]
+  generateMenu cmdSemInCxtOfKM EM.empty kds gameInfo "challenge"
 
 -- * GameTutorialToggle
 

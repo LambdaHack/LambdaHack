@@ -65,6 +65,7 @@ serverOptionsP = do
   sstopAfterGameOver <- stopAfterGameOverP
   sprintEachScreen  <- printEachScreenP
   sbenchmark        <- benchmarkP
+  sbenchMessages    <- benchMessagesP
   sdungeonRng       <- setDungeonRngP
   smainRng          <- setMainRngP
   sdumpInitRngs     <- dumpInitRngsP
@@ -218,6 +219,11 @@ benchmarkP :: Parser Bool
 benchmarkP =
   switch (  long "benchmark"
          <> help "Restrict file IO, print timing stats" )
+
+benchMessagesP :: Parser Bool
+benchMessagesP =
+  switch (  long "benchMessages"
+         <> help "Display messages in realistic was under AI control (for benchmarks)" )
 
 setDungeonRngP :: Parser (Maybe SM.SMGen)
 setDungeonRngP = optional $

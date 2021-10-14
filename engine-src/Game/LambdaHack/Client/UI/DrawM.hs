@@ -403,7 +403,7 @@ drawFrameExtra dm drawnLevelId = do
       stashesToDisplay = mapMaybe locateStash $ EM.assocs factionD
       upd :: FrameForall
       upd = FrameForall $ \v -> do
-        when (isJust saimMode || smarkVision) $
+        when (isJust saimMode && smarkVision >= 1 || smarkVision == 2) $
           mapVL backlightVision visionMarks v
         case mtgtPos of
           Nothing -> return ()

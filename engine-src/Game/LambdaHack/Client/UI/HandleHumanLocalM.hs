@@ -91,7 +91,6 @@ import           Game.LambdaHack.Common.Types
 import           Game.LambdaHack.Common.Vector
 import qualified Game.LambdaHack.Content.ItemKind as IK
 import qualified Game.LambdaHack.Content.ModeKind as MK
-import qualified Game.LambdaHack.Content.PlaceKind as PK
 import           Game.LambdaHack.Content.RuleKind
 import qualified Game.LambdaHack.Definition.Ability as Ability
 import qualified Game.LambdaHack.Definition.Color as Color
@@ -194,10 +193,11 @@ chooseItemDialogMode leader0 permitLoreCycle c = do
                            , MU.AW $ blurb itemFull ]
             ix0 = fromMaybe (error $ "" `showFailure` result)
                   $ elemIndex iid $ EM.elems lSlots
-        go <- displayItemLore itemBag meleeSkill promptFun ix0 lSlots
-        if go
-        then chooseItemDialogMode leader False MOrgans
-        else failWith "never mind"
+        km <- displayItemLore itemBag meleeSkill promptFun ix0 lSlots False
+        case K.key km of
+          K.Space -> chooseItemDialogMode leader False MOrgans
+          K.Esc -> failWith "never mind"
+          _ -> error $ "" `showFailure` km
       ROwned iid -> do
         found <- getsState $ findIid leader side iid
         let (newAid, bestStore) = case leader `lookup` found of
@@ -214,24 +214,20 @@ chooseItemDialogMode leader0 permitLoreCycle c = do
            | blid b2 /= arena && autoDun ->
              failSer NoChangeDunLeader
            | otherwise -> do
-             -- We switch leader only here, not in lore screens, because
-             -- lore is only about inspecting items, no activation submenu.
+             -- We switch leader only here, not when processing results
+             -- of lore screens, because lore is only about inspecting items.
              void $ pickLeader True newAid
              return $ Right MOwned
       RSkills slotIndex0 -> do
+        -- This can be used in the future, e.g., to increase stats from
+        -- level-up stat points, so let's keep it even if it shows
+        -- no extra info compared to right pane display in menu.
         let slotListBound = length skillSlots - 1
             displayOneSlot slotIndex = do
-              b <- getsState $ getActorBody leader
-              let skill = skillSlots !! slotIndex
-                  valueText = skillToDecorator skill b
-                              $ Ability.getSk skill actorCurAndMaxSk
-                  prompt2 = makeSentence
-                    [ MU.WownW (partActor bUI) (MU.Text $ skillName skill)
-                    , "is", MU.Text valueText ]
-                  ov0 = EM.singleton propFont
+              (prompt2, attrString) <- skillCloseUp leader slotIndex
+              let ov0 = EM.singleton propFont
                         $ offsetOverlay
-                        $ indentSplitAttrString rwidth
-                        $ textToAS $ skillDesc skill
+                        $ splitAttrString rwidth rwidth attrString
                   keys = [K.spaceKM, K.escKM]
                          ++ [K.upKM | slotIndex /= 0]
                          ++ [K.downKM | slotIndex /= slotListBound]
@@ -255,8 +251,8 @@ chooseItemDialogMode leader0 permitLoreCycle c = do
         let lorePending = loreFound && case schosenLore of
               ChosenLore [] [] -> False
               _ -> True
-        km <- displayItemLorePointedAt itemBag meleeSkill promptFun ix0
-                                       lSlots lorePending
+        km <- displayItemLore itemBag meleeSkill promptFun ix0
+                              lSlots lorePending
         case K.key km of
           K.Space -> do
             modifySession $ \sess -> sess {schosenLore = ChosenNothing}
@@ -269,42 +265,17 @@ chooseItemDialogMode leader0 permitLoreCycle c = do
       RPlaces slotIndex0 -> do
         COps{coplace} <- getsState scops
         soptions <- getsClient soptions
-        places <- getsState $ EM.assocs . placesFromState coplace soptions
+        -- This is computed just once for the whole series of up and down arrow
+        -- navigations, avoid quadratic blowup.
+        places <- getsState $ EM.assocs
+                              . placesFromState coplace (sexposePlaces soptions)
         let slotListBound = length places - 1
             displayOneSlot slotIndex = do
-              let (pk, (es, ne, na, _)) = places !! slotIndex
-                  pkind = okind coplace pk
-                  prompt2 = makeSentence
-                    [ MU.SubjectVerbSg (partActor bUI) "remember"
-                    , MU.Text $ PK.pname pkind ]
-                  freqsText = "Frequencies:" <+> T.intercalate " "
-                    (map (\(grp, n) -> "(" <> displayGroupName grp
-                                       <> ", " <> tshow n <> ")")
-                     $ PK.pfreq pkind)
-                  onLevels | ES.null es = []
-                           | otherwise =
-                    [makeSentence
-                       [ "Appears on"
-                       , MU.CarWs (ES.size es) "level" <> ":"
-                       , MU.WWandW $ map MU.Car $ sort
-                                   $ map (abs . fromEnum) $ ES.elems es ]]
-                  placeParts = ["it has" | ne > 0 || na > 0]
-                               ++ [MU.CarWs ne "entrance" | ne > 0]
-                               ++ ["and" | ne > 0 && na > 0]
-                               ++ [MU.CarWs na "surrounding" | na > 0]
-                  partsSentence | null placeParts = ""
-                                | otherwise = makeSentence placeParts
-                  -- Ideally, place layout would be in SquareFont and the rest
-                  -- in PropFont, but this is mostly a debug screen, so KISS.
-                  ov0 = EM.singleton monoFont
-                        $ offsetOverlay
-                        $ concatMap (indentSplitAttrString rwidth . textToAS)
-                        $ ["", partsSentence]
-                          ++ (if sexposePlaces soptions
-                              then [ "", freqsText
-                                   , "" ] ++ PK.ptopLeft pkind
-                              else [])
-                          ++ [""] ++ onLevels
+              (prompt2, blurbs) <-
+                placeCloseUp places (sexposePlaces soptions) slotIndex
+              let splitText = splitAttrString rwidth rwidth . textToAS
+                  ov0 = attrLinesToFontMap
+                        $ map (second (concatMap splitText)) blurbs
                   keys = [K.spaceKM, K.escKM]
                          ++ [K.upKM | slotIndex /= 0]
                          ++ [K.downKM | slotIndex /= slotListBound]
@@ -334,7 +305,7 @@ chooseItemDialogMode leader0 permitLoreCycle c = do
                     Just cm -> fromMaybe 0 (M.lookup nxtChal cm)
                   verb = if victories > 0 then "remember" else "forsee"
                   prompt2 = makeSentence
-                    [ MU.SubjectVerbSg (partActor bUI) verb
+                    [ MU.SubjectVerbSg "you" verb
                     , MU.Text $ "the '" <> MK.mname gameMode <> "' adventure" ]
                   keys = [K.spaceKM, K.escKM]
                          ++ [K.upKM | slotIndex /= 0]
@@ -874,7 +845,7 @@ lastHistoryHuman = eitherHistory False
 -- * MarkVision
 
 markVisionHuman :: MonadClientUI m => m ()
-markVisionHuman = modifySession toggleMarkVision
+markVisionHuman = modifySession cycleMarkVision
 
 -- * MarkSmell
 
@@ -911,11 +882,25 @@ printScreenHuman = do
 
 -- * Cancel
 
--- | End aiming mode, rejecting the current position.
+-- | End aiming mode, rejecting the current position, unless when on
+-- remote level, in which case, return to our level.
 cancelHuman :: MonadClientUI m => m ()
 cancelHuman = do
-  saimMode <- getsSession saimMode
-  when (isJust saimMode) clearAimMode
+  maimMode <- getsSession saimMode
+  case maimMode of
+    Just aimMode -> do
+      let lidV = aimLevelId aimMode
+      lidOur <- getArenaUI
+      if lidV == lidOur
+      then clearAimMode
+      else do
+        xhairPos <- xhairToPos
+        let sxhair = Just $ TPoint TKnown lidOur xhairPos
+        modifySession $ \sess ->
+          sess {saimMode = Just aimMode {aimLevelId = lidOur}}
+        setXHairFromGUI sxhair
+        doLook
+    Nothing -> return ()
 
 -- * Accept
 

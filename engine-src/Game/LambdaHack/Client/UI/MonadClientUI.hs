@@ -133,13 +133,14 @@ displayFrames _ [] = return ()
 displayFrames lid frs = do
   let framesRaw = case frs of
         [] -> []
-        [Just ((bfr, ffr), (ovProp, ovMono))] ->
-          [Just ((FrameBase $ U.unsafeThaw bfr, ffr), (ovProp, ovMono))]
+        [Just ((bfr, ffr), (ovProp, ovSquare, ovMono))] ->
+          [Just ( (FrameBase $ U.unsafeThaw bfr, ffr)
+                , (ovProp, ovSquare, ovMono) )]
         _ ->
           -- Due to the frames coming from the same base frame,
           -- we have to copy it to avoid picture corruption.
-          map (fmap $ \((bfr, ffr), (ovProp, ovMono)) ->
-                ((FrameBase $ U.thaw bfr, ffr), (ovProp, ovMono))) frs
+          map (fmap $ \((bfr, ffr), (ovProp, ovSquare, ovMono)) ->
+                ((FrameBase $ U.thaw bfr, ffr), (ovProp, ovSquare, ovMono))) frs
   -- If display level different than the man viewed level,
   -- e.g., when our actor is attacked on a remote level,
   -- then pad with tripple delay to give more time to see the remote frames(s).
@@ -155,8 +156,9 @@ displayFrames lid frs = do
 -- | Write 'Frontend.FrontKey' UI request to the frontend, read the reply,
 -- set pointer, return key.
 connFrontendFrontKey :: MonadClientUI m => [K.KM] -> PreFrame3 -> m K.KM
-connFrontendFrontKey frontKeyKeys ((bfr, ffr), (ovProp, ovMono)) = do
-  let frontKeyFrame = ((FrameBase $ U.unsafeThaw bfr, ffr), (ovProp, ovMono))
+connFrontendFrontKey frontKeyKeys ((bfr, ffr), (ovProp, ovSquare, ovMono)) = do
+  let frontKeyFrame =
+        ((FrameBase $ U.unsafeThaw bfr, ffr), (ovProp, ovSquare, ovMono))
   sautoYes <- getsSession sautoYes
   if sautoYes && (null frontKeyKeys || K.spaceKM `elem` frontKeyKeys) then do
     connFrontend $ Frontend.FrontFrame frontKeyFrame
@@ -251,7 +253,7 @@ computeChosenLore = do
   lidV <- viewedLevelUI
   let isOurs (_, b) = bfid b == side
   inhabitants0 <- getsState $ filter (not . isOurs)
-                  . posToAidAssocs xhairPos lidV
+                              . posToAidAssocs xhairPos lidV
   embeds0 <- getsState $ EM.assocs . getEmbedBag lidV xhairPos
   return (inhabitants0, embeds0)
 

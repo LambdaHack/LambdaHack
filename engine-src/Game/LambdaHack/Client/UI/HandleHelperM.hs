@@ -9,7 +9,7 @@ module Game.LambdaHack.Client.UI.HandleHelperM
   , placesFromState, placesOverlay
   , describeMode, modesOverlay
   , pickNumber, guardItemSize, lookAtItems, lookAtStash, lookAtPosition
-  , displayItemLore, displayItemLorePointedAt, cycleLore, spoilsBlurb
+  , displayItemLore, okxItemLorePointedAt, cycleLore, spoilsBlurb
   , ppContainerWownW, nxtGameMode
 #ifdef EXPOSE_INTERNAL
     -- * Internal operations
@@ -281,8 +281,7 @@ itemOverlayFromState lSlots lid bag displayRanged
       (tsLab, tsDesc) = unzip ts
       ovsLab = EM.singleton squareFont $ offsetOverlay tsLab
       ovsDesc = EM.singleton propFont $ offsetOverlayX tsDesc
-      renumber y (km, (PointUI x _, len)) = (km, (PointUI x y, len))
-  in (EM.unionWith (++) ovsLab ovsDesc, zipWith renumber [0..] kxs )
+  in (EM.unionWith (++) ovsLab ovsDesc, zipWith yrenumberKXY [0..] kxs)
 
 skillsOverlay :: MonadClientUI m => ActorId -> m OKX
 skillsOverlay aid = do
@@ -315,10 +314,10 @@ skillsOverlay aid = do
 -- counting the number of occurrences of each type of `PlaceEntry`
 -- for the given place kind and gathering the set of levels
 -- on which any entry for that place kind can be found.
-placesFromState :: ContentData PK.PlaceKind -> ClientOptions -> State
+placesFromState :: ContentData PK.PlaceKind -> Bool -> State
                 -> EM.EnumMap (ContentId PK.PlaceKind)
                               (ES.EnumSet LevelId, Int, Int, Int)
-placesFromState coplace ClientOptions{sexposePlaces} s =
+placesFromState coplace sexposePlaces s =
   let addEntries (!es1, !nEntries1, !nArounds1, !nExists1)
                  (!es2, !nEntries2, !nArounds2, !nExists2) =
         let !es = ES.union es1 es2
@@ -359,7 +358,7 @@ placesOverlay = do
   COps{coplace} <- getsState scops
   soptions <- getsClient soptions
   FontSetup{..} <- getFontSetup
-  places <- getsState $ placesFromState coplace soptions
+  places <- getsState $ placesFromState coplace (sexposePlaces soptions)
   let prSlot :: (Int, SlotChar)
              -> (ContentId PK.PlaceKind, (ES.EnumSet LevelId, Int, Int, Int))
              -> (AttrLine, (Int, AttrLine), KYX)
@@ -487,17 +486,16 @@ describeMode addTitle gameModeId = do
            <+:> (textFgToAS color (T.toTitle $ MK.nameOutcomePast outcome)
                  <+:> textToAS lastRemark)
            <> textToAS ":"
-      shiftPointUI x (PointUI x0 y0) = PointUI (x0 + x) y0
   return $! if isSquareFont propFont
             then EM.singleton squareFont  -- single column, single font
                  $ offsetOverlayX
                  $ map (\t -> (2, t))
                  $ concatMap snd $ blurb ++ blurbEnd
             else EM.unionWith (++)
-                 (EM.map (map (first $ shiftPointUI 1))
-                  $ attrLinesToFontMap 0 blurb)
-                 (EM.map (map (first $ shiftPointUI $ rwidth + 1))
-                  $ attrLinesToFontMap 0 blurbEnd)
+                 (EM.map (xtranslateOverlay 1)
+                  $ attrLinesToFontMap blurb)
+                 (EM.map (xtranslateOverlay $ rwidth + 1)
+                  $ attrLinesToFontMap blurbEnd)
 
 modesOverlay :: MonadClientUI m => m OKX
 modesOverlay = do
@@ -931,28 +929,39 @@ lookAtPosition p lidV = do
 
 displayItemLore :: MonadClientUI m
                 => ItemBag -> Int -> (ItemId -> ItemFull -> Int -> Text) -> Int
-                -> SingleItemSlots
-                -> m Bool
-displayItemLore itemBag meleeSkill promptFun slotIndex lSlots = do
-  km <- displayItemLorePointedAt itemBag meleeSkill promptFun slotIndex
-                                 lSlots False
-  case K.key km of
-    K.Space -> return True
-    K.Esc -> return False
-    _ -> error $ "" `showFailure` km
-
-displayItemLorePointedAt
-  :: MonadClientUI m
-  => ItemBag -> Int -> (ItemId -> ItemFull -> Int -> Text) -> Int
-  -> SingleItemSlots -> Bool
-  -> m K.KM
-displayItemLorePointedAt itemBag meleeSkill promptFun slotIndex
-                         lSlots addTilde = do
+                -> SingleItemSlots -> Bool
+                -> m K.KM
+displayItemLore itemBag meleeSkill promptFun slotIndex lSlots addTilde = do
   CCUI{coscreen=ScreenContent{rwidth, rheight}} <- getsSession sccui
+  FontSetup{propFont} <- getFontSetup
+  let lSlotsElems = EM.elems lSlots
+      lSlotsBound = length lSlotsElems - 1
+  let keys = [K.spaceKM, K.escKM]
+             ++ [K.mkChar '~' | addTilde]
+             ++ [K.upKM | slotIndex /= 0]
+             ++ [K.downKM | slotIndex /= lSlotsBound]
+  okx <- okxItemLorePointedAt
+           propFont rwidth False itemBag meleeSkill promptFun slotIndex lSlots
+  slides <- overlayToSlideshow (rheight - 2) keys okx
+  km <- getConfirms ColorFull keys slides
+  case K.key km of
+    K.Up -> displayItemLore itemBag meleeSkill promptFun (slotIndex - 1)
+                            lSlots addTilde
+    K.Down -> displayItemLore itemBag meleeSkill promptFun (slotIndex + 1)
+                              lSlots addTilde
+    _ -> return km
+
+okxItemLorePointedAt :: MonadClientUI m
+                     => DisplayFont -> Int -> Bool -> ItemBag -> Int
+                     -> (ItemId -> ItemFull -> Int -> Text)
+                     -> Int -> SingleItemSlots
+                     -> m OKX
+okxItemLorePointedAt font width inlineMsg itemBag meleeSkill promptFun
+                     slotIndex lSlots = do
+  FontSetup{squareFont} <- getFontSetup
   side <- getsClient sside
   arena <- getArenaUI
   let lSlotsElems = EM.elems lSlots
-      lSlotsBound = length lSlotsElems - 1
       iid2 = lSlotsElems !! slotIndex
       kit2@(k, _) = itemBag EM.! iid2
   itemFull2 <- getsState $ itemToFull iid2
@@ -960,33 +969,32 @@ displayItemLorePointedAt itemBag meleeSkill promptFun slotIndex
   factionD <- getsState sfactionD
   -- The hacky level 0 marks items never seen, but sent by server at gameover.
   jlid <- getsSession $ fromMaybe (toEnum 0) <$> EM.lookup iid2 . sitemUI
-  FontSetup{..} <- getFontSetup
-  let descAl = itemDesc rwidth True side factionD meleeSkill
+  let descAl = itemDesc width True side factionD meleeSkill
                         CGround localTime jlid itemFull2 kit2
       (descSymAl, descBlurbAl) = span (/= Color.spaceAttrW32) descAl
-      descSym = offsetOverlay $ splitAttrString rwidth rwidth descSymAl
+      descSym = offsetOverlay $ splitAttrString width width descSymAl
       descBlurb = offsetOverlayX $
-        case splitAttrString rwidth rwidth $ stringToAS "xx" ++ descBlurbAl of
+        case splitAttrString width width $ stringToAS "xx" ++ descBlurbAl of
           [] -> error "splitting AttrString loses characters"
           al1 : rest ->
             (2, attrStringToAL $ drop 2 $ attrLine al1) : map (0,) rest
-      ov = EM.insertWith (++) squareFont descSym
-           $ EM.singleton propFont descBlurb
-      keys = [K.spaceKM, K.escKM]
-             ++ [K.mkChar '~' | addTilde]
-             ++ [K.upKM | slotIndex /= 0]
-             ++ [K.downKM | slotIndex /= lSlotsBound]
-  msgAdd MsgPromptGeneric $ promptFun iid2 itemFull2 k
-  slides <- overlayToSlideshow (rheight - 2) keys (ov, [])
-  km <- getConfirms ColorFull keys slides
-  case K.key km of
-    K.Up ->
-      displayItemLorePointedAt itemBag meleeSkill promptFun (slotIndex - 1)
-                               lSlots addTilde
-    K.Down ->
-      displayItemLorePointedAt itemBag meleeSkill promptFun (slotIndex + 1)
-                               lSlots addTilde
-    _ -> return km
+      prompt = promptFun iid2 itemFull2 k
+      promptBlurb | T.null prompt = []
+                  | otherwise = offsetOverlay $ splitAttrString width width
+                                              $ textFgToAS Color.Brown
+                                              $ prompt <> "\n\n"
+  (descSym2, descBlurb2) <-
+    if inlineMsg
+    then do
+      let len = length promptBlurb
+      return ( ytranslateOverlay len descSym
+             , promptBlurb ++ ytranslateOverlay len descBlurb )
+    else do
+      msgAdd MsgPromptGeneric prompt
+      return (descSym, descBlurb)
+  let ov = EM.insertWith (++) squareFont descSym2
+           $ EM.singleton font descBlurb2
+  return (ov, [])
 
 cycleLore :: MonadClientUI m => [m K.KM] -> [m K.KM] -> m ()
 cycleLore _ [] = return ()

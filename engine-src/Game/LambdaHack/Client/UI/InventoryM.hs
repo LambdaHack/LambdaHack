@@ -2,10 +2,11 @@
 module Game.LambdaHack.Client.UI.InventoryM
   ( Suitability(..), ResultItemDialogMode(..)
   , slotsOfItemDialogMode, getFull, getGroupItem, getStoreItem
+  , skillCloseUp, placeCloseUp
 #ifdef EXPOSE_INTERNAL
     -- * Internal operations
   , ItemDialogState(..), accessModeBag, storeItemPrompt, getItem
-  , DefItemKey(..), transition, keyOfEKM, runDefItemKey
+  , DefItemKey(..), transition, keyOfEKM, runDefItemKey, inventoryInRightPane
 #endif
   ) where
 
@@ -16,6 +17,7 @@ import Game.LambdaHack.Core.Prelude
 import qualified Data.Char as Char
 import           Data.Either
 import qualified Data.EnumMap.Strict as EM
+import qualified Data.EnumSet as ES
 import qualified Data.Text as T
 import qualified NLP.Miniutter.English as MU
 
@@ -24,6 +26,7 @@ import           Game.LambdaHack.Client.State
 import           Game.LambdaHack.Client.UI.ActorUI
 import           Game.LambdaHack.Client.UI.Content.Screen
 import           Game.LambdaHack.Client.UI.ContentClientUI
+import           Game.LambdaHack.Client.UI.EffectDescription
 import           Game.LambdaHack.Client.UI.Frame
 import           Game.LambdaHack.Client.UI.HandleHelperM
 import           Game.LambdaHack.Client.UI.HumanCmd
@@ -32,11 +35,13 @@ import qualified Game.LambdaHack.Client.UI.Key as K
 import           Game.LambdaHack.Client.UI.MonadClientUI
 import           Game.LambdaHack.Client.UI.Msg
 import           Game.LambdaHack.Client.UI.MsgM
+import           Game.LambdaHack.Client.UI.Overlay
 import           Game.LambdaHack.Client.UI.SessionUI
 import           Game.LambdaHack.Client.UI.Slideshow
 import           Game.LambdaHack.Client.UI.SlideshowM
 import           Game.LambdaHack.Common.Actor
 import           Game.LambdaHack.Common.ActorState
+import           Game.LambdaHack.Common.ClientOptions
 import           Game.LambdaHack.Common.Faction
 import           Game.LambdaHack.Common.Item
 import qualified Game.LambdaHack.Common.ItemAspect as IA
@@ -46,7 +51,9 @@ import           Game.LambdaHack.Common.MonadStateRead
 import           Game.LambdaHack.Common.State
 import           Game.LambdaHack.Common.Types
 import qualified Game.LambdaHack.Content.ItemKind as IK
+import qualified Game.LambdaHack.Content.PlaceKind as PK
 import qualified Game.LambdaHack.Definition.Ability as Ability
+import qualified Game.LambdaHack.Definition.Color as Color
 import           Game.LambdaHack.Definition.Defs
 
 data ItemDialogState = ISuitable | IAll
@@ -327,7 +334,7 @@ getItem leader psuit prompt promptGeneric cCur cRest askWhenLone
 data DefItemKey m = DefItemKey
   { defLabel  :: Either Text K.KM
   , defCond   :: Bool
-  , defAction :: Either K.KM SlotChar -> m (Either Text ResultItemDialogMode)
+  , defAction :: KeyOrSlot -> m (Either Text ResultItemDialogMode)
   }
 
 data Suitability =
@@ -546,7 +553,8 @@ transition leader psuit prompt promptGeneric permitMulitple
                                   $ elemIndex slot allSlots
                   in return (Right (resultConstructor slotIndex))
               }
-        runDefItemKey keyDefs skillsDef io slotKeys promptChosen cCur
+        runDefItemKey leader lSlots bagFiltered keyDefs skillsDef io slotKeys
+                      promptChosen cCur
   case cCur of
     MSkills -> do
       io <- skillsOverlay leader
@@ -563,9 +571,10 @@ transition leader psuit prompt promptGeneric permitMulitple
       io <- itemOverlay lSlots (blid body) bagFiltered displayRanged
       let slotKeys = mapMaybe (keyOfEKM numPrefix . Right)
                      $ EM.keys bagItemSlots
-      runDefItemKey keyDefs lettersDef io slotKeys promptChosen cCur
+      runDefItemKey leader lSlots bagFiltered keyDefs lettersDef io slotKeys
+                    promptChosen cCur
 
-keyOfEKM :: Int -> Either [K.KM] SlotChar -> Maybe K.KM
+keyOfEKM :: Int -> KeyOrSlot -> Maybe K.KM
 keyOfEKM _ (Left kms) = error $ "" `showFailure` kms
 keyOfEKM numPrefix (Right SlotChar{..}) | slotPrefix == numPrefix =
   Just $ K.mkChar slotChar
@@ -574,14 +583,17 @@ keyOfEKM _ _ = Nothing
 -- We don't create keys from slots in @okx@, so they have to be
 -- exolicitly given in @slotKeys@.
 runDefItemKey :: MonadClientUI m
-              => [(K.KM, DefItemKey m)]
+              => ActorId
+              -> SingleItemSlots
+              -> ItemBag
+              -> [(K.KM, DefItemKey m)]
               -> DefItemKey m
               -> OKX
               -> [K.KM]
               -> Text
               -> ItemDialogMode
               -> m (Either Text ResultItemDialogMode)
-runDefItemKey keyDefs lettersDef okx slotKeys prompt cCur = do
+runDefItemKey leader lSlots bag keyDefs lettersDef okx slotKeys prompt cCur = do
   let itemKeys = slotKeys ++ map fst keyDefs
       wrapB s = "[" <> s <> "]"
       (keyLabelsRaw, keys) = partitionEithers $ map (defLabel . snd) keyDefs
@@ -591,10 +603,118 @@ runDefItemKey keyDefs lettersDef okx slotKeys prompt cCur = do
   msgAdd MsgPromptGeneric $ prompt <+> choice
   CCUI{coscreen=ScreenContent{rheight}} <- getsSession sccui
   ekm <- do
-    okxs <- overlayToSlideshow (rheight - 2) keys okx
-    displayChoiceScreen (show cCur) ColorFull False okxs itemKeys
+    sli <- overlayToSlideshow (rheight - 2) keys okx
+    displayChoiceScreenWithRightPane
+      (inventoryInRightPane leader lSlots bag cCur)
+      (show cCur) ColorFull False sli itemKeys
   case ekm of
     Left km -> case km `lookup` keyDefs of
       Just keyDef -> defAction keyDef ekm
       Nothing -> defAction lettersDef ekm  -- pressed; with current prefix
     Right _slot -> defAction lettersDef ekm  -- selected; with the given prefix
+
+inventoryInRightPane :: MonadClientUI m
+                     => ActorId -> SingleItemSlots -> ItemBag -> ItemDialogMode
+                     -> KeyOrSlot
+                     -> m OKX
+inventoryInRightPane leader lSlots bag c ekm = case ekm of
+  Left{} -> return emptyOKX
+  Right slot -> do
+    CCUI{coscreen=ScreenContent{rwidth}} <- getsSession sccui
+    FontSetup{..} <- getFontSetup
+    let -- Lower width, to permit extra vertical space at the start,
+        -- because gameover menu prompts are sometimes wide and/or long.
+       width = rwidth - 2
+       slotIndex = fromMaybe (error "illegal slot") $ elemIndex slot allSlots
+    case c of
+      _ | isSquareFont propFont -> return emptyOKX
+      MSkills -> do
+        (prompt, attrString) <- skillCloseUp leader slotIndex
+        let promptAS | T.null prompt = []
+                     | otherwise = textFgToAS Color.Brown $ prompt <> "\n\n"
+            ov = EM.singleton propFont $ offsetOverlay
+                                       $ splitAttrString width width
+                                       $ promptAS ++ attrString
+        return (ov, [])
+      MPlaces -> do
+        COps{coplace} <- getsState scops
+        soptions <- getsClient soptions
+        -- This is very slow when many places are exposed,
+        -- because this is computed once per place menu keypress.
+        -- Fortunately, the mode after entering a place and with pressing
+        -- up and down arrow keys is not quadratic, so should be used instead,
+        -- particularly with @sexposePlaces@.
+        places <- getsState $ EM.assocs
+                              . placesFromState coplace (sexposePlaces soptions)
+        (prompt, blurbs) <-
+          placeCloseUp places (sexposePlaces soptions) slotIndex
+        let promptAS | T.null prompt = []
+                     | otherwise = textFgToAS Color.Brown $ prompt <> "\n\n"
+            ov = attrLinesToFontMap
+                 $ map (second $ concatMap (splitAttrString width width))
+                 $ (propFont, [promptAS]) : map (second $ map textToAS) blurbs
+        return (ov, [])
+      MModes -> return emptyOKX
+        -- modes cover the right part of screen, so let's keep it empty
+      _ -> do
+        let ix0 = fromMaybe (error $ show slot)
+                            (elemIndex slot $ EM.keys lSlots)
+            promptFun _iid _itemFull _k = ""
+              -- TODO, e.g., if the party still owns any copies, if the actor
+              -- was ever killed by us or killed ours, etc.
+              -- This can be the same prompt or longer than what entering
+              -- the item screen shows.
+        -- Mono font used, because lots of numbers in these blurbs
+        -- and because some prop fonts wider than mono (e.g., in the
+        -- dejavuBold font set).
+        okxItemLorePointedAt
+          monoFont (rwidth - 2) True bag 0 promptFun ix0 lSlots
+
+skillCloseUp :: MonadClientUI m => ActorId -> Int -> m (Text, AttrString)
+skillCloseUp leader slotIndex = do
+  b <- getsState $ getActorBody leader
+  bUI <- getsSession $ getActorUI leader
+  actorCurAndMaxSk <- getsState $ getActorMaxSkills leader
+  let skill = skillSlots !! slotIndex
+      valueText = skillToDecorator skill b
+                  $ Ability.getSk skill actorCurAndMaxSk
+      prompt = makeSentence
+        [ MU.WownW (partActor bUI) (MU.Text $ skillName skill)
+        , "is", MU.Text valueText ]
+      attrString = textToAS $ skillDesc skill
+  return (prompt, attrString)
+
+placeCloseUp :: MonadClientUI m
+             => [(ContentId PK.PlaceKind, (ES.EnumSet LevelId, Int, Int, Int))]
+             -> Bool
+             -> Int
+             -> m (Text, [(DisplayFont, [Text])])
+placeCloseUp places sexposePlaces slotIndex = do
+  COps{coplace} <- getsState scops
+  FontSetup{..} <- getFontSetup
+  let (pk, (es, ne, na, _)) = places !! slotIndex
+      pkind = okind coplace pk
+      prompt = makeSentence ["you remember", MU.Text $ PK.pname pkind]
+      freqsText = "Frequencies:" <+> T.intercalate " "
+        (map (\(grp, n) -> "(" <> displayGroupName grp
+                           <> ", " <> tshow n <> ")")
+         $ PK.pfreq pkind)
+      onLevels | ES.null es = []
+               | otherwise = [makeSentence
+                               [ "Appears on"
+                               , MU.CarWs (ES.size es) "level" <> ":"
+                               , MU.WWandW $ map MU.Car $ sort
+                                 $ map (abs . fromEnum) $ ES.elems es ]]
+      placeParts = ["it has" | ne > 0 || na > 0]
+                   ++ [MU.CarWs ne "entrance" | ne > 0]
+                   ++ ["and" | ne > 0 && na > 0]
+                   ++ [MU.CarWs na "surrounding" | na > 0]
+      partsSentence | null placeParts = []
+                    | otherwise = [makeSentence placeParts, "\n"]
+      -- Ideally, place layout would be in SquareFont and the rest
+      -- in PropFont, but this is mostly a debug screen, so KISS.
+      blurbs = [(propFont, partsSentence)]
+               ++ [(monoFont, [freqsText, "\n"]) | sexposePlaces]
+               ++ [(squareFont, PK.ptopLeft pkind ++ ["\n"]) | sexposePlaces]
+               ++ [(propFont, onLevels)]
+  return (prompt, blurbs)
