@@ -54,6 +54,7 @@ import           Game.LambdaHack.Common.ClientOptions
 import           Game.LambdaHack.Common.Faction
 import           Game.LambdaHack.Common.MonadStateRead
 import           Game.LambdaHack.Common.State
+import           Game.LambdaHack.Content.ModeKind
 
 -- | Handle the move of a human player.
 queryUI :: (MonadClient m, MonadClientUI m) => m (Maybe RequestUI)
@@ -167,8 +168,11 @@ stepQueryUI = do
     Just leader -> do
       body <- getsState $ getActorBody leader
       lastLost <- getsSession slastLost
-      if bhp body <= 0 then
-        when (leader `ES.notMember` lastLost) $ do
+      if bhp body <= 0 then do
+        side <- getsClient sside
+        fact <- getsState $ (EM.! side) . sfactionD
+        let gameOver = maybe False ((/= Camping) . stOutcome) (gquit fact)
+        when (not gameOver && leader `ES.notMember` lastLost) $ do
           -- Hacky reuse of @slastLost@ for near-death spam prevention.
           modifySession $ \sess ->
             sess {slastLost = ES.insert leader lastLost}

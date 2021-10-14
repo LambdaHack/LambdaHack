@@ -253,7 +253,7 @@ computeChosenLore = do
   lidV <- viewedLevelUI
   let isOurs (_, b) = bfid b == side
   inhabitants0 <- getsState $ filter (not . isOurs)
-                  . posToAidAssocs xhairPos lidV
+                              . posToAidAssocs xhairPos lidV
   embeds0 <- getsState $ EM.assocs . getEmbedBag lidV xhairPos
   return (inhabitants0, embeds0)
 
