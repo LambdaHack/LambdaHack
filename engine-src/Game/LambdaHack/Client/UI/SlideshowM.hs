@@ -197,8 +197,8 @@ stepChoiceScreen menuName dm sfBlank frsX extraKeys = do
       legalKeys = keys
                   ++ navigationKeys
                   ++ [K.mkChar '?' | menuName == "help"]  -- a hack
-      maxIx = length (concatMap snd frs) - 1
       allOKX = concatMap snd frs
+      maxIx = length allOKX - 1
       initIx = case findIndex (isRight . fst) allOKX of
         Just p -> p
         _ -> 0  -- can't be @length allOKX@ or a multi-page item menu
