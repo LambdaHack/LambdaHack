@@ -228,9 +228,13 @@ stepChoiceScreen menuName dm sfBlank frsX extraKeys = do
               -- and the third no longer than half width.
               -- We also add two to three lines of backdrop at the bottom.
               ymax = maxYofFontOverlayMap ovsRight0
-              -- Apparently spaces can be really narrow, hence so many.
-              spaceRectangle = rectangleOfSpaces (rwidth * 4)
-                                                 (min canvasLength $ ymax + 5)
+              -- Apparently prop spaces can be really narrow, hence so many.
+              -- With square font, this obscures the link in main menu,
+              -- so would need to complicated.
+              spaceRectangle | isSquareFont propFont = []
+                             | otherwise =
+                                 rectangleOfSpaces (rwidth * 4)
+                                                   (min canvasLength $ ymax + 5)
               trim = filter (\(PointUI _ yRight, _) -> yRight < trimmedY)
               -- The alert not clickable, because the player can enter
               -- the menu entry and scroll through the unabridged blurb.
@@ -240,8 +244,8 @@ stepChoiceScreen menuName dm sfBlank frsX extraKeys = do
                                  (EM.map trim ovsRight0)
                                  (EM.singleton monoFont [trimmedAlert])
               ovsRight = EM.unionWith (++)
-                          (EM.singleton propFont spaceRectangle)
-                          (EM.map (xytranslateOverlay 2 2) ovsRight1)
+                           (EM.singleton propFont spaceRectangle)
+                           (EM.map (xytranslateOverlay 2 2) ovsRight1)
               (ovs, kyxs) =
                 if EM.null ovsRight0
                 then (ovs1, kyxs1)
