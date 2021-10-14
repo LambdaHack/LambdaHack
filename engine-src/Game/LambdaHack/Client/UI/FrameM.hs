@@ -26,7 +26,6 @@ import           Game.LambdaHack.Client.UI.Content.Screen
 import           Game.LambdaHack.Client.UI.ContentClientUI
 import           Game.LambdaHack.Client.UI.DrawM
 import           Game.LambdaHack.Client.UI.Frame
-import qualified Game.LambdaHack.Client.UI.Frontend as Frontend
 import qualified Game.LambdaHack.Client.UI.HumanCmd as HumanCmd
 import qualified Game.LambdaHack.Client.UI.Key as K
 import           Game.LambdaHack.Client.UI.MonadClientUI
@@ -57,14 +56,10 @@ drawOverlay dm onBlank ovs lid = do
                   return (m, FrameForall $ \_v -> return ())
                 else drawHudFrame dm lid
   FontSetup{..} <- getFontSetup
-  soptions <- getsClient soptions
-  let isTeletype = Frontend.frontendName soptions == "teletype"
-      propWidth = if isMonoFont propFont then 2 * rwidth else 4 * rwidth
+  let propWidth = if isMonoFont propFont then 2 * rwidth else 4 * rwidth
       ovProp | not $ isSquareFont propFont
              = truncateOverlay False propWidth rheight False 0 onBlank
                $ EM.findWithDefault [] propFont ovs
-             | isTeletype  -- hack for debug output
-             = map (second attrLine) $ concat $ EM.elems ovs
              | otherwise = []
       ovMono = if not $ isSquareFont monoFont
                then truncateOverlay False (2 * rwidth) rheight False 0 onBlank
