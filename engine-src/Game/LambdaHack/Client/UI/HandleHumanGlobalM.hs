@@ -1704,11 +1704,6 @@ mainMenuHuman cmdSemInCxtOfKM = do
   gameMode <- getGameMode
   curChal <- getsClient scurChal
   let offOn b = if b then "on" else "off"
-      tcurDiff   = "   with difficulty:" <+> tshow (cdiff curChal)
-      tcurFish   = "       cold fish:" <+> offOn (cfish curChal)
-      tcurGoods  = "     ready goods:" <+> offOn (cgoods curChal)
-      tcurWolf   = "       lone wolf:" <+> offOn (cwolf curChal)
-      tcurKeeper = "   finder keeper:" <+> offOn (ckeeper curChal)
       -- Key-description-command tuples.
       kds = [ ("s", ("setup and start new game>", ChallengeMenu, Nothing))
             , ("x", ("save and exit to desktop", GameExit, Nothing))
@@ -1721,11 +1716,11 @@ mainMenuHuman cmdSemInCxtOfKM = do
       gameInfo = map T.unpack
                    [ "Now playing:" <+> gameName
                    , ""
-                   , tcurDiff
-                   , tcurFish
-                   , tcurGoods
-                   , tcurWolf
-                   , tcurKeeper
+                   , "   with difficulty:" <+> tshow (cdiff curChal)
+                   , "       cold fish:" <+> offOn (cfish curChal)
+                   , "     ready goods:" <+> offOn (cgoods curChal)
+                   , "       lone wolf:" <+> offOn (cwolf curChal)
+                   , "   finder keeper:" <+> offOn (ckeeper curChal)
                    , "" ]
       glueLines (l1 : l2 : rest) =
         if | null l1 -> l1 : glueLines (l2 : rest)
@@ -1847,17 +1842,12 @@ challengeMenuHuman cmdSemInCxtOfKM = do
       offOn b = if b then "on" else "off"
       starTut t = if isJust overrideTut then "*" <> t else t
       displayTutorialHints = fromMaybe nxtTutorial overrideTut
-      tnextTutorial = "tutorial hints:"
-                      <+> starTut (offOn displayTutorialHints)
+      tnextTutorial = "tutorial hints:" <+> starTut (offOn displayTutorialHints)
       tnextDiff = "difficulty level:" <+> tshow (cdiff nxtChal)
-      tnextFish   = "cold fish (rather hard):"
-                    <+> offOn (cfish nxtChal)
-      tnextGoods  = "ready goods (hard):"
-                    <+> offOn (cgoods nxtChal)
-      tnextWolf   = "lone wolf (very hard):"
-                    <+> offOn (cwolf nxtChal)
-      tnextKeeper = "finder keeper (hard):"
-                    <+> offOn (ckeeper nxtChal)
+      tnextFish = "cold fish (rather hard):" <+> offOn (cfish nxtChal)
+      tnextGoods = "ready goods (hard):" <+> offOn (cgoods nxtChal)
+      tnextWolf = "lone wolf (very hard):" <+> offOn (cwolf nxtChal)
+      tnextKeeper = "finder keeper (hard):" <+> offOn (ckeeper nxtChal)
       width = if isSquareFont propFont
               then rwidth `div` 2
               else min uMsgWrapColumn (rwidth - 2)
