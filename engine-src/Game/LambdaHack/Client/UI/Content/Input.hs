@@ -69,30 +69,24 @@ makeData muiOptions (InputContentRaw copsClient) =
       -- This is the most common case of duplicate keys and it usually
       -- has an easy solution, so it's tested for first.
       !_A = flip assert () $
-        let isNotMainMenu (_, (cats, _, _)) = all (`notElem` [CmdMainMenu]) cats
-            rawContentNoMainMenu = filter isNotMainMenu rawContent
-            movementKeys = map fst movementDefinitions
-            filteredNoMainMenu = filter (\(k, _) -> k `notElem` movementKeys)
-                                        rawContentNoMainMenu
-        in rawContentNoMainMenu == filteredNoMainMenu
+        let movementKeys = map fst movementDefinitions
+            filteredNoMovement = filter (\(k, _) -> k `notElem` movementKeys)
+                                        rawContent
+        in rawContent == filteredNoMovement
            `blame` "commands overwrite the enabled movement keys (you can disable some in config file and try again)"
-           `swith` rawContentNoMainMenu \\ filteredNoMainMenu
+           `swith` rawContent \\ filteredNoMovement
       bcmdList = rawContent ++ movementDefinitions
       -- This catches repetitions (usually) not involving movement keys.
       rejectRepetitions k t1 t2 =
         error $ "duplicate key among command definitions (you can instead disable some movement key sets in config file and overwrite the freed keys)" `showFailure` (k, t1, t2)
   in InputContent
-  { bcmdMap = M.fromListWithKey rejectRepetitions
-      [ (k, triple)
-      | (k, triple@(cats, _, _)) <- bcmdList
-      , all (`notElem` [CmdMainMenu]) cats
-      ]
+  { bcmdMap = M.fromListWithKey rejectRepetitions bcmdList
   , bcmdList
   , brevMap = M.fromListWith (flip (++)) $ concat
       [ [(cmd, [k])]
       | (k, (cats, _desc, cmd)) <- bcmdList
       , not (null cats)
-        && all (`notElem` [CmdMainMenu, CmdDebug]) cats
+        && all (/= CmdDebug) cats
       ]
   }
 

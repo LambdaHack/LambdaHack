@@ -29,19 +29,10 @@ standardKeysAndMouse = InputContentRaw $ map evalKeyDef $
   -- Remember to put commands that show information (e.g., enter aiming
   -- mode) first.
 
-  -- Main menu
-  [ ("s", ([CmdMainMenu], "setup and start new game>", ChallengeMenu))
-  , ("x", ([CmdMainMenu], "save and exit to desktop", GameExit))
-  , ("c", ([CmdMainMenu], "tweak convenience settings>", SettingsMenu))
-  , ("t", ([CmdMainMenu], "toggle autoplay", AutomateToggle))
-  , ("?", ([CmdMainMenu], "see command help", Help))
-  , ("F12", ([CmdMainMenu], "switch to dashboard", Dashboard))
-  , ("Escape", ([CmdMainMenu], "back to playing", AutomateBack))
-
   -- Minimal command set, in the desired presentation order.
   -- A lot of these are not necessary, but may be familiar to new players.
   -- Also a few non-minimal item commands to keep proper order.
-  , ("I", ( [CmdMinimal, CmdItem, CmdDashboard]
+  [ ("I", ( [CmdMinimal, CmdItem, CmdDashboard]
           , "manage the shared inventory stash"
           , ChooseItemMenu (MStore CStash) ))
   , ("O", ( [CmdItem, CmdDashboard]

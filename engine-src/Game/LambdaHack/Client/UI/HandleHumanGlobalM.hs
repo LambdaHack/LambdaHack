@@ -1699,8 +1699,7 @@ mainMenuHuman :: MonadClientUI m
               => (K.KM -> HumanCmd -> m (Either MError ReqUI))
               -> m (Either MError ReqUI)
 mainMenuHuman cmdSemInCxtOfKM = do
-  CCUI{ coinput=InputContent{bcmdList}
-      , coscreen=ScreenContent{rintroScreen} } <- getsSession sccui
+  CCUI{coscreen=ScreenContent{rintroScreen}} <- getsSession sccui
   FontSetup{propFont} <- getFontSetup
   gameMode <- getGameMode
   curChal <- getsClient scurChal
@@ -1711,8 +1710,13 @@ mainMenuHuman cmdSemInCxtOfKM = do
       tcurWolf   = "       lone wolf:" <+> offOn (cwolf curChal)
       tcurKeeper = "   finder keeper:" <+> offOn (ckeeper curChal)
       -- Key-description-command tuples.
-      kds = [ ("TODO", (desc, cmd, Nothing))
-            | (km, ([CmdMainMenu], desc, cmd)) <- bcmdList ]
+      kds = [ ("s", ("setup and start new game>", ChallengeMenu, Nothing))
+            , ("x", ("save and exit to desktop", GameExit, Nothing))
+            , ("c", ("tweak convenience settings>", SettingsMenu, Nothing))
+            , ("t", ("toggle autoplay", AutomateToggle, Nothing))
+            , ("?", ("see command help", Help, Nothing))
+            , ("F12", ("switch to dashboard", Dashboard, Nothing))
+            , ("Escape", ("back to playing", AutomateBack, Nothing)) ]
       gameName = MK.mname gameMode
       gameInfo = map T.unpack
                    [ "Now playing:" <+> gameName
