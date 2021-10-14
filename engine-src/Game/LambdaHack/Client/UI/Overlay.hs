@@ -6,8 +6,7 @@ module Game.LambdaHack.Client.UI.Overlay
   , (<+:>), (<\:>)
     -- * AttrLine
   , AttrLine, attrLine, emptyAttrLine, attrStringToAL, firstParagraph, linesAttr
-  , textToAL, textFgToAL, stringToAL, splitAttrString
-  , indentSplitAttrString, indentSplitAttrString2
+  , textToAL, textFgToAL, stringToAL, splitAttrString, indentSplitAttrString2
     -- * Overlay
   , Overlay, xytranslateOverlay, xtranslateOverlay, ytranslateOverlay
   , offsetOverlay, offsetOverlayX, updateLine, rectangleOfSpaces, maxYofOverlay
@@ -176,13 +175,6 @@ splitAttrString w0 w1 l = case linesAttr l of
      . AttrLine . dropWhile (== Color.spaceAttrW32) . attrLine) x
     ++ concatMap (splitAttrPhrase w1 w1
                   . AttrLine . dropWhile (== Color.spaceAttrW32) . attrLine) xs
-
-indentSplitAttrString :: Int -> AttrString -> [AttrLine]
-indentSplitAttrString w l =
-  let ts = splitAttrString w (w - 1) l
-  in case ts of
-    [] -> []
-    hd : tl -> hd : map (AttrLine . ([Color.spaceAttrW32] ++) . attrLine) tl
 
 indentSplitAttrString2 :: Bool -> Int -> AttrString -> [AttrLine]
 indentSplitAttrString2 isProp w l =

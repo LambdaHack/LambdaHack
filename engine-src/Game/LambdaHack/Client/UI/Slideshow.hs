@@ -286,10 +286,10 @@ splitOKX FontSetup{..} msgLong width height wrap reportAS keys (ls0, kxs0) =
       monoWidth = if null repProp then msgWidth else msgWrap
       repMono0 = ytranslateOverlay (length repProp0)
                  $ offsetOverlay
-                 $ indentSplitAttrString monoWidth $ attrLine repMono
+                 $ indentSplitAttrString2 False monoWidth $ attrLine repMono
       repMonoW = ytranslateOverlay (length repPropW)
                  $ offsetOverlay
-                 $ indentSplitAttrString width $ attrLine repMono
+                 $ indentSplitAttrString2 False width $ attrLine repMono
       repWhole0 = offsetOverlay
                   $ concatMap (indentSplitSpaces msgWidth . attrLine)
                               reportParagraphs
