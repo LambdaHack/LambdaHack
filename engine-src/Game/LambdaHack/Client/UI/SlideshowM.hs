@@ -136,15 +136,11 @@ displayChoiceScreenWithRightPane
   -> m KeyOrSlot
 displayChoiceScreenWithRightPane displayInRightPane
                                  menuName dm sfBlank frsX extraKeys = do
-  FontSetup{propFont} <- getFontSetup
-  let displayInRightUnlessSquare km = if isSquareFont propFont
-                                      then return emptyOKX
-                                      else displayInRightPane km
   (maxIx, initIx, clearIx, m) <-
     stepChoiceScreen menuName dm sfBlank frsX extraKeys
   let loop :: Int -> KeyOrSlot -> m (KeyOrSlot, Int)
       loop pointer km = do
-        okxRight <- displayInRightUnlessSquare km
+        okxRight <- displayInRightPane km
         (final, km1, pointer1) <- m pointer okxRight
         if final
         then return (km1, pointer1)

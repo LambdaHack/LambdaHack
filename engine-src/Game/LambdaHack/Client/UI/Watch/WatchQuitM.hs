@@ -317,7 +317,7 @@ viewLoreItems :: forall m . MonadClientUI m
               -> m K.KM
 viewLoreItems menuName lSlotsRaw trunkBag prompt promptFun displayRanged = do
   CCUI{coscreen=ScreenContent{rwidth, rheight}} <- getsSession sccui
-  FontSetup{monoFont} <- getFontSetup
+  FontSetup{..} <- getFontSetup
   arena <- getArenaUI
   itemToF <- getsState $ flip itemToFull
   let keysPre = [K.spaceKM, K.mkChar '<', K.mkChar '>', K.escKM]
@@ -331,6 +331,7 @@ viewLoreItems menuName lSlotsRaw trunkBag prompt promptFun displayRanged = do
       keysMain = keysPre ++ map (keyOfEKM . fst) allOKX
       displayInRightPane :: KeyOrSlot -> m OKX
       displayInRightPane ekm = case ekm of
+        _ | isSquareFont propFont -> return emptyOKX
         Left{} -> return emptyOKX
         Right slot -> do
           let ix0 = fromMaybe (error $ show slot)
