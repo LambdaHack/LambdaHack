@@ -1806,9 +1806,9 @@ settingsMenuHuman cmdSemInCxtOfKM = do
                            , textToBlurb "* display smell clues\nThis setting affects the ongoing and the next games. It determines whether the map displays any smell traces (regardless of who left them) detected by a party member that can track via smell (as determined by the smell radius skill; not common among humans)." ))
             , (K.mkKM "a", (tanim, MarkAnim
                            , textToBlurb "* play animations\nThis setting affects the ongoing and the next games. It determines whether important events, such combat, are highlighted by animations. This overrides the corresponding config file setting." ))
-            , (K.mkKM "t", (tdoctrine, Doctrine
+            , (K.mkKM "d", (tdoctrine, Doctrine
                            , textToBlurb "* squad doctrine\nThis setting affects the ongoing game, but does not persist to the next games. It determines the behaviour of henchmen (non-pointman characters) in the party and, in particular, if they are permitted to move autonomously or fire opportunistically (assuming they are able to, usually due to rare equipment). This setting has a poor UI that will be improved in the future." ))
-            , (K.mkKM "o", (toverride, OverrideTut
+            , (K.mkKM "t", (toverride, OverrideTut
                            , textToBlurb "* override tutorial hints\nThis setting affects the ongoing and the next games. It determines whether tutorial hints are, respectively, not overridden with respect to the setting that was chosen when starting the current game, forced to be off, forced to be on." ))
             , (K.mkKM "Escape", ( "back to main menu", MainMenu
                                 , Just EM.empty )) ]
