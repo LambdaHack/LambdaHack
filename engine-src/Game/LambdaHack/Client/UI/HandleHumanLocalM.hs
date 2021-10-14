@@ -882,11 +882,25 @@ printScreenHuman = do
 
 -- * Cancel
 
--- | End aiming mode, rejecting the current position.
+-- | End aiming mode, rejecting the current position, unless when on
+-- remote level, in which case, return to our level.
 cancelHuman :: MonadClientUI m => m ()
 cancelHuman = do
-  saimMode <- getsSession saimMode
-  when (isJust saimMode) clearAimMode
+  maimMode <- getsSession saimMode
+  case maimMode of
+    Just aimMode -> do
+      let lidV = aimLevelId aimMode
+      lidOur <- getArenaUI
+      if lidV == lidOur
+      then clearAimMode
+      else do
+        xhairPos <- xhairToPos
+        let sxhair = Just $ TPoint TKnown lidOur xhairPos
+        modifySession $ \sess ->
+          sess {saimMode = Just aimMode {aimLevelId = lidOur}}
+        setXHairFromGUI sxhair
+        doLook
+    Nothing -> return ()
 
 -- * Accept
 
