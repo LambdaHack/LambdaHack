@@ -1782,7 +1782,7 @@ settingsMenuHuman cmdSemInCxtOfKM = do
         2 -> "always"
         _ -> error $ "" `showFailure` n
       offOnUnset mb = case mb of
-        Nothing -> "no override"
+        Nothing -> "pass"
         Just b -> if b then "force on" else "force off"
       tsuspect = "mark suspect terrain:" <+> offOnAll markSuspect
       tvisible = "show visible zone:" <+> neverEver markVision
