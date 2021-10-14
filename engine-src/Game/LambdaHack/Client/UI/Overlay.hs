@@ -6,7 +6,7 @@ module Game.LambdaHack.Client.UI.Overlay
   , (<+:>), (<\:>)
     -- * AttrLine
   , AttrLine, attrLine, emptyAttrLine, attrStringToAL, firstParagraph, linesAttr
-  , textToAL, textFgToAL, stringToAL, splitAttrString, indentSplitAttrString2
+  , textToAL, textFgToAL, stringToAL, splitAttrString, indentSplitAttrString
     -- * Overlay
   , Overlay, xytranslateOverlay, xtranslateOverlay, ytranslateOverlay
   , offsetOverlay, offsetOverlayX, updateLine, rectangleOfSpaces, maxYofOverlay
@@ -176,8 +176,10 @@ splitAttrString w0 w1 l = case linesAttr l of
     ++ concatMap (splitAttrPhrase w1 w1
                   . AttrLine . dropWhile (== Color.spaceAttrW32) . attrLine) xs
 
-indentSplitAttrString2 :: Bool -> Int -> AttrString -> [AttrLine]
-indentSplitAttrString2 isProp w l =
+indentSplitAttrString :: Bool -> Int -> AttrString -> [AttrLine]
+indentSplitAttrString isProp w l =
+  -- Sadly this depends on how wide the space is in propotional font,
+  -- which varies wildly, so we err on the side of larger indent.
   let nspaces = if isProp then 4 else 2
       ts = splitAttrString w (w - nspaces) l
       -- Proportional spaces are very narrow.

@@ -248,7 +248,7 @@ splitOKX :: FontSetup -> Bool -> Int -> Int -> Int -> AttrString -> [K.KM]
          -> [OKX]
 splitOKX FontSetup{..} msgLong width height wrap reportAS keys (ls0, kxs0) =
   assert (height > 2) $
-  let indentSplitSpaces = indentSplitAttrString2
+  let indentSplitSpaces = indentSplitAttrString
                             (not (isMonoFont propFont || isSquareFont propFont))
       reportParagraphs = linesAttr reportAS
       -- TODO: until SDL support for measuring prop font text is released,
@@ -286,10 +286,10 @@ splitOKX FontSetup{..} msgLong width height wrap reportAS keys (ls0, kxs0) =
       monoWidth = if null repProp then msgWidth else msgWrap
       repMono0 = ytranslateOverlay (length repProp0)
                  $ offsetOverlay
-                 $ indentSplitAttrString2 False monoWidth $ attrLine repMono
+                 $ indentSplitAttrString False monoWidth $ attrLine repMono
       repMonoW = ytranslateOverlay (length repPropW)
                  $ offsetOverlay
-                 $ indentSplitAttrString2 False width $ attrLine repMono
+                 $ indentSplitAttrString False width $ attrLine repMono
       repWhole0 = offsetOverlay
                   $ concatMap (indentSplitSpaces msgWidth . attrLine)
                               reportParagraphs
