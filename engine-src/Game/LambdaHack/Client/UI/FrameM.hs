@@ -1,11 +1,11 @@
 -- | A set of Frame monad operations.
 module Game.LambdaHack.Client.UI.FrameM
-  ( basicFrameWithoutReport, promptGetKey, addToMacro, dropEmptyMacroFrames
+  ( promptGetKey, addToMacro, dropEmptyMacroFrames
   , lastMacroFrame, stopPlayBack, renderAnimFrames, animate
 #ifdef EXPOSE_INTERNAL
     -- * Internal operations
   , drawOverlay
-  , resetPlayBack, restoreLeaderFromRun
+  , resetPlayBack, restoreLeaderFromRun, basicFrameForAnimation
 #endif
   ) where
 
@@ -107,27 +107,6 @@ drawOverlay dm onBlank ovs lid = do
       overlayedFrame = overlayFrame rwidth ovOther
                        $ overlayFrame rwidth ovBackdrop basicFrame
   return (overlayedFrame, (ovProp, ovSquare, ovMono))
-
--- This is not our turn, so we can't obstruct screen with messages
--- and message reformatting causes distraction, so there's no point
--- trying to squeeze the report into the single available line,
--- except when it's not our turn permanently, because AI runs UI.
---
--- The only real drawback of this is that when resting for longer time
--- I can't see the boring messages accumulate until a non-boring interrupts me.
-basicFrameWithoutReport :: MonadClientUI m
-                        => LevelId -> Maybe Bool -> m PreFrame3
-basicFrameWithoutReport arena forceReport = do
-  FontSetup{propFont} <- getFontSetup
-  side <- getsClient sside
-  fact <- getsState $ (EM.! side) . sfactionD
-  report <- getReportUI False
-  let par1 = firstParagraph $ foldr (<+:>) [] $ renderReport True report
-      underAI = isAIFact fact
-      truncRep | fromMaybe underAI forceReport =
-                   EM.fromList [(propFont, [(PointUI 0 0, par1)])]
-               | otherwise = EM.empty
-  drawOverlay ColorFull False truncRep arena
 
 promptGetKey :: MonadClientUI m
              => ColorMode -> FontOverlayMap -> Bool -> [K.KM]
@@ -251,13 +230,34 @@ restoreLeaderFromRun = do
       when (memA && not (noRunWithMulti fact)) $
         updateClientLeader runLeader
 
+-- This is not our turn, so we can't obstruct screen with messages
+-- and message reformatting causes distraction, so there's no point
+-- trying to squeeze the report into the single available line,
+-- except when it's not our turn permanently, because AI runs UI.
+basicFrameForAnimation :: MonadClientUI m
+                        => LevelId -> Maybe Bool -> m PreFrame3
+basicFrameForAnimation arena forceReport = do
+  FontSetup{propFont} <- getFontSetup
+  sbenchMessages <- getsClient $ sbenchMessages . soptions
+  side <- getsClient sside
+  fact <- getsState $ (EM.! side) . sfactionD
+  report <- getReportUI False
+  let par1 = firstParagraph $ foldr (<+:>) [] $ renderReport True report
+      underAI = isAIFact fact
+      -- If messages are benchmarked, they can't be displayed under AI,
+      -- because this is not realistic when player is in control.
+      truncRep | not sbenchMessages && fromMaybe underAI forceReport =
+                   EM.fromList [(propFont, [(PointUI 0 0, par1)])]
+               | otherwise = EM.empty
+  drawOverlay ColorFull False truncRep arena
+
 -- | Render animations on top of the current screen frame.
 renderAnimFrames :: MonadClientUI m
                  => LevelId -> Animation -> Maybe Bool -> m PreFrames3
 renderAnimFrames arena anim forceReport = do
   CCUI{coscreen=ScreenContent{rwidth}} <- getsSession sccui
   snoAnim <- getsClient $ snoAnim . soptions
-  basicFrame <- basicFrameWithoutReport arena forceReport
+  basicFrame <- basicFrameForAnimation arena forceReport
   smuteMessages <- getsSession smuteMessages
   return $! if | smuteMessages -> []
                | fromMaybe False snoAnim -> [Just basicFrame]
