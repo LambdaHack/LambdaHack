@@ -227,7 +227,7 @@ chooseItemDialogMode leader0 permitLoreCycle c = do
               (prompt2, attrString) <- skillCloseUp leader slotIndex
               let ov0 = EM.singleton propFont
                         $ offsetOverlay
-                        $ indentSplitAttrString rwidth attrString
+                        $ splitAttrString rwidth rwidth attrString
                   keys = [K.spaceKM, K.escKM]
                          ++ [K.upKM | slotIndex /= 0]
                          ++ [K.downKM | slotIndex /= slotListBound]
@@ -273,7 +273,7 @@ chooseItemDialogMode leader0 permitLoreCycle c = do
             displayOneSlot slotIndex = do
               (prompt2, blurbs) <-
                 placeCloseUp places (sexposePlaces soptions) slotIndex
-              let splitText = indentSplitAttrString rwidth . textToAS
+              let splitText = splitAttrString rwidth rwidth . textToAS
                   ov0 = attrLinesToFontMap
                         $ map (second (concatMap splitText)) blurbs
                   keys = [K.spaceKM, K.escKM]
