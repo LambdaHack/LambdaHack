@@ -1,10 +1,9 @@
 -- | A set of Frame monad operations.
 module Game.LambdaHack.Client.UI.FrameM
-  ( promptGetKey, addToMacro, dropEmptyMacroFrames
+  ( drawOverlay, promptGetKey, addToMacro, dropEmptyMacroFrames
   , lastMacroFrame, stopPlayBack, renderAnimFrames, animate
 #ifdef EXPOSE_INTERNAL
     -- * Internal operations
-  , drawOverlay
   , resetPlayBack, restoreLeaderFromRun, basicFrameForAnimation
 #endif
   ) where
