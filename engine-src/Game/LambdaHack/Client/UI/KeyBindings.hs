@@ -75,7 +75,7 @@ keyHelp CCUI{ coinput=coinput@InputContent{..}
       , "effects. Here we give an overview of effects of each button over"
       , "the game map area. The list includes not only left and right buttons,"
       , "but also the optional middle mouse button (MMB) and the mouse wheel,"
-      , "which is also used over menus, to page-scroll them. For mice without RMB,"
+      , "which is also used over menus to move selection. For mice without RMB,"
       , "one can use Control key with LMB and for mice without MMB, one can use"
       , "C-RMB or C-S-LMB."
       ]
@@ -88,7 +88,7 @@ keyHelp CCUI{ coinput=coinput@InputContent{..}
       [ "Mouse button effects per screen area, in exploration and in aiming modes"
       ]
     movTextEnd = "Press SPACE or PGDN to advance or ESC to see the map again."
-    lastHelpEnd = "Use mouse wheel or PGUP to go back and ESC to see the map again."
+    lastHelpEnd = "Use PGUP to go back and ESC to see the map again."
     seeAlso = "For more playing instructions see file PLAYING.md."
     offsetCol2 = 12
     pickLeaderDescription =

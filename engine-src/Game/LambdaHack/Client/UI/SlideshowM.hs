@@ -310,21 +310,23 @@ stepChoiceScreen menuName dm sfBlank frsX extraKeys = do
                     else tmpResult clearIx
                   _ | ikm `elem` keys ->
                     return (True, Left ikm, pointer)
-                  K.Up -> case findIndex xix $ reverse $ take ixOnPage kyxs of
-                    Nothing -> interpretKey ikm{K.key=K.Left}
-                    Just ix -> tmpResult (max 0 (pointer - ix - 1))
+                  _ | K.key ikm `elem` [K.Up, K.WheelNorth] ->
+                    case findIndex xix $ reverse $ take ixOnPage kyxs of
+                      Nothing -> interpretKey ikm{K.key=K.Left}
+                      Just ix -> tmpResult (max 0 (pointer - ix - 1))
+                  _ | K.key ikm `elem` [K.Down, K.WheelSouth] ->
+                    case findIndex xix $ drop (ixOnPage + 1) kyxs of
+                      Nothing -> interpretKey ikm{K.key=K.Right}
+                      Just ix -> tmpResult (pointer + ix + 1)
                   K.Left -> if pointer == 0 then tmpResult maxIx
                             else tmpResult (max 0 (pointer - 1))
-                  K.Down -> case findIndex xix $ drop (ixOnPage + 1) kyxs of
-                    Nothing -> interpretKey ikm{K.key=K.Right}
-                    Just ix -> tmpResult (pointer + ix + 1)
                   K.Right -> if pointer == maxIx then tmpResult 0
                              else tmpResult (min maxIx (pointer + 1))
                   K.Home -> tmpResult clearIx
                   K.End -> tmpResult maxIx
-                  _ | K.key ikm `elem` [K.PgUp, K.WheelNorth] ->
+                  K.PgUp ->
                     tmpResult (max 0 (pointer - ixOnPage - 1))
-                  _ | K.key ikm `elem` [K.PgDn, K.WheelSouth] ->
+                  K.PgDn ->
                     -- This doesn't scroll by screenful when header very long
                     -- and menu non-empty, but that scenario is rare, so OK,
                     -- arrow keys may be used instead.
@@ -350,8 +352,8 @@ stepChoiceScreen menuName dm sfBlank frsX extraKeys = do
 navigationKeys :: [K.KM]
 navigationKeys = [ K.leftButtonReleaseKM, K.rightButtonReleaseKM
                  , K.returnKM, K.spaceKM
-                 , K.upKM, K.leftKM, K.downKM, K.rightKM
-                 , K.pgupKM, K.pgdnKM, K.wheelNorthKM, K.wheelSouthKM
+                 , K.upKM, K.downKM, K.wheelNorthKM, K.wheelSouthKM
+                 , K.leftKM, K.rightKM, K.pgupKM, K.pgdnKM
                  , K.homeKM, K.endKM, K.controlP ]
 
 -- | Find a position in a menu.
