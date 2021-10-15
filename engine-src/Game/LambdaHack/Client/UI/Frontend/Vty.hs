@@ -13,8 +13,9 @@ import Prelude ()
 import Game.LambdaHack.Core.Prelude
 
 import           Control.Concurrent.Async
-import           Graphics.Vty
-import qualified Graphics.Vty as Vty
+import           Data.Char (chr, ord)
+import qualified System.Console.ANSI as ANSI
+import qualified System.IO as SIO
 
 import           Game.LambdaHack.Client.UI.Content.Screen
 import           Game.LambdaHack.Client.UI.Frame
@@ -27,10 +28,7 @@ import qualified Game.LambdaHack.Common.PointArray as PointArray
 import           Game.LambdaHack.Content.TileKind (floorSymbol)
 import qualified Game.LambdaHack.Definition.Color as Color
 
--- | Session data maintained by the frontend.
-newtype FrontendSession = FrontendSession
-  { svty :: Vty  -- ^ internal vty session
-  }
+-- No session data maintained by this frontend
 
 -- | The name of the frontend.
 frontendName :: String
@@ -39,85 +37,75 @@ frontendName = "vty"
 -- | Starts the main program loop using the frontend input and output.
 startup :: ScreenContent -> ClientOptions -> IO RawFrontend
 startup coscreen _soptions = do
-  svty <- mkVty mempty
-  let sess = FrontendSession{..}
-  rf <- createRawFrontend coscreen (display coscreen sess) (Vty.shutdown svty)
+  rf <- createRawFrontend coscreen (display coscreen) shutdown
   let storeKeys :: IO ()
       storeKeys = do
-        e <- nextEvent svty  -- blocks here, so no polling
-        case e of
-          EvKey n mods ->
-            saveKMP rf (modTranslate mods) (keyTranslate n) (PointUI 0 0)
-          _ -> return ()
+        c <- SIO.getChar  -- blocks here, so no polling
+        let K.KM{..} = keyTranslate c
+        saveKMP rf modifier key (PointUI 0 0)
         storeKeys
+  SIO.hSetBuffering SIO.stdin SIO.NoBuffering
+  SIO.hSetBuffering SIO.stderr $ SIO.BlockBuffering $
+    Just $ 2 * rwidth coscreen * rheight coscreen
   void $ async storeKeys
   return $! rf
 
+shutdown :: IO ()
+shutdown = SIO.hFlush SIO.stdout >> SIO.hFlush SIO.stderr
+
 -- | Output to the screen via the frontend.
 display :: ScreenContent
-        -> FrontendSession
         -> SingleFrame
         -> IO ()
-display coscreen FrontendSession{svty} SingleFrame{singleArray} = do
-  let img = foldr (<->) emptyImage
-            . map (foldr (<|>) emptyImage
-                     . map (\w -> char (setAttr $ Color.attrFromW32 w)
-                                       (squashChar $ Color.charFromW32 w)))
-            $ chunk $ PointArray.toListA singleArray
-      pic1 = picForImage img
-      Point{..} = PointArray.maxIndexByA (comparing Color.bgFromW32) singleArray
-      pic2 = pic1 {picCursor = AbsoluteCursor px py}
-      chunk [] = []
-      chunk l = let (ch, r) = splitAt (rwidth coscreen) l
-                in ch : chunk r
-  update svty pic2
+display _coscreen SingleFrame{singleArray} = do
+  ANSI.hHideCursor SIO.stderr
+  let f Point{..} w = do
+        ANSI.hSetCursorPosition SIO.stderr py px
+        let acChar = squashChar $ Color.charFromW32 w
+            (fg, bg) = setAttr $ Color.attrFromW32 w
+        ANSI.hSetSGR SIO.stderr [uncurry (ANSI.SetColor ANSI.Foreground)
+                                 $ colorTranslate fg]
+        ANSI.hSetSGR SIO.stderr [uncurry (ANSI.SetColor ANSI.Background)
+                                 $ colorTranslate bg]
+{-
+This is dubious, because I can't foce bright background colour with that,
+only bright foregrouns. And I have at least one bright backround: bright black.
+        -- A hack to get bright colors via the bold attribute.
+        -- Depending on terminal settings this is needed or not
+        -- and the characters really get bold or not.
+        -- HSCurses does this by default, in Vty you have to request the hack,
+        -- with ANSI we probably need it as well.
+        ANSI.hSetSGR SIO.stderr [ANSI.SetConsoleIntensity
+                                 $ if Color.isBright fg
+                                   then ANSI.BoldIntensity
+                                   else ANSI.NormalIntensity]
+-}
+        SIO.hPutStr SIO.stderr [acChar]
+  PointArray.imapMA_ f singleArray
+  let Point{..} = PointArray.maxIndexByA (comparing Color.bgFromW32) singleArray
+  ANSI.hSetCursorPosition SIO.stderr py px
+  ANSI.hShowCursor SIO.stderr
+  SIO.hFlush SIO.stderr
 
-keyTranslate :: Key -> K.Key
-keyTranslate n =
-  case n of
-    KEsc          -> K.Esc
-    KEnter        -> K.Return
-    (KChar ' ')   -> K.Space
-    (KChar '\t')  -> K.Tab
-    KBackTab      -> K.BackTab
-    KBS           -> K.BackSpace
-    KUp           -> K.Up
-    KDown         -> K.Down
-    KLeft         -> K.Left
-    KRight        -> K.Right
-    KHome         -> K.Home
-    KEnd          -> K.End
-    KPageUp       -> K.PgUp
-    KPageDown     -> K.PgDn
-    KBegin        -> K.Begin
-    KCenter       -> K.Begin
-    KIns          -> K.Insert
-    -- S-KP_5 and C-KP_5 are still not correctly handled in vty
-    -- on some terminals so we have to use 1--9 for movement instead of
-    -- leader change.
-    (KChar c)
-      | c `elem` ['1'..'9'] -> K.KP c  -- movement, not leader change
-      | otherwise           -> K.Char c
-    _             -> K.Unknown (show n)
+keyTranslate :: Char -> K.KM
+keyTranslate e = (\(key, modifier) -> K.KM modifier key) $
+  case e of
+    '\ESC' -> (K.Esc,     K.NoModifier)
+    '\n'   -> (K.Return,  K.NoModifier)
+    '\r'   -> (K.Return,  K.NoModifier)
+    ' '    -> (K.Space,   K.NoModifier)
+    '\t'   -> (K.Tab,     K.NoModifier)
+    c | ord '\^A' <= ord c && ord c <= ord '\^Z' ->
+        -- Alas, only lower-case letters.
+        (K.Char $ chr $ ord c - ord '\^A' + ord 'a', K.Control)
+        -- Movement keys are more important than leader picking,
+        -- so disabling the latter and interpreting the keypad numbers
+        -- as movement:
+      | c `elem` ['1'..'9'] -> (K.KP c,              K.NoModifier)
+      | otherwise           -> (K.Char c,            K.NoModifier)
 
--- | Translates modifiers to our own encoding.
-modTranslate :: [Modifier] -> K.Modifier
-modTranslate mods =
-  modifierTranslate
-    (MCtrl `elem` mods) (MShift `elem` mods) (MAlt `elem` mods) False
-
--- A hack to get bright colors via the bold attribute. Depending on terminal
--- settings this is needed or not and the characters really get bold or not.
--- HSCurses does this by default, but in Vty you have to request the hack.
-hack :: Color.Color -> Attr -> Attr
-hack c a = if Color.isBright c then withStyle a bold else a
-
-setAttr :: Color.Attr -> Attr
+setAttr :: Color.Attr -> (Color.Color, Color.Color)
 setAttr Color.Attr{..} =
--- This optimization breaks display for white background terminals:
---  if (fg, bg) == Color.defAttr
---  then def_attr
---  else
   let (fg1, bg1) = case bg of
         Color.HighlightNone -> (fg, Color.Black)
         Color.HighlightGreen ->
@@ -154,29 +142,27 @@ setAttr Color.Attr{..} =
           else (fg, Color.defFG)
         Color.HighlightNoneCursor -> (fg, Color.Black)
         Color.HighlightBackground -> (fg, Color.BrBlack)
-  in hack fg1 $ hack bg1 $
-       defAttr { attrForeColor = SetTo (aToc fg1)
-               , attrBackColor = SetTo (aToc bg1) }
+  in (fg1, bg1)
+
+colorTranslate :: Color.Color -> (ANSI.ColorIntensity, ANSI.Color)
+colorTranslate Color.Black     = (ANSI.Dull, ANSI.Black)
+colorTranslate Color.Red       = (ANSI.Dull, ANSI.Red)
+colorTranslate Color.Green     = (ANSI.Dull, ANSI.Green)
+colorTranslate Color.Brown     = (ANSI.Dull, ANSI.Yellow)
+colorTranslate Color.Blue      = (ANSI.Dull, ANSI.Blue)
+colorTranslate Color.Magenta   = (ANSI.Dull, ANSI.Magenta)
+colorTranslate Color.Cyan      = (ANSI.Dull, ANSI.Cyan)
+colorTranslate Color.White     = (ANSI.Dull, ANSI.White)
+colorTranslate Color.AltWhite  = (ANSI.Dull, ANSI.White)
+colorTranslate Color.BrBlack   = (ANSI.Vivid, ANSI.Black)
+colorTranslate Color.BrRed     = (ANSI.Vivid, ANSI.Red)
+colorTranslate Color.BrGreen   = (ANSI.Vivid, ANSI.Green)
+colorTranslate Color.BrYellow  = (ANSI.Vivid, ANSI.Yellow)
+colorTranslate Color.BrBlue    = (ANSI.Vivid, ANSI.Blue)
+colorTranslate Color.BrMagenta = (ANSI.Vivid, ANSI.Magenta)
+colorTranslate Color.BrCyan    = (ANSI.Vivid, ANSI.Cyan)
+colorTranslate Color.BrWhite   = (ANSI.Vivid, ANSI.White)
 
 squashChar :: Char -> Char
 squashChar c = if c == floorSymbol then '.' else c
-
-aToc :: Color.Color -> Color
-aToc Color.Black     = black
-aToc Color.Red       = red
-aToc Color.Green     = green
-aToc Color.Brown     = yellow
-aToc Color.Blue      = blue
-aToc Color.Magenta   = magenta
-aToc Color.Cyan      = cyan
-aToc Color.White     = white
-aToc Color.AltWhite  = white
-aToc Color.BrBlack   = brightBlack
-aToc Color.BrRed     = brightRed
-aToc Color.BrGreen   = brightGreen
-aToc Color.BrYellow  = brightYellow
-aToc Color.BrBlue    = brightBlue
-aToc Color.BrMagenta = brightMagenta
-aToc Color.BrCyan    = brightCyan
-aToc Color.BrWhite   = brightWhite
 #endif

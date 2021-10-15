@@ -141,8 +141,6 @@ common options
     ghcjs-options:    -DREMOVE_TELETYPE
 
 common exe-options
-  if flag(vty)
-    ghc-options:      -threaded
   ghc-options:        -rtsopts
 -- (Ignored by GHCJS) Minimize median lag at the cost of occasional bigger
 -- GC lag, which fortunately sometimes fits into idle time between turns):
@@ -370,7 +368,7 @@ library
     cpp-options:      -DUSE_BROWSER
   } elif flag(vty) {
     exposed-modules:    Game.LambdaHack.Client.UI.Frontend.Vty
-    build-depends:    vty >= 5
+    build-depends:    ansi-terminal >= 0.10
     cpp-options:      -DUSE_VTY
   } elif flag(curses) {
     exposed-modules:    Game.LambdaHack.Client.UI.Frontend.Curses
