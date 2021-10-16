@@ -79,27 +79,6 @@ source-repository head
   type:               git
   location:           git://github.com/LambdaHack/LambdaHack.git
 
-flag vty
-  description:        switch to the vty frontend (screen reader friendly)
-  default:            False
-  manual:             True
-
-flag curses
-  description:        switch to the curses frontend (not fully supported)
-  default:            False
-  manual:             True
-
--- This flag is not used.
--- flag sdl
---   description:        switch to the SDL2 frontend
---   default:            False
---   manual:             True
-
-flag jsaddle
-  description:        switch to the JSaddle frontend (may be bit-rotted)
-  default:            False
-  manual:             True
-
 flag with_expensive_assertions
   description:        turn on expensive assertions of well-tested code
   default:            False
@@ -113,6 +92,11 @@ flag release
 flag supportNodeJS
   description:        compile so that the JS blob works in terminal with NodeJS
   default:            True
+  manual:             True
+
+flag jsaddle
+  description:        switch to the JSaddle frontend (may be bit-rotted)
+  default:            False
   manual:             True
 
 common options
@@ -145,8 +129,6 @@ common options
     ghcjs-options:    -DREMOVE_TELETYPE
 
 common exe-options
-  if flag(vty)
-    ghc-options:      -threaded
   ghc-options:        -rtsopts
 -- (Ignored by GHCJS) Minimize median lag at the cost of occasional bigger
 -- GC lag, which fortunately sometimes fits into idle time between turns):
@@ -220,7 +202,6 @@ library
                       Game.LambdaHack.Client.UI.Frame
                       Game.LambdaHack.Client.UI.FrameM
                       Game.LambdaHack.Client.UI.Frontend
-                      Game.LambdaHack.Client.UI.Frontend.Chosen
                       Game.LambdaHack.Client.UI.Frontend.Common
                       Game.LambdaHack.Client.UI.Frontend.Teletype
                       Game.LambdaHack.Client.UI.HandleHelperM
@@ -354,21 +335,15 @@ library
                       ghc-compact
 
   if impl(ghcjs) || flag(jsaddle) {
-    exposed-modules:    Game.LambdaHack.Client.UI.Frontend.Dom
+    exposed-modules:  Game.LambdaHack.Client.UI.Frontend.Dom
     build-depends:    ghcjs-dom >= 0.9.1.1
     cpp-options:      -DUSE_BROWSER
-  } elif flag(vty) {
-    exposed-modules:    Game.LambdaHack.Client.UI.Frontend.Vty
-    build-depends:    vty >= 5
-    cpp-options:      -DUSE_VTY
-  } elif flag(curses) {
-    exposed-modules:    Game.LambdaHack.Client.UI.Frontend.Curses
-    build-depends:    hscurses >= 1.4.1
-    cpp-options:      -DUSE_CURSES
   } else {
-    exposed-modules:    Game.LambdaHack.Client.UI.Frontend.Sdl
-    build-depends:    sdl2 >= 2, sdl2-ttf >= 2
-    cpp-options:      -DUSE_SDL
+    exposed-modules:  Game.LambdaHack.Client.UI.Frontend.Sdl
+                      Game.LambdaHack.Client.UI.Frontend.ANSI
+    build-depends:    sdl2 >= 2,
+                      sdl2-ttf >= 2,
+                      ansi-terminal >= 0.10
   }
 
   if impl(ghcjs) {
@@ -393,19 +368,24 @@ test-suite test
   type:               exitcode-stdio-1.0
   hs-source-dirs:     test
   main-is:            Spec.hs
-  other-modules:      ItemKindUnitTests
+  other-modules:      ItemDescriptionUnitTests
+                      ItemKindUnitTests
+                      ItemRevUnitTests
                       ReqFailureUnitTests
                       SessionUIMock
                       SessionUIUnitTests
   build-depends:      ,LambdaHack
                       ,base
                       ,containers
+                      ,enummapset
                       ,optparse-applicative
+                      ,splitmix
                       ,tasty >= 1.0
                       ,tasty-quickcheck
                       ,tasty-hunit
                       ,text
                       ,transformers
+                      ,vector
 
 test-suite doctests
   import: options, exe-options
