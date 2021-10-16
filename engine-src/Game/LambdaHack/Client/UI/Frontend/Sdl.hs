@@ -404,8 +404,8 @@ drawFrame coscreen ClientOptions{..} sess@FrontendSession{..} curFrame = do
           -- reset back to black
       chooseAndDrawHighlight !col !row !bg = case bg of
         Color.HighlightNone -> return ()
-        Color.HighlightNoneCursor -> return ()
         Color.HighlightBackground -> return ()
+        Color.HighlightNoneCursor -> return ()
         _ -> drawHighlight col row $ Color.highlightToColor bg
       -- This also frees the surface it gets.
       scaleSurfaceToTexture :: Int -> SDL.Surface -> IO SDL.Texture

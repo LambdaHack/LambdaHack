@@ -140,10 +140,12 @@ colorToRGB BrWhite   = "#FFFFFF"
 -- | Additional map cell highlight, e.g., a colorful square around the cell
 -- or a colorful background.
 --
--- Note: the highlight underscored by the terminal cursor is
--- the maximal element of this type present of this screen.
+-- Warning: the highlight underscored by the terminal cursor is
+-- the maximal element of this type present on a screen,
+-- so don't add new highlights to the end.
 data Highlight =
     HighlightNone
+  | HighlightBackground
   | HighlightGreen
   | HighlightBlue
   | HighlightBrown
@@ -156,12 +158,12 @@ data Highlight =
   | HighlightYellowAim
   | HighlightRedAim
   | HighlightNoneCursor
-  | HighlightBackground
   deriving (Show, Eq, Ord, Enum, Bounded)
 
 highlightToColor :: Highlight -> Color
 highlightToColor hi = case hi of
   HighlightNone -> Black  -- should be transparent, but is OK in web frontend
+  HighlightBackground -> BrBlack  -- gets a special colour, but as a background
   HighlightGreen -> Green
   HighlightBlue -> Blue
   HighlightBrown -> Brown
@@ -174,7 +176,6 @@ highlightToColor hi = case hi of
   HighlightYellowAim -> BrYellow
   HighlightRedAim -> Red
   HighlightNoneCursor -> Black  -- used in ANSI for cursor via @maxIndexByA@
-  HighlightBackground -> BrBlack  -- gets a special colour, but as a background
 
 -- | Text attributes: foreground color and highlight.
 data Attr = Attr
