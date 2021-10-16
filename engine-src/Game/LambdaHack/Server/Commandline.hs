@@ -78,6 +78,7 @@ serverOptionsP = do
   sdisableAutoYes   <- disableAutoYesP
   snoAnim           <- noAnimP
   ssavePrefixSer    <- savePrefixP
+  sfrontendANSI     <- frontendANSIP
   sfrontendTeletype <- frontendTeletypeP
   sfrontendNull     <- frontendNullP
   sfrontendLazy     <- frontendLazyP
@@ -306,6 +307,11 @@ savePrefixP =
             <> showDefault
             <> value ""
             <> help "Prepend PREFIX to all savefile names" )
+
+frontendANSIP :: Parser Bool
+frontendANSIP =
+  switch (  long "frontendANSI"
+         <> help "Use the ANSI terminal frontend (best for screen readers)" )
 
 frontendTeletypeP :: Parser Bool
 frontendTeletypeP =

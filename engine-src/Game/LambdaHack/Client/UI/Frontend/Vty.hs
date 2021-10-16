@@ -1,13 +1,8 @@
 -- | Text frontend based on Vty.
 module Game.LambdaHack.Client.UI.Frontend.Vty
-  (
-#ifdef USE_VTY
--- to molify doctest, but don't break stylish-haskell parsing
-   startup, frontendName
-#endif
+  ( startup, frontendName
   ) where
 
-#ifdef USE_VTY
 import Prelude ()
 
 import Game.LambdaHack.Core.Prelude
@@ -22,7 +17,6 @@ import           Game.LambdaHack.Client.UI.Frame
 import           Game.LambdaHack.Client.UI.Frontend.Common
 import qualified Game.LambdaHack.Client.UI.Key as K
 import           Game.LambdaHack.Client.UI.PointUI
-import           Game.LambdaHack.Common.ClientOptions
 import           Game.LambdaHack.Common.Point
 import qualified Game.LambdaHack.Common.PointArray as PointArray
 import           Game.LambdaHack.Content.TileKind (floorSymbol)
@@ -32,11 +26,11 @@ import qualified Game.LambdaHack.Definition.Color as Color
 
 -- | The name of the frontend.
 frontendName :: String
-frontendName = "vty"
+frontendName = "ANSI"
 
 -- | Starts the main program loop using the frontend input and output.
-startup :: ScreenContent -> ClientOptions -> IO RawFrontend
-startup coscreen _soptions = do
+startup :: ScreenContent -> IO RawFrontend
+startup coscreen = do
   rf <- createRawFrontend coscreen (display coscreen) shutdown
   let storeKeys :: IO ()
       storeKeys = do
@@ -165,4 +159,3 @@ colorTranslate Color.BrWhite   = (ANSI.Vivid, ANSI.White)
 
 squashChar :: Char -> Char
 squashChar c = if c == floorSymbol then '.' else c
-#endif

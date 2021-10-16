@@ -59,6 +59,8 @@ data ClientOptions = ClientOptions
   , stitle            :: Maybe String
   , ssavePrefixCli    :: String
       -- ^ Prefix of the save game file name.
+  , sfrontendANSI     :: Bool
+      -- ^ Whether to use the ANSI frontend.
   , sfrontendTeletype :: Bool
       -- ^ Whether to use the stdout/stdin frontend.
   , sfrontendNull     :: Bool
@@ -95,6 +97,7 @@ defClientOptions = ClientOptions
   , sbenchMessages = False
   , stitle = Nothing
   , ssavePrefixCli = ""
+  , sfrontendANSI = False
   , sfrontendTeletype = False
   , sfrontendNull = False
   , sfrontendLazy = False

@@ -2015,7 +2015,7 @@ gameDropHuman = do
   modifySession $ \sess -> sess {sallNframes = -1}  -- hack, but we crash anyway
   msgAdd MsgPromptGeneric "Interrupt! Trashing the unsaved game. The program exits now."
   clientPrintUI "Interrupt! Trashing the unsaved game. The program exits now."
-    -- this is not shown by vty frontend, but at least shown by sdl2 one
+    -- this is not shown by ANSI frontend, but at least shown by sdl2 one
   return ReqUIGameDropAndExit
 
 -- * GameExit

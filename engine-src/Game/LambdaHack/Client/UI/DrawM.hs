@@ -579,8 +579,8 @@ drawHudFrame dm drawnLevelId = do
   soptions <- getsClient soptions
   let upd = FrameForall $ \v -> do
         unFrameForall updContent v
-        -- vty frontend is screen-reader friendly, so avoid visual fluff
-        unless (frontendName soptions == "vty") $ unFrameForall updPath v
+        -- ANSI frontend is screen-reader friendly, so avoid visual fluff
+        unless (frontendName soptions == "ANSI") $ unFrameForall updPath v
         unFrameForall updActor v
         unFrameForall updExtra v
   return (baseTerrain, upd)

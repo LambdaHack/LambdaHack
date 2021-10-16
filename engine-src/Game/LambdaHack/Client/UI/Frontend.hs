@@ -33,6 +33,7 @@ import           Game.LambdaHack.Client.UI.Frame
 import qualified Game.LambdaHack.Client.UI.Frontend.Chosen as Chosen
 import           Game.LambdaHack.Client.UI.Frontend.Common
 import qualified Game.LambdaHack.Client.UI.Frontend.Teletype as Teletype
+import qualified Game.LambdaHack.Client.UI.Frontend.Vty as Vty
 import           Game.LambdaHack.Client.UI.Key (KMP (..))
 import qualified Game.LambdaHack.Client.UI.Key as K
 import           Game.LambdaHack.Common.ClientOptions
@@ -78,6 +79,7 @@ chanFrontendIO coscreen soptions = do
 #ifndef REMOVE_TELETYPE
               | sfrontendTeletype soptions = Teletype.startup coscreen
 #endif
+              | sfrontendANSI soptions = Vty.startup coscreen
               | otherwise = Chosen.startup coscreen soptions
       maxFps = fromMaybe defaultMaxFps $ smaxFps soptions
       delta = max 1 $ round $ intToDouble microInSec / max 0.000001 maxFps
@@ -179,6 +181,7 @@ frontendName soptions =
 #ifndef REMOVE_TELETYPE
      | sfrontendTeletype soptions -> Teletype.frontendName
 #endif
+     | sfrontendANSI soptions -> Vty.frontendName
      | otherwise -> Chosen.frontendName
 
 lazyStartup :: ScreenContent -> IO RawFrontend

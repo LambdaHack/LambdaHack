@@ -8,8 +8,6 @@ import Prelude ()
 
 #ifdef USE_CURSES
 import Game.LambdaHack.Client.UI.Frontend.Curses
-#elif USE_VTY
-import Game.LambdaHack.Client.UI.Frontend.Vty
 #elif USE_SDL
 import Game.LambdaHack.Client.UI.Frontend.Sdl
 #elif USE_BROWSER
