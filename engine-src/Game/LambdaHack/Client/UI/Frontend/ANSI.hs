@@ -88,6 +88,7 @@ startup coscreen@ScreenContent{rwidth, rheight} = do
 -- C-S, C-P, C-keypad. This is acceptable. No worth adding functionality
 -- for decoding modifiers that would, with much luck, enable C-keypad,
 -- but no other broken keys. Unless more is broken on other terminals.
+-- On rxvt, sadly, KP_5 is a dead key.
 keyTranslate :: String -> K.KM
 keyTranslate e = (\(key, modifier) -> K.KM modifier key) $
   case e of
@@ -195,6 +196,17 @@ ocodeTranslate e =
     "Q" -> (K.Fun 2, K.NoModifier)
     "R" -> (K.Fun 3, K.NoModifier)
     "S" -> (K.Fun 4, K.NoModifier)
+
+    "p" -> (K.KP '0', K.Shift)
+    "q" -> (K.KP '1', K.Shift)
+    "r" -> (K.KP '2', K.Shift)
+    "s" -> (K.KP '3', K.Shift)
+    "t" -> (K.KP '4', K.Shift)
+    "u" -> (K.KP '5', K.Shift)
+    "v" -> (K.KP '6', K.Shift)
+    "w" -> (K.KP '7', K.Shift)
+    "x" -> (K.KP '8', K.Shift)
+    "y" -> (K.KP '9', K.Shift)
 
     _ -> (K.Unknown $ "\\ESCO" ++ e, K.NoModifier)
 

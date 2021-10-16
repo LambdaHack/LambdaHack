@@ -61,6 +61,7 @@ makeData muiOptions (InputContentRaw copsClient) =
         ++ [ (K.mkKM "KP_Begin", waitTriple)
            , (K.mkKM "C-KP_Begin", wait10Triple)
            , (K.mkKM "KP_5", wait10Triple)
+           , (K.mkKM "S-KP_5", wait10Triple)  -- rxvt
            , (K.mkKM "C-KP_5", wait10Triple) ]
         ++ [(K.mkKM "period", waitTriple) | uVi0]
         ++ [(K.mkKM "C-period", wait10Triple) | uVi0]
