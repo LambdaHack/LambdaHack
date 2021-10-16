@@ -948,7 +948,7 @@ displaceActorUI source target = do
   tpart <- partActorLeader target
   let msgClass = if mleader `elem` map Just [source, target]
                  then MsgActionMajor  -- to interrupt run after a displace;
-                 else MsgActionMinor  -- configurable
+                 else MsgActionMinor  -- configurable, animation is feedback
       msg = makeSentence [MU.SubjectVerbSg spart "displace", tpart]
   msgAdd msgClass msg
   lookAtMove source
@@ -981,9 +981,9 @@ moveItemUI iid k aid cstore1 cstore2 = do
       -- So far organs can't be put into stash, so no need to call
       -- @updateItemSlot@ to add or reassign lore category.
       if cstore1 == CGround && Just aid == mleader && not underAI then
-        itemAidVerbMU MsgItemMovement aid verb iid (Right k)
+        itemAidVerbMU MsgActionMajor aid verb iid (Right k)
       else when (not (bproj b) && bhp b > 0) $  -- don't announce death drops
-        itemAidVerbMU MsgItemMovement aid verb iid (Left k)
+        itemAidVerbMU MsgActionMajor aid verb iid (Left k)
     Nothing -> error $
       "" `showFailure` (iid, k, aid, cstore1, cstore2)
 

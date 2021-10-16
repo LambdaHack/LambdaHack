@@ -200,7 +200,7 @@ watchRespSfxAtomicUI sfx = case sfx of
         if fid /= fidSource then do
           -- Before domination, possibly not seen if actor (yet) not ours.
           if bcalm b == 0  -- sometimes only a coincidence, but nm
-          then aidVerbMU MsgEffectMinor aid "yield, under extreme pressure"
+          then aidVerbMU MsgEffectMedium aid "yield, under extreme pressure"
           else do
             let verb = if isOurAlive
                        then "black out, dominated by foes"
@@ -212,7 +212,7 @@ watchRespSfxAtomicUI sfx = case sfx of
                           else Just $ if isOurAlive
                                       then "through"
                                       else "under the influence of"
-            mitemAidVerbMU MsgEffectMinor aid verb iid msuffix
+            mitemAidVerbMU MsgEffectMedium aid verb iid msuffix
           fidNameRaw <- getsState $ gname . (EM.! fid) . sfactionD
           -- Avoid "controlled by Controlled foo".
           let fidName = T.unwords $ tail $ T.words fidNameRaw
@@ -285,13 +285,20 @@ watchRespSfxAtomicUI sfx = case sfx of
         -- Usually self-inflicted of from embeds, so obvious, so no @iid@.
         if Dice.supDice d >= 10
         then aidVerbMU MsgEffectMedium aid "act with extreme speed"
-        else aidVerbMU MsgEffectMinor aid "move swiftly"
+        else do
+          let msgClass = if isOurCharacter
+                         then MsgEffectMedium
+                         else MsgEffectMinor
+          aidVerbMU msgClass aid "move swiftly"
       IK.Teleport t | Dice.supDice t <= 9 -> do
         -- Actor may be sent away before noticing the item that did it.
         let msuffix = if iid `EM.notMember` itemD
                       then Nothing
                       else Just "due to"
-        mitemAidVerbMU MsgEffectMinor aid "blink" iid msuffix
+            msgClass = if isOurCharacter
+                       then MsgEffectMedium
+                       else MsgEffectMinor
+        mitemAidVerbMU msgClass aid "blink" iid msuffix
       IK.Teleport{} -> do
         -- Actor may be sent away before noticing the item that did it.
         let msuffix = if iid `EM.notMember` itemD
@@ -443,8 +450,10 @@ watchRespSfxAtomicUI sfx = case sfx of
     unless (bproj b && bfid b == side) $ do  -- don't spam
       spart <- partActorLeader aid
       (_heardSubject, verb) <- displayTaunt voluntary rndToActionUI aid
-      msgAdd MsgMiscellanous $!
-        makeSentence [MU.SubjectVerbSg spart (MU.Text verb)]
+      let msgClass = if voluntary && bfid b == side
+                     then MsgActionComplete  -- give feedback after keypress
+                     else MsgMiscellanous
+      msgAdd msgClass $! makeSentence [MU.SubjectVerbSg spart (MU.Text verb)]
 
 returnJustLeft :: MonadClientUI m
                => (MsgClassShowAndSave, Text)

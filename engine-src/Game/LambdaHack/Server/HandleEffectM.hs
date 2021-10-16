@@ -862,7 +862,7 @@ effectYell execSfx target = do
   if bhp tb <= 0 then  -- avoid yelling corpses
     return UseDud  -- the yell never manifested
   else do
-    when (not (bproj tb))
+    unless (bproj tb)
       execSfx
     execSfxAtomic $ SfxTaunt False target
     when (not (bproj tb) && deltaBenign (bcalmDelta tb)) $
