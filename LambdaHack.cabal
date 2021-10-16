@@ -356,7 +356,6 @@ library
     build-depends:    sdl2 >= 2,
                       sdl2-ttf >= 2,
                       ansi-terminal >= 0.10
-    cpp-options:      -DUSE_SDL
   }
 
   if impl(ghcjs) {

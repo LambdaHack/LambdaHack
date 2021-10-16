@@ -63,7 +63,6 @@
 - ignore: {name: Use LANGUAGE pragmas}
 - ignore: {name: Use tuple-section}
 - ignore: {name: Use sortOn}
-- ignore: {name: Use fewer imports, within: Game.LambdaHack.Client.UI.Frontend.Chosen}
 - ignore: {name: Redundant $, within: Game.LambdaHack.Client.UI.Frontend.Dom}
 - ignore: {name: "Use :", within: Main}
 
