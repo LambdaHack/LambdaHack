@@ -6,9 +6,7 @@ module Game.LambdaHack.Client.UI.Frontend.Chosen
 
 import Prelude ()
 
-#ifdef USE_CURSES
-import Game.LambdaHack.Client.UI.Frontend.Curses
-#elif USE_SDL
+#ifdef USE_SDL
 import Game.LambdaHack.Client.UI.Frontend.Sdl
 #elif USE_BROWSER
 import Game.LambdaHack.Client.UI.Frontend.Dom

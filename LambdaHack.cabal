@@ -75,16 +75,6 @@ source-repository head
   type:               git
   location:           git://github.com/LambdaHack/LambdaHack.git
 
-flag curses
-  description:        switch to the curses frontend (not fully supported)
-  default:            False
-  manual:             True
-
-flag jsaddle
-  description:        switch to the JSaddle frontend (may be bit-rotted)
-  default:            False
-  manual:             True
-
 flag with_expensive_assertions
   description:        turn on expensive assertions of well-tested code
   default:            False
@@ -98,6 +88,11 @@ flag release
 flag supportNodeJS
   description:        compile so that the JS blob works in terminal with NodeJS
   default:            True
+  manual:             True
+
+flag jsaddle
+  description:        switch to the JSaddle frontend (may be bit-rotted)
+  default:            False
   manual:             True
 
 common options
@@ -355,10 +350,6 @@ library
     exposed-modules:  Game.LambdaHack.Client.UI.Frontend.Dom
     build-depends:    ghcjs-dom >= 0.9.1.1
     cpp-options:      -DUSE_BROWSER
-  } elif flag(curses) {
-    exposed-modules:  Game.LambdaHack.Client.UI.Frontend.Curses
-    build-depends:    hscurses >= 1.4.1
-    cpp-options:      -DUSE_CURSES
   } else {
     exposed-modules:  Game.LambdaHack.Client.UI.Frontend.Sdl
                       Game.LambdaHack.Client.UI.Frontend.ANSI
