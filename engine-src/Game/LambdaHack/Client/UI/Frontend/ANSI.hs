@@ -1,5 +1,5 @@
--- | Text frontend based on Vty.
-module Game.LambdaHack.Client.UI.Frontend.Vty
+-- | Text frontend based on ANSI (via ansi-terminal).
+module Game.LambdaHack.Client.UI.Frontend.ANSI
   ( startup, frontendName
   ) where
 

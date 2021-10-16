@@ -361,7 +361,7 @@ library
     cpp-options:      -DUSE_CURSES
   } else {
     exposed-modules:  Game.LambdaHack.Client.UI.Frontend.Sdl
-                      Game.LambdaHack.Client.UI.Frontend.Vty
+                      Game.LambdaHack.Client.UI.Frontend.ANSI
     build-depends:    sdl2 >= 2,
                       sdl2-ttf >= 2,
                       ansi-terminal >= 0.10
