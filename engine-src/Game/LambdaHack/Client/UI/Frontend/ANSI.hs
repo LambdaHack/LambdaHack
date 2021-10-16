@@ -111,7 +111,7 @@ keyTranslate e = (\(key, modifier) -> K.KM modifier key) $
           -- keys are more important than leader picking, we are disabling
           -- the latter and interpreting the keypad numbers as movement.
           --
-          -- BTW, S-KP_5 and C-KP_5 are still not correctly handled
+          -- BTW, S-KP_5 and C-KP_5 are probably still not correctly handled
           -- on some terminals, so this may be the biggest portability problem.
           c `elem` ['1'..'9'] -> (K.KP c, K.NoModifier)
         | otherwise           -> (K.Char c, K.NoModifier)
@@ -170,10 +170,6 @@ keycodeTranslate e =
     "M" -> (K.Unknown $ "\\ESC[" ++ e, K.NoModifier)
     "N" -> (K.Unknown $ "\\ESC[" ++ e, K.NoModifier)
     "O" -> (K.Unknown $ "\\ESC[" ++ e, K.NoModifier)
-    "OP" -> (K.Fun 1, K.NoModifier)
-    "OQ" -> (K.Fun 2, K.NoModifier)
-    "OR" -> (K.Fun 3, K.NoModifier)
-    "OS" -> (K.Fun 4, K.NoModifier)
     "1P" -> (K.Fun 1, K.NoModifier)
     "1Q" -> (K.Fun 2, K.NoModifier)
     "1R" -> (K.Fun 3, K.NoModifier)
