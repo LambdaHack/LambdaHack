@@ -234,19 +234,25 @@ setAttr Color.Attr{..} =
           then (fg, Color.Blue)
           else (fg, Color.BrBlack)
         Color.HighlightBrown ->
-          if fg /= Color.Blue
+          if fg /= Color.Brown
           then (fg, Color.Brown)
           else (fg, Color.BrBlack)
         Color.HighlightCyan ->
-          if fg /= Color.Blue
+          if fg /= Color.Cyan
           then (fg, Color.Cyan)
           else (fg, Color.BrBlack)
         Color.HighlightGrey ->
           if fg /= Color.BrBlack
           then (fg, Color.BrBlack)
-          else (fg, Color.defFG)
-        Color.HighlightWhite -> (fg, Color.Magenta)
-        Color.HighlightMagenta -> (fg, Color.Magenta)
+          else (fg, Color.Black)
+        Color.HighlightWhite ->
+          if fg /= Color.Magenta
+          then (fg, Color.Magenta)
+          else (fg, Color.BrBlack)
+        Color.HighlightMagenta ->
+          if fg /= Color.Magenta
+          then (fg, Color.Magenta)
+          else (fg, Color.BrBlack)
         Color.HighlightRed ->
           if fg /= Color.Red
           then (fg, Color.Red)
@@ -258,7 +264,10 @@ setAttr Color.Attr{..} =
           then (fg, Color.Red)
           else (fg, Color.defFG)
         Color.HighlightNoneCursor -> (fg, Color.Black)
-        Color.HighlightBackground -> (fg, Color.BrBlack)
+        Color.HighlightBackground ->
+          if fg /= Color.BrBlack
+          then (fg, Color.BrBlack)
+          else (fg, Color.Black)
   in (fg1, bg1)
 
 colorTranslate :: Color.Color -> (ANSI.ColorIntensity, ANSI.Color)
