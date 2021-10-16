@@ -140,19 +140,19 @@ as well as with keyboard only, but the most efficient combination
 may be mouse for menus, go-to, inspecting the map, aiming at distant
 positions and keyboard for everything else.
 
-If you are using a terminal frontend, e.g. the best supported vty frontend,
+If you are using the ANSI terminal frontend (`--frontendANSI` on commandline),
 then numeric keypad (especially keypad `*` and `/`) may not work correctly,
-depending on versions of libraries, terminfo and terminal emulators.
-Toggling the Num Lock key may help or make issues worse. As a workaround,
-in the vty frontend, numbers are used for movement, which sadly prevents
-the number keys from selecting heroes. The commands that require pressing
-Control and Shift together won't work either, but fortunately they are
-not crucial to gameplay.
+depending on the versions of libraries terminal emulators. Toggling
+the Num Lock key may help or make issues worse. As a workaround,
+in the ANSI terminal frontend, numbers are used for movement,
+which sadly prevents the number keys from selecting heroes.
+The commands that require pressing Control and Shift together won't work
+either, but fortunately they are not crucial to gameplay.
 
-Some effort went into making the vty frontend usable with screen readers,
+Some effort went into making the ANSI frontend usable with screen readers,
 but without feedback it's hard to say how accessible that setup is.
 As a side effect of screen reader support, there is no aiming line
-nor path in vty frontend and some of map position highlighting
+nor path in ANSI frontend and some of map position highlighting
 is performed using the terminal cursor. Screen readers may also work
 better with animations turned off, using `--noAnim` or the corresponding
 config file or main game menu options.
@@ -193,17 +193,16 @@ and run the game with
 
     make play
 
-There is a built-in black and white line terminal frontend, suitable
-for teletype terminals or a keyboard and a printer (but it's going to use
-a lot of paper, unless you disable animations with `--noAnim`). It is used
-in CI and for some tests and benchmarks defined in Makefile. To compile
-with one of the less rudimentary terminal frontends (in which case you are
-on your own regarding font choice and color setup and you won't have
-the spiffy colorful squares outlining special positions that exist in SDL2
-frontend, but only crude cursor highlights), use Cabal flags, e.g,
-to switch to the vty console frontend optimized for screen readers, run
-
-    cabal run -fvty LambdaHack
+There is a built-in ANSI terminal frontend (`--frontendANSI` on commandline)
+intended for screen readers and a simplified black and white line terminal
+frontend (`--frontendTeletype`) suitable for teletype terminals
+or a keyboard and a printer (but it's going to use a lot of paper,
+unless you disable animations with `--noAnim`). The teletype frontend
+is used in CI and for some tests and benchmarks defined in Makefile.
+The terminal frontends leave you on your own regarding font choice
+and color setup and you won't have the colorful squares outlining
+special positions that exist in the SDL2 frontend, but only crude
+cursor highlights.
 
 
 Testing and debugging

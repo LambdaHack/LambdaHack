@@ -280,9 +280,6 @@ copy-binary:
 configure-binary-v2:
 	cabal configure --disable-tests --disable-library-profiling --disable-profiling --enable-optimization
 
-configure-binary-v2-vty:
-	cabal configure -fvty --disable-tests --disable-library-profiling --disable-profiling --disable-documentation --enable-optimization
-
 build-binary-v2:
 	cabal build --only-dependencies .
 	cabal build exe:LambdaHack
@@ -313,10 +310,3 @@ build-binary-macosx: build-directory
 	LH_VERSION=$$(cat ~/.LambdaHack/stdout.txt); \
 	OS_VERSION=$$(sw_vers -productVersion); \
 	tar -czf LambdaHack_$${LH_VERSION}_macosx-$${OS_VERSION}-amd64.tar.gz LambdaHackTheGame
-
-build-directory-vty: configure-binary-v2-vty build-binary-v2 copy-directory copy-binary
-
-build-binary-screen-reader-ubuntu: build-directory-vty
-	LambdaHackTheGame/LambdaHack --version > /dev/null; \
-	LH_VERSION=$$(cat ~/.LambdaHack/stdout.txt); \
-	tar -czf LambdaHack_$${LH_VERSION}_screen-reader-ubuntu-16.04-amd64.tar.gz LambdaHackTheGame
