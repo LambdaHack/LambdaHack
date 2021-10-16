@@ -25,6 +25,12 @@ jobs:
             setup-method: ghcup
             allow-failure: false
           - compiler: ghc-9.0.1-asserts
+            projectFlags: -fwith_expensive_assertions
+            compilerKind: ghc
+            compilerVersion: 9.0.1
+            setup-method: ghcup
+            allow-failure: false
+          - compiler: ghc-9.0.1-norelease-asserts
             projectFlags: -f-release -fwith_expensive_assertions
             compilerKind: ghc
             compilerVersion: 9.0.1
@@ -42,18 +48,6 @@ jobs:
             compilerVersion: 9.0.1
             setup-method: ghcup
             allow-failure: false
-          - compiler: ghc-9.0.1-vty
-            projectFlags: -fvty -fwith_expensive_assertions
-            compilerKind: ghc
-            compilerVersion: 9.0.1
-            setup-method: ghcup
-            allow-failure: false
-          - compiler: ghc-9.0.1-curses
-            projectFlags: -fcurses -f-release -fwith_expensive_assertions
-            compilerKind: ghc
-            compilerVersion: 9.0.1
-            setup-method: ghcup
-            allow-failure: false
           - compiler: ghc-8.10.7-vanilla
             projectFlags:
             compilerKind: ghc
@@ -61,6 +55,12 @@ jobs:
             setup-method: ghcup
             allow-failure: false
           - compiler: ghc-8.10.7-asserts
+            projectFlags: -fwith_expensive_assertions
+            compilerKind: ghc
+            compilerVersion: 8.10.7
+            setup-method: ghcup
+            allow-failure: false
+          - compiler: ghc-8.10.7-norelease-asserts
             projectFlags: -f-release -fwith_expensive_assertions
             compilerKind: ghc
             compilerVersion: 8.10.7
@@ -78,18 +78,6 @@ jobs:
             compilerVersion: 8.10.7
             setup-method: ghcup
             allow-failure: false
-          - compiler: ghc-8.10.7-vty
-            projectFlags: -fvty -fwith_expensive_assertions
-            compilerKind: ghc
-            compilerVersion: 8.10.7
-            setup-method: ghcup
-            allow-failure: false
-          - compiler: ghc-8.10.7-curses
-            projectFlags: -fcurses -f-release -fwith_expensive_assertions
-            compilerKind: ghc
-            compilerVersion: 8.10.7
-            setup-method: ghcup
-            allow-failure: false
           - compiler: ghc-8.8.4-vanilla
             projectFlags:
             compilerKind: ghc
@@ -97,6 +85,12 @@ jobs:
             setup-method: hvr-ppa
             allow-failure: false
           - compiler: ghc-8.8.4-asserts
+            projectFlags: -fwith_expensive_assertions
+            compilerKind: ghc
+            compilerVersion: 8.8.4
+            setup-method: hvr-ppa
+            allow-failure: false
+          - compiler: ghc-8.8.4-norelease-asserts
             projectFlags: -f-release -fwith_expensive_assertions
             compilerKind: ghc
             compilerVersion: 8.8.4
@@ -110,18 +104,6 @@ jobs:
             allow-failure: false
           - compiler: ghc-8.8.4-opt2
             projectFlags: --ghc-option=-O2 --ghc-option=-fno-ignore-asserts
-            compilerKind: ghc
-            compilerVersion: 8.8.4
-            setup-method: hvr-ppa
-            allow-failure: false
-          - compiler: ghc-8.8.4-vty
-            projectFlags: -fvty -fwith_expensive_assertions
-            compilerKind: ghc
-            compilerVersion: 8.8.4
-            setup-method: hvr-ppa
-            allow-failure: false
-          - compiler: ghc-8.8.4-curses
-            projectFlags: -fcurses -f-release -fwith_expensive_assertions
             compilerKind: ghc
             compilerVersion: 8.8.4
             setup-method: hvr-ppa
@@ -282,14 +264,10 @@ jobs:
           $CABAL v2-build $ARG_COMPILER --disable-tests --disable-benchmarks all
       - name: build
         run: |
-          if case $MY_HCFLAGS in -fvty* | -fcurses* ) false;; esac; then
-            $CABAL v2-build $ARG_COMPILER $ARG_TESTS $ARG_BENCH all --write-ghc-environment-files=always
-          fi
+          $CABAL v2-build $ARG_COMPILER $ARG_TESTS $ARG_BENCH all --write-ghc-environment-files=always
       - name: tests
         run: |
-          if case $MY_HCFLAGS in -fvty* | -fcurses* ) false;; esac; then
-            $CABAL v2-test $ARG_COMPILER $ARG_TESTS $ARG_BENCH all --test-show-details=direct
-          fi
+          $CABAL v2-test $ARG_COMPILER $ARG_TESTS $ARG_BENCH all --test-show-details=direct
       - name: gameplay tests
         shell: 'script -q -e -c "bash --noprofile --norc -eo pipefail {0}"'
         run: |
@@ -297,7 +275,7 @@ jobs:
       - name: hlint
         run: |
           if [ $((HCNUMVER >= 90000 && HCNUMVER < 90002)) -ne 0 ] ; then
-            case $MY_HCFLAGS in -fvty*)
+            case $MY_HCFLAGS in -f-release*)
               (cd ${PKGDIR_haskell_ci} && hlint -h ${GITHUB_WORKSPACE}/source/.hlint.yaml .)
             esac
           fi
