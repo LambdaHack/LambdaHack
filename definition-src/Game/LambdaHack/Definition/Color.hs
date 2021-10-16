@@ -174,7 +174,7 @@ highlightToColor hi = case hi of
   HighlightYellowAim -> BrYellow
   HighlightRedAim -> Red
   HighlightNoneCursor -> Black  -- used in ANSI for cursor via @maxIndexByA@
-  HighlightBackground -> Black  -- gets a special colour, but as a background
+  HighlightBackground -> BrBlack  -- gets a special colour, but as a background
 
 -- | Text attributes: foreground color and highlight.
 data Attr = Attr

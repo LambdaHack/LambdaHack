@@ -225,31 +225,7 @@ setAttr :: Color.Attr -> (Color.Color, Color.Color)
 setAttr Color.Attr{..} =
   let (fg1, bg1) = case bg of
         Color.HighlightNone -> (fg, Color.Black)
-        Color.HighlightGreen ->
-          if fg /= Color.Green
-          then (fg, Color.Green)
-          else (fg, Color.BrBlack)
-        Color.HighlightBlue ->
-          if fg /= Color.Blue
-          then (fg, Color.Blue)
-          else (fg, Color.BrBlack)
-        Color.HighlightBrown ->
-          if fg /= Color.Brown
-          then (fg, Color.Brown)
-          else (fg, Color.BrBlack)
-        Color.HighlightCyan ->
-          if fg /= Color.Cyan
-          then (fg, Color.Cyan)
-          else (fg, Color.BrBlack)
-        Color.HighlightGrey ->
-          if fg /= Color.BrBlack
-          then (fg, Color.BrBlack)
-          else (fg, Color.Black)
         Color.HighlightWhite ->
-          if fg /= Color.Magenta
-          then (fg, Color.Magenta)
-          else (fg, Color.BrBlack)
-        Color.HighlightMagenta ->
           if fg /= Color.Magenta
           then (fg, Color.Magenta)
           else (fg, Color.BrBlack)
@@ -264,10 +240,11 @@ setAttr Color.Attr{..} =
           then (fg, Color.Red)
           else (fg, Color.defFG)
         Color.HighlightNoneCursor -> (fg, Color.Black)
-        Color.HighlightBackground ->
-          if fg /= Color.BrBlack
-          then (fg, Color.BrBlack)
-          else (fg, Color.Black)
+        _ -> if fg /= Color.highlightToColor bg
+             then (fg, Color.highlightToColor bg)
+             else (fg, if fg == Color.BrBlack
+                       then Color.Black
+                       else Color.BrBlack)
   in (fg1, bg1)
 
 colorTranslate :: Color.Color -> (ANSI.ColorIntensity, ANSI.Color)
