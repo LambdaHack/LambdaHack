@@ -58,7 +58,7 @@ startup coscreen@ScreenContent{rwidth, rheight} = do
                   case c2 of
                     '\ESC' -> return [c]
                     '[' -> keycodeInput [c, c2]
-                    '0' -> keycodeInput [c, c2]  -- not handled, but reported
+                    'O' -> keycodeInput [c, c2]
                     _ -> return [c, c2]  -- Alt modifier
                 else return [c]
               else return [c]
@@ -127,7 +127,7 @@ only bright foregrouns. And I have at least one bright backround: bright black.
 -- The "works" comments are mostly about Gnome terminal.
 -- On the Gnome terminal, fo the keys mention on game help screen,
 -- the following don't work: C-TAB, C-S-TAB, C-R, C-?. C-/, C-{, C-}, C-q,
--- F1, C-S, C-P, C-keypad. This is acceptable. No worth adding functionality
+-- C-S, C-P, C-keypad. This is acceptable. No worth adding functionality
 -- for decoding modifiers that would, with much luck, enable C-keypad,
 -- but no other broken keys. Unless more is broken on other terminals.
 keyTranslate :: String -> K.KM
@@ -135,7 +135,7 @@ keyTranslate e = (\(key, modifier) -> K.KM modifier key) $
   case e of
     "\ESC" -> (K.Esc, K.NoModifier)  -- equals @^[@
     '\ESC' : '[' : rest -> keycodeTranslate rest
-    '\ESC' : '0' : rest -> (K.Unknown $ "\\ESC0" ++ rest, K.NoModifier)
+    '\ESC' : 'O' : rest -> ocodeTranslate rest
     ['\ESC', c] -> (K.Char c, K.Alt)
     "\b" -> (K.BackSpace, K.NoModifier)  -- same as "\BS" and "\^H" but fails
     "\DEL" -> (K.BackSpace, K.NoModifier)  -- works; go figure
@@ -212,6 +212,10 @@ keycodeTranslate e =
     "M" -> (K.Unknown $ "\\ESC[" ++ e, K.NoModifier)
     "N" -> (K.Unknown $ "\\ESC[" ++ e, K.NoModifier)
     "O" -> (K.Unknown $ "\\ESC[" ++ e, K.NoModifier)
+    "OP" -> (K.Fun 1, K.NoModifier)
+    "OQ" -> (K.Fun 2, K.NoModifier)
+    "OR" -> (K.Fun 3, K.NoModifier)
+    "OS" -> (K.Fun 4, K.NoModifier)
     "1P" -> (K.Fun 1, K.NoModifier)
     "1Q" -> (K.Fun 2, K.NoModifier)
     "1R" -> (K.Fun 3, K.NoModifier)
@@ -228,6 +232,17 @@ keycodeTranslate e =
 --    "u" -> (K.Begin, K.NoModifier)
 
     _ -> (K.Unknown $ "\\ESC[" ++ e, K.NoModifier)
+
+-- From guesswork, cargo-culting and @sed -n l@.
+ocodeTranslate :: String -> (K.Key, K.Modifier)
+ocodeTranslate e =
+  case e of
+    "P" -> (K.Fun 1, K.NoModifier)
+    "Q" -> (K.Fun 2, K.NoModifier)
+    "R" -> (K.Fun 3, K.NoModifier)
+    "S" -> (K.Fun 4, K.NoModifier)
+
+    _ -> (K.Unknown $ "\\ESCO" ++ e, K.NoModifier)
 
 setAttr :: Color.Attr -> (Color.Color, Color.Color)
 setAttr Color.Attr{..} =
