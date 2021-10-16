@@ -9,6 +9,7 @@ import Game.LambdaHack.Core.Prelude
 
 import           Control.Concurrent.Async
 import           Data.Char (chr, ord)
+import qualified Data.Text as T
 import qualified System.Console.ANSI as ANSI
 import qualified System.IO as SIO
 
@@ -30,41 +31,54 @@ frontendName = "ANSI"
 
 -- | Starts the main program loop using the frontend input and output.
 startup :: ScreenContent -> IO RawFrontend
-startup coscreen = do
-  rf <- createRawFrontend coscreen (display coscreen) shutdown
-  let storeKeys :: IO ()
-      storeKeys = do
-        c <- SIO.getChar  -- blocks here, so no polling
-        s <- do
-          if c == '\ESC' then do
+startup coscreen@ScreenContent{rwidth, rheight} = do
+  myx <- ANSI.getTerminalSize
+  case myx of
+    Just (y, x) | x < rwidth || y < rheight ->
+      error $ T.unpack
+            $ "The terminal is too small. It should have"
+              <+> tshow rwidth
+              <+> "columns and"
+              <+> tshow rheight
+              <+> "rows, but is has"
+              <+> tshow x
+              <+> "columns and"
+              <+> tshow y
+              <+> "rows. Resize it and run the program again."
+    _ -> do
+      rf <- createRawFrontend coscreen (display coscreen) shutdown
+      let storeKeys :: IO ()
+          storeKeys = do
+            c <- SIO.getChar  -- blocks here, so no polling
+            s <- do
+              if c == '\ESC' then do
+                ready <- SIO.hReady SIO.stdin
+                if ready then do
+                  c2 <- SIO.getChar
+                  case c2 of
+                    '\ESC' -> return [c]
+                    '[' -> keycodeInput [c, c2]
+                    '0' -> keycodeInput [c, c2]  -- not handled, but reported
+                    _ -> return [c, c2]  -- Alt modifier
+                else return [c]
+              else return [c]
+            let K.KM{..} = keyTranslate s
+            saveKMP rf modifier key (PointUI 0 0)
+            storeKeys
+          keycodeInput :: String -> IO String
+          keycodeInput inputSoFar = do
             ready <- SIO.hReady SIO.stdin
             if ready then do
-              c2 <- SIO.getChar
-              case c2 of
-                '\ESC' -> return [c]
-                '[' -> keycodeInput [c, c2]
-                '0' -> keycodeInput [c, c2]  -- not handled, but reported
-                _ -> return [c, c2]  -- Alt modifier
-            else return [c]
-          else return [c]
-        let K.KM{..} = keyTranslate s
-        saveKMP rf modifier key (PointUI 0 0)
-        storeKeys
-      keycodeInput :: String -> IO String
-      keycodeInput inputSoFar = do
-        ready <- SIO.hReady SIO.stdin
-        if ready then do
-          c <- SIO.getChar
-          if ord '@' <= ord c && ord c <= ord '~'  -- terminator
-          then return $ inputSoFar ++ [c]
-          else keycodeInput  $ inputSoFar ++ [c]
-        else return inputSoFar
-
-  SIO.hSetBuffering SIO.stdin SIO.NoBuffering
-  SIO.hSetBuffering SIO.stderr $ SIO.BlockBuffering $
-    Just $ 2 * rwidth coscreen * rheight coscreen
-  void $ async storeKeys
-  return $! rf
+              c <- SIO.getChar
+              if ord '@' <= ord c && ord c <= ord '~'  -- terminator
+              then return $ inputSoFar ++ [c]
+              else keycodeInput  $ inputSoFar ++ [c]
+            else return inputSoFar
+      SIO.hSetBuffering SIO.stdin SIO.NoBuffering
+      SIO.hSetBuffering SIO.stderr $ SIO.BlockBuffering $
+        Just $ 2 * rwidth * rheight
+      void $ async storeKeys
+      return $! rf
 
 shutdown :: IO ()
 shutdown = SIO.hFlush SIO.stdout >> SIO.hFlush SIO.stderr
