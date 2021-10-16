@@ -30,7 +30,6 @@ import           System.IO (hFlush, stdout)
 
 import           Game.LambdaHack.Client.UI.Content.Screen
 import           Game.LambdaHack.Client.UI.Frame
-import qualified Game.LambdaHack.Client.UI.Frontend.ANSI as ANSI
 import           Game.LambdaHack.Client.UI.Frontend.Common
 import qualified Game.LambdaHack.Client.UI.Frontend.Teletype as Teletype
 import           Game.LambdaHack.Client.UI.Key (KMP (..))
@@ -42,6 +41,7 @@ import qualified Game.LambdaHack.Definition.Color as Color
 #ifdef USE_BROWSER
 import qualified Game.LambdaHack.Client.UI.Frontend.Dom as Chosen
 #else
+import qualified Game.LambdaHack.Client.UI.Frontend.ANSI as ANSI
 import qualified Game.LambdaHack.Client.UI.Frontend.Sdl as Chosen
 #endif
 
@@ -84,7 +84,9 @@ chanFrontendIO coscreen soptions = do
 #ifndef REMOVE_TELETYPE
               | sfrontendTeletype soptions = Teletype.startup coscreen
 #endif
+#ifndef USE_BROWSER
               | sfrontendANSI soptions = ANSI.startup coscreen
+#endif
               | otherwise = Chosen.startup coscreen soptions
       maxFps = fromMaybe defaultMaxFps $ smaxFps soptions
       delta = max 1 $ round $ intToDouble microInSec / max 0.000001 maxFps
@@ -186,7 +188,9 @@ frontendName soptions =
 #ifndef REMOVE_TELETYPE
      | sfrontendTeletype soptions -> Teletype.frontendName
 #endif
+#ifndef USE_BROWSER
      | sfrontendANSI soptions -> ANSI.frontendName
+#endif
      | otherwise -> Chosen.frontendName
 
 lazyStartup :: ScreenContent -> IO RawFrontend
