@@ -80,48 +80,6 @@ startup coscreen@ScreenContent{rwidth, rheight} = do
       void $ async storeKeys
       return $! rf
 
-shutdown :: IO ()
-shutdown = SIO.hFlush SIO.stdout >> SIO.hFlush SIO.stderr
-
--- | Output to the screen via the frontend.
-display :: ScreenContent
-        -> SingleFrame
-        -> IO ()
-display _coscreen SingleFrame{singleArray} = do
-  ANSI.hHideCursor SIO.stderr
-  let f Point{..} w = do
-        ANSI.hSetCursorPosition SIO.stderr py px
-        let acChar = squashChar $ Color.charFromW32 w
-            (fg, bg) = setAttr $ Color.attrFromW32 w
-        ANSI.hSetSGR SIO.stderr [uncurry (ANSI.SetColor ANSI.Foreground)
-                                 $ colorTranslate fg]
-        ANSI.hSetSGR SIO.stderr [uncurry (ANSI.SetColor ANSI.Background)
-                                 $ colorTranslate bg]
-{-
-This is dubious, because I can't foce bright background colour with that,
-only bright foregrouns. And I have at least one bright backround: bright black.
-        -- A hack to get bright colors via the bold attribute.
-        -- Depending on terminal settings this is needed or not
-        -- and the characters really get bold or not.
-        -- HSCurses does this by default, in Vty you have to request the hack,
-        -- with ANSI we probably need it as well.
-        ANSI.hSetSGR SIO.stderr [ANSI.SetConsoleIntensity
-                                 $ if Color.isBright fg
-                                   then ANSI.BoldIntensity
-                                   else ANSI.NormalIntensity]
--}
-        SIO.hPutStr SIO.stderr [acChar]
-  PointArray.imapMA_ f singleArray
-  let Point{..} = PointArray.maxIndexByA (comparing Color.bgFromW32) singleArray
-  ANSI.hSetCursorPosition SIO.stderr py px
-  ANSI.hShowCursor SIO.stderr
-  -- Do not trash people's terminals when interrupted:
-  ANSI.hSetSGR SIO.stderr [uncurry (ANSI.SetColor ANSI.Foreground)
-                           $ colorTranslate Color.White]
-  ANSI.hSetSGR SIO.stderr [uncurry (ANSI.SetColor ANSI.Background)
-                           $ colorTranslate Color.Black]
-  SIO.hFlush SIO.stderr
-
 -- This is contrived, because we don't want to depend on libraries
 -- that read and interpret terminfo or similar on different architectures.
 -- The "works" comments are mostly about Gnome terminal.
@@ -244,6 +202,51 @@ ocodeTranslate e =
 
     _ -> (K.Unknown $ "\\ESCO" ++ e, K.NoModifier)
 
+shutdown :: IO ()
+shutdown = SIO.hFlush SIO.stdout >> SIO.hFlush SIO.stderr
+
+-- | Output to the screen via the frontend.
+display :: ScreenContent
+        -> SingleFrame
+        -> IO ()
+display _coscreen SingleFrame{singleArray} = do
+  ANSI.hHideCursor SIO.stderr
+  let f Point{..} w = do
+        ANSI.hSetCursorPosition SIO.stderr py px
+        let acChar = squashChar $ Color.charFromW32 w
+            (fg, bg) = setAttr $ Color.attrFromW32 w
+        ANSI.hSetSGR SIO.stderr [uncurry (ANSI.SetColor ANSI.Foreground)
+                                 $ colorTranslate fg]
+        ANSI.hSetSGR SIO.stderr [uncurry (ANSI.SetColor ANSI.Background)
+                                 $ colorTranslate bg]
+{-
+This is dubious, because I can't foce bright background colour with that,
+only bright foregrouns. And I have at least one bright backround: bright black.
+        -- A hack to get bright colors via the bold attribute.
+        -- Depending on terminal settings this is needed or not
+        -- and the characters really get bold or not.
+        -- HSCurses does this by default, in Vty you have to request the hack,
+        -- with ANSI we probably need it as well.
+        ANSI.hSetSGR SIO.stderr [ANSI.SetConsoleIntensity
+                                 $ if Color.isBright fg
+                                   then ANSI.BoldIntensity
+                                   else ANSI.NormalIntensity]
+-}
+        SIO.hPutStr SIO.stderr [acChar]
+  PointArray.imapMA_ f singleArray
+  let Point{..} = PointArray.maxIndexByA (comparing Color.bgFromW32) singleArray
+  ANSI.hSetCursorPosition SIO.stderr py px
+  ANSI.hShowCursor SIO.stderr
+  -- Do not trash people's terminals when interrupted:
+  ANSI.hSetSGR SIO.stderr [uncurry (ANSI.SetColor ANSI.Foreground)
+                           $ colorTranslate Color.White]
+  ANSI.hSetSGR SIO.stderr [uncurry (ANSI.SetColor ANSI.Background)
+                           $ colorTranslate Color.Black]
+  SIO.hFlush SIO.stderr
+
+squashChar :: Char -> Char
+squashChar c = if c == floorSymbol then '.' else c
+
 setAttr :: Color.Attr -> (Color.Color, Color.Color)
 setAttr Color.Attr{..} =
   let (fg1, bg1) = case bg of
@@ -288,6 +291,3 @@ colorTranslate Color.BrBlue    = (ANSI.Vivid, ANSI.Blue)
 colorTranslate Color.BrMagenta = (ANSI.Vivid, ANSI.Magenta)
 colorTranslate Color.BrCyan    = (ANSI.Vivid, ANSI.Cyan)
 colorTranslate Color.BrWhite   = (ANSI.Vivid, ANSI.White)
-
-squashChar :: Char -> Char
-squashChar c = if c == floorSymbol then '.' else c
