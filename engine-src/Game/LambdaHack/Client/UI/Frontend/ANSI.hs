@@ -124,17 +124,25 @@ only bright foregrouns. And I have at least one bright backround: bright black.
 
 -- This is contrived, because we don't want to depend on libraries
 -- that read and interpret terminfo or similar on different architectures.
+-- The "works" comments are mostly about Gnome terminal.
+-- On the Gnome terminal, fo the keys mention on game help screen,
+-- the following don't work: C-TAB, C-S-TAB, C-R, C-?. C-/, C-{, C-}, C-q,
+-- F1, C-S, C-P, C-keypad. This is acceptable. No worth adding functionality
+-- for decoding modifiers that would, with much luck, enable C-keypad,
+-- but no other broken keys. Unless more is broken on other terminals.
 keyTranslate :: String -> K.KM
 keyTranslate e = (\(key, modifier) -> K.KM modifier key) $
   case e of
     "\ESC" -> (K.Esc, K.NoModifier)  -- equals @^[@
     '\ESC' : '[' : rest -> keycodeTranslate rest
+    '\ESC' : '0' : rest -> (K.Unknown $ "\\ESC0" ++ rest, K.NoModifier)
     ['\ESC', c] -> (K.Char c, K.Alt)
-    "\BS"  -> (K.BackSpace, K.NoModifier)
-    "\n"   -> (K.Return, K.NoModifier)
-    "\r"   -> (K.Return, K.NoModifier)
-    " "    -> (K.Space, K.NoModifier)
-    "\t"   -> (K.Tab, K.NoModifier)  -- apparently equals @\^I@ and @\HT@
+    "\b" -> (K.BackSpace, K.NoModifier)  -- same as "\BS" and "\^H" but fails
+    "\DEL" -> (K.BackSpace, K.NoModifier)  -- works; go figure
+    "\n" -> (K.Return, K.NoModifier)
+    "\r" -> (K.Return, K.NoModifier)
+    " "  -> (K.Space, K.NoModifier)
+    "\t" -> (K.Tab, K.NoModifier)  -- apparently equals @\^I@ and @\HT@
     [c] | ord '\^A' <= ord c && ord c <= ord '\^Z' ->
           -- Alas, only lower-case letters.
           (K.Char $ chr $ ord c - ord '\^A' + ord 'a', K.Control)
@@ -214,7 +222,7 @@ keycodeTranslate e =
     "W" -> (K.Unknown $ "\\ESC[" ++ e, K.NoModifier)
     "X" -> (K.Unknown $ "\\ESC[" ++ e, K.NoModifier)
     "Y" -> (K.Unknown $ "\\ESC[" ++ e, K.NoModifier)
-    "Z" -> (K.Unknown $ "\\ESC[" ++ e, K.NoModifier)
+    "Z" -> (K.BackTab, K.NoModifier)
 
 --    "r" -> (K.Begin, K.NoModifier)
 --    "u" -> (K.Begin, K.NoModifier)
