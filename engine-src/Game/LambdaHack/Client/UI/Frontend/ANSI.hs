@@ -35,9 +35,30 @@ startup coscreen = do
   let storeKeys :: IO ()
       storeKeys = do
         c <- SIO.getChar  -- blocks here, so no polling
-        let K.KM{..} = keyTranslate c
+        s <- do
+          if c == '\ESC' then do
+            ready <- SIO.hReady SIO.stdin
+            if ready then do
+              c2 <- SIO.getChar
+              case c2 of
+                '\ESC' -> return [c]
+                '[' -> keycodeInput [c, c2]
+                _ -> return [c, c2]  -- Alt modifier
+            else return [c]
+          else return [c]
+        let K.KM{..} = keyTranslate s
         saveKMP rf modifier key (PointUI 0 0)
         storeKeys
+      keycodeInput :: String -> IO String
+      keycodeInput inputSoFar = do
+        ready <- SIO.hReady SIO.stdin
+        if ready then do
+          c <- SIO.getChar
+          if ord '@' <= ord c && ord c <= ord '~'  -- terminator
+          then return $ inputSoFar ++ [c]
+          else keycodeInput  $ inputSoFar ++ [c]
+        else return inputSoFar
+
   SIO.hSetBuffering SIO.stdin SIO.NoBuffering
   SIO.hSetBuffering SIO.stderr $ SIO.BlockBuffering $
     Just $ 2 * rwidth coscreen * rheight coscreen
@@ -81,22 +102,35 @@ only bright foregrouns. And I have at least one bright backround: bright black.
   ANSI.hShowCursor SIO.stderr
   SIO.hFlush SIO.stderr
 
-keyTranslate :: Char -> K.KM
+-- This is contrived, because we don't want to depend on libraries
+-- that read and interpret terminfo or similar on different architectures.
+keyTranslate :: String -> K.KM
 keyTranslate e = (\(key, modifier) -> K.KM modifier key) $
   case e of
-    '\ESC' -> (K.Esc,     K.NoModifier)
-    '\n'   -> (K.Return,  K.NoModifier)
-    '\r'   -> (K.Return,  K.NoModifier)
-    ' '    -> (K.Space,   K.NoModifier)
-    '\t'   -> (K.Tab,     K.NoModifier)
-    c | ord '\^A' <= ord c && ord c <= ord '\^Z' ->
-        -- Alas, only lower-case letters.
-        (K.Char $ chr $ ord c - ord '\^A' + ord 'a', K.Control)
-        -- Movement keys are more important than leader picking,
-        -- so disabling the latter and interpreting the keypad numbers
-        -- as movement:
-      | c `elem` ['1'..'9'] -> (K.KP c,              K.NoModifier)
-      | otherwise           -> (K.Char c,            K.NoModifier)
+    "\ESC" -> (K.Esc, K.NoModifier)  -- equals @^[@
+    '\ESC' : '[' : rest -> keycodeTranslate rest
+    ['\ESC', c] -> (K.Char c, K.Alt)
+    "\BS"  -> (K.BackSpace, K.NoModifier)
+    "\n"   -> (K.Return, K.NoModifier)
+    "\r"   -> (K.Return, K.NoModifier)
+    " "    -> (K.Space, K.NoModifier)
+    "\t"   -> (K.Tab, K.NoModifier)  -- apparently equals @\^I@ and @\HT@
+    [c] | ord '\^A' <= ord c && ord c <= ord '\^Z' ->
+          -- Alas, only lower-case letters.
+          (K.Char $ chr $ ord c - ord '\^A' + ord 'a', K.Control)
+        | -- Movement keys are more important than leader picking,
+          -- so disabling the latter and interpreting the keypad numbers
+          -- as movement:
+          c `elem` ['1'..'9'] -> (K.KP c, K.NoModifier)
+        | otherwise           -> (K.Char c, K.NoModifier)
+    _ -> (K.Unknown e, K.NoModifier)
+
+keycodeTranslate :: String -> (K.Key, K.Modifier)
+keycodeTranslate e =
+  case e of
+    "1~" -> (K.Home, K.NoModifier)
+    "H" -> (K.Home, K.NoModifier)
+    _ -> (K.Unknown $ "\\ESC[" ++ e, K.NoModifier)
 
 setAttr :: Color.Attr -> (Color.Color, Color.Color)
 setAttr Color.Attr{..} =

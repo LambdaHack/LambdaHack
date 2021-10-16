@@ -131,7 +131,7 @@ showKey MiddleButtonRelease = "MMB"
 showKey RightButtonRelease = "RMB"
 showKey WheelNorth = "WHEEL-UP"
 showKey WheelSouth = "WHEEL-DN"
-showKey (Unknown s) = "'" ++ s ++ "'"
+showKey (Unknown s) = s
 showKey DeadKey      = "DEADKEY"
 
 -- | Show a key with a modifier, if any.
