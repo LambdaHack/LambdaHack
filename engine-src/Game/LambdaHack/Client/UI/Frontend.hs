@@ -31,7 +31,6 @@ import           System.IO (hFlush, stdout)
 import           Game.LambdaHack.Client.UI.Content.Screen
 import           Game.LambdaHack.Client.UI.Frame
 import qualified Game.LambdaHack.Client.UI.Frontend.ANSI as ANSI
-import qualified Game.LambdaHack.Client.UI.Frontend.Chosen as Chosen
 import           Game.LambdaHack.Client.UI.Frontend.Common
 import qualified Game.LambdaHack.Client.UI.Frontend.Teletype as Teletype
 import           Game.LambdaHack.Client.UI.Key (KMP (..))
@@ -39,6 +38,12 @@ import qualified Game.LambdaHack.Client.UI.Key as K
 import           Game.LambdaHack.Common.ClientOptions
 import qualified Game.LambdaHack.Common.PointArray as PointArray
 import qualified Game.LambdaHack.Definition.Color as Color
+
+#ifdef USE_BROWSER
+import qualified Game.LambdaHack.Client.UI.Frontend.Dom as Chosen
+#else
+import qualified Game.LambdaHack.Client.UI.Frontend.Sdl as Chosen
+#endif
 
 -- | The instructions sent by clients to the raw frontend, indexed
 -- by the returned value.

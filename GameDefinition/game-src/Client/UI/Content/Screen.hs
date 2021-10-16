@@ -47,7 +47,7 @@ standardLayoutAndFeatures = ScreenContent
       lift intro)
   , rapplyVerbMap = EM.fromList [('!', "quaff"), (',', "eat"), ('?', "read")]
   , rFontFiles =
-#ifdef USE_JSFILE
+#ifdef USE_BROWSER
       []
 #else
       $(embedDir "GameDefinition/fonts")

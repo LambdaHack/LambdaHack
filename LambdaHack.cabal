@@ -219,7 +219,6 @@ library
                       Game.LambdaHack.Client.UI.Frame
                       Game.LambdaHack.Client.UI.FrameM
                       Game.LambdaHack.Client.UI.Frontend
-                      Game.LambdaHack.Client.UI.Frontend.Chosen
                       Game.LambdaHack.Client.UI.Frontend.Common
                       Game.LambdaHack.Client.UI.Frontend.Teletype
                       Game.LambdaHack.Client.UI.HandleHelperM
