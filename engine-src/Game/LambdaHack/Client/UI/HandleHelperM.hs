@@ -269,9 +269,7 @@ itemOverlayFromState lSlots lid bag displayRanged
                   [partItemWsRanged rwidth side factionD displayRanged
                                     DetailMedium 4 k localTime itemFull kit]
                 al1 = attrStringToAL
-                      $ textToAS (markEqp iid $ slotLabel l)
-                        ++ [Color.spaceAttrW32 | isSquareFont propFont]
-                        ++ [colorSymbol]
+                      $ textToAS (markEqp iid $ slotLabel l) ++ [colorSymbol]
                 xal2 = ( textSize squareFont $ attrLine al1
                        , attrStringToAL $ Color.spaceAttrW32 : textToAS phrase )
                 kx = (Right l, ( PointUI 0 0
