@@ -192,7 +192,9 @@ stepChoiceScreen menuName dm sfBlank frsX extraKeys = do
       keys = concatMap (lefts . map fst . snd) frs ++ extraKeys
       legalKeys = keys
                   ++ navigationKeys
-                  ++ [K.mkChar '?' | menuName == "help"]  -- a hack
+                  ++ (if menuName == "help"
+                      then [K.mkChar '?', K.mkKM "F1"]
+                      else [])  -- a hack
       allOKX = concatMap snd frs
       maxIx = length allOKX - 1
       initIx = case findIndex (isRight . fst) allOKX of
@@ -301,8 +303,9 @@ stepChoiceScreen menuName dm sfBlank frsX extraKeys = do
                        | otherwise -> ignoreKey
                   K.Space | firstItemOfNextPage <= maxIx ->
                     tmpResult firstItemOfNextPage
-                  K.Char '?' | firstItemOfNextPage <= maxIx
-                               && menuName == "help" ->  -- a hack
+                  _ | K.key ikm `elem` [K.Char '?', K.Fun 1]
+                      && firstItemOfNextPage <= maxIx
+                      && menuName == "help" ->  -- a hack
                     tmpResult firstItemOfNextPage
                   K.Unknown "SAFE_SPACE" ->
                     if firstItemOfNextPage <= maxIx
