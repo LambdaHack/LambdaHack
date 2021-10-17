@@ -4,9 +4,10 @@ module Game.LambdaHack.Client.UI.Slideshow
   , FontSetup(..), multiFontSetup, monoFontSetup, singleFontSetup, textSize
   , KeyOrSlot, ButtonWidth(..)
   , KYX, xytranslateKXY, xtranslateKXY, ytranslateKXY, yrenumberKXY
-  , OKX, emptyOKX, sideBySideOKX, Slideshow(slideshow)
-  , emptySlideshow, unsnoc, toSlideshow, attrLinesToFontMap
-  , menuToSlideshow, wrapOKX, splitOverlay, splitOKX, highSlideshow
+  , OKX, emptyOKX, xytranslateOKX, sideBySideOKX
+  , Slideshow(slideshow), emptySlideshow, unsnoc, toSlideshow
+  , attrLinesToFontMap, menuToSlideshow, wrapOKX, splitOverlay, splitOKX
+  , highSlideshow
 #ifdef EXPOSE_INTERNAL
     -- * Internal operations
   , keysOKX, showTable, showNearbyScores
@@ -111,11 +112,16 @@ type OKX = (FontOverlayMap, [KYX])
 emptyOKX :: OKX
 emptyOKX = (EM.empty, [])
 
+xytranslateOKX ::Int -> Int -> OKX -> OKX
+xytranslateOKX dx dy (ovs, kyxs) =
+  ( EM.map (xytranslateOverlay dx dy) ovs
+  , map (xytranslateKXY dx dy) kyxs )
+
 sideBySideOKX :: Int -> Int -> OKX -> OKX -> OKX
 sideBySideOKX dx dy (ovs1, kyxs1) (ovs2, kyxs2) =
-  ( EM.unionWith (++) ovs1 (EM.map (xytranslateOverlay dx dy) ovs2)
-  , sortOn (\(_, (PointUI x y, _)) -> (y, x))
-    $ kyxs1 ++ map (xytranslateKXY dx dy) kyxs2 )
+  let (ovs3, kyxs3) = xytranslateOKX dx dy (ovs2, kyxs2)
+  in ( EM.unionWith (++) ovs1 ovs3
+     , sortOn (\(_, (PointUI x y, _)) -> (y, x)) $ kyxs1 ++ kyxs3 )
 
 -- | A list of active screenfulls to be shown one after another.
 -- Each screenful has an independent numbering of rows and columns.

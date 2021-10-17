@@ -1450,7 +1450,7 @@ dashboardHuman cmdSemInCxtOfKM = do
   CCUI{coinput, coscreen=ScreenContent{rwidth, rheight}} <- getsSession sccui
   fontSetup@FontSetup{..} <- getFontSetup
   let offsetCol2 = 2
-      (ov0, kxs0) = okxsN coinput monoFont propFont 0 offsetCol2 (const False)
+      (ov0, kxs0) = okxsN coinput monoFont propFont offsetCol2 (const False)
                           False CmdDashboard ([], [], []) ([], [])
       al1 = textToAS "Dashboard"
   let splitHelp (al, okx) = splitOKX fontSetup False rwidth (rheight - 2) rwidth
@@ -1558,9 +1558,9 @@ itemMenuHuman leader cmdSemInCxtOfKM = do
               offsetCol2 = 11
               keyCaption = fmt offsetCol2 "keys" "command"
               offset = 1 + maxYofOverlay (descBlurb ++ ovFound)
-              (ov0, kxs0) = okxsN coinput monoFont propFont offset offsetCol2
-                                  greyedOut True CmdItemMenu
-                                  ([], [], ["", keyCaption]) ([], [])
+              (ov0, kxs0) = xytranslateOKX 0 offset $
+                 okxsN coinput monoFont propFont offsetCol2 greyedOut
+                       True CmdItemMenu ([], [], ["", keyCaption]) ([], [])
               t0 = makeSentence [ MU.SubjectVerbSg (partActor bUI) "choose"
                                 , "an item", MU.Text $ ppCStoreIn fromCStore ]
               alRep = foldr (<+:>) [] $ renderReport True report

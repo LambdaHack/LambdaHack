@@ -101,16 +101,13 @@ keyHelp CCUI{ coinput=coinput@InputContent{..}
     keyCaption = fmt offsetCol2 "keys" "command"
     mouseOverviewCaption = fmt offsetCol2 "keys" "command (exploration/aiming)"
     spLen = textSize monoFont " "
-    okxs cat headers footers =
-      let (ovs, kyx) = okxsN coinput monoFont propFont 0 offsetCol2
-                             (const False) True cat headers footers
-      in ( EM.map (xtranslateOverlay spLen) ovs
-         , map (xtranslateKXY spLen) kyx )
+    okxs cat headers footers = xytranslateOKX spLen 0 $
+      okxsN coinput monoFont propFont offsetCol2 (const False)
+            True cat headers footers
     mergeOKX :: OKX -> OKX -> OKX
-    mergeOKX (ovs1, ks1) (ovs2, ks2) =
-      let off = 1 + maxYofFontOverlayMap ovs1
-      in ( EM.unionWith (++) ovs1 $ EM.map (ytranslateOverlay off) ovs2
-         , ks1 ++ map (ytranslateKXY off) ks2 )
+    mergeOKX okx1 okx2 =
+      let off = 1 + maxYofFontOverlayMap (fst okx1)
+      in sideBySideOKX 0 off okx1 okx2
     catLength cat = length $ filter (\(_, (cats, desc, _)) ->
       cat `elem` cats && (desc /= "" || CmdInternal `elem` cats)) bcmdList
     keyM = 13
@@ -293,12 +290,12 @@ keyHelp CCUI{ coinput=coinput@InputContent{..}
 --
 -- The length of the button may be wrong if the two supplied fonts
 -- have very different widths.
-okxsN :: InputContent -> DisplayFont -> DisplayFont -> Int -> Int
-      -> (HumanCmd -> Bool) -> Bool -> CmdCategory
-      -> ([Text], [Text], [Text]) -> ([Text], [Text]) -> OKX
-okxsN InputContent{..} keyFont descFont offset offsetCol2 greyedOut
+okxsN :: InputContent -> DisplayFont -> DisplayFont -> Int -> (HumanCmd -> Bool)
+      -> Bool -> CmdCategory -> ([Text], [Text], [Text]) -> ([Text], [Text])
+      -> OKX
+okxsN InputContent{..} keyFont descFont offsetCol2 greyedOut
       showManyKeys cat (headerMono1, headerProp, headerMono2)
-                       (footerMono, footerProp) =
+      (footerMono, footerProp) =
   let fmt k h = (T.singleton '\x00a0' <> k, h)
       coImage :: HumanCmd -> [K.KM]
       coImage cmd = M.findWithDefault (error $ "" `showFailure` cmd) cmd brevMap
@@ -323,9 +320,8 @@ okxsN InputContent{..} keyFont descFont offset offsetCol2 greyedOut
       f (ks, (_, (_, t2))) y =
         (ks, ( PointUI spLen y
              , ButtonWidth keyFont (offsetCol2 + 2 + T.length t2 - 1)))
-      kxs = zipWith f keys [offset + length headerMono1
-                                   + length headerProp
-                                   + length headerMono2 ..]
+      kxs = zipWith f keys
+              [length headerMono1 + length headerProp + length headerMono2 ..]
       ts = map (\t -> (False, (t, ""))) headerMono1
            ++ map (\t -> (False, ("", t))) headerProp
            ++ map (\t -> (False, (t, ""))) headerMono2
@@ -341,7 +337,6 @@ okxsN InputContent{..} keyFont descFont offset offsetCol2 greyedOut
              in (al1, ( if T.null t1 then 0 else spLen * (offsetCol2 + 2)
                       , textToAL t2 ))
       (greyLab, greyDesc) = unzip $ map greyToAL ts
-      descOv = ytranslateOverlay offset (offsetOverlayX greyDesc)
-      labOv = ytranslateOverlay offset (offsetOverlay greyLab)
-  in ( EM.insertWith (++) descFont descOv $ EM.singleton keyFont labOv
+  in ( EM.insertWith (++) descFont (offsetOverlayX greyDesc)
+       $ EM.singleton keyFont (offsetOverlay greyLab)
      , kxs )
