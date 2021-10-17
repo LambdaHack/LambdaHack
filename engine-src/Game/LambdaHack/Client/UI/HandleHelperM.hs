@@ -488,8 +488,7 @@ describeMode addTitle gameModeId = do
            <> textToAS ":"
   return $! if isSquareFont propFont
             then EM.singleton squareFont  -- single column, single font
-                 $ offsetOverlayX
-                 $ map (\t -> (2, t))
+                 $ xtranslateOverlay 2 $ offsetOverlay
                  $ concatMap snd $ blurb ++ blurbEnd
             else EM.unionWith (++)
                  (EM.map (xtranslateOverlay 1)
@@ -981,8 +980,7 @@ okxItemLorePointedAt font width inlineMsg itemBag meleeSkill promptFun
       prompt = promptFun iid2 itemFull2 k
       promptBlurb | T.null prompt = []
                   | otherwise = offsetOverlay $ splitAttrString width width
-                                              $ textFgToAS Color.Brown
-                                              $ prompt <> "\n\n"
+                                $ textFgToAS Color.Brown $ prompt <> "\n\n"
   (descSym2, descBlurb2) <-
     if inlineMsg
     then do

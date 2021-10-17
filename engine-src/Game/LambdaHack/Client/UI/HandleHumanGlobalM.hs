@@ -1644,25 +1644,25 @@ generateMenu cmdSemInCxtOfKM blurb kdsRaw gameInfo menuName = do
               , T.unpack
                 $ T.justifyLeft 3 ' ' (T.pack $ K.showKM km) <> " " <> d )
         in map fmt kds
-      generate :: Int -> (Maybe K.KM, String) -> ((Int, AttrLine), Maybe KYX)
+      generate :: Int -> (Maybe K.KM, String) -> Maybe KYX
       generate y (mkey, binding) =
         let lenB = length binding
-            yxx key = (Left key, ( PointUI 2 y
+            yxx key = (Left key, ( PointUI 0 y
                                  , ButtonWidth squareFont lenB ))
-            myxx = yxx <$> mkey
-        in ((2, stringToAL binding), myxx)
+        in yxx <$> mkey
       titleLine = rtitle corule ++ " "
                   ++ showVersion (rexeVersion corule) ++ " "
       rawLines = zip (repeat Nothing)
                      (["", titleLine ++ "[" ++ rwebAddress ++ "]", ""]
                       ++ gameInfo)
                  ++ bindings
-      (menuOvLines, mkyxs) = unzip $ zipWith generate [0..] rawLines
       browserKey = ( Right $ SlotChar 1042 'a'
-                   , ( PointUI (2 + 2 * length titleLine) 1
+                   , ( PointUI (2 * length titleLine) 1
                      , ButtonWidth squareFont (2 + length rwebAddress) ) )
-      kyxs = browserKey : catMaybes mkyxs
-      ov = EM.singleton squareFont (offsetOverlayX menuOvLines)
+      kyxs = browserKey : catMaybes (zipWith generate [0..] rawLines)
+      ov = EM.singleton squareFont $ offsetOverlay
+                                   $ map (stringToAL . snd) rawLines
+      kxy = xytranslateOKX 2 0 (ov, kyxs)
   menuIxMap <- getsSession smenuIxMap
   unless (menuName `M.member` menuIxMap) $
     modifySession $ \sess -> sess {smenuIxMap = M.insert menuName 1 menuIxMap}
@@ -1682,7 +1682,7 @@ generateMenu cmdSemInCxtOfKM blurb kdsRaw gameInfo menuName = do
         Nothing -> error "displayInRightPane: unexpected key"
   ekm <- displayChoiceScreenWithRightPane displayInRightPane
                                           menuName ColorFull True
-                                          (menuToSlideshow (ov, kyxs)) [K.escKM]
+                                          (menuToSlideshow kxy) [K.escKM]
   case ekm of
     Left km -> case km `lookup` kds of
       Just (_desc, cmd, _) -> cmdSemInCxtOfKM km cmd
