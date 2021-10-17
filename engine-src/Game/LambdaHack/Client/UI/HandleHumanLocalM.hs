@@ -752,16 +752,17 @@ eitherHistory showAll = do
                         ++ renderedHistoryRaw
       histBound = placeholderCount + histBoundRaw
       splitRow as =
-        let (spNo, spYes) = span (/= Color.spaceAttrW32) as
-            par1 = case filter (/= emptyAttrLine) $ linesAttr spYes of
+        let (tLab, tDesc) = span (/= Color.spaceAttrW32) as
+            labLen = textSize monoFont tLab
+            par1 = case filter (/= emptyAttrLine) $ linesAttr tDesc of
               [] -> emptyAttrLine
               [l] -> l
               ls -> attrStringToAL $ intercalate [Color.spaceAttrW32]
                                    $ map attrLine ls
-        in (attrStringToAL spNo, (textSize monoFont spNo, par1))
-      (histLab, histDesc) = unzip $ map splitRow renderedHistory
-      rhLab = EM.singleton monoFont $ offsetOverlay histLab
-      rhDesc = EM.singleton propFont $ offsetOverlayX histDesc
+        in (attrStringToAL tLab, (labLen, par1))
+      (tsLab, tsDesc) = unzip $ map splitRow renderedHistory
+      ovs = EM.insertWith (++) monoFont (offsetOverlay tsLab)
+            $ EM.singleton propFont $ offsetOverlayX tsDesc
       turnsGlobal = global `timeFitUp` timeTurn
       turnsLocal = localTime `timeFitUp` timeTurn
       msg = makeSentence
@@ -779,14 +780,14 @@ eitherHistory showAll = do
         : K.mkChar '.'
 #endif
         : [K.escKM]
-  okxs <- overlayToSlideshow (rheight - 2) keysAllHistory
-                             (EM.unionWith (++) rhLab rhDesc, kxs)
-  let maxIx = length (concatMap snd $ slideshow okxs) - 1
+  slides <- overlayToSlideshow (rheight - 2) keysAllHistory (ovs, kxs)
+  let maxIx = length (concatMap snd $ slideshow slides) - 1
       menuName = "history"
   modifySession $ \sess ->
     sess {smenuIxMap = M.insert menuName maxIx $ smenuIxMap sess}
   let displayAllHistory = do
-        ekm <- displayChoiceScreen menuName ColorFull False okxs keysAllHistory
+        ekm <- displayChoiceScreen menuName ColorFull False slides
+                                   keysAllHistory
         case ekm of
           Left km | km == K.mkChar '.' -> do
             let t = T.unlines $ map (T.pack . map Color.charFromW32)
@@ -806,18 +807,17 @@ eitherHistory showAll = do
               [] -> error $ "" `showFailure` histSlot
               tR : _ -> tR
             ov0 =
-              let (spNo, spYes) = span (/= Color.spaceAttrW32) timeReport
-                  lenNo = textSize monoFont spNo
-                  spYesX = case splitAttrString (rwidth - lenNo - 1) rwidth
-                                                spYes of
+              let (tLab, tDesc) = span (/= Color.spaceAttrW32) timeReport
+                  labLen = textSize monoFont tLab
+                  alsLab = [attrStringToAL tLab]
+                  alsDesc = case splitAttrString (rwidth - labLen - 1) rwidth
+                                                 tDesc of
                     [] -> []
                     l : ls ->
-                      ( lenNo
-                      , firstParagraph $ Color.spaceAttrW32 : attrLine l )
+                      (labLen, firstParagraph $ Color.spaceAttrW32 : attrLine l)
                       : map (0,) ls
-              in EM.insertWith (++) monoFont
-                               (offsetOverlay [attrStringToAL spNo])
-                 $ EM.singleton propFont $ offsetOverlayX spYesX
+              in EM.insertWith (++) monoFont (offsetOverlay alsLab)
+                 $ EM.singleton propFont $ offsetOverlayX alsDesc
             prompt = makeSentence
               [ "the", MU.Ordinal $ histSlot + 1
               , "most recent record follows" ]
@@ -825,8 +825,8 @@ eitherHistory showAll = do
                    ++ [K.upKM | histSlot /= 0]
                    ++ [K.downKM | histSlot /= histBoundRaw - 1]
         msgAdd MsgPromptGeneric prompt
-        slides <- overlayToSlideshow (rheight - 2) keys (ov0, [])
-        km <- getConfirms ColorFull keys slides
+        slides2 <- overlayToSlideshow (rheight - 2) keys (ov0, [])
+        km <- getConfirms ColorFull keys slides2
         case K.key km of
           K.Space -> displayAllHistory
           K.Up -> displayOneReport $ histSlot - 1

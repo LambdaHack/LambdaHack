@@ -255,7 +255,8 @@ itemOverlayFromState lSlots lid bag displayRanged
            | iid `EM.member` stashBag -> T.snoc (T.init t) '}'
                -- some spares in shared stash
            | otherwise -> t
-      pr (l, iid) =
+      pr :: (SlotChar, ItemId) -> Maybe (AttrString, AttrString, KeyOrSlot)
+      pr (c, iid) =
         case EM.lookup iid bag of
           Nothing -> Nothing
           Just kit@(k, _) ->
@@ -268,18 +269,12 @@ itemOverlayFromState lSlots lid bag displayRanged
                 phrase = makePhrase
                   [partItemWsRanged rwidth side factionD displayRanged
                                     DetailMedium 4 k localTime itemFull kit]
-                al1 = attrStringToAL
-                      $ textToAS (markEqp iid $ slotLabel l) ++ [colorSymbol]
-                xal2 = ( textSize squareFont $ attrLine al1
-                       , attrStringToAL $ Color.spaceAttrW32 : textToAS phrase )
-                kx = (Right l, ( PointUI 0 0
-                               , ButtonWidth propFont (5 + T.length phrase) ))
-            in Just ((al1, xal2), kx)
-      (ts, kxs) = unzip $ mapMaybe pr $ EM.assocs lSlots
-      (tsLab, tsDesc) = unzip ts
-      ovsLab = EM.singleton squareFont $ offsetOverlay tsLab
-      ovsDesc = EM.singleton propFont $ offsetOverlayX tsDesc
-  in (EM.unionWith (++) ovsLab ovsDesc, zipWith yrenumberKXY [0..] kxs)
+                !tLab = markEqp iid $ slotLabel c
+                aLab = textToAS tLab ++ [colorSymbol]
+                !tDesc = " " <> phrase
+            in Just (aLab, textToAS tDesc, Right c)
+      l = mapMaybe pr $ EM.assocs lSlots
+  in labDescOKX squareFont propFont l
 
 skillsOverlay :: MonadClientUI m => ActorId -> m OKX
 skillsOverlay aid = do
@@ -293,14 +288,15 @@ skillsOverlay aid = do
             slotLab = slotLabel c
             lab = textToAL slotLab
             labLen = textSize squareFont $ attrLine lab
-            indentation = if isSquareFont propFont then 42 else 20
+            indentation = if isSquareFont propFont then 48 else 26
             valueText = skillToDecorator skill b
                         $ Ability.getSk skill actorMaxSk
             triple = ( lab
                      , (labLen, textToAL skName)
-                     , (labLen + indentation, textToAL valueText) )
+                     , (indentation, textToAL valueText) )
+            lenButton = 24 + T.length valueText
         in (triple, (Right c, ( PointUI 0 y
-                              , ButtonWidth propFont (28 + T.length slotLab) )))
+                              , ButtonWidth propFont lenButton )))
       (ts, kxs) = unzip $ zipWith prSlot (zip [0..] allSlots) skillSlots
       (skLab, skDescr, skValue) = unzip3 ts
       skillLab = EM.singleton squareFont $ offsetOverlay skLab
@@ -357,34 +353,25 @@ placesOverlay = do
   soptions <- getsClient soptions
   FontSetup{..} <- getFontSetup
   places <- getsState $ placesFromState coplace (sexposePlaces soptions)
-  let prSlot :: (Int, SlotChar)
+  let prSlot :: SlotChar
              -> (ContentId PK.PlaceKind, (ES.EnumSet LevelId, Int, Int, Int))
-             -> (AttrLine, (Int, AttrLine), KYX)
-      prSlot (y, c) (pk, (es, _, _, _)) =
+             -> (AttrString, AttrString, KeyOrSlot)
+      prSlot c (pk, (es, _, _, _)) =
         let placeName = PK.pname $ okind coplace pk
             markPlace t = if ES.null es
                           then T.snoc (T.init t) '>'
                           else t
-            !tSlot = markPlace $ slotLabel c  -- free @places@ as you go
-            !lenSlot = 2 * T.length tSlot
-            !tBlurb = " "
-                      <> placeName
-                      <+> if ES.null es
-                          then ""
-                          else "("
-                               <> makePhrase [MU.CarWs (ES.size es) "level"]
-                               <> ")"
-            !lenButton = lenSlot + T.length tBlurb
-            !pButton = PointUI 0 y
-            !widthButton = ButtonWidth propFont lenButton
-        in ( textToAL tSlot
-           , (lenSlot, textToAL tBlurb)
-           , (Right c, (pButton, widthButton)) )
-      (plLab, plDesc, kxs) = unzip3 $ zipWith prSlot (zip [0..] allSlots)
-                                    $ EM.assocs places
-      placeLab = EM.singleton squareFont $ offsetOverlay plLab
-      placeDesc = EM.singleton propFont $ offsetOverlayX plDesc
-  return (EM.unionWith (++) placeLab placeDesc, kxs)
+            !tLab = markPlace $ slotLabel c  -- ! to free @places@ as you go
+            !tDesc = " "
+                     <> placeName
+                     <+> if ES.null es
+                         then ""
+                         else "("
+                              <> makePhrase [MU.CarWs (ES.size es) "level"]
+                              <> ")"
+        in (textToAS tLab, textToAS tDesc, Right c)
+      l = zipWith prSlot allSlots $ EM.assocs places
+  return $! labDescOKX squareFont propFont l
 
 describeMode :: MonadClientUI m
              => Bool -> ContentId MK.ModeKind
@@ -502,10 +489,10 @@ modesOverlay = do
   nxtChal <- getsClient snxtChal  -- mark victories only for current difficulty
   let f !acc _p !i !a = (i, a) : acc
       campaignModes = ofoldlGroup' comode MK.CAMPAIGN_SCENARIO f []
-      prSlot :: (Int, SlotChar)
+      prSlot :: SlotChar
              -> (ContentId MK.ModeKind, MK.ModeKind)
-             -> (AttrLine, (Int, AttrLine), KYX)
-      prSlot (y, c) (gameModeId, gameMode) =
+             -> (AttrString, AttrString, KeyOrSlot)
+      prSlot c (gameModeId, gameMode) =
         let modeName = MK.mname gameMode
             victories = case EM.lookup gameModeId svictories of
               Nothing -> 0
@@ -513,20 +500,11 @@ modesOverlay = do
             markMode t = if victories > 0
                          then T.snoc (T.init t) '>'
                          else t
-            !tSlot = markMode $ slotLabel c
-            !lenSlot = 2 * T.length tSlot
-            !tBlurb = " " <> modeName
-            !lenButton = lenSlot + T.length tBlurb
-            !pButton = PointUI 0 y
-            !widthButton = ButtonWidth propFont lenButton
-        in ( textToAL tSlot
-           , (lenSlot, textToAL tBlurb)
-           , (Right c, (pButton, widthButton)) )
-      (plLab, plDesc, kxs) =
-        unzip3 $ zipWith prSlot (zip [0..] allSlots) campaignModes
-      placeLab = EM.singleton squareFont $ offsetOverlay plLab
-      placeDesc = EM.singleton propFont $ offsetOverlayX plDesc
-  return (EM.unionWith (++) placeLab placeDesc, kxs)
+            !tLab = markMode $ slotLabel c
+            !tDesc = " " <> modeName
+        in (textToAS tLab, textToAS tDesc, Right c)
+      l = zipWith prSlot allSlots campaignModes
+  return $! labDescOKX squareFont propFont l
 
 pickNumber :: MonadClientUI m => Bool -> Int -> m (Either MError Int)
 pickNumber askNumber kAll = assert (kAll >= 1) $ do

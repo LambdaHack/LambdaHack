@@ -293,7 +293,7 @@ keyHelp CCUI{ coinput=coinput@InputContent{..}
 okxsN :: InputContent -> DisplayFont -> DisplayFont -> Int -> (HumanCmd -> Bool)
       -> Bool -> CmdCategory -> ([Text], [Text], [Text]) -> ([Text], [Text])
       -> OKX
-okxsN InputContent{..} keyFont descFont offsetCol2 greyedOut
+okxsN InputContent{..} labFont descFont offsetCol2 greyedOut
       showManyKeys cat (headerMono1, headerProp, headerMono2)
       (footerMono, footerProp) =
   let fmt k h = (T.singleton '\x00a0' <> k, h)
@@ -316,10 +316,10 @@ okxsN InputContent{..} keyFont descFont offsetCol2 greyedOut
                      km1 : _ -> km1
              , cat `elem` cats
              , desc /= "" || CmdInternal `elem` cats]
-      spLen = textSize keyFont " "
+      spLen = textSize labFont " "
       f (ks, (_, (_, t2))) y =
         (ks, ( PointUI spLen y
-             , ButtonWidth keyFont (offsetCol2 + 2 + T.length t2 - 1)))
+             , ButtonWidth labFont (offsetCol2 + 2 + T.length t2 - 1)))
       kxs = zipWith f keys
               [length headerMono1 + length headerProp + length headerMono2 ..]
       ts = map (\t -> (False, (t, ""))) headerMono1
@@ -338,5 +338,5 @@ okxsN InputContent{..} keyFont descFont offsetCol2 greyedOut
                       , textToAL t2 ))
       (greyLab, greyDesc) = unzip $ map greyToAL ts
   in ( EM.insertWith (++) descFont (offsetOverlayX greyDesc)
-       $ EM.singleton keyFont (offsetOverlay greyLab)
+       $ EM.singleton labFont (offsetOverlay greyLab)
      , kxs )

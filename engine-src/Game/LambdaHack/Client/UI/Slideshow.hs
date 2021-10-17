@@ -1,10 +1,11 @@
 -- | Slideshows.
 module Game.LambdaHack.Client.UI.Slideshow
-  ( DisplayFont, isSquareFont, isMonoFont, FontOverlayMap, maxYofFontOverlayMap
+  ( DisplayFont, isSquareFont, isMonoFont
+  , FontOverlayMap, maxYofFontOverlayMap
   , FontSetup(..), multiFontSetup, monoFontSetup, singleFontSetup, textSize
   , KeyOrSlot, ButtonWidth(..)
   , KYX, xytranslateKXY, xtranslateKXY, ytranslateKXY, yrenumberKXY
-  , OKX, emptyOKX, xytranslateOKX, sideBySideOKX
+  , OKX, emptyOKX, xytranslateOKX, sideBySideOKX, labDescOKX
   , Slideshow(slideshow), emptySlideshow, unsnoc, toSlideshow
   , attrLinesToFontMap, menuToSlideshow, wrapOKX, splitOverlay, splitOKX
   , highSlideshow
@@ -122,6 +123,26 @@ sideBySideOKX dx dy (ovs1, kyxs1) (ovs2, kyxs2) =
   let (ovs3, kyxs3) = xytranslateOKX dx dy (ovs2, kyxs2)
   in ( EM.unionWith (++) ovs1 ovs3
      , sortOn (\(_, (PointUI x y, _)) -> (y, x)) $ kyxs1 ++ kyxs3 )
+
+-- The bangs are to free the possibly very long input list ASAP.
+labDescOKX :: DisplayFont -> DisplayFont
+           -> [(AttrString, AttrString, KeyOrSlot)]
+           -> OKX
+labDescOKX labFont descFont l =
+  let processRow :: (AttrString, AttrString, KeyOrSlot)
+                 -> (AttrLine, (Int, AttrLine), KYX)
+      processRow (!tLab, !tDesc, !ekm) =
+        let labLen = textSize labFont tLab
+            descFontForSize =
+              if descFont == PropFont then MonoFont else descFont
+            lenButton = labLen + textSize descFontForSize tDesc
+        in ( attrStringToAL tLab
+           , (labLen, attrStringToAL tDesc)
+           , (ekm, (PointUI 0 0, ButtonWidth descFont lenButton)) )
+      (tsLab, tsDesc, kxs) = unzip3 $ map processRow l
+      ovs = EM.insertWith (++) labFont (offsetOverlay tsLab)
+            $ EM.singleton descFont $ offsetOverlayX tsDesc
+  in (ovs, zipWith yrenumberKXY [0..] kxs)
 
 -- | A list of active screenfulls to be shown one after another.
 -- Each screenful has an independent numbering of rows and columns.
