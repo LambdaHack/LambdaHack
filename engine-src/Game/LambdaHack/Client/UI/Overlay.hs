@@ -9,7 +9,8 @@ module Game.LambdaHack.Client.UI.Overlay
   , textToAL, textFgToAL, stringToAL, splitAttrString, indentSplitAttrString
     -- * Overlay
   , Overlay, xytranslateOverlay, xtranslateOverlay, ytranslateOverlay
-  , offsetOverlay, offsetOverlayX, updateLine, rectangleOfSpaces, maxYofOverlay
+  , offsetOverlay, offsetOverlayX, typesetXY
+  , updateLine, rectangleOfSpaces, maxYofOverlay
 #ifdef EXPOSE_INTERNAL
     -- * Internal operations
   , splitAttrPhrase
@@ -235,6 +236,10 @@ offsetOverlay l = map (first $ PointUI 0) $ zip [0..] l
 offsetOverlayX :: [(Int, AttrLine)] -> Overlay
 offsetOverlayX l =
   map (\(y, (x, al)) -> (PointUI x y, al)) $ zip [0..] l
+
+typesetXY :: (Int, Int) -> [AttrLine] -> Overlay
+typesetXY (xoffset, yoffset) =
+  map (\(y, al) -> (PointUI xoffset (y + yoffset), al)) . zip [0..]
 
 -- @f@ should not enlarge the line beyond screen width nor introduce linebreaks.
 updateLine :: Int -> (Int -> AttrString -> AttrString) -> Overlay -> Overlay

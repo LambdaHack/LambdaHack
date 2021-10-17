@@ -157,9 +157,9 @@ keyHelp CCUI{ coinput=coinput@InputContent{..}
                            , ButtonWidth monoFont keyB )) ]
           f c d e = error $ "" `showFailure` (c, d, e)
           kxs = concat $ zipWith3 f kst1 kst2 [1 + length header..]
-          menuLeft = map (\(ca1, _, _) -> areaDescription ca1) kst1
-          menuMiddle = map (\(_, _, desc) -> desc) kst1
-          menuRight = map (\(_, _, desc) -> desc) kst2
+          menuLeft = map (\(ca1, _, _) -> textToAL $ areaDescription ca1) kst1
+          menuMiddle = map (\(_, _, desc) -> textToAL desc) kst1
+          menuRight = map (\(_, _, desc) -> textToAL desc) kst2
           y0 = 1 + length header
       in ( EM.unionsWith (++)
              [ typesetInMono $ "" : header
@@ -171,17 +171,14 @@ keyHelp CCUI{ coinput=coinput@InputContent{..}
                $ typesetXY (doubleIfSquare $ keyB + keyM + 5, y0) menuRight ]
          , kxs )
     typesetInSquare :: [Text] -> FontOverlayMap
-    typesetInSquare = EM.singleton squareFont . offsetOverlayX
-                      . map (\t -> (spLen, textToAL t))
+    typesetInSquare =
+      EM.singleton squareFont . typesetXY (spLen, 0) . map textToAL
     typesetInMono :: [Text] -> FontOverlayMap
-    typesetInMono = EM.singleton monoFont . offsetOverlayX
-                    . map (\t -> (spLen, textToAL t))
+    typesetInMono =
+      EM.singleton monoFont . typesetXY (spLen, 0) . map textToAL
     typesetInProp :: [Text] -> FontOverlayMap
-    typesetInProp = EM.singleton propFont . offsetOverlayX
-                    . map (\t -> (spLen, textToAL t))
-    typesetXY :: (Int, Int) -> [Text] -> Overlay
-    typesetXY (xoffset, yoffset) =
-      map (\(y, t) -> (PointUI xoffset (y + yoffset), textToAL t)) . zip [0..]
+    typesetInProp =
+      EM.singleton propFont . typesetXY (spLen, 0) . map textToAL
     sideBySide :: [(Text, OKX)] -> [(Text, OKX)]
     sideBySide ((_t1, okx1) : (t2, okx2) : rest) | not $ isSquareFont propFont =
       (t2, sideBySideOKX rwidth 0 okx1 okx2) : sideBySide rest
@@ -344,7 +341,7 @@ okxsN InputContent{..} keyFont descFont offset offsetCol2 greyedOut
              in (al1, ( if T.null t1 then 0 else spLen * (offsetCol2 + 2)
                       , textToAL t2 ))
       (greyLab, greyDesc) = unzip $ map greyToAL ts
-  in ( EM.insertWith (++) descFont (ytranslateOverlay offset
-                                                      (offsetOverlayX greyDesc))
-       $ EM.singleton keyFont $ ytranslateOverlay offset (offsetOverlay greyLab)
+      descOv = ytranslateOverlay offset (offsetOverlayX greyDesc)
+      labOv = ytranslateOverlay offset (offsetOverlay greyLab)
+  in ( EM.insertWith (++) descFont descOv $ EM.singleton keyFont labOv
      , kxs )
