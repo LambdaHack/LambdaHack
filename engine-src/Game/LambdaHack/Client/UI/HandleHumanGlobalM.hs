@@ -1393,7 +1393,7 @@ helpHuman cmdSemInCxtOfKM = do
         else intercalate [""] (reverse acc) : packIntoScreens (l : ls) [] 0
       manualScreens = packIntoScreens (snd rintroScreen) [] 0
       sideBySide =
-        if isSquareFont monoFont
+        if monoFont == SquareFont
         then \(screen1, screen2) ->  -- single column, two screens
           map offsetOverlay $ filter (not . null) [screen1, screen2]
         else \(screen1, screen2) ->  -- two columns, single screen
@@ -1516,7 +1516,7 @@ itemMenuHuman leader cmdSemInCxtOfKM = do
               foundKeys = map (K.KM K.NoModifier . K.Fun)
                               [1 .. length foundAlt]  -- starting from 1!
           let ks = zip foundKeys foundTexts
-              width = if isSquareFont monoFont then 2 * rwidth else rwidth
+              width = if monoFont == SquareFont then 2 * rwidth else rwidth
               (ovFoundRaw, kxsFound) = wrapOKX monoFont ystart xstart width ks
               ovFound = ovPrefix ++ ovFoundRaw
           report <- getReportUI True
@@ -1670,7 +1670,7 @@ generateMenu cmdSemInCxtOfKM blurb kdsRaw gameInfo menuName = do
   let prepareBlurb ovs =
         let introLen = 1 + maxYofFontOverlayMap ovs
             start0 = max 0 (rheight - introLen
-                            - if isSquareFont propFont then 1 else 2)
+                            - if propFont == SquareFont then 1 else 2)
         in EM.map (xytranslateOverlay (-2) (start0 - 2)) ovs
           -- subtracting 2 from X and Y to negate the indentation in
           -- @displayChoiceScreenWithRightPane@
@@ -1728,7 +1728,7 @@ mainMenuHuman cmdSemInCxtOfKM = do
            | null l2 -> l1 : l2 : glueLines rest
            | otherwise -> (l1 ++ l2) : glueLines rest
       glueLines ll = ll
-      backstory | isSquareFont propFont = fst rintroScreen
+      backstory | propFont == SquareFont = fst rintroScreen
                 | otherwise = glueLines $ fst rintroScreen
       backstoryAL = map stringToAL $ map (dropWhile (== ' ')) backstory
       blurb = attrLinesToFontMap [(propFont, backstoryAL)]
@@ -1791,7 +1791,7 @@ settingsMenuHuman cmdSemInCxtOfKM = do
       tanim = "play animations:" <+> offOn (not noAnim)
       tdoctrine = "squad doctrine:" <+> Ability.nameDoctrine factDoctrine
       toverride = "override tutorial hints:" <+> offOnUnset overrideTut
-      width = if isSquareFont propFont
+      width = if propFont == SquareFont
               then rwidth `div` 2
               else min uMsgWrapColumn (rwidth - 2)
       textToBlurb t = Just $ attrLinesToFontMap
@@ -1849,10 +1849,10 @@ challengeMenuHuman cmdSemInCxtOfKM = do
       tnextGoods = "ready goods (hard):" <+> offOn (cgoods nxtChal)
       tnextWolf = "lone wolf (very hard):" <+> offOn (cwolf nxtChal)
       tnextKeeper = "finder keeper (hard):" <+> offOn (ckeeper nxtChal)
-      width = if isSquareFont propFont
+      width = if propFont == SquareFont
               then rwidth `div` 2
               else min uMsgWrapColumn (rwidth - 2)
-      widthMono = if isSquareFont propFont
+      widthMono = if propFont == SquareFont
                   then rwidth `div` 2
                   else rwidth - 2
       duplicateEOL '\n' = "\n\n"

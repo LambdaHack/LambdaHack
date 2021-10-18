@@ -55,27 +55,27 @@ drawOverlay dm onBlank ovs lid = do
                   return (m, FrameForall $ \_v -> return ())
                 else drawHudFrame dm lid
   FontSetup{..} <- getFontSetup
-  let propWidth = if isMonoFont propFont then 2 * rwidth else 4 * rwidth
-      ovProp | not $ isSquareFont propFont
+  let propWidth = if propFont == MonoFont then 2 * rwidth else 4 * rwidth
+      ovProp | propFont /= SquareFont
              = truncateOverlay False propWidth rheight False 0 onBlank
                $ EM.findWithDefault [] propFont ovs
              | otherwise = []
-      ovMono = if not $ isSquareFont monoFont
+      ovMono = if monoFont /= SquareFont
                then truncateOverlay False (2 * rwidth) rheight False 0 onBlank
                     $ EM.findWithDefault [] monoFont ovs
                else []
-      ovSquare | not $ isSquareFont propFont
+      ovSquare | propFont /= SquareFont
                = truncateOverlay False (2 * rwidth) rheight False 0 onBlank
                  $ EM.findWithDefault [] squareFont ovs
               | otherwise = []
-      ovOther | not $ isSquareFont propFont = []
+      ovOther | propFont /= SquareFont = []
               | otherwise
               = truncateOverlay True rwidth rheight True 20 onBlank
                 $ concat $ EM.elems ovs
                     -- 20 needed not to leave gaps in skill menu
                     -- in the absence of backdrop
       ovBackdrop =
-        if not (isSquareFont propFont) && not onBlank
+        if propFont /= SquareFont && not onBlank
         then let propOutline =
                    truncateOverlay False propWidth rheight True 0 onBlank
                    $ EM.findWithDefault [] propFont ovs

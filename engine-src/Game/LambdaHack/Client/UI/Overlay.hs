@@ -1,7 +1,9 @@
 {-# LANGUAGE RankNTypes #-}
 -- | Screen overlays.
 module Game.LambdaHack.Client.UI.Overlay
-  ( -- * AttrString
+  ( -- * DisplayFont
+    DisplayFont(..)
+  , -- * AttrString
     AttrString, blankAttrString, textToAS, textFgToAS, stringToAS
   , (<+:>), (<\:>)
     -- * AttrLine
@@ -26,6 +28,21 @@ import qualified Data.Text as T
 
 import           Game.LambdaHack.Client.UI.PointUI
 import qualified Game.LambdaHack.Definition.Color as Color
+
+-- * DisplayFont
+
+-- | Three types of fonts used in the UI. Overlays (layers, more or less)
+-- in proportional font are overwritten by layers in square font,
+-- which are overwritten by layers in mono font.
+-- All overlays overwrite the rendering of the game map, which is
+-- the underlying basic UI frame, comprised of square font glyps.
+--
+-- Note that the order of constructors has limited effect (probably only
+-- when square font is used instead of all other fonts and all overlays
+-- are flattened), but it represents how overwriting is explicitly
+-- implemented in frontends that support all fonts.
+data DisplayFont = PropFont | SquareFont | MonoFont
+  deriving (Show, Eq, Enum)
 
 -- * AttrString
 

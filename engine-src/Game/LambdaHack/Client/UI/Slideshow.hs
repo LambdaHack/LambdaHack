@@ -1,8 +1,7 @@
 {-# LANGUAGE TupleSections #-}
 -- | Slideshows.
 module Game.LambdaHack.Client.UI.Slideshow
-  ( DisplayFont, isSquareFont, isMonoFont
-  , FontOverlayMap, maxYofFontOverlayMap
+  ( FontOverlayMap, maxYofFontOverlayMap
   , FontSetup(..), multiFontSetup, monoFontSetup, singleFontSetup, textSize
   , KeyOrSlot, ButtonWidth(..)
   , KYX, xytranslateKXY, xtranslateKXY, ytranslateKXY, yrenumberKXY
@@ -30,27 +29,6 @@ import           Game.LambdaHack.Client.UI.Overlay
 import           Game.LambdaHack.Client.UI.PointUI
 import qualified Game.LambdaHack.Common.HighScore as HighScore
 import qualified Game.LambdaHack.Definition.Color as Color
-
--- | Three types of fonts used in the UI. Overlays (layers, more or less)
--- in proportional font are overwritten by layers in square font,
--- which are overwritten by layers in mono font.
--- All overlays overwrite the rendering of the game map, which is
--- the underlying basic UI frame, comprised of square font glyps.
---
--- Note that the order of constructors has limited effect (probably only
--- when square font is used instead of all other fonts and all overlays
--- are flattened), but it represents how overwriting is explicitly
--- implemented in frontends that support all fonts.
-data DisplayFont = PropFont | SquareFont | MonoFont
-  deriving (Show, Eq, Enum)
-
-isSquareFont :: DisplayFont -> Bool
-isSquareFont SquareFont = True
-isSquareFont _ = False
-
-isMonoFont :: DisplayFont -> Bool
-isMonoFont MonoFont = True
-isMonoFont _ = False
 
 type FontOverlayMap = EM.EnumMap DisplayFont Overlay
 
@@ -291,7 +269,7 @@ splitOKX :: FontSetup -> Bool -> Int -> Int -> Int -> AttrString -> [K.KM]
 splitOKX FontSetup{..} msgLong width height wrap reportAS keys (ls0, kxs0) =
   assert (height > 2) $
   let indentSplitSpaces = indentSplitAttrString
-                            (not (isMonoFont propFont || isSquareFont propFont))
+                            (not (propFont == MonoFont || propFont == SquareFont))
       reportParagraphs = linesAttr reportAS
       -- TODO: until SDL support for measuring prop font text is released,
       -- we have to use MonoFont for the paragraph that ends with buttons.
@@ -302,10 +280,10 @@ splitOKX FontSetup{..} msgLong width height wrap reportAS keys (ls0, kxs0) =
           [] -> ([], emptyAttrLine)
           l : rest ->
             (reverse rest, attrStringToAL $ attrLine l ++ [Color.nbspAttrW32])
-      msgWrap = if msgLong && not (isSquareFont propFont)
+      msgWrap = if msgLong && propFont /= SquareFont
                 then 2 * width
                 else wrap  -- TODO if with width fits on one screen, use it
-      msgWidth = if msgLong && not (isSquareFont propFont)
+      msgWidth = if msgLong && propFont /= SquareFont
                  then 2 * width
                  else width
       repProp0 = offsetOverlay $ case repProp of

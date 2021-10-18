@@ -623,7 +623,7 @@ inventoryInRightPane leader lSlots bag c ekm = case ekm of
        width = rwidth - 2
        slotIndex = fromMaybe (error "illegal slot") $ elemIndex slot allSlots
     case c of
-      _ | isSquareFont propFont -> return emptyOKX
+      _ | propFont == SquareFont -> return emptyOKX
       MSkills -> do
         (prompt, attrString) <- skillCloseUp leader slotIndex
         let promptAS | T.null prompt = []
