@@ -1,4 +1,3 @@
-{-# LANGUAGE TupleSections #-}
 -- | Helper functions for both inventory management and human commands.
 module Game.LambdaHack.Client.UI.HandleHelperM
   ( FailError, showFailError, MError, mergeMError, FailOrCmd, failWith
@@ -931,7 +930,7 @@ okxItemLorePointedAt :: MonadClientUI m
                      -> (ItemId -> ItemFull -> Int -> Text)
                      -> Int -> SingleItemSlots
                      -> m OKX
-okxItemLorePointedAt font width inlineMsg itemBag meleeSkill promptFun
+okxItemLorePointedAt descFont width inlineMsg itemBag meleeSkill promptFun
                      slotIndex lSlots = do
   FontSetup{squareFont} <- getFontSetup
   side <- getsClient sside
@@ -944,15 +943,9 @@ okxItemLorePointedAt font width inlineMsg itemBag meleeSkill promptFun
   factionD <- getsState sfactionD
   -- The hacky level 0 marks items never seen, but sent by server at gameover.
   jlid <- getsSession $ fromMaybe (toEnum 0) <$> EM.lookup iid2 . sitemUI
-  let descAl = itemDesc width True side factionD meleeSkill
+  let descAs = itemDesc width True side factionD meleeSkill
                         CGround localTime jlid itemFull2 kit2
-      (descSymAl, descBlurbAl) = span (/= Color.spaceAttrW32) descAl
-      descSym = offsetOverlay $ splitAttrString width width descSymAl
-      descBlurb = offsetOverlayX $
-        case splitAttrString width width $ stringToAS "xx" ++ descBlurbAl of
-          [] -> error "splitting AttrString loses characters"
-          al1 : rest ->
-            (2, attrStringToAL $ drop 2 $ attrLine al1) : map (0,) rest
+      (ovLab, ovDesc) = labDescOverlay squareFont width descAs
       prompt = promptFun iid2 itemFull2 k
       promptBlurb | T.null prompt = []
                   | otherwise = offsetOverlay $ splitAttrString width width
@@ -961,13 +954,13 @@ okxItemLorePointedAt font width inlineMsg itemBag meleeSkill promptFun
     if inlineMsg
     then do
       let len = length promptBlurb
-      return ( ytranslateOverlay len descSym
-             , promptBlurb ++ ytranslateOverlay len descBlurb )
+      return ( ytranslateOverlay len ovLab
+             , promptBlurb ++ ytranslateOverlay len ovDesc )
     else do
       msgAdd MsgPromptGeneric prompt
-      return (descSym, descBlurb)
+      return (ovLab, ovDesc)
   let ov = EM.insertWith (++) squareFont descSym2
-           $ EM.singleton font descBlurb2
+           $ EM.singleton descFont descBlurb2
   return (ov, [])
 
 cycleLore :: MonadClientUI m => [m K.KM] -> [m K.KM] -> m ()

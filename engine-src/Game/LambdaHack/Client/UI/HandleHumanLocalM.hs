@@ -1,4 +1,3 @@
-{-# LANGUAGE TupleSections #-}
 -- | Semantics of "Game.LambdaHack.Client.UI.HumanCmd"
 -- client commands that do not return server requests,,
 -- but only change internal client state.
@@ -806,18 +805,9 @@ eitherHistory showAll = do
         let timeReport = case drop histSlot renderedHistoryRaw of
               [] -> error $ "" `showFailure` histSlot
               tR : _ -> tR
-            ov0 =
-              let (tLab, tDesc) = span (/= Color.spaceAttrW32) timeReport
-                  labLen = textSize monoFont tLab
-                  alsLab = [attrStringToAL tLab]
-                  alsDesc = case splitAttrString (rwidth - labLen - 1) rwidth
-                                                 tDesc of
-                    [] -> []
-                    l : ls ->
-                      (labLen, firstParagraph $ Color.spaceAttrW32 : attrLine l)
-                      : map (0,) ls
-              in EM.insertWith (++) monoFont (offsetOverlay alsLab)
-                 $ EM.singleton propFont $ offsetOverlayX alsDesc
+            (ovLab, ovDesc) = labDescOverlay monoFont rwidth timeReport
+            ov0 = EM.insertWith (++) monoFont ovLab
+                  $ EM.singleton propFont ovDesc
             prompt = makeSentence
               [ "the", MU.Ordinal $ histSlot + 1
               , "most recent record follows" ]

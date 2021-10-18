@@ -1,3 +1,4 @@
+{-# LANGUAGE TupleSections #-}
 -- | Slideshows.
 module Game.LambdaHack.Client.UI.Slideshow
   ( DisplayFont, isSquareFont, isMonoFont
@@ -5,7 +6,7 @@ module Game.LambdaHack.Client.UI.Slideshow
   , FontSetup(..), multiFontSetup, monoFontSetup, singleFontSetup, textSize
   , KeyOrSlot, ButtonWidth(..)
   , KYX, xytranslateKXY, xtranslateKXY, ytranslateKXY, yrenumberKXY
-  , OKX, emptyOKX, xytranslateOKX, sideBySideOKX, labDescOKX
+  , OKX, emptyOKX, xytranslateOKX, sideBySideOKX, labDescOverlay, labDescOKX
   , Slideshow(slideshow), emptySlideshow, unsnoc, toSlideshow
   , attrLinesToFontMap, menuToSlideshow, wrapOKX, splitOverlay, splitOKX
   , highSlideshow
@@ -123,6 +124,20 @@ sideBySideOKX dx dy (ovs1, kyxs1) (ovs2, kyxs2) =
   let (ovs3, kyxs3) = xytranslateOKX dx dy (ovs2, kyxs2)
   in ( EM.unionWith (++) ovs1 ovs3
      , sortOn (\(_, (PointUI x y, _)) -> (y, x)) $ kyxs1 ++ kyxs3 )
+
+labDescOverlay :: DisplayFont -> Int -> AttrString -> (Overlay, Overlay)
+labDescOverlay labFont width as =
+  let (tLab, tDesc) = span (/= Color.spaceAttrW32) as
+      labLen = textSize labFont tLab
+      ovLab = offsetOverlay [attrStringToAL tLab]
+      ovDesc = offsetOverlayX $
+        case splitAttrString (width - labLen) width tDesc of
+          [] -> []
+          l : ls ->
+            -- @splitAttrString@ drops leading spaces, so compensate
+            (labLen, firstParagraph $ Color.spaceAttrW32 : attrLine l)
+            : map (0,) ls
+  in (ovLab, ovDesc)
 
 -- The bangs are to free the possibly very long input list ASAP.
 labDescOKX :: DisplayFont -> DisplayFont

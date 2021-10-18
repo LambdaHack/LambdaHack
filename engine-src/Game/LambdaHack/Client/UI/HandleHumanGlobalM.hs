@@ -1,4 +1,3 @@
-{-# LANGUAGE TupleSections #-}
 -- | Semantics of "Game.LambdaHack.Client.UI.HumanCmd"
 -- client commands that return server requests.
 -- A couple of them do not take time, the rest does.
@@ -1503,30 +1502,23 @@ itemMenuHuman leader cmdSemInCxtOfKM = do
           let foundPrefix = textToAS $
                 if null foundTexts then "" else "The item is also in:"
               markParagraphs = rheight >= 45
-              descAl = itemDesc rwidth markParagraphs (bfid b) factionD
+              descAs = itemDesc rwidth markParagraphs (bfid b) factionD
                                 (Ability.getSk Ability.SkHurtMelee
                                                actorCurAndMaxSk)
                                 fromCStore localTime jlid itemFull kit
-              (descSymAl, descBlurbAl) = span (/= Color.spaceAttrW32) descAl
-              descSym = offsetOverlay $ splitAttrString rwidth rwidth descSymAl
-              descBlurb = offsetOverlayX $
-                case splitAttrString rwidth rwidth
-                     $ stringToAS "xx" ++ descBlurbAl of
-                  [] -> error "splitting AttrString loses characters"
-                  al1 : rest ->
-                    (2, attrStringToAL $ drop 2 $ attrLine al1) : map (0,) rest
-              alPrefix = ytranslateOverlay (length descBlurb)
+              (ovLab, ovDesc) = labDescOverlay squareFont rwidth descAs
+              ovPrefix = ytranslateOverlay (length ovDesc)
                          $ offsetOverlay
                          $ splitAttrString rwidth rwidth foundPrefix
-              ystart = length descBlurb + length alPrefix - 1
+              ystart = length ovDesc + length ovPrefix - 1
               xstart = textSize monoFont (Color.spaceAttrW32
-                                          : attrLine (snd $ last alPrefix))
+                                          : attrLine (snd $ last ovPrefix))
               foundKeys = map (K.KM K.NoModifier . K.Fun)
                               [1 .. length foundAlt]  -- starting from 1!
           let ks = zip foundKeys foundTexts
               width = if isSquareFont monoFont then 2 * rwidth else rwidth
               (ovFoundRaw, kxsFound) = wrapOKX monoFont ystart xstart width ks
-              ovFound = alPrefix ++ ovFoundRaw
+              ovFound = ovPrefix ++ ovFoundRaw
           report <- getReportUI True
           CCUI{coinput} <- getsSession sccui
           mstash <- getsState $ \s -> gstash $ sfactionD s EM.! bfid b
@@ -1557,7 +1549,7 @@ itemMenuHuman leader cmdSemInCxtOfKM = do
               fmt n k h = " " <> T.justifyLeft n ' ' k <> " " <> h
               offsetCol2 = 11
               keyCaption = fmt offsetCol2 "keys" "command"
-              offset = 1 + maxYofOverlay (descBlurb ++ ovFound)
+              offset = 1 + maxYofOverlay (ovDesc ++ ovFound)
               (ov0, kxs0) = xytranslateOKX 0 offset $
                  okxsN coinput monoFont propFont offsetCol2 greyedOut
                        True CmdItemMenu ([], [], ["", keyCaption]) ([], [])
@@ -1571,8 +1563,8 @@ itemMenuHuman leader cmdSemInCxtOfKM = do
                          [K.spaceKM, K.escKM] okx
               sli = toSlideshow fontSetup
                     $ splitHelp ( al1
-                                , ( EM.insertWith (++) squareFont descSym
-                                    $ EM.insertWith (++) propFont descBlurb
+                                , ( EM.insertWith (++) squareFont ovLab
+                                    $ EM.insertWith (++) propFont ovDesc
                                     $ EM.insertWith (++) monoFont ovFound ov0
                                         -- mono font, because there are buttons
                                   , kxsFound ++ kxs0 ))
