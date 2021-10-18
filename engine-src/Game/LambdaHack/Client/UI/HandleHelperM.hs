@@ -287,13 +287,13 @@ skillsOverlay aid = do
             slotLab = slotLabel c
             lab = textToAL slotLab
             labLen = textSize squareFont $ attrLine lab
-            indentation = if isSquareFont propFont then 48 else 26
+            indentation = if isSquareFont propFont then 52 else 26
             valueText = skillToDecorator skill b
                         $ Ability.getSk skill actorMaxSk
             triple = ( lab
                      , (labLen, textToAL skName)
                      , (indentation, textToAL valueText) )
-            lenButton = 24 + T.length valueText
+            lenButton = 26 + T.length valueText
         in (triple, (Right c, ( PointUI 0 y
                               , ButtonWidth propFont lenButton )))
       (ts, kxs) = unzip $ zipWith prSlot (zip [0..] allSlots) skillSlots
