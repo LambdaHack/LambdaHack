@@ -1,11 +1,10 @@
-{-# LANGUAGE TupleSections #-}
 -- | Slideshows.
 module Game.LambdaHack.Client.UI.Slideshow
   ( FontOverlayMap, maxYofFontOverlayMap
-  , FontSetup(..), multiFontSetup, monoFontSetup, singleFontSetup, textSize
+  , FontSetup(..), multiFontSetup, monoFontSetup, singleFontSetup
   , KeyOrSlot, ButtonWidth(..)
   , KYX, xytranslateKXY, xtranslateKXY, ytranslateKXY, yrenumberKXY
-  , OKX, emptyOKX, xytranslateOKX, sideBySideOKX, labDescOverlay, labDescOKX
+  , OKX, emptyOKX, xytranslateOKX, sideBySideOKX, labDescOKX
   , Slideshow(slideshow), emptySlideshow, unsnoc, toSlideshow
   , attrLinesToFontMap, menuToSlideshow, wrapOKX, splitOverlay, splitOKX
   , highSlideshow
@@ -49,11 +48,6 @@ monoFontSetup = FontSetup SquareFont MonoFont MonoFont
 
 singleFontSetup :: FontSetup
 singleFontSetup = FontSetup SquareFont SquareFont SquareFont
-
-textSize :: DisplayFont -> [a] -> Int
-textSize SquareFont l = 2 * length l
-textSize MonoFont l = length l
-textSize PropFont _ = error "size of proportional font texts is not defined"
 
 type KeyOrSlot = Either K.KM SlotChar
 
@@ -102,20 +96,6 @@ sideBySideOKX dx dy (ovs1, kyxs1) (ovs2, kyxs2) =
   let (ovs3, kyxs3) = xytranslateOKX dx dy (ovs2, kyxs2)
   in ( EM.unionWith (++) ovs1 ovs3
      , sortOn (\(_, (PointUI x y, _)) -> (y, x)) $ kyxs1 ++ kyxs3 )
-
-labDescOverlay :: DisplayFont -> Int -> AttrString -> (Overlay, Overlay)
-labDescOverlay labFont width as =
-  let (tLab, tDesc) = span (/= Color.spaceAttrW32) as
-      labLen = textSize labFont tLab
-      ovLab = offsetOverlay [attrStringToAL tLab]
-      ovDesc = offsetOverlayX $
-        case splitAttrString (width - labLen) width tDesc of
-          [] -> []
-          l : ls ->
-            -- @splitAttrString@ drops leading spaces, so compensate
-            (labLen, firstParagraph $ Color.spaceAttrW32 : attrLine l)
-            : map (0,) ls
-  in (ovLab, ovDesc)
 
 -- The bangs are to free the possibly very long input list ASAP.
 labDescOKX :: DisplayFont -> DisplayFont

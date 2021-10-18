@@ -1,8 +1,8 @@
-{-# LANGUAGE RankNTypes #-}
+{-# LANGUAGE RankNTypes, TupleSections #-}
 -- | Screen overlays.
 module Game.LambdaHack.Client.UI.Overlay
   ( -- * DisplayFont
-    DisplayFont(..)
+    DisplayFont(..), textSize
   , -- * AttrString
     AttrString, blankAttrString, textToAS, textFgToAS, stringToAS
   , (<+:>), (<\:>)
@@ -12,7 +12,7 @@ module Game.LambdaHack.Client.UI.Overlay
     -- * Overlay
   , Overlay, xytranslateOverlay, xtranslateOverlay, ytranslateOverlay
   , offsetOverlay, offsetOverlayX, typesetXY
-  , updateLine, rectangleOfSpaces, maxYofOverlay
+  , updateLine, rectangleOfSpaces, maxYofOverlay, labDescOverlay
 #ifdef EXPOSE_INTERNAL
     -- * Internal operations
   , splitAttrPhrase
@@ -43,6 +43,11 @@ import qualified Game.LambdaHack.Definition.Color as Color
 -- implemented in frontends that support all fonts.
 data DisplayFont = PropFont | SquareFont | MonoFont
   deriving (Show, Eq, Enum)
+
+textSize :: DisplayFont -> [a] -> Int
+textSize SquareFont l = 2 * length l
+textSize MonoFont l = length l
+textSize PropFont _ = error "size of proportional font texts is not defined"
 
 -- * AttrString
 
@@ -273,3 +278,17 @@ rectangleOfSpaces x y =
 maxYofOverlay :: Overlay -> Int
 maxYofOverlay ov = let yOfOverlay (PointUI _ y, _) = y
                    in maximum $ 0 : map yOfOverlay ov
+
+labDescOverlay :: DisplayFont -> Int -> AttrString -> (Overlay, Overlay)
+labDescOverlay labFont width as =
+  let (tLab, tDesc) = span (/= Color.spaceAttrW32) as
+      labLen = textSize labFont tLab
+      ovLab = offsetOverlay [attrStringToAL tLab]
+      ovDesc = offsetOverlayX $
+        case splitAttrString (width - labLen) width tDesc of
+          [] -> []
+          l : ls ->
+            -- @splitAttrString@ drops leading spaces, so compensate
+            (labLen, firstParagraph $ Color.spaceAttrW32 : attrLine l)
+            : map (0,) ls
+  in (ovLab, ovDesc)
