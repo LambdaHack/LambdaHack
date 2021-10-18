@@ -229,12 +229,8 @@ storeItemPrompt side body bodyUI actorCurAndMaxSk c2 s =
                          $ ouniqGroup coitem IK.S_CURRENCY
           dungeonTotal = sgold s
           (_, total) = calculateTotal side s
-          n = countItems CStash
-          verbOwned = if n == 0 then "find nothing among" else "review"
-      in makePhrase
-           [ MU.Text $ spoilsBlurb currencyName total dungeonTotal
-           , MU.Capitalize $ MU.SubjectVerbSg subject verbOwned
-           , MU.Text t ]
+      in T.init $ spoilsBlurb currencyName total dungeonTotal
+        -- no space for more, e.g., the pointman, but it can't be changed anyway
     MSkills ->
       makePhrase
         [ MU.Capitalize $ MU.SubjectVerbSg subject "estimate"
