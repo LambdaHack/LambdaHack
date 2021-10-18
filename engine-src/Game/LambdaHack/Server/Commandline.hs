@@ -69,11 +69,12 @@ serverOptionsP = do
   sdungeonRng       <- setDungeonRngP
   smainRng          <- setMainRngP
   sdumpInitRngs     <- dumpInitRngsP
+  sdbgMsgCli        <- dbgMsgCliP
   sdbgMsgSer        <- dbgMsgSerP
+  slogPriority      <- logPriorityP
   sassertExplored   <- assertExploredP
   schosenFontset    <- chosenFontsetP
   sallFontsScale    <- allFontsScaleP
-  slogPriority      <- logPriorityP
   smaxFps           <- maxFpsP
   sdisableAutoYes   <- disableAutoYesP
   snoAnim           <- noAnimP
@@ -82,7 +83,6 @@ serverOptionsP = do
   sfrontendTeletype <- frontendTeletypeP
   sfrontendNull     <- frontendNullP
   sfrontendLazy     <- frontendLazyP
-  sdbgMsgCli        <- dbgMsgCliP
 
   pure ServerOptions
     {
@@ -243,10 +243,32 @@ dumpInitRngsP =
   switch (  long "dumpInitRngs"
          <> help "Dump the RNG seeds used to initialize the game" )
 
+dbgMsgCliP :: Parser Bool
+dbgMsgCliP =
+  switch (  long "dbgMsgCli"
+         <> help "Emit extra internal client debug messages" )
+
 dbgMsgSerP :: Parser Bool
 dbgMsgSerP =
   switch (  long "dbgMsgSer"
          <> help "Emit extra internal server debug messages" )
+
+logPriorityP :: Parser (Maybe Int)
+logPriorityP = optional $
+  option (auto >>= verifyLogPriority) $
+       long "logPriority"
+    <> showDefault
+    <> value 5
+    <> metavar "N"
+    <> help ( "Log only messages of priority at least N, where 1 (all) is "
+           ++ "the lowest and 5 logs errors only; use value 0 for testing on "
+           ++ "CIs without graphics access; setting priority to 0 causes "
+           ++ "SDL frontend to init and quit at once" )
+  where
+    verifyLogPriority n =
+      if n >= 0 && n <= 5
+      then return n
+      else readerError "N has to be 0 or a positive integer not larger than 5"
 
 assertExploredP :: Parser (Maybe Int)
 assertExploredP = optional $ max 1 <$>
@@ -271,23 +293,6 @@ maxFpsP = optional $ max 0 <$>
   option auto (  long "maxFps"
               <> metavar "D"
               <> help "Display at most D frames per second" )
-
-logPriorityP :: Parser (Maybe Int)
-logPriorityP = optional $
-  option (auto >>= verifyLogPriority) $
-       long "logPriority"
-    <> showDefault
-    <> value 5
-    <> metavar "N"
-    <> help ( "Log only messages of priority at least N, where 1 (all) is "
-           ++ "the lowest and 5 logs errors only; use value 0 for testing on "
-           ++ "CIs without graphics access; setting priority to 0 causes "
-           ++ "SDL frontend to init and quit at once" )
-  where
-    verifyLogPriority n =
-      if n >= 0 && n <= 5
-      then return n
-      else readerError "N has to be 0 or a positive integer not larger than 5"
 
 disableAutoYesP :: Parser Bool
 disableAutoYesP =
@@ -327,8 +332,3 @@ frontendLazyP :: Parser Bool
 frontendLazyP =
   switch (  long "frontendLazy"
          <> help "Use frontend that not even computes frames (for benchmarks)" )
-
-dbgMsgCliP :: Parser Bool
-dbgMsgCliP =
-  switch (  long "dbgMsgCli"
-         <> help "Emit extra internal client debug messages" )
