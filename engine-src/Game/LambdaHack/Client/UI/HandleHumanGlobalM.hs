@@ -1467,9 +1467,11 @@ dashboardHuman cmdSemInCxtOfKM = do
 -- * ItemMenu
 
 itemMenuHuman :: MonadClientUI m
-              => ActorId -> (K.KM -> HumanCmd -> m (Either MError ReqUI))
+              => ActorId
+              -> (K.KM -> HumanCmd -> m (Either MError ReqUI))
+              -> Maybe ItemDialogMode
               -> m (Either MError ReqUI)
-itemMenuHuman leader cmdSemInCxtOfKM = do
+itemMenuHuman leader cmdSemInCxtOfKM mc = do
   COps{corule} <- getsState scops
   itemSel <- getsSession sitemSel
   fontSetup@FontSetup{..} <- getFontSetup
@@ -1574,7 +1576,9 @@ itemMenuHuman leader cmdSemInCxtOfKM = do
           case ekm of
             Left km -> case km `M.lookup` bcmdMap coinput of
               _ | km == K.escKM -> weaveJust <$> failWith "never mind"
-              _ | km == K.spaceKM -> weaveJust <$> failWith "back to list"
+              _ | km == K.spaceKM -> case mc of
+                Just c -> chooseItemMenuHuman leader cmdSemInCxtOfKM c
+                Nothing -> weaveJust <$> failWith "never mind"
               _ | km `elem` foundKeys -> case km of
                 K.KM{key=K.Fun n} -> do
                   let (newAid, (bNew, newCStore)) = foundAlt !! (n - 1)
@@ -1586,7 +1590,7 @@ itemMenuHuman leader cmdSemInCxtOfKM = do
                        void $ pickLeader True newAid
                        modifySession $ \sess ->
                          sess {sitemSel = Just (iid, newCStore, False)}
-                       itemMenuHuman newAid cmdSemInCxtOfKM
+                       itemMenuHuman newAid cmdSemInCxtOfKM mc
                 _ -> error $ "" `showFailure` km
               Just (_desc, _cats, cmd) -> do
                 modifySession $ \sess ->
@@ -1612,16 +1616,7 @@ chooseItemMenuHuman leader0 cmdSemInCxtOfKM c0 = do
             let leader2 =
                   fromMaybe (error "UI manipulation killed the pointman")
                             mleader2
-            res3 <- itemMenuHuman leader2 cmdSemInCxtOfKM
-            backToList <- failMsg "back to list"
-            case res3 of
-              Left err | err == backToList -> do
-                mleader3 <- getsClient sleader
-                let leader3 =
-                      fromMaybe (error "UI manipulation killed the pointman")
-                                mleader3
-                chooseItemMenu leader3 c2
-              _ -> return res3
+            itemMenuHuman leader2 cmdSemInCxtOfKM (Just c2)
           Left err -> return $ Left $ Just err
   chooseItemMenu leader0 c0
 
