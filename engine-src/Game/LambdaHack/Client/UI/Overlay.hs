@@ -199,11 +199,14 @@ splitAttrString w0 w1 l = case linesAttr l of
     ++ concatMap (splitAttrPhrase w1 w1
                   . AttrLine . dropWhile (== Color.spaceAttrW32) . attrLine) xs
 
-indentSplitAttrString :: Bool -> Int -> AttrString -> [AttrLine]
-indentSplitAttrString isProp w l =
+indentSplitAttrString :: DisplayFont -> Int -> AttrString -> [AttrLine]
+indentSplitAttrString font w l =
   -- Sadly this depends on how wide the space is in propotional font,
   -- which varies wildly, so we err on the side of larger indent.
-  let nspaces = if isProp then 4 else 2
+  let nspaces = case font of
+        SquareFont -> 1
+        MonoFont -> 2
+        PropFont -> 4
       ts = splitAttrString w (w - nspaces) l
       -- Proportional spaces are very narrow.
       spaces = replicate nspaces Color.spaceAttrW32

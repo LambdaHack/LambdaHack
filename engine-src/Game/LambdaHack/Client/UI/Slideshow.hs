@@ -248,9 +248,7 @@ splitOKX :: FontSetup -> Bool -> Int -> Int -> Int -> AttrString -> [K.KM]
          -> [OKX]
 splitOKX FontSetup{..} msgLong width height wrap reportAS keys (ls0, kxs0) =
   assert (height > 2) $
-  let indentSplitSpaces = indentSplitAttrString
-                            (not (propFont == MonoFont || propFont == SquareFont))
-      reportParagraphs = linesAttr reportAS
+  let reportParagraphs = linesAttr reportAS
       -- TODO: until SDL support for measuring prop font text is released,
       -- we have to use MonoFont for the paragraph that ends with buttons.
       (repProp, repMono) =
@@ -275,23 +273,26 @@ splitOKX FontSetup{..} msgLong width height wrap reportAS keys (ls0, kxs0) =
           let firstWidth = if length (attrLine r) <= 2 * msgWidth
                            then msgWidth
                            else msgWrap
-          in (indentSplitSpaces firstWidth . attrLine) r  -- first possibly long
-             ++ concatMap (indentSplitSpaces msgWrap . attrLine) rs
+          in (indentSplitAttrString propFont firstWidth . attrLine) r
+               -- first possibly long
+             ++ concatMap (indentSplitAttrString propFont msgWrap . attrLine) rs
       -- TODO: refactor this ugly pile of copy-paste
       repPropW = offsetOverlay
-                 $ concatMap (indentSplitSpaces width . attrLine) repProp
+                 $ concatMap (indentSplitAttrString propFont width . attrLine)
+                             repProp
       -- If the mono portion first on the line, let it take half width,
       -- but if previous lines shorter, match them and only buttons
       -- are permitted to stick out.
       monoWidth = if null repProp then msgWidth else msgWrap
       repMono0 = ytranslateOverlay (length repProp0)
                  $ offsetOverlay
-                 $ indentSplitAttrString False monoWidth $ attrLine repMono
+                 $ indentSplitAttrString monoFont monoWidth $ attrLine repMono
       repMonoW = ytranslateOverlay (length repPropW)
                  $ offsetOverlay
-                 $ indentSplitAttrString False width $ attrLine repMono
+                 $ indentSplitAttrString monoFont width $ attrLine repMono
       repWhole0 = offsetOverlay
-                  $ concatMap (indentSplitSpaces msgWidth . attrLine)
+                  $ concatMap (indentSplitAttrString propFont msgWidth
+                               . attrLine)
                               reportParagraphs
       repWhole1 = ytranslateOverlay 1 repWhole0
       lenOfRep0 = length repProp0 + length repMono0
