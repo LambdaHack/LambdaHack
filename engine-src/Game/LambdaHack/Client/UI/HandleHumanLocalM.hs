@@ -153,7 +153,7 @@ chooseItemDialogModeLore = do
 
 chooseItemDialogMode :: MonadClientUI m
                      => ActorId -> Bool -> ItemDialogMode
-                     -> m (FailOrCmd ItemDialogMode)
+                     -> m (FailOrCmd (ItemDialogMode, ActorId))
 chooseItemDialogMode leader0 permitLoreCycle c = do
   CCUI{coscreen=ScreenContent{rwidth, rheight}} <- getsSession sccui
   FontSetup{..} <- getFontSetup
@@ -180,7 +180,7 @@ chooseItemDialogMode leader0 permitLoreCycle c = do
       RStore fromCStore [iid] -> do
         modifySession $ \sess ->
           sess {sitemSel = Just (iid, fromCStore, False)}
-        return $ Right $ MStore fromCStore
+        return $ Right (MStore fromCStore, leader)
       RStore{} -> error $ "" `showFailure` result
       ROrgans iid itemBag lSlots -> do
         let blurb itemFull =
@@ -209,14 +209,14 @@ chooseItemDialogMode leader0 permitLoreCycle c = do
         arena <- getArenaUI
         b2 <- getsState $ getActorBody newAid
         let (autoDun, _) = autoDungeonLevel fact
-        if | newAid == leader -> return $ Right MOwned
+        if | newAid == leader -> return $ Right (MOwned, leader)
            | blid b2 /= arena && autoDun ->
              failSer NoChangeDunLeader
            | otherwise -> do
              -- We switch leader only here, not when processing results
              -- of lore screens, because lore is only about inspecting items.
              void $ pickLeader True newAid
-             return $ Right MOwned
+             return $ Right (MOwned, newAid)
       RSkills slotIndex0 -> do
         -- This can be used in the future, e.g., to increase stats from
         -- level-up stat points, so let's keep it even if it shows

@@ -1607,18 +1607,11 @@ chooseItemMenuHuman :: MonadClientUI m
                     -> (K.KM -> HumanCmd -> m (Either MError ReqUI))
                     -> ItemDialogMode
                     -> m (Either MError ReqUI)
-chooseItemMenuHuman leader0 cmdSemInCxtOfKM c0 = do
-  let chooseItemMenu leader1 c1 = do
-        res2 <- chooseItemDialogMode leader1 True c1
-        case res2 of
-          Right c2 -> do
-            mleader2 <- getsClient sleader
-            let leader2 =
-                  fromMaybe (error "UI manipulation killed the pointman")
-                            mleader2
-            itemMenuHuman leader2 cmdSemInCxtOfKM (Just c2)
-          Left err -> return $ Left $ Just err
-  chooseItemMenu leader0 c0
+chooseItemMenuHuman leader1 cmdSemInCxtOfKM c1 = do
+  res2 <- chooseItemDialogMode leader1 True c1
+  case res2 of
+    Right (c2, leader2) -> itemMenuHuman leader2 cmdSemInCxtOfKM (Just c2)
+    Left err -> return $ Left $ Just err
 
 -- * MainMenu
 
