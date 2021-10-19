@@ -1469,9 +1469,8 @@ dashboardHuman cmdSemInCxtOfKM = do
 itemMenuHuman :: MonadClientUI m
               => ActorId
               -> (K.KM -> HumanCmd -> m (Either MError ReqUI))
-              -> Maybe ItemDialogMode
               -> m (Either MError ReqUI)
-itemMenuHuman leader cmdSemInCxtOfKM mc = do
+itemMenuHuman leader cmdSemInCxtOfKM = do
   COps{corule} <- getsState scops
   itemSel <- getsSession sitemSel
   fontSetup@FontSetup{..} <- getFontSetup
@@ -1576,9 +1575,8 @@ itemMenuHuman leader cmdSemInCxtOfKM mc = do
           case ekm of
             Left km -> case km `M.lookup` bcmdMap coinput of
               _ | km == K.escKM -> weaveJust <$> failWith "never mind"
-              _ | km == K.spaceKM -> case mc of
-                Just c -> chooseItemMenuHuman leader cmdSemInCxtOfKM c
-                Nothing -> weaveJust <$> failWith "never mind"
+              _ | km == K.spaceKM ->
+                chooseItemMenuHuman leader cmdSemInCxtOfKM (MStore fromCStore)
               _ | km `elem` foundKeys -> case km of
                 K.KM{key=K.Fun n} -> do
                   let (newAid, (bNew, newCStore)) = foundAlt !! (n - 1)
@@ -1590,7 +1588,7 @@ itemMenuHuman leader cmdSemInCxtOfKM mc = do
                        void $ pickLeader True newAid
                        modifySession $ \sess ->
                          sess {sitemSel = Just (iid, newCStore, False)}
-                       itemMenuHuman newAid cmdSemInCxtOfKM mc
+                       itemMenuHuman newAid cmdSemInCxtOfKM
                 _ -> error $ "" `showFailure` km
               Just (_desc, _cats, cmd) -> do
                 modifySession $ \sess ->
@@ -1610,7 +1608,7 @@ chooseItemMenuHuman :: MonadClientUI m
 chooseItemMenuHuman leader1 cmdSemInCxtOfKM c1 = do
   res2 <- chooseItemDialogMode leader1 True c1
   case res2 of
-    Right (c2, leader2) -> itemMenuHuman leader2 cmdSemInCxtOfKM (Just c2)
+    Right leader2 -> itemMenuHuman leader2 cmdSemInCxtOfKM
     Left err -> return $ Left $ Just err
 
 -- * MainMenu

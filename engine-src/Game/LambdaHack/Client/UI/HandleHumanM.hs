@@ -129,8 +129,7 @@ cmdSemanticsLeader cmd = case cmd of
   CloseDir -> weaveLeader $ \leader -> ReqUITimed <$$> closeDirHuman leader
   Help -> CmdNoNeed $ helpHuman cmdSemInCxtOfKM
   Hint -> CmdNoNeed $ hintHuman cmdSemInCxtOfKM
-  ItemMenu ->
-    CmdLeader $ \leader -> itemMenuHuman leader cmdSemInCxtOfKM Nothing
+  ItemMenu -> CmdLeader $ \leader -> itemMenuHuman leader cmdSemInCxtOfKM
   ChooseItemMenu dialogMode ->
     CmdLeader $ \leader -> chooseItemMenuHuman leader cmdSemInCxtOfKM dialogMode
   MainMenu -> CmdNoNeed $ mainMenuHuman cmdSemInCxtOfKM
