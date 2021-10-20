@@ -223,10 +223,11 @@ display _coscreen SingleFrame{singleArray} = do
         ANSI.hSetCursorPosition SIO.stderr py px
         let acChar = squashChar $ Color.charFromW32 w
             (fg, bg) = setAttr $ Color.attrFromW32 w
-        ANSI.hSetSGR SIO.stderr [uncurry (ANSI.SetColor ANSI.Foreground)
-                                 $ colorTranslate fg]
-        ANSI.hSetSGR SIO.stderr [uncurry (ANSI.SetColor ANSI.Background)
-                                 $ colorTranslate bg]
+            s = ANSI.setSGRCode [ uncurry (ANSI.SetColor ANSI.Foreground)
+                                  $ colorTranslate fg
+                                , uncurry (ANSI.SetColor ANSI.Background)
+                                  $ colorTranslate bg ]
+                ++ [acChar]
 {-
 This is dubious, because I can't force bright background colour with that,
 only bright foregrounds. And I have at least one bright backround: bright black.
@@ -240,7 +241,7 @@ only bright foregrounds. And I have at least one bright backround: bright black.
                                    then ANSI.BoldIntensity
                                    else ANSI.NormalIntensity]
 -}
-        SIO.hPutChar SIO.stderr acChar
+        SIO.hPutStr SIO.stderr s
   PointArray.imapMA_ f singleArray
   let Point{..} = PointArray.maxIndexByA (comparing Color.bgFromW32) singleArray
   ANSI.hSetCursorPosition SIO.stderr py px
