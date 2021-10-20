@@ -228,8 +228,8 @@ display _coscreen SingleFrame{singleArray} = do
         ANSI.hSetSGR SIO.stderr [uncurry (ANSI.SetColor ANSI.Background)
                                  $ colorTranslate bg]
 {-
-This is dubious, because I can't foce bright background colour with that,
-only bright foregrouns. And I have at least one bright backround: bright black.
+This is dubious, because I can't force bright background colour with that,
+only bright foregrounds. And I have at least one bright backround: bright black.
         -- A hack to get bright colors via the bold attribute.
         -- Depending on terminal settings this is needed or not
         -- and the characters really get bold or not.
@@ -240,7 +240,7 @@ only bright foregrouns. And I have at least one bright backround: bright black.
                                    then ANSI.BoldIntensity
                                    else ANSI.NormalIntensity]
 -}
-        SIO.hPutStr SIO.stderr [acChar]
+        SIO.hPutChar SIO.stderr acChar
   PointArray.imapMA_ f singleArray
   let Point{..} = PointArray.maxIndexByA (comparing Color.bgFromW32) singleArray
   ANSI.hSetCursorPosition SIO.stderr py px
