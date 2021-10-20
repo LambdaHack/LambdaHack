@@ -46,7 +46,7 @@ startup coscreen@ScreenContent{rwidth, rheight} = do
               <+> tshow y
               <+> "rows. Resize it and run the program again."
     _ -> do
-      rf <- createRawFrontend coscreen (display coscreen) shutdown
+      rf <- createRawFrontend coscreen (display coscreen) (shutdown coscreen)
       let storeKeys :: IO ()
           storeKeys = do
             c <- SIO.getChar  -- blocks here, so no polling
@@ -210,8 +210,11 @@ ocodeTranslate e =
 
     _ -> (K.Unknown $ "\\ESCO" ++ e, K.NoModifier)
 
-shutdown :: IO ()
-shutdown = SIO.hFlush SIO.stdout >> SIO.hFlush SIO.stderr
+shutdown :: ScreenContent -> IO ()
+shutdown ScreenContent{rheight} = do
+  -- The lowest position guaranteed to exist.
+  ANSI.hSetCursorPosition SIO.stderr (rheight - 1) 0
+  SIO.hFlush SIO.stdout >> SIO.hFlush SIO.stderr
 
 -- | Output to the screen via the frontend.
 display :: ScreenContent
