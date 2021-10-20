@@ -228,7 +228,7 @@ display ScreenContent{rwidth} SingleFrame{singleArray} = do
       f (!y, chunk) = do
         ANSI.hSetCursorPosition SIO.stderr y 0
         SIO.hPutStr SIO.stderr $ g chunk
-      g chunk = concatMap h chunk
+      g = concatMap h
       -- Not emitting ANSI if the previous character had the same fg and bg
       -- gains little in terms of maximal lag, due to checkerboard levels/rooms
       -- (even though it triples FPS in normal rooms; but comparing with
