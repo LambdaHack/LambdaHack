@@ -151,6 +151,7 @@ either, but fortunately they are not crucial to gameplay.
 
 Some effort went into making the ANSI frontend usable with screen readers,
 but without feedback it's hard to say how accessible that setup is.
+This doesn't work on Windows, due to extra code that would be required.
 As a side effect of screen reader support, there is no aiming line
 nor path in ANSI frontend and some of map position highlighting
 is performed using the terminal cursor. Screen readers may also work
@@ -202,7 +203,9 @@ is used in CI and for some tests and benchmarks defined in Makefile.
 The terminal frontends leave you on your own regarding font choice
 and color setup and you won't have the colorful squares outlining
 special positions that exist in the SDL2 frontend, but only crude
-cursor highlights.
+cursor highlights. The terminal frontends should theoretically run
+on Windows, but the operating system disables console for GUI applications,
+so they don't.
 
 
 Testing and debugging
