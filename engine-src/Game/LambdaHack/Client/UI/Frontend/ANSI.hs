@@ -220,17 +220,28 @@ shutdown ScreenContent{rheight} = do
 display :: ScreenContent
         -> SingleFrame
         -> IO ()
-display _coscreen SingleFrame{singleArray} = do
+display ScreenContent{rwidth} SingleFrame{singleArray} = do
   ANSI.hHideCursor SIO.stderr
-  let f Point{..} w = do
-        ANSI.hSetCursorPosition SIO.stderr py px
+  let cutInChunks [] = []
+      cutInChunks l = let (ch, r) = splitAt rwidth l
+                      in ch : cutInChunks r
+      f (!y, chunk) = do
+        ANSI.hSetCursorPosition SIO.stderr y 0
+        SIO.hPutStr SIO.stderr $ g chunk
+      g chunk = concatMap h chunk
+      -- Not emitting ANSI if the previous character had the same fg and bg
+      -- gains little in terms of maximal lag, due to checkerboard levels/rooms
+      -- (even though it triples FPS in normal rooms; but comparing with
+      -- previous frame gains even more in normal cases and copes well
+      -- with checkerboard; both not worth the effort for this frontend).
+      h !w =
         let acChar = squashChar $ Color.charFromW32 w
             (fg, bg) = setAttr $ Color.attrFromW32 w
-            s = ANSI.setSGRCode [ uncurry (ANSI.SetColor ANSI.Foreground)
-                                  $ colorTranslate fg
-                                , uncurry (ANSI.SetColor ANSI.Background)
-                                  $ colorTranslate bg ]
-                ++ [acChar]
+        in ANSI.setSGRCode [ uncurry (ANSI.SetColor ANSI.Foreground)
+                             $ colorTranslate fg
+                           , uncurry (ANSI.SetColor ANSI.Background)
+                             $ colorTranslate bg ]
+           ++ [acChar]
 {-
 This is dubious, because I can't force bright background colour with that,
 only bright foregrounds. And I have at least one bright backround: bright black.
@@ -244,8 +255,7 @@ only bright foregrounds. And I have at least one bright backround: bright black.
                                    then ANSI.BoldIntensity
                                    else ANSI.NormalIntensity]
 -}
-        SIO.hPutStr SIO.stderr s
-  PointArray.imapMA_ f singleArray
+  mapM_ f $ zip [0 ..] $ cutInChunks $ PointArray.toListA singleArray
   let Point{..} = PointArray.maxIndexByA (comparing Color.bgFromW32) singleArray
   ANSI.hSetCursorPosition SIO.stderr py px
   ANSI.hShowCursor SIO.stderr
