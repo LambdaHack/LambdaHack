@@ -200,9 +200,13 @@ nullStartup :: ScreenContent -> IO RawFrontend
 nullStartup coscreen = createRawFrontend coscreen seqFrame (return ())
 
 seqFrame :: SingleFrame -> IO ()
-seqFrame SingleFrame{singleArray} =
+seqFrame SingleFrame{..} =
   let seqAttr () attr = Color.colorToRGB (Color.fgFromW32 attr)
                         `seq` Color.bgFromW32 attr
                         `seq` Color.charFromW32 attr == ' '
                         `seq` ()
-  in return $! PointArray.foldlA' seqAttr () singleArray
+      !_Force1 = PointArray.foldlA' seqAttr () singleArray
+      !_Force2 = length singlePropOverlay
+      !_Force3 = length singleSquareOverlay
+      !_Force4 = length singleMonoOverlay
+  in return ()
