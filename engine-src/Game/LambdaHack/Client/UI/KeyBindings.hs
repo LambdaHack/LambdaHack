@@ -80,9 +80,9 @@ keyHelp CCUI{ coinput=coinput@InputContent{..}
       , "C-RMB or C-S-LMB."
       ]
     mouseAreasBlurb =
-      [ "Next we show mouse button effects per screen area, in exploration mode"
-      , "and (if different) in aiming mode. Note that this is all optional. Keyboard"
-      , "suffices, at worst requiring the more obscure commands listed later on."
+      [ "Next we show mouse button effects per screen area, in exploration and"
+      , "(if different) aiming mode. Note that mouse is optional. Keyboard suffices,"
+      , "occasionally requiring a lookup for an obscure command key in help screens."
       ]
     mouseAreasMini =
       [ "Mouse button effects per screen area, in exploration and in aiming modes"

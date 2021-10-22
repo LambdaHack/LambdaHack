@@ -344,7 +344,7 @@ Screen area and UI mode (exploration/aiming) determine mouse click
 effects. Here we give an overview of effects of each button over
 the game map area. The list includes not only left and right buttons,
 but also the optional middle mouse button (MMB) and the mouse wheel,
-which is also used over menus to move selection. For mice without RMB
+which is also used over menus to move selection. For mice without RMB,
 one can use Control key with LMB and for mice without MMB, one can use
 C-RMB or C-S-LMB.
 
@@ -357,8 +357,8 @@ C-RMB or C-S-LMB.
     WHEEL-UP     swerve the aiming line
     WHEEL-DN     unswerve the aiming line
 
-Note that mouse is totally optional. Keyboard suffices, occasionally
-requiring a lookup for some obscure command key in the help screens.
+Note that mouse is optional. Keyboard suffices, occasionally requiring
+a lookup for an obscure command key in help screens.
 
 
 Battling monsters

@@ -3,179 +3,177 @@ For more general gameplay information see
 https://github.com/LambdaHack/LambdaHack/blob/master/GameDefinition/PLAYING.md
 
 
-Minimal cheat sheet for casual play
+ Minimal cheat sheet for casual play
 
-Walk throughout a level with mouse or numeric keypad (right diagram below)
-or the Vi editor keys (middle) or the left-hand movement keys (left). Run until
-disturbed with Shift or Control. Go-to a position with LMB (left mouse button).
+ Walk throughout a level with mouse or numeric keypad (right diagram below)
+ or the Vi editor keys (middle) or the left-hand movement keys (left). Run until
+ disturbed with Shift or Control. Go-to a position with LMB (left mouse button).
 
-          q w e          y k u          7 8 9
-           \|/            \|/            \|/
-          a-s-d          h-.-l          4-5-6
-           /|\            /|\            /|\
-          z x c          b j n          1 2 3
+      q w e     y k u     7 8 9
+       \|/       \|/       \|/
+      a-s-d     h-.-l     4-5-6
+       /|\       /|\       /|\
+      z x c     b j n     1 2 3
 
-In aiming mode, the same keys (and mouse) move the aiming crosshair.
-Press `KP_5` (`5` on keypad) to wait, bracing for impact, which reduces any
-damage taken and prevents displacement by foes. Press `S-KP_5` or `C-KP_5`
-(the same key with Shift or Control) to lurk 0.1 of a turn, without bracing.
+ In aiming mode, the same keys (and mouse) move the aiming crosshair.
+ Press `KP_5` (`5` on keypad) to wait, bracing for impact, which reduces any
+ damage taken and prevents displacement by foes. Press `S-KP_5` or `C-KP_5`
+ (the same key with Shift or Control) to lurk 0.1 of a turn, without bracing.
 
-Displace enemies by running into them with Shift/Control or S-LMB. Search,
-open, descend and attack by bumping into walls, doors, stairs and enemies.
-The best, not on cooldown, melee weapon is automatically chosen from your
-equipment and from among your body parts.
+ Displace enemies by running into them with Shift/Control or S-LMB. Search,
+ open, descend and attack by bumping into walls, doors, stairs and enemies.
+ The best, not on cooldown, melee weapon is automatically chosen from your
+ equipment and from among your body parts.
 
-The following few commands, joined with the movement and running keys,
-let you accomplish almost anything in the game, though not necessarily
-with the fewest keystrokes. You can also play the game exclusively
-with a mouse, or both mouse and keyboard (e.g., mouse for go-to
-and terrain inspection and keyboard for everything else). Lastly,
-you can select a command with arrows or mouse directly from the help
-screen or the dashboard and execute it on the spot.
+ The following few commands, joined with the movement and running keys,
+ let you accomplish almost anything in the game, though not necessarily
+ with the fewest keystrokes. You can also play the game exclusively
+ with a mouse, or both mouse and keyboard (e.g., mouse for go-to
+ and terrain inspection and keyboard for everything else). Lastly,
+ you can select a command with arrows or mouse directly from the help
+ screen or the dashboard and execute it on the spot.
 
-    keys         command
-    I            manage the shared inventory stash
-    g or ,       grab item(s)
-    ESC          clear messages/open main menu/finish aiming
-    RET or INS   open dashboard/accept target
-    SPACE        clear messages/show history/cycle detail level
-    TAB          cycle among all party members
-    *            cycle crosshair among enemies
-    /            cycle crosshair among items
-    M            modify any admissible terrain
-    %            yell or yawn and stop sleeping
-
-
-Optional mouse commands
-
-Screen area and UI mode (exploration/aiming) determine mouse click
-effects. Here we give an overview of effects of each button over
-the game map area. The list includes not only left and right buttons,
-but also the optional middle mouse button (MMB) and the mouse wheel,
-which is also used over menus to move selection. For mice without RMB
-one can use Control key with LMB and for mice without MMB, one can use
-C-RMB or C-S-LMB.
-
-    keys         command (exploration/aiming)
-    LMB          go to pointer for 25 steps/fling at enemy
-    S-LMB        run to pointer collectively for 25 steps/fling at enemy
-    RMB or C-LMB start aiming at enemy under pointer/cycle detail level
-    S-RMB        modify terrain at pointer
-    MMB or C-RMB snap crosshair to floor under pointer/cycle detail level
-    WHEEL-UP     swerve the aiming line
-    WHEEL-DN     unswerve the aiming line
-
-Note that mouse is totally optional. Keyboard suffices, at worst requiring
-the more obscure commands listed in the help screens.
+  keys         command
+  I            manage the shared inventory stash
+  g or ,       grab item(s)
+  ESC          clear messages/open main menu/finish aiming
+  RET or INS   open dashboard/accept target
+  SPACE        clear messages/show history/cycle detail level
+  TAB          cycle among all party members
+  *            cycle crosshair among enemies
+  /            cycle crosshair among items
+  M            modify any admissible terrain
+  %            yell or yawn and stop sleeping
 
 
-Here is the complete list of commands from the snapshot of in-game help.
-For more general gameplay information see PLAYING.md.
+ Optional mouse commands
 
-Mouse button effects per screen area, in exploration and in aiming modes
+ Screen area and UI mode (exploration/aiming) determine mouse click
+ effects. Here we give an overview of effects of each button over
+ the game map area. The list includes not only left and right buttons,
+ but also the optional middle mouse button (MMB) and the mouse wheel,
+ which is also used over menus to move selection. For mice without RMB,
+ one can use Control key with LMB and for mice without MMB, one can use
+ C-RMB or C-S-LMB.
 
- exploration    LMB (left mouse button)         RMB (right mouse button)
- message line   show history                    display help
- pointman tile  grab item(s)                    remove item(s)
- party on map   pick new pointman on screen     select party member on screen
- the map area   go to pointer for 25 steps      set crosshair to enemy
- level number   move aiming one level up        move aiming one level down
- level caption  open dashboard                  clear msgs and open main menu
- percent seen   explore nearest unknown spot    autoexplore 25 times
- crosshair info cycle crosshair among enemies   cycle crosshair among items
- party roster   pick new pointman on screen     select party member on screen
- Calm value     yell or yawn and stop sleeping  yell or yawn and stop sleeping
- HP gauge       rest (wait 25 times)            heed (lurk 0.1 turns 100 times)
- HP value       wait a turn, bracing for impact lurk 0.1 of a turn
- pointman info  auto-fling and keep choice      clear chosen item and crosshair
+  keys         command (exploration/aiming)
+  LMB          go to pointer for 25 steps/fling at enemy
+  S-LMB        run to pointer collectively for 25 steps/fling at enemy
+  RMB or C-LMB start aiming at enemy under pointer/cycle detail level
+  S-RMB        modify terrain at pointer
+  MMB or C-RMB snap crosshair to floor under pointer/cycle detail level
+  WHEEL-UP     swerve the aiming line
+  WHEEL-DN     unswerve the aiming line
 
- aiming mode    LMB (left mouse button)         RMB (right mouse button)
- the map area   fling at enemy under pointer    snap crosshair to enemy
- level caption  accept target                   cancel aiming
- percent seen   aim at nearest upstairs         aim at nearest downstairs
+ Note that mouse is optional. Keyboard suffices, occasionally requiring
+ a lookup for an obscure command key in help screens.
 
 
-All item-related commands
+ Mouse button effects per screen area, in exploration and in aiming modes
 
- keys         command
- I            manage the shared inventory stash
- O            manage the equipment outfit of the pointman
- g or ,       grab item(s)
- r            remove item(s)
- f            start flinging projectiles
- C-f          auto-fling and keep choice
- t            trigger consumable item
- C-t          trigger item and keep choice
- i            stash item into shared inventory
- o            equip item into outfit of the pointman
- G            manage items on the ground
- T            manage our total team belongings
+  Exploration    LMB (left mouse button)         RMB (right mouse button)
+  message line   show history                    display help
+  pointman tile  grab item(s)                    remove item(s)
+  party on map   pick new pointman on screen     select party member on screen
+  the map area   go to pointer for 25 steps      set crosshair to enemy
+  level number   move aiming one level up        move aiming one level down
+  level caption  open dashboard                  clear msgs and open main menu
+  percent seen   explore nearest unknown spot    autoexplore 25 times
+  crosshair info cycle crosshair among enemies   cycle crosshair among items
+  party roster   pick new pointman on screen     select party member on screen
+  Calm value     yell or yawn and stop sleeping  yell or yawn and stop sleeping
+  HP gauge       rest (wait 25 times)            heed (lurk 0.1 turns 100 times)
+  HP value       wait a turn, bracing for impact lurk 0.1 of a turn
+  pointman info  auto-fling and keep choice      clear chosen item and crosshair
 
-Note how lower case item commands (stash item, equip item) place items
-into a particular item store, while upper case item commands (manage Inventory,
-manage Outfit) open management menu for a store. Once a store menu is opened,
-you can switch stores with '<' and '>', so the multiple commands only determine
-the starting item store. Each store is accessible from the dashboard as well.
-
-
-Terrain exploration and modification commands
-
- keys         command
- TAB          cycle among all party members
- S-TAB        cycle backwards among all party members
- C-TAB        cycle among party members on the level
- C-S-TAB      cycle backwards among party members on the level
- m            modify door by closing it
- M            modify any admissible terrain
- =            select (or deselect) party member
- _            deselect (or select) all on the level
- ;            go to crosshair for 25 steps
- :            run to crosshair collectively for 25 steps
- [            explore nearest unknown spot
- ]            autoexplore 25 times
- R            rest (wait 25 times)
- C-R          heed (lurk 0.1 turns 100 times)
- 0, 1 ... 9   pick a particular actor as the new pointman
+  Aiming Mode    LMB (left mouse button)         RMB (right mouse button)
+  the map area   fling at enemy under pointer    snap crosshair to enemy
+  level caption  accept target                   cancel aiming
+  percent seen   aim at nearest upstairs         aim at nearest downstairs
 
 
-All aiming commands
+ All item-related commands
 
- keys         command
- ESC          clear messages/open main menu/finish aiming
- RET or INS   open dashboard/accept target
- SPACE        clear messages/show history/cycle detail level
- *            cycle crosshair among enemies
- /            cycle crosshair among items
- +            swerve the aiming line
- -            unswerve the aiming line
- \            cycle aiming modes
- C-?          set crosshair to nearest unknown spot
- C-/          set crosshair to nearest item
- C-{          aim at nearest upstairs
- C-}          aim at nearest downstairs
- <            move aiming one level up
- >            move aiming one level down
- BACKSPACE    clear chosen item and crosshair
+  keys         command
+  I            manage the shared inventory stash
+  O            manage the equipment outfit of the pointman
+  g or ,       grab item(s)
+  r            remove item(s)
+  f            fling in-range projectile
+  C-f          auto-fling and keep choice
+  t            trigger consumable item
+  C-t          trigger item and keep choice
+  i            stash item into shared inventory
+  o            equip item into outfit of the pointman
+  G            manage items on the ground
+  T            manage our total team belongings
+
+ Note how lower case item commands (stash item, equip item) place items
+ into a particular item store, while upper case item commands (manage Inventory,
+ manage Outfit) open management menu for a store. Once a store menu is opened,
+ you can switch stores with `<` and `>`, so the multiple commands only determine
+ the starting item store. Each store is accessible from the dashboard as well.
 
 
-Assorted commands
+ Terrain exploration and modification commands
 
- keys         command
- %            yell or yawn and stop sleeping
- @            describe organs of the pointman
- #            show skill summary of the pointman
- ~            display relevant lore
- C-s          start new game
- C-x          save and exit to desktop
- C-q          quit game and start autoplay
- C-c          exit to desktop without saving
- ?            display help
- F1           display help immediately
- F12          open dashboard
- v            voice last action again
- V            voice recorded macro again
- '            start recording commands
- C-S          save game backup
- C-P          print screen
+  keys         command
+  TAB          cycle among all party members
+  S-TAB        cycle backwards among all party members
+  C-TAB        cycle among party members on the level
+  C-S-TAB      cycle backwards among party members on the level
+  m            modify door by closing it
+  M            modify any admissible terrain
+  =            select (or deselect) party member
+  _            deselect (or select) all on the level
+  ;            go to crosshair for 25 steps
+  :            run to crosshair collectively for 25 steps
+  [            explore nearest unknown spot
+  ]            autoexplore 25 times
+  R            rest (wait 25 times)
+  C-R          heed (lurk 0.1 turns 100 times)
+  0, 1 ... 9   pick a particular actor as the new pointman
 
-For more playing instructions see file PLAYING.md.
+
+ All aiming commands
+
+  keys         command
+  ESC          clear messages/open main menu/finish aiming
+  RET or INS   open dashboard/accept target
+  SPACE        clear messages/show history/cycle detail level
+  *            cycle crosshair among enemies
+  /            cycle crosshair among items
+  +            swerve the aiming line
+  -            unswerve the aiming line
+  \            cycle aiming modes
+  C-?          set crosshair to nearest unknown spot
+  C-/          set crosshair to nearest item
+  C-{          aim at nearest upstairs
+  C-}          aim at nearest downstairs
+  <            move aiming one level up
+  >            move aiming one level down
+  BACKSPACE    clear chosen item and crosshair
+
+
+ Assorted commands
+
+  keys         command
+  %            yell or yawn and stop sleeping
+  @            describe organs of the pointman
+  #            show skill summary of the pointman
+  ~            display relevant lore
+  C-g          start new game
+  C-x          save and exit to desktop
+  C-q          quit game and start autoplay
+  C-c          exit to desktop without saving
+  ?            display help
+  F1           display help immediately
+  F12          open dashboard
+  v            voice last action again
+  V            voice recorded macro again
+  '            start recording commands
+  C-S          save game backup
+  C-P          print screen
+
+
+ For more playing instructions see file PLAYING.md.
