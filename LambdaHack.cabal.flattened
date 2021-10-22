@@ -44,11 +44,11 @@ homepage:      https://lambdahack.github.io
 bug-reports:   http://github.com/LambdaHack/LambdaHack/issues
 license:       BSD-3-Clause
 license-file:  COPYLEFT
-tested-with:   GHC==8.2.2, GHC==8.4.4, GHC==8.6.5, GHC==8.8.4, GHC==8.10.4,
+tested-with:   GHC==8.2.2, GHC==8.4.4, GHC==8.6.5, GHC==8.8.4, GHC==8.10.7,
                GHC==9.0.1
--- Enough files is included to build and run CI and manual tests
--- and be presentable on Hackage, but not enough to create
--- a user-friendly binary package, e.g., no InGameHelp.txt.
+-- Enough files is included in the Hackage package to run CI and manual
+-- tests off it, to be presentable on Hackage and to create user-friendly
+-- binary packages.
 extra-source-files: GameDefinition/config.ui.default,
                     GameDefinition/PLAYING.md,
                     GameDefinition/fonts/16x16xw.woff,
