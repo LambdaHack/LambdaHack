@@ -251,9 +251,9 @@ Spaces around arithmetic operators encouraged.
 Generally, relax and try to stick to the style apparent in a file
 you are editing. Put big formatting changes in separate commits.
 
-CI checks the code with `hlint .` using the very liberal configuration
-file at `.hlint.yaml`. If hlint is still too naggy, feel free to add
-more exceptions.
+CI checks the code with `hlint .` using the very liberal configuration file at
+[.hlint.yaml](https://github.com/LambdaHack/LambdaHack/blob/master/.hlint.yaml).
+If hlint is still too naggy, feel free to add more exceptions.
 
 Haddocks are provided for all module headers and for all functions and types
 from major modules, in particular for the modules that are interfaces

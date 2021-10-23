@@ -297,8 +297,7 @@ This chapter is a copy of the few initial pages of in-game help.
 The in-game help is automatically generated based on a game's keybinding
 content definitions and on overrides in the player's config file.
 The remaining in-game help screens, not shown here, list all game
-commands grouped by categories in detail. A text snapshot of the complete
-in-game help is in [InGameHelp.txt](InGameHelp.txt).
+commands grouped by categories in detail.
 
 Walk throughout a level with mouse or numeric keypad (right diagram below)
 or the Vi editor keys (middle) or the left-hand movement keys (left). Run until
