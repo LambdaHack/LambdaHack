@@ -12,13 +12,15 @@ import Test.Tasty.HUnit
 
 import           Game.LambdaHack.Client.UI.HandleHelperM
 
-import Game.LambdaHack.Client.UI.MonadClientUI ( MonadClientUI )
+import           Game.LambdaHack.Client.UI.MonadClientUI ( MonadClientUI )
 import           Game.LambdaHack.Client.MonadClient
 import           Game.LambdaHack.Client.State
+import           Game.LambdaHack.Client.UI.HandleHelperM
 import           Game.LambdaHack.Client.UI.HandleHumanLocalM
 import qualified Game.LambdaHack.Client.UI.HumanCmd as HumanCmd
 import           Game.LambdaHack.Common.Types
-import Game.LambdaHack.Definition.DefsInternal ( toContentSymbol )
+import           Game.LambdaHack.Definition.DefsInternal ( toContentSymbol )
+
 
 import           MonadClientMock
 
@@ -36,7 +38,7 @@ handleHumanLocalMUnitTests = testGroup "handleHumanLocalMUnitTests" [
                         ]
                     in chooseItemProjectHuman (toEnum 1) triggerItems
       result <- executorCli testFn
-      result @?= Nothing 
+      fst result @?= Nothing --Just FailError {failError="no aim designated"}
   ]
 
 -- chooseItemProjectHuman :: forall m. (MonadClient m, MonadClientUI m) -- line 395

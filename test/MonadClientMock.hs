@@ -40,6 +40,7 @@ import           Game.LambdaHack.Client.UI
 import           Game.LambdaHack.Client.UI.SessionUI
 import           Game.LambdaHack.Client.UI.UIOptions
 
+import           Game.LambdaHack.Common.Actor
 import           Game.LambdaHack.Common.Area
 import           Game.LambdaHack.Common.ClientOptions
 import           Game.LambdaHack.Common.Faction
@@ -52,6 +53,7 @@ import qualified Game.LambdaHack.Common.Save as Save
 import           Game.LambdaHack.Common.State
 import           Game.LambdaHack.Common.Time
 import           Game.LambdaHack.Common.Types
+import           Game.LambdaHack.Common.Vector
 
 
 import           Game.LambdaHack.Content.ModeKind
@@ -152,13 +154,37 @@ testFaction =
     , gvictimsD = EM.empty
     }
 
+testActor = 
+  Actor
+  { btrunk = toEnum 0
+  , bnumber = Nothing
+  , bhp = 0
+  , bhpDelta = ResDelta (0,0) (0,0)
+  , bcalm = 0
+  , bcalmDelta = ResDelta (0,0) (0,0)
+  , bpos = Point 0 0
+  , boldpos = Nothing
+  , blid = toEnum 0
+  , bfid = toEnum 0
+  , btrajectory = Nothing
+  , borgan = EM.empty
+  , beqp = EM.empty
+  , bweapon = 0
+  , bweapBenign = 0
+  , bwatch = WWatch
+  , bproj = False
+  }
+
 
 -- stublike state instance that should barely function for testing
 testState :: State
 testState = let singletonFactionUpdate _ = EM.singleton (toEnum 0) testFaction
                 singletonDungeonUpdate _ = EM.singleton (toEnum 0) testLevel
-                stateWithFaction = updateFactionD singletonFactionUpdate emptyState 
-               in updateDungeon singletonDungeonUpdate stateWithFaction
+                singletonActorDUpdate _ = EM.singleton (toEnum 1) testActor
+                stateWithFaction = updateFactionD singletonFactionUpdate emptyState
+                stateWithActorD = updateActorD singletonActorDUpdate stateWithFaction
+                stateWithDungeon = updateDungeon singletonDungeonUpdate stateWithActorD
+             in stateWithDungeon
 
 emptyCliState :: CliState
 emptyCliState = CliState
@@ -172,10 +198,10 @@ emptyCliState = CliState
 testCliState = CliState
   { cliState = testState
   , cliClient = emptyStateClient $ toEnum 0
-  , cliSession = Just (emptySessionUI stubUIOptions)
+  , cliSession = Just ((emptySessionUI stubUIOptions) {sxhair = Just (TNonEnemy (toEnum 1))})-- Vector {vx=1, vy=0})})
   }
 
--- | Client state transformation monad.
+-- | Client state mock transformation monad.
 newtype CliMock a = CliMock
   { runCliMock :: StateT CliState IO a }  -- we build off io so we can compile but we don't want to use it
   deriving (Monad, Functor, Applicative)
@@ -250,7 +276,8 @@ instance MonadClientAtomic CliMock where
   execPutState = putState
 
 
-executorCli :: CliMock a -> IO a 
+executorCli :: CliMock a -> IO (a, CliState)
 executorCli testFn = 
-  evalStateT (runCliMock testFn) testCliState 
+  runStateT (runCliMock testFn) testCliState 
+  
   
