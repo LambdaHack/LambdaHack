@@ -35,6 +35,7 @@ keyHelp CCUI{ coinput=coinput@InputContent{..}
       [ "Walk throughout a level with mouse or numeric keypad (right diagram below)"
       , "or the Vi editor keys (middle) or the left-hand movement keys (left). Run until"
       , "disturbed with Shift or Control. Go-to a position with LMB (left mouse button)."
+      , "In aiming mode, the same keys (and mouse) move the aiming crosshair."
       ]
     movSchema =
       [ "     q w e     y k u     7 8 9"
@@ -44,15 +45,14 @@ keyHelp CCUI{ coinput=coinput@InputContent{..}
       , "     z x c     b j n     1 2 3"
       ]
     movBlurb2 =
-      [ "In aiming mode, the same keys (and mouse) move the aiming crosshair."
-      , "Press `KP_5` (`5` on keypad) to wait, bracing for impact, which reduces any"
+      [ "Press `KP_5` (`5` on keypad) to wait, bracing for impact, which reduces any"
       , "damage taken and prevents displacement by foes. Press `S-KP_5` or `C-KP_5`"
       , "(the same key with Shift or Control) to lurk 0.1 of a turn, without bracing."
       , ""
       , "Displace enemies by running into them with Shift/Control or S-LMB. Search,"
-      , "open, descend and attack by bumping into walls, doors, stairs and enemies."
-      , "The best, not on cooldown, melee weapon is automatically chosen from your"
-      , "equipment and from among your body parts."
+      , "open, descend and melee by bumping into walls, doors, stairs and enemies."
+      , "The best, and not on cooldown, melee weapon is automatically chosen"
+      , "for attack from your equipment and from among your body parts."
       ]
     minimalBlurb =
       [ "The following few commands, joined with the movement and running keys,"

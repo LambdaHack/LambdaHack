@@ -480,7 +480,7 @@ closestTriggers fleeVia aid = do
 -- We assume weapons in equipment are better than any among organs
 -- or at least provide some essential diversity.
 -- Disabled if, due to doctrine, actors follow leader and so would
--- repeatedly move towards and away form stairs at leader change,
+-- repeatedly move towards and away from stairs at leader change,
 -- depending on current leader's gear.
 -- Number of items of a single kind is ignored, because variety is needed.
 condEnoughGearM :: MonadClientRead m => ActorId -> m Bool
