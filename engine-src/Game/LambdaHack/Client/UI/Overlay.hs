@@ -288,7 +288,9 @@ labDescOverlay labFont width as =
       labLen = textSize labFont tLab
       ovLab = offsetOverlay [attrStringToAL tLab]
       ovDesc = offsetOverlayX $
-        case splitAttrString (width - labLen) width tDesc of
+        -- The @- 1@ is due to @splitAttrString@ dropping leading spaces
+        -- and the compensation below.
+        case splitAttrString (width - labLen - 1) width tDesc of
           [] -> []
           l : ls ->
             -- @splitAttrString@ drops leading spaces, so compensate
