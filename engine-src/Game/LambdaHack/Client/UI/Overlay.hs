@@ -7,15 +7,16 @@ module Game.LambdaHack.Client.UI.Overlay
     AttrString, blankAttrString, textToAS, textFgToAS, stringToAS
   , (<+:>), (<\:>)
     -- * AttrLine
-  , AttrLine, attrLine, emptyAttrLine, attrStringToAL, firstParagraph, linesAttr
-  , textToAL, textFgToAL, stringToAL, splitAttrString, indentSplitAttrString
+  , AttrLine, attrLine, emptyAttrLine, attrStringToAL, firstParagraph
+  , textToAL, textFgToAL, stringToAL, linesAttr
+  , splitAttrString, indentSplitAttrString
     -- * Overlay
   , Overlay, xytranslateOverlay, xtranslateOverlay, ytranslateOverlay
   , offsetOverlay, offsetOverlayX, typesetXY
   , updateLine, rectangleOfSpaces, maxYofOverlay, labDescOverlay
 #ifdef EXPOSE_INTERNAL
     -- * Internal operations
-  , splitAttrPhrase
+  , nonbreakableRev, isPrefixOfNonbreakable, breakAtSpace, splitAttrPhrase
 #endif
   ) where
 
@@ -119,7 +120,8 @@ breakAtSpace lRev =
 
 -- * AttrLine
 
--- | Line of colourful text. End of line characters forbidden.
+-- | Line of colourful text. End of line characters forbidden. Trailing
+-- @White@ space forbidden.
 newtype AttrLine = AttrLine {attrLine :: AttrString}
   deriving (Show, Eq)
 
@@ -182,9 +184,11 @@ linesAttr l = cons (case break (\ac -> Color.charFromW32 ac == '\n') l of
  where
   cons ~(h, t) = h : t
 
--- | Split a string into lines. Avoids breaking the line at a character
--- other than space. Remove space characters from the starts and ends
--- of created lines. Newlines are respected.
+-- | Split a string into lines. Avoid breaking the line at a character
+-- other than space. Remove the spaces on which lines are broken,
+-- keep other spaces. In expensive assertions mode (dev debug mode)
+-- fail at trailing spaces, but keep leading spaces, e.g., to make
+-- distance from a text in another font. Newlines are respected.
 --
 -- Note that we only split wrt @White@ space, nothing else,
 -- and the width, in the first argument, is calculated in characters,
@@ -193,11 +197,7 @@ linesAttr l = cons (case break (\ac -> Color.charFromW32 ac == '\n') l of
 splitAttrString :: Int -> Int -> AttrString -> [AttrLine]
 splitAttrString w0 w1 l = case linesAttr l of
   [] -> []
-  x : xs ->
-    (splitAttrPhrase w0 w1
-     . AttrLine . dropWhile (== Color.spaceAttrW32) . attrLine) x
-    ++ concatMap (splitAttrPhrase w1 w1
-                  . AttrLine . dropWhile (== Color.spaceAttrW32) . attrLine) xs
+  x : xs -> splitAttrPhrase w0 w1 x ++ concatMap (splitAttrPhrase w1 w1) xs
 
 indentSplitAttrString :: DisplayFont -> Int -> AttrString -> [AttrLine]
 indentSplitAttrString font w l =
@@ -288,12 +288,7 @@ labDescOverlay labFont width as =
       labLen = textSize labFont tLab
       ovLab = offsetOverlay [attrStringToAL tLab]
       ovDesc = offsetOverlayX $
-        -- The @- 1@ is due to @splitAttrString@ dropping leading spaces
-        -- and the compensation below.
-        case splitAttrString (width - labLen - 1) width tDesc of
+        case splitAttrString (width - labLen) width tDesc of
           [] -> []
-          l : ls ->
-            -- @splitAttrString@ drops leading spaces, so compensate
-            (labLen, firstParagraph $ Color.spaceAttrW32 : attrLine l)
-            : map (0,) ls
+          l : ls -> (labLen, l) : map (0,) ls
   in (ovLab, ovDesc)
