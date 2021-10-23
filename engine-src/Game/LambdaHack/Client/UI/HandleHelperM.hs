@@ -287,7 +287,7 @@ skillsOverlay aid = do
             slotLab = slotLabel c
             lab = textToAL slotLab
             labLen = textSize squareFont $ attrLine lab
-            indentation = if propFont == SquareFont then 52 else 26
+            indentation = if isSquareFont propFont then 52 else 26
             valueText = skillToDecorator skill b
                         $ Ability.getSk skill actorMaxSk
             triple = ( lab
@@ -470,7 +470,7 @@ describeMode addTitle gameModeId = do
            <+:> (textFgToAS color (T.toTitle $ MK.nameOutcomePast outcome)
                  <+:> textToAS lastRemark)
            <> textToAS ":"
-  return $! if propFont == SquareFont
+  return $! if isSquareFont propFont
             then EM.singleton squareFont  -- single column, single font
                  $ xtranslateOverlay 2 $ offsetOverlay
                  $ concatMap snd $ blurb ++ blurbEnd

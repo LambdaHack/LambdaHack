@@ -2,7 +2,9 @@
 -- | Screen overlays.
 module Game.LambdaHack.Client.UI.Overlay
   ( -- * DisplayFont
-    DisplayFont(..), textSize
+    DisplayFont, isPropFont, isSquareFont, isMonoFont, textSize
+  , -- * FontSetup
+    FontSetup(..), multiFontSetup, monoFontSetup, singleFontSetup
   , -- * AttrString
     AttrString, blankAttrString, textToAS, textFgToAS, stringToAS
   , (<+:>), (<\:>)
@@ -38,17 +40,47 @@ import qualified Game.LambdaHack.Definition.Color as Color
 -- All overlays overwrite the rendering of the game map, which is
 -- the underlying basic UI frame, comprised of square font glyps.
 --
--- Note that the order of constructors has limited effect (probably only
--- when square font is used instead of all other fonts and all overlays
--- are flattened), but it represents how overwriting is explicitly
--- implemented in frontends that support all fonts.
+-- This type needs to be kept abstract to ensure that frontend-enforced
+-- or user config-enforced font assignments in 'FontSetup'
+-- (e.g., stating that the supposedly proportional font is overriden
+-- to be the square font) can't be ignored. Otherwise a programmer
+-- could use arbirary @DisplayFont@, instead of the one taken from 'FontSetup',
+-- and so, e.g., calculating the width of an overlay so constructed
+-- in order to decide where another overlay can start would be inconsistent
+-- what what font is really eventually used when rendering.
+--
+-- Note that the order of constructors has limited effect,
+-- but it illustrates how overwriting is explicitly implemented
+-- in frontends that support all fonts.
 data DisplayFont = PropFont | SquareFont | MonoFont
   deriving (Show, Eq, Enum)
+
+isPropFont, isSquareFont, isMonoFont :: DisplayFont -> Bool
+isPropFont = (== PropFont)
+isSquareFont = (== SquareFont)
+isMonoFont = (== MonoFont)
 
 textSize :: DisplayFont -> [a] -> Int
 textSize SquareFont l = 2 * length l
 textSize MonoFont l = length l
 textSize PropFont _ = error "size of proportional font texts is not defined"
+
+-- * FontSetup
+
+data FontSetup = FontSetup
+  { squareFont :: DisplayFont
+  , monoFont   :: DisplayFont
+  , propFont   :: DisplayFont
+  }
+
+multiFontSetup :: FontSetup
+multiFontSetup = FontSetup SquareFont MonoFont PropFont
+
+monoFontSetup :: FontSetup
+monoFontSetup = FontSetup SquareFont MonoFont MonoFont
+
+singleFontSetup :: FontSetup
+singleFontSetup = FontSetup SquareFont SquareFont SquareFont
 
 -- * AttrString
 

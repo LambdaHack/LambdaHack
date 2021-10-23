@@ -140,7 +140,7 @@ keyHelp CCUI{ coinput=coinput@InputContent{..}
                   Nothing -> (key, "(not described:" <+> tshow cmd2 <> ")")
             in (ca, Left km, desc)
       in map caMakeChoice caCmds
-    doubleIfSquare n | monoFont == SquareFont = 2 * n
+    doubleIfSquare n | isSquareFont monoFont = 2 * n
                      | otherwise = n
     okm :: (forall a. (a, a) -> a) -> K.KM -> K.KM -> [Text] -> OKX
     okm sel key1 key2 header =
@@ -177,7 +177,7 @@ keyHelp CCUI{ coinput=coinput@InputContent{..}
     typesetInProp =
       EM.singleton propFont . typesetXY (spLen, 0) . map textToAL
     sideBySide :: [(Text, OKX)] -> [(Text, OKX)]
-    sideBySide ((_t1, okx1) : (t2, okx2) : rest) | propFont /= SquareFont =
+    sideBySide ((_t1, okx1) : (t2, okx2) : rest) | not (isSquareFont propFont) =
       (t2, sideBySideOKX rwidth 0 okx1 okx2) : sideBySide rest
     sideBySide l = l
   in sideBySide $ concat

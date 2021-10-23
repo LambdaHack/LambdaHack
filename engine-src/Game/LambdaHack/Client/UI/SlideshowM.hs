@@ -233,7 +233,7 @@ stepChoiceScreen menuName dm sfBlank frsX extraKeys = do
               -- Apparently prop spaces can be really narrow, hence so many.
               -- With square font, this obscures the link in main menu,
               -- so would need to complicated.
-              spaceRectangle | propFont == SquareFont = []
+              spaceRectangle | isSquareFont propFont = []
                              | otherwise =
                                  rectangleOfSpaces (rwidth * 4)
                                                    (min canvasLength $ ymax + 5)
@@ -281,7 +281,7 @@ stepChoiceScreen menuName dm sfBlank frsX extraKeys = do
                   K.LeftButtonRelease -> do
                     PointUI mx my <- getsSession spointer
                     let onChoice (_, (PointUI cx cy, ButtonWidth font clen)) =
-                          let blen | font == SquareFont = 2 * clen
+                          let blen | isSquareFont font = 2 * clen
                                    | otherwise = clen
                           in my == cy && mx >= cx && mx < cx + blen
                     case find onChoice kyxs of
@@ -387,8 +387,8 @@ drawHighlight x1 (ButtonWidth font len) xstart as =
                           (Color.acAttr c)
                             {Color.bg = Color.HighlightNoneCursor}}
       -- This also highlights dull white item symbols, but who cares.
-      lenUI = if font == SquareFont then len * 2 else len
-      x1MinusXStartChars = if font == SquareFont
+      lenUI = if isSquareFont font then len * 2 else len
+      x1MinusXStartChars = if isSquareFont font
                            then (x1 - xstart) `div` 2
                            else x1 - xstart
       (as1, asRest) = splitAt x1MinusXStartChars as

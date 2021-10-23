@@ -1,7 +1,6 @@
 -- | Slideshows.
 module Game.LambdaHack.Client.UI.Slideshow
   ( FontOverlayMap, maxYofFontOverlayMap
-  , FontSetup(..), multiFontSetup, monoFontSetup, singleFontSetup
   , KeyOrSlot, ButtonWidth(..)
   , KYX, xytranslateKXY, xtranslateKXY, ytranslateKXY, yrenumberKXY
   , OKX, emptyOKX, xytranslateOKX, sideBySideOKX, labDescOKX
@@ -33,21 +32,6 @@ type FontOverlayMap = EM.EnumMap DisplayFont Overlay
 
 maxYofFontOverlayMap :: FontOverlayMap -> Int
 maxYofFontOverlayMap ovs = maximum (0 : map maxYofOverlay (EM.elems ovs))
-
-data FontSetup = FontSetup
-  { squareFont :: DisplayFont
-  , monoFont   :: DisplayFont
-  , propFont   :: DisplayFont
-  }
-
-multiFontSetup :: FontSetup
-multiFontSetup = FontSetup SquareFont MonoFont PropFont
-
-monoFontSetup :: FontSetup
-monoFontSetup = FontSetup SquareFont MonoFont MonoFont
-
-singleFontSetup :: FontSetup
-singleFontSetup = FontSetup SquareFont SquareFont SquareFont
 
 type KeyOrSlot = Either K.KM SlotChar
 
@@ -102,13 +86,13 @@ labDescOKX :: DisplayFont -> DisplayFont
            -> [(AttrString, AttrString, KeyOrSlot)]
            -> OKX
 labDescOKX labFont descFont l =
-  let processRow :: (AttrString, AttrString, KeyOrSlot)
+  let descFontSize | isPropFont descFont = length  -- may be less or a bit more
+                   | otherwise = textSize descFont
+      processRow :: (AttrString, AttrString, KeyOrSlot)
                  -> (AttrLine, (Int, AttrLine), KYX)
       processRow (!tLab, !tDesc, !ekm) =
         let labLen = textSize labFont tLab
-            descFontForSize =
-              if descFont == PropFont then MonoFont else descFont
-            lenButton = labLen + textSize descFontForSize tDesc
+            lenButton = labLen + descFontSize tDesc
         in ( attrStringToAL tLab
            , (labLen, attrStringToAL tDesc)
            , (ekm, (PointUI 0 0, ButtonWidth descFont lenButton)) )
@@ -148,7 +132,7 @@ toSlideshow FontSetup{..} okxs = Slideshow $ addFooters False okxs
           [] -> (monoFont, 0)
           (font, (yNeg, _x)) : rest ->
             let unique = all (\(_, (yNeg2, _)) -> yNeg /= yNeg2) rest
-            in ( if font == SquareFont && unique
+            in ( if isSquareFont font && unique
                  then font
                  else monoFont
                , - yNeg )
@@ -258,10 +242,10 @@ splitOKX FontSetup{..} msgLong width height wrap reportAS keys (ls0, kxs0) =
           [] -> ([], emptyAttrLine)
           l : rest ->
             (reverse rest, attrStringToAL $ attrLine l ++ [Color.nbspAttrW32])
-      msgWrap = if msgLong && propFont /= SquareFont
+      msgWrap = if msgLong && not (isSquareFont propFont)
                 then 2 * width
                 else wrap  -- TODO if with width fits on one screen, use it
-      msgWidth = if msgLong && propFont /= SquareFont
+      msgWidth = if msgLong && not (isSquareFont propFont)
                  then 2 * width
                  else width
       repProp0 = offsetOverlay $ case repProp of
