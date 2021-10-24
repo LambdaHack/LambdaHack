@@ -193,10 +193,12 @@ watchRespUpdAtomicUI cmd = case cmd of
   UpdMoveActor aid source target -> moveActor aid source target
   UpdWaitActor aid WSleep _ -> do
     aidVerbMU MsgStatusWakeup aid "wake up"
+    msgAdd MsgTutorialHint "Woken up actors regain stats and skills, including sight radius and melee armor, over several turns."
+  UpdWaitActor aid WWake _ -> do
     side <- getsClient sside
     b <- getsState $ getActorBody aid
     unless (bfid b == side) $
-      msgAdd MsgTutorialHint "Woken up actors regain stats and skills, including sight radius and melee armor, over several turns. To avoid waking them up, make sure they don't lose HP nor too much Calm through noises, particularly close ones. Beware, however, that they slowly regenerate HP as they sleep and eventually wake up at full HP."
+      msgAdd MsgTutorialHint "To avoid waking enemies up, make sure they don't lose HP nor too much Calm through noises, particularly close ones. Beware, however, that they slowly regenerate HP as they sleep and eventually wake up at full HP."
   UpdWaitActor{} -> return ()  -- falling asleep handled uniformly elsewhere
   UpdDisplaceActor source target -> displaceActorUI source target
   UpdMoveItem iid k aid c1 c2 -> moveItemUI iid k aid c1 c2
