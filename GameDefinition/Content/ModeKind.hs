@@ -199,7 +199,7 @@ escape = ModeKind  -- asymmetric ranged and stealth race at night
   , mtutorial = False
   , mroster = rosterEscape
   , mcaves  = cavesEscape
-  , mendMsg = []
+  , mendMsg = [ (Conquer, "It was enough to reach the escape area marked by yellow '>' symbol. Spilling that much blood was risky. unnecessary and alerted the authorities. Having said that --- impressive indeed.") ]
   , mrules  = T.intercalate "\n"
       [ "* One level only"
       , "* Three heroes vs. Seven human enemies capable of concurrent attacks"
@@ -577,7 +577,6 @@ rosterHunt = Roster
 rosterEscape = Roster
   { rosterList = [ ( playerAntiHero { fname = "Indigo Researcher"
                                     , fcanEscape = False  -- start on escape
-                                    , fneverEmpty = False  -- loot after killing
                                     , fhiCondPoly = hiHeroMedium }
                    , Just teamCompetitor
                    , [(-7, 6, AMBUSHER_HERO), (-7, 1, SCOUT_HERO)] )
