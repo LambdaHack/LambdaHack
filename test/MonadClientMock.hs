@@ -4,6 +4,7 @@
 module MonadClientMock
   ( emptyCliState
   , executorCli
+  , testState
 -- #ifdef EXPOSE_INTERNAL
 --     -- * Internal operations
   , CliMock(..)
@@ -23,6 +24,7 @@ import Control.Monad.Trans.State.Strict
     ( StateT(StateT, runStateT), gets, state, evalStateT )
 
 import qualified Data.EnumMap.Strict as EM
+import qualified Data.Vector.Unboxed as U
 
 
 import           Game.LambdaHack.Atomic (MonadStateWrite (..))
@@ -57,9 +59,13 @@ import           Game.LambdaHack.Common.Vector
 
 
 import           Game.LambdaHack.Content.ModeKind
+import           Game.LambdaHack.Content.RuleKind
+import           Game.LambdaHack.Content.TileKind
 import qualified Game.LambdaHack.Core.Dice as Dice
 
 import           Game.LambdaHack.Definition.Color
+import           Game.LambdaHack.Definition.DefsInternal
+
 import           Game.LambdaHack.Server (ChanServer (..))
 
 import Content.ModeKindPlayer
@@ -97,6 +103,8 @@ data CliState = CliState
 --     , funderAI = False
 --     }
 
+--testRuleContent = emptyRuleContent { corule = emptyRuleContent { rXmax = 2, rYmax = 2 }}
+
 stubUIOptions :: UIOptions
 stubUIOptions = UIOptions
   { uCommands = []
@@ -117,6 +125,22 @@ stubUIOptions = UIOptions
   , uMessageColors = []
   }
 
+testLevelDimension = 2
+
+testTileKind :: TileKind
+testTileKind = TileKind
+  { tsymbol  = '0'
+  , tname    = "testtile"
+  , tfreq    = [(GroupName "testgroup", 1)]
+  , tcolor   = BrWhite
+  , tcolor2  = defFG
+  , talter   = 0
+  , tfeature = [Walkable, Clear]
+  }
+
+
+(Just testArea) = toArea (0, 0, testLevelDimension, testLevelDimension)
+
 testLevel :: Level
 testLevel = Level
   { lkind = toEnum 0
@@ -125,7 +149,7 @@ testLevel = Level
   , lembed = EM.empty
   , lbig = EM.empty
   , lproj = EM.empty
-  , ltile = PointArray.empty
+  , ltile = unknownTileMap testArea unknownId testLevelDimension testLevelDimension
   , lentry = EM.empty
   , larea = trivialArea (Point 0 0)
   , lsmell = EM.empty
@@ -181,10 +205,14 @@ testState :: State
 testState = let singletonFactionUpdate _ = EM.singleton (toEnum 0) testFaction
                 singletonDungeonUpdate _ = EM.singleton (toEnum 0) testLevel
                 singletonActorDUpdate _ = EM.singleton (toEnum 1) testActor
+                copsUpdate oldCOps = oldCOps{corule=((corule oldCOps){rXmax=testLevelDimension, rYmax=testLevelDimension})}
+                --stateWithUnknownTiles = localFromGlobal emptyState
                 stateWithFaction = updateFactionD singletonFactionUpdate emptyState
                 stateWithActorD = updateActorD singletonActorDUpdate stateWithFaction
                 stateWithDungeon = updateDungeon singletonDungeonUpdate stateWithActorD
-             in stateWithDungeon
+                stateWithMoreSpace = updateCOpsAndCachedData copsUpdate stateWithDungeon
+             in stateWithMoreSpace
+
 
 emptyCliState :: CliState
 emptyCliState = CliState
@@ -198,7 +226,7 @@ emptyCliState = CliState
 testCliState = CliState
   { cliState = testState
   , cliClient = emptyStateClient $ toEnum 0
-  , cliSession = Just ((emptySessionUI stubUIOptions) {sxhair = Just (TNonEnemy (toEnum 1))})-- Vector {vx=1, vy=0})})
+  , cliSession = Just ((emptySessionUI stubUIOptions) {sxhair = Just (TPoint TUnknown (toEnum 0) (Point 1 0))}) --(TVector Vector {vx=1, vy=0})}) -- (TNonEnemy (toEnum 1))})-- 
   }
 
 -- | Client state mock transformation monad.

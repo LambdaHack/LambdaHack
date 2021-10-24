@@ -24,6 +24,7 @@ import HandleHumanLocalMUnitTests
 import ItemDescriptionUnitTests
 import ItemKindUnitTests
 import ItemRevUnitTests
+import LevelUnitTests
 import ReqFailureUnitTests
 import SessionUIUnitTests
 
@@ -36,6 +37,7 @@ tests = testGroup "Tests" [ commonMUnitTests
                           , itemDescriptionUnitTests
                           , itemKindUnitTests
                           , itemRevUnitTests
+                          , levelUnitTests
                           , reqFailureUnitTests
                           , macroTests
                           --, integrationTests 

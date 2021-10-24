@@ -437,6 +437,7 @@ test-suite test
                       ItemDescriptionUnitTests
                       ItemKindUnitTests
                       ItemRevUnitTests
+                      LevelUnitTests
                       ReqFailureUnitTests
                       SessionUIMock
                       SessionUIUnitTests

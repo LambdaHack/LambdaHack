@@ -10,6 +10,9 @@ import qualified Control.Monad.Trans.State.Strict as St
 import Test.Tasty
 import Test.Tasty.HUnit
 
+import qualified Data.EnumMap.Strict as EM
+import qualified Data.Vector.Unboxed as U
+
 import           Game.LambdaHack.Client.UI.HandleHelperM
 
 import           Game.LambdaHack.Client.UI.MonadClientUI ( MonadClientUI )
@@ -18,9 +21,14 @@ import           Game.LambdaHack.Client.State
 import           Game.LambdaHack.Client.UI.HandleHelperM
 import           Game.LambdaHack.Client.UI.HandleHumanLocalM
 import qualified Game.LambdaHack.Client.UI.HumanCmd as HumanCmd
+import           Game.LambdaHack.Common.Area
+import           Game.LambdaHack.Common.Level
+import           Game.LambdaHack.Common.PointArray as PointArray
 import           Game.LambdaHack.Common.Types
+import           Game.LambdaHack.Common.Point
+import           Game.LambdaHack.Common.State
+import           Game.LambdaHack.Content.TileKind
 import           Game.LambdaHack.Definition.DefsInternal ( toContentSymbol )
-
 
 import           MonadClientMock
 
@@ -29,8 +37,16 @@ toFactionId = toEnum
 
 
 handleHumanLocalMUnitTests :: TestTree 
-handleHumanLocalMUnitTests = testGroup "handleHumanLocalMUnitTests" [
-   testCase "chooseItemProjectHuman" $
+handleHumanLocalMUnitTests = testGroup "handleHumanLocalMUnitTests" 
+  [ testCase "verifyUnknownTileMap" $
+    do let (Just testArea) = toArea (0, 0, 1, 1)
+           map = unknownTileMap testArea unknownId 2 2
+        in print (show map)
+--           map ! (Point 1 1) @?= unknownId
+  , testCase "verifyTestLevelSize" $
+    do let (Just level) = EM.lookup (toEnum 0) (sdungeon testState)
+        in (ltile level) ! (Point 1 1) @?= unknownId
+  , testCase "chooseItemProjectHuman" $
     do 
       let testFn = let triggerItems = 
                         [ HumanCmd.TriggerItem{tiverb="verb", tiobject="object", tisymbols=[toContentSymbol 'a', toContentSymbol 'b']}

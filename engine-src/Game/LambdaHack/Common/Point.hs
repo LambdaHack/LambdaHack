@@ -131,6 +131,20 @@ adjacent s t = chessDist s t == 1
 -- not @PointI@, to permit aiming out of the level, e.g., to get
 -- uniform distributions of directions for explosions close to the edge
 -- of the level.
+-- |
+-- >>> bla 4 4 0 (Point 0 0) (Point 1 0) 
+-- Just [(1,0),(2,0),(3,0)]
+-- >>> bla 4 4 0 (Point 0 0) (Point 0 1) 
+-- Just [(0,1),(0,2),(0,3)]
+-- >>> bla 4 4 0 (Point 0 0) (Point 1 1)
+-- Just [(1,1),(2,2),(3,3)]
+-- >>> bla 4 4 0 (Point 0 0) (Point 0 0) 
+-- Nothing
+-- >>> bla 0 0 0 (Point 0 0) (Point 1 0) 
+-- Just []
+-- >>> bla 1 1 0 (Point 2 0) (Point 3 0)
+-- Just []  
+
 bla :: Int -> Point -> Point -> Maybe [Point]
 bla eps source target =
   if source == target then Nothing
