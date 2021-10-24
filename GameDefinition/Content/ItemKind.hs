@@ -440,8 +440,8 @@ flask6 = flaskTemplate
   , irarity  = [(1, 1)]  -- not every playthrough needs one
   , iaspects = ELabel "of resolution"
                : iaspects flaskTemplate
-  , ieffects = [ toOrganGood S_RESOLUTE (500 + 1 `d` 200)  -- long, for scouting
-               , RefillCalm 60  -- not to make it a drawback, via @calmEnough@
+  , ieffects = [ toOrganGood S_RESOLUTE (100 + 1 `d` 20)  -- long, for scouting
+               , RefillCalm 100  -- not to make it a drawback, via @calmEnough@
                , OnSmash (Explode S_RESOLUTION_DUST) ]
   }
 flask7 = flaskTemplate
