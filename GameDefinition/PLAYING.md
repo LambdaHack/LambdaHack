@@ -496,7 +496,7 @@ bumping is enough, lied.
 A: Perhaps he's just sleeping (blue box indicates that)? If so,
 you can wake him up with the `%` command. If he's not asleep,
 his movement skill may be temporarily drained. Switch to another hero
-or perform some other productive action differrent from walking
+or perform some other productive action different from walking
 or wait with `KP_5` or rest with `R`.
 
 - Q: Is autoexplore safe?

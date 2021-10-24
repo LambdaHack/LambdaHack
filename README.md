@@ -221,7 +221,7 @@ Afterwards, doctests can be executed with
 
 and their detailed results observed in a log file.
 (This repeating of `cabal build` before each testsuite run
-is requied due to bug https://github.com/haskell/cabal/issues/7522.
+is required due to bug https://github.com/haskell/cabal/issues/7522.
 Contributions to cabal development are very welcome.)
 
 The [Makefile](https://github.com/LambdaHack/LambdaHack/blob/master/Makefile)
