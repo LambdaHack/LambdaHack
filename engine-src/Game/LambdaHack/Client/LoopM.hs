@@ -202,9 +202,7 @@ loopUI timeSinceLastQuery = do
        if isAIFact fact then
          -- Mark for immediate control regain from AI.
          modifySession $ \sess -> sess {sregainControl = True}
-       else when (isJust $ gleader fact) $ do
-              -- don't give control to client if temporarily no leader,
-              -- e.g., game just ended and new one not yet started
+       else do  -- should work fine even if UI faction has no leader ATM
          -- Stop displaying the prompt, if any, but keep UI simple.
          modifySession $ \sess -> sess {sreqDelay = ReqDelayHandled}
          let msg = if isNothing sreqPending
