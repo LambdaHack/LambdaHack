@@ -777,14 +777,14 @@ createActorUI born aid body = do
          case threat of
            ThreatNone -> return ()  -- too rare to care ATM
            ThreatUnarmed ->
-             msgAdd MsgTutorialHint "Enemies are normally dealt with using melee (by bumping when adjacent) or ranged combat (by 'f'linging items at them)."  -- assuming newbies don't remap their keys
+             msgAdd MsgTutorialHint "Enemies are normally dealt with using melee (by bumping when adjacent) or ranged combat (by 'f'linging items at them)."
            ThreatArmed ->
              msgAdd MsgTutorialHint "Enemies can be dealt with not only via combat, but also with clever use of terrain effects, stealth (not emitting nor reflecting light) or hasty retreat (particularly when foes are asleep or drowsy)."
            _ | length friendAssocs <= 1 -> return ()  -- one member on level
            ThreatAnotherUnarmed ->
-             msgAdd MsgTutorialHint "When dealing with groups of enemies, remember than you fight as a team. After a few moves, switch the controlled teammate (marked on the map with the yellow box) using the Tab key to another party member (marked with a green box). Avoid meleeing alone."
+             msgAdd MsgTutorialHint "When dealing with groups of enemies, remember than you fight as a team. Switch the pointman (marked on the map with the yellow box) using the Tab key until you move each teammate to a tactically advantageous position. Avoid meleeing alone."
            ThreatAnotherArmed ->
-             msgAdd MsgTutorialHint "When dealing with groups of armed enemies, remember than you fight as a team. After a few moves, switch the controlled teammate (marked on the map with the yellow box) using the Tab key to another party member (marked with a green box). Retreat, if necessary to form a front line. Soften the foes with missiles, especially of exploding kind."
+             msgAdd MsgTutorialHint "When dealing with groups of armed enemies, remember than you fight as a team. Switch the pointman (marked on the map with the yellow box) using the Tab key until you move each teammate to a tactically advantageous position. Retreat, if necessary to form a front line. Soften the foes with missiles, especially of exploding kind."
          animate (blid body) $ actorX (bpos body)
 
 destroyActorUI :: MonadClientUI m => Bool -> ActorId -> Actor -> m ()
