@@ -397,7 +397,7 @@ populateDungeon = do
 
 -- | Find starting postions for all factions. Try to make them distant
 -- from each other. Place as many of the factions, as possible,
--- over stairs. Place the last faction(s) over escape(s)
+-- over stairs. Place the first faction(s) over escape(s)
 -- (we assume they are guardians of the escapes).
 -- This implies the inital factions (if any) start far from escapes.
 findEntryPoss :: COps -> Level -> Int -> Rnd [Point]
@@ -405,18 +405,17 @@ findEntryPoss COps{cocave, coTileSpeedup}
               lvl@Level{lkind, larea, lstair, lescape}
               kRaw = do
   let lskip = CK.cskip $ okind cocave lkind
-      k = kRaw + length lskip  -- is @lskip@ is bogus, will be too large; OK
+      k = kRaw + length lskip  -- if @lskip@ is bogus, will be too large; OK
       (_, xspan, yspan) = spanArea larea
       factionDist = max xspan yspan - 10
       dist !poss !cmin !l _ = all (\ !pos -> chessDist l pos > cmin) poss
       tryFind _ 0 = return []
       tryFind !ps !n = do
         let ds = [ dist ps factionDist
-                 , dist ps $ 2 * factionDist `div` 3
                  , dist ps $ factionDist `div` 2
                  , dist ps $ factionDist `div` 3
-                 , dist ps $ factionDist `div` 4
-                 , dist ps $ factionDist `div` 5
+                 , dist ps $ max 5 $ factionDist `div` 5
+                 , dist ps $ max 2 $ factionDist `div` 10
                  ]
         mp <- findPosTry2 500 lvl  -- try really hard, for skirmish fairness
                 (\_ !t -> Tile.isWalkable coTileSpeedup t
