@@ -231,7 +231,8 @@ drawFramePath drawnLevelId = do
  if isNothing saimMode || sreportNull
  then return $! FrameForall $ \_ -> return ()
  else do
-  COps{corule=RuleContent{rWidthMax}, coTileSpeedup} <- getsState scops
+  COps{corule=RuleContent{rWidthMax, rHeightMax}, coTileSpeedup}
+    <- getsState scops
   StateClient{seps} <- getClient
   -- Not @ScreenContent@, because pathing in level's map.
   Level{ltile=PointArray.Array{avector}} <- getLevel drawnLevelId
@@ -259,6 +260,8 @@ drawFramePath drawnLevelId = do
           trajectoryToPath prPos (fst p)
         _ -> []
       shiftedLine = delete xhairPos
+                    $ takeWhile
+                        (flip insideP (0, 0, rWidthMax - 1, rHeightMax - 1))
                     $ if null shiftedBTrajectory
                       then bline
                       else shiftedBTrajectory
