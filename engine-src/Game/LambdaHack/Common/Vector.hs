@@ -123,11 +123,6 @@ compassText v = let m = EM.fromList $ zip moves longMoveTexts
                     assFail = error $ "not a unit vector" `showFailure` v
                 in EM.findWithDefault assFail v m
 
--- | Checks that a point belongs to an area.
-insideP :: Point -> (X, Y, X, Y) -> Bool
-{-# INLINE insideP #-}
-insideP (Point x y) (x0, y0, x1, y1) = x1 >= x && x >= x0 && y1 >= y && y >= y0
-
 -- | All (8 at most) closest neighbours of a point within an area.
 vicinityBounded :: X -> Y   -- ^ limit the search to this area
                 -> Point    -- ^ position to find neighbours of

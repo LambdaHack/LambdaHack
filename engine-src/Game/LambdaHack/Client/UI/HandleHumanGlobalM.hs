@@ -1259,8 +1259,8 @@ alterWithPointerHuman :: MonadClientUI m
 alterWithPointerHuman leader = do
   COps{corule=RuleContent{rWidthMax, rHeightMax}} <- getsState scops
   pUI <- getsSession spointer
-  let p@(Point px py) = squareToMap $ uiToSquare pUI
-  if px >= 0 && py >= 0 && px < rWidthMax && py < rHeightMax
+  let p = squareToMap $ uiToSquare pUI
+  if insideP p (0, 0, rWidthMax - 1, rHeightMax - 1)
   then alterTileAtPos leader p
   else failWith "never mind"
 

@@ -389,7 +389,8 @@ permittedProjectClient leader = do
 
 projectCheck :: MonadClientUI m => ActorId -> Point -> m (Maybe ReqFailure)
 projectCheck leader tpos = do
-  COps{corule=RuleContent{rWidthMax, rHeightMax}, coTileSpeedup} <- getsState scops
+  COps{corule=RuleContent{rWidthMax, rHeightMax}, coTileSpeedup}
+    <- getsState scops
   eps <- getsClient seps
   sb <- getsState $ getActorBody leader
   let lid = blid sb
@@ -1291,8 +1292,8 @@ aimPointerFloorLoud loud = do
   lidV <- viewedLevelUI
   -- Not @ScreenContent@, because not drawing here.
   pUI <- getsSession spointer
-  let p@(Point px py) = squareToMap $ uiToSquare pUI
-  if px >= 0 && py >= 0 && px < rWidthMax && py < rHeightMax
+  let p = squareToMap $ uiToSquare pUI
+  if insideP p (0, 0, rWidthMax - 1, rHeightMax - 1)
   then do
     oldXhair <- getsSession sxhair
     let sxhair = Just $ TPoint TUnknown lidV p
@@ -1318,8 +1319,8 @@ aimPointerEnemyHuman = do
   lidV <- viewedLevelUI
   -- Not @ScreenContent@, because not drawing here.
   pUI <- getsSession spointer
-  let p@(Point px py) = squareToMap $ uiToSquare pUI
-  if px >= 0 && py >= 0 && px < rWidthMax && py < rHeightMax
+  let p = squareToMap $ uiToSquare pUI
+  if insideP p (0, 0, rWidthMax - 1, rHeightMax - 1)
   then do
     bsAll <- getsState $ actorAssocs (const True) lidV
     oldXhair <- getsSession sxhair

@@ -3,7 +3,7 @@
 module Game.LambdaHack.Common.Point
   ( Point(..), PointI
   , chessDist, euclidDistSq, adjacent, bla, fromTo
-  , originPoint
+  , originPoint, insideP
   , speedupHackXSize
 #ifdef EXPOSE_INTERNAL
     -- * Internal operations
@@ -135,8 +135,8 @@ bla :: X -> Y -> Int -> Point -> Point -> Maybe [Point]
 bla rWidthMax rHeightMax eps source target =
   if source == target then Nothing
   else Just $
-    let inBounds p@(Point x y) =
-          rWidthMax > x && x >= 0 && rHeightMax > y && y >= 0 && p /= source
+    let inBounds p = insideP p (0, 0, rWidthMax - 1, rHeightMax - 1)
+                     && p /= source
     in takeWhile inBounds $ tail $ blaXY eps source target
 
 -- | Bresenham's line algorithm generalized to arbitrary starting @eps@
@@ -175,3 +175,8 @@ fromTo (Point x0 y0) (Point x1 y1) =
 
 originPoint :: Point
 originPoint = Point 0 0
+
+-- | Checks that a point belongs to an area.
+insideP :: Point -> (X, Y, X, Y) -> Bool
+{-# INLINE insideP #-}
+insideP (Point x y) (x0, y0, x1, y1) = x1 >= x && x >= x0 && y1 >= y && y >= y0
