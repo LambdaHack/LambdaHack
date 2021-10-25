@@ -60,7 +60,7 @@ timeClip = Time 50000
 timeTurn :: Time
 timeTurn = Time 500000
 
--- | This many ticks fits in a single second. Do not export,
+-- | This many ticks fits in a single second.
 timeSecond :: Time
 timeSecond = Time $ timeTicks timeTurn * turnsInSecond
 

@@ -626,8 +626,10 @@ watchRespUpdAtomicUI cmd = case cmd of
     case hearMsg of
       HearUpd UpdDestroyActor{} ->
         msgAdd MsgTutorialHint "Events out of your sight radius (as listed in the '#' skill menu) can sometimes be heard, depending on your hearing radius skill. Some, such as death shrieks, can always be heard regardless of skill and distance, including when they come from a different floor."
-      HearTaunt{} ->
-        msgAdd MsgTutorialHint "Enemies you can't see are sometimes heard yelling and emitting other noises. Whether you can hear them, depends on their distance and your hearing radius, as listed in the '#' skill menu."
+      HearTaunt{} -> do
+        globalTime <- getsState stime
+        when (globalTime > timeTurn) $  -- avoid too many hints at the start
+          msgAdd MsgTutorialHint "Enemies you can't see are sometimes heard yelling and emitting other noises. Whether you can hear them, depends on their distance and your hearing radius, as listed in the '#' skill menu."
       _ -> return ()
   UpdMuteMessages _ smuteMessages ->
     modifySession $ \sess -> sess {smuteMessages}
