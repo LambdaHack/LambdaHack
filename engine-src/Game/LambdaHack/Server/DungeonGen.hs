@@ -60,7 +60,7 @@ convertTileMaps COps{ corule=RuleContent{rWidthMax, rHeightMax}
                      , (SM.SMGen, (Int, [(Int, ContentId TileKind)])) )
       runCdefTile (gen1, (pI, assocs)) =
         let p = toEnum pI
-        in if p `inside` darea
+        in if inside darea p
            then case assocs of
              (p2, t2) : rest | p2 == pI -> (t2, (gen1, (pI + 1, rest)))
              _ -> let (tile, gen2) = St.runState cdefTile gen1
@@ -91,7 +91,7 @@ convertTileMaps COps{ corule=RuleContent{rWidthMax, rHeightMax}
           yeven Point{..} = py `mod` 2 == 0
           activeArea = fromMaybe (error $ "" `showFailure` darea) $ shrink darea
           connect included blocks walkableTile array =
-            let g p c = if p `inside` activeArea
+            let g p c = if inside activeArea p
                            && included p
                            && not (Tile.isEasyOpen coTileSpeedup c)
                            && p `EM.notMember` ltile

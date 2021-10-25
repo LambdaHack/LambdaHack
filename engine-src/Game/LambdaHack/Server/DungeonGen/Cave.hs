@@ -208,7 +208,7 @@ buildCave cops@COps{cocave, coplace, cotile, coTileSpeedup}
                                   $ shrink ar
                       !_A0 = shrink innerArea
                       !_A1 = assert (isJust _A0 `blame` (innerArea, gs2, kc)) ()
-                      !_A2 = assert (p `inside` fromJust _A0
+                      !_A2 = assert (inside (fromJust _A0) p
                                      `blame` (p, innerArea, gs)) ()
                       r = mkFixed maxPlaceSize innerArea p
                       !_A3 = assert (isJust (shrink r)
@@ -294,7 +294,7 @@ buildCave cops@COps{cocave, coplace, cotile, coTileSpeedup}
   -- only the suspect variant on client gets replaced by this upon searching.
   let sub2Area = fromMaybe (error $ "" `showFailure` kc) $ shrink subArea
       sub3Area = fromMaybe (error $ "" `showFailure` kc) $ shrink sub2Area
-      likelySecret = (`inside` sub3Area)
+      likelySecret = inside sub3Area
       obscure p t = if isChancePos 1 chidden dsecret p && likelySecret p
                     then Tile.obscureAs cotile t
                     else return t

@@ -128,11 +128,11 @@ vicinityBounded :: X -> Y   -- ^ limit the search to this area
                 -> Point    -- ^ position to find neighbours of
                 -> [Point]
 vicinityBounded rWidthMax rHeightMax p =
-  if insideP p (1, 1, rWidthMax - 2, rHeightMax - 2)
+  if insideP (1, 1, rWidthMax - 2, rHeightMax - 2) p
   then vicinityUnsafe p
   else [ res | dxy <- moves
              , let res = shift p dxy
-             , insideP res (0, 0, rWidthMax - 1, rHeightMax - 1) ]
+             , insideP (0, 0, rWidthMax - 1, rHeightMax - 1) res ]
 
 vicinityUnsafe :: Point -> [Point]
 {-# INLINE vicinityUnsafe #-}
@@ -145,7 +145,7 @@ vicinityCardinal :: X -> Y   -- ^ limit the search to this area
 vicinityCardinal rWidthMax rHeightMax p =
   [ res | dxy <- movesCardinal
         , let res = shift p dxy
-        , insideP res (0, 0, rWidthMax - 1, rHeightMax - 1) ]
+        , insideP (0, 0, rWidthMax - 1, rHeightMax - 1) res ]
 
 vicinityCardinalUnsafe :: Point -> [Point]
 vicinityCardinalUnsafe p = [ shift p dxy | dxy <- movesCardinal ]
@@ -170,7 +170,7 @@ shift (Point x0 y0) (Vector x1 y1) = Point (x0 + x1) (y0 + y1)
 -- | Translate a point by a vector, but only if the result fits in an area.
 shiftBounded :: X -> Y -> Point -> Vector -> Point
 shiftBounded rWidthMax rHeightMax pos v@(Vector xv yv) =
-  if insideP pos (-xv, -yv, rWidthMax - xv - 1, rHeightMax - yv - 1)
+  if insideP (-xv, -yv, rWidthMax - xv - 1, rHeightMax - yv - 1) pos
   then shift pos v
   else pos
 

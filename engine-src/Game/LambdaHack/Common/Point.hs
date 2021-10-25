@@ -174,6 +174,6 @@ originPoint :: Point
 originPoint = Point 0 0
 
 -- | Checks that a point belongs to an area.
-insideP :: Point -> (X, Y, X, Y) -> Bool
+insideP :: (X, Y, X, Y) -> Point -> Bool
 {-# INLINE insideP #-}
-insideP (Point x y) (x0, y0, x1, y1) = x1 >= x && x >= x0 && y1 >= y && y >= y0
+insideP (x0, y0, x1, y1) (Point x y) = x1 >= x && x >= x0 && y1 >= y && y >= y0

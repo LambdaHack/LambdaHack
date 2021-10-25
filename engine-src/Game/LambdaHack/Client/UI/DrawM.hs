@@ -260,8 +260,7 @@ drawFramePath drawnLevelId = do
           trajectoryToPath prPos (fst p)
         _ -> []
       shiftedLine = delete xhairPos
-                    $ takeWhile
-                        (flip insideP (0, 0, rWidthMax - 1, rHeightMax - 1))
+                    $ takeWhile (insideP (0, 0, rWidthMax - 1, rHeightMax - 1))
                     $ if null shiftedBTrajectory
                       then bline
                       else shiftedBTrajectory

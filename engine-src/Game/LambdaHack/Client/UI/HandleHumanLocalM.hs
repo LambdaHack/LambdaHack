@@ -1292,7 +1292,7 @@ aimPointerFloorLoud loud = do
   -- Not @ScreenContent@, because not drawing here.
   pUI <- getsSession spointer
   let p = squareToMap $ uiToSquare pUI
-  if insideP p (0, 0, rWidthMax - 1, rHeightMax - 1)
+  if insideP (0, 0, rWidthMax - 1, rHeightMax - 1) p
   then do
     oldXhair <- getsSession sxhair
     let sxhair = Just $ TPoint TUnknown lidV p
@@ -1319,7 +1319,7 @@ aimPointerEnemyHuman = do
   -- Not @ScreenContent@, because not drawing here.
   pUI <- getsSession spointer
   let p = squareToMap $ uiToSquare pUI
-  if insideP p (0, 0, rWidthMax - 1, rHeightMax - 1)
+  if insideP (0, 0, rWidthMax - 1, rHeightMax - 1) p
   then do
     bsAll <- getsState $ actorAssocs (const True) lidV
     oldXhair <- getsSession sxhair

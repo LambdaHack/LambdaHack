@@ -122,7 +122,7 @@ byAreaHuman cmdSemInCxtOfKM l = do
                       -- for the whole UI screen in square font coordinates
       pointerInArea a = do
         rs <- areaToRectangles a
-        return $! any (inside p) $ catMaybes rs
+        return $! any (flip inside p) $ catMaybes rs
   cmds <- filterM (pointerInArea . fst) l
   case cmds of
     [] -> do
@@ -1260,7 +1260,7 @@ alterWithPointerHuman leader = do
   COps{corule=RuleContent{rWidthMax, rHeightMax}} <- getsState scops
   pUI <- getsSession spointer
   let p = squareToMap $ uiToSquare pUI
-  if insideP p (0, 0, rWidthMax - 1, rHeightMax - 1)
+  if insideP (0, 0, rWidthMax - 1, rHeightMax - 1) p
   then alterTileAtPos leader p
   else failWith "never mind"
 
