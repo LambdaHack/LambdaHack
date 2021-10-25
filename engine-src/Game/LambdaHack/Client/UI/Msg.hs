@@ -16,7 +16,7 @@ module Game.LambdaHack.Client.UI.Msg
     -- * Internal operations
   , UAttrString, uToAttrString, attrStringToU
   , toMsg, MsgPrototype, tripleFromProto
-  , scrapsRepeats, tutorialHint, msgColor
+  , scrapsRepeats, isTutorialHint, msgColor
   , RepMsgNK, nullRepMsgNK
   , emptyReport, renderRepetition
   , scrapRepetitionSingle, scrapRepetition, renderTimeReport
@@ -302,8 +302,8 @@ scrapsRepeats = \case
   MsgClassIgnore _ -> False  -- ignored, so no need to scrap
   MsgClassDistinct _x -> True
 
-tutorialHint :: MsgClass -> Bool
-tutorialHint = \case
+isTutorialHint :: MsgClass -> Bool
+isTutorialHint = \case
   MsgClassShowAndSave x -> case x of  -- show and save: least surprise
     MsgTutorialHint -> True
     _ -> False
@@ -551,7 +551,7 @@ addToReport usedHints displayHints inMelee
       newH = History { newReport = Report $ repMsgNK : r
                      , newTime = time
                      , .. }
-      msgIsHint = tutorialHint (msgClass msg)
+      msgIsHint = isTutorialHint (msgClass msg)
       msgUsedAsHint = S.member msg usedHints
       newUsedHints = if msgIsHint && displayHints && not msgUsedAsHint
                      then S.insert msg usedHints
