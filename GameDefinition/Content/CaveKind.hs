@@ -279,7 +279,6 @@ outermost = shallowRogue
   , cminStairDist = 10
   , cmaxStairsNum = 1
   , cescapeFreq   = [(INDOOR_ESCAPE_UP, 1)]
-  , cskip         = [0]
   , cdesc         = "This close to the surface, the sunlight still illuminates the dungeon."
   }
 shallowRogue = rogue
@@ -312,7 +311,6 @@ raid = rogue
   , cescapeFreq   = [(INDOOR_ESCAPE_UP, 1)]
   , cstairFreq    = []
   , cstairAllowed = []
-  , cskip         = [0]
   , cdesc         = ""
   }
 brawl = rogue  -- many random solid tiles, to break LOS, since it's a day
@@ -449,7 +447,7 @@ escape = rogue  -- a scenario with weak missiles, because heroes don't depend
   , cmaxStairsNum = 0
   , cescapeFreq   = [(OUTDOOR_ESCAPE_DOWN, 1)]
   , cstairFreq    = []
-  , cskip         = [0]  -- don't start heroes on exit
+  , cskip         = [0]  -- don't start heroes nor opponents on escape
   , cdesc         = ""
   }
 zoo = rogue  -- few lights and many solids, to help the less numerous heroes

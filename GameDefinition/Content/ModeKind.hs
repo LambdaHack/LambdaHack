@@ -488,16 +488,16 @@ teamCivilian = TeamContinuity 3
 rosterRaid, rosterBrawl, rosterCrawl, rosterShootout, rosterHunt, rosterEscape, rosterZoo, rosterAmbush, rosterSafari, rosterCrawlEmpty, rosterCrawlSurvival, rosterSafariSurvival, rosterBattle, rosterBattleDefense, rosterBattleSurvival, rosterDefense, rosterDefenseEmpty :: Roster
 
 rosterRaid = Roster
-  { rosterList = [ ( playerHero {fhiCondPoly = hiHeroShort}
+  { rosterList = [ ( playerAnimal  -- starting over escape
+                   , Nothing
+                   , [(-2, 2, ANIMAL)] )
+                 , ( playerHero {fhiCondPoly = hiHeroShort}
                    , Just teamExplorer
                    , [(-2, 2, HERO)] )
                  , ( playerAntiHero { fname = "Indigo Founder"
                                     , fhiCondPoly = hiHeroShort }
                    , Just teamCompetitor
                    , [(-2, 1, HERO)] )
-                 , ( playerAnimal  -- starting over escape
-                   , Nothing
-                   , [(-2, 2, ANIMAL)] )
                  , (playerHorror, Nothing, []) ]  -- for summoned monsters
   , rosterEnemy = [ ("Explorer", "Animal Kingdom")
                   , ("Explorer", "Horror Den")
@@ -522,18 +522,18 @@ rosterBrawl = Roster
   , rosterAlly = [] }
 
 rosterCrawl = Roster
-  { rosterList = [ ( playerHero
-                   , Just teamExplorer
-                   , [(-1, 3, HERO)] )
-                 , ( playerMonster
-                   , Nothing
-                   , [(-4, 1, SCOUT_MONSTER), (-4, 3, MONSTER)] )
-                 , ( playerAnimal
+  { rosterList = [ ( playerAnimal  -- starting over escape
                    , Nothing
                    , -- Fun from the start to avoid empty initial level:
                      [ (-1, 1 + 1 `d` 2, ANIMAL)
                      -- Huge battle at the end:
-                     , (-10, 100, MOBILE_ANIMAL) ] ) ]
+                     , (-10, 100, MOBILE_ANIMAL) ] )
+                 , ( playerHero  -- start on stairs so that stash is handy
+                   , Just teamExplorer
+                   , [(-1, 3, HERO)] )
+                 , ( playerMonster
+                   , Nothing
+                   , [(-4, 1, SCOUT_MONSTER), (-4, 3, MONSTER)] ) ]
   , rosterEnemy = [ ("Explorer", "Monster Hive")
                   , ("Explorer", "Animal Kingdom") ]
   , rosterAlly = [("Monster Hive", "Animal Kingdom")] }
