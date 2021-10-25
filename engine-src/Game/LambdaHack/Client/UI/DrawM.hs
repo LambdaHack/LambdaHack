@@ -231,7 +231,7 @@ drawFramePath drawnLevelId = do
  if isNothing saimMode || sreportNull
  then return $! FrameForall $ \_ -> return ()
  else do
-  COps{corule=RuleContent{rWidthMax, rHeightMax}, coTileSpeedup} <- getsState scops
+  COps{corule=RuleContent{rWidthMax}, coTileSpeedup} <- getsState scops
   StateClient{seps} <- getClient
   -- Not @ScreenContent@, because pathing in level's map.
   Level{ltile=PointArray.Array{avector}} <- getLevel drawnLevelId
@@ -243,7 +243,7 @@ drawFramePath drawnLevelId = do
       Actor{bpos, blid} <- getsState $ getActorBody leader
       return $! if blid /= drawnLevelId
                 then []
-                else fromMaybe [] $ bla rWidthMax rHeightMax seps bpos xhairPos
+                else fromMaybe [] $ bla seps bpos xhairPos
     _ -> return []
   mpath <- maybe (return Nothing) (\aid -> do
     mtgtMPath <- getsClient $ EM.lookup aid . stargetD

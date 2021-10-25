@@ -48,7 +48,6 @@ import           Game.LambdaHack.Common.Types
 import           Game.LambdaHack.Content.ItemKind (ItemKind)
 import qualified Game.LambdaHack.Content.ItemKind as IK
 import           Game.LambdaHack.Content.ModeKind
-import           Game.LambdaHack.Content.RuleKind
 import           Game.LambdaHack.Core.Random
 import qualified Game.LambdaHack.Definition.Ability as Ability
 import           Game.LambdaHack.Definition.Defs
@@ -407,11 +406,11 @@ projectFail :: MonadServerAtomic m
             -> Bool       -- ^ whether the item is a blast
             -> m (Maybe ReqFailure)
 projectFail propeller origin oxy tpxy eps center iid cstore blast = do
-  COps{corule=RuleContent{rWidthMax, rHeightMax}, coTileSpeedup} <- getsState scops
+  COps{coTileSpeedup} <- getsState scops
   body <- getsState $ getActorBody origin
   let lid = blid body
   lvl <- getLevel lid
-  case bla rWidthMax rHeightMax eps oxy tpxy of
+  case bla eps oxy tpxy of
     Nothing -> return $ Just ProjectAimOnself
     Just [] -> error $ "projecting from the edge of level"
                        `showFailure` (oxy, tpxy)

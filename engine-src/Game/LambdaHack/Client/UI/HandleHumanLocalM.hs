@@ -389,14 +389,13 @@ permittedProjectClient leader = do
 
 projectCheck :: MonadClientUI m => ActorId -> Point -> m (Maybe ReqFailure)
 projectCheck leader tpos = do
-  COps{corule=RuleContent{rWidthMax, rHeightMax}, coTileSpeedup}
-    <- getsState scops
+  COps{coTileSpeedup} <- getsState scops
   eps <- getsClient seps
   sb <- getsState $ getActorBody leader
   let lid = blid sb
       spos = bpos sb
   -- Not @ScreenContent@, because not drawing here.
-  case bla rWidthMax rHeightMax eps spos tpos of
+  case bla eps spos tpos of
     Nothing -> return $ Just ProjectAimOnself
     Just [] -> error $ "project from the edge of level"
                        `showFailure` (spos, tpos, sb)

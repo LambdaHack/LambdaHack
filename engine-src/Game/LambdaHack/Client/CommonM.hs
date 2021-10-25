@@ -71,10 +71,10 @@ aidTgtToPos maid lidV (Just tgt) s = case tgt of
 -- Treats unknown tiles as walkable, but prefers known.
 makeLine :: Bool -> Actor -> Point -> Int -> COps -> Level -> Maybe Int
 makeLine onlyFirst body fpos epsOld cops lvl =
-  let COps{corule=RuleContent{rWidthMax, rHeightMax}, coTileSpeedup} = cops
+  let COps{coTileSpeedup} = cops
       dist = chessDist (bpos body) fpos
       calcScore :: Int -> Int
-      calcScore eps = case bla rWidthMax rHeightMax eps (bpos body) fpos of
+      calcScore eps = case bla eps (bpos body) fpos of
         Just bl ->
           let blDist = take (dist - 1) bl  -- goal not checked; actor well aware
               noActor p = p == fpos || not (occupiedBigLvl p lvl)

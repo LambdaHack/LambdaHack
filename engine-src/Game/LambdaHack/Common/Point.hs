@@ -126,18 +126,15 @@ adjacent s t = chessDist s t == 1
 
 -- | Bresenham's line algorithm generalized to arbitrary starting @eps@
 -- (@eps@ value of 0 gives the standard BLA).
--- Skips the source point and goes through the second point
--- to the edge of the level. Gives @Nothing@ if the points are equal.
--- The target is given as @Point@ to permit aiming out of the level,
--- e.g., to get uniform distributions of directions for explosions
--- close to the edge of the level.
-bla :: X -> Y -> Int -> Point -> Point -> Maybe [Point]
-bla rWidthMax rHeightMax eps source target =
+-- Skips the source point and goes through the second point to infinity.
+-- Gives @Nothing@ if the points are equal. The target is given as @Point@,
+-- not @PointI@, to permit aiming out of the level, e.g., to get
+-- uniform distributions of directions for explosions close to the edge
+-- of the level.
+bla :: Int -> Point -> Point -> Maybe [Point]
+bla eps source target =
   if source == target then Nothing
-  else Just $
-    let inBounds p = insideP p (0, 0, rWidthMax - 1, rHeightMax - 1)
-                     && p /= source
-    in takeWhile inBounds $ tail $ blaXY eps source target
+  else Just $ tail $ blaXY eps source target
 
 -- | Bresenham's line algorithm generalized to arbitrary starting @eps@
 -- (@eps@ value of 0 gives the standard BLA). Includes the source point
