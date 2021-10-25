@@ -50,7 +50,9 @@ import           Game.LambdaHack.Server.ServerOptions
 convertTileMaps :: COps -> Bool -> Rnd (ContentId TileKind)
                 -> Maybe (Rnd (ContentId TileKind)) -> Area -> TileMapEM
                 -> Rnd TileMap
-convertTileMaps COps{corule=RuleContent{rXmax, rYmax}, cotile, coTileSpeedup}
+convertTileMaps COps{ corule=RuleContent{rWidthMax, rHeightMax}
+                    , cotile
+                    , coTileSpeedup }
                 areAllWalkable cdefTile mpickPassable darea ltile = do
   let outerId = ouniqGroup cotile TK.S_UNKNOWN_OUTER_FENCE
       runCdefTile :: (SM.SMGen, (Int, [(Int, ContentId TileKind)]))
@@ -67,7 +69,7 @@ convertTileMaps COps{corule=RuleContent{rXmax, rYmax}, cotile, coTileSpeedup}
       runUnfold gen =
         let (gen1, gen2) = SM.splitSMGen gen
         in (PointArray.unfoldrNA
-              rXmax rYmax runCdefTile
+              rWidthMax rHeightMax runCdefTile
               (gen1, (0, IM.assocs $ EM.enumMapToIntMap ltile)), gen2)
   converted1 <- St.state runUnfold
   case mpickPassable of
@@ -143,18 +145,18 @@ buildLevel cops@COps{coplace, corule=RuleContent{..}} serverOptions
         let (lxPrev, lyPrev) = unzip $ map ((px &&& py) . fst) stairsFromUp
             -- Stairs take some space, hence the additions.
             lxMin = max 0
-                    $ -4 - d + minimum (rXmax - 1 : lxPrev)
-            lxMax = min (rXmax - 1)
+                    $ -4 - d + minimum (rWidthMax - 1 : lxPrev)
+            lxMax = min (rWidthMax - 1)
                     $ 4 + d + maximum (0 : lxPrev)
             lyMin = max 0
-                    $ -3 - d + minimum (rYmax - 1 : lyPrev)
-            lyMax = min (rYmax - 1)
+                    $ -3 - d + minimum (rHeightMax - 1 : lyPrev)
+            lyMax = min (rHeightMax - 1)
                     $ 3 + d + maximum (0 : lyPrev)
             -- Pick minimal cave size that fits all previous stairs.
             xspan = max (lxMax - lxMin + 1) $ cXminSize kc
             yspan = max (lyMax - lyMin + 1) $ cYminSize kc
-            x0 = min lxMin (rXmax - xspan)
-            y0 = min lyMin (rYmax - yspan)
+            x0 = min lxMin (rWidthMax - xspan)
+            y0 = min lyMin (rHeightMax - yspan)
         in fromMaybe (error $ "" `showFailure` kc)
            $ toArea (x0, y0, x0 + xspan - 1, y0 + yspan - 1)
       (lstairsDouble, lstairsSingleUp) = splitAt doubleDownStairs stairsFromUp

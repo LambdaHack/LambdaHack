@@ -1993,15 +1993,15 @@ effectDetectX :: MonadServerAtomic m
               => IK.DetectKind -> (Point -> Bool) -> ([Point] -> m Bool)
               -> m () -> Int -> ActorId -> m UseResult
 effectDetectX d predicate action execSfx radius target = do
-  COps{corule=RuleContent{rXmax, rYmax}} <- getsState scops
+  COps{corule=RuleContent{rWidthMax, rHeightMax}} <- getsState scops
   b <- getsState $ getActorBody target
   sperFidOld <- getsServer sperFid
   let perOld = sperFidOld EM.! bfid b EM.! blid b
       Point x0 y0 = bpos b
       perList = filter predicate
         [ Point x y
-        | y <- [max 0 (y0 - radius) .. min (rYmax - 1) (y0 + radius)]
-        , x <- [max 0 (x0 - radius) .. min (rXmax - 1) (x0 + radius)]
+        | y <- [max 0 (y0 - radius) .. min (rHeightMax - 1) (y0 + radius)]
+        , x <- [max 0 (x0 - radius) .. min (rWidthMax - 1) (x0 + radius)]
         ]
       extraPer = emptyPer {psight = PerVisible $ ES.fromDistinctAscList perList}
       inPer = diffPer extraPer perOld
@@ -2054,8 +2054,8 @@ effectSendFlying execSfx IK.ThrowMod{..} source target container modePush = do
       execSfxAtomic $ SfxMsgFid (bfid tb) $ SfxBracedImmune target
     return UseUp  -- waste it to prevent repeated throwing at immobile actors
   else do
-   COps{corule=RuleContent{rXmax, rYmax}} <- getsState scops
-   case bla rXmax rYmax eps (bpos tb) fpos of
+   COps{corule=RuleContent{rWidthMax, rHeightMax}} <- getsState scops
+   case bla rWidthMax rHeightMax eps (bpos tb) fpos of
     Nothing -> error $ "" `showFailure` (fpos, tb)
     Just [] -> error $ "projecting from the edge of level"
                        `showFailure` (fpos, tb)

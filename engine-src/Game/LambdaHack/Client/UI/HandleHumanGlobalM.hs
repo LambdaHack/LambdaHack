@@ -1257,10 +1257,10 @@ verifyToolEffect lid store itemFull = do
 alterWithPointerHuman :: MonadClientUI m
                       => ActorId -> m (FailOrCmd RequestTimed)
 alterWithPointerHuman leader = do
-  COps{corule=RuleContent{rXmax, rYmax}} <- getsState scops
+  COps{corule=RuleContent{rWidthMax, rHeightMax}} <- getsState scops
   pUI <- getsSession spointer
   let p@(Point px py) = squareToMap $ uiToSquare pUI
-  if px >= 0 && py >= 0 && px < rXmax && py < rYmax
+  if px >= 0 && py >= 0 && px < rWidthMax && py < rHeightMax
   then alterTileAtPos leader p
   else failWith "never mind"
 

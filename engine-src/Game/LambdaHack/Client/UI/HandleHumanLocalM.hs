@@ -389,13 +389,13 @@ permittedProjectClient leader = do
 
 projectCheck :: MonadClientUI m => ActorId -> Point -> m (Maybe ReqFailure)
 projectCheck leader tpos = do
-  COps{corule=RuleContent{rXmax, rYmax}, coTileSpeedup} <- getsState scops
+  COps{corule=RuleContent{rWidthMax, rHeightMax}, coTileSpeedup} <- getsState scops
   eps <- getsClient seps
   sb <- getsState $ getActorBody leader
   let lid = blid sb
       spos = bpos sb
   -- Not @ScreenContent@, because not drawing here.
-  case bla rXmax rYmax eps spos tpos of
+  case bla rWidthMax rHeightMax eps spos tpos of
     Nothing -> return $ Just ProjectAimOnself
     Just [] -> error $ "project from the edge of level"
                        `showFailure` (spos, tpos, sb)
@@ -418,7 +418,7 @@ projectCheck leader tpos = do
 -- e.g., because the target actor can be obscured by a glass wall.
 xhairLegalEps :: MonadClientUI m => ActorId -> m (Either Text Int)
 xhairLegalEps leader = do
-  cops@COps{corule=RuleContent{rXmax, rYmax}} <- getsState scops
+  cops@COps{corule=RuleContent{rWidthMax, rHeightMax}} <- getsState scops
   b <- getsState $ getActorBody leader
   lidV <- viewedLevelUI
   let !_A = assert (lidV == blid b) ()
@@ -453,7 +453,7 @@ xhairLegalEps leader = do
       else return $ Left "can't fling at a target on remote level"
     Just (TVector v) -> do
       -- Not @ScreenContent@, because not drawing here.
-      let shifted = shiftBounded rXmax rYmax (bpos b) v
+      let shifted = shiftBounded rWidthMax rHeightMax (bpos b) v
       if shifted == bpos b && v /= Vector 0 0
       then return $ Left "selected translation is void"
       else findNewEps True shifted  -- @True@, because the goal is vague anyway
@@ -649,7 +649,7 @@ selectNoneHuman = do
 
 selectWithPointerHuman :: MonadClientUI m => m MError
 selectWithPointerHuman = do
-  COps{corule=RuleContent{rYmax}} <- getsState scops
+  COps{corule=RuleContent{rHeightMax}} <- getsState scops
   lidV <- viewedLevelUI
   -- Not @ScreenContent@, because not drawing here.
   side <- getsClient sside
@@ -661,8 +661,8 @@ selectWithPointerHuman = do
   pUI <- getsSession spointer
   let p@(Point px py) = squareToMap $ uiToSquare pUI
   -- Select even if no space in status line for the actor's symbol.
-  if | py == rYmax + 1 && px == 0 -> selectNoneHuman >> return Nothing
-     | py == rYmax + 1 ->
+  if | py == rHeightMax + 1 && px == 0 -> selectNoneHuman >> return Nothing
+     | py == rHeightMax + 1 ->
          case drop (px - 1) viewed of
            [] -> failMsg "not pointing at an actor"
            (aid, _, _) : _ -> selectActorHuman aid >> return Nothing
@@ -983,12 +983,12 @@ itemClearHuman = modifySession $ \sess -> sess {sitemSel = Nothing}
 moveXhairHuman :: MonadClientUI m => Vector -> Int -> m MError
 moveXhairHuman dir n = do
   -- Not @ScreenContent@, because not drawing here.
-  COps{corule=RuleContent{rXmax, rYmax}} <- getsState scops
+  COps{corule=RuleContent{rWidthMax, rHeightMax}} <- getsState scops
   saimMode <- getsSession saimMode
   let lidV = maybe (error $ "" `showFailure` (dir, n)) aimLevelId saimMode
   xhair <- getsSession sxhair
   xhairPos <- xhairToPos
-  let shiftB pos = shiftBounded rXmax rYmax pos dir
+  let shiftB pos = shiftBounded rWidthMax rHeightMax pos dir
       newPos = iterate shiftB xhairPos !! n
   if newPos == xhairPos then failMsg "never mind"
   else do
@@ -1287,12 +1287,12 @@ aimPointerFloorHuman = aimPointerFloorLoud True
 
 aimPointerFloorLoud :: MonadClientUI m => Bool -> m ()
 aimPointerFloorLoud loud = do
-  COps{corule=RuleContent{rXmax, rYmax}} <- getsState scops
+  COps{corule=RuleContent{rWidthMax, rHeightMax}} <- getsState scops
   lidV <- viewedLevelUI
   -- Not @ScreenContent@, because not drawing here.
   pUI <- getsSession spointer
   let p@(Point px py) = squareToMap $ uiToSquare pUI
-  if px >= 0 && py >= 0 && px < rXmax && py < rYmax
+  if px >= 0 && py >= 0 && px < rWidthMax && py < rHeightMax
   then do
     oldXhair <- getsSession sxhair
     let sxhair = Just $ TPoint TUnknown lidV p
@@ -1314,12 +1314,12 @@ aimPointerFloorLoud loud = do
 
 aimPointerEnemyHuman :: MonadClientUI m => m ()
 aimPointerEnemyHuman = do
-  COps{corule=RuleContent{rXmax, rYmax}} <- getsState scops
+  COps{corule=RuleContent{rWidthMax, rHeightMax}} <- getsState scops
   lidV <- viewedLevelUI
   -- Not @ScreenContent@, because not drawing here.
   pUI <- getsSession spointer
   let p@(Point px py) = squareToMap $ uiToSquare pUI
-  if px >= 0 && py >= 0 && px < rXmax && py < rYmax
+  if px >= 0 && py >= 0 && px < rWidthMax && py < rHeightMax
   then do
     bsAll <- getsState $ actorAssocs (const True) lidV
     oldXhair <- getsSession sxhair

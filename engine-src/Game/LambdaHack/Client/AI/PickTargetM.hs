@@ -82,7 +82,7 @@ computeTarget :: forall m. MonadClient m
               => [(ActorId, Actor)] -> [(ActorId, Actor)] -> ActorId
               -> m (Maybe TgtAndPath)
 computeTarget foeAssocs friendAssocs aid = do
-  cops@COps{cocave, corule=RuleContent{rXmax, rYmax, rnearby}, coTileSpeedup}
+  cops@COps{cocave, corule=RuleContent{rWidthMax, rHeightMax, rnearby}, coTileSpeedup}
     <- getsState scops
   b <- getsState $ getActorBody aid
   mleader <- getsClient sleader
@@ -316,7 +316,7 @@ computeTarget foeAssocs friendAssocs aid = do
                       if nullFreq ctriggers then do
                         let oldpos = fromMaybe (bpos b) (boldpos b)
                             vOld = bpos b `vectorToFrom` oldpos
-                            pNew = shiftBounded rXmax rYmax (bpos b) vOld
+                            pNew = shiftBounded rWidthMax rHeightMax (bpos b) vOld
                         if slackDoctrine && not isStuck && calmE && not focused
                            && isUnit vOld && bpos b /= pNew
                                 -- both are needed, e.g., when just teleported
@@ -337,7 +337,7 @@ computeTarget foeAssocs friendAssocs aid = do
                           -- animals. Heroes idling on the level help a lot.
                           let pathSource = bpos b
                               traSlack7 = trajectoryToPathBounded
-                                            rXmax rYmax pathSource
+                                            rWidthMax rHeightMax pathSource
                                             (replicate 7 v)  -- > 6 from take6
                               pathList = map head $ group traSlack7
                               pathGoal = last pathList

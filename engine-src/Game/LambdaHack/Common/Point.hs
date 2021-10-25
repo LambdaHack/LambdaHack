@@ -132,11 +132,11 @@ adjacent s t = chessDist s t == 1
 -- e.g., to get uniform distributions of directions for explosions
 -- close to the edge of the level.
 bla :: X -> Y -> Int -> Point -> Point -> Maybe [Point]
-bla rXmax rYmax eps source target =
+bla rWidthMax rHeightMax eps source target =
   if source == target then Nothing
   else Just $
     let inBounds p@(Point x y) =
-          rXmax > x && x >= 0 && rYmax > y && y >= 0 && p /= source
+          rWidthMax > x && x >= 0 && rHeightMax > y && y >= 0 && p /= source
     in takeWhile inBounds $ tail $ blaXY eps source target
 
 -- | Bresenham's line algorithm generalized to arbitrary starting @eps@

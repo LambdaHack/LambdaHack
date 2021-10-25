@@ -57,7 +57,7 @@ tieKnotForAsync options@ServerOptions{ sallClear
   -- Set the X size of the dungeon from content ASAP, before it's used.
   speedupHackXSizeThawed <- PA.unsafeThawPrimArray speedupHackXSize
   PA.writePrimArray speedupHackXSizeThawed 0 $
-    RK.rXmax Content.RuleKind.standardRules
+    RK.rWidthMax Content.RuleKind.standardRules
   void $ PA.unsafeFreezePrimArray speedupHackXSizeThawed
   -- This setup ensures the boosting option doesn't affect generating initial
   -- RNG for dungeon, etc., and also, that setting dungeon RNG on commandline

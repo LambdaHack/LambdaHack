@@ -171,7 +171,7 @@ unknownLevel COps{corule, cotile}
            , lembed = EM.empty
            , lbig = EM.empty
            , lproj = EM.empty
-           , ltile = unknownTileMap larea outerId (rXmax corule) (rYmax corule)
+           , ltile = unknownTileMap larea outerId (rWidthMax corule) (rHeightMax corule)
            , lentry = EM.empty
            , larea
            , lsmell = EM.empty
@@ -184,8 +184,8 @@ unknownLevel COps{corule, cotile}
            }
 
 unknownTileMap :: Area -> ContentId TileKind -> X -> Y -> TileMap
-unknownTileMap larea outerId rXmax rYmax =
-  let unknownMap = PointArray.replicateA rXmax rYmax TK.unknownId
+unknownTileMap larea outerId rWidthMax rHeightMax =
+  let unknownMap = PointArray.replicateA rWidthMax rHeightMax TK.unknownId
       outerUpdate = zip (areaInnerBorder larea) $ repeat outerId
   in unknownMap PointArray.// outerUpdate
 

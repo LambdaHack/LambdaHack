@@ -59,9 +59,9 @@ aidTgtToPos maid lidV (Just tgt) s = case tgt of
   TVector v -> case maid of
     Nothing -> Nothing
     Just aid ->
-      let COps{corule=RuleContent{rXmax, rYmax}} = scops s
+      let COps{corule=RuleContent{rWidthMax, rHeightMax}} = scops s
           b = getActorBody aid s
-          shifted = shiftBounded rXmax rYmax (bpos b) v
+          shifted = shiftBounded rWidthMax rHeightMax (bpos b) v
       in if shifted == bpos b && v /= Vector 0 0 then Nothing else Just shifted
 
 -- | Counts the number of steps until the projectile would hit a non-projectile
@@ -71,10 +71,10 @@ aidTgtToPos maid lidV (Just tgt) s = case tgt of
 -- Treats unknown tiles as walkable, but prefers known.
 makeLine :: Bool -> Actor -> Point -> Int -> COps -> Level -> Maybe Int
 makeLine onlyFirst body fpos epsOld cops lvl =
-  let COps{corule=RuleContent{rXmax, rYmax}, coTileSpeedup} = cops
+  let COps{corule=RuleContent{rWidthMax, rHeightMax}, coTileSpeedup} = cops
       dist = chessDist (bpos body) fpos
       calcScore :: Int -> Int
-      calcScore eps = case bla rXmax rYmax eps (bpos body) fpos of
+      calcScore eps = case bla rWidthMax rHeightMax eps (bpos body) fpos of
         Just bl ->
           let blDist = take (dist - 1) bl  -- goal not checked; actor well aware
               noActor p = p == fpos || not (occupiedBigLvl p lvl)

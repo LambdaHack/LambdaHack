@@ -22,9 +22,9 @@ import Game.LambdaHack.Definition.Defs
 -- | The type of game rules and assorted game data.
 data RuleContent = RuleContent
   { rtitle            :: String    -- ^ title of the game (not lib)
-  , rXmax             :: X         -- ^ maximum level width; for now,
+  , rWidthMax         :: X         -- ^ maximum level width; for now,
                                    --   keep equal to ScreenContent.rwidth
-  , rYmax             :: Y         -- ^ maximum level height; for now,
+  , rHeightMax        :: Y         -- ^ maximum level height; for now,
                                    --   keep equal to ScreenContent.rheight - 3
   , rexeVersion       :: Version   -- ^ version of the game
   , rcfgUIName        :: FilePath  -- ^ name of the UI config file
@@ -43,8 +43,8 @@ data RuleContent = RuleContent
 emptyRuleContent :: RuleContent
 emptyRuleContent = RuleContent
   { rtitle = ""
-  , rXmax = 0
-  , rYmax = 0
+  , rWidthMax = 0
+  , rHeightMax = 0
   , rexeVersion = makeVersion []
   , rcfgUIName = ""
   , rcfgUIDefault = ("", Ini.emptyConfig)

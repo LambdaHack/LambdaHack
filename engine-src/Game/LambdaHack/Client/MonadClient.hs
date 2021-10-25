@@ -62,9 +62,9 @@ debugPossiblyPrint t = do
 
 createTabBFS :: MonadClient m => m (PA.PrimArray PointI)
 createTabBFS = do
-  COps{corule=RuleContent{rXmax, rYmax}} <- getsState scops
+  COps{corule=RuleContent{rWidthMax, rHeightMax}} <- getsState scops
   liftIO $ stToIO $ do
-    tabAMutable <- PA.newPrimArray (rXmax * rYmax)  -- always enough
+    tabAMutable <- PA.newPrimArray (rWidthMax * rHeightMax)  -- always enough
     PA.unsafeFreezePrimArray tabAMutable
 
 dumpTextFile :: MonadClientRead m => Text -> FilePath -> m FilePath

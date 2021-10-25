@@ -453,7 +453,7 @@ embedBenefit fleeVia aid pbags = do
 closestTriggers :: MonadClient m => FleeViaStairsOrEscape -> ActorId
                 -> m [(Int, (Point, (Point, ItemBag)))]
 closestTriggers fleeVia aid = do
-  COps{corule=RuleContent{rXmax, rYmax}} <- getsState scops
+  COps{corule=RuleContent{rWidthMax, rHeightMax}} <- getsState scops
   b <- getsState $ getActorBody aid
   lvl <- getLevel (blid b)
   let pbags = EM.assocs $ lembed lvl
@@ -466,7 +466,8 @@ closestTriggers fleeVia aid = do
   -- OTOH, siege of stairs or escapes is more effective.
   bfs <- getCacheBfs aid
   let vicTrigger (cid, (p0, bag)) =
-        map (\p -> (cid, (p, (p0, bag)))) $ vicinityBounded rXmax rYmax p0
+        map (\p -> (cid, (p, (p0, bag))))
+            (vicinityBounded rWidthMax rHeightMax p0)
       vicAll = concatMap vicTrigger efeat
   return $!
     let mix (benefit, ppbag) dist =

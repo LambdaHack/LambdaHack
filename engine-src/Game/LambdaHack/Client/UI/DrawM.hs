@@ -145,7 +145,7 @@ targetDescXhair = do
 
 drawFrameTerrain :: forall m. MonadClientUI m => LevelId -> m (U.Vector Word32)
 drawFrameTerrain drawnLevelId = do
-  COps{corule=RuleContent{rXmax}, cotile, coTileSpeedup} <- getsState scops
+  COps{corule=RuleContent{rWidthMax}, cotile, coTileSpeedup} <- getsState scops
   StateClient{smarkSuspect} <- getClient
   -- Not @ScreenContent@, because indexing in level's data.
   Level{ltile=PointArray.Array{avector}, lembed} <- getLevel drawnLevelId
@@ -176,8 +176,8 @@ drawFrameTerrain drawnLevelId = do
       caveVector :: U.Vector Word32
       caveVector = U.imap g avector
       messageVector =
-        U.replicate rXmax (Color.attrCharW32 Color.spaceAttrW32)
-      statusVector = U.fromListN (2 * rXmax) $ map Color.attrCharW32 frameStatus
+        U.replicate rWidthMax (Color.attrCharW32 Color.spaceAttrW32)
+      statusVector = U.fromListN (2 * rWidthMax) $ map Color.attrCharW32 frameStatus
   -- The vector package is so smart that the 3 vectors are not allocated
   -- separately at all, but written to the big vector at once.
   -- But even with double allocation it would be faster than writing
@@ -186,7 +186,7 @@ drawFrameTerrain drawnLevelId = do
 
 drawFrameContent :: forall m. MonadClientUI m => LevelId -> m FrameForall
 drawFrameContent drawnLevelId = do
-  COps{corule=RuleContent{rXmax}} <- getsState scops
+  COps{corule=RuleContent{rWidthMax}} <- getsState scops
   SessionUI{smarkSmell} <- getSession
   -- Not @ScreenContent@, because indexing in level's data.
   Level{lsmell, ltime, lfloor} <- getLevel drawnLevelId
@@ -209,7 +209,7 @@ drawFrameContent drawnLevelId = do
         let g :: (PointI, a) -> ST s ()
             g (!pI, !a0) = do
               let w = Color.attrCharW32 $ f pI a0
-              VM.write v (pI + rXmax) w
+              VM.write v (pI + rWidthMax) w
         mapM_ g l
       -- We don't usually show embedded items, because normally we don't
       -- want them to clutter the display. If they are really important,
@@ -231,7 +231,7 @@ drawFramePath drawnLevelId = do
  if isNothing saimMode || sreportNull
  then return $! FrameForall $ \_ -> return ()
  else do
-  COps{corule=RuleContent{rXmax, rYmax}, coTileSpeedup} <- getsState scops
+  COps{corule=RuleContent{rWidthMax, rHeightMax}, coTileSpeedup} <- getsState scops
   StateClient{seps} <- getClient
   -- Not @ScreenContent@, because pathing in level's map.
   Level{ltile=PointArray.Array{avector}} <- getLevel drawnLevelId
@@ -243,7 +243,7 @@ drawFramePath drawnLevelId = do
       Actor{bpos, blid} <- getsState $ getActorBody leader
       return $! if blid /= drawnLevelId
                 then []
-                else fromMaybe [] $ bla rXmax rYmax seps bpos xhairPos
+                else fromMaybe [] $ bla rWidthMax rHeightMax seps bpos xhairPos
     _ -> return []
   mpath <- maybe (return Nothing) (\aid -> do
     mtgtMPath <- getsClient $ EM.lookup aid . stargetD
@@ -284,7 +284,7 @@ drawFramePath drawnLevelId = do
               let pI = fromEnum p0
                   tile = avector U.! pI
                   w = Color.attrCharW32 $ f p0 (DefsInternal.toContentId tile)
-              VM.write v (pI + rXmax) w
+              VM.write v (pI + rWidthMax) w
         mapM_ g l
       upd :: FrameForall
       upd = FrameForall $ \v -> do
@@ -294,7 +294,7 @@ drawFramePath drawnLevelId = do
 
 drawFrameActor :: forall m. MonadClientUI m => LevelId -> m FrameForall
 drawFrameActor drawnLevelId = do
-  COps{corule=RuleContent{rXmax}} <- getsState scops
+  COps{corule=RuleContent{rWidthMax}} <- getsState scops
   SessionUI{sactorUI, sselected, sUIOptions} <- getSession
   -- Not @ScreenContent@, because indexing in level's data.
   Level{lbig, lproj} <- getLevel drawnLevelId
@@ -343,7 +343,7 @@ drawFrameActor drawnLevelId = do
         let g :: (PointI, a) -> ST s ()
             g (!pI, !a0) = do
               let w = Color.attrCharW32 $ f a0
-              VM.write v (pI + rXmax) w
+              VM.write v (pI + rWidthMax) w
         mapM_ g l
       upd :: FrameForall
       upd = FrameForall $ \v -> do
@@ -355,7 +355,7 @@ drawFrameActor drawnLevelId = do
 drawFrameExtra :: forall m. MonadClientUI m
                => ColorMode -> LevelId -> m FrameForall
 drawFrameExtra dm drawnLevelId = do
-  COps{corule=RuleContent{rXmax, rYmax}} <- getsState scops
+  COps{corule=RuleContent{rWidthMax, rHeightMax}} <- getsState scops
   SessionUI{saimMode, smarkVision} <- getSession
   -- Not @ScreenContent@, because indexing in level's data.
   totVisible <- totalVisible <$> getPerFid drawnLevelId
@@ -382,14 +382,14 @@ drawFrameExtra dm drawnLevelId = do
       mapVL f l v = do
         let g :: PointI -> ST s ()
             g !pI = do
-              w0 <- VM.read v (pI + rXmax)
+              w0 <- VM.read v (pI + rWidthMax)
               let w = Color.attrCharW32 . Color.attrCharToW32
                       . f . Color.attrCharFromW32 . Color.AttrCharW32 $ w0
-              VM.write v (pI + rXmax) w
+              VM.write v (pI + rWidthMax) w
         mapM_ g l
-      -- Here @rXmax@ and @rYmax@ are correct, because we are not
+      -- Here @rWidthMax@ and @rHeightMax@ are correct, because we are not
       -- turning the whole screen into black&white, but only the level map.
-      lDungeon = [0..rXmax * rYmax - 1]
+      lDungeon = [0..rWidthMax * rHeightMax - 1]
       xhairColor = if isJust saimMode
                    then Color.HighlightRedAim
                    else Color.HighlightRed
@@ -418,7 +418,7 @@ drawFrameExtra dm drawnLevelId = do
 
 drawFrameStatus :: MonadClientUI m => LevelId -> m AttrString
 drawFrameStatus drawnLevelId = do
-  cops@COps{corule=RuleContent{rXmax=_rXmax}} <- getsState scops
+  cops@COps{corule=RuleContent{rWidthMax=_rWidthMax}} <- getsState scops
   SessionUI{sselected, saimMode, swaitTimes, sitemSel} <- getSession
   mleader <- getsClient sleader
   mxhairPos <- mxhairToPos
@@ -563,7 +563,7 @@ drawFrameStatus drawnLevelId = do
   -- Keep it at least partially lazy, to avoid allocating the whole list:
   return
 #ifdef WITH_EXPENSIVE_ASSERTIONS
-    $ assert (length status == 2 * _rXmax
+    $ assert (length status == 2 * _rWidthMax
               `blame` map Color.charFromW32 status)
 #endif
         status

@@ -25,8 +25,8 @@ import Game.LambdaHack.Definition.DefsInternal
 standardRules :: RuleContent
 standardRules = RuleContent
   { rtitle = "LambdaHack"
-  , rXmax = 80
-  , rYmax = 21
+  , rWidthMax = 80
+  , rHeightMax = 21
   , rexeVersion = Self.version
   -- The strings containing the default configuration file
   -- included from config.ui.default.
