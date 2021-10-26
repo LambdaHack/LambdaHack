@@ -207,21 +207,17 @@ getReportUI insideMenu = do
   saimMode <- getsSession saimMode
   sUIOptions <- getsSession sUIOptions
   report <- getsSession $ newReport . shistory
-  curTutorial <- getsSession scurTutorial
-  overrideTut <- getsSession soverrideTut
   sreqDelay <- getsSession sreqDelay
   miniHintAiming <- getMiniHintAiming
   -- Different from ordinary tutorial hints in that shown more than once.
-  let newcomerHelp = fromMaybe curTutorial overrideTut
-      detailAtDefault = (detailLevel <$> saimMode) == Just defaultDetailLevel
+  let detailAtDefault = (detailLevel <$> saimMode) == Just defaultDetailLevel
       detailMinimal = (detailLevel <$> saimMode) == Just minBound
       prefixColors = uMessageColors sUIOptions
       promptAim = toMsgShared prefixColors MsgPromptGeneric
                               (miniHintAiming <> "\n")
       promptDelay = toMsgShared prefixColors MsgPromptAction
                                 "<press any key to regain control>"
-  return $! if | (newcomerHelp || sreqDelay == ReqDelayHandled)
-                 && not insideMenu && detailAtDefault && not detailMinimal ->
+  return $! if | not insideMenu && detailAtDefault && not detailMinimal ->
                    consReport promptAim report
                | sreqDelay == ReqDelayAlarm && not insideMenu ->
                    consReport promptDelay report
