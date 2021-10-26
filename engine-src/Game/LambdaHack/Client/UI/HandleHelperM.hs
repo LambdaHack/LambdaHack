@@ -245,14 +245,14 @@ itemOverlayFromState lSlots lid bag displayRanged
       stashBag = getFactionStashBag side s
       !_A = assert (allB (`elem` EM.elems lSlots) (EM.keys bag)
                     `blame` (lid, bag, lSlots)) ()
-      markEqp iid t =
-        if | (iid `EM.member` combOrgan
-             || iid `EM.member` combEqp)
-             && iid `EM.notMember` stashBag
-             && iid `EM.notMember` combGround -> T.snoc (T.init t) ']'
-               -- all ready to fight with
-           | iid `EM.member` stashBag -> T.snoc (T.init t) '}'
-               -- some spares in shared stash
+      markEqp iid periodic k ncha t =
+        if | periodic -> T.snoc (T.init t) '/'  -- if equipped, no charges
+           | ncha == 0 -> T.snoc (T.init t) '-'  -- no charges left
+           | k > ncha -> T.snoc (T.init t) '+'  -- not all charges left
+           | iid `EM.member` combOrgan || iid `EM.member` combEqp ->
+             if iid `EM.member` stashBag || iid `EM.member` combGround
+             then T.snoc (T.init t) '}'  -- some spares in shared stash
+             else T.snoc (T.init t) ']'  -- all ready to fight with
            | otherwise -> t
       pr :: (SlotChar, ItemId) -> Maybe (AttrString, AttrString, KeyOrSlot)
       pr (c, iid) =
@@ -268,7 +268,9 @@ itemOverlayFromState lSlots lid bag displayRanged
                 phrase = makePhrase
                   [partItemWsRanged rwidth side factionD displayRanged
                                     DetailMedium 4 k localTime itemFull kit]
-                !tLab = markEqp iid $ slotLabel c
+                ncha = ncharges localTime kit
+                periodic = IA.checkFlag Ability.Periodic arItem
+                !tLab = markEqp iid periodic k ncha $ slotLabel c
                 aLab = textToAS tLab ++ [colorSymbol]
                 !tDesc = " " <> phrase
             in Just (aLab, textToAS tDesc, Right c)
