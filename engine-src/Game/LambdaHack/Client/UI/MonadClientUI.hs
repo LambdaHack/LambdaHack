@@ -318,6 +318,9 @@ clearAimMode = do
           _ -> sxhairOld
     setXHairFromGUI sxhair
 
+-- We can't support setup @FontSetup SquareFont MonoFont MonoFont@
+-- at this time, because the mono layer needs to overwrite the prop layer
+-- and so has to be distinct even if the underlying font is mono for both.
 getFontSetup :: MonadClientUI m => m FontSetup
 getFontSetup = do
   soptions@ClientOptions{schosenFontset, sfontsets} <- getsClient soptions
@@ -328,11 +331,7 @@ getFontSetup = do
         Just fs -> fs
       multiFont = Frontend.frontendName soptions == "sdl"
                   && not (T.null (fontPropRegular chosenFontset))
-  return $! if | not multiFont -> singleFontSetup
-               | fontPropRegular chosenFontset == fontMono chosenFontset
-                 && fontPropBold chosenFontset == fontMono chosenFontset ->
-                 monoFontSetup
-               | otherwise -> multiFontSetup
+  return $! if multiFont then multiFontSetup else singleFontSetup
 
 scoreToSlideshow :: MonadClientUI m => Int -> Status -> m Slideshow
 scoreToSlideshow total status = do

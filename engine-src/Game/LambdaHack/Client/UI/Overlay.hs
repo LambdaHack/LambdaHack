@@ -4,7 +4,7 @@ module Game.LambdaHack.Client.UI.Overlay
   ( -- * DisplayFont
     DisplayFont, isPropFont, isSquareFont, isMonoFont, textSize
   , -- * FontSetup
-    FontSetup(..), multiFontSetup, monoFontSetup, singleFontSetup
+    FontSetup(..), multiFontSetup, singleFontSetup
   , -- * AttrString
     AttrString, blankAttrString, textToAS, textFgToAS, stringToAS
   , (<+:>), (<\:>)
@@ -75,9 +75,6 @@ data FontSetup = FontSetup
 
 multiFontSetup :: FontSetup
 multiFontSetup = FontSetup SquareFont MonoFont PropFont
-
-monoFontSetup :: FontSetup
-monoFontSetup = FontSetup SquareFont MonoFont MonoFont
 
 singleFontSetup :: FontSetup
 singleFontSetup = FontSetup SquareFont SquareFont SquareFont
