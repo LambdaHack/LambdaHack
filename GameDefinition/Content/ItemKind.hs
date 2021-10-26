@@ -1126,14 +1126,17 @@ necklace8 = necklaceTemplate
 necklace9 = necklaceTemplate
   { ifreq    = [(COMMON_ITEM, 100), (ANY_JEWELRY, 100)]
   , irarity  = [(4, 3)]  -- entirely optional
-  , iaspects = Timeout ((1 + 1 `d` 3) * 5)
+  , iaspects = Timeout ((1 + 1 `d` 3) * 5)  -- low timeout for offensive use
                : iaspects_necklaceTemplate
   , ieffects = [Explode S_SPARK]
   }
 necklace10 = necklaceTemplate
   { ifreq    = [(COMMON_ITEM, 100), (ANY_JEWELRY, 100)]
-  , iaspects = Timeout ((1 + 1 `d` 3) * 5)
+  , iaspects = Timeout ((3 + 1 `d` 3) * 10)
                : iaspects_necklaceTemplate
+                   -- high timeout to prevent spam obscuring messages
+                   -- when other actors act and annoying bumping into
+                   -- projectiles caused by own necklace when walking
   , ieffects = [Explode S_FRAGRANCE]
   }
 motionScanner = necklaceTemplate
