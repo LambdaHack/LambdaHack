@@ -697,7 +697,7 @@ drawLeaderDamage width leader = do
             (IK.ieffects $ itemKind itemFull)
       ppDice :: Bool -> (Bool, Int, Int, ItemFullKit)
              -> [(Bool, (AttrString, AttrString))]
-      ppDice showInBrief (hasEffect, timeout, nch, (itemFull, (k, _))) =
+      ppDice showInBrief (hasEffect, timeout, ncha, (itemFull, (k, _))) =
         let dice = IK.idamage $ itemKind itemFull
             tdice = case Dice.reduceDice dice of
               Just d | showInBrief -> show d
@@ -721,9 +721,9 @@ drawLeaderDamage width leader = do
                  ++ map (Color.attrChar2ToW32 chp) tRefillHP
             possiblyHasTimeout = timeout > 0 || itemSuspect itemFull
         in if possiblyHasTimeout
-           then replicate (k - nch)
+           then replicate (k - ncha)
                           (False, (ldice Color.Cyan, lBurnHP False))
-                ++ replicate nch (True, (ldice Color.BrCyan, lBurnHP True))
+                ++ replicate ncha (True, (ldice Color.BrCyan, lBurnHP True))
            else [(True, (ldice Color.BrBlue, lBurnHP True))]
       lbonus :: AttrString
       lbonus =

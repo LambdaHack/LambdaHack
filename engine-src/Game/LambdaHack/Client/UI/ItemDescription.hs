@@ -59,22 +59,22 @@ partItemN3 width side factionD ranged detailLevel maxWordsToShow localTime
       timeout = IA.aTimeout arItem
       temporary = IA.checkFlag Ability.Fragile arItem
                   && IA.checkFlag Ability.Periodic arItem
-      lenCh = itemK - ncharges localTime (itemK, itemTimers)
+      ncha = ncharges localTime (itemK, itemTimers)
       charges | temporary = case itemTimers of
-                  [] -> if lenCh == 0
+                  [] -> if itemK == ncha
                         then ""
                         else error $ "partItemN3: charges with null timer"
                                      `showFailure`
                                      (side, itemFull, itemK, itemTimers)
-                  t : _ -> if lenCh == 0
+                  t : _ -> if itemK == ncha
                            then "(ready to expire)"
                            else let total = deltaOfItemTimer localTime t
                                 in "for" <+> timeDeltaInSecondsText total
-              | lenCh == 0 = ""
-              | itemK == 1 && lenCh == 1 = "(charging)"
-              | itemK == lenCh = "(all charging)"
-              | otherwise = "(" <> tshow lenCh <+> "charging)"
-      skipRecharging = detailLevel <= DetailLow && lenCh >= itemK
+              | itemK == ncha = ""
+              | itemK == 1 && ncha == 0 = "(charging)"
+              | ncha == 0 = "(all charging)"
+              | otherwise = "(" <> tshow (itemK - ncha) <+> "charging)"
+      skipRecharging = detailLevel <= DetailLow && ncha == 0
       (orTs, powerTs, rangedDamage) =
         textAllPowers width detailLevel skipRecharging itemFull
       lsource = case jfid itemBase of
