@@ -3,7 +3,7 @@ module Game.LambdaHack.Client.UI.HandleHumanM
   ( cmdSemInCxtOfKM, updateKeyLast
 #ifdef EXPOSE_INTERNAL
     -- * Internal operations
-  , noRemoteHumanCmd, cmdSemantics, cmdSemanticsLeader
+  , noRemoteHumanCmd, CmdLeaderNeed, cmdSemantics, cmdSemanticsLeader
   , addNoError, addLeader, weaveLeader
 #endif
   ) where

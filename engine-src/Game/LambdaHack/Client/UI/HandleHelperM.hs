@@ -306,7 +306,8 @@ skillsOverlay aid = do
   return (EM.unionsWith (++) [skillLab, skillDescr, skillValue], kxs)
 
 -- | Extract whole-dungeon statistics for each place kind,
--- counting the number of occurrences of each type of `PlaceEntry`
+-- counting the number of occurrences of each type of
+-- `Game.LambdaHack.Content.PlaceKind.PlaceEntry`
 -- for the given place kind and gathering the set of levels
 -- on which any entry for that place kind can be found.
 placesFromState :: ContentData PK.PlaceKind -> Bool -> State
