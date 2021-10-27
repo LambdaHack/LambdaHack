@@ -268,7 +268,7 @@ spreadConcussion = ItemKind
   , ieffects = [ DropItem maxBound 1 CEqp ARMOR_MISC
                , PushActor (ThrowMod 400 25 1)  -- 1 step, fast; after DropItem
                    -- this produces spam for braced actors; too bad
-               , toOrganBad S_IMMOBILE 3  -- no balance
+               , toOrganBad S_IMMOBILE 1  -- no balance
                , toOrganBad S_DEAFENED 23 ]
   , idesc    = "Shock wave, hot gases, some fire and smoke."
   , ikit     = []
