@@ -618,18 +618,26 @@ goToXhairExplorationMode :: (MonadClient m, MonadClientUI m)
                          => ActorId -> Bool -> Bool
                          -> m (FailOrCmd RequestTimed)
 goToXhairExplorationMode leader initialStep run = do
-  xhair <- getsSession sxhair
-  xhairGoTo <- getsSession sxhairGoTo
-  mfail <-
-    if not (isNothing xhairGoTo) && xhairGoTo /= xhair
-    then failWith "crosshair position changed"
-    else do
-      when (isNothing xhairGoTo) $  -- set it up for next steps
-        modifySession $ \sess -> sess {sxhairGoTo = xhair}
-      goToXhairGoTo leader initialStep run
-  when (isLeft mfail) $
-    modifySession $ \sess -> sess {sxhairGoTo = Nothing}
-  return mfail
+  actorCurAndMaxSk <- getsState $ getActorMaxSkills leader
+  sb <- getsState $ getActorBody leader
+  let moveSkill = Ability.getSk Ability.SkMove actorCurAndMaxSk
+  -- If skill is too low, no path in @Bfs@ is going to be found,
+  -- but we check the skill (and sleep) to give a more accurate message.
+  if | moveSkill > 0 -> do
+       xhair <- getsSession sxhair
+       xhairGoTo <- getsSession sxhairGoTo
+       mfail <-
+         if not (isNothing xhairGoTo) && xhairGoTo /= xhair
+         then failWith "crosshair position changed"
+         else do
+           when (isNothing xhairGoTo) $  -- set it up for next steps
+             modifySession $ \sess -> sess {sxhairGoTo = xhair}
+           goToXhairGoTo leader initialStep run
+       when (isLeft mfail) $
+         modifySession $ \sess -> sess {sxhairGoTo = Nothing}
+       return mfail
+     | bwatch sb == WSleep -> failSer MoveUnskilledAsleep
+     | otherwise -> failSer MoveUnskilled
 
 goToXhairGoTo :: (MonadClient m, MonadClientUI m)
               => ActorId -> Bool -> Bool -> m (FailOrCmd RequestTimed)
