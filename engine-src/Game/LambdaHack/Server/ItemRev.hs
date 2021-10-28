@@ -157,14 +157,11 @@ serverDiscos COps{coitem} (DiscoveryKindRev discoRevFromPreviousGame) = do
     else shuffleExcept (keepMetaGameInformation coitem discoRevFromPreviousGame)
                        (olength coitem)
                        ixs
-  let f :: (DiscoveryKind, [Word16]) -> ContentId ItemKind -> ItemKind
-        -> (DiscoveryKind, [Word16])
-      f (!ikMap, (!ix) : rest) !kmKind _ =
-        (EM.insert (toItemKindIx ix) kmKind ikMap, rest)
-      f (ikMap, []) ik _ =
-        error $ "too short ixs" `showFailure` (ik, ikMap)
-      (discoS, _) = ofoldlWithKey' coitem f (EM.empty, shuffled)
-      udiscoRev = U.fromListN (olength coitem) shuffled
+  let udiscoRev = U.fromListN (olength coitem) shuffled
+      f :: (ContentId ItemKind, Word16) -> (ItemKindIx, ContentId ItemKind)
+      f (ik, ikx) = (toItemKindIx ikx, ik)
+      -- Not @fromDistinctAscList@, because it's the reverse map.
+      discoS = EM.fromList $ map f $ zip [toEnum 0 ..] $ U.toList udiscoRev
   return (discoS, DiscoveryKindRev udiscoRev)
 
 -- | Keep in a vector the information that is retained from playthrough
