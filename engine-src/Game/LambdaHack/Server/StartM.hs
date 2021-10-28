@@ -66,8 +66,8 @@ initPer = do
     ser { sfovLitLid, sfovClearLid, sfovLucidLid
         , sperValidFid, sperCacheFid, sperFid }
 
-reinitGame :: MonadServerAtomic m => m ()
-reinitGame = do
+reinitGame :: MonadServerAtomic m => FactionDict -> m ()
+reinitGame factionDold = do
   COps{coitem} <- getsState scops
   pers <- getsServer sperFid
   ServerOptions{scurChalSer, sknowMap, sshowItemSamples, sclientOptions}
@@ -91,6 +91,7 @@ reinitGame = do
       defLocal = updateDiscoKind (const discoKindFiltered) defL
   factionD <- getsState sfactionD
   clientStatesOld <- getsServer sclientStates
+  modifyServer $ \ser -> ser {sclientStates = EM.map (const defLocal) factionD}
   -- Some item kinds preserve their identity and flavour throughout
   -- the whole metagame, until the savefiles is removed.
   -- These are usually not man-made items, because these can be made
@@ -99,16 +100,33 @@ reinitGame = do
   -- so the random aspects of items, stored in @sdiscoAspect@
   -- are not preserved (a lot of other state components would need
   -- to be partially preserved, too, both on server and clients).
-  let includeMetaGame fid = case fid `EM.lookup` clientStatesOld of
-        Nothing -> defLocal
-        Just sOld ->
-          let disco = sdiscoKind sOld
-              inMetaGame kindId = IK.SetFlag Ability.MetaGame
-                                  `elem` IK.iaspects (okind coitem kindId)
-              discoMetaGame = EM.filter inMetaGame disco
-          in updateDiscoKind (discoMetaGame `EM.union`) defLocal
-      clientStatesNew = EM.mapWithKey (\fid _ -> includeMetaGame fid) factionD
-  modifyServer $ \ser -> ser {sclientStates = clientStatesNew}
+  --
+  -- This is a terrible temporary hack until Player becomes content
+  -- and we persistently store Player information on the server.
+  let metaHolder factionDict = case find (\(_, fact) ->
+                                      gteamCont fact == Just (TeamContinuity 1))
+                                    $ EM.assocs factionDict of
+        Nothing ->
+          fst <$> find (\(_, fact) -> isNothing (gteamCont fact))
+                       (EM.assocs factionDict)
+        Just (fid, _) -> Just fid
+      mmetaHolderOld = metaHolder factionDold
+  case mmetaHolderOld of
+    Just metaHolderOld -> do
+      let metaDiscoOld =
+            let sOld = clientStatesOld EM.! metaHolderOld
+                disco = sdiscoKind sOld
+                inMetaGame kindId = IK.SetFlag Ability.MetaGame
+                                    `elem` IK.iaspects (okind coitem kindId)
+            in EM.filter inMetaGame disco
+          defDiscoOld = updateDiscoKind (metaDiscoOld `EM.union`) defLocal
+          metaHolderNew = fromJust $ metaHolder factionD
+      modifyServer $ \ser ->
+        ser {sclientStates = EM.insert metaHolderNew defDiscoOld
+                             $ sclientStates ser}
+    Nothing -> return ()  -- probably no previous games
+  -- Hack ends.
+  clientStatesNew <- getsServer sclientStates
   let updRestart fid = UpdRestart fid (pers EM.! fid) (clientStatesNew EM.! fid)
                                   scurChalSer sclientOptions
   mapWithKeyM_ (\fid _ -> do

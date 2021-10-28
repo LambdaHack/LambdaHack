@@ -96,6 +96,7 @@ loopSer serverOptions executorClient = do
       rngs <- getsServer srngs
       when (sdumpInitRngs serverOptions) $ dumpRngs rngs
     _ -> do  -- starting new game for this savefile (--newGame or fresh save)
+      factionDold <- getsState sfactionD
       s <- gameReset serverOptions Nothing Nothing
              -- get RNG from item boost
       -- Set up commandline options.
@@ -106,7 +107,7 @@ loopSer serverOptions executorClient = do
       execUpdAtomic $ UpdRestartServer s
       updConn
       initPer
-      reinitGame
+      reinitGame factionDold
       writeSaveAll False False
   loopUpd updConn
 
@@ -722,6 +723,7 @@ restartGame updConn loop mgameMode = do
   execSfxAtomic SfxRestart
   soptionsNxt <- getsServer soptionsNxt
   srandom <- getsServer srandom
+  factionDold <- getsState sfactionD
   -- Create new factions.
   s <- gameReset soptionsNxt mgameMode (Just srandom)
   -- Note how we also no longer assert exploration, because there may not be
@@ -736,7 +738,7 @@ restartGame updConn loop mgameMode = do
   -- Spawn new clients, as needed, according to new factions.
   updConn
   initPer
-  reinitGame
+  reinitGame factionDold
   -- Save a just started noConfirm game to preserve history of the just
   -- ended normal game, in case the user exits brutally.
   writeSaveAll False True
