@@ -9,7 +9,7 @@ module Game.LambdaHack.Server.ItemRev
     -- * The @FlavourMap@ type
   , FlavourMap, emptyFlavourMap, dungeonFlavourMap
     -- * Important implementation parts, exposed for tests
-  , rollFlavourMap, invalidInformationCode
+  , rollFlavourMap
 #ifdef EXPOSE_INTERNAL
     -- * Internal operations
   , buildItem, keepMetaGameInformation
@@ -144,13 +144,6 @@ newItem cops freq flavourMap discoRev levelDepth totalDepth =
 newtype DiscoveryKindRev = DiscoveryKindRev (U.Vector Word16)
   deriving (Show, Binary)
 
--- | Code that means the information (e.g., flavour or hidden kind index)
--- should be regenerated, because it could not be transferred from
--- previous playthrough (it's random in each playthrough or there was
--- no previous playthrough).
-invalidInformationCode :: Word16
-invalidInformationCode = maxBound
-
 emptyDiscoveryKindRev :: DiscoveryKindRev
 emptyDiscoveryKindRev = DiscoveryKindRev U.empty
 
@@ -162,8 +155,11 @@ serverDiscos COps{coitem} (DiscoveryKindRev discoRevFromPreviousGame) = do
     if U.null discoRevFromPreviousGame
     then shuffle ixs
     else shuffleExcept (keepMetaGameInformation coitem discoRevFromPreviousGame)
-                       (olength coitem) ixs
-  let f (!ikMap, (!ix) : rest) !kmKind _ =
+                       (olength coitem)
+                       ixs
+  let f :: (DiscoveryKind, [Word16]) -> ContentId ItemKind -> ItemKind
+        -> (DiscoveryKind, [Word16])
+      f (!ikMap, (!ix) : rest) !kmKind _ =
         (EM.insert (toItemKindIx ix) kmKind ikMap, rest)
       f (ikMap, []) ik _ =
         error $ "too short ixs" `showFailure` (ik, ikMap)
