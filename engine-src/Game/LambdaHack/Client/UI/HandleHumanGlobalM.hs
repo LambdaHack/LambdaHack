@@ -122,7 +122,7 @@ byAreaHuman cmdSemInCxtOfKM l = do
                       -- for the whole UI screen in square font coordinates
       pointerInArea a = do
         rs <- areaToRectangles a
-        return $! any (flip inside p) $ catMaybes rs
+        return $! any (`inside` p) $ catMaybes rs
   cmds <- filterM (pointerInArea . fst) l
   case cmds of
     [] -> do
