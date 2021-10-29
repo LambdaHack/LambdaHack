@@ -84,6 +84,8 @@ queryUIunderAI = do
    modifySession $ \sess -> sess { sregainControl = False
                                  , sreqDelay = ReqDelayNot
                                  , sreqPending = Nothing }  -- just in case
+   -- The keys mashed to gain control are not considered a command.
+   resetPressedKeys
    -- Menu is entered in @displayRespUpdAtomicUI@ at @UpdAutoFaction@
    -- and @stopAfter@ is canceled in @cmdAtomicSemCli@
    -- when handling the results of the request below.

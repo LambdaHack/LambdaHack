@@ -192,8 +192,6 @@ loopUI timeSinceLastQuery = do
                               || sreqDelay == ReqDelayHandled
                               || isJust sreqPending) -> do
          -- ignore alarm if to be handled by AI control regain code elsewhere
-       -- The keys mashed to gain control are not considered a command.
-       resetPressedKeys
        -- Checking for special case for UI under AI control, because the default
        -- behaviour is in this case too alarming for the player, especially
        -- during the insert coin demo before game is started.
