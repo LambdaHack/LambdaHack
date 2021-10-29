@@ -72,7 +72,7 @@ frontendCrawlEmpty:
 	$$(cabal list-bin exe:LambdaHack) --dbgMsgSer --logPriority 4 --savePrefix test --newGame 1 --dumpInitRngs --automateAll --gameMode crawlEmpty --maxFps 100000 --benchmark
 
 frontendCrawlSurvival:
-	$$(cabal list-bin exe:LambdaHack) --dbgMsgSer --logPriority 4 --savePrefix test --newGame 9 --dumpInitRngs --automateAll --gameMode crawlSurvival --maxFps 1000 --maxFps 100000 --benchmark
+	$$(cabal list-bin exe:LambdaHack) --dbgMsgSer --logPriority 4 --savePrefix test --newGame 9 --dumpInitRngs --automateAll --gameMode crawlSurvival --maxFps 100000 --benchmark
 
 frontendSafari:
 	$$(cabal list-bin exe:LambdaHack) --dbgMsgSer --logPriority 4 --savePrefix test --newGame 5 --dumpInitRngs --automateAll --gameMode safari --exposeActors
