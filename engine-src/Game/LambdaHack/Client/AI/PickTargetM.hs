@@ -465,6 +465,10 @@ computeTarget foeAssocs friendAssocs aid = do
             | bpos b == pos -> tellOthersNothingHere
             | recentlyFled -> pickNewTarget
                 -- forget enemy positions to prevent attacking them again soon
+            | not (couldMoveLastTurn || null nearbyFoes) -> pickNewTarget
+                -- if only, possibly, shooting, forget hotspots, target foes;
+                -- this results in only pointman humans chasing old foes
+                -- in preference of new visible ones, but it's fine
             | otherwise -> do
               -- Here pick the closer enemy, the remembered or seen, to avoid
               -- loops when approaching new enemy obscures him behind obstacle
