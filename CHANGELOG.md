@@ -1,6 +1,6 @@
 ## [v0.10.3.0](https://github.com/LambdaHack/LambdaHack/compare/v0.10.2.0...v0.10.3.0)
 
-- Work around regression https://gitlab.freedesktop.org/freetype/freetype/-/issues/1076 by making the scalable square font the default as the map font; the tiny map fonts, for which there is no such workaround, wont work for anybody with freetype 2.11.0
+- Work around regression https://gitlab.freedesktop.org/freetype/freetype/-/issues/1076 by making the scalable square font the default as the map font; the tiny map fonts, for which there is no such workaround, won't work for anybody with freetype 2.11.0
 - Enable display of details in right pane in many menus
 - Switch mouse wheel to move selection now that it changes right pane display
 - Make the line where messages wrap configurable in config file
