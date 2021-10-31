@@ -660,13 +660,12 @@ inventoryInRightPane leader lSlots bag c ekm = case ekm of
               -- was ever killed by us or killed ours, etc.
               -- This can be the same prompt or longer than what entering
               -- the item screen shows.
-        -- Mono font used, because lots of numbers in these blurbs
-        -- and because some prop fonts wider than mono (e.g., in the
-        -- dejavuBold font set).
-        -- A side effect is a larger space between the symbol and description,
-        -- so this is not a bug, not a double space, not worth focusing on.
-        okxItemLorePointedAt
-          monoFont (rwidth - 2) True bag 0 promptFun ix0 lSlots
+        -- Some prop fonts are wider than mono (e.g., in dejavuBold font set),
+        -- so the width in these artificial texts full of digits and strange
+        -- characters needs to be smaller than @rwidth - 2@ that would suffice
+        -- for mono.
+        let widthAt = width - 5
+        okxItemLorePointedAt propFont widthAt True bag 0 promptFun ix0 lSlots
 
 skillCloseUp :: MonadClientUI m => ActorId -> Int -> m (Text, AttrString)
 skillCloseUp leader slotIndex = do
