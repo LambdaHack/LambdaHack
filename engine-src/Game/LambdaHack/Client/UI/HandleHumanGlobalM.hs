@@ -1799,7 +1799,7 @@ settingsMenuHuman cmdSemInCxtOfKM = do
               then rwidth `div` 2
               else min uMsgWrapColumn (rwidth - 2)
       textToBlurb t = Just $ attrLinesToFontMap
-        [ ( monoFont
+        [ ( propFont
           , splitAttrString width width
             $ textToAS t ) ]
       -- Key-description-command-text tuples.
@@ -1856,7 +1856,7 @@ challengeMenuHuman cmdSemInCxtOfKM = do
       width = if isSquareFont propFont
               then rwidth `div` 2
               else min uMsgWrapColumn (rwidth - 2)
-      widthMono = if isSquareFont propFont
+      widthFull = if isSquareFont propFont
                   then rwidth `div` 2
                   else rwidth - 2
       duplicateEOL '\n' = "\n\n"
@@ -1867,8 +1867,8 @@ challengeMenuHuman cmdSemInCxtOfKM = do
             $ textFgToAS Color.BrBlack
             $ T.concatMap duplicateEOL (MK.mdesc gameMode)
               <> "\n\n" )
-        , ( monoFont
-          , splitAttrString widthMono widthMono
+        , ( propFont
+          , splitAttrString widthFull widthFull
             $ textToAS
             $ MK.mrules gameMode
               <> "\n\n" )
@@ -1878,8 +1878,8 @@ challengeMenuHuman cmdSemInCxtOfKM = do
             $ T.concatMap duplicateEOL (MK.mreason gameMode) )
         ]
       textToBlurb t = Just $ attrLinesToFontMap
-        [ ( monoFont
-          , splitAttrString width width  -- not widthMono!
+        [ ( propFont
+          , splitAttrString width width  -- not widthFull!
             $ textToAS t ) ]
       -- Key-description-command-text tuples.
       kds = [ ("s", (tnextScenario, GameScenarioIncr, blurb))
