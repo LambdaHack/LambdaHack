@@ -1644,10 +1644,7 @@ generateMenu cmdSemInCxtOfKM blurb kdsRaw gameInfo menuName = do
   FontSetup{..} <- getFontSetup
   let kds = map (first K.mkKM) kdsRaw
       bindings =  -- key bindings to display
-        let fmt (km, (d, _, _)) =
-              ( Just km
-              , T.unpack
-                $ T.justifyLeft 3 ' ' (T.pack $ K.showKM km) <> " " <> d )
+        let fmt (km, (d, _, _)) = (Just km, T.unpack d)
         in map fmt kds
       generate :: Int -> (Maybe K.KM, String) -> Maybe KYX
       generate y (mkey, binding) =
