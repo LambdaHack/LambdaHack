@@ -330,10 +330,14 @@ stepChoiceScreen dm sfBlank frsX extraKeys = do
                       Nothing -> if pointer == maxIx then tmpResult 0
                                  else tmpResult (min maxIx (pointer + 1))
                       Just ix -> tmpResult (pointer + ix + 1)
-                  K.Left -> if pointer == 0 then tmpResult maxIx
-                            else tmpResult (max 0 (pointer - 1))
-                  K.Right -> if pointer == maxIx then tmpResult 0
-                             else tmpResult (min maxIx (pointer + 1))
+                  K.Left -> case findKYX (max 0 (pointer - 1)) frs of
+                    Just (_, (_, (PointUI _ y2, _)), _) | y2 == y ->
+                      tmpResult (max 0 (pointer - 1))
+                    _ -> tmpResult pointer  -- do nothing
+                  K.Right -> case findKYX (min maxIx (pointer + 1)) frs of
+                    Just (_, (_, (PointUI _ y2, _)), _) | y2 == y ->
+                      tmpResult (min maxIx (pointer + 1))
+                    _ -> tmpResult pointer  -- do nothing
                   K.Home -> tmpResult clearIx
                   K.End -> tmpResult maxIx
                   K.PgUp ->
