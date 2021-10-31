@@ -398,7 +398,8 @@ hunt = rogue  -- a scenario with strong missiles for ranged and shade for melee
   , cdoorChance   = 1
   , copenChance   = 0
   , chidden       = 0
-  , cactorFreq    = []
+  , cactorCoeff   = 300  -- spawn slowly
+  , cactorFreq    = [(INSECT, 100)]
   , citemNum      = 5 `d` 10
   , citemFreq     = [ (IK.COMMON_ITEM, 30)
                     , (ANY_ARROW, 400), (HARPOON, 300), (IK.EXPLOSIVE, 50) ]
