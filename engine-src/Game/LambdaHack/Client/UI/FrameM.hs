@@ -109,14 +109,16 @@ promptGetKey dm ovs onBlank frontKeyKeys = do
   lidV <- viewedLevelUI
   report <- getsSession $ newReport . shistory
   sreqQueried <- getsSession sreqQueried
+  macroFrame <- getsSession smacroFrame
   let interrupted =
         -- If server is not querying for request, then the key is needed due to
         -- a special event, not ordinary querying the player for command,
         -- so interrupt.
         not sreqQueried
-        -- Any alarming message interupts macros.
-        || anyInReport disturbsResting report
-  macroFrame <- getsSession smacroFrame
+        -- Any alarming message interupts macros, except when the macro
+        -- displays help and ends, which is a helpful thing to do.
+        || (anyInReport disturbsResting report
+            && keyPending macroFrame /= KeyMacro [K.mkKM "F1"])
   km <- case keyPending macroFrame of
     KeyMacro (km : kms) | not interrupted
                           -- A faulty key in a macro is a good reason

@@ -347,6 +347,14 @@ stepChoiceScreen dm sfBlank frsX extraKeys = do
                     -- arrow keys may be used instead.
                     tmpResult (min maxIx firstItemOfNextPage)
                   K.Space -> ignoreKey
+                  _ | K.key ikm `elem` [K.Char '?', K.Fun 1] -> do
+                    -- Clear macros and invoke the help macro.
+                    modifySession $ \sess ->
+                      sess { smacroFrame =
+                               emptyMacroFrame {keyPending =
+                                                  KeyMacro [K.mkKM "F1"]}
+                           , smacroStack = [] }
+                    return (True, Left K.escKM, pointer)
                   _ -> error $ "unknown key" `showFailure` ikm
           pkm <- promptGetKey dm ovs sfBlank legalKeys
           interpretKey pkm
@@ -367,7 +375,8 @@ navigationKeys = [ K.leftButtonReleaseKM, K.rightButtonReleaseKM
                  , K.returnKM, K.spaceKM
                  , K.upKM, K.downKM, K.wheelNorthKM, K.wheelSouthKM
                  , K.leftKM, K.rightKM, K.pgupKM, K.pgdnKM
-                 , K.homeKM, K.endKM, K.controlP ]
+                 , K.homeKM, K.endKM, K.controlP
+                 , K.mkChar '?', K.mkKM "F1" ]
 
 -- | Find a position in a menu.
 -- The arguments go from first menu line and menu page to the last,
