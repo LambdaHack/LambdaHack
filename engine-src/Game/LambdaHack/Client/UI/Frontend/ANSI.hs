@@ -32,6 +32,7 @@ frontendName = "ANSI"
 -- | Starts the main program loop using the frontend input and output.
 startup :: ScreenContent -> IO RawFrontend
 startup coscreen@ScreenContent{rwidth, rheight} = do
+  ANSI.clearScreen
   myx <- ANSI.getTerminalSize
   case myx of
     Just (y, x) | x < rwidth || y < rheight ->
