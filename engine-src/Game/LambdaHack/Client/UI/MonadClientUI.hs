@@ -365,7 +365,7 @@ scoreToSlideshow total status = do
                            ourVictims theirVictims
                            (fhiCondPoly $ gplayer fact)
   fontSetup <- getFontSetup
-  let sli = highSlideshow fontSetup rwidth (rheight - 1) ntable pos
+  let sli = highSlideshow fontSetup False rwidth (rheight - 1) ntable pos
                           gameModeName tz
   return $! if worthMentioning
             then sli

@@ -1369,7 +1369,10 @@ helpHuman cmdSemInCxtOfKM = do
   fontSetup@FontSetup{..} <- getFontSetup
   gameModeId <- getsState sgameModeId
   modeOv <- describeMode True gameModeId
-  let modeH = ( "Press SPACE or PGDN to advance or ESC to see the map again."
+  curTutorial <- getsSession scurTutorial
+  overrideTut <- getsSession soverrideTut
+  let displayTutorialHints = fromMaybe curTutorial overrideTut
+      modeH = ( "Press SPACE or PGDN to advance or ESC to see the map again."
               , (modeOv, []) )
       keyH = keyHelp ccui fontSetup
       -- This takes a list of paragraphs and returns a list of screens.
@@ -1420,8 +1423,8 @@ helpHuman cmdSemInCxtOfKM = do
       manualH = map addMnualHeader manualOvs
       splitHelp (t, okx) = splitOKX fontSetup True rwidth rheight rwidth
                                     (textToAS t) [K.spaceKM, K.escKM] okx
-      sli = toSlideshow fontSetup $ concat $ map splitHelp
-            $ modeH : keyH ++ manualH
+      sli = toSlideshow fontSetup displayTutorialHints
+            $ concat $ map splitHelp $ modeH : keyH ++ manualH
   -- Thus, the whole help menu corresponds to a single menu of item or lore,
   -- e.g., shared stash menu. This is especially clear when the shared stash
   -- menu contains many pages.
@@ -1456,13 +1459,17 @@ dashboardHuman :: MonadClientUI m
 dashboardHuman cmdSemInCxtOfKM = do
   CCUI{coinput, coscreen=ScreenContent{rwidth, rheight}} <- getsSession sccui
   fontSetup@FontSetup{..} <- getFontSetup
-  let offsetCol2 = 2
+  curTutorial <- getsSession scurTutorial
+  overrideTut <- getsSession soverrideTut
+  let displayTutorialHints = fromMaybe curTutorial overrideTut
+      offsetCol2 = 2
       (ov0, kxs0) = okxsN coinput monoFont propFont offsetCol2 (const False)
                           False CmdDashboard ([], [], []) ([], [])
       al1 = textToAS "Dashboard"
-  let splitHelp (al, okx) = splitOKX fontSetup False rwidth (rheight - 2) rwidth
+      splitHelp (al, okx) = splitOKX fontSetup False rwidth (rheight - 2) rwidth
                                      al [K.escKM] okx
-      sli = toSlideshow fontSetup $ splitHelp (al1, (ov0, kxs0))
+      sli = toSlideshow fontSetup displayTutorialHints
+            $ splitHelp (al1, (ov0, kxs0))
       extraKeys = [K.escKM]
   ekm <- displayChoiceScreen "dashboard" ColorFull False sli extraKeys
   case ekm of
@@ -1531,7 +1538,10 @@ itemMenuHuman leader cmdSemInCxtOfKM = do
           report <- getReportUI True
           CCUI{coinput} <- getsSession sccui
           mstash <- getsState $ \s -> gstash $ sfactionD s EM.! bfid b
-          let calmE = calmEnough b actorCurAndMaxSk
+          curTutorial <- getsSession scurTutorial
+          overrideTut <- getsSession soverrideTut
+          let displayTutorialHints = fromMaybe curTutorial overrideTut
+              calmE = calmEnough b actorCurAndMaxSk
               greyedOut cmd = not calmE && fromCStore == CEqp
                               || mstash == Just (blid b, bpos b)
                                  && fromCStore == CGround
@@ -1570,7 +1580,7 @@ itemMenuHuman leader cmdSemInCxtOfKM = do
               splitHelp (al, okx) =
                 splitOKX fontSetup False rwidth (rheight - 2) rwidth al
                          [K.spaceKM, K.escKM] okx
-              sli = toSlideshow fontSetup
+              sli = toSlideshow fontSetup displayTutorialHints
                     $ splitHelp ( al1
                                 , ( EM.insertWith (++) squareFont ovLab
                                     $ EM.insertWith (++) propFont ovDesc

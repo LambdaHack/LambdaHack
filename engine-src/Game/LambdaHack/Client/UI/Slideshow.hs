@@ -115,14 +115,19 @@ unsnoc Slideshow{slideshow} =
     [] -> Nothing
     okx : rest -> Just (Slideshow $ reverse rest, okx)
 
-toSlideshow :: FontSetup -> [OKX] -> Slideshow
-toSlideshow FontSetup{..} okxs = Slideshow $ addFooters False okxs
+toSlideshow :: FontSetup -> Bool -> [OKX] -> Slideshow
+toSlideshow FontSetup{..}displayTutorialHints okxs =
+  Slideshow $ addFooters False okxs
  where
   atEnd = flip (++)
   appendToFontOverlayMap :: FontOverlayMap -> String
                          -> (FontOverlayMap, PointUI, DisplayFont, Int)
-  appendToFontOverlayMap ovs msg =
-    let maxYminXofOverlay ov =
+  appendToFontOverlayMap ovs msgPrefix =
+    let msg | displayTutorialHints =
+              msgPrefix
+              ++ "  (ESC to exit, PGUP, HOME, mouse, wheel, arrows, etc.)"
+            | otherwise = msgPrefix
+        maxYminXofOverlay ov =
           let ymxOfOverlay (PointUI x y, _) = (- y, x)
           in minimum $ maxBound : map ymxOfOverlay ov
         -- @sortOn@ less efficient here, because function cheap.
@@ -218,13 +223,15 @@ keysOKX displayFont ystart xstart width keys =
 
 -- The font argument is for the report and keys overlay. Others already have
 -- assigned fonts.
-splitOverlay :: FontSetup -> Int -> Int -> Int -> Report -> [K.KM] -> OKX
+splitOverlay :: FontSetup -> Bool -> Int -> Int -> Int -> Report -> [K.KM]
+             -> OKX
              -> Slideshow
-splitOverlay fontSetup width height wrap report keys (ls0, kxs0) =
+splitOverlay fontSetup displayTutorialHints
+             width height wrap report keys (ls0, kxs0) =
   let renderedReport = renderReport True report
       reportAS = foldr (<\:>) [] renderedReport
-  in toSlideshow fontSetup $ splitOKX fontSetup False width height wrap
-                                      reportAS keys (ls0, kxs0)
+  in toSlideshow fontSetup displayTutorialHints $
+       splitOKX fontSetup False width height wrap reportAS keys (ls0, kxs0)
 
 -- Note that we only split wrt @White@ space, nothing else.
 splitOKX :: FontSetup -> Bool -> Int -> Int -> Int -> AttrString -> [K.KM]
@@ -351,6 +358,7 @@ splitOKX FontSetup{..} msgLong width height wrap reportAS keys (ls0, kxs0) =
 
 -- | Generate a slideshow with the current and previous scores.
 highSlideshow :: FontSetup
+              -> Bool
               -> Int        -- ^ width of the display area
               -> Int        -- ^ height of the display area
               -> HighScore.ScoreTable -- ^ current score table
@@ -358,8 +366,8 @@ highSlideshow :: FontSetup
               -> Text       -- ^ the name of the game mode
               -> TimeZone   -- ^ the timezone where the game is run
               -> Slideshow
-highSlideshow fontSetup@FontSetup{monoFont} width height table pos
-              gameModeName tz =
+highSlideshow fontSetup@FontSetup{monoFont} displayTutorialHints
+              width height table pos gameModeName tz =
   let entries = (height - 3) `div` 3
       msg = HighScore.showAward entries table pos gameModeName
       tts = map offsetOverlay $ showNearbyScores tz pos table entries
@@ -367,7 +375,7 @@ highSlideshow fontSetup@FontSetup{monoFont} width height table pos
       splitScreen ts =
         splitOKX fontSetup False width height width al [K.spaceKM, K.escKM]
                  (EM.singleton monoFont ts, [])
-  in toSlideshow fontSetup $ concat $ map splitScreen tts
+  in toSlideshow fontSetup displayTutorialHints $ concat $ map splitScreen tts
 
 -- | Show a screenful of the high scores table.
 -- Parameter @entries@ is the number of (3-line) scores to be shown.

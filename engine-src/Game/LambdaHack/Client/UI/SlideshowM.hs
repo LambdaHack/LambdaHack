@@ -52,7 +52,11 @@ overlayToSlideshow y keys okx = do
   report <- getReportUI True
   recordHistory  -- report will be shown soon, remove it to history
   fontSetup <- getFontSetup
-  return $! splitOverlay fontSetup rwidth y uMsgWrapColumn report keys okx
+  curTutorial <- getsSession scurTutorial
+  overrideTut <- getsSession soverrideTut
+  let displayTutorialHints = fromMaybe curTutorial overrideTut
+  return $! splitOverlay fontSetup displayTutorialHints
+                         rwidth y uMsgWrapColumn report keys okx
 
 -- | Split current report into a slideshow.
 reportToSlideshow :: MonadClientUI m => [K.KM] -> m Slideshow
@@ -74,7 +78,11 @@ reportToSlideshowKeepHalt insideMenu keys = do
   -- Don't do @recordHistory@; the message is important, but related
   -- to the messages that come after, so should be shown together.
   fontSetup <- getFontSetup
-  return $! splitOverlay fontSetup rwidth (rheight - 2) uMsgWrapColumn
+  curTutorial <- getsSession scurTutorial
+  overrideTut <- getsSession soverrideTut
+  let displayTutorialHints = fromMaybe curTutorial overrideTut
+  return $! splitOverlay fontSetup displayTutorialHints
+                         rwidth (rheight - 2) uMsgWrapColumn
                          report keys emptyOKX
 
 -- | Display a message. Return value indicates if the player wants to continue.
