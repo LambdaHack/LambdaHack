@@ -311,7 +311,7 @@ raid = rogue
   , cescapeFreq   = [(INDOOR_ESCAPE_UP, 1)]
   , cstairFreq    = []
   , cstairAllowed = []
-  , cdesc         = ""
+  , cdesc         = "Mold spreads across the walls and scuttling sounds can be heard in the distance."
   }
 brawl = rogue  -- many random solid tiles, to break LOS, since it's a day
                -- and this scenario is not focused on ranged combat;
@@ -383,11 +383,11 @@ shootout = rogue  -- a scenario with strong missiles;
   , cfenceTileS   = OUTDOOR_OUTER_FENCE
   , cfenceTileW   = OUTDOOR_OUTER_FENCE
   , cmaxStairsNum = 0
-  , cdesc         = ""
+  , cdesc         = "The warmth has released fog and the wind brooms it away."
   }
 hunt = rogue  -- a scenario with strong missiles for ranged and shade for melee
   { csymbol       = 'H'
-  , cname         = "Noon swamp"
+  , cname         = "Afternoon swamp"
   , cfreq         = [(CAVE_HUNT, 1)]
   , ccellSize     = DiceXY (1 `d` 2 + 6) 6
   , cminPlaceSize = DiceXY 3 3
@@ -413,7 +413,7 @@ hunt = rogue  -- a scenario with strong missiles for ranged and shade for melee
   , cfenceTileS   = OUTDOOR_OUTER_FENCE
   , cfenceTileW   = OUTDOOR_OUTER_FENCE
   , cmaxStairsNum = 0
-  , cdesc         = ""
+  , cdesc         = "Tired after the day's heat, the insects gather strength in their hiding places."
   }
 escape = rogue  -- a scenario with weak missiles, because heroes don't depend
                 -- on them; dark, so solid obstacles are to hide from missiles,
@@ -448,7 +448,7 @@ escape = rogue  -- a scenario with weak missiles, because heroes don't depend
   , cescapeFreq   = [(OUTDOOR_ESCAPE_DOWN, 1)]
   , cstairFreq    = []
   , cskip         = [0]  -- don't start heroes nor opponents on escape
-  , cdesc         = ""
+  , cdesc         = "The darkening greyness is settling into silence."
   }
 zoo = rogue  -- few lights and many solids, to help the less numerous heroes
   { csymbol       = 'Z'
@@ -479,7 +479,7 @@ zoo = rogue  -- few lights and many solids, to help the less numerous heroes
   , cfenceTileS   = OUTDOOR_OUTER_FENCE
   , cfenceTileW   = OUTDOOR_OUTER_FENCE
   , cmaxStairsNum = 0
-  , cdesc         = ""
+  , cdesc         = "The night is filled with animal calls."
   }
 ambush = rogue  -- a scenario with strong missiles;
                 -- dark, so solid obstacles are to hide from missiles,
@@ -515,7 +515,7 @@ ambush = rogue  -- a scenario with strong missiles;
   , cfenceTileS   = OUTDOOR_OUTER_FENCE
   , cfenceTileW   = OUTDOOR_OUTER_FENCE
   , cmaxStairsNum = 0
-  , cdesc         = ""
+  , cdesc         = "Fires have reached into the city, glowing in darkness."
   }
 
 -- * Other caves; testing, Easter egg, future work
@@ -549,7 +549,7 @@ battle = rogue  -- few lights and many solids, to help the less numerous heroes
   , cfenceApart   = True  -- ensures no cut-off parts from collapsed
   , cmaxStairsNum = 0
   , cstairFreq    = []
-  , cdesc         = ""
+  , cdesc         = "Eroded walls, rusted weapons and unidentifiable bones cruch underfoot all alike."
   }
 safari1 = brawl
   { cname         = "Hunam habitat"
