@@ -170,6 +170,7 @@ standardKeysAndMouse = InputContentRaw $ map evalKeyDef $
   , ("C-c", ([CmdMeta], "exit to desktop without saving", GameDrop))
   , ("?", ([CmdMeta], "display help", Hint))
   , ("F1", ([CmdMeta, CmdDashboard], "display help immediately", Help))
+  , ("F11", ([CmdMeta, CmdDashboard], "show history", AllHistory))
   , ("F12", ([CmdMeta], "open dashboard", Dashboard))
   , ("v", repeatLastTriple 1 [CmdMeta])
   , ("C-v", repeatLastTriple 25 [])
@@ -180,9 +181,6 @@ standardKeysAndMouse = InputContentRaw $ map evalKeyDef $
   , ("'", ([CmdMeta], "start recording commands", Record))
   , ("C-S", ([CmdMeta], "save game backup", GameSave))
   , ("C-P", ([CmdMeta], "print screen", PrintScreen))
-
-  -- Dashboard, in addition to commands marked above
-  , ("safeD101", ([CmdInternal, CmdDashboard], "display history", AllHistory))
 
   -- Mouse
   , ( "LeftButtonRelease"
@@ -245,15 +243,12 @@ standardKeysAndMouse = InputContentRaw $ map evalKeyDef $
                , "accept target"
                , Accept ))
   , ("safe11", ( [CmdInternal]
-               , "show history"
-               , AllHistory ))
-  , ("safe12", ( [CmdInternal]
                , "wait a turn, bracing for impact"
                , Wait ))
-  , ("safe13", ( [CmdInternal]
+  , ("safe12", ( [CmdInternal]
                , "lurk 0.1 of a turn"
                , Wait10 ))
-  , ("safe14", ( [CmdInternal]
+  , ("safe13", ( [CmdInternal]
                , "snap crosshair to enemy"
                , XhairPointerEnemy ))
   ]

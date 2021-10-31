@@ -1462,7 +1462,7 @@ dashboardHuman cmdSemInCxtOfKM = do
   curTutorial <- getsSession scurTutorial
   overrideTut <- getsSession soverrideTut
   let displayTutorialHints = fromMaybe curTutorial overrideTut
-      offsetCol2 = 2
+      offsetCol2 = 3
       (ov0, kxs0) = okxsN coinput monoFont propFont offsetCol2 (const False)
                           False CmdDashboard ([], [], []) ([], [])
       al1 = textToAS "Dashboard"
