@@ -13,8 +13,7 @@ module Game.LambdaHack.Client.UI.HandleHumanLocalM
   , selectActorHuman, selectNoneHuman, selectWithPointerHuman
   , repeatHuman, repeatHumanTransition
   , repeatLastHuman, repeatLastHumanTransition
-  , recordHuman, recordHumanTransition
-  , allHistoryHuman, lastHistoryHuman
+  , recordHuman, recordHumanTransition, allHistoryHuman
   , markVisionHuman, markSmellHuman, markSuspectHuman, markAnimHuman
   , overrideTutHuman
   , printScreenHuman
@@ -29,8 +28,7 @@ module Game.LambdaHack.Client.UI.HandleHumanLocalM
 #ifdef EXPOSE_INTERNAL
     -- * Internal operations
   , chooseItemDialogModeLore, permittedProjectClient, projectCheck
-  , xhairLegalEps, posFromXhair
-  , permittedApplyClient, eitherHistory, endAiming, endAimingMsg
+  , xhairLegalEps, posFromXhair, permittedApplyClient, endAiming, endAimingMsg
   , doLook, flashAiming
 #endif
   ) where
@@ -730,11 +728,8 @@ recordHumanTransition macroFrame =
 
 -- * AllHistory
 
-allHistoryHuman :: MonadClientUI m => m ()
-allHistoryHuman = eitherHistory True
-
-eitherHistory :: forall m. MonadClientUI m => Bool -> m ()
-eitherHistory showAll = do
+allHistoryHuman :: forall m. MonadClientUI m => m ()
+allHistoryHuman = do
   CCUI{coscreen=ScreenContent{rwidth, rheight}} <- getsSession sccui
   history <- getsSession shistory
   arena <- getArenaUI
@@ -823,14 +818,7 @@ eitherHistory showAll = do
           K.Down -> displayOneReport $ histSlot + 1
           K.Esc -> msgAdd MsgPromptGeneric "Try to learn from your previous mistakes."
           _ -> error $ "" `showFailure` km
-  if showAll
-  then displayAllHistory
-  else displayOneReport (histBoundRaw - 1)
-
--- * LastHistory
-
-lastHistoryHuman :: MonadClientUI m => m ()
-lastHistoryHuman = eitherHistory False
+  displayAllHistory
 
 -- * MarkVision
 

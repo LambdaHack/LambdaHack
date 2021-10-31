@@ -181,7 +181,6 @@ cmdSemanticsLeader cmd = case cmd of
   RepeatLast n -> addNoError $ repeatLastHuman n
   Record -> addNoError recordHuman
   AllHistory -> addNoError allHistoryHuman
-  LastHistory -> addNoError lastHistoryHuman
   MarkVision ->
     CmdNoNeed $ markVisionHuman >> settingsMenuHuman cmdSemInCxtOfKM
   MarkSmell ->

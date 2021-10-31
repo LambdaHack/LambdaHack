@@ -146,7 +146,7 @@ mouseLMB goToOrRunTo desc =
         , (CaArenaName, Accept)
         , (CaPercentSeen, XhairStair True) ] }
   common =
-    [ (CaMessage, LastHistory)
+    [ (CaMessage, AllHistory)
     , (CaLevelNumber, AimAscend 1)
     , (CaXhairDesc, AimEnemy)  -- inits aiming and then cycles enemies
     , (CaSelected, PickLeaderWithPointer)

@@ -165,7 +165,6 @@ data HumanCmd =
   | RepeatLast Int
   | Record
   | AllHistory
-  | LastHistory
   | MarkVision
   | MarkSmell
   | MarkSuspect
