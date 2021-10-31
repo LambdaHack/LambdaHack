@@ -494,6 +494,7 @@ watchRespUpdAtomicUI cmd = case cmd of
     oldSess <- getSession
     svictories <- getsClient svictories
     snxtChal <- getsClient snxtChal
+    noConfirmsGame <- isNoConfirmsGame
     let uiOptions = sUIOptions oldSess
         f !acc _p !i _a = i : acc
         modes = zip [0..] $ ofoldlGroup' comode CAMPAIGN_SCENARIO f []
@@ -511,7 +512,8 @@ watchRespUpdAtomicUI cmd = case cmd of
         , smarkVision = smarkVision oldSess
         , smarkSmell = smarkSmell oldSess
         , snxtScenario
-        , scurTutorial = snxtTutorial oldSess  -- quite random for screensavers
+        , scurTutorial = noConfirmsGame || snxtTutorial oldSess
+            -- make sure a newbie interrupting a screensaver has ample help
         , snxtTutorial = nxtGameTutorial
         , soverrideTut = soverrideTut oldSess
         , sstart = sstart oldSess
