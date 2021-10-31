@@ -308,10 +308,9 @@ stepChoiceScreen dm sfBlank frsX extraKeys = do
                           else interpretKey km
                         Right c  -> return (True, Right c, pointer)
                   K.RightButtonRelease ->
-                    if | ikm `elem` keys -> return (True, Left ikm, pointer)
-                       | K.escKM `elem` keys ->
-                           return (True, Left K.escKM, pointer)
-                       | otherwise -> ignoreKey
+                    if ikm `elem` keys
+                    then return (True, Left ikm, pointer)
+                    else return (True, Left K.escKM, pointer)
                   K.Space | firstItemOfNextPage <= maxIx ->
                     tmpResult firstItemOfNextPage
                   K.Unknown "SAFE_SPACE" ->
@@ -333,11 +332,11 @@ stepChoiceScreen dm sfBlank frsX extraKeys = do
                   K.Left -> case findKYX (max 0 (pointer - 1)) frs of
                     Just (_, (_, (PointUI _ y2, _)), _) | y2 == y ->
                       tmpResult (max 0 (pointer - 1))
-                    _ -> tmpResult pointer  -- do nothing
+                    _ -> ignoreKey
                   K.Right -> case findKYX (min maxIx (pointer + 1)) frs of
                     Just (_, (_, (PointUI _ y2, _)), _) | y2 == y ->
                       tmpResult (min maxIx (pointer + 1))
-                    _ -> tmpResult pointer  -- do nothing
+                    _ -> ignoreKey
                   K.Home -> tmpResult clearIx
                   K.End -> tmpResult maxIx
                   K.PgUp ->
@@ -347,7 +346,7 @@ stepChoiceScreen dm sfBlank frsX extraKeys = do
                     -- and menu non-empty, but that scenario is rare, so OK,
                     -- arrow keys may be used instead.
                     tmpResult (min maxIx firstItemOfNextPage)
-                  K.Space -> tmpResult pointer  -- do nothing
+                  K.Space -> ignoreKey
                   _ -> error $ "unknown key" `showFailure` ikm
           pkm <- promptGetKey dm ovs sfBlank legalKeys
           interpretKey pkm
