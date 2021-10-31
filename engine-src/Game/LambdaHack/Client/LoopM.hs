@@ -201,6 +201,8 @@ loopUI timeSinceLastQuery = do
          -- Mark for immediate control regain from AI.
          modifySession $ \sess -> sess {sregainControl = True}
        else do  -- should work fine even if UI faction has no leader ATM
+         -- The keys mashed to make UI accessible are not considered a command.
+         resetPressedKeys
          -- Stop displaying the prompt, if any, but keep UI simple.
          modifySession $ \sess -> sess {sreqDelay = ReqDelayHandled}
          let msg = if isNothing sreqPending
