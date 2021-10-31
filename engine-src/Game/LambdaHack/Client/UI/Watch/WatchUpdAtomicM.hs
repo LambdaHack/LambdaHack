@@ -540,6 +540,8 @@ watchRespUpdAtomicUI cmd = case cmd of
           _ -> False
     msgAdd MsgBookKeeping "-------------------------------------------------"
     recordHistory
+    msgAdd MsgPromptGeneric
+           "A grand story starts right here! (Press '?' for mode description and help.)"
     msgAdd MsgActionWarning
            ("New game started in" <+> mname gameMode <+> "mode.")
     msgAdd MsgPlotExposition $ mdesc gameMode
@@ -567,10 +569,6 @@ watchRespUpdAtomicUI cmd = case cmd of
     setFrontAutoYes $ isAIFact fact
     -- Forget the furious keypresses when dying in the previous game.
     resetPressedKeys
-    -- Help newbies when actors obscured by text and no obvious key to press:
-    displayMore ColorFull "\nAre you up for the challenge?"
-    msgAdd MsgPromptGeneric
-           "A grand story starts right here! (Press '?' for context and help.)"
   UpdRestartServer{} -> return ()
   UpdResume fid _ -> do
     COps{cocave} <- getsState scops
@@ -581,15 +579,14 @@ watchRespUpdAtomicUI cmd = case cmd of
       lid <- getArenaUI
       lvl <- getLevel lid
       gameMode <- getGameMode
-      msgAdd MsgActionAlert $ "Continuing" <+> mname gameMode <> "."
+      msgAdd MsgPromptGeneric
+             "Welcome back! (Press '?' for mode description and help.)"
+      msgAdd MsgActionAlert $ "Continuing" <+> mname gameMode <+> "mode."
       msgAdd MsgPromptGeneric $ mdesc gameMode
       let desc = cdesc $ okind cocave $ lkind lvl
       unless (T.null desc) $ do
         msgLnAdd MsgPromptFocus "You remember your surroundings."
         msgAdd MsgPromptGeneric desc
-      displayMore ColorFull "\nAre you up for the challenge?"
-      msgAdd MsgPromptGeneric
-             "Prove yourself! (Press '?' for context and help.)"
   UpdResumeServer{} -> return ()
   UpdKillExit{} -> do
 #ifdef USE_JSFILE
