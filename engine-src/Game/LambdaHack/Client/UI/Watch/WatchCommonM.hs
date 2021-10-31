@@ -1,13 +1,11 @@
 -- | Common code for displaying atomic update and SFX commands.
 module Game.LambdaHack.Client.UI.Watch.WatchCommonM
-  ( pushFrame, pushReportFrame, fadeOutOrIn, markDisplayNeeded
-  , lookAtMove, stopAtMove
+  ( fadeOutOrIn, markDisplayNeeded, lookAtMove, stopAtMove
   , aidVerbMU, aidVerbDuplicateMU, itemVerbMUGeneral, itemVerbMU
   , itemVerbMUShort, itemAidVerbMU, mitemAidVerbMU, itemAidDistinctMU
   , manyItemsAidVerbMU
 #ifdef EXPOSE_INTERNAL
     -- * Internal operations
-  , basicFrameWithoutReport
 #endif
   ) where
 
@@ -24,21 +22,15 @@ import           Game.LambdaHack.Client.State
 import           Game.LambdaHack.Client.UI.Animation
 import           Game.LambdaHack.Client.UI.Content.Screen
 import           Game.LambdaHack.Client.UI.ContentClientUI
-import           Game.LambdaHack.Client.UI.Frame
 import           Game.LambdaHack.Client.UI.FrameM
 import           Game.LambdaHack.Client.UI.HandleHelperM
 import           Game.LambdaHack.Client.UI.ItemDescription
 import           Game.LambdaHack.Client.UI.MonadClientUI
 import           Game.LambdaHack.Client.UI.Msg
 import           Game.LambdaHack.Client.UI.MsgM
-import           Game.LambdaHack.Client.UI.Overlay
-import           Game.LambdaHack.Client.UI.PointUI
 import           Game.LambdaHack.Client.UI.SessionUI
-import           Game.LambdaHack.Client.UI.Slideshow
-import           Game.LambdaHack.Client.UI.SlideshowM
 import           Game.LambdaHack.Common.Actor
 import           Game.LambdaHack.Common.ActorState
-import           Game.LambdaHack.Common.ClientOptions
 import           Game.LambdaHack.Common.Faction
 import           Game.LambdaHack.Common.Item
 import qualified Game.LambdaHack.Common.ItemAspect as IA
@@ -47,62 +39,6 @@ import           Game.LambdaHack.Common.MonadStateRead
 import           Game.LambdaHack.Common.State
 import           Game.LambdaHack.Common.Types
 import qualified Game.LambdaHack.Definition.Ability as Ability
-
--- This is not our turn, so we can't obstruct screen with messages
--- and message reformatting causes distraction, so there's no point
--- trying to squeeze the report into the single available line,
--- except when it's not our turn permanently, because AI runs UI.
---
--- The only real drawback of this is that when resting for longer time
--- I can't see the boring messages accumulate until a non-boring interrupts me.
-basicFrameWithoutReport :: MonadClientUI m
-                        => LevelId -> Maybe Bool -> m PreFrame3
-basicFrameWithoutReport arena forceReport = do
-  FontSetup{propFont} <- getFontSetup
-  sbenchMessages <- getsClient $ sbenchMessages . soptions
-  side <- getsClient sside
-  fact <- getsState $ (EM.! side) . sfactionD
-  let underAI = isAIFact fact
-  truncRep <-
-    if | sbenchMessages -> do
-         slides <- reportToSlideshowKeepHalt False []
-         case slideshow slides of
-           [] -> return EM.empty
-           (ov, _) : _ -> do
-             -- See @stepQueryUI@. This strips either "--end-" or "--more-".
-             let ovProp = ov EM.! propFont
-             return $!
-               EM.singleton propFont
-               $ if EM.size ov > 1 then ovProp else init ovProp
-       | fromMaybe underAI forceReport -> do
-         report <- getReportUI False
-         let par1 = firstParagraph $ foldr (<+:>) [] $ renderReport True report
-         return $! EM.fromList [(propFont, [(PointUI 0 0, par1)])]
-       | otherwise -> return EM.empty
-  drawOverlay ColorFull False truncRep arena
-
--- | Push the frame depicting the current level to the frame queue.
--- Only one line of the report is shown, as in animations,
--- because it may not be our turn, so we can't clear the message
--- to see what is underneath.
-pushFrame :: MonadClientUI m => Bool -> m ()
-pushFrame delay = do
-  -- The delay before reaction to keypress was too long in case of many
-  -- projectiles flying and ending flight, so frames need to be skipped.
-  keyPressed <- anyKeyPressed
-  unless keyPressed $ do
-    lidV <- viewedLevelUI
-    frame <- basicFrameWithoutReport lidV Nothing
-    -- Pad with delay before and after to let player see, e.g., door being
-    -- opened a few ticks after it came into vision, the same turn.
-    displayFrames lidV $
-      if delay then [Nothing, Just frame, Nothing] else [Just frame]
-
-pushReportFrame :: MonadClientUI m => m ()
-pushReportFrame = do
-  lidV <- viewedLevelUI
-  frame <- basicFrameWithoutReport lidV (Just True)
-  displayFrames lidV [Just frame]
 
 fadeOutOrIn :: MonadClientUI m => Bool -> m ()
 fadeOutOrIn out = do
