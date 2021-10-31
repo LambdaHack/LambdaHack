@@ -1684,7 +1684,9 @@ generateMenu cmdSemInCxtOfKM blurb kdsRaw gameInfo menuName = do
         Just (_, _, mblurbRight) -> case mblurbRight of
           Nothing -> returnDefaultOKS
           Just blurbRight -> return (prepareBlurb blurbRight, [])
-        Nothing -> error "displayInRightPane: unexpected key"
+        Nothing | ekm == Right (SlotChar 1042 'a') -> returnDefaultOKS
+        Nothing -> error $ "generateMenu: unexpected key:"
+                           `showFailure` ekm
   ekm <- displayChoiceScreenWithRightPane displayInRightPane
                                           menuName ColorFull True
                                           (menuToSlideshow kxy) [K.escKM]
