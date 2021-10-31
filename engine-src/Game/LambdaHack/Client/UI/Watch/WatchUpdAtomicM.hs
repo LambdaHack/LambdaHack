@@ -542,6 +542,9 @@ watchRespUpdAtomicUI cmd = case cmd of
     recordHistory
     msgAdd MsgPromptGeneric
            "A grand story starts right here! (Press '?' for mode description and help.)"
+    if lengthHistory (shistory oldSess) > 1
+      then fadeOutOrIn False
+      else pushReportFrame  -- show anything ASAP
     msgAdd MsgActionWarning
            ("New game started in" <+> mname gameMode <+> "mode.")
     let desc = cdesc $ okind cocave $ lkind lvl
@@ -563,8 +566,6 @@ watchRespUpdAtomicUI cmd = case cmd of
     msgLnAdd MsgBadMiscEvent blurb  -- being here is a bad turn of events
     when (cwolf curChal && not loneMode) $
       msgAdd MsgActionWarning "Being a lone wolf, you begin without companions."
-    when (lengthHistory (shistory oldSess) > 1) $
-      fadeOutOrIn False
     setFrontAutoYes $ isAIFact fact
     -- Forget the furious keypresses when dying in the previous game.
     resetPressedKeys
@@ -580,6 +581,7 @@ watchRespUpdAtomicUI cmd = case cmd of
       gameMode <- getGameMode
       msgAdd MsgPromptGeneric
              "Welcome back! (Press '?' for mode description and help.)"
+      pushReportFrame  -- show anything ASAP
       msgAdd MsgActionAlert $ "Continuing" <+> mname gameMode <+> "mode."
       let desc = cdesc $ okind cocave $ lkind lvl
       unless (T.null desc) $ do

@@ -29,6 +29,7 @@ import Game.LambdaHack.Client.UI.MonadClientUI
 import Game.LambdaHack.Client.UI.Msg
 import Game.LambdaHack.Client.UI.MsgM
 import Game.LambdaHack.Client.UI.SessionUI
+import Game.LambdaHack.Client.UI.Watch.WatchCommonM
 import Game.LambdaHack.Common.ClientOptions
 import Game.LambdaHack.Common.Faction
 import Game.LambdaHack.Common.MonadStateRead
@@ -210,6 +211,8 @@ loopUI timeSinceLastQuery = do
                    else "Server delayed receiving a command from us. The command is cancelled. Issue a new one."
          msgAdd MsgActionAlert msg
          mreqNew <- queryUI
+         msgAdd MsgPromptGeneric "Your client is listening to the server again."
+         pushReportFrame
          -- TODO: once this is really used, verify that if a request
          -- overwritten, nothing breaks due to some things in our ClientState
          -- and SessionUI (but fortunately not in State nor ServerState)
@@ -217,10 +220,10 @@ loopUI timeSinceLastQuery = do
          modifySession $ \sess -> sess {sreqPending = mreqNew}
          -- Now relax completely.
          modifySession $ \sess -> sess {sreqDelay = ReqDelayNot}
-         -- We may yet not know if server is ready, but perhaps server
-         -- tried hard to contact us while we took control and now it sleeps
-         -- for a bit, so let's give it the benefit of the doubt
-         -- and a slight pause before we alarm the player again.
+       -- We may yet not know if server is ready, but perhaps server
+       -- tried hard to contact us while we took control and now it sleeps
+       -- for a bit, so let's give it the benefit of the doubt
+       -- and a slight pause before we alarm the player again.
        loopUI 0
      | otherwise -> do
        -- We know server is not ready.
