@@ -341,9 +341,7 @@ stepChoiceScreen dm sfBlank frsX extraKeys = do
                     -- and menu non-empty, but that scenario is rare, so OK,
                     -- arrow keys may be used instead.
                     tmpResult (min maxIx firstItemOfNextPage)
-                  K.Space -> if pointer == maxIx
-                             then tmpResult clearIx
-                             else tmpResult maxIx
+                  K.Space -> tmpResult pointer  -- do nothing
                   _ -> error $ "unknown key" `showFailure` ikm
           pkm <- promptGetKey dm ovs sfBlank legalKeys
           interpretKey pkm
