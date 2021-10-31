@@ -144,8 +144,7 @@ displayChoiceScreenWithRightPane
   -> m KeyOrSlot
 displayChoiceScreenWithRightPane displayInRightPane
                                  menuName dm sfBlank frsX extraKeys = do
-  (maxIx, initIx, clearIx, m) <-
-    stepChoiceScreen menuName dm sfBlank frsX extraKeys
+  (maxIx, initIx, clearIx, m) <- stepChoiceScreen dm sfBlank frsX extraKeys
   let loop :: Int -> KeyOrSlot -> m (KeyOrSlot, Int)
       loop pointer km = do
         okxRight <- displayInRightPane km
@@ -189,20 +188,16 @@ saveMenuIx menuName initIx pointer =
 -- argument need to be contained in the @[K.KM]@ argument. Otherwise
 -- they are not accepted.
 stepChoiceScreen :: forall m . MonadClientUI m
-                 => String -> ColorMode -> Bool -> Slideshow -> [K.KM]
+                 => ColorMode -> Bool -> Slideshow -> [K.KM]
                  -> m ( Int, Int, Int
                       , Int -> OKX -> m (Bool, KeyOrSlot, Int) )
-stepChoiceScreen menuName dm sfBlank frsX extraKeys = do
+stepChoiceScreen dm sfBlank frsX extraKeys = do
   CCUI{coscreen=ScreenContent{rwidth, rheight}} <- getsSession sccui
   FontSetup{..} <- getFontSetup
   let !_A = assert (K.escKM `elem` extraKeys) ()
       frs = slideshow frsX
       keys = concatMap (lefts . map fst . snd) frs ++ extraKeys
-      legalKeys = keys
-                  ++ navigationKeys
-                  ++ (if menuName == "help"
-                      then [K.mkChar '?', K.mkKM "F1"]
-                      else [])  -- a hack
+      legalKeys = keys ++ navigationKeys
       allOKX = concatMap snd frs
       maxIx = length allOKX - 1
       initIx = case findIndex (isRight . fst) allOKX of
@@ -310,10 +305,6 @@ stepChoiceScreen menuName dm sfBlank frsX extraKeys = do
                            return (True, Left K.escKM, pointer)
                        | otherwise -> ignoreKey
                   K.Space | firstItemOfNextPage <= maxIx ->
-                    tmpResult firstItemOfNextPage
-                  _ | K.key ikm `elem` [K.Char '?', K.Fun 1]
-                      && firstItemOfNextPage <= maxIx
-                      && menuName == "help" ->  -- a hack
                     tmpResult firstItemOfNextPage
                   K.Unknown "SAFE_SPACE" ->
                     if firstItemOfNextPage <= maxIx
