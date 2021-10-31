@@ -202,6 +202,8 @@ standardKeysAndMouse = InputContentRaw $ map evalKeyDef $
   , ("WheelSouth", ([CmdMouse], "unswerve the aiming line", Macro ["-"]))
 
   -- Debug and others not to display in help screens
+  , ("Escape", ([CmdMeta], "", AutomateBack))
+  , ("Escape", ([CmdMeta], "", MainMenu))
   , ("C-semicolon", ( []
                     , "move one step towards the crosshair"
                     , MoveOnceToXhair ))

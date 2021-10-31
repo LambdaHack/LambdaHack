@@ -78,6 +78,8 @@ makeData muiOptions (InputContentRaw copsClient) =
            `swith` rawContent \\ filteredNoMovement
       bcmdList = rawContent ++ movementDefinitions
       -- This catches repetitions (usually) not involving movement keys.
+      rejectRepetitions _ t1 (_, "", _) = t1
+      rejectRepetitions _ (_, "", _) t2 = t2
       rejectRepetitions k t1 t2 =
         error $ "duplicate key among command definitions (you can instead disable some movement key sets in config file and overwrite the freed keys)" `showFailure` (k, t1, t2)
   in InputContent

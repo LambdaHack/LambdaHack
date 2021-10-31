@@ -1640,9 +1640,13 @@ generateMenu :: MonadClientUI m
              -> m (Either MError ReqUI)
 generateMenu cmdSemInCxtOfKM blurb kdsRaw gameInfo menuName = do
   COps{corule} <- getsState scops
-  CCUI{coscreen=ScreenContent{rheight, rwebAddress}} <- getsSession sccui
+  CCUI{ coinput=InputContent{brevMap}
+      , coscreen=ScreenContent{rheight, rwebAddress} } <- getsSession sccui
   FontSetup{..} <- getFontSetup
-  let kds = zipWith (\n kd -> (Right (SlotChar n 'a'), kd)) [0 ..] kdsRaw
+  let matchKM n kd@(_, cmd, _) = case M.lookup cmd brevMap of
+        Just (km : _) -> (Left km, kd)
+        _ -> (Right (SlotChar n 'a'), kd)
+      kds = zipWith matchKM [0 ..] kdsRaw
       bindings =  -- key bindings to display
         let fmt (ekm, (d, _, _)) = (Just ekm, T.unpack d)
         in map fmt kds
