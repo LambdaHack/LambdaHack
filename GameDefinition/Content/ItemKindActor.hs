@@ -2,7 +2,7 @@
 module Content.ItemKindActor
   ( -- * Group name patterns
     pattern S_WOODEN_TORCH, pattern S_SANDSTONE_ROCK
-  , pattern HERO, pattern SCOUT_HERO, pattern RANGER_HERO, pattern ESCAPIST_HERO, pattern AMBUSHER_HERO, pattern BRAWLER_HERO, pattern SOLDIER_HERO, pattern CIVILIAN, pattern MONSTER, pattern MOBILE_MONSTER, pattern SCOUT_MONSTER, pattern ANIMAL, pattern MOBILE_ANIMAL, pattern IMMOBILE_ANIMAL
+  , pattern HERO, pattern SCOUT_HERO, pattern RANGER_HERO, pattern ESCAPIST_HERO, pattern AMBUSHER_HERO, pattern BRAWLER_HERO, pattern SOLDIER_HERO, pattern CIVILIAN, pattern MONSTER, pattern MOBILE_MONSTER, pattern SCOUT_MONSTER, pattern ANIMAL, pattern MOBILE_ANIMAL, pattern IMMOBILE_ANIMAL, pattern INSECT
   , pattern ADD_SIGHT, pattern ARMOR_RANGED, pattern ADD_NOCTO_1, pattern WEAK_ARROW, pattern LIGHT_ATTENUATOR, pattern FIREPROOF_CLOTH, pattern RING_OF_OPPORTUNITY_SNIPER, pattern ANY_ARROW, pattern STARTING_ARMOR, pattern STARTING_WEAPON, pattern GEM
   , actorsGN, actorsGNSingleton
   , -- * Content
@@ -31,10 +31,10 @@ pattern S_WOODEN_TORCH, S_SANDSTONE_ROCK :: GroupName ItemKind
 
 actorsGN :: [GroupName ItemKind]
 actorsGN =
-       [HERO, SCOUT_HERO, RANGER_HERO, ESCAPIST_HERO, AMBUSHER_HERO, BRAWLER_HERO, SOLDIER_HERO, CIVILIAN, MONSTER, MOBILE_MONSTER, SCOUT_MONSTER, ANIMAL, MOBILE_ANIMAL, IMMOBILE_ANIMAL]
+       [HERO, SCOUT_HERO, RANGER_HERO, ESCAPIST_HERO, AMBUSHER_HERO, BRAWLER_HERO, SOLDIER_HERO, CIVILIAN, MONSTER, MOBILE_MONSTER, SCOUT_MONSTER, ANIMAL, MOBILE_ANIMAL, IMMOBILE_ANIMAL, INSECT]
     ++ [ADD_SIGHT, ARMOR_RANGED, ADD_NOCTO_1, WEAK_ARROW, LIGHT_ATTENUATOR, FIREPROOF_CLOTH, RING_OF_OPPORTUNITY_SNIPER, ANY_ARROW, STARTING_ARMOR, STARTING_WEAPON, GEM]
 
-pattern HERO, SCOUT_HERO, RANGER_HERO, ESCAPIST_HERO, AMBUSHER_HERO, BRAWLER_HERO, SOLDIER_HERO, CIVILIAN, MONSTER, MOBILE_MONSTER, SCOUT_MONSTER, ANIMAL, MOBILE_ANIMAL, IMMOBILE_ANIMAL :: GroupName ItemKind
+pattern HERO, SCOUT_HERO, RANGER_HERO, ESCAPIST_HERO, AMBUSHER_HERO, BRAWLER_HERO, SOLDIER_HERO, CIVILIAN, MONSTER, MOBILE_MONSTER, SCOUT_MONSTER, ANIMAL, MOBILE_ANIMAL, IMMOBILE_ANIMAL, INSECT :: GroupName ItemKind
 
 pattern ADD_SIGHT, ARMOR_RANGED, ADD_NOCTO_1, WEAK_ARROW, LIGHT_ATTENUATOR, FIREPROOF_CLOTH, RING_OF_OPPORTUNITY_SNIPER, ANY_ARROW, STARTING_ARMOR, STARTING_WEAPON, GEM :: GroupName ItemKind
 
@@ -52,6 +52,7 @@ pattern SCOUT_MONSTER = GroupName "scout monster"
 pattern ANIMAL = GroupName "animal"
 pattern MOBILE_ANIMAL = GroupName "mobile animal"
 pattern IMMOBILE_ANIMAL = GroupName "immobile animal"
+pattern INSECT = GroupName "insect"
 
 pattern S_WOODEN_TORCH = GroupName "wooden torch"
 pattern S_SANDSTONE_ROCK = GroupName "sandstone rock"
@@ -582,7 +583,7 @@ rhinoceros = ItemKind
 beeSwarm = ItemKind
   { isymbol  = toContentSymbol 'b'
   , iname    = "bee swarm"
-  , ifreq    = [(ANIMAL, 100), (MOBILE, 1)]
+  , ifreq    = [(ANIMAL, 100), (INSECT, 50), (MOBILE, 1)]
   , iflavour = zipPlain [Brown]
   , icount   = 1
   , irarity  = [(1, 3), (10, 4)]
@@ -604,7 +605,7 @@ beeSwarm = ItemKind
 hornetSwarm = ItemKind  -- kind of tank with armor, but short-lived
   { isymbol  = toContentSymbol 'h'
   , iname    = "hornet swarm"
-  , ifreq    = [(ANIMAL, 100), (MOBILE, 1), (MOBILE_ANIMAL, 100)]
+  , ifreq    = [(ANIMAL, 100), (INSECT, 100), (MOBILE, 1), (MOBILE_ANIMAL, 100)]
   , iflavour = zipPlain [Magenta]
   , icount   = 1
   , irarity  = [(5, 1), (10, 4), (20, 10)]
