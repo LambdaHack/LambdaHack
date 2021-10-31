@@ -14,6 +14,7 @@ import Prelude ()
 import Game.LambdaHack.Core.Prelude
 
 import           Control.Concurrent
+import           Control.Concurrent.Async
 import qualified Control.Exception as Ex
 import qualified Control.Monad.IO.Class as IO
 import           Control.Monad.Trans.State.Strict hiding (State)
@@ -21,7 +22,7 @@ import qualified Data.EnumMap.Strict as EM
 import qualified Data.Text.IO as T
 import           Options.Applicative
   (defaultPrefs, execParserPure, handleParseResult)
-import           System.Exit (ExitCode (ExitSuccess))
+import           System.Exit (ExitCode)
 import           System.IO (hFlush, stdout)
 
 import           Game.LambdaHack.Atomic
@@ -160,11 +161,14 @@ executorSer cops@COps{corule} ccui soptionsNxtCmdline sUIOptions = do
       m = loopSer soptionsNxt executorClient
       exe = evalStateT (runSerImplementation m) . totalState
       exeWithSaves = Save.wrapInSaves cops stateToFileName exe
+      unwrapEx e = case Ex.fromException e of
+        Just (ExceptionInLinkedThread _ ex) -> unwrapEx ex
+        _ -> e
   -- Wait for clients to exit even in case of server crash
   -- (or server and client crash), which gives them time to save
   -- and report their own inconsistencies, if any.
-  Ex.handle (\ex -> case Ex.fromException ex of
-               Just ExitSuccess ->
+  Ex.handle (\ex -> case Ex.fromException (unwrapEx ex) :: Maybe ExitCode of
+               Just{} ->
                  -- User-forced shutdown, not crash, so the intention is
                  -- to keep old saves and also clients may be not ready to save.
                  Ex.throwIO ex

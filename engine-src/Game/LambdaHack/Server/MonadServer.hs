@@ -92,6 +92,7 @@ debugPossiblyPrint t = do
     T.hPutStr stdout $! t <> "\n"  -- hPutStrLn not atomic enough
     hFlush stdout
 
+-- No moving savefiles aside, to debug more easily.
 debugPossiblyPrintAndExit :: MonadServer m => Text -> m ()
 debugPossiblyPrintAndExit t = do
   debug <- getsServer $ sdbgMsgSer . soptions

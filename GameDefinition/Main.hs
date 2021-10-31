@@ -11,7 +11,6 @@ import Game.LambdaHack.Core.Prelude
 import           Control.Concurrent.Async
 import qualified Control.Exception as Ex
 import qualified Options.Applicative as OA
-import           System.Exit
 import qualified System.IO as SIO
 
 #ifndef USE_JSFILE
@@ -61,7 +60,5 @@ main = do
         _ -> e
   case resOrEx of
     Right () -> return ()
-    Left e -> case Ex.fromException $ unwrapEx e of
-      Just ExitSuccess ->
-        exitSuccess  -- we are in the main thread, so here it really exits
-      _ -> Ex.throwIO $ unwrapEx e
+    Left ex -> Ex.throwIO $ unwrapEx ex
+                 -- we are in the main thread, so now really exit

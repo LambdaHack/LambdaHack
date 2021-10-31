@@ -11,6 +11,7 @@ import           Control.Concurrent.Async
 import           Data.Char (chr, ord)
 import qualified Data.Text as T
 import qualified System.Console.ANSI as ANSI
+import           System.Exit (die)
 import qualified System.IO as SIO
 
 import           Game.LambdaHack.Client.UI.Content.Screen
@@ -36,16 +37,17 @@ startup coscreen@ScreenContent{rwidth, rheight} = do
   myx <- ANSI.getTerminalSize
   case myx of
     Just (y, x) | x < rwidth || y < rheight ->
-      error $ T.unpack
-            $ "The terminal is too small. It should have"
-              <+> tshow rwidth
-              <+> "columns and"
-              <+> tshow rheight
-              <+> "rows, but is has"
-              <+> tshow x
-              <+> "columns and"
-              <+> tshow y
-              <+> "rows. Resize it and run the program again."
+      -- Unlike @error@, @die@ does not move savefiles aside.
+      die $ T.unpack $
+        "The terminal is too small. It should have"
+        <+> tshow rwidth
+        <+> "columns and"
+        <+> tshow rheight
+        <+> "rows, but is has"
+        <+> tshow x
+        <+> "columns and"
+        <+> tshow y
+        <+> "rows. Resize it and run the program again."
     _ -> do
       rf <- createRawFrontend coscreen (display coscreen) (shutdown coscreen)
       let storeKeys :: IO ()

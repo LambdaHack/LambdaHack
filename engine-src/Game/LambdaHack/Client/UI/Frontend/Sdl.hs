@@ -26,7 +26,7 @@ import           Foreign.C.Types (CInt)
 import           Foreign.Ptr (nullPtr)
 import           Foreign.Storable (peek)
 import           System.Directory
-import           System.Exit (exitSuccess)
+import           System.Exit (die, exitSuccess)
 import           System.FilePath
 
 import qualified SDL
@@ -96,19 +96,20 @@ startupFun coscreen soptions@ClientOptions{..} rfMVar = do
  TTF.initialize
  let title = T.pack $ fromJust stitle
      chosenFontsetID = fromJust schosenFontset
-     chosenFontset = case lookup chosenFontsetID sfontsets of
-       Nothing -> error $ "Fontset not defined in config file"
-                          `showFailure` chosenFontsetID
-       Just fs -> fs
+ -- Unlike @error@, @die@ does not move savefiles aside.
+ chosenFontset <- case lookup chosenFontsetID sfontsets of
+   Nothing -> die $ "Fontset not defined in config file"
+                    `showFailure` chosenFontsetID
+   Just fs -> return fs
      -- If some auxiliary fonts are equal and at the same size, this wastefully
      -- opens them many times. However, native builds are efficient enough
      -- and slow machines should use the most frugal case (only square font)
      -- in which no waste occurs and all rendering is aided with an atlas.
-     findFontFile t =
+ let findFontFile t =
        if T.null t
        then return Nothing
        else case lookup t sfonts of
-         Nothing -> error $ "Font not defined in config file" `showFailure` t
+         Nothing -> die $ "Font not defined in config file" `showFailure` t
          Just (FontProportional fname fsize fhint) -> do
            sdlFont <- loadFontFile fname fsize
            setHintMode sdlFont fhint
@@ -163,12 +164,12 @@ startupFun coscreen soptions@ClientOptions{..} rfMVar = do
          mfontMapScalable <- findFontFile $ fontMapScalable chosenFontset
          case mfontMapScalable of
            Just (sdlFont, size) -> return (sdlFont, size, False)
-           Nothing -> error "Neither bitmap nor scalable map font defined"
+           Nothing -> die "Neither bitmap nor scalable map font defined"
    else do
      mfontMapScalable <- findFontFile $ fontMapScalable chosenFontset
      case mfontMapScalable of
         Just (sdlFont, size) -> return (sdlFont, size, False)
-        Nothing -> error "Scaling requested but scalable map font not defined"
+        Nothing -> die "Scaling requested but scalable map font not defined"
  let halfSize = squareFontSize `div` 2
      boxSize = 2 * halfSize  -- map font determines cell size for all others
  -- Real size of these fonts ignored.
