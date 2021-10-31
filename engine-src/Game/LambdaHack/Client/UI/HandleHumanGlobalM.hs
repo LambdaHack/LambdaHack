@@ -1634,7 +1634,7 @@ chooseItemMenuHuman leader1 cmdSemInCxtOfKM c1 = do
 generateMenu :: MonadClientUI m
              => (K.KM -> HumanCmd -> m (Either MError ReqUI))
              -> FontOverlayMap
-             -> [(String, (Text, HumanCmd, Maybe FontOverlayMap))]
+             -> [(Text, HumanCmd, Maybe FontOverlayMap)]
              -> [String]
              -> String
              -> m (Either MError ReqUI)
@@ -1642,16 +1642,16 @@ generateMenu cmdSemInCxtOfKM blurb kdsRaw gameInfo menuName = do
   COps{corule} <- getsState scops
   CCUI{coscreen=ScreenContent{rheight, rwebAddress}} <- getsSession sccui
   FontSetup{..} <- getFontSetup
-  let kds = map (first K.mkKM) kdsRaw
+  let kds = zipWith (\n kd -> (Right (SlotChar n 'a'), kd)) [0 ..] kdsRaw
       bindings =  -- key bindings to display
-        let fmt (km, (d, _, _)) = (Just km, T.unpack d)
+        let fmt (ekm, (d, _, _)) = (Just ekm, T.unpack d)
         in map fmt kds
-      generate :: Int -> (Maybe K.KM, String) -> Maybe KYX
-      generate y (mkey, binding) =
+      generate :: Int -> (Maybe KeyOrSlot, String) -> Maybe KYX
+      generate y (mekm, binding) =
         let lenB = length binding
-            yxx key = (Left key, ( PointUI 0 y
-                                 , ButtonWidth squareFont lenB ))
-        in yxx <$> mkey
+            yxx ekm = (ekm, ( PointUI 0 y
+                            , ButtonWidth squareFont lenB ))
+        in yxx <$> mekm
       titleLine = rtitle corule ++ " "
                   ++ showVersion (rexeVersion corule) ++ " "
       rawLines = zip (repeat Nothing)
@@ -1676,8 +1676,7 @@ generateMenu cmdSemInCxtOfKM blurb kdsRaw gameInfo menuName = do
           -- subtracting 2 from X and Y to negate the indentation in
           -- @displayChoiceScreenWithRightPane@
       returnDefaultOKS = return (prepareBlurb blurb, [])
-      displayInRightPane (Right _) = returnDefaultOKS
-      displayInRightPane (Left km) = case km `lookup` kds of
+      displayInRightPane ekm = case ekm `lookup` kds of
         Just (_, _, mblurbRight) -> case mblurbRight of
           Nothing -> returnDefaultOKS
           Just blurbRight -> return (prepareBlurb blurbRight, [])
@@ -1686,15 +1685,17 @@ generateMenu cmdSemInCxtOfKM blurb kdsRaw gameInfo menuName = do
                                           menuName ColorFull True
                                           (menuToSlideshow kxy) [K.escKM]
   case ekm of
-    Left km -> case km `lookup` kds of
-      Just (_desc, cmd, _) -> cmdSemInCxtOfKM km cmd
+    Left km -> case ekm `lookup` kds of
+      Just (_, cmd, _) -> cmdSemInCxtOfKM km cmd
       Nothing -> weaveJust <$> failWith "never mind"
     Right (SlotChar 1042 'a') -> do
       success <- tryOpenBrowser rwebAddress
       if success
       then generateMenu cmdSemInCxtOfKM blurb kdsRaw gameInfo menuName
       else weaveJust <$> failWith "failed to open web browser"
-    Right _slot -> error $ "" `showFailure` ekm
+    Right{} -> case ekm `lookup` kds of
+      Just (_, cmd, _) -> cmdSemInCxtOfKM K.escKM cmd
+      Nothing -> weaveJust <$> failWith "never mind"
 
 -- | Display the main menu.
 mainMenuHuman :: MonadClientUI m
@@ -1707,13 +1708,13 @@ mainMenuHuman cmdSemInCxtOfKM = do
   curChal <- getsClient scurChal
   let offOn b = if b then "on" else "off"
       -- Key-description-command tuples.
-      kds = [ ("s", ("setup and start new game>", ChallengeMenu, Nothing))
-            , ("x", ("save and exit to desktop", GameExit, Nothing))
-            , ("c", ("tweak convenience settings>", SettingsMenu, Nothing))
-            , ("t", ("toggle autoplay", AutomateToggle, Nothing))
-            , ("?", ("see command help", Help, Nothing))
-            , ("F12", ("switch to dashboard", Dashboard, Nothing))
-            , ("Escape", ("back to playing", AutomateBack, Nothing)) ]
+      kds = [ ("setup and start new game>", ChallengeMenu, Nothing)
+            , ("save and exit to desktop", GameExit, Nothing)
+            , ("tweak convenience settings>", SettingsMenu, Nothing)
+            , ("toggle autoplay", AutomateToggle, Nothing)
+            , ("see command help", Help, Nothing)
+            , ("switch to dashboard", Dashboard, Nothing)
+            , ("back to playing", AutomateBack, Nothing) ]
       gameName = MK.mname gameMode
       gameInfo = map T.unpack
                    [ "Now playing:" <+> gameName
@@ -1800,20 +1801,19 @@ settingsMenuHuman cmdSemInCxtOfKM = do
           , splitAttrString width width
             $ textToAS t ) ]
       -- Key-description-command-text tuples.
-      kds = [ ("s", ( tsuspect, MarkSuspect
-                    , textToBlurb "* mark suspect terrain\nThis setting affects the ongoing and the next games. It determines which suspect terrain is marked in special color on the map: none, untried (not searched nor revealed), all. It correspondingly determines which, if any, suspect tiles are considered for mouse go-to, auto-explore and for the command that marks the nearest unexplored position." ))
-            , ("v", (tvisible, MarkVision
-                    , textToBlurb "* show visible zone\nThis setting affects the ongoing and the next games. It determines the conditions under which the area visible to the party is marked on the map via a gray background: never, when aiming, always." ))
-            , ("c", (tsmell, MarkSmell
-                    , textToBlurb "* display smell clues\nThis setting affects the ongoing and the next games. It determines whether the map displays any smell traces (regardless of who left them) detected by a party member that can track via smell (as determined by the smell radius skill; not common among humans)." ))
-            , ("a", (tanim, MarkAnim
-                    , textToBlurb "* play animations\nThis setting affects the ongoing and the next games. It determines whether important events, such combat, are highlighted by animations. This overrides the corresponding config file setting." ))
-            , ("d", (tdoctrine, Doctrine
-                    , textToBlurb "* squad doctrine\nThis setting affects the ongoing game, but does not persist to the next games. It determines the behaviour of henchmen (non-pointman characters) in the party and, in particular, if they are permitted to move autonomously or fire opportunistically (assuming they are able to, usually due to rare equipment). This setting has a poor UI that will be improved in the future." ))
-            , ("t", (toverride, OverrideTut
-                    , textToBlurb "* override tutorial hints\nThis setting affects the ongoing and the next games. It determines whether tutorial hints are, respectively, not overridden with respect to the setting that was chosen when starting the current game, forced to be off, forced to be on." ))
-            , ("Escape", ( "back to main menu", MainMenu
-                         , Just EM.empty )) ]
+      kds = [ ( tsuspect, MarkSuspect
+              , textToBlurb "* mark suspect terrain\nThis setting affects the ongoing and the next games. It determines which suspect terrain is marked in special color on the map: none, untried (not searched nor revealed), all. It correspondingly determines which, if any, suspect tiles are considered for mouse go-to, auto-explore and for the command that marks the nearest unexplored position." )
+            , ( tvisible, MarkVision
+              , textToBlurb "* show visible zone\nThis setting affects the ongoing and the next games. It determines the conditions under which the area visible to the party is marked on the map via a gray background: never, when aiming, always." )
+            , ( tsmell, MarkSmell
+              , textToBlurb "* display smell clues\nThis setting affects the ongoing and the next games. It determines whether the map displays any smell traces (regardless of who left them) detected by a party member that can track via smell (as determined by the smell radius skill; not common among humans)." )
+            , ( tanim, MarkAnim
+              , textToBlurb "* play animations\nThis setting affects the ongoing and the next games. It determines whether important events, such combat, are highlighted by animations. This overrides the corresponding config file setting." )
+            , ( tdoctrine, Doctrine
+              , textToBlurb "* squad doctrine\nThis setting affects the ongoing game, but does not persist to the next games. It determines the behaviour of henchmen (non-pointman characters) in the party and, in particular, if they are permitted to move autonomously or fire opportunistically (assuming they are able to, usually due to rare equipment). This setting has a poor UI that will be improved in the future." )
+            , ( toverride, OverrideTut
+              , textToBlurb "* override tutorial hints\nThis setting affects the ongoing and the next games. It determines whether tutorial hints are, respectively, not overridden with respect to the setting that was chosen when starting the current game, forced to be off, forced to be on." )
+            , ( "back to main menu", MainMenu, Just EM.empty ) ]
       gameInfo = map T.unpack
                    [ "Tweak convenience settings:"
                    , "" ]
@@ -1879,21 +1879,21 @@ challengeMenuHuman cmdSemInCxtOfKM = do
           , splitAttrString width width  -- not widthFull!
             $ textToAS t ) ]
       -- Key-description-command-text tuples.
-      kds = [ ("s", (tnextScenario, GameScenarioIncr, blurb))
-            , ("t", ( tnextTutorial, GameTutorialToggle
-                    , textToBlurb "* tutorial hints\nThis determines whether tutorial hint messages will be shown in the next game that's about to be started. They are rendered in pink and can be re-read from message history. Display of tutorial hints in the current game can be overridden from the convenience settings menu."))
-            , ("d", ( tnextDiff, GameDifficultyIncr
-                    , textToBlurb "* difficulty level\nThis determines the difficulty of survival in the next game that's about to be started. Lower numbers result in easier game. In particular, difficulty below 5 multiplies hitpoints of player characters and difficulty over 5 multiplies hitpoints of their enemies. Game score scales with difficulty."))
-            , ("f", ( tnextFish, GameFishToggle
-                    , textToBlurb "* cold fish\nThis challenge mode setting will affect the next game that's about to be started. When on, it makes it impossible for player characters to be healed by actors from other factions (this is a significant restriction in the long crawl adventure)."))
-            , ("r", ( tnextGoods, GameGoodsToggle
-                    , textToBlurb "* ready goods\nThis challenge mode setting will affect the next game that's about to be started. When on, it disables crafting for the player, making the selection of equipment, especially melee weapons, very limited, unless the player has the luck to find the rare powerful ready weapons (this applies only if the chosen adventure supports crafting at all)."))
-            , ("w", ( tnextWolf, GameWolfToggle
-                    , textToBlurb "* lone wolf\nThis challenge mode setting will affect the next game that's about to be started. When on, it reduces player's starting actors to exactly one, though later on new heroes may join the party. This makes the game very hard in the long run."))
-            , ("k", ( tnextKeeper, GameKeeperToggle
-                    , textToBlurb "* finder keeper\nThis challenge mode setting will affect the next game that's about to be started. When on, it completely disables flinging projectiles by the player, which affects not only ranged damage dealing, but also throwing of consumables that buff teammates engaged in melee combat, weaken and distract enemies, light dark corners, etc."))
-            , ("g", ("start new game", GameRestart, blurb))
-            , ("Escape", ("back to main menu", MainMenu, Nothing)) ]
+      kds = [ ( tnextScenario, GameScenarioIncr, blurb )
+            , ( tnextTutorial, GameTutorialToggle
+              , textToBlurb "* tutorial hints\nThis determines whether tutorial hint messages will be shown in the next game that's about to be started. They are rendered in pink and can be re-read from message history. Display of tutorial hints in the current game can be overridden from the convenience settings menu.")
+            , ( tnextDiff, GameDifficultyIncr
+              , textToBlurb "* difficulty level\nThis determines the difficulty of survival in the next game that's about to be started. Lower numbers result in easier game. In particular, difficulty below 5 multiplies hitpoints of player characters and difficulty over 5 multiplies hitpoints of their enemies. Game score scales with difficulty.")
+            , ( tnextFish, GameFishToggle
+              , textToBlurb "* cold fish\nThis challenge mode setting will affect the next game that's about to be started. When on, it makes it impossible for player characters to be healed by actors from other factions (this is a significant restriction in the long crawl adventure).")
+            , ( tnextGoods, GameGoodsToggle
+              , textToBlurb "* ready goods\nThis challenge mode setting will affect the next game that's about to be started. When on, it disables crafting for the player, making the selection of equipment, especially melee weapons, very limited, unless the player has the luck to find the rare powerful ready weapons (this applies only if the chosen adventure supports crafting at all).")
+            , ( tnextWolf, GameWolfToggle
+              , textToBlurb "* lone wolf\nThis challenge mode setting will affect the next game that's about to be started. When on, it reduces player's starting actors to exactly one, though later on new heroes may join the party. This makes the game very hard in the long run.")
+            , ( tnextKeeper, GameKeeperToggle
+              , textToBlurb "* finder keeper\nThis challenge mode setting will affect the next game that's about to be started. When on, it completely disables flinging projectiles by the player, which affects not only ranged damage dealing, but also throwing of consumables that buff teammates engaged in melee combat, weaken and distract enemies, light dark corners, etc.")
+            , ( "start new game", GameRestart, blurb )
+            , ( "back to main menu", MainMenu, Nothing ) ]
       gameInfo = map T.unpack [ "Setup and start new game:"
                               , "" ]
   generateMenu cmdSemInCxtOfKM EM.empty kds gameInfo "challenge"
