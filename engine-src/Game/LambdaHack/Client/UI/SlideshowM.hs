@@ -322,11 +322,13 @@ stepChoiceScreen dm sfBlank frsX extraKeys = do
                     return (True, Left ikm, pointer)
                   _ | K.key ikm `elem` [K.Up, K.WheelNorth] ->
                     case findIndex xix $ reverse $ take ixOnPage kyxs of
-                      Nothing -> interpretKey ikm{K.key=K.Left}
+                      Nothing -> if pointer == 0 then tmpResult maxIx
+                                 else tmpResult (max 0 (pointer - 1))
                       Just ix -> tmpResult (max 0 (pointer - ix - 1))
                   _ | K.key ikm `elem` [K.Down, K.WheelSouth] ->
                     case findIndex xix $ drop (ixOnPage + 1) kyxs of
-                      Nothing -> interpretKey ikm{K.key=K.Right}
+                      Nothing -> if pointer == maxIx then tmpResult 0
+                                 else tmpResult (min maxIx (pointer + 1))
                       Just ix -> tmpResult (pointer + ix + 1)
                   K.Left -> if pointer == 0 then tmpResult maxIx
                             else tmpResult (max 0 (pointer - 1))
