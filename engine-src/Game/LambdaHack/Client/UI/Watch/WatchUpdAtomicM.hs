@@ -544,7 +544,6 @@ watchRespUpdAtomicUI cmd = case cmd of
            "A grand story starts right here! (Press '?' for mode description and help.)"
     msgAdd MsgActionWarning
            ("New game started in" <+> mname gameMode <+> "mode.")
-    msgAdd MsgPlotExposition $ mdesc gameMode
     let desc = cdesc $ okind cocave $ lkind lvl
     unless (T.null desc) $ do
       msgLnAdd MsgBackdropFocus "You take in your surroundings."
@@ -582,7 +581,6 @@ watchRespUpdAtomicUI cmd = case cmd of
       msgAdd MsgPromptGeneric
              "Welcome back! (Press '?' for mode description and help.)"
       msgAdd MsgActionAlert $ "Continuing" <+> mname gameMode <+> "mode."
-      msgAdd MsgPromptGeneric $ mdesc gameMode
       let desc = cdesc $ okind cocave $ lkind lvl
       unless (T.null desc) $ do
         msgLnAdd MsgPromptFocus "You remember your surroundings."

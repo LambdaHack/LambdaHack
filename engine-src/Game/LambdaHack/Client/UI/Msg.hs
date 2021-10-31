@@ -147,7 +147,6 @@ data MsgClassShowAndSave =
   | MsgPointmanSwap
   | MsgFactionIntel
   | MsgFinalOutcome
-  | MsgPlotExposition
   | MsgBackdropInfo
   | MsgTerrainReveal
   | MsgItemDiscovery
@@ -330,7 +329,6 @@ msgColor = \case
     MsgPointmanSwap -> Color.cBoring
     MsgFactionIntel -> Color.cMeta  -- good or bad
     MsgFinalOutcome -> Color.cGameOver
-    MsgPlotExposition -> Color.cBoring
     MsgBackdropInfo -> Color.cBoring
     MsgTerrainReveal -> Color.cIdentification
     MsgItemDiscovery -> Color.cIdentification
