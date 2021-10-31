@@ -773,7 +773,7 @@ allHistoryHuman = do
 #ifndef USE_JSFILE
         : K.mkChar '.'
 #endif
-        : [K.escKM]
+        : [K.spaceKM, K.escKM]
   slides <- overlayToSlideshow (rheight - 2) keysAllHistory (ovs, kxs)
   let maxIx = length (concatMap snd $ slideshow slides) - 1
       menuName = "history"
@@ -790,7 +790,7 @@ allHistoryHuman = do
             msgAdd MsgPromptGeneric $ "All of history dumped to file" <+> T.pack path <> "."
           Left km | km == K.escKM ->
             msgAdd MsgPromptGeneric "Try to survive a few seconds more, if you can."
-          Left km | km == K.spaceKM ->  -- click in any unused space
+          Left km | km == K.spaceKM ->
             msgAdd MsgPromptGeneric "Steady on."
           Right SlotChar{..} | slotChar == 'a' ->
             displayOneReport $ max 0 $ slotPrefix - placeholderCount
