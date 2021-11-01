@@ -493,35 +493,19 @@ transition leader psuit prompt promptGeneric permitMulitple
             let eslots = EM.elems multipleSlots
             in return $! getResult eslots
         }
-      lettersDef :: DefItemKey m
-      lettersDef = DefItemKey
-        { defLabel = Left ""
-        , defCond = True
-        , defAction = \ekm ->
-            let slot = case ekm of
-                  Left km -> error $ "unexpected key:" `showFailure` K.showKM km
-                  Right sl -> sl
-            in case EM.lookup slot bagItemSlotsAll of
-              Nothing -> error $ "unexpected slot"
-                                 `showFailure` (slot, bagItemSlotsAll)
-              Just iid -> return $! getResult [iid]
-        }
+      slotDef :: SlotChar -> m (Either Text ResultItemDialogMode)
+      slotDef slot = case EM.lookup slot bagItemSlotsAll of
+        Nothing -> error $ "unexpected slot"
+                           `showFailure` (slot, bagItemSlotsAll)
+        Just iid -> return $! getResult [iid]
       processSpecialOverlay :: OKX -> (Int -> ResultItemDialogMode)
                             -> m (Either Text ResultItemDialogMode)
       processSpecialOverlay io resultConstructor = do
-        let skillsDef :: DefItemKey m
-            skillsDef = DefItemKey
-              { defLabel = Left ""
-              , defCond = True
-              , defAction = \ekm ->
-                  let slot = case ekm of
-                        Left K.KM{key} -> error $ "unexpected key:"
-                                                  `showFailure` K.showKey key
-                        Right sl -> sl
-                      slotIndex = slotPrefix slot
-                  in return (Right (resultConstructor slotIndex))
-              }
-        runDefItemKey leader lSlots bagFiltered keyDefs skillsDef io
+        let slotDef2 :: SlotChar -> m (Either Text ResultItemDialogMode)
+            slotDef2 slot = do
+              let slotIndex = slotPrefix slot
+              return (Right (resultConstructor slotIndex))
+        runDefItemKey leader lSlots bagFiltered keyDefs slotDef2 io
                       promptChosen cCur
   case cCur of
     MSkills -> do
@@ -537,7 +521,7 @@ transition leader psuit prompt promptGeneric permitMulitple
       let displayRanged =
             cCur `notElem` [MStore COrgan, MOrgans, MLore SOrgan, MLore STrunk]
       io <- itemOverlay lSlots (blid body) bagFiltered displayRanged
-      runDefItemKey leader lSlots bagFiltered keyDefs lettersDef io
+      runDefItemKey leader lSlots bagFiltered keyDefs slotDef io
                     promptChosen cCur
 
 runDefItemKey :: MonadClientUI m
@@ -545,12 +529,12 @@ runDefItemKey :: MonadClientUI m
               -> SingleItemSlots
               -> ItemBag
               -> [(K.KM, DefItemKey m)]
-              -> DefItemKey m
+              -> (SlotChar -> m (Either Text ResultItemDialogMode))
               -> OKX
               -> Text
               -> ItemDialogMode
               -> m (Either Text ResultItemDialogMode)
-runDefItemKey leader lSlots bag keyDefs lettersDef okx prompt cCur = do
+runDefItemKey leader lSlots bag keyDefs slotDef okx prompt cCur = do
   let itemKeys = map fst keyDefs
       wrapB s = "[" <> s <> "]"
       (keyLabelsRaw, keys) = partitionEithers $ map (defLabel . snd) keyDefs
@@ -567,8 +551,8 @@ runDefItemKey leader lSlots bag keyDefs lettersDef okx prompt cCur = do
   case ekm of
     Left km -> case km `lookup` keyDefs of
       Just keyDef -> defAction keyDef ekm
-      Nothing -> defAction lettersDef ekm  -- pressed; with current prefix
-    Right _slot -> defAction lettersDef ekm  -- selected; with the given prefix
+      Nothing -> error $ "unexpected key:" `showFailure` K.showKM km
+    Right slot -> slotDef slot
 
 inventoryInRightPane :: MonadClientUI m
                      => ActorId -> SingleItemSlots -> ItemBag -> ItemDialogMode
