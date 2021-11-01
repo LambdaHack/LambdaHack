@@ -15,7 +15,7 @@ module Game.LambdaHack.Definition.Color
   , AttrChar(..), AttrCharW32(..)
   , attrCharToW32, attrCharFromW32
   , fgFromW32, bgFromW32, charFromW32, attrFromW32
-  , spaceAttrW32, nbspAttrW32, spaceCursorAttrW32, trimmedLineAttrW32
+  , spaceAttrW32, nbspAttrW32, trimmedLineAttrW32
   , attrChar2ToW32, attrChar1ToW32
   ) where
 
@@ -232,10 +232,6 @@ spaceAttrW32 = attrCharToW32 $ AttrChar defAttr ' '
 
 nbspAttrW32 :: AttrCharW32
 nbspAttrW32 = attrCharToW32 $ AttrChar defAttr '\x00a0'
-
-spaceCursorAttrW32 :: AttrCharW32
-spaceCursorAttrW32 =
-  attrCharToW32 $ AttrChar (defAttr {bg = HighlightNoneCursor}) ' '
 
 trimmedLineAttrW32 :: AttrCharW32
 trimmedLineAttrW32 = attrChar2ToW32 BrBlack '$'

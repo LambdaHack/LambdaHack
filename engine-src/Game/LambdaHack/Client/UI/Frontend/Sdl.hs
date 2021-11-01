@@ -569,7 +569,7 @@ drawFrame coscreen ClientOptions{..} sess@FrontendSession{..} curFrame = do
         -- This chunk starts at $ sign or beyond so, for KISS, reject it.
         return ()
       drawPropLine x row (w : rest) = do
-        let isSpace = (`elem` [Color.spaceAttrW32, Color.spaceCursorAttrW32])
+        let isSpace = (== Color.spaceAttrW32)
             Color.AttrChar{acAttr=Color.Attr{fg=fgRaw, bg}} =
               Color.attrCharFromW32
               $ if isSpace w
