@@ -320,16 +320,12 @@ viewLoreItems menuName lSlotsRaw trunkBag prompt promptFun displayRanged = do
   FontSetup{..} <- getFontSetup
   arena <- getArenaUI
   itemToF <- getsState $ flip itemToFull
-  let keysPre = [K.spaceKM, K.mkChar '<', K.mkChar '>', K.escKM]
+  let keys = [K.spaceKM, K.mkChar '<', K.mkChar '>', K.escKM]
       lSlots = sortSlotMap itemToF lSlotsRaw
   msgAdd MsgPromptGeneric prompt
   io <- itemOverlay lSlots arena trunkBag displayRanged
-  itemSlides <- overlayToSlideshow (rheight - 2) keysPre io
-  let keyOfEKM (Left km) = km
-      keyOfEKM (Right SlotChar{slotChar}) = K.mkChar slotChar
-      allOKX = concatMap snd $ slideshow itemSlides
-      keysMain = keysPre ++ map (keyOfEKM . fst) allOKX
-      displayInRightPane :: KeyOrSlot -> m OKX
+  itemSlides <- overlayToSlideshow (rheight - 2) keys io
+  let displayInRightPane :: KeyOrSlot -> m OKX
       displayInRightPane ekm = case ekm of
         _ | isSquareFont propFont -> return emptyOKX
         Left{} -> return emptyOKX
@@ -354,11 +350,9 @@ viewLoreItems menuName lSlotsRaw trunkBag prompt promptFun displayRanged = do
           K.Esc -> return km
           _ -> error $ "" `showFailure` km
   ekm <- displayChoiceScreenWithRightPane displayInRightPane False
-           menuName ColorFull False itemSlides keysMain
+           menuName ColorFull False itemSlides keys
   case ekm of
     Left km | km `elem` [K.spaceKM, K.mkChar '<', K.mkChar '>', K.escKM] ->
       return km
-    Left K.KM{key=K.Char l} -> viewAtSlot $ SlotChar 0 l
-      -- other prefixes are not accessible via keys; tough luck; waste of effort
     Left km -> error $ "" `showFailure` km
     Right slot -> viewAtSlot slot

@@ -10,8 +10,6 @@ import Prelude ()
 import Game.LambdaHack.Core.Prelude
 
 import           Data.Binary
-import           Data.Bits (unsafeShiftL, unsafeShiftR)
-import           Data.Char
 import qualified Data.EnumMap.Strict as EM
 
 import           Game.LambdaHack.Common.Item
@@ -20,24 +18,8 @@ import qualified Game.LambdaHack.Content.ItemKind as IK
 import           Game.LambdaHack.Definition.Defs
 
 -- | Slot label. Usually just a character. Sometimes with a numerical prefix.
-data SlotChar = SlotChar {slotPrefix :: Int, slotChar :: Char}
-  deriving (Show, Eq)
-
-instance Ord SlotChar where
-  compare = comparing fromEnum
-
-instance Binary SlotChar where
-  put = put . fromEnum
-  get = fmap toEnum get
-
-instance Enum SlotChar where
-  fromEnum (SlotChar n c) =
-    unsafeShiftL n 8 + ord c + (if isUpper c then 100 else 0)
-  toEnum e =
-    let n = unsafeShiftR e 8
-        c0 = e - unsafeShiftL n 8
-        c100 = c0 - if c0 > 150 then 100 else 0
-    in SlotChar n (chr c100)
+newtype SlotChar = SlotChar {slotPrefix :: Int}
+  deriving (Show, Eq, Ord, Binary, Enum)
 
 type SingleItemSlots = EM.EnumMap SlotChar ItemId
 
@@ -46,7 +28,7 @@ newtype ItemSlots = ItemSlots (EM.EnumMap SLore SingleItemSlots)
   deriving (Show, Binary)
 
 natSlots :: [SlotChar]
-natSlots = map (`SlotChar` 'a') [0 ..]
+natSlots = [SlotChar 0 ..]
 
 -- | Assigns a slot to an item, e.g., for inclusion in equipment of a hero.
 -- At first, e.g., when item is spotted on the floor, the slot is
@@ -58,7 +40,7 @@ assignSlot lSlots =
   let maxPrefix = case EM.maxViewWithKey lSlots of
         Just ((lm, _), _) -> slotPrefix lm
         Nothing -> 0
-  in SlotChar (maxPrefix + 1) 'a'
+  in SlotChar $ maxPrefix + 1
 
 sortSlotMap :: (ItemId -> ItemFull) -> SingleItemSlots -> SingleItemSlots
 sortSlotMap itemToF em =
@@ -73,8 +55,8 @@ sortSlotMap itemToF em =
 
 mergeItemSlots :: (ItemId -> ItemFull) -> [SingleItemSlots] -> SingleItemSlots
 mergeItemSlots itemToF ems =
-  let renumberSlot n SlotChar{slotPrefix, slotChar} =
-        SlotChar{slotPrefix = slotPrefix + n * 1000000, slotChar}
+  let renumberSlot n SlotChar{slotPrefix} =
+        SlotChar{slotPrefix = slotPrefix + n * 1000000}
       renumberMap n = EM.mapKeys (renumberSlot n)
       rms = zipWith renumberMap [0..] ems
       em = EM.unionsWith (\_ _ -> error "mergeItemSlots: duplicate keys") rms

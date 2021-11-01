@@ -6,7 +6,7 @@ module Game.LambdaHack.Client.UI.InventoryM
 #ifdef EXPOSE_INTERNAL
     -- * Internal operations
   , ItemDialogState(..), accessModeBag, storeItemPrompt, getItem
-  , DefItemKey(..), transition, keyOfEKM, runDefItemKey, inventoryInRightPane
+  , DefItemKey(..), transition, runDefItemKey, inventoryInRightPane
 #endif
   ) where
 
@@ -14,7 +14,6 @@ import Prelude ()
 
 import Game.LambdaHack.Core.Prelude
 
-import qualified Data.Char as Char
 import           Data.Either
 import qualified Data.EnumMap.Strict as EM
 import qualified Data.EnumSet as ES
@@ -325,7 +324,7 @@ getItem leader psuit prompt promptGeneric cCur cRest askWhenLone
     ([(iid, _)], MStore rstore) | null cRest && not askWhenLone ->
       return $ Right $ RStore rstore [iid]
     _ -> transition leader psuit prompt promptGeneric permitMulitple
-                    0 cCur cRest ISuitable
+                    cCur cRest ISuitable
 
 data DefItemKey m = DefItemKey
   { defLabel  :: Either Text K.KM
@@ -345,21 +344,20 @@ transition :: forall m. MonadClientUI m
            -> (Actor -> ActorUI -> Ability.Skills -> ItemDialogMode -> State
                -> Text)
            -> Bool
-           -> Int
            -> ItemDialogMode
            -> [ItemDialogMode]
            -> ItemDialogState
            -> m (Either Text ResultItemDialogMode)
 transition leader psuit prompt promptGeneric permitMulitple
-           numPrefix cCur cRest itemDialogState = do
-  let recCall numPrefix2 cCur2 cRest2 itemDialogState2 = do
+           cCur cRest itemDialogState = do
+  let recCall cCur2 cRest2 itemDialogState2 = do
         -- Pointman could have been changed by keypresses near the end of
         -- the current recursive call, so refresh it for the next call.
         mleader <- getsClient sleader
         let leader2 = fromMaybe (error "UI manipulation killed the pointman")
                                 mleader
         transition leader2 psuit prompt promptGeneric permitMulitple
-                   numPrefix2 cCur2 cRest2 itemDialogState2
+                   cCur2 cRest2 itemDialogState2
   actorCurAndMaxSk <- getsState $ getActorMaxSkills leader
   body <- getsState $ getActorBody leader
   bodyUI <- getsSession $ getActorUI leader
@@ -395,21 +393,11 @@ transition leader psuit prompt promptGeneric permitMulitple
       filterP iid = psuitFun mstore (itemToF iid)
       bagAllSuit = EM.filterWithKey filterP bagAll
       bagItemSlotsAll = EM.filter (`EM.member` bagAll) lSlots
-      -- Predicate for slot matching the current prefix, unless the prefix
-      -- is 0, in which case we display all slots, even if they require
-      -- the user to start with number keys to get to them.
-      -- Could be generalized to 1 if prefix 1x exists, etc., but too rare.
-      hasPrefixOpen x _ = slotPrefix x == numPrefix || numPrefix == 0
-      bagItemSlotsOpen = EM.filterWithKey hasPrefixOpen bagItemSlotsAll
-      hasPrefix x _ = slotPrefix x == numPrefix
-      bagItemSlots = EM.filterWithKey hasPrefix bagItemSlotsOpen
       bag = EM.fromList $ map (\iid -> (iid, bagAll EM.! iid))
-                              (EM.elems bagItemSlotsOpen)
+                              (EM.elems bagItemSlotsAll)
       suitableItemSlotsAll = EM.filter (`EM.member` bagAllSuit) lSlots
-      suitableItemSlotsOpen =
-        EM.filterWithKey hasPrefixOpen suitableItemSlotsAll
       bagSuit = EM.fromList $ map (\iid -> (iid, bagAllSuit EM.! iid))
-                                  (EM.elems suitableItemSlotsOpen)
+                                  (EM.elems suitableItemSlotsAll)
       nextContainers direction = case direction of
         Forward -> case cRest ++ [cCur] of
           c1 : rest -> (c1, rest)
@@ -438,7 +426,7 @@ transition leader psuit prompt promptGeneric permitMulitple
                , defAction = \_ -> do
                    err <- pointmanCycle leader False direction
                    let !_A = assert (isNothing err `blame` err) ()
-                   recCall numPrefix cCur cRest itemDialogState
+                   recCall cCur cRest itemDialogState
                })
       cycleLevelKeyDef direction =
         let km = revCmd $ PointmanCycleLevel direction
@@ -449,7 +437,7 @@ transition leader psuit prompt promptGeneric permitMulitple
                 , defAction = \_ -> do
                     err <- pointmanCycleLevel leader False direction
                     let !_A = assert (isNothing err `blame` err) ()
-                    recCall numPrefix cCur cRest itemDialogState
+                    recCall cCur cRest itemDialogState
                 })
       keyDefs :: [(K.KM, DefItemKey m)]
       keyDefs = filter (defCond . snd) $
@@ -461,7 +449,7 @@ transition leader psuit prompt promptGeneric permitMulitple
           in (km, DefItemKey
            { defLabel = Right km
            , defCond = bag /= bagSuit
-           , defAction = \_ -> recCall numPrefix cCur cRest
+           , defAction = \_ -> recCall cCur cRest
                                $ case itemDialogState of
                                    ISuitable -> IAll
                                    IAll -> ISuitable
@@ -480,7 +468,7 @@ transition leader psuit prompt promptGeneric permitMulitple
            , defAction = \_ -> do
                merror <- pickLeaderWithPointer leader
                case merror of
-                 Nothing -> recCall numPrefix cCur cRest itemDialogState
+                 Nothing -> recCall cCur cRest itemDialogState
                  Just{} -> return $ Left "not a menu item nor teammate position"
                              -- don't inspect the error, it's expected
            })
@@ -490,14 +478,13 @@ transition leader psuit prompt promptGeneric permitMulitple
            , defAction = \_ -> return $ Left "never mind"
            })
         ]
-        ++ numberPrefixes
       changeContainerDef direction defLabel =
         let (cCurAfterCalm, cRestAfterCalm) = nextContainers direction
         in DefItemKey
           { defLabel
           , defCond = cCurAfterCalm /= cCur
           , defAction = \_ ->
-              recCall numPrefix cCurAfterCalm cRestAfterCalm itemDialogState
+              recCall cCurAfterCalm cRestAfterCalm itemDialogState
           }
       useMultipleDef defLabel = DefItemKey
         { defLabel
@@ -506,49 +493,35 @@ transition leader psuit prompt promptGeneric permitMulitple
             let eslots = EM.elems multipleSlots
             in return $! getResult eslots
         }
-      prefixCmdDef d =
-        (K.mkChar $ Char.intToDigit d, DefItemKey
-           { defLabel = Left ""
-           , defCond = True
-           , defAction = \_ ->
-               recCall (10 * numPrefix + d) cCur cRest itemDialogState
-           })
-      numberPrefixes = map prefixCmdDef [0..9]
       lettersDef :: DefItemKey m
       lettersDef = DefItemKey
         { defLabel = Left ""
         , defCond = True
         , defAction = \ekm ->
             let slot = case ekm of
-                  Left K.KM{key=K.Char l} -> SlotChar numPrefix l
-                  Left km ->
-                    error $ "unexpected key:" `showFailure` K.showKM km
+                  Left km -> error $ "unexpected key:" `showFailure` K.showKM km
                   Right sl -> sl
             in case EM.lookup slot bagItemSlotsAll of
               Nothing -> error $ "unexpected slot"
-                                 `showFailure` (slot, bagItemSlots)
+                                 `showFailure` (slot, bagItemSlotsAll)
               Just iid -> return $! getResult [iid]
         }
       processSpecialOverlay :: OKX -> (Int -> ResultItemDialogMode)
                             -> m (Either Text ResultItemDialogMode)
       processSpecialOverlay io resultConstructor = do
-        let slotLabels = map fst $ snd io
-            slotKeys = mapMaybe (keyOfEKM numPrefix) slotLabels
-            skillsDef :: DefItemKey m
+        let skillsDef :: DefItemKey m
             skillsDef = DefItemKey
               { defLabel = Left ""
               , defCond = True
               , defAction = \ekm ->
                   let slot = case ekm of
-                        Left K.KM{key} -> case key of
-                          K.Char l -> SlotChar numPrefix l
-                          _ -> error $ "unexpected key:"
-                                       `showFailure` K.showKey key
+                        Left K.KM{key} -> error $ "unexpected key:"
+                                                  `showFailure` K.showKey key
                         Right sl -> sl
                       slotIndex = slotPrefix slot
                   in return (Right (resultConstructor slotIndex))
               }
-        runDefItemKey leader lSlots bagFiltered keyDefs skillsDef io slotKeys
+        runDefItemKey leader lSlots bagFiltered keyDefs skillsDef io
                       promptChosen cCur
   case cCur of
     MSkills -> do
@@ -564,19 +537,9 @@ transition leader psuit prompt promptGeneric permitMulitple
       let displayRanged =
             cCur `notElem` [MStore COrgan, MOrgans, MLore SOrgan, MLore STrunk]
       io <- itemOverlay lSlots (blid body) bagFiltered displayRanged
-      let slotKeys = mapMaybe (keyOfEKM numPrefix . Right)
-                     $ EM.keys bagItemSlots
-      runDefItemKey leader lSlots bagFiltered keyDefs lettersDef io slotKeys
+      runDefItemKey leader lSlots bagFiltered keyDefs lettersDef io
                     promptChosen cCur
 
-keyOfEKM :: Int -> KeyOrSlot -> Maybe K.KM
-keyOfEKM _ (Left kms) = error $ "" `showFailure` kms
-keyOfEKM numPrefix (Right SlotChar{..}) | slotPrefix == numPrefix =
-  Just $ K.mkChar slotChar
-keyOfEKM _ _ = Nothing
-
--- We don't create keys from slots in @okx@, so they have to be
--- exolicitly given in @slotKeys@.
 runDefItemKey :: MonadClientUI m
               => ActorId
               -> SingleItemSlots
@@ -584,12 +547,11 @@ runDefItemKey :: MonadClientUI m
               -> [(K.KM, DefItemKey m)]
               -> DefItemKey m
               -> OKX
-              -> [K.KM]
               -> Text
               -> ItemDialogMode
               -> m (Either Text ResultItemDialogMode)
-runDefItemKey leader lSlots bag keyDefs lettersDef okx slotKeys prompt cCur = do
-  let itemKeys = slotKeys ++ map fst keyDefs
+runDefItemKey leader lSlots bag keyDefs lettersDef okx prompt cCur = do
+  let itemKeys = map fst keyDefs
       wrapB s = "[" <> s <> "]"
       (keyLabelsRaw, keys) = partitionEithers $ map (defLabel . snd) keyDefs
       keyLabels = filter (not . T.null) keyLabelsRaw

@@ -65,7 +65,7 @@ import           Game.LambdaHack.Client.UI.HandleHumanLocalM
 import           Game.LambdaHack.Client.UI.HumanCmd
 import           Game.LambdaHack.Client.UI.InventoryM
 import           Game.LambdaHack.Client.UI.ItemDescription
-import           Game.LambdaHack.Client.UI.ItemSlot (SlotChar (SlotChar))
+import           Game.LambdaHack.Client.UI.ItemSlot
 import qualified Game.LambdaHack.Client.UI.Key as K
 import           Game.LambdaHack.Client.UI.KeyBindings
 import           Game.LambdaHack.Client.UI.MonadClientUI
@@ -1643,10 +1643,10 @@ generateMenu cmdSemInCxtOfKM blurb kdsRaw gameInfo menuName = do
   CCUI{ coinput=InputContent{brevMap}
       , coscreen=ScreenContent{rheight, rwebAddress} } <- getsSession sccui
   FontSetup{..} <- getFontSetup
-  let matchKM n kd@(_, cmd, _) = case M.lookup cmd brevMap of
+  let matchKM slot kd@(_, cmd, _) = case M.lookup cmd brevMap of
         Just (km : _) -> (Left km, kd)
-        _ -> (Right (SlotChar n 'a'), kd)
-      kds = zipWith matchKM [0 ..] kdsRaw
+        _ -> (Right slot, kd)
+      kds = zipWith matchKM natSlots kdsRaw
       bindings =  -- key bindings to display
         let attrCursor = Color.defAttr {Color.bg = Color.HighlightNoneCursor}
             highAttr ac = ac {Color.acAttr = attrCursor}
@@ -1668,7 +1668,7 @@ generateMenu cmdSemInCxtOfKM blurb kdsRaw gameInfo menuName = do
                        (map stringToAL $
                           ["", titleLine ++ "[" ++ rwebAddress ++ "]", ""]
                           ++ gameInfo)
-      titleKey = ( Right $ SlotChar 1042 'a'
+      titleKey = ( Right $ SlotChar (-1)
                  , ( PointUI (2 * length titleLine) 1
                    , ButtonWidth squareFont (2 + length rwebAddress) ) )
       okxTitle = ( EM.singleton squareFont $ offsetOverlay $ map snd titleLines
@@ -1690,7 +1690,7 @@ generateMenu cmdSemInCxtOfKM blurb kdsRaw gameInfo menuName = do
         Just (_, _, mblurbRight) -> case mblurbRight of
           Nothing -> returnDefaultOKS
           Just blurbRight -> return (prepareBlurb blurbRight, [])
-        Nothing | ekm == Right (SlotChar 1042 'a') -> returnDefaultOKS
+        Nothing | ekm == Right (SlotChar (-1)) -> returnDefaultOKS
         Nothing -> error $ "generateMenu: unexpected key:"
                            `showFailure` ekm
   ekm <- displayChoiceScreenWithRightPane displayInRightPane True
@@ -1700,7 +1700,7 @@ generateMenu cmdSemInCxtOfKM blurb kdsRaw gameInfo menuName = do
     Left km -> case ekm `lookup` kds of
       Just (_, cmd, _) -> cmdSemInCxtOfKM km cmd
       Nothing -> weaveJust <$> failWith "never mind"
-    Right (SlotChar 1042 'a') -> do
+    Right (SlotChar (-1)) -> do
       success <- tryOpenBrowser rwebAddress
       if success
       then generateMenu cmdSemInCxtOfKM blurb kdsRaw gameInfo menuName

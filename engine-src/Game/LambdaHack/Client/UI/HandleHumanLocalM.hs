@@ -792,7 +792,7 @@ allHistoryHuman = do
             msgAdd MsgPromptGeneric "Try to survive a few seconds more, if you can."
           Left km | km == K.spaceKM ->
             msgAdd MsgPromptGeneric "Steady on."
-          Right SlotChar{..} | slotChar == 'a' ->
+          Right SlotChar{slotPrefix} ->
             displayOneReport $ max 0 $ slotPrefix - placeholderCount
           _ -> error $ "" `showFailure` ekm
       displayOneReport :: Int -> m ()
