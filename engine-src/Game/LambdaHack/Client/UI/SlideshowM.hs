@@ -424,7 +424,7 @@ drawHighlight x1 (ButtonWidth font len) xstart as =
       highW32 = Color.attrCharToW32 . highAttr . Color.attrCharFromW32
       as2High = map highW32 as2
       cursorW32 = Color.attrCharToW32 . cursorAttr . Color.attrCharFromW32
-      (nonAlpha, alpha) = break (Char.isAlpha . Color.charFromW32) as2High
+      (nonAlpha, alpha) = break (Char.isAlphaNum . Color.charFromW32) as2High
       as2Cursor = case alpha of
         [] -> []
         ch : chrest -> cursorW32 ch : chrest
