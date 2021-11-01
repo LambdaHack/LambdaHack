@@ -7,6 +7,7 @@ module MonadClientMock
   , stubLevel
   , stubState
   , stubCliState
+  , testCliStateWithItem
 -- #ifdef EXPOSE_INTERNAL
 --     -- * Internal operations
   , CliMock(..)
@@ -211,7 +212,6 @@ stubState = let singletonFactionUpdate _ = EM.singleton (toEnum 0) testFaction
                 singletonActorDUpdate _ = EM.singleton (toEnum 1) testActor
                 copsUpdate oldCOps = oldCOps{corule=((corule oldCOps){rXmax=testLevelDimension, rYmax=testLevelDimension})}
                 stateWithMaxLevelDimension = updateCOpsAndCachedData copsUpdate emptyState
-                --stateWithUnknownTIles = localFromGlobal stateWithMaxLevelDimension
                 stateWithFaction = updateFactionD singletonFactionUpdate stateWithMaxLevelDimension
                 stateWithActorD = updateActorD singletonActorDUpdate stateWithFaction
                 stateWithDungeon = updateDungeon singletonDungeonUpdate stateWithActorD
@@ -234,6 +234,8 @@ stubCliState = CliState
   , cliClient = emptyStateClient $ toEnum 0
   , cliSession = Just ((emptySessionUI stubUIOptions) {sxhair = Just (TPoint TUnknown (toEnum 0) (Point 1 0))}) --(TVector Vector {vx=1, vy=0})}) -- (TNonEnemy (toEnum 1))})-- 
   }
+
+testCliStateWithItem = stubCliState { cliState = testStateWithItem }
 
 -- | Client state mock transformation monad.
 newtype CliMock a = CliMock

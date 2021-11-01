@@ -5,38 +5,15 @@ import Prelude ()
 
 import Game.LambdaHack.Core.Prelude
 
-import qualified Control.Monad.Trans.State.Strict as St
 import qualified Data.Text as T
 
 import Test.Tasty
 import Test.Tasty.HUnit
 
-import qualified Data.EnumMap.Strict as EM
-import qualified Data.Vector.Unboxed as U
-
-import           Game.LambdaHack.Client.UI.HandleHelperM
-
-import           Game.LambdaHack.Client.UI.MonadClientUI ( MonadClientUI )
 import           Game.LambdaHack.Client.UI.InventoryM
-import           Game.LambdaHack.Client.MonadClient
-import           Game.LambdaHack.Client.State
-import           Game.LambdaHack.Client.UI.HandleHelperM
-import           Game.LambdaHack.Client.UI.HandleHumanLocalM
-import qualified Game.LambdaHack.Client.UI.HumanCmd as HumanCmd
-import           Game.LambdaHack.Common.Area
-import           Game.LambdaHack.Common.Level
-import           Game.LambdaHack.Common.PointArray as PointArray
-import           Game.LambdaHack.Common.Types
-import           Game.LambdaHack.Common.Point
-import           Game.LambdaHack.Common.State
-import           Game.LambdaHack.Content.TileKind
 import           Game.LambdaHack.Definition.Defs
-import           Game.LambdaHack.Definition.DefsInternal ( toContentSymbol )
 
 import           MonadClientMock
-
-toFactionId :: Int -> FactionId
-toFactionId = toEnum
 
 
 inventoryMUnitTests :: TestTree 
@@ -72,14 +49,6 @@ inventoryMUnitTests = testGroup "inventoryMUnitTests"
                             [CEqp]
                             False 
                             False
-      result <- executorCli testFn stubCliState 
-      fst result @?= Left "no items in equipment outfit"
+      result <- executorCli testFn testCliStateWithItem  
+      fst result @?= Right (CEqp,[(toEnum 1,(1,[]))])
   ]
-
--- chooseItemProjectHuman :: forall m. (MonadClient m, MonadClientUI m) -- line 395
-
--- - line 533
--- triggerSymbols
-
--- - line 576
--- chooseItemApplyHuman
