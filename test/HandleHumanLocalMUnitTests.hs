@@ -38,14 +38,9 @@ toFactionId = toEnum
 
 handleHumanLocalMUnitTests :: TestTree 
 handleHumanLocalMUnitTests = testGroup "handleHumanLocalMUnitTests" 
-  [ testCase "verifyUnknownTileMap" $
-    do let (Just testArea) = toArea (0, 0, 1, 1)
-           map = unknownTileMap testArea unknownId 2 2
-        in print (show map)
---           map ! (Point 1 1) @?= unknownId
-  , testCase "verifyTestLevelSize" $
-    do let (Just level) = EM.lookup (toEnum 0) (sdungeon testState)
-        in (ltile level) ! (Point 1 1) @?= unknownId
+  [  testCase "verifyTestLevelSize" $
+    do let level = stubLevel -- (Just level) = EM.lookup (toEnum 0) (sdungeon testState)
+        in (ltile level) ! (Point 0 0) @?= unknownId
   , testCase "chooseItemProjectHuman" $
     do 
       let testFn = let triggerItems = 
@@ -53,7 +48,7 @@ handleHumanLocalMUnitTests = testGroup "handleHumanLocalMUnitTests"
                         , HumanCmd.TriggerItem{tiverb="verb2", tiobject="object2", tisymbols=[toContentSymbol 'c']}
                         ]
                     in chooseItemProjectHuman (toEnum 1) triggerItems
-      result <- executorCli testFn
+      result <- executorCli testFn stubCliState
       fst result @?= Nothing --Just FailError {failError="no aim designated"}
   ]
 

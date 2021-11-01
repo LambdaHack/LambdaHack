@@ -21,6 +21,7 @@ import           TieKnot
 
 import CommonMUnitTests
 import HandleHumanLocalMUnitTests
+import InventoryMUnitTests
 import ItemDescriptionUnitTests
 import ItemKindUnitTests
 import ItemRevUnitTests
@@ -34,6 +35,7 @@ main = defaultMain tests
 tests :: TestTree
 tests = testGroup "Tests" [ commonMUnitTests
                           , handleHumanLocalMUnitTests
+                          , inventoryMUnitTests
                           , itemDescriptionUnitTests
                           , itemKindUnitTests
                           , itemRevUnitTests

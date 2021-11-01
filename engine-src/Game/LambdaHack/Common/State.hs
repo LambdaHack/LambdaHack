@@ -184,6 +184,9 @@ unknownLevel COps{corule, cotile}
            , lnight
            }
 
+-- | Create a map full of unknown tiles
+-- >>> unknownTileMap (fromJust (toArea (0,0,0,0))) TK.unknownId 2 2
+-- PointArray.Array with size (2,2)
 unknownTileMap :: Area -> ContentId TileKind -> X -> Y -> TileMap
 unknownTileMap larea outerId rWidthMax rHeightMax =
   let unknownMap = PointArray.replicateA rWidthMax rHeightMax TK.unknownId

@@ -4,7 +4,9 @@
 module MonadClientMock
   ( emptyCliState
   , executorCli
-  , testState
+  , stubLevel
+  , stubState
+  , stubCliState
 -- #ifdef EXPOSE_INTERNAL
 --     -- * Internal operations
   , CliMock(..)
@@ -125,7 +127,7 @@ stubUIOptions = UIOptions
   , uMessageColors = []
   }
 
-testLevelDimension = 2
+testLevelDimension = 3
 
 testTileKind :: TileKind
 testTileKind = TileKind
@@ -139,10 +141,10 @@ testTileKind = TileKind
   }
 
 
-(Just testArea) = toArea (0, 0, testLevelDimension, testLevelDimension)
+(Just testArea) = toArea (0, 0, 0, 0)
 
-testLevel :: Level
-testLevel = Level
+stubLevel :: Level
+stubLevel = Level
   { lkind = toEnum 0
   , ldepth = Dice.AbsDepth 1
   , lfloor = EM.empty
@@ -199,20 +201,24 @@ testActor =
   , bproj = False
   }
 
+testActorWithItem = 
+  testActor { beqp = EM.singleton (toEnum 1) (1,[])}
 
 -- stublike state instance that should barely function for testing
-testState :: State
-testState = let singletonFactionUpdate _ = EM.singleton (toEnum 0) testFaction
-                singletonDungeonUpdate _ = EM.singleton (toEnum 0) testLevel
+stubState :: State
+stubState = let singletonFactionUpdate _ = EM.singleton (toEnum 0) testFaction
+                singletonDungeonUpdate _ = EM.singleton (toEnum 0) stubLevel
                 singletonActorDUpdate _ = EM.singleton (toEnum 1) testActor
                 copsUpdate oldCOps = oldCOps{corule=((corule oldCOps){rXmax=testLevelDimension, rYmax=testLevelDimension})}
-                --stateWithUnknownTiles = localFromGlobal emptyState
-                stateWithFaction = updateFactionD singletonFactionUpdate emptyState
+                stateWithMaxLevelDimension = updateCOpsAndCachedData copsUpdate emptyState
+                --stateWithUnknownTIles = localFromGlobal stateWithMaxLevelDimension
+                stateWithFaction = updateFactionD singletonFactionUpdate stateWithMaxLevelDimension
                 stateWithActorD = updateActorD singletonActorDUpdate stateWithFaction
                 stateWithDungeon = updateDungeon singletonDungeonUpdate stateWithActorD
-                stateWithMoreSpace = updateCOpsAndCachedData copsUpdate stateWithDungeon
-             in stateWithMoreSpace
+            in stateWithDungeon
 
+testStateWithItem = let swapToItemActor _ = EM.singleton (toEnum 1) testActorWithItem
+                     in updateActorD swapToItemActor stubState
 
 emptyCliState :: CliState
 emptyCliState = CliState
@@ -223,8 +229,8 @@ emptyCliState = CliState
   -- , cliToSave = undefined 
   }  
 
-testCliState = CliState
-  { cliState = testState
+stubCliState = CliState
+  { cliState = stubState
   , cliClient = emptyStateClient $ toEnum 0
   , cliSession = Just ((emptySessionUI stubUIOptions) {sxhair = Just (TPoint TUnknown (toEnum 0) (Point 1 0))}) --(TVector Vector {vx=1, vy=0})}) -- (TNonEnemy (toEnum 1))})-- 
   }
@@ -304,8 +310,9 @@ instance MonadClientAtomic CliMock where
   execPutState = putState
 
 
-executorCli :: CliMock a -> IO (a, CliState)
-executorCli testFn = 
+-- the compiler is recommending I ditch the testCliState redundancy ... it feels less readable to me that way though ... but maybe that's because I suck at haskell
+executorCli :: CliMock a -> CliState -> IO (a, CliState)
+executorCli testFn testCliState = 
   runStateT (runCliMock testFn) testCliState 
   
   

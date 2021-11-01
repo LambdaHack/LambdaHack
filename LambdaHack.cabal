@@ -434,6 +434,7 @@ test-suite test
   main-is:            Spec.hs
   other-modules:      CommonMUnitTests
                       HandleHumanLocalMUnitTests
+                      InventoryMUnitTests
                       ItemDescriptionUnitTests
                       ItemKindUnitTests
                       ItemRevUnitTests
