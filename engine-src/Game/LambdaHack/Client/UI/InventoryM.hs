@@ -363,7 +363,7 @@ transition leader psuit prompt promptGeneric permitMulitple
   bodyUI <- getsSession $ getActorUI leader
   fact <- getsState $ (EM.! bfid body) . sfactionD
   hs <- partyAfterLeader leader
-  bagAll <- getsState $ \s -> accessModeBag leader s cCur
+  bagHuge <- getsState $ \s -> accessModeBag leader s cCur
   itemToF <- getsState $ flip itemToFull
   revCmd <- revCmdMap
   mpsuit <- psuit  -- when throwing, this sets eps and checks xhair validity
@@ -376,28 +376,26 @@ transition leader psuit prompt promptGeneric permitMulitple
       getResult iids = Right $ case cCur of
         MStore rstore -> RStore rstore iids
         MOrgans -> case iids of
-          [iid] -> ROrgans iid bagAll bagItemSlotsAll
+          [iid] -> ROrgans iid bagAll bagAllItemSlots
           _ -> error $ "" `showFailure` (cCur, iids)
         MOwned -> case iids of
           [iid] -> ROwned iid
           _ -> error $ "" `showFailure` (cCur, iids)
         MSkills -> error $ "" `showFailure` cCur
         MLore rlore -> case iids of
-          [iid] -> RLore rlore iid bagAll bagItemSlotsAll
+          [iid] -> RLore rlore iid bagAll bagAllItemSlots
           _ -> error $ "" `showFailure` (cCur, iids)
         MPlaces ->  error $ "" `showFailure` cCur
         MModes -> error $ "" `showFailure` cCur
+      bagAllItemSlots = EM.filter (`EM.member` bagHuge) lSlots
+      bagAll = EM.fromList $ map (\iid -> (iid, bagHuge EM.! iid))
+                                 (EM.elems bagAllItemSlots)
       mstore = case cCur of
         MStore store -> Just store
         _ -> Nothing
-      filterP iid = psuitFun mstore (itemToF iid)
-      bagAllSuit = EM.filterWithKey filterP bagAll
-      bagItemSlotsAll = EM.filter (`EM.member` bagAll) lSlots
-      bag = EM.fromList $ map (\iid -> (iid, bagAll EM.! iid))
-                              (EM.elems bagItemSlotsAll)
-      suitableItemSlotsAll = EM.filter (`EM.member` bagAllSuit) lSlots
-      bagSuit = EM.fromList $ map (\iid -> (iid, bagAllSuit EM.! iid))
-                                  (EM.elems suitableItemSlotsAll)
+      filterP = psuitFun mstore . itemToF
+      bagSuit = EM.filterWithKey filterP bagAll
+      bagSuitItemSlots = EM.filter (`EM.member` bagSuit) bagAllItemSlots
       nextContainers direction = case direction of
         Forward -> case cRest ++ [cCur] of
           c1 : rest -> (c1, rest)
@@ -408,11 +406,11 @@ transition leader psuit prompt promptGeneric permitMulitple
   (bagFiltered, promptChosen) <- getsState $ \s ->
     case itemDialogState of
       ISuitable -> (bagSuit, prompt body bodyUI actorCurAndMaxSk cCur s <> ":")
-      IAll -> (bag, promptGeneric body bodyUI actorCurAndMaxSk cCur s <> ":")
+      IAll -> (bagAll, promptGeneric body bodyUI actorCurAndMaxSk cCur s <> ":")
   let (autoDun, _) = autoDungeonLevel fact
-      multipleSlots = if itemDialogState == IAll
-                      then bagItemSlotsAll
-                      else suitableItemSlotsAll
+      multipleSlots = case itemDialogState of
+        ISuitable -> bagSuitItemSlots
+        IAll -> bagAllItemSlots
       maySwitchLeader MOwned = False
       maySwitchLeader MLore{} = False
       maySwitchLeader MPlaces = False
@@ -448,7 +446,7 @@ transition leader psuit prompt promptGeneric permitMulitple
         , let km = K.mkChar '+'
           in (km, DefItemKey
            { defLabel = Right km
-           , defCond = bag /= bagSuit
+           , defCond = bagAll /= bagSuit
            , defAction = recCall cCur cRest $ case itemDialogState of
                                                 ISuitable -> IAll
                                                 IAll -> ISuitable
@@ -491,9 +489,9 @@ transition leader psuit prompt promptGeneric permitMulitple
                       in return $! getResult eslots
         }
       slotDef :: SlotChar -> m (Either Text ResultItemDialogMode)
-      slotDef slot = case EM.lookup slot bagItemSlotsAll of
+      slotDef slot = case EM.lookup slot bagAllItemSlots of
         Nothing -> error $ "unexpected slot"
-                           `showFailure` (slot, bagItemSlotsAll)
+                           `showFailure` (slot, bagAllItemSlots)
         Just iid -> return $! getResult [iid]
       processSpecialOverlay :: OKX -> (SlotChar -> ResultItemDialogMode)
                             -> m (Either Text ResultItemDialogMode)
