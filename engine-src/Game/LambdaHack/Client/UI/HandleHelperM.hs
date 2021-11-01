@@ -239,21 +239,14 @@ itemOverlayFromState lSlots lid bag displayRanged
       localTime = getLocalTime lid s
       itemToF = flip itemToFull s
       factionD = sfactionD s
-      combGround = combinedGround side s
-      combOrgan = combinedOrgan side s
-      combEqp = combinedEqp side s
-      stashBag = getFactionStashBag side s
       !_A = assert (allB (`elem` EM.elems lSlots) (EM.keys bag)
                     `blame` (lid, bag, lSlots)) ()
-      markEqp iid periodic k ncha =
-        if | periodic -> '/'  -- if equipped, no charges
+      attrCursor = Color.defAttr {Color.bg = Color.HighlightNoneCursor}
+      markEqp periodic k ncha =
+        if | periodic -> '"'  -- if equipped, no charges
            | ncha == 0 -> '-'  -- no charges left
-           | k > ncha -> '+'  -- not all charges left
-           | iid `EM.member` combOrgan || iid `EM.member` combEqp ->
-             if iid `EM.member` stashBag || iid `EM.member` combGround
-             then '}'  -- some spares in shared stash
-             else ']'  -- all ready to fight with
-           | otherwise -> ')'
+           | k > ncha -> '~'  -- not all charges left
+           | otherwise -> '+'
       pr :: (SlotChar, ItemId) -> Maybe (AttrString, AttrString, KeyOrSlot)
       pr (c, iid) =
         case EM.lookup iid bag of
@@ -270,10 +263,11 @@ itemOverlayFromState lSlots lid bag displayRanged
                                     DetailMedium 4 k localTime itemFull kit]
                 ncha = ncharges localTime kit
                 periodic = IA.checkFlag Ability.Periodic arItem
-                !tLab = T.singleton $ markEqp iid periodic k ncha
-                aLab = textToAS tLab ++ [colorSymbol]
+                !cLab = Color.AttrChar { acAttr = attrCursor
+                                       , acChar = markEqp periodic k ncha }
+                asLab = [Color.attrCharToW32 cLab, colorSymbol]
                 !tDesc = " " <> phrase
-            in Just (aLab, textToAS tDesc, Right c)
+            in Just (asLab, textToAS tDesc, Right c)
       l = mapMaybe pr $ EM.assocs lSlots
   in labDescOKX squareFont propFont l
 

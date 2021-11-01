@@ -435,12 +435,10 @@ drawHighlight x1 (ButtonWidth font len) xstart as =
 
 drawBullet :: Int -> ButtonWidth -> Int -> AttrString -> AttrString
 drawBullet x1 (ButtonWidth font len) xstart as0 =
-  let diminishChar '@' = '·'
-      diminishChar '*' = '·'
-      diminishChar '+' = '·'
-      diminishChar '~' = '·'
-      diminishChar '-' = ' '
-      diminishChar ch = ch
+  let diminishChar '-' = ' '
+      diminishChar '^' = '^'
+      diminishChar '"' = '"'
+      diminishChar _ = '·'
       highableAttr = Color.defAttr {Color.bg = Color.HighlightNoneCursor}
       highW32 ac32 =
         let ac = Color.attrCharFromW32 ac32
