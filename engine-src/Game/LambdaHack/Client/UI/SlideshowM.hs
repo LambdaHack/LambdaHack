@@ -201,7 +201,7 @@ stepChoiceScreen :: forall m . MonadClientUI m
                  => Bool -> ColorMode -> Bool -> Slideshow -> [K.KM]
                  -> m ( Int, Int, Int
                       , Int -> OKX -> m (Bool, KeyOrSlot, Int) )
-stepChoiceScreen _highlightBullet dm sfBlank frsX extraKeys = do
+stepChoiceScreen highlightBullet dm sfBlank frsX extraKeys = do
   CCUI{coscreen=ScreenContent{rwidth, rheight}} <- getsSession sccui
   FontSetup{..} <- getFontSetup
   let !_A = assert (K.escKM `elem` extraKeys) ()
@@ -223,10 +223,13 @@ stepChoiceScreen _highlightBullet dm sfBlank frsX extraKeys = do
       page pointer (ovsRight0, kyxsRight) = assert (pointer >= 0)
                                             $ case findKYX pointer frs of
         Nothing -> error $ "no menu keys" `showFailure` frs
-        Just ( (ovs0, kyxs1)
+        Just ( (ovs0, kyxs2)
              , (ekm, (PointUI x1 y, buttonWidth))
              , ixOnPage ) -> do
           let ovs1 = EM.map (updateLine y $ drawHighlight x1 buttonWidth) ovs0
+              ovs2 = if highlightBullet
+                     then EM.map (highBullet kyxs2) ovs1
+                     else ovs1
               -- We add spaces in proportional font under the report rendered
               -- in mono font and the right pane text in prop font,
               -- but over menu lines in proportional font that can be
@@ -263,8 +266,8 @@ stepChoiceScreen _highlightBullet dm sfBlank frsX extraKeys = do
                            (EM.map (xytranslateOverlay 2 2) ovsRight1)
               (ovs, kyxs) =
                 if EM.null ovsRight0
-                then (ovs1, kyxs1)
-                else sideBySideOKX rwidth 0 (ovs1, kyxs1) (ovsRight, kyxsRight)
+                then (ovs2, kyxs2)
+                else sideBySideOKX rwidth 0 (ovs2, kyxs2) (ovsRight, kyxsRight)
               tmpResult pointer1 = case findKYX pointer1 frs of
                 Nothing -> error $ "no menu keys" `showFailure` frs
                 Just (_, (ekm1, _), _) -> return (False, ekm1, pointer1)
@@ -426,6 +429,35 @@ drawHighlight x1 (ButtonWidth font len) xstart as =
   in if x1 + lenUI < xstart
      then as
      else as1 ++ as2High ++ as3
+
+drawBullet :: Int -> ButtonWidth -> Int -> AttrString -> AttrString
+drawBullet x1 (ButtonWidth font len) xstart as =
+  let highableAttrs = [Color.defAttr]
+      highAttr c | Color.acAttr c `notElem` highableAttrs
+                   || Color.acChar c == ' ' = c
+      highAttr c = c {Color.acAttr =
+                        (Color.acAttr c) {Color.fg = Color.BrBlack}}
+      lenUI = if isSquareFont font then len * 2 else len
+      x1MinusXStartChars = if isSquareFont font
+                           then (x1 - xstart) `div` 2
+                           else x1 - xstart
+      (as1, asRest) = splitAt x1MinusXStartChars as
+      (as2, as3) = splitAt len asRest
+      highW32 = Color.attrCharToW32
+                . highAttr
+                . Color.attrCharFromW32
+  in if x1 + lenUI < xstart
+     then as
+     else case as2 of
+       toHighlight : rest@(space : _) | space == Color.spaceAttrW32 ->
+         as1 ++ [highW32 toHighlight] ++ rest ++ as3
+       _ -> as
+
+highBullet :: [KYX] -> Overlay -> Overlay
+highBullet kyxs ov0 =
+  let f (_, (PointUI x1 y, buttonWidth)) =
+        updateLine y $ drawBullet x1 buttonWidth
+  in foldr f ov0 kyxs
 
 -- This is not our turn, so we can't obstruct screen with messages
 -- and message reformatting causes distraction, so there's no point
