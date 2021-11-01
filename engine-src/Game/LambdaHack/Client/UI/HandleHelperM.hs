@@ -280,8 +280,10 @@ skillsOverlay aid = do
              -> ((AttrLine, (Int, AttrLine), (Int, AttrLine)), KYX)
       prSlot (y, c) skill =
         let skName = " " <> skillName skill
-            slotLab = slotLabel c
-            lab = textToAL slotLab
+            attrCursor = Color.defAttr {Color.bg = Color.HighlightNoneCursor}
+            labAc = Color.AttrChar { acAttr = attrCursor
+                                   , acChar = '+' }
+            lab = attrStringToAL [Color.attrCharToW32 labAc]
             labLen = textSize squareFont $ attrLine lab
             indentation = if isSquareFont propFont then 52 else 26
             valueText = skillToDecorator skill b
