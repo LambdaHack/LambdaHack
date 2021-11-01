@@ -1653,29 +1653,28 @@ generateMenu cmdSemInCxtOfKM blurb kdsRaw gameInfo menuName = do
             highW32 = Color.attrCharToW32 . highAttr . Color.attrCharFromW32
             markFirst d = markFirstAS $ textToAS d
             markFirstAS [] = []
-            markFirstAS (ac : rest) = Color.spaceAttrW32 : highW32 ac : rest
-            fmt (ekm, (d, _, _)) = (Just ekm, markFirst d)
+            markFirstAS (ac : rest) = highW32 ac : rest
+            fmt (ekm, (d, _, _)) = (ekm, markFirst d)
         in map fmt kds
-      generate :: Int -> (Maybe KeyOrSlot, AttrString) -> Maybe KYX
-      generate y (mekm, binding) =
-        let lenB = length binding
-            yxx ekm = (ekm, ( PointUI 0 y
-                            , ButtonWidth squareFont lenB ))
-        in yxx <$> mekm
+      generate :: Int -> (KeyOrSlot, AttrString) -> KYX
+      generate y (ekm, binding) =
+        (ekm, (PointUI 0 y, ButtonWidth squareFont (length binding)))
+      okxBindings = ( EM.singleton squareFont
+                      $ offsetOverlay $ map (attrStringToAL . snd) bindings
+                    , zipWith generate [0..] bindings )
       titleLine = rtitle corule ++ " "
                   ++ showVersion (rexeVersion corule) ++ " "
-      rawLines = zip (repeat Nothing)
-                     (map stringToAS $
-                        ["", titleLine ++ "[" ++ rwebAddress ++ "]", ""]
-                        ++ gameInfo)
-                 ++ bindings
-      browserKey = ( Right $ SlotChar 1042 'a'
-                   , ( PointUI (2 * length titleLine) 1
-                     , ButtonWidth squareFont (2 + length rwebAddress) ) )
-      kyxs = browserKey : catMaybes (zipWith generate [0..] rawLines)
-      ov = EM.singleton squareFont $ offsetOverlay
-                                   $ map (attrStringToAL . snd) rawLines
-      okx = xytranslateOKX 2 0 (ov, kyxs)
+      titleLines = zip (repeat Nothing)
+                       (map stringToAL $
+                          ["", titleLine ++ "[" ++ rwebAddress ++ "]", ""]
+                          ++ gameInfo)
+      titleKey = ( Right $ SlotChar 1042 'a'
+                 , ( PointUI (2 * length titleLine) 1
+                   , ButtonWidth squareFont (2 + length rwebAddress) ) )
+      okxTitle = ( EM.singleton squareFont $ offsetOverlay $ map snd titleLines
+                 , [titleKey] )
+      okx = xytranslateOKX 2 0
+            $ sideBySideOKX 2 (length titleLines) okxTitle okxBindings
   menuIxMap <- getsSession smenuIxMap
   unless (menuName `M.member` menuIxMap) $
     modifySession $ \sess -> sess {smenuIxMap = M.insert menuName 1 menuIxMap}

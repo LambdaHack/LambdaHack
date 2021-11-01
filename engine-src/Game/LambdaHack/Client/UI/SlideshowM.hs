@@ -15,6 +15,7 @@ import Prelude ()
 
 import Game.LambdaHack.Core.Prelude
 
+import qualified Data.Char as Char
 import           Data.Either
 import qualified Data.EnumMap.Strict as EM
 import qualified Data.Map.Strict as M
@@ -409,7 +410,10 @@ drawHighlight x1 (ButtonWidth font len) xstart as =
                         (Color.acAttr c) {Color.fg = Color.BrWhite}}
       cursorAttr c = c {Color.acAttr =
                           (Color.acAttr c)
-                            {Color.bg = Color.HighlightNoneCursor}}
+                             {Color.bg = Color.HighlightNoneCursor}}
+      noCursorAttr c = c {Color.acAttr =
+                            (Color.acAttr c)
+                               {Color.bg = Color.HighlightNone}}
       -- This also highlights dull white item symbols, but who cares.
       lenUI = if isSquareFont font then len * 2 else len
       x1MinusXStartChars = if isSquareFont font
@@ -418,13 +422,16 @@ drawHighlight x1 (ButtonWidth font len) xstart as =
       (as1, asRest) = splitAt x1MinusXStartChars as
       (as2, as3) = splitAt len asRest
       highW32 = Color.attrCharToW32 . highAttr . Color.attrCharFromW32
+      as2High = map highW32 as2
       cursorW32 = Color.attrCharToW32 . cursorAttr . Color.attrCharFromW32
-      as2High = case map highW32 as2 of
+      (nonAlpha, alpha) = break (Char.isAlpha . Color.charFromW32) as2High
+      as2Cursor = case alpha of
         [] -> []
         ch : chrest -> cursorW32 ch : chrest
+      noCursorW32 = Color.attrCharToW32 . noCursorAttr . Color.attrCharFromW32
   in if x1 + lenUI < xstart
      then as
-     else as1 ++ as2High ++ as3
+     else as1 ++ map noCursorW32 nonAlpha ++ as2Cursor ++ as3
 
 drawBullet :: Int -> ButtonWidth -> Int -> AttrString -> AttrString
 drawBullet x1 (ButtonWidth font len) xstart as0 =
@@ -439,7 +446,9 @@ drawBullet x1 (ButtonWidth font len) xstart as0 =
         let ac = Color.attrCharFromW32 ac32
             ch = diminishChar $ Color.acChar ac
         in if | Color.acAttr ac /= highableAttr -> ac32
-              | Color.acChar ac == ' ' -> ac32
+              | Color.acChar ac == ' ' ->
+                  error $ "drawBullet: HighlightNoneCursor space forbidden"
+                          `showFailure` (ac, map Color.charFromW32 as0)
               | ch == ' ' -> Color.spaceAttrW32
               | otherwise ->
                   Color.attrCharToW32
@@ -451,15 +460,12 @@ drawBullet x1 (ButtonWidth font len) xstart as0 =
                            else x1 - xstart
       (as1, asRest) = splitAt x1MinusXStartChars as0
       (as2, as3) = splitAt len asRest
-      highAsSpace = \case
-        space : rest | space == Color.spaceAttrW32 -> space : highAs rest
-        as -> highAs as
       highAs = \case
         toHighlight : rest -> highW32 toHighlight : rest
         [] -> []
   in if x1 + lenUI < xstart
      then as0
-     else as1 ++ highAsSpace as2 ++ as3
+     else as1 ++ highAs as2 ++ as3
 
 highBullet :: [KYX] -> Overlay -> Overlay
 highBullet kyxs ov0 =
