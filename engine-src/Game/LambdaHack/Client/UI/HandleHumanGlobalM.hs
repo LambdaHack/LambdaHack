@@ -1648,9 +1648,15 @@ generateMenu cmdSemInCxtOfKM blurb kdsRaw gameInfo menuName = do
         _ -> (Right (SlotChar n 'a'), kd)
       kds = zipWith matchKM [0 ..] kdsRaw
       bindings =  -- key bindings to display
-        let fmt (ekm, (d, _, _)) = (Just ekm, ' ' : T.unpack d)
+        let attrCursor = Color.defAttr {Color.bg = Color.HighlightNoneCursor}
+            highAttr ac = ac {Color.acAttr = attrCursor}
+            highW32 = Color.attrCharToW32 . highAttr . Color.attrCharFromW32
+            markFirst d = markFirstAS $ textToAS d
+            markFirstAS [] = []
+            markFirstAS (ac : rest) = Color.spaceAttrW32 : highW32 ac : rest
+            fmt (ekm, (d, _, _)) = (Just ekm, markFirst d)
         in map fmt kds
-      generate :: Int -> (Maybe KeyOrSlot, String) -> Maybe KYX
+      generate :: Int -> (Maybe KeyOrSlot, AttrString) -> Maybe KYX
       generate y (mekm, binding) =
         let lenB = length binding
             yxx ekm = (ekm, ( PointUI 0 y
@@ -1659,16 +1665,17 @@ generateMenu cmdSemInCxtOfKM blurb kdsRaw gameInfo menuName = do
       titleLine = rtitle corule ++ " "
                   ++ showVersion (rexeVersion corule) ++ " "
       rawLines = zip (repeat Nothing)
-                     (["", titleLine ++ "[" ++ rwebAddress ++ "]", ""]
-                      ++ gameInfo)
+                     (map stringToAS $
+                        ["", titleLine ++ "[" ++ rwebAddress ++ "]", ""]
+                        ++ gameInfo)
                  ++ bindings
       browserKey = ( Right $ SlotChar 1042 'a'
                    , ( PointUI (2 * length titleLine) 1
                      , ButtonWidth squareFont (2 + length rwebAddress) ) )
       kyxs = browserKey : catMaybes (zipWith generate [0..] rawLines)
       ov = EM.singleton squareFont $ offsetOverlay
-                                   $ map (stringToAL . snd) rawLines
-      kxy = xytranslateOKX 2 0 (ov, kyxs)
+                                   $ map (attrStringToAL . snd) rawLines
+      okx = xytranslateOKX 2 0 (ov, kyxs)
   menuIxMap <- getsSession smenuIxMap
   unless (menuName `M.member` menuIxMap) $
     modifySession $ \sess -> sess {smenuIxMap = M.insert menuName 1 menuIxMap}
@@ -1689,7 +1696,7 @@ generateMenu cmdSemInCxtOfKM blurb kdsRaw gameInfo menuName = do
                            `showFailure` ekm
   ekm <- displayChoiceScreenWithRightPane displayInRightPane True
                                           menuName ColorFull True
-                                          (menuToSlideshow kxy) [K.escKM]
+                                          (menuToSlideshow okx) [K.escKM]
   case ekm of
     Left km -> case ekm `lookup` kds of
       Just (_, cmd, _) -> cmdSemInCxtOfKM km cmd

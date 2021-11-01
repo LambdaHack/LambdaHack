@@ -417,12 +417,8 @@ drawHighlight x1 (ButtonWidth font len) xstart as =
                            else x1 - xstart
       (as1, asRest) = splitAt x1MinusXStartChars as
       (as2, as3) = splitAt len asRest
-      highW32 = Color.attrCharToW32
-                . highAttr
-                . Color.attrCharFromW32
-      cursorW32 = Color.attrCharToW32
-                  . cursorAttr
-                  . Color.attrCharFromW32
+      highW32 = Color.attrCharToW32 . highAttr . Color.attrCharFromW32
+      cursorW32 = Color.attrCharToW32 . cursorAttr . Color.attrCharFromW32
       as2High = case map highW32 as2 of
         [] -> []
         ch : chrest -> cursorW32 ch : chrest
@@ -435,32 +431,32 @@ drawBullet x1 (ButtonWidth font len) xstart as0 =
   let diminishChar '@' = '·'
       diminishChar '*' = '·'
       diminishChar '+' = '·'
+      diminishChar '~' = '·'
       diminishChar '-' = ' '
-      diminishChar '~' = ' '
-      diminishChar c = c
-      highableAttrs = [Color.defAttr]
-      highAttr c | Color.acAttr c `notElem` highableAttrs
-                   || Color.acChar c == ' ' = c
-      highAttr c = c { Color.acAttr =
-                         (Color.acAttr c) {Color.fg = Color.BrBlack}
-                     , Color.acChar = diminishChar $ Color.acChar c
-                     }
+      diminishChar ch = ch
+      highableAttr = Color.defAttr {Color.bg = Color.HighlightNoneCursor}
+      highW32 ac32 =
+        let ac = Color.attrCharFromW32 ac32
+            ch = diminishChar $ Color.acChar ac
+        in if | Color.acAttr ac /= highableAttr -> ac32
+              | Color.acChar ac == ' ' -> ac32
+              | ch == ' ' -> Color.spaceAttrW32
+              | otherwise ->
+                  Color.attrCharToW32
+                  $ ac { Color.acAttr = Color.defAttr {Color.fg = Color.BrBlack}
+                       , Color.acChar = ch }
       lenUI = if isSquareFont font then len * 2 else len
       x1MinusXStartChars = if isSquareFont font
                            then (x1 - xstart) `div` 2
                            else x1 - xstart
       (as1, asRest) = splitAt x1MinusXStartChars as0
       (as2, as3) = splitAt len asRest
-      highW32 = Color.attrCharToW32
-                . highAttr
-                . Color.attrCharFromW32
       highAsSpace = \case
         space : rest | space == Color.spaceAttrW32 -> space : highAs rest
         as -> highAs as
       highAs = \case
-        toHighlight : rest@(space : _) | space == Color.spaceAttrW32 ->
-          [highW32 toHighlight] ++ rest
-        as -> as
+        toHighlight : rest -> highW32 toHighlight : rest
+        [] -> []
   in if x1 + lenUI < xstart
      then as0
      else as1 ++ highAsSpace as2 ++ as3
