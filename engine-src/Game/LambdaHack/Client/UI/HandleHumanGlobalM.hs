@@ -1668,7 +1668,7 @@ generateMenu cmdSemInCxtOfKM blurb kdsRaw gameInfo menuName = do
                        (map stringToAL $
                           ["", titleLine ++ "[" ++ rwebAddress ++ "]", ""]
                           ++ gameInfo)
-      titleKey = ( Right $ SlotChar (-1)
+      titleKey = ( Right oddSlot
                  , ( PointUI (2 * length titleLine) 1
                    , ButtonWidth squareFont (2 + length rwebAddress) ) )
       okxTitle = ( EM.singleton squareFont $ offsetOverlay $ map snd titleLines
@@ -1690,7 +1690,7 @@ generateMenu cmdSemInCxtOfKM blurb kdsRaw gameInfo menuName = do
         Just (_, _, mblurbRight) -> case mblurbRight of
           Nothing -> returnDefaultOKS
           Just blurbRight -> return (prepareBlurb blurbRight, [])
-        Nothing | ekm == Right (SlotChar (-1)) -> returnDefaultOKS
+        Nothing | ekm == Right oddSlot -> returnDefaultOKS
         Nothing -> error $ "generateMenu: unexpected key:"
                            `showFailure` ekm
   ekm <- displayChoiceScreenWithRightPane displayInRightPane True
@@ -1700,7 +1700,7 @@ generateMenu cmdSemInCxtOfKM blurb kdsRaw gameInfo menuName = do
     Left km -> case ekm `lookup` kds of
       Just (_, cmd, _) -> cmdSemInCxtOfKM km cmd
       Nothing -> weaveJust <$> failWith "never mind"
-    Right (SlotChar (-1)) -> do
+    Right slot | slot == oddSlot -> do
       success <- tryOpenBrowser rwebAddress
       if success
       then generateMenu cmdSemInCxtOfKM blurb kdsRaw gameInfo menuName

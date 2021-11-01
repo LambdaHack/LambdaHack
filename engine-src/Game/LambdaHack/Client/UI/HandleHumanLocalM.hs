@@ -226,8 +226,8 @@ chooseItemDialogMode leader0 permitLoreCycle c = do
                         $ offsetOverlay
                         $ splitAttrString rwidth rwidth attrString
                   keys = [K.spaceKM, K.escKM]
-                         ++ [K.upKM | slotPrefix slot /= 0]
-                         ++ [K.downKM | slotPrefix slot /= slotListBound]
+                         ++ [K.upKM | fromEnum slot /= 0]
+                         ++ [K.downKM | fromEnum slot /= slotListBound]
               msgAdd MsgPromptGeneric prompt2
               slides <- overlayToSlideshow (rheight - 2) keys (ov0, [])
               km <- getConfirms ColorFull keys slides
@@ -274,8 +274,8 @@ chooseItemDialogMode leader0 permitLoreCycle c = do
                   ov0 = attrLinesToFontMap
                         $ map (second (concatMap splitText)) blurbs
                   keys = [K.spaceKM, K.escKM]
-                         ++ [K.upKM | slotPrefix slot /= 0]
-                         ++ [K.downKM | slotPrefix slot /= slotListBound]
+                         ++ [K.upKM | fromEnum slot /= 0]
+                         ++ [K.downKM | fromEnum slot /= slotListBound]
               msgAdd MsgPromptGeneric prompt2
               slides <- overlayToSlideshow (rheight - 2) keys (ov0, [])
               km <- getConfirms ColorFull keys slides
@@ -295,7 +295,7 @@ chooseItemDialogMode leader0 permitLoreCycle c = do
             campaignModes = ofoldlGroup' comode MK.CAMPAIGN_SCENARIO f []
             slotListBound = length campaignModes - 1
             displayOneSlot slot = do
-              let (gameModeId, gameMode) = campaignModes !! slotPrefix slot
+              let (gameModeId, gameMode) = campaignModes !! fromEnum slot
               modeOKX <- describeMode False gameModeId
               let victories = case EM.lookup gameModeId svictories of
                     Nothing -> 0
@@ -305,8 +305,8 @@ chooseItemDialogMode leader0 permitLoreCycle c = do
                     [ MU.SubjectVerbSg "you" verb
                     , MU.Text $ "the '" <> MK.mname gameMode <> "' adventure" ]
                   keys = [K.spaceKM, K.escKM]
-                         ++ [K.upKM | slotPrefix slot /= 0]
-                         ++ [K.downKM | slotPrefix slot /= slotListBound]
+                         ++ [K.upKM | fromEnum slot /= 0]
+                         ++ [K.downKM | fromEnum slot /= slotListBound]
               msgAdd MsgPromptGeneric prompt2
               slides <- overlayToSlideshow rheight keys (modeOKX, [])
               ekm2 <- displayChoiceScreen "" ColorFull True slides keys
@@ -764,7 +764,7 @@ allHistoryHuman = do
         , MU.CarWs turnsGlobal "half-second turn"
         , "(this level:"
         , MU.Car turnsLocal <> ")" ]
-      kxs = [ (Right sn, ( PointUI 0 (slotPrefix sn)
+      kxs = [ (Right sn, ( PointUI 0 (fromEnum sn)
                          , ButtonWidth propFont 1000 ))
             | sn <- take histBound natSlots ]
   msgAdd MsgPromptGeneric msg
@@ -792,8 +792,8 @@ allHistoryHuman = do
             msgAdd MsgPromptGeneric "Try to survive a few seconds more, if you can."
           Left km | km == K.spaceKM ->
             msgAdd MsgPromptGeneric "Steady on."
-          Right SlotChar{slotPrefix} ->
-            displayOneReport $ max 0 $ slotPrefix - placeholderCount
+          Right slot ->
+            displayOneReport $ max 0 $ fromEnum slot - placeholderCount
           _ -> error $ "" `showFailure` ekm
       displayOneReport :: Int -> m ()
       displayOneReport histSlot = do

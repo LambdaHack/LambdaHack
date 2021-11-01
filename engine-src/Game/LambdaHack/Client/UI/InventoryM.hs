@@ -609,7 +609,7 @@ skillCloseUp leader slot = do
   b <- getsState $ getActorBody leader
   bUI <- getsSession $ getActorUI leader
   actorCurAndMaxSk <- getsState $ getActorMaxSkills leader
-  let skill = skillSlots !! slotPrefix slot
+  let skill = skillSlots !! fromEnum slot
       valueText = skillToDecorator skill b
                   $ Ability.getSk skill actorCurAndMaxSk
       prompt = makeSentence
@@ -626,7 +626,7 @@ placeCloseUp :: MonadClientUI m
 placeCloseUp places sexposePlaces slot = do
   COps{coplace} <- getsState scops
   FontSetup{..} <- getFontSetup
-  let (pk, (es, ne, na, _)) = places !! slotPrefix slot
+  let (pk, (es, ne, na, _)) = places !! fromEnum slot
       pkind = okind coplace pk
       prompt = makeSentence ["you remember", MU.Text $ PK.pname pkind]
       freqsText = "Frequencies:" <+> T.intercalate " "

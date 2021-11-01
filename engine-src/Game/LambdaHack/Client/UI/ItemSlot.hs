@@ -1,8 +1,8 @@
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 -- | Item slots for UI and AI item collections.
 module Game.LambdaHack.Client.UI.ItemSlot
-  ( SlotChar(..), ItemSlots(..), SingleItemSlots
-  , natSlots, assignSlot, sortSlotMap, mergeItemSlots
+  ( SlotChar, ItemSlots(..), SingleItemSlots
+  , natSlots, oddSlot, assignSlot, sortSlotMap, mergeItemSlots
   ) where
 
 import Prelude ()
@@ -29,6 +29,9 @@ newtype ItemSlots = ItemSlots (EM.EnumMap SLore SingleItemSlots)
 
 natSlots :: [SlotChar]
 natSlots = [SlotChar 0 ..]
+
+oddSlot :: SlotChar
+oddSlot = SlotChar (-1)
 
 -- | Assigns a slot to an item, e.g., for inclusion in equipment of a hero.
 -- At first, e.g., when item is spotted on the floor, the slot is

@@ -292,7 +292,7 @@ skillsOverlay aid = do
                      , (labLen, textToAL skName)
                      , (indentation, textToAL valueText) )
             lenButton = 26 + T.length valueText
-        in (triple, (Right c, ( PointUI 0 (slotPrefix c)
+        in (triple, (Right c, ( PointUI 0 (fromEnum c)
                               , ButtonWidth propFont lenButton )))
       (ts, kxs) = unzip $ zipWith prSlot natSlots skillSlots
       (skLab, skDescr, skValue) = unzip3 ts
