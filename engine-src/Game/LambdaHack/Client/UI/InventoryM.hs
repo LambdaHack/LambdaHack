@@ -408,7 +408,7 @@ transition leader psuit prompt promptGeneric permitMulitple
       ISuitable -> (bagSuit, prompt body bodyUI actorCurAndMaxSk cCur s <> ":")
       IAll -> (bagAll, promptGeneric body bodyUI actorCurAndMaxSk cCur s <> ":")
   let (autoDun, _) = autoDungeonLevel fact
-      multipleSlots = case itemDialogState of
+      slotsFiltered = case itemDialogState of
         ISuitable -> bagSuitItemSlots
         IAll -> bagAllItemSlots
       maySwitchLeader MOwned = False
@@ -484,21 +484,21 @@ transition leader psuit prompt promptGeneric permitMulitple
           }
       useMultipleDef defLabel = DefItemKey
         { defLabel
-        , defCond = permitMulitple && not (EM.null multipleSlots)
-        , defAction = let eslots = EM.elems multipleSlots
+        , defCond = permitMulitple && not (EM.null slotsFiltered)
+        , defAction = let eslots = EM.elems slotsFiltered
                       in return $! getResult eslots
         }
       slotDef :: SlotChar -> m (Either Text ResultItemDialogMode)
-      slotDef slot = case EM.lookup slot bagAllItemSlots of
+      slotDef slot = case EM.lookup slot slotsFiltered of
         Nothing -> error $ "unexpected slot"
-                           `showFailure` (slot, bagAllItemSlots)
+                           `showFailure` (slot, bagAllItemSlots, slotsFiltered)
         Just iid -> return $! getResult [iid]
       processSpecialOverlay :: OKX -> (SlotChar -> ResultItemDialogMode)
                             -> m (Either Text ResultItemDialogMode)
       processSpecialOverlay io resultConstructor = do
         let slotDef2 :: SlotChar -> m (Either Text ResultItemDialogMode)
             slotDef2 = return . Right . resultConstructor
-        runDefItemKey leader lSlots bagFiltered keyDefs slotDef2 io
+        runDefItemKey leader slotsFiltered bagFiltered keyDefs slotDef2 io
                       promptChosen cCur
   case cCur of
     MSkills -> do
@@ -513,8 +513,8 @@ transition leader psuit prompt promptGeneric permitMulitple
     _ -> do
       let displayRanged =
             cCur `notElem` [MStore COrgan, MOrgans, MLore SOrgan, MLore STrunk]
-      io <- itemOverlay lSlots (blid body) bagFiltered displayRanged
-      runDefItemKey leader lSlots bagFiltered keyDefs slotDef io
+      io <- itemOverlay slotsFiltered (blid body) bagFiltered displayRanged
+      runDefItemKey leader slotsFiltered bagFiltered keyDefs slotDef io
                     promptChosen cCur
 
 runDefItemKey :: MonadClientUI m
