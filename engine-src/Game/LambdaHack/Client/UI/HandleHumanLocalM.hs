@@ -215,29 +215,29 @@ chooseItemDialogMode leader0 permitLoreCycle c = do
              -- of lore screens, because lore is only about inspecting items.
              void $ pickLeader True newAid
              return $ Right newAid
-      RSkills slotIndex0 -> do
+      RSkills slot0 -> do
         -- This can be used in the future, e.g., to increase stats from
         -- level-up stat points, so let's keep it even if it shows
         -- no extra info compared to right pane display in menu.
         let slotListBound = length skillSlots - 1
-            displayOneSlot slotIndex = do
-              (prompt2, attrString) <- skillCloseUp leader slotIndex
+            displayOneSlot slot = do
+              (prompt2, attrString) <- skillCloseUp leader slot
               let ov0 = EM.singleton propFont
                         $ offsetOverlay
                         $ splitAttrString rwidth rwidth attrString
                   keys = [K.spaceKM, K.escKM]
-                         ++ [K.upKM | slotIndex /= 0]
-                         ++ [K.downKM | slotIndex /= slotListBound]
+                         ++ [K.upKM | slotPrefix slot /= 0]
+                         ++ [K.downKM | slotPrefix slot /= slotListBound]
               msgAdd MsgPromptGeneric prompt2
               slides <- overlayToSlideshow (rheight - 2) keys (ov0, [])
               km <- getConfirms ColorFull keys slides
               case K.key km of
                 K.Space -> chooseItemDialogMode leader False MSkills
-                K.Up -> displayOneSlot $ slotIndex - 1
-                K.Down -> displayOneSlot $ slotIndex + 1
+                K.Up -> displayOneSlot $ pred slot
+                K.Down -> displayOneSlot $ succ slot
                 K.Esc -> failWith "never mind"
                 _ -> error $ "" `showFailure` km
-        displayOneSlot slotIndex0
+        displayOneSlot slot0
       RLore slore iid itemBag lSlots -> do
         let ix0 = fromMaybe (error $ "" `showFailure` result)
                   $ elemIndex iid $ EM.elems lSlots
@@ -259,7 +259,7 @@ chooseItemDialogMode leader0 permitLoreCycle c = do
             modifySession $ \sess -> sess {schosenLore = ChosenNothing}
             failWith "never mind"
           _ -> error $ "" `showFailure` km
-      RPlaces slotIndex0 -> do
+      RPlaces slot0 -> do
         COps{coplace} <- getsState scops
         soptions <- getsClient soptions
         -- This is computed just once for the whole series of up and down arrow
@@ -267,26 +267,26 @@ chooseItemDialogMode leader0 permitLoreCycle c = do
         places <- getsState $ EM.assocs
                               . placesFromState coplace (sexposePlaces soptions)
         let slotListBound = length places - 1
-            displayOneSlot slotIndex = do
+            displayOneSlot slot = do
               (prompt2, blurbs) <-
-                placeCloseUp places (sexposePlaces soptions) slotIndex
+                placeCloseUp places (sexposePlaces soptions) slot
               let splitText = splitAttrString rwidth rwidth . textToAS
                   ov0 = attrLinesToFontMap
                         $ map (second (concatMap splitText)) blurbs
                   keys = [K.spaceKM, K.escKM]
-                         ++ [K.upKM | slotIndex /= 0]
-                         ++ [K.downKM | slotIndex /= slotListBound]
+                         ++ [K.upKM | slotPrefix slot /= 0]
+                         ++ [K.downKM | slotPrefix slot /= slotListBound]
               msgAdd MsgPromptGeneric prompt2
               slides <- overlayToSlideshow (rheight - 2) keys (ov0, [])
               km <- getConfirms ColorFull keys slides
               case K.key km of
                 K.Space -> chooseItemDialogMode leader False MPlaces
-                K.Up -> displayOneSlot $ slotIndex - 1
-                K.Down -> displayOneSlot $ slotIndex + 1
+                K.Up -> displayOneSlot $ pred slot
+                K.Down -> displayOneSlot $ succ slot
                 K.Esc -> failWith "never mind"
                 _ -> error $ "" `showFailure` km
-        displayOneSlot slotIndex0
-      RModes slotIndex0 -> do
+        displayOneSlot slot0
+      RModes slot0 -> do
         COps{comode} <- getsState scops
         svictories <- getsClient svictories
         nxtChal <- getsClient snxtChal
@@ -294,8 +294,8 @@ chooseItemDialogMode leader0 permitLoreCycle c = do
         let f !acc _p !i !a = (i, a) : acc
             campaignModes = ofoldlGroup' comode MK.CAMPAIGN_SCENARIO f []
             slotListBound = length campaignModes - 1
-            displayOneSlot slotIndex = do
-              let (gameModeId, gameMode) = campaignModes !! slotIndex
+            displayOneSlot slot = do
+              let (gameModeId, gameMode) = campaignModes !! slotPrefix slot
               modeOKX <- describeMode False gameModeId
               let victories = case EM.lookup gameModeId svictories of
                     Nothing -> 0
@@ -305,19 +305,19 @@ chooseItemDialogMode leader0 permitLoreCycle c = do
                     [ MU.SubjectVerbSg "you" verb
                     , MU.Text $ "the '" <> MK.mname gameMode <> "' adventure" ]
                   keys = [K.spaceKM, K.escKM]
-                         ++ [K.upKM | slotIndex /= 0]
-                         ++ [K.downKM | slotIndex /= slotListBound]
+                         ++ [K.upKM | slotPrefix slot /= 0]
+                         ++ [K.downKM | slotPrefix slot /= slotListBound]
               msgAdd MsgPromptGeneric prompt2
               slides <- overlayToSlideshow rheight keys (modeOKX, [])
               ekm2 <- displayChoiceScreen "" ColorFull True slides keys
               let km = either id (error $ "" `showFailure` ekm2) ekm2
               case K.key km of
                 K.Space -> chooseItemDialogMode leader False MModes
-                K.Up -> displayOneSlot $ slotIndex - 1
-                K.Down -> displayOneSlot $ slotIndex + 1
+                K.Up -> displayOneSlot $ pred slot
+                K.Down -> displayOneSlot $ succ slot
                 K.Esc -> failWith "never mind"
                 _ -> error $ "" `showFailure` km
-        displayOneSlot slotIndex0
+        displayOneSlot slot0
     Left err -> failWith err
 
 -- * ChooseItemProject

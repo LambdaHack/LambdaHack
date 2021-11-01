@@ -62,10 +62,10 @@ data ResultItemDialogMode =
     RStore CStore [ItemId]
   | ROrgans ItemId ItemBag SingleItemSlots
   | ROwned ItemId
-  | RSkills Int
+  | RSkills SlotChar
   | RLore SLore ItemId ItemBag SingleItemSlots
-  | RPlaces Int
-  | RModes Int
+  | RPlaces SlotChar
+  | RModes SlotChar
   deriving Show
 
 accessModeBag :: ActorId -> State -> ItemDialogMode -> ItemBag
@@ -495,13 +495,11 @@ transition leader psuit prompt promptGeneric permitMulitple
         Nothing -> error $ "unexpected slot"
                            `showFailure` (slot, bagItemSlotsAll)
         Just iid -> return $! getResult [iid]
-      processSpecialOverlay :: OKX -> (Int -> ResultItemDialogMode)
+      processSpecialOverlay :: OKX -> (SlotChar -> ResultItemDialogMode)
                             -> m (Either Text ResultItemDialogMode)
       processSpecialOverlay io resultConstructor = do
         let slotDef2 :: SlotChar -> m (Either Text ResultItemDialogMode)
-            slotDef2 slot = do
-              let slotIndex = slotPrefix slot
-              return (Right (resultConstructor slotIndex))
+            slotDef2 = return . Right . resultConstructor
         runDefItemKey leader lSlots bagFiltered keyDefs slotDef2 io
                       promptChosen cCur
   case cCur of
@@ -563,11 +561,10 @@ inventoryInRightPane leader lSlots bag c ekm = case ekm of
     let -- Lower width, to permit extra vertical space at the start,
         -- because gameover menu prompts are sometimes wide and/or long.
        width = rwidth - 2
-       slotIndex = slotPrefix slot
     case c of
       _ | isSquareFont propFont -> return emptyOKX
       MSkills -> do
-        (prompt, attrString) <- skillCloseUp leader slotIndex
+        (prompt, attrString) <- skillCloseUp leader slot
         let promptAS | T.null prompt = []
                      | otherwise = textFgToAS Color.Brown $ prompt <> "\n\n"
             ov = EM.singleton propFont $ offsetOverlay
@@ -585,7 +582,7 @@ inventoryInRightPane leader lSlots bag c ekm = case ekm of
         places <- getsState $ EM.assocs
                               . placesFromState coplace (sexposePlaces soptions)
         (prompt, blurbs) <-
-          placeCloseUp places (sexposePlaces soptions) slotIndex
+          placeCloseUp places (sexposePlaces soptions) slot
         let promptAS | T.null prompt = []
                      | otherwise = textFgToAS Color.Brown $ prompt <> "\n\n"
             ov = attrLinesToFontMap
@@ -609,12 +606,12 @@ inventoryInRightPane leader lSlots bag c ekm = case ekm of
         let widthAt = width - 5
         okxItemLorePointedAt propFont widthAt True bag 0 promptFun ix0 lSlots
 
-skillCloseUp :: MonadClientUI m => ActorId -> Int -> m (Text, AttrString)
-skillCloseUp leader slotIndex = do
+skillCloseUp :: MonadClientUI m => ActorId -> SlotChar -> m (Text, AttrString)
+skillCloseUp leader slot = do
   b <- getsState $ getActorBody leader
   bUI <- getsSession $ getActorUI leader
   actorCurAndMaxSk <- getsState $ getActorMaxSkills leader
-  let skill = skillSlots !! slotIndex
+  let skill = skillSlots !! slotPrefix slot
       valueText = skillToDecorator skill b
                   $ Ability.getSk skill actorCurAndMaxSk
       prompt = makeSentence
@@ -626,12 +623,12 @@ skillCloseUp leader slotIndex = do
 placeCloseUp :: MonadClientUI m
              => [(ContentId PK.PlaceKind, (ES.EnumSet LevelId, Int, Int, Int))]
              -> Bool
-             -> Int
+             -> SlotChar
              -> m (Text, [(DisplayFont, [Text])])
-placeCloseUp places sexposePlaces slotIndex = do
+placeCloseUp places sexposePlaces slot = do
   COps{coplace} <- getsState scops
   FontSetup{..} <- getFontSetup
-  let (pk, (es, ne, na, _)) = places !! slotIndex
+  let (pk, (es, ne, na, _)) = places !! slotPrefix slot
       pkind = okind coplace pk
       prompt = makeSentence ["you remember", MU.Text $ PK.pname pkind]
       freqsText = "Frequencies:" <+> T.intercalate " "
