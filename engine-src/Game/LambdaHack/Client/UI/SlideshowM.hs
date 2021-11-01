@@ -431,27 +431,39 @@ drawHighlight x1 (ButtonWidth font len) xstart as =
      else as1 ++ as2High ++ as3
 
 drawBullet :: Int -> ButtonWidth -> Int -> AttrString -> AttrString
-drawBullet x1 (ButtonWidth font len) xstart as =
-  let highableAttrs = [Color.defAttr]
+drawBullet x1 (ButtonWidth font len) xstart as0 =
+  let diminishChar '@' = '·'
+      diminishChar '*' = '·'
+      diminishChar '+' = '·'
+      diminishChar '-' = ' '
+      diminishChar '~' = ' '
+      diminishChar c = c
+      highableAttrs = [Color.defAttr]
       highAttr c | Color.acAttr c `notElem` highableAttrs
                    || Color.acChar c == ' ' = c
-      highAttr c = c {Color.acAttr =
-                        (Color.acAttr c) {Color.fg = Color.BrBlack}}
+      highAttr c = c { Color.acAttr =
+                         (Color.acAttr c) {Color.fg = Color.BrBlack}
+                     , Color.acChar = diminishChar $ Color.acChar c
+                     }
       lenUI = if isSquareFont font then len * 2 else len
       x1MinusXStartChars = if isSquareFont font
                            then (x1 - xstart) `div` 2
                            else x1 - xstart
-      (as1, asRest) = splitAt x1MinusXStartChars as
+      (as1, asRest) = splitAt x1MinusXStartChars as0
       (as2, as3) = splitAt len asRest
       highW32 = Color.attrCharToW32
                 . highAttr
                 . Color.attrCharFromW32
+      highAsSpace = \case
+        space : rest | space == Color.spaceAttrW32 -> space : highAs rest
+        as -> highAs as
+      highAs = \case
+        toHighlight : rest@(space : _) | space == Color.spaceAttrW32 ->
+          [highW32 toHighlight] ++ rest
+        as -> as
   in if x1 + lenUI < xstart
-     then as
-     else case as2 of
-       toHighlight : rest@(space : _) | space == Color.spaceAttrW32 ->
-         as1 ++ [highW32 toHighlight] ++ rest ++ as3
-       _ -> as
+     then as0
+     else as1 ++ highAsSpace as2 ++ as3
 
 highBullet :: [KYX] -> Overlay -> Overlay
 highBullet kyxs ov0 =

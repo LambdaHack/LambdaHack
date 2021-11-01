@@ -1648,7 +1648,7 @@ generateMenu cmdSemInCxtOfKM blurb kdsRaw gameInfo menuName = do
         _ -> (Right (SlotChar n 'a'), kd)
       kds = zipWith matchKM [0 ..] kdsRaw
       bindings =  -- key bindings to display
-        let fmt (ekm, (d, _, _)) = (Just ekm, T.unpack d)
+        let fmt (ekm, (d, _, _)) = (Just ekm, ' ' : T.unpack d)
         in map fmt kds
       generate :: Int -> (Maybe KeyOrSlot, String) -> Maybe KYX
       generate y (mekm, binding) =
@@ -1714,22 +1714,22 @@ mainMenuHuman cmdSemInCxtOfKM = do
   curChal <- getsClient scurChal
   let offOn b = if b then "on" else "off"
       -- Key-description-command tuples.
-      kds = [ ("setup and start new game>", ChallengeMenu, Nothing)
-            , ("save and exit to desktop", GameExit, Nothing)
-            , ("tweak convenience settings>", SettingsMenu, Nothing)
-            , ("toggle autoplay", AutomateToggle, Nothing)
-            , ("see command help", Help, Nothing)
-            , ("switch to dashboard", Dashboard, Nothing)
-            , ("back to playing", AutomateBack, Nothing) ]
+      kds = [ ("+ setup and start new game>", ChallengeMenu, Nothing)
+            , ("@ save and exit to desktop", GameExit, Nothing)
+            , ("+ tweak convenience settings>", SettingsMenu, Nothing)
+            , ("@ toggle autoplay", AutomateToggle, Nothing)
+            , ("@ see command help", Help, Nothing)
+            , ("@ switch to dashboard", Dashboard, Nothing)
+            , ("^ back to playing", AutomateBack, Nothing) ]
       gameName = MK.mname gameMode
       gameInfo = map T.unpack
                    [ "Now playing:" <+> gameName
                    , ""
-                   , "   with difficulty:" <+> tshow (cdiff curChal)
-                   , "       cold fish:" <+> offOn (cfish curChal)
-                   , "     ready goods:" <+> offOn (cgoods curChal)
-                   , "       lone wolf:" <+> offOn (cwolf curChal)
-                   , "   finder keeper:" <+> offOn (ckeeper curChal)
+                   , "     with difficulty:" <+> tshow (cdiff curChal)
+                   , "         cold fish:" <+> offOn (cfish curChal)
+                   , "       ready goods:" <+> offOn (cgoods curChal)
+                   , "         lone wolf:" <+> offOn (cwolf curChal)
+                   , "     finder keeper:" <+> offOn (ckeeper curChal)
                    , "" ]
       glueLines (l1 : l2 : rest) =
         if | null l1 -> l1 : glueLines (l2 : rest)
@@ -1793,12 +1793,12 @@ settingsMenuHuman cmdSemInCxtOfKM = do
       offOnUnset mb = case mb of
         Nothing -> "pass"
         Just b -> if b then "force on" else "force off"
-      tsuspect = "mark suspect terrain:" <+> offOnAll markSuspect
-      tvisible = "show visible zone:" <+> neverEver markVision
-      tsmell = "display smell clues:" <+> offOn markSmell
-      tanim = "play animations:" <+> offOn (not noAnim)
-      tdoctrine = "squad doctrine:" <+> Ability.nameDoctrine factDoctrine
-      toverride = "override tutorial hints:" <+> offOnUnset overrideTut
+      tsuspect = "@ mark suspect terrain:" <+> offOnAll markSuspect
+      tvisible = "@ show visible zone:" <+> neverEver markVision
+      tsmell = "@ display smell clues:" <+> offOn markSmell
+      tanim = "@ play animations:" <+> offOn (not noAnim)
+      tdoctrine = "@ squad doctrine:" <+> Ability.nameDoctrine factDoctrine
+      toverride = "@ override tutorial hints:" <+> offOnUnset overrideTut
       width = if isSquareFont propFont
               then rwidth `div` 2
               else min uMsgWrapColumn (rwidth - 2)
@@ -1819,7 +1819,7 @@ settingsMenuHuman cmdSemInCxtOfKM = do
               , textToBlurb "* squad doctrine\nThis setting affects the ongoing game, but does not persist to the next games. It determines the behaviour of henchmen (non-pointman characters) in the party and, in particular, if they are permitted to move autonomously or fire opportunistically (assuming they are able to, usually due to rare equipment). This setting has a poor UI that will be improved in the future." )
             , ( toverride, OverrideTut
               , textToBlurb "* override tutorial hints\nThis setting affects the ongoing and the next games. It determines whether tutorial hints are, respectively, not overridden with respect to the setting that was chosen when starting the current game, forced to be off, forced to be on." )
-            , ( "back to main menu", MainMenu, Just EM.empty ) ]
+            , ( "^ back to main menu", MainMenu, Just EM.empty ) ]
       gameInfo = map T.unpack
                    [ "Tweak convenience settings:"
                    , "" ]
@@ -1846,16 +1846,17 @@ challengeMenuHuman cmdSemInCxtOfKM = do
         Nothing -> 0
         Just cm -> fromMaybe 0 (M.lookup nxtChal cm)
       star t = if victories > 0 then "*" <> t else t
-      tnextScenario = "adventure:" <+> star (MK.mname gameMode)
+      tnextScenario = "@ adventure:" <+> star (MK.mname gameMode)
       offOn b = if b then "on" else "off"
       starTut t = if isJust overrideTut then "*" <> t else t
       displayTutorialHints = fromMaybe nxtTutorial overrideTut
-      tnextTutorial = "tutorial hints:" <+> starTut (offOn displayTutorialHints)
-      tnextDiff = "difficulty level:" <+> tshow (cdiff nxtChal)
-      tnextFish = "cold fish (rather hard):" <+> offOn (cfish nxtChal)
-      tnextGoods = "ready goods (hard):" <+> offOn (cgoods nxtChal)
-      tnextWolf = "lone wolf (very hard):" <+> offOn (cwolf nxtChal)
-      tnextKeeper = "finder keeper (hard):" <+> offOn (ckeeper nxtChal)
+      tnextTutorial = "@ tutorial hints:"
+                      <+> starTut (offOn displayTutorialHints)
+      tnextDiff = "@ difficulty level:" <+> tshow (cdiff nxtChal)
+      tnextFish = "@ cold fish (rather hard):" <+> offOn (cfish nxtChal)
+      tnextGoods = "@ ready goods (hard):" <+> offOn (cgoods nxtChal)
+      tnextWolf = "@ lone wolf (very hard):" <+> offOn (cwolf nxtChal)
+      tnextKeeper = "@ finder keeper (hard):" <+> offOn (ckeeper nxtChal)
       width = if isSquareFont propFont
               then rwidth `div` 2
               else min uMsgWrapColumn (rwidth - 2)
@@ -1898,8 +1899,8 @@ challengeMenuHuman cmdSemInCxtOfKM = do
               , textToBlurb "* lone wolf\nThis challenge mode setting will affect the next game that's about to be started. When on, it reduces player's starting actors to exactly one, though later on new heroes may join the party. This makes the game very hard in the long run.")
             , ( tnextKeeper, GameKeeperToggle
               , textToBlurb "* finder keeper\nThis challenge mode setting will affect the next game that's about to be started. When on, it completely disables flinging projectiles by the player, which affects not only ranged damage dealing, but also throwing of consumables that buff teammates engaged in melee combat, weaken and distract enemies, light dark corners, etc.")
-            , ( "start new game", GameRestart, blurb )
-            , ( "back to main menu", MainMenu, Nothing ) ]
+            , ( "@ start new game", GameRestart, blurb )
+            , ( "^ back to main menu", MainMenu, Nothing ) ]
       gameInfo = map T.unpack [ "Setup and start new game:"
                               , "" ]
   generateMenu cmdSemInCxtOfKM EM.empty kds gameInfo "challenge"
