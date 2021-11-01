@@ -13,7 +13,7 @@ import Test.Tasty.HUnit
 import           Game.LambdaHack.Client.UI.InventoryM
 import           Game.LambdaHack.Definition.Defs
 
-import           MonadClientMock
+import           UnitTestHelpers
 
 
 inventoryMUnitTests :: TestTree 

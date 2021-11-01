@@ -1,13 +1,14 @@
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 -- | The implementation of our custom game client monads. Just as any other
 -- component of the library, this implementation can be substituted.
-module MonadClientMock
+module UnitTestHelpers
   ( emptyCliState
   , executorCli
   , stubLevel
   , stubState
   , stubCliState
   , testCliStateWithItem
+  , testItemKind
 -- #ifdef EXPOSE_INTERNAL
 --     -- * Internal operations
   , CliMock(..)
@@ -37,10 +38,7 @@ import           Game.LambdaHack.Client.HandleAtomicM
 import           Game.LambdaHack.Client.HandleResponseM
 import           Game.LambdaHack.Client.LoopM
 import           Game.LambdaHack.Client.MonadClient
-
-
-import Game.LambdaHack.Client.State
-
+import           Game.LambdaHack.Client.State
 import           Game.LambdaHack.Client.UI
 import           Game.LambdaHack.Client.UI.SessionUI
 import           Game.LambdaHack.Client.UI.UIOptions
@@ -60,14 +58,16 @@ import           Game.LambdaHack.Common.Time
 import           Game.LambdaHack.Common.Types
 import           Game.LambdaHack.Common.Vector
 
-
+import           Game.LambdaHack.Content.ItemKind
 import           Game.LambdaHack.Content.ModeKind
 import           Game.LambdaHack.Content.RuleKind
 import           Game.LambdaHack.Content.TileKind
 import qualified Game.LambdaHack.Core.Dice as Dice
 
+import qualified Game.LambdaHack.Definition.Ability as Ability
 import           Game.LambdaHack.Definition.Color
 import           Game.LambdaHack.Definition.DefsInternal
+import           Game.LambdaHack.Definition.Flavour
 
 import           Game.LambdaHack.Server (ChanServer (..))
 
@@ -200,6 +200,24 @@ testActor =
   , bweapBenign = 0
   , bwatch = WWatch
   , bproj = False
+  }
+
+testItemKind = ItemKind
+  { isymbol  = 'x'
+  , iname    = "12345678901234567890123"
+  , ifreq    = [ (UNREPORTED_INVENTORY, 1) ]
+  , iflavour = zipPlain [Green]
+  , icount   = 1 + 1 `Dice.d` 2
+  , irarity  = [(1, 50), (10, 1)]
+  , iverbHit = "hit"
+  , iweight  = 300
+  , idamage  = 1 `Dice.d` 1
+  , iaspects = [ AddSkill Ability.SkHurtMelee $ -16 * 5
+                , SetFlag Ability.Fragile
+                , toVelocity 70 ]
+  , ieffects = []
+  , idesc    = "A really cool test item."
+  , ikit     = []
   }
 
 testActorWithItem = 

@@ -5,6 +5,8 @@ import Prelude ()
 
 import Game.LambdaHack.Core.Prelude
 
+import Data.Either
+
 import qualified Control.Monad.Trans.State.Strict as St
 
 import Test.Tasty
@@ -12,6 +14,7 @@ import Test.Tasty.HUnit
 
 import qualified Data.EnumMap.Strict as EM
 import qualified Data.Vector.Unboxed as U
+
 
 import           Game.LambdaHack.Client.UI.HandleHelperM
 
@@ -22,15 +25,19 @@ import           Game.LambdaHack.Client.UI.HandleHelperM
 import           Game.LambdaHack.Client.UI.HandleHumanLocalM
 import qualified Game.LambdaHack.Client.UI.HumanCmd as HumanCmd
 import           Game.LambdaHack.Common.Area
+import           Game.LambdaHack.Common.Item
+import           Game.LambdaHack.Common.ItemAspect
 import           Game.LambdaHack.Common.Level
 import           Game.LambdaHack.Common.PointArray as PointArray
 import           Game.LambdaHack.Common.Types
 import           Game.LambdaHack.Common.Point
+import           Game.LambdaHack.Common.ReqFailure
 import           Game.LambdaHack.Common.State
 import           Game.LambdaHack.Content.TileKind
-import           Game.LambdaHack.Definition.DefsInternal ( toContentSymbol )
+import           Game.LambdaHack.Definition.DefsInternal ( toContentId, toContentSymbol )
+import           Game.LambdaHack.Definition.Flavour
 
-import           MonadClientMock
+import           UnitTestHelpers
 
 toFactionId :: Int -> FactionId
 toFactionId = toEnum
@@ -38,9 +45,17 @@ toFactionId = toEnum
 
 handleHumanLocalMUnitTests :: TestTree 
 handleHumanLocalMUnitTests = testGroup "handleHumanLocalMUnitTests" 
-  [  testCase "verifyTestLevelSize" $
+  [ testCase "verify stubLevel has tile element" $
     do let level = stubLevel -- (Just level) = EM.lookup (toEnum 0) (sdungeon testState)
         in (ltile level) ! (Point 0 0) @?= unknownId
+  , testCase "permittedProjectClient" $
+    do
+      let testFn = permittedProjectClient (toEnum 1)
+      let stubItem = Item { jkind = IdentityObvious (toEnum 1), jfid = Nothing, jflavour = dummyFlavour }
+      let testItemFull = ItemFull { itemBase = stubItem, itemKindId = toContentId 0, itemKind = testItemKind, itemDisco = ItemDiscoFull emptyAspectRecord, itemSuspect = False }
+      permittedProjectClientResultFnInMonad <- executorCli testFn stubCliState 
+      let ultimateResult = (fst permittedProjectClientResultFnInMonad) testItemFull
+      ultimateResult @?= Left MoveUnskilled
   , testCase "chooseItemProjectHuman" $
     do 
       let testFn = let triggerItems = 
@@ -48,7 +63,7 @@ handleHumanLocalMUnitTests = testGroup "handleHumanLocalMUnitTests"
                         , HumanCmd.TriggerItem{tiverb="verb2", tiobject="object2", tisymbols=[toContentSymbol 'c']}
                         ]
                     in chooseItemProjectHuman (toEnum 1) triggerItems
-      result <- executorCli testFn stubCliState
+      result <- executorCli testFn testCliStateWithItem 
       fst result @?= Nothing --Just FailError {failError="no aim designated"}
   ]
 
