@@ -766,7 +766,7 @@ allHistoryHuman = do
         , MU.Car turnsLocal <> ")" ]
       kxs = [ (Right sn, ( PointUI 0 (slotPrefix sn)
                          , ButtonWidth propFont 1000 ))
-            | sn <- take histBound intSlots ]
+            | sn <- take histBound natSlots ]
   msgAdd MsgPromptGeneric msg
   let keysAllHistory =
         K.returnKM

@@ -545,8 +545,7 @@ transition leader psuit prompt promptGeneric permitMulitple
                           _ -> error $ "unexpected key:"
                                        `showFailure` K.showKey key
                         Right sl -> sl
-                      slotIndex = fromMaybe (error "illegal slot")
-                                  $ elemIndex slot allSlots
+                      slotIndex = slotPrefix slot
                   in return (Right (resultConstructor slotIndex))
               }
         runDefItemKey leader lSlots bagFiltered keyDefs skillsDef io slotKeys
@@ -621,7 +620,7 @@ inventoryInRightPane leader lSlots bag c ekm = case ekm of
     let -- Lower width, to permit extra vertical space at the start,
         -- because gameover menu prompts are sometimes wide and/or long.
        width = rwidth - 2
-       slotIndex = fromMaybe (error "illegal slot") $ elemIndex slot allSlots
+       slotIndex = slotPrefix slot
     case c of
       _ | isSquareFont propFont -> return emptyOKX
       MSkills -> do

@@ -276,9 +276,9 @@ skillsOverlay aid = do
   b <- getsState $ getActorBody aid
   actorMaxSk <- getsState $ getActorMaxSkills aid
   FontSetup{..} <- getFontSetup
-  let prSlot :: (Int, SlotChar) -> Ability.Skill
+  let prSlot :: SlotChar -> Ability.Skill
              -> ((AttrLine, (Int, AttrLine), (Int, AttrLine)), KYX)
-      prSlot (y, c) skill =
+      prSlot c skill =
         let skName = " " <> skillName skill
             attrCursor = Color.defAttr {Color.bg = Color.HighlightNoneCursor}
             labAc = Color.AttrChar { acAttr = attrCursor
@@ -292,9 +292,9 @@ skillsOverlay aid = do
                      , (labLen, textToAL skName)
                      , (indentation, textToAL valueText) )
             lenButton = 26 + T.length valueText
-        in (triple, (Right c, ( PointUI 0 y
+        in (triple, (Right c, ( PointUI 0 (slotPrefix c)
                               , ButtonWidth propFont lenButton )))
-      (ts, kxs) = unzip $ zipWith prSlot (zip [0..] allSlots) skillSlots
+      (ts, kxs) = unzip $ zipWith prSlot natSlots skillSlots
       (skLab, skDescr, skValue) = unzip3 ts
       skillLab = EM.singleton squareFont $ offsetOverlay skLab
       skillDescr = EM.singleton propFont $ offsetOverlayX skDescr
@@ -370,7 +370,7 @@ placesOverlay = do
                               <> makePhrase [MU.CarWs (ES.size es) "level"]
                               <> ")"
         in (asLab, textToAS tDesc, Right c)
-      l = zipWith prSlot allSlots $ EM.assocs places
+      l = zipWith prSlot natSlots $ EM.assocs places
   return $! labDescOKX squareFont propFont l
 
 describeMode :: MonadClientUI m
@@ -504,7 +504,7 @@ modesOverlay = do
             !asLab = [Color.attrCharToW32 labAc]
             !tDesc = " " <> modeName
         in (asLab, textToAS tDesc, Right c)
-      l = zipWith prSlot allSlots campaignModes
+      l = zipWith prSlot natSlots campaignModes
   return $! labDescOKX squareFont propFont l
 
 pickNumber :: MonadClientUI m => Bool -> Int -> m (Either MError Int)

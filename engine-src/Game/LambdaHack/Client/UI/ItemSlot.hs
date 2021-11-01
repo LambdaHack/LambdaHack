@@ -2,8 +2,7 @@
 -- | Item slots for UI and AI item collections.
 module Game.LambdaHack.Client.UI.ItemSlot
   ( SlotChar(..), ItemSlots(..), SingleItemSlots
-  , allSlots, intSlots, slotLabel
-  , assignSlot, sortSlotMap, mergeItemSlots
+  , natSlots, assignSlot, sortSlotMap, mergeItemSlots
   ) where
 
 import Prelude ()
@@ -14,7 +13,6 @@ import           Data.Binary
 import           Data.Bits (unsafeShiftL, unsafeShiftR)
 import           Data.Char
 import qualified Data.EnumMap.Strict as EM
-import qualified Data.Text as T
 
 import           Game.LambdaHack.Common.Item
 import           Game.LambdaHack.Common.Types
@@ -47,20 +45,8 @@ type SingleItemSlots = EM.EnumMap SlotChar ItemId
 newtype ItemSlots = ItemSlots (EM.EnumMap SLore SingleItemSlots)
   deriving (Show, Binary)
 
-allChars :: [Char]
-allChars = ['a'..'z'] ++ ['A'..'Z']
-
-allSlots :: [SlotChar]
-allSlots = concatMap (\n -> map (SlotChar n) allChars) [0..]
-
-intSlots :: [SlotChar]
-intSlots = map (`SlotChar` 'a') [0..]
-
-slotLabel :: SlotChar -> Text
-slotLabel x =
-  T.snoc (if slotPrefix x == 0 then T.empty else tshow $ slotPrefix x)
-         (slotChar x)
-  <> ")"
+natSlots :: [SlotChar]
+natSlots = map (`SlotChar` 'a') [0 ..]
 
 -- | Assigns a slot to an item, e.g., for inclusion in equipment of a hero.
 -- At first, e.g., when item is spotted on the floor, the slot is
@@ -72,7 +58,7 @@ assignSlot lSlots =
   let maxPrefix = case EM.maxViewWithKey lSlots of
         Just ((lm, _), _) -> slotPrefix lm
         Nothing -> 0
-  in SlotChar (maxPrefix + 1) 'x'
+  in SlotChar (maxPrefix + 1) 'a'
 
 sortSlotMap :: (ItemId -> ItemFull) -> SingleItemSlots -> SingleItemSlots
 sortSlotMap itemToF em =
@@ -83,7 +69,7 @@ sortSlotMap itemToF em =
            , IK.isymbol itemKind, IK.iname itemKind
            , jflavour, jfid )
       sortItemIds = sortOn kindAndAppearance
-  in EM.fromDistinctAscList $ zip allSlots $ sortItemIds $ EM.elems em
+  in EM.fromDistinctAscList $ zip natSlots $ sortItemIds $ EM.elems em
 
 mergeItemSlots :: (ItemId -> ItemFull) -> [SingleItemSlots] -> SingleItemSlots
 mergeItemSlots itemToF ems =
