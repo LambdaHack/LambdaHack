@@ -601,7 +601,7 @@ runDefItemKey leader lSlots bag keyDefs lettersDef okx slotKeys prompt cCur = do
   ekm <- do
     sli <- overlayToSlideshow (rheight - 2) keys okx
     displayChoiceScreenWithRightPane
-      (inventoryInRightPane leader lSlots bag cCur)
+      (inventoryInRightPane leader lSlots bag cCur) False
       (show cCur) ColorFull False sli itemKeys
   case ekm of
     Left km -> case km `lookup` keyDefs of

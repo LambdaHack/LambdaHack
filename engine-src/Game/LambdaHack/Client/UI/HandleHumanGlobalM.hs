@@ -1687,7 +1687,7 @@ generateMenu cmdSemInCxtOfKM blurb kdsRaw gameInfo menuName = do
         Nothing | ekm == Right (SlotChar 1042 'a') -> returnDefaultOKS
         Nothing -> error $ "generateMenu: unexpected key:"
                            `showFailure` ekm
-  ekm <- displayChoiceScreenWithRightPane displayInRightPane
+  ekm <- displayChoiceScreenWithRightPane displayInRightPane True
                                           menuName ColorFull True
                                           (menuToSlideshow kxy) [K.escKM]
   case ekm of

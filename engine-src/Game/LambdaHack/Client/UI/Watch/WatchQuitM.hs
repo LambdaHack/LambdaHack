@@ -353,7 +353,7 @@ viewLoreItems menuName lSlotsRaw trunkBag prompt promptFun displayRanged = do
                                    promptFun displayRanged
           K.Esc -> return km
           _ -> error $ "" `showFailure` km
-  ekm <- displayChoiceScreenWithRightPane displayInRightPane
+  ekm <- displayChoiceScreenWithRightPane displayInRightPane False
            menuName ColorFull False itemSlides keysMain
   case ekm of
     Left km | km `elem` [K.spaceKM, K.mkChar '<', K.mkChar '>', K.escKM] ->

@@ -135,7 +135,7 @@ displayChoiceScreen :: forall m . MonadClientUI m
                     => String -> ColorMode -> Bool -> Slideshow -> [K.KM]
                     -> m KeyOrSlot
 displayChoiceScreen =
-  displayChoiceScreenWithRightPane $ const $ return emptyOKX
+  displayChoiceScreenWithRightPane (const $ return emptyOKX) False
 
 -- | Display a, potentially, multi-screen menu and return the chosen
 -- key or item slot label (and save the index in the whole menu so that the cursor
@@ -148,11 +148,13 @@ displayChoiceScreen =
 displayChoiceScreenWithRightPane
   :: forall m . MonadClientUI m
   => (KeyOrSlot -> m OKX)
-  -> String -> ColorMode -> Bool -> Slideshow -> [K.KM]
+  -> Bool -> String -> ColorMode -> Bool -> Slideshow -> [K.KM]
   -> m KeyOrSlot
 displayChoiceScreenWithRightPane displayInRightPane
-                                 menuName dm sfBlank frsX extraKeys = do
-  (maxIx, initIx, clearIx, m) <- stepChoiceScreen dm sfBlank frsX extraKeys
+                                 highlightBullet menuName dm sfBlank
+                                 frsX extraKeys = do
+  (maxIx, initIx, clearIx, m)
+    <- stepChoiceScreen highlightBullet dm sfBlank frsX extraKeys
   let loop :: Int -> KeyOrSlot -> m (KeyOrSlot, Int)
       loop pointer km = do
         okxRight <- displayInRightPane km
@@ -196,10 +198,10 @@ saveMenuIx menuName initIx pointer =
 -- argument need to be contained in the @[K.KM]@ argument. Otherwise
 -- they are not accepted.
 stepChoiceScreen :: forall m . MonadClientUI m
-                 => ColorMode -> Bool -> Slideshow -> [K.KM]
+                 => Bool -> ColorMode -> Bool -> Slideshow -> [K.KM]
                  -> m ( Int, Int, Int
                       , Int -> OKX -> m (Bool, KeyOrSlot, Int) )
-stepChoiceScreen dm sfBlank frsX extraKeys = do
+stepChoiceScreen _highlightBullet dm sfBlank frsX extraKeys = do
   CCUI{coscreen=ScreenContent{rwidth, rheight}} <- getsSession sccui
   FontSetup{..} <- getFontSetup
   let !_A = assert (K.escKM `elem` extraKeys) ()
