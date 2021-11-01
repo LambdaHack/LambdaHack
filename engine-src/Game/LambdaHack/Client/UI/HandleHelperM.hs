@@ -356,10 +356,12 @@ placesOverlay = do
              -> (AttrString, AttrString, KeyOrSlot)
       prSlot c (pk, (es, _, _, _)) =
         let placeName = PK.pname $ okind coplace pk
-            markPlace t = if ES.null es
-                          then T.snoc (T.init t) '>'
-                          else t
-            !tLab = markPlace $ slotLabel c  -- ! to free @places@ as you go
+            labChar = if ES.null es then '-' else '+'
+            attrCursor = Color.defAttr {Color.bg = Color.HighlightNoneCursor}
+            labAc = Color.AttrChar { acAttr = attrCursor
+                                   , acChar = labChar }
+            -- Bang required to free @places@ as you go.
+            !asLab = [Color.attrCharToW32 labAc]
             !tDesc = " "
                      <> placeName
                      <+> if ES.null es
@@ -367,7 +369,7 @@ placesOverlay = do
                          else "("
                               <> makePhrase [MU.CarWs (ES.size es) "level"]
                               <> ")"
-        in (textToAS tLab, textToAS tDesc, Right c)
+        in (asLab, textToAS tDesc, Right c)
       l = zipWith prSlot allSlots $ EM.assocs places
   return $! labDescOKX squareFont propFont l
 
@@ -495,12 +497,13 @@ modesOverlay = do
             victories = case EM.lookup gameModeId svictories of
               Nothing -> 0
               Just cm -> fromMaybe 0 (M.lookup nxtChal cm)
-            markMode t = if victories > 0
-                         then T.snoc (T.init t) '>'
-                         else t
-            !tLab = markMode $ slotLabel c
+            labChar = if victories > 0 then '-' else '+'
+            attrCursor = Color.defAttr {Color.bg = Color.HighlightNoneCursor}
+            labAc = Color.AttrChar { acAttr = attrCursor
+                                   , acChar = labChar }
+            !asLab = [Color.attrCharToW32 labAc]
             !tDesc = " " <> modeName
-        in (textToAS tLab, textToAS tDesc, Right c)
+        in (asLab, textToAS tDesc, Right c)
       l = zipWith prSlot allSlots campaignModes
   return $! labDescOKX squareFont propFont l
 
