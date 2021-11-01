@@ -329,7 +329,7 @@ getItem leader psuit prompt promptGeneric cCur cRest askWhenLone
 data DefItemKey m = DefItemKey
   { defLabel  :: Either Text K.KM
   , defCond   :: Bool
-  , defAction :: KeyOrSlot -> m (Either Text ResultItemDialogMode)
+  , defAction :: m (Either Text ResultItemDialogMode)
   }
 
 data Suitability =
@@ -423,7 +423,7 @@ transition leader psuit prompt promptGeneric permitMulitple
         in (km, DefItemKey
                { defLabel = if direction == Forward then Right km else Left ""
                , defCond = maySwitchLeader cCur && not (autoDun || null hs)
-               , defAction = \_ -> do
+               , defAction = do
                    err <- pointmanCycle leader False direction
                    let !_A = assert (isNothing err `blame` err) ()
                    recCall cCur cRest itemDialogState
@@ -434,7 +434,7 @@ transition leader psuit prompt promptGeneric permitMulitple
                 { defLabel = Left ""
                 , defCond = maySwitchLeader cCur
                             && any (\(_, b, _) -> blid b == blid body) hs
-                , defAction = \_ -> do
+                , defAction = do
                     err <- pointmanCycleLevel leader False direction
                     let !_A = assert (isNothing err `blame` err) ()
                     recCall cCur cRest itemDialogState
@@ -449,10 +449,9 @@ transition leader psuit prompt promptGeneric permitMulitple
           in (km, DefItemKey
            { defLabel = Right km
            , defCond = bag /= bagSuit
-           , defAction = \_ -> recCall cCur cRest
-                               $ case itemDialogState of
-                                   ISuitable -> IAll
-                                   IAll -> ISuitable
+           , defAction = recCall cCur cRest $ case itemDialogState of
+                                                ISuitable -> IAll
+                                                IAll -> ISuitable
            })
         , let km = K.mkChar '*'
           in (km, useMultipleDef $ Right km)
@@ -465,7 +464,7 @@ transition leader psuit prompt promptGeneric permitMulitple
         , (K.KM K.NoModifier K.LeftButtonRelease, DefItemKey
            { defLabel = Left ""
            , defCond = maySwitchLeader cCur && not (null hs)
-           , defAction = \_ -> do
+           , defAction = do
                merror <- pickLeaderWithPointer leader
                case merror of
                  Nothing -> recCall cCur cRest itemDialogState
@@ -475,7 +474,7 @@ transition leader psuit prompt promptGeneric permitMulitple
         , (K.escKM, DefItemKey
            { defLabel = Right K.escKM
            , defCond = True
-           , defAction = \_ -> return $ Left "never mind"
+           , defAction = return $ Left "never mind"
            })
         ]
       changeContainerDef direction defLabel =
@@ -483,15 +482,13 @@ transition leader psuit prompt promptGeneric permitMulitple
         in DefItemKey
           { defLabel
           , defCond = cCurAfterCalm /= cCur
-          , defAction = \_ ->
-              recCall cCurAfterCalm cRestAfterCalm itemDialogState
+          , defAction = recCall cCurAfterCalm cRestAfterCalm itemDialogState
           }
       useMultipleDef defLabel = DefItemKey
         { defLabel
         , defCond = permitMulitple && not (EM.null multipleSlots)
-        , defAction = \_ ->
-            let eslots = EM.elems multipleSlots
-            in return $! getResult eslots
+        , defAction = let eslots = EM.elems multipleSlots
+                      in return $! getResult eslots
         }
       slotDef :: SlotChar -> m (Either Text ResultItemDialogMode)
       slotDef slot = case EM.lookup slot bagItemSlotsAll of
@@ -550,7 +547,7 @@ runDefItemKey leader lSlots bag keyDefs slotDef okx prompt cCur = do
       (show cCur) ColorFull False sli itemKeys
   case ekm of
     Left km -> case km `lookup` keyDefs of
-      Just keyDef -> defAction keyDef ekm
+      Just keyDef -> defAction keyDef
       Nothing -> error $ "unexpected key:" `showFailure` K.showKM km
     Right slot -> slotDef slot
 
