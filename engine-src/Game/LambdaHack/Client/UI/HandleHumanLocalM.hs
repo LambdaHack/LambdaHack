@@ -733,14 +733,14 @@ allHistoryHuman = do
   global <- getsState stime
   FontSetup{..} <- getFontSetup
   let renderedHistoryRaw = renderHistory history
-      histBoundRaw = length renderedHistoryRaw
+      histLenRaw = length renderedHistoryRaw
       placeholderLine = textFgToAS Color.BrBlack
         "Newest_messages_are_at_the_bottom._Press_END_to_get_there."
       placeholderCount =
-        (- histBoundRaw `mod` (rheight - 4)) `mod` (rheight - 4)
+        (- histLenRaw `mod` (rheight - 4)) `mod` (rheight - 4)
       renderedHistory = replicate placeholderCount placeholderLine
                         ++ renderedHistoryRaw
-      histBound = placeholderCount + histBoundRaw
+      histLen = placeholderCount + histLenRaw
       splitRow as =
         let (tLab, tDesc) = span (/= Color.spaceAttrW32) as
             labLen = textSize monoFont tLab
@@ -762,7 +762,7 @@ allHistoryHuman = do
         , MU.Car turnsLocal <> ")" ]
       kxs = [ (Right sn, ( PointUI 0 (fromEnum sn)
                          , ButtonWidth propFont 1000 ))
-            | sn <- take histBound natSlots ]
+            | sn <- take histLen natSlots ]
   msgAdd MsgPromptGeneric msg
   let keysAllHistory =
         K.returnKM
@@ -788,30 +788,30 @@ allHistoryHuman = do
             msgAdd MsgPromptGeneric "Try to survive a few seconds more, if you can."
           Left km | km == K.spaceKM ->
             msgAdd MsgPromptGeneric "Steady on."
-          Right slot ->
-            displayOneReport $ max 0 $ fromEnum slot - placeholderCount
+          Right slot -> displayOneReport slot
           _ -> error $ "" `showFailure` ekm
-      displayOneReport :: Int -> m ()
-      displayOneReport histSlot = do
-        let timeReport = case drop histSlot renderedHistoryRaw of
-              [] -> error $ "" `showFailure` histSlot
+      displayOneReport :: MenuSlot -> m ()
+      displayOneReport slot = do
+        let timeReport = case drop (fromEnum slot - placeholderCount)
+                                   renderedHistoryRaw of
+              [] -> error $ "" `showFailure` slot
               tR : _ -> tR
             (ovLab, ovDesc) = labDescOverlay monoFont rwidth timeReport
             ov0 = EM.insertWith (++) monoFont ovLab
                   $ EM.singleton propFont ovDesc
             prompt = makeSentence
-              [ "the", MU.Ordinal $ histSlot + 1
+              [ "the", MU.Ordinal $ fromEnum slot + 1
               , "most recent record follows" ]
             keys = [K.spaceKM, K.escKM]
-                   ++ [K.upKM | histSlot /= 0]
-                   ++ [K.downKM | histSlot /= histBoundRaw - 1]
+                   ++ [K.upKM | fromEnum slot /= 0]
+                   ++ [K.downKM | fromEnum slot /= histLenRaw - 1]
         msgAdd MsgPromptGeneric prompt
         slides2 <- overlayToSlideshow (rheight - 2) keys (ov0, [])
         km <- getConfirms ColorFull keys slides2
         case K.key km of
           K.Space -> displayAllHistory
-          K.Up -> displayOneReport $ histSlot - 1
-          K.Down -> displayOneReport $ histSlot + 1
+          K.Up -> displayOneReport $ pred slot
+          K.Down -> displayOneReport $ succ slot
           K.Esc -> msgAdd MsgPromptGeneric "Try to learn from your previous mistakes."
           _ -> error $ "" `showFailure` km
   displayAllHistory
