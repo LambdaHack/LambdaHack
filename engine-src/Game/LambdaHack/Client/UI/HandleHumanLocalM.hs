@@ -119,15 +119,26 @@ chooseItemHuman :: MonadClientUI m => ActorId -> ItemDialogMode -> m MError
 chooseItemHuman leader c =
   either Just (const Nothing) <$> chooseItemDialogMode leader False c
 
-chooseItemDialogModeLore :: MonadClientUI m => m (Maybe ResultItemDialogMode)
+chooseItemDialogModeLore :: forall m . MonadClientUI m
+                         => m (Maybe ResultItemDialogMode)
 chooseItemDialogModeLore = do
-  schosenLore <- getsSession schosenLore
-  (inhabitants, embeds) <- case schosenLore of
+  schosenLoreOld <- getsSession schosenLore
+  (inhabitants, embeds) <- case schosenLoreOld of
     ChosenLore inh emb -> return (inh, emb)
     ChosenNothing -> computeChosenLore
   bagHuge <- getsState $ EM.map (const quantSingle) . sitemD
   itemToF <- getsState $ flip itemToFull
   ItemRoles itemRoles <- getsSession sroles
+  let rlore :: ItemId -> SLore -> ChosenLore -> m (Maybe ResultItemDialogMode)
+      rlore iid slore schosenLore = do
+        let itemRole = itemRoles EM.! slore
+            bagAll = EM.filterWithKey (\iid2 _ -> iid2 `ES.member` itemRole)
+                                      bagHuge
+        modifySession $ \sess -> sess {schosenLore}
+        let iids = sortIids itemToF $ EM.assocs bagAll
+            slot = toEnum $ fromMaybe (error $ "" `showFailure` (iid, iids))
+                          $ elemIndex iid $ map fst iids
+        return $ Just $ RLore slore slot iids
   case inhabitants of
     (_, b) : rest -> do
       let iid = btrunk b
@@ -135,27 +146,12 @@ chooseItemDialogModeLore = do
       let slore | not $ bproj b = STrunk
                 | IA.checkFlag Ability.Blast arItem = SBlast
                 | otherwise = SItem
-          itemRole = itemRoles EM.! slore
-          bagAll = EM.filterWithKey (\iid2 _ -> iid2 `ES.member` itemRole)
-                                    bagHuge
-      modifySession $ \sess -> sess {schosenLore = ChosenLore rest embeds}
-      let iids = sortIids itemToF $ EM.assocs bagAll
-          slot = toEnum $ fromMaybe (error $ "" `showFailure` (iid, iids))
-                        $ elemIndex iid $ map fst iids
-      return $ Just $ RLore slore slot iids
+      rlore iid slore (ChosenLore rest embeds)
     [] ->
       case embeds of
         (iid, _) : rest -> do
           let slore = SEmbed
-              itemRole = itemRoles EM.! slore
-              bagAll = EM.filterWithKey (\iid2 _ -> iid2 `ES.member` itemRole)
-                                        bagHuge
-          modifySession $ \sess ->
-            sess {schosenLore = ChosenLore inhabitants rest}
-          let iids = sortIids itemToF $ EM.assocs bagAll
-              slot = toEnum $ fromMaybe (error $ "" `showFailure` (iid, iids))
-                            $ elemIndex iid $ map fst iids
-          return $ Just $ RLore slore slot iids
+          rlore iid slore (ChosenLore inhabitants rest)
         [] -> do
           modifySession $ \sess -> sess {schosenLore = ChosenNothing}
           return Nothing
