@@ -156,7 +156,7 @@ chooseItemDialogModeLore = do
           modifySession $ \sess -> sess {schosenLore = ChosenNothing}
           return Nothing
 
-chooseItemDialogMode :: MonadClientUI m
+chooseItemDialogMode :: forall m. MonadClientUI m
                      => ActorId -> Bool -> ItemDialogMode
                      -> m (FailOrCmd ActorId)
 chooseItemDialogMode leader0 permitLoreCycle c = do
@@ -236,25 +236,20 @@ chooseItemDialogMode leader0 permitLoreCycle c = do
         -- This can be used in the future, e.g., to increase stats from
         -- level-up stat points, so let's keep it even if it shows
         -- no extra info compared to right pane display in menu.
-        let slotBound = length skillsInDisplayOrder - 1
-            displayOneSlot slot = do
+        let renderOneItem slot = do
               (prompt2, attrString) <- skillCloseUp leader slot
               let ov0 = EM.singleton propFont
                         $ offsetOverlay
                         $ splitAttrString rwidth rwidth attrString
-                  keys = [K.spaceKM, K.escKM]
-                         ++ [K.upKM | fromEnum slot /= 0]
-                         ++ [K.downKM | fromEnum slot /= slotBound]
               msgAdd MsgPromptGeneric prompt2
-              slides <- overlayToSlideshow (rheight - 2) keys (ov0, [])
-              km <- getConfirms ColorFull keys slides
-              case K.key km of
-                K.Space -> chooseItemDialogMode leader False MSkills
-                K.Up -> displayOneSlot $ pred slot
-                K.Down -> displayOneSlot $ succ slot
-                K.Esc -> failWith "never mind"
-                _ -> error $ "" `showFailure` km
-        displayOneSlot slot0
+              return (ov0, [])
+            extraKeys = []
+            slotBound = length skillsInDisplayOrder - 1
+        km <- displayOneMenuItem renderOneItem extraKeys slotBound slot0
+        case K.key km of
+          K.Space -> chooseItemDialogMode leader False MSkills
+          K.Esc -> failWith "never mind"
+          _ -> error $ "" `showFailure` km
       RPlaces slot0 -> do
         COps{coplace} <- getsState scops
         soptions <- getsClient soptions
@@ -262,37 +257,51 @@ chooseItemDialogMode leader0 permitLoreCycle c = do
         -- navigations, avoid quadratic blowup.
         places <- getsState $ EM.assocs
                               . placesFromState coplace (sexposePlaces soptions)
-        let slotBound = length places - 1
-            displayOneSlot slot = do
+        let renderOneItem slot = do
               (prompt2, blurbs) <-
                 placeCloseUp places (sexposePlaces soptions) slot
               let splitText = splitAttrString rwidth rwidth . textToAS
                   ov0 = attrLinesToFontMap
                         $ map (second (concatMap splitText)) blurbs
-                  keys = [K.spaceKM, K.escKM]
+              msgAdd MsgPromptGeneric prompt2
+              return (ov0, [])
+            extraKeys = []
+            slotBound = length places - 1
+        km <- displayOneMenuItem renderOneItem extraKeys slotBound slot0
+        case K.key km of
+          K.Space -> chooseItemDialogMode leader False MPlaces
+          K.Esc -> failWith "never mind"
+          _ -> error $ "" `showFailure` km
+      RModes slot0 -> do
+        let displayOneMenuItemBig :: (MenuSlot -> m OKX)
+                                  -> [K.KM] -> Int -> MenuSlot
+                                  -> m K.KM
+            displayOneMenuItemBig renderOneItem extraKeys slotBound slot = do
+              let keys = [K.spaceKM, K.escKM]
                          ++ [K.upKM | fromEnum slot /= 0]
                          ++ [K.downKM | fromEnum slot /= slotBound]
-              msgAdd MsgPromptGeneric prompt2
-              slides <- overlayToSlideshow (rheight - 2) keys (ov0, [])
-              km <- getConfirms ColorFull keys slides
+                         ++ extraKeys
+              okx <- renderOneItem slot
+              -- Here it differs from @displayOneMenuItem@,
+              slides <- overlayToSlideshow rheight keys okx
+              ekm2 <- displayChoiceScreen "" ColorFull True slides keys
+              let km = either id (error $ "" `showFailure` ekm2) ekm2
+              -- Here it stops differing.
               case K.key km of
-                K.Space -> chooseItemDialogMode leader False MPlaces
-                K.Up -> displayOneSlot $ pred slot
-                K.Down -> displayOneSlot $ succ slot
-                K.Esc -> failWith "never mind"
-                _ -> error $ "" `showFailure` km
-        displayOneSlot slot0
-      RModes slot0 -> do
+                K.Up -> displayOneMenuItemBig renderOneItem extraKeys
+                                              slotBound $ pred slot
+                K.Down -> displayOneMenuItemBig renderOneItem extraKeys
+                                                slotBound $ succ slot
+                _ -> return km
         COps{comode} <- getsState scops
         svictories <- getsClient svictories
         nxtChal <- getsClient snxtChal
           -- mark victories only for current difficulty
         let f !acc _p !i !a = (i, a) : acc
             campaignModes = ofoldlGroup' comode MK.CAMPAIGN_SCENARIO f []
-            slotBound = length campaignModes - 1
-            displayOneSlot slot = do
+            renderOneItem slot = do
               let (gameModeId, gameMode) = campaignModes !! fromEnum slot
-              modeOKX <- describeMode False gameModeId
+              ov0 <- describeMode False gameModeId
               let victories = case EM.lookup gameModeId svictories of
                     Nothing -> 0
                     Just cm -> fromMaybe 0 (M.lookup nxtChal cm)
@@ -300,20 +309,15 @@ chooseItemDialogMode leader0 permitLoreCycle c = do
                   prompt2 = makeSentence
                     [ MU.SubjectVerbSg "you" verb
                     , MU.Text $ "the '" <> MK.mname gameMode <> "' adventure" ]
-                  keys = [K.spaceKM, K.escKM]
-                         ++ [K.upKM | fromEnum slot /= 0]
-                         ++ [K.downKM | fromEnum slot /= slotBound]
               msgAdd MsgPromptGeneric prompt2
-              slides <- overlayToSlideshow rheight keys (modeOKX, [])
-              ekm2 <- displayChoiceScreen "" ColorFull True slides keys
-              let km = either id (error $ "" `showFailure` ekm2) ekm2
-              case K.key km of
-                K.Space -> chooseItemDialogMode leader False MModes
-                K.Up -> displayOneSlot $ pred slot
-                K.Down -> displayOneSlot $ succ slot
-                K.Esc -> failWith "never mind"
-                _ -> error $ "" `showFailure` km
-        displayOneSlot slot0
+              return (ov0, [])
+            extraKeys = []
+            slotBound = length campaignModes - 1
+        km <- displayOneMenuItemBig renderOneItem extraKeys slotBound slot0
+        case K.key km of
+          K.Space -> chooseItemDialogMode leader False MModes
+          K.Esc -> failWith "never mind"
+          _ -> error $ "" `showFailure` km
     Left err -> failWith err
 
 -- * ChooseItemProject
