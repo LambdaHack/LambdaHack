@@ -3,7 +3,7 @@ module Game.LambdaHack.Client.UI.Watch.WatchUpdAtomicM
   ( watchRespUpdAtomicUI
 #ifdef EXPOSE_INTERNAL
     -- * Internal operations
-  , updateItemSlot, Threat, createActorUI, destroyActorUI, spotItemBag
+  , assignItemRole, Threat, createActorUI, destroyActorUI, spotItemBag
   , recordItemLid, moveActor, displaceActorUI, moveItemUI
   , discover, ppHearMsg, ppHearDistanceAdjective, ppHearDistanceAdverb
 #endif
@@ -19,7 +19,6 @@ import qualified Data.EnumMap.Strict as EM
 import qualified Data.EnumSet as ES
 import qualified Data.Map.Strict as M
 import qualified Data.Text as T
-import           Data.Tuple
 import           GHC.Exts (inline)
 import qualified NLP.Miniutter.English as MU
 
@@ -35,7 +34,6 @@ import           Game.LambdaHack.Client.UI.Frame
 import           Game.LambdaHack.Client.UI.FrameM
 import           Game.LambdaHack.Client.UI.HandleHelperM
 import           Game.LambdaHack.Client.UI.ItemDescription
-import           Game.LambdaHack.Client.UI.ItemSlot
 import qualified Game.LambdaHack.Client.UI.Key as K
 import           Game.LambdaHack.Client.UI.MonadClientUI
 import           Game.LambdaHack.Client.UI.Msg
@@ -85,7 +83,7 @@ watchRespUpdAtomicUI cmd = case cmd of
   UpdDestroyActor aid body _ -> destroyActorUI True aid body
   UpdCreateItem verbose iid _ kit@(kAdd, _) c -> do
     recordItemLid iid c
-    updateItemSlot c iid
+    assignItemRole c iid
     if verbose then case c of
       CActor aid store -> do
         b <- getsState $ getActorBody aid
@@ -633,19 +631,15 @@ watchRespUpdAtomicUI cmd = case cmd of
   UpdMuteMessages _ smuteMessages ->
     modifySession $ \sess -> sess {smuteMessages}
 
-updateItemSlot :: MonadClientUI m => Container -> ItemId -> m ()
-updateItemSlot c iid = do
+assignItemRole :: MonadClientUI m => Container -> ItemId -> m ()
+assignItemRole c iid = do
   arItem <- getsState $ aspectRecordFromIid iid
   let assignSingleSlot lore = do
-        ItemRoles itemSlots <- getsSession sroles
-        let lSlots = itemSlots EM.! lore
-        case lookup iid $ map swap $ EM.assocs lSlots of
-          Nothing -> do
-            let l = assignSlot lSlots
-                f = EM.insert l iid
-                newSlots = ItemRoles $ EM.adjust f lore itemSlots
-            modifySession $ \sess -> sess {sroles = newSlots}
-          Just _l -> return ()  -- slot already assigned
+        ItemRoles itemRoles <- getsSession sroles
+        let itemRole = itemRoles EM.! lore
+        unless (iid `ES.member` itemRole) $ do
+          let newRoles = ItemRoles $ EM.adjust (ES.insert iid) lore itemRoles
+          modifySession $ \sess -> sess {sroles = newRoles}
       slore = IA.loreFromContainer arItem c
   assignSingleSlot slore
   when (slore `elem` [SOrgan, STrunk, SCondition]) $
@@ -720,7 +714,7 @@ createActorUI born aid body = do
            let c = if not (bproj body) && iid == btrunk body
                    then CTrunk (bfid body) (blid body) (bpos body)
                    else CActor aid store
-           updateItemSlot c iid
+           assignItemRole c iid
            recordItemLid iid c)
         ((btrunk body, CEqp)  -- store will be overwritten, unless projectile
          : filter ((/= btrunk body) . fst) (getCarriedIidCStore body))
@@ -844,7 +838,7 @@ spotItemBag verbose c bag = do
   localTime <- getsState $ getLocalTime lid
   factionD <- getsState sfactionD
   -- Queried just once, so many copies of a new item can be reported. OK.
-  ItemRoles itemSlots <- getsSession sroles
+  ItemRoles itemRoles <- getsSession sroles
   sxhairOld <- getsSession sxhair
   let resetXhair = case c of
         CFloor _ p -> case sxhairOld of
@@ -873,19 +867,19 @@ spotItemBag verbose c bag = do
         itemFull <- getsState $ itemToFull iid
         let arItem = aspectRecordFull itemFull
             slore = IA.loreFromContainer arItem c
-        case lookup iid $ map swap $ EM.assocs $ itemSlots EM.! slore of
-          Nothing -> do  -- never seen or would have a slot
-            updateItemSlot c iid
-            case c of
-              CFloor{} -> do
-                let subjectShort = partItemWsShortest rwidth side factionD k
-                                                      localTime itemFull kit
-                    subjectLong = partItemWsLong rwidth side factionD k
-                                                 localTime itemFull kit
-                return $ Just (k, subjectShort, subjectLong)
-              _ -> return Nothing
-          _ -> return Nothing  -- this item or another with the same @iid@
-                               -- seen already (has a slot assigned); old news
+        if iid `ES.member` (itemRoles EM.! slore)
+        then return Nothing  -- this item or another with the same @iid@
+                             -- seen already (has a slot assigned); old news
+        else do  -- never seen or would have a role
+          assignItemRole c iid
+          case c of
+            CFloor{} -> do
+              let subjectShort = partItemWsShortest rwidth side factionD k
+                                                    localTime itemFull kit
+                  subjectLong = partItemWsLong rwidth side factionD k
+                                               localTime itemFull kit
+              return $ Just (k, subjectShort, subjectLong)
+            _ -> return Nothing
       -- @SortOn@ less efficient here, because function cheap.
       sortItems = sortOn (getKind . fst)
       sortedAssocs = sortItems $ EM.assocs bag
@@ -982,17 +976,15 @@ moveItemUI iid k aid cstore1 cstore2 = do
   fact <- getsState $ (EM.! bfid b) . sfactionD
   let underAI = isAIFact fact
   mleader <- getsClient sleader
-  ItemRoles itemSlots <- getsSession sroles
-  case lookup iid $ map swap $ EM.assocs $ itemSlots EM.! SItem of
-    Just _l ->
-      -- So far organs can't be put into stash, so no need to call
-      -- @updateItemSlot@ to add or reassign lore category.
-      if cstore1 == CGround && Just aid == mleader && not underAI then
-        itemAidVerbMU MsgActionMajor aid verb iid (Right k)
-      else when (not (bproj b) && bhp b > 0) $  -- don't announce death drops
-        itemAidVerbMU MsgActionMajor aid verb iid (Left k)
-    Nothing -> error $
-      "" `showFailure` (iid, k, aid, cstore1, cstore2)
+  ItemRoles itemRoles <- getsSession sroles
+  if iid `ES.member` (itemRoles EM.! SItem) then
+    -- So far organs can't be put into stash, so no need to call
+    -- @assignItemRole@ to add or reassign lore category.
+    if cstore1 == CGround && Just aid == mleader && not underAI then
+      itemAidVerbMU MsgActionMajor aid verb iid (Right k)
+    else when (not (bproj b) && bhp b > 0) $  -- don't announce death drops
+      itemAidVerbMU MsgActionMajor aid verb iid (Left k)
+  else error $ "" `showFailure` (iid, k, aid, cstore1, cstore2)
 
 -- The item may be used up already and so not present in the container,
 -- e.g., if the item destroyed itself. This is OK. Message is still needed.

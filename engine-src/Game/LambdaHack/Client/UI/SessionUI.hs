@@ -1,8 +1,8 @@
 {-# LANGUAGE DeriveGeneric, GeneralizedNewtypeDeriving #-}
 -- | The client UI session state.
 module Game.LambdaHack.Client.UI.SessionUI
-  ( SessionUI(..), ReqDelay(..), ItemDictUI, AimMode(..), KeyMacro(..)
-  , KeyMacroFrame(..), RunParams(..), ChosenLore(..)
+  ( SessionUI(..), ReqDelay(..), ItemDictUI, ItemRoles(..), AimMode(..)
+  , KeyMacro(..), KeyMacroFrame(..), RunParams(..), ChosenLore(..)
   , emptySessionUI, emptyMacroFrame
   , cycleMarkVision, toggleMarkSmell, cycleOverrideTut, getActorUI
   ) where
@@ -26,7 +26,6 @@ import           Game.LambdaHack.Client.UI.ActorUI
 import           Game.LambdaHack.Client.UI.ContentClientUI
 import           Game.LambdaHack.Client.UI.EffectDescription (DetailLevel (..))
 import           Game.LambdaHack.Client.UI.Frontend
-import           Game.LambdaHack.Client.UI.ItemSlot
 import qualified Game.LambdaHack.Client.UI.Key as K
 import           Game.LambdaHack.Client.UI.Msg
 import           Game.LambdaHack.Client.UI.PointUI
@@ -124,6 +123,11 @@ data KeyMacroFrame = KeyMacroFrame
 -- but never read from, except when the user requests item details.
 type ItemDictUI = EM.EnumMap ItemId LevelId
 
+-- | A collection of item identifier sets indicating what roles (possibly many)
+-- an item has assigned.
+newtype ItemRoles = ItemRoles (EM.EnumMap SLore (ES.EnumSet ItemId))
+  deriving (Show, Binary)
+
 -- | Current aiming mode of a client.
 data AimMode = AimMode
   { aimLevelId  :: LevelId
@@ -169,7 +173,7 @@ emptySessionUI sUIOptions =
     , sactorUI = EM.empty
     , sitemUI = EM.empty
     , sroles = ItemRoles $ EM.fromDistinctAscList
-               $ zip [minBound..maxBound] (repeat EM.empty)
+               $ zip [minBound..maxBound] (repeat ES.empty)
     , slastItemMove = Nothing
     , schanF = ChanFrontend $ const $
         error $ "emptySessionUI: ChanFrontend" `showFailure` ()

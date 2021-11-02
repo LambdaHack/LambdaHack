@@ -1,7 +1,7 @@
 -- | UI of inventory management.
 module Game.LambdaHack.Client.UI.InventoryM
   ( Suitability(..), ResultItemDialogMode(..)
-  , slotsOfItemDialogMode, getFull, getGroupItem, getStoreItem
+  , roleOfItemDialogMode, getFull, getGroupItem, getStoreItem
   , skillCloseUp, placeCloseUp
 #ifdef EXPOSE_INTERNAL
     -- * Internal operations
@@ -84,16 +84,17 @@ accessModeBag _ _ MModes = EM.empty
 -- Not so for organ menu, because many lore maps point there.
 -- Sorting in @updateItemSlot@ would not be enough, because, e.g.,
 -- identifying an item should change its slot position.
-slotsOfItemDialogMode :: MonadClientUI m => ItemDialogMode -> m SingleItemRoles
-slotsOfItemDialogMode cCur = do
-  ItemRoles itemSlotsPre <- getsSession sroles
+roleOfItemDialogMode :: MonadClientUI m => ItemDialogMode
+                     -> m (ES.EnumSet ItemId)
+roleOfItemDialogMode cCur = do
+  ItemRoles itemRoles <- getsSession sroles
   case cCur of
-    MSkills -> return EM.empty
-    MPlaces -> return EM.empty
-    MModes -> return EM.empty
+    MSkills -> return ES.empty
+    MPlaces -> return ES.empty
+    MModes -> return ES.empty
     _ -> do
       let slore = IA.loreFromMode cCur
-      return $! itemSlotsPre EM.! slore
+      return $! itemRoles EM.! slore
 
 -- | Let a human player choose any item from a given group.
 -- Note that this does not guarantee the chosen item belongs to the group,
@@ -362,10 +363,8 @@ transition leader psuit prompt promptGeneric permitMulitple
     SuitsEverything -> return $ \_ _ _ -> True
     SuitsSomething f -> return f  -- When throwing, this function takes
                                   -- missile range into accout.
-  lSlots <- slotsOfItemDialogMode cCur
-  let bagAllItemRoles = EM.filter (`EM.member` bagHuge) lSlots
-      bagAll = EM.fromList $ map (\iid -> (iid, bagHuge EM.! iid))
-                                 (EM.elems bagAllItemRoles)
+  itemRole <- roleOfItemDialogMode cCur
+  let bagAll = EM.filterWithKey (\iid _ -> iid `ES.member` itemRole) bagHuge
       mstore = case cCur of
         MStore store -> Just store
         _ -> Nothing

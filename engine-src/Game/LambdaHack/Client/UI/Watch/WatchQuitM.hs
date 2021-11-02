@@ -14,6 +14,7 @@ import Prelude ()
 import Game.LambdaHack.Core.Prelude
 
 import qualified Data.EnumMap.Strict as EM
+import qualified Data.EnumSet as ES
 import qualified NLP.Miniutter.English as MU
 
 import           Game.LambdaHack.Client.MonadClient
@@ -243,16 +244,16 @@ displayGameOverAnalytics :: MonadClientUI m
 displayGameOverAnalytics factionAn generationAn = do
   ClientOptions{sexposeActors} <- getsClient soptions
   side <- getsClient sside
-  ItemRoles itemSlots <- getsSession sroles
+  ItemRoles itemRoles <- getsSession sroles
   let ourAn = akillCounts
               $ EM.findWithDefault emptyAnalytics side factionAn
       foesAn = EM.unionsWith (+)
                $ concatMap EM.elems $ catMaybes
                $ map (`EM.lookup` ourAn) [KillKineticMelee .. KillOtherPush]
-      trunkBagRaw = EM.map (, []) foesAn
-      lSlotsTrunk = EM.filter (`EM.member` trunkBagRaw) $ itemSlots EM.! STrunk
-      killedBag = EM.fromList $ map (\iid -> (iid, trunkBagRaw EM.! iid))
-                                    (EM.elems lSlotsTrunk)
+      killedBagIncludingProjectiles = EM.map (, []) foesAn
+      killedBag = EM.filterWithKey
+                    (\iid _ -> iid `ES.member` (itemRoles EM.! STrunk))
+                    killedBagIncludingProjectiles
       generationTrunk = generationAn EM.! STrunk
       trunkBag =
         if sexposeActors
