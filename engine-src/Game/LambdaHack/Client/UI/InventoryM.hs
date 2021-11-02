@@ -498,7 +498,7 @@ transition leader psuit prompt promptGeneric permitMulitple
       processSpecialOverlay io resultConstructor = do
         let slotDef2 :: SlotChar -> m (Either Text ResultItemDialogMode)
             slotDef2 = return . Right . resultConstructor
-        runDefItemKey leader slotsFiltered bagFiltered keyDefs slotDef2 io
+        runDefItemKey leader EM.empty EM.empty keyDefs slotDef2 io
                       promptChosen cCur
   case cCur of
     MSkills -> do
