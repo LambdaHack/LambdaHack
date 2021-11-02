@@ -901,36 +901,37 @@ lookAtPosition p lidV = do
             else ms
 
 displayItemLore :: MonadClientUI m
-                => [(ItemId, ItemQuant)]-> Int -> (ItemId -> ItemFull -> Int
-                -> Text) -> Int -> Bool
+                => [(ItemId, ItemQuant)]-> Int
+                -> (ItemId -> ItemFull -> Int -> Text)
+                -> MenuSlot -> Bool
                 -> m K.KM
-displayItemLore iids meleeSkill promptFun slotIndex addTilde = do
+displayItemLore iids meleeSkill promptFun slot addTilde = do
   CCUI{coscreen=ScreenContent{rwidth, rheight}} <- getsSession sccui
   FontSetup{propFont} <- getFontSetup
   let lSlotsBound = length iids - 1
       keys = [K.spaceKM, K.escKM]
              ++ [K.mkChar '~' | addTilde]
-             ++ [K.upKM | slotIndex /= 0]
-             ++ [K.downKM | slotIndex /= lSlotsBound]
-  okx <- okxItemLorePointedAt
-           propFont rwidth False iids meleeSkill promptFun slotIndex
+             ++ [K.upKM | fromEnum slot /= 0]
+             ++ [K.downKM | fromEnum slot /= lSlotsBound]
+  okx <- okxItemLorePointedAt propFont rwidth False iids meleeSkill promptFun
+                              slot
   slides <- overlayToSlideshow (rheight - 2) keys okx
   km <- getConfirms ColorFull keys slides
   case K.key km of
-    K.Up -> displayItemLore iids meleeSkill promptFun (slotIndex - 1) addTilde
-    K.Down -> displayItemLore iids meleeSkill promptFun (slotIndex + 1) addTilde
+    K.Up -> displayItemLore iids meleeSkill promptFun (pred slot) addTilde
+    K.Down -> displayItemLore iids meleeSkill promptFun (succ slot) addTilde
     _ -> return km
 
 okxItemLorePointedAt :: MonadClientUI m
                      => DisplayFont -> Int -> Bool -> [(ItemId, ItemQuant)]
-                     -> Int -> (ItemId -> ItemFull -> Int -> Text) -> Int
+                     -> Int -> (ItemId -> ItemFull -> Int -> Text) -> MenuSlot
                      -> m OKX
 okxItemLorePointedAt descFont width inlineMsg iids meleeSkill promptFun
-                     slotIndex = do
+                     slot = do
   FontSetup{squareFont} <- getFontSetup
   side <- getsClient sside
   arena <- getArenaUI
-  let (iid2, kit2@(k, _)) = iids !! slotIndex
+  let (iid2, kit2@(k, _)) = iids !! fromEnum slot
   itemFull2 <- getsState $ itemToFull iid2
   localTime <- getsState $ getLocalTime arena
   factionD <- getsState sfactionD
