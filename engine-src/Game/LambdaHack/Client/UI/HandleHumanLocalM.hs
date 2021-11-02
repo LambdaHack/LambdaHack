@@ -791,28 +791,27 @@ allHistoryHuman = do
           Right slot -> displayOneReport slot
           _ -> error $ "" `showFailure` ekm
       displayOneReport :: MenuSlot -> m ()
-      displayOneReport slot = do
-        let timeReport = case drop (fromEnum slot - placeholderCount)
-                                   renderedHistoryRaw of
-              [] -> error $ "" `showFailure` slot
-              tR : _ -> tR
-            (ovLab, ovDesc) = labDescOverlay monoFont rwidth timeReport
-            ov0 = EM.insertWith (++) monoFont ovLab
-                  $ EM.singleton propFont ovDesc
-            prompt = makeSentence
-              [ "the", MU.Ordinal $ fromEnum slot + 1
-              , "most recent record follows" ]
-            keys = [K.spaceKM, K.escKM]
-                   ++ [K.upKM | fromEnum slot /= 0]
-                   ++ [K.downKM | fromEnum slot /= histLenRaw - 1]
-        msgAdd MsgPromptGeneric prompt
-        slides2 <- overlayToSlideshow (rheight - 2) keys (ov0, [])
-        km <- getConfirms ColorFull keys slides2
+      displayOneReport slot0 = do
+        let renderOneItem slot = do
+              let timeReport = case drop (fromEnum slot - placeholderCount)
+                                         renderedHistoryRaw of
+                    [] -> error $ "" `showFailure` slot
+                    tR : _ -> tR
+                  (ovLab, ovDesc) = labDescOverlay monoFont rwidth timeReport
+                  ov0 = EM.insertWith (++) monoFont ovLab
+                        $ EM.singleton propFont ovDesc
+                  prompt = makeSentence
+                    [ "the", MU.Ordinal $ fromEnum slot + 1
+                    , "most recent record follows" ]
+              msgAdd MsgPromptGeneric prompt
+              return (ov0, [])
+            extraKeys = []
+            slotBound = histLenRaw - 1
+        km <- displayOneMenuItem renderOneItem extraKeys slotBound slot0
         case K.key km of
           K.Space -> displayAllHistory
-          K.Up -> displayOneReport $ pred slot
-          K.Down -> displayOneReport $ succ slot
-          K.Esc -> msgAdd MsgPromptGeneric "Try to learn from your previous mistakes."
+          K.Esc -> msgAdd MsgPromptGeneric
+                          "Try to learn from your previous mistakes."
           _ -> error $ "" `showFailure` km
   displayAllHistory
 
