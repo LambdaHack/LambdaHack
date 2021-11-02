@@ -239,7 +239,7 @@ chooseItemDialogMode leader0 permitLoreCycle c = do
         -- This can be used in the future, e.g., to increase stats from
         -- level-up stat points, so let's keep it even if it shows
         -- no extra info compared to right pane display in menu.
-        let slotListBound = length skillsInDisplayOrder - 1
+        let slotBound = length skillsInDisplayOrder - 1
             displayOneSlot slot = do
               (prompt2, attrString) <- skillCloseUp leader slot
               let ov0 = EM.singleton propFont
@@ -247,7 +247,7 @@ chooseItemDialogMode leader0 permitLoreCycle c = do
                         $ splitAttrString rwidth rwidth attrString
                   keys = [K.spaceKM, K.escKM]
                          ++ [K.upKM | fromEnum slot /= 0]
-                         ++ [K.downKM | fromEnum slot /= slotListBound]
+                         ++ [K.downKM | fromEnum slot /= slotBound]
               msgAdd MsgPromptGeneric prompt2
               slides <- overlayToSlideshow (rheight - 2) keys (ov0, [])
               km <- getConfirms ColorFull keys slides
@@ -265,7 +265,7 @@ chooseItemDialogMode leader0 permitLoreCycle c = do
         -- navigations, avoid quadratic blowup.
         places <- getsState $ EM.assocs
                               . placesFromState coplace (sexposePlaces soptions)
-        let slotListBound = length places - 1
+        let slotBound = length places - 1
             displayOneSlot slot = do
               (prompt2, blurbs) <-
                 placeCloseUp places (sexposePlaces soptions) slot
@@ -274,7 +274,7 @@ chooseItemDialogMode leader0 permitLoreCycle c = do
                         $ map (second (concatMap splitText)) blurbs
                   keys = [K.spaceKM, K.escKM]
                          ++ [K.upKM | fromEnum slot /= 0]
-                         ++ [K.downKM | fromEnum slot /= slotListBound]
+                         ++ [K.downKM | fromEnum slot /= slotBound]
               msgAdd MsgPromptGeneric prompt2
               slides <- overlayToSlideshow (rheight - 2) keys (ov0, [])
               km <- getConfirms ColorFull keys slides
@@ -292,7 +292,7 @@ chooseItemDialogMode leader0 permitLoreCycle c = do
           -- mark victories only for current difficulty
         let f !acc _p !i !a = (i, a) : acc
             campaignModes = ofoldlGroup' comode MK.CAMPAIGN_SCENARIO f []
-            slotListBound = length campaignModes - 1
+            slotBound = length campaignModes - 1
             displayOneSlot slot = do
               let (gameModeId, gameMode) = campaignModes !! fromEnum slot
               modeOKX <- describeMode False gameModeId
@@ -305,7 +305,7 @@ chooseItemDialogMode leader0 permitLoreCycle c = do
                     , MU.Text $ "the '" <> MK.mname gameMode <> "' adventure" ]
                   keys = [K.spaceKM, K.escKM]
                          ++ [K.upKM | fromEnum slot /= 0]
-                         ++ [K.downKM | fromEnum slot /= slotListBound]
+                         ++ [K.downKM | fromEnum slot /= slotBound]
               msgAdd MsgPromptGeneric prompt2
               slides <- overlayToSlideshow rheight keys (modeOKX, [])
               ekm2 <- displayChoiceScreen "" ColorFull True slides keys

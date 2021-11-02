@@ -531,7 +531,7 @@ pickNumber askNumber kAll = assert (kAll >= 1) $ do
               K.Esc -> weaveJust <$> failWith "never mind"
               K.Space -> return $ Left Nothing
               _ -> error $ "unexpected key" `showFailure` kkm
-          Right sc -> error $ "unexpected slot char" `showFailure` sc
+          Right slot -> error $ "unexpected menu slot" `showFailure` slot
   if | kAll == 1 || not askNumber -> return $ Right kAll
      | otherwise -> do
          res <- gatherNumber kAll
@@ -908,11 +908,11 @@ displayItemLore :: MonadClientUI m
 displayItemLore iids meleeSkill promptFun slot addTilde = do
   CCUI{coscreen=ScreenContent{rwidth, rheight}} <- getsSession sccui
   FontSetup{propFont} <- getFontSetup
-  let lSlotsBound = length iids - 1
+  let slotBound = length iids - 1
       keys = [K.spaceKM, K.escKM]
              ++ [K.mkChar '~' | addTilde]
              ++ [K.upKM | fromEnum slot /= 0]
-             ++ [K.downKM | fromEnum slot /= lSlotsBound]
+             ++ [K.downKM | fromEnum slot /= slotBound]
   okx <- okxItemLorePointedAt propFont rwidth False iids meleeSkill promptFun
                               slot
   slides <- overlayToSlideshow (rheight - 2) keys okx

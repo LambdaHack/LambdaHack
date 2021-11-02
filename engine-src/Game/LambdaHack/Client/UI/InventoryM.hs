@@ -77,11 +77,6 @@ accessModeBag _ s MLore{} = EM.map (const quantSingle) $ sitemD s
 accessModeBag _ _ MPlaces = EM.empty
 accessModeBag _ _ MModes = EM.empty
 
--- This is the only place slots are sorted. As a side-effect,
--- slots in inventories always agree with slots of item lore.
--- Not so for organ menu, because many lore maps point there.
--- Sorting in @updateItemSlot@ would not be enough, because, e.g.,
--- identifying an item should change its slot position.
 roleOfItemDialogMode :: MonadClientUI m => ItemDialogMode
                      -> m (ES.EnumSet ItemId)
 roleOfItemDialogMode cCur = do

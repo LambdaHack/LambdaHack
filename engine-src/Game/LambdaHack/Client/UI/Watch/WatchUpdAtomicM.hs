@@ -634,16 +634,16 @@ watchRespUpdAtomicUI cmd = case cmd of
 assignItemRole :: MonadClientUI m => Container -> ItemId -> m ()
 assignItemRole c iid = do
   arItem <- getsState $ aspectRecordFromIid iid
-  let assignSingleSlot lore = do
+  let assignSingleRole lore = do
         ItemRoles itemRoles <- getsSession sroles
         let itemRole = itemRoles EM.! lore
         unless (iid `ES.member` itemRole) $ do
           let newRoles = ItemRoles $ EM.adjust (ES.insert iid) lore itemRoles
           modifySession $ \sess -> sess {sroles = newRoles}
       slore = IA.loreFromContainer arItem c
-  assignSingleSlot slore
+  assignSingleRole slore
   when (slore `elem` [SOrgan, STrunk, SCondition]) $
-    assignSingleSlot SBody
+    assignSingleRole SBody
 
 data Threat =
     ThreatNone
@@ -869,7 +869,7 @@ spotItemBag verbose c bag = do
             slore = IA.loreFromContainer arItem c
         if iid `ES.member` (itemRoles EM.! slore)
         then return Nothing  -- this item or another with the same @iid@
-                             -- seen already (has a slot assigned); old news
+                             -- seen already (has a role assigned); old news
         else do  -- never seen or would have a role
           assignItemRole c iid
           case c of
