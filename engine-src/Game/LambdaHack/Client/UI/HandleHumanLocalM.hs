@@ -222,7 +222,11 @@ chooseItemDialogMode leader0 permitLoreCycle c = do
         let lorePending = loreFound && case schosenLore of
               ChosenLore [] [] -> False
               _ -> True
-        km <- displayItemLore promptFun meleeSkill lorePending iids slot
+            renderOneItem = okxItemLorePointedAt propFont rwidth False
+                                                 promptFun meleeSkill iids
+            extraKeys = [K.mkChar '~' | lorePending]
+            slotBound = length iids - 1
+        km <- displayOneMenuItem renderOneItem extraKeys slotBound slot
         case K.key km of
           K.Space -> do
             modifySession $ \sess -> sess {schosenLore = ChosenNothing}

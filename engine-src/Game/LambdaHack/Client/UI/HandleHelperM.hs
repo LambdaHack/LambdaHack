@@ -8,7 +8,7 @@ module Game.LambdaHack.Client.UI.HandleHelperM
   , placesFromState, placesOverlay
   , describeMode, modesOverlay
   , pickNumber, guardItemSize, lookAtItems, lookAtStash, lookAtPosition
-  , displayOneMenuItem, displayItemLore, okxItemLorePointedAt
+  , displayOneMenuItem, okxItemLorePointedAt
   , cycleLore, spoilsBlurb, ppContainerWownW, nxtGameMode
 #ifdef EXPOSE_INTERNAL
     -- * Internal operations
@@ -916,19 +916,6 @@ displayOneMenuItem renderOneItem extraKeys slotBound slot = do
     K.Up -> displayOneMenuItem renderOneItem extraKeys slotBound $ pred slot
     K.Down -> displayOneMenuItem renderOneItem extraKeys slotBound $ succ slot
     _ -> return km
-
-displayItemLore :: MonadClientUI m
-                => (ItemId -> ItemFull -> Int -> Text)
-                -> Int -> Bool -> [(ItemId, ItemQuant)] -> MenuSlot
-                -> m K.KM
-displayItemLore promptFun meleeSkill addTilde iids slot = do
-  CCUI{coscreen=ScreenContent{rwidth}} <- getsSession sccui
-  FontSetup{propFont} <- getFontSetup
-  let renderOneItem =
-        okxItemLorePointedAt propFont rwidth False promptFun meleeSkill iids
-      extraKeys = [K.mkChar '~' | addTilde]
-      slotBound = length iids - 1
-  displayOneMenuItem renderOneItem extraKeys slotBound slot
 
 okxItemLorePointedAt :: MonadClientUI m
                      => DisplayFont -> Int -> Bool

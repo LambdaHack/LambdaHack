@@ -333,7 +333,11 @@ viewLoreItems menuName trunkBag prompt promptFun dmode = do
           okxItemLorePointedAt propFont widthAt True promptFun 0 iids slot
       viewAtSlot :: MenuSlot -> m K.KM
       viewAtSlot slot = do
-        km <- displayItemLore promptFun 0 False iids slot
+        let renderOneItem =
+              okxItemLorePointedAt propFont rwidth False promptFun 0 iids
+            extraKeys = []
+            slotBound = length iids - 1
+        km <- displayOneMenuItem renderOneItem extraKeys slotBound slot
         case K.key km of
           K.Space -> viewLoreItems menuName trunkBag prompt promptFun dmode
           K.Esc -> return km
