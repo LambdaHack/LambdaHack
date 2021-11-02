@@ -124,6 +124,7 @@ data SLore =
   | SCondition
   | SBlast
   | SEmbed
+  | SBody  -- contains the sum of @SOrgan@, @STrunk@ and @SCondition@
   deriving (Show, Read, Eq, Ord, Enum, Bounded, Generic)
 
 instance Binary SLore
@@ -151,6 +152,7 @@ ppSLore STrunk = "creature"
 ppSLore SCondition = "condition"
 ppSLore SBlast = "blast"
 ppSLore SEmbed = "terrain"
+ppSLore SBody = "body"
 
 headingSLore :: SLore -> Text
 headingSLore SItem = "miscellaneous item"
@@ -159,12 +161,14 @@ headingSLore STrunk = "autonomous entity"
 headingSLore SCondition = "momentary bodily condition"
 headingSLore SBlast = "explosion blast particle"
 headingSLore SEmbed = "landmark feature"
+headingSLore SBody = "body part"
 
 ppItemDialogMode :: ItemDialogMode -> (Text, Text)
 ppItemDialogMode (MStore cstore) = ppCStore cstore
 ppItemDialogMode MOrgans = ("in", "body")
 ppItemDialogMode MOwned = ("among", "our total team belongings")
 ppItemDialogMode MSkills = ("among", "skills")
+ppItemDialogMode (MLore SBody) = ("in", "body")
 ppItemDialogMode (MLore slore) = ("among", ppSLore slore <+> "lore")
 ppItemDialogMode MPlaces = ("among", "place lore")
 ppItemDialogMode MModes = ("among", "adventure lore")

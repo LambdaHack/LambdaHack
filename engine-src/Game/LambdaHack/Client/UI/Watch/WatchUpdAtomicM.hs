@@ -636,16 +636,20 @@ watchRespUpdAtomicUI cmd = case cmd of
 updateItemSlot :: MonadClientUI m => Container -> ItemId -> m ()
 updateItemSlot c iid = do
   arItem <- getsState $ aspectRecordFromIid iid
-  ItemSlots itemSlots <- getsSession sslots
-  let slore = IA.loreFromContainer arItem c
-      lSlots = itemSlots EM.! slore
-  case lookup iid $ map swap $ EM.assocs lSlots of
-    Nothing -> do
-      let l = assignSlot lSlots
-          f = EM.insert l iid
-          newSlots = ItemSlots $ EM.adjust f slore itemSlots
-      modifySession $ \sess -> sess {sslots = newSlots}
-    Just _l -> return ()  -- slot already assigned
+  let assignSingleSlot lore = do
+        ItemSlots itemSlots <- getsSession sslots
+        let lSlots = itemSlots EM.! lore
+        case lookup iid $ map swap $ EM.assocs lSlots of
+          Nothing -> do
+            let l = assignSlot lSlots
+                f = EM.insert l iid
+                newSlots = ItemSlots $ EM.adjust f lore itemSlots
+            modifySession $ \sess -> sess {sslots = newSlots}
+          Just _l -> return ()  -- slot already assigned
+      slore = IA.loreFromContainer arItem c
+  assignSingleSlot slore
+  when (slore `elem` [SOrgan, STrunk, SCondition]) $
+    assignSingleSlot SBody
 
 data Threat =
     ThreatNone

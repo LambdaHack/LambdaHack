@@ -76,6 +76,8 @@ accessModeBag leader s MOrgans = let b = getActorBody leader s
 accessModeBag leader s MOwned = let fid = bfid $ getActorBody leader s
                                 in combinedItems fid s
 accessModeBag _ _ MSkills = EM.empty
+accessModeBag leader s (MLore SBody) = let b = getActorBody leader s
+                                       in getBodyStoreBag b COrgan s
 accessModeBag _ s MLore{} = EM.map (const quantSingle) $ sitemD s
 accessModeBag _ _ MPlaces = EM.empty
 accessModeBag _ _ MModes = EM.empty
@@ -152,9 +154,8 @@ getStoreItem :: MonadClientUI m
 getStoreItem leader cInitial = do
   side <- getsClient sside
   let itemCs = map MStore [CStash, CEqp, CGround]
-        -- No @COrgan@, because triggerable organs are rare and,
-        -- if really needed, accessible directly from the trigger menu.
-      loreCs = map MLore [minBound..maxBound] ++ [MPlaces, MModes]
+      -- No @SBody@, because repeated in other lores.
+      loreCs = map MLore [minBound..SEmbed] ++ [MPlaces, MModes]
       allCs = case cInitial of
         MLore{} -> loreCs
         MPlaces -> loreCs
@@ -512,7 +513,8 @@ transition leader psuit prompt promptGeneric permitMulitple
       processSpecialOverlay io RModes
     _ -> do
       let displayRanged =
-            cCur `notElem` [MStore COrgan, MOrgans, MLore SOrgan, MLore STrunk]
+            cCur `notElem`
+              [MStore COrgan, MOrgans, MLore SOrgan, MLore STrunk, MLore SBody]
       io <- itemOverlay slotsFiltered (blid body) bagFiltered displayRanged
       runDefItemKey leader slotsFiltered bagFiltered keyDefs slotDef io
                     promptChosen cCur
