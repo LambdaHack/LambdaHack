@@ -219,12 +219,14 @@ pickLeaderWithPointer leader = do
            Just (aid, b, _) -> pick (aid, b)
 
 itemOverlay :: MonadClientUI m
-            => SingleItemSlots -> LevelId -> ItemBag -> Bool -> m OKX
-itemOverlay lSlots lid bag displayRanged = do
+            => SingleItemSlots -> LevelId -> ItemBag -> ItemDialogMode -> m OKX
+itemOverlay lSlots lid bag dmode = do
   sccui <- getsSession sccui
   side <- getsClient sside
   discoBenefit <- getsClient sdiscoBenefit
   fontSetup <- getFontSetup
+  let displayRanged =
+        dmode `notElem` [MStore COrgan, MLore SOrgan, MLore STrunk, MLore SBody]
   okx <- getsState $ itemOverlayFromState lSlots lid bag displayRanged
                                           sccui side discoBenefit fontSetup
   return $! okx

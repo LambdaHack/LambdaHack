@@ -235,7 +235,7 @@ displayGameOverLoot (heldBag, total) generationAn = do
         <+> (if sexposeItems
              then "Non-positive count means none held but this many generated."
              else "")
-  viewLoreItems "GameOverLoot" itemBag prompt promptFun True
+  viewLoreItems "GameOverLoot" itemBag prompt promptFun (MLore SItem)
 
 displayGameOverAnalytics :: MonadClientUI m
                          => FactionAnalytics -> GenerationAnalytics
@@ -274,7 +274,7 @@ displayGameOverAnalytics factionAn generationAn = do
         <+> (if sexposeActors
              then "Non-positive count means none killed but this many reported."
              else "")
-  viewLoreItems "GameOverAnalytics" trunkBag prompt promptFun False
+  viewLoreItems "GameOverAnalytics" trunkBag prompt promptFun (MLore STrunk)
 
 displayGameOverLore :: MonadClientUI m
                     => SLore -> Bool -> GenerationAnalytics -> m K.KM
@@ -299,16 +299,15 @@ displayGameOverLore slore exposeCount generationAn = do
                           , MU.Text (headingSLore slore) ]
         _ -> makeSentence [ "you", verb, "the following variety of"
                           , MU.CarWs total $ MU.Text (headingSLore slore) ]
-      displayRanged = slore `notElem` [SOrgan, STrunk]
   viewLoreItems ("GameOverLore" ++ show slore)
-                generationBag prompt promptFun displayRanged
+                generationBag prompt promptFun (MLore slore)
 
 viewLoreItems :: forall m . MonadClientUI m
               => String -> ItemBag -> Text
               -> (ItemId -> ItemFull -> Int -> Text)
-              -> Bool
+              -> ItemDialogMode
               -> m K.KM
-viewLoreItems menuName trunkBag prompt promptFun displayRanged = do
+viewLoreItems menuName trunkBag prompt promptFun dmode = do
   CCUI{coscreen=ScreenContent{rwidth, rheight}} <- getsSession sccui
   FontSetup{..} <- getFontSetup
   arena <- getArenaUI
@@ -317,7 +316,7 @@ viewLoreItems menuName trunkBag prompt promptFun displayRanged = do
       lSlotsRaw = EM.fromDistinctAscList $ zip natSlots $ EM.keys trunkBag
       lSlots = sortSlotMap itemToF lSlotsRaw
   msgAdd MsgPromptGeneric prompt
-  io <- itemOverlay lSlots arena trunkBag displayRanged
+  io <- itemOverlay lSlots arena trunkBag dmode
   itemSlides <- overlayToSlideshow (rheight - 2) keys io
   let displayInRightPane :: KeyOrSlot -> m OKX
       displayInRightPane ekm = case ekm of
@@ -340,7 +339,7 @@ viewLoreItems menuName trunkBag prompt promptFun displayRanged = do
         km <- displayItemLore trunkBag 0 promptFun ix0 lSlots False
         case K.key km of
           K.Space ->
-            viewLoreItems menuName trunkBag prompt promptFun displayRanged
+            viewLoreItems menuName trunkBag prompt promptFun dmode
           K.Esc -> return km
           _ -> error $ "" `showFailure` km
   ekm <- displayChoiceScreenWithRightPane displayInRightPane True

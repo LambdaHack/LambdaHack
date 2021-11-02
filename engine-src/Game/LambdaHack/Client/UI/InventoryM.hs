@@ -502,10 +502,7 @@ transition leader psuit prompt promptGeneric permitMulitple
       io <- modesOverlay
       processSpecialOverlay io RModes
     _ -> do
-      let displayRanged =
-            cCur `notElem`
-              [MStore COrgan, MLore SOrgan, MLore STrunk, MLore SBody]
-      io <- itemOverlay slotsFiltered (blid body) bagFiltered displayRanged
+      io <- itemOverlay slotsFiltered (blid body) bagFiltered cCur
       runDefItemKey leader slotsFiltered bagFiltered keyDefs slotDef io
                     promptChosen cCur
 
