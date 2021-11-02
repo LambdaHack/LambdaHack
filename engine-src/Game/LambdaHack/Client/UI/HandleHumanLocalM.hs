@@ -237,7 +237,7 @@ chooseItemDialogMode leader0 permitLoreCycle c = do
         -- This can be used in the future, e.g., to increase stats from
         -- level-up stat points, so let's keep it even if it shows
         -- no extra info compared to right pane display in menu.
-        let slotListBound = length skillSlots - 1
+        let slotListBound = length skillsInDisplayOrder - 1
             displayOneSlot slot = do
               (prompt2, attrString) <- skillCloseUp leader slot
               let ov0 = EM.singleton propFont

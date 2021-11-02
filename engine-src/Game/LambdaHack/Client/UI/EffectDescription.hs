@@ -3,7 +3,7 @@
 module Game.LambdaHack.Client.UI.EffectDescription
   ( DetailLevel(..), defaultDetailLevel
   , effectToSuffix, detectToObject, detectToVerb
-  , skillName, skillDesc, skillToDecorator, skillSlots
+  , skillName, skillDesc, skillToDecorator, skillsInDisplayOrder
   , kindAspectToSuffix, aspectToSentence, affixDice
   , describeToolsAlternative, describeCrafting, wrapInParens
 #ifdef EXPOSE_INTERNAL
@@ -402,8 +402,8 @@ skillToDecorator skill b t =
     SkDeflectRanged -> tshow t
     SkDeflectMelee -> tshow t
 
-skillSlots :: [Skill]
-skillSlots = [minBound .. maxBound]
+skillsInDisplayOrder :: [Skill]
+skillsInDisplayOrder = [minBound .. maxBound]
 
 tmodToSuff :: Text -> ThrowMod -> Text
 tmodToSuff verb ThrowMod{..} =

@@ -291,7 +291,7 @@ skillsOverlay aid = do
             lenButton = 26 + T.length valueText
         in (triple, (Right c, ( PointUI 0 (fromEnum c)
                               , ButtonWidth propFont lenButton )))
-      (ts, kxs) = unzip $ zipWith prSlot natSlots skillSlots
+      (ts, kxs) = unzip $ zipWith prSlot natSlots skillsInDisplayOrder
       (skLab, skDescr, skValue) = unzip3 ts
       skillLab = EM.singleton squareFont $ offsetOverlay skLab
       skillDescr = EM.singleton propFont $ offsetOverlayX skDescr

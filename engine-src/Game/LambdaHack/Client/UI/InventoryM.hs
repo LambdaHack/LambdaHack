@@ -581,7 +581,7 @@ skillCloseUp leader slot = do
   b <- getsState $ getActorBody leader
   bUI <- getsSession $ getActorUI leader
   actorCurAndMaxSk <- getsState $ getActorMaxSkills leader
-  let skill = skillSlots !! fromEnum slot
+  let skill = skillsInDisplayOrder !! fromEnum slot
       valueText = skillToDecorator skill b
                   $ Ability.getSk skill actorCurAndMaxSk
       prompt = makeSentence
