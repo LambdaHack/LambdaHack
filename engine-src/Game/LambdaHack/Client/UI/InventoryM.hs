@@ -86,7 +86,6 @@ accessModeBag _ _ MModes = EM.empty
 -- identifying an item should change its slot position.
 slotsOfItemDialogMode :: MonadClientUI m => ItemDialogMode -> m SingleItemSlots
 slotsOfItemDialogMode cCur = do
-  itemToF <- getsState $ flip itemToFull
   ItemSlots itemSlotsPre <- getsSession sslots
   case cCur of
     MSkills -> return EM.empty
@@ -94,9 +93,7 @@ slotsOfItemDialogMode cCur = do
     MModes -> return EM.empty
     _ -> do
       let slore = IA.loreFromMode cCur
-          newSlots = EM.adjust (sortSlotMap itemToF) slore itemSlotsPre
-      modifySession $ \sess -> sess {sslots = ItemSlots newSlots}
-      return $! newSlots EM.! slore
+      return $! itemSlotsPre EM.! slore
 
 -- | Let a human player choose any item from a given group.
 -- Note that this does not guarantee the chosen item belongs to the group,
