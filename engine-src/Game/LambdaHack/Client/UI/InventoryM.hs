@@ -516,7 +516,7 @@ inventoryInRightPane leader iids c ekm = case ekm of
   Left{} -> return emptyOKX
   Right slot -> do
     CCUI{coscreen=ScreenContent{rwidth}} <- getsSession sccui
-    FontSetup{..} <- getFontSetup
+    FontSetup{propFont} <- getFontSetup
     let -- Lower width, to permit extra vertical space at the start,
         -- because gameover menu prompts are sometimes wide and/or long.
        width = rwidth - 2
@@ -561,7 +561,7 @@ inventoryInRightPane leader iids c ekm = case ekm of
         -- characters needs to be smaller than @rwidth - 2@ that would suffice
         -- for mono.
         let widthAt = width - 5
-        okxItemLorePointedAt propFont widthAt True promptFun 0 iids slot
+        okxItemLorePointedAt widthAt True promptFun 0 iids slot
 
 skillCloseUp :: MonadClientUI m => ActorId -> MenuSlot -> m (Text, AttrString)
 skillCloseUp leader slot = do

@@ -309,7 +309,7 @@ viewLoreItems :: forall m . MonadClientUI m
               -> m K.KM
 viewLoreItems menuName trunkBag prompt promptFun dmode = do
   CCUI{coscreen=ScreenContent{rwidth, rheight}} <- getsSession sccui
-  FontSetup{..} <- getFontSetup
+  FontSetup{propFont} <- getFontSetup
   arena <- getArenaUI
   itemToF <- getsState $ flip itemToFull
   let keys = [K.spaceKM, K.mkChar '<', K.mkChar '>', K.escKM]
@@ -330,11 +330,10 @@ viewLoreItems menuName trunkBag prompt promptFun dmode = do
           -- so the width in these artificial texts full of digits and strange
           -- characters needs to be smaller than @rwidth - 2@ that would suffice
               widthAt = width - 5
-          okxItemLorePointedAt propFont widthAt True promptFun 0 iids slot
+          okxItemLorePointedAt widthAt True promptFun 0 iids slot
       viewAtSlot :: MenuSlot -> m K.KM
       viewAtSlot slot = do
-        let renderOneItem =
-              okxItemLorePointedAt propFont rwidth False promptFun 0 iids
+        let renderOneItem = okxItemLorePointedAt rwidth False promptFun 0 iids
             extraKeys = []
             slotBound = length iids - 1
         km <- displayOneMenuItem renderOneItem extraKeys slotBound slot

@@ -918,13 +918,11 @@ displayOneMenuItem renderOneItem extraKeys slotBound slot = do
     _ -> return km
 
 okxItemLorePointedAt :: MonadClientUI m
-                     => DisplayFont -> Int -> Bool
-                     -> (ItemId -> ItemFull -> Int -> Text)
+                     => Int -> Bool -> (ItemId -> ItemFull -> Int -> Text)
                      -> Int -> [(ItemId, ItemQuant)] -> MenuSlot
                      -> m OKX
-okxItemLorePointedAt descFont width inlineMsg promptFun meleeSkill
-                     iids slot = do
-  FontSetup{squareFont} <- getFontSetup
+okxItemLorePointedAt width inlineMsg promptFun meleeSkill iids slot = do
+  FontSetup{..} <- getFontSetup
   side <- getsClient sside
   arena <- getArenaUI
   let (iid2, kit2@(k, _)) = iids !! fromEnum slot
@@ -950,7 +948,7 @@ okxItemLorePointedAt descFont width inlineMsg promptFun meleeSkill
       msgAdd MsgPromptGeneric prompt
       return (ovLab, ovDesc)
   let ov = EM.insertWith (++) squareFont descSym2
-           $ EM.singleton descFont descBlurb2
+           $ EM.singleton propFont descBlurb2
   return (ov, [])
 
 cycleLore :: MonadClientUI m => [m K.KM] -> [m K.KM] -> m ()

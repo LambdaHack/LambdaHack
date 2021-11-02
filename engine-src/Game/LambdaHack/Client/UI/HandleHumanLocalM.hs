@@ -161,7 +161,7 @@ chooseItemDialogMode :: forall m. MonadClientUI m
                      -> m (FailOrCmd ActorId)
 chooseItemDialogMode leader0 permitLoreCycle c = do
   CCUI{coscreen=ScreenContent{rwidth, rheight}} <- getsSession sccui
-  FontSetup{..} <- getFontSetup
+  FontSetup{propFont} <- getFontSetup
   side <- getsClient sside
   fact <- getsState $ (EM.! side) . sfactionD
   (ggi, loreFound) <- do
@@ -222,8 +222,8 @@ chooseItemDialogMode leader0 permitLoreCycle c = do
         let lorePending = loreFound && case schosenLore of
               ChosenLore [] [] -> False
               _ -> True
-            renderOneItem = okxItemLorePointedAt propFont rwidth False
-                                                 promptFun meleeSkill iids
+            renderOneItem =
+              okxItemLorePointedAt rwidth False promptFun meleeSkill iids
             extraKeys = [K.mkChar '~' | lorePending]
             slotBound = length iids - 1
         km <- displayOneMenuItem renderOneItem extraKeys slotBound slot
