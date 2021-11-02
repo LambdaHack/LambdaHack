@@ -348,78 +348,16 @@ transition leader psuit prompt promptGeneric permitMulitple
   bodyUI <- getsSession $ getActorUI leader
   fact <- getsState $ (EM.! bfid body) . sfactionD
   hs <- partyAfterLeader leader
-  bagHuge <- getsState $ \s -> accessModeBag leader s cCur
-  itemToF <- getsState $ flip itemToFull
   revCmd <- revCmdMap
-  mpsuit <- psuit  -- when throwing, this sets eps and checks xhair validity
-  psuitFun <- case mpsuit of
-    SuitsEverything -> return $ \_ _ _ -> True
-    SuitsSomething f -> return f  -- When throwing, this function takes
-                                  -- missile range into accout.
-  itemRole <- roleOfItemDialogMode cCur
-  let bagAll = EM.filterWithKey (\iid _ -> iid `ES.member` itemRole) bagHuge
-      mstore = case cCur of
-        MStore store -> Just store
-        _ -> Nothing
-      filterP = psuitFun mstore . itemToF
-      bagSuit = EM.filterWithKey filterP bagAll
-      nextContainers direction = case direction of
-        Forward -> case cRest ++ [cCur] of
-          c1 : rest -> (c1, rest)
-          [] -> error $ "" `showFailure` cRest
-        Backward -> case reverse $ cCur : cRest of
-          c1 : rest -> (c1, reverse rest)
-          [] -> error $ "" `showFailure` cRest
-  (bagFiltered, promptChosen) <- getsState $ \s ->
-    case itemDialogState of
-      ISuitable -> (bagSuit, prompt body bodyUI actorCurAndMaxSk cCur s <> ":")
-      IAll -> (bagAll, promptGeneric body bodyUI actorCurAndMaxSk cCur s <> ":")
-  let iids = sortIids itemToF $ EM.assocs bagFiltered
-      (autoDun, _) = autoDungeonLevel fact
-      maySwitchLeader MOwned = False
-      maySwitchLeader MLore{} = False
-      maySwitchLeader MPlaces = False
-      maySwitchLeader MModes = False
-      maySwitchLeader _ = True
-      cycleKeyDef direction =
-        let km = revCmd $ PointmanCycle direction
-        in (km, DefItemKey
-               { defLabel = if direction == Forward then Right km else Left ""
-               , defCond = maySwitchLeader cCur && not (autoDun || null hs)
-               , defAction = do
-                   err <- pointmanCycle leader False direction
-                   let !_A = assert (isNothing err `blame` err) ()
-                   recCall cCur cRest itemDialogState
-               })
-      cycleLevelKeyDef direction =
-        let km = revCmd $ PointmanCycleLevel direction
-        in (km, DefItemKey
-                { defLabel = Left ""
-                , defCond = maySwitchLeader cCur
-                            && any (\(_, b, _) -> blid b == blid body) hs
-                , defAction = do
-                    err <- pointmanCycleLevel leader False direction
-                    let !_A = assert (isNothing err `blame` err) ()
-                    recCall cCur cRest itemDialogState
-                })
-      keyDefs :: [(K.KM, DefItemKey m)]
-      keyDefs = filter (defCond . snd) $
+  promptChosen <- getsState $ \s -> case itemDialogState of
+    ISuitable -> prompt body bodyUI actorCurAndMaxSk cCur s <> ":"
+    IAll -> promptGeneric body bodyUI actorCurAndMaxSk cCur s <> ":"
+  let keyDefsCommon :: [(K.KM, DefItemKey m)]
+      keyDefsCommon =
         [ let km = K.mkChar '<'
           in (km, changeContainerDef Backward $ Right km)
         , let km = K.mkChar '>'
           in (km, changeContainerDef Forward $ Right km)
-        , let km = K.mkChar '+'
-          in (km, DefItemKey
-           { defLabel = Right km
-           , defCond = bagAll /= bagSuit
-           , defAction = recCall cCur cRest $ case itemDialogState of
-                                                ISuitable -> IAll
-                                                IAll -> ISuitable
-           })
-        , let km = K.mkChar '*'
-          in (km, useMultipleDef $ Right km)
-        , let km = K.mkChar '!'
-          in (km, useMultipleDef $ Left "")  -- alias close to 'g'
         , cycleKeyDef Forward
         , cycleKeyDef Backward
         , cycleLevelKeyDef Forward
@@ -440,6 +378,17 @@ transition leader psuit prompt promptGeneric permitMulitple
            , defAction = return $ Left "never mind"
            })
         ]
+      cycleLevelKeyDef direction =
+        let km = revCmd $ PointmanCycleLevel direction
+        in (km, DefItemKey
+                { defLabel = Left ""
+                , defCond = maySwitchLeader cCur
+                            && any (\(_, b, _) -> blid b == blid body) hs
+                , defAction = do
+                    err <- pointmanCycleLevel leader False direction
+                    let !_A = assert (isNothing err `blame` err) ()
+                    recCall cCur cRest itemDialogState
+                })
       changeContainerDef direction defLabel =
         let (cCurAfterCalm, cRestAfterCalm) = nextContainers direction
         in DefItemKey
@@ -447,38 +396,96 @@ transition leader psuit prompt promptGeneric permitMulitple
           , defCond = cCurAfterCalm /= cCur
           , defAction = recCall cCurAfterCalm cRestAfterCalm itemDialogState
           }
-      useMultipleDef defLabel = DefItemKey
-        { defLabel
-        , defCond = permitMulitple && not (null iids)
-        , defAction = case cCur of
-            MStore rstore -> return $! Right $ RStore rstore $ map fst iids
-            _ -> error "transition: multiple items not for MStore"
-        }
-      slotDef :: MenuSlot -> Either Text ResultItemDialogMode
-      slotDef slot =
-        let iid = fst $ iids !! fromEnum slot
-        in Right $ case cCur of
-          MStore rstore -> RStore rstore [iid]
-          MOwned -> ROwned iid
-          MLore rlore -> RLore rlore slot iids
-          _ -> error $ "" `showFailure` cCur
-      processSpecialOverlay :: OKX -> (MenuSlot -> ResultItemDialogMode)
-                            -> m (Either Text ResultItemDialogMode)
-      processSpecialOverlay io resultConstructor = do
-        let slotDef2 :: MenuSlot -> Either Text ResultItemDialogMode
-            slotDef2 = Right . resultConstructor
-        runDefItemKey leader [] keyDefs slotDef2 io promptChosen cCur
+      nextContainers direction = case direction of
+        Forward -> case cRest ++ [cCur] of
+          c1 : rest -> (c1, rest)
+          [] -> error $ "" `showFailure` cRest
+        Backward -> case reverse $ cCur : cRest of
+          c1 : rest -> (c1, reverse rest)
+          [] -> error $ "" `showFailure` cRest
+      (autoDun, _) = autoDungeonLevel fact
+      maySwitchLeader MOwned = False
+      maySwitchLeader MLore{} = False
+      maySwitchLeader MPlaces = False
+      maySwitchLeader MModes = False
+      maySwitchLeader _ = True
+      cycleKeyDef direction =
+        let km = revCmd $ PointmanCycle direction
+        in (km, DefItemKey
+               { defLabel = if direction == Forward then Right km else Left ""
+               , defCond = maySwitchLeader cCur && not (autoDun || null hs)
+               , defAction = do
+                   err <- pointmanCycle leader False direction
+                   let !_A = assert (isNothing err `blame` err) ()
+                   recCall cCur cRest itemDialogState
+               })
+      runModesSpecial :: OKX -> (MenuSlot -> ResultItemDialogMode)
+                      -> m (Either Text ResultItemDialogMode)
+      runModesSpecial io resultConstructor = do
+        let keyDefsSpecial = filter (defCond . snd) $ keyDefsCommon
+            slotDefSpecial :: MenuSlot -> Either Text ResultItemDialogMode
+            slotDefSpecial = Right . resultConstructor
+        runDefItemKey leader [] keyDefsSpecial slotDefSpecial
+                      io promptChosen cCur
   case cCur of
     MSkills -> do
       io <- skillsOverlay leader
-      processSpecialOverlay io RSkills
+      runModesSpecial io RSkills
     MPlaces -> do
       io <- placesOverlay
-      processSpecialOverlay io RPlaces
+      runModesSpecial io RPlaces
     MModes -> do
       io <- modesOverlay
-      processSpecialOverlay io RModes
+      runModesSpecial io RModes
     _ -> do
+      bagHuge <- getsState $ \s -> accessModeBag leader s cCur
+      itemToF <- getsState $ flip itemToFull
+      mpsuit <- psuit  -- when throwing, this sets eps and checks xhair validity
+      psuitFun <- case mpsuit of
+        SuitsEverything -> return $ \_ _ _ -> True
+        SuitsSomething f -> return f  -- When throwing, this function takes
+                                      -- missile range into accout.
+      itemRole <- roleOfItemDialogMode cCur
+      let bagAll = EM.filterWithKey (\iid _ -> iid `ES.member` itemRole) bagHuge
+          mstore = case cCur of
+            MStore store -> Just store
+            _ -> Nothing
+          filterP = psuitFun mstore . itemToF
+          bagSuit = EM.filterWithKey filterP bagAll
+          bagFiltered = case itemDialogState of
+            ISuitable -> bagSuit
+            IAll -> bagAll
+          iids = sortIids itemToF $ EM.assocs bagFiltered
+          keyDefsExtra =
+            [ let km = K.mkChar '+'
+              in (km, DefItemKey
+               { defLabel = Right km
+               , defCond = bagAll /= bagSuit
+               , defAction = recCall cCur cRest $ case itemDialogState of
+                                                    ISuitable -> IAll
+                                                    IAll -> ISuitable
+               })
+            , let km = K.mkChar '*'
+              in (km, useMultipleDef $ Right km)
+            , let km = K.mkChar '!'
+              in (km, useMultipleDef $ Left "")  -- alias close to 'g'
+            ]
+          useMultipleDef defLabel = DefItemKey
+            { defLabel
+            , defCond = permitMulitple && not (null iids)
+            , defAction = case cCur of
+                MStore rstore -> return $! Right $ RStore rstore $ map fst iids
+                _ -> error "transition: multiple items not for MStore"
+            }
+          keyDefs = filter (defCond . snd) $ keyDefsCommon ++ keyDefsExtra
+          slotDef :: MenuSlot -> Either Text ResultItemDialogMode
+          slotDef slot =
+            let iid = fst $ iids !! fromEnum slot
+            in Right $ case cCur of
+              MStore rstore -> RStore rstore [iid]
+              MOwned -> ROwned iid
+              MLore rlore -> RLore rlore slot iids
+              _ -> error $ "" `showFailure` cCur
       io <- itemOverlay (blid body) iids cCur
       runDefItemKey leader iids keyDefs slotDef io promptChosen cCur
 
