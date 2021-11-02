@@ -5,7 +5,7 @@ module Game.LambdaHack.Common.ItemAspect
   , emptyAspectRecord, addMeanAspect, castAspect, aspectsRandom
   , aspectRecordToList, rollAspectRecord, getSkill, checkFlag, meanAspect
   , onlyMinorEffects, itemTrajectory, totalRange, isHumanTrinket
-  , goesIntoEqp, loreFromMode, loreFromContainer
+  , goesIntoEqp, loreFromContainer
 #ifdef EXPOSE_INTERNAL
     -- * Internal operations
   , ceilingMeanDice
@@ -188,16 +188,6 @@ isHumanTrinket itemKind =
 goesIntoEqp :: AspectRecord -> Bool
 goesIntoEqp ar = checkFlag Ability.Equipable ar
                  || checkFlag Ability.Meleeable ar
-
-loreFromMode :: ItemDialogMode -> SLore
-loreFromMode c = case c of
-  MStore COrgan -> SOrgan
-  MStore _ -> SItem
-  MOwned -> SItem
-  MSkills -> undefined  -- artificial slots
-  MLore slore -> slore
-  MPlaces -> undefined  -- artificial slots
-  MModes -> undefined  -- artificial slots
 
 loreFromContainer :: AspectRecord -> Container -> SLore
 loreFromContainer arItem c = case c of

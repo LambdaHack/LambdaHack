@@ -9,7 +9,7 @@ module Game.LambdaHack.Definition.Defs
   , Rarity, linearInterpolation
   , CStore(..), ppCStore, ppCStoreIn, verbCStore
   , SLore(..), ItemDialogMode(..), ppSLore, headingSLore
-  , ppItemDialogMode, ppItemDialogModeIn, ppItemDialogModeFrom
+  , ppItemDialogMode, ppItemDialogModeIn, ppItemDialogModeFrom, loreFromMode
   , Direction(..)
   ) where
 
@@ -176,6 +176,16 @@ ppItemDialogModeIn c = let (tIn, t) = ppItemDialogMode c in tIn <+> t
 
 ppItemDialogModeFrom :: ItemDialogMode -> Text
 ppItemDialogModeFrom c = let (_tIn, t) = ppItemDialogMode c in "from" <+> t
+
+loreFromMode :: ItemDialogMode -> SLore
+loreFromMode c = case c of
+  MStore COrgan -> SOrgan
+  MStore _ -> SItem
+  MOwned -> SItem
+  MSkills -> undefined  -- artificial slots
+  MLore slore -> slore
+  MPlaces -> undefined  -- artificial slots
+  MModes -> undefined  -- artificial slots
 
 data Direction = Forward | Backward
   deriving (Show, Read, Eq, Ord, Generic)

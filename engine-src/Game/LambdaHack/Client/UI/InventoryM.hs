@@ -43,7 +43,6 @@ import           Game.LambdaHack.Common.ActorState
 import           Game.LambdaHack.Common.ClientOptions
 import           Game.LambdaHack.Common.Faction
 import           Game.LambdaHack.Common.Item
-import qualified Game.LambdaHack.Common.ItemAspect as IA
 import           Game.LambdaHack.Common.Kind
 import           Game.LambdaHack.Common.Misc
 import           Game.LambdaHack.Common.MonadStateRead
@@ -93,7 +92,7 @@ roleOfItemDialogMode cCur = do
     MPlaces -> return ES.empty
     MModes -> return ES.empty
     _ -> do
-      let slore = IA.loreFromMode cCur
+      let slore = loreFromMode cCur
       return $! itemRoles EM.! slore
 
 -- | Let a human player choose any item from a given group.
