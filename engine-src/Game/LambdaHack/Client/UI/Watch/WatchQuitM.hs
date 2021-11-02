@@ -327,10 +327,10 @@ viewLoreItems menuName trunkBag prompt promptFun dmode = do
           -- dejavuBold font set).
           -- Lower width, to permit extra vertical space at the start,
           -- because gameover menu prompts are sometimes wide and/or long.
-          okxItemLorePointedAt monoFont (rwidth - 2) True iids 0 promptFun slot
+          okxItemLorePointedAt monoFont (rwidth - 2) True promptFun 0 iids slot
       viewAtSlot :: MenuSlot -> m K.KM
       viewAtSlot slot = do
-        km <- displayItemLore iids 0 promptFun slot False
+        km <- displayItemLore promptFun 0 False iids slot
         case K.key km of
           K.Space -> viewLoreItems menuName trunkBag prompt promptFun dmode
           K.Esc -> return km

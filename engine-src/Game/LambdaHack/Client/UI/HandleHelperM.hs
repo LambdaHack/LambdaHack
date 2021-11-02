@@ -900,34 +900,43 @@ lookAtPosition p lidV = do
             then [(MsgPromptFocus, tileBlurb)]
             else ms
 
-displayItemLore :: MonadClientUI m
-                => [(ItemId, ItemQuant)]-> Int
-                -> (ItemId -> ItemFull -> Int -> Text)
-                -> MenuSlot -> Bool
-                -> m K.KM
-displayItemLore iids meleeSkill promptFun slot addTilde = do
-  CCUI{coscreen=ScreenContent{rwidth, rheight}} <- getsSession sccui
-  FontSetup{propFont} <- getFontSetup
-  let slotBound = length iids - 1
-      keys = [K.spaceKM, K.escKM]
-             ++ [K.mkChar '~' | addTilde]
+displayOneMenuItem :: MonadClientUI m
+                   => (MenuSlot -> m OKX) -> [K.KM] -> Int -> MenuSlot
+                   -> m K.KM
+displayOneMenuItem renderOneItem extraKeys slotBound slot = do
+  CCUI{coscreen=ScreenContent{rheight}} <- getsSession sccui
+  let keys = [K.spaceKM, K.escKM]
              ++ [K.upKM | fromEnum slot /= 0]
              ++ [K.downKM | fromEnum slot /= slotBound]
-  okx <- okxItemLorePointedAt propFont rwidth False iids meleeSkill promptFun
-                              slot
+             ++ extraKeys
+  okx <- renderOneItem slot
   slides <- overlayToSlideshow (rheight - 2) keys okx
   km <- getConfirms ColorFull keys slides
   case K.key km of
-    K.Up -> displayItemLore iids meleeSkill promptFun (pred slot) addTilde
-    K.Down -> displayItemLore iids meleeSkill promptFun (succ slot) addTilde
+    K.Up -> displayOneMenuItem renderOneItem extraKeys slotBound $ pred slot
+    K.Down -> displayOneMenuItem renderOneItem extraKeys slotBound $ succ slot
     _ -> return km
 
+displayItemLore :: MonadClientUI m
+                => (ItemId -> ItemFull -> Int -> Text)
+                -> Int -> Bool -> [(ItemId, ItemQuant)] -> MenuSlot
+                -> m K.KM
+displayItemLore promptFun meleeSkill addTilde iids slot = do
+  CCUI{coscreen=ScreenContent{rwidth}} <- getsSession sccui
+  FontSetup{propFont} <- getFontSetup
+  let renderOneItem =
+        okxItemLorePointedAt propFont rwidth False promptFun meleeSkill iids
+      extraKeys = [K.mkChar '~' | addTilde]
+      slotBound = length iids - 1
+  displayOneMenuItem renderOneItem extraKeys slotBound slot
+
 okxItemLorePointedAt :: MonadClientUI m
-                     => DisplayFont -> Int -> Bool -> [(ItemId, ItemQuant)]
-                     -> Int -> (ItemId -> ItemFull -> Int -> Text) -> MenuSlot
+                     => DisplayFont -> Int -> Bool
+                     -> (ItemId -> ItemFull -> Int -> Text)
+                     -> Int -> [(ItemId, ItemQuant)] -> MenuSlot
                      -> m OKX
-okxItemLorePointedAt descFont width inlineMsg iids meleeSkill promptFun
-                     slot = do
+okxItemLorePointedAt descFont width inlineMsg promptFun meleeSkill
+                     iids slot = do
   FontSetup{squareFont} <- getFontSetup
   side <- getsClient sside
   arena <- getArenaUI

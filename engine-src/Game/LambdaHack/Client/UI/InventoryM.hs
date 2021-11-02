@@ -561,7 +561,7 @@ inventoryInRightPane leader iids c ekm = case ekm of
         -- characters needs to be smaller than @rwidth - 2@ that would suffice
         -- for mono.
         let widthAt = width - 5
-        okxItemLorePointedAt propFont widthAt True iids 0 promptFun slot
+        okxItemLorePointedAt propFont widthAt True promptFun 0 iids slot
 
 skillCloseUp :: MonadClientUI m => ActorId -> MenuSlot -> m (Text, AttrString)
 skillCloseUp leader slot = do
