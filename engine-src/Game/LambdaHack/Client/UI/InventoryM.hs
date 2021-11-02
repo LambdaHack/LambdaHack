@@ -59,7 +59,7 @@ data ItemDialogState = ISuitable | IAll
 data ResultItemDialogMode =
     RStore CStore [ItemId]
   | ROwned ItemId
-  | RLore SLore ItemId [(ItemId, ItemQuant)]
+  | RLore SLore MenuSlot [(ItemId, ItemQuant)]
   | RSkills MenuSlot
   | RPlaces MenuSlot
   | RModes MenuSlot
@@ -465,7 +465,7 @@ transition leader psuit prompt promptGeneric permitMulitple
         in Right $ case cCur of
           MStore rstore -> RStore rstore [iid]
           MOwned -> ROwned iid
-          MLore rlore -> RLore rlore iid iids
+          MLore rlore -> RLore rlore slot iids
           _ -> error $ "" `showFailure` cCur
       processSpecialOverlay :: OKX -> (MenuSlot -> ResultItemDialogMode)
                             -> m (Either Text ResultItemDialogMode)

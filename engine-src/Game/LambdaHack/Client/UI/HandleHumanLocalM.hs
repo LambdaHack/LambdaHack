@@ -139,7 +139,9 @@ chooseItemDialogModeLore = do
                                     bagHuge
       modifySession $ \sess -> sess {schosenLore = ChosenLore rest embeds}
       let iids = sortIids itemToF $ EM.assocs bagAll
-      return $ Just $ RLore slore iid iids
+          slot = toEnum $ fromMaybe (error $ "" `showFailure` (iid, iids))
+                        $ elemIndex iid $ map fst iids
+      return $ Just $ RLore slore slot iids
     [] ->
       case embeds of
         (iid, _) : rest -> do
@@ -150,7 +152,9 @@ chooseItemDialogModeLore = do
           modifySession $ \sess ->
             sess {schosenLore = ChosenLore inhabitants rest}
           let iids = sortIids itemToF $ EM.assocs bagAll
-          return $ Just $ RLore slore iid iids
+              slot = toEnum $ fromMaybe (error $ "" `showFailure` (iid, iids))
+                            $ elemIndex iid $ map fst iids
+          return $ Just $ RLore slore slot iids
         [] -> do
           modifySession $ \sess -> sess {schosenLore = ChosenNothing}
           return Nothing
@@ -206,10 +210,8 @@ chooseItemDialogMode leader0 permitLoreCycle c = do
              -- of lore screens, because lore is only about inspecting items.
              void $ pickLeader True newAid
              return $ Right newAid
-      RLore slore iid iids -> do
-        let ix0 = fromMaybe (error $ "" `showFailure` result)
-                  $ elemIndex iid $ map fst iids
-            promptFun _ itemFull _ = case slore of
+      RLore slore slot iids -> do
+        let promptFun _ itemFull _ = case slore of
               SBody ->
                 let blurb = if IA.checkFlag Ability.Condition
                                $ aspectRecordFull itemFull
@@ -223,7 +225,7 @@ chooseItemDialogMode leader0 permitLoreCycle c = do
         let lorePending = loreFound && case schosenLore of
               ChosenLore [] [] -> False
               _ -> True
-        km <- displayItemLore iids meleeSkill promptFun (toEnum ix0) lorePending
+        km <- displayItemLore iids meleeSkill promptFun slot lorePending
         case K.key km of
           K.Space -> do
             modifySession $ \sess -> sess {schosenLore = ChosenNothing}
