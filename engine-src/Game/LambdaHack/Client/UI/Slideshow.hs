@@ -1,7 +1,9 @@
+{-# LANGUAGE GeneralizedNewtypeDeriving #-}
 -- | Slideshows.
 module Game.LambdaHack.Client.UI.Slideshow
   ( FontOverlayMap, maxYofFontOverlayMap
-  , KeyOrSlot, ButtonWidth(..)
+  , KeyOrSlot, MenuSlot, natSlots, oddSlot
+  , ButtonWidth(..)
   , KYX, xytranslateKXY, xtranslateKXY, ytranslateKXY, yrenumberKXY
   , OKX, emptyOKX, xytranslateOKX, sideBySideOKX, labDescOKX
   , Slideshow(slideshow), emptySlideshow, unsnoc, toSlideshow
@@ -17,10 +19,10 @@ import Prelude ()
 
 import Game.LambdaHack.Core.Prelude
 
+import           Data.Binary
 import qualified Data.EnumMap.Strict as EM
 import           Data.Time.LocalTime
 
-import           Game.LambdaHack.Client.UI.ItemSlot
 import qualified Game.LambdaHack.Client.UI.Key as K
 import           Game.LambdaHack.Client.UI.Msg
 import           Game.LambdaHack.Client.UI.Overlay
@@ -34,6 +36,16 @@ maxYofFontOverlayMap :: FontOverlayMap -> Int
 maxYofFontOverlayMap ovs = maximum (0 : map maxYofOverlay (EM.elems ovs))
 
 type KeyOrSlot = Either K.KM MenuSlot
+
+newtype MenuSlot = MenuSlot Int
+  deriving (Show, Eq, Ord, Binary, Enum)
+
+natSlots :: [MenuSlot]
+{-# INLINE natSlots #-}
+natSlots = [MenuSlot 0 ..]
+
+oddSlot :: MenuSlot
+oddSlot = MenuSlot (-1)
 
 -- TODO: probably best merge the PointUI into that and represent
 -- the position as characters, too, translating to UI positions as needed.

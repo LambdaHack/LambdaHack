@@ -228,7 +228,6 @@ library
                       Game.LambdaHack.Client.UI.HumanCmd
                       Game.LambdaHack.Client.UI.InventoryM
                       Game.LambdaHack.Client.UI.ItemDescription
-                      Game.LambdaHack.Client.UI.ItemSlot
                       Game.LambdaHack.Client.UI.Key
                       Game.LambdaHack.Client.UI.KeyBindings
                       Game.LambdaHack.Client.UI.MonadClientUI
