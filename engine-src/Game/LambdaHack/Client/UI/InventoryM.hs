@@ -60,10 +60,9 @@ data ItemDialogState = ISuitable | IAll
 
 data ResultItemDialogMode =
     RStore CStore [ItemId]
-  | ROrgans ItemId ItemBag SingleItemSlots
   | ROwned ItemId
-  | RSkills SlotChar
   | RLore SLore ItemId ItemBag SingleItemSlots
+  | RSkills SlotChar
   | RPlaces SlotChar
   | RModes SlotChar
   deriving Show
@@ -71,8 +70,6 @@ data ResultItemDialogMode =
 accessModeBag :: ActorId -> State -> ItemDialogMode -> ItemBag
 accessModeBag leader s (MStore cstore) = let b = getActorBody leader s
                                          in getBodyStoreBag b cstore s
-accessModeBag leader s MOrgans = let b = getActorBody leader s
-                                 in getBodyStoreBag b COrgan s
 accessModeBag leader s MOwned = let fid = bfid $ getActorBody leader s
                                 in combinedItems fid s
 accessModeBag _ _ MSkills = EM.empty
@@ -92,14 +89,6 @@ slotsOfItemDialogMode cCur = do
   itemToF <- getsState $ flip itemToFull
   ItemSlots itemSlotsPre <- getsSession sslots
   case cCur of
-    MOrgans -> do
-      let newSlots = EM.adjust (sortSlotMap itemToF) SOrgan
-                     $ EM.adjust (sortSlotMap itemToF) STrunk
-                     $ EM.adjust (sortSlotMap itemToF) SCondition itemSlotsPre
-      modifySession $ \sess -> sess {sslots = ItemSlots newSlots}
-      return $! mergeItemSlots itemToF [ newSlots EM.! SOrgan
-                                       , newSlots EM.! STrunk
-                                       , newSlots EM.! SCondition ]
     MSkills -> return EM.empty
     MPlaces -> return EM.empty
     MModes -> return EM.empty
@@ -153,14 +142,18 @@ getStoreItem :: MonadClientUI m
              -> m (Either Text ResultItemDialogMode)
 getStoreItem leader cInitial = do
   side <- getsClient sside
-  let itemCs = map MStore [CStash, CEqp, CGround]
-      -- No @SBody@, because repeated in other lores.
+  let -- No @COrgan@, because triggerable organs are rare and,
+      -- if really needed, accessible directly from the trigger menu.
+      itemCs = map MStore [CStash, CEqp, CGround]
+      -- No @SBody@, because repeated in other lores and included elsewhere.
       loreCs = map MLore [minBound..SEmbed] ++ [MPlaces, MModes]
+      leaderCs = itemCs ++ [MOwned, MLore SBody, MSkills]
       allCs = case cInitial of
+        MLore SBody -> leaderCs
         MLore{} -> loreCs
         MPlaces -> loreCs
         MModes -> loreCs
-        _ -> itemCs ++ [MOwned, MOrgans, MSkills]
+        _ -> leaderCs
       (pre, rest) = break (== cInitial) allCs
       post = dropWhile (== cInitial) rest
       remCs = post ++ pre
@@ -218,11 +211,6 @@ storeItemPrompt side body bodyUI actorCurAndMaxSk c2 s =
       in makePhrase $
            [ MU.Capitalize $ MU.SubjectVerbSg subject verb
            , nItems, MU.Text tIn ] ++ ownObject ++ onLevel
-    MOrgans ->
-      makePhrase
-        [ MU.Capitalize $ MU.SubjectVerbSg subject "feel"
-        , MU.Text tIn
-        , MU.WownW (MU.Text $ bpronoun bodyUI) $ MU.Text t ]
     MOwned ->
       -- We assume "gold grain", not "grain" with label "of gold":
       let currencyName = IK.iname $ okind coitem
@@ -234,6 +222,11 @@ storeItemPrompt side body bodyUI actorCurAndMaxSk c2 s =
     MSkills ->
       makePhrase
         [ MU.Capitalize $ MU.SubjectVerbSg subject "estimate"
+        , MU.WownW (MU.Text $ bpronoun bodyUI) $ MU.Text t ]
+    MLore SBody ->
+      makePhrase
+        [ MU.Capitalize $ MU.SubjectVerbSg subject "feel"
+        , MU.Text tIn
         , MU.WownW (MU.Text $ bpronoun bodyUI) $ MU.Text t ]
     MLore slore ->
       makePhrase
@@ -376,16 +369,13 @@ transition leader psuit prompt promptGeneric permitMulitple
   let getResult :: [ItemId] -> Either Text ResultItemDialogMode
       getResult iids = Right $ case cCur of
         MStore rstore -> RStore rstore iids
-        MOrgans -> case iids of
-          [iid] -> ROrgans iid bagAll bagAllItemSlots
-          _ -> error $ "" `showFailure` (cCur, iids)
         MOwned -> case iids of
           [iid] -> ROwned iid
           _ -> error $ "" `showFailure` (cCur, iids)
-        MSkills -> error $ "" `showFailure` cCur
         MLore rlore -> case iids of
           [iid] -> RLore rlore iid bagAll bagAllItemSlots
           _ -> error $ "" `showFailure` (cCur, iids)
+        MSkills -> error $ "" `showFailure` cCur
         MPlaces ->  error $ "" `showFailure` cCur
         MModes -> error $ "" `showFailure` cCur
       bagAllItemSlots = EM.filter (`EM.member` bagHuge) lSlots
@@ -514,7 +504,7 @@ transition leader psuit prompt promptGeneric permitMulitple
     _ -> do
       let displayRanged =
             cCur `notElem`
-              [MStore COrgan, MOrgans, MLore SOrgan, MLore STrunk, MLore SBody]
+              [MStore COrgan, MLore SOrgan, MLore STrunk, MLore SBody]
       io <- itemOverlay slotsFiltered (blid body) bagFiltered displayRanged
       runDefItemKey leader slotsFiltered bagFiltered keyDefs slotDef io
                     promptChosen cCur

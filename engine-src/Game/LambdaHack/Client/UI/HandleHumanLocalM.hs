@@ -180,21 +180,6 @@ chooseItemDialogMode leader0 permitLoreCycle c = do
           sess {sitemSel = Just (iid, fromCStore, False)}
         return $ Right leader
       RStore{} -> error $ "" `showFailure` result
-      ROrgans iid itemBag lSlots -> do
-        let blurb itemFull =
-              if IA.checkFlag Ability.Condition $ aspectRecordFull itemFull
-              then "condition"
-              else "organ"
-            promptFun _ itemFull _ =
-              makeSentence [ partActor bUI, "is aware of"
-                           , MU.AW $ blurb itemFull ]
-            ix0 = fromMaybe (error $ "" `showFailure` result)
-                  $ elemIndex iid $ EM.elems lSlots
-        km <- displayItemLore itemBag meleeSkill promptFun ix0 lSlots False
-        case K.key km of
-          K.Space -> chooseItemDialogMode leader False MOrgans
-          K.Esc -> failWith "never mind"
-          _ -> error $ "" `showFailure` km
       ROwned iid -> do
         found <- getsState $ findIid leader side iid
         let (newAid, bestStore) = case leader `lookup` found of
@@ -215,6 +200,34 @@ chooseItemDialogMode leader0 permitLoreCycle c = do
              -- of lore screens, because lore is only about inspecting items.
              void $ pickLeader True newAid
              return $ Right newAid
+      RLore slore iid itemBag lSlots -> do
+        let ix0 = fromMaybe (error $ "" `showFailure` result)
+                  $ elemIndex iid $ EM.elems lSlots
+            promptFun _ itemFull _ = case slore of
+              SBody ->
+                let blurb = if IA.checkFlag Ability.Condition
+                               $ aspectRecordFull itemFull
+                            then "condition"
+                            else "organ"
+                in makeSentence [partActor bUI, "is aware of" ,MU.AW blurb]
+              _ ->
+                makeSentence [ MU.SubjectVerbSg (partActor bUI) "remember"
+                             , MU.AW $ MU.Text (headingSLore slore) ]
+        schosenLore <- getsSession schosenLore
+        let lorePending = loreFound && case schosenLore of
+              ChosenLore [] [] -> False
+              _ -> True
+        km <- displayItemLore itemBag meleeSkill promptFun ix0
+                              lSlots lorePending
+        case K.key km of
+          K.Space -> do
+            modifySession $ \sess -> sess {schosenLore = ChosenNothing}
+            chooseItemDialogMode leader False (MLore slore)
+          K.Char '~' -> chooseItemDialogMode leader True c
+          K.Esc -> do
+            modifySession $ \sess -> sess {schosenLore = ChosenNothing}
+            failWith "never mind"
+          _ -> error $ "" `showFailure` km
       RSkills slot0 -> do
         -- This can be used in the future, e.g., to increase stats from
         -- level-up stat points, so let's keep it even if it shows
@@ -238,27 +251,6 @@ chooseItemDialogMode leader0 permitLoreCycle c = do
                 K.Esc -> failWith "never mind"
                 _ -> error $ "" `showFailure` km
         displayOneSlot slot0
-      RLore slore iid itemBag lSlots -> do
-        let ix0 = fromMaybe (error $ "" `showFailure` result)
-                  $ elemIndex iid $ EM.elems lSlots
-            promptFun _ _ _ =
-              makeSentence [ MU.SubjectVerbSg (partActor bUI) "remember"
-                           , MU.AW $ MU.Text (headingSLore slore) ]
-        schosenLore <- getsSession schosenLore
-        let lorePending = loreFound && case schosenLore of
-              ChosenLore [] [] -> False
-              _ -> True
-        km <- displayItemLore itemBag meleeSkill promptFun ix0
-                              lSlots lorePending
-        case K.key km of
-          K.Space -> do
-            modifySession $ \sess -> sess {schosenLore = ChosenNothing}
-            chooseItemDialogMode leader False (MLore slore)
-          K.Char '~' -> chooseItemDialogMode leader True c
-          K.Esc -> do
-            modifySession $ \sess -> sess {schosenLore = ChosenNothing}
-            failWith "never mind"
-          _ -> error $ "" `showFailure` km
       RPlaces slot0 -> do
         COps{coplace} <- getsState scops
         soptions <- getsClient soptions

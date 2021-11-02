@@ -193,7 +193,6 @@ loreFromMode :: ItemDialogMode -> SLore
 loreFromMode c = case c of
   MStore COrgan -> SOrgan
   MStore _ -> SItem
-  MOrgans -> undefined  -- slots from many lore kinds
   MOwned -> SItem
   MSkills -> undefined  -- artificial slots
   MLore slore -> slore

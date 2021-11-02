@@ -2,7 +2,7 @@
 -- | Item slots for UI and AI item collections.
 module Game.LambdaHack.Client.UI.ItemSlot
   ( SlotChar, ItemSlots(..), SingleItemSlots
-  , natSlots, oddSlot, assignSlot, sortSlotMap, mergeItemSlots
+  , natSlots, oddSlot, assignSlot, sortSlotMap
   ) where
 
 import Prelude ()
@@ -18,7 +18,7 @@ import qualified Game.LambdaHack.Content.ItemKind as IK
 import           Game.LambdaHack.Definition.Defs
 
 -- | Slot label. Usually just a character. Sometimes with a numerical prefix.
-newtype SlotChar = SlotChar {slotPrefix :: Int}
+newtype SlotChar = SlotChar Int
   deriving (Show, Eq, Ord, Binary, Enum)
 
 type SingleItemSlots = EM.EnumMap SlotChar ItemId
@@ -41,7 +41,7 @@ oddSlot = SlotChar (-1)
 assignSlot :: SingleItemSlots -> SlotChar
 assignSlot lSlots =
   let maxPrefix = case EM.maxViewWithKey lSlots of
-        Just ((lm, _), _) -> slotPrefix lm
+        Just ((SlotChar n, _), _) -> n
         Nothing -> 0
   in SlotChar $ maxPrefix + 1
 
@@ -55,12 +55,3 @@ sortSlotMap itemToF em =
            , jflavour, jfid )
       sortItemIds = sortOn kindAndAppearance
   in EM.fromDistinctAscList $ zip natSlots $ sortItemIds $ EM.elems em
-
-mergeItemSlots :: (ItemId -> ItemFull) -> [SingleItemSlots] -> SingleItemSlots
-mergeItemSlots itemToF ems =
-  let renumberSlot n SlotChar{slotPrefix} =
-        SlotChar{slotPrefix = slotPrefix + n * 1000000}
-      renumberMap n = EM.mapKeys (renumberSlot n)
-      rms = zipWith renumberMap [0..] ems
-      em = EM.unionsWith (\_ _ -> error "mergeItemSlots: duplicate keys") rms
-  in sortSlotMap itemToF em

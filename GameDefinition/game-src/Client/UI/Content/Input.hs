@@ -93,7 +93,7 @@ standardKeysAndMouse = InputContentRaw $ map evalKeyDef $
           , ChooseItemMenu MOwned ))
   , ("@", ( [CmdMeta, CmdDashboard]
           , "describe organs of the pointman"
-          , ChooseItemMenu MOrgans ))
+          , ChooseItemMenu (MLore SBody) ))
   , ("#", ( [CmdMeta, CmdDashboard]
           , "show skill summary of the pointman"
           , ChooseItemMenu MSkills ))

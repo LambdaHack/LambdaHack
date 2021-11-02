@@ -133,7 +133,6 @@ instance NFData SLore
 
 data ItemDialogMode =
     MStore CStore  -- ^ a leader's store
-  | MOrgans        -- ^ leader's organs
   | MOwned         -- ^ all party's items
   | MSkills        -- ^ not items, but determined by leader's items
   | MLore SLore    -- ^ not party's items, but all known generalized items
@@ -165,7 +164,6 @@ headingSLore SBody = "body part"
 
 ppItemDialogMode :: ItemDialogMode -> (Text, Text)
 ppItemDialogMode (MStore cstore) = ppCStore cstore
-ppItemDialogMode MOrgans = ("in", "body")
 ppItemDialogMode MOwned = ("among", "our total team belongings")
 ppItemDialogMode MSkills = ("among", "skills")
 ppItemDialogMode (MLore SBody) = ("in", "body")
