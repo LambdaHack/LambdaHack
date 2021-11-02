@@ -386,7 +386,6 @@ transition leader psuit prompt promptGeneric permitMulitple
         _ -> Nothing
       filterP = psuitFun mstore . itemToF
       bagSuit = EM.filterWithKey filterP bagAll
-      bagSuitItemSlots = EM.filter (`EM.member` bagSuit) bagAllItemSlots
       nextContainers direction = case direction of
         Forward -> case cRest ++ [cCur] of
           c1 : rest -> (c1, rest)
@@ -398,10 +397,8 @@ transition leader psuit prompt promptGeneric permitMulitple
     case itemDialogState of
       ISuitable -> (bagSuit, prompt body bodyUI actorCurAndMaxSk cCur s <> ":")
       IAll -> (bagAll, promptGeneric body bodyUI actorCurAndMaxSk cCur s <> ":")
-  let (autoDun, _) = autoDungeonLevel fact
-      slotsFiltered = case itemDialogState of
-        ISuitable -> bagSuitItemSlots
-        IAll -> bagAllItemSlots
+  let iids = sortIids itemToF $ EM.assocs bagFiltered
+      (autoDun, _) = autoDungeonLevel fact
       maySwitchLeader MOwned = False
       maySwitchLeader MLore{} = False
       maySwitchLeader MPlaces = False
@@ -475,20 +472,16 @@ transition leader psuit prompt promptGeneric permitMulitple
           }
       useMultipleDef defLabel = DefItemKey
         { defLabel
-        , defCond = permitMulitple && not (EM.null slotsFiltered)
-        , defAction = let eslots = EM.elems slotsFiltered
-                      in return $! getResult eslots
+        , defCond = permitMulitple && not (null iids)
+        , defAction = return $! getResult $ map fst iids
         }
-      slotDef :: SlotChar -> m (Either Text ResultItemDialogMode)
-      slotDef slot = case EM.lookup slot slotsFiltered of
-        Nothing -> error $ "unexpected slot"
-                           `showFailure` (slot, bagAllItemSlots, slotsFiltered)
-        Just iid -> return $! getResult [iid]
+      slotDef :: SlotChar -> Either Text ResultItemDialogMode
+      slotDef slot = getResult [fst $ iids !! fromEnum slot]
       processSpecialOverlay :: OKX -> (SlotChar -> ResultItemDialogMode)
                             -> m (Either Text ResultItemDialogMode)
       processSpecialOverlay io resultConstructor = do
-        let slotDef2 :: SlotChar -> m (Either Text ResultItemDialogMode)
-            slotDef2 = return . Right . resultConstructor
+        let slotDef2 :: SlotChar -> Either Text ResultItemDialogMode
+            slotDef2 = Right . resultConstructor
         runDefItemKey leader [] keyDefs slotDef2 io promptChosen cCur
   case cCur of
     MSkills -> do
@@ -501,7 +494,6 @@ transition leader psuit prompt promptGeneric permitMulitple
       io <- modesOverlay
       processSpecialOverlay io RModes
     _ -> do
-      let iids = sortIids itemToF $ EM.assocs bagFiltered
       io <- itemOverlay (blid body) iids cCur
       runDefItemKey leader iids keyDefs slotDef io promptChosen cCur
 
@@ -509,7 +501,7 @@ runDefItemKey :: MonadClientUI m
               => ActorId
               -> [(ItemId, ItemQuant)]
               -> [(K.KM, DefItemKey m)]
-              -> (SlotChar -> m (Either Text ResultItemDialogMode))
+              -> (SlotChar -> Either Text ResultItemDialogMode)
               -> OKX
               -> Text
               -> ItemDialogMode
@@ -532,7 +524,7 @@ runDefItemKey leader iids keyDefs slotDef okx prompt cCur = do
     Left km -> case km `lookup` keyDefs of
       Just keyDef -> defAction keyDef
       Nothing -> error $ "unexpected key:" `showFailure` K.showKM km
-    Right slot -> slotDef slot
+    Right slot -> return $! slotDef slot
 
 inventoryInRightPane :: MonadClientUI m
                      => ActorId -> [(ItemId, ItemQuant)] -> ItemDialogMode
