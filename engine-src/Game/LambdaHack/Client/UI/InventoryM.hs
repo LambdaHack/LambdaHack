@@ -380,18 +380,6 @@ transition leader psuit prompt promptGeneric permitMulitple
       ISuitable -> (bagSuit, prompt body bodyUI actorCurAndMaxSk cCur s <> ":")
       IAll -> (bagAll, promptGeneric body bodyUI actorCurAndMaxSk cCur s <> ":")
   let iids = sortIids itemToF $ EM.assocs bagFiltered
-      getResult :: [ItemId] -> Either Text ResultItemDialogMode
-      getResult itemIds = Right $ case cCur of
-        MStore rstore -> RStore rstore itemIds
-        MOwned -> case itemIds of
-          [iid] -> ROwned iid
-          _ -> error $ "" `showFailure` (cCur, itemIds)
-        MLore rlore -> case itemIds of
-          [iid] -> RLore rlore iid iids
-          _ -> error $ "" `showFailure` (cCur, itemIds)
-        MSkills -> error $ "" `showFailure` cCur
-        MPlaces ->  error $ "" `showFailure` cCur
-        MModes -> error $ "" `showFailure` cCur
       (autoDun, _) = autoDungeonLevel fact
       maySwitchLeader MOwned = False
       maySwitchLeader MLore{} = False
@@ -467,10 +455,18 @@ transition leader psuit prompt promptGeneric permitMulitple
       useMultipleDef defLabel = DefItemKey
         { defLabel
         , defCond = permitMulitple && not (null iids)
-        , defAction = return $! getResult $ map fst iids
+        , defAction = case cCur of
+            MStore rstore -> return $! Right $ RStore rstore $ map fst iids
+            _ -> error "transition: multiple items not for MStore"
         }
       slotDef :: MenuSlot -> Either Text ResultItemDialogMode
-      slotDef slot = getResult [fst $ iids !! fromEnum slot]
+      slotDef slot =
+        let iid = fst $ iids !! fromEnum slot
+        in Right $ case cCur of
+          MStore rstore -> RStore rstore [iid]
+          MOwned -> ROwned iid
+          MLore rlore -> RLore rlore iid iids
+          _ -> error $ "" `showFailure` cCur
       processSpecialOverlay :: OKX -> (MenuSlot -> ResultItemDialogMode)
                             -> m (Either Text ResultItemDialogMode)
       processSpecialOverlay io resultConstructor = do
