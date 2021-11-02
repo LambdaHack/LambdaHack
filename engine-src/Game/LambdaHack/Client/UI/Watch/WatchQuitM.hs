@@ -322,12 +322,15 @@ viewLoreItems menuName trunkBag prompt promptFun dmode = do
         _ | isSquareFont propFont -> return emptyOKX
         Left{} -> return emptyOKX
         Right slot -> do
-          -- Mono font used, because lots of numbers in these blurbs
-          -- and because some prop fonts wider than mono (e.g., in the
-          -- dejavuBold font set).
+          -- for mono.
           -- Lower width, to permit extra vertical space at the start,
           -- because gameover menu prompts are sometimes wide and/or long.
-          okxItemLorePointedAt monoFont (rwidth - 2) True promptFun 0 iids slot
+          let width = rwidth - 2
+          -- Some prop fonts are wider than mono (e.g., in dejavuBold font set),
+          -- so the width in these artificial texts full of digits and strange
+          -- characters needs to be smaller than @rwidth - 2@ that would suffice
+              widthAt = width - 5
+          okxItemLorePointedAt propFont widthAt True promptFun 0 iids slot
       viewAtSlot :: MenuSlot -> m K.KM
       viewAtSlot slot = do
         km <- displayItemLore promptFun 0 False iids slot
