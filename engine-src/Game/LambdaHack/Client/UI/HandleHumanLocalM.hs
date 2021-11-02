@@ -214,11 +214,12 @@ chooseItemDialogMode leader0 permitLoreCycle c = do
                 makeSentence [ MU.SubjectVerbSg (partActor bUI) "remember"
                              , MU.AW $ MU.Text (headingSLore slore) ]
         schosenLore <- getsSession schosenLore
+        itemToF <- getsState $ flip itemToFull
         let lorePending = loreFound && case schosenLore of
               ChosenLore [] [] -> False
               _ -> True
-        km <- displayItemLore itemBag meleeSkill promptFun ix0
-                              lSlots lorePending
+            iids = sortIids itemToF $ EM.assocs itemBag
+        km <- displayItemLore iids meleeSkill promptFun ix0 lorePending
         case K.key km of
           K.Space -> do
             modifySession $ \sess -> sess {schosenLore = ChosenNothing}

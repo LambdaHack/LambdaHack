@@ -10,7 +10,7 @@ module Game.LambdaHack.Common.Item
   , deltaOfItemTimer, charging, ncharges, hasCharge
   , strongestMelee, unknownMeleeBonus, unknownSpeedBonus
   , conditionMeleeBonus, conditionSpeedBonus, armorHurtCalculation
-  , mergeItemQuant, listToolsToConsume, subtractIidfromGrps
+  , mergeItemQuant, listToolsToConsume, subtractIidfromGrps, sortIids
 #ifdef EXPOSE_INTERNAL
     -- * Internal operations
   , valueAtEqpSlot, unknownAspect, countIidConsumed
@@ -453,3 +453,15 @@ subtractIidfromGrps (bagsToLose1, iidsToApply1, grps1)
                             removedBags bagsToLose1
      , replicate nToApply (store, (iid, itemFull)) ++ iidsToApply1
      , grps2 )
+
+sortIids :: (ItemId -> ItemFull)
+         -> [(ItemId, ItemQuant)]
+         -> [(ItemId, ItemQuant)]
+sortIids itemToF =
+  -- If appearance and aspects the same, keep the order from before sort.
+  let kindAndAppearance (iid, _) =
+        let ItemFull{itemBase=Item{..}, ..} = itemToF iid
+        in ( not itemSuspect, itemKindId, itemDisco
+           , IK.isymbol itemKind, IK.iname itemKind
+           , jflavour, jfid )
+  in sortOn kindAndAppearance

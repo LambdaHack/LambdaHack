@@ -313,33 +313,27 @@ viewLoreItems menuName trunkBag prompt promptFun dmode = do
   arena <- getArenaUI
   itemToF <- getsState $ flip itemToFull
   let keys = [K.spaceKM, K.mkChar '<', K.mkChar '>', K.escKM]
-      lSlotsRaw = EM.fromDistinctAscList $ zip natSlots $ EM.keys trunkBag
-      lSlots = sortSlotMap itemToF lSlotsRaw
+      iids = sortIids itemToF $ EM.assocs trunkBag
   msgAdd MsgPromptGeneric prompt
-  io <- itemOverlay lSlots arena trunkBag dmode
+  io <- itemOverlay arena iids dmode
   itemSlides <- overlayToSlideshow (rheight - 2) keys io
   let displayInRightPane :: KeyOrSlot -> m OKX
       displayInRightPane ekm = case ekm of
         _ | isSquareFont propFont -> return emptyOKX
         Left{} -> return emptyOKX
         Right slot -> do
-          let ix0 = fromMaybe (error $ show slot)
-                              (elemIndex slot $ EM.keys lSlots)
           -- Mono font used, because lots of numbers in these blurbs
           -- and because some prop fonts wider than mono (e.g., in the
           -- dejavuBold font set).
           -- Lower width, to permit extra vertical space at the start,
           -- because gameover menu prompts are sometimes wide and/or long.
-          okxItemLorePointedAt
-            monoFont (rwidth - 2) True trunkBag 0 promptFun ix0 lSlots
+          okxItemLorePointedAt monoFont (rwidth - 2) True iids 0 promptFun
+                               (fromEnum slot)
       viewAtSlot :: SlotChar -> m K.KM
       viewAtSlot slot = do
-        let ix0 = fromMaybe (error $ show slot)
-                            (elemIndex slot $ EM.keys lSlots)
-        km <- displayItemLore trunkBag 0 promptFun ix0 lSlots False
+        km <- displayItemLore iids 0 promptFun (fromEnum slot) False
         case K.key km of
-          K.Space ->
-            viewLoreItems menuName trunkBag prompt promptFun dmode
+          K.Space -> viewLoreItems menuName trunkBag prompt promptFun dmode
           K.Esc -> return km
           _ -> error $ "" `showFailure` km
   ekm <- displayChoiceScreenWithRightPane displayInRightPane True

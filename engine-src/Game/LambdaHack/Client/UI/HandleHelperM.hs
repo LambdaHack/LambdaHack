@@ -219,58 +219,54 @@ pickLeaderWithPointer leader = do
            Just (aid, b, _) -> pick (aid, b)
 
 itemOverlay :: MonadClientUI m
-            => SingleItemSlots -> LevelId -> ItemBag -> ItemDialogMode -> m OKX
-itemOverlay lSlots lid bag dmode = do
+            => LevelId -> [(ItemId, ItemQuant)] -> ItemDialogMode -> m OKX
+itemOverlay lid iids dmode = do
   sccui <- getsSession sccui
   side <- getsClient sside
   discoBenefit <- getsClient sdiscoBenefit
   fontSetup <- getFontSetup
   let displayRanged =
         dmode `notElem` [MStore COrgan, MLore SOrgan, MLore STrunk, MLore SBody]
-  okx <- getsState $ itemOverlayFromState lSlots lid bag displayRanged
+  okx <- getsState $ itemOverlayFromState lid iids displayRanged
                                           sccui side discoBenefit fontSetup
   return $! okx
 
-itemOverlayFromState :: SingleItemSlots -> LevelId -> ItemBag -> Bool
+itemOverlayFromState :: LevelId -> [(ItemId, ItemQuant)] -> Bool
                      -> CCUI -> FactionId -> DiscoveryBenefit -> FontSetup
                      -> State
                      -> OKX
-itemOverlayFromState lSlots lid bag displayRanged
-                     sccui side discoBenefit FontSetup{..} s =
+itemOverlayFromState lid iids displayRanged sccui side discoBenefit
+                     FontSetup{..} s =
   let CCUI{coscreen=ScreenContent{rwidth}} = sccui
       localTime = getLocalTime lid s
       itemToF = flip itemToFull s
       factionD = sfactionD s
-      !_A = assert (allB (`elem` EM.elems lSlots) (EM.keys bag)
-                    `blame` (lid, bag, lSlots)) ()
       attrCursor = Color.defAttr {Color.bg = Color.HighlightNoneCursor}
       markEqp periodic k ncha =
         if | periodic -> '"'  -- if equipped, no charges
            | ncha == 0 -> '-'  -- no charges left
            | k > ncha -> '~'  -- not all charges left
            | otherwise -> '+'
-      pr :: (SlotChar, ItemId) -> Maybe (AttrString, AttrString, KeyOrSlot)
-      pr (c, iid) =
-        case EM.lookup iid bag of
-          Nothing -> Nothing
-          Just kit@(k, _) ->
-            let itemFull = itemToF iid
-                arItem = aspectRecordFull itemFull
-                colorSymbol =
-                  if IA.checkFlag Ability.Condition arItem
-                  then viewItemBenefitColored discoBenefit iid itemFull
-                  else viewItem itemFull
-                phrase = makePhrase
-                  [partItemWsRanged rwidth side factionD displayRanged
-                                    DetailMedium 4 k localTime itemFull kit]
-                ncha = ncharges localTime kit
-                periodic = IA.checkFlag Ability.Periodic arItem
-                !cLab = Color.AttrChar { acAttr = attrCursor
-                                       , acChar = markEqp periodic k ncha }
-                asLab = [Color.attrCharToW32 cLab, colorSymbol]
-                !tDesc = " " <> phrase
-            in Just (asLab, textToAS tDesc, Right c)
-      l = mapMaybe pr $ EM.assocs lSlots
+      pr :: SlotChar -> (ItemId, ItemQuant)
+         -> (AttrString, AttrString, KeyOrSlot)
+      pr c (iid, kit@(k, _)) =
+        let itemFull = itemToF iid
+            arItem = aspectRecordFull itemFull
+            colorSymbol =
+              if IA.checkFlag Ability.Condition arItem
+              then viewItemBenefitColored discoBenefit iid itemFull
+              else viewItem itemFull
+            phrase = makePhrase
+              [partItemWsRanged rwidth side factionD displayRanged
+                                DetailMedium 4 k localTime itemFull kit]
+            ncha = ncharges localTime kit
+            periodic = IA.checkFlag Ability.Periodic arItem
+            !cLab = Color.AttrChar { acAttr = attrCursor
+                                   , acChar = markEqp periodic k ncha }
+            asLab = [Color.attrCharToW32 cLab, colorSymbol]
+            !tDesc = " " <> phrase
+        in (asLab, textToAS tDesc, Right c)
+      l = zipWith pr natSlots iids
   in labDescOKX squareFont propFont l
 
 skillsOverlay :: MonadClientUI m => ActorId -> m OKX
@@ -906,42 +902,36 @@ lookAtPosition p lidV = do
             else ms
 
 displayItemLore :: MonadClientUI m
-                => ItemBag -> Int -> (ItemId -> ItemFull -> Int -> Text) -> Int
-                -> SingleItemSlots -> Bool
+                => [(ItemId, ItemQuant)]-> Int -> (ItemId -> ItemFull -> Int
+                -> Text) -> Int -> Bool
                 -> m K.KM
-displayItemLore itemBag meleeSkill promptFun slotIndex lSlots addTilde = do
+displayItemLore iids meleeSkill promptFun slotIndex addTilde = do
   CCUI{coscreen=ScreenContent{rwidth, rheight}} <- getsSession sccui
   FontSetup{propFont} <- getFontSetup
-  let lSlotsElems = EM.elems lSlots
-      lSlotsBound = length lSlotsElems - 1
-  let keys = [K.spaceKM, K.escKM]
+  let lSlotsBound = length iids - 1
+      keys = [K.spaceKM, K.escKM]
              ++ [K.mkChar '~' | addTilde]
              ++ [K.upKM | slotIndex /= 0]
              ++ [K.downKM | slotIndex /= lSlotsBound]
   okx <- okxItemLorePointedAt
-           propFont rwidth False itemBag meleeSkill promptFun slotIndex lSlots
+           propFont rwidth False iids meleeSkill promptFun slotIndex
   slides <- overlayToSlideshow (rheight - 2) keys okx
   km <- getConfirms ColorFull keys slides
   case K.key km of
-    K.Up -> displayItemLore itemBag meleeSkill promptFun (slotIndex - 1)
-                            lSlots addTilde
-    K.Down -> displayItemLore itemBag meleeSkill promptFun (slotIndex + 1)
-                              lSlots addTilde
+    K.Up -> displayItemLore iids meleeSkill promptFun (slotIndex - 1) addTilde
+    K.Down -> displayItemLore iids meleeSkill promptFun (slotIndex + 1) addTilde
     _ -> return km
 
 okxItemLorePointedAt :: MonadClientUI m
-                     => DisplayFont -> Int -> Bool -> ItemBag -> Int
-                     -> (ItemId -> ItemFull -> Int -> Text)
-                     -> Int -> SingleItemSlots
+                     => DisplayFont -> Int -> Bool -> [(ItemId, ItemQuant)]
+                     -> Int -> (ItemId -> ItemFull -> Int -> Text) -> Int
                      -> m OKX
-okxItemLorePointedAt descFont width inlineMsg itemBag meleeSkill promptFun
-                     slotIndex lSlots = do
+okxItemLorePointedAt descFont width inlineMsg iids meleeSkill promptFun
+                     slotIndex = do
   FontSetup{squareFont} <- getFontSetup
   side <- getsClient sside
   arena <- getArenaUI
-  let lSlotsElems = EM.elems lSlots
-      iid2 = lSlotsElems !! slotIndex
-      kit2@(k, _) = itemBag EM.! iid2
+  let (iid2, kit2@(k, _)) = iids !! slotIndex
   itemFull2 <- getsState $ itemToFull iid2
   localTime <- getsState $ getLocalTime arena
   factionD <- getsState sfactionD

@@ -489,8 +489,7 @@ transition leader psuit prompt promptGeneric permitMulitple
       processSpecialOverlay io resultConstructor = do
         let slotDef2 :: SlotChar -> m (Either Text ResultItemDialogMode)
             slotDef2 = return . Right . resultConstructor
-        runDefItemKey leader EM.empty EM.empty keyDefs slotDef2 io
-                      promptChosen cCur
+        runDefItemKey leader [] keyDefs slotDef2 io promptChosen cCur
   case cCur of
     MSkills -> do
       io <- skillsOverlay leader
@@ -502,21 +501,20 @@ transition leader psuit prompt promptGeneric permitMulitple
       io <- modesOverlay
       processSpecialOverlay io RModes
     _ -> do
-      io <- itemOverlay slotsFiltered (blid body) bagFiltered cCur
-      runDefItemKey leader slotsFiltered bagFiltered keyDefs slotDef io
-                    promptChosen cCur
+      let iids = sortIids itemToF $ EM.assocs bagFiltered
+      io <- itemOverlay (blid body) iids cCur
+      runDefItemKey leader iids keyDefs slotDef io promptChosen cCur
 
 runDefItemKey :: MonadClientUI m
               => ActorId
-              -> SingleItemSlots
-              -> ItemBag
+              -> [(ItemId, ItemQuant)]
               -> [(K.KM, DefItemKey m)]
               -> (SlotChar -> m (Either Text ResultItemDialogMode))
               -> OKX
               -> Text
               -> ItemDialogMode
               -> m (Either Text ResultItemDialogMode)
-runDefItemKey leader lSlots bag keyDefs slotDef okx prompt cCur = do
+runDefItemKey leader iids keyDefs slotDef okx prompt cCur = do
   let itemKeys = map fst keyDefs
       wrapB s = "[" <> s <> "]"
       (keyLabelsRaw, keys) = partitionEithers $ map (defLabel . snd) keyDefs
@@ -528,7 +526,7 @@ runDefItemKey leader lSlots bag keyDefs slotDef okx prompt cCur = do
   ekm <- do
     sli <- overlayToSlideshow (rheight - 2) keys okx
     displayChoiceScreenWithRightPane
-      (inventoryInRightPane leader lSlots bag cCur) True
+      (inventoryInRightPane leader iids cCur) True
       (show cCur) ColorFull False sli itemKeys
   case ekm of
     Left km -> case km `lookup` keyDefs of
@@ -537,10 +535,10 @@ runDefItemKey leader lSlots bag keyDefs slotDef okx prompt cCur = do
     Right slot -> slotDef slot
 
 inventoryInRightPane :: MonadClientUI m
-                     => ActorId -> SingleItemSlots -> ItemBag -> ItemDialogMode
+                     => ActorId -> [(ItemId, ItemQuant)] -> ItemDialogMode
                      -> KeyOrSlot
                      -> m OKX
-inventoryInRightPane leader lSlots bag c ekm = case ekm of
+inventoryInRightPane leader iids c ekm = case ekm of
   Left{} -> return emptyOKX
   Right slot -> do
     CCUI{coscreen=ScreenContent{rwidth}} <- getsSession sccui
@@ -579,9 +577,7 @@ inventoryInRightPane leader lSlots bag c ekm = case ekm of
       MModes -> return emptyOKX
         -- modes cover the right part of screen, so let's keep it empty
       _ -> do
-        let ix0 = fromMaybe (error $ show slot)
-                            (elemIndex slot $ EM.keys lSlots)
-            promptFun _iid _itemFull _k = ""
+        let promptFun _iid _itemFull _k = ""
               -- TODO, e.g., if the party still owns any copies, if the actor
               -- was ever killed by us or killed ours, etc.
               -- This can be the same prompt or longer than what entering
@@ -591,7 +587,8 @@ inventoryInRightPane leader lSlots bag c ekm = case ekm of
         -- characters needs to be smaller than @rwidth - 2@ that would suffice
         -- for mono.
         let widthAt = width - 5
-        okxItemLorePointedAt propFont widthAt True bag 0 promptFun ix0 lSlots
+        okxItemLorePointedAt propFont widthAt True iids 0 promptFun
+                             (fromEnum slot)
 
 skillCloseUp :: MonadClientUI m => ActorId -> SlotChar -> m (Text, AttrString)
 skillCloseUp leader slot = do
