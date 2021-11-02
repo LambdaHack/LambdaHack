@@ -126,7 +126,8 @@ chooseItemDialogModeLore = do
   (inhabitants, embeds) <- case schosenLore of
     ChosenLore inh emb -> return (inh, emb)
     ChosenNothing -> computeChosenLore
-  bagAll <- getsState $ EM.map (const quantSingle) . sitemD
+  bagHuge <- getsState $ EM.map (const quantSingle) . sitemD
+  itemToF <- getsState $ flip itemToFull
   case inhabitants of
     (_, b) : rest -> do
       let iid = btrunk b
@@ -135,16 +136,24 @@ chooseItemDialogModeLore = do
                 | IA.checkFlag Ability.Blast arItem = SBlast
                 | otherwise = SItem
       lSlots <- slotsOfItemDialogMode $ MLore slore
+      let bagAllItemSlots = EM.filter (`EM.member` bagHuge) lSlots
+          bagAll = EM.fromList $ map (\iid2 -> (iid2, bagHuge EM.! iid))
+                                     (EM.elems bagAllItemSlots)
       modifySession $ \sess -> sess {schosenLore = ChosenLore rest embeds}
-      return $ Just $ RLore slore iid bagAll lSlots
+      let iids = sortIids itemToF $ EM.assocs bagAll
+      return $ Just $ RLore slore iid iids
     [] ->
       case embeds of
         (iid, _) : rest -> do
           let slore = SEmbed
           lSlots <- slotsOfItemDialogMode $ MLore slore
+          let bagAllItemSlots = EM.filter (`EM.member` bagHuge) lSlots
+              bagAll = EM.fromList $ map (\iid2 -> (iid2, bagHuge EM.! iid))
+                                         (EM.elems bagAllItemSlots)
           modifySession $ \sess ->
             sess {schosenLore = ChosenLore inhabitants rest}
-          return $ Just $ RLore slore iid bagAll lSlots
+          let iids = sortIids itemToF $ EM.assocs bagAll
+          return $ Just $ RLore slore iid iids
         [] -> do
           modifySession $ \sess -> sess {schosenLore = ChosenNothing}
           return Nothing
@@ -200,9 +209,9 @@ chooseItemDialogMode leader0 permitLoreCycle c = do
              -- of lore screens, because lore is only about inspecting items.
              void $ pickLeader True newAid
              return $ Right newAid
-      RLore slore iid itemBag lSlots -> do
+      RLore slore iid iids -> do
         let ix0 = fromMaybe (error $ "" `showFailure` result)
-                  $ elemIndex iid $ EM.elems lSlots
+                  $ elemIndex iid $ map fst iids
             promptFun _ itemFull _ = case slore of
               SBody ->
                 let blurb = if IA.checkFlag Ability.Condition
@@ -214,11 +223,9 @@ chooseItemDialogMode leader0 permitLoreCycle c = do
                 makeSentence [ MU.SubjectVerbSg (partActor bUI) "remember"
                              , MU.AW $ MU.Text (headingSLore slore) ]
         schosenLore <- getsSession schosenLore
-        itemToF <- getsState $ flip itemToFull
         let lorePending = loreFound && case schosenLore of
               ChosenLore [] [] -> False
               _ -> True
-            iids = sortIids itemToF $ EM.assocs itemBag
         km <- displayItemLore iids meleeSkill promptFun ix0 lorePending
         case K.key km of
           K.Space -> do

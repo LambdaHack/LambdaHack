@@ -61,7 +61,7 @@ data ItemDialogState = ISuitable | IAll
 data ResultItemDialogMode =
     RStore CStore [ItemId]
   | ROwned ItemId
-  | RLore SLore ItemId ItemBag SingleItemSlots
+  | RLore SLore ItemId [(ItemId, ItemQuant)]
   | RSkills SlotChar
   | RPlaces SlotChar
   | RModes SlotChar
@@ -363,19 +363,7 @@ transition leader psuit prompt promptGeneric permitMulitple
     SuitsSomething f -> return f  -- When throwing, this function takes
                                   -- missile range into accout.
   lSlots <- slotsOfItemDialogMode cCur
-  let getResult :: [ItemId] -> Either Text ResultItemDialogMode
-      getResult iids = Right $ case cCur of
-        MStore rstore -> RStore rstore iids
-        MOwned -> case iids of
-          [iid] -> ROwned iid
-          _ -> error $ "" `showFailure` (cCur, iids)
-        MLore rlore -> case iids of
-          [iid] -> RLore rlore iid bagAll bagAllItemSlots
-          _ -> error $ "" `showFailure` (cCur, iids)
-        MSkills -> error $ "" `showFailure` cCur
-        MPlaces ->  error $ "" `showFailure` cCur
-        MModes -> error $ "" `showFailure` cCur
-      bagAllItemSlots = EM.filter (`EM.member` bagHuge) lSlots
+  let bagAllItemSlots = EM.filter (`EM.member` bagHuge) lSlots
       bagAll = EM.fromList $ map (\iid -> (iid, bagHuge EM.! iid))
                                  (EM.elems bagAllItemSlots)
       mstore = case cCur of
@@ -395,6 +383,18 @@ transition leader psuit prompt promptGeneric permitMulitple
       ISuitable -> (bagSuit, prompt body bodyUI actorCurAndMaxSk cCur s <> ":")
       IAll -> (bagAll, promptGeneric body bodyUI actorCurAndMaxSk cCur s <> ":")
   let iids = sortIids itemToF $ EM.assocs bagFiltered
+      getResult :: [ItemId] -> Either Text ResultItemDialogMode
+      getResult itemIds = Right $ case cCur of
+        MStore rstore -> RStore rstore itemIds
+        MOwned -> case itemIds of
+          [iid] -> ROwned iid
+          _ -> error $ "" `showFailure` (cCur, itemIds)
+        MLore rlore -> case itemIds of
+          [iid] -> RLore rlore iid iids
+          _ -> error $ "" `showFailure` (cCur, itemIds)
+        MSkills -> error $ "" `showFailure` cCur
+        MPlaces ->  error $ "" `showFailure` cCur
+        MModes -> error $ "" `showFailure` cCur
       (autoDun, _) = autoDungeonLevel fact
       maySwitchLeader MOwned = False
       maySwitchLeader MLore{} = False
