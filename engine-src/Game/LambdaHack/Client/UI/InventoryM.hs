@@ -1,7 +1,7 @@
 -- | UI of inventory management.
 module Game.LambdaHack.Client.UI.InventoryM
   ( Suitability(..), ResultItemDialogMode(..)
-  , roleOfItemDialogMode, getFull, getGroupItem, getStoreItem
+  , getFull, getGroupItem, getStoreItem
   , skillCloseUp, placeCloseUp
 #ifdef EXPOSE_INTERNAL
     -- * Internal operations
@@ -76,18 +76,6 @@ accessModeBag leader s (MLore SBody) = let b = getActorBody leader s
 accessModeBag _ s MLore{} = EM.map (const quantSingle) $ sitemD s
 accessModeBag _ _ MPlaces = EM.empty
 accessModeBag _ _ MModes = EM.empty
-
-roleOfItemDialogMode :: MonadClientUI m => ItemDialogMode
-                     -> m (ES.EnumSet ItemId)
-roleOfItemDialogMode cCur = do
-  ItemRoles itemRoles <- getsSession sroles
-  case cCur of
-    MSkills -> return ES.empty
-    MPlaces -> return ES.empty
-    MModes -> return ES.empty
-    _ -> do
-      let slore = loreFromMode cCur
-      return $! itemRoles EM.! slore
 
 -- | Let a human player choose any item from a given group.
 -- Note that this does not guarantee the chosen item belongs to the group,
@@ -445,8 +433,10 @@ transition leader psuit prompt promptGeneric permitMulitple
         SuitsEverything -> return $ \_ _ _ -> True
         SuitsSomething f -> return f  -- When throwing, this function takes
                                       -- missile range into accout.
-      itemRole <- roleOfItemDialogMode cCur
-      let bagAll = EM.filterWithKey (\iid _ -> iid `ES.member` itemRole) bagHuge
+      ItemRoles itemRoles <- getsSession sroles
+      let slore = loreFromMode cCur
+          itemRole = itemRoles EM.! slore
+          bagAll = EM.filterWithKey (\iid _ -> iid `ES.member` itemRole) bagHuge
           mstore = case cCur of
             MStore store -> Just store
             _ -> Nothing
