@@ -194,18 +194,14 @@ displayGameOverLoot :: MonadClientUI m
 displayGameOverLoot (heldBag, total) generationAn = do
   ClientOptions{sexposeItems} <- getsClient soptions
   COps{coitem} <- getsState scops
-  ItemSlots itemSlots <- getsSession sslots
   -- We assume "gold grain", not "grain" with label "of gold":
   let currencyName = IK.iname $ okind coitem $ ouniqGroup coitem IK.S_CURRENCY
-      lSlotsRaw = EM.filter (`EM.member` heldBag) $ itemSlots EM.! SItem
       generationItem = generationAn EM.! SItem
-      (itemBag, lSlots) =
+      itemBag =
         if sexposeItems
         then let generationBag = EM.map (\k -> (-k, [])) generationItem
-                 bag = heldBag `EM.union` generationBag
-                 slots = EM.fromDistinctAscList $ zip natSlots $ EM.keys bag
-             in (bag, slots)
-        else (heldBag, lSlotsRaw)
+             in heldBag `EM.union` generationBag
+        else heldBag
       promptFun iid itemFull2 k =
         let worth = itemPrice 1 $ itemKind itemFull2
             lootMsg = if worth == 0 then "" else
@@ -239,7 +235,7 @@ displayGameOverLoot (heldBag, total) generationAn = do
         <+> (if sexposeItems
              then "Non-positive count means none held but this many generated."
              else "")
-  viewLoreItems "GameOverLoot" lSlots itemBag prompt promptFun True
+  viewLoreItems "GameOverLoot" itemBag prompt promptFun True
 
 displayGameOverAnalytics :: MonadClientUI m
                          => FactionAnalytics -> GenerationAnalytics
@@ -254,17 +250,15 @@ displayGameOverAnalytics factionAn generationAn = do
                $ concatMap EM.elems $ catMaybes
                $ map (`EM.lookup` ourAn) [KillKineticMelee .. KillOtherPush]
       trunkBagRaw = EM.map (, []) foesAn
-      lSlotsRaw = EM.filter (`EM.member` trunkBagRaw) $ itemSlots EM.! STrunk
+      lSlotsTrunk = EM.filter (`EM.member` trunkBagRaw) $ itemSlots EM.! STrunk
       killedBag = EM.fromList $ map (\iid -> (iid, trunkBagRaw EM.! iid))
-                                    (EM.elems lSlotsRaw)
+                                    (EM.elems lSlotsTrunk)
       generationTrunk = generationAn EM.! STrunk
-      (trunkBag, lSlots) =
+      trunkBag =
         if sexposeActors
         then let generationBag = EM.map (\k -> (-k, [])) generationTrunk
-                 bag = killedBag `EM.union` generationBag
-                 slots = EM.fromDistinctAscList $ zip natSlots $ EM.keys bag
-             in (bag, slots)
-        else (killedBag, lSlotsRaw)
+             in killedBag `EM.union` generationBag
+        else killedBag
       total = sum $ filter (> 0) $ map fst $ EM.elems trunkBag
       -- Not just "killed 1 out of 4", because it's sometimes "2 out of 1",
       -- if an enemy was revived.
@@ -280,7 +274,7 @@ displayGameOverAnalytics factionAn generationAn = do
         <+> (if sexposeActors
              then "Non-positive count means none killed but this many reported."
              else "")
-  viewLoreItems "GameOverAnalytics" lSlots trunkBag prompt promptFun False
+  viewLoreItems "GameOverAnalytics" trunkBag prompt promptFun False
 
 displayGameOverLore :: MonadClientUI m
                     => SLore -> Bool -> GenerationAnalytics -> m K.KM
@@ -289,7 +283,6 @@ displayGameOverLore slore exposeCount generationAn = do
       generationBag = EM.map (\k -> (if exposeCount then k else 1, []))
                              generationLore
       total = sum $ map fst $ EM.elems generationBag
-      slots = EM.fromDistinctAscList $ zip natSlots $ EM.keys generationBag
       promptFun :: ItemId -> ItemFull-> Int -> Text
       promptFun _ _ k =
         makeSentence
@@ -308,19 +301,20 @@ displayGameOverLore slore exposeCount generationAn = do
                           , MU.CarWs total $ MU.Text (headingSLore slore) ]
       displayRanged = slore `notElem` [SOrgan, STrunk]
   viewLoreItems ("GameOverLore" ++ show slore)
-                slots generationBag prompt promptFun displayRanged
+                generationBag prompt promptFun displayRanged
 
 viewLoreItems :: forall m . MonadClientUI m
-              => String -> SingleItemSlots -> ItemBag -> Text
+              => String -> ItemBag -> Text
               -> (ItemId -> ItemFull -> Int -> Text)
               -> Bool
               -> m K.KM
-viewLoreItems menuName lSlotsRaw trunkBag prompt promptFun displayRanged = do
+viewLoreItems menuName trunkBag prompt promptFun displayRanged = do
   CCUI{coscreen=ScreenContent{rwidth, rheight}} <- getsSession sccui
   FontSetup{..} <- getFontSetup
   arena <- getArenaUI
   itemToF <- getsState $ flip itemToFull
   let keys = [K.spaceKM, K.mkChar '<', K.mkChar '>', K.escKM]
+      lSlotsRaw = EM.fromDistinctAscList $ zip natSlots $ EM.keys trunkBag
       lSlots = sortSlotMap itemToF lSlotsRaw
   msgAdd MsgPromptGeneric prompt
   io <- itemOverlay lSlots arena trunkBag displayRanged
@@ -345,8 +339,8 @@ viewLoreItems menuName lSlotsRaw trunkBag prompt promptFun displayRanged = do
                             (elemIndex slot $ EM.keys lSlots)
         km <- displayItemLore trunkBag 0 promptFun ix0 lSlots False
         case K.key km of
-          K.Space -> viewLoreItems menuName lSlots trunkBag prompt
-                                   promptFun displayRanged
+          K.Space ->
+            viewLoreItems menuName trunkBag prompt promptFun displayRanged
           K.Esc -> return km
           _ -> error $ "" `showFailure` km
   ekm <- displayChoiceScreenWithRightPane displayInRightPane True
