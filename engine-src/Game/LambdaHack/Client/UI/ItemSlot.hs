@@ -28,6 +28,7 @@ newtype ItemSlots = ItemSlots (EM.EnumMap SLore SingleItemSlots)
   deriving (Show, Binary)
 
 natSlots :: [SlotChar]
+{-# INLINE natSlots #-}
 natSlots = [SlotChar 0 ..]
 
 oddSlot :: SlotChar
