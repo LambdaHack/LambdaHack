@@ -1,7 +1,7 @@
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 -- | Item slots for UI and AI item collections.
 module Game.LambdaHack.Client.UI.ItemSlot
-  ( SlotChar, natSlots, oddSlot
+  ( MenuSlot, natSlots, oddSlot
   ) where
 
 import Prelude ()
@@ -10,12 +10,12 @@ import Game.LambdaHack.Core.Prelude
 
 import Data.Binary
 
-newtype SlotChar = SlotChar Int
+newtype MenuSlot = MenuSlot Int
   deriving (Show, Eq, Ord, Binary, Enum)
 
-natSlots :: [SlotChar]
+natSlots :: [MenuSlot]
 {-# INLINE natSlots #-}
-natSlots = [SlotChar 0 ..]
+natSlots = [MenuSlot 0 ..]
 
-oddSlot :: SlotChar
-oddSlot = SlotChar (-1)
+oddSlot :: MenuSlot
+oddSlot = MenuSlot (-1)

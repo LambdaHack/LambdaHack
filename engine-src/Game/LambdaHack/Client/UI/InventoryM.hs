@@ -62,9 +62,9 @@ data ResultItemDialogMode =
     RStore CStore [ItemId]
   | ROwned ItemId
   | RLore SLore ItemId [(ItemId, ItemQuant)]
-  | RSkills SlotChar
-  | RPlaces SlotChar
-  | RModes SlotChar
+  | RSkills MenuSlot
+  | RPlaces MenuSlot
+  | RModes MenuSlot
   deriving Show
 
 accessModeBag :: ActorId -> State -> ItemDialogMode -> ItemBag
@@ -471,12 +471,12 @@ transition leader psuit prompt promptGeneric permitMulitple
         , defCond = permitMulitple && not (null iids)
         , defAction = return $! getResult $ map fst iids
         }
-      slotDef :: SlotChar -> Either Text ResultItemDialogMode
+      slotDef :: MenuSlot -> Either Text ResultItemDialogMode
       slotDef slot = getResult [fst $ iids !! fromEnum slot]
-      processSpecialOverlay :: OKX -> (SlotChar -> ResultItemDialogMode)
+      processSpecialOverlay :: OKX -> (MenuSlot -> ResultItemDialogMode)
                             -> m (Either Text ResultItemDialogMode)
       processSpecialOverlay io resultConstructor = do
-        let slotDef2 :: SlotChar -> Either Text ResultItemDialogMode
+        let slotDef2 :: MenuSlot -> Either Text ResultItemDialogMode
             slotDef2 = Right . resultConstructor
         runDefItemKey leader [] keyDefs slotDef2 io promptChosen cCur
   case cCur of
@@ -497,7 +497,7 @@ runDefItemKey :: MonadClientUI m
               => ActorId
               -> [(ItemId, ItemQuant)]
               -> [(K.KM, DefItemKey m)]
-              -> (SlotChar -> Either Text ResultItemDialogMode)
+              -> (MenuSlot -> Either Text ResultItemDialogMode)
               -> OKX
               -> Text
               -> ItemDialogMode
@@ -578,7 +578,7 @@ inventoryInRightPane leader iids c ekm = case ekm of
         okxItemLorePointedAt propFont widthAt True iids 0 promptFun
                              (fromEnum slot)
 
-skillCloseUp :: MonadClientUI m => ActorId -> SlotChar -> m (Text, AttrString)
+skillCloseUp :: MonadClientUI m => ActorId -> MenuSlot -> m (Text, AttrString)
 skillCloseUp leader slot = do
   b <- getsState $ getActorBody leader
   bUI <- getsSession $ getActorUI leader
@@ -595,7 +595,7 @@ skillCloseUp leader slot = do
 placeCloseUp :: MonadClientUI m
              => [(ContentId PK.PlaceKind, (ES.EnumSet LevelId, Int, Int, Int))]
              -> Bool
-             -> SlotChar
+             -> MenuSlot
              -> m (Text, [(DisplayFont, [Text])])
 placeCloseUp places sexposePlaces slot = do
   COps{coplace} <- getsState scops

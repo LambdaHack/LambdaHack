@@ -330,7 +330,7 @@ viewLoreItems menuName trunkBag prompt promptFun dmode = do
           -- because gameover menu prompts are sometimes wide and/or long.
           okxItemLorePointedAt monoFont (rwidth - 2) True iids 0 promptFun
                                (fromEnum slot)
-      viewAtSlot :: SlotChar -> m K.KM
+      viewAtSlot :: MenuSlot -> m K.KM
       viewAtSlot slot = do
         km <- displayItemLore iids 0 promptFun (fromEnum slot) False
         case K.key km of

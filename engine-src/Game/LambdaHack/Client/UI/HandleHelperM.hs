@@ -247,7 +247,7 @@ itemOverlayFromState lid iids displayRanged sccui side discoBenefit
            | ncha == 0 -> '-'  -- no charges left
            | k > ncha -> '~'  -- not all charges left
            | otherwise -> '+'
-      pr :: SlotChar -> (ItemId, ItemQuant)
+      pr :: MenuSlot -> (ItemId, ItemQuant)
          -> (AttrString, AttrString, KeyOrSlot)
       pr c (iid, kit@(k, _)) =
         let itemFull = itemToF iid
@@ -274,7 +274,7 @@ skillsOverlay aid = do
   b <- getsState $ getActorBody aid
   actorMaxSk <- getsState $ getActorMaxSkills aid
   FontSetup{..} <- getFontSetup
-  let prSlot :: SlotChar -> Ability.Skill
+  let prSlot :: MenuSlot -> Ability.Skill
              -> ((AttrLine, (Int, AttrLine), (Int, AttrLine)), KYX)
       prSlot c skill =
         let skName = " " <> skillName skill
@@ -349,7 +349,7 @@ placesOverlay = do
   soptions <- getsClient soptions
   FontSetup{..} <- getFontSetup
   places <- getsState $ placesFromState coplace (sexposePlaces soptions)
-  let prSlot :: SlotChar
+  let prSlot :: MenuSlot
              -> (ContentId PK.PlaceKind, (ES.EnumSet LevelId, Int, Int, Int))
              -> (AttrString, AttrString, KeyOrSlot)
       prSlot c (pk, (es, _, _, _)) =
@@ -487,7 +487,7 @@ modesOverlay = do
   nxtChal <- getsClient snxtChal  -- mark victories only for current difficulty
   let f !acc _p !i !a = (i, a) : acc
       campaignModes = ofoldlGroup' comode MK.CAMPAIGN_SCENARIO f []
-      prSlot :: SlotChar
+      prSlot :: MenuSlot
              -> (ContentId MK.ModeKind, MK.ModeKind)
              -> (AttrString, AttrString, KeyOrSlot)
       prSlot c (gameModeId, gameMode) =

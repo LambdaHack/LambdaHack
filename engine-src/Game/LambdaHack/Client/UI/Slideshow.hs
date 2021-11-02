@@ -33,7 +33,7 @@ type FontOverlayMap = EM.EnumMap DisplayFont Overlay
 maxYofFontOverlayMap :: FontOverlayMap -> Int
 maxYofFontOverlayMap ovs = maximum (0 : map maxYofOverlay (EM.elems ovs))
 
-type KeyOrSlot = Either K.KM SlotChar
+type KeyOrSlot = Either K.KM MenuSlot
 
 -- TODO: probably best merge the PointUI into that and represent
 -- the position as characters, too, translating to UI positions as needed.
