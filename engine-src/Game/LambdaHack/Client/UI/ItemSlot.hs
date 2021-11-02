@@ -1,7 +1,7 @@
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 -- | Item slots for UI and AI item collections.
 module Game.LambdaHack.Client.UI.ItemSlot
-  ( SlotChar, ItemSlots(..), SingleItemSlots
+  ( SlotChar, ItemRoles(..), SingleItemRoles
   , natSlots, oddSlot, assignSlot
   ) where
 
@@ -19,10 +19,10 @@ import Game.LambdaHack.Definition.Defs
 newtype SlotChar = SlotChar Int
   deriving (Show, Eq, Ord, Binary, Enum)
 
-type SingleItemSlots = EM.EnumMap SlotChar ItemId
+type SingleItemRoles = EM.EnumMap SlotChar ItemId
 
 -- | A collection of mappings from slot labels to item identifiers.
-newtype ItemSlots = ItemSlots (EM.EnumMap SLore SingleItemSlots)
+newtype ItemRoles = ItemRoles (EM.EnumMap SLore SingleItemRoles)
   deriving (Show, Binary)
 
 natSlots :: [SlotChar]
@@ -37,7 +37,7 @@ oddSlot = SlotChar (-1)
 -- not user-friendly. After any player's item manipulation action,
 -- slots are sorted and a fully human-readable slot is then assigned.
 -- Only then the slot can be viewed by the player.
-assignSlot :: SingleItemSlots -> SlotChar
+assignSlot :: SingleItemRoles -> SlotChar
 assignSlot lSlots =
   let maxPrefix = case EM.maxViewWithKey lSlots of
         Just ((SlotChar n, _), _) -> n

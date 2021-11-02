@@ -243,7 +243,7 @@ displayGameOverAnalytics :: MonadClientUI m
 displayGameOverAnalytics factionAn generationAn = do
   ClientOptions{sexposeActors} <- getsClient soptions
   side <- getsClient sside
-  ItemSlots itemSlots <- getsSession sslots
+  ItemRoles itemSlots <- getsSession sroles
   let ourAn = akillCounts
               $ EM.findWithDefault emptyAnalytics side factionAn
       foesAn = EM.unionsWith (+)

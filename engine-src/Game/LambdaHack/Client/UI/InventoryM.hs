@@ -84,9 +84,9 @@ accessModeBag _ _ MModes = EM.empty
 -- Not so for organ menu, because many lore maps point there.
 -- Sorting in @updateItemSlot@ would not be enough, because, e.g.,
 -- identifying an item should change its slot position.
-slotsOfItemDialogMode :: MonadClientUI m => ItemDialogMode -> m SingleItemSlots
+slotsOfItemDialogMode :: MonadClientUI m => ItemDialogMode -> m SingleItemRoles
 slotsOfItemDialogMode cCur = do
-  ItemSlots itemSlotsPre <- getsSession sslots
+  ItemRoles itemSlotsPre <- getsSession sroles
   case cCur of
     MSkills -> return EM.empty
     MPlaces -> return EM.empty
@@ -363,9 +363,9 @@ transition leader psuit prompt promptGeneric permitMulitple
     SuitsSomething f -> return f  -- When throwing, this function takes
                                   -- missile range into accout.
   lSlots <- slotsOfItemDialogMode cCur
-  let bagAllItemSlots = EM.filter (`EM.member` bagHuge) lSlots
+  let bagAllItemRoles = EM.filter (`EM.member` bagHuge) lSlots
       bagAll = EM.fromList $ map (\iid -> (iid, bagHuge EM.! iid))
-                                 (EM.elems bagAllItemSlots)
+                                 (EM.elems bagAllItemRoles)
       mstore = case cCur of
         MStore store -> Just store
         _ -> Nothing

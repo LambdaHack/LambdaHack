@@ -54,7 +54,7 @@ data SessionUI = SessionUI
   , sxhairGoTo     :: Maybe Target  -- ^ xhair set for last GoTo
   , sactorUI       :: ActorDictUI   -- ^ assigned actor UI presentations
   , sitemUI        :: ItemDictUI    -- ^ assigned item first seen level
-  , sslots         :: ItemSlots     -- ^ map from slots to items
+  , sroles         :: ItemRoles     -- ^ map from slots to items
   , slastItemMove  :: Maybe (CStore, CStore)
                                     -- ^ last item move stores
   , schanF         :: ChanFrontend  -- ^ connection with the frontend
@@ -168,7 +168,7 @@ emptySessionUI sUIOptions =
     , sxhairGoTo = Nothing
     , sactorUI = EM.empty
     , sitemUI = EM.empty
-    , sslots = ItemSlots $ EM.fromDistinctAscList
+    , sroles = ItemRoles $ EM.fromDistinctAscList
                $ zip [minBound..maxBound] (repeat EM.empty)
     , slastItemMove = Nothing
     , schanF = ChanFrontend $ const $
@@ -234,7 +234,7 @@ instance Binary SessionUI where
     put sxhair
     put sactorUI
     put sitemUI
-    put sslots
+    put sroles
     put sUIOptions
     put saimMode
     put sitemSel
@@ -254,7 +254,7 @@ instance Binary SessionUI where
     sxhair <- get
     sactorUI <- get
     sitemUI <- get
-    sslots <- get
+    sroles <- get
     sUIOptions <- get  -- is overwritten ASAP, but useful for, e.g., crash debug
     saimMode <- get
     sitemSel <- get

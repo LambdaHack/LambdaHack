@@ -136,9 +136,9 @@ chooseItemDialogModeLore = do
                 | IA.checkFlag Ability.Blast arItem = SBlast
                 | otherwise = SItem
       lSlots <- slotsOfItemDialogMode $ MLore slore
-      let bagAllItemSlots = EM.filter (`EM.member` bagHuge) lSlots
+      let bagAllItemRoles = EM.filter (`EM.member` bagHuge) lSlots
           bagAll = EM.fromList $ map (\iid2 -> (iid2, bagHuge EM.! iid))
-                                     (EM.elems bagAllItemSlots)
+                                     (EM.elems bagAllItemRoles)
       modifySession $ \sess -> sess {schosenLore = ChosenLore rest embeds}
       let iids = sortIids itemToF $ EM.assocs bagAll
       return $ Just $ RLore slore iid iids
@@ -147,9 +147,9 @@ chooseItemDialogModeLore = do
         (iid, _) : rest -> do
           let slore = SEmbed
           lSlots <- slotsOfItemDialogMode $ MLore slore
-          let bagAllItemSlots = EM.filter (`EM.member` bagHuge) lSlots
+          let bagAllItemRoles = EM.filter (`EM.member` bagHuge) lSlots
               bagAll = EM.fromList $ map (\iid2 -> (iid2, bagHuge EM.! iid))
-                                         (EM.elems bagAllItemSlots)
+                                         (EM.elems bagAllItemRoles)
           modifySession $ \sess ->
             sess {schosenLore = ChosenLore inhabitants rest}
           let iids = sortIids itemToF $ EM.assocs bagAll

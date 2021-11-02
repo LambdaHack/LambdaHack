@@ -637,14 +637,14 @@ updateItemSlot :: MonadClientUI m => Container -> ItemId -> m ()
 updateItemSlot c iid = do
   arItem <- getsState $ aspectRecordFromIid iid
   let assignSingleSlot lore = do
-        ItemSlots itemSlots <- getsSession sslots
+        ItemRoles itemSlots <- getsSession sroles
         let lSlots = itemSlots EM.! lore
         case lookup iid $ map swap $ EM.assocs lSlots of
           Nothing -> do
             let l = assignSlot lSlots
                 f = EM.insert l iid
-                newSlots = ItemSlots $ EM.adjust f lore itemSlots
-            modifySession $ \sess -> sess {sslots = newSlots}
+                newSlots = ItemRoles $ EM.adjust f lore itemSlots
+            modifySession $ \sess -> sess {sroles = newSlots}
           Just _l -> return ()  -- slot already assigned
       slore = IA.loreFromContainer arItem c
   assignSingleSlot slore
@@ -844,7 +844,7 @@ spotItemBag verbose c bag = do
   localTime <- getsState $ getLocalTime lid
   factionD <- getsState sfactionD
   -- Queried just once, so many copies of a new item can be reported. OK.
-  ItemSlots itemSlots <- getsSession sslots
+  ItemRoles itemSlots <- getsSession sroles
   sxhairOld <- getsSession sxhair
   let resetXhair = case c of
         CFloor _ p -> case sxhairOld of
@@ -982,7 +982,7 @@ moveItemUI iid k aid cstore1 cstore2 = do
   fact <- getsState $ (EM.! bfid b) . sfactionD
   let underAI = isAIFact fact
   mleader <- getsClient sleader
-  ItemSlots itemSlots <- getsSession sslots
+  ItemRoles itemSlots <- getsSession sroles
   case lookup iid $ map swap $ EM.assocs $ itemSlots EM.! SItem of
     Just _l ->
       -- So far organs can't be put into stash, so no need to call
