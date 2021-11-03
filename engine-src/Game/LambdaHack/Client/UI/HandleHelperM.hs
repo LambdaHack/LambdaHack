@@ -218,15 +218,16 @@ pickLeaderWithPointer leader = do
            Just (aid, b, _) -> pick (aid, b)
 
 itemOverlay :: MonadClientUI m
-            => LevelId -> [(ItemId, ItemQuant)] -> ItemDialogMode -> m OKX
-itemOverlay lid iids dmode = do
+            => [(ItemId, ItemQuant)] -> ItemDialogMode -> m OKX
+itemOverlay iids dmode = do
   sccui <- getsSession sccui
   side <- getsClient sside
+  arena <- getArenaUI
   discoBenefit <- getsClient sdiscoBenefit
   fontSetup <- getFontSetup
   let displayRanged =
         dmode `notElem` [MStore COrgan, MLore SOrgan, MLore STrunk, MLore SBody]
-  okx <- getsState $ itemOverlayFromState lid iids displayRanged
+  okx <- getsState $ itemOverlayFromState arena iids displayRanged
                                           sccui side discoBenefit fontSetup
   return $! okx
 
@@ -234,10 +235,10 @@ itemOverlayFromState :: LevelId -> [(ItemId, ItemQuant)] -> Bool
                      -> CCUI -> FactionId -> DiscoveryBenefit -> FontSetup
                      -> State
                      -> OKX
-itemOverlayFromState lid iids displayRanged sccui side discoBenefit
+itemOverlayFromState arena iids displayRanged sccui side discoBenefit
                      FontSetup{..} s =
   let CCUI{coscreen=ScreenContent{rwidth}} = sccui
-      localTime = getLocalTime lid s
+      localTime = getLocalTime arena s
       itemToF = flip itemToFull s
       factionD = sfactionD s
       attrCursor = Color.defAttr {Color.bg = Color.HighlightNoneCursor}

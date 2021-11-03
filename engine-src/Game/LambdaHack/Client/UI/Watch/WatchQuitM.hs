@@ -308,7 +308,6 @@ viewLoreItems :: forall m . MonadClientUI m
               -> m K.KM
 viewLoreItems menuName trunkBag prompt promptFun dmode = do
   CCUI{coscreen=ScreenContent{rheight}} <- getsSession sccui
-  arena <- getArenaUI
   itemToF <- getsState $ flip itemToFull
   let iids = sortIids itemToF $ EM.assocs trunkBag
       viewAtSlot :: MenuSlot -> m K.KM
@@ -323,7 +322,7 @@ viewLoreItems menuName trunkBag prompt promptFun dmode = do
           _ -> error $ "" `showFailure` km
   msgAdd MsgPromptGeneric prompt
   let keys = [K.spaceKM, K.mkChar '<', K.mkChar '>', K.escKM]
-  okx <- itemOverlay arena iids dmode
+  okx <- itemOverlay iids dmode
   sli <- overlayToSlideshow (rheight - 2) keys okx
   ekm <- displayChoiceScreenWithDefItemKey
            (okxItemLoreInline promptFun 0 iids) sli keys menuName

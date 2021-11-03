@@ -566,7 +566,6 @@ runDefInventory :: MonadClientUI m
                 -> m (Either Text ResultItemDialogMode)
 runDefInventory keyDefs promptChosen _leader dmode iids = do
   CCUI{coscreen=ScreenContent{rheight}} <- getsSession sccui
-  arena <- getArenaUI
   let slotDef :: MenuSlot -> Either Text ResultItemDialogMode
       slotDef slot =
         let iid = fst $ iids !! fromEnum slot
@@ -583,7 +582,7 @@ runDefInventory keyDefs promptChosen _leader dmode iids = do
   runDefMessage keyDefs promptChosen
   let itemKeys = map fst keyDefs
       keys = rights $ map (defLabel . snd) keyDefs
-  okx <- itemOverlay arena iids dmode
+  okx <- itemOverlay iids dmode
   sli <- overlayToSlideshow (rheight - 2) keys okx
   ekm <- displayChoiceScreenWithDefItemKey
            (okxItemLoreInline promptFun 0 iids) sli itemKeys (show dmode)
