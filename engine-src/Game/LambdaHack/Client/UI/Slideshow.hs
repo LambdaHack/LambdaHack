@@ -2,7 +2,7 @@
 -- | Slideshows.
 module Game.LambdaHack.Client.UI.Slideshow
   ( FontOverlayMap, maxYofFontOverlayMap
-  , KeyOrSlot, MenuSlot, natSlots, oddSlot
+  , KeyOrSlot, MenuSlot, natSlots
   , ButtonWidth(..)
   , KYX, xytranslateKXY, xtranslateKXY, ytranslateKXY, yrenumberKXY
   , OKX, emptyOKX, xytranslateOKX, sideBySideOKX, labDescOKX
@@ -43,9 +43,6 @@ newtype MenuSlot = MenuSlot Int
 natSlots :: [MenuSlot]
 {-# INLINE natSlots #-}
 natSlots = [MenuSlot 0 ..]
-
-oddSlot :: MenuSlot
-oddSlot = MenuSlot (-1)
 
 -- TODO: probably best merge the PointUI into that and represent
 -- the position as characters, too, translating to UI positions as needed.

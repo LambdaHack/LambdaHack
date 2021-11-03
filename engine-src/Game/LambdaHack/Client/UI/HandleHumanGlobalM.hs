@@ -1660,23 +1660,21 @@ generateMenu cmdSemInCxtOfKM blurb kdsRaw gameInfo menuName = do
       okxBindings = ( EM.singleton squareFont
                       $ offsetOverlay $ map (attrStringToAL . snd) bindings
                     , zipWith generate [0..] bindings )
-      titleLine = rtitle corule ++ " "
-                  ++ showVersion (rexeVersion corule) ++ " "
-      titleLines = zip (repeat Nothing)
-                       (map stringToAL $
-                          ["", titleLine ++ "[" ++ rwebAddress ++ "]", ""]
+      titleLine =
+        rtitle corule ++ " " ++ showVersion (rexeVersion corule) ++ " "
+      titleAndInfo = map stringToAL
+                         ([ ""
+                          , titleLine ++ "[" ++ rwebAddress ++ "]"
+                          , "" ]
                           ++ gameInfo)
-      titleKey = ( Right oddSlot
-                 , ( PointUI (2 * length titleLine) 1
-                   , ButtonWidth squareFont (2 + length rwebAddress) ) )
-      okxTitle = ( EM.singleton squareFont $ offsetOverlay $ map snd titleLines
-                 , [titleKey] )
+      webButton = ( Left $ K.mkChar '@'  -- to start the menu not here
+                  , ( PointUI (2 * length titleLine) 1
+                    , ButtonWidth squareFont (2 + length rwebAddress) ) )
+      okxTitle = ( EM.singleton squareFont $ offsetOverlay titleAndInfo
+                 , [webButton] )
       okx = xytranslateOKX 2 0
-            $ sideBySideOKX 2 (length titleLines) okxTitle okxBindings
-  menuIxMap <- getsSession smenuIxMap
-  unless (menuName `M.member` menuIxMap) $
-    modifySession $ \sess -> sess {smenuIxMap = M.insert menuName 1 menuIxMap}
-  let prepareBlurb ovs =
+            $ sideBySideOKX 2 (length titleAndInfo) okxTitle okxBindings
+      prepareBlurb ovs =
         let introLen = 1 + maxYofFontOverlayMap ovs
             start0 = max 0 (rheight - introLen
                             - if isSquareFont propFont then 1 else 2)
@@ -1688,10 +1686,10 @@ generateMenu cmdSemInCxtOfKM blurb kdsRaw gameInfo menuName = do
         Just (_, _, _, mblurbRight) -> case mblurbRight of
           Nothing -> returnDefaultOKS
           Just blurbRight -> return (prepareBlurb blurbRight, [])
-        Nothing | ekm == Right oddSlot -> returnDefaultOKS
+        Nothing | ekm == Left (K.mkChar '@') -> returnDefaultOKS
         Nothing -> error $ "generateMenu: unexpected key:"
                            `showFailure` ekm
-      keys = [K.leftKM, K.rightKM, K.escKM]
+      keys = [K.leftKM, K.rightKM, K.escKM, K.mkChar '@']
       loop = do
         kmkm <- displayChoiceScreenWithRightPaneKMKM displayInRightPane True
                                                      menuName ColorFull True
@@ -1704,14 +1702,14 @@ generateMenu cmdSemInCxtOfKM blurb kdsRaw gameInfo menuName = do
           Left (km@(K.KM {key=K.Right}), ekm) -> case ekm `lookup` kds of
             Just (_, cmd, _, _) -> cmdSemInCxtOfKM km cmd
             Nothing -> weaveJust <$> failWith "never mind"
-          Left (km, _) -> case Left km `lookup` kds of
-            Just (_, cmd, _, _) -> cmdSemInCxtOfKM km cmd
-            Nothing -> weaveJust <$> failWith "never mind"
-          Right slot | slot == oddSlot -> do
+          Left (K.KM {key=K.Char '@'}, _)-> do
             success <- tryOpenBrowser rwebAddress
             if success
             then generateMenu cmdSemInCxtOfKM blurb kdsRaw gameInfo menuName
             else weaveJust <$> failWith "failed to open web browser"
+          Left (km, _) -> case Left km `lookup` kds of
+            Just (_, cmd, _, _) -> cmdSemInCxtOfKM km cmd
+            Nothing -> weaveJust <$> failWith "never mind"
           Right slot -> case Right slot `lookup` kds of
             Just (_, cmd, _, _) -> cmdSemInCxtOfKM K.escKM cmd
             Nothing -> weaveJust <$> failWith "never mind"
