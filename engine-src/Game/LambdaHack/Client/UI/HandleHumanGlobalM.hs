@@ -17,8 +17,7 @@ module Game.LambdaHack.Client.UI.HandleHumanGlobalM
   , alterDirHuman, alterWithPointerHuman, closeDirHuman
   , helpHuman, hintHuman, dashboardHuman, itemMenuHuman, chooseItemMenuHuman
   , mainMenuHuman, mainMenuAutoOnHuman, mainMenuAutoOffHuman
-  , settingsMenuHuman, challengeMenuHuman
-  , gameTutorialToggle, gameDifficultyIncr
+  , settingsMenuHuman, challengeMenuHuman, gameDifficultyIncr
   , gameFishToggle, gameGoodsToggle, gameWolfToggle, gameKeeperToggle
   , gameScenarioIncr
     -- * Global commands that never take time
@@ -1716,6 +1715,8 @@ mainMenuHuman cmdSemInCxtOfKM = do
   CCUI{coscreen=ScreenContent{rintroScreen}} <- getsSession sccui
   FontSetup{propFont} <- getFontSetup
   gameMode <- getGameMode
+  curTutorial <- getsSession scurTutorial
+  overrideTut <- getsSession soverrideTut
   curChal <- getsClient scurChal
   let offOn b = if b then "on" else "off"
       -- Key-description-command tuples.
@@ -1727,14 +1728,16 @@ mainMenuHuman cmdSemInCxtOfKM = do
             , ("@ switch to dashboard", Dashboard, Nothing)
             , ("^ back to playing", AutomateBack, Nothing) ]
       gameName = MK.mname gameMode
+      displayTutorialHints = fromMaybe curTutorial overrideTut
       gameInfo = map T.unpack
                    [ "Now playing:" <+> gameName
                    , ""
-                   , "     with difficulty:" <+> tshow (cdiff curChal)
-                   , "         cold fish:" <+> offOn (cfish curChal)
-                   , "       ready goods:" <+> offOn (cgoods curChal)
-                   , "         lone wolf:" <+> offOn (cwolf curChal)
-                   , "     finder keeper:" <+> offOn (ckeeper curChal)
+                   , "      with difficulty:" <+> tshow (cdiff curChal)
+                   , "            cold fish:" <+> offOn (cfish curChal)
+                   , "          ready goods:" <+> offOn (cgoods curChal)
+                   , "            lone wolf:" <+> offOn (cwolf curChal)
+                   , "        finder keeper:" <+> offOn (ckeeper curChal)
+                   , "       tutorial hints:" <+> offOn displayTutorialHints
                    , "" ]
       glueLines (l1 : l2 : rest) =
         if | null l1 -> l1 : glueLines (l2 : rest)
@@ -1823,7 +1826,7 @@ settingsMenuHuman cmdSemInCxtOfKM = do
             , ( tdoctrine, Doctrine
               , textToBlurb "* squad doctrine\nThis setting affects the ongoing game, but does not persist to the next games. It determines the behaviour of henchmen (non-pointman characters) in the party and, in particular, if they are permitted to move autonomously or fire opportunistically (assuming they are able to, usually due to rare equipment). This setting has a poor UI that will be improved in the future." )
             , ( toverride, OverrideTut
-              , textToBlurb "* override tutorial hints\nThis setting affects the ongoing and the next games. It determines whether tutorial hints are, respectively, not overridden with respect to the setting that was chosen when starting the current game, forced to be off, forced to be on." )
+              , textToBlurb "* override tutorial hints\nThis setting affects the ongoing and the next games. It determines whether tutorial hints are, respectively, not overridden with respect to the default game mode setting, forced to be off, forced to be on. Tutorial hints are rendered as pink messages and can afterwards be re-read from message history." )
             , ( "^ back to main menu", MainMenu, Just EM.empty ) ]
       gameInfo = map T.unpack
                    [ "Tweak convenience settings:"
@@ -1843,8 +1846,6 @@ challengeMenuHuman cmdSemInCxtOfKM = do
   FontSetup{..} <- getFontSetup
   svictories <- getsClient svictories
   snxtScenario <- getsSession snxtScenario
-  nxtTutorial <- getsSession snxtTutorial
-  overrideTut <- getsSession soverrideTut
   nxtChal <- getsClient snxtChal
   let (gameModeId, gameMode) = nxtGameMode cops snxtScenario
       victories = case EM.lookup gameModeId svictories of
@@ -1853,10 +1854,6 @@ challengeMenuHuman cmdSemInCxtOfKM = do
       star t = if victories > 0 then "*" <> t else t
       tnextScenario = "@ adventure:" <+> star (MK.mname gameMode)
       offOn b = if b then "on" else "off"
-      starTut t = if isJust overrideTut then "*" <> t else t
-      displayTutorialHints = fromMaybe nxtTutorial overrideTut
-      tnextTutorial = "@ tutorial hints:"
-                      <+> starTut (offOn displayTutorialHints)
       tnextDiff = "@ difficulty level:" <+> tshow (cdiff nxtChal)
       tnextFish = "@ cold fish (rather hard):" <+> offOn (cfish nxtChal)
       tnextGoods = "@ ready goods (hard):" <+> offOn (cgoods nxtChal)
@@ -1892,8 +1889,6 @@ challengeMenuHuman cmdSemInCxtOfKM = do
             $ textToAS t ) ]
       -- Key-description-command-text tuples.
       kds = [ ( tnextScenario, GameScenarioIncr, blurb )
-            , ( tnextTutorial, GameTutorialToggle
-              , textToBlurb "* tutorial hints\nThis determines whether tutorial hint messages will be shown in the next game that's about to be started. They are rendered in pink and can be re-read from message history. Display of tutorial hints in the current game can be overridden from the convenience settings menu.")
             , ( tnextDiff, GameDifficultyIncr
               , textToBlurb "* difficulty level\nThis determines the difficulty of survival in the next game that's about to be started. Lower numbers result in easier game. In particular, difficulty below 5 multiplies hitpoints of player characters and difficulty over 5 multiplies hitpoints of their enemies. Game score scales with difficulty.")
             , ( tnextFish, GameFishToggle
@@ -1909,16 +1904,6 @@ challengeMenuHuman cmdSemInCxtOfKM = do
       gameInfo = map T.unpack [ "Setup and start new game:"
                               , "" ]
   generateMenu cmdSemInCxtOfKM EM.empty kds gameInfo "challenge"
-
--- * GameTutorialToggle
-
-gameTutorialToggle :: MonadClientUI m  => m ()
-gameTutorialToggle = do
-  nxtTutorial <- getsSession snxtTutorial
-  overrideTut <- getsSession soverrideTut
-  let displayTutorialHints = fromMaybe nxtTutorial overrideTut
-  modifySession $ \sess -> sess { snxtTutorial = not displayTutorialHints
-                                , soverrideTut = Nothing }
 
 -- * GameDifficultyIncr
 

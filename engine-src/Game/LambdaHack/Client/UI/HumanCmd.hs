@@ -133,7 +133,6 @@ data HumanCmd =
   | MainMenuAutoOff
   | Dashboard
     -- Below this line, commands do not take time.
-  | GameTutorialToggle
   | GameDifficultyIncr
   | GameFishToggle
   | GameGoodsToggle

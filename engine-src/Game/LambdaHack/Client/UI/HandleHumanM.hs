@@ -136,8 +136,6 @@ cmdSemanticsLeader cmd = case cmd of
   MainMenuAutoOn -> CmdNoNeed $ mainMenuAutoOnHuman cmdSemInCxtOfKM
   MainMenuAutoOff -> CmdNoNeed $ mainMenuAutoOffHuman cmdSemInCxtOfKM
   Dashboard -> CmdNoNeed $ dashboardHuman cmdSemInCxtOfKM
-  GameTutorialToggle ->
-    CmdNoNeed $ gameTutorialToggle >> challengeMenuHuman cmdSemInCxtOfKM
   GameDifficultyIncr ->
     CmdNoNeed $ gameDifficultyIncr >> challengeMenuHuman cmdSemInCxtOfKM
   GameFishToggle ->
