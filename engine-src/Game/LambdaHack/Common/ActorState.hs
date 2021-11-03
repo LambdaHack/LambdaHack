@@ -5,8 +5,7 @@ module Game.LambdaHack.Common.ActorState
   , fidActorRegularIds, foeRegularAssocs, foeRegularList
   , friendRegularAssocs, friendRegularList, bagAssocs, bagAssocsK
   , posToBig, posToBigAssoc, posToProjs, posToProjAssocs
-  , posToAids, posToAidAssocs, calculateTotal, itemPrice, findIid
-  , combinedGround, combinedOrgan, combinedEqp, combinedItems
+  , posToAids, posToAidAssocs, calculateTotal, itemPrice, findIid, combinedItems
   , getActorBody, getActorMaxSkills, actorCurrentSkills, canTraverse
   , getCarriedAssocsAndTrunk, getContainerBag
   , getFloorBag, getEmbedBag, getBodyStoreBag, getFactionStashBag
@@ -151,23 +150,6 @@ findIid leader fid iid s =
         in concatMap itemsOfCStore stores
       items = concatMap itemsOfActor actors
   in map snd $ filter ((== iid) . fst) items
-
-combinedGround :: FactionId -> State -> ItemBag
-combinedGround fid s =
-  let bs = inline fidActorNotProjGlobalAssocs fid s
-  in EM.unionsWith mergeItemQuant
-     $ map (\(_, b) -> getFloorBag (blid b) (bpos b) s) bs
-
--- Trunk not considered (if stolen).
-combinedOrgan :: FactionId -> State -> ItemBag
-combinedOrgan fid s =
-  let bs = inline fidActorNotProjGlobalAssocs fid s
-  in EM.unionsWith mergeItemQuant $ map (borgan . snd) bs
-
-combinedEqp :: FactionId -> State -> ItemBag
-combinedEqp fid s =
-  let bs = inline fidActorNotProjGlobalAssocs fid s
-  in EM.unionsWith mergeItemQuant $ map (beqp . snd) bs
 
 -- Trunk not considered (if stolen).
 combinedItems :: FactionId -> State -> ItemBag
