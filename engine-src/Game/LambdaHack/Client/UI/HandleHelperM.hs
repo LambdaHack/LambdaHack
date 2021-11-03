@@ -8,7 +8,7 @@ module Game.LambdaHack.Client.UI.HandleHelperM
   , placesFromState, placesOverlay
   , describeMode, modesOverlay
   , pickNumber, guardItemSize, lookAtItems, lookAtStash, lookAtPosition
-  , displayOneMenuItem, okxItemLorePointedAt, itemDescOverlays
+  , displayOneMenuItem, okxItemLoreInline, okxItemLoreMsg, itemDescOverlays
   , cycleLore, spoilsBlurb, ppContainerWownW, nxtGameMode
 #ifdef EXPOSE_INTERNAL
     -- * Internal operations
@@ -919,35 +919,47 @@ displayOneMenuItem renderOneItem extraKeys slotBound slot = do
     K.Down -> displayOneMenuItem renderOneItem extraKeys slotBound $ succ slot
     _ -> return km
 
-okxItemLorePointedAt :: MonadClientUI m
-                     => Bool -> (ItemId -> ItemFull -> Int -> Text)
-                     -> Int -> [(ItemId, ItemQuant)] -> Int -> MenuSlot
-                     -> m OKX
-okxItemLorePointedAt inlineMsg promptFun meleeSkill iids widthRaw slot = do
+okxItemLoreInline :: MonadClientUI m
+                  => (ItemId -> ItemFull -> Int -> Text)
+                  -> Int -> [(ItemId, ItemQuant)] -> Int -> MenuSlot
+                  -> m OKX
+okxItemLoreInline promptFun meleeSkill iids widthRaw slot = do
   FontSetup{..} <- getFontSetup
   let (iid, kit@(k, _)) = iids !! fromEnum slot
       -- Some prop fonts are wider than mono (e.g., in dejavuBold font set),
       -- so the width in these artificial texts full of digits and strange
       -- characters needs to be smaller than @rwidth - 2@ that would suffice
       -- for mono.
-      width = if inlineMsg then widthRaw - 5 else widthRaw
+      width = widthRaw - 5
   itemFull <- getsState $ itemToFull iid
-  (ovLab, ovDesc) <- itemDescOverlays True meleeSkill CGround iid kit itemFull width
+  (ovLab, ovDesc) <- itemDescOverlays True meleeSkill CGround iid kit itemFull
+                                      width
   let prompt = promptFun iid itemFull k
       promptBlurb | T.null prompt = []
                   | otherwise = offsetOverlay $ splitAttrString width width
                                 $ textFgToAS Color.Brown $ prompt <> "\n\n"
-  (descSym2, descBlurb2) <-
-    if inlineMsg
-    then do
-      let len = length promptBlurb
-      return ( ytranslateOverlay len ovLab
-             , promptBlurb ++ ytranslateOverlay len ovDesc )
-    else do
-      msgAdd MsgPromptGeneric prompt
-      return (ovLab, ovDesc)
-  let ov = EM.insertWith (++) squareFont descSym2
+      len = length promptBlurb
+      descSym2 = ytranslateOverlay len ovLab
+      descBlurb2 = promptBlurb ++ ytranslateOverlay len ovDesc
+      ov = EM.insertWith (++) squareFont descSym2
            $ EM.singleton propFont descBlurb2
+  return (ov, [])
+
+okxItemLoreMsg :: MonadClientUI m
+               => (ItemId -> ItemFull -> Int -> Text)
+               -> Int -> [(ItemId, ItemQuant)] -> MenuSlot
+               -> m OKX
+okxItemLoreMsg promptFun meleeSkill iids slot = do
+  CCUI{coscreen=ScreenContent{rwidth}} <- getsSession sccui
+  FontSetup{..} <- getFontSetup
+  let (iid, kit@(k, _)) = iids !! fromEnum slot
+  itemFull <- getsState $ itemToFull iid
+  (ovLab, ovDesc) <- itemDescOverlays True meleeSkill CGround iid kit itemFull
+                                      rwidth
+  let prompt = promptFun iid itemFull k
+  msgAdd MsgPromptGeneric prompt
+  let ov = EM.insertWith (++) squareFont ovLab
+           $ EM.singleton propFont ovDesc
   return (ov, [])
 
 itemDescOverlays :: MonadClientUI m

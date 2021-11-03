@@ -325,10 +325,10 @@ viewLoreItems menuName trunkBag prompt promptFun dmode = do
           -- Lower width, to permit extra vertical space at the start,
           -- because gameover menu prompts are sometimes wide and/or long.
           let width = rwidth - 2
-          okxItemLorePointedAt True promptFun 0 iids width slot
+          okxItemLoreInline promptFun 0 iids width slot
       viewAtSlot :: MenuSlot -> m K.KM
       viewAtSlot slot = do
-        let renderOneItem = okxItemLorePointedAt False promptFun 0 iids rwidth
+        let renderOneItem = okxItemLoreMsg promptFun 0 iids
             extraKeys = []
             slotBound = length iids - 1
         km <- displayOneMenuItem renderOneItem extraKeys slotBound slot

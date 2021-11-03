@@ -583,7 +583,7 @@ runDefInventory :: MonadClientUI m
                 -> ItemDialogMode
                 -> [(ItemId, ItemQuant)]
                 -> m (Either Text ResultItemDialogMode)
-runDefInventory  keyDefs promptChosen leader cCur iids = do
+runDefInventory keyDefs promptChosen leader cCur iids = do
   CCUI{coscreen=ScreenContent{rheight}} <- getsSession sccui
   body <- getsState $ getActorBody leader
   let slotDef :: MenuSlot -> Either Text ResultItemDialogMode
@@ -605,7 +605,7 @@ runDefInventory  keyDefs promptChosen leader cCur iids = do
       keys = rights $ map (defLabel . snd) keyDefs
   sli <- overlayToSlideshow (rheight - 2) keys okx
   ekm <- displayChoiceScreenWithDefItemKey
-           (okxItemLorePointedAt True promptFun 0 iids) sli itemKeys cCur
+           (okxItemLoreInline promptFun 0 iids) sli itemKeys cCur
   runDefAction keyDefs slotDef ekm
 
 skillCloseUp :: MonadClientUI m => ActorId -> MenuSlot -> m (Text, AttrString)
