@@ -8,7 +8,7 @@ module Game.LambdaHack.Client.UI.HandleHelperM
   , placesFromState, placesOverlay
   , describeMode, modesOverlay
   , pickNumber, guardItemSize, lookAtItems, lookAtStash, lookAtPosition
-  , displayOneMenuItem, okxItemLorePointedAt
+  , displayOneMenuItem, okxItemLorePointedAt, itemDescOverlays
   , cycleLore, spoilsBlurb, ppContainerWownW, nxtGameMode
 #ifdef EXPOSE_INTERNAL
     -- * Internal operations
@@ -925,23 +925,15 @@ okxItemLorePointedAt :: MonadClientUI m
                      -> m OKX
 okxItemLorePointedAt inlineMsg promptFun meleeSkill iids widthRaw slot = do
   FontSetup{..} <- getFontSetup
-  side <- getsClient sside
-  arena <- getArenaUI
-  let (iid2, kit2@(k, _)) = iids !! fromEnum slot
+  let (iid, kit@(k, _)) = iids !! fromEnum slot
       -- Some prop fonts are wider than mono (e.g., in dejavuBold font set),
       -- so the width in these artificial texts full of digits and strange
       -- characters needs to be smaller than @rwidth - 2@ that would suffice
       -- for mono.
       width = if inlineMsg then widthRaw - 5 else widthRaw
-  itemFull <- getsState $ itemToFull iid2
-  localTime <- getsState $ getLocalTime arena
-  factionD <- getsState sfactionD
-  -- The hacky level 0 marks items never seen, but sent by server at gameover.
-  jlid <- getsSession $ fromMaybe (toEnum 0) <$> EM.lookup iid2 . sitemUI
-  let descAs = itemDesc width True side factionD meleeSkill
-                        CGround localTime jlid itemFull kit2
-      (ovLab, ovDesc) = labDescOverlay squareFont width descAs
-      prompt = promptFun iid2 itemFull k
+  itemFull <- getsState $ itemToFull iid
+  (ovLab, ovDesc) <- itemDescOverlays True meleeSkill CGround iid kit itemFull width
+  let prompt = promptFun iid itemFull k
       promptBlurb | T.null prompt = []
                   | otherwise = offsetOverlay $ splitAttrString width width
                                 $ textFgToAS Color.Brown $ prompt <> "\n\n"
@@ -957,6 +949,22 @@ okxItemLorePointedAt inlineMsg promptFun meleeSkill iids widthRaw slot = do
   let ov = EM.insertWith (++) squareFont descSym2
            $ EM.singleton propFont descBlurb2
   return (ov, [])
+
+itemDescOverlays :: MonadClientUI m
+                 => Bool -> Int -> CStore -> ItemId -> ItemQuant -> ItemFull
+                 -> Int
+                 -> m (Overlay, Overlay)
+itemDescOverlays markParagraphs meleeSkill cstore iid kit itemFull width = do
+  FontSetup{squareFont} <- getFontSetup
+  side <- getsClient sside
+  arena <- getArenaUI
+  localTime <- getsState $ getLocalTime arena
+  factionD <- getsState sfactionD
+  -- The hacky level 0 marks items never seen, but sent by server at gameover.
+  jlid <- getsSession $ fromMaybe (toEnum 0) <$> EM.lookup iid . sitemUI
+  let descAs = itemDesc width markParagraphs side factionD meleeSkill
+                        cstore localTime jlid itemFull kit
+  return $! labDescOverlay squareFont width descAs
 
 cycleLore :: MonadClientUI m => [m K.KM] -> [m K.KM] -> m ()
 cycleLore _ [] = return ()

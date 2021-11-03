@@ -1489,6 +1489,7 @@ itemMenuHuman leader cmdSemInCxtOfKM = do
   fontSetup@FontSetup{..} <- getFontSetup
   case itemSel of
     Just (iid, fromCStore, _) -> do
+      side <- getsClient sside
       b <- getsState $ getActorBody leader
       bUI <- getsSession $ getActorUI leader
       bag <- getsState $ getBodyStoreBag b fromCStore
@@ -1499,13 +1500,13 @@ itemMenuHuman leader cmdSemInCxtOfKM = do
           actorCurAndMaxSk <- getsState $ getActorMaxSkills leader
           itemFull <- getsState $ itemToFull iid
           localTime <- getsState $ getLocalTime (blid b)
-          found <- getsState $ findIid leader (bfid b) iid
-          factionD <- getsState sfactionD
-          jlid <- getsSession $ (EM.! iid) . sitemUI
+          found <- getsState $ findIid leader side iid
           let !_A = assert (not (null found) || fromCStore == CGround
                             `blame` (iid, leader)) ()
               fAlt (aid, (_, store)) = aid /= leader || store /= fromCStore
               foundAlt = filter fAlt found
+              markParagraphs = rheight >= 45
+              meleeSkill = Ability.getSk Ability.SkHurtMelee actorCurAndMaxSk
               partRawActor aid = getsSession (partActor . getActorUI aid)
               ppLoc aid store = do
                 parts <- ppContainerWownW partRawActor
@@ -1513,14 +1514,11 @@ itemMenuHuman leader cmdSemInCxtOfKM = do
                                           (CActor aid store)
                 return $! "[" ++ T.unpack (makePhrase parts) ++ "]"
           foundTexts <- mapM (\(aid, (_, store)) -> ppLoc aid store) foundAlt
+          (ovLab, ovDesc) <-
+            itemDescOverlays markParagraphs meleeSkill fromCStore iid kit
+                             itemFull rwidth
           let foundPrefix = textToAS $
                 if null foundTexts then "" else "The item is also in:"
-              markParagraphs = rheight >= 45
-              descAs = itemDesc rwidth markParagraphs (bfid b) factionD
-                                (Ability.getSk Ability.SkHurtMelee
-                                               actorCurAndMaxSk)
-                                fromCStore localTime jlid itemFull kit
-              (ovLab, ovDesc) = labDescOverlay squareFont rwidth descAs
               ovPrefix = ytranslateOverlay (length ovDesc)
                          $ offsetOverlay
                          $ splitAttrString rwidth rwidth foundPrefix
@@ -1535,7 +1533,7 @@ itemMenuHuman leader cmdSemInCxtOfKM = do
               ovFound = ovPrefix ++ ovFoundRaw
           report <- getReportUI True
           CCUI{coinput} <- getsSession sccui
-          mstash <- getsState $ \s -> gstash $ sfactionD s EM.! bfid b
+          mstash <- getsState $ \s -> gstash $ sfactionD s EM.! side
           curTutorial <- getsSession scurTutorial
           overrideTut <- getsSession soverrideTut
           let displayTutorialHints = fromMaybe curTutorial overrideTut
@@ -1596,7 +1594,7 @@ itemMenuHuman leader cmdSemInCxtOfKM = do
               _ | km `elem` foundKeys -> case km of
                 K.KM{key=K.Fun n} -> do
                   let (newAid, (bNew, newCStore)) = foundAlt !! (n - 1)
-                  fact <- getsState $ (EM.! bfid bNew) . sfactionD
+                  fact <- getsState $ (EM.! side) . sfactionD
                   let (autoDun, _) = autoDungeonLevel fact
                   if | blid bNew /= blid b && autoDun ->
                        weaveJust <$> failSer NoChangeDunLeader
