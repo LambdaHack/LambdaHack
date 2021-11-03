@@ -344,7 +344,7 @@ transition leader psuit prompt promptGeneric permitMulitple
     ISuitable -> prompt body bodyUI actorCurAndMaxSk cCur s <> ":"
     IAll -> promptGeneric body bodyUI actorCurAndMaxSk cCur s <> ":"
   let keyDefsCommon :: [(K.KM, DefItemKey m)]
-      keyDefsCommon =
+      keyDefsCommon = filter (defCond . snd) $
         [ let km = K.mkChar '<'
           in (km, changeContainerDef Backward $ Right km)
         , let km = K.mkChar '>'
@@ -410,30 +410,37 @@ transition leader psuit prompt promptGeneric permitMulitple
                    let !_A = assert (isNothing err `blame` err) ()
                    recCall cCur cRest itemDialogState
                })
-      runModesSpecial :: OKX -> (MenuSlot -> ResultItemDialogMode)
-                      -> m (Either Text ResultItemDialogMode)
-      runModesSpecial okx resultConstructor = do
-        let keyDefsSpecial = filter (defCond . snd) keyDefsCommon
-            slotDefSpecial :: MenuSlot -> Either Text ResultItemDialogMode
-            slotDefSpecial = Right . resultConstructor
-        runDefMessage keyDefsSpecial promptChosen
-        let itemKeys = map fst keyDefsSpecial
-            keys = rights $ map (defLabel . snd) keyDefsSpecial
-        sli <- overlayToSlideshow (rheight - 2) keys okx
-        ekm <- displayChoiceScreenWithRightPane
-                 (inventoryInRightPane leader [] cCur) True
-                 (show cCur) ColorFull False sli itemKeys
-        runDefAction keyDefsSpecial slotDefSpecial ekm
   case cCur of
     MSkills -> do
       okx <- skillsOverlay leader
-      runModesSpecial okx RSkills
+      runDefMessage keyDefsCommon promptChosen
+      let itemKeys = map fst keyDefsCommon
+          keys = rights $ map (defLabel . snd) keyDefsCommon
+      sli <- overlayToSlideshow (rheight - 2) keys okx
+      ekm <- displayChoiceScreenWithRightPane
+               (inventoryInRightPane leader [] cCur) True
+               (show cCur) ColorFull False sli itemKeys
+      runDefAction keyDefsCommon (Right . RSkills) ekm
     MPlaces -> do
       okx <- placesOverlay
-      runModesSpecial okx RPlaces
+      runDefMessage keyDefsCommon promptChosen
+      let itemKeys = map fst keyDefsCommon
+          keys = rights $ map (defLabel . snd) keyDefsCommon
+      sli <- overlayToSlideshow (rheight - 2) keys okx
+      ekm <- displayChoiceScreenWithRightPane
+               (inventoryInRightPane leader [] cCur) True
+               (show cCur) ColorFull False sli itemKeys
+      runDefAction keyDefsCommon (Right . RPlaces) ekm
     MModes -> do
       okx <- modesOverlay
-      runModesSpecial okx RModes
+      runDefMessage keyDefsCommon promptChosen
+      let itemKeys = map fst keyDefsCommon
+          keys = rights $ map (defLabel . snd) keyDefsCommon
+      sli <- overlayToSlideshow (rheight - 2) keys okx
+      ekm <- displayChoiceScreenWithRightPane
+               (inventoryInRightPane leader [] cCur) True
+               (show cCur) ColorFull False sli itemKeys
+      runDefAction keyDefsCommon (Right . RModes) ekm
     _ -> do
       bagHuge <- getsState $ \s -> accessModeBag leader s cCur
       itemToF <- getsState $ flip itemToFull
@@ -476,7 +483,7 @@ transition leader psuit prompt promptGeneric permitMulitple
                 MStore rstore -> return $! Right $ RStore rstore $ map fst iids
                 _ -> error "transition: multiple items not for MStore"
             }
-          keyDefs = filter (defCond . snd) $ keyDefsCommon ++ keyDefsExtra
+          keyDefs = keyDefsCommon ++ filter (defCond . snd) keyDefsExtra
           slotDef :: MenuSlot -> Either Text ResultItemDialogMode
           slotDef slot =
             let iid = fst $ iids !! fromEnum slot
