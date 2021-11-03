@@ -7,7 +7,7 @@ module Game.LambdaHack.Client.UI.InventoryM
     -- * Internal operations
   , ItemDialogState(..), accessModeBag, storeItemPrompt, getItem
   , DefItemKey(..), transition, runDefMessage, runDefAction
-  , inventoryInRightPane
+  , skillsInRightPane, placesInRightPane, inventoryInRightPane
 #endif
   ) where
 
@@ -325,7 +325,7 @@ transition :: forall m. MonadClientUI m
            -> m (Either Text ResultItemDialogMode)
 transition leader psuit prompt promptGeneric permitMulitple
            cCur cRest itemDialogState = do
-  CCUI{coscreen=ScreenContent{rheight}} <- getsSession sccui
+  CCUI{coscreen=ScreenContent{rwidth, rheight}} <- getsSession sccui
   let recCall cCur2 cRest2 itemDialogState2 = do
         -- Pointman could have been changed by keypresses near the end of
         -- the current recursive call, so refresh it for the next call.
@@ -410,6 +410,20 @@ transition leader psuit prompt promptGeneric permitMulitple
                    let !_A = assert (isNothing err `blame` err) ()
                    recCall cCur cRest itemDialogState
                })
+      displayChoiceScreenWithDefItemKey :: (Int -> MenuSlot -> m OKX)
+                                        -> Slideshow
+                                        -> [K.KM]
+                                        -> m KeyOrSlot
+      displayChoiceScreenWithDefItemKey f sli itemKeys = do
+        let g ekm = case ekm of
+              Left{} -> return emptyOKX
+              Right slot -> do
+                FontSetup{propFont} <- getFontSetup
+                if isSquareFont propFont
+                then return emptyOKX
+                else f (rwidth - 2) slot
+        displayChoiceScreenWithRightPane
+          g True (show cCur) ColorFull False sli itemKeys
   case cCur of
     MSkills -> do
       okx <- skillsOverlay leader
@@ -417,9 +431,8 @@ transition leader psuit prompt promptGeneric permitMulitple
       let itemKeys = map fst keyDefsCommon
           keys = rights $ map (defLabel . snd) keyDefsCommon
       sli <- overlayToSlideshow (rheight - 2) keys okx
-      ekm <- displayChoiceScreenWithRightPane
-               (inventoryInRightPane leader [] cCur) True
-               (show cCur) ColorFull False sli itemKeys
+      ekm <- displayChoiceScreenWithDefItemKey
+               (skillsInRightPane leader) sli itemKeys
       runDefAction keyDefsCommon (Right . RSkills) ekm
     MPlaces -> do
       okx <- placesOverlay
@@ -427,9 +440,8 @@ transition leader psuit prompt promptGeneric permitMulitple
       let itemKeys = map fst keyDefsCommon
           keys = rights $ map (defLabel . snd) keyDefsCommon
       sli <- overlayToSlideshow (rheight - 2) keys okx
-      ekm <- displayChoiceScreenWithRightPane
-               (inventoryInRightPane leader [] cCur) True
-               (show cCur) ColorFull False sli itemKeys
+      ekm <- displayChoiceScreenWithDefItemKey
+               placesInRightPane sli itemKeys
       runDefAction keyDefsCommon (Right . RPlaces) ekm
     MModes -> do
       okx <- modesOverlay
@@ -437,9 +449,10 @@ transition leader psuit prompt promptGeneric permitMulitple
       let itemKeys = map fst keyDefsCommon
           keys = rights $ map (defLabel . snd) keyDefsCommon
       sli <- overlayToSlideshow (rheight - 2) keys okx
-      ekm <- displayChoiceScreenWithRightPane
-               (inventoryInRightPane leader [] cCur) True
-               (show cCur) ColorFull False sli itemKeys
+      -- Modes would cover the whole screen, so we don't display in right pane.
+      -- But we display and highlight menu bullets.
+      ekm <- displayChoiceScreenWithDefItemKey
+               (\_ _ -> return emptyOKX) sli itemKeys
       runDefAction keyDefsCommon (Right . RModes) ekm
     _ -> do
       bagHuge <- getsState $ \s -> accessModeBag leader s cCur
@@ -497,9 +510,8 @@ transition leader psuit prompt promptGeneric permitMulitple
       let itemKeys = map fst keyDefs
           keys = rights $ map (defLabel . snd) keyDefs
       sli <- overlayToSlideshow (rheight - 2) keys okx
-      ekm <- displayChoiceScreenWithRightPane
-               (inventoryInRightPane leader iids cCur) True
-               (show cCur) ColorFull False sli itemKeys
+      ekm <- displayChoiceScreenWithDefItemKey
+               (inventoryInRightPane iids) sli itemKeys
       runDefAction keyDefs slotDef ekm
 
 runDefMessage :: MonadClientUI m
@@ -525,60 +537,47 @@ runDefAction keyDefs slotDef ekm = case ekm of
     Nothing -> error $ "unexpected key:" `showFailure` K.showKM km
   Right slot -> return $! slotDef slot
 
+skillsInRightPane :: MonadClientUI m => ActorId -> Int -> MenuSlot -> m OKX
+skillsInRightPane leader width slot = do
+  FontSetup{propFont} <- getFontSetup
+  (prompt, attrString) <- skillCloseUp leader slot
+  let promptAS | T.null prompt = []
+               | otherwise = textFgToAS Color.Brown $ prompt <> "\n\n"
+      ov = EM.singleton propFont $ offsetOverlay
+                                 $ splitAttrString width width
+                                 $ promptAS ++ attrString
+  return (ov, [])
+
+placesInRightPane :: MonadClientUI m => Int -> MenuSlot -> m OKX
+placesInRightPane width slot = do
+  COps{coplace} <- getsState scops
+  FontSetup{propFont} <- getFontSetup
+  soptions <- getsClient soptions
+  places <- getsState $ EM.assocs
+                        . placesFromState coplace (sexposePlaces soptions)
+  (prompt, blurbs) <-
+    placeCloseUp places (sexposePlaces soptions) slot
+  let promptAS | T.null prompt = []
+               | otherwise = textFgToAS Color.Brown $ prompt <> "\n\n"
+      ov = attrLinesToFontMap
+           $ map (second $ concatMap (splitAttrString width width))
+           $ (propFont, [promptAS]) : map (second $ map textToAS) blurbs
+  return (ov, [])
+
 inventoryInRightPane :: MonadClientUI m
-                     => ActorId -> [(ItemId, ItemQuant)] -> ItemDialogMode
-                     -> KeyOrSlot
-                     -> m OKX
-inventoryInRightPane leader iids c ekm = case ekm of
-  Left{} -> return emptyOKX
-  Right slot -> do
-    CCUI{coscreen=ScreenContent{rwidth}} <- getsSession sccui
-    FontSetup{propFont} <- getFontSetup
-    let -- Lower width, to permit extra vertical space at the start,
-        -- because gameover menu prompts are sometimes wide and/or long.
-       width = rwidth - 2
-    case c of
-      _ | isSquareFont propFont -> return emptyOKX
-      MSkills -> do
-        (prompt, attrString) <- skillCloseUp leader slot
-        let promptAS | T.null prompt = []
-                     | otherwise = textFgToAS Color.Brown $ prompt <> "\n\n"
-            ov = EM.singleton propFont $ offsetOverlay
-                                       $ splitAttrString width width
-                                       $ promptAS ++ attrString
-        return (ov, [])
-      MPlaces -> do
-        COps{coplace} <- getsState scops
-        soptions <- getsClient soptions
-        -- This is very slow when many places are exposed,
-        -- because this is computed once per place menu keypress.
-        -- Fortunately, the mode after entering a place and with pressing
-        -- up and down arrow keys is not quadratic, so should be used instead,
-        -- particularly with @sexposePlaces@.
-        places <- getsState $ EM.assocs
-                              . placesFromState coplace (sexposePlaces soptions)
-        (prompt, blurbs) <-
-          placeCloseUp places (sexposePlaces soptions) slot
-        let promptAS | T.null prompt = []
-                     | otherwise = textFgToAS Color.Brown $ prompt <> "\n\n"
-            ov = attrLinesToFontMap
-                 $ map (second $ concatMap (splitAttrString width width))
-                 $ (propFont, [promptAS]) : map (second $ map textToAS) blurbs
-        return (ov, [])
-      MModes -> return emptyOKX
-        -- modes cover the right part of screen, so let's keep it empty
-      _ -> do
-        let promptFun _iid _itemFull _k = ""
-              -- TODO, e.g., if the party still owns any copies, if the actor
-              -- was ever killed by us or killed ours, etc.
-              -- This can be the same prompt or longer than what entering
-              -- the item screen shows.
-        -- Some prop fonts are wider than mono (e.g., in dejavuBold font set),
-        -- so the width in these artificial texts full of digits and strange
-        -- characters needs to be smaller than @rwidth - 2@ that would suffice
-        -- for mono.
-        let widthAt = width - 5
-        okxItemLorePointedAt widthAt True promptFun 0 iids slot
+                     => [(ItemId, ItemQuant)] -> Int -> MenuSlot -> m OKX
+inventoryInRightPane iids width slot = do
+  let promptFun _iid _itemFull _k = ""
+        -- TODO, e.g., if the party still owns any copies, if the actor
+        -- was ever killed by us or killed ours, etc.
+        -- This can be the same prompt or longer than what entering
+        -- the item screen shows.
+  -- Some prop fonts are wider than mono (e.g., in dejavuBold font set),
+  -- so the width in these artificial texts full of digits and strange
+  -- characters needs to be smaller than @rwidth - 2@ that would suffice
+  -- for mono.
+  let widthAt = width - 5
+  okxItemLorePointedAt widthAt True promptFun 0 iids slot
 
 skillCloseUp :: MonadClientUI m => ActorId -> MenuSlot -> m (Text, AttrString)
 skillCloseUp leader slot = do
