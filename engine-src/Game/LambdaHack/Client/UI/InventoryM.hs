@@ -327,7 +327,6 @@ transition :: forall m. MonadClientUI m
            -> m (Either Text ResultItemDialogMode)
 transition leader psuit prompt promptGeneric permitMulitple
            cCur cRest itemDialogState = do
-  CCUI{coscreen=ScreenContent{rheight}} <- getsSession sccui
   let recCall cCur2 cRest2 itemDialogState2 = do
         -- Pointman could have been changed by keypresses near the end of
         -- the current recursive call, so refresh it for the next call.
@@ -413,7 +412,7 @@ transition leader psuit prompt promptGeneric permitMulitple
                    recCall cCur cRest itemDialogState
                })
   case cCur of
-    MSkills -> runDefSkills leader keyDefsCommon promptChosen
+    MSkills -> runDefSkills keyDefsCommon promptChosen leader
     MPlaces -> runDefPlaces keyDefsCommon promptChosen
     MModes -> runDefModes keyDefsCommon promptChosen
     _ -> do
@@ -459,22 +458,7 @@ transition leader psuit prompt promptGeneric permitMulitple
                 _ -> error "transition: multiple items not for MStore"
             }
           keyDefs = keyDefsCommon ++ filter (defCond . snd) keyDefsExtra
-          slotDef :: MenuSlot -> Either Text ResultItemDialogMode
-          slotDef slot =
-            let iid = fst $ iids !! fromEnum slot
-            in Right $ case cCur of
-              MStore rstore -> RStore rstore [iid]
-              MOwned -> ROwned iid
-              MLore rlore -> RLore rlore slot iids
-              _ -> error $ "" `showFailure` cCur
-      okx <- itemOverlay (blid body) iids cCur
-      runDefMessage keyDefs promptChosen
-      let itemKeys = map fst keyDefs
-          keys = rights $ map (defLabel . snd) keyDefs
-      sli <- overlayToSlideshow (rheight - 2) keys okx
-      ekm <- displayChoiceScreenWithDefItemKey
-               (inventoryInRightPane iids) sli itemKeys cCur
-      runDefAction keyDefs slotDef ekm
+      runDefInventory keyDefs promptChosen leader cCur iids
 
 displayChoiceScreenWithDefItemKey :: MonadClientUI m
                                   => (Int -> MenuSlot -> m OKX)
@@ -518,9 +502,9 @@ runDefAction keyDefs slotDef ekm = case ekm of
   Right slot -> return $! slotDef slot
 
 runDefSkills :: MonadClientUI m
-             => ActorId -> [(K.KM, DefItemKey m)] -> Text
+             => [(K.KM, DefItemKey m)] -> Text -> ActorId
              -> m (Either Text ResultItemDialogMode)
-runDefSkills leader keyDefsCommon promptChosen = do
+runDefSkills keyDefsCommon promptChosen leader = do
   CCUI{coscreen=ScreenContent{rheight}} <- getsSession sccui
   okx <- skillsOverlay leader
   runDefMessage keyDefsCommon promptChosen
@@ -588,6 +572,33 @@ runDefModes keyDefsCommon promptChosen = do
   ekm <- displayChoiceScreenWithDefItemKey
            (\_ _ -> return emptyOKX) sli itemKeys MModes
   runDefAction keyDefsCommon (Right . RModes) ekm
+
+runDefInventory :: MonadClientUI m
+                => [(K.KM, DefItemKey m)]
+                -> Text
+                -> ActorId
+                -> ItemDialogMode
+                -> [(ItemId, ItemQuant)]
+                -> m (Either Text ResultItemDialogMode)
+runDefInventory  keyDefs promptChosen leader cCur iids = do
+  CCUI{coscreen=ScreenContent{rheight}} <- getsSession sccui
+  body <- getsState $ getActorBody leader
+  let slotDef :: MenuSlot -> Either Text ResultItemDialogMode
+      slotDef slot =
+        let iid = fst $ iids !! fromEnum slot
+        in Right $ case cCur of
+          MStore rstore -> RStore rstore [iid]
+          MOwned -> ROwned iid
+          MLore rlore -> RLore rlore slot iids
+          _ -> error $ "" `showFailure` cCur
+  okx <- itemOverlay (blid body) iids cCur
+  runDefMessage keyDefs promptChosen
+  let itemKeys = map fst keyDefs
+      keys = rights $ map (defLabel . snd) keyDefs
+  sli <- overlayToSlideshow (rheight - 2) keys okx
+  ekm <- displayChoiceScreenWithDefItemKey
+           (inventoryInRightPane iids) sli itemKeys cCur
+  runDefAction keyDefs slotDef ekm
 
 inventoryInRightPane :: MonadClientUI m
                      => [(ItemId, ItemQuant)] -> Int -> MenuSlot -> m OKX
