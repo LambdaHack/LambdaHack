@@ -5,7 +5,7 @@ module Game.LambdaHack.Client.UI.Watch.WatchQuitM
 #ifdef EXPOSE_INTERNAL
     -- * Internal operations
   , displayGameOverLoot, displayGameOverAnalytics, displayGameOverLore
-  , viewLoreItems
+  , viewFinalLore
 #endif
   ) where
 
@@ -234,7 +234,7 @@ displayGameOverLoot (heldBag, total) generationAn = do
         <+> (if sexposeItems
              then "Non-positive count means none held but this many generated."
              else "")
-  viewLoreItems "GameOverLoot" itemBag prompt promptFun (MLore SItem)
+  viewFinalLore "GameOverLoot" itemBag prompt promptFun (MLore SItem)
 
 displayGameOverAnalytics :: MonadClientUI m
                          => FactionAnalytics -> GenerationAnalytics
@@ -273,7 +273,7 @@ displayGameOverAnalytics factionAn generationAn = do
         <+> (if sexposeActors
              then "Non-positive count means none killed but this many reported."
              else "")
-  viewLoreItems "GameOverAnalytics" trunkBag prompt promptFun (MLore STrunk)
+  viewFinalLore "GameOverAnalytics" trunkBag prompt promptFun (MLore STrunk)
 
 displayGameOverLore :: MonadClientUI m
                     => SLore -> Bool -> GenerationAnalytics -> m K.KM
@@ -298,15 +298,15 @@ displayGameOverLore slore exposeCount generationAn = do
                           , MU.Text (headingSLore slore) ]
         _ -> makeSentence [ "you", verb, "the following variety of"
                           , MU.CarWs total $ MU.Text (headingSLore slore) ]
-  viewLoreItems ("GameOverLore" ++ show slore)
+  viewFinalLore ("GameOverLore" ++ show slore)
                 generationBag prompt promptFun (MLore slore)
 
-viewLoreItems :: forall m . MonadClientUI m
+viewFinalLore :: forall m . MonadClientUI m
               => String -> ItemBag -> Text
               -> (ItemId -> ItemFull -> Int -> Text)
               -> ItemDialogMode
               -> m K.KM
-viewLoreItems menuName trunkBag prompt promptFun dmode = do
+viewFinalLore menuName trunkBag prompt promptFun dmode = do
   CCUI{coscreen=ScreenContent{rheight}} <- getsSession sccui
   itemToF <- getsState $ flip itemToFull
   let iids = sortIids itemToF $ EM.assocs trunkBag
@@ -317,7 +317,7 @@ viewLoreItems menuName trunkBag prompt promptFun dmode = do
             slotBound = length iids - 1
         km <- displayOneMenuItem renderOneItem extraKeys slotBound slot
         case K.key km of
-          K.Space -> viewLoreItems menuName trunkBag prompt promptFun dmode
+          K.Space -> viewFinalLore menuName trunkBag prompt promptFun dmode
           K.Esc -> return km
           _ -> error $ "" `showFailure` km
   msgAdd MsgPromptGeneric prompt

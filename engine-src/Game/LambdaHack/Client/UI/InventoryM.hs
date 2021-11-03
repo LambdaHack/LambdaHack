@@ -564,9 +564,11 @@ runDefInventory :: MonadClientUI m
                 -> ItemDialogMode
                 -> [(ItemId, ItemQuant)]
                 -> m (Either Text ResultItemDialogMode)
-runDefInventory keyDefs promptChosen _leader dmode iids = do
+runDefInventory keyDefs promptChosen leader dmode iids = do
   CCUI{coscreen=ScreenContent{rheight}} <- getsSession sccui
-  let slotDef :: MenuSlot -> Either Text ResultItemDialogMode
+  actorCurAndMaxSk <- getsState $ getActorMaxSkills leader
+  let meleeSkill = Ability.getSk Ability.SkHurtMelee actorCurAndMaxSk
+      slotDef :: MenuSlot -> Either Text ResultItemDialogMode
       slotDef slot =
         let iid = fst $ iids !! fromEnum slot
         in Right $ case dmode of
@@ -585,7 +587,8 @@ runDefInventory keyDefs promptChosen _leader dmode iids = do
   okx <- itemOverlay iids dmode
   sli <- overlayToSlideshow (rheight - 2) keys okx
   ekm <- displayChoiceScreenWithDefItemKey
-           (okxItemLoreInline promptFun 0 iids) sli itemKeys (show dmode)
+           (okxItemLoreInline promptFun meleeSkill iids)
+           sli itemKeys (show dmode)
   runDefAction keyDefs slotDef ekm
 
 skillCloseUp :: MonadClientUI m => ActorId -> MenuSlot -> m (Text, AttrString)
