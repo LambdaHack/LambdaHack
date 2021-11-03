@@ -325,7 +325,7 @@ transition :: forall m. MonadClientUI m
            -> m (Either Text ResultItemDialogMode)
 transition leader psuit prompt promptGeneric permitMulitple
            cCur cRest itemDialogState = do
-  CCUI{coscreen=ScreenContent{rwidth, rheight}} <- getsSession sccui
+  CCUI{coscreen=ScreenContent{rheight}} <- getsSession sccui
   let recCall cCur2 cRest2 itemDialogState2 = do
         -- Pointman could have been changed by keypresses near the end of
         -- the current recursive call, so refresh it for the next call.
@@ -410,20 +410,6 @@ transition leader psuit prompt promptGeneric permitMulitple
                    let !_A = assert (isNothing err `blame` err) ()
                    recCall cCur cRest itemDialogState
                })
-      displayChoiceScreenWithDefItemKey :: (Int -> MenuSlot -> m OKX)
-                                        -> Slideshow
-                                        -> [K.KM]
-                                        -> m KeyOrSlot
-      displayChoiceScreenWithDefItemKey f sli itemKeys = do
-        let g ekm = case ekm of
-              Left{} -> return emptyOKX
-              Right slot -> do
-                FontSetup{propFont} <- getFontSetup
-                if isSquareFont propFont
-                then return emptyOKX
-                else f (rwidth - 2) slot
-        displayChoiceScreenWithRightPane
-          g True (show cCur) ColorFull False sli itemKeys
   case cCur of
     MSkills -> do
       okx <- skillsOverlay leader
@@ -432,7 +418,7 @@ transition leader psuit prompt promptGeneric permitMulitple
           keys = rights $ map (defLabel . snd) keyDefsCommon
       sli <- overlayToSlideshow (rheight - 2) keys okx
       ekm <- displayChoiceScreenWithDefItemKey
-               (skillsInRightPane leader) sli itemKeys
+               (skillsInRightPane leader) sli itemKeys cCur
       runDefAction keyDefsCommon (Right . RSkills) ekm
     MPlaces -> do
       okx <- placesOverlay
@@ -441,7 +427,7 @@ transition leader psuit prompt promptGeneric permitMulitple
           keys = rights $ map (defLabel . snd) keyDefsCommon
       sli <- overlayToSlideshow (rheight - 2) keys okx
       ekm <- displayChoiceScreenWithDefItemKey
-               placesInRightPane sli itemKeys
+               placesInRightPane sli itemKeys cCur
       runDefAction keyDefsCommon (Right . RPlaces) ekm
     MModes -> do
       okx <- modesOverlay
@@ -452,7 +438,7 @@ transition leader psuit prompt promptGeneric permitMulitple
       -- Modes would cover the whole screen, so we don't display in right pane.
       -- But we display and highlight menu bullets.
       ekm <- displayChoiceScreenWithDefItemKey
-               (\_ _ -> return emptyOKX) sli itemKeys
+               (\_ _ -> return emptyOKX) sli itemKeys cCur
       runDefAction keyDefsCommon (Right . RModes) ekm
     _ -> do
       bagHuge <- getsState $ \s -> accessModeBag leader s cCur
@@ -511,8 +497,26 @@ transition leader psuit prompt promptGeneric permitMulitple
           keys = rights $ map (defLabel . snd) keyDefs
       sli <- overlayToSlideshow (rheight - 2) keys okx
       ekm <- displayChoiceScreenWithDefItemKey
-               (inventoryInRightPane iids) sli itemKeys
+               (inventoryInRightPane iids) sli itemKeys cCur
       runDefAction keyDefs slotDef ekm
+
+displayChoiceScreenWithDefItemKey :: MonadClientUI m
+                                  => (Int -> MenuSlot -> m OKX)
+                                  -> Slideshow
+                                  -> [K.KM]
+                                  -> ItemDialogMode
+                                  -> m KeyOrSlot
+displayChoiceScreenWithDefItemKey f sli itemKeys cCur = do
+  CCUI{coscreen=ScreenContent{rwidth}} <- getsSession sccui
+  FontSetup{propFont} <- getFontSetup
+  let g ekm = case ekm of
+        Left{} -> return emptyOKX
+        Right slot -> do
+          if isSquareFont propFont
+          then return emptyOKX
+          else f (rwidth - 2) slot
+  displayChoiceScreenWithRightPane
+    g True (show cCur) ColorFull False sli itemKeys
 
 runDefMessage :: MonadClientUI m
               => [(K.KM, DefItemKey m)]
