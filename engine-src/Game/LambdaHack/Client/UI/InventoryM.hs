@@ -411,7 +411,7 @@ transition leader psuit prompt promptGeneric permitMulitple
       runModesSpecial :: OKX -> (MenuSlot -> ResultItemDialogMode)
                       -> m (Either Text ResultItemDialogMode)
       runModesSpecial io resultConstructor = do
-        let keyDefsSpecial = filter (defCond . snd) $ keyDefsCommon
+        let keyDefsSpecial = filter (defCond . snd) keyDefsCommon
             slotDefSpecial :: MenuSlot -> Either Text ResultItemDialogMode
             slotDefSpecial = Right . resultConstructor
         runDefItemKey leader [] keyDefsSpecial slotDefSpecial

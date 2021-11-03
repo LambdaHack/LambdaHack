@@ -825,8 +825,8 @@ allHistoryHuman = do
 
 -- * MarkVision
 
-markVisionHuman :: MonadClientUI m => m ()
-markVisionHuman = modifySession cycleMarkVision
+markVisionHuman :: MonadClientUI m => Int -> m ()
+markVisionHuman delta = modifySession $ cycleMarkVision delta
 
 -- * MarkSmell
 
@@ -835,11 +835,11 @@ markSmellHuman = modifySession toggleMarkSmell
 
 -- * MarkSuspect
 
-markSuspectHuman :: MonadClient m => m ()
-markSuspectHuman = do
+markSuspectHuman :: MonadClient m => Int -> m ()
+markSuspectHuman delta = do
   -- @condBFS@ depends on the setting we change here.
   invalidateBfsAll
-  modifyClient cycleMarkSuspect
+  modifyClient (cycleMarkSuspect delta)
 
 -- * MarkAnim
 
@@ -851,8 +851,8 @@ markAnimHuman = do
 
 -- * OverrideTut
 
-overrideTutHuman :: MonadClientUI m => m ()
-overrideTutHuman = modifySession cycleOverrideTut
+overrideTutHuman :: MonadClientUI m => Int -> m ()
+overrideTutHuman delta = modifySession $ cycleOverrideTut delta
 
 -- * PrintScreen
 

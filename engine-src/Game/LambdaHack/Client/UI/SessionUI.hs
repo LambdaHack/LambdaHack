@@ -216,17 +216,19 @@ emptySessionUI sUIOptions =
 emptyMacroFrame :: KeyMacroFrame
 emptyMacroFrame = KeyMacroFrame (Right mempty) mempty Nothing
 
-cycleMarkVision :: SessionUI -> SessionUI
-cycleMarkVision sess = sess {smarkVision = succ (smarkVision sess) `mod` 3}
+cycleMarkVision :: Int -> SessionUI -> SessionUI
+cycleMarkVision delta sess =
+  sess {smarkVision = (smarkVision sess + delta) `mod` 3}
 
 toggleMarkSmell :: SessionUI -> SessionUI
 toggleMarkSmell sess = sess {smarkSmell = not (smarkSmell sess)}
 
-cycleOverrideTut :: SessionUI -> SessionUI
-cycleOverrideTut sess = sess {soverrideTut = case soverrideTut sess of
-                                Nothing -> Just False
-                                Just False -> Just True
-                                Just True -> Nothing}
+cycleOverrideTut :: Int -> SessionUI -> SessionUI
+cycleOverrideTut delta sess =
+  let ordering = cycle [Nothing, Just False, Just True]
+  in sess {soverrideTut =
+    let ix = fromJust $ elemIndex (soverrideTut sess) ordering
+    in ordering !! (ix + delta)}
 
 getActorUI :: ActorId -> SessionUI -> ActorUI
 getActorUI aid sess =

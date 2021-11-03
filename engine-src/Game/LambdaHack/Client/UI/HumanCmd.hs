@@ -133,12 +133,12 @@ data HumanCmd =
   | MainMenuAutoOff
   | Dashboard
     -- Below this line, commands do not take time.
-  | GameDifficultyIncr
+  | GameDifficultyIncr Int
   | GameFishToggle
   | GameGoodsToggle
   | GameWolfToggle
   | GameKeeperToggle
-  | GameScenarioIncr
+  | GameScenarioIncr Int
   | GameRestart
   | GameQuit
   | GameDrop
@@ -164,11 +164,11 @@ data HumanCmd =
   | RepeatLast Int
   | Record
   | AllHistory
-  | MarkVision
+  | MarkVision Int
   | MarkSmell
-  | MarkSuspect
+  | MarkSuspect Int
   | MarkAnim
-  | OverrideTut
+  | OverrideTut Int
   | SettingsMenu
   | ChallengeMenu
   | PrintScreen

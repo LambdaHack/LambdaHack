@@ -136,8 +136,8 @@ cmdSemanticsLeader cmd = case cmd of
   MainMenuAutoOn -> CmdNoNeed $ mainMenuAutoOnHuman cmdSemInCxtOfKM
   MainMenuAutoOff -> CmdNoNeed $ mainMenuAutoOffHuman cmdSemInCxtOfKM
   Dashboard -> CmdNoNeed $ dashboardHuman cmdSemInCxtOfKM
-  GameDifficultyIncr ->
-    CmdNoNeed $ gameDifficultyIncr >> challengeMenuHuman cmdSemInCxtOfKM
+  GameDifficultyIncr delta ->
+    CmdNoNeed $ gameDifficultyIncr delta >> challengeMenuHuman cmdSemInCxtOfKM
   GameFishToggle ->
     CmdNoNeed $ gameFishToggle >> challengeMenuHuman cmdSemInCxtOfKM
   GameGoodsToggle ->
@@ -146,8 +146,8 @@ cmdSemanticsLeader cmd = case cmd of
     CmdNoNeed $ gameWolfToggle >> challengeMenuHuman cmdSemInCxtOfKM
   GameKeeperToggle ->
     CmdNoNeed $ gameKeeperToggle >> challengeMenuHuman cmdSemInCxtOfKM
-  GameScenarioIncr ->
-    CmdNoNeed $ gameScenarioIncr >> challengeMenuHuman cmdSemInCxtOfKM
+  GameScenarioIncr delta ->
+    CmdNoNeed $ gameScenarioIncr delta >> challengeMenuHuman cmdSemInCxtOfKM
 
   GameRestart -> CmdNoNeed $ weaveJust <$> gameRestartHuman
   GameQuit -> CmdNoNeed $ weaveJust <$> gameQuitHuman
@@ -179,16 +179,16 @@ cmdSemanticsLeader cmd = case cmd of
   RepeatLast n -> addNoError $ repeatLastHuman n
   Record -> addNoError recordHuman
   AllHistory -> addNoError allHistoryHuman
-  MarkVision ->
-    CmdNoNeed $ markVisionHuman >> settingsMenuHuman cmdSemInCxtOfKM
+  MarkVision delta ->
+    CmdNoNeed $ markVisionHuman delta >> settingsMenuHuman cmdSemInCxtOfKM
   MarkSmell ->
     CmdNoNeed $ markSmellHuman >> settingsMenuHuman cmdSemInCxtOfKM
-  MarkSuspect ->
-    CmdNoNeed $ markSuspectHuman >> settingsMenuHuman cmdSemInCxtOfKM
+  MarkSuspect delta ->
+    CmdNoNeed $ markSuspectHuman delta >> settingsMenuHuman cmdSemInCxtOfKM
   MarkAnim ->
     CmdNoNeed $ markAnimHuman >> settingsMenuHuman cmdSemInCxtOfKM
-  OverrideTut ->
-    CmdNoNeed $ overrideTutHuman >> settingsMenuHuman cmdSemInCxtOfKM
+  OverrideTut delta ->
+    CmdNoNeed $ overrideTutHuman delta >> settingsMenuHuman cmdSemInCxtOfKM
   SettingsMenu -> CmdNoNeed $ settingsMenuHuman cmdSemInCxtOfKM
   ChallengeMenu -> CmdNoNeed $ challengeMenuHuman cmdSemInCxtOfKM
   PrintScreen -> addNoError printScreenHuman

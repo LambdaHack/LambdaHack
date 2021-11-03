@@ -1632,7 +1632,7 @@ chooseItemMenuHuman leader1 cmdSemInCxtOfKM c1 = do
 generateMenu :: MonadClientUI m
              => (K.KM -> HumanCmd -> m (Either MError ReqUI))
              -> FontOverlayMap
-             -> [(Text, HumanCmd, Maybe FontOverlayMap)]
+             -> [(Text, HumanCmd, Maybe HumanCmd, Maybe FontOverlayMap)]
              -> [String]
              -> String
              -> m (Either MError ReqUI)
@@ -1641,7 +1641,7 @@ generateMenu cmdSemInCxtOfKM blurb kdsRaw gameInfo menuName = do
   CCUI{ coinput=InputContent{brevMap}
       , coscreen=ScreenContent{rheight, rwebAddress} } <- getsSession sccui
   FontSetup{..} <- getFontSetup
-  let matchKM slot kd@(_, cmd, _) = case M.lookup cmd brevMap of
+  let matchKM slot kd@(_, cmd, _, _) = case M.lookup cmd brevMap of
         Just (km : _) -> (Left km, kd)
         _ -> (Right slot, kd)
       kds = zipWith matchKM natSlots kdsRaw
@@ -1652,7 +1652,7 @@ generateMenu cmdSemInCxtOfKM blurb kdsRaw gameInfo menuName = do
             markFirst d = markFirstAS $ textToAS d
             markFirstAS [] = []
             markFirstAS (ac : rest) = highW32 ac : rest
-            fmt (ekm, (d, _, _)) = (ekm, markFirst d)
+            fmt (ekm, (d, _, _, _)) = (ekm, markFirst d)
         in map fmt kds
       generate :: Int -> (KeyOrSlot, AttrString) -> KYX
       generate y (ekm, binding) =
@@ -1685,34 +1685,37 @@ generateMenu cmdSemInCxtOfKM blurb kdsRaw gameInfo menuName = do
           -- @displayChoiceScreenWithRightPane@
       returnDefaultOKS = return (prepareBlurb blurb, [])
       displayInRightPane ekm = case ekm `lookup` kds of
-        Just (_, _, mblurbRight) -> case mblurbRight of
+        Just (_, _, _, mblurbRight) -> case mblurbRight of
           Nothing -> returnDefaultOKS
           Just blurbRight -> return (prepareBlurb blurbRight, [])
         Nothing | ekm == Right oddSlot -> returnDefaultOKS
         Nothing -> error $ "generateMenu: unexpected key:"
                            `showFailure` ekm
       keys = [K.leftKM, K.rightKM, K.escKM]
-  kmkm <- displayChoiceScreenWithRightPaneKMKM displayInRightPane True
-                                               menuName ColorFull True
-                                               (menuToSlideshow okx) keys
-  case kmkm of
-    Left (km@(K.KM {key=K.Left}), ekm) -> case ekm `lookup` kds of
-      Just (_, cmd, _) -> cmdSemInCxtOfKM km cmd
-      Nothing -> weaveJust <$> failWith "never mind"
-    Left (km@(K.KM {key=K.Right}), ekm) -> case ekm `lookup` kds of
-      Just (_, cmd, _) -> cmdSemInCxtOfKM km cmd
-      Nothing -> weaveJust <$> failWith "never mind"
-    Left (km, _) -> case Left km `lookup` kds of
-      Just (_, cmd, _) -> cmdSemInCxtOfKM km cmd
-      Nothing -> weaveJust <$> failWith "never mind"
-    Right slot | slot == oddSlot -> do
-      success <- tryOpenBrowser rwebAddress
-      if success
-      then generateMenu cmdSemInCxtOfKM blurb kdsRaw gameInfo menuName
-      else weaveJust <$> failWith "failed to open web browser"
-    Right slot -> case Right slot `lookup` kds of
-      Just (_, cmd, _) -> cmdSemInCxtOfKM K.escKM cmd
-      Nothing -> weaveJust <$> failWith "never mind"
+      loop = do
+        kmkm <- displayChoiceScreenWithRightPaneKMKM displayInRightPane True
+                                                     menuName ColorFull True
+                                                     (menuToSlideshow okx) keys
+        case kmkm of
+          Left (km@(K.KM {key=K.Left}), ekm) -> case ekm `lookup` kds of
+            Just (_, _, Nothing, _) -> loop
+            Just (_, _, Just cmdReverse, _) -> cmdSemInCxtOfKM km cmdReverse
+            Nothing -> weaveJust <$> failWith "never mind"
+          Left (km@(K.KM {key=K.Right}), ekm) -> case ekm `lookup` kds of
+            Just (_, cmd, _, _) -> cmdSemInCxtOfKM km cmd
+            Nothing -> weaveJust <$> failWith "never mind"
+          Left (km, _) -> case Left km `lookup` kds of
+            Just (_, cmd, _, _) -> cmdSemInCxtOfKM km cmd
+            Nothing -> weaveJust <$> failWith "never mind"
+          Right slot | slot == oddSlot -> do
+            success <- tryOpenBrowser rwebAddress
+            if success
+            then generateMenu cmdSemInCxtOfKM blurb kdsRaw gameInfo menuName
+            else weaveJust <$> failWith "failed to open web browser"
+          Right slot -> case Right slot `lookup` kds of
+            Just (_, cmd, _, _) -> cmdSemInCxtOfKM K.escKM cmd
+            Nothing -> weaveJust <$> failWith "never mind"
+  loop
 
 -- | Display the main menu.
 mainMenuHuman :: MonadClientUI m
@@ -1727,13 +1730,13 @@ mainMenuHuman cmdSemInCxtOfKM = do
   curChal <- getsClient scurChal
   let offOn b = if b then "on" else "off"
       -- Key-description-command tuples.
-      kds = [ ("+ setup and start new game>", ChallengeMenu, Nothing)
-            , ("@ save and exit to desktop", GameExit, Nothing)
-            , ("+ tweak convenience settings>", SettingsMenu, Nothing)
-            , ("@ toggle autoplay", AutomateToggle, Nothing)
-            , ("@ see command help", Help, Nothing)
-            , ("@ switch to dashboard", Dashboard, Nothing)
-            , ("^ back to playing", AutomateBack, Nothing) ]
+      kds = [ ("+ setup and start new game>", ChallengeMenu, Nothing, Nothing)
+            , ("@ save and exit to desktop", GameExit, Nothing, Nothing)
+            , ("+ tweak convenience settings>", SettingsMenu, Nothing, Nothing)
+            , ("@ toggle autoplay", AutomateToggle, Nothing, Nothing)
+            , ("@ see command help", Help, Nothing, Nothing)
+            , ("@ switch to dashboard", Dashboard, Nothing, Nothing)
+            , ("^ back to playing", AutomateBack, Nothing, Nothing) ]
       gameName = MK.mname gameMode
       displayTutorialHints = fromMaybe curTutorial overrideTut
       gameInfo = map T.unpack
@@ -1822,19 +1825,19 @@ settingsMenuHuman cmdSemInCxtOfKM = do
           , splitAttrString width width
             $ textToAS t ) ]
       -- Key-description-command-text tuples.
-      kds = [ ( tsuspect, MarkSuspect
+      kds = [ ( tsuspect, MarkSuspect 1, Just (MarkSuspect (-1))
               , textToBlurb "* mark suspect terrain\nThis setting affects the ongoing and the next games. It determines which suspect terrain is marked in special color on the map: none, untried (not searched nor revealed), all. It correspondingly determines which, if any, suspect tiles are considered for mouse go-to, auto-explore and for the command that marks the nearest unexplored position." )
-            , ( tvisible, MarkVision
+            , ( tvisible, MarkVision 1, Just (MarkVision (-1))
               , textToBlurb "* show visible zone\nThis setting affects the ongoing and the next games. It determines the conditions under which the area visible to the party is marked on the map via a gray background: never, when aiming, always." )
-            , ( tsmell, MarkSmell
+            , ( tsmell, MarkSmell, Just MarkSmell
               , textToBlurb "* display smell clues\nThis setting affects the ongoing and the next games. It determines whether the map displays any smell traces (regardless of who left them) detected by a party member that can track via smell (as determined by the smell radius skill; not common among humans)." )
-            , ( tanim, MarkAnim
+            , ( tanim, MarkAnim, Just MarkAnim
               , textToBlurb "* play animations\nThis setting affects the ongoing and the next games. It determines whether important events, such combat, are highlighted by animations. This overrides the corresponding config file setting." )
-            , ( tdoctrine, Doctrine
+            , ( tdoctrine, Doctrine, Nothing
               , textToBlurb "* squad doctrine\nThis setting affects the ongoing game, but does not persist to the next games. It determines the behaviour of henchmen (non-pointman characters) in the party and, in particular, if they are permitted to move autonomously or fire opportunistically (assuming they are able to, usually due to rare equipment). This setting has a poor UI that will be improved in the future." )
-            , ( toverride, OverrideTut
+            , ( toverride, OverrideTut 1, Just (OverrideTut (-1))
               , textToBlurb "* override tutorial hints\nThis setting affects the ongoing and the next games. It determines whether tutorial hints are, respectively, not overridden with respect to the default game mode setting, forced to be off, forced to be on. Tutorial hints are rendered as pink messages and can afterwards be re-read from message history." )
-            , ( "^ back to main menu", MainMenu, Just EM.empty ) ]
+            , ( "^ back to main menu", MainMenu, Nothing, Just EM.empty ) ]
       gameInfo = map T.unpack
                    [ "Tweak convenience settings:"
                    , "" ]
@@ -1895,30 +1898,30 @@ challengeMenuHuman cmdSemInCxtOfKM = do
           , splitAttrString width width  -- not widthFull!
             $ textToAS t ) ]
       -- Key-description-command-text tuples.
-      kds = [ ( tnextScenario, GameScenarioIncr, blurb )
-            , ( tnextDiff, GameDifficultyIncr
+      kds = [ ( tnextScenario, GameScenarioIncr 1, Just (GameScenarioIncr (-1))
+              , blurb )
+            , ( tnextDiff, GameDifficultyIncr 1, Just (GameDifficultyIncr (-1))
               , textToBlurb "* difficulty level\nThis determines the difficulty of survival in the next game that's about to be started. Lower numbers result in easier game. In particular, difficulty below 5 multiplies hitpoints of player characters and difficulty over 5 multiplies hitpoints of their enemies. Game score scales with difficulty.")
-            , ( tnextFish, GameFishToggle
+            , ( tnextFish, GameFishToggle, Just GameFishToggle
               , textToBlurb "* cold fish\nThis challenge mode setting will affect the next game that's about to be started. When on, it makes it impossible for player characters to be healed by actors from other factions (this is a significant restriction in the long crawl adventure).")
-            , ( tnextGoods, GameGoodsToggle
+            , ( tnextGoods, GameGoodsToggle, Just GameGoodsToggle
               , textToBlurb "* ready goods\nThis challenge mode setting will affect the next game that's about to be started. When on, it disables crafting for the player, making the selection of equipment, especially melee weapons, very limited, unless the player has the luck to find the rare powerful ready weapons (this applies only if the chosen adventure supports crafting at all).")
-            , ( tnextWolf, GameWolfToggle
+            , ( tnextWolf, GameWolfToggle, Just GameWolfToggle
               , textToBlurb "* lone wolf\nThis challenge mode setting will affect the next game that's about to be started. When on, it reduces player's starting actors to exactly one, though later on new heroes may join the party. This makes the game very hard in the long run.")
-            , ( tnextKeeper, GameKeeperToggle
+            , ( tnextKeeper, GameKeeperToggle, Just GameKeeperToggle
               , textToBlurb "* finder keeper\nThis challenge mode setting will affect the next game that's about to be started. When on, it completely disables flinging projectiles by the player, which affects not only ranged damage dealing, but also throwing of consumables that buff teammates engaged in melee combat, weaken and distract enemies, light dark corners, etc.")
-            , ( "@ start new game", GameRestart, blurb )
-            , ( "^ back to main menu", MainMenu, Nothing ) ]
+            , ( "@ start new game", GameRestart, Nothing, blurb )
+            , ( "^ back to main menu", MainMenu, Nothing, Nothing ) ]
       gameInfo = map T.unpack [ "Setup and start new game:"
                               , "" ]
   generateMenu cmdSemInCxtOfKM EM.empty kds gameInfo "challenge"
 
 -- * GameDifficultyIncr
 
-gameDifficultyIncr :: MonadClient m => m ()
-gameDifficultyIncr = do
+gameDifficultyIncr :: MonadClient m => Int -> m ()
+gameDifficultyIncr delta = do
   nxtDiff <- getsClient $ cdiff . snxtChal
-  let delta = -1
-      d | nxtDiff + delta > difficultyBound = 1
+  let d | nxtDiff + delta > difficultyBound = 1
         | nxtDiff + delta < 1 = difficultyBound
         | otherwise = nxtDiff + delta
   modifyClient $ \cli -> cli {snxtChal = (snxtChal cli) {cdiff = d} }
@@ -1953,11 +1956,11 @@ gameKeeperToggle =
 
 -- * GameScenarioIncr
 
-gameScenarioIncr :: MonadClientUI m => m ()
-gameScenarioIncr = do
+gameScenarioIncr :: MonadClientUI m => Int -> m ()
+gameScenarioIncr delta = do
   cops <- getsState scops
   oldScenario <- getsSession snxtScenario
-  let snxtScenario = oldScenario + 1
+  let snxtScenario = oldScenario + delta
       snxtTutorial = MK.mtutorial $ snd $ nxtGameMode cops snxtScenario
   modifySession $ \sess -> sess {snxtScenario, snxtTutorial}
 
