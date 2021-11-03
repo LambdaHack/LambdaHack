@@ -343,7 +343,7 @@ transition leader psuit prompt promptGeneric permitMulitple
     ISuitable -> prompt body bodyUI actorCurAndMaxSk cCur s <> ":"
     IAll -> promptGeneric body bodyUI actorCurAndMaxSk cCur s <> ":"
   let keyDefsCommon :: [(K.KM, DefItemKey m)]
-      keyDefsCommon = filter (defCond . snd) $
+      keyDefsCommon = filter (defCond . snd)
         [ let km = K.mkChar '<'
           in (km, changeContainerDef Backward $ Right km)
         , let km = K.mkChar '>'
