@@ -463,9 +463,9 @@ displayChoiceScreenWithDefItemKey :: MonadClientUI m
                                   => (Int -> MenuSlot -> m OKX)
                                   -> Slideshow
                                   -> [K.KM]
-                                  -> ItemDialogMode
+                                  -> String
                                   -> m KeyOrSlot
-displayChoiceScreenWithDefItemKey f sli itemKeys cCur = do
+displayChoiceScreenWithDefItemKey f sli itemKeys menuName = do
   CCUI{coscreen=ScreenContent{rwidth}} <- getsSession sccui
   FontSetup{propFont} <- getFontSetup
   let g ekm = case ekm of
@@ -475,7 +475,7 @@ displayChoiceScreenWithDefItemKey f sli itemKeys cCur = do
           then return emptyOKX
           else f (rwidth - 2) slot
   displayChoiceScreenWithRightPane
-    g True (show cCur) ColorFull False sli itemKeys
+    g True menuName ColorFull False sli itemKeys
 
 runDefMessage :: MonadClientUI m
               => [(K.KM, DefItemKey m)]
@@ -511,7 +511,7 @@ runDefSkills keyDefsCommon promptChosen leader = do
       keys = rights $ map (defLabel . snd) keyDefsCommon
   sli <- overlayToSlideshow (rheight - 2) keys okx
   ekm <- displayChoiceScreenWithDefItemKey
-           (skillsInRightPane leader) sli itemKeys MSkills
+           (skillsInRightPane leader) sli itemKeys (show MSkills)
   runDefAction keyDefsCommon (Right . RSkills) ekm
 
 skillsInRightPane :: MonadClientUI m => ActorId -> Int -> MenuSlot -> m OKX
@@ -540,7 +540,7 @@ runDefPlaces keyDefsCommon promptChosen = do
       keys = rights $ map (defLabel . snd) keyDefsCommon
   sli <- overlayToSlideshow (rheight - 2) keys okx
   ekm <- displayChoiceScreenWithDefItemKey
-           (placesInRightPane places) sli itemKeys MPlaces
+           (placesInRightPane places) sli itemKeys (show MPlaces)
   runDefAction keyDefsCommon (Right . RPlaces) ekm
 
 placesInRightPane :: MonadClientUI m
@@ -573,7 +573,7 @@ runDefModes keyDefsCommon promptChosen = do
   -- Modes would cover the whole screen, so we don't display in right pane.
   -- But we display and highlight menu bullets.
   ekm <- displayChoiceScreenWithDefItemKey
-           (\_ _ -> return emptyOKX) sli itemKeys MModes
+           (\_ _ -> return emptyOKX) sli itemKeys (show MModes)
   runDefAction keyDefsCommon (Right . RModes) ekm
 
 runDefInventory :: MonadClientUI m
@@ -605,7 +605,7 @@ runDefInventory keyDefs promptChosen leader cCur iids = do
       keys = rights $ map (defLabel . snd) keyDefs
   sli <- overlayToSlideshow (rheight - 2) keys okx
   ekm <- displayChoiceScreenWithDefItemKey
-           (okxItemLoreInline promptFun 0 iids) sli itemKeys cCur
+           (okxItemLoreInline promptFun 0 iids) sli itemKeys (show cCur)
   runDefAction keyDefs slotDef ekm
 
 skillCloseUp :: MonadClientUI m => ActorId -> MenuSlot -> m (Text, AttrString)
