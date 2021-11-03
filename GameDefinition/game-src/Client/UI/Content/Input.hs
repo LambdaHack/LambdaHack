@@ -170,8 +170,7 @@ standardKeysAndMouse = InputContentRaw $ map evalKeyDef $
   , ("C-c", ([CmdMeta], "exit to desktop without saving", GameDrop))
   , ("?", ([CmdMeta], "display help", Hint))
   , ("F1", ([CmdMeta, CmdDashboard], "display help immediately", Help))
-  , ("F11", ([CmdMeta, CmdDashboard], "show history", AllHistory))
-  , ("F12", ([CmdMeta], "open dashboard", Dashboard))
+  , ("F12", ([CmdMeta, CmdDashboard], "show history", AllHistory))
   , ("v", repeatLastTriple 1 [CmdMeta])
   , ("C-v", repeatLastTriple 25 [])
   , ("A-v", repeatLastTriple 100 [])
@@ -253,6 +252,9 @@ standardKeysAndMouse = InputContentRaw $ map evalKeyDef $
   , ("safe13", ( [CmdInternal]
                , "snap crosshair to enemy"
                , XhairPointerEnemy ))
+  , ("safe14", ( [CmdInternal]
+               , "open dashboard"
+               , Dashboard ))
   ]
   ++ map defaultHeroSelect [0..9]
 
