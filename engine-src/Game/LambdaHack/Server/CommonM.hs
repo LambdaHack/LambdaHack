@@ -86,9 +86,11 @@ revealItems fid = do
       discoverSample iid = do
         itemKindId <- getsState $ getIidKindIdServer iid
         let arItem = discoAspect EM.! iid
-            cdummy = CTrunk fid minLid originPoint  -- only @fid@ matters here
+            cdummy = CTrunk fid minLid originPoint
             itemKind = okind coitem itemKindId
-        execUpdAtomic $ if keptSecret itemKind arItem  -- a hack
+        -- Due to @cdummy@, the met and unmet secret things will appear
+        -- at gameover among actors in the debug mode. Tough luck.
+        execUpdAtomic $ if keptSecret itemKind arItem
                         then UpdSpotItem False iid quantSingle cdummy
                         else UpdDiscover cdummy iid itemKindId arItem
   generationAn <- getsServer sgenerationAn
@@ -106,12 +108,12 @@ revealItems fid = do
   when (sexposeActors sclientOptions) $
     -- Few, if any, need ID, but we can't rule out unusual content.
     mapM_ discoverSample $ EM.keys $ nonDupGen EM.! STrunk
-  when (sexposeItems sclientOptions) $
+  when (sexposeItems sclientOptions) $ do
     mapM_ discoverSample $ EM.keys $ nonDupGen EM.! SItem
-  mapM_ discoverSample $ EM.keys $ nonDupGen EM.! SEmbed
-  mapM_ discoverSample $ EM.keys $ nonDupGen EM.! SOrgan
-  mapM_ discoverSample $ EM.keys $ nonDupGen EM.! SCondition
-  mapM_ discoverSample $ EM.keys $ nonDupGen EM.! SBlast
+    mapM_ discoverSample $ EM.keys $ nonDupGen EM.! SEmbed
+    mapM_ discoverSample $ EM.keys $ nonDupGen EM.! SOrgan
+    mapM_ discoverSample $ EM.keys $ nonDupGen EM.! SCondition
+    mapM_ discoverSample $ EM.keys $ nonDupGen EM.! SBlast
 
 revealAll :: MonadServerAtomic m => FactionId -> m ()
 revealAll fid = do
