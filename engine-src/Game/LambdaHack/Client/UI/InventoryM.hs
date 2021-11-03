@@ -302,7 +302,8 @@ getItem leader psuit prompt promptGeneric cCur cRest askWhenLone
 data DefItemKey m = DefItemKey
   { defLabel  :: Either Text K.KM
   , defCond   :: Bool
-  , defAction :: m (Either Text ResultItemDialogMode)
+  , defAction :: ~(m (Either Text ResultItemDialogMode))
+      -- this field may be expensive or undefined when @defCond@ is false
   }
 
 data Suitability =
