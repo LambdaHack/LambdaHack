@@ -262,7 +262,9 @@ itemOverlayFromState lid iids displayRanged sccui side discoBenefit
             periodic = IA.checkFlag Ability.Periodic arItem
             !cLab = Color.AttrChar { acAttr = attrCursor
                                    , acChar = markEqp periodic k ncha }
-            asLab = [Color.attrCharToW32 cLab, colorSymbol]
+            asLab = [Color.attrCharToW32 cLab]
+                    ++ [Color.spaceAttrW32 | isSquareFont propFont]
+                    ++ [colorSymbol]
             !tDesc = " " <> phrase
         in (asLab, textToAS tDesc, Right c)
       l = zipWith pr natSlots iids
