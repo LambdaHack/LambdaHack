@@ -530,25 +530,29 @@ runDefPlaces :: MonadClientUI m
              => [(K.KM, DefItemKey m)] -> Text
              -> m (Either Text ResultItemDialogMode)
 runDefPlaces keyDefsCommon promptChosen = do
+  COps{coplace} <- getsState scops
   CCUI{coscreen=ScreenContent{rheight}} <- getsSession sccui
+  soptions <- getsClient soptions
+  places <- getsState $ EM.assocs
+                      . placesFromState coplace (sexposePlaces soptions)
   okx <- placesOverlay
   runDefMessage keyDefsCommon promptChosen
   let itemKeys = map fst keyDefsCommon
       keys = rights $ map (defLabel . snd) keyDefsCommon
   sli <- overlayToSlideshow (rheight - 2) keys okx
   ekm <- displayChoiceScreenWithDefItemKey
-           placesInRightPane sli itemKeys MPlaces
+           (placesInRightPane places) sli itemKeys MPlaces
   runDefAction keyDefsCommon (Right . RPlaces) ekm
 
-placesInRightPane :: MonadClientUI m => Int -> MenuSlot -> m OKX
-placesInRightPane width slot = do
-  COps{coplace} <- getsState scops
+placesInRightPane :: MonadClientUI m
+                  => [( ContentId PK.PlaceKind
+                      , (ES.EnumSet LevelId, Int, Int, Int) )]
+                  -> Int -> MenuSlot
+                  -> m OKX
+placesInRightPane places width slot = do
   FontSetup{propFont} <- getFontSetup
   soptions <- getsClient soptions
-  places <- getsState $ EM.assocs
-                        . placesFromState coplace (sexposePlaces soptions)
-  (prompt, blurbs) <-
-    placeCloseUp places (sexposePlaces soptions) slot
+  (prompt, blurbs) <- placeCloseUp places (sexposePlaces soptions) slot
   let promptAS | T.null prompt = []
                | otherwise = textFgToAS Color.Brown $ prompt <> "\n\n"
       splitText = splitAttrString width width
