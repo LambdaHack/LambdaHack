@@ -6,7 +6,8 @@ module Game.LambdaHack.Client.UI.InventoryM
 #ifdef EXPOSE_INTERNAL
     -- * Internal operations
   , ItemDialogState(..), accessModeBag, storeItemPrompt, getItem
-  , DefItemKey(..), transition, runDefItemKey, inventoryInRightPane
+  , DefItemKey(..), transition, runDefMessage, runDefItemKey, runDefAction
+  , inventoryInRightPane
 #endif
   ) where
 
@@ -414,8 +415,9 @@ transition leader psuit prompt promptGeneric permitMulitple
         let keyDefsSpecial = filter (defCond . snd) keyDefsCommon
             slotDefSpecial :: MenuSlot -> Either Text ResultItemDialogMode
             slotDefSpecial = Right . resultConstructor
-        runDefItemKey leader [] keyDefsSpecial slotDefSpecial
-                      io promptChosen cCur
+        runDefMessage keyDefsSpecial promptChosen
+        ekm <- runDefItemKey leader [] keyDefsSpecial io cCur
+        runDefAction keyDefsSpecial slotDefSpecial ekm
   case cCur of
     MSkills -> do
       io <- skillsOverlay leader
@@ -478,36 +480,48 @@ transition leader psuit prompt promptGeneric permitMulitple
               MLore rlore -> RLore rlore slot iids
               _ -> error $ "" `showFailure` cCur
       io <- itemOverlay (blid body) iids cCur
-      runDefItemKey leader iids keyDefs slotDef io promptChosen cCur
+      runDefMessage keyDefs promptChosen
+      ekm <- runDefItemKey leader iids keyDefs io cCur
+      runDefAction keyDefs slotDef ekm
+
+runDefMessage :: MonadClientUI m
+              => [(K.KM, DefItemKey m)]
+              -> Text
+              -> m ()
+runDefMessage keyDefs prompt = do
+  let wrapB s = "[" <> s <> "]"
+      keyLabelsRaw = lefts $ map (defLabel . snd) keyDefs
+      keyLabels = filter (not . T.null) keyLabelsRaw
+      choice = T.intercalate " " $ map wrapB $ nub keyLabels
+        -- switch to Data.Containers.ListUtils.nubOrd when we drop GHC 8.4.4
+  msgAdd MsgPromptGeneric $ prompt <+> choice
 
 runDefItemKey :: MonadClientUI m
               => ActorId
               -> [(ItemId, ItemQuant)]
               -> [(K.KM, DefItemKey m)]
-              -> (MenuSlot -> Either Text ResultItemDialogMode)
               -> OKX
-              -> Text
               -> ItemDialogMode
-              -> m (Either Text ResultItemDialogMode)
-runDefItemKey leader iids keyDefs slotDef okx prompt cCur = do
-  let itemKeys = map fst keyDefs
-      wrapB s = "[" <> s <> "]"
-      (keyLabelsRaw, keys) = partitionEithers $ map (defLabel . snd) keyDefs
-      keyLabels = filter (not . T.null) keyLabelsRaw
-      choice = T.intercalate " " $ map wrapB $ nub keyLabels
-        -- switch to Data.Containers.ListUtils.nubOrd when we drop GHC 8.4.4
-  msgAdd MsgPromptGeneric $ prompt <+> choice
+              -> m KeyOrSlot
+runDefItemKey leader iids keyDefs okx cCur = do
   CCUI{coscreen=ScreenContent{rheight}} <- getsSession sccui
-  ekm <- do
-    sli <- overlayToSlideshow (rheight - 2) keys okx
-    displayChoiceScreenWithRightPane
-      (inventoryInRightPane leader iids cCur) True
-      (show cCur) ColorFull False sli itemKeys
-  case ekm of
-    Left km -> case km `lookup` keyDefs of
-      Just keyDef -> defAction keyDef
-      Nothing -> error $ "unexpected key:" `showFailure` K.showKM km
-    Right slot -> return $! slotDef slot
+  let itemKeys = map fst keyDefs
+      keys = rights $ map (defLabel . snd) keyDefs
+  sli <- overlayToSlideshow (rheight - 2) keys okx
+  displayChoiceScreenWithRightPane
+    (inventoryInRightPane leader iids cCur) True
+    (show cCur) ColorFull False sli itemKeys
+
+runDefAction :: MonadClientUI m
+             => [(K.KM, DefItemKey m)]
+             -> (MenuSlot -> Either Text ResultItemDialogMode)
+             -> KeyOrSlot
+             -> m (Either Text ResultItemDialogMode)
+runDefAction keyDefs slotDef ekm = case ekm of
+  Left km -> case km `lookup` keyDefs of
+    Just keyDef -> defAction keyDef
+    Nothing -> error $ "unexpected key:" `showFailure` K.showKM km
+  Right slot -> return $! slotDef slot
 
 inventoryInRightPane :: MonadClientUI m
                      => ActorId -> [(ItemId, ItemQuant)] -> ItemDialogMode
