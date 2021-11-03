@@ -34,6 +34,7 @@ startup coscreen = do
   let storeKeys :: IO ()
       storeKeys = do
         c <- SIO.getChar  -- blocks here, so no polling
+        SIO.hPutStrLn SIO.stderr ""  -- prevent next line starting indented
         let K.KM{..} = keyTranslate c
         saveKMP rf modifier key (PointUI 0 0)
         storeKeys
