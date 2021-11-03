@@ -264,9 +264,10 @@ chooseItemDialogMode leader0 permitLoreCycle c = do
         let renderOneItem slot = do
               (prompt2, blurbs) <-
                 placeCloseUp places (sexposePlaces soptions) slot
-              let splitText = splitAttrString rwidth rwidth . textToAS
+              let splitText = splitAttrString rwidth rwidth
                   ov0 = attrLinesToFontMap
-                        $ map (second (concatMap splitText)) blurbs
+                        $ map (second $ concatMap splitText)
+                        $ blurbs
               msgAdd MsgPromptGeneric prompt2
               return (ov0, [])
             extraKeys = []

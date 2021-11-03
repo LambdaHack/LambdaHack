@@ -559,9 +559,10 @@ placesInRightPane width slot = do
     placeCloseUp places (sexposePlaces soptions) slot
   let promptAS | T.null prompt = []
                | otherwise = textFgToAS Color.Brown $ prompt <> "\n\n"
+      splitText = splitAttrString width width
       ov = attrLinesToFontMap
-           $ map (second $ concatMap (splitAttrString width width))
-           $ (propFont, [promptAS]) : map (second $ map textToAS) blurbs
+           $ map (second $ concatMap splitText)
+           $ (propFont, [promptAS]) : blurbs
   return (ov, [])
 
 inventoryInRightPane :: MonadClientUI m
@@ -597,7 +598,7 @@ placeCloseUp :: MonadClientUI m
              => [(ContentId PK.PlaceKind, (ES.EnumSet LevelId, Int, Int, Int))]
              -> Bool
              -> MenuSlot
-             -> m (Text, [(DisplayFont, [Text])])
+             -> m (Text, [(DisplayFont, [AttrString])])
 placeCloseUp places sexposePlaces slot = do
   COps{coplace} <- getsState scops
   FontSetup{..} <- getFontSetup
@@ -626,4 +627,4 @@ placeCloseUp places sexposePlaces slot = do
                ++ [(monoFont, [freqsText, "\n"]) | sexposePlaces]
                ++ [(squareFont, PK.ptopLeft pkind ++ ["\n"]) | sexposePlaces]
                ++ [(propFont, onLevels)]
-  return (prompt, blurbs)
+  return (prompt, map (second $ map textToAS) blurbs)
