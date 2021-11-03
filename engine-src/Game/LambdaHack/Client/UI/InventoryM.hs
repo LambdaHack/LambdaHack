@@ -6,7 +6,7 @@ module Game.LambdaHack.Client.UI.InventoryM
 #ifdef EXPOSE_INTERNAL
     -- * Internal operations
   , ItemDialogState(..), accessModeBag, storeItemPrompt, getItem
-  , DefItemKey(..), transition, displayChoiceScreenWithDefItemKey
+  , DefItemKey(..), transition
   , runDefMessage, runDefAction, runDefSkills, skillsInRightPane
   , runDefPlaces, placesInRightPane, runDefModes, runDefInventory
 #endif
@@ -28,7 +28,6 @@ import           Game.LambdaHack.Client.UI.ActorUI
 import           Game.LambdaHack.Client.UI.Content.Screen
 import           Game.LambdaHack.Client.UI.ContentClientUI
 import           Game.LambdaHack.Client.UI.EffectDescription
-import           Game.LambdaHack.Client.UI.Frame
 import           Game.LambdaHack.Client.UI.HandleHelperM
 import           Game.LambdaHack.Client.UI.HumanCmd
 import qualified Game.LambdaHack.Client.UI.Key as K
@@ -459,24 +458,6 @@ transition leader psuit prompt promptGeneric permitMulitple
           keyDefs = keyDefsCommon ++ filter (defCond . snd) keyDefsExtra
       runDefInventory keyDefs promptChosen leader cCur iids
 
-displayChoiceScreenWithDefItemKey :: MonadClientUI m
-                                  => (Int -> MenuSlot -> m OKX)
-                                  -> Slideshow
-                                  -> [K.KM]
-                                  -> String
-                                  -> m KeyOrSlot
-displayChoiceScreenWithDefItemKey f sli itemKeys menuName = do
-  CCUI{coscreen=ScreenContent{rwidth}} <- getsSession sccui
-  FontSetup{propFont} <- getFontSetup
-  let g ekm = case ekm of
-        Left{} -> return emptyOKX
-        Right slot -> do
-          if isSquareFont propFont
-          then return emptyOKX
-          else f (rwidth - 2) slot
-  displayChoiceScreenWithRightPane
-    g True menuName ColorFull False sli itemKeys
-
 runDefMessage :: MonadClientUI m
               => [(K.KM, DefItemKey m)]
               -> Text
@@ -505,10 +486,10 @@ runDefSkills :: MonadClientUI m
              -> m (Either Text ResultItemDialogMode)
 runDefSkills keyDefsCommon promptChosen leader = do
   CCUI{coscreen=ScreenContent{rheight}} <- getsSession sccui
-  okx <- skillsOverlay leader
   runDefMessage keyDefsCommon promptChosen
   let itemKeys = map fst keyDefsCommon
       keys = rights $ map (defLabel . snd) keyDefsCommon
+  okx <- skillsOverlay leader
   sli <- overlayToSlideshow (rheight - 2) keys okx
   ekm <- displayChoiceScreenWithDefItemKey
            (skillsInRightPane leader) sli itemKeys (show MSkills)
@@ -534,10 +515,10 @@ runDefPlaces keyDefsCommon promptChosen = do
   soptions <- getsClient soptions
   places <- getsState $ EM.assocs
                       . placesFromState coplace (sexposePlaces soptions)
-  okx <- placesOverlay
   runDefMessage keyDefsCommon promptChosen
   let itemKeys = map fst keyDefsCommon
       keys = rights $ map (defLabel . snd) keyDefsCommon
+  okx <- placesOverlay
   sli <- overlayToSlideshow (rheight - 2) keys okx
   ekm <- displayChoiceScreenWithDefItemKey
            (placesInRightPane places) sli itemKeys (show MPlaces)
@@ -565,10 +546,10 @@ runDefModes :: MonadClientUI m
             -> m (Either Text ResultItemDialogMode)
 runDefModes keyDefsCommon promptChosen = do
   CCUI{coscreen=ScreenContent{rheight}} <- getsSession sccui
-  okx <- modesOverlay
   runDefMessage keyDefsCommon promptChosen
   let itemKeys = map fst keyDefsCommon
       keys = rights $ map (defLabel . snd) keyDefsCommon
+  okx <- modesOverlay
   sli <- overlayToSlideshow (rheight - 2) keys okx
   -- Modes would cover the whole screen, so we don't display in right pane.
   -- But we display and highlight menu bullets.
@@ -583,29 +564,29 @@ runDefInventory :: MonadClientUI m
                 -> ItemDialogMode
                 -> [(ItemId, ItemQuant)]
                 -> m (Either Text ResultItemDialogMode)
-runDefInventory keyDefs promptChosen leader cCur iids = do
+runDefInventory keyDefs promptChosen _leader dmode iids = do
   CCUI{coscreen=ScreenContent{rheight}} <- getsSession sccui
-  body <- getsState $ getActorBody leader
+  arena <- getArenaUI
   let slotDef :: MenuSlot -> Either Text ResultItemDialogMode
       slotDef slot =
         let iid = fst $ iids !! fromEnum slot
-        in Right $ case cCur of
+        in Right $ case dmode of
           MStore rstore -> RStore rstore [iid]
           MOwned -> ROwned iid
           MLore rlore -> RLore rlore slot iids
-          _ -> error $ "" `showFailure` cCur
+          _ -> error $ "" `showFailure` dmode
       promptFun _iid _itemFull _k = ""
         -- TODO, e.g., if the party still owns any copies, if the actor
         -- was ever killed by us or killed ours, etc.
         -- This can be the same prompt or longer than what entering
         -- the item screen shows.
-  okx <- itemOverlay (blid body) iids cCur
   runDefMessage keyDefs promptChosen
   let itemKeys = map fst keyDefs
       keys = rights $ map (defLabel . snd) keyDefs
+  okx <- itemOverlay arena iids dmode
   sli <- overlayToSlideshow (rheight - 2) keys okx
   ekm <- displayChoiceScreenWithDefItemKey
-           (okxItemLoreInline promptFun 0 iids) sli itemKeys (show cCur)
+           (okxItemLoreInline promptFun 0 iids) sli itemKeys (show dmode)
   runDefAction keyDefs slotDef ekm
 
 skillCloseUp :: MonadClientUI m => ActorId -> MenuSlot -> m (Text, AttrString)

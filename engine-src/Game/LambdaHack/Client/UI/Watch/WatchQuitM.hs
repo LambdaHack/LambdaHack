@@ -29,7 +29,6 @@ import qualified Game.LambdaHack.Client.UI.Key as K
 import           Game.LambdaHack.Client.UI.MonadClientUI
 import           Game.LambdaHack.Client.UI.Msg
 import           Game.LambdaHack.Client.UI.MsgM
-import           Game.LambdaHack.Client.UI.Overlay
 import           Game.LambdaHack.Client.UI.SessionUI
 import           Game.LambdaHack.Client.UI.Slideshow
 import           Game.LambdaHack.Client.UI.SlideshowM
@@ -308,24 +307,10 @@ viewLoreItems :: forall m . MonadClientUI m
               -> ItemDialogMode
               -> m K.KM
 viewLoreItems menuName trunkBag prompt promptFun dmode = do
-  CCUI{coscreen=ScreenContent{rwidth, rheight}} <- getsSession sccui
-  FontSetup{propFont} <- getFontSetup
+  CCUI{coscreen=ScreenContent{rheight}} <- getsSession sccui
   arena <- getArenaUI
   itemToF <- getsState $ flip itemToFull
-  let keys = [K.spaceKM, K.mkChar '<', K.mkChar '>', K.escKM]
-      iids = sortIids itemToF $ EM.assocs trunkBag
-  msgAdd MsgPromptGeneric prompt
-  okx <- itemOverlay arena iids dmode
-  itemSlides <- overlayToSlideshow (rheight - 2) keys okx
-  let displayInRightPane :: KeyOrSlot -> m OKX
-      displayInRightPane ekm = case ekm of
-        _ | isSquareFont propFont -> return emptyOKX
-        Left{} -> return emptyOKX
-        Right slot -> do
-          -- Lower width, to permit extra vertical space at the start,
-          -- because gameover menu prompts are sometimes wide and/or long.
-          let width = rwidth - 2
-          okxItemLoreInline promptFun 0 iids width slot
+  let iids = sortIids itemToF $ EM.assocs trunkBag
       viewAtSlot :: MenuSlot -> m K.KM
       viewAtSlot slot = do
         let renderOneItem = okxItemLoreMsg promptFun 0 iids
@@ -336,10 +321,13 @@ viewLoreItems menuName trunkBag prompt promptFun dmode = do
           K.Space -> viewLoreItems menuName trunkBag prompt promptFun dmode
           K.Esc -> return km
           _ -> error $ "" `showFailure` km
-  ekm <- displayChoiceScreenWithRightPane displayInRightPane True
-           menuName ColorFull False itemSlides keys
+  msgAdd MsgPromptGeneric prompt
+  let keys = [K.spaceKM, K.mkChar '<', K.mkChar '>', K.escKM]
+  okx <- itemOverlay arena iids dmode
+  sli <- overlayToSlideshow (rheight - 2) keys okx
+  ekm <- displayChoiceScreenWithDefItemKey
+           (okxItemLoreInline promptFun 0 iids) sli keys menuName
   case ekm of
-    Left km | km `elem` [K.spaceKM, K.mkChar '<', K.mkChar '>', K.escKM] ->
-      return km
+    Left km | km `elem` keys -> return km
     Left km -> error $ "" `showFailure` km
     Right slot -> viewAtSlot slot

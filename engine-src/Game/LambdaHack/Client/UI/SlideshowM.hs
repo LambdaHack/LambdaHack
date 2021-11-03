@@ -4,6 +4,7 @@ module Game.LambdaHack.Client.UI.SlideshowM
   , displaySpaceEsc, displayMore, displayMoreKeep, displayYesNo, getConfirms
   , displayChoiceScreen
   , displayChoiceScreenWithRightPane
+  , displayChoiceScreenWithDefItemKey
   , displayChoiceScreenWithRightPaneKMKM
   , pushFrame, pushReportFrame
 #ifdef EXPOSE_INTERNAL
@@ -163,6 +164,25 @@ displayChoiceScreenWithRightPane displayInRightPane
   return $! case kmkm of
     Left (km, _) -> Left km
     Right slot -> Right slot
+
+-- | A specialized variant of 'displayChoiceScreenWithRightPane'.
+displayChoiceScreenWithDefItemKey :: MonadClientUI m
+                                  => (Int -> MenuSlot -> m OKX)
+                                  -> Slideshow
+                                  -> [K.KM]
+                                  -> String
+                                  -> m KeyOrSlot
+displayChoiceScreenWithDefItemKey f sli itemKeys menuName = do
+  CCUI{coscreen=ScreenContent{rwidth}} <- getsSession sccui
+  FontSetup{propFont} <- getFontSetup
+  let g ekm = case ekm of
+        Left{} -> return emptyOKX
+        Right slot -> do
+          if isSquareFont propFont
+          then return emptyOKX
+          else f (rwidth - 2) slot
+  displayChoiceScreenWithRightPane
+    g True menuName ColorFull False sli itemKeys
 
 -- | A variant providing for a keypress the information about the label
 -- of the menu slot which was selected during the keypress.
