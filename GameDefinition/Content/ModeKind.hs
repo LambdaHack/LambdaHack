@@ -185,7 +185,7 @@ hunt = ModeKind  -- melee vs ranged with reaction fire in daylight
       [ "* One level only"
       , "* Seven heroes vs. Seven human enemies capable of concurrent attacks"
       , "* Minimize losses"
-      , "* Incapacitate all enemies ASAP"
+      , "* Incapacitate all human enemies ASAP"
       ]
   , mdesc   = "Who is the hunter and who is the prey? The only criterion is last man standing when the chase ends."
   , mreason = "This adventure is quite a tactical challenge, because enemies are allowed to fling their ammo simultaneously at your team, which has no such ability."
