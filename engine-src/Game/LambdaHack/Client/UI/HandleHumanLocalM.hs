@@ -779,7 +779,10 @@ allHistoryHuman = do
 #endif
         : [K.spaceKM, K.escKM]
   slides <- overlayToSlideshow (rheight - 2) keysAllHistory (ovs, kxs)
-  let maxIx = length (concatMap snd $ slideshow slides) - 1
+  let historyLines = case reverse $ concatMap snd $ slideshow slides of
+        (Left{}, _) : rest -> rest  -- don't count the @--more--@ line
+        l -> l
+      maxIx = length historyLines - 1 - length keysAllHistory
       menuName = "history"
   modifySession $ \sess ->
     sess {smenuIxMap = M.insert menuName maxIx $ smenuIxMap sess}

@@ -53,7 +53,7 @@ data SessionUI = SessionUI
   , sxhairGoTo     :: Maybe Target  -- ^ xhair set for last GoTo
   , sactorUI       :: ActorDictUI   -- ^ assigned actor UI presentations
   , sitemUI        :: ItemDictUI    -- ^ assigned item first seen level
-  , sroles         :: ItemRoles     -- ^ map from slots to items
+  , sroles         :: ItemRoles     -- ^ assignment of roles to items
   , slastItemMove  :: Maybe (CStore, CStore)
                                     -- ^ last item move stores
   , schanF         :: ChanFrontend  -- ^ connection with the frontend

@@ -129,7 +129,7 @@ getConfirms dm extraKeys slides = do
   return $! either id (error $ "" `showFailure` ekm) ekm
 
 -- | Display a, potentially, multi-screen menu and return the chosen
--- key or item slot label (and save the index in the whole menu so that the cursor
+-- key or menu slot (and save the index in the whole menu so that the cursor
 -- can again be placed at that spot next time menu is displayed).
 --
 -- This function is one of only two sources of menus and so,
@@ -141,7 +141,7 @@ displayChoiceScreen = do
   displayChoiceScreenWithRightPane (const $ return emptyOKX) False
 
 -- | Display a, potentially, multi-screen menu and return the chosen
--- key or item slot label (and save the index in the whole menu so that the cursor
+-- key or menu slot (and save the index in the whole menu so that the cursor
 -- can again be placed at that spot next time menu is displayed).
 -- Additionally, display something on the right half of the screen,
 -- depending on which menu item is currently highlighted

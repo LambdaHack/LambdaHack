@@ -55,7 +55,7 @@ data ButtonWidth = ButtonWidth
   , buttonWidth :: Int }
   deriving (Show, Eq)
 
--- | A key or an item slot label at a given position on the screen.
+-- | A key or a menu slot at a given position on the screen.
 type KYX = (KeyOrSlot, (PointUI, ButtonWidth))
 
 xytranslateKXY :: Int -> Int -> KYX -> KYX
