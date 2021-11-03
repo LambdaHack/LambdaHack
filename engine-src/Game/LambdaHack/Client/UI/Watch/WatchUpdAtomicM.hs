@@ -84,7 +84,7 @@ watchRespUpdAtomicUI cmd = case cmd of
   UpdCreateItem verbose iid _ kit@(kAdd, _) c -> do
     recordItemLid iid c
     assignItemRole c iid
-    if verbose then case c of
+    when verbose $ case c of
       CActor aid store -> do
         b <- getsState $ getActorBody aid
         case store of
@@ -145,18 +145,15 @@ watchRespUpdAtomicUI cmd = case cmd of
             wown <- ppContainerWownW partActorLeader True c
             itemVerbMU MsgItemCreation iid kit
                        (MU.Text $ makePhrase $ "appear" : wown) c
-      CEmbed lid _ -> markDisplayNeeded lid
+      CEmbed{} -> return ()  -- not visible so can't delay even if important
       CFloor lid _ -> do
         factionD <- getsState sfactionD
         itemVerbMU MsgItemCreation iid kit
                    (MU.Text $ "appear" <+> ppContainer factionD c) c
         markDisplayNeeded lid
       CTrunk{} -> return ()
-    else do
-      lid <- getsState $ lidFromC c
-      markDisplayNeeded lid
   UpdDestroyItem verbose iid _ kit c ->
-    if verbose then case c of
+    when verbose $ case c of
       CActor aid _  -> do
         b <- getsState $ getActorBody aid
         if bproj b then
@@ -165,16 +162,13 @@ watchRespUpdAtomicUI cmd = case cmd of
           ownW <- ppContainerWownW partActorLeader False c
           let verb = MU.Text $ makePhrase $ "vanish from" : ownW
           itemVerbMUShort MsgItemRuination iid kit verb c
-      CEmbed lid _ -> markDisplayNeeded lid
+      CEmbed{} -> return ()  -- not visible so can't delay even if important
       CFloor lid _ -> do
         factionD <- getsState sfactionD
         itemVerbMUShort MsgItemRuination iid kit
                         (MU.Text $ "break" <+> ppContainer factionD c) c
         markDisplayNeeded lid
       CTrunk{} -> return ()
-    else do
-      lid <- getsState $ lidFromC c
-      markDisplayNeeded lid
   UpdSpotActor aid body -> createActorUI False aid body
   UpdLoseActor aid body -> destroyActorUI False aid body
   UpdSpotItem verbose iid kit c -> spotItemBag verbose c $ EM.singleton iid kit
