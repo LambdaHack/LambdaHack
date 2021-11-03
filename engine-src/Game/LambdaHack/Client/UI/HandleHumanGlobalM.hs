@@ -1691,11 +1691,18 @@ generateMenu cmdSemInCxtOfKM blurb kdsRaw gameInfo menuName = do
         Nothing | ekm == Right oddSlot -> returnDefaultOKS
         Nothing -> error $ "generateMenu: unexpected key:"
                            `showFailure` ekm
-  ekm <- displayChoiceScreenWithRightPane displayInRightPane True
-                                          menuName ColorFull True
-                                          (menuToSlideshow okx) [K.escKM]
-  case ekm of
-    Left km -> case ekm `lookup` kds of
+      keys = [K.leftKM, K.rightKM, K.escKM]
+  kmkm <- displayChoiceScreenWithRightPaneKMKM displayInRightPane True
+                                               menuName ColorFull True
+                                               (menuToSlideshow okx) keys
+  case kmkm of
+    Left (km@(K.KM {key=K.Left}), ekm) -> case ekm `lookup` kds of
+      Just (_, cmd, _) -> cmdSemInCxtOfKM km cmd
+      Nothing -> weaveJust <$> failWith "never mind"
+    Left (km@(K.KM {key=K.Right}), ekm) -> case ekm `lookup` kds of
+      Just (_, cmd, _) -> cmdSemInCxtOfKM km cmd
+      Nothing -> weaveJust <$> failWith "never mind"
+    Left (km, _) -> case Left km `lookup` kds of
       Just (_, cmd, _) -> cmdSemInCxtOfKM km cmd
       Nothing -> weaveJust <$> failWith "never mind"
     Right slot | slot == oddSlot -> do
@@ -1703,7 +1710,7 @@ generateMenu cmdSemInCxtOfKM blurb kdsRaw gameInfo menuName = do
       if success
       then generateMenu cmdSemInCxtOfKM blurb kdsRaw gameInfo menuName
       else weaveJust <$> failWith "failed to open web browser"
-    Right{} -> case ekm `lookup` kds of
+    Right slot -> case Right slot `lookup` kds of
       Just (_, cmd, _) -> cmdSemInCxtOfKM K.escKM cmd
       Nothing -> weaveJust <$> failWith "never mind"
 
