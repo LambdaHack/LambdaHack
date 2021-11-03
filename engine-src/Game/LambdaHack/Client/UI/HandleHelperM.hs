@@ -920,23 +920,28 @@ displayOneMenuItem renderOneItem extraKeys slotBound slot = do
     _ -> return km
 
 okxItemLorePointedAt :: MonadClientUI m
-                     => Int -> Bool -> (ItemId -> ItemFull -> Int -> Text)
-                     -> Int -> [(ItemId, ItemQuant)] -> MenuSlot
+                     => Bool -> (ItemId -> ItemFull -> Int -> Text)
+                     -> Int -> [(ItemId, ItemQuant)] -> Int -> MenuSlot
                      -> m OKX
-okxItemLorePointedAt width inlineMsg promptFun meleeSkill iids slot = do
+okxItemLorePointedAt inlineMsg promptFun meleeSkill iids widthRaw slot = do
   FontSetup{..} <- getFontSetup
   side <- getsClient sside
   arena <- getArenaUI
   let (iid2, kit2@(k, _)) = iids !! fromEnum slot
-  itemFull2 <- getsState $ itemToFull iid2
+      -- Some prop fonts are wider than mono (e.g., in dejavuBold font set),
+      -- so the width in these artificial texts full of digits and strange
+      -- characters needs to be smaller than @rwidth - 2@ that would suffice
+      -- for mono.
+      width = if inlineMsg then widthRaw - 5 else widthRaw
+  itemFull <- getsState $ itemToFull iid2
   localTime <- getsState $ getLocalTime arena
   factionD <- getsState sfactionD
   -- The hacky level 0 marks items never seen, but sent by server at gameover.
   jlid <- getsSession $ fromMaybe (toEnum 0) <$> EM.lookup iid2 . sitemUI
   let descAs = itemDesc width True side factionD meleeSkill
-                        CGround localTime jlid itemFull2 kit2
+                        CGround localTime jlid itemFull kit2
       (ovLab, ovDesc) = labDescOverlay squareFont width descAs
-      prompt = promptFun iid2 itemFull2 k
+      prompt = promptFun iid2 itemFull k
       promptBlurb | T.null prompt = []
                   | otherwise = offsetOverlay $ splitAttrString width width
                                 $ textFgToAS Color.Brown $ prompt <> "\n\n"

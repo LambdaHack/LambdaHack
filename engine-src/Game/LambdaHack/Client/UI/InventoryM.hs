@@ -8,8 +8,7 @@ module Game.LambdaHack.Client.UI.InventoryM
   , ItemDialogState(..), accessModeBag, storeItemPrompt, getItem
   , DefItemKey(..), transition, displayChoiceScreenWithDefItemKey
   , runDefMessage, runDefAction, runDefSkills, skillsInRightPane
-  , runDefPlaces, placesInRightPane, runDefModes
-  , inventoryInRightPane
+  , runDefPlaces, placesInRightPane, runDefModes, runDefInventory
 #endif
   ) where
 
@@ -595,29 +594,19 @@ runDefInventory  keyDefs promptChosen leader cCur iids = do
           MOwned -> ROwned iid
           MLore rlore -> RLore rlore slot iids
           _ -> error $ "" `showFailure` cCur
+      promptFun _iid _itemFull _k = ""
+        -- TODO, e.g., if the party still owns any copies, if the actor
+        -- was ever killed by us or killed ours, etc.
+        -- This can be the same prompt or longer than what entering
+        -- the item screen shows.
   okx <- itemOverlay (blid body) iids cCur
   runDefMessage keyDefs promptChosen
   let itemKeys = map fst keyDefs
       keys = rights $ map (defLabel . snd) keyDefs
   sli <- overlayToSlideshow (rheight - 2) keys okx
   ekm <- displayChoiceScreenWithDefItemKey
-           (inventoryInRightPane iids) sli itemKeys cCur
+           (okxItemLorePointedAt True promptFun 0 iids) sli itemKeys cCur
   runDefAction keyDefs slotDef ekm
-
-inventoryInRightPane :: MonadClientUI m
-                     => [(ItemId, ItemQuant)] -> Int -> MenuSlot -> m OKX
-inventoryInRightPane iids width slot = do
-  let promptFun _iid _itemFull _k = ""
-        -- TODO, e.g., if the party still owns any copies, if the actor
-        -- was ever killed by us or killed ours, etc.
-        -- This can be the same prompt or longer than what entering
-        -- the item screen shows.
-  -- Some prop fonts are wider than mono (e.g., in dejavuBold font set),
-  -- so the width in these artificial texts full of digits and strange
-  -- characters needs to be smaller than @rwidth - 2@ that would suffice
-  -- for mono.
-  let widthAt = width - 5
-  okxItemLorePointedAt widthAt True promptFun 0 iids slot
 
 skillCloseUp :: MonadClientUI m => ActorId -> MenuSlot -> m (Text, AttrString)
 skillCloseUp leader slot = do

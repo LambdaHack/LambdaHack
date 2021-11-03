@@ -315,25 +315,20 @@ viewLoreItems menuName trunkBag prompt promptFun dmode = do
   let keys = [K.spaceKM, K.mkChar '<', K.mkChar '>', K.escKM]
       iids = sortIids itemToF $ EM.assocs trunkBag
   msgAdd MsgPromptGeneric prompt
-  io <- itemOverlay arena iids dmode
-  itemSlides <- overlayToSlideshow (rheight - 2) keys io
+  okx <- itemOverlay arena iids dmode
+  itemSlides <- overlayToSlideshow (rheight - 2) keys okx
   let displayInRightPane :: KeyOrSlot -> m OKX
       displayInRightPane ekm = case ekm of
         _ | isSquareFont propFont -> return emptyOKX
         Left{} -> return emptyOKX
         Right slot -> do
-          -- for mono.
           -- Lower width, to permit extra vertical space at the start,
           -- because gameover menu prompts are sometimes wide and/or long.
           let width = rwidth - 2
-          -- Some prop fonts are wider than mono (e.g., in dejavuBold font set),
-          -- so the width in these artificial texts full of digits and strange
-          -- characters needs to be smaller than @rwidth - 2@ that would suffice
-              widthAt = width - 5
-          okxItemLorePointedAt widthAt True promptFun 0 iids slot
+          okxItemLorePointedAt True promptFun 0 iids width slot
       viewAtSlot :: MenuSlot -> m K.KM
       viewAtSlot slot = do
-        let renderOneItem = okxItemLorePointedAt rwidth False promptFun 0 iids
+        let renderOneItem = okxItemLorePointedAt False promptFun 0 iids rwidth
             extraKeys = []
             slotBound = length iids - 1
         km <- displayOneMenuItem renderOneItem extraKeys slotBound slot

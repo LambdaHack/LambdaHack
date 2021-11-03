@@ -223,7 +223,7 @@ chooseItemDialogMode leader0 permitLoreCycle c = do
               ChosenLore [] [] -> False
               _ -> True
             renderOneItem =
-              okxItemLorePointedAt rwidth False promptFun meleeSkill iids
+              okxItemLorePointedAt False promptFun meleeSkill iids rwidth
             extraKeys = [K.mkChar '~' | lorePending]
             slotBound = length iids - 1
         km <- displayOneMenuItem renderOneItem extraKeys slotBound slot
