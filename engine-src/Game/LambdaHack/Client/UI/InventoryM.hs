@@ -6,8 +6,10 @@ module Game.LambdaHack.Client.UI.InventoryM
 #ifdef EXPOSE_INTERNAL
     -- * Internal operations
   , ItemDialogState(..), accessModeBag, storeItemPrompt, getItem
-  , DefItemKey(..), transition, runDefMessage, runDefAction
-  , skillsInRightPane, placesInRightPane, inventoryInRightPane
+  , DefItemKey(..), transition, displayChoiceScreenWithDefItemKey
+  , runDefMessage, runDefAction, runDefSkills, skillsInRightPane
+  , runDefPlaces, placesInRightPane, runDefModes
+  , inventoryInRightPane
 #endif
   ) where
 
@@ -411,35 +413,9 @@ transition leader psuit prompt promptGeneric permitMulitple
                    recCall cCur cRest itemDialogState
                })
   case cCur of
-    MSkills -> do
-      okx <- skillsOverlay leader
-      runDefMessage keyDefsCommon promptChosen
-      let itemKeys = map fst keyDefsCommon
-          keys = rights $ map (defLabel . snd) keyDefsCommon
-      sli <- overlayToSlideshow (rheight - 2) keys okx
-      ekm <- displayChoiceScreenWithDefItemKey
-               (skillsInRightPane leader) sli itemKeys cCur
-      runDefAction keyDefsCommon (Right . RSkills) ekm
-    MPlaces -> do
-      okx <- placesOverlay
-      runDefMessage keyDefsCommon promptChosen
-      let itemKeys = map fst keyDefsCommon
-          keys = rights $ map (defLabel . snd) keyDefsCommon
-      sli <- overlayToSlideshow (rheight - 2) keys okx
-      ekm <- displayChoiceScreenWithDefItemKey
-               placesInRightPane sli itemKeys cCur
-      runDefAction keyDefsCommon (Right . RPlaces) ekm
-    MModes -> do
-      okx <- modesOverlay
-      runDefMessage keyDefsCommon promptChosen
-      let itemKeys = map fst keyDefsCommon
-          keys = rights $ map (defLabel . snd) keyDefsCommon
-      sli <- overlayToSlideshow (rheight - 2) keys okx
-      -- Modes would cover the whole screen, so we don't display in right pane.
-      -- But we display and highlight menu bullets.
-      ekm <- displayChoiceScreenWithDefItemKey
-               (\_ _ -> return emptyOKX) sli itemKeys cCur
-      runDefAction keyDefsCommon (Right . RModes) ekm
+    MSkills -> runDefSkills leader keyDefsCommon promptChosen
+    MPlaces -> runDefPlaces keyDefsCommon promptChosen
+    MModes -> runDefModes keyDefsCommon promptChosen
     _ -> do
       bagHuge <- getsState $ \s -> accessModeBag leader s cCur
       itemToF <- getsState $ flip itemToFull
@@ -541,6 +517,20 @@ runDefAction keyDefs slotDef ekm = case ekm of
     Nothing -> error $ "unexpected key:" `showFailure` K.showKM km
   Right slot -> return $! slotDef slot
 
+runDefSkills :: MonadClientUI m
+             => ActorId -> [(K.KM, DefItemKey m)] -> Text
+             -> m (Either Text ResultItemDialogMode)
+runDefSkills leader keyDefsCommon promptChosen = do
+  CCUI{coscreen=ScreenContent{rheight}} <- getsSession sccui
+  okx <- skillsOverlay leader
+  runDefMessage keyDefsCommon promptChosen
+  let itemKeys = map fst keyDefsCommon
+      keys = rights $ map (defLabel . snd) keyDefsCommon
+  sli <- overlayToSlideshow (rheight - 2) keys okx
+  ekm <- displayChoiceScreenWithDefItemKey
+           (skillsInRightPane leader) sli itemKeys MSkills
+  runDefAction keyDefsCommon (Right . RSkills) ekm
+
 skillsInRightPane :: MonadClientUI m => ActorId -> Int -> MenuSlot -> m OKX
 skillsInRightPane leader width slot = do
   FontSetup{propFont} <- getFontSetup
@@ -551,6 +541,20 @@ skillsInRightPane leader width slot = do
                                  $ splitAttrString width width
                                  $ promptAS ++ attrString
   return (ov, [])
+
+runDefPlaces :: MonadClientUI m
+             => [(K.KM, DefItemKey m)] -> Text
+             -> m (Either Text ResultItemDialogMode)
+runDefPlaces keyDefsCommon promptChosen = do
+  CCUI{coscreen=ScreenContent{rheight}} <- getsSession sccui
+  okx <- placesOverlay
+  runDefMessage keyDefsCommon promptChosen
+  let itemKeys = map fst keyDefsCommon
+      keys = rights $ map (defLabel . snd) keyDefsCommon
+  sli <- overlayToSlideshow (rheight - 2) keys okx
+  ekm <- displayChoiceScreenWithDefItemKey
+           placesInRightPane sli itemKeys MPlaces
+  runDefAction keyDefsCommon (Right . RPlaces) ekm
 
 placesInRightPane :: MonadClientUI m => Int -> MenuSlot -> m OKX
 placesInRightPane width slot = do
@@ -568,6 +572,22 @@ placesInRightPane width slot = do
            $ map (second $ concatMap splitText)
            $ (propFont, [promptAS]) : blurbs
   return (ov, [])
+
+runDefModes :: MonadClientUI m
+            => [(K.KM, DefItemKey m)] -> Text
+            -> m (Either Text ResultItemDialogMode)
+runDefModes keyDefsCommon promptChosen = do
+  CCUI{coscreen=ScreenContent{rheight}} <- getsSession sccui
+  okx <- modesOverlay
+  runDefMessage keyDefsCommon promptChosen
+  let itemKeys = map fst keyDefsCommon
+      keys = rights $ map (defLabel . snd) keyDefsCommon
+  sli <- overlayToSlideshow (rheight - 2) keys okx
+  -- Modes would cover the whole screen, so we don't display in right pane.
+  -- But we display and highlight menu bullets.
+  ekm <- displayChoiceScreenWithDefItemKey
+           (\_ _ -> return emptyOKX) sli itemKeys MModes
+  runDefAction keyDefsCommon (Right . RModes) ekm
 
 inventoryInRightPane :: MonadClientUI m
                      => [(ItemId, ItemQuant)] -> Int -> MenuSlot -> m OKX
