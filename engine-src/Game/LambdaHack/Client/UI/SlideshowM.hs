@@ -2,7 +2,9 @@
 module Game.LambdaHack.Client.UI.SlideshowM
   ( overlayToSlideshow, reportToSlideshow, reportToSlideshowKeepHalt
   , displaySpaceEsc, displayMore, displayMoreKeep, displayYesNo, getConfirms
-  , displayChoiceScreen, displayChoiceScreenWithRightPane
+  , displayChoiceScreen
+  , displayChoiceScreenWithRightPane
+  , displayChoiceScreenWithRightPaneKMKM
   , pushFrame, pushReportFrame
 #ifdef EXPOSE_INTERNAL
     -- * Internal operations
@@ -135,7 +137,7 @@ getConfirms dm extraKeys slides = do
 displayChoiceScreen :: forall m . MonadClientUI m
                     => String -> ColorMode -> Bool -> Slideshow -> [K.KM]
                     -> m KeyOrSlot
-displayChoiceScreen =
+displayChoiceScreen = do
   displayChoiceScreenWithRightPane (const $ return emptyOKX) False
 
 -- | Display a, potentially, multi-screen menu and return the chosen
@@ -154,15 +156,35 @@ displayChoiceScreenWithRightPane
 displayChoiceScreenWithRightPane displayInRightPane
                                  highlightBullet menuName dm sfBlank
                                  frsX extraKeys = do
+  kmkm <- displayChoiceScreenWithRightPaneKMKM
+                                 displayInRightPane
+                                 highlightBullet menuName dm sfBlank
+                                 frsX extraKeys
+  return $! case kmkm of
+    Left (km, _) -> Left km
+    Right slot -> Right slot
+
+-- | A variant providing for a keypress the information about the label
+-- of the menu slot which was selected during the keypress.
+displayChoiceScreenWithRightPaneKMKM
+  :: forall m . MonadClientUI m
+  => (KeyOrSlot -> m OKX)
+  -> Bool -> String -> ColorMode -> Bool -> Slideshow -> [K.KM]
+  -> m (Either (K.KM, KeyOrSlot) MenuSlot)
+displayChoiceScreenWithRightPaneKMKM displayInRightPane
+                                     highlightBullet menuName dm sfBlank
+                                     frsX extraKeys = do
   (maxIx, initIx, clearIx, m)
     <- stepChoiceScreen highlightBullet dm sfBlank frsX extraKeys
-  let loop :: Int -> KeyOrSlot -> m (KeyOrSlot, Int)
+  let loop :: Int -> KeyOrSlot -> m (Either (K.KM, KeyOrSlot) MenuSlot, Int)
       loop pointer km = do
         okxRight <- displayInRightPane km
-        (final, km1, pointer1) <- m pointer okxRight
+        (final, kmkm1, pointer1) <- m pointer okxRight
         if final
-        then return (km1, pointer1)
-        else loop pointer1 km1
+        then return (kmkm1, pointer1)
+        else loop pointer1 $ case kmkm1 of
+          Left (km1, _) -> Left km1
+          Right slot -> Right slot
   pointer0 <- getMenuIx menuName maxIx initIx clearIx
   let km0 = case findKYX pointer0 $ slideshow frsX of
         Nothing -> error $ "no menu keys" `showFailure` frsX
@@ -201,7 +223,8 @@ saveMenuIx menuName initIx pointer =
 stepChoiceScreen :: forall m . MonadClientUI m
                  => Bool -> ColorMode -> Bool -> Slideshow -> [K.KM]
                  -> m ( Int, Int, Int
-                      , Int -> OKX -> m (Bool, KeyOrSlot, Int) )
+                      , Int -> OKX
+                        -> m (Bool, Either (K.KM, KeyOrSlot) MenuSlot, Int) )
 stepChoiceScreen highlightBullet dm sfBlank frsX extraKeys = do
   CCUI{coscreen=ScreenContent{rwidth, rheight}} <- getsSession sccui
   FontSetup{..} <- getFontSetup
@@ -220,7 +243,7 @@ stepChoiceScreen highlightBullet dm sfBlank frsX extraKeys = do
       trimmedY = canvasLength - 1 - 2  -- will be translated down 2 lines
       trimmedAlert = ( PointUI 0 trimmedY
                      , stringToAL "--a portion of the text trimmed--" )
-      page :: Int -> OKX -> m (Bool, KeyOrSlot, Int)
+      page :: Int -> OKX -> m (Bool, Either (K.KM, KeyOrSlot) MenuSlot, Int)
       page pointer (ovsRight0, kyxsRight) = assert (pointer >= 0)
                                             $ case findKYX pointer frs of
         Nothing -> error $ "no menu keys" `showFailure` frs
@@ -269,10 +292,13 @@ stepChoiceScreen highlightBullet dm sfBlank frsX extraKeys = do
                 if EM.null ovsRight0
                 then (ovs2, kyxs2)
                 else sideBySideOKX rwidth 0 (ovs2, kyxs2) (ovsRight, kyxsRight)
+              kmkm ekm2 = case ekm2 of
+                Left km -> Left (km, ekm2)
+                Right slot -> Right slot
               tmpResult pointer1 = case findKYX pointer1 frs of
                 Nothing -> error $ "no menu keys" `showFailure` frs
-                Just (_, (ekm1, _), _) -> return (False, ekm1, pointer1)
-              ignoreKey = return (False, ekm, pointer)
+                Just (_, (ekm1, _), _) -> return (False, kmkm ekm1, pointer1)
+              ignoreKey = return (False, kmkm ekm, pointer)
               pageLen = length kyxs
               xix :: KYX -> Bool
               xix (_, (PointUI x1' _, _)) = x1' <= x1 + 2 && x1' >= x1 - 2
@@ -282,7 +308,8 @@ stepChoiceScreen highlightBullet dm sfBlank frsX extraKeys = do
               firstItemOfNextPage = case findIndex (isRight . fst) restOKX of
                 Just p -> p + firstRowOfNextPage
                 _ -> firstRowOfNextPage
-              interpretKey :: K.KM -> m (Bool, KeyOrSlot, Int)
+              interpretKey :: K.KM
+                           -> m (Bool, Either (K.KM, KeyOrSlot) MenuSlot, Int)
               interpretKey ikm =
                 case K.key ikm of
                   _ | ikm == K.controlP -> do
@@ -292,7 +319,7 @@ stepChoiceScreen highlightBullet dm sfBlank frsX extraKeys = do
                   K.Return -> case ekm of
                     Left km ->
                       if K.key km == K.Return && km `elem` keys
-                      then return (True, Left km, pointer)
+                      then return (True, Left (km, ekm), pointer)
                       else interpretKey km
                     Right c -> return (True, Right c, pointer)
                   K.LeftButtonRelease -> do
@@ -303,20 +330,21 @@ stepChoiceScreen highlightBullet dm sfBlank frsX extraKeys = do
                           in my == cy && mx >= cx && mx < cx + blen
                     case find onChoice kyxs of
                       Nothing | ikm `elem` keys ->
-                        return (True, Left ikm, pointer)
-                      Nothing -> if K.spaceKM `elem` keys
-                                 then return (True, Left K.spaceKM, pointer)
-                                 else ignoreKey
+                        return (True, Left (ikm, ekm), pointer)
+                      Nothing ->
+                        if K.spaceKM `elem` keys
+                        then return (True, Left (K.spaceKM, ekm), pointer)
+                        else ignoreKey
                       Just (ckm, _) -> case ckm of
                         Left km ->
                           if K.key km == K.Return && km `elem` keys
-                          then return (True, Left km, pointer)
+                          then return (True, Left (km, ekm), pointer)
                           else interpretKey km
                         Right c  -> return (True, Right c, pointer)
                   K.RightButtonRelease ->
                     if ikm `elem` keys
-                    then return (True, Left ikm, pointer)
-                    else return (True, Left K.escKM, pointer)
+                    then return (True, Left (ikm, ekm), pointer)
+                    else return (True, Left (K.escKM, ekm), pointer)
                   K.Space | firstItemOfNextPage <= maxIx ->
                     tmpResult firstItemOfNextPage
                   K.Unknown "SAFE_SPACE" ->
@@ -324,7 +352,7 @@ stepChoiceScreen highlightBullet dm sfBlank frsX extraKeys = do
                     then tmpResult firstItemOfNextPage
                     else tmpResult clearIx
                   _ | ikm `elem` keys ->
-                    return (True, Left ikm, pointer)
+                    return (True, Left (ikm, ekm), pointer)
                   _ | K.key ikm `elem` [K.Up, K.WheelNorth] ->
                     case findIndex xix $ reverse $ take ixOnPage kyxs of
                       Nothing -> if pointer == 0 then tmpResult maxIx
@@ -360,16 +388,16 @@ stepChoiceScreen highlightBullet dm sfBlank frsX extraKeys = do
                                emptyMacroFrame {keyPending =
                                                   KeyMacro [K.mkKM "F1"]}
                            , smacroStack = [] }
-                    return (True, Left K.escKM, pointer)
+                    return (True, Left (K.escKM, ekm), pointer)
                   _ -> error $ "unknown key" `showFailure` ikm
           pkm <- promptGetKey dm ovs sfBlank legalKeys
           interpretKey pkm
       m pointer okxRight =
         if null frs
-        then return (True, Left K.escKM, pointer)
+        then return (True, Left (K.escKM, Left K.escKM), pointer)
         else do
           (final, km, pointer1) <- page pointer okxRight
-          let !_A1 = assert (either (`elem` keys) (const True) km) ()
+          let !_A1 = assert (either ((`elem` keys) . fst) (const True) km) ()
           -- Pointer at a button included, hence greater than 0, not @clearIx@.
           let !_A2 = assert (0 <= pointer1 && pointer1 <= maxIx
                              `blame`  (pointer1, maxIx)) ()
