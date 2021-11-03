@@ -6,7 +6,7 @@ module Game.LambdaHack.Client.UI.InventoryM
 #ifdef EXPOSE_INTERNAL
     -- * Internal operations
   , ItemDialogState(..), accessModeBag, storeItemPrompt, getItem
-  , DefItemKey(..), transition, runDefMessage, runDefItemKey, runDefAction
+  , DefItemKey(..), transition, runDefMessage, runDefAction
   , inventoryInRightPane
 #endif
   ) where
@@ -325,6 +325,7 @@ transition :: forall m. MonadClientUI m
            -> m (Either Text ResultItemDialogMode)
 transition leader psuit prompt promptGeneric permitMulitple
            cCur cRest itemDialogState = do
+  CCUI{coscreen=ScreenContent{rheight}} <- getsSession sccui
   let recCall cCur2 cRest2 itemDialogState2 = do
         -- Pointman could have been changed by keypresses near the end of
         -- the current recursive call, so refresh it for the next call.
@@ -411,23 +412,28 @@ transition leader psuit prompt promptGeneric permitMulitple
                })
       runModesSpecial :: OKX -> (MenuSlot -> ResultItemDialogMode)
                       -> m (Either Text ResultItemDialogMode)
-      runModesSpecial io resultConstructor = do
+      runModesSpecial okx resultConstructor = do
         let keyDefsSpecial = filter (defCond . snd) keyDefsCommon
             slotDefSpecial :: MenuSlot -> Either Text ResultItemDialogMode
             slotDefSpecial = Right . resultConstructor
         runDefMessage keyDefsSpecial promptChosen
-        ekm <- runDefItemKey leader [] keyDefsSpecial io cCur
+        let itemKeys = map fst keyDefsSpecial
+            keys = rights $ map (defLabel . snd) keyDefsSpecial
+        sli <- overlayToSlideshow (rheight - 2) keys okx
+        ekm <- displayChoiceScreenWithRightPane
+                 (inventoryInRightPane leader [] cCur) True
+                 (show cCur) ColorFull False sli itemKeys
         runDefAction keyDefsSpecial slotDefSpecial ekm
   case cCur of
     MSkills -> do
-      io <- skillsOverlay leader
-      runModesSpecial io RSkills
+      okx <- skillsOverlay leader
+      runModesSpecial okx RSkills
     MPlaces -> do
-      io <- placesOverlay
-      runModesSpecial io RPlaces
+      okx <- placesOverlay
+      runModesSpecial okx RPlaces
     MModes -> do
-      io <- modesOverlay
-      runModesSpecial io RModes
+      okx <- modesOverlay
+      runModesSpecial okx RModes
     _ -> do
       bagHuge <- getsState $ \s -> accessModeBag leader s cCur
       itemToF <- getsState $ flip itemToFull
@@ -479,9 +485,14 @@ transition leader psuit prompt promptGeneric permitMulitple
               MOwned -> ROwned iid
               MLore rlore -> RLore rlore slot iids
               _ -> error $ "" `showFailure` cCur
-      io <- itemOverlay (blid body) iids cCur
+      okx <- itemOverlay (blid body) iids cCur
       runDefMessage keyDefs promptChosen
-      ekm <- runDefItemKey leader iids keyDefs io cCur
+      let itemKeys = map fst keyDefs
+          keys = rights $ map (defLabel . snd) keyDefs
+      sli <- overlayToSlideshow (rheight - 2) keys okx
+      ekm <- displayChoiceScreenWithRightPane
+               (inventoryInRightPane leader iids cCur) True
+               (show cCur) ColorFull False sli itemKeys
       runDefAction keyDefs slotDef ekm
 
 runDefMessage :: MonadClientUI m
@@ -495,22 +506,6 @@ runDefMessage keyDefs prompt = do
       choice = T.intercalate " " $ map wrapB $ nub keyLabels
         -- switch to Data.Containers.ListUtils.nubOrd when we drop GHC 8.4.4
   msgAdd MsgPromptGeneric $ prompt <+> choice
-
-runDefItemKey :: MonadClientUI m
-              => ActorId
-              -> [(ItemId, ItemQuant)]
-              -> [(K.KM, DefItemKey m)]
-              -> OKX
-              -> ItemDialogMode
-              -> m KeyOrSlot
-runDefItemKey leader iids keyDefs okx cCur = do
-  CCUI{coscreen=ScreenContent{rheight}} <- getsSession sccui
-  let itemKeys = map fst keyDefs
-      keys = rights $ map (defLabel . snd) keyDefs
-  sli <- overlayToSlideshow (rheight - 2) keys okx
-  displayChoiceScreenWithRightPane
-    (inventoryInRightPane leader iids cCur) True
-    (show cCur) ColorFull False sli itemKeys
 
 runDefAction :: MonadClientUI m
              => [(K.KM, DefItemKey m)]
