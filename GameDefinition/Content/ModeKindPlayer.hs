@@ -147,7 +147,7 @@ hiHeroShort =
 hiHeroMedium =
   [ ( [(HiLoot, 200)]  -- usually no loot, but if so, no harm
     , [minBound..maxBound] )
-  , ( [(HiConst, 200), (HiLoss, -10)]
+  , ( [(HiConst, 200), (HiLoss, -10)]  -- normally, always positive
     , victoryOutcomes )
   , ( [(HiSprint, -500)]  -- speed matters, but only if fast enough
     , victoryOutcomes )
@@ -161,6 +161,8 @@ hiHeroMedium =
 hiHeroLong =
   [ ( [(HiLoot, 10000)]  -- multiplied by fraction of collected
     , [minBound..maxBound] )
+  , ( [(HiConst, 15)]  -- a token bonus in case all loot lost, but victory
+    , victoryOutcomes )
   , ( [(HiSprint, -20000)]  -- speedrun bonus, if below this number of turns
     , victoryOutcomes )
   , ( [(HiBlitz, -100)]  -- speed matters always
