@@ -171,12 +171,12 @@ showAward height table pos gameModeName =
             ("your valiant exploits", MU.PlEtc, "")
           Conquer ->
             ("your ruthless victory", MU.Sg3rd,
-             if pos <= height
+             if pos <= height && length (unTable table) > 3
              then "among the best"  -- "greatest heroes" doesn't fit
              else "(bonus included)")
           Escape ->
             ("your dashing coup", MU.Sg3rd,
-             if pos <= height
+             if pos <= height && length (unTable table) > 3
              then "among the best"
              else "(bonus included)")
           Restart ->
