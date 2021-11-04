@@ -107,7 +107,8 @@ register table total dungeonTotal time status@Status{stOutcome}
                  * 1.5 ^^ (- (difficultyCoeff (cdiff challenge)))
       negTime = absoluteTimeNegate time
       score = ScoreRecord{..}
-  in (points > 0, insertPos score table)
+  in (points > 0 || turnsSpent > 100, insertPos score table)
+       -- even if stash looted and all gold lost, count highscore if long game
 
 -- | Show a single high score, from the given ranking in the high score table.
 showScore :: TimeZone -> Int -> ScoreRecord -> [Text]
