@@ -278,7 +278,11 @@ displayGameOverAnalytics factionAn generationAn = do
 displayGameOverLore :: MonadClientUI m
                     => SLore -> Bool -> GenerationAnalytics -> m K.KM
 displayGameOverLore slore exposeCount generationAn = do
-  let generationLore = generationAn EM.! slore
+  itemD <- getsState sitemD
+  let -- In @sexposeItems@ mode this filtering passes all through
+      -- thanks to @revealItems@.
+      generationLore = EM.filterWithKey (\iid _ -> iid `EM.member` itemD)
+                       $ generationAn EM.! slore
       generationBag = EM.map (\k -> (if exposeCount then k else 1, []))
                              generationLore
       total = sum $ map fst $ EM.elems generationBag
