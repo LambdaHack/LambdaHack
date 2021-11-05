@@ -375,8 +375,8 @@ library this-game-content
                       Content.ItemKindBlast
                       Content.ItemKindTemporary
                       Content.ModeKind
-                      Content.ModeKindPlayer
                       Content.PlaceKind
+                      Content.PlayerKind
                       Content.RuleKind
                       Content.TileKind
   other-modules:      Paths_LambdaHack

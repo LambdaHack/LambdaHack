@@ -1,5 +1,5 @@
 -- | Basic players definitions.
-module Content.ModeKindPlayer
+module Content.PlayerKind
   ( playerHero, playerAntiHero, playerCivilian
   , playerMonster, playerAntiMonster, playerAnimal
   , playerHorror, playerMonsterTourist, playerHunamConvict

@@ -288,8 +288,8 @@ library
                       Content.ItemKindBlast
                       Content.ItemKindTemporary
                       Content.ModeKind
-                      Content.ModeKindPlayer
                       Content.PlaceKind
+                      Content.PlayerKind
                       Content.RuleKind
                       Content.TileKind
                       TieKnot
