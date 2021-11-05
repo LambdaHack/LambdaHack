@@ -28,6 +28,7 @@ import           Game.LambdaHack.Common.State
 import qualified Game.LambdaHack.Common.Tile as Tile
 import           Game.LambdaHack.Common.Time
 import           Game.LambdaHack.Common.Types
+import           Game.LambdaHack.Content.PlayerKind (fskillsOther)
 import           Game.LambdaHack.Core.Frequency
 import           Game.LambdaHack.Core.Random
 import qualified Game.LambdaHack.Definition.Ability as Ability
@@ -55,9 +56,15 @@ pickActorToMove foeAssocs friendAssocs maidToAvoid = do
         void $ refreshTarget foeAssocs friendAssocs (oldAid, oldBody)
         return oldAid
       oursNotSleeping = filter (\(_, b) -> bwatch b /= WSleep) ours
+      -- Faction discourages client leader change on level, because
+      -- non-leader actors have the same skills as leader, so no point.
+      -- Server is guaranteed to switch leader within a level occasionally,
+      -- e.g., when the old leader dies, so this works fine.
+      discouragedPointmanSwitchOnLevel =
+        fskillsOther (gplayer fact) == Ability.zeroSkills
   case oursNotSleeping of
-    _ | -- Keep the leader: faction discourages client leader change on level,
-        -- so will only be changed if waits (maidToAvoid)
+    _ | -- Keep the leader: client is discouraged from leader switching,
+        -- so it will only be changed if pointman waits (maidToAvoid)
         -- to avoid wasting his higher mobility.
         -- This is OK for monsters even if in melee, because both having
         -- a meleeing actor a leader (and higher DPS) and rescuing actor
@@ -65,7 +72,7 @@ pickActorToMove foeAssocs friendAssocs maidToAvoid = do
         -- And we are guaranteed that only the two classes of actors are
         -- not waiting, with some exceptions (urgent unequip, flee via starts,
         -- melee-less trying to flee, first aid, etc.).
-        snd (autoDungeonLevel fact) && isNothing maidToAvoid -> pickOld
+       discouragedPointmanSwitchOnLevel && isNothing maidToAvoid -> pickOld
     [] -> pickOld
     [(aidNotSleeping, bNotSleeping)] -> do
       -- Target of asleep actors won't change unless foe adjacent,
