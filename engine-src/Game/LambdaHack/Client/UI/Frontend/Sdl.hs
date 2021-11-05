@@ -205,6 +205,7 @@ startupFun coscreen soptions@ClientOptions{..} rfMVar = do
  else do
   -- The code below fails without access to a graphics system.
   SDL.initialize [SDL.InitVideo]
+  -- This cursor size if fine for default size and Full HD 1.5x size.
   xhairCursor <-
     createCursor cursorWB cursorAlpha (SDL.V2 32 27) (SDL.P (SDL.V2 13 13))
   SDL.activeCursor SDL.$= xhairCursor
@@ -408,33 +409,33 @@ cursorWB =
       charToBool _ = False
   in VS.fromList $ boolListToWord8List $ map charToBool $ concat
 
-    [ "            . .                 "
+    [ "            ...                 "
     , "            . .                 "
     , "        ..  . .  ..             "
     , "      ..    . .    ..           "
     , "     .      . .      .          "
     , "    .       . .       .         "
     , "   .        . .        .        "
-    , "   .        . .        .        "
+    , "   .        ...        .        "
     , "  .                     .       "
     , "  .                     .       "
     , "                                "
-    , "                                "
-    , "........           ........     "
-    , "                                "
-    , "........           ........     "
-    , "                                "
+    , "             .                  "
+    , "........    . .    ........     "
+    , ".      .   .   .   .      .     "
+    , "........    . .    ........     "
+    , "             .                  "
     , "                                "
     , "  .                     .       "
     , "  .                     .       "
-    , "   .        . .        .        "
+    , "   .        ...        .        "
     , "   .        . .        .        "
     , "    .       . .       .         "
     , "     .      . .      .          "
     , "      ..    . .    ..           "
     , "        ..  . .  ..             "
     , "            . .                 "
-    , "            . .                 " ]
+    , "            ...                 " ]
 
 cursorAlpha :: VS.Vector Word8
 cursorAlpha =
@@ -443,33 +444,33 @@ cursorAlpha =
       charToBool _ = False
   in VS.fromList $ boolListToWord8List $ map charToBool $ concat
 
-    [ "            .#.                 "
+    [ "            ...                 "
     , "            .#.                 "
     , "        ..  .#.  ..             "
     , "      ..##  .#.  ##..           "
     , "     .##    .#.    ##.          "
     , "    .#      .#.      #.         "
     , "   .#       .#.       #.        "
-    , "   .#       .#.       #.        "
+    , "   .#       ...       #.        "
     , "  .#                   #.       "
     , "  .#                   #.       "
     , "                                "
-    , "                                "
-    , "........           ........     "
-    , "########           ########     "
-    , "........           ........     "
-    , "                                "
+    , "             .                  "
+    , "........    .#.    ........     "
+    , ".######.   .###.   .######.     "
+    , "........    .#.    ........     "
+    , "             .                  "
     , "                                "
     , "  .#                   #.       "
     , "  .#                   #.       "
-    , "   .#       .#.       #.        "
+    , "   .#       ...       #.        "
     , "   .#       .#.       #.        "
     , "    .#      .#.      #.         "
     , "     .##    .#.    ##.          "
     , "      ..##  .#.  ##..           "
     , "        ..  .#.  ..             "
     , "            .#.                 "
-    , "            .#.                 " ]
+    , "            ...                 " ]
 
 shutdown :: FrontendSession -> IO ()
 shutdown FrontendSession{..} = writeIORef scontinueSdlLoop False
