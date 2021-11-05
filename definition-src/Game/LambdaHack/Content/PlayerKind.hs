@@ -28,7 +28,7 @@ import           Game.LambdaHack.Definition.Defs
 
 -- | Properties of a particular player.
 data PlayerKind = PlayerKind
-  { fsymbol       :: Char            -- ^ a symbol
+  { fsymbol       :: Char        -- ^ a symbol
   , fname         :: Text        -- ^ name of the player
   , ffreq         :: Freqs PlayerKind
                                  -- ^ frequency within groups
@@ -46,6 +46,10 @@ data PlayerKind = PlayerKind
   , fhasGender    :: Bool        -- ^ whether actors have gender
   , finitDoctrine :: Ability.Doctrine
                                  -- ^ initial faction's non-leaders doctrine
+  , fspawnsFast   :: Bool
+      -- ^ spawns fast enough that switching pointman to another level
+      --   to optimize spawning is a winning tactics, which would spoil
+      --   the fun, so switching is disabled in UI and AI clients
   , fleaderMode   :: Maybe AutoLeader
                                  -- ^ whether the faction can have a leader
                                  --   and what's its switching mode;

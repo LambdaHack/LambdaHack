@@ -1596,8 +1596,8 @@ itemMenuHuman leader cmdSemInCxtOfKM = do
                 K.KM{key=K.Fun n} -> do
                   let (newAid, (bNew, newCStore)) = foundAlt !! (n - 1)
                   fact <- getsState $ (EM.! side) . sfactionD
-                  let (autoDun, _) = autoDungeonLevel fact
-                  if | blid bNew /= blid b && autoDun ->
+                  let banned = bannedPointmanSwitchBetweenLevels fact
+                  if | blid bNew /= blid b && banned ->
                        weaveJust <$> failSer NoChangeDunLeader
                      | otherwise -> do
                        void $ pickLeader True newAid

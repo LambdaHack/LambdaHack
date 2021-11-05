@@ -112,12 +112,12 @@ pointmanCycleLevel leader verbose direction = do
   lidV <- viewedLevelUI
   body <- getsState $ getActorBody leader
   hs <- partyAfterLeader leader
-  let (autoDun, _) = autoDungeonLevel fact
-  let hsSort = case direction of
+  let banned = bannedPointmanSwitchBetweenLevels fact
+      hsSort = case direction of
         Forward -> hs
         Backward -> reverse hs
   case filter (\(_, b, _) -> blid b == lidV) hsSort of
-    _ | autoDun && lidV /= blid body ->
+    _ | banned && lidV /= blid body ->
       failMsg $ showReqFailure NoChangeDunLeader
     [] -> failMsg "cannot pick any other pointman on this level"
     (np, b, _) : _ -> do
@@ -133,12 +133,12 @@ pointmanCycle leader verbose direction = do
   side <- getsClient sside
   fact <- getsState $ (EM.! side) . sfactionD
   hs <- partyAfterLeader leader
-  let (autoDun, _) = autoDungeonLevel fact
-  let hsSort = case direction of
+  let banned = bannedPointmanSwitchBetweenLevels fact
+      hsSort = case direction of
         Forward -> hs
         Backward -> reverse hs
   case hsSort of
-    _ | autoDun -> failMsg $ showReqFailure NoChangeDunLeader
+    _ | banned -> failMsg $ showReqFailure NoChangeDunLeader
     [] -> failMsg "no other member in the party"
     (np, b, _) : _ -> do
       success <- pickLeader verbose np
@@ -197,9 +197,9 @@ pickLeaderWithPointer leader = do
                       . actorAssocs (== side) lidV
   let oursUI = map (\(aid, b) -> (aid, b, sactorUI EM.! aid)) ours
       viewed = sortOn keySelected oursUI
-      (autoDun, _) = autoDungeonLevel fact
+      banned = bannedPointmanSwitchBetweenLevels fact
       pick (aid, b) =
-        if | blid b /= arena && autoDun ->
+        if | blid b /= arena && banned ->
                failMsg $ showReqFailure NoChangeDunLeader
            | otherwise -> do
                void $ pickLeader True aid

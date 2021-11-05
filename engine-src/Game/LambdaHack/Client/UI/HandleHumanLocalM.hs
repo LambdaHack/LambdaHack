@@ -199,9 +199,9 @@ chooseItemDialogMode leader0 permitLoreCycle c = do
           sess {sitemSel = Just (iid, bestStore, False)}
         arena <- getArenaUI
         b2 <- getsState $ getActorBody newAid
-        let (autoDun, _) = autoDungeonLevel fact
+        let banned = bannedPointmanSwitchBetweenLevels fact
         if | newAid == leader -> return $ Right leader
-           | blid b2 /= arena && autoDun ->
+           | blid b2 /= arena && banned ->
              failSer NoChangeDunLeader
            | otherwise -> do
              -- We switch leader only here, not when processing results
@@ -586,11 +586,11 @@ pickLeaderHuman k = do
                  [] -> Nothing
                  (aid, b, _) : _ -> Just (aid, b)
       mchoice = if PLK.fhasGender (gplayer fact) then mhero else mactor
-      (autoDun, _) = autoDungeonLevel fact
+      banned = bannedPointmanSwitchBetweenLevels fact
   case mchoice of
     Nothing -> failMsg "no such member of the party"
     Just (aid, b)
-      | blid b /= arena && autoDun ->
+      | blid b /= arena && banned ->
           failMsg $ showReqFailure NoChangeDunLeader
       | otherwise -> do
           void $ pickLeader True aid

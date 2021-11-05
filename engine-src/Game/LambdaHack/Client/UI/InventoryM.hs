@@ -393,7 +393,7 @@ transition leader psuit prompt promptGeneric permitMulitple
         Backward -> case reverse $ cCur : cRest of
           c1 : rest -> (c1, reverse rest)
           [] -> error $ "" `showFailure` cRest
-      (autoDun, _) = autoDungeonLevel fact
+      banned = bannedPointmanSwitchBetweenLevels fact
       maySwitchLeader MOwned = False
       maySwitchLeader MLore{} = False
       maySwitchLeader MPlaces = False
@@ -403,7 +403,7 @@ transition leader psuit prompt promptGeneric permitMulitple
         let km = revCmd $ PointmanCycle direction
         in (km, DefItemKey
                { defLabel = if direction == Forward then Right km else Left ""
-               , defCond = maySwitchLeader cCur && not (autoDun || null hs)
+               , defCond = maySwitchLeader cCur && not (banned || null hs)
                , defAction = do
                    err <- pointmanCycle leader False direction
                    let !_A = assert (isNothing err `blame` err) ()

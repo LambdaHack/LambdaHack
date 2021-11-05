@@ -5,7 +5,7 @@ module Game.LambdaHack.Common.Faction
   ( FactionDict, Faction(..), Diplomacy(..)
   , Status(..), Challenge(..)
   , tshowChallenge, gleader, isHorrorFact, noRunWithMulti
-  , autoDungeonLevel, automateFaction, isFoe, isFriend
+  , autoDungeonLevel, bannedPointmanSwitchBetweenLevels, automateFaction, isFoe, isFriend
   , difficultyBound, difficultyDefault, difficultyCoeff, difficultyInverse
   , defaultChallenge, possibleActorFactions, ppContainer
 #ifdef EXPOSE_INTERNAL
@@ -145,6 +145,9 @@ autoDungeonLevel :: Faction -> (Bool, Bool)
 autoDungeonLevel fact = case fleaderMode (gplayer fact) of
                           Nothing -> (False, False)
                           Just AutoLeader{..} -> (autoDungeon, autoLevel)
+
+bannedPointmanSwitchBetweenLevels :: Faction -> Bool
+bannedPointmanSwitchBetweenLevels = fspawnsFast . gplayer
 
 automateFaction :: Bool -> Faction -> Faction
 automateFaction gunderAI fact = fact {gunderAI}
