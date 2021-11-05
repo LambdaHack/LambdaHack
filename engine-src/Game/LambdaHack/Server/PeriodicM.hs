@@ -322,11 +322,12 @@ leadLevelSwitch :: MonadServerAtomic m => m ()
 leadLevelSwitch = do
   COps{cocave} <- getsState scops
   factionD <- getsState sfactionD
-  let canSwitch fact = fst (autoDungeonLevel fact)
-                         -- a hack to help AI, until AI client can switch levels
-                       || gunderAI fact
-                          && isJust (fleaderMode (gplayer fact))
-      flipFaction (_, fact) | not $ canSwitch fact = return ()
+  let serverMaySwitch fact =
+        bannedPointmanSwitchBetweenLevels fact
+          -- client banned from switching, so the sever has to step in
+        || gunderAI fact
+             -- a hack to help AI, until AI client can switch levels
+      flipFaction (_, fact) | not $ serverMaySwitch fact = return ()
       flipFaction (fid, fact) =
         case gleader fact of
           Nothing -> return ()

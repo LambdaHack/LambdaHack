@@ -244,13 +244,13 @@ switchLeader fid aidNew = do
       !_A2 = assert (bfid bPre == fid
                      `blame` "client tries to move other faction actors"
                      `swith` (aidNew, bPre, fid, fact)) ()
-  let (autoDun, _) = autoDungeonLevel fact
+  let banned = bannedPointmanSwitchBetweenLevels fact
   arena <- case mleader of
     Nothing -> return $! blid bPre
     Just leader -> do
       b <- getsState $ getActorBody leader
       return $! blid b
-  if | blid bPre /= arena && autoDun ->
+  if | blid bPre /= arena && banned ->  -- catch the cheating clients
        execFailure aidNew ReqWait{-hack-} NoChangeDunLeader
      | otherwise -> do
        execUpdAtomic $ UpdLeadFaction fid mleader (Just aidNew)
