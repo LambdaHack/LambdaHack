@@ -206,8 +206,9 @@ startupFun coscreen soptions@ClientOptions{..} rfMVar = do
   -- The code below fails without access to a graphics system.
   SDL.initialize [SDL.InitVideo]
   -- This cursor size if fine for default size and Full HD 1.5x size.
+  let (cursorAlpha, cursorBW) = cursorXhair
   xhairCursor <-
-    createCursor cursorWB cursorAlpha (SDL.V2 32 27) (SDL.P (SDL.V2 13 13))
+    createCursor cursorBW cursorAlpha (SDL.V2 32 27) (SDL.P (SDL.V2 13 13))
   SDL.activeCursor SDL.$= xhairCursor
 --  xhairCursor <-
 --    throwIfNull "SDL.Input.Mouse.createSystemCursor" "SDL_createSystemCursor"
@@ -403,46 +404,13 @@ boolListToWord8List =
       : boolListToWord8List rest
     _ -> []
 
-cursorWB :: VS.Vector Word8
-cursorWB =
-  let charToBool '.' = True  -- black
-      charToBool _ = False
-  in VS.fromList $ boolListToWord8List $ map charToBool $ concat
-
-    [ "            ...                 "
-    , "            . .                 "
-    , "        ..  . .  ..             "
-    , "      ..    . .    ..           "
-    , "     .      . .      .          "
-    , "    .       . .       .         "
-    , "   .        . .        .        "
-    , "   .        ...        .        "
-    , "  .                     .       "
-    , "  .                     .       "
-    , "                                "
-    , "             .                  "
-    , "........    . .    ........     "
-    , ".      .   .   .   .      .     "
-    , "........    . .    ........     "
-    , "             .                  "
-    , "                                "
-    , "  .                     .       "
-    , "  .                     .       "
-    , "   .        ...        .        "
-    , "   .        . .        .        "
-    , "    .       . .       .         "
-    , "     .      . .      .          "
-    , "      ..    . .    ..           "
-    , "        ..  . .  ..             "
-    , "            . .                 "
-    , "            ...                 " ]
-
-cursorAlpha :: VS.Vector Word8
-cursorAlpha =
-  let charToBool '.' = True  -- visible black
-      charToBool '#' = True  -- visible white
-      charToBool _ = False
-  in VS.fromList $ boolListToWord8List $ map charToBool $ concat
+cursorXhair :: (VS.Vector Word8, VS.Vector Word8)  -- alpha, BW
+cursorXhair =
+  let charToBool '.' = (True, True)  -- visible black
+      charToBool '#' = (True, False)  -- visible white
+      charToBool _ = (False, False)  -- transparent white
+      toVS = VS.fromList . boolListToWord8List
+  in toVS *** toVS $ unzip $ map charToBool $ concat
 
     [ "            ...                 "
     , "            .#.                 "
