@@ -58,9 +58,9 @@ import qualified Game.LambdaHack.Definition.Color as Color
 -- to the fixed version:
 import           Control.Monad.IO.Class (MonadIO, liftIO)
 import           SDL.Internal.Exception (throwIfNull)
-import qualified SDL.Raw.Enum as Raw
 import qualified SDL.Raw.Event as Raw
 import           Unsafe.Coerce (unsafeCoerce)
+--import qualified SDL.Raw.Enum as Raw
 
 type FontAtlas = EM.EnumMap Color.AttrCharW32 SDL.Texture
 
@@ -205,12 +205,13 @@ startupFun coscreen soptions@ClientOptions{..} rfMVar = do
  else do
   -- The code below fails without access to a graphics system.
   SDL.initialize [SDL.InitVideo]
---  xhairCursor <-
---    createCursor cursorWB cursorAlpha (SDL.V2 32 27) (SDL.P (SDL.V2 13 13))
   xhairCursor <-
-    throwIfNull "SDL.Input.Mouse.createSystemCursor" "SDL_createSystemCursor"
-    $ Raw.createSystemCursor Raw.SDL_SYSTEM_CURSOR_CROSSHAIR
-  SDL.activeCursor SDL.$= unsafeCoerce xhairCursor
+    createCursor cursorWB cursorAlpha (SDL.V2 32 27) (SDL.P (SDL.V2 13 13))
+  SDL.activeCursor SDL.$= xhairCursor
+--  xhairCursor <-
+--    throwIfNull "SDL.Input.Mouse.createSystemCursor" "SDL_createSystemCursor"
+--    $ Raw.createSystemCursor Raw.SDL_SYSTEM_CURSOR_CROSSHAIR
+--  SDL.activeCursor SDL.$= unsafeCoerce xhairCursor
   let screenV2 = SDL.V2 (toEnum $ rwidth coscreen * boxSize)
                         (toEnum $ rheight coscreen * boxSize)
       windowConfig = SDL.defaultWindow
@@ -407,33 +408,35 @@ cursorWB =
       charToBool _ = False
   in VS.fromList $ boolListToWord8List $ map charToBool $ concat
 
-    [ "            .                   "
-    , "            .                   "
-    , "        ..  .    ..             "
-    , "      ..    .      ..           "
-    , "     .      .        .          "
-    , "    .       .         .         "
-    , "   .        .          .        "
-    , "   .        .          .        "
-    , "  .         .           .       "
-    , "  .         .           .       "
+    [ "             .                  "
+    , "             .                  "
+    , "        ..   .     ..           "
+    , "      ..     .       ..         "
+    , "     .       .         .        "
+    , "    .        .          .       "
+    , "   .         .           .      "
+    , "   .         .           .      "
+    , "  .          .            .     "
+    , "  .          .            .     "
     , "                                "
     , "                                "
-    , "                 ..........     "
+    , "                                "
+    , "                   ..........   "
     , "                                "
     , "..........                      "
     , "                                "
     , "                                "
-    , "  .           .         .       "
-    , "  .           .         .       "
-    , "   .          .        .        "
-    , "   .          .        .        "
-    , "    .         .       .         "
-    , "     .        .      .          "
-    , "      ..      .    ..           "
-    , "        ..    .  ..             "
-    , "              .                 "
-    , "              .                 " ]
+    , "                                "
+    , "  .            .          .     "
+    , "  .            .          .     "
+    , "   .           .         .      "
+    , "   .           .         .      "
+    , "    .          .        .       "
+    , "     .         .       .        "
+    , "      ..       .     ..         "
+    , "        ..     .   ..           "
+    , "               .                "
+    , "               .                " ]
 
 cursorAlpha :: VS.Vector Word8
 cursorAlpha =
@@ -442,33 +445,35 @@ cursorAlpha =
       charToBool _ = False
   in VS.fromList $ boolListToWord8List $ map charToBool $ concat
 
-    [ "            .#                  "
-    , "            .#                  "
-    , "        ..  .#   ..             "
-    , "      ..##  .#   ##..           "
-    , "     .##    .#     ##.          "
-    , "    .#      .#       #.         "
-    , "   .#       .#        #.        "
-    , "   .#      #.###      #.        "
-    , "  .#     ## .#  ##     #.       "
-    , "  .#    #   .#    #    #.       "
-    , "        #         #             "
-    , "       #           #            "
-    , "       #         ..........     "
-    , "##########       ##########     "
-    , "..........         #            "
-    , "       #           #            "
-    , "        #         #             "
-    , "  .#    #    #.   #    #.       "
-    , "  .#     ##  #. ##     #.       "
-    , "   .#      ###.#      #.        "
-    , "   .#        #.       #.        "
-    , "    .#       #.      #.         "
-    , "     .##     #.    ##.          "
-    , "      ..##   #.  ##..           "
-    , "        ..   #.  ..             "
-    , "             #.                 "
-    , "             #.                 " ]
+    [ "             .#                 "
+    , "             .#                 "
+    , "        ..   .#    ..           "
+    , "      ..##   .#    ##..         "
+    , "     .##     .#      ##.        "
+    , "    .#       .#        #.       "
+    , "   .#        .#         #.      "
+    , "   .#      ##.# ##      #.      "
+    , "  .#     ##  .#   ##     #.     "
+    , "  .#    #    .#     #    #.     "
+    , "        #           #           "
+    , "       #             #          "
+    , "       #             #          "
+    , "                   ..........   "
+    , "##########         ##########   "
+    , "..........                      "
+    , "       #             #          "
+    , "       #             #          "
+    , "        #           #           "
+    , "  .#    #     #.    #    #.     "
+    , "  .#     ##   #.  ##     #.     "
+    , "   .#      ## #.##      #.      "
+    , "   .#         #.        #.      "
+    , "    .#        #.       #.       "
+    , "     .##      #.     ##.        "
+    , "      ..##    #.   ##..         "
+    , "        ..    #.   ..           "
+    , "              #.                "
+    , "              #.                " ]
 
 shutdown :: FrontendSession -> IO ()
 shutdown FrontendSession{..} = writeIORef scontinueSdlLoop False
