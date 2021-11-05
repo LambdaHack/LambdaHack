@@ -66,6 +66,7 @@ import           Game.LambdaHack.Common.Types
 import qualified Game.LambdaHack.Content.ItemKind as IK
 import qualified Game.LambdaHack.Content.ModeKind as MK
 import qualified Game.LambdaHack.Content.PlaceKind as PK
+import qualified Game.LambdaHack.Content.PlayerKind as PLK
 import qualified Game.LambdaHack.Content.TileKind as TK
 import qualified Game.LambdaHack.Definition.Ability as Ability
 import qualified Game.LambdaHack.Definition.Color as Color
@@ -431,7 +432,7 @@ describeMode addTitle gameModeId = do
       sectionsEndAS = concat (intersperse [(monoFont, textToAS "\n")]
                                           (mapMaybe renderSection sectionsEnd))
       sectionsEnd = map outcomeSection [minBound..maxBound]
-      outcomeSection :: MK.Outcome -> (AttrString, Text)
+      outcomeSection :: PLK.Outcome -> (AttrString, Text)
       outcomeSection outcome =
         ( renderOutcome outcome
         , if not (outcomeSeen outcome)
@@ -442,33 +443,33 @@ describeMode addTitle gameModeId = do
         )
       -- These are not added to @mendMsg@, because they only fit here.
       endMsgDefault =
-        [ (MK.Restart, "No shame there is in noble defeat and there is honour in perseverance. Sometimes there are ways and places to turn rout into victory.")
-        , (MK.Camping, "Don't fear to take breaks. While you move, others move, even on distant floors, but while you stay still, the world stays still.")
+        [ (PLK.Restart, "No shame there is in noble defeat and there is honour in perseverance. Sometimes there are ways and places to turn rout into victory.")
+        , (PLK.Camping, "Don't fear to take breaks. While you move, others move, even on distant floors, but while you stay still, the world stays still.")
         ]
       scoreRecords = maybe [] HighScore.unTable $ EM.lookup gameModeId scoreDict
-      outcomeSeen :: MK.Outcome -> Bool
+      outcomeSeen :: PLK.Outcome -> Bool
       outcomeSeen outcome = case outcome of
-        MK.Camping -> gameModeId `ES.member` scampings
-        MK.Restart -> gameModeId `ES.member` srestarts
+        PLK.Camping -> gameModeId `ES.member` scampings
+        PLK.Restart -> gameModeId `ES.member` srestarts
         _ -> outcome `elem` map (stOutcome . HighScore.getStatus) scoreRecords
       -- Camping not taken into account.
-      lastOutcome :: MK.Outcome
+      lastOutcome :: PLK.Outcome
       lastOutcome = if null scoreRecords
-                    then MK.Restart  -- only if nothing else
+                    then PLK.Restart  -- only if nothing else
                     else stOutcome . HighScore.getStatus
                          $ maximumBy (comparing HighScore.getDate) scoreRecords
-      renderOutcome :: MK.Outcome -> AttrString
+      renderOutcome :: PLK.Outcome -> AttrString
       renderOutcome outcome =
-        let color | outcome `elem` MK.deafeatOutcomes = Color.cVeryBadEvent
-                  | outcome `elem` MK.victoryOutcomes = Color.cVeryGoodEvent
+        let color | outcome `elem` PLK.deafeatOutcomes = Color.cVeryBadEvent
+                  | outcome `elem` PLK.victoryOutcomes = Color.cVeryGoodEvent
                   | otherwise = Color.cNeutralEvent
             lastRemark
               | outcome /= lastOutcome = ""
-              | outcome `elem` MK.deafeatOutcomes = "(last suffered ending)"
-              | outcome `elem` MK.victoryOutcomes = "(last achieved ending)"
+              | outcome `elem` PLK.deafeatOutcomes = "(last suffered ending)"
+              | outcome `elem` PLK.victoryOutcomes = "(last achieved ending)"
               | otherwise = "(last seen ending)"
         in textToAS "Game over message when"
-           <+:> (textFgToAS color (T.toTitle $ MK.nameOutcomePast outcome)
+           <+:> (textFgToAS color (T.toTitle $ PLK.nameOutcomePast outcome)
                  <+:> textToAS lastRemark)
            <> textToAS ":"
   return $! if isSquareFont propFont

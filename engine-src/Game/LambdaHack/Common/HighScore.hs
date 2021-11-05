@@ -27,6 +27,7 @@ import Game.LambdaHack.Common.Misc
 import Game.LambdaHack.Common.Time
 import Game.LambdaHack.Content.ItemKind (ItemKind)
 import Game.LambdaHack.Content.ModeKind
+import Game.LambdaHack.Content.PlayerKind
 import Game.LambdaHack.Definition.Defs
 
 -- | A single score record. Records are ordered in the highscore table,

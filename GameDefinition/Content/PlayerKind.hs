@@ -14,13 +14,15 @@ import Game.LambdaHack.Core.Prelude
 import           Content.ItemKindActor
 import           Content.ItemKindOrgan
 import qualified Game.LambdaHack.Content.ItemKind as IK
-import           Game.LambdaHack.Content.ModeKind
+import           Game.LambdaHack.Content.PlayerKind
 import           Game.LambdaHack.Definition.Ability
 
-playerHero, playerAntiHero, playerCivilian, playerMonster, playerAntiMonster, playerAnimal, playerHorror, playerMonsterTourist, playerHunamConvict, playerAnimalMagnificent, playerAnimalExquisite :: Player
+playerHero, playerAntiHero, playerCivilian, playerMonster, playerAntiMonster, playerAnimal, playerHorror, playerMonsterTourist, playerHunamConvict, playerAnimalMagnificent, playerAnimalExquisite :: PlayerKind
 
-playerHero = Player
-  { fname = "Explorer"
+playerHero = PlayerKind
+  { fsymbol = 'e'
+  , fname = "Explorer"
+  , ffreq = []
   , fgroups = [HERO]
   , fskillsOther = meleeAdjacent
   , fcanEscape = True
@@ -34,13 +36,17 @@ playerHero = Player
   }
 
 playerAntiHero = playerHero
-  { fleaderMode = Just $ AutoLeader True False
+  { fsymbol = 'a'
+  , ffreq = []
+  , fleaderMode = Just $ AutoLeader True False
   , fhasUI = False
   , finitUnderAI = True
   }
 
-playerCivilian = Player
-  { fname = "Civilian"
+playerCivilian = PlayerKind
+  { fsymbol = 'c'
+  , fname = "Civilian"
+  , ffreq = []
   , fgroups = [HERO, CIVILIAN]
   , fskillsOther = zeroSkills  -- not coordinated by any leadership
   , fcanEscape = False
@@ -53,8 +59,10 @@ playerCivilian = Player
   , finitUnderAI = True
   }
 
-playerMonster = Player
-  { fname = "Monster Hive"
+playerMonster = PlayerKind
+  { fsymbol = 'm'
+  , fname = "Monster Hive"
+  , ffreq = []
   , fgroups = [MONSTER, MOBILE_MONSTER]
   , fskillsOther = zeroSkills
   , fcanEscape = False
@@ -71,13 +79,17 @@ playerMonster = Player
   }
 
 playerAntiMonster = playerMonster
-  { fleaderMode = Just $ AutoLeader True True
+  { fsymbol = 'b'
+  , ffreq = []
+  , fleaderMode = Just $ AutoLeader True True
   , fhasUI = True
   , finitUnderAI = False
   }
 
-playerAnimal = Player
-  { fname = "Animal Kingdom"
+playerAnimal = PlayerKind
+  { fsymbol = 'n'
+  , fname = "Animal Kingdom"
+  , ffreq = []
   , fgroups = [ANIMAL, MOBILE_ANIMAL, IMMOBILE_ANIMAL, SCAVENGER]
   , fskillsOther = zeroSkills
   , fcanEscape = False
@@ -95,8 +107,10 @@ playerAnimal = Player
 -- a brawl game between two hero factions land in the horror faction.
 -- In every game, either all factions for which summoning items exist
 -- should be present or a horror player should be added to host them.
-playerHorror = Player
-  { fname = "Horror Den"
+playerHorror = PlayerKind
+  { fsymbol = 'h'
+  , fname = "Horror Den"
+  , ffreq = []
   , fgroups = [IK.HORROR]
   , fskillsOther = zeroSkills
   , fcanEscape = False
@@ -111,7 +125,9 @@ playerHorror = Player
 
 playerMonsterTourist =
   playerAntiMonster
-    { fname = "Monster Tourist Office"
+    { fsymbol = 't'
+    , fname = "Monster Tourist Office"
+    , ffreq = []
     , fcanEscape = True
     , fneverEmpty = True  -- no spawning
     , fhiCondPoly = hiHeroMedium
@@ -120,16 +136,22 @@ playerMonsterTourist =
     , finitUnderAI = False }
 
 playerHunamConvict =
-  playerCivilian { fname = "Hunam Convict"
+  playerCivilian { fsymbol = 'v'
+                 , fname = "Hunam Convict"
+                 , ffreq = []
                  , fleaderMode = Just $ AutoLeader True False
                  , finitUnderAI = True }
 
 playerAnimalMagnificent =
-  playerAnimal { fname = "Animal Magnificent Specimen Variety"
+  playerAnimal { fsymbol = 'g'
+               , fname = "Animal Magnificent Specimen Variety"
+               , ffreq = []
                , fneverEmpty = True }
 
 playerAnimalExquisite =
-  playerAnimal { fname = "Animal Exquisite Herds and Packs Galore"
+  playerAnimal { fsymbol = 'q'
+               , fname = "Animal Exquisite Herds and Packs Galore"
+               , ffreq = []
                , fneverEmpty = True }
 
 hiHeroLong, hiHeroMedium, hiHeroShort, hiDweller :: HiCondPoly

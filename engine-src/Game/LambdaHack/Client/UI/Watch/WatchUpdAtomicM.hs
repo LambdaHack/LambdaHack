@@ -61,6 +61,7 @@ import           Game.LambdaHack.Content.CaveKind (cdesc)
 import qualified Game.LambdaHack.Content.ItemKind as IK
 import           Game.LambdaHack.Content.ModeKind
 import qualified Game.LambdaHack.Content.ModeKind as MK
+import           Game.LambdaHack.Content.PlayerKind
 import           Game.LambdaHack.Content.RuleKind
 import qualified Game.LambdaHack.Content.TileKind as TK
 import           Game.LambdaHack.Core.Random

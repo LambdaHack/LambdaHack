@@ -41,6 +41,7 @@ import qualified Game.LambdaHack.Content.CaveKind as CK
 import           Game.LambdaHack.Content.ItemKind (ItemKind)
 import qualified Game.LambdaHack.Content.ItemKind as IK
 import           Game.LambdaHack.Content.ModeKind
+import           Game.LambdaHack.Content.PlayerKind
 import           Game.LambdaHack.Core.Frequency
 import           Game.LambdaHack.Core.Random
 import qualified Game.LambdaHack.Definition.Ability as Ability

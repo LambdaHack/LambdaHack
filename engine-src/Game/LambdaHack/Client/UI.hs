@@ -55,7 +55,7 @@ import           Game.LambdaHack.Common.ClientOptions
 import           Game.LambdaHack.Common.Faction
 import           Game.LambdaHack.Common.MonadStateRead
 import           Game.LambdaHack.Common.State
-import           Game.LambdaHack.Content.ModeKind
+import           Game.LambdaHack.Content.PlayerKind
 
 -- | Handle the move of a human player.
 queryUI :: (MonadClient m, MonadClientUI m) => m (Maybe RequestUI)

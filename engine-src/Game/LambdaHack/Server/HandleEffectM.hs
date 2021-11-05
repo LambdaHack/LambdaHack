@@ -58,7 +58,7 @@ import           Game.LambdaHack.Common.Types
 import           Game.LambdaHack.Common.Vector
 import           Game.LambdaHack.Content.ItemKind (ItemKind)
 import qualified Game.LambdaHack.Content.ItemKind as IK
-import           Game.LambdaHack.Content.ModeKind
+import           Game.LambdaHack.Content.PlayerKind
 import           Game.LambdaHack.Content.RuleKind
 import qualified Game.LambdaHack.Core.Dice as Dice
 import           Game.LambdaHack.Core.Random

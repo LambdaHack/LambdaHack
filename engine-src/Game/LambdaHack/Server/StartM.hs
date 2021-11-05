@@ -43,6 +43,7 @@ import qualified Game.LambdaHack.Content.CaveKind as CK
 import           Game.LambdaHack.Content.ItemKind (ItemKind)
 import qualified Game.LambdaHack.Content.ItemKind as IK
 import           Game.LambdaHack.Content.ModeKind
+import           Game.LambdaHack.Content.PlayerKind
 import qualified Game.LambdaHack.Core.Dice as Dice
 import           Game.LambdaHack.Core.Random
 import qualified Game.LambdaHack.Definition.Ability as Ability
@@ -229,7 +230,7 @@ resetFactions :: FactionDict -> ContentId ModeKind -> Int -> Dice.AbsDepth
               -> Roster
               -> Rnd FactionDict
 resetFactions factionDold gameModeIdOld curDiffSerOld totalDepth players = do
-  let rawCreate (ix, (gplayer@Player{..}, gteamCont, initialActors)) = do
+  let rawCreate (ix, (gplayer@PlayerKind{..}, gteamCont, initialActors)) = do
         let castInitialActors (ln, d, actorGroup) = do
               n <- castDice (Dice.AbsDepth $ abs ln) totalDepth d
               return (ln, n, actorGroup)

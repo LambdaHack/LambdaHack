@@ -3,15 +3,11 @@
 module Game.LambdaHack.Content.ModeKind
   ( pattern CAMPAIGN_SCENARIO, pattern INSERT_COIN, pattern NO_CONFIRMS
   , ModeKind(..), makeData
-  , Caves, Roster(..), TeamContinuity(..), Outcome(..)
-  , HiCondPoly, HiSummand, HiPolynomial, HiIndeterminant(..)
-  , Player(..), AutoLeader(..)
-  , teamExplorer, victoryOutcomes, deafeatOutcomes, nameOutcomePast
-  , nameOutcomeVerb, endMessageOutcome, screensave
+  , Caves, Roster(..)
+  , screensave
 #ifdef EXPOSE_INTERNAL
     -- * Internal operations
-  , validateSingle, validateAll
-  , validateSingleRoster, validateSinglePlayer, mandatoryGroups
+  , validateSingle, validateAll, validateSingleRoster, mandatoryGroups
 #endif
   ) where
 
@@ -19,14 +15,18 @@ import Prelude ()
 
 import Game.LambdaHack.Core.Prelude
 
-import           Data.Binary
 import qualified Data.Text as T
-import           GHC.Generics (Generic)
 
 import           Game.LambdaHack.Content.CaveKind (CaveKind)
 import           Game.LambdaHack.Content.ItemKind (ItemKind)
+import           Game.LambdaHack.Content.PlayerKind
+  ( AutoLeader
+  , Outcome (..)
+  , PlayerKind (..)
+  , TeamContinuity (..)
+  , screensavePlayerKind
+  )
 import qualified Game.LambdaHack.Core.Dice as Dice
-import qualified Game.LambdaHack.Definition.Ability as Ability
 import           Game.LambdaHack.Definition.ContentData
 import           Game.LambdaHack.Definition.Defs
 import           Game.LambdaHack.Definition.DefsInternal
@@ -54,7 +54,7 @@ type Caves = [([Int], [GroupName CaveKind])]
 
 -- | The specification of players for the game mode.
 data Roster = Roster
-  { rosterList  :: [( Player
+  { rosterList  :: [( PlayerKind
                     , Maybe TeamContinuity
                     , [(Int, Dice.Dice, GroupName ItemKind)] )]
       -- ^ players in the particular team and levels, numbers and groups
@@ -64,138 +64,10 @@ data Roster = Roster
   }
   deriving Show
 
--- | Team continuity index. Starting with 1, lower than 100.
-newtype TeamContinuity = TeamContinuity Int
-  deriving (Show, Eq, Ord, Enum, Generic)
-
-instance Binary TeamContinuity
-
--- | Outcome of a game.
-data Outcome =
-    Escape    -- ^ the player escaped the dungeon alive
-  | Conquer   -- ^ the player won by eliminating all rivals
-  | Defeated  -- ^ the faction lost the game in another way
-  | Killed    -- ^ the faction was eliminated
-  | Restart   -- ^ game is restarted; the quitter quit
-  | Camping   -- ^ game is supended
-  deriving (Show, Eq, Ord, Enum, Bounded, Generic)
-
-instance Binary Outcome
-
--- | Conditional polynomial representing score calculation for this player.
-type HiCondPoly = [HiSummand]
-
-type HiSummand = (HiPolynomial, [Outcome])
-
-type HiPolynomial = [(HiIndeterminant, Double)]
-
-data HiIndeterminant =
-    HiConst
-  | HiLoot
-  | HiSprint
-  | HiBlitz
-  | HiSurvival
-  | HiKill
-  | HiLoss
-  deriving (Show, Eq, Generic)
-
-instance Binary HiIndeterminant
-
--- | Properties of a particular player.
-data Player = Player
-  { fname         :: Text        -- ^ name of the player
-  , fgroups       :: [GroupName ItemKind]
-                                 -- ^ names of actor groups that may naturally
-                                 --   fall under player's control, e.g., upon
-                                 --   spawning or summoning
-  , fskillsOther  :: Ability.Skills
-                                 -- ^ fixed skill modifiers to the non-leader
-                                 --   actors; also summed with skills implied
-                                 --   by @fdoctrine@ (which is not fixed)
-  , fcanEscape    :: Bool        -- ^ the player can escape the dungeon
-  , fneverEmpty   :: Bool        -- ^ the faction declared killed if no actors
-  , fhiCondPoly   :: HiCondPoly  -- ^ score polynomial for the player
-  , fhasGender    :: Bool        -- ^ whether actors have gender
-  , finitDoctrine :: Ability.Doctrine
-                                 -- ^ initial faction's non-leaders doctrine
-  , fleaderMode   :: Maybe AutoLeader
-                                 -- ^ whether the faction can have a leader
-                                 --   and what's its switching mode;
-  , fhasUI        :: Bool        -- ^ does the faction have a UI client
-                                 --   (for control or passive observation)
-  , finitUnderAI  :: Bool        -- ^ is the faction initially under AI control
-  }
-  deriving (Show, Eq, Generic)
-
-instance Binary Player
-
-data AutoLeader = AutoLeader
-  { autoDungeon :: Bool
-      -- ^ leader switching between levels is automatically done by the server
-      --   and client is not permitted to change to leaders from other levels
-      --   (the frequency of leader level switching done by the server
-      --   is controlled by @RuleKind.rleadLevelClips@);
-      --   if the flag is @False@, server still does a subset
-      --   of the automatic switching, e.g., when the old leader dies
-      --   and no other actor of the faction resides on his level,
-      --   but the client (particularly UI) is expected to do changes as well
-  , autoLevel   :: Bool
-      -- ^ client is discouraged from leader switching (e.g., because
-      --   non-leader actors have the same skills as leader);
-      --   server is guaranteed to switch leader within a level very rarely,
-      --   e.g., when the old leader dies;
-      --   if the flag is @False@, server still does a subset
-      --   of the automatic switching, but the client is expected to do more,
-      --   because it's advantageous for that kind of a faction
-  }
-  deriving (Show, Eq, Generic)
-
-instance Binary AutoLeader
-
-teamExplorer :: TeamContinuity
-teamExplorer = TeamContinuity 1
-
-victoryOutcomes :: [Outcome]
-victoryOutcomes = [Escape, Conquer]
-
-deafeatOutcomes :: [Outcome]
-deafeatOutcomes = [Defeated, Killed, Restart]
-
-nameOutcomePast :: Outcome -> Text
-nameOutcomePast = \case
-  Escape   -> "emerged victorious"
-  Conquer  -> "vanquished all opposition"
-  Defeated -> "got decisively defeated"
-  Killed   -> "got eliminated"
-  Restart  -> "resigned prematurely"
-  Camping  -> "set camp"
-
-nameOutcomeVerb :: Outcome -> Text
-nameOutcomeVerb = \case
-  Escape   -> "emerge victorious"
-  Conquer  -> "vanquish all opposition"
-  Defeated -> "be decisively defeated"
-  Killed   -> "be eliminated"
-  Restart  -> "resign prematurely"
-  Camping  -> "set camp"
-
-endMessageOutcome :: Outcome -> Text
-endMessageOutcome = \case
-  Escape   -> "Can it be done more efficiently, though?"
-  Conquer  -> "Can it be done in a better style, though?"
-  Defeated -> "Let's hope your new overlords let you live."
-  Killed   -> "Let's hope a rescue party arrives in time!"
-  Restart  -> "This time for real."
-  Camping  -> "See you soon, stronger and braver!"
-
 screensave :: AutoLeader -> ModeKind -> ModeKind
 screensave auto mk =
-  let f x@(Player{finitUnderAI=True}, _, _) = x
-      f (player, teamContinuity, initial) =
-          ( player { finitUnderAI = True
-                   , fleaderMode = Just auto }
-          , teamContinuity
-          , initial )
+  let f (player, teamContinuity, initial) =
+        (screensavePlayerKind auto player, teamContinuity, initial)
   in mk { mroster = (mroster mk) {rosterList = map f $ rosterList $ mroster mk}
         , mreason = "This is one of the screensaver scenarios, not available from the main menu, with all factions controlled by AI. Feel free to take over or relinquish control at any moment, but to register a legitimate high score, choose a standard scenario instead.\n" <> mreason mk
         }
@@ -223,7 +95,6 @@ validateSingleRoster caves Roster{..} =
          nubTokens = nub $ sort tokens
      in [ "duplicate team continuity token"
         | length tokens /= length nubTokens ]
-  ++ concatMap (\(pl, _, _) -> validateSinglePlayer pl) rosterList
   ++ let checkPl field plName =
            [ plName <+> "is not a player name in" <+> field
            | all (\(pl, _, _) -> fname pl /= plName) rosterList ]
@@ -245,12 +116,6 @@ validateSingleRoster caves Roster{..} =
            | signum minD /= signum maxD ]
         ++ [ "player confused by level numer zero"
            | any (== 0) keys ]
-
-validateSinglePlayer :: Player -> [Text]
-validateSinglePlayer Player{..} =
-  [ "fname empty:" <+> fname | T.null fname ]
-  ++ [ "fskillsOther not negative:" <+> fname
-     | any ((>= 0) . snd) $ Ability.skillsToList fskillsOther ]
 
 -- | Validate game mode kinds together.
 validateAll :: [ModeKind] -> ContentData ModeKind -> [Text]

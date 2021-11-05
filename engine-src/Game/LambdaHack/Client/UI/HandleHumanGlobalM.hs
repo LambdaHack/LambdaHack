@@ -95,6 +95,7 @@ import           Game.LambdaHack.Common.Types
 import           Game.LambdaHack.Common.Vector
 import qualified Game.LambdaHack.Content.ItemKind as IK
 import qualified Game.LambdaHack.Content.ModeKind as MK
+import qualified Game.LambdaHack.Content.PlayerKind as PLK
 import           Game.LambdaHack.Content.RuleKind
 import qualified Game.LambdaHack.Content.TileKind as TK
 import qualified Game.LambdaHack.Core.Dice as Dice
@@ -1214,7 +1215,7 @@ verifyEscape :: MonadClientUI m => m (FailOrCmd ())
 verifyEscape = do
   side <- getsClient sside
   fact <- getsState $ (EM.! side) . sfactionD
-  if not (MK.fcanEscape $ gplayer fact)
+  if not (PLK.fcanEscape $ gplayer fact)
   then failWith
          "This is the way out, but where would you go in this alien world?"
            -- exceptionally a full sentence, because a real question

@@ -24,7 +24,7 @@ import Game.LambdaHack.Common.State
 import Game.LambdaHack.Common.Time
 import Game.LambdaHack.Common.Types
 import Game.LambdaHack.Content.ItemKind (ItemKind)
-import Game.LambdaHack.Content.ModeKind (TeamContinuity)
+import Game.LambdaHack.Content.PlayerKind (TeamContinuity)
 import Game.LambdaHack.Definition.Defs
 import Game.LambdaHack.Server.Fov
 import Game.LambdaHack.Server.ItemRev
