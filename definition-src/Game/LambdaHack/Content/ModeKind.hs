@@ -20,12 +20,7 @@ import qualified Data.Text as T
 import           Game.LambdaHack.Content.CaveKind (CaveKind)
 import           Game.LambdaHack.Content.ItemKind (ItemKind)
 import           Game.LambdaHack.Content.PlayerKind
-  ( AutoLeader
-  , Outcome (..)
-  , PlayerKind (..)
-  , TeamContinuity (..)
-  , screensavePlayerKind
-  )
+  (Outcome (..), PlayerKind (..), TeamContinuity (..), screensavePlayerKind)
 import qualified Game.LambdaHack.Core.Dice as Dice
 import           Game.LambdaHack.Definition.ContentData
 import           Game.LambdaHack.Definition.Defs
@@ -64,10 +59,10 @@ data Roster = Roster
   }
   deriving Show
 
-screensave :: AutoLeader -> ModeKind -> ModeKind
-screensave auto mk =
+screensave :: ModeKind -> ModeKind
+screensave mk =
   let f (player, teamContinuity, initial) =
-        (screensavePlayerKind auto player, teamContinuity, initial)
+        (screensavePlayerKind player, teamContinuity, initial)
   in mk { mroster = (mroster mk) {rosterList = map f $ rosterList $ mroster mk}
         , mreason = "This is one of the screensaver scenarios, not available from the main menu, with all factions controlled by AI. Feel free to take over or relinquish control at any moment, but to register a legitimate high score, choose a standard scenario instead.\n" <> mreason mk
         }

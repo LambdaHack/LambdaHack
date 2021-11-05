@@ -138,7 +138,7 @@ noRunWithMulti fact =
   let skillsOther = fskillsOther $ gplayer fact
   in Ability.getSk Ability.SkMove skillsOther >= 0
      || bannedPointmanSwitchBetweenLevels fact
-     || isNothing (fleaderMode (gplayer fact))
+     || not (fhasPointman (gplayer fact))
 
 bannedPointmanSwitchBetweenLevels :: Faction -> Bool
 bannedPointmanSwitchBetweenLevels = fspawnsFast . gplayer

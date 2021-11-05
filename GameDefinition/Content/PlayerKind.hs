@@ -49,7 +49,8 @@ playerExplorer = PlayerKind
   , fhasGender = True
   , finitDoctrine = TExplore
   , fspawnsFast = False
-  , fleaderMode = Just $ AutoLeader False False
+  , fhasPointman = True
+  , fleaderMode = Just ()
   , fhasUI = True
   , finitUnderAI = False
   }
@@ -65,7 +66,7 @@ playerExplorerTrapped = playerExplorer { fcanEscape = False
 playerCompetitor = playerExplorer
   { fsymbol = 'a'
   , ffreq = []
-  , fleaderMode = Just $ AutoLeader True False
+  , fleaderMode = Just ()
   , fhasUI = False
   , finitUnderAI = True
   }
@@ -91,6 +92,7 @@ playerCivilian = PlayerKind
   , fhasGender = True
   , finitDoctrine = TPatrol
   , fspawnsFast = False
+  , fhasPointman = False
   , fleaderMode = Nothing  -- unorganized
   , fhasUI = False
   , finitUnderAI = True
@@ -102,7 +104,8 @@ playerHunamConvict =
   playerCivilian { fsymbol = 'v'
                  , fname = "Hunam Convict"
                  , ffreq = []
-                 , fleaderMode = Just $ AutoLeader True False
+                 , fhasPointman = True  -- convicts organize better
+                 , fleaderMode = Just ()
                  , finitUnderAI = True }
 
 -- ** teamMonster
@@ -119,10 +122,8 @@ playerMonster = PlayerKind
   , fhasGender = False
   , finitDoctrine = TExplore
   , fspawnsFast = True
-  , fleaderMode =
-      -- No point changing leader on level, since all move and they
-      -- don't follow the leader.
-      Just $ AutoLeader True True
+  , fhasPointman = True
+  , fleaderMode = Just ()
   , fhasUI = False
   , finitUnderAI = True
   }
@@ -130,7 +131,7 @@ playerMonster = PlayerKind
 playerAntiMonster = playerMonster
   { fsymbol = 'b'
   , ffreq = []
-  , fleaderMode = Just $ AutoLeader True True
+  , fleaderMode = Just ()
   , fhasUI = True
   , finitUnderAI = False
   }
@@ -146,10 +147,10 @@ playerMonsterTourist =
     , fhiCondPoly = hiHeroMedium
     , finitDoctrine = TFollow  -- follow-the-guide, as tourists do
     , fspawnsFast = False  -- on a trip, so no spawning
-    , fleaderMode = Just $ AutoLeader False False
+    , fleaderMode = Just ()
     , finitUnderAI = False }
 playerMonsterTouristPassive =
-  playerMonsterTourist { fleaderMode = Just $ AutoLeader True True
+  playerMonsterTourist { fleaderMode = Just ()
                        , fhasUI = False
                        , finitUnderAI = True }
 playerMonsterCaptive = playerMonster {fneverEmpty = True}
@@ -170,6 +171,7 @@ playerAnimal = PlayerKind
   , fhasGender = False
   , finitDoctrine = TRoam  -- can't pick up, so no point exploring
   , fspawnsFast = True
+  , fhasPointman = False
   , fleaderMode = Nothing
   , fhasUI = False
   , finitUnderAI = True
@@ -189,7 +191,8 @@ playerAnimalExquisite =
 playerAnimalCaptive = playerAnimal {fneverEmpty = True}
 playerAnimalNarrating = playerAnimal {fhasUI = True}
 playerAnimalMagnificentNarrating =
-  playerAnimalMagnificent { fleaderMode = Just $ AutoLeader True False
+  playerAnimalMagnificent { fhasPointman = True
+                          , fleaderMode = Just ()
                           , fhasUI = True
                           , finitUnderAI = False }
 playerAnimalCaptiveNarrating = playerAnimal { fneverEmpty = True
@@ -214,6 +217,7 @@ playerHorror = PlayerKind
   , fhasGender = False
   , finitDoctrine = TPatrol  -- disoriented
   , fspawnsFast = False
+  , fhasPointman = False
   , fleaderMode = Nothing
   , fhasUI = False
   , finitUnderAI = True

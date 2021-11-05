@@ -48,7 +48,7 @@ import Content.PlayerKind
 import Game.LambdaHack.Content.CaveKind (CaveKind, pattern DEFAULT_RANDOM)
 import Game.LambdaHack.Content.ModeKind
 import Game.LambdaHack.Content.PlayerKind
-  (AutoLeader (..), Outcome (..), TeamContinuity (..), teamExplorer)
+  (Outcome (..), TeamContinuity (..), teamExplorer)
 import Game.LambdaHack.Core.Dice
 import Game.LambdaHack.Definition.Defs
 import Game.LambdaHack.Definition.DefsInternal
@@ -463,48 +463,48 @@ defenseEmpty = ModeKind
 
 -- * Screensaver modes
 
-screensaverRaid = screensave (AutoLeader False False) $ raid
+screensaverRaid = screensave $ raid
   { mname   = "auto-raid (1)"
   , mfreq   = [(INSERT_COIN, 2), (NO_CONFIRMS, 1)]
   }
 
-screensaverBrawl = screensave (AutoLeader False False) $ brawl
+screensaverBrawl = screensave $ brawl
   { mname   = "auto-brawl (2)"
   , mfreq   = [(NO_CONFIRMS, 1)]
   }
 
-screensaverCrawl = screensave (AutoLeader False False) $ crawl
+screensaverCrawl = screensave $ crawl
   { mname   = "auto-crawl (long)"
   , mfreq   = [(NO_CONFIRMS, 1)]
   }
 
-screensaverShootout = screensave (AutoLeader False False) $ shootout
+screensaverShootout = screensave $ shootout
   { mname   = "auto-shootout (3)"
   , mfreq   = [(INSERT_COIN, 2), (NO_CONFIRMS, 1)]
   }
 
-screensaverHunt = screensave (AutoLeader False False) $ hunt
+screensaverHunt = screensave $ hunt
   { mname   = "auto-hunt (4)"
   , mfreq   = [(INSERT_COIN, 2), (NO_CONFIRMS, 1)]
   }
 
-screensaverEscape = screensave (AutoLeader False False) $ escape
+screensaverEscape = screensave $ escape
   { mname   = "auto-escape (5)"
   , mfreq   = [(INSERT_COIN, 2), (NO_CONFIRMS, 1)]
   }
 
-screensaverZoo = screensave (AutoLeader False False) $ zoo
+screensaverZoo = screensave $ zoo
   { mname   = "auto-zoo (6)"
   , mfreq   = [(NO_CONFIRMS, 1)]
   }
 
-screensaverAmbush = screensave (AutoLeader False False) $ ambush
+screensaverAmbush = screensave $ ambush
   { mname   = "auto-ambush (7)"
   , mfreq   = [(NO_CONFIRMS, 1)]
   }
 
 -- changing leader by client needed, because of TFollow
-screensaverSafari = screensave (AutoLeader False True) $ safari
+screensaverSafari = screensave $ safari
   { mname   = "auto-safari"
   , mfreq   = [(INSERT_COIN, 1), (NO_CONFIRMS, 1)]
   }

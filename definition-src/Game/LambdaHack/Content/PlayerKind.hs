@@ -4,7 +4,7 @@
 module Game.LambdaHack.Content.PlayerKind
   ( PlayerKind(..), makeData
   , HiCondPoly, HiSummand, HiPolynomial, HiIndeterminant(..)
-  , TeamContinuity(..), AutoLeader(..), Outcome(..)
+  , TeamContinuity(..), Outcome(..)
   , teamExplorer, screensavePlayerKind, victoryOutcomes, deafeatOutcomes
   , nameOutcomePast, nameOutcomeVerb, endMessageOutcome
 #ifdef EXPOSE_INTERNAL
@@ -50,7 +50,8 @@ data PlayerKind = PlayerKind
       -- ^ spawns fast enough that switching pointman to another level
       --   to optimize spawning is a winning tactics, which would spoil
       --   the fun, so switching is disabled in UI and AI clients
-  , fleaderMode   :: Maybe AutoLeader
+  , fhasPointman  :: Bool        -- ^ if faction has an actor, it has a Pointman
+  , fleaderMode   :: Maybe ()
                                  -- ^ whether the faction can have a leader
                                  --   and what's its switching mode;
   , fhasUI        :: Bool        -- ^ does the faction have a UI client
@@ -86,29 +87,6 @@ data HiIndeterminant =
 
 instance Binary HiIndeterminant
 
-data AutoLeader = AutoLeader
-  { autoDungeon :: Bool
-      -- ^ leader switching between levels is automatically done by the server
-      --   and client is not permitted to change to leaders from other levels
-      --   (the frequency of leader level switching done by the server
-      --   is controlled by @RuleKind.rleadLevelClips@);
-      --   if the flag is @False@, server still does a subset
-      --   of the automatic switching, e.g., when the old leader dies
-      --   and no other actor of the faction resides on his level,
-      --   but the client (particularly UI) is expected to do changes as well
-  , autoLevel   :: Bool
-      -- ^ client is discouraged from leader switching (e.g., because
-      --   non-leader actors have the same skills as leader);
-      --   server is guaranteed to switch leader within a level very rarely,
-      --   e.g., when the old leader dies;
-      --   if the flag is @False@, server still does a subset
-      --   of the automatic switching, but the client is expected to do more,
-      --   because it's advantageous for that kind of a faction
-  }
-  deriving (Show, Eq, Generic)
-
-instance Binary AutoLeader
-
 -- | Outcome of a game.
 data Outcome =
     Escape    -- ^ the player escaped the dungeon alive
@@ -124,10 +102,10 @@ instance Binary Outcome
 teamExplorer :: TeamContinuity
 teamExplorer = TeamContinuity 1
 
-screensavePlayerKind :: AutoLeader -> PlayerKind -> PlayerKind
-screensavePlayerKind _ player@(PlayerKind{finitUnderAI=True}) = player
-screensavePlayerKind auto player = player { finitUnderAI = True
-                                          , fleaderMode = Just auto }
+screensavePlayerKind :: PlayerKind -> PlayerKind
+screensavePlayerKind player@(PlayerKind{finitUnderAI=True}) = player
+screensavePlayerKind player = player { finitUnderAI = True
+                                          , fleaderMode = Just () }
 
 victoryOutcomes :: [Outcome]
 victoryOutcomes = [Escape, Conquer]
