@@ -137,9 +137,8 @@ noRunWithMulti :: Faction -> Bool
 noRunWithMulti fact =
   let skillsOther = fskillsOther $ gplayer fact
   in Ability.getSk Ability.SkMove skillsOther >= 0
-     || case fleaderMode (gplayer fact) of
-          Nothing -> True
-          Just AutoLeader{..} -> autoDungeon || autoLevel
+     || bannedPointmanSwitchBetweenLevels fact
+     || isNothing (fleaderMode (gplayer fact))
 
 bannedPointmanSwitchBetweenLevels :: Faction -> Bool
 bannedPointmanSwitchBetweenLevels = fspawnsFast . gplayer
