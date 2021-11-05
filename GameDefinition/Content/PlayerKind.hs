@@ -1,10 +1,18 @@
 -- | Basic players definitions.
 module Content.PlayerKind
-  ( playerHero, playerAntiHero, playerCivilian
+  ( -- * Group names
+    groupNamesSingleton, groupNames
+  , -- * Content
+    content
+
+  , playerHero, playerAntiHero, playerCivilian
   , playerMonster, playerAntiMonster, playerAnimal
   , playerHorror, playerMonsterTourist, playerHunamConvict
   , playerAnimalMagnificent, playerAnimalExquisite
   , hiHeroShort, hiHeroMedium, hiHeroLong, hiDweller
+#ifdef EXPOSE_INTERNAL
+  -- * Group name patterns
+#endif
   ) where
 
 import Prelude ()
@@ -16,8 +24,18 @@ import           Content.ItemKindOrgan
 import qualified Game.LambdaHack.Content.ItemKind as IK
 import           Game.LambdaHack.Content.PlayerKind
 import           Game.LambdaHack.Definition.Ability
+import           Game.LambdaHack.Definition.Defs
 
-playerHero, playerAntiHero, playerCivilian, playerMonster, playerAntiMonster, playerAnimal, playerHorror, playerMonsterTourist, playerHunamConvict, playerAnimalMagnificent, playerAnimalExquisite :: PlayerKind
+groupNamesSingleton :: [GroupName PlayerKind]
+groupNamesSingleton = []
+
+groupNames :: [GroupName PlayerKind]
+groupNames = []
+
+content :: [PlayerKind]
+content = [playerHero, playerAntiHero, playerCivilian, playerMonster, playerAntiMonster, playerAnimal, playerHorror, playerMonsterTourist, playerHunamConvict, playerAnimalMagnificent, playerAnimalExquisite]
+
+playerHero,            playerAntiHero, playerCivilian, playerMonster, playerAntiMonster, playerAnimal, playerHorror, playerMonsterTourist, playerHunamConvict, playerAnimalMagnificent, playerAnimalExquisite :: PlayerKind
 
 playerHero = PlayerKind
   { fsymbol = 'e'
