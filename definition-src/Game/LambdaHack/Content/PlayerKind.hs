@@ -160,7 +160,7 @@ endMessageOutcome = \case
 
 validateSingle :: PlayerKind -> [Text]
 validateSingle PlayerKind{..} =
-  [ "fname longer than 20" | T.length fname > 50 ]
+  [ "fname longer than 50" | T.length fname > 50 ]
   ++ [ "fskillsOther not negative:" <+> fname
      | any ((>= 0) . snd) $ Ability.skillsToList fskillsOther ]
 

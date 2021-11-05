@@ -312,6 +312,7 @@ library
                       ,Game.LambdaHack.Content.ItemKind
                       ,Game.LambdaHack.Content.ModeKind
                       ,Game.LambdaHack.Content.PlaceKind
+                      ,Game.LambdaHack.Content.PlayerKind
                       ,Game.LambdaHack.Content.RuleKind
                       ,Game.LambdaHack.Content.TileKind
   autogen-modules:    Paths_LambdaHack

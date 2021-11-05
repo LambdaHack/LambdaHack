@@ -25,6 +25,7 @@ import           Game.LambdaHack.Content.ItemKind (ItemKind)
 import qualified Game.LambdaHack.Content.ItemKind as IK
 import           Game.LambdaHack.Content.ModeKind
 import           Game.LambdaHack.Content.PlaceKind
+import           Game.LambdaHack.Content.PlayerKind
 import           Game.LambdaHack.Content.RuleKind
 import           Game.LambdaHack.Content.TileKind (TileKind)
 import           Game.LambdaHack.Definition.ContentData
@@ -36,6 +37,7 @@ data COps = COps
   , coitem        :: ContentData ItemKind
   , comode        :: ContentData ModeKind   -- server only
   , coplace       :: ContentData PlaceKind  -- server only, so far
+  , coplayer      :: ContentData PlayerKind
   , corule        :: RuleContent
   , cotile        :: ContentData TileKind
   , coItemSpeedup :: ItemSpeedup
@@ -54,6 +56,7 @@ emptyCOps = COps
   , coitem  = emptyContentData
   , comode  = emptyContentData
   , coplace = emptyContentData
+  , coplayer = emptyContentData
   , corule  = emptyRuleContent
   , cotile  = emptyContentData
   , coItemSpeedup = emptyItemSpeedup
