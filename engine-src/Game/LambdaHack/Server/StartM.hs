@@ -238,7 +238,7 @@ resetFactions factionDold gameModeIdOld curDiffSerOld totalDepth players = do
               mapFromFuns Color.legalFgCol
                           [colorToTeamName, colorToPlainName, colorToFancyName]
             colorName = T.toLower $ head $ T.words fname
-            prefix = case (fleaderMode, funderAI) of
+            prefix = case (fleaderMode, finitUnderAI) of
               (Nothing, False) -> "Uncoordinated"
               (Nothing, True) -> "Loose"
               (Just{}, False) -> "Autonomous"
@@ -256,6 +256,7 @@ resetFactions factionDold gameModeIdOld curDiffSerOld totalDepth players = do
                 in EM.insertWith f gameModeIdOld sing $ gvictimsD fact
         let gname = gnameNew
             gdoctrine = finitDoctrine
+            gunderAI = finitUnderAI
             gdipl = EM.empty  -- fixed below
             gquit = Nothing
             _gleader = Nothing
@@ -314,19 +315,16 @@ gameReset serverOptions mGameMode mrandom = do
           fromMaybe (error $ "Unknown game mode:" `showFailure` gameMode)
           <$> opick comode gameMode (const True)
         let mode = okind comode modeKindId
-            automatePS ps = ps {rosterList =
-              map (\(pl, tc, l) -> (automatePlayer True pl, tc, l))
-                  (rosterList ps)}
-            players = if sautomateAll serverOptions
-                      then automatePS $ mroster mode
-                      else mroster mode
         flavour <- dungeonFlavourMap cops flavourOld
         (discoKind, sdiscoKindRev) <- serverDiscos cops discoKindRevOld
         freshDng <- DungeonGen.dungeonGen cops serverOptions $ mcaves mode
-        factionD <- resetFactions factionDold gameModeIdOld
-                                  (cdiff curChalSer)
-                                  (DungeonGen.freshTotalDepth freshDng)
-                                  players
+        factionDRaw <- resetFactions factionDold gameModeIdOld
+                                     (cdiff curChalSer)
+                                     (DungeonGen.freshTotalDepth freshDng)
+                                     (mroster mode)
+        let factionD = if sautomateAll serverOptions
+                       then EM.map (automateFaction True) factionDRaw
+                       else factionDRaw
         return ( factionD, flavour, discoKind
                , sdiscoKindRev, freshDng, modeKindId )
   let ( factionD, sflavour, discoKind

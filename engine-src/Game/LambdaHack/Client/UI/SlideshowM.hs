@@ -533,7 +533,6 @@ basicFrameWithoutReport arena forceReport = do
   sbenchMessages <- getsClient $ sbenchMessages . soptions
   side <- getsClient sside
   fact <- getsState $ (EM.! side) . sfactionD
-  let underAI = isAIFact fact
   truncRep <-
     if | sbenchMessages -> do
          slides <- reportToSlideshowKeepHalt False []
@@ -545,7 +544,7 @@ basicFrameWithoutReport arena forceReport = do
              return $!
                EM.singleton propFont
                $ if EM.size ov > 1 then ovProp else init ovProp
-       | fromMaybe underAI forceReport -> do
+       | fromMaybe (gunderAI fact) forceReport -> do
          report <- getReportUI False
          let par1 = firstParagraph $ foldr (<+:>) [] $ renderReport True report
          return $! EM.fromList [(propFont, [(PointUI 0 0, par1)])]

@@ -183,7 +183,7 @@ quitF status fid = do
         if fhasUI $ gplayer fact then do
           keepAutomated <- getsServer $ skeepAutomated . soptions
           -- Try to remove AI control of the UI faction, to show gameover info.
-          when (isAIFact fact && not keepAutomated) $
+          when (gunderAI fact && not keepAutomated) $
             execUpdAtomic $ UpdAutoFaction fid False
           revealAll fid
           -- Likely, by this time UI faction is no longer AI-controlled,

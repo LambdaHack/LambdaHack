@@ -616,11 +616,11 @@ hActors as@(aid : rest) = do
       -- Checking @breakLoop@, to avoid doubly setting faction status to Camping
       -- in case AI-controlled UI client asks to exit game at exactly
       -- the same moment as natural game over was detected.
-      mainUIunderAI = mainUIactor && isAIFact fact && not breakLoop
+      mainUIunderAI = mainUIactor && gunderAI fact && not breakLoop
   when mainUIunderAI $
     handleUIunderAI side aid
   factNew <- getsState $ (EM.! side) . sfactionD
-  let doQueryAI = not mainUIactor || isAIFact factNew
+  let doQueryAI = not mainUIactor || gunderAI factNew
   breakASAP <- getsServer sbreakASAP
   -- If breaking out of the game loop, pretend there was a non-wait move.
   -- we don't need additionally to check @sbreakLoop@, because it occurs alone

@@ -198,7 +198,7 @@ loopUI timeSinceLastQuery = do
        -- during the insert coin demo before game is started.
        side <- getsClient sside
        fact <- getsState $ (EM.! side) . sfactionD
-       if isAIFact fact then
+       if gunderAI fact then
          -- Mark for immediate control regain from AI.
          modifySession $ \sess -> sess {sregainControl = True}
        else do  -- should work fine even if UI faction has no leader ATM

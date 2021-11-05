@@ -4,8 +4,8 @@
 module Game.LambdaHack.Common.Faction
   ( FactionDict, Faction(..), Diplomacy(..)
   , Status(..), Challenge(..)
-  , tshowChallenge, gleader, isHorrorFact, noRunWithMulti, isAIFact
-  , autoDungeonLevel, automatePlayer, isFoe, isFriend
+  , tshowChallenge, gleader, isHorrorFact, noRunWithMulti
+  , autoDungeonLevel, automateFaction, isFoe, isFriend
   , difficultyBound, difficultyDefault, difficultyCoeff, difficultyInverse
   , defaultChallenge, possibleActorFactions, ppContainer
 #ifdef EXPOSE_INTERNAL
@@ -43,6 +43,7 @@ data Faction = Faction
   , gplayer   :: Player          -- ^ the player spec for this faction
   , gdoctrine :: Ability.Doctrine
                                  -- ^ non-leaders behave according to this
+  , gunderAI  :: Bool            -- ^ is the faction under AI control
   , gteamCont :: Maybe TeamContinuity
                                  -- ^ identity of this faction across games
                                  --   and scenarios
@@ -139,16 +140,13 @@ noRunWithMulti fact =
           Nothing -> True
           Just AutoLeader{..} -> autoDungeon || autoLevel
 
-isAIFact :: Faction -> Bool
-isAIFact fact = funderAI (gplayer fact)
-
 autoDungeonLevel :: Faction -> (Bool, Bool)
 autoDungeonLevel fact = case fleaderMode (gplayer fact) of
                           Nothing -> (False, False)
                           Just AutoLeader{..} -> (autoDungeon, autoLevel)
 
-automatePlayer :: Bool -> Player -> Player
-automatePlayer funderAI pl = pl {funderAI}
+automateFaction :: Bool -> Faction -> Faction
+automateFaction gunderAI fact = fact {gunderAI}
 
 -- | Check if factions are at war. Assumes symmetry.
 isFoe :: FactionId -> Faction -> FactionId -> Bool

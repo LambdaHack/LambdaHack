@@ -123,7 +123,7 @@ data Player = Player
                                  --   and what's its switching mode;
   , fhasUI        :: Bool        -- ^ does the faction have a UI client
                                  --   (for control or passive observation)
-  , funderAI      :: Bool        -- ^ is the faction under AI control
+  , finitUnderAI  :: Bool        -- ^ is the faction initially under AI control
   }
   deriving (Show, Eq, Generic)
 
@@ -190,9 +190,9 @@ endMessageOutcome = \case
 
 screensave :: AutoLeader -> ModeKind -> ModeKind
 screensave auto mk =
-  let f x@(Player{funderAI=True}, _, _) = x
+  let f x@(Player{finitUnderAI=True}, _, _) = x
       f (player, teamContinuity, initial) =
-          ( player { funderAI = True
+          ( player { finitUnderAI = True
                    , fleaderMode = Just auto }
           , teamContinuity
           , initial )

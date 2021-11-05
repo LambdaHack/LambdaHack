@@ -351,7 +351,7 @@ watchRespUpdAtomicUI cmd = case cmd of
     when (mtgt /= mleader) $ do
       fact <- getsState $ (EM.! fid) . sfactionD
       lidV <- viewedLevelUI
-      when (isAIFact fact) $ markDisplayNeeded lidV
+      when (gunderAI fact) $ markDisplayNeeded lidV
       -- This faction can't run with multiple actors, so this is not
       -- a leader change while running, but rather server changing
       -- their leader, which the player should be alerted to.
@@ -560,7 +560,7 @@ watchRespUpdAtomicUI cmd = case cmd of
     msgLnAdd MsgBadMiscEvent blurb  -- being here is a bad turn of events
     when (cwolf curChal && not loneMode) $
       msgAdd MsgActionWarning "Being a lone wolf, you begin without companions."
-    setFrontAutoYes $ isAIFact fact
+    setFrontAutoYes $ gunderAI fact
     -- Forget the furious keypresses when dying in the previous game.
     resetPressedKeys
   UpdRestartServer{} -> return ()
@@ -568,8 +568,8 @@ watchRespUpdAtomicUI cmd = case cmd of
     COps{cocave} <- getsState scops
     resetSessionStart
     fact <- getsState $ (EM.! fid) . sfactionD
-    setFrontAutoYes $ isAIFact fact
-    unless (isAIFact fact) $ do
+    setFrontAutoYes $ gunderAI fact
+    unless (gunderAI fact) $ do
       lid <- getArenaUI
       lvl <- getLevel lid
       gameMode <- getGameMode
@@ -901,9 +901,8 @@ spotItemBag verbose c bag = do
       let verb = MU.Text $ verbCStore store
       b <- getsState $ getActorBody aid
       fact <- getsState $ (EM.! bfid b) . sfactionD
-      let underAI = isAIFact fact
       mleader <- getsClient sleader
-      if Just aid == mleader && not underAI then
+      if Just aid == mleader && not (gunderAI fact) then
         manyItemsAidVerbMU MsgItemMovement aid verb sortedAssocs Right
       else when (not (bproj b) && bhp b > 0) $  -- don't announce death drops
         manyItemsAidVerbMU MsgItemMovement aid verb sortedAssocs (Left . Just)
@@ -968,13 +967,12 @@ moveItemUI iid k aid cstore1 cstore2 = do
   let verb = MU.Text $ verbCStore cstore2
   b <- getsState $ getActorBody aid
   fact <- getsState $ (EM.! bfid b) . sfactionD
-  let underAI = isAIFact fact
   mleader <- getsClient sleader
   ItemRoles itemRoles <- getsSession sroles
   if iid `ES.member` (itemRoles EM.! SItem) then
     -- So far organs can't be put into stash, so no need to call
     -- @assignItemRole@ to add or reassign lore category.
-    if cstore1 == CGround && Just aid == mleader && not underAI then
+    if cstore1 == CGround && Just aid == mleader && not (gunderAI fact) then
       itemAidVerbMU MsgActionMajor aid verb iid (Right k)
     else when (not (bproj b) && bhp b > 0) $  -- don't announce death drops
       itemAidVerbMU MsgActionMajor aid verb iid (Left k)

@@ -237,11 +237,10 @@ condBFS aid = do
                 || Ability.getSk Ability.SkProject actorMaxSk > 0
   smarkSuspect <- getsClient smarkSuspect
   fact <- getsState $ (EM.! side) . sfactionD
-  let underAI = isAIFact fact
-      -- Under UI, playing a hero party, we let AI set our target each
+  let -- Under UI, playing a hero party, we let AI set our target each
       -- turn for non-pointmen that can't move and can't alter,
       -- usually to TUnknown. This is rather useless, but correct.
-      enterSuspect = smarkSuspect > 0 || underAI
+      enterSuspect = smarkSuspect > 0 || gunderAI fact
       skill | enterSuspect = alterSkill  -- dig and search as skill allows
             | otherwise = 0  -- only walkable tiles
   return (canMove, skill)  -- keep it lazy

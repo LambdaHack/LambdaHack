@@ -141,7 +141,7 @@ promptGetKey dm ovs onBlank frontKeyKeys = do
           -- This marks a special event, regardless of @sreqQueried@.
           side <- getsClient sside
           fact <- getsState $ (EM.! side) . sfactionD
-          unless (isAIFact fact) -- don't forget special autoplay keypresses
+          unless (gunderAI fact) -- don't forget special autoplay keypresses
             -- Forget the furious keypresses just before a special event.
             resetPressedKeys
         -- Running, if any, must have ended naturally, because no macro.
@@ -239,10 +239,9 @@ basicFrameForAnimation arena forceReport = do
   fact <- getsState $ (EM.! side) . sfactionD
   report <- getReportUI False
   let par1 = firstParagraph $ foldr (<+:>) [] $ renderReport True report
-      underAI = isAIFact fact
       -- If messages are benchmarked, they can't be displayed under AI,
       -- because this is not realistic when player is in control.
-      truncRep | not sbenchMessages && fromMaybe underAI forceReport =
+      truncRep | not sbenchMessages && fromMaybe (gunderAI fact) forceReport =
                    EM.fromList [(propFont, [(PointUI 0 0, par1)])]
                | otherwise = EM.empty
   drawOverlay ColorFull False truncRep arena

@@ -232,7 +232,7 @@ computeTarget foeAssocs friendAssocs aid = do
   cstashes <- if canMove
                  && (calmE || null nearbyFoes) -- danger or risk of defecting
                  && not heavilyDistressed
-                 && isAIFact fact  -- humans target any stashes explicitly
+                 && gunderAI fact  -- humans target any stashes explicitly
               then closestStashes aid
               else return []
   let desirableIid (iid, (k, _)) =

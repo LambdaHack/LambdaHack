@@ -180,7 +180,7 @@ registerScore status fid = do
       outputScore (worthMentioning, (ntable, pos)) =
         -- If testing or fooling around, dump instead of registering.
         -- In particular don't register score for the auto-* scenarios.
-        if bench || noConfirmsGame || isAIFact fact then
+        if bench || noConfirmsGame || gunderAI fact then
           debugPossiblyPrint $ T.intercalate "\n"
           $ HighScore.showScore tz pos (HighScore.getRecord pos ntable)
             ++ ["           Spawned groups:"

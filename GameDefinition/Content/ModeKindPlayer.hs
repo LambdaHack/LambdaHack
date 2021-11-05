@@ -30,13 +30,13 @@ playerHero = Player
   , finitDoctrine = TExplore
   , fleaderMode = Just $ AutoLeader False False
   , fhasUI = True
-  , funderAI = False
+  , finitUnderAI = False
   }
 
 playerAntiHero = playerHero
   { fleaderMode = Just $ AutoLeader True False
   , fhasUI = False
-  , funderAI = True
+  , finitUnderAI = True
   }
 
 playerCivilian = Player
@@ -50,7 +50,7 @@ playerCivilian = Player
   , finitDoctrine = TPatrol
   , fleaderMode = Nothing  -- unorganized
   , fhasUI = False
-  , funderAI = True
+  , finitUnderAI = True
   }
 
 playerMonster = Player
@@ -67,13 +67,13 @@ playerMonster = Player
       -- don't follow the leader.
       Just $ AutoLeader True True
   , fhasUI = False
-  , funderAI = True
+  , finitUnderAI = True
   }
 
 playerAntiMonster = playerMonster
   { fleaderMode = Just $ AutoLeader True True
   , fhasUI = True
-  , funderAI = False
+  , finitUnderAI = False
   }
 
 playerAnimal = Player
@@ -87,7 +87,7 @@ playerAnimal = Player
   , finitDoctrine = TRoam  -- can't pick up, so no point exploring
   , fleaderMode = Nothing
   , fhasUI = False
-  , funderAI = True
+  , finitUnderAI = True
   }
 
 -- | A special player, for summoned actors that don't belong to any
@@ -106,7 +106,7 @@ playerHorror = Player
   , finitDoctrine = TPatrol  -- disoriented
   , fleaderMode = Nothing
   , fhasUI = False
-  , funderAI = True
+  , finitUnderAI = True
   }
 
 playerMonsterTourist =
@@ -117,12 +117,12 @@ playerMonsterTourist =
     , fhiCondPoly = hiHeroMedium
     , finitDoctrine = TFollow  -- follow-the-guide, as tourists do
     , fleaderMode = Just $ AutoLeader False False
-    , funderAI = False }
+    , finitUnderAI = False }
 
 playerHunamConvict =
   playerCivilian { fname = "Hunam Convict"
                  , fleaderMode = Just $ AutoLeader True False
-                 , funderAI = True }
+                 , finitUnderAI = True }
 
 playerAnimalMagnificent =
   playerAnimal { fname = "Animal Magnificent Specimen Variety"

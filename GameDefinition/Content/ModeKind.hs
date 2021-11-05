@@ -672,7 +672,7 @@ rosterSafariSurvival = rosterSafari
   { rosterList = [ ( playerMonsterTourist
                        { fleaderMode = Just $ AutoLeader True True
                        , fhasUI = False
-                       , funderAI = True }
+                       , finitUnderAI = True }
                    , Nothing
                    , [(-4, 15, MONSTER)] )
                  , ( playerHunamConvict
@@ -681,7 +681,7 @@ rosterSafariSurvival = rosterSafari
                  , ( playerAnimalMagnificent
                        { fleaderMode = Just $ AutoLeader True False
                        , fhasUI = True
-                       , funderAI = False }
+                       , finitUnderAI = False }
                    , Nothing
                    , [(-7, 20, MOBILE_ANIMAL)] )
                  , ( playerAnimalExquisite
