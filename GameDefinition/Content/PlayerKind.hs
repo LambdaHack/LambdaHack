@@ -5,11 +5,7 @@ module Content.PlayerKind
   , -- * Content
     content
 
-  , playerHero, playerAntiHero, playerCivilian
-  , playerMonster, playerAntiMonster, playerAnimal
-  , playerHorror, playerMonsterTourist, playerHunamConvict
-  , playerAnimalMagnificent, playerAnimalExquisite
-  , hiHeroShort, hiHeroMedium, hiHeroLong, hiDweller
+  , playerExplorer, playerExplorerShort, playerExplorerNoEscape, playerExplorerMedium, playerExplorerTrapped, playerCompetitor, playerCompetitorShort, playerCompetitorNoEscape, playerCompetitorTrapped, playerCivilian, playerHunamConvict, playerMonster, playerAntiMonster, playerAntiMonsterCaptive, playerMonsterTourist, playerMonsterTouristPassive, playerMonsterCaptive, playerMonsterCaptiveNarrating, playerAnimal, playerAnimalMagnificent, playerAnimalExquisite, playerAnimalCaptive, playerAnimalNarrating, playerAnimalMagnificentNarrating, playerAnimalCaptiveNarrating, playerHorror
 #ifdef EXPOSE_INTERNAL
   -- * Group name patterns
 #endif
@@ -33,15 +29,15 @@ groupNames :: [GroupName PlayerKind]
 groupNames = []
 
 content :: [PlayerKind]
-content = [playerHero, playerAntiHero, playerCivilian, playerHunamConvict, playerMonster, playerAntiMonster, playerMonsterTourist, playerAnimal, playerAnimalMagnificent, playerAnimalExquisite, playerHorror]
+content = [playerExplorer, playerExplorerShort, playerExplorerNoEscape, playerExplorerMedium, playerExplorerTrapped, playerCompetitor, playerCompetitorShort, playerCompetitorNoEscape, playerCompetitorTrapped, playerCivilian, playerHunamConvict, playerMonster, playerAntiMonster, playerAntiMonsterCaptive, playerMonsterTourist, playerMonsterTouristPassive, playerMonsterCaptive, playerMonsterCaptiveNarrating, playerAnimal, playerAnimalMagnificent, playerAnimalExquisite, playerAnimalCaptive, playerAnimalNarrating, playerAnimalMagnificentNarrating, playerAnimalCaptiveNarrating, playerHorror]
 
-playerHero,            playerAntiHero, playerCivilian, playerHunamConvict, playerMonster, playerAntiMonster, playerMonsterTourist, playerAnimal, playerAnimalMagnificent, playerAnimalExquisite, playerHorror :: PlayerKind
+playerExplorer,            playerExplorerShort, playerExplorerNoEscape, playerExplorerMedium, playerExplorerTrapped, playerCompetitor, playerCompetitorShort, playerCompetitorNoEscape, playerCompetitorTrapped, playerCivilian, playerHunamConvict, playerMonster, playerAntiMonster, playerAntiMonsterCaptive, playerMonsterTourist, playerMonsterTouristPassive, playerMonsterCaptive, playerMonsterCaptiveNarrating, playerAnimal, playerAnimalMagnificent, playerAnimalExquisite, playerAnimalCaptive, playerAnimalNarrating, playerAnimalMagnificentNarrating, playerAnimalCaptiveNarrating, playerHorror :: PlayerKind
 
 -- * Content
 
 -- ** teamExplorer
 
-playerHero = PlayerKind
+playerExplorer = PlayerKind
   { fsymbol = 'e'
   , fname = "Explorer"
   , ffreq = []
@@ -56,16 +52,29 @@ playerHero = PlayerKind
   , fhasUI = True
   , finitUnderAI = False
   }
+playerExplorerShort = playerExplorer {fhiCondPoly = hiHeroShort}
+playerExplorerNoEscape = playerExplorer { fcanEscape = False
+                                        , fhiCondPoly = hiHeroMedium }
+playerExplorerMedium = playerExplorer { fhiCondPoly = hiHeroMedium }
+playerExplorerTrapped = playerExplorer { fcanEscape = False
+                                       , fhiCondPoly = hiHeroLong }
 
 -- ** teamCompetitor, symmetric opponets of teamExplorer
 
-playerAntiHero = playerHero
+playerCompetitor = playerExplorer
   { fsymbol = 'a'
   , ffreq = []
   , fleaderMode = Just $ AutoLeader True False
   , fhasUI = False
   , finitUnderAI = True
   }
+playerCompetitorShort = playerCompetitor { fname = "Indigo Founder"
+                                         , fhiCondPoly = hiHeroShort }
+playerCompetitorNoEscape = playerCompetitor { fname = "Indigo Researcher"
+                                            , fcanEscape = False
+                                            , fhiCondPoly = hiHeroMedium }
+playerCompetitorTrapped = playerCompetitor { fcanEscape = False
+                                           , fhiCondPoly = hiHeroLong }
 
 -- ** teamCivilian
 
@@ -85,7 +94,7 @@ playerCivilian = PlayerKind
   , finitUnderAI = True
   }
 
--- ** teamConvict, different demographics
+-- ** teamHunamConvict, different demographics
 
 playerHunamConvict =
   playerCivilian { fsymbol = 'v'
@@ -122,6 +131,7 @@ playerAntiMonster = playerMonster
   , fhasUI = True
   , finitUnderAI = False
   }
+playerAntiMonsterCaptive = playerAntiMonster {fneverEmpty = True}
 -- More flavour and special backstory, but the same team.
 playerMonsterTourist =
   playerAntiMonster
@@ -134,6 +144,13 @@ playerMonsterTourist =
     , finitDoctrine = TFollow  -- follow-the-guide, as tourists do
     , fleaderMode = Just $ AutoLeader False False
     , finitUnderAI = False }
+playerMonsterTouristPassive =
+  playerMonsterTourist { fleaderMode = Just $ AutoLeader True True
+                       , fhasUI = False
+                       , finitUnderAI = True }
+playerMonsterCaptive = playerMonster {fneverEmpty = True}
+playerMonsterCaptiveNarrating = playerMonster { fneverEmpty = True
+                                              , fhasUI = True }
 
 -- ** teamAnimal
 
@@ -164,6 +181,14 @@ playerAnimalExquisite =
                , fname = "Animal Exquisite Herds and Packs Galore"
                , ffreq = []
                , fneverEmpty = True }
+playerAnimalCaptive = playerAnimal {fneverEmpty = True}
+playerAnimalNarrating = playerAnimal {fhasUI = True}
+playerAnimalMagnificentNarrating =
+  playerAnimalMagnificent { fleaderMode = Just $ AutoLeader True False
+                          , fhasUI = True
+                          , finitUnderAI = False }
+playerAnimalCaptiveNarrating = playerAnimal { fneverEmpty = True
+                                            , fhasUI = True }
 
 -- ** teamHorror, not much of a continuity intended, but can't be ignored
 
