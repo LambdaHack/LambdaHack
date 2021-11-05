@@ -19,6 +19,7 @@ import           Data.IORef
 import qualified Data.Text as T
 import           Data.Time.Clock.POSIX
 import           Data.Time.LocalTime
+import qualified Data.Vector.Storable as VS
 import qualified Data.Vector.Unboxed as U
 import           Data.Word (Word32, Word8)
 import           Foreign.C.String (withCString)
@@ -52,6 +53,13 @@ import           Game.LambdaHack.Common.Point
 import qualified Game.LambdaHack.Common.PointArray as PointArray
 import           Game.LambdaHack.Content.TileKind (floorSymbol)
 import qualified Game.LambdaHack.Definition.Color as Color
+
+-- These are needed until SDL is fixed and all our devs move
+-- to the fixed version:
+import           Control.Monad.IO.Class (MonadIO, liftIO)
+import           SDL.Internal.Exception (throwIfNull)
+import qualified SDL.Raw.Event as Raw
+import           Unsafe.Coerce (unsafeCoerce)
 
 type FontAtlas = EM.EnumMap Color.AttrCharW32 SDL.Texture
 
@@ -196,6 +204,9 @@ startupFun coscreen soptions@ClientOptions{..} rfMVar = do
  else do
   -- The code below fails without access to a graphics system.
   SDL.initialize [SDL.InitVideo]
+  xhairCursor <-
+    createCursor cursorWB cursorAlpha (SDL.V2 32 27) (SDL.P (SDL.V2 13 13))
+  SDL.activeCursor SDL.$= xhairCursor
   let screenV2 = SDL.V2 (toEnum $ rwidth coscreen * boxSize)
                         (toEnum $ rheight coscreen * boxSize)
       windowConfig = SDL.defaultWindow
@@ -355,6 +366,105 @@ startupFun coscreen soptions@ClientOptions{..} rfMVar = do
         -- SDL.WindowShownEvent{} -> redraw
         _ -> return ()
   loopSDL
+
+-- | Copied from SDL2 and fixed (packed booleans are needed).
+--
+-- Create a cursor using the specified bitmap data and mask (in MSB format,
+-- packed). Width must be a multiple of 8.
+--
+--
+createCursor :: MonadIO m
+             => VS.Vector Word8 -- ^ Whether this part of the cursor is black. Use bit 1 for white and bit 0 for black.
+             -> VS.Vector Word8 -- ^ Whether or not pixels are visible. Use bit 1 for visible and bit 0 for transparent.
+             -> Vect.V2 CInt -- ^ The width and height of the cursor.
+             -> Vect.Point Vect.V2 CInt -- ^ The X- and Y-axis location of the upper left corner of the cursor relative to the actual mouse position
+             -> m SDL.Cursor
+createCursor dta msk (Vect.V2 w h) (Vect.P (Vect.V2 hx hy)) =
+    liftIO . fmap unsafeCoerce $
+        throwIfNull "SDL.Input.Mouse.createCursor" "SDL_createCursor" $
+            VS.unsafeWith dta $ \unsafeDta ->
+            VS.unsafeWith msk $ \unsafeMsk ->
+                Raw.createCursor unsafeDta unsafeMsk w h hx hy
+
+-- Ignores bits after the last 8 multiple.
+boolListToWord8List :: [Bool] -> [Word8]
+boolListToWord8List =
+  let i True multiple = multiple
+      i False _ = 0
+  in \case
+    b1 : b2 : b3 : b4 : b5 : b6 : b7 : b8 : rest ->
+      i b1 128 + i b2 64 + i b3 32 + i b4 16 + i b5 8 + i b6 4 + i b7 2 + i b8 1
+      : boolListToWord8List rest
+    _ -> []
+
+cursorWB :: VS.Vector Word8
+cursorWB =
+  let charToBool '.' = True  -- black
+      charToBool _ = False
+  in VS.fromList $ boolListToWord8List $ map charToBool $ concat
+
+    [ "            .                   "
+    , "            .                   "
+    , "        ..  .    ..             "
+    , "      ..    .      ..           "
+    , "     .      .        .          "
+    , "    .       .         .         "
+    , "   .        .          .        "
+    , "   .        .          .        "
+    , "  .         .           .       "
+    , "  .         .           .       "
+    , "                                "
+    , "                                "
+    , "                 ..........     "
+    , "                                "
+    , "..........                      "
+    , "                                "
+    , "                                "
+    , "  .           .         .       "
+    , "  .           .         .       "
+    , "   .          .        .        "
+    , "   .          .        .        "
+    , "    .         .       .         "
+    , "     .        .      .          "
+    , "      ..      .    ..           "
+    , "        ..    .  ..             "
+    , "              .                 "
+    , "              .                 " ]
+
+cursorAlpha :: VS.Vector Word8
+cursorAlpha =
+  let charToBool '.' = True  -- visible black
+      charToBool '#' = True  -- visible white
+      charToBool _ = False
+  in VS.fromList $ boolListToWord8List $ map charToBool $ concat
+
+    [ "            .#                  "
+    , "            .#                  "
+    , "        ..  .#   ..             "
+    , "      ..##  .#   ##..           "
+    , "     .##    .#     ##.          "
+    , "    .#      .#       #.         "
+    , "   .#       .#        #.        "
+    , "   .#      #.###      #.        "
+    , "  .#     ## .#  ##     #.       "
+    , "  .#    #   .#    #    #.       "
+    , "        #         #             "
+    , "       #           #            "
+    , "       #         ..........     "
+    , "##########       ##########     "
+    , "..........         #            "
+    , "       #           #            "
+    , "        #         #             "
+    , "  .#    #    #.   #    #.       "
+    , "  .#     ##  #. ##     #.       "
+    , "   .#      ###.#      #.        "
+    , "   .#        #.       #.        "
+    , "    .#       #.      #.         "
+    , "     .##     #.    ##.          "
+    , "      ..##   #.  ##..           "
+    , "        ..   #.  ..             "
+    , "             #.                 "
+    , "             #.                 " ]
 
 shutdown :: FrontendSession -> IO ()
 shutdown FrontendSession{..} = writeIORef scontinueSdlLoop False
