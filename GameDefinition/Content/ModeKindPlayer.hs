@@ -27,7 +27,7 @@ playerHero = Player
   , fneverEmpty = True
   , fhiCondPoly = hiHeroLong
   , fhasGender = True
-  , fdoctrine = TExplore
+  , finitDoctrine = TExplore
   , fleaderMode = Just $ AutoLeader False False
   , fhasUI = True
   , funderAI = False
@@ -47,7 +47,7 @@ playerCivilian = Player
   , fneverEmpty = True
   , fhiCondPoly = hiHeroMedium
   , fhasGender = True
-  , fdoctrine = TPatrol
+  , finitDoctrine = TPatrol
   , fleaderMode = Nothing  -- unorganized
   , fhasUI = False
   , funderAI = True
@@ -61,7 +61,7 @@ playerMonster = Player
   , fneverEmpty = False
   , fhiCondPoly = hiDweller
   , fhasGender = False
-  , fdoctrine = TExplore
+  , finitDoctrine = TExplore
   , fleaderMode =
       -- No point changing leader on level, since all move and they
       -- don't follow the leader.
@@ -84,7 +84,7 @@ playerAnimal = Player
   , fneverEmpty = False
   , fhiCondPoly = hiDweller
   , fhasGender = False
-  , fdoctrine = TRoam  -- can't pick up, so no point exploring
+  , finitDoctrine = TRoam  -- can't pick up, so no point exploring
   , fleaderMode = Nothing
   , fhasUI = False
   , funderAI = True
@@ -103,20 +103,21 @@ playerHorror = Player
   , fneverEmpty = False
   , fhiCondPoly = []
   , fhasGender = False
-  , fdoctrine = TPatrol  -- disoriented
+  , finitDoctrine = TPatrol  -- disoriented
   , fleaderMode = Nothing
   , fhasUI = False
   , funderAI = True
   }
 
 playerMonsterTourist =
-  playerAntiMonster { fname = "Monster Tourist Office"
-                    , fcanEscape = True
-                    , fneverEmpty = True  -- no spawning
-                    , fhiCondPoly = hiHeroMedium
-                    , fdoctrine = TFollow  -- follow-the-guide, as tourists do
-                    , fleaderMode = Just $ AutoLeader False False
-                    , funderAI = False }
+  playerAntiMonster
+    { fname = "Monster Tourist Office"
+    , fcanEscape = True
+    , fneverEmpty = True  -- no spawning
+    , fhiCondPoly = hiHeroMedium
+    , finitDoctrine = TFollow  -- follow-the-guide, as tourists do
+    , fleaderMode = Just $ AutoLeader False False
+    , funderAI = False }
 
 playerHunamConvict =
   playerCivilian { fname = "Hunam Convict"

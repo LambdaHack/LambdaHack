@@ -28,7 +28,6 @@ import           Game.LambdaHack.Common.State
 import qualified Game.LambdaHack.Common.Tile as Tile
 import           Game.LambdaHack.Common.Time
 import           Game.LambdaHack.Common.Types
-import           Game.LambdaHack.Content.ModeKind
 import           Game.LambdaHack.Core.Frequency
 import           Game.LambdaHack.Core.Random
 import qualified Game.LambdaHack.Definition.Ability as Ability
@@ -350,8 +349,7 @@ pickActorToMove foeAssocs friendAssocs maidToAvoid = do
           modifyClient $ updateLeader aid s
           -- When you become a leader, stop following old leader, but follow
           -- his target, if still valid, to avoid distraction.
-          when (fdoctrine (gplayer fact)
-                `elem` [Ability.TFollow, Ability.TFollowNoItems]
+          when (gdoctrine fact `elem` [Ability.TFollow, Ability.TFollowNoItems]
                 && not condInMelee) $
             void $ refreshTarget foeAssocs friendAssocs (aid, b)
           return aid
@@ -410,7 +408,7 @@ setTargetFromDoctrines foeAssocs friendAssocs oldAid = do
               unless nonEnemyPathSet
                 -- If no path even to the leader himself, explore.
                 explore
-  case fdoctrine $ gplayer fact of
+  case gdoctrine fact of
     Ability.TExplore -> explore
     Ability.TFollow -> follow
     Ability.TFollowNoItems -> follow

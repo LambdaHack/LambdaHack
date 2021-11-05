@@ -1237,7 +1237,7 @@ reqGameSave =
 
 reqDoctrine :: MonadServerAtomic m => FactionId -> Ability.Doctrine -> m ()
 reqDoctrine fid toT = do
-  fromT <- getsState $ fdoctrine . gplayer . (EM.! fid) . sfactionD
+  fromT <- getsState $ gdoctrine . (EM.! fid) . sfactionD
   execUpdAtomic $ UpdDoctrineFaction fid toT fromT
 
 -- * ReqAutomate

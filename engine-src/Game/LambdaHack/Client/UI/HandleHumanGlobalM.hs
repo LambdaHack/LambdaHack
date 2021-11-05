@@ -1791,7 +1791,7 @@ settingsMenuHuman cmdSemInCxtOfKM = do
   markSmell <- getsSession smarkSmell
   noAnim <- getsClient $ fromMaybe False . snoAnim . soptions
   side <- getsClient sside
-  factDoctrine <- getsState $ MK.fdoctrine . gplayer . (EM.! side) . sfactionD
+  factDoctrine <- getsState $ gdoctrine . (EM.! side) . sfactionD
   overrideTut <- getsSession soverrideTut
   let offOn b = if b then "on" else "off"
       offOnAll n = case n of
@@ -2045,7 +2045,7 @@ gameSaveHuman = do
 doctrineHuman :: MonadClientUI m => m (FailOrCmd ReqUI)
 doctrineHuman = do
   fid <- getsClient sside
-  fromT <- getsState $ MK.fdoctrine . gplayer . (EM.! fid) . sfactionD
+  fromT <- getsState $ gdoctrine . (EM.! fid) . sfactionD
   let toT = if fromT == maxBound then minBound else succ fromT
   go <- displaySpaceEsc ColorFull
         $ "(Beware, work in progress!)"

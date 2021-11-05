@@ -482,10 +482,7 @@ updDiplFaction fid1 fid2 fromDipl toDipl =
 updDoctrineFaction :: MonadStateWrite m
                    => FactionId -> Ability.Doctrine -> Ability.Doctrine -> m ()
 updDoctrineFaction fid toT fromT = do
-  let adj fact =
-        let player = gplayer fact
-        in assert (fdoctrine player == fromT)
-           $ fact {gplayer = player {fdoctrine = toT}}
+  let adj fact = assert (gdoctrine fact == fromT) $ fact {gdoctrine = toT}
   updateFaction fid adj
 
 updAutoFaction :: MonadStateWrite m => FactionId -> Bool -> m ()

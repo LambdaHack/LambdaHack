@@ -255,6 +255,7 @@ resetFactions factionDold gameModeIdOld curDiffSerOld totalDepth players = do
                     f = IM.unionWith (EM.unionWith (+))
                 in EM.insertWith f gameModeIdOld sing $ gvictimsD fact
         let gname = gnameNew
+            gdoctrine = finitDoctrine
             gdipl = EM.empty  -- fixed below
             gquit = Nothing
             _gleader = Nothing

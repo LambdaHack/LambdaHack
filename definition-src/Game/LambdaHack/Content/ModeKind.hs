@@ -103,28 +103,27 @@ instance Binary HiIndeterminant
 
 -- | Properties of a particular player.
 data Player = Player
-  { fname        :: Text        -- ^ name of the player
-  , fgroups      :: [GroupName ItemKind]
-                                -- ^ names of actor groups that may naturally
-                                --   fall under player's control, e.g., upon
-                                --   spawning or summoning
-  , fskillsOther :: Ability.Skills
-                                -- ^ fixed skill modifiers to the non-leader
-                                --   actors; also summed with skills implied
-                                --   by @fdoctrine@ (which is not fixed)
-  , fcanEscape   :: Bool        -- ^ the player can escape the dungeon
-  , fneverEmpty  :: Bool        -- ^ the faction declared killed if no actors
-  , fhiCondPoly  :: HiCondPoly  -- ^ score polynomial for the player
-  , fhasGender   :: Bool        -- ^ whether actors have gender
-  , fdoctrine    :: Ability.Doctrine
-                                -- ^ non-leaders behave according to this
-                                --   doctrine; can be changed during the game
-  , fleaderMode  :: Maybe AutoLeader
-                                -- ^ whether the faction can have a leader
-                                --   and what's its switching mode;
-  , fhasUI       :: Bool        -- ^ does the faction have a UI client
-                                --   (for control or passive observation)
-  , funderAI     :: Bool        -- ^ is the faction under AI control
+  { fname         :: Text        -- ^ name of the player
+  , fgroups       :: [GroupName ItemKind]
+                                 -- ^ names of actor groups that may naturally
+                                 --   fall under player's control, e.g., upon
+                                 --   spawning or summoning
+  , fskillsOther  :: Ability.Skills
+                                 -- ^ fixed skill modifiers to the non-leader
+                                 --   actors; also summed with skills implied
+                                 --   by @fdoctrine@ (which is not fixed)
+  , fcanEscape    :: Bool        -- ^ the player can escape the dungeon
+  , fneverEmpty   :: Bool        -- ^ the faction declared killed if no actors
+  , fhiCondPoly   :: HiCondPoly  -- ^ score polynomial for the player
+  , fhasGender    :: Bool        -- ^ whether actors have gender
+  , finitDoctrine :: Ability.Doctrine
+                                 -- ^ initial faction's non-leaders doctrine
+  , fleaderMode   :: Maybe AutoLeader
+                                 -- ^ whether the faction can have a leader
+                                 --   and what's its switching mode;
+  , fhasUI        :: Bool        -- ^ does the faction have a UI client
+                                 --   (for control or passive observation)
+  , funderAI      :: Bool        -- ^ is the faction under AI control
   }
   deriving (Show, Eq, Generic)
 

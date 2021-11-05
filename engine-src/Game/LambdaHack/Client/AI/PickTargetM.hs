@@ -139,10 +139,9 @@ computeTarget foeAssocs friendAssocs aid = do
   factionD <- getsState sfactionD
   seps <- getsClient seps
   let fact = factionD EM.! bfid b
-      slackDoctrine =
-        fdoctrine (gplayer fact)
-          `elem` [ Ability.TMeleeAndRanged, Ability.TMeleeAdjacent
-                 , Ability.TBlock, Ability.TRoam, Ability.TPatrol ]
+      slackDoctrine = gdoctrine fact
+                      `elem` [ Ability.TMeleeAndRanged, Ability.TMeleeAdjacent
+                             , Ability.TBlock, Ability.TRoam, Ability.TPatrol ]
       canMove = Ability.getSk Ability.SkMove actorMaxSk > 0
       canReach = canMove
                  || Ability.getSk Ability.SkDisplace actorMaxSk > 0

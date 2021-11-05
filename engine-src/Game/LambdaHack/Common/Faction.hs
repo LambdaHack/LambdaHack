@@ -41,6 +41,8 @@ data Faction = Faction
   { gname     :: Text            -- ^ individual name
   , gcolor    :: Color.Color     -- ^ color of actors or their frames
   , gplayer   :: Player          -- ^ the player spec for this faction
+  , gdoctrine :: Ability.Doctrine
+                                 -- ^ non-leaders behave according to this
   , gteamCont :: Maybe TeamContinuity
                                  -- ^ identity of this faction across games
                                  --   and scenarios

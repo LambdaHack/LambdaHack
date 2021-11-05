@@ -176,11 +176,12 @@ actorCurrentSkills :: Maybe ActorId -> ActorId -> State -> Ability.Skills
 actorCurrentSkills mleader aid s =
   let body = getActorBody aid s
       actorMaxSk = getActorMaxSkills aid s
-      player = gplayer . (EM.! bfid body) . sfactionD $ s
-      skillsFromDoctrine = Ability.doctrineSkills $ fdoctrine player
+      fact = (EM.! bfid body) . sfactionD $ s
+      skillsFromDoctrine = Ability.doctrineSkills $ gdoctrine fact
       factionSkills
         | Just aid == mleader = Ability.zeroSkills
-        | otherwise = fskillsOther player `Ability.addSkills` skillsFromDoctrine
+        | otherwise = fskillsOther (gplayer fact)
+                      `Ability.addSkills` skillsFromDoctrine
   in actorMaxSk `Ability.addSkills` factionSkills
 
 -- Check that the actor can move, also between levels and through doors.
