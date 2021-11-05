@@ -33,9 +33,13 @@ groupNames :: [GroupName PlayerKind]
 groupNames = []
 
 content :: [PlayerKind]
-content = [playerHero, playerAntiHero, playerCivilian, playerMonster, playerAntiMonster, playerAnimal, playerHorror, playerMonsterTourist, playerHunamConvict, playerAnimalMagnificent, playerAnimalExquisite]
+content = [playerHero, playerAntiHero, playerCivilian, playerHunamConvict, playerMonster, playerAntiMonster, playerMonsterTourist, playerAnimal, playerAnimalMagnificent, playerAnimalExquisite, playerHorror]
 
-playerHero,            playerAntiHero, playerCivilian, playerMonster, playerAntiMonster, playerAnimal, playerHorror, playerMonsterTourist, playerHunamConvict, playerAnimalMagnificent, playerAnimalExquisite :: PlayerKind
+playerHero,            playerAntiHero, playerCivilian, playerHunamConvict, playerMonster, playerAntiMonster, playerMonsterTourist, playerAnimal, playerAnimalMagnificent, playerAnimalExquisite, playerHorror :: PlayerKind
+
+-- * Content
+
+-- ** teamExplorer
 
 playerHero = PlayerKind
   { fsymbol = 'e'
@@ -53,6 +57,8 @@ playerHero = PlayerKind
   , finitUnderAI = False
   }
 
+-- ** teamCompetitor, symmetric opponets of teamExplorer
+
 playerAntiHero = playerHero
   { fsymbol = 'a'
   , ffreq = []
@@ -60,6 +66,8 @@ playerAntiHero = playerHero
   , fhasUI = False
   , finitUnderAI = True
   }
+
+-- ** teamCivilian
 
 playerCivilian = PlayerKind
   { fsymbol = 'c'
@@ -76,6 +84,17 @@ playerCivilian = PlayerKind
   , fhasUI = False
   , finitUnderAI = True
   }
+
+-- ** teamConvict, different demographics
+
+playerHunamConvict =
+  playerCivilian { fsymbol = 'v'
+                 , fname = "Hunam Convict"
+                 , ffreq = []
+                 , fleaderMode = Just $ AutoLeader True False
+                 , finitUnderAI = True }
+
+-- ** teamMonster
 
 playerMonster = PlayerKind
   { fsymbol = 'm'
@@ -95,7 +114,7 @@ playerMonster = PlayerKind
   , fhasUI = False
   , finitUnderAI = True
   }
-
+-- This has continuity @teamMonster@, despite being playable.
 playerAntiMonster = playerMonster
   { fsymbol = 'b'
   , ffreq = []
@@ -103,6 +122,20 @@ playerAntiMonster = playerMonster
   , fhasUI = True
   , finitUnderAI = False
   }
+-- More flavour and special backstory, but the same team.
+playerMonsterTourist =
+  playerAntiMonster
+    { fsymbol = 't'
+    , fname = "Monster Tourist Office"
+    , ffreq = []
+    , fcanEscape = True
+    , fneverEmpty = True  -- no spawning
+    , fhiCondPoly = hiHeroMedium
+    , finitDoctrine = TFollow  -- follow-the-guide, as tourists do
+    , fleaderMode = Just $ AutoLeader False False
+    , finitUnderAI = False }
+
+-- ** teamAnimal
 
 playerAnimal = PlayerKind
   { fsymbol = 'n'
@@ -119,6 +152,20 @@ playerAnimal = PlayerKind
   , fhasUI = False
   , finitUnderAI = True
   }
+-- These two differ from outside, but share information and boasting
+-- about them tends to be general, too.
+playerAnimalMagnificent =
+  playerAnimal { fsymbol = 'g'
+               , fname = "Animal Magnificent Specimen Variety"
+               , ffreq = []
+               , fneverEmpty = True }
+playerAnimalExquisite =
+  playerAnimal { fsymbol = 'q'
+               , fname = "Animal Exquisite Herds and Packs Galore"
+               , ffreq = []
+               , fneverEmpty = True }
+
+-- ** teamHorror, not much of a continuity intended, but can't be ignored
 
 -- | A special player, for summoned actors that don't belong to any
 -- of the main players of a given game. E.g., animals summoned during
@@ -141,36 +188,7 @@ playerHorror = PlayerKind
   , finitUnderAI = True
   }
 
-playerMonsterTourist =
-  playerAntiMonster
-    { fsymbol = 't'
-    , fname = "Monster Tourist Office"
-    , ffreq = []
-    , fcanEscape = True
-    , fneverEmpty = True  -- no spawning
-    , fhiCondPoly = hiHeroMedium
-    , finitDoctrine = TFollow  -- follow-the-guide, as tourists do
-    , fleaderMode = Just $ AutoLeader False False
-    , finitUnderAI = False }
-
-playerHunamConvict =
-  playerCivilian { fsymbol = 'v'
-                 , fname = "Hunam Convict"
-                 , ffreq = []
-                 , fleaderMode = Just $ AutoLeader True False
-                 , finitUnderAI = True }
-
-playerAnimalMagnificent =
-  playerAnimal { fsymbol = 'g'
-               , fname = "Animal Magnificent Specimen Variety"
-               , ffreq = []
-               , fneverEmpty = True }
-
-playerAnimalExquisite =
-  playerAnimal { fsymbol = 'q'
-               , fname = "Animal Exquisite Herds and Packs Galore"
-               , ffreq = []
-               , fneverEmpty = True }
+-- * Score formulas (conditional polynomials)
 
 hiHeroLong, hiHeroMedium, hiHeroShort, hiDweller :: HiCondPoly
 

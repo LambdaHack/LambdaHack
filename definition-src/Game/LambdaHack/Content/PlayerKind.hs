@@ -42,7 +42,7 @@ data PlayerKind = PlayerKind
                                  --   by @fdoctrine@ (which is not fixed)
   , fcanEscape    :: Bool        -- ^ the player can escape the dungeon
   , fneverEmpty   :: Bool        -- ^ the faction declared killed if no actors
-  , fhiCondPoly   :: HiCondPoly  -- ^ score polynomial for the player
+  , fhiCondPoly   :: HiCondPoly  -- ^ score formula (conditional polynomial)
   , fhasGender    :: Bool        -- ^ whether actors have gender
   , finitDoctrine :: Ability.Doctrine
                                  -- ^ initial faction's non-leaders doctrine
