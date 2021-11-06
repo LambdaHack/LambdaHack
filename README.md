@@ -43,8 +43,8 @@ A couple of frontends are available (SDL2 is the default
 for desktop and there is a JavaScript browser frontend)
 and many other generic engine components are easily overridden,
 but the fundamental source of flexibility lies in the strict
-and enforced with types separation of code from the content
-and of clients (human and AI-controlled) from the server.
+and enforced with types separation of engine code from the read-only
+content and of clients (human and AI-controlled) from the server.
 
 Please see the changelog file for recent improvements
 and the issue tracker for short-term plans. Long term goals
