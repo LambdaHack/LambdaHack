@@ -1,7 +1,7 @@
 {-# LANGUAGE DeriveGeneric, GeneralizedNewtypeDeriving #-}
 -- | The type of kinds of game modes.
 module Game.LambdaHack.Content.ModeKind
-  ( pattern CAMPAIGN_SCENARIO, pattern INSERT_COIN, pattern NO_CONFIRMS
+  ( pattern CAMPAIGN_SCENARIO, pattern INSERT_COIN
   , ModeKind(..), makeData
   , Caves, Roster(..)
 #ifdef EXPOSE_INTERNAL
@@ -118,12 +118,6 @@ pattern CAMPAIGN_SCENARIO, INSERT_COIN :: GroupName ModeKind
 
 pattern CAMPAIGN_SCENARIO = GroupName "campaign scenario"
 pattern INSERT_COIN = GroupName "insert coin"
-
--- * Optional item groups
-
-pattern NO_CONFIRMS :: GroupName ModeKind
-
-pattern NO_CONFIRMS = GroupName "no confirms"
 
 makeData :: [ModeKind] -> [GroupName ModeKind] -> [GroupName ModeKind]
          -> ContentData ModeKind

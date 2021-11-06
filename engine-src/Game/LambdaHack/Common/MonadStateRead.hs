@@ -48,7 +48,7 @@ getGameMode = do
 isNoConfirmsGame :: MonadStateRead m => m Bool
 isNoConfirmsGame = do
   gameMode <- getGameMode
-  return $! maybe False (> 0) $ lookup NO_CONFIRMS $ mfreq gameMode
+  return $! mattract gameMode
 
 getEntryArena :: MonadStateRead m => Faction -> m LevelId
 getEntryArena fact = do

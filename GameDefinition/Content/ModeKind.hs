@@ -62,7 +62,7 @@ groupNamesSingleton =
 pattern RAID, BRAWL, LONG, CRAWL, FOGGY, SHOOTOUT, PERILOUS, HUNT, NIGHT, ESCAPE, BURNING, ZOO, RANGED, AMBUSH, SAFARI, DIG, SEE, SHORT, CRAWL_EMPTY, CRAWL_SURVIVAL, SAFARI_SURVIVAL, BATTLE, BATTLE_DEFENSE, BATTLE_SURVIVAL, DEFENSE, DEFENSE_EMPTY :: GroupName ModeKind
 
 groupNames :: [GroupName ModeKind]
-groupNames = [NO_CONFIRMS]
+groupNames = []
 
 pattern RAID = GroupName "raid"
 pattern BRAWL = GroupName "brawl"
@@ -485,55 +485,55 @@ defenseEmpty = ModeKind
 
 screensaverRaid = raid
   { mname   = "auto-raid (1)"
-  , mfreq   = [(INSERT_COIN, 2), (NO_CONFIRMS, 1)]
+  , mfreq   = [(INSERT_COIN, 2)]
   , mattract = True
   }
 
 screensaverBrawl = brawl
   { mname   = "auto-brawl (2)"
-  , mfreq   = [(NO_CONFIRMS, 1)]
+  , mfreq   = []
   , mattract = True
   }
 
 screensaverCrawl = crawl
   { mname   = "auto-crawl (long)"
-  , mfreq   = [(NO_CONFIRMS, 1)]
+  , mfreq   = []
   , mattract = True
   }
 
 screensaverShootout = shootout
   { mname   = "auto-shootout (3)"
-  , mfreq   = [(INSERT_COIN, 2), (NO_CONFIRMS, 1)]
+  , mfreq   = [(INSERT_COIN, 2)]
   , mattract = True
   }
 
 screensaverHunt = hunt
   { mname   = "auto-hunt (4)"
-  , mfreq   = [(INSERT_COIN, 2), (NO_CONFIRMS, 1)]
+  , mfreq   = [(INSERT_COIN, 2)]
   , mattract = True
   }
 
 screensaverEscape = escape
   { mname   = "auto-escape (5)"
-  , mfreq   = [(INSERT_COIN, 2), (NO_CONFIRMS, 1)]
+  , mfreq   = [(INSERT_COIN, 2)]
   , mattract = True
   }
 
 screensaverZoo = zoo
   { mname   = "auto-zoo (6)"
-  , mfreq   = [(NO_CONFIRMS, 1)]
+  , mfreq   = []
   , mattract = True
   }
 
 screensaverAmbush = ambush
   { mname   = "auto-ambush (7)"
-  , mfreq   = [(NO_CONFIRMS, 1)]
+  , mfreq   = []
   , mattract = True
   }
 
 screensaverSafari = safari
   { mname   = "auto-safari"
-  , mfreq   = [(INSERT_COIN, 1), (NO_CONFIRMS, 1)]
+  , mfreq   = [(INSERT_COIN, 1)]
   , mattract = True
   }
 
