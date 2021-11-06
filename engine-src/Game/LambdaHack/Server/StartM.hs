@@ -227,9 +227,10 @@ mapFromFuns domain =
   in foldr fromFun M.empty
 
 resetFactions :: FactionDict -> ContentId ModeKind -> Int -> Dice.AbsDepth
-              -> ModeKind
+              -> ModeKind -> Bool
               -> Rnd FactionDict
-resetFactions factionDold gameModeIdOld curDiffSerOld totalDepth mode = do
+resetFactions factionDold gameModeIdOld curDiffSerOld totalDepth mode
+              automateAll = do
   let rawCreate (ix, (gplayer@PlayerKind{..}, gteamCont, initialActors)) = do
         let castInitialActors (ln, d, actorGroup) = do
               n <- castDice (Dice.AbsDepth $ abs ln) totalDepth d
@@ -257,7 +258,7 @@ resetFactions factionDold gameModeIdOld curDiffSerOld totalDepth mode = do
                 in EM.insertWith f gameModeIdOld sing $ gvictimsD fact
         let gname = gnameNew
             gdoctrine = finitDoctrine
-            gunderAI = finitUnderAI || mattract mode
+            gunderAI = finitUnderAI || mattract mode || automateAll
             gdipl = EM.empty  -- fixed below
             gquit = Nothing
             _gleader = Nothing
@@ -319,13 +320,10 @@ gameReset serverOptions mGameMode mrandom = do
         flavour <- dungeonFlavourMap cops flavourOld
         (discoKind, sdiscoKindRev) <- serverDiscos cops discoKindRevOld
         freshDng <- DungeonGen.dungeonGen cops serverOptions $ mcaves mode
-        factionDRaw <- resetFactions factionDold gameModeIdOld
-                                     (cdiff curChalSer)
-                                     (DungeonGen.freshTotalDepth freshDng)
-                                     mode
-        let factionD = if sautomateAll serverOptions
-                       then EM.map (automateFaction True) factionDRaw
-                       else factionDRaw
+        factionD <- resetFactions factionDold gameModeIdOld
+                                  (cdiff curChalSer)
+                                  (DungeonGen.freshTotalDepth freshDng)
+                                  mode (sautomateAll serverOptions)
         return ( factionD, flavour, discoKind
                , sdiscoKindRev, freshDng, modeKindId )
   let ( factionD, sflavour, discoKind

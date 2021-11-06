@@ -5,7 +5,7 @@ module Game.LambdaHack.Common.Faction
   ( FactionDict, Faction(..), Diplomacy(..)
   , Status(..), Challenge(..)
   , tshowChallenge, gleader, isHorrorFact, noRunWithMulti
-  , bannedPointmanSwitchBetweenLevels, automateFaction, isFoe, isFriend
+  , bannedPointmanSwitchBetweenLevels, isFoe, isFriend
   , difficultyBound, difficultyDefault, difficultyCoeff, difficultyInverse
   , defaultChallenge, possibleActorFactions, ppContainer
 #ifdef EXPOSE_INTERNAL
@@ -142,9 +142,6 @@ noRunWithMulti fact =
 
 bannedPointmanSwitchBetweenLevels :: Faction -> Bool
 bannedPointmanSwitchBetweenLevels = fspawnsFast . gplayer
-
-automateFaction :: Bool -> Faction -> Faction
-automateFaction gunderAI fact = fact {gunderAI}
 
 -- | Check if factions are at war. Assumes symmetry.
 isFoe :: FactionId -> Faction -> FactionId -> Bool

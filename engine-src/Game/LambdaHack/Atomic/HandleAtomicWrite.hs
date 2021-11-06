@@ -488,7 +488,7 @@ updDoctrineFaction fid toT fromT = do
 updAutoFaction :: MonadStateWrite m => FactionId -> Bool -> m ()
 updAutoFaction fid st =
   updateFaction fid (\fact ->
-    assert (gunderAI fact == not st) $ automateFaction st fact)
+    assert (gunderAI fact == not st) $ fact {gunderAI = st})
 
 -- Record a given number (usually just 1, or -1 for undo) of actor kills
 -- for score calculation.
