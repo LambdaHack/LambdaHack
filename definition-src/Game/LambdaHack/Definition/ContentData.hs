@@ -107,7 +107,7 @@ makeContentData contentName getName getFreq validateSingle validateAll
       allGroupNamesNonUnique = allGroupNamesSorted \\ allGroupNamesUnique
       missingGroups = filter (not . omemberGroup contentData)
                              (groupNamesSingleton ++ groupNames)
-      groupsMoreThanOne = filter (oisMoreThanOneGroup contentData)
+      groupsMoreThanOne = filter (not . oisSingletonGroup contentData)
                                  groupNamesSingleton
       groupsDeclaredSet = S.fromAscList allGroupNamesUnique
       groupsNotDeclared = filter (`S.notMember` groupsDeclaredSet)
@@ -160,12 +160,6 @@ oisSingletonGroup :: ContentData a -> GroupName a -> Bool
 oisSingletonGroup ContentData{groupFreq} cgroup =
   case M.lookup cgroup groupFreq of
     Just [_] -> True
-    _ -> False
-
-oisMoreThanOneGroup :: ContentData a -> GroupName a -> Bool
-oisMoreThanOneGroup ContentData{groupFreq} cgroup =
-  case M.lookup cgroup groupFreq of
-    Just (_:_:_) -> True
     _ -> False
 
 -- | The id of the unique member of a singleton content group.
