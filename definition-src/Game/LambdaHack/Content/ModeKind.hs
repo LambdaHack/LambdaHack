@@ -50,8 +50,7 @@ type Caves = [([Int], [GroupName CaveKind])]
 data Roster = Roster
   { rosterList  :: [( PlayerKind
                     , [(Int, Dice.Dice, GroupName ItemKind)] )]
-      -- ^ players in the particular team and levels, numbers and groups
-      --   of their initial members
+      -- ^ players and levels, numbers and groups of their initial members
   , rosterEnemy :: [(Text, Text)]  -- ^ the initial enmity matrix
   , rosterAlly  :: [(Text, Text)]  -- ^ the initial aliance matrix
   }

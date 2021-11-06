@@ -437,7 +437,7 @@ escape = rogue  -- a scenario with weak missiles, because heroes don't depend
   , cmaxStairsNum = 0
   , cescapeFreq   = [(OUTDOOR_ESCAPE_DOWN, 1)]
   , cstairFreq    = []
-  , cskip         = [0]  -- don't start heroes nor opponents on escape
+  , cskip         = []
   , cdesc         = "The darkening greyness is settling into silence."
   }
 zoo = rogue  -- few lights and many solids, to help the less numerous heroes

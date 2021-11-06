@@ -44,7 +44,7 @@ data Faction = Faction
   , gplayer   :: PlayerKind      -- ^ the player spec for this faction
   , gdoctrine :: Ability.Doctrine
                                  -- ^ non-leaders behave according to this
-  , gunderAI  :: Bool            -- ^ is the faction under AI control
+  , gunderAI  :: Bool            -- ^ whether the faction is under AI control
   , ginitial  :: [(Int, Int, GroupName ItemKind)]  -- ^ initial actors
   , gdipl     :: Dipl            -- ^ diplomatic standing
   , gquit     :: Maybe Status    -- ^ cause of game end/exit

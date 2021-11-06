@@ -584,7 +584,7 @@ rosterHunt = Roster
   , rosterAlly = [] }
 
 rosterEscape = Roster
-  { rosterList = [ ( playerCompetitorNoEscape  -- start on escape
+  { rosterList = [ ( playerCompetitorNoEscape  -- start on exit
                    , [(-7, 6, AMBUSHER_HERO), (-7, 1, SCOUT_HERO)] )
                  , ( playerExplorerMedium
                    , [(-7, 2, ESCAPIST_HERO), (-7, 1, SCOUT_HERO)] )
