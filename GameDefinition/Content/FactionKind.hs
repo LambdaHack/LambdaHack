@@ -1,5 +1,5 @@
 -- | Basic players definitions.
-module Content.PlayerKind
+module Content.FactionKind
   ( -- * Group names
     groupNamesSingleton, groupNames
   , -- * Content
@@ -18,20 +18,20 @@ import Game.LambdaHack.Core.Prelude
 import           Content.ItemKindActor
 import           Content.ItemKindOrgan
 import qualified Game.LambdaHack.Content.ItemKind as IK
-import           Game.LambdaHack.Content.PlayerKind
+import           Game.LambdaHack.Content.FactionKind
 import           Game.LambdaHack.Definition.Ability
 import           Game.LambdaHack.Definition.Defs
 
-groupNamesSingleton :: [GroupName PlayerKind]
+groupNamesSingleton :: [GroupName FactionKind]
 groupNamesSingleton = []
 
-groupNames :: [GroupName PlayerKind]
+groupNames :: [GroupName FactionKind]
 groupNames = []
 
-content :: [PlayerKind]
+content :: [FactionKind]
 content = [playerExplorer, playerExplorerShort, playerExplorerNoEscape, playerExplorerMedium, playerExplorerTrapped, playerExplorerAutomated, playerExplorerAutomatedTrapped, playerCompetitor, playerCompetitorShort, playerCompetitorNoEscape, playerCivilian, playerConvict, playerMonster, playerAntiMonster, playerAntiMonsterCaptive, playerMonsterTourist, playerMonsterTouristPassive, playerMonsterCaptive, playerMonsterCaptiveNarrating, playerAnimal, playerAnimalMagnificent, playerAnimalExquisite, playerAnimalCaptive, playerAnimalNarrating, playerAnimalMagnificentNarrating, playerAnimalCaptiveNarrating, playerHorror]
 
-playerExplorer,            playerExplorerShort, playerExplorerNoEscape, playerExplorerMedium, playerExplorerTrapped, playerExplorerAutomated, playerExplorerAutomatedTrapped, playerCompetitor, playerCompetitorShort, playerCompetitorNoEscape, playerCivilian, playerConvict, playerMonster, playerAntiMonster, playerAntiMonsterCaptive, playerMonsterTourist, playerMonsterTouristPassive, playerMonsterCaptive, playerMonsterCaptiveNarrating, playerAnimal, playerAnimalMagnificent, playerAnimalExquisite, playerAnimalCaptive, playerAnimalNarrating, playerAnimalMagnificentNarrating, playerAnimalCaptiveNarrating, playerHorror :: PlayerKind
+playerExplorer,            playerExplorerShort, playerExplorerNoEscape, playerExplorerMedium, playerExplorerTrapped, playerExplorerAutomated, playerExplorerAutomatedTrapped, playerCompetitor, playerCompetitorShort, playerCompetitorNoEscape, playerCivilian, playerConvict, playerMonster, playerAntiMonster, playerAntiMonsterCaptive, playerMonsterTourist, playerMonsterTouristPassive, playerMonsterCaptive, playerMonsterCaptiveNarrating, playerAnimal, playerAnimalMagnificent, playerAnimalExquisite, playerAnimalCaptive, playerAnimalNarrating, playerAnimalMagnificentNarrating, playerAnimalCaptiveNarrating, playerHorror :: FactionKind
 
 -- * Teams
 
@@ -47,7 +47,7 @@ teamHorror = TeamContinuity 7
 
 -- ** teamExplorer
 
-playerExplorer = PlayerKind
+playerExplorer = FactionKind
   { fname = "Explorer"
   , ffreq = []
   , fteam = teamExplorer
@@ -94,7 +94,7 @@ playerCompetitorNoEscape = playerCompetitor { fcanEscape = False
 
 -- ** teamCivilian
 
-playerCivilian = PlayerKind
+playerCivilian = FactionKind
   { fname = "Civilian"
   , ffreq = []
   , fteam = teamCivilian
@@ -122,7 +122,7 @@ playerConvict =
 
 -- ** teamMonster
 
-playerMonster = PlayerKind
+playerMonster = FactionKind
   { fname = "Monster Hive"
   , ffreq = []
   , fteam = teamMonster
@@ -164,7 +164,7 @@ playerMonsterCaptiveNarrating = playerAntiMonsterCaptive {fhasUI = True}
 
 -- ** teamAnimal
 
-playerAnimal = PlayerKind
+playerAnimal = FactionKind
   { fname = "Animal Kingdom"
   , ffreq = []
   , fteam = teamAnimal
@@ -208,7 +208,7 @@ playerAnimalCaptiveNarrating = playerAnimalCaptive {fhasUI = True}
 -- a brawl game between two hero factions land in the horror faction.
 -- In every game, either all factions for which summoning items exist
 -- should be present or a horror player should be added to host them.
-playerHorror = PlayerKind
+playerHorror = FactionKind
   { fname = "Horror Den"
   , ffreq = []
   , fteam = teamHorror

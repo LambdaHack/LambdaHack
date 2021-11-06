@@ -51,7 +51,7 @@ import           Game.LambdaHack.Common.Types
 import           Game.LambdaHack.Common.Vector
 import           Game.LambdaHack.Content.ItemKind (ItemKind)
 import qualified Game.LambdaHack.Content.PlaceKind as PK
-import           Game.LambdaHack.Content.PlayerKind
+import           Game.LambdaHack.Content.FactionKind
 import           Game.LambdaHack.Content.TileKind (TileKind, unknownId)
 import qualified Game.LambdaHack.Definition.Ability as Ability
 import           Game.LambdaHack.Definition.Defs

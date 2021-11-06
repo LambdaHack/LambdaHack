@@ -43,7 +43,7 @@ import qualified Game.LambdaHack.Content.CaveKind as CK
 import           Game.LambdaHack.Content.ItemKind (ItemKind)
 import qualified Game.LambdaHack.Content.ItemKind as IK
 import           Game.LambdaHack.Content.ModeKind
-import           Game.LambdaHack.Content.PlayerKind
+import           Game.LambdaHack.Content.FactionKind
 import qualified Game.LambdaHack.Core.Dice as Dice
 import           Game.LambdaHack.Core.Random
 import qualified Game.LambdaHack.Definition.Ability as Ability
@@ -102,8 +102,8 @@ reinitGame factionDold = do
   -- are not preserved (a lot of other state components would need
   -- to be partially preserved, too, both on server and clients).
   --
-  -- This is a terrible temporary hack until Player becomes content
-  -- and we persistently store Player information on the server.
+  -- This is a terrible temporary hack until Faction becomes content
+  -- and we persistently store Faction information on the server.
   let metaHolder factionDict = case find (\(_, fact) ->
                                       fteam (gplayer fact) == TeamContinuity 1)
                                     $ EM.assocs factionDict of
@@ -233,7 +233,7 @@ resetFactions :: FactionDict -> ContentId ModeKind -> Int -> Dice.AbsDepth
               -> Rnd FactionDict
 resetFactions factionDold gameModeIdOld curDiffSerOld totalDepth mode
               automateAll = do
-  let rawCreate (ix, (gplayer@PlayerKind{..}, initialActors)) = do
+  let rawCreate (ix, (gplayer@FactionKind{..}, initialActors)) = do
         let castInitialActors (ln, d, actorGroup) = do
               n <- castDice (Dice.AbsDepth $ abs ln) totalDepth d
               return (ln, n, actorGroup)
@@ -270,9 +270,9 @@ resetFactions factionDold gameModeIdOld curDiffSerOld totalDepth mode
         return (toEnum $ if fhasUI then ix else -ix, Faction{..})
   lFs <- mapM rawCreate $ zip [1..] $ rosterList (mroster mode)
   let swapIx l =
-        let findPlayerName name = find ((name ==) . fname . gplayer . snd)
+        let findFactionName name = find ((name ==) . fname . gplayer . snd)
             f (name1, name2) =
-              case (findPlayerName name1 lFs, findPlayerName name2 lFs) of
+              case (findFactionName name1 lFs, findFactionName name2 lFs) of
                 (Just (ix1, _), Just (ix2, _)) -> (ix1, ix2)
                 _ -> error $ "unknown faction"
                              `showFailure` ((name1, name2), lFs)

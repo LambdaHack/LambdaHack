@@ -18,8 +18,8 @@ import qualified Data.Text as T
 
 import           Game.LambdaHack.Content.CaveKind (CaveKind)
 import           Game.LambdaHack.Content.ItemKind (ItemKind)
-import           Game.LambdaHack.Content.PlayerKind
-  (Outcome (..), PlayerKind (..))
+import           Game.LambdaHack.Content.FactionKind
+  (Outcome (..), FactionKind (..))
 import qualified Game.LambdaHack.Core.Dice as Dice
 import           Game.LambdaHack.Definition.ContentData
 import           Game.LambdaHack.Definition.Defs
@@ -48,7 +48,7 @@ type Caves = [([Int], [GroupName CaveKind])]
 
 -- | The specification of players for the game mode.
 data Roster = Roster
-  { rosterList  :: [( PlayerKind
+  { rosterList  :: [( FactionKind
                     , [(Int, Dice.Dice, GroupName ItemKind)] )]
       -- ^ players and levels, numbers and groups of their initial members
   , rosterEnemy :: [(Text, Text)]  -- ^ the initial enmity matrix

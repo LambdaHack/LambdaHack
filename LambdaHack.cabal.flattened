@@ -163,10 +163,10 @@ library
                       Game.LambdaHack.Definition.DefsInternal
                       Game.LambdaHack.Definition.Flavour
                       Game.LambdaHack.Content.CaveKind
+                      Game.LambdaHack.Content.FactionKind
                       Game.LambdaHack.Content.ItemKind
                       Game.LambdaHack.Content.ModeKind
                       Game.LambdaHack.Content.PlaceKind
-                      Game.LambdaHack.Content.PlayerKind
                       Game.LambdaHack.Content.RuleKind
                       Game.LambdaHack.Content.TileKind
                       Game.LambdaHack.Atomic
@@ -282,6 +282,7 @@ library
 -- for doctest:
                       Paths_LambdaHack
   exposed-modules:    Content.CaveKind
+                      Content.FactionKind
                       Content.ItemKind
                       Content.ItemKindEmbed
                       Content.ItemKindActor
@@ -290,7 +291,6 @@ library
                       Content.ItemKindTemporary
                       Content.ModeKind
                       Content.PlaceKind
-                      Content.PlayerKind
                       Content.RuleKind
                       Content.TileKind
                       TieKnot

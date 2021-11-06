@@ -24,10 +24,10 @@ import           Game.LambdaHack.Common.Misc
 import           Game.LambdaHack.Common.Point (speedupHackXSize)
 import qualified Game.LambdaHack.Common.Tile as Tile
 import qualified Game.LambdaHack.Content.CaveKind as CK
+import qualified Game.LambdaHack.Content.FactionKind as FK
 import qualified Game.LambdaHack.Content.ItemKind as IK
 import qualified Game.LambdaHack.Content.ModeKind as MK
 import qualified Game.LambdaHack.Content.PlaceKind as PK
-import qualified Game.LambdaHack.Content.PlayerKind as PLK
 import qualified Game.LambdaHack.Content.RuleKind as RK
 import qualified Game.LambdaHack.Content.TileKind as TK
 import           Game.LambdaHack.Server
@@ -35,10 +35,10 @@ import           Game.LambdaHack.Server
 import qualified Client.UI.Content.Input as Content.Input
 import qualified Client.UI.Content.Screen as Content.Screen
 import qualified Content.CaveKind
+import qualified Content.FactionKind
 import qualified Content.ItemKind
 import qualified Content.ModeKind
 import qualified Content.PlaceKind
-import qualified Content.PlayerKind
 import qualified Content.RuleKind
 import qualified Content.TileKind
 import           Implementation.MonadServerImplementation (executorSer)
@@ -96,9 +96,9 @@ tieKnotForAsync options@ServerOptions{ sallClear
                                 Content.PlaceKind.content
                                 Content.PlaceKind.groupNamesSingleton
                                 Content.PlaceKind.groupNames
-        , coplayer = PLK.makeData Content.PlayerKind.content
-                                  Content.PlayerKind.groupNamesSingleton
-                                  Content.PlayerKind.groupNames
+        , cofact = FK.makeData Content.FactionKind.content
+                               Content.FactionKind.groupNamesSingleton
+                               Content.FactionKind.groupNames
         , corule = RK.makeData Content.RuleKind.standardRules
         , cotile
         , coItemSpeedup

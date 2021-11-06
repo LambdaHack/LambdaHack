@@ -58,10 +58,10 @@ import qualified Game.LambdaHack.Common.Tile as Tile
 import           Game.LambdaHack.Common.Time
 import           Game.LambdaHack.Common.Types
 import           Game.LambdaHack.Content.CaveKind (cdesc)
+import           Game.LambdaHack.Content.FactionKind
 import qualified Game.LambdaHack.Content.ItemKind as IK
 import           Game.LambdaHack.Content.ModeKind
 import qualified Game.LambdaHack.Content.ModeKind as MK
-import           Game.LambdaHack.Content.PlayerKind
 import           Game.LambdaHack.Content.RuleKind
 import qualified Game.LambdaHack.Content.TileKind as TK
 import           Game.LambdaHack.Core.Random
@@ -420,7 +420,7 @@ watchRespUpdAtomicUI cmd = case cmd of
     mactorAtPos <- getsState $ posToBig p lid
     mleader <- getsClient sleader
     when (unexpected || isJust mactorAtPos && mactorAtPos /= mleader) $ do
-      -- Player notices @fromTile can't be altered into @toTIle@,
+      -- Faction notices @fromTile@ can't be altered into @toTIle@,
       -- which is uncanny, so we produce a message.
       -- This happens when the player missed an earlier search of the tile
       -- performed by another faction.

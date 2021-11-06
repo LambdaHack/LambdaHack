@@ -87,7 +87,7 @@ import           Game.LambdaHack.Common.Types
 import           Game.LambdaHack.Common.Vector
 import qualified Game.LambdaHack.Content.ItemKind as IK
 import qualified Game.LambdaHack.Content.ModeKind as MK
-import qualified Game.LambdaHack.Content.PlayerKind as PLK
+import qualified Game.LambdaHack.Content.FactionKind as FK
 import           Game.LambdaHack.Content.RuleKind
 import qualified Game.LambdaHack.Definition.Ability as Ability
 import qualified Game.LambdaHack.Definition.Color as Color
@@ -585,7 +585,7 @@ pickLeaderHuman k = do
       mactor = case drop k hs of
                  [] -> Nothing
                  (aid, b, _) : _ -> Just (aid, b)
-      mchoice = if PLK.fhasGender (gplayer fact) then mhero else mactor
+      mchoice = if FK.fhasGender (gplayer fact) then mhero else mactor
       banned = bannedPointmanSwitchBetweenLevels fact
   case mchoice of
     Nothing -> failMsg "no such member of the party"

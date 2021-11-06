@@ -1,8 +1,8 @@
 {-# LANGUAGE DeriveGeneric, GeneralizedNewtypeDeriving #-}
 -- | The type of kinds of players present in a game, both human
 -- and computer-controlled.
-module Game.LambdaHack.Content.PlayerKind
-  ( PlayerKind(..), makeData
+module Game.LambdaHack.Content.FactionKind
+  ( FactionKind(..), makeData
   , HiCondPoly, HiSummand, HiPolynomial, HiIndeterminant(..)
   , TeamContinuity(..), Outcome(..)
   , teamExplorer, victoryOutcomes, deafeatOutcomes
@@ -27,9 +27,9 @@ import           Game.LambdaHack.Definition.ContentData
 import           Game.LambdaHack.Definition.Defs
 
 -- | Properties of a particular player.
-data PlayerKind = PlayerKind
+data FactionKind = FactionKind
   { fname         :: Text        -- ^ name of the player
-  , ffreq         :: Freqs PlayerKind
+  , ffreq         :: Freqs FactionKind
                                  -- ^ frequency within groups
   , fteam         :: TeamContinuity
                                  -- ^ the team the player identifies with
@@ -59,7 +59,7 @@ data PlayerKind = PlayerKind
   }
   deriving (Show, Eq, Generic)
 
-instance Binary PlayerKind
+instance Binary FactionKind
 
 -- | Team continuity index. Starting with 1, lower than 100.
 newtype TeamContinuity = TeamContinuity Int
@@ -134,18 +134,18 @@ endMessageOutcome = \case
   Restart  -> "This time for real."
   Camping  -> "See you soon, stronger and braver!"
 
-validateSingle :: PlayerKind -> [Text]
-validateSingle PlayerKind{..} =
+validateSingle :: FactionKind -> [Text]
+validateSingle FactionKind{..} =
   [ "fname longer than 50" | T.length fname > 50 ]
   ++ [ "fskillsOther not negative:" <+> fname
      | any ((>= 0) . snd) $ Ability.skillsToList fskillsOther ]
 
 -- | Validate game player kinds together.
-validateAll :: [PlayerKind] -> ContentData PlayerKind -> [Text]
+validateAll :: [FactionKind] -> ContentData FactionKind -> [Text]
 validateAll _ _ = []  -- so far, always valid
 
-makeData :: [PlayerKind] -> [GroupName PlayerKind] -> [GroupName PlayerKind]
-         -> ContentData PlayerKind
+makeData :: [FactionKind] -> [GroupName FactionKind] -> [GroupName FactionKind]
+         -> ContentData FactionKind
 makeData content groupNamesSingleton groupNames =
-  makeContentData "PlayerKind" fname ffreq validateSingle validateAll content
+  makeContentData "FactionKind" fname ffreq validateSingle validateAll content
                   groupNamesSingleton groupNames

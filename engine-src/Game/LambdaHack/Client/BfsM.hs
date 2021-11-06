@@ -45,7 +45,7 @@ import           Game.LambdaHack.Common.Types
 import           Game.LambdaHack.Common.Vector
 import qualified Game.LambdaHack.Content.CaveKind as CK
 import qualified Game.LambdaHack.Content.ItemKind as IK
-import           Game.LambdaHack.Content.PlayerKind
+import           Game.LambdaHack.Content.FactionKind
 import           Game.LambdaHack.Content.RuleKind
 import           Game.LambdaHack.Content.TileKind (isUknownSpace)
 import           Game.LambdaHack.Core.Random

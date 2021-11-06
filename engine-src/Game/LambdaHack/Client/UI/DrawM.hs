@@ -64,7 +64,7 @@ import           Game.LambdaHack.Common.Types
 import           Game.LambdaHack.Common.Vector
 import           Game.LambdaHack.Content.CaveKind (cname)
 import qualified Game.LambdaHack.Content.ItemKind as IK
-import qualified Game.LambdaHack.Content.PlayerKind as PLK
+import qualified Game.LambdaHack.Content.FactionKind as FK
 import           Game.LambdaHack.Content.RuleKind
 import           Game.LambdaHack.Content.TileKind (TileKind, isUknownSpace)
 import qualified Game.LambdaHack.Content.TileKind as TK
@@ -482,7 +482,7 @@ drawFrameStatus drawnLevelId = do
       -- The indicators must fit, they are the actual information.
       widthXhairOrItem = widthTgt - T.length pathCsr
       nMember = MU.Ord $ 1 + sum (EM.elems $ gvictims fact)
-      fallback = if PLK.fhasPointman (gplayer fact)
+      fallback = if FK.fhasPointman (gplayer fact)
                  then makePhrase
                         ["Waiting for", nMember, "team member to spawn"]
                  else "This faction never picks a pointman"

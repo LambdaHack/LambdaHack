@@ -156,10 +156,10 @@ library definition
                       Game.LambdaHack.Definition.DefsInternal
                       Game.LambdaHack.Definition.Flavour
                       Game.LambdaHack.Content.CaveKind
+                      Game.LambdaHack.Content.FactionKind
                       Game.LambdaHack.Content.ItemKind
                       Game.LambdaHack.Content.ModeKind
                       Game.LambdaHack.Content.PlaceKind
-                      Game.LambdaHack.Content.PlayerKind
                       Game.LambdaHack.Content.RuleKind
                       Game.LambdaHack.Content.TileKind
   build-depends:
@@ -309,6 +309,7 @@ library
                       ,Game.LambdaHack.Definition.DefsInternal
                       ,Game.LambdaHack.Definition.Flavour
                       ,Game.LambdaHack.Content.CaveKind
+                      ,Game.LambdaHack.Content.FactionKind
                       ,Game.LambdaHack.Content.ItemKind
                       ,Game.LambdaHack.Content.ModeKind
                       ,Game.LambdaHack.Content.PlaceKind
@@ -369,6 +370,7 @@ library this-game-content
   import: options
   hs-source-dirs:     GameDefinition
   exposed-modules:    Content.CaveKind
+                      Content.FactionKind
                       Content.ItemKind
                       Content.ItemKindEmbed
                       Content.ItemKindActor
@@ -377,7 +379,6 @@ library this-game-content
                       Content.ItemKindTemporary
                       Content.ModeKind
                       Content.PlaceKind
-                      Content.PlayerKind
                       Content.RuleKind
                       Content.TileKind
   other-modules:      Paths_LambdaHack

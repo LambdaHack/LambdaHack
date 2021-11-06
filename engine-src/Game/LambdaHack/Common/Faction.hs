@@ -26,10 +26,10 @@ import           GHC.Generics (Generic)
 
 import           Game.LambdaHack.Common.Point
 import           Game.LambdaHack.Common.Types
+import           Game.LambdaHack.Content.FactionKind
 import           Game.LambdaHack.Content.ItemKind (ItemKind)
 import qualified Game.LambdaHack.Content.ItemKind as IK
 import           Game.LambdaHack.Content.ModeKind
-import           Game.LambdaHack.Content.PlayerKind
 import qualified Game.LambdaHack.Definition.Ability as Ability
 import qualified Game.LambdaHack.Definition.Color as Color
 import           Game.LambdaHack.Definition.Defs
@@ -41,7 +41,7 @@ type FactionDict = EM.EnumMap FactionId Faction
 data Faction = Faction
   { gname     :: Text            -- ^ individual name
   , gcolor    :: Color.Color     -- ^ color of actors or their frames
-  , gplayer   :: PlayerKind      -- ^ the player spec for this faction
+  , gplayer   :: FactionKind     -- ^ the player spec for this faction
   , gdoctrine :: Ability.Doctrine
                                  -- ^ non-leaders behave according to this
   , gunderAI  :: Bool            -- ^ whether the faction is under AI control

@@ -42,7 +42,7 @@ import qualified Game.LambdaHack.Common.Save as Save
 import           Game.LambdaHack.Common.State
 import           Game.LambdaHack.Common.Thread
 import           Game.LambdaHack.Common.Types
-import           Game.LambdaHack.Content.PlayerKind
+import           Game.LambdaHack.Content.FactionKind
 import           Game.LambdaHack.Content.RuleKind
 import           Game.LambdaHack.Server.DebugM
 import           Game.LambdaHack.Server.MonadServer hiding (liftIO)

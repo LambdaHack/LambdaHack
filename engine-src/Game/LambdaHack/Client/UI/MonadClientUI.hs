@@ -77,7 +77,7 @@ import           Game.LambdaHack.Common.State
 import           Game.LambdaHack.Common.Time
 import           Game.LambdaHack.Common.Types
 import           Game.LambdaHack.Content.ModeKind
-import           Game.LambdaHack.Content.PlayerKind
+import           Game.LambdaHack.Content.FactionKind
 import           Game.LambdaHack.Content.RuleKind
 import           Game.LambdaHack.Core.Random
 

@@ -43,7 +43,7 @@ import qualified Game.LambdaHack.Common.Tile as Tile
 import           Game.LambdaHack.Common.Time
 import           Game.LambdaHack.Common.Types
 import qualified Game.LambdaHack.Content.CaveKind as CK
-import           Game.LambdaHack.Content.PlayerKind
+import           Game.LambdaHack.Content.FactionKind
 import           Game.LambdaHack.Content.TileKind (TileKind)
 import           Game.LambdaHack.Definition.Defs
 

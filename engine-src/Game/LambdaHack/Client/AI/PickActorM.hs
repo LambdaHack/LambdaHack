@@ -28,7 +28,7 @@ import           Game.LambdaHack.Common.State
 import qualified Game.LambdaHack.Common.Tile as Tile
 import           Game.LambdaHack.Common.Time
 import           Game.LambdaHack.Common.Types
-import           Game.LambdaHack.Content.PlayerKind (fskillsOther)
+import           Game.LambdaHack.Content.FactionKind (fskillsOther)
 import           Game.LambdaHack.Core.Frequency
 import           Game.LambdaHack.Core.Random
 import qualified Game.LambdaHack.Definition.Ability as Ability
