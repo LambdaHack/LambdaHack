@@ -1,4 +1,4 @@
--- | Item definitions.
+-- | Definitions of basic items.
 module Content.ItemKind
   ( -- * Group name patterns
     pattern HARPOON, pattern EDIBLE_PLANT, pattern RING_OF_OPPORTUNITY_GRENADIER, pattern ARMOR_LOOSE, pattern CLOTHING_MISC, pattern CHIC_GEAR

@@ -1,4 +1,4 @@
--- | The type of game mode definitions.
+-- | Definitions of game mode kinds.
 module Content.ModeKind
   ( -- * Group name patterns
     groupNamesSingleton, groupNames

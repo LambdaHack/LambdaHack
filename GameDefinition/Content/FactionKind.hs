@@ -1,4 +1,5 @@
--- | Basic players definitions.
+-- | Definitions of kinds of factions present in a game, both human
+-- and computer-controlled.
 module Content.FactionKind
   ( -- * Group name patterns
     pattern EXPLORER_REPRESENTATIVE, pattern EXPLORER_SHORT, pattern EXPLORER_NO_ESCAPE, pattern EXPLORER_MEDIUM, pattern EXPLORER_TRAPPED, pattern EXPLORER_AUTOMATED, pattern EXPLORER_AUTOMATED_TRAPPED, pattern COMPETITOR_REPRESENTATIVE, pattern COMPETITOR_SHORT, pattern COMPETITOR_NO_ESCAPE, pattern CIVILIAN_REPRESENTATIVE, pattern CONVICT_REPRESENTATIVE, pattern MONSTER_REPRESENTATIVE, pattern MONSTER_ANTI, pattern MONSTER_ANTI_CAPTIVE, pattern MONSTER_TOURIST, pattern MONSTER_TOURIST_PASSIVE, pattern MONSTER_CAPTIVE, pattern MONSTER_CAPTIVE_NARRATING, pattern ANIMAL_REPRESENTATIVE, pattern ANIMAL_MAGNIFICENT, pattern ANIMAL_EXQUISITE, pattern ANIMAL_CAPTIVE, pattern ANIMAL_NARRATING, pattern ANIMAL_MAGNIFICENT_NARRATING, pattern ANIMAL_CAPTIVE_NARRATING, pattern HORROR_REPRESENTATIVE
@@ -78,15 +79,15 @@ teamHorror = TeamContinuity 7
 -- * Content
 
 content :: [FactionKind]
-content = [playerExplorer, playerExplorerShort, playerExplorerNoEscape, playerExplorerMedium, playerExplorerTrapped, playerExplorerAutomated, playerExplorerAutomatedTrapped, playerCompetitor, playerCompetitorShort, playerCompetitorNoEscape, playerCivilian, playerConvict, playerMonster, playerAntiMonster, playerAntiMonsterCaptive, playerMonsterTourist, playerMonsterTouristPassive, playerMonsterCaptive, playerMonsterCaptiveNarrating, playerAnimal, playerAnimalMagnificent, playerAnimalExquisite, playerAnimalCaptive, playerAnimalNarrating, playerAnimalMagnificentNarrating, playerAnimalCaptiveNarrating, playerHorror]
+content = [factExplorer, factExplorerShort, factExplorerNoEscape, factExplorerMedium, factExplorerTrapped, factExplorerAutomated, factExplorerAutomatedTrapped, factCompetitor, factCompetitorShort, factCompetitorNoEscape, factCivilian, factConvict, factMonster, factAntiMonster, factAntiMonsterCaptive, factMonsterTourist, factMonsterTouristPassive, factMonsterCaptive, factMonsterCaptiveNarrating, factAnimal, factAnimalMagnificent, factAnimalExquisite, factAnimalCaptive, factAnimalNarrating, factAnimalMagnificentNarrating, factAnimalCaptiveNarrating, factHorror]
 
-playerExplorer,            playerExplorerShort, playerExplorerNoEscape, playerExplorerMedium, playerExplorerTrapped, playerExplorerAutomated, playerExplorerAutomatedTrapped, playerCompetitor, playerCompetitorShort, playerCompetitorNoEscape, playerCivilian, playerConvict, playerMonster, playerAntiMonster, playerAntiMonsterCaptive, playerMonsterTourist, playerMonsterTouristPassive, playerMonsterCaptive, playerMonsterCaptiveNarrating, playerAnimal, playerAnimalMagnificent, playerAnimalExquisite, playerAnimalCaptive, playerAnimalNarrating, playerAnimalMagnificentNarrating, playerAnimalCaptiveNarrating, playerHorror :: FactionKind
+factExplorer,            factExplorerShort, factExplorerNoEscape, factExplorerMedium, factExplorerTrapped, factExplorerAutomated, factExplorerAutomatedTrapped, factCompetitor, factCompetitorShort, factCompetitorNoEscape, factCivilian, factConvict, factMonster, factAntiMonster, factAntiMonsterCaptive, factMonsterTourist, factMonsterTouristPassive, factMonsterCaptive, factMonsterCaptiveNarrating, factAnimal, factAnimalMagnificent, factAnimalExquisite, factAnimalCaptive, factAnimalNarrating, factAnimalMagnificentNarrating, factAnimalCaptiveNarrating, factHorror :: FactionKind
 
 -- * Content
 
 -- ** teamExplorer
 
-playerExplorer = FactionKind
+factExplorer = FactionKind
   { fname = "Explorer"
   , ffreq = [(EXPLORER_REPRESENTATIVE, 1), (REPRESENTATIVE, 1)]
   , fteam = teamExplorer
@@ -102,30 +103,30 @@ playerExplorer = FactionKind
   , fhasUI = True
   , finitUnderAI = False
   }
-playerExplorerShort = playerExplorer
+factExplorerShort = factExplorer
   { ffreq = [(EXPLORER_SHORT, 1)]
   , fhiCondPoly = hiHeroShort
   }
-playerExplorerNoEscape = playerExplorer
+factExplorerNoEscape = factExplorer
   { ffreq = [(EXPLORER_NO_ESCAPE, 1)]
   , fcanEscape = False
   , fhiCondPoly = hiHeroMedium
   }
-playerExplorerMedium = playerExplorer
+factExplorerMedium = factExplorer
   { ffreq = [(EXPLORER_MEDIUM, 1)]
   , fhiCondPoly = hiHeroMedium
   }
-playerExplorerTrapped = playerExplorer
+factExplorerTrapped = factExplorer
   { ffreq = [(EXPLORER_TRAPPED, 1)]
   , fcanEscape = False
   , fhiCondPoly = hiHeroLong
   }
-playerExplorerAutomated = playerExplorer
+factExplorerAutomated = factExplorer
   { ffreq = [(EXPLORER_AUTOMATED, 1)]
   , fhasUI = False
   , finitUnderAI = True
   }
-playerExplorerAutomatedTrapped = playerExplorerAutomated
+factExplorerAutomatedTrapped = factExplorerAutomated
   { ffreq = [(EXPLORER_AUTOMATED_TRAPPED, 1)]
   , fcanEscape = False
   , fhiCondPoly = hiHeroLong
@@ -133,19 +134,19 @@ playerExplorerAutomatedTrapped = playerExplorerAutomated
 
 -- ** teamCompetitor, symmetric opponets of teamExplorer
 
-playerCompetitor = playerExplorer
+factCompetitor = factExplorer
   { fname = "Indigo Researcher"
   , ffreq = [(COMPETITOR_REPRESENTATIVE, 1), (REPRESENTATIVE, 1)]
   , fteam = teamCompetitor
   , fhasUI = False
   , finitUnderAI = True
   }
-playerCompetitorShort = playerCompetitor
+factCompetitorShort = factCompetitor
   { fname = "Indigo Founder"  -- early
   , ffreq = [(COMPETITOR_SHORT, 1)]
   , fhiCondPoly = hiHeroShort
   }
-playerCompetitorNoEscape = playerCompetitor
+factCompetitorNoEscape = factCompetitor
   { ffreq = [(COMPETITOR_NO_ESCAPE, 1)]
   , fcanEscape = False
   , fhiCondPoly = hiHeroMedium
@@ -153,7 +154,7 @@ playerCompetitorNoEscape = playerCompetitor
 
 -- ** teamCivilian
 
-playerCivilian = FactionKind
+factCivilian = FactionKind
   { fname = "Civilian"
   , ffreq = [(CIVILIAN_REPRESENTATIVE, 1), (REPRESENTATIVE, 1)]
   , fteam = teamCivilian
@@ -172,7 +173,7 @@ playerCivilian = FactionKind
 
 -- ** teamConvict, different demographics
 
-playerConvict = playerCivilian
+factConvict = factCivilian
   { fname = "Hunam Convict"
   , ffreq = [(CONVICT_REPRESENTATIVE, 1), (REPRESENTATIVE, 1)]
   , fteam = teamConvict
@@ -182,7 +183,7 @@ playerConvict = playerCivilian
 
 -- ** teamMonster
 
-playerMonster = FactionKind
+factMonster = FactionKind
   { fname = "Monster Hive"
   , ffreq = [(MONSTER_REPRESENTATIVE, 1), (REPRESENTATIVE, 1)]
   , fteam = teamMonster
@@ -199,17 +200,17 @@ playerMonster = FactionKind
   , finitUnderAI = True
   }
 -- This has continuity @teamMonster@, despite being playable.
-playerAntiMonster = playerMonster
+factAntiMonster = factMonster
   { ffreq = [(MONSTER_ANTI, 1)]
   , fhasUI = True
   , finitUnderAI = False
   }
-playerAntiMonsterCaptive = playerAntiMonster
+factAntiMonsterCaptive = factAntiMonster
   {ffreq = [(MONSTER_ANTI_CAPTIVE, 1)]
   , fneverEmpty = True
   }
 -- More flavour and special backstory, but the same team.
-playerMonsterTourist = playerAntiMonster
+factMonsterTourist = factAntiMonster
   { fname = "Monster Tourist Office"
   , ffreq = [(MONSTER_TOURIST, 1)]
   , fcanEscape = True
@@ -219,23 +220,23 @@ playerMonsterTourist = playerAntiMonster
   , fspawnsFast = False  -- on a trip, so no spawning
   , finitUnderAI = False
   }
-playerMonsterTouristPassive = playerMonsterTourist
+factMonsterTouristPassive = factMonsterTourist
   { ffreq = [(MONSTER_TOURIST_PASSIVE, 1)]
   , fhasUI = False
   , finitUnderAI = True
   }
-playerMonsterCaptive = playerMonster
+factMonsterCaptive = factMonster
   { ffreq = [(MONSTER_CAPTIVE, 1)]
   , fneverEmpty = True
   }
-playerMonsterCaptiveNarrating = playerAntiMonsterCaptive
+factMonsterCaptiveNarrating = factAntiMonsterCaptive
   { ffreq = [(MONSTER_CAPTIVE_NARRATING, 1)]
   , fhasUI = True
   }
 
 -- ** teamAnimal
 
-playerAnimal = FactionKind
+factAnimal = FactionKind
   { fname = "Animal Kingdom"
   , ffreq = [(ANIMAL_REPRESENTATIVE, 1), (REPRESENTATIVE, 1)]
   , fteam = teamAnimal
@@ -253,46 +254,46 @@ playerAnimal = FactionKind
   }
 -- These two differ from outside, but share information and boasting
 -- about them tends to be general, too.
-playerAnimalMagnificent = playerAnimal
+factAnimalMagnificent = factAnimal
   { fname = "Animal Magnificent Specimen Variety"
   , ffreq = [(ANIMAL_MAGNIFICENT, 1)]
   , fneverEmpty = True
   }
-playerAnimalExquisite = playerAnimal
+factAnimalExquisite = factAnimal
   { fname = "Animal Exquisite Herds and Packs Galore"
   , ffreq = [(ANIMAL_EXQUISITE, 1)]
   , fteam = teamHorror
-      -- in the same mode as @playerAnimalMagnificent@, so borrow
+      -- in the same mode as @factAnimalMagnificent@, so borrow
       -- identity from horrors to avoid a clash
   , fneverEmpty = True
   }
-playerAnimalCaptive = playerAnimal
+factAnimalCaptive = factAnimal
   { ffreq = [(ANIMAL_CAPTIVE, 1)]
   , fneverEmpty = True
   }
-playerAnimalNarrating = playerAnimal
+factAnimalNarrating = factAnimal
   { ffreq = [(ANIMAL_NARRATING, 1)]
   , fhasUI = True
   }
-playerAnimalMagnificentNarrating = playerAnimalMagnificent
+factAnimalMagnificentNarrating = factAnimalMagnificent
   { ffreq = [(ANIMAL_MAGNIFICENT_NARRATING, 1)]
   , fhasPointman = True
   , fhasUI = True
   , finitUnderAI = False
   }
-playerAnimalCaptiveNarrating = playerAnimalCaptive
+factAnimalCaptiveNarrating = factAnimalCaptive
   { ffreq = [(ANIMAL_CAPTIVE_NARRATING, 1)]
   , fhasUI = True
   }
 
 -- ** teamHorror, not much of a continuity intended, but can't be ignored
 
--- | A special player, for summoned actors that don't belong to any
--- of the main players of a given game. E.g., animals summoned during
+-- | A special faction, for summoned actors that don't belong to any
+-- of the main factions of a given game. E.g., animals summoned during
 -- a brawl game between two hero factions land in the horror faction.
 -- In every game, either all factions for which summoning items exist
--- should be present or a horror player should be added to host them.
-playerHorror = FactionKind
+-- should be present or a horror faction should be added to host them.
+factHorror = FactionKind
   { fname = "Horror Den"
   , ffreq = [(HORROR_REPRESENTATIVE, 1), (REPRESENTATIVE, 1)]
   , fteam = teamHorror
