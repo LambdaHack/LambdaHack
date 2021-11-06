@@ -212,6 +212,4 @@ validateAll _ _ = []  -- so far, always valid
 
 makeData :: [FactionKind] -> [GroupName FactionKind] -> [GroupName FactionKind]
          -> ContentData FactionKind
-makeData content groupNamesSingleton groupNames =
-  makeContentData "FactionKind" fname ffreq validateSingle validateAll content
-                  groupNamesSingleton groupNames
+makeData = makeContentData "FactionKind" fname ffreq validateSingle validateAll

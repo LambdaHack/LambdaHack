@@ -1,4 +1,3 @@
-{-# LANGUAGE DeriveGeneric, GeneralizedNewtypeDeriving #-}
 -- | The type of game modes.
 module Game.LambdaHack.Content.ModeKind
   ( pattern CAMPAIGN_SCENARIO, pattern INSERT_COIN
