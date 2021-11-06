@@ -214,7 +214,13 @@ Unit tests and integration tests can be run and displayed with
 
     cabal test test --enable-tests --test-show-details=direct
 
-To prepare doctests[7], set `tests: True` in your `cabal.project.local`.
+To prepare doctests[7], set
+
+    tests: True
+    package LambdaHack
+        flags: +doctests
+
+in your `cabal.project.local`.
 Afterwards, doctests can be executed with
 
     cabal build . && cabal exec cabal test doctests

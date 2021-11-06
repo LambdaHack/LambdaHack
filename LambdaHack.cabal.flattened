@@ -89,6 +89,11 @@ flag release
   default:            True
   manual:             True
 
+flag doctests
+  description:        whether to include doctests (see README.md for how to run)
+  default:            False
+  manual:             True
+
 flag supportNodeJS
   description:        compile so that the JS blob works in terminal with NodeJS
   default:            True
@@ -389,6 +394,10 @@ test-suite test
 
 test-suite doctests
   import: options, exe-options
+  if flag(doctests)
+    buildable: True
+  else
+    buildable: False
   type:               exitcode-stdio-1.0
   main-is:            test/doctest-driver.hs
   build-tool-depends: doctest-driver-gen:doctest-driver-gen
