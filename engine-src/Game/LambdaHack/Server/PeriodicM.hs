@@ -322,6 +322,13 @@ leadLevelSwitch :: MonadServerAtomic m => m ()
 leadLevelSwitch = do
   COps{cocave} <- getsState scops
   factionD <- getsState sfactionD
+  -- Leader switching between levels can be done by the client
+  -- (e.g,. UI client of the human) or by the server
+  -- (the frequency of leader level switching done by the server
+  -- is controlled by @RuleKind.rleadLevelClips@). Regardless, the server
+  -- alwayw does a subset of the switching, e.g., when the old leader dies
+  -- and no other actor of the faction resides on his level.
+  -- Here we check if the server is permitted to handle the mundane cases.
   let serverMaySwitch fact =
         bannedPointmanSwitchBetweenLevels fact
           -- client banned from switching, so the sever has to step in
