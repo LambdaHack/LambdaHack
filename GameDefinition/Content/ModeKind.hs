@@ -503,7 +503,6 @@ screensaverAmbush = screensave $ ambush
   , mfreq   = [(NO_CONFIRMS, 1)]
   }
 
--- changing leader by client needed, because of TFollow
 screensaverSafari = screensave $ safari
   { mname   = "auto-safari"
   , mfreq   = [(INSERT_COIN, 1), (NO_CONFIRMS, 1)]

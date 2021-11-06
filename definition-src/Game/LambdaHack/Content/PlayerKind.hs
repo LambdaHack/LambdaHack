@@ -101,8 +101,7 @@ teamExplorer = TeamContinuity 1
 
 screensavePlayerKind :: PlayerKind -> PlayerKind
 screensavePlayerKind player@(PlayerKind{finitUnderAI=True}) = player
-screensavePlayerKind player = player { finitUnderAI = True
-                                     , fhasPointman = True }
+screensavePlayerKind player = player {finitUnderAI = True}
 
 victoryOutcomes :: [Outcome]
 victoryOutcomes = [Escape, Conquer]
