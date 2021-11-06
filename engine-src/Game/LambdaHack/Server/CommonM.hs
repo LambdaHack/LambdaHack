@@ -596,14 +596,14 @@ addActorIid trunkId ItemFull{itemBase, itemKind, itemDisco=ItemDiscoFull arItem}
   factionD <- getsState sfactionD
   curChalSer <- getsServer $ scurChalSer . soptions
   let fact = factionD EM.! fid
-  bnumberTeam <- case gteamCont fact of
-    Just teamContinuity | not bproj -> do
+      teamContinuityOurs = fteam (gplayer fact)
+  bnumberTeam <-
+    if bproj then return Nothing else do
       stcounter <- getsServer stcounter
-      let number = EM.findWithDefault 0 teamContinuity stcounter
+      let number = EM.findWithDefault 0 teamContinuityOurs stcounter
       modifyServer $ \ser -> ser {stcounter =
-        EM.insert teamContinuity (succ number) stcounter}
-      return $ Just (number, teamContinuity)
-    _ -> return Nothing
+        EM.insert teamContinuityOurs (succ number) stcounter}
+      return $ Just (number, teamContinuityOurs)
   let bnumber = fst <$> bnumberTeam
   -- If difficulty is below standard, HP is added to the UI factions,
   -- otherwise HP is added to their enemies.

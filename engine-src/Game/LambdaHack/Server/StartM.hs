@@ -105,10 +105,12 @@ reinitGame factionDold = do
   -- This is a terrible temporary hack until Player becomes content
   -- and we persistently store Player information on the server.
   let metaHolder factionDict = case find (\(_, fact) ->
-                                      gteamCont fact == Just (TeamContinuity 1))
+                                      fteam (gplayer fact) == TeamContinuity 1)
                                     $ EM.assocs factionDict of
         Nothing ->
-          fst <$> find (\(_, fact) -> isNothing (gteamCont fact))
+          -- This is a terrible hack as well. Monsters carry our gear memory
+          -- if we are not in the game.
+          fst <$> find (\(_, fact) -> fteam (gplayer fact) == TeamContinuity 5)
                        (EM.assocs factionDict)
         Just (fid, _) -> Just fid
       mmetaHolderOld = metaHolder factionDold
@@ -259,7 +261,6 @@ resetFactions factionDold gameModeIdOld curDiffSerOld totalDepth mode
         let gname = gnameNew
             gdoctrine = finitDoctrine
             gunderAI = finitUnderAI || mattract mode || automateAll
-            gteamCont = Just fteam
             gdipl = EM.empty  -- fixed below
             gquit = Nothing
             _gleader = Nothing

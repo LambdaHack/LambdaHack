@@ -45,9 +45,6 @@ data Faction = Faction
   , gdoctrine :: Ability.Doctrine
                                  -- ^ non-leaders behave according to this
   , gunderAI  :: Bool            -- ^ is the faction under AI control
-  , gteamCont :: Maybe TeamContinuity
-                                 -- ^ identity of this faction across games
-                                 --   and scenarios
   , ginitial  :: [(Int, Int, GroupName ItemKind)]  -- ^ initial actors
   , gdipl     :: Dipl            -- ^ diplomatic standing
   , gquit     :: Maybe Status    -- ^ cause of game end/exit
