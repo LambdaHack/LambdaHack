@@ -5,7 +5,7 @@ module Game.LambdaHack.Content.PlayerKind
   ( PlayerKind(..), makeData
   , HiCondPoly, HiSummand, HiPolynomial, HiIndeterminant(..)
   , TeamContinuity(..), Outcome(..)
-  , teamExplorer, screensavePlayerKind, victoryOutcomes, deafeatOutcomes
+  , teamExplorer, victoryOutcomes, deafeatOutcomes
   , nameOutcomePast, nameOutcomeVerb, endMessageOutcome
 #ifdef EXPOSE_INTERNAL
     -- * Internal operations
@@ -98,10 +98,6 @@ instance Binary Outcome
 
 teamExplorer :: TeamContinuity
 teamExplorer = TeamContinuity 1
-
-screensavePlayerKind :: PlayerKind -> PlayerKind
-screensavePlayerKind player@(PlayerKind{finitUnderAI=True}) = player
-screensavePlayerKind player = player {finitUnderAI = True}
 
 victoryOutcomes :: [Outcome]
 victoryOutcomes = [Escape, Conquer]

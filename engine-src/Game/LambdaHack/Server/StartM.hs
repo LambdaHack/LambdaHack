@@ -227,9 +227,9 @@ mapFromFuns domain =
   in foldr fromFun M.empty
 
 resetFactions :: FactionDict -> ContentId ModeKind -> Int -> Dice.AbsDepth
-              -> Roster
+              -> ModeKind
               -> Rnd FactionDict
-resetFactions factionDold gameModeIdOld curDiffSerOld totalDepth players = do
+resetFactions factionDold gameModeIdOld curDiffSerOld totalDepth mode = do
   let rawCreate (ix, (gplayer@PlayerKind{..}, gteamCont, initialActors)) = do
         let castInitialActors (ln, d, actorGroup) = do
               n <- castDice (Dice.AbsDepth $ abs ln) totalDepth d
@@ -257,7 +257,7 @@ resetFactions factionDold gameModeIdOld curDiffSerOld totalDepth players = do
                 in EM.insertWith f gameModeIdOld sing $ gvictimsD fact
         let gname = gnameNew
             gdoctrine = finitDoctrine
-            gunderAI = finitUnderAI
+            gunderAI = finitUnderAI || mattract mode
             gdipl = EM.empty  -- fixed below
             gquit = Nothing
             _gleader = Nothing
@@ -265,7 +265,7 @@ resetFactions factionDold gameModeIdOld curDiffSerOld totalDepth players = do
             gvictimsD = gvictimsDnew
             gstash = Nothing
         return (toEnum $ if fhasUI then ix else -ix, Faction{..})
-  lFs <- mapM rawCreate $ zip [1..] $ rosterList players
+  lFs <- mapM rawCreate $ zip [1..] $ rosterList (mroster mode)
   let swapIx l =
         let findPlayerName name = find ((name ==) . fname . gplayer . snd)
             f (name1, name2) =
@@ -284,8 +284,8 @@ resetFactions factionDold gameModeIdOld curDiffSerOld totalDepth players = do
         in foldr f
       rawFs = EM.fromList lFs
       -- War overrides alliance, so 'warFs' second.
-      allianceFs = mkDipl Alliance rawFs (swapIx (rosterAlly players))
-      warFs = mkDipl War allianceFs (swapIx (rosterEnemy players))
+      allianceFs = mkDipl Alliance rawFs (swapIx (rosterAlly (mroster mode)))
+      warFs = mkDipl War allianceFs (swapIx (rosterEnemy (mroster mode)))
   return $! warFs
 
 gameReset :: MonadServer m
@@ -322,7 +322,7 @@ gameReset serverOptions mGameMode mrandom = do
         factionDRaw <- resetFactions factionDold gameModeIdOld
                                      (cdiff curChalSer)
                                      (DungeonGen.freshTotalDepth freshDng)
-                                     (mroster mode)
+                                     mode
         let factionD = if sautomateAll serverOptions
                        then EM.map (automateFaction True) factionDRaw
                        else factionDRaw
