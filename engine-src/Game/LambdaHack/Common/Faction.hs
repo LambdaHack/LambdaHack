@@ -29,7 +29,7 @@ import           Game.LambdaHack.Common.Types
 import           Game.LambdaHack.Content.FactionKind
 import           Game.LambdaHack.Content.ItemKind (ItemKind)
 import qualified Game.LambdaHack.Content.ItemKind as IK
-import           Game.LambdaHack.Content.ModeKind
+import           Game.LambdaHack.Content.ModeKind (ModeKind)
 import qualified Game.LambdaHack.Definition.Ability as Ability
 import qualified Game.LambdaHack.Definition.Color as Color
 import           Game.LambdaHack.Definition.Defs
@@ -39,7 +39,13 @@ type FactionDict = EM.EnumMap FactionId Faction
 
 -- | The faction datatype.
 data Faction = Faction
-  { gkind     :: FactionKind     -- ^ the player spec for this faction
+  { gkind     :: FactionKind
+      -- ^ the player spec for this faction, do not update!
+      -- it is morally read-only, but not represented
+      -- as @ContentId FactionKind@, because it's very small
+      -- and it's looked up often enough in the code and during runtime;
+      -- if we ever have thousands of factions in a single game,
+      -- e.g., one for each separately spawned herd of animals, change this
   , gname     :: Text            -- ^ individual name
   , gcolor    :: Color.Color     -- ^ color of actors or their frames
   , gdoctrine :: Ability.Doctrine
