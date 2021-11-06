@@ -241,11 +241,13 @@ stubState :: State
 stubState = let singletonFactionUpdate _ = EM.singleton testFactionId testFaction
                 singletonDungeonUpdate _ = EM.singleton testLevelId stubLevel
                 singletonActorDUpdate _ = EM.singleton testActorId testActor
+                singletonActorMaxSkillsUpdate _ = EM.singleton testActorId Ability.zeroSkills
                 copsUpdate oldCOps = oldCOps{corule=((corule oldCOps){rXmax=testLevelDimension, rYmax=testLevelDimension})}
                 stateWithMaxLevelDimension = updateCOpsAndCachedData copsUpdate emptyState
                 stateWithFaction = updateFactionD singletonFactionUpdate stateWithMaxLevelDimension
                 stateWithActorD = updateActorD singletonActorDUpdate stateWithFaction
-                stateWithDungeon = updateDungeon singletonDungeonUpdate stateWithActorD
+                stateWithActorMaxSkills = updateActorMaxSkills singletonActorMaxSkillsUpdate stateWithActorD
+                stateWithDungeon = updateDungeon singletonDungeonUpdate stateWithActorMaxSkills
             in stateWithDungeon
 
 testStateWithItem = let swapToItemActor _ = EM.singleton testActorId testActorWithItem

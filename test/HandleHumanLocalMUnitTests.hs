@@ -52,14 +52,14 @@ handleHumanLocalMUnitTests = testGroup "handleHumanLocalMUnitTests"
         in (ltile level) ! (Point 0 0) @?= unknownId
   , testCase "verify stubCliState has actor" $
     do getActorBody testActorId (cliState stubCliState) @?= testActor
-  , testCase "permittedProjectClient" $
+  , testCase "permittedProjectClient stubCliState returns ProjectUnskilled" $
     do
       let testFn = permittedProjectClient testActorId
       let stubItem = Item { jkind = IdentityObvious (toContentId 0), jfid = Nothing, jflavour = dummyFlavour }
       let testItemFull = ItemFull { itemBase = stubItem, itemKindId = toContentId 0, itemKind = testItemKind, itemDisco = ItemDiscoFull emptyAspectRecord, itemSuspect = False }
       permittedProjectClientResultFnInMonad <- executorCli testFn stubCliState 
       let ultimateResult = (fst permittedProjectClientResultFnInMonad) testItemFull
-      ultimateResult @?= Left MoveUnskilled
+      ultimateResult @?= Left ProjectUnskilled
   , testCase "chooseItemProjectHuman" $
     do 
       let testFn = let triggerItems = 
