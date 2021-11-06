@@ -105,12 +105,12 @@ reinitGame factionDold = do
   -- This is a terrible temporary hack until Faction becomes content
   -- and we persistently store Faction information on the server.
   let metaHolder factionDict = case find (\(_, fact) ->
-                                      fteam (gplayer fact) == TeamContinuity 1)
+                                      fteam (gkind fact) == TeamContinuity 1)
                                     $ EM.assocs factionDict of
         Nothing ->
           -- This is a terrible hack as well. Monsters carry our gear memory
           -- if we are not in the game.
-          fst <$> find (\(_, fact) -> fteam (gplayer fact) == TeamContinuity 5)
+          fst <$> find (\(_, fact) -> fteam (gkind fact) == TeamContinuity 5)
                        (EM.assocs factionDict)
         Just (fid, _) -> Just fid
       mmetaHolderOld = metaHolder factionDold
@@ -233,7 +233,7 @@ resetFactions :: FactionDict -> ContentId ModeKind -> Int -> Dice.AbsDepth
               -> Rnd FactionDict
 resetFactions factionDold gameModeIdOld curDiffSerOld totalDepth mode
               automateAll = do
-  let rawCreate (ix, (gplayer@FactionKind{..}, initialActors)) = do
+  let rawCreate (ix, (gkind@FactionKind{..}, initialActors)) = do
         let castInitialActors (ln, d, actorGroup) = do
               n <- castDice (Dice.AbsDepth $ abs ln) totalDepth d
               return (ln, n, actorGroup)
@@ -270,7 +270,7 @@ resetFactions factionDold gameModeIdOld curDiffSerOld totalDepth mode
         return (toEnum $ if fhasUI then ix else -ix, Faction{..})
   lFs <- mapM rawCreate $ zip [1..] $ rosterList (mroster mode)
   let swapIx l =
-        let findFactionName name = find ((name ==) . fname . gplayer . snd)
+        let findFactionName name = find ((name ==) . fname . gkind . snd)
             f (name1, name2) =
               case (findFactionName name1 lFs, findFactionName name2 lFs) of
                 (Just (ix1, _), Just (ix2, _)) -> (ix1, ix2)
@@ -350,7 +350,7 @@ populateDungeon = do
   factionD <- getsState sfactionD
   curChalSer <- getsServer $ scurChalSer . soptions
   let nGt0 (_, n, _) = n > 0
-      ginitialWolf fact1 = if cwolf curChalSer && fhasUI (gplayer fact1)
+      ginitialWolf fact1 = if cwolf curChalSer && fhasUI (gkind fact1)
                            then case filter nGt0 $ ginitial fact1 of
                              [] -> []
                              (ln, _, grp) : _ -> [(ln, 1, grp)]

@@ -58,7 +58,7 @@ quitFactionUI fid toSt manalytics = do
   ClientOptions{sexposeItems} <- getsClient soptions
   fact <- getsState $ (EM.! fid) . sfactionD
   let fidName = MU.Text $ gname fact
-      person = if fhasGender $ gplayer fact then MU.PlEtc else MU.Sg3rd
+      person = if fhasGender $ gkind fact then MU.PlEtc else MU.Sg3rd
       horror = isHorrorFact fact
       camping = maybe True ((== Camping) . stOutcome) toSt
   side <- getsClient sside
@@ -110,7 +110,7 @@ quitFactionUI fid toSt manalytics = do
             let getTrunkFull (aid, b) = (aid, itemToF $ btrunk b)
             ourTrunks <- getsState $ map getTrunkFull
                                      . fidActorNotProjGlobalAssocs side
-            let smartFaction fact2 = fhasPointman (gplayer fact2)
+            let smartFaction fact2 = fhasPointman (gkind fact2)
                 canBeSmart = any (smartFaction . snd)
                 canBeOurFaction = any (\(fid2, _) -> fid2 == side)
                 smartEnemy trunkFull =

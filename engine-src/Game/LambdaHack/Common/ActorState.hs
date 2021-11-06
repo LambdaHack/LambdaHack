@@ -180,7 +180,7 @@ actorCurrentSkills mleader aid s =
       skillsFromDoctrine = Ability.doctrineSkills $ gdoctrine fact
       factionSkills
         | Just aid == mleader = Ability.zeroSkills
-        | otherwise = fskillsOther (gplayer fact)
+        | otherwise = fskillsOther (gkind fact)
                       `Ability.addSkills` skillsFromDoctrine
   in actorMaxSk `Ability.addSkills` factionSkills
 

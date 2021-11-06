@@ -189,7 +189,7 @@ registerScore status fid = do
           let nScoreDict = EM.insert gameModeId ntable scoreDict
           in when worthMentioning $ liftIO $
                encodeEOF path Self.version (nScoreDict :: HighScore.ScoreDict)
-      chal | fhasUI $ gplayer fact = curChalSer
+      chal | fhasUI $ gkind fact = curChalSer
            | otherwise = curChalSer
                            {cdiff = difficultyInverse (cdiff curChalSer)}
       theirVic (fi, fa) | isFoe fid fact fi
@@ -204,7 +204,7 @@ registerScore status fid = do
         HighScore.register table total dungeonTotal time status date chal
                            (T.unwords $ tail $ T.words $ gname fact)
                            ourVictims theirVictims
-                           (fhiCondPoly $ gplayer fact)
+                           (fhiCondPoly $ gkind fact)
   outputScore registeredScore
 
 -- | Invoke pseudo-random computation with the generator kept in the state.

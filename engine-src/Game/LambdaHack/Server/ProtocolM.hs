@@ -184,7 +184,7 @@ updateConn executorClient = do
       mkChanServer fact = do
         responseS <- newQueue
         requestAIS <- newQueue
-        requestUIS <- if fhasUI $ gplayer fact
+        requestUIS <- if fhasUI $ gkind fact
                       then Just <$> newQueue
                       else return Nothing
         return $! ChanServer{..}

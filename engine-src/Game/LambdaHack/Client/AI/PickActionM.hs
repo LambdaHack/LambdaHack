@@ -584,7 +584,7 @@ equipItems aid = do
                || not calmE
                || heavilyDistressed
                || recentlyFled
-      canEsc = fcanEscape (gplayer fact)
+      canEsc = fcanEscape (gkind fact)
       -- We filter out unneeded items. In particular, we ignore them in eqp
       -- when comparing to items we may want to equip, so that the unneeded
       -- but powerful items don't fool us.
@@ -932,7 +932,7 @@ applyItem actorSk aid applyGroup = do
       skill = getSk SkApply actorSk
       -- This detects if the value of keeping the item in eqp is in fact < 0.
       hind = hinders condShineWouldBetray uneasy actorSk
-      canEsc = fcanEscape (gplayer fact)
+      canEsc = fcanEscape (gkind fact)
       permittedActor cstore itemFull kit =
         fromRight False
         $ permittedApply corule localTime skill calmE cstore itemFull kit
@@ -1192,7 +1192,7 @@ chase actorSk aid avoidAmbient retry = do
   fact <- getsState $ (EM.! bfid body) . sfactionD
   mtgtMPath <- getsClient $ EM.lookup aid . stargetD
   let -- With no leader, the goal is vague, so permit arbitrary detours.
-      relaxed = not $ fhasPointman (gplayer fact)
+      relaxed = not $ fhasPointman (gkind fact)
       strAmbient avoid = case mtgtMPath of
         Just TgtAndPath{tapPath=Just AndPath{pathList=q : _, ..}} ->
           if pathGoal == bpos body

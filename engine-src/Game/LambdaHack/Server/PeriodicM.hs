@@ -360,7 +360,7 @@ leadLevelSwitch = do
                   , let allSeen =
                           lexpl lvl <= lseen lvl
                           || CK.cactorCoeff (okind cocave $ lkind lvl) > 150
-                             && not (fhasGender $ gplayer fact)
+                             && not (fhasGender $ gkind fact)
                   ]
                 (lvlsSeen, lvlsNotSeen) = partition (fst . snd) lvlsRaw
                 -- Monster AI changes leadership mostly to move from level

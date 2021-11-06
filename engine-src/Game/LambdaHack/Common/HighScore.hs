@@ -38,7 +38,7 @@ data ScoreRecord = ScoreRecord
   , date         :: POSIXTime  -- ^ date of the last game interruption
   , status       :: Status     -- ^ reason of the game interruption
   , challenge    :: Challenge  -- ^ challenge setup of the game
-  , gplayerName  :: Text       -- ^ name of the faction's gplayer
+  , gkindName  :: Text       -- ^ name of the faction's gkind
   , ourVictims   :: EM.EnumMap (ContentId ItemKind) Int  -- ^ allies lost
   , theirVictims :: EM.EnumMap (ContentId ItemKind) Int  -- ^ foes killed
   }
@@ -76,13 +76,13 @@ register :: ScoreTable  -- ^ old table
          -> Status      -- ^ reason of the game interruption
          -> POSIXTime   -- ^ current date
          -> Challenge   -- ^ challenge setup
-         -> Text        -- ^ name of the faction's gplayer
+         -> Text        -- ^ name of the faction's gkind
          -> EM.EnumMap (ContentId ItemKind) Int  -- ^ allies lost
          -> EM.EnumMap (ContentId ItemKind) Int  -- ^ foes killed
          -> HiCondPoly
          -> (Bool, (ScoreTable, Int))
 register table total dungeonTotal time status@Status{stOutcome}
-         date challenge gplayerName ourVictims theirVictims hiCondPoly =
+         date challenge gkindName ourVictims theirVictims hiCondPoly =
   let turnsSpent = intToDouble $ timeFitUp time timeTurn
       hiInValue (hi, c) = assert (total <= dungeonTotal) $ case hi of
         HiConst -> c
@@ -131,7 +131,7 @@ showScore tz pos score =
       chalText | challenge score == defaultChallenge = ""
                | otherwise = tshowChallenge (challenge score)
       tturns = makePhrase [MU.CarWs turns "turn"]
-  in [ tpos <> "." <+> tscore <+> gplayerName score
+  in [ tpos <> "." <+> tscore <+> gkindName score
        <+> died <> "," <+> victims <> ","
      , "           "
        <> "after" <+> tturns <+> chalText <+> "on" <+> curDate <> "."

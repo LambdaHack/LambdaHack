@@ -585,7 +585,7 @@ pickLeaderHuman k = do
       mactor = case drop k hs of
                  [] -> Nothing
                  (aid, b, _) : _ -> Just (aid, b)
-      mchoice = if FK.fhasGender (gplayer fact) then mhero else mactor
+      mchoice = if FK.fhasGender (gkind fact) then mhero else mactor
       banned = bannedPointmanSwitchBetweenLevels fact
   case mchoice of
     Nothing -> failMsg "no such member of the party"

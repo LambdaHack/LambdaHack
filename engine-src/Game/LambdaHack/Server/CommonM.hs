@@ -180,7 +180,7 @@ quitF status fid = do
                         `swith` (stOutcome <$> oldSt, status, fid)) ()
       -- This runs regardless of the _new_ status.
       manalytics <-
-        if fhasUI $ gplayer fact then do
+        if fhasUI $ gkind fact then do
           keepAutomated <- getsServer $ skeepAutomated . soptions
           -- Try to remove AI control of the UI faction, to show gameover info.
           when (gunderAI fact && not keepAutomated) $
@@ -204,7 +204,7 @@ deduceQuits fid0 status@Status{stOutcome}
     error $ "no quitting to deduce" `showFailure` (fid0, status)
 deduceQuits fid0 status = do
   fact0 <- getsState $ (EM.! fid0) . sfactionD
-  let factHasUI = fhasUI . gplayer
+  let factHasUI = fhasUI . gkind
       quitFaction (stOutcome, (fid, _)) = quitF status{stOutcome} fid
       mapQuitF outfids = do
         let (withUI, withoutUI) =
@@ -283,7 +283,7 @@ verifyCaches = do
   -- Don't verify perception in such cases. All the caches from which
   -- legal perception would be created at that point are legal and verified,
   -- which is almost as tight.
-  let gameOverUI fact = fhasUI (gplayer fact)
+  let gameOverUI fact = fhasUI (gkind fact)
                         && maybe False ((/= Camping) . stOutcome) (gquit fact)
       isGameOverUI = any gameOverUI $ EM.elems factionD
       !_A7 = assert (sfovLitLid == fovLitLid
@@ -315,7 +315,7 @@ verifyCaches = do
 -- So, leaderless factions and spawner factions do not keep an arena,
 -- even though the latter usually has a leader for most of the game.
 keepArenaFact :: Faction -> Bool
-keepArenaFact fact = fhasPointman (gplayer fact) && fneverEmpty (gplayer fact)
+keepArenaFact fact = fhasPointman (gkind fact) && fneverEmpty (gkind fact)
 
 -- We assume the actor in the second argument has HP <= 0 or is going to be
 -- dominated right now. Even if the actor is to be dominated,
@@ -324,7 +324,7 @@ deduceKilled :: MonadServerAtomic m => ActorId -> m ()
 deduceKilled aid = do
   body <- getsState $ getActorBody aid
   fact <- getsState $ (EM.! bfid body) . sfactionD
-  when (fneverEmpty $ gplayer fact) $ do
+  when (fneverEmpty $ gkind fact) $ do
     actorsAlive <- anyActorsAlive (bfid body) aid
     when (not actorsAlive) $
       deduceQuits (bfid body) $ Status Killed (fromEnum $ blid body) Nothing
@@ -354,7 +354,7 @@ electLeader fid lid aidToReplace = do
 setFreshLeader :: MonadServerAtomic m => FactionId -> ActorId -> m ()
 setFreshLeader fid aid = do
   fact <- getsState $ (EM.! fid) . sfactionD
-  when (fhasPointman (gplayer fact)) $ do
+  when (fhasPointman (gkind fact)) $ do
     -- First update and send Perception so that the new leader
     -- may report his environment.
     b <- getsState $ getActorBody aid
@@ -525,7 +525,7 @@ registerActor summoned (ItemKnown kindIx ar _) (itemFullRaw, kit)
   when (canSleep actorMaxSk
         && not condAnyFoeAdj
         && not summoned
-        && not (fhasGender (gplayer fact))) $ do  -- heroes never start asleep
+        && not (fhasGender (gkind fact))) $ do  -- heroes never start asleep
     -- A lot of actors will wake up at once anyway, so let most start sleeping.
     let sleepOdds = if prefersSleep actorMaxSk then 19%20 else 2%3
     sleeps <- rndToAction $ chance sleepOdds
@@ -596,7 +596,7 @@ addActorIid trunkId ItemFull{itemBase, itemKind, itemDisco=ItemDiscoFull arItem}
   factionD <- getsState sfactionD
   curChalSer <- getsServer $ scurChalSer . soptions
   let fact = factionD EM.! fid
-      teamContinuityOurs = fteam (gplayer fact)
+      teamContinuityOurs = fteam (gkind fact)
   bnumberTeam <-
     if bproj then return Nothing else do
       stcounter <- getsServer stcounter
@@ -619,10 +619,10 @@ addActorIid trunkId ItemFull{itemBase, itemKind, itemDisco=ItemDiscoFull arItem}
       -- in a hard to balance way (e.g., one bullet adds 10 SkMaxHP).
       boostFact = not bproj
                   && if diffBonusCoeff > 0
-                     then any (fhasUI . gplayer . snd)
+                     then any (fhasUI . gkind . snd)
                               (filter (\(fi, fa) -> isFriend fi fa fid)
                                       (EM.assocs factionD))
-                     else any (fhasUI . gplayer  . snd)
+                     else any (fhasUI . gkind  . snd)
                               (filter (\(fi, fa) -> isFoe fi fa fid)
                                       (EM.assocs factionD))
       finalHP | boostFact = min (xM 899)  -- no more than UI can stand

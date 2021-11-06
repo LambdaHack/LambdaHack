@@ -195,7 +195,7 @@ condCanProjectM skill aid = do
   curChal <- getsClient scurChal
   fact <- getsState $ (EM.! side) . sfactionD
   if skill < 1
-     || ckeeper curChal && fhasUI (gplayer fact)
+     || ckeeper curChal && fhasUI (gkind fact)
   then return False
   else  -- shortcut
     -- Compared to conditions in @projectItem@, range and charge are ignored,
@@ -293,7 +293,7 @@ benGroundItems aid = do
   b <- getsState $ getActorBody aid
   fact <- getsState $ (EM.! bfid b) . sfactionD
   discoBenefit <- getsClient sdiscoBenefit
-  let canEsc = fcanEscape (gplayer fact)
+  let canEsc = fcanEscape (gkind fact)
       isDesirable (ben, _, _, itemFull, _) =
         desirableItem cops canEsc (benPickup ben)
                       (aspectRecordFull itemFull) (itemKind itemFull)

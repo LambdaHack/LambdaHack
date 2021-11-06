@@ -663,15 +663,15 @@ createActorUI born aid body = do
     let baseColor = flavourToColor $ jflavour itemBase
         basePronoun | not (bproj body)
                       && IK.isymbol itemKind == '@'
-                      && fhasGender (gplayer fact) = "he"
+                      && fhasGender (gkind fact) = "he"
                     | otherwise = "it"
         nameFromNumber fn k = if k == 0
                               then makePhrase [MU.Ws $ MU.Text fn, "Captain"]
                               else fn <+> tshow k
         heroNamePronoun k =
           if gcolor fact /= Color.BrWhite
-          then (nameFromNumber (fname $ gplayer fact) k, "he")
-          else fromMaybe (nameFromNumber (fname $ gplayer fact) k, "he")
+          then (nameFromNumber (fname $ gkind fact) k, "he")
+          else fromMaybe (nameFromNumber (fname $ gkind fact) k, "he")
                $ lookup k uHeroNames
         (n, bsymbol) =
           if | bproj body -> (0, if IA.checkFlag Ability.Blast arItem

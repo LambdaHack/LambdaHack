@@ -350,7 +350,7 @@ scoreToSlideshow total status = do
   let fact = factionD EM.! fid
       table = HighScore.getTable gameModeId scoreDict
       gameModeName = mname gameMode
-      chal | fhasUI $ gplayer fact = curChalSer
+      chal | fhasUI $ gkind fact = curChalSer
            | otherwise = curChalSer
                            {cdiff = difficultyInverse (cdiff curChalSer)}
       theirVic (fi, fa) | isFoe fid fact fi
@@ -364,7 +364,7 @@ scoreToSlideshow total status = do
         HighScore.register table total dungeonTotal time status date chal
                            (T.unwords $ tail $ T.words $ gname fact)
                            ourVictims theirVictims
-                           (fhiCondPoly $ gplayer fact)
+                           (fhiCondPoly $ gkind fact)
   fontSetup <- getFontSetup
   let sli = highSlideshow fontSetup False rwidth (rheight - 1) ntable pos
                           gameModeName tz

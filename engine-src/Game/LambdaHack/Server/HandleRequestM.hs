@@ -1110,7 +1110,7 @@ reqProject source tpxy eps iid cstore = do
   fact <- getsState $ (EM.! bfid b) . sfactionD
   actorMaxSk <- getsState $ getActorMaxSkills source
   let calmE = calmEnough b actorMaxSk
-  if | ckeeper curChalSer && fhasUI (gplayer fact) ->
+  if | ckeeper curChalSer && fhasUI (gkind fact) ->
         execFailure source req ProjectFinderKeeper
      | cstore == CEqp && not calmE -> execFailure source req ItemNotCalm
      | otherwise -> do
@@ -1155,7 +1155,7 @@ reqGameRestart :: MonadServerAtomic m
 reqGameRestart aid groupName scurChalSer = do
   noConfirmsGame <- isNoConfirmsGame
   factionD <- getsState sfactionD
-  let fidsUI = map fst $ filter (\(_, fact) -> fhasUI (gplayer fact))
+  let fidsUI = map fst $ filter (\(_, fact) -> fhasUI (gkind fact))
                                 (EM.assocs factionD)
   -- This call to `revealItems` and `revealPerception` is really needed,
   -- because the other happens only at natural game conclusion,

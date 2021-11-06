@@ -1215,7 +1215,7 @@ verifyEscape :: MonadClientUI m => m (FailOrCmd ())
 verifyEscape = do
   side <- getsClient sside
   fact <- getsState $ (EM.! side) . sfactionD
-  if not (FK.fcanEscape $ gplayer fact)
+  if not (FK.fcanEscape $ gkind fact)
   then failWith
          "This is the way out, but where would you go in this alien world?"
            -- exceptionally a full sentence, because a real question

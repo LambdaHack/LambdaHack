@@ -148,7 +148,7 @@ refillHP source target speedDeltaHP = assert (speedDeltaHP /= 0) $ do
   when serious $ cutCalm target
   tb <- getsState $ getActorBody target
   fact <- getsState $ (EM.! bfid tb) . sfactionD
-  when (not (bproj tb) && fhasPointman (gplayer fact)) $
+  when (not (bproj tb) && fhasPointman (gkind fact)) $
     -- If leader just lost all HP, change the leader early (not when destroying
     -- the actor), to let players rescue him, especially if he's slowed
     -- by the attackers.
@@ -626,7 +626,7 @@ effectRefillHP power0 source target iid = do
   let power = if power0 <= -1 then power0 else max 1 power0  -- avoid 0
       deltaHP = xM power
   if | cfish curChalSer && deltaHP > 0
-       && fhasUI (gplayer fact) && bfid sb /= bfid tb -> do
+       && fhasUI (gkind fact) && bfid sb /= bfid tb -> do
        execSfxAtomic $ SfxMsgFid (bfid tb) SfxColdFish
        return UseId
      | otherwise -> do
@@ -677,7 +677,7 @@ effectDominate source target iid = do
              Just (hiImpressionFid, hiImpressionK) ->
                 hiImpressionFid == bfid sb
                   -- highest impression needs to be by us
-                && (fhasPointman (gplayer fact) || hiImpressionK >= 10)
+                && (fhasPointman (gkind fact) || hiImpressionK >= 10)
                      -- to tame/hack animal/robot, impress them a lot first
        if permitted then do
          b <- dominateFidSfx source target iid (bfid sb)
@@ -1148,7 +1148,7 @@ effectEscape execSfx source target = do
   fact <- getsState $ (EM.! fid) . sfactionD
   if | bproj tb ->
        return UseDud  -- basically a misfire
-     | not (fcanEscape $ gplayer fact) -> do
+     | not (fcanEscape $ gkind fact) -> do
        execSfxAtomic $ SfxMsgFid (bfid sb) SfxEscapeImpossible
        when (source /= target) $
          execSfxAtomic $ SfxMsgFid (bfid tb) SfxEscapeImpossible
@@ -1629,13 +1629,13 @@ effectDropItem execSfx iidOriginal ngroup kcopy store grp target = do
   if | bproj tb || null is -> return UseDud
      | ngroup == maxBound && kcopy == maxBound
        && store `elem` [CStash, CEqp]
-       && fhasGender (gplayer fact)  -- hero in Allure's decontamination chamber
+       && fhasGender (gkind fact)  -- hero in Allure's decontamination chamber
        && (cdiff curChalSer == 1     -- at lowest difficulty for its faction
-           && any (fhasUI . gplayer . snd)
+           && any (fhasUI . gkind . snd)
                   (filter (\(fi, fa) -> isFriend fi fa (bfid tb))
                           (EM.assocs factionD))
            || cdiff curChalSer == difficultyBound
-              && any (fhasUI . gplayer  . snd)
+              && any (fhasUI . gkind  . snd)
                      (filter (\(fi, fa) -> isFoe fi fa (bfid tb))
                              (EM.assocs factionD))) ->
 {-
@@ -2186,7 +2186,7 @@ effectAndEffect recursiveCall source eff1@IK.ConsumeItems{} eff2 = do
   sb <- getsState $ getActorBody source
   curChalSer <- getsServer $ scurChalSer . soptions
   fact <- getsState $ (EM.! bfid sb) . sfactionD
-  if cgoods curChalSer && fhasUI (gplayer fact) then do
+  if cgoods curChalSer && fhasUI (gkind fact) then do
     execSfxAtomic $ SfxMsgFid (bfid sb) SfxReadyGoods
     return UseId
   else effectAndEffectSem recursiveCall eff1 eff2
@@ -2215,7 +2215,7 @@ effectOrEffect recursiveCall fid eff1 eff2 = do
   fact <- getsState $ (EM.! fid) . sfactionD
   case eff1 of
     IK.AndEffect IK.ConsumeItems{} _ | cgoods curChalSer
-                                       && fhasUI (gplayer fact) -> do
+                                       && fhasUI (gkind fact) -> do
       -- Stop forbidden crafting ASAP to avoid spam.
       execSfxAtomic $ SfxMsgFid fid SfxReadyGoods
       return UseId

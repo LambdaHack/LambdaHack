@@ -61,7 +61,7 @@ pickActorToMove foeAssocs friendAssocs maidToAvoid = do
       -- Server is guaranteed to switch leader within a level occasionally,
       -- e.g., when the old leader dies, so this works fine.
       discouragedPointmanSwitchOnLevel =
-        fskillsOther (gplayer fact) == Ability.zeroSkills
+        fskillsOther (gkind fact) == Ability.zeroSkills
   case oursNotSleeping of
     _ | -- Keep the leader: client is discouraged from leader switching,
         -- so it will only be changed if pointman waits (maidToAvoid)

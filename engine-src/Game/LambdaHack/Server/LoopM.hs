@@ -346,7 +346,7 @@ manageCalmAndDomination aid b = do
         Nothing -> return False
         Just (hiImpressionFid, hiImpressionK) -> do
           fact <- getsState $ (EM.! bfid b) . sfactionD
-          if fhasPointman (gplayer fact)
+          if fhasPointman (gkind fact)
                -- animals/robots/human drones never Calm-dominated
              || hiImpressionK >= 10
                -- unless very high impression, e.g., in a dominated hero
@@ -611,8 +611,8 @@ hActors as@(aid : rest) = do
   breakLoop <- getsServer sbreakLoop
   let mleader = gleader fact
       aidIsLeader = mleader == Just aid
-      mainUIactor = fhasUI (gplayer fact)
-                    && (aidIsLeader || not (fhasPointman (gplayer fact)))
+      mainUIactor = fhasUI (gkind fact)
+                    && (aidIsLeader || not (fhasPointman (gkind fact)))
       -- Checking @breakLoop@, to avoid doubly setting faction status to Camping
       -- in case AI-controlled UI client asks to exit game at exactly
       -- the same moment as natural game over was detected.

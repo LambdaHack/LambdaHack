@@ -39,9 +39,9 @@ type FactionDict = EM.EnumMap FactionId Faction
 
 -- | The faction datatype.
 data Faction = Faction
-  { gname     :: Text            -- ^ individual name
+  { gkind     :: FactionKind     -- ^ the player spec for this faction
+  , gname     :: Text            -- ^ individual name
   , gcolor    :: Color.Color     -- ^ color of actors or their frames
-  , gplayer   :: FactionKind     -- ^ the player spec for this faction
   , gdoctrine :: Ability.Doctrine
                                  -- ^ non-leaders behave according to this
   , gunderAI  :: Bool            -- ^ whether the faction is under AI control
@@ -120,7 +120,7 @@ gleader = _gleader
 -- In every game, either all factions for which summoning items exist
 -- should be present or a horror player should be added to host them.
 isHorrorFact :: Faction -> Bool
-isHorrorFact fact = IK.HORROR `elem` fgroups (gplayer fact)
+isHorrorFact fact = IK.HORROR `elem` fgroups (gkind fact)
 
 -- A faction where other actors move at once or where some of leader change
 -- is automatic can't run with multiple actors at once. That would be
@@ -132,13 +132,13 @@ isHorrorFact fact = IK.HORROR `elem` fgroups (gplayer fact)
 -- by the UI user.
 noRunWithMulti :: Faction -> Bool
 noRunWithMulti fact =
-  let skillsOther = fskillsOther $ gplayer fact
+  let skillsOther = fskillsOther $ gkind fact
   in Ability.getSk Ability.SkMove skillsOther >= 0
      || bannedPointmanSwitchBetweenLevels fact
-     || not (fhasPointman (gplayer fact))
+     || not (fhasPointman (gkind fact))
 
 bannedPointmanSwitchBetweenLevels :: Faction -> Bool
-bannedPointmanSwitchBetweenLevels = fspawnsFast . gplayer
+bannedPointmanSwitchBetweenLevels = fspawnsFast . gkind
 
 -- | Check if factions are at war. Assumes symmetry.
 isFoe :: FactionId -> Faction -> FactionId -> Bool
@@ -179,7 +179,7 @@ defaultChallenge = Challenge { cdiff = difficultyDefault
 possibleActorFactions :: ItemKind -> FactionDict -> [(FactionId, Faction)]
 possibleActorFactions itemKind factionD =
   let freqNames = map fst $ IK.ifreq itemKind
-      f (_, fact) = any (`elem` fgroups (gplayer fact)) freqNames
+      f (_, fact) = any (`elem` fgroups (gkind fact)) freqNames
       fidFactsRaw = filter f $ EM.assocs factionD
   in if null fidFactsRaw
      then filter (isHorrorFact . snd) $ EM.assocs factionD  -- fall back

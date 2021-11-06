@@ -99,7 +99,7 @@ effectToBenefit cops fid factionD eff =
           fact = factionD EM.! fid
           friendlyHasGrp fid2 =
             isFriend fid fact fid2
-            && grp `elem` fgroups (gplayer $ factionD EM.! fid2)
+            && grp `elem` fgroups (gkind $ factionD EM.! fid2)
       in -- Prefer applying summoning items to flinging them; the actor gets
          -- spawned further from foes, but it's more robust.
          if any friendlyHasGrp $ EM.keys factionD
