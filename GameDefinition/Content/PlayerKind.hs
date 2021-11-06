@@ -48,8 +48,7 @@ teamHorror = TeamContinuity 7
 -- ** teamExplorer
 
 playerExplorer = PlayerKind
-  { fsymbol = 'e'
-  , fname = "Explorer"
+  { fname = "Explorer"
   , ffreq = []
   , fteam = teamExplorer
   , fgroups = [HERO]
@@ -71,8 +70,7 @@ playerExplorerMedium = playerExplorer { fhiCondPoly = hiHeroMedium }
 playerExplorerTrapped = playerExplorer { fcanEscape = False
                                        , fhiCondPoly = hiHeroLong }
 playerExplorerAutomated = playerExplorer
-  { fsymbol = 'a'
-  , ffreq = []
+  { ffreq = []
   , fhasUI = False
   , finitUnderAI = True
   }
@@ -83,8 +81,7 @@ playerExplorerAutomatedTrapped =
 -- ** teamCompetitor, symmetric opponets of teamExplorer
 
 playerCompetitor = playerExplorer
-  { fsymbol = 'a'
-  , fname = "Indigo Researcher"
+  { fname = "Indigo Researcher"
   , ffreq = []
   , fteam = teamCompetitor
   , fhasUI = False
@@ -98,8 +95,7 @@ playerCompetitorNoEscape = playerCompetitor { fcanEscape = False
 -- ** teamCivilian
 
 playerCivilian = PlayerKind
-  { fsymbol = 'c'
-  , fname = "Civilian"
+  { fname = "Civilian"
   , ffreq = []
   , fteam = teamCivilian
   , fgroups = [HERO, CIVILIAN]
@@ -118,8 +114,7 @@ playerCivilian = PlayerKind
 -- ** teamConvict, different demographics
 
 playerConvict =
-  playerCivilian { fsymbol = 'v'
-                 , fname = "Hunam Convict"
+  playerCivilian { fname = "Hunam Convict"
                  , ffreq = []
                  , fteam = teamConvict
                  , fhasPointman = True  -- convicts organize better
@@ -128,8 +123,7 @@ playerConvict =
 -- ** teamMonster
 
 playerMonster = PlayerKind
-  { fsymbol = 'm'
-  , fname = "Monster Hive"
+  { fname = "Monster Hive"
   , ffreq = []
   , fteam = teamMonster
   , fgroups = [MONSTER, MOBILE_MONSTER]
@@ -146,8 +140,7 @@ playerMonster = PlayerKind
   }
 -- This has continuity @teamMonster@, despite being playable.
 playerAntiMonster = playerMonster
-  { fsymbol = 'b'
-  , ffreq = []
+  { ffreq = []
   , fhasUI = True
   , finitUnderAI = False
   }
@@ -155,8 +148,7 @@ playerAntiMonsterCaptive = playerAntiMonster {fneverEmpty = True}
 -- More flavour and special backstory, but the same team.
 playerMonsterTourist =
   playerAntiMonster
-    { fsymbol = 't'
-    , fname = "Monster Tourist Office"
+    { fname = "Monster Tourist Office"
     , ffreq = []
     , fcanEscape = True
     , fneverEmpty = True  -- no spawning
@@ -173,8 +165,7 @@ playerMonsterCaptiveNarrating = playerAntiMonsterCaptive {fhasUI = True}
 -- ** teamAnimal
 
 playerAnimal = PlayerKind
-  { fsymbol = 'n'
-  , fname = "Animal Kingdom"
+  { fname = "Animal Kingdom"
   , ffreq = []
   , fteam = teamAnimal
   , fgroups = [ANIMAL, MOBILE_ANIMAL, IMMOBILE_ANIMAL, SCAVENGER]
@@ -192,13 +183,11 @@ playerAnimal = PlayerKind
 -- These two differ from outside, but share information and boasting
 -- about them tends to be general, too.
 playerAnimalMagnificent =
-  playerAnimal { fsymbol = 'g'
-               , fname = "Animal Magnificent Specimen Variety"
+  playerAnimal { fname = "Animal Magnificent Specimen Variety"
                , ffreq = []
                , fneverEmpty = True }
 playerAnimalExquisite =
-  playerAnimal { fsymbol = 'q'
-               , fname = "Animal Exquisite Herds and Packs Galore"
+  playerAnimal { fname = "Animal Exquisite Herds and Packs Galore"
                , ffreq = []
                , fteam = teamHorror
                    -- in the same mode as @playerAnimalMagnificent@, so borrow
@@ -220,8 +209,7 @@ playerAnimalCaptiveNarrating = playerAnimalCaptive {fhasUI = True}
 -- In every game, either all factions for which summoning items exist
 -- should be present or a horror player should be added to host them.
 playerHorror = PlayerKind
-  { fsymbol = 'h'
-  , fname = "Horror Den"
+  { fname = "Horror Den"
   , ffreq = []
   , fteam = teamHorror
   , fgroups = [IK.HORROR]

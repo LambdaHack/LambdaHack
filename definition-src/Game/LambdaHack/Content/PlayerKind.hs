@@ -28,8 +28,7 @@ import           Game.LambdaHack.Definition.Defs
 
 -- | Properties of a particular player.
 data PlayerKind = PlayerKind
-  { fsymbol       :: Char        -- ^ a symbol
-  , fname         :: Text        -- ^ name of the player
+  { fname         :: Text        -- ^ name of the player
   , ffreq         :: Freqs PlayerKind
                                  -- ^ frequency within groups
   , fteam         :: TeamContinuity

@@ -27,8 +27,7 @@ import           Game.LambdaHack.Definition.DefsInternal
 
 -- | Game mode specification.
 data ModeKind = ModeKind
-  { msymbol   :: Char            -- ^ a symbol
-  , mname     :: Text            -- ^ short description
+  { mname     :: Text            -- ^ short description
   , mfreq     :: Freqs ModeKind  -- ^ frequency within groups
   , mtutorial :: Bool            -- ^ whether to show tutorial messages, etc.
   , mattract  :: Bool            -- ^ whether this is an attract mode

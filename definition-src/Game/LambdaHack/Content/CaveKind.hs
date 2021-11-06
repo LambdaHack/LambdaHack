@@ -27,8 +27,7 @@ import           Game.LambdaHack.Definition.DefsInternal
 -- | Parameters for the generation of dungeon levels.
 -- Warning: for efficiency, avoid embedded items in any of the common tiles.
 data CaveKind = CaveKind
-  { csymbol       :: Char             -- ^ a symbol
-  , cname         :: Text             -- ^ short description
+  { cname         :: Text             -- ^ short description
   , cfreq         :: Freqs CaveKind   -- ^ frequency within groups
   , cXminSize     :: X                -- ^ minimal X size of the whole cave
   , cYminSize     :: Y                -- ^ minimal Y size of the whole cave

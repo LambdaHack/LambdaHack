@@ -71,8 +71,7 @@ rogue,    arena, smoking, laboratory, noise, mine, empty, outermost, shallowRogu
 -- * Underground caves; most of mediocre height and size
 
 rogue = CaveKind
-  { csymbol       = 'R'
-  , cname         = "A maze of twisty passages"
+  { cname         = "A maze of twisty passages"
   , cfreq         = [(DEFAULT_RANDOM, 100), (CAVE_ROGUE, 1)]
   , cXminSize     = 80
   , cYminSize     = 21
@@ -116,8 +115,7 @@ rogue = CaveKind
   , cdesc         = "Winding tunnels stretch into the dark."
   }  -- no lit corridors cave alternative, since both lit # and . look bad here
 arena = rogue
-  { csymbol       = 'A'
-  , cname         = "Dusty underground library"
+  { cname         = "Dusty underground library"
   , cfreq         = [(DEFAULT_RANDOM, 60), (CAVE_ARENA, 1)]
   , cXminSize     = 50
   , cYminSize     = 21
@@ -160,8 +158,7 @@ smoking = arena
   , cdesc         = "Velvet couches exude the strong smell of tobacco."
   }
 laboratory = rogue
-  { csymbol       = 'L'
-  , cname         = "Burnt laboratory"
+  { cname         = "Burnt laboratory"
   , cfreq         = [(CAVE_LABORATORY, 1)]
   , cXminSize     = 60
   , cYminSize     = 21
@@ -186,8 +183,7 @@ laboratory = rogue
   , cdesc         = "Shattered glassware and the sharp scent of spilt chemicals show that something terrible happened here."
   }
 noise = rogue
-  { csymbol       = 'N'
-  , cname         = "Leaky burrowed sediment"
+  { cname         = "Leaky burrowed sediment"
   , cfreq         = [(DEFAULT_RANDOM, 30), (CAVE_NOISE, 1)]
   , cXminSize     = 50
   , cYminSize     = 21
@@ -232,8 +228,7 @@ mine = noise
   , cdesc         = "Pillars of shining ice create a frozen labyrinth."
   }
 empty = rogue
-  { csymbol       = 'E'
-  , cname         = "Tall cavern"
+  { cname         = "Tall cavern"
   , cfreq         = [(CAVE_EMPTY, 1)]
   , ccellSize     = DiceXY (2 `d` 2 + 11) (1 `d` 2 + 8)
   , cminPlaceSize = DiceXY 13 11
@@ -266,8 +261,7 @@ empty = rogue
   , cdesc         = "Swirls of warm fog fill the air, the hiss of geysers sounding all around."
   }
 outermost = shallowRogue
-  { csymbol       = 'B'
-  , cname         = "Cave entrance"
+  { cname         = "Cave entrance"
   , cfreq         = [(CAVE_OUTERMOST, 100)]
   , cXminSize     = 40
   , cYminSize     = 21
@@ -292,8 +286,7 @@ shallowRogue = rogue
 -- * Overground "caves"; no story-wise limits wrt height and size
 
 raid = rogue
-  { csymbol       = 'T'
-  , cname         = "Typing den"
+  { cname         = "Typing den"
   , cfreq         = [(CAVE_RAID, 1)]
   , cXminSize     = 50
   , cYminSize     = 21
@@ -316,8 +309,7 @@ raid = rogue
 brawl = rogue  -- many random solid tiles, to break LOS, since it's a day
                -- and this scenario is not focused on ranged combat;
                -- also, sanctuaries against missiles in shadow under trees
-  { csymbol       = 'b'
-  , cname         = "Sunny woodland"
+  { cname         = "Sunny woodland"
   , cfreq         = [(CAVE_BRAWL, 1)]
   , cXminSize     = 60
   , cYminSize     = 21
@@ -351,8 +343,7 @@ shootout = rogue  -- a scenario with strong missiles;
                   -- opaque tiles, to make scouting and sniping more interesting
                   -- and to avoid obstructing view too much, since this
                   -- scenario is about ranged combat at long range
-  { csymbol       = 'S'
-  , cname         = "Misty meadow"
+  { cname         = "Misty meadow"
   , cfreq         = [(CAVE_SHOOTOUT, 1)]
   , ccellSize     = DiceXY (1 `d` 2 + 6) 6
   , cminPlaceSize = DiceXY 3 3
@@ -386,8 +377,7 @@ shootout = rogue  -- a scenario with strong missiles;
   , cdesc         = "The warmth has released fog and the wind brooms it away."
   }
 hunt = rogue  -- a scenario with strong missiles for ranged and shade for melee
-  { csymbol       = 'H'
-  , cname         = "Afternoon swamp"
+  { cname         = "Afternoon swamp"
   , cfreq         = [(CAVE_HUNT, 1)]
   , ccellSize     = DiceXY (1 `d` 2 + 6) 6
   , cminPlaceSize = DiceXY 3 3
@@ -420,8 +410,7 @@ escape = rogue  -- a scenario with weak missiles, because heroes don't depend
                 -- on them; dark, so solid obstacles are to hide from missiles,
                 -- not view; obstacles are not lit, to frustrate the AI;
                 -- lots of small lights to cross, to have some risks
-  { csymbol       = 'E'
-  , cname         = "Metropolitan park at dusk"  -- "night" didn't fit
+  { cname         = "Metropolitan park at dusk"  -- "night" didn't fit
   , cfreq         = [(CAVE_ESCAPE, 1)]
   , ccellSize     = DiceXY (1 `d` 3 + 7) 6
   , cminPlaceSize = DiceXY 5 3
@@ -452,8 +441,7 @@ escape = rogue  -- a scenario with weak missiles, because heroes don't depend
   , cdesc         = "The darkening greyness is settling into silence."
   }
 zoo = rogue  -- few lights and many solids, to help the less numerous heroes
-  { csymbol       = 'Z'
-  , cname         = "Menagerie in flames"
+  { cname         = "Menagerie in flames"
   , cfreq         = [(CAVE_ZOO, 1)]
   , ccellSize     = DiceXY (1 `d` 3 + 7) 6
   , cminPlaceSize = DiceXY 4 4
@@ -491,8 +479,7 @@ ambush = rogue  -- a scenario with strong missiles;
                 -- of missiles are usually not seen, so enemy can't be guessed;
                 -- camping doesn't pay off, because enemies can sneak and only
                 -- active scouting, throwing flares and shooting discovers them
-  { csymbol       = 'M'
-  , cname         = "Burning metropolitan park"
+  { cname         = "Burning metropolitan park"
   , cfreq         = [(CAVE_AMBUSH, 1)]
   , ccellSize     = DiceXY (1 `d` 4 + 7) 6
   , cminPlaceSize = DiceXY 5 3
@@ -522,8 +509,7 @@ ambush = rogue  -- a scenario with strong missiles;
 -- * Other caves; testing, Easter egg, future work
 
 battle = rogue  -- few lights and many solids, to help the less numerous heroes
-  { csymbol       = 'B'
-  , cname         = "Old battle ground"
+  { cname         = "Old battle ground"
   , cfreq         = [(CAVE_BATTLE, 1)]
   , ccellSize     = DiceXY (5 `d` 3 + 11) 5  -- cfenceApart results in 2 rows
   , cminPlaceSize = DiceXY 4 4
