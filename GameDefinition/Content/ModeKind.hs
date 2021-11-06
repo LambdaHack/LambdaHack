@@ -583,10 +583,7 @@ rosterCrawlSurvival =
   , ( MONSTER_REPRESENTATIVE
     , [(-4, 1, SCOUT_MONSTER), (-4, 3, MONSTER)] )
   , ( ANIMAL_NARRATING
-    , -- Fun from the start to avoid empty initial level:
-      [ (-1, 1 + 1 `d` 2, ANIMAL)
-      -- Huge battle at the end:
-      , (-10, 100, MOBILE_ANIMAL) ] ) ]
+    , [(-5, 10, ANIMAL)] ) ]  -- explore unopposed for some time
 
 rosterSafariSurvival =
   [ ( MONSTER_TOURIST_PASSIVE
