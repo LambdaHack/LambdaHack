@@ -5,7 +5,7 @@ module Content.PlayerKind
   , -- * Content
     content
 
-  , playerExplorer, playerExplorerShort, playerExplorerNoEscape, playerExplorerMedium, playerExplorerTrapped, playerCompetitor, playerCompetitorShort, playerCompetitorNoEscape, playerCompetitorTrapped, playerCivilian, playerHunamConvict, playerMonster, playerAntiMonster, playerAntiMonsterCaptive, playerMonsterTourist, playerMonsterTouristPassive, playerMonsterCaptive, playerMonsterCaptiveNarrating, playerAnimal, playerAnimalMagnificent, playerAnimalExquisite, playerAnimalCaptive, playerAnimalNarrating, playerAnimalMagnificentNarrating, playerAnimalCaptiveNarrating, playerHorror
+  , playerExplorer, playerExplorerShort, playerExplorerNoEscape, playerExplorerMedium, playerExplorerTrapped, playerCompetitor, playerCompetitorShort, playerCompetitorNoEscape, playerCompetitorTrapped, playerCivilian, playerConvict, playerMonster, playerAntiMonster, playerAntiMonsterCaptive, playerMonsterTourist, playerMonsterTouristPassive, playerMonsterCaptive, playerMonsterCaptiveNarrating, playerAnimal, playerAnimalMagnificent, playerAnimalExquisite, playerAnimalCaptive, playerAnimalNarrating, playerAnimalMagnificentNarrating, playerAnimalCaptiveNarrating, playerHorror
 #ifdef EXPOSE_INTERNAL
   -- * Group name patterns
 #endif
@@ -29,9 +29,19 @@ groupNames :: [GroupName PlayerKind]
 groupNames = []
 
 content :: [PlayerKind]
-content = [playerExplorer, playerExplorerShort, playerExplorerNoEscape, playerExplorerMedium, playerExplorerTrapped, playerCompetitor, playerCompetitorShort, playerCompetitorNoEscape, playerCompetitorTrapped, playerCivilian, playerHunamConvict, playerMonster, playerAntiMonster, playerAntiMonsterCaptive, playerMonsterTourist, playerMonsterTouristPassive, playerMonsterCaptive, playerMonsterCaptiveNarrating, playerAnimal, playerAnimalMagnificent, playerAnimalExquisite, playerAnimalCaptive, playerAnimalNarrating, playerAnimalMagnificentNarrating, playerAnimalCaptiveNarrating, playerHorror]
+content = [playerExplorer, playerExplorerShort, playerExplorerNoEscape, playerExplorerMedium, playerExplorerTrapped, playerCompetitor, playerCompetitorShort, playerCompetitorNoEscape, playerCompetitorTrapped, playerCivilian, playerConvict, playerMonster, playerAntiMonster, playerAntiMonsterCaptive, playerMonsterTourist, playerMonsterTouristPassive, playerMonsterCaptive, playerMonsterCaptiveNarrating, playerAnimal, playerAnimalMagnificent, playerAnimalExquisite, playerAnimalCaptive, playerAnimalNarrating, playerAnimalMagnificentNarrating, playerAnimalCaptiveNarrating, playerHorror]
 
-playerExplorer,            playerExplorerShort, playerExplorerNoEscape, playerExplorerMedium, playerExplorerTrapped, playerCompetitor, playerCompetitorShort, playerCompetitorNoEscape, playerCompetitorTrapped, playerCivilian, playerHunamConvict, playerMonster, playerAntiMonster, playerAntiMonsterCaptive, playerMonsterTourist, playerMonsterTouristPassive, playerMonsterCaptive, playerMonsterCaptiveNarrating, playerAnimal, playerAnimalMagnificent, playerAnimalExquisite, playerAnimalCaptive, playerAnimalNarrating, playerAnimalMagnificentNarrating, playerAnimalCaptiveNarrating, playerHorror :: PlayerKind
+playerExplorer,            playerExplorerShort, playerExplorerNoEscape, playerExplorerMedium, playerExplorerTrapped, playerCompetitor, playerCompetitorShort, playerCompetitorNoEscape, playerCompetitorTrapped, playerCivilian, playerConvict, playerMonster, playerAntiMonster, playerAntiMonsterCaptive, playerMonsterTourist, playerMonsterTouristPassive, playerMonsterCaptive, playerMonsterCaptiveNarrating, playerAnimal, playerAnimalMagnificent, playerAnimalExquisite, playerAnimalCaptive, playerAnimalNarrating, playerAnimalMagnificentNarrating, playerAnimalCaptiveNarrating, playerHorror :: PlayerKind
+
+-- * Teams
+
+teamCompetitor, teamCivilian, teamConvict, teamMonster, teamAnimal, teamHorror :: TeamContinuity
+teamCompetitor = TeamContinuity 2
+teamCivilian = TeamContinuity 3
+teamConvict = TeamContinuity 4
+teamMonster = TeamContinuity 5
+teamAnimal = TeamContinuity 6
+teamHorror = TeamContinuity 7
 
 -- * Content
 
@@ -41,6 +51,7 @@ playerExplorer = PlayerKind
   { fsymbol = 'e'
   , fname = "Explorer"
   , ffreq = []
+  , fteam = teamExplorer
   , fgroups = [HERO]
   , fskillsOther = meleeAdjacent
   , fcanEscape = True
@@ -65,6 +76,7 @@ playerExplorerTrapped = playerExplorer { fcanEscape = False
 playerCompetitor = playerExplorer
   { fsymbol = 'a'
   , ffreq = []
+  , fteam = teamCompetitor
   , fhasUI = False
   , finitUnderAI = True
   }
@@ -82,6 +94,7 @@ playerCivilian = PlayerKind
   { fsymbol = 'c'
   , fname = "Civilian"
   , ffreq = []
+  , fteam = teamCivilian
   , fgroups = [HERO, CIVILIAN]
   , fskillsOther = zeroSkills  -- not coordinated by any leadership
   , fcanEscape = False
@@ -95,12 +108,13 @@ playerCivilian = PlayerKind
   , finitUnderAI = True
   }
 
--- ** teamHunamConvict, different demographics
+-- ** teamConvict, different demographics
 
-playerHunamConvict =
+playerConvict =
   playerCivilian { fsymbol = 'v'
                  , fname = "Hunam Convict"
                  , ffreq = []
+                 , fteam = teamConvict
                  , fhasPointman = True  -- convicts organize better
                  , finitUnderAI = True }
 
@@ -110,6 +124,7 @@ playerMonster = PlayerKind
   { fsymbol = 'm'
   , fname = "Monster Hive"
   , ffreq = []
+  , fteam = teamMonster
   , fgroups = [MONSTER, MOBILE_MONSTER]
   , fskillsOther = zeroSkills
   , fcanEscape = False
@@ -155,6 +170,7 @@ playerAnimal = PlayerKind
   { fsymbol = 'n'
   , fname = "Animal Kingdom"
   , ffreq = []
+  , fteam = teamAnimal
   , fgroups = [ANIMAL, MOBILE_ANIMAL, IMMOBILE_ANIMAL, SCAVENGER]
   , fskillsOther = zeroSkills
   , fcanEscape = False
@@ -178,6 +194,9 @@ playerAnimalExquisite =
   playerAnimal { fsymbol = 'q'
                , fname = "Animal Exquisite Herds and Packs Galore"
                , ffreq = []
+               , fteam = teamHorror
+                   -- in the same mode as @playerAnimalMagnificent@, so borrow
+                   -- identity from horrors to avoid a clash
                , fneverEmpty = True }
 playerAnimalCaptive = playerAnimal {fneverEmpty = True}
 playerAnimalNarrating = playerAnimal {fhasUI = True}
@@ -199,6 +218,7 @@ playerHorror = PlayerKind
   { fsymbol = 'h'
   , fname = "Horror Den"
   , ffreq = []
+  , fteam = teamHorror
   , fgroups = [IK.HORROR]
   , fskillsOther = zeroSkills
   , fcanEscape = False

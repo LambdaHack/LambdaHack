@@ -19,7 +19,7 @@ import qualified Data.Text as T
 import           Game.LambdaHack.Content.CaveKind (CaveKind)
 import           Game.LambdaHack.Content.ItemKind (ItemKind)
 import           Game.LambdaHack.Content.PlayerKind
-  (Outcome (..), PlayerKind (..), TeamContinuity (..))
+  (Outcome (..), PlayerKind (..))
 import qualified Game.LambdaHack.Core.Dice as Dice
 import           Game.LambdaHack.Definition.ContentData
 import           Game.LambdaHack.Definition.Defs
@@ -50,7 +50,6 @@ type Caves = [([Int], [GroupName CaveKind])]
 -- | The specification of players for the game mode.
 data Roster = Roster
   { rosterList  :: [( PlayerKind
-                    , Maybe TeamContinuity
                     , [(Int, Dice.Dice, GroupName ItemKind)] )]
       -- ^ players in the particular team and levels, numbers and groups
       --   of their initial members
@@ -75,16 +74,16 @@ validateSingle ModeKind{..} =
 validateSingleRoster :: Caves -> Roster -> [Text]
 validateSingleRoster caves Roster{..} =
   [ "no player keeps the dungeon alive"
-  | all (\(pl, _, _) -> not $ fneverEmpty pl) rosterList ]
+  | all (\(pl, _) -> not $ fneverEmpty pl) rosterList ]
   ++ [ "not exactly one UI client"
-     | length (filter (\(pl, _, _) -> fhasUI pl) rosterList) /= 1 ]
-  ++ let tokens = mapMaybe (\(_, tc, _) -> tc) rosterList
+     | length (filter (\(pl, _) -> fhasUI pl) rosterList) /= 1 ]
+  ++ let tokens = map (\(pl, _) -> fteam pl) rosterList
          nubTokens = nub $ sort tokens
      in [ "duplicate team continuity token"
         | length tokens /= length nubTokens ]
   ++ let checkPl field plName =
            [ plName <+> "is not a player name in" <+> field
-           | all (\(pl, _, _) -> fname pl /= plName) rosterList ]
+           | all (\(pl, _) -> fname pl /= plName) rosterList ]
          checkDipl field (pl1, pl2) =
            [ "self-diplomacy in" <+> field | pl1 == pl2 ]
            ++ checkPl field pl1
@@ -94,7 +93,7 @@ validateSingleRoster caves Roster{..} =
   ++ let keys = concatMap fst caves
          minD = minimum keys
          maxD = maximum keys
-         f (_, _, l) = concatMap g l
+         f (_, l) = concatMap g l
          g i3@(ln, _, _) =
            [ "initial actor levels not among caves:" <+> tshow i3
            | ln `notElem` keys ]

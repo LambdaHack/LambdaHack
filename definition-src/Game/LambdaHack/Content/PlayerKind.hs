@@ -32,6 +32,9 @@ data PlayerKind = PlayerKind
   , fname         :: Text        -- ^ name of the player
   , ffreq         :: Freqs PlayerKind
                                  -- ^ frequency within groups
+  , fteam         :: TeamContinuity
+                                 -- ^ the team the player identifies with
+                                 --   across games and modes
   , fgroups       :: [GroupName ItemKind]
                                  -- ^ names of actor groups that may naturally
                                  --   fall under player's control, e.g., upon

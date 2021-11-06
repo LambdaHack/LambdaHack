@@ -231,7 +231,7 @@ resetFactions :: FactionDict -> ContentId ModeKind -> Int -> Dice.AbsDepth
               -> Rnd FactionDict
 resetFactions factionDold gameModeIdOld curDiffSerOld totalDepth mode
               automateAll = do
-  let rawCreate (ix, (gplayer@PlayerKind{..}, gteamCont, initialActors)) = do
+  let rawCreate (ix, (gplayer@PlayerKind{..}, initialActors)) = do
         let castInitialActors (ln, d, actorGroup) = do
               n <- castDice (Dice.AbsDepth $ abs ln) totalDepth d
               return (ln, n, actorGroup)
@@ -259,6 +259,7 @@ resetFactions factionDold gameModeIdOld curDiffSerOld totalDepth mode
         let gname = gnameNew
             gdoctrine = finitDoctrine
             gunderAI = finitUnderAI || mattract mode || automateAll
+            gteamCont = Just fteam
             gdipl = EM.empty  -- fixed below
             gquit = Nothing
             _gleader = Nothing
