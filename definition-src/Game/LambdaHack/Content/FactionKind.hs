@@ -57,6 +57,10 @@ data FactionKind = FactionKind
   , fhasUI        :: Bool        -- ^ does the faction have a UI client
                                  --   (for control or passive observation)
   , finitUnderAI  :: Bool        -- ^ is the faction initially under AI control
+  , fenemyTeams   :: [TeamContinuity]
+                                 -- ^ teams starting at war with the faction
+  , falliedTeams  :: [TeamContinuity]
+                                 -- ^ teams starting allied with the faction
   }
   deriving (Show, Eq, Generic)
 

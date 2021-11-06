@@ -614,9 +614,9 @@ rosterSafari = Roster
                    , "Animal Exquisite Herds and Packs Galore" ) ] }
 
 rosterCrawlEmpty = Roster
-  { rosterList = [ ( EXPLORER_REPRESENTATIVE
+  { rosterList = [ ( EXPLORER_CAPTIVE
                    , [(-1, 1, HERO)] )
-                 , (HORROR_REPRESENTATIVE, []) ]
+                 , (HORROR_CAPTIVE, []) ]
                      -- for spawned and summoned monsters
   , rosterEnemy = []
   , rosterAlly = [] }
@@ -681,7 +681,7 @@ rosterDefense = rosterCrawl
 rosterDefenseEmpty = rosterCrawl
   { rosterList = [ ( MONSTER_ANTI_CAPTIVE
                    , [(-4, 1, SCOUT_MONSTER)] )
-                 , (HORROR_REPRESENTATIVE, []) ]
+                 , (HORROR_CAPTIVE, []) ]
                      -- for spawned and summoned animals
   , rosterEnemy = []
   , rosterAlly = [] }

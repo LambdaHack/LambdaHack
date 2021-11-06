@@ -2,7 +2,7 @@
 -- and computer-controlled.
 module Content.FactionKind
   ( -- * Group name patterns
-    pattern EXPLORER_REPRESENTATIVE, pattern EXPLORER_SHORT, pattern EXPLORER_NO_ESCAPE, pattern EXPLORER_MEDIUM, pattern EXPLORER_TRAPPED, pattern EXPLORER_AUTOMATED, pattern EXPLORER_AUTOMATED_TRAPPED, pattern COMPETITOR_REPRESENTATIVE, pattern COMPETITOR_SHORT, pattern COMPETITOR_NO_ESCAPE, pattern CIVILIAN_REPRESENTATIVE, pattern CONVICT_REPRESENTATIVE, pattern MONSTER_REPRESENTATIVE, pattern MONSTER_ANTI, pattern MONSTER_ANTI_CAPTIVE, pattern MONSTER_TOURIST, pattern MONSTER_TOURIST_PASSIVE, pattern MONSTER_CAPTIVE, pattern MONSTER_CAPTIVE_NARRATING, pattern ANIMAL_REPRESENTATIVE, pattern ANIMAL_MAGNIFICENT, pattern ANIMAL_EXQUISITE, pattern ANIMAL_CAPTIVE, pattern ANIMAL_NARRATING, pattern ANIMAL_MAGNIFICENT_NARRATING, pattern ANIMAL_CAPTIVE_NARRATING, pattern HORROR_REPRESENTATIVE
+    pattern EXPLORER_REPRESENTATIVE, pattern EXPLORER_SHORT, pattern EXPLORER_NO_ESCAPE, pattern EXPLORER_MEDIUM, pattern EXPLORER_TRAPPED, pattern EXPLORER_AUTOMATED, pattern EXPLORER_AUTOMATED_TRAPPED, pattern EXPLORER_CAPTIVE, pattern COMPETITOR_REPRESENTATIVE, pattern COMPETITOR_SHORT, pattern COMPETITOR_NO_ESCAPE, pattern CIVILIAN_REPRESENTATIVE, pattern CONVICT_REPRESENTATIVE, pattern MONSTER_REPRESENTATIVE, pattern MONSTER_ANTI, pattern MONSTER_ANTI_CAPTIVE, pattern MONSTER_TOURIST, pattern MONSTER_TOURIST_PASSIVE, pattern MONSTER_CAPTIVE, pattern MONSTER_CAPTIVE_NARRATING, pattern ANIMAL_REPRESENTATIVE, pattern ANIMAL_MAGNIFICENT, pattern ANIMAL_EXQUISITE, pattern ANIMAL_CAPTIVE, pattern ANIMAL_NARRATING, pattern ANIMAL_MAGNIFICENT_NARRATING, pattern ANIMAL_CAPTIVE_NARRATING, pattern HORROR_REPRESENTATIVE, pattern HORROR_CAPTIVE
   , pattern REPRESENTATIVE
   , groupNamesSingleton, groupNames
   , -- * Content
@@ -28,9 +28,9 @@ import           Game.LambdaHack.Definition.DefsInternal
 
 groupNamesSingleton :: [GroupName FactionKind]
 groupNamesSingleton =
-       [EXPLORER_REPRESENTATIVE, EXPLORER_SHORT, EXPLORER_NO_ESCAPE, EXPLORER_MEDIUM, EXPLORER_TRAPPED, EXPLORER_AUTOMATED, EXPLORER_AUTOMATED_TRAPPED, COMPETITOR_REPRESENTATIVE, COMPETITOR_SHORT, COMPETITOR_NO_ESCAPE, CIVILIAN_REPRESENTATIVE, CONVICT_REPRESENTATIVE, MONSTER_REPRESENTATIVE, MONSTER_ANTI, MONSTER_ANTI_CAPTIVE, MONSTER_TOURIST, MONSTER_TOURIST_PASSIVE, MONSTER_CAPTIVE, MONSTER_CAPTIVE_NARRATING, ANIMAL_REPRESENTATIVE, ANIMAL_MAGNIFICENT, ANIMAL_EXQUISITE, ANIMAL_CAPTIVE, ANIMAL_NARRATING, ANIMAL_MAGNIFICENT_NARRATING, ANIMAL_CAPTIVE_NARRATING, HORROR_REPRESENTATIVE]
+       [EXPLORER_REPRESENTATIVE, EXPLORER_SHORT, EXPLORER_NO_ESCAPE, EXPLORER_MEDIUM, EXPLORER_TRAPPED, EXPLORER_AUTOMATED, EXPLORER_AUTOMATED_TRAPPED, EXPLORER_CAPTIVE, COMPETITOR_REPRESENTATIVE, COMPETITOR_SHORT, COMPETITOR_NO_ESCAPE, CIVILIAN_REPRESENTATIVE, CONVICT_REPRESENTATIVE, MONSTER_REPRESENTATIVE, MONSTER_ANTI, MONSTER_ANTI_CAPTIVE, MONSTER_TOURIST, MONSTER_TOURIST_PASSIVE, MONSTER_CAPTIVE, MONSTER_CAPTIVE_NARRATING, ANIMAL_REPRESENTATIVE, ANIMAL_MAGNIFICENT, ANIMAL_EXQUISITE, ANIMAL_CAPTIVE, ANIMAL_NARRATING, ANIMAL_MAGNIFICENT_NARRATING, ANIMAL_CAPTIVE_NARRATING, HORROR_REPRESENTATIVE, HORROR_CAPTIVE]
 
-pattern EXPLORER_REPRESENTATIVE, EXPLORER_SHORT, EXPLORER_NO_ESCAPE, EXPLORER_MEDIUM, EXPLORER_TRAPPED, EXPLORER_AUTOMATED, EXPLORER_AUTOMATED_TRAPPED, COMPETITOR_REPRESENTATIVE, COMPETITOR_SHORT, COMPETITOR_NO_ESCAPE, CIVILIAN_REPRESENTATIVE, CONVICT_REPRESENTATIVE, MONSTER_REPRESENTATIVE, MONSTER_ANTI, MONSTER_ANTI_CAPTIVE, MONSTER_TOURIST, MONSTER_TOURIST_PASSIVE, MONSTER_CAPTIVE, MONSTER_CAPTIVE_NARRATING, ANIMAL_REPRESENTATIVE, ANIMAL_MAGNIFICENT, ANIMAL_EXQUISITE, ANIMAL_CAPTIVE, ANIMAL_NARRATING, ANIMAL_MAGNIFICENT_NARRATING, ANIMAL_CAPTIVE_NARRATING, HORROR_REPRESENTATIVE :: GroupName FactionKind
+pattern EXPLORER_REPRESENTATIVE, EXPLORER_SHORT, EXPLORER_NO_ESCAPE, EXPLORER_MEDIUM, EXPLORER_TRAPPED, EXPLORER_AUTOMATED, EXPLORER_AUTOMATED_TRAPPED, EXPLORER_CAPTIVE, COMPETITOR_REPRESENTATIVE, COMPETITOR_SHORT, COMPETITOR_NO_ESCAPE, CIVILIAN_REPRESENTATIVE, CONVICT_REPRESENTATIVE, MONSTER_REPRESENTATIVE, MONSTER_ANTI, MONSTER_ANTI_CAPTIVE, MONSTER_TOURIST, MONSTER_TOURIST_PASSIVE, MONSTER_CAPTIVE, MONSTER_CAPTIVE_NARRATING, ANIMAL_REPRESENTATIVE, ANIMAL_MAGNIFICENT, ANIMAL_EXQUISITE, ANIMAL_CAPTIVE, ANIMAL_NARRATING, ANIMAL_MAGNIFICENT_NARRATING, ANIMAL_CAPTIVE_NARRATING, HORROR_REPRESENTATIVE, HORROR_CAPTIVE :: GroupName FactionKind
 
 groupNames :: [GroupName FactionKind]
 groupNames = [REPRESENTATIVE]
@@ -45,6 +45,7 @@ pattern EXPLORER_MEDIUM = GroupName "explorer medium"
 pattern EXPLORER_TRAPPED = GroupName "explorer trapped"
 pattern EXPLORER_AUTOMATED = GroupName "explorer automated"
 pattern EXPLORER_AUTOMATED_TRAPPED = GroupName "explorer automated trapped"
+pattern EXPLORER_CAPTIVE = GroupName "explorer captive"
 pattern COMPETITOR_REPRESENTATIVE = GroupName "competitor"
 pattern COMPETITOR_SHORT = GroupName "competitor short"
 pattern COMPETITOR_NO_ESCAPE = GroupName "competitor no escape"
@@ -65,6 +66,7 @@ pattern ANIMAL_NARRATING = GroupName "animal narrating"
 pattern ANIMAL_MAGNIFICENT_NARRATING = GroupName "animal magnificent narrating"
 pattern ANIMAL_CAPTIVE_NARRATING = GroupName "animal captive narrating"
 pattern HORROR_REPRESENTATIVE = GroupName "horror"
+pattern HORROR_CAPTIVE = GroupName "horror captive"
 
 -- * Teams
 
@@ -79,9 +81,9 @@ teamHorror = TeamContinuity 7
 -- * Content
 
 content :: [FactionKind]
-content = [factExplorer, factExplorerShort, factExplorerNoEscape, factExplorerMedium, factExplorerTrapped, factExplorerAutomated, factExplorerAutomatedTrapped, factCompetitor, factCompetitorShort, factCompetitorNoEscape, factCivilian, factConvict, factMonster, factAntiMonster, factAntiMonsterCaptive, factMonsterTourist, factMonsterTouristPassive, factMonsterCaptive, factMonsterCaptiveNarrating, factAnimal, factAnimalMagnificent, factAnimalExquisite, factAnimalCaptive, factAnimalNarrating, factAnimalMagnificentNarrating, factAnimalCaptiveNarrating, factHorror]
+content = [factExplorer, factExplorerShort, factExplorerNoEscape, factExplorerMedium, factExplorerTrapped, factExplorerAutomated, factExplorerAutomatedTrapped, factExplorerCaptive, factCompetitor, factCompetitorShort, factCompetitorNoEscape, factCivilian, factConvict, factMonster, factAntiMonster, factAntiMonsterCaptive, factMonsterTourist, factMonsterTouristPassive, factMonsterCaptive, factMonsterCaptiveNarrating, factAnimal, factAnimalMagnificent, factAnimalExquisite, factAnimalCaptive, factAnimalNarrating, factAnimalMagnificentNarrating, factAnimalCaptiveNarrating, factHorror, factHorrorCaptive]
 
-factExplorer,            factExplorerShort, factExplorerNoEscape, factExplorerMedium, factExplorerTrapped, factExplorerAutomated, factExplorerAutomatedTrapped, factCompetitor, factCompetitorShort, factCompetitorNoEscape, factCivilian, factConvict, factMonster, factAntiMonster, factAntiMonsterCaptive, factMonsterTourist, factMonsterTouristPassive, factMonsterCaptive, factMonsterCaptiveNarrating, factAnimal, factAnimalMagnificent, factAnimalExquisite, factAnimalCaptive, factAnimalNarrating, factAnimalMagnificentNarrating, factAnimalCaptiveNarrating, factHorror :: FactionKind
+factExplorer,            factExplorerShort, factExplorerNoEscape, factExplorerMedium, factExplorerTrapped, factExplorerAutomated, factExplorerAutomatedTrapped, factExplorerCaptive, factCompetitor, factCompetitorShort, factCompetitorNoEscape, factCivilian, factConvict, factMonster, factAntiMonster, factAntiMonsterCaptive, factMonsterTourist, factMonsterTouristPassive, factMonsterCaptive, factMonsterCaptiveNarrating, factAnimal, factAnimalMagnificent, factAnimalExquisite, factAnimalCaptive, factAnimalNarrating, factAnimalMagnificentNarrating, factAnimalCaptiveNarrating, factHorror, factHorrorCaptive :: FactionKind
 
 -- * Content
 
@@ -102,10 +104,13 @@ factExplorer = FactionKind
   , fhasPointman = True
   , fhasUI = True
   , finitUnderAI = False
+  , fenemyTeams = [teamCompetitor, teamMonster, teamAnimal, teamHorror]
+  , falliedTeams = []
   }
 factExplorerShort = factExplorer
   { ffreq = [(EXPLORER_SHORT, 1)]
   , fhiCondPoly = hiHeroShort
+  , fenemyTeams = [teamMonster, teamAnimal, teamHorror]
   }
 factExplorerNoEscape = factExplorer
   { ffreq = [(EXPLORER_NO_ESCAPE, 1)]
@@ -131,6 +136,11 @@ factExplorerAutomatedTrapped = factExplorerAutomated
   , fcanEscape = False
   , fhiCondPoly = hiHeroLong
   }
+factExplorerCaptive = factExplorer
+  { ffreq = [(EXPLORER_CAPTIVE, 1)]
+  , fenemyTeams = []
+  , falliedTeams = []
+  }
 
 -- ** teamCompetitor, symmetric opponets of teamExplorer
 
@@ -140,11 +150,14 @@ factCompetitor = factExplorer
   , fteam = teamCompetitor
   , fhasUI = False
   , finitUnderAI = True
+  , fenemyTeams = [teamExplorer, teamMonster, teamAnimal, teamHorror]
+  , falliedTeams = []
   }
 factCompetitorShort = factCompetitor
   { fname = "Indigo Founder"  -- early
   , ffreq = [(COMPETITOR_SHORT, 1)]
   , fhiCondPoly = hiHeroShort
+  , fenemyTeams = [teamMonster, teamAnimal, teamHorror]
   }
 factCompetitorNoEscape = factCompetitor
   { ffreq = [(COMPETITOR_NO_ESCAPE, 1)]
@@ -169,6 +182,8 @@ factCivilian = FactionKind
   , fhasPointman = False  -- unorganized
   , fhasUI = False
   , finitUnderAI = True
+  , fenemyTeams = [teamMonster, teamAnimal, teamHorror]
+  , falliedTeams = []
   }
 
 -- ** teamConvict, different demographics
@@ -179,6 +194,8 @@ factConvict = factCivilian
   , fteam = teamConvict
   , fhasPointman = True  -- convicts organize better
   , finitUnderAI = True
+  , fenemyTeams = [teamMonster, teamAnimal, teamHorror]
+  , falliedTeams = []
   }
 
 -- ** teamMonster
@@ -198,6 +215,8 @@ factMonster = FactionKind
   , fhasPointman = True
   , fhasUI = False
   , finitUnderAI = True
+  , fenemyTeams = [teamExplorer, teamCompetitor, teamCivilian, teamConvict]
+  , falliedTeams = [teamAnimal]
   }
 -- This has continuity @teamMonster@, despite being playable.
 factAntiMonster = factMonster
@@ -206,8 +225,10 @@ factAntiMonster = factMonster
   , finitUnderAI = False
   }
 factAntiMonsterCaptive = factAntiMonster
-  {ffreq = [(MONSTER_ANTI_CAPTIVE, 1)]
+  { ffreq = [(MONSTER_ANTI_CAPTIVE, 1)]
   , fneverEmpty = True
+  , fenemyTeams = []
+  , falliedTeams = []
   }
 -- More flavour and special backstory, but the same team.
 factMonsterTourist = factAntiMonster
@@ -219,6 +240,9 @@ factMonsterTourist = factAntiMonster
   , finitDoctrine = TFollow  -- follow-the-guide, as tourists do
   , fspawnsFast = False  -- on a trip, so no spawning
   , finitUnderAI = False
+  , fenemyTeams =
+      [teamAnimal, teamExplorer, teamCompetitor, teamCivilian, teamConvict]
+  , falliedTeams = []
   }
 factMonsterTouristPassive = factMonsterTourist
   { ffreq = [(MONSTER_TOURIST_PASSIVE, 1)]
@@ -251,6 +275,8 @@ factAnimal = FactionKind
   , fhasPointman = False
   , fhasUI = False
   , finitUnderAI = True
+  , fenemyTeams = [teamExplorer, teamCompetitor, teamCivilian, teamConvict]
+  , falliedTeams = [teamMonster]
   }
 -- These two differ from outside, but share information and boasting
 -- about them tends to be general, too.
@@ -258,6 +284,9 @@ factAnimalMagnificent = factAnimal
   { fname = "Animal Magnificent Specimen Variety"
   , ffreq = [(ANIMAL_MAGNIFICENT, 1)]
   , fneverEmpty = True
+  , fenemyTeams =
+      [teamMonster, teamExplorer, teamCompetitor, teamCivilian, teamConvict]
+  , falliedTeams = []
   }
 factAnimalExquisite = factAnimal
   { fname = "Animal Exquisite Herds and Packs Galore"
@@ -266,6 +295,9 @@ factAnimalExquisite = factAnimal
       -- in the same mode as @factAnimalMagnificent@, so borrow
       -- identity from horrors to avoid a clash
   , fneverEmpty = True
+  , fenemyTeams =
+      [teamMonster, teamExplorer, teamCompetitor, teamCivilian, teamConvict]
+  , falliedTeams = [teamMonster]
   }
 factAnimalCaptive = factAnimal
   { ffreq = [(ANIMAL_CAPTIVE, 1)]
@@ -308,4 +340,11 @@ factHorror = FactionKind
   , fhasPointman = False
   , fhasUI = False
   , finitUnderAI = True
+  , fenemyTeams = [teamExplorer, teamCompetitor, teamCivilian, teamConvict]
+  , falliedTeams = []
+  }
+factHorrorCaptive = factHorror
+  { ffreq = [(HORROR_CAPTIVE, 1)]
+  , fenemyTeams = []
+  , falliedTeams = []
   }
