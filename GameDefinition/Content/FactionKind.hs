@@ -70,13 +70,14 @@ pattern HORROR_CAPTIVE = GroupName "horror captive"
 
 -- * Teams
 
-teamCompetitor, teamCivilian, teamConvict, teamMonster, teamAnimal, teamHorror :: TeamContinuity
+teamCompetitor, teamCivilian, teamConvict, teamMonster, teamAnimal, teamHorror, teamOther :: TeamContinuity
 teamCompetitor = TeamContinuity 2
 teamCivilian = TeamContinuity 3
 teamConvict = TeamContinuity 4
 teamMonster = TeamContinuity 5
 teamAnimal = TeamContinuity 6
 teamHorror = TeamContinuity 7
+teamOther = TeamContinuity 10
 
 -- * Content
 
@@ -291,7 +292,7 @@ factAnimalMagnificent = factAnimal
 factAnimalExquisite = factAnimal
   { fname = "Animal Exquisite Herds and Packs Galore"
   , ffreq = [(ANIMAL_EXQUISITE, 1)]
-  , fteam = teamHorror
+  , fteam = teamOther
       -- in the same mode as @factAnimalMagnificent@, so borrow
       -- identity from horrors to avoid a clash
   , fneverEmpty = True
