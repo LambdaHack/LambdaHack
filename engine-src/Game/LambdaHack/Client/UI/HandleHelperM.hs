@@ -388,6 +388,7 @@ describeMode addTitle gameModeId = do
   side <- getsClient sside
   total <- getsState $ snd . calculateTotal side
   dungeonTotal <- getsState sgold
+  let screensaverBlurb = "This is one of the screensaver scenarios, not available from the main menu, with all factions controlled by AI. Feel free to take over or relinquish control at any moment, but to register a legitimate high score, choose a standard scenario instead.\n"
   let gameMode = okind comode gameModeId
       duplicateEOL '\n' = "\n\n"
       duplicateEOL c = T.singleton c
@@ -397,7 +398,10 @@ describeMode addTitle gameModeId = do
         , ( textFgToAS Color.cMeta "Rules of the game:"
           , MK.mrules gameMode )
         , ( textFgToAS Color.BrCyan "Running commentary:"
-          , T.concatMap duplicateEOL (MK.mreason gameMode) )
+          , T.concatMap duplicateEOL
+              (if MK.mattract gameMode
+               then screensaverBlurb <> MK.mreason gameMode
+               else MK.mreason gameMode) )
         , ( textFgToAS Color.cGreed "Hints, not needed unless stuck:"
           , T.concatMap duplicateEOL (MK.mhint gameMode) )
         ]

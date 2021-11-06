@@ -4,7 +4,6 @@ module Game.LambdaHack.Content.ModeKind
   ( pattern CAMPAIGN_SCENARIO, pattern INSERT_COIN, pattern NO_CONFIRMS
   , ModeKind(..), makeData
   , Caves, Roster(..)
-  , screensave
 #ifdef EXPOSE_INTERNAL
     -- * Internal operations
   , validateSingle, validateAll, validateSingleRoster, mandatoryGroups
@@ -59,10 +58,6 @@ data Roster = Roster
   , rosterAlly  :: [(Text, Text)]  -- ^ the initial aliance matrix
   }
   deriving Show
-
-screensave :: ModeKind -> ModeKind
-screensave mk = mk { mreason = "This is one of the screensaver scenarios, not available from the main menu, with all factions controlled by AI. Feel free to take over or relinquish control at any moment, but to register a legitimate high score, choose a standard scenario instead.\n" <> mreason mk
-        }
 
 -- | Catch invalid game mode kind definitions.
 validateSingle :: ModeKind -> [Text]

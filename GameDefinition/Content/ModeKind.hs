@@ -483,55 +483,55 @@ defenseEmpty = ModeKind
 
 -- * Screensaver modes
 
-screensaverRaid = screensave $ raid
+screensaverRaid = raid
   { mname   = "auto-raid (1)"
   , mfreq   = [(INSERT_COIN, 2), (NO_CONFIRMS, 1)]
   , mattract = True
   }
 
-screensaverBrawl = screensave $ brawl
+screensaverBrawl = brawl
   { mname   = "auto-brawl (2)"
   , mfreq   = [(NO_CONFIRMS, 1)]
   , mattract = True
   }
 
-screensaverCrawl = screensave $ crawl
+screensaverCrawl = crawl
   { mname   = "auto-crawl (long)"
   , mfreq   = [(NO_CONFIRMS, 1)]
   , mattract = True
   }
 
-screensaverShootout = screensave $ shootout
+screensaverShootout = shootout
   { mname   = "auto-shootout (3)"
   , mfreq   = [(INSERT_COIN, 2), (NO_CONFIRMS, 1)]
   , mattract = True
   }
 
-screensaverHunt = screensave $ hunt
+screensaverHunt = hunt
   { mname   = "auto-hunt (4)"
   , mfreq   = [(INSERT_COIN, 2), (NO_CONFIRMS, 1)]
   , mattract = True
   }
 
-screensaverEscape = screensave $ escape
+screensaverEscape = escape
   { mname   = "auto-escape (5)"
   , mfreq   = [(INSERT_COIN, 2), (NO_CONFIRMS, 1)]
   , mattract = True
   }
 
-screensaverZoo = screensave $ zoo
+screensaverZoo = zoo
   { mname   = "auto-zoo (6)"
   , mfreq   = [(NO_CONFIRMS, 1)]
   , mattract = True
   }
 
-screensaverAmbush = screensave $ ambush
+screensaverAmbush = ambush
   { mname   = "auto-ambush (7)"
   , mfreq   = [(NO_CONFIRMS, 1)]
   , mattract = True
   }
 
-screensaverSafari = screensave $ safari
+screensaverSafari = safari
   { mname   = "auto-safari"
   , mfreq   = [(INSERT_COIN, 1), (NO_CONFIRMS, 1)]
   , mattract = True
