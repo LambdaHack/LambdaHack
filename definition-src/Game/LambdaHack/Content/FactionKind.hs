@@ -5,7 +5,8 @@ module Game.LambdaHack.Content.FactionKind
   ( FactionKind(..), makeData
   , HiCondPoly, HiSummand, HiPolynomial, HiIndeterminant(..)
   , TeamContinuity(..), Outcome(..)
-  , teamExplorer, victoryOutcomes, deafeatOutcomes
+  , teamExplorer, hiHeroLong, hiHeroMedium, hiHeroShort, hiDweller
+  , victoryOutcomes, deafeatOutcomes
   , nameOutcomePast, nameOutcomeVerb, endMessageOutcome
 #ifdef EXPOSE_INTERNAL
     -- * Internal operations
@@ -100,6 +101,60 @@ instance Binary Outcome
 
 teamExplorer :: TeamContinuity
 teamExplorer = TeamContinuity 1
+
+hiHeroLong, hiHeroMedium, hiHeroShort, hiDweller :: HiCondPoly
+
+hiHeroShort =
+  [ ( [(HiLoot, 100)]
+    , [minBound..maxBound] )
+  , ( [(HiConst, 100)]
+    , victoryOutcomes )
+  , ( [(HiSprint, -500)]  -- speed matters, but only if fast enough
+    , victoryOutcomes )
+  , ( [(HiSurvival, 10)]  -- few points for surviving long
+    , deafeatOutcomes )
+  ]
+
+hiHeroMedium =
+  [ ( [(HiLoot, 200)]  -- usually no loot, but if so, no harm
+    , [minBound..maxBound] )
+  , ( [(HiConst, 200), (HiLoss, -10)]  -- normally, always positive
+    , victoryOutcomes )
+  , ( [(HiSprint, -500)]  -- speed matters, but only if fast enough
+    , victoryOutcomes )
+  , ( [(HiBlitz, -100)]  -- speed matters always
+    , victoryOutcomes )
+  , ( [(HiSurvival, 10)]  -- few points for surviving long
+    , deafeatOutcomes )
+  ]
+
+-- Heroes in long crawls rejoice in loot.
+hiHeroLong =
+  [ ( [(HiLoot, 10000)]  -- multiplied by fraction of collected
+    , [minBound..maxBound] )
+  , ( [(HiConst, 15)]  -- a token bonus in case all loot lost, but victory
+    , victoryOutcomes )
+  , ( [(HiSprint, -20000)]  -- speedrun bonus, if below this number of turns
+    , victoryOutcomes )
+  , ( [(HiBlitz, -100)]  -- speed matters always
+    , victoryOutcomes )
+  , ( [(HiSurvival, 10)]  -- few points for surviving long
+    , deafeatOutcomes )
+  ]
+
+-- Spawners get no points from loot, but try to kill
+-- all opponents fast or at least hold up for long.
+hiDweller = [ ( [(HiConst, 1000)]  -- no loot, so big win reward
+              , victoryOutcomes )
+            , ( [(HiConst, 1000), (HiLoss, -10)]
+              , victoryOutcomes )
+            , ( [(HiSprint, -1000)]  -- speedrun bonus, if below
+              , victoryOutcomes )
+            , ( [(HiBlitz, -100)]  -- speed matters
+              , victoryOutcomes )
+            , ( [(HiSurvival, 100)]
+              , deafeatOutcomes )
+            ]
 
 victoryOutcomes :: [Outcome]
 victoryOutcomes = [Escape, Conquer]

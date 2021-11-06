@@ -17,8 +17,8 @@ import Game.LambdaHack.Core.Prelude
 
 import           Content.ItemKindActor
 import           Content.ItemKindOrgan
-import qualified Game.LambdaHack.Content.ItemKind as IK
 import           Game.LambdaHack.Content.FactionKind
+import qualified Game.LambdaHack.Content.ItemKind as IK
 import           Game.LambdaHack.Definition.Ability
 import           Game.LambdaHack.Definition.Defs
 
@@ -224,59 +224,3 @@ playerHorror = FactionKind
   , fhasUI = False
   , finitUnderAI = True
   }
-
--- * Score formulas (conditional polynomials)
-
-hiHeroLong, hiHeroMedium, hiHeroShort, hiDweller :: HiCondPoly
-
-hiHeroShort =
-  [ ( [(HiLoot, 100)]
-    , [minBound..maxBound] )
-  , ( [(HiConst, 100)]
-    , victoryOutcomes )
-  , ( [(HiSprint, -500)]  -- speed matters, but only if fast enough
-    , victoryOutcomes )
-  , ( [(HiSurvival, 10)]  -- few points for surviving long
-    , deafeatOutcomes )
-  ]
-
-hiHeroMedium =
-  [ ( [(HiLoot, 200)]  -- usually no loot, but if so, no harm
-    , [minBound..maxBound] )
-  , ( [(HiConst, 200), (HiLoss, -10)]  -- normally, always positive
-    , victoryOutcomes )
-  , ( [(HiSprint, -500)]  -- speed matters, but only if fast enough
-    , victoryOutcomes )
-  , ( [(HiBlitz, -100)]  -- speed matters always
-    , victoryOutcomes )
-  , ( [(HiSurvival, 10)]  -- few points for surviving long
-    , deafeatOutcomes )
-  ]
-
--- Heroes in long crawls rejoice in loot.
-hiHeroLong =
-  [ ( [(HiLoot, 10000)]  -- multiplied by fraction of collected
-    , [minBound..maxBound] )
-  , ( [(HiConst, 15)]  -- a token bonus in case all loot lost, but victory
-    , victoryOutcomes )
-  , ( [(HiSprint, -20000)]  -- speedrun bonus, if below this number of turns
-    , victoryOutcomes )
-  , ( [(HiBlitz, -100)]  -- speed matters always
-    , victoryOutcomes )
-  , ( [(HiSurvival, 10)]  -- few points for surviving long
-    , deafeatOutcomes )
-  ]
-
--- Spawners get no points from loot, but try to kill
--- all opponents fast or at least hold up for long.
-hiDweller = [ ( [(HiConst, 1000)]  -- no loot, so big win reward
-              , victoryOutcomes )
-            , ( [(HiConst, 1000), (HiLoss, -10)]
-              , victoryOutcomes )
-            , ( [(HiSprint, -1000)]  -- speedrun bonus, if below
-              , victoryOutcomes )
-            , ( [(HiBlitz, -100)]  -- speed matters
-              , victoryOutcomes )
-            , ( [(HiSurvival, 100)]
-              , deafeatOutcomes )
-            ]
