@@ -20,7 +20,7 @@ inventoryMUnitTests :: TestTree
 inventoryMUnitTests = testGroup "inventoryMUnitTests" 
   [ testCase "getFull no stores " $
     do 
-      let testFn = getFull (toEnum 1) -- actor id
+      let testFn = getFull testActorId
                             (return SuitsEverything) -- m Suitability
                             (\_ _ _ _ _ -> T.pack "specific prompt")
                             (\_ _ _ _ _ -> T.pack "generic prompt") 
@@ -31,7 +31,7 @@ inventoryMUnitTests = testGroup "inventoryMUnitTests"
       fst result @?= Left "no items"
   , testCase "getFull no item in eqp store" $
     do
-      let testFn = getFull (toEnum 1) -- actor id
+      let testFn = getFull testActorId
                             (return SuitsEverything) -- m Suitability
                             (\_ _ _ _ _ -> T.pack "specific prompt")
                             (\_ _ _ _ _ -> T.pack "generic prompt") 
@@ -42,7 +42,7 @@ inventoryMUnitTests = testGroup "inventoryMUnitTests"
       fst result @?= Left "no items in equipment outfit"
   , testCase "getFull an item in eqp store" $
     do
-      let testFn = getFull (toEnum 1) -- actor id
+      let testFn = getFull testActorId
                             (return SuitsEverything) -- m Suitability
                             (\_ _ _ _ _ -> T.pack "specific prompt")
                             (\_ _ _ _ _ -> T.pack "generic prompt") 
@@ -50,5 +50,5 @@ inventoryMUnitTests = testGroup "inventoryMUnitTests"
                             False 
                             False
       result <- executorCli testFn testCliStateWithItem  
-      fst result @?= Right (CEqp,[(toEnum 1,(1,[]))])
+      fst result @?= Right (CEqp,[(testItemId,(1,[]))])
   ]

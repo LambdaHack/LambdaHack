@@ -24,6 +24,8 @@ import           Game.LambdaHack.Client.State
 import           Game.LambdaHack.Client.UI.HandleHelperM
 import           Game.LambdaHack.Client.UI.HandleHumanLocalM
 import qualified Game.LambdaHack.Client.UI.HumanCmd as HumanCmd
+
+import           Game.LambdaHack.Common.ActorState
 import           Game.LambdaHack.Common.Area
 import           Game.LambdaHack.Common.Item
 import           Game.LambdaHack.Common.ItemAspect
@@ -48,10 +50,12 @@ handleHumanLocalMUnitTests = testGroup "handleHumanLocalMUnitTests"
   [ testCase "verify stubLevel has tile element" $
     do let level = stubLevel -- (Just level) = EM.lookup (toEnum 0) (sdungeon testState)
         in (ltile level) ! (Point 0 0) @?= unknownId
+  , testCase "verify stubCliState has actor" $
+    do getActorBody testActorId (cliState stubCliState) @?= testActor
   , testCase "permittedProjectClient" $
     do
-      let testFn = permittedProjectClient (toEnum 1)
-      let stubItem = Item { jkind = IdentityObvious (toEnum 1), jfid = Nothing, jflavour = dummyFlavour }
+      let testFn = permittedProjectClient testActorId
+      let stubItem = Item { jkind = IdentityObvious (toContentId 0), jfid = Nothing, jflavour = dummyFlavour }
       let testItemFull = ItemFull { itemBase = stubItem, itemKindId = toContentId 0, itemKind = testItemKind, itemDisco = ItemDiscoFull emptyAspectRecord, itemSuspect = False }
       permittedProjectClientResultFnInMonad <- executorCli testFn stubCliState 
       let ultimateResult = (fst permittedProjectClientResultFnInMonad) testItemFull

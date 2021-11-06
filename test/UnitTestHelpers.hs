@@ -7,11 +7,15 @@ module UnitTestHelpers
   , stubLevel
   , stubState
   , stubCliState
+  , testActor
+  , testActorId
+  , testItemId
   , testCliStateWithItem
   , testItemKind
 -- #ifdef EXPOSE_INTERNAL
 --     -- * Internal operations
   , CliMock(..)
+  , CliState(..)
 -- #endif
   ) where
 
@@ -44,6 +48,7 @@ import           Game.LambdaHack.Client.UI.SessionUI
 import           Game.LambdaHack.Client.UI.UIOptions
 
 import           Game.LambdaHack.Common.Actor
+import           Game.LambdaHack.Common.ActorState
 import           Game.LambdaHack.Common.Area
 import           Game.LambdaHack.Common.ClientOptions
 import           Game.LambdaHack.Common.Faction
@@ -128,7 +133,15 @@ stubUIOptions = UIOptions
   , uMessageColors = []
   }
 
+
 testLevelDimension = 3
+
+-- using different arbitrary numbers for these so if tests fail to missing keys we'll have more of a clue
+testLevelId = toEnum 111
+testActorId = toEnum 112
+testItemId = toEnum 113
+
+testFactionId = toEnum 114
 
 testTileKind :: TileKind
 testTileKind = TileKind
@@ -221,13 +234,13 @@ testItemKind = ItemKind
   }
 
 testActorWithItem = 
-  testActor { beqp = EM.singleton (toEnum 1) (1,[])}
+  testActor { beqp = EM.singleton testItemId (1,[])}
 
 -- stublike state instance that should barely function for testing
 stubState :: State
-stubState = let singletonFactionUpdate _ = EM.singleton (toEnum 0) testFaction
-                singletonDungeonUpdate _ = EM.singleton (toEnum 0) stubLevel
-                singletonActorDUpdate _ = EM.singleton (toEnum 1) testActor
+stubState = let singletonFactionUpdate _ = EM.singleton testFactionId testFaction
+                singletonDungeonUpdate _ = EM.singleton testLevelId stubLevel
+                singletonActorDUpdate _ = EM.singleton testActorId testActor
                 copsUpdate oldCOps = oldCOps{corule=((corule oldCOps){rXmax=testLevelDimension, rYmax=testLevelDimension})}
                 stateWithMaxLevelDimension = updateCOpsAndCachedData copsUpdate emptyState
                 stateWithFaction = updateFactionD singletonFactionUpdate stateWithMaxLevelDimension
@@ -235,7 +248,7 @@ stubState = let singletonFactionUpdate _ = EM.singleton (toEnum 0) testFaction
                 stateWithDungeon = updateDungeon singletonDungeonUpdate stateWithActorD
             in stateWithDungeon
 
-testStateWithItem = let swapToItemActor _ = EM.singleton (toEnum 1) testActorWithItem
+testStateWithItem = let swapToItemActor _ = EM.singleton testActorId testActorWithItem
                      in updateActorD swapToItemActor stubState
 
 emptyCliState :: CliState
