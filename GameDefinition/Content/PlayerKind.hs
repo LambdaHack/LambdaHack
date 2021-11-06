@@ -5,7 +5,7 @@ module Content.PlayerKind
   , -- * Content
     content
 
-  , playerExplorer, playerExplorerShort, playerExplorerNoEscape, playerExplorerMedium, playerExplorerTrapped, playerCompetitor, playerCompetitorShort, playerCompetitorNoEscape, playerCompetitorTrapped, playerCivilian, playerConvict, playerMonster, playerAntiMonster, playerAntiMonsterCaptive, playerMonsterTourist, playerMonsterTouristPassive, playerMonsterCaptive, playerMonsterCaptiveNarrating, playerAnimal, playerAnimalMagnificent, playerAnimalExquisite, playerAnimalCaptive, playerAnimalNarrating, playerAnimalMagnificentNarrating, playerAnimalCaptiveNarrating, playerHorror
+  , playerExplorer, playerExplorerShort, playerExplorerNoEscape, playerExplorerMedium, playerExplorerTrapped, playerExplorerAutomated, playerExplorerAutomatedTrapped, playerCompetitor, playerCompetitorShort, playerCompetitorNoEscape, playerCivilian, playerConvict, playerMonster, playerAntiMonster, playerAntiMonsterCaptive, playerMonsterTourist, playerMonsterTouristPassive, playerMonsterCaptive, playerMonsterCaptiveNarrating, playerAnimal, playerAnimalMagnificent, playerAnimalExquisite, playerAnimalCaptive, playerAnimalNarrating, playerAnimalMagnificentNarrating, playerAnimalCaptiveNarrating, playerHorror
 #ifdef EXPOSE_INTERNAL
   -- * Group name patterns
 #endif
@@ -29,9 +29,9 @@ groupNames :: [GroupName PlayerKind]
 groupNames = []
 
 content :: [PlayerKind]
-content = [playerExplorer, playerExplorerShort, playerExplorerNoEscape, playerExplorerMedium, playerExplorerTrapped, playerCompetitor, playerCompetitorShort, playerCompetitorNoEscape, playerCompetitorTrapped, playerCivilian, playerConvict, playerMonster, playerAntiMonster, playerAntiMonsterCaptive, playerMonsterTourist, playerMonsterTouristPassive, playerMonsterCaptive, playerMonsterCaptiveNarrating, playerAnimal, playerAnimalMagnificent, playerAnimalExquisite, playerAnimalCaptive, playerAnimalNarrating, playerAnimalMagnificentNarrating, playerAnimalCaptiveNarrating, playerHorror]
+content = [playerExplorer, playerExplorerShort, playerExplorerNoEscape, playerExplorerMedium, playerExplorerTrapped, playerExplorerAutomated, playerExplorerAutomatedTrapped, playerCompetitor, playerCompetitorShort, playerCompetitorNoEscape, playerCivilian, playerConvict, playerMonster, playerAntiMonster, playerAntiMonsterCaptive, playerMonsterTourist, playerMonsterTouristPassive, playerMonsterCaptive, playerMonsterCaptiveNarrating, playerAnimal, playerAnimalMagnificent, playerAnimalExquisite, playerAnimalCaptive, playerAnimalNarrating, playerAnimalMagnificentNarrating, playerAnimalCaptiveNarrating, playerHorror]
 
-playerExplorer,            playerExplorerShort, playerExplorerNoEscape, playerExplorerMedium, playerExplorerTrapped, playerCompetitor, playerCompetitorShort, playerCompetitorNoEscape, playerCompetitorTrapped, playerCivilian, playerConvict, playerMonster, playerAntiMonster, playerAntiMonsterCaptive, playerMonsterTourist, playerMonsterTouristPassive, playerMonsterCaptive, playerMonsterCaptiveNarrating, playerAnimal, playerAnimalMagnificent, playerAnimalExquisite, playerAnimalCaptive, playerAnimalNarrating, playerAnimalMagnificentNarrating, playerAnimalCaptiveNarrating, playerHorror :: PlayerKind
+playerExplorer,            playerExplorerShort, playerExplorerNoEscape, playerExplorerMedium, playerExplorerTrapped, playerExplorerAutomated, playerExplorerAutomatedTrapped, playerCompetitor, playerCompetitorShort, playerCompetitorNoEscape, playerCivilian, playerConvict, playerMonster, playerAntiMonster, playerAntiMonsterCaptive, playerMonsterTourist, playerMonsterTouristPassive, playerMonsterCaptive, playerMonsterCaptiveNarrating, playerAnimal, playerAnimalMagnificent, playerAnimalExquisite, playerAnimalCaptive, playerAnimalNarrating, playerAnimalMagnificentNarrating, playerAnimalCaptiveNarrating, playerHorror :: PlayerKind
 
 -- * Teams
 
@@ -70,23 +70,30 @@ playerExplorerNoEscape = playerExplorer { fcanEscape = False
 playerExplorerMedium = playerExplorer { fhiCondPoly = hiHeroMedium }
 playerExplorerTrapped = playerExplorer { fcanEscape = False
                                        , fhiCondPoly = hiHeroLong }
+playerExplorerAutomated = playerExplorer
+  { fsymbol = 'a'
+  , ffreq = []
+  , fhasUI = False
+  , finitUnderAI = True
+  }
+playerExplorerAutomatedTrapped =
+  playerExplorerAutomated { fcanEscape = False
+                          , fhiCondPoly = hiHeroLong }
 
 -- ** teamCompetitor, symmetric opponets of teamExplorer
 
 playerCompetitor = playerExplorer
   { fsymbol = 'a'
+  , fname = "Indigo Researcher"
   , ffreq = []
   , fteam = teamCompetitor
   , fhasUI = False
   , finitUnderAI = True
   }
-playerCompetitorShort = playerCompetitor { fname = "Indigo Founder"
+playerCompetitorShort = playerCompetitor { fname = "Indigo Founder"  -- early
                                          , fhiCondPoly = hiHeroShort }
-playerCompetitorNoEscape = playerCompetitor { fname = "Indigo Researcher"
-                                            , fcanEscape = False
+playerCompetitorNoEscape = playerCompetitor { fcanEscape = False
                                             , fhiCondPoly = hiHeroMedium }
-playerCompetitorTrapped = playerCompetitor { fcanEscape = False
-                                           , fhiCondPoly = hiHeroLong }
 
 -- ** teamCivilian
 
@@ -161,8 +168,7 @@ playerMonsterTouristPassive =
   playerMonsterTourist { fhasUI = False
                        , finitUnderAI = True }
 playerMonsterCaptive = playerMonster {fneverEmpty = True}
-playerMonsterCaptiveNarrating = playerMonster { fneverEmpty = True
-                                              , fhasUI = True }
+playerMonsterCaptiveNarrating = playerAntiMonsterCaptive {fhasUI = True}
 
 -- ** teamAnimal
 
@@ -204,8 +210,7 @@ playerAnimalMagnificentNarrating =
   playerAnimalMagnificent { fhasPointman = True
                           , fhasUI = True
                           , finitUnderAI = False }
-playerAnimalCaptiveNarrating = playerAnimal { fneverEmpty = True
-                                            , fhasUI = True }
+playerAnimalCaptiveNarrating = playerAnimalCaptive {fhasUI = True}
 
 -- ** teamHorror, not much of a continuity intended, but can't be ignored
 

@@ -28,12 +28,12 @@ import Content.PlayerKind
   , playerAnimalNarrating
   , playerAntiMonster
   , playerAntiMonsterCaptive
-  , playerCompetitor
   , playerCompetitorNoEscape
   , playerCompetitorShort
-  , playerCompetitorTrapped
   , playerConvict
   , playerExplorer
+  , playerExplorerAutomated
+  , playerExplorerAutomatedTrapped
   , playerExplorerMedium
   , playerExplorerNoEscape
   , playerExplorerShort
@@ -667,7 +667,7 @@ rosterCrawlEmpty = Roster
   , rosterAlly = [] }
 
 rosterCrawlSurvival = rosterCrawl
-  { rosterList = [ ( playerCompetitor
+  { rosterList = [ ( playerExplorerAutomated
                    , [(-1, 3, HERO)] )
                  , ( playerMonster
                    , [(-4, 1, SCOUT_MONSTER), (-4, 3, MONSTER)] )
@@ -699,7 +699,7 @@ rosterBattle = Roster
   , rosterAlly = [("Monster Hive", "Animal Kingdom")] }
 
 rosterBattleDefense = rosterBattle
-  { rosterList = [ ( playerCompetitorTrapped
+  { rosterList = [ ( playerExplorerAutomatedTrapped
                    , [(-5, 5, SOLDIER_HERO)] )
                  , ( playerMonsterCaptiveNarrating
                    , [(-5, 35, MOBILE_MONSTER)] )
@@ -707,7 +707,7 @@ rosterBattleDefense = rosterBattle
                    , [(-5, 30, MOBILE_ANIMAL)] ) ] }
 
 rosterBattleSurvival = rosterBattle
-  { rosterList = [ ( playerCompetitorTrapped
+  { rosterList = [ ( playerExplorerAutomatedTrapped
                    , [(-5, 5, SOLDIER_HERO)] )
                  , ( playerMonsterCaptive
                    , [(-5, 35, MOBILE_MONSTER)] )
@@ -715,7 +715,7 @@ rosterBattleSurvival = rosterBattle
                    , [(-5, 30, MOBILE_ANIMAL)] ) ] }
 
 rosterDefense = rosterCrawl
-  { rosterList = [ ( playerCompetitor
+  { rosterList = [ ( playerExplorerAutomated
                    , [(-1, 3, HERO)] )
                  , ( playerAntiMonster
                    , [(-4, 1, SCOUT_MONSTER), (-4, 3, MONSTER)] )
