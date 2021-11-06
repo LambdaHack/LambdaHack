@@ -1,5 +1,5 @@
 {-# LANGUAGE DeriveGeneric, GeneralizedNewtypeDeriving #-}
--- | The type of kinds of players present in a game, both human
+-- | The type of kinds of factions present in a game, both human
 -- and computer-controlled.
 module Game.LambdaHack.Content.FactionKind
   ( FactionKind(..), makeData
@@ -27,23 +27,23 @@ import qualified Game.LambdaHack.Definition.Ability as Ability
 import           Game.LambdaHack.Definition.ContentData
 import           Game.LambdaHack.Definition.Defs
 
--- | Properties of a particular player.
+-- | Properties of a particular faction.
 data FactionKind = FactionKind
-  { fname         :: Text        -- ^ name of the player
+  { fname         :: Text        -- ^ name of the faction
   , ffreq         :: Freqs FactionKind
                                  -- ^ frequency within groups
   , fteam         :: TeamContinuity
-                                 -- ^ the team the player identifies with
+                                 -- ^ the team the faction identifies with
                                  --   across games and modes
   , fgroups       :: [GroupName ItemKind]
                                  -- ^ names of actor groups that may naturally
-                                 --   fall under player's control, e.g., upon
+                                 --   fall under faction's control, e.g., upon
                                  --   spawning or summoning
   , fskillsOther  :: Ability.Skills
                                  -- ^ fixed skill modifiers to the non-leader
                                  --   actors; also summed with skills implied
                                  --   by @fdoctrine@ (which is not fixed)
-  , fcanEscape    :: Bool        -- ^ the player can escape the dungeon
+  , fcanEscape    :: Bool        -- ^ the faction can escape the dungeon
   , fneverEmpty   :: Bool        -- ^ the faction declared killed if no actors
   , fhiCondPoly   :: HiCondPoly  -- ^ score formula (conditional polynomial)
   , fhasGender    :: Bool        -- ^ whether actors have gender
@@ -68,7 +68,7 @@ newtype TeamContinuity = TeamContinuity Int
 
 instance Binary TeamContinuity
 
--- | Conditional polynomial representing score calculation for this player.
+-- | Conditional polynomial representing score calculation for this faction.
 type HiCondPoly = [HiSummand]
 
 type HiSummand = (HiPolynomial, [Outcome])
@@ -89,8 +89,8 @@ instance Binary HiIndeterminant
 
 -- | Outcome of a game.
 data Outcome =
-    Escape    -- ^ the player escaped the dungeon alive
-  | Conquer   -- ^ the player won by eliminating all rivals
+    Escape    -- ^ the faction escaped the dungeon alive
+  | Conquer   -- ^ the faction won by eliminating all rivals
   | Defeated  -- ^ the faction lost the game in another way
   | Killed    -- ^ the faction was eliminated
   | Restart   -- ^ game is restarted; the quitter quit
@@ -195,7 +195,7 @@ validateSingle FactionKind{..} =
   ++ [ "fskillsOther not negative:" <+> fname
      | any ((>= 0) . snd) $ Ability.skillsToList fskillsOther ]
 
--- | Validate game player kinds together.
+-- | Validate game faction kinds together.
 validateAll :: [FactionKind] -> ContentData FactionKind -> [Text]
 validateAll _ _ = []  -- so far, always valid
 

@@ -17,33 +17,7 @@ import Game.LambdaHack.Core.Prelude
 import qualified Data.Text as T
 
 import Content.CaveKind hiding (content, groupNames, groupNamesSingleton)
-import Content.FactionKind
-  ( playerAnimal
-  , playerAnimalCaptive
-  , playerAnimalCaptiveNarrating
-  , playerAnimalExquisite
-  , playerAnimalMagnificent
-  , playerAnimalMagnificentNarrating
-  , playerAnimalNarrating
-  , playerAntiMonster
-  , playerAntiMonsterCaptive
-  , playerCompetitorNoEscape
-  , playerCompetitorShort
-  , playerConvict
-  , playerExplorer
-  , playerExplorerAutomated
-  , playerExplorerAutomatedTrapped
-  , playerExplorerMedium
-  , playerExplorerNoEscape
-  , playerExplorerShort
-  , playerExplorerTrapped
-  , playerHorror
-  , playerMonster
-  , playerMonsterCaptive
-  , playerMonsterCaptiveNarrating
-  , playerMonsterTourist
-  , playerMonsterTouristPassive
-  )
+import Content.FactionKind hiding (content, groupNames, groupNamesSingleton)
 import Content.ItemKindActor
 import Game.LambdaHack.Content.CaveKind (CaveKind, pattern DEFAULT_RANDOM)
 import Game.LambdaHack.Content.FactionKind (Outcome (..))
@@ -519,13 +493,13 @@ screensaverSafari = safari
 rosterRaid, rosterBrawl, rosterCrawl, rosterShootout, rosterHunt, rosterEscape, rosterZoo, rosterAmbush, rosterSafari, rosterCrawlEmpty, rosterCrawlSurvival, rosterSafariSurvival, rosterBattle, rosterBattleDefense, rosterBattleSurvival, rosterDefense, rosterDefenseEmpty :: Roster
 
 rosterRaid = Roster
-  { rosterList = [ ( playerAnimal  -- starting over escape
+  { rosterList = [ ( ANIMAL_REPRESENTATIVE  -- starting over escape
                    , [(-2, 2, ANIMAL)] )
-                 , ( playerExplorerShort
+                 , ( EXPLORER_SHORT
                    , [(-2, 2, HERO)] )
-                 , ( playerCompetitorShort
+                 , ( COMPETITOR_SHORT
                    , [(-2, 1, HERO)] )
-                 , (playerHorror, []) ]  -- for summoned monsters
+                 , (HORROR_REPRESENTATIVE, []) ]  -- for summoned monsters
   , rosterEnemy = [ ("Explorer", "Animal Kingdom")
                   , ("Explorer", "Horror Den")
                   , ("Indigo Founder", "Animal Kingdom")
@@ -533,25 +507,26 @@ rosterRaid = Roster
   , rosterAlly = [] }
 
 rosterBrawl = Roster
-  { rosterList = [ ( playerExplorerNoEscape
+  { rosterList = [ ( EXPLORER_NO_ESCAPE
                    , [(-2, 3, BRAWLER_HERO)] )
-                 , ( playerCompetitorNoEscape
+                 , ( COMPETITOR_NO_ESCAPE
                    , [(-2, 3, BRAWLER_HERO)] )
-                 , (playerHorror, []) ]
+                 , (HORROR_REPRESENTATIVE, []) ]
   , rosterEnemy = [ ("Explorer", "Indigo Researcher")
                   , ("Explorer", "Horror Den")
                   , ("Indigo Researcher", "Horror Den") ]
   , rosterAlly = [] }
 
 rosterCrawl = Roster
-  { rosterList = [ ( playerAnimal  -- starting over escape
+  { rosterList = [ ( ANIMAL_REPRESENTATIVE  -- starting over escape
                    , -- Fun from the start to avoid empty initial level:
                      [ (-1, 1 + 1 `d` 2, ANIMAL)
                      -- Huge battle at the end:
                      , (-10, 100, MOBILE_ANIMAL) ] )
-                 , ( playerExplorer  -- start on stairs so that stash is handy
+                 , ( EXPLORER_REPRESENTATIVE
+                       -- start on stairs so that stash is handy
                    , [(-1, 3, HERO)] )
-                 , ( playerMonster
+                 , ( MONSTER_REPRESENTATIVE
                    , [(-4, 1, SCOUT_MONSTER), (-4, 3, MONSTER)] ) ]
   , rosterEnemy = [ ("Explorer", "Monster Hive")
                   , ("Explorer", "Animal Kingdom") ]
@@ -562,55 +537,55 @@ rosterCrawl = Roster
 -- can't guess where the attack would come and so can't position his single
 -- scout to counter the stealthy advance.
 rosterShootout = Roster
-  { rosterList = [ ( playerExplorerNoEscape
+  { rosterList = [ ( EXPLORER_NO_ESCAPE
                    , [(-5, 2, RANGER_HERO), (-5, 1, SCOUT_HERO)] )
-                 , ( playerCompetitorNoEscape
+                 , ( COMPETITOR_NO_ESCAPE
                    , [(-5, 2, RANGER_HERO), (-5, 1, SCOUT_HERO)] )
-                 , (playerHorror, []) ]
+                 , (HORROR_REPRESENTATIVE, []) ]
   , rosterEnemy = [ ("Explorer", "Indigo Researcher")
                   , ("Explorer", "Horror Den")
                   , ("Indigo Researcher", "Horror Den") ]
   , rosterAlly = [] }
 
 rosterHunt = Roster
-  { rosterList = [ ( playerExplorerNoEscape
+  { rosterList = [ ( EXPLORER_NO_ESCAPE
                    , [(-6, 7, SOLDIER_HERO)] )
-                 , ( playerCompetitorNoEscape
+                 , ( COMPETITOR_NO_ESCAPE
                    , [(-6, 6, AMBUSHER_HERO), (-6, 1, SCOUT_HERO)] )
-                 , (playerHorror, []) ]
+                 , (HORROR_REPRESENTATIVE, []) ]
   , rosterEnemy = [ ("Explorer", "Indigo Researcher")
                   , ("Explorer", "Horror Den")
                   , ("Indigo Researcher", "Horror Den") ]
   , rosterAlly = [] }
 
 rosterEscape = Roster
-  { rosterList = [ ( playerCompetitorNoEscape  -- start on exit
+  { rosterList = [ ( COMPETITOR_NO_ESCAPE  -- start on exit
                    , [(-7, 6, AMBUSHER_HERO), (-7, 1, SCOUT_HERO)] )
-                 , ( playerExplorerMedium
+                 , ( EXPLORER_MEDIUM
                    , [(-7, 2, ESCAPIST_HERO), (-7, 1, SCOUT_HERO)] )
                      -- second on the list to let foes occupy the exit
-                 , (playerHorror, []) ]
+                 , (HORROR_REPRESENTATIVE, []) ]
   , rosterEnemy = [ ("Explorer", "Indigo Researcher")
                   , ("Explorer", "Horror Den")
                   , ("Indigo Researcher", "Horror Den") ]
   , rosterAlly = [] }
 
 rosterZoo = Roster
-  { rosterList = [ ( playerExplorerTrapped
+  { rosterList = [ ( EXPLORER_TRAPPED
                    , [(-8, 5, SOLDIER_HERO)] )
-                 , ( playerAnimalCaptive
+                 , ( ANIMAL_CAPTIVE
                    , [(-8, 100, MOBILE_ANIMAL)] )
-                 , (playerHorror, []) ]  -- for summoned monsters
+                 , (HORROR_REPRESENTATIVE, []) ]  -- for summoned monsters
   , rosterEnemy = [ ("Explorer", "Animal Kingdom")
                   , ("Explorer", "Horror Den") ]
   , rosterAlly = [] }
 
 rosterAmbush = Roster
-  { rosterList = [ ( playerExplorerNoEscape
+  { rosterList = [ ( EXPLORER_NO_ESCAPE
                    , [(-9, 5, AMBUSHER_HERO), (-9, 1, SCOUT_HERO)] )
-                 , ( playerCompetitorNoEscape
+                 , ( COMPETITOR_NO_ESCAPE
                    , [(-9, 12, SOLDIER_HERO)] )
-                 , (playerHorror, []) ]
+                 , (HORROR_REPRESENTATIVE, []) ]
   , rosterEnemy = [ ("Explorer", "Indigo Researcher")
                   , ("Explorer", "Horror Den")
                   , ("Indigo Researcher", "Horror Den") ]
@@ -618,13 +593,13 @@ rosterAmbush = Roster
 
 -- No horrors faction needed, because spawned heroes land in civilian faction.
 rosterSafari = Roster
-  { rosterList = [ ( playerMonsterTourist
+  { rosterList = [ ( MONSTER_TOURIST
                    , [(-4, 15, MONSTER)] )
-                 , ( playerConvict
+                 , ( CONVICT_REPRESENTATIVE
                    , [(-4, 2, CIVILIAN)] )
-                 , ( playerAnimalMagnificent
+                 , ( ANIMAL_MAGNIFICENT
                    , [(-7, 15, MOBILE_ANIMAL)] )
-                 , ( playerAnimalExquisite  -- start on escape
+                 , ( ANIMAL_EXQUISITE  -- start on escape
                    , [(-10, 20, MOBILE_ANIMAL)] ) ]
   , rosterEnemy = [ ("Monster Tourist Office", "Hunam Convict")
                   , ( "Monster Tourist Office"
@@ -639,74 +614,74 @@ rosterSafari = Roster
                    , "Animal Exquisite Herds and Packs Galore" ) ] }
 
 rosterCrawlEmpty = Roster
-  { rosterList = [ ( playerExplorer
+  { rosterList = [ ( EXPLORER_REPRESENTATIVE
                    , [(-1, 1, HERO)] )
-                 , (playerHorror, []) ]
+                 , (HORROR_REPRESENTATIVE, []) ]
                      -- for spawned and summoned monsters
   , rosterEnemy = []
   , rosterAlly = [] }
 
 rosterCrawlSurvival = rosterCrawl
-  { rosterList = [ ( playerExplorerAutomated
+  { rosterList = [ ( EXPLORER_AUTOMATED
                    , [(-1, 3, HERO)] )
-                 , ( playerMonster
+                 , ( MONSTER_REPRESENTATIVE
                    , [(-4, 1, SCOUT_MONSTER), (-4, 3, MONSTER)] )
-                 , ( playerAnimalNarrating
+                 , ( ANIMAL_NARRATING
                    , -- Fun from the start to avoid empty initial level:
                      [ (-1, 1 + 1 `d` 2, ANIMAL)
                      -- Huge battle at the end:
                      , (-10, 100, MOBILE_ANIMAL) ] ) ] }
 
 rosterSafariSurvival = rosterSafari
-  { rosterList = [ ( playerMonsterTouristPassive
+  { rosterList = [ ( MONSTER_TOURIST_PASSIVE
                    , [(-4, 15, MONSTER)] )
-                 , ( playerConvict
+                 , ( CONVICT_REPRESENTATIVE
                    , [(-4, 3, CIVILIAN)] )
-                 , ( playerAnimalMagnificentNarrating
+                 , ( ANIMAL_MAGNIFICENT_NARRATING
                    , [(-7, 20, MOBILE_ANIMAL)] )
-                 , ( playerAnimalExquisite
+                 , ( ANIMAL_EXQUISITE
                    , [(-10, 30, MOBILE_ANIMAL)] ) ] }
 
 rosterBattle = Roster
-  { rosterList = [ ( playerExplorerTrapped
+  { rosterList = [ ( EXPLORER_TRAPPED
                    , [(-5, 5, SOLDIER_HERO)] )
-                 , ( playerMonsterCaptive
+                 , ( MONSTER_CAPTIVE
                    , [(-5, 35, MOBILE_MONSTER)] )
-                 , ( playerAnimalCaptive
+                 , ( ANIMAL_CAPTIVE
                    , [(-5, 30, MOBILE_ANIMAL)] ) ]
   , rosterEnemy = [ ("Explorer", "Monster Hive")
                   , ("Explorer", "Animal Kingdom") ]
   , rosterAlly = [("Monster Hive", "Animal Kingdom")] }
 
 rosterBattleDefense = rosterBattle
-  { rosterList = [ ( playerExplorerAutomatedTrapped
+  { rosterList = [ ( EXPLORER_AUTOMATED_TRAPPED
                    , [(-5, 5, SOLDIER_HERO)] )
-                 , ( playerMonsterCaptiveNarrating
+                 , ( MONSTER_CAPTIVE_NARRATING
                    , [(-5, 35, MOBILE_MONSTER)] )
-                 , ( playerAnimalCaptive
+                 , ( ANIMAL_CAPTIVE
                    , [(-5, 30, MOBILE_ANIMAL)] ) ] }
 
 rosterBattleSurvival = rosterBattle
-  { rosterList = [ ( playerExplorerAutomatedTrapped
+  { rosterList = [ ( EXPLORER_AUTOMATED_TRAPPED
                    , [(-5, 5, SOLDIER_HERO)] )
-                 , ( playerMonsterCaptive
+                 , ( MONSTER_CAPTIVE
                    , [(-5, 35, MOBILE_MONSTER)] )
-                 , ( playerAnimalCaptiveNarrating
+                 , ( ANIMAL_CAPTIVE_NARRATING
                    , [(-5, 30, MOBILE_ANIMAL)] ) ] }
 
 rosterDefense = rosterCrawl
-  { rosterList = [ ( playerExplorerAutomated
+  { rosterList = [ ( EXPLORER_AUTOMATED
                    , [(-1, 3, HERO)] )
-                 , ( playerAntiMonster
+                 , ( MONSTER_ANTI
                    , [(-4, 1, SCOUT_MONSTER), (-4, 3, MONSTER)] )
-                 , ( playerAnimal
+                 , ( ANIMAL_REPRESENTATIVE
                    , [ (-1, 1 + 1 `d` 2, ANIMAL)
                      , (-10, 100, MOBILE_ANIMAL) ] ) ] }
 
 rosterDefenseEmpty = rosterCrawl
-  { rosterList = [ ( playerAntiMonsterCaptive
+  { rosterList = [ ( MONSTER_ANTI_CAPTIVE
                    , [(-4, 1, SCOUT_MONSTER)] )
-                 , (playerHorror, []) ]
+                 , (HORROR_REPRESENTATIVE, []) ]
                      -- for spawned and summoned animals
   , rosterEnemy = []
   , rosterAlly = [] }

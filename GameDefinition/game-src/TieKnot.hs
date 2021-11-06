@@ -80,6 +80,9 @@ tieKnotForAsync options@ServerOptions{ sallClear
                            Content.TileKind.groupNamesSingleton
                            Content.TileKind.groupNames
       coTileSpeedup = Tile.speedupTile sallClear cotile
+      cofact = FK.makeData Content.FactionKind.content
+                           Content.FactionKind.groupNamesSingleton
+                           Content.FactionKind.groupNames
       -- Common content operations, created from content definitions.
       -- Evaluated fully to discover errors ASAP and to free memory.
       -- Fail here, not inside server code, so that savefiles are not removed,
@@ -88,17 +91,16 @@ tieKnotForAsync options@ServerOptions{ sallClear
         { cocave = CK.makeData Content.CaveKind.content
                                Content.CaveKind.groupNamesSingleton
                                Content.CaveKind.groupNames
+        , cofact
         , coitem
-        , comode = MK.makeData Content.ModeKind.content
+        , comode = MK.makeData cofact
+                               Content.ModeKind.content
                                Content.ModeKind.groupNamesSingleton
                                Content.ModeKind.groupNames
         , coplace = PK.makeData cotile
                                 Content.PlaceKind.content
                                 Content.PlaceKind.groupNamesSingleton
                                 Content.PlaceKind.groupNames
-        , cofact = FK.makeData Content.FactionKind.content
-                               Content.FactionKind.groupNamesSingleton
-                               Content.FactionKind.groupNames
         , corule = RK.makeData Content.RuleKind.standardRules
         , cotile
         , coItemSpeedup

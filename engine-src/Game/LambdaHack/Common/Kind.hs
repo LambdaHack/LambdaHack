@@ -34,10 +34,10 @@ import           Game.LambdaHack.Definition.Defs
 -- | Operations for all content types, gathered together.
 data COps = COps
   { cocave        :: ContentData CaveKind   -- server only
+  , cofact        :: ContentData FactionKind
   , coitem        :: ContentData ItemKind
   , comode        :: ContentData ModeKind   -- server only
   , coplace       :: ContentData PlaceKind  -- server only, so far
-  , cofact        :: ContentData FactionKind
   , corule        :: RuleContent
   , cotile        :: ContentData TileKind
   , coItemSpeedup :: ItemSpeedup
@@ -53,10 +53,10 @@ instance Eq COps where
 emptyCOps :: COps
 emptyCOps = COps
   { cocave  = emptyContentData
+  , cofact  = emptyContentData
   , coitem  = emptyContentData
   , comode  = emptyContentData
   , coplace = emptyContentData
-  , cofact  = emptyContentData
   , corule  = emptyRuleContent
   , cotile  = emptyContentData
   , coItemSpeedup = emptyItemSpeedup

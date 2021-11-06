@@ -40,10 +40,10 @@ import qualified Game.LambdaHack.Common.Tile as Tile
 import           Game.LambdaHack.Common.Time
 import           Game.LambdaHack.Common.Types
 import qualified Game.LambdaHack.Content.CaveKind as CK
+import           Game.LambdaHack.Content.FactionKind
 import           Game.LambdaHack.Content.ItemKind (ItemKind)
 import qualified Game.LambdaHack.Content.ItemKind as IK
 import           Game.LambdaHack.Content.ModeKind
-import           Game.LambdaHack.Content.FactionKind
 import qualified Game.LambdaHack.Core.Dice as Dice
 import           Game.LambdaHack.Core.Random
 import qualified Game.LambdaHack.Definition.Ability as Ability
@@ -228,13 +228,16 @@ mapFromFuns domain =
         in m2 `M.union` m1
   in foldr fromFun M.empty
 
-resetFactions :: FactionDict -> ContentId ModeKind -> Int -> Dice.AbsDepth
-              -> ModeKind -> Bool
+resetFactions :: ContentData FactionKind -> FactionDict -> ContentId ModeKind
+              -> Int -> Dice.AbsDepth -> ModeKind -> Bool
               -> Rnd FactionDict
-resetFactions factionDold gameModeIdOld curDiffSerOld totalDepth mode
+resetFactions cofact factionDold gameModeIdOld curDiffSerOld totalDepth mode
               automateAll = do
-  let rawCreate (ix, (gkind@FactionKind{..}, initialActors)) = do
-        let castInitialActors (ln, d, actorGroup) = do
+  let rawCreate (ix, (fkGroup, initialActors)) = do
+        -- Validation of content guarantess the existence of such faction kind.
+        gkindId <- fromJust <$> opick cofact fkGroup (const True)
+        let gkind@FactionKind{..} = okind cofact gkindId
+            castInitialActors (ln, d, actorGroup) = do
               n <- castDice (Dice.AbsDepth $ abs ln) totalDepth d
               return (ln, n, actorGroup)
         ginitial <- mapM castInitialActors initialActors
@@ -297,7 +300,7 @@ gameReset :: MonadServer m
 gameReset serverOptions mGameMode mrandom = do
   -- Dungeon seed generation has to come first, to ensure item boosting
   -- is determined by the dungeon RNG.
-  cops@COps{comode} <- getsState scops
+  cops@COps{cofact, comode} <- getsState scops
   dungeonSeed <- getSetGen $ sdungeonRng serverOptions `mplus` mrandom
   srandom <- getSetGen $ smainRng serverOptions `mplus` mrandom
   let srngs = RNGs (Just dungeonSeed) (Just srandom)
@@ -322,7 +325,7 @@ gameReset serverOptions mGameMode mrandom = do
         flavour <- dungeonFlavourMap cops flavourOld
         (discoKind, sdiscoKindRev) <- serverDiscos cops discoKindRevOld
         freshDng <- DungeonGen.dungeonGen cops serverOptions $ mcaves mode
-        factionD <- resetFactions factionDold gameModeIdOld
+        factionD <- resetFactions cofact factionDold gameModeIdOld
                                   (cdiff curChalSer)
                                   (DungeonGen.freshTotalDepth freshDng)
                                   mode (sautomateAll serverOptions)

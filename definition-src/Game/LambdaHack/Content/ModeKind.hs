@@ -17,9 +17,9 @@ import Game.LambdaHack.Core.Prelude
 import qualified Data.Text as T
 
 import           Game.LambdaHack.Content.CaveKind (CaveKind)
-import           Game.LambdaHack.Content.ItemKind (ItemKind)
 import           Game.LambdaHack.Content.FactionKind
-  (Outcome (..), FactionKind (..))
+  (FactionKind (..), Outcome (..))
+import           Game.LambdaHack.Content.ItemKind (ItemKind)
 import qualified Game.LambdaHack.Core.Dice as Dice
 import           Game.LambdaHack.Definition.ContentData
 import           Game.LambdaHack.Definition.Defs
@@ -31,7 +31,7 @@ data ModeKind = ModeKind
   , mfreq     :: Freqs ModeKind  -- ^ frequency within groups
   , mtutorial :: Bool            -- ^ whether to show tutorial messages, etc.
   , mattract  :: Bool            -- ^ whether this is an attract mode
-  , mroster   :: Roster          -- ^ players taking part in the game
+  , mroster   :: Roster          -- ^ factions taking part in the game
   , mcaves    :: Caves           -- ^ arena of the game
   , mendMsg   :: [(Outcome, Text)]
       -- ^ messages displayed at each particular game ends; if message empty,
@@ -46,48 +46,61 @@ data ModeKind = ModeKind
 -- | Requested cave groups for particular level intervals.
 type Caves = [([Int], [GroupName CaveKind])]
 
--- | The specification of players for the game mode.
+-- | The specification of factions for the game mode.
 data Roster = Roster
-  { rosterList  :: [( FactionKind
+  { rosterList  :: [( GroupName FactionKind
                     , [(Int, Dice.Dice, GroupName ItemKind)] )]
-      -- ^ players and levels, numbers and groups of their initial members
+      -- ^ factions and levels, numbers and groups of their initial members
   , rosterEnemy :: [(Text, Text)]  -- ^ the initial enmity matrix
   , rosterAlly  :: [(Text, Text)]  -- ^ the initial aliance matrix
   }
   deriving Show
 
 -- | Catch invalid game mode kind definitions.
-validateSingle :: ModeKind -> [Text]
-validateSingle ModeKind{..} =
+validateSingle :: ContentData FactionKind -> ModeKind -> [Text]
+validateSingle cofact ModeKind{..} =
   [ "mname longer than 20" | T.length mname > 20 ]
   ++ let f cave@(ns, l) =
            [ "not enough or too many levels for required cave groups:"
              <+> tshow cave
            | length ns /= length l ]
      in concatMap f mcaves
-  ++ validateSingleRoster mcaves mroster
+  ++ validateSingleRoster cofact mcaves mroster
 
 -- | Checks, in particular, that there is at least one faction with fneverEmpty
 -- or the game would get stuck as soon as the dungeon is devoid of actors.
-validateSingleRoster :: Caves -> Roster -> [Text]
-validateSingleRoster caves Roster{..} =
-  [ "no player keeps the dungeon alive"
-  | all (\(pl, _) -> not $ fneverEmpty pl) rosterList ]
-  ++ [ "not exactly one UI client"
-     | length (filter (\(pl, _) -> fhasUI pl) rosterList) /= 1 ]
-  ++ let tokens = map (\(pl, _) -> fteam pl) rosterList
-         nubTokens = nub $ sort tokens
-     in [ "duplicate team continuity token"
+validateSingleRoster :: ContentData FactionKind -> Caves -> Roster -> [Text]
+validateSingleRoster cofact caves Roster{..} =
+  let emptyGroups = filter (not . oexistsGroup cofact) $ map fst rosterList
+  in [ "the following faction kind groups have no representative with non-zero frequency:"
+       <+> T.intercalate ", " (map displayGroupName emptyGroups)
+     | not $ null emptyGroups ]
+  ++ let fkKeepsAlive acc _ _ fk = acc && fneverEmpty fk
+           -- all of group elements have to keep level alive, hence conjunction
+         fkGroupKeepsAlive (fkGroup, _) =
+           ofoldlGroup' cofact fkGroup fkKeepsAlive True
+     in [ "potentially no faction keeps the dungeon alive"
+        | not $ any fkGroupKeepsAlive rosterList ]
+  ++ let fkHasUIor acc _ _ fk = acc || fhasUI fk
+           -- single group element having UI already incurs the risk
+           -- of duplication, hence disjunction
+         fkGroupHasUIor (fkGroup, _) =
+           ofoldlGroup' cofact fkGroup fkHasUIor False
+     in [ "potentially more than one UI client"
+        | length (filter fkGroupHasUIor rosterList) > 1 ]
+  ++ let fkHasUIand acc _ _ fk = acc && fhasUI fk
+           -- single group element missing UI already incurs the risk
+           -- of no UI in the whole game, hence disjunction
+         fkGroupHasUIand (fkGroup, _) =
+           ofoldlGroup' cofact fkGroup fkHasUIand True
+     in [ "potentially less than one UI client"
+        | length (filter fkGroupHasUIand rosterList) < 1 ]
+  ++ let fkTokens acc _ _ fk = fteam fk : acc
+         fkGroupTokens (fkGroup, _) = ofoldlGroup' cofact fkGroup fkTokens []
+         tokens = concatMap (nub . sort . fkGroupTokens) rosterList
+         nubTokens = nub . sort $ tokens
+     in [ "potentially duplicate team continuity token"
         | length tokens /= length nubTokens ]
-  ++ let checkPl field plName =
-           [ plName <+> "is not a player name in" <+> field
-           | all (\(pl, _) -> fname pl /= plName) rosterList ]
-         checkDipl field (pl1, pl2) =
-           [ "self-diplomacy in" <+> field | pl1 == pl2 ]
-           ++ checkPl field pl1
-           ++ checkPl field pl2
-     in concatMap (checkDipl "rosterEnemy") rosterEnemy
-        ++ concatMap (checkDipl "rosterAlly") rosterAlly
   ++ let keys = concatMap fst caves
          minD = minimum keys
          maxD = maximum keys
@@ -96,9 +109,9 @@ validateSingleRoster caves Roster{..} =
            [ "initial actor levels not among caves:" <+> tshow i3
            | ln `notElem` keys ]
      in concatMap f rosterList
-        ++ [ "player confused by both positive and negative level numbers"
+        ++ [ "player is confused by both positive and negative level numbers"
            | signum minD /= signum maxD ]
-        ++ [ "player confused by level numer zero"
+        ++ [ "player is confused by level numer zero"
            | any (== 0) keys ]
 
 -- | Validate game mode kinds together.
@@ -116,9 +129,11 @@ pattern CAMPAIGN_SCENARIO, INSERT_COIN :: GroupName ModeKind
 pattern CAMPAIGN_SCENARIO = GroupName "campaign scenario"
 pattern INSERT_COIN = GroupName "insert coin"
 
-makeData :: [ModeKind] -> [GroupName ModeKind] -> [GroupName ModeKind]
+makeData :: ContentData FactionKind
+         -> [ModeKind] -> [GroupName ModeKind] -> [GroupName ModeKind]
          -> ContentData ModeKind
-makeData content groupNamesSingleton groupNames =
-  makeContentData "ModeKind" mname mfreq validateSingle validateAll content
+makeData cofact content groupNamesSingleton groupNames =
+  makeContentData "ModeKind" mname mfreq (validateSingle cofact) validateAll
+                  content
                   groupNamesSingleton
                   (mandatoryGroups ++ groupNames)
