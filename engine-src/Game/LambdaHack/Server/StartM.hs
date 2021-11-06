@@ -239,11 +239,11 @@ resetFactions factionDold gameModeIdOld curDiffSerOld totalDepth players = do
               mapFromFuns Color.legalFgCol
                           [colorToTeamName, colorToPlainName, colorToFancyName]
             colorName = T.toLower $ head $ T.words fname
-            prefix = case (fleaderMode, finitUnderAI) of
-              (Nothing, False) -> "Uncoordinated"
-              (Nothing, True) -> "Loose"
-              (Just{}, False) -> "Autonomous"
-              (Just{}, True) -> "Controlled"
+            prefix = case (fhasPointman, finitUnderAI) of
+              (False, False) -> "Uncoordinated"
+              (False, True) -> "Loose"
+              (True, False) -> "Autonomous"
+              (True, True) -> "Controlled"
             gnameNew = prefix <+> if fhasGender
                                   then makePhrase [MU.Ws $ MU.Text fname]
                                   else fname

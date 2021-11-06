@@ -50,7 +50,6 @@ playerExplorer = PlayerKind
   , finitDoctrine = TExplore
   , fspawnsFast = False
   , fhasPointman = True
-  , fleaderMode = Just ()
   , fhasUI = True
   , finitUnderAI = False
   }
@@ -66,7 +65,6 @@ playerExplorerTrapped = playerExplorer { fcanEscape = False
 playerCompetitor = playerExplorer
   { fsymbol = 'a'
   , ffreq = []
-  , fleaderMode = Just ()
   , fhasUI = False
   , finitUnderAI = True
   }
@@ -92,8 +90,7 @@ playerCivilian = PlayerKind
   , fhasGender = True
   , finitDoctrine = TPatrol
   , fspawnsFast = False
-  , fhasPointman = False
-  , fleaderMode = Nothing  -- unorganized
+  , fhasPointman = False  -- unorganized
   , fhasUI = False
   , finitUnderAI = True
   }
@@ -105,7 +102,6 @@ playerHunamConvict =
                  , fname = "Hunam Convict"
                  , ffreq = []
                  , fhasPointman = True  -- convicts organize better
-                 , fleaderMode = Just ()
                  , finitUnderAI = True }
 
 -- ** teamMonster
@@ -123,7 +119,6 @@ playerMonster = PlayerKind
   , finitDoctrine = TExplore
   , fspawnsFast = True
   , fhasPointman = True
-  , fleaderMode = Just ()
   , fhasUI = False
   , finitUnderAI = True
   }
@@ -131,7 +126,6 @@ playerMonster = PlayerKind
 playerAntiMonster = playerMonster
   { fsymbol = 'b'
   , ffreq = []
-  , fleaderMode = Just ()
   , fhasUI = True
   , finitUnderAI = False
   }
@@ -147,11 +141,9 @@ playerMonsterTourist =
     , fhiCondPoly = hiHeroMedium
     , finitDoctrine = TFollow  -- follow-the-guide, as tourists do
     , fspawnsFast = False  -- on a trip, so no spawning
-    , fleaderMode = Just ()
     , finitUnderAI = False }
 playerMonsterTouristPassive =
-  playerMonsterTourist { fleaderMode = Just ()
-                       , fhasUI = False
+  playerMonsterTourist { fhasUI = False
                        , finitUnderAI = True }
 playerMonsterCaptive = playerMonster {fneverEmpty = True}
 playerMonsterCaptiveNarrating = playerMonster { fneverEmpty = True
@@ -172,7 +164,6 @@ playerAnimal = PlayerKind
   , finitDoctrine = TRoam  -- can't pick up, so no point exploring
   , fspawnsFast = True
   , fhasPointman = False
-  , fleaderMode = Nothing
   , fhasUI = False
   , finitUnderAI = True
   }
@@ -192,7 +183,6 @@ playerAnimalCaptive = playerAnimal {fneverEmpty = True}
 playerAnimalNarrating = playerAnimal {fhasUI = True}
 playerAnimalMagnificentNarrating =
   playerAnimalMagnificent { fhasPointman = True
-                          , fleaderMode = Just ()
                           , fhasUI = True
                           , finitUnderAI = False }
 playerAnimalCaptiveNarrating = playerAnimal { fneverEmpty = True
@@ -218,7 +208,6 @@ playerHorror = PlayerKind
   , finitDoctrine = TPatrol  -- disoriented
   , fspawnsFast = False
   , fhasPointman = False
-  , fleaderMode = Nothing
   , fhasUI = False
   , finitUnderAI = True
   }

@@ -482,10 +482,10 @@ drawFrameStatus drawnLevelId = do
       -- The indicators must fit, they are the actual information.
       widthXhairOrItem = widthTgt - T.length pathCsr
       nMember = MU.Ord $ 1 + sum (EM.elems $ gvictims fact)
-      fallback = if PLK.fleaderMode (gplayer fact) == Nothing
-                 then "This faction never picks a pointman"
-                 else makePhrase
+      fallback = if PLK.fhasPointman (gplayer fact)
+                 then makePhrase
                         ["Waiting for", nMember, "team member to spawn"]
+                 else "This faction never picks a pointman"
       leaderName bUI = trimTgtDesc (widthTgt - 10) (bname bUI)
       leaderBlurbLong = maybe fallback (\bUI ->
         "Pointman:" <+> leaderName bUI) mbodyUI

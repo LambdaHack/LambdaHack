@@ -315,8 +315,7 @@ verifyCaches = do
 -- So, leaderless factions and spawner factions do not keep an arena,
 -- even though the latter usually has a leader for most of the game.
 keepArenaFact :: Faction -> Bool
-keepArenaFact fact = fleaderMode (gplayer fact) /= Nothing
-                     && fneverEmpty (gplayer fact)
+keepArenaFact fact = fhasPointman (gplayer fact) && fneverEmpty (gplayer fact)
 
 -- We assume the actor in the second argument has HP <= 0 or is going to be
 -- dominated right now. Even if the actor is to be dominated,
@@ -355,7 +354,7 @@ electLeader fid lid aidToReplace = do
 setFreshLeader :: MonadServerAtomic m => FactionId -> ActorId -> m ()
 setFreshLeader fid aid = do
   fact <- getsState $ (EM.! fid) . sfactionD
-  unless (fleaderMode (gplayer fact) == Nothing) $ do
+  when (fhasPointman (gplayer fact)) $ do
     -- First update and send Perception so that the new leader
     -- may report his environment.
     b <- getsState $ getActorBody aid

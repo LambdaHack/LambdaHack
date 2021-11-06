@@ -1192,7 +1192,7 @@ chase actorSk aid avoidAmbient retry = do
   fact <- getsState $ (EM.! bfid body) . sfactionD
   mtgtMPath <- getsClient $ EM.lookup aid . stargetD
   let -- With no leader, the goal is vague, so permit arbitrary detours.
-      relaxed = isNothing $ fleaderMode (gplayer fact)
+      relaxed = not $ fhasPointman (gplayer fact)
       strAmbient avoid = case mtgtMPath of
         Just TgtAndPath{tapPath=Just AndPath{pathList=q : _, ..}} ->
           if pathGoal == bpos body

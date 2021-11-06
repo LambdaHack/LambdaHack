@@ -50,10 +50,7 @@ data PlayerKind = PlayerKind
       -- ^ spawns fast enough that switching pointman to another level
       --   to optimize spawning is a winning tactics, which would spoil
       --   the fun, so switching is disabled in UI and AI clients
-  , fhasPointman  :: Bool        -- ^ if faction has an actor, it has a Pointman
-  , fleaderMode   :: Maybe ()
-                                 -- ^ whether the faction can have a leader
-                                 --   and what's its switching mode;
+  , fhasPointman  :: Bool        -- ^ whether the faction can have a pointman
   , fhasUI        :: Bool        -- ^ does the faction have a UI client
                                  --   (for control or passive observation)
   , finitUnderAI  :: Bool        -- ^ is the faction initially under AI control
@@ -105,7 +102,7 @@ teamExplorer = TeamContinuity 1
 screensavePlayerKind :: PlayerKind -> PlayerKind
 screensavePlayerKind player@(PlayerKind{finitUnderAI=True}) = player
 screensavePlayerKind player = player { finitUnderAI = True
-                                          , fleaderMode = Just () }
+                                     , fhasPointman = True }
 
 victoryOutcomes :: [Outcome]
 victoryOutcomes = [Escape, Conquer]
