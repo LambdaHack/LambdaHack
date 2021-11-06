@@ -198,6 +198,13 @@ validateSingle FactionKind{..} =
   [ "fname longer than 50" | T.length fname > 50 ]
   ++ [ "fskillsOther not negative:" <+> fname
      | any ((>= 0) . snd) $ Ability.skillsToList fskillsOther ]
+  ++ let checkLoveHate l team =
+           [ "love-hate relationship for" <+> tshow team | team `elem` l ]
+     in concatMap (checkLoveHate fenemyTeams) falliedTeams
+  ++ let checkDipl field l team =
+           [ "self-diplomacy in" <+> field | length (elemIndices team l) > 1 ]
+     in concatMap (checkDipl "fenemyTeams" fenemyTeams) fenemyTeams
+        ++ concatMap (checkDipl "falliedTeams" falliedTeams) falliedTeams
 
 -- | Validate game faction kinds together.
 validateAll :: [FactionKind] -> ContentData FactionKind -> [Text]

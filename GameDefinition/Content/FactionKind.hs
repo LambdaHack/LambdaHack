@@ -297,7 +297,7 @@ factAnimalExquisite = factAnimal
   , fneverEmpty = True
   , fenemyTeams =
       [teamMonster, teamExplorer, teamCompetitor, teamCivilian, teamConvict]
-  , falliedTeams = [teamMonster]
+  , falliedTeams = []
   }
 factAnimalCaptive = factAnimal
   { ffreq = [(ANIMAL_CAPTIVE, 1)]
