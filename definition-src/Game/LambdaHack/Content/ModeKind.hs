@@ -3,7 +3,7 @@
 module Game.LambdaHack.Content.ModeKind
   ( pattern CAMPAIGN_SCENARIO, pattern INSERT_COIN
   , ModeKind(..), makeData
-  , Caves, Roster(..)
+  , Caves, Roster
 #ifdef EXPOSE_INTERNAL
     -- * Internal operations
   , validateSingle, validateAll, validateSingleRoster, mandatoryGroups
@@ -46,15 +46,10 @@ data ModeKind = ModeKind
 -- | Requested cave groups for particular level intervals.
 type Caves = [([Int], [GroupName CaveKind])]
 
--- | The specification of factions for the game mode.
-data Roster = Roster
-  { rosterList  :: [( GroupName FactionKind
-                    , [(Int, Dice.Dice, GroupName ItemKind)] )]
-      -- ^ factions and levels, numbers and groups of their initial members
-  , rosterEnemy :: [(Text, Text)]  -- ^ the initial enmity matrix
-  , rosterAlly  :: [(Text, Text)]  -- ^ the initial aliance matrix
-  }
-  deriving Show
+-- | The specification of factions and of levels, numbers and groups
+-- of their initial members.
+type Roster = [( GroupName FactionKind
+               , [(Int, Dice.Dice, GroupName ItemKind)] )]
 
 -- | Catch invalid game mode kind definitions.
 validateSingle :: ContentData FactionKind -> ModeKind -> [Text]
@@ -70,8 +65,8 @@ validateSingle cofact ModeKind{..} =
 -- | Checks, in particular, that there is at least one faction with fneverEmpty
 -- or the game would get stuck as soon as the dungeon is devoid of actors.
 validateSingleRoster :: ContentData FactionKind -> Caves -> Roster -> [Text]
-validateSingleRoster cofact caves Roster{..} =
-  let emptyGroups = filter (not . oexistsGroup cofact) $ map fst rosterList
+validateSingleRoster cofact caves roster =
+  let emptyGroups = filter (not . oexistsGroup cofact) $ map fst roster
   in [ "the following faction kind groups have no representative with non-zero frequency:"
        <+> T.intercalate ", " (map displayGroupName emptyGroups)
      | not $ null emptyGroups ]
@@ -80,24 +75,24 @@ validateSingleRoster cofact caves Roster{..} =
          fkGroupKeepsAlive (fkGroup, _) =
            ofoldlGroup' cofact fkGroup fkKeepsAlive True
      in [ "potentially no faction keeps the dungeon alive"
-        | not $ any fkGroupKeepsAlive rosterList ]
+        | not $ any fkGroupKeepsAlive roster ]
   ++ let fkHasUIor acc _ _ fk = acc || fhasUI fk
            -- single group element having UI already incurs the risk
            -- of duplication, hence disjunction
          fkGroupHasUIor (fkGroup, _) =
            ofoldlGroup' cofact fkGroup fkHasUIor False
      in [ "potentially more than one UI client"
-        | length (filter fkGroupHasUIor rosterList) > 1 ]
+        | length (filter fkGroupHasUIor roster) > 1 ]
   ++ let fkHasUIand acc _ _ fk = acc && fhasUI fk
            -- single group element missing UI already incurs the risk
            -- of no UI in the whole game, hence disjunction
          fkGroupHasUIand (fkGroup, _) =
            ofoldlGroup' cofact fkGroup fkHasUIand True
      in [ "potentially less than one UI client"
-        | length (filter fkGroupHasUIand rosterList) < 1 ]
+        | length (filter fkGroupHasUIand roster) < 1 ]
   ++ let fkTokens acc _ _ fk = fteam fk : acc
          fkGroupTokens (fkGroup, _) = ofoldlGroup' cofact fkGroup fkTokens []
-         tokens = concatMap (nub . sort . fkGroupTokens) rosterList
+         tokens = concatMap (nub . sort . fkGroupTokens) roster
          nubTokens = nub . sort $ tokens
      in [ "potentially duplicate team continuity token"
         | length tokens /= length nubTokens ]
@@ -108,7 +103,7 @@ validateSingleRoster cofact caves Roster{..} =
          g i3@(ln, _, _) =
            [ "initial actor levels not among caves:" <+> tshow i3
            | ln `notElem` keys ]
-     in concatMap f rosterList
+     in concatMap f roster
         ++ [ "player is confused by both positive and negative level numbers"
            | signum minD /= signum maxD ]
         ++ [ "player is confused by level numer zero"

@@ -20,7 +20,6 @@ import           Data.Key (mapWithKeyM_)
 import qualified Data.Map.Strict as M
 import qualified Data.Set as S
 import qualified Data.Text as T
-import           Data.Tuple (swap)
 import qualified NLP.Miniutter.English as MU
 import qualified System.Random.SplitMix32 as SM
 
@@ -271,27 +270,32 @@ resetFactions cofact factionDold gameModeIdOld curDiffSerOld totalDepth mode
             gvictimsD = gvictimsDnew
             gstash = Nothing
         return (toEnum $ if fhasUI then ix else -ix, Faction{..})
-  lFs <- mapM rawCreate $ zip [1..] $ rosterList (mroster mode)
-  let swapIx l =
-        let findFactionName name = find ((name ==) . fname . gkind . snd)
-            f (name1, name2) =
-              case (findFactionName name1 lFs, findFactionName name2 lFs) of
-                (Just (ix1, _), Just (ix2, _)) -> (ix1, ix2)
-                _ -> error $ "unknown faction"
-                             `showFailure` ((name1, name2), lFs)
-            ixs = map f l
-        -- Only symmetry is ensured, everything else is permitted, e.g.,
-        -- a faction in alliance with two others that are at war.
-        in ixs ++ map swap ixs
-      mkDipl diplMode =
+  lFs <- mapM rawCreate $ zip [1..] $ mroster mode
+  let mkDipl diplMode =
         let f (ix1, ix2) =
-              let adj fact = fact {gdipl = EM.insert ix2 diplMode (gdipl fact)}
-              in EM.adjust adj ix1
+              let adj1 fact = fact {gdipl = EM.insert ix2 diplMode (gdipl fact)}
+              in EM.adjust adj1 ix1
         in foldr f
+      -- Only symmetry is ensured, everything else is permitted,
+      -- e.g., a faction in alliance with two others that are at war.
+      pairsFromFaction :: (FactionKind -> [TeamContinuity])
+                       -> (FactionId, Faction)
+                       -> [(FactionId, FactionId)]
+      pairsFromFaction selector (fid, fact) =
+        let teams = selector $ gkind fact
+            hasTeam team (_, fact2) = team == fteam (gkind fact2)
+            pairsFromTeam team = case find (hasTeam team) lFs of
+              Just (fid2, _) -> [(fid, fid2), (fid2, fid)]
+              Nothing -> []
+        in concatMap pairsFromTeam teams
       rawFs = EM.fromList lFs
-      -- War overrides alliance, so 'warFs' second.
-      allianceFs = mkDipl Alliance rawFs (swapIx (rosterAlly (mroster mode)))
-      warFs = mkDipl War allianceFs (swapIx (rosterEnemy (mroster mode)))
+      -- War overrides alliance, so 'warFs' second. Consequently, if a faction
+      -- is allied with a faction that is at war with them, they will be
+      -- symmetrically at war.
+      allianceFs = mkDipl Alliance rawFs
+                   $ concatMap (pairsFromFaction falliedTeams) $ EM.assocs rawFs
+      warFs = mkDipl War allianceFs
+              $ concatMap (pairsFromFaction fenemyTeams) $ EM.assocs allianceFs
   return $! warFs
 
 gameReset :: MonadServer m
