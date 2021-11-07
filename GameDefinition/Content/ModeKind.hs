@@ -572,9 +572,9 @@ rosterSafari =
     , [(-10, 20, MOBILE_ANIMAL)] ) ]
 
 rosterCrawlEmpty =
-  [ ( EXPLORER_CAPTIVE
+  [ ( EXPLORER_PACIFIST
     , [(-1, 1, HERO)] )
-  , (HORROR_CAPTIVE, []) ]
+  , (HORROR_PACIFIST, []) ]
       -- for spawned and summoned monsters
 
 rosterCrawlSurvival =
@@ -629,9 +629,9 @@ rosterDefense =
       , (-10, 100, MOBILE_ANIMAL) ] ) ]
 
 rosterDefenseEmpty =
-  [ ( MONSTER_ANTI_CAPTIVE
+  [ ( MONSTER_ANTI_PACIFIST
     , [(-4, 1, SCOUT_MONSTER)] )
-  , (HORROR_CAPTIVE, []) ]
+  , (HORROR_PACIFIST, []) ]
       -- for spawned and summoned animals
 
 cavesRaid, cavesBrawl, cavesCrawl, cavesShootout, cavesHunt, cavesEscape, cavesZoo, cavesAmbush, cavesSafari, cavesDig, cavesSee, cavesShort, cavesCrawlEmpty, cavesBattle :: Caves
