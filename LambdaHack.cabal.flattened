@@ -316,7 +316,6 @@ library
                       enummapset >= 0.5.2.2,
                       file-embed >= 0.0.11,
                       filepath   >= 1.2.0.1,
-                      ghc-prim,
                       hashable   >= 1.1.2.5,
                       hsini      >= 0.2,
                       witch      >= 0.3,

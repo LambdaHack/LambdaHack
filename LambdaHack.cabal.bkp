@@ -168,14 +168,13 @@ library definition
                       Game.LambdaHack.Content.RuleKind
                       Game.LambdaHack.Content.TileKind
   build-depends:
-                      ,assert-failure
+                      ,assert-failure >= 0.1.2 && < 0.2
                       ,base
                       ,base-compat
                       ,binary
                       ,containers
                       ,deepseq
                       ,enummapset
-                      ,ghc-prim
                       ,hashable
                       ,hsini
                       ,witch >= 0.3
@@ -322,7 +321,6 @@ library
                       ,Game.LambdaHack.Content.TileKind
   autogen-modules:    Paths_LambdaHack
   build-depends:      definition,
-                      assert-failure >= 0.1.2 && < 0.2,
                       async      >= 2.2.1,
                       base       >= 4.10 && < 99,
                       binary     >= 0.8,
@@ -332,7 +330,6 @@ library
                       directory  >= 1.1.0.1,
                       enummapset >= 0.5.2.2,
                       filepath   >= 1.2.0.1,
-                      ghc-prim,
                       hashable   >= 1.1.2.5,
                       hsini      >= 0.2,
                       keys       >= 3,
