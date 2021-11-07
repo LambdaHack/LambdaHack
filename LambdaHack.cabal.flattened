@@ -84,6 +84,11 @@ flag with_expensive_assertions
   default:            False
   manual:             True
 
+flag with_costly_optimizations
+  description:        turn on costly (mostly GHC heap size) optimizations (that give 15-25% speedup)
+  default:            True
+  manual:             True
+
 flag release
   description:        prepare for a release (expose internal functions and types, etc.)
   default:            True
@@ -119,8 +124,10 @@ common options
                       DataKinds, KindSignatures, DeriveGeneric, DeriveLift
   ghc-options:        -Wall -Wcompat -Worphans -Wincomplete-uni-patterns -Wincomplete-record-updates -Wimplicit-prelude -Wmissing-home-modules -Widentities -Wredundant-constraints -Wmissing-export-lists -Wpartial-fields -Wunused-packages -Winvalid-haddock
 -- TODO: remove -Winvalid-haddock when added to -Wall in a GHC I use for haddock
-  ghc-options:        -Wall-missed-specialisations
-  ghc-options:        -fno-ignore-asserts -fexpose-all-unfoldings -fspecialise-aggressively -fsimpl-tick-factor=200
+  ghc-options:        -fno-ignore-asserts -Wall-missed-specialisations
+
+  if flag(with_costly_optimizations)
+    ghc-options:        -fexpose-all-unfoldings -fspecialise-aggressively -fsimpl-tick-factor=200
 
   if flag(with_expensive_assertions)
     cpp-options:      -DWITH_EXPENSIVE_ASSERTIONS
