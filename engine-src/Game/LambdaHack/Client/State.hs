@@ -14,7 +14,6 @@ import Game.LambdaHack.Core.Prelude
 import           Data.Binary
 import qualified Data.EnumMap.Strict as EM
 import qualified Data.EnumSet as ES
-import qualified Data.Map.Strict as M
 import qualified Data.Primitive.PrimArray as PA
 import           GHC.Generics (Generic)
 import qualified System.Random.SplitMix32 as SM
@@ -32,8 +31,6 @@ import           Game.LambdaHack.Common.State
 import           Game.LambdaHack.Common.Time
 import           Game.LambdaHack.Common.Types
 import           Game.LambdaHack.Common.Vector
-import           Game.LambdaHack.Content.ModeKind (ModeKind)
-import           Game.LambdaHack.Definition.Defs
 
 -- | Client state, belonging to a single faction.
 data StateClient = StateClient
@@ -66,10 +63,6 @@ data StateClient = StateClient
   , smarkSuspect  :: Int            -- ^ whether to mark suspect features
   , scondInMelee  :: ES.EnumSet LevelId
                                     -- ^ whether we are in melee, per level
-  , svictories    :: EM.EnumMap (ContentId ModeKind) (M.Map Challenge Int)
-                                    -- ^ won games at particular difficulty lvls
-  , scampings     :: ES.EnumSet (ContentId ModeKind)  -- ^ camped games
-  , srestarts     :: ES.EnumSet (ContentId ModeKind)  -- ^ restarted games
   , soptions      :: ClientOptions  -- ^ client options
   , stabs         :: (PA.PrimArray PointI, PA.PrimArray PointI)
       -- ^ Instead of a BFS queue (list) we use these two arrays,
@@ -143,9 +136,6 @@ emptyStateClient _sside =
     , snxtChal = defaultChallenge
     , smarkSuspect = 1
     , scondInMelee = ES.empty
-    , svictories = EM.empty
-    , scampings = ES.empty
-    , srestarts = ES.empty
     , soptions = defClientOptions
     , stabs = (undefined, undefined)
     }
@@ -197,9 +187,6 @@ instance Binary StateClient where
     put snxtChal
     put smarkSuspect
     put scondInMelee
-    put svictories
-    put scampings
-    put srestarts
     put soptions
 #ifdef WITH_EXPENSIVE_ASSERTIONS
     put sfper
@@ -217,9 +204,6 @@ instance Binary StateClient where
     snxtChal <- get
     smarkSuspect <- get
     scondInMelee <- get
-    svictories <- get
-    scampings <- get
-    srestarts <- get
     soptions <- get
     let sbfsD = EM.empty
         sundo = ()

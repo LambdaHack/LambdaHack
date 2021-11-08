@@ -485,14 +485,13 @@ watchRespUpdAtomicUI cmd = case cmd of
   UpdRestart fid _ _ _ _ srandom -> do
     cops@COps{cocave, comode, corule} <- getsState scops
     oldSess <- getSession
-    svictories <- getsClient svictories
     snxtChal <- getsClient snxtChal
     noConfirmsGame <- isNoConfirmsGame
     let uiOptions = sUIOptions oldSess
         f !acc _p !i _a = i : acc
         modes = zip [0..] $ ofoldlGroup' comode CAMPAIGN_SCENARIO f []
         g :: (Int, ContentId ModeKind) -> Int
-        g (_, mode) = case EM.lookup mode svictories of
+        g (_, mode) = case EM.lookup mode (svictories oldSess) of
           Nothing -> 0
           Just cm -> fromMaybe 0 (M.lookup snxtChal cm)
         (snxtScenario, _) = minimumBy (comparing g) modes
@@ -502,6 +501,9 @@ watchRespUpdAtomicUI cmd = case cmd of
         { schanF = schanF oldSess
         , sccui = sccui oldSess
         , shistory = shistory oldSess
+        , svictories = svictories oldSess
+        , scampings = scampings oldSess
+        , srestarts = srestarts oldSess
         , smarkVision = smarkVision oldSess
         , smarkSmell = smarkSmell oldSess
         , snxtScenario

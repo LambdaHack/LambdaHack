@@ -63,10 +63,10 @@ import           Game.LambdaHack.Common.State
 import qualified Game.LambdaHack.Common.Tile as Tile
 import           Game.LambdaHack.Common.Time
 import           Game.LambdaHack.Common.Types
+import qualified Game.LambdaHack.Content.FactionKind as FK
 import qualified Game.LambdaHack.Content.ItemKind as IK
 import qualified Game.LambdaHack.Content.ModeKind as MK
 import qualified Game.LambdaHack.Content.PlaceKind as PK
-import qualified Game.LambdaHack.Content.FactionKind as FK
 import qualified Game.LambdaHack.Content.TileKind as TK
 import qualified Game.LambdaHack.Definition.Ability as Ability
 import qualified Game.LambdaHack.Definition.Color as Color
@@ -383,8 +383,8 @@ describeMode addTitle gameModeId = do
     <- getsSession sccui
   FontSetup{..} <- getFontSetup
   scoreDict <- getsState shigh
-  scampings <- getsClient scampings
-  srestarts <- getsClient srestarts
+  scampings <- getsSession scampings
+  srestarts <- getsSession srestarts
   side <- getsClient sside
   total <- getsState $ snd . calculateTotal side
   dungeonTotal <- getsState sgold
@@ -451,6 +451,10 @@ describeMode addTitle gameModeId = do
         , (FK.Camping, "Don't fear to take breaks. While you move, others move, even on distant floors, but while you stay still, the world stays still.")
         ]
       scoreRecords = maybe [] HighScore.unTable $ EM.lookup gameModeId scoreDict
+      -- This doesn't use @svictories@, but high scores, because high scores
+      -- are more persistent and granular (per-outcome). OTOH, @svictories@
+      -- are per-challenge, which is important in other cases.
+      -- @Camping@ and @Restart@ are fine to be less persistent.
       outcomeSeen :: FK.Outcome -> Bool
       outcomeSeen outcome = case outcome of
         FK.Camping -> gameModeId `ES.member` scampings
@@ -490,7 +494,7 @@ modesOverlay :: MonadClientUI m => m OKX
 modesOverlay = do
   COps{comode} <- getsState scops
   FontSetup{..} <- getFontSetup
-  svictories <- getsClient svictories
+  svictories <- getsSession svictories
   nxtChal <- getsClient snxtChal  -- mark victories only for current difficulty
   let f !acc _p !i !a = (i, a) : acc
       campaignModes = ofoldlGroup' comode MK.CAMPAIGN_SCENARIO f []

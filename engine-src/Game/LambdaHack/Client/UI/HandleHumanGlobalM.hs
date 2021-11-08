@@ -93,9 +93,9 @@ import           Game.LambdaHack.Common.State
 import qualified Game.LambdaHack.Common.Tile as Tile
 import           Game.LambdaHack.Common.Types
 import           Game.LambdaHack.Common.Vector
+import qualified Game.LambdaHack.Content.FactionKind as FK
 import qualified Game.LambdaHack.Content.ItemKind as IK
 import qualified Game.LambdaHack.Content.ModeKind as MK
-import qualified Game.LambdaHack.Content.FactionKind as FK
 import           Game.LambdaHack.Content.RuleKind
 import qualified Game.LambdaHack.Content.TileKind as TK
 import qualified Game.LambdaHack.Core.Dice as Dice
@@ -1851,7 +1851,7 @@ challengeMenuHuman cmdSemInCxtOfKM = do
   CCUI{coscreen=ScreenContent{rwidth}} <- getsSession sccui
   UIOptions{uMsgWrapColumn} <- getsSession sUIOptions
   FontSetup{..} <- getFontSetup
-  svictories <- getsClient svictories
+  svictories <- getsSession svictories
   snxtScenario <- getsSession snxtScenario
   nxtChal <- getsClient snxtChal
   let (gameModeId, gameMode) = nxtGameMode cops snxtScenario

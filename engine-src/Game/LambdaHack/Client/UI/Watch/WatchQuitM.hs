@@ -15,6 +15,7 @@ import Game.LambdaHack.Core.Prelude
 
 import qualified Data.EnumMap.Strict as EM
 import qualified Data.EnumSet as ES
+import qualified Data.Map.Strict as M
 import qualified NLP.Miniutter.English as MU
 
 import           Game.LambdaHack.Client.MonadClient
@@ -44,9 +45,9 @@ import           Game.LambdaHack.Common.Misc
 import           Game.LambdaHack.Common.MonadStateRead
 import           Game.LambdaHack.Common.State
 import           Game.LambdaHack.Common.Types
+import           Game.LambdaHack.Content.FactionKind
 import qualified Game.LambdaHack.Content.ItemKind as IK
 import           Game.LambdaHack.Content.ModeKind
-import           Game.LambdaHack.Content.FactionKind
 import qualified Game.LambdaHack.Definition.Ability as Ability
 import           Game.LambdaHack.Definition.Defs
 
@@ -55,13 +56,28 @@ quitFactionUI :: MonadClientUI m
               -> Maybe (FactionAnalytics, GenerationAnalytics)
               -> m ()
 quitFactionUI fid toSt manalytics = do
+  side <- getsClient sside
+  gameModeId <- getsState sgameModeId
+  when (side == fid) $ case toSt of
+    Just Status{stOutcome=Camping} ->
+      modifySession $ \sess ->
+        sess {scampings = ES.insert gameModeId $ scampings sess}
+    Just Status{stOutcome=Restart} ->
+      modifySession $ \sess ->
+        sess {srestarts = ES.insert gameModeId $ srestarts sess}
+    Just Status{stOutcome} | stOutcome `elem` victoryOutcomes -> do
+      scurChal <- getsClient scurChal
+      let sing = M.singleton scurChal 1
+          f = M.unionWith (+)
+          g = EM.insertWith f gameModeId sing
+      modifySession $ \sess -> sess {svictories = g $ svictories sess}
+    _ -> return ()
   ClientOptions{sexposeItems} <- getsClient soptions
   fact <- getsState $ (EM.! fid) . sfactionD
   let fidName = MU.Text $ gname fact
       person = if fhasGender $ gkind fact then MU.PlEtc else MU.Sg3rd
       horror = isHorrorFact fact
       camping = maybe True ((== Camping) . stOutcome) toSt
-  side <- getsClient sside
   when (fid == side && not camping) $ do
     tellGameClipPS
     resetGameStart

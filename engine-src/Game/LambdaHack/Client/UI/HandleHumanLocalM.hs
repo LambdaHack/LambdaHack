@@ -85,9 +85,9 @@ import qualified Game.LambdaHack.Common.Tile as Tile
 import           Game.LambdaHack.Common.Time
 import           Game.LambdaHack.Common.Types
 import           Game.LambdaHack.Common.Vector
+import qualified Game.LambdaHack.Content.FactionKind as FK
 import qualified Game.LambdaHack.Content.ItemKind as IK
 import qualified Game.LambdaHack.Content.ModeKind as MK
-import qualified Game.LambdaHack.Content.FactionKind as FK
 import           Game.LambdaHack.Content.RuleKind
 import qualified Game.LambdaHack.Definition.Ability as Ability
 import qualified Game.LambdaHack.Definition.Color as Color
@@ -298,7 +298,7 @@ chooseItemDialogMode leader0 permitLoreCycle c = do
                                                 slotBound $ succ slot
                 _ -> return km
         COps{comode} <- getsState scops
-        svictories <- getsClient svictories
+        svictories <- getsSession svictories
         nxtChal <- getsClient snxtChal
           -- mark victories only for current difficulty
         let f !acc _p !i !a = (i, a) : acc

@@ -31,9 +31,11 @@ import           Game.LambdaHack.Client.UI.Msg
 import           Game.LambdaHack.Client.UI.PointUI
 import           Game.LambdaHack.Client.UI.UIOptions
 import           Game.LambdaHack.Common.Actor
+import           Game.LambdaHack.Common.Faction
 import           Game.LambdaHack.Common.Item
 import           Game.LambdaHack.Common.Time
 import           Game.LambdaHack.Common.Types
+import           Game.LambdaHack.Content.ModeKind (ModeKind)
 import           Game.LambdaHack.Definition.Defs
 
 -- | The information that is used across a human player playing session,
@@ -71,6 +73,11 @@ data SessionUI = SessionUI
   , srunning       :: Maybe RunParams
                                     -- ^ parameters of the current run, if any
   , shistory       :: History       -- ^ history of messages
+  , svictories     :: EM.EnumMap (ContentId ModeKind) (M.Map Challenge Int)
+      -- ^ the number of games won by the UI faction per game mode
+      --   and per difficulty level
+  , scampings      :: ES.EnumSet (ContentId ModeKind)  -- ^ camped games
+  , srestarts      :: ES.EnumSet (ContentId ModeKind)  -- ^ restarted games
   , spointer       :: PointUI       -- ^ mouse pointer position
   , sautoYes       :: Bool          -- ^ whether to auto-clear prompts
   , smacroFrame    :: KeyMacroFrame -- ^ the head of the key macro stack
@@ -187,6 +194,9 @@ emptySessionUI sUIOptions =
     , sselected = ES.empty
     , srunning = Nothing
     , shistory = emptyHistory 0
+    , svictories = EM.empty
+    , scampings = ES.empty
+    , srestarts = ES.empty
     , spointer = PointUI 0 0
     , sautoYes = False
     , smacroFrame = emptyMacroFrame
@@ -250,6 +260,9 @@ instance Binary SessionUI where
     put srunning
     put $ archiveReport shistory
       -- avoid displaying ending messages again at game start
+    put svictories
+    put scampings
+    put srestarts
     put smarkVision
     put smarkSmell
     put snxtScenario
@@ -269,6 +282,9 @@ instance Binary SessionUI where
     sselected <- get
     srunning <- get
     shistory <- get
+    svictories <- get
+    scampings <- get
+    srestarts <- get
     smarkVision <- get
     smarkSmell <- get
     snxtScenario <- get
