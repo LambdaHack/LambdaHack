@@ -120,12 +120,13 @@ instance MonadClientAtomic CliImplementation where
 
 -- | Run the main client loop, with the given arguments and empty
 -- initial states, in the @IO@ monad.
-executorCli :: CCUI -> UIOptions -> ClientOptions
+executorCli :: CCUI -> UIOptions -> ClientOptions -> Bool
             -> COps
             -> FactionId
             -> ChanServer
             -> IO ()
-executorCli ccui sUIOptions clientOptions cops@COps{corule} fid cliDict =
+executorCli ccui sUIOptions clientOptions startsNewGame
+            cops@COps{corule} fid cliDict =
   let cliSession | isJust (requestUIS cliDict) =
                      Just $ emptySessionUI sUIOptions
                  | otherwise = Nothing
@@ -139,6 +140,6 @@ executorCli ccui sUIOptions clientOptions cops@COps{corule} fid cliDict =
         , cliToSave
         , cliSession
         }
-      m = loopCli ccui sUIOptions clientOptions
+      m = loopCli ccui sUIOptions clientOptions startsNewGame
       exe = evalStateT (runCliImplementation m) . totalState
   in Save.wrapInSaves cops stateToFileName exe

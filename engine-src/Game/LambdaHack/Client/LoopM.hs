@@ -66,8 +66,8 @@ loopCli :: ( MonadClientSetup m
            , MonadClientAtomic m
            , MonadClientReadResponse m
            , MonadClientWriteRequest m )
-        => CCUI -> UIOptions -> ClientOptions -> m ()
-loopCli ccui sUIOptions clientOptions = do
+        => CCUI -> UIOptions -> ClientOptions -> Bool -> m ()
+loopCli ccui sUIOptions clientOptions startsNewGame = do
   modifyClient $ \cli -> cli {soptions = clientOptions}
   side <- getsClient sside
   hasUI <- clientHasUI
@@ -79,7 +79,7 @@ loopCli ccui sUIOptions clientOptions = do
   -- and sper are empty.
   restoredG <- tryRestore
   restored <- case restoredG of
-    Just (cli, msess) | not $ snewGameCli clientOptions -> do
+    Just (cli, msess) | not startsNewGame -> do
       -- Restore game.
       case msess of
         Just sess | hasUI -> do
@@ -96,13 +96,12 @@ loopCli ccui sUIOptions clientOptions = do
       putClient cli {soptions = clientOptions {snoAnim = Just noAnim}}
       return True
     Just (_, msessR) -> do
-      -- Don't restore the game, due to commandline new game request,
+      -- Don't restore the game, due to new game starting right now,
       -- which means everything will be overwritten soon anyway
       -- via an @UpdRestart@ command (instead of @UpdResume@).
       case msessR of
         Just sessR | hasUI ->
-          -- Preserve previous history, if any, but nothing else,
-          -- since this is a brutal new game from commandline.
+          -- Preserve previous history, if any, but nothing else due to restart.
           modifySession $ \sess -> sess {shistory = shistory sessR}
         _ -> return ()
       return False
@@ -117,22 +116,26 @@ loopCli ccui sUIOptions clientOptions = do
   debugPossiblyPrint $ cliendKindText <+> "client"
                        <+> tshow side <+> "started 3/4."
   case (restored, cmd1) of
-    (True, RespUpdAtomic _ UpdResume{}) -> return ()
-    (True, RespUpdAtomic _ UpdRestart{}) ->
+    (True, RespUpdAtomic _ UpdResume{}) -> assert (not startsNewGame) $
+      return ()
+    (True, RespUpdAtomic _ UpdRestart{}) -> assert startsNewGame $
       when hasUI $
         clientPrintUI "Ignoring an old savefile and starting a new game."
-    (False, RespUpdAtomic _ UpdResume{}) ->
+    (False, RespUpdAtomic _ UpdResume{}) -> assert (not startsNewGame) $
       error $ "Savefile of client " ++ show side ++ " not usable."
               `showFailure` ()
-    (False, RespUpdAtomic _ UpdRestart{}) -> return ()
-    (True, RespUpdAtomicNoState UpdResume{}) -> undefined
-    (True, RespUpdAtomicNoState UpdRestart{}) ->
+    (False, RespUpdAtomic _ UpdRestart{}) -> assert startsNewGame $
+      return ()
+    (True, RespUpdAtomicNoState UpdResume{}) -> assert (not startsNewGame) $
+      undefined
+    (True, RespUpdAtomicNoState UpdRestart{}) -> assert startsNewGame $
       when hasUI $
         clientPrintUI "Ignoring an old savefile and starting a new game."
-    (False, RespUpdAtomicNoState UpdResume{}) ->
+    (False, RespUpdAtomicNoState UpdResume{}) -> assert (not startsNewGame) $
       error $ "Savefile of client " ++ show side ++ " not usable."
               `showFailure` ()
-    (False, RespUpdAtomicNoState UpdRestart{}) -> return ()
+    (False, RespUpdAtomicNoState UpdRestart{}) -> assert startsNewGame $
+      return ()
     _ -> error $ "unexpected command" `showFailure` (side, restored, cmd1)
   handleResponse cmd1
   -- State and client state now valid.

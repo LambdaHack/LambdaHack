@@ -59,7 +59,7 @@ import           Game.LambdaHack.Server.State
 loopSer :: (MonadServerAtomic m, MonadServerComm m)
         => ServerOptions
              -- ^ player-supplied server options
-        -> (FactionId -> ChanServer -> IO ())
+        -> (Bool -> FactionId -> ChanServer -> IO ())
              -- ^ function that initializes a client and runs its main loop
         -> m ()
 loopSer serverOptions executorClient = do
@@ -67,7 +67,7 @@ loopSer serverOptions executorClient = do
   modifyServer $ \ser -> ser { soptionsNxt = serverOptions
                              , soptions = serverOptions }
   cops <- getsState scops
-  let updConn = updateConn executorClient
+  let updConn startsNewGame = updateConn $ executorClient startsNewGame
   restored <- tryRestore
   case restored of
     Just (sRaw, ser) | not $ snewGameSer serverOptions -> do  -- a restored game
@@ -81,7 +81,7 @@ loopSer serverOptions executorClient = do
                             $ sclientStates ser EM.! fid
                   in execUpdAtomicFidCatch fid cmd
       mapM_ (void <$> f) $ EM.keys factionD
-      updConn
+      updConn False
       initPer
       pers <- getsServer sperFid
       let clear = const emptyPer
@@ -106,11 +106,11 @@ loopSer serverOptions executorClient = do
       modifyServer $ \ser -> ser { soptionsNxt = optionsBarRngs
                                  , soptions = optionsBarRngs }
       execUpdAtomic $ UpdRestartServer s
-      updConn
+      updConn True
       initPer
       reinitGame factionDold
       writeSaveAll False False
-  loopUpd updConn
+  loopUpd $ updConn True
 
 factionArena :: MonadStateRead m => Faction -> m (Maybe LevelId)
 factionArena fact = case gleader fact of

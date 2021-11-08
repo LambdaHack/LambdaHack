@@ -153,7 +153,8 @@ executorSer cops@COps{corule} ccui soptionsNxtCmdline sUIOptions = do
                       $ sclientOptions soptionsNxtRaw
       soptionsNxt = soptionsNxtRaw {sclientOptions = clientOptions}
       -- Partially applied main loop of the clients.
-      executorClient = executorCli ccui sUIOptions clientOptions cops
+      executorClient startsNewGame =
+        executorCli ccui sUIOptions clientOptions startsNewGame cops
   -- Wire together game content, the main loop of game clients
   -- and the game server loop.
   let stateToFileName (_, ser) =
