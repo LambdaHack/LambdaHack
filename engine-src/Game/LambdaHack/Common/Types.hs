@@ -23,7 +23,14 @@ import Game.LambdaHack.Definition.Defs
 newtype ItemId = ItemId Int
   deriving (Show, Eq, Ord, Enum, Binary)
 
--- | A unique identifier of a faction in a game.
+-- | A unique identifier of a faction in a game. It's assigned in the order
+-- from game mode roster, starting from one. We keep the @FactionId@
+-- and @TeamContinuity@ types separate mostly to let @FactionId@ reflect
+-- the order, which influences starting faction positions, etc.
+-- We use @TeamContinuity@ for dictionaries containing teams that may
+-- or may not be active factions in the current game, while @FactionId@ are
+-- used only for factions in the game (in particular, because they vary
+-- depending on order in game mode roster, while @TeamContinuity@ are stable).
 newtype FactionId = FactionId Int
   deriving (Show, Eq, Ord, Enum, Hashable, Binary)
 

@@ -19,6 +19,7 @@ import qualified Data.IntMap.Strict as IM
 import qualified System.Random.SplitMix32 as SM
 
 import Game.LambdaHack.Common.Analytics
+import Game.LambdaHack.Common.Item
 import Game.LambdaHack.Common.Perception
 import Game.LambdaHack.Common.State
 import Game.LambdaHack.Common.Time
@@ -65,6 +66,8 @@ data StateServer = StateServer
   , sundo         :: () -- [CmdAtomic] -- ^ atomic commands performed to date
   , sclientStates :: EM.EnumMap FactionId State
                                     -- ^ each faction state, as seen by clients
+  , smetaBackup   :: EM.EnumMap TeamContinuity DiscoveryKind
+                                    -- ^ discovery info for absent factions
   , sperFid       :: PerFid         -- ^ perception of all factions
   , sperValidFid  :: PerValidFid    -- ^ perception validity for all factions
   , sperCacheFid  :: PerCacheFid    -- ^ perception cache of all factions
@@ -122,6 +125,7 @@ emptyStateServer =
     , sbandSpawned = IM.fromList [(1, 0), (2, 0), (3, 0)]
     , sundo = ()
     , sclientStates = EM.empty
+    , smetaBackup = EM.empty
     , sperFid = EM.empty
     , sperValidFid = EM.empty
     , sperCacheFid = EM.empty
@@ -178,6 +182,7 @@ instance Binary StateServer where
     put snumSpawned
     put sbandSpawned
     put sclientStates
+    put smetaBackup
     put (show srandom)
     put srngs
     put soptions
@@ -201,6 +206,7 @@ instance Binary StateServer where
     snumSpawned <- get
     sbandSpawned <- get
     sclientStates <- get
+    smetaBackup <- get
     g <- get
     srngs <- get
     soptions <- get
