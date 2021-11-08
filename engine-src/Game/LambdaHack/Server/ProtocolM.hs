@@ -166,6 +166,15 @@ killAllClients = do
   -- We can't interate over sfactionD, because client can be from an old game.
   -- For the same reason we can't look up and send client's state.
   mapWithKeyM_ sendKill d
+  connBackup <- getsConnBackup id
+  -- Also kill the backup AI client shadowed by the UI client.
+  let sendDirectlyToConn conn = do
+        factionD <- getsState sfactionD
+        let (fidUI, _) =
+              fromJust $ find (fhasUI . gkind . snd) $ EM.assocs factionD
+        let resp = RespUpdAtomicNoState $ UpdKillExit fidUI
+        writeQueue resp $ responseS conn
+  maybe (return ()) sendDirectlyToConn connBackup
 
 -- Global variable for all children threads of the server.
 childrenServer :: MVar [Async ()]
@@ -201,20 +210,20 @@ updateConn executorClient = do
     -- so we can reuse it for any faction (to keep history)
     -- and reuse AI connections for their old factions to keep various
     -- info about these factions.
-    connBackupOld <- getsConnBackup id
+    mconnBackupOld <- getsConnBackup id
     -- Gather all existing AI connections in @oldD2@.
     let (connUI, oldD2) = case find (isJust . requestUIS . snd)
                                $ EM.assocs oldD of
           Nothing -> error "updateConn: no UI connection found"
           Just (fid, conn) ->
-            let alt _ = connBackupOld  -- restore AI connection from backup
+            let alt _ = mconnBackupOld  -- restore AI connection from backup
             in (conn, EM.alter alt fid oldD)
     -- Find the new UI faction.
         (fidUI, _) = fromJust $ find (fhasUI . gkind . snd) $ EM.assocs factionD
     -- Insert the UI connection and back up AI connection at the spot, if any.
-        connBackup = EM.lookup fidUI oldD2
+        mconnBackup = EM.lookup fidUI oldD2
         oldD3 = EM.insert fidUI connUI oldD2
-    putConnBackup connBackup  -- never kill old clients
+    putConnBackup mconnBackup  -- never kill old clients
     -- Add extra AI connections.
     let extraFacts = EM.filterWithKey (\fid _ -> EM.notMember fid oldD3)
                                       factionD
