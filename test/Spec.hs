@@ -27,6 +27,7 @@ import ItemDescriptionUnitTests
 import ItemKindUnitTests
 import ItemRevUnitTests
 import LevelUnitTests
+import MonadClientUIUnitTests
 import ReqFailureUnitTests
 import SessionUIUnitTests
 
@@ -44,7 +45,8 @@ tests = testGroup "Tests" [ actorStateUnitTests
                           , levelUnitTests
                           , reqFailureUnitTests
                           , macroTests
-                          --, integrationTests 
+                          , monadClientUIUnitTests
+                          --, integrationTests
                           ]
 
 integrationTests :: TestTree

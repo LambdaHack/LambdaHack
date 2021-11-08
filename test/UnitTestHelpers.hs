@@ -9,9 +9,11 @@ module UnitTestHelpers
   , stubCliState
   , testActor
   , testActorId
-  , testItemId
   , testCliStateWithItem
+  , testFactionId
+  , testItemId
   , testItemKind
+  , testLevelId
 -- #ifdef EXPOSE_INTERNAL
 --     -- * Internal operations
   , CliMock(..)
@@ -264,7 +266,7 @@ emptyCliState = CliState
 
 stubCliState = CliState
   { cliState = stubState
-  , cliClient = emptyStateClient $ toEnum 0
+  , cliClient = emptyStateClient testFactionId
   , cliSession = Just ((emptySessionUI stubUIOptions) {sxhair = Just (TPoint TUnknown (toEnum 0) (Point 1 0))}) --(TVector Vector {vx=1, vy=0})}) -- (TNonEnemy (toEnum 1))})-- 
   }
 
