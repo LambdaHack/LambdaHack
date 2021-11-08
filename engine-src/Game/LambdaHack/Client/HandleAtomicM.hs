@@ -295,8 +295,8 @@ cmdAtomicSemCli oldState cmd = case cmd of
     let !_A = assert (sfperNew == sfperOld
                       `blame` (_side, sfperNew, sfperOld)) ()
 #endif
-    modifyClient $ \cli -> cli {sfper = sfperNew}
-    salter <- getsState createSalter
+    modifyClient $ \cli -> cli {sfper = sfperNew}  -- just in case
+    salter <- getsState createSalter  -- because space saved by not storing it
     modifyClient $ \cli -> cli {salter}
   UpdResumeServer{} -> return ()
   UpdKillExit _fid -> killExit

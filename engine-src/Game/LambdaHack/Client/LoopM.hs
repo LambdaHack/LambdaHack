@@ -83,17 +83,26 @@ loopCli ccui sUIOptions clientOptions = do
       -- Restore game.
       case msess of
         Just sess | hasUI -> do
+          -- Preserve almost everything from the saved session.
+          -- Renew the communication channel to the newly spawned frontend
+          -- and get the possibly updated UI content and UI options.
           schanF <- getsSession schanF
           sccui <- getsSession sccui
           putSession $ sess {schanF, sccui, sUIOptions}
         _ -> return ()
+      -- We preserve the client state from savefile except for the single
+      -- option that can be overwritten on commandline.
       let noAnim = fromMaybe False $ snoAnim $ soptions cli
       putClient cli {soptions = clientOptions {snoAnim = Just noAnim}}
       return True
     Just (_, msessR) -> do
-      -- Preserve previous history, if any.
+      -- Don't restore the game, due to commandline new game request,
+      -- which means everything will be overwritten soon anyway
+      -- via an @UpdRestart@ command (instead of @UpdResume@).
       case msessR of
         Just sessR | hasUI ->
+          -- Preserve previous history, if any, but nothing else,
+          -- since this is a brutal new game from commandline.
           modifySession $ \sess -> sess {shistory = shistory sessR}
         _ -> return ()
       return False
