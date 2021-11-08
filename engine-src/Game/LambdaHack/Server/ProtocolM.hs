@@ -207,9 +207,12 @@ updateConn executorClient = do
     liftIO $ mapWithKeyM_ forkClient newD
   else do
     -- Hard case, but we know there is exactly one UI connection in oldD,
-    -- so we can reuse it for any faction (to keep history)
-    -- and reuse AI connections for their old factions to keep various
-    -- info about these factions.
+    -- so we can reuse it for any faction (to keep history).
+    -- UI session (history in particular) is preserved even over game
+    -- save and reload. It gets saved with the savefile of the team
+    -- that is a UI faction and restored intact. However, when a new game
+    -- is started from commandline (@--newGame@), even if it's using the same
+    -- save prefix (@--savePrefix@), the session data is often lost.
     mconnBackupOld <- getsConnBackup id
     -- Gather all existing AI connections in @oldD2@.
     let (connUI, oldD2) = case find (isJust . requestUIS . snd)

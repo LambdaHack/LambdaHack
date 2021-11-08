@@ -79,7 +79,7 @@ loopCli ccui sUIOptions clientOptions startsNewGame = do
   -- and sper are empty.
   restoredG <- tryRestore
   restored <- case restoredG of
-    Just (cli, msess) | not startsNewGame -> do
+    Just (cli, msess)-> do
       -- Restore game.
       case msess of
         Just sess | hasUI -> do
@@ -90,22 +90,18 @@ loopCli ccui sUIOptions clientOptions startsNewGame = do
           sccui <- getsSession sccui
           putSession $ sess {schanF, sccui, sUIOptions}
         _ -> return ()
-      -- We preserve the client state from savefile except for the single
-      -- option that can be overwritten on commandline.
-      let noAnim = fromMaybe False $ snoAnim $ soptions cli
-      putClient cli {soptions = clientOptions {snoAnim = Just noAnim}}
-      return True
-    Just (_, msessR) -> do
-      -- Don't restore the game, due to new game starting right now,
-      -- which means everything will be overwritten soon anyway
-      -- via an @UpdRestart@ command (instead of @UpdResume@).
-      case msessR of
-        Just sessR | hasUI ->
-          -- Preserve previous history, if any, but nothing else due to restart.
-          modifySession $ \sess -> sess {shistory = shistory sessR}
-        _ -> return ()
-      return False
-    _ -> return False
+      if startsNewGame then
+        -- Don't restore client state, due to new game starting right now,
+        -- which means everything will be overwritten soon anyway
+        -- via an @UpdRestart@ command (instead of @UpdResume@).
+        return False
+      else do
+        -- We preserve the client state from savefile except for the single
+        -- option that can be overwritten on commandline.
+        let noAnim = fromMaybe False $ snoAnim $ soptions cli
+        putClient cli {soptions = clientOptions {snoAnim = Just noAnim}}
+        return True
+    Nothing -> return False
   debugPossiblyPrint $ cliendKindText <+> "client"
                        <+> tshow side <+> "started 2/4."
   -- At this point @ClientState@ not overriten dumbly and @State@ valid.
@@ -115,26 +111,26 @@ loopCli ccui sUIOptions clientOptions startsNewGame = do
   cmd1 <- receiveResponse
   debugPossiblyPrint $ cliendKindText <+> "client"
                        <+> tshow side <+> "started 3/4."
-  case (restored, cmd1) of
-    (True, RespUpdAtomic _ UpdResume{}) -> assert (not startsNewGame) $
+  case (restored, startsNewGame, cmd1) of
+    (True, False, RespUpdAtomic _ UpdResume{}) ->
       return ()
-    (True, RespUpdAtomic _ UpdRestart{}) -> assert startsNewGame $
+    (True, True, RespUpdAtomic _ UpdRestart{}) ->
       when hasUI $
         clientPrintUI "Ignoring an old savefile and starting a new game."
-    (False, RespUpdAtomic _ UpdResume{}) -> assert (not startsNewGame) $
+    (False, False, RespUpdAtomic _ UpdResume{}) ->
       error $ "Savefile of client " ++ show side ++ " not usable."
               `showFailure` ()
-    (False, RespUpdAtomic _ UpdRestart{}) -> assert startsNewGame $
+    (False, True, RespUpdAtomic _ UpdRestart{}) ->
       return ()
-    (True, RespUpdAtomicNoState UpdResume{}) -> assert (not startsNewGame) $
+    (True, False, RespUpdAtomicNoState UpdResume{}) ->
       undefined
-    (True, RespUpdAtomicNoState UpdRestart{}) -> assert startsNewGame $
+    (True, True, RespUpdAtomicNoState UpdRestart{}) ->
       when hasUI $
         clientPrintUI "Ignoring an old savefile and starting a new game."
-    (False, RespUpdAtomicNoState UpdResume{}) -> assert (not startsNewGame) $
+    (False, False, RespUpdAtomicNoState UpdResume{}) ->
       error $ "Savefile of client " ++ show side ++ " not usable."
               `showFailure` ()
-    (False, RespUpdAtomicNoState UpdRestart{}) -> assert startsNewGame $
+    (False, True, RespUpdAtomicNoState UpdRestart{}) ->
       return ()
     _ -> error $ "unexpected command" `showFailure` (side, restored, cmd1)
   handleResponse cmd1

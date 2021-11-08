@@ -36,9 +36,11 @@ import           Game.LambdaHack.Common.Time
 import           Game.LambdaHack.Common.Types
 import           Game.LambdaHack.Definition.Defs
 
--- | The information that is used across a client playing session,
--- including many consecutive games in a single session.
--- Some of it is saved, some is reset when a new playing session starts.
+-- | The information that is used across a human player playing session,
+-- including many consecutive games in a single session,
+-- including playing different teams. Some of it is saved, some is reset
+-- when a new playing session starts. Nothing is tied to a faction/team,
+-- but instead all to UI configuration and UI input and display history.
 -- An important component is the frontend session.
 data SessionUI = SessionUI
   { sreqPending    :: Maybe RequestUI
