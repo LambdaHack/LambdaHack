@@ -5,11 +5,13 @@ module Game.LambdaHack.Server.ProtocolM
     -- * The server-client communication monad
   , MonadServerComm
       ( getsDict  -- exposed only to be implemented, not used
-      , modifyDict  -- exposed only to be implemented, not used
+      , putDict  -- exposed only to be implemented, not used
+      , getsConnBackup  -- exposed only to be implemented, not used
+      , putConnBackup  -- exposed only to be implemented, not used
       , liftIO  -- exposed only to be implemented, not used
       )
     -- * Protocol
-  , putDict, sendUpdate, sendUpdateCheck, sendUpdNoState
+  , sendUpdate, sendUpdateCheck, sendUpdNoState
   , sendSfx, sendQueryAI, sendQueryUI
     -- * Assorted
   , killAllClients, childrenServer, updateConn, tryRestore
@@ -26,7 +28,7 @@ import Game.LambdaHack.Core.Prelude
 import           Control.Concurrent
 import           Control.Concurrent.Async
 import qualified Data.EnumMap.Strict as EM
-import           Data.Key (mapWithKeyM, mapWithKeyM_)
+import           Data.Key (mapWithKeyM_)
 import           System.FilePath
 import           System.IO.Unsafe (unsafePerformIO)
 
@@ -81,15 +83,14 @@ data ChanServer = ChanServer
 
 -- | The server monad with the ability to communicate with clients.
 class MonadServer m => MonadServerComm m where
-  getsDict     :: (ConnServerDict -> a) -> m a
-  modifyDict   :: (ConnServerDict -> ConnServerDict) -> m ()
-  liftIO       :: IO a -> m a
+  getsDict       :: (ConnServerDict -> a) -> m a
+  putDict        :: ConnServerDict -> m ()
+  getsConnBackup :: (Maybe ChanServer -> a) -> m a
+  putConnBackup  :: Maybe ChanServer -> m ()
+  liftIO         :: IO a -> m a
 
 getDict :: MonadServerComm m => m ConnServerDict
 getDict = getsDict id
-
-putDict :: MonadServerComm m => ConnServerDict -> m ()
-putDict s = modifyDict (const s)
 
 -- | If the @AtomicFail@ conditions hold, send a command to client,
 -- otherwise do nothing.
@@ -175,7 +176,7 @@ childrenServer = unsafePerformIO (newMVar [])
 -- Connect to clients in old or newly spawned threads
 -- that read and write directly to the channels.
 updateConn :: (MonadServerAtomic m, MonadServerComm m)
-           => (Bool -> FactionId -> ChanServer -> IO ())
+           => (FactionId -> ChanServer -> IO ())
            -> m ()
 updateConn executorClient = do
   -- Prepare connections based on factions.
@@ -185,35 +186,43 @@ updateConn executorClient = do
         responseS <- newQueue
         requestAIS <- newQueue
         requestUIS <- if fhasUI $ gkind fact
-                      then Just <$> newQueue
+                      then assert (EM.null oldD) $ Just <$> newQueue
                       else return Nothing
-        return $! ChanServer{..}
-      addConn :: FactionId -> Faction -> IO ChanServer
-      addConn fid fact = case EM.lookup fid oldD of
-        Just conns -> return conns  -- share old conns and threads
-        Nothing | fromEnum fid < 0 -> mkChanServer fact
-        Nothing -> case filter (\(fidOld, _) -> fromEnum fidOld > 0)
-                        $ EM.assocs oldD of
-          [] -> mkChanServer fact
-          (_, conns) : _ -> return conns  -- re-use session to keep history
+        return ChanServer{..}
+      forkClient fid = forkChild childrenServer . executorClient fid
   factionD <- getsState sfactionD
-  d <- liftIO $ mapWithKeyM addConn factionD
-  let newD = d `EM.union` oldD  -- never kill old clients
-  putDict newD
-  -- Spawn client threads.
-  let toSpawn = newD EM.\\ oldD
-      forkUI fid connS =
-        forkChild childrenServer $ executorClient True fid connS
-      forkAI fid connS =
-        forkChild childrenServer $ executorClient False fid connS
-      forkClient fid conn@ChanServer{requestUIS=Nothing} =
-        -- When a connection is reused, clients are not respawned,
-        -- even if UI status of a faction changes, but it works OK thanks to
-        -- UI faction clients distinguished by positive FactionId numbers.
-        forkAI fid conn
-      forkClient fid conn = when (EM.null oldD) $
-        forkUI fid conn
-  liftIO $ mapWithKeyM_ forkClient toSpawn
+  if EM.null oldD then do
+    -- Easy case, nothing to recycle, frontend not spawned yet.
+    newD <- liftIO $ mapM mkChanServer factionD
+    putDict newD
+    liftIO $ mapWithKeyM_ forkClient newD
+  else do
+    -- Hard case, but we know there is exactly one UI connection in oldD,
+    -- so we can reuse it for any faction (to keep history)
+    -- and reuse AI connections for their old factions to keep various
+    -- info about these factions.
+    connBackupOld <- getsConnBackup id
+    -- Gather all existing AI connections in @oldD2@.
+    let (connUI, oldD2) = case find (isJust . requestUIS . snd)
+                               $ EM.assocs oldD of
+          Nothing -> error "updateConn: no UI connection found"
+          Just (fid, conn) ->
+            let alt _ = connBackupOld  -- restore AI connection from backup
+            in (conn, EM.alter alt fid oldD)
+    -- Find the new UI faction.
+        (fidUI, _) = fromJust $ find (fhasUI . gkind . snd) $ EM.assocs factionD
+    -- Insert the UI connection and back up AI connection at the spot, if any.
+        connBackup = EM.lookup fidUI oldD2
+        oldD3 = EM.insert fidUI connUI oldD2
+    putConnBackup connBackup  -- never kill old clients
+    -- Add extra AI connections.
+    let extraFacts = EM.filterWithKey (\fid _ -> EM.notMember fid oldD3)
+                                      factionD
+    extraD <- liftIO $ mapM mkChanServer extraFacts
+    let newD = oldD3 `EM.union` extraD
+    putDict newD
+    -- Spawn the extra AI client threads.
+    liftIO $ mapWithKeyM_ forkClient extraD
 
 tryRestore :: MonadServerComm m => m (Maybe (State, StateServer))
 tryRestore = do

@@ -42,11 +42,12 @@ import           Game.LambdaHack.Server.State
 import Implementation.MonadClientImplementation (executorCli)
 
 data SerState = SerState
-  { serState  :: State           -- ^ current global state
-  , serServer :: StateServer     -- ^ current server state
-  , serDict   :: ConnServerDict  -- ^ client-server connection information
-  , serToSave :: Save.ChanSave (State, StateServer)
-                                 -- ^ connection to the save thread
+  { serState      :: State             -- ^ current global state
+  , serServer     :: StateServer       -- ^ current server state
+  , serDict       :: ConnServerDict    -- ^ client-server connection information
+  , serConnBackup :: Maybe ChanServer  -- ^ backup of AI connection in UI place
+  , serToSave     :: Save.ChanSave (State, StateServer)
+                                       -- ^ connection to the save thread
   }
 
 -- | Server state transformation monad.
@@ -80,10 +81,16 @@ instance MonadServer SerImplementation where
 
 instance MonadServerComm SerImplementation where
   {-# INLINE getsDict #-}
-  getsDict   f = SerImplementation $ gets $ f . serDict
-  {-# INLINE modifyDict #-}
-  modifyDict f = SerImplementation $ state $ \serS ->
-    let !newSerS = serS {serDict = f $ serDict serS}
+  getsDict f = SerImplementation $ gets $ f . serDict
+  {-# INLINE putDict #-}
+  putDict newSerDict = SerImplementation $ state $ \serS ->
+    let !newSerS = serS {serDict = newSerDict}
+    in ((), newSerS)
+  {-# INLINE getsConnBackup #-}
+  getsConnBackup f = SerImplementation $ gets $ f . serConnBackup
+  {-# INLINE putConnBackup #-}
+  putConnBackup newConnBackup = SerImplementation $ state $ \serS ->
+    let !newSerS = serS {serConnBackup = newConnBackup}
     in ((), newSerS)
   liftIO = SerImplementation . IO.liftIO
 
@@ -156,6 +163,7 @@ executorSer cops@COps{corule} ccui soptionsNxtCmdline sUIOptions = do
             -- state is empty, so the cached data is left empty and untouched
         , serServer = emptyStateServer
         , serDict = EM.empty
+        , serConnBackup = Nothing
         , serToSave
         }
       m = loopSer soptionsNxt executorClient

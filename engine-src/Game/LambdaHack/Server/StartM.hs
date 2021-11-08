@@ -232,7 +232,7 @@ resetFactions :: ContentData FactionKind -> FactionDict -> ContentId ModeKind
               -> Rnd FactionDict
 resetFactions cofact factionDold gameModeIdOld curDiffSerOld totalDepth mode
               automateAll = do
-  let rawCreate (ix, (fkGroup, initialActors)) = do
+  let rawCreate (fid, (fkGroup, initialActors)) = do
         -- Validation of content guarantess the existence of such faction kind.
         gkindId <- fromJust <$> opick cofact fkGroup (const True)
         let gkind@FactionKind{..} = okind cofact gkindId
@@ -269,8 +269,8 @@ resetFactions cofact factionDold gameModeIdOld curDiffSerOld totalDepth mode
             gvictims = EM.empty
             gvictimsD = gvictimsDnew
             gstash = Nothing
-        return (toEnum $ if fhasUI then ix else -ix, Faction{..})
-  lFs <- mapM rawCreate $ zip [1..] $ mroster mode
+        return (fid, Faction{..})
+  lFs <- mapM rawCreate $ zip [toEnum 1 ..] $ mroster mode
   let mkDipl diplMode =
         let f (ix1, ix2) =
               let adj1 fact = fact {gdipl = EM.insert ix2 diplMode (gdipl fact)}
@@ -363,7 +363,7 @@ populateDungeon = do
                              (ln, _, grp) : _ -> [(ln, 1, grp)]
                            else ginitial fact1
       -- Keep the same order of factions as in roster.
-      needInitialCrew = sortBy (comparing $ abs . fromEnum . fst)
+      needInitialCrew = sortBy (comparing fst)
                         $ filter (not . null . ginitialWolf . snd)
                         $ EM.assocs factionD
       getEntryLevels (_, fact) =

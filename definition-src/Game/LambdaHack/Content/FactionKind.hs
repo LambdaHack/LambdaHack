@@ -66,7 +66,7 @@ data FactionKind = FactionKind
 
 instance Binary FactionKind
 
--- | Team continuity index. Starting with 1, lower than 100.
+-- | Team continuity index. Starting with 1.
 newtype TeamContinuity = TeamContinuity Int
   deriving (Show, Eq, Ord, Enum, Generic)
 

@@ -122,12 +122,12 @@ instance MonadClientAtomic CliImplementation where
 -- initial states, in the @IO@ monad.
 executorCli :: CCUI -> UIOptions -> ClientOptions
             -> COps
-            -> Bool
             -> FactionId
             -> ChanServer
             -> IO ()
-executorCli ccui sUIOptions clientOptions cops@COps{corule} isUI fid cliDict =
-  let cliSession | isUI = Just $ emptySessionUI sUIOptions
+executorCli ccui sUIOptions clientOptions cops@COps{corule} fid cliDict =
+  let cliSession | isJust (requestUIS cliDict) =
+                     Just $ emptySessionUI sUIOptions
                  | otherwise = Nothing
       stateToFileName (cli, _) =
         ssavePrefixCli (soptions cli) <> Save.saveNameCli corule (sside cli)

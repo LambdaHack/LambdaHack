@@ -81,17 +81,21 @@ loopCli ccui sUIOptions clientOptions = do
   restored <- case restoredG of
     Just (cli, msess) | not $ snewGameCli clientOptions -> do
       -- Restore game.
-      schanF <- getsSession schanF
-      sccui <- getsSession sccui
-      maybe (return ()) (\sess -> modifySession $ const
-        sess {schanF, sccui, sUIOptions}) msess
+      case msess of
+        Just sess | hasUI -> do
+          schanF <- getsSession schanF
+          sccui <- getsSession sccui
+          putSession $ sess {schanF, sccui, sUIOptions}
+        _ -> return ()
       let noAnim = fromMaybe False $ snoAnim $ soptions cli
       putClient cli {soptions = clientOptions {snoAnim = Just noAnim}}
       return True
     Just (_, msessR) -> do
       -- Preserve previous history, if any.
-      maybe (return ()) (\sessR -> modifySession $ \sess ->
-        sess {shistory = shistory sessR}) msessR
+      case msessR of
+        Just sessR | hasUI ->
+          modifySession $ \sess -> sess {shistory = shistory sessR}
+        _ -> return ()
       return False
     _ -> return False
   debugPossiblyPrint $ cliendKindText <+> "client"

@@ -36,9 +36,9 @@ import qualified Game.LambdaHack.Common.Tile as Tile
 import           Game.LambdaHack.Common.Time
 import           Game.LambdaHack.Common.Types
 import           Game.LambdaHack.Common.Vector
+import           Game.LambdaHack.Content.FactionKind
 import qualified Game.LambdaHack.Content.ItemKind as IK
 import           Game.LambdaHack.Content.ModeKind
-import           Game.LambdaHack.Content.FactionKind
 import           Game.LambdaHack.Content.RuleKind
 import qualified Game.LambdaHack.Definition.Ability as Ability
 import           Game.LambdaHack.Definition.Defs
@@ -59,7 +59,7 @@ import           Game.LambdaHack.Server.State
 loopSer :: (MonadServerAtomic m, MonadServerComm m)
         => ServerOptions
              -- ^ player-supplied server options
-        -> (Bool -> FactionId -> ChanServer -> IO ())
+        -> (FactionId -> ChanServer -> IO ())
              -- ^ function that initializes a client and runs its main loop
         -> m ()
 loopSer serverOptions executorClient = do
@@ -230,14 +230,18 @@ loopUpd updConn = do
         endOrLoop loopUpdConn (restartGame updConn loopUpdConn)
       loopUpdConn = do
         factionD <- getsState sfactionD
-        -- Start handling actors with the single UI faction (positive ID),
+        -- Start handling actors with the single UI faction,
         -- to safely save/exit. Note that this hack fails if there are many UI
         -- factions (when we reenable multiplayer). Then players will request
         -- save&exit and others will vote on it and it will happen
         -- after the clip has ended, not at the start.
         -- Note that at most a single actor with a time-consuming action
         -- is processed per faction, so it's fair, but many loops are needed.
-        mapM_ handleFid $ EM.toDescList factionD
+        let hasUI (_, fact) = fhasUI (gkind fact)
+            (factionUI, factionsRest) = case break hasUI $ EM.assocs factionD of
+              (noUI1, ui : noUI2) -> (ui, noUI1 ++ noUI2)
+              _ -> error "no UI faction in the game"
+        mapM_ handleFid $ factionUI : factionsRest
         breakASAP <- getsServer sbreakASAP
         breakLoop <- getsServer sbreakLoop
         if breakASAP || breakLoop

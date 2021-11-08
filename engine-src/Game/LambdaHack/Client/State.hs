@@ -76,7 +76,7 @@ data StateClient = StateClient
       --   for (JS) speed. They need to be per-client distinct,
       --   because sometimes multiple clients interleave BFS computation.
   }
-  deriving Show
+  -- No @Show@ instance, because @stabs@ start undefined.
 
 type AlterLid = EM.EnumMap LevelId (PointArray.Array Word8)
 

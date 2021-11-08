@@ -156,11 +156,8 @@ saveNameCli corule side =
         case words $ rtitle corule of
           w : _ -> w
           _ -> "Game"
-      n = fromEnum side  -- we depend on the numbering hack to number saves
   in gameShortName
-     ++ (if n > 0
-         then ".human_" ++ show n
-         else ".computer_" ++ show (-n))
+     ++ ".team_" ++ show (fromEnum side)
      ++ ".sav"
 
 saveNameSer :: RuleContent -> String
