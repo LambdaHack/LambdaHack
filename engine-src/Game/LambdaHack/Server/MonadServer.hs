@@ -189,9 +189,6 @@ registerScore status fid = do
           let nScoreDict = EM.insert gameModeId ntable scoreDict
           in when worthMentioning $ liftIO $
                encodeEOF path Self.version (nScoreDict :: HighScore.ScoreDict)
-      chal | fhasUI $ gkind fact = curChalSer
-           | otherwise = curChalSer
-                           {cdiff = difficultyInverse (cdiff curChalSer)}
       theirVic (fi, fa) | isFoe fid fact fi
                           && not (isHorrorFact fa) = Just $ gvictims fa
                         | otherwise = Nothing
@@ -201,7 +198,7 @@ registerScore status fid = do
       ourVictims = EM.unionsWith (+) $ mapMaybe ourVic $ EM.assocs factionD
       table = HighScore.getTable gameModeId scoreDict
       registeredScore =
-        HighScore.register table total dungeonTotal time status date chal
+        HighScore.register table total dungeonTotal time status date curChalSer
                            (T.unwords $ tail $ T.words $ gname fact)
                            ourVictims theirVictims
                            (fhiCondPoly $ gkind fact)

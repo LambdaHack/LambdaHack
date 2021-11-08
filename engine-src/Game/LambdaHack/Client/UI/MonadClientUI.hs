@@ -76,8 +76,8 @@ import qualified Game.LambdaHack.Common.Save as Save
 import           Game.LambdaHack.Common.State
 import           Game.LambdaHack.Common.Time
 import           Game.LambdaHack.Common.Types
-import           Game.LambdaHack.Content.ModeKind
 import           Game.LambdaHack.Content.FactionKind
+import           Game.LambdaHack.Content.ModeKind
 import           Game.LambdaHack.Content.RuleKind
 import           Game.LambdaHack.Core.Random
 
@@ -350,9 +350,6 @@ scoreToSlideshow total status = do
   let fact = factionD EM.! fid
       table = HighScore.getTable gameModeId scoreDict
       gameModeName = mname gameMode
-      chal | fhasUI $ gkind fact = curChalSer
-           | otherwise = curChalSer
-                           {cdiff = difficultyInverse (cdiff curChalSer)}
       theirVic (fi, fa) | isFoe fid fact fi
                           && not (isHorrorFact fa) = Just $ gvictims fa
                         | otherwise = Nothing
@@ -361,7 +358,7 @@ scoreToSlideshow total status = do
                       | otherwise = Nothing
       ourVictims = EM.unionsWith (+) $ mapMaybe ourVic $ EM.assocs factionD
       (worthMentioning, (ntable, pos)) =
-        HighScore.register table total dungeonTotal time status date chal
+        HighScore.register table total dungeonTotal time status date curChalSer
                            (T.unwords $ tail $ T.words $ gname fact)
                            ourVictims theirVictims
                            (fhiCondPoly $ gkind fact)

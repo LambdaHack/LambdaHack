@@ -6,7 +6,7 @@ module Game.LambdaHack.Common.Faction
   , Status(..), Challenge(..)
   , tshowChallenge, gleader, isHorrorFact, noRunWithMulti
   , bannedPointmanSwitchBetweenLevels, isFoe, isFriend
-  , difficultyBound, difficultyDefault, difficultyCoeff, difficultyInverse
+  , difficultyBound, difficultyDefault, difficultyCoeff
   , defaultChallenge, possibleActorFactions, ppContainer
 #ifdef EXPOSE_INTERNAL
     -- * Internal operations
@@ -170,10 +170,6 @@ difficultyDefault = (1 + difficultyBound) `div` 2
 -- The function is its own inverse.
 difficultyCoeff :: Int -> Int
 difficultyCoeff n = difficultyDefault - n
-
--- The function is its own inverse.
-difficultyInverse :: Int -> Int
-difficultyInverse n = difficultyBound + 1 - n
 
 defaultChallenge :: Challenge
 defaultChallenge = Challenge { cdiff = difficultyDefault
