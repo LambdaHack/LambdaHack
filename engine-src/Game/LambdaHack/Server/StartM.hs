@@ -15,7 +15,6 @@ import Game.LambdaHack.Core.Prelude
 import qualified Control.Monad.Trans.State.Strict as St
 import qualified Data.EnumMap.Strict as EM
 import qualified Data.EnumSet as ES
-import qualified Data.IntMap.Strict as IM
 import           Data.Key (mapWithKeyM_)
 import qualified Data.Map.Strict as M
 import qualified Data.Set as S
@@ -218,10 +217,9 @@ mapFromFuns domain =
         in m2 `M.union` m1
   in foldr fromFun M.empty
 
-resetFactions :: ContentData FactionKind -> FactionDict -> ContentId ModeKind
-              -> Int -> Dice.AbsDepth -> ModeKind -> Bool
+resetFactions :: ContentData FactionKind -> Dice.AbsDepth -> ModeKind -> Bool
               -> Rnd FactionDict
-resetFactions cofact factionDold gameModeIdOld curDiffSerOld totalDepth mode
+resetFactions cofact totalDepth mode
               automateAll = do
   let rawCreate (fid, (fkGroup, initialActors)) = do
         -- Validation of content guarantess the existence of such faction kind.
@@ -244,13 +242,6 @@ resetFactions cofact factionDold gameModeIdOld curDiffSerOld totalDepth mode
                                   then makePhrase [MU.Ws $ MU.Text fname]
                                   else fname
             gcolor = M.findWithDefault Color.BrWhite colorName cmap
-            gvictimsDnew = case find (\fact -> gname fact == gnameNew)
-                                $ EM.elems factionDold of
-              Nothing -> EM.empty
-              Just fact ->
-                let sing = IM.singleton curDiffSerOld (gvictims fact)
-                    f = IM.unionWith (EM.unionWith (+))
-                in EM.insertWith f gameModeIdOld sing $ gvictimsD fact
         let gname = gnameNew
             gdoctrine = finitDoctrine
             gunderAI = finitUnderAI || mattract mode || automateAll
@@ -258,7 +249,6 @@ resetFactions cofact factionDold gameModeIdOld curDiffSerOld totalDepth mode
             gquit = Nothing
             _gleader = Nothing
             gvictims = EM.empty
-            gvictimsD = gvictimsDnew
             gstash = Nothing
         return (fid, Faction{..})
   lFs <- mapM rawCreate $ zip [toEnum 1 ..] $ mroster mode
@@ -301,13 +291,10 @@ gameReset serverOptions mGameMode mrandom = do
   let srngs = RNGs (Just dungeonSeed) (Just srandom)
   when (sdumpInitRngs serverOptions) $ dumpRngs srngs
   scoreTable <- restoreScore cops
-  factionDold <- getsState sfactionD
-  gameModeIdOld <- getsState sgameModeId
   teamGearOld <- getsServer steamGear
   flavourOld <- getsServer sflavour
   discoKindRevOld <- getsServer sdiscoKindRev
   clientStatesOld <- getsServer sclientStates
-  curChalSer <- getsServer $ scurChalSer . soptions
   let gameMode = fromMaybe INSERT_COIN
                  $ mGameMode `mplus` sgameMode serverOptions
       rnd :: Rnd (FactionDict, FlavourMap, DiscoveryKind, DiscoveryKindRev,
@@ -320,9 +307,7 @@ gameReset serverOptions mGameMode mrandom = do
         flavour <- dungeonFlavourMap cops flavourOld
         (discoKind, sdiscoKindRev) <- serverDiscos cops discoKindRevOld
         freshDng <- DungeonGen.dungeonGen cops serverOptions $ mcaves mode
-        factionD <- resetFactions cofact factionDold gameModeIdOld
-                                  (cdiff curChalSer)
-                                  (DungeonGen.freshTotalDepth freshDng)
+        factionD <- resetFactions cofact (DungeonGen.freshTotalDepth freshDng)
                                   mode (sautomateAll serverOptions)
         return ( factionD, flavour, discoKind
                , sdiscoKindRev, freshDng, modeKindId )

@@ -20,7 +20,6 @@ import Game.LambdaHack.Core.Prelude
 
 import           Data.Binary
 import qualified Data.EnumMap.Strict as EM
-import qualified Data.IntMap.Strict as IM
 import qualified Data.Text as T
 import           GHC.Generics (Generic)
 
@@ -60,9 +59,6 @@ data Faction = Faction
                                  -- ^ level and position of faction's
                                  --   shared inventory stash
   , gvictims  :: EM.EnumMap (ContentId ItemKind) Int  -- ^ members killed
-  , gvictimsD :: EM.EnumMap (ContentId ModeKind)
-                            (IM.IntMap (EM.EnumMap (ContentId ItemKind) Int))
-      -- ^ members killed in the past, by game mode and difficulty level
   }
   deriving (Show, Eq, Generic)
 
