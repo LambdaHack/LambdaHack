@@ -58,9 +58,6 @@ data StateClient = StateClient
                                     --   Faction.gleader is the old leader
   , _sside        :: FactionId      -- ^ faction controlled by the client
   , squit         :: Bool           -- ^ exit the game loop
-  , scurChal      :: Challenge      -- ^ current game challenge setup
-  , snxtChal      :: Challenge      -- ^ next game challenge setup
-  , smarkSuspect  :: Int            -- ^ whether to mark suspect features
   , scondInMelee  :: ES.EnumSet LevelId
                                     -- ^ whether we are in melee, per level
   , soptions      :: ClientOptions  -- ^ client options
@@ -68,6 +65,15 @@ data StateClient = StateClient
       -- ^ Instead of a BFS queue (list) we use these two arrays,
       --   for (JS) speed. They need to be per-client distinct,
       --   because sometimes multiple clients interleave BFS computation.
+
+    -- The three fields below only make sense for the UI faction,
+    -- but can't be in SessionUI, because AI-moved actors of the UI faction
+    -- require them for their action. Fortunately, being in StateClient
+    -- of the UI client, these are never lost, even when a different faction
+    -- becomes the UI faction.
+  , scurChal      :: Challenge      -- ^ current game challenge setup
+  , snxtChal      :: Challenge      -- ^ next game challenge setup
+  , smarkSuspect  :: Int            -- ^ whether to mark suspect features
   }
   -- No @Show@ instance, because @stabs@ start undefined.
 
@@ -132,12 +138,12 @@ emptyStateClient _sside =
     , _sleader = Nothing  -- no heroes yet alive
     , _sside
     , squit = False
-    , scurChal = defaultChallenge
-    , snxtChal = defaultChallenge
-    , smarkSuspect = 1
     , scondInMelee = ES.empty
     , soptions = defClientOptions
     , stabs = (undefined, undefined)
+    , scurChal = defaultChallenge
+    , snxtChal = defaultChallenge
+    , smarkSuspect = 1
     }
 
 -- | Cycle the 'smarkSuspect' setting.
@@ -183,11 +189,11 @@ instance Binary StateClient where
     put (show srandom)
     put _sleader
     put _sside
+    put scondInMelee
+    put soptions
     put scurChal
     put snxtChal
     put smarkSuspect
-    put scondInMelee
-    put soptions
 #ifdef WITH_EXPENSIVE_ASSERTIONS
     put sfper
 #endif
@@ -200,11 +206,11 @@ instance Binary StateClient where
     g <- get
     _sleader <- get
     _sside <- get
+    scondInMelee <- get
+    soptions <- get
     scurChal <- get
     snxtChal <- get
     smarkSuspect <- get
-    scondInMelee <- get
-    soptions <- get
     let sbfsD = EM.empty
         sundo = ()
         salter = EM.empty
