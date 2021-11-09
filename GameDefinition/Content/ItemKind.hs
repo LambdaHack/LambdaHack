@@ -567,9 +567,9 @@ potion2 = potionTemplate
   , ifreq    = [(TREASURE, 100), (ANY_GLASS, 100)]
   , icount   = 1
   , irarity  = [(5, 8), (10, 8)]
-  , iaspects = [ SetFlag Unique, ELabel "of Attraction"
-               , SetFlag Precious, SetFlag Lobable, SetFlag Fragile
-               , toVelocity 50 ]  -- identified
+  , iaspects = [ SetFlag Unique, ELabel "of Attraction", SetFlag MetaGame
+               , SetFlag Precious ]
+               ++ iaspects potionTemplate
   , ieffects = [ Dominate
                , toOrganGood S_HASTED (20 + 1 `d` 5)
                , OnSmash (Explode S_PHEROMONE)
@@ -636,9 +636,9 @@ potion8 = potionTemplate
   , ifreq    = [(TREASURE, 100), (ANY_GLASS, 100)]
   , icount   = 1
   , irarity  = [(10, 5)]
-  , iaspects = [ SetFlag Unique, ELabel "of Love"
-               , SetFlag Precious, SetFlag Lobable, SetFlag Fragile
-               , toVelocity 50 ]  -- identified
+  , iaspects = [ SetFlag Unique, ELabel "of Love", SetFlag MetaGame
+               , SetFlag Precious ]
+               ++ iaspects potionTemplate
   , ieffects = [ RefillHP 60, RefillCalm (-60)
                , toOrganGood S_ROSE_SMELLING (80 + 1 `d` 20)
                , OnSmash (Explode S_HEALING_MIST_2)
@@ -1607,11 +1607,12 @@ hammer2 = hammerTemplate
 hammer3 = hammerTemplate
   { ifreq    = [(COMMON_ITEM, 3), (STARTING_WEAPON, 1)]
   , iverbHit = "puncture"
-  , iweight  = 2400  -- weight gives it away
+  , iweight  = 2400
   , idamage  = 12 `d` 1
   , iaspects = [ Timeout 12  -- balance, or @DupItem@ would break the game
+               , SetFlag MetaGame  -- weight gives it away after seen once
                , EqpSlot EqpSlotWeaponBig]
-               ++ delete (PresentAs HAMMER_UNKNOWN) (iaspects hammerTemplate)
+               ++ iaspects hammerTemplate
   , idesc    = "This hammer sports a long metal handle that increases the momentum of the sharpened head's swing, at the cost of long recovery."
   }
 hammerParalyze = hammerTemplate
@@ -1629,13 +1630,14 @@ hammerSpark = hammerTemplate
   { iname    = "The Grand Smithhammer"
   , ifreq    = [(TREASURE, 20)]
   , irarity  = [(5, 1), (8, 6)]
-  , iweight  = 2400  -- weight gives it away
+  , iweight  = 2400
   , idamage  = 12 `d` 1
   , iaspects = [ SetFlag Unique
+               , SetFlag MetaGame  -- weight gives it away after seen once
                , Timeout 10
                , EqpSlot EqpSlotWeaponBig
                , AddSkill SkShine 3]
-               ++ delete (PresentAs HAMMER_UNKNOWN) (iaspects hammerTemplate)
+               ++ iaspects hammerTemplate
   , ieffects = [Explode S_SPARK]
       -- we can't use a focused explosion, because it would harm the hammer
       -- wielder as well, unlike this one

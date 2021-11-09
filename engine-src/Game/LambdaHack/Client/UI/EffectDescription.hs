@@ -488,7 +488,7 @@ aspectToSentence feat =
     SetFlag Blast -> Nothing
     SetFlag Condition -> Nothing
     SetFlag Unique -> Just "It is one of a kind."
-    SetFlag MetaGame -> Just "It's characteristic to a person and easy to recognize once learned, even under very different circumstances."
+    SetFlag MetaGame -> Just "It's so characteristic that it's recognizable every time after being identified once, even under very different circumstances."
     SetFlag MinorEffects -> Nothing
     SetFlag MinorAspects -> Nothing
     SetFlag Meleeable -> Just "It is considered for melee strikes."
