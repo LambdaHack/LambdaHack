@@ -231,7 +231,8 @@ updateConn executorClient = do
     let extraFacts = EM.filterWithKey (\fid _ -> EM.notMember fid oldD3)
                                       factionD
     extraD <- liftIO $ mapM mkChanServer extraFacts
-    let newD = oldD3 `EM.union` extraD
+    let exclusiveUnion = EM.unionWith $ \_ _ -> error "forbidden duplicate"
+        newD = oldD3 `exclusiveUnion` extraD
     putDict newD
     -- Spawn the extra AI client threads.
     liftIO $ mapWithKeyM_ forkClient extraD

@@ -110,7 +110,8 @@ reinitGame factionDold = do
       fidToTeam fid = fteam $ gkind $ factionDold EM.! fid
       metaDiscoOldTeam =
         EM.fromList $ map (first fidToTeam) $ EM.assocs metaDiscoOldFid
-      metaDiscoAll = metaDiscoOldTeam `EM.union` metaBackupOld
+      exclusiveUnion = EM.unionWith $ \_ _ -> error "forbidden duplicate"
+      metaDiscoAll = metaDiscoOldTeam `exclusiveUnion` metaBackupOld
       currentTeams = ES.fromList $ map (fteam . gkind) $ EM.elems factionD
       metaBackupNew = EM.withoutKeys metaDiscoAll currentTeams
       stateNew fact = case EM.lookup (fteam $ gkind fact) metaDiscoAll of
