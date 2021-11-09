@@ -49,8 +49,8 @@ integrationTests = testGroup "integrationTests" $
   ++
   let corule = RK.makeData Content.RuleKind.standardRules
       uiOptions = unsafePerformIO $ mkUIOptions corule defClientOptions
-      testFontset :: (Int, String) -> TestTree
-      testFontset (n, fontsetName) =
+      testFontset :: Int -> String -> TestTree
+      testFontset n fontsetName =
         testCase ("SDL fronted; init only; " ++ fontsetName ++ " fontset") $ do
           -- This test only works when run from the same directory that
           -- the .cabal file is in. And this is what Debian needs, so OK.
@@ -62,5 +62,5 @@ integrationTests = testGroup "integrationTests" $
                          , "--fontset", fontsetName ]
           serverOptions2 <- handleParseResult $ execParserPure defaultPrefs serverOptionsPI args2
           tieKnot serverOptions2
-  in map testFontset $ zip [0..] $ map T.unpack $ map fst $ uFontsets uiOptions
+  in zipWith testFontset [0..] $ map (T.unpack . fst) $ uFontsets uiOptions
 #endif

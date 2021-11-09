@@ -167,7 +167,7 @@ cmdSemanticsLeader cmd = case cmd of
     CmdLeader $ \leader -> Left <$> chooseItemApplyHuman leader ts
   PickLeader k -> CmdNoNeed $ Left <$> pickLeaderHuman k
   PickLeaderWithPointer ->
-    CmdLeader $ \leader -> Left <$> pickLeaderWithPointerHuman leader
+    CmdLeader $ fmap Left . pickLeaderWithPointerHuman
   PointmanCycle direction ->
     CmdLeader $ \leader -> Left <$> pointmanCycleHuman leader direction
   PointmanCycleLevel direction ->
@@ -205,8 +205,8 @@ cmdSemanticsLeader cmd = case cmd of
   AimItem -> addNoError aimItemHuman
   AimAscend k -> CmdNoNeed $ Left <$> aimAscendHuman k
   EpsIncr b -> addNoError $ epsIncrHuman b
-  XhairUnknown -> CmdLeader $ \leader -> Left <$> xhairUnknownHuman leader
-  XhairItem -> CmdLeader $ \leader -> Left <$> xhairItemHuman leader
+  XhairUnknown -> CmdLeader $ fmap Left . xhairUnknownHuman
+  XhairItem -> CmdLeader $ fmap Left . xhairItemHuman
   XhairStair up -> CmdLeader $ \leader -> Left <$> xhairStairHuman leader up
   XhairPointerFloor -> addNoError xhairPointerFloorHuman
   XhairPointerMute -> addNoError xhairPointerMuteHuman
@@ -222,5 +222,4 @@ addLeader cmdCli =
   CmdLeader $ \leader -> cmdCli leader >> return (Left Nothing)
 
 weaveLeader :: Monad m => (ActorId -> m (FailOrCmd ReqUI)) -> CmdLeaderNeed m
-weaveLeader cmdCli =
-  CmdLeader $ \leader -> weaveJust <$> cmdCli leader
+weaveLeader cmdCli = CmdLeader $ fmap weaveJust . cmdCli

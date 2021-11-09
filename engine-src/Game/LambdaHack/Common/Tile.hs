@@ -68,10 +68,8 @@ speedupTile allClear cotile =
   -- Vectors pack bools as Word8 by default. No idea if the extra memory
   -- taken makes random lookups more or less efficient, so not optimizing
   -- further, until I have benchmarks.
-  let isClearTab | allClear = createTab cotile
-                              $ not . (== maxBound) . TK.talter
-                 | otherwise = createTab cotile
-                               $ kindHasFeature TK.Clear
+  let isClearTab | allClear = createTab cotile $ (/= maxBound) . TK.talter
+                 | otherwise = createTab cotile $ kindHasFeature TK.Clear
       isLitTab = createTab cotile $ not . kindHasFeature TK.Dark
       isHideoutTab = createTab cotile $ \tk ->
         kindHasFeature TK.Walkable tk  -- implies not unknown

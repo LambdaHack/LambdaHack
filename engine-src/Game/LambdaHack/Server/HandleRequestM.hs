@@ -49,9 +49,9 @@ import qualified Game.LambdaHack.Common.Tile as Tile
 import           Game.LambdaHack.Common.Time
 import           Game.LambdaHack.Common.Types
 import           Game.LambdaHack.Common.Vector
+import           Game.LambdaHack.Content.FactionKind
 import qualified Game.LambdaHack.Content.ItemKind as IK
 import           Game.LambdaHack.Content.ModeKind
-import           Game.LambdaHack.Content.FactionKind
 import qualified Game.LambdaHack.Content.TileKind as TK
 import qualified Game.LambdaHack.Definition.Ability as Ability
 import           Game.LambdaHack.Definition.Defs
@@ -155,7 +155,7 @@ processWatchfulness mwait aid = do
         execUpdAtomic $ UpdWaitActor aid (WWait n) WWatch
     WSleep ->
       if mwait /= Just False  -- lurk can't wake up regardless; too short
-         && (not (isJust mwait)  -- not a wait
+         && (isNothing mwait  -- not a wait
              || uneasy  -- spooked
              || not (deltaBenign $ bhpDelta b))  -- any HP lost
       then execUpdAtomic $ UpdWaitActor aid WSleep WWake
@@ -250,25 +250,25 @@ switchLeader fid aidNew = do
     Just leader -> do
       b <- getsState $ getActorBody leader
       return $! blid b
-  if | blid bPre /= arena && banned ->  -- catch the cheating clients
-       execFailure aidNew ReqWait{-hack-} NoChangeDunLeader
-     | otherwise -> do
-       execUpdAtomic $ UpdLeadFaction fid mleader (Just aidNew)
-     -- We exchange times of the old and new leader.
-     -- This permits an abuse, because a slow tank can be moved fast
-     -- by alternating between it and many fast actors (until all of them
-     -- get slowed down by this and none remain). But at least the sum
-     -- of all times of a faction is conserved. And we avoid double moves
-     -- against the UI player caused by his leader changes. There may still
-     -- happen double moves caused by AI leader changes, but that's rare.
-     -- The flip side is the possibility of multi-moves of the UI player
-     -- as in the case of the tank.
-     -- Warning: when the action is performed on the server,
-     -- the time of the actor is different than when client prepared that
-     -- action, so any client checks involving time should discount this.
-       case mleader of
-         Just aidOld | aidOld /= aidNew -> swapTime aidOld aidNew
-         _ -> return ()
+  if blid bPre /= arena && banned  -- catch the cheating clients
+  then execFailure aidNew ReqWait{-hack-} NoChangeDunLeader
+  else do
+    execUpdAtomic $ UpdLeadFaction fid mleader (Just aidNew)
+    -- We exchange times of the old and new leader.
+    -- This permits an abuse, because a slow tank can be moved fast
+    -- by alternating between it and many fast actors (until all of them
+    -- get slowed down by this and none remain). But at least the sum
+    -- of all times of a faction is conserved. And we avoid double moves
+    -- against the UI player caused by his leader changes. There may still
+    -- happen double moves caused by AI leader changes, but that's rare.
+    -- The flip side is the possibility of multi-moves of the UI player
+    -- as in the case of the tank.
+    -- Warning: when the action is performed on the server,
+    -- the time of the actor is different than when client prepared that
+    -- action, so any client checks involving time should discount this.
+    case mleader of
+      Just aidOld | aidOld /= aidNew -> swapTime aidOld aidNew
+      _ -> return ()
 
 -- * ReqMove
 
@@ -1053,7 +1053,7 @@ reqMoveItem absentPermitted aid calmE (iid, kOld, fromCStore, toCStore) = do
   -- The effect of dropping previous items from this series may have
   -- increased or decreased the number of this item.
   let k = min kOld $ fst $ EM.findWithDefault (0, []) iid bagFrom
-  let !_A = if absentPermitted then True else k == kOld
+  let !_A = absentPermitted || k == kOld
   if
    | absentPermitted && k == 0 -> return ()
    | k < 1 || fromCStore == toCStore -> execFailure aid req ItemNothing

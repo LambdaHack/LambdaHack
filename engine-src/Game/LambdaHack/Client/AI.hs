@@ -83,6 +83,6 @@ pickActorAndAction foeAssocs friendAssocs maid aid = do
   -- a non-waiting action should be found.
   -- If a new leader found, there is hope (but we don't check)
   -- that he gets a non-waiting action without any desperate measures.
-  let retry = maybe False (aidToMove ==) maid
+  let retry = Just aidToMove == maid
   treq <- pickAction foeAssocs friendAssocs aidToMove retry
   return (aidToMove, treq, oldFlee)

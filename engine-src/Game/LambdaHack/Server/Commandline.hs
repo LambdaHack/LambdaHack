@@ -182,7 +182,7 @@ keepAutomatedP =
          <> help "Keep factions automated after game over" )
 
 newGameP :: Parser (Maybe Int)
-newGameP = optional $ max 1 <$> min difficultyBound <$>
+newGameP = optional $ max 1 . min difficultyBound <$>
   option auto (  long "newGame"
               <> help "Start a new game, overwriting the save file and often forgetting history, with difficulty for all UI players set to N"
               <> metavar "N" )

@@ -63,8 +63,8 @@ import           Game.LambdaHack.Common.Time
 import           Game.LambdaHack.Common.Types
 import           Game.LambdaHack.Common.Vector
 import           Game.LambdaHack.Content.CaveKind (cname)
-import qualified Game.LambdaHack.Content.ItemKind as IK
 import qualified Game.LambdaHack.Content.FactionKind as FK
+import qualified Game.LambdaHack.Content.ItemKind as IK
 import           Game.LambdaHack.Content.RuleKind
 import           Game.LambdaHack.Content.TileKind (TileKind, isUknownSpace)
 import qualified Game.LambdaHack.Content.TileKind as TK
@@ -424,7 +424,7 @@ drawFrameStatus drawnLevelId = do
   SessionUI{sselected, saimMode, swaitTimes, sitemSel} <- getSession
   mleader <- getsClient sleader
   mxhairPos <- mxhairToPos
-  mbfs <- maybe (return Nothing) (\aid -> Just <$> getCacheBfs aid) mleader
+  mbfs <- maybe (return Nothing) (fmap Just . getCacheBfs) mleader
   (mhairDesc, mxhairHP, mxhairWatchfulness) <- targetDescXhair
   lvl <- getLevel drawnLevelId
   side <- getsClient sside
@@ -761,7 +761,7 @@ drawLeaderDamage width leader = do
           -- but often it's the player's mistake, so show them anyway
       showStrongest showInBrief l =
         let lToDisplay = concatMap (ppDice showInBrief) l
-            (ldischarged, lrest) = span (not . fst) lToDisplay
+            (ldischarged, lrest) = break fst lToDisplay
             lWithBonus = case map snd lrest of
               [] -> []  -- no timeout-free organ, e.g., rattlesnake or hornet
               (ldmg, lextra) : rest -> (ldmg ++ lbonus, lextra) : rest

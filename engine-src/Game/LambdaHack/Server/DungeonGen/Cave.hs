@@ -237,7 +237,7 @@ buildCave cops@COps{cocave, coplace, cotile, coTileSpeedup}
         addedConnects <- do
           let cauxNum =
                 round $ cauxConnects * (fromIntegralWrap :: Int -> Rational)
-                                         (fst lgrid * snd lgrid)
+                                         (uncurry (*) lgrid)
           cns <- map head . group . sort
                  <$> replicateM cauxNum (randomConnection lgrid)
           -- This allows connections through a single void room,

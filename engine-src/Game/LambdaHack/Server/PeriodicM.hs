@@ -38,10 +38,10 @@ import qualified Game.LambdaHack.Common.Tile as Tile
 import           Game.LambdaHack.Common.Time
 import           Game.LambdaHack.Common.Types
 import qualified Game.LambdaHack.Content.CaveKind as CK
+import           Game.LambdaHack.Content.FactionKind
 import           Game.LambdaHack.Content.ItemKind (ItemKind)
 import qualified Game.LambdaHack.Content.ItemKind as IK
 import           Game.LambdaHack.Content.ModeKind
-import           Game.LambdaHack.Content.FactionKind
 import           Game.LambdaHack.Core.Frequency
 import           Game.LambdaHack.Core.Random
 import qualified Game.LambdaHack.Definition.Ability as Ability
@@ -415,7 +415,7 @@ leadLevelSwitch = do
                 canHelpMelee =
                   not leaderStuck
                   && length oursCloseMelee >= 2
-                  && length foesClose >= 1
+                  && not (null foesClose)
                   && not (all (\b -> any (adjacent (bpos b) . bpos) foes)
                               oursCloseMelee)
             unless (closeToEnemyStash || canHelpMelee || null freqList) $ do

@@ -161,7 +161,7 @@ attrStringToAL :: AttrString -> AttrLine
 attrStringToAL s =
 #ifdef WITH_EXPENSIVE_ASSERTIONS
   assert (allB (\ac -> Color.charFromW32 ac /= '\n') s) $  -- expensive in menus
-  assert (length s == 0 || last s /= Color.spaceAttrW32
+  assert (null s || last s /= Color.spaceAttrW32
           `blame` map Color.charFromW32 s) $
     -- only expensive for menus, but often violated by code changes, so disabled
     -- outside test runs
@@ -181,7 +181,7 @@ textToAL !t =
       s = T.foldr f [] t
   in AttrLine $
 #ifdef WITH_EXPENSIVE_ASSERTIONS
-  assert (length s == 0 || last s /= Color.spaceAttrW32 `blame` t)
+  assert (null s || last s /= Color.spaceAttrW32 `blame` t)
 #endif
     s
 
@@ -196,7 +196,7 @@ textFgToAL !fg !t =
       s = T.foldr f [] t
   in AttrLine $
 #ifdef WITH_EXPENSIVE_ASSERTIONS
-  assert (length s == 0 || last s /= Color.spaceAttrW32 `blame` t)
+  assert (null s || last s /= Color.spaceAttrW32 `blame` t)
 #endif
     s
 
@@ -285,15 +285,14 @@ ytranslateOverlay :: Int -> Overlay -> Overlay
 ytranslateOverlay = xytranslateOverlay 0
 
 offsetOverlay :: [AttrLine] -> Overlay
-offsetOverlay l = map (first $ PointUI 0) $ zip [0..] l
+offsetOverlay = zipWith (curry (first $ PointUI 0)) [0..]
 
 offsetOverlayX :: [(Int, AttrLine)] -> Overlay
-offsetOverlayX l =
-  map (\(y, (x, al)) -> (PointUI x y, al)) $ zip [0..] l
+offsetOverlayX = zipWith (\y (x, al) -> (PointUI x y, al)) [0..]
 
 typesetXY :: (Int, Int) -> [AttrLine] -> Overlay
 typesetXY (xoffset, yoffset) =
-  map (\(y, al) -> (PointUI xoffset (y + yoffset), al)) . zip [0..]
+  zipWith (\y al -> (PointUI xoffset (y + yoffset), al)) [0..]
 
 -- @f@ should not enlarge the line beyond screen width nor introduce linebreaks.
 updateLine :: Int -> (Int -> AttrString -> AttrString) -> Overlay -> Overlay

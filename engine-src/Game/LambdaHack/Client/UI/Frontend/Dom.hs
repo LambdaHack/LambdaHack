@@ -254,7 +254,7 @@ display FrontendSession{..} !curFrame = flip runDOM undefined $ do
         let Point{..} = toEnum i
             Color.AttrChar{acAttr=Color.Attr{fg=fgRaw,bg}, acChar} =
               Color.attrCharFromW32 $ Color.AttrCharW32 w
-            fg | py `mod` 2 == 0 && fgRaw == Color.White = Color.AltWhite
+            fg | even py && fgRaw == Color.White = Color.AltWhite
                | otherwise = fgRaw
             (!cell, !style) = scharCells V.! i
         if | acChar == ' ' -> setTextContent cell $ Just ("\x00a0" :: JSString)

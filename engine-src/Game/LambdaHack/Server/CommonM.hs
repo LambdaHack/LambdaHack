@@ -45,9 +45,9 @@ import           Game.LambdaHack.Common.State
 import qualified Game.LambdaHack.Common.Tile as Tile
 import           Game.LambdaHack.Common.Time
 import           Game.LambdaHack.Common.Types
+import           Game.LambdaHack.Content.FactionKind
 import           Game.LambdaHack.Content.ItemKind (ItemKind)
 import qualified Game.LambdaHack.Content.ItemKind as IK
-import           Game.LambdaHack.Content.FactionKind
 import           Game.LambdaHack.Core.Random
 import qualified Game.LambdaHack.Definition.Ability as Ability
 import           Game.LambdaHack.Definition.Defs
@@ -326,7 +326,7 @@ deduceKilled aid = do
   fact <- getsState $ (EM.! bfid body) . sfactionD
   when (fneverEmpty $ gkind fact) $ do
     actorsAlive <- anyActorsAlive (bfid body) aid
-    when (not actorsAlive) $
+    unless actorsAlive $
       deduceQuits (bfid body) $ Status Killed (fromEnum $ blid body) Nothing
 
 anyActorsAlive :: MonadServer m => FactionId -> ActorId -> m Bool
@@ -347,8 +347,7 @@ electLeader fid lid aidToReplace = do
     onThisLevel <- getsState $ fidActorRegularAssocs fid lid
     let candidates = filter (\(_, b) -> bwatch b /= WSleep) onThisLevel
                      ++ awake ++ sleeping ++ negative
-        mleaderNew =
-          listToMaybe $ filter (/= aidToReplace) $ map fst candidates
+        mleaderNew = find (/= aidToReplace) $ map fst candidates
     execUpdAtomic $ UpdLeadFaction fid mleader mleaderNew
 
 setFreshLeader :: MonadServerAtomic m => FactionId -> ActorId -> m ()

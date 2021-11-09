@@ -88,7 +88,7 @@ validateSingleRoster cofact caves roster =
          fkGroupHasUIand (fkGroup, _) =
            ofoldlGroup' cofact fkGroup fkHasUIand True
      in [ "potentially less than one UI client"
-        | length (filter fkGroupHasUIand roster) < 1 ]
+        | not (any fkGroupHasUIand roster) ]
   ++ let fkTokens acc _ _ fk = fteam fk : acc
          fkGroupTokens (fkGroup, _) = ofoldlGroup' cofact fkGroup fkTokens []
          tokens = concatMap (nub . sort . fkGroupTokens) roster
@@ -106,7 +106,7 @@ validateSingleRoster cofact caves roster =
         ++ [ "player is confused by both positive and negative level numbers"
            | signum minD /= signum maxD ]
         ++ [ "player is confused by level numer zero"
-           | any (== 0) keys ]
+           | 0 `elem` keys ]
 
 -- | Validate game mode kinds together.
 validateAll :: [ModeKind] -> ContentData ModeKind -> [Text]

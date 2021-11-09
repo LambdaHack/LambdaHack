@@ -39,7 +39,7 @@ import Prelude ()
 import Game.LambdaHack.Core.Prelude
 
 import qualified Data.Char as Char
-import           Data.Either (isLeft)
+import           Data.Either
 import qualified Data.EnumMap.Strict as EM
 import qualified Data.EnumSet as ES
 import qualified Data.Map.Strict as M
@@ -626,7 +626,7 @@ goToXhairExplorationMode leader initialStep run = do
        xhair <- getsSession sxhair
        xhairGoTo <- getsSession sxhairGoTo
        mfail <-
-         if not (isNothing xhairGoTo) && xhairGoTo /= xhair
+         if isJust xhairGoTo && xhairGoTo /= xhair
          then failWith "crosshair position changed"
          else do
            when (isNothing xhairGoTo) $  -- set it up for next steps
@@ -1147,7 +1147,7 @@ processTileActions leader bumping tpos tas = do
                || bproj sb && tileMinSkill > 0 ->  -- local skill check
                processTA (Just useResult) rest bumpFailed
                  -- embed won't fire; try others
-             | all (not . IK.isEffEscape) (IK.ieffects $ getKind iid) ->
+             | (not . any IK.isEffEscape) (IK.ieffects $ getKind iid) ->
                processTA (Just True) rest False
                  -- no escape checking needed, effect found;
                  -- also bumpFailed reset, because must have been
@@ -1423,7 +1423,7 @@ helpHuman cmdSemInCxtOfKM = do
       splitHelp (t, okx) = splitOKX fontSetup True rwidth rheight rwidth
                                     (textToAS t) [K.spaceKM, K.escKM] okx
       sli = toSlideshow fontSetup displayTutorialHints
-            $ concat $ map splitHelp $ modeH : keyH ++ manualH
+            $ concatMap splitHelp $ modeH : keyH ++ manualH
   -- Thus, the whole help menu corresponds to a single menu of item or lore,
   -- e.g., shared stash menu. This is especially clear when the shared stash
   -- menu contains many pages.
@@ -1554,13 +1554,13 @@ itemMenuHuman leader cmdSemInCxtOfKM = do
                   || destCStore == CGround && mstash == Just (blid b, bpos b)
                 Apply{} ->
                   let skill = Ability.getSk Ability.SkApply actorCurAndMaxSk
-                  in not $ either (const False) id
-                     $ permittedApply corule localTime skill calmE
-                                      (Just fromCStore) itemFull kit
+                  in not $ fromRight False
+                         $ permittedApply corule localTime skill calmE
+                                          (Just fromCStore) itemFull kit
                 Project{} ->
                   let skill = Ability.getSk Ability.SkProject actorCurAndMaxSk
-                  in not $ either (const False) id
-                     $ permittedProject False skill calmE itemFull
+                  in not $ fromRight False
+                         $ permittedProject False skill calmE itemFull
                 _ -> False
               fmt n k h = " " <> T.justifyLeft n ' ' k <> " " <> h
               offsetCol2 = 11
@@ -1597,13 +1597,13 @@ itemMenuHuman leader cmdSemInCxtOfKM = do
                   let (newAid, (bNew, newCStore)) = foundAlt !! (n - 1)
                   fact <- getsState $ (EM.! side) . sfactionD
                   let banned = bannedPointmanSwitchBetweenLevels fact
-                  if | blid bNew /= blid b && banned ->
-                       weaveJust <$> failSer NoChangeDunLeader
-                     | otherwise -> do
-                       void $ pickLeader True newAid
-                       modifySession $ \sess ->
-                         sess {sitemSel = Just (iid, newCStore, False)}
-                       itemMenuHuman newAid cmdSemInCxtOfKM
+                  if blid bNew /= blid b && banned
+                  then weaveJust <$> failSer NoChangeDunLeader
+                  else do
+                    void $ pickLeader True newAid
+                    modifySession $ \sess ->
+                      sess {sitemSel = Just (iid, newCStore, False)}
+                    itemMenuHuman newAid cmdSemInCxtOfKM
                 _ -> error $ "" `showFailure` km
               Just (_desc, _cats, cmd) -> do
                 modifySession $ \sess ->
@@ -1753,7 +1753,7 @@ mainMenuHuman cmdSemInCxtOfKM = do
       glueLines ll = ll
       backstory | isSquareFont propFont = fst rintroScreen
                 | otherwise = glueLines $ fst rintroScreen
-      backstoryAL = map stringToAL $ map (dropWhile (== ' ')) backstory
+      backstoryAL = map (stringToAL . dropWhile (== ' ')) backstory
       blurb = attrLinesToFontMap [(propFont, backstoryAL)]
   generateMenu cmdSemInCxtOfKM blurb kds gameInfo "main"
 

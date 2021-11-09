@@ -44,8 +44,8 @@ import           Game.LambdaHack.Common.Time
 import           Game.LambdaHack.Common.Types
 import           Game.LambdaHack.Common.Vector
 import qualified Game.LambdaHack.Content.CaveKind as CK
-import qualified Game.LambdaHack.Content.ItemKind as IK
 import           Game.LambdaHack.Content.FactionKind
+import qualified Game.LambdaHack.Content.ItemKind as IK
 import           Game.LambdaHack.Content.RuleKind
 import           Game.LambdaHack.Content.TileKind (isUknownSpace)
 import           Game.LambdaHack.Core.Random
@@ -184,9 +184,9 @@ getCachePath :: MonadClient m => ActorId -> Point -> m (Maybe AndPath)
 getCachePath aid target = do
   b <- getsState $ getActorBody aid
   let source = bpos b
-  if | source == target ->
-       return $ Just $ AndPath (bpos b) [] target 0  -- speedup
-     | otherwise -> snd <$> getCacheBfsAndPath aid target
+  if source == target
+  then return $ Just $ AndPath (bpos b) [] target 0  -- speedup
+  else snd <$> getCacheBfsAndPath aid target
 
 createPath :: MonadClient m => ActorId -> Target -> m TgtAndPath
 createPath aid tapTgt = do
@@ -382,7 +382,7 @@ embedBenefit fleeVia aid pbags = do
           -- Escape (or guard) only after exploring, for high score, etc.
           let escapeOrGuard =
                 fcanEscape (gkind fact)
-                || fleeVia `elem` [ViaExit]  -- target to guard after explored
+                || fleeVia == ViaExit  -- target to guard after explored
           in if fleeVia `elem` [ViaAnything, ViaEscape, ViaExit]
                 && escapeOrGuard
                 && allExplored

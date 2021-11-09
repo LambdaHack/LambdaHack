@@ -180,7 +180,7 @@ attrLinesToFontMap :: [(DisplayFont, [AttrLine])] -> FontOverlayMap
 attrLinesToFontMap blurb =
   let zipAttrLines :: Int -> [AttrLine] -> (Overlay, Int)
       zipAttrLines start als =
-        ( map (first $ PointUI 0) $ zip [start ..] als
+        ( zipWith (curry (first $ PointUI 0)) [start ..] als
         , start + length als )
       addOverlay :: (FontOverlayMap, Int) -> (DisplayFont, [AttrLine])
                  -> (FontOverlayMap, Int)
@@ -202,7 +202,7 @@ wrapOKX displayFont ystart xstart width ks =
   let overlayLineFromStrings :: Int -> Int -> [String] -> (PointUI, AttrLine)
       overlayLineFromStrings xlineStart y strings =
         let p = PointUI xlineStart y
-        in (p, stringToAL $ intercalate " " (reverse strings))
+        in (p, stringToAL $ unwords (reverse strings))
       f :: ((Int, Int), (Int, [String], Overlay, [KYX])) -> (K.KM, String)
         -> ((Int, Int), (Int, [String], Overlay, [KYX]))
       f ((y, x), (xlineStart, kL, kV, kX)) (key, s) =
@@ -384,7 +384,7 @@ highSlideshow fontSetup@FontSetup{monoFont} displayTutorialHints
       splitScreen ts =
         splitOKX fontSetup False width height width al [K.spaceKM, K.escKM]
                  (EM.singleton monoFont ts, [])
-  in toSlideshow fontSetup displayTutorialHints $ concat $ map splitScreen tts
+  in toSlideshow fontSetup displayTutorialHints $ concatMap splitScreen tts
 
 -- | Show a screenful of the high scores table.
 -- Parameter @entries@ is the number of (3-line) scores to be shown.

@@ -137,7 +137,7 @@ aspectRecordToList AspectRecord{..} =
      | (sk, n) <- Ability.skillsToList aSkills ]
   ++ [IK.SetFlag feat | feat <- ES.elems $ Ability.flags aFlags]
   ++ [IK.ELabel aELabel | not $ T.null aELabel]
-  ++ [IK.ToThrow aToThrow | not $ aToThrow == IK.ThrowMod 100 100 1]
+  ++ [IK.ToThrow aToThrow | aToThrow /= IK.ThrowMod 100 100 1]
   ++ maybe [] (\ha -> [IK.PresentAs ha]) aPresentAs
   ++ maybe [] (\slot -> [IK.EqpSlot slot]) aEqpSlot
 
@@ -168,7 +168,7 @@ meanAspect kind = foldl' addMeanAspect emptyAspectRecord (IK.iaspects kind)
 onlyMinorEffects :: AspectRecord -> IK.ItemKind -> Bool
 onlyMinorEffects ar kind =
   checkFlag Ability.MinorEffects ar  -- override
-  || not (any (not . IK.alwaysDudEffect) $ IK.ieffects kind)
+  || all IK.alwaysDudEffect (IK.ieffects kind)
        -- exhibits no major effects
 
 itemTrajectory :: AspectRecord -> IK.ItemKind -> [Point]

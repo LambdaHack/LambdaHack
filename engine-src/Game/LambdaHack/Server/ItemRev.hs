@@ -158,10 +158,10 @@ serverDiscos COps{coitem} (DiscoveryKindRev discoRevFromPreviousGame) = do
                        (olength coitem)
                        ixs
   let udiscoRev = U.fromListN (olength coitem) shuffled
-      f :: (ContentId ItemKind, Word16) -> (ItemKindIx, ContentId ItemKind)
-      f (ik, ikx) = (toItemKindIx ikx, ik)
+      f :: ContentId ItemKind -> Word16 -> (ItemKindIx, ContentId ItemKind)
+      f ik ikx = (toItemKindIx ikx, ik)
       -- Not @fromDistinctAscList@, because it's the reverse map.
-      discoS = EM.fromList $ map f $ zip [toEnum 0 ..] $ U.toList udiscoRev
+      discoS = EM.fromList $ zipWith f [toEnum 0 ..] $ U.toList udiscoRev
   return (discoS, DiscoveryKindRev udiscoRev)
 
 -- | Keep in a vector the information that is retained from playthrough

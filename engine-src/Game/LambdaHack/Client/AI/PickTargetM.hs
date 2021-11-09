@@ -393,18 +393,19 @@ computeTarget foeAssocs friendAssocs aid = do
       updateTgt tap@TgtAndPath{tapPath=Just AndPath{..},tapTgt} = case tapTgt of
         TEnemy a -> do
           body <- getsState $ getActorBody a
-          if | (condInMelee  -- fight close foes or nobody at all
+          if   (condInMelee  -- fight close foes or nobody at all
                 || bweapon body <= 0  -- not dangerous
                 || not focused && not (null nearbyFoes))  -- prefers closer foes
                && a `notElem` map fst nearbyFoes  -- old one not close enough
                || blid body /= blid b  -- wrong level
                || actorDying body  -- foe already dying
                || not (worthTargeting a body)
-               || recentlyFled ->
+               || recentlyFled
+          then
                     -- forget enemy positions to prevent attacking them
                     -- again soon after flight
                pickNewTarget
-             | otherwise -> do
+          else do
                -- If there are no unwalkable tiles on the path to enemy,
                -- he gets target @TEnemy@ and then, even if such tiles emerge,
                -- the target updated by his moves remains @TEnemy@.

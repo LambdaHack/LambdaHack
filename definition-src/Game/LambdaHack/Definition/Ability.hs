@@ -228,12 +228,12 @@ addSkills (Skills sk1) (Skills sk2) =
         s -> Just s
   in Skills $ EM.mergeWithKey combine id id sk1 sk2
 
-scaleSkills :: Skills -> Int -> Skills
-scaleSkills _ 0 = zeroSkills
-scaleSkills (Skills sk) n = Skills $ EM.map (n *) sk
+scaleSkills :: (Skills, Int) -> Skills
+scaleSkills (_, 0) = zeroSkills
+scaleSkills (Skills sk, n) = Skills $ EM.map (n *) sk
 
 sumScaledSkills :: [(Skills, Int)] -> Skills
-sumScaledSkills = foldr addSkills zeroSkills . map (uncurry scaleSkills)
+sumScaledSkills = foldr (addSkills . scaleSkills) zeroSkills
 
 nameDoctrine :: Doctrine -> Text
 nameDoctrine TExplore        = "explore"

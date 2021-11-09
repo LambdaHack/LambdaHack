@@ -87,8 +87,6 @@ convertTileMaps COps{ corule=RuleContent{rWidthMax, rHeightMax}
           blocksVertical (Point x y) array =
             not (passes (Point x (y + 1)) array
                  || passes (Point x (y - 1)) array)
-          xeven Point{..} = px `mod` 2 == 0
-          yeven Point{..} = py `mod` 2 == 0
           activeArea = fromMaybe (error $ "" `showFailure` darea) $ shrink darea
           connect included blocks walkableTile array =
             let g p c = if inside activeArea p
@@ -100,15 +98,15 @@ convertTileMaps COps{ corule=RuleContent{rWidthMax, rHeightMax}
                         else c
             in PointArray.imapA g array
       walkable2 <- pickPassable
-      let converted2 = connect xeven blocksHorizontal walkable2 converted1
+      let converted2 = connect (even . px) blocksHorizontal walkable2 converted1
       walkable3 <- pickPassable
-      let converted3 = connect yeven blocksVertical walkable3 converted2
+      let converted3 = connect (even . py) blocksVertical walkable3 converted2
       walkable4 <- pickPassable
       let converted4 =
-            connect (not . xeven) blocksHorizontal walkable4 converted3
+            connect (odd . px) blocksHorizontal walkable4 converted3
       walkable5 <- pickPassable
       let converted5 =
-            connect (not . yeven) blocksVertical walkable5 converted4
+            connect (odd . py) blocksVertical walkable5 converted4
       return converted5
 
 buildTileMap :: COps -> Cave -> Rnd TileMap

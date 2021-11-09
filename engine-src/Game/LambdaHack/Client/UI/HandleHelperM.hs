@@ -20,6 +20,7 @@ import Prelude ()
 
 import Game.LambdaHack.Core.Prelude
 
+import           Control.Applicative
 import qualified Data.Char as Char
 import qualified Data.EnumMap.Strict as EM
 import qualified Data.EnumSet as ES
@@ -198,12 +199,11 @@ pickLeaderWithPointer leader = do
   let oursUI = map (\(aid, b) -> (aid, b, sactorUI EM.! aid)) ours
       viewed = sortOn keySelected oursUI
       banned = bannedPointmanSwitchBetweenLevels fact
-      pick (aid, b) =
-        if | blid b /= arena && banned ->
-               failMsg $ showReqFailure NoChangeDunLeader
-           | otherwise -> do
-               void $ pickLeader True aid
-               return Nothing
+      pick (aid, b) = if blid b /= arena && banned
+                      then failMsg $ showReqFailure NoChangeDunLeader
+                      else do
+                        void $ pickLeader True aid
+                        return Nothing
   pUI <- getsSession spointer
   let p@(Point px py) = squareToMap $ uiToSquare pUI
   -- Pick even if no space in status line for the actor's symbol.
@@ -422,8 +422,8 @@ describeMode addTitle gameModeId = do
               else ""
       blurb = map (second $ splitAttrString (rwidth - 2) (rwidth - 2)) $
         (propFont, textToAS (title <> "\n"))
-        : concat (intersperse [(monoFont, textToAS "\n")]
-                              (mapMaybe renderSection sections))
+        : intercalate [(monoFont, textToAS "\n")]
+                       (mapMaybe renderSection sections)
       -- Colour is used to delimit the section when displayed in one
       -- column, when using square fonts only.
       blurbEnd = map (second $ splitAttrString (rwidth - 2) (rwidth - 2)) $
@@ -433,8 +433,8 @@ describeMode addTitle gameModeId = do
           : if null sectionsEndAS
             then [(monoFont, textToAS "*none*")]
             else sectionsEndAS
-      sectionsEndAS = concat (intersperse [(monoFont, textToAS "\n")]
-                                          (mapMaybe renderSection sectionsEnd))
+      sectionsEndAS = intercalate [(monoFont, textToAS "\n")]
+                                  (mapMaybe renderSection sectionsEnd)
       sectionsEnd = map outcomeSection [minBound..maxBound]
       outcomeSection :: FK.Outcome -> (AttrString, Text)
       outcomeSection outcome =
@@ -544,12 +544,13 @@ pickNumber askNumber kAll = assert (kAll >= 1) $ do
               K.Space -> return $ Left Nothing
               _ -> error $ "unexpected key" `showFailure` kkm
           Right slot -> error $ "unexpected menu slot" `showFailure` slot
-  if | kAll == 1 || not askNumber -> return $ Right kAll
-     | otherwise -> do
-         res <- gatherNumber kAll
-         case res of
-           Right k | k <= 0 -> error $ "" `showFailure` (res, kAll)
-           _ -> return res
+  if kAll == 1 || not askNumber
+  then return $ Right kAll
+  else do
+    res <- gatherNumber kAll
+    case res of
+      Right k | k <= 0 -> error $ "" `showFailure` (res, kAll)
+      _ -> return res
 
 -- | Produces a textual description of the tile at a position.
 lookAtTile :: MonadClientUI m
@@ -574,7 +575,7 @@ lookAtTile canSee p lidV maid mperson = do
   getKind <- getsState $ flip getIidKind
   let inhabitants = posToAidsLvl p lvl
       detail = maybe DetailAll detailLevel saimMode
-      aims = isJust $ maybe Nothing (\b -> makeLine False b p seps cops lvl) mb
+      aims = isJust $ (\b -> makeLine False b p seps cops lvl) =<< mb
       tkid = lvl `at` p
       tile = okind cotile tkid
       vis | TK.tname tile == "unknown space" = "that is"
@@ -764,7 +765,7 @@ lookAtItems canSee p lidV maid mactorPronounAlive = do
       leaderPronoun <- partPronounLeader aid
       return $ Just (leaderPronoun, (bhp <$> mb) >= Just 0)
     _ -> return Nothing
-  let mactorPronounAliveLeader = maybe mLeader Just mactorPronounAlive
+  let mactorPronounAliveLeader = mactorPronounAlive <|> mLeader
   (subject, verb) <- case mactorPronounAliveLeader of
     Just (actorPronoun, actorAlive) ->
       return (actorPronoun, if actorAlive then "stand over" else "fall over")

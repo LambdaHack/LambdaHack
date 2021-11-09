@@ -78,7 +78,7 @@ partItemN3 width side factionD ranged detailLevel maxWordsToShow localTime
       (orTs, powerTs, rangedDamage) =
         textAllPowers width detailLevel skipRecharging itemFull
       lsource = case jfid itemBase of
-        Just fid | IK.iname itemKind `elem` ["impressed"] ->
+        Just fid | IK.iname itemKind == "impressed" ->
           ["by" <+> if fid == side
                     then "us"
                     else gname (factionD EM.! fid)]
@@ -172,7 +172,7 @@ textAllPowers width detailLevel skipRecharging
                                (nub $ filter (not . T.null)
                                     $ map ppAnd $ unOr eff)
             onCombineTs =
-              filter (not . T.null) $ map ppOr $ map unCombine combineEffs
+              filter (not . T.null) $ map (ppOr . unCombine) combineEffs
             rechargingTs = T.intercalate " "
                            $ [damageText | IK.idamage itemKind /= 0]
                              ++ filter (not . T.null)

@@ -49,9 +49,9 @@ import qualified Game.LambdaHack.Common.Tile as Tile
 import           Game.LambdaHack.Common.Time
 import           Game.LambdaHack.Common.Types
 import           Game.LambdaHack.Common.Vector
+import           Game.LambdaHack.Content.FactionKind
 import           Game.LambdaHack.Content.ItemKind (ItemKind)
 import qualified Game.LambdaHack.Content.PlaceKind as PK
-import           Game.LambdaHack.Content.FactionKind
 import           Game.LambdaHack.Content.TileKind (TileKind, unknownId)
 import qualified Game.LambdaHack.Definition.Ability as Ability
 import           Game.LambdaHack.Definition.Defs
@@ -279,7 +279,7 @@ updLoseItem iid kit@(k, _) c = assert (k > 0) $ do
 updSpotItemBag :: MonadStateWrite m => Container -> ItemBag -> m ()
 updSpotItemBag c bag =
   -- The case of empty bag is for a hack to help identifying sample items.
-  when (not $ EM.null bag) $ do
+  unless (EM.null bag) $ do
     insertBagContainer bag c
     case c of
       CActor aid store ->

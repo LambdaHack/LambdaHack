@@ -503,7 +503,7 @@ advanceTrajectory aid b1 = do
   case btrajectory b1 of
     Just (d : lv, speed) -> do
       let tpos = bpos b1 `shift` d  -- target position
-      if | Tile.isWalkable coTileSpeedup $ lvl `at` tpos -> do
+      if Tile.isWalkable coTileSpeedup $ lvl `at` tpos then do
            -- Hit will clear trajectories in @reqMelee@,
            -- so no need to do that here.
            execUpdAtomic $ UpdTrajectory aid (btrajectory b1) (Just (lv, speed))
@@ -524,7 +524,7 @@ advanceTrajectory aid b1 = do
                     if null lv then reqDisp target else reqMoveHit
                   (Just _, _) -> reqMoveHit  -- can't displace multiple
               | otherwise -> reqMoveHit  -- if not occupied, just move
-         | otherwise -> do
+      else do
            -- Will be removed from @strajTime@ in recursive call
            -- to @handleTrajectories@.
            unless (bproj b1) $

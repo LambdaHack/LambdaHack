@@ -266,11 +266,11 @@ handleDir _ _ = Nothing
 moveBinding :: Bool -> Bool -> (Vector -> a) -> (Vector -> a)
             -> [(KM, a)]
 moveBinding uVi uLeftHand move run =
-  let assign f (km, dir) = (km, f dir)
+  let assign f km dir = (km, f dir)
       mapMove modifier keys =
-        map (assign move) (zip (map (KM modifier) keys) $ cycle moves)
+        zipWith (assign move) (map (KM modifier) keys) (cycle moves)
       mapRun modifier keys =
-        map (assign run) (zip (map (KM modifier) keys) $ cycle moves)
+        zipWith (assign run) (map (KM modifier) keys) (cycle moves)
   in mapMove NoModifier (dirMoveNoModifier uVi uLeftHand)
      ++ mapRun NoModifier (dirRunNoModifier uVi uLeftHand)
      ++ mapRun Control dirRunControl

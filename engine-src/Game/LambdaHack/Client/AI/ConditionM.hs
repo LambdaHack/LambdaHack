@@ -48,8 +48,8 @@ import qualified Game.LambdaHack.Common.Tile as Tile
 import           Game.LambdaHack.Common.Time
 import           Game.LambdaHack.Common.Types
 import           Game.LambdaHack.Common.Vector
-import qualified Game.LambdaHack.Content.ItemKind as IK
 import           Game.LambdaHack.Content.FactionKind
+import qualified Game.LambdaHack.Content.ItemKind as IK
 import qualified Game.LambdaHack.Content.RuleKind as RK
 import qualified Game.LambdaHack.Core.Dice as Dice
 import qualified Game.LambdaHack.Definition.Ability as Ability
@@ -185,7 +185,7 @@ condFloorWeaponM aid =
 -- | Check whether the actor has no weapon in equipment.
 condNoEqpWeaponM :: MonadStateRead m => ActorId -> m Bool
 condNoEqpWeaponM aid =
-  all (not . IA.checkFlag Ability.Meleeable . aspectRecordFull . snd) <$>
+  not . any (IA.checkFlag Ability.Meleeable . aspectRecordFull . snd) <$>
     getsState (fullAssocs aid [CEqp])
 
 -- | Require that the actor can project any items.

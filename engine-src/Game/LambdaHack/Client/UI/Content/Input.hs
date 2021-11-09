@@ -89,7 +89,7 @@ makeData muiOptions (InputContentRaw copsClient) =
       [ [(cmd, [k])]
       | (k, (cats, _desc, cmd)) <- bcmdList
       , not (null cats)
-        && all (/= CmdDebug) cats
+        && CmdDebug `notElem` cats
       ]
   }
 

@@ -198,9 +198,9 @@ hearUpdAtomic cmd = do
       b <- getsState $ getActorBody aid
       discoAspect <- getsState sdiscoAspect
       let arTrunk = discoAspect EM.! btrunk b
-      return $! ( False, if not (bproj b) || IA.checkFlag Ability.Blast arTrunk
-                         then Nothing
-                         else Just $ bpos b )
+      return ( False, if not (bproj b) || IA.checkFlag Ability.Blast arTrunk
+                      then Nothing
+                      else Just $ bpos b )
     UpdAlterTile _ p _ toTile ->
       return (not $ Tile.isDoor coTileSpeedup toTile, Just p)
     UpdAlterExplorable{} -> return (True, Nothing)

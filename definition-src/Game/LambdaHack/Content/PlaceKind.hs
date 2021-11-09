@@ -109,7 +109,7 @@ validateSingle cotile PlaceKind{..} =
                                            (concatMap T.unpack ptopLeft)
   in [ "top-left corner empty" | dxcorner == 0 ]
      ++ [ "top-left corner not rectangular"
-        | any (/= dxcorner) (map T.length ptopLeft) ]
+        | any ((/= dxcorner) . T.length) ptopLeft ]
      ++ inLegendAll "plegendDark" plegendDark
      ++ inLegendAll "plegendLit" plegendLit
      ++ validateRarity prarity

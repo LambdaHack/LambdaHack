@@ -167,5 +167,4 @@ applyUIOptions COps{corule} uioptions =
      (\opts -> opts {stitle =
         stitle opts `mplus` Just (rtitle corule)}) .
      (\opts -> opts {sfonts = uFonts uioptions}) .
-     (\opts -> opts {sfontsets = uFontsets uioptions}) .
-     id
+     (\opts -> opts {sfontsets = uFontsets uioptions})

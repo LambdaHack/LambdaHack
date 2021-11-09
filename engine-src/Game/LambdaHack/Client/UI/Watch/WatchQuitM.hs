@@ -262,9 +262,9 @@ displayGameOverAnalytics factionAn generationAn = do
   ItemRoles itemRoles <- getsSession sroles
   let ourAn = akillCounts
               $ EM.findWithDefault emptyAnalytics side factionAn
-      foesAn = EM.unionsWith (+)
-               $ concatMap EM.elems $ catMaybes
-               $ map (`EM.lookup` ourAn) [KillKineticMelee .. KillOtherPush]
+      foesAn = EM.unionsWith (+) $ concatMap EM.elems
+               $ mapMaybe (`EM.lookup` ourAn)
+                          [KillKineticMelee .. KillOtherPush]
       killedBagIncludingProjectiles = EM.map (, []) foesAn
       killedBag = EM.filterWithKey
                     (\iid _ -> iid `ES.member` (itemRoles EM.! STrunk))

@@ -56,9 +56,9 @@ import qualified Game.LambdaHack.Common.Tile as Tile
 import           Game.LambdaHack.Common.Time
 import           Game.LambdaHack.Common.Types
 import           Game.LambdaHack.Common.Vector
+import           Game.LambdaHack.Content.FactionKind
 import           Game.LambdaHack.Content.ItemKind (ItemKind)
 import qualified Game.LambdaHack.Content.ItemKind as IK
-import           Game.LambdaHack.Content.FactionKind
 import           Game.LambdaHack.Content.RuleKind
 import qualified Game.LambdaHack.Core.Dice as Dice
 import           Game.LambdaHack.Core.Random
@@ -573,7 +573,7 @@ effectExplode execSfx cgroup source target containerOrigin = do
               , flip Point (y + 12) $ x + fuzz
               , flip Point (y - 12) $ x - fuzz
               , flip Point (y + 12) $ x - fuzz ]
-            randomReverse = if veryRandom `mod` 2 == 0 then id else reverse
+            randomReverse = if even veryRandom then id else reverse
             ps = take k $ concat $
               randomReverse
                 [ zip (repeat True)  -- diagonal particles don't reach that far
@@ -625,15 +625,16 @@ effectRefillHP power0 source target iid = do
   fact <- getsState $ (EM.! bfid tb) . sfactionD
   let power = if power0 <= -1 then power0 else max 1 power0  -- avoid 0
       deltaHP = xM power
-  if | cfish curChalSer && deltaHP > 0
-       && fhasUI (gkind fact) && bfid sb /= bfid tb -> do
-       execSfxAtomic $ SfxMsgFid (bfid tb) SfxColdFish
-       return UseId
-     | otherwise -> do
-       let reportedEffect = IK.RefillHP power
-       execSfxAtomic $ SfxEffect (bfid sb) target iid reportedEffect deltaHP
-       refillHP source target deltaHP
-       return UseUp
+  if cfish curChalSer && deltaHP > 0
+     && fhasUI (gkind fact) && bfid sb /= bfid tb
+  then do
+     execSfxAtomic $ SfxMsgFid (bfid tb) SfxColdFish
+     return UseId
+  else do
+    let reportedEffect = IK.RefillHP power
+    execSfxAtomic $ SfxEffect (bfid sb) target iid reportedEffect deltaHP
+    refillHP source target deltaHP
+    return UseUp
 
 -- ** RefillCalm
 
@@ -1129,12 +1130,10 @@ switchLevels2 lidNew posNew (aid, bOld) mbtime_bOld mbtimeTraj_bOld mlead = do
   -- Onlookers see somebody appear suddenly. The actor himself
   -- sees new surroundings and has to reset his perception.
   execUpdAtomic $ UpdSpotActor aid bNew
-  case mlead of
-    Nothing -> return ()
-    Just leader ->
-      -- The leader is fresh in the sense that he's on a new level
-      -- and so doesn't have up to date Perception.
-      setFreshLeader side leader
+  forM_ mlead $
+    -- The leader is fresh in the sense that he's on a new level
+    -- and so doesn't have up to date Perception.
+    setFreshLeader side
 
 -- ** Escape
 
@@ -1178,23 +1177,23 @@ paralyze execSfx nDm source target = do
   power0 <- rndToAction $ castDice ldepth totalDepth nDm
   let power = max power0 1  -- KISS, avoid special case
   actorStasis <- getsServer sactorStasis
-  if | ES.member target actorStasis -> do
-       sb <- getsState $ getActorBody source
-       execSfxAtomic $ SfxMsgFid (bfid sb) SfxStasisProtects
-       when (source /= target) $
-         execSfxAtomic $ SfxMsgFid (bfid tb) SfxStasisProtects
-       return UseId
-     | otherwise -> do
-       execSfx
-       let t = timeDeltaScale (Delta timeClip) power
-       -- Only the normal time, not the trajectory time, is affected.
-       modifyServer $ \ser ->
-         ser { sactorTime = ageActor (bfid tb) (blid tb) target t
-                            $ sactorTime ser
-             , sactorStasis = ES.insert target (sactorStasis ser) }
-                 -- actor's time warped, so he is in stasis,
-                 -- immune to further warps
-       return UseUp
+  if ES.member target actorStasis then do
+    sb <- getsState $ getActorBody source
+    execSfxAtomic $ SfxMsgFid (bfid sb) SfxStasisProtects
+    when (source /= target) $
+      execSfxAtomic $ SfxMsgFid (bfid tb) SfxStasisProtects
+    return UseId
+  else do
+    execSfx
+    let t = timeDeltaScale (Delta timeClip) power
+    -- Only the normal time, not the trajectory time, is affected.
+    modifyServer $ \ser ->
+      ser { sactorTime = ageActor (bfid tb) (blid tb) target t
+                         $ sactorTime ser
+          , sactorStasis = ES.insert target (sactorStasis ser) }
+              -- actor's time warped, so he is in stasis,
+              -- immune to further warps
+    return UseUp
 
 -- ** ParalyzeInWater
 
@@ -1444,14 +1443,14 @@ effectDestroyItem :: MonadServerAtomic m
 effectDestroyItem execSfx ngroup kcopy store target grp = do
   tb <- getsState $ getActorBody target
   is <- allGroupItems store grp target
-  if | null is -> return UseDud
-     | otherwise -> do
-       execSfx
-       urs <- mapM (uncurry (dropCStoreItem True True store target tb kcopy))
-                   (take ngroup is)
-       return $! case urs of
-         [] -> UseDud  -- there was no effects
-         _ -> maximum urs
+  if null is then return UseDud
+  else do
+    execSfx
+    urs <- mapM (uncurry (dropCStoreItem True True store target tb kcopy))
+                (take ngroup is)
+    return $! case urs of
+      [] -> UseDud  -- there was no effects
+      _ -> maximum urs
 
 -- | Drop a single actor's item (though possibly multiple copies).
 -- Note that if there are multiple copies, at most one explodes
@@ -1781,32 +1780,32 @@ effectRerollItem execSfx iidOriginal target = do
     (iid, ( ItemFull{ itemBase, itemKindId, itemKind
                     , itemDisco=ItemDiscoFull itemAspect }
           , (_, itemTimer) )) : _ ->
-      if | IA.kmConst $ getKindMean itemKindId coItemSpeedup -> do
-           execSfxAtomic $ SfxMsgFid (bfid tb) SfxRerollNotRandom
-           return UseId
-         | otherwise -> do
-           let c = CActor target cstore
-               kit = (1, take 1 itemTimer)  -- prevent micromanagement
-               freq = pure (itemKindId, itemKind)
-           execSfx
-           identifyIid iid c itemKindId itemKind
-           execUpdAtomic $ UpdDestroyItem False iid itemBase kit c
-           totalDepth <- getsState stotalDepth
-           let roll100 :: Int -> m (ItemKnown, ItemFull)
-               roll100 n = do
-                 -- Not only rerolled, but at highest depth possible,
-                 -- resulting in highest potential for bonuses.
-                 m2 <- rollItemAspect freq totalDepth
-                 case m2 of
-                   NoNewItem ->
-                     error "effectRerollItem: can't create rerolled item"
-                   NewItem itemKnown@(ItemKnown _ ar2 _) itemFull _ ->
-                     if ar2 == itemAspect && n > 0
-                     then roll100 (n - 1)
-                     else return (itemKnown, itemFull)
-           (itemKnown, itemFull) <- roll100 100
-           void $ registerItem True (itemFull, kit) itemKnown c
-           return UseUp
+      if IA.kmConst $ getKindMean itemKindId coItemSpeedup then do
+        execSfxAtomic $ SfxMsgFid (bfid tb) SfxRerollNotRandom
+        return UseId
+      else do
+        let c = CActor target cstore
+            kit = (1, take 1 itemTimer)  -- prevent micromanagement
+            freq = pure (itemKindId, itemKind)
+        execSfx
+        identifyIid iid c itemKindId itemKind
+        execUpdAtomic $ UpdDestroyItem False iid itemBase kit c
+        totalDepth <- getsState stotalDepth
+        let roll100 :: Int -> m (ItemKnown, ItemFull)
+            roll100 n = do
+              -- Not only rerolled, but at highest depth possible,
+              -- resulting in highest potential for bonuses.
+              m2 <- rollItemAspect freq totalDepth
+              case m2 of
+                NoNewItem ->
+                  error "effectRerollItem: can't create rerolled item"
+                NewItem itemKnown@(ItemKnown _ ar2 _) itemFull _ ->
+                  if ar2 == itemAspect && n > 0
+                  then roll100 (n - 1)
+                  else return (itemKnown, itemFull)
+        (itemKnown, itemFull) <- roll100 100
+        void $ registerItem True (itemFull, kit) itemKnown c
+        return UseUp
     _ -> error "effectRerollItem: server ignorant about an item"
 
 -- ** DupItem
@@ -1938,7 +1937,7 @@ effectDetect execSfx d radius target container = do
       effectHasLoot (IK.OrEffect eff1 eff2) =
         effectHasLoot eff1 || effectHasLoot eff2
       effectHasLoot (IK.SeqEffect effs) =
-        or $ map effectHasLoot effs
+        any effectHasLoot effs
       effectHasLoot (IK.When _ eff) = effectHasLoot eff
       effectHasLoot (IK.Unless _ eff) = effectHasLoot eff
       effectHasLoot (IK.IfThenElse _ eff1 eff2) =

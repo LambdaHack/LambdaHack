@@ -580,7 +580,7 @@ drawFrame coscreen ClientOptions{..} sess@FrontendSession{..} curFrame = do
         atlas <- readIORef smonoAtlas
         let Color.AttrChar{acAttr=Color.Attr{fg=fgRaw, bg}, acChar} =
               Color.attrCharFromW32 w
-            fg | row `mod` 2 == 0 && fgRaw == Color.White = Color.AltWhite
+            fg | even row && fgRaw == Color.White = Color.AltWhite
                | otherwise = fgRaw
             ac = Color.attrChar2ToW32 fg acChar
             !_A = assert (bg `elem` [ Color.HighlightNone
@@ -614,7 +614,7 @@ drawFrame coscreen ClientOptions{..} sess@FrontendSession{..} curFrame = do
         let Color.AttrChar{ acAttr=Color.Attr{fg=fgRaw, bg}
                           , acChar=acCharRaw } =
               Color.attrCharFromW32 w
-            fg | row `mod` 2 == 0 && fgRaw == Color.White = Color.AltWhite
+            fg | even row && fgRaw == Color.White = Color.AltWhite
                | otherwise = fgRaw
             ac = if bg == Color.HighlightBackground
                  then w
@@ -666,7 +666,7 @@ drawFrame coscreen ClientOptions{..} sess@FrontendSession{..} curFrame = do
             (sameRest, otherRest) = span sameAttr rest
             !_A = assert (bg `elem` [ Color.HighlightNone
                                     , Color.HighlightNoneCursor ]) ()
-            fg | row `mod` 2 == 0 && fgRaw == Color.White = Color.AltWhite
+            fg | even row && fgRaw == Color.White = Color.AltWhite
                | otherwise = fgRaw
             t = T.pack $ map Color.charFromW32 $ w : sameRest
         width <- drawPropChunk x row fg t
