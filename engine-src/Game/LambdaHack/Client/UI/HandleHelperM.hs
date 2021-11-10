@@ -217,20 +217,6 @@ pickLeaderWithPointer leader = do
            Nothing -> failMsg "not pointing at an actor"
            Just (aid, b, _) -> pick (aid, b)
 
-itemOverlay :: MonadClientUI m
-            => [(ItemId, ItemQuant)] -> ItemDialogMode -> m OKX
-itemOverlay iids dmode = do
-  sccui <- getsSession sccui
-  side <- getsClient sside
-  arena <- getArenaUI
-  discoBenefit <- getsClient sdiscoBenefit
-  fontSetup <- getFontSetup
-  let displayRanged =
-        dmode `notElem` [MStore COrgan, MLore SOrgan, MLore STrunk, MLore SBody]
-  okx <- getsState $ itemOverlayFromState arena iids displayRanged
-                                          sccui side discoBenefit fontSetup
-  return $! okx
-
 itemOverlayFromState :: LevelId -> [(ItemId, ItemQuant)] -> Bool
                      -> CCUI -> FactionId -> DiscoveryBenefit -> FontSetup
                      -> State
@@ -270,36 +256,6 @@ itemOverlayFromState arena iids displayRanged sccui side discoBenefit
         in (asLab, textToAS tDesc, Right c)
       l = zipWith pr natSlots iids
   in labDescOKX squareFont propFont l
-
-skillsOverlay :: MonadClientUI m => ActorId -> m OKX
-skillsOverlay aid = do
-  b <- getsState $ getActorBody aid
-  actorMaxSk <- getsState $ getActorMaxSkills aid
-  FontSetup{..} <- getFontSetup
-  let prSlot :: MenuSlot -> Ability.Skill
-             -> ((AttrLine, (Int, AttrLine), (Int, AttrLine)), KYX)
-      prSlot c skill =
-        let skName = " " <> skillName skill
-            attrCursor = Color.defAttr {Color.bg = Color.HighlightNoneCursor}
-            labAc = Color.AttrChar { acAttr = attrCursor
-                                   , acChar = '+' }
-            lab = attrStringToAL [Color.attrCharToW32 labAc]
-            labLen = textSize squareFont $ attrLine lab
-            indentation = if isSquareFont propFont then 52 else 26
-            valueText = skillToDecorator skill b
-                        $ Ability.getSk skill actorMaxSk
-            triple = ( lab
-                     , (labLen, textToAL skName)
-                     , (indentation, textToAL valueText) )
-            lenButton = 26 + T.length valueText
-        in (triple, (Right c, ( PointUI 0 (fromEnum c)
-                              , ButtonWidth propFont lenButton )))
-      (ts, kxs) = unzip $ zipWith prSlot natSlots skillsInDisplayOrder
-      (skLab, skDescr, skValue) = unzip3 ts
-      skillLab = EM.singleton squareFont $ offsetOverlay skLab
-      skillDescr = EM.singleton propFont $ offsetOverlayX skDescr
-      skillValue = EM.singleton monoFont $ offsetOverlayX skValue
-  return (EM.unionsWith (++) [skillLab, skillDescr, skillValue], kxs)
 
 -- | Extract whole-dungeon statistics for each place kind,
 -- counting the number of occurrences of each type of
@@ -344,6 +300,50 @@ placesFromState coplace sexposePlaces s =
         -- gather per-place-kind statistics for each level,
         -- then aggregate them over all levels, remembering that the place
         -- appeared on the given level (but not how man times)
+
+itemOverlay :: MonadClientUI m
+            => [(ItemId, ItemQuant)] -> ItemDialogMode -> m OKX
+itemOverlay iids dmode = do
+  sccui <- getsSession sccui
+  side <- getsClient sside
+  arena <- getArenaUI
+  discoBenefit <- getsClient sdiscoBenefit
+  fontSetup <- getFontSetup
+  let displayRanged =
+        dmode `notElem` [MStore COrgan, MLore SOrgan, MLore STrunk, MLore SBody]
+  okx <- getsState $ itemOverlayFromState arena iids displayRanged
+                                          sccui side discoBenefit fontSetup
+  return $! okx
+
+skillsOverlay :: MonadClientUI m => ActorId -> m OKX
+skillsOverlay aid = do
+  b <- getsState $ getActorBody aid
+  actorMaxSk <- getsState $ getActorMaxSkills aid
+  FontSetup{..} <- getFontSetup
+  let prSlot :: MenuSlot -> Ability.Skill
+             -> ((AttrLine, (Int, AttrLine), (Int, AttrLine)), KYX)
+      prSlot c skill =
+        let skName = " " <> skillName skill
+            attrCursor = Color.defAttr {Color.bg = Color.HighlightNoneCursor}
+            labAc = Color.AttrChar { acAttr = attrCursor
+                                   , acChar = '+' }
+            lab = attrStringToAL [Color.attrCharToW32 labAc]
+            labLen = textSize squareFont $ attrLine lab
+            indentation = if isSquareFont propFont then 52 else 26
+            valueText = skillToDecorator skill b
+                        $ Ability.getSk skill actorMaxSk
+            triple = ( lab
+                     , (labLen, textToAL skName)
+                     , (indentation, textToAL valueText) )
+            lenButton = 26 + T.length valueText
+        in (triple, (Right c, ( PointUI 0 (fromEnum c)
+                              , ButtonWidth propFont lenButton )))
+      (ts, kxs) = unzip $ zipWith prSlot natSlots skillsInDisplayOrder
+      (skLab, skDescr, skValue) = unzip3 ts
+      skillLab = EM.singleton squareFont $ offsetOverlay skLab
+      skillDescr = EM.singleton propFont $ offsetOverlayX skDescr
+      skillValue = EM.singleton monoFont $ offsetOverlayX skValue
+  return (EM.unionsWith (++) [skillLab, skillDescr, skillValue], kxs)
 
 placesOverlay :: MonadClientUI m => m OKX
 placesOverlay = do
@@ -396,6 +396,32 @@ factionsOverlay = do
                              "(" <> FK.nameOutcomePast stOutcome <> ")"
         in (asLab, textToAS tDesc, Right c)
       l = zipWith prSlot natSlots $ EM.assocs factionD
+  return $! labDescOKX squareFont propFont l
+
+modesOverlay :: MonadClientUI m => m OKX
+modesOverlay = do
+  COps{comode} <- getsState scops
+  FontSetup{..} <- getFontSetup
+  svictories <- getsSession svictories
+  nxtChal <- getsClient snxtChal  -- mark victories only for current difficulty
+  let f !acc _p !i !a = (i, a) : acc
+      campaignModes = ofoldlGroup' comode MK.CAMPAIGN_SCENARIO f []
+      prSlot :: MenuSlot
+             -> (ContentId MK.ModeKind, MK.ModeKind)
+             -> (AttrString, AttrString, KeyOrSlot)
+      prSlot c (gameModeId, gameMode) =
+        let modeName = MK.mname gameMode
+            victories = case EM.lookup gameModeId svictories of
+              Nothing -> 0
+              Just cm -> fromMaybe 0 (M.lookup nxtChal cm)
+            labChar = if victories > 0 then '-' else '+'
+            attrCursor = Color.defAttr {Color.bg = Color.HighlightNoneCursor}
+            labAc = Color.AttrChar { acAttr = attrCursor
+                                   , acChar = labChar }
+            !asLab = [Color.attrCharToW32 labAc]
+            !tDesc = " " <> modeName
+        in (asLab, textToAS tDesc, Right c)
+      l = zipWith prSlot natSlots campaignModes
   return $! labDescOKX squareFont propFont l
 
 describeMode :: MonadClientUI m
@@ -513,32 +539,6 @@ describeMode addTitle gameModeId = do
                   $ attrLinesToFontMap blurb)
                  (EM.map (xtranslateOverlay $ rwidth + 1)
                   $ attrLinesToFontMap blurbEnd)
-
-modesOverlay :: MonadClientUI m => m OKX
-modesOverlay = do
-  COps{comode} <- getsState scops
-  FontSetup{..} <- getFontSetup
-  svictories <- getsSession svictories
-  nxtChal <- getsClient snxtChal  -- mark victories only for current difficulty
-  let f !acc _p !i !a = (i, a) : acc
-      campaignModes = ofoldlGroup' comode MK.CAMPAIGN_SCENARIO f []
-      prSlot :: MenuSlot
-             -> (ContentId MK.ModeKind, MK.ModeKind)
-             -> (AttrString, AttrString, KeyOrSlot)
-      prSlot c (gameModeId, gameMode) =
-        let modeName = MK.mname gameMode
-            victories = case EM.lookup gameModeId svictories of
-              Nothing -> 0
-              Just cm -> fromMaybe 0 (M.lookup nxtChal cm)
-            labChar = if victories > 0 then '-' else '+'
-            attrCursor = Color.defAttr {Color.bg = Color.HighlightNoneCursor}
-            labAc = Color.AttrChar { acAttr = attrCursor
-                                   , acChar = labChar }
-            !asLab = [Color.attrCharToW32 labAc]
-            !tDesc = " " <> modeName
-        in (asLab, textToAS tDesc, Right c)
-      l = zipWith prSlot natSlots campaignModes
-  return $! labDescOKX squareFont propFont l
 
 pickNumber :: MonadClientUI m => Bool -> Int -> m (Either MError Int)
 pickNumber askNumber kAll = assert (kAll >= 1) $ do
