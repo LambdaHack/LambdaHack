@@ -111,9 +111,12 @@ standardKeysAndMouse = InputContentRaw $ map evalKeyDef $
                          , ChooseItemMenu (MLore slore) )))
           [1..] [minBound..maxBound]
   ++
-  [ ("safeD97", ( [CmdInternal, CmdDashboard]
+  [ ("safeD96", ( [CmdInternal, CmdDashboard]
                 , "display place lore"
                 , ChooseItemMenu MPlaces) )
+  , ("safeD97", ( [CmdInternal, CmdDashboard]
+                , "display faction lore"
+                , ChooseItemMenu MFactions) )
   , ("safeD98", ( [CmdInternal, CmdDashboard]
                 , "display adventure lore"
                 , ChooseItemMenu MModes) )

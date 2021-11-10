@@ -5,8 +5,7 @@ module Game.LambdaHack.Client.UI.HandleHelperM
   , pointmanCycle, pointmanCycleLevel, partyAfterLeader
   , pickLeader, pickLeaderWithPointer
   , itemOverlay, skillsOverlay
-  , placesFromState, placesOverlay
-  , describeMode, modesOverlay
+  , placesFromState, placesOverlay, factionsOverlay, describeMode, modesOverlay
   , pickNumber, guardItemSize, lookAtItems, lookAtStash, lookAtPosition
   , displayOneMenuItem, okxItemLoreInline, okxItemLoreMsg, itemDescOverlays
   , cycleLore, spoilsBlurb, ppContainerWownW, nxtGameMode
@@ -356,7 +355,7 @@ placesOverlay = do
              -> (ContentId PK.PlaceKind, (ES.EnumSet LevelId, Int, Int, Int))
              -> (AttrString, AttrString, KeyOrSlot)
       prSlot c (pk, (es, _, _, _)) =
-        let placeName = PK.pname $ okind coplace pk
+        let name = PK.pname $ okind coplace pk
             labChar = if ES.null es then '-' else '+'
             attrCursor = Color.defAttr {Color.bg = Color.HighlightNoneCursor}
             labAc = Color.AttrChar { acAttr = attrCursor
@@ -364,7 +363,7 @@ placesOverlay = do
             -- Bang required to free @places@ as you go.
             !asLab = [Color.attrCharToW32 labAc]
             !tDesc = " "
-                     <> placeName
+                     <> name
                      <+> if ES.null es
                          then ""
                          else "("
@@ -372,6 +371,31 @@ placesOverlay = do
                               <> ")"
         in (asLab, textToAS tDesc, Right c)
       l = zipWith prSlot natSlots $ EM.assocs places
+  return $! labDescOKX squareFont propFont l
+
+factionsOverlay :: MonadClientUI m => m OKX
+factionsOverlay = do
+  FontSetup{..} <- getFontSetup
+  factionD <- getsState sfactionD
+  let prSlot :: MenuSlot
+             -> (FactionId, Faction)
+             -> (AttrString, AttrString, KeyOrSlot)
+      prSlot c (_, fact) =
+        let name = FK.fname $ gkind fact  -- we ignore "Controlled", etc.
+            gameOver = isJust $ gquit fact
+            labChar = if gameOver then '-' else '+'
+            attrCursor = Color.defAttr {Color.bg = Color.HighlightNoneCursor}
+            labAc = Color.AttrChar { acAttr = attrCursor
+                                   , acChar = labChar }
+            !asLab = [Color.attrCharToW32 labAc]
+            !tDesc = " "
+                     <> name
+                     <+> case gquit fact of
+                           Nothing -> ""
+                           Just Status{stOutcome} ->
+                             "(" <> FK.nameOutcomePast stOutcome <> ")"
+        in (asLab, textToAS tDesc, Right c)
+      l = zipWith prSlot natSlots $ EM.assocs factionD
   return $! labDescOKX squareFont propFont l
 
 describeMode :: MonadClientUI m

@@ -276,6 +276,22 @@ chooseItemDialogMode leader0 permitLoreCycle c = do
           K.Space -> chooseItemDialogMode leader False MPlaces
           K.Esc -> failWith "never mind"
           _ -> error $ "" `showFailure` km
+      RFactions slot0 -> do
+        factionD <- getsState sfactionD
+        let renderOneItem slot = do
+              (prompt2, blurbs) <- factionCloseUp (EM.assocs factionD) slot
+              let splitText = splitAttrString rwidth rwidth
+                  ov0 = attrLinesToFontMap
+                        $ map (second $ concatMap splitText) blurbs
+              msgAdd MsgPromptGeneric prompt2
+              return (ov0, [])
+            extraKeys = []
+            slotBound = EM.size factionD - 1
+        km <- displayOneMenuItem renderOneItem extraKeys slotBound slot0
+        case K.key km of
+          K.Space -> chooseItemDialogMode leader False MFactions
+          K.Esc -> failWith "never mind"
+          _ -> error $ "" `showFailure` km
       RModes slot0 -> do
         let displayOneMenuItemBig :: (MenuSlot -> m OKX)
                                   -> [K.KM] -> Int -> MenuSlot

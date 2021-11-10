@@ -137,6 +137,7 @@ data ItemDialogMode =
   | MSkills        -- ^ not items, but determined by leader's items
   | MLore SLore    -- ^ not party's items, but all known generalized items
   | MPlaces        -- ^ places; not items at all, but definitely a lore
+  | MFactions      -- ^ factions in this game, with some data from previous
   | MModes         -- ^ scenarios; not items at all, but definitely a lore
   deriving (Show, Read, Eq, Ord, Generic)
 
@@ -169,6 +170,7 @@ ppItemDialogMode MSkills = ("among", "skills")
 ppItemDialogMode (MLore SBody) = ("in", "body")
 ppItemDialogMode (MLore slore) = ("among", ppSLore slore <+> "lore")
 ppItemDialogMode MPlaces = ("among", "place lore")
+ppItemDialogMode MFactions = ("among", "faction lore")
 ppItemDialogMode MModes = ("among", "adventure lore")
 
 ppItemDialogModeIn :: ItemDialogMode -> Text
@@ -185,6 +187,7 @@ loreFromMode c = case c of
   MSkills -> undefined  -- artificial slots
   MLore slore -> slore
   MPlaces -> undefined  -- artificial slots
+  MFactions -> undefined  -- artificial slots
   MModes -> undefined  -- artificial slots
 
 data Direction = Forward | Backward

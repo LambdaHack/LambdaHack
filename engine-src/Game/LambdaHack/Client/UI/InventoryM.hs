@@ -2,13 +2,15 @@
 module Game.LambdaHack.Client.UI.InventoryM
   ( Suitability(..), ResultItemDialogMode(..)
   , getFull, getGroupItem, getStoreItem
-  , skillCloseUp, placeCloseUp
+  , skillCloseUp, placeCloseUp, factionCloseUp
 #ifdef EXPOSE_INTERNAL
     -- * Internal operations
   , ItemDialogState(..), accessModeBag, storeItemPrompt, getItem
   , DefItemKey(..), transition
   , runDefMessage, runDefAction, runDefSkills, skillsInRightPane
-  , runDefPlaces, placesInRightPane, runDefModes, runDefInventory
+  , runDefPlaces, placesInRightPane
+  , runDefFactions, factionsInRightPane
+  , runDefModes, runDefInventory
 #endif
   ) where
 
@@ -48,6 +50,7 @@ import           Game.LambdaHack.Common.Misc
 import           Game.LambdaHack.Common.MonadStateRead
 import           Game.LambdaHack.Common.State
 import           Game.LambdaHack.Common.Types
+import qualified Game.LambdaHack.Content.FactionKind as FK
 import qualified Game.LambdaHack.Content.ItemKind as IK
 import qualified Game.LambdaHack.Content.PlaceKind as PK
 import qualified Game.LambdaHack.Definition.Ability as Ability
@@ -63,6 +66,7 @@ data ResultItemDialogMode =
   | RLore SLore MenuSlot [(ItemId, ItemQuant)]
   | RSkills MenuSlot
   | RPlaces MenuSlot
+  | RFactions MenuSlot
   | RModes MenuSlot
   deriving Show
 
@@ -76,6 +80,7 @@ accessModeBag leader s (MLore SBody) = let b = getActorBody leader s
                                        in getBodyStoreBag b COrgan s
 accessModeBag _ s MLore{} = EM.map (const quantSingle) $ sitemD s
 accessModeBag _ _ MPlaces = EM.empty
+accessModeBag _ _ MFactions = EM.empty
 accessModeBag _ _ MModes = EM.empty
 
 -- | Let a human player choose any item from a given group.
@@ -126,14 +131,17 @@ getStoreItem leader cInitial = do
       -- if really needed, accessible directly from the trigger menu.
       itemCs = map MStore [CStash, CEqp, CGround]
       -- No @SBody@, because repeated in other lores and included elsewhere.
-      loreCs = map MLore [minBound..SEmbed] ++ [MPlaces, MModes]
+      loreCs = map MLore [minBound..SEmbed] ++ [MPlaces, MFactions, MModes]
       leaderCs = itemCs ++ [MOwned, MLore SBody, MSkills]
       allCs = case cInitial of
+        MStore{} -> leaderCs
+        MOwned -> leaderCs
+        MSkills -> leaderCs
         MLore SBody -> leaderCs
         MLore{} -> loreCs
         MPlaces -> loreCs
+        MFactions -> loreCs
         MModes -> loreCs
-        _ -> leaderCs
       (pre, rest) = break (== cInitial) allCs
       post = dropWhile (== cInitial) rest
       remCs = post ++ pre
@@ -215,6 +223,9 @@ storeItemPrompt side body bodyUI actorCurAndMaxSk c2 s =
             then "terrain (including crafting recipes)"
             else t ]
     MPlaces ->
+      makePhrase
+        [ MU.Capitalize $ MU.Text t ]
+    MFactions ->
       makePhrase
         [ MU.Capitalize $ MU.Text t ]
     MModes ->
@@ -394,11 +405,13 @@ transition leader psuit prompt promptGeneric permitMulitple
           c1 : rest -> (c1, reverse rest)
           [] -> error $ "" `showFailure` cRest
       banned = bannedPointmanSwitchBetweenLevels fact
+      maySwitchLeader MStore{} = True
       maySwitchLeader MOwned = False
+      maySwitchLeader MSkills = True
       maySwitchLeader MLore{} = False
       maySwitchLeader MPlaces = False
+      maySwitchLeader MFactions = False
       maySwitchLeader MModes = False
-      maySwitchLeader _ = True
       cycleKeyDef direction =
         let km = revCmd $ PointmanCycle direction
         in (km, DefItemKey
@@ -412,6 +425,7 @@ transition leader psuit prompt promptGeneric permitMulitple
   case cCur of
     MSkills -> runDefSkills keyDefsCommon promptChosen leader
     MPlaces -> runDefPlaces keyDefsCommon promptChosen
+    MFactions -> runDefFactions keyDefsCommon promptChosen
     MModes -> runDefModes keyDefsCommon promptChosen
     _ -> do
       bagHuge <- getsState $ \s -> accessModeBag leader s cCur
@@ -541,6 +555,37 @@ placesInRightPane places width slot = do
            $ (propFont, [promptAS]) : blurbs
   return (ov, [])
 
+runDefFactions :: MonadClientUI m
+               => [(K.KM, DefItemKey m)] -> Text
+               -> m (Either Text ResultItemDialogMode)
+runDefFactions keyDefsCommon promptChosen = do
+  CCUI{coscreen=ScreenContent{rheight}} <- getsSession sccui
+  factionD <- getsState sfactionD
+  runDefMessage keyDefsCommon promptChosen
+  let itemKeys = map fst keyDefsCommon
+      keys = rights $ map (defLabel . snd) keyDefsCommon
+  okx <- factionsOverlay
+  sli <- overlayToSlideshow (rheight - 2) keys okx
+  ekm <- displayChoiceScreenWithDefItemKey
+           (factionsInRightPane (EM.assocs factionD))
+           sli itemKeys (show MFactions)
+  runDefAction keyDefsCommon (Right . RFactions) ekm
+
+factionsInRightPane :: MonadClientUI m
+                    => [(FactionId, Faction)]
+                    -> Int -> MenuSlot
+                    -> m OKX
+factionsInRightPane factions width slot = do
+  FontSetup{propFont} <- getFontSetup
+  (prompt, blurbs) <- factionCloseUp factions slot
+  let promptAS | T.null prompt = []
+               | otherwise = textFgToAS Color.Brown $ prompt <> "\n\n"
+      splitText = splitAttrString width width
+      ov = attrLinesToFontMap
+           $ map (second $ concatMap splitText)
+           $ (propFont, [promptAS]) : blurbs
+  return (ov, [])
+
 runDefModes :: MonadClientUI m
             => [(K.KM, DefItemKey m)] -> Text
             -> m (Either Text ResultItemDialogMode)
@@ -632,10 +677,24 @@ placeCloseUp places sexposePlaces slot = do
                    ++ [MU.CarWs na "surrounding" | na > 0]
       partsSentence | null placeParts = []
                     | otherwise = [makeSentence placeParts, "\n"]
-      -- Ideally, place layout would be in SquareFont and the rest
-      -- in PropFont, but this is mostly a debug screen, so KISS.
       blurbs = [(propFont, partsSentence)]
                ++ [(monoFont, [freqsText, "\n"]) | sexposePlaces]
                ++ [(squareFont, PK.ptopLeft pkind ++ ["\n"]) | sexposePlaces]
                ++ [(propFont, onLevels)]
+  return (prompt, map (second $ map textToAS) blurbs)
+
+factionCloseUp :: MonadClientUI m
+               => [(FactionId, Faction)]
+               -> MenuSlot
+               -> m (Text, [(DisplayFont, [AttrString])])
+factionCloseUp factions slot = do
+  side <- getsClient sside
+  -- FontSetup{..} <- getFontSetup
+  let (fid, fact) = factions !! fromEnum slot
+      name = FK.fname $ gkind fact  -- we ignore "Controlled", etc.
+      prompt = makeSentence $
+        if fid == side
+        then ["you are the", MU.Text name]
+        else ["you are wary of the", MU.Text name]  -- wary even if allies
+      blurbs = []
   return (prompt, map (second $ map textToAS) blurbs)
