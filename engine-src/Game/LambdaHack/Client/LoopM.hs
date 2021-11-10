@@ -74,43 +74,47 @@ loopCli ccui sUIOptions clientOptions startsNewGame = do
   if not hasUI then initAI else initUI ccui
   let cliendKindText = if not hasUI then "AI" else "UI"
   debugPossiblyPrint $ cliendKindText <+> "client"
-                       <+> tshow side <+> "started 1/4."
+                       <+> tshow side <+> "starting 1/4."
   -- Warning: state and client state are invalid here, e.g., sdungeon
   -- and sper are empty.
-  restoredG <- tryRestore
-  restored <- case restoredG of
-    Just (cli, msess)-> do
-      -- Restore game.
-      case msess of
-        Just sess | hasUI -> do
-          -- Preserve almost everything from the saved session.
-          -- Renew the communication channel to the newly spawned frontend
-          -- and get the possibly updated UI content and UI options.
-          schanF <- getsSession schanF
-          sccui <- getsSession sccui
-          putSession $ sess {schanF, sccui, sUIOptions}
-        _ -> return ()
-      if startsNewGame then
-        -- Don't restore client state, due to new game starting right now,
-        -- which means everything will be overwritten soon anyway
-        -- via an @UpdRestart@ command (instead of @UpdResume@).
-        return False
-      else do
-        -- We preserve the client state from savefile except for the single
-        -- option that can be overwritten on commandline.
-        let noAnim = fromMaybe False $ snoAnim $ soptions cli
-        putClient cli {soptions = clientOptions {snoAnim = Just noAnim}}
-        return True
-    Nothing -> return False
+  restored <-
+    if startsNewGame && not hasUI
+    then return False
+    else do
+      restoredG <- tryRestore
+      case restoredG of
+        Just (cli, msess)-> do
+          -- Restore game.
+          case msess of
+            Just sess | hasUI -> do
+              -- Preserve almost everything from the saved session.
+              -- Renew the communication channel to the newly spawned frontend
+              -- and get the possibly updated UI content and UI options.
+              schanF <- getsSession schanF
+              sccui <- getsSession sccui
+              putSession $ sess {schanF, sccui, sUIOptions}
+            _ -> return ()
+          if startsNewGame then
+            -- Don't restore client state, due to new game starting right now,
+            -- which means everything will be overwritten soon anyway
+            -- via an @UpdRestart@ command (instead of @UpdResume@).
+            return False
+          else do
+            -- We preserve the client state from savefile except for the single
+            -- option that can be overwritten on commandline.
+            let noAnim = fromMaybe False $ snoAnim $ soptions cli
+            putClient cli {soptions = clientOptions {snoAnim = Just noAnim}}
+            return True
+        Nothing -> return False
   debugPossiblyPrint $ cliendKindText <+> "client"
-                       <+> tshow side <+> "started 2/4."
+                       <+> tshow side <+> "starting 2/4."
   -- At this point @ClientState@ not overriten dumbly and @State@ valid.
   tabA <- createTabBFS
   tabB <- createTabBFS
   modifyClient $ \cli -> cli {stabs = (tabA, tabB)}
   cmd1 <- receiveResponse
   debugPossiblyPrint $ cliendKindText <+> "client"
-                       <+> tshow side <+> "started 3/4."
+                       <+> tshow side <+> "starting 3/4."
   case (restored, startsNewGame, cmd1) of
     (True, False, RespUpdAtomic _ UpdResume{}) ->
       return ()
@@ -136,7 +140,7 @@ loopCli ccui sUIOptions clientOptions startsNewGame = do
   handleResponse cmd1
   -- State and client state now valid.
   debugPossiblyPrint $ cliendKindText <+> "client"
-                       <+> tshow side <+> "started 4/4."
+                       <+> tshow side <+> "starting 4/4."
   if hasUI
   then loopUI 0
   else loopAI
