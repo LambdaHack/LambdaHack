@@ -4,7 +4,7 @@
 module Game.LambdaHack.Common.Faction
   ( FactionDict, Faction(..), Diplomacy(..)
   , Status(..), Challenge(..)
-  , tshowChallenge, gleader, isHorrorFact, noRunWithMulti
+  , tshowDiplomacy, tshowChallenge, gleader, isHorrorFact, noRunWithMulti
   , bannedPointmanSwitchBetweenLevels, isFoe, isFriend
   , difficultyBound, difficultyDefault, difficultyCoeff
   , defaultChallenge, possibleActorFactions, ppContainer
@@ -100,6 +100,12 @@ data Challenge = Challenge
   deriving (Show, Eq, Ord, Generic)
 
 instance Binary Challenge
+
+tshowDiplomacy :: Diplomacy -> Text
+tshowDiplomacy Unknown = "unknown to each other"
+tshowDiplomacy Neutral = "in neutral diplomatic relations"
+tshowDiplomacy Alliance = "allied"
+tshowDiplomacy War = "at war"
 
 tshowChallenge :: Challenge -> Text
 tshowChallenge Challenge{..} =

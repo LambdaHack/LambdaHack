@@ -378,12 +378,8 @@ watchRespUpdAtomicUI cmd = case cmd of
   UpdDiplFaction fid1 fid2 _ toDipl -> do
     name1 <- getsState $ gname . (EM.! fid1) . sfactionD
     name2 <- getsState $ gname . (EM.! fid2) . sfactionD
-    let showDipl Unknown = "unknown to each other"
-        showDipl Neutral = "in neutral diplomatic relations"
-        showDipl Alliance = "allied"
-        showDipl War = "at war"
     msgAdd MsgFactionIntel $
-      name1 <+> "and" <+> name2 <+> "are now" <+> showDipl toDipl <> "."
+      name1 <+> "and" <+> name2 <+> "are now" <+> tshowDiplomacy toDipl <> "."
   UpdDoctrineFaction{} -> return ()
   UpdAutoFaction fid b -> do
     side <- getsClient sside
