@@ -113,7 +113,7 @@ posUpdAtomic cmd = case cmd of
   UpdLoseStashFaction _ fid lid pos -> return $! PosFidAndSight fid lid [pos]
   UpdLeadFaction fid _ _ -> return $! PosFidAndSer fid
   UpdDiplFaction{} -> return PosAll
-  UpdDoctrineFaction fid _ _ -> return $! PosFidAndSer fid
+  UpdDoctrineFaction{} -> return PosAll  -- make faction lore fun
   UpdAutoFaction{} -> return PosAll
   UpdRecordKill aid _ _ -> singleAid aid
   UpdAlterTile lid p _ _ -> return $! PosSight lid [p]

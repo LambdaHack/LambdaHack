@@ -1629,7 +1629,7 @@ effectDropItem execSfx iidOriginal ngroup kcopy store grp target = do
      | ngroup == maxBound && kcopy == maxBound
        && store `elem` [CStash, CEqp]
        && fhasGender (gkind fact)  -- hero in Allure's decontamination chamber
-       && (cdiff curChalSer == 1     -- at lowest difficulty for its faction
+       && (cdiff curChalSer == 1   -- at lowest difficulty for its faction
            && any (fhasUI . gkind . snd)
                   (filter (\(fi, fa) -> isFriend fi fa (bfid tb))
                           (EM.assocs factionD))

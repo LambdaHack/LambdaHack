@@ -689,12 +689,52 @@ factionCloseUp :: MonadClientUI m
                -> m (Text, [(DisplayFont, [AttrString])])
 factionCloseUp factions slot = do
   side <- getsClient sside
-  -- FontSetup{..} <- getFontSetup
-  let (fid, fact) = factions !! fromEnum slot
-      name = FK.fname $ gkind fact  -- we ignore "Controlled", etc.
+  FontSetup{propFont} <- getFontSetup
+  let (fid, Faction{gkind=FK.FactionKind{..}, ..}) =
+        factions !! fromEnum slot
+      name = if fhasGender  -- but we ignore "Controlled", etc.
+             then makePhrase [MU.Ws $ MU.Text fname]
+             else fname
       prompt = makeSentence $
         if fid == side
         then ["you are the", MU.Text name]
         else ["you are wary of the", MU.Text name]  -- wary even if allies
-      blurbs = []
-  return (prompt, map (second $ map textToAS) blurbs)
+      ts1 =
+        case fgroups of
+          [] -> []  -- only initial actors in the faction?
+          [fgroup] ->
+            [makeSentence [ "the faction consists of"
+                          , MU.Ws $ MU.Text $ displayGroupName fgroup ]]
+          _ -> [makeSentence
+                  [ "the faction attracts members such as:"
+                  ,  MU.WWandW $ map (MU.Text . displayGroupName) fgroups ]]
+        ++ [if fskillsOther == Ability.zeroSkills  -- simplified
+            then "Its members don't care about each other and crowd and stampede all at once, sometimes brutally colliding by accident."
+            else "Its members pay attention to all other party members and take care to move one at a time."]
+        ++ [ "It's able to take part in races to an area exit."
+           | fcanEscape ]
+        ++ [ "When all members are incapacitated, the faction dissolves."
+           | fneverEmpty ]
+        ++ [if fhasGender
+            then "It's known to have sexual dimorphism and use gender pronouns."
+            else "Its memebers seem to choose naked ground for sleeping."]
+        ++ [ "Its ranks swell with time."
+           | fspawnsFast ]
+        ++ [ "It's able to maintain activity on a level on its own, with a pointman coordinating each tactical maneuver."
+           | fhasPointman ]
+      -- Changes to all of these have @PosAll@, so the player knows them.
+      ts2 =
+        let nkilled = sum $ EM.elems gvictims
+            person = if nkilled == 1 then MU.Sg3rd else MU.PlEtc
+        in [ makeSentence
+               [ "so far,"
+               , MU.CardinalWs nkilled "member"
+               , MU.SubjectVerb person
+                                MU.Yes
+                                "of this faction"
+                                "have been reported incapacitated" ]
+           | nkilled > 0 ]
+        ++ ["Its current doctrine is '" <> Ability.nameDoctrine gdoctrine
+            <> "' (" <> Ability.describeDoctrine gdoctrine <> ")."]
+      blurbs = intersperse ["\n"] [ts1, ts2]
+  return (prompt, map (\t -> (propFont, map textToAS t)) blurbs)

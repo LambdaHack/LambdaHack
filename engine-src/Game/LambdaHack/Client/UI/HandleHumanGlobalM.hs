@@ -2050,9 +2050,9 @@ doctrineHuman = do
   let toT = if fromT == maxBound then minBound else succ fromT
   go <- displaySpaceEsc ColorFull
         $ "(Beware, work in progress!)"
-          <+> "Current squad doctrine is" <+> Ability.nameDoctrine fromT
+          <+> "Current squad doctrine is '" <> Ability.nameDoctrine fromT <> "'"
           <+> "(" <> Ability.describeDoctrine fromT <> ")."
-          <+> "Switching doctrine to" <+> Ability.nameDoctrine toT
+          <+> "Switching doctrine to '" <> Ability.nameDoctrine toT <> "'"
           <+> "(" <> Ability.describeDoctrine toT <> ")."
           <+> "This clears targets of all non-pointmen teammates."
           <+> "New targets will be picked according to new doctrine."

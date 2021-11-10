@@ -43,12 +43,13 @@ data Faction = Faction
       -- it is morally read-only, but not represented
       -- as @ContentId FactionKind@, because it's very small
       -- and it's looked up often enough in the code and during runtime;
+      -- a side-effect is that if content changes mid-game, this stays;
       -- if we ever have thousands of factions in a single game,
       -- e.g., one for each separately spawned herd of animals, change this
   , gname     :: Text            -- ^ individual name
-  , gcolor    :: Color.Color     -- ^ color of actors or their frames
+  , gcolor    :: Color.Color     -- ^ color of numbered actors
   , gdoctrine :: Ability.Doctrine
-                                 -- ^ non-leaders behave according to this
+                                 -- ^ non-pointmen behave according to this
   , gunderAI  :: Bool            -- ^ whether the faction is under AI control
   , ginitial  :: [(Int, Int, GroupName ItemKind)]  -- ^ initial actors
   , gdipl     :: Dipl            -- ^ diplomatic standing
