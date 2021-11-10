@@ -6,8 +6,6 @@ module Game.LambdaHack.Server.ProtocolM
   , MonadServerComm
       ( getsDict  -- exposed only to be implemented, not used
       , putDict  -- exposed only to be implemented, not used
-      , getsConnBackup  -- exposed only to be implemented, not used
-      , putConnBackup  -- exposed only to be implemented, not used
       , liftIO  -- exposed only to be implemented, not used
       )
     -- * Protocol
@@ -85,8 +83,6 @@ data ChanServer = ChanServer
 class MonadServer m => MonadServerComm m where
   getsDict       :: (ConnServerDict -> a) -> m a
   putDict        :: ConnServerDict -> m ()
-  getsConnBackup :: (Maybe ChanServer -> a) -> m a
-  putConnBackup  :: Maybe ChanServer -> m ()
   liftIO         :: IO a -> m a
 
 getDict :: MonadServerComm m => m ConnServerDict
@@ -166,15 +162,6 @@ killAllClients = do
   -- We can't interate over sfactionD, because client can be from an old game.
   -- For the same reason we can't look up and send client's state.
   mapWithKeyM_ sendKill d
-  connBackup <- getsConnBackup id
-  -- Also kill the backup AI client shadowed by the UI client.
-  let sendDirectlyToConn conn = do
-        factionD <- getsState sfactionD
-        let (fidUI, _) =
-              fromJust $ find (fhasUI . gkind . snd) $ EM.assocs factionD
-        let resp = RespUpdAtomicNoState $ UpdKillExit fidUI
-        writeQueue resp $ responseS conn
-  maybe (return ()) sendDirectlyToConn connBackup
 
 -- Global variable for all children threads of the server.
 childrenServer :: MVar [Async ()]
@@ -207,32 +194,33 @@ updateConn executorClient = do
     liftIO $ mapWithKeyM_ forkClient newD
   else do
     -- Hard case, but we know there is exactly one UI connection in oldD,
-    -- so we can reuse it for any faction (to keep history).
+    -- so we can reuse it for any new UI faction (to keep history).
     -- UI session (history in particular) is preserved even over game
     -- save and reload. It gets saved with the savefile of the team
     -- that is a UI faction and restored intact. However, when a new game
     -- is started from commandline (@--newGame@), even if it's using the same
     -- save prefix (@--savePrefix@), the session data is often lost.
-    mconnBackupOld <- getsConnBackup id
-    -- Gather all existing AI connections in @oldD2@.
-    let (connUI, oldD2) = case find (isJust . requestUIS . snd)
+    -- AI factions don't care which client they use, so we don't always
+    -- preserve the old assignments either of factions or teams.
+    let -- Find the new UI faction.
+        (fidUI, _) = fromJust $ find (fhasUI . gkind . snd) $ EM.assocs factionD
+        -- Swap UI and AI connections around.
+        swappedD = case find (isJust . requestUIS . snd)
                                $ EM.assocs oldD of
           Nothing -> error "updateConn: no UI connection found"
           Just (fid, conn) ->
-            let alt _ = mconnBackupOld  -- restore AI connection from backup
-            in (conn, EM.alter alt fid oldD)
-    -- Find the new UI faction.
-        (fidUI, _) = fromJust $ find (fhasUI . gkind . snd) $ EM.assocs factionD
-    -- Insert the UI connection and back up AI connection at the spot, if any.
-        mconnBackup = EM.lookup fidUI oldD2
-        oldD3 = EM.insert fidUI connUI oldD2
-    putConnBackup mconnBackup  -- never kill old clients
-    -- Add extra AI connections.
-    let extraFacts = EM.filterWithKey (\fid _ -> EM.notMember fid oldD3)
+            if fid == fidUI
+            then oldD  -- UI connection at the same place; nothing to do
+            else let -- Move the AI connection that was at new UI faction spot,
+                     -- to the freed old UI spot.
+                     alt _ = EM.lookup fidUI oldD
+                 in EM.alter alt fid $ EM.insert fidUI conn oldD
+        -- Add extra AI connections.
+        extraFacts = EM.filterWithKey (\fid _ -> EM.notMember fid swappedD)
                                       factionD
     extraD <- liftIO $ mapM mkChanServer extraFacts
     let exclusiveUnion = EM.unionWith $ \_ _ -> error "forbidden duplicate"
-        newD = oldD3 `exclusiveUnion` extraD
+        newD = swappedD `exclusiveUnion` extraD
     putDict newD
     -- Spawn the extra AI client threads.
     liftIO $ mapWithKeyM_ forkClient extraD
