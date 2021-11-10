@@ -255,7 +255,7 @@ describeDoctrine TMeleeAndRanged =
 describeDoctrine TMeleeAdjacent = "engage exclusively in melee, don't move"
 describeDoctrine TBlock = "block and wait, don't move"
 describeDoctrine TRoam = "move freely, chase targets"
-describeDoctrine TPatrol = "find and patrol an area (WIP)"
+describeDoctrine TPatrol = "find and patrol an area"
 
 doctrineSkills :: Doctrine -> Skills
 doctrineSkills TExplore = zeroSkills

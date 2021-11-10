@@ -21,6 +21,7 @@ import Game.LambdaHack.Core.Prelude
 import           Data.Either
 import qualified Data.EnumMap.Strict as EM
 import qualified Data.EnumSet as ES
+import           Data.Function
 import qualified Data.Text as T
 import qualified NLP.Miniutter.English as MU
 
@@ -44,6 +45,7 @@ import           Game.LambdaHack.Common.Actor
 import           Game.LambdaHack.Common.ActorState
 import           Game.LambdaHack.Common.ClientOptions
 import           Game.LambdaHack.Common.Faction
+import qualified Game.LambdaHack.Common.Faction as Faction
 import           Game.LambdaHack.Common.Item
 import           Game.LambdaHack.Common.Kind
 import           Game.LambdaHack.Common.Misc
@@ -690,15 +692,17 @@ factionCloseUp :: MonadClientUI m
 factionCloseUp factions slot = do
   side <- getsClient sside
   FontSetup{propFont} <- getFontSetup
+  factionD <- getsState sfactionD
   let (fid, Faction{gkind=FK.FactionKind{..}, ..}) =
         factions !! fromEnum slot
-      name = if fhasGender  -- but we ignore "Controlled", etc.
-             then makePhrase [MU.Ws $ MU.Text fname]
-             else fname
-      prompt = makeSentence $
+      (name, person) = if fhasGender  -- but we ignore "Controlled", etc.
+                       then (makePhrase [MU.Ws $ MU.Text fname], MU.PlEtc)
+                       else (fname, MU.Sg3rd)
+      (youThey, prompt) =
         if fid == side
-        then ["you are the", MU.Text name]
-        else ["you are wary of the", MU.Text name]  -- wary even if allies
+        then ("You", makeSentence  ["you are the", MU.Text name])
+        else ("They", makeSentence ["you are wary of the", MU.Text name])
+               -- wary even if the faction is allied
       ts1 =
         case fgroups of
           [] -> []  -- only initial actors in the faction?
@@ -709,32 +713,56 @@ factionCloseUp factions slot = do
                   [ "the faction attracts members such as:"
                   ,  MU.WWandW $ map (MU.Text . displayGroupName) fgroups ]]
         ++ [if fskillsOther == Ability.zeroSkills  -- simplified
-            then "Its members don't care about each other and crowd and stampede all at once, sometimes brutally colliding by accident."
-            else "Its members pay attention to all other party members and take care to move one at a time."]
-        ++ [ "It's able to take part in races to an area exit."
-           | fcanEscape ]
+            then youThey <+> "don't care about each other and crowd and stampede all at once, sometimes brutally colliding by accident."
+            else youThey <+> "pay attention to each other and take care to move one at a time."]
+        ++ [ if fcanEscape
+             then "The faction is able to take part in races to an area exit."
+             else "The faction doesn't escape areas of conflict and attempts to block exits instead."]
         ++ [ "When all members are incapacitated, the faction dissolves."
            | fneverEmpty ]
         ++ [if fhasGender
-            then "It's known to have sexual dimorphism and use gender pronouns."
-            else "Its memebers seem to choose naked ground for sleeping."]
+            then "Its members are known to have sexual dimorphism and use gender pronouns."
+            else "Its members seem to prefer naked ground for sleeping."]
         ++ [ "Its ranks swell with time."
            | fspawnsFast ]
-        ++ [ "It's able to maintain activity on a level on its own, with a pointman coordinating each tactical maneuver."
+        ++ [ "The faction is able to maintain activity on a level on its own, with a pointman coordinating each tactical maneuver."
            | fhasPointman ]
-      -- Changes to all of these have @PosAll@, so the player knows them.
+      -- Changes to all of these have visibility @PosAll@, so the player
+      -- knows them fully, except for @gvictims@, which is coupled to tracking
+      -- other factions' actors and so only incremented when we've seen
+      -- their actor killed (mostly likely killed by us).
       ts2 =
-        let nkilled = sum $ EM.elems gvictims
-            person = if nkilled == 1 then MU.Sg3rd else MU.PlEtc
-        in [ makeSentence
-               [ "so far,"
-               , MU.CardinalWs nkilled "member"
-               , MU.SubjectVerb person
-                                MU.Yes
-                                "of this faction"
-                                "have been reported incapacitated" ]
-           | nkilled > 0 ]
+        case gquit of
+          Nothing -> []
+          Just Status{..} ->
+            ["The faction has already" <+> FK.nameOutcomePast stOutcome
+             <+> "around level" <+> tshow (abs stDepth)]
+        ++ let nkilled = sum $ EM.elems gvictims
+               personKilled = if nkilled == 1 then MU.Sg3rd else MU.PlEtc
+           in [ makeSentence $
+                  [ "so far," | isNothing gquit ]
+                  ++ [ "at least"
+                     , MU.CardinalWs nkilled "member"
+                     , MU.SubjectVerb personKilled
+                                      MU.Yes
+                                      "of this faction"
+                                      "have been incapacitated" ]
+              | nkilled > 0 ]
         ++ ["Its current doctrine is '" <> Ability.nameDoctrine gdoctrine
             <> "' (" <> Ability.describeDoctrine gdoctrine <> ")."]
-      blurbs = intersperse ["\n"] [ts1, ts2]
+      ts3 =  -- reporting regardless of whether any of the factions are dead
+        let renderDiplGroup [] = error "renderDiplGroup: null"
+            renderDiplGroup ((fid2, diplomacy) : rest) = MU.Phrase
+              [ MU.Text $ tshowDiplomacy diplomacy
+              , "with"
+              , MU.WWandW $ map renderFact2 $ fid2 : map fst rest ]
+            renderFact2 fid2 = MU.Text $ Faction.gname (factionD EM.! fid2)
+            knownAssocsGroups = groupBy ((==) `on` snd) $ sortOn snd
+                                $ filter ((/= Unknown) . snd) $ EM.assocs gdipl
+        in [ makeSentence [ MU.SubjectVerb person MU.Yes (MU.Text name) "be"
+                          , MU.WWandW $ map renderDiplGroup knownAssocsGroups ]
+           | not (null knownAssocsGroups) ]
+      -- Description of the score polynomial would go into a separate section,
+      -- but it's hard to make it sound non-technical enough.
+      blurbs = intersperse ["\n"] [ts1, ts2, ts3]
   return (prompt, map (\t -> (propFont, map textToAS t)) blurbs)

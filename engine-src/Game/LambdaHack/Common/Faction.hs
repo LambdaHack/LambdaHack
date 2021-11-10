@@ -71,7 +71,7 @@ data Diplomacy =
   | Neutral
   | Alliance
   | War
-  deriving (Show, Eq, Enum, Generic)
+  deriving (Show, Eq, Ord, Enum, Generic)
 
 instance Binary Diplomacy
 
