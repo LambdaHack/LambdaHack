@@ -2,7 +2,7 @@
 module Content.ItemKindActor
   ( -- * Group name patterns
     pattern S_WOODEN_TORCH, pattern S_SANDSTONE_ROCK
-  , pattern HERO, pattern SCOUT_HERO, pattern RANGER_HERO, pattern ESCAPIST_HERO, pattern AMBUSHER_HERO, pattern BRAWLER_HERO, pattern SOLDIER_HERO, pattern CIVILIAN, pattern MONSTER, pattern MOBILE_MONSTER, pattern SCOUT_MONSTER, pattern ANIMAL, pattern MOBILE_ANIMAL, pattern IMMOBILE_ANIMAL, pattern INSECT
+  , pattern HERO, pattern SCOUT_HERO, pattern RANGER_HERO, pattern ESCAPIST_HERO, pattern AMBUSHER_HERO, pattern BRAWLER_HERO, pattern SOLDIER_HERO, pattern CIVILIAN, pattern MONSTER, pattern MOBILE_MONSTER, pattern SCOUT_MONSTER, pattern ANIMAL, pattern MOBILE_ANIMAL, pattern IMMOBILE_ANIMAL, pattern INSECT, pattern GEOPHENOMENON
   , pattern ADD_SIGHT, pattern ARMOR_RANGED, pattern ADD_NOCTO_1, pattern WEAK_ARROW, pattern LIGHT_ATTENUATOR, pattern FIREPROOF_CLOTH, pattern RING_OF_OPPORTUNITY_SNIPER, pattern ANY_ARROW, pattern STARTING_ARMOR, pattern STARTING_WEAPON, pattern GEM
   , actorsGN, actorsGNSingleton
   , -- * Content
@@ -31,14 +31,14 @@ pattern S_WOODEN_TORCH, S_SANDSTONE_ROCK :: GroupName ItemKind
 
 actorsGN :: [GroupName ItemKind]
 actorsGN =
-       [HERO, SCOUT_HERO, RANGER_HERO, ESCAPIST_HERO, AMBUSHER_HERO, BRAWLER_HERO, SOLDIER_HERO, CIVILIAN, MONSTER, MOBILE_MONSTER, SCOUT_MONSTER, ANIMAL, MOBILE_ANIMAL, IMMOBILE_ANIMAL, INSECT]
+       [HERO, SCOUT_HERO, RANGER_HERO, ESCAPIST_HERO, AMBUSHER_HERO, BRAWLER_HERO, SOLDIER_HERO, CIVILIAN, MONSTER, MOBILE_MONSTER, SCOUT_MONSTER, ANIMAL, MOBILE_ANIMAL, IMMOBILE_ANIMAL, INSECT, GEOPHENOMENON]
     ++ [ADD_SIGHT, ARMOR_RANGED, ADD_NOCTO_1, WEAK_ARROW, LIGHT_ATTENUATOR, FIREPROOF_CLOTH, RING_OF_OPPORTUNITY_SNIPER, ANY_ARROW, STARTING_ARMOR, STARTING_WEAPON, GEM]
 
-pattern HERO, SCOUT_HERO, RANGER_HERO, ESCAPIST_HERO, AMBUSHER_HERO, BRAWLER_HERO, SOLDIER_HERO, CIVILIAN, MONSTER, MOBILE_MONSTER, SCOUT_MONSTER, ANIMAL, MOBILE_ANIMAL, IMMOBILE_ANIMAL, INSECT :: GroupName ItemKind
+pattern HERO, SCOUT_HERO, RANGER_HERO, ESCAPIST_HERO, AMBUSHER_HERO, BRAWLER_HERO, SOLDIER_HERO, CIVILIAN, MONSTER, MOBILE_MONSTER, SCOUT_MONSTER, ANIMAL, MOBILE_ANIMAL, IMMOBILE_ANIMAL, INSECT, GEOPHENOMENON :: GroupName ItemKind
 
 pattern ADD_SIGHT, ARMOR_RANGED, ADD_NOCTO_1, WEAK_ARROW, LIGHT_ATTENUATOR, FIREPROOF_CLOTH, RING_OF_OPPORTUNITY_SNIPER, ANY_ARROW, STARTING_ARMOR, STARTING_WEAPON, GEM :: GroupName ItemKind
 
-pattern HERO = GroupName "adenturer"
+pattern HERO = GroupName "adventurer"
 pattern SCOUT_HERO = GroupName "scout"
 pattern RANGER_HERO = GroupName "ranger"
 pattern ESCAPIST_HERO = GroupName "escapist"
@@ -53,6 +53,7 @@ pattern ANIMAL = GroupName "animal"
 pattern MOBILE_ANIMAL = GroupName "mobile animal"
 pattern IMMOBILE_ANIMAL = GroupName "immobile animal"
 pattern INSECT = GroupName "insect"
+pattern GEOPHENOMENON = GroupName "geological phenomenon"
 
 pattern S_WOODEN_TORCH = GroupName "wooden torch"
 pattern S_SANDSTONE_ROCK = GroupName "sandstone rock"
@@ -649,7 +650,7 @@ thornbush = ItemKind  -- the wimpiest kind of early tank
 geyserBoiling = ItemKind
   { isymbol  = toContentSymbol 'g'
   , iname    = "geyser"
-  , ifreq    = [(ANIMAL, 8), (IMMOBILE_ANIMAL, 30)]
+  , ifreq    = [(ANIMAL, 8), (IMMOBILE_ANIMAL, 30), (GEOPHENOMENON, 1)]
   , iflavour = zipPlain [Blue]
   , icount   = 1
   , irarity  = [(1, 10), (10, 6)]
@@ -667,7 +668,7 @@ geyserBoiling = ItemKind
 geyserArsenic = ItemKind
   { isymbol  = toContentSymbol 'g'
   , iname    = "arsenic geyser"
-  , ifreq    = [(ANIMAL, 8), (IMMOBILE_ANIMAL, 40)]
+  , ifreq    = [(ANIMAL, 8), (IMMOBILE_ANIMAL, 40), (GEOPHENOMENON, 1)]
   , iflavour = zipPlain [Cyan]
   , icount   = 1
   , irarity  = [(1, 10), (10, 6)]
@@ -685,7 +686,7 @@ geyserArsenic = ItemKind
 geyserSulfur = ItemKind
   { isymbol  = toContentSymbol 'g'
   , iname    = "sulfur geyser"
-  , ifreq    = [(ANIMAL, 8), (IMMOBILE_ANIMAL, 120)]
+  , ifreq    = [(ANIMAL, 8), (IMMOBILE_ANIMAL, 120), (GEOPHENOMENON, 1)]
   , iflavour = zipPlain [BrYellow]  -- exception, animal with bright color
   , icount   = 1
   , irarity  = [(1, 10), (10, 6)]

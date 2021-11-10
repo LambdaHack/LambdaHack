@@ -17,7 +17,6 @@ import Prelude ()
 import Game.LambdaHack.Core.Prelude
 
 import           Content.ItemKindActor
-import           Content.ItemKindOrgan
 import           Game.LambdaHack.Content.FactionKind
 import qualified Game.LambdaHack.Content.ItemKind as IK
 import           Game.LambdaHack.Definition.Ability
@@ -97,7 +96,7 @@ factExplorer = FactionKind
   { fname = "Explorer"
   , ffreq = [(EXPLORER_REPRESENTATIVE, 1), (REPRESENTATIVE, 1)]
   , fteam = teamExplorer
-  , fgroups = [HERO]
+  , fgroups = [HERO]  -- don't spam the escapists, etc.
   , fskillsOther = meleeAdjacent
   , fcanEscape = True
   , fneverEmpty = True
@@ -212,7 +211,7 @@ factMonster = FactionKind
   { fname = "Monster Hive"
   , ffreq = [(MONSTER_REPRESENTATIVE, 1), (REPRESENTATIVE, 1)]
   , fteam = teamMonster
-  , fgroups = [MONSTER, MOBILE_MONSTER]
+  , fgroups = [MONSTER]  -- don't spam
   , fskillsOther = zeroSkills
   , fcanEscape = False
   , fneverEmpty = False
@@ -275,7 +274,7 @@ factAnimal = FactionKind
   { fname = "Animal Kingdom"
   , ffreq = [(ANIMAL_REPRESENTATIVE, 1), (REPRESENTATIVE, 1)]
   , fteam = teamAnimal
-  , fgroups = [ANIMAL, MOBILE_ANIMAL, IMMOBILE_ANIMAL, SCAVENGER]
+  , fgroups = [ANIMAL, INSECT, GEOPHENOMENON]  -- only the distinct ones
   , fskillsOther = zeroSkills
   , fcanEscape = False
   , fneverEmpty = False
