@@ -265,12 +265,13 @@ harpoon = ItemKind
   , ikit     = []
   }
 harpoon2 = harpoon
-  { iname    = "whaling harpoon"
+  { iname    = "The whaling Harpoon"
   , ifreq    = [(COMMON_ITEM, 5), (HARPOON, 2)]
   , icount   = 2 `dL` 5
   , iweight  = 1000
-  , idamage  = 10 `d` 1
-  , idesc    = "With a brittle, barbed head and thick cord, this ancient weapon is designed for formidable prey."
+  , idamage  = 21 `d` 1
+  , iaspects = SetFlag Unique : delete (SetFlag Durable) (iaspects harpoon)
+  , idesc    = "With a brittle, barbed head and thick cord, this ancient weapon is designed for formidable prey. The age has made the edge thinner and sharper, but brittle and splintering, so it won't last beyond a single hit. "
   }
 net = ItemKind
   { isymbol  = symbolProjectile
