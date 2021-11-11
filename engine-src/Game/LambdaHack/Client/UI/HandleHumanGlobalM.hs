@@ -1990,11 +1990,11 @@ gameExitWithHuman exitStrategy = do
                }
            exitReturn nxtGameGroup
          Quit ->
-           do exitReturn MK.INSERT_COIN)
-      (do rndToActionUI $ oneOf  -- ifM false case; this 'do' is necessary! -nks
-            [ "yea, would be a pity to leave them to die"
-            , "yea, a shame to get your team stranded" ]
-          >>= failWith)
+           exitReturn MK.INSERT_COIN)
+      (rndToActionUI (oneOf  -- ifM false case
+                        [ "yea, would be a pity to leave them to die"
+                        , "yea, a shame to get your team stranded" ])
+       >>= failWith)
 
 ifM :: Monad m => m Bool -> m b -> m b -> m b
 ifM b t f = do b' <- b; if b' then t else f
