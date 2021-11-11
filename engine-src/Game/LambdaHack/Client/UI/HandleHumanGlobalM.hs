@@ -1977,8 +1977,9 @@ gameExitWithHuman exitStrategy = do
   ifM (if' noConfirmsGame
            (return True)  -- true case
            (let displayExitMessage diff =
-                  displayYesNo ColorBW $ diff <+> "progress of the ongoing" <+>
-                  MK.mname gameMode <+> "game will be lost! Are you sure?"
+                  displayYesNo ColorBW
+                  $ diff <+> "progress of the ongoing"
+                    <+> MK.mname gameMode <+> "game will be lost! Are you sure?"
             in displayExitMessage $ case exitStrategy of  -- false case
                  Restart -> "You just requested a new" <+> nxtGameName <+> "game. The "
                  Quit    -> "If you quit, the "))
@@ -1986,7 +1987,7 @@ gameExitWithHuman exitStrategy = do
          Restart -> do
            let (mainName, _) = T.span (\c -> Char.isAlpha c || c == ' ') nxtGameName
                nxtGameGroup = DefsInternal.GroupName $ T.intercalate " "
-                 $ take 2 $ T.words mainName
+                              $ take 2 $ T.words mainName
            exitReturn nxtGameGroup
          Quit ->
            exitReturn MK.INSERT_COIN)
