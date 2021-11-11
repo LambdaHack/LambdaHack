@@ -1982,15 +1982,13 @@ gameExitWithHuman exitStrategy = do
            (return True)  -- true case
            (displayExitMessage $ case exitStrategy of  -- false case
               Restart -> "You just requested a new" <+> nxtGameName <+> "game. The "
-              Quit    -> "If you quit, the "))
-      (case exitStrategy of  -- ifM true case
-         Restart -> do
+              Quit -> "If you quit, the "))
+      (exitReturn $ case exitStrategy of  -- ifM true case
+         Restart ->
            let (mainName, _) = T.span (\c -> Char.isAlpha c || c == ' ') nxtGameName
-               nxtGameGroup = DefsInternal.GroupName $ T.intercalate " "
-                              $ take 2 $ T.words mainName
-           exitReturn nxtGameGroup
-         Quit ->
-           exitReturn MK.INSERT_COIN)
+           in DefsInternal.GroupName $ T.intercalate " "
+              $ take 2 $ T.words mainName
+         Quit -> MK.INSERT_COIN)
       (rndToActionUI (oneOf  -- ifM false case
                         [ "yea, would be a pity to leave them to die"
                         , "yea, a shame to get your team stranded" ])
