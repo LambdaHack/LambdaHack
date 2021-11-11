@@ -21,8 +21,9 @@ module Game.LambdaHack.Client.UI.HandleHumanGlobalM
   , gameFishToggle, gameGoodsToggle, gameWolfToggle, gameKeeperToggle
   , gameScenarioIncr
     -- * Global commands that never take time
-  , gameExitWithHuman, ExitStrategy(..), gameDropHuman, gameExitHuman, gameSaveHuman
-  , doctrineHuman, automateHuman, automateToggleHuman, automateBackHuman
+  , gameExitWithHuman, ExitStrategy(..), gameDropHuman, gameExitHuman
+  , gameSaveHuman, doctrineHuman, automateHuman, automateToggleHuman
+  , automateBackHuman
 #ifdef EXPOSE_INTERNAL
     -- * Internal operations
   , areaToRectangles, meleeAid, displaceAid, moveSearchAlter, alterCommon
@@ -1981,11 +1982,13 @@ gameExitWithHuman exitStrategy = do
   ifM (if' noConfirmsGame
            (return True)  -- true case
            (displayExitMessage $ case exitStrategy of  -- false case
-              Restart -> "You just requested a new" <+> nxtGameName <+> "game. The "
+              Restart -> "You just requested a new" <+> nxtGameName
+                         <+> "game. The "
               Quit -> "If you quit, the "))
       (exitReturn $ case exitStrategy of  -- ifM true case
          Restart ->
-           let (mainName, _) = T.span (\c -> Char.isAlpha c || c == ' ') nxtGameName
+           let (mainName, _) = T.span (\c -> Char.isAlpha c || c == ' ')
+                                      nxtGameName
            in DefsInternal.GroupName $ T.intercalate " "
               $ take 2 $ T.words mainName
          Quit -> MK.INSERT_COIN)
