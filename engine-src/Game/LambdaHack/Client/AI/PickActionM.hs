@@ -47,8 +47,8 @@ import qualified Game.LambdaHack.Common.Tile as Tile
 import           Game.LambdaHack.Common.Time
 import           Game.LambdaHack.Common.Types
 import           Game.LambdaHack.Common.Vector
-import qualified Game.LambdaHack.Content.ItemKind as IK
 import           Game.LambdaHack.Content.FactionKind
+import qualified Game.LambdaHack.Content.ItemKind as IK
 import           Game.LambdaHack.Core.Frequency
 import           Game.LambdaHack.Core.Random
 import           Game.LambdaHack.Definition.Ability
@@ -758,6 +758,8 @@ harmful discoBenefit iid =
 
 -- If enemy (or even a friend) blocks the way, sometimes melee him
 -- even though normally you wouldn't.
+-- This is also a trick to make a foe use up its non-durable weapons,
+-- e.g., on cheap slow projectiles fired in its path.
 meleeBlocker :: MonadClient m
              => Ability.Skills -> ActorId -> m (Strategy RequestTimed)
 meleeBlocker actorSk aid = do

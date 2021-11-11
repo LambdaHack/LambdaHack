@@ -716,18 +716,22 @@ discoverIfMinorEffects c iid itemKindId = do
         && not (IA.isHumanTrinket itemKind)) $
     execUpdAtomic $ UpdDiscover c iid itemKindId arItem
 
-pickWeaponServer :: MonadServer m => ActorId -> m (Maybe (ItemId, CStore))
-pickWeaponServer source = do
+pickWeaponServer :: MonadServer m
+                 => ActorId -> ActorId -> m (Maybe (ItemId, CStore))
+pickWeaponServer source target = do
   eqpAssocs <- getsState $ kitAssocs source [CEqp]
   bodyAssocs <- getsState $ kitAssocs source [COrgan]
   actorSk <- currentSkillsServer source
   sb <- getsState $ getActorBody source
+  tb <- getsState $ getActorBody target
   let kitAssRaw = eqpAssocs ++ bodyAssocs
       forced = bproj sb
       kitAss | forced = kitAssRaw  -- for projectiles, anything is weapon
              | otherwise =
                  filter (IA.checkFlag Ability.Meleeable
                          . aspectRecordFull . fst . snd) kitAssRaw
+      benign itemFull = let arItem = aspectRecordFull itemFull
+                        in IA.checkFlag Ability.Benign arItem
   -- Server ignores item effects or it would leak item discovery info.
   -- Hence, weapons with powerful burning or wouding are undervalued.
   -- In particular, it even uses weapons that would heal an opponent.
@@ -736,6 +740,9 @@ pickWeaponServer source = do
   strongest <- pickWeaponM False Nothing kitAss actorSk source
   case strongest of
     [] -> return Nothing
+    (_, _, _, _, _, (itemFull, _)) : _ | not forced
+                                         && benign itemFull && bproj tb ->
+      return Nothing  -- if strongest is benign, don't waste fun on a projectile
     iis@((value1, hasEffect1, timeout1, _, _, _) : _) -> do
       let minIis = takeWhile (\(value, hasEffect, timeout, _, _, _) ->
                                  value == value1

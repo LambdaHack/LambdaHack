@@ -358,7 +358,7 @@ reqMoveGeneric voluntary mayAttack source dir = do
       -- unless it's large enough or tends to explode (fragile and lobable).
       -- The actor in the way is visible or not; server sees him always.
       -- Below the only weapon (the only item) of projectiles is picked.
-      mweapon <- pickWeaponServer source
+      mweapon <- pickWeaponServer source target
       case mweapon of
         Just (wp, cstore) | abInSkill Ability.SkMelee ->
           reqMeleeChecked voluntary source target wp cstore
@@ -630,7 +630,7 @@ reqDisplaceGeneric voluntary source target = do
        -- If the character melees instead, the player can tell displace failed.
        -- As for the other failures, they are impossible and we don't
        -- verify here that they don't occur, for simplicity.
-       mweapon <- pickWeaponServer source
+       mweapon <- pickWeaponServer source target
        case mweapon of
          Just (wp, cstore) | abInSkill Ability.SkMelee ->
            reqMeleeChecked voluntary source target wp cstore

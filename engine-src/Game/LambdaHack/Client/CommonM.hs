@@ -137,19 +137,23 @@ currentSkillsClient aid = do
 -- that hits multiple tagets comes into the equation. AI has to be very
 -- primitive and random here as well.
 pickWeaponClient :: MonadClient m
-                 => ActorId -> ActorId
-                 -> m (Maybe RequestTimed)
+                 => ActorId -> ActorId -> m (Maybe RequestTimed)
 pickWeaponClient source target = do
   eqpAssocs <- getsState $ kitAssocs source [CEqp]
   bodyAssocs <- getsState $ kitAssocs source [COrgan]
   actorSk <- currentSkillsClient source
+  tb <- getsState $ getActorBody target
   let kitAssRaw = eqpAssocs ++ bodyAssocs
       kitAss = filter (IA.checkFlag Ability.Meleeable
                        . aspectRecordFull . fst . snd) kitAssRaw
+      benign itemFull = let arItem = aspectRecordFull itemFull
+                        in IA.checkFlag Ability.Benign arItem
   discoBenefit <- getsClient sdiscoBenefit
   strongest <- pickWeaponM False (Just discoBenefit) kitAss actorSk source
   case strongest of
     [] -> return Nothing
+    (_, _, _, _, _, (itemFull, _)) : _ | benign itemFull && bproj tb ->
+      return Nothing  -- if strongest is benign, don't waste fun on a projectile
     iis@(ii1@(value1, hasEffect1, timeout1, _, _, (itemFull1, _)) : _) -> do
       let minIis = takeWhile (\(value, hasEffect, timeout, _, _, _) ->
                                  value == value1
