@@ -21,7 +21,7 @@ module Game.LambdaHack.Client.UI.HandleHumanGlobalM
   , gameFishToggle, gameGoodsToggle, gameWolfToggle, gameKeeperToggle
   , gameScenarioIncr
     -- * Global commands that never take time
-  , gameRestartHuman, gameQuitHuman, gameDropHuman, gameExitHuman, gameSaveHuman
+  , gameExitWithHuman, ExitStrategy(..), gameDropHuman, gameExitHuman, gameSaveHuman
   , doctrineHuman, automateHuman, automateToggleHuman, automateBackHuman
 #ifdef EXPOSE_INTERNAL
     -- * Internal operations
@@ -1961,58 +1961,46 @@ gameScenarioIncr delta = do
       snxtTutorial = MK.mtutorial $ snd $ nxtGameMode cops snxtScenario
   modifySession $ \sess -> sess {snxtScenario, snxtTutorial}
 
--- * GameRestart
+-- * GameRestart & GameQuit
 
-gameRestartHuman :: MonadClientUI m => m (FailOrCmd ReqUI)
-gameRestartHuman = do
-  cops <- getsState scops
+data ExitStrategy = Restart | Quit
+
+gameExitWithHuman :: MonadClientUI m => ExitStrategy -> m (FailOrCmd ReqUI)
+gameExitWithHuman exitStrategy = do
+  snxtChal       <- getsClient snxtChal
+  cops           <- getsState scops
   noConfirmsGame <- isNoConfirmsGame
-  gameMode <- getGameMode
-  snxtScenario <- getsSession snxtScenario
-  let nxtGameName = MK.mname $ snd $ nxtGameMode cops snxtScenario
-  b <- if noConfirmsGame
-       then return True
-       else displayYesNo ColorBW
-            $ "You just requested a new" <+> nxtGameName
-              <+> "game. The progress of the ongoing" <+> MK.mname gameMode
-              <+> "game will be lost! Are you sure?"
-  if b
-  then do
-    snxtChal <- getsClient snxtChal
-    -- This ignores all but the first word of game mode names picked
-    -- via main menu and assumes the fist word of such game modes
-    -- is present in their frequencies.
-    let (mainName, _) = T.span (\c -> Char.isAlpha c || c == ' ') nxtGameName
-        nxtGameGroup = DefsInternal.GroupName $ T.intercalate " "
-                       $ take 2 $ T.words mainName
-    return $ Right $ ReqUIGameRestart nxtGameGroup snxtChal
-  else do
-    msg2 <- rndToActionUI $ oneOf
-              [ "yea, would be a pity to leave them to die"
-              , "yea, a shame to get your team stranded" ]
-    failWith msg2
+  gameMode       <- getGameMode
+  snxtScenario   <- getsSession snxtScenario
+  let nxtGameName  = MK.mname $ snd $ nxtGameMode cops snxtScenario
+      exitReturn x = return $ Right $ ReqUIGameRestart x snxtChal
+   in ifM (if' noConfirmsGame
+          (return True)                              -- true case
+          (let displayExitMessage diff =
+                 displayYesNo ColorBW $ diff <+> "progress of the ongoing" <+>
+                 MK.mname gameMode <+> "game will be lost! Are you sure?"
+            in displayExitMessage $ case exitStrategy of -- false case
+                 Restart -> "You just requested a new" <+> nxtGameName <+> "game. The "
+                 Quit    -> "If you quit, the "))
+      (case exitStrategy of -- ifM true case
+         Restart ->
+           do let { (mainName, _) = T.span (\c -> Char.isAlpha c || c == ' ') nxtGameName
+                  ; nxtGameGroup = DefsInternal.GroupName $ T.intercalate " "
+                    $ take 2 $ T.words mainName
+                  }
+              exitReturn nxtGameGroup
+         Quit ->
+           do exitReturn MK.INSERT_COIN)
+      (do rndToActionUI $ oneOf -- ifM false case; this 'do' is necessary! -nks
+            [ "yea, would be a pity to leave them to die"
+            , "yea, a shame to get your team stranded" ]
+          >>= failWith)
 
--- * GameQuit
+ifM :: Monad m => m Bool -> m b -> m b -> m b
+ifM b t f = do b' <- b; if b' then t else f
 
--- TODO: deduplicate with gameRestartHuman
-gameQuitHuman :: MonadClientUI m => m (FailOrCmd ReqUI)
-gameQuitHuman = do
-  noConfirmsGame <- isNoConfirmsGame
-  gameMode <- getGameMode
-  b <- if noConfirmsGame
-       then return True
-       else displayYesNo ColorBW
-            $ "If you quit, the progress of the ongoing" <+> MK.mname gameMode
-              <+> "game will be lost! Are you sure?"
-  if b
-  then do
-    snxtChal <- getsClient snxtChal
-    return $ Right $ ReqUIGameRestart MK.INSERT_COIN snxtChal
-  else do
-    msg2 <- rndToActionUI $ oneOf
-              [ "yea, would be a pity to leave them to die"
-              , "yea, a shame to get your team stranded" ]
-    failWith msg2
+if' :: Bool -> p -> p -> p
+if' b t f = if b then t else f
 
 -- * GameDrop
 

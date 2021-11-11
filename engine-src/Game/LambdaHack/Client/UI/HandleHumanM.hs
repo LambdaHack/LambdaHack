@@ -149,8 +149,8 @@ cmdSemanticsLeader cmd = case cmd of
   GameScenarioIncr delta ->
     CmdNoNeed $ gameScenarioIncr delta >> challengeMenuHuman cmdSemInCxtOfKM
 
-  GameRestart -> CmdNoNeed $ weaveJust <$> gameRestartHuman
-  GameQuit -> CmdNoNeed $ weaveJust <$> gameQuitHuman
+  GameRestart -> CmdNoNeed $ weaveJust <$> gameExitWithHuman Restart
+  GameQuit -> CmdNoNeed $ weaveJust <$> gameExitWithHuman Quit
   GameDrop -> CmdNoNeed $ weaveJust <$> fmap Right gameDropHuman
   GameExit -> CmdNoNeed $ weaveJust <$> fmap Right gameExitHuman
   GameSave -> CmdNoNeed $ weaveJust <$> fmap Right gameSaveHuman
