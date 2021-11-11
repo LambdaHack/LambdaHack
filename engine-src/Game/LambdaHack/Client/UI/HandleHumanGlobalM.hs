@@ -1984,10 +1984,9 @@ gameExitWithHuman exitStrategy = do
                  Quit    -> "If you quit, the "))
       (case exitStrategy of  -- ifM true case
          Restart -> do
-           let { (mainName, _) = T.span (\c -> Char.isAlpha c || c == ' ') nxtGameName
-               ; nxtGameGroup = DefsInternal.GroupName $ T.intercalate " "
+           let (mainName, _) = T.span (\c -> Char.isAlpha c || c == ' ') nxtGameName
+               nxtGameGroup = DefsInternal.GroupName $ T.intercalate " "
                  $ take 2 $ T.words mainName
-               }
            exitReturn nxtGameGroup
          Quit ->
            exitReturn MK.INSERT_COIN)
