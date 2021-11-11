@@ -83,8 +83,8 @@ validateSingle CaveKind{..} =
       (maxMinSizeX, maxMinSizeY) = Dice.supDiceXY cminPlaceSize
       (minMaxSizeX, minMaxSizeY) = Dice.infDiceXY cmaxPlaceSize
   in [ "cname longer than 25" | T.length cname > 25 ]
-     ++ [ "cXminSize < 20" | cXminSize < 20 ]
-     ++ [ "cYminSize < 20" | cYminSize < 20 ]
+     ++ [ "cXminSize < 8" | cXminSize < 8 ]
+     ++ [ "cYminSize < 8" | cYminSize < 8 ]  -- see @focusArea@
      ++ [ "minCellSizeX < 1" | minCellSizeX < 1 ]
      ++ [ "minCellSizeY < 1" | minCellSizeY < 1 ]
      -- The following four are heuristics, so not too restrictive:
