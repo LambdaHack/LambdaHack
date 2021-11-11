@@ -1975,26 +1975,26 @@ gameExitWithHuman exitStrategy = do
   let nxtGameName  = MK.mname $ snd $ nxtGameMode cops snxtScenario
       exitReturn x = return $ Right $ ReqUIGameRestart x snxtChal
    in ifM (if' noConfirmsGame
-          (return True)                              -- true case
-          (let displayExitMessage diff =
-                 displayYesNo ColorBW $ diff <+> "progress of the ongoing" <+>
-                 MK.mname gameMode <+> "game will be lost! Are you sure?"
-            in displayExitMessage $ case exitStrategy of -- false case
-                 Restart -> "You just requested a new" <+> nxtGameName <+> "game. The "
-                 Quit    -> "If you quit, the "))
-      (case exitStrategy of -- ifM true case
-         Restart ->
-           do let { (mainName, _) = T.span (\c -> Char.isAlpha c || c == ' ') nxtGameName
-                  ; nxtGameGroup = DefsInternal.GroupName $ T.intercalate " "
-                    $ take 2 $ T.words mainName
-                  }
-              exitReturn nxtGameGroup
-         Quit ->
-           do exitReturn MK.INSERT_COIN)
-      (do rndToActionUI $ oneOf -- ifM false case; this 'do' is necessary! -nks
-            [ "yea, would be a pity to leave them to die"
-            , "yea, a shame to get your team stranded" ]
-          >>= failWith)
+               (return True)                              -- true case
+               (let displayExitMessage diff =
+                      displayYesNo ColorBW $ diff <+> "progress of the ongoing" <+>
+                      MK.mname gameMode <+> "game will be lost! Are you sure?"
+                 in displayExitMessage $ case exitStrategy of -- false case
+                      Restart -> "You just requested a new" <+> nxtGameName <+> "game. The "
+                      Quit    -> "If you quit, the "))
+          (case exitStrategy of -- ifM true case
+             Restart ->
+               do let { (mainName, _) = T.span (\c -> Char.isAlpha c || c == ' ') nxtGameName
+                      ; nxtGameGroup = DefsInternal.GroupName $ T.intercalate " "
+                        $ take 2 $ T.words mainName
+                      }
+                  exitReturn nxtGameGroup
+             Quit ->
+               do exitReturn MK.INSERT_COIN)
+          (do rndToActionUI $ oneOf -- ifM false case; this 'do' is necessary! -nks
+                [ "yea, would be a pity to leave them to die"
+                , "yea, a shame to get your team stranded" ]
+              >>= failWith)
 
 ifM :: Monad m => m Bool -> m b -> m b -> m b
 ifM b t f = do b' <- b; if b' then t else f
