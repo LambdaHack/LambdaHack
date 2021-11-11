@@ -1974,15 +1974,15 @@ gameExitWithHuman exitStrategy = do
   snxtScenario   <- getsSession snxtScenario
   let nxtGameName = MK.mname $ snd $ nxtGameMode cops snxtScenario
       exitReturn x = return $ Right $ ReqUIGameRestart x snxtChal
+      displayExitMessage diff =
+        displayYesNo ColorBW
+        $ diff <+> "progress of the ongoing"
+          <+> MK.mname gameMode <+> "game will be lost! Are you sure?"
   ifM (if' noConfirmsGame
            (return True)  -- true case
-           (let displayExitMessage diff =
-                  displayYesNo ColorBW
-                  $ diff <+> "progress of the ongoing"
-                    <+> MK.mname gameMode <+> "game will be lost! Are you sure?"
-            in displayExitMessage $ case exitStrategy of  -- false case
-                 Restart -> "You just requested a new" <+> nxtGameName <+> "game. The "
-                 Quit    -> "If you quit, the "))
+           (displayExitMessage $ case exitStrategy of  -- false case
+              Restart -> "You just requested a new" <+> nxtGameName <+> "game. The "
+              Quit    -> "If you quit, the "))
       (case exitStrategy of  -- ifM true case
          Restart -> do
            let (mainName, _) = T.span (\c -> Char.isAlpha c || c == ' ') nxtGameName
