@@ -1976,9 +1976,9 @@ gameExitWithHuman exitStrategy = do
       exitReturn x = return $ Right $ ReqUIGameRestart x snxtChal
    in ifM (if' noConfirmsGame
           (return True)                              -- true case
-          (let displayExitMessage =
-                 \diff -> displayYesNo ColorBW $ diff <+> "progress of the ongoing" <+>
-                          MK.mname gameMode <+> "game will be lost! Are you sure?"
+          (let displayExitMessage diff =
+                 displayYesNo ColorBW $ diff <+> "progress of the ongoing" <+>
+                 MK.mname gameMode <+> "game will be lost! Are you sure?"
             in displayExitMessage $ case exitStrategy of -- false case
                  Restart -> "You just requested a new" <+> nxtGameName <+> "game. The "
                  Quit    -> "If you quit, the "))
