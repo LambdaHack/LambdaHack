@@ -164,8 +164,8 @@ sampleTrunks dungeon = do
   Level{ldepth} <- getLevel minLid
   let regItem itemKindId = do
         let itemKind = okind coitem itemKindId
-            freq = pure (itemKindId, itemKind)
-        case possibleActorFactions itemKind factionD of
+            freq = pure (IK.HORROR, itemKindId, itemKind)
+        case possibleActorFactions [] itemKind factionD of
           [] -> return Nothing
           (fid, _) : _ -> do
             let c = CTrunk fid minLid originPoint
@@ -173,7 +173,7 @@ sampleTrunks dungeon = do
             m2 <- rollItemAspect freq ldepth
             case m2 of
               NoNewItem -> error "sampleTrunks: can't create actor trunk"
-              NewItem (ItemKnown kindIx ar _) itemFullRaw itemQuant -> do
+              NewItem _ (ItemKnown kindIx ar _) itemFullRaw itemQuant -> do
                 let itemKnown = ItemKnown kindIx ar jfid
                     itemFull =
                       itemFullRaw {itemBase = (itemBase itemFullRaw) {jfid}}
@@ -198,12 +198,12 @@ sampleItems dungeon = do
   Level{ldepth} <- getLevel minLid
   let regItem itemKindId = do
         let itemKind = okind coitem itemKindId
-            freq = pure (itemKindId, itemKind)
+            freq = pure (IK.HORROR, itemKindId, itemKind)
             c = CFloor minLid originPoint
         m2 <- rollItemAspect freq ldepth
         case m2 of
           NoNewItem -> error "sampleItems: can't create sample item"
-          NewItem itemKnown itemFull _ ->
+          NewItem _ itemKnown itemFull _ ->
             Just <$> registerItem False (itemFull, (0, [])) itemKnown c
   miids <- mapM regItem itemKindIds
   return $! EM.singleton SItem

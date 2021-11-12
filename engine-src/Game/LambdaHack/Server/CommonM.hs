@@ -502,7 +502,7 @@ addActorFromGroup actorGroup fid pos lid time = do
   m2 <- rollItemAspect freq ldepth
   case m2 of
     NoNewItem -> return Nothing
-    NewItem itemKnown itemFull itemQuant -> do
+    NewItem _ itemKnown itemFull itemQuant -> do
       let itemFullKit = (itemFull, itemQuant)
       Just <$> registerActor False itemKnown itemFullKit fid pos lid time
 
@@ -692,7 +692,7 @@ addActorIid trunkId ItemFull{itemBase, itemKind, itemDisco=ItemDiscoFull arItem}
           modifyServer $ \ser ->
             ser {steamGearCur = EM.alter alt teamContinuity steamGearCur}
           let itemKind2 = okind coitem itemKindId2
-              freq = pure (itemKindId2, itemKind2)
+              freq = pure (ikGrp, itemKindId2, itemKind2)
           rollAndRegisterItem False ldepth freq container mk
       case mIidEtc of
         Nothing -> error $ "" `showFailure` (lid, ikGrp, container, mk)

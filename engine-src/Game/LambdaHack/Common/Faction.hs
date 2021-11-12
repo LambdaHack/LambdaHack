@@ -181,14 +181,21 @@ defaultChallenge = Challenge { cdiff = difficultyDefault
                              , cwolf = False
                              , ckeeper = False }
 
-possibleActorFactions :: ItemKind -> FactionDict -> [(FactionId, Faction)]
-possibleActorFactions itemKind factionD =
-  let freqNames = map fst $ IK.ifreq itemKind
-      f (_, fact) = any (`elem` fgroups (gkind fact)) freqNames
-      fidFactsRaw = filter f $ EM.assocs factionD
-  in if null fidFactsRaw
-     then filter (isHorrorFact . snd) $ EM.assocs factionD  -- fall back
-     else fidFactsRaw
+possibleActorFactions :: [GroupName ItemKind] -> ItemKind -> FactionDict
+                      -> [(FactionId, Faction)]
+possibleActorFactions itemGroups itemKind factionD =
+  let candidatesFromGroups grps =
+        let f (_, fact) = any (`elem` fgroups (gkind fact)) grps
+        in filter f $ EM.assocs factionD
+      allCandidates =
+        [ candidatesFromGroups itemGroups  -- when origin known/matters
+        , candidatesFromGroups $ map fst $ IK.ifreq itemKind  -- otherwise
+        , filter (isHorrorFact . snd) $ EM.assocs factionD  -- fall back
+        , EM.assocs factionD  -- desperate fall back
+        ]
+  in case filter (not . null) allCandidates of
+    [] -> []
+    candidates : _ -> candidates
 
 ppContainer :: FactionDict -> Container -> Text
 ppContainer factionD (CFloor lid p) =

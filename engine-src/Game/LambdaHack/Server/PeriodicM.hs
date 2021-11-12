@@ -90,8 +90,8 @@ spawnMonster = do
                , sbandSpawned = IM.alter alt numToSpawn
                                 $ sbandSpawned ser }
          localTime <- getsState $ getLocalTime arena
-         void $ addManyActors False lvlSpawned (CK.cactorFreq ck) arena localTime
-                              Nothing numToSpawn
+         void $ addManyActors False lvlSpawned (CK.cactorFreq ck) arena
+                              localTime Nothing numToSpawn
 
 addAnyActor :: MonadServerAtomic m
             => Bool -> Int -> Freqs ItemKind -> LevelId -> Time -> Maybe Point
@@ -110,9 +110,10 @@ addAnyActor summoned lvlSpawned actorFreq lid time mpos = do
         "Server: addAnyActor: trunk failed to roll"
         `showFailure` (summoned, lvlSpawned, actorFreq, freq, lid, time, mpos)
       return Nothing
-    NewItem itemKnownRaw itemFullRaw itemQuant -> do
+    NewItem itemGroup itemKnownRaw itemFullRaw itemQuant -> do
       (fid, _) <- rndToAction $ oneOf $
-                    possibleActorFactions (itemKind itemFullRaw) factionD
+                    possibleActorFactions [itemGroup] (itemKind itemFullRaw)
+                                          factionD
       pers <- getsServer sperFid
       let allPers = ES.unions $ map (totalVisible . (EM.! lid))
                     $ EM.elems $ EM.delete fid pers  -- expensive :(

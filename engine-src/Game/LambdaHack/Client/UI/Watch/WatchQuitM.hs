@@ -131,7 +131,7 @@ quitFactionUI fid toSt manalytics = do
                 canBeOurFaction = any (\(fid2, _) -> fid2 == side)
                 smartEnemy trunkFull =
                   let possible =
-                        possibleActorFactions (itemKind trunkFull) factionD
+                        possibleActorFactions [] (itemKind trunkFull) factionD
                   in not (canBeOurFaction possible) && canBeSmart possible
                 smartEnemiesOurs = filter (smartEnemy . snd) ourTrunks
                 uniqueActor trunkFull = IA.checkFlag Ability.Unique

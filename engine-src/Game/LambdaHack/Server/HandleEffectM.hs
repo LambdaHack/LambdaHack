@@ -1355,7 +1355,7 @@ effectCreateItem jfidRaw mcount source target miidOriginal store grp tim = do
   m2 <- rollItemAspect freq depth
   case m2 of
     NoNewItem -> return UseDud  -- e.g., unique already generated
-    NewItem itemKnownRaw itemFullRaw (kRaw, itRaw) -> do
+    NewItem _ itemKnownRaw itemFullRaw (kRaw, itRaw) -> do
       -- Avoid too many different item identifiers (one for each faction)
       -- for blasts or common item generating tiles. Conditions are
       -- allowed to be duplicated, because they provide really useful info
@@ -1786,7 +1786,7 @@ effectRerollItem execSfx iidOriginal target = do
       else do
         let c = CActor target cstore
             kit = (1, take 1 itemTimer)  -- prevent micromanagement
-            freq = pure (itemKindId, itemKind)
+            freq = pure (IK.HORROR, itemKindId, itemKind)
         execSfx
         identifyIid iid c itemKindId itemKind
         execUpdAtomic $ UpdDestroyItem False iid itemBase kit c
@@ -1799,7 +1799,7 @@ effectRerollItem execSfx iidOriginal target = do
               case m2 of
                 NoNewItem ->
                   error "effectRerollItem: can't create rerolled item"
-                NewItem itemKnown@(ItemKnown _ ar2 _) itemFull _ ->
+                NewItem _ itemKnown@(ItemKnown _ ar2 _) itemFull _ ->
                   if ar2 == itemAspect && n > 0
                   then roll100 (n - 1)
                   else return (itemKnown, itemFull)
