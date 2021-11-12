@@ -53,7 +53,7 @@ type Roster = [( GroupName FactionKind
 -- | Catch invalid game mode kind definitions.
 validateSingle :: ContentData FactionKind -> ModeKind -> [Text]
 validateSingle cofact ModeKind{..} =
-  [ "mname longer than 20" | T.length mname > 20 ]
+  [ "mname longer than 22" | T.length mname > 22 ]
   ++ let f cave@(ns, l) =
            [ "not enough or too many levels for required cave groups:"
              <+> tshow cave
