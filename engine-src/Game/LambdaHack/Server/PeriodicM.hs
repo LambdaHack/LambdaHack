@@ -114,29 +114,33 @@ addAnyActor summoned lvlSpawned actorFreq lid time mpos = do
       (fid, _) <- rndToAction $ oneOf $
                     possibleActorFactions [itemGroup] (itemKind itemFullRaw)
                                           factionD
-      pers <- getsServer sperFid
-      let allPers = ES.unions $ map (totalVisible . (EM.! lid))
-                    $ EM.elems $ EM.delete fid pers  -- expensive :(
-          -- Checking skill would be more accurate, but skills can be
-          -- inside organs, equipment, condition organs, created organs, etc.
-          freqNames = map fst $ IK.ifreq $ itemKind itemFullRaw
-          mobile = IK.MOBILE `elem` freqNames
-          aquatic = IK.AQUATIC `elem` freqNames
-      mrolledPos <- case mpos of
-        Just{} -> return mpos
-        Nothing -> do
-          rollPos <-
-            getsState $ rollSpawnPos cops allPers mobile aquatic lid lvl fid
-          rndToAction rollPos
-      case mrolledPos of
-        Just pos ->
-          Just . (\aid -> (aid, pos))
-          <$> registerActor summoned itemKnownRaw (itemFullRaw, itemQuant)
-                            fid pos lid time
-        Nothing -> do
-          debugPossiblyPrint
-            "Server: addAnyActor: failed to find any free position"
-          return Nothing
+      let fact = factionD EM.! fid
+      if isJust $ gquit fact
+      then return Nothing  -- the faction that spawns the monster is dead
+      else do
+        pers <- getsServer sperFid
+        let allPers = ES.unions $ map (totalVisible . (EM.! lid))
+                      $ EM.elems $ EM.delete fid pers  -- expensive :(
+            -- Checking skill would be more accurate, but skills can be
+            -- inside organs, equipment, condition organs, created organs, etc.
+            freqNames = map fst $ IK.ifreq $ itemKind itemFullRaw
+            mobile = IK.MOBILE `elem` freqNames
+            aquatic = IK.AQUATIC `elem` freqNames
+        mrolledPos <- case mpos of
+          Just{} -> return mpos
+          Nothing -> do
+            rollPos <-
+              getsState $ rollSpawnPos cops allPers mobile aquatic lid lvl fid
+            rndToAction rollPos
+        case mrolledPos of
+          Just pos ->
+            Just . (\aid -> (aid, pos))
+            <$> registerActor summoned itemKnownRaw (itemFullRaw, itemQuant)
+                              fid pos lid time
+          Nothing -> do
+            debugPossiblyPrint
+              "Server: addAnyActor: failed to find any free position"
+            return Nothing
 
 addManyActors :: MonadServerAtomic m
               => Bool -> Int -> Freqs ItemKind -> LevelId -> Time -> Maybe Point
