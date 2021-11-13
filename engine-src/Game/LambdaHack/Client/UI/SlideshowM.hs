@@ -44,6 +44,7 @@ import           Game.LambdaHack.Common.Faction
 import           Game.LambdaHack.Common.MonadStateRead
 import           Game.LambdaHack.Common.State
 import           Game.LambdaHack.Common.Types
+import           Game.LambdaHack.Common.Vector
 import qualified Game.LambdaHack.Definition.Color as Color
 
 -- | Add current report to the overlay, split the result and produce,
@@ -248,10 +249,13 @@ stepChoiceScreen :: forall m . MonadClientUI m
 stepChoiceScreen highlightBullet dm sfBlank frsX extraKeys = do
   CCUI{coscreen=ScreenContent{rwidth, rheight}} <- getsSession sccui
   FontSetup{..} <- getFontSetup
+  UIOptions{uVi, uLeftHand} <- getsSession sUIOptions
   let !_A = assert (K.escKM `elem` extraKeys) ()
       frs = slideshow frsX
       keys = concatMap (lefts . map fst . snd) frs ++ extraKeys
-      legalKeys = keys ++ navigationKeys
+      cardinalKeys = K.cardinalAllKM uVi uLeftHand
+      handleDir = K.handleCardinal cardinalKeys
+      legalKeys = keys ++ navigationKeys ++ cardinalKeys
       allOKX = concatMap snd frs
       maxIx = length allOKX - 1
       initIx = case findIndex (isRight . fst) allOKX of
@@ -373,24 +377,28 @@ stepChoiceScreen highlightBullet dm sfBlank frsX extraKeys = do
                     else tmpResult clearIx
                   _ | ikm `elem` keys ->
                     return (True, Left (ikm, ekm), pointer)
-                  _ | K.key ikm `elem` [K.Up, K.WheelNorth] ->
+                  _ | K.key ikm == K.WheelNorth
+                      || handleDir ikm == Just (Vector 0 (-1)) ->
                     case findIndex xix $ reverse $ take ixOnPage kyxs of
                       Nothing -> if pointer == 0 then tmpResult maxIx
                                  else tmpResult (max 0 (pointer - 1))
                       Just ix -> tmpResult (max 0 (pointer - ix - 1))
-                  _ | K.key ikm `elem` [K.Down, K.WheelSouth] ->
+                  _ | K.key ikm == K.WheelSouth
+                      || handleDir ikm == Just (Vector 0 1) ->
                     case findIndex xix $ drop (ixOnPage + 1) kyxs of
                       Nothing -> if pointer == maxIx then tmpResult 0
                                  else tmpResult (min maxIx (pointer + 1))
                       Just ix -> tmpResult (pointer + ix + 1)
-                  K.Left -> case findKYX (max 0 (pointer - 1)) frs of
-                    Just (_, (_, (PointUI _ y2, _)), _) | y2 == y ->
-                      tmpResult (max 0 (pointer - 1))
-                    _ -> ignoreKey
-                  K.Right -> case findKYX (min maxIx (pointer + 1)) frs of
-                    Just (_, (_, (PointUI _ y2, _)), _) | y2 == y ->
-                      tmpResult (min maxIx (pointer + 1))
-                    _ -> ignoreKey
+                  _ | handleDir ikm == Just (Vector (-1) 0) ->
+                    case findKYX (max 0 (pointer - 1)) frs of
+                      Just (_, (_, (PointUI _ y2, _)), _) | y2 == y ->
+                        tmpResult (max 0 (pointer - 1))
+                      _ -> ignoreKey
+                  _ | handleDir ikm == Just (Vector 1 0) ->
+                    case findKYX (min maxIx (pointer + 1)) frs of
+                      Just (_, (_, (PointUI _ y2, _)), _) | y2 == y ->
+                        tmpResult (min maxIx (pointer + 1))
+                      _ -> ignoreKey
                   K.Home -> tmpResult clearIx
                   K.End -> tmpResult maxIx
                   K.PgUp ->
@@ -426,10 +434,8 @@ stepChoiceScreen highlightBullet dm sfBlank frsX extraKeys = do
 
 navigationKeys :: [K.KM]
 navigationKeys = [ K.leftButtonReleaseKM, K.rightButtonReleaseKM
-                 , K.returnKM, K.spaceKM
-                 , K.upKM, K.downKM, K.wheelNorthKM, K.wheelSouthKM
-                 , K.leftKM, K.rightKM, K.pgupKM, K.pgdnKM
-                 , K.homeKM, K.endKM, K.controlP
+                 , K.returnKM, K.spaceKM, K.wheelNorthKM, K.wheelSouthKM
+                 , K.pgupKM, K.pgdnKM, K.homeKM, K.endKM, K.controlP
                  , K.mkChar '?', K.mkKM "F1" ]
 
 -- | Find a position in a menu.
