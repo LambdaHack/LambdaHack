@@ -562,14 +562,15 @@ runDefFactions :: MonadClientUI m
                -> m (Either Text ResultItemDialogMode)
 runDefFactions keyDefsCommon promptChosen = do
   CCUI{coscreen=ScreenContent{rheight}} <- getsSession sccui
-  factionD <- getsState sfactionD
+  sroles <- getsSession sroles
+  factions <- getsState $ factionsFromState sroles
   runDefMessage keyDefsCommon promptChosen
   let itemKeys = map fst keyDefsCommon
       keys = rights $ map (defLabel . snd) keyDefsCommon
   okx <- factionsOverlay
   sli <- overlayToSlideshow (rheight - 2) keys okx
   ekm <- displayChoiceScreenWithDefItemKey
-           (factionsInRightPane (EM.assocs factionD))
+           (factionsInRightPane factions)
            sli itemKeys (show MFactions)
   runDefAction keyDefsCommon (Right . RFactions) ekm
 

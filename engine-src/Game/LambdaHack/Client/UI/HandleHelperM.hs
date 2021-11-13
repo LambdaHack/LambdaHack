@@ -4,8 +4,9 @@ module Game.LambdaHack.Client.UI.HandleHelperM
   , failSer, failMsg, weaveJust
   , pointmanCycle, pointmanCycleLevel, partyAfterLeader
   , pickLeader, pickLeaderWithPointer
-  , itemOverlay, skillsOverlay
-  , placesFromState, placesOverlay, factionsOverlay, describeMode, modesOverlay
+  , itemOverlay, skillsOverlay, placesFromState, placesOverlay
+  , factionsFromState, factionsOverlay
+  , describeMode, modesOverlay
   , pickNumber, guardItemSize, lookAtItems, lookAtStash, lookAtPosition
   , displayOneMenuItem, okxItemLoreInline, okxItemLoreMsg, itemDescOverlays
   , cycleLore, spoilsBlurb, ppContainerWownW, nxtGameMode
@@ -301,6 +302,17 @@ placesFromState coplace sexposePlaces s =
         -- then aggregate them over all levels, remembering that the place
         -- appeared on the given level (but not how man times)
 
+-- TODO: if faction not known, it's info should not be updated
+-- by the server. But let's wait until server sends general state diffs
+-- and then block diffs that don't apply, because faction is missing.
+factionsFromState :: ItemRoles -> State -> [(FactionId, Faction)]
+factionsFromState (ItemRoles itemRoles) s =
+  let seenTrunks = ES.toList $ itemRoles EM.! STrunk
+      trunkBelongs fid iid = jfid (getItemBody iid s) == Just fid
+      factionSeen (fid, fact) = not (EM.null (gvictims fact))  -- shortcut
+                                || any (trunkBelongs fid) seenTrunks
+  in filter factionSeen $ EM.assocs $ sfactionD s
+
 itemOverlay :: MonadClientUI m
             => [(ItemId, ItemQuant)] -> ItemDialogMode -> m OKX
 itemOverlay iids dmode = do
@@ -376,7 +388,8 @@ placesOverlay = do
 factionsOverlay :: MonadClientUI m => m OKX
 factionsOverlay = do
   FontSetup{..} <- getFontSetup
-  factionD <- getsState sfactionD
+  sroles <- getsSession sroles
+  factions <- getsState $ factionsFromState sroles
   let prSlot :: MenuSlot
              -> (FactionId, Faction)
              -> (AttrString, AttrString, KeyOrSlot)
@@ -395,7 +408,7 @@ factionsOverlay = do
                            Just Status{stOutcome} ->
                              "(" <> FK.nameOutcomePast stOutcome <> ")"
         in (asLab, textToAS tDesc, Right c)
-      l = zipWith prSlot natSlots $ EM.assocs factionD
+      l = zipWith prSlot natSlots factions
   return $! labDescOKX squareFont propFont l
 
 modesOverlay :: MonadClientUI m => m OKX
