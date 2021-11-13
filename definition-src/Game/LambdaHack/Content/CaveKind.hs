@@ -79,12 +79,15 @@ data CaveKind = CaveKind
 validateSingle :: CaveKind -> [Text]
 validateSingle CaveKind{..} =
   let (minCellSizeX, minCellSizeY) = Dice.infDiceXY ccellSize
+      (maxCellSizeX, maxCellSizeY) = Dice.supDiceXY ccellSize
       (minMinSizeX, minMinSizeY) = Dice.infDiceXY cminPlaceSize
       (maxMinSizeX, maxMinSizeY) = Dice.supDiceXY cminPlaceSize
       (minMaxSizeX, minMaxSizeY) = Dice.infDiceXY cmaxPlaceSize
   in [ "cname longer than 25" | T.length cname > 25 ]
      ++ [ "cXminSize < 8" | cXminSize < 8 ]
      ++ [ "cYminSize < 8" | cYminSize < 8 ]  -- see @focusArea@
+     ++ [ "cXminSize - 2 < maxCellSizeX" | cXminSize - 2 < maxCellSizeX ]
+     ++ [ "cYminSize - 2 < maxCellSizeY" | cYminSize - 2 < maxCellSizeY ]
      ++ [ "minCellSizeX < 1" | minCellSizeX < 1 ]
      ++ [ "minCellSizeY < 1" | minCellSizeY < 1 ]
      -- The following four are heuristics, so not too restrictive:

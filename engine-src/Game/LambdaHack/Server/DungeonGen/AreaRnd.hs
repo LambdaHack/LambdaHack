@@ -158,7 +158,7 @@ randomConnection :: (X, Y) -> Rnd (Point, Point)
 randomConnection (nx, ny) =
   assert (nx > 1 && ny > 0 || nx > 0 && ny > 1 `blame` (nx, ny)) $ do
   rb <- oneOf [False, True]
-  if rb && nx > 1
+  if rb && nx > 1 || ny <= 1
   then do
     rx <- randomR0 (nx - 2)
     ry <- randomR0 (ny - 1)
@@ -319,9 +319,21 @@ grid fixedCenters boot area cellSize =
                      (c2 : rest)
       f _ z1 _ prev [c1] = [(prev, z1, Just c1)]
       f _ _ _ _ [] = error $ "empty list of centers" `showFailure` fixedCenters
-      (xCenters, yCenters) = unzip $ map (px &&& py) $ EM.keys fixedCenters
-      xset = IS.fromList $ xCenters ++ map px boot
-      yset = IS.fromList $ yCenters ++ map py boot
+      (xCenters, yCenters) = IS.fromList *** IS.fromList
+                             $ unzip $ map (px &&& py) $ EM.keys fixedCenters
+      distFromIS is z =
+        - minimum (maxBound : map (\i -> abs (i - z)) (IS.toList is))
+      xboot = nub $ sortOn (distFromIS xCenters)
+              $ filter (`IS.notMember` xCenters) $ map px boot
+      yboot = nub $ sortOn (distFromIS yCenters)
+              $ filter (`IS.notMember` yCenters) $ map py boot
+      -- Don't let boots ignore cell size too much, esp. in small caves.
+      xcellsInArea = (x1 - x0 + 1) `div` fst cellSize
+      ycellsInArea = (y1 - y0 + 1) `div` snd cellSize
+      xbootN = assert (xcellsInArea > 0) $ xcellsInArea - IS.size xCenters
+      ybootN = assert (ycellsInArea > 0) $ ycellsInArea - IS.size yCenters
+      xset = xCenters `IS.union` IS.fromList (take xbootN xboot)
+      yset = yCenters `IS.union` IS.fromList (take ybootN yboot)
       xsize = IS.findMax xset - IS.findMin xset
       ysize = IS.findMax yset - IS.findMin yset
       -- This is precisely how the cave will be divided among places,
