@@ -269,19 +269,22 @@ placeDownStairs object cornerPermitted serverOptions lid
       ry = 6  -- enough to fit smallest stairs
       wx = x1 - x0 + 1
       wy = y1 - y0 + 1
-      notInCorner Point{..} =
+      notInCornerEtc Point{..} =
         cornerPermitted
         || wx < 3 * rx + 3 || wy < 3 * ry + 3  -- everything is a corner
         || px > x0 + (wx - 3) `div` 3
            && py > y0 + (wy - 3) `div` 3
+      inCorner Point{..} = (px <= x0 + rx || px >= x1 - rx)
+                           && (py <= y0 + ry || py >= y1 - ry)
+      gpreference = if cornerPermitted then inCorner else notInCornerEtc
       f p = case snapToStairList 0 ps p of
         Left{} -> Nothing
         Right np -> let nnp = either id id $ snapToStairList 0 boot np
-                    in if notInCorner nnp then Just nnp else Nothing
+                    in if notInCornerEtc nnp then Just nnp else Nothing
       g p = case snapToStairList 2 ps p of
         Left{} -> Nothing
         Right np -> let nnp = either id id $ snapToStairList 2 boot np
-                    in if notInCorner nnp && dist cminStairDist nnp
+                    in if gpreference nnp && dist cminStairDist nnp
                        then Just nnp
                        else Nothing
       focusArea = let d = if cfenceApart then 1 else 0

@@ -54,7 +54,7 @@ pointInArea area = do
   return $! Point (x0 + px) (y0 + py)
 
 -- | Find a suitable position in the area, based on random points
--- and a predicate.
+-- and a preference predicate and fallback acceptability predicate.
 findPointInArea :: Area -> (Point -> Maybe Point)
                 -> Int -> (Point -> Maybe Point)
                 -> Rnd (Maybe Point)
