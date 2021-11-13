@@ -88,8 +88,12 @@ validateSingle CaveKind{..} =
      ++ [ "cYminSize < 8" | cYminSize < 8 ]  -- see @focusArea@
      ++ [ "cXminSize - 2 < maxCellSizeX" | cXminSize - 2 < maxCellSizeX ]
      ++ [ "cYminSize - 2 < maxCellSizeY" | cYminSize - 2 < maxCellSizeY ]
-     ++ [ "minCellSizeX < 1" | minCellSizeX < 1 ]
-     ++ [ "minCellSizeY < 1" | minCellSizeY < 1 ]
+     ++ [ "minCellSizeX < 2" | minCellSizeX < 2 ]
+     ++ [ "minCellSizeY < 2" | minCellSizeY < 2 ]
+     ++ [ "minCellSizeX < 4 and stairs"
+        | minCellSizeX < 4 && not (null cstairFreq) ]
+     ++ [ "minCellSizeY < 4 and stairs"
+        | minCellSizeY < 4 && not (null cstairFreq) ]
      -- The following four are heuristics, so not too restrictive:
      ++ [ "minCellSizeX < 6 && non-trivial stairs"
         | minCellSizeX < 6 && not (length cstairFreq <= 1 && null cescapeFreq) ]
