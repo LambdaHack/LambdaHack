@@ -182,10 +182,12 @@ rollSpawnPos COps{coTileSpeedup} visible
              mobile aquatic lid lvl@Level{larea} fid s = do
   let inhabitants = foeRegularList fid lid s
       nearInh !df !p = all (\ !b -> df $ chessDist (bpos b) p) inhabitants
+      (_, xspan, yspan) = spanArea larea
+      averageSpan = (xspan + yspan) `div` 2
       distantMiddle !d !p = chessDist p (middlePoint larea) < d
       condList | mobile =
-        [ nearInh (<= 50)  -- don't spawn very far from foes
-        , nearInh (<= 100)
+        [ nearInh (<= averageSpan `div` 2)  -- don't spawn very far from foes
+        , nearInh (<= 2 * averageSpan `div` 3)
         ]
                | otherwise =
         [ distantMiddle 8
