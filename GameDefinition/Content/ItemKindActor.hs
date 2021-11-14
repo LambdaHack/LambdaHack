@@ -182,7 +182,8 @@ brawler = warrior
   { iname    = "brawler"
   , ifreq    = [(BRAWLER_HERO, 100), (MOBILE, 1)]
   , ikit     = humanOrgans
-               ++ [(STARTING_WEAPON, CEqp)]
+               ++ [ (STARTING_WEAPON, CEqp)
+                  , (ANY_POTION, CStash) ]
   -- , idesc    = ""
   }
 soldier = brawler
