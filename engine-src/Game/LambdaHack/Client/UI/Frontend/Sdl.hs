@@ -36,6 +36,7 @@ import           SDL.Input.Keyboard.Codes
 import qualified SDL.Internal.Types
 import qualified SDL.Raw.Basic as SDL (logSetAllPriority)
 import qualified SDL.Raw.Enum
+import qualified SDL.Raw.Event
 import qualified SDL.Raw.Types
 import qualified SDL.Raw.Video
 import qualified SDL.Vect as Vect
@@ -293,6 +294,8 @@ startupFun coscreen soptions@ClientOptions{..} rfMVar = do
         prevFrame <- readIORef spreviousFrame
         writeIORef spreviousFrame $ blankSingleFrame coscreen
         drawFrame coscreen soptions sess prevFrame
+        SDL.pumpEvents
+        SDL.Raw.Event.flushEvents minBound maxBound
       loopSDL :: IO ()
       loopSDL = do
         me <- SDL.pollEvent  -- events take precedence over frames
