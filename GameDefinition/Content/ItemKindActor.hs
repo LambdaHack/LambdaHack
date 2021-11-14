@@ -96,7 +96,7 @@ humanOrgans = [ (S_FIST, COrgan), (S_FOOT, COrgan)
               , (S_SAPIENT_BRAIN, COrgan) ]
 warrior = ItemKind
   { isymbol  = toContentSymbol '@'
-  , iname    = "warrior"  -- modified if initial actors in hero faction
+  , iname    = "adventurer"  -- modified if initial actors in hero faction
   , ifreq    = [(HERO, 100), (MOBILE, 1)]
   , iflavour = zipPlain [BrWhite]
   , icount   = 1
@@ -114,12 +114,12 @@ warrior = ItemKind
                , AddSkill SkOdor 1
                , SetFlag Durable ]
   , ieffects = []
-  , idesc    = ""  -- "A hardened veteran of combat."
   , ikit     = humanOrgans
                ++ [(S_SANDSTONE_ROCK, CStash)]
+  , idesc    = ""  -- "A hardened veteran of combat."
   }
 warrior2 = warrior
-  { iname    = "adventurer"
+  { iname    = "warrior"
   , ikit     = humanOrgans
                ++ [(COMMON_ITEM, CStash)]
   -- , idesc    = ""
@@ -138,8 +138,7 @@ warrior5 = warrior
   }
 
 scout = warrior
-  { iname    = "scout"
-  , ifreq    = [(SCOUT_HERO, 100), (MOBILE, 1)]
+  { ifreq    = [(SCOUT_HERO, 100), (MOBILE, 1)]
   , ikit     = humanOrgans
                ++ [ (ADD_SIGHT, CEqp)
                   , (ARMOR_RANGED, CEqp)
@@ -147,16 +146,14 @@ scout = warrior
   -- , idesc    = ""
   }
 ranger = warrior
-  { iname    = "ranger"
-  , ifreq    = [(RANGER_HERO, 100), (MOBILE, 1)]
+  { ifreq    = [(RANGER_HERO, 100), (MOBILE, 1)]
   , ikit     = humanOrgans
                ++ [ (ARMOR_RANGED, CEqp)
                   , (WEAK_ARROW, CStash) ]
   -- , idesc    = ""
   }
 escapist = warrior
-  { iname    = "escapist"
-  , ifreq    = [(ESCAPIST_HERO, 100), (MOBILE, 1)]
+  { ifreq    = [(ESCAPIST_HERO, 100), (MOBILE, 1)]
   , ikit     = humanOrgans
                ++ [ (ADD_SIGHT, CEqp)
                   , (STARTING_ARMOR, CEqp)
@@ -167,8 +164,7 @@ escapist = warrior
   -- , idesc    = ""
   }
 ambusher = warrior
-  { iname    = "ambusher"
-  , ifreq    = [(AMBUSHER_HERO, 100), (MOBILE, 1)]
+  { ifreq    = [(AMBUSHER_HERO, 100), (MOBILE, 1)]
   , ikit     = humanOrgans  -- dark and numerous, so more kit without exploring
                ++ [ (RING_OF_OPPORTUNITY_SNIPER, CEqp)
                   , (ANY_ARROW, CStash), (ANY_ARROW, CStash)
@@ -179,16 +175,14 @@ ambusher = warrior
   -- , idesc    = ""
   }
 brawler = warrior
-  { iname    = "brawler"
-  , ifreq    = [(BRAWLER_HERO, 100), (MOBILE, 1)]
+  { ifreq    = [(BRAWLER_HERO, 100), (MOBILE, 1)]
   , ikit     = humanOrgans
                ++ [ (STARTING_WEAPON, CEqp)
                   , (ANY_POTION, CStash) ]
   -- , idesc    = ""
   }
 soldier = brawler
-  { iname    = "soldier"
-  , ifreq    = [(SOLDIER_HERO, 100), (MOBILE, 1)]
+  { ifreq    = [(SOLDIER_HERO, 100), (MOBILE, 1)]
   , ikit     = ikit brawler
                ++ [(EXPLOSIVE, CStash)]
   -- , idesc    = ""
