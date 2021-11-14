@@ -414,9 +414,14 @@ itemDesc width markParagraphs side factionD aHurtMeleeOfOwner store localTime
              | otherwise =
                "Can be thrown at"
                <+> T.pack (displaySpeed $ fromSpeed speed)
-               <> if throwLinger /= 100
-                  then " dropping after" <+> tshow range <> "m."
-                  else "."
+               <> (if throwLinger /= 100
+                   then let trange = if range == 0
+                                     then "immediately"
+                                     else "after" <+> tshow range <> "m"
+                        in " dropping" <+> trange
+                             -- comma here is logical but looks bad
+                   else "")
+               <> "."
       tsuspect = ["You are unsure what it does." | itemSuspect]
       (desc, aspectSentences, damageAnalysis) =
         let aspects = case itemDisco of
