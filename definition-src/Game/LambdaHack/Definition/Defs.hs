@@ -125,6 +125,7 @@ data SLore =
   | SBlast
   | SEmbed
   | SBody  -- contains the sum of @SOrgan@, @STrunk@ and @SCondition@
+           -- but only present in the current pointman's body
   deriving (Show, Read, Eq, Ord, Enum, Bounded, Generic)
 
 instance Binary SLore

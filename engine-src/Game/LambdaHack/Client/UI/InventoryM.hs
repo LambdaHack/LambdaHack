@@ -410,6 +410,7 @@ transition leader psuit prompt promptGeneric permitMulitple
       maySwitchLeader MStore{} = True
       maySwitchLeader MOwned = False
       maySwitchLeader MSkills = True
+      maySwitchLeader (MLore SBody) = True
       maySwitchLeader MLore{} = False
       maySwitchLeader MPlaces = False
       maySwitchLeader MFactions = False
