@@ -64,7 +64,7 @@ spawnMonster = do
   -- Do this on only one of the arenas to prevent micromanagement,
   -- e.g., spreading leaders across levels to bump monster generation.
   arena <- rndToAction $ oneOf $ ES.elems arenas
-  Level{lkind, ldepth, lbig} <- getLevel arena
+  Level{lkind, ldepth, lbig, ltime=localTime} <- getLevel arena
   let ck = okind cocave lkind
   if | CK.cactorCoeff ck == 0 || null (CK.cactorFreq ck) -> return ()
      | EM.size lbig >= 300 ->  -- probably not so rare, but debug anyway
@@ -78,7 +78,7 @@ spawnMonster = do
              monsterGenChance ldepth totalDepth lvlSpawned (CK.cactorCoeff ck)
            million = 1000000
        k <- rndToAction $ randomR (1, million)
-       when (k <= perMillion) $ do
+       when (k <= perMillion && localTime > timeTurn) $ do
          let numToSpawn | 10 * k <= perMillion = 3
                         | 4 * k <= perMillion = 2
                         | otherwise = 1
@@ -89,7 +89,6 @@ spawnMonster = do
                                $ snumSpawned ser
                , sbandSpawned = IM.alter alt numToSpawn
                                 $ sbandSpawned ser }
-         localTime <- getsState $ getLocalTime arena
          void $ addManyActors False lvlSpawned (CK.cactorFreq ck) arena
                               localTime Nothing numToSpawn
 
