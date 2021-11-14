@@ -478,13 +478,42 @@ drawFrame coscreen ClientOptions{..} sess@FrontendSession{..} curFrame = do
   prevFrame <- readIORef spreviousFrame
   let halfSize = squareFontSize `div` 2
       boxSize = 2 * halfSize
+      tt2Square = Vect.V2 (toEnum boxSize) (toEnum boxSize)
       vp :: Int -> Int -> Vect.Point Vect.V2 CInt
       vp x y = Vect.P $ Vect.V2 (toEnum x) (toEnum y)
       drawHighlight !col !row !color = do
         SDL.rendererDrawColor srenderer SDL.$= colorToRGBA color
-        let tt2Square = Vect.V2 (toEnum boxSize) (toEnum boxSize)
-            rect = SDL.Rectangle (vp (col * boxSize) (row * boxSize)) tt2Square
-        SDL.drawRect srenderer $ Just rect
+-- This is broken in SDL 2.0.16
+-- (https://github.com/LambdaHack/LambdaHack/issues/281)
+-- and has to be worked around, but the workarounds fail!
+--      let rect = SDL.Rectangle (vp (col * boxSize) (row * boxSize)) tt2Square
+--      SDL.drawRect srenderer $ Just rect
+{-
+and this workaround is broken at least under SDL2 2.0.4
+        let vLines = VS.fromList
+              [ vp (col * boxSize) (row * boxSize)
+              , vp ((col + 1) * boxSize) (row * boxSize)
+              , vp ((col + 1) * boxSize) ((row + 1) * boxSize)
+              , vp (col * boxSize) ((row + 1) * boxSize)
+              , vp (col * boxSize) (row * boxSize)
+              ]
+        SDL.drawLines srenderer vLines
+-}
+{-
+and this workaround, too, is broken at least under SDL2 2.0.4
+        SDL.drawLine srenderer (vp (col * boxSize) (row * boxSize))
+                               (vp ((col + 1) * boxSize) (row * boxSize))
+        SDL.drawLine srenderer (vp ((col + 1) * boxSize) (row * boxSize))
+                               (vp ((col + 1) * boxSize) ((row + 1) * boxSize))
+        SDL.drawLine srenderer (vp ((col + 1) * boxSize) ((row + 1) * boxSize))
+                               (vp (col * boxSize) ((row + 1) * boxSize))
+        SDL.drawLine srenderer (vp (col * boxSize) ((row + 1) * boxSize))
+                               (vp (col * boxSize) (row * boxSize))
+-}
+-- let's see if this workaround works in SDL 2.0.16
+        let rect = SDL.Rectangle (vp (col * boxSize) (row * boxSize)) tt2Square
+        SDL.drawRects srenderer $ VS.fromList [rect]
+-- workarounds end
         SDL.rendererDrawColor srenderer SDL.$= blackRGBA
           -- reset back to black
       chooseAndDrawHighlight !col !row !bg = case bg of
@@ -638,8 +667,7 @@ drawFrame coscreen ClientOptions{..} sess@FrontendSession{..} curFrame = do
             writeIORef squareAtlas $ EM.insert ac textTexture atlas
             return textTexture
           Just textTexture -> return textTexture
-        let tt2Square = Vect.V2 (toEnum boxSize) (toEnum boxSize)
-            tgtR = SDL.Rectangle (vp (col * boxSize) (row * boxSize)) tt2Square
+        let tgtR = SDL.Rectangle (vp (col * boxSize) (row * boxSize)) tt2Square
         SDL.copy srenderer textTexture Nothing (Just tgtR)
         -- Potentially overwrite a portion of the glyph.
         chooseAndDrawHighlight col row bg
