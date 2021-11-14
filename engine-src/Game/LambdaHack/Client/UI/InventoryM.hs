@@ -759,8 +759,10 @@ factionCloseUp factions slot = do
               , "with"
               , MU.WWandW $ map renderFact2 $ fid2 : map fst rest ]
             renderFact2 fid2 = MU.Text $ Faction.gname (factionD EM.! fid2)
+            valid (fid2, diplomacy) = isJust (lookup fid2 factions)
+                                      && diplomacy /= Unknown
             knownAssocsGroups = groupBy ((==) `on` snd) $ sortOn snd
-                                $ filter ((/= Unknown) . snd) $ EM.assocs gdipl
+                                $ filter valid $ EM.assocs gdipl
         in [ makeSentence [ MU.SubjectVerb person MU.Yes (MU.Text name) "be"
                           , MU.WWandW $ map renderDiplGroup knownAssocsGroups ]
            | not (null knownAssocsGroups) ]
