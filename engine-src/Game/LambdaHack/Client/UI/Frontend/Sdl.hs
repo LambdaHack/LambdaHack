@@ -370,8 +370,14 @@ startupFun coscreen soptions@ClientOptions{..} rfMVar = do
                 (\key -> saveKMP rf modifier key (pointTranslate p)) mkey
         SDL.WindowClosedEvent{} -> forceShutdown sess
         SDL.QuitEvent -> forceShutdown sess
-        SDL.WindowRestoredEvent{} -> redraw
+        SDL.WindowRestoredEvent{} -> redraw  -- e.g., unminimize
         SDL.WindowExposedEvent{} -> redraw  -- needed on Windows
+        SDL.WindowResizedEvent{} -> do
+          -- Eome window managers apparently are able to resize.
+          SDL.showSimpleMessageBox Nothing SDL.Warning
+            "Windows resize detected"
+            "Please resize the game and/or make it fullscreen via 'allFontsScale' and 'fullscreenMode' settings in the 'config.ui.ini' file. Resizing fonts via generic scaling algorithms gives poor results."
+          redraw
         -- Probably not needed, because no textures nor their content lost:
         -- SDL.WindowShownEvent{} -> redraw
         _ -> return ()
