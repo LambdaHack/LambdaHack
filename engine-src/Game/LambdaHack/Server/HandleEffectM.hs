@@ -272,7 +272,7 @@ effectAndDestroy effApplyFlags0@EffApplyFlags{..} source target iid container
   if not recharged then return UseDud else do
     let timeoutTurns = timeDeltaScale (Delta timeTurn) timeout
         newItemTimer = createItemTimer localTime timeoutTurns
-        it2 = if timeout /= 0 && recharged
+        it2 = if timeout > 0 && recharged
               then if effActivation == ActivationPeriodic
                       && IA.checkFlag Ability.Fragile arItem
                    then replicate (itemK - length it1) newItemTimer ++ it1

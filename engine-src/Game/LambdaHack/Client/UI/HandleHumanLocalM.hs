@@ -299,8 +299,8 @@ chooseItemDialogMode leader0 permitLoreCycle c = do
                                   -> m K.KM
             displayOneMenuItemBig renderOneItem extraKeys slotBound slot = do
               let keys = [K.spaceKM, K.escKM]
-                         ++ [K.upKM | fromEnum slot /= 0]
-                         ++ [K.downKM | fromEnum slot /= slotBound]
+                         ++ [K.upKM | fromEnum slot > 0]
+                         ++ [K.downKM | fromEnum slot < slotBound]
                          ++ extraKeys
               okx <- renderOneItem slot
               -- Here it differs from @displayOneMenuItem@,
