@@ -636,7 +636,7 @@ runDefInventory keyDefs promptChosen leader dmode iids = do
   okx <- itemOverlay iids dmode
   sli <- overlayToSlideshow (rheight - 2) keys okx
   ekm <- displayChoiceScreenWithDefItemKey
-           (okxItemLoreInline promptFun meleeSkill iids)
+           (okxItemLoreInline promptFun meleeSkill dmode iids)
            sli itemKeys (show dmode)
   runDefAction keyDefs slotDef ekm
 

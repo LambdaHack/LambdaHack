@@ -394,10 +394,10 @@ viewItemBenefitColored discoBenefit iid itemFull =
   in Color.attrChar2ToW32
        color (displayContentSymbol $ IK.isymbol $ itemKind itemFull)
 
-itemDesc :: Int -> Bool -> FactionId -> FactionDict -> Int -> CStore -> Time
-         -> LevelId -> ItemFull -> ItemQuant
+itemDesc :: Int -> Bool -> FactionId -> FactionDict -> Int -> ItemDialogMode
+         -> Time -> LevelId -> ItemFull -> ItemQuant
          -> AttrString
-itemDesc width markParagraphs side factionD aHurtMeleeOfOwner store localTime
+itemDesc width markParagraphs side factionD aHurtMeleeOfOwner dmode localTime
          jlid itemFull@ItemFull{itemBase, itemKind, itemDisco, itemSuspect}
          kit =
   let (orTs, name, powers) =
@@ -407,12 +407,23 @@ itemDesc width markParagraphs side factionD aHurtMeleeOfOwner store localTime
       IK.ThrowMod{IK.throwVelocity, IK.throwLinger} = IA.aToThrow arItem
       speed = speedFromWeight (IK.iweight itemKind) throwVelocity
       range = rangeFromSpeedAndLinger speed throwLinger
-      tspeed | IA.checkFlag Ability.Condition arItem
-               || IK.iweight itemKind == 0 = ""
-             | speed < speedLimp = "When thrown, it drops at once."
-             | speed < speedWalk = "When thrown, it drops after one meter."
+      plausiblyThrown =
+        dmode `elem` [ MStore CGround, MStore CEqp, MStore CStash
+                     , MOwned, MLore SItem ]
+      plausiblyFlies = dmode == MLore SBlast
+      tspeed | not (plausiblyThrown || plausiblyFlies) = ""
+             | speed < speedLimp =
+               if plausiblyThrown
+               then "When thrown, it drops at once."
+               else "When airborne, it drops at once."
+             | speed < speedWalk =
+               if plausiblyThrown
+               then "When thrown, it drops after one meter."
+               else "When airborne, it drops after one meter."
              | otherwise =
-               "Can be thrown at"
+               (if plausiblyThrown
+                then "Can be thrown at"
+                else "Travels at")
                <+> T.pack (displaySpeed $ fromSpeed speed)
                <> (if throwLinger /= 100
                    then let trange = if range == 0
@@ -436,7 +447,7 @@ itemDesc width markParagraphs side factionD aHurtMeleeOfOwner store localTime
             meanDmg = ceiling $ Dice.meanDice (IK.idamage itemKind)
             dmgAn = if meanDmg <= 0 then "" else
               let multRaw = aHurtMeleeOfOwner
-                            + if store `elem` [CEqp, COrgan]
+                            + if dmode `elem` [MStore CEqp, MStore COrgan]
                               then 0
                               else aHurtMeleeOfItem
                   mult = 100 + min 100 (max (-95) multRaw)

@@ -1515,9 +1515,10 @@ itemMenuHuman leader cmdSemInCxtOfKM = do
                                           False
                                           (CActor aid store)
                 return $! "[" ++ T.unpack (makePhrase parts) ++ "]"
+              dmode = MStore fromCStore
           foundTexts <- mapM (\(aid, (_, store)) -> ppLoc aid store) foundAlt
           (ovLab, ovDesc) <-
-            itemDescOverlays markParagraphs meleeSkill fromCStore iid kit
+            itemDescOverlays markParagraphs meleeSkill dmode iid kit
                              itemFull rwidth
           let foundPrefix = textToAS $
                 if null foundTexts then "" else "The item is also in:"
@@ -1592,7 +1593,7 @@ itemMenuHuman leader cmdSemInCxtOfKM = do
             Left km -> case km `M.lookup` bcmdMap coinput of
               _ | km == K.escKM -> weaveJust <$> failWith "never mind"
               _ | km == K.spaceKM ->
-                chooseItemMenuHuman leader cmdSemInCxtOfKM (MStore fromCStore)
+                chooseItemMenuHuman leader cmdSemInCxtOfKM dmode
               _ | km `elem` foundKeys -> case km of
                 K.KM{key=K.Fun n} -> do
                   let (newAid, (bNew, newCStore)) = foundAlt !! (n - 1)

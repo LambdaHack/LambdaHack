@@ -333,7 +333,7 @@ viewFinalLore menuName trunkBag prompt promptFun dmode = do
   let iids = sortIids itemToF $ EM.assocs trunkBag
       viewAtSlot :: MenuSlot -> m K.KM
       viewAtSlot slot = do
-        let renderOneItem = okxItemLoreMsg promptFun 0 iids
+        let renderOneItem = okxItemLoreMsg promptFun 0 dmode iids
             extraKeys = []
             slotBound = length iids - 1
         km <- displayOneMenuItem renderOneItem extraKeys slotBound slot
@@ -346,7 +346,7 @@ viewFinalLore menuName trunkBag prompt promptFun dmode = do
   okx <- itemOverlay iids dmode
   sli <- overlayToSlideshow (rheight - 2) keys okx
   ekm <- displayChoiceScreenWithDefItemKey
-           (okxItemLoreInline promptFun 0 iids) sli keys menuName
+           (okxItemLoreInline promptFun 0 dmode iids) sli keys menuName
   case ekm of
     Left km | km `elem` keys -> return km
     Left km -> error $ "" `showFailure` km

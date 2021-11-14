@@ -970,9 +970,10 @@ displayOneMenuItem renderOneItem extraKeys slotBound slot = do
 
 okxItemLoreInline :: MonadClientUI m
                   => (ItemId -> ItemFull -> Int -> Text)
-                  -> Int -> [(ItemId, ItemQuant)] -> Int -> MenuSlot
+                  -> Int -> ItemDialogMode -> [(ItemId, ItemQuant)]
+                  -> Int -> MenuSlot
                   -> m OKX
-okxItemLoreInline promptFun meleeSkill iids widthRaw slot = do
+okxItemLoreInline promptFun meleeSkill dmode iids widthRaw slot = do
   FontSetup{..} <- getFontSetup
   let (iid, kit@(k, _)) = iids !! fromEnum slot
       -- Some prop fonts are wider than mono (e.g., in dejavuBold font set),
@@ -981,7 +982,7 @@ okxItemLoreInline promptFun meleeSkill iids widthRaw slot = do
       -- for mono.
       width = widthRaw - 5
   itemFull <- getsState $ itemToFull iid
-  (ovLab, ovDesc) <- itemDescOverlays True meleeSkill CGround iid kit itemFull
+  (ovLab, ovDesc) <- itemDescOverlays True meleeSkill dmode iid kit itemFull
                                       width
   let prompt = promptFun iid itemFull k
       promptBlurb | T.null prompt = []
@@ -996,14 +997,15 @@ okxItemLoreInline promptFun meleeSkill iids widthRaw slot = do
 
 okxItemLoreMsg :: MonadClientUI m
                => (ItemId -> ItemFull -> Int -> Text)
-               -> Int -> [(ItemId, ItemQuant)] -> MenuSlot
+               -> Int -> ItemDialogMode -> [(ItemId, ItemQuant)]
+               -> MenuSlot
                -> m OKX
-okxItemLoreMsg promptFun meleeSkill iids slot = do
+okxItemLoreMsg promptFun meleeSkill dmode iids slot = do
   CCUI{coscreen=ScreenContent{rwidth}} <- getsSession sccui
   FontSetup{..} <- getFontSetup
   let (iid, kit@(k, _)) = iids !! fromEnum slot
   itemFull <- getsState $ itemToFull iid
-  (ovLab, ovDesc) <- itemDescOverlays True meleeSkill CGround iid kit itemFull
+  (ovLab, ovDesc) <- itemDescOverlays True meleeSkill dmode iid kit itemFull
                                       rwidth
   let prompt = promptFun iid itemFull k
   msgAdd MsgPromptGeneric prompt
@@ -1012,10 +1014,10 @@ okxItemLoreMsg promptFun meleeSkill iids slot = do
   return (ov, [])
 
 itemDescOverlays :: MonadClientUI m
-                 => Bool -> Int -> CStore -> ItemId -> ItemQuant -> ItemFull
-                 -> Int
+                 => Bool -> Int -> ItemDialogMode -> ItemId -> ItemQuant
+                 -> ItemFull -> Int
                  -> m (Overlay, Overlay)
-itemDescOverlays markParagraphs meleeSkill cstore iid kit itemFull width = do
+itemDescOverlays markParagraphs meleeSkill dmode iid kit itemFull width = do
   FontSetup{squareFont} <- getFontSetup
   side <- getsClient sside
   arena <- getArenaUI
@@ -1024,7 +1026,7 @@ itemDescOverlays markParagraphs meleeSkill cstore iid kit itemFull width = do
   -- The hacky level 0 marks items never seen, but sent by server at gameover.
   jlid <- getsSession $ fromMaybe (toEnum 0) <$> EM.lookup iid . sitemUI
   let descAs = itemDesc width markParagraphs side factionD meleeSkill
-                        cstore localTime jlid itemFull kit
+                        dmode localTime jlid itemFull kit
   return $! labDescOverlay squareFont width descAs
 
 cycleLore :: MonadClientUI m => [m K.KM] -> [m K.KM] -> m ()
