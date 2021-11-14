@@ -957,8 +957,8 @@ displayOneMenuItem :: MonadClientUI m
 displayOneMenuItem renderOneItem extraKeys slotBound slot = do
   CCUI{coscreen=ScreenContent{rheight}} <- getsSession sccui
   let keys = [K.spaceKM, K.escKM]
-             ++ [K.upKM | fromEnum slot /= 0]
-             ++ [K.downKM | fromEnum slot /= slotBound]
+             ++ [K.upKM | fromEnum slot > 0]
+             ++ [K.downKM | fromEnum slot < slotBound]
              ++ extraKeys
   okx <- renderOneItem slot
   slides <- overlayToSlideshow (rheight - 2) keys okx

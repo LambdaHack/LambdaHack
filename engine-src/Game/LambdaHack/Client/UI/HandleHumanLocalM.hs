@@ -834,7 +834,7 @@ allHistoryHuman = do
               msgAdd MsgPromptGeneric prompt
               return (ov0, [])
             extraKeys = []
-            slotBound = histLenRaw - 1
+            slotBound = histLen - 1
         km <- displayOneMenuItem renderOneItem extraKeys slotBound slot0
         case K.key km of
           K.Space -> displayAllHistory
