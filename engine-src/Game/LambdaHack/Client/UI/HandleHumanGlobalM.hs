@@ -1224,7 +1224,7 @@ verifyEscape = do
     (_, total) <- getsState $ calculateTotal side
     dungeonTotal <- getsState sgold
     let prompt | dungeonTotal == 0 =
-                 "You finally reached the way out. Really leave now?"
+                 "You finally reached your goal. Really leave now?"
                | total == 0 =
                  "Afraid of the challenge? Leaving so soon and without any treasure? Are you sure?"
                | total < dungeonTotal =
