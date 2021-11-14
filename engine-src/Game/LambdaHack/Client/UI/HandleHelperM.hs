@@ -322,7 +322,8 @@ itemOverlay iids dmode = do
   discoBenefit <- getsClient sdiscoBenefit
   fontSetup <- getFontSetup
   let displayRanged =
-        dmode `notElem` [MStore COrgan, MLore SOrgan, MLore STrunk, MLore SBody]
+        dmode `elem` [ MStore CGround, MStore CEqp, MStore CStash
+                     , MOwned, MLore SItem, MLore SBlast ]
   okx <- getsState $ itemOverlayFromState arena iids displayRanged
                                           sccui side discoBenefit fontSetup
   return $! okx
