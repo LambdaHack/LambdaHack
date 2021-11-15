@@ -816,12 +816,13 @@ allHistoryHuman = do
             msgAdd MsgPromptGeneric "Try to survive a few seconds more, if you can."
           Left km | km == K.spaceKM ->
             msgAdd MsgPromptGeneric "Steady on."
-          Right slot -> displayOneReport slot
+          Right slot ->
+            displayOneReport $ toEnum $ max 0 $ fromEnum slot - placeholderCount
           _ -> error $ "" `showFailure` ekm
       displayOneReport :: MenuSlot -> m ()
       displayOneReport slot0 = do
         let renderOneItem slot = do
-              let timeReport = case drop (fromEnum slot - placeholderCount)
+              let timeReport = case drop (fromEnum slot)
                                          renderedHistoryRaw of
                     [] -> error $ "" `showFailure` slot
                     tR : _ -> tR
@@ -834,7 +835,7 @@ allHistoryHuman = do
               msgAdd MsgPromptGeneric prompt
               return (ov0, [])
             extraKeys = []
-            slotBound = histLen - 1
+            slotBound = histLenRaw - 1
         km <- displayOneMenuItem renderOneItem extraKeys slotBound slot0
         case K.key km of
           K.Space -> displayAllHistory
