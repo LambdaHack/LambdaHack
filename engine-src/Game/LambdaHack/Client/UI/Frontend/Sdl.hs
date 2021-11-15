@@ -522,14 +522,19 @@ and this workaround, too, is broken at least under SDL2 2.0.4
 -- let's see if this workaround works in SDL 2.0.16
         let rect = SDL.Rectangle (vp (col * boxSize) (row * boxSize)) tt2Square
         SDL.drawRects srenderer $ VS.fromList [rect]
--- workarounds end
         SDL.rendererDrawColor srenderer SDL.$= blackRGBA
           -- reset back to black
-      chooseAndDrawHighlight !col !row !bg = case bg of
-        Color.HighlightNone -> return ()
-        Color.HighlightBackground -> return ()
-        Color.HighlightNoneCursor -> return ()
+      chooseAndDrawHighlight !col !row !bg = do
+       let workaroundOverwriteHighlight = do
+             let rect = SDL.Rectangle (vp (col * boxSize) (row * boxSize))
+                                      tt2Square
+             SDL.drawRects srenderer $ VS.fromList [rect]
+       case bg of
+        Color.HighlightNone -> workaroundOverwriteHighlight
+        Color.HighlightBackground -> workaroundOverwriteHighlight
+        Color.HighlightNoneCursor -> workaroundOverwriteHighlight
         _ -> drawHighlight col row $ Color.highlightToColor bg
+-- workarounds end
       -- This also frees the surface it gets.
       scaleSurfaceToTexture :: Int -> SDL.Surface -> IO SDL.Texture
       scaleSurfaceToTexture xsize textSurfaceRaw = do
