@@ -140,15 +140,16 @@ getStoreItem leader cInitial = do
       -- This should match, including order, the items in standardKeysAndMouse
       -- marked with CmdDashboard past @MSkills@ and up to @MModes@.
       loreCs = itemLoreCs ++ [MPlaces, MFactions, MModes]
-      allCs = case cInitial of
-        MStore{} -> leaderCs
-        MOwned -> leaderCs
-        MSkills -> leaderCs
-        MLore SBody -> leaderCs
-        MLore{} -> loreCs
-        MPlaces -> loreCs
-        MFactions -> loreCs
-        MModes -> loreCs
+  let !_A1 = assert (null (leaderCs `intersect` loreCs)) ()
+      !_A2 = assert (sort (leaderCs ++ loreCs ++ [MStore COrgan])
+                     == map MStore [minBound..maxBound]
+                        ++ [MOwned, MSkills]
+                        ++ map MLore [minBound..maxBound]
+                        ++ [MPlaces, MFactions, MModes]) ()
+      allCs | cInitial `elem` leaderCs = leaderCs
+            | cInitial `elem` loreCs = loreCs
+            | otherwise = assert (cInitial == MStore COrgan) leaderCs
+                            -- werrd content, but let it be
       (pre, rest) = break (== cInitial) allCs
       post = dropWhile (== cInitial) rest
       remCs = post ++ pre
