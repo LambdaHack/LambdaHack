@@ -6,6 +6,7 @@ import Prelude ()
 import Game.LambdaHack.Core.Prelude
 
 import Data.Either
+import Data.Text
 
 import qualified Control.Monad.Trans.State.Strict as St
 
@@ -16,7 +17,6 @@ import qualified Data.EnumMap.Strict as EM
 import qualified Data.Vector.Unboxed as U
 
 
-import           Game.LambdaHack.Client.UI.HandleHelperM
 
 import           Game.LambdaHack.Client.UI.MonadClientUI ( MonadClientUI )
 import           Game.LambdaHack.Client.MonadClient
@@ -44,6 +44,10 @@ import           UnitTestHelpers
 toFactionId :: Int -> FactionId
 toFactionId = toEnum
 
+stubItem = Item { jkind = IdentityObvious (toContentId 0), jfid = Nothing, jflavour = dummyFlavour }
+
+testItemFull = ItemFull { itemBase = stubItem, itemKindId = toContentId 0, itemKind = testItemKind, itemDisco = ItemDiscoFull emptyAspectRecord, itemSuspect = False }
+
 
 handleHumanLocalMUnitTests :: TestTree 
 handleHumanLocalMUnitTests = testGroup "handleHumanLocalMUnitTests" 
@@ -55,8 +59,6 @@ handleHumanLocalMUnitTests = testGroup "handleHumanLocalMUnitTests"
   , testCase "permittedProjectClient stubCliState returns ProjectUnskilled" $
     do
       let testFn = permittedProjectClient testActorId
-      let stubItem = Item { jkind = IdentityObvious (toContentId 0), jfid = Nothing, jflavour = dummyFlavour }
-      let testItemFull = ItemFull { itemBase = stubItem, itemKindId = toContentId 0, itemKind = testItemKind, itemDisco = ItemDiscoFull emptyAspectRecord, itemSuspect = False }
       permittedProjectClientResultFnInMonad <- executorCli testFn stubCliState 
       let ultimateResult = (fst permittedProjectClientResultFnInMonad) testItemFull
       ultimateResult @?= Left ProjectUnskilled
@@ -66,9 +68,29 @@ handleHumanLocalMUnitTests = testGroup "handleHumanLocalMUnitTests"
                         [ HumanCmd.TriggerItem{tiverb="verb", tiobject="object", tisymbols=[toContentSymbol 'a', toContentSymbol 'b']}
                         , HumanCmd.TriggerItem{tiverb="verb2", tiobject="object2", tisymbols=[toContentSymbol 'c']}
                         ]
-                    in chooseItemProjectHuman (toEnum 1) triggerItems
+                    in chooseItemProjectHuman testActorId triggerItems
       result <- executorCli testFn testCliStateWithItem 
-      fst result @?= Nothing --Just FailError {failError="no aim designated"}
+      fst result @?= Nothing
+  , testCase "psuitReq" $
+    do 
+      let testFn = psuitReq testActorId
+      mpsuitReqMonad <- executorCli testFn testCliStateWithItem 
+      let mpsuitReq = fst mpsuitReqMonad
+      -- mpsuitReq @?= Left "can't fling at a target on remote level"  -- I don't get why this doesn't work
+      case mpsuitReq of
+        Left err -> do 
+          err @?= "" -- shouldn't be here
+        Right psuitReqFun -> 
+          case psuitReqFun testItemFull of
+            Left reqFail -> do
+              reqFail @?= ProjectUnskilled
+            Right (pos, _) -> do
+              pos @?= Point 0 0
+  , testCase "xhairLegalEps" $
+    do
+      let testFn = xhairLegalEps testActorId
+      result <- executorCli testFn testCliStateWithItem 
+      fst result @?= Right 114 -- is this a coincidence that it matches the testFactionId?
   ]
 
 -- chooseItemProjectHuman :: forall m. (MonadClient m, MonadClientUI m) -- line 395

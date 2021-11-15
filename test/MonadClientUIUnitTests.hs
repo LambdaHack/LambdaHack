@@ -18,12 +18,13 @@ import qualified Data.Vector.Unboxed as U
 
 import           Game.LambdaHack.Client.UI.HandleHelperM
 
-import           Game.LambdaHack.Client.UI.MonadClientUI ( MonadClientUI, getArenaUI )
+import           Game.LambdaHack.Client.UI.MonadClientUI
 import           Game.LambdaHack.Client.MonadClient
 import           Game.LambdaHack.Client.State
 import           Game.LambdaHack.Client.UI.HandleHelperM
 import           Game.LambdaHack.Client.UI.HandleHumanLocalM
 import qualified Game.LambdaHack.Client.UI.HumanCmd as HumanCmd
+import           Game.LambdaHack.Client.UI.Slideshow
 
 import           Game.LambdaHack.Common.ActorState
 import           Game.LambdaHack.Common.Area
@@ -49,10 +50,18 @@ monadClientUIUnitTests :: TestTree
 monadClientUIUnitTests = testGroup "handleHumanLocalMUnitTests" 
   [ testCase "getsClient sside" $
     do
-        side <- executorCli (getsClient sside) stubCliState 
-        fst side @?= testFactionId
+      sideInMonad <- executorCli (getsClient sside) stubCliState 
+      fst sideInMonad @?= testFactionId
   , testCase "getArenaUI works in stub" $
     do
-      resultInMonad <- executorCli getArenaUI stubCliState 
-      fst resultInMonad @?= testLevelId
+      levelIdInMonad <- executorCli getArenaUI stubCliState 
+      fst levelIdInMonad @?= testLevelId
+  , testCase "viewedLevelUI works in stub" $
+    do
+      levelIdInMonad <- executorCli viewedLevelUI stubCliState
+      fst levelIdInMonad @?= testLevelId 
+  , testCase "getFontSetup works in stub" $
+    do
+      fontSetupInMonad <- executorCli getFontSetup stubCliState
+      fst fontSetupInMonad @?= multiFontSetup 
   ]

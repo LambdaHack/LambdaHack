@@ -9,6 +9,7 @@ module UnitTestHelpers
   , stubCliState
   , testActor
   , testActorId
+  , testActorWithItem
   , testCliStateWithItem
   , testFactionId
   , testItemId
@@ -46,6 +47,7 @@ import           Game.LambdaHack.Client.LoopM
 import           Game.LambdaHack.Client.MonadClient
 import           Game.LambdaHack.Client.State
 import           Game.LambdaHack.Client.UI
+import           Game.LambdaHack.Client.UI.ActorUI
 import           Game.LambdaHack.Client.UI.SessionUI
 import           Game.LambdaHack.Client.UI.UIOptions
 
@@ -79,6 +81,7 @@ import           Game.LambdaHack.Definition.Flavour
 import           Game.LambdaHack.Server (ChanServer (..))
 
 import Content.ModeKindPlayer
+import Game.LambdaHack.Common.Misc
 
 
 -- just for test code
@@ -135,7 +138,10 @@ stubUIOptions = UIOptions
   , uMessageColors = []
   }
 
-
+stubClientOptions = defClientOptions 
+  { schosenFontset = Just "snoopy"
+  , sfontsets = [("snoopy",FontSet {fontMapScalable="scalable",fontMapBitmap="bitmap",fontPropRegular="propRegular",fontPropBold="propBold",fontMono="mono"})]
+  }
 testLevelDimension = 3
 
 -- using different arbitrary numbers for these so if tests fail to missing keys we'll have more of a clue
@@ -206,8 +212,8 @@ testActor =
   , bcalmDelta = ResDelta (0,0) (0,0)
   , bpos = Point 0 0
   , boldpos = Nothing
-  , blid = toEnum 0
-  , bfid = toEnum 0
+  , blid = testLevelId
+  , bfid = testFactionId
   , btrajectory = Nothing
   , borgan = EM.empty
   , beqp = EM.empty
@@ -264,10 +270,13 @@ emptyCliState = CliState
   -- , cliToSave = undefined 
   }  
 
+stubSessionUI = (emptySessionUI stubUIOptions) 
+  { sactorUI = EM.singleton testActorId ActorUI { bsymbol='j', bname="Jamie", bpronoun="he/him", bcolor=BrCyan } }
+
 stubCliState = CliState
   { cliState = stubState
-  , cliClient = emptyStateClient testFactionId
-  , cliSession = Just ((emptySessionUI stubUIOptions) {sxhair = Just (TPoint TUnknown (toEnum 0) (Point 1 0))}) --(TVector Vector {vx=1, vy=0})}) -- (TNonEnemy (toEnum 1))})-- 
+  , cliClient = (emptyStateClient testFactionId) { soptions = stubClientOptions }
+  , cliSession = Just (stubSessionUI {sxhair = Just (TPoint TUnknown testLevelId (Point 1 0))}) --(TVector Vector {vx=1, vy=0})}) -- (TNonEnemy (toEnum 1))})-- 
   }
 
 testCliStateWithItem = stubCliState { cliState = testStateWithItem }
