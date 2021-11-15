@@ -432,13 +432,16 @@ test-suite test
   type:               exitcode-stdio-1.0
   hs-source-dirs:     test
   main-is:            Spec.hs
-  other-modules:      CommonMUnitTests
+  other-modules:      ActorStateUnitTests
+                      CommonMUnitTests
+                      HandleHelperMUnitTests
                       HandleHumanLocalMUnitTests
                       InventoryMUnitTests
                       ItemDescriptionUnitTests
                       ItemKindUnitTests
                       ItemRevUnitTests
                       LevelUnitTests
+                      MonadClientUIUnitTests
                       ReqFailureUnitTests
                       SessionUIMock
                       SessionUIUnitTests
