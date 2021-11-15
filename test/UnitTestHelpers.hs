@@ -48,6 +48,8 @@ import           Game.LambdaHack.Client.MonadClient
 import           Game.LambdaHack.Client.State
 import           Game.LambdaHack.Client.UI
 import           Game.LambdaHack.Client.UI.ActorUI
+import           Game.LambdaHack.Client.UI.ContentClientUI
+import           Game.LambdaHack.Client.UI.Content.Screen
 import           Game.LambdaHack.Client.UI.SessionUI
 import           Game.LambdaHack.Client.UI.UIOptions
 
@@ -271,7 +273,15 @@ emptyCliState = CliState
   }  
 
 stubSessionUI = (emptySessionUI stubUIOptions) 
-  { sactorUI = EM.singleton testActorId ActorUI { bsymbol='j', bname="Jamie", bpronoun="he/him", bcolor=BrCyan } }
+  { sactorUI = EM.singleton testActorId ActorUI { bsymbol='j', bname="Jamie", bpronoun="he/him", bcolor=BrCyan }
+  , sccui = emptyCCUI { coscreen = ScreenContent { rwidth = 0
+                             , rheight = 4  -- unit test expects rheight - 2 > 2
+                             , rwebAddress = ""
+                             , rintroScreen = ([], [])
+                             , rapplyVerbMap = EM.empty
+                             , rFontFiles = []
+                             }}
+  } 
 
 stubCliState = CliState
   { cliState = stubState
