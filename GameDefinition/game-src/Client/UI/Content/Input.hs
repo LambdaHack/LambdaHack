@@ -109,7 +109,7 @@ standardKeysAndMouse = InputContentRaw $ map evalKeyDef $
                        , ( [CmdInternal, CmdDashboard]
                          , "display" <+> ppSLore slore <+> "lore"
                          , ChooseItemMenu (MLore slore) )))
-          [1..] [minBound..maxBound]
+          [1..] [minBound..SEmbed]
   ++
   [ ("safeD96", ( [CmdInternal, CmdDashboard]
                 , "display place lore"

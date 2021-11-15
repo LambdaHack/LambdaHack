@@ -132,9 +132,14 @@ getStoreItem leader cInitial = do
   let -- No @COrgan@, because triggerable organs are rare and,
       -- if really needed, accessible directly from the trigger menu.
       itemCs = map MStore [CStash, CEqp, CGround]
-      -- No @SBody@, because repeated in other lores and included elsewhere.
-      loreCs = map MLore [minBound..SEmbed] ++ [MPlaces, MFactions, MModes]
+      -- This should match, including order, the items in standardKeysAndMouse
+      -- marked with CmdDashboard up to @MSkills@.
       leaderCs = itemCs ++ [MOwned, MLore SBody, MSkills]
+      -- No @SBody@, because repeated in other lores and included elsewhere.
+      itemLoreCs = map MLore [minBound..SEmbed]
+      -- This should match, including order, the items in standardKeysAndMouse
+      -- marked with CmdDashboard past @MSkills@ and up to @MModes@.
+      loreCs = itemLoreCs ++ [MPlaces, MFactions, MModes]
       allCs = case cInitial of
         MStore{} -> leaderCs
         MOwned -> leaderCs
