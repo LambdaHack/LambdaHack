@@ -816,6 +816,8 @@ allHistoryHuman = do
             msgAdd MsgPromptGeneric "Try to survive a few seconds more, if you can."
           Left km | km == K.spaceKM ->
             msgAdd MsgPromptGeneric "Steady on."
+          Left km | km == K.returnKM ->
+            msgAdd MsgPromptGeneric "Press RET when history message selected to see it in full."
           Right slot ->
             displayOneReport $ toEnum $ max 0 $ fromEnum slot - placeholderCount
           _ -> error $ "" `showFailure` ekm

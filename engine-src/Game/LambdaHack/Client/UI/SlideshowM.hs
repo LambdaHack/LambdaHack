@@ -342,7 +342,7 @@ stepChoiceScreen highlightBullet dm sfBlank frsX extraKeys = do
                     ignoreKey
                   K.Return -> case ekm of
                     Left km ->
-                      if K.key km == K.Return && km `elem` keys
+                      if K.key km == K.Return
                       then return (True, Left (km, ekm), pointer)
                       else interpretKey km
                     Right c -> return (True, Right c, pointer)
