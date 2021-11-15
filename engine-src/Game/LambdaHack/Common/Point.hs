@@ -93,7 +93,7 @@ type PointI = Int
 -- This is hidden from Haddock, but run by doctest:
 -- $
 -- prop> (toEnum :: PointI -> Point) (fromEnum p) == p
--- prop> (fromEnum :: Point -> PointI) (toEnum p) == p
+-- prop> \ (NonNegative i) -> (fromEnum :: Point -> PointI) (toEnum i) == i
 
 -- | The distance between two points in the chessboard metric.
 --
