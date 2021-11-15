@@ -162,7 +162,8 @@ shootout = ModeKind  -- sparse ranged in daylight
   , mattract = False
   , mroster = rosterShootout
   , mcaves  = cavesShootout
-  , mendMsg = []
+  , mendMsg = [ (Killed, "This is a disgrace. What have we missed in our theoretic models of this fight? Did we miss a human lookout placed in a covered but unobstructed spot that lets the rest of the squad snipe from concealment or from a safe distance?\nBarring that, would we end up in a better shape even if we all hid and only fired blindly? We'd listen to impact sounds and wait vigilantly for incoming enemy missiles in order to register their trajectories and derive hints of enemy location. Apparently, ranged combat requires a change of pace and better planning than our previous simple but efficient calculations accustomed us to.")
+              , (Conquer, "That was a good fight, with scientifically accurate application of missiles, cover and concealment. Not even skilled logicians can routinely deduce enemy position from the physical trajectory of their projectiles nor by firing without line of sight and interpreting auditory cues. However, while this steep hurdle is overcome, the dispute is not over yet.") ]
   , mrules  = T.intercalate "\n"
       [ "* One level only"
       , "* Three heroes vs. Three human enemies"
@@ -181,16 +182,18 @@ hunt = ModeKind  -- melee vs ranged with reaction fire in daylight
   , mattract = False
   , mroster = rosterHunt
   , mcaves  = cavesHunt
-  , mendMsg = []
+  , mendMsg = [ (Killed, "Leaving concealment might have not been rational enough, leaving cover is hard to justify on a scientific basis and wandering off on an area of a heated dispute is foolhardy. All this is doubly regrettable, given that our cold-hearted opponents supported their weak arguments with inexplicably effective telegraphy and triangulation equipment. And we so deserve a complete intellectual victory, if only we strove to lower the difficulty of this altercation instead of raising it.")
+      -- this is in the middle of the scenario list and the mission is not tricky, so a subtle reminder about lowering difficulty, in case the player struggles
+              , (Conquer, "We chased them off and proved our argument, like we knew that we would. It feels efficient to stick together and prevail. We taught them a lesson in rationality, despite their superior scientific equipment. Scientific truth prevails over brute force.") ]
   , mrules  = T.intercalate "\n"
       [ "* One level only"
       , "* Seven heroes vs. Seven human enemies capable of concurrent attacks"
       , "* Minimize losses"
       , "* Incapacitate all human enemies ASAP"
       ]
-  , mdesc   = "Who is the hunter and who is the prey? The only criterion is last man standing when the chase ends."
+  , mdesc   = "Who is the hunter and who is the prey? The only criterion is last man standing when the chase for truth ends."
   , mreason = "This adventure is quite a tactical challenge, because enemies are allowed to fling their ammo simultaneously at your team, which has no such ability."
-  , mhint   = "Try not to outshoot the enemy, but to instead focus more on melee tactics. A useful concept here is communication overhead. Any team member that is not waiting and spotting for everybody, but acts, e.g., melees or moves or manages items, slows down all other team members by rougly 10%, because they need to keep track of his actions. Therefore, if other heroes melee, consider carefully if it makes sense to come to their aid, slowing them while you move, or if it's better to stay put and monitor the perimeter. This is true for all factions and all actors on each level separately, except the pointman of each faction, if any."  -- this also eliminates lag in big battles and helps the player to focus on combat and not get distracted by distant team members frantically trying to reach the battleground in time
+  , mhint   = "Try not to outshoot the enemy, but to instead focus more on melee tactics. A useful concept here is communication overhead. Any team member that is not waiting and spotting for everybody, but acts, e.g., melees or moves or manages items, slows down all other team members by roughly 10%, because they need to keep track of his actions. Therefore, if other heroes melee, consider carefully if it makes sense to come to their aid, slowing them while you move, or if it's better to stay put and monitor the perimeter. This is true for all factions and all actors on each level separately, except the pointman of each faction, if it has one."  -- this also eliminates lag in big battles and helps the player to focus on combat and not get distracted by distant team members frantically trying to reach the battleground in time
   }
 
 escape = ModeKind  -- asymmetric ranged and stealth race at night
@@ -200,7 +203,8 @@ escape = ModeKind  -- asymmetric ranged and stealth race at night
   , mattract = False
   , mroster = rosterEscape
   , mcaves  = cavesEscape
-  , mendMsg = [ (Conquer, "It was enough to reach the escape area marked by yellow '>' symbol. Spilling that much blood was risky. unnecessary and alerted the authorities. Having said that --- impressive indeed.") ]
+  , mendMsg = [ (Killed, "Somebody must have tipped the enemies of free inquiry off. However, us walking along a lit trail, yelling, could have been a contributing factor. Also, it's worth noting that the torches prepared for this assault are best used as thrown makeshift flares.\nOn the other hand, equipping a lit torch makes one visible in the dark, regrettably but not quite unexpectedly to a scientific mind. Lastly, the goal of this foray was to definitely disengage from the fruitless dispute, via an exit marked by a yellow '>' sign, and to gather treasure that would support our future research. Not to harass every nearby scientific truth denier, as much as they do deserve it.")
+              , (Conquer, "It was enough to reach the escape area marked by yellow '>' symbol. Spilling that much blood was risky. unnecessary and alerted the authorities. Having said that --- impressive indeed.") ]
   , mrules  = T.intercalate "\n"
       [ "* One level only"
       , "* Three heroes vs. Seven human enemies capable of concurrent attacks"
@@ -220,7 +224,8 @@ zoo = ModeKind  -- asymmetric crowd melee at night
   , mattract = False
   , mroster = rosterZoo
   , mcaves  = cavesZoo
-  , mendMsg = []
+  , mendMsg = [ (Killed, "Against such an onslaught, only clever positioning, use of terrain and patient vigilance gives any chance of survival.")
+              , (Conquer, "That was a grim harvest. Science demands sacrifices.") ]
   , mrules  = T.intercalate "\n"
       [ "* One level only"
       , "* Five heroes vs. Many enemies"
@@ -247,7 +252,8 @@ ambush = ModeKind  -- dense ranged with reaction fire vs melee at night
   , mattract = False
   , mroster = rosterAmbush
   , mcaves  = cavesAmbush
-  , mendMsg = []
+  , mendMsg = [ (Killed, "You turned out to be the prey, this time, not the hunter. In fact, you are not even in the hunters' league. When fighting against such odds, passively waiting for enemy to spring a trap is to no avail, because a professional team can sneak in darkness and ambush the ambushers.\nGranted, good positioning is crucial, so that each squad member can overwatch the battlefield and fire opportunistically, using the recently recovered instant telegraphy equipment. However, there is no hope without active scouting, throwing lit objects and probing suspect areas with missiles while paying attention to sounds. And that may still not be enough.")
+              , (Conquer, "The new instant telegraphy equipment enabling simultaneous ranged attacks with indirect triangulation and aiming proved effective beyond expectation. Your ideas are safe, your research programme on track, your chartered company ready to launch and introduce progress and science into every household of the nation.") ]
   , mrules  = T.intercalate "\n"
       [ "* One level only"
       , "* Three heroes with concurrent attacks vs. Unidentified foes"
@@ -256,7 +262,7 @@ ambush = ModeKind  -- dense ranged with reaction fire vs melee at night
       ]
   , mdesc   = "Prevent hijacking of your ideas at all cost! Be stealthy, be observant, be aggressive. Fast execution is what makes or breaks a creative team."
   , mreason = "In this adventure, finally, your heroes are able to all use ranged attacks at once, given enough ammunition."
-  , mhint   = ""
+  , mhint   = "Beware of friendly fire, particularly from explosives. But you need no more hints. Go fulfill your destiny! For Science!"
   }
 
 safari = ModeKind  -- Easter egg available only via screensaver
