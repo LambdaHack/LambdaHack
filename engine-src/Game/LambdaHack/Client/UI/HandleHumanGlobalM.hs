@@ -1421,16 +1421,21 @@ helpHuman cmdSemInCxtOfKM = do
         ( "Showing PLAYING.md (best viewed in the browser)."
         , (ov, []) )
       manualH = map addMnualHeader manualOvs
-      splitHelp (t, okx) = splitOKX fontSetup True rwidth rheight rwidth
-                                    (textToAS t) [K.spaceKM, K.escKM] okx
+      splitHelp (t, okx) =
+        splitOKX fontSetup True rwidth rheight rwidth (textToAS t)
+                 [K.spaceKM, K.returnKM, K.escKM] okx
       sli = toSlideshow fontSetup displayTutorialHints
             $ concatMap splitHelp $ modeH : keyH ++ manualH
   -- Thus, the whole help menu corresponds to a single menu of item or lore,
   -- e.g., shared stash menu. This is especially clear when the shared stash
   -- menu contains many pages.
-  ekm <- displayChoiceScreen "help" ColorFull True sli [K.spaceKM, K.escKM]
+  ekm <- displayChoiceScreen "help" ColorFull True sli
+                             [K.spaceKM, K.returnKM, K.escKM]
   case ekm of
     Left km | km `elem` [K.escKM, K.spaceKM] -> return $ Left Nothing
+    Left km | km == K.returnKM -> do
+      msgAdd MsgPromptGeneric "Press RET when a command help text is selected to invoke the command."
+      return $ Left Nothing
     Left km -> case km `M.lookup` bcmdMap coinput of
       Just (_desc, _cats, cmd) -> cmdSemInCxtOfKM km cmd
       Nothing -> weaveJust <$> failWith "never mind"
@@ -1467,14 +1472,17 @@ dashboardHuman cmdSemInCxtOfKM = do
                           False CmdDashboard ([], [], []) ([], [])
       al1 = textToAS "Dashboard"
       splitHelp (al, okx) = splitOKX fontSetup False rwidth (rheight - 2) rwidth
-                                     al [K.escKM] okx
+                                     al [K.returnKM, K.escKM] okx
       sli = toSlideshow fontSetup displayTutorialHints
             $ splitHelp (al1, (ov0, kxs0))
-      extraKeys = [K.escKM]
+      extraKeys = [K.returnKM, K.escKM]
   ekm <- displayChoiceScreen "dashboard" ColorFull False sli extraKeys
   case ekm of
     Left km -> case km `M.lookup` bcmdMap coinput of
       _ | km == K.escKM -> weaveJust <$> failWith "never mind"
+      _ | km == K.returnKM -> do
+        msgAdd MsgPromptGeneric "Press RET when a menu name is selected to browse the menu."
+        return $ Left Nothing
       Just (_desc, _cats, cmd) -> cmdSemInCxtOfKM km cmd
       Nothing -> weaveJust <$> failWith "never mind"
     Right _slot -> error $ "" `showFailure` ekm
