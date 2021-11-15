@@ -212,23 +212,13 @@ Testing and debugging
 
 Unit tests and integration tests can be run and displayed with
 
-    cabal test test --enable-tests --test-show-details=direct
+    cabal test --enable-tests --test-show-details=direct
 
-To prepare doctests[7], set
+and doctests with
 
-    tests: True
-    package LambdaHack
-        flags: +doctests
-
-in your `cabal.project.local`.
-Afterwards, doctests can be executed with
-
-    cabal build . && cabal exec cabal test doctests
-
-and their detailed results observed in a log file.
-(This repeating of `cabal build` before each testsuite run
-is required due to bug https://github.com/haskell/cabal/issues/7522.
-Contributions to cabal development are very welcome.)
+    cabal install doctest --overwrite-policy=always && cabal build
+    cabal repl --build-depends=QuickCheck --with-ghc=doctest definition
+    cabal repl --build-depends=QuickCheck --build-depends=template-haskell --with-ghc=doctest LambdaHack
 
 The [Makefile](https://github.com/LambdaHack/LambdaHack/blob/master/Makefile)
 contains many sample automated playtest commands.
@@ -348,7 +338,6 @@ Have fun!
 [4]: https://github.com/LambdaHack/LambdaHack/wiki
 [5]: https://github.com/LambdaHack/LambdaHack
 [6]: http://allureofthestars.com
-[7]: https://github.com/sol/doctest
 [9]: https://github.com/LambdaHack/LambdaHack/wiki/Sample-dungeon-crawler
 [10]: https://github.com/AllureOfTheStars/Allure
 [11]: https://github.com/LambdaHack/LambdaHack/releases

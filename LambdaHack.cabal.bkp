@@ -90,11 +90,6 @@ flag release
   default:            True
   manual:             True
 
-flag doctests
-  description:        whether to include doctests (see README.md for how to run)
-  default:            True
-  manual:             True
-
 flag supportNodeJS
   description:        compile so that the JS blob works in terminal with NodeJS
   default:            True
@@ -307,8 +302,6 @@ library
                       Game.LambdaHack.Server.ServerOptions
                       Game.LambdaHack.Server.StartM
                       Game.LambdaHack.Server.State
--- for doctest:
-                      Paths_LambdaHack
   reexported-modules: ,Game.LambdaHack.Core.Dice
                       ,Game.LambdaHack.Core.Frequency
                       ,Game.LambdaHack.Core.Prelude
@@ -326,6 +319,7 @@ library
                       ,Game.LambdaHack.Content.PlaceKind
                       ,Game.LambdaHack.Content.RuleKind
                       ,Game.LambdaHack.Content.TileKind
+  other-modules:      Paths_LambdaHack
   autogen-modules:    Paths_LambdaHack
   build-depends:      definition,
                       async      >= 2.2.1,
@@ -458,17 +452,3 @@ test-suite test
                       ,text
                       ,transformers
                       ,vector
-
-test-suite doctests
-  import: options, exe-options
-  if flag(doctests)
-    buildable: True
-  else
-    buildable: False
-  type:               exitcode-stdio-1.0
-  main-is:            test/doctest-driver.hs
-  build-tool-depends: doctest-driver-gen:doctest-driver-gen
-  ghc-options:        -Wno-unused-packages
-  build-depends:      ,base
-                      ,doctest >= 0.13
-                      ,QuickCheck

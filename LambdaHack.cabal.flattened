@@ -94,11 +94,6 @@ flag release
   default:            True
   manual:             True
 
-flag doctests
-  description:        whether to include doctests (see README.md for how to run)
-  default:            False
-  manual:             True
-
 flag supportNodeJS
   description:        compile so that the JS blob works in terminal with NodeJS
   default:            True
@@ -291,8 +286,6 @@ library
                       Game.LambdaHack.Server.ServerOptions
                       Game.LambdaHack.Server.StartM
                       Game.LambdaHack.Server.State
--- for doctest:
-                      Paths_LambdaHack
   exposed-modules:    Content.CaveKind
                       Content.FactionKind
                       Content.ItemKind
@@ -310,6 +303,7 @@ library
                       Client.UI.Content.Screen
                       Implementation.MonadClientImplementation
                       Implementation.MonadServerImplementation
+  other-modules:      Paths_LambdaHack
   autogen-modules:    Paths_LambdaHack
   build-depends:      assert-failure >= 0.1.2 && < 0.2,
                       async      >= 2.2.1,
@@ -397,17 +391,3 @@ test-suite test
                       ,text
                       ,transformers
                       ,vector
-
-test-suite doctests
-  import: options, exe-options
-  if flag(doctests)
-    buildable: True
-  else
-    buildable: False
-  type:               exitcode-stdio-1.0
-  main-is:            test/doctest-driver.hs
-  build-tool-depends: doctest-driver-gen:doctest-driver-gen
-  ghc-options:        -Wno-unused-packages
-  build-depends:      ,base
-                      ,doctest >= 0.13
-                      ,QuickCheck
