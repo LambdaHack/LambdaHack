@@ -180,13 +180,20 @@ rollSpawnPos :: COps -> ES.EnumSet Point
 rollSpawnPos COps{coTileSpeedup} visible
              mobile aquatic lid lvl@Level{larea} fid s = do
   let inhabitants = foeRegularList fid lid s
-      nearInh !df !p = all (\ !b -> df $ chessDist (bpos b) p) inhabitants
+      nearInh !d !p = any (\ !b -> chessDist (bpos b) p < d) inhabitants
+      farInh !d !p = all (\ !b -> chessDist (bpos b) p > d) inhabitants
       (_, xspan, yspan) = spanArea larea
       averageSpan = (xspan + yspan) `div` 2
       distantMiddle !d !p = chessDist p (middlePoint larea) < d
+      -- Don't spawn very far from foes, to keep the player entertained,
+      -- but not too close, so that standing on positions with better
+      -- visibility does not influence the spawn places too often,
+      -- to avoid unnatural position micromanagement using AI predictability.
       condList | mobile =
-        [ nearInh (<= averageSpan `div` 2)  -- don't spawn very far from foes
-        , nearInh (<= 2 * averageSpan `div` 3)
+        [ \p -> nearInh (max 15 $ averageSpan `div` 2) p
+                && farInh 10 p
+        , \p -> nearInh (max 15 $ 2 * averageSpan `div` 3) p
+                && farInh 5 p
         ]
                | otherwise =
         [ distantMiddle 8
@@ -204,12 +211,12 @@ rollSpawnPos COps{coTileSpeedup} visible
                && not (occupiedBigLvl p lvl)
                && not (occupiedProjLvl p lvl) )
     (map (\f p _ -> f p) condList)
-    (\ !p t -> nearInh (> 4) p  -- otherwise actors in dark rooms swarmed
+    (\ !p t -> farInh 3 p  -- otherwise actors in dark rooms swarmed
                && not (p `ES.member` visible)  -- visibility and plausibility
                && (not aquatic || Tile.isAquatic coTileSpeedup t))
-    [ \ !p _ -> nearInh (> 3) p
+    [ \ !p _ -> farInh 3 p
                 && not (p `ES.member` visible)
-    , \ !p _ -> nearInh (> 2) p  -- otherwise actors hit on entering level
+    , \ !p _ -> farInh 2 p  -- otherwise actors hit on entering level
                 && not (p `ES.member` visible)
     , \ !p _ -> not (p `ES.member` visible)
     ]
