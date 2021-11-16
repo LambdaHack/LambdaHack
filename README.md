@@ -218,7 +218,7 @@ and doctests with
 
     cabal install doctest --overwrite-policy=always && cabal build
     cabal repl --build-depends=QuickCheck --with-ghc=doctest definition
-    cabal repl --build-depends=QuickCheck --build-depends=template-haskell --with-ghc=doctest LambdaHack
+    cabal repl --build-depends=QuickCheck --build-depends=template-haskell --with-ghc=doctest lib:LambdaHack
 
 The [Makefile](https://github.com/LambdaHack/LambdaHack/blob/master/Makefile)
 contains many sample automated playtest commands.

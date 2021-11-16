@@ -268,7 +268,7 @@ jobs:
         run: |
           $CABAL v2-test $ARG_COMPILER $ARG_TESTS $ARG_BENCH all --test-show-details=direct
           $CABAL $ARG_COMPILER $ARG_TESTS $ARG_BENCH repl --build-depends=QuickCheck --with-ghc=doctest definition
-          $CABAL $ARG_COMPILER $ARG_TESTS $ARG_BENCH repl --build-depends=QuickCheck --build-depends=template-haskell --with-ghc=doctest LambdaHack
+          $CABAL $ARG_COMPILER $ARG_TESTS $ARG_BENCH repl --build-depends=QuickCheck --build-depends=template-haskell --with-ghc=doctest lib:LambdaHack
       - name: gameplay tests
         shell: 'script -q -e -c "bash --noprofile --norc -eo pipefail {0}"'
         run: |
