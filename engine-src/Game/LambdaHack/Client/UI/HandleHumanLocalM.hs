@@ -828,7 +828,11 @@ allHistoryHuman = do
                                          renderedHistoryRaw of
                     [] -> error $ "" `showFailure` slot
                     tR : _ -> tR
-                  (ovLab, ovDesc) = labDescOverlay monoFont rwidth timeReport
+                  markParagraph c | Color.charFromW32 c == '\n' = [c, c]
+                  markParagraph c = [c]
+                  reportWithParagraphs = concatMap markParagraph timeReport
+                  (ovLab, ovDesc) =
+                    labDescOverlay monoFont rwidth reportWithParagraphs
                   ov0 = EM.insertWith (++) monoFont ovLab
                         $ EM.singleton propFont ovDesc
                   prompt = makeSentence
