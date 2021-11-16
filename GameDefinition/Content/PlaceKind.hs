@@ -52,9 +52,9 @@ pattern NOISE = GroupName "noise"
 pattern MINE = GroupName "mine"
 pattern EMPTY = GroupName "empty"
 
-pattern INDOOR_ESCAPE_DOWN = GroupName "escape down"
-pattern INDOOR_ESCAPE_UP = GroupName "escape up"
-pattern OUTDOOR_ESCAPE_DOWN = GroupName "outdoor escape route"
+pattern INDOOR_ESCAPE_DOWN = GroupName "indoor escape down"
+pattern INDOOR_ESCAPE_UP = GroupName "indoor escape up"
+pattern OUTDOOR_ESCAPE_DOWN = GroupName "outdoor escape down"
 pattern TINY_STAIRCASE = GroupName "tiny staircase"
 pattern OPEN_STAIRCASE = GroupName "open staircase"
 pattern CLOSED_STAIRCASE = GroupName "closed staircase"
@@ -113,8 +113,8 @@ defaultLegendLit = EM.fromList
   , ('-', S_WALL_HORIZONTAL_LIT)
   , ('0', S_PILLAR)
   , ('&', S_RUBBLE_PILE)
-  , ('<', ESCAPE_UP)
-  , ('>', ESCAPE_DOWN)
+  , ('<', TILE_INDOOR_ESCAPE_UP)
+  , ('>', TILE_INDOOR_ESCAPE_DOWN)
   , ('·', FLOOR_ACTOR_ITEM_LIT)
   , ('~', S_SHALLOW_WATER_LIT)
   , ('I', SIGNBOARD) ]
@@ -126,8 +126,8 @@ defaultLegendDark = EM.fromList
   , ('-', S_WALL_HORIZONTAL_DARK)
   , ('0', S_PILLAR)
   , ('&', S_RUBBLE_PILE)
-  , ('<', ESCAPE_UP)
-  , ('>', ESCAPE_DOWN)
+  , ('<', TILE_INDOOR_ESCAPE_UP)
+  , ('>', TILE_INDOOR_ESCAPE_DOWN)
   , ('·', FLOOR_ACTOR_ITEM_DARK)
   , ('~', S_SHALLOW_WATER_DARK)
   , ('I', SIGNBOARD) ]
@@ -1007,13 +1007,14 @@ switchStaircaseToOutdoor s = overridePlaceKind overrideOutdoor $ s
   }
 
 switchEscapeToUp :: PlaceKind -> PlaceKind
-switchEscapeToUp s = overridePlaceKind [('>', ESCAPE_UP)] $ s
+switchEscapeToUp s = overridePlaceKind [('>', TILE_INDOOR_ESCAPE_UP)] $ s
   { pname     = "an escape up"
   , pfreq     = map (\(_, n) -> (INDOOR_ESCAPE_UP, n)) $ pfreq s
   }
 
 switchEscapeToOutdoorDown :: PlaceKind -> PlaceKind
-switchEscapeToOutdoorDown s = overridePlaceKind [('>', ESCAPE_OUTDOOR_DOWN)] $ s
+switchEscapeToOutdoorDown s = overridePlaceKind
+                                [('>', TILE_OUTDOOR_ESCAPE_DOWN)] $ s
   { pname     = "outdoor escape route"
   , pfreq     = map (\(_, n) -> (OUTDOOR_ESCAPE_DOWN, n)) $ pfreq s
   }
