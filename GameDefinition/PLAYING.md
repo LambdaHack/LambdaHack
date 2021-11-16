@@ -81,6 +81,9 @@ are listed in the main menu, brought up by the Esc key.
 Game difficulty level, from the new game setup menu, determines how hard
 the survival in the game is. Each of the several named optional challenges
 make the game additionally much harder, but usually simpler, as well.
+Not that in-game hints don't take challenges into account
+so kindly ignore, e.g., advice to use ranged combat more often,
+if the chosen challenge bans ranged combat use altogether.
 Of the convenience settings, the `suspect terrain` choice is of particular
 interest, because it determines not only screen display of the floor map,
 but also whether suspect tiles are considered for mouse go-to, auto-explore
