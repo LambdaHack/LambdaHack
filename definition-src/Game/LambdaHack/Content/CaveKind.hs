@@ -2,7 +2,7 @@
 -- cave kind.
 module Game.LambdaHack.Content.CaveKind
   ( pattern DEFAULT_RANDOM
-  , CaveKind(..), makeData
+  , CaveKind(..), InitSleep(..), makeData
 #ifdef EXPOSE_INTERNAL
     -- * Internal operations
   , validateSingle, validateAll, mandatoryGroups
@@ -71,9 +71,13 @@ data CaveKind = CaveKind
   , cstairFreq    :: Freqs PlaceKind     -- ^ place groups for created stairs
   , cstairAllowed :: Freqs PlaceKind     -- ^ extra groups for inherited
   , cskip         :: [Int]  -- ^ which faction starting positions to skip
+  , cinitSleep    :: InitSleep           -- ^ whether actors spawn sleeping
   , cdesc         :: Text   -- ^ full cave description
   }
   deriving Show  -- No Eq and Ord to make extending logically sound
+
+data InitSleep = InitSleepAlways | InitSleepPermitted | InitSleepBanned
+  deriving (Show, Eq)
 
 -- | Catch caves with not enough space for all the places. Check the size
 -- of the cave descriptions to make sure they fit on screen. Etc.

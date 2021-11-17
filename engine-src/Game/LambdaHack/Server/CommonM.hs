@@ -45,6 +45,7 @@ import           Game.LambdaHack.Common.State
 import qualified Game.LambdaHack.Common.Tile as Tile
 import           Game.LambdaHack.Common.Time
 import           Game.LambdaHack.Common.Types
+import qualified Game.LambdaHack.Content.CaveKind as CK
 import           Game.LambdaHack.Content.FactionKind
 import           Game.LambdaHack.Content.ItemKind (ItemKind)
 import qualified Game.LambdaHack.Content.ItemKind as IK
@@ -512,6 +513,7 @@ registerActor :: MonadServerAtomic m
               -> m ActorId
 registerActor summoned (ItemKnown kindIx ar _) (itemFullRaw, kit)
               bfid pos lid time = do
+  COps{cocave} <- getsState scops
   let container = CTrunk bfid lid pos
       jfid = Just bfid
       itemKnown = ItemKnown kindIx ar jfid
@@ -521,14 +523,17 @@ registerActor summoned (ItemKnown kindIx ar _) (itemFullRaw, kit)
   fact <- getsState $ (EM.! bfid) . sfactionD
   actorMaxSk <- getsState $ getActorMaxSkills aid
   condAnyFoeAdj <- getsState $ anyFoeAdj aid
-  when (canSleep actorMaxSk
+  Level{lkind} <- getLevel lid
+  let cinitSleep = CK.cinitSleep $ okind cocave lkind
+  when (cinitSleep /= CK.InitSleepBanned
+        && canSleep actorMaxSk
         && not condAnyFoeAdj
         && not summoned
         && not (fhasGender (gkind fact))) $ do  -- heroes never start asleep
     -- A lot of actors will wake up at once anyway, so let most start sleeping.
     let sleepOdds = if prefersSleep actorMaxSk then 19%20 else 2%3
     sleeps <- rndToAction $ chance sleepOdds
-    when sleeps $ addSleep aid
+    when (cinitSleep == CK.InitSleepAlways || sleeps) $ addSleep aid
   return aid
 
 addProjectile :: MonadServerAtomic m

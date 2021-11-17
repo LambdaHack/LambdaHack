@@ -112,6 +112,7 @@ rogue = CaveKind
                     , (TINY_STAIRCASE, 1) ]
   , cstairAllowed = []
   , cskip         = []
+  , cinitSleep    = InitSleepPermitted
   , cdesc         = "Winding tunnels stretch into the dark."
   }  -- no lit corridors cave alternative, since both lit # and . look bad here
 arena = rogue
@@ -144,7 +145,8 @@ arena = rogue
   , cmaxStairsNum = 1 `d` 2
   , cstairFreq    = [ (WALLED_STAIRCASE, 20), (CLOSED_STAIRCASE, 80)
                     , (TINY_STAIRCASE, 1) ]
-  , cdesc         = "The shelves groan with dusty books and tattered scrolls."
+  , cinitSleep    = InitSleepAlways
+  , cdesc         = "The shelves groan with dusty books and tattered scrolls. Subtle snoring can be heard from a distance."
   }
 smoking = arena
   { cname         = "Smoking rooms"
@@ -211,6 +213,7 @@ noise = rogue
   , cminStairDist = 15
   , cstairFreq    = [ (CLOSED_STAIRCASE, 50), (OPEN_STAIRCASE, 50)
                     , (TINY_STAIRCASE, 1) ]
+  , cinitSleep    = InitSleepBanned
   , cdesc         = "Soon, these passages will be swallowed up by the mud."
   }
 mine = noise
@@ -226,6 +229,7 @@ mine = noise
   , cstairFreq    = [ (GATED_CLOSED_STAIRCASE, 50)
                     , (GATED_OPEN_STAIRCASE, 50)
                     , (GATED_TINY_STAIRCASE, 1) ]
+  , cinitSleep    = InitSleepBanned
   , cdesc         = "Pillars of shining ice create a frozen labyrinth."
   }
 empty = rogue
