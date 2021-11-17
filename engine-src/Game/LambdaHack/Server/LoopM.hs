@@ -300,15 +300,16 @@ endClip updatePerFid = do
     -- Perform periodic dungeon maintenance.
     when (clipN `mod` rleadLevelClips corule == 0) leadLevelSwitch
     case clipN `mod` clipsInTurn of
-      2 ->
+      0 ->
+        -- Spawn monsters at most once per 3 turns.
+        when (clipN `mod` (3 * clipsInTurn) == 0)
+          spawnMonster
+      4 ->
         -- Periodic activation only once per turn, for speed,
         -- but on all active arenas. Calm updates and domination
         -- happen there as well. Once per turn is too rare for accurate
         -- expiration of short conditions, e.g., 1-turn haste. TODO.
         applyPeriodicLevel
-      4 ->
-        -- Spawn monsters at most once per turn.
-        spawnMonster
       _ -> return ()
   -- @applyPeriodicLevel@ might have, e.g., dominated actors, ending the game.
   -- It could not have unended the game, though.

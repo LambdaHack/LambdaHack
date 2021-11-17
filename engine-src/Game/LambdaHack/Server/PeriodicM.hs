@@ -79,8 +79,8 @@ spawnMonster = do
            million = 1000000
        k <- rndToAction $ randomR (1, million)
        when (k <= perMillion && localTime > timeTurn) $ do
-         let numToSpawn | 10 * k <= perMillion = 3
-                        | 4 * k <= perMillion = 2
+         let numToSpawn | 25 * k <= perMillion = 3
+                        | 10 * k <= perMillion = 2
                         | otherwise = 1
              alt Nothing = Just 1
              alt (Just n) = Just $ n + 1

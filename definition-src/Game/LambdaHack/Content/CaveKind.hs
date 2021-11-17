@@ -48,8 +48,9 @@ data CaveKind = CaveKind
   , cactorFreq    :: Freqs ItemKind   -- ^ actor groups to consider
   , citemNum      :: Dice.Dice        -- ^ number of initial items in the cave
   , citemFreq     :: Freqs ItemKind   -- ^ item groups to consider;
-      -- note that the groups are flattened; e.g., if an item is moved to another
-      -- included group with the same weight, the outcome doesn't change
+      -- note that the groups are flattened; e.g., if an item is moved
+      -- to another included group with the same weight, the outcome
+      -- doesn't change
   , cplaceFreq    :: Freqs PlaceKind  -- ^ place groups to consider
   , cpassable     :: Bool
       -- ^ are passable default tiles permitted
