@@ -34,11 +34,11 @@ standardRules = RuleContent
   , rcfgUIDefault = $(do
       let path = "GameDefinition" </> "config.ui" <.> "default"
       qAddDependentFile path
-      s <- qRunIO $ do
+      !s <- qRunIO $ do
         inputHandle <- openFile path ReadMode
         hSetEncoding inputHandle utf8
         hGetContents inputHandle
-      let cfgUIDefault =
+      let !cfgUIDefault =
             either (error . ("Ini.parse of default config" `showFailure`)) id
             $ Ini.parse s
       lift (s, cfgUIDefault))
