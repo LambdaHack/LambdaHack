@@ -44,7 +44,7 @@ standardRules = RuleContent
       lift (s, cfgUIDefault))
   , rwriteSaveClips = 1000
   , rleadLevelClips = 50
-  , rscoresFile = "LambdaHack.scores"
+  , rscoresFileName = "LambdaHack.scores"
   , rnearby = 20
   , rstairWordCarried = ["staircase"]  -- only one, so inert
   , ritemSymbols = ItemSymbolsUsedInEngine

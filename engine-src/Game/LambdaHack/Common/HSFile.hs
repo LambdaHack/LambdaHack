@@ -16,11 +16,12 @@ import qualified Codec.Compression.Zlib as Z
 import qualified Control.Exception as Ex
 import           Data.Binary
 import qualified Data.ByteString.Lazy as LBS
+import qualified Data.Text.IO as T
 import           Data.Version
 import           System.Directory
 import           System.FilePath
-import           System.IO (IOMode (..), hClose, openBinaryFile, readFile,
-                            withBinaryFile, writeFile)
+import           System.IO
+  (IOMode (..), hClose, openBinaryFile, readFile, withBinaryFile)
 
 -- | Serialize and save data.
 -- Note that LBS.writeFile opens the file in binary mode.
@@ -68,11 +69,12 @@ tryCreateDir dir = do
               (createDirectory dir)
 
 -- | Try to write a file, given content, if the file not already there.
--- We catch exceptions in case many clients try to do the same thing
--- at the same time.
-tryWriteFile :: FilePath -> String -> IO ()
+-- We catch exceptions in case many clients and/or the server try to do
+-- the same thing at the same time. Using `Text.IO` to avoid UTF conflicts
+-- with OS or filesystem.
+tryWriteFile :: FilePath -> Text -> IO ()
 tryWriteFile path content = do
   fileExists <- doesFileExist path
   unless fileExists $
     Ex.handle (\(_ :: Ex.IOException) -> return ())
-              (writeFile path content)
+              (T.writeFile path content)

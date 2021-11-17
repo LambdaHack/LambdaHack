@@ -28,11 +28,11 @@ data RuleContent = RuleContent
                                    --   keep equal to ScreenContent.rheight - 3
   , rexeVersion       :: Version   -- ^ version of the game
   , rcfgUIName        :: FilePath  -- ^ name of the UI config file
-  , rcfgUIDefault     :: (String, Ini.Config)
+  , rcfgUIDefault     :: (Text, Ini.Config)
                                    -- ^ the default UI settings config file
   , rwriteSaveClips   :: Int       -- ^ game saved that often (not on browser)
   , rleadLevelClips   :: Int       -- ^ server switches leader level that often
-  , rscoresFile       :: FilePath  -- ^ name of the scores file
+  , rscoresFileName   :: FilePath  -- ^ name of the scores file
   , rnearby           :: Int       -- ^ what is a close distance between actors
   , rstairWordCarried :: [Text]    -- ^ words that can't be dropped from stair
                                    --   name as it goes through levels
@@ -50,7 +50,7 @@ emptyRuleContent = RuleContent
   , rcfgUIDefault = ("", Ini.emptyConfig)
   , rwriteSaveClips = 0
   , rleadLevelClips = 0
-  , rscoresFile = ""
+  , rscoresFileName = ""
   , rnearby = 0
   , rstairWordCarried = []
   , ritemSymbols = emptyItemSymbolsUsedInEngine

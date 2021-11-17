@@ -124,9 +124,9 @@ restoreScore :: forall m. MonadServer m => COps -> m HighScore.ScoreDict
 restoreScore COps{corule} = do
   benchmark <- getsServer $ sbenchmark . sclientOptions . soptions
   mscore <- if benchmark then return Nothing else do
-    let scoresFile = rscoresFile corule
+    let scoresFileName = rscoresFileName corule
     dataDir <- liftIO appDataDir
-    let path bkp = dataDir </> bkp <> scoresFile
+    let path bkp = dataDir </> bkp <> scoresFileName
     configExists <- liftIO $ doesFileExist (path "")
     res <- liftIO $ Ex.try $
       if configExists then do
@@ -161,7 +161,7 @@ registerScore :: MonadServer m => Status -> FactionId -> m ()
 registerScore status fid = do
   cops@COps{corule} <- getsState scops
   total <- getsState $ snd . calculateTotal fid
-  let scoresFile = rscoresFile corule
+  let scoresFileName = rscoresFileName corule
   dataDir <- liftIO appDataDir
   -- Re-read the table in case it's changed by a concurrent game.
   scoreDict <- restoreScore cops
@@ -176,7 +176,7 @@ registerScore status fid = do
   noConfirmsGame <- isNoConfirmsGame
   sbandSpawned <- getsServer sbandSpawned
   let fact = factionD EM.! fid
-      path = dataDir </> scoresFile
+      path = dataDir </> scoresFileName
       outputScore (worthMentioning, (ntable, pos)) =
         -- If testing or fooling around, dump instead of registering.
         -- In particular don't register score for the auto-* scenarios.
