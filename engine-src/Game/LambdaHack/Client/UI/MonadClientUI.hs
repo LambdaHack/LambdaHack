@@ -38,7 +38,6 @@ import           Data.Time.Clock.POSIX
 import           Data.Time.LocalTime
 import qualified Data.Vector.Unboxed as U
 import qualified NLP.Miniutter.English as MU
-import           System.FilePath
 import           System.IO (hFlush, stdout)
 import           Web.Browser (openBrowser)
 
@@ -64,7 +63,6 @@ import           Game.LambdaHack.Common.Actor
 import           Game.LambdaHack.Common.ActorState
 import           Game.LambdaHack.Common.ClientOptions
 import           Game.LambdaHack.Common.Faction
-import           Game.LambdaHack.Common.File
 import qualified Game.LambdaHack.Common.HighScore as HighScore
 import           Game.LambdaHack.Common.Item
 import           Game.LambdaHack.Common.Kind
@@ -78,7 +76,6 @@ import           Game.LambdaHack.Common.Time
 import           Game.LambdaHack.Common.Types
 import           Game.LambdaHack.Content.FactionKind
 import           Game.LambdaHack.Content.ModeKind
-import           Game.LambdaHack.Content.RuleKind
 import           Game.LambdaHack.Core.Random
 
 -- Assumes no interleaving with other clients, because each UI client
@@ -488,12 +485,7 @@ tryRestore = do
     side <- getsClient sside
     prefix <- getsClient $ ssavePrefixCli . soptions
     let fileName = prefix <> Save.saveNameCli corule side
-    res <- liftIO $ Save.restoreGame corule clientOptions fileName
-    let cfgUIName = rcfgUIName corule
-        (configString, _) = rcfgUIDefault corule
-    dataDir <- liftIO appDataDir
-    liftIO $ tryWriteFile (dataDir </> cfgUIName) configString
-    return res
+    liftIO $ Save.restoreGame corule clientOptions fileName
 
 -- | Invoke pseudo-random computation with the generator kept in the session.
 rndToActionUI :: MonadClientUI m => Rnd a -> m a
