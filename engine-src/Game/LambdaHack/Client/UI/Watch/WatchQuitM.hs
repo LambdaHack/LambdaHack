@@ -201,9 +201,9 @@ quitFactionUI fid toSt manalytics = do
           epilogue
     _ ->
       when (isJust startingPart && (stOutcome <$> toSt) == Just Killed) $ do
-        msgAdd MsgTutorialHint "When a whole faction gets eliminated, no new members of the party will ever appear and its stashed belongings may remain far off, unclaimed and undefended. While some adventures require elimination a faction (to be verified in the adventure description screen in the help menu), for others it's an optional task, if possible at all. Instead, finding an exit may be necessary to win. It's enough if one character finds and triggers the exit. Others automatically follow, duly hauling all common belongings."
+        msgAdd MsgTutorialHint "When a whole faction gets eliminated, no new members of the party will ever appear and its stashed belongings may remain far off, unclaimed and undefended. While some adventures require elimination a faction (to be verified in the adventure description screen in the help menu), for others it's an optional task, if possible at all. Instead, finding an exit may be necessary to win. It's enough if one character finds and triggers the exit. Others automatically follow, duly hauling all common belongings. Similarly, if eliminating foes ends a challenge, it happens immediately, with no need to move party members anywhere."
         -- Needed not to overlook the competitor dying in raid scenario.
-        displayMore ColorFull ""
+        displayMore ColorFull "This is grave news. What now?"
 
 displayGameOverLoot :: MonadClientUI m
                     => (ItemBag, Int) -> GenerationAnalytics -> m K.KM
