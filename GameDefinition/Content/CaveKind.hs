@@ -202,8 +202,8 @@ noise = rogue
   , cactorFreq    = [(MONSTER, 80), (ANIMAL, 20)]
   , citemNum      = 6 `d` 5  -- an incentive to explore the labyrinth
   , cpassable     = True
-  , labyrinth     = True
   , cplaceFreq    = [(NOISE, 1)]
+  , labyrinth     = True
   , cdefTile      = NOISE_SET_LIT
   , cfenceApart   = True  -- ensures no cut-off parts from collapsed
   , cdarkCorTile  = DAMP_FLOOR_DARK
@@ -221,6 +221,7 @@ mine = noise
   , citemFreq     = [(IK.COMMON_ITEM, 20), (GEM, 20)]
                       -- can't be "valuable" or template items generated
   , cplaceFreq    = [(NOISE, 1), (MINE, 99)]
+  , labyrinth     = True
   , cdefTile      = POWER_SET_DARK
   , cstairFreq    = [ (GATED_CLOSED_STAIRCASE, 50)
                     , (GATED_OPEN_STAIRCASE, 50)
