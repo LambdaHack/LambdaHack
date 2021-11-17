@@ -35,9 +35,9 @@ data CaveKind = CaveKind
   , cminPlaceSize :: Dice.DiceXY      -- ^ minimal size of places; for merging
   , cmaxPlaceSize :: Dice.DiceXY      -- ^ maximal size of places; for growing
   , cdarkOdds     :: Dice.Dice        -- ^ the odds a place is dark
-                                        --   (level-scaled dice roll > 50)
+                                      --   (level-scaled dice roll > 50)
   , cnightOdds    :: Dice.Dice        -- ^ the odds the cave is dark
-                                        --   (level-scaled dice roll > 50)
+                                      --   (level-scaled dice roll > 50)
   , cauxConnects  :: Rational         -- ^ a proportion of extra connections
   , cmaxVoid      :: Rational
       -- ^ at most this proportion of rooms may be void
@@ -54,7 +54,7 @@ data CaveKind = CaveKind
   , cplaceFreq    :: Freqs PlaceKind  -- ^ place groups to consider
   , cpassable     :: Bool
       -- ^ are passable default tiles permitted
-  , labyrinth     :: Bool                -- ^ waste of time for AI to explore
+  , clabyrinth    :: Bool                -- ^ waste of time for AI to explore
   , cdefTile      :: GroupName TileKind  -- ^ the default cave tile
   , cdarkCorTile  :: GroupName TileKind  -- ^ the dark cave corridor tile
   , clitCorTile   :: GroupName TileKind  -- ^ the lit cave corridor tile

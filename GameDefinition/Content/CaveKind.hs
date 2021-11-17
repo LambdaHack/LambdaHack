@@ -94,7 +94,7 @@ rogue = CaveKind
   , citemFreq     = [(IK.COMMON_ITEM, 40), (IK.TREASURE, 60)]
   , cplaceFreq    = [(ROGUE, 1)]
   , cpassable     = False
-  , labyrinth     = False
+  , clabyrinth    = False
   , cdefTile      = FILLER_WALL
   , cdarkCorTile  = FLOOR_CORRIDOR_DARK
   , clitCorTile   = FLOOR_CORRIDOR_LIT
@@ -203,7 +203,7 @@ noise = rogue
   , citemNum      = 6 `d` 5  -- an incentive to explore the labyrinth
   , cpassable     = True
   , cplaceFreq    = [(NOISE, 1)]
-  , labyrinth     = True
+  , clabyrinth    = True
   , cdefTile      = NOISE_SET_LIT
   , cfenceApart   = True  -- ensures no cut-off parts from collapsed
   , cdarkCorTile  = DAMP_FLOOR_DARK
@@ -221,7 +221,7 @@ mine = noise
   , citemFreq     = [(IK.COMMON_ITEM, 20), (GEM, 20)]
                       -- can't be "valuable" or template items generated
   , cplaceFreq    = [(NOISE, 1), (MINE, 99)]
-  , labyrinth     = True
+  , clabyrinth    = True
   , cdefTile      = POWER_SET_DARK
   , cstairFreq    = [ (GATED_CLOSED_STAIRCASE, 50)
                     , (GATED_OPEN_STAIRCASE, 50)

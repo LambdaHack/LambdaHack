@@ -244,7 +244,7 @@ cmdAtomicSemCli oldState cmd = case cmd of
     smarkSuspect <- getsClient smarkSuspect
     stabs <- getsClient stabs
     soptionsOld <- getsClient soptions
-    let h lvl = CK.labyrinth (okind cocave $ lkind lvl)
+    let h lvl = CK.clabyrinth (okind cocave $ lkind lvl)
                 && not (fhasGender $ gkind fact)
           -- Not to burrow through a labyrinth instead of leaving it for
           -- the human player and to prevent AI losing time there instead
