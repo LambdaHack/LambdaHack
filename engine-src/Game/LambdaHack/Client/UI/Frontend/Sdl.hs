@@ -492,43 +492,20 @@ drawFrame coscreen ClientOptions{..} sess@FrontendSession{..} curFrame = do
       vp x y = Vect.P $ Vect.V2 (toEnum x) (toEnum y)
       drawHighlight !col !row !color = do
         SDL.rendererDrawColor srenderer SDL.$= colorToRGBA color
--- This is broken in SDL 2.0.16
--- (https://github.com/LambdaHack/LambdaHack/issues/281)
--- and has to be worked around, but the workarounds fail!
---      let rect = SDL.Rectangle (vp (col * boxSize) (row * boxSize)) tt2Square
---      SDL.drawRect srenderer $ Just rect
-{-
-and this workaround is broken at least under SDL2 2.0.4
-        let vLines = VS.fromList
-              [ vp (col * boxSize) (row * boxSize)
-              , vp ((col + 1) * boxSize) (row * boxSize)
-              , vp ((col + 1) * boxSize) ((row + 1) * boxSize)
-              , vp (col * boxSize) ((row + 1) * boxSize)
-              , vp (col * boxSize) (row * boxSize)
-              ]
-        SDL.drawLines srenderer vLines
--}
-{-
-and this workaround, too, is broken at least under SDL2 2.0.4
-        SDL.drawLine srenderer (vp (col * boxSize) (row * boxSize))
-                               (vp ((col + 1) * boxSize) (row * boxSize))
-        SDL.drawLine srenderer (vp ((col + 1) * boxSize) (row * boxSize))
-                               (vp ((col + 1) * boxSize) ((row + 1) * boxSize))
-        SDL.drawLine srenderer (vp ((col + 1) * boxSize) ((row + 1) * boxSize))
-                               (vp (col * boxSize) ((row + 1) * boxSize))
-        SDL.drawLine srenderer (vp (col * boxSize) ((row + 1) * boxSize))
-                               (vp (col * boxSize) (row * boxSize))
--}
--- let's see if this workaround works in SDL 2.0.16
         let rect = SDL.Rectangle (vp (col * boxSize) (row * boxSize)) tt2Square
-        SDL.drawRects srenderer $ VS.fromList [rect]
+        SDL.drawRect srenderer $ Just rect
         SDL.rendererDrawColor srenderer SDL.$= blackRGBA
           -- reset back to black
       chooseAndDrawHighlight !col !row !bg = do
+-- Rectangle drawing is broken in SDL 2.0.16
+-- (https://github.com/LambdaHack/LambdaHack/issues/281)
+-- and simple workarounds fail with old SDL, e.g., four lines instead of
+-- a rectangle, so we have to manually erase the broken rectangles
+-- instead of depending on glyphs overwriting them fully.
        let workaroundOverwriteHighlight = do
              let rect = SDL.Rectangle (vp (col * boxSize) (row * boxSize))
                                       tt2Square
-             SDL.drawRects srenderer $ VS.fromList [rect]
+             SDL.drawRect srenderer $ Just rect
        case bg of
         Color.HighlightNone -> workaroundOverwriteHighlight
         Color.HighlightBackground -> workaroundOverwriteHighlight
