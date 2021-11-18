@@ -15,11 +15,13 @@ import Prelude ()
 
 import Game.LambdaHack.Core.Prelude
 
+import qualified Control.Exception as Ex
 import           Control.Monad.ST.Strict (stToIO)
 import qualified Control.Monad.Trans.State.Strict as St
 import qualified Data.EnumSet as ES
 import qualified Data.Primitive.PrimArray as PA
 import qualified Data.Text.IO as T
+import           System.Directory
 import           System.FilePath
 import           System.IO (hFlush, stdout)
 
@@ -72,7 +74,9 @@ dumpTextFile t filename = liftIO $ do
   dataDir <- appDataDir
   tryCreateDir dataDir
   let path = dataDir </> filename
-  T.writeFile path t
+  Ex.handle (\(_ :: Ex.IOException) -> return ()) $
+    removeFile path
+  tryWriteFile path t
   return path
 
 -- | Invoke pseudo-random computation with the generator kept in the state.
