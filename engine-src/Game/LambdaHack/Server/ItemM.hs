@@ -267,8 +267,8 @@ placeItemsInDungeon factionPositions = do
               Level{lfloor} <- getLevel lid
               -- Don't generate items around initial actors or in bunches.
               let distAndNotFloor !p _ =
-                    let f !k b = chessDist p k > 4 && b
-                    in p `EM.notMember` lfloor && foldr f True alPos
+                    let f !k = chessDist p k > 4
+                    in p `EM.notMember` lfloor && all f alPos
               mpos <- rndToAction $ findPosTry2 20 lvl
                 (\_ !t -> Tile.isWalkable coTileSpeedup t
                           && not (Tile.isNoItem coTileSpeedup t))
