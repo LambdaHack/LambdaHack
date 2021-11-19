@@ -90,9 +90,10 @@ geyserBoiling, geyserArsenic, geyserSulfur :: ItemKind
 
 -- * Hunams
 
+-- TODO: bring back S_EAR_3 when character progression permits hearing boosts.
 humanOrgans :: [(GroupName ItemKind, CStore)]
 humanOrgans = [ (S_FIST, COrgan), (S_FOOT, COrgan)
-              , (S_EYE_6, COrgan), (S_EAR_3, COrgan)
+              , (S_EYE_6, COrgan), (S_EAR_6, COrgan)
               , (S_SAPIENT_BRAIN, COrgan) ]
 warrior = ItemKind
   { isymbol  = toContentSymbol '@'
