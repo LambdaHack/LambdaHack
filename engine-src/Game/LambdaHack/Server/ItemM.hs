@@ -269,13 +269,13 @@ placeItemsInDungeon factionPositions = do
               let distAndNotFloor !p _ =
                     let f !k = chessDist p k > 4
                     in p `EM.notMember` lfloor && all f alPos
-              mpos <- rndToAction $ findPosTry2 20 lvl
+              mpos <- rndToAction $ findPosTry2 10 lvl
                 (\_ !t -> Tile.isWalkable coTileSpeedup t
                           && not (Tile.isNoItem coTileSpeedup t))
                 [ \_ !t -> Tile.isVeryOftenItem coTileSpeedup t
                 , \_ !t -> Tile.isCommonItem coTileSpeedup t ]
                 distAndNotFloor
-                [distAndNotFloor, distAndNotFloor]
+                (replicate 10 distAndNotFloor)
               case mpos of
                 Just pos -> do
                   createCaveItem pos lid

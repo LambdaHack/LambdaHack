@@ -81,7 +81,8 @@ data Feature =
   | Dark                 -- ^ is not lit with an ambient light
   | OftenItem            -- ^ initial items often generated there
   | VeryOftenItem        -- ^ initial items very often generated there
-  | OftenActor           -- ^ initial actors often generated there
+  | OftenActor           -- ^ initial actors often generated there;
+                         --   counterpart of @VeryOftenItem@ for dark places
   | NoItem               -- ^ no items ever generated there
   | NoActor              -- ^ no actors ever generated there
   | ConsideredByAI       -- ^ even if otherwise uninteresting, taken into
