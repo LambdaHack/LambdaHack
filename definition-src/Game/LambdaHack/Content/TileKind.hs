@@ -140,8 +140,8 @@ validateSingle t@TileKind{..} =
           ts = filter f tfeature
       in ["more than one BuildAs specification" | length ts > 1])
   ++ concatMap (validateDups t)
-       [ Walkable, Clear, Dark, OftenItem, OftenActor, NoItem, NoActor
-       , ConsideredByAI, Trail, Spice ]
+       [ Walkable, Clear, Dark, OftenItem, VeryOftenItem, OftenActor
+       , NoItem, NoActor, ConsideredByAI, Trail, Spice ]
 
 validateDups :: TileKind -> Feature -> [Text]
 validateDups TileKind{..} feat =
