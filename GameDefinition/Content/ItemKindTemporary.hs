@@ -137,12 +137,14 @@ tmpProtectedRanged = tmpAspects S_PROTECTED_FROM_RANGED
                                 [AddSkill SkArmorRanged 25]
 tmpDefenseless = tmpAspects S_DEFENSELESS [ AddSkill SkArmorMelee (-50)
                                           , AddSkill SkArmorRanged (-25) ]
-tmpResolute = tmpAspects S_RESOLUTE [AddSkill SkMaxCalm 60]
+tmpResolute = tmpAspects S_RESOLUTE [ AddSkill SkMaxCalm 60
+                                    , AddSkill SkHearing 10 ]
 tmpFast20 = tmpAspects S_HASTED [AddSkill SkSpeed 20]
 tmpSlow10 = tmpAspects S_SLOWED [AddSkill SkSpeed (-10)]
 tmpFarSighted = tmpAspects S_FAR_SIGHTED [AddSkill SkSight 5]
 tmpBlind = tmpAspects S_BLIND [ AddSkill SkSight (-99)
-                              , AddSkill SkArmorMelee (-30) ]
+                              , AddSkill SkArmorMelee (-30)
+                              , AddSkill SkHearing 10 ]
 tmpKeenSmelling = tmpAspects S_KEEN_SMELLING [AddSkill SkSmell 2]
 tmpFoulSmelling = tmpAspects S_FOUL_SMELLING [AddSkill SkOdor 2]
 tmpRoseSmelling = tmpAspects S_ROSE_SMELLING [AddSkill SkOdor (-4)]
