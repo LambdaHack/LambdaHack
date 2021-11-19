@@ -338,7 +338,11 @@ pickOpening COps{cotile, coTileSpeedup}
                                   && Tile.isLit coTileSpeedup tile
                  vic = vicinityCardinalUnsafe pos
              in if any roomTileLit vic then litCorTile else cor
-  newTile <- do
+      vicAll = vicinityUnsafe pos
+      vicNewTiles = mapMaybe (`EM.lookup` acc) vicAll
+  newTile <- case vicNewTiles of
+    vicNewTile : _ -> return vicNewTile  -- disallow a door beside an opening
+    [] -> do
       -- Openings have a certain chance to be doors and doors have a certain
       -- chance to be open.
       rd <- chance cdoorChance
