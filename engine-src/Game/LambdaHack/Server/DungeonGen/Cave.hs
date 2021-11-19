@@ -285,8 +285,8 @@ buildCave cops@COps{cocave, coplace, cotile, coTileSpeedup}
       intersectionWithKeyMaybe combine =
         EM.mergeWithKey combine (const EM.empty) (const EM.empty)
       interCor = intersectionWithKeyMaybe mergeCor lplaces lplcorOuter  -- fast
-  doorMap <- mapWithKeyM (pickOpening cops kc lplaces litCorTile dsecret)
-                         interCor  -- very small
+  doorMap <- foldlM' (pickOpening cops kc lplaces litCorTile dsecret) EM.empty
+                     (EM.assocs interCor)  -- very small
   let subArea = fromMaybe (error $ "" `showFailure` kc) $ shrink darea
   fence <- buildFenceRnd cops
                          cfenceTileN cfenceTileE cfenceTileS cfenceTileW subArea
@@ -318,14 +318,15 @@ buildCave cops@COps{cocave, coplace, cotile, coTileSpeedup}
         -- order matters
   return $! Cave {..}
 
-pickOpening :: COps -> CaveKind -> TileMapEM -> ContentId TileKind
-            -> Word32 -> Point
-            -> (ContentId TileKind, ContentId TileKind, ContentId PlaceKind)
-            -> Rnd (ContentId TileKind)
+pickOpening :: COps -> CaveKind -> TileMapEM -> ContentId TileKind -> Word32
+            -> EM.EnumMap Point (ContentId TileKind)
+            -> ( Point
+               , (ContentId TileKind, ContentId TileKind, ContentId PlaceKind) )
+            -> Rnd (EM.EnumMap Point (ContentId TileKind))
 pickOpening COps{cotile, coTileSpeedup}
             CaveKind{cdoorChance, copenChance, chidden}
             lplaces litCorTile dsecret
-            pos (pl, cor, _) = do
+            !acc (pos, (pl, cor, _)) = do
   let nicerCorridor =
         if Tile.isLit coTileSpeedup cor then cor
         else -- If any cardinally adjacent walkable room tile is lit,
@@ -337,23 +338,25 @@ pickOpening COps{cotile, coTileSpeedup}
                                   && Tile.isLit coTileSpeedup tile
                  vic = vicinityCardinalUnsafe pos
              in if any roomTileLit vic then litCorTile else cor
-  -- Openings have a certain chance to be doors and doors have a certain
-  -- chance to be open.
-  rd <- chance cdoorChance
-  if rd then do
-    let hidden = Tile.buildAs cotile pl
-    doorTrappedId <- Tile.revealAs cotile hidden
-    let !_A = assert (Tile.buildAs cotile doorTrappedId == doorTrappedId) ()
-    -- Not all solid tiles can hide a door (or any other openable tile),
-    -- so @doorTrappedId@ may in fact not be a door at all, hence the check.
-    if Tile.isOpenable coTileSpeedup doorTrappedId then do  -- door created
-      ro <- chance copenChance
-      if ro
-      then Tile.openTo cotile doorTrappedId
-      else if isChancePos 1 chidden dsecret pos
-           then return $! doorTrappedId  -- server will hide it
-           else do
-             doorOpenId <- Tile.openTo cotile doorTrappedId
-             Tile.closeTo cotile doorOpenId  -- mail do nothing; OK
-    else return $! doorTrappedId  -- assume this is what content enforces
-  else return $! nicerCorridor
+  newTile <- do
+      -- Openings have a certain chance to be doors and doors have a certain
+      -- chance to be open.
+      rd <- chance cdoorChance
+      if rd then do
+        let hidden = Tile.buildAs cotile pl
+        doorTrappedId <- Tile.revealAs cotile hidden
+        let !_A = assert (Tile.buildAs cotile doorTrappedId == doorTrappedId) ()
+        -- Not all solid tiles can hide a door (or any other openable tile),
+        -- so @doorTrappedId@ may in fact not be a door at all, hence the check.
+        if Tile.isOpenable coTileSpeedup doorTrappedId then do  -- door created
+          ro <- chance copenChance
+          if ro
+          then Tile.openTo cotile doorTrappedId
+          else if isChancePos 1 chidden dsecret pos
+               then return doorTrappedId  -- server will hide it
+               else do
+                 doorOpenId <- Tile.openTo cotile doorTrappedId
+                 Tile.closeTo cotile doorOpenId  -- mail do nothing; OK
+        else return doorTrappedId  -- assume this is what content enforces
+      else return nicerCorridor
+  return $! EM.insert pos newTile acc
