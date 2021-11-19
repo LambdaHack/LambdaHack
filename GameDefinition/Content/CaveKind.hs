@@ -273,10 +273,10 @@ outermost = shallowRogue
   , cdarkOdds     = 0  -- all rooms lit, for a gentle start
   , cactorCoeff   = 100  -- already animals start there; also, pity on the noob
   , cactorFreq    = filter ((/= MONSTER) . fst) $ cactorFreq rogue
-  , citemNum      = 6 `d` 5  -- lure them in with loot
+  , citemNum      = 12 `d` 2  -- lure them in with loot; relatively consisten
   , citemFreq     = filter ((/= IK.TREASURE) . fst) $ citemFreq rogue
-  , cminStairDist = 10
-  , cmaxStairsNum = 1
+  , cminStairDist = 10  -- distance from the escape
+  , cmaxStairsNum = 1  -- simplify at the start
   , cescapeFreq   = [(INDOOR_ESCAPE_UP, 1)]
   , cdesc         = "This close to the surface, the sunlight still illuminates the dungeon."
   }
@@ -284,7 +284,7 @@ shallowRogue = rogue
   { cfreq         = [(CAVE_SHALLOW_ROGUE, 100)]
   , cXminSize     = 60
   , cYminSize     = 21
-  , cmaxStairsNum = 1  -- ensure heroes meet initial monsters and their loot
+  , cmaxStairsNum = 1  -- simplify at the start
   , cdesc         = "The snorts and grunts of savage beasts can be clearly heard."
   }
 
@@ -304,7 +304,7 @@ raid = rogue
   , copenChance   = 0  -- make sure enemies not seen on turn 1
   , cactorCoeff   = 300  -- deep level with no kit, so slow spawning
   , cactorFreq    = [(ANIMAL, 100)]
-  , citemNum      = 6 `d` 6  -- just one level, hard enemies, treasure
+  , citemNum      = 18  -- first tutorial mode, so make it consistent
   , citemFreq     = [ (IK.COMMON_ITEM, 100), (IK.S_CURRENCY, 500)
                     , (STARTING_WEAPON, 100) ]
   , cmaxStairsNum = 0
