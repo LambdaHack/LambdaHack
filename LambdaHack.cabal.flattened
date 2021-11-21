@@ -39,7 +39,7 @@ description: LambdaHack is a Haskell game engine library for ASCII roguelike
              .
              This is a workaround .cabal file, flattened to eliminate
              internal libraries until generating haddocks for them
-             is fixed. The original .cabal file is stored in the github repo.
+             is fixed. The original .cabal file is in .cabal.bkp file.
 homepage:      https://lambdahack.github.io
 bug-reports:   http://github.com/LambdaHack/LambdaHack/issues
 license:       BSD-3-Clause
