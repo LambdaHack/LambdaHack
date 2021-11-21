@@ -224,12 +224,14 @@ drawFrameContent drawnLevelId = do
                             $ IM.assocs $ EM.enumMapToIntMap lsmell) v
   return upd
 
-drawFramePath :: forall m. MonadClientUI m => LevelId -> m FrameForall
+drawFramePath :: forall m. MonadClientUI m
+              => LevelId -> m (FrameForall, FrameForall)
 drawFramePath drawnLevelId = do
  SessionUI{saimMode} <- getSession
  sreportNull <- getsSession sreportNull
+ let frameForallId = FrameForall $ const $ return ()
  if isNothing saimMode || sreportNull
- then return $! FrameForall $ \_ -> return ()
+ then return (frameForallId, frameForallId)
  else do
   COps{corule=RuleContent{rWidthMax, rHeightMax}, coTileSpeedup}
     <- getsState scops
@@ -293,7 +295,7 @@ drawFramePath drawnLevelId = do
       upd = FrameForall $ \v -> do
         mapVTL (acOnPathOrLine ';') lpath v
         mapVTL (acOnPathOrLine '*') shiftedLine v  -- overwrites path
-  return upd
+  return (upd, if null shiftedBTrajectory then frameForallId else upd)
 
 drawFrameActor :: forall m. MonadClientUI m => LevelId -> m FrameForall
 drawFrameActor drawnLevelId = do
@@ -576,7 +578,7 @@ drawHudFrame :: MonadClientUI m => ColorMode -> LevelId -> m PreFrame
 drawHudFrame dm drawnLevelId = do
   baseTerrain <- drawFrameTerrain drawnLevelId
   updContent <- drawFrameContent drawnLevelId
-  updPath <- drawFramePath drawnLevelId
+  (updPath, updTrajectory) <- drawFramePath drawnLevelId
   updActor <- drawFrameActor drawnLevelId
   updExtra <- drawFrameExtra dm drawnLevelId
   soptions <- getsClient soptions
@@ -585,6 +587,7 @@ drawHudFrame dm drawnLevelId = do
         -- ANSI frontend is screen-reader friendly, so avoid visual fluff
         unless (frontendName soptions == "ANSI") $ unFrameForall updPath v
         unFrameForall updActor v
+        unFrameForall updTrajectory v
         unFrameForall updExtra v
   return (baseTerrain, upd)
 
