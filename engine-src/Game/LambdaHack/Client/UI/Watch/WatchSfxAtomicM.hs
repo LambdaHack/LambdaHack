@@ -417,8 +417,10 @@ watchRespSfxAtomicUI sfx = case sfx of
         msgAdd MsgActionWarning $
           makePhrase [MU.Capitalize $ MU.SubjectVerbSg subject $ MU.Text verb]
           <> ending
-  SfxItemApplied iid c ->
-    itemVerbMU MsgInnerWorkSpam iid (1, []) "have been triggered" c
+  SfxItemApplied verbose iid c -> do
+    if verbose
+    then itemVerbMU MsgActionMinor iid (1, []) "have got activated" c
+    else itemVerbMU MsgInnerWorkSpam iid (1, []) "have been triggered" c
   SfxMsgFid _ sfxMsg -> do
     mleader <- getsClient sleader
     case mleader of

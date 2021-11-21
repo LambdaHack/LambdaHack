@@ -423,7 +423,7 @@ tellGameClipPS = do
         <+> "Average clips per second:" <+> tshow cps <> "."
         <+> "Average FPS:" <+> tshow fps <> "."
 
--- TODO: for speed and resolutiion use
+-- TODO: for speed and resolution use
 -- https://hackage.haskell.org/package/chronos
 -- or the number_of_nanonseconds functionality
 -- in Data.Time.Clock.System, once it arrives there

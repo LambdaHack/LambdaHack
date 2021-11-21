@@ -306,17 +306,18 @@ effectAndDestroy effApplyFlags0@EffApplyFlags{..} source target iid container
         mEmbedPos = case container of
           CEmbed _ p -> Just p
           _ -> Nothing
-    -- Announce no effect, which is rare and wastes time, so noteworthy.
     if | triggered == UseUp
          && mEmbedPos /= Just (bpos sb)  -- treading water, etc.
          && effActivation `notElem` [ActivationTrigger, ActivationMeleeable]
               -- do not repeat almost the same msg
          && (effActivation /= ActivationOnSmash  -- only tells condition ends
              && effActivation /= ActivationPeriodic
-             || not (IA.checkFlag Ability.Condition arItem)) ->
+             || not (IA.checkFlag Ability.Condition arItem)) -> do
            -- Effects triggered; main feedback comes from them,
            -- but send info so that clients can log it.
-           execSfxAtomic $ SfxItemApplied iid container
+           let verbose = effActivation == ActivationUnderRanged
+                         || effActivation == ActivationUnderMelee
+           execSfxAtomic $ SfxItemApplied verbose iid container
        | triggered /= UseUp
          && effActivation /= ActivationOnSmash
          && effActivation /= ActivationPeriodic
@@ -326,12 +327,13 @@ effectAndDestroy effApplyFlags0@EffApplyFlags{..} source target iid container
               -- and so do effects under attack
          && not (bproj sb)  -- projectiles can be very numerous
          && isNothing mEmbedPos  ->  -- embeds may be just flavour
+           -- Announce no effect, which is rare and wastes time, so noteworthy.
            execSfxAtomic $ SfxMsgFid (bfid sb) $
              if any IK.forApplyEffect effs
              then SfxFizzles iid container
                     -- something didn't work despite promising effects
              else SfxNothingHappens iid container  -- fully expected
-       | otherwise -> return ()
+       | otherwise -> return ()  -- all the spam cases
     -- If none of item's effects nor a kinetic hit were performed,
     -- we recreate the item (assuming we deleted the item above).
     -- Regardless, we don't rewind the time, because some info is gained
