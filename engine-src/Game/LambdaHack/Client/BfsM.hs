@@ -353,7 +353,8 @@ embedBenefit fleeVia aid pbags = do
         filter (\(_, body) -> blid body == blid b) oursExploring
       spawnFreqs = CK.cactorFreq $ okind cocave $ lkind lvl
       hasGroup grp = fromMaybe 0 (lookup grp spawnFreqs) > 0
-      lvlSpawnsUs = any hasGroup $ fgroups (gkind fact)
+      lvlSpawnsUs = any (hasGroup . fst) $ filter ((> 0) . snd)
+                                         $ fgroups (gkind fact)
   actorSk <- if fleeVia `elem` [ViaAnything, ViaExit]
                   -- targeting, possibly when not a leader
              then getsState $ getActorMaxSkills aid
@@ -568,7 +569,8 @@ closestStashes aid = do
   let fact = factionD EM.! bfid b
       spawnFreqs = CK.cactorFreq $ okind cocave $ lkind lvl
       hasGroup grp = fromMaybe 0 (lookup grp spawnFreqs) > 0
-      lvlSpawnsUs = any hasGroup $ fgroups (gkind fact)
+      lvlSpawnsUs = any (hasGroup . fst) $ filter ((> 0) . snd)
+                                         $ fgroups (gkind fact)
       qualifyStash (fid2, Faction{gstash}) = case gstash of
         Nothing -> Nothing
         Just (lid, pos) ->

@@ -712,14 +712,15 @@ factionCloseUp factions slot = do
         else ("They", makeSentence ["you are wary of the", MU.Text name])
                -- wary even if the faction is allied
       ts1 =
-        case fgroups of
+        -- Display only the main groups, not to spam.
+        case map fst $ filter ((>= 100) . snd) fgroups of
           [] -> []  -- only initial actors in the faction?
           [fgroup] ->
             [makeSentence [ "the faction consists of"
                           , MU.Ws $ MU.Text $ displayGroupName fgroup ]]
-          _ -> [makeSentence
-                  [ "the faction attracts members such as:"
-                  ,  MU.WWandW $ map (MU.Text . displayGroupName) fgroups ]]
+          grps -> [makeSentence
+                    [ "the faction attracts members such as:"
+                    ,  MU.WWandW $ map (MU.Text . displayGroupName) grps ]]
         ++ [if fskillsOther == Ability.zeroSkills  -- simplified
             then youThey <+> "don't care about each other and crowd and stampede all at once, sometimes brutally colliding by accident."
             else youThey <+> "pay attention to each other and take care to move one at a time."]

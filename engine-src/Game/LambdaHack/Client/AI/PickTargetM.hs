@@ -441,7 +441,8 @@ computeTarget foeAssocs friendAssocs aid = do
                   filter (\(_, body) -> blid body == lid) oursExploring
                 spawnFreqs = CK.cactorFreq $ okind cocave $ lkind lvl
                 hasGroup grp = fromMaybe 0 (lookup grp spawnFreqs) > 0
-                lvlSpawnsUs = any hasGroup $ fgroups (gkind fact)
+                lvlSpawnsUs = any (hasGroup . fst) $ filter ((> 0) . snd)
+                                                   $ fgroups (gkind fact)
            -- Even if made peace with the faction, loot stash one last time.
             if (calmE || null nearbyFoes)  -- no risk or can't defend anyway
                && not heavilyDistressed  -- not under heavy fire

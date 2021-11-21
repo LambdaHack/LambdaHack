@@ -43,6 +43,7 @@ import           Game.LambdaHack.Content.ItemKind (ItemKind)
 import qualified Game.LambdaHack.Content.ItemKind as IK
 import           Game.LambdaHack.Content.ModeKind
 import qualified Game.LambdaHack.Core.Dice as Dice
+import           Game.LambdaHack.Core.Frequency
 import           Game.LambdaHack.Core.Random
 import qualified Game.LambdaHack.Definition.Ability as Ability
 import qualified Game.LambdaHack.Definition.Color as Color
@@ -165,9 +166,9 @@ sampleTrunks dungeon = do
   let regItem itemKindId = do
         let itemKind = okind coitem itemKindId
             freq = pure (IK.HORROR, itemKindId, itemKind)
-        case possibleActorFactions [] itemKind factionD of
-          [] -> return Nothing
-          (fid, _) : _ -> do
+        case runFrequency $ possibleActorFactions [] itemKind factionD of
+          [] -> error "sampleTrunks: null faction frequency"
+          (_, (fid, _)) : _ -> do
             let c = CTrunk fid minLid originPoint
                 jfid = Just fid
             m2 <- rollItemAspect freq ldepth

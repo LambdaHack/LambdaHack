@@ -1,4 +1,4 @@
-{-# LANGUAGE DeriveGeneric #-}
+{-# LANGUAGE DeriveGeneric, TupleSections #-}
 -- | Factions taking part in the game, e.g., a hero faction, a monster faction
 -- and an animal faction.
 module Game.LambdaHack.Common.Faction
@@ -29,6 +29,7 @@ import           Game.LambdaHack.Content.FactionKind
 import           Game.LambdaHack.Content.ItemKind (ItemKind)
 import qualified Game.LambdaHack.Content.ItemKind as IK
 import           Game.LambdaHack.Content.ModeKind (ModeKind)
+import           Game.LambdaHack.Core.Frequency
 import qualified Game.LambdaHack.Definition.Ability as Ability
 import qualified Game.LambdaHack.Definition.Color as Color
 import           Game.LambdaHack.Definition.Defs
@@ -129,7 +130,7 @@ gleader = _gleader
 -- In every game, either all factions for which summoning items exist
 -- should be present or a horror player should be added to host them.
 isHorrorFact :: Faction -> Bool
-isHorrorFact fact = IK.HORROR `elem` fgroups (gkind fact)
+isHorrorFact fact = fromMaybe 0 (lookup IK.HORROR $ fgroups $ gkind fact) > 0
 
 -- A faction where other actors move at once or where some of leader change
 -- is automatic can't run with multiple actors at once. That would be
@@ -182,20 +183,24 @@ defaultChallenge = Challenge { cdiff = difficultyDefault
                              , ckeeper = False }
 
 possibleActorFactions :: [GroupName ItemKind] -> ItemKind -> FactionDict
-                      -> [(FactionId, Faction)]
+                      -> Frequency (FactionId, Faction)
 possibleActorFactions itemGroups itemKind factionD =
   let candidatesFromGroups grps =
-        let f (_, fact) = any (`elem` fgroups (gkind fact)) grps
-        in filter f $ EM.assocs factionD
+        let h (fid, fact) =
+              let f grp (grp2, n) = [(n, (fid, fact)) | grp == grp2]
+                  g grp = concatMap (f grp) (fgroups (gkind fact))
+              in concatMap g grps
+        in concatMap h $ EM.assocs factionD
       allCandidates =
         [ candidatesFromGroups itemGroups  -- when origin known/matters
         , candidatesFromGroups $ map fst $ IK.ifreq itemKind  -- otherwise
-        , filter (isHorrorFact . snd) $ EM.assocs factionD  -- fall back
-        , EM.assocs factionD  -- desperate fall back
+        , map (1,) $ filter (isHorrorFact . snd)
+          $ EM.assocs factionD  -- fall back
+        , map (1,) $ EM.assocs factionD  -- desperate fall back
         ]
   in case filter (not . null) allCandidates of
-    [] -> []
-    candidates : _ -> candidates
+    [] -> error "possibleActorFactions: no faction found for an actor"
+    candidates : _ -> toFreq "possibleActorFactions" candidates
 
 ppContainer :: FactionDict -> Container -> Text
 ppContainer factionD (CFloor lid p) =

@@ -35,10 +35,12 @@ data FactionKind = FactionKind
   , fteam         :: TeamContinuity
                                  -- ^ the team the faction identifies with
                                  --   across games and modes
-  , fgroups       :: [GroupName ItemKind]
-                                 -- ^ names of actor groups that may naturally
-                                 --   fall under faction's control, e.g., upon
-                                 --   spawning or summoning
+  , fgroups       :: Freqs ItemKind
+      -- ^ names of actor groups that may naturally fall under faction's
+      --   control, e.g., upon spawning; make sure all groups that may
+      --   ever continuousely generate actors, e.g., through spawning
+      --   or summoning, are mentioned in at least one faction kind;
+      --   groups of initial faction actors don't need to be included
   , fskillsOther  :: Ability.Skills
                                  -- ^ fixed skill modifiers to the non-leader
                                  --   actors; also summed with skills implied

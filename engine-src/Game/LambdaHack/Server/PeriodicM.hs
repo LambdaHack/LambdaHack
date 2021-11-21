@@ -110,7 +110,7 @@ addAnyActor summoned lvlSpawned actorFreq lid time mpos = do
         `showFailure` (summoned, lvlSpawned, actorFreq, freq, lid, time, mpos)
       return Nothing
     NewItem itemGroup itemKnownRaw itemFullRaw itemQuant -> do
-      (fid, _) <- rndToAction $ oneOf $
+      (fid, _) <- rndToAction $ frequency $
                     possibleActorFactions [itemGroup] (itemKind itemFullRaw)
                                           factionD
       let fact = factionD EM.! fid

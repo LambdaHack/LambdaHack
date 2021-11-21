@@ -23,9 +23,9 @@ import           Game.LambdaHack.Common.Kind
 import           Game.LambdaHack.Common.Misc
 import           Game.LambdaHack.Common.Time
 import           Game.LambdaHack.Common.Types
+import           Game.LambdaHack.Content.FactionKind
 import           Game.LambdaHack.Content.ItemKind (ItemKind)
 import qualified Game.LambdaHack.Content.ItemKind as IK
-import           Game.LambdaHack.Content.FactionKind
 import qualified Game.LambdaHack.Core.Dice as Dice
 import qualified Game.LambdaHack.Definition.Ability as Ability
 import           Game.LambdaHack.Definition.Defs
@@ -99,7 +99,8 @@ effectToBenefit cops fid factionD eff =
           fact = factionD EM.! fid
           friendlyHasGrp fid2 =
             isFriend fid fact fid2
-            && grp `elem` fgroups (gkind $ factionD EM.! fid2)
+            && fromMaybe 0 (lookup grp $ fgroups $ gkind $ factionD EM.! fid2)
+               > 0
       in -- Prefer applying summoning items to flinging them; the actor gets
          -- spawned further from foes, but it's more robust.
          if any friendlyHasGrp $ EM.keys factionD

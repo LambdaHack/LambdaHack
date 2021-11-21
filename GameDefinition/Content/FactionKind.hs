@@ -17,6 +17,7 @@ import Prelude ()
 import Game.LambdaHack.Core.Prelude
 
 import           Content.ItemKindActor
+import           Content.ItemKindOrgan
 import           Game.LambdaHack.Content.FactionKind
 import qualified Game.LambdaHack.Content.ItemKind as IK
 import           Game.LambdaHack.Definition.Ability
@@ -96,7 +97,7 @@ factExplorer = FactionKind
   { fname = "Explorer"
   , ffreq = [(EXPLORER_REPRESENTATIVE, 1), (REPRESENTATIVE, 1)]
   , fteam = teamExplorer
-  , fgroups = [HERO]  -- don't spam the escapists, etc.
+  , fgroups = [(HERO, 100)]  -- don't spam the escapists, etc., in description
   , fskillsOther = meleeAdjacent
   , fcanEscape = True
   , fneverEmpty = True
@@ -178,7 +179,7 @@ factCivilian = FactionKind
   { fname = "Civilian"
   , ffreq = [(CIVILIAN_REPRESENTATIVE, 1), (REPRESENTATIVE, 1)]
   , fteam = teamCivilian
-  , fgroups = [HERO, CIVILIAN]
+  , fgroups = [(HERO, 100), (CIVILIAN, 100)]  -- symmetric vs player
   , fskillsOther = zeroSkills  -- not coordinated by any leadership
   , fcanEscape = False
   , fneverEmpty = True
@@ -211,7 +212,8 @@ factMonster = FactionKind
   { fname = "Monster Hive"
   , ffreq = [(MONSTER_REPRESENTATIVE, 1), (REPRESENTATIVE, 1)]
   , fteam = teamMonster
-  , fgroups = [MONSTER]  -- don't spam
+  , fgroups = [ (MONSTER, 100)
+              , (MOBILE_MONSTER, 1) ]
   , fskillsOther = zeroSkills
   , fcanEscape = False
   , fneverEmpty = False
@@ -274,7 +276,9 @@ factAnimal = FactionKind
   { fname = "Animal Kingdom"
   , ffreq = [(ANIMAL_REPRESENTATIVE, 1), (REPRESENTATIVE, 1)]
   , fteam = teamAnimal
-  , fgroups = [ANIMAL, INSECT, GEOPHENOMENON]  -- only the distinct ones
+  , fgroups = [ (ANIMAL, 100), (INSECT, 100), (GEOPHENOMENON, 100)
+                   -- only the distinct enough ones
+              , (MOBILE_ANIMAL, 1), (IMMOBILE_ANIMAL, 1), (SCAVENGER, 1) ]
   , fskillsOther = zeroSkills
   , fcanEscape = False
   , fneverEmpty = False
@@ -339,7 +343,7 @@ factHorror = FactionKind
   { fname = "Horror Den"
   , ffreq = [(HORROR_REPRESENTATIVE, 1), (REPRESENTATIVE, 1)]
   , fteam = teamHorror
-  , fgroups = [IK.HORROR]
+  , fgroups = [(IK.HORROR, 100)]
   , fskillsOther = zeroSkills
   , fcanEscape = False
   , fneverEmpty = False
