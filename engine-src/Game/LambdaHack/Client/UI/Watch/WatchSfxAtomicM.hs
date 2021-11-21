@@ -312,9 +312,9 @@ watchRespSfxAtomicUI sfx = case sfx of
       IK.DropItem{} ->  -- rare enough
         mitemAidVerbMU MsgEffectMedium aid "be stripped" iid (Just "with")
       IK.Recharge{} | not isAlive -> return ()
-      IK.Recharge{} -> aidVerbMU MsgEffectMedium aid "heat up"
+      IK.Recharge{} -> aidVerbMU MsgEffectMedium aid "charge up"
       IK.Discharge{} | not isAlive -> return ()
-      IK.Discharge{} -> aidVerbMU MsgEffectMedium aid "cool down"
+      IK.Discharge{} -> aidVerbMU MsgEffectMedium aid "lose charges"
       IK.PolyItem -> do
         subject <- partActorLeader aid
         let ppstore = MU.Text $ ppCStoreIn CGround
