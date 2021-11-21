@@ -13,9 +13,6 @@ import Prelude ()
 
 import Game.LambdaHack.Core.Prelude
 
-import Content.ItemKindBlast
-import Content.ItemKindTemporary
-import Content.RuleKind
 import Game.LambdaHack.Content.ItemKind
 import Game.LambdaHack.Content.RuleKind
 import Game.LambdaHack.Core.Dice
@@ -24,6 +21,10 @@ import Game.LambdaHack.Definition.Color
 import Game.LambdaHack.Definition.Defs
 import Game.LambdaHack.Definition.DefsInternal
 import Game.LambdaHack.Definition.Flavour
+
+import Content.ItemKindBlast
+import Content.ItemKindTemporary
+import Content.RuleKind
 
 -- * Group name patterns
 

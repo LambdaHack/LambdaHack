@@ -16,11 +16,12 @@ import Game.LambdaHack.Core.Prelude
 import qualified Data.EnumMap.Strict as EM
 import qualified Data.Text as T
 
-import Content.TileKind hiding (content, groupNames, groupNamesSingleton)
 import Game.LambdaHack.Content.PlaceKind
 import Game.LambdaHack.Content.TileKind (TileKind)
 import Game.LambdaHack.Definition.Defs
 import Game.LambdaHack.Definition.DefsInternal
+
+import Content.TileKind hiding (content, groupNames, groupNamesSingleton)
 
 -- * Group name patterns
 

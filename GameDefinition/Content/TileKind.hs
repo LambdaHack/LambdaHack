@@ -19,11 +19,12 @@ import Game.LambdaHack.Core.Prelude
 
 import qualified Data.Text as T
 
-import Content.ItemKindEmbed
 import Game.LambdaHack.Content.TileKind
 import Game.LambdaHack.Definition.Color
 import Game.LambdaHack.Definition.Defs
 import Game.LambdaHack.Definition.DefsInternal
+
+import Content.ItemKindEmbed
 
 -- * Group name patterns
 
