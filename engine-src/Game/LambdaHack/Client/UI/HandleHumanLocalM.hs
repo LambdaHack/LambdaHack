@@ -29,7 +29,7 @@ module Game.LambdaHack.Client.UI.HandleHumanLocalM
     -- * Internal operations
   , chooseItemDialogModeLore, permittedProjectClient, projectCheck
   , xhairLegalEps, posFromXhair, permittedApplyClient, endAiming, endAimingMsg
-  , doLook, flashAiming
+  , flashAiming
 #endif
   ) where
 
@@ -960,35 +960,6 @@ clearTargetIfItemClearHuman leader = do
     setXHairFromGUI Nothing
     modifyClient $ updateTarget leader (const Nothing)
     doLook
-
--- | Perform look around in the current position of the xhair.
--- Does nothing outside aiming mode.
-doLook :: MonadClientUI m => m ()
-doLook = do
-  saimMode <- getsSession saimMode
-  case saimMode of
-    Just aimMode -> do
-      let lidV = aimLevelId aimMode
-      mxhairPos <- mxhairToPos
-      xhairPos <- xhairToPos
-      blurb <- lookAtPosition xhairPos lidV
-      itemSel <- getsSession sitemSel
-      mleader <- getsClient sleader
-      outOfRangeBlurb <- case (itemSel, mxhairPos, mleader) of
-        (Just (iid, _, _), Just pos, Just leader) -> do
-          b <- getsState $ getActorBody leader
-          if lidV /= blid b  -- no range warnings on remote levels
-             || detailLevel aimMode < DetailAll  -- no spam
-          then return []
-          else do
-            itemFull <- getsState $ itemToFull iid
-            let arItem = aspectRecordFull itemFull
-            return [ (MsgPromptGeneric, "This position is out of range when flinging the selected item.")
-                   | 1 + IA.totalRange arItem (itemKind itemFull)
-                     < chessDist (bpos b) pos ]
-        _ -> return []
-      mapM_ (uncurry msgAdd) $ blurb ++ outOfRangeBlurb
-    _ -> return ()
 
 -- * ItemClear
 
