@@ -303,9 +303,7 @@ drawFrameActor drawnLevelId = do
   SessionUI{sactorUI, sselected, sUIOptions} <- getSession
   -- Not @ScreenContent@, because indexing in level's data.
   Level{lbig, lproj} <- getLevel drawnLevelId
-  SessionUI{saimMode} <- getSession
   side <- getsClient sside
-  mleader <- getsClient sleader
   s <- getState
   let {-# INLINE viewBig #-}
       viewBig aid =
@@ -315,11 +313,7 @@ drawFrameActor drawnLevelId = do
               symbol | bhp > 0 = bsymbol
                      | otherwise = '%'
               dominated = maybe False (/= bfid) jfid
-              leaderColor = if isJust saimMode
-                            then Color.HighlightYellowAim
-                            else Color.HighlightYellow
-              bg = if | mleader == Just aid -> leaderColor
-                      | bwatch == WSleep -> Color.HighlightBlue
+              bg = if | bwatch == WSleep -> Color.HighlightBlue
                       | dominated -> if bfid == side  -- dominated by us
                                      then Color.HighlightCyan
                                      else Color.HighlightBrown
@@ -360,13 +354,14 @@ drawFrameActor drawnLevelId = do
 drawFrameExtra :: forall m. MonadClientUI m
                => ColorMode -> LevelId -> m FrameForall
 drawFrameExtra dm drawnLevelId = do
+  -- Not @ScreenContent@, because indexing in level's data.
   COps{corule=RuleContent{rWidthMax, rHeightMax}} <- getsState scops
   SessionUI{saimMode, smarkVision} <- getSession
-  -- Not @ScreenContent@, because indexing in level's data.
+  mleader <- getsClient sleader
+  mbody <- getsState $ \s -> flip getActorBody s <$> mleader
   totVisible <- totalVisible <$> getPerFid drawnLevelId
   mxhairPos <- mxhairToPos
   mtgtPos <- do
-    mleader <- getsClient sleader
     mtgt <- getsClient $ maybe (const Nothing) getTarget mleader
     getsState $ aidTgtToPos mleader drawnLevelId mtgt
   side <- getsClient sside
@@ -395,6 +390,9 @@ drawFrameExtra dm drawnLevelId = do
       -- Here @rWidthMax@ and @rHeightMax@ are correct, because we are not
       -- turning the whole screen into black&white, but only the level map.
       lDungeon = [0..rWidthMax * rHeightMax - 1]
+      leaderColor = if isJust saimMode
+                    then Color.HighlightYellowAim
+                    else Color.HighlightYellow
       xhairColor = if isJust saimMode
                    then Color.HighlightRedAim
                    else Color.HighlightRed
@@ -415,7 +413,10 @@ drawFrameExtra dm drawnLevelId = do
           Just p -> mapVL (writeSquare Color.HighlightGrey) [fromEnum p] v
         mapM_ (\(pos, color) -> mapVL (writeSquare color) [fromEnum pos] v)
               stashesToDisplay
-        case mxhairPos of  -- overwrites target
+        case mbody of  -- overwrites target
+          Nothing -> return ()
+          Just body -> mapVL (writeSquare leaderColor) [fromEnum $ bpos body] v
+        case mxhairPos of  -- overwrites target and non-aim leader box
           Nothing -> return ()
           Just p -> mapVL (writeSquare xhairColor) [fromEnum p] v
         when (dm == ColorBW) $ mapVL turnBW lDungeon v
