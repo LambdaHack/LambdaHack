@@ -552,7 +552,7 @@ alterCommon leader bumping tpos = do
              if bumping then
                return $ Right $ ReqMove $ vectorToFrom tpos spos
              else do
-               msgAddDone leader tpos "modify"
+               msgAddDone False leader tpos "modify"
                return $ Right $ ReqAlter tpos
            Left err -> return $ Left err
          -- Even when bumping, we don't use ReqMove, because we don't want
@@ -1319,12 +1319,12 @@ closeTileAtPos leader tpos = do
           -> failSer AlterBlockActor
          | otherwise
           -> do
-             msgAddDone leader tpos "close"
+             msgAddDone True leader tpos "close"
              return $ Right (ReqAlter tpos)
 
 -- | Adds message with proper names.
-msgAddDone :: MonadClientUI m => ActorId -> Point -> Text -> m ()
-msgAddDone leader p verb = do
+msgAddDone :: MonadClientUI m => Bool -> ActorId -> Point -> Text -> m ()
+msgAddDone mentionTile leader p verb = do
   COps{cotile} <- getsState scops
   b <- getsState $ getActorBody leader
   lvl <- getLevel $ blid b
@@ -1333,10 +1333,12 @@ msgAddDone leader p verb = do
             [] -> "thing"
             ("open" : xs) -> T.unwords xs
             _ -> tname
+      object | mentionTile = "the" <+> s
+             | otherwise = ""
       v = p `vectorToFrom` bpos b
       dir | v == Vector 0 0 = "underneath"
           | otherwise = compassText v
-  msgAdd MsgActionComplete $ "You" <+> verb <+> "the" <+> s <+> dir <> "."
+  msgAdd MsgActionComplete $ "You" <+> verb <+> object <+> dir <> "."
 
 -- | Prompts user to pick a point.
 pickPoint :: MonadClientUI m => ActorId -> Text -> m (Maybe Point)
