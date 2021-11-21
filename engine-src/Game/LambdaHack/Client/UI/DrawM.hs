@@ -253,9 +253,7 @@ drawFramePath drawnLevelId = do
         | pathGoal == xhairPos -> return tapPath
       _ -> getCachePath aid xhairPos) mleader
   assocsAtxhair <- getsState $ posToAidAssocs xhairPos drawnLevelId
-  let lpath = delete xhairPos
-              $ if null bline then [] else maybe [] pathList mpath
-      shiftedBTrajectory = case assocsAtxhair of
+  let shiftedBTrajectory = case assocsAtxhair of
         (_, Actor{btrajectory = Just p, bpos = prPos}) : _->
           trajectoryToPath prPos (fst p)
         _ -> []
@@ -264,6 +262,9 @@ drawFramePath drawnLevelId = do
                     $ if null shiftedBTrajectory
                       then bline
                       else shiftedBTrajectory
+      lpath = if not (null bline) && null shiftedBTrajectory
+              then delete xhairPos $ maybe [] pathList mpath
+              else []
       acOnPathOrLine :: Char -> Point -> ContentId TileKind
                      -> Color.AttrCharW32
       acOnPathOrLine !ch !p0 !tile =
