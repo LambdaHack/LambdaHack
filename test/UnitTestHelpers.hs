@@ -61,6 +61,7 @@ import           Game.LambdaHack.Common.Faction
 import           Game.LambdaHack.Common.Kind
 import           Game.LambdaHack.Common.Level
 import           Game.LambdaHack.Common.MonadStateRead
+import           Game.LambdaHack.Common.Perception
 import           Game.LambdaHack.Common.Point
 import           Game.LambdaHack.Common.PointArray as PointArray
 import qualified Game.LambdaHack.Common.Save as Save
@@ -274,8 +275,8 @@ emptyCliState = CliState
 
 stubSessionUI = (emptySessionUI stubUIOptions) 
   { sactorUI = EM.singleton testActorId ActorUI { bsymbol='j', bname="Jamie", bpronoun="he/him", bcolor=BrCyan }
-  , sccui = emptyCCUI { coscreen = ScreenContent { rwidth = 0
-                             , rheight = 4  -- unit test expects rheight - 2 > 2
+  , sccui = emptyCCUI { coscreen = ScreenContent { rwidth = 10 -- unit test expects rheight > 1
+                             , rheight = 5  -- unit test expects rheight - 2 > 2
                              , rwebAddress = ""
                              , rintroScreen = ([], [])
                              , rapplyVerbMap = EM.empty
@@ -285,7 +286,7 @@ stubSessionUI = (emptySessionUI stubUIOptions)
 
 stubCliState = CliState
   { cliState = stubState
-  , cliClient = (emptyStateClient testFactionId) { soptions = stubClientOptions }
+  , cliClient = (emptyStateClient testFactionId) { soptions = stubClientOptions, sfper = EM.singleton testLevelId emptyPer }
   , cliSession = Just (stubSessionUI {sxhair = Just (TPoint TUnknown testLevelId (Point 1 0))}) --(TVector Vector {vx=1, vy=0})}) -- (TNonEnemy (toEnum 1))})-- 
   }
 
@@ -313,7 +314,7 @@ instance MonadStateWrite CliMock where
 instance MonadClientRead CliMock where
   {-# INLINE getsClient #-}
   getsClient f = CliMock $ gets $ f . cliClient
-  liftIO = return undefined --CliMock . IO.liftIO
+  liftIO = CliMock . IO.liftIO
 
 instance MonadClient CliMock where
   {-# INLINE modifyClient #-}
