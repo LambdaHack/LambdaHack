@@ -1,4 +1,3 @@
-tests: False
 optimization: True
 
 package *

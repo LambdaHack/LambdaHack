@@ -3,7 +3,6 @@ library-profiling: True
 profiling-detail: all-functions
 
 flags: +with_expensive_assertions
-tests: False
 optimization: False
 documentation: False
 

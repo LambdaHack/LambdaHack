@@ -212,7 +212,7 @@ Testing and debugging
 
 Unit tests and integration tests can be run and displayed with
 
-    cabal test --enable-tests --test-show-details=direct
+    cabal test --test-show-details=direct
 
 and doctests with
 
