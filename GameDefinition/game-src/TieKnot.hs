@@ -128,7 +128,7 @@ tieKnotForAsync options@ServerOptions{ sallClear
   let !ccui = CCUI
         { coinput = IC.makeData (Just sUIOptions)
                                 Content.Input.standardKeysAndMouse
-        , coscreen = SC.makeData Content.Screen.standardLayoutAndFeatures
+        , coscreen = SC.makeData corule Content.Screen.standardLayoutAndFeatures
         }
   -- Wire together game content, the main loops of game clients
   -- and the game server loop.
