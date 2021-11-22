@@ -1,9 +1,9 @@
 -- | The type of definitions of screen layout and features.
 module Game.LambdaHack.Client.UI.Content.Screen
-  ( ScreenContent(..), makeData
+  ( ScreenContent(..), emptyScreenContent, makeData
 #ifdef EXPOSE_INTERNAL
     -- * Internal operations
-  , validateSingle
+  , emptyScreenContentRaw, validateSingle
 #endif
   ) where
 
@@ -33,6 +33,20 @@ data ScreenContent = ScreenContent
                                -- ^ embedded game-supplied font files
   }
 
+emptyScreenContentRaw :: ScreenContent
+emptyScreenContentRaw = ScreenContent { rwidth = 2
+                                      , rheight = 5
+                                      , rwebAddress = ""
+                                      , rintroScreen = ([], [])
+                                      , rapplyVerbMap = EM.empty
+                                      , rFontFiles = []
+                                      }
+
+emptyScreenContent :: ScreenContent
+emptyScreenContent =
+  assert (null $ validateSingle RK.emptyRuleContent emptyScreenContentRaw)
+         emptyScreenContentRaw
+
 -- | Catch invalid rule kind definitions.
 validateSingle :: RK.RuleContent -> ScreenContent -> [Text]
 validateSingle corule ScreenContent{..} =
@@ -57,6 +71,6 @@ makeData :: RK.RuleContent -> ScreenContent -> ScreenContent
 makeData corule sc =
   let singleOffenders = validateSingle corule sc
   in assert (null singleOffenders
-             `blame` "Screen Content" ++ ": some content items not valid"
+             `blame` "Screen Content not valid"
              `swith` singleOffenders)
      sc
