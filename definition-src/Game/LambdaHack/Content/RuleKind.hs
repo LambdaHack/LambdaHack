@@ -3,7 +3,7 @@ module Game.LambdaHack.Content.RuleKind
   ( RuleContent(..), emptyRuleContent, makeData
 #ifdef EXPOSE_INTERNAL
     -- * Internal operations
-  , validateSingle
+  , emptyRuleContentRaw, validateSingle
 #endif
   ) where
 
@@ -38,11 +38,11 @@ data RuleContent = RuleContent
                                    -- ^ item symbols treated specially in engine
   }
 
-emptyRuleContent :: RuleContent
-emptyRuleContent = RuleContent
+emptyRuleContentRaw :: RuleContent
+emptyRuleContentRaw = RuleContent
   { rtitle = ""
-  , rWidthMax = 0
-  , rHeightMax = 0
+  , rWidthMax = 2
+  , rHeightMax = 2
   , rexeVersion = makeVersion []
   , rcfgUIName = ""
   , rcfgUIDefault = ("", Ini.emptyConfig)
@@ -54,9 +54,15 @@ emptyRuleContent = RuleContent
   , ritemSymbols = emptyItemSymbolsUsedInEngine
   }
 
+emptyRuleContent :: RuleContent
+emptyRuleContent = assert (null $ validateSingle emptyRuleContentRaw)
+                          emptyRuleContentRaw
+
 -- | Catch invalid rule kind definitions.
 validateSingle :: RuleContent -> [Text]
-validateSingle _ = []
+validateSingle RuleContent{..} =
+  [ "rWidthMax < 2" | rWidthMax < 2 ]  -- hero, opponent, stairs, wiggle room
+  ++ [ "rHeightMax < 2" | rHeightMax < 2 ]  -- or 4 tiles of sentinel wall
 
 makeData :: RuleContent -> RuleContent
 makeData rc =
