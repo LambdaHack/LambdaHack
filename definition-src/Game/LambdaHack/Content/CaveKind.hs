@@ -17,6 +17,7 @@ import qualified Data.Text as T
 
 import           Game.LambdaHack.Content.ItemKind (ItemKind)
 import           Game.LambdaHack.Content.PlaceKind (PlaceKind)
+import qualified Game.LambdaHack.Content.RuleKind as RK
 import           Game.LambdaHack.Content.TileKind (TileKind)
 import qualified Game.LambdaHack.Core.Dice as Dice
 import           Game.LambdaHack.Core.Random
@@ -81,14 +82,16 @@ data InitSleep = InitSleepAlways | InitSleepPermitted | InitSleepBanned
 
 -- | Catch caves with not enough space for all the places. Check the size
 -- of the cave descriptions to make sure they fit on screen. Etc.
-validateSingle :: CaveKind -> [Text]
-validateSingle CaveKind{..} =
+validateSingle :: RK.RuleContent -> CaveKind -> [Text]
+validateSingle corule CaveKind{..} =
   let (minCellSizeX, minCellSizeY) = Dice.infDiceXY ccellSize
       (maxCellSizeX, maxCellSizeY) = Dice.supDiceXY ccellSize
       (minMinSizeX, minMinSizeY) = Dice.infDiceXY cminPlaceSize
       (maxMinSizeX, maxMinSizeY) = Dice.supDiceXY cminPlaceSize
       (minMaxSizeX, minMaxSizeY) = Dice.infDiceXY cmaxPlaceSize
   in [ "cname longer than 25" | T.length cname > 25 ]
+     ++ [ "cXminSize > RK.rWidthMax" | cXminSize > RK.rWidthMax corule ]
+     ++ [ "cYminSize > RK.rHeightMax" | cYminSize > RK.rHeightMax corule ]
      ++ [ "cXminSize < 8" | cXminSize < 8 ]
      ++ [ "cYminSize < 8" | cYminSize < 8 ]  -- see @focusArea@
      ++ [ "cXminSize - 2 < maxCellSizeX" | cXminSize - 2 < maxCellSizeX ]
@@ -135,9 +138,11 @@ pattern DEFAULT_RANDOM :: GroupName CaveKind
 
 pattern DEFAULT_RANDOM = GroupName "default random"
 
-makeData :: [CaveKind] -> [GroupName CaveKind] -> [GroupName CaveKind]
+makeData :: RK.RuleContent
+         -> [CaveKind] -> [GroupName CaveKind] -> [GroupName CaveKind]
          -> ContentData CaveKind
-makeData content groupNamesSingleton groupNames =
-  makeContentData "CaveKind" cname cfreq validateSingle validateAll content
+makeData corule content groupNamesSingleton groupNames =
+  makeContentData "CaveKind" cname cfreq (validateSingle corule) validateAll
+                  content
                   groupNamesSingleton
                   (mandatoryGroups ++ groupNames)

@@ -83,12 +83,14 @@ tieKnotForAsync options@ServerOptions{ sallClear
       cofact = FK.makeData Content.FactionKind.content
                            Content.FactionKind.groupNamesSingleton
                            Content.FactionKind.groupNames
+      corule = RK.makeData Content.RuleKind.standardRules
       -- Common content operations, created from content definitions.
       -- Evaluated fully to discover errors ASAP and to free memory.
       -- Fail here, not inside server code, so that savefiles are not removed,
       -- because they are not the source of the failure.
       copsRaw = COps
-        { cocave = CK.makeData Content.CaveKind.content
+        { cocave = CK.makeData corule
+                               Content.CaveKind.content
                                Content.CaveKind.groupNamesSingleton
                                Content.CaveKind.groupNames
         , cofact
@@ -101,7 +103,7 @@ tieKnotForAsync options@ServerOptions{ sallClear
                                 Content.PlaceKind.content
                                 Content.PlaceKind.groupNamesSingleton
                                 Content.PlaceKind.groupNames
-        , corule = RK.makeData Content.RuleKind.standardRules
+        , corule
         , cotile
         , coItemSpeedup
         , coTileSpeedup
@@ -120,7 +122,7 @@ tieKnotForAsync options@ServerOptions{ sallClear
   -- It is reparsed at each start of the game executable.
   -- Fail here, not inside client code, so that savefiles are not removed,
   -- because they are not the source of the failure.
-  sUIOptions <- mkUIOptions (corule cops) (sclientOptions soptionsNxt)
+  sUIOptions <- mkUIOptions corule (sclientOptions soptionsNxt)
   -- Client content operations containing default keypresses
   -- and command descriptions.
   let !ccui = CCUI
