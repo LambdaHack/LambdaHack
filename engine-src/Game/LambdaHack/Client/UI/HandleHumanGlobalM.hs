@@ -1249,7 +1249,9 @@ verifyToolEffect lid store itemFull = do
   let (name1, powers) = partItemShort rwidth side factionD localTime
                                       itemFull quantSingle
       objectA = makePhrase [MU.AW name1, powers]
-      prompt = "Do you really want to transform the terrain using"
+      -- "Potentially", because an unidentified items on the ground can take
+      -- precedence (perhaps placed there in order to get identified!).
+      prompt = "Do you really want to transform the terrain potentially using"
                <+> objectA <+> ppCStoreIn store
                <+> "that may cause substantial side-effects?"
       objectThe = makePhrase ["the", name1]
