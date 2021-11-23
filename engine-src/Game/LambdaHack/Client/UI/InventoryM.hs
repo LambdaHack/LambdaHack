@@ -745,7 +745,7 @@ factionCloseUp factions slot = do
           Nothing -> []
           Just Status{..} ->
             ["The faction has already" <+> FK.nameOutcomePast stOutcome
-             <+> "around level" <+> tshow (abs stDepth)]
+             <+> "around level" <+> tshow (abs stDepth) <> "."]
         ++ let nkilled = sum $ EM.elems gvictims
                personKilled = if nkilled == 1 then MU.Sg3rd else MU.PlEtc
            in [ makeSentence $
