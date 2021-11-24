@@ -1,18 +1,27 @@
 -- | Ways for the client to use player input via UI to produce server
 -- requests, based on the client's view (visualized for the player)
 -- of the game state.
+--
+-- This module is leaking quite a bit of implementation details
+-- for the sake of "Game.LambdaHack.Client.LoopM". After multiplayer
+-- is enabled again and the new requirements sorted out, this should be
+-- redesigned and some code moved down the module hierarhy tree,
+-- exposing a smaller API here.
 module Game.LambdaHack.Client.UI
   ( -- * Querying the human player
     queryUI, queryUIunderAI
-    -- * UI monad and session type
-  , MonadClientUI(..), SessionUI(..), ReqDelay(..), emptySessionUI
+    -- * UI monad operations
+  , MonadClientUI(..), putSession, anyKeyPressed, resetPressedKeys
+    -- * UI session type
+  , SessionUI(..), ReqDelay(..), emptySessionUI
     -- * Updating UI state wrt game state changes
   , watchRespUpdAtomicUI, watchRespSfxAtomicUI
     -- * Startup and initialization
   , CCUI(..)
   , UIOptions, applyUIOptions, uOverrideCmdline, mkUIOptions
-    -- * Operations exposed for "Game.LambdaHack.Client.LoopM"
+    -- * Assorted operations and types
   , ChanFrontend, chanFrontend, tryRestore, clientPrintUI
+  , pushReportFrame, msgAdd, MsgClassShow(..)
 #ifdef EXPOSE_INTERNAL
     -- * Internal operations
   , stepQueryUIwithLeader, stepQueryUI
