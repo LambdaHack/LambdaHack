@@ -546,11 +546,11 @@ rosterHunt =
   , (HORROR_REPRESENTATIVE, []) ]
 
 rosterFlight =
-  [ ( COMPETITOR_NO_ESCAPE  -- start on exit
+  [ ( COMPETITOR_NO_ESCAPE  -- start on escape
     , [(-7, 6, AMBUSHER_HERO), (-7, 1, SCOUT_HERO)] )
   , ( EXPLORER_MEDIUM
     , [(-7, 2, ESCAPIST_HERO), (-7, 1, SCOUT_HERO)] )
-      -- second on the list to let foes occupy the exit
+      -- second on the list to let foes occupy the escape
   , (HORROR_REPRESENTATIVE, []) ]
 
 rosterZoo =

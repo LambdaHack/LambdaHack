@@ -463,7 +463,7 @@ Winning and dying
 
 You win an adventure if you escape the location alive (which may prove
 difficult, because your foes tend to gradually build up the ambush squad
-blocking your escape route) or, in scenarios with no exit locations,
+blocking your escape route) or, in scenarios with no escape locations,
 if you eliminate all opposition. In the former case, your score
 is based predominantly on the gold and precious gems you've plundered.
 In the latter case, your score is most influenced by the number
