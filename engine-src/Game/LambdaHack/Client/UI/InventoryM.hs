@@ -740,7 +740,21 @@ factionCloseUp factions slot = do
       -- knows them fully, except for @gvictims@, which is coupled to tracking
       -- other factions' actors and so only incremented when we've seen
       -- their actor killed (mostly likely killed by us).
-      ts2 =
+      ts2 =  -- reporting regardless of whether any of the factions are dead
+        let renderDiplGroup [] = error "renderDiplGroup: null"
+            renderDiplGroup ((fid2, diplomacy) : rest) = MU.Phrase
+              [ MU.Text $ tshowDiplomacy diplomacy
+              , "with"
+              , MU.WWandW $ map renderFact2 $ fid2 : map fst rest ]
+            renderFact2 fid2 = MU.Text $ Faction.gname (factionD EM.! fid2)
+            valid (fid2, diplomacy) = isJust (lookup fid2 factions)
+                                      && diplomacy /= Unknown
+            knownAssocsGroups = groupBy ((==) `on` snd) $ sortOn snd
+                                $ filter valid $ EM.assocs gdipl
+        in [ makeSentence [ MU.SubjectVerb person MU.Yes (MU.Text name) "be"
+                          , MU.WWandW $ map renderDiplGroup knownAssocsGroups ]
+           | not (null knownAssocsGroups) ]
+      ts3 =
         case gquit of
           Nothing -> []
           Just Status{..} ->
@@ -762,21 +776,7 @@ factionCloseUp factions slot = do
            in ["Its" <+> adjective <+> "doctrine" <+> verb
                <+> "'" <> Ability.nameDoctrine gdoctrine
                <> "' (" <> Ability.describeDoctrine gdoctrine <> ")."]
-      ts3 =  -- reporting regardless of whether any of the factions are dead
-        let renderDiplGroup [] = error "renderDiplGroup: null"
-            renderDiplGroup ((fid2, diplomacy) : rest) = MU.Phrase
-              [ MU.Text $ tshowDiplomacy diplomacy
-              , "with"
-              , MU.WWandW $ map renderFact2 $ fid2 : map fst rest ]
-            renderFact2 fid2 = MU.Text $ Faction.gname (factionD EM.! fid2)
-            valid (fid2, diplomacy) = isJust (lookup fid2 factions)
-                                      && diplomacy /= Unknown
-            knownAssocsGroups = groupBy ((==) `on` snd) $ sortOn snd
-                                $ filter valid $ EM.assocs gdipl
-        in [ makeSentence [ MU.SubjectVerb person MU.Yes (MU.Text name) "be"
-                          , MU.WWandW $ map renderDiplGroup knownAssocsGroups ]
-           | not (null knownAssocsGroups) ]
       -- Description of the score polynomial would go into a separate section,
       -- but it's hard to make it sound non-technical enough.
-      blurbs = intersperse ["\n"] [ts1, ts2, ts3]
+      blurbs = intersperse ["\n"] $ filter (not . null) [ts1, ts2, ts3]
   return (prompt, map (\t -> (propFont, map textToAS t)) blurbs)
