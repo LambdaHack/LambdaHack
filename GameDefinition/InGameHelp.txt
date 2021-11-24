@@ -168,7 +168,7 @@ https://github.com/LambdaHack/LambdaHack/blob/master/GameDefinition/PLAYING.md
   C-c          exit to desktop without saving
   ?            display help
   F1           display help immediately
-  F12          open dashboard
+  F12          show history
   v            voice last action again
   V            voice recorded macro again
   '            start recording commands
