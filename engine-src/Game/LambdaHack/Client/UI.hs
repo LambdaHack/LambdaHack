@@ -5,7 +5,7 @@ module Game.LambdaHack.Client.UI
   ( -- * Querying the human player
     queryUI, queryUIunderAI
     -- * UI monad and session type
-  , MonadClientUI(..), SessionUI(..)
+  , MonadClientUI(..), SessionUI(..), ReqDelay(..), emptySessionUI
     -- * Updating UI state wrt game state changes
   , watchRespUpdAtomicUI, watchRespSfxAtomicUI
     -- * Startup and initialization
