@@ -757,8 +757,11 @@ factionCloseUp factions slot = do
                                       "of this faction"
                                       "have been incapacitated" ]
               | nkilled > 0 ]
-        ++ ["Its current doctrine is '" <> Ability.nameDoctrine gdoctrine
-            <> "' (" <> Ability.describeDoctrine gdoctrine <> ")."]
+        ++ let adjective = if isNothing gquit then "current" else "last"
+               verb = if isNothing gquit then "is" else "was"
+           in ["Its" <+> adjective <+> "doctrine" <+> verb
+               <+> "'" <> Ability.nameDoctrine gdoctrine
+               <> "' (" <> Ability.describeDoctrine gdoctrine <> ")."]
       ts3 =  -- reporting regardless of whether any of the factions are dead
         let renderDiplGroup [] = error "renderDiplGroup: null"
             renderDiplGroup ((fid2, diplomacy) : rest) = MU.Phrase
