@@ -701,7 +701,7 @@ factionCloseUp factions slot = do
   side <- getsClient sside
   FontSetup{propFont} <- getFontSetup
   factionD <- getsState sfactionD
-  let (fid, Faction{gkind=FK.FactionKind{..}, ..}) =
+  let (fid, fact@Faction{gkind=FK.FactionKind{..}, ..}) =
         factions !! fromEnum slot
       (name, person) = if fhasGender  -- but we ignore "Controlled", etc.
                        then (makePhrase [MU.Ws $ MU.Text fname], MU.PlEtc)
@@ -756,10 +756,10 @@ factionCloseUp factions slot = do
            | not (null knownAssocsGroups) ]
       ts3 =
         case gquit of
-          Nothing -> []
-          Just Status{..} ->
+          Just Status{..} | not $ isHorrorFact fact ->
             ["The faction has already" <+> FK.nameOutcomePast stOutcome
              <+> "around level" <+> tshow (abs stDepth) <> "."]
+          _ -> []
         ++ let nkilled = sum $ EM.elems gvictims
                personKilled = if nkilled == 1 then MU.Sg3rd else MU.PlEtc
            in [ makeSentence $
