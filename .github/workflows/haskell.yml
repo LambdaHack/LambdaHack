@@ -18,6 +18,36 @@ jobs:
     strategy:
       matrix:
         include:
+          - compiler: ghc-9.2.1-vanilla
+            projectFlags: --allow-newer=sdl2:bytestring
+            compilerKind: ghc
+            compilerVersion: 9.2.1
+            setup-method: ghcup
+            allow-failure: false
+          - compiler: ghc-9.2.1-asserts
+            projectFlags: -fwith_expensive_assertions --allow-newer=sdl2:bytestring
+            compilerKind: ghc
+            compilerVersion: 9.2.1
+            setup-method: ghcup
+            allow-failure: false
+          - compiler: ghc-9.2.1-norelease-asserts
+            projectFlags: -f-release -fwith_expensive_assertions --allow-newer=sdl2:bytestring
+            compilerKind: ghc
+            compilerVersion: 9.2.1
+            setup-method: ghcup
+            allow-failure: false
+          - compiler: ghc-9.2.1-noopt
+            projectFlags: --ghc-option=-O0 --ghc-option=-fno-ignore-asserts --allow-newer=sdl2:bytestring
+            compilerKind: ghc
+            compilerVersion: 9.2.1
+            setup-method: ghcup
+            allow-failure: false
+          - compiler: ghc-9.2.1-opt2
+            projectFlags: --ghc-option=-O2 --ghc-option=-fno-ignore-asserts --allow-newer=sdl2:bytestring
+            compilerKind: ghc
+            compilerVersion: 9.2.1
+            setup-method: ghcup
+            allow-failure: false
           - compiler: ghc-9.0.1-vanilla
             projectFlags:
             compilerKind: ghc
