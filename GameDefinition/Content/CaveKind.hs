@@ -2,7 +2,7 @@
 -- cave kind.
 module Content.CaveKind
   ( -- * Group name patterns
-    pattern CAVE_ROGUE, pattern CAVE_ARENA, pattern CAVE_SMOKING, pattern CAVE_LABORATORY, pattern CAVE_NOISE, pattern CAVE_MINE, pattern CAVE_EMPTY, pattern CAVE_SHALLOW_ROGUE, pattern CAVE_OUTERMOST, pattern CAVE_RAID, pattern CAVE_BRAWL, pattern CAVE_SHOOTOUT, pattern CAVE_HUNT, pattern CAVE_ESCAPE, pattern CAVE_ZOO, pattern CAVE_AMBUSH, pattern CAVE_BATTLE, pattern CAVE_SAFARI_1, pattern CAVE_SAFARI_2, pattern CAVE_SAFARI_3
+    pattern CAVE_ROGUE, pattern CAVE_ARENA, pattern CAVE_SMOKING, pattern CAVE_LABORATORY, pattern CAVE_NOISE, pattern CAVE_MINE, pattern CAVE_EMPTY, pattern CAVE_SHALLOW_ROGUE, pattern CAVE_OUTERMOST, pattern CAVE_RAID, pattern CAVE_BRAWL, pattern CAVE_SHOOTOUT, pattern CAVE_HUNT, pattern CAVE_FLIGHT, pattern CAVE_ZOO, pattern CAVE_AMBUSH, pattern CAVE_BATTLE, pattern CAVE_SAFARI_1, pattern CAVE_SAFARI_2, pattern CAVE_SAFARI_3
   , groupNamesSingleton, groupNames
   , -- * Content
     content
@@ -33,9 +33,9 @@ groupNamesSingleton = []
 
 groupNames :: [GroupName CaveKind]
 groupNames =
-       [CAVE_ROGUE, CAVE_ARENA, CAVE_SMOKING, CAVE_LABORATORY, CAVE_NOISE, CAVE_MINE, CAVE_EMPTY, CAVE_SHALLOW_ROGUE, CAVE_OUTERMOST, CAVE_RAID, CAVE_BRAWL, CAVE_SHOOTOUT, CAVE_HUNT, CAVE_ESCAPE, CAVE_ZOO, CAVE_AMBUSH, CAVE_BATTLE, CAVE_SAFARI_1, CAVE_SAFARI_2, CAVE_SAFARI_3]
+       [CAVE_ROGUE, CAVE_ARENA, CAVE_SMOKING, CAVE_LABORATORY, CAVE_NOISE, CAVE_MINE, CAVE_EMPTY, CAVE_SHALLOW_ROGUE, CAVE_OUTERMOST, CAVE_RAID, CAVE_BRAWL, CAVE_SHOOTOUT, CAVE_HUNT, CAVE_FLIGHT, CAVE_ZOO, CAVE_AMBUSH, CAVE_BATTLE, CAVE_SAFARI_1, CAVE_SAFARI_2, CAVE_SAFARI_3]
 
-pattern CAVE_ROGUE, CAVE_ARENA, CAVE_SMOKING, CAVE_LABORATORY, CAVE_NOISE, CAVE_MINE, CAVE_EMPTY, CAVE_SHALLOW_ROGUE, CAVE_OUTERMOST, CAVE_RAID, CAVE_BRAWL, CAVE_SHOOTOUT, CAVE_HUNT, CAVE_ESCAPE, CAVE_ZOO, CAVE_AMBUSH, CAVE_BATTLE, CAVE_SAFARI_1, CAVE_SAFARI_2, CAVE_SAFARI_3 :: GroupName CaveKind
+pattern CAVE_ROGUE, CAVE_ARENA, CAVE_SMOKING, CAVE_LABORATORY, CAVE_NOISE, CAVE_MINE, CAVE_EMPTY, CAVE_SHALLOW_ROGUE, CAVE_OUTERMOST, CAVE_RAID, CAVE_BRAWL, CAVE_SHOOTOUT, CAVE_HUNT, CAVE_FLIGHT, CAVE_ZOO, CAVE_AMBUSH, CAVE_BATTLE, CAVE_SAFARI_1, CAVE_SAFARI_2, CAVE_SAFARI_3 :: GroupName CaveKind
 
 pattern CAVE_ROGUE = GroupName "caveRogue"
 pattern CAVE_ARENA = GroupName "caveArena"
@@ -50,7 +50,7 @@ pattern CAVE_RAID = GroupName "caveRaid"
 pattern CAVE_BRAWL = GroupName "caveBrawl"
 pattern CAVE_SHOOTOUT = GroupName "caveShootout"
 pattern CAVE_HUNT = GroupName "caveHunt"
-pattern CAVE_ESCAPE = GroupName "caveEscape"
+pattern CAVE_FLIGHT = GroupName "caveFlight"
 pattern CAVE_ZOO = GroupName "caveZoo"
 pattern CAVE_AMBUSH = GroupName "caveAmbush"
 pattern CAVE_BATTLE = GroupName "caveBattle"
@@ -62,9 +62,9 @@ pattern CAVE_SAFARI_3 = GroupName "caveSafari3"
 
 content :: [CaveKind]
 content =
-  [rogue, arena, smoking, laboratory, noise, mine, empty, outermost, shallowRogue, raid, brawl, shootout, hunt, escape, zoo, ambush, battle, safari1, safari2, safari3]
+  [rogue, arena, smoking, laboratory, noise, mine, empty, outermost, shallowRogue, raid, brawl, shootout, hunt, flight, zoo, ambush, battle, safari1, safari2, safari3]
 
-rogue,    arena, smoking, laboratory, noise, mine, empty, outermost, shallowRogue, raid, brawl, shootout, hunt, escape, zoo, ambush, battle, safari1, safari2, safari3 :: CaveKind
+rogue,    arena, smoking, laboratory, noise, mine, empty, outermost, shallowRogue, raid, brawl, shootout, hunt, flight, zoo, ambush, battle, safari1, safari2, safari3 :: CaveKind
 
 -- * Underground caves; most of mediocre height and size
 
@@ -411,12 +411,12 @@ hunt = rogue  -- a scenario with strong missiles for ranged and shade for melee
   , cmaxStairsNum = 0
   , cdesc         = "Tired after the day's heat, the insects gather strength in their hiding places."
   }
-escape = rogue  -- a scenario with weak missiles, because heroes don't depend
+flight = rogue  -- a scenario with weak missiles, because heroes don't depend
                 -- on them; dark, so solid obstacles are to hide from missiles,
                 -- not view; obstacles are not lit, to frustrate the AI;
                 -- lots of small lights to cross, to have some risks
   { cname         = "Metropolitan park at dusk"  -- "night" didn't fit
-  , cfreq         = [(CAVE_ESCAPE, 1)]
+  , cfreq         = [(CAVE_FLIGHT, 1)]
   , ccellSize     = DiceXY (1 `d` 3 + 7) 6
   , cminPlaceSize = DiceXY 5 3
   , cmaxPlaceSize = DiceXY 9 9  -- bias towards larger lamp areas
@@ -430,9 +430,9 @@ escape = rogue  -- a scenario with weak missiles, because heroes don't depend
   , citemFreq     = [ (IK.COMMON_ITEM, 30), (GEM, 500)
                     , (WEAK_ARROW, 500), (HARPOON, 400)
                     , (IK.EXPLOSIVE, 100) ]
-  , cplaceFreq    = [(ESCAPE, 1)]
+  , cplaceFreq    = [(FLIGHT, 1)]
   , cpassable     = True
-  , cdefTile      = ESCAPE_SET_DARK  -- unlike in ambush, tiles not burning yet
+  , cdefTile      = FLIGHT_SET_DARK  -- unlike in ambush, tiles not burning yet
   , cdarkCorTile  = SAFE_TRAIL_LIT  -- let trails give off light
   , clitCorTile   = SAFE_TRAIL_LIT
   , cfenceTileN   = OUTDOOR_OUTER_FENCE
@@ -554,7 +554,7 @@ safari1 = brawl
   , cskip         = [0]
   , cdesc         = "\"Act 1. Hunams scavenge in a forest in their usual disgusting way.\""
   }
-safari2 = escape  -- lamps instead of trees, but ok, it's only a simulation
+safari2 = flight  -- lamps instead of trees, but ok, it's only a simulation
   { cname         = "Deep into the jungle"
   , cfreq         = [(CAVE_SAFARI_2, 1)]
   , cmaxStairsNum = 1

@@ -2,7 +2,7 @@
 -- place kind.
 module Content.PlaceKind
   ( -- * Group name patterns
-    pattern ROGUE, pattern LABORATORY, pattern ZOO, pattern BRAWL, pattern SHOOTOUT, pattern ARENA, pattern ESCAPE, pattern AMBUSH, pattern BATTLE, pattern NOISE, pattern MINE, pattern EMPTY
+    pattern ROGUE, pattern LABORATORY, pattern ZOO, pattern BRAWL, pattern SHOOTOUT, pattern ARENA, pattern FLIGHT, pattern AMBUSH, pattern BATTLE, pattern NOISE, pattern MINE, pattern EMPTY
   , pattern INDOOR_ESCAPE_DOWN, pattern INDOOR_ESCAPE_UP, pattern OUTDOOR_ESCAPE_DOWN, pattern TINY_STAIRCASE, pattern OPEN_STAIRCASE, pattern CLOSED_STAIRCASE, pattern WALLED_STAIRCASE, pattern GATED_TINY_STAIRCASE, pattern GATED_OPEN_STAIRCASE, pattern GATED_CLOSED_STAIRCASE, pattern OUTDOOR_TINY_STAIRCASE, pattern OUTDOOR_CLOSED_STAIRCASE, pattern OUTDOOR_WALLED_STAIRCASE
   , groupNamesSingleton, groupNames
   , -- * Content
@@ -32,11 +32,11 @@ groupNamesSingleton = []
 -- group names, let's also add the generated group names to @groupNames@.
 groupNames :: [GroupName PlaceKind]
 groupNames =
-       [ROGUE, LABORATORY, ZOO, BRAWL, SHOOTOUT, ARENA, ESCAPE, AMBUSH, BATTLE, NOISE, MINE, EMPTY]
+       [ROGUE, LABORATORY, ZOO, BRAWL, SHOOTOUT, ARENA, FLIGHT, AMBUSH, BATTLE, NOISE, MINE, EMPTY]
     ++ [INDOOR_ESCAPE_DOWN, INDOOR_ESCAPE_UP, OUTDOOR_ESCAPE_DOWN, TINY_STAIRCASE, OPEN_STAIRCASE, CLOSED_STAIRCASE, WALLED_STAIRCASE]
     ++ fst generatedStairs
 
-pattern ROGUE, LABORATORY, ZOO, BRAWL, SHOOTOUT, ARENA, ESCAPE, AMBUSH, BATTLE, NOISE, MINE, EMPTY :: GroupName PlaceKind
+pattern ROGUE, LABORATORY, ZOO, BRAWL, SHOOTOUT, ARENA, FLIGHT, AMBUSH, BATTLE, NOISE, MINE, EMPTY :: GroupName PlaceKind
 
 pattern INDOOR_ESCAPE_DOWN, INDOOR_ESCAPE_UP, OUTDOOR_ESCAPE_DOWN, TINY_STAIRCASE, OPEN_STAIRCASE, CLOSED_STAIRCASE, WALLED_STAIRCASE, GATED_TINY_STAIRCASE, GATED_OPEN_STAIRCASE, GATED_CLOSED_STAIRCASE, OUTDOOR_TINY_STAIRCASE, OUTDOOR_CLOSED_STAIRCASE, OUTDOOR_WALLED_STAIRCASE :: GroupName PlaceKind
 
@@ -46,7 +46,7 @@ pattern ZOO = GroupName "zoo"
 pattern BRAWL = GroupName "brawl"
 pattern SHOOTOUT = GroupName "shootout"
 pattern ARENA = GroupName "arena"
-pattern ESCAPE = GroupName "escape"
+pattern FLIGHT = GroupName "flight"
 pattern AMBUSH = GroupName "ambush"
 pattern BATTLE = GroupName "battle"
 pattern NOISE = GroupName "noise"
@@ -174,7 +174,7 @@ rectWindows = override2PlaceKind
                 [ ('=', RECT_WINDOWS_HORIZONTAL_LIT)
                 , ('!', RECT_WINDOWS_VERTICAL_LIT) ] $ PlaceKind
   { pname    = "a hut"
-  , pfreq    = [(ESCAPE, 10), (AMBUSH, 7)]
+  , pfreq    = [(FLIGHT, 10), (AMBUSH, 7)]
   , prarity  = [(1, 10), (10, 10)]
   , pcover   = CStretch
   , pfence   = FNone
@@ -350,7 +350,7 @@ colonnade = PlaceKind
   { pname    = "a colonnade"
   , pfreq    = [ (ROGUE, 3), (ARENA, 20), (LABORATORY, 2)
                , (EMPTY, 10000), (MINE, 1000), (BRAWL, 4)
-               , (ESCAPE, 40), (AMBUSH, 40) ]
+               , (FLIGHT, 40), (AMBUSH, 40) ]
   , prarity  = [(1, 10), (10, 10)]
   , pcover   = CAlternate
   , pfence   = FFloor
@@ -396,7 +396,7 @@ colonnade6 = colonnade
 lampPost = overridePlaceKind [ ('0', S_LAMP_POST)
                              , ('·', S_FLOOR_ACTOR_LIT) ] $ PlaceKind
   { pname    = "a lamp-lit area"
-  , pfreq    = [(ESCAPE, 200), (AMBUSH, 200), (ZOO, 100), (BATTLE, 100)]
+  , pfreq    = [(FLIGHT, 200), (AMBUSH, 200), (ZOO, 100), (BATTLE, 100)]
   , prarity  = [(1, 1)]
   , pcover   = CVerbatim
   , pfence   = FNone
@@ -414,7 +414,7 @@ lampPost2 = lampPost
                ]
   }
 lampPost3 = lampPost
-  { pfreq    = [ (ESCAPE, 3000), (AMBUSH, 3000), (ZOO, 50)
+  { pfreq    = [ (FLIGHT, 3000), (AMBUSH, 3000), (ZOO, 50)
                , (BATTLE, 110) ]
   , ptopLeft = [ "XX·XX"
                , "X···X"
@@ -424,7 +424,7 @@ lampPost3 = lampPost
                ]
   }
 lampPost4 = lampPost
-  { pfreq    = [(ESCAPE, 3000), (AMBUSH, 3000), (ZOO, 50), (BATTLE, 60)]
+  { pfreq    = [(FLIGHT, 3000), (AMBUSH, 3000), (ZOO, 50), (BATTLE, 60)]
   , ptopLeft = [ "X···X"
                , "·····"
                , "··0··"

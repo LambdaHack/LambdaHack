@@ -6,7 +6,7 @@ module Content.ModeKind
     content
 #ifdef EXPOSE_INTERNAL
   -- * Group name patterns
-  , pattern RAID, pattern BRAWL, pattern LONG, pattern CRAWL, pattern FOGGY, pattern SHOOTOUT, pattern PERILOUS, pattern HUNT, pattern NIGHT, pattern ESCAPE, pattern BURNING, pattern ZOO, pattern RANGED, pattern AMBUSH, pattern SAFARI, pattern DIG, pattern SEE, pattern SHORT, pattern CRAWL_EMPTY, pattern CRAWL_SURVIVAL, pattern SAFARI_SURVIVAL, pattern BATTLE, pattern BATTLE_DEFENSE, pattern BATTLE_SURVIVAL, pattern DEFENSE, pattern DEFENSE_EMPTY
+  , pattern RAID, pattern BRAWL, pattern LONG, pattern CRAWL, pattern FOGGY, pattern SHOOTOUT, pattern PERILOUS, pattern HUNT, pattern NIGHT, pattern FLIGHT, pattern BURNING, pattern ZOO, pattern RANGED, pattern AMBUSH, pattern SAFARI, pattern DIG, pattern SEE, pattern SHORT, pattern CRAWL_EMPTY, pattern CRAWL_SURVIVAL, pattern SAFARI_SURVIVAL, pattern BATTLE, pattern BATTLE_DEFENSE, pattern BATTLE_SURVIVAL, pattern DEFENSE, pattern DEFENSE_EMPTY
 #endif
   ) where
 
@@ -31,9 +31,9 @@ import Content.ItemKindActor
 
 groupNamesSingleton :: [GroupName ModeKind]
 groupNamesSingleton =
-       [RAID, BRAWL, LONG, CRAWL, FOGGY, SHOOTOUT, PERILOUS, HUNT, NIGHT, ESCAPE, BURNING, ZOO, RANGED, AMBUSH, SAFARI, DIG, SEE, SHORT, CRAWL_EMPTY, CRAWL_SURVIVAL, SAFARI_SURVIVAL, BATTLE, BATTLE_DEFENSE, BATTLE_SURVIVAL, DEFENSE, DEFENSE_EMPTY]
+       [RAID, BRAWL, LONG, CRAWL, FOGGY, SHOOTOUT, PERILOUS, HUNT, NIGHT, FLIGHT, BURNING, ZOO, RANGED, AMBUSH, SAFARI, DIG, SEE, SHORT, CRAWL_EMPTY, CRAWL_SURVIVAL, SAFARI_SURVIVAL, BATTLE, BATTLE_DEFENSE, BATTLE_SURVIVAL, DEFENSE, DEFENSE_EMPTY]
 
-pattern RAID, BRAWL, LONG, CRAWL, FOGGY, SHOOTOUT, PERILOUS, HUNT, NIGHT, ESCAPE, BURNING, ZOO, RANGED, AMBUSH, SAFARI, DIG, SEE, SHORT, CRAWL_EMPTY, CRAWL_SURVIVAL, SAFARI_SURVIVAL, BATTLE, BATTLE_DEFENSE, BATTLE_SURVIVAL, DEFENSE, DEFENSE_EMPTY :: GroupName ModeKind
+pattern RAID, BRAWL, LONG, CRAWL, FOGGY, SHOOTOUT, PERILOUS, HUNT, NIGHT, FLIGHT, BURNING, ZOO, RANGED, AMBUSH, SAFARI, DIG, SEE, SHORT, CRAWL_EMPTY, CRAWL_SURVIVAL, SAFARI_SURVIVAL, BATTLE, BATTLE_DEFENSE, BATTLE_SURVIVAL, DEFENSE, DEFENSE_EMPTY :: GroupName ModeKind
 
 groupNames :: [GroupName ModeKind]
 groupNames = []
@@ -46,8 +46,8 @@ pattern FOGGY = GroupName "foggy shootout"
 pattern SHOOTOUT = GroupName "shootout"
 pattern PERILOUS = GroupName "perilous hunt"
 pattern HUNT = GroupName "hunt"
-pattern NIGHT = GroupName "night escape"
-pattern ESCAPE = GroupName "escape"
+pattern NIGHT = GroupName "night flight"
+pattern FLIGHT = GroupName "flight"
 pattern BURNING = GroupName "burning zoo"
 pattern ZOO = GroupName "zoo"
 pattern RANGED = GroupName "ranged ambush"
@@ -69,9 +69,9 @@ pattern DEFENSE_EMPTY = GroupName "defenseEmpty"
 
 content :: [ModeKind]
 content =
-  [raid, brawl, crawl, shootout, hunt, escape, zoo, ambush, safari, dig, see, short, crawlEmpty, crawlSurvival, safariSurvival, battle, battleDefense, battleSurvival, defense, defenseEmpty, screensaverRaid, screensaverBrawl, screensaverCrawl, screensaverShootout, screensaverHunt, screensaverEscape, screensaverZoo, screensaverAmbush, screensaverSafari]
+  [raid, brawl, crawl, shootout, hunt, flight, zoo, ambush, safari, dig, see, short, crawlEmpty, crawlSurvival, safariSurvival, battle, battleDefense, battleSurvival, defense, defenseEmpty, screensaverRaid, screensaverBrawl, screensaverCrawl, screensaverShootout, screensaverHunt, screensaverFlight, screensaverZoo, screensaverAmbush, screensaverSafari]
 
-raid,    brawl, crawl, shootout, hunt, escape, zoo, ambush, safari, dig, see, short, crawlEmpty, crawlSurvival, safariSurvival, battle, battleDefense, battleSurvival, defense, defenseEmpty, screensaverRaid, screensaverBrawl, screensaverCrawl, screensaverShootout, screensaverHunt, screensaverEscape, screensaverZoo, screensaverAmbush, screensaverSafari :: ModeKind
+raid,    brawl, crawl, shootout, hunt, flight, zoo, ambush, safari, dig, see, short, crawlEmpty, crawlSurvival, safariSurvival, battle, battleDefense, battleSurvival, defense, defenseEmpty, screensaverRaid, screensaverBrawl, screensaverCrawl, screensaverShootout, screensaverHunt, screensaverFlight, screensaverZoo, screensaverAmbush, screensaverSafari :: ModeKind
 
 -- What other symmetric (two only-one-moves factions) and asymmetric vs crowd
 -- scenarios make sense (e.g., are good for a tutorial or for standalone
@@ -197,13 +197,13 @@ hunt = ModeKind  -- melee vs ranged with reaction fire in daylight
   , mhint   = "Try not to outshoot the enemy, but to instead focus more on melee tactics. A useful concept here is communication overhead. Any team member that is not waiting and spotting for everybody, but acts, e.g., melees or moves or manages items, slows down all other team members by roughly 10%, because they need to keep track of his actions. Therefore, if other heroes melee, consider carefully if it makes sense to come to their aid, slowing them while you move, or if it's better to stay put and monitor the perimeter. This is true for all factions and all actors on each level separately, except the pointman of each faction, if it has one."  -- this also eliminates lag in big battles and helps the player to focus on combat and not get distracted by distant team members frantically trying to reach the battleground in time
   }
 
-escape = ModeKind  -- asymmetric ranged and stealth race at night
-  { mname   = "night escape (5)"
-  , mfreq   = [(NIGHT, 1), (ESCAPE, 1), (CAMPAIGN_SCENARIO, 1)]
+flight = ModeKind  -- asymmetric ranged and stealth race at night
+  { mname   = "night flight (5)"
+  , mfreq   = [(NIGHT, 1), (FLIGHT, 1), (CAMPAIGN_SCENARIO, 1)]
   , mtutorial = False
   , mattract = False
-  , mroster = rosterEscape
-  , mcaves  = cavesEscape
+  , mroster = rosterFlight
+  , mcaves  = cavesFlight
   , mendMsg = [ (Killed, "Somebody must have tipped the enemies of free inquiry off. However, us walking along a lit trail, yelling, could have been a contributing factor. Also, it's worth noting that the torches prepared for this assault are best used as thrown makeshift flares.\nOn the other hand, equipping a lit torch makes one visible in the dark, regrettably but not quite unexpectedly to a scientific mind. Lastly, the goal of this foray was to definitely disengage from the fruitless dispute, via an exit marked by a yellow '>' sign, and to gather treasure that would support our future research. Not to harass every nearby scientific truth denier, as much as they do deserve it.")
               , (Conquer, "It was enough to reach the escape area marked by yellow '>' symbol. Spilling that much blood was risky. unnecessary and alerted the authorities. Having said that --- impressive indeed.") ]
   , mrules  = T.intercalate "\n"
@@ -473,8 +473,8 @@ screensaverHunt = hunt
   , mattract = True
   }
 
-screensaverEscape = escape
-  { mname   = "auto-escape (5)"
+screensaverFlight = flight
+  { mname   = "auto-flight (5)"
   , mfreq   = [(INSERT_COIN, 2)]
   , mattract = True
   }
@@ -497,7 +497,7 @@ screensaverSafari = safari
   , mattract = True
   }
 
-rosterRaid, rosterBrawl, rosterCrawl, rosterShootout, rosterHunt, rosterEscape, rosterZoo, rosterAmbush, rosterSafari, rosterCrawlEmpty, rosterCrawlSurvival, rosterSafariSurvival, rosterBattle, rosterBattleDefense, rosterBattleSurvival, rosterDefense, rosterDefenseEmpty :: Roster
+rosterRaid, rosterBrawl, rosterCrawl, rosterShootout, rosterHunt, rosterFlight, rosterZoo, rosterAmbush, rosterSafari, rosterCrawlEmpty, rosterCrawlSurvival, rosterSafariSurvival, rosterBattle, rosterBattleDefense, rosterBattleSurvival, rosterDefense, rosterDefenseEmpty :: Roster
 
 rosterRaid =
   [ ( ANIMAL_REPRESENTATIVE  -- starting over escape
@@ -545,7 +545,7 @@ rosterHunt =
     , [(-6, 6, AMBUSHER_HERO), (-6, 1, SCOUT_HERO)] )
   , (HORROR_REPRESENTATIVE, []) ]
 
-rosterEscape =
+rosterFlight =
   [ ( COMPETITOR_NO_ESCAPE  -- start on exit
     , [(-7, 6, AMBUSHER_HERO), (-7, 1, SCOUT_HERO)] )
   , ( EXPLORER_MEDIUM
@@ -641,7 +641,7 @@ rosterDefenseEmpty =
   , (HORROR_PACIFIST, []) ]
       -- for spawned and summoned animals
 
-cavesRaid, cavesBrawl, cavesCrawl, cavesShootout, cavesHunt, cavesEscape, cavesZoo, cavesAmbush, cavesSafari, cavesDig, cavesSee, cavesShort, cavesCrawlEmpty, cavesBattle :: Caves
+cavesRaid, cavesBrawl, cavesCrawl, cavesShootout, cavesHunt, cavesFlight, cavesZoo, cavesAmbush, cavesSafari, cavesDig, cavesSee, cavesShort, cavesCrawlEmpty, cavesBattle :: Caves
 
 cavesRaid = [([-2], [CAVE_RAID])]
 
@@ -663,7 +663,7 @@ cavesShootout = [([-5], [CAVE_SHOOTOUT])]
 
 cavesHunt = [([-6], [CAVE_HUNT])]
 
-cavesEscape = [([-7], [CAVE_ESCAPE])]
+cavesFlight = [([-7], [CAVE_FLIGHT])]
 
 cavesZoo = [([-8], [CAVE_ZOO])]
 
@@ -691,7 +691,7 @@ cavesShort = let numberCaves n c = ([n], [c])
 
 allCaves :: [GroupName CaveKind]
 allCaves =
-  [ CAVE_RAID, CAVE_BRAWL, CAVE_SHOOTOUT, CAVE_HUNT, CAVE_ESCAPE, CAVE_ZOO
+  [ CAVE_RAID, CAVE_BRAWL, CAVE_SHOOTOUT, CAVE_HUNT, CAVE_FLIGHT, CAVE_ZOO
   , CAVE_AMBUSH
   , CAVE_ROGUE, CAVE_LABORATORY, CAVE_EMPTY, CAVE_ARENA, CAVE_SMOKING
   , CAVE_NOISE, CAVE_MINE ]
