@@ -309,13 +309,13 @@ displayGameOverLore slore exposeCount generationAn = do
           [ "this", MU.Text (ppSLore slore), "manifested during your quest"
           , MU.CarWs k "time" ]
       verb = if | slore `elem` [SCondition, SBlast] -> "experienced"
-                | slore == SEmbed -> "strived through"
+                | slore == SEmbed -> "ambled among"
                 | otherwise -> "lived among"
       prompt = case total of
         0 -> makeSentence [ "you didn't experience any"
                           , MU.Ws $ MU.Text (headingSLore slore)
                           , "this time" ]
-        1 -> makeSentence [ "you", verb, "the following"
+        1 -> makeSentence [ "you saw the following"
                           , MU.Text (headingSLore slore) ]
         _ -> makeSentence [ "you", verb, "the following variety of"
                           , MU.CarWs total $ MU.Text (headingSLore slore) ]
