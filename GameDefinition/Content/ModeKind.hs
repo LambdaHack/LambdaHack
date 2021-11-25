@@ -100,10 +100,10 @@ raid = ModeKind
       [ "* One level only"
       , "* Two heroes vs. Spawned enemies"
       , "* Gather gold"
-      , "* Find exit and escape ASAP"
+      , "* Find a way out and escape ASAP"
       ]
   , mdesc   = "An incredibly advanced typing machine worth 100 gold is buried at the exit of this maze. Be the first to find it and fund a research team that makes typing accurate and dependable forever."
-  , mreason = "In addition to initiating the (loose) game plot, this adventure provides an introductory tutorial. Relax, explore, gather loot, find the exit and escape. With some luck, you won't even need to fight anything."
+  , mreason = "In addition to initiating the (loose) game plot, this adventure provides an introductory tutorial. Relax, explore, gather loot, find the way out and escape. With some luck, you won't even need to fight anything."
   , mhint   = "You can't use gathered items in your next encounters, so trigger any consumables at will. Feel free to scout with only one of the heroes and keep the other one immobile, e.g., standing guard over the squad's shared inventory stash. If in grave danger, retreat with the scout to join forces with the guard. The more gold collected and the faster the victory, the higher your score in this encounter."
   }
 
@@ -141,7 +141,7 @@ crawl = ModeKind
       [ "* Many levels"
       , "* Three heroes vs. Spawned enemies"
       , "* Gather gold, gems and elixirs"
-      , "* Find exit and escape ASAP"
+      , "* Find a way out and escape ASAP"
       ]
   , mdesc   = "Enjoy the peaceful seclusion of these cold austere tunnels, but don't let wanton curiosity, greed and the ever-creeping abstraction madness keep you down there for too long. If you find survivors (whole or perturbed or segmented) of the past scientific missions, exercise extreme caution and engage or ignore at your discretion."
   , mreason = "This is the main, longest and most replayable scenario of the game."
@@ -204,14 +204,14 @@ flight = ModeKind  -- asymmetric ranged and stealth race at night
   , mattract = False
   , mroster = rosterFlight
   , mcaves  = cavesFlight
-  , mendMsg = [ (Killed, "Somebody must have tipped the enemies of free inquiry off. However, us walking along a lit trail, yelling, could have been a contributing factor. Also, it's worth noting that the torches prepared for this assault are best used as thrown makeshift flares.\nOn the other hand, equipping a lit torch makes one visible in the dark, regrettably but not quite unexpectedly to a scientific mind. Lastly, the goal of this foray was to definitely disengage from the fruitless dispute, via an exit marked by a yellow '>' sign, and to gather treasure that would support our future research. Not to harass every nearby scientific truth denier, as much as they do deserve it.")
+  , mendMsg = [ (Killed, "Somebody must have tipped the enemies of free inquiry off. However, us walking along a lit trail, yelling, could have been a contributing factor. Also, it's worth noting that the torches prepared for this assault are best used as thrown makeshift flares.\nOn the other hand, equipping a lit torch makes one visible in the dark, regrettably but not quite unexpectedly to a scientific mind. Lastly, the goal of this foray was to definitely disengage from the fruitless dispute, via a way out marked by a yellow '>' sign, and to gather treasure that would support our future research. Not to harass every nearby scientific truth denier, as much as they do deserve it.")
               , (Conquer, "It was enough to reach the escape area marked by yellow '>' symbol. Spilling that much blood was risky. unnecessary and alerted the authorities. Having said that --- impressive indeed.") ]
   , mrules  = T.intercalate "\n"
       [ "* One level only"
       , "* Three heroes vs. Seven human enemies capable of concurrent attacks"
       , "* Minimize losses"
       , "* Gather gems"
-      , "* Find exit and escape ASAP"
+      , "* Find a way out and escape ASAP"
       ]
   , mdesc   = "Dwelling into dark matters is dangerous, so avoid the crowd of firebrand disputants, catch any gems of thought, find a way out and bring back a larger team to shed new light on the field."
   , mreason = "The focus of this installment is on stealthy exploration under the threat of numerically superior enemy."
@@ -278,7 +278,7 @@ safari = ModeKind  -- Easter egg available only via screensaver
       [ "* Three levels"
       , "* Many teammates capable of concurrent action vs. Many enemies"
       , "* Minimize losses"
-      , "* Find exit and escape ASAP"
+      , "* Find a way out and escape ASAP"
       ]
   , mdesc   = "\"In this enactment you'll discover the joys of hunting the most exquisite of Earth's flora and fauna, both animal and semi-intelligent. Exit at the bottommost level.\" This is a drama script recovered from a monster nest debris."
   , mreason = "This is an Easter egg. The default squad doctrine is that all team members follow the pointman, but it can be changed from the settings submenu of the main menu."
