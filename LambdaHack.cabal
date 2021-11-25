@@ -115,7 +115,7 @@ common options
                       DataKinds, KindSignatures, DeriveGeneric, DeriveLift
   ghc-options:        -Wall -Wcompat -Worphans -Wincomplete-uni-patterns -Wincomplete-record-updates -Wimplicit-prelude -Wmissing-home-modules -Widentities -Wredundant-constraints -Wmissing-export-lists -Wpartial-fields -Wunused-packages -Winvalid-haddock
 -- TODO: remove -Winvalid-haddock when added to -Wall in a GHC I use for haddock
-  ghc-options:        -fno-ignore-asserts -Wall-missed-specialisations
+  ghc-options:        -fno-ignore-asserts
 
   if flag(with_costly_optimizations)
     ghc-options:        -fexpose-all-unfoldings -fspecialise-aggressively -fsimpl-tick-factor=200
