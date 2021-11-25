@@ -574,7 +574,7 @@ stairsGatedDown = stairsDown
   }
 escapeUp = TileKind
   { tsymbol  = '<'
-  , tname    = "exit hatch up"
+  , tname    = "escape hatch up"
   , tfreq    = [(TILE_INDOOR_ESCAPE_UP, 1)]
   , tcolor   = BrYellow
   , tcolor2  = BrYellow
@@ -583,7 +583,7 @@ escapeUp = TileKind
   }
 escapeDown = TileKind
   { tsymbol  = '>'
-  , tname    = "exit trapdoor down"
+  , tname    = "escape trapdoor down"
   , tfreq    = [(TILE_INDOOR_ESCAPE_DOWN, 1)]
   , tcolor   = BrYellow
   , tcolor2  = BrYellow
@@ -591,7 +591,7 @@ escapeDown = TileKind
   , tfeature = [Embed ESCAPE, ConsideredByAI]
   }
 escapeOutdoorDown = escapeDown
-  { tname    = "exit back to town"
+  { tname    = "escape back to town"
   , tfreq    = [(TILE_OUTDOOR_ESCAPE_DOWN, 1)]
   }
 
