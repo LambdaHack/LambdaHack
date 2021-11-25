@@ -438,9 +438,9 @@ factionsOverlay = do
             !tDesc = " "
                      <> name
                      <+> case gquit fact of
-                           Nothing -> ""
-                           Just Status{stOutcome} ->
+                           Just Status{stOutcome} | not $ isHorrorFact fact ->
                              "(" <> FK.nameOutcomePast stOutcome <> ")"
+                           _ -> ""
         in (asLab, textToAS tDesc, Right c)
       l = zipWith prSlot natSlots factions
   return $! labDescOKX squareFont propFont l
