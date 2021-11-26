@@ -70,7 +70,7 @@ handleHumanLocalMUnitTests = testGroup "handleHumanLocalMUnitTests"
                         ]
                     in chooseItemProjectHuman testActorId triggerItems
       result <- executorCli testFn testCliStateWithItem 
-      fst result @?= Nothing
+      showFailError (fromJust (fst result)) @?= "*never mind*"
   , testCase "psuitReq" $
     do 
       let testFn = psuitReq testActorId

@@ -1,4 +1,4 @@
-{-# LANGUAGE GeneralizedNewtypeDeriving #-}
+{-# LANGUAGE GADTs, GeneralizedNewtypeDeriving #-}
 -- | The implementation of our custom game client monads. Just as any other
 -- component of the library, this implementation can be substituted.
 module UnitTestHelpers
@@ -50,6 +50,10 @@ import           Game.LambdaHack.Client.UI
 import           Game.LambdaHack.Client.UI.ActorUI
 import           Game.LambdaHack.Client.UI.ContentClientUI
 import           Game.LambdaHack.Client.UI.Content.Screen
+import           Game.LambdaHack.Client.UI.Frontend
+import           Game.LambdaHack.Client.UI.Key (KMP (..))
+import qualified Game.LambdaHack.Client.UI.Key as K
+import           Game.LambdaHack.Client.UI.PointUI
 import           Game.LambdaHack.Client.UI.SessionUI
 import           Game.LambdaHack.Client.UI.UIOptions
 
@@ -86,7 +90,6 @@ import           Game.LambdaHack.Server (ChanServer (..))
 import Content.ModeKindPlayer
 import Game.LambdaHack.Common.Misc
 
-
 -- just for test code
 -- import           Game.LambdaHack.Client.UI.HandleHelperM
 -- import qualified Game.LambdaHack.Client.UI.HumanCmd as HumanCmd
@@ -94,6 +97,18 @@ import Game.LambdaHack.Common.Misc
 -- import Game.LambdaHack.Definition.DefsInternal ( toContentSymbol )
 
 
+-- Read UI requests from the client and send them to the frontend,
+fchanFrontendStub :: ChanFrontend
+fchanFrontendStub =
+  ChanFrontend $ \case
+    FrontFrame _ -> print "FrontFrame"
+    FrontDelay _ -> print "FrontDelay"
+    FrontKey _ _ -> do return KMP { kmpKeyMod=K.escKM, kmpPointer=PointUI 0 0 }
+    FrontPressed -> do return False
+    FrontDiscardKey -> print "FrontDiscardKey"
+    FrontResetKeys -> print "FrontResetKeys"
+    FrontShutdown -> print "FrontShutdown"
+    FrontPrintScreen -> print "FrontPrintScreen"
 
 data CliState = CliState
   { cliState   :: State            -- ^ current global state
@@ -282,6 +297,7 @@ stubSessionUI = (emptySessionUI stubUIOptions)
                              , rapplyVerbMap = EM.empty
                              , rFontFiles = []
                              }}
+  , schanF = fchanFrontendStub
   } 
 
 stubCliState = CliState
