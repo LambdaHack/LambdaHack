@@ -72,7 +72,8 @@ import qualified Game.LambdaHack.Definition.Ability as Ability
 import           Game.LambdaHack.Definition.Color
 import           Game.LambdaHack.Definition.Flavour
 
-import Content.ModeKindPlayer
+import Content.FactionKind
+
 import Game.LambdaHack.Common.Misc
 
 
@@ -169,17 +170,17 @@ stubLevel = Level
 testFaction :: Faction
 testFaction =
   Faction
-    { gname = ""
+    { gkind = head content 
+    , gname = ""
     , gcolor = Black
-    , gplayer = playerAnimal
-    , gteamCont = Nothing
+    , gdoctrine = Ability.TBlock 
+    , gunderAI = True 
     , ginitial = []
     , gdipl = EM.empty
     , gquit = Nothing
     , _gleader = Nothing
     , gstash = Nothing
     , gvictims = EM.empty
-    , gvictimsD = EM.empty
     }
 
 testActor :: Actor
