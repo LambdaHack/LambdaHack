@@ -132,19 +132,14 @@ adjacent s t = chessDist s t == 1
 -- uniform distributions of directions for explosions close to the edge
 -- of the level.
 -- |
--- >>> bla 4 4 0 (Point 0 0) (Point 1 0) 
--- Just [(1,0),(2,0),(3,0)]
--- >>> bla 4 4 0 (Point 0 0) (Point 0 1) 
--- Just [(0,1),(0,2),(0,3)]
--- >>> bla 4 4 0 (Point 0 0) (Point 1 1)
--- Just [(1,1),(2,2),(3,3)]
--- >>> bla 4 4 0 (Point 0 0) (Point 0 0) 
+-- >>> bla 0 (Point 0 0) (Point 0 0) 
 -- Nothing
--- >>> bla 0 0 0 (Point 0 0) (Point 1 0) 
--- Just []
--- >>> bla 1 1 0 (Point 2 0) (Point 3 0)
--- Just []  
-
+-- >>> take 3 $ fromJust $ bla 0 (Point 0 0) (Point 1 0) 
+-- [(1,0),(2,0),(3,0)]
+-- >>> take 3 $ fromJust $ bla 0 (Point 0 0) (Point 0 1) 
+-- [(0,1),(0,2),(0,3)]
+-- >>> take 3 $ fromJust $ bla 0 (Point 0 0) (Point 1 1)
+-- [(1,1),(2,2),(3,3)]
 bla :: Int -> Point -> Point -> Maybe [Point]
 bla eps source target =
   if source == target then Nothing
@@ -153,6 +148,8 @@ bla eps source target =
 -- | Bresenham's line algorithm generalized to arbitrary starting @eps@
 -- (@eps@ value of 0 gives the standard BLA). Includes the source point
 -- and goes through the target point to infinity.
+-- | >>> take 4 $ blaXY 0 (Point 0 0) (Point 2 0)
+-- [(0,0),(1,0),(2,0),(3,0)]
 blaXY :: Int -> Point -> Point -> [Point]
 blaXY eps (Point x0 y0) (Point x1 y1) =
   let (dx, dy) = (x1 - x0, y1 - y0)
@@ -171,6 +168,8 @@ balancedWord p q eps               = 1 : balancedWord p q (eps + p - q)
 
 -- | A list of all points on a straight vertical or straight horizontal line
 -- between two points. Fails if no such line exists.
+-- >>> fromTo (Point 0 0) (Point 2 0)
+-- [(0,0),(1,0),(2,0)]
 fromTo :: Point -> Point -> [Point]
 fromTo (Point x0 y0) (Point x1 y1) =
  let fromTo1 :: Int -> Int -> [Int]

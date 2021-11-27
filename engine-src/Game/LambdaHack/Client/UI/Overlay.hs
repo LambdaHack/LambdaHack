@@ -72,6 +72,7 @@ data FontSetup = FontSetup
   , monoFont   :: DisplayFont
   , propFont   :: DisplayFont
   }
+  deriving (Eq, Show)  -- for unit tests
 
 multiFontSetup :: FontSetup
 multiFontSetup = FontSetup SquareFont MonoFont PropFont

@@ -26,24 +26,17 @@ import Prelude ()
 
 import Game.LambdaHack.Core.Prelude
 
-import           Control.Concurrent
 import qualified Control.Monad.IO.Class as IO
---import qualified Control.Monad.IO.Class as IO
-
 
 import Control.Monad.Trans.State.Strict
     ( StateT(StateT, runStateT), gets, state, evalStateT )
 
 import qualified Data.EnumMap.Strict as EM
-import qualified Data.Vector.Unboxed as U
-
 
 import           Game.LambdaHack.Atomic (MonadStateWrite (..))
 import           Game.LambdaHack.Client
 import qualified Game.LambdaHack.Client.BfsM as BfsM
-import           Game.LambdaHack.Client.HandleAtomicM
 import           Game.LambdaHack.Client.HandleResponseM
-import           Game.LambdaHack.Client.LoopM
 import           Game.LambdaHack.Client.MonadClient
 import           Game.LambdaHack.Client.State
 import           Game.LambdaHack.Client.UI
@@ -58,7 +51,6 @@ import           Game.LambdaHack.Client.UI.SessionUI
 import           Game.LambdaHack.Client.UI.UIOptions
 
 import           Game.LambdaHack.Common.Actor
-import           Game.LambdaHack.Common.ActorState
 import           Game.LambdaHack.Common.Area
 import           Game.LambdaHack.Common.ClientOptions
 import           Game.LambdaHack.Common.Faction
@@ -67,34 +59,21 @@ import           Game.LambdaHack.Common.Level
 import           Game.LambdaHack.Common.MonadStateRead
 import           Game.LambdaHack.Common.Perception
 import           Game.LambdaHack.Common.Point
-import           Game.LambdaHack.Common.PointArray as PointArray
-import qualified Game.LambdaHack.Common.Save as Save
 import           Game.LambdaHack.Common.State
 import           Game.LambdaHack.Common.Time
 import           Game.LambdaHack.Common.Types
-import           Game.LambdaHack.Common.Vector
 
 import           Game.LambdaHack.Content.ItemKind
-import           Game.LambdaHack.Content.ModeKind
 import           Game.LambdaHack.Content.RuleKind
 import           Game.LambdaHack.Content.TileKind
 import qualified Game.LambdaHack.Core.Dice as Dice
 
 import qualified Game.LambdaHack.Definition.Ability as Ability
 import           Game.LambdaHack.Definition.Color
-import           Game.LambdaHack.Definition.DefsInternal
 import           Game.LambdaHack.Definition.Flavour
-
-import           Game.LambdaHack.Server (ChanServer (..))
 
 import Content.ModeKindPlayer
 import Game.LambdaHack.Common.Misc
-
--- just for test code
--- import           Game.LambdaHack.Client.UI.HandleHelperM
--- import qualified Game.LambdaHack.Client.UI.HumanCmd as HumanCmd
--- import           Game.LambdaHack.Client.UI.HandleHumanLocalM
--- import Game.LambdaHack.Definition.DefsInternal ( toContentSymbol )
 
 
 -- Read UI requests from the client and send them to the frontend,
@@ -119,23 +98,6 @@ data CliState = CliState
   }
 
 
--- minimalPlayer :: Player
--- minimalPlayer = Player
---     { fname = ""
---     , fgroups = []
---     , fskillsOther = [] -- :: Ability.Skills
---     , fcanEscape = False
---     , fneverEmpty = False
---     , fhiCondPoly = []
---     , fhasGender = False
---     , fdoctrine = TExplore
---     , fleaderMode = Nothing
---     , fhasUI = False
---     , funderAI = False
---     }
-
---testRuleContent = emptyRuleContent { corule = emptyRuleContent { rXmax = 2, rYmax = 2 }}
-
 stubUIOptions :: UIOptions
 stubUIOptions = UIOptions
   { uCommands = []
@@ -156,32 +118,32 @@ stubUIOptions = UIOptions
   , uMessageColors = []
   }
 
+stubClientOptions :: ClientOptions
 stubClientOptions = defClientOptions 
   { schosenFontset = Just "snoopy"
   , sfontsets = [("snoopy",FontSet {fontMapScalable="scalable",fontMapBitmap="bitmap",fontPropRegular="propRegular",fontPropBold="propBold",fontMono="mono"})]
   }
+
+testLevelDimension :: Int
 testLevelDimension = 3
 
 -- using different arbitrary numbers for these so if tests fail to missing keys we'll have more of a clue
+testLevelId :: LevelId 
 testLevelId = toEnum 111
+
+testActorId :: ActorId
 testActorId = toEnum 112
+
+testItemId :: ItemId 
 testItemId = toEnum 113
 
+testFactionId :: FactionId 
 testFactionId = toEnum 114
 
-testTileKind :: TileKind
-testTileKind = TileKind
-  { tsymbol  = '0'
-  , tname    = "testtile"
-  , tfreq    = [(GroupName "testgroup", 1)]
-  , tcolor   = BrWhite
-  , tcolor2  = defFG
-  , talter   = 0
-  , tfeature = [Walkable, Clear]
-  }
 
 
-(Just testArea) = toArea (0, 0, 0, 0)
+testArea :: Area
+testArea = fromJust(toArea (0, 0, 0, 0))
 
 stubLevel :: Level
 stubLevel = Level
@@ -220,6 +182,7 @@ testFaction =
     , gvictimsD = EM.empty
     }
 
+testActor :: Actor
 testActor = 
   Actor
   { btrunk = toEnum 0
@@ -241,6 +204,7 @@ testActor =
   , bproj = False
   }
 
+testItemKind :: ItemKind 
 testItemKind = ItemKind
   { isymbol  = 'x'
   , iname    = "12345678901234567890123"
@@ -259,6 +223,7 @@ testItemKind = ItemKind
   , ikit     = []
   }
 
+testActorWithItem :: Actor
 testActorWithItem = 
   testActor { beqp = EM.singleton testItemId (1,[])}
 
@@ -268,7 +233,7 @@ stubState = let singletonFactionUpdate _ = EM.singleton testFactionId testFactio
                 singletonDungeonUpdate _ = EM.singleton testLevelId stubLevel
                 singletonActorDUpdate _ = EM.singleton testActorId testActor
                 singletonActorMaxSkillsUpdate _ = EM.singleton testActorId Ability.zeroSkills
-                copsUpdate oldCOps = oldCOps{corule=((corule oldCOps){rXmax=testLevelDimension, rYmax=testLevelDimension})}
+                copsUpdate oldCOps = oldCOps{corule=((corule oldCOps){rWidthMax=testLevelDimension, rHeightMax=testLevelDimension})}
                 stateWithMaxLevelDimension = updateCOpsAndCachedData copsUpdate emptyState
                 stateWithFaction = updateFactionD singletonFactionUpdate stateWithMaxLevelDimension
                 stateWithActorD = updateActorD singletonActorDUpdate stateWithFaction
@@ -276,6 +241,7 @@ stubState = let singletonFactionUpdate _ = EM.singleton testFactionId testFactio
                 stateWithDungeon = updateDungeon singletonDungeonUpdate stateWithActorMaxSkills
             in stateWithDungeon
 
+testStateWithItem :: State
 testStateWithItem = let swapToItemActor _ = EM.singleton testActorId testActorWithItem
                      in updateActorD swapToItemActor stubState
 
@@ -288,6 +254,7 @@ emptyCliState = CliState
   -- , cliToSave = undefined 
   }  
 
+stubSessionUI :: SessionUI
 stubSessionUI = (emptySessionUI stubUIOptions) 
   { sactorUI = EM.singleton testActorId ActorUI { bsymbol='j', bname="Jamie", bpronoun="he/him", bcolor=BrCyan }
   , sccui = emptyCCUI { coscreen = ScreenContent { rwidth = 10 -- unit test expects rheight > 1
@@ -300,12 +267,14 @@ stubSessionUI = (emptySessionUI stubUIOptions)
   , schanF = fchanFrontendStub
   } 
 
+stubCliState :: CliState
 stubCliState = CliState
   { cliState = stubState
   , cliClient = (emptyStateClient testFactionId) { soptions = stubClientOptions, sfper = EM.singleton testLevelId emptyPer }
   , cliSession = Just (stubSessionUI {sxhair = Just (TPoint TUnknown testLevelId (Point 1 0))}) --(TVector Vector {vx=1, vy=0})}) -- (TNonEnemy (toEnum 1))})-- 
   }
 
+testCliStateWithItem :: CliState
 testCliStateWithItem = stubCliState { cliState = testStateWithItem }
 
 -- | Client state mock transformation monad.

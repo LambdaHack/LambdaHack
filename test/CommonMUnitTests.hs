@@ -12,14 +12,13 @@ import qualified Data.EnumMap.Strict as EM
 
 import           Game.LambdaHack.Client.CommonM
 
-import           Game.LambdaHack.Common.Actor
 import           Game.LambdaHack.Common.Area
 import           Game.LambdaHack.Common.Kind
 import           Game.LambdaHack.Common.Level
 import           Game.LambdaHack.Common.Perception
 import           Game.LambdaHack.Common.Point
-import           Game.LambdaHack.Common.PointArray as PointArray
 import           Game.LambdaHack.Common.State
+import           Game.LambdaHack.Content.TileKind
 import           Game.LambdaHack.Common.Time
 
 import qualified Game.LambdaHack.Core.Dice as Dice
@@ -34,7 +33,7 @@ testLevel = Level
   , lembed = EM.empty
   , lbig = EM.empty
   , lproj = EM.empty
-  , ltile = PointArray.empty
+  , ltile = unknownTileMap (fromJust (toArea (0,0,0,0))) unknownId 10 10
   , lentry = EM.empty
   , larea = trivialArea (Point 0 0)
   , lsmell = EM.empty
@@ -45,8 +44,6 @@ testLevel = Level
   , ltime = timeZero
   , lnight = False
   }
-
-testUnknownTileLevelState = localFromGlobal emptyState
 
 commonMUnitTests :: TestTree
 commonMUnitTests = testGroup "commonMUnitTests" $ 
@@ -62,8 +59,6 @@ commonMUnitTests = testGroup "commonMUnitTests" $
   , testCase "makeLine unknownTiles succeeds" $
     do
       let eps = 1
-          testDungeon = sdungeon testUnknownTileLevelState
-          (Just testUnknownTileLevel) = EM.lookup (toEnum 0) testDungeon
-          result = makeLine False testActor (Point 2 0) eps emptyCOps testUnknownTileLevel 
+          result = makeLine False testActor (Point 2 0) eps emptyCOps testLevel
        in result @?= Just 1
   ]

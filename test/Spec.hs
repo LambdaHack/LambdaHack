@@ -48,7 +48,7 @@ tests = testGroup "Tests" [ actorStateUnitTests
                           , reqFailureUnitTests
                           , macroTests
                           , monadClientUIUnitTests
-                          --, integrationTests
+                          , integrationTests
                           ]
 
 integrationTests :: TestTree
