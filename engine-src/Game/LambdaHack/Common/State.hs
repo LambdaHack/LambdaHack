@@ -17,8 +17,9 @@ module Game.LambdaHack.Common.State
   , maxSkillsFromActor, maxSkillsInDungeon
 #ifdef EXPOSE_INTERNAL
     -- * Internal operations
-  , unknownLevel, unknownTileMap
+  , unknownLevel
 #endif
+  , unknownTileMap -- internal and unit tests
   ) where
 
 import Prelude ()
