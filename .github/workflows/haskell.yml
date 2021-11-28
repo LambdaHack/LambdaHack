@@ -244,7 +244,11 @@ jobs:
           path: ~/.haskell-ci-tools
       - name: install doctest
         run: |
-          if [ $((HCNUMVER < 90002)) -ne 0 ] ; then $CABAL --store-dir=$HOME/.haskell-ci-tools/store v2-install $ARG_COMPILER_TOOL --ignore-project -j2 doctest --constraint='doctest ^>=0.20' ; fi
+          if [ $((HCNUMVER < 90002)) -ne 0 ] ; then
+            case $MY_HCFLAGS in --ghc-option=-O*) : ;;
+              *)
+                $CABAL --store-dir=$HOME/.haskell-ci-tools/store v2-install $ARG_COMPILER_TOOL --ignore-project -j2 doctest --constraint='doctest ^>=0.20'
+          fi
       - name: install hlint
         run: |
           if [ $((HCNUMVER >= 90000 && HCNUMVER < 90002)) -ne 0 ] ; then HLINTVER=$(cd /tmp && (${CABAL} v2-install -v $ARG_COMPILER_TOOL --dry-run hlint  --constraint='hlint >=3.3 && <3.4' |  perl -ne 'if (/\bhlint-(\d+(\.\d+)*)\b/) { print "$1"; last; }')); echo "HLint version $HLINTVER" ; fi
@@ -298,9 +302,11 @@ jobs:
         run: |
           $CABAL v2-test $ARG_COMPILER $ARG_TESTS $ARG_BENCH all --test-show-details=direct
           if [ $((HCNUMVER < 90002)) -ne 0 ] ; then
-            $CABAL build $ARG_COMPILER all
-            $CABAL repl --build-depends=QuickCheck --with-ghc=doctest definition
-            $CABAL repl --build-depends=QuickCheck --build-depends=template-haskell --with-ghc=doctest lib:LambdaHack
+            case $MY_HCFLAGS in --ghc-option=-O*) : ;;
+              *)
+                $CABAL repl --build-depends=QuickCheck --with-ghc=doctest definition
+                $CABAL repl --build-depends=QuickCheck --build-depends=template-haskell --with-ghc=doctest lib:LambdaHack
+            esac
           fi
       - name: gameplay tests
         shell: 'script -q -e -c "bash --noprofile --norc -eo pipefail {0}"'
