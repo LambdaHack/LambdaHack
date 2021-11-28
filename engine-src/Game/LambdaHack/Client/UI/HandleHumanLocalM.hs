@@ -176,7 +176,8 @@ chooseItemDialogMode leader0 permitLoreCycle c = do
         return (ggi, False)
   -- Pointman could have been changed in @getStoreItem@ above.
   mleader <- getsClient sleader
-  let leader = fromMaybe (error "UI manipulation killed the pointman") mleader
+  -- When run inside a test, without mleader, assume leader not changed.
+  let leader = fromMaybe leader0 mleader
   recordHistory  -- item chosen, wipe out already shown msgs
   actorCurAndMaxSk <- getsState $ getActorMaxSkills leader
   let meleeSkill = Ability.getSk Ability.SkHurtMelee actorCurAndMaxSk
