@@ -103,7 +103,7 @@ jobs:
             setup-method: ghcup
             allow-failure: false
           - compiler: ghc-8.10.7-opt2
-            projectFlags: --ghc-options=-O2 --ghc-option=-fno-ignore-asserts
+            projectFlags: --ghc-option=-O2 --ghc-option=-fno-ignore-asserts
             compilerKind: ghc
             compilerVersion: 8.10.7
             setup-method: ghcup
