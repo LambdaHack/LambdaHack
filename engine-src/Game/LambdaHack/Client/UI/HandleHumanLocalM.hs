@@ -27,10 +27,11 @@ module Game.LambdaHack.Client.UI.HandleHumanLocalM
   , aimPointerFloorHuman, aimPointerEnemyHuman
 #ifdef EXPOSE_INTERNAL
     -- * Internal operations
-  , chooseItemDialogModeLore, permittedProjectClient, projectCheck
-  , xhairLegalEps, posFromXhair, permittedApplyClient, endAiming, endAimingMsg
+  , chooseItemDialogModeLore, projectCheck
+  , posFromXhair, permittedApplyClient, endAiming, endAimingMsg
   , flashAiming
 #endif
+  , permittedProjectClient, xhairLegalEps -- internal and for unit tests
   ) where
 
 import Prelude ()
@@ -92,7 +93,7 @@ import           Game.LambdaHack.Content.RuleKind
 import qualified Game.LambdaHack.Definition.Ability as Ability
 import qualified Game.LambdaHack.Definition.Color as Color
 import           Game.LambdaHack.Definition.Defs
-import           Game.LambdaHack.Definition.DefsInternal
+
 -- * Macro
 
 macroHuman :: MonadClientUI m => [String] -> m ()

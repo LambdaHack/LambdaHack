@@ -52,13 +52,7 @@ commonMUnitTests = testGroup "commonMUnitTests" $
       result <- executorCli (getPerFid testLevelId) stubCliState
       fst result @?= emptyPer
   , testCase "makeLine stubLevel fails" $
-    do
-      let eps = 1
-          result = makeLine False testActor (Point 0 0) eps emptyCOps testLevel 
-       in result @?= Nothing
+    do Nothing @?= makeLine False testActor (Point 0 0) 1 emptyCOps testLevel 
   , testCase "makeLine unknownTiles succeeds" $
-    do
-      let eps = 1
-          result = makeLine False testActor (Point 2 0) eps emptyCOps testLevel
-       in result @?= Just 1
+    do Just 1 @?= makeLine False testActor (Point 2 0) 1 emptyCOps testLevel
   ]

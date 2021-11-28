@@ -82,8 +82,8 @@ fchanFrontendStub =
   ChanFrontend $ \case
     FrontFrame _ -> putStr "FrontFrame"
     FrontDelay _ -> putStr "FrontDelay"
-    FrontKey _ _ -> do return KMP { kmpKeyMod=K.escKM, kmpPointer=PointUI 0 0 }
-    FrontPressed -> do return False
+    FrontKey _ _ -> return KMP { kmpKeyMod=K.escKM, kmpPointer=PointUI 0 0 }
+    FrontPressed -> return False
     FrontDiscardKey -> putStr "FrontDiscardKey"
     FrontResetKeys -> putStr "FrontResetKeys"
     FrontShutdown -> putStr "FrontShutdown"

@@ -5,8 +5,6 @@ import Prelude ()
 
 import Game.LambdaHack.Core.Prelude
 
-import qualified Data.Text as T
-
 import Test.Tasty
 import Test.Tasty.HUnit
 
@@ -22,8 +20,8 @@ inventoryMUnitTests = testGroup "inventoryMUnitTests"
     do 
       let testFn = getFull testActorId
                             (return SuitsEverything) -- m Suitability
-                            (\_ _ _ _ _ -> T.pack "specific prompt")
-                            (\_ _ _ _ _ -> T.pack "generic prompt") 
+                            (\_ _ _ _ _ -> "specific prompt")
+                            (\_ _ _ _ _ -> "generic prompt") 
                             [] -- [CStore]
                             False 
                             False
@@ -33,8 +31,8 @@ inventoryMUnitTests = testGroup "inventoryMUnitTests"
     do
       let testFn = getFull testActorId
                             (return SuitsEverything) -- m Suitability
-                            (\_ _ _ _ _ -> T.pack "specific prompt")
-                            (\_ _ _ _ _ -> T.pack "generic prompt") 
+                            (\_ _ _ _ _ -> "specific prompt")
+                            (\_ _ _ _ _ -> "generic prompt") 
                             [CEqp]
                             False 
                             False
@@ -44,8 +42,8 @@ inventoryMUnitTests = testGroup "inventoryMUnitTests"
     do
       let testFn = getFull testActorId
                             (return SuitsEverything) -- m Suitability
-                            (\_ _ _ _ _ -> T.pack "specific prompt")
-                            (\_ _ _ _ _ -> T.pack "generic prompt") 
+                            (\_ _ _ _ _ -> "specific prompt")
+                            (\_ _ _ _ _ -> "generic prompt") 
                             [CEqp]
                             False 
                             False
