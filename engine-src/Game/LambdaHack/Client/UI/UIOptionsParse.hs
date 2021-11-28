@@ -147,7 +147,9 @@ mkUIOptions corule clientOptions = do
                     then "The config file and savefiles have been moved aside."
                     else "The config file has been moved aside."
       delayPrint msg
-    tryWriteFile (path "") configText
+    dataDirExists <- doesFileExist dataDir
+    when dataDirExists $  -- may not exist, e.g., when testing
+      tryWriteFile (path "") configText
     let confDefault = parseConfig cfgUIDefault
     return confDefault
 
