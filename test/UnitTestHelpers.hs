@@ -27,6 +27,7 @@ import Prelude ()
 import Game.LambdaHack.Core.Prelude
 
 import qualified Control.Monad.IO.Class as IO
+import System.IO (putStr)
 
 import Control.Monad.Trans.State.Strict
     ( StateT(StateT, runStateT), gets, state, evalStateT )
@@ -81,14 +82,14 @@ import Game.LambdaHack.Common.Misc
 fchanFrontendStub :: ChanFrontend
 fchanFrontendStub =
   ChanFrontend $ \case
-    FrontFrame _ -> print "FrontFrame"
-    FrontDelay _ -> print "FrontDelay"
+    FrontFrame _ -> putStr "FrontFrame"
+    FrontDelay _ -> putStr "FrontDelay"
     FrontKey _ _ -> do return KMP { kmpKeyMod=K.escKM, kmpPointer=PointUI 0 0 }
     FrontPressed -> do return False
-    FrontDiscardKey -> print "FrontDiscardKey"
-    FrontResetKeys -> print "FrontResetKeys"
-    FrontShutdown -> print "FrontShutdown"
-    FrontPrintScreen -> print "FrontPrintScreen"
+    FrontDiscardKey -> putStr "FrontDiscardKey"
+    FrontResetKeys -> putStr "FrontResetKeys"
+    FrontShutdown -> putStr "FrontShutdown"
+    FrontPrintScreen -> putStr "FrontPrintScreen"
 
 data CliState = CliState
   { cliState   :: State            -- ^ current global state
