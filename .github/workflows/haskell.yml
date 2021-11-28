@@ -248,6 +248,7 @@ jobs:
             case $MY_HCFLAGS in --ghc-option=-O*) : ;;
               *)
                 $CABAL --store-dir=$HOME/.haskell-ci-tools/store v2-install $ARG_COMPILER_TOOL --ignore-project -j2 doctest --constraint='doctest ^>=0.20'
+            esac
           fi
       - name: install hlint
         run: |
