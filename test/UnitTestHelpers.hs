@@ -27,10 +27,9 @@ import Prelude ()
 import Game.LambdaHack.Core.Prelude
 
 import qualified Control.Monad.IO.Class as IO
-import System.IO (putStr)
 
 import Control.Monad.Trans.State.Strict
-    ( StateT(StateT, runStateT), gets, state, evalStateT )
+    ( StateT(StateT, runStateT), gets, state )
 
 import qualified Data.EnumMap.Strict as EM
 
@@ -48,7 +47,6 @@ import           Game.LambdaHack.Client.UI.Frontend
 import           Game.LambdaHack.Client.UI.Key (KMP (..))
 import qualified Game.LambdaHack.Client.UI.Key as K
 import           Game.LambdaHack.Client.UI.PointUI
-import           Game.LambdaHack.Client.UI.SessionUI
 import           Game.LambdaHack.Client.UI.UIOptions
 
 import           Game.LambdaHack.Common.Actor
