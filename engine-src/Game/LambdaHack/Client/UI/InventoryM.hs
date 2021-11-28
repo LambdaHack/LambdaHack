@@ -347,7 +347,7 @@ transition leader psuit prompt promptGeneric permitMulitple
   let recCall cCur2 cRest2 itemDialogState2 = do
         -- Pointman could have been changed by keypresses near the end of
         -- the current recursive call, so refresh it for the next call.
-        mleader <- getsClient sleader'
+        mleader <- getsClient sleader
         -- When run inside a test, without mleader, assume leader not changed.
         let leader2 = fromMaybe leader mleader
         transition leader2 psuit prompt promptGeneric permitMulitple
