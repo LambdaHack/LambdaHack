@@ -298,7 +298,7 @@ jobs:
         run: |
           $CABAL v2-test $ARG_COMPILER $ARG_TESTS $ARG_BENCH all --test-show-details=direct
           if [ $((HCNUMVER < 90002)) -ne 0 ] ; then
-            $CABAL build $ARG_COMPILER
+            $CABAL build $ARG_COMPILER all
             $CABAL repl --build-depends=QuickCheck --with-ghc=doctest definition
             $CABAL repl --build-depends=QuickCheck --build-depends=template-haskell --with-ghc=doctest lib:LambdaHack
           fi
