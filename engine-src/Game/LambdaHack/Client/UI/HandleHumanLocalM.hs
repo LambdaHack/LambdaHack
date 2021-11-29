@@ -521,8 +521,10 @@ psuitReq leader = do
             in Right (pos, 1 + IA.totalRange arItem (itemKind itemFull)
                            >= chessDist (bpos b) pos)
 
--- | triggerSymbols
---
+-- $setup
+-- >>> import Game.LambdaHack.Definition.DefsInternal
+
+-- |
 -- >>> let trigger1 = HumanCmd.TriggerItem{tiverb="verb", tiobject="object", tisymbols=[toContentSymbol 'a', toContentSymbol 'b']}
 -- >>> let trigger2 = HumanCmd.TriggerItem{tiverb="verb2", tiobject="object2", tisymbols=[toContentSymbol 'c']}
 -- >>> triggerSymbols [trigger1, trigger2]
