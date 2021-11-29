@@ -352,9 +352,8 @@ instance MonadClientAtomic CliMock where
   execPutState = putState
 
 
--- the compiler is recommending I ditch the testCliState redundancy ... it feels less readable to me that way though ... but maybe that's because I suck at haskell
 executorCli :: CliMock a -> CliState -> IO (a, CliState)
-executorCli testFn testCliState = 
-  runStateT (runCliMock testFn) testCliState 
+executorCli testFn = 
+  runStateT (runCliMock testFn)
   
   
