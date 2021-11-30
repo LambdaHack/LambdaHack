@@ -74,7 +74,8 @@ data State = State
   , _sfactionD       :: FactionDict
                                    -- ^ remembered sides still in game
   , _stime           :: Time       -- ^ global game time, for UI display only
-  , _scops           :: COps       -- ^ remembered content
+  , _scops           :: COps       -- ^ remembered content; warning: use only
+                                   --   validated content, even for testing
   , _sgold           :: Int        -- ^ total value of human trinkets in dungeon
   , _shigh           :: HighScore.ScoreDict  -- ^ high score table
   , _sgameModeId     :: ContentId ModeKind   -- ^ current game mode

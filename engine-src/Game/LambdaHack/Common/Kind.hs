@@ -32,6 +32,11 @@ import           Game.LambdaHack.Definition.ContentData
 import           Game.LambdaHack.Definition.Defs
 
 -- | Operations for all content types, gathered together.
+--
+-- Warning: this type is not abstract, but its values should not be
+-- created ad hoc, even for unit tests, but should be constructed
+-- with @makeData@ for each particular content kind, which includes validation,
+-- and with @speedupItem@, etc., to ensure internal consistency.
 data COps = COps
   { cocave        :: ContentData CaveKind   -- server only
   , cofact        :: ContentData FactionKind
