@@ -97,7 +97,7 @@ empty = Array 0 0 U.empty
 
 accessI :: UnboxRepClass c => Array c -> Int -> UnboxRep c
 {-# INLINE accessI #-}
-accessI Array{..} p = avector `U.unsafeIndex` p
+accessI Array{..} p = avector `vectorUnboxedUnsafeIndex` p
 
 -- | Construct an array updated with the association list.
 (//) :: UnboxRepClass c => Array c -> [(Point, c)] -> Array c

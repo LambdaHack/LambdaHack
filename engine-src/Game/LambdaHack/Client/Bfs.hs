@@ -132,10 +132,19 @@ fillBfsThawed !lalter !alterSkill !sourceI
               (!tabAThawed, !tabBThawed) !vThawed = do
   let unsafeReadI :: PointI -> ST s BfsDistance
       {-# INLINE unsafeReadI #-}
+#ifdef WITH_EXPENSIVE_ASSERTIONS
+      unsafeReadI p = BfsDistance <$> VM.read vThawed p
+        -- index checking is sometimes an expensive (kind of) assertion
+#else
       unsafeReadI p = BfsDistance <$> VM.unsafeRead vThawed p
+#endif
       unsafeWriteI :: PointI -> BfsDistance -> ST s ()
       {-# INLINE unsafeWriteI #-}
+#ifdef WITH_EXPENSIVE_ASSERTIONS
+      unsafeWriteI p c = VM.write vThawed p (bfsDistance c)
+#else
       unsafeWriteI p c = VM.unsafeWrite vThawed p (bfsDistance c)
+#endif
       -- The two tabs (arrays) are used as a staged, optimized queue.
       -- The first tab is for writes, the second one for reads.
       -- They switch places in each recursive @bfs@ call.
@@ -195,7 +204,11 @@ fillBfsThawed !lalter !alterSkill !sourceI
         if acc3 == 0 || distanceNew == maxBfsDistance
         then return () -- no more close enough dungeon positions
         else bfs tabWriteThawed tabReadThawed distanceNew acc3
+#ifdef WITH_EXPENSIVE_ASSERTIONS
+  VM.write vThawed sourceI (bfsDistance minKnownBfs)
+#else
   VM.unsafeWrite vThawed sourceI (bfsDistance minKnownBfs)
+#endif
   PA.writePrimArray tabAThawed 0 sourceI
   bfs tabAThawed tabBThawed (succBfsDistance minKnownBfs) 1
 

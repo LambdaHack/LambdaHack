@@ -61,7 +61,7 @@ createTabWithKey cotile prop = Tab $ U.convert $ oimapVector cotile prop
 -- with the newtype.
 accessTab :: U.Unbox a => Tab a -> ContentId TileKind -> a
 {-# INLINE accessTab #-}
-accessTab (Tab tab) ki = tab `U.unsafeIndex` contentIdIndex ki
+accessTab (Tab tab) ki = tab `vectorUnboxedUnsafeIndex` contentIdIndex ki
 
 speedupTile :: Bool -> ContentData TileKind -> TileSpeedup
 speedupTile allClear cotile =

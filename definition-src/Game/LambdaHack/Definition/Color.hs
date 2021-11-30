@@ -25,7 +25,7 @@ import Game.LambdaHack.Core.Prelude
 
 import           Control.DeepSeq
 import           Data.Binary
-import           Data.Bits (unsafeShiftL, unsafeShiftR, (.&.))
+import           Data.Bits ((.&.))
 import qualified Data.Char as Char
 import           GHC.Generics (Generic)
 
