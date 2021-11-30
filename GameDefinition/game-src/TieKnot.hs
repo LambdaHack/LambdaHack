@@ -66,24 +66,22 @@ tieKnotForAsync options@ServerOptions{ sallClear
   -- equal to what was generated last time, ensures the same item boost.
   initialGen <- maybe SM.newSMGen return sdungeonRng
   let soptionsNxt = options {sdungeonRng = Just initialGen}
+      corule = RK.makeData Content.RuleKind.standardRules
       boostedItems = IK.boostItemKindList initialGen Content.ItemKind.items
       itemContent =
         if sboostRandomItem
         then boostedItems ++ Content.ItemKind.otherItemContent
         else Content.ItemKind.content
-      coitem = IK.makeData (RK.ritemSymbols Content.RuleKind.standardRules)
+      coitem = IK.makeData (RK.ritemSymbols corule)
                            itemContent
                            Content.ItemKind.groupNamesSingleton
                            Content.ItemKind.groupNames
-      coItemSpeedup = speedupItem coitem
       cotile = TK.makeData Content.TileKind.content
                            Content.TileKind.groupNamesSingleton
                            Content.TileKind.groupNames
-      coTileSpeedup = Tile.speedupTile sallClear cotile
       cofact = FK.makeData Content.FactionKind.content
                            Content.FactionKind.groupNamesSingleton
                            Content.FactionKind.groupNames
-      corule = RK.makeData Content.RuleKind.standardRules
       -- Common content operations, created from content definitions.
       -- Evaluated fully to discover errors ASAP and to free memory.
       -- Fail here, not inside server code, so that savefiles are not removed,
@@ -105,8 +103,8 @@ tieKnotForAsync options@ServerOptions{ sallClear
                                 Content.PlaceKind.groupNames
         , corule
         , cotile
-        , coItemSpeedup
-        , coTileSpeedup
+        , coItemSpeedup = speedupItem coitem
+        , coTileSpeedup = Tile.speedupTile sallClear cotile
         }
   -- Evaluating for compact regions catches all kinds of errors in content ASAP,
   -- even in unused items.
