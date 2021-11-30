@@ -242,6 +242,7 @@ jobs:
         with:
           key: ${{ runner.os }}-${{ matrix.compilerVersion }}-tools-803c0a4b
           path: ~/.haskell-ci-tools
+          restore-keys: ${{ runner.os }}-${{ matrix.compilerVersion }}-tools-803c0a4b
       - name: install doctest
         run: |
           if [ $((HCNUMVER < 90002)) -ne 0 ] ; then
