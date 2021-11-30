@@ -7,10 +7,10 @@ module Game.LambdaHack.Content.TileKind
   , isUknownSpace, unknownId
   , isSuspectKind, isOpenableKind, isClosableKind
   , talterForStairs, floorSymbol
+  , mandatoryGroups, mandatoryGroupsSingleton
 #ifdef EXPOSE_INTERNAL
     -- * Internal operations
-  , validateSingle, validateAll
-  , validateDups, mandatoryGroups, mandatoryGroupsSingleton
+  , validateSingle, validateAll, validateDups
 #endif
   ) where
 

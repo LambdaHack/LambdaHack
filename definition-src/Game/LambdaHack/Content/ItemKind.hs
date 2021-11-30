@@ -15,11 +15,11 @@ module Game.LambdaHack.Content.ItemKind
   , damageUsefulness, verbMsgNoLonger, verbMsgLess, toVelocity, toLinger
   , timerNone, isTimerNone, foldTimer, toOrganBad, toOrganGood, toOrganNoTimer
   , validateSingle
+  , mandatoryGroups, mandatoryGroupsSingleton
 #ifdef EXPOSE_INTERNAL
     -- * Internal operations
   , boostItemKind, onSmashOrCombineEffect
   , validateAll, validateDups, validateDamage
-  , mandatoryGroups, mandatoryGroupsSingleton
 #endif
   ) where
 

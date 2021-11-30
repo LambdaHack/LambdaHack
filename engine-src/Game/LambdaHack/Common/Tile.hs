@@ -13,9 +13,9 @@
 --
 -- Actors at normal speed (2 m/s) take one turn to move one tile (1 m by 1 m).
 module Game.LambdaHack.Common.Tile
-  ( -- * Construction of tile property lookup speedup tables
-    speedupTile
-    -- * Sped up property lookups
+  ( -- * Tile property lookup speedup tables and their construction
+    TileSpeedup(..), Tab(..), speedupTile
+    -- * Speedup property lookups
   , isClear, isLit, isHideout, isWalkable, isDoor, isChangable
   , isSuspect, isHideAs, consideredByAI, isExplorable
   , isVeryOftenItem, isCommonItem, isOftenActor, isNoItem, isNoActor
@@ -37,15 +37,47 @@ import Game.LambdaHack.Core.Prelude
 import qualified Data.Vector.Unboxed as U
 import           Data.Word (Word8)
 
-import           Game.LambdaHack.Common.Item
-import           Game.LambdaHack.Common.Kind
-import           Game.LambdaHack.Common.Types
 import           Game.LambdaHack.Content.ItemKind (ItemKind)
-import qualified Game.LambdaHack.Content.ItemKind as IK
 import           Game.LambdaHack.Content.TileKind (TileKind, isUknownSpace)
 import qualified Game.LambdaHack.Content.TileKind as TK
 import           Game.LambdaHack.Core.Random
+import           Game.LambdaHack.Definition.ContentData
 import           Game.LambdaHack.Definition.Defs
+
+-- | A lot of tabulated maps from tile kind identifier to a property
+-- of the tile kind.
+data TileSpeedup = TileSpeedup
+  { isClearTab          :: Tab Bool
+  , isLitTab            :: Tab Bool
+  , isHideoutTab        :: Tab Bool
+  , isWalkableTab       :: Tab Bool
+  , isDoorTab           :: Tab Bool
+  , isOpenableTab       :: Tab Bool
+  , isClosableTab       :: Tab Bool
+  , isChangableTab      :: Tab Bool
+  , isModifiableWithTab :: Tab Bool
+  , isSuspectTab        :: Tab Bool
+  , isHideAsTab         :: Tab Bool
+  , consideredByAITab   :: Tab Bool
+  , isVeryOftenItemTab  :: Tab Bool
+  , isCommonItemTab     :: Tab Bool
+  , isOftenActorTab     :: Tab Bool
+  , isNoItemTab         :: Tab Bool
+  , isNoActorTab        :: Tab Bool
+  , isEasyOpenTab       :: Tab Bool
+  , isEmbedTab          :: Tab Bool
+  , isAquaticTab        :: Tab Bool
+  , alterMinSkillTab    :: Tab Word8
+  , alterMinWalkTab     :: Tab Word8
+  }
+
+-- Vectors of booleans can be slower than arrays, because they are not packed,
+-- but with growing cache sizes they may as well turn out faster at some point.
+-- The advantage of vectors are exposed internals, in particular unsafe
+-- indexing. Also, in JS, bool arrays are obviously not packed.
+-- An option: https://github.com/Bodigrim/bitvec
+-- | A map morally indexed by @ContentId TileKind@.
+newtype Tab a = Tab (U.Vector a)
 
 createTab :: U.Unbox a => ContentData TileKind -> (TileKind -> a) -> Tab a
 createTab cotile prop = Tab $ U.convert $ omapVector cotile prop

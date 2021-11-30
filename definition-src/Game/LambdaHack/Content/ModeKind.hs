@@ -3,9 +3,10 @@ module Game.LambdaHack.Content.ModeKind
   ( pattern CAMPAIGN_SCENARIO, pattern INSERT_COIN
   , ModeKind(..), makeData
   , Caves, Roster
+  , mandatoryGroups
 #ifdef EXPOSE_INTERNAL
     -- * Internal operations
-  , validateSingle, validateAll, validateSingleRoster, mandatoryGroups
+  , validateSingle, validateAll, validateSingleRoster
 #endif
   ) where
 
@@ -104,7 +105,7 @@ validateSingleRoster cofact caves roster =
            | ln `notElem` keys ]
      in concatMap f roster
         ++ [ "player is confused by both positive and negative level numbers"
-           | signum minD /= signum maxD ]
+           | not (null keys) && signum minD /= signum maxD ]
         ++ [ "player is confused by level numer zero"
            | 0 `elem` keys ]
 

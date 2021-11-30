@@ -1,14 +1,18 @@
+{-# LANGUAGE TupleSections #-}
 -- | General content types and operations.
 module Game.LambdaHack.Common.Kind
-  ( ContentData, COps(..)
+  ( ContentData  -- re-exported without some operations
+  , COps(..)
   , emptyCOps
   , ItemSpeedup
   , emptyItemSpeedup, getKindMean, speedupItem
-  , TileSpeedup(..), Tab(..)
-  , emptyTileSpeedup, emptyTab
   , okind, omemberGroup, oisSingletonGroup, ouniqGroup, opick
   , ofoldlWithKey', ofoldlGroup', omapVector, oimapVector
   , olength, linearInterpolation
+#ifdef EXPOSE_INTERNAL
+  , emptyMultiGroupItem, emptyUnknownTile
+  , emptyUIFactionGroupName, emptyUIFaction, emptyMultiGroupMode
+#endif
   ) where
 
 import Prelude ()
@@ -16,20 +20,23 @@ import Prelude ()
 import Game.LambdaHack.Core.Prelude
 
 import qualified Data.Vector as V
-import qualified Data.Vector.Unboxed as U
-import           Data.Word (Word8)
 
 import qualified Game.LambdaHack.Common.ItemAspect as IA
-import           Game.LambdaHack.Content.CaveKind
-import           Game.LambdaHack.Content.FactionKind
-import           Game.LambdaHack.Content.ItemKind (ItemKind)
+import qualified Game.LambdaHack.Common.Tile as Tile
+import qualified Game.LambdaHack.Content.CaveKind as CK
+import qualified Game.LambdaHack.Content.FactionKind as FK
 import qualified Game.LambdaHack.Content.ItemKind as IK
-import           Game.LambdaHack.Content.ModeKind
-import           Game.LambdaHack.Content.PlaceKind
-import           Game.LambdaHack.Content.RuleKind
-import           Game.LambdaHack.Content.TileKind (TileKind)
+import qualified Game.LambdaHack.Content.ModeKind as MK
+import qualified Game.LambdaHack.Content.PlaceKind as PK
+import qualified Game.LambdaHack.Content.RuleKind as RK
+import qualified Game.LambdaHack.Content.TileKind as TK
+import qualified Game.LambdaHack.Definition.Ability as Ability
+import qualified Game.LambdaHack.Definition.Color as Color
 import           Game.LambdaHack.Definition.ContentData
 import           Game.LambdaHack.Definition.Defs
+import           Game.LambdaHack.Definition.DefsInternal
+  (GroupName (GroupName), toContentSymbol)
+import           Game.LambdaHack.Definition.Flavour (dummyFlavour)
 
 -- | Operations for all content types, gathered together.
 --
@@ -38,15 +45,15 @@ import           Game.LambdaHack.Definition.Defs
 -- with @makeData@ for each particular content kind, which includes validation,
 -- and with @speedupItem@, etc., to ensure internal consistency.
 data COps = COps
-  { cocave        :: ContentData CaveKind   -- server only
-  , cofact        :: ContentData FactionKind
-  , coitem        :: ContentData ItemKind
-  , comode        :: ContentData ModeKind   -- server only
-  , coplace       :: ContentData PlaceKind  -- server only, so far
-  , corule        :: RuleContent
-  , cotile        :: ContentData TileKind
+  { cocave        :: ContentData CK.CaveKind   -- server only
+  , cofact        :: ContentData FK.FactionKind
+  , coitem        :: ContentData IK.ItemKind
+  , comode        :: ContentData MK.ModeKind   -- server only
+  , coplace       :: ContentData PK.PlaceKind  -- server only, so far
+  , corule        :: RK.RuleContent
+  , cotile        :: ContentData TK.TileKind
   , coItemSpeedup :: ItemSpeedup
-  , coTileSpeedup :: TileSpeedup
+  , coTileSpeedup :: Tile.TileSpeedup
   }
 
 instance Show COps where
@@ -55,18 +62,94 @@ instance Show COps where
 instance Eq COps where
   (==) _ _ = True
 
-emptyCOps :: COps
-emptyCOps = COps
-  { cocave  = emptyContentData
-  , cofact  = emptyContentData
-  , coitem  = emptyContentData
-  , comode  = emptyContentData
-  , coplace = emptyContentData
-  , corule  = emptyRuleContent
-  , cotile  = emptyContentData
-  , coItemSpeedup = emptyItemSpeedup
-  , coTileSpeedup = emptyTileSpeedup
+emptyMultiGroupItem :: IK.ItemKind
+emptyMultiGroupItem = IK.ItemKind
+  { isymbol  = toContentSymbol 'E'
+  , iname    = "emptyCOps item"
+  , ifreq    = map (, 1) $ IK.mandatoryGroups ++ IK.mandatoryGroupsSingleton
+  , iflavour = [dummyFlavour]
+  , icount   = 0
+  , irarity  = []
+  , iverbHit = ""
+  , iweight  = 0
+  , idamage  = 0
+  , iaspects = []
+  , ieffects = []
+  , idesc    = ""
+  , ikit     = []
   }
+
+emptyUnknownTile :: TK.TileKind
+emptyUnknownTile = TK.TileKind  -- needs to have index 0 and alter 1
+  { tsymbol  = 'E'
+  , tname    = "unknown space"  -- name checked in validation
+  , tfreq    = map (, 1) $ TK.mandatoryGroups ++ TK.mandatoryGroupsSingleton
+  , tcolor   = Color.BrMagenta
+  , tcolor2  = Color.BrMagenta
+  , talter   = 1
+  , tfeature = []
+  }
+
+emptyUIFactionGroupName :: GroupName FK.FactionKind
+emptyUIFactionGroupName = GroupName "emptyUIFaction"
+
+emptyUIFaction :: FK.FactionKind
+emptyUIFaction = FK.FactionKind
+  { fname = "emptyUIFaction"
+  , ffreq = [(emptyUIFactionGroupName, 1)]
+  , fteam = FK.TeamContinuity 999  -- must be > 0
+  , fgroups = []
+  , fskillsOther = Ability.zeroSkills
+  , fcanEscape = False
+  , fneverEmpty = True  -- to keep the dungeon alive
+  , fhiCondPoly = []
+  , fhasGender = False
+  , finitDoctrine = Ability.TBlock
+  , fspawnsFast = False
+  , fhasPointman = False
+  , fhasUI = True  -- to own the UI frontend
+  , finitUnderAI = False
+  , fenemyTeams = []
+  , falliedTeams = []
+  }
+
+emptyMultiGroupMode :: MK.ModeKind
+emptyMultiGroupMode = MK.ModeKind
+  { mname   = "emptyMultiGroupMode"
+  , mfreq   = map (, 1) MK.mandatoryGroups
+  , mtutorial = False
+  , mattract = False
+  , mroster = [(emptyUIFactionGroupName, [])]
+  , mcaves  = []
+  , mendMsg = []
+  , mrules  = ""
+  , mdesc   = ""
+  , mreason = ""
+  , mhint   = ""
+  }
+
+-- | This is as empty, as possible, but still valid content, except for
+-- @cocave@ which is empty and not valid (making it valid would require
+-- bloating most other contents).
+emptyCOps :: COps
+emptyCOps =
+  let corule = RK.emptyRuleContent
+      coitem = IK.makeData (RK.ritemSymbols corule) [emptyMultiGroupItem] [] []
+      cotile = TK.makeData [emptyUnknownTile] [] []
+      cofact = FK.makeData [emptyUIFaction] [emptyUIFactionGroupName] []
+  in COps
+    { cocave = emptyContentData  -- not valid! beware when testing!
+        -- to make valid cave content, we'd need to define a single cave kind,
+        -- which involves creating and validating tile and place kinds, etc.
+    , cofact
+    , coitem
+    , comode = MK.makeData cofact [emptyMultiGroupMode] [] []
+    , coplace =  PK.makeData cotile [] [] []
+    , corule
+    , cotile
+    , coItemSpeedup = speedupItem coitem
+    , coTileSpeedup = Tile.speedupTile False cotile
+    }
 
 -- | Map from an item kind identifier to the mean aspect value for the kind.
 newtype ItemSpeedup = ItemSpeedup (V.Vector IA.KindMean)
@@ -84,48 +167,3 @@ speedupItem coitem =
             kmConst = not $ IA.aspectsRandom (IK.iaspects kind)
         in IA.KindMean{..}
   in ItemSpeedup $ omapVector coitem f
-
--- | A lot of tabulated maps from tile kind identifier to a property
--- of the tile kind.
-data TileSpeedup = TileSpeedup
-  { isClearTab          :: Tab Bool
-  , isLitTab            :: Tab Bool
-  , isHideoutTab        :: Tab Bool
-  , isWalkableTab       :: Tab Bool
-  , isDoorTab           :: Tab Bool
-  , isOpenableTab       :: Tab Bool
-  , isClosableTab       :: Tab Bool
-  , isChangableTab      :: Tab Bool
-  , isModifiableWithTab :: Tab Bool
-  , isSuspectTab        :: Tab Bool
-  , isHideAsTab         :: Tab Bool
-  , consideredByAITab   :: Tab Bool
-  , isVeryOftenItemTab  :: Tab Bool
-  , isCommonItemTab     :: Tab Bool
-  , isOftenActorTab     :: Tab Bool
-  , isNoItemTab         :: Tab Bool
-  , isNoActorTab        :: Tab Bool
-  , isEasyOpenTab       :: Tab Bool
-  , isEmbedTab          :: Tab Bool
-  , isAquaticTab        :: Tab Bool
-  , alterMinSkillTab    :: Tab Word8
-  , alterMinWalkTab     :: Tab Word8
-  }
-
--- Vectors of booleans can be slower than arrays, because they are not packed,
--- but with growing cache sizes they may as well turn out faster at some point.
--- The advantage of vectors are exposed internals, in particular unsafe
--- indexing. Also, in JS, bool arrays are obviously not packed.
--- An option: https://github.com/Bodigrim/bitvec
--- | A map morally indexed by @ContentId TileKind@.
-newtype Tab a = Tab (U.Vector a)
-
-emptyTileSpeedup :: TileSpeedup
-emptyTileSpeedup = TileSpeedup emptyTab emptyTab emptyTab emptyTab emptyTab
-                               emptyTab emptyTab emptyTab emptyTab emptyTab
-                               emptyTab emptyTab emptyTab emptyTab emptyTab
-                               emptyTab emptyTab emptyTab emptyTab emptyTab
-                               emptyTab emptyTab
-
-emptyTab :: U.Unbox a => Tab a
-emptyTab = Tab $! U.empty
