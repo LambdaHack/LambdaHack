@@ -61,7 +61,6 @@ import           Game.LambdaHack.Common.Perception
 import           Game.LambdaHack.Common.Point
 import           Game.LambdaHack.Common.ReqFailure
 import           Game.LambdaHack.Common.State
-import qualified Game.LambdaHack.Common.Tile as Tile
 import           Game.LambdaHack.Common.Time
 import           Game.LambdaHack.Common.Types
 import qualified Game.LambdaHack.Content.FactionKind as FK
@@ -920,19 +919,19 @@ lookAtPosition p lidV = do
       embedKindList = map (\(iid, kit) -> (getKind iid, (iid, kit)))
                           (EM.assocs embeds)
       feats = TK.tfeature $ okind cotile $ lvl `at` p
-      tileActions = mapMaybe (Tile.parseTileAction False False embedKindList)
+      tileActions = mapMaybe (parseTileAction False False embedKindList)
                              feats
-      isEmbedAction Tile.EmbedAction{} = True
+      isEmbedAction EmbedAction{} = True
       isEmbedAction _ = False
       embedVerb = [ "activated"
                   | any isEmbedAction tileActions
                     && any (\(itemKind, _) -> not $ null $ IK.ieffects itemKind)
                            embedKindList ]
-      isToAction Tile.ToAction{} = True
+      isToAction ToAction{} = True
       isToAction _ = False
-      isWithAction Tile.WithAction{} = True
+      isWithAction WithAction{} = True
       isWithAction _ = False
-      isEmptyWithAction (Tile.WithAction [] _) = True
+      isEmptyWithAction (WithAction [] _) = True
       isEmptyWithAction _ = False
       alterVerb | any isEmptyWithAction tileActions = ["very easily modified"]
                 | any isToAction tileActions = ["easily modified"]
@@ -942,7 +941,7 @@ lookAtPosition p lidV = do
       alterBlurb = if null verbs
                    then ""
                    else makeSentence ["can be", MU.WWandW verbs]
-      toolFromAction (Tile.WithAction grps _) = Just grps
+      toolFromAction (WithAction grps _) = Just grps
       toolFromAction _ = Nothing
       toolsToAlterWith = mapMaybe toolFromAction tileActions
       tItems = describeToolsAlternative toolsToAlterWith

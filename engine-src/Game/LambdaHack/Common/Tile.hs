@@ -24,7 +24,6 @@ module Game.LambdaHack.Common.Tile
   , kindHasFeature, openTo, closeTo, embeddedItems, revealAs
   , obscureAs, hideAs, buildAs
   , isEasyOpenKind, isOpenable, isClosable, isModifiable
-  , TileAction (..), parseTileAction
 #ifdef EXPOSE_INTERNAL
     -- * Internal operations
   , createTab, createTabWithKey, accessTab, alterMinSkillKind, alterMinWalkKind
@@ -368,40 +367,3 @@ isModifiable coTileSpeedup t = isOpenable coTileSpeedup t
                                || isChangable coTileSpeedup t
                                || isModifiableWith coTileSpeedup t
                                || isSuspect coTileSpeedup t
-
-data TileAction =
-    EmbedAction (ItemId, ItemQuant)
-  | ToAction (GroupName TK.TileKind)
-  | WithAction [(Int, GroupName ItemKind)] (GroupName TK.TileKind)
-  deriving Show
-
-parseTileAction :: Bool -> Bool -> [(IK.ItemKind, (ItemId, ItemQuant))]
-                -> TK.Feature
-                -> Maybe TileAction
-parseTileAction bproj underFeet embedKindList feat = case feat of
-  TK.Embed igroup ->
-      -- Greater or equal 0 to also cover template UNKNOWN items
-      -- not yet identified by the client.
-    let f (itemKind, _) =
-          fromMaybe (-1) (lookup igroup $ IK.ifreq itemKind) >= 0
-    in case find f embedKindList of
-      Nothing -> Nothing
-      Just (_, iidkit) -> Just $ EmbedAction iidkit
-  TK.OpenTo tgroup | not (underFeet || bproj) -> Just $ ToAction tgroup
-  TK.CloseTo tgroup | not (underFeet || bproj) -> Just $ ToAction tgroup
-  TK.ChangeTo tgroup | not bproj -> Just $ ToAction tgroup
-  TK.OpenWith proj grps tgroup | not underFeet ->
-    if proj == TK.ProjNo && bproj
-    then Nothing
-    else Just $ WithAction grps tgroup
-  TK.CloseWith proj grps tgroup | not underFeet ->
-    -- Not when standing on tile, not to autoclose doors under actor
-    -- or close via dropping an item inside.
-    if proj == TK.ProjNo && bproj
-    then Nothing
-    else Just $ WithAction grps tgroup
-  TK.ChangeWith proj grps tgroup ->
-    if proj == TK.ProjNo && bproj
-    then Nothing
-    else Just $ WithAction grps tgroup
-  _ -> Nothing

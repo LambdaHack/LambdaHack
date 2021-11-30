@@ -855,20 +855,20 @@ reqAlterFail bumping effToUse voluntary source tpos = do
             else return False
           feats = TK.tfeature $ okind cotile serverTile
           tileActions =
-            mapMaybe (Tile.parseTileAction
+            mapMaybe (parseTileAction
                         (bproj sb)
                         (underFeet || blockedByItem)  -- avoids AlterBlockItem
                         embedKindList)
                      feats
           groupWithFromAction action = case action of
-            Tile.WithAction grps _ | not bumping -> Just grps
+            WithAction grps _ | not bumping -> Just grps
             _ -> Nothing
           groupsToAlterWith = mapMaybe groupWithFromAction tileActions
-          processTileActions :: Maybe UseResult -> [Tile.TileAction] -> m Bool
+          processTileActions :: Maybe UseResult -> [TileAction] -> m Bool
           processTileActions museResult [] =
             return $! maybe False (/= UseDud) museResult
           processTileActions museResult (ta : rest) = case ta of
-            Tile.EmbedAction (iid, kit) ->
+            EmbedAction (iid, kit) ->
               -- Embeds are activated in the order in tile definition
               -- and never after the tile is changed.
               -- If any embedded item was present and processed,
@@ -899,7 +899,7 @@ reqAlterFail bumping effToUse voluntary source tpos = do
                      processTileActions (Just $ max useResult triggered) rest
                        -- max means that even one activated embed is enough
                        -- to alter terrain in a future action
-            Tile.ToAction tgroup -> assert (not (bproj sb)) $
+            ToAction tgroup -> assert (not (bproj sb)) $
               -- @parseTileAction@ ensures the above assertion
               -- so that projectiles never cause normal transitions and,
               -- e.g., mists douse fires or two flames thrown, first ignites,
@@ -910,7 +910,7 @@ reqAlterFail bumping effToUse voluntary source tpos = do
                 changeTo tgroup
                 return True
               else processTileActions museResult rest
-            Tile.WithAction grps tgroup -> do
+            WithAction grps tgroup -> do
               -- Note that there is no skill check if the source actors
               -- is a projectile. Permission is conveyed in @ProjYes@ instead.
               groundBag2 <- getsState $ getBodyStoreBag sb CGround

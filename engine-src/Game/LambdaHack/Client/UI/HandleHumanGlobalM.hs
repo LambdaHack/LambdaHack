@@ -1097,7 +1097,7 @@ verifyAlters leader bumping tpos = do
       tile = lvl `at` tpos
       feats = TK.tfeature $ okind cotile tile
       tileActions =
-        mapMaybe (Tile.parseTileAction
+        mapMaybe (parseTileAction
                     (bproj sb)
                     (underFeet || blockedByItem)  -- avoids AlterBlockItem
                     embedKindList)
@@ -1110,7 +1110,7 @@ verifyAlters leader bumping tpos = do
   else processTileActions leader bumping tpos tileActions
 
 processTileActions :: forall m. MonadClientUI m
-                   => ActorId -> Bool -> Point -> [Tile.TileAction]
+                   => ActorId -> Bool -> Point -> [TileAction]
                    -> m (FailOrCmd ())
 processTileActions leader bumping tpos tas = do
   COps{coTileSpeedup} <- getsState scops
@@ -1121,7 +1121,7 @@ processTileActions leader bumping tpos tas = do
   let leaderIsMist = IA.checkFlag Ability.Blast sar
                      && Dice.infDice (IK.idamage $ getKind $ btrunk sb) <= 0
       tileMinSkill = Tile.alterMinSkill coTileSpeedup $ lvl `at` tpos
-      processTA :: Maybe Bool -> [Tile.TileAction] -> Bool
+      processTA :: Maybe Bool -> [TileAction] -> Bool
                 -> m (FailOrCmd (Maybe (Bool, Bool)))
       processTA museResult [] bumpFailed = do
         let useResult = fromMaybe False museResult
@@ -1137,7 +1137,7 @@ processTileActions leader bumping tpos tas = do
                          then Nothing  -- success of some kind
                          else Just (useResult, bumpFailed)  -- not quite
       processTA museResult (ta : rest) bumpFailed = case ta of
-        Tile.EmbedAction (iid, _) -> do
+        EmbedAction (iid, _) -> do
           -- Embeds are activated in the order in tile definition
           -- and never after the tile is changed.
           -- We assume the item would trigger and we let the player
@@ -1159,13 +1159,13 @@ processTileActions leader bumping tpos tas = do
                  Left err -> return $ Left err
                  Right () -> processTA (Just True) rest False
                    -- effect found, bumpFailed reset
-        Tile.ToAction{} ->
+        ToAction{} ->
           if fromMaybe True museResult
              && not (bproj sb && tileMinSkill > 0)  -- local skill check
           then return $ Right Nothing  -- tile changed, no more activations
           else processTA museResult rest bumpFailed
                  -- failed, but not due to bumping
-        Tile.WithAction tools0 _ ->
+        WithAction tools0 _ ->
           if not bumping || null tools0 then
             if fromMaybe True museResult then do
               -- UI requested, so this is voluntary, so item loss is fine.
