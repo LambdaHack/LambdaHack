@@ -20,6 +20,13 @@ import qualified Game.LambdaHack.Content.RuleKind as RK
 import           Game.LambdaHack.Definition.Defs
 
 -- | Screen layout and features definition.
+--
+-- Warning: this type is not abstract, but its values should not be
+-- created ad hoc, even for unit tests, but should be constructed
+-- with @makeData@, which includes validation,
+--
+-- The @emptyScreenContent@ is one such valid by construction value
+-- of this type. It's suitable for bootstrapping and for testing.
 data ScreenContent = ScreenContent
   { rwidth        :: X         -- ^ screen width
   , rheight       :: Y         -- ^ screen height

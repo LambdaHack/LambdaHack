@@ -96,7 +96,7 @@ validateSingleRoster cofact caves roster =
          nubTokens = nub . sort $ tokens
      in [ "potentially duplicate team continuity token"
         | length tokens /= length nubTokens ]
-  ++ let keys = concatMap fst caves
+  ++ let keys = concatMap fst caves  -- permitted to be empty, for tests
          minD = minimum keys
          maxD = maximum keys
          f (_, l) = concatMap g l

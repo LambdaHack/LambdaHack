@@ -44,6 +44,10 @@ import           Game.LambdaHack.Definition.Flavour (dummyFlavour)
 -- created ad hoc, even for unit tests, but should be constructed
 -- with @makeData@ for each particular content kind, which includes validation,
 -- and with @speedupItem@, etc., to ensure internal consistency.
+--
+-- The @emptyCOps@ is one such valid by construction value of this type,
+-- except for the @cocave@ field. It's suitable for bootstrapping
+-- and for tests not involving dungeon generation from cave templates.
 data COps = COps
   { cocave        :: ContentData CK.CaveKind   -- server only
   , cofact        :: ContentData FK.FactionKind
@@ -144,7 +148,7 @@ emptyCOps =
     , cofact
     , coitem
     , comode = MK.makeData cofact [emptyMultiGroupMode] [] []
-    , coplace =  PK.makeData cotile [] [] []
+    , coplace = PK.makeData cotile [] [] []
     , corule
     , cotile
     , coItemSpeedup = speedupItem coitem
