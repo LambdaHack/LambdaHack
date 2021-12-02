@@ -41,7 +41,7 @@ data RuleContent = RuleContent
 emptyRuleContentRaw :: RuleContent
 emptyRuleContentRaw = RuleContent
   { rtitle = ""
-  , rWidthMax = 2
+  , rWidthMax = 5
   , rHeightMax = 2
   , rexeVersion = makeVersion []
   , rcfgUIName = ""
@@ -61,7 +61,7 @@ emptyRuleContent = assert (null $ validateSingle emptyRuleContentRaw)
 -- | Catch invalid rule kind definitions.
 validateSingle :: RuleContent -> [Text]
 validateSingle RuleContent{..} =
-  [ "rWidthMax < 2" | rWidthMax < 2 ]  -- hero, opponent, stairs, wiggle room
+  [ "rWidthMax < 5" | rWidthMax < 5 ]  -- indented (4 prop spaces) text
   ++ [ "rHeightMax < 2" | rHeightMax < 2 ]  -- or 4 tiles of sentinel wall
 
 makeData :: RuleContent -> RuleContent

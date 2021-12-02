@@ -229,7 +229,7 @@ splitAttrString w0 w1 l = case linesAttr l of
   x : xs -> splitAttrPhrase w0 w1 x ++ concatMap (splitAttrPhrase w1 w1) xs
 
 indentSplitAttrString :: DisplayFont -> Int -> AttrString -> [AttrLine]
-indentSplitAttrString font w l =
+indentSplitAttrString font w l = assert (w > 4) $
   -- Sadly this depends on how wide the space is in propotional font,
   -- which varies wildly, so we err on the side of larger indent.
   let nspaces = case font of
@@ -257,8 +257,8 @@ splitAttrPhrase w0 w1 (AttrLine xs)
               (([], preRev), rest)
             _ -> (breakAtSpace preRev, postRaw)
       in if all (== Color.spaceAttrW32) ppost
-         then AttrLine (reverse $ dropWhile (== Color.spaceAttrW32) preRev) :
-              splitAttrPhrase w1 w1 (AttrLine post)
+         then AttrLine (reverse $ dropWhile (== Color.spaceAttrW32) preRev)
+              : splitAttrPhrase w1 w1 (AttrLine post)
          else AttrLine (reverse $ dropWhile (== Color.spaceAttrW32) ppost)
               : splitAttrPhrase w1 w1 (AttrLine $ reverse ppre ++ post)
 
@@ -316,7 +316,7 @@ labDescOverlay labFont width as =
       labLen = textSize labFont tLab
       ovLab = offsetOverlay [attrStringToAL tLab]
       ovDesc = offsetOverlayX $
-        case splitAttrString (width - labLen) width tDesc of
+        case splitAttrString (max 0 $ width - labLen) width tDesc of
           [] -> []
           l : ls -> (labLen, l) : map (0,) ls
   in (ovLab, ovDesc)

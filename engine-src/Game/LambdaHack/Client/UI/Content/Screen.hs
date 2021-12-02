@@ -41,7 +41,7 @@ data ScreenContent = ScreenContent
   }
 
 emptyScreenContentRaw :: ScreenContent
-emptyScreenContentRaw = ScreenContent { rwidth = 2
+emptyScreenContentRaw = ScreenContent { rwidth = 5
                                       , rheight = 5
                                       , rwebAddress = ""
                                       , rintroScreen = ([], [])
