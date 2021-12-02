@@ -257,13 +257,6 @@ emptyCliState = CliState
 stubSessionUI :: SessionUI
 stubSessionUI = (emptySessionUI stubUIOptions) 
   { sactorUI = EM.singleton testActorId ActorUI { bsymbol='j', bname="Jamie", bpronoun="he/him", bcolor=BrCyan }
-  , sccui = emptyCCUI { coscreen = ScreenContent { rwidth = 10 -- unit test expects rheight > 1
-                             , rheight = 5  -- unit test expects rheight - 2 > 2
-                             , rwebAddress = ""
-                             , rintroScreen = ([], [])
-                             , rapplyVerbMap = EM.empty
-                             , rFontFiles = []
-                             }}
   , schanF = fchanFrontendStub
   } 
 
