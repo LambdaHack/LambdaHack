@@ -445,6 +445,7 @@ test-suite test
                       ReqFailureUnitTests
                       SessionUIMock
                       SessionUIUnitTests
+                      UnitTestHelpers
   build-depends:      ,LambdaHack
                       ,this-game-content
                       ,this-game-src
