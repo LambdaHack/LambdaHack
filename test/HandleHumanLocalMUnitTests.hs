@@ -38,14 +38,14 @@ handleHumanLocalMUnitTests :: TestTree
 handleHumanLocalMUnitTests = testGroup "handleHumanLocalMUnitTests" 
   [ testCase "verify stubLevel has tile element" $
     do let level = stubLevel -- (Just level) = EM.lookup (toEnum 0) (sdungeon testState)
-        in (ltile level) ! (Point 0 0) @?= unknownId
+        in ltile level ! Point 0 0 @?= unknownId
   , testCase "verify stubCliState has actor" $
     do getActorBody testActorId (cliState stubCliState) @?= testActor
   , testCase "permittedProjectClient stubCliState returns ProjectUnskilled" $
     do
       let testFn = permittedProjectClient testActorId
       permittedProjectClientResultFnInMonad <- executorCli testFn stubCliState 
-      let ultimateResult = (fst permittedProjectClientResultFnInMonad) testItemFull
+      let ultimateResult = fst permittedProjectClientResultFnInMonad testItemFull
       ultimateResult @?= Left ProjectUnskilled
   , testCase "chooseItemProjectHuman" $
     do 
