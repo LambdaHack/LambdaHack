@@ -2,12 +2,12 @@
 -- | Basic operations on 2D points represented as linear offsets.
 module Game.LambdaHack.Common.Point
   ( Point(..), PointI
-  , chessDist, euclidDistSq, adjacent, bla, fromTo
+  , chessDist, euclidDistSq, adjacent, bresenhamsLineAlgorithm, fromTo
   , originPoint, insideP
   , speedupHackXSize
 #ifdef EXPOSE_INTERNAL
     -- * Internal operations
-  , blaXY, balancedWord
+  , bresenhamsLineAlgorithmBegin, balancedWord
 #endif
   ) where
 
@@ -132,27 +132,27 @@ adjacent s t = chessDist s t == 1
 -- uniform distributions of directions for explosions close to the edge
 -- of the level.
 --
--- >>> bla 0 (Point 0 0) (Point 0 0)
+-- >>> bresenhamsLineAlgorithm 0 (Point 0 0) (Point 0 0)
 -- Nothing
--- >>> take 3 $ fromJust $ bla 0 (Point 0 0) (Point 1 0)
+-- >>> take 3 $ fromJust $ bresenhamsLineAlgorithm 0 (Point 0 0) (Point 1 0)
 -- [(1,0),(2,0),(3,0)]
--- >>> take 3 $ fromJust $ bla 0 (Point 0 0) (Point 0 1)
+-- >>> take 3 $ fromJust $ bresenhamsLineAlgorithm 0 (Point 0 0) (Point 0 1)
 -- [(0,1),(0,2),(0,3)]
--- >>> take 3 $ fromJust $ bla 0 (Point 0 0) (Point 1 1)
+-- >>> take 3 $ fromJust $ bresenhamsLineAlgorithm 0 (Point 0 0) (Point 1 1)
 -- [(1,1),(2,2),(3,3)]
-bla :: Int -> Point -> Point -> Maybe [Point]
-bla eps source target =
+bresenhamsLineAlgorithm :: Int -> Point -> Point -> Maybe [Point]
+bresenhamsLineAlgorithm eps source target =
   if source == target then Nothing
-  else Just $ tail $ blaXY eps source target
+  else Just $ tail $ bresenhamsLineAlgorithmBegin eps source target
 
 -- | Bresenham's line algorithm generalized to arbitrary starting @eps@
 -- (@eps@ value of 0 gives the standard BLA). Includes the source point
 -- and goes through the target point to infinity.
 --
--- >>> take 4 $ blaXY 0 (Point 0 0) (Point 2 0)
+-- >>> take 4 $ bresenhamsLineAlgorithmBegin 0 (Point 0 0) (Point 2 0)
 -- [(0,0),(1,0),(2,0),(3,0)]
-blaXY :: Int -> Point -> Point -> [Point]
-blaXY eps (Point x0 y0) (Point x1 y1) =
+bresenhamsLineAlgorithmBegin :: Int -> Point -> Point -> [Point]
+bresenhamsLineAlgorithmBegin eps (Point x0 y0) (Point x1 y1) =
   let (dx, dy) = (x1 - x0, y1 - y0)
       xyStep b (x, y) = (x + signum dx,     y + signum dy * b)
       yxStep b (x, y) = (x + signum dx * b, y + signum dy)

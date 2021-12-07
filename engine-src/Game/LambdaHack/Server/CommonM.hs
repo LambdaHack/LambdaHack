@@ -411,7 +411,7 @@ projectFail propeller origin oxy tpxy eps center iid cstore blast = do
   body <- getsState $ getActorBody origin
   let lid = blid body
   lvl <- getLevel lid
-  case bla eps oxy tpxy of
+  case bresenhamsLineAlgorithm eps oxy tpxy of
     Nothing -> return $ Just ProjectAimOnself
     Just [] -> error $ "projecting from the edge of level"
                        `showFailure` (oxy, tpxy)

@@ -74,7 +74,7 @@ makeLine onlyFirst body fpos epsOld cops lvl =
   let COps{coTileSpeedup} = cops
       dist = chessDist (bpos body) fpos
       calcScore :: Int -> Int
-      calcScore eps = case bla eps (bpos body) fpos of
+      calcScore eps = case bresenhamsLineAlgorithm eps (bpos body) fpos of
         Just bl ->
           let blDist = take (dist - 1) bl  -- goal not checked; actor well aware
               noActor p = p == fpos || not (occupiedBigLvl p lvl)

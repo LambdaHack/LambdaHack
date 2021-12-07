@@ -417,7 +417,7 @@ projectCheck leader tpos = do
   let lid = blid sb
       spos = bpos sb
   -- Not @ScreenContent@, because not drawing here.
-  case bla eps spos tpos of
+  case bresenhamsLineAlgorithm eps spos tpos of
     Nothing -> return $ Just ProjectAimOnself
     Just [] -> error $ "project from the edge of level"
                        `showFailure` (spos, tpos, sb)

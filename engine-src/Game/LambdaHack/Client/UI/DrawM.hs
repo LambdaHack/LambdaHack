@@ -246,7 +246,7 @@ drawFramePath drawnLevelId = do
       Actor{bpos, blid} <- getsState $ getActorBody leader
       return $! if blid /= drawnLevelId
                 then []
-                else fromMaybe [] $ bla seps bpos xhairPos
+                else fromMaybe [] $ bresenhamsLineAlgorithm seps bpos xhairPos
     _ -> return []
   mpath <- maybe (return Nothing) (\aid -> do
     mtgtMPath <- getsClient $ EM.lookup aid . stargetD

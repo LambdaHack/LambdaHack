@@ -2054,7 +2054,7 @@ effectSendFlying execSfx IK.ThrowMod{..} source target container modePush = do
       execSfxAtomic $ SfxMsgFid (bfid tb) $ SfxBracedImmune target
     return UseUp  -- waste it to prevent repeated throwing at immobile actors
   else do
-   case bla eps (bpos tb) fpos of
+   case bresenhamsLineAlgorithm eps (bpos tb) fpos of
     Nothing -> error $ "" `showFailure` (fpos, tb)
     Just [] -> error $ "projecting from the edge of level"
                        `showFailure` (fpos, tb)
