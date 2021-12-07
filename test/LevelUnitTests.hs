@@ -19,6 +19,7 @@ import Game.LambdaHack.Common.Time
 
 import qualified Game.LambdaHack.Core.Dice as Dice
 
+import UnitTestHelpers
 
 testLevel :: Level
 testLevel = Level
@@ -41,7 +42,7 @@ testLevel = Level
   }
 
 testDungeonWithLevel :: State
-testDungeonWithLevel = let singletonDungeonUpdate _ = EM.singleton (toEnum 0) testLevel
+testDungeonWithLevel = let singletonDungeonUpdate _ = EM.singleton testLevelId testLevel
                            unknownTileState = localFromGlobal emptyState
                            oneLevelDungeonState = updateDungeon singletonDungeonUpdate unknownTileState
                         in oneLevelDungeonState
@@ -50,11 +51,11 @@ levelUnitTests :: TestTree
 levelUnitTests = testGroup "levelUnitTests" $
   [ testCase "testDungeonWithLevel has min level id" $
       do let ((minKey, _), _) = fromJust $ EM.minViewWithKey (sdungeon testDungeonWithLevel)
-          in minKey @?= toEnum 0
+          in minKey @?= testLevelId
   , testCase "testDungeonWithLevel has max level id" $
       do let ((minKey, _), _) = fromJust $ EM.maxViewWithKey (sdungeon testDungeonWithLevel)
-          in minKey @?= toEnum 0
+          in minKey @?= testLevelId
   , testCase "dungeonBounds testDungeonWithLevel returns (0,0)" $
       do let bounds = dungeonBounds (sdungeon testDungeonWithLevel)
-          in bounds @?= (toEnum 0,toEnum 0)
+          in bounds @?= (testLevelId, testLevelId)
   ]

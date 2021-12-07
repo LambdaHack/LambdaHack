@@ -183,7 +183,7 @@ testFaction =
 testActor :: Actor
 testActor =
   Actor
-  { btrunk = toEnum 0
+  { btrunk = testItemId
   , bnumber = Nothing
   , bhp = 0
   , bhpDelta = ResDelta (0,0) (0,0)
@@ -265,7 +265,7 @@ stubCliState :: CliState
 stubCliState = CliState
   { cliState = stubState
   , cliClient = (emptyStateClient testFactionId) { soptions = stubClientOptions, sfper = EM.singleton testLevelId emptyPer }
-  , cliSession = Just (stubSessionUI {sxhair = Just (TPoint TUnknown testLevelId (Point 1 0))}) --(TVector Vector {vx=1, vy=0})}) -- (TNonEnemy (toEnum 1))})--
+  , cliSession = Just (stubSessionUI {sxhair = Just (TPoint TUnknown testLevelId (Point 1 0))})
   }
 
 testCliStateWithItem :: CliState
