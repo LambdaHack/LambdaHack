@@ -1,40 +1,36 @@
 module HandleHumanLocalMUnitTests (handleHumanLocalMUnitTests) where
--- at some point I'm guessing we'll want our unit test hierarchy to match the file hierarchy
 
 import Prelude ()
 
 import Game.LambdaHack.Core.Prelude
 
-import Test.Tasty
-import Test.Tasty.HUnit
-
 import qualified Data.EnumMap.Strict as EM
+import           Test.Tasty
+import           Test.Tasty.HUnit
 
 import           Game.LambdaHack.Client.UI.HandleHelperM
 import           Game.LambdaHack.Client.UI.HandleHumanLocalM
 import qualified Game.LambdaHack.Client.UI.HumanCmd as HumanCmd
+import           Game.LambdaHack.Common.ActorState
+import           Game.LambdaHack.Common.Item
+import           Game.LambdaHack.Common.ItemAspect
+import           Game.LambdaHack.Common.Level
+import           Game.LambdaHack.Common.Point
+import           Game.LambdaHack.Common.PointArray as PointArray
+import           Game.LambdaHack.Common.ReqFailure
 import           Game.LambdaHack.Common.State
-
-import Game.LambdaHack.Common.ActorState
-import Game.LambdaHack.Common.Item
-import Game.LambdaHack.Common.ItemAspect
-import Game.LambdaHack.Common.Level
-import Game.LambdaHack.Common.Point
-import Game.LambdaHack.Common.PointArray as PointArray
-import Game.LambdaHack.Common.ReqFailure
-import Game.LambdaHack.Content.TileKind
-import Game.LambdaHack.Definition.DefsInternal (toContentId, toContentSymbol)
-import Game.LambdaHack.Definition.Flavour
+import           Game.LambdaHack.Content.TileKind
+import           Game.LambdaHack.Definition.DefsInternal
+  (toContentId, toContentSymbol)
+import           Game.LambdaHack.Definition.Flavour
 
 import UnitTestHelpers
-
 
 stubItem :: Item
 stubItem = Item { jkind = IdentityObvious (toContentId 0), jfid = Nothing, jflavour = dummyFlavour }
 
 testItemFull :: ItemFull
 testItemFull = ItemFull { itemBase = stubItem, itemKindId = toContentId 0, itemKind = testItemKind, itemDisco = ItemDiscoFull emptyAspectRecord, itemSuspect = False }
-
 
 handleHumanLocalMUnitTests :: TestTree
 handleHumanLocalMUnitTests = testGroup "handleHumanLocalMUnitTests"
@@ -47,14 +43,15 @@ handleHumanLocalMUnitTests = testGroup "handleHumanLocalMUnitTests"
   , testCase "permittedProjectClient stubCliState returns ProjectUnskilled" $ do
       let testFn = permittedProjectClient testActorId
       permittedProjectClientResultFnInMonad <- executorCli testFn stubCliState
-      let ultimateResult = fst permittedProjectClientResultFnInMonad testItemFull
+      let ultimateResult =
+            fst permittedProjectClientResultFnInMonad testItemFull
       ultimateResult @?= Left ProjectUnskilled
   , testCase "chooseItemProjectHuman" $ do
       let testFn = let triggerItems =
-                        [ HumanCmd.TriggerItem{tiverb="verb", tiobject="object", tisymbols=[toContentSymbol 'a', toContentSymbol 'b']}
-                        , HumanCmd.TriggerItem{tiverb="verb2", tiobject="object2", tisymbols=[toContentSymbol 'c']}
-                        ]
-                    in chooseItemProjectHuman testActorId triggerItems
+                         [ HumanCmd.TriggerItem {tiverb = "verb", tiobject = "object", tisymbols = [toContentSymbol 'a', toContentSymbol 'b']}
+                         , HumanCmd.TriggerItem {tiverb = "verb2", tiobject = "object2", tisymbols = [toContentSymbol 'c']}
+                         ]
+                   in chooseItemProjectHuman testActorId triggerItems
       result <- executorCli testFn testCliStateWithItem
       showFailError (fromJust (fst result)) @?= "*aiming obstructed by terrain*"
   , testCase "psuitReq" $  do
@@ -78,11 +75,3 @@ handleHumanLocalMUnitTests = testGroup "handleHumanLocalMUnitTests"
                                 -- because @eps@ is initialized that way,
                                 -- for "randomness"
   ]
-
--- chooseItemProjectHuman :: forall m. (MonadClient m, MonadClientUI m) -- line 395
-
--- - line 533
--- triggerSymbols
-
--- - line 576
--- chooseItemApplyHuman

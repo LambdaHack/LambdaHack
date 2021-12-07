@@ -1,14 +1,11 @@
 module MonadClientUIUnitTests (monadClientUIUnitTests) where
--- at some point I'm guessing we'll want our unit test hierarchy to match the file hierarchy
 
 import Prelude ()
 
 import Game.LambdaHack.Core.Prelude
 
-
 import Test.Tasty
 import Test.Tasty.HUnit
-
 
 import Game.LambdaHack.Client.MonadClient
 import Game.LambdaHack.Client.State

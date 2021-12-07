@@ -5,9 +5,8 @@ import Prelude ()
 import Game.LambdaHack.Core.Prelude
 
 import qualified Data.EnumMap.Strict as EM
-
-import Test.Tasty
-import Test.Tasty.HUnit
+import           Test.Tasty
+import           Test.Tasty.HUnit
 
 import           Game.LambdaHack.Client.UI.ItemDescription
 import           Game.LambdaHack.Common.Item
@@ -54,8 +53,8 @@ itemDescriptionUnitTests = testGroup "itemDescriptionUnitTests" $
   [ testCase "testItem_viewItem_Blackx" $
       viewItem testItemFull
       @?= attrChar2ToW32 Green 'x'
-  , testCase "testItem!_viewItem_Black!" $
-      viewItem testItemFull { itemKind = testItemKind { isymbol = '!' }}
+  , testCase "testItem_viewItem_Black!" $
+      viewItem testItemFull {itemKind = testItemKind {isymbol = '!'}}
       @?= attrChar2ToW32 Green '!'
   , testCase "testItem_viewItemBenefitColored_isEquip_Greenx" $
       viewItemBenefitColored (EM.singleton (toEnum 42) (Benefit True 0 0 0 0)) (toEnum 42) testItemFull

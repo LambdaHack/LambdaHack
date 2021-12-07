@@ -9,9 +9,8 @@ import qualified Data.EnumMap.Strict as EM
 import qualified Data.EnumSet as ES
 import qualified Data.Vector.Unboxed as U
 import qualified System.Random.SplitMix32 as SM
-
-import Test.Tasty
-import Test.Tasty.HUnit
+import           Test.Tasty
+import           Test.Tasty.HUnit
 
 import           Game.LambdaHack.Content.ItemKind
 import           Game.LambdaHack.Core.Dice

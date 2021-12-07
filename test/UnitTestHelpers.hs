@@ -1,6 +1,5 @@
 {-# LANGUAGE GADTs, GeneralizedNewtypeDeriving #-}
--- | The implementation of our custom game client monads. Just as any other
--- component of the library, this implementation can be substituted.
+-- | Monadic test harness and other stubs for unit tests.
 module UnitTestHelpers
   ( emptyCliState
   , executorCli
@@ -15,11 +14,12 @@ module UnitTestHelpers
   , testItemId
   , testItemKind
   , testLevelId
--- #ifdef EXPOSE_INTERNAL
---     -- * Internal operations
+#ifdef EXPOSE_INTERNAL
+    -- * Internal operations
   , CliMock(..)
   , CliState(..)
--- #endif
+  , fchanFrontendStub
+#endif
   ) where
 
 import Prelude ()
@@ -27,10 +27,8 @@ import Prelude ()
 import Game.LambdaHack.Core.Prelude
 
 import qualified Control.Monad.IO.Class as IO
-
-import Control.Monad.Trans.State.Strict
+import           Control.Monad.Trans.State.Strict
   (StateT (StateT, runStateT), gets, state)
-
 import qualified Data.EnumMap.Strict as EM
 
 import           Game.LambdaHack.Atomic (MonadStateWrite (..))
@@ -48,31 +46,28 @@ import           Game.LambdaHack.Client.UI.Key (KMP (..))
 import qualified Game.LambdaHack.Client.UI.Key as K
 import           Game.LambdaHack.Client.UI.PointUI
 import           Game.LambdaHack.Client.UI.UIOptions
-
-import Game.LambdaHack.Common.Actor
-import Game.LambdaHack.Common.Area
-import Game.LambdaHack.Common.ClientOptions
-import Game.LambdaHack.Common.Faction
-import Game.LambdaHack.Common.Kind
-import Game.LambdaHack.Common.Level
-import Game.LambdaHack.Common.MonadStateRead
-import Game.LambdaHack.Common.Perception
-import Game.LambdaHack.Common.Point
-import Game.LambdaHack.Common.State
-import Game.LambdaHack.Common.Time
-import Game.LambdaHack.Common.Types
-
+import           Game.LambdaHack.Common.Actor
+import           Game.LambdaHack.Common.Area
+import           Game.LambdaHack.Common.ClientOptions
+import           Game.LambdaHack.Common.Faction
+import           Game.LambdaHack.Common.Kind
+import           Game.LambdaHack.Common.Level
+import           Game.LambdaHack.Common.Misc
+import           Game.LambdaHack.Common.MonadStateRead
+import           Game.LambdaHack.Common.Perception
+import           Game.LambdaHack.Common.Point
+import           Game.LambdaHack.Common.State
+import           Game.LambdaHack.Common.Time
+import           Game.LambdaHack.Common.Types
 import           Game.LambdaHack.Content.ItemKind
 import           Game.LambdaHack.Content.RuleKind
 import           Game.LambdaHack.Content.TileKind
 import qualified Game.LambdaHack.Core.Dice as Dice
-
 import qualified Game.LambdaHack.Definition.Ability as Ability
 import           Game.LambdaHack.Definition.Color
 import           Game.LambdaHack.Definition.Flavour
 
-import Game.LambdaHack.Common.Misc
-
+-- * UI frontend stub
 
 -- Read UI requests from the client and send them to the frontend,
 fchanFrontendStub :: ChanFrontend
@@ -80,21 +75,27 @@ fchanFrontendStub =
   ChanFrontend $ \case
     FrontFrame _ -> putStr "FrontFrame"
     FrontDelay _ -> putStr "FrontDelay"
-    FrontKey _ _ -> return KMP { kmpKeyMod=K.escKM, kmpPointer=PointUI 0 0 }
+    FrontKey _ _ -> return KMP {kmpKeyMod = K.escKM, kmpPointer = PointUI 0 0}
     FrontPressed -> return False
     FrontDiscardKey -> putStr "FrontDiscardKey"
     FrontResetKeys -> putStr "FrontResetKeys"
     FrontShutdown -> putStr "FrontShutdown"
     FrontPrintScreen -> putStr "FrontPrintScreen"
 
+-- * Mock client state implementation
+
 data CliState = CliState
   { cliState   :: State            -- ^ current global state
   , cliClient  :: StateClient      -- ^ current client state
   , cliSession :: Maybe SessionUI  -- ^ UI state, empty for AI clients
-  -- , cliDict    :: ChanServer       -- ^ this client connection information
+
+  -- Not needed for the mock monad (and blank line needed to avoid making this
+  -- comment a haddock for @cliSession@ field):
+  -- , cliDict    :: ChanServer
   -- , cliToSave  :: Save.ChanSave (StateClient, Maybe SessionUI)
   }
 
+-- * Option stubs
 
 stubUIOptions :: UIOptions
 stubUIOptions = UIOptions
@@ -119,13 +120,18 @@ stubUIOptions = UIOptions
 stubClientOptions :: ClientOptions
 stubClientOptions = defClientOptions
   { schosenFontset = Just "snoopy"
-  , sfontsets = [("snoopy",FontSet {fontMapScalable="scalable",fontMapBitmap="bitmap",fontPropRegular="propRegular",fontPropBold="propBold",fontMono="mono"})]
+  , sfontsets =
+      [("snoopy", FontSet { fontMapScalable = "scalable"
+                          , fontMapBitmap = "bitmap"
+                          , fontPropRegular = "propRegular"
+                          , fontPropBold = "propBold"
+                          , fontMono = "mono" })]
   }
 
-testLevelDimension :: Int
-testLevelDimension = 3
+-- * Stub identifiers
 
--- using different arbitrary numbers for these so if tests fail to missing keys we'll have more of a clue
+-- Using different arbitrary numbers for these so that if tests fail
+-- due to missing keys we'll have more of a clue.
 testLevelId :: LevelId
 testLevelId = toEnum 111
 
@@ -138,10 +144,13 @@ testItemId = toEnum 113
 testFactionId :: FactionId
 testFactionId = toEnum 114
 
-
+-- * Game arena element stubs
 
 testArea :: Area
 testArea = fromJust(toArea (0, 0, 0, 0))
+
+testLevelDimension :: Int
+testLevelDimension = 3
 
 stubLevel :: Level
 stubLevel = Level
@@ -163,7 +172,6 @@ stubLevel = Level
   , lnight = False
   }
 
-
 testFaction :: Faction
 testFaction =
   Faction
@@ -181,8 +189,7 @@ testFaction =
     }
 
 testActor :: Actor
-testActor =
-  Actor
+testActor = Actor
   { btrunk = testItemId
   , bnumber = Nothing
   , bhp = 0
@@ -225,53 +232,70 @@ testActorWithItem :: Actor
 testActorWithItem =
   testActor { beqp = EM.singleton testItemId (1,[])}
 
--- stublike state instance that should barely function for testing
+-- Stublike state that should barely function for testing.
 stubState :: State
-stubState = let singletonFactionUpdate _ = EM.singleton testFactionId testFaction
-                singletonDungeonUpdate _ = EM.singleton testLevelId stubLevel
-                singletonActorDUpdate _ = EM.singleton testActorId testActor
-                singletonActorMaxSkillsUpdate _ = EM.singleton testActorId Ability.zeroSkills
-                copsUpdate oldCOps = oldCOps{corule=((corule oldCOps){rWidthMax=testLevelDimension, rHeightMax=testLevelDimension})}
-                stateWithMaxLevelDimension = updateCOpsAndCachedData copsUpdate emptyState
-                stateWithFaction = updateFactionD singletonFactionUpdate stateWithMaxLevelDimension
-                stateWithActorD = updateActorD singletonActorDUpdate stateWithFaction
-                stateWithActorMaxSkills = updateActorMaxSkills singletonActorMaxSkillsUpdate stateWithActorD
-                stateWithDungeon = updateDungeon singletonDungeonUpdate stateWithActorMaxSkills
-            in stateWithDungeon
+stubState =
+  let singletonFactionUpdate _ = EM.singleton testFactionId testFaction
+      singletonDungeonUpdate _ = EM.singleton testLevelId stubLevel
+      singletonActorDUpdate _ = EM.singleton testActorId testActor
+      singletonActorMaxSkillsUpdate _ =
+        EM.singleton testActorId Ability.zeroSkills
+      copsUpdate oldCOps =
+        oldCOps {corule = (corule oldCOps)
+                   { rWidthMax = testLevelDimension
+                   , rHeightMax = testLevelDimension }}
+      stateWithMaxLevelDimension = updateCOpsAndCachedData copsUpdate emptyState
+      stateWithFaction =
+        updateFactionD singletonFactionUpdate stateWithMaxLevelDimension
+      stateWithActorD = updateActorD singletonActorDUpdate stateWithFaction
+      stateWithActorMaxSkills =
+        updateActorMaxSkills singletonActorMaxSkillsUpdate stateWithActorD
+      stateWithDungeon =
+        updateDungeon singletonDungeonUpdate stateWithActorMaxSkills
+  in stateWithDungeon
 
 testStateWithItem :: State
-testStateWithItem = let swapToItemActor _ = EM.singleton testActorId testActorWithItem
-                     in updateActorD swapToItemActor stubState
+testStateWithItem =
+  let swapToItemActor _ = EM.singleton testActorId testActorWithItem
+  in updateActorD swapToItemActor stubState
 
 emptyCliState :: CliState
 emptyCliState = CliState
   { cliState = emptyState
   , cliClient = emptyStateClient testFactionId
   , cliSession = Nothing
-  -- , cliDict = undefined
-  -- , cliToSave = undefined
   }
 
 stubSessionUI :: SessionUI
-stubSessionUI = (emptySessionUI stubUIOptions)
-  { sactorUI = EM.singleton testActorId ActorUI { bsymbol='j', bname="Jamie", bpronoun="he/him", bcolor=BrCyan }
-  , sccui = emptyCCUI { coscreen = emptyScreenContent
-                                     { rwidth = testLevelDimension
-                                     , rheight = testLevelDimension + 3 } }
-  , schanF = fchanFrontendStub
-  }
+stubSessionUI =
+  let actorUI = ActorUI { bsymbol = 'j'
+                        , bname = "Jamie"
+                        , bpronoun = "he/him"
+                        , bcolor = BrCyan }
+  in (emptySessionUI stubUIOptions)
+    { sactorUI = EM.singleton testActorId actorUI
+    , sccui = emptyCCUI { coscreen = emptyScreenContent
+                                       { rwidth = testLevelDimension
+                                       , rheight = testLevelDimension + 3 } }
+    , schanF = fchanFrontendStub
+    }
 
 stubCliState :: CliState
 stubCliState = CliState
   { cliState = stubState
-  , cliClient = (emptyStateClient testFactionId) { soptions = stubClientOptions, sfper = EM.singleton testLevelId emptyPer }
-  , cliSession = Just (stubSessionUI {sxhair = Just (TPoint TUnknown testLevelId (Point 1 0))})
+  , cliClient = (emptyStateClient testFactionId)
+      { soptions = stubClientOptions
+      , sfper = EM.singleton testLevelId emptyPer }
+  , cliSession = let target = TPoint TUnknown testLevelId (Point 1 0)
+                 in Just (stubSessionUI {sxhair = Just target})
   }
 
 testCliStateWithItem :: CliState
 testCliStateWithItem = stubCliState { cliState = testStateWithItem }
 
--- | Client state mock transformation monad.
+-- * Monad harness mock
+
+-- | Client state transformation monad mock.
 newtype CliMock a = CliMock
   { runCliMock :: StateT CliState IO a }
     -- we build off io so we can compile but we don't want to use it;
@@ -347,7 +371,6 @@ instance MonadClientAtomic CliMock where
     -- Don't catch anything; assume exceptions impossible.
   {-# INLINE execPutState #-}
   execPutState = putState
-
 
 executorCli :: CliMock a -> CliState -> IO (a, CliState)
 executorCli = runStateT . runCliMock

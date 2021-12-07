@@ -4,23 +4,19 @@ import Prelude ()
 
 import Game.LambdaHack.Core.Prelude
 
-import Test.Tasty
-import Test.Tasty.HUnit
-
 import qualified Data.EnumMap.Strict as EM
+import           Test.Tasty
+import           Test.Tasty.HUnit
 
-
-import Game.LambdaHack.Client.CommonM
-
-import Game.LambdaHack.Common.Area
-import Game.LambdaHack.Common.Kind
-import Game.LambdaHack.Common.Level
-import Game.LambdaHack.Common.Perception
-import Game.LambdaHack.Common.Point
-import Game.LambdaHack.Common.State
-import Game.LambdaHack.Common.Time
-import Game.LambdaHack.Content.TileKind
-
+import           Game.LambdaHack.Client.CommonM
+import           Game.LambdaHack.Common.Area
+import           Game.LambdaHack.Common.Kind
+import           Game.LambdaHack.Common.Level
+import           Game.LambdaHack.Common.Perception
+import           Game.LambdaHack.Common.Point
+import           Game.LambdaHack.Common.State
+import           Game.LambdaHack.Common.Time
+import           Game.LambdaHack.Content.TileKind
 import qualified Game.LambdaHack.Core.Dice as Dice
 
 import UnitTestHelpers
