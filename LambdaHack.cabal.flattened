@@ -373,12 +373,20 @@ test-suite test
   type:               exitcode-stdio-1.0
   hs-source-dirs:     test
   main-is:            Spec.hs
-  other-modules:      ItemDescriptionUnitTests
+  other-modules:      ActorStateUnitTests
+                      CommonMUnitTests
+                      HandleHelperMUnitTests
+                      HandleHumanLocalMUnitTests
+                      InventoryMUnitTests
+                      ItemDescriptionUnitTests
                       ItemKindUnitTests
                       ItemRevUnitTests
+                      LevelUnitTests
+                      MonadClientUIUnitTests
                       ReqFailureUnitTests
                       SessionUIMock
                       SessionUIUnitTests
+                      UnitTestHelpers
   build-depends:      ,LambdaHack
                       ,base
                       ,containers
