@@ -48,7 +48,7 @@ testDungeonWithLevel = let singletonDungeonUpdate _ = EM.singleton testLevelId t
                         in oneLevelDungeonState
 
 levelUnitTests :: TestTree
-levelUnitTests = testGroup "levelUnitTests" $
+levelUnitTests = testGroup "levelUnitTests"
   [ testCase "testDungeonWithLevel has min level id" $
       do let ((minKey, _), _) = fromJust $ EM.minViewWithKey (sdungeon testDungeonWithLevel)
           in minKey @?= testLevelId

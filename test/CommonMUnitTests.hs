@@ -46,7 +46,7 @@ testLevel = Level
   }
 
 commonMUnitTests :: TestTree
-commonMUnitTests = testGroup "commonMUnitTests" $
+commonMUnitTests = testGroup "commonMUnitTests"
   [ testCase "getPerFid stubCliState returns emptyPerception" $
     do
       result <- executorCli (getPerFid testLevelId) stubCliState
