@@ -1,7 +1,8 @@
 {-# LANGUAGE GADTs, GeneralizedNewtypeDeriving #-}
 -- | Monadic test harness and other stubs for unit tests.
 module UnitTestHelpers
-  ( emptyCliState
+  ( CliState(..)
+  , emptyCliState
   , executorCli
   , stubLevel
   , stubState
@@ -17,7 +18,6 @@ module UnitTestHelpers
 #ifdef EXPOSE_INTERNAL
     -- * Internal operations
   , CliMock(..)
-  , CliState(..)
   , fchanFrontendStub
 #endif
   ) where

@@ -11,8 +11,10 @@ module Game.LambdaHack.Common.Kind
   , olength, linearInterpolation
 #ifdef EXPOSE_INTERNAL
   , emptyMultiGroupItem, emptyUnknownTile
-  , emptyUIFactionGroupName, emptyUIFaction, emptyMultiGroupMode
+  , emptyUIFactionGroupName, emptyMultiGroupMode
 #endif
+    -- * Operations both internal and used in unit tests
+  , emptyUIFaction
   ) where
 
 import Prelude ()
