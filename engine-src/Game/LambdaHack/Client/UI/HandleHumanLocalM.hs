@@ -27,10 +27,11 @@ module Game.LambdaHack.Client.UI.HandleHumanLocalM
   , aimPointerFloorHuman, aimPointerEnemyHuman
 #ifdef EXPOSE_INTERNAL
     -- * Internal operations
-  , chooseItemDialogModeLore, permittedProjectClient, projectCheck
-  , xhairLegalEps, posFromXhair, permittedApplyClient, endAiming, endAimingMsg
+  , chooseItemDialogModeLore, projectCheck
+  , posFromXhair, permittedApplyClient, endAiming, endAimingMsg
   , flashAiming
 #endif
+  , permittedProjectClient, xhairLegalEps -- internal and for unit tests
   ) where
 
 import Prelude ()
@@ -520,7 +521,18 @@ psuitReq leader = do
             in Right (pos, 1 + IA.totalRange arItem (itemKind itemFull)
                            >= chessDist (bpos b) pos)
 
-triggerSymbols :: [HumanCmd.TriggerItem] -> [Char]
+-- $setup
+-- >>> import Game.LambdaHack.Definition.DefsInternal
+
+-- |
+-- >>> let trigger1 = HumanCmd.TriggerItem{tiverb="verb", tiobject="object", tisymbols=[toContentSymbol 'a', toContentSymbol 'b']}
+-- >>> let trigger2 = HumanCmd.TriggerItem{tiverb="verb2", tiobject="object2", tisymbols=[toContentSymbol 'c']}
+-- >>> triggerSymbols [trigger1, trigger2]
+-- "abc"
+--
+-- >>> triggerSymbols []
+-- ""
+triggerSymbols :: [HumanCmd.TriggerItem] -> [ContentSymbol IK.ItemKind]
 triggerSymbols [] = []
 triggerSymbols (HumanCmd.TriggerItem{tisymbols} : ts) =
   tisymbols ++ triggerSymbols ts

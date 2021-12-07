@@ -42,11 +42,13 @@ contentIdIndex :: ContentId c -> Int
 contentIdIndex (ContentId k) = fromEnum k
 
 -- TODO: temporary, not to break compilation too soon:
+--{--
 type ContentSymbol c = Char
 toContentSymbol :: Char -> ContentSymbol c
 toContentSymbol = id
 displayContentSymbol :: ContentSymbol c -> Char
 displayContentSymbol = id
+--}
 
 -- TODO: The intended definitions. Error they are going to cause will
 -- point out all the remaining item symbols hardwired in the engine
@@ -58,7 +60,7 @@ displayContentSymbol = id
 -- by accident (this is still possible via conversion functions,
 -- if one insists, so the abstraction is leaky, but that's fine).
 newtype ContentSymbol c = ContentSymbol Char
-  deriving (Show, Eq, Ord, Generic, Binary, NFData)
+  deriving (Show, Eq, Ord, Binary, NFData) -- Generic?
 
 -- | This is a 1-1 inclusion. Don't use, if an equal named symbol already
 -- exists in rules content.
