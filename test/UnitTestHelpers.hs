@@ -29,7 +29,7 @@ import Game.LambdaHack.Core.Prelude
 import qualified Control.Monad.IO.Class as IO
 
 import Control.Monad.Trans.State.Strict
-    ( StateT(StateT, runStateT), gets, state )
+  (StateT (StateT, runStateT), gets, state)
 
 import qualified Data.EnumMap.Strict as EM
 
@@ -41,26 +41,26 @@ import           Game.LambdaHack.Client.MonadClient
 import           Game.LambdaHack.Client.State
 import           Game.LambdaHack.Client.UI
 import           Game.LambdaHack.Client.UI.ActorUI
-import           Game.LambdaHack.Client.UI.ContentClientUI
 import           Game.LambdaHack.Client.UI.Content.Screen
+import           Game.LambdaHack.Client.UI.ContentClientUI
 import           Game.LambdaHack.Client.UI.Frontend
 import           Game.LambdaHack.Client.UI.Key (KMP (..))
 import qualified Game.LambdaHack.Client.UI.Key as K
 import           Game.LambdaHack.Client.UI.PointUI
 import           Game.LambdaHack.Client.UI.UIOptions
 
-import           Game.LambdaHack.Common.Actor
-import           Game.LambdaHack.Common.Area
-import           Game.LambdaHack.Common.ClientOptions
-import           Game.LambdaHack.Common.Faction
-import           Game.LambdaHack.Common.Kind
-import           Game.LambdaHack.Common.Level
-import           Game.LambdaHack.Common.MonadStateRead
-import           Game.LambdaHack.Common.Perception
-import           Game.LambdaHack.Common.Point
-import           Game.LambdaHack.Common.State
-import           Game.LambdaHack.Common.Time
-import           Game.LambdaHack.Common.Types
+import Game.LambdaHack.Common.Actor
+import Game.LambdaHack.Common.Area
+import Game.LambdaHack.Common.ClientOptions
+import Game.LambdaHack.Common.Faction
+import Game.LambdaHack.Common.Kind
+import Game.LambdaHack.Common.Level
+import Game.LambdaHack.Common.MonadStateRead
+import Game.LambdaHack.Common.Perception
+import Game.LambdaHack.Common.Point
+import Game.LambdaHack.Common.State
+import Game.LambdaHack.Common.Time
+import Game.LambdaHack.Common.Types
 
 import           Game.LambdaHack.Content.ItemKind
 import           Game.LambdaHack.Content.RuleKind
@@ -106,7 +106,7 @@ stubUIOptions = UIOptions
   , uLeftHand = False
   , uChosenFontset = ""
   , uAllFontsScale = 0.0
-  , uFullscreenMode = NotFullscreen      
+  , uFullscreenMode = NotFullscreen
   , uhpWarningPercent = 0
   , uMsgWrapColumn = 0
   , uHistoryMax = 0
@@ -119,7 +119,7 @@ stubUIOptions = UIOptions
   }
 
 stubClientOptions :: ClientOptions
-stubClientOptions = defClientOptions 
+stubClientOptions = defClientOptions
   { schosenFontset = Just "snoopy"
   , sfontsets = [("snoopy",FontSet {fontMapScalable="scalable",fontMapBitmap="bitmap",fontPropRegular="propRegular",fontPropBold="propBold",fontMono="mono"})]
   }
@@ -128,16 +128,16 @@ testLevelDimension :: Int
 testLevelDimension = 3
 
 -- using different arbitrary numbers for these so if tests fail to missing keys we'll have more of a clue
-testLevelId :: LevelId 
+testLevelId :: LevelId
 testLevelId = toEnum 111
 
 testActorId :: ActorId
 testActorId = toEnum 112
 
-testItemId :: ItemId 
+testItemId :: ItemId
 testItemId = toEnum 113
 
-testFactionId :: FactionId 
+testFactionId :: FactionId
 testFactionId = toEnum 114
 
 
@@ -169,11 +169,11 @@ stubLevel = Level
 testFaction :: Faction
 testFaction =
   Faction
-    { gkind = head content 
+    { gkind = head content
     , gname = ""
     , gcolor = Black
-    , gdoctrine = Ability.TBlock 
-    , gunderAI = True 
+    , gdoctrine = Ability.TBlock
+    , gunderAI = True
     , ginitial = []
     , gdipl = EM.empty
     , gquit = Nothing
@@ -183,7 +183,7 @@ testFaction =
     }
 
 testActor :: Actor
-testActor = 
+testActor =
   Actor
   { btrunk = toEnum 0
   , bnumber = Nothing
@@ -204,7 +204,7 @@ testActor =
   , bproj = False
   }
 
-testItemKind :: ItemKind 
+testItemKind :: ItemKind
 testItemKind = ItemKind
   { isymbol  = 'x'
   , iname    = "12345678901234567890123"
@@ -224,7 +224,7 @@ testItemKind = ItemKind
   }
 
 testActorWithItem :: Actor
-testActorWithItem = 
+testActorWithItem =
   testActor { beqp = EM.singleton testItemId (1,[])}
 
 -- stublike state instance that should barely function for testing
@@ -247,24 +247,24 @@ testStateWithItem = let swapToItemActor _ = EM.singleton testActorId testActorWi
 
 emptyCliState :: CliState
 emptyCliState = CliState
-  { cliState = emptyState 
+  { cliState = emptyState
   , cliClient = emptyStateClient $ toEnum 0
   , cliSession = Nothing
-  -- , cliDict = undefined 
-  -- , cliToSave = undefined 
-  }  
+  -- , cliDict = undefined
+  -- , cliToSave = undefined
+  }
 
 stubSessionUI :: SessionUI
-stubSessionUI = (emptySessionUI stubUIOptions) 
+stubSessionUI = (emptySessionUI stubUIOptions)
   { sactorUI = EM.singleton testActorId ActorUI { bsymbol='j', bname="Jamie", bpronoun="he/him", bcolor=BrCyan }
   , schanF = fchanFrontendStub
-  } 
+  }
 
 stubCliState :: CliState
 stubCliState = CliState
   { cliState = stubState
   , cliClient = (emptyStateClient testFactionId) { soptions = stubClientOptions, sfper = EM.singleton testLevelId emptyPer }
-  , cliSession = Just (stubSessionUI {sxhair = Just (TPoint TUnknown testLevelId (Point 1 0))}) --(TVector Vector {vx=1, vy=0})}) -- (TNonEnemy (toEnum 1))})-- 
+  , cliSession = Just (stubSessionUI {sxhair = Just (TPoint TUnknown testLevelId (Point 1 0))}) --(TVector Vector {vx=1, vy=0})}) -- (TNonEnemy (toEnum 1))})--
   }
 
 testCliStateWithItem :: CliState
@@ -346,7 +346,5 @@ instance MonadClientAtomic CliMock where
 
 
 executorCli :: CliMock a -> CliState -> IO (a, CliState)
-executorCli testFn = 
+executorCli testFn =
   runStateT (runCliMock testFn)
-  
-  

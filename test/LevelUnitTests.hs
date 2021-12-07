@@ -10,12 +10,12 @@ import Test.Tasty.HUnit
 import qualified Data.EnumMap.Strict as EM
 
 
-import           Game.LambdaHack.Common.Area
-import           Game.LambdaHack.Common.Level
-import           Game.LambdaHack.Common.Point
-import           Game.LambdaHack.Common.PointArray as PointArray
-import           Game.LambdaHack.Common.State
-import           Game.LambdaHack.Common.Time
+import Game.LambdaHack.Common.Area
+import Game.LambdaHack.Common.Level
+import Game.LambdaHack.Common.Point
+import Game.LambdaHack.Common.PointArray as PointArray
+import Game.LambdaHack.Common.State
+import Game.LambdaHack.Common.Time
 
 import qualified Game.LambdaHack.Core.Dice as Dice
 
@@ -41,13 +41,13 @@ testLevel = Level
   }
 
 testDungeonWithLevel :: State
-testDungeonWithLevel = let singletonDungeonUpdate _ = EM.singleton (toEnum 0) testLevel                          
+testDungeonWithLevel = let singletonDungeonUpdate _ = EM.singleton (toEnum 0) testLevel
                            unknownTileState = localFromGlobal emptyState
                            oneLevelDungeonState = updateDungeon singletonDungeonUpdate unknownTileState
                         in oneLevelDungeonState
 
 levelUnitTests :: TestTree
-levelUnitTests = testGroup "levelUnitTests" $ 
+levelUnitTests = testGroup "levelUnitTests" $
   [ testCase "testDungeonWithLevel has min level id" $
       do let ((minKey, _), _) = fromJust $ EM.minViewWithKey (sdungeon testDungeonWithLevel)
           in minKey @?= toEnum 0
@@ -55,6 +55,6 @@ levelUnitTests = testGroup "levelUnitTests" $
       do let ((minKey, _), _) = fromJust $ EM.maxViewWithKey (sdungeon testDungeonWithLevel)
           in minKey @?= toEnum 0
   , testCase "dungeonBounds testDungeonWithLevel returns (0,0)" $
-      do let bounds = dungeonBounds (sdungeon testDungeonWithLevel) 
+      do let bounds = dungeonBounds (sdungeon testDungeonWithLevel)
           in bounds @?= (toEnum 0,toEnum 0)
   ]

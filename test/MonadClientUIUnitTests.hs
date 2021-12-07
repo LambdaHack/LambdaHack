@@ -10,29 +10,29 @@ import Test.Tasty
 import Test.Tasty.HUnit
 
 
-import           Game.LambdaHack.Client.UI.MonadClientUI
-import           Game.LambdaHack.Client.MonadClient
-import           Game.LambdaHack.Client.State
-import           Game.LambdaHack.Client.UI.Overlay
+import Game.LambdaHack.Client.MonadClient
+import Game.LambdaHack.Client.State
+import Game.LambdaHack.Client.UI.MonadClientUI
+import Game.LambdaHack.Client.UI.Overlay
 
-import           UnitTestHelpers
+import UnitTestHelpers
 
-monadClientUIUnitTests :: TestTree 
-monadClientUIUnitTests = testGroup "handleHumanLocalMUnitTests" 
+monadClientUIUnitTests :: TestTree
+monadClientUIUnitTests = testGroup "handleHumanLocalMUnitTests"
   [ testCase "getsClient sside" $
     do
-      sideInMonad <- executorCli (getsClient sside) stubCliState 
+      sideInMonad <- executorCli (getsClient sside) stubCliState
       fst sideInMonad @?= testFactionId
   , testCase "getArenaUI works in stub" $
     do
-      levelIdInMonad <- executorCli getArenaUI stubCliState 
+      levelIdInMonad <- executorCli getArenaUI stubCliState
       fst levelIdInMonad @?= testLevelId
   , testCase "viewedLevelUI works in stub" $
     do
       levelIdInMonad <- executorCli viewedLevelUI stubCliState
-      fst levelIdInMonad @?= testLevelId 
+      fst levelIdInMonad @?= testLevelId
   , testCase "getFontSetup works in stub" $
     do
       fontSetupInMonad <- executorCli getFontSetup stubCliState
-      fst fontSetupInMonad @?= multiFontSetup 
+      fst fontSetupInMonad @?= multiFontSetup
   ]

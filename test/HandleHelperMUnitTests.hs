@@ -8,17 +8,17 @@ import Game.LambdaHack.Core.Prelude
 import Test.Tasty
 import Test.Tasty.HUnit
 
-import           Game.LambdaHack.Client.UI.HandleHelperM
+import Game.LambdaHack.Client.UI.HandleHelperM
 
-import           UnitTestHelpers
+import UnitTestHelpers
 
 
 
-handleHelperMUnitTests :: TestTree 
-handleHelperMUnitTests = testGroup "handleHelperMUnitTests" 
+handleHelperMUnitTests :: TestTree
+handleHelperMUnitTests = testGroup "handleHelperMUnitTests"
   [ testCase "partyAfterLeader" $ -- you've got to fight for your right to party
-    do let testFunc = partyAfterLeader testActorId 
-       partyInMonad <- executorCli testFunc testCliStateWithItem 
+    do let testFunc = partyAfterLeader testActorId
+       partyInMonad <- executorCli testFunc testCliStateWithItem
        let party = fst partyInMonad
        party @?= []
   ]
