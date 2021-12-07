@@ -71,8 +71,6 @@ import qualified Game.LambdaHack.Definition.Ability as Ability
 import           Game.LambdaHack.Definition.Color
 import           Game.LambdaHack.Definition.Flavour
 
-import Content.FactionKind
-
 import Game.LambdaHack.Common.Misc
 
 
@@ -169,7 +167,7 @@ stubLevel = Level
 testFaction :: Faction
 testFaction =
   Faction
-    { gkind = head content
+    { gkind = emptyUIFaction
     , gname = ""
     , gcolor = Black
     , gdoctrine = Ability.TBlock
@@ -248,7 +246,7 @@ testStateWithItem = let swapToItemActor _ = EM.singleton testActorId testActorWi
 emptyCliState :: CliState
 emptyCliState = CliState
   { cliState = emptyState
-  , cliClient = emptyStateClient $ toEnum 0
+  , cliClient = emptyStateClient testFactionId
   , cliSession = Nothing
   -- , cliDict = undefined
   -- , cliToSave = undefined
@@ -257,6 +255,9 @@ emptyCliState = CliState
 stubSessionUI :: SessionUI
 stubSessionUI = (emptySessionUI stubUIOptions)
   { sactorUI = EM.singleton testActorId ActorUI { bsymbol='j', bname="Jamie", bpronoun="he/him", bcolor=BrCyan }
+  , sccui = emptyCCUI { coscreen = emptyScreenContent
+                                     { rwidth = testLevelDimension
+                                     , rheight = testLevelDimension + 3 } }
   , schanF = fchanFrontendStub
   }
 
@@ -272,7 +273,10 @@ testCliStateWithItem = stubCliState { cliState = testStateWithItem }
 
 -- | Client state mock transformation monad.
 newtype CliMock a = CliMock
-  { runCliMock :: StateT CliState IO a }  -- we build off io so we can compile but we don't want to use it
+  { runCliMock :: StateT CliState IO a }
+    -- we build off io so we can compile but we don't want to use it;
+    -- TODO: let's try to get rid of the IO. I can't see any problem right now.
+    -- We'd need to to define dummy liftIO in some monads, etc.
   deriving (Monad, Functor, Applicative)
 
 instance MonadStateRead CliMock where
@@ -346,5 +350,4 @@ instance MonadClientAtomic CliMock where
 
 
 executorCli :: CliMock a -> CliState -> IO (a, CliState)
-executorCli testFn =
-  runStateT (runCliMock testFn)
+executorCli = runStateT . runCliMock

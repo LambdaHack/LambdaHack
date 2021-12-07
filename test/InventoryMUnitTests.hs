@@ -1,5 +1,6 @@
+-- TODO: at some point we'll want our unit test hierarchy to match the
+-- main codebase file hierarchy
 module InventoryMUnitTests (inventoryMUnitTests) where
--- at some point I'm guessing we'll want our unit test hierarchy to match the file hierarchy
 
 import Prelude ()
 

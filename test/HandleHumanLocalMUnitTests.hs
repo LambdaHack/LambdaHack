@@ -8,10 +8,12 @@ import Game.LambdaHack.Core.Prelude
 import Test.Tasty
 import Test.Tasty.HUnit
 
+import qualified Data.EnumMap.Strict as EM
 
 import           Game.LambdaHack.Client.UI.HandleHelperM
 import           Game.LambdaHack.Client.UI.HandleHumanLocalM
 import qualified Game.LambdaHack.Client.UI.HumanCmd as HumanCmd
+import           Game.LambdaHack.Common.State
 
 import Game.LambdaHack.Common.ActorState
 import Game.LambdaHack.Common.Item
@@ -37,8 +39,9 @@ testItemFull = ItemFull { itemBase = stubItem, itemKindId = toContentId 0, itemK
 handleHumanLocalMUnitTests :: TestTree
 handleHumanLocalMUnitTests = testGroup "handleHumanLocalMUnitTests"
   [ testCase "verify stubLevel has tile element" $
-    do let level = stubLevel -- (Just level) = EM.lookup (toEnum 0) (sdungeon testState)
-        in ltile level ! Point 0 0 @?= unknownId
+      case EM.lookup testLevelId (sdungeon stubState) of
+        Nothing -> assertFailure "stubLevel lost in dungeon"
+        Just level -> ltile level ! Point 0 0 @?= unknownId
   , testCase "verify stubCliState has actor" $
     do getActorBody testActorId (cliState stubCliState) @?= testActor
   , testCase "permittedProjectClient stubCliState returns ProjectUnskilled" $
@@ -63,7 +66,8 @@ handleHumanLocalMUnitTests = testGroup "handleHumanLocalMUnitTests"
       let mpsuitReq = fst mpsuitReqMonad
       case mpsuitReq of
         Left err -> do
-          err @?= "aiming obstructed by terrain" -- I didn't think we should be here, and yet we are
+          err @?= "aiming obstructed by terrain"
+            -- TODO: I'd split the test into three tests, each taking a different branch and fail in the remaining two branches that the particular branch doesn't take. Here it takes the first branch, because unknown tiles are not walkable (regardless what I claimed previously) and so the player is surrounded by walls, basically, so aiming fails, because the projectiles wouldn't even leave the position of the actor. I think.
         Right psuitReqFun ->
           case psuitReqFun testItemFull of
             Left reqFail -> do
@@ -74,7 +78,9 @@ handleHumanLocalMUnitTests = testGroup "handleHumanLocalMUnitTests"
     do
       let testFn = xhairLegalEps testActorId
       result <- executorCli testFn testCliStateWithItem
-      fst result @?= Right 114 -- is this a coincidence that it matches the testFactionId?
+      fst result @?= Right 114  -- not a coincidence this matches testFactionId,
+                                -- because @eps@ is initialized that way,
+                                -- for "randomness"
   ]
 
 -- chooseItemProjectHuman :: forall m. (MonadClient m, MonadClientUI m) -- line 395
