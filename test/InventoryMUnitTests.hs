@@ -17,8 +17,7 @@ import UnitTestHelpers
 
 inventoryMUnitTests :: TestTree
 inventoryMUnitTests = testGroup "inventoryMUnitTests"
-  [ testCase "getFull no stores " $
-    do
+  [ testCase "getFull no stores " $ do
       let testFn = getFull testActorId
                             (return SuitsEverything) -- m Suitability
                             (\_ _ _ _ _ -> "specific prompt")
@@ -28,8 +27,7 @@ inventoryMUnitTests = testGroup "inventoryMUnitTests"
                             False
       result <- executorCli testFn stubCliState
       fst result @?= Left "no items"
-  , testCase "getFull no item in eqp store" $
-    do
+  , testCase "getFull no item in eqp store" $ do
       let testFn = getFull testActorId
                             (return SuitsEverything) -- m Suitability
                             (\_ _ _ _ _ -> "specific prompt")
@@ -39,8 +37,7 @@ inventoryMUnitTests = testGroup "inventoryMUnitTests"
                             False
       result <- executorCli testFn stubCliState
       fst result @?= Left "no items in equipment outfit"
-  , testCase "getFull an item in eqp store" $
-    do
+  , testCase "getFull an item in eqp store" $ do
       let testFn = getFull testActorId
                             (return SuitsEverything) -- m Suitability
                             (\_ _ _ _ _ -> "specific prompt")

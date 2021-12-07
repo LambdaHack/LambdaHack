@@ -16,9 +16,9 @@ import UnitTestHelpers
 
 handleHelperMUnitTests :: TestTree
 handleHelperMUnitTests = testGroup "handleHelperMUnitTests"
-  [ testCase "partyAfterLeader" $ -- you've got to fight for your right to party
-    do let testFunc = partyAfterLeader testActorId
-       partyInMonad <- executorCli testFunc testCliStateWithItem
-       let party = fst partyInMonad
-       party @?= []
+  [ testCase "partyAfterLeader" $ do  -- you've got to fight for your right to party
+      let testFunc = partyAfterLeader testActorId
+      partyInMonad <- executorCli testFunc testCliStateWithItem
+      let party = fst partyInMonad
+      party @?= []
   ]

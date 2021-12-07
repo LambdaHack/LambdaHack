@@ -47,12 +47,11 @@ testLevel = Level
 
 commonMUnitTests :: TestTree
 commonMUnitTests = testGroup "commonMUnitTests"
-  [ testCase "getPerFid stubCliState returns emptyPerception" $
-    do
+  [ testCase "getPerFid stubCliState returns emptyPerception" $ do
       result <- executorCli (getPerFid testLevelId) stubCliState
       fst result @?= emptyPer
   , testCase "makeLine, when actor stands at the target position, fails" $
-    do Nothing @?= makeLine False testActor (Point 0 0) 1 emptyCOps testLevel
+      Nothing @?= makeLine False testActor (Point 0 0) 1 emptyCOps testLevel
   , testCase "makeLine unknownTiles succeeds" $
-    do Just 1 @?= makeLine False testActor (Point 2 0) 1 emptyCOps testLevel
+      Just 1 @?= makeLine False testActor (Point 2 0) 1 emptyCOps testLevel
   ]

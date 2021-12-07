@@ -43,15 +43,13 @@ handleHumanLocalMUnitTests = testGroup "handleHumanLocalMUnitTests"
         Nothing -> assertFailure "stubLevel lost in dungeon"
         Just level -> ltile level ! Point 0 0 @?= unknownId
   , testCase "verify stubCliState has actor" $
-    do getActorBody testActorId (cliState stubCliState) @?= testActor
-  , testCase "permittedProjectClient stubCliState returns ProjectUnskilled" $
-    do
+      getActorBody testActorId (cliState stubCliState) @?= testActor
+  , testCase "permittedProjectClient stubCliState returns ProjectUnskilled" $ do
       let testFn = permittedProjectClient testActorId
       permittedProjectClientResultFnInMonad <- executorCli testFn stubCliState
       let ultimateResult = fst permittedProjectClientResultFnInMonad testItemFull
       ultimateResult @?= Left ProjectUnskilled
-  , testCase "chooseItemProjectHuman" $
-    do
+  , testCase "chooseItemProjectHuman" $ do
       let testFn = let triggerItems =
                         [ HumanCmd.TriggerItem{tiverb="verb", tiobject="object", tisymbols=[toContentSymbol 'a', toContentSymbol 'b']}
                         , HumanCmd.TriggerItem{tiverb="verb2", tiobject="object2", tisymbols=[toContentSymbol 'c']}
@@ -59,8 +57,7 @@ handleHumanLocalMUnitTests = testGroup "handleHumanLocalMUnitTests"
                     in chooseItemProjectHuman testActorId triggerItems
       result <- executorCli testFn testCliStateWithItem
       showFailError (fromJust (fst result)) @?= "*aiming obstructed by terrain*"
-  , testCase "psuitReq" $
-    do
+  , testCase "psuitReq" $  do
       let testFn = psuitReq testActorId
       mpsuitReqMonad <- executorCli testFn testCliStateWithItem
       let mpsuitReq = fst mpsuitReqMonad
@@ -74,8 +71,7 @@ handleHumanLocalMUnitTests = testGroup "handleHumanLocalMUnitTests"
               reqFail @?= ProjectUnskilled
             Right (pos, _) -> do
               pos @?= Point 0 0
-  , testCase "xhairLegalEps" $
-    do
+  , testCase "xhairLegalEps" $ do
       let testFn = xhairLegalEps testActorId
       result <- executorCli testFn testCliStateWithItem
       fst result @?= Right 114  -- not a coincidence this matches testFactionId,

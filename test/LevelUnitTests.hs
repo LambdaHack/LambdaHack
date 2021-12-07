@@ -49,13 +49,13 @@ testDungeonWithLevel = let singletonDungeonUpdate _ = EM.singleton testLevelId t
 
 levelUnitTests :: TestTree
 levelUnitTests = testGroup "levelUnitTests"
-  [ testCase "testDungeonWithLevel has min level id" $
-      do let ((minKey, _), _) = fromJust $ EM.minViewWithKey (sdungeon testDungeonWithLevel)
-          in minKey @?= testLevelId
-  , testCase "testDungeonWithLevel has max level id" $
-      do let ((minKey, _), _) = fromJust $ EM.maxViewWithKey (sdungeon testDungeonWithLevel)
-          in minKey @?= testLevelId
-  , testCase "dungeonBounds testDungeonWithLevel returns (0,0)" $
-      do let bounds = dungeonBounds (sdungeon testDungeonWithLevel)
-          in bounds @?= (testLevelId, testLevelId)
+  [ testCase "testDungeonWithLevel has min level id" $ do
+      let ((minKey, _), _) = fromJust $ EM.minViewWithKey (sdungeon testDungeonWithLevel)
+      minKey @?= testLevelId
+  , testCase "testDungeonWithLevel has max level id" $ do
+      let ((minKey, _), _) = fromJust $ EM.maxViewWithKey (sdungeon testDungeonWithLevel)
+      minKey @?= testLevelId
+  , testCase "dungeonBounds testDungeonWithLevel returns (0,0)" $ do
+      let bounds = dungeonBounds (sdungeon testDungeonWithLevel)
+      bounds @?= (testLevelId, testLevelId)
   ]

@@ -19,20 +19,16 @@ import UnitTestHelpers
 
 monadClientUIUnitTests :: TestTree
 monadClientUIUnitTests = testGroup "handleHumanLocalMUnitTests"
-  [ testCase "getsClient sside" $
-    do
+  [ testCase "getsClient sside" $ do
       sideInMonad <- executorCli (getsClient sside) stubCliState
       fst sideInMonad @?= testFactionId
-  , testCase "getArenaUI works in stub" $
-    do
+  , testCase "getArenaUI works in stub" $ do
       levelIdInMonad <- executorCli getArenaUI stubCliState
       fst levelIdInMonad @?= testLevelId
-  , testCase "viewedLevelUI works in stub" $
-    do
+  , testCase "viewedLevelUI works in stub" $ do
       levelIdInMonad <- executorCli viewedLevelUI stubCliState
       fst levelIdInMonad @?= testLevelId
-  , testCase "getFontSetup works in stub" $
-    do
+  , testCase "getFontSetup works in stub" $ do
       fontSetupInMonad <- executorCli getFontSetup stubCliState
       fst fontSetupInMonad @?= multiFontSetup
   ]
