@@ -19,7 +19,8 @@ module Game.LambdaHack.Common.State
     -- * Internal operations
   , unknownLevel
 #endif
-  , unknownTileMap -- internal and unit tests
+    -- * Operations both internal and used in unit tests
+  , unknownTileMap
   ) where
 
 import Prelude ()
@@ -185,7 +186,8 @@ unknownLevel COps{corule, cotile}
            , lnight
            }
 
--- | Create a map full of unknown tiles
+-- | Create a map full of unknown tiles.
+--
 -- >>> unknownTileMap (fromJust (toArea (0,0,0,0))) TK.unknownId 2 2
 -- PointArray.Array with size (2,2)
 unknownTileMap :: Area -> ContentId TileKind -> X -> Y -> TileMap

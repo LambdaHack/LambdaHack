@@ -31,7 +31,8 @@ module Game.LambdaHack.Client.UI.HandleHumanLocalM
   , posFromXhair, permittedApplyClient, endAiming, endAimingMsg
   , flashAiming
 #endif
-  , permittedProjectClient, xhairLegalEps -- internal and for unit tests
+    -- * Operations both internal and used in unit tests
+  , permittedProjectClient, xhairLegalEps
   ) where
 
 import Prelude ()

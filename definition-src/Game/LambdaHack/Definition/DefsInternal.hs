@@ -60,7 +60,7 @@ displayContentSymbol = id
 -- by accident (this is still possible via conversion functions,
 -- if one insists, so the abstraction is leaky, but that's fine).
 newtype ContentSymbol c = ContentSymbol Char
-  deriving (Show, Eq, Ord, Binary, NFData) -- Generic?
+  deriving (Show, Eq, Ord, Binary, NFData)  -- TODO: Generic and most others are only needed for TriggerItem, so once the latter is removed, these instances can go.
 
 -- | This is a 1-1 inclusion. Don't use, if an equal named symbol already
 -- exists in rules content.

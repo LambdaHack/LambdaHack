@@ -247,8 +247,9 @@ splitOKX :: FontSetup -> Bool -> Int -> Int -> Int -> AttrString -> [K.KM]
          -> OKX
          -> [OKX]
 splitOKX FontSetup{..} msgLong width height wrap reportAS keys (ls0, kxs0) =
-  assert (height > 2) $
-  assert (width > 2) $  -- if the strings to split are long these minimums won't be enough
+  assert (width > 2 && height > 2) $
+    -- if the strings to split are long these minimums won't be enough,
+    -- but content validation ensures larger values (perhaps large enough?)
   let reportParagraphs = linesAttr reportAS
       -- TODO: until SDL support for measuring prop font text is released,
       -- we have to use MonoFont for the paragraph that ends with buttons.
