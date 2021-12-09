@@ -315,9 +315,10 @@ labDescOverlay :: DisplayFont -> Int -> AttrString -> (Overlay, Overlay)
 labDescOverlay labFont width as =
   let (tLab, tDesc) = span (/= Color.spaceAttrW32) as
       labLen = textSize labFont tLab
+      len = max 0 $ width - length tLab  -- not labLen; TODO: type more strictly
       ovLab = offsetOverlay [attrStringToAL tLab]
       ovDesc = offsetOverlayX $
-        case splitAttrString (max 0 $ width - labLen) width tDesc of
+        case splitAttrString len width tDesc of
           [] -> []
           l : ls -> (labLen, l) : map (0,) ls
   in (ovLab, ovDesc)
