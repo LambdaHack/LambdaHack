@@ -194,20 +194,21 @@ effectToSuffix detailLevel effect =
           object2 = effectToSuffix detailLevel eff
       in if T.null object2
          then ""  -- no 'conditional processing' --- probably a hack
-         else "when" <+> object <+> "then" <+> object2
+         else "(when" <+> object <+> "then" <+> object2 <> ")"
     Unless cond eff ->
       let object = conditionToObject cond
           object2 = effectToSuffix detailLevel eff
       in if T.null object2
          then ""
-         else "unless" <+> object <+> "then" <+> object2
+         else "(unless" <+> object <+> "then" <+> object2 <> ")"
     IfThenElse cond eff1 eff2 ->
       let object = conditionToObject cond
           object1 = effectToSuffix detailLevel eff1
           object2 = effectToSuffix detailLevel eff2
       in if T.null object1 && T.null object2
          then ""
-         else "if" <+> object <+> "then" <+> object1 <+> "else" <+> object2
+         else "(if" <+> object <+> "then" <+> object1
+                               <+> "else" <+> object2 <> ")"
     VerbNoLonger{} -> ""  -- no description for a flavour effect
     VerbMsg{} -> ""  -- no description for an effect that prints a description
     VerbMsgFail{} -> ""
