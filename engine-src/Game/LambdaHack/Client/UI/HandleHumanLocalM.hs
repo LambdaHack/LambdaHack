@@ -281,16 +281,17 @@ chooseItemDialogMode leader0 permitLoreCycle c = do
           K.Esc -> failWith "never mind"
           _ -> error $ "" `showFailure` km
       RFactions slot0 -> do
-        factionD <- getsState sfactionD
+        sroles <- getsSession sroles
+        factions <- getsState $ factionsFromState sroles
         let renderOneItem slot = do
-              (prompt2, blurbs) <- factionCloseUp (EM.assocs factionD) slot
+              (prompt2, blurbs) <- factionCloseUp factions slot
               let splitText = splitAttrString rwidth rwidth
                   ov0 = attrLinesToFontMap
                         $ map (second $ concatMap splitText) blurbs
               msgAdd MsgPromptGeneric prompt2
               return (ov0, [])
             extraKeys = []
-            slotBound = EM.size factionD - 1
+            slotBound = length factions - 1
         km <- displayOneMenuItem renderOneItem extraKeys slotBound slot0
         case K.key km of
           K.Space -> chooseItemDialogMode leader False MFactions
