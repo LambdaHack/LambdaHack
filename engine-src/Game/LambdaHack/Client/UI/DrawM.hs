@@ -38,6 +38,7 @@ import           Game.LambdaHack.Client.State
 import           Game.LambdaHack.Client.UI.ActorUI
 import           Game.LambdaHack.Client.UI.Content.Screen
 import           Game.LambdaHack.Client.UI.ContentClientUI
+import           Game.LambdaHack.Client.UI.EffectDescription
 import           Game.LambdaHack.Client.UI.Frame
 import           Game.LambdaHack.Client.UI.Frontend (frontendName)
 import           Game.LambdaHack.Client.UI.ItemDescription
@@ -231,7 +232,7 @@ drawFramePath drawnLevelId = do
  sreportNull <- getsSession sreportNull
  let frameForallId = FrameForall $ const $ return ()
  case saimMode of
-   Just{} | not sreportNull -> do
+   Just AimMode{detailLevel} | not sreportNull -> do
      COps{corule=RuleContent{rWidthMax, rHeightMax}, coTileSpeedup}
        <- getsState scops
      StateClient{seps} <- getClient
@@ -256,8 +257,9 @@ drawFramePath drawnLevelId = do
          _ -> getCachePath aid xhairPos) mleader
      assocsAtxhair <- getsState $ posToAidAssocs xhairPos drawnLevelId
      let shiftedBTrajectory = case assocsAtxhair of
-           (_, Actor{btrajectory = Just p, bpos = prPos}) : _->
-             trajectoryToPath prPos (fst p)
+           (_, Actor{btrajectory = Just p, bpos = prPos}) : _
+             | detailLevel == defaultDetailLevel ->
+               trajectoryToPath prPos (fst p)
            _ -> []
          shiftedLine =
            delete xhairPos
