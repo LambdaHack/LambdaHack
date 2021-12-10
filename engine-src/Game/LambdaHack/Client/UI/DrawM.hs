@@ -230,72 +230,75 @@ drawFramePath drawnLevelId = do
  SessionUI{saimMode} <- getSession
  sreportNull <- getsSession sreportNull
  let frameForallId = FrameForall $ const $ return ()
- if isNothing saimMode || sreportNull
- then return (frameForallId, frameForallId)
- else do
-  COps{corule=RuleContent{rWidthMax, rHeightMax}, coTileSpeedup}
-    <- getsState scops
-  StateClient{seps} <- getClient
-  -- Not @ScreenContent@, because pathing in level's map.
-  Level{ltile=PointArray.Array{avector}} <- getLevel drawnLevelId
-  totVisible <- totalVisible <$> getPerFid drawnLevelId
-  mleader <- getsClient sleader
-  xhairPos <- xhairToPos
-  bline <- case mleader of
-    Just leader -> do
-      Actor{bpos, blid} <- getsState $ getActorBody leader
-      return $! if blid /= drawnLevelId
-                then []
-                else fromMaybe [] $ bresenhamsLineAlgorithm seps bpos xhairPos
-    _ -> return []
-  mpath <- maybe (return Nothing) (\aid -> do
-    mtgtMPath <- getsClient $ EM.lookup aid . stargetD
-    case mtgtMPath of
-      Just TgtAndPath{tapPath=tapPath@(Just AndPath{pathGoal})}
-        | pathGoal == xhairPos -> return tapPath
-      _ -> getCachePath aid xhairPos) mleader
-  assocsAtxhair <- getsState $ posToAidAssocs xhairPos drawnLevelId
-  let shiftedBTrajectory = case assocsAtxhair of
-        (_, Actor{btrajectory = Just p, bpos = prPos}) : _->
-          trajectoryToPath prPos (fst p)
-        _ -> []
-      shiftedLine = delete xhairPos
-                    $ takeWhile (insideP (0, 0, rWidthMax - 1, rHeightMax - 1))
-                    $ if null shiftedBTrajectory
-                      then bline
-                      else shiftedBTrajectory
-      lpath = if not (null bline) && null shiftedBTrajectory
-              then delete xhairPos $ maybe [] pathList mpath
-              else []
-      acOnPathOrLine :: Char -> Point -> ContentId TileKind
-                     -> Color.AttrCharW32
-      acOnPathOrLine !ch !p0 !tile =
-        let fgOnPathOrLine =
-              case ( ES.member p0 totVisible
-                   , Tile.isWalkable coTileSpeedup tile ) of
-                _ | isUknownSpace tile -> Color.BrBlack
-                _ | Tile.isSuspect coTileSpeedup tile -> Color.BrMagenta
-                (True, True)   -> Color.BrGreen
-                (True, False)  -> Color.BrRed
-                (False, True)  -> Color.Green
-                (False, False) -> Color.Red
-        in Color.attrChar2ToW32 fgOnPathOrLine ch
-      mapVTL :: forall s. (Point -> ContentId TileKind -> Color.AttrCharW32)
-             -> [Point]
-             -> FrameST s
-      mapVTL f l v = do
-        let g :: Point -> ST s ()
-            g !p0 = do
-              let pI = fromEnum p0
-                  tile = avector U.! pI
-                  w = Color.attrCharW32 $ f p0 (DefsInternal.toContentId tile)
-              VM.write v (pI + rWidthMax) w
-        mapM_ g l
-      upd :: FrameForall
-      upd = FrameForall $ \v -> do
-        mapVTL (acOnPathOrLine ';') lpath v
-        mapVTL (acOnPathOrLine '*') shiftedLine v  -- overwrites path
-  return (upd, if null shiftedBTrajectory then frameForallId else upd)
+ case saimMode of
+   Just{} | not sreportNull -> do
+     COps{corule=RuleContent{rWidthMax, rHeightMax}, coTileSpeedup}
+       <- getsState scops
+     StateClient{seps} <- getClient
+     -- Not @ScreenContent@, because pathing in level's map.
+     Level{ltile=PointArray.Array{avector}} <- getLevel drawnLevelId
+     totVisible <- totalVisible <$> getPerFid drawnLevelId
+     mleader <- getsClient sleader
+     xhairPos <- xhairToPos
+     bline <- case mleader of
+       Just leader -> do
+         Actor{bpos, blid} <- getsState $ getActorBody leader
+         return $! if blid /= drawnLevelId
+                   then []
+                   else fromMaybe []
+                        $ bresenhamsLineAlgorithm seps bpos xhairPos
+       _ -> return []
+     mpath <- maybe (return Nothing) (\aid -> do
+       mtgtMPath <- getsClient $ EM.lookup aid . stargetD
+       case mtgtMPath of
+         Just TgtAndPath{tapPath=tapPath@(Just AndPath{pathGoal})}
+           | pathGoal == xhairPos -> return tapPath
+         _ -> getCachePath aid xhairPos) mleader
+     assocsAtxhair <- getsState $ posToAidAssocs xhairPos drawnLevelId
+     let shiftedBTrajectory = case assocsAtxhair of
+           (_, Actor{btrajectory = Just p, bpos = prPos}) : _->
+             trajectoryToPath prPos (fst p)
+           _ -> []
+         shiftedLine =
+           delete xhairPos
+           $ takeWhile (insideP (0, 0, rWidthMax - 1, rHeightMax - 1))
+           $ if null shiftedBTrajectory
+             then bline
+             else shiftedBTrajectory
+         lpath = if not (null bline) && null shiftedBTrajectory
+                 then delete xhairPos $ maybe [] pathList mpath
+                 else []
+         acOnPathOrLine :: Char -> Point -> ContentId TileKind
+                        -> Color.AttrCharW32
+         acOnPathOrLine !ch !p0 !tile =
+           let fgOnPathOrLine =
+                 case ( ES.member p0 totVisible
+                      , Tile.isWalkable coTileSpeedup tile ) of
+                   _ | isUknownSpace tile -> Color.BrBlack
+                   _ | Tile.isSuspect coTileSpeedup tile -> Color.BrMagenta
+                   (True, True)   -> Color.BrGreen
+                   (True, False)  -> Color.BrRed
+                   (False, True)  -> Color.Green
+                   (False, False) -> Color.Red
+           in Color.attrChar2ToW32 fgOnPathOrLine ch
+         mapVTL :: forall s. (Point -> ContentId TileKind -> Color.AttrCharW32)
+                -> [Point]
+                -> FrameST s
+         mapVTL f l v = do
+           let g :: Point -> ST s ()
+               g !p0 = do
+                 let pI = fromEnum p0
+                     tile = avector U.! pI
+                     w = Color.attrCharW32
+                         $ f p0 (DefsInternal.toContentId tile)
+                 VM.write v (pI + rWidthMax) w
+           mapM_ g l
+         upd :: FrameForall
+         upd = FrameForall $ \v -> do
+           mapVTL (acOnPathOrLine ';') lpath v
+           mapVTL (acOnPathOrLine '*') shiftedLine v  -- overwrites path
+     return (upd, if null shiftedBTrajectory then frameForallId else upd)
+   _ -> return (frameForallId, frameForallId)
 
 drawFrameActor :: forall m. MonadClientUI m => LevelId -> m FrameForall
 drawFrameActor drawnLevelId = do
