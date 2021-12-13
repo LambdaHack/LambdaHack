@@ -141,7 +141,7 @@ newtype Flags = Flags {flags :: ES.EnumSet Flag}
 
 -- | Doctrine of non-leader actors. Apart of determining AI operation,
 -- each doctrine implies a skill modifier, that is added to the non-leader
--- skills defined in @fskillsOther@ field of @Player@.
+-- skills defined in @fskillsOther@ field of @FactionKind@.
 data Doctrine =
     TExplore  -- ^ if enemy nearby, attack, if no items, etc., explore unknown
   | TFollow   -- ^ always follow leader's target or his position if no target
@@ -228,12 +228,12 @@ addSkills (Skills sk1) (Skills sk2) =
         s -> Just s
   in Skills $ EM.mergeWithKey combine id id sk1 sk2
 
-scaleSkills :: Skills -> Int -> Skills
-scaleSkills _ 0 = zeroSkills
-scaleSkills (Skills sk) n = Skills $ EM.map (n *) sk
+scaleSkills :: (Skills, Int) -> Skills
+scaleSkills (_, 0) = zeroSkills
+scaleSkills (Skills sk, n) = Skills $ EM.map (n *) sk
 
 sumScaledSkills :: [(Skills, Int)] -> Skills
-sumScaledSkills = foldr addSkills zeroSkills . map (uncurry scaleSkills)
+sumScaledSkills = foldr (addSkills . scaleSkills) zeroSkills
 
 nameDoctrine :: Doctrine -> Text
 nameDoctrine TExplore        = "explore"
@@ -255,7 +255,7 @@ describeDoctrine TMeleeAndRanged =
 describeDoctrine TMeleeAdjacent = "engage exclusively in melee, don't move"
 describeDoctrine TBlock = "block and wait, don't move"
 describeDoctrine TRoam = "move freely, chase targets"
-describeDoctrine TPatrol = "find and patrol an area (WIP)"
+describeDoctrine TPatrol = "find and patrol an area"
 
 doctrineSkills :: Doctrine -> Skills
 doctrineSkills TExplore = zeroSkills

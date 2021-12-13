@@ -14,7 +14,6 @@ import Game.LambdaHack.Core.Prelude
 import           Data.Binary
 import qualified Data.EnumMap.Strict as EM
 import qualified Data.EnumSet as ES
-import qualified Data.Map.Strict as M
 import qualified Data.Primitive.PrimArray as PA
 import           GHC.Generics (Generic)
 import qualified System.Random.SplitMix32 as SM
@@ -32,8 +31,6 @@ import           Game.LambdaHack.Common.State
 import           Game.LambdaHack.Common.Time
 import           Game.LambdaHack.Common.Types
 import           Game.LambdaHack.Common.Vector
-import           Game.LambdaHack.Content.ModeKind (ModeKind)
-import           Game.LambdaHack.Definition.Defs
 
 -- | Client state, belonging to a single faction.
 data StateClient = StateClient
@@ -61,22 +58,24 @@ data StateClient = StateClient
                                     --   Faction.gleader is the old leader
   , _sside        :: FactionId      -- ^ faction controlled by the client
   , squit         :: Bool           -- ^ exit the game loop
-  , scurChal      :: Challenge      -- ^ current game challenge setup
-  , snxtChal      :: Challenge      -- ^ next game challenge setup
-  , smarkSuspect  :: Int            -- ^ whether to mark suspect features
   , scondInMelee  :: ES.EnumSet LevelId
                                     -- ^ whether we are in melee, per level
-  , svictories    :: EM.EnumMap (ContentId ModeKind) (M.Map Challenge Int)
-                                    -- ^ won games at particular difficulty lvls
-  , scampings     :: ES.EnumSet (ContentId ModeKind)  -- ^ camped games
-  , srestarts     :: ES.EnumSet (ContentId ModeKind)  -- ^ restarted games
   , soptions      :: ClientOptions  -- ^ client options
   , stabs         :: (PA.PrimArray PointI, PA.PrimArray PointI)
       -- ^ Instead of a BFS queue (list) we use these two arrays,
       --   for (JS) speed. They need to be per-client distinct,
       --   because sometimes multiple clients interleave BFS computation.
+
+    -- The three fields below only make sense for the UI faction,
+    -- but can't be in SessionUI, because AI-moved actors of the UI faction
+    -- require them for their action. Fortunately, being in StateClient
+    -- of the UI client, these are never lost, even when a different faction
+    -- becomes the UI faction.
+  , scurChal      :: Challenge      -- ^ current game challenge setup
+  , snxtChal      :: Challenge      -- ^ next game challenge setup
+  , smarkSuspect  :: Int            -- ^ whether to mark suspect features
   }
-  deriving Show
+  -- No @Show@ instance, because @stabs@ start undefined.
 
 type AlterLid = EM.EnumMap LevelId (PointArray.Array Word8)
 
@@ -139,21 +138,18 @@ emptyStateClient _sside =
     , _sleader = Nothing  -- no heroes yet alive
     , _sside
     , squit = False
+    , scondInMelee = ES.empty
+    , soptions = defClientOptions
+    , stabs = (undefined, undefined)
     , scurChal = defaultChallenge
     , snxtChal = defaultChallenge
     , smarkSuspect = 1
-    , scondInMelee = ES.empty
-    , svictories = EM.empty
-    , scampings = ES.empty
-    , srestarts = ES.empty
-    , soptions = defClientOptions
-    , stabs = (undefined, undefined)
     }
 
 -- | Cycle the 'smarkSuspect' setting.
-cycleMarkSuspect :: StateClient -> StateClient
-cycleMarkSuspect s@StateClient{smarkSuspect} =
-  s {smarkSuspect = (smarkSuspect + 1) `mod` 3}
+cycleMarkSuspect :: Int -> StateClient -> StateClient
+cycleMarkSuspect delta cli =
+  cli {smarkSuspect = (smarkSuspect cli + delta) `mod` 3}
 
 -- | Update target parameters within client state.
 updateTarget :: ActorId -> (Maybe Target -> Maybe Target) -> StateClient
@@ -193,14 +189,11 @@ instance Binary StateClient where
     put (show srandom)
     put _sleader
     put _sside
+    put scondInMelee
+    put soptions
     put scurChal
     put snxtChal
     put smarkSuspect
-    put scondInMelee
-    put svictories
-    put scampings
-    put srestarts
-    put soptions
 #ifdef WITH_EXPENSIVE_ASSERTIONS
     put sfper
 #endif
@@ -213,14 +206,11 @@ instance Binary StateClient where
     g <- get
     _sleader <- get
     _sside <- get
+    scondInMelee <- get
+    soptions <- get
     scurChal <- get
     snxtChal <- get
     smarkSuspect <- get
-    scondInMelee <- get
-    svictories <- get
-    scampings <- get
-    srestarts <- get
-    soptions <- get
     let sbfsD = EM.empty
         sundo = ()
         salter = EM.empty

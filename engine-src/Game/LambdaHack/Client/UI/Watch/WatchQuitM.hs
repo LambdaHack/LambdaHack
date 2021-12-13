@@ -5,7 +5,7 @@ module Game.LambdaHack.Client.UI.Watch.WatchQuitM
 #ifdef EXPOSE_INTERNAL
     -- * Internal operations
   , displayGameOverLoot, displayGameOverAnalytics, displayGameOverLore
-  , viewLoreItems
+  , viewFinalLore
 #endif
   ) where
 
@@ -14,6 +14,8 @@ import Prelude ()
 import Game.LambdaHack.Core.Prelude
 
 import qualified Data.EnumMap.Strict as EM
+import qualified Data.EnumSet as ES
+import qualified Data.Map.Strict as M
 import qualified NLP.Miniutter.English as MU
 
 import           Game.LambdaHack.Client.MonadClient
@@ -24,7 +26,6 @@ import           Game.LambdaHack.Client.UI.ContentClientUI
 import           Game.LambdaHack.Client.UI.EffectDescription
 import           Game.LambdaHack.Client.UI.Frame
 import           Game.LambdaHack.Client.UI.HandleHelperM
-import           Game.LambdaHack.Client.UI.ItemSlot
 import qualified Game.LambdaHack.Client.UI.Key as K
 import           Game.LambdaHack.Client.UI.MonadClientUI
 import           Game.LambdaHack.Client.UI.Msg
@@ -32,7 +33,6 @@ import           Game.LambdaHack.Client.UI.MsgM
 import           Game.LambdaHack.Client.UI.SessionUI
 import           Game.LambdaHack.Client.UI.Slideshow
 import           Game.LambdaHack.Client.UI.SlideshowM
-import           Game.LambdaHack.Client.UI.Watch.WatchCommonM
 import           Game.LambdaHack.Common.Actor
 import           Game.LambdaHack.Common.ActorState
 import           Game.LambdaHack.Common.Analytics
@@ -45,6 +45,7 @@ import           Game.LambdaHack.Common.Misc
 import           Game.LambdaHack.Common.MonadStateRead
 import           Game.LambdaHack.Common.State
 import           Game.LambdaHack.Common.Types
+import           Game.LambdaHack.Content.FactionKind
 import qualified Game.LambdaHack.Content.ItemKind as IK
 import           Game.LambdaHack.Content.ModeKind
 import qualified Game.LambdaHack.Definition.Ability as Ability
@@ -55,13 +56,28 @@ quitFactionUI :: MonadClientUI m
               -> Maybe (FactionAnalytics, GenerationAnalytics)
               -> m ()
 quitFactionUI fid toSt manalytics = do
+  side <- getsClient sside
+  gameModeId <- getsState sgameModeId
+  when (side == fid) $ case toSt of
+    Just Status{stOutcome=Camping} ->
+      modifySession $ \sess ->
+        sess {scampings = ES.insert gameModeId $ scampings sess}
+    Just Status{stOutcome=Restart} ->
+      modifySession $ \sess ->
+        sess {srestarts = ES.insert gameModeId $ srestarts sess}
+    Just Status{stOutcome} | stOutcome `elem` victoryOutcomes -> do
+      scurChal <- getsClient scurChal
+      let sing = M.singleton scurChal 1
+          f = M.unionWith (+)
+          g = EM.insertWith f gameModeId sing
+      modifySession $ \sess -> sess {svictories = g $ svictories sess}
+    _ -> return ()
   ClientOptions{sexposeItems} <- getsClient soptions
   fact <- getsState $ (EM.! fid) . sfactionD
   let fidName = MU.Text $ gname fact
-      person = if fhasGender $ gplayer fact then MU.PlEtc else MU.Sg3rd
+      person = if fhasGender $ gkind fact then MU.PlEtc else MU.Sg3rd
       horror = isHorrorFact fact
       camping = maybe True ((== Camping) . stOutcome) toSt
-  side <- getsClient sside
   when (fid == side && not camping) $ do
     tellGameClipPS
     resetGameStart
@@ -110,12 +126,12 @@ quitFactionUI fid toSt manalytics = do
             let getTrunkFull (aid, b) = (aid, itemToF $ btrunk b)
             ourTrunks <- getsState $ map getTrunkFull
                                      . fidActorNotProjGlobalAssocs side
-            let smartFaction fact2 = fleaderMode (gplayer fact2) /= Nothing
+            let smartFaction fact2 = fhasPointman (gkind fact2)
                 canBeSmart = any (smartFaction . snd)
                 canBeOurFaction = any (\(fid2, _) -> fid2 == side)
                 smartEnemy trunkFull =
                   let possible =
-                        possibleActorFactions (itemKind trunkFull) factionD
+                        possibleActorFactions [] (itemKind trunkFull) factionD
                   in not (canBeOurFaction possible) && canBeSmart possible
                 smartEnemiesOurs = filter (smartEnemy . snd) ourTrunks
                 uniqueActor trunkFull = IA.checkFlag Ability.Unique
@@ -185,31 +201,27 @@ quitFactionUI fid toSt manalytics = do
           epilogue
     _ ->
       when (isJust startingPart && (stOutcome <$> toSt) == Just Killed) $ do
-        msgAdd MsgTutorialHint "When a whole faction gets eliminated, no new members of the party will ever appear and its stashed belongings may await far off, unclaimed and undefended. While some adventures require eliminating a faction (as seen in the adventure description screen in the help menu), for others it's an optional task, if possible at all. Instead, finding an exit may be necessary to win. It's enough if one character finds and triggers the exit. Others automatically follow, duly hauling all party belongings."
+        msgAdd MsgTutorialHint "When a whole faction gets eliminated, no new members of the party will ever appear and its stashed belongings may remain far off, unclaimed and undefended. While some adventures require elimination a faction (to be verified in the adventure description screen in the help menu), for others it's an optional task, if possible at all. Instead, finding an exit may be necessary to win. It's enough if one character finds and triggers the exit. Others automatically follow, duly hauling all common belongings. Similarly, if eliminating foes ends a challenge, it happens immediately, with no need to move party members anywhere."
         -- Needed not to overlook the competitor dying in raid scenario.
-        displayMore ColorFull ""
+        displayMore ColorFull "This is grave news. What now?"
 
 displayGameOverLoot :: MonadClientUI m
                     => (ItemBag, Int) -> GenerationAnalytics -> m K.KM
 displayGameOverLoot (heldBag, total) generationAn = do
   ClientOptions{sexposeItems} <- getsClient soptions
   COps{coitem} <- getsState scops
-  ItemSlots itemSlots <- getsSession sslots
   -- We assume "gold grain", not "grain" with label "of gold":
   let currencyName = IK.iname $ okind coitem $ ouniqGroup coitem IK.S_CURRENCY
-      lSlotsRaw = EM.filter (`EM.member` heldBag) $ itemSlots EM.! SItem
       generationItem = generationAn EM.! SItem
-      (itemBag, lSlots) =
+      itemBag =
         if sexposeItems
         then let generationBag = EM.map (\k -> (-k, [])) generationItem
-                 bag = heldBag `EM.union` generationBag
-                 slots = EM.fromDistinctAscList $ zip allSlots $ EM.keys bag
-             in (bag, slots)
-        else (heldBag, lSlotsRaw)
+             in heldBag `EM.union` generationBag
+        else heldBag
       promptFun iid itemFull2 k =
         let worth = itemPrice 1 $ itemKind itemFull2
             lootMsg = if worth == 0 then "" else
-              let pile = if k == 1 then "exemplar" else "hoard"
+              let pile = if k <= 1 then "exemplar" else "hoard"
               in makeSentence $
                    ["this treasure", pile, "is worth"]
                    ++ (if k > 1 then [ MU.Cardinal k, "times"] else [])
@@ -239,8 +251,7 @@ displayGameOverLoot (heldBag, total) generationAn = do
         <+> (if sexposeItems
              then "Non-positive count means none held but this many generated."
              else "")
-      examItem = displayItemLore itemBag 0 promptFun
-  viewLoreItems "GameOverLoot" lSlots itemBag prompt examItem True
+  viewFinalLore "GameOverLoot" itemBag prompt promptFun (MLore SItem)
 
 displayGameOverAnalytics :: MonadClientUI m
                          => FactionAnalytics -> GenerationAnalytics
@@ -248,24 +259,22 @@ displayGameOverAnalytics :: MonadClientUI m
 displayGameOverAnalytics factionAn generationAn = do
   ClientOptions{sexposeActors} <- getsClient soptions
   side <- getsClient sside
-  ItemSlots itemSlots <- getsSession sslots
+  ItemRoles itemRoles <- getsSession sroles
   let ourAn = akillCounts
               $ EM.findWithDefault emptyAnalytics side factionAn
-      foesAn = EM.unionsWith (+)
-               $ concatMap EM.elems $ catMaybes
-               $ map (`EM.lookup` ourAn) [KillKineticMelee .. KillOtherPush]
-      trunkBagRaw = EM.map (, []) foesAn
-      lSlotsRaw = EM.filter (`EM.member` trunkBagRaw) $ itemSlots EM.! STrunk
-      killedBag = EM.fromList $ map (\iid -> (iid, trunkBagRaw EM.! iid))
-                                    (EM.elems lSlotsRaw)
+      foesAn = EM.unionsWith (+) $ concatMap EM.elems
+               $ mapMaybe (`EM.lookup` ourAn)
+                          [KillKineticMelee .. KillOtherPush]
+      killedBagIncludingProjectiles = EM.map (, []) foesAn
+      killedBag = EM.filterWithKey
+                    (\iid _ -> iid `ES.member` (itemRoles EM.! STrunk))
+                    killedBagIncludingProjectiles
       generationTrunk = generationAn EM.! STrunk
-      (trunkBag, lSlots) =
+      trunkBag =
         if sexposeActors
         then let generationBag = EM.map (\k -> (-k, [])) generationTrunk
-                 bag = killedBag `EM.union` generationBag
-                 slots = EM.fromDistinctAscList $ zip allSlots $ EM.keys bag
-             in (bag, slots)
-        else (killedBag, lSlotsRaw)
+             in killedBag `EM.union` generationBag
+        else killedBag
       total = sum $ filter (> 0) $ map fst $ EM.elems trunkBag
       -- Not just "killed 1 out of 4", because it's sometimes "2 out of 1",
       -- if an enemy was revived.
@@ -281,68 +290,64 @@ displayGameOverAnalytics factionAn generationAn = do
         <+> (if sexposeActors
              then "Non-positive count means none killed but this many reported."
              else "")
-      examItem = displayItemLore trunkBag 0 promptFun
-  viewLoreItems "GameOverAnalytics" lSlots trunkBag prompt examItem False
+  viewFinalLore "GameOverAnalytics" trunkBag prompt promptFun (MLore STrunk)
 
 displayGameOverLore :: MonadClientUI m
                     => SLore -> Bool -> GenerationAnalytics -> m K.KM
 displayGameOverLore slore exposeCount generationAn = do
-  let generationLore = generationAn EM.! slore
+  itemD <- getsState sitemD
+  let -- In @sexposeItems@ mode this filtering passes all through
+      -- thanks to @revealItems@.
+      generationLore = EM.filterWithKey (\iid _ -> iid `EM.member` itemD)
+                       $ generationAn EM.! slore
       generationBag = EM.map (\k -> (if exposeCount then k else 1, []))
                              generationLore
       total = sum $ map fst $ EM.elems generationBag
-      slots = EM.fromDistinctAscList $ zip allSlots $ EM.keys generationBag
       promptFun :: ItemId -> ItemFull-> Int -> Text
       promptFun _ _ k =
         makeSentence
           [ "this", MU.Text (ppSLore slore), "manifested during your quest"
           , MU.CarWs k "time" ]
       verb = if | slore `elem` [SCondition, SBlast] -> "experienced"
-                | slore == SEmbed -> "strived through"
+                | slore == SEmbed -> "ambled among"
                 | otherwise -> "lived among"
       prompt = case total of
         0 -> makeSentence [ "you didn't experience any"
                           , MU.Ws $ MU.Text (headingSLore slore)
                           , "this time" ]
-        1 -> makeSentence [ "you", verb, "the following"
+        1 -> makeSentence [ "you saw the following"
                           , MU.Text (headingSLore slore) ]
         _ -> makeSentence [ "you", verb, "the following variety of"
                           , MU.CarWs total $ MU.Text (headingSLore slore) ]
-      examItem = displayItemLore generationBag 0 promptFun
-      displayRanged = slore `notElem` [SOrgan, STrunk]
-  viewLoreItems ("GameOverLore" ++ show slore)
-                slots generationBag prompt examItem displayRanged
+  viewFinalLore ("GameOverLore" ++ show slore)
+                generationBag prompt promptFun (MLore slore)
 
-viewLoreItems :: MonadClientUI m
-              => String -> SingleItemSlots -> ItemBag -> Text
-              -> (Int -> SingleItemSlots -> m Bool) -> Bool
+viewFinalLore :: forall m . MonadClientUI m
+              => String -> ItemBag -> Text
+              -> (ItemId -> ItemFull -> Int -> Text)
+              -> ItemDialogMode
               -> m K.KM
-viewLoreItems menuName lSlotsRaw trunkBag prompt examItem displayRanged = do
+viewFinalLore menuName trunkBag prompt promptFun dmode = do
   CCUI{coscreen=ScreenContent{rheight}} <- getsSession sccui
-  arena <- getArenaUI
   itemToF <- getsState $ flip itemToFull
-  let keysPre = [K.spaceKM, K.mkChar '<', K.mkChar '>', K.escKM]
-      lSlots = sortSlotMap itemToF lSlotsRaw
-  msgAdd MsgPromptGeneric prompt
-  io <- itemOverlay lSlots arena trunkBag displayRanged
-  itemSlides <- overlayToSlideshow (rheight - 2) keysPre io
-  let keyOfEKM (Left km) = km
-      keyOfEKM (Right SlotChar{slotChar}) = [K.mkChar slotChar]
-      allOKX = concatMap snd $ slideshow itemSlides
-      keysMain = keysPre ++ concatMap (keyOfEKM . fst) allOKX
+  let iids = sortIids itemToF $ EM.assocs trunkBag
+      viewAtSlot :: MenuSlot -> m K.KM
       viewAtSlot slot = do
-        let ix0 = fromMaybe (error $ show slot)
-                            (findIndex (== slot) $ EM.keys lSlots)
-        go2 <- examItem ix0 lSlots
-        if go2
-        then viewLoreItems menuName lSlots trunkBag prompt
-                           examItem displayRanged
-        else return K.escKM
-  ekm <- displayChoiceScreen menuName ColorFull False itemSlides keysMain
+        let renderOneItem = okxItemLoreMsg promptFun 0 dmode iids
+            extraKeys = []
+            slotBound = length iids - 1
+        km <- displayOneMenuItem renderOneItem extraKeys slotBound slot
+        case K.key km of
+          K.Space -> viewFinalLore menuName trunkBag prompt promptFun dmode
+          K.Esc -> return km
+          _ -> error $ "" `showFailure` km
+  msgAdd MsgPromptGeneric prompt
+  let keys = [K.spaceKM, K.mkChar '<', K.mkChar '>', K.escKM]
+  okx <- itemOverlay iids dmode
+  sli <- overlayToSlideshow (rheight - 2) keys okx
+  ekm <- displayChoiceScreenWithDefItemKey
+           (okxItemLoreInline promptFun 0 dmode iids) sli keys menuName
   case ekm of
-    Left km | km `elem` [K.spaceKM, K.mkChar '<', K.mkChar '>', K.escKM] ->
-      return km
-    Left K.KM{key=K.Char l} -> viewAtSlot $ SlotChar 0 l
-      -- other prefixes are not accessible via keys; tough luck; waste of effort
+    Left km | km `elem` keys -> return km
     Left km -> error $ "" `showFailure` km
     Right slot -> viewAtSlot slot

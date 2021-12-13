@@ -21,7 +21,7 @@ import Game.LambdaHack.Content.ItemKind (ItemKind)
 import Game.LambdaHack.Definition.Defs
 
 data CmdCategory =
-    CmdMainMenu | CmdDashboard | CmdItemMenu
+    CmdDashboard | CmdItemMenu
   | CmdMove | CmdItem | CmdAim | CmdMeta | CmdMouse
   | CmdInternal | CmdDebug | CmdMinimal
   deriving (Show, Read, Eq, Generic)
@@ -31,7 +31,6 @@ instance NFData CmdCategory
 instance Binary CmdCategory
 
 categoryDescription :: CmdCategory -> Text
-categoryDescription CmdMainMenu = "Main menu"
 categoryDescription CmdDashboard = "Dashboard"
 categoryDescription CmdItemMenu = "Item menu commands"
 categoryDescription CmdMove = "Terrain exploration and modification commands"
@@ -134,13 +133,12 @@ data HumanCmd =
   | MainMenuAutoOff
   | Dashboard
     -- Below this line, commands do not take time.
-  | GameTutorialToggle
-  | GameDifficultyIncr
+  | GameDifficultyIncr Int
   | GameFishToggle
   | GameGoodsToggle
   | GameWolfToggle
   | GameKeeperToggle
-  | GameScenarioIncr
+  | GameScenarioIncr Int
   | GameRestart
   | GameQuit
   | GameDrop
@@ -166,12 +164,11 @@ data HumanCmd =
   | RepeatLast Int
   | Record
   | AllHistory
-  | LastHistory
-  | MarkVision
+  | MarkVision Int
   | MarkSmell
-  | MarkSuspect
+  | MarkSuspect Int
   | MarkAnim
-  | OverrideTut
+  | OverrideTut Int
   | SettingsMenu
   | ChallengeMenu
   | PrintScreen

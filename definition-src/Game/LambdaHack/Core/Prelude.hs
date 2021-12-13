@@ -13,7 +13,7 @@ module Game.LambdaHack.Core.Prelude
 
   , Text, (<+>), tshow, divUp, sum, (<$$>), partitionM, length, null, comparing
   , into, fromIntegralWrap, toIntegralCrash, intToDouble, int64ToDouble
-  , mapM_, forM_
+  , mapM_, forM_, vectorUnboxedUnsafeIndex, unsafeShiftL, unsafeShiftR
 
   , (***), (&&&), first, second
   ) where
@@ -30,7 +30,6 @@ import Prelude.Compat hiding
   , null
   , readFile
   , sum
-  , writeFile
   , (<>)
   )
 
@@ -46,8 +45,8 @@ import qualified Data.Bits as Bits
 import qualified Data.EnumMap.Strict as EM
 import qualified Data.EnumSet as ES
 import qualified Data.Fixed as Fixed
-import           Data.Hashable
 import qualified Data.HashMap.Strict as HM
+import           Data.Hashable
 import           Data.Int (Int64)
 import           Data.Key
 import           Data.List.Compat hiding (foldl, foldl1, length, null, sum)
@@ -58,6 +57,7 @@ import           Data.Semigroup.Compat (Semigroup ((<>)))
 import           Data.Text (Text)
 import qualified Data.Text as T (pack)
 import qualified Data.Time as Time
+import qualified Data.Vector.Unboxed as U
 import           NLP.Miniutter.English ((<+>))
 import qualified NLP.Miniutter.English as MU
 import qualified Prelude.Compat
@@ -197,3 +197,27 @@ mapM_ = Control.Monad.Compat.mapM_
 -- | This has a more specific type (unit result) than normally, to catch errors.
 forM_ :: (Foldable t, Monad m) => t a -> (a -> m ()) -> m ()
 forM_ = Control.Monad.Compat.forM_
+
+vectorUnboxedUnsafeIndex :: U.Unbox a => U.Vector a -> Int -> a
+vectorUnboxedUnsafeIndex =
+#ifdef WITH_EXPENSIVE_ASSERTIONS
+  (U.!)  -- index checking is sometimes an expensive (kind of) assertion
+#else
+  U.unsafeIndex
+#endif
+
+unsafeShiftL :: Bits.Bits a => a -> Int -> a
+unsafeShiftL =
+#ifdef WITH_EXPENSIVE_ASSERTIONS
+  Bits.shiftL
+#else
+  Bits.unsafeShiftL
+#endif
+
+unsafeShiftR :: Bits.Bits a => a -> Int -> a
+unsafeShiftR =
+#ifdef WITH_EXPENSIVE_ASSERTIONS
+  Bits.shiftR
+#else
+  Bits.unsafeShiftR
+#endif

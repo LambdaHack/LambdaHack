@@ -4,7 +4,7 @@ module Game.LambdaHack.Core.Random
     Rnd
     -- * Random operations
   , randomR, randomR0, nextRandom, randomWord32
-  , oneOf, shuffle, shuffleExcept, frequency
+  , oneOf, shuffle, invalidInformationCode, shuffleExcept, frequency
     -- * Fractional chance
   , Chance, chance
     -- * Casting dice scaled with level
@@ -37,7 +37,7 @@ type Rnd a = St.State SM.SMGen a
 -- | Get a random object within a (inclusive) range with a uniform distribution.
 randomR :: (Integral a) => (a, a) -> Rnd a
 {-# INLINE randomR #-}
-randomR (0, h) = St.state $ nextRandom h
+randomR (0, h) = randomR0 h
 randomR (l, h) | l > h = error "randomR: empty range"
 randomR (l, h) = St.state $ \g ->
   let (x, g') = nextRandom (h - l) g
@@ -56,8 +56,9 @@ randomR0 h = St.state $ nextRandom h
 -- to keep it working for arbitrary fixed number of bits.
 nextRandom :: forall a. (Integral a) => a -> SM.SMGen -> (a, SM.SMGen)
 {-# INLINE nextRandom #-}
-nextRandom h g = assert (toInteger h
-                         <= (toInteger :: Int32 -> Integer) maxBound) $
+nextRandom 0 g = (0, g)
+nextRandom h g = assert (h > 0 && toInteger h
+                                  <= (toInteger :: Int32 -> Integer) maxBound) $
   let (w32, g') = SM.bitmaskWithRejection32'
                     ((fromIntegralWrap :: a -> Word32) h) g
       -- `fromIntegralWrap` is fine here, because wrapping is OK.
@@ -87,16 +88,23 @@ shuffle l = do
   x <- oneOf l
   (x :) <$> shuffle (delete x l)
 
+-- | Code that means the information (e.g., flavour or hidden kind index)
+-- should be regenerated, because it could not be transferred from
+-- previous playthrough (it's random in each playthrough or there was
+-- no previous playthrough).
+invalidInformationCode :: Word16
+invalidInformationCode = maxBound
+
 -- | Generates a random permutation, except for the existing mapping.
 shuffleExcept :: U.Vector Word16 -> Int -> [Word16] -> Rnd [Word16]
 shuffleExcept v len l0 = assert (len == length l0) $
-  shuffleE 0 (l0 \\ filter (/= maxBound) (U.toList v))
+  shuffleE 0 (l0 \\ filter (/= invalidInformationCode) (U.toList v))
  where
   shuffleE :: Int -> [Word16] -> Rnd [Word16]
   shuffleE i _ | i == len = return []
   shuffleE i l = do
     let a0 = v U.! i
-    if a0 == maxBound then do
+    if a0 == invalidInformationCode then do
       a <- oneOf l
       (a :) <$> shuffleE (succ i) (delete a l)
     else

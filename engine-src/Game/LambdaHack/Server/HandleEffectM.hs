@@ -56,9 +56,9 @@ import qualified Game.LambdaHack.Common.Tile as Tile
 import           Game.LambdaHack.Common.Time
 import           Game.LambdaHack.Common.Types
 import           Game.LambdaHack.Common.Vector
+import           Game.LambdaHack.Content.FactionKind
 import           Game.LambdaHack.Content.ItemKind (ItemKind)
 import qualified Game.LambdaHack.Content.ItemKind as IK
-import           Game.LambdaHack.Content.ModeKind
 import           Game.LambdaHack.Content.RuleKind
 import qualified Game.LambdaHack.Core.Dice as Dice
 import           Game.LambdaHack.Core.Random
@@ -148,7 +148,7 @@ refillHP source target speedDeltaHP = assert (speedDeltaHP /= 0) $ do
   when serious $ cutCalm target
   tb <- getsState $ getActorBody target
   fact <- getsState $ (EM.! bfid tb) . sfactionD
-  unless (bproj tb || fleaderMode (gplayer fact) == Nothing) $
+  when (not (bproj tb) && fhasPointman (gkind fact)) $
     -- If leader just lost all HP, change the leader early (not when destroying
     -- the actor), to let players rescue him, especially if he's slowed
     -- by the attackers.
@@ -272,7 +272,7 @@ effectAndDestroy effApplyFlags0@EffApplyFlags{..} source target iid container
   if not recharged then return UseDud else do
     let timeoutTurns = timeDeltaScale (Delta timeTurn) timeout
         newItemTimer = createItemTimer localTime timeoutTurns
-        it2 = if timeout /= 0 && recharged
+        it2 = if timeout > 0 && recharged
               then if effActivation == ActivationPeriodic
                       && IA.checkFlag Ability.Fragile arItem
                    then replicate (itemK - length it1) newItemTimer ++ it1
@@ -306,17 +306,18 @@ effectAndDestroy effApplyFlags0@EffApplyFlags{..} source target iid container
         mEmbedPos = case container of
           CEmbed _ p -> Just p
           _ -> Nothing
-    -- Announce no effect, which is rare and wastes time, so noteworthy.
     if | triggered == UseUp
          && mEmbedPos /= Just (bpos sb)  -- treading water, etc.
          && effActivation `notElem` [ActivationTrigger, ActivationMeleeable]
               -- do not repeat almost the same msg
          && (effActivation /= ActivationOnSmash  -- only tells condition ends
              && effActivation /= ActivationPeriodic
-             || not (IA.checkFlag Ability.Condition arItem)) ->
+             || not (IA.checkFlag Ability.Condition arItem)) -> do
            -- Effects triggered; main feedback comes from them,
            -- but send info so that clients can log it.
-           execSfxAtomic $ SfxItemApplied iid container
+           let verbose = effActivation == ActivationUnderRanged
+                         || effActivation == ActivationUnderMelee
+           execSfxAtomic $ SfxItemApplied verbose iid container
        | triggered /= UseUp
          && effActivation /= ActivationOnSmash
          && effActivation /= ActivationPeriodic
@@ -326,12 +327,13 @@ effectAndDestroy effApplyFlags0@EffApplyFlags{..} source target iid container
               -- and so do effects under attack
          && not (bproj sb)  -- projectiles can be very numerous
          && isNothing mEmbedPos  ->  -- embeds may be just flavour
+           -- Announce no effect, which is rare and wastes time, so noteworthy.
            execSfxAtomic $ SfxMsgFid (bfid sb) $
              if any IK.forApplyEffect effs
              then SfxFizzles iid container
                     -- something didn't work despite promising effects
              else SfxNothingHappens iid container  -- fully expected
-       | otherwise -> return ()
+       | otherwise -> return ()  -- all the spam cases
     -- If none of item's effects nor a kinetic hit were performed,
     -- we recreate the item (assuming we deleted the item above).
     -- Regardless, we don't rewind the time, because some info is gained
@@ -573,7 +575,7 @@ effectExplode execSfx cgroup source target containerOrigin = do
               , flip Point (y + 12) $ x + fuzz
               , flip Point (y - 12) $ x - fuzz
               , flip Point (y + 12) $ x - fuzz ]
-            randomReverse = if veryRandom `mod` 2 == 0 then id else reverse
+            randomReverse = if even veryRandom then id else reverse
             ps = take k $ concat $
               randomReverse
                 [ zip (repeat True)  -- diagonal particles don't reach that far
@@ -625,15 +627,16 @@ effectRefillHP power0 source target iid = do
   fact <- getsState $ (EM.! bfid tb) . sfactionD
   let power = if power0 <= -1 then power0 else max 1 power0  -- avoid 0
       deltaHP = xM power
-  if | cfish curChalSer && deltaHP > 0
-       && fhasUI (gplayer fact) && bfid sb /= bfid tb -> do
-       execSfxAtomic $ SfxMsgFid (bfid tb) SfxColdFish
-       return UseId
-     | otherwise -> do
-       let reportedEffect = IK.RefillHP power
-       execSfxAtomic $ SfxEffect (bfid sb) target iid reportedEffect deltaHP
-       refillHP source target deltaHP
-       return UseUp
+  if cfish curChalSer && deltaHP > 0
+     && fhasUI (gkind fact) && bfid sb /= bfid tb
+  then do
+     execSfxAtomic $ SfxMsgFid (bfid tb) SfxColdFish
+     return UseId
+  else do
+    let reportedEffect = IK.RefillHP power
+    execSfxAtomic $ SfxEffect (bfid sb) target iid reportedEffect deltaHP
+    refillHP source target deltaHP
+    return UseUp
 
 -- ** RefillCalm
 
@@ -677,8 +680,7 @@ effectDominate source target iid = do
              Just (hiImpressionFid, hiImpressionK) ->
                 hiImpressionFid == bfid sb
                   -- highest impression needs to be by us
-                && (fleaderMode (gplayer fact) /= Nothing
-                    || hiImpressionK >= 10)
+                && (fhasPointman (gkind fact) || hiImpressionK >= 10)
                      -- to tame/hack animal/robot, impress them a lot first
        if permitted then do
          b <- dominateFidSfx source target iid (bfid sb)
@@ -862,7 +864,7 @@ effectYell execSfx target = do
   if bhp tb <= 0 then  -- avoid yelling corpses
     return UseDud  -- the yell never manifested
   else do
-    when (not (bproj tb))
+    unless (bproj tb)
       execSfx
     execSfxAtomic $ SfxTaunt False target
     when (not (bproj tb) && deltaBenign (bcalmDelta tb)) $
@@ -1130,12 +1132,10 @@ switchLevels2 lidNew posNew (aid, bOld) mbtime_bOld mbtimeTraj_bOld mlead = do
   -- Onlookers see somebody appear suddenly. The actor himself
   -- sees new surroundings and has to reset his perception.
   execUpdAtomic $ UpdSpotActor aid bNew
-  case mlead of
-    Nothing -> return ()
-    Just leader ->
-      -- The leader is fresh in the sense that he's on a new level
-      -- and so doesn't have up to date Perception.
-      setFreshLeader side leader
+  forM_ mlead $
+    -- The leader is fresh in the sense that he's on a new level
+    -- and so doesn't have up to date Perception.
+    setFreshLeader side
 
 -- ** Escape
 
@@ -1149,7 +1149,7 @@ effectEscape execSfx source target = do
   fact <- getsState $ (EM.! fid) . sfactionD
   if | bproj tb ->
        return UseDud  -- basically a misfire
-     | not (fcanEscape $ gplayer fact) -> do
+     | not (fcanEscape $ gkind fact) -> do
        execSfxAtomic $ SfxMsgFid (bfid sb) SfxEscapeImpossible
        when (source /= target) $
          execSfxAtomic $ SfxMsgFid (bfid tb) SfxEscapeImpossible
@@ -1179,23 +1179,23 @@ paralyze execSfx nDm source target = do
   power0 <- rndToAction $ castDice ldepth totalDepth nDm
   let power = max power0 1  -- KISS, avoid special case
   actorStasis <- getsServer sactorStasis
-  if | ES.member target actorStasis -> do
-       sb <- getsState $ getActorBody source
-       execSfxAtomic $ SfxMsgFid (bfid sb) SfxStasisProtects
-       when (source /= target) $
-         execSfxAtomic $ SfxMsgFid (bfid tb) SfxStasisProtects
-       return UseId
-     | otherwise -> do
-       execSfx
-       let t = timeDeltaScale (Delta timeClip) power
-       -- Only the normal time, not the trajectory time, is affected.
-       modifyServer $ \ser ->
-         ser { sactorTime = ageActor (bfid tb) (blid tb) target t
-                            $ sactorTime ser
-             , sactorStasis = ES.insert target (sactorStasis ser) }
-                 -- actor's time warped, so he is in stasis,
-                 -- immune to further warps
-       return UseUp
+  if ES.member target actorStasis then do
+    sb <- getsState $ getActorBody source
+    execSfxAtomic $ SfxMsgFid (bfid sb) SfxStasisProtects
+    when (source /= target) $
+      execSfxAtomic $ SfxMsgFid (bfid tb) SfxStasisProtects
+    return UseId
+  else do
+    execSfx
+    let t = timeDeltaScale (Delta timeClip) power
+    -- Only the normal time, not the trajectory time, is affected.
+    modifyServer $ \ser ->
+      ser { sactorTime = ageActor (bfid tb) (blid tb) target t
+                         $ sactorTime ser
+          , sactorStasis = ES.insert target (sactorStasis ser) }
+              -- actor's time warped, so he is in stasis,
+              -- immune to further warps
+    return UseUp
 
 -- ** ParalyzeInWater
 
@@ -1357,7 +1357,7 @@ effectCreateItem jfidRaw mcount source target miidOriginal store grp tim = do
   m2 <- rollItemAspect freq depth
   case m2 of
     NoNewItem -> return UseDud  -- e.g., unique already generated
-    NewItem itemKnownRaw itemFullRaw (kRaw, itRaw) -> do
+    NewItem _ itemKnownRaw itemFullRaw (kRaw, itRaw) -> do
       -- Avoid too many different item identifiers (one for each faction)
       -- for blasts or common item generating tiles. Conditions are
       -- allowed to be duplicated, because they provide really useful info
@@ -1445,14 +1445,14 @@ effectDestroyItem :: MonadServerAtomic m
 effectDestroyItem execSfx ngroup kcopy store target grp = do
   tb <- getsState $ getActorBody target
   is <- allGroupItems store grp target
-  if | null is -> return UseDud
-     | otherwise -> do
-       execSfx
-       urs <- mapM (uncurry (dropCStoreItem True True store target tb kcopy))
-                   (take ngroup is)
-       return $! case urs of
-         [] -> UseDud  -- there was no effects
-         _ -> maximum urs
+  if null is then return UseDud
+  else do
+    execSfx
+    urs <- mapM (uncurry (dropCStoreItem True True store target tb kcopy))
+                (take ngroup is)
+    return $! case urs of
+      [] -> UseDud  -- there was no effects
+      _ -> maximum urs
 
 -- | Drop a single actor's item (though possibly multiple copies).
 -- Note that if there are multiple copies, at most one explodes
@@ -1630,13 +1630,13 @@ effectDropItem execSfx iidOriginal ngroup kcopy store grp target = do
   if | bproj tb || null is -> return UseDud
      | ngroup == maxBound && kcopy == maxBound
        && store `elem` [CStash, CEqp]
-       && fhasGender (gplayer fact)  -- hero in Allure's decontamination chamber
-       && (cdiff curChalSer == 1     -- at lowest difficulty for its faction
-           && any (fhasUI . gplayer . snd)
+       && fhasGender (gkind fact)  -- hero in Allure's decontamination chamber
+       && (cdiff curChalSer == 1   -- at lowest difficulty for its faction
+           && any (fhasUI . gkind . snd)
                   (filter (\(fi, fa) -> isFriend fi fa (bfid tb))
                           (EM.assocs factionD))
            || cdiff curChalSer == difficultyBound
-              && any (fhasUI . gplayer  . snd)
+              && any (fhasUI . gkind  . snd)
                      (filter (\(fi, fa) -> isFoe fi fa (bfid tb))
                              (EM.assocs factionD))) ->
 {-
@@ -1782,32 +1782,32 @@ effectRerollItem execSfx iidOriginal target = do
     (iid, ( ItemFull{ itemBase, itemKindId, itemKind
                     , itemDisco=ItemDiscoFull itemAspect }
           , (_, itemTimer) )) : _ ->
-      if | IA.kmConst $ getKindMean itemKindId coItemSpeedup -> do
-           execSfxAtomic $ SfxMsgFid (bfid tb) SfxRerollNotRandom
-           return UseId
-         | otherwise -> do
-           let c = CActor target cstore
-               kit = (1, take 1 itemTimer)  -- prevent micromanagement
-               freq = pure (itemKindId, itemKind)
-           execSfx
-           identifyIid iid c itemKindId itemKind
-           execUpdAtomic $ UpdDestroyItem False iid itemBase kit c
-           totalDepth <- getsState stotalDepth
-           let roll100 :: Int -> m (ItemKnown, ItemFull)
-               roll100 n = do
-                 -- Not only rerolled, but at highest depth possible,
-                 -- resulting in highest potential for bonuses.
-                 m2 <- rollItemAspect freq totalDepth
-                 case m2 of
-                   NoNewItem ->
-                     error "effectRerollItem: can't create rerolled item"
-                   NewItem itemKnown@(ItemKnown _ ar2 _) itemFull _ ->
-                     if ar2 == itemAspect && n > 0
-                     then roll100 (n - 1)
-                     else return (itemKnown, itemFull)
-           (itemKnown, itemFull) <- roll100 100
-           void $ registerItem True (itemFull, kit) itemKnown c
-           return UseUp
+      if IA.kmConst $ getKindMean itemKindId coItemSpeedup then do
+        execSfxAtomic $ SfxMsgFid (bfid tb) SfxRerollNotRandom
+        return UseId
+      else do
+        let c = CActor target cstore
+            kit = (1, take 1 itemTimer)  -- prevent micromanagement
+            freq = pure (IK.HORROR, itemKindId, itemKind)
+        execSfx
+        identifyIid iid c itemKindId itemKind
+        execUpdAtomic $ UpdDestroyItem False iid itemBase kit c
+        totalDepth <- getsState stotalDepth
+        let roll100 :: Int -> m (ItemKnown, ItemFull)
+            roll100 n = do
+              -- Not only rerolled, but at highest depth possible,
+              -- resulting in highest potential for bonuses.
+              m2 <- rollItemAspect freq totalDepth
+              case m2 of
+                NoNewItem ->
+                  error "effectRerollItem: can't create rerolled item"
+                NewItem _ itemKnown@(ItemKnown _ ar2 _) itemFull _ ->
+                  if ar2 == itemAspect && n > 0
+                  then roll100 (n - 1)
+                  else return (itemKnown, itemFull)
+        (itemKnown, itemFull) <- roll100 100
+        void $ registerItem True (itemFull, kit) itemKnown c
+        return UseUp
     _ -> error "effectRerollItem: server ignorant about an item"
 
 -- ** DupItem
@@ -1939,7 +1939,7 @@ effectDetect execSfx d radius target container = do
       effectHasLoot (IK.OrEffect eff1 eff2) =
         effectHasLoot eff1 || effectHasLoot eff2
       effectHasLoot (IK.SeqEffect effs) =
-        or $ map effectHasLoot effs
+        any effectHasLoot effs
       effectHasLoot (IK.When _ eff) = effectHasLoot eff
       effectHasLoot (IK.Unless _ eff) = effectHasLoot eff
       effectHasLoot (IK.IfThenElse _ eff1 eff2) =
@@ -1993,15 +1993,15 @@ effectDetectX :: MonadServerAtomic m
               => IK.DetectKind -> (Point -> Bool) -> ([Point] -> m Bool)
               -> m () -> Int -> ActorId -> m UseResult
 effectDetectX d predicate action execSfx radius target = do
-  COps{corule=RuleContent{rXmax, rYmax}} <- getsState scops
+  COps{corule=RuleContent{rWidthMax, rHeightMax}} <- getsState scops
   b <- getsState $ getActorBody target
   sperFidOld <- getsServer sperFid
   let perOld = sperFidOld EM.! bfid b EM.! blid b
       Point x0 y0 = bpos b
       perList = filter predicate
         [ Point x y
-        | y <- [max 0 (y0 - radius) .. min (rYmax - 1) (y0 + radius)]
-        , x <- [max 0 (x0 - radius) .. min (rXmax - 1) (x0 + radius)]
+        | y <- [max 0 (y0 - radius) .. min (rHeightMax - 1) (y0 + radius)]
+        , x <- [max 0 (x0 - radius) .. min (rWidthMax - 1) (x0 + radius)]
         ]
       extraPer = emptyPer {psight = PerVisible $ ES.fromDistinctAscList perList}
       inPer = diffPer extraPer perOld
@@ -2054,8 +2054,7 @@ effectSendFlying execSfx IK.ThrowMod{..} source target container modePush = do
       execSfxAtomic $ SfxMsgFid (bfid tb) $ SfxBracedImmune target
     return UseUp  -- waste it to prevent repeated throwing at immobile actors
   else do
-   COps{corule=RuleContent{rXmax, rYmax}} <- getsState scops
-   case bla rXmax rYmax eps (bpos tb) fpos of
+   case bresenhamsLineAlgorithm eps (bpos tb) fpos of
     Nothing -> error $ "" `showFailure` (fpos, tb)
     Just [] -> error $ "projecting from the edge of level"
                        `showFailure` (fpos, tb)
@@ -2188,7 +2187,7 @@ effectAndEffect recursiveCall source eff1@IK.ConsumeItems{} eff2 = do
   sb <- getsState $ getActorBody source
   curChalSer <- getsServer $ scurChalSer . soptions
   fact <- getsState $ (EM.! bfid sb) . sfactionD
-  if cgoods curChalSer && fhasUI (gplayer fact) then do
+  if cgoods curChalSer && fhasUI (gkind fact) then do
     execSfxAtomic $ SfxMsgFid (bfid sb) SfxReadyGoods
     return UseId
   else effectAndEffectSem recursiveCall eff1 eff2
@@ -2217,7 +2216,7 @@ effectOrEffect recursiveCall fid eff1 eff2 = do
   fact <- getsState $ (EM.! fid) . sfactionD
   case eff1 of
     IK.AndEffect IK.ConsumeItems{} _ | cgoods curChalSer
-                                       && fhasUI (gplayer fact) -> do
+                                       && fhasUI (gkind fact) -> do
       -- Stop forbidden crafting ASAP to avoid spam.
       execSfxAtomic $ SfxMsgFid fid SfxReadyGoods
       return UseId

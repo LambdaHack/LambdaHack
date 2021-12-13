@@ -25,8 +25,8 @@ import Game.LambdaHack.Definition.DefsInternal
 standardRules :: RuleContent
 standardRules = RuleContent
   { rtitle = "LambdaHack"
-  , rXmax = 80
-  , rYmax = 21
+  , rWidthMax = 80
+  , rHeightMax = 21
   , rexeVersion = Self.version
   -- The strings containing the default configuration file
   -- included from config.ui.default.
@@ -34,17 +34,17 @@ standardRules = RuleContent
   , rcfgUIDefault = $(do
       let path = "GameDefinition" </> "config.ui" <.> "default"
       qAddDependentFile path
-      s <- qRunIO $ do
+      !s <- qRunIO $ do
         inputHandle <- openFile path ReadMode
         hSetEncoding inputHandle utf8
         hGetContents inputHandle
-      let cfgUIDefault =
+      let !cfgUIDefault =
             either (error . ("Ini.parse of default config" `showFailure`)) id
             $ Ini.parse s
       lift (s, cfgUIDefault))
   , rwriteSaveClips = 1000
   , rleadLevelClips = 50
-  , rscoresFile = "LambdaHack.scores"
+  , rscoresFileName = "LambdaHack.scores"
   , rnearby = 20
   , rstairWordCarried = ["staircase"]  -- only one, so inert
   , ritemSymbols = ItemSymbolsUsedInEngine

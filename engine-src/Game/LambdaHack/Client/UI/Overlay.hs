@@ -1,18 +1,24 @@
-{-# LANGUAGE RankNTypes #-}
+{-# LANGUAGE RankNTypes, TupleSections #-}
 -- | Screen overlays.
 module Game.LambdaHack.Client.UI.Overlay
-  ( -- * AttrString
+  ( -- * DisplayFont
+    DisplayFont, isPropFont, isSquareFont, isMonoFont, textSize
+  , -- * FontSetup
+    FontSetup(..), multiFontSetup, singleFontSetup
+  , -- * AttrString
     AttrString, blankAttrString, textToAS, textFgToAS, stringToAS
   , (<+:>), (<\:>)
     -- * AttrLine
-  , AttrLine, attrLine, emptyAttrLine, attrStringToAL, firstParagraph, linesAttr
-  , textToAL, textFgToAL, stringToAL, splitAttrString
-  , indentSplitAttrString, indentSplitAttrString2
+  , AttrLine, attrLine, emptyAttrLine, attrStringToAL, firstParagraph
+  , textToAL, textFgToAL, stringToAL, linesAttr
+  , splitAttrString, indentSplitAttrString
     -- * Overlay
-  , Overlay, offsetOverlay, offsetOverlayX, updateLine
+  , Overlay, xytranslateOverlay, xtranslateOverlay, ytranslateOverlay
+  , offsetOverlay, offsetOverlayX, typesetXY
+  , updateLine, rectangleOfSpaces, maxYofOverlay, labDescOverlay
 #ifdef EXPOSE_INTERNAL
     -- * Internal operations
-  , splitAttrPhrase
+  , nonbreakableRev, isPrefixOfNonbreakable, breakAtSpace, splitAttrPhrase
 #endif
   ) where
 
@@ -25,6 +31,54 @@ import qualified Data.Text as T
 
 import           Game.LambdaHack.Client.UI.PointUI
 import qualified Game.LambdaHack.Definition.Color as Color
+
+-- * DisplayFont
+
+-- | Three types of fonts used in the UI. Overlays (layers, more or less)
+-- in proportional font are overwritten by layers in square font,
+-- which are overwritten by layers in mono font.
+-- All overlays overwrite the rendering of the game map, which is
+-- the underlying basic UI frame, comprised of square font glyps.
+--
+-- This type needs to be kept abstract to ensure that frontend-enforced
+-- or user config-enforced font assignments in 'FontSetup'
+-- (e.g., stating that the supposedly proportional font is overriden
+-- to be the square font) can't be ignored. Otherwise a programmer
+-- could use arbirary @DisplayFont@, instead of the one taken from 'FontSetup',
+-- and so, e.g., calculating the width of an overlay so constructed
+-- in order to decide where another overlay can start would be inconsistent
+-- what what font is really eventually used when rendering.
+--
+-- Note that the order of constructors has limited effect,
+-- but it illustrates how overwriting is explicitly implemented
+-- in frontends that support all fonts.
+data DisplayFont = PropFont | SquareFont | MonoFont
+  deriving (Show, Eq, Enum)
+
+isPropFont, isSquareFont, isMonoFont :: DisplayFont -> Bool
+isPropFont = (== PropFont)
+isSquareFont = (== SquareFont)
+isMonoFont = (== MonoFont)
+
+textSize :: DisplayFont -> [a] -> Int
+textSize SquareFont l = 2 * length l
+textSize MonoFont l = length l
+textSize PropFont _ = error "size of proportional font texts is not defined"
+
+-- * FontSetup
+
+data FontSetup = FontSetup
+  { squareFont :: DisplayFont
+  , monoFont   :: DisplayFont
+  , propFont   :: DisplayFont
+  }
+  deriving (Eq, Show)  -- for unit tests
+
+multiFontSetup :: FontSetup
+multiFontSetup = FontSetup SquareFont MonoFont PropFont
+
+singleFontSetup :: FontSetup
+singleFontSetup = FontSetup SquareFont SquareFont SquareFont
 
 -- * AttrString
 
@@ -96,7 +150,8 @@ breakAtSpace lRev =
 
 -- * AttrLine
 
--- | Line of colourful text. End of line characters forbidden.
+-- | Line of colourful text. End of line characters forbidden. Trailing
+-- @White@ space forbidden.
 newtype AttrLine = AttrLine {attrLine :: AttrString}
   deriving (Show, Eq)
 
@@ -107,7 +162,7 @@ attrStringToAL :: AttrString -> AttrLine
 attrStringToAL s =
 #ifdef WITH_EXPENSIVE_ASSERTIONS
   assert (allB (\ac -> Color.charFromW32 ac /= '\n') s) $  -- expensive in menus
-  assert (length s == 0 || last s /= Color.spaceAttrW32
+  assert (null s || last s /= Color.spaceAttrW32
           `blame` map Color.charFromW32 s) $
     -- only expensive for menus, but often violated by code changes, so disabled
     -- outside test runs
@@ -127,7 +182,7 @@ textToAL !t =
       s = T.foldr f [] t
   in AttrLine $
 #ifdef WITH_EXPENSIVE_ASSERTIONS
-  assert (length s == 0 || last s /= Color.spaceAttrW32 `blame` t)
+  assert (null s || last s /= Color.spaceAttrW32 `blame` t)
 #endif
     s
 
@@ -142,7 +197,7 @@ textFgToAL !fg !t =
       s = T.foldr f [] t
   in AttrLine $
 #ifdef WITH_EXPENSIVE_ASSERTIONS
-  assert (length s == 0 || last s /= Color.spaceAttrW32 `blame` t)
+  assert (null s || last s /= Color.spaceAttrW32 `blame` t)
 #endif
     s
 
@@ -159,9 +214,11 @@ linesAttr l = cons (case break (\ac -> Color.charFromW32 ac == '\n') l of
  where
   cons ~(h, t) = h : t
 
--- | Split a string into lines. Avoids breaking the line at a character
--- other than space. Remove space characters from the starts and ends
--- of created lines. Newlines are respected.
+-- | Split a string into lines. Avoid breaking the line at a character
+-- other than space. Remove the spaces on which lines are broken,
+-- keep other spaces. In expensive assertions mode (dev debug mode)
+-- fail at trailing spaces, but keep leading spaces, e.g., to make
+-- distance from a text in another font. Newlines are respected.
 --
 -- Note that we only split wrt @White@ space, nothing else,
 -- and the width, in the first argument, is calculated in characters,
@@ -170,22 +227,16 @@ linesAttr l = cons (case break (\ac -> Color.charFromW32 ac == '\n') l of
 splitAttrString :: Int -> Int -> AttrString -> [AttrLine]
 splitAttrString w0 w1 l = case linesAttr l of
   [] -> []
-  x : xs ->
-    (splitAttrPhrase w0 w1
-     . AttrLine . dropWhile (== Color.spaceAttrW32) . attrLine) x
-    ++ concatMap (splitAttrPhrase w1 w1
-                  . AttrLine . dropWhile (== Color.spaceAttrW32) . attrLine) xs
+  x : xs -> splitAttrPhrase w0 w1 x ++ concatMap (splitAttrPhrase w1 w1) xs
 
-indentSplitAttrString :: Int -> AttrString -> [AttrLine]
-indentSplitAttrString w l =
-  let ts = splitAttrString w (w - 1) l
-  in case ts of
-    [] -> []
-    hd : tl -> hd : map (AttrLine . ([Color.spaceAttrW32] ++) . attrLine) tl
-
-indentSplitAttrString2 :: Bool -> Int -> AttrString -> [AttrLine]
-indentSplitAttrString2 isProp w l =
-  let nspaces = if isProp then 4 else 2
+indentSplitAttrString :: DisplayFont -> Int -> AttrString -> [AttrLine]
+indentSplitAttrString font w l = assert (w > 4) $
+  -- Sadly this depends on how wide the space is in propotional font,
+  -- which varies wildly, so we err on the side of larger indent.
+  let nspaces = case font of
+        SquareFont -> 1
+        MonoFont -> 2
+        PropFont -> 4
       ts = splitAttrString w (w - nspaces) l
       -- Proportional spaces are very narrow.
       spaces = replicate nspaces Color.spaceAttrW32
@@ -207,8 +258,8 @@ splitAttrPhrase w0 w1 (AttrLine xs)
               (([], preRev), rest)
             _ -> (breakAtSpace preRev, postRaw)
       in if all (== Color.spaceAttrW32) ppost
-         then AttrLine (reverse $ dropWhile (== Color.spaceAttrW32) preRev) :
-              splitAttrPhrase w1 w1 (AttrLine post)
+         then AttrLine (reverse $ dropWhile (== Color.spaceAttrW32) preRev)
+              : splitAttrPhrase w1 w1 (AttrLine post)
          else AttrLine (reverse $ dropWhile (== Color.spaceAttrW32) ppost)
               : splitAttrPhrase w1 w1 (AttrLine $ reverse ppre ++ post)
 
@@ -224,12 +275,25 @@ splitAttrPhrase w0 w1 (AttrLine xs)
 -- simply not shown.
 type Overlay = [(PointUI, AttrLine)]
 
+xytranslateOverlay :: Int -> Int -> Overlay -> Overlay
+xytranslateOverlay dx dy =
+  map (\(PointUI x y, al) -> (PointUI (x + dx) (y + dy), al))
+
+xtranslateOverlay :: Int -> Overlay -> Overlay
+xtranslateOverlay dx = xytranslateOverlay dx 0
+
+ytranslateOverlay :: Int -> Overlay -> Overlay
+ytranslateOverlay = xytranslateOverlay 0
+
 offsetOverlay :: [AttrLine] -> Overlay
-offsetOverlay l = map (first $ PointUI 0) $ zip [0..] l
+offsetOverlay = zipWith (curry (first $ PointUI 0)) [0..]
 
 offsetOverlayX :: [(Int, AttrLine)] -> Overlay
-offsetOverlayX l =
-  map (\(y, (x, al)) -> (PointUI x y, al)) $ zip [0..] l
+offsetOverlayX = zipWith (\y (x, al) -> (PointUI x y, al)) [0..]
+
+typesetXY :: (Int, Int) -> [AttrLine] -> Overlay
+typesetXY (xoffset, yoffset) =
+  zipWith (\y al -> (PointUI xoffset (y + yoffset), al)) [0..]
 
 -- @f@ should not enlarge the line beyond screen width nor introduce linebreaks.
 updateLine :: Int -> (Int -> AttrString -> AttrString) -> Overlay -> Overlay
@@ -237,3 +301,24 @@ updateLine y f ov =
   let upd (p@(PointUI px py), AttrLine l) =
         if py == y then (p, AttrLine $ f px l) else (p, AttrLine l)
   in map upd ov
+
+rectangleOfSpaces :: Int -> Int -> Overlay
+rectangleOfSpaces x y =
+  let blankAttrLine = AttrLine $ replicate x Color.nbspAttrW32
+  in offsetOverlay $ replicate y blankAttrLine
+
+maxYofOverlay :: Overlay -> Int
+maxYofOverlay ov = let yOfOverlay (PointUI _ y, _) = y
+                   in maximum $ 0 : map yOfOverlay ov
+
+labDescOverlay :: DisplayFont -> Int -> AttrString -> (Overlay, Overlay)
+labDescOverlay labFont width as =
+  let (tLab, tDesc) = span (/= Color.spaceAttrW32) as
+      labLen = textSize labFont tLab
+      len = max 0 $ width - length tLab  -- not labLen; TODO: type more strictly
+      ovLab = offsetOverlay [attrStringToAL tLab]
+      ovDesc = offsetOverlayX $
+        case splitAttrString len width tDesc of
+          [] -> []
+          l : ls -> (labLen, l) : map (0,) ls
+  in (ovLab, ovDesc)

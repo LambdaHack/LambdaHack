@@ -48,8 +48,8 @@ import qualified Game.LambdaHack.Common.Tile as Tile
 import           Game.LambdaHack.Common.Time
 import           Game.LambdaHack.Common.Types
 import           Game.LambdaHack.Common.Vector
+import           Game.LambdaHack.Content.FactionKind
 import qualified Game.LambdaHack.Content.ItemKind as IK
-import           Game.LambdaHack.Content.ModeKind
 import qualified Game.LambdaHack.Content.RuleKind as RK
 import qualified Game.LambdaHack.Core.Dice as Dice
 import qualified Game.LambdaHack.Definition.Ability as Ability
@@ -185,7 +185,7 @@ condFloorWeaponM aid =
 -- | Check whether the actor has no weapon in equipment.
 condNoEqpWeaponM :: MonadStateRead m => ActorId -> m Bool
 condNoEqpWeaponM aid =
-  all (not . IA.checkFlag Ability.Meleeable . aspectRecordFull . snd) <$>
+  not . any (IA.checkFlag Ability.Meleeable . aspectRecordFull . snd) <$>
     getsState (fullAssocs aid [CEqp])
 
 -- | Require that the actor can project any items.
@@ -195,7 +195,7 @@ condCanProjectM skill aid = do
   curChal <- getsClient scurChal
   fact <- getsState $ (EM.! side) . sfactionD
   if skill < 1
-     || ckeeper curChal && fhasUI (gplayer fact)
+     || ckeeper curChal && fhasUI (gkind fact)
   then return False
   else  -- shortcut
     -- Compared to conditions in @projectItem@, range and charge are ignored,
@@ -293,7 +293,7 @@ benGroundItems aid = do
   b <- getsState $ getActorBody aid
   fact <- getsState $ (EM.! bfid b) . sfactionD
   discoBenefit <- getsClient sdiscoBenefit
-  let canEsc = fcanEscape (gplayer fact)
+  let canEsc = fcanEscape (gkind fact)
       isDesirable (ben, _, _, itemFull, _) =
         desirableItem cops canEsc (benPickup ben)
                       (aspectRecordFull itemFull) (itemKind itemFull)

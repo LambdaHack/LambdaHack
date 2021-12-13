@@ -15,12 +15,10 @@ import Game.LambdaHack.Core.Prelude
 import qualified Control.Monad.Trans.State.Strict as St
 import qualified Data.EnumMap.Strict as EM
 import qualified Data.EnumSet as ES
-import qualified Data.IntMap.Strict as IM
 import           Data.Key (mapWithKeyM_)
 import qualified Data.Map.Strict as M
 import qualified Data.Set as S
 import qualified Data.Text as T
-import           Data.Tuple (swap)
 import qualified NLP.Miniutter.English as MU
 import qualified System.Random.SplitMix32 as SM
 
@@ -40,10 +38,12 @@ import qualified Game.LambdaHack.Common.Tile as Tile
 import           Game.LambdaHack.Common.Time
 import           Game.LambdaHack.Common.Types
 import qualified Game.LambdaHack.Content.CaveKind as CK
+import           Game.LambdaHack.Content.FactionKind
 import           Game.LambdaHack.Content.ItemKind (ItemKind)
 import qualified Game.LambdaHack.Content.ItemKind as IK
 import           Game.LambdaHack.Content.ModeKind
 import qualified Game.LambdaHack.Core.Dice as Dice
+import           Game.LambdaHack.Core.Frequency
 import           Game.LambdaHack.Core.Random
 import qualified Game.LambdaHack.Definition.Ability as Ability
 import qualified Game.LambdaHack.Definition.Color as Color
@@ -66,8 +66,8 @@ initPer = do
     ser { sfovLitLid, sfovClearLid, sfovLucidLid
         , sperValidFid, sperCacheFid, sperFid }
 
-reinitGame :: MonadServerAtomic m => m ()
-reinitGame = do
+reinitGame :: MonadServerAtomic m => FactionDict -> m ()
+reinitGame factionDold = do
   COps{coitem} <- getsState scops
   pers <- getsServer sperFid
   ServerOptions{scurChalSer, sknowMap, sshowItemSamples, sclientOptions}
@@ -91,24 +91,35 @@ reinitGame = do
       defLocal = updateDiscoKind (const discoKindFiltered) defL
   factionD <- getsState sfactionD
   clientStatesOld <- getsServer sclientStates
+  metaBackupOld <- getsServer smetaBackup
   -- Some item kinds preserve their identity and flavour throughout
-  -- the whole metagame, until the savefiles is removed.
-  -- These are usually not man-made items, because these can be made
+  -- the whole meta-game, until the savefiles are removed.
+  -- These are usually not common man-made items, because these can be made
   -- in many flavours so it may be hard to recognize them.
+  -- Character backstories and rare artifacts are uncommon enough
+  -- to requiring learning their identify only once.
   -- However, the exact properties of even natural items may vary,
   -- so the random aspects of items, stored in @sdiscoAspect@
   -- are not preserved (a lot of other state components would need
   -- to be partially preserved, too, both on server and clients).
-  let includeMetaGame fid = case fid `EM.lookup` clientStatesOld of
+  let inMetaGame kindId = IK.SetFlag Ability.MetaGame
+                          `elem` IK.iaspects (okind coitem kindId)
+      metaDiscoOldFid =
+        EM.map (EM.filter inMetaGame . sdiscoKind) clientStatesOld
+      fidToTeam :: FactionId -> TeamContinuity
+      fidToTeam fid = fteam $ gkind $ factionDold EM.! fid
+      metaDiscoOldTeam =
+        EM.fromList $ map (first fidToTeam) $ EM.assocs metaDiscoOldFid
+      exclusiveUnion = EM.unionWith $ \_ _ -> error "forbidden duplicate"
+      metaDiscoAll = metaDiscoOldTeam `exclusiveUnion` metaBackupOld
+      currentTeams = ES.fromList $ map (fteam . gkind) $ EM.elems factionD
+      metaBackupNew = EM.withoutKeys metaDiscoAll currentTeams
+      stateNew fact = case EM.lookup (fteam $ gkind fact) metaDiscoAll of
         Nothing -> defLocal
-        Just sOld ->
-          let disco = sdiscoKind sOld
-              inMetaGame kindId = IK.SetFlag Ability.MetaGame
-                                  `elem` IK.iaspects (okind coitem kindId)
-              discoMetaGame = EM.filter inMetaGame disco
-          in updateDiscoKind (discoMetaGame `EM.union`) defLocal
-      clientStatesNew = EM.mapWithKey (\fid _ -> includeMetaGame fid) factionD
-  modifyServer $ \ser -> ser {sclientStates = clientStatesNew}
+        Just disco -> updateDiscoKind (disco `EM.union`) defLocal
+      clientStatesNew = EM.map stateNew factionD
+  modifyServer $ \ser -> ser { sclientStates = clientStatesNew
+                             , smetaBackup = metaBackupNew }
   let updRestart fid = UpdRestart fid (pers EM.! fid) (clientStatesNew EM.! fid)
                                   scurChalSer sclientOptions
   mapWithKeyM_ (\fid _ -> do
@@ -154,16 +165,16 @@ sampleTrunks dungeon = do
   Level{ldepth} <- getLevel minLid
   let regItem itemKindId = do
         let itemKind = okind coitem itemKindId
-            freq = pure (itemKindId, itemKind)
-        case possibleActorFactions itemKind factionD of
-          [] -> return Nothing
-          (fid, _) : _ -> do
+            freq = pure (IK.HORROR, itemKindId, itemKind)
+        case runFrequency $ possibleActorFactions [] itemKind factionD of
+          [] -> error "sampleTrunks: null faction frequency"
+          (_, (fid, _)) : _ -> do
             let c = CTrunk fid minLid originPoint
                 jfid = Just fid
             m2 <- rollItemAspect freq ldepth
             case m2 of
               NoNewItem -> error "sampleTrunks: can't create actor trunk"
-              NewItem (ItemKnown kindIx ar _) itemFullRaw itemQuant -> do
+              NewItem _ (ItemKnown kindIx ar _) itemFullRaw itemQuant -> do
                 let itemKnown = ItemKnown kindIx ar jfid
                     itemFull =
                       itemFullRaw {itemBase = (itemBase itemFullRaw) {jfid}}
@@ -188,12 +199,12 @@ sampleItems dungeon = do
   Level{ldepth} <- getLevel minLid
   let regItem itemKindId = do
         let itemKind = okind coitem itemKindId
-            freq = pure (itemKindId, itemKind)
+            freq = pure (IK.HORROR, itemKindId, itemKind)
             c = CFloor minLid originPoint
         m2 <- rollItemAspect freq ldepth
         case m2 of
           NoNewItem -> error "sampleItems: can't create sample item"
-          NewItem itemKnown itemFull _ ->
+          NewItem _ itemKnown itemFull _ ->
             Just <$> registerItem False (itemFull, (0, [])) itemKnown c
   miids <- mapM regItem itemKindIds
   return $! EM.singleton SItem
@@ -207,12 +218,15 @@ mapFromFuns domain =
         in m2 `M.union` m1
   in foldr fromFun M.empty
 
-resetFactions :: FactionDict -> ContentId ModeKind -> Int -> Dice.AbsDepth
-              -> Roster
+resetFactions :: ContentData FactionKind -> Dice.AbsDepth -> ModeKind -> Bool
               -> Rnd FactionDict
-resetFactions factionDold gameModeIdOld curDiffSerOld totalDepth players = do
-  let rawCreate (ixRaw, (gplayer@Player{..}, gteamCont, initialActors)) = do
-        let castInitialActors (ln, d, actorGroup) = do
+resetFactions cofact totalDepth mode
+              automateAll = do
+  let rawCreate (fid, (fkGroup, initialActors)) = do
+        -- Validation of content guarantess the existence of such faction kind.
+        gkindId <- fromJust <$> opick cofact fkGroup (const True)
+        let gkind@FactionKind{..} = okind cofact gkindId
+            castInitialActors (ln, d, actorGroup) = do
               n <- castDice (Dice.AbsDepth $ abs ln) totalDepth d
               return (ln, n, actorGroup)
         ginitial <- mapM castInitialActors initialActors
@@ -220,55 +234,50 @@ resetFactions factionDold gameModeIdOld curDiffSerOld totalDepth players = do
               mapFromFuns Color.legalFgCol
                           [colorToTeamName, colorToPlainName, colorToFancyName]
             colorName = T.toLower $ head $ T.words fname
-            prefix = case (fleaderMode, funderAI) of
-              (Nothing, False) -> "Uncoordinated"
-              (Nothing, True) -> "Loose"
-              (Just{}, False) -> "Autonomous"
-              (Just{}, True) -> "Controlled"
+            prefix = case (fhasPointman, finitUnderAI) of
+              (False, False) -> "Uncoordinated"
+              (False, True) -> "Loose"
+              (True, False) -> "Autonomous"
+              (True, True) -> "Controlled"
             gnameNew = prefix <+> if fhasGender
                                   then makePhrase [MU.Ws $ MU.Text fname]
                                   else fname
             gcolor = M.findWithDefault Color.BrWhite colorName cmap
-            gvictimsDnew = case find (\fact -> gname fact == gnameNew)
-                                $ EM.elems factionDold of
-              Nothing -> EM.empty
-              Just fact ->
-                let sing = IM.singleton curDiffSerOld (gvictims fact)
-                    f = IM.unionWith (EM.unionWith (+))
-                in EM.insertWith f gameModeIdOld sing $ gvictimsD fact
         let gname = gnameNew
+            gdoctrine = finitDoctrine
+            gunderAI = finitUnderAI || mattract mode || automateAll
             gdipl = EM.empty  -- fixed below
             gquit = Nothing
             _gleader = Nothing
             gvictims = EM.empty
-            gvictimsD = gvictimsDnew
             gstash = Nothing
-            ix = case gteamCont of
-              Just (TeamContinuity k) -> k
-              _ -> ixRaw
-        return (toEnum $ if fhasUI then ix else -ix, Faction{..})
-  -- We assume @TeamContinuity@ are small integers.
-  lFs <- mapM rawCreate $ zip [100..] $ rosterList players
-  let swapIx l =
-        let findPlayerName name = find ((name ==) . fname . gplayer . snd)
-            f (name1, name2) =
-              case (findPlayerName name1 lFs, findPlayerName name2 lFs) of
-                (Just (ix1, _), Just (ix2, _)) -> (ix1, ix2)
-                _ -> error $ "unknown faction"
-                             `showFailure` ((name1, name2), lFs)
-            ixs = map f l
-        -- Only symmetry is ensured, everything else is permitted, e.g.,
-        -- a faction in alliance with two others that are at war.
-        in ixs ++ map swap ixs
-      mkDipl diplMode =
+        return (fid, Faction{..})
+  lFs <- mapM rawCreate $ zip [toEnum 1 ..] $ mroster mode
+  let mkDipl diplMode =
         let f (ix1, ix2) =
-              let adj fact = fact {gdipl = EM.insert ix2 diplMode (gdipl fact)}
-              in EM.adjust adj ix1
+              let adj1 fact = fact {gdipl = EM.insert ix2 diplMode (gdipl fact)}
+              in EM.adjust adj1 ix1
         in foldr f
+      -- Only symmetry is ensured, everything else is permitted,
+      -- e.g., a faction in alliance with two others that are at war.
+      pairsFromFaction :: (FactionKind -> [TeamContinuity])
+                       -> (FactionId, Faction)
+                       -> [(FactionId, FactionId)]
+      pairsFromFaction selector (fid, fact) =
+        let teams = selector $ gkind fact
+            hasTeam team (_, fact2) = team == fteam (gkind fact2)
+            pairsFromTeam team = case find (hasTeam team) lFs of
+              Just (fid2, _) -> [(fid, fid2), (fid2, fid)]
+              Nothing -> []
+        in concatMap pairsFromTeam teams
       rawFs = EM.fromList lFs
-      -- War overrides alliance, so 'warFs' second.
-      allianceFs = mkDipl Alliance rawFs (swapIx (rosterAlly players))
-      warFs = mkDipl War allianceFs (swapIx (rosterEnemy players))
+      -- War overrides alliance, so 'warFs' second. Consequently, if a faction
+      -- is allied with a faction that is at war with them, they will be
+      -- symmetrically at war.
+      allianceFs = mkDipl Alliance rawFs
+                   $ concatMap (pairsFromFaction falliedTeams) $ EM.assocs rawFs
+      warFs = mkDipl War allianceFs
+              $ concatMap (pairsFromFaction fenemyTeams) $ EM.assocs allianceFs
   return $! warFs
 
 gameReset :: MonadServer m
@@ -277,19 +286,16 @@ gameReset :: MonadServer m
 gameReset serverOptions mGameMode mrandom = do
   -- Dungeon seed generation has to come first, to ensure item boosting
   -- is determined by the dungeon RNG.
-  cops@COps{comode} <- getsState scops
+  cops@COps{cofact, comode} <- getsState scops
   dungeonSeed <- getSetGen $ sdungeonRng serverOptions `mplus` mrandom
   srandom <- getSetGen $ smainRng serverOptions `mplus` mrandom
   let srngs = RNGs (Just dungeonSeed) (Just srandom)
   when (sdumpInitRngs serverOptions) $ dumpRngs srngs
   scoreTable <- restoreScore cops
-  factionDold <- getsState sfactionD
-  gameModeIdOld <- getsState sgameModeId
   teamGearOld <- getsServer steamGear
   flavourOld <- getsServer sflavour
   discoKindRevOld <- getsServer sdiscoKindRev
   clientStatesOld <- getsServer sclientStates
-  curChalSer <- getsServer $ scurChalSer . soptions
   let gameMode = fromMaybe INSERT_COIN
                  $ mGameMode `mplus` sgameMode serverOptions
       rnd :: Rnd (FactionDict, FlavourMap, DiscoveryKind, DiscoveryKindRev,
@@ -299,19 +305,11 @@ gameReset serverOptions mGameMode mrandom = do
           fromMaybe (error $ "Unknown game mode:" `showFailure` gameMode)
           <$> opick comode gameMode (const True)
         let mode = okind comode modeKindId
-            automatePS ps = ps {rosterList =
-              map (\(pl, tc, l) -> (automatePlayer True pl, tc, l))
-                  (rosterList ps)}
-            players = if sautomateAll serverOptions
-                      then automatePS $ mroster mode
-                      else mroster mode
         flavour <- dungeonFlavourMap cops flavourOld
         (discoKind, sdiscoKindRev) <- serverDiscos cops discoKindRevOld
         freshDng <- DungeonGen.dungeonGen cops serverOptions $ mcaves mode
-        factionD <- resetFactions factionDold gameModeIdOld
-                                  (cdiff curChalSer)
-                                  (DungeonGen.freshTotalDepth freshDng)
-                                  players
+        factionD <- resetFactions cofact (DungeonGen.freshTotalDepth freshDng)
+                                  mode (sautomateAll serverOptions)
         return ( factionD, flavour, discoKind
                , sdiscoKindRev, freshDng, modeKindId )
   let ( factionD, sflavour, discoKind
@@ -336,13 +334,13 @@ populateDungeon = do
   factionD <- getsState sfactionD
   curChalSer <- getsServer $ scurChalSer . soptions
   let nGt0 (_, n, _) = n > 0
-      ginitialWolf fact1 = if cwolf curChalSer && fhasUI (gplayer fact1)
+      ginitialWolf fact1 = if cwolf curChalSer && fhasUI (gkind fact1)
                            then case filter nGt0 $ ginitial fact1 of
                              [] -> []
                              (ln, _, grp) : _ -> [(ln, 1, grp)]
                            else ginitial fact1
       -- Keep the same order of factions as in roster.
-      needInitialCrew = sortBy (comparing $ abs . fromEnum . fst)
+      needInitialCrew = sortBy (comparing fst)
                         $ filter (not . null . ginitialWolf . snd)
                         $ EM.assocs factionD
       getEntryLevels (_, fact) =
@@ -397,7 +395,7 @@ populateDungeon = do
 
 -- | Find starting postions for all factions. Try to make them distant
 -- from each other. Place as many of the factions, as possible,
--- over stairs. Place the last faction(s) over escape(s)
+-- over stairs. Place the first faction(s) over escape(s)
 -- (we assume they are guardians of the escapes).
 -- This implies the inital factions (if any) start far from escapes.
 findEntryPoss :: COps -> Level -> Int -> Rnd [Point]
@@ -405,18 +403,17 @@ findEntryPoss COps{cocave, coTileSpeedup}
               lvl@Level{lkind, larea, lstair, lescape}
               kRaw = do
   let lskip = CK.cskip $ okind cocave lkind
-      k = kRaw + length lskip  -- is @lskip@ is bogus, will be too large; OK
+      k = kRaw + length lskip  -- if @lskip@ is bogus, will be too large; OK
       (_, xspan, yspan) = spanArea larea
       factionDist = max xspan yspan - 10
       dist !poss !cmin !l _ = all (\ !pos -> chessDist l pos > cmin) poss
       tryFind _ 0 = return []
       tryFind !ps !n = do
         let ds = [ dist ps factionDist
-                 , dist ps $ 2 * factionDist `div` 3
                  , dist ps $ factionDist `div` 2
                  , dist ps $ factionDist `div` 3
-                 , dist ps $ factionDist `div` 4
-                 , dist ps $ factionDist `div` 5
+                 , dist ps $ max 5 $ factionDist `div` 5
+                 , dist ps $ max 2 $ factionDist `div` 10
                  ]
         mp <- findPosTry2 500 lvl  -- try really hard, for skirmish fairness
                 (\_ !t -> Tile.isWalkable coTileSpeedup t

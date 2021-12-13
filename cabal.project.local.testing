@@ -1,5 +1,4 @@
 flags: +with_expensive_assertions
-tests: False
 optimization: True
 profiling: False
 library-profiling: False

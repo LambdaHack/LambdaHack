@@ -15,11 +15,11 @@ module Game.LambdaHack.Content.ItemKind
   , damageUsefulness, verbMsgNoLonger, verbMsgLess, toVelocity, toLinger
   , timerNone, isTimerNone, foldTimer, toOrganBad, toOrganGood, toOrganNoTimer
   , validateSingle
+  , mandatoryGroups, mandatoryGroupsSingleton
 #ifdef EXPOSE_INTERNAL
     -- * Internal operations
   , boostItemKind, onSmashOrCombineEffect
   , validateAll, validateDups, validateDamage
-  , mandatoryGroups, mandatoryGroupsSingleton
 #endif
   ) where
 
@@ -396,7 +396,7 @@ forApplyEffect eff = case eff of
   NopEffect -> False
   AndEffect eff1 eff2 -> forApplyEffect eff1 || forApplyEffect eff2
   OrEffect eff1 eff2 -> forApplyEffect eff1 || forApplyEffect eff2
-  SeqEffect effs -> or $ map forApplyEffect effs
+  SeqEffect effs -> any forApplyEffect effs
   When _ eff1 -> forApplyEffect eff1
   Unless _ eff1 -> forApplyEffect eff1
   IfThenElse _ eff1 eff2 -> forApplyEffect eff1 || forApplyEffect eff2
@@ -427,7 +427,7 @@ isEffEscape (OnCombine eff) = isEffEscape eff
 isEffEscape (OnUser eff) = isEffEscape eff
 isEffEscape (AndEffect eff1 eff2) = isEffEscape eff1 || isEffEscape eff2
 isEffEscape (OrEffect eff1 eff2) = isEffEscape eff1 || isEffEscape eff2
-isEffEscape (SeqEffect effs) = or $ map isEffEscape effs
+isEffEscape (SeqEffect effs) = any isEffEscape effs
 isEffEscape (When _ eff) = isEffEscape eff
 isEffEscape (Unless _ eff) = isEffEscape eff
 isEffEscape (IfThenElse _ eff1 eff2) = isEffEscape eff1 || isEffEscape eff2
@@ -445,7 +445,7 @@ isEffEscapeOrAscend (AndEffect eff1 eff2) =
 isEffEscapeOrAscend (OrEffect eff1 eff2) =
   isEffEscapeOrAscend eff1 || isEffEscapeOrAscend eff2
 isEffEscapeOrAscend (SeqEffect effs) =
-  or $ map isEffEscapeOrAscend effs
+  any isEffEscapeOrAscend effs
 isEffEscapeOrAscend (When _ eff) = isEffEscapeOrAscend eff
 isEffEscapeOrAscend (Unless _ eff) = isEffEscapeOrAscend eff
 isEffEscapeOrAscend (IfThenElse _ eff1 eff2) =
@@ -583,7 +583,7 @@ validateSingle itemSymbols ik@ItemKind{..} =
          | length ts == 1 && not equipable && not meleeable ]
          ++ [ "EqpSlot not specified but Equipable or Meleeable and not a likely organ or necklace or template"
             | not likelyException
-              && length ts == 0 && (equipable || meleeable) ]
+              && null ts && (equipable || meleeable) ]
          ++ [ "More than one EqpSlot specified"
             | length ts > 1 ] )
   ++ [ "Redundant Equipable or Meleeable"
@@ -613,7 +613,7 @@ validateSingle itemSymbols ik@ItemKind{..} =
           f _ = False
           ts = filter f iaspects
       in ["more than one PresentAs specification" | length ts > 1])
-  ++ concatMap (validateDups ik) (map SetFlag [minBound .. maxBound])
+  ++ concatMap (validateDups ik . SetFlag) [minBound .. maxBound]
   ++ (let f :: Effect -> Bool
           f VerbNoLonger{} = True
           f _ = False
@@ -694,7 +694,7 @@ validateNotNested effs t f =
       g (OnUser effect) = h effect
       g (AndEffect eff1 eff2) = h eff1 || h eff2
       g (OrEffect eff1 eff2) = h eff1 || h eff2
-      g (SeqEffect effs2) = or $ map h effs2
+      g (SeqEffect effs2) = any h effs2
       g (When _ effect) = h effect
       g (Unless _ effect) = h effect
       g (IfThenElse _ eff1 eff2) = h eff1 || h eff2
@@ -702,7 +702,7 @@ validateNotNested effs t f =
       h effect = f effect || g effect
       ts = filter g effs
   in [ "effect" <+> t <+> "should be specified at top level, not nested"
-     | length ts > 0 ]
+     | not (null ts) ]
 
 checkSubEffectProp :: (Effect -> Bool) -> Effect -> Bool
 checkSubEffectProp f eff =
@@ -713,7 +713,7 @@ checkSubEffectProp f eff =
       g (OnUser effect) = h effect
       g (AndEffect eff1 eff2) = h eff1 || h eff2
       g (OrEffect eff1 eff2) = h eff1 || h eff2
-      g (SeqEffect effs) = or $ map h effs
+      g (SeqEffect effs) = any h effs
       g (When _ effect) = h effect
       g (Unless _ effect) = h effect
       g (IfThenElse _ eff1 eff2) = h eff1 || h eff2

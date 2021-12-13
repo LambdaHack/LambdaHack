@@ -24,6 +24,7 @@ toArea (x0, y0, x1, y1) = if x0 <= x1 && y0 <= y1
                           else Nothing
 
 fromArea :: Area -> (X, Y, X, Y)
+{-# INLINE fromArea #-}
 fromArea (Area x0 y0 x1 y1) = (x0, y0, x1, y1)
 
 -- Funny thing, Trivial area, a point, has span 1 in each dimension.
@@ -37,10 +38,9 @@ isTrivialArea :: Area -> Bool
 isTrivialArea (Area x0 y0 x1 y1) = x0 == x1 && y0 == y1
 
 -- | Checks that a point belongs to an area.
-inside :: Point -> Area -> Bool
+inside :: Area -> Point -> Bool
 {-# INLINE inside #-}
-inside (Point x y) (Area x0 y0 x1 y1) =
-  x1 >= x && x >= x0 && y1 >= y && y >= y0
+inside = insideP . fromArea
 
 -- | Shrink the given area on all fours sides by the amount.
 shrink :: Area -> Maybe Area

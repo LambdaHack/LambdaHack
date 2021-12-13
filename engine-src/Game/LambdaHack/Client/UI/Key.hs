@@ -8,8 +8,8 @@ module Game.LambdaHack.Client.UI.Key
   , upKM, downKM, leftKM, rightKM
   , homeKM, endKM, backspaceKM, controlP
   , leftButtonReleaseKM, middleButtonReleaseKM, rightButtonReleaseKM
-  , dirAllKey, handleDir, moveBinding, mkKM, mkChar
-  , keyTranslate, keyTranslateWeb
+  , cardinalAllKM, dirAllKey, handleCardinal, handleDir, moveBinding
+  , mkKM, mkChar, keyTranslate, keyTranslateWeb
   , dirMoveNoModifier, dirRunNoModifier, dirRunControl, dirRunShift
 #ifdef EXPOSE_INTERNAL
     -- * Internal operations
@@ -131,7 +131,7 @@ showKey MiddleButtonRelease = "MMB"
 showKey RightButtonRelease = "RMB"
 showKey WheelNorth = "WHEEL-UP"
 showKey WheelSouth = "WHEEL-DN"
-showKey (Unknown s) = "'" ++ s ++ "'"
+showKey (Unknown s) = s
 showKey DeadKey      = "DEADKEY"
 
 -- | Show a key with a modifier, if any.
@@ -206,6 +206,9 @@ middleButtonReleaseKM = KM NoModifier MiddleButtonRelease
 rightButtonReleaseKM :: KM
 rightButtonReleaseKM = KM NoModifier RightButtonRelease
 
+cardinalKeypadKM :: [KM]
+cardinalKeypadKM = map (KM NoModifier) [Up, Right, Down, Left]
+
 dirKeypadKey :: [Key]
 dirKeypadKey = [Home, Up, PgUp, Right, PgDn, Down, End, Left]
 
@@ -215,11 +218,17 @@ dirKeypadShiftChar = ['7', '8', '9', '6', '3', '2', '1', '4']
 dirKeypadShiftKey :: [Key]
 dirKeypadShiftKey = map KP dirKeypadShiftChar
 
+cardinalLeftHandKM :: [KM]
+cardinalLeftHandKM = map (KM NoModifier . Char) ['w', 'd', 'x', 'a']
+
 dirLeftHandKey :: [Key]
 dirLeftHandKey = map Char ['q', 'w', 'e', 'd', 'c', 'x', 'z', 'a']
 
 dirLeftHandShiftKey :: [Key]
 dirLeftHandShiftKey = map Char ['Q', 'W', 'E', 'D', 'C', 'X', 'Z', 'A']
+
+cardinalViKM :: [KM]
+cardinalViKM = map (KM NoModifier . Char) ['k', 'l', 'j', 'h']
 
 dirViChar :: [Char]
 dirViChar = ['y', 'k', 'u', 'l', 'n', 'j', 'b', 'h']
@@ -248,11 +257,22 @@ dirRunControl = dirKeypadKey
 dirRunShift :: [Key]
 dirRunShift = dirRunControl
 
+cardinalAllKM :: Bool -> Bool -> [KM]
+cardinalAllKM uVi uLeftHand = concat $
+  [cardinalKeypadKM]
+  ++ [cardinalViKM | uVi]
+  ++ [cardinalLeftHandKM | uLeftHand]
+
 dirAllKey :: Bool -> Bool -> [Key]
 dirAllKey uVi uLeftHand =
   dirMoveNoModifier uVi uLeftHand
   ++ dirRunNoModifier uVi uLeftHand
   ++ dirRunControl
+
+handleCardinal :: [KM] -> KM -> Maybe Vector
+handleCardinal dirKeys key =
+  let assocs = zip dirKeys $ cycle movesCardinal
+  in lookup key assocs
 
 -- | Configurable event handler for the direction keys.
 -- Used for directed commands such as close door.
@@ -266,11 +286,11 @@ handleDir _ _ = Nothing
 moveBinding :: Bool -> Bool -> (Vector -> a) -> (Vector -> a)
             -> [(KM, a)]
 moveBinding uVi uLeftHand move run =
-  let assign f (km, dir) = (km, f dir)
+  let assign f km dir = (km, f dir)
       mapMove modifier keys =
-        map (assign move) (zip (map (KM modifier) keys) $ cycle moves)
+        zipWith (assign move) (map (KM modifier) keys) (cycle moves)
       mapRun modifier keys =
-        map (assign run) (zip (map (KM modifier) keys) $ cycle moves)
+        zipWith (assign run) (map (KM modifier) keys) (cycle moves)
   in mapMove NoModifier (dirMoveNoModifier uVi uLeftHand)
      ++ mapRun NoModifier (dirRunNoModifier uVi uLeftHand)
      ++ mapRun Control dirRunControl

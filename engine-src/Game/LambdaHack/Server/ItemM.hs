@@ -139,7 +139,7 @@ randomResetTimeout k iid itemFull beforeIt toC = do
 computeRndTimeout :: Time -> ItemFull -> Rnd (Maybe ItemTimer)
 computeRndTimeout localTime ItemFull{itemDisco=ItemDiscoFull itemAspect} = do
   let t = IA.aTimeout itemAspect
-  if t /= 0 then do
+  if t > 0 then do
     rndT <- randomR0 t
     let rndTurns = timeDeltaScale (Delta timeTurn) (t + rndT)
     return $ Just $ createItemTimer localTime rndTurns
@@ -204,7 +204,8 @@ embedItemOnPos lid pos tk = do
 
 prepareItemKind :: MonadServerAtomic m
                 => Int -> Dice.AbsDepth -> Freqs ItemKind
-                -> m (Frequency (ContentId IK.ItemKind, ItemKind))
+                -> m (Frequency
+                        (GroupName ItemKind, ContentId IK.ItemKind, ItemKind))
 prepareItemKind lvlSpawned ldepth itemFreq = do
   cops <- getsState scops
   uniqueSet <- getsServer suniqueSet
@@ -212,7 +213,9 @@ prepareItemKind lvlSpawned ldepth itemFreq = do
   return $! newItemKind cops uniqueSet itemFreq ldepth totalDepth lvlSpawned
 
 rollItemAspect :: MonadServerAtomic m
-               => Frequency (ContentId IK.ItemKind, ItemKind) -> Dice.AbsDepth
+               => Frequency
+                    (GroupName ItemKind, ContentId IK.ItemKind, ItemKind)
+               -> Dice.AbsDepth
                -> m NewItem
 rollItemAspect freq ldepth = do
   cops <- getsState scops
@@ -221,7 +224,7 @@ rollItemAspect freq ldepth = do
   totalDepth <- getsState stotalDepth
   m2 <- rndToAction $ newItem cops freq flavour discoRev ldepth totalDepth
   case m2 of
-    NewItem (ItemKnown _ arItem _) ItemFull{itemKindId} _ -> do
+    NewItem _ (ItemKnown _ arItem _) ItemFull{itemKindId} _ -> do
       when (IA.checkFlag Ability.Unique arItem) $
         modifyServer $ \ser ->
           ser {suniqueSet = ES.insert itemKindId (suniqueSet ser)}
@@ -231,7 +234,8 @@ rollItemAspect freq ldepth = do
 rollAndRegisterItem :: MonadServerAtomic m
                     => Bool
                     -> Dice.AbsDepth
-                    -> Frequency (ContentId IK.ItemKind, ItemKind)
+                    -> Frequency
+                         (GroupName ItemKind, ContentId IK.ItemKind, ItemKind)
                     -> Container
                     -> Maybe Int
                     -> m (Maybe (ItemId, ItemFullKit))
@@ -239,7 +243,7 @@ rollAndRegisterItem verbose ldepth freq container mk = do
   m2 <- rollItemAspect freq ldepth
   case m2 of
     NoNewItem -> return Nothing
-    NewItem itemKnown itemFull kit -> do
+    NewItem _ itemKnown itemFull kit -> do
       let f k = if k == 1 && null (snd kit)
                 then quantSingle
                 else (k, snd kit)
@@ -263,15 +267,15 @@ placeItemsInDungeon factionPositions = do
               Level{lfloor} <- getLevel lid
               -- Don't generate items around initial actors or in bunches.
               let distAndNotFloor !p _ =
-                    let f !k b = chessDist p k > 4 && b
-                    in p `EM.notMember` lfloor && foldr f True alPos
-              mpos <- rndToAction $ findPosTry2 20 lvl
+                    let f !k = chessDist p k > 4
+                    in p `EM.notMember` lfloor && all f alPos
+              mpos <- rndToAction $ findPosTry2 10 lvl
                 (\_ !t -> Tile.isWalkable coTileSpeedup t
                           && not (Tile.isNoItem coTileSpeedup t))
                 [ \_ !t -> Tile.isVeryOftenItem coTileSpeedup t
                 , \_ !t -> Tile.isCommonItem coTileSpeedup t ]
                 distAndNotFloor
-                [distAndNotFloor, distAndNotFloor]
+                (replicate 10 distAndNotFloor)
               case mpos of
                 Just pos -> do
                   createCaveItem pos lid

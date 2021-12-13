@@ -59,9 +59,9 @@ aidTgtToPos maid lidV (Just tgt) s = case tgt of
   TVector v -> case maid of
     Nothing -> Nothing
     Just aid ->
-      let COps{corule=RuleContent{rXmax, rYmax}} = scops s
+      let COps{corule=RuleContent{rWidthMax, rHeightMax}} = scops s
           b = getActorBody aid s
-          shifted = shiftBounded rXmax rYmax (bpos b) v
+          shifted = shiftBounded rWidthMax rHeightMax (bpos b) v
       in if shifted == bpos b && v /= Vector 0 0 then Nothing else Just shifted
 
 -- | Counts the number of steps until the projectile would hit a non-projectile
@@ -71,10 +71,10 @@ aidTgtToPos maid lidV (Just tgt) s = case tgt of
 -- Treats unknown tiles as walkable, but prefers known.
 makeLine :: Bool -> Actor -> Point -> Int -> COps -> Level -> Maybe Int
 makeLine onlyFirst body fpos epsOld cops lvl =
-  let COps{corule=RuleContent{rXmax, rYmax}, coTileSpeedup} = cops
+  let COps{coTileSpeedup} = cops
       dist = chessDist (bpos body) fpos
       calcScore :: Int -> Int
-      calcScore eps = case bla rXmax rYmax eps (bpos body) fpos of
+      calcScore eps = case bresenhamsLineAlgorithm eps (bpos body) fpos of
         Just bl ->
           let blDist = take (dist - 1) bl  -- goal not checked; actor well aware
               noActor p = p == fpos || not (occupiedBigLvl p lvl)
@@ -137,19 +137,23 @@ currentSkillsClient aid = do
 -- that hits multiple tagets comes into the equation. AI has to be very
 -- primitive and random here as well.
 pickWeaponClient :: MonadClient m
-                 => ActorId -> ActorId
-                 -> m (Maybe RequestTimed)
+                 => ActorId -> ActorId -> m (Maybe RequestTimed)
 pickWeaponClient source target = do
   eqpAssocs <- getsState $ kitAssocs source [CEqp]
   bodyAssocs <- getsState $ kitAssocs source [COrgan]
   actorSk <- currentSkillsClient source
+  tb <- getsState $ getActorBody target
   let kitAssRaw = eqpAssocs ++ bodyAssocs
       kitAss = filter (IA.checkFlag Ability.Meleeable
                        . aspectRecordFull . fst . snd) kitAssRaw
+      benign itemFull = let arItem = aspectRecordFull itemFull
+                        in IA.checkFlag Ability.Benign arItem
   discoBenefit <- getsClient sdiscoBenefit
   strongest <- pickWeaponM False (Just discoBenefit) kitAss actorSk source
   case strongest of
     [] -> return Nothing
+    (_, _, _, _, _, (itemFull, _)) : _ | benign itemFull && bproj tb ->
+      return Nothing  -- if strongest is benign, don't waste fun on a projectile
     iis@(ii1@(value1, hasEffect1, timeout1, _, _, (itemFull1, _)) : _) -> do
       let minIis = takeWhile (\(value, hasEffect, timeout, _, _, _) ->
                                  value == value1

@@ -1,3 +1,32 @@
+## [v0.10.3.0](https://github.com/LambdaHack/LambdaHack/compare/v0.10.2.0...v0.10.3.0)
+
+- Work around regression https://gitlab.freedesktop.org/freetype/freetype/-/issues/1076 by making the scalable square font the default as the map font; the tiny map fonts, for which there is no such workaround, won't work for anybody with freetype 2.11.0
+- Enable display of details in right pane in many menus
+- Switch mouse wheel to move selection now that it changes right pane display
+- Make the line where messages wrap configurable in config file
+- Remove rarely used options from config file and code
+- Prepare client-server for delays when operating over the network
+- Reveal all map at game over and make it explorable
+- Don't run with -threaded, increasing speed by a couple dozen percent
+- Don't show messages during enemy turn (except when under AI control)
+- Spawn many actors at once with probability correlated to spawning at all
+- Gut out Ubuntu Font Family fonts
+- Default to more old-fashioned small fonts in LambdaHack the game
+- Add a few tutorial messages, reword some in-game texts
+- Move with CI from Travis to GitHub Actions (but GHA can't keep up as well)
+- Add hlint to CI
+- Make place content directly define legends instead of overriding them
+- Add a warning that crosshair is out of flinging range
+- Add ANSI display to SDL2 frontend; remove vty, hcurses and GTK frontends
+- Make Teletype frontend more usable (input, speed, overlays)
+- Remove sight malus from light sources to avoid micromanagement
+- Keep convenience settings between new games
+- Add an option to mark FOV area with grey background
+- Refactor and clean up a lot of the code
+- Unhardwire various constants (hat tip to Jamie)
+- Fix a couple of bugs and improve documentation
+- Add whole new kinds of tests (even greater hat tip to Jamie)
+
 ## [v0.10.2.0](https://github.com/LambdaHack/LambdaHack/compare/v0.9.5.0...v0.10.2.0)
 
 - Let '?' scroll help

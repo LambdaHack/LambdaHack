@@ -50,7 +50,9 @@ import           Game.LambdaHack.Server.ServerOptions
 convertTileMaps :: COps -> Bool -> Rnd (ContentId TileKind)
                 -> Maybe (Rnd (ContentId TileKind)) -> Area -> TileMapEM
                 -> Rnd TileMap
-convertTileMaps COps{corule=RuleContent{rXmax, rYmax}, cotile, coTileSpeedup}
+convertTileMaps COps{ corule=RuleContent{rWidthMax, rHeightMax}
+                    , cotile
+                    , coTileSpeedup }
                 areAllWalkable cdefTile mpickPassable darea ltile = do
   let outerId = ouniqGroup cotile TK.S_UNKNOWN_OUTER_FENCE
       runCdefTile :: (SM.SMGen, (Int, [(Int, ContentId TileKind)]))
@@ -58,7 +60,7 @@ convertTileMaps COps{corule=RuleContent{rXmax, rYmax}, cotile, coTileSpeedup}
                      , (SM.SMGen, (Int, [(Int, ContentId TileKind)])) )
       runCdefTile (gen1, (pI, assocs)) =
         let p = toEnum pI
-        in if p `inside` darea
+        in if inside darea p
            then case assocs of
              (p2, t2) : rest | p2 == pI -> (t2, (gen1, (pI + 1, rest)))
              _ -> let (tile, gen2) = St.runState cdefTile gen1
@@ -67,7 +69,7 @@ convertTileMaps COps{corule=RuleContent{rXmax, rYmax}, cotile, coTileSpeedup}
       runUnfold gen =
         let (gen1, gen2) = SM.splitSMGen gen
         in (PointArray.unfoldrNA
-              rXmax rYmax runCdefTile
+              rWidthMax rHeightMax runCdefTile
               (gen1, (0, IM.assocs $ EM.enumMapToIntMap ltile)), gen2)
   converted1 <- St.state runUnfold
   case mpickPassable of
@@ -85,11 +87,9 @@ convertTileMaps COps{corule=RuleContent{rXmax, rYmax}, cotile, coTileSpeedup}
           blocksVertical (Point x y) array =
             not (passes (Point x (y + 1)) array
                  || passes (Point x (y - 1)) array)
-          xeven Point{..} = px `mod` 2 == 0
-          yeven Point{..} = py `mod` 2 == 0
           activeArea = fromMaybe (error $ "" `showFailure` darea) $ shrink darea
           connect included blocks walkableTile array =
-            let g p c = if p `inside` activeArea
+            let g p c = if inside activeArea p
                            && included p
                            && not (Tile.isEasyOpen coTileSpeedup c)
                            && p `EM.notMember` ltile
@@ -98,15 +98,15 @@ convertTileMaps COps{corule=RuleContent{rXmax, rYmax}, cotile, coTileSpeedup}
                         else c
             in PointArray.imapA g array
       walkable2 <- pickPassable
-      let converted2 = connect xeven blocksHorizontal walkable2 converted1
+      let converted2 = connect (even . px) blocksHorizontal walkable2 converted1
       walkable3 <- pickPassable
-      let converted3 = connect yeven blocksVertical walkable3 converted2
+      let converted3 = connect (even . py) blocksVertical walkable3 converted2
       walkable4 <- pickPassable
       let converted4 =
-            connect (not . xeven) blocksHorizontal walkable4 converted3
+            connect (odd . px) blocksHorizontal walkable4 converted3
       walkable5 <- pickPassable
       let converted5 =
-            connect (not . yeven) blocksVertical walkable5 converted4
+            connect (odd . py) blocksVertical walkable5 converted4
       return converted5
 
 buildTileMap :: COps -> Cave -> Rnd TileMap
@@ -143,18 +143,18 @@ buildLevel cops@COps{coplace, corule=RuleContent{..}} serverOptions
         let (lxPrev, lyPrev) = unzip $ map ((px &&& py) . fst) stairsFromUp
             -- Stairs take some space, hence the additions.
             lxMin = max 0
-                    $ -4 - d + minimum (rXmax - 1 : lxPrev)
-            lxMax = min (rXmax - 1)
+                    $ -4 - d + minimum (rWidthMax - 1 : lxPrev)
+            lxMax = min (rWidthMax - 1)
                     $ 4 + d + maximum (0 : lxPrev)
             lyMin = max 0
-                    $ -3 - d + minimum (rYmax - 1 : lyPrev)
-            lyMax = min (rYmax - 1)
+                    $ -3 - d + minimum (rHeightMax - 1 : lyPrev)
+            lyMax = min (rHeightMax - 1)
                     $ 3 + d + maximum (0 : lyPrev)
             -- Pick minimal cave size that fits all previous stairs.
             xspan = max (lxMax - lxMin + 1) $ cXminSize kc
             yspan = max (lyMax - lyMin + 1) $ cYminSize kc
-            x0 = min lxMin (rXmax - xspan)
-            y0 = min lyMin (rYmax - yspan)
+            x0 = min lxMin (rWidthMax - xspan)
+            y0 = min lyMin (rHeightMax - yspan)
         in fromMaybe (error $ "" `showFailure` kc)
            $ toArea (x0, y0, x0 + xspan - 1, y0 + yspan - 1)
       (lstairsDouble, lstairsSingleUp) = splitAt doubleDownStairs stairsFromUp
@@ -269,26 +269,29 @@ placeDownStairs object cornerPermitted serverOptions lid
       ry = 6  -- enough to fit smallest stairs
       wx = x1 - x0 + 1
       wy = y1 - y0 + 1
-      notInCorner Point{..} =
+      notInCornerEtc Point{..} =
         cornerPermitted
         || wx < 3 * rx + 3 || wy < 3 * ry + 3  -- everything is a corner
         || px > x0 + (wx - 3) `div` 3
            && py > y0 + (wy - 3) `div` 3
+      inCorner Point{..} = (px <= x0 + rx || px >= x1 - rx)
+                           && (py <= y0 + ry || py >= y1 - ry)
+      gpreference = if cornerPermitted then inCorner else notInCornerEtc
       f p = case snapToStairList 0 ps p of
         Left{} -> Nothing
         Right np -> let nnp = either id id $ snapToStairList 0 boot np
-                    in if notInCorner nnp then Just nnp else Nothing
+                    in if notInCornerEtc nnp then Just nnp else Nothing
       g p = case snapToStairList 2 ps p of
         Left{} -> Nothing
         Right np -> let nnp = either id id $ snapToStairList 2 boot np
-                    in if notInCorner nnp && dist cminStairDist nnp
+                    in if gpreference nnp && dist cminStairDist nnp
                        then Just nnp
                        else Nothing
       focusArea = let d = if cfenceApart then 1 else 0
                   in fromMaybe (error $ "" `showFailure` darea)
                      $ toArea ( x0 + 4 + d, y0 + 3 + d
                               , x1 - 4 - d, y1 - anchorDown + 1 )
-  mpos <- findPointInArea focusArea g 300 f
+  mpos <- findPointInArea focusArea g 500 f
   -- The message fits this debugging level:
   let !_ = if isNothing mpos && sdumpInitRngs serverOptions
            then unsafePerformIO $ do

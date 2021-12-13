@@ -65,22 +65,24 @@ serverOptionsP = do
   sstopAfterGameOver <- stopAfterGameOverP
   sprintEachScreen  <- printEachScreenP
   sbenchmark        <- benchmarkP
+  sbenchMessages    <- benchMessagesP
   sdungeonRng       <- setDungeonRngP
   smainRng          <- setMainRngP
   sdumpInitRngs     <- dumpInitRngsP
+  sdbgMsgCli        <- dbgMsgCliP
   sdbgMsgSer        <- dbgMsgSerP
+  slogPriority      <- logPriorityP
   sassertExplored   <- assertExploredP
   schosenFontset    <- chosenFontsetP
   sallFontsScale    <- allFontsScaleP
-  slogPriority      <- logPriorityP
   smaxFps           <- maxFpsP
   sdisableAutoYes   <- disableAutoYesP
   snoAnim           <- noAnimP
   ssavePrefixSer    <- savePrefixP
+  sfrontendANSI     <- frontendANSIP
   sfrontendTeletype <- frontendTeletypeP
   sfrontendNull     <- frontendNullP
   sfrontendLazy     <- frontendLazyP
-  sdbgMsgCli        <- dbgMsgCliP
 
   pure ServerOptions
     {
@@ -180,9 +182,9 @@ keepAutomatedP =
          <> help "Keep factions automated after game over" )
 
 newGameP :: Parser (Maybe Int)
-newGameP = optional $ max 1 <$> min difficultyBound <$>
+newGameP = optional $ max 1 . min difficultyBound <$>
   option auto (  long "newGame"
-              <> help "Start a new game, overwriting the save file, with difficulty for all UI players set to N"
+              <> help "Start a new game, overwriting the save file and often forgetting history, with difficulty for all UI players set to N"
               <> metavar "N" )
 
 fullscreenModeP :: Parser (Maybe FullscreenMode)
@@ -219,6 +221,11 @@ benchmarkP =
   switch (  long "benchmark"
          <> help "Restrict file IO, print timing stats" )
 
+benchMessagesP :: Parser Bool
+benchMessagesP =
+  switch (  long "benchMessages"
+         <> help "Display messages in realistic was under AI control (for benchmarks)" )
+
 setDungeonRngP :: Parser (Maybe SM.SMGen)
 setDungeonRngP = optional $
   option auto (  long "setDungeonRng"
@@ -236,10 +243,32 @@ dumpInitRngsP =
   switch (  long "dumpInitRngs"
          <> help "Dump the RNG seeds used to initialize the game" )
 
+dbgMsgCliP :: Parser Bool
+dbgMsgCliP =
+  switch (  long "dbgMsgCli"
+         <> help "Emit extra internal client debug messages" )
+
 dbgMsgSerP :: Parser Bool
 dbgMsgSerP =
   switch (  long "dbgMsgSer"
          <> help "Emit extra internal server debug messages" )
+
+logPriorityP :: Parser (Maybe Int)
+logPriorityP = optional $
+  option (auto >>= verifyLogPriority) $
+       long "logPriority"
+    <> showDefault
+    <> value 5
+    <> metavar "N"
+    <> help ( "Log only messages of priority at least N, where 1 (all) is "
+           ++ "the lowest and 5 logs errors only; use value 0 for testing on "
+           ++ "CIs without graphics access; setting priority to 0 causes "
+           ++ "SDL frontend to init and quit at once" )
+  where
+    verifyLogPriority n =
+      if n >= 0 && n <= 5
+      then return n
+      else readerError "N has to be 0 or a positive integer not larger than 5"
 
 assertExploredP :: Parser (Maybe Int)
 assertExploredP = optional $ max 1 <$>
@@ -265,23 +294,6 @@ maxFpsP = optional $ max 0 <$>
               <> metavar "D"
               <> help "Display at most D frames per second" )
 
-logPriorityP :: Parser (Maybe Int)
-logPriorityP = optional $
-  option (auto >>= verifyLogPriority) $
-       long "logPriority"
-    <> showDefault
-    <> value 5
-    <> metavar "N"
-    <> help ( "Log only messages of priority at least N, where 1 (all) is "
-           ++ "the lowest and 5 logs errors only; use value 0 for testing on "
-           ++ "CIs without graphics access; setting priority to 0 causes "
-           ++ "SDL frontend to init and quit at once" )
-  where
-    verifyLogPriority n =
-      if n >= 0 && n <= 5
-      then return n
-      else readerError "N has to be 0 or a positive integer not larger than 5"
-
 disableAutoYesP :: Parser Bool
 disableAutoYesP =
   switch (  long "disableAutoYes"
@@ -301,6 +313,11 @@ savePrefixP =
             <> value ""
             <> help "Prepend PREFIX to all savefile names" )
 
+frontendANSIP :: Parser Bool
+frontendANSIP =
+  switch (  long "frontendANSI"
+         <> help "Use the ANSI terminal frontend (best for screen readers)" )
+
 frontendTeletypeP :: Parser Bool
 frontendTeletypeP =
   switch (  long "frontendTeletype"
@@ -315,8 +332,3 @@ frontendLazyP :: Parser Bool
 frontendLazyP =
   switch (  long "frontendLazy"
          <> help "Use frontend that not even computes frames (for benchmarks)" )
-
-dbgMsgCliP :: Parser Bool
-dbgMsgCliP =
-  switch (  long "dbgMsgCli"
-         <> help "Emit extra internal client debug messages" )

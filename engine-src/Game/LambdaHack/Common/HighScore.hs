@@ -27,6 +27,7 @@ import Game.LambdaHack.Common.Misc
 import Game.LambdaHack.Common.Time
 import Game.LambdaHack.Content.ItemKind (ItemKind)
 import Game.LambdaHack.Content.ModeKind
+import Game.LambdaHack.Content.FactionKind
 import Game.LambdaHack.Definition.Defs
 
 -- | A single score record. Records are ordered in the highscore table,
@@ -37,7 +38,7 @@ data ScoreRecord = ScoreRecord
   , date         :: POSIXTime  -- ^ date of the last game interruption
   , status       :: Status     -- ^ reason of the game interruption
   , challenge    :: Challenge  -- ^ challenge setup of the game
-  , gplayerName  :: Text       -- ^ name of the faction's gplayer
+  , gkindName  :: Text       -- ^ name of the faction's gkind
   , ourVictims   :: EM.EnumMap (ContentId ItemKind) Int  -- ^ allies lost
   , theirVictims :: EM.EnumMap (ContentId ItemKind) Int  -- ^ foes killed
   }
@@ -75,13 +76,13 @@ register :: ScoreTable  -- ^ old table
          -> Status      -- ^ reason of the game interruption
          -> POSIXTime   -- ^ current date
          -> Challenge   -- ^ challenge setup
-         -> Text        -- ^ name of the faction's gplayer
+         -> Text        -- ^ name of the faction's gkind
          -> EM.EnumMap (ContentId ItemKind) Int  -- ^ allies lost
          -> EM.EnumMap (ContentId ItemKind) Int  -- ^ foes killed
          -> HiCondPoly
          -> (Bool, (ScoreTable, Int))
 register table total dungeonTotal time status@Status{stOutcome}
-         date challenge gplayerName ourVictims theirVictims hiCondPoly =
+         date challenge gkindName ourVictims theirVictims hiCondPoly =
   let turnsSpent = intToDouble $ timeFitUp time timeTurn
       hiInValue (hi, c) = assert (total <= dungeonTotal) $ case hi of
         HiConst -> c
@@ -107,7 +108,8 @@ register table total dungeonTotal time status@Status{stOutcome}
                  * 1.5 ^^ (- (difficultyCoeff (cdiff challenge)))
       negTime = absoluteTimeNegate time
       score = ScoreRecord{..}
-  in (points > 0, insertPos score table)
+  in (points > 0 || turnsSpent > 100, insertPos score table)
+       -- even if stash looted and all gold lost, count highscore if long game
 
 -- | Show a single high score, from the given ranking in the high score table.
 showScore :: TimeZone -> Int -> ScoreRecord -> [Text]
@@ -129,7 +131,7 @@ showScore tz pos score =
       chalText | challenge score == defaultChallenge = ""
                | otherwise = tshowChallenge (challenge score)
       tturns = makePhrase [MU.CarWs turns "turn"]
-  in [ tpos <> "." <+> tscore <+> gplayerName score
+  in [ tpos <> "." <+> tscore <+> gkindName score
        <+> died <> "," <+> victims <> ","
      , "           "
        <> "after" <+> tturns <+> chalText <+> "on" <+> curDate <> "."
@@ -170,12 +172,12 @@ showAward height table pos gameModeName =
             ("your valiant exploits", MU.PlEtc, "")
           Conquer ->
             ("your ruthless victory", MU.Sg3rd,
-             if pos <= height
+             if pos <= height && length (unTable table) > 3
              then "among the best"  -- "greatest heroes" doesn't fit
              else "(bonus included)")
           Escape ->
             ("your dashing coup", MU.Sg3rd,
-             if pos <= height
+             if pos <= height && length (unTable table) > 3
              then "among the best"
              else "(bonus included)")
           Restart ->

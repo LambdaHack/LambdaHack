@@ -5,8 +5,7 @@ module Game.LambdaHack.Common.ActorState
   , fidActorRegularIds, foeRegularAssocs, foeRegularList
   , friendRegularAssocs, friendRegularList, bagAssocs, bagAssocsK
   , posToBig, posToBigAssoc, posToProjs, posToProjAssocs
-  , posToAids, posToAidAssocs, calculateTotal, itemPrice, findIid
-  , combinedGround, combinedOrgan, combinedEqp, combinedItems
+  , posToAids, posToAidAssocs, calculateTotal, itemPrice, findIid, combinedItems
   , getActorBody, getActorMaxSkills, actorCurrentSkills, canTraverse
   , getCarriedAssocsAndTrunk, getContainerBag
   , getFloorBag, getEmbedBag, getBodyStoreBag, getFactionStashBag
@@ -41,7 +40,7 @@ import           Game.LambdaHack.Common.Time
 import           Game.LambdaHack.Common.Types
 import           Game.LambdaHack.Common.Vector
 import qualified Game.LambdaHack.Content.ItemKind as IK
-import           Game.LambdaHack.Content.ModeKind
+import           Game.LambdaHack.Content.FactionKind
 import qualified Game.LambdaHack.Content.TileKind as TK
 import qualified Game.LambdaHack.Definition.Ability as Ability
 import           Game.LambdaHack.Definition.Defs
@@ -152,23 +151,6 @@ findIid leader fid iid s =
       items = concatMap itemsOfActor actors
   in map snd $ filter ((== iid) . fst) items
 
-combinedGround :: FactionId -> State -> ItemBag
-combinedGround fid s =
-  let bs = inline fidActorNotProjGlobalAssocs fid s
-  in EM.unionsWith mergeItemQuant
-     $ map (\(_, b) -> getFloorBag (blid b) (bpos b) s) bs
-
--- Trunk not considered (if stolen).
-combinedOrgan :: FactionId -> State -> ItemBag
-combinedOrgan fid s =
-  let bs = inline fidActorNotProjGlobalAssocs fid s
-  in EM.unionsWith mergeItemQuant $ map (borgan . snd) bs
-
-combinedEqp :: FactionId -> State -> ItemBag
-combinedEqp fid s =
-  let bs = inline fidActorNotProjGlobalAssocs fid s
-  in EM.unionsWith mergeItemQuant $ map (beqp . snd) bs
-
 -- Trunk not considered (if stolen).
 combinedItems :: FactionId -> State -> ItemBag
 combinedItems fid s =
@@ -194,11 +176,12 @@ actorCurrentSkills :: Maybe ActorId -> ActorId -> State -> Ability.Skills
 actorCurrentSkills mleader aid s =
   let body = getActorBody aid s
       actorMaxSk = getActorMaxSkills aid s
-      player = gplayer . (EM.! bfid body) . sfactionD $ s
-      skillsFromDoctrine = Ability.doctrineSkills $ fdoctrine player
+      fact = (EM.! bfid body) . sfactionD $ s
+      skillsFromDoctrine = Ability.doctrineSkills $ gdoctrine fact
       factionSkills
         | Just aid == mleader = Ability.zeroSkills
-        | otherwise = fskillsOther player `Ability.addSkills` skillsFromDoctrine
+        | otherwise = fskillsOther (gkind fact)
+                      `Ability.addSkills` skillsFromDoctrine
   in actorMaxSk `Ability.addSkills` factionSkills
 
 -- Check that the actor can move, also between levels and through doors.

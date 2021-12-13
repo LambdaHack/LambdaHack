@@ -28,7 +28,7 @@ import           Game.LambdaHack.Common.State
 import qualified Game.LambdaHack.Common.Tile as Tile
 import           Game.LambdaHack.Common.Time
 import           Game.LambdaHack.Common.Types
-import           Game.LambdaHack.Content.ModeKind
+import           Game.LambdaHack.Content.FactionKind (fskillsOther)
 import           Game.LambdaHack.Core.Frequency
 import           Game.LambdaHack.Core.Random
 import qualified Game.LambdaHack.Definition.Ability as Ability
@@ -56,9 +56,15 @@ pickActorToMove foeAssocs friendAssocs maidToAvoid = do
         void $ refreshTarget foeAssocs friendAssocs (oldAid, oldBody)
         return oldAid
       oursNotSleeping = filter (\(_, b) -> bwatch b /= WSleep) ours
+      -- Faction discourages client leader change on level, because
+      -- non-leader actors have the same skills as leader, so no point.
+      -- Server is guaranteed to switch leader within a level occasionally,
+      -- e.g., when the old leader dies, so this works fine.
+      discouragedPointmanSwitchOnLevel =
+        fskillsOther (gkind fact) == Ability.zeroSkills
   case oursNotSleeping of
-    _ | -- Keep the leader: faction discourages client leader change on level,
-        -- so will only be changed if waits (maidToAvoid)
+    _ | -- Keep the leader: client is discouraged from leader switching,
+        -- so it will only be changed if pointman waits (maidToAvoid)
         -- to avoid wasting his higher mobility.
         -- This is OK for monsters even if in melee, because both having
         -- a meleeing actor a leader (and higher DPS) and rescuing actor
@@ -66,7 +72,7 @@ pickActorToMove foeAssocs friendAssocs maidToAvoid = do
         -- And we are guaranteed that only the two classes of actors are
         -- not waiting, with some exceptions (urgent unequip, flee via starts,
         -- melee-less trying to flee, first aid, etc.).
-        snd (autoDungeonLevel fact) && isNothing maidToAvoid -> pickOld
+       discouragedPointmanSwitchOnLevel && isNothing maidToAvoid -> pickOld
     [] -> pickOld
     [(aidNotSleeping, bNotSleeping)] -> do
       -- Target of asleep actors won't change unless foe adjacent,
@@ -350,8 +356,7 @@ pickActorToMove foeAssocs friendAssocs maidToAvoid = do
           modifyClient $ updateLeader aid s
           -- When you become a leader, stop following old leader, but follow
           -- his target, if still valid, to avoid distraction.
-          when (fdoctrine (gplayer fact)
-                `elem` [Ability.TFollow, Ability.TFollowNoItems]
+          when (gdoctrine fact `elem` [Ability.TFollow, Ability.TFollowNoItems]
                 && not condInMelee) $
             void $ refreshTarget foeAssocs friendAssocs (aid, b)
           return aid
@@ -410,7 +415,7 @@ setTargetFromDoctrines foeAssocs friendAssocs oldAid = do
               unless nonEnemyPathSet
                 -- If no path even to the leader himself, explore.
                 explore
-  case fdoctrine $ gplayer fact of
+  case gdoctrine fact of
     Ability.TExplore -> explore
     Ability.TFollow -> follow
     Ability.TFollowNoItems -> follow

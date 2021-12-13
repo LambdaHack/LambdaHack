@@ -39,10 +39,10 @@ renderAnim width basicFrame (Animation anim) =
   let modifyFrame :: OverlaySpace -> PreFrame
       -- Overlay not truncated, because guaranteed within bounds.
       modifyFrame am = overlayFrame width am basicFrame
-      modifyFrames :: (OverlaySpace, OverlaySpace) -> Maybe PreFrame
-      modifyFrames (am, amPrevious) =
+      modifyFrames :: OverlaySpace -> OverlaySpace -> Maybe PreFrame
+      modifyFrames am amPrevious =
         if am == amPrevious then Nothing else Just $ modifyFrame am
-  in Just basicFrame : map modifyFrames (zip anim ([] : anim))
+  in Just basicFrame : zipWith modifyFrames anim ([] : anim)
 
 blank :: Maybe AttrCharW32
 blank = Nothing

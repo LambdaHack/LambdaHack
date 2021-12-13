@@ -7,10 +7,10 @@ module Game.LambdaHack.Content.TileKind
   , isUknownSpace, unknownId
   , isSuspectKind, isOpenableKind, isClosableKind
   , talterForStairs, floorSymbol
+  , mandatoryGroups, mandatoryGroupsSingleton
 #ifdef EXPOSE_INTERNAL
     -- * Internal operations
-  , validateSingle, validateAll
-  , validateDups, mandatoryGroups, mandatoryGroupsSingleton
+  , validateSingle, validateAll, validateDups
 #endif
   ) where
 
@@ -81,7 +81,8 @@ data Feature =
   | Dark                 -- ^ is not lit with an ambient light
   | OftenItem            -- ^ initial items often generated there
   | VeryOftenItem        -- ^ initial items very often generated there
-  | OftenActor           -- ^ initial actors often generated there
+  | OftenActor           -- ^ initial actors often generated there;
+                         --   counterpart of @VeryOftenItem@ for dark places
   | NoItem               -- ^ no items ever generated there
   | NoActor              -- ^ no actors ever generated there
   | ConsideredByAI       -- ^ even if otherwise uninteresting, taken into
@@ -139,8 +140,8 @@ validateSingle t@TileKind{..} =
           ts = filter f tfeature
       in ["more than one BuildAs specification" | length ts > 1])
   ++ concatMap (validateDups t)
-       [ Walkable, Clear, Dark, OftenItem, OftenActor, NoItem, NoActor
-       , ConsideredByAI, Trail, Spice ]
+       [ Walkable, Clear, Dark, OftenItem, VeryOftenItem, OftenActor
+       , NoItem, NoActor, ConsideredByAI, Trail, Spice ]
 
 validateDups :: TileKind -> Feature -> [Text]
 validateDups TileKind{..} feat =

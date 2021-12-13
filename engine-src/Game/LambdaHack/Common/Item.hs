@@ -10,7 +10,8 @@ module Game.LambdaHack.Common.Item
   , deltaOfItemTimer, charging, ncharges, hasCharge
   , strongestMelee, unknownMeleeBonus, unknownSpeedBonus
   , conditionMeleeBonus, conditionSpeedBonus, armorHurtCalculation
-  , mergeItemQuant, listToolsToConsume, subtractIidfromGrps
+  , mergeItemQuant, listToolsToConsume, subtractIidfromGrps, sortIids
+  , TileAction (..), parseTileAction
 #ifdef EXPOSE_INTERNAL
     -- * Internal operations
   , valueAtEqpSlot, unknownAspect, countIidConsumed
@@ -33,6 +34,7 @@ import           Game.LambdaHack.Common.Kind
 import           Game.LambdaHack.Common.Time
 import           Game.LambdaHack.Common.Types
 import qualified Game.LambdaHack.Content.ItemKind as IK
+import qualified Game.LambdaHack.Content.TileKind as TK
 import qualified Game.LambdaHack.Core.Dice as Dice
 import           Game.LambdaHack.Definition.Ability (EqpSlot (..))
 import qualified Game.LambdaHack.Definition.Ability as Ability
@@ -453,3 +455,52 @@ subtractIidfromGrps (bagsToLose1, iidsToApply1, grps1)
                             removedBags bagsToLose1
      , replicate nToApply (store, (iid, itemFull)) ++ iidsToApply1
      , grps2 )
+
+sortIids :: (ItemId -> ItemFull)
+         -> [(ItemId, ItemQuant)]
+         -> [(ItemId, ItemQuant)]
+sortIids itemToF =
+  -- If appearance and aspects the same, keep the order from before sort.
+  let kindAndAppearance (iid, _) =
+        let ItemFull{itemBase=Item{..}, ..} = itemToF iid
+        in ( not itemSuspect, itemKindId, itemDisco
+           , IK.isymbol itemKind, IK.iname itemKind
+           , jflavour, jfid )
+  in sortOn kindAndAppearance
+
+data TileAction =
+    EmbedAction (ItemId, ItemQuant)
+  | ToAction (GroupName TK.TileKind)
+  | WithAction [(Int, GroupName IK.ItemKind)] (GroupName TK.TileKind)
+  deriving Show
+
+parseTileAction :: Bool -> Bool -> [(IK.ItemKind, (ItemId, ItemQuant))]
+                -> TK.Feature
+                -> Maybe TileAction
+parseTileAction bproj underFeet embedKindList feat = case feat of
+  TK.Embed igroup ->
+      -- Greater or equal 0 to also cover template UNKNOWN items
+      -- not yet identified by the client.
+    let f (itemKind, _) =
+          fromMaybe (-1) (lookup igroup $ IK.ifreq itemKind) >= 0
+    in case find f embedKindList of
+      Nothing -> Nothing
+      Just (_, iidkit) -> Just $ EmbedAction iidkit
+  TK.OpenTo tgroup | not (underFeet || bproj) -> Just $ ToAction tgroup
+  TK.CloseTo tgroup | not (underFeet || bproj) -> Just $ ToAction tgroup
+  TK.ChangeTo tgroup | not bproj -> Just $ ToAction tgroup
+  TK.OpenWith proj grps tgroup | not underFeet ->
+    if proj == TK.ProjNo && bproj
+    then Nothing
+    else Just $ WithAction grps tgroup
+  TK.CloseWith proj grps tgroup | not underFeet ->
+    -- Not when standing on tile, not to autoclose doors under actor
+    -- or close via dropping an item inside.
+    if proj == TK.ProjNo && bproj
+    then Nothing
+    else Just $ WithAction grps tgroup
+  TK.ChangeWith proj grps tgroup ->
+    if proj == TK.ProjNo && bproj
+    then Nothing
+    else Just $ WithAction grps tgroup
+  _ -> Nothing

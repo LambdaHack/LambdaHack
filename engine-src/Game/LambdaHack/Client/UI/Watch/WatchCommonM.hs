@@ -1,7 +1,6 @@
 -- | Common code for displaying atomic update and SFX commands.
 module Game.LambdaHack.Client.UI.Watch.WatchCommonM
-  ( pushFrame, pushReportFrame, fadeOutOrIn, markDisplayNeeded
-  , lookAtMove, stopAtMove
+  ( fadeOutOrIn, markDisplayNeeded, lookAtMove, stopAtMove
   , aidVerbMU, aidVerbDuplicateMU, itemVerbMUGeneral, itemVerbMU
   , itemVerbMUShort, itemAidVerbMU, mitemAidVerbMU, itemAidDistinctMU
   , manyItemsAidVerbMU
@@ -40,29 +39,6 @@ import           Game.LambdaHack.Common.MonadStateRead
 import           Game.LambdaHack.Common.State
 import           Game.LambdaHack.Common.Types
 import qualified Game.LambdaHack.Definition.Ability as Ability
-
--- | Push the frame depicting the current level to the frame queue.
--- Only one line of the report is shown, as in animations,
--- because it may not be our turn, so we can't clear the message
--- to see what is underneath.
-pushFrame :: MonadClientUI m => Bool -> m ()
-pushFrame delay = do
-  -- The delay before reaction to keypress was too long in case of many
-  -- projectiles flying and ending flight, so frames need to be skipped.
-  keyPressed <- anyKeyPressed
-  unless keyPressed $ do
-    lidV <- viewedLevelUI
-    frame <- basicFrameWithoutReport lidV Nothing
-    -- Pad with delay before and after to let player see, e.g., door being
-    -- opened a few ticks after it came into vision, the same turn.
-    displayFrames lidV $
-      if delay then [Nothing, Just frame, Nothing] else [Just frame]
-
-pushReportFrame :: MonadClientUI m => m ()
-pushReportFrame = do
-  lidV <- viewedLevelUI
-  frame <- basicFrameWithoutReport lidV (Just True)
-  displayFrames lidV [Just frame]
 
 fadeOutOrIn :: MonadClientUI m => Bool -> m ()
 fadeOutOrIn out = do

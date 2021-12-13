@@ -24,6 +24,7 @@ import           Game.LambdaHack.Common.Misc
 import           Game.LambdaHack.Common.Point (speedupHackXSize)
 import qualified Game.LambdaHack.Common.Tile as Tile
 import qualified Game.LambdaHack.Content.CaveKind as CK
+import qualified Game.LambdaHack.Content.FactionKind as FK
 import qualified Game.LambdaHack.Content.ItemKind as IK
 import qualified Game.LambdaHack.Content.ModeKind as MK
 import qualified Game.LambdaHack.Content.PlaceKind as PK
@@ -34,6 +35,7 @@ import           Game.LambdaHack.Server
 import qualified Client.UI.Content.Input as Content.Input
 import qualified Client.UI.Content.Screen as Content.Screen
 import qualified Content.CaveKind
+import qualified Content.FactionKind
 import qualified Content.ItemKind
 import qualified Content.ModeKind
 import qualified Content.PlaceKind
@@ -57,47 +59,52 @@ tieKnotForAsync options@ServerOptions{ sallClear
   -- Set the X size of the dungeon from content ASAP, before it's used.
   speedupHackXSizeThawed <- PA.unsafeThawPrimArray speedupHackXSize
   PA.writePrimArray speedupHackXSizeThawed 0 $
-    RK.rXmax Content.RuleKind.standardRules
+    RK.rWidthMax Content.RuleKind.standardRules
   void $ PA.unsafeFreezePrimArray speedupHackXSizeThawed
   -- This setup ensures the boosting option doesn't affect generating initial
   -- RNG for dungeon, etc., and also, that setting dungeon RNG on commandline
   -- equal to what was generated last time, ensures the same item boost.
   initialGen <- maybe SM.newSMGen return sdungeonRng
   let soptionsNxt = options {sdungeonRng = Just initialGen}
+      corule = RK.makeData Content.RuleKind.standardRules
       boostedItems = IK.boostItemKindList initialGen Content.ItemKind.items
       itemContent =
         if sboostRandomItem
         then boostedItems ++ Content.ItemKind.otherItemContent
         else Content.ItemKind.content
-      coitem = IK.makeData (RK.ritemSymbols Content.RuleKind.standardRules)
+      coitem = IK.makeData (RK.ritemSymbols corule)
                            itemContent
                            Content.ItemKind.groupNamesSingleton
                            Content.ItemKind.groupNames
-      coItemSpeedup = speedupItem coitem
       cotile = TK.makeData Content.TileKind.content
                            Content.TileKind.groupNamesSingleton
                            Content.TileKind.groupNames
-      coTileSpeedup = Tile.speedupTile sallClear cotile
+      cofact = FK.makeData Content.FactionKind.content
+                           Content.FactionKind.groupNamesSingleton
+                           Content.FactionKind.groupNames
       -- Common content operations, created from content definitions.
       -- Evaluated fully to discover errors ASAP and to free memory.
       -- Fail here, not inside server code, so that savefiles are not removed,
       -- because they are not the source of the failure.
       copsRaw = COps
-        { cocave = CK.makeData Content.CaveKind.content
+        { cocave = CK.makeData corule
+                               Content.CaveKind.content
                                Content.CaveKind.groupNamesSingleton
                                Content.CaveKind.groupNames
+        , cofact
         , coitem
-        , comode = MK.makeData Content.ModeKind.content
+        , comode = MK.makeData cofact
+                               Content.ModeKind.content
                                Content.ModeKind.groupNamesSingleton
                                Content.ModeKind.groupNames
         , coplace = PK.makeData cotile
                                 Content.PlaceKind.content
                                 Content.PlaceKind.groupNamesSingleton
                                 Content.PlaceKind.groupNames
-        , corule = RK.makeData Content.RuleKind.standardRules
+        , corule
         , cotile
-        , coItemSpeedup
-        , coTileSpeedup
+        , coItemSpeedup = speedupItem coitem
+        , coTileSpeedup = Tile.speedupTile sallClear cotile
         }
   -- Evaluating for compact regions catches all kinds of errors in content ASAP,
   -- even in unused items.
@@ -113,13 +120,13 @@ tieKnotForAsync options@ServerOptions{ sallClear
   -- It is reparsed at each start of the game executable.
   -- Fail here, not inside client code, so that savefiles are not removed,
   -- because they are not the source of the failure.
-  sUIOptions <- mkUIOptions (corule cops) (sclientOptions soptionsNxt)
+  sUIOptions <- mkUIOptions corule (sclientOptions soptionsNxt)
   -- Client content operations containing default keypresses
   -- and command descriptions.
   let !ccui = CCUI
         { coinput = IC.makeData (Just sUIOptions)
                                 Content.Input.standardKeysAndMouse
-        , coscreen = SC.makeData Content.Screen.standardLayoutAndFeatures
+        , coscreen = SC.makeData corule Content.Screen.standardLayoutAndFeatures
         }
   -- Wire together game content, the main loops of game clients
   -- and the game server loop.

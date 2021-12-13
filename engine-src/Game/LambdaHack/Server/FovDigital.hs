@@ -253,7 +253,7 @@ hence
 General remarks:
 The FOV agrees with physical properties of tiles as diamonds
 and visibility from any point to any point. A diamond is denoted
-by the left corner of it's encompassing tile. Hero is at (0, 0).
+by the left corner of its encompassing tile. Hero is at (0, 0).
 Order of processing in the first quadrant rotated by 45 degrees is
 
 > 45678

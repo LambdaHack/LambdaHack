@@ -1,10 +1,13 @@
+{-# LANGUAGE GeneralizedNewtypeDeriving #-}
 -- | Slideshows.
 module Game.LambdaHack.Client.UI.Slideshow
-  ( DisplayFont, isSquareFont, isMonoFont, FontOverlayMap, FontSetup(..)
-  , multiFontSetup, monoFontSetup, singleFontSetup, textSize
-  , ButtonWidth(..), KYX, OKX, Slideshow(slideshow)
-  , emptySlideshow, unsnoc, toSlideshow, attrLinesToFontMap
-  , maxYofOverlay, menuToSlideshow, wrapOKX, splitOverlay, splitOKX
+  ( FontOverlayMap, maxYofFontOverlayMap
+  , KeyOrSlot, MenuSlot, natSlots
+  , ButtonWidth(..)
+  , KYX, xytranslateKXY, xtranslateKXY, ytranslateKXY, yrenumberKXY
+  , OKX, emptyOKX, xytranslateOKX, sideBySideOKX, labDescOKX
+  , Slideshow(slideshow), emptySlideshow, unsnoc, toSlideshow
+  , attrLinesToFontMap, menuToSlideshow, wrapOKX, splitOverlay, splitOKX
   , highSlideshow
 #ifdef EXPOSE_INTERNAL
     -- * Internal operations
@@ -16,10 +19,10 @@ import Prelude ()
 
 import Game.LambdaHack.Core.Prelude
 
+import           Data.Binary
 import qualified Data.EnumMap.Strict as EM
 import           Data.Time.LocalTime
 
-import           Game.LambdaHack.Client.UI.ItemSlot
 import qualified Game.LambdaHack.Client.UI.Key as K
 import           Game.LambdaHack.Client.UI.Msg
 import           Game.LambdaHack.Client.UI.Overlay
@@ -27,38 +30,19 @@ import           Game.LambdaHack.Client.UI.PointUI
 import qualified Game.LambdaHack.Common.HighScore as HighScore
 import qualified Game.LambdaHack.Definition.Color as Color
 
-data DisplayFont = SquareFont | MonoFont | PropFont
-  deriving (Show, Eq, Enum)
-
-isSquareFont :: DisplayFont -> Bool
-isSquareFont SquareFont = True
-isSquareFont _ = False
-
-isMonoFont :: DisplayFont -> Bool
-isMonoFont MonoFont = True
-isMonoFont _ = False
-
 type FontOverlayMap = EM.EnumMap DisplayFont Overlay
 
-data FontSetup = FontSetup
-  { squareFont :: DisplayFont
-  , monoFont   :: DisplayFont
-  , propFont   :: DisplayFont
-  }
+maxYofFontOverlayMap :: FontOverlayMap -> Int
+maxYofFontOverlayMap ovs = maximum (0 : map maxYofOverlay (EM.elems ovs))
 
-multiFontSetup :: FontSetup
-multiFontSetup = FontSetup SquareFont MonoFont PropFont
+type KeyOrSlot = Either K.KM MenuSlot
 
-monoFontSetup :: FontSetup
-monoFontSetup = FontSetup SquareFont MonoFont MonoFont
+newtype MenuSlot = MenuSlot Int
+  deriving (Show, Eq, Ord, Binary, Enum)
 
-singleFontSetup :: FontSetup
-singleFontSetup = FontSetup SquareFont SquareFont SquareFont
-
-textSize :: DisplayFont -> [a] -> Int
-textSize SquareFont l = 2 * length l
-textSize MonoFont l = length l
-textSize PropFont _ = error "size of proportional font texts is not defined"
+natSlots :: [MenuSlot]
+{-# INLINE natSlots #-}
+natSlots = [MenuSlot 0 ..]
 
 -- TODO: probably best merge the PointUI into that and represent
 -- the position as characters, too, translating to UI positions as needed.
@@ -71,13 +55,60 @@ data ButtonWidth = ButtonWidth
   , buttonWidth :: Int }
   deriving (Show, Eq)
 
--- | A key or an item slot label at a given position on the screen.
-type KYX = (Either [K.KM] SlotChar, (PointUI, ButtonWidth))
+-- | A key or a menu slot at a given position on the screen.
+type KYX = (KeyOrSlot, (PointUI, ButtonWidth))
+
+xytranslateKXY :: Int -> Int -> KYX -> KYX
+xytranslateKXY dx dy (km, (PointUI x y, len)) =
+  (km, (PointUI (x + dx) (y + dy), len))
+
+xtranslateKXY :: Int -> KYX -> KYX
+xtranslateKXY dx = xytranslateKXY dx 0
+
+ytranslateKXY :: Int -> KYX -> KYX
+ytranslateKXY = xytranslateKXY 0
+
+yrenumberKXY :: Int -> KYX -> KYX
+yrenumberKXY ynew (km, (PointUI x _, len)) = (km, (PointUI x ynew, len))
 
 -- | An Overlay of text with an associated list of keys or slots
--- that activated when the specified screen position is pointed at.
+-- that activate when the specified screen position is pointed at.
 -- The list should be sorted wrt rows and then columns.
 type OKX = (FontOverlayMap, [KYX])
+
+emptyOKX :: OKX
+emptyOKX = (EM.empty, [])
+
+xytranslateOKX ::Int -> Int -> OKX -> OKX
+xytranslateOKX dx dy (ovs, kyxs) =
+  ( EM.map (xytranslateOverlay dx dy) ovs
+  , map (xytranslateKXY dx dy) kyxs )
+
+sideBySideOKX :: Int -> Int -> OKX -> OKX -> OKX
+sideBySideOKX dx dy (ovs1, kyxs1) (ovs2, kyxs2) =
+  let (ovs3, kyxs3) = xytranslateOKX dx dy (ovs2, kyxs2)
+  in ( EM.unionWith (++) ovs1 ovs3
+     , sortOn (\(_, (PointUI x y, _)) -> (y, x)) $ kyxs1 ++ kyxs3 )
+
+-- The bangs are to free the possibly very long input list ASAP.
+labDescOKX :: DisplayFont -> DisplayFont
+           -> [(AttrString, AttrString, KeyOrSlot)]
+           -> OKX
+labDescOKX labFont descFont l =
+  let descFontSize | isPropFont descFont = length  -- may be less or a bit more
+                   | otherwise = textSize descFont
+      processRow :: (AttrString, AttrString, KeyOrSlot)
+                 -> (AttrLine, (Int, AttrLine), KYX)
+      processRow (!tLab, !tDesc, !ekm) =
+        let labLen = textSize labFont tLab
+            lenButton = labLen + descFontSize tDesc
+        in ( attrStringToAL tLab
+           , (labLen, attrStringToAL tDesc)
+           , (ekm, (PointUI 0 0, ButtonWidth descFont lenButton)) )
+      (tsLab, tsDesc, kxs) = unzip3 $ map processRow l
+      ovs = EM.insertWith (++) labFont (offsetOverlay tsLab)
+            $ EM.singleton descFont $ offsetOverlayX tsDesc
+  in (ovs, zipWith yrenumberKXY [0..] kxs)
 
 -- | A list of active screenfulls to be shown one after another.
 -- Each screenful has an independent numbering of rows and columns.
@@ -93,17 +124,19 @@ unsnoc Slideshow{slideshow} =
     [] -> Nothing
     okx : rest -> Just (Slideshow $ reverse rest, okx)
 
-toSlideshow :: FontSetup -> [OKX] -> Slideshow
-toSlideshow FontSetup{..} okxs = Slideshow $ addFooters False okxsNotNull
+toSlideshow :: FontSetup -> Bool -> [OKX] -> Slideshow
+toSlideshow FontSetup{..}displayTutorialHints okxs =
+  Slideshow $ addFooters False okxs
  where
-  okxFilter (ov, kyxs) =
-    (ov, filter (either (not . null) (const True) . fst) kyxs)
-  okxsNotNull = map okxFilter okxs
   atEnd = flip (++)
   appendToFontOverlayMap :: FontOverlayMap -> String
                          -> (FontOverlayMap, PointUI, DisplayFont, Int)
-  appendToFontOverlayMap ovs msg =
-    let maxYminXofOverlay ov =
+  appendToFontOverlayMap ovs msgPrefix =
+    let msg | displayTutorialHints =
+              msgPrefix
+              ++ "  (ESC to exit, PGUP, HOME, mouse, wheel, arrows, etc.)"
+            | otherwise = msgPrefix
+        maxYminXofOverlay ov =
           let ymxOfOverlay (PointUI x y, _) = (- y, x)
           in minimum $ maxBound : map ymxOfOverlay ov
         -- @sortOn@ less efficient here, because function cheap.
@@ -113,7 +146,7 @@ toSlideshow FontSetup{..} okxs = Slideshow $ addFooters False okxsNotNull
           [] -> (monoFont, 0)
           (font, (yNeg, _x)) : rest ->
             let unique = all (\(_, (yNeg2, _)) -> yNeg /= yNeg2) rest
-            in ( if font == SquareFont && unique
+            in ( if isSquareFont font && unique
                  then font
                  else monoFont
                , - yNeg )
@@ -123,26 +156,31 @@ toSlideshow FontSetup{..} okxs = Slideshow $ addFooters False okxsNotNull
        , fontMax
        , length msg )
   addFooters :: Bool -> [OKX] -> [OKX]
-  addFooters _ [] = error $ "" `showFailure` okxsNotNull
+  addFooters _ [] = error $ "" `showFailure` okxs
   addFooters _ [(als, [])] =
     -- TODO: make sure this case never coincides with the space button
     -- actually returning to top, as opposed to finishing preview.
     let (ovs, p, font, width) = appendToFontOverlayMap als "--end--"
-    in [(ovs, [(Left [K.safeSpaceKM], (p, ButtonWidth font width))])]
+    in [(ovs, [(Left K.safeSpaceKM, (p, ButtonWidth font width))])]
   addFooters False [(als, kxs)] = [(als, kxs)]
   addFooters True [(als, kxs)] =
     let (ovs, p, font, width) = appendToFontOverlayMap als "--back to top--"
-    in [(ovs, kxs ++ [(Left [K.safeSpaceKM], (p, ButtonWidth font width))])]
+    in [(ovs, kxs ++ [(Left K.safeSpaceKM, (p, ButtonWidth font width))])]
   addFooters _ ((als, kxs) : rest) =
     let (ovs, p, font, width) = appendToFontOverlayMap als "--more--"
-    in (ovs, kxs ++ [(Left [K.safeSpaceKM], (p, ButtonWidth font width))])
+    in (ovs, kxs ++ [(Left K.safeSpaceKM, (p, ButtonWidth font width))])
        : addFooters True rest
 
-attrLinesToFontMap :: Int -> [(DisplayFont, [AttrLine])] -> FontOverlayMap
-attrLinesToFontMap start0 blurb =
+-- | This appends vertically a list of blurbs into a single font overlay map.
+-- Not to be used if some blurbs need to be places overlapping vertically,
+-- e.g., when the square font symbol needs to be in the same line
+-- as the start of the descritpion of the denoted item
+-- or when mono font buttons need to be after a prompt.
+attrLinesToFontMap :: [(DisplayFont, [AttrLine])] -> FontOverlayMap
+attrLinesToFontMap blurb =
   let zipAttrLines :: Int -> [AttrLine] -> (Overlay, Int)
       zipAttrLines start als =
-        ( map (first $ PointUI 0) $ zip [start ..] als
+        ( zipWith (curry (first $ PointUI 0)) [start ..] als
         , start + length als )
       addOverlay :: (FontOverlayMap, Int) -> (DisplayFont, [AttrLine])
                  -> (FontOverlayMap, Int)
@@ -150,12 +188,8 @@ attrLinesToFontMap start0 blurb =
         let (als2, start2) = zipAttrLines start als
         in ( EM.insertWith (++) font als2 em
            , start2 )
-      (ov, _) = foldl' addOverlay (EM.empty, start0) blurb
+      (ov, _) = foldl' addOverlay (EM.empty, 0) blurb
   in ov
-
-maxYofOverlay :: Overlay -> Int
-maxYofOverlay ov = let yOfOverlay (PointUI _ y, _) = y
-                   in maximum $ 0 : map yOfOverlay ov
 
 menuToSlideshow :: OKX -> Slideshow
 menuToSlideshow (als, kxs) =
@@ -168,7 +202,7 @@ wrapOKX displayFont ystart xstart width ks =
   let overlayLineFromStrings :: Int -> Int -> [String] -> (PointUI, AttrLine)
       overlayLineFromStrings xlineStart y strings =
         let p = PointUI xlineStart y
-        in (p, stringToAL $ intercalate " " (reverse strings))
+        in (p, stringToAL $ unwords (reverse strings))
       f :: ((Int, Int), (Int, [String], Overlay, [KYX])) -> (K.KM, String)
         -> ((Int, Int), (Int, [String], Overlay, [KYX]))
       f ((y, x), (xlineStart, kL, kV, kX)) (key, s) =
@@ -181,8 +215,8 @@ wrapOKX displayFont ystart xstart width ks =
                 , ( xlineStart
                   , s : kL
                   , kV
-                  , (Left [key], ( PointUI x y
-                                 , ButtonWidth displayFont (length s) ))
+                  , (Left key, ( PointUI x y
+                               , ButtonWidth displayFont (length s) ))
                     : kX ) )
       ((ystop, _), (xlineStop, kL1, kV1, kX1)) =
         foldl' f ((ystart, xstart), (xstart, [], [], [])) ks
@@ -198,23 +232,25 @@ keysOKX displayFont ystart xstart width keys =
 
 -- The font argument is for the report and keys overlay. Others already have
 -- assigned fonts.
-splitOverlay :: FontSetup -> Int -> Int -> Int -> Report -> [K.KM] -> OKX
+splitOverlay :: FontSetup -> Bool -> Int -> Int -> Int -> Report -> [K.KM]
+             -> OKX
              -> Slideshow
-splitOverlay fontSetup width height wrap report keys (ls0, kxs0) =
+splitOverlay fontSetup displayTutorialHints
+             width height wrap report keys (ls0, kxs0) =
   let renderedReport = renderReport True report
       reportAS = foldr (<\:>) [] renderedReport
-  in toSlideshow fontSetup $ splitOKX fontSetup False width height wrap
-                                      reportAS keys (ls0, kxs0)
+  in toSlideshow fontSetup displayTutorialHints $
+       splitOKX fontSetup False width height wrap reportAS keys (ls0, kxs0)
 
 -- Note that we only split wrt @White@ space, nothing else.
 splitOKX :: FontSetup -> Bool -> Int -> Int -> Int -> AttrString -> [K.KM]
          -> OKX
          -> [OKX]
 splitOKX FontSetup{..} msgLong width height wrap reportAS keys (ls0, kxs0) =
-  assert (height > 2) $
-  let indentSplitSpaces = indentSplitAttrString2
-                            (not (isMonoFont propFont || isSquareFont propFont))
-      reportParagraphs = linesAttr reportAS
+  assert (width > 2 && height > 2) $
+    -- if the strings to split are long these minimums won't be enough,
+    -- but content validation ensures larger values (perhaps large enough?)
+  let reportParagraphs = linesAttr reportAS
       -- TODO: until SDL support for measuring prop font text is released,
       -- we have to use MonoFont for the paragraph that ends with buttons.
       (repProp, repMono) =
@@ -239,27 +275,28 @@ splitOKX FontSetup{..} msgLong width height wrap reportAS keys (ls0, kxs0) =
           let firstWidth = if length (attrLine r) <= 2 * msgWidth
                            then msgWidth
                            else msgWrap
-          in (indentSplitSpaces firstWidth . attrLine) r  -- first possibly long
-             ++ concatMap (indentSplitSpaces msgWrap . attrLine) rs
+          in (indentSplitAttrString propFont firstWidth . attrLine) r
+               -- first possibly long
+             ++ concatMap (indentSplitAttrString propFont msgWrap . attrLine) rs
       -- TODO: refactor this ugly pile of copy-paste
       repPropW = offsetOverlay
-                 $ concatMap (indentSplitSpaces width . attrLine) repProp
+                 $ concatMap (indentSplitAttrString propFont width . attrLine)
+                             repProp
       -- If the mono portion first on the line, let it take half width,
       -- but if previous lines shorter, match them and only buttons
       -- are permitted to stick out.
       monoWidth = if null repProp then msgWidth else msgWrap
-      repMono0 = map (\(PointUI x y, al) ->
-                        (PointUI x (y + length repProp0), al))
+      repMono0 = ytranslateOverlay (length repProp0)
                  $ offsetOverlay
-                 $ indentSplitAttrString monoWidth $ attrLine repMono
-      repMonoW = map (\(PointUI x y, al) ->
-                        (PointUI x (y + length repPropW), al))
+                 $ indentSplitAttrString monoFont monoWidth $ attrLine repMono
+      repMonoW = ytranslateOverlay (length repPropW)
                  $ offsetOverlay
-                 $ indentSplitAttrString width $ attrLine repMono
+                 $ indentSplitAttrString monoFont width $ attrLine repMono
       repWhole0 = offsetOverlay
-                  $ concatMap (indentSplitSpaces msgWidth . attrLine)
+                  $ concatMap (indentSplitAttrString propFont msgWidth
+                               . attrLine)
                               reportParagraphs
-      repWhole1 = map (\(PointUI x y, al) -> (PointUI x (y + 1), al)) repWhole0
+      repWhole1 = ytranslateOverlay 1 repWhole0
       lenOfRep0 = length repProp0 + length repMono0
       lenOfRepW = length repPropW + length repMonoW
       startOfKeys = if null repMono0
@@ -276,14 +313,12 @@ splitOKX FontSetup{..} msgLong width height wrap reportAS keys (ls0, kxs0) =
                             (2 * width) keys
       (lXW, keysXW) = keysOKX monoFont (max 0 $ lenOfRepW - 1) startOfKeysW
                               (2 * width) keys
-      renumber dy (km, (PointUI x y, len)) = (km, (PointUI x (y + dy), len))
-      renumberOv dy = map (\(PointUI x y, al) -> (PointUI x (y + dy), al))
       splitO :: Int -> (Overlay, Overlay, [KYX]) -> OKX -> [OKX]
       splitO yoffset (hdrProp, hdrMono, rk) (ls, kxs) =
         let hdrOff | null hdrProp && null hdrMono = 0
                    | otherwise = 1 + maxYofOverlay hdrMono
-            keyRenumber = map $ renumber (hdrOff - yoffset)
-            lineRenumber = EM.map $ renumberOv (hdrOff - yoffset)
+            keyTranslate = map $ ytranslateKXY (hdrOff - yoffset)
+            lineTranslate = EM.map $ ytranslateOverlay (hdrOff - yoffset)
             yoffsetNew = yoffset + height - hdrOff - 1
             ltOffset :: (PointUI, a) -> Bool
             ltOffset (PointUI _ y, _) = y < yoffsetNew
@@ -292,9 +327,9 @@ splitOKX FontSetup{..} msgLong width height wrap reportAS keys (ls0, kxs0) =
             prependHdr = EM.insertWith (++) propFont hdrProp
                          . EM.insertWith (++) monoFont hdrMono
         in if all null $ EM.elems post  -- all fits on one screen
-           then [(prependHdr $ lineRenumber pre, rk ++ keyRenumber kxs)]
+           then [(prependHdr $ lineTranslate pre, rk ++ keyTranslate kxs)]
            else let (preX, postX) = span (\(_, pa) -> ltOffset pa) kxs
-                in (prependHdr $ lineRenumber pre, rk ++ keyRenumber preX)
+                in (prependHdr $ lineTranslate pre, rk ++ keyTranslate preX)
                    : splitO yoffsetNew (hdrProp, hdrMono, rk) (post, postX)
       firstParaReport = firstParagraph reportAS
       hdrShortened = ( [(PointUI 0 0, firstParaReport)]
@@ -304,12 +339,12 @@ splitOKX FontSetup{..} msgLong width height wrap reportAS keys (ls0, kxs0) =
       ((lsInit, kxsInit), (headerProp, headerMono, rkxs)) =
         -- Check whether all space taken by report and keys.
         if | (lenOfRep0 + length lX) < height ->  -- display normally
-             ((EM.empty, []), (repProp0, lX ++ repMono0, keysX))
+             (emptyOKX, (repProp0, lX ++ repMono0, keysX))
            | (lenOfRepW + length lXW) < height ->  -- display widely
-             ((EM.empty, []), (repPropW, lXW ++ repMonoW, keysXW))
+             (emptyOKX, (repPropW, lXW ++ repMonoW, keysXW))
            | length reportParagraphs == 1
              && length (attrLine firstParaReport) <= 2 * width ->
-             ( (EM.empty, [])  -- already shown in full in @hdrShortened@
+             ( emptyOKX  -- already shown in full in @hdrShortened@
              , hdrShortened )
            | otherwise -> case lX0 of
                [] ->
@@ -334,6 +369,7 @@ splitOKX FontSetup{..} msgLong width height wrap reportAS keys (ls0, kxs0) =
 
 -- | Generate a slideshow with the current and previous scores.
 highSlideshow :: FontSetup
+              -> Bool
               -> Int        -- ^ width of the display area
               -> Int        -- ^ height of the display area
               -> HighScore.ScoreTable -- ^ current score table
@@ -341,8 +377,8 @@ highSlideshow :: FontSetup
               -> Text       -- ^ the name of the game mode
               -> TimeZone   -- ^ the timezone where the game is run
               -> Slideshow
-highSlideshow fontSetup@FontSetup{monoFont} width height table pos
-              gameModeName tz =
+highSlideshow fontSetup@FontSetup{monoFont} displayTutorialHints
+              width height table pos gameModeName tz =
   let entries = (height - 3) `div` 3
       msg = HighScore.showAward entries table pos gameModeName
       tts = map offsetOverlay $ showNearbyScores tz pos table entries
@@ -350,7 +386,7 @@ highSlideshow fontSetup@FontSetup{monoFont} width height table pos
       splitScreen ts =
         splitOKX fontSetup False width height width al [K.spaceKM, K.escKM]
                  (EM.singleton monoFont ts, [])
-  in toSlideshow fontSetup $ concat $ map splitScreen tts
+  in toSlideshow fontSetup displayTutorialHints $ concatMap splitScreen tts
 
 -- | Show a screenful of the high scores table.
 -- Parameter @entries@ is the number of (3-line) scores to be shown.

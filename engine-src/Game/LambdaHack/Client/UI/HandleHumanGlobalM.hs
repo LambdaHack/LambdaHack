@@ -1,4 +1,3 @@
-{-# LANGUAGE TupleSections #-}
 -- | Semantics of "Game.LambdaHack.Client.UI.HumanCmd"
 -- client commands that return server requests.
 -- A couple of them do not take time, the rest does.
@@ -18,13 +17,13 @@ module Game.LambdaHack.Client.UI.HandleHumanGlobalM
   , alterDirHuman, alterWithPointerHuman, closeDirHuman
   , helpHuman, hintHuman, dashboardHuman, itemMenuHuman, chooseItemMenuHuman
   , mainMenuHuman, mainMenuAutoOnHuman, mainMenuAutoOffHuman
-  , settingsMenuHuman, challengeMenuHuman
-  , gameTutorialToggle, gameDifficultyIncr
+  , settingsMenuHuman, challengeMenuHuman, gameDifficultyIncr
   , gameFishToggle, gameGoodsToggle, gameWolfToggle, gameKeeperToggle
   , gameScenarioIncr
     -- * Global commands that never take time
-  , gameRestartHuman, gameQuitHuman, gameDropHuman, gameExitHuman, gameSaveHuman
-  , doctrineHuman, automateHuman, automateToggleHuman, automateBackHuman
+  , gameExitWithHuman, ExitStrategy(..), gameDropHuman, gameExitHuman
+  , gameSaveHuman, doctrineHuman, automateHuman, automateToggleHuman
+  , automateBackHuman
 #ifdef EXPOSE_INTERNAL
     -- * Internal operations
   , areaToRectangles, meleeAid, displaceAid, moveSearchAlter, alterCommon
@@ -41,7 +40,7 @@ import Prelude ()
 import Game.LambdaHack.Core.Prelude
 
 import qualified Data.Char as Char
-import           Data.Either (isLeft)
+import           Data.Either
 import qualified Data.EnumMap.Strict as EM
 import qualified Data.EnumSet as ES
 import qualified Data.Map.Strict as M
@@ -66,7 +65,6 @@ import           Game.LambdaHack.Client.UI.HandleHumanLocalM
 import           Game.LambdaHack.Client.UI.HumanCmd
 import           Game.LambdaHack.Client.UI.InventoryM
 import           Game.LambdaHack.Client.UI.ItemDescription
-import           Game.LambdaHack.Client.UI.ItemSlot (SlotChar (SlotChar))
 import qualified Game.LambdaHack.Client.UI.Key as K
 import           Game.LambdaHack.Client.UI.KeyBindings
 import           Game.LambdaHack.Client.UI.MonadClientUI
@@ -96,6 +94,7 @@ import           Game.LambdaHack.Common.State
 import qualified Game.LambdaHack.Common.Tile as Tile
 import           Game.LambdaHack.Common.Types
 import           Game.LambdaHack.Common.Vector
+import qualified Game.LambdaHack.Content.FactionKind as FK
 import qualified Game.LambdaHack.Content.ItemKind as IK
 import qualified Game.LambdaHack.Content.ModeKind as MK
 import           Game.LambdaHack.Content.RuleKind
@@ -123,7 +122,7 @@ byAreaHuman cmdSemInCxtOfKM l = do
                       -- for the whole UI screen in square font coordinates
       pointerInArea a = do
         rs <- areaToRectangles a
-        return $! any (inside p) $ catMaybes rs
+        return $! any (`inside` p) $ catMaybes rs
   cmds <- filterM (pointerInArea . fst) l
   case cmds of
     [] -> do
@@ -553,7 +552,7 @@ alterCommon leader bumping tpos = do
              if bumping then
                return $ Right $ ReqMove $ vectorToFrom tpos spos
              else do
-               msgAddDone leader tpos "modify"
+               msgAddDone False leader tpos "modify"
                return $ Right $ ReqAlter tpos
            Left err -> return $ Left err
          -- Even when bumping, we don't use ReqMove, because we don't want
@@ -619,18 +618,26 @@ goToXhairExplorationMode :: (MonadClient m, MonadClientUI m)
                          => ActorId -> Bool -> Bool
                          -> m (FailOrCmd RequestTimed)
 goToXhairExplorationMode leader initialStep run = do
-  xhair <- getsSession sxhair
-  xhairGoTo <- getsSession sxhairGoTo
-  mfail <-
-    if not (isNothing xhairGoTo) && xhairGoTo /= xhair
-    then failWith "crosshair position changed"
-    else do
-      when (isNothing xhairGoTo) $  -- set it up for next steps
-        modifySession $ \sess -> sess {sxhairGoTo = xhair}
-      goToXhairGoTo leader initialStep run
-  when (isLeft mfail) $
-    modifySession $ \sess -> sess {sxhairGoTo = Nothing}
-  return mfail
+  actorCurAndMaxSk <- getsState $ getActorMaxSkills leader
+  sb <- getsState $ getActorBody leader
+  let moveSkill = Ability.getSk Ability.SkMove actorCurAndMaxSk
+  -- If skill is too low, no path in @Bfs@ is going to be found,
+  -- but we check the skill (and sleep) to give a more accurate message.
+  if | moveSkill > 0 -> do
+       xhair <- getsSession sxhair
+       xhairGoTo <- getsSession sxhairGoTo
+       mfail <-
+         if isJust xhairGoTo && xhairGoTo /= xhair
+         then failWith "crosshair position changed"
+         else do
+           when (isNothing xhairGoTo) $  -- set it up for next steps
+             modifySession $ \sess -> sess {sxhairGoTo = xhair}
+           goToXhairGoTo leader initialStep run
+       when (isLeft mfail) $
+         modifySession $ \sess -> sess {sxhairGoTo = Nothing}
+       return mfail
+     | bwatch sb == WSleep -> failSer MoveUnskilledAsleep
+     | otherwise -> failSer MoveUnskilled
 
 goToXhairGoTo :: (MonadClient m, MonadClientUI m)
               => ActorId -> Bool -> Bool -> m (FailOrCmd RequestTimed)
@@ -1090,7 +1097,7 @@ verifyAlters leader bumping tpos = do
       tile = lvl `at` tpos
       feats = TK.tfeature $ okind cotile tile
       tileActions =
-        mapMaybe (Tile.parseTileAction
+        mapMaybe (parseTileAction
                     (bproj sb)
                     (underFeet || blockedByItem)  -- avoids AlterBlockItem
                     embedKindList)
@@ -1103,7 +1110,7 @@ verifyAlters leader bumping tpos = do
   else processTileActions leader bumping tpos tileActions
 
 processTileActions :: forall m. MonadClientUI m
-                   => ActorId -> Bool -> Point -> [Tile.TileAction]
+                   => ActorId -> Bool -> Point -> [TileAction]
                    -> m (FailOrCmd ())
 processTileActions leader bumping tpos tas = do
   COps{coTileSpeedup} <- getsState scops
@@ -1114,7 +1121,7 @@ processTileActions leader bumping tpos tas = do
   let leaderIsMist = IA.checkFlag Ability.Blast sar
                      && Dice.infDice (IK.idamage $ getKind $ btrunk sb) <= 0
       tileMinSkill = Tile.alterMinSkill coTileSpeedup $ lvl `at` tpos
-      processTA :: Maybe Bool -> [Tile.TileAction] -> Bool
+      processTA :: Maybe Bool -> [TileAction] -> Bool
                 -> m (FailOrCmd (Maybe (Bool, Bool)))
       processTA museResult [] bumpFailed = do
         let useResult = fromMaybe False museResult
@@ -1130,7 +1137,7 @@ processTileActions leader bumping tpos tas = do
                          then Nothing  -- success of some kind
                          else Just (useResult, bumpFailed)  -- not quite
       processTA museResult (ta : rest) bumpFailed = case ta of
-        Tile.EmbedAction (iid, _) -> do
+        EmbedAction (iid, _) -> do
           -- Embeds are activated in the order in tile definition
           -- and never after the tile is changed.
           -- We assume the item would trigger and we let the player
@@ -1141,7 +1148,7 @@ processTileActions leader bumping tpos tas = do
                || bproj sb && tileMinSkill > 0 ->  -- local skill check
                processTA (Just useResult) rest bumpFailed
                  -- embed won't fire; try others
-             | all (not . IK.isEffEscape) (IK.ieffects $ getKind iid) ->
+             | (not . any IK.isEffEscape) (IK.ieffects $ getKind iid) ->
                processTA (Just True) rest False
                  -- no escape checking needed, effect found;
                  -- also bumpFailed reset, because must have been
@@ -1152,13 +1159,13 @@ processTileActions leader bumping tpos tas = do
                  Left err -> return $ Left err
                  Right () -> processTA (Just True) rest False
                    -- effect found, bumpFailed reset
-        Tile.ToAction{} ->
+        ToAction{} ->
           if fromMaybe True museResult
              && not (bproj sb && tileMinSkill > 0)  -- local skill check
           then return $ Right Nothing  -- tile changed, no more activations
           else processTA museResult rest bumpFailed
                  -- failed, but not due to bumping
-        Tile.WithAction tools0 _ ->
+        WithAction tools0 _ ->
           if not bumping || null tools0 then
             if fromMaybe True museResult then do
               -- UI requested, so this is voluntary, so item loss is fine.
@@ -1209,7 +1216,7 @@ verifyEscape :: MonadClientUI m => m (FailOrCmd ())
 verifyEscape = do
   side <- getsClient sside
   fact <- getsState $ (EM.! side) . sfactionD
-  if not (MK.fcanEscape $ gplayer fact)
+  if not (FK.fcanEscape $ gkind fact)
   then failWith
          "This is the way out, but where would you go in this alien world?"
            -- exceptionally a full sentence, because a real question
@@ -1217,7 +1224,7 @@ verifyEscape = do
     (_, total) <- getsState $ calculateTotal side
     dungeonTotal <- getsState sgold
     let prompt | dungeonTotal == 0 =
-                 "You finally reached the way out. Really leave now?"
+                 "You finally reached your goal. Really leave now?"
                | total == 0 =
                  "Afraid of the challenge? Leaving so soon and without any treasure? Are you sure?"
                | total < dungeonTotal =
@@ -1242,7 +1249,9 @@ verifyToolEffect lid store itemFull = do
   let (name1, powers) = partItemShort rwidth side factionD localTime
                                       itemFull quantSingle
       objectA = makePhrase [MU.AW name1, powers]
-      prompt = "Do you really want to transform the terrain using"
+      -- "Potentially", because an unidentified items on the ground can take
+      -- precedence (perhaps placed there in order to get identified!).
+      prompt = "Do you really want to transform the terrain potentially using"
                <+> objectA <+> ppCStoreIn store
                <+> "that may cause substantial side-effects?"
       objectThe = makePhrase ["the", name1]
@@ -1258,10 +1267,10 @@ verifyToolEffect lid store itemFull = do
 alterWithPointerHuman :: MonadClientUI m
                       => ActorId -> m (FailOrCmd RequestTimed)
 alterWithPointerHuman leader = do
-  COps{corule=RuleContent{rXmax, rYmax}} <- getsState scops
+  COps{corule=RuleContent{rWidthMax, rHeightMax}} <- getsState scops
   pUI <- getsSession spointer
-  let p@(Point px py) = squareToMap $ uiToSquare pUI
-  if px >= 0 && py >= 0 && px < rXmax && py < rYmax
+  let p = squareToMap $ uiToSquare pUI
+  if insideP (0, 0, rWidthMax - 1, rHeightMax - 1) p
   then alterTileAtPos leader p
   else failWith "never mind"
 
@@ -1312,12 +1321,12 @@ closeTileAtPos leader tpos = do
           -> failSer AlterBlockActor
          | otherwise
           -> do
-             msgAddDone leader tpos "close"
+             msgAddDone True leader tpos "close"
              return $ Right (ReqAlter tpos)
 
 -- | Adds message with proper names.
-msgAddDone :: MonadClientUI m => ActorId -> Point -> Text -> m ()
-msgAddDone leader p verb = do
+msgAddDone :: MonadClientUI m => Bool -> ActorId -> Point -> Text -> m ()
+msgAddDone mentionTile leader p verb = do
   COps{cotile} <- getsState scops
   b <- getsState $ getActorBody leader
   lvl <- getLevel $ blid b
@@ -1326,10 +1335,12 @@ msgAddDone leader p verb = do
             [] -> "thing"
             ("open" : xs) -> T.unwords xs
             _ -> tname
+      object | mentionTile = "the" <+> s
+             | otherwise = ""
       v = p `vectorToFrom` bpos b
       dir | v == Vector 0 0 = "underneath"
           | otherwise = compassText v
-  msgAdd MsgActionComplete $ "You" <+> verb <+> "the" <+> s <+> dir <> "."
+  msgAdd MsgActionComplete $ "You" <+> verb <+> object <+> dir <> "."
 
 -- | Prompts user to pick a point.
 pickPoint :: MonadClientUI m => ActorId -> Text -> m (Maybe Point)
@@ -1362,7 +1373,10 @@ helpHuman cmdSemInCxtOfKM = do
   fontSetup@FontSetup{..} <- getFontSetup
   gameModeId <- getsState sgameModeId
   modeOv <- describeMode True gameModeId
-  let modeH = ( "Press SPACE or PGDN to advance or ESC to see the map again."
+  curTutorial <- getsSession scurTutorial
+  overrideTut <- getsSession soverrideTut
+  let displayTutorialHints = fromMaybe curTutorial overrideTut
+      modeH = ( "Press SPACE or PGDN to advance or ESC to see the map again."
               , (modeOv, []) )
       keyH = keyHelp ccui fontSetup
       -- This takes a list of paragraphs and returns a list of screens.
@@ -1393,14 +1407,13 @@ helpHuman cmdSemInCxtOfKM = do
         then packIntoScreens ls (l : acc) (length l + 1 + h)
         else intercalate [""] (reverse acc) : packIntoScreens (l : ls) [] 0
       manualScreens = packIntoScreens (snd rintroScreen) [] 0
-      shiftPointUI x (PointUI x0 y0) = PointUI (x0 + x) y0
       sideBySide =
         if isSquareFont monoFont
         then \(screen1, screen2) ->  -- single column, two screens
           map offsetOverlay $ filter (not . null) [screen1, screen2]
         else \(screen1, screen2) ->  -- two columns, single screen
           [offsetOverlay screen1
-           ++ map (first $ shiftPointUI rwidth) (offsetOverlay screen2)]
+           ++ xtranslateOverlay rwidth (offsetOverlay screen2)]
       listPairs (a : b : rest) = (a, b) : listPairs rest
       listPairs [a] = [(a, [])]
       listPairs [] = []
@@ -1412,16 +1425,21 @@ helpHuman cmdSemInCxtOfKM = do
         ( "Showing PLAYING.md (best viewed in the browser)."
         , (ov, []) )
       manualH = map addMnualHeader manualOvs
-      splitHelp (t, okx) = splitOKX fontSetup True rwidth rheight rwidth
-                                    (textToAS t) [K.spaceKM, K.escKM] okx
-      sli = toSlideshow fontSetup $ concat $ map splitHelp
-            $ modeH : keyH ++ manualH
+      splitHelp (t, okx) =
+        splitOKX fontSetup True rwidth rheight rwidth (textToAS t)
+                 [K.spaceKM, K.returnKM, K.escKM] okx
+      sli = toSlideshow fontSetup displayTutorialHints
+            $ concatMap splitHelp $ modeH : keyH ++ manualH
   -- Thus, the whole help menu corresponds to a single menu of item or lore,
   -- e.g., shared stash menu. This is especially clear when the shared stash
   -- menu contains many pages.
-  ekm <- displayChoiceScreen "help" ColorFull True sli [K.spaceKM, K.escKM]
+  ekm <- displayChoiceScreen "help" ColorFull True sli
+                             [K.spaceKM, K.returnKM, K.escKM]
   case ekm of
     Left km | km `elem` [K.escKM, K.spaceKM] -> return $ Left Nothing
+    Left km | km == K.returnKM -> do
+      msgAdd MsgPromptGeneric "Press RET when a command help text is selected to invoke the command."
+      return $ Left Nothing
     Left km -> case km `M.lookup` bcmdMap coinput of
       Just (_desc, _cats, cmd) -> cmdSemInCxtOfKM km cmd
       Nothing -> weaveJust <$> failWith "never mind"
@@ -1450,18 +1468,25 @@ dashboardHuman :: MonadClientUI m
 dashboardHuman cmdSemInCxtOfKM = do
   CCUI{coinput, coscreen=ScreenContent{rwidth, rheight}} <- getsSession sccui
   fontSetup@FontSetup{..} <- getFontSetup
-  let offsetCol2 = 2
-      (ov0, kxs0) = okxsN coinput monoFont propFont 0 offsetCol2 (const False)
+  curTutorial <- getsSession scurTutorial
+  overrideTut <- getsSession soverrideTut
+  let displayTutorialHints = fromMaybe curTutorial overrideTut
+      offsetCol2 = 3
+      (ov0, kxs0) = okxsN coinput monoFont propFont offsetCol2 (const False)
                           False CmdDashboard ([], [], []) ([], [])
       al1 = textToAS "Dashboard"
-  let splitHelp (al, okx) = splitOKX fontSetup False rwidth (rheight - 2) rwidth
-                                     al [K.escKM] okx
-      sli = toSlideshow fontSetup $ splitHelp (al1, (ov0, kxs0))
-      extraKeys = [K.escKM]
+      splitHelp (al, okx) = splitOKX fontSetup False rwidth (rheight - 2) rwidth
+                                     al [K.returnKM, K.escKM] okx
+      sli = toSlideshow fontSetup displayTutorialHints
+            $ splitHelp (al1, (ov0, kxs0))
+      extraKeys = [K.returnKM, K.escKM]
   ekm <- displayChoiceScreen "dashboard" ColorFull False sli extraKeys
   case ekm of
     Left km -> case km `M.lookup` bcmdMap coinput of
       _ | km == K.escKM -> weaveJust <$> failWith "never mind"
+      _ | km == K.returnKM -> do
+        msgAdd MsgPromptGeneric "Press RET when a menu name is selected to browse the menu."
+        return $ Left Nothing
       Just (_desc, _cats, cmd) -> cmdSemInCxtOfKM km cmd
       Nothing -> weaveJust <$> failWith "never mind"
     Right _slot -> error $ "" `showFailure` ekm
@@ -1469,7 +1494,8 @@ dashboardHuman cmdSemInCxtOfKM = do
 -- * ItemMenu
 
 itemMenuHuman :: MonadClientUI m
-              => ActorId -> (K.KM -> HumanCmd -> m (Either MError ReqUI))
+              => ActorId
+              -> (K.KM -> HumanCmd -> m (Either MError ReqUI))
               -> m (Either MError ReqUI)
 itemMenuHuman leader cmdSemInCxtOfKM = do
   COps{corule} <- getsState scops
@@ -1477,6 +1503,7 @@ itemMenuHuman leader cmdSemInCxtOfKM = do
   fontSetup@FontSetup{..} <- getFontSetup
   case itemSel of
     Just (iid, fromCStore, _) -> do
+      side <- getsClient sside
       b <- getsState $ getActorBody leader
       bUI <- getsSession $ getActorUI leader
       bag <- getsState $ getBodyStoreBag b fromCStore
@@ -1487,52 +1514,45 @@ itemMenuHuman leader cmdSemInCxtOfKM = do
           actorCurAndMaxSk <- getsState $ getActorMaxSkills leader
           itemFull <- getsState $ itemToFull iid
           localTime <- getsState $ getLocalTime (blid b)
-          found <- getsState $ findIid leader (bfid b) iid
-          factionD <- getsState sfactionD
-          jlid <- getsSession $ (EM.! iid) . sitemUI
+          found <- getsState $ findIid leader side iid
           let !_A = assert (not (null found) || fromCStore == CGround
                             `blame` (iid, leader)) ()
               fAlt (aid, (_, store)) = aid /= leader || store /= fromCStore
               foundAlt = filter fAlt found
+              markParagraphs = rheight >= 45
+              meleeSkill = Ability.getSk Ability.SkHurtMelee actorCurAndMaxSk
               partRawActor aid = getsSession (partActor . getActorUI aid)
               ppLoc aid store = do
                 parts <- ppContainerWownW partRawActor
                                           False
                                           (CActor aid store)
                 return $! "[" ++ T.unpack (makePhrase parts) ++ "]"
+              dmode = MStore fromCStore
           foundTexts <- mapM (\(aid, (_, store)) -> ppLoc aid store) foundAlt
+          (ovLab, ovDesc) <-
+            itemDescOverlays markParagraphs meleeSkill dmode iid kit
+                             itemFull rwidth
           let foundPrefix = textToAS $
                 if null foundTexts then "" else "The item is also in:"
-              markParagraphs = rheight >= 45
-              descAl = itemDesc rwidth markParagraphs (bfid b) factionD
-                                (Ability.getSk Ability.SkHurtMelee
-                                               actorCurAndMaxSk)
-                                fromCStore localTime jlid itemFull kit
-              (descSymAl, descBlurbAl) = span (/= Color.spaceAttrW32) descAl
-              descSym = offsetOverlay $ splitAttrString rwidth rwidth descSymAl
-              descBlurb = offsetOverlayX $
-                case splitAttrString rwidth rwidth
-                     $ stringToAS "xx" ++ descBlurbAl of
-                  [] -> error "splitting AttrString loses characters"
-                  al1 : rest ->
-                    (2, attrStringToAL $ drop 2 $ attrLine al1) : map (0,) rest
-              alPrefix = map (\(PointUI x y, al) ->
-                                (PointUI x (y + length descBlurb), al))
+              ovPrefix = ytranslateOverlay (length ovDesc)
                          $ offsetOverlay
                          $ splitAttrString rwidth rwidth foundPrefix
-              ystart = length descBlurb + length alPrefix - 1
+              ystart = length ovDesc + length ovPrefix - 1
               xstart = textSize monoFont (Color.spaceAttrW32
-                                          : attrLine (snd $ last alPrefix))
+                                          : attrLine (snd $ last ovPrefix))
               foundKeys = map (K.KM K.NoModifier . K.Fun)
                               [1 .. length foundAlt]  -- starting from 1!
           let ks = zip foundKeys foundTexts
               width = if isSquareFont monoFont then 2 * rwidth else rwidth
               (ovFoundRaw, kxsFound) = wrapOKX monoFont ystart xstart width ks
-              ovFound = alPrefix ++ ovFoundRaw
+              ovFound = ovPrefix ++ ovFoundRaw
           report <- getReportUI True
           CCUI{coinput} <- getsSession sccui
-          mstash <- getsState $ \s -> gstash $ sfactionD s EM.! bfid b
-          let calmE = calmEnough b actorCurAndMaxSk
+          mstash <- getsState $ \s -> gstash $ sfactionD s EM.! side
+          curTutorial <- getsSession scurTutorial
+          overrideTut <- getsSession soverrideTut
+          let displayTutorialHints = fromMaybe curTutorial overrideTut
+              calmE = calmEnough b actorCurAndMaxSk
               greyedOut cmd = not calmE && fromCStore == CEqp
                               || mstash == Just (blid b, bpos b)
                                  && fromCStore == CGround
@@ -1548,21 +1568,21 @@ itemMenuHuman leader cmdSemInCxtOfKM = do
                   || destCStore == CGround && mstash == Just (blid b, bpos b)
                 Apply{} ->
                   let skill = Ability.getSk Ability.SkApply actorCurAndMaxSk
-                  in not $ either (const False) id
-                     $ permittedApply corule localTime skill calmE
-                                      (Just fromCStore) itemFull kit
+                  in not $ fromRight False
+                         $ permittedApply corule localTime skill calmE
+                                          (Just fromCStore) itemFull kit
                 Project{} ->
                   let skill = Ability.getSk Ability.SkProject actorCurAndMaxSk
-                  in not $ either (const False) id
-                     $ permittedProject False skill calmE itemFull
+                  in not $ fromRight False
+                         $ permittedProject False skill calmE itemFull
                 _ -> False
               fmt n k h = " " <> T.justifyLeft n ' ' k <> " " <> h
               offsetCol2 = 11
               keyCaption = fmt offsetCol2 "keys" "command"
-              offset = 1 + maxYofOverlay (descBlurb ++ ovFound)
-              (ov0, kxs0) = okxsN coinput monoFont propFont offset offsetCol2
-                                  greyedOut True CmdItemMenu
-                                  ([], [], ["", keyCaption]) ([], [])
+              offset = 1 + maxYofOverlay (ovDesc ++ ovFound)
+              (ov0, kxs0) = xytranslateOKX 0 offset $
+                 okxsN coinput monoFont propFont offsetCol2 greyedOut
+                       True CmdItemMenu ([], [], ["", keyCaption]) ([], [])
               t0 = makeSentence [ MU.SubjectVerbSg (partActor bUI) "choose"
                                 , "an item", MU.Text $ ppCStoreIn fromCStore ]
               alRep = foldr (<+:>) [] $ renderReport True report
@@ -1571,10 +1591,10 @@ itemMenuHuman leader cmdSemInCxtOfKM = do
               splitHelp (al, okx) =
                 splitOKX fontSetup False rwidth (rheight - 2) rwidth al
                          [K.spaceKM, K.escKM] okx
-              sli = toSlideshow fontSetup
+              sli = toSlideshow fontSetup displayTutorialHints
                     $ splitHelp ( al1
-                                , ( EM.insertWith (++) squareFont descSym
-                                    $ EM.insertWith (++) propFont descBlurb
+                                , ( EM.insertWith (++) squareFont ovLab
+                                    $ EM.insertWith (++) propFont ovDesc
                                     $ EM.insertWith (++) monoFont ovFound ov0
                                         -- mono font, because there are buttons
                                   , kxsFound ++ kxs0 ))
@@ -1584,19 +1604,20 @@ itemMenuHuman leader cmdSemInCxtOfKM = do
           case ekm of
             Left km -> case km `M.lookup` bcmdMap coinput of
               _ | km == K.escKM -> weaveJust <$> failWith "never mind"
-              _ | km == K.spaceKM -> weaveJust <$> failWith "back to list"
+              _ | km == K.spaceKM ->
+                chooseItemMenuHuman leader cmdSemInCxtOfKM dmode
               _ | km `elem` foundKeys -> case km of
                 K.KM{key=K.Fun n} -> do
                   let (newAid, (bNew, newCStore)) = foundAlt !! (n - 1)
-                  fact <- getsState $ (EM.! bfid bNew) . sfactionD
-                  let (autoDun, _) = autoDungeonLevel fact
-                  if | blid bNew /= blid b && autoDun ->
-                       weaveJust <$> failSer NoChangeDunLeader
-                     | otherwise -> do
-                       void $ pickLeader True newAid
-                       modifySession $ \sess ->
-                         sess {sitemSel = Just (iid, newCStore, False)}
-                       itemMenuHuman newAid cmdSemInCxtOfKM
+                  fact <- getsState $ (EM.! side) . sfactionD
+                  let banned = bannedPointmanSwitchBetweenLevels fact
+                  if blid bNew /= blid b && banned
+                  then weaveJust <$> failSer NoChangeDunLeader
+                  else do
+                    void $ pickLeader True newAid
+                    modifySession $ \sess ->
+                      sess {sitemSel = Just (iid, newCStore, False)}
+                    itemMenuHuman newAid cmdSemInCxtOfKM
                 _ -> error $ "" `showFailure` km
               Just (_desc, _cats, cmd) -> do
                 modifySession $ \sess ->
@@ -1613,106 +1634,131 @@ chooseItemMenuHuman :: MonadClientUI m
                     -> (K.KM -> HumanCmd -> m (Either MError ReqUI))
                     -> ItemDialogMode
                     -> m (Either MError ReqUI)
-chooseItemMenuHuman leader cmdSemInCxtOfKM c0 = do
-  let chooseItemMenu c1 = do
-        res <- chooseItemDialogMode leader True c1
-        case res of
-          Right c2 -> do
-            res2 <- itemMenuHuman leader cmdSemInCxtOfKM
-            backToList <- failMsg "back to list"
-            case res2 of
-              Left err | err == backToList -> chooseItemMenu c2
-              _ -> return res2
-          Left err -> return $ Left $ Just err
-  chooseItemMenu c0
+chooseItemMenuHuman leader1 cmdSemInCxtOfKM c1 = do
+  res2 <- chooseItemDialogMode leader1 True c1
+  case res2 of
+    Right leader2 -> itemMenuHuman leader2 cmdSemInCxtOfKM
+    Left err -> return $ Left $ Just err
 
 -- * MainMenu
 
 generateMenu :: MonadClientUI m
              => (K.KM -> HumanCmd -> m (Either MError ReqUI))
-             -> [(DisplayFont, [AttrLine])]
-             -> [(K.KM, (Text, HumanCmd))]
+             -> FontOverlayMap
+             -> [(Text, HumanCmd, Maybe HumanCmd, Maybe FontOverlayMap)]
              -> [String]
              -> String
              -> m (Either MError ReqUI)
-generateMenu cmdSemInCxtOfKM blurb kds gameInfo menuName = do
+generateMenu cmdSemInCxtOfKM blurb kdsRaw gameInfo menuName = do
   COps{corule} <- getsState scops
-  CCUI{coscreen=ScreenContent{rwidth, rheight, rwebAddress}} <-
-    getsSession sccui
+  CCUI{ coinput=InputContent{brevMap}
+      , coscreen=ScreenContent{rheight, rwebAddress} } <- getsSession sccui
   FontSetup{..} <- getFontSetup
-  let bindings =  -- key bindings to display
-        let fmt (k, (d, _)) =
-              ( Just k
-              , T.unpack
-                $  T.justifyLeft 3 ' ' (T.pack $ K.showKM k) <> " " <> d )
+  let matchKM slot kd@(_, cmd, _, _) = case M.lookup cmd brevMap of
+        Just (km : _) -> (Left km, kd)
+        _ -> (Right slot, kd)
+      kds = zipWith matchKM natSlots kdsRaw
+      bindings =  -- key bindings to display
+        let attrCursor = Color.defAttr {Color.bg = Color.HighlightNoneCursor}
+            highAttr ac = ac {Color.acAttr = attrCursor}
+            highW32 = Color.attrCharToW32 . highAttr . Color.attrCharFromW32
+            markFirst d = markFirstAS $ textToAS d
+            markFirstAS [] = []
+            markFirstAS (ac : rest) = highW32 ac : rest
+            fmt (ekm, (d, _, _, _)) = (ekm, markFirst d)
         in map fmt kds
-      generate :: Int -> (Maybe K.KM, String) -> ((Int, AttrLine), Maybe KYX)
-      generate y (mkey, binding) =
-        let lenB = length binding
-            yxx key = (Left [key], ( PointUI 2 y
-                                   , ButtonWidth squareFont lenB ))
-            myxx = yxx <$> mkey
-        in ((2, stringToAL binding), myxx)
-      titleLine = rtitle corule ++ " "
-                  ++ showVersion (rexeVersion corule) ++ " "
-      rawLines = zip (repeat Nothing)
-                     (["", titleLine ++ "[" ++ rwebAddress ++ "]", ""]
-                      ++ gameInfo)
-                 ++ bindings
-      (menuOvLines, mkyxs) = unzip $ zipWith generate [0..] rawLines
-      browserKey = ( Right $ SlotChar 1042 'a'
-                   , ( PointUI (2 + 2 * length titleLine) 1
-                     , ButtonWidth squareFont (2 + length rwebAddress) ) )
-      kyxs = browserKey : catMaybes mkyxs
-      introLen = sum $ map (length . snd) blurb
-      start0 = max 0 (rheight - introLen
-                      - if isSquareFont propFont then 1 else 2)
-      shiftPointUI (PointUI x0 y0) = PointUI (x0 + rwidth) y0
-      ov0 = EM.map (map (first shiftPointUI)) $ attrLinesToFontMap start0 blurb
-      ov = EM.insertWith (++) squareFont (offsetOverlayX menuOvLines) ov0
-  menuIxMap <- getsSession smenuIxMap
-  unless (menuName `M.member` menuIxMap) $
-    modifySession $ \sess -> sess {smenuIxMap = M.insert menuName 1 menuIxMap}
-  ekm <- displayChoiceScreen menuName ColorFull True
-                             (menuToSlideshow (ov, kyxs)) [K.escKM]
-  case ekm of
-    Left km -> case km `lookup` kds of
-      Just (_desc, cmd) -> cmdSemInCxtOfKM km cmd
-      Nothing -> weaveJust <$> failWith "never mind"
-    Right (SlotChar 1042 'a') -> do
-      success <- tryOpenBrowser rwebAddress
-      if success
-      then generateMenu cmdSemInCxtOfKM blurb kds gameInfo menuName
-      else weaveJust <$> failWith "failed to open web browser"
-    Right _slot -> error $ "" `showFailure` ekm
+      generate :: Int -> (KeyOrSlot, AttrString) -> KYX
+      generate y (ekm, binding) =
+        (ekm, (PointUI 0 y, ButtonWidth squareFont (length binding)))
+      okxBindings = ( EM.singleton squareFont
+                      $ offsetOverlay $ map (attrStringToAL . snd) bindings
+                    , zipWith generate [0..] bindings )
+      titleLine =
+        rtitle corule ++ " " ++ showVersion (rexeVersion corule) ++ " "
+      titleAndInfo = map stringToAL
+                         ([ ""
+                          , titleLine ++ "[" ++ rwebAddress ++ "]"
+                          , "" ]
+                          ++ gameInfo)
+      webButton = ( Left $ K.mkChar '@'  -- to start the menu not here
+                  , ( PointUI (2 * length titleLine) 1
+                    , ButtonWidth squareFont (2 + length rwebAddress) ) )
+      okxTitle = ( EM.singleton squareFont $ offsetOverlay titleAndInfo
+                 , [webButton] )
+      okx = xytranslateOKX 2 0
+            $ sideBySideOKX 2 (length titleAndInfo) okxTitle okxBindings
+      prepareBlurb ovs =
+        let introLen = 1 + maxYofFontOverlayMap ovs
+            start0 = max 0 (rheight - introLen
+                            - if isSquareFont propFont then 1 else 2)
+        in EM.map (xytranslateOverlay (-2) (start0 - 2)) ovs
+          -- subtracting 2 from X and Y to negate the indentation in
+          -- @displayChoiceScreenWithRightPane@
+      returnDefaultOKS = return (prepareBlurb blurb, [])
+      displayInRightPane ekm = case ekm `lookup` kds of
+        Just (_, _, _, mblurbRight) -> case mblurbRight of
+          Nothing -> returnDefaultOKS
+          Just blurbRight -> return (prepareBlurb blurbRight, [])
+        Nothing | ekm == Left (K.mkChar '@') -> returnDefaultOKS
+        Nothing -> error $ "generateMenu: unexpected key:"
+                           `showFailure` ekm
+      keys = [K.leftKM, K.rightKM, K.escKM, K.mkChar '@']
+      loop = do
+        kmkm <- displayChoiceScreenWithRightPaneKMKM displayInRightPane True
+                                                     menuName ColorFull True
+                                                     (menuToSlideshow okx) keys
+        case kmkm of
+          Left (km@(K.KM {key=K.Left}), ekm) -> case ekm `lookup` kds of
+            Just (_, _, Nothing, _) -> loop
+            Just (_, _, Just cmdReverse, _) -> cmdSemInCxtOfKM km cmdReverse
+            Nothing -> weaveJust <$> failWith "never mind"
+          Left (km@(K.KM {key=K.Right}), ekm) -> case ekm `lookup` kds of
+            Just (_, cmd, _, _) -> cmdSemInCxtOfKM km cmd
+            Nothing -> weaveJust <$> failWith "never mind"
+          Left (K.KM {key=K.Char '@'}, _)-> do
+            success <- tryOpenBrowser rwebAddress
+            if success
+            then generateMenu cmdSemInCxtOfKM blurb kdsRaw gameInfo menuName
+            else weaveJust <$> failWith "failed to open web browser"
+          Left (km, _) -> case Left km `lookup` kds of
+            Just (_, cmd, _, _) -> cmdSemInCxtOfKM km cmd
+            Nothing -> weaveJust <$> failWith "never mind"
+          Right slot -> case Right slot `lookup` kds of
+            Just (_, cmd, _, _) -> cmdSemInCxtOfKM K.escKM cmd
+            Nothing -> weaveJust <$> failWith "never mind"
+  loop
 
 -- | Display the main menu.
 mainMenuHuman :: MonadClientUI m
               => (K.KM -> HumanCmd -> m (Either MError ReqUI))
               -> m (Either MError ReqUI)
 mainMenuHuman cmdSemInCxtOfKM = do
-  CCUI{ coinput=InputContent{bcmdList}
-      , coscreen=ScreenContent{rintroScreen} } <- getsSession sccui
+  CCUI{coscreen=ScreenContent{rintroScreen}} <- getsSession sccui
   FontSetup{propFont} <- getFontSetup
   gameMode <- getGameMode
+  curTutorial <- getsSession scurTutorial
+  overrideTut <- getsSession soverrideTut
   curChal <- getsClient scurChal
   let offOn b = if b then "on" else "off"
-      tcurDiff   = "   with difficulty:" <+> tshow (cdiff curChal)
-      tcurFish   = "       cold fish:" <+> offOn (cfish curChal)
-      tcurGoods  = "     ready goods:" <+> offOn (cgoods curChal)
-      tcurWolf   = "       lone wolf:" <+> offOn (cwolf curChal)
-      tcurKeeper = "   finder keeper:" <+> offOn (ckeeper curChal)
       -- Key-description-command tuples.
-      kds = [(km, (desc, cmd)) | (km, ([CmdMainMenu], desc, cmd)) <- bcmdList]
+      kds = [ ("+ setup and start new game>", ChallengeMenu, Nothing, Nothing)
+            , ("@ save and exit to desktop", GameExit, Nothing, Nothing)
+            , ("+ tweak convenience settings>", SettingsMenu, Nothing, Nothing)
+            , ("@ toggle autoplay", AutomateToggle, Nothing, Nothing)
+            , ("@ see command help", Help, Nothing, Nothing)
+            , ("@ switch to dashboard", Dashboard, Nothing, Nothing)
+            , ("^ back to playing", AutomateBack, Nothing, Nothing) ]
       gameName = MK.mname gameMode
+      displayTutorialHints = fromMaybe curTutorial overrideTut
       gameInfo = map T.unpack
                    [ "Now playing:" <+> gameName
                    , ""
-                   , tcurDiff
-                   , tcurFish
-                   , tcurGoods
-                   , tcurWolf
-                   , tcurKeeper
+                   , "      with difficulty:" <+> tshow (cdiff curChal)
+                   , "            cold fish:" <+> offOn (cfish curChal)
+                   , "          ready goods:" <+> offOn (cgoods curChal)
+                   , "            lone wolf:" <+> offOn (cwolf curChal)
+                   , "        finder keeper:" <+> offOn (ckeeper curChal)
+                   , "       tutorial hints:" <+> offOn displayTutorialHints
                    , "" ]
       glueLines (l1 : l2 : rest) =
         if | null l1 -> l1 : glueLines (l2 : rest)
@@ -1721,8 +1767,9 @@ mainMenuHuman cmdSemInCxtOfKM = do
       glueLines ll = ll
       backstory | isSquareFont propFont = fst rintroScreen
                 | otherwise = glueLines $ fst rintroScreen
-      backstoryAL = map stringToAL $ map (dropWhile (== ' ')) backstory
-  generateMenu cmdSemInCxtOfKM [(propFont, backstoryAL)] kds gameInfo "main"
+      backstoryAL = map (stringToAL . dropWhile (== ' ')) backstory
+      blurb = attrLinesToFontMap [(propFont, backstoryAL)]
+  generateMenu cmdSemInCxtOfKM blurb kds gameInfo "main"
 
 -- * MainMenuAutoOn
 
@@ -1751,40 +1798,61 @@ settingsMenuHuman :: MonadClientUI m
                   => (K.KM -> HumanCmd -> m (Either MError ReqUI))
                   -> m (Either MError ReqUI)
 settingsMenuHuman cmdSemInCxtOfKM = do
+  CCUI{coscreen=ScreenContent{rwidth}} <- getsSession sccui
+  UIOptions{uMsgWrapColumn} <- getsSession sUIOptions
+  FontSetup{..} <- getFontSetup
   markSuspect <- getsClient smarkSuspect
   markVision <- getsSession smarkVision
   markSmell <- getsSession smarkSmell
   noAnim <- getsClient $ fromMaybe False . snoAnim . soptions
   side <- getsClient sside
-  factDoctrine <- getsState $ MK.fdoctrine . gplayer . (EM.! side) . sfactionD
+  factDoctrine <- getsState $ gdoctrine . (EM.! side) . sfactionD
   overrideTut <- getsSession soverrideTut
   let offOn b = if b then "on" else "off"
-      offOnUnset mb = case mb of
-        Nothing -> "no override"
-        Just b -> if b then "force on" else "force off"
       offOnAll n = case n of
         0 -> "none"
         1 -> "untried"
         2 -> "all"
         _ -> error $ "" `showFailure` n
-      tsuspect = "mark suspect terrain:" <+> offOnAll markSuspect
-      tvisible = "show visible zone:" <+> offOn markVision
-      tsmell = "display smell clues:" <+> offOn markSmell
-      tanim = "play animations:" <+> offOn (not noAnim)
-      tdoctrine = "squad doctrine:" <+> Ability.nameDoctrine factDoctrine
-      toverride = "override tutorial hints:" <+> offOnUnset overrideTut
-      -- Key-description-command tuples.
-      kds = [ (K.mkKM "s", (tsuspect, MarkSuspect))
-            , (K.mkKM "v", (tvisible, MarkVision))
-            , (K.mkKM "c", (tsmell, MarkSmell))
-            , (K.mkKM "a", (tanim, MarkAnim))
-            , (K.mkKM "t", (tdoctrine, Doctrine))
-            , (K.mkKM "o", (toverride, OverrideTut))
-            , (K.mkKM "Escape", ("back to main menu", MainMenu)) ]
+      neverEver n = case n of
+        0 -> "never"
+        1 -> "aiming"
+        2 -> "always"
+        _ -> error $ "" `showFailure` n
+      offOnUnset mb = case mb of
+        Nothing -> "pass"
+        Just b -> if b then "force on" else "force off"
+      tsuspect = "@ mark suspect terrain:" <+> offOnAll markSuspect
+      tvisible = "@ show visible zone:" <+> neverEver markVision
+      tsmell = "@ display smell clues:" <+> offOn markSmell
+      tanim = "@ play animations:" <+> offOn (not noAnim)
+      tdoctrine = "@ squad doctrine:" <+> Ability.nameDoctrine factDoctrine
+      toverride = "@ override tutorial hints:" <+> offOnUnset overrideTut
+      width = if isSquareFont propFont
+              then rwidth `div` 2
+              else min uMsgWrapColumn (rwidth - 2)
+      textToBlurb t = Just $ attrLinesToFontMap
+        [ ( propFont
+          , splitAttrString width width
+            $ textToAS t ) ]
+      -- Key-description-command-text tuples.
+      kds = [ ( tsuspect, MarkSuspect 1, Just (MarkSuspect (-1))
+              , textToBlurb "* mark suspect terrain\nThis setting affects the ongoing and the next games. It determines which suspect terrain is marked in special color on the map: none, untried (not searched nor revealed), all. It correspondingly determines which, if any, suspect tiles are considered for mouse go-to, auto-explore and for the command that marks the nearest unexplored position." )
+            , ( tvisible, MarkVision 1, Just (MarkVision (-1))
+              , textToBlurb "* show visible zone\nThis setting affects the ongoing and the next games. It determines the conditions under which the area visible to the party is marked on the map via a gray background: never, when aiming, always." )
+            , ( tsmell, MarkSmell, Just MarkSmell
+              , textToBlurb "* display smell clues\nThis setting affects the ongoing and the next games. It determines whether the map displays any smell traces (regardless of who left them) detected by a party member that can track via smell (as determined by the smell radius skill; not common among humans)." )
+            , ( tanim, MarkAnim, Just MarkAnim
+              , textToBlurb "* play animations\nThis setting affects the ongoing and the next games. It determines whether important events, such combat, are highlighted by animations. This overrides the corresponding config file setting." )
+            , ( tdoctrine, Doctrine, Nothing
+              , textToBlurb "* squad doctrine\nThis setting affects the ongoing game, but does not persist to the next games. It determines the behaviour of henchmen (non-pointman characters) in the party and, in particular, if they are permitted to move autonomously or fire opportunistically (assuming they are able to, usually due to rare equipment). This setting has a poor UI that will be improved in the future." )
+            , ( toverride, OverrideTut 1, Just (OverrideTut (-1))
+              , textToBlurb "* override tutorial hints\nThis setting affects the ongoing and the next games. It determines whether tutorial hints are, respectively, not overridden with respect to the default game mode setting, forced to be off, forced to be on. Tutorial hints are rendered as pink messages and can afterwards be re-read from message history." )
+            , ( "^ back to main menu", MainMenu, Nothing, Just EM.empty ) ]
       gameInfo = map T.unpack
                    [ "Tweak convenience settings:"
                    , "" ]
-  generateMenu cmdSemInCxtOfKM [] kds gameInfo "settings"
+  generateMenu cmdSemInCxtOfKM EM.empty kds gameInfo "settings"
 
 -- * ChallengeMenu
 
@@ -1797,86 +1865,74 @@ challengeMenuHuman cmdSemInCxtOfKM = do
   CCUI{coscreen=ScreenContent{rwidth}} <- getsSession sccui
   UIOptions{uMsgWrapColumn} <- getsSession sUIOptions
   FontSetup{..} <- getFontSetup
-  svictories <- getsClient svictories
+  svictories <- getsSession svictories
   snxtScenario <- getsSession snxtScenario
-  nxtTutorial <- getsSession snxtTutorial
-  overrideTut <- getsSession soverrideTut
   nxtChal <- getsClient snxtChal
   let (gameModeId, gameMode) = nxtGameMode cops snxtScenario
       victories = case EM.lookup gameModeId svictories of
         Nothing -> 0
         Just cm -> fromMaybe 0 (M.lookup nxtChal cm)
       star t = if victories > 0 then "*" <> t else t
-      tnextScenario = "adventure:" <+> star (MK.mname gameMode)
+      tnextScenario = "@ adventure:" <+> star (MK.mname gameMode)
       offOn b = if b then "on" else "off"
-      starTut t = if isJust overrideTut then "*" <> t else t
-      displayTutorialHints = fromMaybe nxtTutorial overrideTut
-      tnextTutorial = "tutorial hints (in pink):"
-                      <+> starTut (offOn displayTutorialHints)
-      tnextDiff = "difficulty (lower easier):" <+> tshow (cdiff nxtChal)
-      tnextFish   = "cold fish (rather hard):"
-                    <+> offOn (cfish nxtChal)
-      tnextGoods  = "ready goods (hard):"
-                    <+> offOn (cgoods nxtChal)
-      tnextWolf   = "lone wolf (very hard):"
-                    <+> offOn (cwolf nxtChal)
-      tnextKeeper = "finder keeper (hard):"
-                    <+> offOn (ckeeper nxtChal)
-      -- Key-description-command tuples.
-      kds = [ (K.mkKM "s", (tnextScenario, GameScenarioIncr))
-            , (K.mkKM "t", (tnextTutorial, GameTutorialToggle))
-            , (K.mkKM "d", (tnextDiff, GameDifficultyIncr))
-            , (K.mkKM "f", (tnextFish, GameFishToggle))
-            , (K.mkKM "r", (tnextGoods, GameGoodsToggle))
-            , (K.mkKM "w", (tnextWolf, GameWolfToggle))
-            , (K.mkKM "k", (tnextKeeper, GameKeeperToggle))
-            , (K.mkKM "g", ("start new game", GameRestart))
-            , (K.mkKM "Escape", ("back to main menu", MainMenu)) ]
-      gameInfo = map T.unpack [ "Setup and start new game:"
-                              , "" ]
-      widthProp = if isSquareFont propFont
-                  then rwidth `div` 2
-                  else min uMsgWrapColumn (rwidth - 2)
-      widthMono = if isSquareFont propFont
+      tnextDiff = "@ difficulty level:" <+> tshow (cdiff nxtChal)
+      tnextFish = "@ cold fish (rather hard):" <+> offOn (cfish nxtChal)
+      tnextGoods = "@ ready goods (hard):" <+> offOn (cgoods nxtChal)
+      tnextWolf = "@ lone wolf (very hard):" <+> offOn (cwolf nxtChal)
+      tnextKeeper = "@ finder keeper (hard):" <+> offOn (ckeeper nxtChal)
+      width = if isSquareFont propFont
+              then rwidth `div` 2
+              else min uMsgWrapColumn (rwidth - 2)
+      widthFull = if isSquareFont propFont
                   then rwidth `div` 2
                   else rwidth - 2
       duplicateEOL '\n' = "\n\n"
       duplicateEOL c = T.singleton c
-      blurb =
+      blurb = Just $ attrLinesToFontMap
         [ ( propFont
-          , splitAttrString widthProp widthProp
+          , splitAttrString width width
             $ textFgToAS Color.BrBlack
             $ T.concatMap duplicateEOL (MK.mdesc gameMode)
               <> "\n\n" )
-        , ( monoFont
-          , splitAttrString widthMono widthMono
+        , ( propFont
+          , splitAttrString widthFull widthFull
             $ textToAS
             $ MK.mrules gameMode
               <> "\n\n" )
         , ( propFont
-          , splitAttrString widthProp widthProp
+          , splitAttrString width width
             $ textToAS
             $ T.concatMap duplicateEOL (MK.mreason gameMode) )
         ]
-  generateMenu cmdSemInCxtOfKM blurb kds gameInfo "challenge"
-
--- * GameTutorialToggle
-
-gameTutorialToggle :: MonadClientUI m  => m ()
-gameTutorialToggle = do
-  nxtTutorial <- getsSession snxtTutorial
-  overrideTut <- getsSession soverrideTut
-  let displayTutorialHints = fromMaybe nxtTutorial overrideTut
-  modifySession $ \sess -> sess { snxtTutorial = not displayTutorialHints
-                                , soverrideTut = Nothing }
+      textToBlurb t = Just $ attrLinesToFontMap
+        [ ( propFont
+          , splitAttrString width width  -- not widthFull!
+            $ textToAS t ) ]
+      -- Key-description-command-text tuples.
+      kds = [ ( tnextScenario, GameScenarioIncr 1, Just (GameScenarioIncr (-1))
+              , blurb )
+            , ( tnextDiff, GameDifficultyIncr 1, Just (GameDifficultyIncr (-1))
+              , textToBlurb "* difficulty level\nThis determines the difficulty of survival in the next game that's about to be started. Lower numbers result in easier game. In particular, difficulty below 5 multiplies hitpoints of player characters and difficulty over 5 multiplies hitpoints of their enemies. Game score scales with difficulty.")
+            , ( tnextFish, GameFishToggle, Just GameFishToggle
+              , textToBlurb "* cold fish\nThis challenge mode setting will affect the next game that's about to be started. When on, it makes it impossible for player characters to be healed by actors from other factions (this is a significant restriction in the long crawl adventure).")
+            , ( tnextGoods, GameGoodsToggle, Just GameGoodsToggle
+              , textToBlurb "* ready goods\nThis challenge mode setting will affect the next game that's about to be started. When on, it disables crafting for the player, making the selection of equipment, especially melee weapons, very limited, unless the player has the luck to find the rare powerful ready weapons (this applies only if the chosen adventure supports crafting at all).")
+            , ( tnextWolf, GameWolfToggle, Just GameWolfToggle
+              , textToBlurb "* lone wolf\nThis challenge mode setting will affect the next game that's about to be started. When on, it reduces player's starting actors to exactly one, though later on new heroes may join the party. This makes the game very hard in the long run.")
+            , ( tnextKeeper, GameKeeperToggle, Just GameKeeperToggle
+              , textToBlurb "* finder keeper\nThis challenge mode setting will affect the next game that's about to be started. When on, it completely disables flinging projectiles by the player, which affects not only ranged damage dealing, but also throwing of consumables that buff teammates engaged in melee combat, weaken and distract enemies, light dark corners, etc.")
+            , ( "@ start new game", GameRestart, Nothing, blurb )
+            , ( "^ back to main menu", MainMenu, Nothing, Nothing ) ]
+      gameInfo = map T.unpack [ "Setup and start new game:"
+                              , "" ]
+  generateMenu cmdSemInCxtOfKM EM.empty kds gameInfo "challenge"
 
 -- * GameDifficultyIncr
 
-gameDifficultyIncr :: MonadClient m => m ()
-gameDifficultyIncr = do
+gameDifficultyIncr :: MonadClient m => Int -> m ()
+gameDifficultyIncr delta = do
   nxtDiff <- getsClient $ cdiff . snxtChal
-  let delta = -1
-      d | nxtDiff + delta > difficultyBound = 1
+  let d | nxtDiff + delta > difficultyBound = 1
         | nxtDiff + delta < 1 = difficultyBound
         | otherwise = nxtDiff + delta
   modifyClient $ \cli -> cli {snxtChal = (snxtChal cli) {cdiff = d} }
@@ -1911,66 +1967,54 @@ gameKeeperToggle =
 
 -- * GameScenarioIncr
 
-gameScenarioIncr :: MonadClientUI m => m ()
-gameScenarioIncr = do
+gameScenarioIncr :: MonadClientUI m => Int -> m ()
+gameScenarioIncr delta = do
   cops <- getsState scops
   oldScenario <- getsSession snxtScenario
-  let snxtScenario = oldScenario + 1
+  let snxtScenario = oldScenario + delta
       snxtTutorial = MK.mtutorial $ snd $ nxtGameMode cops snxtScenario
   modifySession $ \sess -> sess {snxtScenario, snxtTutorial}
 
--- * GameRestart
+-- * GameRestart & GameQuit
 
-gameRestartHuman :: MonadClientUI m => m (FailOrCmd ReqUI)
-gameRestartHuman = do
-  cops <- getsState scops
+data ExitStrategy = Restart | Quit
+
+gameExitWithHuman :: MonadClientUI m => ExitStrategy -> m (FailOrCmd ReqUI)
+gameExitWithHuman exitStrategy = do
+  snxtChal       <- getsClient snxtChal
+  cops           <- getsState scops
   noConfirmsGame <- isNoConfirmsGame
-  gameMode <- getGameMode
-  snxtScenario <- getsSession snxtScenario
+  gameMode       <- getGameMode
+  snxtScenario   <- getsSession snxtScenario
   let nxtGameName = MK.mname $ snd $ nxtGameMode cops snxtScenario
-  b <- if noConfirmsGame
-       then return True
-       else displayYesNo ColorBW
-            $ "You just requested a new" <+> nxtGameName
-              <+> "game. The progress of the ongoing" <+> MK.mname gameMode
-              <+> "game will be lost! Are you sure?"
-  if b
-  then do
-    snxtChal <- getsClient snxtChal
-    -- This ignores all but the first word of game mode names picked
-    -- via main menu and assumes the fist word of such game modes
-    -- is present in their frequencies.
-    let (mainName, _) = T.span (\c -> Char.isAlpha c || c == ' ') nxtGameName
-        nxtGameGroup = DefsInternal.GroupName $ T.intercalate " "
-                       $ take 2 $ T.words mainName
-    return $ Right $ ReqUIGameRestart nxtGameGroup snxtChal
-  else do
-    msg2 <- rndToActionUI $ oneOf
-              [ "yea, would be a pity to leave them to die"
-              , "yea, a shame to get your team stranded" ]
-    failWith msg2
+      exitReturn x = return $ Right $ ReqUIGameRestart x snxtChal
+      displayExitMessage diff =
+        displayYesNo ColorBW
+        $ diff <+> "progress of the ongoing"
+          <+> MK.mname gameMode <+> "game will be lost! Are you sure?"
+  ifM (if' noConfirmsGame
+           (return True)  -- true case
+           (displayExitMessage $ case exitStrategy of  -- false case
+              Restart -> "You just requested a new" <+> nxtGameName
+                         <+> "game. The "
+              Quit -> "If you quit, the "))
+      (exitReturn $ case exitStrategy of  -- ifM true case
+         Restart ->
+           let (mainName, _) = T.span (\c -> Char.isAlpha c || c == ' ')
+                                      nxtGameName
+           in DefsInternal.GroupName $ T.intercalate " "
+              $ take 2 $ T.words mainName
+         Quit -> MK.INSERT_COIN)
+      (rndToActionUI (oneOf  -- ifM false case
+                        [ "yea, would be a pity to leave them to die"
+                        , "yea, a shame to get your team stranded" ])
+       >>= failWith)
 
--- * GameQuit
+ifM :: Monad m => m Bool -> m b -> m b -> m b
+ifM b t f = do b' <- b; if b' then t else f
 
--- TODO: deduplicate with gameRestartHuman
-gameQuitHuman :: MonadClientUI m => m (FailOrCmd ReqUI)
-gameQuitHuman = do
-  noConfirmsGame <- isNoConfirmsGame
-  gameMode <- getGameMode
-  b <- if noConfirmsGame
-       then return True
-       else displayYesNo ColorBW
-            $ "If you quit, the progress of the ongoing" <+> MK.mname gameMode
-              <+> "game will be lost! Are you sure?"
-  if b
-  then do
-    snxtChal <- getsClient snxtChal
-    return $ Right $ ReqUIGameRestart MK.INSERT_COIN snxtChal
-  else do
-    msg2 <- rndToActionUI $ oneOf
-              [ "yea, would be a pity to leave them to die"
-              , "yea, a shame to get your team stranded" ]
-    failWith msg2
+if' :: Bool -> p -> p -> p
+if' b t f = if b then t else f
 
 -- * GameDrop
 
@@ -1979,7 +2023,7 @@ gameDropHuman = do
   modifySession $ \sess -> sess {sallNframes = -1}  -- hack, but we crash anyway
   msgAdd MsgPromptGeneric "Interrupt! Trashing the unsaved game. The program exits now."
   clientPrintUI "Interrupt! Trashing the unsaved game. The program exits now."
-    -- this is not shown by vty frontend, but at least shown by sdl2 one
+    -- this is not shown by ANSI frontend, but at least shown by sdl2 one
   return ReqUIGameDropAndExit
 
 -- * GameExit
@@ -2004,13 +2048,13 @@ gameSaveHuman = do
 doctrineHuman :: MonadClientUI m => m (FailOrCmd ReqUI)
 doctrineHuman = do
   fid <- getsClient sside
-  fromT <- getsState $ MK.fdoctrine . gplayer . (EM.! fid) . sfactionD
+  fromT <- getsState $ gdoctrine . (EM.! fid) . sfactionD
   let toT = if fromT == maxBound then minBound else succ fromT
   go <- displaySpaceEsc ColorFull
         $ "(Beware, work in progress!)"
-          <+> "Current squad doctrine is" <+> Ability.nameDoctrine fromT
+          <+> "Current squad doctrine is '" <> Ability.nameDoctrine fromT <> "'"
           <+> "(" <> Ability.describeDoctrine fromT <> ")."
-          <+> "Switching doctrine to" <+> Ability.nameDoctrine toT
+          <+> "Switching doctrine to '" <> Ability.nameDoctrine toT <> "'"
           <+> "(" <> Ability.describeDoctrine toT <> ")."
           <+> "This clears targets of all non-pointmen teammates."
           <+> "New targets will be picked according to new doctrine."

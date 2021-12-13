@@ -6,7 +6,7 @@ name:          LambdaHack
 -- PVP summary:+-+------- breaking API changes
 --             | |  +----- minor or non-breaking API additions
 --             | |  | +--- code changes with no API change
-version:       0.10.3.0
+version:       0.11.0.0
 synopsis:      A game engine library for tactical squad ASCII roguelike dungeon crawlers
 description: LambdaHack is a Haskell game engine library for ASCII roguelike
              games of arbitrary theme, size and complexity, with optional
@@ -40,11 +40,11 @@ homepage:      https://lambdahack.github.io
 bug-reports:   http://github.com/LambdaHack/LambdaHack/issues
 license:       BSD-3-Clause
 license-file:  COPYLEFT
-tested-with:   GHC==8.2.2, GHC==8.4.4, GHC==8.6.5, GHC==8.8.4, GHC==8.10.4,
+tested-with:   GHC==8.2.2, GHC==8.4.4, GHC==8.6.5, GHC==8.8.4, GHC==8.10.7,
                GHC==9.0.1
--- Enough files is included to build and run CI and manual tests
--- and be presentable on Hackage, but not enough to create
--- a user-friendly binary package, e.g., no InGameHelp.txt.
+-- Enough files is included in the Hackage package to run CI and manual
+-- tests off it, to be presentable on Hackage and to create user-friendly
+-- binary packages.
 extra-source-files: GameDefinition/config.ui.default,
                     GameDefinition/PLAYING.md,
                     GameDefinition/fonts/16x16xw.woff,
@@ -75,30 +75,14 @@ source-repository head
   type:               git
   location:           git://github.com/LambdaHack/LambdaHack.git
 
-flag vty
-  description:        switch to the vty frontend (screen reader friendly)
-  default:            False
-  manual:             True
-
-flag curses
-  description:        switch to the curses frontend (not fully supported)
-  default:            False
-  manual:             True
-
--- This flag is not used.
--- flag sdl
---   description:        switch to the SDL2 frontend
---   default:            False
---   manual:             True
-
-flag jsaddle
-  description:        switch to the JSaddle frontend (may be bit-rotted)
-  default:            False
-  manual:             True
-
 flag with_expensive_assertions
   description:        turn on expensive assertions of well-tested code
   default:            False
+  manual:             True
+
+flag with_costly_optimizations
+  description:        turn on costly (mostly GHC heap size) optimizations (that give 15-25% speedup)
+  default:            True
   manual:             True
 
 flag release
@@ -109,6 +93,11 @@ flag release
 flag supportNodeJS
   description:        compile so that the JS blob works in terminal with NodeJS
   default:            True
+  manual:             True
+
+flag jsaddle
+  description:        switch to the JSaddle frontend (may be bit-rotted)
+  default:            False
   manual:             True
 
 common options
@@ -126,8 +115,10 @@ common options
                       DataKinds, KindSignatures, DeriveGeneric, DeriveLift
   ghc-options:        -Wall -Wcompat -Worphans -Wincomplete-uni-patterns -Wincomplete-record-updates -Wimplicit-prelude -Wmissing-home-modules -Widentities -Wredundant-constraints -Wmissing-export-lists -Wpartial-fields -Wunused-packages -Winvalid-haddock
 -- TODO: remove -Winvalid-haddock when added to -Wall in a GHC I use for haddock
-  ghc-options:        -Wall-missed-specialisations
-  ghc-options:        -fno-ignore-asserts -fexpose-all-unfoldings -fspecialise-aggressively -fsimpl-tick-factor=200
+  ghc-options:        -fno-ignore-asserts
+
+  if flag(with_costly_optimizations)
+    ghc-options:        -fexpose-all-unfoldings -fspecialise-aggressively -fsimpl-tick-factor=200
 
   if flag(with_expensive_assertions)
     cpp-options:      -DWITH_EXPENSIVE_ASSERTIONS
@@ -141,8 +132,6 @@ common options
     ghcjs-options:    -DREMOVE_TELETYPE
 
 common exe-options
-  if flag(vty)
-    ghc-options:      -threaded
   ghc-options:        -rtsopts
 -- (Ignored by GHCJS) Minimize median lag at the cost of occasional bigger
 -- GC lag, which fortunately sometimes fits into idle time between turns):
@@ -174,20 +163,20 @@ library definition
                       Game.LambdaHack.Definition.DefsInternal
                       Game.LambdaHack.Definition.Flavour
                       Game.LambdaHack.Content.CaveKind
+                      Game.LambdaHack.Content.FactionKind
                       Game.LambdaHack.Content.ItemKind
                       Game.LambdaHack.Content.ModeKind
                       Game.LambdaHack.Content.PlaceKind
                       Game.LambdaHack.Content.RuleKind
                       Game.LambdaHack.Content.TileKind
   build-depends:
-                      ,assert-failure
+                      ,assert-failure >= 0.1.2 && < 0.2
                       ,base
                       ,base-compat
                       ,binary
                       ,containers
                       ,deepseq
                       ,enummapset
-                      ,ghc-prim
                       ,hashable
                       ,hsini
                       ,witch >= 0.3
@@ -237,7 +226,6 @@ library
                       Game.LambdaHack.Client.UI.Frame
                       Game.LambdaHack.Client.UI.FrameM
                       Game.LambdaHack.Client.UI.Frontend
-                      Game.LambdaHack.Client.UI.Frontend.Chosen
                       Game.LambdaHack.Client.UI.Frontend.Common
                       Game.LambdaHack.Client.UI.Frontend.Teletype
                       Game.LambdaHack.Client.UI.HandleHelperM
@@ -247,7 +235,6 @@ library
                       Game.LambdaHack.Client.UI.HumanCmd
                       Game.LambdaHack.Client.UI.InventoryM
                       Game.LambdaHack.Client.UI.ItemDescription
-                      Game.LambdaHack.Client.UI.ItemSlot
                       Game.LambdaHack.Client.UI.Key
                       Game.LambdaHack.Client.UI.KeyBindings
                       Game.LambdaHack.Client.UI.MonadClientUI
@@ -315,8 +302,6 @@ library
                       Game.LambdaHack.Server.ServerOptions
                       Game.LambdaHack.Server.StartM
                       Game.LambdaHack.Server.State
--- for doctest:
-                      Paths_LambdaHack
   reexported-modules: ,Game.LambdaHack.Core.Dice
                       ,Game.LambdaHack.Core.Frequency
                       ,Game.LambdaHack.Core.Prelude
@@ -328,14 +313,15 @@ library
                       ,Game.LambdaHack.Definition.DefsInternal
                       ,Game.LambdaHack.Definition.Flavour
                       ,Game.LambdaHack.Content.CaveKind
+                      ,Game.LambdaHack.Content.FactionKind
                       ,Game.LambdaHack.Content.ItemKind
                       ,Game.LambdaHack.Content.ModeKind
                       ,Game.LambdaHack.Content.PlaceKind
                       ,Game.LambdaHack.Content.RuleKind
                       ,Game.LambdaHack.Content.TileKind
+  other-modules:      Paths_LambdaHack
   autogen-modules:    Paths_LambdaHack
   build-depends:      definition,
-                      assert-failure >= 0.1.2 && < 0.2,
                       async      >= 2.2.1,
                       base       >= 4.10 && < 99,
                       binary     >= 0.8,
@@ -345,7 +331,6 @@ library
                       directory  >= 1.1.0.1,
                       enummapset >= 0.5.2.2,
                       filepath   >= 1.2.0.1,
-                      ghc-prim,
                       hashable   >= 1.1.2.5,
                       hsini      >= 0.2,
                       keys       >= 3,
@@ -365,21 +350,15 @@ library
                       vector-binary-instances >= 0.2.3.1
 
   if impl(ghcjs) || flag(jsaddle) {
-    exposed-modules:    Game.LambdaHack.Client.UI.Frontend.Dom
+    exposed-modules:  Game.LambdaHack.Client.UI.Frontend.Dom
     build-depends:    ghcjs-dom >= 0.9.1.1
     cpp-options:      -DUSE_BROWSER
-  } elif flag(vty) {
-    exposed-modules:    Game.LambdaHack.Client.UI.Frontend.Vty
-    build-depends:    vty >= 5
-    cpp-options:      -DUSE_VTY
-  } elif flag(curses) {
-    exposed-modules:    Game.LambdaHack.Client.UI.Frontend.Curses
-    build-depends:    hscurses >= 1.4.1
-    cpp-options:      -DUSE_CURSES
   } else {
-    exposed-modules:    Game.LambdaHack.Client.UI.Frontend.Sdl
-    build-depends:    sdl2 >= 2, sdl2-ttf >= 2
-    cpp-options:      -DUSE_SDL
+    exposed-modules:  Game.LambdaHack.Client.UI.Frontend.Sdl
+                      Game.LambdaHack.Client.UI.Frontend.ANSI
+    build-depends:    sdl2 >= 2,
+                      sdl2-ttf >= 2,
+                      ansi-terminal >= 0.10
   }
 
   if impl(ghcjs) {
@@ -394,6 +373,7 @@ library this-game-content
   import: options
   hs-source-dirs:     GameDefinition
   exposed-modules:    Content.CaveKind
+                      Content.FactionKind
                       Content.ItemKind
                       Content.ItemKindEmbed
                       Content.ItemKindActor
@@ -401,7 +381,6 @@ library this-game-content
                       Content.ItemKindBlast
                       Content.ItemKindTemporary
                       Content.ModeKind
-                      Content.ModeKindPlayer
                       Content.PlaceKind
                       Content.RuleKind
                       Content.TileKind
@@ -453,28 +432,31 @@ test-suite test
   type:               exitcode-stdio-1.0
   hs-source-dirs:     test
   main-is:            Spec.hs
-  other-modules:      ItemKindUnitTests
+  other-modules:      ActorStateUnitTests
+                      CommonMUnitTests
+                      HandleHelperMUnitTests
+                      HandleHumanLocalMUnitTests
+                      InventoryMUnitTests
+                      ItemDescriptionUnitTests
+                      ItemKindUnitTests
+                      ItemRevUnitTests
+                      LevelUnitTests
+                      MonadClientUIUnitTests
                       ReqFailureUnitTests
                       SessionUIMock
                       SessionUIUnitTests
+                      UnitTestHelpers
   build-depends:      ,LambdaHack
                       ,this-game-content
                       ,this-game-src
                       ,base
                       ,containers
+                      ,enummapset
                       ,optparse-applicative
+                      ,splitmix
                       ,tasty >= 1.0
                       ,tasty-quickcheck
                       ,tasty-hunit
                       ,text
                       ,transformers
-
-test-suite doctests
-  import: options, exe-options
-  type:               exitcode-stdio-1.0
-  main-is:            test/doctest-driver.hs
-  build-tool-depends: doctest-driver-gen:doctest-driver-gen
-  ghc-options:        -Wno-unused-packages
-  build-depends:      ,base
-                      ,doctest >= 0.13
-                      ,QuickCheck
+                      ,vector

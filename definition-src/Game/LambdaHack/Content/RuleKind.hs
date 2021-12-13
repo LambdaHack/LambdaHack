@@ -3,7 +3,7 @@ module Game.LambdaHack.Content.RuleKind
   ( RuleContent(..), emptyRuleContent, makeData
 #ifdef EXPOSE_INTERNAL
     -- * Internal operations
-  , validateSingle
+  , emptyRuleContentRaw, validateSingle
 #endif
   ) where
 
@@ -22,17 +22,15 @@ import Game.LambdaHack.Definition.Defs
 -- | The type of game rules and assorted game data.
 data RuleContent = RuleContent
   { rtitle            :: String    -- ^ title of the game (not lib)
-  , rXmax             :: X         -- ^ maximum level width; for now,
-                                   --   keep equal to ScreenContent.rwidth
-  , rYmax             :: Y         -- ^ maximum level height; for now,
-                                   --   keep equal to ScreenContent.rheight - 3
+  , rWidthMax         :: X         -- ^ maximum level width
+  , rHeightMax        :: Y         -- ^ maximum level height
   , rexeVersion       :: Version   -- ^ version of the game
   , rcfgUIName        :: FilePath  -- ^ name of the UI config file
-  , rcfgUIDefault     :: (String, Ini.Config)
+  , rcfgUIDefault     :: (Text, Ini.Config)
                                    -- ^ the default UI settings config file
   , rwriteSaveClips   :: Int       -- ^ game saved that often (not on browser)
   , rleadLevelClips   :: Int       -- ^ server switches leader level that often
-  , rscoresFile       :: FilePath  -- ^ name of the scores file
+  , rscoresFileName   :: FilePath  -- ^ name of the scores file
   , rnearby           :: Int       -- ^ what is a close distance between actors
   , rstairWordCarried :: [Text]    -- ^ words that can't be dropped from stair
                                    --   name as it goes through levels
@@ -40,25 +38,31 @@ data RuleContent = RuleContent
                                    -- ^ item symbols treated specially in engine
   }
 
-emptyRuleContent :: RuleContent
-emptyRuleContent = RuleContent
+emptyRuleContentRaw :: RuleContent
+emptyRuleContentRaw = RuleContent
   { rtitle = ""
-  , rXmax = 0
-  , rYmax = 0
+  , rWidthMax = 5
+  , rHeightMax = 2
   , rexeVersion = makeVersion []
   , rcfgUIName = ""
   , rcfgUIDefault = ("", Ini.emptyConfig)
   , rwriteSaveClips = 0
   , rleadLevelClips = 0
-  , rscoresFile = ""
+  , rscoresFileName = ""
   , rnearby = 0
   , rstairWordCarried = []
   , ritemSymbols = emptyItemSymbolsUsedInEngine
   }
 
+emptyRuleContent :: RuleContent
+emptyRuleContent = assert (null $ validateSingle emptyRuleContentRaw)
+                          emptyRuleContentRaw
+
 -- | Catch invalid rule kind definitions.
 validateSingle :: RuleContent -> [Text]
-validateSingle _ = []
+validateSingle RuleContent{..} =
+  [ "rWidthMax < 5" | rWidthMax < 5 ]  -- indented (4 prop spaces) text
+  ++ [ "rHeightMax < 2" | rHeightMax < 2 ]  -- or 4 tiles of sentinel wall
 
 makeData :: RuleContent -> RuleContent
 makeData rc =

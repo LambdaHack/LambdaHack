@@ -44,8 +44,8 @@ import           Game.LambdaHack.Common.Time
 import           Game.LambdaHack.Common.Types
 import           Game.LambdaHack.Common.Vector
 import qualified Game.LambdaHack.Content.CaveKind as CK
+import           Game.LambdaHack.Content.FactionKind
 import qualified Game.LambdaHack.Content.ItemKind as IK
-import           Game.LambdaHack.Content.ModeKind
 import           Game.LambdaHack.Content.RuleKind
 import           Game.LambdaHack.Content.TileKind (isUknownSpace)
 import           Game.LambdaHack.Core.Random
@@ -184,9 +184,9 @@ getCachePath :: MonadClient m => ActorId -> Point -> m (Maybe AndPath)
 getCachePath aid target = do
   b <- getsState $ getActorBody aid
   let source = bpos b
-  if | source == target ->
-       return $ Just $ AndPath (bpos b) [] target 0  -- speedup
-     | otherwise -> snd <$> getCacheBfsAndPath aid target
+  if source == target
+  then return $ Just $ AndPath (bpos b) [] target 0  -- speedup
+  else snd <$> getCacheBfsAndPath aid target
 
 createPath :: MonadClient m => ActorId -> Target -> m TgtAndPath
 createPath aid tapTgt = do
@@ -237,11 +237,10 @@ condBFS aid = do
                 || Ability.getSk Ability.SkProject actorMaxSk > 0
   smarkSuspect <- getsClient smarkSuspect
   fact <- getsState $ (EM.! side) . sfactionD
-  let underAI = isAIFact fact
-      -- Under UI, playing a hero party, we let AI set our target each
+  let -- Under UI, playing a hero party, we let AI set our target each
       -- turn for non-pointmen that can't move and can't alter,
       -- usually to TUnknown. This is rather useless, but correct.
-      enterSuspect = smarkSuspect > 0 || underAI
+      enterSuspect = smarkSuspect > 0 || gunderAI fact
       skill | enterSuspect = alterSkill  -- dig and search as skill allows
             | otherwise = 0  -- only walkable tiles
   return (canMove, skill)  -- keep it lazy
@@ -354,7 +353,8 @@ embedBenefit fleeVia aid pbags = do
         filter (\(_, body) -> blid body == blid b) oursExploring
       spawnFreqs = CK.cactorFreq $ okind cocave $ lkind lvl
       hasGroup grp = fromMaybe 0 (lookup grp spawnFreqs) > 0
-      lvlSpawnsUs = any hasGroup $ fgroups (gplayer fact)
+      lvlSpawnsUs = any (hasGroup . fst) $ filter ((> 0) . snd)
+                                         $ fgroups (gkind fact)
   actorSk <- if fleeVia `elem` [ViaAnything, ViaExit]
                   -- targeting, possibly when not a leader
              then getsState $ getActorMaxSkills aid
@@ -382,8 +382,8 @@ embedBenefit fleeVia aid pbags = do
         Just IK.Escape{} ->
           -- Escape (or guard) only after exploring, for high score, etc.
           let escapeOrGuard =
-                fcanEscape (gplayer fact)
-                || fleeVia `elem` [ViaExit]  -- target to guard after explored
+                fcanEscape (gkind fact)
+                || fleeVia == ViaExit  -- target to guard after explored
           in if fleeVia `elem` [ViaAnything, ViaEscape, ViaExit]
                 && escapeOrGuard
                 && allExplored
@@ -453,7 +453,7 @@ embedBenefit fleeVia aid pbags = do
 closestTriggers :: MonadClient m => FleeViaStairsOrEscape -> ActorId
                 -> m [(Int, (Point, (Point, ItemBag)))]
 closestTriggers fleeVia aid = do
-  COps{corule=RuleContent{rXmax, rYmax}} <- getsState scops
+  COps{corule=RuleContent{rWidthMax, rHeightMax}} <- getsState scops
   b <- getsState $ getActorBody aid
   lvl <- getLevel (blid b)
   let pbags = EM.assocs $ lembed lvl
@@ -466,7 +466,8 @@ closestTriggers fleeVia aid = do
   -- OTOH, siege of stairs or escapes is more effective.
   bfs <- getCacheBfs aid
   let vicTrigger (cid, (p0, bag)) =
-        map (\p -> (cid, (p, (p0, bag)))) $ vicinityBounded rXmax rYmax p0
+        map (\p -> (cid, (p, (p0, bag))))
+            (vicinityBounded rWidthMax rHeightMax p0)
       vicAll = concatMap vicTrigger efeat
   return $!
     let mix (benefit, ppbag) dist =
@@ -480,15 +481,15 @@ closestTriggers fleeVia aid = do
 -- We assume weapons in equipment are better than any among organs
 -- or at least provide some essential diversity.
 -- Disabled if, due to doctrine, actors follow leader and so would
--- repeatedly move towards and away form stairs at leader change,
+-- repeatedly move towards and away from stairs at leader change,
 -- depending on current leader's gear.
 -- Number of items of a single kind is ignored, because variety is needed.
 condEnoughGearM :: MonadClientRead m => ActorId -> m Bool
 condEnoughGearM aid = do
   b <- getsState $ getActorBody aid
   fact <- getsState $ (EM.! bfid b) . sfactionD
-  let followDoctrine = fdoctrine (gplayer fact)
-                       `elem` [Ability.TFollow, Ability.TFollowNoItems]
+  let followDoctrine =
+        gdoctrine fact `elem` [Ability.TFollow, Ability.TFollowNoItems]
   eqpAssocs <- getsState $ fullAssocs aid [CEqp]
   return $ not followDoctrine  -- keep it lazy
            && (any (IA.checkFlag Ability.Meleeable
@@ -568,7 +569,8 @@ closestStashes aid = do
   let fact = factionD EM.! bfid b
       spawnFreqs = CK.cactorFreq $ okind cocave $ lkind lvl
       hasGroup grp = fromMaybe 0 (lookup grp spawnFreqs) > 0
-      lvlSpawnsUs = any hasGroup $ fgroups (gplayer fact)
+      lvlSpawnsUs = any (hasGroup . fst) $ filter ((> 0) . snd)
+                                         $ fgroups (gkind fact)
       qualifyStash (fid2, Faction{gstash}) = case gstash of
         Nothing -> Nothing
         Just (lid, pos) ->

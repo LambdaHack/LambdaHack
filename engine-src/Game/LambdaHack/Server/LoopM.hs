@@ -36,6 +36,7 @@ import qualified Game.LambdaHack.Common.Tile as Tile
 import           Game.LambdaHack.Common.Time
 import           Game.LambdaHack.Common.Types
 import           Game.LambdaHack.Common.Vector
+import           Game.LambdaHack.Content.FactionKind
 import qualified Game.LambdaHack.Content.ItemKind as IK
 import           Game.LambdaHack.Content.ModeKind
 import           Game.LambdaHack.Content.RuleKind
@@ -66,7 +67,7 @@ loopSer serverOptions executorClient = do
   modifyServer $ \ser -> ser { soptionsNxt = serverOptions
                              , soptions = serverOptions }
   cops <- getsState scops
-  let updConn = updateConn executorClient
+  let updConn startsNewGame = updateConn $ executorClient startsNewGame
   restored <- tryRestore
   case restored of
     Just (sRaw, ser) | not $ snewGameSer serverOptions -> do  -- a restored game
@@ -80,7 +81,7 @@ loopSer serverOptions executorClient = do
                             $ sclientStates ser EM.! fid
                   in execUpdAtomicFidCatch fid cmd
       mapM_ (void <$> f) $ EM.keys factionD
-      updConn
+      updConn False
       initPer
       pers <- getsServer sperFid
       let clear = const emptyPer
@@ -96,6 +97,7 @@ loopSer serverOptions executorClient = do
       rngs <- getsServer srngs
       when (sdumpInitRngs serverOptions) $ dumpRngs rngs
     _ -> do  -- starting new game for this savefile (--newGame or fresh save)
+      factionDold <- getsState sfactionD
       s <- gameReset serverOptions Nothing Nothing
              -- get RNG from item boost
       -- Set up commandline options.
@@ -104,11 +106,11 @@ loopSer serverOptions executorClient = do
       modifyServer $ \ser -> ser { soptionsNxt = optionsBarRngs
                                  , soptions = optionsBarRngs }
       execUpdAtomic $ UpdRestartServer s
-      updConn
+      updConn True
       initPer
-      reinitGame
+      reinitGame factionDold
       writeSaveAll False False
-  loopUpd updConn
+  loopUpd $ updConn True
 
 factionArena :: MonadStateRead m => Faction -> m (Maybe LevelId)
 factionArena fact = case gleader fact of
@@ -228,14 +230,18 @@ loopUpd updConn = do
         endOrLoop loopUpdConn (restartGame updConn loopUpdConn)
       loopUpdConn = do
         factionD <- getsState sfactionD
-        -- Start handling actors with the single UI faction (positive ID),
+        -- Start handling actors with the single UI faction,
         -- to safely save/exit. Note that this hack fails if there are many UI
         -- factions (when we reenable multiplayer). Then players will request
         -- save&exit and others will vote on it and it will happen
         -- after the clip has ended, not at the start.
         -- Note that at most a single actor with a time-consuming action
         -- is processed per faction, so it's fair, but many loops are needed.
-        mapM_ handleFid $ EM.toDescList factionD
+        let hasUI (_, fact) = fhasUI (gkind fact)
+            (factionUI, factionsRest) = case break hasUI $ EM.assocs factionD of
+              (noUI1, ui : noUI2) -> (ui, noUI1 ++ noUI2)
+              _ -> error "no UI faction in the game"
+        mapM_ handleFid $ factionUI : factionsRest
         breakASAP <- getsServer sbreakASAP
         breakLoop <- getsServer sbreakLoop
         if breakASAP || breakLoop
@@ -294,15 +300,16 @@ endClip updatePerFid = do
     -- Perform periodic dungeon maintenance.
     when (clipN `mod` rleadLevelClips corule == 0) leadLevelSwitch
     case clipN `mod` clipsInTurn of
-      2 ->
+      0 ->
+        -- Spawn monsters at most once per 3 turns.
+        when (clipN `mod` (3 * clipsInTurn) == 0)
+          spawnMonster
+      4 ->
         -- Periodic activation only once per turn, for speed,
         -- but on all active arenas. Calm updates and domination
         -- happen there as well. Once per turn is too rare for accurate
         -- expiration of short conditions, e.g., 1-turn haste. TODO.
         applyPeriodicLevel
-      4 ->
-        -- Spawn monsters at most once per turn.
-        spawnMonster
       _ -> return ()
   -- @applyPeriodicLevel@ might have, e.g., dominated actors, ending the game.
   -- It could not have unended the game, though.
@@ -344,7 +351,7 @@ manageCalmAndDomination aid b = do
         Nothing -> return False
         Just (hiImpressionFid, hiImpressionK) -> do
           fact <- getsState $ (EM.! bfid b) . sfactionD
-          if fleaderMode (gplayer fact) /= Nothing
+          if fhasPointman (gkind fact)
                -- animals/robots/human drones never Calm-dominated
              || hiImpressionK >= 10
                -- unless very high impression, e.g., in a dominated hero
@@ -497,7 +504,7 @@ advanceTrajectory aid b1 = do
   case btrajectory b1 of
     Just (d : lv, speed) -> do
       let tpos = bpos b1 `shift` d  -- target position
-      if | Tile.isWalkable coTileSpeedup $ lvl `at` tpos -> do
+      if Tile.isWalkable coTileSpeedup $ lvl `at` tpos then do
            -- Hit will clear trajectories in @reqMelee@,
            -- so no need to do that here.
            execUpdAtomic $ UpdTrajectory aid (btrajectory b1) (Just (lv, speed))
@@ -518,7 +525,7 @@ advanceTrajectory aid b1 = do
                     if null lv then reqDisp target else reqMoveHit
                   (Just _, _) -> reqMoveHit  -- can't displace multiple
               | otherwise -> reqMoveHit  -- if not occupied, just move
-         | otherwise -> do
+      else do
            -- Will be removed from @strajTime@ in recursive call
            -- to @handleTrajectories@.
            unless (bproj b1) $
@@ -609,17 +616,16 @@ hActors as@(aid : rest) = do
   breakLoop <- getsServer sbreakLoop
   let mleader = gleader fact
       aidIsLeader = mleader == Just aid
-      mainUIactor = fhasUI (gplayer fact)
-                    && (aidIsLeader
-                        || fleaderMode (gplayer fact) == Nothing)
+      mainUIactor = fhasUI (gkind fact)
+                    && (aidIsLeader || not (fhasPointman (gkind fact)))
       -- Checking @breakLoop@, to avoid doubly setting faction status to Camping
       -- in case AI-controlled UI client asks to exit game at exactly
       -- the same moment as natural game over was detected.
-      mainUIunderAI = mainUIactor && isAIFact fact && not breakLoop
+      mainUIunderAI = mainUIactor && gunderAI fact && not breakLoop
   when mainUIunderAI $
     handleUIunderAI side aid
   factNew <- getsState $ (EM.! side) . sfactionD
-  let doQueryAI = not mainUIactor || isAIFact factNew
+  let doQueryAI = not mainUIactor || gunderAI factNew
   breakASAP <- getsServer sbreakASAP
   -- If breaking out of the game loop, pretend there was a non-wait move.
   -- we don't need additionally to check @sbreakLoop@, because it occurs alone
@@ -722,6 +728,7 @@ restartGame updConn loop mgameMode = do
   execSfxAtomic SfxRestart
   soptionsNxt <- getsServer soptionsNxt
   srandom <- getsServer srandom
+  factionDold <- getsState sfactionD
   -- Create new factions.
   s <- gameReset soptionsNxt mgameMode (Just srandom)
   -- Note how we also no longer assert exploration, because there may not be
@@ -736,7 +743,7 @@ restartGame updConn loop mgameMode = do
   -- Spawn new clients, as needed, according to new factions.
   updConn
   initPer
-  reinitGame
+  reinitGame factionDold
   -- Save a just started noConfirm game to preserve history of the just
   -- ended normal game, in case the user exits brutally.
   writeSaveAll False True

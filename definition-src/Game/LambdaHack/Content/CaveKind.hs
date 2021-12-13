@@ -2,7 +2,7 @@
 -- cave kind.
 module Game.LambdaHack.Content.CaveKind
   ( pattern DEFAULT_RANDOM
-  , CaveKind(..), makeData
+  , CaveKind(..), InitSleep(..), makeData
 #ifdef EXPOSE_INTERNAL
     -- * Internal operations
   , validateSingle, validateAll, mandatoryGroups
@@ -17,6 +17,7 @@ import qualified Data.Text as T
 
 import           Game.LambdaHack.Content.ItemKind (ItemKind)
 import           Game.LambdaHack.Content.PlaceKind (PlaceKind)
+import qualified Game.LambdaHack.Content.RuleKind as RK
 import           Game.LambdaHack.Content.TileKind (TileKind)
 import qualified Game.LambdaHack.Core.Dice as Dice
 import           Game.LambdaHack.Core.Random
@@ -27,8 +28,7 @@ import           Game.LambdaHack.Definition.DefsInternal
 -- | Parameters for the generation of dungeon levels.
 -- Warning: for efficiency, avoid embedded items in any of the common tiles.
 data CaveKind = CaveKind
-  { csymbol       :: Char             -- ^ a symbol
-  , cname         :: Text             -- ^ short description
+  { cname         :: Text             -- ^ short description
   , cfreq         :: Freqs CaveKind   -- ^ frequency within groups
   , cXminSize     :: X                -- ^ minimal X size of the whole cave
   , cYminSize     :: Y                -- ^ minimal Y size of the whole cave
@@ -36,9 +36,9 @@ data CaveKind = CaveKind
   , cminPlaceSize :: Dice.DiceXY      -- ^ minimal size of places; for merging
   , cmaxPlaceSize :: Dice.DiceXY      -- ^ maximal size of places; for growing
   , cdarkOdds     :: Dice.Dice        -- ^ the odds a place is dark
-                                        --   (level-scaled dice roll > 50)
+                                      --   (level-scaled dice roll > 50)
   , cnightOdds    :: Dice.Dice        -- ^ the odds the cave is dark
-                                        --   (level-scaled dice roll > 50)
+                                      --   (level-scaled dice roll > 50)
   , cauxConnects  :: Rational         -- ^ a proportion of extra connections
   , cmaxVoid      :: Rational
       -- ^ at most this proportion of rooms may be void
@@ -49,12 +49,13 @@ data CaveKind = CaveKind
   , cactorFreq    :: Freqs ItemKind   -- ^ actor groups to consider
   , citemNum      :: Dice.Dice        -- ^ number of initial items in the cave
   , citemFreq     :: Freqs ItemKind   -- ^ item groups to consider;
-      -- note that the groups are flattened; e.g., if an item is moved to another
-      -- included group with the same weight, the outcome doesn't change
+      -- note that the groups are flattened; e.g., if an item is moved
+      -- to another included group with the same weight, the outcome
+      -- doesn't change
   , cplaceFreq    :: Freqs PlaceKind  -- ^ place groups to consider
   , cpassable     :: Bool
       -- ^ are passable default tiles permitted
-  , labyrinth     :: Bool                -- ^ waste of time for AI to explore
+  , clabyrinth    :: Bool                -- ^ waste of time for AI to explore
   , cdefTile      :: GroupName TileKind  -- ^ the default cave tile
   , cdarkCorTile  :: GroupName TileKind  -- ^ the dark cave corridor tile
   , clitCorTile   :: GroupName TileKind  -- ^ the lit cave corridor tile
@@ -71,23 +72,36 @@ data CaveKind = CaveKind
   , cstairFreq    :: Freqs PlaceKind     -- ^ place groups for created stairs
   , cstairAllowed :: Freqs PlaceKind     -- ^ extra groups for inherited
   , cskip         :: [Int]  -- ^ which faction starting positions to skip
+  , cinitSleep    :: InitSleep           -- ^ whether actors spawn sleeping
   , cdesc         :: Text   -- ^ full cave description
   }
   deriving Show  -- No Eq and Ord to make extending logically sound
 
+data InitSleep = InitSleepAlways | InitSleepPermitted | InitSleepBanned
+  deriving (Show, Eq)
+
 -- | Catch caves with not enough space for all the places. Check the size
 -- of the cave descriptions to make sure they fit on screen. Etc.
-validateSingle :: CaveKind -> [Text]
-validateSingle CaveKind{..} =
+validateSingle :: RK.RuleContent -> CaveKind -> [Text]
+validateSingle corule CaveKind{..} =
   let (minCellSizeX, minCellSizeY) = Dice.infDiceXY ccellSize
+      (maxCellSizeX, maxCellSizeY) = Dice.supDiceXY ccellSize
       (minMinSizeX, minMinSizeY) = Dice.infDiceXY cminPlaceSize
       (maxMinSizeX, maxMinSizeY) = Dice.supDiceXY cminPlaceSize
       (minMaxSizeX, minMaxSizeY) = Dice.infDiceXY cmaxPlaceSize
   in [ "cname longer than 25" | T.length cname > 25 ]
-     ++ [ "cXminSize < 20" | cXminSize < 20 ]
-     ++ [ "cYminSize < 20" | cYminSize < 20 ]
-     ++ [ "minCellSizeX < 1" | minCellSizeX < 1 ]
-     ++ [ "minCellSizeY < 1" | minCellSizeY < 1 ]
+     ++ [ "cXminSize > RK.rWidthMax" | cXminSize > RK.rWidthMax corule ]
+     ++ [ "cYminSize > RK.rHeightMax" | cYminSize > RK.rHeightMax corule ]
+     ++ [ "cXminSize < 8" | cXminSize < 8 ]
+     ++ [ "cYminSize < 8" | cYminSize < 8 ]  -- see @focusArea@
+     ++ [ "cXminSize - 2 < maxCellSizeX" | cXminSize - 2 < maxCellSizeX ]
+     ++ [ "cYminSize - 2 < maxCellSizeY" | cYminSize - 2 < maxCellSizeY ]
+     ++ [ "minCellSizeX < 2" | minCellSizeX < 2 ]
+     ++ [ "minCellSizeY < 2" | minCellSizeY < 2 ]
+     ++ [ "minCellSizeX < 4 and stairs"
+        | minCellSizeX < 4 && not (null cstairFreq) ]
+     ++ [ "minCellSizeY < 4 and stairs"
+        | minCellSizeY < 4 && not (null cstairFreq) ]
      -- The following four are heuristics, so not too restrictive:
      ++ [ "minCellSizeX < 6 && non-trivial stairs"
         | minCellSizeX < 6 && not (length cstairFreq <= 1 && null cescapeFreq) ]
@@ -124,9 +138,11 @@ pattern DEFAULT_RANDOM :: GroupName CaveKind
 
 pattern DEFAULT_RANDOM = GroupName "default random"
 
-makeData :: [CaveKind] -> [GroupName CaveKind] -> [GroupName CaveKind]
+makeData :: RK.RuleContent
+         -> [CaveKind] -> [GroupName CaveKind] -> [GroupName CaveKind]
          -> ContentData CaveKind
-makeData content groupNamesSingleton groupNames =
-  makeContentData "CaveKind" cname cfreq validateSingle validateAll content
+makeData corule content groupNamesSingleton groupNames =
+  makeContentData "CaveKind" cname cfreq (validateSingle corule) validateAll
+                  content
                   groupNamesSingleton
                   (mandatoryGroups ++ groupNames)

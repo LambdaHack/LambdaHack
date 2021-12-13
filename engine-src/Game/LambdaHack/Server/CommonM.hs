@@ -45,10 +45,10 @@ import           Game.LambdaHack.Common.State
 import qualified Game.LambdaHack.Common.Tile as Tile
 import           Game.LambdaHack.Common.Time
 import           Game.LambdaHack.Common.Types
+import qualified Game.LambdaHack.Content.CaveKind as CK
+import           Game.LambdaHack.Content.FactionKind
 import           Game.LambdaHack.Content.ItemKind (ItemKind)
 import qualified Game.LambdaHack.Content.ItemKind as IK
-import           Game.LambdaHack.Content.ModeKind
-import           Game.LambdaHack.Content.RuleKind
 import           Game.LambdaHack.Core.Random
 import qualified Game.LambdaHack.Definition.Ability as Ability
 import           Game.LambdaHack.Definition.Defs
@@ -87,9 +87,11 @@ revealItems fid = do
       discoverSample iid = do
         itemKindId <- getsState $ getIidKindIdServer iid
         let arItem = discoAspect EM.! iid
-            cdummy = CTrunk fid minLid originPoint  -- only @fid@ matters here
+            cdummy = CTrunk fid minLid originPoint
             itemKind = okind coitem itemKindId
-        execUpdAtomic $ if keptSecret itemKind arItem  -- a hack
+        -- Due to @cdummy@, the met and unmet secret things will appear
+        -- at gameover among actors in the debug mode. Tough luck.
+        execUpdAtomic $ if keptSecret itemKind arItem
                         then UpdSpotItem False iid quantSingle cdummy
                         else UpdDiscover cdummy iid itemKindId arItem
   generationAn <- getsServer sgenerationAn
@@ -107,12 +109,12 @@ revealItems fid = do
   when (sexposeActors sclientOptions) $
     -- Few, if any, need ID, but we can't rule out unusual content.
     mapM_ discoverSample $ EM.keys $ nonDupGen EM.! STrunk
-  when (sexposeItems sclientOptions) $
+  when (sexposeItems sclientOptions) $ do
     mapM_ discoverSample $ EM.keys $ nonDupGen EM.! SItem
-  mapM_ discoverSample $ EM.keys $ nonDupGen EM.! SEmbed
-  mapM_ discoverSample $ EM.keys $ nonDupGen EM.! SOrgan
-  mapM_ discoverSample $ EM.keys $ nonDupGen EM.! SCondition
-  mapM_ discoverSample $ EM.keys $ nonDupGen EM.! SBlast
+    mapM_ discoverSample $ EM.keys $ nonDupGen EM.! SEmbed
+    mapM_ discoverSample $ EM.keys $ nonDupGen EM.! SOrgan
+    mapM_ discoverSample $ EM.keys $ nonDupGen EM.! SCondition
+    mapM_ discoverSample $ EM.keys $ nonDupGen EM.! SBlast
 
 revealAll :: MonadServerAtomic m => FactionId -> m ()
 revealAll fid = do
@@ -179,10 +181,10 @@ quitF status fid = do
                         `swith` (stOutcome <$> oldSt, status, fid)) ()
       -- This runs regardless of the _new_ status.
       manalytics <-
-        if fhasUI $ gplayer fact then do
+        if fhasUI $ gkind fact then do
           keepAutomated <- getsServer $ skeepAutomated . soptions
           -- Try to remove AI control of the UI faction, to show gameover info.
-          when (isAIFact fact && not keepAutomated) $
+          when (gunderAI fact && not keepAutomated) $
             execUpdAtomic $ UpdAutoFaction fid False
           revealAll fid
           -- Likely, by this time UI faction is no longer AI-controlled,
@@ -203,7 +205,7 @@ deduceQuits fid0 status@Status{stOutcome}
     error $ "no quitting to deduce" `showFailure` (fid0, status)
 deduceQuits fid0 status = do
   fact0 <- getsState $ (EM.! fid0) . sfactionD
-  let factHasUI = fhasUI . gplayer
+  let factHasUI = fhasUI . gkind
       quitFaction (stOutcome, (fid, _)) = quitF status{stOutcome} fid
       mapQuitF outfids = do
         let (withUI, withoutUI) =
@@ -282,7 +284,7 @@ verifyCaches = do
   -- Don't verify perception in such cases. All the caches from which
   -- legal perception would be created at that point are legal and verified,
   -- which is almost as tight.
-  let gameOverUI fact = fhasUI (gplayer fact)
+  let gameOverUI fact = fhasUI (gkind fact)
                         && maybe False ((/= Camping) . stOutcome) (gquit fact)
       isGameOverUI = any gameOverUI $ EM.elems factionD
       !_A7 = assert (sfovLitLid == fovLitLid
@@ -314,8 +316,7 @@ verifyCaches = do
 -- So, leaderless factions and spawner factions do not keep an arena,
 -- even though the latter usually has a leader for most of the game.
 keepArenaFact :: Faction -> Bool
-keepArenaFact fact = fleaderMode (gplayer fact) /= Nothing
-                     && fneverEmpty (gplayer fact)
+keepArenaFact fact = fhasPointman (gkind fact) && fneverEmpty (gkind fact)
 
 -- We assume the actor in the second argument has HP <= 0 or is going to be
 -- dominated right now. Even if the actor is to be dominated,
@@ -324,9 +325,9 @@ deduceKilled :: MonadServerAtomic m => ActorId -> m ()
 deduceKilled aid = do
   body <- getsState $ getActorBody aid
   fact <- getsState $ (EM.! bfid body) . sfactionD
-  when (fneverEmpty $ gplayer fact) $ do
+  when (fneverEmpty $ gkind fact) $ do
     actorsAlive <- anyActorsAlive (bfid body) aid
-    when (not actorsAlive) $
+    unless actorsAlive $
       deduceQuits (bfid body) $ Status Killed (fromEnum $ blid body) Nothing
 
 anyActorsAlive :: MonadServer m => FactionId -> ActorId -> m Bool
@@ -347,14 +348,13 @@ electLeader fid lid aidToReplace = do
     onThisLevel <- getsState $ fidActorRegularAssocs fid lid
     let candidates = filter (\(_, b) -> bwatch b /= WSleep) onThisLevel
                      ++ awake ++ sleeping ++ negative
-        mleaderNew =
-          listToMaybe $ filter (/= aidToReplace) $ map fst candidates
+        mleaderNew = find (/= aidToReplace) $ map fst candidates
     execUpdAtomic $ UpdLeadFaction fid mleader mleaderNew
 
 setFreshLeader :: MonadServerAtomic m => FactionId -> ActorId -> m ()
 setFreshLeader fid aid = do
   fact <- getsState $ (EM.! fid) . sfactionD
-  unless (fleaderMode (gplayer fact) == Nothing) $ do
+  when (fhasPointman (gkind fact)) $ do
     -- First update and send Perception so that the new leader
     -- may report his environment.
     b <- getsState $ getActorBody aid
@@ -407,11 +407,11 @@ projectFail :: MonadServerAtomic m
             -> Bool       -- ^ whether the item is a blast
             -> m (Maybe ReqFailure)
 projectFail propeller origin oxy tpxy eps center iid cstore blast = do
-  COps{corule=RuleContent{rXmax, rYmax}, coTileSpeedup} <- getsState scops
+  COps{coTileSpeedup} <- getsState scops
   body <- getsState $ getActorBody origin
   let lid = blid body
   lvl <- getLevel lid
-  case bla rXmax rYmax eps oxy tpxy of
+  case bresenhamsLineAlgorithm eps oxy tpxy of
     Nothing -> return $ Just ProjectAimOnself
     Just [] -> error $ "projecting from the edge of level"
                        `showFailure` (oxy, tpxy)
@@ -503,7 +503,7 @@ addActorFromGroup actorGroup fid pos lid time = do
   m2 <- rollItemAspect freq ldepth
   case m2 of
     NoNewItem -> return Nothing
-    NewItem itemKnown itemFull itemQuant -> do
+    NewItem _ itemKnown itemFull itemQuant -> do
       let itemFullKit = (itemFull, itemQuant)
       Just <$> registerActor False itemKnown itemFullKit fid pos lid time
 
@@ -513,6 +513,7 @@ registerActor :: MonadServerAtomic m
               -> m ActorId
 registerActor summoned (ItemKnown kindIx ar _) (itemFullRaw, kit)
               bfid pos lid time = do
+  COps{cocave} <- getsState scops
   let container = CTrunk bfid lid pos
       jfid = Just bfid
       itemKnown = ItemKnown kindIx ar jfid
@@ -522,14 +523,17 @@ registerActor summoned (ItemKnown kindIx ar _) (itemFullRaw, kit)
   fact <- getsState $ (EM.! bfid) . sfactionD
   actorMaxSk <- getsState $ getActorMaxSkills aid
   condAnyFoeAdj <- getsState $ anyFoeAdj aid
-  when (canSleep actorMaxSk
+  Level{lkind} <- getLevel lid
+  let cinitSleep = CK.cinitSleep $ okind cocave lkind
+  when (cinitSleep /= CK.InitSleepBanned
+        && canSleep actorMaxSk
         && not condAnyFoeAdj
         && not summoned
-        && not (fhasGender (gplayer fact))) $ do  -- heroes never start asleep
+        && not (fhasGender (gkind fact))) $ do  -- heroes never start asleep
     -- A lot of actors will wake up at once anyway, so let most start sleeping.
     let sleepOdds = if prefersSleep actorMaxSk then 19%20 else 2%3
     sleeps <- rndToAction $ chance sleepOdds
-    when sleeps $ addSleep aid
+    when (cinitSleep == CK.InitSleepAlways || sleeps) $ addSleep aid
   return aid
 
 addProjectile :: MonadServerAtomic m
@@ -596,14 +600,14 @@ addActorIid trunkId ItemFull{itemBase, itemKind, itemDisco=ItemDiscoFull arItem}
   factionD <- getsState sfactionD
   curChalSer <- getsServer $ scurChalSer . soptions
   let fact = factionD EM.! fid
-  bnumberTeam <- case gteamCont fact of
-    Just teamContinuity | not bproj -> do
+      teamContinuityOurs = fteam (gkind fact)
+  bnumberTeam <-
+    if bproj then return Nothing else do
       stcounter <- getsServer stcounter
-      let number = EM.findWithDefault 0 teamContinuity stcounter
+      let number = EM.findWithDefault 0 teamContinuityOurs stcounter
       modifyServer $ \ser -> ser {stcounter =
-        EM.insert teamContinuity (succ number) stcounter}
-      return $ Just (number, teamContinuity)
-    _ -> return Nothing
+        EM.insert teamContinuityOurs (succ number) stcounter}
+      return $ Just (number, teamContinuityOurs)
   let bnumber = fst <$> bnumberTeam
   -- If difficulty is below standard, HP is added to the UI factions,
   -- otherwise HP is added to their enemies.
@@ -619,10 +623,10 @@ addActorIid trunkId ItemFull{itemBase, itemKind, itemDisco=ItemDiscoFull arItem}
       -- in a hard to balance way (e.g., one bullet adds 10 SkMaxHP).
       boostFact = not bproj
                   && if diffBonusCoeff > 0
-                     then any (fhasUI . gplayer . snd)
+                     then any (fhasUI . gkind . snd)
                               (filter (\(fi, fa) -> isFriend fi fa fid)
                                       (EM.assocs factionD))
-                     else any (fhasUI . gplayer  . snd)
+                     else any (fhasUI . gkind  . snd)
                               (filter (\(fi, fa) -> isFoe fi fa fid)
                                       (EM.assocs factionD))
       finalHP | boostFact = min (xM 899)  -- no more than UI can stand
@@ -693,7 +697,7 @@ addActorIid trunkId ItemFull{itemBase, itemKind, itemDisco=ItemDiscoFull arItem}
           modifyServer $ \ser ->
             ser {steamGearCur = EM.alter alt teamContinuity steamGearCur}
           let itemKind2 = okind coitem itemKindId2
-              freq = pure (itemKindId2, itemKind2)
+              freq = pure (ikGrp, itemKindId2, itemKind2)
           rollAndRegisterItem False ldepth freq container mk
       case mIidEtc of
         Nothing -> error $ "" `showFailure` (lid, ikGrp, container, mk)
@@ -717,18 +721,22 @@ discoverIfMinorEffects c iid itemKindId = do
         && not (IA.isHumanTrinket itemKind)) $
     execUpdAtomic $ UpdDiscover c iid itemKindId arItem
 
-pickWeaponServer :: MonadServer m => ActorId -> m (Maybe (ItemId, CStore))
-pickWeaponServer source = do
+pickWeaponServer :: MonadServer m
+                 => ActorId -> ActorId -> m (Maybe (ItemId, CStore))
+pickWeaponServer source target = do
   eqpAssocs <- getsState $ kitAssocs source [CEqp]
   bodyAssocs <- getsState $ kitAssocs source [COrgan]
   actorSk <- currentSkillsServer source
   sb <- getsState $ getActorBody source
+  tb <- getsState $ getActorBody target
   let kitAssRaw = eqpAssocs ++ bodyAssocs
       forced = bproj sb
       kitAss | forced = kitAssRaw  -- for projectiles, anything is weapon
              | otherwise =
                  filter (IA.checkFlag Ability.Meleeable
                          . aspectRecordFull . fst . snd) kitAssRaw
+      benign itemFull = let arItem = aspectRecordFull itemFull
+                        in IA.checkFlag Ability.Benign arItem
   -- Server ignores item effects or it would leak item discovery info.
   -- Hence, weapons with powerful burning or wouding are undervalued.
   -- In particular, it even uses weapons that would heal an opponent.
@@ -737,6 +745,9 @@ pickWeaponServer source = do
   strongest <- pickWeaponM False Nothing kitAss actorSk source
   case strongest of
     [] -> return Nothing
+    (_, _, _, _, _, (itemFull, _)) : _ | not forced
+                                         && benign itemFull && bproj tb ->
+      return Nothing  -- if strongest is benign, don't waste fun on a projectile
     iis@((value1, hasEffect1, timeout1, _, _, _) : _) -> do
       let minIis = takeWhile (\(value, hasEffect, timeout, _, _, _) ->
                                  value == value1

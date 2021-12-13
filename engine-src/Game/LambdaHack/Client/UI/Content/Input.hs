@@ -61,6 +61,7 @@ makeData muiOptions (InputContentRaw copsClient) =
         ++ [ (K.mkKM "KP_Begin", waitTriple)
            , (K.mkKM "C-KP_Begin", wait10Triple)
            , (K.mkKM "KP_5", wait10Triple)
+           , (K.mkKM "S-KP_5", wait10Triple)  -- rxvt
            , (K.mkKM "C-KP_5", wait10Triple) ]
         ++ [(K.mkKM "period", waitTriple) | uVi0]
         ++ [(K.mkKM "C-period", wait10Triple) | uVi0]
@@ -69,30 +70,26 @@ makeData muiOptions (InputContentRaw copsClient) =
       -- This is the most common case of duplicate keys and it usually
       -- has an easy solution, so it's tested for first.
       !_A = flip assert () $
-        let isNotMainMenu (_, (cats, _, _)) = all (`notElem` [CmdMainMenu]) cats
-            rawContentNoMainMenu = filter isNotMainMenu rawContent
-            movementKeys = map fst movementDefinitions
-            filteredNoMainMenu = filter (\(k, _) -> k `notElem` movementKeys)
-                                        rawContentNoMainMenu
-        in rawContentNoMainMenu == filteredNoMainMenu
+        let movementKeys = map fst movementDefinitions
+            filteredNoMovement = filter (\(k, _) -> k `notElem` movementKeys)
+                                        rawContent
+        in rawContent == filteredNoMovement
            `blame` "commands overwrite the enabled movement keys (you can disable some in config file and try again)"
-           `swith` rawContentNoMainMenu \\ filteredNoMainMenu
+           `swith` rawContent \\ filteredNoMovement
       bcmdList = rawContent ++ movementDefinitions
       -- This catches repetitions (usually) not involving movement keys.
+      rejectRepetitions _ t1 (_, "", _) = t1
+      rejectRepetitions _ (_, "", _) t2 = t2
       rejectRepetitions k t1 t2 =
         error $ "duplicate key among command definitions (you can instead disable some movement key sets in config file and overwrite the freed keys)" `showFailure` (k, t1, t2)
   in InputContent
-  { bcmdMap = M.fromListWithKey rejectRepetitions
-      [ (k, triple)
-      | (k, triple@(cats, _, _)) <- bcmdList
-      , all (`notElem` [CmdMainMenu]) cats
-      ]
+  { bcmdMap = M.fromListWithKey rejectRepetitions bcmdList
   , bcmdList
   , brevMap = M.fromListWith (flip (++)) $ concat
       [ [(cmd, [k])]
       | (k, (cats, _desc, cmd)) <- bcmdList
       , not (null cats)
-        && all (`notElem` [CmdMainMenu, CmdDebug]) cats
+        && CmdDebug `notElem` cats
       ]
   }
 
@@ -151,7 +148,7 @@ mouseLMB goToOrRunTo desc =
         , (CaArenaName, Accept)
         , (CaPercentSeen, XhairStair True) ] }
   common =
-    [ (CaMessage, LastHistory)
+    [ (CaMessage, AllHistory)
     , (CaLevelNumber, AimAscend 1)
     , (CaXhairDesc, AimEnemy)  -- inits aiming and then cycles enemies
     , (CaSelected, PickLeaderWithPointer)

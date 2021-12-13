@@ -38,7 +38,6 @@ import           Data.Time.Clock.POSIX
 import           Data.Time.LocalTime
 import qualified Data.Vector.Unboxed as U
 import qualified NLP.Miniutter.English as MU
-import           System.FilePath
 import           System.IO (hFlush, stdout)
 import           Web.Browser (openBrowser)
 
@@ -56,6 +55,7 @@ import qualified Game.LambdaHack.Client.UI.Frontend as Frontend
 import qualified Game.LambdaHack.Client.UI.HumanCmd as HumanCmd
 import qualified Game.LambdaHack.Client.UI.Key as K
 import           Game.LambdaHack.Client.UI.Msg
+import           Game.LambdaHack.Client.UI.Overlay
 import           Game.LambdaHack.Client.UI.SessionUI
 import           Game.LambdaHack.Client.UI.Slideshow
 import           Game.LambdaHack.Client.UI.UIOptions
@@ -63,7 +63,6 @@ import           Game.LambdaHack.Common.Actor
 import           Game.LambdaHack.Common.ActorState
 import           Game.LambdaHack.Common.ClientOptions
 import           Game.LambdaHack.Common.Faction
-import           Game.LambdaHack.Common.File
 import qualified Game.LambdaHack.Common.HighScore as HighScore
 import           Game.LambdaHack.Common.Item
 import           Game.LambdaHack.Common.Kind
@@ -75,8 +74,8 @@ import qualified Game.LambdaHack.Common.Save as Save
 import           Game.LambdaHack.Common.State
 import           Game.LambdaHack.Common.Time
 import           Game.LambdaHack.Common.Types
+import           Game.LambdaHack.Content.FactionKind
 import           Game.LambdaHack.Content.ModeKind
-import           Game.LambdaHack.Content.RuleKind
 import           Game.LambdaHack.Core.Random
 
 -- Assumes no interleaving with other clients, because each UI client
@@ -133,13 +132,14 @@ displayFrames _ [] = return ()
 displayFrames lid frs = do
   let framesRaw = case frs of
         [] -> []
-        [Just ((bfr, ffr), (ovProp, ovMono))] ->
-          [Just ((FrameBase $ U.unsafeThaw bfr, ffr), (ovProp, ovMono))]
+        [Just ((bfr, ffr), (ovProp, ovSquare, ovMono))] ->
+          [Just ( (FrameBase $ U.unsafeThaw bfr, ffr)
+                , (ovProp, ovSquare, ovMono) )]
         _ ->
           -- Due to the frames coming from the same base frame,
           -- we have to copy it to avoid picture corruption.
-          map (fmap $ \((bfr, ffr), (ovProp, ovMono)) ->
-                ((FrameBase $ U.thaw bfr, ffr), (ovProp, ovMono))) frs
+          map (fmap $ \((bfr, ffr), (ovProp, ovSquare, ovMono)) ->
+                ((FrameBase $ U.thaw bfr, ffr), (ovProp, ovSquare, ovMono))) frs
   -- If display level different than the man viewed level,
   -- e.g., when our actor is attacked on a remote level,
   -- then pad with tripple delay to give more time to see the remote frames(s).
@@ -155,8 +155,9 @@ displayFrames lid frs = do
 -- | Write 'Frontend.FrontKey' UI request to the frontend, read the reply,
 -- set pointer, return key.
 connFrontendFrontKey :: MonadClientUI m => [K.KM] -> PreFrame3 -> m K.KM
-connFrontendFrontKey frontKeyKeys ((bfr, ffr), (ovProp, ovMono)) = do
-  let frontKeyFrame = ((FrameBase $ U.unsafeThaw bfr, ffr), (ovProp, ovMono))
+connFrontendFrontKey frontKeyKeys ((bfr, ffr), (ovProp, ovSquare, ovMono)) = do
+  let frontKeyFrame =
+        ((FrameBase $ U.unsafeThaw bfr, ffr), (ovProp, ovSquare, ovMono))
   sautoYes <- getsSession sautoYes
   if sautoYes && (null frontKeyKeys || K.spaceKM `elem` frontKeyKeys) then do
     connFrontend $ Frontend.FrontFrame frontKeyFrame
@@ -204,21 +205,17 @@ getReportUI insideMenu = do
   saimMode <- getsSession saimMode
   sUIOptions <- getsSession sUIOptions
   report <- getsSession $ newReport . shistory
-  curTutorial <- getsSession scurTutorial
-  overrideTut <- getsSession soverrideTut
   sreqDelay <- getsSession sreqDelay
   miniHintAiming <- getMiniHintAiming
   -- Different from ordinary tutorial hints in that shown more than once.
-  let newcomerHelp = fromMaybe curTutorial overrideTut
-      detailAtDefault = (detailLevel <$> saimMode) == Just defaultDetailLevel
+  let detailAtDefault = (detailLevel <$> saimMode) == Just defaultDetailLevel
       detailMinimal = (detailLevel <$> saimMode) == Just minBound
       prefixColors = uMessageColors sUIOptions
       promptAim = toMsgShared prefixColors MsgPromptGeneric
                               (miniHintAiming <> "\n")
       promptDelay = toMsgShared prefixColors MsgPromptAction
                                 "<press any key to regain control>"
-  return $! if | (newcomerHelp || sreqDelay == ReqDelayHandled)
-                 && not insideMenu && detailAtDefault && not detailMinimal ->
+  return $! if | not insideMenu && detailAtDefault && not detailMinimal ->
                    consReport promptAim report
                | sreqDelay == ReqDelayAlarm && not insideMenu ->
                    consReport promptDelay report
@@ -251,7 +248,7 @@ computeChosenLore = do
   lidV <- viewedLevelUI
   let isOurs (_, b) = bfid b == side
   inhabitants0 <- getsState $ filter (not . isOurs)
-                  . posToAidAssocs xhairPos lidV
+                              . posToAidAssocs xhairPos lidV
   embeds0 <- getsState $ EM.assocs . getEmbedBag lidV xhairPos
   return (inhabitants0, embeds0)
 
@@ -319,6 +316,9 @@ clearAimMode = do
           _ -> sxhairOld
     setXHairFromGUI sxhair
 
+-- We can't support setup @FontSetup SquareFont MonoFont MonoFont@
+-- at this time, because the mono layer needs to overwrite the prop layer
+-- and so has to be distinct even if the underlying font is mono for both.
 getFontSetup :: MonadClientUI m => m FontSetup
 getFontSetup = do
   soptions@ClientOptions{schosenFontset, sfontsets} <- getsClient soptions
@@ -329,11 +329,7 @@ getFontSetup = do
         Just fs -> fs
       multiFont = Frontend.frontendName soptions == "sdl"
                   && not (T.null (fontPropRegular chosenFontset))
-  return $! if | not multiFont -> singleFontSetup
-               | fontPropRegular chosenFontset == fontMono chosenFontset
-                 && fontPropBold chosenFontset == fontMono chosenFontset ->
-                 monoFontSetup
-               | otherwise -> multiFontSetup
+  return $! if multiFont then multiFontSetup else singleFontSetup
 
 scoreToSlideshow :: MonadClientUI m => Int -> Status -> m Slideshow
 scoreToSlideshow total status = do
@@ -351,9 +347,6 @@ scoreToSlideshow total status = do
   let fact = factionD EM.! fid
       table = HighScore.getTable gameModeId scoreDict
       gameModeName = mname gameMode
-      chal | fhasUI $ gplayer fact = curChalSer
-           | otherwise = curChalSer
-                           {cdiff = difficultyInverse (cdiff curChalSer)}
       theirVic (fi, fa) | isFoe fid fact fi
                           && not (isHorrorFact fa) = Just $ gvictims fa
                         | otherwise = Nothing
@@ -362,12 +355,12 @@ scoreToSlideshow total status = do
                       | otherwise = Nothing
       ourVictims = EM.unionsWith (+) $ mapMaybe ourVic $ EM.assocs factionD
       (worthMentioning, (ntable, pos)) =
-        HighScore.register table total dungeonTotal time status date chal
+        HighScore.register table total dungeonTotal time status date curChalSer
                            (T.unwords $ tail $ T.words $ gname fact)
                            ourVictims theirVictims
-                           (fhiCondPoly $ gplayer fact)
+                           (fhiCondPoly $ gkind fact)
   fontSetup <- getFontSetup
-  let sli = highSlideshow fontSetup rwidth (rheight - 1) ntable pos
+  let sli = highSlideshow fontSetup False rwidth (rheight - 1) ntable pos
                           gameModeName tz
   return $! if worthMentioning
             then sli
@@ -430,7 +423,7 @@ tellGameClipPS = do
         <+> "Average clips per second:" <+> tshow cps <> "."
         <+> "Average FPS:" <+> tshow fps <> "."
 
--- TODO: for speed and resolutiion use
+-- TODO: for speed and resolution use
 -- https://hackage.haskell.org/package/chronos
 -- or the number_of_nanonseconds functionality
 -- in Data.Time.Clock.System, once it arrives there
@@ -492,12 +485,7 @@ tryRestore = do
     side <- getsClient sside
     prefix <- getsClient $ ssavePrefixCli . soptions
     let fileName = prefix <> Save.saveNameCli corule side
-    res <- liftIO $ Save.restoreGame corule clientOptions fileName
-    let cfgUIName = rcfgUIName corule
-        (configString, _) = rcfgUIDefault corule
-    dataDir <- liftIO appDataDir
-    liftIO $ tryWriteFile (dataDir </> cfgUIName) configString
-    return res
+    liftIO $ Save.restoreGame corule clientOptions fileName
 
 -- | Invoke pseudo-random computation with the generator kept in the session.
 rndToActionUI :: MonadClientUI m => Rnd a -> m a

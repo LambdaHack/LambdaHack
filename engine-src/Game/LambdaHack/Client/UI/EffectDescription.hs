@@ -3,7 +3,7 @@
 module Game.LambdaHack.Client.UI.EffectDescription
   ( DetailLevel(..), defaultDetailLevel
   , effectToSuffix, detectToObject, detectToVerb
-  , skillName, skillDesc, skillToDecorator, skillSlots
+  , skillName, skillDesc, skillToDecorator, skillsInDisplayOrder
   , kindAspectToSuffix, aspectToSentence, affixDice
   , describeToolsAlternative, describeCrafting, wrapInParens
 #ifdef EXPOSE_INTERNAL
@@ -56,10 +56,10 @@ effectToSuffix detailLevel effect =
     Explode t -> "of" <+> displayGroupName t <+> "explosion"
     RefillHP p | p > 0 -> "of healing" <+> wrapInParens (affixBonus p)
     RefillHP 0 -> error $ "" `showFailure` effect
-    RefillHP p -> "of wounding" <+> wrapInParens (affixBonus $ - p)
+    RefillHP p -> "of wounding" <+> wrapInParens (tshow $ abs p)
     RefillCalm p | p > 0 -> "of soothing" <+> wrapInParens (affixBonus p)
     RefillCalm 0 -> error $ "" `showFailure` effect
-    RefillCalm p -> "of dismaying" <+> wrapInParens (affixBonus $ - p)
+    RefillCalm p -> "of dismaying" <+> wrapInParens (tshow $ abs p)
     Dominate -> "of domination"
     Impress -> "of impression"
     PutToSleep -> "of sleep"
@@ -194,20 +194,21 @@ effectToSuffix detailLevel effect =
           object2 = effectToSuffix detailLevel eff
       in if T.null object2
          then ""  -- no 'conditional processing' --- probably a hack
-         else "when" <+> object <+> "then" <+> object2
+         else "(when" <+> object <+> "then" <+> object2 <> ")"
     Unless cond eff ->
       let object = conditionToObject cond
           object2 = effectToSuffix detailLevel eff
       in if T.null object2
          then ""
-         else "unless" <+> object <+> "then" <+> object2
+         else "(unless" <+> object <+> "then" <+> object2 <> ")"
     IfThenElse cond eff1 eff2 ->
       let object = conditionToObject cond
           object1 = effectToSuffix detailLevel eff1
           object2 = effectToSuffix detailLevel eff2
       in if T.null object1 && T.null object2
          then ""
-         else "if" <+> object <+> "then" <+> object1 <+> "else" <+> object2
+         else "(if" <+> object <+> "then" <+> object1
+                               <+> "else" <+> object2 <> ")"
     VerbNoLonger{} -> ""  -- no description for a flavour effect
     VerbMsg{} -> ""  -- no description for an effect that prints a description
     VerbMsgFail{} -> ""
@@ -402,8 +403,8 @@ skillToDecorator skill b t =
     SkDeflectRanged -> tshow t
     SkDeflectMelee -> tshow t
 
-skillSlots :: [Skill]
-skillSlots = [minBound .. maxBound]
+skillsInDisplayOrder :: [Skill]
+skillsInDisplayOrder = [minBound .. maxBound]
 
 tmodToSuff :: Text -> ThrowMod -> Text
 tmodToSuff verb ThrowMod{..} =
@@ -488,7 +489,7 @@ aspectToSentence feat =
     SetFlag Blast -> Nothing
     SetFlag Condition -> Nothing
     SetFlag Unique -> Just "It is one of a kind."
-    SetFlag MetaGame -> Just "It's characteristic to a person and easy to recognize once learned, even under very different circumstances."
+    SetFlag MetaGame -> Just "It's so characteristic that it's recognizable every time after being identified once, even under very different circumstances."
     SetFlag MinorEffects -> Nothing
     SetFlag MinorAspects -> Nothing
     SetFlag Meleeable -> Just "It is considered for melee strikes."

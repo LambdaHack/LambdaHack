@@ -1,10 +1,10 @@
 {-# LANGUAGE DeriveGeneric, GeneralizedNewtypeDeriving #-}
 -- | The client UI session state.
 module Game.LambdaHack.Client.UI.SessionUI
-  ( SessionUI(..), ReqDelay(..), ItemDictUI, AimMode(..), KeyMacro(..)
-  , KeyMacroFrame(..), RunParams(..), ChosenLore(..)
+  ( SessionUI(..), ReqDelay(..), ItemDictUI, ItemRoles(..), AimMode(..)
+  , KeyMacro(..), KeyMacroFrame(..), RunParams(..), ChosenLore(..)
   , emptySessionUI, emptyMacroFrame
-  , toggleMarkVision, toggleMarkSmell, cycleOverrideTut, getActorUI
+  , cycleMarkVision, toggleMarkSmell, cycleOverrideTut, getActorUI
   ) where
 
 import Prelude ()
@@ -26,20 +26,23 @@ import           Game.LambdaHack.Client.UI.ActorUI
 import           Game.LambdaHack.Client.UI.ContentClientUI
 import           Game.LambdaHack.Client.UI.EffectDescription (DetailLevel (..))
 import           Game.LambdaHack.Client.UI.Frontend
-import           Game.LambdaHack.Client.UI.ItemSlot
 import qualified Game.LambdaHack.Client.UI.Key as K
 import           Game.LambdaHack.Client.UI.Msg
 import           Game.LambdaHack.Client.UI.PointUI
 import           Game.LambdaHack.Client.UI.UIOptions
 import           Game.LambdaHack.Common.Actor
+import           Game.LambdaHack.Common.Faction
 import           Game.LambdaHack.Common.Item
 import           Game.LambdaHack.Common.Time
 import           Game.LambdaHack.Common.Types
+import           Game.LambdaHack.Content.ModeKind (ModeKind)
 import           Game.LambdaHack.Definition.Defs
 
--- | The information that is used across a client playing session,
--- including many consecutive games in a single session.
--- Some of it is saved, some is reset when a new playing session starts.
+-- | The information that is used across a human player playing session,
+-- including many consecutive games in a single session,
+-- including playing different teams. Some of it is saved, some is reset
+-- when a new playing session starts. Nothing is tied to a faction/team,
+-- but instead all to UI configuration and UI input and display history.
 -- An important component is the frontend session.
 data SessionUI = SessionUI
   { sreqPending    :: Maybe RequestUI
@@ -54,7 +57,7 @@ data SessionUI = SessionUI
   , sxhairGoTo     :: Maybe Target  -- ^ xhair set for last GoTo
   , sactorUI       :: ActorDictUI   -- ^ assigned actor UI presentations
   , sitemUI        :: ItemDictUI    -- ^ assigned item first seen level
-  , sslots         :: ItemSlots     -- ^ map from slots to items
+  , sroles         :: ItemRoles     -- ^ assignment of roles to items
   , slastItemMove  :: Maybe (CStore, CStore)
                                     -- ^ last item move stores
   , schanF         :: ChanFrontend  -- ^ connection with the frontend
@@ -70,6 +73,11 @@ data SessionUI = SessionUI
   , srunning       :: Maybe RunParams
                                     -- ^ parameters of the current run, if any
   , shistory       :: History       -- ^ history of messages
+  , svictories     :: EM.EnumMap (ContentId ModeKind) (M.Map Challenge Int)
+      -- ^ the number of games won by the UI faction per game mode
+      --   and per difficulty level
+  , scampings      :: ES.EnumSet (ContentId ModeKind)  -- ^ camped games
+  , srestarts      :: ES.EnumSet (ContentId ModeKind)  -- ^ restarted games
   , spointer       :: PointUI       -- ^ mouse pointer position
   , sautoYes       :: Bool          -- ^ whether to auto-clear prompts
   , smacroFrame    :: KeyMacroFrame -- ^ the head of the key macro stack
@@ -79,7 +87,7 @@ data SessionUI = SessionUI
                                     -- ^ actors that just got out of sight
   , swaitTimes     :: Int           -- ^ player just waited this many times
   , swasAutomated  :: Bool          -- ^ the player just exited AI automation
-  , smarkVision    :: Bool          -- ^ mark leader and party FOV
+  , smarkVision    :: Int           -- ^ mark leader and party FOV
   , smarkSmell     :: Bool          -- ^ mark smell, if the leader can smell
   , snxtScenario   :: Int           -- ^ next game scenario number
   , scurTutorial   :: Bool          -- ^ whether current game is a tutorial
@@ -123,6 +131,11 @@ data KeyMacroFrame = KeyMacroFrame
 -- This can stay a map forever, not a vector, because it's added to often,
 -- but never read from, except when the user requests item details.
 type ItemDictUI = EM.EnumMap ItemId LevelId
+
+-- | A collection of item identifier sets indicating what roles (possibly many)
+-- an item has assigned.
+newtype ItemRoles = ItemRoles (EM.EnumMap SLore (ES.EnumSet ItemId))
+  deriving (Show, Binary)
 
 -- | Current aiming mode of a client.
 data AimMode = AimMode
@@ -168,8 +181,8 @@ emptySessionUI sUIOptions =
     , sxhairGoTo = Nothing
     , sactorUI = EM.empty
     , sitemUI = EM.empty
-    , sslots = ItemSlots $ EM.fromDistinctAscList
-               $ zip [minBound..maxBound] (repeat EM.empty)
+    , sroles = ItemRoles $ EM.fromDistinctAscList
+               $ zip [minBound..maxBound] (repeat ES.empty)
     , slastItemMove = Nothing
     , schanF = ChanFrontend $ const $
         error $ "emptySessionUI: ChanFrontend" `showFailure` ()
@@ -181,6 +194,9 @@ emptySessionUI sUIOptions =
     , sselected = ES.empty
     , srunning = Nothing
     , shistory = emptyHistory 0
+    , svictories = EM.empty
+    , scampings = ES.empty
+    , srestarts = ES.empty
     , spointer = PointUI 0 0
     , sautoYes = False
     , smacroFrame = emptyMacroFrame
@@ -188,7 +204,7 @@ emptySessionUI sUIOptions =
     , slastLost = ES.empty
     , swaitTimes = 0
     , swasAutomated = False
-    , smarkVision = False
+    , smarkVision = 1
     , smarkSmell = True
     , snxtScenario = 0
     , scurTutorial = False
@@ -212,17 +228,19 @@ emptySessionUI sUIOptions =
 emptyMacroFrame :: KeyMacroFrame
 emptyMacroFrame = KeyMacroFrame (Right mempty) mempty Nothing
 
-toggleMarkVision :: SessionUI -> SessionUI
-toggleMarkVision sess = sess {smarkVision = not (smarkVision sess)}
+cycleMarkVision :: Int -> SessionUI -> SessionUI
+cycleMarkVision delta sess =
+  sess {smarkVision = (smarkVision sess + delta) `mod` 3}
 
 toggleMarkSmell :: SessionUI -> SessionUI
 toggleMarkSmell sess = sess {smarkSmell = not (smarkSmell sess)}
 
-cycleOverrideTut :: SessionUI -> SessionUI
-cycleOverrideTut sess = sess {soverrideTut = case soverrideTut sess of
-                                Nothing -> Just False
-                                Just False -> Just True
-                                Just True -> Nothing}
+cycleOverrideTut :: Int -> SessionUI -> SessionUI
+cycleOverrideTut delta sess =
+  let ordering = cycle [Nothing, Just False, Just True]
+  in sess {soverrideTut =
+    let ix = fromJust $ elemIndex (soverrideTut sess) ordering
+    in ordering !! (ix + delta)}
 
 getActorUI :: ActorId -> SessionUI -> ActorUI
 getActorUI aid sess =
@@ -234,7 +252,7 @@ instance Binary SessionUI where
     put sxhair
     put sactorUI
     put sitemUI
-    put sslots
+    put sroles
     put sUIOptions
     put saimMode
     put sitemSel
@@ -242,6 +260,9 @@ instance Binary SessionUI where
     put srunning
     put $ archiveReport shistory
       -- avoid displaying ending messages again at game start
+    put svictories
+    put scampings
+    put srestarts
     put smarkVision
     put smarkSmell
     put snxtScenario
@@ -254,13 +275,16 @@ instance Binary SessionUI where
     sxhair <- get
     sactorUI <- get
     sitemUI <- get
-    sslots <- get
+    sroles <- get
     sUIOptions <- get  -- is overwritten ASAP, but useful for, e.g., crash debug
     saimMode <- get
     sitemSel <- get
     sselected <- get
     srunning <- get
     shistory <- get
+    svictories <- get
+    scampings <- get
+    srestarts <- get
     smarkVision <- get
     smarkSmell <- get
     snxtScenario <- get

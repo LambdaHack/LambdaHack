@@ -38,6 +38,7 @@ import           Game.LambdaHack.Client.State
 import           Game.LambdaHack.Client.UI.ActorUI
 import           Game.LambdaHack.Client.UI.Content.Screen
 import           Game.LambdaHack.Client.UI.ContentClientUI
+import           Game.LambdaHack.Client.UI.EffectDescription
 import           Game.LambdaHack.Client.UI.Frame
 import           Game.LambdaHack.Client.UI.Frontend (frontendName)
 import           Game.LambdaHack.Client.UI.ItemDescription
@@ -63,8 +64,8 @@ import           Game.LambdaHack.Common.Time
 import           Game.LambdaHack.Common.Types
 import           Game.LambdaHack.Common.Vector
 import           Game.LambdaHack.Content.CaveKind (cname)
+import qualified Game.LambdaHack.Content.FactionKind as FK
 import qualified Game.LambdaHack.Content.ItemKind as IK
-import qualified Game.LambdaHack.Content.ModeKind as MK
 import           Game.LambdaHack.Content.RuleKind
 import           Game.LambdaHack.Content.TileKind (TileKind, isUknownSpace)
 import qualified Game.LambdaHack.Content.TileKind as TK
@@ -145,7 +146,7 @@ targetDescXhair = do
 
 drawFrameTerrain :: forall m. MonadClientUI m => LevelId -> m (U.Vector Word32)
 drawFrameTerrain drawnLevelId = do
-  COps{corule=RuleContent{rXmax}, cotile, coTileSpeedup} <- getsState scops
+  COps{corule=RuleContent{rWidthMax}, cotile, coTileSpeedup} <- getsState scops
   StateClient{smarkSuspect} <- getClient
   -- Not @ScreenContent@, because indexing in level's data.
   Level{ltile=PointArray.Array{avector}, lembed} <- getLevel drawnLevelId
@@ -176,8 +177,8 @@ drawFrameTerrain drawnLevelId = do
       caveVector :: U.Vector Word32
       caveVector = U.imap g avector
       messageVector =
-        U.replicate rXmax (Color.attrCharW32 Color.spaceAttrW32)
-      statusVector = U.fromListN (2 * rXmax) $ map Color.attrCharW32 frameStatus
+        U.replicate rWidthMax (Color.attrCharW32 Color.spaceAttrW32)
+      statusVector = U.fromListN (2 * rWidthMax) $ map Color.attrCharW32 frameStatus
   -- The vector package is so smart that the 3 vectors are not allocated
   -- separately at all, but written to the big vector at once.
   -- But even with double allocation it would be faster than writing
@@ -186,7 +187,7 @@ drawFrameTerrain drawnLevelId = do
 
 drawFrameContent :: forall m. MonadClientUI m => LevelId -> m FrameForall
 drawFrameContent drawnLevelId = do
-  COps{corule=RuleContent{rXmax}} <- getsState scops
+  COps{corule=RuleContent{rWidthMax}} <- getsState scops
   SessionUI{smarkSmell} <- getSession
   -- Not @ScreenContent@, because indexing in level's data.
   Level{lsmell, ltime, lfloor} <- getLevel drawnLevelId
@@ -209,7 +210,7 @@ drawFrameContent drawnLevelId = do
         let g :: (PointI, a) -> ST s ()
             g (!pI, !a0) = do
               let w = Color.attrCharW32 $ f pI a0
-              VM.write v (pI + rXmax) w
+              VM.write v (pI + rWidthMax) w
         mapM_ g l
       -- We don't usually show embedded items, because normally we don't
       -- want them to clutter the display. If they are really important,
@@ -224,83 +225,90 @@ drawFrameContent drawnLevelId = do
                             $ IM.assocs $ EM.enumMapToIntMap lsmell) v
   return upd
 
-drawFramePath :: forall m. MonadClientUI m => LevelId -> m FrameForall
+drawFramePath :: forall m. MonadClientUI m
+              => LevelId -> m (FrameForall, FrameForall)
 drawFramePath drawnLevelId = do
  SessionUI{saimMode} <- getSession
  sreportNull <- getsSession sreportNull
- if isNothing saimMode || sreportNull
- then return $! FrameForall $ \_ -> return ()
- else do
-  COps{corule=RuleContent{rXmax, rYmax}, coTileSpeedup} <- getsState scops
-  StateClient{seps} <- getClient
-  -- Not @ScreenContent@, because pathing in level's map.
-  Level{ltile=PointArray.Array{avector}} <- getLevel drawnLevelId
-  totVisible <- totalVisible <$> getPerFid drawnLevelId
-  mleader <- getsClient sleader
-  xhairPos <- xhairToPos
-  bline <- case mleader of
-    Just leader -> do
-      Actor{bpos, blid} <- getsState $ getActorBody leader
-      return $! if blid /= drawnLevelId
-                then []
-                else fromMaybe [] $ bla rXmax rYmax seps bpos xhairPos
-    _ -> return []
-  mpath <- maybe (return Nothing) (\aid -> do
-    mtgtMPath <- getsClient $ EM.lookup aid . stargetD
-    case mtgtMPath of
-      Just TgtAndPath{tapPath=tapPath@(Just AndPath{pathGoal})}
-        | pathGoal == xhairPos -> return tapPath
-      _ -> getCachePath aid xhairPos) mleader
-  assocsAtxhair <- getsState $ posToAidAssocs xhairPos drawnLevelId
-  let lpath = delete xhairPos
-              $ if null bline then [] else maybe [] pathList mpath
-      shiftedBTrajectory = case assocsAtxhair of
-        (_, Actor{btrajectory = Just p, bpos = prPos}) : _->
-          trajectoryToPath prPos (fst p)
-        _ -> []
-      shiftedLine = delete xhairPos
-                    $ if null shiftedBTrajectory
-                      then bline
-                      else shiftedBTrajectory
-      acOnPathOrLine :: Char -> Point -> ContentId TileKind
-                     -> Color.AttrCharW32
-      acOnPathOrLine !ch !p0 !tile =
-        let fgOnPathOrLine =
-              case ( ES.member p0 totVisible
-                   , Tile.isWalkable coTileSpeedup tile ) of
-                _ | isUknownSpace tile -> Color.BrBlack
-                _ | Tile.isSuspect coTileSpeedup tile -> Color.BrMagenta
-                (True, True)   -> Color.BrGreen
-                (True, False)  -> Color.BrCyan
-                (False, True)  -> Color.Green
-                (False, False) -> Color.Cyan
-        in Color.attrChar2ToW32 fgOnPathOrLine ch
-      mapVTL :: forall s. (Point -> ContentId TileKind -> Color.AttrCharW32)
-             -> [Point]
-             -> FrameST s
-      mapVTL f l v = do
-        let g :: Point -> ST s ()
-            g !p0 = do
-              let pI = fromEnum p0
-                  tile = avector U.! pI
-                  w = Color.attrCharW32 $ f p0 (DefsInternal.toContentId tile)
-              VM.write v (pI + rXmax) w
-        mapM_ g l
-      upd :: FrameForall
-      upd = FrameForall $ \v -> do
-        mapVTL (acOnPathOrLine ';') lpath v
-        mapVTL (acOnPathOrLine '*') shiftedLine v  -- overwrites path
-  return upd
+ let frameForallId = FrameForall $ const $ return ()
+ case saimMode of
+   Just AimMode{detailLevel} | not sreportNull -> do
+     COps{corule=RuleContent{rWidthMax, rHeightMax}, coTileSpeedup}
+       <- getsState scops
+     StateClient{seps} <- getClient
+     -- Not @ScreenContent@, because pathing in level's map.
+     Level{ltile=PointArray.Array{avector}} <- getLevel drawnLevelId
+     totVisible <- totalVisible <$> getPerFid drawnLevelId
+     mleader <- getsClient sleader
+     xhairPos <- xhairToPos
+     bline <- case mleader of
+       Just leader -> do
+         Actor{bpos, blid} <- getsState $ getActorBody leader
+         return $! if blid /= drawnLevelId
+                   then []
+                   else fromMaybe []
+                        $ bresenhamsLineAlgorithm seps bpos xhairPos
+       _ -> return []
+     mpath <- maybe (return Nothing) (\aid -> do
+       mtgtMPath <- getsClient $ EM.lookup aid . stargetD
+       case mtgtMPath of
+         Just TgtAndPath{tapPath=tapPath@(Just AndPath{pathGoal})}
+           | pathGoal == xhairPos -> return tapPath
+         _ -> getCachePath aid xhairPos) mleader
+     assocsAtxhair <- getsState $ posToAidAssocs xhairPos drawnLevelId
+     let shiftedBTrajectory = case assocsAtxhair of
+           (_, Actor{btrajectory = Just p, bpos = prPos}) : _
+             | detailLevel == defaultDetailLevel ->
+               trajectoryToPath prPos (fst p)
+           _ -> []
+         shiftedLine =
+           delete xhairPos
+           $ takeWhile (insideP (0, 0, rWidthMax - 1, rHeightMax - 1))
+           $ if null shiftedBTrajectory
+             then bline
+             else shiftedBTrajectory
+         lpath = if not (null bline) && null shiftedBTrajectory
+                 then delete xhairPos $ maybe [] pathList mpath
+                 else []
+         acOnPathOrLine :: Char -> Point -> ContentId TileKind
+                        -> Color.AttrCharW32
+         acOnPathOrLine !ch !p0 !tile =
+           let fgOnPathOrLine =
+                 case ( ES.member p0 totVisible
+                      , Tile.isWalkable coTileSpeedup tile ) of
+                   _ | isUknownSpace tile -> Color.BrBlack
+                   _ | Tile.isSuspect coTileSpeedup tile -> Color.BrMagenta
+                   (True, True)   -> Color.BrGreen
+                   (True, False)  -> Color.BrRed
+                   (False, True)  -> Color.Green
+                   (False, False) -> Color.Red
+           in Color.attrChar2ToW32 fgOnPathOrLine ch
+         mapVTL :: forall s. (Point -> ContentId TileKind -> Color.AttrCharW32)
+                -> [Point]
+                -> FrameST s
+         mapVTL f l v = do
+           let g :: Point -> ST s ()
+               g !p0 = do
+                 let pI = fromEnum p0
+                     tile = avector U.! pI
+                     w = Color.attrCharW32
+                         $ f p0 (DefsInternal.toContentId tile)
+                 VM.write v (pI + rWidthMax) w
+           mapM_ g l
+         upd :: FrameForall
+         upd = FrameForall $ \v -> do
+           mapVTL (acOnPathOrLine ';') lpath v
+           mapVTL (acOnPathOrLine '*') shiftedLine v  -- overwrites path
+     return (upd, if null shiftedBTrajectory then frameForallId else upd)
+   _ -> return (frameForallId, frameForallId)
 
 drawFrameActor :: forall m. MonadClientUI m => LevelId -> m FrameForall
 drawFrameActor drawnLevelId = do
-  COps{corule=RuleContent{rXmax}} <- getsState scops
+  COps{corule=RuleContent{rWidthMax}} <- getsState scops
   SessionUI{sactorUI, sselected, sUIOptions} <- getSession
   -- Not @ScreenContent@, because indexing in level's data.
   Level{lbig, lproj} <- getLevel drawnLevelId
-  SessionUI{saimMode} <- getSession
   side <- getsClient sside
-  mleader <- getsClient sleader
   s <- getState
   let {-# INLINE viewBig #-}
       viewBig aid =
@@ -310,11 +318,7 @@ drawFrameActor drawnLevelId = do
               symbol | bhp > 0 = bsymbol
                      | otherwise = '%'
               dominated = maybe False (/= bfid) jfid
-              leaderColor = if isJust saimMode
-                            then Color.HighlightYellowAim
-                            else Color.HighlightYellow
-              bg = if | mleader == Just aid -> leaderColor
-                      | bwatch == WSleep -> Color.HighlightBlue
+              bg = if | bwatch == WSleep -> Color.HighlightBlue
                       | dominated -> if bfid == side  -- dominated by us
                                      then Color.HighlightCyan
                                      else Color.HighlightBrown
@@ -343,7 +347,7 @@ drawFrameActor drawnLevelId = do
         let g :: (PointI, a) -> ST s ()
             g (!pI, !a0) = do
               let w = Color.attrCharW32 $ f a0
-              VM.write v (pI + rXmax) w
+              VM.write v (pI + rWidthMax) w
         mapM_ g l
       upd :: FrameForall
       upd = FrameForall $ \v -> do
@@ -355,13 +359,14 @@ drawFrameActor drawnLevelId = do
 drawFrameExtra :: forall m. MonadClientUI m
                => ColorMode -> LevelId -> m FrameForall
 drawFrameExtra dm drawnLevelId = do
-  COps{corule=RuleContent{rXmax, rYmax}} <- getsState scops
-  SessionUI{saimMode, smarkVision} <- getSession
   -- Not @ScreenContent@, because indexing in level's data.
+  COps{corule=RuleContent{rWidthMax, rHeightMax}} <- getsState scops
+  SessionUI{saimMode, smarkVision} <- getSession
+  mleader <- getsClient sleader
+  mbody <- getsState $ \s -> flip getActorBody s <$> mleader
   totVisible <- totalVisible <$> getPerFid drawnLevelId
   mxhairPos <- mxhairToPos
   mtgtPos <- do
-    mleader <- getsClient sleader
     mtgt <- getsClient $ maybe (const Nothing) getTarget mleader
     getsState $ aidTgtToPos mleader drawnLevelId mtgt
   side <- getsClient sside
@@ -382,14 +387,17 @@ drawFrameExtra dm drawnLevelId = do
       mapVL f l v = do
         let g :: PointI -> ST s ()
             g !pI = do
-              w0 <- VM.read v (pI + rXmax)
+              w0 <- VM.read v (pI + rWidthMax)
               let w = Color.attrCharW32 . Color.attrCharToW32
                       . f . Color.attrCharFromW32 . Color.AttrCharW32 $ w0
-              VM.write v (pI + rXmax) w
+              VM.write v (pI + rWidthMax) w
         mapM_ g l
-      -- Here @rXmax@ and @rYmax@ are correct, because we are not
+      -- Here @rWidthMax@ and @rHeightMax@ are correct, because we are not
       -- turning the whole screen into black&white, but only the level map.
-      lDungeon = [0..rXmax * rYmax - 1]
+      lDungeon = [0..rWidthMax * rHeightMax - 1]
+      leaderColor = if isJust saimMode
+                    then Color.HighlightYellowAim
+                    else Color.HighlightYellow
       xhairColor = if isJust saimMode
                    then Color.HighlightRedAim
                    else Color.HighlightRed
@@ -403,14 +411,17 @@ drawFrameExtra dm drawnLevelId = do
       stashesToDisplay = mapMaybe locateStash $ EM.assocs factionD
       upd :: FrameForall
       upd = FrameForall $ \v -> do
-        when (isJust saimMode || smarkVision) $
+        when (isJust saimMode && smarkVision >= 1 || smarkVision == 2) $
           mapVL backlightVision visionMarks v
         case mtgtPos of
           Nothing -> return ()
           Just p -> mapVL (writeSquare Color.HighlightGrey) [fromEnum p] v
         mapM_ (\(pos, color) -> mapVL (writeSquare color) [fromEnum pos] v)
               stashesToDisplay
-        case mxhairPos of  -- overwrites target
+        case mbody of  -- overwrites target
+          Nothing -> return ()
+          Just body -> mapVL (writeSquare leaderColor) [fromEnum $ bpos body] v
+        case mxhairPos of  -- overwrites target and non-aim leader box
           Nothing -> return ()
           Just p -> mapVL (writeSquare xhairColor) [fromEnum p] v
         when (dm == ColorBW) $ mapVL turnBW lDungeon v
@@ -418,11 +429,11 @@ drawFrameExtra dm drawnLevelId = do
 
 drawFrameStatus :: MonadClientUI m => LevelId -> m AttrString
 drawFrameStatus drawnLevelId = do
-  cops@COps{corule=RuleContent{rXmax=_rXmax}} <- getsState scops
+  cops@COps{corule=RuleContent{rWidthMax=_rWidthMax}} <- getsState scops
   SessionUI{sselected, saimMode, swaitTimes, sitemSel} <- getSession
   mleader <- getsClient sleader
   mxhairPos <- mxhairToPos
-  mbfs <- maybe (return Nothing) (\aid -> Just <$> getCacheBfs aid) mleader
+  mbfs <- maybe (return Nothing) (fmap Just . getCacheBfs) mleader
   (mhairDesc, mxhairHP, mxhairWatchfulness) <- targetDescXhair
   lvl <- getLevel drawnLevelId
   side <- getsClient sside
@@ -480,10 +491,10 @@ drawFrameStatus drawnLevelId = do
       -- The indicators must fit, they are the actual information.
       widthXhairOrItem = widthTgt - T.length pathCsr
       nMember = MU.Ord $ 1 + sum (EM.elems $ gvictims fact)
-      fallback = if MK.fleaderMode (gplayer fact) == Nothing
-                 then "This faction never picks a pointman"
-                 else makePhrase
+      fallback = if FK.fhasPointman (gkind fact)
+                 then makePhrase
                         ["Waiting for", nMember, "team member to spawn"]
+                 else "This faction never picks a pointman"
       leaderName bUI = trimTgtDesc (widthTgt - 10) (bname bUI)
       leaderBlurbLong = maybe fallback (\bUI ->
         "Pointman:" <+> leaderName bUI) mbodyUI
@@ -563,7 +574,7 @@ drawFrameStatus drawnLevelId = do
   -- Keep it at least partially lazy, to avoid allocating the whole list:
   return
 #ifdef WITH_EXPENSIVE_ASSERTIONS
-    $ assert (length status == 2 * _rXmax
+    $ assert (length status == 2 * _rWidthMax
               `blame` map Color.charFromW32 status)
 #endif
         status
@@ -573,15 +584,16 @@ drawHudFrame :: MonadClientUI m => ColorMode -> LevelId -> m PreFrame
 drawHudFrame dm drawnLevelId = do
   baseTerrain <- drawFrameTerrain drawnLevelId
   updContent <- drawFrameContent drawnLevelId
-  updPath <- drawFramePath drawnLevelId
+  (updPath, updTrajectory) <- drawFramePath drawnLevelId
   updActor <- drawFrameActor drawnLevelId
   updExtra <- drawFrameExtra dm drawnLevelId
   soptions <- getsClient soptions
   let upd = FrameForall $ \v -> do
         unFrameForall updContent v
-        -- vty frontend is screen-reader friendly, so avoid visual fluff
-        unless (frontendName soptions == "vty") $ unFrameForall updPath v
+        -- ANSI frontend is screen-reader friendly, so avoid visual fluff
+        unless (frontendName soptions == "ANSI") $ unFrameForall updPath v
         unFrameForall updActor v
+        unFrameForall updTrajectory v
         unFrameForall updExtra v
   return (baseTerrain, upd)
 
@@ -695,7 +707,7 @@ drawLeaderDamage width leader = do
             (IK.ieffects $ itemKind itemFull)
       ppDice :: Bool -> (Bool, Int, Int, ItemFullKit)
              -> [(Bool, (AttrString, AttrString))]
-      ppDice showInBrief (hasEffect, timeout, nch, (itemFull, (k, _))) =
+      ppDice showInBrief (hasEffect, timeout, ncha, (itemFull, (k, _))) =
         let dice = IK.idamage $ itemKind itemFull
             tdice = case Dice.reduceDice dice of
               Just d | showInBrief -> show d
@@ -719,9 +731,9 @@ drawLeaderDamage width leader = do
                  ++ map (Color.attrChar2ToW32 chp) tRefillHP
             possiblyHasTimeout = timeout > 0 || itemSuspect itemFull
         in if possiblyHasTimeout
-           then replicate (k - nch)
+           then replicate (k - ncha)
                           (False, (ldice Color.Cyan, lBurnHP False))
-                ++ replicate nch (True, (ldice Color.BrCyan, lBurnHP True))
+                ++ replicate ncha (True, (ldice Color.BrCyan, lBurnHP True))
            else [(True, (ldice Color.BrBlue, lBurnHP True))]
       lbonus :: AttrString
       lbonus =
@@ -759,7 +771,7 @@ drawLeaderDamage width leader = do
           -- but often it's the player's mistake, so show them anyway
       showStrongest showInBrief l =
         let lToDisplay = concatMap (ppDice showInBrief) l
-            (ldischarged, lrest) = span (not . fst) lToDisplay
+            (ldischarged, lrest) = break fst lToDisplay
             lWithBonus = case map snd lrest of
               [] -> []  -- no timeout-free organ, e.g., rattlesnake or hornet
               (ldmg, lextra) : rest -> (ldmg ++ lbonus, lextra) : rest

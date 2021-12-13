@@ -15,7 +15,7 @@ module Game.LambdaHack.Definition.Color
   , AttrChar(..), AttrCharW32(..)
   , attrCharToW32, attrCharFromW32
   , fgFromW32, bgFromW32, charFromW32, attrFromW32
-  , spaceAttrW32, nbspAttrW32, spaceCursorAttrW32, trimmedLineAttrW32
+  , spaceAttrW32, nbspAttrW32, trimmedLineAttrW32
   , attrChar2ToW32, attrChar1ToW32
   ) where
 
@@ -25,7 +25,7 @@ import Game.LambdaHack.Core.Prelude
 
 import           Control.DeepSeq
 import           Data.Binary
-import           Data.Bits (unsafeShiftL, unsafeShiftR, (.&.))
+import           Data.Bits ((.&.))
 import qualified Data.Char as Char
 import           GHC.Generics (Generic)
 
@@ -140,10 +140,12 @@ colorToRGB BrWhite   = "#FFFFFF"
 -- | Additional map cell highlight, e.g., a colorful square around the cell
 -- or a colorful background.
 --
--- Note: the highlight underscored by the terminal cursor is
--- the maximal element of this type present of this screen.
+-- Warning: the highlight underscored by the terminal cursor is
+-- the maximal element of this type present on a screen,
+-- so don't add new highlights to the end.
 data Highlight =
     HighlightNone
+  | HighlightBackground
   | HighlightGreen
   | HighlightBlue
   | HighlightBrown
@@ -156,12 +158,12 @@ data Highlight =
   | HighlightYellowAim
   | HighlightRedAim
   | HighlightNoneCursor
-  | HighlightBackground
   deriving (Show, Eq, Ord, Enum, Bounded)
 
 highlightToColor :: Highlight -> Color
 highlightToColor hi = case hi of
   HighlightNone -> Black  -- should be transparent, but is OK in web frontend
+  HighlightBackground -> BrBlack  -- gets a special colour, but as a background
   HighlightGreen -> Green
   HighlightBlue -> Blue
   HighlightBrown -> Brown
@@ -173,8 +175,7 @@ highlightToColor hi = case hi of
   HighlightYellow -> BrYellow  -- obscures, but mostly used around bright white
   HighlightYellowAim -> BrYellow
   HighlightRedAim -> Red
-  HighlightNoneCursor -> Black  -- used in vty for cursor via @maxIndexByA@
-  HighlightBackground -> Black  -- gets a special colour, but as a background
+  HighlightNoneCursor -> Black  -- used in ANSI for cursor via @maxIndexByA@
 
 -- | Text attributes: foreground color and highlight.
 data Attr = Attr
@@ -231,10 +232,6 @@ spaceAttrW32 = attrCharToW32 $ AttrChar defAttr ' '
 
 nbspAttrW32 :: AttrCharW32
 nbspAttrW32 = attrCharToW32 $ AttrChar defAttr '\x00a0'
-
-spaceCursorAttrW32 :: AttrCharW32
-spaceCursorAttrW32 =
-  attrCharToW32 $ AttrChar (defAttr {bg = HighlightNoneCursor}) ' '
 
 trimmedLineAttrW32 :: AttrCharW32
 trimmedLineAttrW32 = attrChar2ToW32 BrBlack '$'

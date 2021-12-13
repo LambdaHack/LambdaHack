@@ -38,6 +38,7 @@ import qualified Game.LambdaHack.Common.Tile as Tile
 import           Game.LambdaHack.Common.Time
 import           Game.LambdaHack.Common.Types
 import qualified Game.LambdaHack.Content.CaveKind as CK
+import           Game.LambdaHack.Content.FactionKind
 import           Game.LambdaHack.Content.ItemKind (ItemKind)
 import qualified Game.LambdaHack.Content.ItemKind as IK
 import           Game.LambdaHack.Content.ModeKind
@@ -63,7 +64,7 @@ spawnMonster = do
   -- Do this on only one of the arenas to prevent micromanagement,
   -- e.g., spreading leaders across levels to bump monster generation.
   arena <- rndToAction $ oneOf $ ES.elems arenas
-  Level{lkind, ldepth, lbig} <- getLevel arena
+  Level{lkind, ldepth, lbig, ltime=localTime} <- getLevel arena
   let ck = okind cocave lkind
   if | CK.cactorCoeff ck == 0 || null (CK.cactorFreq ck) -> return ()
      | EM.size lbig >= 300 ->  -- probably not so rare, but debug anyway
@@ -77,9 +78,9 @@ spawnMonster = do
              monsterGenChance ldepth totalDepth lvlSpawned (CK.cactorCoeff ck)
            million = 1000000
        k <- rndToAction $ randomR (1, million)
-       when (k <= perMillion) $ do
-         let numToSpawn | 10 * k <= perMillion = 3
-                        | 4 * k <= perMillion = 2
+       when (k <= perMillion && localTime > timeTurn) $ do
+         let numToSpawn | 25 * k <= perMillion = 3
+                        | 10 * k <= perMillion = 2
                         | otherwise = 1
              alt Nothing = Just 1
              alt (Just n) = Just $ n + 1
@@ -88,9 +89,8 @@ spawnMonster = do
                                $ snumSpawned ser
                , sbandSpawned = IM.alter alt numToSpawn
                                 $ sbandSpawned ser }
-         localTime <- getsState $ getLocalTime arena
-         void $ addManyActors False lvlSpawned (CK.cactorFreq ck) arena localTime
-                              Nothing numToSpawn
+         void $ addManyActors False lvlSpawned (CK.cactorFreq ck) arena
+                              localTime Nothing numToSpawn
 
 addAnyActor :: MonadServerAtomic m
             => Bool -> Int -> Freqs ItemKind -> LevelId -> Time -> Maybe Point
@@ -109,32 +109,37 @@ addAnyActor summoned lvlSpawned actorFreq lid time mpos = do
         "Server: addAnyActor: trunk failed to roll"
         `showFailure` (summoned, lvlSpawned, actorFreq, freq, lid, time, mpos)
       return Nothing
-    NewItem itemKnownRaw itemFullRaw itemQuant -> do
-      (fid, _) <- rndToAction $ oneOf $
-                    possibleActorFactions (itemKind itemFullRaw) factionD
-      pers <- getsServer sperFid
-      let allPers = ES.unions $ map (totalVisible . (EM.! lid))
-                    $ EM.elems $ EM.delete fid pers  -- expensive :(
-          -- Checking skill would be more accurate, but skills can be
-          -- inside organs, equipment, condition organs, created organs, etc.
-          freqNames = map fst $ IK.ifreq $ itemKind itemFullRaw
-          mobile = IK.MOBILE `elem` freqNames
-          aquatic = IK.AQUATIC `elem` freqNames
-      mrolledPos <- case mpos of
-        Just{} -> return mpos
-        Nothing -> do
-          rollPos <-
-            getsState $ rollSpawnPos cops allPers mobile aquatic lid lvl fid
-          rndToAction rollPos
-      case mrolledPos of
-        Just pos ->
-          Just . (\aid -> (aid, pos))
-          <$> registerActor summoned itemKnownRaw (itemFullRaw, itemQuant)
-                            fid pos lid time
-        Nothing -> do
-          debugPossiblyPrint
-            "Server: addAnyActor: failed to find any free position"
-          return Nothing
+    NewItem itemGroup itemKnownRaw itemFullRaw itemQuant -> do
+      (fid, _) <- rndToAction $ frequency $
+                    possibleActorFactions [itemGroup] (itemKind itemFullRaw)
+                                          factionD
+      let fact = factionD EM.! fid
+      if isJust $ gquit fact
+      then return Nothing  -- the faction that spawns the monster is dead
+      else do
+        pers <- getsServer sperFid
+        let allPers = ES.unions $ map (totalVisible . (EM.! lid))
+                      $ EM.elems $ EM.delete fid pers  -- expensive :(
+            -- Checking skill would be more accurate, but skills can be
+            -- inside organs, equipment, condition organs, created organs, etc.
+            freqNames = map fst $ IK.ifreq $ itemKind itemFullRaw
+            mobile = IK.MOBILE `elem` freqNames
+            aquatic = IK.AQUATIC `elem` freqNames
+        mrolledPos <- case mpos of
+          Just{} -> return mpos
+          Nothing -> do
+            rollPos <-
+              getsState $ rollSpawnPos cops allPers mobile aquatic lid lvl fid
+            rndToAction rollPos
+        case mrolledPos of
+          Just pos ->
+            Just . (\aid -> (aid, pos))
+            <$> registerActor summoned itemKnownRaw (itemFullRaw, itemQuant)
+                              fid pos lid time
+          Nothing -> do
+            debugPossiblyPrint
+              "Server: addAnyActor: failed to find any free position"
+            return Nothing
 
 addManyActors :: MonadServerAtomic m
               => Bool -> Int -> Freqs ItemKind -> LevelId -> Time -> Maybe Point
@@ -175,11 +180,20 @@ rollSpawnPos :: COps -> ES.EnumSet Point
 rollSpawnPos COps{coTileSpeedup} visible
              mobile aquatic lid lvl@Level{larea} fid s = do
   let inhabitants = foeRegularList fid lid s
-      nearInh !df !p = all (\ !b -> df $ chessDist (bpos b) p) inhabitants
+      nearInh !d !p = any (\ !b -> chessDist (bpos b) p < d) inhabitants
+      farInh !d !p = all (\ !b -> chessDist (bpos b) p > d) inhabitants
+      (_, xspan, yspan) = spanArea larea
+      averageSpan = (xspan + yspan) `div` 2
       distantMiddle !d !p = chessDist p (middlePoint larea) < d
+      -- Don't spawn very far from foes, to keep the player entertained,
+      -- but not too close, so that standing on positions with better
+      -- visibility does not influence the spawn places too often,
+      -- to avoid unnatural position micromanagement using AI predictability.
       condList | mobile =
-        [ nearInh (<= 50)  -- don't spawn very far from foes
-        , nearInh (<= 100)
+        [ \p -> nearInh (max 15 $ averageSpan `div` 2) p
+                && farInh 10 p
+        , \p -> nearInh (max 15 $ 2 * averageSpan `div` 3) p
+                && farInh 5 p
         ]
                | otherwise =
         [ distantMiddle 8
@@ -197,12 +211,12 @@ rollSpawnPos COps{coTileSpeedup} visible
                && not (occupiedBigLvl p lvl)
                && not (occupiedProjLvl p lvl) )
     (map (\f p _ -> f p) condList)
-    (\ !p t -> nearInh (> 4) p  -- otherwise actors in dark rooms swarmed
+    (\ !p t -> farInh 3 p  -- otherwise actors in dark rooms swarmed
                && not (p `ES.member` visible)  -- visibility and plausibility
                && (not aquatic || Tile.isAquatic coTileSpeedup t))
-    [ \ !p _ -> nearInh (> 3) p
+    [ \ !p _ -> farInh 3 p
                 && not (p `ES.member` visible)
-    , \ !p _ -> nearInh (> 2) p  -- otherwise actors hit on entering level
+    , \ !p _ -> farInh 2 p  -- otherwise actors hit on entering level
                 && not (p `ES.member` visible)
     , \ !p _ -> not (p `ES.member` visible)
     ]
@@ -321,11 +335,19 @@ leadLevelSwitch :: MonadServerAtomic m => m ()
 leadLevelSwitch = do
   COps{cocave} <- getsState scops
   factionD <- getsState sfactionD
-  let canSwitch fact = fst (autoDungeonLevel fact)
-                       -- a hack to help AI, until AI client can switch levels
-                       || funderAI (gplayer fact)
-                          && isJust (fleaderMode (gplayer fact))
-      flipFaction (_, fact) | not $ canSwitch fact = return ()
+  -- Leader switching between levels can be done by the client
+  -- (e.g,. UI client of the human) or by the server
+  -- (the frequency of leader level switching done by the server
+  -- is controlled by @RuleKind.rleadLevelClips@). Regardless, the server
+  -- alwayw does a subset of the switching, e.g., when the old leader dies
+  -- and no other actor of the faction resides on his level.
+  -- Here we check if the server is permitted to handle the mundane cases.
+  let serverMaySwitch fact =
+        bannedPointmanSwitchBetweenLevels fact
+          -- client banned from switching, so the sever has to step in
+        || gunderAI fact
+             -- a hack to help AI, until AI client can switch levels
+      flipFaction (_, fact) | not $ serverMaySwitch fact = return ()
       flipFaction (fid, fact) =
         case gleader fact of
           Nothing -> return ()
@@ -351,7 +373,7 @@ leadLevelSwitch = do
                   , let allSeen =
                           lexpl lvl <= lseen lvl
                           || CK.cactorCoeff (okind cocave $ lkind lvl) > 150
-                             && not (fhasGender $ gplayer fact)
+                             && not (fhasGender $ gkind fact)
                   ]
                 (lvlsSeen, lvlsNotSeen) = partition (fst . snd) lvlsRaw
                 -- Monster AI changes leadership mostly to move from level
@@ -406,7 +428,7 @@ leadLevelSwitch = do
                 canHelpMelee =
                   not leaderStuck
                   && length oursCloseMelee >= 2
-                  && length foesClose >= 1
+                  && not (null foesClose)
                   && not (all (\b -> any (adjacent (bpos b) . bpos) foes)
                               oursCloseMelee)
             unless (closeToEnemyStash || canHelpMelee || null freqList) $ do

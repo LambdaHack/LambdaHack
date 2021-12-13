@@ -1,4 +1,4 @@
--- | Item definitions.
+-- | Definitions of basic items.
 module Content.ItemKind
   ( -- * Group name patterns
     pattern HARPOON, pattern EDIBLE_PLANT, pattern RING_OF_OPPORTUNITY_GRENADIER, pattern ARMOR_LOOSE, pattern CLOTHING_MISC, pattern CHIC_GEAR
@@ -11,12 +11,6 @@ import Prelude ()
 
 import Game.LambdaHack.Core.Prelude
 
-import Content.ItemKindActor
-import Content.ItemKindBlast
-import Content.ItemKindEmbed
-import Content.ItemKindOrgan
-import Content.ItemKindTemporary
-import Content.RuleKind
 import Game.LambdaHack.Content.ItemKind
 import Game.LambdaHack.Content.RuleKind
 import Game.LambdaHack.Core.Dice
@@ -25,6 +19,13 @@ import Game.LambdaHack.Definition.Color
 import Game.LambdaHack.Definition.Defs
 import Game.LambdaHack.Definition.DefsInternal
 import Game.LambdaHack.Definition.Flavour
+
+import Content.ItemKindActor
+import Content.ItemKindBlast
+import Content.ItemKindEmbed
+import Content.ItemKindOrgan
+import Content.ItemKindTemporary
+import Content.RuleKind
 
 -- * Group name patterns
 
@@ -265,12 +266,13 @@ harpoon = ItemKind
   , ikit     = []
   }
 harpoon2 = harpoon
-  { iname    = "whaling harpoon"
-  , ifreq    = [(COMMON_ITEM, 5), (HARPOON, 2)]
+  { iname    = "The whaling Harpoon"
+  , ifreq    = [(COMMON_ITEM, 10), (HARPOON, 2)]
   , icount   = 2 `dL` 5
   , iweight  = 1000
-  , idamage  = 10 `d` 1
-  , idesc    = "With a brittle, barbed head and thick cord, this ancient weapon is designed for formidable prey."
+  , idamage  = 21 `d` 1
+  , iaspects = SetFlag Unique : delete (SetFlag Durable) (iaspects harpoon)
+  , idesc    = "With a brittle, barbed head and thick cord, this ancient weapon is designed for formidable prey. The age has made the edge thinner and sharper, but brittle and splintering, so it won't last beyond a single hit. "
   }
 net = ItemKind
   { isymbol  = symbolProjectile
@@ -348,7 +350,7 @@ flashBomb = fragmentationBomb
 firecrackerBomb = fragmentationBomb
   { iname = "roll"  -- not fireworks, as they require outdoors
   , iflavour = zipPlain [BrMagenta]
-  , irarity  = [(1, 5), (5, 6)]  -- a toy, if deadly
+  , irarity  = [(1, 5), (5, 6)]  -- a toy, if harmful
   , iverbHit = "crack"  -- a pun, matches the verb from "ItemKindBlast"
   , iweight  = 1000
   , iaspects = [SetFlag Lobable, SetFlag Fragile]
@@ -440,8 +442,8 @@ flask6 = flaskTemplate
   , irarity  = [(1, 1)]  -- not every playthrough needs one
   , iaspects = ELabel "of resolution"
                : iaspects flaskTemplate
-  , ieffects = [ toOrganGood S_RESOLUTE (500 + 1 `d` 200)  -- long, for scouting
-               , RefillCalm 60  -- not to make it a drawback, via @calmEnough@
+  , ieffects = [ toOrganGood S_RESOLUTE (100 + 1 `d` 20)  -- long, for scouting
+               , RefillCalm 100  -- not to make it a drawback, via @calmEnough@
                , OnSmash (Explode S_RESOLUTION_DUST) ]
   }
 flask7 = flaskTemplate
@@ -567,9 +569,8 @@ potion2 = potionTemplate
   , ifreq    = [(TREASURE, 100), (ANY_GLASS, 100)]
   , icount   = 1
   , irarity  = [(5, 8), (10, 8)]
-  , iaspects = [ SetFlag Unique, ELabel "of Attraction"
-               , SetFlag Precious, SetFlag Lobable, SetFlag Fragile
-               , toVelocity 50 ]  -- identified
+  , iaspects = [SetFlag Unique, ELabel "of Attraction", SetFlag MetaGame]
+               ++ iaspects potionTemplate
   , ieffects = [ Dominate
                , toOrganGood S_HASTED (20 + 1 `d` 5)
                , OnSmash (Explode S_PHEROMONE)
@@ -636,9 +637,8 @@ potion8 = potionTemplate
   , ifreq    = [(TREASURE, 100), (ANY_GLASS, 100)]
   , icount   = 1
   , irarity  = [(10, 5)]
-  , iaspects = [ SetFlag Unique, ELabel "of Love"
-               , SetFlag Precious, SetFlag Lobable, SetFlag Fragile
-               , toVelocity 50 ]  -- identified
+  , iaspects = [SetFlag Unique, ELabel "of Love", SetFlag MetaGame]
+               ++ iaspects potionTemplate
   , ieffects = [ RefillHP 60, RefillCalm (-60)
                , toOrganGood S_ROSE_SMELLING (80 + 1 `d` 20)
                , OnSmash (Explode S_HEALING_MIST_2)
@@ -1126,14 +1126,17 @@ necklace8 = necklaceTemplate
 necklace9 = necklaceTemplate
   { ifreq    = [(COMMON_ITEM, 100), (ANY_JEWELRY, 100)]
   , irarity  = [(4, 3)]  -- entirely optional
-  , iaspects = Timeout ((1 + 1 `d` 3) * 5)
+  , iaspects = Timeout ((1 + 1 `d` 3) * 5)  -- low timeout for offensive use
                : iaspects_necklaceTemplate
   , ieffects = [Explode S_SPARK]
   }
 necklace10 = necklaceTemplate
   { ifreq    = [(COMMON_ITEM, 100), (ANY_JEWELRY, 100)]
-  , iaspects = Timeout ((1 + 1 `d` 3) * 5)
+  , iaspects = Timeout ((3 + 1 `d` 3) * 10)
                : iaspects_necklaceTemplate
+                   -- high timeout to prevent spam obscuring messages
+                   -- when other actors act and annoying bumping into
+                   -- projectiles caused by own necklace when walking
   , ieffects = [Explode S_FRAGRANCE]
   }
 motionScanner = necklaceTemplate
@@ -1301,7 +1304,7 @@ armorLeather = ItemKind
   , ifreq    = [(COMMON_ITEM, 100), (ARMOR_LOOSE, 1), (STARTING_ARMOR, 100)]
   , iflavour = zipPlain [Brown]
   , icount   = 1
-  , irarity  = [(1, 9), (10, 3)]
+  , irarity  = [(1, 9), (10, 2)]
   , iverbHit = "thud"
   , iweight  = 7000
   , idamage  = 0
@@ -1604,11 +1607,12 @@ hammer2 = hammerTemplate
 hammer3 = hammerTemplate
   { ifreq    = [(COMMON_ITEM, 3), (STARTING_WEAPON, 1)]
   , iverbHit = "puncture"
-  , iweight  = 2400  -- weight gives it away
+  , iweight  = 2400
   , idamage  = 12 `d` 1
   , iaspects = [ Timeout 12  -- balance, or @DupItem@ would break the game
+               , SetFlag MetaGame  -- weight gives it away after seen once
                , EqpSlot EqpSlotWeaponBig]
-               ++ delete (PresentAs HAMMER_UNKNOWN) (iaspects hammerTemplate)
+               ++ iaspects hammerTemplate
   , idesc    = "This hammer sports a long metal handle that increases the momentum of the sharpened head's swing, at the cost of long recovery."
   }
 hammerParalyze = hammerTemplate
@@ -1626,13 +1630,14 @@ hammerSpark = hammerTemplate
   { iname    = "The Grand Smithhammer"
   , ifreq    = [(TREASURE, 20)]
   , irarity  = [(5, 1), (8, 6)]
-  , iweight  = 2400  -- weight gives it away
+  , iweight  = 2400
   , idamage  = 12 `d` 1
   , iaspects = [ SetFlag Unique
+               , SetFlag MetaGame  -- weight gives it away after seen once
                , Timeout 10
                , EqpSlot EqpSlotWeaponBig
                , AddSkill SkShine 3]
-               ++ delete (PresentAs HAMMER_UNKNOWN) (iaspects hammerTemplate)
+               ++ iaspects hammerTemplate
   , ieffects = [Explode S_SPARK]
       -- we can't use a focused explosion, because it would harm the hammer
       -- wielder as well, unlike this one
@@ -1807,7 +1812,7 @@ currency = currencyTemplate
 jumpingPole = ItemKind
   { isymbol  = symbolWand
   , iname    = "jumping pole"
-  , ifreq    = [(COMMON_ITEM, 100)]
+  , ifreq    = [(COMMON_ITEM, 90)]
   , iflavour = zipFancy [White]
   , icount   = 1
   , irarity  = [(1, 3)]

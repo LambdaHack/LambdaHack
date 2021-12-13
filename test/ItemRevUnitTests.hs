@@ -9,12 +9,12 @@ import qualified Data.EnumMap.Strict as EM
 import qualified Data.EnumSet as ES
 import qualified Data.Vector.Unboxed as U
 import qualified System.Random.SplitMix32 as SM
-
-import Test.Tasty
-import Test.Tasty.HUnit
+import           Test.Tasty
+import           Test.Tasty.HUnit
 
 import           Game.LambdaHack.Content.ItemKind
 import           Game.LambdaHack.Core.Dice
+import           Game.LambdaHack.Core.Random
 import qualified Game.LambdaHack.Definition.Ability as Ability
 import           Game.LambdaHack.Definition.Color
 import           Game.LambdaHack.Definition.DefsInternal
@@ -51,7 +51,7 @@ itemRevUnitTests = testGroup "itemRevUnitTests" $
   in
   [ testCase "empty & default initializers -> first is single dummy result" $
       let rndMapPair0 = return emptyIdToFlavourSymbolToFlavourSetPair
-          (mapPair1, _) = St.runState (rollFlavourMap U.empty rndMapPair0 (toContentId 0) testItemKind) $ SM.mkSMGen 1
+          mapPair1 = St.evalState (rollFlavourMap U.empty rndMapPair0 (toContentId 0) testItemKind) $ SM.mkSMGen 1
         in fst mapPair1 @?= EM.singleton (toContentId 0) dummyFlavour
   , testCase "empty & default initializers -> second is empty" $
       let rndMapPair0 = return emptyIdToFlavourSymbolToFlavourSetPair

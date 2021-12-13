@@ -113,7 +113,7 @@ posUpdAtomic cmd = case cmd of
   UpdLoseStashFaction _ fid lid pos -> return $! PosFidAndSight fid lid [pos]
   UpdLeadFaction fid _ _ -> return $! PosFidAndSer fid
   UpdDiplFaction{} -> return PosAll
-  UpdDoctrineFaction fid _ _ -> return $! PosFidAndSer fid
+  UpdDoctrineFaction{} -> return PosAll  -- make faction lore fun
   UpdAutoFaction{} -> return PosAll
   UpdRecordKill aid _ _ -> singleAid aid
   UpdAlterTile lid p _ _ -> return $! PosSight lid [p]
@@ -190,7 +190,7 @@ posSfxAtomic cmd = case cmd of
     body <- getsState $ getActorBody aid
     return $! PosSightLevels [(lid, p), (blid body, bpos body)]
   SfxEffect _ aid _ _ _ -> singleAid aid  -- sometimes we don't see source, OK
-  SfxItemApplied _ c -> singleContainerActor c
+  SfxItemApplied _ _ c -> singleContainerActor c
   SfxMsgFid fid _ -> return $! PosFid fid
   SfxRestart -> return PosAll
   SfxCollideTile aid _ -> singleAid aid
@@ -272,7 +272,7 @@ iidSfxAtomic cmd = case cmd of
   SfxTrigger{} -> []
   SfxShun{} -> []
   SfxEffect{} -> []
-  SfxItemApplied iid _ -> [iid]
+  SfxItemApplied _ iid _ -> [iid]
   SfxMsgFid{} -> []
   SfxRestart{} -> []
   SfxCollideTile{} -> []

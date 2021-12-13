@@ -16,7 +16,7 @@ module Game.LambdaHack.Client.UI.Msg
     -- * Internal operations
   , UAttrString, uToAttrString, attrStringToU
   , toMsg, MsgPrototype, tripleFromProto
-  , scrapsRepeats, tutorialHint, msgColor
+  , scrapsRepeats, isTutorialHint, msgColor
   , RepMsgNK, nullRepMsgNK
   , emptyReport, renderRepetition
   , scrapRepetitionSingle, scrapRepetition, renderTimeReport
@@ -147,7 +147,6 @@ data MsgClassShowAndSave =
   | MsgPointmanSwap
   | MsgFactionIntel
   | MsgFinalOutcome
-  | MsgPlotExposition
   | MsgBackdropInfo
   | MsgTerrainReveal
   | MsgItemDiscovery
@@ -302,8 +301,8 @@ scrapsRepeats = \case
   MsgClassIgnore _ -> False  -- ignored, so no need to scrap
   MsgClassDistinct _x -> True
 
-tutorialHint :: MsgClass -> Bool
-tutorialHint = \case
+isTutorialHint :: MsgClass -> Bool
+isTutorialHint = \case
   MsgClassShowAndSave x -> case x of  -- show and save: least surprise
     MsgTutorialHint -> True
     _ -> False
@@ -330,7 +329,6 @@ msgColor = \case
     MsgPointmanSwap -> Color.cBoring
     MsgFactionIntel -> Color.cMeta  -- good or bad
     MsgFinalOutcome -> Color.cGameOver
-    MsgPlotExposition -> Color.cBoring
     MsgBackdropInfo -> Color.cBoring
     MsgTerrainReveal -> Color.cIdentification
     MsgItemDiscovery -> Color.cIdentification
@@ -551,7 +549,7 @@ addToReport usedHints displayHints inMelee
       newH = History { newReport = Report $ repMsgNK : r
                      , newTime = time
                      , .. }
-      msgIsHint = tutorialHint (msgClass msg)
+      msgIsHint = isTutorialHint (msgClass msg)
       msgUsedAsHint = S.member msg usedHints
       newUsedHints = if msgIsHint && displayHints && not msgUsedAsHint
                      then S.insert msg usedHints

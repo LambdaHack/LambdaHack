@@ -1,12 +1,12 @@
--- | The type of game mode definitions.
+-- | Definitions of game mode kinds.
 module Content.ModeKind
-  ( -- * Group names
+  ( -- * Group name patterns
     groupNamesSingleton, groupNames
   , -- * Content
     content
 #ifdef EXPOSE_INTERNAL
   -- * Group name patterns
-  , pattern RAID, pattern BRAWL, pattern LONG, pattern CRAWL, pattern FOGGY, pattern SHOOTOUT, pattern PERILOUS, pattern HUNT, pattern NIGHT, pattern ESCAPE, pattern BURNING, pattern ZOO, pattern RANGED, pattern AMBUSH, pattern SAFARI, pattern DIG, pattern SEE, pattern SHORT, pattern CRAWL_EMPTY, pattern CRAWL_SURVIVAL, pattern SAFARI_SURVIVAL, pattern BATTLE, pattern BATTLE_DEFENSE, pattern BATTLE_SURVIVAL, pattern DEFENSE, pattern DEFENSE_EMPTY
+  , pattern RAID, pattern BRAWL, pattern LONG, pattern CRAWL, pattern FOGGY, pattern SHOOTOUT, pattern PERILOUS, pattern HUNT, pattern NIGHT, pattern FLIGHT, pattern BURNING, pattern ZOO, pattern RANGED, pattern AMBUSH, pattern SAFARI, pattern DIG, pattern SEE, pattern SHORT, pattern CRAWL_EMPTY, pattern CRAWL_SURVIVAL, pattern SAFARI_SURVIVAL, pattern BATTLE, pattern BATTLE_DEFENSE, pattern BATTLE_SURVIVAL, pattern DEFENSE, pattern DEFENSE_EMPTY
 #endif
   ) where
 
@@ -16,25 +16,27 @@ import Game.LambdaHack.Core.Prelude
 
 import qualified Data.Text as T
 
-import Content.CaveKind hiding (content, groupNames, groupNamesSingleton)
-import Content.ItemKindActor
-import Content.ModeKindPlayer
 import Game.LambdaHack.Content.CaveKind (CaveKind, pattern DEFAULT_RANDOM)
+import Game.LambdaHack.Content.FactionKind (Outcome (..))
 import Game.LambdaHack.Content.ModeKind
 import Game.LambdaHack.Core.Dice
 import Game.LambdaHack.Definition.Defs
 import Game.LambdaHack.Definition.DefsInternal
 
+import Content.CaveKind hiding (content, groupNames, groupNamesSingleton)
+import Content.FactionKind hiding (content, groupNames, groupNamesSingleton)
+import Content.ItemKindActor
+
 -- * Group name patterns
 
 groupNamesSingleton :: [GroupName ModeKind]
 groupNamesSingleton =
-       [RAID, BRAWL, LONG, CRAWL, FOGGY, SHOOTOUT, PERILOUS, HUNT, NIGHT, ESCAPE, BURNING, ZOO, RANGED, AMBUSH, SAFARI, DIG, SEE, SHORT, CRAWL_EMPTY, CRAWL_SURVIVAL, SAFARI_SURVIVAL, BATTLE, BATTLE_DEFENSE, BATTLE_SURVIVAL, DEFENSE, DEFENSE_EMPTY]
+       [RAID, BRAWL, LONG, CRAWL, FOGGY, SHOOTOUT, PERILOUS, HUNT, NIGHT, FLIGHT, BURNING, ZOO, RANGED, AMBUSH, SAFARI, DIG, SEE, SHORT, CRAWL_EMPTY, CRAWL_SURVIVAL, SAFARI_SURVIVAL, BATTLE, BATTLE_DEFENSE, BATTLE_SURVIVAL, DEFENSE, DEFENSE_EMPTY]
 
-pattern RAID, BRAWL, LONG, CRAWL, FOGGY, SHOOTOUT, PERILOUS, HUNT, NIGHT, ESCAPE, BURNING, ZOO, RANGED, AMBUSH, SAFARI, DIG, SEE, SHORT, CRAWL_EMPTY, CRAWL_SURVIVAL, SAFARI_SURVIVAL, BATTLE, BATTLE_DEFENSE, BATTLE_SURVIVAL, DEFENSE, DEFENSE_EMPTY :: GroupName ModeKind
+pattern RAID, BRAWL, LONG, CRAWL, FOGGY, SHOOTOUT, PERILOUS, HUNT, NIGHT, FLIGHT, BURNING, ZOO, RANGED, AMBUSH, SAFARI, DIG, SEE, SHORT, CRAWL_EMPTY, CRAWL_SURVIVAL, SAFARI_SURVIVAL, BATTLE, BATTLE_DEFENSE, BATTLE_SURVIVAL, DEFENSE, DEFENSE_EMPTY :: GroupName ModeKind
 
 groupNames :: [GroupName ModeKind]
-groupNames = [NO_CONFIRMS]
+groupNames = []
 
 pattern RAID = GroupName "raid"
 pattern BRAWL = GroupName "brawl"
@@ -44,8 +46,8 @@ pattern FOGGY = GroupName "foggy shootout"
 pattern SHOOTOUT = GroupName "shootout"
 pattern PERILOUS = GroupName "perilous hunt"
 pattern HUNT = GroupName "hunt"
-pattern NIGHT = GroupName "night escape"
-pattern ESCAPE = GroupName "escape"
+pattern NIGHT = GroupName "night flight"
+pattern FLIGHT = GroupName "flight"
 pattern BURNING = GroupName "burning zoo"
 pattern ZOO = GroupName "zoo"
 pattern RANGED = GroupName "ranged ambush"
@@ -67,9 +69,9 @@ pattern DEFENSE_EMPTY = GroupName "defenseEmpty"
 
 content :: [ModeKind]
 content =
-  [raid, brawl, crawl, shootout, hunt, escape, zoo, ambush, safari, dig, see, short, crawlEmpty, crawlSurvival, safariSurvival, battle, battleDefense, battleSurvival, defense, defenseEmpty, screensaverRaid, screensaverBrawl, screensaverCrawl, screensaverShootout, screensaverHunt, screensaverEscape, screensaverZoo, screensaverAmbush, screensaverSafari]
+  [raid, brawl, crawl, shootout, hunt, flight, zoo, ambush, safari, dig, see, short, crawlEmpty, crawlSurvival, safariSurvival, battle, battleDefense, battleSurvival, defense, defenseEmpty, screensaverRaid, screensaverBrawl, screensaverCrawl, screensaverShootout, screensaverHunt, screensaverFlight, screensaverZoo, screensaverAmbush, screensaverSafari]
 
-raid,    brawl, crawl, shootout, hunt, escape, zoo, ambush, safari, dig, see, short, crawlEmpty, crawlSurvival, safariSurvival, battle, battleDefense, battleSurvival, defense, defenseEmpty, screensaverRaid, screensaverBrawl, screensaverCrawl, screensaverShootout, screensaverHunt, screensaverEscape, screensaverZoo, screensaverAmbush, screensaverSafari :: ModeKind
+raid,    brawl, crawl, shootout, hunt, flight, zoo, ambush, safari, dig, see, short, crawlEmpty, crawlSurvival, safariSurvival, battle, battleDefense, battleSurvival, defense, defenseEmpty, screensaverRaid, screensaverBrawl, screensaverCrawl, screensaverShootout, screensaverHunt, screensaverFlight, screensaverZoo, screensaverAmbush, screensaverSafari :: ModeKind
 
 -- What other symmetric (two only-one-moves factions) and asymmetric vs crowd
 -- scenarios make sense (e.g., are good for a tutorial or for standalone
@@ -85,10 +87,10 @@ raid,    brawl, crawl, shootout, hunt, escape, zoo, ambush, safari, dig, see, sh
 --   crawl, even without reaction fire
 
 raid = ModeKind
-  { msymbol = 'r'
-  , mname   = "raid (tutorial, 1)"
+  { mname   = "raid (tutorial, 1)"
   , mfreq   = [(RAID, 1), (CAMPAIGN_SCENARIO, 1)]
   , mtutorial = True
+  , mattract = False
   , mroster = rosterRaid
   , mcaves  = cavesRaid
   , mendMsg = [ (Killed, "This expedition has gone wrong. However, scientific mind does not despair, but analyzes and corrects. Did you perchance awake one animal too many? Did you remember to try using all consumables at your disposal for your immediate survival? Did you choose a challenge with difficulty level within your means? Answer honestly, ponder wisely, experiment methodically.")
@@ -98,18 +100,18 @@ raid = ModeKind
       [ "* One level only"
       , "* Two heroes vs. Spawned enemies"
       , "* Gather gold"
-      , "* Find exit and escape ASAP"
+      , "* Find a way out and escape ASAP"
       ]
   , mdesc   = "An incredibly advanced typing machine worth 100 gold is buried at the exit of this maze. Be the first to find it and fund a research team that makes typing accurate and dependable forever."
-  , mreason = "In addition to initiating the (loose) game plot, this adventure provides an introductory tutorial. Relax, explore, gather loot, find the exit and escape. With some luck, you won't even need to fight anything."
+  , mreason = "In addition to initiating the (loose) game plot, this adventure provides an introductory tutorial. Relax, explore, gather loot, find the way out and escape. With some luck, you won't even need to fight anything."
   , mhint   = "You can't use gathered items in your next encounters, so trigger any consumables at will. Feel free to scout with only one of the heroes and keep the other one immobile, e.g., standing guard over the squad's shared inventory stash. If in grave danger, retreat with the scout to join forces with the guard. The more gold collected and the faster the victory, the higher your score in this encounter."
   }
 
 brawl = ModeKind  -- sparse melee in daylight, with shade for melee ambush
-  { msymbol = 'k'
-  , mname   = "brawl (tutorial, 2)"
+  { mname   = "brawl (tutorial, 2)"
   , mfreq   = [(BRAWL, 1), (CAMPAIGN_SCENARIO, 1)]
   , mtutorial = True
+  , mattract = False
   , mroster = rosterBrawl
   , mcaves  = cavesBrawl
   , mendMsg = [ (Killed, "The inquisitive scholars turned out to be envious of our deep insight to the point of outright violence. It would still not result in such a defeat and recanting of our thesis if we figured out to use terrain to protect us from missiles or even completely hide our presence. It would also help if we honourably kept our ground together to the end, at the same time preventing the overwhelming enemy forces from brutishly ganging up on our modest-sized, though valiant, research team.")
@@ -127,19 +129,19 @@ brawl = ModeKind  -- sparse melee in daylight, with shade for melee ambush
   }
 
 crawl = ModeKind
-  { msymbol = 'c'
-  , mname   = "long crawl (main)"
+  { mname   = "long crawl (main)"
   , mfreq   = [(LONG, 1), (CRAWL, 1), (CAMPAIGN_SCENARIO, 1)]
   , mtutorial = False
+  , mattract = False
   , mroster = rosterCrawl
   , mcaves  = cavesCrawl
-  , mendMsg = [ (Killed, "To think that followers of science and agents of enlightenment would earn death as their reward! Where did we err in our ways? Perhaps nature should not have been disturbed so brashly and the fell beasts woken up from their slumber so eagerly? Perhaps the gathered items should have been used for scientific experiments on the spot rather than hoarded as if of base covetousness? Or perhaps the challenge, chosen freely but without the foreknowledge of the grisly difficulty, was insurmountable and forlorn from the start, despite the enormous power of educated reason at out disposal?")
+  , mendMsg = [ (Killed, "To think that followers of science and agents of enlightenment would earn death as their reward! Where did we err in our ways? Perhaps nature should not have been disturbed so brashly and the fell beasts woken up from their slumber so eagerly?\nPerhaps the gathered items should have been used for scientific experiments on the spot rather than hoarded as if of base covetousness? Or perhaps the challenge, chosen freely but without the foreknowledge of the grisly difficulty, was insurmountable and forlorn from the start, despite the enormous power of educated reason at out disposal?")
               , (Escape, "It's better to live to tell the tale than to choke on more than one can swallow. There was no more exquisite cultural artifacts and glorious scientific wonders in these forbidding tunnels anyway. Or were there?") ]
   , mrules  = T.intercalate "\n"
       [ "* Many levels"
       , "* Three heroes vs. Spawned enemies"
       , "* Gather gold, gems and elixirs"
-      , "* Find exit and escape ASAP"
+      , "* Find a way out and escape ASAP"
       ]
   , mdesc   = "Enjoy the peaceful seclusion of these cold austere tunnels, but don't let wanton curiosity, greed and the ever-creeping abstraction madness keep you down there for too long. If you find survivors (whole or perturbed or segmented) of the past scientific missions, exercise extreme caution and engage or ignore at your discretion."
   , mreason = "This is the main, longest and most replayable scenario of the game."
@@ -155,13 +157,14 @@ crawl = ModeKind
 -- the other team members are more spotters and guardians than snipers
 -- and that's their only role, so a small party makes sense.
 shootout = ModeKind  -- sparse ranged in daylight
-  { msymbol = 's'
-  , mname   = "foggy shootout (3)"
+  { mname   = "foggy shootout (3)"
   , mfreq   = [(FOGGY, 1), (SHOOTOUT, 1), (CAMPAIGN_SCENARIO, 1)]
   , mtutorial = False
+  , mattract = False
   , mroster = rosterShootout
   , mcaves  = cavesShootout
-  , mendMsg = []
+  , mendMsg = [ (Killed, "This is a disgrace. What have we missed in our theoretic models of this fight? Did we miss a human lookout placed in a covered but unobstructed spot that lets the rest of the squad snipe from concealment or from a safe distance?\nBarring that, would we end up in a better shape even if we all hid and only fired blindly? We'd listen to impact sounds and wait vigilantly for incoming enemy missiles in order to register their trajectories and derive hints of enemy location. Apparently, ranged combat requires a change of pace and better planning than our previous simple but efficient calculations accustomed us to.")
+              , (Conquer, "That was a good fight, with scientifically accurate application of missiles, cover and concealment. Not even skilled logicians can routinely deduce enemy position from the physical trajectory of their projectiles nor by firing without line of sight and interpreting auditory cues. However, while this steep hurdle is overcome, the dispute is not over yet.") ]
   , mrules  = T.intercalate "\n"
       [ "* One level only"
       , "* Three heroes vs. Three human enemies"
@@ -174,38 +177,41 @@ shootout = ModeKind  -- sparse ranged in daylight
   }
 
 hunt = ModeKind  -- melee vs ranged with reaction fire in daylight
-  { msymbol = 'h'
-  , mname   = "perilous hunt (4)"
+  { mname   = "perilous hunt (4)"
   , mfreq   = [(PERILOUS, 1), (HUNT, 1), (CAMPAIGN_SCENARIO, 1)]
   , mtutorial = False
+  , mattract = False
   , mroster = rosterHunt
   , mcaves  = cavesHunt
-  , mendMsg = []
+  , mendMsg = [ (Killed, "Leaving concealment might have not been rational enough, leaving cover is hard to justify on a scientific basis and wandering off on an area of a heated dispute is foolhardy. All this is doubly regrettable, given that our cold-hearted opponents supported their weak arguments with inexplicably effective telegraphy and triangulation equipment. And we so deserve a complete intellectual victory, if only we strove to lower the difficulty of this altercation instead of raising it.")
+      -- this is in the middle of the scenario list and the mission is not tricky, so a subtle reminder about lowering difficulty, in case the player struggles
+              , (Conquer, "We chased them off and proved our argument, like we knew that we would. It feels efficient to stick together and prevail. We taught them a lesson in rationality, despite their superior scientific equipment. Scientific truth prevails over brute force.") ]
   , mrules  = T.intercalate "\n"
       [ "* One level only"
       , "* Seven heroes vs. Seven human enemies capable of concurrent attacks"
       , "* Minimize losses"
-      , "* Incapacitate all enemies ASAP"
+      , "* Incapacitate all human enemies ASAP"
       ]
-  , mdesc   = "Who is the hunter and who is the prey? The only criterion is last man standing when the chase ends."
+  , mdesc   = "Who is the hunter and who is the prey? The only criterion is last man standing when the chase for truth ends."
   , mreason = "This adventure is quite a tactical challenge, because enemies are allowed to fling their ammo simultaneously at your team, which has no such ability."
-  , mhint   = "Try not to outshoot the enemy, but to instead focus more on melee tactics. A useful concept here is communication overhead. Any team member that is not waiting and spotting for everybody, but acts, e.g., melees or moves or manages items, slows down all other team members by rougly 10%, because they need to keep track of his actions. Therefore, if other heroes melee, consider carefully if it makes sense to come to their aid, slowing them while you move, or if it's better to stay put and monitor the perimeter. This is true for all factions and all actors on each level separately, except the pointman of each faction, if any."  -- this also eliminates lag in big battles and helps the player to focus on combat and not get distracted by distant team members frantically trying to reach the battleground in time
+  , mhint   = "Try not to outshoot the enemy, but to instead focus more on melee tactics. A useful concept here is communication overhead. Any team member that is not waiting and spotting for everybody, but acts, e.g., melees or moves or manages items, slows down all other team members by roughly 10%, because they need to keep track of his actions. Therefore, if other heroes melee, consider carefully if it makes sense to come to their aid, slowing them while you move, or if it's better to stay put and monitor the perimeter. This is true for all factions and all actors on each level separately, except the pointman of each faction, if it has one."  -- this also eliminates lag in big battles and helps the player to focus on combat and not get distracted by distant team members frantically trying to reach the battleground in time
   }
 
-escape = ModeKind  -- asymmetric ranged and stealth race at night
-  { msymbol = 'e'
-  , mname   = "night escape (5)"
-  , mfreq   = [(NIGHT, 1), (ESCAPE, 1), (CAMPAIGN_SCENARIO, 1)]
+flight = ModeKind  -- asymmetric ranged and stealth race at night
+  { mname   = "night flight (5)"
+  , mfreq   = [(NIGHT, 1), (FLIGHT, 1), (CAMPAIGN_SCENARIO, 1)]
   , mtutorial = False
-  , mroster = rosterEscape
-  , mcaves  = cavesEscape
-  , mendMsg = []
+  , mattract = False
+  , mroster = rosterFlight
+  , mcaves  = cavesFlight
+  , mendMsg = [ (Killed, "Somebody must have tipped the enemies of free inquiry off. However, us walking along a lit trail, yelling, could have been a contributing factor. Also, it's worth noting that the torches prepared for this assault are best used as thrown makeshift flares.\nOn the other hand, equipping a lit torch makes one visible in the dark, regrettably but not quite unexpectedly to a scientific mind. Lastly, the goal of this foray was to definitely disengage from the fruitless dispute, via a way out marked by a yellow '>' sign, and to gather treasure that would support our future research. Not to harass every nearby scientific truth denier, as much as they do deserve it.")
+              , (Conquer, "It was enough to reach the escape area marked by yellow '>' symbol. Spilling that much blood was risky. unnecessary and alerted the authorities. Having said that --- impressive indeed.") ]
   , mrules  = T.intercalate "\n"
       [ "* One level only"
       , "* Three heroes vs. Seven human enemies capable of concurrent attacks"
       , "* Minimize losses"
       , "* Gather gems"
-      , "* Find exit and escape ASAP"
+      , "* Find a way out and escape ASAP"
       ]
   , mdesc   = "Dwelling into dark matters is dangerous, so avoid the crowd of firebrand disputants, catch any gems of thought, find a way out and bring back a larger team to shed new light on the field."
   , mreason = "The focus of this installment is on stealthy exploration under the threat of numerically superior enemy."
@@ -213,13 +219,14 @@ escape = ModeKind  -- asymmetric ranged and stealth race at night
   }
 
 zoo = ModeKind  -- asymmetric crowd melee at night
-  { msymbol = 'b'
-  , mname   = "burning zoo (6)"
+  { mname   = "burning zoo (6)"
   , mfreq   = [(BURNING, 1), (ZOO, 1), (CAMPAIGN_SCENARIO, 1)]
   , mtutorial = False
+  , mattract = False
   , mroster = rosterZoo
   , mcaves  = cavesZoo
-  , mendMsg = []
+  , mendMsg = [ (Killed, "Against such an onslaught, only clever positioning, use of terrain and patient vigilance gives any chance of survival.")
+              , (Conquer, "That was a grim harvest. Science demands sacrifices.") ]
   , mrules  = T.intercalate "\n"
       [ "* One level only"
       , "* Five heroes vs. Many enemies"
@@ -240,13 +247,14 @@ zoo = ModeKind  -- asymmetric crowd melee at night
 -- without reaction fire don't make sense, because then usually only one hero
 -- shoots (and often also scouts) and others just gather ammo.
 ambush = ModeKind  -- dense ranged with reaction fire vs melee at night
-  { msymbol = 'm'
-  , mname   = "ranged ambush (7)"
+  { mname   = "ranged ambush (7)"
   , mfreq   = [(RANGED, 1), (AMBUSH, 1), (CAMPAIGN_SCENARIO, 1)]
   , mtutorial = False
+  , mattract = False
   , mroster = rosterAmbush
   , mcaves  = cavesAmbush
-  , mendMsg = []
+  , mendMsg = [ (Killed, "You turned out to be the prey, this time, not the hunter. In fact, you are not even in the hunters' league. When fighting against such odds, passively waiting for enemy to spring a trap is to no avail, because a professional team can sneak in darkness and ambush the ambushers.\nGranted, good positioning is crucial, so that each squad member can overwatch the battlefield and fire opportunistically, using the recently recovered instant telegraphy equipment. However, there is no hope without active scouting, throwing lit objects and probing suspect areas with missiles while paying attention to sounds. And that may still not be enough.")
+              , (Conquer, "The new instant telegraphy equipment enabling simultaneous ranged attacks with indirect triangulation and aiming proved effective beyond expectation. Your ideas are safe, your research programme on track, your chartered company ready to launch and introduce progress and science into every household of the nation.") ]
   , mrules  = T.intercalate "\n"
       [ "* One level only"
       , "* Three heroes with concurrent attacks vs. Unidentified foes"
@@ -255,14 +263,14 @@ ambush = ModeKind  -- dense ranged with reaction fire vs melee at night
       ]
   , mdesc   = "Prevent hijacking of your ideas at all cost! Be stealthy, be observant, be aggressive. Fast execution is what makes or breaks a creative team."
   , mreason = "In this adventure, finally, your heroes are able to all use ranged attacks at once, given enough ammunition."
-  , mhint   = ""
+  , mhint   = "Beware of friendly fire, particularly from explosives. But you need no more hints. Go fulfill your destiny! For Science!"
   }
 
 safari = ModeKind  -- Easter egg available only via screensaver
-  { msymbol = 'f'
-  , mname   = "safari"
+  { mname   = "safari"
   , mfreq   = [(SAFARI, 1)]
   , mtutorial = False
+  , mattract = False
   , mroster = rosterSafari
   , mcaves  = cavesSafari
   , mendMsg = []
@@ -270,7 +278,7 @@ safari = ModeKind  -- Easter egg available only via screensaver
       [ "* Three levels"
       , "* Many teammates capable of concurrent action vs. Many enemies"
       , "* Minimize losses"
-      , "* Find exit and escape ASAP"
+      , "* Find a way out and escape ASAP"
       ]
   , mdesc   = "\"In this enactment you'll discover the joys of hunting the most exquisite of Earth's flora and fauna, both animal and semi-intelligent. Exit at the bottommost level.\" This is a drama script recovered from a monster nest debris."
   , mreason = "This is an Easter egg. The default squad doctrine is that all team members follow the pointman, but it can be changed from the settings submenu of the main menu."
@@ -280,10 +288,10 @@ safari = ModeKind  -- Easter egg available only via screensaver
 -- * Testing modes
 
 dig = ModeKind
-  { msymbol = 'd'
-  , mname   = "dig"
+  { mname   = "dig"
   , mfreq   = [(DIG, 1)]
   , mtutorial = False
+  , mattract = False
   , mroster = rosterCrawlEmpty
   , mcaves  = cavesDig
   , mendMsg = []
@@ -294,10 +302,10 @@ dig = ModeKind
   }
 
 see = ModeKind
-  { msymbol = 'a'
-  , mname   = "see"
+  { mname   = "see"
   , mfreq   = [(SEE, 1)]
   , mtutorial = False
+  , mattract = False
   , mroster = rosterCrawlEmpty
   , mcaves  = cavesSee
   , mendMsg = []
@@ -308,10 +316,10 @@ see = ModeKind
   }
 
 short = ModeKind
-  { msymbol = 's'
-  , mname   = "short"
+  { mname   = "short"
   , mfreq   = [(SHORT, 1)]
   , mtutorial = False
+  , mattract = False
   , mroster = rosterCrawlEmpty
   , mcaves  = cavesShort
   , mendMsg = []
@@ -322,10 +330,10 @@ short = ModeKind
   }
 
 crawlEmpty = ModeKind
-  { msymbol = 'c'
-  , mname   = "crawl empty"
+  { mname   = "crawl empty"
   , mfreq   = [(CRAWL_EMPTY, 1)]
   , mtutorial = False
+  , mattract = False
   , mroster = rosterCrawlEmpty
   , mcaves  = cavesCrawlEmpty
   , mendMsg = []
@@ -336,10 +344,10 @@ crawlEmpty = ModeKind
   }
 
 crawlSurvival = ModeKind
-  { msymbol = 'd'
-  , mname   = "crawl survival"
+  { mname   = "crawl survival"
   , mfreq   = [(CRAWL_SURVIVAL, 1)]
   , mtutorial = False
+  , mattract = False
   , mroster = rosterCrawlSurvival
   , mcaves  = cavesCrawl
   , mendMsg = []
@@ -350,10 +358,10 @@ crawlSurvival = ModeKind
   }
 
 safariSurvival = ModeKind
-  { msymbol = 'u'
-  , mname   = "safari survival"
+  { mname   = "safari survival"
   , mfreq   = [(SAFARI_SURVIVAL, 1)]
   , mtutorial = False
+  , mattract = False
   , mroster = rosterSafariSurvival
   , mcaves  = cavesSafari
   , mendMsg = []
@@ -364,10 +372,10 @@ safariSurvival = ModeKind
   }
 
 battle = ModeKind
-  { msymbol = 'b'
-  , mname   = "battle"
+  { mname   = "battle"
   , mfreq   = [(BATTLE, 1)]
   , mtutorial = False
+  , mattract = False
   , mroster = rosterBattle
   , mcaves  = cavesBattle
   , mendMsg = []
@@ -378,10 +386,10 @@ battle = ModeKind
   }
 
 battleDefense = ModeKind
-  { msymbol = 'f'
-  , mname   = "battle defense"
+  { mname   = "battle defense"
   , mfreq   = [(BATTLE_DEFENSE, 1)]
   , mtutorial = False
+  , mattract = False
   , mroster = rosterBattleDefense
   , mcaves  = cavesBattle
   , mendMsg = []
@@ -392,10 +400,10 @@ battleDefense = ModeKind
   }
 
 battleSurvival = ModeKind
-  { msymbol = 'i'
-  , mname   = "battle survival"
+  { mname   = "battle survival"
   , mfreq   = [(BATTLE_SURVIVAL, 1)]
   , mtutorial = False
+  , mattract = False
   , mroster = rosterBattleSurvival
   , mcaves  = cavesBattle
   , mendMsg = []
@@ -406,10 +414,10 @@ battleSurvival = ModeKind
   }
 
 defense = ModeKind  -- perhaps a real scenario in the future
-  { msymbol = 'e'
-  , mname   = "defense"
+  { mname   = "defense"
   , mfreq   = [(DEFENSE, 1)]
   , mtutorial = False
+  , mattract = False
   , mroster = rosterDefense
   , mcaves  = cavesCrawl
   , mendMsg = []
@@ -420,10 +428,10 @@ defense = ModeKind  -- perhaps a real scenario in the future
   }
 
 defenseEmpty = ModeKind
-  { msymbol = 'e'
-  , mname   = "defense empty"
+  { mname   = "defense empty"
   , mfreq   = [(DEFENSE_EMPTY, 1)]
   , mtutorial = False
+  , mattract = False
   , mroster = rosterDefenseEmpty
   , mcaves  = cavesCrawlEmpty
   , mendMsg = []
@@ -435,323 +443,205 @@ defenseEmpty = ModeKind
 
 -- * Screensaver modes
 
-screensaverRaid = screensave (AutoLeader False False) $ raid
+screensaverRaid = raid
   { mname   = "auto-raid (1)"
-  , mfreq   = [(INSERT_COIN, 2), (NO_CONFIRMS, 1)]
+  , mfreq   = [(INSERT_COIN, 2)]
+  , mattract = True
   }
 
-screensaverBrawl = screensave (AutoLeader False False) $ brawl
+screensaverBrawl = brawl
   { mname   = "auto-brawl (2)"
-  , mfreq   = [(NO_CONFIRMS, 1)]
+  , mfreq   = []
+  , mattract = True
   }
 
-screensaverCrawl = screensave (AutoLeader False False) $ crawl
+screensaverCrawl = crawl
   { mname   = "auto-crawl (long)"
-  , mfreq   = [(NO_CONFIRMS, 1)]
+  , mfreq   = []
+  , mattract = True
   }
 
-screensaverShootout = screensave (AutoLeader False False) $ shootout
+screensaverShootout = shootout
   { mname   = "auto-shootout (3)"
-  , mfreq   = [(INSERT_COIN, 2), (NO_CONFIRMS, 1)]
+  , mfreq   = [(INSERT_COIN, 2)]
+  , mattract = True
   }
 
-screensaverHunt = screensave (AutoLeader False False) $ hunt
+screensaverHunt = hunt
   { mname   = "auto-hunt (4)"
-  , mfreq   = [(INSERT_COIN, 2), (NO_CONFIRMS, 1)]
+  , mfreq   = [(INSERT_COIN, 2)]
+  , mattract = True
   }
 
-screensaverEscape = screensave (AutoLeader False False) $ escape
-  { mname   = "auto-escape (5)"
-  , mfreq   = [(INSERT_COIN, 2), (NO_CONFIRMS, 1)]
+screensaverFlight = flight
+  { mname   = "auto-flight (5)"
+  , mfreq   = [(INSERT_COIN, 2)]
+  , mattract = True
   }
 
-screensaverZoo = screensave (AutoLeader False False) $ zoo
+screensaverZoo = zoo
   { mname   = "auto-zoo (6)"
-  , mfreq   = [(NO_CONFIRMS, 1)]
+  , mfreq   = []
+  , mattract = True
   }
 
-screensaverAmbush = screensave (AutoLeader False False) $ ambush
+screensaverAmbush = ambush
   { mname   = "auto-ambush (7)"
-  , mfreq   = [(NO_CONFIRMS, 1)]
+  , mfreq   = []
+  , mattract = True
   }
 
--- changing leader by client needed, because of TFollow
-screensaverSafari = screensave (AutoLeader False True) $ safari
+screensaverSafari = safari
   { mname   = "auto-safari"
-  , mfreq   = [(INSERT_COIN, 1), (NO_CONFIRMS, 1)]
+  , mfreq   = [(INSERT_COIN, 1)]
+  , mattract = True
   }
 
-teamCompetitor, teamCivilian :: TeamContinuity
-teamCompetitor = TeamContinuity 2
-teamCivilian = TeamContinuity 3
+rosterRaid, rosterBrawl, rosterCrawl, rosterShootout, rosterHunt, rosterFlight, rosterZoo, rosterAmbush, rosterSafari, rosterCrawlEmpty, rosterCrawlSurvival, rosterSafariSurvival, rosterBattle, rosterBattleDefense, rosterBattleSurvival, rosterDefense, rosterDefenseEmpty :: Roster
 
-rosterRaid, rosterBrawl, rosterCrawl, rosterShootout, rosterHunt, rosterEscape, rosterZoo, rosterAmbush, rosterSafari, rosterCrawlEmpty, rosterCrawlSurvival, rosterSafariSurvival, rosterBattle, rosterBattleDefense, rosterBattleSurvival, rosterDefense, rosterDefenseEmpty :: Roster
+rosterRaid =
+  [ ( ANIMAL_REPRESENTATIVE  -- starting over escape
+    , [(-2, 2, ANIMAL)] )
+  , ( EXPLORER_SHORT
+    , [(-2, 2, HERO)] )
+  , ( COMPETITOR_SHORT
+    , [(-2, 1, HERO)] )
+  , (HORROR_REPRESENTATIVE, []) ]  -- for summoned monsters
 
-rosterRaid = Roster
-  { rosterList = [ ( playerHero {fhiCondPoly = hiHeroShort}
-                   , Just teamExplorer
-                   , [(-2, 2, HERO)] )
-                 , ( playerAntiHero { fname = "Indigo Founder"
-                                    , fhiCondPoly = hiHeroShort }
-                   , Just teamCompetitor
-                   , [(-2, 1, HERO)] )
-                 , ( playerAnimal  -- starting over escape
-                   , Nothing
-                   , [(-2, 2, ANIMAL)] )
-                 , (playerHorror, Nothing, []) ]  -- for summoned monsters
-  , rosterEnemy = [ ("Explorer", "Animal Kingdom")
-                  , ("Explorer", "Horror Den")
-                  , ("Indigo Founder", "Animal Kingdom")
-                  , ("Indigo Founder", "Horror Den") ]
-  , rosterAlly = [] }
+rosterBrawl =
+  [ ( EXPLORER_NO_ESCAPE
+    , [(-2, 3, BRAWLER_HERO)] )
+  , ( COMPETITOR_NO_ESCAPE
+    , [(-2, 3, BRAWLER_HERO)] )
+  , (HORROR_REPRESENTATIVE, []) ]
 
-rosterBrawl = Roster
-  { rosterList = [ ( playerHero { fcanEscape = False
-                                , fhiCondPoly = hiHeroMedium }
-                   , Just teamExplorer
-                   , [(-2, 3, BRAWLER_HERO)] )
-                 , ( playerAntiHero { fname = "Indigo Researcher"
-                                    , fcanEscape = False
-                                    , fhiCondPoly = hiHeroMedium }
-                   , Just teamCompetitor
-                   , [(-2, 3, BRAWLER_HERO)] )
-                 , (playerHorror, Nothing, []) ]
-  , rosterEnemy = [ ("Explorer", "Indigo Researcher")
-                  , ("Explorer", "Horror Den")
-                  , ("Indigo Researcher", "Horror Den") ]
-  , rosterAlly = [] }
-
-rosterCrawl = Roster
-  { rosterList = [ ( playerHero
-                   , Just teamExplorer
-                   , [(-1, 3, HERO)] )
-                 , ( playerMonster
-                   , Nothing
-                   , [(-4, 1, SCOUT_MONSTER), (-4, 3, MONSTER)] )
-                 , ( playerAnimal
-                   , Nothing
-                   , -- Fun from the start to avoid empty initial level:
-                     [ (-1, 1 + 1 `d` 2, ANIMAL)
-                     -- Huge battle at the end:
-                     , (-10, 100, MOBILE_ANIMAL) ] ) ]
-  , rosterEnemy = [ ("Explorer", "Monster Hive")
-                  , ("Explorer", "Animal Kingdom") ]
-  , rosterAlly = [("Monster Hive", "Animal Kingdom")] }
+rosterCrawl =
+  [ ( ANIMAL_REPRESENTATIVE  -- starting over escape
+    , -- Fun from the start to avoid empty initial level:
+      [ (-1, 1 + 1 `d` 2, ANIMAL)
+      -- Huge battle at the end:
+      , (-10, 100, MOBILE_ANIMAL) ] )
+  , ( EXPLORER_REPRESENTATIVE
+        -- start on stairs so that stash is handy
+    , [(-1, 3, HERO)] )
+  , ( MONSTER_REPRESENTATIVE
+    , [(-4, 1, SCOUT_MONSTER), (-4, 3, MONSTER)] ) ]
 
 -- Exactly one scout gets a sight boost, to help the aggressor, because he uses
 -- the scout for initial attack, while camper (on big enough maps)
 -- can't guess where the attack would come and so can't position his single
 -- scout to counter the stealthy advance.
-rosterShootout = Roster
-  { rosterList = [ ( playerHero { fcanEscape = False
-                                , fhiCondPoly = hiHeroMedium }
-                   , Just teamExplorer
-                   , [(-5, 2, RANGER_HERO), (-5, 1, SCOUT_HERO)] )
-                 , ( playerAntiHero { fname = "Indigo Researcher"
-                                    , fcanEscape = False
-                                    , fhiCondPoly = hiHeroMedium }
-                   , Just teamCompetitor
-                   , [(-5, 2, RANGER_HERO), (-5, 1, SCOUT_HERO)] )
-                 , (playerHorror, Nothing, []) ]
-  , rosterEnemy = [ ("Explorer", "Indigo Researcher")
-                  , ("Explorer", "Horror Den")
-                  , ("Indigo Researcher", "Horror Den") ]
-  , rosterAlly = [] }
+rosterShootout =
+  [ ( EXPLORER_NO_ESCAPE
+    , [(-5, 2, RANGER_HERO), (-5, 1, SCOUT_HERO)] )
+  , ( COMPETITOR_NO_ESCAPE
+    , [(-5, 2, RANGER_HERO), (-5, 1, SCOUT_HERO)] )
+  , (HORROR_REPRESENTATIVE, []) ]
 
-rosterHunt = Roster
-  { rosterList = [ ( playerHero { fcanEscape = False
-                                , fhiCondPoly = hiHeroMedium }
-                   , Just teamExplorer
-                   , [(-6, 7, SOLDIER_HERO)] )
-                 , ( playerAntiHero { fname = "Indigo Researcher"
-                                    , fcanEscape = False
-                                    , fhiCondPoly = hiHeroMedium }
-                   , Just teamCompetitor
-                   , [(-6, 6, AMBUSHER_HERO), (-6, 1, SCOUT_HERO)] )
-                 , (playerHorror, Nothing, []) ]
-  , rosterEnemy = [ ("Explorer", "Indigo Researcher")
-                  , ("Explorer", "Horror Den")
-                  , ("Indigo Researcher", "Horror Den") ]
-  , rosterAlly = [] }
+rosterHunt =
+  [ ( EXPLORER_NO_ESCAPE
+    , [(-6, 7, SOLDIER_HERO)] )
+  , ( COMPETITOR_NO_ESCAPE
+    , [(-6, 6, AMBUSHER_HERO), (-6, 1, SCOUT_HERO)] )
+  , (HORROR_REPRESENTATIVE, []) ]
 
-rosterEscape = Roster
-  { rosterList = [ ( playerAntiHero { fname = "Indigo Researcher"
-                                    , fcanEscape = False  -- start on escape
-                                    , fneverEmpty = False  -- loot after killing
-                                    , fhiCondPoly = hiHeroMedium }
-                   , Just teamCompetitor
-                   , [(-7, 6, AMBUSHER_HERO), (-7, 1, SCOUT_HERO)] )
-                 , ( playerHero {fhiCondPoly = hiHeroMedium}
-                   , Just teamExplorer
-                   , [(-7, 2, ESCAPIST_HERO), (-7, 1, SCOUT_HERO)] )
-                     -- second on the list to let foes occupy the exit
-                 , (playerHorror, Nothing, []) ]
-  , rosterEnemy = [ ("Explorer", "Indigo Researcher")
-                  , ("Explorer", "Horror Den")
-                  , ("Indigo Researcher", "Horror Den") ]
-  , rosterAlly = [] }
+rosterFlight =
+  [ ( COMPETITOR_NO_ESCAPE  -- start on escape
+    , [(-7, 6, AMBUSHER_HERO), (-7, 1, SCOUT_HERO)] )
+  , ( EXPLORER_MEDIUM
+    , [(-7, 2, ESCAPIST_HERO), (-7, 1, SCOUT_HERO)] )
+      -- second on the list to let foes occupy the escape
+  , (HORROR_REPRESENTATIVE, []) ]
 
-rosterZoo = Roster
-  { rosterList = [ ( playerHero { fcanEscape = False
-                                , fhiCondPoly = hiHeroLong }
-                   , Just teamExplorer
-                   , [(-8, 5, SOLDIER_HERO)] )
-                 , ( playerAnimal {fneverEmpty = True}
-                   , Nothing
-                   , [(-8, 100, MOBILE_ANIMAL)] )
-                 , (playerHorror, Nothing, []) ]  -- for summoned monsters
-  , rosterEnemy = [ ("Explorer", "Animal Kingdom")
-                  , ("Explorer", "Horror Den") ]
-  , rosterAlly = [] }
+rosterZoo =
+  [ ( EXPLORER_TRAPPED
+    , [(-8, 5, SOLDIER_HERO)] )
+  , ( ANIMAL_CAPTIVE
+    , [(-8, 100, MOBILE_ANIMAL)] )
+  , (HORROR_REPRESENTATIVE, []) ]  -- for summoned monsters
 
-rosterAmbush = Roster
-  { rosterList = [ ( playerHero { fcanEscape = False
-                                , fhiCondPoly = hiHeroMedium }
-                   , Just teamExplorer
-                   , [(-9, 5, AMBUSHER_HERO), (-9, 1, SCOUT_HERO)] )
-                 , ( playerAntiHero { fname = "Indigo Researcher"
-                                    , fcanEscape = False
-                                    , fhiCondPoly = hiHeroMedium }
-                   , Just teamCompetitor
-                   , [(-9, 12, SOLDIER_HERO)] )
-                 , (playerHorror, Nothing, []) ]
-  , rosterEnemy = [ ("Explorer", "Indigo Researcher")
-                  , ("Explorer", "Horror Den")
-                  , ("Indigo Researcher", "Horror Den") ]
-  , rosterAlly = [] }
+rosterAmbush =
+  [ ( EXPLORER_NO_ESCAPE
+    , [(-9, 5, AMBUSHER_HERO), (-9, 1, SCOUT_HERO)] )
+  , ( COMPETITOR_NO_ESCAPE
+    , [(-9, 12, SOLDIER_HERO)] )
+  , (HORROR_REPRESENTATIVE, []) ]
 
 -- No horrors faction needed, because spawned heroes land in civilian faction.
-rosterSafari = Roster
-  { rosterList = [ ( playerMonsterTourist
-                   , Nothing
-                   , [(-4, 15, MONSTER)] )
-                 , ( playerHunamConvict
-                   , Just teamCivilian
-                   , [(-4, 2, CIVILIAN)] )
-                 , ( playerAnimalMagnificent
-                   , Nothing
-                   , [(-7, 15, MOBILE_ANIMAL)] )
-                 , ( playerAnimalExquisite  -- start on escape
-                   , Nothing
-                   , [(-10, 20, MOBILE_ANIMAL)] ) ]
-  , rosterEnemy = [ ("Monster Tourist Office", "Hunam Convict")
-                  , ( "Monster Tourist Office"
-                    , "Animal Magnificent Specimen Variety" )
-                  , ( "Monster Tourist Office"
-                    , "Animal Exquisite Herds and Packs Galore" )
-                  , ( "Animal Magnificent Specimen Variety"
-                    , "Hunam Convict" )
-                  , ( "Hunam Convict"
-                    , "Animal Exquisite Herds and Packs Galore" ) ]
-  , rosterAlly = [ ( "Animal Magnificent Specimen Variety"
-                   , "Animal Exquisite Herds and Packs Galore" ) ] }
+rosterSafari =
+  [ ( MONSTER_TOURIST
+    , [(-4, 15, MONSTER)] )
+  , ( CONVICT_REPRESENTATIVE
+    , [(-4, 2, CIVILIAN)] )
+  , ( ANIMAL_MAGNIFICENT
+    , [(-7, 15, MOBILE_ANIMAL)] )
+  , ( ANIMAL_EXQUISITE  -- start on escape
+    , [(-10, 20, MOBILE_ANIMAL)] ) ]
 
-rosterCrawlEmpty = Roster
-  { rosterList = [ ( playerHero
-                   , Just teamExplorer
-                   , [(-1, 1, HERO)] )
-                 , (playerHorror, Nothing, []) ]
-                     -- for spawned and summoned monsters
-  , rosterEnemy = []
-  , rosterAlly = [] }
+rosterCrawlEmpty =
+  [ ( EXPLORER_PACIFIST
+    , [(-1, 1, HERO)] )
+  , (HORROR_PACIFIST, []) ]
+      -- for spawned and summoned monsters
 
-rosterCrawlSurvival = rosterCrawl
-  { rosterList = [ ( playerAntiHero
-                   , Just teamExplorer
-                   , [(-1, 3, HERO)] )
-                 , ( playerMonster
-                   , Nothing
-                   , [(-4, 1, SCOUT_MONSTER), (-4, 3, MONSTER)] )
-                 , ( playerAnimal {fhasUI = True}
-                   , Nothing
-                   , -- Fun from the start to avoid empty initial level:
-                     [ (-1, 1 + 1 `d` 2, ANIMAL)
-                     -- Huge battle at the end:
-                     , (-10, 100, MOBILE_ANIMAL) ] ) ] }
+rosterCrawlSurvival =
+  [ ( EXPLORER_AUTOMATED
+    , [(-1, 3, HERO)] )
+  , ( MONSTER_REPRESENTATIVE
+    , [(-4, 1, SCOUT_MONSTER), (-4, 3, MONSTER)] )
+  , ( ANIMAL_NARRATING
+    , [(-5, 10, ANIMAL)] ) ]  -- explore unopposed for some time
 
-rosterSafariSurvival = rosterSafari
-  { rosterList = [ ( playerMonsterTourist
-                       { fleaderMode = Just $ AutoLeader True True
-                       , fhasUI = False
-                       , funderAI = True }
-                   , Nothing
-                   , [(-4, 15, MONSTER)] )
-                 , ( playerHunamConvict
-                   , Just teamCivilian
-                   , [(-4, 3, CIVILIAN)] )
-                 , ( playerAnimalMagnificent
-                       { fleaderMode = Just $ AutoLeader True False
-                       , fhasUI = True
-                       , funderAI = False }
-                   , Nothing
-                   , [(-7, 20, MOBILE_ANIMAL)] )
-                 , ( playerAnimalExquisite
-                   , Nothing
-                   , [(-10, 30, MOBILE_ANIMAL)] ) ] }
+rosterSafariSurvival =
+  [ ( MONSTER_TOURIST_PASSIVE
+    , [(-4, 15, MONSTER)] )
+  , ( CONVICT_REPRESENTATIVE
+    , [(-4, 3, CIVILIAN)] )
+  , ( ANIMAL_MAGNIFICENT_NARRATING
+    , [(-7, 20, MOBILE_ANIMAL)] )
+  , ( ANIMAL_EXQUISITE
+    , [(-10, 30, MOBILE_ANIMAL)] ) ]
 
-rosterBattle = Roster
-  { rosterList = [ ( playerHero { fcanEscape = False
-                                , fhiCondPoly = hiHeroLong }
-                   , Just teamExplorer
-                   , [(-5, 5, SOLDIER_HERO)] )
-                 , ( playerMonster {fneverEmpty = True}
-                   , Nothing
-                   , [(-5, 35, MOBILE_MONSTER)] )
-                 , ( playerAnimal {fneverEmpty = True}
-                   , Nothing
-                   , [(-5, 30, MOBILE_ANIMAL)] ) ]
-  , rosterEnemy = [ ("Explorer", "Monster Hive")
-                  , ("Explorer", "Animal Kingdom") ]
-  , rosterAlly = [("Monster Hive", "Animal Kingdom")] }
+rosterBattle =
+  [ ( EXPLORER_TRAPPED
+    , [(-5, 5, SOLDIER_HERO)] )
+  , ( MONSTER_CAPTIVE
+    , [(-5, 35, MOBILE_MONSTER)] )
+  , ( ANIMAL_CAPTIVE
+    , [(-5, 30, MOBILE_ANIMAL)] ) ]
 
-rosterBattleDefense = rosterBattle
-  { rosterList = [ ( playerAntiHero { fcanEscape = False
-                                    , fhiCondPoly = hiHeroLong }
-                   , Just teamExplorer
-                   , [(-5, 5, SOLDIER_HERO)] )
-                 , ( playerMonster { fneverEmpty = True
-                                   , fhasUI = True }
-                   , Nothing
-                   , [(-5, 35, MOBILE_MONSTER)] )
-                 , ( playerAnimal {fneverEmpty = True}
-                   , Nothing
-                   , [(-5, 30, MOBILE_ANIMAL)] ) ] }
+rosterBattleDefense =
+  [ ( EXPLORER_AUTOMATED_TRAPPED
+    , [(-5, 5, SOLDIER_HERO)] )
+  , ( MONSTER_CAPTIVE_NARRATING
+    , [(-5, 35, MOBILE_MONSTER)] )
+  , ( ANIMAL_CAPTIVE
+    , [(-5, 30, MOBILE_ANIMAL)] ) ]
 
-rosterBattleSurvival = rosterBattle
-  { rosterList = [ ( playerAntiHero { fcanEscape = False
-                                    , fhiCondPoly = hiHeroLong }
-                   , Just teamExplorer
-                   , [(-5, 5, SOLDIER_HERO)] )
-                 , ( playerMonster {fneverEmpty = True}
-                   , Nothing
-                   , [(-5, 35, MOBILE_MONSTER)] )
-                 , ( playerAnimal { fneverEmpty = True
-                                  , fhasUI = True }
-                   , Nothing
-                   , [(-5, 30, MOBILE_ANIMAL)] ) ] }
+rosterBattleSurvival =
+  [ ( EXPLORER_AUTOMATED_TRAPPED
+    , [(-5, 5, SOLDIER_HERO)] )
+  , ( MONSTER_CAPTIVE
+    , [(-5, 35, MOBILE_MONSTER)] )
+  , ( ANIMAL_CAPTIVE_NARRATING
+    , [(-5, 30, MOBILE_ANIMAL)] ) ]
 
-rosterDefense = rosterCrawl
-  { rosterList = [ ( playerAntiHero
-                   , Just teamExplorer
-                   , [(-1, 3, HERO)] )
-                 , ( playerAntiMonster
-                   , Nothing
-                   , [(-4, 1, SCOUT_MONSTER), (-4, 3, MONSTER)] )
-                 , ( playerAnimal
-                   , Nothing
-                   , [ (-1, 1 + 1 `d` 2, ANIMAL)
-                     , (-10, 100, MOBILE_ANIMAL) ] ) ] }
+rosterDefense =
+  [ ( EXPLORER_AUTOMATED
+    , [(-1, 3, HERO)] )
+  , ( MONSTER_ANTI
+    , [(-4, 1, SCOUT_MONSTER), (-4, 3, MONSTER)] )
+  , ( ANIMAL_REPRESENTATIVE
+    , [ (-1, 1 + 1 `d` 2, ANIMAL)
+      , (-10, 100, MOBILE_ANIMAL) ] ) ]
 
-rosterDefenseEmpty = rosterCrawl
-  { rosterList = [ ( playerAntiMonster {fneverEmpty = True}
-                   , Nothing
-                   , [(-4, 1, SCOUT_MONSTER)] )
-                 , (playerHorror, Nothing, []) ]
-                     -- for spawned and summoned animals
-  , rosterEnemy = []
-  , rosterAlly = [] }
+rosterDefenseEmpty =
+  [ ( MONSTER_ANTI_PACIFIST
+    , [(-4, 1, SCOUT_MONSTER)] )
+  , (HORROR_PACIFIST, []) ]
+      -- for spawned and summoned animals
 
-cavesRaid, cavesBrawl, cavesCrawl, cavesShootout, cavesHunt, cavesEscape, cavesZoo, cavesAmbush, cavesSafari, cavesDig, cavesSee, cavesShort, cavesCrawlEmpty, cavesBattle :: Caves
+cavesRaid, cavesBrawl, cavesCrawl, cavesShootout, cavesHunt, cavesFlight, cavesZoo, cavesAmbush, cavesSafari, cavesDig, cavesSee, cavesShort, cavesCrawlEmpty, cavesBattle :: Caves
 
 cavesRaid = [([-2], [CAVE_RAID])]
 
@@ -773,7 +663,7 @@ cavesShootout = [([-5], [CAVE_SHOOTOUT])]
 
 cavesHunt = [([-6], [CAVE_HUNT])]
 
-cavesEscape = [([-7], [CAVE_ESCAPE])]
+cavesFlight = [([-7], [CAVE_FLIGHT])]
 
 cavesZoo = [([-8], [CAVE_ZOO])]
 
@@ -801,7 +691,7 @@ cavesShort = let numberCaves n c = ([n], [c])
 
 allCaves :: [GroupName CaveKind]
 allCaves =
-  [ CAVE_RAID, CAVE_BRAWL, CAVE_SHOOTOUT, CAVE_HUNT, CAVE_ESCAPE, CAVE_ZOO
+  [ CAVE_RAID, CAVE_BRAWL, CAVE_SHOOTOUT, CAVE_HUNT, CAVE_FLIGHT, CAVE_ZOO
   , CAVE_AMBUSH
   , CAVE_ROGUE, CAVE_LABORATORY, CAVE_EMPTY, CAVE_ARENA, CAVE_SMOKING
   , CAVE_NOISE, CAVE_MINE ]

@@ -9,7 +9,7 @@ module Game.LambdaHack.Server.ItemRev
     -- * The @FlavourMap@ type
   , FlavourMap, emptyFlavourMap, dungeonFlavourMap
     -- * Important implementation parts, exposed for tests
-  , rollFlavourMap, invalidInformationCode
+  , rollFlavourMap
 #ifdef EXPOSE_INTERNAL
     -- * Internal operations
   , buildItem, keepMetaGameInformation
@@ -56,7 +56,7 @@ instance Binary ItemKnown
 instance Hashable ItemKnown
 
 data NewItem =
-    NewItem ItemKnown ItemFull ItemQuant
+    NewItem  (GroupName ItemKind) ItemKnown ItemFull ItemQuant
   | NoNewItem
 
 -- | Reverse item map, for item creation, to keep items and item identifiers
@@ -85,7 +85,7 @@ buildItem COps{coitem} arItem (FlavourMap flavourMap)
 -- | Roll an item kind based on given @Freqs@ and kind rarities
 newItemKind :: COps -> UniqueSet -> Freqs ItemKind
             -> Dice.AbsDepth -> Dice.AbsDepth -> Int
-            -> Frequency (ContentId IK.ItemKind, ItemKind)
+            -> Frequency (GroupName ItemKind, ContentId IK.ItemKind, ItemKind)
 newItemKind COps{coitem, coItemSpeedup} uniqueSet itemFreq
             (Dice.AbsDepth ldepth) (Dice.AbsDepth totalDepth) lvlSpawned =
   assert (any (\(_, n) -> n > 0) itemFreq) $
@@ -94,8 +94,8 @@ newItemKind COps{coitem, coItemSpeedup} uniqueSet itemFreq
   -- each 10 spawns adds 5 depth.
   let numSpawnedCoeff = max 0 $ lvlSpawned `div` 2 - 5
       ldSpawned = ldepth + numSpawnedCoeff
-      f _ acc _ ik _ | ik `ES.member` uniqueSet = acc
-      f !q !acc !p !ik !kind =
+      f _ _ acc _ ik _ | ik `ES.member` uniqueSet = acc
+      f !itemGroup !q !acc !p !ik !kind =
         -- Don't consider lvlSpawned for uniques, except those that have
         -- @Unique@ under @Odds@.
         let ld = if IA.checkFlag Ability.Unique
@@ -104,14 +104,15 @@ newItemKind COps{coitem, coItemSpeedup} uniqueSet itemFreq
                  else ldSpawned
             rarity = linearInterpolation ld totalDepth (IK.irarity kind)
             !fr = q * p * rarity
-        in (fr, (ik, kind)) : acc
-      g (!itemGroup, !q) = ofoldlGroup' coitem itemGroup (f q) []
+        in (fr, (itemGroup, ik, kind)) : acc
+      g (!itemGroup, !q) = ofoldlGroup' coitem itemGroup (f itemGroup q) []
       freqDepth = concatMap g itemFreq
   in toFreq "newItemKind" freqDepth
 
 -- | Given item kind frequency, roll item kind, generate item aspects
 -- based on level and put together the full item data set.
-newItem :: COps -> Frequency (ContentId IK.ItemKind, ItemKind)
+newItem :: COps
+        -> Frequency (GroupName ItemKind, ContentId IK.ItemKind, ItemKind)
         -> FlavourMap -> DiscoveryKindRev
         -> Dice.AbsDepth -> Dice.AbsDepth
         -> Rnd NewItem
@@ -119,7 +120,7 @@ newItem cops freq flavourMap discoRev levelDepth totalDepth =
   if nullFreq freq
   then return NoNewItem  -- e.g., rare tile has a unique embed, only first time
   else do
-    (itemKindId, itemKind) <- frequency freq
+    (itemGroup, itemKindId, itemKind) <- frequency freq
     -- Number of new items/actors unaffected by number of spawned actors.
     itemN <- castDice levelDepth totalDepth (IK.icount itemKind)
     arItem <- IA.rollAspectRecord (IK.iaspects itemKind) levelDepth totalDepth
@@ -136,20 +137,13 @@ newItem cops freq flavourMap discoRev levelDepth totalDepth =
         itemQuant = if itemK == 1 && null itemTimer
                     then quantSingle
                     else (itemK, itemTimer)
-    return $! NewItem itemKnown itemFull itemQuant
+    return $! NewItem itemGroup itemKnown itemFull itemQuant
 
 -- | The reverse map to @DiscoveryKind@, needed for item creation.
 -- This is total and never changes, hence implemented as vector.
 -- Morally, it's indexed by @ContentId ItemKind@ and elements are @ItemKindIx@.
 newtype DiscoveryKindRev = DiscoveryKindRev (U.Vector Word16)
   deriving (Show, Binary)
-
--- | Code that means the information (e.g., flavour or hidden kind index)
--- should be regenerated, because it could not be transferred from
--- previous playthrough (it's random in each playthrough or there was
--- no previous playthrough).
-invalidInformationCode :: Word16
-invalidInformationCode = maxBound
 
 emptyDiscoveryKindRev :: DiscoveryKindRev
 emptyDiscoveryKindRev = DiscoveryKindRev U.empty
@@ -162,13 +156,13 @@ serverDiscos COps{coitem} (DiscoveryKindRev discoRevFromPreviousGame) = do
     if U.null discoRevFromPreviousGame
     then shuffle ixs
     else shuffleExcept (keepMetaGameInformation coitem discoRevFromPreviousGame)
-                       (olength coitem) ixs
-  let f (!ikMap, (!ix) : rest) !kmKind _ =
-        (EM.insert (toItemKindIx ix) kmKind ikMap, rest)
-      f (ikMap, []) ik _ =
-        error $ "too short ixs" `showFailure` (ik, ikMap)
-      (discoS, _) = ofoldlWithKey' coitem f (EM.empty, shuffled)
-      udiscoRev = U.fromListN (olength coitem) shuffled
+                       (olength coitem)
+                       ixs
+  let udiscoRev = U.fromListN (olength coitem) shuffled
+      f :: ContentId ItemKind -> Word16 -> (ItemKindIx, ContentId ItemKind)
+      f ik ikx = (toItemKindIx ikx, ik)
+      -- Not @fromDistinctAscList@, because it's the reverse map.
+      discoS = EM.fromList $ zipWith f [toEnum 0 ..] $ U.toList udiscoRev
   return (discoS, DiscoveryKindRev udiscoRev)
 
 -- | Keep in a vector the information that is retained from playthrough

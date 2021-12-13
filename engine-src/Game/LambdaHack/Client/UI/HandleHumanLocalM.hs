@@ -1,4 +1,3 @@
-{-# LANGUAGE TupleSections #-}
 -- | Semantics of "Game.LambdaHack.Client.UI.HumanCmd"
 -- client commands that do not return server requests,,
 -- but only change internal client state.
@@ -14,8 +13,7 @@ module Game.LambdaHack.Client.UI.HandleHumanLocalM
   , selectActorHuman, selectNoneHuman, selectWithPointerHuman
   , repeatHuman, repeatHumanTransition
   , repeatLastHuman, repeatLastHumanTransition
-  , recordHuman, recordHumanTransition
-  , allHistoryHuman, lastHistoryHuman
+  , recordHuman, recordHumanTransition, allHistoryHuman
   , markVisionHuman, markSmellHuman, markSuspectHuman, markAnimHuman
   , overrideTutHuman
   , printScreenHuman
@@ -29,11 +27,12 @@ module Game.LambdaHack.Client.UI.HandleHumanLocalM
   , aimPointerFloorHuman, aimPointerEnemyHuman
 #ifdef EXPOSE_INTERNAL
     -- * Internal operations
-  , chooseItemDialogModeLore, permittedProjectClient, projectCheck
-  , xhairLegalEps, posFromXhair
-  , permittedApplyClient, eitherHistory, endAiming, endAimingMsg
-  , doLook, flashAiming
+  , chooseItemDialogModeLore, projectCheck
+  , posFromXhair, permittedApplyClient, endAiming, endAimingMsg
+  , flashAiming
 #endif
+    -- * Operations both internal and used in unit tests
+  , permittedProjectClient, xhairLegalEps
   ) where
 
 import Prelude ()
@@ -62,7 +61,6 @@ import           Game.LambdaHack.Client.UI.FrameM
 import           Game.LambdaHack.Client.UI.HandleHelperM
 import qualified Game.LambdaHack.Client.UI.HumanCmd as HumanCmd
 import           Game.LambdaHack.Client.UI.InventoryM
-import           Game.LambdaHack.Client.UI.ItemSlot
 import qualified Game.LambdaHack.Client.UI.Key as K
 import           Game.LambdaHack.Client.UI.MonadClientUI
 import           Game.LambdaHack.Client.UI.Msg
@@ -89,9 +87,9 @@ import qualified Game.LambdaHack.Common.Tile as Tile
 import           Game.LambdaHack.Common.Time
 import           Game.LambdaHack.Common.Types
 import           Game.LambdaHack.Common.Vector
+import qualified Game.LambdaHack.Content.FactionKind as FK
 import qualified Game.LambdaHack.Content.ItemKind as IK
 import qualified Game.LambdaHack.Content.ModeKind as MK
-import qualified Game.LambdaHack.Content.PlaceKind as PK
 import           Game.LambdaHack.Content.RuleKind
 import qualified Game.LambdaHack.Definition.Ability as Ability
 import qualified Game.LambdaHack.Definition.Color as Color
@@ -124,13 +122,26 @@ chooseItemHuman :: MonadClientUI m => ActorId -> ItemDialogMode -> m MError
 chooseItemHuman leader c =
   either Just (const Nothing) <$> chooseItemDialogMode leader False c
 
-chooseItemDialogModeLore :: MonadClientUI m => m (Maybe ResultItemDialogMode)
+chooseItemDialogModeLore :: forall m . MonadClientUI m
+                         => m (Maybe ResultItemDialogMode)
 chooseItemDialogModeLore = do
-  schosenLore <- getsSession schosenLore
-  (inhabitants, embeds) <- case schosenLore of
+  schosenLoreOld <- getsSession schosenLore
+  (inhabitants, embeds) <- case schosenLoreOld of
     ChosenLore inh emb -> return (inh, emb)
     ChosenNothing -> computeChosenLore
-  bagAll <- getsState $ EM.map (const quantSingle) . sitemD
+  bagHuge <- getsState $ EM.map (const quantSingle) . sitemD
+  itemToF <- getsState $ flip itemToFull
+  ItemRoles itemRoles <- getsSession sroles
+  let rlore :: ItemId -> SLore -> ChosenLore -> m (Maybe ResultItemDialogMode)
+      rlore iid slore schosenLore = do
+        let itemRole = itemRoles EM.! slore
+            bagAll = EM.filterWithKey (\iid2 _ -> iid2 `ES.member` itemRole)
+                                      bagHuge
+        modifySession $ \sess -> sess {schosenLore}
+        let iids = sortIids itemToF $ EM.assocs bagAll
+            slot = toEnum $ fromMaybe (error $ "" `showFailure` (iid, iids))
+                          $ elemIndex iid $ map fst iids
+        return $ Just $ RLore slore slot iids
   case inhabitants of
     (_, b) : rest -> do
       let iid = btrunk b
@@ -138,27 +149,22 @@ chooseItemDialogModeLore = do
       let slore | not $ bproj b = STrunk
                 | IA.checkFlag Ability.Blast arItem = SBlast
                 | otherwise = SItem
-      lSlots <- slotsOfItemDialogMode $ MLore slore
-      modifySession $ \sess -> sess {schosenLore = ChosenLore rest embeds}
-      return $ Just $ RLore slore iid bagAll lSlots
+      rlore iid slore (ChosenLore rest embeds)
     [] ->
       case embeds of
         (iid, _) : rest -> do
           let slore = SEmbed
-          lSlots <- slotsOfItemDialogMode $ MLore slore
-          modifySession $ \sess ->
-            sess {schosenLore = ChosenLore inhabitants rest}
-          return $ Just $ RLore slore iid bagAll lSlots
+          rlore iid slore (ChosenLore inhabitants rest)
         [] -> do
           modifySession $ \sess -> sess {schosenLore = ChosenNothing}
           return Nothing
 
-chooseItemDialogMode :: MonadClientUI m
+chooseItemDialogMode :: forall m. MonadClientUI m
                      => ActorId -> Bool -> ItemDialogMode
-                     -> m (FailOrCmd ItemDialogMode)
+                     -> m (FailOrCmd ActorId)
 chooseItemDialogMode leader0 permitLoreCycle c = do
   CCUI{coscreen=ScreenContent{rwidth, rheight}} <- getsSession sccui
-  FontSetup{..} <- getFontSetup
+  FontSetup{propFont} <- getFontSetup
   side <- getsClient sside
   fact <- getsState $ (EM.! side) . sfactionD
   (ggi, loreFound) <- do
@@ -172,7 +178,8 @@ chooseItemDialogMode leader0 permitLoreCycle c = do
         return (ggi, False)
   -- Pointman could have been changed in @getStoreItem@ above.
   mleader <- getsClient sleader
-  let leader = fromMaybe (error "UI manipulation killed the pointman") mleader
+  -- When run inside a test, without mleader, assume leader not changed.
+  let leader = fromMaybe leader0 mleader
   recordHistory  -- item chosen, wipe out already shown msgs
   actorCurAndMaxSk <- getsState $ getActorMaxSkills leader
   let meleeSkill = Ability.getSk Ability.SkHurtMelee actorCurAndMaxSk
@@ -182,22 +189,8 @@ chooseItemDialogMode leader0 permitLoreCycle c = do
       RStore fromCStore [iid] -> do
         modifySession $ \sess ->
           sess {sitemSel = Just (iid, fromCStore, False)}
-        return $ Right $ MStore fromCStore
+        return $ Right leader
       RStore{} -> error $ "" `showFailure` result
-      ROrgans iid itemBag lSlots -> do
-        let blurb itemFull =
-              if IA.checkFlag Ability.Condition $ aspectRecordFull itemFull
-              then "condition"
-              else "organ"
-            promptFun _ itemFull _ =
-              makeSentence [ partActor bUI, "is aware of"
-                           , MU.AW $ blurb itemFull ]
-            ix0 = fromMaybe (error $ "" `showFailure` result)
-                  $ elemIndex iid $ EM.elems lSlots
-        go <- displayItemLore itemBag meleeSkill promptFun ix0 lSlots
-        if go
-        then chooseItemDialogMode leader False MOrgans
-        else failWith "never mind"
       ROwned iid -> do
         found <- getsState $ findIid leader side iid
         let (newAid, bestStore) = case leader `lookup` found of
@@ -209,54 +202,35 @@ chooseItemDialogMode leader0 permitLoreCycle c = do
           sess {sitemSel = Just (iid, bestStore, False)}
         arena <- getArenaUI
         b2 <- getsState $ getActorBody newAid
-        let (autoDun, _) = autoDungeonLevel fact
-        if | newAid == leader -> return $ Right MOwned
-           | blid b2 /= arena && autoDun ->
+        let banned = bannedPointmanSwitchBetweenLevels fact
+        if | newAid == leader -> return $ Right leader
+           | blid b2 /= arena && banned ->
              failSer NoChangeDunLeader
            | otherwise -> do
-             -- We switch leader only here, not in lore screens, because
-             -- lore is only about inspecting items, no activation submenu.
+             -- We switch leader only here, not when processing results
+             -- of lore screens, because lore is only about inspecting items.
              void $ pickLeader True newAid
-             return $ Right MOwned
-      RSkills slotIndex0 -> do
-        let slotListBound = length skillSlots - 1
-            displayOneSlot slotIndex = do
-              b <- getsState $ getActorBody leader
-              let skill = skillSlots !! slotIndex
-                  valueText = skillToDecorator skill b
-                              $ Ability.getSk skill actorCurAndMaxSk
-                  prompt2 = makeSentence
-                    [ MU.WownW (partActor bUI) (MU.Text $ skillName skill)
-                    , "is", MU.Text valueText ]
-                  ov0 = EM.singleton propFont
-                        $ offsetOverlay
-                        $ indentSplitAttrString rwidth
-                        $ textToAS $ skillDesc skill
-                  keys = [K.spaceKM, K.escKM]
-                         ++ [K.upKM | slotIndex /= 0]
-                         ++ [K.downKM | slotIndex /= slotListBound]
-              msgAdd MsgPromptGeneric prompt2
-              slides <- overlayToSlideshow (rheight - 2) keys (ov0, [])
-              km <- getConfirms ColorFull keys slides
-              case K.key km of
-                K.Space -> chooseItemDialogMode leader False MSkills
-                K.Up -> displayOneSlot $ slotIndex - 1
-                K.Down -> displayOneSlot $ slotIndex + 1
-                K.Esc -> failWith "never mind"
-                _ -> error $ "" `showFailure` km
-        displayOneSlot slotIndex0
-      RLore slore iid itemBag lSlots -> do
-        let ix0 = fromMaybe (error $ "" `showFailure` result)
-                  $ elemIndex iid $ EM.elems lSlots
-            promptFun _ _ _ =
-              makeSentence [ MU.SubjectVerbSg (partActor bUI) "remember"
-                           , MU.AW $ MU.Text (headingSLore slore) ]
+             return $ Right newAid
+      RLore slore slot iids -> do
+        let promptFun _ itemFull _ = case slore of
+              SBody ->
+                let blurb = if IA.checkFlag Ability.Condition
+                               $ aspectRecordFull itemFull
+                            then "condition"
+                            else "organ"
+                in makeSentence [partActor bUI, "is aware of" ,MU.AW blurb]
+              _ ->
+                makeSentence [ MU.SubjectVerbSg (partActor bUI) "remember"
+                             , MU.AW $ MU.Text (headingSLore slore) ]
         schosenLore <- getsSession schosenLore
         let lorePending = loreFound && case schosenLore of
               ChosenLore [] [] -> False
               _ -> True
-        km <- displayItemLorePointedAt itemBag meleeSkill promptFun ix0
-                                       lSlots lorePending
+            renderOneItem =
+              okxItemLoreMsg promptFun meleeSkill (MLore slore) iids
+            extraKeys = [K.mkChar '~' | lorePending]
+            slotBound = length iids - 1
+        km <- displayOneMenuItem renderOneItem extraKeys slotBound slot
         case K.key km of
           K.Space -> do
             modifySession $ \sess -> sess {schosenLore = ChosenNothing}
@@ -266,90 +240,109 @@ chooseItemDialogMode leader0 permitLoreCycle c = do
             modifySession $ \sess -> sess {schosenLore = ChosenNothing}
             failWith "never mind"
           _ -> error $ "" `showFailure` km
-      RPlaces slotIndex0 -> do
+      RSkills slot0 -> do
+        -- This can be used in the future, e.g., to increase stats from
+        -- level-up stat points, so let's keep it even if it shows
+        -- no extra info compared to right pane display in menu.
+        let renderOneItem slot = do
+              (prompt2, attrString) <- skillCloseUp leader slot
+              let ov0 = EM.singleton propFont
+                        $ offsetOverlay
+                        $ splitAttrString rwidth rwidth attrString
+              msgAdd MsgPromptGeneric prompt2
+              return (ov0, [])
+            extraKeys = []
+            slotBound = length skillsInDisplayOrder - 1
+        km <- displayOneMenuItem renderOneItem extraKeys slotBound slot0
+        case K.key km of
+          K.Space -> chooseItemDialogMode leader False MSkills
+          K.Esc -> failWith "never mind"
+          _ -> error $ "" `showFailure` km
+      RPlaces slot0 -> do
         COps{coplace} <- getsState scops
         soptions <- getsClient soptions
-        places <- getsState $ EM.assocs . placesFromState coplace soptions
-        let slotListBound = length places - 1
-            displayOneSlot slotIndex = do
-              let (pk, (es, ne, na, _)) = places !! slotIndex
-                  pkind = okind coplace pk
-                  prompt2 = makeSentence
-                    [ MU.SubjectVerbSg (partActor bUI) "remember"
-                    , MU.Text $ PK.pname pkind ]
-                  freqsText = "Frequencies:" <+> T.intercalate " "
-                    (map (\(grp, n) -> "(" <> displayGroupName grp
-                                       <> ", " <> tshow n <> ")")
-                     $ PK.pfreq pkind)
-                  onLevels | ES.null es = []
-                           | otherwise =
-                    [makeSentence
-                       [ "Appears on"
-                       , MU.CarWs (ES.size es) "level" <> ":"
-                       , MU.WWandW $ map MU.Car $ sort
-                                   $ map (abs . fromEnum) $ ES.elems es ]]
-                  placeParts = ["it has" | ne > 0 || na > 0]
-                               ++ [MU.CarWs ne "entrance" | ne > 0]
-                               ++ ["and" | ne > 0 && na > 0]
-                               ++ [MU.CarWs na "surrounding" | na > 0]
-                  partsSentence | null placeParts = ""
-                                | otherwise = makeSentence placeParts
-                  -- Ideally, place layout would be in SquareFont and the rest
-                  -- in PropFont, but this is mostly a debug screen, so KISS.
-                  ov0 = EM.singleton monoFont
-                        $ offsetOverlay
-                        $ concatMap (indentSplitAttrString rwidth . textToAS)
-                        $ ["", partsSentence]
-                          ++ (if sexposePlaces soptions
-                              then [ "", freqsText
-                                   , "" ] ++ PK.ptopLeft pkind
-                              else [])
-                          ++ [""] ++ onLevels
-                  keys = [K.spaceKM, K.escKM]
-                         ++ [K.upKM | slotIndex /= 0]
-                         ++ [K.downKM | slotIndex /= slotListBound]
+        -- This is computed just once for the whole series of up and down arrow
+        -- navigations, avoid quadratic blowup.
+        places <- getsState $ EM.assocs
+                              . placesFromState coplace (sexposePlaces soptions)
+        let renderOneItem slot = do
+              (prompt2, blurbs) <-
+                placeCloseUp places (sexposePlaces soptions) slot
+              let splitText = splitAttrString rwidth rwidth
+                  ov0 = attrLinesToFontMap
+                        $ map (second $ concatMap splitText) blurbs
               msgAdd MsgPromptGeneric prompt2
-              slides <- overlayToSlideshow (rheight - 2) keys (ov0, [])
-              km <- getConfirms ColorFull keys slides
+              return (ov0, [])
+            extraKeys = []
+            slotBound = length places - 1
+        km <- displayOneMenuItem renderOneItem extraKeys slotBound slot0
+        case K.key km of
+          K.Space -> chooseItemDialogMode leader False MPlaces
+          K.Esc -> failWith "never mind"
+          _ -> error $ "" `showFailure` km
+      RFactions slot0 -> do
+        sroles <- getsSession sroles
+        factions <- getsState $ factionsFromState sroles
+        let renderOneItem slot = do
+              (prompt2, blurbs) <- factionCloseUp factions slot
+              let splitText = splitAttrString rwidth rwidth
+                  ov0 = attrLinesToFontMap
+                        $ map (second $ concatMap splitText) blurbs
+              msgAdd MsgPromptGeneric prompt2
+              return (ov0, [])
+            extraKeys = []
+            slotBound = length factions - 1
+        km <- displayOneMenuItem renderOneItem extraKeys slotBound slot0
+        case K.key km of
+          K.Space -> chooseItemDialogMode leader False MFactions
+          K.Esc -> failWith "never mind"
+          _ -> error $ "" `showFailure` km
+      RModes slot0 -> do
+        let displayOneMenuItemBig :: (MenuSlot -> m OKX)
+                                  -> [K.KM] -> Int -> MenuSlot
+                                  -> m K.KM
+            displayOneMenuItemBig renderOneItem extraKeys slotBound slot = do
+              let keys = [K.spaceKM, K.escKM]
+                         ++ [K.upKM | fromEnum slot > 0]
+                         ++ [K.downKM | fromEnum slot < slotBound]
+                         ++ extraKeys
+              okx <- renderOneItem slot
+              -- Here it differs from @displayOneMenuItem@,
+              slides <- overlayToSlideshow rheight keys okx
+              ekm2 <- displayChoiceScreen "" ColorFull True slides keys
+              let km = either id (error $ "" `showFailure` ekm2) ekm2
+              -- Here it stops differing.
               case K.key km of
-                K.Space -> chooseItemDialogMode leader False MPlaces
-                K.Up -> displayOneSlot $ slotIndex - 1
-                K.Down -> displayOneSlot $ slotIndex + 1
-                K.Esc -> failWith "never mind"
-                _ -> error $ "" `showFailure` km
-        displayOneSlot slotIndex0
-      RModes slotIndex0 -> do
+                K.Up -> displayOneMenuItemBig renderOneItem extraKeys
+                                              slotBound $ pred slot
+                K.Down -> displayOneMenuItemBig renderOneItem extraKeys
+                                                slotBound $ succ slot
+                _ -> return km
         COps{comode} <- getsState scops
-        svictories <- getsClient svictories
+        svictories <- getsSession svictories
         nxtChal <- getsClient snxtChal
           -- mark victories only for current difficulty
         let f !acc _p !i !a = (i, a) : acc
             campaignModes = ofoldlGroup' comode MK.CAMPAIGN_SCENARIO f []
-            slotListBound = length campaignModes - 1
-            displayOneSlot slotIndex = do
-              let (gameModeId, gameMode) = campaignModes !! slotIndex
-              modeOKX <- describeMode False gameModeId
+            renderOneItem slot = do
+              let (gameModeId, gameMode) = campaignModes !! fromEnum slot
+              ov0 <- describeMode False gameModeId
               let victories = case EM.lookup gameModeId svictories of
                     Nothing -> 0
                     Just cm -> fromMaybe 0 (M.lookup nxtChal cm)
                   verb = if victories > 0 then "remember" else "forsee"
                   prompt2 = makeSentence
-                    [ MU.SubjectVerbSg (partActor bUI) verb
+                    [ MU.SubjectVerbSg "you" verb
                     , MU.Text $ "the '" <> MK.mname gameMode <> "' adventure" ]
-                  keys = [K.spaceKM, K.escKM]
-                         ++ [K.upKM | slotIndex /= 0]
-                         ++ [K.downKM | slotIndex /= slotListBound]
               msgAdd MsgPromptGeneric prompt2
-              slides <- overlayToSlideshow rheight keys (modeOKX, [])
-              ekm2 <- displayChoiceScreen "" ColorFull True slides keys
-              let km = either id (error $ "" `showFailure` ekm2) ekm2
-              case K.key km of
-                K.Space -> chooseItemDialogMode leader False MModes
-                K.Up -> displayOneSlot $ slotIndex - 1
-                K.Down -> displayOneSlot $ slotIndex + 1
-                K.Esc -> failWith "never mind"
-                _ -> error $ "" `showFailure` km
-        displayOneSlot slotIndex0
+              return (ov0, [])
+            extraKeys = []
+            slotBound = length campaignModes - 1
+        km <- displayOneMenuItemBig renderOneItem extraKeys slotBound slot0
+        case K.key km of
+          K.Space -> chooseItemDialogMode leader False MModes
+          K.Esc -> failWith "never mind"
+          _ -> error $ "" `showFailure` km
     Left err -> failWith err
 
 -- * ChooseItemProject
@@ -419,13 +412,13 @@ permittedProjectClient leader = do
 
 projectCheck :: MonadClientUI m => ActorId -> Point -> m (Maybe ReqFailure)
 projectCheck leader tpos = do
-  COps{corule=RuleContent{rXmax, rYmax}, coTileSpeedup} <- getsState scops
+  COps{coTileSpeedup} <- getsState scops
   eps <- getsClient seps
   sb <- getsState $ getActorBody leader
   let lid = blid sb
       spos = bpos sb
   -- Not @ScreenContent@, because not drawing here.
-  case bla rXmax rYmax eps spos tpos of
+  case bresenhamsLineAlgorithm eps spos tpos of
     Nothing -> return $ Just ProjectAimOnself
     Just [] -> error $ "project from the edge of level"
                        `showFailure` (spos, tpos, sb)
@@ -448,7 +441,7 @@ projectCheck leader tpos = do
 -- e.g., because the target actor can be obscured by a glass wall.
 xhairLegalEps :: MonadClientUI m => ActorId -> m (Either Text Int)
 xhairLegalEps leader = do
-  cops@COps{corule=RuleContent{rXmax, rYmax}} <- getsState scops
+  cops@COps{corule=RuleContent{rWidthMax, rHeightMax}} <- getsState scops
   b <- getsState $ getActorBody leader
   lidV <- viewedLevelUI
   let !_A = assert (lidV == blid b) ()
@@ -483,7 +476,7 @@ xhairLegalEps leader = do
       else return $ Left "can't fling at a target on remote level"
     Just (TVector v) -> do
       -- Not @ScreenContent@, because not drawing here.
-      let shifted = shiftBounded rXmax rYmax (bpos b) v
+      let shifted = shiftBounded rWidthMax rHeightMax (bpos b) v
       if shifted == bpos b && v /= Vector 0 0
       then return $ Left "selected translation is void"
       else findNewEps True shifted  -- @True@, because the goal is vague anyway
@@ -530,7 +523,18 @@ psuitReq leader = do
             in Right (pos, 1 + IA.totalRange arItem (itemKind itemFull)
                            >= chessDist (bpos b) pos)
 
-triggerSymbols :: [HumanCmd.TriggerItem] -> [Char]
+-- $setup
+-- >>> import Game.LambdaHack.Definition.DefsInternal
+
+-- |
+-- >>> let trigger1 = HumanCmd.TriggerItem{tiverb="verb", tiobject="object", tisymbols=[toContentSymbol 'a', toContentSymbol 'b']}
+-- >>> let trigger2 = HumanCmd.TriggerItem{tiverb="verb2", tiobject="object2", tisymbols=[toContentSymbol 'c']}
+-- >>> triggerSymbols [trigger1, trigger2]
+-- "abc"
+--
+-- >>> triggerSymbols []
+-- ""
+triggerSymbols :: [HumanCmd.TriggerItem] -> [ContentSymbol IK.ItemKind]
 triggerSymbols [] = []
 triggerSymbols (HumanCmd.TriggerItem{tisymbols} : ts) =
   tisymbols ++ triggerSymbols ts
@@ -613,12 +617,12 @@ pickLeaderHuman k = do
       mactor = case drop k hs of
                  [] -> Nothing
                  (aid, b, _) : _ -> Just (aid, b)
-      mchoice = if MK.fhasGender (gplayer fact) then mhero else mactor
-      (autoDun, _) = autoDungeonLevel fact
+      mchoice = if FK.fhasGender (gkind fact) then mhero else mactor
+      banned = bannedPointmanSwitchBetweenLevels fact
   case mchoice of
     Nothing -> failMsg "no such member of the party"
     Just (aid, b)
-      | blid b /= arena && autoDun ->
+      | blid b /= arena && banned ->
           failMsg $ showReqFailure NoChangeDunLeader
       | otherwise -> do
           void $ pickLeader True aid
@@ -679,7 +683,7 @@ selectNoneHuman = do
 
 selectWithPointerHuman :: MonadClientUI m => m MError
 selectWithPointerHuman = do
-  COps{corule=RuleContent{rYmax}} <- getsState scops
+  COps{corule=RuleContent{rHeightMax}} <- getsState scops
   lidV <- viewedLevelUI
   -- Not @ScreenContent@, because not drawing here.
   side <- getsClient sside
@@ -691,8 +695,8 @@ selectWithPointerHuman = do
   pUI <- getsSession spointer
   let p@(Point px py) = squareToMap $ uiToSquare pUI
   -- Select even if no space in status line for the actor's symbol.
-  if | py == rYmax + 1 && px == 0 -> selectNoneHuman >> return Nothing
-     | py == rYmax + 1 ->
+  if | py == rHeightMax + 1 && px == 0 -> selectNoneHuman >> return Nothing
+     | py == rHeightMax + 1 ->
          case drop (px - 1) viewed of
            [] -> failMsg "not pointing at an actor"
            (aid, _, _) : _ -> selectActorHuman aid >> return Nothing
@@ -760,11 +764,8 @@ recordHumanTransition macroFrame =
 
 -- * AllHistory
 
-allHistoryHuman :: MonadClientUI m => m ()
-allHistoryHuman = eitherHistory True
-
-eitherHistory :: forall m. MonadClientUI m => Bool -> m ()
-eitherHistory showAll = do
+allHistoryHuman :: forall m. MonadClientUI m => m ()
+allHistoryHuman = do
   CCUI{coscreen=ScreenContent{rwidth, rheight}} <- getsSession sccui
   history <- getsSession shistory
   arena <- getArenaUI
@@ -772,25 +773,26 @@ eitherHistory showAll = do
   global <- getsState stime
   FontSetup{..} <- getFontSetup
   let renderedHistoryRaw = renderHistory history
-      histBoundRaw = length renderedHistoryRaw
+      histLenRaw = length renderedHistoryRaw
       placeholderLine = textFgToAS Color.BrBlack
         "Newest_messages_are_at_the_bottom._Press_END_to_get_there."
       placeholderCount =
-        (- histBoundRaw `mod` (rheight - 4)) `mod` (rheight - 4)
+        (- histLenRaw `mod` (rheight - 4)) `mod` (rheight - 4)
       renderedHistory = replicate placeholderCount placeholderLine
                         ++ renderedHistoryRaw
-      histBound = placeholderCount + histBoundRaw
+      histLen = placeholderCount + histLenRaw
       splitRow as =
-        let (spNo, spYes) = span (/= Color.spaceAttrW32) as
-            par1 = case filter (/= emptyAttrLine) $ linesAttr spYes of
+        let (tLab, tDesc) = span (/= Color.spaceAttrW32) as
+            labLen = textSize monoFont tLab
+            par1 = case filter (/= emptyAttrLine) $ linesAttr tDesc of
               [] -> emptyAttrLine
               [l] -> l
               ls -> attrStringToAL $ intercalate [Color.spaceAttrW32]
                                    $ map attrLine ls
-        in (attrStringToAL spNo, (textSize monoFont spNo, par1))
-      (histLab, histDesc) = unzip $ map splitRow renderedHistory
-      rhLab = EM.singleton monoFont $ offsetOverlay histLab
-      rhDesc = EM.singleton propFont $ offsetOverlayX histDesc
+        in (attrStringToAL tLab, (labLen, par1))
+      (tsLab, tsDesc) = unzip $ map splitRow renderedHistory
+      ovs = EM.insertWith (++) monoFont (offsetOverlay tsLab)
+            $ EM.singleton propFont $ offsetOverlayX tsDesc
       turnsGlobal = global `timeFitUp` timeTurn
       turnsLocal = localTime `timeFitUp` timeTurn
       msg = makeSentence
@@ -798,24 +800,27 @@ eitherHistory showAll = do
         , MU.CarWs turnsGlobal "half-second turn"
         , "(this level:"
         , MU.Car turnsLocal <> ")" ]
-      kxs = [ (Right sn, ( PointUI 0 (slotPrefix sn)
+      kxs = [ (Right sn, ( PointUI 0 (fromEnum sn)
                          , ButtonWidth propFont 1000 ))
-            | sn <- take histBound intSlots ]
+            | sn <- take histLen natSlots ]
   msgAdd MsgPromptGeneric msg
   let keysAllHistory =
         K.returnKM
 #ifndef USE_JSFILE
         : K.mkChar '.'
 #endif
-        : [K.escKM]
-  okxs <- overlayToSlideshow (rheight - 2) keysAllHistory
-                             (EM.unionWith (++) rhLab rhDesc, kxs)
-  let maxIx = length (concatMap snd $ slideshow okxs) - 1
+        : [K.spaceKM, K.escKM]
+  slides <- overlayToSlideshow (rheight - 2) keysAllHistory (ovs, kxs)
+  let historyLines = case reverse $ concatMap snd $ slideshow slides of
+        (Left{}, _) : rest -> rest  -- don't count the @--more--@ line
+        l -> l
+      maxIx = length historyLines - 1 - length keysAllHistory
       menuName = "history"
   modifySession $ \sess ->
     sess {smenuIxMap = M.insert menuName maxIx $ smenuIxMap sess}
   let displayAllHistory = do
-        ekm <- displayChoiceScreen menuName ColorFull False okxs keysAllHistory
+        ekm <- displayChoiceScreen menuName ColorFull False slides
+                                   keysAllHistory
         case ekm of
           Left km | km == K.mkChar '.' -> do
             let t = T.unlines $ map (T.pack . map Color.charFromW32)
@@ -824,57 +829,46 @@ eitherHistory showAll = do
             msgAdd MsgPromptGeneric $ "All of history dumped to file" <+> T.pack path <> "."
           Left km | km == K.escKM ->
             msgAdd MsgPromptGeneric "Try to survive a few seconds more, if you can."
-          Left km | km == K.spaceKM ->  -- click in any unused space
+          Left km | km == K.spaceKM ->
             msgAdd MsgPromptGeneric "Steady on."
-          Right SlotChar{..} | slotChar == 'a' ->
-            displayOneReport $ max 0 $ slotPrefix - placeholderCount
+          Left km | km == K.returnKM ->
+            msgAdd MsgPromptGeneric "Press RET when history message selected to see it in full."
+          Right slot ->
+            displayOneReport $ toEnum $ max 0 $ fromEnum slot - placeholderCount
           _ -> error $ "" `showFailure` ekm
-      displayOneReport :: Int -> m ()
-      displayOneReport histSlot = do
-        let timeReport = case drop histSlot renderedHistoryRaw of
-              [] -> error $ "" `showFailure` histSlot
-              tR : _ -> tR
-            ov0 =
-              let (spNo, spYes) = span (/= Color.spaceAttrW32) timeReport
-                  lenNo = textSize monoFont spNo
-                  spYesX = case splitAttrString (rwidth - lenNo - 1) rwidth
-                                                spYes of
-                    [] -> []
-                    l : ls ->
-                      ( lenNo
-                      , firstParagraph $ Color.spaceAttrW32 : attrLine l )
-                      : map (0,) ls
-              in EM.insertWith (++) monoFont
-                               (offsetOverlay [attrStringToAL spNo])
-                 $ EM.singleton propFont $ offsetOverlayX spYesX
-            prompt = makeSentence
-              [ "the", MU.Ordinal $ histSlot + 1
-              , "most recent record follows" ]
-            keys = [K.spaceKM, K.escKM]
-                   ++ [K.upKM | histSlot /= 0]
-                   ++ [K.downKM | histSlot /= histBoundRaw - 1]
-        msgAdd MsgPromptGeneric prompt
-        slides <- overlayToSlideshow (rheight - 2) keys (ov0, [])
-        km <- getConfirms ColorFull keys slides
+      displayOneReport :: MenuSlot -> m ()
+      displayOneReport slot0 = do
+        let renderOneItem slot = do
+              let timeReport = case drop (fromEnum slot)
+                                         renderedHistoryRaw of
+                    [] -> error $ "" `showFailure` slot
+                    tR : _ -> tR
+                  markParagraph c | Color.charFromW32 c == '\n' = [c, c]
+                  markParagraph c = [c]
+                  reportWithParagraphs = concatMap markParagraph timeReport
+                  (ovLab, ovDesc) =
+                    labDescOverlay monoFont rwidth reportWithParagraphs
+                  ov0 = EM.insertWith (++) monoFont ovLab
+                        $ EM.singleton propFont ovDesc
+                  prompt = makeSentence
+                    [ "the", MU.Ordinal $ fromEnum slot + 1
+                    , "most recent record follows" ]
+              msgAdd MsgPromptGeneric prompt
+              return (ov0, [])
+            extraKeys = []
+            slotBound = histLenRaw - 1
+        km <- displayOneMenuItem renderOneItem extraKeys slotBound slot0
         case K.key km of
           K.Space -> displayAllHistory
-          K.Up -> displayOneReport $ histSlot - 1
-          K.Down -> displayOneReport $ histSlot + 1
-          K.Esc -> msgAdd MsgPromptGeneric "Try to learn from your previous mistakes."
+          K.Esc -> msgAdd MsgPromptGeneric
+                          "Try to learn from your previous mistakes."
           _ -> error $ "" `showFailure` km
-  if showAll
-  then displayAllHistory
-  else displayOneReport (histBoundRaw - 1)
-
--- * LastHistory
-
-lastHistoryHuman :: MonadClientUI m => m ()
-lastHistoryHuman = eitherHistory False
+  displayAllHistory
 
 -- * MarkVision
 
-markVisionHuman :: MonadClientUI m => m ()
-markVisionHuman = modifySession toggleMarkVision
+markVisionHuman :: MonadClientUI m => Int -> m ()
+markVisionHuman delta = modifySession $ cycleMarkVision delta
 
 -- * MarkSmell
 
@@ -883,11 +877,11 @@ markSmellHuman = modifySession toggleMarkSmell
 
 -- * MarkSuspect
 
-markSuspectHuman :: MonadClient m => m ()
-markSuspectHuman = do
+markSuspectHuman :: MonadClient m => Int -> m ()
+markSuspectHuman delta = do
   -- @condBFS@ depends on the setting we change here.
   invalidateBfsAll
-  modifyClient cycleMarkSuspect
+  modifyClient (cycleMarkSuspect delta)
 
 -- * MarkAnim
 
@@ -899,8 +893,8 @@ markAnimHuman = do
 
 -- * OverrideTut
 
-overrideTutHuman :: MonadClientUI m => m ()
-overrideTutHuman = modifySession cycleOverrideTut
+overrideTutHuman :: MonadClientUI m => Int -> m ()
+overrideTutHuman delta = modifySession $ cycleOverrideTut delta
 
 -- * PrintScreen
 
@@ -911,11 +905,25 @@ printScreenHuman = do
 
 -- * Cancel
 
--- | End aiming mode, rejecting the current position.
+-- | End aiming mode, rejecting the current position, unless when on
+-- remote level, in which case, return to our level.
 cancelHuman :: MonadClientUI m => m ()
 cancelHuman = do
-  saimMode <- getsSession saimMode
-  when (isJust saimMode) clearAimMode
+  maimMode <- getsSession saimMode
+  case maimMode of
+    Just aimMode -> do
+      let lidV = aimLevelId aimMode
+      lidOur <- getArenaUI
+      if lidV == lidOur
+      then clearAimMode
+      else do
+        xhairPos <- xhairToPos
+        let sxhair = Just $ TPoint TKnown lidOur xhairPos
+        modifySession $ \sess ->
+          sess {saimMode = Just aimMode {aimLevelId = lidOur}}
+        setXHairFromGUI sxhair
+        doLook
+    Nothing -> return ()
 
 -- * Accept
 
@@ -968,35 +976,6 @@ clearTargetIfItemClearHuman leader = do
     modifyClient $ updateTarget leader (const Nothing)
     doLook
 
--- | Perform look around in the current position of the xhair.
--- Does nothing outside aiming mode.
-doLook :: MonadClientUI m => m ()
-doLook = do
-  saimMode <- getsSession saimMode
-  case saimMode of
-    Just aimMode -> do
-      let lidV = aimLevelId aimMode
-      mxhairPos <- mxhairToPos
-      xhairPos <- xhairToPos
-      blurb <- lookAtPosition xhairPos lidV
-      itemSel <- getsSession sitemSel
-      mleader <- getsClient sleader
-      outOfRangeBlurb <- case (itemSel, mxhairPos, mleader) of
-        (Just (iid, _, _), Just pos, Just leader) -> do
-          b <- getsState $ getActorBody leader
-          if lidV /= blid b  -- no range warnings on remote levels
-             || detailLevel aimMode < DetailAll  -- no spam
-          then return []
-          else do
-            itemFull <- getsState $ itemToFull iid
-            let arItem = aspectRecordFull itemFull
-            return [ (MsgPromptGeneric, "This position is out of range when flinging the selected item.")
-                   | 1 + IA.totalRange arItem (itemKind itemFull)
-                     < chessDist (bpos b) pos ]
-        _ -> return []
-      mapM_ (uncurry msgAdd) $ blurb ++ outOfRangeBlurb
-    _ -> return ()
-
 -- * ItemClear
 
 itemClearHuman :: MonadClientUI m => m ()
@@ -1008,12 +987,12 @@ itemClearHuman = modifySession $ \sess -> sess {sitemSel = Nothing}
 moveXhairHuman :: MonadClientUI m => Vector -> Int -> m MError
 moveXhairHuman dir n = do
   -- Not @ScreenContent@, because not drawing here.
-  COps{corule=RuleContent{rXmax, rYmax}} <- getsState scops
+  COps{corule=RuleContent{rWidthMax, rHeightMax}} <- getsState scops
   saimMode <- getsSession saimMode
   let lidV = maybe (error $ "" `showFailure` (dir, n)) aimLevelId saimMode
   xhair <- getsSession sxhair
   xhairPos <- xhairToPos
-  let shiftB pos = shiftBounded rXmax rYmax pos dir
+  let shiftB pos = shiftBounded rWidthMax rHeightMax pos dir
       newPos = iterate shiftB xhairPos !! n
   if newPos == xhairPos then failMsg "never mind"
   else do
@@ -1312,12 +1291,12 @@ aimPointerFloorHuman = aimPointerFloorLoud True
 
 aimPointerFloorLoud :: MonadClientUI m => Bool -> m ()
 aimPointerFloorLoud loud = do
-  COps{corule=RuleContent{rXmax, rYmax}} <- getsState scops
+  COps{corule=RuleContent{rWidthMax, rHeightMax}} <- getsState scops
   lidV <- viewedLevelUI
   -- Not @ScreenContent@, because not drawing here.
   pUI <- getsSession spointer
-  let p@(Point px py) = squareToMap $ uiToSquare pUI
-  if px >= 0 && py >= 0 && px < rXmax && py < rYmax
+  let p = squareToMap $ uiToSquare pUI
+  if insideP (0, 0, rWidthMax - 1, rHeightMax - 1) p
   then do
     oldXhair <- getsSession sxhair
     let sxhair = Just $ TPoint TUnknown lidV p
@@ -1339,12 +1318,12 @@ aimPointerFloorLoud loud = do
 
 aimPointerEnemyHuman :: MonadClientUI m => m ()
 aimPointerEnemyHuman = do
-  COps{corule=RuleContent{rXmax, rYmax}} <- getsState scops
+  COps{corule=RuleContent{rWidthMax, rHeightMax}} <- getsState scops
   lidV <- viewedLevelUI
   -- Not @ScreenContent@, because not drawing here.
   pUI <- getsSession spointer
-  let p@(Point px py) = squareToMap $ uiToSquare pUI
-  if px >= 0 && py >= 0 && px < rXmax && py < rYmax
+  let p = squareToMap $ uiToSquare pUI
+  if insideP (0, 0, rWidthMax - 1, rHeightMax - 1) p
   then do
     bsAll <- getsState $ actorAssocs (const True) lidV
     oldXhair <- getsSession sxhair

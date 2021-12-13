@@ -117,7 +117,8 @@ handleAndBroadcast ps atomicBroken atomic = do
                         -- which prevents changing leader just to get hearing
                         -- intel. However, leader's position affects accuracy
                         -- of the distance to noise hints.
-                        return $ Just $ min 5 $ chessDist pos (bpos b) `div` 10
+                        return $ Just $ max 0 $ min 5 $ flip (-) 1 $ floor
+                               $ sqrt $ intToDouble $ chessDist pos (bpos b)
               -- Projectiles never hear, for speed and simplicity,
               -- even though they sometimes see. There are flying cameras,
               -- but no microphones --- drones make too much noise themselves.
@@ -198,9 +199,9 @@ hearUpdAtomic cmd = do
       b <- getsState $ getActorBody aid
       discoAspect <- getsState sdiscoAspect
       let arTrunk = discoAspect EM.! btrunk b
-      return $! ( False, if not (bproj b) || IA.checkFlag Ability.Blast arTrunk
-                         then Nothing
-                         else Just $ bpos b )
+      return ( False, if not (bproj b) || IA.checkFlag Ability.Blast arTrunk
+                      then Nothing
+                      else Just $ bpos b )
     UpdAlterTile _ p _ toTile ->
       return (not $ Tile.isDoor coTileSpeedup toTile, Just p)
     UpdAlterExplorable{} -> return (True, Nothing)

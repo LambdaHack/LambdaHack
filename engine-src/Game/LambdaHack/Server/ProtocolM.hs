@@ -5,11 +5,11 @@ module Game.LambdaHack.Server.ProtocolM
     -- * The server-client communication monad
   , MonadServerComm
       ( getsDict  -- exposed only to be implemented, not used
-      , modifyDict  -- exposed only to be implemented, not used
+      , putDict  -- exposed only to be implemented, not used
       , liftIO  -- exposed only to be implemented, not used
       )
     -- * Protocol
-  , putDict, sendUpdate, sendUpdateCheck, sendUpdNoState
+  , sendUpdate, sendUpdateCheck, sendUpdNoState
   , sendSfx, sendQueryAI, sendQueryUI
     -- * Assorted
   , killAllClients, childrenServer, updateConn, tryRestore
@@ -26,7 +26,7 @@ import Game.LambdaHack.Core.Prelude
 import           Control.Concurrent
 import           Control.Concurrent.Async
 import qualified Data.EnumMap.Strict as EM
-import           Data.Key (mapWithKeyM, mapWithKeyM_)
+import           Data.Key (mapWithKeyM_)
 import           System.FilePath
 import           System.IO.Unsafe (unsafePerformIO)
 
@@ -42,7 +42,7 @@ import qualified Game.LambdaHack.Common.Save as Save
 import           Game.LambdaHack.Common.State
 import           Game.LambdaHack.Common.Thread
 import           Game.LambdaHack.Common.Types
-import           Game.LambdaHack.Content.ModeKind
+import           Game.LambdaHack.Content.FactionKind
 import           Game.LambdaHack.Content.RuleKind
 import           Game.LambdaHack.Server.DebugM
 import           Game.LambdaHack.Server.MonadServer hiding (liftIO)
@@ -81,15 +81,12 @@ data ChanServer = ChanServer
 
 -- | The server monad with the ability to communicate with clients.
 class MonadServer m => MonadServerComm m where
-  getsDict     :: (ConnServerDict -> a) -> m a
-  modifyDict   :: (ConnServerDict -> ConnServerDict) -> m ()
-  liftIO       :: IO a -> m a
+  getsDict       :: (ConnServerDict -> a) -> m a
+  putDict        :: ConnServerDict -> m ()
+  liftIO         :: IO a -> m a
 
 getDict :: MonadServerComm m => m ConnServerDict
 getDict = getsDict id
-
-putDict :: MonadServerComm m => ConnServerDict -> m ()
-putDict s = modifyDict (const s)
 
 -- | If the @AtomicFail@ conditions hold, send a command to client,
 -- otherwise do nothing.
@@ -175,7 +172,7 @@ childrenServer = unsafePerformIO (newMVar [])
 -- Connect to clients in old or newly spawned threads
 -- that read and write directly to the channels.
 updateConn :: (MonadServerAtomic m, MonadServerComm m)
-           => (Bool -> FactionId -> ChanServer -> IO ())
+           => (FactionId -> ChanServer -> IO ())
            -> m ()
 updateConn executorClient = do
   -- Prepare connections based on factions.
@@ -184,36 +181,49 @@ updateConn executorClient = do
       mkChanServer fact = do
         responseS <- newQueue
         requestAIS <- newQueue
-        requestUIS <- if fhasUI $ gplayer fact
-                      then Just <$> newQueue
+        requestUIS <- if fhasUI $ gkind fact
+                      then assert (EM.null oldD) $ Just <$> newQueue
                       else return Nothing
-        return $! ChanServer{..}
-      addConn :: FactionId -> Faction -> IO ChanServer
-      addConn fid fact = case EM.lookup fid oldD of
-        Just conns -> return conns  -- share old conns and threads
-        Nothing | fromEnum fid < 0 -> mkChanServer fact
-        Nothing -> case filter (\(fidOld, _) -> fromEnum fidOld > 0)
-                        $ EM.assocs oldD of
-          [] -> mkChanServer fact
-          (_, conns) : _ -> return conns  -- re-use session to keep history
+        return ChanServer{..}
+      forkClient fid = forkChild childrenServer . executorClient fid
   factionD <- getsState sfactionD
-  d <- liftIO $ mapWithKeyM addConn factionD
-  let newD = d `EM.union` oldD  -- never kill old clients
-  putDict newD
-  -- Spawn client threads.
-  let toSpawn = newD EM.\\ oldD
-      forkUI fid connS =
-        forkChild childrenServer $ executorClient True fid connS
-      forkAI fid connS =
-        forkChild childrenServer $ executorClient False fid connS
-      forkClient fid conn@ChanServer{requestUIS=Nothing} =
-        -- When a connection is reused, clients are not respawned,
-        -- even if UI status of a faction changes, but it works OK thanks to
-        -- UI faction clients distinguished by positive FactionId numbers.
-        forkAI fid conn
-      forkClient fid conn = when (EM.null oldD) $
-        forkUI fid conn
-  liftIO $ mapWithKeyM_ forkClient toSpawn
+  if EM.null oldD then do
+    -- Easy case, nothing to recycle, frontend not spawned yet.
+    newD <- liftIO $ mapM mkChanServer factionD
+    putDict newD
+    liftIO $ mapWithKeyM_ forkClient newD
+  else do
+    -- Hard case, but we know there is exactly one UI connection in oldD,
+    -- so we can reuse it for any new UI faction (to keep history).
+    -- UI session (history in particular) is preserved even over game
+    -- save and reload. It gets saved with the savefile of the team
+    -- that is a UI faction and restored intact. However, when a new game
+    -- is started from commandline (@--newGame@), even if it's using the same
+    -- save prefix (@--savePrefix@), the session data is often lost.
+    -- AI factions don't care which client they use, so we don't always
+    -- preserve the old assignments either of factions or teams.
+    let -- Find the new UI faction.
+        (fidUI, _) = fromJust $ find (fhasUI . gkind . snd) $ EM.assocs factionD
+        -- Swap UI and AI connections around.
+        swappedD = case find (isJust . requestUIS . snd)
+                               $ EM.assocs oldD of
+          Nothing -> error "updateConn: no UI connection found"
+          Just (fid, conn) ->
+            if fid == fidUI
+            then oldD  -- UI connection at the same place; nothing to do
+            else let -- Move the AI connection that was at new UI faction spot,
+                     -- to the freed old UI spot.
+                     alt _ = EM.lookup fidUI oldD
+                 in EM.alter alt fid $ EM.insert fidUI conn oldD
+        -- Add extra AI connections.
+        extraFacts = EM.filterWithKey (\fid _ -> EM.notMember fid swappedD)
+                                      factionD
+    extraD <- liftIO $ mapM mkChanServer extraFacts
+    let exclusiveUnion = EM.unionWith $ \_ _ -> error "forbidden duplicate"
+        newD = swappedD `exclusiveUnion` extraD
+    putDict newD
+    -- Spawn the extra AI client threads.
+    liftIO $ mapWithKeyM_ forkClient extraD
 
 tryRestore :: MonadServerComm m => m (Maybe (State, StateServer))
 tryRestore = do
@@ -225,7 +235,7 @@ tryRestore = do
         fileName = prefix <> Save.saveNameSer corule
     res <- liftIO $ Save.restoreGame corule (sclientOptions soptions) fileName
     let cfgUIName = rcfgUIName corule
-        (configString, _) = rcfgUIDefault corule
+        (configText, _) = rcfgUIDefault corule
     dataDir <- liftIO appDataDir
-    liftIO $ tryWriteFile (dataDir </> cfgUIName) configString
+    liftIO $ tryWriteFile (dataDir </> cfgUIName) configText
     return $! res

@@ -13,7 +13,6 @@ import Prelude ()
 
 import Game.LambdaHack.Core.Prelude
 
-import Content.ItemKindTemporary
 import Game.LambdaHack.Content.ItemKind
 import Game.LambdaHack.Core.Dice
 import Game.LambdaHack.Definition.Ability
@@ -21,6 +20,8 @@ import Game.LambdaHack.Definition.Color
 import Game.LambdaHack.Definition.Defs
 import Game.LambdaHack.Definition.DefsInternal
 import Game.LambdaHack.Definition.Flavour
+
+import Content.ItemKindTemporary
 
 -- * Group name patterns
 
@@ -268,7 +269,7 @@ spreadConcussion = ItemKind
   , ieffects = [ DropItem maxBound 1 CEqp ARMOR_MISC
                , PushActor (ThrowMod 400 25 1)  -- 1 step, fast; after DropItem
                    -- this produces spam for braced actors; too bad
-               , toOrganBad S_IMMOBILE 3  -- no balance
+               , toOrganBad S_IMMOBILE 1  -- no balance
                , toOrganBad S_DEAFENED 23 ]
   , idesc    = "Shock wave, hot gases, some fire and smoke."
   , ikit     = []
@@ -387,7 +388,7 @@ fragrance = ItemKind
   , iname    = "fragrance"  -- instant, fast fragrance
   , ifreq    = [(S_FRAGRANCE, 1)]
   , iflavour = zipPlain [Magenta]
-  , icount   = 12
+  , icount   = 8
   , irarity  = [(1, 1)]
   , iverbHit = "engulf"
   , iweight  = 1

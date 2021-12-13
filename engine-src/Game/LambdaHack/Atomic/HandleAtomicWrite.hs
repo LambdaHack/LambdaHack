@@ -49,8 +49,8 @@ import qualified Game.LambdaHack.Common.Tile as Tile
 import           Game.LambdaHack.Common.Time
 import           Game.LambdaHack.Common.Types
 import           Game.LambdaHack.Common.Vector
+import           Game.LambdaHack.Content.FactionKind
 import           Game.LambdaHack.Content.ItemKind (ItemKind)
-import           Game.LambdaHack.Content.ModeKind
 import qualified Game.LambdaHack.Content.PlaceKind as PK
 import           Game.LambdaHack.Content.TileKind (TileKind, unknownId)
 import qualified Game.LambdaHack.Definition.Ability as Ability
@@ -279,7 +279,7 @@ updLoseItem iid kit@(k, _) c = assert (k > 0) $ do
 updSpotItemBag :: MonadStateWrite m => Container -> ItemBag -> m ()
 updSpotItemBag c bag =
   -- The case of empty bag is for a hack to help identifying sample items.
-  when (not $ EM.null bag) $ do
+  unless (EM.null bag) $ do
     insertBagContainer bag c
     case c of
       CActor aid store ->
@@ -453,7 +453,7 @@ updLeadFaction :: MonadStateWrite m
                -> m ()
 updLeadFaction fid source target = assert (source /= target) $ do
   fact <- getsState $ (EM.! fid) . sfactionD
-  let !_A = assert (fleaderMode (gplayer fact) /= Nothing) ()
+  let !_A = assert (fhasPointman (gkind fact)) ()
     -- @PosNone@ ensures this
   mtb <- getsState $ \s -> flip getActorBody s <$> target
   let !_A = assert (maybe True (not . bproj) mtb
@@ -482,17 +482,13 @@ updDiplFaction fid1 fid2 fromDipl toDipl =
 updDoctrineFaction :: MonadStateWrite m
                    => FactionId -> Ability.Doctrine -> Ability.Doctrine -> m ()
 updDoctrineFaction fid toT fromT = do
-  let adj fact =
-        let player = gplayer fact
-        in assert (fdoctrine player == fromT)
-           $ fact {gplayer = player {fdoctrine = toT}}
+  let adj fact = assert (gdoctrine fact == fromT) $ fact {gdoctrine = toT}
   updateFaction fid adj
 
 updAutoFaction :: MonadStateWrite m => FactionId -> Bool -> m ()
 updAutoFaction fid st =
   updateFaction fid (\fact ->
-    assert (isAIFact fact == not st)
-    $ fact {gplayer = automatePlayer st (gplayer fact)})
+    assert (gunderAI fact == not st) $ fact {gunderAI = st})
 
 -- Record a given number (usually just 1, or -1 for undo) of actor kills
 -- for score calculation.

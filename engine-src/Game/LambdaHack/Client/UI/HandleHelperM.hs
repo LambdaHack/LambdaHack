@@ -1,16 +1,15 @@
-{-# LANGUAGE TupleSections #-}
 -- | Helper functions for both inventory management and human commands.
 module Game.LambdaHack.Client.UI.HandleHelperM
   ( FailError, showFailError, MError, mergeMError, FailOrCmd, failWith
   , failSer, failMsg, weaveJust
   , pointmanCycle, pointmanCycleLevel, partyAfterLeader
-  , pickLeader, pickLeaderWithPointer
-  , itemOverlay, skillsOverlay
-  , placesFromState, placesOverlay
+  , pickLeader, doLook, pickLeaderWithPointer
+  , itemOverlay, skillsOverlay, placesFromState, placesOverlay
+  , factionsFromState, factionsOverlay
   , describeMode, modesOverlay
   , pickNumber, guardItemSize, lookAtItems, lookAtStash, lookAtPosition
-  , displayItemLore, displayItemLorePointedAt, cycleLore, spoilsBlurb
-  , ppContainerWownW, nxtGameMode
+  , displayOneMenuItem, okxItemLoreInline, okxItemLoreMsg, itemDescOverlays
+  , cycleLore, spoilsBlurb, ppContainerWownW, nxtGameMode
 #ifdef EXPOSE_INTERNAL
     -- * Internal operations
   , itemOverlayFromState, lookAtTile, lookAtActors, guardItemVerbs
@@ -21,6 +20,7 @@ import Prelude ()
 
 import Game.LambdaHack.Core.Prelude
 
+import           Control.Applicative
 import qualified Data.Char as Char
 import qualified Data.EnumMap.Strict as EM
 import qualified Data.EnumSet as ES
@@ -37,7 +37,6 @@ import           Game.LambdaHack.Client.UI.ContentClientUI
 import           Game.LambdaHack.Client.UI.EffectDescription
 import           Game.LambdaHack.Client.UI.Frame
 import           Game.LambdaHack.Client.UI.ItemDescription
-import           Game.LambdaHack.Client.UI.ItemSlot
 import qualified Game.LambdaHack.Client.UI.Key as K
 import           Game.LambdaHack.Client.UI.MonadClientUI
 import           Game.LambdaHack.Client.UI.Msg
@@ -62,9 +61,9 @@ import           Game.LambdaHack.Common.Perception
 import           Game.LambdaHack.Common.Point
 import           Game.LambdaHack.Common.ReqFailure
 import           Game.LambdaHack.Common.State
-import qualified Game.LambdaHack.Common.Tile as Tile
 import           Game.LambdaHack.Common.Time
 import           Game.LambdaHack.Common.Types
+import qualified Game.LambdaHack.Content.FactionKind as FK
 import qualified Game.LambdaHack.Content.ItemKind as IK
 import qualified Game.LambdaHack.Content.ModeKind as MK
 import qualified Game.LambdaHack.Content.PlaceKind as PK
@@ -113,12 +112,12 @@ pointmanCycleLevel leader verbose direction = do
   lidV <- viewedLevelUI
   body <- getsState $ getActorBody leader
   hs <- partyAfterLeader leader
-  let (autoDun, _) = autoDungeonLevel fact
-  let hsSort = case direction of
+  let banned = bannedPointmanSwitchBetweenLevels fact
+      hsSort = case direction of
         Forward -> hs
         Backward -> reverse hs
   case filter (\(_, b, _) -> blid b == lidV) hsSort of
-    _ | autoDun && lidV /= blid body ->
+    _ | banned && lidV /= blid body ->
       failMsg $ showReqFailure NoChangeDunLeader
     [] -> failMsg "cannot pick any other pointman on this level"
     (np, b, _) : _ -> do
@@ -134,12 +133,12 @@ pointmanCycle leader verbose direction = do
   side <- getsClient sside
   fact <- getsState $ (EM.! side) . sfactionD
   hs <- partyAfterLeader leader
-  let (autoDun, _) = autoDungeonLevel fact
-  let hsSort = case direction of
+  let banned = bannedPointmanSwitchBetweenLevels fact
+      hsSort = case direction of
         Forward -> hs
         Backward -> reverse hs
   case hsSort of
-    _ | autoDun -> failMsg $ showReqFailure NoChangeDunLeader
+    _ | banned -> failMsg $ showReqFailure NoChangeDunLeader
     [] -> failMsg "no other member in the party"
     (np, b, _) : _ -> do
       success <- pickLeader verbose np
@@ -180,11 +179,44 @@ pickLeader verbose aid = do
       modifySession $ \sess -> sess {saimMode =
         (\aimMode -> aimMode {aimLevelId = blid body}) <$> saimMode sess}
       -- Inform about items, etc.
-      (itemsBlurb, _) <-
-        lookAtItems True (bpos body) (blid body) (Just aid) Nothing
-      stashBlurb <- lookAtStash (bpos body) (blid body)
-      when verbose $ msgAdd MsgAtFeetMinor $ stashBlurb <+> itemsBlurb
+      saimMode <- getsSession saimMode
+      if isJust saimMode
+        then doLook
+        else do
+          (itemsBlurb, _) <-
+            lookAtItems True (bpos body) (blid body) (Just aid) Nothing
+          stashBlurb <- lookAtStash (bpos body) (blid body)
+          when verbose $ msgAdd MsgAtFeetMinor $ stashBlurb <+> itemsBlurb
       return True
+
+-- | Perform look around in the current position of the xhair.
+-- Does nothing outside aiming mode.
+doLook :: MonadClientUI m => m ()
+doLook = do
+  saimMode <- getsSession saimMode
+  case saimMode of
+    Just aimMode -> do
+      let lidV = aimLevelId aimMode
+      mxhairPos <- mxhairToPos
+      xhairPos <- xhairToPos
+      blurb <- lookAtPosition xhairPos lidV
+      itemSel <- getsSession sitemSel
+      mleader <- getsClient sleader
+      outOfRangeBlurb <- case (itemSel, mxhairPos, mleader) of
+        (Just (iid, _, _), Just pos, Just leader) -> do
+          b <- getsState $ getActorBody leader
+          if lidV /= blid b  -- no range warnings on remote levels
+             || detailLevel aimMode < DetailAll  -- no spam
+          then return []
+          else do
+            itemFull <- getsState $ itemToFull iid
+            let arItem = aspectRecordFull itemFull
+            return [ (MsgPromptGeneric, "This position is out of range when flinging the selected item.")
+                   | 1 + IA.totalRange arItem (itemKind itemFull)
+                     < chessDist (bpos b) pos ]
+        _ -> return []
+      mapM_ (uncurry msgAdd) $ blurb ++ outOfRangeBlurb
+    _ -> return ()
 
 pickLeaderWithPointer :: MonadClientUI m => ActorId -> m MError
 pickLeaderWithPointer leader = do
@@ -198,13 +230,12 @@ pickLeaderWithPointer leader = do
                       . actorAssocs (== side) lidV
   let oursUI = map (\(aid, b) -> (aid, b, sactorUI EM.! aid)) ours
       viewed = sortOn keySelected oursUI
-      (autoDun, _) = autoDungeonLevel fact
-      pick (aid, b) =
-        if | blid b /= arena && autoDun ->
-               failMsg $ showReqFailure NoChangeDunLeader
-           | otherwise -> do
-               void $ pickLeader True aid
-               return Nothing
+      banned = bannedPointmanSwitchBetweenLevels fact
+      pick (aid, b) = if blid b /= arena && banned
+                      then failMsg $ showReqFailure NoChangeDunLeader
+                      else do
+                        void $ pickLeader True aid
+                        return Nothing
   pUI <- getsSession spointer
   let p@(Point px py) = squareToMap $ uiToSquare pUI
   -- Pick even if no space in status line for the actor's symbol.
@@ -219,106 +250,55 @@ pickLeaderWithPointer leader = do
            Nothing -> failMsg "not pointing at an actor"
            Just (aid, b, _) -> pick (aid, b)
 
-itemOverlay :: MonadClientUI m
-            => SingleItemSlots -> LevelId -> ItemBag -> Bool -> m OKX
-itemOverlay lSlots lid bag displayRanged = do
-  sccui <- getsSession sccui
-  side <- getsClient sside
-  discoBenefit <- getsClient sdiscoBenefit
-  fontSetup <- getFontSetup
-  okx <- getsState $ itemOverlayFromState lSlots lid bag displayRanged
-                                          sccui side discoBenefit fontSetup
-  return $! okx
-
-itemOverlayFromState :: SingleItemSlots -> LevelId -> ItemBag -> Bool
+itemOverlayFromState :: LevelId -> [(ItemId, ItemQuant)] -> Bool
                      -> CCUI -> FactionId -> DiscoveryBenefit -> FontSetup
                      -> State
                      -> OKX
-itemOverlayFromState lSlots lid bag displayRanged
-                     sccui side discoBenefit FontSetup{..} s =
+itemOverlayFromState arena iids displayRanged sccui side discoBenefit
+                     FontSetup{..} s =
   let CCUI{coscreen=ScreenContent{rwidth}} = sccui
-      localTime = getLocalTime lid s
+      localTime = getLocalTime arena s
       itemToF = flip itemToFull s
       factionD = sfactionD s
-      combGround = combinedGround side s
-      combOrgan = combinedOrgan side s
-      combEqp = combinedEqp side s
-      stashBag = getFactionStashBag side s
-      !_A = assert (allB (`elem` EM.elems lSlots) (EM.keys bag)
-                    `blame` (lid, bag, lSlots)) ()
-      markEqp iid t =
-        if | (iid `EM.member` combOrgan
-             || iid `EM.member` combEqp)
-             && iid `EM.notMember` stashBag
-             && iid `EM.notMember` combGround -> T.snoc (T.init t) ']'
-               -- all ready to fight with
-           | iid `EM.member` stashBag -> T.snoc (T.init t) '}'
-               -- some spares in shared stash
-           | otherwise -> t
-      pr (l, iid) =
-        case EM.lookup iid bag of
-          Nothing -> Nothing
-          Just kit@(k, _) ->
-            let itemFull = itemToF iid
-                arItem = aspectRecordFull itemFull
-                colorSymbol =
-                  if IA.checkFlag Ability.Condition arItem
-                  then viewItemBenefitColored discoBenefit iid itemFull
-                  else viewItem itemFull
-                phrase = makePhrase
-                  [partItemWsRanged rwidth side factionD displayRanged
-                                    DetailMedium 4 k localTime itemFull kit]
-                al1 = attrStringToAL
-                      $ textToAS (markEqp iid $ slotLabel l)
-                        ++ [Color.spaceAttrW32 | isSquareFont propFont]
-                        ++ [colorSymbol]
-                xal2 = ( textSize squareFont $ attrLine al1
-                       , attrStringToAL $ Color.spaceAttrW32 : textToAS phrase )
-                kx = (Right l, ( PointUI 0 0
-                               , ButtonWidth propFont (5 + T.length phrase) ))
-            in Just ((al1, xal2), kx)
-      (ts, kxs) = unzip $ mapMaybe pr $ EM.assocs lSlots
-      (tsLab, tsDesc) = unzip ts
-      ovsLab = EM.singleton squareFont $ offsetOverlay tsLab
-      ovsDesc = EM.singleton propFont $ offsetOverlayX tsDesc
-      renumber y (km, (PointUI x _, len)) = (km, (PointUI x y, len))
-  in (EM.unionWith (++) ovsLab ovsDesc, zipWith renumber [0..] kxs )
-
-skillsOverlay :: MonadClientUI m => ActorId -> m OKX
-skillsOverlay aid = do
-  b <- getsState $ getActorBody aid
-  actorMaxSk <- getsState $ getActorMaxSkills aid
-  FontSetup{..} <- getFontSetup
-  let prSlot :: (Int, SlotChar) -> Ability.Skill
-             -> ((AttrLine, (Int, AttrLine), (Int, AttrLine)), KYX)
-      prSlot (y, c) skill =
-        let skName = " " <> skillName skill
-            slotLab = slotLabel c
-            lab = textToAL slotLab
-            labLen = textSize squareFont $ attrLine lab
-            indentation = if isSquareFont propFont then 42 else 20
-            valueText = skillToDecorator skill b
-                        $ Ability.getSk skill actorMaxSk
-            triple = ( lab
-                     , (labLen, textToAL skName)
-                     , (labLen + indentation, textToAL valueText) )
-        in (triple, (Right c, ( PointUI 0 y
-                              , ButtonWidth propFont (28 + T.length slotLab) )))
-      (ts, kxs) = unzip $ zipWith prSlot (zip [0..] allSlots) skillSlots
-      (skLab, skDescr, skValue) = unzip3 ts
-      skillLab = EM.singleton squareFont $ offsetOverlay skLab
-      skillDescr = EM.singleton propFont $ offsetOverlayX skDescr
-      skillValue = EM.singleton monoFont $ offsetOverlayX skValue
-  return (EM.unionsWith (++) [skillLab, skillDescr, skillValue], kxs)
+      attrCursor = Color.defAttr {Color.bg = Color.HighlightNoneCursor}
+      markEqp periodic k ncha =
+        if | periodic -> '"'  -- if equipped, no charges
+           | ncha == 0 -> '-'  -- no charges left
+           | k > ncha -> '~'  -- not all charges left
+           | otherwise -> '+'
+      pr :: MenuSlot -> (ItemId, ItemQuant)
+         -> (AttrString, AttrString, KeyOrSlot)
+      pr c (iid, kit@(k, _)) =
+        let itemFull = itemToF iid
+            arItem = aspectRecordFull itemFull
+            colorSymbol =
+              if IA.checkFlag Ability.Condition arItem
+              then viewItemBenefitColored discoBenefit iid itemFull
+              else viewItem itemFull
+            phrase = makePhrase
+              [partItemWsRanged rwidth side factionD displayRanged
+                                DetailMedium 4 k localTime itemFull kit]
+            ncha = ncharges localTime kit
+            periodic = IA.checkFlag Ability.Periodic arItem
+            !cLab = Color.AttrChar { acAttr = attrCursor
+                                   , acChar = markEqp periodic k ncha }
+            asLab = [Color.attrCharToW32 cLab]
+                    ++ [Color.spaceAttrW32 | isSquareFont propFont]
+                    ++ [colorSymbol]
+            !tDesc = " " <> phrase
+        in (asLab, textToAS tDesc, Right c)
+      l = zipWith pr natSlots iids
+  in labDescOKX squareFont propFont l
 
 -- | Extract whole-dungeon statistics for each place kind,
--- counting the number of occurrences of each type of `PlaceEntry`
+-- counting the number of occurrences of each type of
+-- `Game.LambdaHack.Content.PlaceKind.PlaceEntry`
 -- for the given place kind and gathering the set of levels
 -- on which any entry for that place kind can be found.
-placesFromState :: ContentData PK.PlaceKind -> ClientOptions -> State
+placesFromState :: ContentData PK.PlaceKind -> Bool -> State
                 -> EM.EnumMap (ContentId PK.PlaceKind)
                               (ES.EnumSet LevelId, Int, Int, Int)
-placesFromState coplace ClientOptions{sexposePlaces} s =
+placesFromState coplace sexposePlaces s =
   let addEntries (!es1, !nEntries1, !nArounds1, !nExists1)
                  (!es2, !nEntries2, !nArounds2, !nExists2) =
         let !es = ES.union es1 es2
@@ -354,40 +334,141 @@ placesFromState coplace ClientOptions{sexposePlaces} s =
         -- then aggregate them over all levels, remembering that the place
         -- appeared on the given level (but not how man times)
 
+-- TODO: if faction not known, it's info should not be updated
+-- by the server. But let's wait until server sends general state diffs
+-- and then block diffs that don't apply, because faction is missing.
+factionsFromState :: ItemRoles -> State -> [(FactionId, Faction)]
+factionsFromState (ItemRoles itemRoles) s =
+  let seenTrunks = ES.toList $ itemRoles EM.! STrunk
+      trunkBelongs fid iid = jfid (getItemBody iid s) == Just fid
+      factionSeen (fid, fact) = not (EM.null (gvictims fact))  -- shortcut
+                                || any (trunkBelongs fid) seenTrunks
+  in filter factionSeen $ EM.assocs $ sfactionD s
+
+itemOverlay :: MonadClientUI m
+            => [(ItemId, ItemQuant)] -> ItemDialogMode -> m OKX
+itemOverlay iids dmode = do
+  sccui <- getsSession sccui
+  side <- getsClient sside
+  arena <- getArenaUI
+  discoBenefit <- getsClient sdiscoBenefit
+  fontSetup <- getFontSetup
+  let displayRanged =
+        dmode `elem` [ MStore CGround, MStore CEqp, MStore CStash
+                     , MOwned, MLore SItem, MLore SBlast ]
+  okx <- getsState $ itemOverlayFromState arena iids displayRanged
+                                          sccui side discoBenefit fontSetup
+  return $! okx
+
+skillsOverlay :: MonadClientUI m => ActorId -> m OKX
+skillsOverlay aid = do
+  b <- getsState $ getActorBody aid
+  actorMaxSk <- getsState $ getActorMaxSkills aid
+  FontSetup{..} <- getFontSetup
+  let prSlot :: MenuSlot -> Ability.Skill
+             -> ((AttrLine, (Int, AttrLine), (Int, AttrLine)), KYX)
+      prSlot c skill =
+        let skName = " " <> skillName skill
+            attrCursor = Color.defAttr {Color.bg = Color.HighlightNoneCursor}
+            labAc = Color.AttrChar { acAttr = attrCursor
+                                   , acChar = '+' }
+            lab = attrStringToAL [Color.attrCharToW32 labAc]
+            labLen = textSize squareFont $ attrLine lab
+            indentation = if isSquareFont propFont then 52 else 26
+            valueText = skillToDecorator skill b
+                        $ Ability.getSk skill actorMaxSk
+            triple = ( lab
+                     , (labLen, textToAL skName)
+                     , (indentation, textToAL valueText) )
+            lenButton = 26 + T.length valueText
+        in (triple, (Right c, ( PointUI 0 (fromEnum c)
+                              , ButtonWidth propFont lenButton )))
+      (ts, kxs) = unzip $ zipWith prSlot natSlots skillsInDisplayOrder
+      (skLab, skDescr, skValue) = unzip3 ts
+      skillLab = EM.singleton squareFont $ offsetOverlay skLab
+      skillDescr = EM.singleton propFont $ offsetOverlayX skDescr
+      skillValue = EM.singleton monoFont $ offsetOverlayX skValue
+  return (EM.unionsWith (++) [skillLab, skillDescr, skillValue], kxs)
+
 placesOverlay :: MonadClientUI m => m OKX
 placesOverlay = do
   COps{coplace} <- getsState scops
   soptions <- getsClient soptions
   FontSetup{..} <- getFontSetup
-  places <- getsState $ placesFromState coplace soptions
-  let prSlot :: (Int, SlotChar)
+  places <- getsState $ placesFromState coplace (sexposePlaces soptions)
+  let prSlot :: MenuSlot
              -> (ContentId PK.PlaceKind, (ES.EnumSet LevelId, Int, Int, Int))
-             -> (AttrLine, (Int, AttrLine), KYX)
-      prSlot (y, c) (pk, (es, _, _, _)) =
-        let placeName = PK.pname $ okind coplace pk
-            markPlace t = if ES.null es
-                          then T.snoc (T.init t) '>'
-                          else t
-            !tSlot = markPlace $ slotLabel c  -- free @places@ as you go
-            !lenSlot = 2 * T.length tSlot
-            !tBlurb = " "
-                      <> placeName
-                      <+> if ES.null es
-                          then ""
-                          else "("
-                               <> makePhrase [MU.CarWs (ES.size es) "level"]
-                               <> ")"
-            !lenButton = lenSlot + T.length tBlurb
-            !pButton = PointUI 0 y
-            !widthButton = ButtonWidth propFont lenButton
-        in ( textToAL tSlot
-           , (lenSlot, textToAL tBlurb)
-           , (Right c, (pButton, widthButton)) )
-      (plLab, plDesc, kxs) = unzip3 $ zipWith prSlot (zip [0..] allSlots)
-                                    $ EM.assocs places
-      placeLab = EM.singleton squareFont $ offsetOverlay plLab
-      placeDesc = EM.singleton propFont $ offsetOverlayX plDesc
-  return (EM.unionWith (++) placeLab placeDesc, kxs)
+             -> (AttrString, AttrString, KeyOrSlot)
+      prSlot c (pk, (es, _, _, _)) =
+        let name = PK.pname $ okind coplace pk
+            labChar = if ES.null es then '-' else '+'
+            attrCursor = Color.defAttr {Color.bg = Color.HighlightNoneCursor}
+            labAc = Color.AttrChar { acAttr = attrCursor
+                                   , acChar = labChar }
+            -- Bang required to free @places@ as you go.
+            !asLab = [Color.attrCharToW32 labAc]
+            !tDesc = " "
+                     <> name
+                     <+> if ES.null es
+                         then ""
+                         else "("
+                              <> makePhrase [MU.CarWs (ES.size es) "level"]
+                              <> ")"
+        in (asLab, textToAS tDesc, Right c)
+      l = zipWith prSlot natSlots $ EM.assocs places
+  return $! labDescOKX squareFont propFont l
+
+factionsOverlay :: MonadClientUI m => m OKX
+factionsOverlay = do
+  FontSetup{..} <- getFontSetup
+  sroles <- getsSession sroles
+  factions <- getsState $ factionsFromState sroles
+  let prSlot :: MenuSlot
+             -> (FactionId, Faction)
+             -> (AttrString, AttrString, KeyOrSlot)
+      prSlot c (_, fact) =
+        let name = FK.fname $ gkind fact  -- we ignore "Controlled", etc.
+            gameOver = isJust $ gquit fact
+            labChar = if gameOver then '-' else '+'
+            attrCursor = Color.defAttr {Color.bg = Color.HighlightNoneCursor}
+            labAc = Color.AttrChar { acAttr = attrCursor
+                                   , acChar = labChar }
+            !asLab = [Color.attrCharToW32 labAc]
+            !tDesc = " "
+                     <> name
+                     <+> case gquit fact of
+                           Just Status{stOutcome} | not $ isHorrorFact fact ->
+                             "(" <> FK.nameOutcomePast stOutcome <> ")"
+                           _ -> ""
+        in (asLab, textToAS tDesc, Right c)
+      l = zipWith prSlot natSlots factions
+  return $! labDescOKX squareFont propFont l
+
+modesOverlay :: MonadClientUI m => m OKX
+modesOverlay = do
+  COps{comode} <- getsState scops
+  FontSetup{..} <- getFontSetup
+  svictories <- getsSession svictories
+  nxtChal <- getsClient snxtChal  -- mark victories only for current difficulty
+  let f !acc _p !i !a = (i, a) : acc
+      campaignModes = ofoldlGroup' comode MK.CAMPAIGN_SCENARIO f []
+      prSlot :: MenuSlot
+             -> (ContentId MK.ModeKind, MK.ModeKind)
+             -> (AttrString, AttrString, KeyOrSlot)
+      prSlot c (gameModeId, gameMode) =
+        let modeName = MK.mname gameMode
+            victories = case EM.lookup gameModeId svictories of
+              Nothing -> 0
+              Just cm -> fromMaybe 0 (M.lookup nxtChal cm)
+            labChar = if victories > 0 then '-' else '+'
+            attrCursor = Color.defAttr {Color.bg = Color.HighlightNoneCursor}
+            labAc = Color.AttrChar { acAttr = attrCursor
+                                   , acChar = labChar }
+            !asLab = [Color.attrCharToW32 labAc]
+            !tDesc = " " <> modeName
+        in (asLab, textToAS tDesc, Right c)
+      l = zipWith prSlot natSlots campaignModes
+  return $! labDescOKX squareFont propFont l
 
 describeMode :: MonadClientUI m
              => Bool -> ContentId MK.ModeKind
@@ -398,11 +479,12 @@ describeMode addTitle gameModeId = do
     <- getsSession sccui
   FontSetup{..} <- getFontSetup
   scoreDict <- getsState shigh
-  scampings <- getsClient scampings
-  srestarts <- getsClient srestarts
+  scampings <- getsSession scampings
+  srestarts <- getsSession srestarts
   side <- getsClient sside
   total <- getsState $ snd . calculateTotal side
   dungeonTotal <- getsState sgold
+  let screensaverBlurb = "This is one of the screensaver scenarios, not available from the main menu, with all factions controlled by AI. Feel free to take over or relinquish control at any moment, but to register a legitimate high score, choose a standard scenario instead.\n"
   let gameMode = okind comode gameModeId
       duplicateEOL '\n' = "\n\n"
       duplicateEOL c = T.singleton c
@@ -412,7 +494,10 @@ describeMode addTitle gameModeId = do
         , ( textFgToAS Color.cMeta "Rules of the game:"
           , MK.mrules gameMode )
         , ( textFgToAS Color.BrCyan "Running commentary:"
-          , T.concatMap duplicateEOL (MK.mreason gameMode) )
+          , T.concatMap duplicateEOL
+              (if MK.mattract gameMode
+               then screensaverBlurb <> MK.mreason gameMode
+               else MK.mreason gameMode) )
         , ( textFgToAS Color.cGreed "Hints, not needed unless stuck:"
           , T.concatMap duplicateEOL (MK.mhint gameMode) )
         ]
@@ -433,8 +518,8 @@ describeMode addTitle gameModeId = do
               else ""
       blurb = map (second $ splitAttrString (rwidth - 2) (rwidth - 2)) $
         (propFont, textToAS (title <> "\n"))
-        : concat (intersperse [(monoFont, textToAS "\n")]
-                              (mapMaybe renderSection sections))
+        : intercalate [(monoFont, textToAS "\n")]
+                       (mapMaybe renderSection sections)
       -- Colour is used to delimit the section when displayed in one
       -- column, when using square fonts only.
       blurbEnd = map (second $ splitAttrString (rwidth - 2) (rwidth - 2)) $
@@ -444,10 +529,10 @@ describeMode addTitle gameModeId = do
           : if null sectionsEndAS
             then [(monoFont, textToAS "*none*")]
             else sectionsEndAS
-      sectionsEndAS = concat (intersperse [(monoFont, textToAS "\n")]
-                                          (mapMaybe renderSection sectionsEnd))
+      sectionsEndAS = intercalate [(monoFont, textToAS "\n")]
+                                  (mapMaybe renderSection sectionsEnd)
       sectionsEnd = map outcomeSection [minBound..maxBound]
-      outcomeSection :: MK.Outcome -> (AttrString, Text)
+      outcomeSection :: FK.Outcome -> (AttrString, Text)
       outcomeSection outcome =
         ( renderOutcome outcome
         , if not (outcomeSeen outcome)
@@ -458,80 +543,48 @@ describeMode addTitle gameModeId = do
         )
       -- These are not added to @mendMsg@, because they only fit here.
       endMsgDefault =
-        [ (MK.Restart, "No shame there is in noble defeat and there is honour in perseverance. Sometimes there are ways and places to turn rout into victory.")
-        , (MK.Camping, "Don't fear to take breaks. While you move, others move, even on distant floors, but while you stay still, the world stays still.")
+        [ (FK.Restart, "No shame there is in noble defeat and there is honour in perseverance. Sometimes there are ways and places to turn rout into victory.")
+        , (FK.Camping, "Don't fear to take breaks. While you move, others move, even on distant floors, but while you stay still, the world stays still.")
         ]
       scoreRecords = maybe [] HighScore.unTable $ EM.lookup gameModeId scoreDict
-      outcomeSeen :: MK.Outcome -> Bool
+      -- This doesn't use @svictories@, but high scores, because high scores
+      -- are more persistent and granular (per-outcome). OTOH, @svictories@
+      -- are per-challenge, which is important in other cases.
+      -- @Camping@ and @Restart@ are fine to be less persistent.
+      outcomeSeen :: FK.Outcome -> Bool
       outcomeSeen outcome = case outcome of
-        MK.Camping -> gameModeId `ES.member` scampings
-        MK.Restart -> gameModeId `ES.member` srestarts
+        FK.Camping -> gameModeId `ES.member` scampings
+        FK.Restart -> gameModeId `ES.member` srestarts
         _ -> outcome `elem` map (stOutcome . HighScore.getStatus) scoreRecords
       -- Camping not taken into account.
-      lastOutcome :: MK.Outcome
+      lastOutcome :: FK.Outcome
       lastOutcome = if null scoreRecords
-                    then MK.Restart  -- only if nothing else
+                    then FK.Restart  -- only if nothing else
                     else stOutcome . HighScore.getStatus
                          $ maximumBy (comparing HighScore.getDate) scoreRecords
-      renderOutcome :: MK.Outcome -> AttrString
+      renderOutcome :: FK.Outcome -> AttrString
       renderOutcome outcome =
-        let color | outcome `elem` MK.deafeatOutcomes = Color.cVeryBadEvent
-                  | outcome `elem` MK.victoryOutcomes = Color.cVeryGoodEvent
+        let color | outcome `elem` FK.deafeatOutcomes = Color.cVeryBadEvent
+                  | outcome `elem` FK.victoryOutcomes = Color.cVeryGoodEvent
                   | otherwise = Color.cNeutralEvent
             lastRemark
               | outcome /= lastOutcome = ""
-              | outcome `elem` MK.deafeatOutcomes = "(last suffered ending)"
-              | outcome `elem` MK.victoryOutcomes = "(last achieved ending)"
+              | outcome `elem` FK.deafeatOutcomes = "(last suffered ending)"
+              | outcome `elem` FK.victoryOutcomes = "(last achieved ending)"
               | otherwise = "(last seen ending)"
         in textToAS "Game over message when"
-           <+:> (textFgToAS color (T.toTitle $ MK.nameOutcomePast outcome)
+           <+:> (textFgToAS color (T.toTitle $ FK.nameOutcomePast outcome)
                  <+:> textToAS lastRemark)
            <> textToAS ":"
-      shiftPointUI x (PointUI x0 y0) = PointUI (x0 + x) y0
   return $! if isSquareFont propFont
             then EM.singleton squareFont  -- single column, single font
-                 $ offsetOverlayX
-                 $ map (\t -> (2, t))
+                 $ xtranslateOverlay 2 $ offsetOverlay
                  $ concatMap snd $ blurb ++ blurbEnd
             else EM.unionWith (++)
-                 (EM.map (map (first $ shiftPointUI 1))
-                  $ attrLinesToFontMap 0 blurb)
-                 (EM.map (map (first $ shiftPointUI $ rwidth + 1))
-                  $ attrLinesToFontMap 0 blurbEnd)
-
-modesOverlay :: MonadClientUI m => m OKX
-modesOverlay = do
-  COps{comode} <- getsState scops
-  FontSetup{..} <- getFontSetup
-  svictories <- getsClient svictories
-  nxtChal <- getsClient snxtChal  -- mark victories only for current difficulty
-  let f !acc _p !i !a = (i, a) : acc
-      campaignModes = ofoldlGroup' comode MK.CAMPAIGN_SCENARIO f []
-      prSlot :: (Int, SlotChar)
-             -> (ContentId MK.ModeKind, MK.ModeKind)
-             -> (AttrLine, (Int, AttrLine), KYX)
-      prSlot (y, c) (gameModeId, gameMode) =
-        let modeName = MK.mname gameMode
-            victories = case EM.lookup gameModeId svictories of
-              Nothing -> 0
-              Just cm -> fromMaybe 0 (M.lookup nxtChal cm)
-            markMode t = if victories > 0
-                         then T.snoc (T.init t) '>'
-                         else t
-            !tSlot = markMode $ slotLabel c
-            !lenSlot = 2 * T.length tSlot
-            !tBlurb = " " <> modeName
-            !lenButton = lenSlot + T.length tBlurb
-            !pButton = PointUI 0 y
-            !widthButton = ButtonWidth propFont lenButton
-        in ( textToAL tSlot
-           , (lenSlot, textToAL tBlurb)
-           , (Right c, (pButton, widthButton)) )
-      (plLab, plDesc, kxs) =
-        unzip3 $ zipWith prSlot (zip [0..] allSlots) campaignModes
-      placeLab = EM.singleton squareFont $ offsetOverlay plLab
-      placeDesc = EM.singleton propFont $ offsetOverlayX plDesc
-  return (EM.unionWith (++) placeLab placeDesc, kxs)
+                 (EM.map (xtranslateOverlay 1)
+                  $ attrLinesToFontMap blurb)
+                 (EM.map (xtranslateOverlay $ rwidth + 1)
+                  $ attrLinesToFontMap blurbEnd)
 
 pickNumber :: MonadClientUI m => Bool -> Int -> m (Either MError Int)
 pickNumber askNumber kAll = assert (kAll >= 1) $ do
@@ -560,13 +613,14 @@ pickNumber askNumber kAll = assert (kAll >= 1) $ do
               K.Esc -> weaveJust <$> failWith "never mind"
               K.Space -> return $ Left Nothing
               _ -> error $ "unexpected key" `showFailure` kkm
-          Right sc -> error $ "unexpected slot char" `showFailure` sc
-  if | kAll == 1 || not askNumber -> return $ Right kAll
-     | otherwise -> do
-         res <- gatherNumber kAll
-         case res of
-           Right k | k <= 0 -> error $ "" `showFailure` (res, kAll)
-           _ -> return res
+          Right slot -> error $ "unexpected menu slot" `showFailure` slot
+  if kAll == 1 || not askNumber
+  then return $ Right kAll
+  else do
+    res <- gatherNumber kAll
+    case res of
+      Right k | k <= 0 -> error $ "" `showFailure` (res, kAll)
+      _ -> return res
 
 -- | Produces a textual description of the tile at a position.
 lookAtTile :: MonadClientUI m
@@ -591,7 +645,7 @@ lookAtTile canSee p lidV maid mperson = do
   getKind <- getsState $ flip getIidKind
   let inhabitants = posToAidsLvl p lvl
       detail = maybe DetailAll detailLevel saimMode
-      aims = isJust $ maybe Nothing (\b -> makeLine False b p seps cops lvl) mb
+      aims = isJust $ (\b -> makeLine False b p seps cops lvl) =<< mb
       tkid = lvl `at` p
       tile = okind cotile tkid
       vis | TK.tname tile == "unknown space" = "that is"
@@ -781,7 +835,7 @@ lookAtItems canSee p lidV maid mactorPronounAlive = do
       leaderPronoun <- partPronounLeader aid
       return $ Just (leaderPronoun, (bhp <$> mb) >= Just 0)
     _ -> return Nothing
-  let mactorPronounAliveLeader = maybe mLeader Just mactorPronounAlive
+  let mactorPronounAliveLeader = mactorPronounAlive <|> mLeader
   (subject, verb) <- case mactorPronounAliveLeader of
     Just (actorPronoun, actorAlive) ->
       return (actorPronoun, if actorAlive then "stand over" else "fall over")
@@ -865,19 +919,19 @@ lookAtPosition p lidV = do
       embedKindList = map (\(iid, kit) -> (getKind iid, (iid, kit)))
                           (EM.assocs embeds)
       feats = TK.tfeature $ okind cotile $ lvl `at` p
-      tileActions = mapMaybe (Tile.parseTileAction False False embedKindList)
+      tileActions = mapMaybe (parseTileAction False False embedKindList)
                              feats
-      isEmbedAction Tile.EmbedAction{} = True
+      isEmbedAction EmbedAction{} = True
       isEmbedAction _ = False
       embedVerb = [ "activated"
                   | any isEmbedAction tileActions
                     && any (\(itemKind, _) -> not $ null $ IK.ieffects itemKind)
                            embedKindList ]
-      isToAction Tile.ToAction{} = True
+      isToAction ToAction{} = True
       isToAction _ = False
-      isWithAction Tile.WithAction{} = True
+      isWithAction WithAction{} = True
       isWithAction _ = False
-      isEmptyWithAction (Tile.WithAction [] _) = True
+      isEmptyWithAction (WithAction [] _) = True
       isEmptyWithAction _ = False
       alterVerb | any isEmptyWithAction tileActions = ["very easily modified"]
                 | any isToAction tileActions = ["easily modified"]
@@ -887,7 +941,7 @@ lookAtPosition p lidV = do
       alterBlurb = if null verbs
                    then ""
                    else makeSentence ["can be", MU.WWandW verbs]
-      toolFromAction (Tile.WithAction grps _) = Just grps
+      toolFromAction (WithAction grps _) = Just grps
       toolFromAction _ = Nothing
       toolsToAlterWith = mapMaybe toolFromAction tileActions
       tItems = describeToolsAlternative toolsToAlterWith
@@ -929,64 +983,83 @@ lookAtPosition p lidV = do
             then [(MsgPromptFocus, tileBlurb)]
             else ms
 
-displayItemLore :: MonadClientUI m
-                => ItemBag -> Int -> (ItemId -> ItemFull -> Int -> Text) -> Int
-                -> SingleItemSlots
-                -> m Bool
-displayItemLore itemBag meleeSkill promptFun slotIndex lSlots = do
-  km <- displayItemLorePointedAt itemBag meleeSkill promptFun slotIndex
-                                 lSlots False
+displayOneMenuItem :: MonadClientUI m
+                   => (MenuSlot -> m OKX) -> [K.KM] -> Int -> MenuSlot
+                   -> m K.KM
+displayOneMenuItem renderOneItem extraKeys slotBound slot = do
+  CCUI{coscreen=ScreenContent{rheight}} <- getsSession sccui
+  let keys = [K.spaceKM, K.escKM]
+             ++ [K.upKM | fromEnum slot > 0]
+             ++ [K.downKM | fromEnum slot < slotBound]
+             ++ extraKeys
+  okx <- renderOneItem slot
+  slides <- overlayToSlideshow (rheight - 2) keys okx
+  km <- getConfirms ColorFull keys slides
   case K.key km of
-    K.Space -> return True
-    K.Esc -> return False
-    _ -> error $ "" `showFailure` km
+    K.Up -> displayOneMenuItem renderOneItem extraKeys slotBound $ pred slot
+    K.Down -> displayOneMenuItem renderOneItem extraKeys slotBound $ succ slot
+    _ -> return km
 
-displayItemLorePointedAt
-  :: MonadClientUI m
-  => ItemBag -> Int -> (ItemId -> ItemFull -> Int -> Text) -> Int
-  -> SingleItemSlots -> Bool
-  -> m K.KM
-displayItemLorePointedAt itemBag meleeSkill promptFun slotIndex
-                         lSlots addTilde = do
-  CCUI{coscreen=ScreenContent{rwidth, rheight}} <- getsSession sccui
+okxItemLoreInline :: MonadClientUI m
+                  => (ItemId -> ItemFull -> Int -> Text)
+                  -> Int -> ItemDialogMode -> [(ItemId, ItemQuant)]
+                  -> Int -> MenuSlot
+                  -> m OKX
+okxItemLoreInline promptFun meleeSkill dmode iids widthRaw slot = do
+  FontSetup{..} <- getFontSetup
+  let (iid, kit@(k, _)) = iids !! fromEnum slot
+      -- Some prop fonts are wider than mono (e.g., in dejavuBold font set),
+      -- so the width in these artificial texts full of digits and strange
+      -- characters needs to be smaller than @rwidth - 2@ that would suffice
+      -- for mono.
+      width = widthRaw - 5
+  itemFull <- getsState $ itemToFull iid
+  (ovLab, ovDesc) <- itemDescOverlays True meleeSkill dmode iid kit itemFull
+                                      width
+  let prompt = promptFun iid itemFull k
+      promptBlurb | T.null prompt = []
+                  | otherwise = offsetOverlay $ splitAttrString width width
+                                $ textFgToAS Color.Brown $ prompt <> "\n\n"
+      len = length promptBlurb
+      descSym2 = ytranslateOverlay len ovLab
+      descBlurb2 = promptBlurb ++ ytranslateOverlay len ovDesc
+      ov = EM.insertWith (++) squareFont descSym2
+           $ EM.singleton propFont descBlurb2
+  return (ov, [])
+
+okxItemLoreMsg :: MonadClientUI m
+               => (ItemId -> ItemFull -> Int -> Text)
+               -> Int -> ItemDialogMode -> [(ItemId, ItemQuant)]
+               -> MenuSlot
+               -> m OKX
+okxItemLoreMsg promptFun meleeSkill dmode iids slot = do
+  CCUI{coscreen=ScreenContent{rwidth}} <- getsSession sccui
+  FontSetup{..} <- getFontSetup
+  let (iid, kit@(k, _)) = iids !! fromEnum slot
+  itemFull <- getsState $ itemToFull iid
+  (ovLab, ovDesc) <- itemDescOverlays True meleeSkill dmode iid kit itemFull
+                                      rwidth
+  let prompt = promptFun iid itemFull k
+  msgAdd MsgPromptGeneric prompt
+  let ov = EM.insertWith (++) squareFont ovLab
+           $ EM.singleton propFont ovDesc
+  return (ov, [])
+
+itemDescOverlays :: MonadClientUI m
+                 => Bool -> Int -> ItemDialogMode -> ItemId -> ItemQuant
+                 -> ItemFull -> Int
+                 -> m (Overlay, Overlay)
+itemDescOverlays markParagraphs meleeSkill dmode iid kit itemFull width = do
+  FontSetup{squareFont} <- getFontSetup
   side <- getsClient sside
   arena <- getArenaUI
-  let lSlotsElems = EM.elems lSlots
-      lSlotsBound = length lSlotsElems - 1
-      iid2 = lSlotsElems !! slotIndex
-      kit2@(k, _) = itemBag EM.! iid2
-  itemFull2 <- getsState $ itemToFull iid2
   localTime <- getsState $ getLocalTime arena
   factionD <- getsState sfactionD
   -- The hacky level 0 marks items never seen, but sent by server at gameover.
-  jlid <- getsSession $ fromMaybe (toEnum 0) <$> EM.lookup iid2 . sitemUI
-  FontSetup{..} <- getFontSetup
-  let descAl = itemDesc rwidth True side factionD meleeSkill
-                        CGround localTime jlid itemFull2 kit2
-      (descSymAl, descBlurbAl) = span (/= Color.spaceAttrW32) descAl
-      descSym = offsetOverlay $ splitAttrString rwidth rwidth descSymAl
-      descBlurb = offsetOverlayX $
-        case splitAttrString rwidth rwidth $ stringToAS "xx" ++ descBlurbAl of
-          [] -> error "splitting AttrString loses characters"
-          al1 : rest ->
-            (2, attrStringToAL $ drop 2 $ attrLine al1) : map (0,) rest
-      ov = EM.insertWith (++) squareFont descSym
-           $ EM.singleton propFont descBlurb
-      keys = [K.spaceKM, K.escKM]
-             ++ [K.mkChar '~' | addTilde]
-             ++ [K.upKM | slotIndex /= 0]
-             ++ [K.downKM | slotIndex /= lSlotsBound]
-  msgAdd MsgPromptGeneric $ promptFun iid2 itemFull2 k
-  slides <- overlayToSlideshow (rheight - 2) keys (ov, [])
-  km <- getConfirms ColorFull keys slides
-  case K.key km of
-    K.Up ->
-      displayItemLorePointedAt itemBag meleeSkill promptFun (slotIndex - 1)
-                               lSlots addTilde
-    K.Down ->
-      displayItemLorePointedAt itemBag meleeSkill promptFun (slotIndex + 1)
-                               lSlots addTilde
-    _ -> return km
+  jlid <- getsSession $ fromMaybe (toEnum 0) <$> EM.lookup iid . sitemUI
+  let descAs = itemDesc width markParagraphs side factionD meleeSkill
+                        dmode localTime jlid itemFull kit
+  return $! labDescOverlay squareFont width descAs
 
 cycleLore :: MonadClientUI m => [m K.KM] -> [m K.KM] -> m ()
 cycleLore _ [] = return ()

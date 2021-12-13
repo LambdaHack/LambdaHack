@@ -16,6 +16,7 @@ import Game.LambdaHack.Core.Prelude
 
 import           Data.Binary
 import qualified Data.ByteString.Lazy.Char8 as LBS
+import qualified Data.Text as T
 import           Data.Text.Encoding (decodeLatin1)
 import           Data.Version
 
@@ -84,7 +85,7 @@ tryWriteFile path content = flip runDOM undefined $ do
   mitem <- getItem storage path
   let fileExists = isJust (mitem :: Maybe String)
   unless fileExists $
-    setItem storage path content
+    setItem storage path $ T.unpack content
 
 readFile :: FilePath -> IO String
 readFile path = flip runDOM undefined $ do

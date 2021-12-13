@@ -2,7 +2,7 @@
 module Content.ItemKindActor
   ( -- * Group name patterns
     pattern S_WOODEN_TORCH, pattern S_SANDSTONE_ROCK
-  , pattern HERO, pattern SCOUT_HERO, pattern RANGER_HERO, pattern ESCAPIST_HERO, pattern AMBUSHER_HERO, pattern BRAWLER_HERO, pattern SOLDIER_HERO, pattern CIVILIAN, pattern MONSTER, pattern MOBILE_MONSTER, pattern SCOUT_MONSTER, pattern ANIMAL, pattern MOBILE_ANIMAL, pattern IMMOBILE_ANIMAL
+  , pattern HERO, pattern SCOUT_HERO, pattern RANGER_HERO, pattern ESCAPIST_HERO, pattern AMBUSHER_HERO, pattern BRAWLER_HERO, pattern SOLDIER_HERO, pattern CIVILIAN, pattern MONSTER, pattern MOBILE_MONSTER, pattern SCOUT_MONSTER, pattern ANIMAL, pattern MOBILE_ANIMAL, pattern IMMOBILE_ANIMAL, pattern INSECT, pattern GEOPHENOMENON
   , pattern ADD_SIGHT, pattern ARMOR_RANGED, pattern ADD_NOCTO_1, pattern WEAK_ARROW, pattern LIGHT_ATTENUATOR, pattern FIREPROOF_CLOTH, pattern RING_OF_OPPORTUNITY_SNIPER, pattern ANY_ARROW, pattern STARTING_ARMOR, pattern STARTING_WEAPON, pattern GEM
   , actorsGN, actorsGNSingleton
   , -- * Content
@@ -13,13 +13,14 @@ import Prelude ()
 
 import Game.LambdaHack.Core.Prelude
 
-import Content.ItemKindOrgan
 import Game.LambdaHack.Content.ItemKind
 import Game.LambdaHack.Definition.Ability
 import Game.LambdaHack.Definition.Color
 import Game.LambdaHack.Definition.Defs
 import Game.LambdaHack.Definition.DefsInternal
 import Game.LambdaHack.Definition.Flavour
+
+import Content.ItemKindOrgan
 
 -- * Group name patterns
 
@@ -31,27 +32,29 @@ pattern S_WOODEN_TORCH, S_SANDSTONE_ROCK :: GroupName ItemKind
 
 actorsGN :: [GroupName ItemKind]
 actorsGN =
-       [HERO, SCOUT_HERO, RANGER_HERO, ESCAPIST_HERO, AMBUSHER_HERO, BRAWLER_HERO, SOLDIER_HERO, CIVILIAN, MONSTER, MOBILE_MONSTER, SCOUT_MONSTER, ANIMAL, MOBILE_ANIMAL, IMMOBILE_ANIMAL]
+       [HERO, SCOUT_HERO, RANGER_HERO, ESCAPIST_HERO, AMBUSHER_HERO, BRAWLER_HERO, SOLDIER_HERO, CIVILIAN, MONSTER, MOBILE_MONSTER, SCOUT_MONSTER, ANIMAL, MOBILE_ANIMAL, IMMOBILE_ANIMAL, INSECT, GEOPHENOMENON]
     ++ [ADD_SIGHT, ARMOR_RANGED, ADD_NOCTO_1, WEAK_ARROW, LIGHT_ATTENUATOR, FIREPROOF_CLOTH, RING_OF_OPPORTUNITY_SNIPER, ANY_ARROW, STARTING_ARMOR, STARTING_WEAPON, GEM]
 
-pattern HERO, SCOUT_HERO, RANGER_HERO, ESCAPIST_HERO, AMBUSHER_HERO, BRAWLER_HERO, SOLDIER_HERO, CIVILIAN, MONSTER, MOBILE_MONSTER, SCOUT_MONSTER, ANIMAL, MOBILE_ANIMAL, IMMOBILE_ANIMAL :: GroupName ItemKind
+pattern HERO, SCOUT_HERO, RANGER_HERO, ESCAPIST_HERO, AMBUSHER_HERO, BRAWLER_HERO, SOLDIER_HERO, CIVILIAN, MONSTER, MOBILE_MONSTER, SCOUT_MONSTER, ANIMAL, MOBILE_ANIMAL, IMMOBILE_ANIMAL, INSECT, GEOPHENOMENON :: GroupName ItemKind
 
 pattern ADD_SIGHT, ARMOR_RANGED, ADD_NOCTO_1, WEAK_ARROW, LIGHT_ATTENUATOR, FIREPROOF_CLOTH, RING_OF_OPPORTUNITY_SNIPER, ANY_ARROW, STARTING_ARMOR, STARTING_WEAPON, GEM :: GroupName ItemKind
 
-pattern HERO = GroupName "hero"
-pattern SCOUT_HERO = GroupName "scout hero"
-pattern RANGER_HERO = GroupName "ranger hero"
-pattern ESCAPIST_HERO = GroupName "escapist hero"
-pattern AMBUSHER_HERO = GroupName "ambusher hero"
-pattern BRAWLER_HERO = GroupName "brawler hero"
-pattern SOLDIER_HERO = GroupName "soldier hero"
+pattern HERO = GroupName "adventurer"
+pattern SCOUT_HERO = GroupName "scout"
+pattern RANGER_HERO = GroupName "ranger"
+pattern ESCAPIST_HERO = GroupName "escapist"
+pattern AMBUSHER_HERO = GroupName "ambusher"
+pattern BRAWLER_HERO = GroupName "brawler"
+pattern SOLDIER_HERO = GroupName "soldier"
 pattern CIVILIAN = GroupName "civilian"
-pattern MONSTER = GroupName "monster"
-pattern MOBILE_MONSTER = GroupName "mobile monster"
-pattern SCOUT_MONSTER = GroupName "scout monster"
+pattern MONSTER = GroupName "monstrosity"
+pattern MOBILE_MONSTER = GroupName "mobile monstrosity"
+pattern SCOUT_MONSTER = GroupName "scout monstrosity"
 pattern ANIMAL = GroupName "animal"
 pattern MOBILE_ANIMAL = GroupName "mobile animal"
 pattern IMMOBILE_ANIMAL = GroupName "immobile animal"
+pattern INSECT = GroupName "insect"
+pattern GEOPHENOMENON = GroupName "geological phenomenon"
 
 pattern S_WOODEN_TORCH = GroupName "wooden torch"
 pattern S_SANDSTONE_ROCK = GroupName "sandstone rock"
@@ -88,13 +91,14 @@ geyserBoiling, geyserArsenic, geyserSulfur :: ItemKind
 
 -- * Hunams
 
+-- TODO: bring back S_EAR_3 when character progression permits hearing boosts.
 humanOrgans :: [(GroupName ItemKind, CStore)]
 humanOrgans = [ (S_FIST, COrgan), (S_FOOT, COrgan)
-              , (S_EYE_6, COrgan), (S_EAR_3, COrgan)
+              , (S_EYE_6, COrgan), (S_EAR_6, COrgan)
               , (S_SAPIENT_BRAIN, COrgan) ]
 warrior = ItemKind
   { isymbol  = toContentSymbol '@'
-  , iname    = "warrior"  -- modified if initial actors in hero faction
+  , iname    = "adventurer"  -- modified if initial actors in hero faction
   , ifreq    = [(HERO, 100), (MOBILE, 1)]
   , iflavour = zipPlain [BrWhite]
   , icount   = 1
@@ -112,12 +116,12 @@ warrior = ItemKind
                , AddSkill SkOdor 1
                , SetFlag Durable ]
   , ieffects = []
-  , idesc    = ""  -- "A hardened veteran of combat."
   , ikit     = humanOrgans
                ++ [(S_SANDSTONE_ROCK, CStash)]
+  , idesc    = ""  -- "A hardened veteran of combat."
   }
 warrior2 = warrior
-  { iname    = "adventurer"
+  { iname    = "warrior"
   , ikit     = humanOrgans
                ++ [(COMMON_ITEM, CStash)]
   -- , idesc    = ""
@@ -136,8 +140,7 @@ warrior5 = warrior
   }
 
 scout = warrior
-  { iname    = "scout"
-  , ifreq    = [(SCOUT_HERO, 100), (MOBILE, 1)]
+  { ifreq    = [(SCOUT_HERO, 100), (MOBILE, 1)]
   , ikit     = humanOrgans
                ++ [ (ADD_SIGHT, CEqp)
                   , (ARMOR_RANGED, CEqp)
@@ -145,16 +148,14 @@ scout = warrior
   -- , idesc    = ""
   }
 ranger = warrior
-  { iname    = "ranger"
-  , ifreq    = [(RANGER_HERO, 100), (MOBILE, 1)]
+  { ifreq    = [(RANGER_HERO, 100), (MOBILE, 1)]
   , ikit     = humanOrgans
                ++ [ (ARMOR_RANGED, CEqp)
                   , (WEAK_ARROW, CStash) ]
   -- , idesc    = ""
   }
 escapist = warrior
-  { iname    = "escapist"
-  , ifreq    = [(ESCAPIST_HERO, 100), (MOBILE, 1)]
+  { ifreq    = [(ESCAPIST_HERO, 100), (MOBILE, 1)]
   , ikit     = humanOrgans
                ++ [ (ADD_SIGHT, CEqp)
                   , (STARTING_ARMOR, CEqp)
@@ -165,8 +166,7 @@ escapist = warrior
   -- , idesc    = ""
   }
 ambusher = warrior
-  { iname    = "ambusher"
-  , ifreq    = [(AMBUSHER_HERO, 100), (MOBILE, 1)]
+  { ifreq    = [(AMBUSHER_HERO, 100), (MOBILE, 1)]
   , ikit     = humanOrgans  -- dark and numerous, so more kit without exploring
                ++ [ (RING_OF_OPPORTUNITY_SNIPER, CEqp)
                   , (ANY_ARROW, CStash), (ANY_ARROW, CStash)
@@ -177,15 +177,14 @@ ambusher = warrior
   -- , idesc    = ""
   }
 brawler = warrior
-  { iname    = "brawler"
-  , ifreq    = [(BRAWLER_HERO, 100), (MOBILE, 1)]
+  { ifreq    = [(BRAWLER_HERO, 100), (MOBILE, 1)]
   , ikit     = humanOrgans
-               ++ [(STARTING_WEAPON, CEqp)]
+               ++ [ (STARTING_WEAPON, CEqp)
+                  , (ANY_POTION, CStash) ]
   -- , idesc    = ""
   }
 soldier = brawler
-  { iname    = "soldier"
-  , ifreq    = [(SOLDIER_HERO, 100), (MOBILE, 1)]
+  { ifreq    = [(SOLDIER_HERO, 100), (MOBILE, 1)]
   , ikit     = ikit brawler
                ++ [(EXPLOSIVE, CStash)]
   -- , idesc    = ""
@@ -582,7 +581,7 @@ rhinoceros = ItemKind
 beeSwarm = ItemKind
   { isymbol  = toContentSymbol 'b'
   , iname    = "bee swarm"
-  , ifreq    = [(ANIMAL, 100), (MOBILE, 1)]
+  , ifreq    = [(ANIMAL, 100), (INSECT, 50), (MOBILE, 1)]
   , iflavour = zipPlain [Brown]
   , icount   = 1
   , irarity  = [(1, 3), (10, 4)]
@@ -604,7 +603,7 @@ beeSwarm = ItemKind
 hornetSwarm = ItemKind  -- kind of tank with armor, but short-lived
   { isymbol  = toContentSymbol 'h'
   , iname    = "hornet swarm"
-  , ifreq    = [(ANIMAL, 100), (MOBILE, 1), (MOBILE_ANIMAL, 100)]
+  , ifreq    = [(ANIMAL, 100), (INSECT, 100), (MOBILE, 1), (MOBILE_ANIMAL, 100)]
   , iflavour = zipPlain [Magenta]
   , icount   = 1
   , irarity  = [(5, 1), (10, 4), (20, 10)]
@@ -648,7 +647,7 @@ thornbush = ItemKind  -- the wimpiest kind of early tank
 geyserBoiling = ItemKind
   { isymbol  = toContentSymbol 'g'
   , iname    = "geyser"
-  , ifreq    = [(ANIMAL, 8), (IMMOBILE_ANIMAL, 30)]
+  , ifreq    = [(ANIMAL, 8), (IMMOBILE_ANIMAL, 30), (GEOPHENOMENON, 1)]
   , iflavour = zipPlain [Blue]
   , icount   = 1
   , irarity  = [(1, 10), (10, 6)]
@@ -666,7 +665,7 @@ geyserBoiling = ItemKind
 geyserArsenic = ItemKind
   { isymbol  = toContentSymbol 'g'
   , iname    = "arsenic geyser"
-  , ifreq    = [(ANIMAL, 8), (IMMOBILE_ANIMAL, 40)]
+  , ifreq    = [(ANIMAL, 8), (IMMOBILE_ANIMAL, 40), (GEOPHENOMENON, 1)]
   , iflavour = zipPlain [Cyan]
   , icount   = 1
   , irarity  = [(1, 10), (10, 6)]
@@ -684,7 +683,7 @@ geyserArsenic = ItemKind
 geyserSulfur = ItemKind
   { isymbol  = toContentSymbol 'g'
   , iname    = "sulfur geyser"
-  , ifreq    = [(ANIMAL, 8), (IMMOBILE_ANIMAL, 120)]
+  , ifreq    = [(ANIMAL, 8), (IMMOBILE_ANIMAL, 120), (GEOPHENOMENON, 1)]
   , iflavour = zipPlain [BrYellow]  -- exception, animal with bright color
   , icount   = 1
   , irarity  = [(1, 10), (10, 6)]

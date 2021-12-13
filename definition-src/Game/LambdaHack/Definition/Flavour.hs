@@ -21,7 +21,7 @@ import Prelude ()
 import Game.LambdaHack.Core.Prelude
 
 import Data.Binary
-import Data.Bits (unsafeShiftL, unsafeShiftR, (.&.))
+import Data.Bits ((.&.))
 import GHC.Generics (Generic)
 
 import Game.LambdaHack.Definition.Color

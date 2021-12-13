@@ -34,6 +34,7 @@ startup coscreen = do
   let storeKeys :: IO ()
       storeKeys = do
         c <- SIO.getChar  -- blocks here, so no polling
+        SIO.hPutStrLn SIO.stderr ""  -- prevent next line starting indented
         let K.KM{..} = keyTranslate c
         saveKMP rf modifier key (PointUI 0 0)
         storeKeys
@@ -50,7 +51,7 @@ shutdown = SIO.hFlush SIO.stdout >> SIO.hFlush SIO.stderr
 display :: ScreenContent
         -> SingleFrame
         -> IO ()
-display coscreen SingleFrame{..} = do
+display coscreen SingleFrame{singleArray} = do
   let f w l =
         let acCharRaw = Color.charFromW32 w
             acChar = if acCharRaw == floorSymbol then '.' else acCharRaw
@@ -60,8 +61,6 @@ display coscreen SingleFrame{..} = do
       chunk l = let (ch, r) = splitAt (rwidth coscreen) l
                 in ch : chunk r
   SIO.hPutStr SIO.stderr $ unlines levelChar
-  mapM_ (SIO.hPutStrLn SIO.stderr) $
-    map (map Color.charFromW32 . snd) singlePropOverlay
   SIO.hFlush SIO.stderr
 
 keyTranslate :: Char -> K.KM

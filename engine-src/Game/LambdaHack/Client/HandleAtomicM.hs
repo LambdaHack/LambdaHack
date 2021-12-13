@@ -20,7 +20,6 @@ import Game.LambdaHack.Core.Prelude
 
 import qualified Data.EnumMap.Strict as EM
 import qualified Data.EnumSet as ES
-import qualified Data.Map.Strict as M
 
 import           Game.LambdaHack.Atomic
 import           Game.LambdaHack.Client.Bfs
@@ -43,7 +42,7 @@ import qualified Game.LambdaHack.Common.Tile as Tile
 import           Game.LambdaHack.Common.Time
 import           Game.LambdaHack.Common.Types
 import qualified Game.LambdaHack.Content.CaveKind as CK
-import           Game.LambdaHack.Content.ModeKind
+import           Game.LambdaHack.Content.FactionKind
 import           Game.LambdaHack.Content.TileKind (TileKind)
 import           Game.LambdaHack.Definition.Defs
 
@@ -129,23 +128,7 @@ cmdAtomicSemCli oldState cmd = case cmd of
       insertInMeleeM (blid b)  -- @bhp@ checked in several places
   UpdRefillCalm{} -> return ()
   UpdTrajectory{} -> return ()
-  UpdQuitFaction fid _ toSt _ -> do
-    side <- getsClient sside
-    gameModeId <- getsState sgameModeId
-    when (side == fid) $ case toSt of
-      Just Status{stOutcome=Camping} ->
-        modifyClient $ \cli ->
-          cli {scampings = ES.insert gameModeId $ scampings cli}
-      Just Status{stOutcome=Restart} ->
-        modifyClient $ \cli ->
-          cli {srestarts = ES.insert gameModeId $ srestarts cli}
-      Just Status{stOutcome} | stOutcome `elem` victoryOutcomes -> do
-        scurChal <- getsClient scurChal
-        let sing = M.singleton scurChal 1
-            f = M.unionWith (+)
-            g = EM.insertWith f gameModeId sing
-        modifyClient $ \cli -> cli {svictories = g $ svictories cli}
-      _ -> return ()
+  UpdQuitFaction{} -> return ()
   UpdSpotStashFaction{} -> return ()
   UpdLoseStashFaction{} -> return ()
   UpdLeadFaction fid source target -> do
@@ -254,17 +237,15 @@ cmdAtomicSemCli oldState cmd = case cmd of
   UpdDiscoverServer{} -> error "server command leaked to client"
   UpdCoverServer{} -> error "server command leaked to client"
   UpdPerception lid outPer inPer -> perception lid outPer inPer
-  UpdRestart side sfper _ scurChal soptions srandom -> do
+  UpdRestart side sfper _ scurChal soptionsNew srandom -> do
     COps{cocave} <- getsState scops
     fact <- getsState $ (EM.! side) . sfactionD
     snxtChal <- getsClient snxtChal
     smarkSuspect <- getsClient smarkSuspect
-    svictories <- getsClient svictories
-    scampings <- getsClient scampings
-    srestarts <- getsClient srestarts
     stabs <- getsClient stabs
-    let h lvl = CK.labyrinth (okind cocave $ lkind lvl)
-                && not (fhasGender $ gplayer fact)
+    soptionsOld <- getsClient soptions
+    let h lvl = CK.clabyrinth (okind cocave $ lkind lvl)
+                && not (fhasGender $ gkind fact)
           -- Not to burrow through a labyrinth instead of leaving it for
           -- the human player and to prevent AI losing time there instead
           -- of congregating at exits.
@@ -277,10 +258,9 @@ cmdAtomicSemCli oldState cmd = case cmd of
                   , scurChal
                   , snxtChal
                   , smarkSuspect
-                  , svictories
-                  , scampings
-                  , srestarts
-                  , soptions
+                  , soptions =
+                      soptionsNew {snoAnim =  -- persist @snoAnim@ between games
+                        snoAnim soptionsOld `mplus` snoAnim soptionsNew}
                   , stabs }
     salter <- getsState createSalter
     modifyClient $ \cli1 -> cli1 {salter}
@@ -292,8 +272,8 @@ cmdAtomicSemCli oldState cmd = case cmd of
     let !_A = assert (sfperNew == sfperOld
                       `blame` (_side, sfperNew, sfperOld)) ()
 #endif
-    modifyClient $ \cli -> cli {sfper = sfperNew}
-    salter <- getsState createSalter
+    modifyClient $ \cli -> cli {sfper = sfperNew}  -- just in case
+    salter <- getsState createSalter  -- because space saved by not storing it
     modifyClient $ \cli -> cli {salter}
   UpdResumeServer{} -> return ()
   UpdKillExit _fid -> killExit

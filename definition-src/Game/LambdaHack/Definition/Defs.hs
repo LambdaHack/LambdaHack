@@ -9,7 +9,7 @@ module Game.LambdaHack.Definition.Defs
   , Rarity, linearInterpolation
   , CStore(..), ppCStore, ppCStoreIn, verbCStore
   , SLore(..), ItemDialogMode(..), ppSLore, headingSLore
-  , ppItemDialogMode, ppItemDialogModeIn, ppItemDialogModeFrom
+  , ppItemDialogMode, ppItemDialogModeIn, ppItemDialogModeFrom, loreFromMode
   , Direction(..)
   ) where
 
@@ -124,6 +124,8 @@ data SLore =
   | SCondition
   | SBlast
   | SEmbed
+  | SBody  -- contains the sum of @SOrgan@, @STrunk@ and @SCondition@
+           -- but only present in the current pointman's body
   deriving (Show, Read, Eq, Ord, Enum, Bounded, Generic)
 
 instance Binary SLore
@@ -132,11 +134,11 @@ instance NFData SLore
 
 data ItemDialogMode =
     MStore CStore  -- ^ a leader's store
-  | MOrgans        -- ^ leader's organs
   | MOwned         -- ^ all party's items
   | MSkills        -- ^ not items, but determined by leader's items
   | MLore SLore    -- ^ not party's items, but all known generalized items
   | MPlaces        -- ^ places; not items at all, but definitely a lore
+  | MFactions      -- ^ factions in this game, with some data from previous
   | MModes         -- ^ scenarios; not items at all, but definitely a lore
   deriving (Show, Read, Eq, Ord, Generic)
 
@@ -151,6 +153,7 @@ ppSLore STrunk = "creature"
 ppSLore SCondition = "condition"
 ppSLore SBlast = "blast"
 ppSLore SEmbed = "terrain"
+ppSLore SBody = "body"
 
 headingSLore :: SLore -> Text
 headingSLore SItem = "miscellaneous item"
@@ -159,14 +162,16 @@ headingSLore STrunk = "autonomous entity"
 headingSLore SCondition = "momentary bodily condition"
 headingSLore SBlast = "explosion blast particle"
 headingSLore SEmbed = "landmark feature"
+headingSLore SBody = "body part"
 
 ppItemDialogMode :: ItemDialogMode -> (Text, Text)
 ppItemDialogMode (MStore cstore) = ppCStore cstore
-ppItemDialogMode MOrgans = ("in", "body")
 ppItemDialogMode MOwned = ("among", "our total team belongings")
 ppItemDialogMode MSkills = ("among", "skills")
+ppItemDialogMode (MLore SBody) = ("in", "body")
 ppItemDialogMode (MLore slore) = ("among", ppSLore slore <+> "lore")
 ppItemDialogMode MPlaces = ("among", "place lore")
+ppItemDialogMode MFactions = ("among", "faction lore")
 ppItemDialogMode MModes = ("among", "adventure lore")
 
 ppItemDialogModeIn :: ItemDialogMode -> Text
@@ -174,6 +179,17 @@ ppItemDialogModeIn c = let (tIn, t) = ppItemDialogMode c in tIn <+> t
 
 ppItemDialogModeFrom :: ItemDialogMode -> Text
 ppItemDialogModeFrom c = let (_tIn, t) = ppItemDialogMode c in "from" <+> t
+
+loreFromMode :: ItemDialogMode -> SLore
+loreFromMode c = case c of
+  MStore COrgan -> SOrgan
+  MStore _ -> SItem
+  MOwned -> SItem
+  MSkills -> undefined  -- artificial slots
+  MLore slore -> slore
+  MPlaces -> undefined  -- artificial slots
+  MFactions -> undefined  -- artificial slots
+  MModes -> undefined  -- artificial slots
 
 data Direction = Forward | Backward
   deriving (Show, Read, Eq, Ord, Generic)

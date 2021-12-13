@@ -23,6 +23,12 @@ data PointUI = PointUI Int Int
 
 -- | Coordinates of the big square fonts. These are not game map coordinates,
 -- because the latter are offset by @mapStartY@ and represented by @Point@.
+--
+-- However, confusingly, @Point@ is also used for square font glyph coordinates,
+-- though exclusively in context of rendered frames to be sent to a frontend,
+-- namely @PointArray.Array@, which is indexed by @Point@ and is a vector,
+-- and so traditionally indexed starting from zero and not from minus one,
+-- as would be needed for consistency.
 data PointSquare = PointSquare Int Int
   deriving (Show, Eq)
 

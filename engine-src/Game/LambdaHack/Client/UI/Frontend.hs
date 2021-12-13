@@ -30,7 +30,6 @@ import           System.IO (hFlush, stdout)
 
 import           Game.LambdaHack.Client.UI.Content.Screen
 import           Game.LambdaHack.Client.UI.Frame
-import qualified Game.LambdaHack.Client.UI.Frontend.Chosen as Chosen
 import           Game.LambdaHack.Client.UI.Frontend.Common
 import qualified Game.LambdaHack.Client.UI.Frontend.Teletype as Teletype
 import           Game.LambdaHack.Client.UI.Key (KMP (..))
@@ -38,6 +37,13 @@ import qualified Game.LambdaHack.Client.UI.Key as K
 import           Game.LambdaHack.Common.ClientOptions
 import qualified Game.LambdaHack.Common.PointArray as PointArray
 import qualified Game.LambdaHack.Definition.Color as Color
+
+#ifdef USE_BROWSER
+import qualified Game.LambdaHack.Client.UI.Frontend.Dom as Chosen
+#else
+import qualified Game.LambdaHack.Client.UI.Frontend.ANSI as ANSI
+import qualified Game.LambdaHack.Client.UI.Frontend.Sdl as Chosen
+#endif
 
 -- | The instructions sent by clients to the raw frontend, indexed
 -- by the returned value.
@@ -77,6 +83,9 @@ chanFrontendIO coscreen soptions = do
               | sfrontendLazy soptions = lazyStartup coscreen
 #ifndef REMOVE_TELETYPE
               | sfrontendTeletype soptions = Teletype.startup coscreen
+#endif
+#ifndef USE_BROWSER
+              | sfrontendANSI soptions = ANSI.startup coscreen
 #endif
               | otherwise = Chosen.startup coscreen soptions
       maxFps = fromMaybe defaultMaxFps $ smaxFps soptions
@@ -127,7 +136,7 @@ fchanFrontend fs@FrontSetup{..} rf =
 
 display :: RawFrontend -> Frame -> IO ()
 display rf@RawFrontend{fshowNow, fcoscreen=ScreenContent{rwidth, rheight}}
-        ((m, upd), (ovProp, ovMono)) = do
+        ((m, upd), (ovProp, ovSquare, ovMono)) = do
   let new :: forall s. ST s (G.Mutable U.Vector s Word32)
       new = do
         v <- unFrameBase m
@@ -135,7 +144,7 @@ display rf@RawFrontend{fshowNow, fcoscreen=ScreenContent{rwidth, rheight}}
         return v
       singleArray = PointArray.Array rwidth rheight (U.create new)
   putMVar fshowNow () -- 1. wait for permission to display; 3. ack
-  fdisplay rf $ SingleFrame singleArray ovProp ovMono
+  fdisplay rf $ SingleFrame singleArray ovProp ovSquare ovMono
 
 defaultMaxFps :: Double
 defaultMaxFps = 24
@@ -179,6 +188,9 @@ frontendName soptions =
 #ifndef REMOVE_TELETYPE
      | sfrontendTeletype soptions -> Teletype.frontendName
 #endif
+#ifndef USE_BROWSER
+     | sfrontendANSI soptions -> ANSI.frontendName
+#endif
      | otherwise -> Chosen.frontendName
 
 lazyStartup :: ScreenContent -> IO RawFrontend
@@ -188,9 +200,13 @@ nullStartup :: ScreenContent -> IO RawFrontend
 nullStartup coscreen = createRawFrontend coscreen seqFrame (return ())
 
 seqFrame :: SingleFrame -> IO ()
-seqFrame SingleFrame{singleArray} =
+seqFrame SingleFrame{..} =
   let seqAttr () attr = Color.colorToRGB (Color.fgFromW32 attr)
                         `seq` Color.bgFromW32 attr
                         `seq` Color.charFromW32 attr == ' '
                         `seq` ()
-  in return $! PointArray.foldlA' seqAttr () singleArray
+      !_Force1 = PointArray.foldlA' seqAttr () singleArray
+      !_Force2 = length singlePropOverlay
+      !_Force3 = length singleSquareOverlay
+      !_Force4 = length singleMonoOverlay
+  in return ()

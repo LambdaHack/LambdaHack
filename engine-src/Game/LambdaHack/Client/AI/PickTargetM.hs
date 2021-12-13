@@ -36,7 +36,7 @@ import           Game.LambdaHack.Common.Time
 import           Game.LambdaHack.Common.Types
 import           Game.LambdaHack.Common.Vector
 import qualified Game.LambdaHack.Content.CaveKind as CK
-import           Game.LambdaHack.Content.ModeKind
+import           Game.LambdaHack.Content.FactionKind
 import           Game.LambdaHack.Content.RuleKind
 import           Game.LambdaHack.Content.TileKind (isUknownSpace)
 import           Game.LambdaHack.Core.Frequency
@@ -82,7 +82,7 @@ computeTarget :: forall m. MonadClient m
               => [(ActorId, Actor)] -> [(ActorId, Actor)] -> ActorId
               -> m (Maybe TgtAndPath)
 computeTarget foeAssocs friendAssocs aid = do
-  cops@COps{cocave, corule=RuleContent{rXmax, rYmax, rnearby}, coTileSpeedup}
+  cops@COps{cocave, corule=RuleContent{rWidthMax, rHeightMax, rnearby}, coTileSpeedup}
     <- getsState scops
   b <- getsState $ getActorBody aid
   mleader <- getsClient sleader
@@ -139,10 +139,9 @@ computeTarget foeAssocs friendAssocs aid = do
   factionD <- getsState sfactionD
   seps <- getsClient seps
   let fact = factionD EM.! bfid b
-      slackDoctrine =
-        fdoctrine (gplayer fact)
-          `elem` [ Ability.TMeleeAndRanged, Ability.TMeleeAdjacent
-                 , Ability.TBlock, Ability.TRoam, Ability.TPatrol ]
+      slackDoctrine = gdoctrine fact
+                      `elem` [ Ability.TMeleeAndRanged, Ability.TMeleeAdjacent
+                             , Ability.TBlock, Ability.TRoam, Ability.TPatrol ]
       canMove = Ability.getSk Ability.SkMove actorMaxSk > 0
       canReach = canMove
                  || Ability.getSk Ability.SkDisplace actorMaxSk > 0
@@ -168,7 +167,7 @@ computeTarget foeAssocs friendAssocs aid = do
       recentlyFled20 =
         maybe False (\(_, time) -> timeRecent5 localTime time) mfled
       actorTurn = ticksPerMeter $ gearSpeed actorMaxSk
-  let canEscape = fcanEscape (gplayer fact)
+  let canEscape = fcanEscape (gkind fact)
       canSmell = Ability.getSk Ability.SkSmell actorMaxSk > 0
       meleeNearby | canEscape = rnearby `div` 2
                   | otherwise = rnearby
@@ -233,7 +232,7 @@ computeTarget foeAssocs friendAssocs aid = do
   cstashes <- if canMove
                  && (calmE || null nearbyFoes) -- danger or risk of defecting
                  && not heavilyDistressed
-                 && isAIFact fact  -- humans target any stashes explicitly
+                 && gunderAI fact  -- humans target any stashes explicitly
               then closestStashes aid
               else return []
   let desirableIid (iid, (k, _)) =
@@ -316,7 +315,7 @@ computeTarget foeAssocs friendAssocs aid = do
                       if nullFreq ctriggers then do
                         let oldpos = fromMaybe (bpos b) (boldpos b)
                             vOld = bpos b `vectorToFrom` oldpos
-                            pNew = shiftBounded rXmax rYmax (bpos b) vOld
+                            pNew = shiftBounded rWidthMax rHeightMax (bpos b) vOld
                         if slackDoctrine && not isStuck && calmE && not focused
                            && isUnit vOld && bpos b /= pNew
                                 -- both are needed, e.g., when just teleported
@@ -337,7 +336,7 @@ computeTarget foeAssocs friendAssocs aid = do
                           -- animals. Heroes idling on the level help a lot.
                           let pathSource = bpos b
                               traSlack7 = trajectoryToPathBounded
-                                            rXmax rYmax pathSource
+                                            rWidthMax rHeightMax pathSource
                                             (replicate 7 v)  -- > 6 from take6
                               pathList = map head $ group traSlack7
                               pathGoal = last pathList
@@ -394,18 +393,19 @@ computeTarget foeAssocs friendAssocs aid = do
       updateTgt tap@TgtAndPath{tapPath=Just AndPath{..},tapTgt} = case tapTgt of
         TEnemy a -> do
           body <- getsState $ getActorBody a
-          if | (condInMelee  -- fight close foes or nobody at all
+          if   (condInMelee  -- fight close foes or nobody at all
                 || bweapon body <= 0  -- not dangerous
                 || not focused && not (null nearbyFoes))  -- prefers closer foes
                && a `notElem` map fst nearbyFoes  -- old one not close enough
                || blid body /= blid b  -- wrong level
                || actorDying body  -- foe already dying
                || not (worthTargeting a body)
-               || recentlyFled ->
+               || recentlyFled
+          then
                     -- forget enemy positions to prevent attacking them
                     -- again soon after flight
                pickNewTarget
-             | otherwise -> do
+          else do
                -- If there are no unwalkable tiles on the path to enemy,
                -- he gets target @TEnemy@ and then, even if such tiles emerge,
                -- the target updated by his moves remains @TEnemy@.
@@ -441,7 +441,8 @@ computeTarget foeAssocs friendAssocs aid = do
                   filter (\(_, body) -> blid body == lid) oursExploring
                 spawnFreqs = CK.cactorFreq $ okind cocave $ lkind lvl
                 hasGroup grp = fromMaybe 0 (lookup grp spawnFreqs) > 0
-                lvlSpawnsUs = any hasGroup $ fgroups (gplayer fact)
+                lvlSpawnsUs = any (hasGroup . fst) $ filter ((> 0) . snd)
+                                                   $ fgroups (gkind fact)
            -- Even if made peace with the faction, loot stash one last time.
             if (calmE || null nearbyFoes)  -- no risk or can't defend anyway
                && not heavilyDistressed  -- not under heavy fire
@@ -465,6 +466,10 @@ computeTarget foeAssocs friendAssocs aid = do
             | bpos b == pos -> tellOthersNothingHere
             | recentlyFled -> pickNewTarget
                 -- forget enemy positions to prevent attacking them again soon
+            | not (couldMoveLastTurn || null nearbyFoes) -> pickNewTarget
+                -- if only, possibly, shooting, forget hotspots, target foes;
+                -- this results in only pointman humans chasing old foes
+                -- in preference of new visible ones, but it's fine
             | otherwise -> do
               -- Here pick the closer enemy, the remembered or seen, to avoid
               -- loops when approaching new enemy obscures him behind obstacle

@@ -52,26 +52,26 @@ reqFailureUnitTests = testGroup "reqFailureUnitTests" $
         }
       standardRules = Content.RuleKind.standardRules
   in
-  [ testCase "oneSkillAndxsymbol_permittedApply_FailureApplyFood" $
+  [ testCase "permittedApply: One Skill and x symbol -> FailureApplyFood" $
       permittedApply standardRules timeZero 1 True Nothing
                      testItemFull quantSingle
       @?= Left ApplyFood
-  , testCase "oneSkillAnd,symbolAndCGround_permittedApply_True" $
+  , testCase "permittedApply: One Skill and , symbol And CGround -> True" $
       permittedApply standardRules timeZero 1 True (Just CGround)
                      testItemFull {itemKind = testItemKind{isymbol = ','}}
                      quantSingle
       @?= Right True
-  , testCase "oneSkillAnd\"symbol_permittedApply_True" $
+  , testCase "permittedApply: One Skill and \" symbol -> True" $
       permittedApply standardRules timeZero 1 True Nothing
                      testItemFull {itemKind = testItemKind{isymbol = '"'}}
                      quantSingle
       @?= Right True
-  , testCase "twoSkillAnd?symbol_permittedApply_FailureApplyRead" $
+  , testCase "permittedApply: Two Skill and ? symbol -> FailureApplyRead" $
       permittedApply standardRules timeZero 2 True Nothing
                      testItemFull {itemKind = testItemKind{isymbol = '?'}}
                      quantSingle
       @?= Left ApplyRead
-  , testCase "twoSkillAnd,symbol_premittedApply_True" $
+  , testCase "permittedApply: Two Skill and , symbol -> True" $
       permittedApply standardRules timeZero 2 True Nothing
                      testItemFull {itemKind = testItemKind{isymbol = ','}}
                      quantSingle

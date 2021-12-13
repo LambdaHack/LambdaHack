@@ -16,7 +16,6 @@ import           Game.LambdaHack.Client.UI.Content.Input
 import           Game.LambdaHack.Client.UI.Content.Screen
 import           Game.LambdaHack.Client.UI.ContentClientUI
 import           Game.LambdaHack.Client.UI.HumanCmd
-import           Game.LambdaHack.Client.UI.ItemSlot
 import qualified Game.LambdaHack.Client.UI.Key as K
 import           Game.LambdaHack.Client.UI.Overlay
 import           Game.LambdaHack.Client.UI.PointUI
@@ -36,6 +35,7 @@ keyHelp CCUI{ coinput=coinput@InputContent{..}
       [ "Walk throughout a level with mouse or numeric keypad (right diagram below)"
       , "or the Vi editor keys (middle) or the left-hand movement keys (left). Run until"
       , "disturbed with Shift or Control. Go-to a position with LMB (left mouse button)."
+      , "In aiming mode, the same keys (and mouse) move the aiming crosshair."
       ]
     movSchema =
       [ "     q w e     y k u     7 8 9"
@@ -45,15 +45,14 @@ keyHelp CCUI{ coinput=coinput@InputContent{..}
       , "     z x c     b j n     1 2 3"
       ]
     movBlurb2 =
-      [ "In aiming mode, the same keys (and mouse) move the aiming crosshair."
-      , "Press `KP_5` (`5` on keypad) to wait, bracing for impact, which reduces any"
+      [ "Press `KP_5` (`5` on keypad) to wait, bracing for impact, which reduces any"
       , "damage taken and prevents displacement by foes. Press `S-KP_5` or `C-KP_5`"
       , "(the same key with Shift or Control) to lurk 0.1 of a turn, without bracing."
       , ""
       , "Displace enemies by running into them with Shift/Control or S-LMB. Search,"
-      , "open, descend and attack by bumping into walls, doors, stairs and enemies."
-      , "The best, not on cooldown, melee weapon is automatically chosen from your"
-      , "equipment and from among your body parts."
+      , "open, descend and melee by bumping into walls, doors, stairs and enemies."
+      , "The best, and not on cooldown, melee weapon is automatically chosen"
+      , "for attack from your equipment and from among your body parts."
       ]
     minimalBlurb =
       [ "The following few commands, joined with the movement and running keys,"
@@ -76,20 +75,20 @@ keyHelp CCUI{ coinput=coinput@InputContent{..}
       , "effects. Here we give an overview of effects of each button over"
       , "the game map area. The list includes not only left and right buttons,"
       , "but also the optional middle mouse button (MMB) and the mouse wheel,"
-      , "which is also used over menus, to page-scroll them. For mice without RMB,"
+      , "which is also used over menus to move selection. For mice without RMB,"
       , "one can use Control key with LMB and for mice without MMB, one can use"
       , "C-RMB or C-S-LMB."
       ]
     mouseAreasBlurb =
-      [ "Next we show mouse button effects per screen area, in exploration mode"
-      , "and (if different) in aiming mode. Note that this is all optional. Keyboard"
-      , "suffices, at worst requiring the more obscure commands listed later on."
+      [ "Next we show mouse button effects per screen area, in exploration and"
+      , "(if different) aiming mode. Note that mouse is optional. Keyboard suffices,"
+      , "occasionally requiring a lookup for an obscure command key in help screens."
       ]
     mouseAreasMini =
       [ "Mouse button effects per screen area, in exploration and in aiming modes"
       ]
     movTextEnd = "Press SPACE or PGDN to advance or ESC to see the map again."
-    lastHelpEnd = "Use mouse wheel or PGUP to go back and ESC to see the map again."
+    lastHelpEnd = "Use PGUP to go back and ESC to see the map again."
     seeAlso = "For more playing instructions see file PLAYING.md."
     offsetCol2 = 12
     pickLeaderDescription =
@@ -102,20 +101,13 @@ keyHelp CCUI{ coinput=coinput@InputContent{..}
     keyCaption = fmt offsetCol2 "keys" "command"
     mouseOverviewCaption = fmt offsetCol2 "keys" "command (exploration/aiming)"
     spLen = textSize monoFont " "
-    pamoveRight :: Int -> (PointUI, a) -> (PointUI, a)
-    pamoveRight xoff (PointUI x y, a) = (PointUI (x + xoff) y, a)
-    okxs cat headers footers =
-      let (ovs, kyx) = okxsN coinput monoFont propFont 0 offsetCol2
-                             (const False) True cat headers footers
-      in ( EM.map (map (pamoveRight spLen)) ovs
-         , map (second $ pamoveRight spLen) kyx )
-    renumber dy (km, (PointUI x y, len)) = (km, (PointUI x (y + dy), len))
-    renumberOv dy = map (\(PointUI x y, al) -> (PointUI x (y + dy), al))
+    okxs cat headers footers = xytranslateOKX spLen 0 $
+      okxsN coinput monoFont propFont offsetCol2 (const False)
+            True cat headers footers
     mergeOKX :: OKX -> OKX -> OKX
-    mergeOKX (ovs1, ks1) (ovs2, ks2) =
-      let off = 1 + EM.foldr (\ov acc -> max acc (maxYofOverlay ov)) 0 ovs1
-      in ( EM.unionWith (++) ovs1 $ EM.map (renumberOv off) ovs2
-         , ks1 ++ map (renumber off) ks2 )
+    mergeOKX okx1 okx2 =
+      let off = 1 + maxYofFontOverlayMap (fst okx1)
+      in sideBySideOKX 0 off okx1 okx2
     catLength cat = length $ filter (\(_, (cats, desc, _)) ->
       cat `elem` cats && (desc /= "" || CmdInternal `elem` cats)) bcmdList
     keyM = 13
@@ -126,7 +118,7 @@ keyHelp CCUI{ coinput=coinput@InputContent{..}
     fmm a b c = fmt (keyM + 1) a $ fmt0 keyB (truncatem b) (truncatem c)
     areaCaption t = fmm t "LMB (left mouse button)" "RMB (right mouse button)"
     keySel :: (forall a. (a, a) -> a) -> K.KM
-           -> [(CmdArea, Either K.KM SlotChar, Text)]
+           -> [(CmdArea, KeyOrSlot, Text)]
     keySel sel key =
       let cmd = case M.lookup key bcmdMap of
             Just (_, _, cmd2) -> cmd2
@@ -156,15 +148,15 @@ keyHelp CCUI{ coinput=coinput@InputContent{..}
           kst2 = keySel sel key2
           f (ca1, Left km1, _) (ca2, Left km2, _) y =
             assert (ca1 == ca2 `blame` (ca1, ca2, km1, km2, kst1, kst2))
-              [ (Left [km1], ( PointUI (doubleIfSquare $ keyM + 4) y
-                             , ButtonWidth monoFont keyB ))
-              , (Left [km2], ( PointUI (doubleIfSquare $ keyB + keyM + 5) y
-                             , ButtonWidth monoFont keyB )) ]
+              [ (Left km1, ( PointUI (doubleIfSquare $ keyM + 4) y
+                           , ButtonWidth monoFont keyB ))
+              , (Left km2, ( PointUI (doubleIfSquare $ keyB + keyM + 5) y
+                           , ButtonWidth monoFont keyB )) ]
           f c d e = error $ "" `showFailure` (c, d, e)
           kxs = concat $ zipWith3 f kst1 kst2 [1 + length header..]
-          menuLeft = map (\(ca1, _, _) -> areaDescription ca1) kst1
-          menuMiddle = map (\(_, _, desc) -> desc) kst1
-          menuRight = map (\(_, _, desc) -> desc) kst2
+          menuLeft = map (\(ca1, _, _) -> textToAL $ areaDescription ca1) kst1
+          menuMiddle = map (\(_, _, desc) -> textToAL desc) kst1
+          menuRight = map (\(_, _, desc) -> textToAL desc) kst2
           y0 = 1 + length header
       in ( EM.unionsWith (++)
              [ typesetInMono $ "" : header
@@ -176,24 +168,17 @@ keyHelp CCUI{ coinput=coinput@InputContent{..}
                $ typesetXY (doubleIfSquare $ keyB + keyM + 5, y0) menuRight ]
          , kxs )
     typesetInSquare :: [Text] -> FontOverlayMap
-    typesetInSquare = EM.singleton squareFont . offsetOverlayX
-                      . map (\t -> (spLen, textToAL t))
+    typesetInSquare =
+      EM.singleton squareFont . typesetXY (spLen, 0) . map textToAL
     typesetInMono :: [Text] -> FontOverlayMap
-    typesetInMono = EM.singleton monoFont . offsetOverlayX
-                    . map (\t -> (spLen, textToAL t))
+    typesetInMono =
+      EM.singleton monoFont . typesetXY (spLen, 0) . map textToAL
     typesetInProp :: [Text] -> FontOverlayMap
-    typesetInProp = EM.singleton propFont . offsetOverlayX
-                    . map (\t -> (spLen, textToAL t))
-    typesetXY :: (Int, Int) -> [Text] -> Overlay
-    typesetXY (xoffset, yoffset) =
-      map (\(y, t) -> (PointUI xoffset (y + yoffset), textToAL t)) . zip [0..]
+    typesetInProp =
+      EM.singleton propFont . typesetXY (spLen, 0) . map textToAL
     sideBySide :: [(Text, OKX)] -> [(Text, OKX)]
-    sideBySide ((_t1, (ovs1, kyx1)) : (t2, (ovs2, kyx2)) : rest)
-      | not $ isSquareFont propFont =
-        (t2, ( EM.unionWith (++) ovs1 (EM.map (map (pamoveRight rwidth)) ovs2)
-             , sortOn (\(_, (PointUI x y, _)) -> (y, x))
-               $ kyx1 ++ map (second $ pamoveRight rwidth) kyx2 ))
-        : sideBySide rest
+    sideBySide ((_t1, okx1) : (t2, okx2) : rest) | not (isSquareFont propFont) =
+      (t2, sideBySideOKX rwidth 0 okx1 okx2) : sideBySide rest
     sideBySide l = l
   in sideBySide $ concat
     [ if catLength CmdMinimal
@@ -305,12 +290,12 @@ keyHelp CCUI{ coinput=coinput@InputContent{..}
 --
 -- The length of the button may be wrong if the two supplied fonts
 -- have very different widths.
-okxsN :: InputContent -> DisplayFont -> DisplayFont -> Int -> Int
-      -> (HumanCmd -> Bool) -> Bool -> CmdCategory
-      -> ([Text], [Text], [Text]) -> ([Text], [Text]) -> OKX
-okxsN InputContent{..} keyFont descFont offset offsetCol2 greyedOut
+okxsN :: InputContent -> DisplayFont -> DisplayFont -> Int -> (HumanCmd -> Bool)
+      -> Bool -> CmdCategory -> ([Text], [Text], [Text]) -> ([Text], [Text])
+      -> OKX
+okxsN InputContent{..} labFont descFont offsetCol2 greyedOut
       showManyKeys cat (headerMono1, headerProp, headerMono2)
-                       (footerMono, footerProp) =
+      (footerMono, footerProp) =
   let fmt k h = (T.singleton '\x00a0' <> k, h)
       coImage :: HumanCmd -> [K.KM]
       coImage cmd = M.findWithDefault (error $ "" `showFailure` cmd) cmd brevMap
@@ -318,24 +303,25 @@ okxsN InputContent{..} keyFont descFont offset offsetCol2 greyedOut
       keyKnown km = case K.key km of
         K.Unknown{} -> False
         _ -> True
-      keys :: [(Either [K.KM] SlotChar, (Bool, (Text, Text)))]
-      keys = [ (Left kmsRes, (greyedOut cmd, fmt keyNames desc))
+      keys :: [(KeyOrSlot, (Bool, (Text, Text)))]
+      keys = [ (Left km, (greyedOut cmd, fmt keyNames desc))
              | (_, (cats, desc, cmd)) <- bcmdList
              , let kms = coImage cmd
                    knownKeys = filter keyKnown kms
                    keyNames =
                      disp $ (if showManyKeys then id else take 1) knownKeys
                    kmsRes = if desc == "" then knownKeys else kms
+                   km = case kmsRes of
+                     [] -> K.escKM
+                     km1 : _ -> km1
              , cat `elem` cats
              , desc /= "" || CmdInternal `elem` cats]
-      spLen = textSize keyFont " "
+      spLen = textSize labFont " "
       f (ks, (_, (_, t2))) y =
         (ks, ( PointUI spLen y
-             , ButtonWidth keyFont (offsetCol2 + 2 + T.length t2 - 1)))
-      kxs = zipWith f keys [offset + length headerMono1
-                                   + length headerProp
-                                   + length headerMono2 ..]
-      renumberOv = map (\(PointUI x y, al) -> (PointUI x (y + offset), al))
+             , ButtonWidth labFont (offsetCol2 + 2 + T.length t2 - 1)))
+      kxs = zipWith f keys
+              [length headerMono1 + length headerProp + length headerMono2 ..]
       ts = map (\t -> (False, (t, ""))) headerMono1
            ++ map (\t -> (False, ("", t))) headerProp
            ++ map (\t -> (False, (t, ""))) headerMono2
@@ -351,6 +337,6 @@ okxsN InputContent{..} keyFont descFont offset offsetCol2 greyedOut
              in (al1, ( if T.null t1 then 0 else spLen * (offsetCol2 + 2)
                       , textToAL t2 ))
       (greyLab, greyDesc) = unzip $ map greyToAL ts
-  in ( EM.insertWith (++) descFont (renumberOv (offsetOverlayX greyDesc))
-       $ EM.singleton keyFont $ renumberOv $ offsetOverlay greyLab
+  in ( EM.insertWith (++) descFont (offsetOverlayX greyDesc)
+       $ EM.singleton labFont (offsetOverlay greyLab)
      , kxs )

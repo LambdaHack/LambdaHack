@@ -9,6 +9,7 @@ import Prelude ()
 
 import Game.LambdaHack.Core.Prelude
 
+import           Data.Either
 import qualified Data.EnumMap.Strict as EM
 
 import           Game.LambdaHack.Common.Actor
@@ -48,7 +49,7 @@ getGameMode = do
 isNoConfirmsGame :: MonadStateRead m => m Bool
 isNoConfirmsGame = do
   gameMode <- getGameMode
-  return $! maybe False (> 0) $ lookup NO_CONFIRMS $ mfreq gameMode
+  return $! mattract gameMode
 
 getEntryArena :: MonadStateRead m => Faction -> m LevelId
 getEntryArena fact = do
@@ -69,7 +70,7 @@ pickWeaponM ignoreCharges mdiscoBenefit kitAss actorSk source = do
   let calmE = calmEnough sb actorMaxSk
       forced = bproj sb
       permitted = permittedPrecious forced calmE
-      preferredPrecious = either (const False) id . permitted
+      preferredPrecious = fromRight False . permitted
       permAssocs = filter (preferredPrecious . fst . snd) kitAss
       strongest = strongestMelee ignoreCharges mdiscoBenefit
                                  localTime permAssocs

@@ -90,9 +90,15 @@ dejavuMono = FontMonospace "Hack-Bold.ttf.woff" 13 HintingHeavy
 8x8xBitmap = FontMapBitmap "8x8x.fnt" 2
 
 [fontsets]
+; This is a temporary hack around bitmap font breakage caused by
+; https://gitlab.freedesktop.org/freetype/freetype/-/issues/1076
+; In a couple of years this can be removed and the small bitmap fonts will work
+; fine again, too.
+dejavuBold = FontSet {fontMapScalable = "16x16xwScalable", fontMapBitmap = "16x16xwScalable", fontPropRegular = "dejavuBold", fontPropBold = "dejavuBold", fontMono = "dejavuMono"}
+
 ; best proportional:
 binary = FontSet {fontMapScalable = "16x16xwScalable", fontMapBitmap = "16x16xwBitmap", fontPropRegular = "binaryRegular", fontPropBold = "binaryBold", fontMono = "binaryMono"}
-dejavuBold = FontSet {fontMapScalable = "16x16xwScalable", fontMapBitmap = "16x16xwBitmap", fontPropRegular = "dejavuBold", fontPropBold = "dejavuBold", fontMono = "dejavuMono"}
+dejavuBold_original = FontSet {fontMapScalable = "16x16xwScalable", fontMapBitmap = "16x16xwBitmap", fontPropRegular = "dejavuBold", fontPropBold = "dejavuBold", fontMono = "dejavuMono"}
 
 ; decent proportional:
 binaryBold = FontSet {fontMapScalable = "16x16xwScalable", fontMapBitmap = "16x16xwBitmap", fontPropRegular = "binaryBold", fontPropBold = "binaryBold", fontMono = "binaryMono"}
@@ -119,4 +125,4 @@ dejavuMono = FontSet {fontMapScalable = "16x16xwScalable", fontMapBitmap = "16x1
 ; any more, the game crashes. To prevent that, one of the first three components
 ; of the game version should be bumped whenever fonts are changed.
 ; Configs from old versions are rejected, preventing the crash.
-version = 0.10.3
+version = 0.11.0

@@ -59,26 +59,26 @@ partItemN3 width side factionD ranged detailLevel maxWordsToShow localTime
       timeout = IA.aTimeout arItem
       temporary = IA.checkFlag Ability.Fragile arItem
                   && IA.checkFlag Ability.Periodic arItem
-      lenCh = itemK - ncharges localTime (itemK, itemTimers)
+      ncha = ncharges localTime (itemK, itemTimers)
       charges | temporary = case itemTimers of
-                  [] -> if lenCh == 0
+                  [] -> if itemK == ncha
                         then ""
                         else error $ "partItemN3: charges with null timer"
                                      `showFailure`
                                      (side, itemFull, itemK, itemTimers)
-                  t : _ -> if lenCh == 0
+                  t : _ -> if itemK == ncha
                            then "(ready to expire)"
                            else let total = deltaOfItemTimer localTime t
                                 in "for" <+> timeDeltaInSecondsText total
-              | lenCh == 0 = ""
-              | itemK == 1 && lenCh == 1 = "(charging)"
-              | itemK == lenCh = "(all charging)"
-              | otherwise = "(" <> tshow lenCh <+> "charging)"
-      skipRecharging = detailLevel <= DetailLow && lenCh >= itemK
+              | itemK == ncha = ""
+              | itemK == 1 && ncha == 0 = "(charging)"
+              | ncha == 0 = "(all charging)"
+              | otherwise = "(" <> tshow (itemK - ncha) <+> "charging)"
+      skipRecharging = detailLevel <= DetailLow && ncha == 0
       (orTs, powerTs, rangedDamage) =
         textAllPowers width detailLevel skipRecharging itemFull
       lsource = case jfid itemBase of
-        Just fid | IK.iname itemKind `elem` ["impressed"] ->
+        Just fid | IK.iname itemKind == "impressed" ->
           ["by" <+> if fid == side
                     then "us"
                     else gname (factionD EM.! fid)]
@@ -172,7 +172,7 @@ textAllPowers width detailLevel skipRecharging
                                (nub $ filter (not . T.null)
                                     $ map ppAnd $ unOr eff)
             onCombineTs =
-              filter (not . T.null) $ map ppOr $ map unCombine combineEffs
+              filter (not . T.null) $ map (ppOr . unCombine) combineEffs
             rechargingTs = T.intercalate " "
                            $ [damageText | IK.idamage itemKind /= 0]
                              ++ filter (not . T.null)
@@ -394,10 +394,10 @@ viewItemBenefitColored discoBenefit iid itemFull =
   in Color.attrChar2ToW32
        color (displayContentSymbol $ IK.isymbol $ itemKind itemFull)
 
-itemDesc :: Int -> Bool -> FactionId -> FactionDict -> Int -> CStore -> Time
-         -> LevelId -> ItemFull -> ItemQuant
+itemDesc :: Int -> Bool -> FactionId -> FactionDict -> Int -> ItemDialogMode
+         -> Time -> LevelId -> ItemFull -> ItemQuant
          -> AttrString
-itemDesc width markParagraphs side factionD aHurtMeleeOfOwner store localTime
+itemDesc width markParagraphs side factionD aHurtMeleeOfOwner dmode localTime
          jlid itemFull@ItemFull{itemBase, itemKind, itemDisco, itemSuspect}
          kit =
   let (orTs, name, powers) =
@@ -407,16 +407,32 @@ itemDesc width markParagraphs side factionD aHurtMeleeOfOwner store localTime
       IK.ThrowMod{IK.throwVelocity, IK.throwLinger} = IA.aToThrow arItem
       speed = speedFromWeight (IK.iweight itemKind) throwVelocity
       range = rangeFromSpeedAndLinger speed throwLinger
-      tspeed | IA.checkFlag Ability.Condition arItem
-               || IK.iweight itemKind == 0 = ""
-             | speed < speedLimp = "When thrown, it drops at once."
-             | speed < speedWalk = "When thrown, it drops after one meter."
+      plausiblyThrown =
+        dmode `elem` [ MStore CGround, MStore CEqp, MStore CStash
+                     , MOwned, MLore SItem ]
+      plausiblyFlies = dmode == MLore SBlast
+      tspeed | not (plausiblyThrown || plausiblyFlies) = ""
+             | speed < speedLimp =
+               if plausiblyThrown
+               then "When thrown, it drops at once."
+               else "When airborne, it drops at once."
+             | speed < speedWalk =
+               if plausiblyThrown
+               then "When thrown, it drops after one meter."
+               else "When airborne, it drops after one meter."
              | otherwise =
-               "Can be thrown at"
+               (if plausiblyThrown
+                then "Can be thrown at"
+                else "Travels at")
                <+> T.pack (displaySpeed $ fromSpeed speed)
-               <> if throwLinger /= 100
-                  then " dropping after" <+> tshow range <> "m."
-                  else "."
+               <> (if throwLinger /= 100
+                   then let trange = if range == 0
+                                     then "immediately"
+                                     else "after" <+> tshow range <> "m"
+                        in " dropping" <+> trange
+                             -- comma here is logical but looks bad
+                   else "")
+               <> "."
       tsuspect = ["You are unsure what it does." | itemSuspect]
       (desc, aspectSentences, damageAnalysis) =
         let aspects = case itemDisco of
@@ -431,7 +447,7 @@ itemDesc width markParagraphs side factionD aHurtMeleeOfOwner store localTime
             meanDmg = ceiling $ Dice.meanDice (IK.idamage itemKind)
             dmgAn = if meanDmg <= 0 then "" else
               let multRaw = aHurtMeleeOfOwner
-                            + if store `elem` [CEqp, COrgan]
+                            + if dmode `elem` [MStore CEqp, MStore COrgan]
                               then 0
                               else aHurtMeleeOfItem
                   mult = 100 + min 100 (max (-95) multRaw)

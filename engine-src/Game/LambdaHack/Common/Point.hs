@@ -2,12 +2,12 @@
 -- | Basic operations on 2D points represented as linear offsets.
 module Game.LambdaHack.Common.Point
   ( Point(..), PointI
-  , chessDist, euclidDistSq, adjacent, bla, fromTo
-  , originPoint
+  , chessDist, euclidDistSq, adjacent, bresenhamsLineAlgorithm, fromTo
+  , originPoint, insideP
   , speedupHackXSize
 #ifdef EXPOSE_INTERNAL
     -- * Internal operations
-  , blaXY, balancedWord
+  , bresenhamsLineAlgorithmBegin, balancedWord
 #endif
   ) where
 
@@ -93,7 +93,7 @@ type PointI = Int
 -- This is hidden from Haddock, but run by doctest:
 -- $
 -- prop> (toEnum :: PointI -> Point) (fromEnum p) == p
--- prop> (fromEnum :: Point -> PointI) (toEnum p) == p
+-- prop> \ (NonNegative i) -> (fromEnum :: Point -> PointI) (toEnum i) == i
 
 -- | The distance between two points in the chessboard metric.
 --
@@ -126,24 +126,33 @@ adjacent s t = chessDist s t == 1
 
 -- | Bresenham's line algorithm generalized to arbitrary starting @eps@
 -- (@eps@ value of 0 gives the standard BLA).
--- Skips the source point and goes through the second point
--- to the edge of the level. Gives @Nothing@ if the points are equal.
--- The target is given as @Point@ to permit aiming out of the level,
--- e.g., to get uniform distributions of directions for explosions
--- close to the edge of the level.
-bla :: X -> Y -> Int -> Point -> Point -> Maybe [Point]
-bla rXmax rYmax eps source target =
+-- Skips the source point and goes through the second point to infinity.
+-- Gives @Nothing@ if the points are equal. The target is given as @Point@,
+-- not @PointI@, to permit aiming out of the level, e.g., to get
+-- uniform distributions of directions for explosions close to the edge
+-- of the level.
+--
+-- >>> bresenhamsLineAlgorithm 0 (Point 0 0) (Point 0 0)
+-- Nothing
+-- >>> take 3 $ fromJust $ bresenhamsLineAlgorithm 0 (Point 0 0) (Point 1 0)
+-- [(1,0),(2,0),(3,0)]
+-- >>> take 3 $ fromJust $ bresenhamsLineAlgorithm 0 (Point 0 0) (Point 0 1)
+-- [(0,1),(0,2),(0,3)]
+-- >>> take 3 $ fromJust $ bresenhamsLineAlgorithm 0 (Point 0 0) (Point 1 1)
+-- [(1,1),(2,2),(3,3)]
+bresenhamsLineAlgorithm :: Int -> Point -> Point -> Maybe [Point]
+bresenhamsLineAlgorithm eps source target =
   if source == target then Nothing
-  else Just $
-    let inBounds p@(Point x y) =
-          rXmax > x && x >= 0 && rYmax > y && y >= 0 && p /= source
-    in takeWhile inBounds $ tail $ blaXY eps source target
+  else Just $ tail $ bresenhamsLineAlgorithmBegin eps source target
 
 -- | Bresenham's line algorithm generalized to arbitrary starting @eps@
 -- (@eps@ value of 0 gives the standard BLA). Includes the source point
 -- and goes through the target point to infinity.
-blaXY :: Int -> Point -> Point -> [Point]
-blaXY eps (Point x0 y0) (Point x1 y1) =
+--
+-- >>> take 4 $ bresenhamsLineAlgorithmBegin 0 (Point 0 0) (Point 2 0)
+-- [(0,0),(1,0),(2,0),(3,0)]
+bresenhamsLineAlgorithmBegin :: Int -> Point -> Point -> [Point]
+bresenhamsLineAlgorithmBegin eps (Point x0 y0) (Point x1 y1) =
   let (dx, dy) = (x1 - x0, y1 - y0)
       xyStep b (x, y) = (x + signum dx,     y + signum dy * b)
       yxStep b (x, y) = (x + signum dx * b, y + signum dy)
@@ -160,6 +169,9 @@ balancedWord p q eps               = 1 : balancedWord p q (eps + p - q)
 
 -- | A list of all points on a straight vertical or straight horizontal line
 -- between two points. Fails if no such line exists.
+--
+-- >>> fromTo (Point 0 0) (Point 2 0)
+-- [(0,0),(1,0),(2,0)]
 fromTo :: Point -> Point -> [Point]
 fromTo (Point x0 y0) (Point x1 y1) =
  let fromTo1 :: Int -> Int -> [Int]
@@ -175,3 +187,8 @@ fromTo (Point x0 y0) (Point x1 y1) =
 
 originPoint :: Point
 originPoint = Point 0 0
+
+-- | Checks that a point belongs to an area.
+insideP :: (X, Y, X, Y) -> Point -> Bool
+{-# INLINE insideP #-}
+insideP (x0, y0, x1, y1) (Point x y) = x1 >= x && x >= x0 && y1 >= y && y >= y0

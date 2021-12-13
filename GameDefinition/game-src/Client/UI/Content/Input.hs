@@ -29,19 +29,10 @@ standardKeysAndMouse = InputContentRaw $ map evalKeyDef $
   -- Remember to put commands that show information (e.g., enter aiming
   -- mode) first.
 
-  -- Main menu
-  [ ("s", ([CmdMainMenu], "setup and start new game>", ChallengeMenu))
-  , ("x", ([CmdMainMenu], "save and exit to desktop", GameExit))
-  , ("v", ([CmdMainMenu], "tweak convenience settings>", SettingsMenu))
-  , ("t", ([CmdMainMenu], "toggle autoplay", AutomateToggle))
-  , ("?", ([CmdMainMenu], "see command help", Help))
-  , ("F12", ([CmdMainMenu], "switch to dashboard", Dashboard))
-  , ("Escape", ([CmdMainMenu], "back to playing", AutomateBack))
-
   -- Minimal command set, in the desired presentation order.
   -- A lot of these are not necessary, but may be familiar to new players.
   -- Also a few non-minimal item commands to keep proper order.
-  , ("I", ( [CmdMinimal, CmdItem, CmdDashboard]
+  [ ("I", ( [CmdMinimal, CmdItem, CmdDashboard]
           , "manage the shared inventory stash"
           , ChooseItemMenu (MStore CStash) ))
   , ("O", ( [CmdItem, CmdDashboard]
@@ -61,7 +52,7 @@ standardKeysAndMouse = InputContentRaw $ map evalKeyDef $
                                       , aiming = Accept } ))
   , ("space", ( [CmdMinimal, CmdAim]
               , "clear messages/show history/cycle detail level"
-              , ByAimMode AimModeCmd { exploration = ExecuteIfClear LastHistory
+              , ByAimMode AimModeCmd { exploration = ExecuteIfClear AllHistory
                                      , aiming = DetailCycle } ))
   , ("Tab", memberCycle Forward [CmdMinimal, CmdMove])
       -- listed here to keep proper order of the minimal cheat sheet
@@ -102,7 +93,7 @@ standardKeysAndMouse = InputContentRaw $ map evalKeyDef $
           , ChooseItemMenu MOwned ))
   , ("@", ( [CmdMeta, CmdDashboard]
           , "describe organs of the pointman"
-          , ChooseItemMenu MOrgans ))
+          , ChooseItemMenu (MLore SBody) ))
   , ("#", ( [CmdMeta, CmdDashboard]
           , "show skill summary of the pointman"
           , ChooseItemMenu MSkills ))
@@ -114,15 +105,18 @@ standardKeysAndMouse = InputContentRaw $ map evalKeyDef $
   , ("safeD0", ([CmdInternal, CmdDashboard], "", Cancel))  -- blank line
   ]
   ++
-  map (\(k, slore) -> ("safeD" ++ show (k :: Int)
-                      , ( [CmdInternal, CmdDashboard]
-                        , "display" <+> ppSLore slore <+> "lore"
-                        , ChooseItemMenu (MLore slore) )))
-      (zip [1..] [minBound..maxBound])
+  zipWith (\k slore -> ("safeD" ++ show (k :: Int)
+                       , ( [CmdInternal, CmdDashboard]
+                         , "display" <+> ppSLore slore <+> "lore"
+                         , ChooseItemMenu (MLore slore) )))
+          [1..] [minBound..SEmbed]
   ++
-  [ ("safeD97", ( [CmdInternal, CmdDashboard]
+  [ ("safeD96", ( [CmdInternal, CmdDashboard]
                 , "display place lore"
                 , ChooseItemMenu MPlaces) )
+  , ("safeD97", ( [CmdInternal, CmdDashboard]
+                , "display faction lore"
+                , ChooseItemMenu MFactions) )
   , ("safeD98", ( [CmdInternal, CmdDashboard]
                 , "display adventure lore"
                 , ChooseItemMenu MModes) )
@@ -179,7 +173,7 @@ standardKeysAndMouse = InputContentRaw $ map evalKeyDef $
   , ("C-c", ([CmdMeta], "exit to desktop without saving", GameDrop))
   , ("?", ([CmdMeta], "display help", Hint))
   , ("F1", ([CmdMeta, CmdDashboard], "display help immediately", Help))
-  , ("F12", ([CmdMeta], "open dashboard", Dashboard))
+  , ("F12", ([CmdMeta, CmdDashboard], "show history", AllHistory))
   , ("v", repeatLastTriple 1 [CmdMeta])
   , ("C-v", repeatLastTriple 25 [])
   , ("A-v", repeatLastTriple 100 [])
@@ -189,9 +183,6 @@ standardKeysAndMouse = InputContentRaw $ map evalKeyDef $
   , ("'", ([CmdMeta], "start recording commands", Record))
   , ("C-S", ([CmdMeta], "save game backup", GameSave))
   , ("C-P", ([CmdMeta], "print screen", PrintScreen))
-
-  -- Dashboard, in addition to commands marked above
-  , ("safeD101", ([CmdInternal, CmdDashboard], "display history", AllHistory))
 
   -- Mouse
   , ( "LeftButtonRelease"
@@ -213,6 +204,8 @@ standardKeysAndMouse = InputContentRaw $ map evalKeyDef $
   , ("WheelSouth", ([CmdMouse], "unswerve the aiming line", Macro ["-"]))
 
   -- Debug and others not to display in help screens
+  , ("Escape", ([CmdMeta], "", AutomateBack))
+  , ("Escape", ([CmdMeta], "", MainMenu))
   , ("C-semicolon", ( []
                     , "move one step towards the crosshair"
                     , MoveOnceToXhair ))
@@ -254,17 +247,17 @@ standardKeysAndMouse = InputContentRaw $ map evalKeyDef $
                , "accept target"
                , Accept ))
   , ("safe11", ( [CmdInternal]
-               , "show history"
-               , LastHistory ))
-  , ("safe12", ( [CmdInternal]
                , "wait a turn, bracing for impact"
                , Wait ))
-  , ("safe13", ( [CmdInternal]
+  , ("safe12", ( [CmdInternal]
                , "lurk 0.1 of a turn"
                , Wait10 ))
-  , ("safe14", ( [CmdInternal]
+  , ("safe13", ( [CmdInternal]
                , "snap crosshair to enemy"
                , XhairPointerEnemy ))
+  , ("safe14", ( [CmdInternal]
+               , "open dashboard"
+               , Dashboard ))
   ]
   ++ map defaultHeroSelect [0..9]
 

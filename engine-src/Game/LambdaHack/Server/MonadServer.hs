@@ -45,7 +45,7 @@ import           Game.LambdaHack.Common.Perception
 import qualified Game.LambdaHack.Common.Save as Save
 import           Game.LambdaHack.Common.State
 import           Game.LambdaHack.Common.Types
-import           Game.LambdaHack.Content.ModeKind
+import           Game.LambdaHack.Content.FactionKind
 import           Game.LambdaHack.Content.RuleKind
 import           Game.LambdaHack.Core.Random
 import           Game.LambdaHack.Server.ServerOptions
@@ -92,6 +92,7 @@ debugPossiblyPrint t = do
     T.hPutStr stdout $! t <> "\n"  -- hPutStrLn not atomic enough
     hFlush stdout
 
+-- No moving savefiles aside, to debug more easily.
 debugPossiblyPrintAndExit :: MonadServer m => Text -> m ()
 debugPossiblyPrintAndExit t = do
   debug <- getsServer $ sdbgMsgSer . soptions
@@ -123,9 +124,9 @@ restoreScore :: forall m. MonadServer m => COps -> m HighScore.ScoreDict
 restoreScore COps{corule} = do
   benchmark <- getsServer $ sbenchmark . sclientOptions . soptions
   mscore <- if benchmark then return Nothing else do
-    let scoresFile = rscoresFile corule
+    let scoresFileName = rscoresFileName corule
     dataDir <- liftIO appDataDir
-    let path bkp = dataDir </> bkp <> scoresFile
+    let path bkp = dataDir </> bkp <> scoresFileName
     configExists <- liftIO $ doesFileExist (path "")
     res <- liftIO $ Ex.try $
       if configExists then do
@@ -160,7 +161,7 @@ registerScore :: MonadServer m => Status -> FactionId -> m ()
 registerScore status fid = do
   cops@COps{corule} <- getsState scops
   total <- getsState $ snd . calculateTotal fid
-  let scoresFile = rscoresFile corule
+  let scoresFileName = rscoresFileName corule
   dataDir <- liftIO appDataDir
   -- Re-read the table in case it's changed by a concurrent game.
   scoreDict <- restoreScore cops
@@ -175,11 +176,11 @@ registerScore status fid = do
   noConfirmsGame <- isNoConfirmsGame
   sbandSpawned <- getsServer sbandSpawned
   let fact = factionD EM.! fid
-      path = dataDir </> scoresFile
+      path = dataDir </> scoresFileName
       outputScore (worthMentioning, (ntable, pos)) =
         -- If testing or fooling around, dump instead of registering.
         -- In particular don't register score for the auto-* scenarios.
-        if bench || noConfirmsGame || isAIFact fact then
+        if bench || noConfirmsGame || gunderAI fact then
           debugPossiblyPrint $ T.intercalate "\n"
           $ HighScore.showScore tz pos (HighScore.getRecord pos ntable)
             ++ ["           Spawned groups:"
@@ -188,9 +189,6 @@ registerScore status fid = do
           let nScoreDict = EM.insert gameModeId ntable scoreDict
           in when worthMentioning $ liftIO $
                encodeEOF path Self.version (nScoreDict :: HighScore.ScoreDict)
-      chal | fhasUI $ gplayer fact = curChalSer
-           | otherwise = curChalSer
-                           {cdiff = difficultyInverse (cdiff curChalSer)}
       theirVic (fi, fa) | isFoe fid fact fi
                           && not (isHorrorFact fa) = Just $ gvictims fa
                         | otherwise = Nothing
@@ -200,10 +198,10 @@ registerScore status fid = do
       ourVictims = EM.unionsWith (+) $ mapMaybe ourVic $ EM.assocs factionD
       table = HighScore.getTable gameModeId scoreDict
       registeredScore =
-        HighScore.register table total dungeonTotal time status date chal
+        HighScore.register table total dungeonTotal time status date curChalSer
                            (T.unwords $ tail $ T.words $ gname fact)
                            ourVictims theirVictims
-                           (fhiCondPoly $ gplayer fact)
+                           (fhiCondPoly $ gkind fact)
   outputScore registeredScore
 
 -- | Invoke pseudo-random computation with the generator kept in the state.

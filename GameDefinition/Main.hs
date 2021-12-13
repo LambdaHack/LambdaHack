@@ -10,8 +10,8 @@ import Game.LambdaHack.Core.Prelude
 
 import           Control.Concurrent.Async
 import qualified Control.Exception as Ex
+import qualified GHC.IO.Encoding as SIO
 import qualified Options.Applicative as OA
-import           System.Exit
 import qualified System.IO as SIO
 
 #ifndef USE_JSFILE
@@ -30,6 +30,10 @@ import TieKnot
 -- run the game and handle exit.
 main :: IO ()
 main = do
+  -- Correct unset or some other too primitive encodings.
+  let enc = SIO.localeEncoding
+  when (show enc `elem` ["ASCII", "ISO-8859-1", "ISO-8859-2"]) $
+    SIO.setLocaleEncoding SIO.utf8
   -- This test is faulty with JS, because it reports the browser console
   -- is not a terminal, but then we can't open files to contain the logs.
   -- Also it bloats the outcome JS file, so disabled.
@@ -61,7 +65,5 @@ main = do
         _ -> e
   case resOrEx of
     Right () -> return ()
-    Left e -> case Ex.fromException $ unwrapEx e of
-      Just ExitSuccess ->
-        exitSuccess  -- we are in the main thread, so here it really exits
-      _ -> Ex.throwIO $ unwrapEx e
+    Left ex -> Ex.throwIO $ unwrapEx ex
+                 -- we are in the main thread, so now really exit

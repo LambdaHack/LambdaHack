@@ -49,6 +49,7 @@ import qualified Game.LambdaHack.Common.Tile as Tile
 import           Game.LambdaHack.Common.Time
 import           Game.LambdaHack.Common.Types
 import           Game.LambdaHack.Common.Vector
+import           Game.LambdaHack.Content.FactionKind
 import qualified Game.LambdaHack.Content.ItemKind as IK
 import           Game.LambdaHack.Content.ModeKind
 import qualified Game.LambdaHack.Content.TileKind as TK
@@ -154,7 +155,7 @@ processWatchfulness mwait aid = do
         execUpdAtomic $ UpdWaitActor aid (WWait n) WWatch
     WSleep ->
       if mwait /= Just False  -- lurk can't wake up regardless; too short
-         && (not (isJust mwait)  -- not a wait
+         && (isNothing mwait  -- not a wait
              || uneasy  -- spooked
              || not (deltaBenign $ bhpDelta b))  -- any HP lost
       then execUpdAtomic $ UpdWaitActor aid WSleep WWake
@@ -243,31 +244,31 @@ switchLeader fid aidNew = do
       !_A2 = assert (bfid bPre == fid
                      `blame` "client tries to move other faction actors"
                      `swith` (aidNew, bPre, fid, fact)) ()
-  let (autoDun, _) = autoDungeonLevel fact
+  let banned = bannedPointmanSwitchBetweenLevels fact
   arena <- case mleader of
     Nothing -> return $! blid bPre
     Just leader -> do
       b <- getsState $ getActorBody leader
       return $! blid b
-  if | blid bPre /= arena && autoDun ->
-       execFailure aidNew ReqWait{-hack-} NoChangeDunLeader
-     | otherwise -> do
-       execUpdAtomic $ UpdLeadFaction fid mleader (Just aidNew)
-     -- We exchange times of the old and new leader.
-     -- This permits an abuse, because a slow tank can be moved fast
-     -- by alternating between it and many fast actors (until all of them
-     -- get slowed down by this and none remain). But at least the sum
-     -- of all times of a faction is conserved. And we avoid double moves
-     -- against the UI player caused by his leader changes. There may still
-     -- happen double moves caused by AI leader changes, but that's rare.
-     -- The flip side is the possibility of multi-moves of the UI player
-     -- as in the case of the tank.
-     -- Warning: when the action is performed on the server,
-     -- the time of the actor is different than when client prepared that
-     -- action, so any client checks involving time should discount this.
-       case mleader of
-         Just aidOld | aidOld /= aidNew -> swapTime aidOld aidNew
-         _ -> return ()
+  if blid bPre /= arena && banned  -- catch the cheating clients
+  then execFailure aidNew ReqWait{-hack-} NoChangeDunLeader
+  else do
+    execUpdAtomic $ UpdLeadFaction fid mleader (Just aidNew)
+    -- We exchange times of the old and new leader.
+    -- This permits an abuse, because a slow tank can be moved fast
+    -- by alternating between it and many fast actors (until all of them
+    -- get slowed down by this and none remain). But at least the sum
+    -- of all times of a faction is conserved. And we avoid double moves
+    -- against the UI player caused by his leader changes. There may still
+    -- happen double moves caused by AI leader changes, but that's rare.
+    -- The flip side is the possibility of multi-moves of the UI player
+    -- as in the case of the tank.
+    -- Warning: when the action is performed on the server,
+    -- the time of the actor is different than when client prepared that
+    -- action, so any client checks involving time should discount this.
+    case mleader of
+      Just aidOld | aidOld /= aidNew -> swapTime aidOld aidNew
+      _ -> return ()
 
 -- * ReqMove
 
@@ -357,7 +358,7 @@ reqMoveGeneric voluntary mayAttack source dir = do
       -- unless it's large enough or tends to explode (fragile and lobable).
       -- The actor in the way is visible or not; server sees him always.
       -- Below the only weapon (the only item) of projectiles is picked.
-      mweapon <- pickWeaponServer source
+      mweapon <- pickWeaponServer source target
       case mweapon of
         Just (wp, cstore) | abInSkill Ability.SkMelee ->
           reqMeleeChecked voluntary source target wp cstore
@@ -629,7 +630,7 @@ reqDisplaceGeneric voluntary source target = do
        -- If the character melees instead, the player can tell displace failed.
        -- As for the other failures, they are impossible and we don't
        -- verify here that they don't occur, for simplicity.
-       mweapon <- pickWeaponServer source
+       mweapon <- pickWeaponServer source target
        case mweapon of
          Just (wp, cstore) | abInSkill Ability.SkMelee ->
            reqMeleeChecked voluntary source target wp cstore
@@ -854,20 +855,20 @@ reqAlterFail bumping effToUse voluntary source tpos = do
             else return False
           feats = TK.tfeature $ okind cotile serverTile
           tileActions =
-            mapMaybe (Tile.parseTileAction
+            mapMaybe (parseTileAction
                         (bproj sb)
                         (underFeet || blockedByItem)  -- avoids AlterBlockItem
                         embedKindList)
                      feats
           groupWithFromAction action = case action of
-            Tile.WithAction grps _ | not bumping -> Just grps
+            WithAction grps _ | not bumping -> Just grps
             _ -> Nothing
           groupsToAlterWith = mapMaybe groupWithFromAction tileActions
-          processTileActions :: Maybe UseResult -> [Tile.TileAction] -> m Bool
+          processTileActions :: Maybe UseResult -> [TileAction] -> m Bool
           processTileActions museResult [] =
             return $! maybe False (/= UseDud) museResult
           processTileActions museResult (ta : rest) = case ta of
-            Tile.EmbedAction (iid, kit) ->
+            EmbedAction (iid, kit) ->
               -- Embeds are activated in the order in tile definition
               -- and never after the tile is changed.
               -- If any embedded item was present and processed,
@@ -898,7 +899,7 @@ reqAlterFail bumping effToUse voluntary source tpos = do
                      processTileActions (Just $ max useResult triggered) rest
                        -- max means that even one activated embed is enough
                        -- to alter terrain in a future action
-            Tile.ToAction tgroup -> assert (not (bproj sb)) $
+            ToAction tgroup -> assert (not (bproj sb)) $
               -- @parseTileAction@ ensures the above assertion
               -- so that projectiles never cause normal transitions and,
               -- e.g., mists douse fires or two flames thrown, first ignites,
@@ -909,7 +910,7 @@ reqAlterFail bumping effToUse voluntary source tpos = do
                 changeTo tgroup
                 return True
               else processTileActions museResult rest
-            Tile.WithAction grps tgroup -> do
+            WithAction grps tgroup -> do
               -- Note that there is no skill check if the source actors
               -- is a projectile. Permission is conveyed in @ProjYes@ instead.
               groundBag2 <- getsState $ getBodyStoreBag sb CGround
@@ -1052,7 +1053,7 @@ reqMoveItem absentPermitted aid calmE (iid, kOld, fromCStore, toCStore) = do
   -- The effect of dropping previous items from this series may have
   -- increased or decreased the number of this item.
   let k = min kOld $ fst $ EM.findWithDefault (0, []) iid bagFrom
-  let !_A = if absentPermitted then True else k == kOld
+  let !_A = absentPermitted || k == kOld
   if
    | absentPermitted && k == 0 -> return ()
    | k < 1 || fromCStore == toCStore -> execFailure aid req ItemNothing
@@ -1109,7 +1110,7 @@ reqProject source tpxy eps iid cstore = do
   fact <- getsState $ (EM.! bfid b) . sfactionD
   actorMaxSk <- getsState $ getActorMaxSkills source
   let calmE = calmEnough b actorMaxSk
-  if | ckeeper curChalSer && fhasUI (gplayer fact) ->
+  if | ckeeper curChalSer && fhasUI (gkind fact) ->
         execFailure source req ProjectFinderKeeper
      | cstore == CEqp && not calmE -> execFailure source req ItemNotCalm
      | otherwise -> do
@@ -1154,7 +1155,7 @@ reqGameRestart :: MonadServerAtomic m
 reqGameRestart aid groupName scurChalSer = do
   noConfirmsGame <- isNoConfirmsGame
   factionD <- getsState sfactionD
-  let fidsUI = map fst $ filter (\(_, fact) -> fhasUI (gplayer fact))
+  let fidsUI = map fst $ filter (\(_, fact) -> fhasUI (gkind fact))
                                 (EM.assocs factionD)
   -- This call to `revealItems` and `revealPerception` is really needed,
   -- because the other happens only at natural game conclusion,
@@ -1237,7 +1238,7 @@ reqGameSave =
 
 reqDoctrine :: MonadServerAtomic m => FactionId -> Ability.Doctrine -> m ()
 reqDoctrine fid toT = do
-  fromT <- getsState $ fdoctrine . gplayer . (EM.! fid) . sfactionD
+  fromT <- getsState $ gdoctrine . (EM.! fid) . sfactionD
   execUpdAtomic $ UpdDoctrineFaction fid toT fromT
 
 -- * ReqAutomate

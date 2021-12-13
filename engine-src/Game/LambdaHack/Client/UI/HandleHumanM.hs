@@ -3,7 +3,7 @@ module Game.LambdaHack.Client.UI.HandleHumanM
   ( cmdSemInCxtOfKM, updateKeyLast
 #ifdef EXPOSE_INTERNAL
     -- * Internal operations
-  , noRemoteHumanCmd, cmdSemantics, cmdSemanticsLeader
+  , noRemoteHumanCmd, CmdLeaderNeed, cmdSemantics, cmdSemanticsLeader
   , addNoError, addLeader, weaveLeader
 #endif
   ) where
@@ -136,10 +136,8 @@ cmdSemanticsLeader cmd = case cmd of
   MainMenuAutoOn -> CmdNoNeed $ mainMenuAutoOnHuman cmdSemInCxtOfKM
   MainMenuAutoOff -> CmdNoNeed $ mainMenuAutoOffHuman cmdSemInCxtOfKM
   Dashboard -> CmdNoNeed $ dashboardHuman cmdSemInCxtOfKM
-  GameTutorialToggle ->
-    CmdNoNeed $ gameTutorialToggle >> challengeMenuHuman cmdSemInCxtOfKM
-  GameDifficultyIncr ->
-    CmdNoNeed $ gameDifficultyIncr >> challengeMenuHuman cmdSemInCxtOfKM
+  GameDifficultyIncr delta ->
+    CmdNoNeed $ gameDifficultyIncr delta >> challengeMenuHuman cmdSemInCxtOfKM
   GameFishToggle ->
     CmdNoNeed $ gameFishToggle >> challengeMenuHuman cmdSemInCxtOfKM
   GameGoodsToggle ->
@@ -148,11 +146,11 @@ cmdSemanticsLeader cmd = case cmd of
     CmdNoNeed $ gameWolfToggle >> challengeMenuHuman cmdSemInCxtOfKM
   GameKeeperToggle ->
     CmdNoNeed $ gameKeeperToggle >> challengeMenuHuman cmdSemInCxtOfKM
-  GameScenarioIncr ->
-    CmdNoNeed $ gameScenarioIncr >> challengeMenuHuman cmdSemInCxtOfKM
+  GameScenarioIncr delta ->
+    CmdNoNeed $ gameScenarioIncr delta >> challengeMenuHuman cmdSemInCxtOfKM
 
-  GameRestart -> CmdNoNeed $ weaveJust <$> gameRestartHuman
-  GameQuit -> CmdNoNeed $ weaveJust <$> gameQuitHuman
+  GameRestart -> CmdNoNeed $ weaveJust <$> gameExitWithHuman Restart
+  GameQuit -> CmdNoNeed $ weaveJust <$> gameExitWithHuman Quit
   GameDrop -> CmdNoNeed $ weaveJust <$> fmap Right gameDropHuman
   GameExit -> CmdNoNeed $ weaveJust <$> fmap Right gameExitHuman
   GameSave -> CmdNoNeed $ weaveJust <$> fmap Right gameSaveHuman
@@ -169,7 +167,7 @@ cmdSemanticsLeader cmd = case cmd of
     CmdLeader $ \leader -> Left <$> chooseItemApplyHuman leader ts
   PickLeader k -> CmdNoNeed $ Left <$> pickLeaderHuman k
   PickLeaderWithPointer ->
-    CmdLeader $ \leader -> Left <$> pickLeaderWithPointerHuman leader
+    CmdLeader $ fmap Left . pickLeaderWithPointerHuman
   PointmanCycle direction ->
     CmdLeader $ \leader -> Left <$> pointmanCycleHuman leader direction
   PointmanCycleLevel direction ->
@@ -181,17 +179,16 @@ cmdSemanticsLeader cmd = case cmd of
   RepeatLast n -> addNoError $ repeatLastHuman n
   Record -> addNoError recordHuman
   AllHistory -> addNoError allHistoryHuman
-  LastHistory -> addNoError lastHistoryHuman
-  MarkVision ->
-    CmdNoNeed $ markVisionHuman >> settingsMenuHuman cmdSemInCxtOfKM
+  MarkVision delta ->
+    CmdNoNeed $ markVisionHuman delta >> settingsMenuHuman cmdSemInCxtOfKM
   MarkSmell ->
     CmdNoNeed $ markSmellHuman >> settingsMenuHuman cmdSemInCxtOfKM
-  MarkSuspect ->
-    CmdNoNeed $ markSuspectHuman >> settingsMenuHuman cmdSemInCxtOfKM
+  MarkSuspect delta ->
+    CmdNoNeed $ markSuspectHuman delta >> settingsMenuHuman cmdSemInCxtOfKM
   MarkAnim ->
     CmdNoNeed $ markAnimHuman >> settingsMenuHuman cmdSemInCxtOfKM
-  OverrideTut ->
-    CmdNoNeed $ overrideTutHuman >> settingsMenuHuman cmdSemInCxtOfKM
+  OverrideTut delta ->
+    CmdNoNeed $ overrideTutHuman delta >> settingsMenuHuman cmdSemInCxtOfKM
   SettingsMenu -> CmdNoNeed $ settingsMenuHuman cmdSemInCxtOfKM
   ChallengeMenu -> CmdNoNeed $ challengeMenuHuman cmdSemInCxtOfKM
   PrintScreen -> addNoError printScreenHuman
@@ -208,8 +205,8 @@ cmdSemanticsLeader cmd = case cmd of
   AimItem -> addNoError aimItemHuman
   AimAscend k -> CmdNoNeed $ Left <$> aimAscendHuman k
   EpsIncr b -> addNoError $ epsIncrHuman b
-  XhairUnknown -> CmdLeader $ \leader -> Left <$> xhairUnknownHuman leader
-  XhairItem -> CmdLeader $ \leader -> Left <$> xhairItemHuman leader
+  XhairUnknown -> CmdLeader $ fmap Left . xhairUnknownHuman
+  XhairItem -> CmdLeader $ fmap Left . xhairItemHuman
   XhairStair up -> CmdLeader $ \leader -> Left <$> xhairStairHuman leader up
   XhairPointerFloor -> addNoError xhairPointerFloorHuman
   XhairPointerMute -> addNoError xhairPointerMuteHuman
@@ -225,5 +222,4 @@ addLeader cmdCli =
   CmdLeader $ \leader -> cmdCli leader >> return (Left Nothing)
 
 weaveLeader :: Monad m => (ActorId -> m (FailOrCmd ReqUI)) -> CmdLeaderNeed m
-weaveLeader cmdCli =
-  CmdLeader $ \leader -> weaveJust <$> cmdCli leader
+weaveLeader cmdCli = CmdLeader $ fmap weaveJust . cmdCli

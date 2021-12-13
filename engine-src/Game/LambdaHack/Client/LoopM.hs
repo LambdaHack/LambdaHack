@@ -25,10 +25,6 @@ import Game.LambdaHack.Client.MonadClient
 import Game.LambdaHack.Client.Response
 import Game.LambdaHack.Client.State
 import Game.LambdaHack.Client.UI
-import Game.LambdaHack.Client.UI.MonadClientUI
-import Game.LambdaHack.Client.UI.Msg
-import Game.LambdaHack.Client.UI.MsgM
-import Game.LambdaHack.Client.UI.SessionUI
 import Game.LambdaHack.Common.ClientOptions
 import Game.LambdaHack.Common.Faction
 import Game.LambdaHack.Common.MonadStateRead
@@ -65,65 +61,81 @@ loopCli :: ( MonadClientSetup m
            , MonadClientAtomic m
            , MonadClientReadResponse m
            , MonadClientWriteRequest m )
-        => CCUI -> UIOptions -> ClientOptions -> m ()
-loopCli ccui sUIOptions clientOptions = do
+        => CCUI -> UIOptions -> ClientOptions -> Bool -> m ()
+loopCli ccui sUIOptions clientOptions startsNewGame = do
   modifyClient $ \cli -> cli {soptions = clientOptions}
   side <- getsClient sside
   hasUI <- clientHasUI
   if not hasUI then initAI else initUI ccui
   let cliendKindText = if not hasUI then "AI" else "UI"
   debugPossiblyPrint $ cliendKindText <+> "client"
-                       <+> tshow side <+> "started 1/4."
+                       <+> tshow side <+> "starting 1/4."
   -- Warning: state and client state are invalid here, e.g., sdungeon
   -- and sper are empty.
-  restoredG <- tryRestore
-  restored <- case restoredG of
-    Just (cli, msess) | not $ snewGameCli clientOptions -> do
-      -- Restore game.
-      schanF <- getsSession schanF
-      sccui <- getsSession sccui
-      maybe (return ()) (\sess -> modifySession $ const
-        sess {schanF, sccui, sUIOptions}) msess
-      let noAnim = fromMaybe False $ snoAnim $ soptions cli
-      putClient cli {soptions = clientOptions {snoAnim = Just noAnim}}
-      return True
-    Just (_, msessR) -> do
-      -- Preserve previous history, if any.
-      maybe (return ()) (\sessR -> modifySession $ \sess ->
-        sess {shistory = shistory sessR}) msessR
-      return False
-    _ -> return False
+  restored <-
+    if startsNewGame && not hasUI
+    then return False
+    else do
+      restoredG <- tryRestore
+      case restoredG of
+        Just (cli, msess)-> do
+          -- Restore game.
+          case msess of
+            Just sess | hasUI -> do
+              -- Preserve almost everything from the saved session.
+              -- Renew the communication channel to the newly spawned frontend
+              -- and get the possibly updated UI content and UI options.
+              schanF <- getsSession schanF
+              sccui <- getsSession sccui
+              putSession $ sess {schanF, sccui, sUIOptions}
+            _ -> return ()
+          if startsNewGame then
+            -- Don't restore client state, due to new game starting right now,
+            -- which means everything will be overwritten soon anyway
+            -- via an @UpdRestart@ command (instead of @UpdResume@).
+            return False
+          else do
+            -- We preserve the client state from savefile except for the single
+            -- option that can be overwritten on commandline.
+            let noAnim = fromMaybe False $ snoAnim $ soptions cli
+            putClient cli {soptions = clientOptions {snoAnim = Just noAnim}}
+            return True
+        Nothing -> return False
   debugPossiblyPrint $ cliendKindText <+> "client"
-                       <+> tshow side <+> "started 2/4."
+                       <+> tshow side <+> "starting 2/4."
   -- At this point @ClientState@ not overriten dumbly and @State@ valid.
   tabA <- createTabBFS
   tabB <- createTabBFS
   modifyClient $ \cli -> cli {stabs = (tabA, tabB)}
   cmd1 <- receiveResponse
   debugPossiblyPrint $ cliendKindText <+> "client"
-                       <+> tshow side <+> "started 3/4."
-  case (restored, cmd1) of
-    (True, RespUpdAtomic _ UpdResume{}) -> return ()
-    (True, RespUpdAtomic _ UpdRestart{}) ->
+                       <+> tshow side <+> "starting 3/4."
+  case (restored, startsNewGame, cmd1) of
+    (True, False, RespUpdAtomic _ UpdResume{}) ->
+      return ()
+    (True, True, RespUpdAtomic _ UpdRestart{}) ->
       when hasUI $
         clientPrintUI "Ignoring an old savefile and starting a new game."
-    (False, RespUpdAtomic _ UpdResume{}) ->
+    (False, False, RespUpdAtomic _ UpdResume{}) ->
       error $ "Savefile of client " ++ show side ++ " not usable."
               `showFailure` ()
-    (False, RespUpdAtomic _ UpdRestart{}) -> return ()
-    (True, RespUpdAtomicNoState UpdResume{}) -> undefined
-    (True, RespUpdAtomicNoState UpdRestart{}) ->
+    (False, True, RespUpdAtomic _ UpdRestart{}) ->
+      return ()
+    (True, False, RespUpdAtomicNoState UpdResume{}) ->
+      undefined
+    (True, True, RespUpdAtomicNoState UpdRestart{}) ->
       when hasUI $
         clientPrintUI "Ignoring an old savefile and starting a new game."
-    (False, RespUpdAtomicNoState UpdResume{}) ->
+    (False, False, RespUpdAtomicNoState UpdResume{}) ->
       error $ "Savefile of client " ++ show side ++ " not usable."
               `showFailure` ()
-    (False, RespUpdAtomicNoState UpdRestart{}) -> return ()
+    (False, True, RespUpdAtomicNoState UpdRestart{}) ->
+      return ()
     _ -> error $ "unexpected command" `showFailure` (side, restored, cmd1)
   handleResponse cmd1
   -- State and client state now valid.
   debugPossiblyPrint $ cliendKindText <+> "client"
-                       <+> tshow side <+> "started 4/4."
+                       <+> tshow side <+> "starting 4/4."
   if hasUI
   then loopUI 0
   else loopAI
@@ -192,19 +204,17 @@ loopUI timeSinceLastQuery = do
                               || sreqDelay == ReqDelayHandled
                               || isJust sreqPending) -> do
          -- ignore alarm if to be handled by AI control regain code elsewhere
-       -- The keys mashed to gain control are not considered a command.
-       resetPressedKeys
        -- Checking for special case for UI under AI control, because the default
        -- behaviour is in this case too alarming for the player, especially
        -- during the insert coin demo before game is started.
        side <- getsClient sside
        fact <- getsState $ (EM.! side) . sfactionD
-       if isAIFact fact then
+       if gunderAI fact then
          -- Mark for immediate control regain from AI.
          modifySession $ \sess -> sess {sregainControl = True}
-       else when (isJust $ gleader fact) $ do
-              -- don't give control to client if temporarily no leader,
-              -- e.g., game just ended and new one not yet started
+       else do  -- should work fine even if UI faction has no leader ATM
+         -- The keys mashed to make UI accessible are not considered a command.
+         resetPressedKeys
          -- Stop displaying the prompt, if any, but keep UI simple.
          modifySession $ \sess -> sess {sreqDelay = ReqDelayHandled}
          let msg = if isNothing sreqPending
@@ -212,6 +222,8 @@ loopUI timeSinceLastQuery = do
                    else "Server delayed receiving a command from us. The command is cancelled. Issue a new one."
          msgAdd MsgActionAlert msg
          mreqNew <- queryUI
+         msgAdd MsgPromptGeneric "Your client is listening to the server again."
+         pushReportFrame
          -- TODO: once this is really used, verify that if a request
          -- overwritten, nothing breaks due to some things in our ClientState
          -- and SessionUI (but fortunately not in State nor ServerState)
@@ -219,10 +231,10 @@ loopUI timeSinceLastQuery = do
          modifySession $ \sess -> sess {sreqPending = mreqNew}
          -- Now relax completely.
          modifySession $ \sess -> sess {sreqDelay = ReqDelayNot}
-         -- We may yet not know if server is ready, but perhaps server
-         -- tried hard to contact us while we took control and now it sleeps
-         -- for a bit, so let's give it the benefit of the doubt
-         -- and a slight pause before we alarm the player again.
+       -- We may yet not know if server is ready, but perhaps server
+       -- tried hard to contact us while we took control and now it sleeps
+       -- for a bit, so let's give it the benefit of the doubt
+       -- and a slight pause before we alarm the player again.
        loopUI 0
      | otherwise -> do
        -- We know server is not ready.

@@ -107,7 +107,7 @@ mkUIOptions :: RuleContent -> ClientOptions -> IO UIOptions
 mkUIOptions corule clientOptions = do
   let benchmark = sbenchmark clientOptions
       cfgUIName = rcfgUIName corule
-      (configString, cfgUIDefault) = rcfgUIDefault corule
+      (configText, cfgUIDefault) = rcfgUIDefault corule
   dataDir <- appDataDir
   let path bkp = dataDir </> bkp <> cfgUIName
   cfgUser <- if benchmark then return Ini.emptyConfig else do
@@ -147,7 +147,9 @@ mkUIOptions corule clientOptions = do
                     then "The config file and savefiles have been moved aside."
                     else "The config file has been moved aside."
       delayPrint msg
-    tryWriteFile (path "") configString
+    dataDirExists <- doesFileExist dataDir
+    when dataDirExists $  -- may not exist, e.g., when testing
+      tryWriteFile (path "") configText
     let confDefault = parseConfig cfgUIDefault
     return confDefault
 
@@ -167,5 +169,4 @@ applyUIOptions COps{corule} uioptions =
      (\opts -> opts {stitle =
         stitle opts `mplus` Just (rtitle corule)}) .
      (\opts -> opts {sfonts = uFonts uioptions}) .
-     (\opts -> opts {sfontsets = uFontsets uioptions}) .
-     id
+     (\opts -> opts {sfontsets = uFontsets uioptions})

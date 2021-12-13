@@ -1,11 +1,16 @@
 -- | UI of inventory management.
 module Game.LambdaHack.Client.UI.InventoryM
   ( Suitability(..), ResultItemDialogMode(..)
-  , slotsOfItemDialogMode, getFull, getGroupItem, getStoreItem
+  , getFull, getGroupItem, getStoreItem
+  , skillCloseUp, placeCloseUp, factionCloseUp
 #ifdef EXPOSE_INTERNAL
     -- * Internal operations
   , ItemDialogState(..), accessModeBag, storeItemPrompt, getItem
-  , DefItemKey(..), transition, keyOfEKM, runDefItemKey
+  , DefItemKey(..), transition
+  , runDefMessage, runDefAction, runDefSkills, skillsInRightPane
+  , runDefPlaces, placesInRightPane
+  , runDefFactions, factionsInRightPane
+  , runDefModes, runDefInventory
 #endif
   ) where
 
@@ -13,9 +18,10 @@ import Prelude ()
 
 import Game.LambdaHack.Core.Prelude
 
-import qualified Data.Char as Char
 import           Data.Either
 import qualified Data.EnumMap.Strict as EM
+import qualified Data.EnumSet as ES
+import           Data.Function
 import qualified Data.Text as T
 import qualified NLP.Miniutter.English as MU
 
@@ -24,29 +30,33 @@ import           Game.LambdaHack.Client.State
 import           Game.LambdaHack.Client.UI.ActorUI
 import           Game.LambdaHack.Client.UI.Content.Screen
 import           Game.LambdaHack.Client.UI.ContentClientUI
-import           Game.LambdaHack.Client.UI.Frame
+import           Game.LambdaHack.Client.UI.EffectDescription
 import           Game.LambdaHack.Client.UI.HandleHelperM
 import           Game.LambdaHack.Client.UI.HumanCmd
-import           Game.LambdaHack.Client.UI.ItemSlot
 import qualified Game.LambdaHack.Client.UI.Key as K
 import           Game.LambdaHack.Client.UI.MonadClientUI
 import           Game.LambdaHack.Client.UI.Msg
 import           Game.LambdaHack.Client.UI.MsgM
+import           Game.LambdaHack.Client.UI.Overlay
 import           Game.LambdaHack.Client.UI.SessionUI
 import           Game.LambdaHack.Client.UI.Slideshow
 import           Game.LambdaHack.Client.UI.SlideshowM
 import           Game.LambdaHack.Common.Actor
 import           Game.LambdaHack.Common.ActorState
+import           Game.LambdaHack.Common.ClientOptions
 import           Game.LambdaHack.Common.Faction
+import qualified Game.LambdaHack.Common.Faction as Faction
 import           Game.LambdaHack.Common.Item
-import qualified Game.LambdaHack.Common.ItemAspect as IA
 import           Game.LambdaHack.Common.Kind
 import           Game.LambdaHack.Common.Misc
 import           Game.LambdaHack.Common.MonadStateRead
 import           Game.LambdaHack.Common.State
 import           Game.LambdaHack.Common.Types
+import qualified Game.LambdaHack.Content.FactionKind as FK
 import qualified Game.LambdaHack.Content.ItemKind as IK
+import qualified Game.LambdaHack.Content.PlaceKind as PK
 import qualified Game.LambdaHack.Definition.Ability as Ability
+import qualified Game.LambdaHack.Definition.Color as Color
 import           Game.LambdaHack.Definition.Defs
 
 data ItemDialogState = ISuitable | IAll
@@ -54,52 +64,26 @@ data ItemDialogState = ISuitable | IAll
 
 data ResultItemDialogMode =
     RStore CStore [ItemId]
-  | ROrgans ItemId ItemBag SingleItemSlots
   | ROwned ItemId
-  | RSkills Int
-  | RLore SLore ItemId ItemBag SingleItemSlots
-  | RPlaces Int
-  | RModes Int
+  | RLore SLore MenuSlot [(ItemId, ItemQuant)]
+  | RSkills MenuSlot
+  | RPlaces MenuSlot
+  | RFactions MenuSlot
+  | RModes MenuSlot
   deriving Show
 
 accessModeBag :: ActorId -> State -> ItemDialogMode -> ItemBag
 accessModeBag leader s (MStore cstore) = let b = getActorBody leader s
                                          in getBodyStoreBag b cstore s
-accessModeBag leader s MOrgans = let b = getActorBody leader s
-                                 in getBodyStoreBag b COrgan s
 accessModeBag leader s MOwned = let fid = bfid $ getActorBody leader s
                                 in combinedItems fid s
 accessModeBag _ _ MSkills = EM.empty
+accessModeBag leader s (MLore SBody) = let b = getActorBody leader s
+                                       in getBodyStoreBag b COrgan s
 accessModeBag _ s MLore{} = EM.map (const quantSingle) $ sitemD s
 accessModeBag _ _ MPlaces = EM.empty
+accessModeBag _ _ MFactions = EM.empty
 accessModeBag _ _ MModes = EM.empty
-
--- This is the only place slots are sorted. As a side-effect,
--- slots in inventories always agree with slots of item lore.
--- Not so for organ menu, because many lore maps point there.
--- Sorting in @updateItemSlot@ would not be enough, because, e.g.,
--- identifying an item should change its slot position.
-slotsOfItemDialogMode :: MonadClientUI m => ItemDialogMode -> m SingleItemSlots
-slotsOfItemDialogMode cCur = do
-  itemToF <- getsState $ flip itemToFull
-  ItemSlots itemSlotsPre <- getsSession sslots
-  case cCur of
-    MOrgans -> do
-      let newSlots = EM.adjust (sortSlotMap itemToF) SOrgan
-                     $ EM.adjust (sortSlotMap itemToF) STrunk
-                     $ EM.adjust (sortSlotMap itemToF) SCondition itemSlotsPre
-      modifySession $ \sess -> sess {sslots = ItemSlots newSlots}
-      return $! mergeItemSlots itemToF [ newSlots EM.! SOrgan
-                                       , newSlots EM.! STrunk
-                                       , newSlots EM.! SCondition ]
-    MSkills -> return EM.empty
-    MPlaces -> return EM.empty
-    MModes -> return EM.empty
-    _ -> do
-      let slore = IA.loreFromMode cCur
-          newSlots = EM.adjust (sortSlotMap itemToF) slore itemSlotsPre
-      modifySession $ \sess -> sess {sslots = ItemSlots newSlots}
-      return $! newSlots EM.! slore
 
 -- | Let a human player choose any item from a given group.
 -- Note that this does not guarantee the chosen item belongs to the group,
@@ -145,15 +129,27 @@ getStoreItem :: MonadClientUI m
              -> m (Either Text ResultItemDialogMode)
 getStoreItem leader cInitial = do
   side <- getsClient sside
-  let itemCs = map MStore [CStash, CEqp, CGround]
-        -- No @COrgan@, because triggerable organs are rare and,
-        -- if really needed, accessible directly from the trigger menu.
-      loreCs = map MLore [minBound..maxBound] ++ [MPlaces, MModes]
-      allCs = case cInitial of
-        MLore{} -> loreCs
-        MPlaces -> loreCs
-        MModes -> loreCs
-        _ -> itemCs ++ [MOwned, MOrgans, MSkills]
+  let -- No @COrgan@, because triggerable organs are rare and,
+      -- if really needed, accessible directly from the trigger menu.
+      itemCs = map MStore [CStash, CEqp, CGround]
+      -- This should match, including order, the items in standardKeysAndMouse
+      -- marked with CmdDashboard up to @MSkills@.
+      leaderCs = itemCs ++ [MOwned, MLore SBody, MSkills]
+      -- No @SBody@, because repeated in other lores and included elsewhere.
+      itemLoreCs = map MLore [minBound..SEmbed]
+      -- This should match, including order, the items in standardKeysAndMouse
+      -- marked with CmdDashboard past @MSkills@ and up to @MModes@.
+      loreCs = itemLoreCs ++ [MPlaces, MFactions, MModes]
+  let !_A1 = assert (null (leaderCs `intersect` loreCs)) ()
+      !_A2 = assert (sort (leaderCs ++ loreCs ++ [MStore COrgan])
+                     == map MStore [minBound..maxBound]
+                        ++ [MOwned, MSkills]
+                        ++ map MLore [minBound..maxBound]
+                        ++ [MPlaces, MFactions, MModes]) ()
+      allCs | cInitial `elem` leaderCs = leaderCs
+            | cInitial `elem` loreCs = loreCs
+            | otherwise = assert (cInitial == MStore COrgan) leaderCs
+                            -- werrd content, but let it be
       (pre, rest) = break (== cInitial) allCs
       post = dropWhile (== cInitial) rest
       remCs = post ++ pre
@@ -211,26 +207,22 @@ storeItemPrompt side body bodyUI actorCurAndMaxSk c2 s =
       in makePhrase $
            [ MU.Capitalize $ MU.SubjectVerbSg subject verb
            , nItems, MU.Text tIn ] ++ ownObject ++ onLevel
-    MOrgans ->
-      makePhrase
-        [ MU.Capitalize $ MU.SubjectVerbSg subject "feel"
-        , MU.Text tIn
-        , MU.WownW (MU.Text $ bpronoun bodyUI) $ MU.Text t ]
     MOwned ->
       -- We assume "gold grain", not "grain" with label "of gold":
       let currencyName = IK.iname $ okind coitem
                          $ ouniqGroup coitem IK.S_CURRENCY
           dungeonTotal = sgold s
           (_, total) = calculateTotal side s
-          n = countItems CStash
-          verbOwned = if n == 0 then "find nothing among" else "review"
-      in makePhrase
-           [ MU.Text $ spoilsBlurb currencyName total dungeonTotal
-           , MU.Capitalize $ MU.SubjectVerbSg subject verbOwned
-           , MU.Text t ]
+      in T.init $ spoilsBlurb currencyName total dungeonTotal
+        -- no space for more, e.g., the pointman, but it can't be changed anyway
     MSkills ->
       makePhrase
         [ MU.Capitalize $ MU.SubjectVerbSg subject "estimate"
+        , MU.WownW (MU.Text $ bpronoun bodyUI) $ MU.Text t ]
+    MLore SBody ->
+      makePhrase
+        [ MU.Capitalize $ MU.SubjectVerbSg subject "feel"
+        , MU.Text tIn
         , MU.WownW (MU.Text $ bpronoun bodyUI) $ MU.Text t ]
     MLore slore ->
       makePhrase
@@ -239,6 +231,9 @@ storeItemPrompt side body bodyUI actorCurAndMaxSk c2 s =
             then "terrain (including crafting recipes)"
             else t ]
     MPlaces ->
+      makePhrase
+        [ MU.Capitalize $ MU.Text t ]
+    MFactions ->
       makePhrase
         [ MU.Capitalize $ MU.Text t ]
     MModes ->
@@ -322,12 +317,13 @@ getItem leader psuit prompt promptGeneric cCur cRest askWhenLone
     ([(iid, _)], MStore rstore) | null cRest && not askWhenLone ->
       return $ Right $ RStore rstore [iid]
     _ -> transition leader psuit prompt promptGeneric permitMulitple
-                    0 cCur cRest ISuitable
+                    cCur cRest ISuitable
 
 data DefItemKey m = DefItemKey
   { defLabel  :: Either Text K.KM
   , defCond   :: Bool
-  , defAction :: Either K.KM SlotChar -> m (Either Text ResultItemDialogMode)
+  , defAction :: ~(m (Either Text ResultItemDialogMode))
+      -- this field may be expensive or undefined when @defCond@ is false
   }
 
 data Suitability =
@@ -342,131 +338,35 @@ transition :: forall m. MonadClientUI m
            -> (Actor -> ActorUI -> Ability.Skills -> ItemDialogMode -> State
                -> Text)
            -> Bool
-           -> Int
            -> ItemDialogMode
            -> [ItemDialogMode]
            -> ItemDialogState
            -> m (Either Text ResultItemDialogMode)
 transition leader psuit prompt promptGeneric permitMulitple
-           numPrefix cCur cRest itemDialogState = do
-  let recCall numPrefix2 cCur2 cRest2 itemDialogState2 = do
+           cCur cRest itemDialogState = do
+  let recCall cCur2 cRest2 itemDialogState2 = do
         -- Pointman could have been changed by keypresses near the end of
         -- the current recursive call, so refresh it for the next call.
         mleader <- getsClient sleader
-        let leader2 = fromMaybe (error "UI manipulation killed the pointman")
-                                mleader
+        -- When run inside a test, without mleader, assume leader not changed.
+        let leader2 = fromMaybe leader mleader
         transition leader2 psuit prompt promptGeneric permitMulitple
-                   numPrefix2 cCur2 cRest2 itemDialogState2
+                   cCur2 cRest2 itemDialogState2
   actorCurAndMaxSk <- getsState $ getActorMaxSkills leader
   body <- getsState $ getActorBody leader
   bodyUI <- getsSession $ getActorUI leader
   fact <- getsState $ (EM.! bfid body) . sfactionD
   hs <- partyAfterLeader leader
-  bagAll <- getsState $ \s -> accessModeBag leader s cCur
-  itemToF <- getsState $ flip itemToFull
   revCmd <- revCmdMap
-  mpsuit <- psuit  -- when throwing, this sets eps and checks xhair validity
-  psuitFun <- case mpsuit of
-    SuitsEverything -> return $ \_ _ _ -> True
-    SuitsSomething f -> return f  -- When throwing, this function takes
-                                  -- missile range into accout.
-  lSlots <- slotsOfItemDialogMode cCur
-  let getResult :: [ItemId] -> Either Text ResultItemDialogMode
-      getResult iids = Right $ case cCur of
-        MStore rstore -> RStore rstore iids
-        MOrgans -> case iids of
-          [iid] -> ROrgans iid bagAll bagItemSlotsAll
-          _ -> error $ "" `showFailure` (cCur, iids)
-        MOwned -> case iids of
-          [iid] -> ROwned iid
-          _ -> error $ "" `showFailure` (cCur, iids)
-        MSkills -> error $ "" `showFailure` cCur
-        MLore rlore -> case iids of
-          [iid] -> RLore rlore iid bagAll bagItemSlotsAll
-          _ -> error $ "" `showFailure` (cCur, iids)
-        MPlaces ->  error $ "" `showFailure` cCur
-        MModes -> error $ "" `showFailure` cCur
-      mstore = case cCur of
-        MStore store -> Just store
-        _ -> Nothing
-      filterP iid = psuitFun mstore (itemToF iid)
-      bagAllSuit = EM.filterWithKey filterP bagAll
-      bagItemSlotsAll = EM.filter (`EM.member` bagAll) lSlots
-      -- Predicate for slot matching the current prefix, unless the prefix
-      -- is 0, in which case we display all slots, even if they require
-      -- the user to start with number keys to get to them.
-      -- Could be generalized to 1 if prefix 1x exists, etc., but too rare.
-      hasPrefixOpen x _ = slotPrefix x == numPrefix || numPrefix == 0
-      bagItemSlotsOpen = EM.filterWithKey hasPrefixOpen bagItemSlotsAll
-      hasPrefix x _ = slotPrefix x == numPrefix
-      bagItemSlots = EM.filterWithKey hasPrefix bagItemSlotsOpen
-      bag = EM.fromList $ map (\iid -> (iid, bagAll EM.! iid))
-                              (EM.elems bagItemSlotsOpen)
-      suitableItemSlotsAll = EM.filter (`EM.member` bagAllSuit) lSlots
-      suitableItemSlotsOpen =
-        EM.filterWithKey hasPrefixOpen suitableItemSlotsAll
-      bagSuit = EM.fromList $ map (\iid -> (iid, bagAllSuit EM.! iid))
-                                  (EM.elems suitableItemSlotsOpen)
-      nextContainers direction = case direction of
-        Forward -> case cRest ++ [cCur] of
-          c1 : rest -> (c1, rest)
-          [] -> error $ "" `showFailure` cRest
-        Backward -> case reverse $ cCur : cRest of
-          c1 : rest -> (c1, reverse rest)
-          [] -> error $ "" `showFailure` cRest
-  (bagFiltered, promptChosen) <- getsState $ \s ->
-    case itemDialogState of
-      ISuitable -> (bagSuit, prompt body bodyUI actorCurAndMaxSk cCur s <> ":")
-      IAll -> (bag, promptGeneric body bodyUI actorCurAndMaxSk cCur s <> ":")
-  let (autoDun, _) = autoDungeonLevel fact
-      multipleSlots = if itemDialogState == IAll
-                      then bagItemSlotsAll
-                      else suitableItemSlotsAll
-      maySwitchLeader MOwned = False
-      maySwitchLeader MLore{} = False
-      maySwitchLeader MPlaces = False
-      maySwitchLeader MModes = False
-      maySwitchLeader _ = True
-      cycleKeyDef direction =
-        let km = revCmd $ PointmanCycle direction
-        in (km, DefItemKey
-               { defLabel = if direction == Forward then Right km else Left ""
-               , defCond = maySwitchLeader cCur && not (autoDun || null hs)
-               , defAction = \_ -> do
-                   err <- pointmanCycle leader False direction
-                   let !_A = assert (isNothing err `blame` err) ()
-                   recCall numPrefix cCur cRest itemDialogState
-               })
-      cycleLevelKeyDef direction =
-        let km = revCmd $ PointmanCycleLevel direction
-        in (km, DefItemKey
-                { defLabel = Left ""
-                , defCond = maySwitchLeader cCur
-                            && any (\(_, b, _) -> blid b == blid body) hs
-                , defAction = \_ -> do
-                    err <- pointmanCycleLevel leader False direction
-                    let !_A = assert (isNothing err `blame` err) ()
-                    recCall numPrefix cCur cRest itemDialogState
-                })
-      keyDefs :: [(K.KM, DefItemKey m)]
-      keyDefs = filter (defCond . snd) $
+  promptChosen <- getsState $ \s -> case itemDialogState of
+    ISuitable -> prompt body bodyUI actorCurAndMaxSk cCur s <> ":"
+    IAll -> promptGeneric body bodyUI actorCurAndMaxSk cCur s <> ":"
+  let keyDefsCommon :: [(K.KM, DefItemKey m)]
+      keyDefsCommon = filter (defCond . snd)
         [ let km = K.mkChar '<'
           in (km, changeContainerDef Backward $ Right km)
         , let km = K.mkChar '>'
           in (km, changeContainerDef Forward $ Right km)
-        , let km = K.mkChar '+'
-          in (km, DefItemKey
-           { defLabel = Right km
-           , defCond = bag /= bagSuit
-           , defAction = \_ -> recCall numPrefix cCur cRest
-                               $ case itemDialogState of
-                                   ISuitable -> IAll
-                                   IAll -> ISuitable
-           })
-        , let km = K.mkChar '*'
-          in (km, useMultipleDef $ Right km)
-        , let km = K.mkChar '!'
-          in (km, useMultipleDef $ Left "")  -- alias close to 'g'
         , cycleKeyDef Forward
         , cycleKeyDef Backward
         , cycleLevelKeyDef Forward
@@ -474,127 +374,409 @@ transition leader psuit prompt promptGeneric permitMulitple
         , (K.KM K.NoModifier K.LeftButtonRelease, DefItemKey
            { defLabel = Left ""
            , defCond = maySwitchLeader cCur && not (null hs)
-           , defAction = \_ -> do
+           , defAction = do
                merror <- pickLeaderWithPointer leader
                case merror of
-                 Nothing -> recCall numPrefix cCur cRest itemDialogState
+                 Nothing -> recCall cCur cRest itemDialogState
                  Just{} -> return $ Left "not a menu item nor teammate position"
                              -- don't inspect the error, it's expected
            })
         , (K.escKM, DefItemKey
            { defLabel = Right K.escKM
            , defCond = True
-           , defAction = \_ -> return $ Left "never mind"
+           , defAction = return $ Left "never mind"
            })
         ]
-        ++ numberPrefixes
+      cycleLevelKeyDef direction =
+        let km = revCmd $ PointmanCycleLevel direction
+        in (km, DefItemKey
+                { defLabel = Left ""
+                , defCond = maySwitchLeader cCur
+                            && any (\(_, b, _) -> blid b == blid body) hs
+                , defAction = do
+                    err <- pointmanCycleLevel leader False direction
+                    let !_A = assert (isNothing err `blame` err) ()
+                    recCall cCur cRest itemDialogState
+                })
       changeContainerDef direction defLabel =
         let (cCurAfterCalm, cRestAfterCalm) = nextContainers direction
         in DefItemKey
           { defLabel
           , defCond = cCurAfterCalm /= cCur
-          , defAction = \_ ->
-              recCall numPrefix cCurAfterCalm cRestAfterCalm itemDialogState
+          , defAction = recCall cCurAfterCalm cRestAfterCalm itemDialogState
           }
-      useMultipleDef defLabel = DefItemKey
-        { defLabel
-        , defCond = permitMulitple && not (EM.null multipleSlots)
-        , defAction = \_ ->
-            let eslots = EM.elems multipleSlots
-            in return $! getResult eslots
-        }
-      prefixCmdDef d =
-        (K.mkChar $ Char.intToDigit d, DefItemKey
-           { defLabel = Left ""
-           , defCond = True
-           , defAction = \_ ->
-               recCall (10 * numPrefix + d) cCur cRest itemDialogState
-           })
-      numberPrefixes = map prefixCmdDef [0..9]
-      lettersDef :: DefItemKey m
-      lettersDef = DefItemKey
-        { defLabel = Left ""
-        , defCond = True
-        , defAction = \ekm ->
-            let slot = case ekm of
-                  Left K.KM{key=K.Char l} -> SlotChar numPrefix l
-                  Left km ->
-                    error $ "unexpected key:" `showFailure` K.showKM km
-                  Right sl -> sl
-            in case EM.lookup slot bagItemSlotsAll of
-              Nothing -> error $ "unexpected slot"
-                                 `showFailure` (slot, bagItemSlots)
-              Just iid -> return $! getResult [iid]
-        }
-      processSpecialOverlay :: OKX -> (Int -> ResultItemDialogMode)
-                            -> m (Either Text ResultItemDialogMode)
-      processSpecialOverlay io resultConstructor = do
-        let slotLabels = map fst $ snd io
-            slotKeys = mapMaybe (keyOfEKM numPrefix) slotLabels
-            skillsDef :: DefItemKey m
-            skillsDef = DefItemKey
-              { defLabel = Left ""
-              , defCond = True
-              , defAction = \ekm ->
-                  let slot = case ekm of
-                        Left K.KM{key} -> case key of
-                          K.Char l -> SlotChar numPrefix l
-                          _ -> error $ "unexpected key:"
-                                       `showFailure` K.showKey key
-                        Right sl -> sl
-                      slotIndex = fromMaybe (error "illegal slot")
-                                  $ elemIndex slot allSlots
-                  in return (Right (resultConstructor slotIndex))
-              }
-        runDefItemKey keyDefs skillsDef io slotKeys promptChosen cCur
+      nextContainers direction = case direction of
+        Forward -> case cRest ++ [cCur] of
+          c1 : rest -> (c1, rest)
+          [] -> error $ "" `showFailure` cRest
+        Backward -> case reverse $ cCur : cRest of
+          c1 : rest -> (c1, reverse rest)
+          [] -> error $ "" `showFailure` cRest
+      banned = bannedPointmanSwitchBetweenLevels fact
+      maySwitchLeader MStore{} = True
+      maySwitchLeader MOwned = False
+      maySwitchLeader MSkills = True
+      maySwitchLeader (MLore SBody) = True
+      maySwitchLeader MLore{} = False
+      maySwitchLeader MPlaces = False
+      maySwitchLeader MFactions = False
+      maySwitchLeader MModes = False
+      cycleKeyDef direction =
+        let km = revCmd $ PointmanCycle direction
+        in (km, DefItemKey
+               { defLabel = if direction == Forward then Right km else Left ""
+               , defCond = maySwitchLeader cCur && not (banned || null hs)
+               , defAction = do
+                   err <- pointmanCycle leader False direction
+                   let !_A = assert (isNothing err `blame` err) ()
+                   recCall cCur cRest itemDialogState
+               })
   case cCur of
-    MSkills -> do
-      io <- skillsOverlay leader
-      processSpecialOverlay io RSkills
-    MPlaces -> do
-      io <- placesOverlay
-      processSpecialOverlay io RPlaces
-    MModes -> do
-      io <- modesOverlay
-      processSpecialOverlay io RModes
+    MSkills -> runDefSkills keyDefsCommon promptChosen leader
+    MPlaces -> runDefPlaces keyDefsCommon promptChosen
+    MFactions -> runDefFactions keyDefsCommon promptChosen
+    MModes -> runDefModes keyDefsCommon promptChosen
     _ -> do
-      let displayRanged =
-            cCur `notElem` [MStore COrgan, MOrgans, MLore SOrgan, MLore STrunk]
-      io <- itemOverlay lSlots (blid body) bagFiltered displayRanged
-      let slotKeys = mapMaybe (keyOfEKM numPrefix . Right)
-                     $ EM.keys bagItemSlots
-      runDefItemKey keyDefs lettersDef io slotKeys promptChosen cCur
+      bagHuge <- getsState $ \s -> accessModeBag leader s cCur
+      itemToF <- getsState $ flip itemToFull
+      mpsuit <- psuit  -- when throwing, this sets eps and checks xhair validity
+      psuitFun <- case mpsuit of
+        SuitsEverything -> return $ \_ _ _ -> True
+        SuitsSomething f -> return f  -- When throwing, this function takes
+                                      -- missile range into accout.
+      ItemRoles itemRoles <- getsSession sroles
+      let slore = loreFromMode cCur
+          itemRole = itemRoles EM.! slore
+          bagAll = EM.filterWithKey (\iid _ -> iid `ES.member` itemRole) bagHuge
+          mstore = case cCur of
+            MStore store -> Just store
+            _ -> Nothing
+          filterP = psuitFun mstore . itemToF
+          bagSuit = EM.filterWithKey filterP bagAll
+          bagFiltered = case itemDialogState of
+            ISuitable -> bagSuit
+            IAll -> bagAll
+          iids = sortIids itemToF $ EM.assocs bagFiltered
+          keyDefsExtra =
+            [ let km = K.mkChar '+'
+              in (km, DefItemKey
+               { defLabel = Right km
+               , defCond = bagAll /= bagSuit
+               , defAction = recCall cCur cRest $ case itemDialogState of
+                                                    ISuitable -> IAll
+                                                    IAll -> ISuitable
+               })
+            , let km = K.mkChar '*'
+              in (km, useMultipleDef $ Right km)
+            , let km = K.mkChar '!'
+              in (km, useMultipleDef $ Left "")  -- alias close to 'g'
+            ]
+          useMultipleDef defLabel = DefItemKey
+            { defLabel
+            , defCond = permitMulitple && not (null iids)
+            , defAction = case cCur of
+                MStore rstore -> return $! Right $ RStore rstore $ map fst iids
+                _ -> error "transition: multiple items not for MStore"
+            }
+          keyDefs = keyDefsCommon ++ filter (defCond . snd) keyDefsExtra
+      runDefInventory keyDefs promptChosen leader cCur iids
 
-keyOfEKM :: Int -> Either [K.KM] SlotChar -> Maybe K.KM
-keyOfEKM _ (Left kms) = error $ "" `showFailure` kms
-keyOfEKM numPrefix (Right SlotChar{..}) | slotPrefix == numPrefix =
-  Just $ K.mkChar slotChar
-keyOfEKM _ _ = Nothing
-
--- We don't create keys from slots in @okx@, so they have to be
--- exolicitly given in @slotKeys@.
-runDefItemKey :: MonadClientUI m
+runDefMessage :: MonadClientUI m
               => [(K.KM, DefItemKey m)]
-              -> DefItemKey m
-              -> OKX
-              -> [K.KM]
               -> Text
-              -> ItemDialogMode
-              -> m (Either Text ResultItemDialogMode)
-runDefItemKey keyDefs lettersDef okx slotKeys prompt cCur = do
-  let itemKeys = slotKeys ++ map fst keyDefs
-      wrapB s = "[" <> s <> "]"
-      (keyLabelsRaw, keys) = partitionEithers $ map (defLabel . snd) keyDefs
+              -> m ()
+runDefMessage keyDefs prompt = do
+  let wrapB s = "[" <> s <> "]"
+      keyLabelsRaw = lefts $ map (defLabel . snd) keyDefs
       keyLabels = filter (not . T.null) keyLabelsRaw
       choice = T.intercalate " " $ map wrapB $ nub keyLabels
         -- switch to Data.Containers.ListUtils.nubOrd when we drop GHC 8.4.4
   msgAdd MsgPromptGeneric $ prompt <+> choice
+
+runDefAction :: MonadClientUI m
+             => [(K.KM, DefItemKey m)]
+             -> (MenuSlot -> Either Text ResultItemDialogMode)
+             -> KeyOrSlot
+             -> m (Either Text ResultItemDialogMode)
+runDefAction keyDefs slotDef ekm = case ekm of
+  Left km -> case km `lookup` keyDefs of
+    Just keyDef -> defAction keyDef
+    Nothing -> error $ "unexpected key:" `showFailure` K.showKM km
+  Right slot -> return $! slotDef slot
+
+runDefSkills :: MonadClientUI m
+             => [(K.KM, DefItemKey m)] -> Text -> ActorId
+             -> m (Either Text ResultItemDialogMode)
+runDefSkills keyDefsCommon promptChosen leader = do
   CCUI{coscreen=ScreenContent{rheight}} <- getsSession sccui
-  ekm <- do
-    okxs <- overlayToSlideshow (rheight - 2) keys okx
-    displayChoiceScreen (show cCur) ColorFull False okxs itemKeys
-  case ekm of
-    Left km -> case km `lookup` keyDefs of
-      Just keyDef -> defAction keyDef ekm
-      Nothing -> defAction lettersDef ekm  -- pressed; with current prefix
-    Right _slot -> defAction lettersDef ekm  -- selected; with the given prefix
+  runDefMessage keyDefsCommon promptChosen
+  let itemKeys = map fst keyDefsCommon
+      keys = rights $ map (defLabel . snd) keyDefsCommon
+  okx <- skillsOverlay leader
+  sli <- overlayToSlideshow (rheight - 2) keys okx
+  ekm <- displayChoiceScreenWithDefItemKey
+           (skillsInRightPane leader) sli itemKeys (show MSkills)
+  runDefAction keyDefsCommon (Right . RSkills) ekm
+
+skillsInRightPane :: MonadClientUI m => ActorId -> Int -> MenuSlot -> m OKX
+skillsInRightPane leader width slot = do
+  FontSetup{propFont} <- getFontSetup
+  (prompt, attrString) <- skillCloseUp leader slot
+  let promptAS | T.null prompt = []
+               | otherwise = textFgToAS Color.Brown $ prompt <> "\n\n"
+      ov = EM.singleton propFont $ offsetOverlay
+                                 $ splitAttrString width width
+                                 $ promptAS ++ attrString
+  return (ov, [])
+
+runDefPlaces :: MonadClientUI m
+             => [(K.KM, DefItemKey m)] -> Text
+             -> m (Either Text ResultItemDialogMode)
+runDefPlaces keyDefsCommon promptChosen = do
+  COps{coplace} <- getsState scops
+  CCUI{coscreen=ScreenContent{rheight}} <- getsSession sccui
+  soptions <- getsClient soptions
+  places <- getsState $ EM.assocs
+                      . placesFromState coplace (sexposePlaces soptions)
+  runDefMessage keyDefsCommon promptChosen
+  let itemKeys = map fst keyDefsCommon
+      keys = rights $ map (defLabel . snd) keyDefsCommon
+  okx <- placesOverlay
+  sli <- overlayToSlideshow (rheight - 2) keys okx
+  ekm <- displayChoiceScreenWithDefItemKey
+           (placesInRightPane places) sli itemKeys (show MPlaces)
+  runDefAction keyDefsCommon (Right . RPlaces) ekm
+
+placesInRightPane :: MonadClientUI m
+                  => [( ContentId PK.PlaceKind
+                      , (ES.EnumSet LevelId, Int, Int, Int) )]
+                  -> Int -> MenuSlot
+                  -> m OKX
+placesInRightPane places width slot = do
+  FontSetup{propFont} <- getFontSetup
+  soptions <- getsClient soptions
+  (prompt, blurbs) <- placeCloseUp places (sexposePlaces soptions) slot
+  let promptAS | T.null prompt = []
+               | otherwise = textFgToAS Color.Brown $ prompt <> "\n\n"
+      splitText = splitAttrString width width
+      ov = attrLinesToFontMap
+           $ map (second $ concatMap splitText)
+           $ (propFont, [promptAS]) : blurbs
+  return (ov, [])
+
+runDefFactions :: MonadClientUI m
+               => [(K.KM, DefItemKey m)] -> Text
+               -> m (Either Text ResultItemDialogMode)
+runDefFactions keyDefsCommon promptChosen = do
+  CCUI{coscreen=ScreenContent{rheight}} <- getsSession sccui
+  sroles <- getsSession sroles
+  factions <- getsState $ factionsFromState sroles
+  runDefMessage keyDefsCommon promptChosen
+  let itemKeys = map fst keyDefsCommon
+      keys = rights $ map (defLabel . snd) keyDefsCommon
+  okx <- factionsOverlay
+  sli <- overlayToSlideshow (rheight - 2) keys okx
+  ekm <- displayChoiceScreenWithDefItemKey
+           (factionsInRightPane factions)
+           sli itemKeys (show MFactions)
+  runDefAction keyDefsCommon (Right . RFactions) ekm
+
+factionsInRightPane :: MonadClientUI m
+                    => [(FactionId, Faction)]
+                    -> Int -> MenuSlot
+                    -> m OKX
+factionsInRightPane factions width slot = do
+  FontSetup{propFont} <- getFontSetup
+  (prompt, blurbs) <- factionCloseUp factions slot
+  let promptAS | T.null prompt = []
+               | otherwise = textFgToAS Color.Brown $ prompt <> "\n\n"
+      splitText = splitAttrString width width
+      ov = attrLinesToFontMap
+           $ map (second $ concatMap splitText)
+           $ (propFont, [promptAS]) : blurbs
+  return (ov, [])
+
+runDefModes :: MonadClientUI m
+            => [(K.KM, DefItemKey m)] -> Text
+            -> m (Either Text ResultItemDialogMode)
+runDefModes keyDefsCommon promptChosen = do
+  CCUI{coscreen=ScreenContent{rheight}} <- getsSession sccui
+  runDefMessage keyDefsCommon promptChosen
+  let itemKeys = map fst keyDefsCommon
+      keys = rights $ map (defLabel . snd) keyDefsCommon
+  okx <- modesOverlay
+  sli <- overlayToSlideshow (rheight - 2) keys okx
+  -- Modes would cover the whole screen, so we don't display in right pane.
+  -- But we display and highlight menu bullets.
+  ekm <- displayChoiceScreenWithDefItemKey
+           (\_ _ -> return emptyOKX) sli itemKeys (show MModes)
+  runDefAction keyDefsCommon (Right . RModes) ekm
+
+runDefInventory :: MonadClientUI m
+                => [(K.KM, DefItemKey m)]
+                -> Text
+                -> ActorId
+                -> ItemDialogMode
+                -> [(ItemId, ItemQuant)]
+                -> m (Either Text ResultItemDialogMode)
+runDefInventory keyDefs promptChosen leader dmode iids = do
+  CCUI{coscreen=ScreenContent{rheight}} <- getsSession sccui
+  actorCurAndMaxSk <- getsState $ getActorMaxSkills leader
+  let meleeSkill = Ability.getSk Ability.SkHurtMelee actorCurAndMaxSk
+      slotDef :: MenuSlot -> Either Text ResultItemDialogMode
+      slotDef slot =
+        let iid = fst $ iids !! fromEnum slot
+        in Right $ case dmode of
+          MStore rstore -> RStore rstore [iid]
+          MOwned -> ROwned iid
+          MLore rlore -> RLore rlore slot iids
+          _ -> error $ "" `showFailure` dmode
+      promptFun _iid _itemFull _k = ""
+        -- TODO, e.g., if the party still owns any copies, if the actor
+        -- was ever killed by us or killed ours, etc.
+        -- This can be the same prompt or longer than what entering
+        -- the item screen shows.
+  runDefMessage keyDefs promptChosen
+  let itemKeys = map fst keyDefs
+      keys = rights $ map (defLabel . snd) keyDefs
+  okx <- itemOverlay iids dmode
+  sli <- overlayToSlideshow (rheight - 2) keys okx
+  ekm <- displayChoiceScreenWithDefItemKey
+           (okxItemLoreInline promptFun meleeSkill dmode iids)
+           sli itemKeys (show dmode)
+  runDefAction keyDefs slotDef ekm
+
+skillCloseUp :: MonadClientUI m => ActorId -> MenuSlot -> m (Text, AttrString)
+skillCloseUp leader slot = do
+  b <- getsState $ getActorBody leader
+  bUI <- getsSession $ getActorUI leader
+  actorCurAndMaxSk <- getsState $ getActorMaxSkills leader
+  let skill = skillsInDisplayOrder !! fromEnum slot
+      valueText = skillToDecorator skill b
+                  $ Ability.getSk skill actorCurAndMaxSk
+      prompt = makeSentence
+        [ MU.WownW (partActor bUI) (MU.Text $ skillName skill)
+        , "is", MU.Text valueText ]
+      attrString = textToAS $ skillDesc skill
+  return (prompt, attrString)
+
+placeCloseUp :: MonadClientUI m
+             => [(ContentId PK.PlaceKind, (ES.EnumSet LevelId, Int, Int, Int))]
+             -> Bool
+             -> MenuSlot
+             -> m (Text, [(DisplayFont, [AttrString])])
+placeCloseUp places sexposePlaces slot = do
+  COps{coplace} <- getsState scops
+  FontSetup{..} <- getFontSetup
+  let (pk, (es, ne, na, _)) = places !! fromEnum slot
+      pkind = okind coplace pk
+      prompt = makeSentence ["you remember", MU.Text $ PK.pname pkind]
+      freqsText = "Frequencies:" <+> T.intercalate " "
+        (map (\(grp, n) -> "(" <> displayGroupName grp
+                           <> ", " <> tshow n <> ")")
+         $ PK.pfreq pkind)
+      onLevels | ES.null es = []
+               | otherwise = [makeSentence
+                               [ "Appears on"
+                               , MU.CarWs (ES.size es) "level" <> ":"
+                               , MU.WWandW $ map MU.Car $ sort
+                                 $ map (abs . fromEnum) $ ES.elems es ]]
+      placeParts = ["it has" | ne > 0 || na > 0]
+                   ++ [MU.CarWs ne "entrance" | ne > 0]
+                   ++ ["and" | ne > 0 && na > 0]
+                   ++ [MU.CarWs na "surrounding" | na > 0]
+      partsSentence | null placeParts = []
+                    | otherwise = [makeSentence placeParts, "\n"]
+      blurbs = [(propFont, partsSentence)]
+               ++ [(monoFont, [freqsText, "\n"]) | sexposePlaces]
+               ++ [(squareFont, PK.ptopLeft pkind ++ ["\n"]) | sexposePlaces]
+               ++ [(propFont, onLevels)]
+  return (prompt, map (second $ map textToAS) blurbs)
+
+factionCloseUp :: MonadClientUI m
+               => [(FactionId, Faction)]
+               -> MenuSlot
+               -> m (Text, [(DisplayFont, [AttrString])])
+factionCloseUp factions slot = do
+  side <- getsClient sside
+  FontSetup{propFont} <- getFontSetup
+  factionD <- getsState sfactionD
+  let (fid, fact@Faction{gkind=FK.FactionKind{..}, ..}) =
+        factions !! fromEnum slot
+      (name, person) = if fhasGender  -- but we ignore "Controlled", etc.
+                       then (makePhrase [MU.Ws $ MU.Text fname], MU.PlEtc)
+                       else (fname, MU.Sg3rd)
+      (youThey, prompt) =
+        if fid == side
+        then ("You", makeSentence  ["you are the", MU.Text name])
+        else ("They", makeSentence ["you are wary of the", MU.Text name])
+               -- wary even if the faction is allied
+      ts1 =
+        -- Display only the main groups, not to spam.
+        case map fst $ filter ((>= 100) . snd) fgroups of
+          [] -> []  -- only initial actors in the faction?
+          [fgroup] ->
+            [makeSentence [ "the faction consists of"
+                          , MU.Ws $ MU.Text $ displayGroupName fgroup ]]
+          grps -> [makeSentence
+                    [ "the faction attracts members such as:"
+                    ,  MU.WWandW $ map (MU.Text . displayGroupName) grps ]]
+        ++ [if fskillsOther == Ability.zeroSkills  -- simplified
+            then youThey <+> "don't care about each other and crowd and stampede all at once, sometimes brutally colliding by accident."
+            else youThey <+> "pay attention to each other and take care to move one at a time."]
+        ++ [ if fcanEscape
+             then "The faction is able to take part in races to an area exit."
+             else "The faction doesn't escape areas of conflict and attempts to block exits instead."]
+        ++ [ "When all members are incapacitated, the faction dissolves."
+           | fneverEmpty ]
+        ++ [if fhasGender
+            then "Its members are known to have sexual dimorphism and use gender pronouns."
+            else "Its members seem to prefer naked ground for sleeping."]
+        ++ [ "Its ranks swell with time."
+           | fspawnsFast ]
+        ++ [ "The faction is able to maintain activity on a level on its own, with a pointman coordinating each tactical maneuver."
+           | fhasPointman ]
+      -- Changes to all of these have visibility @PosAll@, so the player
+      -- knows them fully, except for @gvictims@, which is coupled to tracking
+      -- other factions' actors and so only incremented when we've seen
+      -- their actor killed (mostly likely killed by us).
+      ts2 =  -- reporting regardless of whether any of the factions are dead
+        let renderDiplGroup [] = error "renderDiplGroup: null"
+            renderDiplGroup ((fid2, diplomacy) : rest) = MU.Phrase
+              [ MU.Text $ tshowDiplomacy diplomacy
+              , "with"
+              , MU.WWandW $ map renderFact2 $ fid2 : map fst rest ]
+            renderFact2 fid2 = MU.Text $ Faction.gname (factionD EM.! fid2)
+            valid (fid2, diplomacy) = isJust (lookup fid2 factions)
+                                      && diplomacy /= Unknown
+            knownAssocsGroups = groupBy ((==) `on` snd) $ sortOn snd
+                                $ filter valid $ EM.assocs gdipl
+        in [ makeSentence [ MU.SubjectVerb person MU.Yes (MU.Text name) "be"
+                          , MU.WWandW $ map renderDiplGroup knownAssocsGroups ]
+           | not (null knownAssocsGroups) ]
+      ts3 =
+        case gquit of
+          Just Status{..} | not $ isHorrorFact fact ->
+            ["The faction has already" <+> FK.nameOutcomePast stOutcome
+             <+> "around level" <+> tshow (abs stDepth) <> "."]
+          _ -> []
+        ++ let nkilled = sum $ EM.elems gvictims
+               personKilled = if nkilled == 1 then MU.Sg3rd else MU.PlEtc
+           in [ makeSentence $
+                  [ "so far," | isNothing gquit ]
+                  ++ [ "at least"
+                     , MU.CardinalWs nkilled "member"
+                     , MU.SubjectVerb personKilled
+                                      MU.Yes
+                                      "of this faction"
+                                      "have been incapacitated" ]
+              | nkilled > 0 ]
+        ++ let adjective = if isNothing gquit then "current" else "last"
+               verb = if isNothing gquit then "is" else "was"
+           in ["Its" <+> adjective <+> "doctrine" <+> verb
+               <+> "'" <> Ability.nameDoctrine gdoctrine
+               <> "' (" <> Ability.describeDoctrine gdoctrine <> ")."]
+      -- Description of the score polynomial would go into a separate section,
+      -- but it's hard to make it sound non-technical enough.
+      blurbs = intersperse ["\n"] $ filter (not . null) [ts1, ts2, ts3]
+  return (prompt, map (\t -> (propFont, map textToAS t)) blurbs)

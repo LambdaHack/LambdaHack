@@ -3,7 +3,7 @@ module Game.LambdaHack.Client.UI.Watch.WatchUpdAtomicM
   ( watchRespUpdAtomicUI
 #ifdef EXPOSE_INTERNAL
     -- * Internal operations
-  , updateItemSlot, Threat, createActorUI, destroyActorUI, spotItemBag
+  , assignItemRole, Threat, createActorUI, destroyActorUI, spotItemBag
   , recordItemLid, moveActor, displaceActorUI, moveItemUI
   , discover, ppHearMsg, ppHearDistanceAdjective, ppHearDistanceAdverb
 #endif
@@ -19,7 +19,6 @@ import qualified Data.EnumMap.Strict as EM
 import qualified Data.EnumSet as ES
 import qualified Data.Map.Strict as M
 import qualified Data.Text as T
-import           Data.Tuple
 import           GHC.Exts (inline)
 import qualified NLP.Miniutter.English as MU
 
@@ -35,7 +34,6 @@ import           Game.LambdaHack.Client.UI.Frame
 import           Game.LambdaHack.Client.UI.FrameM
 import           Game.LambdaHack.Client.UI.HandleHelperM
 import           Game.LambdaHack.Client.UI.ItemDescription
-import           Game.LambdaHack.Client.UI.ItemSlot
 import qualified Game.LambdaHack.Client.UI.Key as K
 import           Game.LambdaHack.Client.UI.MonadClientUI
 import           Game.LambdaHack.Client.UI.Msg
@@ -60,6 +58,7 @@ import qualified Game.LambdaHack.Common.Tile as Tile
 import           Game.LambdaHack.Common.Time
 import           Game.LambdaHack.Common.Types
 import           Game.LambdaHack.Content.CaveKind (cdesc)
+import           Game.LambdaHack.Content.FactionKind
 import qualified Game.LambdaHack.Content.ItemKind as IK
 import           Game.LambdaHack.Content.ModeKind
 import qualified Game.LambdaHack.Content.ModeKind as MK
@@ -85,8 +84,8 @@ watchRespUpdAtomicUI cmd = case cmd of
   UpdDestroyActor aid body _ -> destroyActorUI True aid body
   UpdCreateItem verbose iid _ kit@(kAdd, _) c -> do
     recordItemLid iid c
-    updateItemSlot c iid
-    if verbose then case c of
+    assignItemRole c iid
+    when verbose $ case c of
       CActor aid store -> do
         b <- getsState $ getActorBody aid
         case store of
@@ -147,18 +146,15 @@ watchRespUpdAtomicUI cmd = case cmd of
             wown <- ppContainerWownW partActorLeader True c
             itemVerbMU MsgItemCreation iid kit
                        (MU.Text $ makePhrase $ "appear" : wown) c
-      CEmbed lid _ -> markDisplayNeeded lid
+      CEmbed{} -> return ()  -- not visible so can't delay even if important
       CFloor lid _ -> do
         factionD <- getsState sfactionD
         itemVerbMU MsgItemCreation iid kit
                    (MU.Text $ "appear" <+> ppContainer factionD c) c
         markDisplayNeeded lid
       CTrunk{} -> return ()
-    else do
-      lid <- getsState $ lidFromC c
-      markDisplayNeeded lid
   UpdDestroyItem verbose iid _ kit c ->
-    if verbose then case c of
+    when verbose $ case c of
       CActor aid _  -> do
         b <- getsState $ getActorBody aid
         if bproj b then
@@ -167,16 +163,13 @@ watchRespUpdAtomicUI cmd = case cmd of
           ownW <- ppContainerWownW partActorLeader False c
           let verb = MU.Text $ makePhrase $ "vanish from" : ownW
           itemVerbMUShort MsgItemRuination iid kit verb c
-      CEmbed lid _ -> markDisplayNeeded lid
+      CEmbed{} -> return ()  -- not visible so can't delay even if important
       CFloor lid _ -> do
         factionD <- getsState sfactionD
         itemVerbMUShort MsgItemRuination iid kit
                         (MU.Text $ "break" <+> ppContainer factionD c) c
         markDisplayNeeded lid
       CTrunk{} -> return ()
-    else do
-      lid <- getsState $ lidFromC c
-      markDisplayNeeded lid
   UpdSpotActor aid body -> createActorUI False aid body
   UpdLoseActor aid body -> destroyActorUI False aid body
   UpdSpotItem verbose iid kit c -> spotItemBag verbose c $ EM.singleton iid kit
@@ -193,10 +186,12 @@ watchRespUpdAtomicUI cmd = case cmd of
   UpdMoveActor aid source target -> moveActor aid source target
   UpdWaitActor aid WSleep _ -> do
     aidVerbMU MsgStatusWakeup aid "wake up"
+    msgAdd MsgTutorialHint "Woken up actors regain stats and skills, including sight radius and melee armor, over several turns."
+  UpdWaitActor aid WWake _ -> do
     side <- getsClient sside
     b <- getsState $ getActorBody aid
     unless (bfid b == side) $
-      msgAdd MsgTutorialHint "Woken up actors regain stats and skills, including sight radius and melee armor, over several turns. To avoid waking them up, make sure they don't lose HP nor too much Calm through noises, particularly close ones. Beware, however, that they slowly regenerate HP as they sleep and eventually wake up at full HP."
+      msgAdd MsgTutorialHint "To avoid waking enemies up, make sure they don't lose HP nor too much Calm through noises, particularly close ones. Beware, however, that they slowly regenerate HP as they sleep and eventually wake up at full HP."
   UpdWaitActor{} -> return ()  -- falling asleep handled uniformly elsewhere
   UpdDisplaceActor source target -> displaceActorUI source target
   UpdMoveItem iid k aid c1 c2 -> moveItemUI iid k aid c1 c2
@@ -357,7 +352,7 @@ watchRespUpdAtomicUI cmd = case cmd of
     when (mtgt /= mleader) $ do
       fact <- getsState $ (EM.! fid) . sfactionD
       lidV <- viewedLevelUI
-      when (isAIFact fact) $ markDisplayNeeded lidV
+      when (gunderAI fact) $ markDisplayNeeded lidV
       -- This faction can't run with multiple actors, so this is not
       -- a leader change while running, but rather server changing
       -- their leader, which the player should be alerted to.
@@ -383,12 +378,8 @@ watchRespUpdAtomicUI cmd = case cmd of
   UpdDiplFaction fid1 fid2 _ toDipl -> do
     name1 <- getsState $ gname . (EM.! fid1) . sfactionD
     name2 <- getsState $ gname . (EM.! fid2) . sfactionD
-    let showDipl Unknown = "unknown to each other"
-        showDipl Neutral = "in neutral diplomatic relations"
-        showDipl Alliance = "allied"
-        showDipl War = "at war"
     msgAdd MsgFactionIntel $
-      name1 <+> "and" <+> name2 <+> "are now" <+> showDipl toDipl <> "."
+      name1 <+> "and" <+> name2 <+> "are now" <+> tshowDiplomacy toDipl <> "."
   UpdDoctrineFaction{} -> return ()
   UpdAutoFaction fid b -> do
     side <- getsClient sside
@@ -425,7 +416,7 @@ watchRespUpdAtomicUI cmd = case cmd of
     mactorAtPos <- getsState $ posToBig p lid
     mleader <- getsClient sleader
     when (unexpected || isJust mactorAtPos && mactorAtPos /= mleader) $ do
-      -- Player notices @fromTile can't be altered into @toTIle@,
+      -- Faction notices @fromTile@ can't be altered into @toTIle@,
       -- which is uncanny, so we produce a message.
       -- This happens when the player missed an earlier search of the tile
       -- performed by another faction.
@@ -490,13 +481,13 @@ watchRespUpdAtomicUI cmd = case cmd of
   UpdRestart fid _ _ _ _ srandom -> do
     cops@COps{cocave, comode, corule} <- getsState scops
     oldSess <- getSession
-    svictories <- getsClient svictories
     snxtChal <- getsClient snxtChal
+    noConfirmsGame <- isNoConfirmsGame
     let uiOptions = sUIOptions oldSess
         f !acc _p !i _a = i : acc
         modes = zip [0..] $ ofoldlGroup' comode CAMPAIGN_SCENARIO f []
         g :: (Int, ContentId ModeKind) -> Int
-        g (_, mode) = case EM.lookup mode svictories of
+        g (_, mode) = case EM.lookup mode (svictories oldSess) of
           Nothing -> 0
           Just cm -> fromMaybe 0 (M.lookup snxtChal cm)
         (snxtScenario, _) = minimumBy (comparing g) modes
@@ -506,10 +497,14 @@ watchRespUpdAtomicUI cmd = case cmd of
         { schanF = schanF oldSess
         , sccui = sccui oldSess
         , shistory = shistory oldSess
+        , svictories = svictories oldSess
+        , scampings = scampings oldSess
+        , srestarts = srestarts oldSess
         , smarkVision = smarkVision oldSess
         , smarkSmell = smarkSmell oldSess
         , snxtScenario
-        , scurTutorial = snxtTutorial oldSess  -- quite random for screensavers
+        , scurTutorial = noConfirmsGame || snxtTutorial oldSess
+            -- make sure a newbie interrupting a screensaver has ample help
         , snxtTutorial = nxtGameTutorial
         , soverrideTut = soverrideTut oldSess
         , sstart = sstart oldSess
@@ -521,11 +516,11 @@ watchRespUpdAtomicUI cmd = case cmd of
         }
     when (sstart oldSess == 0) resetSessionStart
     when (lengthHistory (shistory oldSess) == 0) $ do
-      let title = T.pack $ rtitle corule
-      msgAdd MsgBookKeeping $ "Welcome to" <+> title <> "!"
       -- Generate initial history. Only for UI clients.
       shistory <- defaultHistory
       modifySession $ \sess -> sess {shistory}
+      let title = T.pack $ rtitle corule
+      msgAdd MsgBookKeeping $ "Welcome to" <+> title <> "!"
     recordHistory  -- to ensure EOL even at creation of history
     lid <- getArenaUI
     lvl <- getLevel lid
@@ -538,9 +533,13 @@ watchRespUpdAtomicUI cmd = case cmd of
           _ -> False
     msgAdd MsgBookKeeping "-------------------------------------------------"
     recordHistory
+    msgAdd MsgPromptGeneric
+           "A grand story starts right here! (Press '?' for mode description and help.)"
+    if lengthHistory (shistory oldSess) > 1
+      then fadeOutOrIn False
+      else pushReportFrame  -- show anything ASAP
     msgAdd MsgActionWarning
            ("New game started in" <+> mname gameMode <+> "mode.")
-    msgAdd MsgPlotExposition $ mdesc gameMode
     let desc = cdesc $ okind cocave $ lkind lvl
     unless (T.null desc) $ do
       msgLnAdd MsgBackdropFocus "You take in your surroundings."
@@ -560,34 +559,27 @@ watchRespUpdAtomicUI cmd = case cmd of
     msgLnAdd MsgBadMiscEvent blurb  -- being here is a bad turn of events
     when (cwolf curChal && not loneMode) $
       msgAdd MsgActionWarning "Being a lone wolf, you begin without companions."
-    when (lengthHistory (shistory oldSess) > 1) $
-      fadeOutOrIn False
-    setFrontAutoYes $ isAIFact fact
+    setFrontAutoYes $ gunderAI fact
     -- Forget the furious keypresses when dying in the previous game.
     resetPressedKeys
-    -- Help newbies when actors obscured by text and no obvious key to press:
-    displayMore ColorFull "\nAre you up for the challenge?"
-    msgAdd MsgPromptGeneric
-           "A grand story starts right here! (Press '?' for context and help.)"
   UpdRestartServer{} -> return ()
   UpdResume fid _ -> do
     COps{cocave} <- getsState scops
     resetSessionStart
     fact <- getsState $ (EM.! fid) . sfactionD
-    setFrontAutoYes $ isAIFact fact
-    unless (isAIFact fact) $ do
+    setFrontAutoYes $ gunderAI fact
+    unless (gunderAI fact) $ do
       lid <- getArenaUI
       lvl <- getLevel lid
       gameMode <- getGameMode
-      msgAdd MsgActionAlert $ "Continuing" <+> mname gameMode <> "."
-      msgAdd MsgPromptGeneric $ mdesc gameMode
+      msgAdd MsgPromptGeneric
+             "Welcome back! (Press '?' for mode description and help.)"
+      pushReportFrame  -- show anything ASAP
+      msgAdd MsgActionAlert $ "Continuing" <+> mname gameMode <+> "mode."
       let desc = cdesc $ okind cocave $ lkind lvl
       unless (T.null desc) $ do
         msgLnAdd MsgPromptFocus "You remember your surroundings."
         msgAdd MsgPromptGeneric desc
-      displayMore ColorFull "\nAre you up for the challenge?"
-      msgAdd MsgPromptGeneric
-             "Prove yourself! (Press '?' for context and help.)"
   UpdResumeServer{} -> return ()
   UpdKillExit{} -> do
 #ifdef USE_JSFILE
@@ -624,25 +616,27 @@ watchRespUpdAtomicUI cmd = case cmd of
     case hearMsg of
       HearUpd UpdDestroyActor{} ->
         msgAdd MsgTutorialHint "Events out of your sight radius (as listed in the '#' skill menu) can sometimes be heard, depending on your hearing radius skill. Some, such as death shrieks, can always be heard regardless of skill and distance, including when they come from a different floor."
-      HearTaunt{} ->
-        msgAdd MsgTutorialHint "Enemies you can't see are sometimes heard yelling and emitting other noises. Whether you can hear them, depends on their distance and your hearing radius, as listed in the '#' skill menu."
+      HearTaunt{} -> do
+        globalTime <- getsState stime
+        when (globalTime > timeTurn) $  -- avoid too many hints at the start
+          msgAdd MsgTutorialHint "Enemies you can't see are sometimes heard yelling and emitting other noises. Whether you can hear them, depends on their distance and your hearing radius, as listed in the '#' skill menu."
       _ -> return ()
   UpdMuteMessages _ smuteMessages ->
     modifySession $ \sess -> sess {smuteMessages}
 
-updateItemSlot :: MonadClientUI m => Container -> ItemId -> m ()
-updateItemSlot c iid = do
+assignItemRole :: MonadClientUI m => Container -> ItemId -> m ()
+assignItemRole c iid = do
   arItem <- getsState $ aspectRecordFromIid iid
-  ItemSlots itemSlots <- getsSession sslots
-  let slore = IA.loreFromContainer arItem c
-      lSlots = itemSlots EM.! slore
-  case lookup iid $ map swap $ EM.assocs lSlots of
-    Nothing -> do
-      let l = assignSlot lSlots
-          f = EM.insert l iid
-          newSlots = ItemSlots $ EM.adjust f slore itemSlots
-      modifySession $ \sess -> sess {sslots = newSlots}
-    Just _l -> return ()  -- slot already assigned
+  let assignSingleRole lore = do
+        ItemRoles itemRoles <- getsSession sroles
+        let itemRole = itemRoles EM.! lore
+        unless (iid `ES.member` itemRole) $ do
+          let newRoles = ItemRoles $ EM.adjust (ES.insert iid) lore itemRoles
+          modifySession $ \sess -> sess {sroles = newRoles}
+      slore = IA.loreFromContainer arItem c
+  assignSingleRole slore
+  when (slore `elem` [SOrgan, STrunk, SCondition]) $
+    assignSingleRole SBody
 
 data Threat =
     ThreatNone
@@ -667,15 +661,15 @@ createActorUI born aid body = do
     let baseColor = flavourToColor $ jflavour itemBase
         basePronoun | not (bproj body)
                       && IK.isymbol itemKind == '@'
-                      && fhasGender (gplayer fact) = "he"
+                      && fhasGender (gkind fact) = "he"
                     | otherwise = "it"
         nameFromNumber fn k = if k == 0
                               then makePhrase [MU.Ws $ MU.Text fn, "Captain"]
                               else fn <+> tshow k
         heroNamePronoun k =
           if gcolor fact /= Color.BrWhite
-          then (nameFromNumber (fname $ gplayer fact) k, "he")
-          else fromMaybe (nameFromNumber (fname $ gplayer fact) k, "he")
+          then (nameFromNumber (fname $ gkind fact) k, "he")
+          else fromMaybe (nameFromNumber (fname $ gkind fact) k, "he")
                $ lookup k uHeroNames
         (n, bsymbol) =
           if | bproj body -> (0, if IA.checkFlag Ability.Blast arItem
@@ -713,7 +707,7 @@ createActorUI born aid body = do
            let c = if not (bproj body) && iid == btrunk body
                    then CTrunk (bfid body) (blid body) (bpos body)
                    else CActor aid store
-           updateItemSlot c iid
+           assignItemRole c iid
            recordItemLid iid c)
         ((btrunk body, CEqp)  -- store will be overwritten, unless projectile
          : filter ((/= btrunk body) . fst) (getCarriedIidCStore body))
@@ -777,14 +771,14 @@ createActorUI born aid body = do
          case threat of
            ThreatNone -> return ()  -- too rare to care ATM
            ThreatUnarmed ->
-             msgAdd MsgTutorialHint "Enemies are normally dealt with using melee (by bumping when adjacent) or ranged combat (by 'f'linging items at them)."  -- assuming newbies don't remap their keys
+             msgAdd MsgTutorialHint "Enemies are normally dealt with using melee (by bumping when adjacent) or ranged combat (by 'f'linging items at them)."
            ThreatArmed ->
              msgAdd MsgTutorialHint "Enemies can be dealt with not only via combat, but also with clever use of terrain effects, stealth (not emitting nor reflecting light) or hasty retreat (particularly when foes are asleep or drowsy)."
            _ | length friendAssocs <= 1 -> return ()  -- one member on level
            ThreatAnotherUnarmed ->
-             msgAdd MsgTutorialHint "When dealing with groups of enemies, remember than you fight as a team. After a few moves, switch the controlled teammate (marked on the map with the yellow box) using the Tab key to another party member (marked with a green box). Avoid meleeing alone."
+             msgAdd MsgTutorialHint "When dealing with groups of enemies, remember than you fight as a team. Switch the pointman (marked on the map with the yellow box) using the Tab key until you move each teammate to a tactically advantageous position. Avoid meleeing alone."
            ThreatAnotherArmed ->
-             msgAdd MsgTutorialHint "When dealing with groups of armed enemies, remember than you fight as a team. After a few moves, switch the controlled teammate (marked on the map with the yellow box) using the Tab key to another party member (marked with a green box). Retreat, if necessary to form a front line. Soften the foes with missiles, especially of exploding kind."
+             msgAdd MsgTutorialHint "When dealing with groups of armed enemies, remember than you fight as a team. Switch the pointman (marked on the map with the yellow box) using the Tab key until you move each teammate to a tactically advantageous position. Retreat, if necessary to form a front line. Soften the foes with missiles, especially of exploding kind."
          animate (blid body) $ actorX (bpos body)
 
 destroyActorUI :: MonadClientUI m => Bool -> ActorId -> Actor -> m ()
@@ -837,7 +831,7 @@ spotItemBag verbose c bag = do
   localTime <- getsState $ getLocalTime lid
   factionD <- getsState sfactionD
   -- Queried just once, so many copies of a new item can be reported. OK.
-  ItemSlots itemSlots <- getsSession sslots
+  ItemRoles itemRoles <- getsSession sroles
   sxhairOld <- getsSession sxhair
   let resetXhair = case c of
         CFloor _ p -> case sxhairOld of
@@ -866,19 +860,19 @@ spotItemBag verbose c bag = do
         itemFull <- getsState $ itemToFull iid
         let arItem = aspectRecordFull itemFull
             slore = IA.loreFromContainer arItem c
-        case lookup iid $ map swap $ EM.assocs $ itemSlots EM.! slore of
-          Nothing -> do  -- never seen or would have a slot
-            updateItemSlot c iid
-            case c of
-              CFloor{} -> do
-                let subjectShort = partItemWsShortest rwidth side factionD k
-                                                      localTime itemFull kit
-                    subjectLong = partItemWsLong rwidth side factionD k
-                                                 localTime itemFull kit
-                return $ Just (k, subjectShort, subjectLong)
-              _ -> return Nothing
-          _ -> return Nothing  -- this item or another with the same @iid@
-                               -- seen already (has a slot assigned); old news
+        if iid `ES.member` (itemRoles EM.! slore)
+        then return Nothing  -- this item or another with the same @iid@
+                             -- seen already (has a role assigned); old news
+        else do  -- never seen or would have a role
+          assignItemRole c iid
+          case c of
+            CFloor{} -> do
+              let subjectShort = partItemWsShortest rwidth side factionD k
+                                                    localTime itemFull kit
+                  subjectLong = partItemWsLong rwidth side factionD k
+                                               localTime itemFull kit
+              return $ Just (k, subjectShort, subjectLong)
+            _ -> return Nothing
       -- @SortOn@ less efficient here, because function cheap.
       sortItems = sortOn (getKind . fst)
       sortedAssocs = sortItems $ EM.assocs bag
@@ -906,9 +900,8 @@ spotItemBag verbose c bag = do
       let verb = MU.Text $ verbCStore store
       b <- getsState $ getActorBody aid
       fact <- getsState $ (EM.! bfid b) . sfactionD
-      let underAI = isAIFact fact
       mleader <- getsClient sleader
-      if Just aid == mleader && not underAI then
+      if Just aid == mleader && not (gunderAI fact) then
         manyItemsAidVerbMU MsgItemMovement aid verb sortedAssocs Right
       else when (not (bproj b) && bhp b > 0) $  -- don't announce death drops
         manyItemsAidVerbMU MsgItemMovement aid verb sortedAssocs (Left . Just)
@@ -948,7 +941,7 @@ displaceActorUI source target = do
   tpart <- partActorLeader target
   let msgClass = if mleader `elem` map Just [source, target]
                  then MsgActionMajor  -- to interrupt run after a displace;
-                 else MsgActionMinor  -- configurable
+                 else MsgActionMinor  -- configurable, animation is feedback
       msg = makeSentence [MU.SubjectVerbSg spart "displace", tpart]
   msgAdd msgClass msg
   lookAtMove source
@@ -973,19 +966,16 @@ moveItemUI iid k aid cstore1 cstore2 = do
   let verb = MU.Text $ verbCStore cstore2
   b <- getsState $ getActorBody aid
   fact <- getsState $ (EM.! bfid b) . sfactionD
-  let underAI = isAIFact fact
   mleader <- getsClient sleader
-  ItemSlots itemSlots <- getsSession sslots
-  case lookup iid $ map swap $ EM.assocs $ itemSlots EM.! SItem of
-    Just _l ->
-      -- So far organs can't be put into stash, so no need to call
-      -- @updateItemSlot@ to add or reassign lore category.
-      if cstore1 == CGround && Just aid == mleader && not underAI then
-        itemAidVerbMU MsgItemMovement aid verb iid (Right k)
-      else when (not (bproj b) && bhp b > 0) $  -- don't announce death drops
-        itemAidVerbMU MsgItemMovement aid verb iid (Left k)
-    Nothing -> error $
-      "" `showFailure` (iid, k, aid, cstore1, cstore2)
+  ItemRoles itemRoles <- getsSession sroles
+  if iid `ES.member` (itemRoles EM.! SItem) then
+    -- So far organs can't be put into stash, so no need to call
+    -- @assignItemRole@ to add or reassign lore category.
+    if cstore1 == CGround && Just aid == mleader && not (gunderAI fact) then
+      itemAidVerbMU MsgActionMajor aid verb iid (Right k)
+    else when (not (bproj b) && bhp b > 0) $  -- don't announce death drops
+      itemAidVerbMU MsgActionMajor aid verb iid (Left k)
+  else error $ "" `showFailure` (iid, k, aid, cstore1, cstore2)
 
 -- The item may be used up already and so not present in the container,
 -- e.g., if the item destroyed itself. This is OK. Message is still needed.

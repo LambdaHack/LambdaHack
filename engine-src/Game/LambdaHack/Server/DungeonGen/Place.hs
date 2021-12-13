@@ -325,7 +325,7 @@ tilePlace area pl@PlaceKind{..} = do
       let reflect :: Int -> [a] -> [a]
           reflect d pat = tileReflect d (cycle pat)
       return $! fillInterior reflect reflect
-    CVerbatim -> return $! fillInterior (flip const) (flip const)
+    CVerbatim -> return $! fillInterior (\ _ x -> x) (\ _ x -> x)
     CMirror -> do
       mirror1 <- oneOf [id, reverse]
       mirror2 <- oneOf [id, reverse]

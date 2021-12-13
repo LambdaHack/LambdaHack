@@ -26,7 +26,6 @@ import           Game.LambdaHack.Client.LoopM
 import           Game.LambdaHack.Client.MonadClient
 import           Game.LambdaHack.Client.State
 import           Game.LambdaHack.Client.UI
-import           Game.LambdaHack.Client.UI.SessionUI
 import           Game.LambdaHack.Common.ClientOptions
 import           Game.LambdaHack.Common.Kind
 import           Game.LambdaHack.Common.MonadStateRead
@@ -120,14 +119,15 @@ instance MonadClientAtomic CliImplementation where
 
 -- | Run the main client loop, with the given arguments and empty
 -- initial states, in the @IO@ monad.
-executorCli :: CCUI -> UIOptions -> ClientOptions
+executorCli :: CCUI -> UIOptions -> ClientOptions -> Bool
             -> COps
-            -> Bool
             -> FactionId
             -> ChanServer
             -> IO ()
-executorCli ccui sUIOptions clientOptions cops@COps{corule} isUI fid cliDict =
-  let cliSession | isUI = Just $ emptySessionUI sUIOptions
+executorCli ccui sUIOptions clientOptions startsNewGame
+            cops@COps{corule} fid cliDict =
+  let cliSession | isJust (requestUIS cliDict) =
+                     Just $ emptySessionUI sUIOptions
                  | otherwise = Nothing
       stateToFileName (cli, _) =
         ssavePrefixCli (soptions cli) <> Save.saveNameCli corule (sside cli)
@@ -139,6 +139,6 @@ executorCli ccui sUIOptions clientOptions cops@COps{corule} isUI fid cliDict =
         , cliToSave
         , cliSession
         }
-      m = loopCli ccui sUIOptions clientOptions
+      m = loopCli ccui sUIOptions clientOptions startsNewGame
       exe = evalStateT (runCliImplementation m) . totalState
   in Save.wrapInSaves cops stateToFileName exe

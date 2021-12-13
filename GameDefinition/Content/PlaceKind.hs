@@ -2,7 +2,7 @@
 -- place kind.
 module Content.PlaceKind
   ( -- * Group name patterns
-    pattern ROGUE, pattern LABORATORY, pattern ZOO, pattern BRAWL, pattern SHOOTOUT, pattern ARENA, pattern ESCAPE, pattern AMBUSH, pattern BATTLE, pattern NOISE, pattern MINE, pattern EMPTY
+    pattern ROGUE, pattern LABORATORY, pattern ZOO, pattern BRAWL, pattern SHOOTOUT, pattern ARENA, pattern FLIGHT, pattern AMBUSH, pattern BATTLE, pattern NOISE, pattern MINE, pattern EMPTY
   , pattern INDOOR_ESCAPE_DOWN, pattern INDOOR_ESCAPE_UP, pattern OUTDOOR_ESCAPE_DOWN, pattern TINY_STAIRCASE, pattern OPEN_STAIRCASE, pattern CLOSED_STAIRCASE, pattern WALLED_STAIRCASE, pattern GATED_TINY_STAIRCASE, pattern GATED_OPEN_STAIRCASE, pattern GATED_CLOSED_STAIRCASE, pattern OUTDOOR_TINY_STAIRCASE, pattern OUTDOOR_CLOSED_STAIRCASE, pattern OUTDOOR_WALLED_STAIRCASE
   , groupNamesSingleton, groupNames
   , -- * Content
@@ -16,11 +16,12 @@ import Game.LambdaHack.Core.Prelude
 import qualified Data.EnumMap.Strict as EM
 import qualified Data.Text as T
 
-import Content.TileKind hiding (content, groupNames, groupNamesSingleton)
 import Game.LambdaHack.Content.PlaceKind
 import Game.LambdaHack.Content.TileKind (TileKind)
 import Game.LambdaHack.Definition.Defs
 import Game.LambdaHack.Definition.DefsInternal
+
+import Content.TileKind hiding (content, groupNames, groupNamesSingleton)
 
 -- * Group name patterns
 
@@ -31,11 +32,11 @@ groupNamesSingleton = []
 -- group names, let's also add the generated group names to @groupNames@.
 groupNames :: [GroupName PlaceKind]
 groupNames =
-       [ROGUE, LABORATORY, ZOO, BRAWL, SHOOTOUT, ARENA, ESCAPE, AMBUSH, BATTLE, NOISE, MINE, EMPTY]
+       [ROGUE, LABORATORY, ZOO, BRAWL, SHOOTOUT, ARENA, FLIGHT, AMBUSH, BATTLE, NOISE, MINE, EMPTY]
     ++ [INDOOR_ESCAPE_DOWN, INDOOR_ESCAPE_UP, OUTDOOR_ESCAPE_DOWN, TINY_STAIRCASE, OPEN_STAIRCASE, CLOSED_STAIRCASE, WALLED_STAIRCASE]
     ++ fst generatedStairs
 
-pattern ROGUE, LABORATORY, ZOO, BRAWL, SHOOTOUT, ARENA, ESCAPE, AMBUSH, BATTLE, NOISE, MINE, EMPTY :: GroupName PlaceKind
+pattern ROGUE, LABORATORY, ZOO, BRAWL, SHOOTOUT, ARENA, FLIGHT, AMBUSH, BATTLE, NOISE, MINE, EMPTY :: GroupName PlaceKind
 
 pattern INDOOR_ESCAPE_DOWN, INDOOR_ESCAPE_UP, OUTDOOR_ESCAPE_DOWN, TINY_STAIRCASE, OPEN_STAIRCASE, CLOSED_STAIRCASE, WALLED_STAIRCASE, GATED_TINY_STAIRCASE, GATED_OPEN_STAIRCASE, GATED_CLOSED_STAIRCASE, OUTDOOR_TINY_STAIRCASE, OUTDOOR_CLOSED_STAIRCASE, OUTDOOR_WALLED_STAIRCASE :: GroupName PlaceKind
 
@@ -45,16 +46,16 @@ pattern ZOO = GroupName "zoo"
 pattern BRAWL = GroupName "brawl"
 pattern SHOOTOUT = GroupName "shootout"
 pattern ARENA = GroupName "arena"
-pattern ESCAPE = GroupName "escape"
+pattern FLIGHT = GroupName "flight"
 pattern AMBUSH = GroupName "ambush"
 pattern BATTLE = GroupName "battle"
 pattern NOISE = GroupName "noise"
 pattern MINE = GroupName "mine"
 pattern EMPTY = GroupName "empty"
 
-pattern INDOOR_ESCAPE_DOWN = GroupName "escape down"
-pattern INDOOR_ESCAPE_UP = GroupName "escape up"
-pattern OUTDOOR_ESCAPE_DOWN = GroupName "outdoor escape route"
+pattern INDOOR_ESCAPE_DOWN = GroupName "indoor escape down"
+pattern INDOOR_ESCAPE_UP = GroupName "indoor escape up"
+pattern OUTDOOR_ESCAPE_DOWN = GroupName "outdoor escape down"
 pattern TINY_STAIRCASE = GroupName "tiny staircase"
 pattern OPEN_STAIRCASE = GroupName "open staircase"
 pattern CLOSED_STAIRCASE = GroupName "closed staircase"
@@ -113,8 +114,8 @@ defaultLegendLit = EM.fromList
   , ('-', S_WALL_HORIZONTAL_LIT)
   , ('0', S_PILLAR)
   , ('&', S_RUBBLE_PILE)
-  , ('<', ESCAPE_UP)
-  , ('>', ESCAPE_DOWN)
+  , ('<', TILE_INDOOR_ESCAPE_UP)
+  , ('>', TILE_INDOOR_ESCAPE_DOWN)
   , ('·', FLOOR_ACTOR_ITEM_LIT)
   , ('~', S_SHALLOW_WATER_LIT)
   , ('I', SIGNBOARD) ]
@@ -126,15 +127,14 @@ defaultLegendDark = EM.fromList
   , ('-', S_WALL_HORIZONTAL_DARK)
   , ('0', S_PILLAR)
   , ('&', S_RUBBLE_PILE)
-  , ('<', ESCAPE_UP)
-  , ('>', ESCAPE_DOWN)
+  , ('<', TILE_INDOOR_ESCAPE_UP)
+  , ('>', TILE_INDOOR_ESCAPE_DOWN)
   , ('·', FLOOR_ACTOR_ITEM_DARK)
   , ('~', S_SHALLOW_WATER_DARK)
   , ('I', SIGNBOARD) ]
 
 deadEnd = PlaceKind  -- needs to have index 0
-  { psymbol  = 'd'
-  , pname    = "a dead end"
+  { pname    = "a dead end"
   , pfreq    = []
   , prarity  = []
   , pcover   = CStretch
@@ -144,8 +144,7 @@ deadEnd = PlaceKind  -- needs to have index 0
   , plegendLit = defaultLegendLit
   }
 rect = PlaceKind  -- Valid for any nonempty area, hence low frequency.
-  { psymbol  = 'r'
-  , pname    = "a chamber"
+  { pname    = "a chamber"
   , pfreq    = [(ROGUE, 30), (LABORATORY, 10)]
   , prarity  = [(1, 10), (10, 6)]
   , pcover   = CStretch
@@ -174,9 +173,8 @@ rectWindows = override2PlaceKind
                 , ('!', RECT_WINDOWS_VERTICAL_DARK) ]
                 [ ('=', RECT_WINDOWS_HORIZONTAL_LIT)
                 , ('!', RECT_WINDOWS_VERTICAL_LIT) ] $ PlaceKind
-  { psymbol  = 'w'
-  , pname    = "a hut"
-  , pfreq    = [(ESCAPE, 10), (AMBUSH, 7)]
+  { pname    = "a hut"
+  , pfreq    = [(FLIGHT, 10), (AMBUSH, 7)]
   , prarity  = [(1, 10), (10, 10)]
   , pcover   = CStretch
   , pfence   = FNone
@@ -189,8 +187,7 @@ rectWindows = override2PlaceKind
 glasshouse = overridePlaceKind
                [ ('=', GLASSHOUSE_HORIZONTAL_LIT)  -- visible from afar
                , ('!', GLASSHOUSE_VERTICAL_LIT) ] $ PlaceKind
-  { psymbol  = 'g'
-  , pname    = "a glasshouse"
+  { pname    = "a glasshouse"
   , pfreq    = [(SHOOTOUT, 4)]
   , prarity  = [(1, 10), (10, 7)]
   , pcover   = CStretch
@@ -216,8 +213,7 @@ pulpit = overridePlaceKind [ ('=', GLASSHOUSE_HORIZONTAL_LIT)
                            , ('!', GLASSHOUSE_VERTICAL_LIT)
                            , ('0', S_PULPIT) ] $ PlaceKind
            -- except for floor, all will be lit, regardless of night/dark; OK
-  { psymbol  = 'p'
-  , pname    = "a stand dais"
+  { pname    = "a stand dais"
   , pfreq    = [(ARENA, 200), (ZOO, 200)]
   , prarity  = [(1, 1)]
   , pcover   = CMirror
@@ -230,8 +226,7 @@ pulpit = overridePlaceKind [ ('=', GLASSHOUSE_HORIZONTAL_LIT)
   , plegendLit = defaultLegendLit
   }
 ruin = PlaceKind
-  { psymbol  = 'R'
-  , pname    = "ruins"
+  { pname    = "ruins"
   , pfreq    = [(BATTLE, 330)]
   , prarity  = [(1, 1)]
   , pcover   = CStretch
@@ -248,8 +243,7 @@ ruin2 = overridePlaceKind [ ('|', S_WALL_LIT)  -- visible from afar
   , pfreq    = [(AMBUSH, 50)]
   }
 collapsed = PlaceKind
-  { psymbol  = 'c'
-  , pname    = "a collapsed cavern"
+  { pname    = "a collapsed cavern"
   , pfreq    = [(NOISE, 1)]
       -- no point taking up space if very little space taken,
       -- but if no other place can be generated, a failsafe is useful
@@ -301,8 +295,7 @@ collapsed7 = collapsed
                ]
   }
 pillar = PlaceKind
-  { psymbol  = 'p'
-  , pname    = "a hall"
+  { pname    = "a hall"
   , pfreq    = [(ROGUE, 600), (LABORATORY, 2000)]
   , prarity  = [(1, 1)]
   , pcover   = CStretch
@@ -354,11 +347,10 @@ pillar5 = overridePlaceKind [('&', CACHE)] $ pillar
                ]
   }
 colonnade = PlaceKind
-  { psymbol  = 'c'
-  , pname    = "a colonnade"
+  { pname    = "a colonnade"
   , pfreq    = [ (ROGUE, 3), (ARENA, 20), (LABORATORY, 2)
                , (EMPTY, 10000), (MINE, 1000), (BRAWL, 4)
-               , (ESCAPE, 40), (AMBUSH, 40) ]
+               , (FLIGHT, 40), (AMBUSH, 40) ]
   , prarity  = [(1, 10), (10, 10)]
   , pcover   = CAlternate
   , pfence   = FFloor
@@ -403,9 +395,8 @@ colonnade6 = colonnade
   }
 lampPost = overridePlaceKind [ ('0', S_LAMP_POST)
                              , ('·', S_FLOOR_ACTOR_LIT) ] $ PlaceKind
-  { psymbol  = 'l'
-  , pname    = "a lamp-lit area"
-  , pfreq    = [(ESCAPE, 200), (AMBUSH, 200), (ZOO, 100), (BATTLE, 100)]
+  { pname    = "a lamp-lit area"
+  , pfreq    = [(FLIGHT, 200), (AMBUSH, 200), (ZOO, 100), (BATTLE, 100)]
   , prarity  = [(1, 1)]
   , pcover   = CVerbatim
   , pfence   = FNone
@@ -423,7 +414,7 @@ lampPost2 = lampPost
                ]
   }
 lampPost3 = lampPost
-  { pfreq    = [ (ESCAPE, 3000), (AMBUSH, 3000), (ZOO, 50)
+  { pfreq    = [ (FLIGHT, 3000), (AMBUSH, 3000), (ZOO, 50)
                , (BATTLE, 110) ]
   , ptopLeft = [ "XX·XX"
                , "X···X"
@@ -433,7 +424,7 @@ lampPost3 = lampPost
                ]
   }
 lampPost4 = lampPost
-  { pfreq    = [(ESCAPE, 3000), (AMBUSH, 3000), (ZOO, 50), (BATTLE, 60)]
+  { pfreq    = [(FLIGHT, 3000), (AMBUSH, 3000), (ZOO, 50), (BATTLE, 60)]
   , ptopLeft = [ "X···X"
                , "·····"
                , "··0··"
@@ -446,8 +437,7 @@ treeShade = override2PlaceKind [ ('0', S_TREE_DARK)
                                [ ('0', S_TREE_LIT)
                                , ('s', TREE_SHADE_WALKABLE_LIT) ] $
             overridePlaceKind [('·', S_SHADED_GROUND)] $ PlaceKind
-  { psymbol  = 't'
-  , pname    = "a tree shade"
+  { pname    = "a tree shade"
   , pfreq    = [(BRAWL, 1000)]
   , prarity  = [(1, 1)]
   , pcover   = CMirror
@@ -462,8 +452,7 @@ treeShade = override2PlaceKind [ ('0', S_TREE_DARK)
 fogClump = override2PlaceKind [('f', FOG_CLUMP_DARK)]
                               [('f', FOG_CLUMP_LIT)] $
            overridePlaceKind [(';', S_FOG_LIT)] $ PlaceKind
-  { psymbol  = 'f'
-  , pname    = "a foggy patch"
+  { pname    = "a foggy patch"
   , pfreq    = [(SHOOTOUT, 150), (EMPTY, 15)]
   , prarity  = [(1, 1)]
   , pcover   = CMirror
@@ -488,8 +477,7 @@ smokeClump = override2PlaceKind [ ('f', SMOKE_CLUMP_DARK)
                                 [ ('f', SMOKE_CLUMP_LIT)
                                 , ('·', S_FLOOR_ACTOR_LIT) ] $
              overridePlaceKind [(';', S_SMOKE_LIT)] $ PlaceKind
-  { psymbol  = 's'
-  , pname    = "a smoky patch"
+  { pname    = "a smoky patch"
   , pfreq    = [(ZOO, 50)]
   , prarity  = [(1, 1)]
   , pcover   = CMirror
@@ -526,8 +514,7 @@ smokeClump3FGround = smokeClump
 bushClump = override2PlaceKind [('f', BUSH_CLUMP_DARK)]
                                [('f', BUSH_CLUMP_LIT)] $
             overridePlaceKind [(';', S_BUSH_LIT)] $ PlaceKind
-  { psymbol  = 'b'
-  , pname    = "a bushy patch"
+  { pname    = "a bushy patch"
   , pfreq    = [(SHOOTOUT, 40)]
   , prarity  = [(1, 1)]
   , pcover   = CMirror
@@ -551,8 +538,7 @@ bushClump2 = bushClump
   }
 escapeDown = overridePlaceKind [ ('|', S_WALL_LIT)  -- visible from afar
                                , ('-', S_WALL_HORIZONTAL_LIT) ] $ PlaceKind
-  { psymbol  = '>'
-  , pname    = "an escape down"
+  { pname    = "an escape down"
   , pfreq    = [(INDOOR_ESCAPE_DOWN, 1)]
   , prarity  = [(1, 1)]
   , pcover   = CVerbatim
@@ -604,8 +590,7 @@ staircase = overridePlaceKind [ ('<', STAIRCASE_UP)
                               , ('>', STAIRCASE_DOWN)
                               , ('|', S_WALL_LIT)  -- visible from afar
                               , ('-', S_WALL_HORIZONTAL_LIT) ] $ PlaceKind
-  { psymbol  = '/'
-  , pname    = "a staircase"
+  { pname    = "a staircase"
   , pfreq    = [(TINY_STAIRCASE, 1)]  -- no cover when arriving; low freq
   , prarity  = [(1, 100), (10, 100)]
   , pcover   = CVerbatim
@@ -989,16 +974,14 @@ staircase37 = staircase
 switchStaircaseToUp :: PlaceKind -> PlaceKind
 switchStaircaseToUp s = override2PlaceKind [('>', STAIR_TERMINAL_DARK)]
                                            [('>', STAIR_TERMINAL_LIT)] $ s
-  { psymbol   = '<'
-  , pname     = pname s <+> "up"
+  { pname     = pname s <+> "up"
   , pfreq     = renameFreqs (<+> "up") $ pfreq s
   }
 
 switchStaircaseToDown :: PlaceKind -> PlaceKind
 switchStaircaseToDown s = override2PlaceKind [('<', STAIR_TERMINAL_DARK)]
                                              [('<', STAIR_TERMINAL_LIT)] $ s
-  { psymbol   = '>'
-  , pname     = pname s <+> "down"
+  { pname     = pname s <+> "down"
   , pfreq     = renameFreqs (<+> "down") $ pfreq s
   }
 
@@ -1009,8 +992,7 @@ overrideGated =
 
 switchStaircaseToGated :: PlaceKind -> PlaceKind
 switchStaircaseToGated s = overridePlaceKind overrideGated $ s
-  { psymbol   = 'g'
-  , pname     = T.unwords $ "a gated" : tail (T.words (pname s))
+  { pname     = T.unwords $ "a gated" : tail (T.words (pname s))
   , pfreq     = renameFreqs ("gated" <+>) $ pfreq s
   }
 
@@ -1021,20 +1003,19 @@ overrideOutdoor =
 
 switchStaircaseToOutdoor :: PlaceKind -> PlaceKind
 switchStaircaseToOutdoor s = overridePlaceKind overrideOutdoor $ s
-  { psymbol   = 'o'
-  , pname     = "an outdoor area exit"
+  { pname     = "an outdoor area exit"
   , pfreq     = renameFreqs ("outdoor" <+>) $ pfreq s
   }
 
 switchEscapeToUp :: PlaceKind -> PlaceKind
-switchEscapeToUp s = overridePlaceKind [('>', ESCAPE_UP)] $ s
-  { psymbol   = '<'
-  , pname     = "an escape up"
+switchEscapeToUp s = overridePlaceKind [('>', TILE_INDOOR_ESCAPE_UP)] $ s
+  { pname     = "an escape up"
   , pfreq     = map (\(_, n) -> (INDOOR_ESCAPE_UP, n)) $ pfreq s
   }
 
 switchEscapeToOutdoorDown :: PlaceKind -> PlaceKind
-switchEscapeToOutdoorDown s = overridePlaceKind [('>', ESCAPE_OUTDOOR_DOWN)] $ s
+switchEscapeToOutdoorDown s = overridePlaceKind
+                                [('>', TILE_OUTDOOR_ESCAPE_DOWN)] $ s
   { pname     = "outdoor escape route"
   , pfreq     = map (\(_, n) -> (OUTDOOR_ESCAPE_DOWN, n)) $ pfreq s
   }

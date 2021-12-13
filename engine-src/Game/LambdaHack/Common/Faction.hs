@@ -1,12 +1,12 @@
-{-# LANGUAGE DeriveGeneric #-}
+{-# LANGUAGE DeriveGeneric, TupleSections #-}
 -- | Factions taking part in the game, e.g., a hero faction, a monster faction
 -- and an animal faction.
 module Game.LambdaHack.Common.Faction
   ( FactionDict, Faction(..), Diplomacy(..)
   , Status(..), Challenge(..)
-  , tshowChallenge, gleader, isHorrorFact, noRunWithMulti, isAIFact
-  , autoDungeonLevel, automatePlayer, isFoe, isFriend
-  , difficultyBound, difficultyDefault, difficultyCoeff, difficultyInverse
+  , tshowDiplomacy, tshowChallenge, gleader, isHorrorFact, noRunWithMulti
+  , bannedPointmanSwitchBetweenLevels, isFoe, isFriend
+  , difficultyBound, difficultyDefault, difficultyCoeff
   , defaultChallenge, possibleActorFactions, ppContainer
 #ifdef EXPOSE_INTERNAL
     -- * Internal operations
@@ -20,15 +20,16 @@ import Game.LambdaHack.Core.Prelude
 
 import           Data.Binary
 import qualified Data.EnumMap.Strict as EM
-import qualified Data.IntMap.Strict as IM
 import qualified Data.Text as T
 import           GHC.Generics (Generic)
 
 import           Game.LambdaHack.Common.Point
 import           Game.LambdaHack.Common.Types
+import           Game.LambdaHack.Content.FactionKind
 import           Game.LambdaHack.Content.ItemKind (ItemKind)
 import qualified Game.LambdaHack.Content.ItemKind as IK
-import           Game.LambdaHack.Content.ModeKind
+import           Game.LambdaHack.Content.ModeKind (ModeKind)
+import           Game.LambdaHack.Core.Frequency
 import qualified Game.LambdaHack.Definition.Ability as Ability
 import qualified Game.LambdaHack.Definition.Color as Color
 import           Game.LambdaHack.Definition.Defs
@@ -38,12 +39,19 @@ type FactionDict = EM.EnumMap FactionId Faction
 
 -- | The faction datatype.
 data Faction = Faction
-  { gname     :: Text            -- ^ individual name
-  , gcolor    :: Color.Color     -- ^ color of actors or their frames
-  , gplayer   :: Player          -- ^ the player spec for this faction
-  , gteamCont :: Maybe TeamContinuity
-                                 -- ^ identity of this faction across games
-                                 --   and scenarios
+  { gkind     :: FactionKind
+      -- ^ the player spec for this faction, do not update!
+      -- it is morally read-only, but not represented
+      -- as @ContentId FactionKind@, because it's very small
+      -- and it's looked up often enough in the code and during runtime;
+      -- a side-effect is that if content changes mid-game, this stays;
+      -- if we ever have thousands of factions in a single game,
+      -- e.g., one for each separately spawned herd of animals, change this
+  , gname     :: Text            -- ^ individual name
+  , gcolor    :: Color.Color     -- ^ color of numbered actors
+  , gdoctrine :: Ability.Doctrine
+                                 -- ^ non-pointmen behave according to this
+  , gunderAI  :: Bool            -- ^ whether the faction is under AI control
   , ginitial  :: [(Int, Int, GroupName ItemKind)]  -- ^ initial actors
   , gdipl     :: Dipl            -- ^ diplomatic standing
   , gquit     :: Maybe Status    -- ^ cause of game end/exit
@@ -53,9 +61,6 @@ data Faction = Faction
                                  -- ^ level and position of faction's
                                  --   shared inventory stash
   , gvictims  :: EM.EnumMap (ContentId ItemKind) Int  -- ^ members killed
-  , gvictimsD :: EM.EnumMap (ContentId ModeKind)
-                            (IM.IntMap (EM.EnumMap (ContentId ItemKind) Int))
-      -- ^ members killed in the past, by game mode and difficulty level
   }
   deriving (Show, Eq, Generic)
 
@@ -67,7 +72,7 @@ data Diplomacy =
   | Neutral
   | Alliance
   | War
-  deriving (Show, Eq, Enum, Generic)
+  deriving (Show, Eq, Ord, Enum, Generic)
 
 instance Binary Diplomacy
 
@@ -97,6 +102,12 @@ data Challenge = Challenge
 
 instance Binary Challenge
 
+tshowDiplomacy :: Diplomacy -> Text
+tshowDiplomacy Unknown = "unknown to each other"
+tshowDiplomacy Neutral = "in neutral diplomatic relations"
+tshowDiplomacy Alliance = "allied"
+tshowDiplomacy War = "at war"
+
 tshowChallenge :: Challenge -> Text
 tshowChallenge Challenge{..} =
   "("
@@ -119,7 +130,7 @@ gleader = _gleader
 -- In every game, either all factions for which summoning items exist
 -- should be present or a horror player should be added to host them.
 isHorrorFact :: Faction -> Bool
-isHorrorFact fact = IK.HORROR `elem` fgroups (gplayer fact)
+isHorrorFact fact = fromMaybe 0 (lookup IK.HORROR $ fgroups $ gkind fact) > 0
 
 -- A faction where other actors move at once or where some of leader change
 -- is automatic can't run with multiple actors at once. That would be
@@ -131,22 +142,13 @@ isHorrorFact fact = IK.HORROR `elem` fgroups (gplayer fact)
 -- by the UI user.
 noRunWithMulti :: Faction -> Bool
 noRunWithMulti fact =
-  let skillsOther = fskillsOther $ gplayer fact
+  let skillsOther = fskillsOther $ gkind fact
   in Ability.getSk Ability.SkMove skillsOther >= 0
-     || case fleaderMode (gplayer fact) of
-          Nothing -> True
-          Just AutoLeader{..} -> autoDungeon || autoLevel
+     || bannedPointmanSwitchBetweenLevels fact
+     || not (fhasPointman (gkind fact))
 
-isAIFact :: Faction -> Bool
-isAIFact fact = funderAI (gplayer fact)
-
-autoDungeonLevel :: Faction -> (Bool, Bool)
-autoDungeonLevel fact = case fleaderMode (gplayer fact) of
-                          Nothing -> (False, False)
-                          Just AutoLeader{..} -> (autoDungeon, autoLevel)
-
-automatePlayer :: Bool -> Player -> Player
-automatePlayer funderAI pl = pl {funderAI}
+bannedPointmanSwitchBetweenLevels :: Faction -> Bool
+bannedPointmanSwitchBetweenLevels = fspawnsFast . gkind
 
 -- | Check if factions are at war. Assumes symmetry.
 isFoe :: FactionId -> Faction -> FactionId -> Bool
@@ -173,10 +175,6 @@ difficultyDefault = (1 + difficultyBound) `div` 2
 difficultyCoeff :: Int -> Int
 difficultyCoeff n = difficultyDefault - n
 
--- The function is its own inverse.
-difficultyInverse :: Int -> Int
-difficultyInverse n = difficultyBound + 1 - n
-
 defaultChallenge :: Challenge
 defaultChallenge = Challenge { cdiff = difficultyDefault
                              , cfish = False
@@ -184,14 +182,25 @@ defaultChallenge = Challenge { cdiff = difficultyDefault
                              , cwolf = False
                              , ckeeper = False }
 
-possibleActorFactions :: ItemKind -> FactionDict -> [(FactionId, Faction)]
-possibleActorFactions itemKind factionD =
-  let freqNames = map fst $ IK.ifreq itemKind
-      f (_, fact) = any (`elem` fgroups (gplayer fact)) freqNames
-      fidFactsRaw = filter f $ EM.assocs factionD
-  in if null fidFactsRaw
-     then filter (isHorrorFact . snd) $ EM.assocs factionD  -- fall back
-     else fidFactsRaw
+possibleActorFactions :: [GroupName ItemKind] -> ItemKind -> FactionDict
+                      -> Frequency (FactionId, Faction)
+possibleActorFactions itemGroups itemKind factionD =
+  let candidatesFromGroups grps =
+        let h (fid, fact) =
+              let f grp (grp2, n) = [(n, (fid, fact)) | grp == grp2]
+                  g grp = concatMap (f grp) (fgroups (gkind fact))
+              in concatMap g grps
+        in concatMap h $ EM.assocs factionD
+      allCandidates =
+        [ candidatesFromGroups itemGroups  -- when origin known/matters
+        , candidatesFromGroups $ map fst $ IK.ifreq itemKind  -- otherwise
+        , map (1,) $ filter (isHorrorFact . snd)
+          $ EM.assocs factionD  -- fall back
+        , map (1,) $ EM.assocs factionD  -- desperate fall back
+        ]
+  in case filter (not . null) allCandidates of
+    [] -> error "possibleActorFactions: no faction found for an actor"
+    candidates : _ -> toFreq "possibleActorFactions" candidates
 
 ppContainer :: FactionDict -> Container -> Text
 ppContainer factionD (CFloor lid p) =

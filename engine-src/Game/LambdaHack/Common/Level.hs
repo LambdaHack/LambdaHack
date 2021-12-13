@@ -248,7 +248,7 @@ findPosTry2 numTries Level{ltile, larea} m0 l g r =
           search !k = do
             pxyRelative <- randomR0 (xspan * yspan - 1)
             -- Here we can't use @fromEnum@ and/or work with the @Int@
-            -- representation, because the span is different than @rXmax@.
+            -- representation, because the span is different than @rWidthMax@.
             let Point{..} = punindex xspan pxyRelative
                 pos = Point (x0 + px) (y0 + py)
                 tile = ltile PointArray.! pos
@@ -266,7 +266,8 @@ findPosTry2 numTries Level{ltile, larea} m0 l g r =
 -- the level in the order of path distance from the starting position (BFS).
 -- The starting position needn't be passable and is always included.
 nearbyPassablePoints :: COps -> Level -> Point -> [Point]
-nearbyPassablePoints cops@COps{corule=RuleContent{rXmax, rYmax}} lvl start =
+nearbyPassablePoints cops@COps{corule=RuleContent{rWidthMax, rHeightMax}}
+                     lvl start =
   let passable p = Tile.isEasyOpen (coTileSpeedup cops) (lvl `at` p)
       -- The error is mostly probably caused by place content creating
       -- enclosed spaces in conjunction with map edges. To verify,
@@ -275,7 +276,7 @@ nearbyPassablePoints cops@COps{corule=RuleContent{rXmax, rYmax}} lvl start =
                          else let offset = fromEnum start `mod` length l
                               in drop offset l ++ take offset l
       passableVic p = semiRandomWrap $ filter passable
-                      $ vicinityBounded rXmax rYmax p
+                      $ vicinityBounded rWidthMax rHeightMax p
       siftSingle :: Point
                  -> (ES.EnumSet Point, [Point])
                  -> (ES.EnumSet Point, [Point])

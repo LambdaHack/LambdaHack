@@ -19,6 +19,7 @@ import           Data.IORef
 import qualified Data.Text as T
 import           Data.Time.Clock.POSIX
 import           Data.Time.LocalTime
+import qualified Data.Vector.Storable as VS
 import qualified Data.Vector.Unboxed as U
 import           Data.Word (Word32, Word8)
 import           Foreign.C.String (withCString)
@@ -26,7 +27,7 @@ import           Foreign.C.Types (CInt)
 import           Foreign.Ptr (nullPtr)
 import           Foreign.Storable (peek)
 import           System.Directory
-import           System.Exit (exitSuccess)
+import           System.Exit (die, exitSuccess)
 import           System.FilePath
 
 import qualified SDL
@@ -35,6 +36,7 @@ import           SDL.Input.Keyboard.Codes
 import qualified SDL.Internal.Types
 import qualified SDL.Raw.Basic as SDL (logSetAllPriority)
 import qualified SDL.Raw.Enum
+import qualified SDL.Raw.Event
 import qualified SDL.Raw.Types
 import qualified SDL.Raw.Video
 import qualified SDL.Vect as Vect
@@ -52,6 +54,14 @@ import           Game.LambdaHack.Common.Point
 import qualified Game.LambdaHack.Common.PointArray as PointArray
 import           Game.LambdaHack.Content.TileKind (floorSymbol)
 import qualified Game.LambdaHack.Definition.Color as Color
+
+-- These are needed until SDL is fixed and all our devs move
+-- to the fixed version:
+import           Control.Monad.IO.Class (MonadIO, liftIO)
+import           SDL.Internal.Exception (throwIfNull)
+import qualified SDL.Raw.Event as Raw
+import           Unsafe.Coerce (unsafeCoerce)
+--import qualified SDL.Raw.Enum as Raw
 
 type FontAtlas = EM.EnumMap Color.AttrCharW32 SDL.Texture
 
@@ -96,19 +106,20 @@ startupFun coscreen soptions@ClientOptions{..} rfMVar = do
  TTF.initialize
  let title = T.pack $ fromJust stitle
      chosenFontsetID = fromJust schosenFontset
-     chosenFontset = case lookup chosenFontsetID sfontsets of
-       Nothing -> error $ "Fontset not defined in config file"
-                          `showFailure` chosenFontsetID
-       Just fs -> fs
+ -- Unlike @error@, @die@ does not move savefiles aside.
+ chosenFontset <- case lookup chosenFontsetID sfontsets of
+   Nothing -> die $ "Fontset not defined in config file"
+                    `showFailure` chosenFontsetID
+   Just fs -> return fs
      -- If some auxiliary fonts are equal and at the same size, this wastefully
      -- opens them many times. However, native builds are efficient enough
      -- and slow machines should use the most frugal case (only square font)
      -- in which no waste occurs and all rendering is aided with an atlas.
-     findFontFile t =
+ let findFontFile t =
        if T.null t
        then return Nothing
        else case lookup t sfonts of
-         Nothing -> error $ "Font not defined in config file" `showFailure` t
+         Nothing -> die $ "Font not defined in config file" `showFailure` t
          Just (FontProportional fname fsize fhint) -> do
            sdlFont <- loadFontFile fname fsize
            setHintMode sdlFont fhint
@@ -163,12 +174,12 @@ startupFun coscreen soptions@ClientOptions{..} rfMVar = do
          mfontMapScalable <- findFontFile $ fontMapScalable chosenFontset
          case mfontMapScalable of
            Just (sdlFont, size) -> return (sdlFont, size, False)
-           Nothing -> error "Neither bitmap nor scalable map font defined"
+           Nothing -> die "Neither bitmap nor scalable map font defined"
    else do
      mfontMapScalable <- findFontFile $ fontMapScalable chosenFontset
      case mfontMapScalable of
         Just (sdlFont, size) -> return (sdlFont, size, False)
-        Nothing -> error "Scaling requested but scalable map font not defined"
+        Nothing -> die "Scaling requested but scalable map font not defined"
  let halfSize = squareFontSize `div` 2
      boxSize = 2 * halfSize  -- map font determines cell size for all others
  -- Real size of these fonts ignored.
@@ -195,6 +206,15 @@ startupFun coscreen soptions@ClientOptions{..} rfMVar = do
  else do
   -- The code below fails without access to a graphics system.
   SDL.initialize [SDL.InitVideo]
+  -- This cursor size if fine for default size and Full HD 1.5x size.
+  let (cursorAlpha, cursorBW) = cursorXhair
+  xhairCursor <-
+    createCursor cursorBW cursorAlpha (SDL.V2 32 27) (SDL.P (SDL.V2 13 13))
+  SDL.activeCursor SDL.$= xhairCursor
+--  xhairCursor <-
+--    throwIfNull "SDL.Input.Mouse.createSystemCursor" "SDL_createSystemCursor"
+--    $ Raw.createSystemCursor Raw.SDL_SYSTEM_CURSOR_CROSSHAIR
+--  SDL.activeCursor SDL.$= unsafeCoerce xhairCursor
   let screenV2 = SDL.V2 (toEnum $ rwidth coscreen * boxSize)
                         (toEnum $ rheight coscreen * boxSize)
       windowConfig = SDL.defaultWindow
@@ -274,6 +294,8 @@ startupFun coscreen soptions@ClientOptions{..} rfMVar = do
         prevFrame <- readIORef spreviousFrame
         writeIORef spreviousFrame $ blankSingleFrame coscreen
         drawFrame coscreen soptions sess prevFrame
+        SDL.pumpEvents
+        SDL.Raw.Event.flushEvents minBound maxBound
       loopSDL :: IO ()
       loopSDL = do
         me <- SDL.pollEvent  -- events take precedence over frames
@@ -348,12 +370,84 @@ startupFun coscreen soptions@ClientOptions{..} rfMVar = do
                 (\key -> saveKMP rf modifier key (pointTranslate p)) mkey
         SDL.WindowClosedEvent{} -> forceShutdown sess
         SDL.QuitEvent -> forceShutdown sess
-        SDL.WindowRestoredEvent{} -> redraw
+        SDL.WindowRestoredEvent{} -> redraw  -- e.g., unminimize
         SDL.WindowExposedEvent{} -> redraw  -- needed on Windows
+        SDL.WindowResizedEvent{} -> do
+          -- Eome window managers apparently are able to resize.
+          SDL.showSimpleMessageBox Nothing SDL.Warning
+            "Windows resize detected"
+            "Please resize the game and/or make it fullscreen via 'allFontsScale' and 'fullscreenMode' settings in the 'config.ui.ini' file. Resizing fonts via generic scaling algorithms gives poor results."
+          redraw
         -- Probably not needed, because no textures nor their content lost:
         -- SDL.WindowShownEvent{} -> redraw
         _ -> return ()
   loopSDL
+
+-- | Copied from SDL2 and fixed (packed booleans are needed).
+--
+-- Create a cursor using the specified bitmap data and mask (in MSB format,
+-- packed). Width must be a multiple of 8.
+--
+--
+createCursor :: MonadIO m
+             => VS.Vector Word8 -- ^ Whether this part of the cursor is black. Use bit 1 for white and bit 0 for black.
+             -> VS.Vector Word8 -- ^ Whether or not pixels are visible. Use bit 1 for visible and bit 0 for transparent.
+             -> Vect.V2 CInt -- ^ The width and height of the cursor.
+             -> Vect.Point Vect.V2 CInt -- ^ The X- and Y-axis location of the upper left corner of the cursor relative to the actual mouse position
+             -> m SDL.Cursor
+createCursor dta msk (Vect.V2 w h) (Vect.P (Vect.V2 hx hy)) =
+    liftIO . fmap unsafeCoerce $
+        throwIfNull "SDL.Input.Mouse.createCursor" "SDL_createCursor" $
+            VS.unsafeWith dta $ \unsafeDta ->
+            VS.unsafeWith msk $ \unsafeMsk ->
+                Raw.createCursor unsafeDta unsafeMsk w h hx hy
+
+-- Ignores bits after the last 8 multiple.
+boolListToWord8List :: [Bool] -> [Word8]
+boolListToWord8List =
+  let i True multiple = multiple
+      i False _ = 0
+  in \case
+    b1 : b2 : b3 : b4 : b5 : b6 : b7 : b8 : rest ->
+      i b1 128 + i b2 64 + i b3 32 + i b4 16 + i b5 8 + i b6 4 + i b7 2 + i b8 1
+      : boolListToWord8List rest
+    _ -> []
+
+cursorXhair :: (VS.Vector Word8, VS.Vector Word8)  -- alpha, BW
+cursorXhair =
+  let charToBool '.' = (True, True)  -- visible black
+      charToBool '#' = (True, False)  -- visible white
+      charToBool _ = (False, False)  -- transparent white
+      toVS = VS.fromList . boolListToWord8List
+  in toVS *** toVS $ unzip $ map charToBool $ concat
+
+    [ "            ...                 "
+    , "            .#.                 "
+    , "        ..  .#.  ..             "
+    , "      ..##  .#.  ##..           "
+    , "     .##    .#.    ##.          "
+    , "    .#      .#.      #.         "
+    , "   .#       .#.       #.        "
+    , "   .#       ...       #.        "
+    , "  .#                   #.       "
+    , "  .#                   #.       "
+    , "                                "
+    , "             .                  "
+    , "........    .#.    ........     "
+    , ".######.   .###.   .######.     "
+    , "........    .#.    ........     "
+    , "             .                  "
+    , "                                "
+    , "  .#                   #.       "
+    , "  .#                   #.       "
+    , "   .#       ...       #.        "
+    , "   .#       .#.       #.        "
+    , "    .#      .#.      #.         "
+    , "     .##    .#.    ##.          "
+    , "      ..##  .#.  ##..           "
+    , "        ..  .#.  ..             "
+    , "            .#.                 "
+    , "            ...                 " ]
 
 shutdown :: FrontendSession -> IO ()
 shutdown FrontendSession{..} = writeIORef scontinueSdlLoop False
@@ -393,20 +487,31 @@ drawFrame coscreen ClientOptions{..} sess@FrontendSession{..} curFrame = do
   prevFrame <- readIORef spreviousFrame
   let halfSize = squareFontSize `div` 2
       boxSize = 2 * halfSize
+      tt2Square = Vect.V2 (toEnum boxSize) (toEnum boxSize)
       vp :: Int -> Int -> Vect.Point Vect.V2 CInt
       vp x y = Vect.P $ Vect.V2 (toEnum x) (toEnum y)
-      drawHighlight !x !y !color = do
+      drawHighlight !col !row !color = do
         SDL.rendererDrawColor srenderer SDL.$= colorToRGBA color
-        let tt2Square = Vect.V2 (toEnum boxSize) (toEnum boxSize)
-            rect = SDL.Rectangle (vp (x * boxSize) (y * boxSize)) tt2Square
+        let rect = SDL.Rectangle (vp (col * boxSize) (row * boxSize)) tt2Square
         SDL.drawRect srenderer $ Just rect
         SDL.rendererDrawColor srenderer SDL.$= blackRGBA
           -- reset back to black
-      chooseAndDrawHighlight !x !y !bg = case bg of
-        Color.HighlightNone -> return ()
-        Color.HighlightNoneCursor -> return ()
-        Color.HighlightBackground -> return ()
-        _ -> drawHighlight x y $ Color.highlightToColor bg
+      chooseAndDrawHighlight !col !row !bg = do
+-- Rectangle drawing is broken in SDL 2.0.16
+-- (https://github.com/LambdaHack/LambdaHack/issues/281)
+-- and simple workarounds fail with old SDL, e.g., four lines instead of
+-- a rectangle, so we have to manually erase the broken rectangles
+-- instead of depending on glyphs overwriting them fully.
+       let workaroundOverwriteHighlight = do
+             let rect = SDL.Rectangle (vp (col * boxSize) (row * boxSize))
+                                      tt2Square
+             SDL.drawRect srenderer $ Just rect
+       case bg of
+        Color.HighlightNone -> workaroundOverwriteHighlight
+        Color.HighlightBackground -> workaroundOverwriteHighlight
+        Color.HighlightNoneCursor -> workaroundOverwriteHighlight
+        _ -> drawHighlight col row $ Color.highlightToColor bg
+-- workarounds end
       -- This also frees the surface it gets.
       scaleSurfaceToTexture :: Int -> SDL.Surface -> IO SDL.Texture
       scaleSurfaceToTexture xsize textSurfaceRaw = do
@@ -433,14 +538,15 @@ drawFrame coscreen ClientOptions{..} sess@FrontendSession{..} curFrame = do
         SDL.freeSurface textSurface
         return textTexture
       -- This also frees the surface it gets.
-      scaleSurfaceToTextureProp :: Int -> Int -> SDL.Surface
+      scaleSurfaceToTextureProp :: Int -> Int -> SDL.Surface -> Bool
                                 -> IO (Int, SDL.Texture)
-      scaleSurfaceToTextureProp x row textSurfaceRaw = do
+      scaleSurfaceToTextureProp x row textSurfaceRaw allSpace = do
         Vect.V2 sw sh <- SDL.surfaceDimensions textSurfaceRaw
         let widthRaw = fromEnum sw
-            width = if widthRaw > rwidth coscreen * boxSize - x
-                    then (rwidth coscreen - 1) * boxSize - x
-                    else widthRaw
+            remainingWidth = rwidth coscreen * boxSize - x
+            width | widthRaw <= remainingWidth = widthRaw
+                  | allSpace = remainingWidth
+                  | otherwise = remainingWidth - boxSize
             height = min boxSize $ fromEnum sh
             xsrc = 0
             ysrc = max 0 (fromEnum sh - height) `divUp` 2
@@ -463,68 +569,38 @@ drawFrame coscreen ClientOptions{..} sess@FrontendSession{..} curFrame = do
         SDL.freeSurface textSurfaceRaw
         textTexture <- SDL.createTextureFromSurface srenderer textSurface
         SDL.freeSurface textSurface
-        when (width /= widthRaw) $ do
-          let greyDollar = Color.trimmedLineAttrW32
-          void $ setChar (fromEnum Point{px = rwidth coscreen - 1, py = row})
-                         (Color.attrCharW32 greyDollar, 0)
+        when (width /= widthRaw && not allSpace) $
+          setSquareChar (rwidth coscreen - 1) row Color.trimmedLineAttrW32
         return (width, textTexture)
       -- <https://www.libsdl.org/projects/SDL_ttf/docs/SDL_ttf_42.html#SEC42>
-      setChar :: PointI -> (Word32, Word32) -> IO Int
-      setChar !i (!w, !wPrev) =
+      -- Note that @Point@ here refers to screen coordinates with square font
+      -- (as @PointSquare@ normally should) and not game map coordinates.
+      -- See "Game.LambdaHack.Client.UI.Frame" for explanation of this
+      -- irregularity.
+      setMapChar :: PointI -> (Word32, Word32) -> IO Int
+      setMapChar !i (!w, !wPrev) =
         if w == wPrev
         then return $! i + 1
         else do
           let Point{..} = toEnum i
-          atlas <- readIORef squareAtlas
-          let Color.AttrChar{ acAttr=Color.Attr{fg=fgRaw, bg}
-                            , acChar=acCharRaw } =
-                Color.attrCharFromW32 $ Color.AttrCharW32 w
-              fg | py `mod` 2 == 0 && fgRaw == Color.White = Color.AltWhite
-                 | otherwise = fgRaw
-              ac = if bg == Color.HighlightBackground
-                   then Color.AttrCharW32 w
-                   else Color.attrChar2ToW32 fg acCharRaw
-          textTexture <- case EM.lookup ac atlas of
-            Nothing -> do
-              -- Make all visible floors bold (no bold fold variant for 16x16x,
-              -- so only the dot can be bold).
-              let acChar = if not (Color.isBright fg)
-                              && acCharRaw == floorSymbol  -- '\x00B7'
-                           then if mapFontIsBitmap
-                                then '\x0007'
-                                else '\x22C5'
-                           else acCharRaw
-                  background = if bg == Color.HighlightBackground
-                               then greyRGBA
-                               else blackRGBA
-              textSurfaceRaw <- TTF.shadedGlyph squareFont (colorToRGBA fg)
-                                                background acChar
-              textTexture <- scaleSurfaceToTexture boxSize textSurfaceRaw
-              writeIORef squareAtlas $ EM.insert ac textTexture atlas
-              return textTexture
-            Just textTexture -> return textTexture
-          let tt2Square = Vect.V2 (toEnum boxSize) (toEnum boxSize)
-              tgtR = SDL.Rectangle (vp (px * boxSize) (py * boxSize)) tt2Square
-          SDL.copy srenderer textTexture Nothing (Just tgtR)
-          -- Potentially overwrite a portion of the glyph.
-          chooseAndDrawHighlight px py bg
+          setSquareChar px py (Color.AttrCharW32 w)
           return $! i + 1
       drawMonoOverlay :: OverlaySpace -> IO ()
       drawMonoOverlay =
         mapM_ (\(PointUI x y, al) ->
                  let lineCut = take (2 * rwidth coscreen - x) al
-                 in drawMonoLine (x * halfSize) y lineCut)
+                 in drawMonoLine x y lineCut)
       drawMonoLine :: Int -> Int -> AttrString -> IO ()
       drawMonoLine _ _ [] = return ()
       drawMonoLine x row (w : rest) = do
         setMonoChar x row w
-        drawMonoLine (x + halfSize) row rest
+        drawMonoLine (x + 1) row rest
       setMonoChar :: Int -> Int -> Color.AttrCharW32 -> IO ()
       setMonoChar !x !row !w = do
         atlas <- readIORef smonoAtlas
         let Color.AttrChar{acAttr=Color.Attr{fg=fgRaw, bg}, acChar} =
               Color.attrCharFromW32 w
-            fg | row `mod` 2 == 0 && fgRaw == Color.White = Color.AltWhite
+            fg | even row && fgRaw == Color.White = Color.AltWhite
                | otherwise = fgRaw
             ac = Color.attrChar2ToW32 fg acChar
             !_A = assert (bg `elem` [ Color.HighlightNone
@@ -539,8 +615,53 @@ drawFrame coscreen ClientOptions{..} sess@FrontendSession{..} curFrame = do
             return textTexture
           Just textTexture -> return textTexture
         let tt2Mono = Vect.V2 (toEnum halfSize) (toEnum boxSize)
-            tgtR = SDL.Rectangle (vp x (row * boxSize)) tt2Mono
+            tgtR = SDL.Rectangle (vp (x * halfSize) (row * boxSize)) tt2Mono
         SDL.copy srenderer textTexture Nothing (Just tgtR)
+      drawSquareOverlay :: OverlaySpace -> IO ()
+      drawSquareOverlay =
+        mapM_ (\(pUI, al) ->
+                 let PointSquare col row = uiToSquare pUI
+                     lineCut = take (rwidth coscreen - col) al
+                 in drawSquareLine col row lineCut)
+      drawSquareLine :: Int -> Int -> AttrString -> IO ()
+      drawSquareLine _ _ [] = return ()
+      drawSquareLine col row (w : rest) = do
+        setSquareChar col row w
+        drawSquareLine (col + 1) row rest
+      setSquareChar :: Int -> Int -> Color.AttrCharW32 -> IO ()
+      setSquareChar !col !row !w = do
+        atlas <- readIORef squareAtlas
+        let Color.AttrChar{ acAttr=Color.Attr{fg=fgRaw, bg}
+                          , acChar=acCharRaw } =
+              Color.attrCharFromW32 w
+            fg | even row && fgRaw == Color.White = Color.AltWhite
+               | otherwise = fgRaw
+            ac = if bg == Color.HighlightBackground
+                 then w
+                 else Color.attrChar2ToW32 fg acCharRaw
+        textTexture <- case EM.lookup ac atlas of
+          Nothing -> do
+            -- Make all visible floors bold (no bold font variant for 16x16x,
+            -- so only the dot can be bold).
+            let acChar = if not (Color.isBright fg)
+                            && acCharRaw == floorSymbol  -- '\x00B7'
+                         then if mapFontIsBitmap
+                              then '\x0007'
+                              else '\x22C5'
+                         else acCharRaw
+                background = if bg == Color.HighlightBackground
+                             then greyRGBA
+                             else blackRGBA
+            textSurfaceRaw <- TTF.shadedGlyph squareFont (colorToRGBA fg)
+                                              background acChar
+            textTexture <- scaleSurfaceToTexture boxSize textSurfaceRaw
+            writeIORef squareAtlas $ EM.insert ac textTexture atlas
+            return textTexture
+          Just textTexture -> return textTexture
+        let tgtR = SDL.Rectangle (vp (col * boxSize) (row * boxSize)) tt2Square
+        SDL.copy srenderer textTexture Nothing (Just tgtR)
+        -- Potentially overwrite a portion of the glyph.
+        chooseAndDrawHighlight col row bg
       drawPropOverlay :: OverlaySpace -> IO ()
       drawPropOverlay =
         mapM_ (\(PointUI x y, al) ->
@@ -551,7 +672,7 @@ drawFrame coscreen ClientOptions{..} sess@FrontendSession{..} curFrame = do
         -- This chunk starts at $ sign or beyond so, for KISS, reject it.
         return ()
       drawPropLine x row (w : rest) = do
-        let isSpace = (`elem` [Color.spaceAttrW32, Color.spaceCursorAttrW32])
+        let isSpace = (== Color.spaceAttrW32)
             Color.AttrChar{acAttr=Color.Attr{fg=fgRaw, bg}} =
               Color.attrCharFromW32
               $ if isSpace w
@@ -564,7 +685,7 @@ drawFrame coscreen ClientOptions{..} sess@FrontendSession{..} curFrame = do
             (sameRest, otherRest) = span sameAttr rest
             !_A = assert (bg `elem` [ Color.HighlightNone
                                     , Color.HighlightNoneCursor ]) ()
-            fg | row `mod` 2 == 0 && fgRaw == Color.White = Color.AltWhite
+            fg | even row && fgRaw == Color.White = Color.AltWhite
                | otherwise = fgRaw
             t = T.pack $ map Color.charFromW32 $ w : sameRest
         width <- drawPropChunk x row fg t
@@ -574,9 +695,11 @@ drawFrame coscreen ClientOptions{..} sess@FrontendSession{..} curFrame = do
         let font = if fg >= Color.White && fg /= Color.BrBlack
                    then spropFont
                    else sboldFont
+            allSpace = T.all Char.isSpace t
         textSurfaceRaw <- TTF.shaded (fromJust font) (colorToRGBA fg)
                                      blackRGBA t
-        (width, textTexture) <- scaleSurfaceToTextureProp x row textSurfaceRaw
+        (width, textTexture) <-
+          scaleSurfaceToTextureProp x row textSurfaceRaw allSpace
         let tgtR = SDL.Rectangle (vp x (row * boxSize))
                                  (Vect.V2 (toEnum width) (toEnum boxSize))
         -- Potentially overwrite some of the screen.
@@ -586,12 +709,13 @@ drawFrame coscreen ClientOptions{..} sess@FrontendSession{..} curFrame = do
   let arraysEqual = singleArray curFrame == singleArray prevFrame
       overlaysEqual =
         singleMonoOverlay curFrame == singleMonoOverlay prevFrame
+        && singleSquareOverlay curFrame == singleSquareOverlay prevFrame
         && singlePropOverlay curFrame == singlePropOverlay prevFrame
   basicTexture <- readIORef sbasicTexture  -- previous content still present
   unless arraysEqual $ do
     SDL.rendererRenderTarget srenderer SDL.$= Just basicTexture
-    U.foldM'_ setChar 0 $ U.zip (PointArray.avector $ singleArray curFrame)
-                                (PointArray.avector $ singleArray prevFrame)
+    U.foldM'_ setMapChar 0 $ U.zip (PointArray.avector $ singleArray curFrame)
+                                   (PointArray.avector $ singleArray prevFrame)
   unless (arraysEqual && overlaysEqual) $ do
     texture <- readIORef stexture
     SDL.rendererRenderTarget srenderer SDL.$= Just texture
@@ -600,6 +724,7 @@ drawFrame coscreen ClientOptions{..} sess@FrontendSession{..} curFrame = do
     -- the proportional one and so to have a warning message about overrun
     -- that needs to be overlaid on top of the proportional overlay.
     drawPropOverlay $ singlePropOverlay curFrame
+    drawSquareOverlay $ singleSquareOverlay curFrame
     drawMonoOverlay $ singleMonoOverlay curFrame
     writeIORef spreviousFrame curFrame
     SDL.rendererRenderTarget srenderer SDL.$= Nothing

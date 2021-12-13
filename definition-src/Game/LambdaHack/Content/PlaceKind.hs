@@ -27,8 +27,7 @@ import Game.LambdaHack.Definition.DefsInternal
 
 -- | Parameters for the generation of small areas within a dungeon level.
 data PlaceKind = PlaceKind
-  { psymbol     :: Char          -- ^ a symbol
-  , pname       :: Text          -- ^ short description, singular or plural
+  { pname       :: Text          -- ^ short description, singular or plural
   , pfreq       :: Freqs PlaceKind  -- ^ frequency within groups
   , prarity     :: Rarity        -- ^ rarity on given depths
   , pcover      :: Cover         -- ^ how to fill whole place using the corner
@@ -110,7 +109,7 @@ validateSingle cotile PlaceKind{..} =
                                            (concatMap T.unpack ptopLeft)
   in [ "top-left corner empty" | dxcorner == 0 ]
      ++ [ "top-left corner not rectangular"
-        | any (/= dxcorner) (map T.length ptopLeft) ]
+        | any ((/= dxcorner) . T.length) ptopLeft ]
      ++ inLegendAll "plegendDark" plegendDark
      ++ inLegendAll "plegendLit" plegendLit
      ++ validateRarity prarity

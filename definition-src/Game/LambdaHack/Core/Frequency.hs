@@ -23,8 +23,8 @@ maxBoundInt32 :: Int
 maxBoundInt32 = toIntegralCrash (maxBound :: Int32)
 
 -- | The frequency distribution type. Not normalized (operations may
--- or may not group the same elements and sum their frequencies).
--- However, elements with zero frequency are removed upon construction.
+-- or may not group the same elements and sum their frequencies). However,
+-- elements with less than zero frequency are removed upon construction.
 --
 -- The @Eq@ instance compares raw representations, not relative,
 -- normalized frequencies, so operations don't need to preserve

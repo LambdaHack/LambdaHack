@@ -16,6 +16,14 @@ Jamie Fristrom
 
 
 
+Binary distributions of this package may be linked or bundled with libraries
+such as SDL2, SDL_ttf, FreeType and many others. These libraries
+are copyright of their respective owners, with all rights reserved.
+In particular, portions of this software are copyright © 2021 The FreeType
+Project (www.freetype.org). All rights reserved.
+
+
+
 Fonts 16x16xw.woff, 16x16xw.bdf, 16x16x.fnt, 8x8x.fnt and 8x8xb.fnt
 are are derived from fonts taken from
 https://github.com/angband/angband, copyrighted by Leon Marrick,
