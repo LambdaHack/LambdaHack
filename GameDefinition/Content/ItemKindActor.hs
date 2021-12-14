@@ -429,7 +429,7 @@ armadillo = ItemKind
   , iverbHit = "thud"
   , iweight  = 54000
   , idamage  = 0
-  , iaspects = [ AddSkill SkMaxHP 30, AddSkill SkMaxCalm 30
+  , iaspects = [ AddSkill SkMaxHP 25, AddSkill SkMaxCalm 30
                , AddSkill SkSpeed 20, AddSkill SkNocto 2
                , AddSkill SkHurtMelee (-70)  -- quite harmless rolled in a ball
                , AddSkill SkAlter (-2)  -- can't use hard stairs nor doors
