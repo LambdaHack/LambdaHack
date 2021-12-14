@@ -1,3 +1,44 @@
+## [v0.11.0.0](https://github.com/LambdaHack/LambdaHack/compare/v0.10.3.0...v0.11.0.0)
+
+- Partially work around regression in libsdl2 2.0.16 (https://github.com/LambdaHack/LambdaHack/issues/281); use a different SDL2 version to avoid deformed boxes around tiles on the game map
+- Deduplicate UI code for exiting game, with extra style points
+- Create monadic test harness and use it for UI and other unit tests
+- Validate empty content and fix other soundness issues revealed by unit tests
+- Add extra hints in --more and similar lines when tutorial is on
+- Show full history at SPACE press and let second SPACE close it
+- Spawn insects in the swamp
+- Remove slot letter display in menus and instead display subtle bullets
+- Repurpose item slots to item roles
+- Redo display and control of main menu and its submenus
+- Make Teletype frontend a bit closer to playable
+- Switch right pane item description display from mono to prop font
+- Ensure score not zero if victory
+- Add a custom SDL cursor, working around a bug in SDL2 bindings
+- Gut out most content symbols; weren't used even in lore menus after all
+- Add a flag to disable the costly optimizations (that give 15-25% speedup)
+- Add faction kind content and redo game mode content to use it
+- Display seen faction lore
+- Simplify and fortify faction and client assignment code
+- Make a few unique items that were identified meta-game identifiable instead
+- Fix persistence of meta-game discoveries in save files
+- When assigning a faction, first try the group actor was picked from
+- When assigned faction is dead, don't spawn the actor
+- Don't use benign weapons on projectiles not to lose the fun
+- Make the unique harpoon worth saving for a unique foe
+- Spawn enemies closer and fix too random spawning location
+- Improve display of item's range
+- Warn when SDL game windows is resized not via config file
+- Ban or force sleep on levels
+- Protect against unset or primitive OS locale
+- Add temporary hearing aids
+- Disallow generating a door beside an opening in room's wall
+- Permit smaller caves and validate cave content more accurately
+- Try harder to generate escape from dungeon in a level corner
+- Avoid exit/escape confusion in content names and descriptions
+- Extend LH game mode a descriptions since people play it instead of Allure
+- Make sure every cave has a description
+- Many fixes, refactorings and tweaks
+
 ## [v0.10.3.0](https://github.com/LambdaHack/LambdaHack/compare/v0.10.2.0...v0.10.3.0)
 
 - Work around regression https://gitlab.freedesktop.org/freetype/freetype/-/issues/1076 by making the scalable square font the default as the map font; the tiny map fonts, for which there is no such workaround, won't work for anybody with freetype 2.11.0
