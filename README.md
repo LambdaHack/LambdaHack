@@ -188,7 +188,7 @@ the following speeds up the turn-around a lot
 
 and then you can compile (and recompile) with
 
-    cabal build .
+    cabal build
 
 and run the game with
 
