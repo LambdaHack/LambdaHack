@@ -5,7 +5,7 @@ module Game.LambdaHack.Common.Kind
   , COps(..)
   , emptyCOps
   , ItemSpeedup
-  , emptyItemSpeedup, getKindMean, speedupItem
+  , getKindMean, speedupItem
   , okind, omemberGroup, oisSingletonGroup, ouniqGroup, opick
   , ofoldlWithKey', ofoldlGroup', omapVector, oimapVector
   , olength, linearInterpolation
@@ -159,9 +159,6 @@ emptyCOps =
 
 -- | Map from an item kind identifier to the mean aspect value for the kind.
 newtype ItemSpeedup = ItemSpeedup (V.Vector IA.KindMean)
-
-emptyItemSpeedup :: ItemSpeedup
-emptyItemSpeedup = ItemSpeedup V.empty
 
 getKindMean :: ContentId IK.ItemKind -> ItemSpeedup -> IA.KindMean
 getKindMean kindId (ItemSpeedup is) = is V.! contentIdIndex kindId
