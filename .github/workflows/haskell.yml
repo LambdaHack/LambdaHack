@@ -308,7 +308,7 @@ jobs:
           if [ $((HCNUMVER < 90002)) -ne 0 ] ; then
             case $MY_HCFLAGS in --ghc-option=-O*) : ;;
               *)
-                $CABAL repl --build-depends=QuickCheck --with-ghc=doctest definition
+#               $CABAL repl --build-depends=QuickCheck --with-ghc=doctest definition
                 $CABAL repl --build-depends=QuickCheck --build-depends=template-haskell --with-ghc=doctest lib:LambdaHack
             esac
           fi

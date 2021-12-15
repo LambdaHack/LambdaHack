@@ -36,6 +36,10 @@ description: LambdaHack is a Haskell game engine library for ASCII roguelike
              when developing the library --- library users are free
              to access any modules, since the library authors are in
              no position to guess their particular needs.
+             .
+             This is a workaround .cabal file, flattened to eliminate
+             internal libraries until generating haddocks for them
+             is fixed. The original .cabal file is in .cabal.bkp file.
 homepage:      https://lambdahack.github.io
 bug-reports:   http://github.com/LambdaHack/LambdaHack/issues
 license:       BSD-3-Clause
@@ -149,9 +153,12 @@ common exe-options
   if !flag(supportNodeJS)
     ghcjs-options:    -DGHCJS_BROWSER
 
-library definition
+library
   import: options
-  hs-source-dirs:     definition-src
+  hs-source-dirs:     definition-src,
+                      engine-src,
+                      GameDefinition/game-src,
+                      GameDefinition
   exposed-modules:    Game.LambdaHack.Core.Dice
                       Game.LambdaHack.Core.Frequency
                       Game.LambdaHack.Core.Prelude
@@ -169,30 +176,7 @@ library definition
                       Game.LambdaHack.Content.PlaceKind
                       Game.LambdaHack.Content.RuleKind
                       Game.LambdaHack.Content.TileKind
-  build-depends:
-                      ,assert-failure >= 0.1.2 && < 0.2
-                      ,base
-                      ,base-compat
-                      ,binary
-                      ,containers
-                      ,deepseq
-                      ,enummapset
-                      ,hashable
-                      ,hsini
-                      ,witch >= 0.3
-                      ,keys
-                      ,miniutter
-                      ,splitmix
-                      ,time
-                      ,text
-                      ,transformers
-                      ,unordered-containers
-                      ,vector
-
-library
-  import: options
-  hs-source-dirs:     engine-src
-  exposed-modules:    Game.LambdaHack.Atomic
+                      Game.LambdaHack.Atomic
                       Game.LambdaHack.Atomic.CmdAtomic
                       Game.LambdaHack.Atomic.HandleAtomicWrite
                       Game.LambdaHack.Atomic.MonadStateWrite
@@ -302,37 +286,40 @@ library
                       Game.LambdaHack.Server.ServerOptions
                       Game.LambdaHack.Server.StartM
                       Game.LambdaHack.Server.State
-  reexported-modules: ,Game.LambdaHack.Core.Dice
-                      ,Game.LambdaHack.Core.Frequency
-                      ,Game.LambdaHack.Core.Prelude
-                      ,Game.LambdaHack.Core.Random
-                      ,Game.LambdaHack.Definition.Ability
-                      ,Game.LambdaHack.Definition.Color
-                      ,Game.LambdaHack.Definition.ContentData
-                      ,Game.LambdaHack.Definition.Defs
-                      ,Game.LambdaHack.Definition.DefsInternal
-                      ,Game.LambdaHack.Definition.Flavour
-                      ,Game.LambdaHack.Content.CaveKind
-                      ,Game.LambdaHack.Content.FactionKind
-                      ,Game.LambdaHack.Content.ItemKind
-                      ,Game.LambdaHack.Content.ModeKind
-                      ,Game.LambdaHack.Content.PlaceKind
-                      ,Game.LambdaHack.Content.RuleKind
-                      ,Game.LambdaHack.Content.TileKind
+  exposed-modules:    Content.CaveKind
+                      Content.FactionKind
+                      Content.ItemKind
+                      Content.ItemKindEmbed
+                      Content.ItemKindActor
+                      Content.ItemKindOrgan
+                      Content.ItemKindBlast
+                      Content.ItemKindTemporary
+                      Content.ModeKind
+                      Content.PlaceKind
+                      Content.RuleKind
+                      Content.TileKind
+                      TieKnot
+                      Client.UI.Content.Input
+                      Client.UI.Content.Screen
+                      Implementation.MonadClientImplementation
+                      Implementation.MonadServerImplementation
   other-modules:      Paths_LambdaHack
   autogen-modules:    Paths_LambdaHack
-  build-depends:      definition,
+  build-depends:      assert-failure >= 0.1.2 && < 0.2,
                       async      >= 2.2.1,
                       base       >= 4.10 && < 99,
+                      base-compat >= 0.10.0,
                       binary     >= 0.8,
                       bytestring >= 0.9.2 ,
                       containers >= 0.5.3.0,
                       deepseq    >= 1.3,
                       directory  >= 1.1.0.1,
                       enummapset >= 0.5.2.2,
+                      file-embed >= 0.0.11,
                       filepath   >= 1.2.0.1,
                       hashable   >= 1.1.2.5,
                       hsini      >= 0.2,
+                      witch      >= 0.3,
                       keys       >= 3,
                       miniutter  >= 0.5.0.0,
                       open-browser >= 0.2,
@@ -347,7 +334,10 @@ library
                       transformers >= 0.4,
                       unordered-containers >= 0.2.3,
                       vector     >= 0.11,
-                      vector-binary-instances >= 0.2.3.1
+                      vector-binary-instances >= 0.2.3.1,
+                      template-haskell >= 2.6,
+                      th-lift-instances,
+                      ghc-compact
 
   if impl(ghcjs) || flag(jsaddle) {
     exposed-modules:  Game.LambdaHack.Client.UI.Frontend.Dom
@@ -369,59 +359,10 @@ library
     build-depends:    zlib >= 0.5.3.1
   }
 
-library this-game-content
-  import: options
-  hs-source-dirs:     GameDefinition
-  exposed-modules:    Content.CaveKind
-                      Content.FactionKind
-                      Content.ItemKind
-                      Content.ItemKindEmbed
-                      Content.ItemKindActor
-                      Content.ItemKindOrgan
-                      Content.ItemKindBlast
-                      Content.ItemKindTemporary
-                      Content.ModeKind
-                      Content.PlaceKind
-                      Content.RuleKind
-                      Content.TileKind
-  other-modules:      Paths_LambdaHack
-  autogen-modules:    Paths_LambdaHack
-  build-depends:      ,definition
-                      ,base
-                      ,enummapset
-                      ,filepath
-                      ,hsini
-                      ,template-haskell
-                      ,text
-                      ,th-lift-instances
-
-library this-game-src
-  import: options
-  hs-source-dirs:     GameDefinition/game-src
-  exposed-modules:    TieKnot
-                      Client.UI.Content.Input
-  other-modules:      Client.UI.Content.Screen
-                      Implementation.MonadClientImplementation
-                      Implementation.MonadServerImplementation
-  build-depends:      ,LambdaHack
-                      ,this-game-content
-                      ,async
-                      ,base
-                      ,enummapset
-                      ,file-embed >= 0.0.11
-                      ,ghc-compact
-                      ,optparse-applicative
-                      ,primitive
-                      ,splitmix
-                      ,template-haskell
-                      ,text
-                      ,transformers
-
 executable LambdaHack
   import: options, exe-options
   main-is:            GameDefinition/Main.hs
   build-depends:      ,LambdaHack
-                      ,this-game-src
                       ,async
                       ,base
                       ,filepath
@@ -447,8 +388,6 @@ test-suite test
                       SessionUIUnitTests
                       UnitTestHelpers
   build-depends:      ,LambdaHack
-                      ,this-game-content
-                      ,this-game-src
                       ,base
                       ,containers
                       ,enummapset
