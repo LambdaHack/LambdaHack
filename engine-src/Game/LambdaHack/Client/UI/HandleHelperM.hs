@@ -180,13 +180,14 @@ pickLeader verbose aid = do
         (\aimMode -> aimMode {aimLevelId = blid body}) <$> saimMode sess}
       -- Inform about items, etc.
       saimMode <- getsSession saimMode
-      if isJust saimMode
+      when verbose $
+        if isJust saimMode
         then doLook
         else do
           (itemsBlurb, _) <-
             lookAtItems True (bpos body) (blid body) (Just aid) Nothing
           stashBlurb <- lookAtStash (bpos body) (blid body)
-          when verbose $ msgAdd MsgAtFeetMinor $ stashBlurb <+> itemsBlurb
+          msgAdd MsgAtFeetMinor $ stashBlurb <+> itemsBlurb
       return True
 
 -- | Perform look around in the current position of the xhair.

@@ -375,6 +375,8 @@ transition leader psuit prompt promptGeneric permitMulitple
            { defLabel = Left ""
            , defCond = maySwitchLeader cCur && not (null hs)
            , defAction = do
+               -- This is verbose even in aiming mode, displaying
+               -- terrain description, but it's fine, mouse may do that.
                merror <- pickLeaderWithPointer leader
                case merror of
                  Nothing -> recCall cCur cRest itemDialogState
