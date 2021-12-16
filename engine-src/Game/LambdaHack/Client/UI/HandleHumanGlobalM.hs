@@ -1614,7 +1614,9 @@ itemMenuHuman leader cmdSemInCxtOfKM = do
                   if blid bNew /= blid b && banned
                   then weaveJust <$> failSer NoChangeDunLeader
                   else do
-                    void $ pickLeader True newAid
+                    -- Verbosity not necessary to notice the switch
+                    -- and it's explicitly requested, so no surprise.
+                    void $ pickLeader False newAid
                     modifySession $ \sess ->
                       sess {sitemSel = Just (iid, newCStore, False)}
                     itemMenuHuman newAid cmdSemInCxtOfKM
