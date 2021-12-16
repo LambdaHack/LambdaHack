@@ -419,8 +419,9 @@ drawFrameExtra dm drawnLevelId = do
         mapM_ (\(pos, color) -> mapVL (writeSquare color) [fromEnum pos] v)
               stashesToDisplay
         case mbody of  -- overwrites target
-          Nothing -> return ()
-          Just body -> mapVL (writeSquare leaderColor) [fromEnum $ bpos body] v
+          Just body | drawnLevelId == blid body ->
+            mapVL (writeSquare leaderColor) [fromEnum $ bpos body] v
+          _ -> return ()
         case mxhairPos of  -- overwrites target and non-aim leader box
           Nothing -> return ()
           Just p -> mapVL (writeSquare xhairColor) [fromEnum p] v
