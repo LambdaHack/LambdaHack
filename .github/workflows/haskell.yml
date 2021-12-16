@@ -43,7 +43,7 @@ jobs:
             setup-method: ghcup
             allow-failure: false
           - compiler: ghc-9.2.1-opt2
-            projectFlags: --ghc-option=-O2 --ghc-option=-fno-ignore-asserts --allow-newer=sdl2:bytestring
+            projectFlags: --ghc-option=-O2 --ghc-option=-fno-ignore-asserts --allow-newer=sdl2:bytestring -f-with_costly_optimizations
             compilerKind: ghc
             compilerVersion: 9.2.1
             setup-method: ghcup
