@@ -283,7 +283,7 @@ watchRespUpdAtomicUI cmd = case cmd of
              let bPrev = b {bcalm = bcalm b - calmDelta}
              when (calmEnough b actorMaxSk
                    && not (calmEnough bPrev actorMaxSk)) $
-               msgAdd MsgNeutralEvent "You are again calm enough to manage your equipment outfit."
+               msgAdd MsgSpecialEvent "You are again calm enough to manage your equipment outfit."
            -- If the leader regenerates Calm more often than once per
            -- standard game turn, this will not be reflected, for smoother
            -- and faster display. However, every halt for keypress

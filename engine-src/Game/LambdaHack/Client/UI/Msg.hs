@@ -241,6 +241,7 @@ interruptsRunning = \case
     MsgHeardFaraway -> False
     -- MsgHeardNearby interrupts, even if running started while hearing close
     MsgRangedOthers -> False
+    MsgNeutralEvent -> False
     MsgAtFeetMinor -> False
     _ -> True
   MsgClassShow x -> case x of
