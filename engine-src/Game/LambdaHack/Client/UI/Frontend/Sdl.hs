@@ -222,7 +222,10 @@ startupFun coscreen soptions@ClientOptions{..} rfMVar = do
         , SDL.windowMode = case fromMaybe NotFullscreen sfullscreenMode of
             ModeChange -> SDL.Fullscreen
             BigBorderlessWindow -> SDL.FullscreenDesktop
-            NotFullscreen -> SDL.Windowed }
+            NotFullscreen -> SDL.Windowed
+        , SDL.windowResizable = False  -- the default, but just in case...
+        , SDL.windowHighDPI = True  -- possibly prevents resize for Retina
+        }
       rendererConfig = SDL.RendererConfig
         { rendererType          = if sbenchmark
                                   then SDL.AcceleratedRenderer
