@@ -84,11 +84,6 @@ flag with_expensive_assertions
   default:            False
   manual:             True
 
-flag with_costly_optimizations
-  description:        turn on costly (mostly GHC heap size) optimizations (that give 15-25% speedup)
-  default:            True
-  manual:             True
-
 flag release
   description:        prepare for a release (expose internal functions and types, etc.)
   default:            True
@@ -121,8 +116,7 @@ common options
 -- TODO: remove -Winvalid-haddock when added to -Wall in a GHC I use for haddock
   ghc-options:        -fno-ignore-asserts
 
-  if flag(with_costly_optimizations)
-    ghc-options:        -fexpose-all-unfoldings -fspecialise-aggressively -fsimpl-tick-factor=200
+  ghc-options:        -fexpose-all-unfoldings -fspecialise-aggressively -fsimpl-tick-factor=200
 
   if flag(with_expensive_assertions)
     cpp-options:      -DWITH_EXPENSIVE_ASSERTIONS
