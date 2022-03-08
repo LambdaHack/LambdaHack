@@ -200,7 +200,6 @@ storeItemPrompt side body bodyUI actorCurAndMaxSk c2 s =
                   Just (lid, _) ->
                     map MU.Text ["on level", tshow $ abs $ fromEnum lid]
                   Nothing -> [] )
-            _ -> ("see", [])
           ownObject = case cstore of
             CStash -> ["our", MU.Text t]
             _ -> [MU.WownW (MU.Text $ bpronoun bodyUI) $ MU.Text t]
