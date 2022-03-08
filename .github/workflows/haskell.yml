@@ -48,34 +48,34 @@ jobs:
 #            compilerVersion: 9.2.2
 #            setup-method: ghcup
 #            allow-failure: false
-          - compiler: ghc-9.0.1-vanilla
+          - compiler: ghc-9.0.2-vanilla
             projectFlags:
             compilerKind: ghc
-            compilerVersion: 9.0.1
+            compilerVersion: 9.0.2
             setup-method: ghcup
             allow-failure: false
-          - compiler: ghc-9.0.1-asserts
+          - compiler: ghc-9.0.2-asserts
             projectFlags: -fwith_expensive_assertions
             compilerKind: ghc
-            compilerVersion: 9.0.1
+            compilerVersion: 9.0.2
             setup-method: ghcup
             allow-failure: false
-          - compiler: ghc-9.0.1-norelease-asserts
+          - compiler: ghc-9.0.2-norelease-asserts
             projectFlags: -f-release -fwith_expensive_assertions
             compilerKind: ghc
-            compilerVersion: 9.0.1
+            compilerVersion: 9.0.2
             setup-method: ghcup
             allow-failure: false
-          - compiler: ghc-9.0.1-noopt
+          - compiler: ghc-9.0.2-noopt
             projectFlags: --ghc-option=-O0 --ghc-option=-fno-ignore-asserts
             compilerKind: ghc
-            compilerVersion: 9.0.1
+            compilerVersion: 9.0.2
             setup-method: ghcup
             allow-failure: false
-          - compiler: ghc-9.0.1-opt2
+          - compiler: ghc-9.0.2-opt2
             projectFlags: --ghc-option=-O2 --ghc-option=-fno-ignore-asserts
             compilerKind: ghc
-            compilerVersion: 9.0.1
+            compilerVersion: 9.0.2
             setup-method: ghcup
             allow-failure: false
           - compiler: ghc-8.10.7-vanilla
