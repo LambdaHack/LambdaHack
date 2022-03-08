@@ -126,7 +126,7 @@ brawl = ModeKind  -- sparse melee in daylight, with shade for melee ambush
       -- Not enough space with square fonts and also this is more of a hint than a flavour: Remember to keep your party together when opponents are spotted, or they might be tempted to silence solitary disputants one by one and so win the altercation.
   , mreason = "In addition to advancing game plot, this encounter trains melee, squad formation and stealth. The battle is symmetric in goals (incapacitate all enemies) and in squad capabilities (only the pointman moves, others either melee or wait)."
   , mhint   =  T.intercalate "\n"
-    ["Run a short distance with Shift or LMB, switch the pointman with Tab, repeat. In open terrain, if you keep distance between teammates, this resembles the leap frog infantry tactics. For best effects, end each sprint behind a cover or concealment."
+    [ "Run a short distance with Shift or LMB, switch the pointman with Tab, repeat. In open terrain, if you keep distance between teammates, this resembles the leap frog infantry tactics. For best effects, end each sprint behind a cover or concealment."
     , "Observe and mimic the enemies. If you can't see an enemy that apparently can see you, in reversed circumstances you would have the same advantage. Savour the relative fairness --- you won't find any in the main crawl adventure that follows."
     , "If you get beaten repeatedly, try using all consumables you find. Ponder the hints from the defeat message, in particular the one about keeping your party together once the opponents are spotted. However, if you want to discover a winning tactics on your own, make sure to ignore any such tips until you succeed."
     ]
@@ -283,7 +283,8 @@ ambush = ModeKind  -- dense ranged with reaction fire vs melee at night
   , mdesc   = "Prevent hijacking of your ideas at all cost! Be stealthy, be observant, be aggressive. Fast execution is what makes or breaks a creative team."
   , mreason = "In this adventure, finally, your heroes are able to all use ranged attacks at once, given enough ammunition."
   , mhint   = "Beware of friendly fire, particularly from explosives. But you need no more hints. Go fulfill your destiny! For Science!"
-  } where
+  }
+  where
     killedMsg = T.intercalate "\n"
       ["You turned out to be the prey, this time, not the hunter. In fact, you are not even in the hunters' league. When fighting against such odds, passively waiting for enemy to spring a trap is to no avail, because a professional team can sneak in darkness and ambush the ambushers."
       ,"Granted, good positioning is crucial, so that each squad member can overwatch the battlefield and fire opportunistically, using the recently recovered instant telegraphy equipment. However, there is no hope without active scouting, throwing lit objects and probing suspect areas with missiles while paying attention to sounds. And that may still not be enough."
