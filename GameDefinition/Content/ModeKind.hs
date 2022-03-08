@@ -151,9 +151,9 @@ crawl = ModeKind
   , mreason = "This is the main, longest and most replayable scenario of the game."
   , mhint   = "If you keep dying, attempt the subsequent adventures as a breather (perhaps at lowered difficulty). They fill the gaps in the plot and teach particular skills that may come in handy and help you discover new tactics of your own or come up with a strategy for staving off the attrition. Also experimenting with the initial adventures may answer some questions you didn't have when you attempted them originally."
   }
-  where
-    killedMsg = T.intercalate "\n"
-     ["To think that followers of science and agents of enlightenment would earn death as their reward! Where did we err in our ways? Perhaps nature should not have been disturbed so brashly and the fell beasts woken up from their slumber so eagerly?"
+ where
+   killedMsg = T.intercalate "\n"
+     [ "To think that followers of science and agents of enlightenment would earn death as their reward! Where did we err in our ways? Perhaps nature should not have been disturbed so brashly and the fell beasts woken up from their slumber so eagerly?"
      , "Perhaps the gathered items should have been used for scientific experiments on the spot rather than hoarded as if of base covetousness? Or perhaps the challenge, chosen freely but without the foreknowledge of the grisly difficulty, was insurmountable and forlorn from the start, despite the enormous power of educated reason at out disposal?"
      ]
 
@@ -184,11 +184,11 @@ shootout = ModeKind  -- sparse ranged in daylight
   , mreason = "This adventure teaches the ranged combat skill in the simplified setup of fully symmetric battle."
   , mhint   = "Try to come up with the best squad formation for this tactical challenge. Don't despair if you run out of ammo, because if you aim truly, enemy has few hit points left at this point. In turn, when trying to avoid enemy projectiles, you can display the trajectory of any soaring entity by pointing it with the crosshair in aiming mode."
   }
-  where
-    killedMsg = T.intercalate "\n"
-      ["This is a disgrace. What have we missed in our theoretic models of this fight? Did we miss a human lookout placed in a covered but unobstructed spot that lets the rest of the squad snipe from concealment or from a safe distance?"
-      , "Barring that, would we end up in a better shape even if we all hid and only fired blindly? We'd listen to impact sounds and wait vigilantly for incoming enemy missiles in order to register their trajectories and derive hints of enemy location. Apparently, ranged combat requires a change of pace and better planning than our previous simple but efficient calculations accustomed us to."
-      ]
+ where
+   killedMsg = T.intercalate "\n"
+     [ "This is a disgrace. What have we missed in our theoretic models of this fight? Did we miss a human lookout placed in a covered but unobstructed spot that lets the rest of the squad snipe from concealment or from a safe distance?"
+     , "Barring that, would we end up in a better shape even if we all hid and only fired blindly? We'd listen to impact sounds and wait vigilantly for incoming enemy missiles in order to register their trajectories and derive hints of enemy location. Apparently, ranged combat requires a change of pace and better planning than our previous simple but efficient calculations accustomed us to."
+     ]
 
 hunt = ModeKind  -- melee vs ranged with reaction fire in daylight
   { mname   = "perilous hunt (4)"
@@ -231,11 +231,11 @@ flight = ModeKind  -- asymmetric ranged and stealth race at night
   , mreason = "The focus of this installment is on stealthy exploration under the threat of numerically superior enemy."
   , mhint   = ""
   }
-  where
-    killedMsg = T.intercalate "\n"
-      [  "Somebody must have tipped the enemies of free inquiry off. However, us walking along a lit trail, yelling, could have been a contributing factor. Also, it's worth noting that the torches prepared for this assault are best used as thrown makeshift flares."
-      ,"On the other hand, equipping a lit torch makes one visible in the dark, regrettably but not quite unexpectedly to a scientific mind. Lastly, the goal of this foray was to definitely disengage from the fruitless dispute, via a way out marked by a yellow '>' sign, and to gather treasure that would support our future research. Not to harass every nearby scientific truth denier, as much as they do deserve it."
-      ]
+ where
+   killedMsg = T.intercalate "\n"
+     [ "Somebody must have tipped the enemies of free inquiry off. However, us walking along a lit trail, yelling, could have been a contributing factor. Also, it's worth noting that the torches prepared for this assault are best used as thrown makeshift flares."
+     , "On the other hand, equipping a lit torch makes one visible in the dark, regrettably but not quite unexpectedly to a scientific mind. Lastly, the goal of this foray was to definitely disengage from the fruitless dispute, via a way out marked by a yellow '>' sign, and to gather treasure that would support our future research. Not to harass every nearby scientific truth denier, as much as they do deserve it."
+     ]
 
 zoo = ModeKind  -- asymmetric crowd melee at night
   { mname   = "burning zoo (6)"
@@ -284,11 +284,11 @@ ambush = ModeKind  -- dense ranged with reaction fire vs melee at night
   , mreason = "In this adventure, finally, your heroes are able to all use ranged attacks at once, given enough ammunition."
   , mhint   = "Beware of friendly fire, particularly from explosives. But you need no more hints. Go fulfill your destiny! For Science!"
   }
-  where
-    killedMsg = T.intercalate "\n"
-      ["You turned out to be the prey, this time, not the hunter. In fact, you are not even in the hunters' league. When fighting against such odds, passively waiting for enemy to spring a trap is to no avail, because a professional team can sneak in darkness and ambush the ambushers."
-      ,"Granted, good positioning is crucial, so that each squad member can overwatch the battlefield and fire opportunistically, using the recently recovered instant telegraphy equipment. However, there is no hope without active scouting, throwing lit objects and probing suspect areas with missiles while paying attention to sounds. And that may still not be enough."
-      ]
+ where
+   killedMsg = T.intercalate "\n"
+     [ "You turned out to be the prey, this time, not the hunter. In fact, you are not even in the hunters' league. When fighting against such odds, passively waiting for enemy to spring a trap is to no avail, because a professional team can sneak in darkness and ambush the ambushers."
+     , "Granted, good positioning is crucial, so that each squad member can overwatch the battlefield and fire opportunistically, using the recently recovered instant telegraphy equipment. However, there is no hope without active scouting, throwing lit objects and probing suspect areas with missiles while paying attention to sounds. And that may still not be enough."
+     ]
 
 safari = ModeKind  -- Easter egg available only via screensaver
   { mname   = "safari"
