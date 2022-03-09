@@ -8,10 +8,11 @@ module Game.LambdaHack.Common.Kind
   , getKindMean, speedupItem
   , okind, omemberGroup, oisSingletonGroup, ouniqGroup, opick
   , ofoldlWithKey', ofoldlGroup', omapVector, oimapVector
-  , olength, linearInterpolation
+  , olength, linearInterpolation, emptyMultiGroupMode, emptyMultiGroupItem
 #ifdef EXPOSE_INTERNAL
-  , emptyMultiGroupItem, emptyUnknownTile
-  , emptyUIFactionGroupName, emptyMultiGroupMode
+  , emptyMultiGroupItem
+  , emptyUnknownTile
+  , emptyUIFactionGroupName
 #endif
     -- * Operations both internal and used in unit tests
   , emptyUIFaction
