@@ -576,7 +576,7 @@ drawFrameStatus drawnLevelId = do
   return
 #ifdef WITH_EXPENSIVE_ASSERTIONS
     $ assert (length status == 2 * _rWidthMax
-              `blame` map Color.charFromW32 status)
+              `blame` attrStringToString status)
 #endif
         status
 
@@ -777,7 +777,7 @@ drawLeaderDamage width leader = do
               [] -> []  -- no timeout-free organ, e.g., rattlesnake or hornet
               (ldmg, lextra) : rest -> (ldmg ++ lbonus, lextra) : rest
             displayDmgAndExtra (ldmg, lextra) =
-              if map Color.charFromW32 ldmg == "0"
+              if attrStringToString ldmg == "0"
               then case lextra of
                 [] -> ldmg
                 _plus : lextraRest -> lextraRest

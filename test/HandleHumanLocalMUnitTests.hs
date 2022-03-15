@@ -1,30 +1,31 @@
 module HandleHumanLocalMUnitTests (handleHumanLocalMUnitTests) where
 
-import Prelude ()
-
-import Game.LambdaHack.Core.Prelude
-
 import qualified Data.EnumMap.Strict as EM
-import           Test.Tasty
-import           Test.Tasty.HUnit
-
+import qualified Data.Text as T
+import           Game.LambdaHack.Client.UI (SessionUI (..), modifySession)
 import           Game.LambdaHack.Client.UI.HandleHelperM
 import           Game.LambdaHack.Client.UI.HandleHumanLocalM
 import qualified Game.LambdaHack.Client.UI.HumanCmd as HumanCmd
+import           Game.LambdaHack.Client.UI.Msg
+import           Game.LambdaHack.Client.UI.MsgM
+import           Game.LambdaHack.Client.UI.TutorialHints
 import           Game.LambdaHack.Common.ActorState
 import           Game.LambdaHack.Common.Item
 import           Game.LambdaHack.Common.ItemAspect
+import           Game.LambdaHack.Common.Kind (emptyMultiGroupItem)
 import           Game.LambdaHack.Common.Level
 import           Game.LambdaHack.Common.Point
 import           Game.LambdaHack.Common.PointArray as PointArray
 import           Game.LambdaHack.Common.ReqFailure
 import           Game.LambdaHack.Common.State
 import           Game.LambdaHack.Content.TileKind
+import           Game.LambdaHack.Core.Prelude
 import           Game.LambdaHack.Definition.DefsInternal
   (toContentId, toContentSymbol)
-
-import Game.LambdaHack.Common.Kind (emptyMultiGroupItem)
-import UnitTestHelpers
+import           Prelude ()
+import           Test.Tasty
+import           Test.Tasty.HUnit
+import           UnitTestHelpers
 
 testItemFull :: ItemFull
 testItemFull = ItemFull { itemBase = stubItem, itemKindId = toContentId 0, itemKind = emptyMultiGroupItem, itemDisco = ItemDiscoFull emptyAspectRecord, itemSuspect = False }
@@ -43,6 +44,7 @@ handleHumanLocalMUnitTests = testGroup "handleHumanLocalMUnitTests"
       let ultimateResult =
             fst permittedProjectClientResultFnInMonad testItemFull
       ultimateResult @?= Left ProjectUnskilled
+
   , testCase "chooseItemProjectHuman" $ do
       let testFn = let triggerItems =
                          [ HumanCmd.TriggerItem {tiverb = "verb", tiobject = "object", tisymbols = [toContentSymbol 'a', toContentSymbol 'b']}
@@ -51,6 +53,25 @@ handleHumanLocalMUnitTests = testGroup "handleHumanLocalMUnitTests"
                    in chooseItemProjectHuman testActorId triggerItems
       result <- executorCli testFn testCliStateWithItem
       showFailError (fromJust (fst result)) @?= "*aiming obstructed by terrain*"
+  , testCase "tutorialHints-msg-in-history-report" $ do
+      let testFn = do
+            modifySession  (\sess -> sess {scurTutorial = True} ) -- let CliState maintain tutorialHint state
+            tutorialHintMsgAdd CannotHarmYouInMelee
+      result <- executorCli testFn testCliStateWithItem
+      let maybeHistory =  shistory <$> (cliSession . snd)  result
+      case maybeHistory of
+        Nothing ->
+          assertFailure "History Report is empty"
+        Just history -> do
+          putStrLn $ "History newReport: " <> (T.unpack . T.unlines) newTextReports
+          putStrLn $ "tutorialHint: " <> (T.unpack . renderTutorialHints) CannotHarmYouInMelee
+          assertBool testFailureMsg isHintThere
+          where
+              newTextReports = reportToTexts . newReport $  history
+              isHintThere = renderTutorialHints  CannotHarmYouInMelee `elem`  newTextReports
+              testFailureMsg = "Expected to find tutorialHints: '"
+                <> (T.unpack . renderTutorialHints $ CannotHarmYouInMelee)
+                <>  "'  in SessionUI.shistory.newReport "
   , testCase "psuitReq" $  do
       let testFn = psuitReq testActorId
       mpsuitReqMonad <- executorCli testFn testCliStateWithItem
