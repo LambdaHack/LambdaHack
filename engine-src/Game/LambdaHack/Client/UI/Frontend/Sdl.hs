@@ -692,7 +692,7 @@ drawFrame coscreen ClientOptions{..} sess@FrontendSession{..} curFrame = do
                                     , Color.HighlightNoneCursor ]) ()
             fg | even row && fgRaw == Color.White = Color.AltWhite
                | otherwise = fgRaw
-            t = T.pack $ map Color.charFromW32 $ w : sameRest
+            t = T.pack . attrStringToString  $ w : sameRest
         width <- drawPropChunk x row fg t
         drawPropLine (x + width) row otherRest
       drawPropChunk :: Int -> Int -> Color.Color -> T.Text -> IO Int

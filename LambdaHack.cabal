@@ -242,6 +242,7 @@ library
                       Game.LambdaHack.Client.UI.SessionUI
                       Game.LambdaHack.Client.UI.Slideshow
                       Game.LambdaHack.Client.UI.SlideshowM
+                      Game.LambdaHack.Client.UI.TutorialHints
                       Game.LambdaHack.Client.UI.UIOptions
                       Game.LambdaHack.Client.UI.UIOptionsParse
                       Game.LambdaHack.Client.UI.Watch

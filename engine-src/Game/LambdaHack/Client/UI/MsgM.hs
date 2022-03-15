@@ -1,7 +1,7 @@
 -- | Monadic operations on game messages.
 module Game.LambdaHack.Client.UI.MsgM
   ( msgAddDuplicate, msgAddDistinct, msgAdd, msgLnAdd
-  , promptMainKeys, recordHistory
+  , promptMainKeys, recordHistory, tutorialHintMsgAdd
   ) where
 
 import Prelude ()
@@ -15,6 +15,8 @@ import qualified Game.LambdaHack.Client.UI.Key as K
 import           Game.LambdaHack.Client.UI.MonadClientUI
 import           Game.LambdaHack.Client.UI.Msg
 import           Game.LambdaHack.Client.UI.SessionUI
+import           Game.LambdaHack.Client.UI.TutorialHints
+  (TutorialHints, renderTutorialHints)
 import           Game.LambdaHack.Client.UI.UIOptions
 import           Game.LambdaHack.Common.ActorState
 import           Game.LambdaHack.Common.MonadStateRead
@@ -69,6 +71,10 @@ msgAddDistinct msgClass (t1, t2) = do
 -- | Add a message to the current report.
 msgAdd :: (MonadClientUI m, MsgShared a) => a -> Text -> m ()
 msgAdd msgClass t = void $ msgAddDuplicate msgClass t
+
+-- | Add a tutorialHint message to the current report.
+tutorialHintMsgAdd :: (MonadClientUI m) => TutorialHints -> m ()
+tutorialHintMsgAdd tutorialHint = msgAdd MsgTutorialHint  (renderTutorialHints tutorialHint)
 
 -- | Add a message to the current report. End previously collected report,
 -- if any, with newline.

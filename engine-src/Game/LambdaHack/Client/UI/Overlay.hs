@@ -6,7 +6,7 @@ module Game.LambdaHack.Client.UI.Overlay
   , -- * FontSetup
     FontSetup(..), multiFontSetup, singleFontSetup
   , -- * AttrString
-    AttrString, blankAttrString, textToAS, textFgToAS, stringToAS
+    AttrString, blankAttrString, textToAS, textFgToAS, stringToAS, attrStringToString
   , (<+:>), (<\:>)
     -- * AttrLine
   , AttrLine, attrLine, emptyAttrLine, attrStringToAL, firstParagraph
@@ -106,6 +106,11 @@ textFgToAS !fg !t =
 stringToAS :: String -> AttrString
 stringToAS = map Color.attrChar1ToW32
 
+-- | Transform AttrString type to String
+--
+attrStringToString :: AttrString ->  String
+attrStringToString  = map Color.charFromW32
+
 -- Follows minimorph.<+>.
 infixr 6 <+:>  -- matches Monoid.<>
 (<+:>) :: AttrString -> AttrString -> AttrString
@@ -135,7 +140,7 @@ isPrefixOfNonbreakable s =
         Nothing -> False
         Just [] -> True
         Just (c : _) -> isSpace c
-  in any (isPrefixOfNb $ map Color.charFromW32 s) nonbreakableRev
+  in any (isPrefixOfNb $ attrStringToString s) nonbreakableRev
 
 breakAtSpace :: AttrString -> (AttrString, AttrString)
 breakAtSpace lRev =
@@ -163,7 +168,7 @@ attrStringToAL s =
 #ifdef WITH_EXPENSIVE_ASSERTIONS
   assert (allB (\ac -> Color.charFromW32 ac /= '\n') s) $  -- expensive in menus
   assert (null s || last s /= Color.spaceAttrW32
-          `blame` map Color.charFromW32 s) $
+          `blame` attrStringToString s) $
     -- only expensive for menus, but often violated by code changes, so disabled
     -- outside test runs
 #endif

@@ -1,9 +1,10 @@
 {-# LANGUAGE GADTs, GeneralizedNewtypeDeriving #-}
 -- | Monadic test harness and other stubs for unit tests.
 module UnitTestHelpers
-  ( CliState(..)
+  (CliState(..)
   , emptyCliState
   , executorCli
+  , reportToTexts
   , stubLevel
   , stubState
   , stubCliState
@@ -18,20 +19,20 @@ module UnitTestHelpers
   , testLevelId
 #ifdef EXPOSE_INTERNAL
     -- * Internal operations
-  , CliMock(..)
   , fchanFrontendStub
+  , CliMock(..)
 #endif
   ) where
 
 import Prelude ()
 
-import Game.LambdaHack.Core.Prelude
-
 import qualified Control.Monad.IO.Class as IO
 import           Control.Monad.Trans.State.Strict
   (StateT (StateT, runStateT), gets, state)
 import qualified Data.EnumMap.Strict as EM
-
+import qualified Data.Text as Text
+import           Game.LambdaHack.Client.UI.Overlay
+import Game.LambdaHack.Core.Prelude
 import           Game.LambdaHack.Atomic (MonadStateWrite (..))
 import           Game.LambdaHack.Client
 import qualified Game.LambdaHack.Client.BfsM as BfsM
@@ -49,6 +50,7 @@ import           Game.LambdaHack.Client.UI.Frontend
   (ChanFrontend (..), FrontReq (..))
 import           Game.LambdaHack.Client.UI.Key (KMP (..))
 import qualified Game.LambdaHack.Client.UI.Key as K
+import           Game.LambdaHack.Client.UI.Msg
 import           Game.LambdaHack.Client.UI.PointUI (PointUI (..))
 import           Game.LambdaHack.Client.UI.UIOptions (UIOptions (..))
 import           Game.LambdaHack.Common.Actor
@@ -58,8 +60,7 @@ import           Game.LambdaHack.Common.ClientOptions
   (ClientOptions (..), FullscreenMode (..), defClientOptions)
 import           Game.LambdaHack.Common.Faction (Faction (..))
 import           Game.LambdaHack.Common.Item
-import           Game.LambdaHack.Common.Kind
-  (COps (..), emptyUIFaction)
+import           Game.LambdaHack.Common.Kind (COps (..), emptyUIFaction)
 import           Game.LambdaHack.Common.Level (Level (..))
 import           Game.LambdaHack.Common.Misc (FontSet (..))
 import           Game.LambdaHack.Common.MonadStateRead
@@ -85,6 +86,7 @@ import qualified Game.LambdaHack.Definition.Ability as Ability
 import           Game.LambdaHack.Definition.Color (Color (..))
 import           Game.LambdaHack.Definition.DefsInternal (toContentId)
 import           Game.LambdaHack.Definition.Flavour
+
 
 -- * UI frontend stub
 
@@ -316,6 +318,7 @@ stubCliState = CliState
 testCliStateWithItem :: CliState
 testCliStateWithItem = stubCliState { cliState = testStateWithItem }
 
+
 -- * Monad harness mock
 
 -- | Client state transformation monad mock.
@@ -351,13 +354,6 @@ instance MonadClient CliMock where
     let !newCliS = cliS {cliClient = f $ cliClient cliS}
     in ((), newCliS)
 
--- instance MonadClientSetup CliMock where
---   saveClient = CliMock $ do
---     --toSave <- gets cliToSave
---     cli <- gets cliClient
---     msess <- gets cliSession
---     IO.liftIO $ Save.saveToChan toSave (cli, msess)
-
 instance MonadClientUI CliMock where
   {-# INLINE getsSession #-}
   getsSession f = CliMock $ gets $ f . fromJust . cliSession
@@ -372,22 +368,6 @@ instance MonadClientUI CliMock where
   getCacheBfs = BfsM.getCacheBfs
   getCachePath = BfsM.getCachePath
 
--- instance MonadClientReadResponse CliMock where
---   receiveResponse = CliMock $ do
---     ChanServer{responseS} <- gets cliDict
---     IO.liftIO $ takeMVar responseS
-
--- instance MonadClientWriteRequest CliMock where
---   sendRequestAI scmd = CliMock $ do
---     ChanServer{requestAIS} <- gets cliDict
---     IO.liftIO $ putMVar requestAIS scmd
---   sendRequestUI scmd = CliMock $ do
---     ChanServer{requestUIS} <- gets cliDict
---     IO.liftIO $ putMVar (fromJust requestUIS) scmd
---   clientHasUI = CliMock $ do
---     mSession <- gets cliSession
---     return $! isJust mSession
-
 instance MonadClientAtomic CliMock where
   {-# INLINE execUpdAtomic #-}
   execUpdAtomic _ = return ()  -- handleUpdAtomic, until needed, save resources
@@ -399,3 +379,7 @@ executorCli :: CliMock a -> CliState -> IO (a, CliState)
 executorCli = runStateT . runCliMock
 
 
+-- | Transform Report type to a list of Text
+--
+reportToTexts :: Report -> [Text.Text]
+reportToTexts report = (Text.pack . attrStringToString) <$> renderReport False report

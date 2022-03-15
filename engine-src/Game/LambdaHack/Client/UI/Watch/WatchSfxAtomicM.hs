@@ -16,7 +16,7 @@ import           Data.Int (Int64)
 import qualified Data.Text as T
 import qualified NLP.Miniutter.English as MU
 
-import           Game.LambdaHack.Atomic
+import           Game.LambdaHack.Atomic (SfxAtomic (..), SfxMsg (..))
 import           Game.LambdaHack.Client.MonadClient
 import           Game.LambdaHack.Client.State
 import           Game.LambdaHack.Client.UI.ActorUI
@@ -35,6 +35,7 @@ import           Game.LambdaHack.Client.UI.Msg
 import           Game.LambdaHack.Client.UI.MsgM
 import           Game.LambdaHack.Client.UI.SessionUI
 import           Game.LambdaHack.Client.UI.SlideshowM
+import           Game.LambdaHack.Client.UI.TutorialHints (TutorialHints (..))
 import           Game.LambdaHack.Client.UI.Watch.WatchCommonM
 import           Game.LambdaHack.Common.Actor
 import           Game.LambdaHack.Common.ActorState
@@ -155,7 +156,7 @@ watchRespSfxAtomicUI sfx = case sfx of
           -- out only in Allure.
           when (isOurCharacter
                 && Ability.getSk Ability.SkArmorMelee actorMaxSk > 0) $
-            msgAdd MsgTutorialHint "You took damage of a different kind than the normal piercing hit, which means your armor couldn't block any part of it. Normally, your HP (hit points, health) do not regenerate, so losing them is a big deal. Apply healing concoctions or take a long sleep to replenish your HP (but in this hectic environment not even uninterrupted resting that leads to sleep is easy)."
+            tutorialHintMsgAdd DamageOfDifferentKind
         feelLookHPGood = feelLook MsgGoodMiscEvent MsgBadMiscEvent
         feelLookCalm bigAdj projAdj = when isAlive $
           feelLook MsgEffectMinor MsgEffectMinor bigAdj projAdj
@@ -260,7 +261,7 @@ watchRespSfxAtomicUI sfx = case sfx of
               let desc = cdesc $ okind cocave $ lkind lvl
               unless (T.null desc) $
                 msgAdd MsgBackdropInfo $ desc <> "\n"
-              msgAdd MsgTutorialHint "New floor is new opportunities, though the old level is still there and others may roam it after you left. Viewing all floors, without moving between them, can be done using the '<' and '>' keys."
+              tutorialHintMsgAdd NewFloorNewOpportunity
             [] -> return ()  -- spell fizzles; normally should not be sent
       IK.Escape{} | isOurCharacter -> do
         ours <- getsState $ fidActorNotProjGlobalAssocs side
@@ -871,7 +872,7 @@ strike catch source target iid = assert (source /= target) $ do
         tutorialHintBenignFoe =
           when (bfid sb == side
                 && not (actorCanMeleeToHarm actorMaxSkills target tb)) $
-            msgAdd MsgTutorialHint "This enemy can't harm you in melee. Left alone could it possibly be of some use?"
+            tutorialHintMsgAdd CannotHarmYouInMelee
     -- The messages about parrying and immediately afterwards dying
     -- sound goofy, but there is no easy way to prevent that.
     -- And it's consistent.
@@ -883,7 +884,7 @@ strike catch source target iid = assert (source /= target) $ do
                      [MU.SubjectVerbSg spart "catch", tpart, "skillfully"]
          msgAdd MsgSpecialEvent msg
          when (bfid sb == side) $
-           msgAdd MsgTutorialHint "You managed to catch a projectile, thanks to being braced and hitting it exactly when it was at arm's reach. The obtained item has been put into the shared stash of your party."
+           tutorialHintMsgAdd CaughtProjectile
          animate (blid tb) $ blockHit ps Color.BrGreen Color.Green
        | not (hasCharge localTime kitWeapon) -> do
          -- Can easily happen with a thrown discharged item.
@@ -923,7 +924,7 @@ strike catch source target iid = assert (source /= target) $ do
                ++ if bproj sb then [] else weaponNameWith
          msgAdd msgClassMelee msg  -- too common for color
          when (bfid sb == side || bfid tb == side) $
-           msgAdd MsgTutorialHint "Some hits don't cause piercing, impact, burning nor any other direct damage. However, they can have other effects, bad, good or both."
+           tutorialHintMsgAdd HitsWithNoDirectDamage
          animate (blid tb) $ subtleHit ps
        | bproj sb -> do  -- more terse than melee, because sometimes very spammy
          let msgRangedPowerful | targetIsFoe = MsgRangedMightyWe

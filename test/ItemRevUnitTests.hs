@@ -12,13 +12,13 @@ import qualified System.Random.SplitMix32 as SM
 import           Test.Tasty
 import           Test.Tasty.HUnit
 
+import Game.LambdaHack.Common.Kind (emptyMultiGroupItem)
 import Game.LambdaHack.Content.ItemKind
 import Game.LambdaHack.Core.Random
 import Game.LambdaHack.Definition.Color
 import Game.LambdaHack.Definition.DefsInternal
 import Game.LambdaHack.Definition.Flavour
 import Game.LambdaHack.Server.ItemRev
-import Game.LambdaHack.Common.Kind (emptyMultiGroupItem)
 
 itemRevUnitTests :: TestTree
 itemRevUnitTests = testGroup "itemRevUnitTests" $

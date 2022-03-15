@@ -8,10 +8,10 @@ import Test.Tasty
 import Test.Tasty.HUnit
 
 import qualified Content.RuleKind
+import           Game.LambdaHack.Common.Kind (emptyMultiGroupItem)
 import           Game.LambdaHack.Content.ItemKind
 import qualified Game.LambdaHack.Content.RuleKind as RK
 import qualified Game.LambdaHack.Definition.Ability as Ability
-import Game.LambdaHack.Common.Kind (emptyMultiGroupItem)
 
 itemKindUnitTests :: TestTree
 itemKindUnitTests = testGroup "itemKindUnitTests" $

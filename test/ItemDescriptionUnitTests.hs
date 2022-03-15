@@ -9,15 +9,15 @@ import           Test.Tasty
 import           Test.Tasty.HUnit
 
 import Game.LambdaHack.Client.UI.ItemDescription
-    ( viewItem, viewItemBenefitColored )
+  (viewItem, viewItemBenefitColored)
 import Game.LambdaHack.Common.Item
-import Game.LambdaHack.Common.ItemAspect ( emptyAspectRecord )
+import Game.LambdaHack.Common.ItemAspect (emptyAspectRecord)
 import Game.LambdaHack.Common.Kind (emptyMultiGroupItem)
-import Game.LambdaHack.Content.ItemKind ( ItemKind(isymbol) )
+import Game.LambdaHack.Content.ItemKind (ItemKind (isymbol))
 import Game.LambdaHack.Definition.Color
-    ( Color(BrRed, Green, BrGreen), attrChar2ToW32 )
-import Game.LambdaHack.Definition.Flavour ( zipPlain )
-import UnitTestHelpers(stubItem)
+  (Color (BrGreen, BrRed, Green), attrChar2ToW32)
+import Game.LambdaHack.Definition.Flavour (zipPlain)
+import UnitTestHelpers (stubItem)
 
 itemDescriptionUnitTests :: TestTree
 itemDescriptionUnitTests = testGroup "itemDescriptionUnitTests" $

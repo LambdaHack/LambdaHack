@@ -7,15 +7,15 @@ import Game.LambdaHack.Core.Prelude
 import Test.Tasty
 import Test.Tasty.HUnit
 
-import Game.LambdaHack.Common.Item
-import Game.LambdaHack.Common.ItemAspect
-import Game.LambdaHack.Common.ReqFailure
-import Game.LambdaHack.Common.Time
-import Game.LambdaHack.Content.ItemKind
-import Game.LambdaHack.Definition.Defs
-import Game.LambdaHack.Common.Kind (emptyMultiGroupItem)
 import qualified Content.RuleKind
-import UnitTestHelpers(stubItem)
+import           Game.LambdaHack.Common.Item
+import           Game.LambdaHack.Common.ItemAspect
+import           Game.LambdaHack.Common.Kind (emptyMultiGroupItem)
+import           Game.LambdaHack.Common.ReqFailure
+import           Game.LambdaHack.Common.Time
+import           Game.LambdaHack.Content.ItemKind
+import           Game.LambdaHack.Definition.Defs
+import           UnitTestHelpers (stubItem)
 
 reqFailureUnitTests :: TestTree
 reqFailureUnitTests = testGroup "reqFailureUnitTests" $
