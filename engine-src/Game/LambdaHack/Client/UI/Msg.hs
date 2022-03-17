@@ -448,7 +448,7 @@ renderRepetition (asRaw, n) =
      else as ++ stringToAS ("<x" ++ show n ++ ">")
 
 anyInReport :: (MsgClass -> Bool) -> Report -> Bool
-anyInReport f (Report xns) = any (f . msgClass. repMsg) xns
+anyInReport f (Report xns) = any (f . msgClass . repMsg) xns
 
 -- * History
 
