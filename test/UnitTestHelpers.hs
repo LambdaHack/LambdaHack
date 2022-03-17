@@ -381,4 +381,4 @@ executorCli = runStateT . runCliMock
 
 -- | Transform 'Report' type to a list of 'Text'.
 reportToTexts :: Report -> [Text.Text]
-reportToTexts report = (Text.pack . attrStringToString) <$> renderReport False report
+reportToTexts report = Text.pack . attrStringToString <$> renderReport False report
