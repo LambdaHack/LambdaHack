@@ -70,7 +70,7 @@ handleHumanLocalMUnitTests = testGroup "handleHumanLocalMUnitTests"
          where
           renderedNewReports = reportToTexts . newReport $ history
           renderedHint = renderTutorialHints CannotHarmYouInMelee
-          isHintThere = renderedHint `elem` newTextReports
+          isHintThere = renderedHint `elem` renderedNewReports
           testFailureMsg = "Expected to find tutorial hint '"
             <> (T.unpack . renderTutorialHints $ CannotHarmYouInMelee)
             <> "' in SessionUI.shistory.newReport '"
