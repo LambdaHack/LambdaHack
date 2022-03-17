@@ -72,9 +72,9 @@ msgAddDistinct msgClass (t1, t2) = do
 msgAdd :: (MonadClientUI m, MsgShared a) => a -> Text -> m ()
 msgAdd msgClass t = void $ msgAddDuplicate msgClass t
 
--- | Add a tutorialHint message to the current report.
-tutorialHintMsgAdd :: (MonadClientUI m) => TutorialHints -> m ()
-tutorialHintMsgAdd tutorialHint = msgAdd MsgTutorialHint  (renderTutorialHints tutorialHint)
+-- | Add a tutorial hint message to the current report.
+tutorialHintMsgAdd :: MonadClientUI m => TutorialHints -> m ()
+tutorialHintMsgAdd = msgAdd MsgTutorialHint . renderTutorialHints
 
 -- | Add a message to the current report. End previously collected report,
 -- if any, with newline.

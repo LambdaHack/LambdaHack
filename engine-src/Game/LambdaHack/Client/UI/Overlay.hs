@@ -6,7 +6,8 @@ module Game.LambdaHack.Client.UI.Overlay
   , -- * FontSetup
     FontSetup(..), multiFontSetup, singleFontSetup
   , -- * AttrString
-    AttrString, blankAttrString, textToAS, textFgToAS, stringToAS, attrStringToString
+    AttrString, blankAttrString, textToAS, textFgToAS, stringToAS
+  , attrStringToString
   , (<+:>), (<\:>)
     -- * AttrLine
   , AttrLine, attrLine, emptyAttrLine, attrStringToAL, firstParagraph
@@ -106,10 +107,9 @@ textFgToAS !fg !t =
 stringToAS :: String -> AttrString
 stringToAS = map Color.attrChar1ToW32
 
--- | Transform AttrString type to String
---
-attrStringToString :: AttrString ->  String
-attrStringToString  = map Color.charFromW32
+-- | Transform 'AttrString' type to 'String'.
+attrStringToString :: AttrString -> String
+attrStringToString = map Color.charFromW32
 
 -- Follows minimorph.<+>.
 infixr 6 <+:>  -- matches Monoid.<>

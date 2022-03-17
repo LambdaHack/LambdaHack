@@ -15,7 +15,6 @@ import Game.LambdaHack.Common.Point (Point (..))
 import UnitTestHelpers
   (executorCli, stubCliState, testActor, testLevel, testLevelId)
 
-
 commonMUnitTests :: TestTree
 commonMUnitTests = testGroup "commonMUnitTests"
   [ testCase "getPerFid stubCliState returns emptyPerception" $ do

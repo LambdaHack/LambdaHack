@@ -1,7 +1,7 @@
 {-# LANGUAGE GADTs, GeneralizedNewtypeDeriving #-}
 -- | Monadic test harness and other stubs for unit tests.
 module UnitTestHelpers
-  (CliState(..)
+  ( CliState(..)
   , emptyCliState
   , executorCli
   , reportToTexts
@@ -26,13 +26,14 @@ module UnitTestHelpers
 
 import Prelude ()
 
+import Game.LambdaHack.Core.Prelude
+
 import qualified Control.Monad.IO.Class as IO
 import           Control.Monad.Trans.State.Strict
   (StateT (StateT, runStateT), gets, state)
 import qualified Data.EnumMap.Strict as EM
 import qualified Data.Text as Text
-import           Game.LambdaHack.Client.UI.Overlay
-import Game.LambdaHack.Core.Prelude
+
 import           Game.LambdaHack.Atomic (MonadStateWrite (..))
 import           Game.LambdaHack.Client
 import qualified Game.LambdaHack.Client.BfsM as BfsM
@@ -51,6 +52,7 @@ import           Game.LambdaHack.Client.UI.Frontend
 import           Game.LambdaHack.Client.UI.Key (KMP (..))
 import qualified Game.LambdaHack.Client.UI.Key as K
 import           Game.LambdaHack.Client.UI.Msg
+import           Game.LambdaHack.Client.UI.Overlay
 import           Game.LambdaHack.Client.UI.PointUI (PointUI (..))
 import           Game.LambdaHack.Client.UI.UIOptions (UIOptions (..))
 import           Game.LambdaHack.Common.Actor
@@ -86,7 +88,6 @@ import qualified Game.LambdaHack.Definition.Ability as Ability
 import           Game.LambdaHack.Definition.Color (Color (..))
 import           Game.LambdaHack.Definition.DefsInternal (toContentId)
 import           Game.LambdaHack.Definition.Flavour
-
 
 -- * UI frontend stub
 
@@ -148,7 +149,6 @@ stubClientOptions = defClientOptions
                           , fontPropBold = "propBold"
                           , fontMono = "mono" })]
   }
-
 
 stubItem :: Item
 stubItem = Item { jkind = IdentityObvious (toContentId 0), jfid = Nothing, jflavour = dummyFlavour }
@@ -379,7 +379,6 @@ executorCli :: CliMock a -> CliState -> IO (a, CliState)
 executorCli = runStateT . runCliMock
 
 
--- | Transform Report type to a list of Text
---
+-- | Transform 'Report' type to a list of 'Text'.
 reportToTexts :: Report -> [Text.Text]
 reportToTexts report = (Text.pack . attrStringToString) <$> renderReport False report

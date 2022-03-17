@@ -1,33 +1,32 @@
 module Game.LambdaHack.Client.UI.TutorialHints
-  (TutorialHints (..)
+  ( TutorialHints (..)
   , renderTutorialHints
   ) where
 
-import Data.Text (Text)
-import Prelude
+import Prelude ()
+
+import Game.LambdaHack.Core.Prelude
 
 data TutorialHints =
     DamageOfDifferentKind
-    | NewFloorNewOpportunity
-    | CannotHarmYouInMelee
-    | CaughtProjectile
-    | HitsWithNoDirectDamage
-    | TemporaryConditions
-    | WokenUpActors
-    | AvoidWalkingEnemies
-    | AlotOfDamageFromOneSource
-    | TerrainNotFullyKnown
-    | OutOfSightEvents
-    | HearingRadius
-    | SwitchTeammat
-    | MeleeEnemies
-    | UseTerrainEffect
-    | SwitchPointmanAndAvoidMeleeAlone
-    | SwitchPointmanAndSoftenFoes
-    deriving(Enum, Eq, Show)
+  | NewFloorNewOpportunity
+  | CannotHarmYouInMelee
+  | CaughtProjectile
+  | HitsWithNoDirectDamage
+  | TemporaryConditions
+  | WokenUpActors
+  | AvoidWalkingEnemies
+  | AlotOfDamageFromOneSource
+  | TerrainNotFullyKnown
+  | OutOfSightEvents
+  | HearingRadius
+  | SwitchTeammate
+  | MeleeEnemies
+  | UseTerrainEffect
+  | SwitchPointmanAndAvoidMeleeAlone
+  | SwitchPointmanAndSoftenFoes
 
--- | Generate the standard textual representation for the tutoiral hints
---
+-- | Generate the standard textual representation for the tutorial hints.
 renderTutorialHints :: TutorialHints -> Text
 renderTutorialHints = \case
   DamageOfDifferentKind ->
@@ -47,15 +46,15 @@ renderTutorialHints = \case
   AlotOfDamageFromOneSource ->
     "You took a lot of damage from one source. If the danger persists, consider retreating towards your teammates or buffing up or an instant escape, if consumables permit."
   TemporaryConditions ->
-     "Temporary conditions, especially the bad ones, pass quickly, usually after just a few turns. While active, they are listed in the '@' organ menu and the effects of most of them are seen in the '#' skill menu."
+    "Temporary conditions, especially the bad ones, pass quickly, usually after just a few turns. While active, they are listed in the '@' organ menu and the effects of most of them are seen in the '#' skill menu."
   TerrainNotFullyKnown ->
     "Solid terrain drawn in pink is not fully known until searched. This is usually done by bumping into it, which also triggers effects and transformations the terrain is capable of. Once revealed, the terrain can be inspected in aiming mode started with the '*' key or with mouse."
   OutOfSightEvents ->
     "Events out of your sight radius (as listed in the '#' skill menu) can sometimes be heard, depending on your hearing radius skill. Some, such as death shrieks, can always be heard regardless of skill and distance, including when they come from a different floor."
   HearingRadius ->
-   "Enemies you can't see are sometimes heard yelling and emitting other noises. Whether you can hear them, depends on their distance and your hearing radius, as listed in the '#' skill menu."
-  SwitchTeammat ->
-   "You survive this mission, or die trying, as a team. After a few moves, feel free to switch the controlled teammate (marked on the map with the yellow box) using the Tab key to another party member (marked with a green box)."  -- assuming newbies don't remap their keys
+    "Enemies you can't see are sometimes heard yelling and emitting other noises. Whether you can hear them, depends on their distance and your hearing radius, as listed in the '#' skill menu."
+  SwitchTeammate ->
+    "You survive this mission, or die trying, as a team. After a few moves, feel free to switch the controlled teammate (marked on the map with the yellow box) using the Tab key to another party member (marked with a green box)."  -- assuming newbies don't remap their keys
   MeleeEnemies ->
     "Enemies are normally dealt with using melee (by bumping when adjacent) or ranged combat (by 'f'linging items at them)."
   UseTerrainEffect ->

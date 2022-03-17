@@ -723,7 +723,7 @@ createActorUI born aid body = do
          when born $ do
            let verb = "join you"
            aidVerbMU MsgSpottedActor aid verb
-           tutorialHintMsgAdd SwitchTeammat
+           tutorialHintMsgAdd SwitchTeammate
            animate (blid body) $ actorX (bpos body)
      | otherwise -> do
        -- Don't spam if the actor was already visible

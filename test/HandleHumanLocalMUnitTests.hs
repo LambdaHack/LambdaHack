@@ -1,7 +1,15 @@
 module HandleHumanLocalMUnitTests (handleHumanLocalMUnitTests) where
 
+import Prelude ()
+
+import Game.LambdaHack.Core.Prelude
+
 import qualified Data.EnumMap.Strict as EM
 import qualified Data.Text as T
+
+import Test.Tasty
+import Test.Tasty.HUnit
+
 import           Game.LambdaHack.Client.UI (SessionUI (..), modifySession)
 import           Game.LambdaHack.Client.UI.HandleHelperM
 import           Game.LambdaHack.Client.UI.HandleHumanLocalM
@@ -19,13 +27,10 @@ import           Game.LambdaHack.Common.PointArray as PointArray
 import           Game.LambdaHack.Common.ReqFailure
 import           Game.LambdaHack.Common.State
 import           Game.LambdaHack.Content.TileKind
-import           Game.LambdaHack.Core.Prelude
 import           Game.LambdaHack.Definition.DefsInternal
   (toContentId, toContentSymbol)
-import           Prelude ()
-import           Test.Tasty
-import           Test.Tasty.HUnit
-import           UnitTestHelpers
+
+import UnitTestHelpers
 
 testItemFull :: ItemFull
 testItemFull = ItemFull { itemBase = stubItem, itemKindId = toContentId 0, itemKind = emptyMultiGroupItem, itemDisco = ItemDiscoFull emptyAspectRecord, itemSuspect = False }
@@ -44,7 +49,6 @@ handleHumanLocalMUnitTests = testGroup "handleHumanLocalMUnitTests"
       let ultimateResult =
             fst permittedProjectClientResultFnInMonad testItemFull
       ultimateResult @?= Left ProjectUnskilled
-
   , testCase "chooseItemProjectHuman" $ do
       let testFn = let triggerItems =
                          [ HumanCmd.TriggerItem {tiverb = "verb", tiobject = "object", tisymbols = [toContentSymbol 'a', toContentSymbol 'b']}
@@ -55,23 +59,23 @@ handleHumanLocalMUnitTests = testGroup "handleHumanLocalMUnitTests"
       showFailError (fromJust (fst result)) @?= "*aiming obstructed by terrain*"
   , testCase "tutorialHints-msg-in-history-report" $ do
       let testFn = do
-            modifySession  (\sess -> sess {scurTutorial = True} ) -- let CliState maintain tutorialHint state
+            modifySession (\sess -> sess {scurTutorial = True})
+              -- permit the client not to ignore tutorial hints
             tutorialHintMsgAdd CannotHarmYouInMelee
       result <- executorCli testFn testCliStateWithItem
-      let maybeHistory =  shistory <$> (cliSession . snd)  result
+      let maybeHistory = shistory <$> (cliSession . snd) result
       case maybeHistory of
-        Nothing ->
-          assertFailure "History Report is empty"
-        Just history -> do
-          putStrLn $ "History newReport: " <> (T.unpack . T.unlines) newTextReports
-          putStrLn $ "tutorialHint: " <> (T.unpack . renderTutorialHints) CannotHarmYouInMelee
-          assertBool testFailureMsg isHintThere
-          where
-              newTextReports = reportToTexts . newReport $  history
-              isHintThere = renderTutorialHints  CannotHarmYouInMelee `elem`  newTextReports
-              testFailureMsg = "Expected to find tutorialHints: '"
-                <> (T.unpack . renderTutorialHints $ CannotHarmYouInMelee)
-                <>  "'  in SessionUI.shistory.newReport "
+        Nothing -> assertFailure "History is empty"
+        Just history -> assertBool testFailureMsg isHintThere
+         where
+          renderedNewReports = reportToTexts . newReport $ history
+          renderedHint = renderTutorialHints CannotHarmYouInMelee
+          isHintThere = renderedHint `elem` newTextReports
+          testFailureMsg = "Expected to find tutorial hint '"
+            <> (T.unpack . renderTutorialHints $ CannotHarmYouInMelee)
+            <> "' in SessionUI.shistory.newReport '"
+            <> T.unpack (T.unlines renderedNewReports)
+            <> "'"
   , testCase "psuitReq" $  do
       let testFn = psuitReq testActorId
       mpsuitReqMonad <- executorCli testFn testCliStateWithItem

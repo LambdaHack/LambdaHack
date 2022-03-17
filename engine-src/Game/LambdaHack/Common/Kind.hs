@@ -10,7 +10,6 @@ module Game.LambdaHack.Common.Kind
   , ofoldlWithKey', ofoldlGroup', omapVector, oimapVector
   , olength, linearInterpolation, emptyMultiGroupMode, emptyMultiGroupItem
 #ifdef EXPOSE_INTERNAL
-  , emptyMultiGroupItem
   , emptyUnknownTile
   , emptyUIFactionGroupName
 #endif
