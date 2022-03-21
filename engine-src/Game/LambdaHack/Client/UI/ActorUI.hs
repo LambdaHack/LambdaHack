@@ -19,12 +19,14 @@ import           Game.LambdaHack.Common.Actor
 import           Game.LambdaHack.Common.State
 import           Game.LambdaHack.Common.Types
 import qualified Game.LambdaHack.Definition.Color as Color
+import Game.LambdaHack.Definition.DefsInternal
+import Game.LambdaHack.Content.ItemKind
 
 data ActorUI = ActorUI
-  { bsymbol  :: Char         -- ^ individual map symbol
-  , bname    :: Text         -- ^ individual name
-  , bpronoun :: Text         -- ^ individual pronoun
-  , bcolor   :: Color.Color  -- ^ individual map color
+  { bsymbol  :: ContentSymbol ItemKind  -- ^ individual map symbol
+  , bname    :: Text           -- ^ individual name
+  , bpronoun :: Text           -- ^ individual pronoun
+  , bcolor   :: Color.Color    -- ^ individual map color
   }
   deriving (Show, Eq, Generic)
 
@@ -33,9 +35,14 @@ instance Binary ActorUI
 type ActorDictUI = EM.EnumMap ActorId ActorUI
 
 keySelected :: (ActorId, Actor, ActorUI)
-            -> (Bool, Bool, Bool, Char, Color.Color, ActorId)
+            -> (Bool, Bool, Bool, ContentSymbol ItemKind, Color.Color, ActorId)
 keySelected (aid, Actor{bhp, bwatch}, ActorUI{bsymbol, bcolor}) =
-  (bhp > 0, bwatch /= WSleep, bsymbol /= '@', bsymbol, bcolor, aid)
+  ( bhp > 0
+  , bwatch /= WSleep
+  , bsymbol /= toContentSymbol '@'
+  , bsymbol
+  , bcolor
+  , aid)
 
 -- | The part of speech describing the actor.
 partActor :: ActorUI -> MU.Part
@@ -54,6 +61,7 @@ tryFindHeroK d fid k s =
   let c | k == 0          = '@'
         | k > 0 && k < 10 = Char.intToDigit k
         | otherwise       = ' '  -- no hero with such symbol
+      theSymbol = toContentSymbol c
   in tryFindActor s (\aid body ->
-       maybe False ((== c) . bsymbol) (EM.lookup aid d)
+       maybe False ((== theSymbol) . bsymbol) (EM.lookup aid d)
        && bfid body == fid)

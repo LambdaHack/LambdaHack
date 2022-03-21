@@ -73,7 +73,7 @@ import qualified Game.LambdaHack.Core.Dice as Dice
 import qualified Game.LambdaHack.Definition.Ability as Ability
 import qualified Game.LambdaHack.Definition.Color as Color
 import           Game.LambdaHack.Definition.Defs
-import qualified Game.LambdaHack.Definition.DefsInternal as DefsInternal
+  (CStore (..), ContentId, displayContentSymbol, toContentId, toContentSymbol)
 
 targetDesc :: MonadClientUI m => Maybe Target -> m (Maybe Text, Maybe Text)
 targetDesc mtarget = do
@@ -173,7 +173,7 @@ drawFrameTerrain drawnLevelId = do
                | otherwise = tcolor2
         in Color.attrChar2ToW32 fg tsymbol
       g :: PointI -> Word16 -> Word32
-      g !pI !tile = Color.attrCharW32 $ dis pI (DefsInternal.toContentId tile)
+      g !pI !tile = Color.attrCharW32 $ dis pI (toContentId tile)
       caveVector :: U.Vector Word32
       caveVector = U.imap g avector
       messageVector =
@@ -292,7 +292,7 @@ drawFramePath drawnLevelId = do
                  let pI = fromEnum p0
                      tile = avector U.! pI
                      w = Color.attrCharW32
-                         $ f p0 (DefsInternal.toContentId tile)
+                         $ f p0 (toContentId tile)
                  VM.write v (pI + rWidthMax) w
            mapM_ g l
          upd :: FrameForall
@@ -316,7 +316,7 @@ drawFrameActor drawnLevelId = do
               ActorUI{bsymbol, bcolor} = sactorUI EM.! aid
               Item{jfid} = getItemBody btrunk s
               symbol | bhp > 0 = bsymbol
-                     | otherwise = '%'
+                     | otherwise = toContentSymbol '%'
               dominated = maybe False (/= bfid) jfid
               bg = if | bwatch == WSleep -> Color.HighlightBlue
                       | dominated -> if bfid == side  -- dominated by us
@@ -331,14 +331,14 @@ drawFrameActor drawnLevelId = do
                 in if hpCheckWarning || calmCheckWarning
                    then Color.Red
                    else bcolor
-         in Color.attrCharToW32 $ Color.AttrChar Color.Attr{..} symbol
+         in Color.attrCharToW32 $ Color.AttrChar Color.Attr{..} (displayContentSymbol symbol)
       {-# INLINE viewProj #-}
       viewProj as = case as of
         aid : _ ->
           let ActorUI{bsymbol, bcolor} = sactorUI EM.! aid
               bg = Color.HighlightNone
               fg = bcolor
-         in Color.attrCharToW32 $ Color.AttrChar Color.Attr{..} bsymbol
+         in Color.attrCharToW32 $ Color.AttrChar Color.Attr{..} (displayContentSymbol bsymbol)
         [] -> error $ "lproj not sparse" `showFailure` ()
       mapVAL :: forall a s. (a -> Color.AttrCharW32) -> [(PointI, a)]
              -> FrameST s
@@ -812,7 +812,7 @@ drawSelected drawnLevelId width selected = do
                     | otherwise -> Color.HighlightNone
             sattr = Color.Attr {Color.fg = bcolor, bg}
         in Color.attrCharToW32 $ Color.AttrChar sattr
-           $ if bhp > 0 then bsymbol else '%'
+           $ displayContentSymbol $ if bhp > 0 then bsymbol else toContentSymbol '%'
       maxViewed = width - 2
       len = length oursUI
       star = let fg = case ES.size selected of

@@ -233,17 +233,18 @@ dungeonFlavourMap COps{coitem} (FlavourMap flavourMapFromPreviousGame) = do
   let uFlavMeta = if U.null flavourMapFromPreviousGame
                   then U.replicate (olength coitem) invalidInformationCode
                   else keepMetaGameInformation coitem flavourMapFromPreviousGame
-      flavToAvailable :: EM.EnumMap Char (ES.EnumSet Flavour) -> Int -> Word16
-                      -> EM.EnumMap Char (ES.EnumSet Flavour)
+      flavToAvailable :: EM.EnumMap (ContentSymbol ItemKind) (ES.EnumSet Flavour) -> Int -> Word16
+                      -> EM.EnumMap (ContentSymbol ItemKind) (ES.EnumSet Flavour)
       flavToAvailable em i fl =
         let ik = okind coitem (toEnum i)
+            symbolKey :: ItemKind -> ContentSymbol ItemKind = toContentSymbol . displayContentSymbol . IK.isymbol
             setBase = EM.findWithDefault (ES.fromList stdFlavList)
-                                         (IK.isymbol ik)
+                                         (symbolKey ik)
                                          em
             setMeta = if fl == invalidInformationCode
                       then setBase
                       else ES.delete (toEnum $ fromEnum fl) setBase
-        in EM.insert (IK.isymbol ik) setMeta em
+        in EM.insert (symbolKey ik) setMeta em
       availableMap = U.ifoldl' flavToAvailable EM.empty uFlavMeta
   (assocsFlav, _) <- ofoldlWithKey' coitem (rollFlavourMap uFlavMeta)
                                     (return (EM.empty, availableMap))

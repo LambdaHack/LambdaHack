@@ -36,8 +36,6 @@ import qualified Game.LambdaHack.Definition.Ability as Ability
 import qualified Game.LambdaHack.Definition.Color as Color
 import           Game.LambdaHack.Definition.ContentData
 import           Game.LambdaHack.Definition.Defs
-import           Game.LambdaHack.Definition.DefsInternal
-  (GroupName (GroupName), toContentSymbol)
 import           Game.LambdaHack.Definition.Flavour (dummyFlavour)
 
 -- | Operations for all content types, gathered together.

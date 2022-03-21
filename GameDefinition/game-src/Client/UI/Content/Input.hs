@@ -264,4 +264,4 @@ standardKeysAndMouse = InputContentRaw $ map evalKeyDef $
 applyTs :: [TriggerItem]
 applyTs = [TriggerItem { tiverb = "trigger"
                        , tiobject = "consumable item"
-                       , tisymbols = "!,?/" }]
+                       , tisymbols = toContentSymbol <$> "!,?/" }]

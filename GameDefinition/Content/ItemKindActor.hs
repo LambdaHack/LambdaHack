@@ -17,7 +17,6 @@ import Game.LambdaHack.Content.ItemKind
 import Game.LambdaHack.Definition.Ability
 import Game.LambdaHack.Definition.Color
 import Game.LambdaHack.Definition.Defs
-import Game.LambdaHack.Definition.DefsInternal
 import Game.LambdaHack.Definition.Flavour
 
 import Content.ItemKindOrgan

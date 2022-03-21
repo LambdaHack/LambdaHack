@@ -1,9 +1,9 @@
 {-# LANGUAGE DeriveGeneric #-}
 -- | Basic types for content definitions.
 module Game.LambdaHack.Definition.Defs
-  ( GroupName, displayGroupName
+  ( GroupName(..), displayGroupName
   , ContentId, contentIdIndex
-  , ContentSymbol, displayContentSymbol
+  , ContentSymbol , displayContentSymbol, toContentSymbol, toContentId
   , X, Y
   , Freqs, renameFreqs
   , Rarity, linearInterpolation
@@ -14,7 +14,6 @@ module Game.LambdaHack.Definition.Defs
   ) where
 
 import Prelude ()
-
 import Game.LambdaHack.Core.Prelude
 
 import Control.DeepSeq

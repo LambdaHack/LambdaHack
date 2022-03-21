@@ -14,6 +14,7 @@ import           Language.Haskell.TH.Syntax
 import           System.IO
 
 import Game.LambdaHack.Client.UI.Content.Screen
+import Game.LambdaHack.Definition.Defs
 
 -- | Description of default screen layout and features.
 standardLayoutAndFeatures :: ScreenContent
@@ -45,8 +46,11 @@ standardLayoutAndFeatures = ScreenContent
               (par1 ++ [""] ++ par2, rest)
             _ -> error "not enough paragraphs in intro screen text"
       lift intro)
-  , rapplyVerbMap = EM.fromList [('!', "quaff"), (',', "eat"), ('?', "read")]
-  , rFontFiles =
+  , rapplyVerbMap = EM.fromList [
+      ( toContentSymbol '!', "quaff")
+      , (toContentSymbol ',', "eat")
+      , (toContentSymbol '?', "read")
+      ] , rFontFiles =
 #ifdef USE_BROWSER
       []
 #else

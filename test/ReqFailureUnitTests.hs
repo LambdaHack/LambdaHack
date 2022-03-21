@@ -34,22 +34,22 @@ reqFailureUnitTests = testGroup "reqFailureUnitTests" $
       @?= Left ApplyFood
   , testCase "permittedApply: One Skill and , symbol And CGround -> True" $
       permittedApply standardRules timeZero 1 True (Just CGround)
-                     testItemFull {itemKind = emptyMultiGroupItem{isymbol = ','}}
+                     testItemFull {itemKind = emptyMultiGroupItem{isymbol = toContentSymbol ','}}
                      quantSingle
       @?= Right True
   , testCase "permittedApply: One Skill and \" symbol -> True" $
       permittedApply standardRules timeZero 1 True Nothing
-                     testItemFull {itemKind = emptyMultiGroupItem{isymbol = '"'}}
+                     testItemFull {itemKind = emptyMultiGroupItem{isymbol = toContentSymbol '"'}}
                      quantSingle
       @?= Right True
   , testCase "permittedApply: Two Skill and ? symbol -> FailureApplyRead" $
       permittedApply standardRules timeZero 2 True Nothing
-                     testItemFull {itemKind = emptyMultiGroupItem{isymbol = '?'}}
+                     testItemFull {itemKind = emptyMultiGroupItem{isymbol = toContentSymbol '?'}}
                      quantSingle
       @?= Left ApplyRead
   , testCase "permittedApply: Two Skill and , symbol -> True" $
       permittedApply standardRules timeZero 2 True Nothing
-                     testItemFull {itemKind = emptyMultiGroupItem{isymbol = ','}}
+                     testItemFull {itemKind = emptyMultiGroupItem{isymbol = toContentSymbol ','}}
                      quantSingle
       @?= Right True
   ]
