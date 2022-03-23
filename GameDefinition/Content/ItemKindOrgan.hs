@@ -19,6 +19,7 @@ import Game.LambdaHack.Core.Dice
 import Game.LambdaHack.Definition.Ability
 import Game.LambdaHack.Definition.Color
 import Game.LambdaHack.Definition.Defs
+import Game.LambdaHack.Definition.DefsInternal (toContentSymbol, GroupName (..))
 import Game.LambdaHack.Definition.Flavour
 
 import Content.ItemKindBlast
@@ -136,7 +137,7 @@ tip = fist
   , idesc    = ""
   }
 fist = ItemKind
-  { isymbol  = toContentSymbol ','
+  { isymbol  = rsymbolFood . ritemSymbols $ standardRules
   , iname    = "fist"
   , ifreq    = [(S_FIST, 1)]
   , iflavour = zipPlain [Red]
@@ -399,7 +400,7 @@ arsenicFissure = boilingFissure
 -- * Armor organs
 
 armoredSkin = ItemKind
-  { isymbol  = toContentSymbol ','
+  { isymbol  = rsymbolFood . ritemSymbols $ standardRules
   , iname    = "armored skin"
   , ifreq    = [(S_ARMORED_SKIN, 1)]
   , iflavour = zipPlain [Red]

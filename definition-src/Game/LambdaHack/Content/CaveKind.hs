@@ -22,7 +22,8 @@ import           Game.LambdaHack.Content.TileKind (TileKind)
 import qualified Game.LambdaHack.Core.Dice as Dice
 import           Game.LambdaHack.Core.Random
 import           Game.LambdaHack.Definition.ContentData
-import           Game.LambdaHack.Definition.Defs
+import           Game.LambdaHack.Definition.Defs (Freqs, GroupName, X, Y)
+import           Game.LambdaHack.Definition.DefsInternal (GroupName (..))
 
 -- | Parameters for the generation of dungeon levels.
 -- Warning: for efficiency, avoid embedded items in any of the common tiles.

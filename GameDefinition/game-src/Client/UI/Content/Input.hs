@@ -12,8 +12,11 @@ import Prelude ()
 
 import Game.LambdaHack.Core.Prelude
 
+import Content.RuleKind
 import Game.LambdaHack.Client.UI.Content.Input
 import Game.LambdaHack.Client.UI.HumanCmd
+import Game.LambdaHack.Content.ItemKind (ItemSymbolsUsedInEngine (..))
+import Game.LambdaHack.Content.RuleKind (RuleContent (..))
 import Game.LambdaHack.Definition.Defs
 
 -- | Description of default key-command bindings.
@@ -264,4 +267,7 @@ standardKeysAndMouse = InputContentRaw $ map evalKeyDef $
 applyTs :: [TriggerItem]
 applyTs = [TriggerItem { tiverb = "trigger"
                        , tiobject = "consumable item"
-                       , tisymbols = toContentSymbol <$> "!,?/" }]
+                       , tisymbols = [ rsymbolFlask . ritemSymbols $ standardRules
+                                     , rsymbolScroll . ritemSymbols $ standardRules
+                                     , rsymbolWand . ritemSymbols $ standardRules]
+                       }] -- "!,?/" }]

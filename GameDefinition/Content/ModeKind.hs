@@ -20,7 +20,7 @@ import Game.LambdaHack.Content.CaveKind (CaveKind, pattern DEFAULT_RANDOM)
 import Game.LambdaHack.Content.FactionKind (Outcome (..))
 import Game.LambdaHack.Content.ModeKind
 import Game.LambdaHack.Core.Dice
-import Game.LambdaHack.Definition.Defs
+import Game.LambdaHack.Definition.DefsInternal (GroupName (..))
 
 import Content.CaveKind hiding (content, groupNames, groupNamesSingleton)
 import Content.FactionKind hiding (content, groupNames, groupNamesSingleton)

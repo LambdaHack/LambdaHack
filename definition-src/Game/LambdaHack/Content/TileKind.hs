@@ -24,6 +24,8 @@ import Game.LambdaHack.Content.ItemKind (ItemKind)
 import Game.LambdaHack.Definition.Color
 import Game.LambdaHack.Definition.ContentData
 import Game.LambdaHack.Definition.Defs
+  (ContentId, Freqs, GroupName, toContentId)
+import Game.LambdaHack.Definition.DefsInternal (GroupName (..))
 
 -- | The type of kinds of terrain tiles. See @Tile.hs@ for explanation
 -- of the absence of a corresponding type @Tile@ that would hold

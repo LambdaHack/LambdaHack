@@ -97,9 +97,9 @@ makeContentData contentName getName getFreq validateSingle validateAll
                         , not (null offences) ]
       allOffences = validateAll content contentData
       freqsOffenders = filter (not . validFreqs . getFreq) content
-      allGroupNamesEmpty = filter (T.null . fromGroupName)
+      allGroupNamesEmpty = filter (T.null . displayGroupName)
                            $ groupNamesSingleton ++ groupNames
-      allGroupNamesTooLong = filter ((> 30) . T.length . fromGroupName)
+      allGroupNamesTooLong = filter ((> 30) . T.length . displayGroupName)
                              $ groupNamesSingleton ++ groupNames
       allGroupNamesSorted = sort $ groupNamesSingleton ++ groupNames
       allGroupNamesUnique = nub allGroupNamesSorted

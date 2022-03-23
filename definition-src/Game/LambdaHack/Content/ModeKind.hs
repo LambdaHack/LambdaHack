@@ -10,8 +10,9 @@ module Game.LambdaHack.Content.ModeKind
 #endif
   ) where
 
-import Prelude ()
 import Game.LambdaHack.Core.Prelude
+
+import Prelude ()
 
 import qualified Data.Text as T
 import           Game.LambdaHack.Content.CaveKind (CaveKind)
@@ -21,6 +22,8 @@ import           Game.LambdaHack.Content.ItemKind (ItemKind)
 import qualified Game.LambdaHack.Core.Dice as Dice
 import           Game.LambdaHack.Definition.ContentData
 import           Game.LambdaHack.Definition.Defs
+  (Freqs, GroupName, displayGroupName)
+import           Game.LambdaHack.Definition.DefsInternal (GroupName (..))
 
 -- | Game mode specification.
 data ModeKind = ModeKind

@@ -22,6 +22,7 @@ import qualified Data.Text as T
 import Game.LambdaHack.Content.TileKind
 import Game.LambdaHack.Definition.Color
 import Game.LambdaHack.Definition.Defs
+import Game.LambdaHack.Definition.DefsInternal (GroupName (..))
 
 import Content.ItemKindEmbed
 

@@ -12,15 +12,18 @@ import Prelude ()
 import Game.LambdaHack.Core.Prelude
 
 import Game.LambdaHack.Content.ItemKind
+import Game.LambdaHack.Content.RuleKind
 import Game.LambdaHack.Core.Dice
 import Game.LambdaHack.Definition.Ability
 import Game.LambdaHack.Definition.Color
 import Game.LambdaHack.Definition.Defs
+import Game.LambdaHack.Definition.DefsInternal (toContentSymbol, GroupName (..))
 import Game.LambdaHack.Definition.Flavour
 
 import Content.ItemKindActor
 import Content.ItemKindBlast
 import Content.ItemKindTemporary
+import Content.RuleKind
 
 -- * Group name patterns
 
@@ -68,7 +71,7 @@ scratchOnWall,    obscenePictogram, subtleFresco, treasureCache, treasureCacheTr
 -- and foregoing the fun of guessing how to find entrance to a disjoint part
 -- of the level by bumping the least number of secret walls.
 scratchOnWall = ItemKind
-  { isymbol  = toContentSymbol '?'
+  { isymbol  = rsymbolScroll . ritemSymbols $ standardRules
   , iname    = "claw mark"
   , ifreq    = [(SCRATCH_ON_WALL, 1)]
   , iflavour = zipPlain [BrBlack]
@@ -84,7 +87,7 @@ scratchOnWall = ItemKind
   , ikit     = []
   }
 obscenePictogram = ItemKind
-  { isymbol  = toContentSymbol '*'
+  { isymbol  = rsymbolSpecial . ritemSymbols $ standardRules
   , iname    = "obscene pictogram"
   , ifreq    = [(OBSCENE_PICTOGRAM, 1)]
   , iflavour = zipPlain [BrMagenta]
@@ -103,7 +106,7 @@ obscenePictogram = ItemKind
   , ikit     = []
   }
 subtleFresco = ItemKind
-  { isymbol  = toContentSymbol '*'
+  { isymbol  = rsymbolSpecial . ritemSymbols $ standardRules
   , iname    = "subtle fresco"
   , ifreq    = [(SUBTLE_FRESCO, 1)]
   , iflavour = zipPlain [BrGreen]
@@ -156,7 +159,7 @@ treasureCacheTrap = ItemKind
   , ikit     = []
   }
 signageExit = ItemKind
-  { isymbol  = toContentSymbol '?'
+  { isymbol  = rsymbolScroll . ritemSymbols $ standardRules
   , iname    = "inscription"
   , ifreq    = [(SIGNAGE, 100)]
   , iflavour = zipPlain [BrGreen]
@@ -342,7 +345,7 @@ stairsTrapDown = stairsTrapUp
   , idesc    = "A treacherous slab, to teach those who are too proud."
   }
 lectern = ItemKind
-  { isymbol  = toContentSymbol '?'
+  { isymbol  = rsymbolScroll . ritemSymbols $ standardRules
   , iname    = "lectern"
   , ifreq    = [(LECTERN, 1)]
   , iflavour = zipFancy [BrYellow]

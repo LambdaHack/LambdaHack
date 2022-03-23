@@ -12,11 +12,13 @@ import Prelude ()
 import Game.LambdaHack.Core.Prelude
 
 import Game.LambdaHack.Content.ItemKind
-import Game.LambdaHack.Content.RuleKind
+import Game.LambdaHack.Content.RuleKind (RuleContent (..))
 import Game.LambdaHack.Core.Dice
 import Game.LambdaHack.Definition.Ability
 import Game.LambdaHack.Definition.Color
 import Game.LambdaHack.Definition.Defs
+  (CStore (..), ContentSymbol)
+import Game.LambdaHack.Definition.DefsInternal (toContentSymbol, GroupName (..))
 import Game.LambdaHack.Definition.Flavour
 
 import Content.ItemKindActor
@@ -24,7 +26,7 @@ import Content.ItemKindBlast
 import Content.ItemKindEmbed
 import Content.ItemKindOrgan
 import Content.ItemKindTemporary
-import Content.RuleKind
+import Content.RuleKind (standardRules)
 
 -- * Group name patterns
 

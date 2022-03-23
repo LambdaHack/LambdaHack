@@ -73,7 +73,8 @@ import qualified Game.LambdaHack.Core.Dice as Dice
 import qualified Game.LambdaHack.Definition.Ability as Ability
 import qualified Game.LambdaHack.Definition.Color as Color
 import           Game.LambdaHack.Definition.Defs
-  (CStore (..), ContentId, displayContentSymbol, toContentId, toContentSymbol)
+  (CStore (..), ContentId, displayContentSymbol, toContentId)
+import           Game.LambdaHack.Definition.DefsInternal (toContentSymbol)
 
 targetDesc :: MonadClientUI m => Maybe Target -> m (Maybe Text, Maybe Text)
 targetDesc mtarget = do

@@ -8,16 +8,20 @@ import qualified Data.EnumMap.Strict as EM
 import           Test.Tasty
 import           Test.Tasty.HUnit
 
+import Content.RuleKind
 import Game.LambdaHack.Client.UI.ItemDescription
   (viewItem, viewItemBenefitColored)
 import Game.LambdaHack.Common.Item
 import Game.LambdaHack.Common.ItemAspect (emptyAspectRecord)
 import Game.LambdaHack.Common.Kind (emptyMultiGroupItem)
-import Game.LambdaHack.Content.ItemKind (ItemKind (isymbol))
+import Game.LambdaHack.Content.ItemKind
+  (ItemKind (isymbol), ItemSymbolsUsedInEngine (..))
+import Game.LambdaHack.Content.RuleKind (RuleContent (..))
 import Game.LambdaHack.Definition.Color
   (Color (BrGreen, BrRed, Green), attrChar2ToW32)
-import Game.LambdaHack.Definition.Defs
+import Game.LambdaHack.Definition.DefsInternal (toContentSymbol)
 import Game.LambdaHack.Definition.Flavour (zipPlain)
+
 import UnitTestHelpers (stubItem)
 
 itemDescriptionUnitTests :: TestTree
@@ -35,10 +39,10 @@ itemDescriptionUnitTests = testGroup "itemDescriptionUnitTests" $
         }
   in
   [ testCase "testItem_viewItem_Blackx" $
-      viewItem testItemFull {itemKind = emptyMultiGroupItem {isymbol = toContentSymbol  'x'}}
+      viewItem testItemFull {itemKind = emptyMultiGroupItem {isymbol = toContentSymbol 'x'}}
       @?= attrChar2ToW32 Green 'x'
   , testCase "testItem_viewItem_Black!" $
-      viewItem testItemFull {itemKind = emptyMultiGroupItem {isymbol = toContentSymbol '!'}}
+      viewItem testItemFull {itemKind = emptyMultiGroupItem {isymbol = rsymbolFlask . ritemSymbols $ standardRules }}
       @?= attrChar2ToW32 Green '!'
   , testCase "testItem_viewItemBenefitColored_isEquip_Greenx" $
       viewItemBenefitColored (EM.singleton (toEnum 42) (Benefit True 0 0 0 0)) (toEnum 42) testItemFull {itemKind = emptyMultiGroupItem {isymbol = toContentSymbol 'x'}}

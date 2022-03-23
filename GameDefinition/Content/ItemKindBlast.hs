@@ -14,13 +14,16 @@ import Prelude ()
 import Game.LambdaHack.Core.Prelude
 
 import Game.LambdaHack.Content.ItemKind
+import Game.LambdaHack.Content.RuleKind
 import Game.LambdaHack.Core.Dice
 import Game.LambdaHack.Definition.Ability
 import Game.LambdaHack.Definition.Color
 import Game.LambdaHack.Definition.Defs
+import Game.LambdaHack.Definition.DefsInternal (toContentSymbol, GroupName (..))
 import Game.LambdaHack.Definition.Flavour
 
 import Content.ItemKindTemporary
+import Content.RuleKind
 
 -- * Group name patterns
 
@@ -119,7 +122,7 @@ spreadBurningOil2,    spreadBurningOil3, spreadBurningOil4, spreadBurningOil82, 
 
 spreadBurningOil :: Int -> GroupName ItemKind -> ItemKind
 spreadBurningOil n grp = ItemKind
-  { isymbol  = toContentSymbol '*'
+  { isymbol  = rsymbolSpecial . ritemSymbols $ standardRules
   , iname    = "burning oil"
   , ifreq    = [(grp, 1)]
   , iflavour = zipPlain [BrYellow]
@@ -175,7 +178,7 @@ focusedBurningOil3 = focusedBurningOil 3 S_FOCUSED_BURNING_OIL_3 S_BURNING_OIL_3
 focusedBurningOil4 = focusedBurningOil 4 S_FOCUSED_BURNING_OIL_4 S_BURNING_OIL_4
 firecracker :: Int -> ItemKind
 firecracker n = ItemKind
-  { isymbol  = toContentSymbol '*'
+  { isymbol  = rsymbolSpecial . ritemSymbols $ standardRules
   , iname    = "firecracker"
   , ifreq    = [(if n == 5
                  then S_FIRECRACKER
@@ -204,7 +207,7 @@ firecracker1 = firecracker 1
 -- * Focused blasts
 
 spreadFragmentation = ItemKind
-  { isymbol  = toContentSymbol '*'
+  { isymbol  = rsymbolSpecial . ritemSymbols $ standardRules
   , iname    = "fragmentation burst"
   , ifreq    = [(S_VIOLENT_FRAGMENTATION, 1)]
   , iflavour = zipPlain [Red]
@@ -248,7 +251,7 @@ focusedFragmentation = ItemKind
   , ikit     = []
   }
 spreadConcussion = ItemKind
-  { isymbol  = toContentSymbol '*'
+  { isymbol  = rsymbolSpecial . ritemSymbols $ standardRules
   , iname    = "concussion blast"
   , ifreq    = [(S_VIOLENT_CONCUSSION, 1)]
   , iflavour = zipPlain [Magenta]
@@ -354,7 +357,7 @@ singleSpark = spreadFlash
   , ikit     = []
   }
 glassPiece = ItemKind
-  { isymbol  = toContentSymbol '*'
+  { isymbol  = rsymbolSpecial . ritemSymbols $ standardRules
   , iname    = "glass piece"
   , ifreq    = [(S_GLASS_HAIL, 1)]
   , iflavour = zipPlain [Blue]
@@ -534,7 +537,7 @@ smoke = ItemKind  -- when stuff burns out  -- unused
   , ikit     = []
   }
 boilingWater = ItemKind
-  { isymbol  = toContentSymbol '*'
+  { isymbol  = rsymbolSpecial . ritemSymbols $ standardRules
   , iname    = "boiling water"
   , ifreq    = [(S_BOILING_WATER, 1)]
   , iflavour = zipPlain [White]
@@ -550,7 +553,7 @@ boilingWater = ItemKind
   , ikit     = []
   }
 glue = ItemKind
-  { isymbol  = toContentSymbol '*'
+  { isymbol  = rsymbolSpecial . ritemSymbols $ standardRules
   , iname    = "hoof glue"
   , ifreq    = [(S_GLUE, 1)]
   , iflavour = zipPlain [Cyan]
@@ -566,7 +569,7 @@ glue = ItemKind
   , ikit     = []
   }
 waste = ItemKind
-  { isymbol  = toContentSymbol '*'
+  { isymbol  = rsymbolSpecial . ritemSymbols $ standardRules
   , iname    = "waste piece"
   , ifreq    = [(S_WASTE, 1)]
   , iflavour = zipPlain [Brown]
@@ -699,7 +702,7 @@ protectingBalmRanged = ItemKind
   , ikit     = []
   }
 defenselessnessRunout = ItemKind
-  { isymbol  = toContentSymbol '?'
+  { isymbol  = rsymbolScroll . ritemSymbols $ standardRules
   , iname    = "PhD defense question"
   , ifreq    = [(S_DEFENSELESSNESS_RUNOUT, 1)]
   , iflavour = zipFancy [BrRed]
