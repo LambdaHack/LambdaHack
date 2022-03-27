@@ -75,10 +75,10 @@ standardKeysAndMouse = InputContentRaw $ map evalKeyDef $
   -- Item menu, first part of item use commands
   , ("comma", grabItems "")  -- only show extra key, not extra entry
   , ("r", dropItems "remove item(s)")
-  , ("f", addCmdCategory CmdItemMenu $ projectA flingTs)
+  , ("f", addCmdCategory CmdItemMenu $ projectA)
   , ("C-f", addCmdCategory CmdItemMenu
             $ replaceDesc "auto-fling and keep choice"
-            $ projectI flingTs)
+            $ projectI)
   , ("t", addCmdCategory CmdItemMenu $ applyI applyTs)
   , ("C-t", addCmdCategory CmdItemMenu
             $ replaceDesc "trigger item and keep choice" $ applyIK applyTs)

@@ -6,7 +6,7 @@ module Game.LambdaHack.Client.UI.Content.Input
   , addCmdCategory, replaceDesc, moveItemTriple, repeatTriple, repeatLastTriple
   , mouseLMB, mouseMMB, mouseMMBMute, mouseRMB
   , goToCmd, runToAllCmd, autoexploreCmd, autoexplore25Cmd
-  , aimFlingCmd, projectI, projectA, flingTs, applyIK, applyI
+  , aimFlingCmd, projectI, projectA, applyIK, applyI
   , grabItems, dropItems, descIs, defaultHeroSelect, macroRun25
   , memberCycle, memberCycleLevel
 #ifdef EXPOSE_INTERNAL
@@ -156,7 +156,7 @@ mouseLMB goToOrRunTo desc =
     , (CaCalmValue, Yell)
     , (CaHPGauge, Macro ["KP_Begin", "C-v"])
     , (CaHPValue, Wait)
-    , (CaLeaderDesc, projectICmd flingTs) ]
+    , (CaLeaderDesc, projectICmd) ]
 
 mouseMMB :: CmdTriple
 mouseMMB = ( [CmdMouse]
@@ -212,32 +212,23 @@ autoexplore25Cmd :: HumanCmd
 autoexplore25Cmd = Macro ["'", "C-?", "C-quotedbl", "'", "C-V"]
 
 aimFlingCmd :: HumanCmd
-aimFlingCmd = ComposeIfLocal AimPointerEnemy (projectICmd flingTs)
+aimFlingCmd = ComposeIfLocal AimPointerEnemy projectICmd
 
-projectICmd :: [TriggerItem] -> HumanCmd
-projectICmd ts = ComposeUnlessError (ChooseItemProject ts) Project
+projectICmd :: HumanCmd
+projectICmd  = ComposeUnlessError (ChooseItemProject []) Project
 
-projectI :: [TriggerItem] -> CmdTriple
-projectI ts = ([CmdItem], descIs ts, projectICmd ts)
+projectI :: CmdTriple
+projectI = ([CmdItem], description, projectICmd)
+  where
+    description = makePhrase ["fling", "in-range projectile"]
 
-projectA :: [TriggerItem] -> CmdTriple
-projectA ts =
+projectA :: CmdTriple
+projectA =
   let fling = Compose2ndLocal Project ItemClear
-      flingICmd = ComposeUnlessError (ChooseItemProject ts) fling
+      flingICmd = ComposeUnlessError (ChooseItemProject []) fling
   in replaceCmd (ByAimMode AimModeCmd { exploration = AimTgt
                                       , aiming = flingICmd })
-                (projectI ts)
-
--- | flingTs - list containing one flingable projectile
--- >>> flingTs
--- [TriggerItem {tiverb = Text "fling", tiobject = Text "in-range projectile", tisymbols = []}]
---
--- I question the value of that test. But would Bob Martin like it
--- on the grounds it's like double-bookkeeping?
-flingTs :: [TriggerItem]
-flingTs = [TriggerItem { tiverb = "fling"
-                       , tiobject = "in-range projectile"
-                       , tisymbols = [] }]
+                projectI
 
 applyIK :: [TriggerItem] -> CmdTriple
 applyIK ts =
