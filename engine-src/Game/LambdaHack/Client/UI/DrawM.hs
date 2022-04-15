@@ -232,7 +232,9 @@ drawFramePath drawnLevelId = do
  sreportNull <- getsSession sreportNull
  let frameForallId = FrameForall $ const $ return ()
  case saimMode of
-   Just AimMode{detailLevel} | not sreportNull -> do
+   Just AimMode{detailLevel} | not sreportNull
+                               && detailLevel /= DetailHigh
+                               && detailLevel /= DetailLow -> do
      COps{corule=RuleContent{rWidthMax, rHeightMax}, coTileSpeedup}
        <- getsState scops
      StateClient{seps} <- getClient

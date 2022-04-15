@@ -966,7 +966,7 @@ detailCycleHuman = do
   doLook
 
 detailCycle :: DetailLevel -> DetailLevel
-detailCycle detail = if detail == maxBound then minBound else succ detail
+detailCycle detail = if detail == minBound then maxBound else pred detail
 
 -- * ClearTargetIfItemClear
 

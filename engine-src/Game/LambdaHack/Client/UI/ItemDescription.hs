@@ -138,7 +138,7 @@ textAllPowers width detailLevel skipRecharging
         let ppA = kindAspectToSuffix
             ppE = effectToSuffix detLev
             reduce_a = maybe "?" tshow . Dice.reduceDice
-            restEs | detLev >= DetailHigh
+            restEs | detLev >= DetailMedium
                      || not (IA.checkFlag Ability.MinorEffects arItem) =
                      IK.ieffects itemKind
                    | otherwise = []
@@ -154,7 +154,7 @@ textAllPowers width detailLevel skipRecharging
             onCombineRawTs = T.intercalate " " $ filter (not . T.null)
                              $ map (ppE . unCombine) combineEffsRaw
             onCombineRawTsTooLarge =
-              detailLevel >= DetailAll && T.length onCombineRawTs > 120
+              detailLevel >= DetailHigh && T.length onCombineRawTs > 120
             (combineEffs, noSmashCombineEffs) =
               if onCombineRawTsTooLarge
               then (combineEffsRaw, noSmashCombineEffsRaw)
@@ -227,7 +227,7 @@ textAllPowers width detailLevel skipRecharging
           , [damageText]
             ++ [timeoutText | detLev > DetailLow && not periodic]
             ++ aes
-            ++ if detLev >= DetailAll
+            ++ if detLev >= DetailHigh
                then [onCombine, onSmash]
                else [onCombineRawTs] )
       hurtMult = armorHurtCalculation True (IA.aSkills arItem)
@@ -259,7 +259,7 @@ textAllPowers width detailLevel skipRecharging
            , filter (/= "")
              $ elab
                : tsSplit
-               ++ if detailLevel >= DetailAll
+               ++ if detailLevel >= DetailHigh
                   then map kindAspectToSuffix aspectsAux
                   else [] )
   in (onCombineTsAss, aspectDescs, rangedDamageDesc)
@@ -268,7 +268,7 @@ textAllPowers width detailLevel skipRecharging
 partItem :: Int -> FactionId -> FactionDict -> Time -> ItemFull -> ItemQuant
          -> (MU.Part, MU.Part)
 partItem width side factionD =
-  partItemN width side factionD False DetailMedium 4
+  partItemN width side factionD False DetailLow 4
 
 partItemShort :: Int -> FactionId -> FactionDict -> Time -> ItemFull
               -> ItemQuant
@@ -285,7 +285,7 @@ partItemShortest width side factionD =
 partItemHigh :: Int -> FactionId -> FactionDict -> Time -> ItemFull -> ItemQuant
              -> ([Text], MU.Part, MU.Part)
 partItemHigh width side factionD =
-  partItemN3 width side factionD False DetailAll 100
+  partItemN3 width side factionD False DetailHigh 100
 
 -- The @count@ can be different than @itemK@ in @ItemFull@, e.g., when picking
 -- a subset of items to drop.
@@ -318,16 +318,16 @@ partItemWsDetail :: DetailLevel
                  -> Int -> FactionId -> FactionDict -> Int -> Time -> ItemFull
                  -> ItemQuant
                  -> MU.Part
-partItemWsDetail DetailLow = \_ _ _ _ _ _ _ -> ""
-partItemWsDetail DetailMedium = partItemWsShortest
-partItemWsDetail DetailHigh = partItemWs
+partItemWsDetail DetailLow = partItemWsShortest
+partItemWsDetail DetailMedium = partItemWs
+partItemWsDetail DetailHigh = partItemWsLong
 partItemWsDetail DetailAll = partItemWsLong
 
 partItemWs :: Int -> FactionId -> FactionDict -> Int -> Time -> ItemFull
            -> ItemQuant
            -> MU.Part
 partItemWs width side factionD =
-  partItemWsRanged width side factionD False DetailMedium 4
+  partItemWsRanged width side factionD False DetailLow 4
 
 partItemWsShortest :: Int -> FactionId -> FactionDict -> Int -> Time -> ItemFull
                    -> ItemQuant
@@ -345,7 +345,7 @@ partItemWsLong :: Int -> FactionId -> FactionDict -> Int -> Time -> ItemFull
                -> ItemQuant
                -> MU.Part
 partItemWsLong width side factionD =
-  partItemWsRanged width side factionD False DetailHigh 100
+  partItemWsRanged width side factionD False DetailMedium 100
 
 partItemShortAW :: Int -> FactionId -> FactionDict -> Time -> ItemFull
                 -> ItemQuant
@@ -360,7 +360,7 @@ partItemMediumAW :: Int -> FactionId -> FactionDict -> Time -> ItemFull
                  -> MU.Part
 partItemMediumAW width side factionD localTime itemFull kit =
   let (name, powers) =
-        partItemN width side factionD False DetailMedium 100 localTime
+        partItemN width side factionD False DetailLow 100 localTime
                   itemFull kit
       arItem = aspectRecordFull itemFull
       phrase = MU.Phrase [name, powers]

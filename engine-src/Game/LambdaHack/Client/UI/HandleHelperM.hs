@@ -207,7 +207,7 @@ doLook = do
         (Just (iid, _, _), Just pos, Just leader) -> do
           b <- getsState $ getActorBody leader
           if lidV /= blid b  -- no range warnings on remote levels
-             || detailLevel aimMode < DetailAll  -- no spam
+             || detailLevel aimMode < DetailHigh  -- no spam
           then return []
           else do
             itemFull <- getsState $ itemToFull iid
@@ -278,7 +278,7 @@ itemOverlayFromState arena iids displayRanged sccui side discoBenefit
               else viewItem itemFull
             phrase = makePhrase
               [partItemWsRanged rwidth side factionD displayRanged
-                                DetailMedium 4 k localTime itemFull kit]
+                                DetailLow 4 k localTime itemFull kit]
             ncha = ncharges localTime kit
             periodic = IA.checkFlag Ability.Periodic arItem
             !cLab = Color.AttrChar { acAttr = attrCursor
@@ -712,7 +712,7 @@ lookAtActors p lidV = do
                   | isJust $ btrajectory body = "move through here"
                   | otherwise = resideVerb
           verbs = flyVerb : guardVerbs
-          projDesc | not (bproj body) || detail < DetailAll = ""
+          projDesc | not (bproj body) || detail < DetailHigh = ""
                    | otherwise =
             let kit = beqp body EM.! btrunk body
                 ps = [partItemMediumAW rwidth side factionD localTime
@@ -727,11 +727,11 @@ lookAtActors p lidV = do
                   tfact = factionD EM.! tfid
               in "Originally of" <+> gname tfact
                  <> ", now fighting for" <+> dominatedBy <> "."
-            _ | detail < DetailAll -> ""  -- only domination worth spamming
+            _ | detail < DetailHigh -> ""  -- only domination worth spamming
             _ | bfid body == side -> ""  -- just one of us
             _ | bproj body -> "Launched by" <+> gname bfact <> "."
             _ -> "One of" <+> gname bfact <> "."
-          idesc = if detail < DetailAll
+          idesc = if detail < DetailHigh
                   then ""
                   else IK.idesc $ itemKind itemFull
           -- If many different actors, only list names.
@@ -823,7 +823,7 @@ lookAtItems canSee p lidV maid mactorPronounAlive = do
       -- that looks stand over the items, because then he can check details
       -- with inventory commands (or look in aiming mode).
       detailExploration = if standingOn && Just side == (bfid <$> mb)
-                          then DetailMedium
+                          then DetailLow
                           else DetailAll
       detail = maybe detailExploration detailLevel saimMode
   localTime <- getsState $ getLocalTime lidV
@@ -850,9 +850,6 @@ lookAtItems canSee p lidV maid mactorPronounAlive = do
         partItemWsDetail detail
                          rwidth side factionD k localTime (itemToF iid) kit
       (object, person) = case EM.assocs is of
-        [(_, (k, _))] | detail == DetailLow ->
-          (if k == 1 then "an item" else "an item stack", MU.Sg3rd)
-        _ | detail == DetailLow -> ("some items", MU.PlEtc)
         ii : _ : _ : _ | detail <= DetailMedium ->
           (MU.Phrase [nWs ii, "and other items"], MU.PlEtc)
         [ii@(_, (1, _))] -> (nWs ii, MU.Sg3rd)
@@ -951,7 +948,7 @@ lookAtPosition p lidV = do
                        else "The following items on the ground or in equipment enable special transformations:"
                             <+> tItems <> "."  -- not telling to what terrain
       modifyBlurb = alterBlurb <+> transformBlurb
-      midEOL = if detail < DetailHigh
+      midEOL = if detail < DetailMedium
                   || T.null stashBlurb && T.null actorsDesc
                   || T.null smellBlurb && T.null itemsBlurb
                   || null embedsList && T.null modifyBlurb
@@ -960,26 +957,18 @@ lookAtPosition p lidV = do
       ms = [ (MsgPromptAction, stashBlurb)
            , (actorMsgClass, actorsBlurb)
            , (MsgPromptGeneric, actorsDesc <> midEOL) ]
-           ++ [(MsgPromptGeneric, smellBlurb) | detail >= DetailHigh]
+           ++ [(MsgPromptGeneric, smellBlurb) | detail >= DetailMedium]
            ++ [(MsgPromptItems, itemsBlurb <> midEOL)]
-           ++ [(MsgPromptFocus, tileBlurb) | detail >= DetailHigh
-                                             || detail == DetailMedium
+           ++ [(MsgPromptFocus, tileBlurb) | detail >= DetailMedium
+                                             || detail == DetailLow
                                                 && not (null embedsList)]
-           ++ [(MsgPromptGeneric, placeBlurb) | detail >= DetailHigh]
+           ++ [(MsgPromptGeneric, placeBlurb) | detail >= DetailMedium]
            ++ case detail of
                 DetailLow -> []  -- not to obscure aiming line
-                DetailMedium ->
-                  [(MsgPromptMention, case embedsList of
-                    [] -> ""
-                    [(k, _)] ->
-                      ppEmbedName (1, if k == 1
-                                      then "an embedded item"
-                                      else "a stack of embedded items")
-                    _ -> ppEmbedName (9, "some embedded items"))]
                 _ -> let n = sum $ map fst embedsList
                          wWandW = MU.WWandW $ map snd embedsList
                      in [(MsgPromptMention, ppEmbedName (n, wWandW)) | n > 0]
-           ++ [(MsgPromptModify, modifyBlurb) | detail == DetailAll]
+           ++ [(MsgPromptModify, modifyBlurb) | detail >= DetailHigh]
   return $! if all (T.null . snd) ms && detail > DetailLow
             then [(MsgPromptFocus, tileBlurb)]
             else ms
