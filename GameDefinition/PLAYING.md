@@ -461,22 +461,32 @@ known position.
 Winning and dying
 -----------------
 
-You win an adventure if you escape the location alive (which may prove
-difficult, because your foes tend to gradually build up the ambush squad
-blocking your escape route) or, in scenarios with no escape locations,
-if you eliminate all opposition. In the former case, your score
-is based predominantly on the gold and precious gems you've plundered.
-In the latter case, your score is most influenced by the number
+You win an adventure if you escape the situation alive, which may prove
+difficult, because your foes tend to gradually build up an ambush squad
+blocking your escape route. On the other hand, in scenarios with no open
+escape routes, the only way to survive is to eliminate all opposition,
+which is not a small feat, either.
+
+If escape without a fight to the death is possible, your score is based
+in equal parts on the speed with which you manage to leave
+the deadly environment and the proportion of gold and precious gems
+(including the elixirs that are stored in precious crystal boxes)
+you manage to plunder and carry off. Note that engaging in wanton slaughter
+is counterproductive in such a setting, because it wastes time
+and non-unique enemies never carry valuables, but stash them instead.
+
+If killing all foes is required, your score is most influenced by the number
 of turns you spent overcoming your foes (the quicker the victory, the better;
 the slower the demise, the better). Bonus points, affected by the number
-of heroes lost, are awarded only if you win. The score is heavily
-modified by the chosen game difficulty, but not by any other challenges
-(which are, however, proudly displayed in the high score listing).
+of heroes lost, are awarded only if you win. The score, in all cases, is
+heavily modified by the chosen game difficulty, but not by any other challenges
+(which are, however, distinctly announced in the high score listing).
 
-When all your heroes fall, you are going to invariably see a new foolhardy
-party of adventurers clamoring to be led into the unknown perils.
-They start their conquest afresh, with no experience, no supplies
-for survival and no equipment, and new undaunted enemies bar their way.
+When all your heroes fall, you lose, but you are going to invariably
+see a new foolhardy party of adventurers clamoring to be led
+into the unknown perils. They start their conquest afresh,
+with no experience, no supplies for survival and no equipment,
+and new undaunted enemies bar their way.
 Lead the new hopeful explorers with wisdom and fortitude!
 
 

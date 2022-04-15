@@ -126,7 +126,7 @@ hiHeroMedium =
     , [minBound..maxBound] )
   , ( [(HiConst, 200), (HiLoss, -10)]  -- normally, always positive
     , victoryOutcomes )
-  , ( [(HiSprint, -500)]  -- speed matters, but only if fast enough
+  , ( [(HiSprint, -1000)]  -- speed matters, but only if fast enough
     , victoryOutcomes )
   , ( [(HiBlitz, -100)]  -- speed matters always
     , victoryOutcomes )
@@ -134,7 +134,7 @@ hiHeroMedium =
     , deafeatOutcomes )
   ]
 
--- Heroes in long crawls rejoice in loot.
+-- Heroes in long crawls rejoice in loot. But speedrunning just as valuable.
 hiHeroLong =
   [ ( [(HiLoot, 10000)]  -- multiplied by fraction of collected
     , [minBound..maxBound] )
