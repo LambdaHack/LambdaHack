@@ -18,34 +18,34 @@ jobs:
     strategy:
       matrix:
         include:
-          - compiler: ghc-9.2.2-vanilla
+          - compiler: ghc-9.2.4-vanilla
             projectFlags:
             compilerKind: ghc
-            compilerVersion: 9.2.2
+            compilerVersion: 9.2.4
             setup-method: ghcup
             allow-failure: false
-          - compiler: ghc-9.2.2-asserts
+          - compiler: ghc-9.2.4-asserts
             projectFlags: -fwith_expensive_assertions
             compilerKind: ghc
-            compilerVersion: 9.2.2
+            compilerVersion: 9.2.4
             setup-method: ghcup
             allow-failure: false
-          - compiler: ghc-9.2.2-norelease-asserts
+          - compiler: ghc-9.2.4-norelease-asserts
             projectFlags: -f-release -fwith_expensive_assertions
             compilerKind: ghc
-            compilerVersion: 9.2.2
+            compilerVersion: 9.2.4
             setup-method: ghcup
             allow-failure: false
-          - compiler: ghc-9.2.2-noopt
+          - compiler: ghc-9.2.4-noopt
             projectFlags: --ghc-option=-O0 --ghc-option=-fno-ignore-asserts
             compilerKind: ghc
-            compilerVersion: 9.2.2
+            compilerVersion: 9.2.4
             setup-method: ghcup
             allow-failure: false
-#OOM          - compiler: ghc-9.2.2-opt2
+#OOM          - compiler: ghc-9.2.4-opt2
 #            projectFlags: --ghc-option=-O2 --ghc-option=-fno-ignore-asserts
 #            compilerKind: ghc
-#            compilerVersion: 9.2.2
+#            compilerVersion: 9.2.4
 #            setup-method: ghcup
 #            allow-failure: false
           - compiler: ghc-9.0.2-vanilla
