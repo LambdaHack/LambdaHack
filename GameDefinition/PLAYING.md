@@ -459,6 +459,43 @@ e.g., when a monster vanishes but you still want to fling at its last
 known position.
 
 
+Combat and Speed
+----------------
+
+During combat there are some more nuances to movement and actions that
+are worth considering. Every action takes an amount of time (equal for
+most of the actions). The time that it takes a unit to act is relative
+to its speed and additionally affected by the team's communication overhead.
+
+Any member of the squad that has not idled (either moved, used inventory,
+attacked or lurked attentively) will incur a 10% speed penalty
+on all members of the team on the same level, including themselves,
+but excluding the pointman. This is a penalty for the time
+and energy they had to spend to take note of any changes
+that could be relevant to the squad and for the overhead needed
+to communicate it and get it acknowledged by the other squad members.
+In this way, a squad where 4 teammates take actions every turn will work
+at 60% speed. By the same token, regardless of how numerous the team is,
+never more than 10 normal speed teammates can act in the same turn
+(the moves of the others are going to spill over to the next turn).
+
+The pointman is an exception to this rule. The pointman may perform
+melee attacks or any other action without incurring a team overhead penalty.
+This may make it preferable to melee with the pointman, even though
+any team member can melee and pointmen can also perform many other actions.
+Also, this prevents a pointman from being slowed by the team residing
+elsewhere on the level, making any solo pointman vs pointman duels fairer.
+
+In a short scenario this may not be terribly relevant, but in longer
+engagements the overhead can make a big difference in damage per second
+that a team can put out. E.g., it's a crucial and context-dependent choice
+whether to hurry towards a lonely meleeing teammate, thus lowering
+the damage output, stay put, fling a projectile, or perhaps get the meleeing
+teammate to retreat towards the team. Over a long run, such choices
+influence the speed of HP attrition and if it outweighs the benefits
+of exploration.
+
+
 Winning and dying
 -----------------
 
