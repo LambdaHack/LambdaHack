@@ -410,9 +410,9 @@ in melee, using itself as the weapon, with the usual dice and damage bonus.
 This time, the *ranged* armor skill of the defender is taken into account
 and, additionally, the speed of the missile (based on shape and weight)
 figures in the calculation. You may propel any item from your inventory
-(by default you are offered only the appropriate items; press `+` to open
-all choices). Only items of a few kinds inflict direct damage, but some
-have other effects, beneficial, detrimental or mixed.
+(by default you are offered exclusively the appropriate items; press `+`
+to open all choices). Only items of a few kinds inflict direct damage,
+but some have other effects, beneficial, detrimental or mixed.
 
 In-game detailed item descriptions contain melee and ranged damage estimates.
 They do not take into account enemy armor nor damage from effects and,
@@ -420,19 +420,20 @@ if bonuses are not known, guesses are based on averages for the item kind
 in question. The displayed figures are rounded, but the game internally
 keeps track of minute fractions of HP for all actors in all calculations.
 
-The combat stress drains Calm, gradually limiting viewing radius and,
-if Calm reaches zero and the actor is sufficiently impressed by his foes,
-making him defect and surrender unto their domination. Whenever the monster's
-or hero's hit points reach zero, the combatant falls down and quickly
-gets permanently incapacitated. When the last hero is disabled or dominated,
-the adventure ends in defeat.
+The combat stress drains Calm, gradually limiting viewing radius.
+If Calm reaches zero and the actor is sufficiently impressed by his foes,
+the actor defects and surrenders unto their domination. Whenever
+the monster's or hero's hit points reach zero, the combatant falls down
+and gets permanently incapacitated. When the last hero is disabled
+or dominated, the adventure ends in defeat. Eliminating the last
+monster at a given time not always results in victory.
 
 
 Attacking from a distance
 -------------------------
 
-Before the player presses `f` to make a ranged attack, he may move
-and set the aiming crosshair in aiming mode. However, this is
+Before the player presses `f` to make a ranged attack, he may spend time
+moving and setting the aiming crosshair in aiming mode. However, this is
 not often needed, since crosshair is set automatically as soon
 as a monster comes into view and can still be adjusted for as long
 as the missile to fling is not chosen.
