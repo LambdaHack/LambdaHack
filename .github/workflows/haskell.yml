@@ -185,7 +185,7 @@ jobs:
           echo "HCNUMVER=$HCNUMVER" >> "$GITHUB_ENV"
           echo "ARG_TESTS=--enable-tests" >> "$GITHUB_ENV"
           echo "ARG_BENCH=--enable-benchmarks" >> "$GITHUB_ENV"
-          if [ $((HCNUMVER > 90001)) -ne 0 ] ; then echo "HEADHACKAGE=true" >> "$GITHUB_ENV" ; else echo "HEADHACKAGE=false" >> "$GITHUB_ENV" ; fi
+          if [ $((HCNUMVER > 90300)) -ne 0 ] ; then echo "HEADHACKAGE=true" >> "$GITHUB_ENV" ; else echo "HEADHACKAGE=false" >> "$GITHUB_ENV" ; fi
           echo "ARG_COMPILER_TOOL=--$HCKIND --with-compiler=$HC" >> "$GITHUB_ENV"
           echo "ARG_COMPILER=$HCFLAGS --$HCKIND --with-compiler=$HC" >> "$GITHUB_ENV"
           echo "GHCJSARITH=0" >> "$GITHUB_ENV"
@@ -245,7 +245,7 @@ jobs:
           restore-keys: ${{ runner.os }}-${{ matrix.compilerVersion }}-tools-803c0a4b
       - name: install doctest
         run: |
-          if [ $((HCNUMVER < 90002)) -ne 0 ] ; then
+          if [ $((HCNUMVER < 90200)) -ne 0 ] ; then
             case $MY_HCFLAGS in --ghc-option=-O*) : ;;
               *)
                 $CABAL --store-dir=$HOME/.haskell-ci-tools/store v2-install $ARG_COMPILER_TOOL --ignore-project -j2 doctest --constraint='doctest ^>=0.20'
@@ -253,7 +253,7 @@ jobs:
           fi
       - name: install hlint
         run: |
-          if [ $((HCNUMVER >= 90000 && HCNUMVER < 90002)) -ne 0 ] ; then
+          if [ $((HCNUMVER >= 90200 && HCNUMVER < 90300)) -ne 0 ] ; then
             case $MY_HCFLAGS in -f-release*)
               $CABAL --store-dir=$HOME/.haskell-ci-tools/store v2-install $ARG_COMPILER --ignore-project -j2 hlint
               hlint --version
@@ -305,7 +305,7 @@ jobs:
       - name: tests
         run: |
           $CABAL v2-test $ARG_COMPILER $ARG_TESTS $ARG_BENCH all --test-show-details=direct
-          if [ $((HCNUMVER < 90002)) -ne 0 ] ; then
+          if [ $((HCNUMVER < 90200)) -ne 0 ] ; then
             case $MY_HCFLAGS in --ghc-option=-O*) : ;;
               *)
                 $CABAL repl --build-depends=QuickCheck --build-depends=template-haskell --with-ghc=doctest lib:LambdaHack
@@ -317,7 +317,7 @@ jobs:
           make -f ${PKGDIR_haskell_ci}/Makefile test-gha || (tail -n 2000 /tmp/teletypetest.log ; exit 77)
       - name: hlint
         run: |
-          if [ $((HCNUMVER >= 90000 && HCNUMVER < 90002)) -ne 0 ] ; then
+          if [ $((HCNUMVER >= 90200 && HCNUMVER < 90300)) -ne 0 ] ; then
             case $MY_HCFLAGS in -f-release*)
               (cd ${PKGDIR_haskell_ci} && hlint -h ${GITHUB_WORKSPACE}/source/.hlint.yaml .)
             esac
