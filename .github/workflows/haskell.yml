@@ -18,6 +18,36 @@ jobs:
     strategy:
       matrix:
         include:
+          - compiler: ghc-9.4.1-vanilla
+            projectFlags:
+            compilerKind: ghc
+            compilerVersion: 9.4.1
+            setup-method: ghcup
+            allow-failure: false
+          - compiler: ghc-9.4.1-asserts
+            projectFlags: -fwith_expensive_assertions
+            compilerKind: ghc
+            compilerVersion: 9.4.1
+            setup-method: ghcup
+            allow-failure: false
+          - compiler: ghc-9.4.1-norelease-asserts
+            projectFlags: -f-release -fwith_expensive_assertions
+            compilerKind: ghc
+            compilerVersion: 9.4.1
+            setup-method: ghcup
+            allow-failure: false
+          - compiler: ghc-9.4.1-noopt
+            projectFlags: --ghc-option=-O0 --ghc-option=-fno-ignore-asserts
+            compilerKind: ghc
+            compilerVersion: 9.4.1
+            setup-method: ghcup
+            allow-failure: false
+          - compiler: ghc-9.4.1-opt2
+            projectFlags: --ghc-option=-O2 --ghc-option=-fno-ignore-asserts
+            compilerKind: ghc
+            compilerVersion: 9.4.1
+            setup-method: ghcup
+            allow-failure: false
           - compiler: ghc-9.2.4-vanilla
             projectFlags:
             compilerKind: ghc
@@ -149,7 +179,7 @@ jobs:
             curl -sL https://downloads.haskell.org/ghcup/0.1.18.0/x86_64-linux-ghcup-0.1.18.0 > "$HOME/.ghcup/bin/ghcup"
             chmod a+x "$HOME/.ghcup/bin/ghcup"
             "$HOME/.ghcup/bin/ghcup" install ghc "$HCVER"
-            "$HOME/.ghcup/bin/ghcup" install cabal 3.4.0.0
+            "$HOME/.ghcup/bin/ghcup" install cabal 3.8.1.0
           else
             apt-add-repository -y 'ppa:hvr/ghc'
             apt-get update
@@ -173,7 +203,7 @@ jobs:
             echo "HC=$HC" >> "$GITHUB_ENV"
             echo "HCPKG=$HOME/.ghcup/bin/$HCKIND-pkg-$HCVER" >> "$GITHUB_ENV"
             echo "HADDOCK=$HOME/.ghcup/bin/haddock-$HCVER" >> "$GITHUB_ENV"
-            echo "CABAL=$HOME/.ghcup/bin/cabal-3.4.0.0 -vnormal+nowrap" >> "$GITHUB_ENV"
+            echo "CABAL=$HOME/.ghcup/bin/cabal-3.8.1.0 -vnormal+nowrap" >> "$GITHUB_ENV"
           else
             HC=$HCDIR/bin/$HCKIND
             echo "HC=$HC" >> "$GITHUB_ENV"
