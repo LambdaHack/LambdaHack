@@ -66,7 +66,7 @@ integrationTests = testGroup "integrationTests" $
       uiOptions = unsafePerformIO $ mkUIOptions corule defClientOptions
       testFontset :: Int -> String -> TestTree
       testFontset n fontsetName =
-        testCase ("SDL fronted; init only; " ++ fontsetName ++ " fontset") $ do
+        testCase ("SDL frontend; init only; " ++ fontsetName ++ " fontset") $ do
           -- This test only works when run from the same directory that
           -- the .cabal file is in. And this is what Debian needs, so OK.
           -- The hacky log priority 0 tells SDL frontend to init
