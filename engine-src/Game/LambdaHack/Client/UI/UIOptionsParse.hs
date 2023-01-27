@@ -48,7 +48,10 @@ parseConfig cfg =
                 Just _ ->
                   let (key, def) = readError keydef
                   in (K.mkKM key, def :: CmdTriple)
-                Nothing -> configError $ "wrong macro id" `showFailure` ident
+                Nothing ->
+                  configError
+                    $ "macro id should start with Cmd_ and it does not:"
+                      `showFailure` ident
             section = Ini.allItems "additional_commands" cfg
         in map mkCommand section
       uHeroNames =
