@@ -120,10 +120,14 @@ pointmanCycleLevel leader verbose direction = do
     _ | banned && lidV /= blid body ->
       failMsg $ showReqFailure NoChangeDunLeader
     [] -> failMsg "cannot pick any other pointman on this level"
-    (np, b, _) : _ -> do
-      success <- pickLeader verbose np
-      let !_A = assert (success `blame` "same leader"
-                                `swith` (leader, np, b)) ()
+    (np, _b, _) : _ -> do
+      _success <- pickLeader verbose np
+-- This apparently crashes rarely, probably becuase @leader@ gets out of sync
+-- with the leader in client state, during nested UI manipulations.
+-- The worst that can happen is TAB doing nothing and having to be repeated
+-- or perhaps item manipulation needs to be exited for TAB to work again.
+--      let !_A = assert (success `blame` "same leader"
+--                                `swith` (leader, np, b)) ()
       return Nothing
 
 -- | Switches current pointman to the previous in the whole dungeon, wrapping.
