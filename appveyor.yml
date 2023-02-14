@@ -41,6 +41,8 @@ install:
       && which cabal
       && cabal --version
       && cabal clean
+      && curl -O https://repo.msys2.org/mingw/x86_64/mingw-w64-x86_64-SDL2-2.0.14-2-any.pkg.tar.zst
+      && pacman -U mingw-w64-x86_64-SDL2-2.0.14-2-any.pkg.tar.zst
       && pacman -S -q --noconfirm mingw64/mingw-w64-x86_64-pkg-config mingw64/mingw-w64-x86_64-SDL2 mingw64/mingw-w64-x86_64-SDL2_ttf
       && cabal update
       && cabal v1-install --force-reinstalls happy
