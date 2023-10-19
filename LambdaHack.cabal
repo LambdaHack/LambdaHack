@@ -328,7 +328,7 @@ library
                       enummapset >= 0.5.2.2,
                       filepath   >= 1.2.0.1,
                       hashable   >= 1.1.2.5,
-                      hsini      >= 0.5.2.2,
+                      hsini      >= 0.2 && < 0.5.2 || >= 0.5.2.2,
                       keys       >= 3,
                       miniutter  >= 0.5.0.0,
                       open-browser >= 0.2,
