@@ -157,7 +157,7 @@ stepQueryUI = do
   report <- getsSession $ newReport . shistory
   modifySession $ \sess -> sess {sreportNull = nullVisibleReport report}
   slides <- reportToSlideshowKeepHalt False []
-  ovs <- case unsnoc slides of
+  ovs <- case unsnocSlideshow slides of
     Nothing -> return EM.empty
     Just (allButLast, (ov, _)) ->
       if allButLast == emptySlideshow
