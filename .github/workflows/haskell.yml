@@ -11,7 +11,7 @@ on:
 jobs:
   linux:
     name: Haskell-CI - Linux - ${{ matrix.compiler }}
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-20.04
     container:
       image: buildpack-deps:focal
     continue-on-error: ${{ matrix.allow-failure }}
