@@ -310,11 +310,13 @@ jobs:
         run: |
           PKGDIR_haskell_ci="$(find "$GITHUB_WORKSPACE/unpacked" -maxdepth 1 -type d -regex '.*/LambdaHack-[0-9.]*')"
           echo "PKGDIR_haskell_ci=${PKGDIR_haskell_ci}" >> "$GITHUB_ENV"
-          tail -n +2 ${PKGDIR_haskell_ci}/cabal.project > cabal.project
+          tail -n +5 ${PKGDIR_haskell_ci}/cabal.project > cabal.project
           echo "packages: $GITHUB_WORKSPACE/source/." >> cabal.project
           if $HEADHACKAGE; then
             echo "allow-newer: $($HCPKG list --simple-output | sed -E 's/([a-zA-Z-]+)-[0-9.]+/*:\1,/g')" >> cabal.project
           fi
+          echo "package sdl2" >> cabal.project
+          echo "    flags: +no-linear +recent-ish" >> cabal.project
           cat cabal.project
       - name: cache
         uses: actions/cache@v2
