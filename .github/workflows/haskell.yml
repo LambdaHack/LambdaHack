@@ -137,36 +137,6 @@ jobs:
             compilerVersion: 8.10.7
             setup-method: ghcup
             allow-failure: false
-          - compiler: ghc-8.8.4-vanilla
-            projectFlags:
-            compilerKind: ghc
-            compilerVersion: 8.8.4
-            setup-method: hvr-ppa
-            allow-failure: false
-          - compiler: ghc-8.8.4-asserts
-            projectFlags: -fwith_expensive_assertions
-            compilerKind: ghc
-            compilerVersion: 8.8.4
-            setup-method: hvr-ppa
-            allow-failure: false
-          - compiler: ghc-8.8.4-norelease-asserts
-            projectFlags: -f-release -fwith_expensive_assertions
-            compilerKind: ghc
-            compilerVersion: 8.8.4
-            setup-method: hvr-ppa
-            allow-failure: false
-          - compiler: ghc-8.8.4-noopt
-            projectFlags: --ghc-option=-O0 --ghc-option=-fno-ignore-asserts
-            compilerKind: ghc
-            compilerVersion: 8.8.4
-            setup-method: hvr-ppa
-            allow-failure: false
-          - compiler: ghc-8.8.4-opt2
-            projectFlags: --ghc-option=-O2 --ghc-option=-fno-ignore-asserts
-            compilerKind: ghc
-            compilerVersion: 8.8.4
-            setup-method: hvr-ppa
-            allow-failure: false
       fail-fast: false
     steps:
       - name: apt
