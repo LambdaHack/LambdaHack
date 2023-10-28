@@ -316,7 +316,7 @@ jobs:
             echo "allow-newer: $($HCPKG list --simple-output | sed -E 's/([a-zA-Z-]+)-[0-9.]+/*:\1,/g')" >> cabal.project
           fi
           echo "package sdl2" >> cabal.project
-          echo "    flags: +no-linear +recent-ish" >> cabal.project
+          echo "    flags: +no-linear -recent-ish" >> cabal.project
           cat cabal.project
       - name: cache
         uses: actions/cache@v2
