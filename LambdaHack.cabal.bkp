@@ -6,7 +6,7 @@ name:          LambdaHack
 -- PVP summary:+-+------- breaking API changes
 --             | |  +----- minor or non-breaking API additions
 --             | |  | +--- code changes with no API change
-version:       0.11.1.0
+version:       0.11.0.1
 synopsis:      A game engine library for tactical squad ASCII roguelike dungeon crawlers
 description: LambdaHack is a Haskell game engine library for ASCII roguelike
              games of arbitrary theme, size and complexity, with optional

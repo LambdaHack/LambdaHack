@@ -1,4 +1,4 @@
-## [v0.11.1.0](https://github.com/LambdaHack/LambdaHack/compare/v0.11.0.0...v0.11.1.0)
+## [v0.11.0.1](https://github.com/LambdaHack/LambdaHack/compare/v0.11.0.0...v0.11.0.1)
 
 - Split the long Content.ModeKind texts into lines, [#283](https://github.com/LambdaHack/LambdaHack/issues/283)
 - In unit tests, re-use values from UnitTestHelpers and Game.LambdaHack.Common.Kind, [#286](https://github.com/LambdaHack/LambdaHack/issues/286)
