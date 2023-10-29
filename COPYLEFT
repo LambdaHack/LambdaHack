@@ -5,19 +5,19 @@ Source: https://hackage.haskell.org/package/LambdaHack
 
 Files: *
 Copyright: 2008-2011 Andres Loeh
-           2010-2021 Mikolaj Konarski and others (see git history)
+           2010-2023 Mikolaj Konarski and others (see git history)
 License: BSD-3-Clause
 
 Files: GameDefinition/fonts/*.fnt GameDefinition/fonts/*.bdf GameDefinition/fonts/16x16xw.woff
 Copyright: 1997-2016 Leon Marrick
            1997-2016 Sheldon Simms III
            1997-2016 Nick McConnell
-           2016-2021 Mikolaj Konarski
+           2016-2023 Mikolaj Konarski
 License: GPL-2.0-or-later
 
 Files: GameDefinition/fonts/Binary*.woff
 Copyright 2010-2019 Adobe (http://www.adobe.com/), with Reserved Font Name 'Source'
-Copyright 2021 Mikolaj Konarski
+Copyright 2023 Mikolaj Konarski
 License: OFL-1.1
 
 Files: GameDefinition/fonts/DejaVu*.woff
