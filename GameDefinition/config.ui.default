@@ -138,4 +138,4 @@ dejavuMono = FontSet {fontMapScalable = "16x16xwScalable", fontMapBitmap = "16x1
 ; any more, the game crashes. To prevent that, one of the first three components
 ; of the game version should be bumped whenever fonts are changed.
 ; Configs from old versions are rejected, preventing the crash.
-version = 0.11.0
+version = 0.11.1
