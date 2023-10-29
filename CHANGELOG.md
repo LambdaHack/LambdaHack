@@ -2,7 +2,21 @@
 
 - Split the long Content.ModeKind texts into lines, [#283](https://github.com/LambdaHack/LambdaHack/issues/283)
 - In unit tests, re-use values from UnitTestHelpers and Game.LambdaHack.Common.Kind, [#286](https://github.com/LambdaHack/LambdaHack/issues/286)
-- ...
+- Rename unsnoc (see #300)
+- Bump the bound on hsini to handle trailing whitespace properly
+- Hack around a crash when TABbing during item manipulation
+- Document better that macros start with Cmd_
+- Correct a typo in test/Spec.hs
+- Add the communication overhead explanation proposed by fYnch
+- Compress detail levels and don't show paths at DetailHigh
+- Balance speedrunning and explain it better in player docs
+- Change failed alter message to less confusing; thanks go to Pug
+- Tweak tutorial hint enums and tests
+- Make lore menu with all tutorial hints
+- Don't punish naughty window managers with spammy warning
+- Try harder to prevent resizing in SDL
+- Change install from Hackage instructions so that they work outside package dir
+- Interrupt sleep and running a bit less
 
 ## [v0.11.0.0](https://github.com/LambdaHack/LambdaHack/compare/v0.10.3.0...v0.11.0.0)
 
