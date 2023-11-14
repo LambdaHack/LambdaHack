@@ -644,7 +644,7 @@
 - Make Burn as valuable as other damage for consistent UI display
 - Show very good no-timeouts weapons at the correct position
 - Partially hash-cons ItemQuant, with very modest effect
-- Change some occurences of trivial Quant to quantSingle
+- Change some occurrences of trivial Quant to quantSingle
 - Simplify skill and place menu code
 - Don't multiply initialPlaces when preparing place display
 - Consume places for places menu more eagerly

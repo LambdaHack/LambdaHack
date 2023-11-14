@@ -482,13 +482,13 @@ scrapRepetitionSingle (s1, n1) rest1 oldMsgs =
   in case break eqs1 rest1 of
     (_, []) -> case break eqs1 oldMsgs of
       (noDup, (_, n2) : rest2) ->
-        -- We keep the occurence of the message in the new report only.
+        -- We keep the occurrence of the message in the new report only.
         let newReport = (s1, n1 + n2) : rest1
             oldReport = noDup ++ ([], 0) : rest2
         in (True, newReport, oldReport)
       _ -> (False, (s1, n1) : rest1, oldMsgs)
     (noDup, (s2, n2) : rest3) ->
-      -- We keep the older (and so, oldest) occurence of the message,
+      -- We keep the older (and so, oldest) occurrence of the message,
       -- to avoid visual disruption by moving the message around.
       let newReport = ([], 0) : noDup ++ (s2, n1 + n2) : rest3
           oldReport = oldMsgs
