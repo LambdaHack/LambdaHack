@@ -17,6 +17,66 @@ jobs:
     strategy:
       matrix:
         include:
+          - compiler: ghc-9.8.1-vanilla
+            projectFlags:
+            compilerKind: ghc
+            compilerVersion: 9.8.1
+            setup-method: ghcup
+            allow-failure: false
+          - compiler: ghc-9.8.1-asserts
+            projectFlags: -fwith_expensive_assertions
+            compilerKind: ghc
+            compilerVersion: 9.8.1
+            setup-method: ghcup
+            allow-failure: false
+          - compiler: ghc-9.8.1-norelease-asserts
+            projectFlags: -f-release -fwith_expensive_assertions
+            compilerKind: ghc
+            compilerVersion: 9.8.1
+            setup-method: ghcup
+            allow-failure: false
+          - compiler: ghc-9.8.1-noopt
+            projectFlags: --ghc-option=-O0 --ghc-option=-fno-ignore-asserts
+            compilerKind: ghc
+            compilerVersion: 9.8.1
+            setup-method: ghcup
+            allow-failure: false
+          - compiler: ghc-9.8.1-opt2
+            projectFlags: --ghc-option=-O2 --ghc-option=-fno-ignore-asserts
+            compilerKind: ghc
+            compilerVersion: 9.8.1
+            setup-method: ghcup
+            allow-failure: false
+          - compiler: ghc-9.6.3-vanilla
+            projectFlags:
+            compilerKind: ghc
+            compilerVersion: 9.6.3
+            setup-method: ghcup
+            allow-failure: false
+          - compiler: ghc-9.6.3-asserts
+            projectFlags: -fwith_expensive_assertions
+            compilerKind: ghc
+            compilerVersion: 9.6.3
+            setup-method: ghcup
+            allow-failure: false
+          - compiler: ghc-9.6.3-norelease-asserts
+            projectFlags: -f-release -fwith_expensive_assertions
+            compilerKind: ghc
+            compilerVersion: 9.6.3
+            setup-method: ghcup
+            allow-failure: false
+          - compiler: ghc-9.6.3-noopt
+            projectFlags: --ghc-option=-O0 --ghc-option=-fno-ignore-asserts
+            compilerKind: ghc
+            compilerVersion: 9.6.3
+            setup-method: ghcup
+            allow-failure: false
+          - compiler: ghc-9.6.3-opt2
+            projectFlags: --ghc-option=-O2 --ghc-option=-fno-ignore-asserts
+            compilerKind: ghc
+            compilerVersion: 9.6.3
+            setup-method: ghcup
+            allow-failure: false
           - compiler: ghc-9.4.7-vanilla
             projectFlags:
             compilerKind: ghc
