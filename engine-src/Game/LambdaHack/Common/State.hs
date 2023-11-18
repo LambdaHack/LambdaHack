@@ -194,7 +194,7 @@ unknownLevel COps{corule, cotile}
 unknownTileMap :: Area -> ContentId TileKind -> X -> Y -> TileMap
 unknownTileMap larea outerId rWidthMax rHeightMax =
   let unknownMap = PointArray.replicateA rWidthMax rHeightMax TK.unknownId
-      outerUpdate = zip (areaInnerBorder larea) $ repeat outerId
+      outerUpdate = map (, outerId) (areaInnerBorder larea)
   in unknownMap PointArray.// outerUpdate
 
 -- | Initial complete global game state.

@@ -334,7 +334,7 @@ unknownAspect f itemFull@ItemFull{itemKind=IK.ItemKind{iaspects}, ..} =
           unknown x = let (minD, maxD) = Dice.infsupDice x
                       in minD /= maxD
       in itemSuspect && not (IA.checkFlag Ability.MinorAspects arItem)
-         || not kmConst && any (or . map unknown . f) iaspects
+         || not kmConst && any (any unknown . f) iaspects
     ItemDiscoFull{} -> False  -- all known
 
 -- We assume @SkHurtMelee@ never appears inside @Odds@. If it does,
