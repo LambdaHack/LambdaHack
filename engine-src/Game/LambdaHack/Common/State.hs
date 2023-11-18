@@ -1,3 +1,4 @@
+{-# LANGUAGE TupleSections #-}
 -- | The common, for server and clients, main game state type
 -- and its operations.
 module Game.LambdaHack.Common.State

@@ -27,6 +27,7 @@ import qualified Data.EnumMap.Strict as EM
 import qualified Data.EnumSet as ES
 import           Data.Hashable (Hashable)
 import qualified Data.Ix as Ix
+import qualified Data.Ord as Ord
 import           GHC.Generics (Generic)
 
 import qualified Game.LambdaHack.Common.ItemAspect as IA
@@ -232,7 +233,7 @@ strongestSlot discoBenefit eqpSlot is =
                                then 1000
                                else 0
              in (ben + idBonus + uniqueBonus, (iid, (itemFull, kit)))
-  in sortBy (flip $ comparing fst) $ mapMaybe f is
+  in sortBy (comparing (Ord.Down . fst)) $ mapMaybe f is
 
 valueAtEqpSlot :: EqpSlot -> IA.AspectRecord -> Int
 valueAtEqpSlot eqpSlot arItem@IA.AspectRecord{..} =
@@ -333,7 +334,7 @@ unknownAspect f itemFull@ItemFull{itemKind=IK.ItemKind{iaspects}, ..} =
           unknown x = let (minD, maxD) = Dice.infsupDice x
                       in minD /= maxD
       in itemSuspect && not (IA.checkFlag Ability.MinorAspects arItem)
-         || not kmConst && or (concatMap (map unknown . f) iaspects)
+         || not kmConst && any (or . map unknown . f) iaspects
     ItemDiscoFull{} -> False  -- all known
 
 -- We assume @SkHurtMelee@ never appears inside @Odds@. If it does,
@@ -403,10 +404,10 @@ listToolsToConsume kitAssG kitAssE =
       -- are applied and, usually being weapons,
       -- may be harmful or may have unintended effects.
       -- CGround takes precedence, too.
-  in zip (repeat (CGround, False)) kitAssGF
-     ++ zip (repeat (CEqp, False)) kitAssEF
-     ++ zip (repeat (CGround, True)) kitAssGT
-     ++ zip (repeat (CEqp, True)) kitAssET
+  in map ((CGround, False),) kitAssGF
+     ++ map ((CEqp, False),) kitAssEF
+     ++ map ((CGround, True),) kitAssGT
+     ++ map ((CEqp, True),) kitAssET
 
 countIidConsumed :: ItemFullKit
                  -> [(Bool, Int, GroupName IK.ItemKind)]

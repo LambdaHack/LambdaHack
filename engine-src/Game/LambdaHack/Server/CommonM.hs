@@ -232,22 +232,22 @@ deduceQuits fid0 status = do
       othersInGame = filter ((/= fid0) . fst) assocsInGame
   if | null assocsUI ->
        -- Only non-UI players left in the game and they all win.
-       mapQuitF $ zip (repeat Conquer) othersInGame
+       mapQuitF $ map (Conquer,) othersInGame
      | null assocsKeepArena ->
        -- Only leaderless and spawners remain (the latter may sometimes
        -- have no leader, just as the former), so they win,
        -- or we could get stuck in a state with no active arena
        -- and so no spawns.
-       mapQuitF $ zip (repeat Conquer) othersInGame
+       mapQuitF $ map (Conquer,) othersInGame
      | worldPeace ->
        -- Nobody is at war any more, so all win (e.g., horrors, but never mind).
-       mapQuitF $ zip (repeat Conquer) othersInGame
+       mapQuitF $ map (Conquer,) othersInGame
      | stOutcome status == Escape -> do
        -- Otherwise, in a game with many warring teams alive,
        -- only complete Victory matters, until enough of them die.
        let (victors, losers) =
              partition (\(fi, _) -> isFriend fid0 fact0 fi) othersInGame
-       mapQuitF $ zip (repeat Escape) victors ++ zip (repeat Defeated) losers
+       mapQuitF $ map (Escape,) victors ++ map (Defeated,) losers
      | otherwise -> quitF status fid0
 
 -- | Save game on server and all clients.
