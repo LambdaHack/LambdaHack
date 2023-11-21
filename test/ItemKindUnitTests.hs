@@ -7,16 +7,18 @@ import Game.LambdaHack.Core.Prelude
 import Test.Tasty
 import Test.Tasty.HUnit
 
-import qualified Content.RuleKind
+import Content.RuleKind
+
 import           Game.LambdaHack.Common.Kind (emptyMultiGroupItem)
 import           Game.LambdaHack.Content.ItemKind
 import qualified Game.LambdaHack.Content.RuleKind as RK
 import qualified Game.LambdaHack.Definition.Ability as Ability
+import           Game.LambdaHack.Definition.DefsInternal (toContentSymbol)
 
 itemKindUnitTests :: TestTree
 itemKindUnitTests = testGroup "itemKindUnitTests" $
   let standardSymbols = RK.ritemSymbols Content.RuleKind.standardRules
-      customSymbols = emptyItemSymbolsUsedInEngine {rsymbolNecklace = '*'}
+      customSymbols = emptyItemSymbolsUsedInEngine {rsymbolNecklace = toContentSymbol '*'}
 
   in
   [ testCase "overlonginame_validateSingle_errs" $
@@ -33,27 +35,27 @@ itemKindUnitTests = testGroup "itemKindUnitTests" $
       @?= ["EqpSlot not specified but Equipable or Meleeable and not a likely organ or necklace or template"]
   , testCase "equipableNoSlot,Symbol_validateSingle_noErr" $
       validateSingle standardSymbols
-                     emptyMultiGroupItem { isymbol = ','
+                     emptyMultiGroupItem { isymbol = rsymbolFood . RK.ritemSymbols $ standardRules
                                   , iaspects = [ SetFlag Ability.Equipable ] }
       @?= []
   , testCase "equipableNoSlot\"Symbol_validateSingle_noErr" $
       validateSingle standardSymbols
-                     emptyMultiGroupItem { isymbol = '"'
+                     emptyMultiGroupItem { isymbol = rsymbolNecklace . RK.ritemSymbols $ standardRules
                                   , iaspects = [ SetFlag Ability.Equipable ] }
       @?= []
   , testCase "equipableNoSlot/Symbol_validateSingle_noErr" $
       validateSingle standardSymbols
-                     emptyMultiGroupItem { isymbol = '/'
+                     emptyMultiGroupItem { isymbol = rsymbolWand . RK.ritemSymbols $ standardRules
                                   , iaspects = [ SetFlag Ability.Equipable ] }
       @?= []
   , testCase "equipableNoSlot*CustomRules_validateSingle_noErr" $
       validateSingle customSymbols
-                     emptyMultiGroupItem { isymbol = '*'
+                     emptyMultiGroupItem { isymbol = toContentSymbol '*'
                                   , iaspects = [ SetFlag Ability.Equipable ] }
       @?= []
   , testCase "equipableNoSlot\"CustomRules_validateSingle_errs" $
       validateSingle customSymbols
-                     emptyMultiGroupItem { isymbol = '"'
+                     emptyMultiGroupItem { isymbol = rsymbolNecklace . RK.ritemSymbols $ standardRules
                                   , iaspects = [ SetFlag Ability.Equipable ] }
       @?= ["EqpSlot not specified but Equipable or Meleeable and not a likely organ or necklace or template"]
   ]

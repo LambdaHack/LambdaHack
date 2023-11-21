@@ -12,8 +12,11 @@ import Prelude ()
 
 import Game.LambdaHack.Core.Prelude
 
+import Content.RuleKind
 import Game.LambdaHack.Client.UI.Content.Input
 import Game.LambdaHack.Client.UI.HumanCmd
+import Game.LambdaHack.Content.ItemKind (ItemSymbolsUsedInEngine (..))
+import Game.LambdaHack.Content.RuleKind (RuleContent (..))
 import Game.LambdaHack.Definition.Defs
 
 -- | Description of default key-command bindings.
@@ -72,10 +75,10 @@ standardKeysAndMouse = InputContentRaw $ map evalKeyDef $
   -- Item menu, first part of item use commands
   , ("comma", grabItems "")  -- only show extra key, not extra entry
   , ("r", dropItems "remove item(s)")
-  , ("f", addCmdCategory CmdItemMenu $ projectA flingTs)
+  , ("f", addCmdCategory CmdItemMenu $ projectA)
   , ("C-f", addCmdCategory CmdItemMenu
             $ replaceDesc "auto-fling and keep choice"
-            $ projectI flingTs)
+            $ projectI)
   , ("t", addCmdCategory CmdItemMenu $ applyI applyTs)
   , ("C-t", addCmdCategory CmdItemMenu
             $ replaceDesc "trigger item and keep choice" $ applyIK applyTs)
@@ -264,4 +267,7 @@ standardKeysAndMouse = InputContentRaw $ map evalKeyDef $
 applyTs :: [TriggerItem]
 applyTs = [TriggerItem { tiverb = "trigger"
                        , tiobject = "consumable item"
-                       , tisymbols = "!,?/" }]
+                       , tisymbols = [ rsymbolFlask . ritemSymbols $ standardRules
+                                     , rsymbolScroll . ritemSymbols $ standardRules
+                                     , rsymbolWand . ritemSymbols $ standardRules]
+                       }] -- "!,?/" }]

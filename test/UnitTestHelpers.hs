@@ -86,7 +86,8 @@ import           Game.LambdaHack.Content.TileKind (unknownId)
 import qualified Game.LambdaHack.Core.Dice as Dice
 import qualified Game.LambdaHack.Definition.Ability as Ability
 import           Game.LambdaHack.Definition.Color (Color (..))
-import           Game.LambdaHack.Definition.DefsInternal (toContentId)
+import           Game.LambdaHack.Definition.Defs
+import           Game.LambdaHack.Definition.DefsInternal (toContentSymbol)
 import           Game.LambdaHack.Definition.Flavour
 
 -- * UI frontend stub
@@ -293,7 +294,7 @@ emptyCliState = CliState
 
 stubSessionUI :: SessionUI
 stubSessionUI =
-  let actorUI = ActorUI { bsymbol = 'j'
+  let actorUI = ActorUI { bsymbol = toContentSymbol 'j'
                         , bname = "Jamie"
                         , bpronoun = "he/him"
                         , bcolor = BrCyan }

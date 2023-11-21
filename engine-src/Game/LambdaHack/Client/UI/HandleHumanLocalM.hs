@@ -528,15 +528,16 @@ psuitReq leader = do
 
 -- $setup
 -- >>> import Game.LambdaHack.Definition.DefsInternal
+--
 
 -- |
 -- >>> let trigger1 = HumanCmd.TriggerItem{tiverb="verb", tiobject="object", tisymbols=[toContentSymbol 'a', toContentSymbol 'b']}
 -- >>> let trigger2 = HumanCmd.TriggerItem{tiverb="verb2", tiobject="object2", tisymbols=[toContentSymbol 'c']}
 -- >>> triggerSymbols [trigger1, trigger2]
--- "abc"
+-- [ContentSymbol 'a',ContentSymbol 'b',ContentSymbol 'c']
 --
 -- >>> triggerSymbols []
--- ""
+-- []
 triggerSymbols :: [HumanCmd.TriggerItem] -> [ContentSymbol IK.ItemKind]
 triggerSymbols [] = []
 triggerSymbols (HumanCmd.TriggerItem{tisymbols} : ts) =

@@ -38,8 +38,10 @@ import           Game.LambdaHack.Core.Random (nextRandom)
 import qualified Game.LambdaHack.Definition.Ability as Ability
 import           Game.LambdaHack.Definition.ContentData
 import           Game.LambdaHack.Definition.Defs
+  (CStore (COrgan), ContentSymbol, Freqs, Rarity)
 import           Game.LambdaHack.Definition.DefsInternal
-import           Game.LambdaHack.Definition.Flavour
+  (GroupName (..), toContentSymbol)
+import           Game.LambdaHack.Definition.Flavour (Flavour)
 
 -- * Mandatory item groups
 

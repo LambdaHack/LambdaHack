@@ -3,7 +3,7 @@
 module Game.LambdaHack.Definition.Defs
   ( GroupName, displayGroupName
   , ContentId, contentIdIndex
-  , ContentSymbol, displayContentSymbol
+  , ContentSymbol , displayContentSymbol, toContentId
   , X, Y
   , Freqs, renameFreqs
   , Rarity, linearInterpolation
@@ -13,15 +13,23 @@ module Game.LambdaHack.Definition.Defs
   , Direction(..)
   ) where
 
-import Prelude ()
-
 import Game.LambdaHack.Core.Prelude
+
+import Prelude ()
 
 import Control.DeepSeq
 import Data.Binary
 import GHC.Generics (Generic)
 
 import Game.LambdaHack.Definition.DefsInternal
+  ( ContentId
+  , ContentSymbol
+  , GroupName (..)
+  , contentIdIndex
+  , displayContentSymbol
+  , displayGroupName
+  , toContentId
+  )
 
 -- | X spacial dimension for points and vectors.
 type X = Int
@@ -35,7 +43,7 @@ type Y = Int
 type Freqs c = [(GroupName c, Int)]
 
 renameFreqs :: (Text -> Text) -> Freqs c -> Freqs c
-renameFreqs f = map (first (GroupName . f . fromGroupName))
+renameFreqs f = map (first (GroupName . f . displayGroupName ))
 
 -- | Rarity on given depths. The first element of the pair is normally
 -- in (0, 10] interval and, e.g., if there are 20 levels, 0.5 represents
