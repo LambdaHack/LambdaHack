@@ -518,7 +518,7 @@ alterCommon leader bumping tpos = do
                map (\(iid, kit) -> (getKind iid, (iid, kit))) (EM.assocs embeds)
              ilooks = map itemLook $ sortEmbeds cops t embedKindList
          failWith $ makePhrase $
-           ["there is no point kicking", MU.AW name]
+           ["there is no way to activate or modify", MU.AW name]
            ++ if EM.null embeds
               then []
               else ["with", MU.WWandW ilooks]
@@ -1614,7 +1614,9 @@ itemMenuHuman leader cmdSemInCxtOfKM = do
                   if blid bNew /= blid b && banned
                   then weaveJust <$> failSer NoChangeDunLeader
                   else do
-                    void $ pickLeader True newAid
+                    -- Verbosity not necessary to notice the switch
+                    -- and it's explicitly requested, so no surprise.
+                    void $ pickLeader False newAid
                     modifySession $ \sess ->
                       sess {sitemSel = Just (iid, newCStore, False)}
                     itemMenuHuman newAid cmdSemInCxtOfKM

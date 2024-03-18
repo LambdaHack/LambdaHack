@@ -209,6 +209,9 @@ chooseItemDialogMode leader0 permitLoreCycle c = do
            | otherwise -> do
              -- We switch leader only here, not when processing results
              -- of lore screens, because lore is only about inspecting items.
+             --
+             -- This is a bit too verbose in aiming mode, but verbosity
+             -- here is good to turn player's attention to the switch.
              void $ pickLeader True newAid
              return $ Right newAid
       RLore slore slot iids -> do
@@ -963,7 +966,7 @@ detailCycleHuman = do
   doLook
 
 detailCycle :: DetailLevel -> DetailLevel
-detailCycle detail = if detail == maxBound then minBound else succ detail
+detailCycle detail = if detail == minBound then maxBound else pred detail
 
 -- * ClearTargetIfItemClear
 

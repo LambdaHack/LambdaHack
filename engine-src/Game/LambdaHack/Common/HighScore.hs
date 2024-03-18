@@ -25,9 +25,9 @@ import qualified NLP.Miniutter.English as MU
 import Game.LambdaHack.Common.Faction
 import Game.LambdaHack.Common.Misc
 import Game.LambdaHack.Common.Time
+import Game.LambdaHack.Content.FactionKind
 import Game.LambdaHack.Content.ItemKind (ItemKind)
 import Game.LambdaHack.Content.ModeKind
-import Game.LambdaHack.Content.FactionKind
 import Game.LambdaHack.Definition.Defs
 
 -- | A single score record. Records are ordered in the highscore table,
@@ -38,7 +38,7 @@ data ScoreRecord = ScoreRecord
   , date         :: POSIXTime  -- ^ date of the last game interruption
   , status       :: Status     -- ^ reason of the game interruption
   , challenge    :: Challenge  -- ^ challenge setup of the game
-  , gkindName  :: Text       -- ^ name of the faction's gkind
+  , gkindName    :: Text       -- ^ name of the faction's gkind
   , ourVictims   :: EM.EnumMap (ContentId ItemKind) Int  -- ^ allies lost
   , theirVictims :: EM.EnumMap (ContentId ItemKind) Int  -- ^ foes killed
   }
@@ -89,7 +89,10 @@ register table total dungeonTotal time status@Status{stOutcome}
         HiLoot | dungeonTotal == 0 -> c  -- a fluke; no gold generated
         HiLoot -> c * intToDouble total / intToDouble dungeonTotal
         HiSprint -> -- Up to -c turns matter.
-                    max 0 (-c - turnsSpent)
+          let speedup = max 0 (-c - turnsSpent)
+          in if c >= -10000
+             then speedup  -- every turn matters
+             else 10000 * speedup / (-c)  -- prevent exploit speedruns
         HiBlitz -> -- Up to 1000000/-c turns matter.
                    sqrt $ max 0 (1000000 + c * turnsSpent)
         HiSurvival -> -- Up to 1000000/c turns matter.

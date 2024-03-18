@@ -578,11 +578,11 @@ effectExplode execSfx cgroup source target containerOrigin = do
             randomReverse = if even veryRandom then id else reverse
             ps = take k $ concat $
               randomReverse
-                [ zip (repeat True)  -- diagonal particles don't reach that far
+                [ map (True,) -- diagonal particles don't reach that far
                   $ take 4 (drop ((k10 + itemK + fuzz) `mod` 4) $ cycle psDir4)
-                , zip (repeat False)  -- only some cardinal reach far
+                , map (False,)  -- only some cardinal reach far
                   $ take 4 (drop ((k10 + n) `mod` 4) $ cycle psDir8) ]
-              ++ [zip (repeat True)
+              ++ [map (True,)
                   $ take 8 (drop ((k10 + fuzz) `mod` 8) $ cycle psFuzz)]
         forM_ ps $ \(centerRaw, tpxy) -> do
           let center = centerRaw && itemK >= 8  -- if few, keep them regular

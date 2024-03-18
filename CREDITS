@@ -12,14 +12,19 @@ Oleg Grenrus
 Simon Michael
 bulbousBullfrog
 Alex Byaly
+
 Jamie Fristrom 
+
+Jamie Fristrom
+Kayvan Kazeminejad
+
 
 
 
 Binary distributions of this package may be linked or bundled with libraries
 such as SDL2, SDL_ttf, FreeType and many others. These libraries
 are copyright of their respective owners, with all rights reserved.
-In particular, portions of this software are copyright © 2021 The FreeType
+In particular, portions of this software are copyright © 2023 The FreeType
 Project (www.freetype.org). All rights reserved.
 
 

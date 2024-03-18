@@ -40,6 +40,7 @@ import           Game.LambdaHack.Client.UI.Msg
 import           Game.LambdaHack.Client.UI.MsgM
 import           Game.LambdaHack.Client.UI.SessionUI
 import           Game.LambdaHack.Client.UI.SlideshowM
+import           Game.LambdaHack.Client.UI.TutorialHints (TutorialHints (..))
 import           Game.LambdaHack.Client.UI.UIOptions
 import           Game.LambdaHack.Client.UI.Watch.WatchCommonM
 import           Game.LambdaHack.Client.UI.Watch.WatchQuitM
@@ -137,7 +138,7 @@ watchRespUpdAtomicUI cmd = case cmd of
                  when (bfid b == side && not good) $
                    -- Others get conditions too often and good ones are not
                    -- dire enough and also too common.
-                   msgAdd MsgTutorialHint "Temporary conditions, especially the bad ones, pass quickly, usually after just a few turns. While active, they are listed in the '@' organ menu and the effects of most of them are seen in the '#' skill menu."
+                   tutorialHintMsgAdd TemporaryConditions
                | otherwise -> do
                  wown <- ppContainerWownW partActorLeader True c
                  itemVerbMU MsgItemCreation iid kit
@@ -186,12 +187,12 @@ watchRespUpdAtomicUI cmd = case cmd of
   UpdMoveActor aid source target -> moveActor aid source target
   UpdWaitActor aid WSleep _ -> do
     aidVerbMU MsgStatusWakeup aid "wake up"
-    msgAdd MsgTutorialHint "Woken up actors regain stats and skills, including sight radius and melee armor, over several turns."
+    tutorialHintMsgAdd WokenUpActors
   UpdWaitActor aid WWake _ -> do
     side <- getsClient sside
     b <- getsState $ getActorBody aid
     unless (bfid b == side) $
-      msgAdd MsgTutorialHint "To avoid waking enemies up, make sure they don't lose HP nor too much Calm through noises, particularly close ones. Beware, however, that they slowly regenerate HP as they sleep and eventually wake up at full HP."
+      tutorialHintMsgAdd AvoidWalkingEnemies
   UpdWaitActor{} -> return ()  -- falling asleep handled uniformly elsewhere
   UpdDisplaceActor source target -> displaceActorUI source target
   UpdMoveItem iid k aid c1 c2 -> moveItemUI iid k aid c1 c2
@@ -261,7 +262,7 @@ watchRespUpdAtomicUI cmd = case cmd of
          when (bfid b == side && not (bproj b)) $ do
            when (abs hpDelta >= oneM) $ markDisplayNeeded (blid b)
            when (hpDelta < 0) $ do
-             when (hpDelta <= xM (-3)) $ msgAdd MsgTutorialHint "You took a lot of damage from one source. If the danger persists, consider retreating towards your teammates or buffing up or an instant escape, if consumables permit."
+             when (hpDelta <= xM (-3)) $ tutorialHintMsgAdd AlotOfDamageFromOneSource
              sUIOptions <- getsSession sUIOptions
              currentWarning <-
                getsState $ checkWarningHP sUIOptions aid (bhp b)
@@ -283,7 +284,7 @@ watchRespUpdAtomicUI cmd = case cmd of
              let bPrev = b {bcalm = bcalm b - calmDelta}
              when (calmEnough b actorMaxSk
                    && not (calmEnough bPrev actorMaxSk)) $
-               msgAdd MsgNeutralEvent "You are again calm enough to manage your equipment outfit."
+               msgAdd MsgSpecialEvent "You are again calm enough to manage your equipment outfit."
            -- If the leader regenerates Calm more often than once per
            -- standard game turn, this will not be reflected, for smoother
            -- and faster display. However, every halt for keypress
@@ -443,7 +444,7 @@ watchRespUpdAtomicUI cmd = case cmd of
                            , MU.AW object ]
     unless (subject2 == object) $ do
       msgAdd MsgTerrainReveal msg
-      msgAdd MsgTutorialHint "Solid terrain drawn in pink is not fully known until searched. This is usually done by bumping into it, which also triggers effects and transformations the terrain is capable of. Once revealed, the terrain can be inspected in aiming mode started with the '*' key or with mouse."
+      tutorialHintMsgAdd TerrainNotFullyKnown
   UpdHideTile{} -> return ()
   UpdSpotTile{} -> return ()
   UpdLoseTile{} -> return ()
@@ -615,11 +616,11 @@ watchRespUpdAtomicUI cmd = case cmd of
     msgAdd msgClass msg
     case hearMsg of
       HearUpd UpdDestroyActor{} ->
-        msgAdd MsgTutorialHint "Events out of your sight radius (as listed in the '#' skill menu) can sometimes be heard, depending on your hearing radius skill. Some, such as death shrieks, can always be heard regardless of skill and distance, including when they come from a different floor."
+        tutorialHintMsgAdd OutOfSightEvents
       HearTaunt{} -> do
         globalTime <- getsState stime
         when (globalTime > timeTurn) $  -- avoid too many hints at the start
-          msgAdd MsgTutorialHint "Enemies you can't see are sometimes heard yelling and emitting other noises. Whether you can hear them, depends on their distance and your hearing radius, as listed in the '#' skill menu."
+          tutorialHintMsgAdd HearingRadius
       _ -> return ()
   UpdMuteMessages _ smuteMessages ->
     modifySession $ \sess -> sess {smuteMessages}
@@ -722,7 +723,7 @@ createActorUI born aid body = do
          when born $ do
            let verb = "join you"
            aidVerbMU MsgSpottedActor aid verb
-           msgAdd MsgTutorialHint "You survive this mission, or die trying, as a team. After a few moves, feel free to switch the controlled teammate (marked on the map with the yellow box) using the Tab key to another party member (marked with a green box)."  -- assuming newbies don't remap their keys
+           tutorialHintMsgAdd SwitchTeammate
            animate (blid body) $ actorX (bpos body)
      | otherwise -> do
        -- Don't spam if the actor was already visible
@@ -771,14 +772,14 @@ createActorUI born aid body = do
          case threat of
            ThreatNone -> return ()  -- too rare to care ATM
            ThreatUnarmed ->
-             msgAdd MsgTutorialHint "Enemies are normally dealt with using melee (by bumping when adjacent) or ranged combat (by 'f'linging items at them)."
+             tutorialHintMsgAdd MeleeEnemies
            ThreatArmed ->
-             msgAdd MsgTutorialHint "Enemies can be dealt with not only via combat, but also with clever use of terrain effects, stealth (not emitting nor reflecting light) or hasty retreat (particularly when foes are asleep or drowsy)."
+             tutorialHintMsgAdd UseTerrainEffect
            _ | length friendAssocs <= 1 -> return ()  -- one member on level
            ThreatAnotherUnarmed ->
-             msgAdd MsgTutorialHint "When dealing with groups of enemies, remember than you fight as a team. Switch the pointman (marked on the map with the yellow box) using the Tab key until you move each teammate to a tactically advantageous position. Avoid meleeing alone."
+             tutorialHintMsgAdd SwitchPointmanAndAvoidMeleeAlone
            ThreatAnotherArmed ->
-             msgAdd MsgTutorialHint "When dealing with groups of armed enemies, remember than you fight as a team. Switch the pointman (marked on the map with the yellow box) using the Tab key until you move each teammate to a tactically advantageous position. Retreat, if necessary to form a front line. Soften the foes with missiles, especially of exploding kind."
+             tutorialHintMsgAdd SwitchPointmanAndSoftenFoes
          animate (blid body) $ actorX (bpos body)
 
 destroyActorUI :: MonadClientUI m => Bool -> ActorId -> Actor -> m ()

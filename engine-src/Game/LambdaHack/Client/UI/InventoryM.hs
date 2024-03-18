@@ -200,7 +200,6 @@ storeItemPrompt side body bodyUI actorCurAndMaxSk c2 s =
                   Just (lid, _) ->
                     map MU.Text ["on level", tshow $ abs $ fromEnum lid]
                   Nothing -> [] )
-            _ -> ("see", [])
           ownObject = case cstore of
             CStash -> ["our", MU.Text t]
             _ -> [MU.WownW (MU.Text $ bpronoun bodyUI) $ MU.Text t]
@@ -375,6 +374,8 @@ transition leader psuit prompt promptGeneric permitMulitple
            { defLabel = Left ""
            , defCond = maySwitchLeader cCur && not (null hs)
            , defAction = do
+               -- This is verbose even in aiming mode, displaying
+               -- terrain description, but it's fine, mouse may do that.
                merror <- pickLeaderWithPointer leader
                case merror of
                  Nothing -> recCall cCur cRest itemDialogState

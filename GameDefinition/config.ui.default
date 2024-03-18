@@ -17,13 +17,15 @@
 Cmd_2 = ("KP_Insert", ([CmdAim], "", ByAimMode AimModeCmd {exploration = Dashboard, aiming = Accept}))
 ; Custom key rebinding example:
 ;
-;   Cmd_3 = ("a", ([CmdItem], "My Happy Cmd", Macro ["t"]))
+;   Cmd_anyName_youLike = ("a", ([CmdItem], "My Happy Cmd", Macro ["t"]))
 ;
 ; Explanation: to (t)rigger a consumable item for use, you normally use
 ;              the key press 't'.
 ; Suppose you would like to use the key press 'a' instead of 't'.
-;   Cmd_3          - can be anything as long as it doesn't conflict or
-;                    overlap with a binding already defined
+;   Cmd_anyName_youLike
+;                  - can be anything starting with 'Cmd_' (the "Cmd_" prefix
+;                    specifies that you are assigning a new command), as long
+;                    as it doesn't conflict with a binding already defined
 ;   "a"            - the new key to use
 ;   [CmdItem]      - can either be [] or [CmdItem]. If using [CmdItem]
 ;                    the new keybinding will be displayed in the help menu
@@ -32,6 +34,17 @@ Cmd_2 = ("KP_Insert", ([CmdAim], "", ByAimMode AimModeCmd {exploration = Dashboa
 ;                    in the help menu, it is recommended to leave this empty []
 ;   "My Happy Cmd" - Is a name given to your binding, which would be dispayed
 ;                    in the help page in-game if you use 'CmdItem' from above
+;   Macro ["t"]    - it specifies that you create a new command by combining
+;                    or using the existing ones bound to keys. You can combine
+;                    several key names within these squared brackets.
+;                    Each key name must be enveloped in quotation marks.
+;                    If you want to create a command that combines several
+;                    simple actions, you should create a sequence of keys
+;                    separated by the "," mark.
+;                    For example, you may write something like ["r", "*"],
+;                    which will remove all items from the shared inventory
+;                    directly to the floor. Using Macro commands is the easiest
+;                    way to create custom commands.
 
 [hero_names]
 HeroName_0 = ("Haskell Alvin", "he")

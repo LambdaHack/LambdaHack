@@ -174,10 +174,11 @@ compiled for SDL2 and installed automatically using the 'cabal' tool,
 which may already be a part of your OS distribution, but if it's too old
 (version 3.4 or later is required) you can download the whole current
 compilation suite as described at https://www.haskell.org/downloads/.
-Get the LambdaHack package from Hackage[3] as follows
+You can get and run the LambdaHack package from Hackage[3] as follows
 
     cabal update
-    cabal run LambdaHack
+    cabal install LambdaHack
+    ~/.cabal/bin/LambdaHack
 
 For a newer snapshot, clone the source code from github[5]
 and run `cabal run LambdaHack` from the main directory.
@@ -188,7 +189,7 @@ the following speeds up the turn-around a lot
 
 and then you can compile (and recompile) with
 
-    cabal build .
+    cabal build
 
 and run the game with
 

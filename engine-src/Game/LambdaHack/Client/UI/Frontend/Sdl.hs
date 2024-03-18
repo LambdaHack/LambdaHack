@@ -222,7 +222,10 @@ startupFun coscreen soptions@ClientOptions{..} rfMVar = do
         , SDL.windowMode = case fromMaybe NotFullscreen sfullscreenMode of
             ModeChange -> SDL.Fullscreen
             BigBorderlessWindow -> SDL.FullscreenDesktop
-            NotFullscreen -> SDL.Windowed }
+            NotFullscreen -> SDL.Windowed
+        , SDL.windowResizable = False  -- the default, but just in case...
+        , SDL.windowHighDPI = True  -- possibly prevents resize for Retina
+        }
       rendererConfig = SDL.RendererConfig
         { rendererType          = if sbenchmark
                                   then SDL.AcceleratedRenderer
@@ -372,11 +375,13 @@ startupFun coscreen soptions@ClientOptions{..} rfMVar = do
         SDL.QuitEvent -> forceShutdown sess
         SDL.WindowRestoredEvent{} -> redraw  -- e.g., unminimize
         SDL.WindowExposedEvent{} -> redraw  -- needed on Windows
-        SDL.WindowResizedEvent{} -> do
-          -- Eome window managers apparently are able to resize.
-          SDL.showSimpleMessageBox Nothing SDL.Warning
-            "Windows resize detected"
-            "Please resize the game and/or make it fullscreen via 'allFontsScale' and 'fullscreenMode' settings in the 'config.ui.ini' file. Resizing fonts via generic scaling algorithms gives poor results."
+        SDL.WindowResizedEvent{} ->
+          -- Some window managers apparently are able to resize.
+          -- And some send resize events at startup, even though
+          -- they don't resize eventually, so this is too much spam:
+          -- SDL.showSimpleMessageBox Nothing SDL.Warning
+          --  "Windows resize detected"
+          --  "Please resize the game and/or make it fullscreen via 'allFontsScale' and 'fullscreenMode' settings in the 'config.ui.ini' file. Resizing fonts via generic scaling algorithms gives poor results."
           redraw
         -- Probably not needed, because no textures nor their content lost:
         -- SDL.WindowShownEvent{} -> redraw
@@ -687,7 +692,7 @@ drawFrame coscreen ClientOptions{..} sess@FrontendSession{..} curFrame = do
                                     , Color.HighlightNoneCursor ]) ()
             fg | even row && fgRaw == Color.White = Color.AltWhite
                | otherwise = fgRaw
-            t = T.pack $ map Color.charFromW32 $ w : sameRest
+            t = T.pack . attrStringToString  $ w : sameRest
         width <- drawPropChunk x row fg t
         drawPropLine (x + width) row otherRest
       drawPropChunk :: Int -> Int -> Color.Color -> T.Text -> IO Int

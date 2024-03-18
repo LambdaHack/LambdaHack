@@ -6,7 +6,7 @@ module Game.LambdaHack.Client.UI.Slideshow
   , ButtonWidth(..)
   , KYX, xytranslateKXY, xtranslateKXY, ytranslateKXY, yrenumberKXY
   , OKX, emptyOKX, xytranslateOKX, sideBySideOKX, labDescOKX
-  , Slideshow(slideshow), emptySlideshow, unsnoc, toSlideshow
+  , Slideshow(slideshow), emptySlideshow, unsnocSlideshow, toSlideshow
   , attrLinesToFontMap, menuToSlideshow, wrapOKX, splitOverlay, splitOKX
   , highSlideshow
 #ifdef EXPOSE_INTERNAL
@@ -118,8 +118,8 @@ newtype Slideshow = Slideshow {slideshow :: [OKX]}
 emptySlideshow :: Slideshow
 emptySlideshow = Slideshow []
 
-unsnoc :: Slideshow -> Maybe (Slideshow, OKX)
-unsnoc Slideshow{slideshow} =
+unsnocSlideshow :: Slideshow -> Maybe (Slideshow, OKX)
+unsnocSlideshow Slideshow{slideshow} =
   case reverse slideshow of
     [] -> Nothing
     okx : rest -> Just (Slideshow $ reverse rest, okx)

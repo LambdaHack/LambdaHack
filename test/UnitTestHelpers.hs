@@ -4,21 +4,23 @@ module UnitTestHelpers
   ( CliState(..)
   , emptyCliState
   , executorCli
+  , reportToTexts
   , stubLevel
   , stubState
   , stubCliState
+  , stubItem
   , testActor
   , testActorId
   , testActorWithItem
   , testCliStateWithItem
   , testFactionId
   , testItemId
-  , testItemKind
+  , testLevel
   , testLevelId
 #ifdef EXPOSE_INTERNAL
     -- * Internal operations
-  , CliMock(..)
   , fchanFrontendStub
+  , CliMock(..)
 #endif
   ) where
 
@@ -30,6 +32,7 @@ import qualified Control.Monad.IO.Class as IO
 import           Control.Monad.Trans.State.Strict
   (StateT (StateT, runStateT), gets, state)
 import qualified Data.EnumMap.Strict as EM
+import qualified Data.Text as Text
 
 import           Game.LambdaHack.Atomic (MonadStateWrite (..))
 import           Game.LambdaHack.Client
@@ -37,34 +40,53 @@ import qualified Game.LambdaHack.Client.BfsM as BfsM
 import           Game.LambdaHack.Client.HandleResponseM
 import           Game.LambdaHack.Client.MonadClient
 import           Game.LambdaHack.Client.State
+  (StateClient (..), TGoal (..), Target (..), emptyStateClient, updateLeader)
 import           Game.LambdaHack.Client.UI
-import           Game.LambdaHack.Client.UI.ActorUI
+  (MonadClientUI (..), SessionUI (..), emptySessionUI)
+import           Game.LambdaHack.Client.UI.ActorUI (ActorUI (..))
 import           Game.LambdaHack.Client.UI.Content.Screen
-import           Game.LambdaHack.Client.UI.ContentClientUI
+  (emptyScreenContent, rheight, rwidth)
+import           Game.LambdaHack.Client.UI.ContentClientUI (coscreen, emptyCCUI)
 import           Game.LambdaHack.Client.UI.Frontend
+  (ChanFrontend (..), FrontReq (..))
 import           Game.LambdaHack.Client.UI.Key (KMP (..))
 import qualified Game.LambdaHack.Client.UI.Key as K
-import           Game.LambdaHack.Client.UI.PointUI
-import           Game.LambdaHack.Client.UI.UIOptions
+import           Game.LambdaHack.Client.UI.Msg
+import           Game.LambdaHack.Client.UI.Overlay
+import           Game.LambdaHack.Client.UI.PointUI (PointUI (..))
+import           Game.LambdaHack.Client.UI.UIOptions (UIOptions (..))
 import           Game.LambdaHack.Common.Actor
-import           Game.LambdaHack.Common.Area
+  (Actor (..), ResDelta (..), Watchfulness (..))
+import           Game.LambdaHack.Common.Area (Area, toArea, trivialArea)
 import           Game.LambdaHack.Common.ClientOptions
-import           Game.LambdaHack.Common.Faction
-import           Game.LambdaHack.Common.Kind
-import           Game.LambdaHack.Common.Level
-import           Game.LambdaHack.Common.Misc
+  (ClientOptions (..), FullscreenMode (..), defClientOptions)
+import           Game.LambdaHack.Common.Faction (Faction (..))
+import           Game.LambdaHack.Common.Item
+import           Game.LambdaHack.Common.Kind (COps (..), emptyUIFaction)
+import           Game.LambdaHack.Common.Level (Level (..))
+import           Game.LambdaHack.Common.Misc (FontSet (..))
 import           Game.LambdaHack.Common.MonadStateRead
-import           Game.LambdaHack.Common.Perception
-import           Game.LambdaHack.Common.Point
+import           Game.LambdaHack.Common.Perception (emptyPer)
+import           Game.LambdaHack.Common.Point (Point (..))
 import           Game.LambdaHack.Common.State
-import           Game.LambdaHack.Common.Time
+  ( State
+  , emptyState
+  , unknownTileMap
+  , updateActorD
+  , updateActorMaxSkills
+  , updateCOpsAndCachedData
+  , updateDungeon
+  , updateFactionD
+  )
+import           Game.LambdaHack.Common.Time (timeZero)
 import           Game.LambdaHack.Common.Types
-import           Game.LambdaHack.Content.ItemKind
-import           Game.LambdaHack.Content.RuleKind
-import           Game.LambdaHack.Content.TileKind
+  (ActorId, FactionId, ItemId, LevelId)
+import           Game.LambdaHack.Content.RuleKind (RuleContent (..))
+import           Game.LambdaHack.Content.TileKind (unknownId)
 import qualified Game.LambdaHack.Core.Dice as Dice
 import qualified Game.LambdaHack.Definition.Ability as Ability
-import           Game.LambdaHack.Definition.Color
+import           Game.LambdaHack.Definition.Color (Color (..))
+import           Game.LambdaHack.Definition.DefsInternal (toContentId)
 import           Game.LambdaHack.Definition.Flavour
 
 -- * UI frontend stub
@@ -128,6 +150,29 @@ stubClientOptions = defClientOptions
                           , fontMono = "mono" })]
   }
 
+stubItem :: Item
+stubItem = Item { jkind = IdentityObvious (toContentId 0), jfid = Nothing, jflavour = dummyFlavour }
+
+testLevel :: Level
+testLevel = Level
+  { lkind = toEnum 0
+  , ldepth = Dice.AbsDepth 1
+  , lfloor = EM.empty
+  , lembed = EM.empty
+  , lbig = EM.empty
+  , lproj = EM.empty
+  , ltile = unknownTileMap (fromJust (toArea (0,0,0,0))) unknownId 10 10  --PointArray.empty
+  , lentry = EM.empty
+  , larea = trivialArea (Point 0 0)
+  , lsmell = EM.empty
+  , lstair = ([],[])
+  , lescape = []
+  , lseen = 0
+  , lexpl = 0
+  , ltime = timeZero
+  , lnight = False
+  }
+
 -- * Stub identifiers
 
 -- Using different arbitrary numbers for these so that if tests fail
@@ -171,7 +216,6 @@ stubLevel = Level
   , ltime = timeZero
   , lnight = False
   }
-
 testFaction :: Faction
 testFaction =
   Faction
@@ -207,25 +251,6 @@ testActor = Actor
   , bweapBenign = 0
   , bwatch = WWatch
   , bproj = False
-  }
-
-testItemKind :: ItemKind
-testItemKind = ItemKind
-  { isymbol  = 'x'
-  , iname    = "12345678901234567890123"
-  , ifreq    = [ (UNREPORTED_INVENTORY, 1) ]
-  , iflavour = zipPlain [Green]
-  , icount   = 1 + 1 `Dice.d` 2
-  , irarity  = [(1, 50), (10, 1)]
-  , iverbHit = "hit"
-  , iweight  = 300
-  , idamage  = 1 `Dice.d` 1
-  , iaspects = [ AddSkill Ability.SkHurtMelee $ -16 * 5
-                , SetFlag Ability.Fragile
-                , toVelocity 70 ]
-  , ieffects = []
-  , idesc    = "A really cool test item."
-  , ikit     = []
   }
 
 testActorWithItem :: Actor
@@ -293,6 +318,7 @@ stubCliState = CliState
 testCliStateWithItem :: CliState
 testCliStateWithItem = stubCliState { cliState = testStateWithItem }
 
+
 -- * Monad harness mock
 
 -- | Client state transformation monad mock.
@@ -328,13 +354,6 @@ instance MonadClient CliMock where
     let !newCliS = cliS {cliClient = f $ cliClient cliS}
     in ((), newCliS)
 
--- instance MonadClientSetup CliMock where
---   saveClient = CliMock $ do
---     --toSave <- gets cliToSave
---     cli <- gets cliClient
---     msess <- gets cliSession
---     IO.liftIO $ Save.saveToChan toSave (cli, msess)
-
 instance MonadClientUI CliMock where
   {-# INLINE getsSession #-}
   getsSession f = CliMock $ gets $ f . fromJust . cliSession
@@ -349,22 +368,6 @@ instance MonadClientUI CliMock where
   getCacheBfs = BfsM.getCacheBfs
   getCachePath = BfsM.getCachePath
 
--- instance MonadClientReadResponse CliMock where
---   receiveResponse = CliMock $ do
---     ChanServer{responseS} <- gets cliDict
---     IO.liftIO $ takeMVar responseS
-
--- instance MonadClientWriteRequest CliMock where
---   sendRequestAI scmd = CliMock $ do
---     ChanServer{requestAIS} <- gets cliDict
---     IO.liftIO $ putMVar requestAIS scmd
---   sendRequestUI scmd = CliMock $ do
---     ChanServer{requestUIS} <- gets cliDict
---     IO.liftIO $ putMVar (fromJust requestUIS) scmd
---   clientHasUI = CliMock $ do
---     mSession <- gets cliSession
---     return $! isJust mSession
-
 instance MonadClientAtomic CliMock where
   {-# INLINE execUpdAtomic #-}
   execUpdAtomic _ = return ()  -- handleUpdAtomic, until needed, save resources
@@ -374,3 +377,8 @@ instance MonadClientAtomic CliMock where
 
 executorCli :: CliMock a -> CliState -> IO (a, CliState)
 executorCli = runStateT . runCliMock
+
+
+-- | Transform 'Report' type to a list of 'Text'.
+reportToTexts :: Report -> [Text.Text]
+reportToTexts report = Text.pack . attrStringToString <$> renderReport False report

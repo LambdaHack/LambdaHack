@@ -1,4 +1,4 @@
-{-# LANGUAGE DeriveGeneric, GeneralizedNewtypeDeriving #-}
+{-# LANGUAGE DeriveGeneric, GeneralizedNewtypeDeriving, TupleSections #-}
 -- | Abilities of items, actors and factions.
 module Game.LambdaHack.Definition.Ability
   ( Skill(..), Skills, Flag(..), ActivationFlag(..), Flags(..)
@@ -271,7 +271,7 @@ minusTen, blockOnly, meleeAdjacent, meleeAndRanged, ignoreItems :: Skills
 
 -- To make sure only a lot of weak items can override move-only-leader, etc.
 minusTen = Skills $ EM.fromDistinctAscList
-                  $ zip [SkMove .. SkApply] (repeat (-10))
+                  $ map (, - 10) [SkMove .. SkApply]
 
 blockOnly = Skills $ EM.delete SkWait $ skills minusTen
 
@@ -281,4 +281,4 @@ meleeAdjacent = Skills $ EM.delete SkMelee $ skills blockOnly
 meleeAndRanged = Skills $ EM.delete SkProject $ skills meleeAdjacent
 
 ignoreItems = Skills $ EM.fromList
-                     $ zip [SkMoveItem, SkProject, SkApply] (repeat (-10))
+                     $ map (, - 10) [SkMoveItem, SkProject, SkApply]

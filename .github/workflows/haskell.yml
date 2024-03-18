@@ -4,78 +4,167 @@ name: Haskell CI
 
 on:
   push:
-    branches: [ master ]
   pull_request:
     branches: [ master ]
 
 jobs:
   linux:
     name: Haskell-CI - Linux - ${{ matrix.compiler }}
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-20.04
     container:
       image: buildpack-deps:focal
     continue-on-error: ${{ matrix.allow-failure }}
     strategy:
       matrix:
         include:
-          - compiler: ghc-9.2.1-vanilla
-            projectFlags: --allow-newer=sdl2:bytestring
-            compilerKind: ghc
-            compilerVersion: 9.2.1
-            setup-method: ghcup
-            allow-failure: false
-          - compiler: ghc-9.2.1-asserts
-            projectFlags: -fwith_expensive_assertions --allow-newer=sdl2:bytestring
-            compilerKind: ghc
-            compilerVersion: 9.2.1
-            setup-method: ghcup
-            allow-failure: false
-          - compiler: ghc-9.2.1-norelease-asserts
-            projectFlags: -f-release -fwith_expensive_assertions --allow-newer=sdl2:bytestring
-            compilerKind: ghc
-            compilerVersion: 9.2.1
-            setup-method: ghcup
-            allow-failure: false
-          - compiler: ghc-9.2.1-noopt
-            projectFlags: --ghc-option=-O0 --ghc-option=-fno-ignore-asserts --allow-newer=sdl2:bytestring
-            compilerKind: ghc
-            compilerVersion: 9.2.1
-            setup-method: ghcup
-            allow-failure: false
-          - compiler: ghc-9.2.1-opt2
-            projectFlags: --ghc-option=-O2 --ghc-option=-fno-ignore-asserts --allow-newer=sdl2:bytestring
-            compilerKind: ghc
-            compilerVersion: 9.2.1
-            setup-method: ghcup
-            allow-failure: false
-          - compiler: ghc-9.0.1-vanilla
+          - compiler: ghc-9.8.1-vanilla
             projectFlags:
             compilerKind: ghc
-            compilerVersion: 9.0.1
+            compilerVersion: 9.8.1
             setup-method: ghcup
             allow-failure: false
-          - compiler: ghc-9.0.1-asserts
+          - compiler: ghc-9.8.1-asserts
             projectFlags: -fwith_expensive_assertions
             compilerKind: ghc
-            compilerVersion: 9.0.1
+            compilerVersion: 9.8.1
             setup-method: ghcup
             allow-failure: false
-          - compiler: ghc-9.0.1-norelease-asserts
+          - compiler: ghc-9.8.1-norelease-asserts
             projectFlags: -f-release -fwith_expensive_assertions
             compilerKind: ghc
-            compilerVersion: 9.0.1
+            compilerVersion: 9.8.1
             setup-method: ghcup
             allow-failure: false
-          - compiler: ghc-9.0.1-noopt
+          - compiler: ghc-9.8.1-noopt
             projectFlags: --ghc-option=-O0 --ghc-option=-fno-ignore-asserts
             compilerKind: ghc
-            compilerVersion: 9.0.1
+            compilerVersion: 9.8.1
             setup-method: ghcup
             allow-failure: false
-          - compiler: ghc-9.0.1-opt2
+          - compiler: ghc-9.8.1-opt2
             projectFlags: --ghc-option=-O2 --ghc-option=-fno-ignore-asserts
             compilerKind: ghc
-            compilerVersion: 9.0.1
+            compilerVersion: 9.8.1
+            setup-method: ghcup
+            allow-failure: false
+          - compiler: ghc-9.6.3-vanilla
+            projectFlags:
+            compilerKind: ghc
+            compilerVersion: 9.6.3
+            setup-method: ghcup
+            allow-failure: false
+          - compiler: ghc-9.6.3-asserts
+            projectFlags: -fwith_expensive_assertions
+            compilerKind: ghc
+            compilerVersion: 9.6.3
+            setup-method: ghcup
+            allow-failure: false
+          - compiler: ghc-9.6.3-norelease-asserts
+            projectFlags: -f-release -fwith_expensive_assertions
+            compilerKind: ghc
+            compilerVersion: 9.6.3
+            setup-method: ghcup
+            allow-failure: false
+          - compiler: ghc-9.6.3-noopt
+            projectFlags: --ghc-option=-O0 --ghc-option=-fno-ignore-asserts
+            compilerKind: ghc
+            compilerVersion: 9.6.3
+            setup-method: ghcup
+            allow-failure: false
+          - compiler: ghc-9.6.3-opt2
+            projectFlags: --ghc-option=-O2 --ghc-option=-fno-ignore-asserts
+            compilerKind: ghc
+            compilerVersion: 9.6.3
+            setup-method: ghcup
+            allow-failure: false
+          - compiler: ghc-9.4.7-vanilla
+            projectFlags:
+            compilerKind: ghc
+            compilerVersion: 9.4.7
+            setup-method: ghcup
+            allow-failure: false
+          - compiler: ghc-9.4.7-asserts
+            projectFlags: -fwith_expensive_assertions
+            compilerKind: ghc
+            compilerVersion: 9.4.7
+            setup-method: ghcup
+            allow-failure: false
+          - compiler: ghc-9.4.7-norelease-asserts
+            projectFlags: -f-release -fwith_expensive_assertions
+            compilerKind: ghc
+            compilerVersion: 9.4.7
+            setup-method: ghcup
+            allow-failure: false
+          - compiler: ghc-9.4.7-noopt
+            projectFlags: --ghc-option=-O0 --ghc-option=-fno-ignore-asserts
+            compilerKind: ghc
+            compilerVersion: 9.4.7
+            setup-method: ghcup
+            allow-failure: false
+          - compiler: ghc-9.4.7-opt2
+            projectFlags: --ghc-option=-O2 --ghc-option=-fno-ignore-asserts
+            compilerKind: ghc
+            compilerVersion: 9.4.7
+            setup-method: ghcup
+            allow-failure: false
+          - compiler: ghc-9.2.8-vanilla
+            projectFlags:
+            compilerKind: ghc
+            compilerVersion: 9.2.8
+            setup-method: ghcup
+            allow-failure: false
+          - compiler: ghc-9.2.8-asserts
+            projectFlags: -fwith_expensive_assertions
+            compilerKind: ghc
+            compilerVersion: 9.2.8
+            setup-method: ghcup
+            allow-failure: false
+          - compiler: ghc-9.2.8-norelease-asserts
+            projectFlags: -f-release -fwith_expensive_assertions
+            compilerKind: ghc
+            compilerVersion: 9.2.8
+            setup-method: ghcup
+            allow-failure: false
+          - compiler: ghc-9.2.8-noopt
+            projectFlags: --ghc-option=-O0 --ghc-option=-fno-ignore-asserts
+            compilerKind: ghc
+            compilerVersion: 9.2.8
+            setup-method: ghcup
+            allow-failure: false
+#OOM          - compiler: ghc-9.2.8-opt2
+#            projectFlags: --ghc-option=-O2 --ghc-option=-fno-ignore-asserts
+#            compilerKind: ghc
+#            compilerVersion: 9.2.8
+#            setup-method: ghcup
+#            allow-failure: false
+          - compiler: ghc-9.0.2-vanilla
+            projectFlags:
+            compilerKind: ghc
+            compilerVersion: 9.0.2
+            setup-method: ghcup
+            allow-failure: false
+          - compiler: ghc-9.0.2-asserts
+            projectFlags: -fwith_expensive_assertions
+            compilerKind: ghc
+            compilerVersion: 9.0.2
+            setup-method: ghcup
+            allow-failure: false
+          - compiler: ghc-9.0.2-norelease-asserts
+            projectFlags: -f-release -fwith_expensive_assertions
+            compilerKind: ghc
+            compilerVersion: 9.0.2
+            setup-method: ghcup
+            allow-failure: false
+          - compiler: ghc-9.0.2-noopt
+            projectFlags: --ghc-option=-O0 --ghc-option=-fno-ignore-asserts
+            compilerKind: ghc
+            compilerVersion: 9.0.2
+            setup-method: ghcup
+            allow-failure: false
+          - compiler: ghc-9.0.2-opt2
+            projectFlags: --ghc-option=-O2 --ghc-option=-fno-ignore-asserts
+            compilerKind: ghc
+            compilerVersion: 9.0.2
             setup-method: ghcup
             allow-failure: false
           - compiler: ghc-8.10.7-vanilla
@@ -108,36 +197,6 @@ jobs:
             compilerVersion: 8.10.7
             setup-method: ghcup
             allow-failure: false
-          - compiler: ghc-8.8.4-vanilla
-            projectFlags:
-            compilerKind: ghc
-            compilerVersion: 8.8.4
-            setup-method: hvr-ppa
-            allow-failure: false
-          - compiler: ghc-8.8.4-asserts
-            projectFlags: -fwith_expensive_assertions
-            compilerKind: ghc
-            compilerVersion: 8.8.4
-            setup-method: hvr-ppa
-            allow-failure: false
-          - compiler: ghc-8.8.4-norelease-asserts
-            projectFlags: -f-release -fwith_expensive_assertions
-            compilerKind: ghc
-            compilerVersion: 8.8.4
-            setup-method: hvr-ppa
-            allow-failure: false
-          - compiler: ghc-8.8.4-noopt
-            projectFlags: --ghc-option=-O0 --ghc-option=-fno-ignore-asserts
-            compilerKind: ghc
-            compilerVersion: 8.8.4
-            setup-method: hvr-ppa
-            allow-failure: false
-          - compiler: ghc-8.8.4-opt2
-            projectFlags: --ghc-option=-O2 --ghc-option=-fno-ignore-asserts
-            compilerKind: ghc
-            compilerVersion: 8.8.4
-            setup-method: hvr-ppa
-            allow-failure: false
       fail-fast: false
     steps:
       - name: apt
@@ -146,10 +205,10 @@ jobs:
           apt-get install -y --no-install-recommends gnupg ca-certificates dirmngr curl git software-properties-common libtinfo5 libsdl2-ttf-dev
           if [ "${{ matrix.setup-method }}" = ghcup ]; then
             mkdir -p "$HOME/.ghcup/bin"
-            curl -sL https://downloads.haskell.org/ghcup/0.1.16.2/x86_64-linux-ghcup-0.1.16.2 > "$HOME/.ghcup/bin/ghcup"
+            curl -sL https://downloads.haskell.org/ghcup/0.1.18.0/x86_64-linux-ghcup-0.1.18.0 > "$HOME/.ghcup/bin/ghcup"
             chmod a+x "$HOME/.ghcup/bin/ghcup"
             "$HOME/.ghcup/bin/ghcup" install ghc "$HCVER"
-            "$HOME/.ghcup/bin/ghcup" install cabal 3.4.0.0
+            "$HOME/.ghcup/bin/ghcup" install cabal 3.8.1.0
           else
             apt-add-repository -y 'ppa:hvr/ghc'
             apt-get update
@@ -173,7 +232,7 @@ jobs:
             echo "HC=$HC" >> "$GITHUB_ENV"
             echo "HCPKG=$HOME/.ghcup/bin/$HCKIND-pkg-$HCVER" >> "$GITHUB_ENV"
             echo "HADDOCK=$HOME/.ghcup/bin/haddock-$HCVER" >> "$GITHUB_ENV"
-            echo "CABAL=$HOME/.ghcup/bin/cabal-3.4.0.0 -vnormal+nowrap" >> "$GITHUB_ENV"
+            echo "CABAL=$HOME/.ghcup/bin/cabal-3.8.1.0 -vnormal+nowrap" >> "$GITHUB_ENV"
           else
             HC=$HCDIR/bin/$HCKIND
             echo "HC=$HC" >> "$GITHUB_ENV"
@@ -185,7 +244,7 @@ jobs:
           echo "HCNUMVER=$HCNUMVER" >> "$GITHUB_ENV"
           echo "ARG_TESTS=--enable-tests" >> "$GITHUB_ENV"
           echo "ARG_BENCH=--enable-benchmarks" >> "$GITHUB_ENV"
-          if [ $((HCNUMVER > 90001)) -ne 0 ] ; then echo "HEADHACKAGE=true" >> "$GITHUB_ENV" ; else echo "HEADHACKAGE=false" >> "$GITHUB_ENV" ; fi
+          if [ $((HCNUMVER > 90300)) -ne 0 ] ; then echo "HEADHACKAGE=true" >> "$GITHUB_ENV" ; else echo "HEADHACKAGE=false" >> "$GITHUB_ENV" ; fi
           echo "ARG_COMPILER_TOOL=--$HCKIND --with-compiler=$HC" >> "$GITHUB_ENV"
           echo "ARG_COMPILER=$HCFLAGS --$HCKIND --with-compiler=$HC" >> "$GITHUB_ENV"
           echo "GHCJSARITH=0" >> "$GITHUB_ENV"
@@ -234,6 +293,7 @@ jobs:
           $HC --version || true
           $HC --print-project-git-commit-id || true
           $CABAL --version || true
+          pkg-config --modversion sdl2
       - name: update cabal index
         run: |
           $CABAL v2-update -v
@@ -245,7 +305,7 @@ jobs:
           restore-keys: ${{ runner.os }}-${{ matrix.compilerVersion }}-tools-803c0a4b
       - name: install doctest
         run: |
-          if [ $((HCNUMVER < 90002)) -ne 0 ] ; then
+          if [ $((HCNUMVER < 90200)) -ne 0 ] ; then
             case $MY_HCFLAGS in --ghc-option=-O*) : ;;
               *)
                 $CABAL --store-dir=$HOME/.haskell-ci-tools/store v2-install $ARG_COMPILER_TOOL --ignore-project -j2 doctest --constraint='doctest ^>=0.20'
@@ -253,10 +313,12 @@ jobs:
           fi
       - name: install hlint
         run: |
-          if [ $((HCNUMVER >= 90000 && HCNUMVER < 90002)) -ne 0 ] ; then HLINTVER=$(cd /tmp && (${CABAL} v2-install -v $ARG_COMPILER_TOOL --dry-run hlint  --constraint='hlint >=3.3 && <3.4' |  perl -ne 'if (/\bhlint-(\d+(\.\d+)*)\b/) { print "$1"; last; }')); echo "HLint version $HLINTVER" ; fi
-          if [ $((HCNUMVER >= 90000 && HCNUMVER < 90002)) -ne 0 ] ; then if [ ! -e $HOME/.haskell-ci-tools/hlint-$HLINTVER/hlint ]; then echo "Downloading HLint version $HLINTVER"; mkdir -p $HOME/.haskell-ci-tools; curl --write-out 'Status Code: %{http_code} Redirects: %{num_redirects} Total time: %{time_total} Total Dsize: %{size_download}\n' --silent --location --output $HOME/.haskell-ci-tools/hlint-$HLINTVER.tar.gz "https://github.com/ndmitchell/hlint/releases/download/v$HLINTVER/hlint-$HLINTVER-x86_64-linux.tar.gz"; tar -xzv -f $HOME/.haskell-ci-tools/hlint-$HLINTVER.tar.gz -C $HOME/.haskell-ci-tools; fi ; fi
-          if [ $((HCNUMVER >= 90000 && HCNUMVER < 90002)) -ne 0 ] ; then mkdir -p $CABAL_DIR/bin && ln -sf "$HOME/.haskell-ci-tools/hlint-$HLINTVER/hlint" $CABAL_DIR/bin/hlint ; fi
-          if [ $((HCNUMVER >= 90000 && HCNUMVER < 90002)) -ne 0 ] ; then hlint --version ; fi
+          if [ $((HCNUMVER >= 90200 && HCNUMVER < 90300)) -ne 0 ] ; then
+            case $MY_HCFLAGS in -f-release*)
+              $CABAL --store-dir=$HOME/.haskell-ci-tools/store v2-install $ARG_COMPILER --ignore-project -j2 hlint
+              hlint --version
+            esac
+          fi
       - name: checkout
         uses: actions/checkout@v2
         with:
@@ -278,11 +340,13 @@ jobs:
         run: |
           PKGDIR_haskell_ci="$(find "$GITHUB_WORKSPACE/unpacked" -maxdepth 1 -type d -regex '.*/LambdaHack-[0-9.]*')"
           echo "PKGDIR_haskell_ci=${PKGDIR_haskell_ci}" >> "$GITHUB_ENV"
-          tail -n +2 ${PKGDIR_haskell_ci}/cabal.project > cabal.project
+          tail -n +5 ${PKGDIR_haskell_ci}/cabal.project > cabal.project
           echo "packages: $GITHUB_WORKSPACE/source/." >> cabal.project
           if $HEADHACKAGE; then
             echo "allow-newer: $($HCPKG list --simple-output | sed -E 's/([a-zA-Z-]+)-[0-9.]+/*:\1,/g')" >> cabal.project
           fi
+          echo "package sdl2" >> cabal.project
+          echo "    flags: +no-linear -recent-ish" >> cabal.project
           cat cabal.project
       - name: cache
         uses: actions/cache@v2
@@ -303,10 +367,9 @@ jobs:
       - name: tests
         run: |
           $CABAL v2-test $ARG_COMPILER $ARG_TESTS $ARG_BENCH all --test-show-details=direct
-          if [ $((HCNUMVER < 90002)) -ne 0 ] ; then
+          if [ $((HCNUMVER < 90200)) -ne 0 ] ; then
             case $MY_HCFLAGS in --ghc-option=-O*) : ;;
               *)
-                $CABAL repl --build-depends=QuickCheck --with-ghc=doctest definition
                 $CABAL repl --build-depends=QuickCheck --build-depends=template-haskell --with-ghc=doctest lib:LambdaHack
             esac
           fi
@@ -316,7 +379,7 @@ jobs:
           make -f ${PKGDIR_haskell_ci}/Makefile test-gha || (tail -n 2000 /tmp/teletypetest.log ; exit 77)
       - name: hlint
         run: |
-          if [ $((HCNUMVER >= 90000 && HCNUMVER < 90002)) -ne 0 ] ; then
+          if [ $((HCNUMVER >= 90200 && HCNUMVER < 90300)) -ne 0 ] ; then
             case $MY_HCFLAGS in -f-release*)
               (cd ${PKGDIR_haskell_ci} && hlint -h ${GITHUB_WORKSPACE}/source/.hlint.yaml .)
             esac

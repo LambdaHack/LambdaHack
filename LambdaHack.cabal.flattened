@@ -6,7 +6,7 @@ name:          LambdaHack
 -- PVP summary:+-+------- breaking API changes
 --             | |  +----- minor or non-breaking API additions
 --             | |  | +--- code changes with no API change
-version:       0.11.0.0
+version:       0.11.0.1
 synopsis:      A game engine library for tactical squad ASCII roguelike dungeon crawlers
 description: LambdaHack is a Haskell game engine library for ASCII roguelike
              games of arbitrary theme, size and complexity, with optional
@@ -44,8 +44,7 @@ homepage:      https://lambdahack.github.io
 bug-reports:   http://github.com/LambdaHack/LambdaHack/issues
 license:       BSD-3-Clause
 license-file:  COPYLEFT
-tested-with:   GHC==8.2.2, GHC==8.4.4, GHC==8.6.5, GHC==8.8.4, GHC==8.10.7,
-               GHC==9.0.1
+tested-with:   GHC==8.10.*, GHC==9.0.*, GHC==9.2.*, GHC==9.4.*
 -- Enough files is included in the Hackage package to run CI and manual
 -- tests off it, to be presentable on Hackage and to create user-friendly
 -- binary packages.
@@ -84,11 +83,6 @@ flag with_expensive_assertions
   default:            False
   manual:             True
 
-flag with_costly_optimizations
-  description:        turn on costly (mostly GHC heap size) optimizations (that give 15-25% speedup)
-  default:            True
-  manual:             True
-
 flag release
   description:        prepare for a release (expose internal functions and types, etc.)
   default:            True
@@ -121,8 +115,9 @@ common options
 -- TODO: remove -Winvalid-haddock when added to -Wall in a GHC I use for haddock
   ghc-options:        -fno-ignore-asserts
 
-  if flag(with_costly_optimizations)
-    ghc-options:        -fexpose-all-unfoldings -fspecialise-aggressively -fsimpl-tick-factor=200
+  ghc-options:        -fexpose-all-unfoldings -fspecialise-aggressively -fsimpl-tick-factor=200
+
+  ghc-options:        -Wmissed-specialisations
 
   if flag(with_expensive_assertions)
     cpp-options:      -DWITH_EXPENSIVE_ASSERTIONS
@@ -230,6 +225,7 @@ library
                       Game.LambdaHack.Client.UI.SessionUI
                       Game.LambdaHack.Client.UI.Slideshow
                       Game.LambdaHack.Client.UI.SlideshowM
+                      Game.LambdaHack.Client.UI.TutorialHints
                       Game.LambdaHack.Client.UI.UIOptions
                       Game.LambdaHack.Client.UI.UIOptionsParse
                       Game.LambdaHack.Client.UI.Watch
@@ -318,7 +314,7 @@ library
                       file-embed >= 0.0.11,
                       filepath   >= 1.2.0.1,
                       hashable   >= 1.1.2.5,
-                      hsini      >= 0.2,
+                      hsini      >= 0.2 && < 0.5.2 || >= 0.5.2.2,
                       witch      >= 0.3,
                       keys       >= 3,
                       miniutter  >= 0.5.0.0,

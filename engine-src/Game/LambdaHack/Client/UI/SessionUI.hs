@@ -1,4 +1,4 @@
-{-# LANGUAGE DeriveGeneric, GeneralizedNewtypeDeriving #-}
+{-# LANGUAGE DeriveGeneric, GeneralizedNewtypeDeriving, TupleSections #-}
 -- | The client UI session state.
 module Game.LambdaHack.Client.UI.SessionUI
   ( SessionUI(..), ReqDelay(..), ItemDictUI, ItemRoles(..), AimMode(..)
@@ -182,7 +182,7 @@ emptySessionUI sUIOptions =
     , sactorUI = EM.empty
     , sitemUI = EM.empty
     , sroles = ItemRoles $ EM.fromDistinctAscList
-               $ zip [minBound..maxBound] (repeat ES.empty)
+               $ map (, ES.empty) [minBound .. maxBound]
     , slastItemMove = Nothing
     , schanF = ChanFrontend $ const $
         error $ "emptySessionUI: ChanFrontend" `showFailure` ()

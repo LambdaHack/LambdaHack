@@ -1,3 +1,4 @@
+{-# LANGUAGE TupleSections #-}
 -- | Generation of caves (not yet inhabited dungeon levels) from cave kinds.
 module Game.LambdaHack.Server.DungeonGen.Cave
   ( Cave(..), buildCave
@@ -269,7 +270,7 @@ buildCave cops@COps{cocave, coplace, cotile, coTileSpeedup}
         let pickedCorTile = if dnight then darkCorTile else litCorTile
             digCorridorSection :: a -> Point -> Point -> EM.EnumMap Point a
             digCorridorSection a p1 p2 =
-              EM.fromList $ zip (fromTo p1 p2) (repeat a)
+              EM.fromList $ map (, a) (fromTo p1 p2)
             digCorridor (sqkind, (p1, p2, p3, p4), tqkind) =
               ( EM.union (digCorridorSection (pickedCorTile, sqkind) p1 p2)
                          (digCorridorSection (pickedCorTile, tqkind) p3 p4)

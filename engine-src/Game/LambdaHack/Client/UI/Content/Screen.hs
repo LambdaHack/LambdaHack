@@ -57,7 +57,7 @@ emptyScreenContent =
 -- | Catch invalid rule kind definitions.
 validateSingle :: RK.RuleContent -> ScreenContent -> [Text]
 validateSingle corule ScreenContent{..} =
-  (let tsGt80 = filter ((> 80) . T.length) $ map T.pack [rwebAddress]
+  (let tsGt80 = filter ((> 80) . T.length) [T.pack rwebAddress]
    in case tsGt80 of
       [] -> []
       tGt80 : _ -> ["rwebAddress's length is over 80:" <> tGt80])

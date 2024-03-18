@@ -232,7 +232,9 @@ drawFramePath drawnLevelId = do
  sreportNull <- getsSession sreportNull
  let frameForallId = FrameForall $ const $ return ()
  case saimMode of
-   Just AimMode{detailLevel} | not sreportNull -> do
+   Just AimMode{detailLevel} | not sreportNull
+                               && detailLevel /= DetailHigh
+                               && detailLevel /= DetailLow -> do
      COps{corule=RuleContent{rWidthMax, rHeightMax}, coTileSpeedup}
        <- getsState scops
      StateClient{seps} <- getClient
@@ -419,8 +421,9 @@ drawFrameExtra dm drawnLevelId = do
         mapM_ (\(pos, color) -> mapVL (writeSquare color) [fromEnum pos] v)
               stashesToDisplay
         case mbody of  -- overwrites target
-          Nothing -> return ()
-          Just body -> mapVL (writeSquare leaderColor) [fromEnum $ bpos body] v
+          Just body | drawnLevelId == blid body ->
+            mapVL (writeSquare leaderColor) [fromEnum $ bpos body] v
+          _ -> return ()
         case mxhairPos of  -- overwrites target and non-aim leader box
           Nothing -> return ()
           Just p -> mapVL (writeSquare xhairColor) [fromEnum p] v
@@ -575,7 +578,7 @@ drawFrameStatus drawnLevelId = do
   return
 #ifdef WITH_EXPENSIVE_ASSERTIONS
     $ assert (length status == 2 * _rWidthMax
-              `blame` map Color.charFromW32 status)
+              `blame` attrStringToString status)
 #endif
         status
 
@@ -776,7 +779,7 @@ drawLeaderDamage width leader = do
               [] -> []  -- no timeout-free organ, e.g., rattlesnake or hornet
               (ldmg, lextra) : rest -> (ldmg ++ lbonus, lextra) : rest
             displayDmgAndExtra (ldmg, lextra) =
-              if map Color.charFromW32 ldmg == "0"
+              if attrStringToString ldmg == "0"
               then case lextra of
                 [] -> ldmg
                 _plus : lextraRest -> lextraRest

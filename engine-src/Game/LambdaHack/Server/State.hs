@@ -1,3 +1,4 @@
+{-# LANGUAGE TupleSections #-}
 -- | Server and client game state types and operations.
 module Game.LambdaHack.Server.State
   ( StateServer(..), ActorTime, ActorPushedBy
@@ -113,7 +114,7 @@ emptyStateServer =
     , sfactionAn = EM.empty
     , sactorAn = EM.empty
     , sgenerationAn = EM.fromDistinctAscList
-                      $ zip [minBound..maxBound] (repeat EM.empty)
+                      $ map (, EM.empty) [minBound .. maxBound]
     , sactorStasis = ES.empty
     , sdiscoKindRev = emptyDiscoveryKindRev
     , suniqueSet = ES.empty

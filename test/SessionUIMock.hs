@@ -53,8 +53,8 @@ humanCommandMock = do
           in sess { smacroFrame = smacroFrameNew
                   , smacroStack = smacroStackMew }
   case abortOrCmd of
-    Left Looped -> tell [(abuffs, "Macro looped")] >> pure ()
-    Left HeadEmpty -> tell [(abuffs, "")] >> pure ()  -- exit loop
+    Left Looped -> void $ tell [(abuffs, "Macro looped")]
+    Left HeadEmpty -> void $ tell [(abuffs, "")]  -- exit loop
     Right Nothing -> tell [(abuffs, "")] >> humanCommandMock
     Right (Just out) -> tell [(abuffs, show out)] >> humanCommandMock
 

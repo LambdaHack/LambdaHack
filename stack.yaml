@@ -1,9 +1,1 @@
-resolver: lts-13.18
-
-packages: ['.']
-
-extra-deps: []
-
-flags: {}
-
-extra-package-dbs: []
+resolver: nightly-2021-12-18

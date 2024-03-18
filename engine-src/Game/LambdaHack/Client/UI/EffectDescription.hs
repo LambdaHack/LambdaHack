@@ -151,7 +151,7 @@ effectToSuffix detailLevel effect =
       in case ts of
         [] -> ""
         [wonder] -> wonder <+> sometimes
-        _ | detailLevel < DetailAll -> header
+        _ | detailLevel < DetailHigh -> header
         _ -> header <+> "[" <> T.intercalate ", " ts <> "]" <+> sometimes
     OneOf effs ->
       let ts = filter (/= "") $ map (effectToSuffix detailLevel) effs
@@ -161,7 +161,7 @@ effectToSuffix detailLevel effect =
       in case ts of
         [] -> ""
         [wonder] -> wonder <+> sometimes
-        _ | detailLevel < DetailAll -> header
+        _ | detailLevel < DetailHigh -> header
         _ -> header <+> "[" <> T.intercalate ", " ts <> "]" <+> sometimes
     OnSmash _ -> ""  -- printed inside a separate section
     OnCombine _ -> ""  -- printed inside a separate section
@@ -169,11 +169,11 @@ effectToSuffix detailLevel effect =
                   in if T.null t then "" else "(on user:" <+> t <> ")"
     NopEffect -> ""  -- never printed
     AndEffect (ConsumeItems tools raw) eff -> case detailLevel of
-      DetailAll ->
+     DetailLow -> "of crafting"
+     DetailMedium -> "of crafting (recipes in lore menu)"
+     _ ->
        let (tcraft, traw, ttools) = describeCrafting tools raw eff
        in tcraft <+> traw <+> ttools
-      DetailHigh -> "of crafting (recipes in lore menu)"
-      _ -> "of crafting"
     AndEffect eff1 eff2 ->
       let t = T.intercalate " and then "
               $ nub $ filter (not . T.null)
