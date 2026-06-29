@@ -352,17 +352,24 @@ library
                       th-lift-instances,
                       ghc-compact
 
-  if impl(ghcjs) {
-    exposed-modules:  Game.LambdaHack.Client.UI.Frontend.Dom
-    build-depends:    ghcjs-dom >= 0.9.1.1
-    cpp-options:      -DUSE_BROWSER
+  if os(wasi) {
+    exposed-modules:  Game.LambdaHack.Client.UI.Frontend.Wasm
+    build-depends:    ghc-experimental
+    cpp-options:      -DUSE_BROWSER -DUSE_WASM
   }
   else {
-    exposed-modules:  Game.LambdaHack.Client.UI.Frontend.Sdl
-                      Game.LambdaHack.Client.UI.Frontend.ANSI
-    build-depends:    sdl2 >= 2,
-                      sdl2-ttf >= 2,
-                      ansi-terminal >= 0.10
+    if impl(ghcjs) {
+      exposed-modules:  Game.LambdaHack.Client.UI.Frontend.Dom
+      build-depends:    ghcjs-dom >= 0.9.1.1
+      cpp-options:      -DUSE_BROWSER
+    }
+    else {
+      exposed-modules:  Game.LambdaHack.Client.UI.Frontend.Sdl
+                        Game.LambdaHack.Client.UI.Frontend.ANSI
+      build-depends:    sdl2 >= 2,
+                        sdl2-ttf >= 2,
+                        ansi-terminal >= 0.10
+    }
   }
 
   if impl(ghcjs) {
@@ -376,6 +383,15 @@ library
 
 executable LambdaHack
   import: options, exe-options
+  if os(wasi)
+    cpp-options:      -DUSE_WASM
+    -- A browser needs a wasm *reactor* (exported entry points callable from JS),
+    -- not a command (single _start). -no-hs-main drops the C main stub; lhStart
+    -- (Main) and lhKey (Frontend.Wasm) are the JS-callable exports.
+    ghc-options:      -no-hs-main
+                      -optl-mexec-model=reactor
+                      -optl-Wl,--export=lhStart
+                      -optl-Wl,--export=lhKey
   main-is:            GameDefinition/Main.hs
   build-depends:      ,LambdaHack
                       ,async

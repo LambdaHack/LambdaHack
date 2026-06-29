@@ -1,3 +1,4 @@
+{-# LANGUAGE ForeignFunctionInterface #-}
 -- | The main source code file of LambdaHack the game.
 -- Module "TieKnot" is separated to make it usable in tests.
 module Main
@@ -22,7 +23,7 @@ import Game.LambdaHack.Common.File (tryCreateDir)
 import Game.LambdaHack.Common.Misc
 #endif
 
-import Game.LambdaHack.Server (serverOptionsPI)
+import Game.LambdaHack.Server (ServerOptions, serverOptionsPI)
 
 import TieKnot
 
@@ -59,6 +60,11 @@ main = do
   -- Fail here, not inside server code, so that savefiles are not removed,
   -- because they are not the source of the failure.
   !serverOptions <- OA.execParser serverOptionsPI
+  runServer serverOptions
+
+-- | Tie the engine, content and clients knot, run the game and handle exit.
+runServer :: ServerOptions -> IO ()
+runServer serverOptions = do
   resOrEx :: Either Ex.SomeException () <- Ex.try $ tieKnot serverOptions
   let unwrapEx e = case Ex.fromException e of
         Just (ExceptionInLinkedThread _ ex) -> unwrapEx ex
@@ -67,3 +73,18 @@ main = do
     Right () -> return ()
     Left ex -> Ex.throwIO $ unwrapEx ex
                  -- we are in the main thread, so now really exit
+
+#ifdef USE_WASM
+-- | Reactor entry point for the wasm32-wasi (browser) build, exported to JS as
+-- @lhStart@. There is no argv in the browser, so server options are taken at
+-- their defaults (an empty argument list). The build is linked with
+-- @-no-hs-main@, so this, not @main@, starts the game.
+lhStart :: IO ()
+lhStart = do
+  SIO.hSetBuffering SIO.stderr SIO.LineBuffering
+  serverOptions <- OA.handleParseResult $
+    OA.execParserPure OA.defaultPrefs serverOptionsPI []
+  runServer serverOptions
+
+foreign export javascript "lhStart" lhStart :: IO ()
+#endif

@@ -97,10 +97,17 @@ squashedWWandW parts =
 -- | Personal data directory for the game. Depends on the OS and the game,
 -- e.g., for LambdaHack under Linux it's @~\/.LambdaHack\/@.
 appDataDir :: IO FilePath
+#ifdef USE_WASM
+-- On wasm32-wasi there is no effective user id nor home directory, so
+-- getAppUserDataDirectory throws "unsupported operation". Use a fixed path
+-- under the (virtual) filesystem root instead.
+appDataDir = return "/LambdaHack"
+#else
 appDataDir = do
   progName <- getProgName
   let name = takeWhile Char.isAlphaNum progName
   getAppUserDataDirectory name
+#endif
 
 -- | Multiplies by a million.
 xM :: Int -> Int64

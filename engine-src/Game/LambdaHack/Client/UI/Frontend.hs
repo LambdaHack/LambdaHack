@@ -38,7 +38,9 @@ import           Game.LambdaHack.Common.ClientOptions
 import qualified Game.LambdaHack.Common.PointArray as PointArray
 import qualified Game.LambdaHack.Definition.Color as Color
 
-#ifdef USE_BROWSER
+#ifdef USE_WASM
+import qualified Game.LambdaHack.Client.UI.Frontend.Wasm as Chosen
+#elif defined(USE_BROWSER)
 import qualified Game.LambdaHack.Client.UI.Frontend.Dom as Chosen
 #else
 import qualified Game.LambdaHack.Client.UI.Frontend.ANSI as ANSI
