@@ -94,11 +94,6 @@ flag supportNodeJS
   default:            True
   manual:             True
 
-flag jsaddle
-  description:        switch to the JSaddle frontend (may be bit-rotted)
-  default:            False
-  manual:             True
-
 common options
   default-language:   GHC2024
   default-extensions: StrictData TypeFamilies TypeFamilyDependencies
@@ -357,7 +352,7 @@ library
                       th-lift-instances,
                       ghc-compact
 
-  if impl(ghcjs) || flag(jsaddle) {
+  if impl(ghcjs) {
     exposed-modules:  Game.LambdaHack.Client.UI.Frontend.Dom
     build-depends:    ghcjs-dom >= 0.9.1.1
     cpp-options:      -DUSE_BROWSER
