@@ -44,7 +44,8 @@ homepage:      https://lambdahack.github.io
 bug-reports:   http://github.com/LambdaHack/LambdaHack/issues
 license:       BSD-3-Clause
 license-file:  COPYLEFT
-tested-with:   GHC==8.10.*, GHC==9.0.*, GHC==9.2.*, GHC==9.4.*, GHC==9.6.*, GHC==9.8.*
+tested-with:   GHC ==9.10.3 || ==9.12.4 || ==9.14.1
+
 -- Enough files is included in the Hackage package to run CI and manual
 -- tests off it, to be presentable on Hackage and to create user-friendly
 -- binary packages.
@@ -99,27 +100,43 @@ flag jsaddle
   manual:             True
 
 common options
-  default-language:   Haskell2010
-  default-extensions: MonoLocalBinds, ScopedTypeVariables, OverloadedStrings,
-                      BangPatterns, RecordWildCards, NamedFieldPuns, MultiWayIf,
-                      LambdaCase, DefaultSignatures, InstanceSigs,
-                      PatternSynonyms, StrictData, CPP, TypeApplications
-  other-extensions:   TemplateHaskell, MultiParamTypeClasses, RankNTypes,
-                      TypeFamilies, FlexibleContexts, FlexibleInstances,
-                      DeriveFunctor, FunctionalDependencies,
-                      GeneralizedNewtypeDeriving, TupleSections,
-                      DeriveFoldable, DeriveTraversable,
-                      ExistentialQuantification, GADTs, StandaloneDeriving,
-                      DataKinds, KindSignatures, DeriveGeneric, DeriveLift
-  ghc-options:        -Wall -Wcompat -Worphans -Wincomplete-uni-patterns -Wincomplete-record-updates -Wimplicit-prelude -Wmissing-home-modules -Widentities -Wredundant-constraints -Wmissing-export-lists -Wpartial-fields -Wunused-packages -Winvalid-haddock
--- TODO: remove -Winvalid-haddock when added to -Wall in a GHC I use for haddock
+  default-language:   GHC2024
+  default-extensions: StrictData TypeFamilies TypeFamilyDependencies
+                      FunctionalDependencies RecordWildCards MultiWayIf
+                      DefaultSignatures PatternSynonyms NoStarIsType
+                      TypeData TypeAbstractions
+                      CPP OverloadedStrings
+                      -- to molify stylish-haskell, until it's fixed
+                      LambdaCase
+  other-extensions:   UnboxedTuples ViewPatterns
+                      DeriveAnyClass QuantifiedConstraints TemplateHaskell
+                      DerivingVia ImpredicativeTypes
+                      UndecidableInstances UndecidableSuperClasses
+                      AllowAmbiguousTypes
+  -- * Warnings and similar.
+  ghc-options:        -Wall -Wcompat -Wimplicit-prelude -Widentities -Wredundant-constraints -Wmissing-export-lists -Wpartial-fields -Wunused-packages -Wredundant-bang-patterns -Wredundant-strictness-flags -Wterm-variable-capture -Wmissed-specialisations
+  ghc-options:        -Wno-unticked-promoted-constructors
+  -- Disables a warning we can't yet fix:
+  if impl(ghc >= 9.14)
+    ghc-options:      -Wno-pattern-namespace-specifier
+  ghc-options:        -fprint-explicit-kinds -fsimpl-tick-factor=200
+
+  -- * Performance.
+  -- This is supposedly risky, but prevents STG from creating thunks, #23848:
+  ghc-options:        -fworker-wrapper-cbv
+  -- These improve performance, but slow down compilation:
+  if impl(ghc >= 9.12)
+    ghc-options:      -fexpose-overloaded-unfoldings
+  ghc-options:        -fspecialise-aggressively
+  if impl(ghc >= 9.14)
+    ghc-options:      -fpolymorphic-specialisation
+  -- This one improves both performance and compilation speed:
+  ghc-options:        -fkeep-auto-rules
+  -- These improve performance to some extent:
+  ghc-options:        -fdicts-cheap -flate-dmd-anal
+
   -- turn off complaints about head, tail, etc.:
   ghc-options:        -Wno-x-partial
-  ghc-options:        -fno-ignore-asserts
-
-  ghc-options:        -fexpose-all-unfoldings -fspecialise-aggressively -fsimpl-tick-factor=200
-
-  ghc-options:        -Wmissed-specialisations
 
   if flag(with_expensive_assertions)
     cpp-options:      -DWITH_EXPENSIVE_ASSERTIONS
@@ -131,6 +148,9 @@ common options
 
   if !flag(supportNodeJS)
     ghcjs-options:    -DREMOVE_TELETYPE
+
+  -- This needs to be after -O2.
+  ghc-options:        -fno-ignore-asserts
 
 common exe-options
   ghc-options:        -rtsopts
