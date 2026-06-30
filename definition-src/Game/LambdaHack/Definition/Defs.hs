@@ -80,7 +80,7 @@ linearInterpolation !levelDepthInt !totalDepthInt !dataset =
                   -- this artificial interval is enough to emulate
                   -- the value staying constant indefinitely
            else (x1y1, (10 + stepLevel, 0))
-      findInterval !x1y1 ((!x, !y) : rest) =
+      findInterval x1y1 ((!x, !y) : rest) =
         if levelDepth10 <= x * totalDepth
         then (x1y1, (x, y))
         else findInterval (x, y) rest

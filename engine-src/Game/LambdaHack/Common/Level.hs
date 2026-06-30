@@ -245,7 +245,7 @@ findPosTry2 numTries Level{ltile, larea} m0 l g r =
         go (hd : tl) = search numTries
          where
           search 0 = go tl
-          search !k = do
+          search k = do
             pxyRelative <- randomR0 (xspan * yspan - 1)
             -- Here we can't use @fromEnum@ and/or work with the @Int@
             -- representation, because the span is different than @rWidthMax@.

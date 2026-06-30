@@ -163,7 +163,7 @@ scan !r isClear tr =
 -- | Specialized implementation for speed in the inner loop. Not partial.
 steepestInHull :: LineOrdering -> Bump -> ConvexHull -> Bump
 {-# NOINLINE steepestInHull #-}
-steepestInHull !lineOrdering !new (ConvexHull !b !ch) = foldlCHull' max' b ch
+steepestInHull !lineOrdering !new (ConvexHull b ch) = foldlCHull' max' b ch
  where max' !x !y = if steepness lineOrdering new x y then x else y
 
 -- | Standard @foldl'@ over @CHull@.

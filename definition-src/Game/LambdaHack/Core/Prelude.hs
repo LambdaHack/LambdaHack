@@ -33,7 +33,6 @@ import Prelude.Compat hiding
   , (<>)
   )
 
-import           Control.Applicative
 import           Control.Arrow (first, second, (&&&), (***))
 import           Control.DeepSeq
 import           Control.Exception.Assert.Sugar
@@ -113,7 +112,7 @@ instance Binary Time.NominalDiffTime where
   get = fmap realToFrac (get :: Get Fixed.Pico)
   put = (put :: Fixed.Pico -> Put) . realToFrac
 
-instance (Hashable k, Eq k, Binary k, Binary v) => Binary (HM.HashMap k v) where
+instance (Hashable k, Binary k, Binary v) => Binary (HM.HashMap k v) where
   get = fmap HM.fromList get
   put = put . HM.toList
 

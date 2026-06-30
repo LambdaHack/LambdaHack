@@ -409,7 +409,7 @@ findEntryPoss COps{cocave, coTileSpeedup}
       factionDist = max xspan yspan - 10
       dist !poss !cmin !l _ = all (\ !pos -> chessDist l pos > cmin) poss
       tryFind _ 0 = return []
-      tryFind !ps !n = do
+      tryFind !ps n = do
         let ds = [ dist ps factionDist
                  , dist ps $ factionDist `div` 2
                  , dist ps $ factionDist `div` 3
