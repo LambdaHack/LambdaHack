@@ -77,7 +77,7 @@ build-type:    Simple
 
 source-repository head
   type:               git
-  location:           git://github.com/LambdaHack/LambdaHack.git
+  location:           https://github.com/LambdaHack/LambdaHack.git
 
 flag with_expensive_assertions
   description:        turn on expensive assertions of well-tested code
