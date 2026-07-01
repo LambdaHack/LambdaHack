@@ -310,3 +310,24 @@ build-binary-macosx: build-directory
 	LH_VERSION=$$(cat ~/.LambdaHack/stdout.txt); \
 	OS_VERSION=$$(sw_vers -productVersion); \
 	tar -czf LambdaHack_$${LH_VERSION}_macosx-$${OS_VERSION}-amd64.tar.gz LambdaHackTheGame
+
+build-wasm:
+	. ~/.ghc-wasm/env; \
+	wasm32-wasi-cabal build exe:LambdaHack
+
+build-ts:
+	. ~/.ghc-wasm/env; \
+	cd ../lambdahack.github.io/web; \
+	npm ci; \
+	npm run build; \
+	W=$$(cd ~/r/LambdaHack && wasm32-wasi-cabal list-bin exe:LambdaHack); \
+	~/.ghc-wasm/wasm32-wasi-ghc/lib/post-link.mjs --input "$$W" --output dist/ghc_wasm_jsffi.mjs; \
+	cp "$$W" dist/LambdaHack.wasm; \
+	cp index.html dist/index.html
+
+serve-wasm:
+	cd ../lambdahack.github.io/web; \
+	node dist/serve.mjs dist 8080
+
+run-wasm:
+	firefox http://localhost:8080/
