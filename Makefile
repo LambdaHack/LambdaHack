@@ -323,7 +323,8 @@ build-ts:
 	W=$$(cd ~/r/LambdaHack && wasm32-wasi-cabal list-bin exe:LambdaHack); \
 	~/.ghc-wasm/wasm32-wasi-ghc/lib/post-link.mjs --input "$$W" --output dist/ghc_wasm_jsffi.mjs; \
 	cp "$$W" dist/LambdaHack.wasm; \
-	cp index.html dist/index.html
+	cp ../16x16xw.woff dist/; \
+	cp index.html dist/
 
 serve-wasm:
 	cd ../lambdahack.github.io/web; \
