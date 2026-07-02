@@ -85,4 +85,40 @@ lhKey jsKey modCtrl modShift modAlt modMeta = do
 
 foreign export javascript "lhKey"
   lhKey :: JSString -> Bool -> Bool -> Bool -> Bool -> IO ()
+
+-- | Handle a wheel event delivered from JS over a given screen cell
+-- (0-based column/row). Mirrors Dom.hs's per-cell @wheel@ handler: only
+-- deltaY beyond a small epsilon counts, to filter out zero-delta glitches.
+lhWheel :: Int -> Int -> Double -> Bool -> Bool -> Bool -> Bool -> IO ()
+lhWheel col row deltaY modCtrl modShift modAlt modMeta = do
+  mrf <- readIORef rfRef
+  forM_ mrf $ \rf -> do
+    let modifier = modifierTranslate modCtrl modShift modAlt modMeta
+        pUI = squareToUI $ PointSquare col row
+        mkey | deltaY < -0.01 = Just K.WheelNorth
+             | deltaY > 0.01 = Just K.WheelSouth
+             | otherwise = Nothing  -- probably a glitch, per Dom.hs
+    forM_ mkey $ \key -> saveKMP rf modifier key pUI
+
+foreign export javascript "lhWheel"
+  lhWheel :: Int -> Int -> Double -> Bool -> Bool -> Bool -> Bool -> IO ()
+
+-- | Handle a mouseup delivered from JS over a given screen cell (0-based
+-- column/row) with the DOM @MouseEvent.button@ code. Mirrors Dom.hs's
+-- per-cell @mouseUp@ handler's button-to-key mapping.
+lhMouseUp :: Int -> Int -> Int -> Bool -> Bool -> Bool -> Bool -> IO ()
+lhMouseUp col row button modCtrl modShift modAlt modMeta = do
+  mrf <- readIORef rfRef
+  forM_ mrf $ \rf -> do
+    let modifier = modifierTranslate modCtrl modShift modAlt modMeta
+        pUI = squareToUI $ PointSquare col row
+        key = case button of
+          0 -> K.LeftButtonRelease
+          1 -> K.MiddleButtonRelease
+          2 -> K.RightButtonRelease  -- not handled in contextmenu
+          _ -> K.LeftButtonRelease  -- any other is alternate left
+    saveKMP rf modifier key pUI
+
+foreign export javascript "lhMouseUp"
+  lhMouseUp :: Int -> Int -> Int -> Bool -> Bool -> Bool -> Bool -> IO ()
 #endif
