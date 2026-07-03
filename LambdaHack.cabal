@@ -396,9 +396,6 @@ executable LambdaHack
     ghc-options:      -no-hs-main
                       -optl-mexec-model=reactor
                       -optl-Wl,--export=lhStart
-                      -optl-Wl,--export=lhKey
-                      -optl-Wl,--export=lhWheel
-                      -optl-Wl,--export=lhMouseUp
   main-is:            GameDefinition/Main.hs
   build-depends:      ,LambdaHack
                       ,async
