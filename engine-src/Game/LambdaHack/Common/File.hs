@@ -8,6 +8,8 @@ import Prelude ()
 
 #ifdef USE_JSFILE
 import Game.LambdaHack.Common.JSFile
+#elif defined(USE_WASMFILE)
+import Game.LambdaHack.Common.WasmFile
 #else
 import Game.LambdaHack.Common.HSFile
 #endif

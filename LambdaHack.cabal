@@ -355,7 +355,7 @@ library
   if os(wasi) {
     exposed-modules:  Game.LambdaHack.Client.UI.Frontend.Wasm
     build-depends:    ghc-experimental
-    cpp-options:      -DUSE_BROWSER -DUSE_WASM
+    cpp-options:      -DUSE_BROWSER -DUSE_WASM -DUSE_WASMFILE
   }
   else {
     if impl(ghcjs) {
@@ -377,8 +377,13 @@ library
     build-depends:    ghcjs-base
   }
   else {
-    other-modules:    Game.LambdaHack.Common.HSFile
-    build-depends:    zlib >= 0.5.3.1
+    if os(wasi) {
+      other-modules:  Game.LambdaHack.Common.WasmFile
+    }
+    else {
+      other-modules:  Game.LambdaHack.Common.HSFile
+      build-depends:  zlib >= 0.5.3.1
+    }
   }
 
 executable LambdaHack
@@ -392,6 +397,8 @@ executable LambdaHack
                       -optl-mexec-model=reactor
                       -optl-Wl,--export=lhStart
                       -optl-Wl,--export=lhKey
+                      -optl-Wl,--export=lhWheel
+                      -optl-Wl,--export=lhMouseUp
   main-is:            GameDefinition/Main.hs
   build-depends:      ,LambdaHack
                       ,async

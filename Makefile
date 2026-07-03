@@ -324,6 +324,7 @@ build-ts:
 	~/.ghc-wasm/wasm32-wasi-ghc/lib/post-link.mjs --input "$$W" --output dist/ghc_wasm_jsffi.mjs; \
 	cp "$$W" dist/LambdaHack.wasm; \
 	cp ../16x16xw.woff dist/; \
+	cp ../lz-string.min.js dist/; \
 	cp index.html dist/
 
 serve-wasm:
