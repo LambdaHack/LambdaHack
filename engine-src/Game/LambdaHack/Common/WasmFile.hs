@@ -14,9 +14,7 @@
 -- would be substantially more complex than this, for no benefit here.
 --
 -- Requires @lz-string@ to be loaded as a page-global (@globalThis.LZString@)
--- alongside the wasm bundle -- not currently the case in web/index.html,
--- which needs a script tag added (see lz-string.min.js at the repo root,
--- already used by the GHCJS build for the same purpose).
+-- alongside the wasm bundle.
 module Game.LambdaHack.Common.WasmFile
   (
 #ifdef USE_WASMFILE
@@ -94,10 +92,7 @@ tryCreateDir _dir = return ()
 doesFileExist :: FilePath -> IO Bool
 doesFileExist path = js_hasItem (toJSString path)
 
--- | Takes Text, not String, matching HSFile.hs's real signature -- JSFile.hs
--- states String here but its body calls T.unpack on the argument, which
--- only type-checks if it's actually Text; that looks like a pre-existing
--- inaccuracy over there, not something to mirror.
+-- | Takes Text, not String, matching HSFile.hs's real signature.
 tryWriteFile :: FilePath -> Text -> IO ()
 tryWriteFile path content = do
   exists <- js_hasItem (toJSString path)

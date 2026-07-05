@@ -36,14 +36,20 @@ import           Game.LambdaHack.Common.ClientOptions
 import qualified Game.LambdaHack.Common.PointArray as PointArray
 
 -- | Paint a frame: @(address, width, height)@ of a @Word32@ cell buffer in
--- wasm linear memory. The JS side (set up by the loader as @globalThis.lhPaint@)
--- reads the buffer and renders. @unsafe@: synchronous, so no GC moves the buffer
--- mid-call.
+-- wasm linear memory. The JS side (set up by the loader
+-- as @globalThis.lhPaint@) reads the buffer and renders.
+-- @unsafe@: synchronous, so no GC moves the buffer mid-call.
 foreign import javascript unsafe "globalThis.lhPaint($1, $2, $3)"
   js_paint :: Int -> Int -> Int -> IO ()
 
--- | The active frontend, stashed so the exported 'lhKey' can reach its key
--- queue. There is only ever one frontend per wasm instance.
+-- | The active frontend, so the exported 'lhKey' can reach its key queue.
+-- Must be global: @foreign export javascript@ functions are static
+-- top-level bindings, not closures, so 'lhKey' has no way to directly
+-- reference the @rf@ value 'startup' constructs -- there is no shared
+-- scope between them, and JS calls 'lhKey' independently, later, with no
+-- handle to the frontend to pass in. A persistent, module-level reference
+-- is the only way for the two to communicate. Only one frontend exists per
+-- wasm instance, hence 'Maybe' rather than a collection.
 {-# NOINLINE rfRef #-}
 rfRef :: IORef (Maybe RawFrontend)
 rfRef = unsafePerformIO $ newIORef Nothing
@@ -54,10 +60,13 @@ frontendName = "wasm"
 
 -- | Set up the frontend input and output.
 startup :: ScreenContent -> ClientOptions -> IO RawFrontend
-startup coscreen _soptions = do
-  rf <- createRawFrontend coscreen (display coscreen) (return ())
+startup coscreen _ = do
+  rf <- createRawFrontend coscreen (display coscreen) shutdown
   writeIORef rfRef $ Just rf
   return rf
+
+shutdown :: IO ()
+shutdown = return () -- nothing to clean up
 
 -- | Output to the screen via the frontend.
 display :: ScreenContent -> SingleFrame -> IO ()
@@ -75,7 +84,7 @@ lhKey jsKey modCtrl modShift modAlt modMeta = do
   forM_ mrf $ \rf -> do
     let modifier = modifierTranslate modCtrl modShift modAlt modMeta
         key = K.keyTranslateWeb (fromJSString jsKey) (modifier == K.Shift)
-        modifierNoShift = case modifier of
+        modifierNoShift = case modifier of  -- to prevent S-!, etc.
           K.Shift -> K.NoModifier
           K.ControlShift -> K.Control
           K.AltShift -> K.Alt
@@ -87,8 +96,8 @@ foreign export javascript "lhKey"
   lhKey :: JSString -> Bool -> Bool -> Bool -> Bool -> IO ()
 
 -- | Handle a wheel event delivered from JS over a given screen cell
--- (0-based column/row). Mirrors Dom.hs's per-cell @wheel@ handler: only
--- deltaY beyond a small epsilon counts, to filter out zero-delta glitches.
+-- (0-based column/row). Only deltaY beyond a small epsilon counts,
+-- to filter out zero-delta glitches.
 lhWheel :: Int -> Int -> Double -> Bool -> Bool -> Bool -> Bool -> IO ()
 lhWheel col row deltaY modCtrl modShift modAlt modMeta = do
   mrf <- readIORef rfRef
@@ -97,15 +106,14 @@ lhWheel col row deltaY modCtrl modShift modAlt modMeta = do
         pUI = squareToUI $ PointSquare col row
         mkey | deltaY < -0.01 = Just K.WheelNorth
              | deltaY > 0.01 = Just K.WheelSouth
-             | otherwise = Nothing  -- probably a glitch, per Dom.hs
+             | otherwise = Nothing  -- probably a glitch
     forM_ mkey $ \key -> saveKMP rf modifier key pUI
 
 foreign export javascript "lhWheel"
   lhWheel :: Int -> Int -> Double -> Bool -> Bool -> Bool -> Bool -> IO ()
 
 -- | Handle a mouseup delivered from JS over a given screen cell (0-based
--- column/row) with the DOM @MouseEvent.button@ code. Mirrors Dom.hs's
--- per-cell @mouseUp@ handler's button-to-key mapping.
+-- column/row) with the DOM @MouseEvent.button@ code.
 lhMouseUp :: Int -> Int -> Int -> Bool -> Bool -> Bool -> Bool -> IO ()
 lhMouseUp col row button modCtrl modShift modAlt modMeta = do
   mrf <- readIORef rfRef

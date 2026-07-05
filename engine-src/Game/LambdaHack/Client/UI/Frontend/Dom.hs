@@ -83,7 +83,7 @@ data FrontendSession = FrontendSession
 
 -- | The name of the frontend.
 frontendName :: String
-frontendName = "browser"
+frontendName = "ghcjs"
 
 -- | Starts the main program loop using the frontend input and output.
 startup :: ScreenContent -> ClientOptions -> IO RawFrontend
@@ -93,7 +93,7 @@ startup coscreen soptions = do
   takeMVar rfMVar
 
 runWeb :: ScreenContent -> ClientOptions -> MVar RawFrontend -> DOM ()
-runWeb coscreen ClientOptions{..} rfMVar = do
+runWeb coscreen _ rfMVar = do
   -- Init the document.
   Just doc <- currentDocument
   Just scurrentWindow <- currentWindow

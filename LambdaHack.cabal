@@ -353,9 +353,9 @@ library
                       ghc-compact
 
   if os(wasi) {
-    exposed-modules:  Game.LambdaHack.Client.UI.Frontend.Wasm
-    build-depends:    ghc-experimental
-    cpp-options:      -DUSE_BROWSER -DUSE_WASM -DUSE_WASMFILE
+    exposed-modules:    Game.LambdaHack.Client.UI.Frontend.Wasm
+    build-depends:      ghc-experimental
+    cpp-options:        -DUSE_BROWSER -DUSE_WASM -DUSE_WASMFILE
   }
   else {
     if impl(ghcjs) {
@@ -372,17 +372,17 @@ library
     }
   }
 
-  if impl(ghcjs) {
-    other-modules:    Game.LambdaHack.Common.JSFile
-    build-depends:    ghcjs-base
+  if os(wasi) {
+    other-modules:      Game.LambdaHack.Common.WasmFile
   }
   else {
-    if os(wasi) {
-      other-modules:  Game.LambdaHack.Common.WasmFile
+    if impl(ghcjs) {
+      other-modules:    Game.LambdaHack.Common.JSFile
+      build-depends:    ghcjs-base
     }
     else {
-      other-modules:  Game.LambdaHack.Common.HSFile
-      build-depends:  zlib >= 0.5.3.1
+      other-modules:    Game.LambdaHack.Common.HSFile
+      build-depends:    zlib >= 0.5.3.1
     }
   }
 
