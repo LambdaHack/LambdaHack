@@ -53,18 +53,17 @@ main = do
     fstderr <- SIO.openFile (dataDir </> "stderr.txt") SIO.WriteMode
     GHC.IO.Handle.hDuplicateTo fstdout SIO.stdout
     GHC.IO.Handle.hDuplicateTo fstderr SIO.stderr
-#else
-  -- Work around display of one character per line.
-  SIO.hSetBuffering SIO.stderr SIO.LineBuffering
 #endif
-  -- Fail here, not inside server code, so that savefiles are not removed,
-  -- because they are not the source of the failure.
+  -- Bang to fail here, not inside server code, so that savefiles are
+  -- not removed, because they are not the source of the failure.
   !serverOptions <- OA.execParser serverOptionsPI
   runServer serverOptions
 
 -- | Tie the engine, content and clients knot, run the game and handle exit.
 runServer :: ServerOptions -> IO ()
 runServer serverOptions = do
+  -- Work around display of one character per line in, e.g., JS console.
+  SIO.hSetBuffering SIO.stderr SIO.LineBuffering
   resOrEx :: Either Ex.SomeException () <- Ex.try $ tieKnot serverOptions
   let unwrapEx e = case Ex.fromException e of
         Just (ExceptionInLinkedThread _ ex) -> unwrapEx ex
@@ -81,8 +80,8 @@ runServer serverOptions = do
 -- @-no-hs-main@, so this, not @main@, starts the game.
 lhStart :: IO ()
 lhStart = do
-  SIO.hSetBuffering SIO.stderr SIO.LineBuffering
-  serverOptions <- OA.handleParseResult $
+  -- Bang to fail early if the default server options are inparseable.
+  !serverOptions <- OA.handleParseResult $
     OA.execParserPure OA.defaultPrefs serverOptionsPI []
   runServer serverOptions
 
