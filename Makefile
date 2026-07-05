@@ -317,19 +317,18 @@ build-wasm:
 
 build-ts:
 	. ~/.ghc-wasm/env; \
-	cd ../lambdahack.github.io/web; \
+	cd ../lambdahack.github.io; \
 	npm ci; \
 	npm run build; \
 	W=$$(cd ~/r/LambdaHack && wasm32-wasi-cabal list-bin exe:LambdaHack); \
-	~/.ghc-wasm/wasm32-wasi-ghc/lib/post-link.mjs --input "$$W" --output dist/ghc_wasm_jsffi.mjs; \
-	cp "$$W" dist/LambdaHack.wasm; \
-	cp ../16x16xw.woff dist/; \
-	cp ../lz-string.min.js dist/; \
-	cp index.html dist/
+	~/.ghc-wasm/wasm32-wasi-ghc/lib/post-link.mjs --input "$$W" --output ghc_wasm_jsffi.mjs; \
+	cp "$$W" LambdaHack.wasm; \
+	mv dist/* .; \
+	rmdir dist
 
 serve-wasm:
-	cd ../lambdahack.github.io/web; \
-	node dist/serve.mjs dist 8080
+	cd ../lambdahack.github.io; \
+	node serve.mjs . 8080
 
 run-wasm:
 	firefox http://localhost:8080/
