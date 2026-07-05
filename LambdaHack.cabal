@@ -139,8 +139,6 @@ common options
   if flag(release)
     cpp-options:      -DEXPOSE_INTERNAL
 
-  ghcjs-options:      -DUSE_JSFILE
-
   if !flag(supportNodeJS)
     ghcjs-options:    -DREMOVE_TELETYPE
 
@@ -361,7 +359,7 @@ library
     if impl(ghcjs) {
       exposed-modules:  Game.LambdaHack.Client.UI.Frontend.Dom
       build-depends:    ghcjs-dom >= 0.9.1.1
-      cpp-options:      -DUSE_BROWSER
+      cpp-options:      -DUSE_BROWSER -DUSE_JSFILE
     }
     else {
       exposed-modules:  Game.LambdaHack.Client.UI.Frontend.Sdl
