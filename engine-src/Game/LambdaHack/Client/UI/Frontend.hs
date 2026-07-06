@@ -40,7 +40,7 @@ import qualified Game.LambdaHack.Definition.Color as Color
 
 #ifdef USE_WASM
 import qualified Game.LambdaHack.Client.UI.Frontend.Wasm as Chosen
-#elif defined(USE_BROWSER)
+#elif defined(USE_GHCJS)
 import qualified Game.LambdaHack.Client.UI.Frontend.Dom as Chosen
 #else
 import qualified Game.LambdaHack.Client.UI.Frontend.ANSI as ANSI

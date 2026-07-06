@@ -139,6 +139,19 @@ common options
   if flag(release)
     cpp-options:      -DEXPOSE_INTERNAL
 
+  -- Backend detection, shared by every component (library, executable,
+  -- test-suite), since cpp-options set inside one stanza's own os(wasi)/
+  -- impl(ghcjs) conditionals aren't inherited by any other stanza, even
+  -- though os(wasi)/impl(ghcjs) themselves evaluate the same way
+  -- everywhere (it's the same compiler building every component in a
+  -- given invocation). Stanzas below only need to vary exposed-modules/
+  -- other-modules/build-depends -- which frontend and file backend get
+  -- compiled in -- not these flags.
+  if os(wasi)
+    cpp-options:      -DUSE_BROWSER -DUSE_WASM -DUSE_WASMFILE
+  if impl(ghcjs)
+    cpp-options:      -DUSE_BROWSER -DUSE_GHCJS -DUSE_JSFILE
+
   if !flag(supportNodeJS)
     ghcjs-options:    -DREMOVE_TELETYPE
 
@@ -353,13 +366,11 @@ library
   if os(wasi) {
     exposed-modules:    Game.LambdaHack.Client.UI.Frontend.Wasm
     build-depends:      ghc-experimental
-    cpp-options:        -DUSE_BROWSER -DUSE_WASM -DUSE_WASMFILE
   }
   else {
     if impl(ghcjs) {
       exposed-modules:  Game.LambdaHack.Client.UI.Frontend.Dom
       build-depends:    ghcjs-dom >= 0.9.1.1
-      cpp-options:      -DUSE_BROWSER -DUSE_JSFILE
     }
     else {
       exposed-modules:  Game.LambdaHack.Client.UI.Frontend.Sdl
@@ -387,10 +398,12 @@ library
 executable LambdaHack
   import: options, exe-options
   if os(wasi)
-    cpp-options:      -DUSE_WASM
     -- A browser needs a wasm *reactor* (exported entry points callable from JS),
     -- not a command (single _start). -no-hs-main drops the C main stub; lhStart
-    -- (Main) and lhKey (Frontend.Wasm) are the JS-callable exports.
+    -- (Main) and lhKey (Frontend.Wasm) are the JS-callable exports. (This stays
+    -- here rather than in common options: the test-suite also imports common
+    -- options, and it must not get the reactor treatment -- tasty's normal
+    -- exitcode-stdio main doesn't fit that model.)
     ghc-options:      -no-hs-main
                       -optl-mexec-model=reactor
                       -optl-Wl,--export=lhStart

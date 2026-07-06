@@ -583,7 +583,7 @@ watchRespUpdAtomicUI cmd = case cmd of
         msgAdd MsgPromptGeneric desc
   UpdResumeServer{} -> return ()
   UpdKillExit{} -> do
-#ifdef USE_JSFILE
+#if defined(USE_JSFILE) || defined(USE_WASMFILE)
       -- Some browsers seem to trash Local Storage when page reloaded or closed
       -- or the browser closed, while they still internally finish the saving
       -- in the background, so wait 2s. If the exit is without a save,

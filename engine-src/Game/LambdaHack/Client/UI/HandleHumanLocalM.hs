@@ -809,7 +809,10 @@ allHistoryHuman = do
   msgAdd MsgPromptGeneric msg
   let keysAllHistory =
         K.returnKM
-#ifndef USE_JSFILE
+        -- Dumps to a real file via dumpTextFile; under either browser
+        -- backend that just writes another localStorage entry, same as a
+        -- save, which isn't useful to the player, so omit the key there.
+#if !defined(USE_JSFILE) && !defined(USE_WASMFILE)
         : K.mkChar '.'
 #endif
         : [K.spaceKM, K.escKM]

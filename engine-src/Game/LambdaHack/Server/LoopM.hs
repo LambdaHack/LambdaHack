@@ -333,7 +333,7 @@ endClip updatePerFid = do
   factionD <- getsState sfactionD
   mapM_ updatePerFid (EM.keys factionD)
   -- Saving on the browser causes a huge lag, hence autosave disabled.
-#ifndef USE_JSFILE
+#if !defined(USE_JSFILE) && !defined(USE_WASMFILE)
   unless breakLoop2 $  -- if by chance requested and periodic saves coincide
     -- Periodic save needs to be at the end, so that restore can start
     -- at the beginning. Double save on first turn is avoided with @succ@.

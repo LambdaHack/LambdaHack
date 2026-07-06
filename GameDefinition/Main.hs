@@ -15,7 +15,7 @@ import qualified GHC.IO.Encoding as SIO
 import qualified Options.Applicative as OA
 import qualified System.IO as SIO
 
-#ifndef USE_JSFILE
+#ifndef USE_BROWSER
 import qualified GHC.IO.Handle
 import           System.FilePath
 
@@ -35,10 +35,11 @@ main = do
   let enc = SIO.localeEncoding
   when (show enc `elem` ["ASCII", "ISO-8859-1", "ISO-8859-2"]) $
     SIO.setLocaleEncoding SIO.utf8
-  -- This test is faulty with JS, because it reports the browser console
-  -- is not a terminal, but then we can't open files to contain the logs.
-  -- Also it bloats the outcome JS file, so disabled.
-#ifndef USE_JSFILE
+  -- This test is faulty in the browser (both wasm and GHCJS): it reports
+  -- the console is not a terminal, but then we can't open real files to
+  -- contain the logs, since neither backend has one. It also bloats the
+  -- compiled output for no benefit, so disabled for both.
+#ifndef USE_BROWSER
   -- Special case hack, when the game is started not on a console.
   -- Without this, any attempt to output on stdout crashes a Windows exe
   -- (at least on Windows Vista) launched from the desktop or start menu.
