@@ -248,9 +248,9 @@ display :: FrontendSession  -- ^ frontend session data
         -> SingleFrame  -- ^ the screen frame to draw
         -> IO ()
 display FrontendSession{..} !curFrame = flip runDOM undefined $ do
-  let setChar :: Int -> (Word32, Word32) -> DOM Int
-      setChar !i (!w, !wPrev) | w == wPrev = return $! i + 1
-      setChar i (w, wPrev) = do
+  let setChar :: PointI -> Word32 -> Word32 -> DOM ()
+      setChar !i !w !wPrev | w == wPrev = return ()
+      setChar i w wPrev = do
         let Point{..} = toEnum i
             Color.AttrChar{acAttr=Color.Attr{fg=fgRaw,bg}, acChar} =
               Color.attrCharFromW32 $ Color.AttrCharW32 w
@@ -270,13 +270,12 @@ display FrontendSession{..} !curFrame = flip runDOM undefined $ do
           setProp style "background-color" background
           setProp style "border-color"
                         (Color.colorToRGB $ Color.highlightToColor bg)
-        return $! i + 1
   !prevFrame <- readIORef spreviousFrame
   writeIORef spreviousFrame curFrame
   -- This continues asynchronously, if can't otherwise.
   callback <- newRequestAnimationFrameCallbackSync $ \_ ->
-    U.foldM'_ setChar 0 $ U.zip (PointArray.avector $ singleArray curFrame)
-                                (PointArray.avector $ singleArray prevFrame)
+    U.izipWithM_ setChar (PointArray.avector $ singleArray curFrame)
+                         (PointArray.avector $ singleArray prevFrame)
   -- This attempts to ensure no redraws while callback executes
   -- and a single redraw when it completes.
   requestAnimationFrame_ scurrentWindow callback

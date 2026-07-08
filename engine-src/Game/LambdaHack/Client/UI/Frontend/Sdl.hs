@@ -582,14 +582,11 @@ drawFrame coscreen ClientOptions{..} sess@FrontendSession{..} curFrame = do
       -- (as @PointSquare@ normally should) and not game map coordinates.
       -- See "Game.LambdaHack.Client.UI.Frame" for explanation of this
       -- irregularity.
-      setMapChar :: PointI -> (Word32, Word32) -> IO Int
-      setMapChar !i (!w, !wPrev) =
-        if w == wPrev
-        then return $! i + 1
-        else do
+      setMapChar :: PointI -> Word32 -> Word32 -> IO ()
+      setMapChar !i !w !wPrev =
+        unless (w == wPrev) $ do
           let Point{..} = toEnum i
           setSquareChar px py (Color.AttrCharW32 w)
-          return $! i + 1
       drawMonoOverlay :: OverlaySpace -> IO ()
       drawMonoOverlay =
         mapM_ (\(PointUI x y, al) ->
@@ -719,8 +716,8 @@ drawFrame coscreen ClientOptions{..} sess@FrontendSession{..} curFrame = do
   basicTexture <- readIORef sbasicTexture  -- previous content still present
   unless arraysEqual $ do
     SDL.rendererRenderTarget srenderer SDL.$= Just basicTexture
-    U.foldM'_ setMapChar 0 $ U.zip (PointArray.avector $ singleArray curFrame)
-                                   (PointArray.avector $ singleArray prevFrame)
+    U.izipWithM_ setMapChar (PointArray.avector $ singleArray curFrame)
+                            (PointArray.avector $ singleArray prevFrame)
   unless (arraysEqual && overlaysEqual) $ do
     texture <- readIORef stexture
     SDL.rendererRenderTarget srenderer SDL.$= Just texture
