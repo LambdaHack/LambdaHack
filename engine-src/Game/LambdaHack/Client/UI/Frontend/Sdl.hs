@@ -20,7 +20,6 @@ import qualified Data.Text as T
 import           Data.Time.Clock.POSIX
 import           Data.Time.LocalTime
 import qualified Data.Vector.Storable as VS
-import qualified Data.Vector.Unboxed as U
 import           Data.Word (Word32, Word8)
 import           Foreign.C.String (withCString)
 import           Foreign.C.Types (CInt)
@@ -51,7 +50,6 @@ import           Game.LambdaHack.Common.ClientOptions
 import           Game.LambdaHack.Common.File
 import           Game.LambdaHack.Common.Misc
 import           Game.LambdaHack.Common.Point
-import qualified Game.LambdaHack.Common.PointArray as PointArray
 import           Game.LambdaHack.Content.TileKind (floorSymbol)
 import qualified Game.LambdaHack.Definition.Color as Color
 
@@ -716,8 +714,8 @@ drawFrame coscreen ClientOptions{..} sess@FrontendSession{..} curFrame = do
   basicTexture <- readIORef sbasicTexture  -- previous content still present
   unless arraysEqual $ do
     SDL.rendererRenderTarget srenderer SDL.$= Just basicTexture
-    U.izipWithM_ setMapChar (PointArray.avector $ singleArray curFrame)
-                            (PointArray.avector $ singleArray prevFrame)
+    VS.izipWithM_ setMapChar (faVector $ singleArray curFrame)
+                             (faVector $ singleArray prevFrame)
   unless (arraysEqual && overlaysEqual) $ do
     texture <- readIORef stexture
     SDL.rendererRenderTarget srenderer SDL.$= Just texture

@@ -17,7 +17,6 @@ import           Game.LambdaHack.Client.UI.Frame
 import           Game.LambdaHack.Client.UI.Frontend.Common
 import qualified Game.LambdaHack.Client.UI.Key as K
 import           Game.LambdaHack.Client.UI.PointUI
-import qualified Game.LambdaHack.Common.PointArray as PointArray
 import           Game.LambdaHack.Content.TileKind (floorSymbol)
 import qualified Game.LambdaHack.Definition.Color as Color
 
@@ -56,7 +55,7 @@ display coscreen SingleFrame{singleArray} = do
         let acCharRaw = Color.charFromW32 w
             acChar = if acCharRaw == floorSymbol then '.' else acCharRaw
         in acChar : l
-      levelChar = chunk $ PointArray.foldrA f [] singleArray
+      levelChar = chunk $ foldrFA f [] singleArray
       chunk [] = []
       chunk l = let (ch, r) = splitAt (rwidth coscreen) l
                 in ch : chunk r

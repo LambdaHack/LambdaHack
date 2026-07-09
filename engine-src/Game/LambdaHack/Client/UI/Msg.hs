@@ -31,7 +31,7 @@ import           Data.Binary
 import qualified Data.Char as Char
 import qualified Data.Set as S
 import           Data.Vector.Binary ()
-import qualified Data.Vector.Unboxed as U
+import qualified Data.Vector.Storable as U
 import           GHC.Generics (Generic)
 
 import           Game.LambdaHack.Client.UI.Overlay

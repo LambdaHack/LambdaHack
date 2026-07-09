@@ -20,7 +20,6 @@ import           Game.LambdaHack.Client.UI.Frontend.Common
 import qualified Game.LambdaHack.Client.UI.Key as K
 import           Game.LambdaHack.Client.UI.PointUI
 import           Game.LambdaHack.Common.Point
-import qualified Game.LambdaHack.Common.PointArray as PointArray
 import           Game.LambdaHack.Content.TileKind (floorSymbol)
 import qualified Game.LambdaHack.Definition.Color as Color
 
@@ -258,8 +257,8 @@ only bright foregrounds. And I have at least one bright backround: bright black.
                                    then ANSI.BoldIntensity
                                    else ANSI.NormalIntensity]
 -}
-  mapM_ f $ zip [0 ..] $ cutInChunks $ PointArray.toListA singleArray
-  let Point{..} = PointArray.maxIndexByA (comparing Color.bgFromW32) singleArray
+  mapM_ f $ zip [0 ..] $ cutInChunks $ toListFA singleArray
+  let Point{..} = maxIndexByFA (comparing Color.bgFromW32) singleArray
   ANSI.hSetCursorPosition SIO.stderr py px
   ANSI.hShowCursor SIO.stderr
   -- Do not trash people's terminals when interrupted:

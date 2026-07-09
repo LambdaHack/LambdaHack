@@ -25,8 +25,9 @@ import           Data.Int (Int64)
 import qualified Data.IntMap.Strict as IM
 import qualified Data.IntSet as IS
 import qualified Data.Text as T
-import qualified Data.Vector.Unboxed as U
-import qualified Data.Vector.Unboxed.Mutable as VM
+import qualified Data.Vector.Storable as U
+import qualified Data.Vector.Storable.Mutable as VM
+import qualified Data.Vector.Unboxed as UB
 import           Data.Word (Word16, Word32)
 import           GHC.Exts (inline)
 import qualified NLP.Miniutter.English as MU
@@ -175,10 +176,11 @@ drawFrameTerrain drawnLevelId = do
       g :: PointI -> Word16 -> Word32
       g !pI !tile = Color.attrCharW32 $ dis pI (DefsInternal.toContentId tile)
       caveVector :: U.Vector Word32
-      caveVector = U.imap g avector
+      caveVector = U.convert $ UB.imap g avector  -- @convert@ most likely fused
       messageVector =
         U.replicate rWidthMax (Color.attrCharW32 Color.spaceAttrW32)
-      statusVector = U.fromListN (2 * rWidthMax) $ map Color.attrCharW32 frameStatus
+      statusVector = U.fromListN (2 * rWidthMax)
+                     $ map Color.attrCharW32 frameStatus
   -- The vector package is so smart that the 3 vectors are not allocated
   -- separately at all, but written to the big vector at once.
   -- But even with double allocation it would be faster than writing
@@ -292,7 +294,7 @@ drawFramePath drawnLevelId = do
            let g :: Point -> ST s ()
                g !p0 = do
                  let pI = fromEnum p0
-                     tile = avector U.! pI
+                     tile = avector UB.! pI
                      w = Color.attrCharW32
                          $ f p0 (DefsInternal.toContentId tile)
                  VM.write v (pI + rWidthMax) w

@@ -15,7 +15,7 @@ import Game.LambdaHack.Core.Prelude
 import qualified Data.Bifunctor as B
 import qualified Data.EnumMap.Strict as EM
 import qualified Data.Map.Strict as M
-import qualified Data.Vector.Unboxed as U
+import qualified Data.Vector.Storable as U
 
 import           Game.LambdaHack.Client.MonadClient
 import           Game.LambdaHack.Client.State

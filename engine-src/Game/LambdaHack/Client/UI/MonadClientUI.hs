@@ -36,7 +36,7 @@ import qualified Data.Text.IO as T
 import           Data.Time.Clock
 import           Data.Time.Clock.POSIX
 import           Data.Time.LocalTime
-import qualified Data.Vector.Unboxed as U
+import qualified Data.Vector.Storable as U
 import qualified NLP.Miniutter.English as MU
 import           System.IO (hFlush, stdout)
 import           Web.Browser (openBrowser)

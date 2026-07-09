@@ -1,7 +1,7 @@
 {-# LANGUAGE RankNTypes #-}
 -- | Screen frames.
 --
--- Note that @PointArray.Array@ here represents a screen frame and so
+-- Note that @FrameArray@ here represents a screen frame and so
 -- screen positions are denoted by @Point@, contrary to the convention
 -- that @Point@ refers to game map coordinates, as outlined
 -- in description of 'PointSquare' that should normally be used in that role.
@@ -9,11 +9,12 @@ module Game.LambdaHack.Client.UI.Frame
   ( ColorMode(..)
   , FrameST, FrameForall(..), FrameBase(..), Frame
   , PreFrame3, PreFrames3, PreFrame, PreFrames
+  , FrameArray(..), foldlFA', foldrFA, maxIndexByFA, toListFA
   , SingleFrame(..), OverlaySpace
   , blankSingleFrame, truncateOverlay, overlayFrame
 #ifdef EXPOSE_INTERNAL
     -- * Internal operations
-  , truncateAttrLine
+  , truncateAttrLine, replicateFA
 #endif
   ) where
 
@@ -24,14 +25,15 @@ import Game.LambdaHack.Core.Prelude
 import           Control.Monad.ST.Strict
 import           Data.Function
 import qualified Data.Vector.Generic as G
-import qualified Data.Vector.Unboxed as U
-import qualified Data.Vector.Unboxed.Mutable as VM
+import qualified Data.Vector.Storable as U
+import qualified Data.Vector.Storable.Mutable as VM
 import           Data.Word
 
 import           Game.LambdaHack.Client.UI.Content.Screen
 import           Game.LambdaHack.Client.UI.Overlay
 import           Game.LambdaHack.Client.UI.PointUI
-import qualified Game.LambdaHack.Common.PointArray as PointArray
+import           Game.LambdaHack.Common.Point
+import           Game.LambdaHack.Definition.Defs
 import qualified Game.LambdaHack.Definition.Color as Color
 
 -- | Color mode for the display.
@@ -80,6 +82,59 @@ writeLine offset al = FrameForall $ \v -> do
         writeAt (off + 1) rest
   writeAt offset al
 
+-- | A rectangular grid of packed attributed characters, backed by
+-- a Storable vector.
+--
+-- This is deliberately a separate, minimal type rather than an
+-- instantiation of 'Game.LambdaHack.Common.PointArray.Array', which
+-- stays on Data.Vector.Unboxed for everything else in the engine: BFS
+-- pathfinding buffers, the level tile map, and the tile-kind lookup
+-- tables that are part of 'Game.LambdaHack.Common.Kind.COps', which
+-- @GHC.Compact@ compacts on native builds (compact cannot handle
+-- Storable's pinned memory, so it can't be used there). @FrameArray@
+-- is used only for 'SingleFrame', the one array in the engine that
+-- crosses an FFI boundary: SDL's C API, and the WASM frontend's JS
+-- FFI, where the underlying vector is handed to
+-- 'Data.Vector.Storable.unsafeWith' with zero copying, which is the
+-- point of it being Storable in the first place.
+data FrameArray = FrameArray
+  { faXsize  :: X
+  , faYsize  :: Y
+  , faVector :: U.Vector Word32  -- ^ packed 'Color.AttrCharW32' values
+  }
+  deriving (Show, Eq)
+
+-- | Create a frame array from a replicated element.
+replicateFA :: X -> Y -> Color.AttrCharW32 -> FrameArray
+{-# INLINE replicateFA #-}
+replicateFA faXsize faYsize c =
+  FrameArray{faVector = U.replicate (faXsize * faYsize) (Color.attrCharW32 c), ..}
+
+-- | Fold left strictly over a frame array.
+foldlFA' :: (a -> Color.AttrCharW32 -> a) -> a -> FrameArray -> a
+{-# INLINE foldlFA' #-}
+foldlFA' f z0 FrameArray{..} =
+  U.foldl' (\a c -> f a (Color.AttrCharW32 c)) z0 faVector
+
+-- | Fold right over a frame array.
+foldrFA :: (Color.AttrCharW32 -> a -> a) -> a -> FrameArray -> a
+{-# INLINE foldrFA #-}
+foldrFA f z0 FrameArray{..} = U.foldr (f . Color.AttrCharW32) z0 faVector
+
+-- | Yield the point coordinates of the first maximum element
+-- of a frame array. The array may not be empty.
+maxIndexByFA :: (Color.AttrCharW32 -> Color.AttrCharW32 -> Ordering)
+             -> FrameArray -> Point
+{-# INLINE maxIndexByFA #-}
+maxIndexByFA f FrameArray{..} =
+  let g a b = f (Color.AttrCharW32 a) (Color.AttrCharW32 b)
+  in toEnum $ U.maxIndexBy g faVector
+
+-- | Coerce a frame array to a list.
+toListFA :: FrameArray -> [Color.AttrCharW32]
+{-# INLINE toListFA #-}
+toListFA FrameArray{..} = map Color.AttrCharW32 $ U.toList faVector
+
 -- | A frame that is padded to fill the whole screen with optional
 -- overlays to display in proportional, square and monospace fonts.
 --
@@ -91,7 +146,7 @@ writeLine offset al = FrameForall $ \v -> do
 -- coordinates in @singleArray@ are @Point@ even though they should be
 -- 'PointSquare'.
 data SingleFrame = SingleFrame
-  { singleArray         :: PointArray.Array Color.AttrCharW32
+  { singleArray         :: FrameArray
   , singlePropOverlay   :: OverlaySpace
   , singleSquareOverlay :: OverlaySpace
   , singleMonoOverlay   :: OverlaySpace }
@@ -101,7 +156,7 @@ type OverlaySpace = [(PointUI, AttrString)]
 
 blankSingleFrame :: ScreenContent -> SingleFrame
 blankSingleFrame ScreenContent{rwidth, rheight} =
-  SingleFrame (PointArray.replicateA rwidth rheight Color.spaceAttrW32)
+  SingleFrame (replicateFA rwidth rheight Color.spaceAttrW32)
               []
               []
               []

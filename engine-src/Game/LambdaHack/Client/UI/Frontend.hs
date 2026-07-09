@@ -24,7 +24,7 @@ import           Control.Monad.ST.Strict
 import           Data.Kind (Type)
 import qualified Data.Text.IO as T
 import qualified Data.Vector.Generic as G
-import qualified Data.Vector.Unboxed as U
+import qualified Data.Vector.Storable as U
 import           Data.Word
 import           System.IO (hFlush, stdout)
 
@@ -35,7 +35,6 @@ import qualified Game.LambdaHack.Client.UI.Frontend.Teletype as Teletype
 import           Game.LambdaHack.Client.UI.Key (KMP (..))
 import qualified Game.LambdaHack.Client.UI.Key as K
 import           Game.LambdaHack.Common.ClientOptions
-import qualified Game.LambdaHack.Common.PointArray as PointArray
 import qualified Game.LambdaHack.Definition.Color as Color
 
 #ifdef USE_WASM
@@ -144,7 +143,7 @@ display rf@RawFrontend{fshowNow, fcoscreen=ScreenContent{rwidth, rheight}}
         v <- unFrameBase m
         unFrameForall upd v
         return v
-      singleArray = PointArray.Array rwidth rheight (U.create new)
+      singleArray = FrameArray rwidth rheight (U.create new)
   putMVar fshowNow () -- 1. wait for permission to display; 3. ack
   fdisplay rf $ SingleFrame singleArray ovProp ovSquare ovMono
 
@@ -207,7 +206,7 @@ seqFrame SingleFrame{..} =
                         `seq` Color.bgFromW32 attr
                         `seq` Color.charFromW32 attr == ' '
                         `seq` ()
-      !_Force1 = PointArray.foldlA' seqAttr () singleArray
+      !_Force1 = foldlFA' seqAttr () singleArray
       !_Force2 = length singlePropOverlay
       !_Force3 = length singleSquareOverlay
       !_Force4 = length singleMonoOverlay

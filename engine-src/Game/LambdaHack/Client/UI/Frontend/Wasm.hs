@@ -19,10 +19,7 @@ import Prelude ()
 import Game.LambdaHack.Core.Prelude
 
 import           Data.IORef
-import qualified Data.Vector.Generic as VG
 import qualified Data.Vector.Storable as VS
-import qualified Data.Vector.Unboxed as U
-import           Data.Word (Word32)
 import           Foreign.Ptr (minusPtr, nullPtr)
 import           GHC.Wasm.Prim (JSString(..), fromJSString)
 import           System.IO.Unsafe (unsafePerformIO)
@@ -33,7 +30,6 @@ import           Game.LambdaHack.Client.UI.Frontend.Common
 import qualified Game.LambdaHack.Client.UI.Key as K
 import           Game.LambdaHack.Client.UI.PointUI
 import           Game.LambdaHack.Common.ClientOptions
-import qualified Game.LambdaHack.Common.PointArray as PointArray
 
 -- | Paint a frame: @(address, width, height)@ of a @Word32@ cell buffer in
 -- wasm linear memory. The JS side (set up by the loader
@@ -71,9 +67,8 @@ shutdown = return () -- nothing to clean up
 -- | Output to the screen via the frontend.
 display :: ScreenContent -> SingleFrame -> IO ()
 display ScreenContent{rwidth, rheight} SingleFrame{singleArray} =
-  let v = PointArray.avector singleArray :: U.Vector Word32
-  in VS.unsafeWith (VG.convert v) $ \ptr ->
-       js_paint (ptr `minusPtr` nullPtr) rwidth rheight
+  VS.unsafeWith (faVector singleArray) $ \ptr ->
+    js_paint (ptr `minusPtr` nullPtr) rwidth rheight
 
 -- | Handle a keydown delivered from JS: the @KeyboardEvent.key@ string plus the
 -- ctrl/shift/alt/meta modifier flags. Mirrors the web (Dom) frontend's keydown

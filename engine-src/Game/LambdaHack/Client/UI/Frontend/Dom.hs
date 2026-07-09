@@ -17,7 +17,7 @@ import qualified Control.Monad.IO.Class as IO
 import           Control.Monad.Trans.Reader (ask)
 import           Data.IORef
 import qualified Data.Vector as V
-import qualified Data.Vector.Unboxed as U
+import qualified Data.Vector.Storable as U
 import           Data.Word (Word32)
 
 import GHCJS.DOM (currentDocument, currentWindow)
@@ -70,7 +70,6 @@ import           Game.LambdaHack.Client.UI.PointUI
 import           Game.LambdaHack.Common.Area
 import           Game.LambdaHack.Common.ClientOptions
 import           Game.LambdaHack.Common.Point
-import qualified Game.LambdaHack.Common.PointArray as PointArray
 import           Game.LambdaHack.Content.TileKind (floorSymbol)
 import qualified Game.LambdaHack.Definition.Color as Color
 
@@ -274,8 +273,8 @@ display FrontendSession{..} !curFrame = flip runDOM undefined $ do
   writeIORef spreviousFrame curFrame
   -- This continues asynchronously, if can't otherwise.
   callback <- newRequestAnimationFrameCallbackSync $ \_ ->
-    U.izipWithM_ setChar (PointArray.avector $ singleArray curFrame)
-                         (PointArray.avector $ singleArray prevFrame)
+    U.izipWithM_ setChar (faVector $ singleArray curFrame)
+                         (faVector $ singleArray prevFrame)
   -- This attempts to ensure no redraws while callback executes
   -- and a single redraw when it completes.
   requestAnimationFrame_ scurrentWindow callback
