@@ -36,12 +36,13 @@ import           Game.LambdaHack.Client.UI.PointUI
 import           Game.LambdaHack.Common.ClientOptions
 import qualified Game.LambdaHack.Common.PointArray as PointArray
 
--- | Paint a frame: @(address, width, height)@ of a @Word32@ cell buffer in
+-- | Submit a frame: @(address, width, height)@ of a @Word32@ cell buffer in
 -- wasm linear memory. The JS side (set up by the loader
--- as @globalThis.lhPaint@) reads the buffer and renders.
+-- as @globalThis.lhSubmitFrame@) snapshots the buffer and schedules a
+-- render; it does not paint synchronously.
 -- @unsafe@: synchronous, so no GC moves the buffer mid-call.
-foreign import javascript unsafe "globalThis.lhPaint($1 + $2, $3, $4)"
-  js_paint :: ByteArray# -> Int -> Int -> Int -> IO ()
+foreign import javascript unsafe "globalThis.lhSubmitFrame($1 + $2, $3, $4)"
+  js_submitFrame :: ByteArray# -> Int -> Int -> Int -> IO ()
 
 word32BackingArray :: U.Vector Word32 -> (ByteArray# -> Int -> IO a) -> IO a
 word32BackingArray (VU.V_Word32 (VP.Vector off _len (ByteArray ba#))) k =
@@ -78,7 +79,7 @@ display :: ScreenContent -> SingleFrame -> IO ()
 display ScreenContent{rwidth, rheight} SingleFrame{singleArray} =
   let v = PointArray.avector singleArray :: U.Vector Word32
   in word32BackingArray v $ \ba# byteOffset ->
-       js_paint ba# byteOffset rwidth rheight
+       js_submitFrame ba# byteOffset rwidth rheight
 
 -- | Handle a keydown delivered from JS: the @KeyboardEvent.key@ string plus the
 -- ctrl/shift/alt/meta modifier flags. Mirrors the web (Dom) frontend's keydown
