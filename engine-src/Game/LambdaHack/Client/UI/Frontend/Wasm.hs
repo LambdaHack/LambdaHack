@@ -43,8 +43,8 @@ import qualified Game.LambdaHack.Common.PointArray as PointArray
 foreign import javascript unsafe "globalThis.lhPaint($1 + $2, $3, $4)"
   js_paint :: ByteArray# -> Int -> Int -> Int -> IO ()
 
-withWord32ByteArray :: U.Vector Word32 -> (ByteArray# -> Int -> IO a) -> IO a
-withWord32ByteArray (VU.V_Word32 (VP.Vector off _len (ByteArray ba#))) k =
+word32BackingArray :: U.Vector Word32 -> (ByteArray# -> Int -> IO a) -> IO a
+word32BackingArray (VU.V_Word32 (VP.Vector off _len (ByteArray ba#))) k =
   k ba# (off * sizeOf (undefined :: Word32))
 
 -- | The active frontend, so the exported 'lhKey' can reach its key queue.
@@ -77,7 +77,7 @@ shutdown = return () -- nothing to clean up
 display :: ScreenContent -> SingleFrame -> IO ()
 display ScreenContent{rwidth, rheight} SingleFrame{singleArray} =
   let v = PointArray.avector singleArray :: U.Vector Word32
-  in withWord32ByteArray v $ \ba# byteOffset ->
+  in word32BackingArray v $ \ba# byteOffset ->
        js_paint ba# byteOffset rwidth rheight
 
 -- | Handle a keydown delivered from JS: the @KeyboardEvent.key@ string plus the
