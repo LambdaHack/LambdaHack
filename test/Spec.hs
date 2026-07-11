@@ -53,6 +53,14 @@ tests = testGroup "Tests" [ actorStateUnitTests
 
 integrationTests :: TestTree
 integrationTests = testGroup "integrationTests" $
+  -- This drives the real tieKnot, so initUI's chanFrontendIO statically
+  -- references Frontend.Wasm under wasm32-wasi (to implement its
+  -- "otherwise" branch) even though --frontendNull means nullStartup runs
+  -- instead at runtime. That reference used to make this test fail to
+  -- instantiate under `make test-wasm`'s plain wasmtime, since Frontend.Wasm
+  -- needs GHC's JSFFI glue merely to be linked in, whether or not it's
+  -- actually called. Works now that test-wasm runs the binary through
+  -- run-wasm-test.mjs, which supplies that glue via Node.
   [ testCase "Null frontend; 5 frames" $ do
       let seed = "SMGen 131 141"
           args = words "--dbgMsgSer --logPriority 4 --newGame 1 --noAnim --maxFps 100000 --frontendNull --benchmark --stopAfterFrames 5 --automateAll --keepAutomated --gameMode crawl"

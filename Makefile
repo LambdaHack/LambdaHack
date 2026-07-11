@@ -332,3 +332,16 @@ serve-wasm:
 
 run-wasm:
 	firefox http://localhost:8080/
+
+test-ts:
+	cd ../lambdahack.github.io; \
+	npx vitest run
+
+test-wasm:
+	. ~/.ghc-wasm/env; \
+	wasm32-wasi-cabal build test; \
+	W=$$(wasm32-wasi-cabal list-bin test); \
+	T=$$(mktemp -d); \
+	~/.ghc-wasm/wasm32-wasi-ghc/lib/post-link.mjs --input "$$W" --output "$$T/ghc_wasm_jsffi.mjs"; \
+	node ts-src/run-wasm-test.mjs "$$W" "$$T/ghc_wasm_jsffi.mjs"; \
+	RC=$$?; rm -rf "$$T"; exit $$RC

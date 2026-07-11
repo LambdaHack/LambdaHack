@@ -26,6 +26,11 @@ monadClientUIUnitTests = testGroup "handleHumanLocalMUnitTests"
       levelIdInMonad <- executorCli viewedLevelUI stubCliState
       fst levelIdInMonad @?= testLevelId
   , testCase "getFontSetup works in stub" $ do
+      -- getFontSetup only picks multiFontSetup when the frontend reports
+      -- itself as "sdl" (see MonadClientUI.getFontSetup). stubClientOptions
+      -- reports the null-test frontend instead (see UnitTestHelpers), so
+      -- the single-font fallback is the correct, platform-independent
+      -- expectation here.
       fontSetupInMonad <- executorCli getFontSetup stubCliState
-      fst fontSetupInMonad @?= multiFontSetup
+      fst fontSetupInMonad @?= singleFontSetup
   ]

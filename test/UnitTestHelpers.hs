@@ -148,6 +148,15 @@ stubClientOptions = defClientOptions
                           , fontPropRegular = "propRegular"
                           , fontPropBold = "propBold"
                           , fontMono = "mono" })]
+  -- Unit tests never want the real, platform-specific frontend (Sdl/Dom/
+  -- Wasm): they already stand in for it via 'fchanFrontendStub' below.
+  -- Reporting the null frontend here keeps Frontend.frontendName and
+  -- Frontend.chanFrontendIO from ever calling into it -- good test
+  -- isolation regardless of platform, and doubly so for wasm32-wasi:
+  -- Frontend.Wasm uses GHC's JSFFI, and even just linking it into the
+  -- test binary (let alone calling it) requires the JS glue that
+  -- `make test-wasm` sets up via run-wasm-test.mjs.
+  , sfrontendNull = True
   }
 
 stubItem :: Item
