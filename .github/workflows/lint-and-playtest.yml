@@ -1,0 +1,46 @@
+# Hand-written workflow complementing the auto-generated haskell-ci.yml
+# (which only does cabal build/test/haddock). This one keeps the README's
+# promises: CI checks the code with `hlint .` and runs the teletype
+# playtests gathered in `make test-gha`.
+name: Lint-and-Playtest
+on:
+  - push
+  - pull_request
+  - workflow_dispatch
+jobs:
+  hlint:
+    name: hlint
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: haskell-actions/hlint-setup@v2
+      - name: hlint
+        run: hlint .
+  playtest:
+    name: Makefile playtests (make test-gha)
+    runs-on: ubuntu-latest
+    timeout-minutes: 240
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install SDL2 dev libraries
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libsdl2-dev libsdl2-ttf-dev
+      - uses: haskell-actions/setup@v2
+        id: setup
+        with:
+          ghc-version: '9.12.4'
+          cabal-version: 'latest'
+      - uses: actions/cache@v4
+        with:
+          path: |
+            ${{ steps.setup.outputs.cabal-store }}
+            dist-newstyle
+          key: playtest-${{ runner.os }}-ghc-${{ steps.setup.outputs.ghc-version }}-${{ hashFiles('LambdaHack.cabal') }}
+          restore-keys: playtest-${{ runner.os }}-ghc-${{ steps.setup.outputs.ghc-version }}-
+      - name: Build
+        run: cabal build exe:LambdaHack
+      # The teletype and null frontends run headless, so no display is needed.
+      - name: Playtests
+        run: make test-gha
