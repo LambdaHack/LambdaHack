@@ -1,0 +1,95 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+
+    <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png">
+    <link rel="icon" type="image/png" href="/favicon-32x32.png" sizes="32x32">
+    <link rel="icon" type="image/png" href="/favicon-16x16.png" sizes="16x16">
+    <link rel="manifest" href="/manifest.json">
+    <link rel="mask-icon" href="/safari-pinned-tab.svg" color="#5bbad5">
+    <meta name="theme-color" content="#ffffff">
+
+    <meta name="description" content="LambdaHack (wasm): a small dungeon crawler illustrating the roguelike game engine of the same name" />
+
+    <title>LambdaHack (wasm)</title>
+    <style>
+      @font-face {
+        font-family: lambdaHackFont;
+        src: url("./16x16xw.woff");
+      }
+
+      html, body {
+        margin: 0;
+        background: #000000;
+        color: #c4beb1; /* AltWhite -- matches master's body default fg */
+        font-family: lambdaHackFont, monospace;
+      }
+      a:link           { color: #ffffff; }  /* unvisited links       */
+      a:visited        { color: #c4beb1; }  /* visited links         */
+      a:hover, a:focus { color: #ffffff; }  /* user hovers, or focus */
+      a:active         { color: #ffffff; }  /* active links          */
+      #banner { table-layout: fixed; border-collapse: collapse; }
+      #screen {
+        /* The grid sizes itself from the engine's frame on first paint.
+           16px matches the bitmap font's native pixel size, avoiding
+           scaling blur (master's td font-size is also 16px). */
+        margin: 0 auto;
+        width: max-content;
+        font-size: 16px;
+      }
+      /* Visible only for keyboard-triggered focus (Tab), not mouse clicks --
+         #screen is tabindex=0 and was previously outline:none, meaning a
+         keyboard-only user tabbing here got no visible indicator at all. */
+      #screen:focus-visible {
+        outline: 2px solid #c4beb1;
+      }
+      #status {
+        text-align: left;
+        font-size: 16px;
+        padding: 4px 8px;
+      }
+    </style>
+  </head>
+  <body>
+    <table id="banner">
+      <tr>
+        <td>
+          <h1 style="letter-spacing:1px">&nbsp;LambdaHack&nbsp;</h1>
+        </td>
+        <td>
+          <h4 style="line-height:130%">
+            This is the experimental wasm build. For proportional fonts,
+            fullscreen, and persistent save games, use the
+            <a href="https://github.com/LambdaHack/LambdaHack/releases">native binary</a>
+            instead. If the game window is too large, zoom out
+            (Control-minus). Press NumLock if the numpad is erratic, or use
+            another key scheme or mouse. Press '?' for help or read
+            <a href="https://github.com/LambdaHack/LambdaHack/blob/master/GameDefinition/PLAYING.md">PLAYING</a>.
+          </h4>
+        </td>
+      </tr>
+    </table>
+    <div id="status">
+      <p>
+        Please wait. Bleeding edge experimental technology of the future is being loaded, <br>
+        which may take 10 or 20 seconds with no apparent progress. <br>
+        Be patient. Do not make hasty keystrokes. Breathtaking letters <br>
+        in sixteen brilliant colors and HD resolution beckon from the other shore.
+      <p>
+      from README: <br>
+      The game runs rather slowly in the browser (fastest on Chrome) <br>
+      and you are limited to the square font for both map and texts. <br>
+      Savefiles are prone to corruption on the browser, <br>
+      e.g., when it's closed while the game is still saving progress. <br>
+      Hence, after trying out the game, you may prefer to use a native <br>
+      binary for your architecture, if it exists.
+      <p>
+      Copyright (c) 2008--2021 Andres Loeh, Mikolaj Konarski and others (see git history)
+    </div>
+    <div id="screen" tabindex="0"></div>
+    <script src="./lz-string.min.js"></script>
+    <script type="module" src="./bundle.js"></script>
+  </body>
+</html>

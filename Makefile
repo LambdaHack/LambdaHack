@@ -326,6 +326,7 @@ test-wasm:
 
 build-ts:
 	. ~/.ghc-wasm/env; \
+	cp GameDefinition/index.html ../lambdahack.github.io; \
 	cd ts-src; \
 	npm ci; \
 	npm run build; \
