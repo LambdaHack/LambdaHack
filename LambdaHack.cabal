@@ -400,13 +400,20 @@ executable LambdaHack
   if os(wasi)
     -- A browser needs a wasm *reactor* (exported entry points callable from JS),
     -- not a command (single _start). -no-hs-main drops the C main stub; lhStart
-    -- (Main) and lhKey (Frontend.Wasm) are the JS-callable exports. (This stays
-    -- here rather than in common options: the test-suite also imports common
-    -- options, and it must not get the reactor treatment -- tasty's normal
-    -- exitcode-stdio main doesn't fit that model.)
+    -- (Main) and lhKey/lhWheel/lhMouseUp (Frontend.Wasm) are the JS-callable
+    -- exports. Each needs its own --export=: a reactor has no default entry
+    -- point for the linker to anchor dead-code elimination against, so any
+    -- foreign-exported symbol that isn't explicitly requested here gets
+    -- dropped, not just kept-but-unreachable. (This stays here rather than in
+    -- common options: the test-suite also imports common options, and it must
+    -- not get the reactor treatment -- tasty's normal exitcode-stdio main
+    -- doesn't fit that model.)
     ghc-options:      -no-hs-main
                       -optl-mexec-model=reactor
                       -optl-Wl,--export=lhStart
+                      -optl-Wl,--export=lhKey
+                      -optl-Wl,--export=lhWheel
+                      -optl-Wl,--export=lhMouseUp
   main-is:            GameDefinition/Main.hs
   build-depends:      ,LambdaHack
                       ,async
