@@ -6,10 +6,17 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 LambdaHack is a Haskell game engine library for ASCII roguelike games, bundled
 together with a sample dungeon crawler (`GameDefinition/`). It targets native
-(SDL2/ANSI/teletype frontends), GHCJS (legacy browser build), and WASM
-(current browser build). The TypeScript browser-side harness lives in
-`ts-src/`; built WASM artifacts are deployed into the `lambdahack.github.io`
-repo, expected as a sibling checkout at `../lambdahack.github.io`.
+(SDL2/ANSI/teletype frontends) and WASM (the browser build); a defunct GHCJS
+browser build survives only as dead example code (see below). The TypeScript
+browser-side harness lives in `ts-src/`; built WASM artifacts are deployed
+into the `lambdahack.github.io` repo, expected as a sibling checkout at
+`../lambdahack.github.io`.
+
+Frontend work is planned in `wasm-frontend-unified-plan.md` (repo root): the
+SDL2-parity roadmap for the WASM frontend, recorded decisions — including
+don't-do rulings, so ideas aren't re-proposed — and verified repo facts with
+file:line citations. Consult it before frontend-touching changes;
+`tools/check-plan-citations.py` re-validates its citations after code moves.
 
 ## Build
 
@@ -43,7 +50,9 @@ cabal test --test-show-details=direct
 
 Doctests (the README also lists a `definition` component, but that internal
 library only exists in the original `LambdaHack.cabal.bkp` — the flattened
-`LambdaHack.cabal` in use has a single library, so this covers everything):
+`LambdaHack.cabal` in use has a single library, so this covers everything;
+note doctests are currently a manual-only recipe, not run in CI — closing
+that gap is part of the plan's R2):
 
 ```
 cabal install doctest --overwrite-policy=always && cabal build
@@ -183,10 +192,13 @@ once in the `options` common stanza and consumed throughout `engine-src` and
   JS-callable entry point: `lhStart`, `lhKey`, `lhWheel`, `lhMouseUp`) rather
   than a command, since a reactor has no default linker entry point to anchor
   dead-code elimination against.
-- `impl(ghcjs)`: legacy GHCJS build. Frontend in `Frontend/Dom.hs`; file
-  storage via `Common/JSFile.hs`. Still configured in the `.cabal` file, but
-  the GHCJS helper targets were removed from the Makefile — WASM is the
-  supported browser path.
+- `impl(ghcjs)`: defunct GHCJS build — dead code, since standalone GHCJS
+  ended at GHC 8.10 and this repo requires 9.10+. `Frontend/Dom.hs` and
+  `Common/JSFile.hs` stay in the tree as documented examples of an
+  alternative frontend/file-backend pair (and as the historical origin the
+  WASM port was written from); the remaining GHCJS wiring (`impl(ghcjs)`
+  cabal stanzas, `ghcjs-options`, CPP branches) is scheduled for removal
+  once WASM reaches SDL2 parity — see `wasm-frontend-unified-plan.md`, R3.
 
 The test-suite stanza shares the same CPP flags (so `USE_BROWSER`/`USE_WASM`
 etc. are consistent across library/executable/test-suite) but is deliberately
