@@ -15,8 +15,17 @@ into the `lambdahack.github.io` repo, expected as a sibling checkout at
 Frontend work is planned in `wasm-frontend-unified-plan.md` (repo root): the
 SDL2-parity roadmap for the WASM frontend, recorded decisions — including
 don't-do rulings, so ideas aren't re-proposed — and verified repo facts with
-file:line citations. Consult it before frontend-touching changes;
-`tools/check-plan-citations.py` re-validates its citations after code moves.
+file:line citations. Consult it before frontend-touching changes.
+
+Both the plan and this file make checkable claims, kept honest by three
+passes run whenever either document (or code it cites) is edited:
+`python3 tools/check-plan-citations.py [DOC]` re-validates file:line
+citations mechanically; paths, Makefile targets and flags named in prose
+are checked for existence; and only/every/never claims are re-verified by
+repo-wide grep. The passes are ordered by yield: the mechanical ones catch
+drift, but the quantified-claims grep has found real, long-standing errors
+every time it has been run — in the plan and twice in this file's own
+earlier text — so it is the pass never to skip.
 
 ## Build
 
