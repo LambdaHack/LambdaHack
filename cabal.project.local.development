@@ -1,9 +1,9 @@
 flags: +with_expensive_assertions
-optimization: False
-profiling: False
-library-profiling: False
-documentation: False
 
-package *
-  documentation: True
-  library-profiling: True
+jobs: 12
+semaphore: True
+
+package LambdaHack
+  tests: True
+
+optimization: False
