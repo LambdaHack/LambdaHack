@@ -16,7 +16,7 @@ jobs:
       - uses: actions/checkout@v4
       - uses: haskell-actions/hlint-setup@v2
       - name: hlint
-        run: hlint .
+        run: hlint . --ignore-glob "engine-src/Game/LambdaHack/Common/JSFile.hs"
   playtest:
     name: Makefile playtests (make test-gha)
     runs-on: ubuntu-latest

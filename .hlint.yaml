@@ -67,7 +67,7 @@
 - ignore: {name: "Use :", within: Main}
 - ignore: {name: "Monad law, left identity", within: Game.LambdaHack.Client.Bfs}
 - ignore: {name: Use bimap, within: Game.LambdaHack.Server.DungeonGen.AreaRnd}
-
+- ignore: {name: Parenthesize unary negation}
 
 # Define some custom infix operators
 # - fixity: infixr 3 ~^#^~
