@@ -138,8 +138,10 @@ module has the same name as a directory (e.g. `Game.LambdaHack.Client` vs.
 `Game.LambdaHack.Client.*`), that module is the *exclusive* interface to
 everything in the directory — other modules in the library must not reach
 past it into the directory's internals. This is enforced by convention, not
-by `.cabal-exposed`/hidden boundaries (all modules are exposed, so that
-downstream games can override things), so respect it when adding imports.
+by `.cabal`-exposed/hidden boundaries (nearly all modules are exposed so
+that downstream games can override things — the only hidden ones are the
+per-backend file module actually compiled in, `HSFile`/`WasmFile`/`JSFile`,
+and `Paths_LambdaHack`), so respect it when adding imports.
 
 ### Client-server architecture
 
@@ -167,7 +169,8 @@ loop, generating requests from perceived state via `Client/AI/`
 
 Six command datatypes recur across the codebase, each with its own
 interpreters (mostly in `Handle*` modules): `HumanCmd`, `Effect`,
-`UpdAtomic`, `Request`, `Response`, `FrontReq`. Most command semantics live in custom
+`UpdAtomic`, `Request` (a family: `ReqUI`/`ReqAI`/`RequestTimed`, in
+`Client/Request.hs`), `Response`, `FrontReq`. Most command semantics live in custom
 monads (`MonadClient`, `MonadServer`, `MonadClientUI`, etc.) — these are
 state monads, so a command's semantics is a state transformer plus side
 effects (e.g. frontend drawing). Each monad's concrete transformer stack is
