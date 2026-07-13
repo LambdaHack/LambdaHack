@@ -164,9 +164,10 @@ Compilation of the library and sample game from source
 To compile with the standard frontend based on SDL2, you need the SDL2
 libraries for your OS. On Linux, remember to install the -dev versions
 as well, e.g., libsdl2-dev and libsdl2-ttf-dev on Ubuntu Linux 16.04.
-Compilation to JavaScript for the browser is more complicated
-and requires the ghcjs[15] compiler and optionally the Google Closure
-Compiler[16].
+Compilation to WebAssembly for the browser is more complicated
+and requires the GHC WebAssembly toolchain, e.g., installed
+via ghc-wasm-meta[15], and Node.js; see the `build-wasm`, `build-ts`,
+`serve-wasm` and `test-wasm` targets in the Makefile.
 
 The latest official version of the LambdaHack library can be downloaded,
 compiled for SDL2 and installed automatically using the 'cabal' tool,
@@ -341,6 +342,5 @@ Have fun!
 [9]: https://github.com/LambdaHack/LambdaHack/wiki/Sample-dungeon-crawler
 [10]: https://github.com/AllureOfTheStars/Allure
 [11]: https://github.com/LambdaHack/LambdaHack/releases
-[15]: https://github.com/ghcjs/ghcjs
-[16]: https://www.npmjs.com/package/google-closure-compiler
+[15]: https://gitlab.haskell.org/haskell-wasm/ghc-wasm-meta
 [17]: https://github.com/LambdaHack/LambdaHack/wiki/Client-server-architecture
