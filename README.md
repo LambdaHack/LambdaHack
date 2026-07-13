@@ -83,8 +83,7 @@ e.g., when it's closed while the game is still saving progress
 (which takes a long time). Hence, after trying out the game,
 you may prefer to use a native binary for your architecture, if it exists.
 
-Pre-compiled game binaries are available through the release page[11]
-(and Linux dev versions from GitHub Actions[18] and Windows from AppVeyor[19]).
+Pre-compiled game binaries are available through the release page[11].
 To use a pre-compiled binary archive, unpack it and run the executable
 in the unpacked directory or use program shortcuts from the installer,
 if available. On Linux, make sure you have the SDL2 libraries installed
@@ -345,5 +344,3 @@ Have fun!
 [15]: https://github.com/ghcjs/ghcjs
 [16]: https://www.npmjs.com/package/google-closure-compiler
 [17]: https://github.com/LambdaHack/LambdaHack/wiki/Client-server-architecture
-[18]: https://github.com/LambdaHack/LambdaHack/actions
-[19]: https://ci.appveyor.com/project/Mikolaj/lambdahack
