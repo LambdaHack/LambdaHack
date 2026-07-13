@@ -315,28 +315,6 @@ build-wasm:
 	. ~/.ghc-wasm/env; \
 	wasm32-wasi-cabal build exe:LambdaHack
 
-build-ts:
-	. ~/.ghc-wasm/env; \
-	cd ../lambdahack.github.io; \
-	npm ci; \
-	npm run build; \
-	W=$$(cd ~/r/LambdaHack && wasm32-wasi-cabal list-bin exe:LambdaHack); \
-	~/.ghc-wasm/wasm32-wasi-ghc/lib/post-link.mjs --input "$$W" --output ghc_wasm_jsffi.mjs; \
-	cp "$$W" LambdaHack.wasm; \
-	mv dist/* .; \
-	rmdir dist
-
-serve-wasm:
-	cd ../lambdahack.github.io; \
-	node serve.mjs . 8080
-
-run-wasm:
-	firefox http://localhost:8080/
-
-test-ts:
-	cd ../lambdahack.github.io; \
-	npx vitest run
-
 test-wasm:
 	. ~/.ghc-wasm/env; \
 	wasm32-wasi-cabal build test; \
@@ -345,3 +323,25 @@ test-wasm:
 	~/.ghc-wasm/wasm32-wasi-ghc/lib/post-link.mjs --input "$$W" --output "$$T/ghc_wasm_jsffi.mjs"; \
 	node ts-src/run-wasm-test.mjs "$$W" "$$T/ghc_wasm_jsffi.mjs"; \
 	RC=$$?; rm -rf "$$T"; exit $$RC
+
+build-ts:
+	. ~/.ghc-wasm/env; \
+	cd ts-src; \
+	npm ci; \
+	npm run build; \
+	W=$$(cd ~/r/LambdaHack && wasm32-wasi-cabal list-bin exe:LambdaHack); \
+	~/.ghc-wasm/wasm32-wasi-ghc/lib/post-link.mjs --input "$$W" --output ../../lambdahack.github.io/ghc_wasm_jsffi.mjs; \
+	cp "$$W" ../../lambdahack.github.io/LambdaHack.wasm; \
+	mv dist/* ../../lambdahack.github.io; \
+	rmdir dist
+
+test-ts:
+	cd ts-src; \
+	npx vitest run
+
+serve-wasm:
+	cd ../lambdahack.github.io; \
+	node serve.mjs . 8080
+
+run-wasm:
+	firefox http://localhost:8080/
