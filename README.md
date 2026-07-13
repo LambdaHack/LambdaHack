@@ -224,7 +224,7 @@ and doctests with
 The [Makefile](https://github.com/LambdaHack/LambdaHack/blob/master/Makefile)
 contains many sample automated playtest commands.
 Numerous tests that use the screensaver game modes (AI vs. AI)
-and the teletype frontend are gathered in `make test-locally`.
+and the teletype frontend are gathered in `make test`.
 Some of these are run by CI  on each push to github.
 Test commands with prefix `frontend` start AI vs. AI games with
 the standard SDL2 frontend to view them on.
