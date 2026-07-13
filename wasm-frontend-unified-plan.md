@@ -102,7 +102,7 @@ practices are ongoing or unscheduled tracks described after the phases.
   (`terminal.ts`, `terminal-core.ts` + tests, `loader.ts`, `serve*.ts`).
   The game page is `GameDefinition/index.html`. `make build-ts` builds
   `ts-src/` and deploys bundle + wasm + JSFFI glue + `index.html` into the
-  sibling checkout `../lambdahack.github.io` (Makefile:318-328), the
+  sibling checkout `../lambdahack.github.io` (Makefile:318-326), the
   GitHub Pages site players actually load.
 - **Fonts.** `config.ui.default` sets `chosenFontset = "dejavuBold"`
   (line 67); its `[fonts]` section names the web fonts directly:

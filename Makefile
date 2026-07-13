@@ -320,12 +320,10 @@ build-ts:
 	cp GameDefinition/index.html ../lambdahack.github.io; \
 	cd ts-src; \
 	npm ci; \
-	npm run build; \
+	BUILD_OUTDIR=../../lambdahack.github.io npm run build; \
 	W=$$(cd ~/r/LambdaHack && wasm32-wasi-cabal list-bin exe:LambdaHack); \
 	~/.ghc-wasm/wasm32-wasi-ghc/lib/post-link.mjs --input "$$W" --output ../../lambdahack.github.io/ghc_wasm_jsffi.mjs; \
-	cp "$$W" ../../lambdahack.github.io/LambdaHack.wasm; \
-	mv dist/* ../../lambdahack.github.io; \
-	rmdir dist
+	cp "$$W" ../../lambdahack.github.io/LambdaHack.wasm
 
 test-ts:
 	cd ts-src; \

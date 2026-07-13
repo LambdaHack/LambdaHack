@@ -8,7 +8,7 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "typecheck": "tsc --noEmit",
-    "build": "esbuild src/loader.ts --bundle --format=esm --outfile=dist/bundle.js --external:./ghc_wasm_jsffi.mjs && esbuild src/serve.ts --bundle --platform=node --format=esm --outfile=dist/serve.mjs"
+    "build": "esbuild src/loader.ts --bundle --format=esm --outfile=\"${BUILD_OUTDIR:-dist}/bundle.js\" --external:./ghc_wasm_jsffi.mjs && esbuild src/serve.ts --bundle --platform=node --format=esm --outfile=\"${BUILD_OUTDIR:-dist}/serve.mjs\""
   },
   "dependencies": {
     "@bjorn3/browser_wasi_shim": "^0.4.1"
