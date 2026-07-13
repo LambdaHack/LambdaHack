@@ -97,6 +97,13 @@ crawl, safari, battle, defense, dig...) through the teletype frontend with
 `--automateAll`. Grep the Makefile for a mode name to find its exact
 invocation before adding a new one.
 
+The headless targets select test frontends by flag: `--frontendNull`
+(frames forced but not displayed), `--frontendLazy` (frames not even
+computed), `--frontendTeletype` (line-printer output). The `nodeBench*`
+and `nodeMinifiedBench` targets are dead GHCJS remnants — they invoke a
+`.jsexe` that nothing builds anymore; repurposing them for WASM is the
+plan's Phase 3.
+
 ## Architecture
 
 ### Three source trees, one library
@@ -205,6 +212,14 @@ etc. are consistent across library/executable/test-suite) but is deliberately
 excluded from the reactor linker treatment — tasty's normal
 `exitcode-stdio` main doesn't fit that model.
 
+Browser-build runtime differences to keep in mind: there is no argv and no
+config file on disk — server/client options sit at their defaults and the UI
+config comes from `config.ui.default`, embedded at compile time via TH
+(`rcfgUIDefault` in `GameDefinition/Content/RuleKind.hs`), with user
+overrides read from localStorage; and periodic autosave is disabled under
+the browser file backends (`Server/LoopM.hs`) — saves happen only on
+explicit save/exit.
+
 ### Coding conventions (beyond hlint/stylish-haskell defaults)
 
 - Haddocks are expected on all module headers and on functions/types in
@@ -216,8 +231,32 @@ excluded from the reactor linker treatment — tasty's normal
     be too verbose.
 - This codebase deliberately avoids a lens library, using plain records
   (with record punning) for state instead.
+- Frontend code follows functional-core/imperative-shell: rendering and
+  input *decisions* belong in shared pure modules under
+  `Client/UI/Frontend/` (tested against fixtures), while frontend modules
+  keep only event capture, output mutation and plumbing. The review
+  question for any new line in a frontend module: would another frontend
+  have to copy it? (The shared modules — `InputDecision`, `CellStyle`,
+  `OverlayLayout` — are being established by the plan's Phases 0 and 2;
+  until then the rule binds new code.)
 - Put large, mechanical formatting changes in their own commit, separate from
   substantive changes.
+
+## Gotchas
+
+- Duplicate basenames: `Server/LoopM.hs` vs `Client/LoopM.hs`, and the
+  engine's vs the game's `Client/UI/Content/Input.hs` (the key bindings are
+  in the game's). Qualify paths when grepping or citing.
+- The `Enum` instances of `Point` and `Vector` read a global dungeon width
+  (`speedupHackXSize`, written once at startup in `TieKnot.hs`) — a
+  deliberate, permanent performance hack; see the comment at `Point.hs:26`.
+  Frontend code decodes screen indices with the explicit
+  `punindex (rwidth coscreen)` instead of `toEnum` (one legacy violation
+  at `Sdl.hs:590` awaits its scheduled fix — see the plan).
+- Several frontends carry near-duplicate logic (SDL2, WASM, the dead Dom,
+  ANSI, Teletype). Before asserting "only frontend X does Y" — or any
+  only/every/never claim about this codebase — verify by repo-wide grep,
+  not by reading the one file where the pattern was first noticed.
 
 ## Orientation for new contributors
 
