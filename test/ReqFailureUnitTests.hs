@@ -7,15 +7,20 @@ import Game.LambdaHack.Core.Prelude
 import Test.Tasty
 import Test.Tasty.HUnit
 
-import qualified Content.RuleKind
-import           Game.LambdaHack.Common.Item
-import           Game.LambdaHack.Common.ItemAspect
-import           Game.LambdaHack.Common.Kind (emptyMultiGroupItem)
-import           Game.LambdaHack.Common.ReqFailure
-import           Game.LambdaHack.Common.Time
-import           Game.LambdaHack.Content.ItemKind
-import           Game.LambdaHack.Definition.Defs
-import           UnitTestHelpers (stubItem)
+import Content.RuleKind (standardRules)
+
+import Game.LambdaHack.Common.Item
+import Game.LambdaHack.Common.ItemAspect
+import Game.LambdaHack.Common.Kind (emptyMultiGroupItem)
+import Game.LambdaHack.Common.ReqFailure
+import Game.LambdaHack.Common.Time
+import Game.LambdaHack.Content.ItemKind
+  (ItemKind (isymbol), ItemSymbolsUsedInEngine (..))
+import Game.LambdaHack.Content.RuleKind (RuleContent (..))
+import Game.LambdaHack.Definition.Defs
+
+
+import UnitTestHelpers (stubItem)
 
 reqFailureUnitTests :: TestTree
 reqFailureUnitTests = testGroup "reqFailureUnitTests" $
@@ -26,7 +31,6 @@ reqFailureUnitTests = testGroup "reqFailureUnitTests" $
         , itemDisco = ItemDiscoFull emptyAspectRecord
         , itemSuspect = True
         }
-      standardRules = Content.RuleKind.standardRules
   in
   [ testCase "permittedApply: One Skill and x symbol -> FailureApplyFood" $
       permittedApply standardRules timeZero 1 True Nothing
@@ -34,22 +38,22 @@ reqFailureUnitTests = testGroup "reqFailureUnitTests" $
       @?= Left ApplyFood
   , testCase "permittedApply: One Skill and , symbol And CGround -> True" $
       permittedApply standardRules timeZero 1 True (Just CGround)
-                     testItemFull {itemKind = emptyMultiGroupItem{isymbol = ','}}
+                     testItemFull {itemKind = emptyMultiGroupItem{isymbol =rsymbolFood . ritemSymbols $ standardRules}}
                      quantSingle
       @?= Right True
   , testCase "permittedApply: One Skill and \" symbol -> True" $
       permittedApply standardRules timeZero 1 True Nothing
-                     testItemFull {itemKind = emptyMultiGroupItem{isymbol = '"'}}
+                     testItemFull {itemKind = emptyMultiGroupItem{isymbol = rsymbolNecklace . ritemSymbols $ standardRules}}
                      quantSingle
       @?= Right True
   , testCase "permittedApply: Two Skill and ? symbol -> FailureApplyRead" $
       permittedApply standardRules timeZero 2 True Nothing
-                     testItemFull {itemKind = emptyMultiGroupItem{isymbol = '?'}}
+                     testItemFull {itemKind = emptyMultiGroupItem{isymbol =rsymbolScroll . ritemSymbols $ standardRules}}
                      quantSingle
       @?= Left ApplyRead
   , testCase "permittedApply: Two Skill and , symbol -> True" $
       permittedApply standardRules timeZero 2 True Nothing
-                     testItemFull {itemKind = emptyMultiGroupItem{isymbol = ','}}
+                     testItemFull {itemKind = emptyMultiGroupItem{isymbol =rsymbolFood . ritemSymbols $ standardRules}}
                      quantSingle
       @?= Right True
   ]

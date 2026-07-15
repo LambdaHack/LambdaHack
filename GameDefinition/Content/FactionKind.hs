@@ -20,7 +20,7 @@ import           Game.LambdaHack.Content.FactionKind
 import qualified Game.LambdaHack.Content.ItemKind as IK
 import           Game.LambdaHack.Definition.Ability
 import           Game.LambdaHack.Definition.Defs
-import           Game.LambdaHack.Definition.DefsInternal
+import           Game.LambdaHack.Definition.DefsInternal (GroupName (..))
 
 import Content.ItemKindActor
 import Content.ItemKindOrgan

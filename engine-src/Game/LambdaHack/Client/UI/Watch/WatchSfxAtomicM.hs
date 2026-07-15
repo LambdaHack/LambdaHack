@@ -1,3 +1,4 @@
+{-#LANGUAGE FlexibleInstances #-}
 -- | Display atomic SFX commands received by the client.
 module Game.LambdaHack.Client.UI.Watch.WatchSfxAtomicM
   ( watchRespSfxAtomicUI
@@ -61,6 +62,7 @@ import qualified Game.LambdaHack.Definition.Ability as Ability
 import qualified Game.LambdaHack.Definition.Color as Color
 import           Game.LambdaHack.Definition.Defs
 
+
 -- | Display special effects (text, animation) sent to the client.
 -- Don't modify client state (except a few fields), but only client
 -- session (e.g., by displaying messages). This is enforced by types.
@@ -112,8 +114,7 @@ watchRespSfxAtomicUI sfx = case sfx of
     ItemFull{itemKind} <- getsState $ itemToFull iid
     let actionPart =
           maybe "trigger"
-                MU.Text
-                (EM.lookup (IK.isymbol itemKind) rapplyVerbMap)
+                MU.Text (EM.lookup (IK.isymbol itemKind) rapplyVerbMap)
     itemAidVerbMU MsgActionMajor aid actionPart iid (Left 1)
   SfxCheck aid iid ->
     itemAidVerbMU MsgActionMajor aid "recover" iid (Left 1)

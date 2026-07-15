@@ -19,7 +19,7 @@ import qualified Game.LambdaHack.Content.ItemKind as IK
 import           Game.LambdaHack.Content.TileKind
 import           Game.LambdaHack.Core.Dice
 import           Game.LambdaHack.Definition.Defs
-import           Game.LambdaHack.Definition.DefsInternal
+import           Game.LambdaHack.Definition.DefsInternal (GroupName (..) )
 
 import Content.ItemKind hiding (content, groupNames, groupNamesSingleton)
 import Content.ItemKindActor

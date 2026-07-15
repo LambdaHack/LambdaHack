@@ -69,6 +69,7 @@ import           Game.LambdaHack.Core.Random
 import qualified Game.LambdaHack.Definition.Ability as Ability
 import qualified Game.LambdaHack.Definition.Color as Color
 import           Game.LambdaHack.Definition.Defs
+import           Game.LambdaHack.Definition.DefsInternal (toContentSymbol)
 import           Game.LambdaHack.Definition.Flavour
 
 -- | Visualize atomic updates sent to the client. This is done
@@ -661,7 +662,7 @@ createActorUI born aid body = do
     UIOptions{uHeroNames} <- getsSession sUIOptions
     let baseColor = flavourToColor $ jflavour itemBase
         basePronoun | not (bproj body)
-                      && IK.isymbol itemKind == '@'
+                      && IK.isymbol itemKind == toContentSymbol '@'
                       && fhasGender (gkind fact) = "he"
                     | otherwise = "it"
         nameFromNumber fn k = if k == 0
@@ -672,18 +673,19 @@ createActorUI born aid body = do
           then (nameFromNumber (fname $ gkind fact) k, "he")
           else fromMaybe (nameFromNumber (fname $ gkind fact) k, "he")
                $ lookup k uHeroNames
-        (n, bsymbol) =
+    let
+        (n, bsymbol) :: (Int, ContentSymbol IK.ItemKind) =
           if | bproj body -> (0, if IA.checkFlag Ability.Blast arItem
                                  then IK.isymbol itemKind
-                                 else '*')
+                                 else toContentSymbol '*')
              | baseColor /= Color.BrWhite -> (0, IK.isymbol itemKind)
              | otherwise -> case bnumber body of
                  Nothing ->
                    error $ "numbered actor without server-assigned number"
                            `showFailure` (aid, body)
                  Just bn -> (bn, if 0 < bn && bn < 10
-                                 then Char.intToDigit bn
-                                 else '@')
+                                 then toContentSymbol . Char.intToDigit $ bn
+                                 else toContentSymbol '@')
         (object1, object2) =
           partItemShortest rwidth (bfid body) factionD localTime
                            itemFull quantSingle
