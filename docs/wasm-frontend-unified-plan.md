@@ -1,5 +1,23 @@
 # WASM Frontend Plan: SDL2 Parity on a Shared-Haskell Architecture
 
+## Temporary notes about the first things to do
+
+Key ordering decision: shared-Haskell foundations (InputDecision,
+CellStyle + TS-table/fixture generator) land before parity features, and
+multi-font is done by extracting Sdl.hs's overlay layout into a shared pure
+module rather than re-implementing it in TypeScript. The sibling
+`../lambdahack.github.io` checkout (deploy target of `make build-ts`) exists
+on this machine; see [[sandbox-wrapper-hides-paths]].
+
+Verified 2026-07-13 by ls: the pages repo contains exactly one font,
+`16x16xw.woff` (deployed manually in 2019, not by the build), and `make
+build-ts` copies no fonts — only index.html, LambdaHack.wasm,
+ghc_wasm_jsffi.mjs, and ts-src dist/. The repo's `GameDefinition/fonts/` has
+10 more font files that never reach the pages repo, and the deployed
+index.html references only 16x16xw.woff. So the plan's Phase 2.2 premise
+holds: multi-font work must extend build-ts to copy fonts and add @font-face
+entries to index.html.
+
 ## Goals and approach
 
 This plan supersedes `wasm-frontend-haskell-alignment-design.md` and
@@ -26,8 +44,9 @@ multi-frontend practices follow the phases.
 
 File:line references were verified against the tree at commit
 `8c93e3ba2` (2026-07-13), then machine-checked — re-run
-`python3 tools/check-plan-citations.py` after landing work that touches
-cited files, and re-verify universally-quantified claims ("only X does
+`python3 tools/check-plan-citations.py docs/wasm-frontend-unified-plan.md`
+after landing work that touches cited files, and re-verify
+universally-quantified claims ("only X does
 Y", "exactly two") by repo-wide grep, never by re-reading one file. Two
 file basenames are ambiguous in this repo and are therefore qualified
 wherever cited: `Server/LoopM.hs` vs `Client/LoopM.hs`, and the engine's
@@ -1081,9 +1100,10 @@ are listed in A.7 and cited inline by number.
 
 This repo cannot build without cross-target TH: `rcfgUIDefault` embeds
 `config.ui.default` via a TH splice
-(`GameDefinition/Content/RuleKind.hs:34`), `Client.UI.Content.Screen` runs a TH splice that reads
-and parses `GameDefinition/PLAYING.md` at compile time (plus `embedDir`
-for fonts, though that one is `#ifdef`'d away under `USE_BROWSER`).
+(`GameDefinition/Content/RuleKind.hs:34`), `Client.UI.Content.Screen`
+runs a TH splice that reads and parses `GameDefinition/PLAYING.md` at
+compile time (plus `embedDir` for fonts, though that one is `#ifdef`'d
+away under `USE_BROWSER`).
 
 - The JS backend runs TH splices through a node-based external
   interpreter: `compiler/GHC/Runtime/Interpreter/JS.hs` ("JavaScript
@@ -1403,8 +1423,8 @@ evidence so nobody re-treads it:
   a 2.2 pitfall item.
 - **PrintScreen key (as opposed to `C-P`).** SDL maps the key
   (`Sdl.hs:841`) but no binding uses `K.PrintScreen` bare
-  (`GameDefinition/.../Content/Input.hs:185` binds only `C-P`), so `keyTranslateWeb`'s lack of a
-  `"PrintScreen"` case changes nothing.
+  (`GameDefinition/.../Content/Input.hs:185` binds only `C-P`), so
+  `keyTranslateWeb`'s lack of a `"PrintScreen"` case changes nothing.
 - **Key-translation coverage.** `keyTranslateWeb` (`Key.hs:472+`) covers
   the same command-relevant key set as SDL's `keyTranslate`
   (`Sdl.hs:783-890`) including F-keys, navigation, KP digits with the

@@ -2,7 +2,7 @@
 """Check that file:line citations in a planning document still resolve.
 
 Usage: python3 tools/check-plan-citations.py [DOC]
-DOC defaults to wasm-frontend-unified-plan.md. Run from the repo root.
+DOC defaults to CLAUDE.md. Run from the repo root.
 
 For every citation of the form `path/to/File.hs:12` or `File.hs:12-34`
 (also .ts, .cabal, .mjs, .html and the Makefile), the script resolves the
@@ -18,6 +18,13 @@ document), or OUT-OF-RANGE (the file is shorter than the cited line).
 Line numbers drift as commits land: after changing a cited file, re-run
 this and eyeball the printed snippets; the document header records the
 commit its citations were last verified against.
+
+Pinned GitHub permalinks (`https://github.com/.../blob/<commit>/<path>#L12`
+or `#L12-L34`) are also checked, against the pinned commit via
+`git show <commit>:<path>` — they never drift, so this catches typos,
+wrong ranges and links whose commit or path is not in this repository
+(foreign-repo links cannot be verified locally and are reported as
+failures).
 
 Scope limits, deliberate: prose-style citations ("config.ui.default line
 67") are not extracted, and the *claims* around citations are not checked
@@ -36,6 +43,9 @@ SEARCH_ROOTS = ["engine-src", "definition-src", "GameDefinition", "ts-src",
 CITE_RE = re.compile(
     r"`?([A-Za-z][A-Za-z0-9_./-]*\.(?:hs|ts|cabal|mjs|html)|Makefile)"
     r":(\d+)(?:-(\d+))?")
+URL_RE = re.compile(
+    r"https://github\.com/[\w.-]+/[\w.-]+/blob/([0-9a-f]{7,40})/"
+    r"([A-Za-z0-9_./-]+)#L(\d+)(?:-L(\d+))?")
 
 
 def all_files_named(basename):
@@ -68,7 +78,7 @@ def resolve(name):
 
 
 def main():
-    doc = sys.argv[1] if len(sys.argv) > 1 else "wasm-frontend-unified-plan.md"
+    doc = sys.argv[1] if len(sys.argv) > 1 else "CLAUDE.md"
     text = open(doc, encoding="utf-8").read()
     cites = sorted({(m.group(1), int(m.group(2)),
                      int(m.group(3) or m.group(2)))
@@ -89,7 +99,28 @@ def main():
             continue
         span = f"{lo}" if lo == hi else f"{lo}-{hi}"
         print(f"ok   {name}:{span} | {lines[lo - 1].strip()[:80]}")
-    print(f"\n{len(cites)} citations checked, {failures} failed"
+    urlcites = sorted({(m.group(1), m.group(2), int(m.group(3)),
+                        int(m.group(4) or m.group(3)))
+                       for m in URL_RE.finditer(text)})
+    for sha, path, lo, hi in urlcites:
+        proc = subprocess.run(["git", "show", f"{sha}:{path}"],
+                              capture_output=True, text=True)
+        if proc.returncode != 0:
+            print(f"FAIL {path}#L{lo}-L{hi} @ {sha[:9]} — commit or path"
+                  f" not in this repository")
+            failures += 1
+            continue
+        lines = proc.stdout.splitlines()
+        if hi > len(lines):
+            print(f"FAIL {path}#L{lo}-L{hi} @ {sha[:9]} — OUT-OF-RANGE "
+                  f"(file has {len(lines)} lines at that commit)")
+            failures += 1
+            continue
+        span = f"L{lo}" if lo == hi else f"L{lo}-L{hi}"
+        print(f"ok   {path}#{span} @ {sha[:9]}"
+              f" | {lines[lo - 1].strip()[:70]}")
+    print(f"\n{len(cites) + len(urlcites)} citations checked,"
+          f" {failures} failed"
           f" — now eyeball the snippets against the document's claims.")
     return 1 if failures else 0
 
