@@ -9,8 +9,7 @@
 # Specify additional command line arguments
 #
 # - arguments: [--color, --cpp-simple, -XQuasiQuotes]
-- arguments: [--cpp-simple]
-
+- arguments: [--cpp-simple, -XNoStarIsType]
 
 # Control which extensions/flags/modules/functions can be used
 #

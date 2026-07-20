@@ -213,7 +213,7 @@ Testing and debugging
 
 Unit tests and integration tests can be run and displayed with
 
-    cabal test --test-show-details=direct
+    cabal test
 
 and doctests with
 
@@ -244,9 +244,13 @@ Stylish Haskell is used for slight auto-formatting at buffer save; see
 [.stylish-haskell.yaml](https://github.com/LambdaHack/LambdaHack/blob/master/.stylish-haskell.yaml).
 As defined in the file, indentation is 2 spaces wide and screen is
 80-columns wide. Spaces are used, not tabs. Spurious whitespace avoided.
-Spaces around arithmetic operators encouraged.
-Generally, relax and try to stick to the style apparent in a file
-you are editing. Put big formatting changes in separate commits.
+Spaces around arithmetic operators encouraged. Inline comments (`--`)
+should be prefixed with exactly two spaces, unless indented to match
+other comments. Operators such as `(` and `,`, `<$>` and `<*>`, comment
+starts, etc. on consecutive lines should either align or, if that would
+make lines too long, should be indented by 2 spaces from the previous
+indentation level. Generally, relax and try to stick to the style apparent
+in a file you are editing. Put big formatting changes in separate commits.
 
 CI checks the code with `hlint .` using the very liberal configuration file at
 [.hlint.yaml](https://github.com/LambdaHack/LambdaHack/blob/master/.hlint.yaml).

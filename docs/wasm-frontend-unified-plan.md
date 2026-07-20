@@ -26,8 +26,9 @@ multi-frontend practices follow the phases.
 
 File:line references were verified against the tree at commit
 `8c93e3ba2` (2026-07-13), then machine-checked — re-run
-`python3 tools/check-plan-citations.py` after landing work that touches
-cited files, and re-verify universally-quantified claims ("only X does
+`python3 tools/check-plan-citations.py docs/wasm-frontend-unified-plan.md`
+after landing work that touches cited files, and re-verify
+universally-quantified claims ("only X does
 Y", "exactly two") by repo-wide grep, never by re-reading one file. Two
 file basenames are ambiguous in this repo and are therefore qualified
 wherever cited: `Server/LoopM.hs` vs `Client/LoopM.hs`, and the engine's
@@ -1081,9 +1082,10 @@ are listed in A.7 and cited inline by number.
 
 This repo cannot build without cross-target TH: `rcfgUIDefault` embeds
 `config.ui.default` via a TH splice
-(`GameDefinition/Content/RuleKind.hs:34`), `Client.UI.Content.Screen` runs a TH splice that reads
-and parses `GameDefinition/PLAYING.md` at compile time (plus `embedDir`
-for fonts, though that one is `#ifdef`'d away under `USE_BROWSER`).
+(`GameDefinition/Content/RuleKind.hs:34`), `Client.UI.Content.Screen`
+runs a TH splice that reads and parses `GameDefinition/PLAYING.md` at
+compile time (plus `embedDir` for fonts, though that one is `#ifdef`'d
+away under `USE_BROWSER`).
 
 - The JS backend runs TH splices through a node-based external
   interpreter: `compiler/GHC/Runtime/Interpreter/JS.hs` ("JavaScript
@@ -1403,8 +1405,8 @@ evidence so nobody re-treads it:
   a 2.2 pitfall item.
 - **PrintScreen key (as opposed to `C-P`).** SDL maps the key
   (`Sdl.hs:841`) but no binding uses `K.PrintScreen` bare
-  (`GameDefinition/.../Content/Input.hs:185` binds only `C-P`), so `keyTranslateWeb`'s lack of a
-  `"PrintScreen"` case changes nothing.
+  (`GameDefinition/.../Content/Input.hs:185` binds only `C-P`), so
+  `keyTranslateWeb`'s lack of a `"PrintScreen"` case changes nothing.
 - **Key-translation coverage.** `keyTranslateWeb` (`Key.hs:472+`) covers
   the same command-relevant key set as SDL's `keyTranslate`
   (`Sdl.hs:783-890`) including F-keys, navigation, KP digits with the

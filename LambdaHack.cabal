@@ -428,7 +428,9 @@ test-suite test
   main-is:            Spec.hs
   other-modules:      ActorStateUnitTests
                       CommonMUnitTests
+                      FrameMUnitTests
                       HandleHelperMUnitTests
+                      HandleHumanGlobalMUnitTests
                       HandleHumanLocalMUnitTests
                       InventoryMUnitTests
                       ItemDescriptionUnitTests
