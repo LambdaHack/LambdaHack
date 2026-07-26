@@ -133,9 +133,7 @@ handleAndBroadcast ps atomicBroken atomic = do
                     Nothing -> return ()
                     Just pos -> do
                       aids <- filterHear pos as
-                      if null aids && not profound
-                      then return ()
-                      else do
+                      unless (null aids && not profound) $ do
                         distance <- if null aids
                                     then return Nothing
                                     else leaderDistance pos
@@ -147,9 +145,7 @@ handleAndBroadcast ps atomicBroken atomic = do
                     Nothing -> return ()
                     Just (hearMsg, profound, pos) -> do
                       aids <- filterHear pos as
-                      if null aids && not profound
-                      then return ()
-                      else do
+                      unless (null aids && not profound) $ do
                         distance <- if null aids
                                     then return Nothing
                                     else leaderDistance pos

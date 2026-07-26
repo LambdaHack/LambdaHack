@@ -663,11 +663,9 @@ addActorIid trunkId ItemFull{itemBase, itemKind, itemDisco=ItemDiscoFull arItem}
      -- Instead, pre-generate 20 player heroes to make sure all unique
      -- backstories are available to the player and so that the order
      -- of games played doesn't affect their availability.
-     if ikGrp == DefsInternal.GroupName "backstory"
-        && isJust bnumberTeam
-        && (snd <$> bnumberTeam) /= Just teamExplorer
-     then return ()
-     else do
+     unless (ikGrp == DefsInternal.GroupName "backstory"
+             && isJust bnumberTeam
+             && (snd <$> bnumberTeam) /= Just teamExplorer) $ do
       let container = CActor aid cstore
       Level{ldepth} <- getLevel lid
       mIidEtc <- case lookup ikGrp gearList of
