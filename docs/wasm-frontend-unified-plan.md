@@ -86,7 +86,7 @@ Appendices [A](#appendix-a--investigation-porting-the-ghcjs-target-to-ghcs-in-tr
 | 2.1 | `OverlayLayout` extraction + `Sdl.hs` on it | medium–large | — | todo |
 | 2.2 | browser canvas overlay renderer + font wiring | medium | 2.1, 0.2 | todo |
 | 2.3 | overlay transport over JSFFI | medium | 2.1, 2.2 | todo |
-| 2.4 | multifont capability flip | tiny diff, big review | 2.1–2.3 | todo |
+| 2.4 | multi-font capability flip | tiny diff, big review | 2.1–2.3 | todo |
 | 2.5 | post-flip QA | small | 2.4 | todo |
 | 3.1 | `lhStart` reads WASI argv | small (+spike) | — | todo |
 | 3.2 | Node driver for the game reactor | small | 3.1 | todo |
@@ -134,7 +134,7 @@ practices are ongoing or unscheduled tracks described after the phases.
   (`rcfgUIDefault`, `GameDefinition/Content/RuleKind.hs:34`; merged with
   the on-disk user config in `UIOptionsParse.hs:mkUIOptions`), so
   `schosenFontset`/`sfontsets`/`sfonts` are populated even with no argv —
-  the multifont gate's `not (T.null (fontPropRegular chosenFontset))`
+  the multi-font gate's `not (T.null (fontPropRegular chosenFontset))`
   conjunct already passes for the default fontset; only the frontend check
   blocks it. However, `GameDefinition/game-src/Client/UI/Content/Screen.hs`
   sets `rFontFiles = []` under `USE_BROWSER` (natively `$(embedDir
@@ -499,7 +499,7 @@ build shows menus and the log today, just in the map font.)
 
 Before 2.2 lands, capture a browser frame-timing **baseline** — with R5's
 harness if it exists by then, else a temporary `performance.now()` probe —
-and re-measure at 2.5, so multifont's rendering cost is an attributed,
+and re-measure at 2.5, so multi-font's rendering cost is an attributed,
 measured change rather than a guess.
 
 ### 2.1 Extract `OverlayLayout`: the pure half of `Sdl.hs`'s overlay drawing

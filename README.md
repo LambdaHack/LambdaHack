@@ -42,9 +42,9 @@ using either the supplied or a custom-made main loop.
 A couple of frontends are available (SDL2 is the default
 for desktop and there is a JavaScript browser frontend)
 and many other generic engine components are easily overridden,
-but the fundamental source of flexibility lies in the strict
-and enforced with types separation of engine code from the read-only
-content and of clients (human and AI-controlled) from the server.
+but the fundamental source of flexibility lies in the strict,
+type-enforced separation of engine code from the read-only content,
+and of clients (human and AI-controlled) from the server.
 
 Please see the changelog file for recent improvements
 and the issue tracker for short-term plans. Long term goals
@@ -64,9 +64,9 @@ You are welcome to create your own games by forking and modifying
 the single package, but please consider eventually splitting your changes
 into a separate content-heavy package that depends on the upstream
 engine library. This will help us exchange ideas and share improvements
-to the common codebase. Alternatively, you can already start the development
-in separation by cloning and rewriting Allure of the Stars[10]
-and mix and merge with the sample LambdaHack game rules at will.
+to the common codebase. Alternatively, you can start separate from the
+outset, by cloning and rewriting Allure of the Stars[10], mixing and
+merging with the sample LambdaHack game rules at will.
 Note that the LambdaHack sample game derives from the Hack/Nethack visual
 and narrative tradition[9], while Allure of the Stars uses the more free-form
 Moria/Angband style (it also uses the AGPL license, and BSD3 + AGPL = AGPL,
@@ -108,14 +108,14 @@ and `Inspect/Application/Local Storage` under RMB menu
 when run inside the Chrome browser.
 If the user config file is outdated or corrupted, it's automatically
 moved away together with old savefiles. At the next game start,
-the new default config file appears at its place.
+the new default config file appears in its place.
 
 Screen fonts and, consequently, window size can be changed by editing
 the config file in the user data folder. The default bitmap font
 `16x16xw.bdf` used for the game map covers most national characters
 in the Latin alphabet (e.g. to give custom names to player characters)
 and results in a game window of exactly 720p HD dimensions. The `8x8xb.fnt`
-bitmap font results in a tiny window and covers latin-1 characters only.
+bitmap font results in a tiny window and covers Latin-1 characters only.
 The config file parameter `allFontsScale` permits further window size
 adjustments, automatically switching to the scalable version of the large
 game map font (`16x16xw.woff`). Config file option `chosenFontset` governs
@@ -142,7 +142,7 @@ positions and keyboard for everything else.
 If you run the ANSI terminal frontend (`--frontendANSI` on commandline),
 then numeric keypad (especially keypad `*`, `/` and `5`) may not work
 correctly, depending on the terminal emulator you use. Toggling
-the Num Lock key may help or make issues worse. As a work around
+the Num Lock key may help or make issues worse. As a workaround for
 these issues, numbers are used for movement in the ANSI frontend,
 which sadly prevents the number keys from selecting heroes.
 The commands that require pressing Control and Shift together won't work
@@ -201,7 +201,7 @@ and a simplified black and white line terminal frontend (`--frontendTeletype`)
 suitable for teletype terminals or a keyboard and a printer (but it's going
 to use a lot of paper, unless you disable animations with `--noAnim`).
 The teletype frontend is used in CI and for some tests and benchmarks defined
-in Makefile. The terminal frontends leave you on your own regarding font
+in the Makefile. The terminal frontends leave you on your own regarding font
 choice and color setup and you won't have the colorful squares outlining
 special positions that exist in the SDL2 frontend, but only crude
 cursor highlights. The terminal frontends should run on Windows,
@@ -258,7 +258,7 @@ If hlint is still too naggy, feel free to add more exceptions.
 
 Haddocks are provided for all module headers and for all functions and types
 from major modules, in particular for the modules that are interfaces
-for a whole directory of modules. Apart of that, only very important
+for a whole directory of modules. Apart from that, only very important
 functions and types are distinguished by having a haddock.
 If minor ones have comments, they should not be haddocks
 and they are permitted to describe implementation details and be out of date.
@@ -266,12 +266,12 @@ Prefer assertions instead of comments, unless too verbose.
 
 The 'pointman' from game manual and UI is called 'leader' in the source code
 and there are a few more mismatches, though the source code naming
-and the UI naming should each be consistent in separation.
+and the UI naming should each be internally consistent.
 If the UI names stick, perhaps source code will be renamed at some point.
 
 This codebase is an experiment in extensive use of states without lens.
 So far, it works, doesn't result in much larger files or lots
-of repetition and has the added benefits that newcomers don't need
+of repetition and has the added benefit that newcomers don't need
 to learn any optics library. Record punning, etc., definitely help.
 
 
