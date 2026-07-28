@@ -66,8 +66,8 @@ candidate fix before committing either.
 Each tag also opens the test's own name, so a series runs as a unit:
 
 ```
-cabal test --test-options='-p "/contract/"'   # 25 tests, must stay green
-cabal test --test-options='-p "/LR-flip/"'    # 8 tests, flip with the fix
+cabal test --test-options='-p "/contract/"'   # must stay green
+cabal test --test-options='-p "/LR-flip/"'    # flip these with the fix
 ```
 
 A test carrying both concerns — the bridge tests X1 and X2, whose
