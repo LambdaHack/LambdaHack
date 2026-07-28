@@ -35,10 +35,8 @@ Consult them before touching pointman/leader plumbing, macro playback, run
 continuation or the item-dialog code.
 
 The closing portable-notes section holds the author-generic conventions
-and the machine-specific session facts — the sandbox's misleading "No such
-file" errors, phantom dotfiles in `git status`, `git`/`cabal` writes
-needing to run unsandboxed — skim it before debugging anything
-environment-related.
+and the machine-specific session facts — skim it before debugging
+anything environment-related.
 
 ## Build
 
@@ -50,10 +48,9 @@ environment-related.
 cabal build
 ```
 
-Run `cabal` (like all `git` writes and `gpg`) unsandboxed — `~/.cabal` is
-read-only under the inner sandbox (sandboxing notes below). A full build
-takes long: give Bash a generous timeout or run it in the background
-rather than concluding it hung.
+Run `cabal` unsandboxed (sandboxing notes below). A full build takes
+long: give Bash a generous timeout or run it in the background rather
+than concluding it hung.
 
 Run the sample game (opens an SDL2 window, so for a human at a display —
 not from a headless session):
@@ -99,59 +96,8 @@ cabal repl --build-depends=QuickCheck --build-depends=template-haskell --with-co
 
 ### Haskell unit-test harness (`test/`)
 
-Hard-won facts for writing and driving tests with this harness.
-
-#### The mock and frontend stubs
-
-`test/UnitTestHelpers.hs` provides `CliMock`, a real `MonadClientUI`
-implementation over `StateT CliState IO`, plus two frontend stubs: the
-default answers every `FrontKey` request with ESC;
-`scriptedFchanFrontend` (wired into a fixture by `partyCliStateScripted`)
-plays a scripted key list first, then falls back to ESC.
-
-#### The stub world: board and party fixtures
-
-- The stub board is 3x3 unknown, unwalkable tiles: aiming/projection
-  pipelines fail deterministically ("aiming obstructed by terrain"), but
-  code that checks stores before aiming (e.g. `projectHuman`) is testable.
-  Anything that indexes `ltile` by `Point` must keep positions on row 0:
-  the `Enum` width hack (`speedupHackXSize`, see the gotcha below) keeps
-  its default 80 in the test binary, so on the 3x3 board only row-0
-  lookups stay in bounds.
-- Party fixtures `partyCliState`/`partyCliState3`/`partyCliStateBanned`
-  model the sample game's hero faction. `emptyUIFaction` defaults
-  `fhasPointman = False`, which alone forces `noRunWithMulti` and disables
-  the run machinery — set it `True` in any faction fixture that must run or
-  restore the pointman.
-
-#### Driving keys, commands and dialogs
-
-- `promptGetKey` runs under the mock with blank frames (`onBlank = True`)
-  and with rendered ones (`drawHudFrame` over the stub board — pinned by
-  `FrameMUnitTests.AS7`). Even whole dialogs can be driven — see the ESC
-  store-dialog test in `test/HandleHumanLocalMUnitTests.hs` — given two
-  things: an item both held by the actor and registered in `sitemD` (a
-  separate `updateItemD` step; without it the store reads as empty), and
-  a screen wider than 4 (dialog prompts assert that — enlarge `coscreen`
-  per-test; the level can stay 3x3).
-- Real key bindings come from the *sample game's* `standardKeysAndMouse`
-  (module `Client.UI.Content.Input` — the game's, per the
-  duplicate-basename gotcha below) via `IC.makeData Nothing`, baked into
-  the fixture CCUI by `stubSessionUI` — no hand-rolled `InputContent`
-  needed. To run a whole `HumanCmd` the way the key loop does, use
-  `dispatchCmd` in `test/HandleHelperMUnitTests.hs`, which resolves the
-  command's real key from those bindings and feeds both to
-  `cmdSemInCxtOfKM`.
-
-#### Characterization tags: `[LR-flip]` and `[contract]`
-
-Some tests are deliberate characterizations of known-buggy behaviour,
-tagged `[LR-flip]` in comments with the post-fix expectation stated
-inline; `[contract]`-tagged tests pin behaviour that must survive both
-planned designs (live-read, then abort-split — see the two `docs/`
-documents above) unchanged. Don't "fix" a green `[LR-flip]` test — flip
-it together with the engine change it documents, and verify the flip by
-temporarily applying the candidate fix before committing either.
+The hard-won facts for writing and driving tests with this harness are in
+`test/CLAUDE.md`, which loads when working under `test/`.
 
 ### WASM and TypeScript test suites
 
@@ -164,28 +110,14 @@ make test-wasm
 make test-ts
 ```
 
-### Playtests (Makefile)
+### Playtests and headless runs
 
-The Makefile has a large battery of automated AI-vs-AI playtest and benchmark
-targets: `make test-short`, `make test-medium`, `make test` (those two plus
-`benchNull`), `make test-gha` (a larger aggregate plus `test-sniff`; run
-by CI on each push), `make frontendCrawl`/`make frontendBattle` etc.
-(interactive AI-vs-AI games in the SDL2 frontend, useful to visually
-confirm a change), and `make bench*` targets for performance.
-`test-*-medium` targets run one game mode each
-(raid, brawl, shootout, hunt, flight, zoo, ambush, crawl, safari, battle,
-defense, dig...) through the teletype frontend with `--automateAll`. Grep the
-Makefile for a mode name to find its exact invocation before adding a new
-one. These targets play out whole AI-vs-AI games — expect minutes, not
-seconds, and set Bash timeouts accordingly; the `frontend*` targets
-additionally open an SDL2 window, so they are for a human at a display.
-
-The headless targets select test frontends by flag: `--frontendNull`
-(frames forced but not displayed), `--frontendLazy` (frames not even
-computed), `--frontendTeletype` (line-printer output). The `nodeBench*`
-and `nodeMinifiedBench` targets are dead GHCJS remnants — they invoke a
-`.jsexe` that nothing builds anymore; repurposing them for WASM is the
-plan's Phase 3.
+The Makefile's battery of automated AI-vs-AI playtest and benchmark
+targets (`make test-short`, `test-medium`, `test-gha`, `frontend*`,
+`bench*`) and the headless test-frontend flags are covered by the
+`playtests` skill. Those targets play out whole games — expect minutes,
+not seconds, and set Bash timeouts accordingly; the `frontend*` targets
+open an SDL2 window, so they are for a human at a display.
 
 `LambdaHack --help` lists all debug options. Of these, `--sniff` (verbose,
 initially cryptic) prints the client-server traffic — useful when debugging
@@ -225,11 +157,11 @@ playtests).
 
 For a generic "run checks" request — each with its trigger:
 
-- Always: `python3 tools/check-plan-citations.py DOC` over CLAUDE.md, the
-  three `docs/` documents and every draft staged in the repo root; then,
-  for any document edited since it was last verified, passes 2 and 3 of
-  the three-pass discipline (portable notes below — pass 3, the
-  quantified-claims grep, is the one that keeps finding real errors).
+- Always: `python3 tools/check-plan-citations.py DOC` over every `.md`
+  document in the repo (`git ls-files '*.md'` plus untracked drafts,
+  minus `CHANGELOG.md`, a historical record rather than a live claim
+  set), the remaining passes over any document edited since it was last
+  verified — the `doc-verification` skill holds them and their order.
 - When Haskell code changed: build, then `cabal test` (the Makefile
   playtests when the change warrants), and stylish-haskell and hlint on
   touched files (both run in-session, sandboxed included; code written
@@ -251,29 +183,26 @@ For a generic "run checks" request — each with its trigger:
 ### Three source trees, one library
 
 The `LambdaHack` library stanza in `LambdaHack.cabal` combines three
-`hs-source-dirs`, all under module namespace `Game.LambdaHack.*` (except
+source trees, all under module namespace `Game.LambdaHack.*` (except
 `GameDefinition`, which is unprefixed):
 
-- `definition-src/` — pure data: dice, frequencies, RNG, and the abstract
-  `Content.*Kind` definitions (`CaveKind`, `FactionKind`, `ItemKind`,
-  `ModeKind`, `PlaceKind`, `RuleKind`, `TileKind`) plus `Definition.*`
-  (abilities, colors, flavour). No game logic, no IO.
-- `engine-src/Game/LambdaHack/` — the actual engine: `Atomic/` (state-changing
-  command representation), `Client/` (UI + AI client logic), `Common/`
-  (shared types/state), `Server/` (game arbiter, dungeon generation, FOV).
-- `GameDefinition/` — the *sample game's* concrete content
-  (`GameDefinition/Content/*.hs`, module namespace `Content.*`) plus
-  game-specific client wiring (`game-src/Client/UI/Content/{Input,Screen}.hs`)
-  and the `Implementation.Monad{Client,Server}Implementation` modules that
-  pick concrete monad transformer stacks for the abstract client/server
+- `definition-src/` — pure content-definition data (`Content.*Kind`,
+  `Definition.*`). No game logic, no IO.
+- `engine-src/Game/LambdaHack/` — the actual engine: `Atomic/`
+  (state-changing command representation), `Client/` (UI + AI client
+  logic), `Common/` (shared types/state), `Server/` (game arbiter,
+  dungeon generation, FOV).
+- `GameDefinition/` — the *sample game's* concrete content (module
+  namespace `Content.*`) plus its client wiring and the
+  `Implementation.Monad{Client,Server}Implementation` modules that pick
+  concrete monad transformer stacks for the abstract client/server
   monads. `TieKnot.hs` wires content + engine + frontend into a runnable
   game (`tieKnot`/`tieKnotForAsync`); `Main.hs` is the executable entry
-  point. Also holds `index.html`, the game's WASM browser page.
+  point.
 
-Separately, `ts-src/` (not part of the Haskell library) holds the TypeScript
-browser-side harness for the WASM build (loader, terminal emulation, dev
-server, their vitest tests) and `run-wasm-test.mjs`, the Node driver for
-`make test-wasm`.
+Separately, `ts-src/` (not part of the Haskell library) holds the
+TypeScript browser-side harness for the WASM build and
+`run-wasm-test.mjs`, the Node driver for `make test-wasm`.
 
 **Module-as-interface convention** (stated in the .cabal description): if a
 module has the same name as a directory (e.g. `Game.LambdaHack.Client` vs.
@@ -393,8 +322,7 @@ section at the end of this file; what follows is LambdaHack-specific.
   at `Sdl.hs:590` awaits its scheduled fix — see the plan).
 - Several frontends carry near-duplicate logic (SDL2, WASM, the dead Dom,
   ANSI, Teletype) — the prime local instance of the analogous-variant
-  families that make single-file only/every/never generalizations
-  treacherous (see the grep rule in the portable working-style notes).
+  families the portable notes' grep rule warns about.
 - The pointman desync (next bullet) stayed hidden for years because one
   `sleader` writer sat inside an input primitive (`promptGetKey`) nobody
   suspected of mutating game-relevant state — the local cautionary tale
@@ -414,15 +342,6 @@ section at the end of this file; what follows is LambdaHack-specific.
 - `updateCOpsAndCachedData` recomputes only the actor max-skills cache; a
   fixture that swaps tile content must rebuild `coTileSpeedup` itself
   (`Tile.speedupTile False cotile`).
-
-## Orientation for new contributors
-
-A good entry point for understanding command flow:
-`GameDefinition/game-src/Client/UI/Content/Input.hs` (key → command bindings,
-also drives auto-generated in-game help) leads to
-`engine-src/Game/LambdaHack/Client/UI/HandleHumanM.hs` (how the UI client
-interprets those commands). From there, see the Client-server architecture
-section above for how a command becomes a `Request`/`Response` round trip.
 
 ## Portable notes: same author, same machine
 
@@ -461,14 +380,14 @@ unless attributed.
 - If hlint is still too naggy, adding more exceptions to `.hlint.yaml` is
   fine — don't contort code to appease it.
 - **Uniformity across analogous positions is itself a review tool.**
-  Parallel code (e.g. the near-duplicate logic across the SDL2, WASM,
-  ANSI and Teletype frontends) and its comments should be identical
-  modulo names and shapes; diffing analogous positions is how bugs
-  surface, and a drifted one is normalized toward the cleaner form, not
-  the first draft. One level up, things meant to be compared (benchmark
-  variants, test cases) are designed as one-to-one counterparts —
-  measuring the same stage, differing only along the compared axis,
-  adjacent in the output — not accreted one probe at a time.
+  Parallel code (e.g. the near-duplicate frontends) and its comments
+  should be identical modulo names and shapes; diffing analogous
+  positions is how bugs surface, and a drifted one is normalized toward
+  the cleaner form, not the first draft. One level up, things meant to be
+  compared (benchmark variants, test cases) are designed as one-to-one
+  counterparts — measuring the same stage, differing only along the
+  compared axis, adjacent in the output — not accreted one probe at a
+  time.
 - **Order definitions as they are used, and let every summary span its
   whole subject.** Auxiliary definitions, do-bindings, list entries and
   top-level functions follow the order in which their consumers run,
@@ -571,40 +490,6 @@ unless attributed.
   rather than hidden in the operator name, and put quantifiers first
   (*for all `f`, `x`, `y`*). It reads in the vocabulary of the code and
   keeps the shapes checkable.
-
-### Document verification: the three-pass discipline
-
-Planning/reference documents (this file, the three `docs/` documents
-listed at the top and any GitHub-bound drafts staged in the repo root)
-make checkable claims. Whenever such a document (or code it cites) is
-edited, run three passes:
-
-1. `python3 tools/check-plan-citations.py [DOC]` (from the repo root) —
-   re-validates `file:line` citations, resolving each, checking the line
-   range and printing the first cited line to eyeball against the
-   surrounding claim, and pinned GitHub permalinks against the commit
-   they name via `git show`, so those never drift; foreign-repo links
-   can't be verified locally. DOC defaults to this file; pass
-   `docs/wasm-frontend-unified-plan.md`, `docs/leader-desync-bug.md` or
-   `docs/promptgetkey-hygiene.md` to check those.
-2. Check that paths, Makefile targets and flags named in prose exist.
-3. Re-verify only/every/never claims by repo-wide grep.
-
-The passes are ordered by yield: the mechanical ones catch drift, but the
-quantified-claims grep has found real, long-standing errors every time it
-has been run, so it is the pass never to skip.
-
-A fourth pass, the **heading-scope check**, applies whenever a document's
-heading structure is edited — adding, moving, removing or re-levelling a
-heading. Markdown nests every block under the nearest preceding heading
-until an equal-or-higher one appears, so a heading edit silently rescopes
-the trailing content. Re-derive the outline with `python3
-tools/heading-outline.py DOC...` (handles ATX and Setext, code-fence-aware)
-and, block by block, confirm each sits under a heading it is actually
-about, at the right level. The tell is a topic that shifts mid-section with
-no heading change — e.g. a new last subsection quietly swallowing the
-sections meant to follow it, or content left dangling under a heading a
-level too deep.
 
 ### Sandboxing on the dev machine (outer wrapper + inner sandbox)
 
