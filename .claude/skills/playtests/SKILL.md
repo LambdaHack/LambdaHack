@@ -11,11 +11,14 @@ targets: `make test-short`, `make test-medium`, `make test` (those two plus
 by CI on each push), `make frontendCrawl`/`make frontendBattle` etc.
 (interactive AI-vs-AI games in the SDL2 frontend, useful to visually
 confirm a change), and `make bench*` targets for performance.
-`test-*-medium` targets run one game mode each
-(raid, brawl, shootout, hunt, flight, zoo, ambush, crawl, safari, battle,
-defense, dig...) through the teletype frontend with `--automateAll`. Grep the
-Makefile for a mode name to find its exact invocation before adding a new
-one.
+`test<Mode>-medium` targets run one game mode each -- `testRaid-medium`,
+`testBrawl-medium`, `testShootout-medium`, `testHunt-medium`,
+`testFlight-medium`, `testZoo-medium`, `testAmbush-medium`,
+`testCrawl-medium`, `testSafari-medium`, `testBattle-medium`,
+`testDefense-medium`, `testDig-medium` and a few variants -- through the
+teletype frontend with `--automateAll`. Note the capitalised mode and the
+single hyphen: there is no `test-raid-medium`. Grep the Makefile for a mode
+name to find its exact invocation before adding a new one.
 
 The headless targets select test frontends by flag: `--frontendNull`
 (frames forced but not displayed), `--frontendLazy` (frames not even
