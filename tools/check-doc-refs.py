@@ -12,7 +12,13 @@ document says about the repo.
 Deliberately conservative: prose backticks hold a mix of paths, type
 names, identifiers and code fragments, and a checker that tried to resolve
 all of them would drown the real failures in noise and stop being read.
-Only four unambiguous shapes are checked, and anything else is counted as
+The per-repo settings live in one block at the top: search roots, the
+options file, the owned module namespace, the allowlist path. Porting
+this to another repository should mean editing that block and nothing
+else, and each setting may be left empty, which switches its check off
+rather than breaking the run.
+
+Only five unambiguous shapes are checked, and anything else is counted as
 unclassified rather than guessed at:
 
   paths    a backticked, space-free token that resolves — directly, as a
@@ -46,6 +52,11 @@ unclassified rather than guessed at:
            that reads its own documentation as evidence would call it
            real — as this one did until the recipe was first run.
 
+  cabal    `+name` against the flags declared in the repo's cabal
+           file(s). Upgrade-only like modules, because prose reaches for
+           a leading plus too — a size column reading "small (+spike)"
+           must not be read as a flag that has gone missing.
+
 Exit status is nonzero only for an unresolved path or an unknown `make`
 target — the two kinds that are unambiguously this repo's own drift.
 
@@ -63,8 +74,10 @@ scratch document holding
     `Game.LambdaHack.Client.NoSuch`                FAIL, unknown module
     `--noSuchFlag`                                 listed, never failed
     `CellStyle.hs`                                 allow-listed, not failed
+    `+noSuchFlag`                                  upgrade-only, unclassified
     `Makefile`, `make play`, `--sniff`             controls, must pass
     `Client.UI`, `Definition.*`                    module controls
+    `+with_expensive_assertions`                   cabal-flag control
     `Ability.SkMove`, `K.KM`                       upgrade-only, unclassified
     `blob/master`, `group/bench`, `KP_/`           must stay unclassified
 
@@ -82,12 +95,25 @@ import re
 import subprocess
 import sys
 
-PATH_EXT = ("hs", "ts", "mjs", "py", "cabal", "html", "md", "yaml", "yml",
-            "json", "sh", "txt")
+# --- per-repo configuration -----------------------------------------
+# Porting this script to another repository should mean editing this
+# block and nothing else; everything below it is repo-agnostic. Each
+# setting may be left empty, which switches its check off rather than
+# breaking the run.
 SEARCH_ROOTS = ["engine-src", "definition-src", "GameDefinition", "ts-src",
                 "test", "tools", "docs", ".claude", ".github"]
-ALLOW_FILE = "tools/doc-refs-allow.txt"
+# Where the executable's `long "…"` options are declared; "" if the repo
+# ships no command-line parser, in which case every `--flag` falls
+# through to the external/unknown buckets.
 OPTIONS_FILE = "engine-src/Game/LambdaHack/Server/Commandline.hs"
+# Module prefix owned by this repo, the one namespace where an
+# unresolved module is a failure rather than a shrug; "" to disable.
+OUR_NAMESPACE = "Game.LambdaHack."
+ALLOW_FILE = "tools/doc-refs-allow.txt"
+# --- end per-repo configuration --------------------------------------
+
+PATH_EXT = ("hs", "ts", "mjs", "py", "cabal", "html", "md", "yaml", "yml",
+            "json", "sh", "txt")
 
 TICK_RE = re.compile(r"`([^`\n]+)`")
 FENCE_RE = re.compile(r"^\s*(```|~~~)")
@@ -99,16 +125,26 @@ LONG_RE = re.compile(r'long "([^"]+)"')
 MODULE_RE = re.compile(r"^[A-Z][A-Za-z0-9_']*(\.[A-Z][A-Za-z0-9_']*)+$")
 # A `Foo.*` stem may be a single component: `Definition.*` is a directory.
 STEM_RE = re.compile(r"^[A-Z][A-Za-z0-9_']*(\.[A-Z][A-Za-z0-9_']*)*$")
-OUR_NAMESPACE = "Game.LambdaHack."
+CABAL_FLAG_RE = re.compile(r"^flag\s+([A-Za-z][A-Za-z0-9_-]*)", re.M)
 # A repo path cannot hold these; they mark URLs, templates and the
 # brace shorthand the documents use (`HandleHuman{Local,Global}M.hs`).
 NOT_IN_PATH = set("<>#?&=…{}")
 
 
+def cabal_flags():
+    """Flags declared in the repo's cabal file(s), for `+name` tokens."""
+    flags = set()
+    for path in glob.glob("*.cabal"):
+        text = open(path, encoding="utf-8").read()
+        flags.update(CABAL_FLAG_RE.findall(text))
+    return flags
+
+
 def repo_paths():
     """Every tracked-or-present path under the search roots, plus the root."""
+    roots = [r for r in SEARCH_ROOTS if os.path.isdir(r)] or ["."]
     out = subprocess.run(
-        ["bash", "-c", "find " + " ".join(SEARCH_ROOTS)
+        ["bash", "-c", "find " + " ".join(roots)
          + " -not -path '*/node_modules/*' 2>/dev/null; ls -1 2>/dev/null"],
         capture_output=True, text=True).stdout.split("\n")
     return [p for p in out if p]
@@ -212,6 +248,8 @@ def make_targets():
 
 
 def our_flags():
+    if not OPTIONS_FILE or not os.path.exists(OPTIONS_FILE):
+        return set()
     text = open(OPTIONS_FILE, encoding="utf-8").read()
     return set(LONG_RE.findall(text))
 
@@ -225,6 +263,7 @@ def main():
     top_level = {d for d in os.listdir(".") if os.path.isdir(d)}
     known = repo_paths()
     allow_paths, allow_targets = allowed()
+    cabalflags = cabal_flags()
     failures = 0
     external, unclassified, unknown_flags = [], [], []
 
@@ -233,7 +272,16 @@ def main():
             continue                      # pass 1 and the flag pass own these
         if not any(c.isalnum() for c in token):
             continue                      # bare punctuation, e.g. `,` `<$>`
-        if token[0] in "~/" or token.startswith(".."):
+        if token.startswith("+"):
+            # A cabal flag as the docs write it, `+with_expensive_assertions`.
+            # Upgrade-only: prose reaches for a leading plus too (a size
+            # column reading "small (+spike)"), so an unknown one is a
+            # shrug, not a failure.
+            if token[1:] in cabalflags:
+                print(f"ok   flag   {token} (cabal flag)")
+            else:
+                unclassified.append(token)
+        elif token[0] in "~/" or token.startswith(".."):
             external.append(token)
         elif resolves(token, known):
             print(f"ok   path   {token}")
@@ -243,7 +291,7 @@ def main():
         elif module_path(token):
             if resolves(module_path(token), known):
                 print(f"ok   module {token}")
-            elif token.startswith(OUR_NAMESPACE):
+            elif OUR_NAMESPACE and token.startswith(OUR_NAMESPACE):
                 print(f"FAIL module {token} — no such module in"
                       f" {OUR_NAMESPACE}*")
                 failures += 1
