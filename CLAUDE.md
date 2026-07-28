@@ -584,8 +584,10 @@ sandbox. Current state and its implications:
   `*.prof`, `cabal.project.local.bkp*`, `.emacs.desktop*`, etc.); leave
   them alone and never `git add` them wholesale.
 - `gh` is not authenticated; for GitHub reads use `curl` against
-  `api.github.com` (whitelisted in horde-ad's sandbox network config —
-  verify it is here too).
+  `api.github.com`, reachable in-session — 200 on 2026-07-28. Don't read
+  that as an allowlist entry: an unrelated control host answered too, so
+  the check shows network access was open, not that this host is special.
+  If the calls start failing, that is the thing to re-establish.
 
 ### Build and shell tooling in sessions
 
