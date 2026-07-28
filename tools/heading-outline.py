@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """Print the heading outline of Markdown files, for the heading-scope check
-in CLAUDE.md (see "Document verification").
+in the `doc-verification` skill, which CLAUDE.md's standing checks name.
 
 Handles both ATX headings (`## Foo`) and Setext headings (a text line
 underlined with `===` for level 1 or `---` for level 2), and ignores
@@ -11,6 +11,13 @@ orphaned section shows up at a glance. Then read the body under each
 heading and confirm it is actually about that heading, at that level.
 
 Usage: python3 tools/heading-outline.py FILE [FILE ...]
+
+Scope limits, deliberate: this shows where a block sits, never whether a
+heading's words describe what sits under it. A section passes while its
+title fits only its first paragraph — CLAUDE.md's "What this is" did
+exactly that, holding twenty-six further lines of pointers to other
+documents until they were split off under a heading that names them. No
+outline can catch that; it is the reading step above, and it is a human's.
 
 Non-vacuity (per CLAUDE.md's "prove a checker non-vacuous"): run it on this
 repo's docs and confirm it lists the ATX headings of CLAUDE.md *without* the
