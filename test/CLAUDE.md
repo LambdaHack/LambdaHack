@@ -4,8 +4,8 @@ The engine-wide conventions and gotchas stay in the repo-root
 `CLAUDE.md`.
 
 File:line references were verified against the tree at commit
-`2815391d4` (2026-07-28); the citation pass proves a cited line exists,
-this stamp that it still says what the claim around it needs.
+`2815391d4` (2026-07-28); the citation pass proves a cited line exists —
+this stamp, that it still says what the claim around it needs.
 
 ## The mock and frontend stubs
 
@@ -63,7 +63,7 @@ Don't "fix" a green `[LR-flip]` test — flip it together with the engine
 change it documents, and verify the flip by temporarily applying the
 candidate fix before committing either.
 
-Each tag also opens the test's own name, so a series runs as a unit:
+Each tag also begins the test's own name, so a series runs as a unit:
 
 ```
 cabal test --test-options='-p "/contract/"'   # must stay green

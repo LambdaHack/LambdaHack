@@ -52,8 +52,8 @@ target — the two kinds that are unambiguously this repo's own drift.
 A planning document legitimately names things that do not exist yet, and
 a superseded document is named as history, so tools/doc-refs-allow.txt
 lists globs to report as "allow" instead of failing. Every entry there
-carries its reason; an unexplained one hides the drift this checker is
-for. Pass -v to also list the unclassified backticks.
+carries its reason; an unexplained one hides the drift this checker
+exists to find. Pass -v to also list the unclassified backticks.
 
 Non-vacuity (per CLAUDE.md's "prove a checker non-vacuous"): feed it a
 scratch document holding

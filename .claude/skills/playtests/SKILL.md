@@ -21,9 +21,10 @@ The headless targets select test frontends by flag: `--frontendNull`
 (frames forced but not displayed), `--frontendLazy` (frames not even
 computed), `--frontendTeletype` (line-printer output). The `nodeBench*`
 and `nodeMinifiedBench` targets are dead GHCJS remnants — they invoke a
-`.jsexe` that nothing builds anymore; repurposing them for WASM is the
-plan's Phase 3.
+`.jsexe` that nothing builds anymore; repurposing them for WASM is
+Phase 3 of `docs/wasm-frontend-unified-plan.md`.
 
-Such runs look completely silent, because the game redirects its own
-stdout and stderr to files — see "Playtests and headless runs" in the
-repo-root `CLAUDE.md` for how to harvest the output.
+Such runs look completely silent, because the main game executable
+redirects its own stdout and stderr to files — see "Playtests and
+headless runs" in the repo-root `CLAUDE.md` for how to harvest the
+output.

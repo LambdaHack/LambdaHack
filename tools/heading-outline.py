@@ -17,7 +17,8 @@ heading's words describe what sits under it. A section passes while its
 title fits only its first paragraph — CLAUDE.md's "What this is" did
 exactly that, holding twenty-six further lines of pointers to other
 documents until they were split off under a heading that names them. No
-outline can catch that; it is the reading step above, and it is a human's.
+outline can catch that; it belongs to the reading step above, which is
+a human's.
 
 Non-vacuity (per CLAUDE.md's "prove a checker non-vacuous"): run it on this
 repo's docs and confirm it lists the ATX headings of CLAUDE.md *without* the
