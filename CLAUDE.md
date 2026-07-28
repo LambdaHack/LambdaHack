@@ -87,7 +87,8 @@ cabal repl --build-depends=QuickCheck --build-depends=template-haskell --with-co
 ### Haskell unit-test harness (`test/`)
 
 The hard-won facts for writing and driving tests with this harness are in
-`test/CLAUDE.md`, which loads when working under `test/`.
+`test/CLAUDE.md` — read it when working under `test/`, where a session
+also loads it by itself.
 
 ### WASM and TypeScript test suites
 
@@ -105,7 +106,8 @@ make test-ts
 The Makefile's battery of automated AI-vs-AI playtest and benchmark
 targets (`make test-short`, `test-medium`, `test-gha`, `frontend*`,
 `bench*`) and the headless test-frontend flags are covered by the
-`playtests` skill. Those targets play out whole games — expect minutes,
+`playtests` skill — read `.claude/skills/playtests/SKILL.md`, in this
+repo. Those targets play out whole games — expect minutes,
 not seconds, and set Bash timeouts accordingly; the `frontend*` targets
 open an SDL2 window, so they are for a human at a display.
 
@@ -113,8 +115,9 @@ open an SDL2 window, so they are for a human at a display.
 initially cryptic) prints the client-server traffic — useful when debugging
 the request/response flow.
 
-When stdout is not a terminal — tool-driven sessions, CI — the game
-redirects its own stdout and stderr to `~/.LambdaHack/stdout.txt` and
+When stdout is not a terminal — tool-driven sessions, CI — the main game
+executable redirects its own stdout and stderr to
+`~/.LambdaHack/stdout.txt` and
 `~/.LambdaHack/stderr.txt` (`GameDefinition/Main.hs`, a Windows
 desktop-launch workaround), superseding any shell redirection. Such
 runs look completely silent: the handles are duplicated at startup, so
@@ -152,7 +155,10 @@ For a generic "run checks" request — each with its trigger:
   repo (`git ls-files '*.md'` plus untracked drafts, minus
   `CHANGELOG.md`, a historical record rather than a live claim set), the
   remaining passes over any document edited since it was last verified —
-  the `doc-verification` skill holds them and their order.
+  the `doc-verification` skill holds them and their order. That skill is
+  user-scope, so it applies in every project and its only copy lives
+  outside this repo, at `~/.claude/skills/doc-verification/SKILL.md`:
+  a reader who wants the passes themselves has to open it there.
 - When Haskell code changed: build, then `cabal test` (the Makefile
   playtests when the change warrants), and stylish-haskell and hlint on
   touched files (both run in-session, sandboxed included; code written
@@ -202,7 +208,7 @@ everything in the directory — other modules in the library must not reach
 past it into the directory's internals. This is enforced by convention, not
 by `.cabal`-exposed/hidden boundaries (nearly all modules are exposed so
 that downstream games can override things — the only hidden ones are the
-per-backend file module actually compiled in, `HSFile`/`WasmFile`/`JSFile`,
+file-backend module compiled into this build, `HSFile`/`WasmFile`/`JSFile`,
 and `Paths_LambdaHack`), so respect it when adding imports.
 
 ### Client-server architecture
