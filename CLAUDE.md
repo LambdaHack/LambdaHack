@@ -157,11 +157,12 @@ playtests).
 
 For a generic "run checks" request — each with its trigger:
 
-- Always: `python3 tools/check-plan-citations.py DOC` over every `.md`
-  document in the repo (`git ls-files '*.md'` plus untracked drafts,
-  minus `CHANGELOG.md`, a historical record rather than a live claim
-  set), the remaining passes over any document edited since it was last
-  verified — the `doc-verification` skill holds them and their order.
+- Always: `python3 tools/check-plan-citations.py DOC` and
+  `python3 tools/check-doc-refs.py DOC` over every `.md` document in the
+  repo (`git ls-files '*.md'` plus untracked drafts, minus
+  `CHANGELOG.md`, a historical record rather than a live claim set), the
+  remaining passes over any document edited since it was last verified —
+  the `doc-verification` skill holds them and their order.
 - When Haskell code changed: build, then `cabal test` (the Makefile
   playtests when the change warrants), and stylish-haskell and hlint on
   touched files (both run in-session, sandboxed included; code written
@@ -336,9 +337,11 @@ section at the end of this file; what follows is LambdaHack-specific.
   the live-read design lands (see `docs/leader-desync-bug.md`), don't
   cache the pointman across a `promptGetKey` call; re-read `sleader`
   at the point of use.
-- `noRunWithMulti` has three disjuncts (`SkMove` skill, `fspawnsFast`,
-  `fhasPointman`); misreading it as two once produced a test fixture where
-  the run-leader restore silently never fired.
+- `noRunWithMulti` has three disjuncts (`Faction.hs:143-151`): the
+  `SkMove` skill, `bannedPointmanSwitchBetweenLevels` — which is
+  `fspawnsFast`, one line below — and `fhasPointman`. Misreading it as
+  two once produced a test fixture where the run-leader restore silently
+  never fired.
 - `updateCOpsAndCachedData` recomputes only the actor max-skills cache; a
   fixture that swaps tile content must rebuild `coTileSpeedup` itself
   (`Tile.speedupTile False cotile`).

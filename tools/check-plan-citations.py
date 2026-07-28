@@ -5,7 +5,8 @@ Usage: python3 tools/check-plan-citations.py [DOC]
 DOC defaults to CLAUDE.md. Run from the repo root.
 
 For every citation of the form `path/to/File.hs:12` or `File.hs:12-34`
-(also .ts, .cabal, .mjs, .html and the Makefile), the script resolves the
+(also .ts, .py, .cabal, .mjs, .html, .md, .txt, .yaml/.yml and the
+Makefile — documents cite each other and the tools), the script resolves the
 file, checks the line range exists, and prints the first cited line so a
 human can compare it against what the surrounding sentence claims. A
 `/.../` component in a cited path is treated as a wildcard (the document
@@ -31,6 +32,25 @@ Scope limits, deliberate: prose-style citations ("config.ui.default line
 — in particular, universally-quantified claims ("only X does Y", "exactly
 two", "never") must be re-verified by repo-wide grep, not by re-reading
 the cited file; that asymmetry is how a real error slipped in once.
+
+Non-vacuity (per CLAUDE.md's "prove a checker non-vacuous"): feed it a
+scratch document holding one citation of each failing kind and confirm
+all five are reported and the exit status is 1 —
+
+    UNRESOLVED       `NoSuchFile.hs:12`
+    OUT-OF-RANGE     `FrameM.hs:999999`
+    AMBIGUOUS        `LoopM.hs:10`        (Client/ and Server/ both have one)
+    NON-SOURCE       `CLAUDE.md:999999`   (documents and tools cite each other)
+    PERMALINK range  .../blob/b4d5cc2e4/CLAUDE.md#L99999
+    PERMALINK repo   https://github.com/ghc/ghc/blob/0123456789abcdef/x.hs#L1
+
+plus a control that must still pass (`Point.hs:26`). A run reporting
+fewer than six failures means extraction, resolution or the `git show`
+branch has silently stopped covering that kind. The NON-SOURCE row is
+there because that kind was silently uncovered for a while: only Haskell
+and web sources were extracted, so a citation into a `.md`, `.py` or
+`.yml` file was skipped rather than checked, and a document citing
+nothing but those reported a clean zero.
 """
 
 import os
@@ -39,9 +59,10 @@ import subprocess
 import sys
 
 SEARCH_ROOTS = ["engine-src", "definition-src", "GameDefinition", "ts-src",
-                "test", "tools", "."]
+                "test", "tools", "docs", ".github", ".claude", "."]
 CITE_RE = re.compile(
-    r"`?([A-Za-z][A-Za-z0-9_./-]*\.(?:hs|ts|cabal|mjs|html)|Makefile)"
+    r"`?([A-Za-z][A-Za-z0-9_./-]*"
+    r"\.(?:hs|ts|py|cabal|mjs|html|md|txt|yaml|yml)|Makefile)"
     r":(\d+)(?:-(\d+))?")
 URL_RE = re.compile(
     r"https://github\.com/[\w.-]+/[\w.-]+/blob/([0-9a-f]{7,40})/"
