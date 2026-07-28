@@ -15,7 +15,7 @@ unrepresentable.
 > source of truth. File:line citations are to this branch's working tree
 > (this is parked WIP, not yet on master), verified against the tree at
 > commit **2815391d4** (2026-07-28); the citation pass proves a cited
-> line exists, that stamp that it still says what the claim needs; re-run
+> line exists — that stamp, that it still says what the claim needs; re-run
 > `python3 tools/check-plan-citations.py
 > docs/leader-desync-bug.md` after touching cited files, and re-verify the
 > only/every/never claims by repo-wide grep, never by re-reading one file.

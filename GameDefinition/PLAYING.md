@@ -251,7 +251,7 @@ the pointman's appendages, ordered by their power. The dice of the first
 recharged weapon, the one that is going to be used now, is adorned with
 percentage damage bonus collected from the whole equipment of the pointman.
 If the dice are displayed with upper-case `D` instead of lower-case `d`,
-the weapon has additional effects apart of the usual direct damage.
+the weapon has additional effects apart from the usual direct damage.
 The nature of the effects can be appraised via the equipment outfit menu.
 Only the most common piercing direct damage, denoted by the damage dice,
 is affected by the percentage damage bonus. The other direct damage kinds,
