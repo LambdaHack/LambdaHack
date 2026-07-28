@@ -8,6 +8,10 @@ assumes it and doesn't retell its tour of the codebase. The coding-style
 rules are the deliberate exception, restated in the portable notes below
 so a session has them resident; README is where a human should read them.
 
+File:line references were verified against the tree at commit
+`1d55df2a4` (2026-07-29); the citation pass proves a cited line exists,
+this stamp that it still says what the claim around it needs.
+
 ## What this is
 
 LambdaHack is a Haskell game engine library for ASCII roguelike games,
@@ -20,6 +24,8 @@ Frontends section below). The TypeScript browser-side harness lives in
 `../lambdahack.github.io` (visible to sessions only when the wrapper
 mounts it — sandboxing notes at the end of this file).
 
+## Where to look next
+
 Frontend work is planned in `docs/wasm-frontend-unified-plan.md`: the
 SDL2-parity roadmap for the WASM frontend, recorded decisions — including
 don't-do rulings, so ideas aren't re-proposed — and verified repo facts with
@@ -28,10 +34,6 @@ file:line citations. Consult it before frontend-touching changes.
 The closing portable-notes section holds the author-generic conventions
 and the machine-specific session facts — skim it before debugging
 anything environment-related.
-
-File:line references were verified against the tree at commit
-`1d55df2a4` (2026-07-29); the citation pass proves a cited line exists,
-this stamp that it still says what the claim around it needs.
 
 ## Build
 
@@ -155,12 +157,15 @@ playtests).
 
 For a generic "run checks" request — each with its trigger:
 
-- Always: `python3 tools/check-plan-citations.py DOC` and
-  `python3 tools/check-doc-refs.py DOC` over every `.md` document in the
-  repo (`git ls-files '*.md'` plus untracked drafts, minus
-  `CHANGELOG.md`, a historical record rather than a live claim set), the
-  remaining passes over any document edited since it was last verified —
-  the `doc-verification` skill holds them and their order. That skill is
+- Always, over every `.md` document in the repo (`git ls-files '*.md'`
+  plus untracked drafts, minus `CHANGELOG.md`, a historical record
+  rather than a live claim set):
+  - the mechanical passes, `python3 tools/check-plan-citations.py DOC`
+    and `python3 tools/check-doc-refs.py DOC`;
+  - the remaining passes, over any document edited since it was last
+    verified.
+
+  The `doc-verification` skill holds them and their order. It is
   user-scope, so it applies in every project and its only copy lives
   outside this repo, at `~/.claude/skills/doc-verification/SKILL.md`:
   a reader who wants the passes themselves has to open it there.
