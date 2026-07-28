@@ -1,7 +1,10 @@
 # CLAUDE.md
 
 This file provides guidance to Claude Code (claude.ai/code) when working
-with code in this repository.
+with code in this repository. Humans read it too, arriving from the file
+listing rather than from `README.md`, which doesn't link here by design —
+so don't "fix" that by adding a link. Read README first: this file
+assumes it and doesn't repeat it.
 
 ## What this is
 
