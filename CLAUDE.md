@@ -24,6 +24,10 @@ The closing portable-notes section holds the author-generic conventions
 and the machine-specific session facts — skim it before debugging
 anything environment-related.
 
+File:line references were verified against the tree at commit
+`1d55df2a4` (2026-07-29); the citation pass proves a cited line exists,
+this stamp that it still says what the claim around it needs.
+
 ## Build
 
 ```
