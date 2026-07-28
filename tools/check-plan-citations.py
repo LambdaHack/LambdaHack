@@ -35,7 +35,7 @@ the cited file; that asymmetry is how a real error slipped in once.
 
 Non-vacuity (per CLAUDE.md's "prove a checker non-vacuous"): feed it a
 scratch document holding one citation of each failing kind and confirm
-all five are reported and the exit status is 1 —
+all six are reported and the exit status is 1 —
 
     UNRESOLVED       `NoSuchFile.hs:12`
     OUT-OF-RANGE     `FrameM.hs:999999`
