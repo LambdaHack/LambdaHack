@@ -4,8 +4,8 @@ The engine-wide conventions and gotchas stay in the repo-root
 `CLAUDE.md`.
 
 File:line references were verified against the tree at commit
-`1d55df2a4` (2026-07-29); the citation pass proves a cited line exists,
-this stamp that it still says what the claim around it needs.
+`1d55df2a4` (2026-07-29); the citation pass proves a cited line exists —
+this stamp, that it still says what the claim around it needs.
 
 ## The mock and frontend stub
 

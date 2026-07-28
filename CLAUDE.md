@@ -9,8 +9,8 @@ rules are the deliberate exception, restated in the portable notes below
 so a session has them resident; README is where a human should read them.
 
 File:line references were verified against the tree at commit
-`1d55df2a4` (2026-07-29); the citation pass proves a cited line exists,
-this stamp that it still says what the claim around it needs.
+`1d55df2a4` (2026-07-29); the citation pass proves a cited line exists —
+this stamp, that it still says what the claim around it needs.
 
 ## What this is
 
@@ -95,7 +95,7 @@ cabal repl --build-depends=QuickCheck --build-depends=template-haskell --with-co
 
 The hard-won facts for writing and driving tests with this harness are in
 `test/CLAUDE.md` — read it when working under `test/`, where a session
-also loads it by itself.
+loads it automatically.
 
 ### WASM and TypeScript test suites
 
@@ -168,7 +168,7 @@ For a generic "run checks" request — each with its trigger:
   The `doc-verification` skill holds them and their order. It is
   user-scope, so it applies in every project and its only copy lives
   outside this repo, at `~/.claude/skills/doc-verification/SKILL.md`:
-  a reader who wants the passes themselves has to open it there.
+  a reader who wants the passes themselves must open it there.
 - When Haskell code changed: build, then `cabal test` (the Makefile
   playtests when the change warrants), and stylish-haskell and hlint on
   touched files (both run in-session, sandboxed included; code written
@@ -457,7 +457,7 @@ unless attributed.
   one session came of skipping that — `grep '^??'` over colourised
   `git status` output (the git notes below), and concluding a note was
   absent from every document after grepping one of its phrasings. It is
-  the rule already stated for assertions and for checkers, pointed at
+  the rule already stated for assertions and for checkers, applied to
   searches.
 - **Commits should be clean and logical, not a diary of the work.**
   File-partition them, order them so exports precede uses, and fold a
