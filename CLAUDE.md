@@ -466,6 +466,14 @@ unless attributed.
   (e.g. the near-duplicate frontends) make single-file generalization
   treacherous. The same discipline applies before concluding "this cannot
   happen here": grep for *every* site that could do it.
+- **Prove a search non-vacuous before trusting its silence.** A grep that
+  finds nothing has proved nothing until it is known to find something:
+  run it first against a case known to be present. Two wrong answers in
+  one session came of skipping that — `grep '^??'` over colourised
+  `git status` output (the git notes below), and concluding a note was
+  absent from every document after grepping one of its phrasings. It is
+  the rule already stated for assertions and for checkers, pointed at
+  searches.
 - **Commits should be clean and logical, not a diary of the work.**
   File-partition them, order them so exports precede uses, and fold a
   follow-up refactor into the commit where the code is logically born
@@ -575,6 +583,10 @@ sandbox. Current state and its implications:
 
 ### Git and GitHub in sessions
 
+- `git status --short` is colourised even through a pipe — the bytes are
+  `^[[31m??^[[m path` — so `grep '^??'` silently matches nothing. Use
+  `git status --porcelain`, which is defined as machine-readable and is
+  never colourised.
 - Interactive git is unavailable (tool commands run without a TTY, so
   editor and prompt loops hang): no `rebase -i`, no `add -i`. Rewrite
   history with `git reset --mixed <base>` + re-`add`/`commit` per file
