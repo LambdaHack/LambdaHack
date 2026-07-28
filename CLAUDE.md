@@ -4,7 +4,9 @@ This file provides guidance to Claude Code (claude.ai/code) when working
 with code in this repository. Humans read it too, arriving from the file
 listing rather than from `README.md`, which doesn't link here by design —
 so don't "fix" that by adding a link. Read README first: this file
-assumes it and doesn't repeat it.
+assumes it and doesn't retell its tour of the codebase. The coding-style
+rules are the deliberate exception, restated in the portable notes below
+so a session has them resident; README is where a human should read them.
 
 ## What this is
 
@@ -383,14 +385,14 @@ unless attributed.
 - GHC2024 is the default language; each project's default-extensions live
   in the cabal `common options` stanza. Projects normally set `StrictData`
   — assume it unless the project's notes say otherwise.
-- Formatting (also spelled out in the README's Coding style section):
-  2-space indent, 80 columns, spaces not tabs, spurious whitespace avoided,
-  spaces around arithmetic operators encouraged. Inline comments (`--`) are
-  prefixed with exactly two spaces, unless indented to match other
-  comments. Operators such as `(` and `,`, `<$>` and `<*>`, comment starts,
-  etc. on consecutive lines either align or, if that would make lines too
-  long, indent by 2 spaces from the previous indentation level. Generally,
-  relax and stick to the style apparent in the file being edited.
+- Formatting: 2-space indent, 80 columns, spaces not tabs, spurious
+  whitespace avoided, spaces around arithmetic operators encouraged.
+  Inline comments (`--`) are prefixed with exactly two spaces, unless
+  indented to match other comments. Operators such as `(` and `,`, `<$>`
+  and `<*>`, comment starts, etc. on consecutive lines either align or,
+  if that would make lines too long, indent by 2 spaces from the previous
+  indentation level. Generally, relax and stick to the style apparent in
+  the file being edited.
 - Put large, mechanical formatting changes in their own commit, separate
   from substantive changes.
 - If hlint is still too naggy, adding more exceptions to `.hlint.yaml` is
