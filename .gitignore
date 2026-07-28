@@ -18,4 +18,5 @@ cabal.project.local
 .HTF/
 .ghc.environment*
 node_modules/
-.claude/
+.claude/*
+!.claude/skills/
