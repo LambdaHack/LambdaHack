@@ -58,7 +58,8 @@ pureMacroTests :: [TestTree]
 pureMacroTests =
   [ -- [contract] Recording appends only keys bound to commands, and never
     -- the Record command itself; an idle buffer (Right) is left alone.
-    testCase "AS1: addToMacro records bound keys, skips Record, noop when idle"
+    testCase
+    "contract AS1: addToMacro records bound keys, skips Record, noop when idle"
       $ do
       let kmWait = K.mkKM "z"
           kmRec = K.mkKM "r"
@@ -77,7 +78,8 @@ pureMacroTests =
 
   , -- [contract] Empty macro frames are dropped from the stack, but the
     -- last frame always survives (it holds the user's in-game macro state).
-    testCase "AS2: dropEmptyMacroFrames GCs empties, keeps the last frame" $ do
+    testCase
+    "contract AS2: dropEmptyMacroFrames GCs empties, keeps the last frame" $ do
       let pending = emptyMacroFrame {keyPending = KeyMacro [kmX]}
           (mf1, stack1) = dropEmptyMacroFrames emptyMacroFrame [pending]
           (mf2, stack2) = dropEmptyMacroFrames emptyMacroFrame [emptyMacroFrame]
@@ -95,7 +97,8 @@ promptGetKeyContractTests =
     -- uninterrupted is consumed and returned; crucially, the run survives
     -- (srunning stays Just) and the pointman is untouched -- the enabler
     -- of the §04 crash window that both designs must keep in mind.
-    testCase "AS3: promptGetKey voices a macro key; run and pointman survive"
+    testCase
+      "contract AS3: promptGetKey voices a macro key; run and pointman survive"
       $ do
       let testFn = do
             updateClientLeader testActorId
@@ -117,7 +120,8 @@ promptGetKeyContractTests =
     -- the run is cancelled, but the pointman is NOT restored (stays C).
     -- This is the branch-exactness of promptgetkey-hygiene.md §01:
     -- natural run end /= macro abort.
-    testCase "AS4: promptGetKey with no macro clears the run, keeps pointman"
+    testCase
+      "contract AS4: promptGetKey with no macro clears the run, keeps pointman"
       $ do
       let testFn = do
             updateClientLeader testActorId
@@ -140,7 +144,8 @@ promptGetKeyContractTests =
     -- names abortMacroPlayback (promptgetkey-hygiene.md §01) and the
     -- live-read design makes safe. Its observable outcome must never
     -- change.
-    testCase "AS5: promptGetKey aborts on illegal macro key, restores pointman"
+    testCase
+    "contract AS5: promptGetKey aborts on illegal macro key, restores pointman"
       $ do
       let testFn = do
             updateClientLeader testActorId
@@ -162,7 +167,8 @@ promptGetKeyContractTests =
   , -- [contract] Abort via "not queried" (special-event key request):
     -- same outcome as AS5, through the other input of the interrupt
     -- decision that the abort-split's pure macroStep must reproduce.
-    testCase "AS6: promptGetKey aborts when not queried, restores pointman" $ do
+    testCase
+    "contract AS6: promptGetKey aborts when not queried, restores pointman" $ do
       let testFn = do
             updateClientLeader testActorId
             updateClientLeader testActorId2  -- run rotated pointman to C
@@ -184,7 +190,8 @@ promptGetKeyContractTests =
     -- (drawHudFrame) over the stub board before reading the key. Pinned
     -- because the full-dialog coverage plan (leader-desync-bug.md §13)
     -- depends on dialogs rendering on the tiny fixture.
-    testCase "AS7: promptGetKey renders a HUD frame on the stub board" $ do
+    testCase
+      "contract AS7: promptGetKey renders a HUD frame on the stub board" $ do
       let testFn = do
             updateClientLeader testActorId
             promptGetKey ColorFull EM.empty False []
@@ -197,7 +204,8 @@ promptGetKeyContractTests =
     -- recording site in promptGetKey, which the abort-split's audit step
     -- keeps inside the primitive). Tab is used because it is bound in the
     -- fixture CCUI (unbound keys are not recorded).
-    testCase "AS8: promptGetKey records voiced keys into the open macro" $ do
+    testCase
+      "contract AS8: promptGetKey records voiced keys into the open macro" $ do
       let kmTab = K.mkKM "Tab"
           testFn = do
             updateClientLeader testActorId
@@ -217,7 +225,7 @@ promptGetKeyContractTests =
     -- MsgStopPlayback message, which disturbs resting and so interrupts
     -- pending playback. Same outcome as AS5/AS6: macro wiped, run
     -- cancelled, pointman restored to the run leader.
-    testCase "AS9: promptGetKey aborts on a disturbing report" $ do
+    testCase "contract AS9: promptGetKey aborts on a disturbing report" $ do
       let testFn = do
             updateClientLeader testActorId
             updateClientLeader testActorId2  -- run rotated pointman to C
@@ -239,7 +247,8 @@ promptGetKeyContractTests =
     -- the F1 exemption, part of the interrupt decision that moves into
     -- the pure macroStep. The key is voiced, the run survives and the
     -- pointman is untouched.
-    testCase "AS10: the F1 help macro survives a disturbing report" $ do
+    testCase
+      "contract AS10: the F1 help macro survives a disturbing report" $ do
       let kmF1 = K.mkKM "F1"
           testFn = do
             updateClientLeader testActorId
@@ -264,7 +273,7 @@ restoreLeaderGuardTests :: [TestTree]
 restoreLeaderGuardTests =
   [ -- [contract] Guard: without a run in progress the restore is a no-op
     -- -- the pointman stays put.
-    testCase "AS11: restoreLeaderFromRun no-ops without a run" $ do
+    testCase "contract AS11: restoreLeaderFromRun no-ops without a run" $ do
       let testFn = do
             updateClientLeader testActorId2  -- pointman C, no run
             restoreLeaderFromRun
@@ -275,7 +284,8 @@ restoreLeaderGuardTests =
   , -- [contract] Guard: a faction that never runs with multiple actors
     -- (here banned via fspawnsFast) keeps whatever pointman is current,
     -- even with a run recorded.
-    testCase "AS12: restoreLeaderFromRun no-ops for a noRunWithMulti faction"
+    testCase
+      "contract AS12: restoreLeaderFromRun no-ops for a noRunWithMulti faction"
       $ do
       let testFn = do
             updateClientLeader testActorId2  -- pointman C
@@ -287,7 +297,8 @@ restoreLeaderGuardTests =
 
   , -- [contract] Guard: a run leader no longer on the level (e.g. dead)
     -- is silently tolerated -- no restore, no crash.
-    testCase "AS13: restoreLeaderFromRun no-ops on a gone run leader" $ do
+    testCase
+      "contract AS13: restoreLeaderFromRun no-ops on a gone run leader" $ do
       let testFn = do
             updateClientLeader testActorId2  -- pointman C
             modifySession $ \sess ->
@@ -313,7 +324,8 @@ bridgeTests =
     -- The final component is [LR-flip]: after the live-read design lands,
     -- cycling reads the pointman live and advances, so flip it to
     -- 'Just testActorId2'.
-    testCase "X1: §04 window end-to-end; stale cycling no-ops after restore"
+    testCase
+      "LR-flip X1: §04 window end-to-end; stale cycling no-ops after restore"
       $ do
       let testFn = do
             updateClientLeader testActorId   -- run leader A
@@ -343,7 +355,7 @@ bridgeTests =
     -- InventoryM's cycleLevelKeyDef would. The promptGetKey observations
     -- are [contract]; the final component is [LR-flip], as in X1: flip it
     -- to 'Just testActorId2' when the live-read design lands.
-    testCase "X2: §04 window ending in a literal scripted C-Tab" $ do
+    testCase "LR-flip X2: §04 window ending in a literal scripted C-Tab" $ do
       cliS <- partyCliStateScripted [K.mkKM "C-Tab"]
       let testFn = do
             updateClientLeader testActorId   -- run leader A

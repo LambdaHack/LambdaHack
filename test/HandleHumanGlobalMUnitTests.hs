@@ -45,7 +45,8 @@ handleHumanGlobalMUnitTests = testGroup "handleHumanGlobalMUnitTests"
     -- what live-read fixes is the CHOOSE half (its live re-reads make the
     -- dialog re-validate for C before the selection is confirmed), closing
     -- the seam where the incoherent approval arises.
-    testCase "Project executed by a different actor than the item selection"
+    testCase
+      "contract Project executed by a different actor than the item selection"
       $ do
       let projSk = Ability.addSk Ability.SkProject 1 Ability.zeroSkills
           skills = EM.fromList

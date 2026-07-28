@@ -32,9 +32,9 @@ list first, then falls back to ESC, and is wired into a fixture by
 
 - `promptGetKey` runs under the mock with blank frames (`onBlank = True`)
   and with rendered ones (`drawHudFrame` over the stub board — pinned by
-  the AS7 case, `FrameMUnitTests.hs:187`). Even whole dialogs can be
+  the AS7 case, `FrameMUnitTests.hs:194`). Even whole dialogs can be
   driven — see the ESC store-dialog test
-  (`HandleHumanLocalMUnitTests.hs:208`) — given two
+  (`HandleHumanLocalMUnitTests.hs:210`) — given two
   things: an item both held by the actor and registered in `sitemD` (a
   separate `updateItemD` step; without it the store reads as empty), and
   a screen wider than 4 (dialog prompts assert that — enlarge `coscreen`
@@ -58,3 +58,16 @@ planned designs (live-read, then abort-split — see
 Don't "fix" a green `[LR-flip]` test — flip it together with the engine
 change it documents, and verify the flip by temporarily applying the
 candidate fix before committing either.
+
+Each tag also opens the test's own name, so a series runs as a unit:
+
+```
+cabal test --test-options='-p "/contract/"'   # 25 tests, must stay green
+cabal test --test-options='-p "/LR-flip/"'    # 8 tests, flip with the fix
+```
+
+A test carrying both concerns — the bridge tests X1 and X2, whose
+`promptGetKey` half is contract and whose final cycling outcome flips —
+is tagged `LR-flip`, because a test that must be edited when the design
+lands is not one that stays green unchanged. Its contract half is
+described in the comment above it.

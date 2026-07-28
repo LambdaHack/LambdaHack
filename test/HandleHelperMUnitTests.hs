@@ -74,7 +74,7 @@ liveReadSeries =
     -- and so is in sync by construction: cycling advances to the next party
     -- member on the level. After the live-read design lands, this is the
     -- only reachable behaviour.
-    testCase "LR1: in-sync pointmanCycleLevel advances A -> C" $ do
+    testCase "contract LR1: in-sync pointmanCycleLevel advances A -> C" $ do
       let testFn = do
             updateClientLeader testActorId
             merr <- dispatchCmd $ HumanCmd.PointmanCycleLevel Forward
@@ -85,7 +85,8 @@ liveReadSeries =
 
   , -- [contract] Backward cycling picks the previous member (wrapping):
     -- party order is [A, B, C], so Backward from A lands on C.
-    testCase "LR2: in-sync pointmanCycleLevel Backward picks C from A" $ do
+    testCase
+      "contract LR2: in-sync pointmanCycleLevel Backward picks C from A" $ do
       let testFn = do
             updateClientLeader testActorId
             merr <- dispatchCmd $ HumanCmd.PointmanCycleLevel Backward
@@ -104,7 +105,7 @@ liveReadSeries =
     -- item dialogs' cycling call (InventoryM.hs:398).
     -- After the live-read design lands: flip the last component to
     -- 'Just testActorId2'.
-    testCase "LR3: stale leader makes pointmanCycleLevel a no-op" $ do
+    testCase "LR-flip LR3: stale leader makes pointmanCycleLevel a no-op" $ do
       let testFn = do
             updateClientLeader testActorId   -- 1. run leader A is the pointman
             -- 2. run rotates pointman to C (the RunM.hs:90-91 write pair):
@@ -126,7 +127,8 @@ liveReadSeries =
     -- "next after B" is C, but the correct answer (next after A) is B.
     -- After the live-read design lands: flip the expectation to
     -- 'Just testActorId3' (B).
-    testCase "LR4: stale leader makes pointmanCycleLevel pick the wrong member"
+    testCase
+      "LR-flip LR4: stale leader makes pointmanCycleLevel pick the wrong member"
       $ do
       let testFn = do
             updateClientLeader testActorId3  -- pointman B (captured by dialog)
@@ -144,7 +146,8 @@ liveReadSeries =
     -- the same desync CRASHES it -- this is the changelog crash, pinned.
     -- After the live-read design lands: no exception; expect
     -- advancement to C instead.
-    testCase "LR5: stale leader crashes pointmanCycle ('same leader' assert)"
+    testCase
+      "LR-flip LR5: stale leader crashes pointmanCycle ('same leader' assert)"
       $ do
       let testFn = do
             updateClientLeader testActorId2  -- pointman C (captured)
@@ -165,7 +168,7 @@ liveReadSeries =
     -- the pivot and returns the WHOLE party, so cycling picks the first
     -- member -- an arbitrary result, not an error. After the live-read design
     -- lands, the argument does not exist, so this case is unrepresentable.
-    testCase "LR6: dangling stale ActorId yields an arbitrary pick" $ do
+    testCase "LR-flip LR6: dangling stale ActorId yields an arbitrary pick" $ do
       let testFn = do
             updateClientLeader testActorId2  -- pointman C
             _merr <- pointmanCycleLevel (toEnum 999) False Forward
@@ -176,7 +179,7 @@ liveReadSeries =
   , -- [contract] partyAfterLeader keeps its pivot parameter under the
     -- live-read design (it means "some actor", not "the pointman now"):
     -- rotation semantics.
-    testCase "LR7: partyAfterLeader rotates around its pivot" $ do
+    testCase "contract LR7: partyAfterLeader rotates around its pivot" $ do
       let testFn = do
             updateClientLeader testActorId
             afterA <- map (\(aid, _, _) -> aid) <$> partyAfterLeader testActorId
@@ -189,7 +192,8 @@ liveReadSeries =
 
   , -- [contract] The edge that lets np == sleader: an unknown pivot makes
     -- partyAfterLeader return the whole party, current pointman included.
-    testCase "LR8: partyAfterLeader with unknown pivot returns whole party" $ do
+    testCase
+    "contract LR8: partyAfterLeader with unknown pivot returns whole party" $ do
       let testFn = map (\(aid, _, _) -> aid) <$> partyAfterLeader (toEnum 999)
       (result, _) <- executorCli testFn partyCliState3
       result @?= [testActorId, testActorId3, testActorId2]  -- [A, B, C]
@@ -197,7 +201,8 @@ liveReadSeries =
   , -- [contract] The pickLeader primitive both designs build on:
     -- no-op (False) when the target already is the pointman,
     -- a real switch (True) otherwise.
-    testCase "LR9: pickLeader no-ops on current pointman, switches otherwise"
+    testCase
+      "contract LR9: pickLeader no-ops on current pointman, switches otherwise"
       $ do
       let testFn = do
             updateClientLeader testActorId
@@ -210,7 +215,7 @@ liveReadSeries =
 
   , -- [contract] Banned factions (fspawnsFast): dungeon-wide cycling is
     -- refused outright...
-    testCase "LR10: banned faction refuses pointmanCycle" $ do
+    testCase "contract LR10: banned faction refuses pointmanCycle" $ do
       let testFn = do
             updateClientLeader testActorId
             merr <- dispatchCmd $ HumanCmd.PointmanCycle Forward
@@ -222,7 +227,8 @@ liveReadSeries =
   , -- [contract] ...but same-level cycling still works for banned factions
     -- (the ban only guards the cross-level case) -- the §10 partition
     -- subtlety that a live-read rewrite must not change.
-    testCase "LR11: banned faction still allows pointmanCycleLevel on level"
+    testCase
+      "contract LR11: banned faction still allows pointmanCycleLevel on level"
       $ do
       let testFn = do
             updateClientLeader testActorId
@@ -236,7 +242,7 @@ liveReadSeries =
     -- through the real key-loop dispatch (Tab): the non-banned success
     -- path of the same pointmanCycle whose live assertion the desync
     -- crashes (LR5).
-    testCase "LR12: in-sync pointmanCycle advances A -> C" $ do
+    testCase "contract LR12: in-sync pointmanCycle advances A -> C" $ do
       let testFn = do
             updateClientLeader testActorId
             merr <- dispatchCmd $ HumanCmd.PointmanCycle Forward
@@ -249,7 +255,7 @@ liveReadSeries =
     -- dispatch refuses with a friendly failure instead of reaching the
     -- handler -- the one place that turns 'Maybe ActorId' into an MError,
     -- kept by the live-read design (docs/leader-desync-bug.md, §10).
-    testCase "LR13: dispatch refuses when no pointman designated" $ do
+    testCase "contract LR13: dispatch refuses when no pointman designated" $ do
       let testFn = do
             merr <- dispatchCmd $ HumanCmd.PointmanCycleLevel Forward
             leaderAfter <- getsClient sleader

@@ -149,7 +149,8 @@ handleHumanLocalMUnitTests = testGroup "handleHumanLocalMUnitTests"
     -- lands, the closure reads the live pointman at each evaluation
     -- (@psuitReq@ loses its ActorId argument), making the stale capture
     -- unrepresentable.
-    testCase "fling suitability closure differs per actor (desync sibling)"
+    testCase
+      "LR-flip fling suitability closure differs per actor (desync sibling)"
       $ do
       let skills = EM.fromList
             [ ( testActorId
@@ -177,7 +178,8 @@ handleHumanLocalMUnitTests = testGroup "handleHumanLocalMUnitTests"
     -- After the live-read design lands, @psuitReq@ loses its ActorId
     -- argument and reads the live pointman, so the two calls below become
     -- one call before and one after a pointman switch.
-    testCase "psuitReq verdict differs per actor (desync sibling, captured)"
+    testCase
+      "LR-flip psuitReq verdict differs per actor (desync sibling, captured)"
       $ do
       let moveTo pos b = b {bpos = pos}
           cliS = partyCliState {cliState =
@@ -205,7 +207,7 @@ handleHumanLocalMUnitTests = testGroup "handleHumanLocalMUnitTests"
     -- second engine call site (SlideshowM.hs:421). The screen (not the
     -- level) is enlarged first: dialog prompts wrap via
     -- indentSplitAttrString, which asserts a screen wider than 4.
-    testCase "chooseItemHuman: ESC exits the real store dialog" $ do
+    testCase "contract chooseItemHuman: ESC exits the real store dialog" $ do
       let giveItem b = b {beqp = EM.singleton testItemId (1, [])}
           cliS = partyCliState {cliState =
               updateItemD (EM.insert testItemId stubItem)
@@ -229,7 +231,8 @@ handleHumanLocalMUnitTests = testGroup "handleHumanLocalMUnitTests"
     -- ESC and exits with "never mind", and the switch to C sticks.
     -- Contract, not flip: the held leader is in sync when Tab fires, so the
     -- outcome survives the live-read design unchanged.
-    testCase "chooseItemHuman: scripted Tab switches pointman mid-dialog"
+    testCase
+      "contract chooseItemHuman: scripted Tab switches pointman mid-dialog"
       $ do
       cliS0 <- partyCliStateScripted [K.mkKM "Tab"]
       let giveItem b = b {beqp = EM.singleton testItemId (1, [])}
