@@ -1,0 +1,32 @@
+# Paths and Makefile targets a document may name although they are not in
+# the repo, read by tools/check-doc-refs.py. One glob per line; a line
+# starting with "make " allows a target instead of a path.
+#
+# The reason is the point of the entry: an unexplained line here silently
+# hides real drift, which is exactly what the checker exists to catch.
+# When a planned artifact lands, delete its entry rather than leaving it.
+
+# Superseded planning documents, named by the unified plan as history.
+sdl2-to-wasm-parity-plan.md
+wasm-frontend-haskell-alignment-design.md
+
+# Foreign repositories, not resolvable locally.
+compiler/GHC/*
+
+# Emitted by the ghc-wasm-meta toolchain at build time, never committed.
+ghc_wasm_jsffi.mjs
+post-link.mjs
+
+# Artifacts docs/wasm-frontend-unified-plan.md proposes but has not built
+# yet (Phases 0-3). Each should disappear from here as its phase lands.
+CellStyle.hs
+Client/UI/Frontend/InputDecision.hs
+Client/UI/Frontend/OverlayLayout.hs
+cursor.ts
+fixtures.json
+overlay-core.ts
+overlay-core.test.ts
+palette.ts
+run-wasm-game.mjs
+ts-src/src/generated/
+make gen-ts

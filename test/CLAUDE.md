@@ -5,9 +5,9 @@ The engine-wide conventions and gotchas stay in the repo-root
 
 ## The mock and frontend stub
 
-`test/UnitTestHelpers.hs` provides `CliMock`, a real `MonadClientUI`
-implementation over `StateT CliState IO`, plus a frontend stub that
-answers every `FrontKey` request with ESC.
+`test/UnitTestHelpers.hs` provides `CliMock` (`UnitTestHelpers.hs:334`), a
+real `MonadClientUI` implementation over `StateT CliState IO`, plus a
+frontend stub that answers every `FrontKey` request with ESC.
 
 ## The stub world
 
