@@ -454,23 +454,27 @@ unless attributed.
   evidence, write the ruling down where the next reader will look. (In
   LambdaHack: the recorded decisions, including don't-do rulings, in
   `docs/wasm-frontend-unified-plan.md`.)
-- **Drafting GitHub-bound texts**: one file per destination (issue, its
-  design comment, PR description, upstream PR), staged in the repo root
-  until posted; keep the *design* implementation-ignorant and put
-  measured results in the PR description; deliberate overlap between
-  files is fine to make each self-contained. Don't attribute design
-  intent to code that is merely generic ("assumes irregular indexing") —
-  state observed granularity and cost, not motives. Prefer
-  reference-style markdown links to keep the prose readable. Wrapping is
-  per destination: GitHub renders single newlines as hard `<br>` in
-  issue/PR/comment *bodies* (though not in rendered `.md` files), so a
-  draft meant to be pasted into an issue body, PR description or comment
-  is kept *unwrapped* — one long line per paragraph (blank line between
-  paragraphs; tables, code fences, list items, reference-link
-  definitions and `Co-Authored-By` trailers each still on their own
-  line) — so the browser soft-wraps it, and it is never re-wrapped to 80
-  columns; a doc read as a repo file (e.g. README, the docs/ documents)
-  keeps that file's normal wrapping instead.
+- **Drafting GitHub-bound texts.**
+  - One file per destination (issue, its design comment, PR description,
+    upstream PR), staged in the repo root until posted.
+  - Keep the *design* implementation-ignorant and put measured results in
+    the PR description.
+  - Deliberate overlap between files is fine, to make each
+    self-contained.
+  - Don't attribute design intent to code that is merely generic
+    ("assumes irregular indexing") — state observed granularity and cost,
+    not motives.
+  - Prefer reference-style markdown links to keep the prose readable.
+  - Wrapping is per destination: GitHub renders single newlines as hard
+    `<br>` in issue/PR/comment *bodies* (though not in rendered `.md`
+    files), so a draft meant to be pasted into an issue body, PR
+    description or comment is kept *unwrapped* — one long line per
+    paragraph (blank line between paragraphs; tables, code fences, list
+    items, reference-link definitions and `Co-Authored-By` trailers each
+    still on their own line) — so the browser soft-wraps it, and it is
+    never re-wrapped to 80 columns; a doc read as a repo file (e.g.
+    README, the docs/ documents) keeps that file's normal wrapping
+    instead.
 - **Links that cite source code — in GitHub-bound texts and the
   reference documents — must be GitHub permalinks pinned to a commit
   hash that is on `master`** (`…blob/<commit>/….hs#L12-L34`): branch-name
@@ -520,11 +524,11 @@ sandbox. Current state and its implications:
   only the current repo, and `~/.ssh` carries public material only).
   Don't infer access from a directory listing and don't record mount
   inventories — they go stale; verify the specific path at the moment it
-  matters. One standing casualty: `~/.ghc-wasm` is not mounted (as of
-  2026-07), so LambdaHack's WASM targets (`make
-  build-wasm`/`build-ts`/`test-wasm` source `~/.ghc-wasm/env`) fail with
-  "cannot open ... No such file" even unsandboxed; they need the wrapper
-  extended or a plain terminal.
+  matters.
+  - One standing casualty: `~/.ghc-wasm` is not mounted (as of 2026-07),
+    so LambdaHack's WASM targets (`make build-wasm`/`build-ts`/`test-wasm`
+    source `~/.ghc-wasm/env`) fail with "cannot open ... No such file"
+    even unsandboxed; they need the wrapper extended or a plain terminal.
 - Inside the inner sandbox, HOME appears to be the repo root, so sandboxed
   `git status`/`ls` show phantom untracked dotfiles (`.bashrc`,
   `.gitconfig`, `.vscode`, ...) that don't exist on the real filesystem.
@@ -532,16 +536,17 @@ sandbox. Current state and its implications:
 - System state under wrapper-hidden paths (e.g. `/etc/apparmor.d`) cannot
   be inspected from inside a session; such diagnosis must be done by
   Mikolaj in a plain terminal.
-- The nested inner sandbox works only because three things hold: the
-  Ubuntu AppArmor userns restriction is off
-  (`kernel.apparmor_restrict_unprivileged_userns=0`, no
-  `bwrap-userns-restrict` profile), the wrapper mounts the repo
-  read-write, and `enableWeakerNestedSandbox: true` is in effect —
-  inherited from the `sandbox` block of the user-level
-  `~/.claude/settings.json` (a project `sandbox` block wholesale
-  replaces the user-level one — settings objects don't deep-merge — so
-  a project that defines one must repeat the flag). If sandboxed
-  commands start failing at startup, check these three first.
+- The nested inner sandbox works only because three things hold; if
+  sandboxed commands start failing at startup, check these first:
+  - the Ubuntu AppArmor userns restriction is off
+    (`kernel.apparmor_restrict_unprivileged_userns=0`, no
+    `bwrap-userns-restrict` profile);
+  - the wrapper mounts the repo read-write;
+  - `enableWeakerNestedSandbox: true` is in effect — inherited from the
+    `sandbox` block of the user-level `~/.claude/settings.json` (a
+    project `sandbox` block wholesale replaces the user-level one —
+    settings objects don't deep-merge — so a project that defines one
+    must repeat the flag).
 
 ### Git and GitHub in sessions
 
