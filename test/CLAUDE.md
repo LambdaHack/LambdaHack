@@ -3,6 +3,10 @@
 The engine-wide conventions and gotchas stay in the repo-root
 `CLAUDE.md`.
 
+File:line references were verified against the tree at commit
+`2815391d4` (2026-07-28); the citation pass proves a cited line exists,
+this stamp that it still says what the claim around it needs.
+
 ## The mock and frontend stubs
 
 `test/UnitTestHelpers.hs` provides `CliMock` (`UnitTestHelpers.hs:496`), a

@@ -17,7 +17,9 @@ it.
 
 > design: **functional core / imperative shell** · planned strictly
 > *after* the live-read design · file:line citations are to this branch's
-> working tree (parked WIP, not yet on master); re-run
+> working tree (parked WIP, not yet on master), verified against the tree
+> at commit **2815391d4** (2026-07-28); the citation pass proves a cited
+> line exists, that stamp that it still says what the claim needs; re-run
 > `python3 tools/check-plan-citations.py
 > docs/promptgetkey-hygiene.md` after touching cited files, and re-verify
 > the only/every/never claims by repo-wide grep, never by re-reading one
