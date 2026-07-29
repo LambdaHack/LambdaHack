@@ -2,9 +2,11 @@
 module Game.LambdaHack.Client.UI.FrameM
   ( drawOverlay, promptGetKey, addToMacro, dropEmptyMacroFrames
   , lastMacroFrame, stopPlayBack, renderAnimFrames, animate
+    -- * Important implementation parts, exposed for tests
+  , restoreLeaderFromRun
 #ifdef EXPOSE_INTERNAL
     -- * Internal operations
-  , resetPlayBack, restoreLeaderFromRun, basicFrameForAnimation
+  , resetPlayBack, basicFrameForAnimation
 #endif
   ) where
 
