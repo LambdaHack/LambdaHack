@@ -487,6 +487,7 @@ test-suite test
                       CommonMUnitTests
                       FrameMUnitTests
                       HandleHelperMUnitTests
+                      HandleHumanGlobalMUnitTests
                       HandleHumanLocalMUnitTests
                       InventoryMUnitTests
                       ItemDescriptionUnitTests
