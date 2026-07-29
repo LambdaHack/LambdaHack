@@ -139,5 +139,14 @@ jobs:
       # Installs into ~/.ghc-wasm, which every wasm Makefile recipe sources.
       - name: Install the ghc-wasm-meta toolchain
         run: curl https://gitlab.haskell.org/haskell-wasm/ghc-wasm-meta/-/raw/master/bootstrap.sh | sh
+      # The toolchain above ships no native build tools, and pretty-show
+      # (a dependency of lib:LambdaHack, directly and via assert-failure)
+      # needs happy to configure. Cabal looks it up on PATH, so a native
+      # one is what's wanted, not a cross-built one. The jobs above never
+      # notice: there cabal builds happy itself, with the host GHC.
+      - name: Install happy
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y happy
       - name: WASM tests
         run: make test-wasm
