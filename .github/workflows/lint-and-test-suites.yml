@@ -20,6 +20,29 @@ jobs:
       - uses: haskell-actions/hlint-setup@v2
       - name: hlint
         run: hlint .
+  stylish:
+    name: stylish-haskell
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      # Pinned, unlike hlint above: a different stylish-haskell formats
+      # differently, and a CI check that disagrees with the editor's
+      # on-save pass is worse than no check. Bump this in step with the
+      # version installed locally.
+      - name: Install stylish-haskell
+        run: |
+          mkdir -p "$HOME/bin"
+          curl -sL https://github.com/haskell/stylish-haskell/releases/download/v0.15.1.0/stylish-haskell-v0.15.1.0-linux-x86_64.tar.gz \
+            | tar xz -C "$HOME/bin" --strip-components=1 --wildcards '*/stylish-haskell'
+          echo "$HOME/bin" >> "$GITHUB_PATH"
+      # 0.15.1.0 has no check mode, so reformat in place and let git
+      # report; the diff it prints is the list of files to fix.
+      - name: stylish-haskell
+        run: |
+          stylish-haskell --version
+          stylish-haskell -i $(git ls-files '*.hs')
+          git diff --exit-code
   playtest:
     name: Makefile playtests (make test-gha)
     runs-on: ubuntu-latest
