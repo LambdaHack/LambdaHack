@@ -9,8 +9,7 @@
 # Specify additional command line arguments
 #
 # - arguments: [--color, --cpp-simple, -XQuasiQuotes]
-- arguments: [--cpp-simple]
-
+- arguments: [--cpp-simple, -XNoStarIsType]
 
 # Control which extensions/flags/modules/functions can be used
 #
@@ -68,6 +67,20 @@
 - ignore: {name: "Monad law, left identity", within: Game.LambdaHack.Client.Bfs}
 - ignore: {name: Use bimap, within: Game.LambdaHack.Server.DungeonGen.AreaRnd}
 - ignore: {name: Parenthesize unary negation}
+
+# A lambda whose argument is named on purpose. Every rewrite these two
+# offer here -- eta-reduction, a `.` chain, `flip`, a backtick section --
+# drops the name that says what the argument is. Two hints, because
+# hlint counts the section form separately.
+- ignore: {name: Avoid lambda}
+- ignore: {name: "Avoid lambda using `infix`"}
+
+# `if cond then return () else body` is how this codebase spells an early
+# exit, and it stays readable when the body is a screenful of nested
+# cases. The mirror hint, `Use when`, is deliberately left enabled: it
+# does not fire here, and silencing a hint nothing has tripped would hide
+# whatever trips it first.
+- ignore: {name: Use unless}
 
 # Define some custom infix operators
 # - fixity: infixr 3 ~^#^~
