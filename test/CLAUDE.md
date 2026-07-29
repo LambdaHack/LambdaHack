@@ -6,7 +6,7 @@ File:line references were verified against the tree at commit `694a160f0` (2026-
 
 ## The mock and frontend stub
 
-`test/UnitTestHelpers.hs` provides `CliMock` (`UnitTestHelpers.hs:334`), a real `MonadClientUI` implementation over `StateT CliState IO`, plus a frontend stub that answers every `FrontKey` request with ESC.
+`test/UnitTestHelpers.hs` provides `CliMock` (`UnitTestHelpers.hs:630`), a real `MonadClientUI` implementation over `StateT CliState IO`, plus a frontend stub that answers every `FrontKey` request with ESC.
 
 ## The stub world
 

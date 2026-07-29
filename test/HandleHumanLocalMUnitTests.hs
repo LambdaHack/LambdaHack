@@ -10,6 +10,7 @@ import Game.LambdaHack.Core.Prelude
 
 import           Data.Either (fromLeft)
 import qualified Data.EnumMap.Strict as EM
+import qualified Data.EnumSet as ES
 import qualified Data.Text as T
 
 import Test.Tasty
@@ -18,15 +19,22 @@ import Test.Tasty.HUnit
 import           Game.LambdaHack.Client.MonadClient (getsClient)
 import           Game.LambdaHack.Client.State (TGoal (..), Target (..), sleader)
 import           Game.LambdaHack.Client.UI
-  (SessionUI (..), modifySession, updateClientLeader)
-import           Game.LambdaHack.Client.UI.Content.Screen (ScreenContent (..))
-import           Game.LambdaHack.Client.UI.ContentClientUI (CCUI (..))
+  ( MonadClientUI
+  , SessionUI (..)
+  , getsSession
+  , modifySession
+  , updateClientLeader
+  )
+import           Game.LambdaHack.Client.UI.EffectDescription
+  (defaultDetailLevel)
 import           Game.LambdaHack.Client.UI.HandleHelperM
 import           Game.LambdaHack.Client.UI.HandleHumanLocalM
 import qualified Game.LambdaHack.Client.UI.HumanCmd as HumanCmd
 import qualified Game.LambdaHack.Client.UI.Key as K
 import           Game.LambdaHack.Client.UI.Msg
 import           Game.LambdaHack.Client.UI.MsgM
+import           Game.LambdaHack.Client.UI.SessionUI
+  (AimMode (..), ItemRoles (..))
 import           Game.LambdaHack.Client.UI.TutorialHints
 import           Game.LambdaHack.Common.Actor (Actor (..))
 import           Game.LambdaHack.Common.ActorState
@@ -41,18 +49,11 @@ import           Game.LambdaHack.Common.State
 import           Game.LambdaHack.Content.TileKind
 import qualified Game.LambdaHack.Definition.Ability as Ability
 import           Game.LambdaHack.Definition.Defs
-  (CStore (..), ItemDialogMode (..))
+  (CStore (..), ItemDialogMode (..), SLore (..))
 import           Game.LambdaHack.Definition.DefsInternal
   (toContentId, toContentSymbol)
 
 import UnitTestHelpers
-
--- Dialog prompts wrap via indentSplitAttrString, which asserts a screen
--- wider than 4, so tests that open real dialogs enlarge the stub screen
--- (the level can stay 3x3).
-enlargeScreen :: SessionUI -> SessionUI
-enlargeScreen sess = sess {sccui = (sccui sess)
-  {coscreen = (coscreen (sccui sess)) {rwidth = 24, rheight = 12}}}
 
 testItemFull :: ItemFull
 testItemFull = ItemFull
@@ -61,6 +62,19 @@ testItemFull = ItemFull
   , itemKind = emptyMultiGroupItem
   , itemDisco = ItemDiscoFull emptyAspectRecord
   , itemSuspect = False }
+
+-- The walkable-board party with one skill set shared by both heroes, for
+-- the aiming branches the unknown board cannot reach (see 'walkableLevel').
+walkableParty :: Ability.Skills -> CliState
+walkableParty skills = partyCliStateWalkable {cliState =
+  updateActorMaxSkills
+    (const $ EM.fromList [(testActorId, skills), (testActorId2, skills)])
+    (cliState partyCliStateWalkable)}
+
+-- Aim at C's position, one walkable step from A.
+aimAtHeroC :: MonadClientUI m => m ()
+aimAtHeroC = modifySession $ \sess ->
+  sess {sxhair = Just $ TPoint TUnknown testLevelId (bpos heroC)}
 
 handleHumanLocalMUnitTests :: TestTree
 handleHumanLocalMUnitTests = testGroup "handleHumanLocalMUnitTests"
@@ -109,27 +123,57 @@ handleHumanLocalMUnitTests = testGroup "handleHumanLocalMUnitTests"
             <> "' in SessionUI.shistory.newReport '"
             <> T.unpack (T.unlines renderedNewReports)
             <> "'"
-  , testCase "psuitReq" $  do
+  , -- psuitReq's three outcomes, one test each, each failing if any other
+    -- outcome is taken. Until the walkable board existed, only the first
+    -- was reachable: the stub board's unknown tiles are not walkable, so
+    -- the actor is walled in and a projectile wouldn't leave its position.
+    testCase "psuitReq: unwalkable board obstructs aiming" $ do
       let testFn = psuitReq testActorId
-      mpsuitReqMonad <- executorCli testFn testCliStateWithItem
-      let mpsuitReq = fst mpsuitReqMonad
-      case mpsuitReq of
-        Left err -> do
-          err @?= "aiming obstructed by terrain"
-            -- TODO: I'd split the test into three tests, each taking
-            -- a different branch and fail in the remaining two branches
-            -- that the particular branch doesn't take. Here it takes
-            -- the first branch, because unknown tiles are not walkable
-            -- (regardless what I claimed previously) and so the player
-            -- is surrounded by walls, basically, so aiming fails,
-            -- because the projectiles wouldn't even leave the position
-            -- of the actor. I think.
-        Right psuitReqFun ->
-          case psuitReqFun testItemFull of
-            Left reqFail -> do
-              reqFail @?= ProjectUnskilled
-            Right (pos, _) -> do
-              pos @?= Point 0 0
+      (result, _) <- executorCli testFn testCliStateWithItem
+      case result of
+        Left err -> err @?= "aiming obstructed by terrain"
+        Right psuitReqFun -> assertFailure $ "expected a failed aim, got: "
+          ++ show (psuitReqFun testItemFull)
+  , testCase "psuitReq: walkable board, unskilled actor" $ do
+      let testFn = aimAtHeroC >> psuitReq testActorId
+      (result, _) <- executorCli testFn (walkableParty Ability.zeroSkills)
+      case result of
+        Left err -> assertFailure $ "expected a suitability function, got: "
+          ++ T.unpack err
+        Right psuitReqFun -> case psuitReqFun testItemFull of
+          Left reqFail -> reqFail @?= ProjectUnskilled
+          Right posRange -> assertFailure $ "expected an unskilled actor, got: "
+            ++ show posRange
+  , testCase "psuitReq: walkable board, skilled actor" $ do
+      let projSk = Ability.addSk Ability.SkProject 1 Ability.zeroSkills
+          testFn = aimAtHeroC >> psuitReq testActorId
+      (result, _) <- executorCli testFn (walkableParty projSk)
+      case result of
+        Left err -> assertFailure $ "expected a suitability function, got: "
+          ++ T.unpack err
+        Right psuitReqFun -> case psuitReqFun testItemFull of
+          Left reqFail -> assertFailure $ "expected a permitted fling, got: "
+            ++ show reqFail
+          Right posRange -> posRange @?= (bpos heroC, True)
+            -- the xhair position, and the range verdict: the stub item is
+            -- weightless, so the range its throw modifier yields covers
+            -- the step to C (the range is computed from weight and
+            -- velocity, not from the aiming path)
+  , -- The fourth outcome, and the only one that never reaches the aiming
+    -- pipeline: psuitReq returns before it whenever the viewed level is
+    -- not the actor's (which is also what keeps xhairLegalEps's
+    -- @lidV == blid b@ assertion out of reach here).
+    testCase "psuitReq: xhair on a remote level" $ do
+      let testFn = do
+            modifySession $ \sess ->
+              sess {saimMode = Just AimMode { aimLevelId = toEnum 222
+                                            , detailLevel = defaultDetailLevel }}
+            psuitReq testActorId
+      (result, _) <- executorCli testFn testCliStateWithItem
+      case result of
+        Left err -> err @?= "can't fling on remote level"
+        Right psuitReqFun -> assertFailure $ "expected a failed aim, got: "
+          ++ show (psuitReqFun testItemFull)
   , testCase "xhairLegalEps" $ do
       let testFn = xhairLegalEps testActorId
       result <- executorCli testFn testCliStateWithItem
@@ -197,6 +241,58 @@ handleHumanLocalMUnitTests = testGroup "handleHumanLocalMUnitTests"
       (result, _) <- executorCli testFn cliS
       result @?= ( "aiming obstructed by terrain"
                  , "aiming blocked at the first step" )
+
+  , -- [LR-flip] Sibling bug (a) end to end, through the real fling dialog:
+    -- chooseItemProjectHuman computes @psuitReq A@ ONCE and bakes the
+    -- resulting closure into the dialog's @psuit@; a scripted C-Tab then
+    -- switches the pointman to C mid-dialog (the dialog permits it:
+    -- @maySwitchLeader MStore = True@) and recCall re-enters the dialog
+    -- for C, whose bag is judged by A's captured closure. C is unskilled,
+    -- so the item is not flingable for the live pointman, yet Return
+    -- selects it and @sitemSel@ is set. The two tests above pin the
+    -- per-actor difference of the captured value; this one shows it
+    -- surviving a real switch inside the real dialog.
+    -- After the live-read design lands, @psuitReq@ loses its ActorId
+    -- argument and the closure judges for the live pointman, so after the
+    -- switch no item is suitable and the dialog runs out of keys and
+    -- exits: flip the expectation to
+    -- @(Just "*never mind*", Nothing, Just testActorId2)@ -- verified by
+    -- temporarily making this dialog's @psuit@ re-read the pointman.
+    testCase "LR-flip fling dialog: a mid-dialog switch keeps A's closure"
+      $ do
+      let projSk = Ability.addSk Ability.SkProject 1 Ability.zeroSkills
+          skills = EM.fromList [ (testActorId, projSk)
+                               , (testActorId2, Ability.zeroSkills) ]
+          giveItem b = b {beqp = EM.singleton testItemId (1, [])}
+          seeItem sess = let ItemRoles roles = sroles sess
+                         in sess {sroles = ItemRoles
+                                  $ EM.adjust (ES.insert testItemId) SItem
+                                              roles}
+            -- the dialog lists only items given a role; without this the
+            -- store reads as empty however full the bag is
+      cliS0 <- scriptedCliState partyCliStateWalkable
+                                [K.mkKM "C-Tab", K.returnKM]
+      let cliS = cliS0
+            { cliState = updateItemD (EM.insert testItemId stubItem)
+                         $ updateActorD (EM.adjust giveItem testActorId
+                                         . EM.adjust giveItem testActorId2)
+                         $ updateActorMaxSkills (const skills)
+                         $ cliState cliS0
+            , cliSession = seeItem <$> cliSession cliS0 }
+          testFn = do
+            modifySession enlargeScreenForItems
+            initBfsTabs
+            updateClientLeader testActorId
+            aimAtHeroC
+            merr <- chooseItemProjectHuman testActorId []
+            itemSel <- getsSession sitemSel
+            leaderAfter <- getsClient sleader
+            return (fmap showFailError merr, itemSel, leaderAfter)
+      (result, _) <- executorCli testFn cliS
+      result @?= ( Nothing  -- the fling selection succeeded ...
+                 , Just (testItemId, CEqp, False)  -- ... for this item ...
+                 , Just testActorId2 )  -- ... which C, the pointman, can't
+                                        -- fling at all
 
   , -- [contract] The first test through the real dialog machinery:
     -- chooseItemHuman opens the equipment store dialog

@@ -6,6 +6,9 @@ module UnitTestHelpers
   , executorCli
   , reportToTexts
   , stubLevel
+  , walkableLevel
+  , floorTileId
+  , wallTileId
   , stubState
   , stubCliState
   , stubItem
@@ -19,10 +22,18 @@ module UnitTestHelpers
   , testItemId
   , testLevel
   , testLevelId
+  , heroA
+  , heroB
+  , heroC
   , partyCliState
   , partyCliState3
   , partyCliStateBanned
+  , partyCliStateWalkable
   , partyCliStateScripted
+  , scriptedCliState
+  , initBfsTabs
+  , enlargeScreen
+  , enlargeScreenForItems
   , runParamsA
   , scriptedFchanFrontend
 #ifdef EXPOSE_INTERNAL
@@ -46,6 +57,7 @@ import qualified Data.Text as Text
 import           Game.LambdaHack.Atomic (MonadStateWrite (..))
 import           Game.LambdaHack.Client
 import qualified Game.LambdaHack.Client.BfsM as BfsM
+import           Game.LambdaHack.Client.CommonM (createSalter)
 import           Game.LambdaHack.Client.HandleResponseM
 import           Game.LambdaHack.Client.MonadClient
 import           Game.LambdaHack.Client.State
@@ -74,12 +86,14 @@ import           Game.LambdaHack.Common.ClientOptions
   (ClientOptions (..), FullscreenMode (..), defClientOptions)
 import           Game.LambdaHack.Common.Faction (Faction (..))
 import           Game.LambdaHack.Common.Item
-import           Game.LambdaHack.Common.Kind (COps (..), emptyUIFaction)
+import           Game.LambdaHack.Common.Kind
+  (COps (..), emptyUIFaction, emptyUnknownTile)
 import           Game.LambdaHack.Common.Level (Level (..))
 import           Game.LambdaHack.Common.Misc (FontSet (..))
 import           Game.LambdaHack.Common.MonadStateRead
 import           Game.LambdaHack.Common.Perception (emptyPer)
 import           Game.LambdaHack.Common.Point (Point (..))
+import qualified Game.LambdaHack.Common.PointArray as PointArray
 import           Game.LambdaHack.Common.State
   ( State
   , emptyState
@@ -90,15 +104,17 @@ import           Game.LambdaHack.Common.State
   , updateDungeon
   , updateFactionD
   )
+import qualified Game.LambdaHack.Common.Tile as Tile
 import           Game.LambdaHack.Common.Time (timeZero)
 import           Game.LambdaHack.Common.Types
   (ActorId, FactionId, ItemId, LevelId)
 import qualified Game.LambdaHack.Content.FactionKind as FK
 import           Game.LambdaHack.Content.RuleKind (RuleContent (..))
-import           Game.LambdaHack.Content.TileKind (unknownId)
+import qualified Game.LambdaHack.Content.TileKind as TK
 import qualified Game.LambdaHack.Core.Dice as Dice
 import qualified Game.LambdaHack.Definition.Ability as Ability
 import           Game.LambdaHack.Definition.Color (Color (..))
+import           Game.LambdaHack.Definition.Defs (ContentId, X, Y)
 import           Game.LambdaHack.Definition.DefsInternal (toContentId)
 import           Game.LambdaHack.Definition.Flavour
 
@@ -202,7 +218,7 @@ testLevel = Level
   , lembed = EM.empty
   , lbig = EM.empty
   , lproj = EM.empty
-  , ltile = unknownTileMap (fromJust (toArea (0,0,0,0))) unknownId 10 10  --PointArray.empty
+  , ltile = unknownTileMap (fromJust (toArea (0,0,0,0))) TK.unknownId 10 10  --PointArray.empty
   , lentry = EM.empty
   , larea = trivialArea (Point 0 0)
   , lsmell = EM.empty
@@ -254,7 +270,7 @@ stubLevel = Level
   , lembed = EM.empty
   , lbig = EM.empty
   , lproj = EM.empty
-  , ltile = unknownTileMap testArea unknownId testLevelDimension testLevelDimension
+  , ltile = unknownTileMap testArea TK.unknownId testLevelDimension testLevelDimension
   , lentry = EM.empty
   , larea = trivialArea (Point 0 0)
   , lsmell = EM.empty
@@ -265,6 +281,59 @@ stubLevel = Level
   , ltime = timeZero
   , lnight = False
   }
+
+-- | A walkable, transparent floor tile, modeled on the sample game's
+-- @floorCorridor@. It's the second tile kind of the unit tests' content
+-- ('floorTileId'); its @talter@ must differ from @1@, which validation
+-- reserves for the unknown tile.
+floorTile :: TK.TileKind
+floorTile = TK.TileKind
+  { tsymbol  = '.'
+  , tname    = "floor"
+  , tfreq    = []  -- in no group: the mandatory groups are singletons
+                   -- and their single member is the unknown tile
+  , tcolor   = BrWhite
+  , tcolor2  = BrBlack
+  , talter   = 0
+  , tfeature = [TK.Walkable, TK.Clear]
+  }
+
+-- | An impenetrable wall, to fence 'walkableLevel' with. Unknown tiles
+-- would not do: their @talter@ of @1@ is exactly the skill the BFS raises
+-- itself to, in order to path through unexplored terrain.
+wallTile :: TK.TileKind
+wallTile = TK.TileKind
+  { tsymbol  = '#'
+  , tname    = "wall"
+  , tfreq    = []
+  , tcolor   = BrWhite
+  , tcolor2  = BrBlack
+  , talter   = maxBound
+  , tfeature = []
+  }
+
+-- | The content identifiers of 'floorTile' and 'wallTile', in the order
+-- 'stubCOpsUpdate' lists them.
+floorTileId, wallTileId :: ContentId TK.TileKind
+floorTileId = toContentId 1
+wallTileId = toContentId 2
+
+-- | The content of every stub state: the dimensions the stub boards use
+-- and tile content holding all three stub tiles. The unknown tile has to
+-- come first (validation) and the board that uses only it is unaffected
+-- by the other two being defined, so one content set serves both boards
+-- and keeps them comparable.
+stubCOpsUpdate :: COps -> COps
+stubCOpsUpdate oldCOps =
+  let cotile = TK.makeData [emptyUnknownTile, floorTile, wallTile] [] []
+  in oldCOps { corule = (corule oldCOps) { rWidthMax = testLevelDimension
+                                         , rHeightMax = testLevelDimension }
+             , cotile
+             , coTileSpeedup = Tile.speedupTile False cotile }
+                 -- rebuilt in the same update, because
+                 -- @updateCOpsAndCachedData@ recomputes only the actor
+                 -- skills cache
+
 testFaction :: Faction
 testFaction =
   Faction
@@ -314,11 +383,8 @@ stubState =
       singletonActorDUpdate _ = EM.singleton testActorId testActor
       singletonActorMaxSkillsUpdate _ =
         EM.singleton testActorId Ability.zeroSkills
-      copsUpdate oldCOps =
-        oldCOps {corule = (corule oldCOps)
-                   { rWidthMax = testLevelDimension
-                   , rHeightMax = testLevelDimension }}
-      stateWithMaxLevelDimension = updateCOpsAndCachedData copsUpdate emptyState
+      stateWithMaxLevelDimension =
+        updateCOpsAndCachedData stubCOpsUpdate emptyState
       stateWithFaction =
         updateFactionD singletonFactionUpdate stateWithMaxLevelDimension
       stateWithActorD = updateActorD singletonActorDUpdate stateWithFaction
@@ -362,7 +428,11 @@ stubCliState = CliState
   { cliState = stubState
   , cliClient = (emptyStateClient testFactionId)
       { soptions = stubClientOptions
-      , sfper = EM.singleton testLevelId emptyPer }
+      , sfper = EM.singleton testLevelId emptyPer
+      , salter = createSalter stubState }
+        -- the client's cached per-level alter-skill map; the BFS indexes
+        -- it by level id, so without it any frame drawn while an xhair is
+        -- set (the path to the xhair is a BFS query) dies on a missing key
   , cliSession = let target = TPoint TUnknown testLevelId (Point 1 0)
                  in Just (stubSessionUI {sxhair = Just target})
   }
@@ -420,46 +490,71 @@ actorUIB = ActorUI { bsymbol = 'b', bname = "Bruno"
 actorUIC = ActorUI { bsymbol = 'c', bname = "Cadet"
                    , bpronoun = "he/him", bcolor = BrGreen }
 
-partyStateWith :: Faction -> [(ActorId, Actor)] -> State
-partyStateWith fact actors =
+-- | The stride the 'Point' 'Enum' instance puts between rows: it reads
+-- @speedupHackXSize@, still at its default 80 in the test binary rather
+-- than at the level width, and 'PointArray' indexes by that encoding. So
+-- an array to be read at any @y > 0@ has to be this wide, whatever width
+-- the content declares for the level.
+enumRowStride :: Int
+enumRowStride = fromEnum (Point 0 1)
+
+-- | A walkable stub board, for tests whose aiming or altering pipeline
+-- has to get past the terrain: the heroes' two positions are floor, the
+-- rest of the array is impenetrable wall.
+--
+-- The fence is not decoration. The BFS -- which any frame drawn with an
+-- xhair set queries, for the path to the xhair -- walks tile
+-- neighbourhoods without bounds checks, as every real level is ringed by
+-- tiles it cannot path through; a board that lets it reach the array's
+-- edge crashes on an out-of-bounds index instead. Unknown space would not
+-- fence it, either: its @talter@ of 1 is exactly the skill the BFS raises
+-- itself to, so as to path through unexplored terrain. That is why
+-- 'stubLevel' -- nine unfenced cells of unknown space -- is no use for
+-- such tests, and why this board is a full row stride wide.
+walkableLevel :: Level
+walkableLevel = stubLevel
+  { ltile = PointArray.replicateA enumRowStride testLevelDimension wallTileId
+            PointArray.// [(bpos heroA, floorTileId), (bpos heroC, floorTileId)]
+  }
+
+partyStateWith :: Level -> Faction -> [(ActorId, Actor)] -> State
+partyStateWith lvl fact actors =
   let factionUpdate _ = EM.singleton testFactionId fact
       actorDUpdate _ = EM.fromList actors
       actorMaxSkillsUpdate _ =
         EM.fromList $ map (\(aid, _) -> (aid, Ability.zeroSkills)) actors
-      dungeonUpdate _ = EM.singleton testLevelId stubLevel
-      copsUpdate oldCOps =
-        oldCOps {corule = (corule oldCOps)
-                   { rWidthMax = testLevelDimension
-                   , rHeightMax = testLevelDimension }}
-      s0 = updateCOpsAndCachedData copsUpdate emptyState
+      dungeonUpdate _ = EM.singleton testLevelId lvl
+      s0 = updateCOpsAndCachedData stubCOpsUpdate emptyState
       s1 = updateFactionD factionUpdate s0
       s2 = updateActorD actorDUpdate s1
       s3 = updateActorMaxSkills actorMaxSkillsUpdate s2
   in updateDungeon dungeonUpdate s3
 
-partyCliStateWith :: Faction -> [(ActorId, Actor, ActorUI)] -> CliState
-partyCliStateWith fact actorTriples = CliState
-  { cliState =
-      partyStateWith fact $ map (\(aid, b, _) -> (aid, b)) actorTriples
-  , cliClient = (emptyStateClient testFactionId)
-      { soptions = stubClientOptions
-      , sfper = EM.singleton testLevelId emptyPer }
-  , cliSession = Just $ stubSessionUI
-      { sactorUI =
-          EM.fromList $ map (\(aid, _, bUI) -> (aid, bUI)) actorTriples }
-  }
+partyCliStateWith :: Level -> Faction -> [(ActorId, Actor, ActorUI)] -> CliState
+partyCliStateWith lvl fact actorTriples =
+  let s = partyStateWith lvl fact $ map (\(aid, b, _) -> (aid, b)) actorTriples
+  in CliState
+    { cliState = s
+    , cliClient = (emptyStateClient testFactionId)
+        { soptions = stubClientOptions
+        , sfper = EM.singleton testLevelId emptyPer
+        , salter = createSalter s }  -- see 'stubCliState'
+    , cliSession = Just $ stubSessionUI
+        { sactorUI =
+            EM.fromList $ map (\(aid, _, bUI) -> (aid, bUI)) actorTriples }
+    }
 
 -- | A client state with a two-hero party (@A@, @C@) on a single level,
 -- no leader set yet (tests set it via 'updateClientLeader'), suitable for
 -- driving the pointman-cycling code the way keypresses do.
 partyCliState :: CliState
-partyCliState = partyCliStateWith partyFaction
+partyCliState = partyCliStateWith stubLevel partyFaction
   [(testActorId, heroA, actorUIA), (testActorId2, heroC, actorUIC)]
 
 -- | A three-hero party (@A@, @B@, @C@), for desyncs that pick the wrong
 -- member rather than no member.
 partyCliState3 :: CliState
-partyCliState3 = partyCliStateWith partyFaction
+partyCliState3 = partyCliStateWith stubLevel partyFaction
   [ (testActorId, heroA, actorUIA)
   , (testActorId3, heroB, actorUIB)
   , (testActorId2, heroC, actorUIC) ]
@@ -467,7 +562,14 @@ partyCliState3 = partyCliStateWith partyFaction
 -- | A two-hero party of a faction banned from switching pointman
 -- between levels.
 partyCliStateBanned :: CliState
-partyCliStateBanned = partyCliStateWith partyFactionBanned
+partyCliStateBanned = partyCliStateWith stubLevel partyFactionBanned
+  [(testActorId, heroA, actorUIA), (testActorId2, heroC, actorUIC)]
+
+-- | 'partyCliState' on the 'walkableLevel': the same two heroes in the
+-- same places, with the terrain under and between them walkable, so that
+-- aiming from one to the other succeeds.
+partyCliStateWalkable :: CliState
+partyCliStateWalkable = partyCliStateWith walkableLevel partyFaction
   [(testActorId, heroA, actorUIA), (testActorId2, heroC, actorUIC)]
 
 -- | A run led by hero A with the whole two-hero party as members,
@@ -481,13 +583,45 @@ runParamsA = RunParams { runLeader = testActorId
                        , runStopMsg = Nothing
                        , runWaiting = 0 }
 
--- | 'partyCliState' with 'scriptedFchanFrontend' replacing the stub
--- frontend: each 'FrontKey' request pops the next scripted key.
-partyCliStateScripted :: [K.KM] -> IO CliState
-partyCliStateScripted kms = do
+-- | A fixture with 'scriptedFchanFrontend' replacing the stub frontend:
+-- each 'FrontKey' request pops the next scripted key.
+scriptedCliState :: CliState -> [K.KM] -> IO CliState
+scriptedCliState cliS kms = do
   chanF <- scriptedFchanFrontend kms
-  return $ partyCliState
-    {cliSession = (\sess -> sess {schanF = chanF}) <$> cliSession partyCliState}
+  return $ cliS
+    {cliSession = (\sess -> sess {schanF = chanF}) <$> cliSession cliS}
+
+-- | 'partyCliState' with the scripted frontend.
+partyCliStateScripted :: [K.KM] -> IO CliState
+partyCliStateScripted = scriptedCliState partyCliState
+
+-- | Dialog prompts wrap via @indentSplitAttrString@, which asserts a
+-- screen wider than 4, so tests that open real dialogs enlarge the stub
+-- screen first. The level can stay 3x3: the map is drawn over
+-- @rWidthMax@/@rHeightMax@, which the stub content keeps at 3.
+enlargeScreen :: SessionUI -> SessionUI
+enlargeScreen = resizeScreen 24 12
+
+-- | A menu that displays an item splits the screen into a label pane and
+-- a description pane, and each pane's width has to clear that same
+-- assertion, so a dialog with items in it needs more room still.
+enlargeScreenForItems :: SessionUI -> SessionUI
+enlargeScreenForItems = resizeScreen 60 20
+
+resizeScreen :: X -> Y -> SessionUI -> SessionUI
+resizeScreen rwidth rheight sess = sess {sccui = (sccui sess)
+  {coscreen = (coscreen (sccui sess)) {rwidth, rheight}}}
+
+-- | Fill in the BFS scratch arrays that 'emptyStateClient' leaves
+-- 'undefined'; the real client fills them once at startup
+-- (@Client.LoopM.loopCli@), which no fixture goes through. A test needs
+-- this whenever a frame is drawn while an xhair is set, because the path
+-- to the xhair is a BFS query.
+initBfsTabs :: MonadClient m => m ()
+initBfsTabs = do
+  tabA <- createTabBFS
+  tabB <- createTabBFS
+  modifyClient $ \cli -> cli {stabs = (tabA, tabB)}
 
 
 -- * Monad harness mock

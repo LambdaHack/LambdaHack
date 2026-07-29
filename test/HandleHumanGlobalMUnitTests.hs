@@ -11,9 +11,16 @@ import qualified Data.EnumMap.Strict as EM
 import           Test.Tasty
 import           Test.Tasty.HUnit
 
-import           Game.LambdaHack.Client.UI (SessionUI (..), modifySession)
+import           Game.LambdaHack.Client.MonadClient (getsClient)
+import           Game.LambdaHack.Client.State (sleader)
+import           Game.LambdaHack.Client.UI
+  (SessionUI (..), modifySession, updateClientLeader)
 import           Game.LambdaHack.Client.UI.HandleHelperM (showFailError)
-import           Game.LambdaHack.Client.UI.HandleHumanGlobalM (projectHuman)
+import           Game.LambdaHack.Client.UI.HandleHumanGlobalM
+  (alterDirHuman, projectHuman)
+import qualified Game.LambdaHack.Client.UI.Key as K
+import           Game.LambdaHack.Client.UI.SessionUI
+  (KeyMacro (..), KeyMacroFrame (..), emptyMacroFrame)
 import           Game.LambdaHack.Common.Actor (Actor (..))
 import           Game.LambdaHack.Common.State
   (updateActorD, updateActorMaxSkills, updateItemD)
@@ -73,4 +80,49 @@ handleHumanGlobalMUnitTests = testGroup "handleHumanGlobalMUnitTests"
            ++ show (showFailError err))
           (showFailError err /= "*no item to fling*")
         Right _ -> return ()  -- even better: the request itself
+
+  , -- [LR-flip] The remaining §09 site: @alterDirHuman@ asks for a
+    -- direction through @pickPoint@, which spans an interactive wait and
+    -- only then shifts the HELD leader's position to get the square to
+    -- modify. Here the wait is the one from the post-mortem's §04 window:
+    -- a macro dies inside @promptGetKey@, which restores the pointman to
+    -- the run leader A -- and the command carries on with the leader it
+    -- was handed. Both runs press the same key and differ only in that
+    -- held value, so the square each modifies is the held actor's
+    -- neighbour: A's is C's floor, C's is the wall past it, and the two
+    -- failures name the two tiles. (The stub board is fenced with
+    -- unalterable walls, so neither attempt can succeed; what is pinned
+    -- is which square was chosen.)
+    -- After the live-read design lands, @pickPoint@ reads the pointman
+    -- after the wait rather than taking it as an argument, so both runs
+    -- modify from the restored A: flip the second component to the floor
+    -- message -- verified by temporarily making @pickPoint@ re-read the
+    -- pointman after the key.
+    testCase "LR-flip alterDir: the held leader picks the square to modify"
+      $ do
+      let dirRight = K.mkKM "Right"  -- keypad Right is the (1, 0) move
+          testFn leaderHeld = do
+            modifySession enlargeScreen
+            initBfsTabs
+            updateClientLeader testActorId   -- run leader A
+            updateClientLeader testActorId2  -- run rotated pointman to C
+            modifySession $ \sess ->
+              sess { sreqQueried = False
+                   , srunning = Just runParamsA
+                   , smacroFrame =
+                       emptyMacroFrame {keyPending = KeyMacro [K.mkKM "x"]} }
+            merr <- alterDirHuman leaderHeld
+              -- the macro dies in promptGetKey inside pickPoint: the
+              -- pointman is restored to A and the scripted key is read
+            leaderAfter <- getsClient sleader
+            return (either showFailError (const "a request") merr, leaderAfter)
+      cliSA <- scriptedCliState partyCliStateWalkable [dirRight]
+      (resultHeldA, _) <- executorCli (testFn testActorId) cliSA
+      cliSC <- scriptedCliState partyCliStateWalkable [dirRight]
+      (resultHeldC, _) <- executorCli (testFn testActorId2) cliSC
+      (resultHeldA, resultHeldC)
+        @?= ( ("*there is no way to activate or modify a floor*"
+              , Just testActorId)
+            , ("*there is no way to activate or modify a wall*"
+              , Just testActorId) )
   ]

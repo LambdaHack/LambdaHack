@@ -10,11 +10,10 @@ module Game.LambdaHack.Common.Kind
   , ofoldlWithKey', ofoldlGroup', omapVector, oimapVector
   , olength, linearInterpolation, emptyMultiGroupMode, emptyMultiGroupItem
 #ifdef EXPOSE_INTERNAL
-  , emptyUnknownTile
   , emptyUIFactionGroupName
 #endif
     -- * Operations both internal and used in unit tests
-  , emptyUIFaction
+  , emptyUnknownTile, emptyUIFaction
   ) where
 
 import Prelude ()
