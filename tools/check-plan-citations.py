@@ -2,7 +2,7 @@
 """Check that file:line citations in a planning document still resolve.
 
 Usage: python3 tools/check-plan-citations.py [DOC]
-DOC defaults to wasm-frontend-unified-plan.md. Run from the repo root.
+DOC defaults to CLAUDE.md. Run from the repo root.
 
 For every citation of the form `path/to/File.hs:12` or `File.hs:12-34`
 (also .ts, .cabal, .mjs, .html and the Makefile), the script resolves the
@@ -68,7 +68,7 @@ def resolve(name):
 
 
 def main():
-    doc = sys.argv[1] if len(sys.argv) > 1 else "wasm-frontend-unified-plan.md"
+    doc = sys.argv[1] if len(sys.argv) > 1 else "CLAUDE.md"
     text = open(doc, encoding="utf-8").read()
     cites = sorted({(m.group(1), int(m.group(2)),
                      int(m.group(3) or m.group(2)))
