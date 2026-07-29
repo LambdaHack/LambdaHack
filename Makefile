@@ -306,14 +306,18 @@ build-wasm:
 	. ~/.ghc-wasm/env; \
 	wasm32-wasi-cabal build exe:LambdaHack
 
+# Chained with && so the log ends at the command that failed; otherwise
+# a build failure runs on into post-link and the test driver, and their
+# complaints about the missing binary bury the real error. The trap both
+# removes the temporary directory and lets the last command's status stand.
 test-wasm:
 	. ~/.ghc-wasm/env; \
-	wasm32-wasi-cabal build test; \
-	W=$$(wasm32-wasi-cabal list-bin test); \
 	T=$$(mktemp -d); \
-	~/.ghc-wasm/wasm32-wasi-ghc/lib/post-link.mjs --input "$$W" --output "$$T/ghc_wasm_jsffi.mjs"; \
-	node ts-src/run-wasm-test.mjs "$$W" "$$T/ghc_wasm_jsffi.mjs"; \
-	RC=$$?; rm -rf "$$T"; exit $$RC
+	trap 'rm -rf "$$T"' EXIT; \
+	wasm32-wasi-cabal build test && \
+	W=$$(wasm32-wasi-cabal list-bin test) && \
+	~/.ghc-wasm/wasm32-wasi-ghc/lib/post-link.mjs --input "$$W" --output "$$T/ghc_wasm_jsffi.mjs" && \
+	node ts-src/run-wasm-test.mjs "$$W" "$$T/ghc_wasm_jsffi.mjs"
 
 build-ts:
 	. ~/.ghc-wasm/env; \
