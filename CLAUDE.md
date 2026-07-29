@@ -624,8 +624,9 @@ sandbox. Current state and its implications:
   accept that syntax — it has no `-p`: bare positional args
   are **prefix** patterns on the full `group/bench` path,
   and `-m glob`/`-m pattern`/`-m ipattern` switch the match mode
-  (e.g. `--benchmark-options='-m glob "*/dInp"'` to pick a bench across
-  groups, or a bare `--benchmark-options='cnn-L1'` prefix).
+  (in horde-ad, this repo having no criterion suites:
+  `--benchmark-options='-m glob "*/S-exec"'` to pick a bench across
+  groups, or a bare `--benchmark-options='cnn-24x24'` prefix).
 - GHC emits warnings only on *recompilation*: a cached, up-to-date build
   can hide warnings (e.g. `-Wredundant-constraints`) that a full rebuild
   would surface — don't infer "no warnings" from a clean second build.
