@@ -56,6 +56,57 @@ Reproduced 2026-07-29: six failures and exit 1, the control resolving to
 the `Point.hs` hack comment. A recipe with no date behind it is a claim
 like any other.
 
+Passing --restamp rewrites the document's own stamp, so the ritual the
+documents ask for -- "re-run the pass and restamp after any replay of
+these commits" -- stops depending on memory. By the leader-desync
+document's own count that ritual had already been missed four times, each
+time leaving a stamp naming a commit no longer in the repository, which no
+reader can check.
+
+The commit it writes is not HEAD but the newest commit touching anything
+the document cites. That referent is the one that survives editing the
+document: a commit carrying only prose touches no cited file, so amending
+or replaying it cannot move the answer, whereas a HEAD-based stamp is
+falsified by the very commit that records it. It also means the stamp can
+name a commit well behind HEAD -- correctly, because the cited lines come
+from there, and re-verification is owed when *they* move, not when
+anything moves.
+
+What the flag cannot do is know that you *read* the document. The stamp
+asserts two things -- that the citations resolve in some named tree, and
+that they still say what the surrounding claims need -- and only the
+first is mechanical. So restamp a document you have just re-read, not one
+you have merely run this over; that asymmetry is why the flag is opt-in
+rather than the default.
+
+It refuses to write when anything is off, and the refusals are the point:
+
+    a stale stamp, clean tree, clean pass  -> hash and date rewritten, 0
+    the same run again                     -> "already current", no write, 0
+    one unresolved citation                -> refuses, file untouched, 1
+    a cited file modified against HEAD     -> refuses, file untouched, 1
+    no stamp, or two stamps                -> refuses, file untouched, 1
+    a stamp but no file:line citation      -> refuses, file untouched, 1
+
+The dirty-cited-file refusal is the subtle one: with a cited file
+modified, the pass verified the working tree, and no commit hash names
+what was checked, so a stamp would be a false statement rather than a
+stale one.
+
+Non-vacuity (per CLAUDE.md's "prove a checker non-vacuous", applied to a
+writer rather than a reader): reproduce the six rows above with scratch
+documents -- one citing `tools/heading-outline.py:1` with a stamp reading
+`0000000aa` (2020-01-01) for the first two rows, one citing
+`NoSuchFile.hs:12` for the third, one citing a file you have just touched
+for the fourth, two more with zero and two stamps, and one with a stamp
+and no citation at all. Check the exit status without a pipe: `tail`
+swallows it, which is how a first run of this recipe read five successes
+that were four refusals. Reproduced 2026-07-29: rows in order 0, 0, 1, 1,
+1, 1, with the file rewritten in the first row only -- and the hash it
+wrote was the last commit touching `tools/heading-outline.py`, not HEAD,
+which is the row that would have passed vacuously under the earlier
+HEAD-based rule.
+
 Six here, five in the horde-ad copy: the AMBIGUOUS row needs two files
 sharing a basename, which this repo has (`LoopM.hs` in both `Client/`
 and `Server/`) and that one has nowhere. So this is the only live proof
@@ -63,6 +114,7 @@ of that branch — keep the row even if the duplicate is ever resolved.
 The two copies otherwise differ only in SEARCH_ROOTS.
 """
 
+import datetime
 import os
 import re
 import subprocess
@@ -77,6 +129,14 @@ CITE_RE = re.compile(
 URL_RE = re.compile(
     r"https://github\.com/[\w.-]+/[\w.-]+/blob/([0-9a-f]{7,40})/"
     r"([A-Za-z0-9_./-]+)#L(\d+)(?:-L(\d+))?")
+# The document's own stamp, in either shape the documents use: an inline
+# `hash` or a blockquoted **hash**, always followed by an ISO date in
+# parentheses. The date is what keeps this from matching the other commit
+# hashes documents mention (a bug's commit, a baseline's commit).
+STAMP_RE = re.compile(
+    r"(verified against[^`*]{0,120}?commit\s*>?\s*(?:`|\*\*))"
+    r"([0-9a-f]{7,40})"
+    r"((?:`|\*\*)\s*\()(\d{4}-\d{2}-\d{2})(\))")
 
 
 def all_files_named(basename):
@@ -120,8 +180,73 @@ def require_readable(paths):
             sys.exit(2)
 
 
+def restamp(doc, text, cited_paths, failures):
+    """Rewrite the document's own stamp to name HEAD. Refuse if unsure.
+
+    Returns the exit status. Writes at most one file, and only when the
+    pass was clean, the cited files are unmodified against HEAD (so that
+    a commit really is what got checked) and the document holds exactly
+    one stamp.
+    """
+    if failures:
+        print(f"\nnot restamping {doc}: {failures} citation(s) failed")
+        return 1
+    others = sorted({p for p in cited_paths if os.path.abspath(p)
+                     != os.path.abspath(doc)})
+    if others:
+        # --porcelain, never colourised, unlike --short
+        dirty = [ln for ln in subprocess.run(
+            ["git", "status", "--porcelain", "--"] + others,
+            capture_output=True, text=True).stdout.splitlines() if ln.strip()]
+        if dirty:
+            print(f"\nnot restamping {doc}: cited files differ from HEAD, so"
+                  f" the pass verified the working tree rather than a commit:")
+            for ln in dirty:
+                print("   " + ln)
+            return 1
+    stamps = list(STAMP_RE.finditer(text))
+    if len(stamps) != 1:
+        which = "no stamp" if not stamps else f"{len(stamps)} stamps"
+        print(f"\nnot restamping {doc}: {which} found — a stamp reads"
+              f' "verified against ... commit `<hash>` (<date>)"')
+        return 1
+    if not others:
+        print(f"\nnot restamping {doc}: no file:line citations, so no commit"
+              f" to name")
+        return 1
+    # The stamp names the commit the cited *code* comes from, not HEAD: the
+    # newest commit touching anything the document cites. That is what makes
+    # it survive amending or replaying the commit that carries the document,
+    # which touches no cited file and so cannot move the answer.
+    anchor = subprocess.run(
+        ["git", "log", "-1", "--format=%h", "--abbrev=9", "--"] + others,
+        capture_output=True, text=True).stdout.strip()
+    if not anchor:
+        print(f"\nnot restamping {doc}: no commit in history touches its"
+              f" cited files")
+        return 1
+    today = datetime.date.today().isoformat()
+    m = stamps[0]
+    if (m.group(2), m.group(4)) == (anchor, today):
+        print(f"\n{doc}: stamp already names {anchor} ({today}) — unchanged")
+        return 0
+    open(doc, "w", encoding="utf-8").write(
+        text[:m.start()] + m.group(1) + anchor + m.group(3) + today
+        + m.group(5) + text[m.end():])
+    print(f"\n{doc}: stamp {m.group(2)} ({m.group(4)})"
+          f" -> {anchor} ({today})")
+    return 0
+
+
 def main():
-    doc = sys.argv[1] if len(sys.argv) > 1 else "CLAUDE.md"
+    flags = {a for a in sys.argv[1:] if a.startswith("--")}
+    args = [a for a in sys.argv[1:] if not a.startswith("--")]
+    unknown = flags - {"--restamp"}
+    if unknown:
+        print(f"unknown flag(s): {' '.join(sorted(unknown))};"
+              f" only --restamp is understood", file=sys.stderr)
+        sys.exit(2)
+    doc = args[0] if args else "CLAUDE.md"
     require_readable([doc])
     text = open(doc, encoding="utf-8").read()
     cites = sorted({(m.group(1), int(m.group(2)),
@@ -166,6 +291,9 @@ def main():
     print(f"\n{len(cites) + len(urlcites)} citations checked,"
           f" {failures} failed"
           f" — now eyeball the snippets against the document's claims.")
+    if "--restamp" in flags:
+        resolved = [resolve(name)[0] for name, _lo, _hi in cites]
+        return restamp(doc, text, [p for p in resolved if p], failures)
     return 1 if failures else 0
 
 
