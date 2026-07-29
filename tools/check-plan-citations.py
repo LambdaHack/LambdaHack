@@ -5,12 +5,12 @@ Usage: python3 tools/check-plan-citations.py [DOC]
 DOC defaults to CLAUDE.md. Run from the repo root.
 
 For every citation of the form `path/to/File.hs:12` or `File.hs:12-34`
-(also .ts, .py, .cabal, .mjs, .html, .md, .txt, .yaml/.yml and the
-Makefile — documents cite each other and the tools), the script resolves the
-file, checks the line range exists, and prints the first cited line so a
-human can compare it against what the surrounding sentence claims. A
-`/.../` component in a cited path is treated as a wildcard (the document
-uses it to abbreviate long paths).
+(also .ts, .py, .c, .h, .cabal, .mjs, .html, .md, .txt, .yaml/.yml and
+the Makefile — documents cite each other and the tools), the script
+resolves the file, checks the line range exists, and prints the first
+cited line so a human can compare it against what the surrounding
+sentence claims. A `/.../` component in a cited path is treated as a
+wildcard (the document uses it to abbreviate long paths).
 
 Exit status is nonzero if any citation is UNRESOLVED (no such file),
 AMBIGUOUS (a bare basename matching several files — qualify it in the
@@ -51,6 +51,16 @@ there because that kind was silently uncovered for a while: only Haskell
 and web sources were extracted, so a citation into a `.md`, `.py` or
 `.yml` file was skipped rather than checked, and a document citing
 nothing but those reported a clean zero.
+
+Reproduced 2026-07-29: six failures and exit 1, the control resolving to
+the `Point.hs` hack comment. A recipe with no date behind it is a claim
+like any other.
+
+Six here, five in the horde-ad copy: the AMBIGUOUS row needs two files
+sharing a basename, which this repo has (`LoopM.hs` in both `Client/`
+and `Server/`) and that one has nowhere. So this is the only live proof
+of that branch — keep the row even if the duplicate is ever resolved.
+The two copies otherwise differ only in SEARCH_ROOTS.
 """
 
 import os
@@ -62,7 +72,7 @@ SEARCH_ROOTS = ["engine-src", "definition-src", "GameDefinition", "ts-src",
                 "test", "tools", "docs", ".github", ".claude", "."]
 CITE_RE = re.compile(
     r"`?([A-Za-z][A-Za-z0-9_./-]*"
-    r"\.(?:hs|ts|py|cabal|mjs|html|md|txt|yaml|yml)|Makefile)"
+    r"\.(?:hs|ts|py|c|h|cabal|mjs|html|md|txt|yaml|yml)|Makefile)"
     r":(\d+)(?:-(\d+))?")
 URL_RE = re.compile(
     r"https://github\.com/[\w.-]+/[\w.-]+/blob/([0-9a-f]{7,40})/"
@@ -98,8 +108,21 @@ def resolve(name):
     return None, f"AMBIGUOUS: {hits} — qualify the citation"
 
 
+def require_readable(paths):
+    """Exit cleanly on a mistyped name rather than with a traceback.
+
+    Exit 2 means the run did not happen, as distinct from 1, which means
+    it ran and found something.
+    """
+    for p in paths:
+        if not os.path.isfile(p):
+            print(f"no such document: {p}", file=sys.stderr)
+            sys.exit(2)
+
+
 def main():
     doc = sys.argv[1] if len(sys.argv) > 1 else "CLAUDE.md"
+    require_readable([doc])
     text = open(doc, encoding="utf-8").read()
     cites = sorted({(m.group(1), int(m.group(2)),
                      int(m.group(3) or m.group(2)))
