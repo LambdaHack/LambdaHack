@@ -52,18 +52,24 @@ findings. A control that cannot fail proves nothing, self-tests included.
 Two things the self-test cannot cover here. No document in this repo has
 a `>>>` block, so the outputs branch has no *live document* to run
 against -- keep the branch anyway; the horde-ad copy uses it. And for the
-types branch there is a live positive control worth running: on the one
-document with fenced Haskell it should extract and resolve 6 capitalised
-names (wasm-frontend-unified-plan) with none unresolved, the count being
-the thing to check, since "0 unresolved" reads the same whether the
-extractor works or finds nothing.
+types branch there are live positive controls worth running: on the four
+documents with fenced Haskell it should extract and resolve 18, 0, 12 and
+6 capitalised names (leader-desync-bug, leader-desync-migration,
+promptgetkey-hygiene, wasm-frontend-unified-plan) with none unresolved,
+the count being the thing to check, since "0 unresolved" reads the same
+whether the extractor works or finds nothing. The zero is expected and is
+its own control: that document's only fence is an all-comment haddock
+draft, so a nonzero count there would mean comment stripping had stopped
+working. The counts are not printed -- load the module and call
+`strip_comments`/`NAME_RE` over `FENCE_RE` yourself.
 
 The noise this had to survive, since a later reader may be tempted to
-widen it: comments inside a fenced block contribute ALL-CAPS words like
-`NOTE`, and a design document declares the constructors of the type it is
-proposing. Stripping comments and treating a document's own `data`
-constructors as local is what took the false positives to zero across
-both repos, with horde-ad's one true positive still reported.
+widen it: comments inside a fenced block contribute words like `NOTE`
+and `MUTATES`, and promptgetkey-hygiene.md declares the `MacroStep`
+constructors it is proposing. Stripping comments and treating a
+document's own `data` constructors as local took twelve false positives
+to zero across both repos, with horde-ad's one true positive still
+reported.
 """
 
 import contextlib

@@ -4,10 +4,33 @@ The engine-wide conventions and gotchas stay in the repo-root `CLAUDE.md`.
 
 File:line references were verified against the tree at commit `8b5703e87` (2026-07-29); the citation pass proves a cited line exists — this stamp, that it still says what the claim around it needs.
 
-## The mock and frontend stub
+## The mock and frontend stubs
 
-`test/UnitTestHelpers.hs` provides `CliMock` (`UnitTestHelpers.hs:630`), a real `MonadClientUI` implementation over `StateT CliState IO`, plus a frontend stub that answers every `FrontKey` request with ESC.
+`test/UnitTestHelpers.hs` provides `CliMock` (`UnitTestHelpers.hs:630`), a real `MonadClientUI` implementation over `StateT CliState IO`, plus two frontend stubs: the default answers every `FrontKey` request with ESC; `scriptedFchanFrontend` (`UnitTestHelpers.hs:142`) plays a scripted key list first, then falls back to ESC, and is wired into any fixture by `scriptedCliState` (`UnitTestHelpers.hs:588`), of which `partyCliStateScripted` (`UnitTestHelpers.hs:595`) is the two-hero instance.
 
-## The stub world
+## The stub world: board and party fixtures
 
-The stub board is 3x3 unknown, unwalkable tiles: aiming/projection pipelines fail deterministically ("aiming obstructed by terrain"), but code that checks stores before aiming (e.g. `projectHuman`) is testable. Anything that indexes `ltile` by `Point` must keep positions on row 0: the `Enum` width hack (`speedupHackXSize`, see the gotchas in the repo-root `CLAUDE.md`) keeps its default 80 in the test binary, so on the 3x3 board only row-0 lookups stay in bounds.
+- The default stub board is 3x3 unknown, unwalkable tiles: aiming/projection pipelines fail deterministically ("aiming obstructed by terrain"), but code that checks stores before aiming (e.g. `projectHuman`) is testable. Anything that indexes `ltile` by `Point` must keep positions on row 0: the `Enum` width hack (`speedupHackXSize`, see the gotchas in the repo-root `CLAUDE.md`) keeps its default 80 in the test binary, so on the 3x3 board only row-0 lookups stay in bounds.
+- The walkable board, `walkableLevel` (`UnitTestHelpers.hs:514`), is for the pipelines the unknown one deterministically fails: it makes the two heroes' own squares `floorTile` and every other cell `wallTile`, and its array is a full row stride wide, so every position the level's declared 3x3 admits is addressable. Both properties are load-bearing. The BFS — which a frame drawn with an xhair set queries, for the path to the xhair — walks tile neighbourhoods with no bounds check, as a real level is always ringed by tiles it cannot path through; unknown space does not fence it, since its `talter` of 1 is exactly the skill the BFS raises itself to in order to path through unexplored terrain, which is why the wall's is `maxBound`.
+- `emptyUnknownTile`, which both boards build on, is exported from `Kind.hs` in its "internal and used in unit tests" group (`Kind.hs:16`), deliberately *outside* the `EXPOSE_INTERNAL` block just above it. That placement is load-bearing rather than tidy: the cabal `release` flag, which gates `EXPOSE_INTERNAL`, defaults to True, so leaning on that block compiles here and breaks the suite under `-release`, where nothing else would warn you.
+- Party fixtures `partyCliState`/`partyCliState3`/`partyCliStateBanned`/`partyCliStateWalkable` (the family starts at `UnitTestHelpers.hs:550`) model the sample game's hero faction, and differ only in party size, faction and board. `emptyUIFaction` defaults `fhasPointman = False`, which alone forces `noRunWithMulti` and disables the run machinery — set it `True` in any faction fixture that must run or restore the pointman.
+- Two client caches the real client fills at startup, which no fixture goes through: `salter`, the per-level alter-skill map, which `stubCliState` and the party fixtures now build with `createSalter` (a missing level key there reads as `IntMap.!: key 111 is not an element of the map`, 111 being `testLevelId`); and the BFS scratch arrays `stabs`, which `emptyStateClient` leaves `undefined` — call `initBfsTabs` (`UnitTestHelpers.hs:620`) in any test that draws a frame while an xhair is set.
+
+## Driving keys, commands and dialogs
+
+- `promptGetKey` runs under the mock with blank frames (`onBlank = True`) and with rendered ones (`drawHudFrame` over the stub board — pinned by the AS7 case, `FrameMUnitTests.hs:194`). Even whole dialogs can be driven — see the ESC store-dialog test (`HandleHumanLocalMUnitTests.hs:306`) — given two things: an item both held by the actor and registered in `sitemD` (a separate `updateItemD` step; without it the store reads as empty), and a screen wider than 4 (dialog prompts assert that — `enlargeScreen`, `UnitTestHelpers.hs:602`; the level can stay 3x3, since the map is drawn over `rWidthMax`/`rHeightMax`).
+- A dialog that *displays* an item needs three things more: the item must have a role in `sroles` for the store's `SLore`, or the store reads as empty however full the bag is; the menu splits the screen into a label and a description pane, each of which must clear that same width assertion, hence `enlargeScreenForItems`; and rendering the description queries the BFS, hence `initBfsTabs`.
+- Real key bindings come from the *sample game's* `standardKeysAndMouse` (module `Client.UI.Content.Input` — the game's, per the duplicate-basename gotcha in the repo-root `CLAUDE.md`) via `IC.makeData Nothing`, baked into the fixture CCUI by `stubSessionUI` (`UnitTestHelpers.hs:409`) — no hand-rolled `InputContent` needed. To run a whole `HumanCmd` the way the key loop does, use `dispatchCmd` (`HandleHelperMUnitTests.hs:46`), which resolves the command's real key from those bindings and feeds both to `cmdSemInCxtOfKM`.
+
+## Characterization tags: `[LR-flip]` and `[contract]`
+
+Some tests are deliberate characterizations of known-buggy behaviour, tagged `[LR-flip]` in comments with the post-fix expectation stated inline; `[contract]`-tagged tests pin behaviour that must survive both planned designs (live-read, then abort-split — see `docs/leader-desync-bug.md` and `docs/promptgetkey-hygiene.md`) unchanged. Don't "fix" a green `[LR-flip]` test — flip it together with the engine change it documents, and verify the flip by temporarily applying the candidate fix before committing either.
+
+Each tag also begins the test's own name, so a series runs as a unit:
+
+```
+cabal test --test-options='-p "/contract/"'   # must stay green
+cabal test --test-options='-p "/LR-flip/"'    # flip these with the fix
+```
+
+A test carrying both concerns — the bridge tests X1 and X2, whose `promptGetKey` half is contract and whose final cycling outcome flips — is tagged `LR-flip`, because a test that must be edited when the design lands is not one that stays green unchanged. Its contract half is described in the comment above it.
