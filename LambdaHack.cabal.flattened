@@ -44,7 +44,8 @@ homepage:      https://lambdahack.github.io
 bug-reports:   http://github.com/LambdaHack/LambdaHack/issues
 license:       BSD-3-Clause
 license-file:  COPYLEFT
-tested-with:   GHC==8.10.*, GHC==9.0.*, GHC==9.2.*, GHC==9.4.*
+tested-with:   GHC ==9.10.3 || ==9.12.4 || ==9.14.1
+
 -- Enough files is included in the Hackage package to run CI and manual
 -- tests off it, to be presentable on Hackage and to create user-friendly
 -- binary packages.
@@ -76,7 +77,7 @@ build-type:    Simple
 
 source-repository head
   type:               git
-  location:           git://github.com/LambdaHack/LambdaHack.git
+  location:           https://github.com/LambdaHack/LambdaHack.git
 
 flag with_expensive_assertions
   description:        turn on expensive assertions of well-tested code
@@ -93,31 +94,44 @@ flag supportNodeJS
   default:            True
   manual:             True
 
-flag jsaddle
-  description:        switch to the JSaddle frontend (may be bit-rotted)
-  default:            False
-  manual:             True
-
 common options
-  default-language:   Haskell2010
-  default-extensions: MonoLocalBinds, ScopedTypeVariables, OverloadedStrings,
-                      BangPatterns, RecordWildCards, NamedFieldPuns, MultiWayIf,
-                      LambdaCase, DefaultSignatures, InstanceSigs,
-                      PatternSynonyms, StrictData, CPP, TypeApplications
-  other-extensions:   TemplateHaskell, MultiParamTypeClasses, RankNTypes,
-                      TypeFamilies, FlexibleContexts, FlexibleInstances,
-                      DeriveFunctor, FunctionalDependencies,
-                      GeneralizedNewtypeDeriving, TupleSections,
-                      DeriveFoldable, DeriveTraversable,
-                      ExistentialQuantification, GADTs, StandaloneDeriving,
-                      DataKinds, KindSignatures, DeriveGeneric, DeriveLift
-  ghc-options:        -Wall -Wcompat -Worphans -Wincomplete-uni-patterns -Wincomplete-record-updates -Wimplicit-prelude -Wmissing-home-modules -Widentities -Wredundant-constraints -Wmissing-export-lists -Wpartial-fields -Wunused-packages -Winvalid-haddock
--- TODO: remove -Winvalid-haddock when added to -Wall in a GHC I use for haddock
-  ghc-options:        -fno-ignore-asserts
+  default-language:   GHC2024
+  default-extensions: StrictData TypeFamilies TypeFamilyDependencies
+                      FunctionalDependencies RecordWildCards MultiWayIf
+                      DefaultSignatures PatternSynonyms NoStarIsType
+                      TypeData TypeAbstractions
+                      CPP OverloadedStrings
+                      -- to molify stylish-haskell, until it's fixed
+                      LambdaCase
+  other-extensions:   UnboxedTuples ViewPatterns
+                      DeriveAnyClass QuantifiedConstraints TemplateHaskell
+                      DerivingVia ImpredicativeTypes
+                      UndecidableInstances UndecidableSuperClasses
+                      AllowAmbiguousTypes
+  -- * Warnings and similar.
+  ghc-options:        -Wall -Wcompat -Wimplicit-prelude -Widentities -Wredundant-constraints -Wmissing-export-lists -Wpartial-fields -Wunused-packages -Wredundant-bang-patterns -Wredundant-strictness-flags -Wterm-variable-capture -Wmissed-specialisations
+  ghc-options:        -Wno-unticked-promoted-constructors
+  -- Disables a warning we can't yet fix:
+  if impl(ghc >= 9.14)
+    ghc-options:      -Wno-pattern-namespace-specifier
+  ghc-options:        -fprint-explicit-kinds -fsimpl-tick-factor=200
 
-  ghc-options:        -fexpose-all-unfoldings -fspecialise-aggressively -fsimpl-tick-factor=200
+  -- * Performance.
+  -- This is supposedly risky, but prevents STG from creating thunks, #23848:
+  ghc-options:        -fworker-wrapper-cbv
+  -- These improve performance, but slow down compilation:
+  if impl(ghc >= 9.12)
+    ghc-options:      -fexpose-overloaded-unfoldings
+  ghc-options:        -fspecialise-aggressively
+  if impl(ghc >= 9.14)
+    ghc-options:      -fpolymorphic-specialisation
+  -- This one improves both performance and compilation speed:
+  ghc-options:        -fkeep-auto-rules
+  -- These improve performance to some extent:
+  ghc-options:        -fdicts-cheap -flate-dmd-anal
 
-  ghc-options:        -Wmissed-specialisations
+  -- turn off complaints about head, tail, etc.:
+  ghc-options:        -Wno-x-partial
 
   if flag(with_expensive_assertions)
     cpp-options:      -DWITH_EXPENSIVE_ASSERTIONS
@@ -125,10 +139,24 @@ common options
   if flag(release)
     cpp-options:      -DEXPOSE_INTERNAL
 
-  ghcjs-options:      -DUSE_JSFILE
+  -- Backend detection, shared by every component (library, executable,
+  -- test-suite), since cpp-options set inside one stanza's own os(wasi)/
+  -- impl(ghcjs) conditionals aren't inherited by any other stanza, even
+  -- though os(wasi)/impl(ghcjs) themselves evaluate the same way
+  -- everywhere (it's the same compiler building every component in a
+  -- given invocation). Stanzas below only need to vary exposed-modules/
+  -- other-modules/build-depends -- which frontend and file backend get
+  -- compiled in -- not these flags.
+  if os(wasi)
+    cpp-options:      -DUSE_BROWSER -DUSE_WASM -DUSE_WASMFILE
+  if impl(ghcjs)
+    cpp-options:      -DUSE_BROWSER -DUSE_GHCJS -DUSE_JSFILE
 
   if !flag(supportNodeJS)
     ghcjs-options:    -DREMOVE_TELETYPE
+
+  -- This needs to be after -O2.
+  ghc-options:        -fno-ignore-asserts
 
 common exe-options
   ghc-options:        -rtsopts
@@ -318,7 +346,7 @@ library
                       witch      >= 0.3,
                       keys       >= 3,
                       miniutter  >= 0.5.0.0,
-                      open-browser >= 0.2,
+                      open-browser >= 0.5.1.0,
                       optparse-applicative >= 0.13,
                       pretty-show >= 1.6,
                       primitive  >= 0.6.1.0,
@@ -335,28 +363,57 @@ library
                       th-lift-instances,
                       ghc-compact
 
-  if impl(ghcjs) || flag(jsaddle) {
-    exposed-modules:  Game.LambdaHack.Client.UI.Frontend.Dom
-    build-depends:    ghcjs-dom >= 0.9.1.1
-    cpp-options:      -DUSE_BROWSER
-  } else {
-    exposed-modules:  Game.LambdaHack.Client.UI.Frontend.Sdl
-                      Game.LambdaHack.Client.UI.Frontend.ANSI
-    build-depends:    sdl2 >= 2,
-                      sdl2-ttf >= 2,
-                      ansi-terminal >= 0.10
+  if os(wasi) {
+    exposed-modules:    Game.LambdaHack.Client.UI.Frontend.Wasm
+    build-depends:      ghc-experimental
+  }
+  else {
+    if impl(ghcjs) {
+      exposed-modules:  Game.LambdaHack.Client.UI.Frontend.Dom
+      build-depends:    ghcjs-dom >= 0.9.1.1
+    }
+    else {
+      exposed-modules:  Game.LambdaHack.Client.UI.Frontend.Sdl
+                        Game.LambdaHack.Client.UI.Frontend.ANSI
+      build-depends:    sdl2 >= 2,
+                        sdl2-ttf >= 2,
+                        ansi-terminal >= 0.10
+    }
   }
 
-  if impl(ghcjs) {
-    other-modules:    Game.LambdaHack.Common.JSFile
-    build-depends:    ghcjs-base
-  } else {
-    other-modules:    Game.LambdaHack.Common.HSFile
-    build-depends:    zlib >= 0.5.3.1
+  if os(wasi) {
+    other-modules:      Game.LambdaHack.Common.WasmFile
+  }
+  else {
+    if impl(ghcjs) {
+      other-modules:    Game.LambdaHack.Common.JSFile
+      build-depends:    ghcjs-base
+    }
+    else {
+      other-modules:    Game.LambdaHack.Common.HSFile
+      build-depends:    zlib >= 0.5.3.1
+    }
   }
 
 executable LambdaHack
   import: options, exe-options
+  if os(wasi)
+    -- A browser needs a wasm *reactor* (exported entry points callable from JS),
+    -- not a command (single _start). -no-hs-main drops the C main stub; lhStart
+    -- (Main) and lhKey/lhWheel/lhMouseUp (Frontend.Wasm) are the JS-callable
+    -- exports. Each needs its own --export=: a reactor has no default entry
+    -- point for the linker to anchor dead-code elimination against, so any
+    -- foreign-exported symbol that isn't explicitly requested here gets
+    -- dropped, not just kept-but-unreachable. (This stays here rather than in
+    -- common options: the test-suite also imports common options, and it must
+    -- not get the reactor treatment -- tasty's normal exitcode-stdio main
+    -- doesn't fit that model.)
+    ghc-options:      -no-hs-main
+                      -optl-mexec-model=reactor
+                      -optl-Wl,--export=lhStart
+                      -optl-Wl,--export=lhKey
+                      -optl-Wl,--export=lhWheel
+                      -optl-Wl,--export=lhMouseUp
   main-is:            GameDefinition/Main.hs
   build-depends:      ,LambdaHack
                       ,async

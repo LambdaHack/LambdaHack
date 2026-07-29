@@ -813,10 +813,9 @@ the tasty suite and haddock run via the generated haskell-ci workflow;
 hlint, the `make test-gha` playtests, the doctests, `make test-ts` and
 `make test-wasm` via the hand-written one, one job each. The doctest gap
 is closed the second of the two ways weighed here — a job following
-CLAUDE.md's recipe — because that recipe is known to work against the
-flattened cabal, naming a single `lib:LambdaHack` component and two
-extra `--build-depends`; haskell-ci's own doctest support was not
-evaluated against it. And the
+CLAUDE.md's recipe — because that recipe is known to work here, a run
+per library with `--with-repl=doctest`; haskell-ci's own doctest support
+was not evaluated against it. And the
 standing rule from the ground rules applies to everything this plan
 adds: the vitest suites (including the jsdom forwarding tests),
 `make test-wasm` (including the FFI battery and the RawFrontend contract

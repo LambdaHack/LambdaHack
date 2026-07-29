@@ -56,11 +56,14 @@ To run a single unit test (tasty), pass a pattern via `-p`:
 cabal test --test-options='-p "<test name substring>"'
 ```
 
-Doctests run in CI, as the `doctest` job of `lint-and-test-suites.yml`, which follows exactly the recipe below. The README also lists a `definition` doctest component, but that internal library only exists in the original `LambdaHack.cabal.bkp` — the flattened `LambdaHack.cabal` in use has a single library, so this covers everything:
+Doctests run in CI, as the `doctest` job of `lint-and-test-suites.yml`, which follows exactly the recipe below. Every library needs its own run — a component's doctests are its own — and today all 22 examples sit in `lib:LambdaHack`, the other three reporting 0, which is the count to check rather than the exit status. Note `--with-repl`, not `--with-compiler`: the latter hands cabal doctest as *the compiler*, so it tries to build the `definition` dependency with it and dies on `--make`:
 
 ```
 cabal install doctest --ignore-project --overwrite-policy=always && cabal build
-cabal repl --build-depends=QuickCheck --build-depends=template-haskell --with-compiler=doctest --repl-options='-w -Wdefault' lib:LambdaHack
+cabal repl --build-depends=QuickCheck --build-depends=template-haskell --with-repl=doctest --repl-options='-w -Wdefault' definition
+cabal repl --build-depends=QuickCheck --build-depends=template-haskell --with-repl=doctest --repl-options='-w -Wdefault' lib:LambdaHack
+cabal repl --build-depends=QuickCheck --build-depends=template-haskell --with-repl=doctest --repl-options='-w -Wdefault' this-game-content
+cabal repl --build-depends=QuickCheck --build-depends=template-haskell --with-repl=doctest --repl-options='-w -Wdefault' this-game-src
 ```
 
 ### Haskell unit-test harness (`test/`)
@@ -109,17 +112,20 @@ For a generic "run checks" request — each with its trigger:
 
 ## Architecture
 
-### Three source trees, one library
+### Four libraries over three source trees
 
-The `LambdaHack` library stanza in `LambdaHack.cabal` combines three source trees, all under module namespace `Game.LambdaHack.*` (except `GameDefinition`, which is unprefixed):
+`LambdaHack.cabal` declares four libraries, one per source tree (`GameDefinition` supplying two), all under module namespace `Game.LambdaHack.*` except `GameDefinition`, which is unprefixed:
 
-- `definition-src/` — pure content-definition data (`Content.*Kind`, `Definition.*`). No game logic, no IO.
-- `engine-src/Game/LambdaHack/` — the actual engine: `Atomic/` (state-changing command representation), `Client/` (UI + AI client logic), `Common/` (shared types/state), `Server/` (game arbiter, dungeon generation, FOV).
-- `GameDefinition/` — the *sample game's* concrete content (module namespace `Content.*`) plus its client wiring and the `Implementation.Monad{Client,Server}Implementation` modules that pick concrete monad transformer stacks for the abstract client/server monads. `TieKnot.hs` wires content + engine + frontend into a runnable game (`tieKnot`/`tieKnotForAsync`); `Main.hs` is the executable entry point.
+- `definition-src/` — library `definition`: pure content-definition data (`Content.*Kind`, `Definition.*`). No game logic, no IO, and no dependency on the others.
+- `engine-src/Game/LambdaHack/` — library `LambdaHack`, the public one, depending on `definition`.
+  The actual engine: `Atomic/` (state-changing command representation), `Client/` (UI + AI client logic), `Common/` (shared types/state), `Server/` (game arbiter, dungeon generation, FOV).
+- `GameDefinition/` — libraries `this-game-content` (the *sample game's* concrete content, module namespace `Content.*`) and `this-game-src` (`GameDefinition/game-src/`, its client wiring). The latter holds the `Implementation.Monad{Client,Server}Implementation` modules that pick concrete monad transformer stacks for the abstract client/server monads. `TieKnot.hs` wires content + engine + frontend into a runnable game (`tieKnot`/`tieKnotForAsync`); `Main.hs` is the executable entry point.
 
-Separately, `ts-src/` (not part of the Haskell library) holds the TypeScript browser-side harness for the WASM build and `run-wasm-test.mjs`, the Node driver for `make test-wasm`.
+Downstream components see `definition` through `LambdaHack`, which lists its seventeen modules in `reexported-modules:`. That field is what keeps the dependency graph shallow: without it an internal library re-exports nothing, so every component importing `Game.LambdaHack.Core.Prelude` would have to name `definition` itself on top of `LambdaHack`. `this-game-content` names it anyway, being a sibling of the engine rather than downstream of it. The previous single-library arrangement is kept verbatim in `LambdaHack.cabal.flattened`, and `LambdaHack.cabal.bkp` holds the pre-2023 multi-library file this split was modelled on. Flattening had been a workaround for haddock not handling internal libraries; it does now — `cabal v2-haddock --haddock-all`, the line CI runs, builds a documentation tree for each of the four — so don't re-flatten on that ground.
 
-**Module-as-interface convention** (stated in the .cabal description): if a module has the same name as a directory (e.g. `Game.LambdaHack.Client` vs. `Game.LambdaHack.Client.*`), that module is the *exclusive* interface to everything in the directory — other modules in the library must not reach past it into the directory's internals. This is enforced by convention, not by `.cabal`-exposed/hidden boundaries (nearly all modules are exposed so that downstream games can override things — the only hidden ones are the file-backend module compiled into this build, `HSFile`/`WasmFile`/`JSFile`, and `Paths_LambdaHack`), so respect it when adding imports.
+Separately, `ts-src/` (not part of the Haskell libraries) holds the TypeScript browser-side harness for the WASM build and `run-wasm-test.mjs`, the Node driver for `make test-wasm`.
+
+**Module-as-interface convention** (stated in the .cabal description): if a module has the same name as a directory (e.g. `Game.LambdaHack.Client` vs. `Game.LambdaHack.Client.*`), that module is the *exclusive* interface to everything in the directory — other modules in the library must not reach past it into the directory's internals. This is enforced by convention, not by `.cabal`-exposed/hidden boundaries (nearly all modules are exposed so that downstream games can override things — the hidden ones are `Paths_LambdaHack` in `LambdaHack` and `this-game-content`, the file-backend module compiled into this build, `HSFile`/`WasmFile`/`JSFile`, and `this-game-src`'s `Client.UI.Content.Screen` and `Implementation.Monad{Client,Server}Implementation`), so respect it when adding imports.
 
 ### Client-server architecture
 
