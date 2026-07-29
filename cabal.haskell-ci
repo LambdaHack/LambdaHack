@@ -1,0 +1,2 @@
+apt: libsdl2-ttf-dev
+github-patches: .github/haskell-ci.patch

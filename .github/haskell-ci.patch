@@ -1,0 +1,47 @@
+--- a/.github/workflows/haskell-ci.yml
++++ b/.github/workflows/haskell-ci.yml
+@@ -173,7 +173,7 @@
+           cat cabal.project.local
+       - name: dump install plan
+         run: |
+-          $CABAL v2-build $ARG_COMPILER $ARG_TESTS $ARG_BENCH --dry-run all
++          $CABAL v2-build $ARG_COMPILER $ARG_TESTS $ARG_BENCH --disable-optimization --dry-run all
+           cabal-plan
+       - name: restore cache
+         uses: actions/cache/restore@v6
+@@ -183,28 +183,28 @@
+           restore-keys: ${{ runner.os }}-${{ matrix.compiler }}-
+       - name: install dependencies
+         run: |
+-          $CABAL v2-build $ARG_COMPILER --disable-tests --disable-benchmarks --dependencies-only -j2 all
+-          $CABAL v2-build $ARG_COMPILER $ARG_TESTS $ARG_BENCH --dependencies-only -j2 all
++          $CABAL v2-build $ARG_COMPILER --disable-tests --disable-benchmarks --disable-optimization --dependencies-only -j2 all
++          $CABAL v2-build $ARG_COMPILER $ARG_TESTS $ARG_BENCH --disable-optimization --dependencies-only -j2 all
+       - name: build w/o tests
+         run: |
+-          $CABAL v2-build $ARG_COMPILER --disable-tests --disable-benchmarks all
++          $CABAL v2-build $ARG_COMPILER --disable-tests --disable-benchmarks --disable-optimization all
+       - name: build
+         run: |
+-          $CABAL v2-build $ARG_COMPILER $ARG_TESTS $ARG_BENCH all --write-ghc-environment-files=always
++          $CABAL v2-build $ARG_COMPILER $ARG_TESTS $ARG_BENCH --disable-optimization all --write-ghc-environment-files=always
+       - name: tests
+         run: |
+-          $CABAL v2-test $ARG_COMPILER $ARG_TESTS $ARG_BENCH all --test-show-details=direct
++          $CABAL v2-test $ARG_COMPILER $ARG_TESTS $ARG_BENCH --disable-optimization all --test-show-details=direct
+       - name: cabal check
+         run: |
+           cd ${PKGDIR_LambdaHack} || false
+           ${CABAL} -vnormal check
+       - name: haddock
+         run: |
+-          $CABAL v2-haddock --disable-documentation --haddock-all $ARG_COMPILER --with-haddock $HADDOCK $ARG_TESTS $ARG_BENCH all
++          $CABAL v2-haddock --disable-documentation --haddock-all $ARG_COMPILER --with-haddock $HADDOCK $ARG_TESTS $ARG_BENCH --disable-optimization all
+       - name: unconstrained build
+         run: |
+           rm -f cabal.project.local
+-          $CABAL v2-build $ARG_COMPILER --disable-tests --disable-benchmarks all
++          $CABAL v2-build $ARG_COMPILER --disable-tests --disable-benchmarks --disable-optimization all
+       - name: save cache
+         if: always()
+         uses: actions/cache/save@v6
