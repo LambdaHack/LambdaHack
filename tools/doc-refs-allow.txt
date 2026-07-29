@@ -1,10 +1,13 @@
-# Paths and Makefile targets a document may name although they are not in
+# Paths and build targets a document may name although they are not in
 # the repo, read by tools/check-doc-refs.py. One glob per line; a line
-# starting with "make " allows a target instead of a path.
+# starting with "make " or "cabal " allows a target instead of a path.
+# Text after "#" is the reason, and the reason is the point of the entry:
+# an unexplained line here silently hides real drift, which is exactly
+# what the checker exists to catch. When a named artifact lands, delete
+# its entry rather than leaving it.
 #
-# The reason is the point of the entry: an unexplained line here silently
-# hides real drift, which is exactly what the checker exists to catch.
-# When a planned artifact lands, delete its entry rather than leaving it.
+# Adding an entry is also the easy way to silently defang the checker, so
+# re-run its docstring's non-vacuity test after touching this file.
 
 # Superseded planning documents, named by the unified plan as history.
 sdl2-to-wasm-parity-plan.md
@@ -13,8 +16,10 @@ wasm-frontend-haskell-alignment-design.md
 # Foreign repositories, not resolvable locally.
 compiler/GHC/*
 
-# Emitted by the ghc-wasm-meta toolchain at build time, never committed.
-ghc_wasm_jsffi.mjs
+# Emitted by the ghc-wasm-meta toolchain at build time, never committed
+# here. `ghc_wasm_jsffi.mjs` is deliberately absent from this list: it is
+# deployed into ../lambdahack.github.io, so the sibling policy resolves it
+# for real, which beats an entry asserting it exists somewhere.
 post-link.mjs
 
 # Artifacts docs/wasm-frontend-unified-plan.md proposes but has not built
