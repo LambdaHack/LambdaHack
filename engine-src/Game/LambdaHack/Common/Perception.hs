@@ -35,8 +35,8 @@ import qualified Data.EnumMap.Strict as EM
 import qualified Data.EnumSet as ES
 import           GHC.Generics (Generic)
 
-import Game.LambdaHack.Common.Types
 import Game.LambdaHack.Common.Point
+import Game.LambdaHack.Common.Types
 
 -- | Visible positions.
 newtype PerVisible = PerVisible {pvisible :: ES.EnumSet Point}

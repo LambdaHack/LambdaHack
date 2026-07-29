@@ -44,8 +44,8 @@ import qualified Data.Bits as Bits
 import qualified Data.EnumMap.Strict as EM
 import qualified Data.EnumSet as ES
 import qualified Data.Fixed as Fixed
-import qualified Data.HashMap.Strict as HM
 import           Data.Hashable
+import qualified Data.HashMap.Strict as HM
 import           Data.Int (Int64)
 import           Data.Key
 import           Data.List.Compat hiding (foldl, foldl1, length, null, sum)

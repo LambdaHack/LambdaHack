@@ -23,8 +23,8 @@ import Game.LambdaHack.Core.Prelude
 import           Data.Binary
 import qualified Data.EnumMap.Strict as EM
 import qualified Data.EnumSet as ES
-import qualified Data.HashMap.Strict as HM
 import           Data.Hashable (Hashable)
+import qualified Data.HashMap.Strict as HM
 import           Data.Vector.Binary ()
 import qualified Data.Vector.Unboxed as U
 import           GHC.Generics (Generic)
