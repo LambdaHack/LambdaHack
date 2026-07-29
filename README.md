@@ -255,6 +255,7 @@ in a file you are editing. Put big formatting changes in separate commits.
 
 CI checks the code with `hlint .` using the very liberal configuration file at
 [.hlint.yaml](https://github.com/LambdaHack/LambdaHack/blob/master/.hlint.yaml).
+Keep it reporting `No hints`; CI's hlint build may differ.
 If hlint is still too naggy, feel free to add more exceptions.
 
 Haddocks are expected on all module headers and on the functions and types

@@ -1,4 +1,9 @@
-{-# LANGUAGE JavaScriptFFI #-}
+-- Commented out on purpose, not stale: hlint's parser rejects
+-- JavaScriptFFI outright, and this module is compiled by no supported
+-- build (only under @impl(ghcjs)@, defunct since GHCJS stopped at GHC
+-- 8.10), so the pragma bought nothing and cost `hlint .` its clean run.
+-- Restore it in the same commit that ever makes this module compile again.
+-- {-# LANGUAGE JavaScriptFFI #-}
 -- | Saving/loading to JS storeage, mimicking operations on files.
 module Game.LambdaHack.Common.JSFile
   (
