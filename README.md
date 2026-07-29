@@ -40,7 +40,7 @@ and the engine builds the world and runs it.
 The library lets you compile a ready-to-play game binary,
 using either the supplied or a custom-made main loop.
 A couple of frontends are available (SDL2 is the default
-for desktop and there is a JavaScript browser frontend)
+for desktop and there is a WebAssembly browser frontend)
 and many other generic engine components are easily overridden,
 but the fundamental source of flexibility lies in the strict,
 type-enforced separation of engine code from the read-only content,
@@ -225,7 +225,7 @@ The [Makefile](https://github.com/LambdaHack/LambdaHack/blob/master/Makefile)
 contains many sample automated playtest commands.
 Numerous tests that use the screensaver game modes (AI vs. AI)
 and the teletype frontend are gathered in `make test`.
-Some of these are run by CI  on each push to github.
+Some of these are run by CI on each push to github.
 Test commands with prefix `frontend` start AI vs. AI games with
 the standard SDL2 frontend to view them on.
 
@@ -258,13 +258,14 @@ CI checks the code with `hlint .` using the very liberal configuration file at
 [.hlint.yaml](https://github.com/LambdaHack/LambdaHack/blob/master/.hlint.yaml).
 If hlint is still too naggy, feel free to add more exceptions.
 
-Haddocks are provided for all module headers and for all functions and types
-from major modules, in particular for the modules that are interfaces
-for a whole directory of modules. Apart from that, only very important
-functions and types are distinguished by having a haddock.
+Haddocks are expected on all module headers and on the functions and types
+of major modules, in particular the modules that are interfaces
+for a whole directory of modules. Apart from that, only particularly
+significant functions and types are distinguished by having a haddock.
 If minor ones have comments, they should not be haddocks
 and they are permitted to describe implementation details and be out of date.
-Prefer assertions instead of comments, unless too verbose.
+Prefer assertions over comments to document invariants,
+unless that would be too verbose.
 
 The 'pointman' from game manual and UI is called 'leader' in the source code
 and there are a few more mismatches, though the source code naming
