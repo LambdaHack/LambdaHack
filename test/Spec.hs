@@ -21,6 +21,7 @@ import           TieKnot
 
 import ActorStateUnitTests
 import CommonMUnitTests
+import FrameMUnitTests
 import HandleHelperMUnitTests
 import HandleHumanLocalMUnitTests
 import InventoryMUnitTests
@@ -38,6 +39,7 @@ main = defaultMain tests
 tests :: TestTree
 tests = testGroup "Tests" [ actorStateUnitTests
                           , commonMUnitTests
+                          , frameMUnitTests
                           , handleHelperMUnitTests
                           , handleHumanLocalMUnitTests
                           , inventoryMUnitTests
