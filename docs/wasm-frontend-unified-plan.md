@@ -173,8 +173,8 @@ practices are ongoing or unscheduled tracks described after the phases.
 - Every test suite, old or new, runs in CI — a test that only runs on a
   developer's machine is treated as not existing. Each new test surface
   this plan introduces lands in CI in the same commit that introduces it;
-  the one pre-existing gap (doctests, today a manual-only recipe in
-  CLAUDE.md) is closed by R2.
+  the one pre-existing gap, doctests, is closed: they run as their own
+  job in the hand-written workflow, following CLAUDE.md's recipe.
 - Follow the module-as-interface convention: new shared modules go under
   `engine-src/Game/LambdaHack/Client/UI/Frontend/` and are reached only
   via the `Frontend` subtree's existing interfaces.
@@ -796,24 +796,27 @@ a fresh save — `Sdl.hs:475-484`), but this is the browser-build equivalent
 of "your progress is safe", which is what parity is *for*.
 
 **R2 — Browser-and-frontend CI.** None of Phase 0's drift protection fires
-unless CI runs it. Add a job to `.github/workflows/lint-and-playtest.yml`
-(the hand-written workflow — do not touch the generated haskell-ci one)
-that installs ghc-wasm-meta, runs `make build-wasm`, `make test-wasm`,
-`make test-ts`, the 0.3 FFI-coverage battery, and the 0.2 generated-file
-freshness check. Cache `~/.ghc-wasm` and the wasm cabal store
-aggressively; the toolchain is the expensive part. `make test-ts` alone
-(Node only) is nearly free — split it into its own always-fast job so TS
-regressions fail in seconds. The frontend-CI-matrix practice (below)
-widens this with xvfb SDL and pty ANSI smokes.
+unless CI runs it. Partly landed, in
+`.github/workflows/lint-and-playtest.yml` (the hand-written workflow — do
+not touch the generated haskell-ci one): a `test-wasm` job that installs
+ghc-wasm-meta and runs `make test-wasm`, and `make test-ts` split off as
+its own Node-only job, so TS regressions fail in seconds. Still to add,
+each when it exists: `make build-wasm`, the 0.3 FFI-coverage battery and
+the 0.2 generated-file freshness check. Still to do regardless: cache
+`~/.ghc-wasm` and the wasm cabal store, the toolchain being the expensive
+part and bootstrapped from scratch on every run today. The
+frontend-CI-matrix practice (below) widens this with xvfb SDL and pty
+ANSI smokes.
 
 **Completeness requirement: everything runs in CI.** Today's inventory:
 the tasty suite and haddock run via the generated haskell-ci workflow;
-hlint and the `make test-gha` playtests via the hand-written one;
-**doctests run nowhere** — CLAUDE.md documents a manual-only recipe.
-Close that gap here: either regenerate haskell-ci with its doctest
-support enabled (repo policy: regenerate, never hand-edit) or add a
-doctest job to the hand-written workflow following the CLAUDE.md recipe —
-whichever survives contact with the flattened-cabal setup. And the
+hlint, the `make test-gha` playtests, the doctests, `make test-ts` and
+`make test-wasm` via the hand-written one, one job each. The doctest gap
+is closed the second of the two ways weighed here — a job following
+CLAUDE.md's recipe — because that recipe is known to work against the
+flattened cabal, naming a single `lib:LambdaHack` component and two
+extra `--build-depends`; haskell-ci's own doctest support was not
+evaluated against it. And the
 standing rule from the ground rules applies to everything this plan
 adds: the vitest suites (including the jsdom forwarding tests),
 `make test-wasm` (including the FFI battery and the RawFrontend contract
@@ -945,12 +948,13 @@ scripted keys, assert a committed final-state digest — in two stages.
 The native-only harness lands **before 2.1**: it guards the two most
 dangerous shared-code changes in the plan (2.1's `Sdl.hs` refactor and
 2.4's flip) regardless of wasm. Then the same goldens run under
-`make test-wasm` once it is part of routine CI (R2) — the only kind of
-test that catches native-vs-wasm *behavioral* drift (FFI-adjacent paths,
-numeric assumptions); per-frontend unit tests can't. Medium effort.
+`make test-wasm`, routine in CI since R2's first jobs landed — the only
+kind of test that catches native-vs-wasm *behavioral* drift (FFI-adjacent
+paths, numeric assumptions); per-frontend unit tests can't. Medium
+effort.
 
 **A CI smoke for every shipped frontend.** CI exercises teletype
-(playtests) and, after R2, wasm; SDL2 itself is only ever CI-tested via
+(playtests) and wasm; SDL2 itself is only ever CI-tested via
 the `slogPriority == Just 0` init-and-quit backdoor (`Sdl.hs:196-207`) —
 its event loop, renderer, and font pipeline never run in CI. Add an
 `xvfb-run` job driving a real SDL game for a few frames (a tiny
@@ -1022,16 +1026,16 @@ deliberate exclusions with their rationale: Appendix B.
     (Phase 3 may run before/alongside Phases 1-2 — it's independent, and
     doing it early unlocks the wasm-vs-native ratio and R1's save-lag
     measurement via 3.2's instrumented stub)
-R2 CI job — start as soon as 0.3 has anything to run; grow it per phase
-    (the test-ts-only job can land today; a short nodeBench smoke run
+R2 CI jobs — test-ts, test-wasm and doctest have landed; grow them per
+    phase (0.3's battery once it exists; a short nodeBench smoke run
     joins after 3.3; the xvfb SDL + pty ANSI smokes complete the matrix)
 0.3 FFI coverage — after the baseline, incremental with every
     FFI-touching commit
 capability constants / sum-typed selection — standalone refactors, any
     time; the sum type before R4 (URL params parse into it)
 RawFrontend contract — input-side cases with 0.1; the rest with 0.3
-determinism goldens — native harness before 2.1; cross-backend once
-    test-wasm is routine in CI (R2)
+determinism goldens — native harness before 2.1; cross-backend under
+    R2's test-wasm job, which has landed
 R1 / R4 — independent; R4 becomes loader-only after 3.1
 R3 GHCJS rip-out — one commit, after 2.5 (parity); Dom.hs/JSFile.hs stay
     as documented-dead examples

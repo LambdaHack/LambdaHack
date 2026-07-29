@@ -1,7 +1,10 @@
 # Hand-written workflow complementing the auto-generated haskell-ci.yml
-# (which only does cabal build/test/haddock). This one keeps the README's
-# promises: CI checks the code with `hlint .` and runs the teletype
-# playtests gathered in `make test-gha`.
+# (which does cabal build/test/haddock across GHC versions, unoptimized).
+# This one keeps the README's promise that CI checks the code with
+# `hlint .`, and carries every suite haskell-ci cannot: the optimized
+# build exercised by the teletype playtests of `make test-gha`, the
+# doctests, and the WASM and TypeScript suites. One job each, so a
+# failure names itself.
 name: Lint-and-Playtest
 on:
   - push
@@ -44,3 +47,69 @@ jobs:
       # The teletype and null frontends run headless, so no display is needed.
       - name: Playtests
         run: make test-gha
+  doctest:
+    name: doctest
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install SDL2 dev libraries
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libsdl2-dev libsdl2-ttf-dev
+      - uses: haskell-actions/setup@v2
+        id: setup
+        with:
+          ghc-version: '9.12.4'
+          cabal-version: 'latest'
+      - uses: actions/cache@v4
+        with:
+          path: |
+            ${{ steps.setup.outputs.cabal-store }}
+            dist-newstyle
+          key: doctest-${{ runner.os }}-ghc-${{ steps.setup.outputs.ghc-version }}-${{ hashFiles('LambdaHack.cabal') }}
+          restore-keys: doctest-${{ runner.os }}-ghc-${{ steps.setup.outputs.ghc-version }}-
+      # --ignore-project so doctest is solved on its own, not against this
+      # project; both candidate bindirs go on PATH, since which one cabal
+      # picks depends on its version.
+      - name: Install doctest
+        run: |
+          cabal install doctest --ignore-project --overwrite-policy=always
+          echo "$HOME/.cabal/bin" >> "$GITHUB_PATH"
+          echo "$HOME/.local/bin" >> "$GITHUB_PATH"
+      - name: Build
+        run: cabal build
+      # The flattened LambdaHack.cabal has a single library, so this one
+      # component covers every doctest in the tree.
+      - name: Doctests
+        run: cabal repl --build-depends=QuickCheck --build-depends=template-haskell --with-compiler=doctest --repl-options='-w -Wdefault' lib:LambdaHack
+  test-ts:
+    name: TypeScript tests (make test-ts)
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: ts-src/package-lock.json
+      # `make test-ts` runs vitest out of node_modules without installing.
+      - name: Install ts-src dependencies
+        run: cd ts-src && npm ci
+      - name: TypeScript tests
+        run: make test-ts
+  test-wasm:
+    name: WASM test suite (make test-wasm)
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      # Installs into ~/.ghc-wasm, which every wasm Makefile recipe sources.
+      - name: Install the ghc-wasm-meta toolchain
+        run: curl https://gitlab.haskell.org/haskell-wasm/ghc-wasm-meta/-/raw/master/bootstrap.sh | sh
+      - name: WASM tests
+        run: make test-wasm
