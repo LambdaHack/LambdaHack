@@ -163,7 +163,8 @@ For a generic "run checks" request — each with its trigger:
   - the mechanical passes, `python3 tools/check-plan-citations.py DOC`
     and `python3 tools/check-doc-refs.py DOC`;
   - the remaining passes, over any document edited since it was last
-    verified.
+    verified — pass 3, the quantified-claims grep, is the one that keeps
+    finding real errors.
 
   The `doc-verification` skill holds them and their order. It is
   user-scope, so it applies in every project and its only copy lives
@@ -458,7 +459,10 @@ unless attributed.
   `git status` output (the git notes below), and concluding a note was
   absent from every document after grepping one of its phrasings. It is
   the rule already stated for assertions and for checkers, applied to
-  searches.
+  searches — and it reaches further than greps: a checker branch with no
+  live control in this repo is a silent search too, which is why the
+  tools under `tools/` name the branches their own recipes cannot
+  exercise here.
 - **Commits should be clean and logical, not a diary of the work.**
   File-partition them, order them so exports precede uses, and fold a
   follow-up refactor into the commit where the code is logically born
@@ -535,7 +539,10 @@ sandbox. Current state and its implications:
   especially one documented as expected, like the `../lambdahack.github.io`
   sibling checkout — suspect the wrapper and ask, rather than record the
   path as absent. `dangerouslyDisableSandbox` bypasses only the inner
-  sandbox, never the wrapper.
+  sandbox, never the wrapper. `tools/check-doc-refs.py` encodes the same
+  rule: it resolves sibling checkouts when present and *stops* (exit 2)
+  when one is not, rather than falling back to a weaker check, so a
+  BLOCKED run means ask for a mount, not work around it.
 - The wrapper mounts a hand-picked, changeable subset of HOME, curated
   per-path rather than per-directory: that an entry is visible says
   nothing about how much of its contents is (at times `~/r` has held
@@ -584,10 +591,10 @@ sandbox. Current state and its implications:
   `*.prof`, `cabal.project.local.bkp*`, `.emacs.desktop*`, etc.); leave
   them alone and never `git add` them wholesale.
 - `gh` is not authenticated; for GitHub reads use `curl` against
-  `api.github.com`, reachable in-session — 200 on 2026-07-28. Don't read
-  that as an allowlist entry: an unrelated control host answered too, so
-  the check shows network access was open, not that this host is special.
-  If the calls start failing, that is the thing to re-establish.
+  `api.github.com`, reachable in-session — 200 on 2026-07-28. Nothing
+  shows that host is specially permitted, only that network access was
+  open, so don't treat it as an allowlist entry. If the calls start
+  failing, reachability is the thing to re-establish.
 
 ### Build and shell tooling in sessions
 
