@@ -5,7 +5,7 @@
 # build exercised by the teletype playtests of `make test-gha`, the
 # doctests, and the WASM and TypeScript suites. One job each, so a
 # failure names itself.
-name: Lint-and-Playtest
+name: Lint-and-Test-Suites
 on:
   - push
   - pull_request

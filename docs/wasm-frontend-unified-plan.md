@@ -797,7 +797,7 @@ of "your progress is safe", which is what parity is *for*.
 
 **R2 — Browser-and-frontend CI.** None of Phase 0's drift protection fires
 unless CI runs it. Partly landed, in
-`.github/workflows/lint-and-playtest.yml` (the hand-written workflow — do
+`.github/workflows/lint-and-test-suites.yml` (the hand-written workflow — do
 not touch the generated haskell-ci one): a `test-wasm` job that installs
 ghc-wasm-meta and runs `make test-wasm`, and `make test-ts` split off as
 its own Node-only job, so TS regressions fail in seconds. Still to add,
