@@ -174,8 +174,9 @@ For a generic "run checks" request — each with its trigger:
 - Always, over every `.md` document in the repo (`git ls-files '*.md'`
   plus untracked drafts, minus `CHANGELOG.md`, a historical record
   rather than a live claim set):
-  - the mechanical passes, `python3 tools/check-plan-citations.py DOC`
-    and `python3 tools/check-doc-refs.py DOC`;
+  - the mechanical passes, `python3 tools/check-plan-citations.py DOC`,
+    `python3 tools/check-doc-refs.py DOC` and, where the document shows
+    example code, `python3 tools/check-doc-examples.py DOC`;
   - the remaining passes, over any document edited since it was last
     verified — pass 3, the quantified-claims grep, is the one that keeps
     finding real errors.
@@ -184,6 +185,9 @@ For a generic "run checks" request — each with its trigger:
   user-scope, so it applies in every project and its only copy lives
   outside this repo, at `~/.claude/skills/doc-verification/SKILL.md`:
   a reader who wants the passes themselves must open it there.
+  `tools/heading-outline.py` belongs to the heading-scope pass, which
+  fires only when a document's heading structure changes, so it is not
+  in the always-run set above.
 - When Haskell code changed: build, then `cabal test` (the Makefile
   playtests when the change warrants), and stylish-haskell and hlint on
   touched files (both run in-session, sandboxed included; code written
@@ -618,6 +622,10 @@ sandbox. Current state and its implications:
   `/etc/alternatives` being wrapper-hidden. `hlint` and
   `stylish-haskell` are on PATH (via `~/.cabal/bin`) and work in-session,
   sandboxed included.
+- `grep` on PATH is ugrep (7.5.0), not GNU grep — mostly compatible, with
+  `-P` meaning PCRE2, and it can reject a regex outright with `exceeds
+  complexity limits` where GNU grep would run it. The checkers under
+  `tools/` are unaffected: they shell out to `git grep`.
 - To combine several tasty `-p` patterns, tasty wants awk-style syntax:
   `-p "/foo/ || /bar/"`.
 - Criterion (the benchmark suites) filters differently and does *not*
