@@ -48,21 +48,39 @@ outcome line.
 > know whether it was already ruled out. It is never deleted, and it is not
 > yet frozen: it matures, and the ledger below says how far. The pointman
 > records are the genre it converges on, each already mostly frozen around a
-> live carve-out; this one is still live throughout. The state is the genre,
-> and there is no second vocabulary:
+> live carve-out; this one is still live throughout.
 >
-> - an item with **no outcome line is live** — specification, or a premise
->   the specification rests on. Its claims about *today's* tree are held to
->   a plan's standard: a drifted count there is an error to fix, not a
->   record that has aged.
-> - an item carrying **`Landed in <hash>` is frozen** — it describes the
->   code as of that commit and is not maintained against later trees, bar
->   one further outcome line per claim that *resolves*. Ordinary drift in a
->   frozen item is left alone; rewriting one to match a later tree is the
+> **The state vocabulary is `docs/leader-desync-bug.md`'s, borrowed whole.**
+> Where the two ever disagree, that record is right and this one is the
+> error: it is the older discipline, it is the one `CLAUDE.md` describes,
+> and a vocabulary decision taken there needs no glance at this file. Three
+> states, and a fourth this campaign needs and a post-mortem does not:
+>
+> - **landed**, with the commit that did it — the item describes the code as
+>   of that commit and is not maintained against later trees, bar one
+>   further outcome line per claim that *resolves*. Ordinary drift in a
+>   landed item is left alone; rewriting one to match a later tree is the
 >   mistake this rule exists to prevent.
+> - **open** — the code is wrong *now*, and the item says how. A drifted
+>   claim here is an error to fix, and "fixing" it by writing the defect up
+>   as solved is the one thing that must not happen.
+> - **not applied** — the design is specified and the artifact does not
+>   exist. Its claims about *today's* tree are held to a plan's standard.
+> - **standing** — the item never lands, because it recurs (1.4, R2) or
+>   because it is a review rule with nothing to execute (explicit widths,
+>   functional core). It retires when the campaign does. The asymmetry is
+>   deliberate: the pointman records have no such case and need no such word.
+>
+> The distinction a reader will trip on is **open** against **not applied**,
+> because the ledger sorts by item number and not by it: 0.0 and 2.1 sit
+> four rows apart and mean different things — AltGraph chords are lost in
+> the shipped browser build today, while `OverlayLayout` is a module nobody
+> has written. The first is a bug report, the second a specification, and
+> only the second may be edited to match a tree that moved.
 >
 > **Landing an item** does two things and nothing else: it appends an
-> outcome line, and it flips that item's ledger row to the same hash. The
+> outcome line, and it flips that item's ledger row from `open` or `not
+> applied` to `landed` in that hash. The
 > outcome line goes **immediately after the item's opening paragraph**,
 > before any subsection, so that opening the item at its head answers the
 > question; its shape is the doctest bullet's under Ground rules. A claim
@@ -124,36 +142,36 @@ this ledger. Everything else is per item:
 
 | § | delivers | size | depends on | state |
 |---|---|---|---|---|
-| 0.0 | AltGraph fixes (keys, mouse/wheel); highlight-outline rule | tiny | — | live |
-| 0.1 | `InputDecision` shared module; sync `lhKey` | small | 0.3 baseline | live |
-| 0.2 | `CellStyle` + TS-table/fixture generator | medium | — | live |
-| 0.3 | FFI-coverage battery (baseline before 0.1, then per-commit) | ongoing | — | live |
-| 1.1 | crosshair cursor (CSS keyword; then generated SVG cursor) | trivial | 0.2 for the final form | live |
-| 1.2 | working `Ctrl+P` screenshots | small–medium | 0.2 helps | live |
-| 1.3 | fullscreen toggle with scaling | small | — | live |
-| 1.4 | banner/title truthfulness | trivial, recurring | feature landings | live |
-| 1.5 | `allFontsScale` honored in browser | small | 2.2's startup call (or a precursor); R4 for player control | live |
-| 2.1 | `OverlayLayout` extraction + `Sdl.hs` on it | medium–large | 0.2 for `CellStyle`; determinism goldens (native harness) | live |
-| 2.2 | browser canvas overlay renderer + font wiring | medium | 2.1, 0.2 | live |
-| 2.3 | overlay transport over JSFFI | medium | 2.1, 2.2; 0.3 for the end-to-end battery | live |
-| 2.4 | multi-font capability flip | tiny diff, big review | 2.1–2.3; determinism goldens | live |
-| 2.5 | post-flip QA | small | 2.4 | live |
-| 3.1 | `lhStart` reads WASI argv | small (+spike) | — | live |
-| 3.2 | Node driver for the game reactor | small | 3.1 | live |
-| 3.3 | `nodeBench*`/`nodeDeployedBench` targets | small | 3.2 | live |
-| R1 | save robustness: staging keys plus a generation pointer | medium | 3.2, for the lag re-measurement | live |
-| R2 | browser-and-frontend CI | ongoing | grows per phase | live |
-| R3 | retire GHCJS support | one commit | 2.5 (parity) | live |
-| R4 | URL-parameter options | small | 3.1 | live |
-| R5 | performance pass | exploratory | 2.5, 3.3; R4 + 3.1 for the browser-side instrument | live |
-| R6 | screenshot/overlay coherence | small | 1.2, 2.2 | live |
-| capability constants | named constants in place of behavioral CPP | — | — | live |
-| sum-typed selection | one frontend field replacing four `Bool`s | mechanical, moderate churn | before R4 | live |
-| RawFrontend contract | haddock contract, tasty harness, add-a-frontend checklist | medium | input side with 0.1; rest with 0.3 | live |
-| determinism goldens | fixed-seed final-state digests | medium | native harness before 2.1 | live |
-| frontend CI smokes | xvfb SDL, pty ANSI, a short nodeBench run | small each | 3.3 for the wasm one | live |
-| explicit widths | `punindex`, never the `Enum` instance, in frontend code | review rule; its one live violation is 0.2's | — | live |
-| functional core | the standing review bar for frontend modules | review rule; nothing to execute | — | live |
+| 0.0 | AltGraph fixes (keys, mouse/wheel); highlight-outline rule | tiny | — | open |
+| 0.1 | `InputDecision` shared module; sync `lhKey` | small | 0.3 baseline | not applied |
+| 0.2 | `CellStyle` + TS-table/fixture generator | medium | — | not applied |
+| 0.3 | FFI-coverage battery (baseline before 0.1, then per-commit) | ongoing | — | not applied · standing |
+| 1.1 | crosshair cursor (CSS keyword; then generated SVG cursor) | trivial | 0.2 for the final form | not applied |
+| 1.2 | working `Ctrl+P` screenshots | small–medium | 0.2 helps | open |
+| 1.3 | fullscreen toggle with scaling | small | — | not applied |
+| 1.4 | banner/title truthfulness | trivial, recurring | feature landings | open · standing |
+| 1.5 | `allFontsScale` honored in browser | small | 2.2's startup call (or a precursor); R4 for player control | open |
+| 2.1 | `OverlayLayout` extraction + `Sdl.hs` on it | medium–large | 0.2 for `CellStyle`; determinism goldens (native harness) | not applied |
+| 2.2 | browser canvas overlay renderer + font wiring | medium | 2.1, 0.2 | not applied |
+| 2.3 | overlay transport over JSFFI | medium | 2.1, 2.2; 0.3 for the end-to-end battery | not applied |
+| 2.4 | multi-font capability flip | tiny diff, big review | 2.1–2.3; determinism goldens | not applied |
+| 2.5 | post-flip QA | small | 2.4 | not applied |
+| 3.1 | `lhStart` reads WASI argv | small (+spike) | — | not applied |
+| 3.2 | Node driver for the game reactor | small | 3.1 | not applied |
+| 3.3 | `nodeBench*`/`nodeDeployedBench` targets | small | 3.2 | not applied |
+| R1 | save robustness: staging keys plus a generation pointer | medium | 3.2, for the lag re-measurement | open |
+| R2 | browser-and-frontend CI | ongoing | grows per phase | standing |
+| R3 | retire GHCJS support | one commit | 2.5 (parity) | not applied |
+| R4 | URL-parameter options | small | 3.1 | not applied |
+| R5 | performance pass | exploratory | 2.5, 3.3; R4 + 3.1 for the browser-side instrument | not applied |
+| R6 | screenshot/overlay coherence | small | 1.2, 2.2 | not applied |
+| capability constants | named constants in place of behavioral CPP | — | — | not applied |
+| sum-typed selection | one frontend field replacing four `Bool`s | mechanical, moderate churn | before R4 | not applied |
+| RawFrontend contract | haddock contract, tasty harness, add-a-frontend checklist | medium | input side with 0.1; rest with 0.3 | not applied |
+| determinism goldens | fixed-seed final-state digests | medium | native harness before 2.1 | not applied |
+| frontend CI smokes | xvfb SDL, pty ANSI, a short nodeBench run | small each | 3.3 for the wasm one | not applied |
+| explicit widths | `punindex`, never the `Enum` instance, in frontend code | review rule; its one live violation is 0.2's | — | open · standing |
+| functional core | the standing review bar for frontend modules | review rule; nothing to execute | — | standing |
 
 ## Repo facts the plan builds on
 
@@ -1045,7 +1063,7 @@ standing item and retires with the campaign. It deletes no
 
 **Owns** — `GameDefinition/index.html`, and
 `docs/wasm-frontend-unified-plan.md` wherever this item's own body quotes
-the banner: 1.4 is live specification, so a quote that no longer matches
+the banner: 1.4 is `open · standing`, so a quote that no longer matches
 the page is an error to fix, not drift to leave alone. Single-writer on
 `index.html` — 1.3 adds its button to the same `<table id="banner">` and
 1.5 rewrites the `#screen` comment, so neither may be in flight.
