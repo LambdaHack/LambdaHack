@@ -1,23 +1,5 @@
 # WASM Frontend Plan: SDL2 Parity on a Shared-Haskell Architecture
 
-## Temporary notes about the first things to do
-
-Key ordering decision: shared-Haskell foundations (InputDecision,
-CellStyle + TS-table/fixture generator) land before parity features, and
-multi-font is done by extracting Sdl.hs's overlay layout into a shared pure
-module rather than re-implementing it in TypeScript. The sibling
-`../lambdahack.github.io` checkout (deploy target of `make build-ts`) exists
-on this machine; see [[sandbox-wrapper-hides-paths]].
-
-Verified 2026-07-13 by ls: the pages repo contains exactly one font,
-`16x16xw.woff` (deployed manually in 2019, not by the build), and `make
-build-ts` copies no fonts — only index.html, LambdaHack.wasm,
-ghc_wasm_jsffi.mjs, and ts-src dist/. The repo's `GameDefinition/fonts/` has
-10 more font files that never reach the pages repo, and the deployed
-index.html references only 16x16xw.woff. So the plan's Phase 2.2 premise
-holds: multi-font work must extend build-ts to copy fonts and add @font-face
-entries to index.html.
-
 ## Goals and approach
 
 This plan supersedes `wasm-frontend-haskell-alignment-design.md` and
@@ -43,15 +25,18 @@ Node benchmark tooling port (Phase 3).** Related goals (R1–R6) and adopted
 multi-frontend practices follow the phases.
 
 File:line references were verified against the tree at commit
-`8c93e3ba2` (2026-07-13), then machine-checked — re-run
+`8b5703e87` (2026-07-30), then machine-checked — re-run
 `python3 tools/check-plan-citations.py docs/wasm-frontend-unified-plan.md`
 after landing work that touches cited files, and re-verify
 universally-quantified claims ("only X does
-Y", "exactly two") by repo-wide grep, never by re-reading one file. Two
-file basenames are ambiguous in this repo and are therefore qualified
-wherever cited: `Server/LoopM.hs` vs `Client/LoopM.hs`, and the engine's
-vs the game's `Content/Input.hs`. Decisions *against* work, deferrals,
-and their rationale are collected in Appendix B; verified non-gaps from
+Y", "exactly two") by repo-wide grep, never by re-reading one file.
+Thirteen file basenames are duplicated among this repo's tracked `.hs`
+files; the four this plan cites are therefore qualified wherever they
+appear: `Server/LoopM.hs` vs `Client/LoopM.hs`, the engine's vs the
+game's `Content/Input.hs`, the engine's vs the game's
+`Client/UI/Content/Screen.hs`, and `GameDefinition`'s vs
+`definition-src`'s `Content/RuleKind.hs`. Decisions *against* work,
+deferrals and their rationale are collected in Appendix B; non-gaps from
 the SDL2-vs-wasm audit in Appendix C; the GHCJS→JS-backend port
 investigation in Appendix A.
 
@@ -83,10 +68,10 @@ Appendices [A](#appendix-a--investigation-porting-the-ghcjs-target-to-ghcs-in-tr
 | 1.3 | fullscreen toggle with scaling | small | — | todo |
 | 1.4 | banner/title truthfulness | trivial, recurring | feature landings | todo |
 | 1.5 | `allFontsScale` honored in browser | small | 2.2's startup call (or a precursor); R4 for player control | todo |
-| 2.1 | `OverlayLayout` extraction + `Sdl.hs` on it | medium–large | — | todo |
+| 2.1 | `OverlayLayout` extraction + `Sdl.hs` on it | medium–large | determinism goldens (native harness) | todo |
 | 2.2 | browser canvas overlay renderer + font wiring | medium | 2.1, 0.2 | todo |
 | 2.3 | overlay transport over JSFFI | medium | 2.1, 2.2 | todo |
-| 2.4 | multi-font capability flip | tiny diff, big review | 2.1–2.3 | todo |
+| 2.4 | multi-font capability flip | tiny diff, big review | 2.1–2.3; determinism goldens | todo |
 | 2.5 | post-flip QA | small | 2.4 | todo |
 | 3.1 | `lhStart` reads WASI argv | small (+spike) | — | todo |
 | 3.2 | Node driver for the game reactor | small | 3.1 | todo |
@@ -141,12 +126,17 @@ practices are ongoing or unscheduled tracks described after the phases.
   "GameDefinition/fonts")`), deliberately keeping font bytes out of the
   browser payload. In the browser, fonts are **static web assets by
   design**: Haskell knows their names and sizes (`sfonts :: [(Text,
-  FontDefinition)]`, `Common/Misc.hs:28`) but cannot supply bytes.
+  FontDefinition)]`, `Common/ClientOptions.hs:35`; `FontDefinition`
+  itself, whose constructors carry filename and size, at
+  `Common/Misc.hs:28`) but cannot supply bytes.
   Phase 2.2's font wiring is built around exactly that split.
 - **Font deployment gap.** `../lambdahack.github.io` currently contains
-  only `16x16xw.woff` (plus `lz-string*.js`, used by `WasmFile.hs`'s save
-  compression). `make build-ts` copies no fonts. Any step adding font
-  usage must extend `build-ts` to copy the needed
+  only `16x16xw.woff` — committed by hand in 2019, not produced by any
+  build — plus `lz-string*.js`, used by `WasmFile.hs`'s save compression.
+  `make build-ts` copies no fonts, so the other ten files in
+  `GameDefinition/fonts/` never reach the pages repo, and the deployed
+  `index.html` references none of them. Any step adding font usage must
+  extend `build-ts` to copy the needed
   `GameDefinition/fonts/*.ttf.woff` files (prefer the Makefile over
   committing to the pages repo, so the repo of record stays this one).
 
@@ -187,7 +177,13 @@ Native Haskell tests: `cabal test`. Wasm-compiled Haskell tests:
 `make test-wasm` (drives the tasty binary through Node via
 `ts-src/run-wasm-test.mjs`; the `common options` stanza applies
 `USE_BROWSER`/`USE_WASM`/`USE_WASMFILE` to the test-suite under
-`os(wasi)`, so it exercises the real `Wasm.hs`/`WasmFile.hs` paths).
+`os(wasi)`, so the suite is *compiled and linked* in the real browser
+configuration — `WasmFile.hs` as the file backend, `Wasm.hs` as the
+chosen frontend — which catches wasm-only compile and link breakage.
+Neither module's code is *executed*: the integration test passes
+`--frontendNull` and every fixture sets `sfrontendNull = True`, so
+`nullStartup` stands in for `Chosen.startup`. Running them is exactly
+what 0.3's FFI battery adds).
 
 ---
 
@@ -208,20 +204,29 @@ Native Haskell tests: `cabal test`. Wasm-compiled Haskell tests:
   (`GameDefinition/.../Content/Input.hs:202`) can't fire with AltGr.
   Same one-line fix per handler.
 - **Highlight outlines follow SDL2.** The rule (also encoded in 0.2's
-  `CellStyle` and pinned by its fixtures): highlight kinds
-  `HighlightNone`/`HighlightBackground`/`HighlightNoneCursor` get
-  background fill only, **no outline** (`Sdl.hs:504-518`); all other
-  highlight kinds get an outline on **all four tile sides**. Today
-  `terminal.ts:135` draws its `inset 0 0 0 1px` box-shadow for every
-  cell, which is correct four-sided drawing but wrongly includes
-  `HighlightBackground` — and `HighlightBackground` is the vision
-  backlight (`DrawM.hs:377-381,416-417`, on by default via
-  `smarkVision = 1`, `SessionUI.hs:207`), so the whole field of view gets
-  spurious `BrBlack` outlines in aiming mode where SDL shows a plain grey
-  wash. Fix in `terminal-core.ts` (border color = background fill for the
-  three kinds) with a `terminal-core.test.ts` case. Background for why
-  the wasm build behaved this way, and the ruling on GHCJS's two-edge
-  rendering, is in Appendix B.
+  `CellStyle` and pinned by its fixtures), read off
+  `chooseAndDrawHighlight` (`Sdl.hs:504-518`): *every* kind gets a
+  four-sided `SDL.drawRect` over the whole cell box, but the colour
+  differs. Kinds other than
+  `HighlightNone`/`HighlightBackground`/`HighlightNoneCursor` go through
+  `drawHighlight`, which sets `highlightToColor bg` and resets to
+  `blackRGBA` afterwards (`Sdl.hs:498-503`). Those three instead take
+  `workaroundOverwriteHighlight`, drawing the same rect in the renderer's
+  *current* colour — always `blackRGBA` outside `drawHighlight` — because
+  rectangle drawing is broken in SDL 2.0.16 (issue #281) and a stale
+  rect must be erased rather than left for the glyph to cover. So the
+  browser rule is **black border**, not "no border", for the three kinds.
+  It reads as no border on the black map background, but
+  `HighlightBackground` is the vision backlight
+  (`DrawM.hs:377-381,416-417`, on by default via `smarkVision = 1`,
+  `SessionUI.hs:207`), and its grey wash is blitted *before*
+  `chooseAndDrawHighlight` runs (`Sdl.hs:666-669`) — so SDL really shows
+  a grey cell ringed in black there, and today's `terminal.ts:135`
+  `inset 0 0 0 1px` box-shadow is wrong only in its `BrBlack` colour, not
+  in drawing a ring at all. Fix in `terminal-core.ts` (border colour
+  black for the three kinds) with a `terminal-core.test.ts` case.
+  Background for why the wasm build behaved this way, and the ruling on
+  GHCJS's two-edge rendering, is in Appendix B.
 
 All three fixes land with tests: the two AltGraph fixes get the jsdom
 forwarding tests (the ground-rule exception above), the highlight rule its
@@ -306,10 +311,12 @@ file (R3).
 pure per-cell decision currently in `Dom.hs`'s `setChar`
 (`Dom.hs:251-273`): decode `AttrCharW32`, even-row `White`→`AltWhite`,
 glyph substitution (space→nbsp, dim floor→`⋅`), highlight→border and
-background color (per 0.0's rule). `Sdl.hs`'s
-`setSquareChar`/`setMonoChar` (`Sdl.hs:603-669`) contain the *same*
-AltWhite and floor-substitution rules (with a bitmap-font variant,
-`'\x0007'`), so the module is written for and consumed by **both** native
+background color (per 0.0's rule). `Sdl.hs`'s `setSquareChar`
+(`Sdl.hs:645-669`) contains the *same* AltWhite and floor-substitution
+rules (with a bitmap-font variant, `'\x0007'`), while `setMonoChar`
+(`Sdl.hs:603-624`) shares only the AltWhite rule — which is also the
+honest statement of what each call site consumes. So the module is
+written for and consumed by **both** native
 and browser frontends, parameterized by the per-frontend floor-glyph choice
 (`'\x0007'` for SDL bitmap fonts, `'\x22C5'` for SDL scalable and the
 web, `'.'` in ANSI and Teletype — `ANSI.hs:273`, `Teletype.hs:57`, which
@@ -336,7 +343,8 @@ hand-editing, per repo policy) that emits into `ts-src/src/generated/`:
    representative input sample (floor bright/dim, space, ordinary glyph,
    even/odd row × `White`, every `Highlight`), plus `(i, w) → (col, row)`
    index-decoding fixtures pinning the `toEnum`-vs-`punindex` invariant
-   (guaranteed by `Screen.hs`'s `rwidth == RK.rWidthMax` assertion —
+   (guaranteed by the engine's `Client/UI/Content/Screen.hs`'s
+   `rwidth == RK.rWidthMax` assertion —
    which the fixtures make checkable from the TS side too; frontend code
    itself stops relying on it per the explicit-widths practice below).
 3. `cursor.ts`: an SVG data-URI rendering of `Sdl.hs`'s `cursorXhair`
@@ -517,8 +525,10 @@ every per-line decision that today lives interleaved with SDL IO in
 - even-row `White`→`AltWhite` (shared with/via `CellStyle`);
 - the coordinate-scaling *rule* — `xPx = x * halfSize`, `yPx = row *
   boxSize` — parameterized by `halfSize`, **not** baked to SDL's pixel
-  values: `Sdl.hs` derives `halfSize` from the loaded map font's real
-  height × `sallFontsScale` (`Sdl.hs:150-184`), while the browser's cell
+  values: `Sdl.hs` derives `halfSize` as half the loaded map font's real
+  `TTF.height` plus the fontset's `cellSizeAdd`, the font itself having
+  been loaded at a point size already multiplied by `sallFontsScale`
+  (`Sdl.hs:150-184`), while the browser's cell
   box comes from CSS. Emitted positions therefore stay in *logical*
   `PointUI` units; each consumer applies its own metrics (see 2.2/2.3);
 - line-overrun cutoffs (`take (2 * rwidth - x)` for mono, the
@@ -646,10 +656,14 @@ multiFont = Frontend.supportsMultiFont soptions
             && not (T.null (fontPropRegular chosenFontset))
 ```
 
-Update `test/MonadClientUIUnitTests.hs`'s `getFontSetup works in stub` so
-it is correct under both `cabal test` and `make test-wasm` — as written it
-only provably holds when compiled for SDL, since `stubClientOptions` falls
-through to the compiled-in frontend.
+Re-check `test/MonadClientUIUnitTests.hs`'s `getFontSetup works in stub`
+after the flip. It is platform-independent today, and stays so only as
+long as the stub pins a frontend: `stubClientOptions` sets
+`sfrontendNull = True` (`test/UnitTestHelpers.hs:207`), which is the
+*first* guard in `frontendName`, so it never reaches
+`Chosen.frontendName` and `multiFont` is `False` under `cabal test` and
+`make test-wasm` alike. Add a case that pins `supportsMultiFont` itself,
+so the flip is covered rather than merely not broken.
 
 Small diff, large blast radius: this is the step that changes what players
 see and it touches shared engine code — the one to review hardest, and to
@@ -731,7 +745,7 @@ then call and await `lhStart()`. Two integration points to cover:
 ### 3.3 Repurpose the Makefile targets
 
 - `nodeBenchCrawl` / `nodeBenchBattle`: same flags and
-  `RNGOPTS`/`RNGOPTS1` as today (mirroring
+  `RNGOPTS` as today (mirroring
   `nativeBenchCrawl`/`nativeBenchBattle`), but invoking the 3.2 driver on
   `wasm32-wasi-cabal list-bin exe:LambdaHack` plus post-linked glue (the
   `test-wasm` target shows the exact `post-link.mjs` recipe,
@@ -810,8 +824,9 @@ ANSI smokes.
 
 **Completeness requirement: everything runs in CI.** Today's inventory:
 the tasty suite and haddock run via the generated haskell-ci workflow;
-hlint, the `make test-gha` playtests, the doctests, `make test-ts` and
-`make test-wasm` via the hand-written one, one job each. The doctest gap
+hlint, stylish-haskell, the `make test-gha` playtests, the doctests,
+`make test-ts` and `make test-wasm` via the hand-written one, one job
+each — six there. The doctest gap
 is closed the second of the two ways weighed here — a job following
 CLAUDE.md's recipe — because that recipe is known to work here, a run
 per library with `--with-repl=doctest`; haskell-ci's own doctest support
@@ -840,13 +855,22 @@ kept as the resurrection manual). Instead, once WASM reaches parity
   (`ghcjs-dom`/`ghcjs-base` deps and the exposed/other-module lines,
   `LambdaHack.cabal:148-152` and `LambdaHack.cabal:380-400`), the
   `ghcjs-options` knobs (`GHCJS_GC_INTERVAL`, `GHCJS_BUSY_YIELD`,
-  `-dedupe`, `GHCJS_BROWSER`, `LambdaHack.cabal:165-173`), the
-  `supportNodeJS` flag's GHCJS semantics, `Frontend.hs:43-44`'s
+  `-dedupe`, `GHCJS_BROWSER`, `LambdaHack.cabal:165-173`) and the fifth,
+  `-DREMOVE_TELETYPE` (`LambdaHack.cabal:152`) — which unlike the other
+  four has source consumers, `Frontend.hs:86` and `Frontend.hs:190`'s
+  `#ifndef REMOVE_TELETYPE` guards, permanently true once no
+  `ghcjs-options` line can define the macro, so those go too. Then the
+  `supportNodeJS` flag entirely, it having no non-GHCJS use — including
+  the tracked `cabal.project.local.js`, whose payload is
+  `flags: -supportNodeJS`. Then `Frontend.hs:43-44`'s
   `USE_GHCJS` import branch, `File.hs`'s `USE_JSFILE` branch,
   `TieKnot.hs:114-118`'s GHC.Compact escape hatch, and the `USE_JSFILE`
   halves of the browser conditions in
-  `Server/LoopM.hs`/`WatchUpdAtomicM.hs`/`HandleHumanLocalM.hs` (or of
-  their capability-constant successors, if that practice lands first).
+  `Server/LoopM.hs`/`WatchUpdAtomicM.hs`/`HandleHumanLocalM.hs` and
+  `TieKnot.hs:138` (the `sdumpInitRngs` hardwiring plus main-thread
+  workaround skip, a second `TieKnot.hs` site distinct from the
+  GHC.Compact one above) — or of
+  their capability-constant successors, if that practice lands first.
   Update CLAUDE.md's and the README's GHCJS mentions in the same commit.
 
 Timed after parity, not before, so the rip-out doesn't tangle with
@@ -898,9 +922,15 @@ Appendix B.
 CPP is fine (`File.hs:9-15`, `Frontend.hs:41-48`); behavioral forks
 scattered around the engine are not: the autosave skip (`Server/LoopM.hs:336`),
 the history-dump key omission (`HandleHumanLocalM.hs:815`), and the 2s
-exit flush wait (`WatchUpdAtomicM.hs:586`) are each an
-`#if !defined(USE_JSFILE) && !defined(USE_WASMFILE)` whose *reason* lives
-in a comment far from the backend it describes. Let the storage backend
+exit flush wait (`WatchUpdAtomicM.hs:586`) are each an `#if` over the same
+two macros, whose *reason* lives in a comment far from the backend it
+describes — and not even in the same *sense*: the first two are
+`#if !defined(USE_JSFILE) && !defined(USE_WASMFILE)`, guarding the native
+behaviour, while the exit wait is the positive
+`#if defined(USE_JSFILE) || defined(USE_WASMFILE)`, browser 2s in the
+`#if` branch and native 200ms in the `#else`. That inversion is exactly
+what makes a mechanical conversion dangerous and a named constant safer.
+Let the storage backend
 module itself export named constants (e.g. `savesCauseLag :: Bool`,
 `filesAreDumpable :: Bool`, `needsExitFlushDelay :: Bool`) re-exported
 through `File.hs`, and let the engine branch on values, not macros. A
@@ -953,20 +983,28 @@ kind of test that catches native-vs-wasm *behavioral* drift (FFI-adjacent
 paths, numeric assumptions); per-frontend unit tests can't. Medium
 effort.
 
-**A CI smoke for every shipped frontend.** CI exercises teletype
-(playtests) and wasm; SDL2 itself is only ever CI-tested via
-the `slogPriority == Just 0` init-and-quit backdoor (`Sdl.hs:196-207`) —
-its event loop, renderer, and font pipeline never run in CI. Add an
+**A CI smoke for every shipped frontend.** No frontend's event loop runs
+in CI at all. Teletype comes closest — the `make test-gha` playtests
+drive `--frontendTeletype` through whole games. `make test-wasm` compiles
+and links `Wasm.hs` but runs the suite with `--frontendNull`, so the wasm
+frontend is never entered, and `make build-wasm`/`make build-ts` run in no
+workflow, leaving the reactor's `--export=` wiring exercised nowhere.
+SDL2 is reached only via the `slogPriority == Just 0` init-and-quit
+backdoor (`Sdl.hs:196-207`) — which does run its font discovery and
+decoding, once per configured fontset, ahead of the backdoor branch, but
+never its event loop or renderer. Add an
 `xvfb-run` job driving a real SDL game for a few frames (a tiny
-`--stopAfterFrames` variant of `benchFrontendBattle`), and a pty-driven
-ANSI startup/shutdown check. No shipped frontend goes permanently untested
-the way `Dom.hs` did.
+`--stopAfterFrames` variant of `benchFrontendBattle`), a pty-driven
+ANSI startup/shutdown check, and — once 3.2 exists — a short `nodeBench`
+run, which is what would first execute `Wasm.hs` in CI. No shipped
+frontend goes permanently untested the way `Dom.hs` did.
 
 **Frontends pass widths explicitly.** Frontend code decodes linear
 indices with the explicitly-parameterized `punindex (rwidth coscreen)`,
 never the `Enum` instance: `toEnum i` depends on the global
 `speedupHackXSize` (the *dungeon* width, correct at frontend call sites
-only via `Screen.hs`'s `rwidth == RK.rWidthMax` assertion). The switch is
+only via the engine's `Client/UI/Content/Screen.hs`'s
+`rwidth == RK.rWidthMax` assertion). The switch is
 the same arithmetic with one *fewer* global read, in a non-hot
 once-per-frame loop, so it needs no benchmark. One live violation
 exists: **`Sdl.hs:590`** (`setMapChar`'s `let Point{..} = toEnum i`) —
@@ -1192,8 +1230,11 @@ so the cheapest step retires the most uncertainty.
    until proven unnecessary. Everything after the spike is
    known-shape work.
 2. **Cabal + `JSFile.hs`, 1–2 days.** `impl(ghcjs)` → `arch(javascript)`
-   everywhere (library conditionals at `LambdaHack.cabal:148-152` and
-   `LambdaHack.cabal:380-400`, plus the executable's); delete the dead
+   everywhere — all three sites: the `common options` cpp-options
+   conditional (`LambdaHack.cabal:148-152`), inherited by every
+   component, and the `library` stanza's frontend and file-backend
+   conditionals (`LambdaHack.cabal:380-400`). The executable has no
+   `impl(ghcjs)` conditional of its own; it inherits them. Delete the dead
    old-compiler knobs (`ghcjs-options`: `GHCJS_GC_INTERVAL`,
    `GHCJS_BUSY_YIELD`, `-dedupe`, `GHCJS_BROWSER`,
    `LambdaHack.cabal:165-173` — none has a new-backend equivalent; the
@@ -1220,8 +1261,7 @@ so the cheapest step retires the most uncertainty.
 
 If Phase 0 has landed first, `Dom.hs` should consume
 `InputDecision`/`CellStyle` as part of step 3 at near-zero marginal cost —
-that's the "cheaper and more valuable after Phases 0–2" claim in R3 made
-concrete.
+which is why a revival would be cheaper after Phases 0–2 than before.
 
 ### A.7 Sources
 
@@ -1287,11 +1327,13 @@ git history is not a to-do list.
 feature.** Context for 0.0's highlight rule: the GHCJS-era page CSS gave
 every table cell `border:1px solid #000000`, so `Dom.hs`'s `border-color`
 writes produced visible outlines — including the spurious one on
-`HighlightBackground` cells that the wasm port faithfully reproduced; and
+`HighlightBackground` cells whose colour the wasm port faithfully
+reproduced; and
 because of collapsed table borders, a highlight effectively showed only on
 a tile's bottom and right edges (verified in a browser). Rulings: SDL2's
-look is canonical (fill-only for
-`None`/`Background`/`NoneCursor`); highlights outline all four tile sides;
+look is canonical (a black ring, not none, for
+`None`/`Background`/`NoneCursor` — see 0.0); every kind outlines all four
+tile sides;
 the wasm `inset` box-shadow's four-sided drawing is correct and stays.
 
 **B.4 No frontend-interface-as-value record (yet).** The idea: each
@@ -1396,12 +1438,20 @@ evidence so nobody re-treads it:
   browser, each keystroke clobbers the remembered pointer. Traced every
   `spointer` consumer (`HandleHumanGlobalM.hs:119,1271,1359`;
   `HandleHumanLocalM.hs:698,1303,1330`; `HandleHelperM.hs:244`;
-  `SlideshowM.hs:350`): all are reachable only from mouse-button-release
-  bindings (`GameDefinition/.../Content/Input.hs:188-236` — the mouse
+  `SlideshowM.hs:350`) — the list is exhaustive, by repo-wide grep for
+  `getsSession spointer`. Every one of them reads `spointer` only on a
+  mouse-button release, and the triggering mouse KMP itself sets
+  `spointer` correctly first, so there is no observable difference today.
+  Six reach that read from the mouse bindings themselves
+  (`GameDefinition/.../Content/Input.hs:188-236` — the mouse
   section plus the `"safe1".."safe6"` `CmdInternal` pseudo-keys, which are
   not typeable on any keyboard and exist only for the mouse machinery and
-  macros to reference), and the triggering mouse KMP itself sets
-  `spointer` correctly first. No observable difference today — but this is
+  macros to reference). The other two are entered from the *keyboard* and
+  gate the read on a `K.LeftButtonRelease` case inside their own confirm
+  loop: `pickPoint` (`HandleHumanGlobalM.hs:1359`, reached from
+  `alterDirHuman`/`closeDirHuman`, bound to `M`/`m`) and
+  `displayChoiceScreen`'s `interpretKey` (`SlideshowM.hs:350`). The
+  invariant is therefore about the *read*, not about the binding. This is
   a booby trap: **any future key binding for a `*WithPointer`/`ByArea`
   command would behave differently on web.** 0.1's `InputDecision` should
   document the invariant.
