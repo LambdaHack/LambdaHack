@@ -35,4 +35,25 @@ palette.ts
 run-wasm-game.mjs
 test/OverlayLayoutUnitTests.hs
 ts-src/src/generated/
+GameDefinition/gen-src/GenTsTables.hs
+frame-timing-core.test.ts
+frame-timing-core.ts
+fullscreen-core.test.ts
+fullscreen-core.ts
+make nodeDeployedBench
+make smokeANSI
+make smokeNodeBench
+make smokeSdl
+render-coherence.test.ts
+screenshot-core.test.ts
+screenshot-core.ts
+test/CellStyleUnitTests.hs
+test/DeterminismGoldenUnitTests.hs
+test/FfiCoverageUnitTests.hs
+test/FrontendContractUnitTests.hs
+test/InputDecisionUnitTests.hs
+test/WasmFileUnitTests.hs
+ts-src/src/terminal-input.test.ts
+url-options-core.test.ts
+url-options-core.ts
 make gen-ts
