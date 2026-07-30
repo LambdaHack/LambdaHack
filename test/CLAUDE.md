@@ -2,7 +2,7 @@
 
 The engine-wide conventions and gotchas stay in the repo-root `CLAUDE.md`.
 
-File:line references were verified against the tree at commit `8b5703e87` (2026-07-29); the citation pass proves a cited line exists — this stamp, that it still says what the claim around it needs.
+File:line references were verified against the tree at commit `d43e1d652` (2026-07-30); the citation pass proves a cited line exists — this stamp, that it still says what the claim around it needs.
 
 ## The mock and frontend stubs
 
@@ -26,11 +26,14 @@ File:line references were verified against the tree at commit `8b5703e87` (2026-
 
 Some tests are deliberate characterizations of known-buggy behaviour, tagged `[LR-flip]` in comments with the post-fix expectation stated inline; `[contract]`-tagged tests pin behaviour that must survive both planned designs (live-read, then abort-split — see `docs/leader-desync-bug.md` and `docs/promptgetkey-hygiene.md`) unchanged. Don't "fix" a green `[LR-flip]` test — flip it together with the engine change it documents, and verify the flip by temporarily applying the candidate fix before committing either.
 
-Each tag also begins the test's own name, so a series runs as a unit:
+Each tag also begins the test's own name, so a series runs as a unit, and both together as the whole battery — tasty wanting awk-style syntax for that last one:
 
 ```
-cabal test --test-options='-p "/contract/"'   # must stay green
-cabal test --test-options='-p "/LR-flip/"'    # flip these with the fix
+cabal test --test-options='-p "/contract/"'               # must stay green
+cabal test --test-options='-p "/LR-flip/"'                # flip with the fix
+cabal test --test-options='-p "/contract/ || /LR-flip/"'  # the whole battery
 ```
+
+Each filter is live rather than a no-op: it selects a proper subset of the suite, while a pattern naming nothing selects nothing. No count is quoted here because the command prints its own. The naming convention holds without exception — every `[contract]`/`[LR-flip]` comment tag sits on a test whose name begins with that same marker, bar the two module haddocks that explain the tags (`FrameMUnitTests.hs:9`, `HandleHelperMUnitTests.hs:9`). Keep it that way; a member named otherwise leaves the battery silently, and a green series then reads as a complete one. The single unmarked test inside a tagged list says so at its definition: `partyAfterLeaderTest` (`HandleHelperMUnitTests.hs:63`) predates this work and is consed onto `liveReadSeries` rather than being part of it.
 
 A test carrying both concerns — the bridge tests X1 and X2, whose `promptGetKey` half is contract and whose final cycling outcome flips — is tagged `LR-flip`, because a test that must be edited when the design lands is not one that stays green unchanged. Its contract half is described in the comment above it.
