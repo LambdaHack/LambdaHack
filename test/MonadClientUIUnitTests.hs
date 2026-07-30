@@ -15,7 +15,7 @@ import Game.LambdaHack.Client.UI.Overlay
 import UnitTestHelpers
 
 monadClientUIUnitTests :: TestTree
-monadClientUIUnitTests = testGroup "handleHumanLocalMUnitTests"
+monadClientUIUnitTests = testGroup "monadClientUIUnitTests"
   [ testCase "getsClient sside" $ do
       sideInMonad <- executorCli (getsClient sside) stubCliState
       fst sideInMonad @?= testFactionId

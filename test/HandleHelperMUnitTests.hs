@@ -58,6 +58,8 @@ handleHelperMUnitTests :: TestTree
 handleHelperMUnitTests = testGroup "handleHelperMUnitTests" $
   partyAfterLeaderTest : liveReadSeries
  where
+  -- Outside the tagged series it is consed onto: this test predates the
+  -- live-read work, so its name carries no [contract]/[LR-flip] marker.
   partyAfterLeaderTest = testCase "partyAfterLeader" $ do
     -- You've got to fight for your right to party!
     let testFunc = partyAfterLeader testActorId
