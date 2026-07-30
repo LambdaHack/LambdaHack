@@ -45,10 +45,11 @@ outcome line.
 > **What this record is for, and what is frozen in it.** It is kept
 > indefinitely, for two readers: the one who wonders why the web stack reads
 > as it does, and the one who proposes a browser-side change and needs to
-> know whether it was already ruled out. Unlike the two pointman records it
-> is not frozen *yet*; unlike a migration plan it is never deleted. It
-> matures, and the ledger below says how far. The state is the genre, and
-> there is no second vocabulary:
+> know whether it was already ruled out. It is never deleted, and it is not
+> yet frozen: it matures, and the ledger below says how far. The pointman
+> records are the genre it converges on, each already mostly frozen around a
+> live carve-out; this one is still live throughout. The state is the genre,
+> and there is no second vocabulary:
 >
 > - an item with **no outcome line is live** — specification, or a premise
 >   the specification rests on. Its claims about *today's* tree are held to
@@ -56,28 +57,44 @@ outcome line.
 >   record that has aged.
 > - an item carrying **`Landed in <hash>` is frozen** — it describes the
 >   code as of that commit and is not maintained against later trees, bar
->   one further outcome line per claim that resolves. Do not rewrite a
->   landed item to match a later tree; that is the mistake this rule exists
->   to prevent.
+>   one further outcome line per claim that *resolves*. Ordinary drift in a
+>   frozen item is left alone; rewriting one to match a later tree is the
+>   mistake this rule exists to prevent.
 >
-> **Landing an item** appends one outcome line to that item's body and
-> changes *nothing else* there. A claim the landing falsified is corrected
-> in a separate commit, so review can tell a relocation from a correction —
-> which commit `a7e825c2d` could not, having rewritten R2 from "Add a job
-> to…" into "Partly landed, in…" and bent a factual claim in the same diff.
+> **Landing an item** does two things and nothing else: it appends an
+> outcome line, and it flips that item's ledger row to the same hash. The
+> outcome line goes **immediately after the item's opening paragraph**,
+> before any subsection, so that opening the item at its head answers the
+> question; its shape is the doctest bullet's under Ground rules. A claim
+> the landing falsified is corrected in a *separate* commit, so review can
+> tell a relocation from a correction — which commit `a7e825c2d` could not,
+> having rewritten R2 from "Add a job to…" into "Partly landed, in…" and
+> bent a factual claim in the same diff.
+>
+> **Landing part of an item takes no outcome line**, and the row stays
+> live: a partial landing is recorded in the item's body as specification
+> for what remains, which is what R2 does today. **A standing item never
+> lands** — 0.3, 1.4, R2, explicit widths and functional core are ongoing
+> or recurring by their own size cells — so it retires when the campaign
+> does, rather than acquiring a hash.
+>
 > An item that proposes an artifact may take its outcome line **only once
 > its entries in `tools/doc-refs-allow.txt` can be deleted**; that file's
 > comment already asks for exactly that deletion, and gating on it makes
-> "landed" a checked claim rather than a declared one. The gate binds the
-> eleven artifacts listed there and nothing else — an item proposing no new
-> file (1.3, 1.4, R5) is unchecked, and its outcome line rests on the same
-> reading as any other claim here.
+> "landed" a checked claim rather than a declared one. That gate reaches
+> five items — 0.1, 0.2, 2.1, 2.2 and 3.2, whose twelve entries are listed
+> there. Every other item is ungated, its outcome line resting on the same
+> reading as any other claim here; and an item whose artifact turns out
+> unneeded clears the gate by deleting the entry together with the sentence
+> that named it.
 >
-> When the last item lands, every row reads landed, the three campaign-live
-> sections freeze with them, this callout becomes one line saying the
-> specification landed in full, and the document stops being restamped —
-> becoming the same genre `docs/leader-desync-bug.md` already is. It is
-> never deleted, because what gets consumed is the state, not the file.
+> When every item has landed or retired, the four campaign-live sections
+> freeze with them — Goals and approach, Repo facts, Build & verification
+> loop, Sequencing — the ledger's own rows stop moving, and this callout
+> becomes one line saying the specification landed in full. Restamping does
+> not stop: the standing checks quantify over every document in the repo,
+> and a frozen record still restamps when the files it cites move, as the
+> pointman records do.
 
 ## Ledger — every item's state
 
@@ -96,10 +113,14 @@ Appendices [A](#appendix-a--investigation-porting-the-ghcjs-target-to-ghcs-in-tr
 / [B](#appendix-b--decisions-against-and-deferrals)
 / [C](#appendix-c--verified-non-gaps-sdl2-vs-wasm-audit-record)
 
-Sections holding no items are stated once, here. **Frozen from the start:**
-Ground rules, Out of scope, and Appendices A, B and C. **Live until the last
-item lands**, because the work falsifies them: Repo facts, Build &
-verification loop, Sequencing. Everything else is per item:
+Sections holding no items are stated once, here, and the two lists are
+exhaustive over the sections the per-item rule does not cover. **Frozen
+from the start:** Ground rules, Out of scope, and Appendices A, B and C —
+frozen does not mean silent, and a claim in one that later resolves takes
+an outcome line, as the doctest bullet under Ground rules has. **Live
+until every item has landed or retired**, because the work falsifies them:
+Goals and approach, Repo facts, Build & verification loop, Sequencing, and
+this ledger. Everything else is per item:
 
 | § | delivers | size | depends on | state |
 |---|---|---|---|---|
@@ -112,9 +133,9 @@ verification loop, Sequencing. Everything else is per item:
 | 1.3 | fullscreen toggle with scaling | small | — | live |
 | 1.4 | banner/title truthfulness | trivial, recurring | feature landings | live |
 | 1.5 | `allFontsScale` honored in browser | small | 2.2's startup call (or a precursor); R4 for player control | live |
-| 2.1 | `OverlayLayout` extraction + `Sdl.hs` on it | medium–large | determinism goldens (native harness) | live |
+| 2.1 | `OverlayLayout` extraction + `Sdl.hs` on it | medium–large | 0.2 for `CellStyle`; determinism goldens (native harness) | live |
 | 2.2 | browser canvas overlay renderer + font wiring | medium | 2.1, 0.2 | live |
-| 2.3 | overlay transport over JSFFI | medium | 2.1, 2.2 | live |
+| 2.3 | overlay transport over JSFFI | medium | 2.1, 2.2; 0.3 for the end-to-end battery | live |
 | 2.4 | multi-font capability flip | tiny diff, big review | 2.1–2.3; determinism goldens | live |
 | 2.5 | post-flip QA | small | 2.4 | live |
 | 3.1 | `lhStart` reads WASI argv | small (+spike) | — | live |
@@ -124,13 +145,13 @@ verification loop, Sequencing. Everything else is per item:
 | R2 | browser-and-frontend CI | ongoing | grows per phase | live |
 | R3 | retire GHCJS support | one commit | 2.5 (parity) | live |
 | R4 | URL-parameter options | small | 3.1 | live |
-| R5 | performance pass | exploratory | 2.5, 3.3 | live |
+| R5 | performance pass | exploratory | 2.5, 3.3; R4 + 3.1 for the browser-side instrument | live |
 | R6 | screenshot/overlay coherence | small | 1.2, 2.2 | live |
-| capability constants | named constants in place of behavioral CPP | moderate churn | — | live |
-| sum-typed selection | one frontend field replacing four `Bool`s | mechanical | before R4 | live |
+| capability constants | named constants in place of behavioral CPP | — | — | live |
+| sum-typed selection | one frontend field replacing four `Bool`s | mechanical, moderate churn | before R4 | live |
 | RawFrontend contract | haddock contract, tasty harness, add-a-frontend checklist | medium | input side with 0.1; rest with 0.3 | live |
 | determinism goldens | fixed-seed final-state digests | medium | native harness before 2.1 | live |
-| frontend CI smokes | xvfb SDL, pty ANSI, a short nodeBench run | small each | 3.2 for the wasm one | live |
+| frontend CI smokes | xvfb SDL, pty ANSI, a short nodeBench run | small each | 3.3 for the wasm one | live |
 | explicit widths | `punindex`, never the `Enum` instance, in frontend code | trivial | fix the one live violation with 0.2 | live |
 | functional core | the standing review bar for frontend modules | — | — | live |
 
@@ -572,7 +593,8 @@ IO in `Sdl.hs:593-713`. It is cut along the *measurement* line, and that
 seam is the design: chunking, colours, faces and the two fixed-pitch line
 cuts are pure and take no metrics at all, while the proportional pen — the
 one quantity that depends on rendered width — advances through two small
-pure functions the consumer calls with the width it has just measured. The
+pure functions: a measurement-free cutoff test, called *before* a chunk is
+rendered, and a fit function called with the width just measured. The
 ruler stays in the frontend; the cutoff rule, the clamp rule and the
 trimmed-line marker get one definition.
 
@@ -606,7 +628,9 @@ mkLayoutMetrics halfSize width =
 
 **The metric-free half.** Its invariant is visible in the signatures: none
 of these takes a `LayoutMetrics`, so none of them can emit a device-space
-number.
+number. `cellPitch` is the one exception, labelled as such: it interprets
+a `CellLayer` into a device advance, and is here only to sit beside the
+type it interprets.
 
 ```haskell
 -- | Which of the two proportional faces draws a chunk
@@ -727,7 +751,9 @@ layOutFrame :: Int -> SingleFrame -> FrameLayout
 --
 -- Cuts nothing: cutting is 'propFit''s business. That is what turns the
 -- concatenation property below into an equality.
-chunkPropLine :: Int -> AttrString -> [PropChunk]  -- ^ row, then the line
+chunkPropLine :: Int          -- ^ row, for the even-row rule
+              -> AttrString   -- ^ the line
+              -> [PropChunk]
 
 -- | @take (rwidth - col)@ after @uiToSquare@ (@Sdl.hs:628-629@); drops
 -- runs left empty.
@@ -843,13 +869,12 @@ most one marker per line and "draw `pfMarker` immediately" is bit-exact
 with SDL. And since the precondition gives `remaining > lmBoxSize`, the
 third branch's width is always positive: no zero-width blit.
 
-**A correction the design forces.** The plan's blanket statement that
-emitted positions stay in logical `PointUI` units is true of everything
-this module *emits* and false of the pen: after the first chunk the x is a
-running sum of measured widths (`Sdl.hs:696-697`). Logical on the wire and
-in `FrameLayout`; device-space only inside `PropCursor`, which never
-travels. The one exactly-logical piece of the cutoff is `propLineStartFits`
-above.
+**Where logical units end.** Everything `FrameLayout` emits is logical,
+and so is everything on the wire; device space exists only inside
+`PropCursor`, which never travels. The pen is where it must: after the
+first chunk its x is a running sum of measured widths (`Sdl.hs:696-697`),
+which is why the cutoff cannot be stated in logical units past the line
+start. The one exactly-logical piece of it is `propLineStartFits` above.
 
 **Rejected: a character-count cutoff.** Replacing the pixel rule with a
 column count would make the module self-contained, and it does not work.
@@ -906,16 +931,15 @@ needs no special casing anywhere: `trimmedLineAttrW32` is a `BrBlack` `'$'`
 `HighlightNone` background takes `workaroundOverwriteHighlight`
 (`Sdl.hs:515`) like any other unhighlighted cell.
 
-**What this means for 2.3's transport.** The format sketched there — per
-line `y`, logical `xStart`, chunk count; per chunk `fontKind|colorIdx`,
-length, codepoints — changes in four ways, all of them staying inside the
-same idiom: a packed `Word32` buffer passed by address, no string
-marshalling, no serialization dependency.
+**2.3's payload, specified here.** 2.3 owns the mechanism — an additive
+`js_submitOverlays`, a packed `Word32` buffer passed by address, no string
+marshalling, no serialization dependency — and points here for the payload,
+so the field list has one definition. Four properties fix it:
 
-1. **Three sections, in draw order**, behind a header of three counts. The
-   sketched format cannot carry the two cell layers at all, though 2.3
-   already promises all three travel; making the sections structural is
-   what lets a decoder obey the layer rule without knowing it.
+1. **Three sections, in draw order**, behind a header of three counts —
+   one per `FrameLayout` field. Making the sections structural is what lets
+   a decoder obey the layer rule without knowing it, and it is the only
+   shape that carries the two cell layers at all.
 2. **Cell layers ship raw `AttrCharW32` words**: per run, layer tag, row,
    col, count, then the already-cut cells verbatim. `fontKind|colorIdx`
    plus codepoints would silently drop `bg`, which the square layer needs
@@ -929,9 +953,9 @@ marshalling, no serialization dependency.
    the colour index is its own field; and `pcAllSpace` gets a bit, because
    `propFit` consumes it (`Sdl.hs:553`, `Sdl.hs:577`) and it is
    measurement-free, so the module owns it and the consumer needs it.
-4. **`xStart` stays logical, and now load-bearing rather than stylistic:**
-   it is logical precisely because the receiving consumer's
-   `startPropLine` computes the device x. Nothing device-space is encoded.
+4. **`xStart` is logical**, and load-bearing rather than stylistic: it is
+   logical precisely because the receiving consumer's `startPropLine` is
+   what computes the device x. Nothing device-space is encoded.
 
 The encoder still lives next to `OverlayLayout` and is still pure; tasty
 still round-trips it on fixed cases and on QuickCheck-generated
@@ -943,8 +967,9 @@ comparisons and a three-way `min`, with no string, colour or chunking
 knowledge — pinned by 0.2-generated branch-complete fixtures, a table of
 `(halfSize, width, cursorX, allSpace, widthRaw) -> (stop | x, width,
 marker)` run by vitest in CI, exactly as `CellStyle`'s TS twin is pinned.
-This respects the standing ruling against a sync `js_measureText` crossing
-per chunk per frame rather than arguing it down. Recorded alternative, with
+This keeps the boundary-cost ruling this section already makes against a
+sync `js_measureText` crossing per chunk per frame, rather than arguing it
+down. Recorded alternative, with
 its trigger: batch instead — one crossing per frame carrying every chunk's
 text out and every measured width back, then run the real `propFit` in
 Haskell. It costs a round trip and a frame of latency, and it is worth
@@ -1036,9 +1061,14 @@ after `make bench`.
 A single absolutely-positioned `<canvas>` over the existing `<span>` grid
 (the grid can't host variable-width text; canvas `fillText`+`measureText`
 is the direct analogue of SDL2's measure-then-blit). New
-`overlay-core.ts`/`overlay-core.test.ts` for the pure parts (cursor
-advance, logical-to-pixel placement), with a fake `measureText` injected
-in tests. Like 1.2's rasterizer, the renderer is a functional core
+`overlay-core.ts`/`overlay-core.test.ts` for the pure parts — the
+`propCutoff`/`propFit` twin 2.1 specifies, which takes widths as plain
+numbers, measurement staying in the canvas shell — pinned by 2.1's
+0.2-generated branch table rather than by hand-written cases. The renderer
+draws all three of 2.1's sections, not only the proportional one: a
+`CellRun` is drawn at its layer's `cellPitch` with `CellStyle`'s per-cell
+rules applied by the painter, in the prop, square, mono order 2.1 fixes.
+Like 1.2's rasterizer, the renderer is a functional core
 emitting draw commands executed by a thin canvas interpreter, so the
 tests assert op lists — no canvas dependency.
 
@@ -1073,8 +1103,9 @@ Known browser pitfalls to handle here, not discover in 2.4:
   mirrors how `Sdl.hs` takes the cell size from the loaded font rather
   than from config.
 
-Fixtures for the chunking logic come from the 0.2 generator calling
-`OverlayLayout` — no hand-written fixtures.
+Fixtures for the browser's `propCutoff`/`propFit` twin come from the 0.2
+generator calling `OverlayLayout` — no hand-written fixtures. Chunking
+itself never crosses, so there is nothing there to pin.
 
 Verify: vitest green; live game pixel-identical to before (nothing wired).
 
@@ -1086,7 +1117,7 @@ Add an **additive** `js_submitOverlays` alongside `js_submitFrame`, using
 the same idiom the frame already uses: a packed `Word32` buffer passed by
 address — everything is numeric and fits `Word32`, no string marshalling,
 no new serialization dependency. The payload's shape is specified once, in
-2.1, under "What this means for 2.3's transport": three sections in draw
+2.1, under "2.3's payload, specified here": three sections in draw
 order behind a header of counts, cell layers shipping raw `AttrCharW32`
 words, the prop chunk header split into face, colour index and the
 `pcAllSpace` bit, and `xStart` logical because the receiving consumer's
