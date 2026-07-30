@@ -5,6 +5,8 @@ description: LambdaHack's automated AI-vs-AI playtest and benchmark Makefile tar
 
 # Playtests and benchmarks (Makefile)
 
+The names cited here — Makefile targets, frontend flags, document paths — were verified against the tree at commit `ef4d44732` (2026-07-30); the reference pass proves a cited name exists, this stamp that it still does what the claim around it needs. The wording differs from the stamp in `CLAUDE.md` and `test/CLAUDE.md` because this file cites no line numbers.
+
 The Makefile has a large battery of automated AI-vs-AI playtest and benchmark
 targets: `make test-short`, `make test-medium`, `make test` (those two plus
 `benchNull`), `make test-gha` (a larger aggregate plus `test-sniff`; run

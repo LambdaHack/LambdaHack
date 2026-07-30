@@ -1,6 +1,6 @@
 # Test harness guidance (`test/`)
 
-The engine-wide conventions and gotchas stay in the repo-root `CLAUDE.md`.
+How to *invoke* the suite, and the engine-wide conventions and gotchas, are in the repo-root `CLAUDE.md` — running `cabal test` from the repo root does not load this file, which arrives only when a session opens something under `test/`. What follows is for writing and reading the tests themselves.
 
 File:line references were verified against the tree at commit `d43e1d652` (2026-07-30); the citation pass proves a cited line exists — this stamp, that it still says what the claim around it needs.
 

@@ -9,6 +9,9 @@
 # Specify additional command line arguments
 #
 # - arguments: [--color, --cpp-simple, -XQuasiQuotes]
+#
+# -XNoStarIsType suppresses nothing here, no file using `*` as a type. It is
+# kept so that this line matches horde-ad's, where it is load-bearing.
 - arguments: [--cpp-simple, -XNoStarIsType]
 
 # Control which extensions/flags/modules/functions can be used

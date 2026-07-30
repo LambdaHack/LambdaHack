@@ -1,2 +1,4 @@
+-- Hand edits belong here rather than in the generated file, where a plain
+-- regenerate drops them without a word.
 apt: libsdl2-ttf-dev
 github-patches: .github/haskell-ci.patch
