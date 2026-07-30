@@ -18,7 +18,9 @@ Two permanent records cover UI client state, and one temporary plan drives the w
 
 The closing portable-notes section holds the author-generic conventions and the machine-specific session facts — skim it before debugging anything environment-related.
 
-## Build
+## Build and test commands
+
+### Build
 
 ```
 # one-time setup of a fast dev build: no optimization, expensive
@@ -48,7 +50,7 @@ make serve-wasm         # serve ../lambdahack.github.io locally on :8080
 make run-wasm           # open in firefox
 ```
 
-## Tests, lint, CI
+### Tests
 
 ```
 cabal test
@@ -160,7 +162,7 @@ The test-suite stanza shares the same CPP flags (so `USE_BROWSER`/`USE_WASM` etc
 
 Browser-build runtime differences: there is no argv and no config file on disk — server/client options sit at their defaults and the UI config comes from `config.ui.default`, embedded at compile time via TH (`rcfgUIDefault` in `GameDefinition/Content/RuleKind.hs`), with user overrides read from localStorage. Periodic autosave is disabled under the browser file backends (`Server/LoopM.hs`) — saves happen only on explicit save/exit.
 
-### Coding conventions (beyond hlint/stylish-haskell defaults)
+## Coding style
 
 Author-generic style conventions are collected in the portable-notes section at the end of this file; what follows is LambdaHack-specific.
 
