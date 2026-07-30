@@ -180,21 +180,24 @@ handleHumanLocalMUnitTests = testGroup "handleHumanLocalMUnitTests"
       fst result @?= Right 114  -- not a coincidence this matches testFactionId,
                                 -- because @eps@ is initialized that way,
                                 -- for "randomness"
-  , -- [LR-flip] Sibling bug (a) of the leader desync
-    -- (docs/leader-desync-bug.md, §09): @chooseItemProjectHuman@ computes
-    -- @psuitReq leader@ ONCE, at dialog entry, and bakes the resulting
-    -- closure into the dialog's @psuit@; the fling dialog then permits
-    -- switching the pointman (@maySwitchLeader@ is 'True' for stores), but
-    -- the captured closure keeps judging items for the ENTRY actor. This
-    -- pins the testable ingredient: the closure's verdict is actor-dependent
-    -- (here via the projecting skill; position and calm differ the same
-    -- way), so reusing the entry actor's closure after a switch reports
-    -- wrong suitability/range for the new pointman. After the live-read design
-    -- lands, the closure reads the live pointman at each evaluation
-    -- (@psuitReq@ loses its ActorId argument), making the stale capture
-    -- unrepresentable.
+  , -- [contract] The premise sibling bug (a) rests on
+    -- (docs/leader-desync-bug.md, §09), and the ruling that keeps
+    -- @permittedProjectClient@ a "some actor" function: its verdict is
+    -- about the actor it is *given*, never about the pointman. The
+    -- verdicts are actor-dependent -- here through the projecting skill;
+    -- position and calm differ the same way -- which is what makes
+    -- reusing an entry actor's captured closure after a switch report the
+    -- wrong suitability, and what the two rows after this one pin.
+    -- The pointman is switched between the two rounds of calls below and
+    -- neither verdict moves. That is the contract, not a flip: §03 of
+    -- docs/leader-desync-migration.md keeps this function's @ActorId@, so
+    -- live-read must leave both answers exactly as they are; a conversion
+    -- that made it read @sleader@ would collapse the second round to two
+    -- copies of C's verdict and fail here. It carried an [LR-flip] tag
+    -- until 2026-07-30, when a review found it had nothing to flip: what
+    -- live-read makes unrepresentable is the dialog's capture, not this.
     testCase
-      "LR-flip fling suitability closure differs per actor (desync sibling)"
+      "contract permittedProjectClient judges its argument, not the pointman"
       $ do
       let skills = EM.fromList
             [ ( testActorId
@@ -203,11 +206,17 @@ handleHumanLocalMUnitTests = testGroup "handleHumanLocalMUnitTests"
           cliS = partyCliState {cliState =
             updateActorMaxSkills (const skills) (cliState partyCliState)}
           testFn = do
-            funA <- permittedProjectClient testActorId
-            funC <- permittedProjectClient testActorId2
-            return (funA testItemFull, funC testItemFull)
+            updateClientLeader testActorId
+            funA1 <- permittedProjectClient testActorId
+            funC1 <- permittedProjectClient testActorId2
+            updateClientLeader testActorId2  -- the pointman switches ...
+            funA2 <- permittedProjectClient testActorId
+            funC2 <- permittedProjectClient testActorId2
+            return ( (funA1 testItemFull, funC1 testItemFull)
+                   , (funA2 testItemFull, funC2 testItemFull) )
       (result, _) <- executorCli testFn cliS
-      result @?= (Right True, Left ProjectUnskilled)
+      let verdicts = (Right True, Left ProjectUnskilled)
+      result @?= (verdicts, verdicts)  -- ... and nothing follows it
 
   , -- [LR-flip] Sibling bug (a) pinned at the exact captured value:
     -- @psuitReq@ -- what @chooseItemProjectHuman@ bakes into the dialog's

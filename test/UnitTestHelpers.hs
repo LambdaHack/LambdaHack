@@ -20,6 +20,7 @@ module UnitTestHelpers
   , testCliStateWithItem
   , testFactionId
   , testItemId
+  , testItemId2
   , testLevel
   , testLevelId
   , heroA
@@ -250,6 +251,11 @@ testActorId3 = toEnum 116
 
 testItemId :: ItemId
 testItemId = toEnum 113
+
+-- | A second item, for tests where two actors must hold *different*
+-- items, so that a bag looked up for the wrong actor misses.
+testItemId2 :: ItemId
+testItemId2 = toEnum 117
 
 testFactionId :: FactionId
 testFactionId = toEnum 114
