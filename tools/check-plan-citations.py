@@ -10,7 +10,11 @@ the Makefile — documents cite each other and the tools), the script
 resolves the file, checks the line range exists, and prints the first
 cited line so a human can compare it against what the surrounding
 sentence claims. A `/.../` component in a cited path is treated as a
-wildcard (the document uses it to abbreviate long paths).
+wildcard (the document uses it to abbreviate long paths). A citation may
+name several lines or ranges, comma-separated with no space
+(`Sdl.hs:353,362,771-781`); each member is resolved and printed on its
+own line. The no-space rule is what the documents write and keeps prose
+("`Sdl.hs:353`, four lines below") out of the match.
 
 Exit status is nonzero if any citation is UNRESOLVED (no such file),
 AMBIGUOUS (a bare basename matching several files — qualify it in the
@@ -28,33 +32,43 @@ wrong ranges and links whose commit or path is not in this repository
 failures).
 
 Scope limits, deliberate: prose-style citations ("config.ui.default line
-67") are not extracted, and the *claims* around citations are not checked
+67") are not extracted, nor is a range left dangling from its filename
+("`LambdaHack.cabal:152-156` and `371-391`") — a bare `371-391` in
+backticks is indistinguishable from any other pair of numbers, so a
+document that wants the second range checked must repeat the filename.
+And the *claims* around citations are not checked
 — in particular, universally-quantified claims ("only X does Y", "exactly
 two", "never") must be re-verified by repo-wide grep, not by re-reading
 the cited file; that asymmetry is how a real error slipped in once.
 
 Non-vacuity (per CLAUDE.md's "prove a checker non-vacuous"): feed it a
 scratch document holding one citation of each failing kind and confirm
-all six are reported and the exit status is 1 —
+all seven are reported and the exit status is 1 —
 
     UNRESOLVED       `NoSuchFile.hs:12`
     OUT-OF-RANGE     `FrameM.hs:999999`
+    CONTINUATION     `Point.hs:26,999999` (the tail member must be checked)
     AMBIGUOUS        `LoopM.hs:10`        (Client/ and Server/ both have one)
     NON-SOURCE       `CLAUDE.md:999999`   (documents and tools cite each other)
     PERMALINK range  .../blob/b4d5cc2e4/CLAUDE.md#L99999
     PERMALINK repo   https://github.com/ghc/ghc/blob/0123456789abcdef/x.hs#L1
 
 plus a control that must still pass (`Point.hs:26`). A run reporting
-fewer than six failures means extraction, resolution or the `git show`
-branch has silently stopped covering that kind. The NON-SOURCE row is
-there because that kind was silently uncovered for a while: only Haskell
-and web sources were extracted, so a citation into a `.md`, `.py` or
-`.yml` file was skipped rather than checked, and a document citing
-nothing but those reported a clean zero.
+fewer than seven failures means extraction, resolution or the `git show`
+branch has silently stopped covering that kind. Two rows are there
+because their kind was silently uncovered for a while. NON-SOURCE:
+only Haskell and web sources were extracted, so a citation into a `.md`,
+`.py` or `.yml` file was skipped rather than checked, and a document
+citing nothing but those reported a clean zero. CONTINUATION: extraction
+took only the first number of a comma-continued citation, so seven
+sub-references in `docs/wasm-frontend-unified-plan.md` had never been
+checked while the run reported "85 citations checked, 0 failed" over the
+rest — a silent search of exactly the kind CLAUDE.md's portable notes
+warn about, and invisible in the exit status by construction.
 
-Reproduced 2026-07-29: six failures and exit 1, the control resolving to
-the `Point.hs` hack comment. A recipe with no date behind it is a claim
-like any other.
+Reproduced 2026-07-30: seven failures and exit 1, the control resolving
+to the `Point.hs` hack comment. A recipe with no date behind it is a
+claim like any other.
 
 Passing --restamp rewrites the document's own stamp, so the ritual the
 documents ask for -- "re-run the pass and restamp after any replay of
@@ -107,7 +121,7 @@ wrote was the last commit touching `tools/heading-outline.py`, not HEAD,
 which is the row that would have passed vacuously under the earlier
 HEAD-based rule.
 
-Six here, five in the horde-ad copy: the AMBIGUOUS row needs two files
+Seven here, six in the horde-ad copy: the AMBIGUOUS row needs two files
 sharing a basename, which this repo has (`LoopM.hs` in both `Client/`
 and `Server/`) and that one has nowhere. So this is the only live proof
 of that branch — keep the row even if the duplicate is ever resolved.
@@ -125,7 +139,7 @@ SEARCH_ROOTS = ["engine-src", "definition-src", "GameDefinition", "ts-src",
 CITE_RE = re.compile(
     r"`?([A-Za-z][A-Za-z0-9_./-]*"
     r"\.(?:hs|ts|py|c|h|cabal|mjs|html|md|txt|yaml|yml)|Makefile)"
-    r":(\d+)(?:-(\d+))?")
+    r":(\d+(?:-\d+)?(?:,\d+(?:-\d+)?)*)")
 URL_RE = re.compile(
     r"https://github\.com/[\w.-]+/[\w.-]+/blob/([0-9a-f]{7,40})/"
     r"([A-Za-z0-9_./-]+)#L(\d+)(?:-L(\d+))?")
@@ -137,6 +151,19 @@ STAMP_RE = re.compile(
     r"(verified against[^`*]{0,120}?commit\s*>?\s*(?:`|\*\*))"
     r"([0-9a-f]{7,40})"
     r"((?:`|\*\*)\s*\()(\d{4}-\d{2}-\d{2})(\))")
+
+
+def spans(spec):
+    """Expand a citation's line spec into (lo, hi) pairs.
+
+    A spec is one or more lines or ranges, comma-separated:
+    "353", "377-381", "119,1271,1359", "353,362,771-781".
+    """
+    out = []
+    for part in spec.split(","):
+        lo, _, hi = part.partition("-")
+        out.append((int(lo), int(hi or lo)))
+    return out
 
 
 def all_files_named(basename):
@@ -249,9 +276,9 @@ def main():
     doc = args[0] if args else "CLAUDE.md"
     require_readable([doc])
     text = open(doc, encoding="utf-8").read()
-    cites = sorted({(m.group(1), int(m.group(2)),
-                     int(m.group(3) or m.group(2)))
-                    for m in CITE_RE.finditer(text)})
+    cites = sorted({(m.group(1),) + span
+                    for m in CITE_RE.finditer(text)
+                    for span in spans(m.group(2))})
     failures = 0
     for name, lo, hi in cites:
         path, err = resolve(name)
