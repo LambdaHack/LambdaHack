@@ -99,6 +99,7 @@ scratch document holding
 
     `engine-src/Game/LambdaHack/NoSuchModule.hs`  FAIL, unresolved path
     `make no-such-target`                  FAIL, unknown make target
+    `make -n no-such-target`               FAIL, flags skipped, not a target
     `cabal build no-such-stanza`            FAIL, unknown cabal target
     `Game.LambdaHack.Client.NoSuch`        FAIL, unknown module
     `../lambdahack.github.io/no-such.js`   FAIL, missing in a live sibling
@@ -182,7 +183,11 @@ PATH_EXT = ("hs", "ts", "mjs", "py", "cabal", "html", "md", "yaml", "yml",
 TICK_RE = re.compile(r"`([^`\n]+)`")
 FENCE_RE = re.compile(r"^\s*(```|~~~)")
 CITE_RE = re.compile(r":\d+(-\d+)?$")
-MAKE_RE = re.compile(r"\bmake ([A-Za-z0-9_*.-]+)")
+# Leading flags are skipped, so `make -n foo` and `make --dry-run foo` name
+# the target `foo` rather than a target called `-n`. A document that shows
+# how to gate a target it cannot run writes the flag somewhere, and the
+# obvious placement was reported as a missing target.
+MAKE_RE = re.compile(r"\bmake +(?:-[A-Za-z0-9-]+ +)*([A-Za-z0-9_*.][A-Za-z0-9_*.-]*)")
 # A cabal invocation, possibly through a toolchain wrapper
 # (`wasm32-wasi-cabal`), naming a stanza directly or through a component
 # prefix (`exe:LambdaHack`). Without the wrapper and prefix cases, the
