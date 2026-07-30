@@ -32,9 +32,10 @@ visible rather than inferred.
 Prove it non-vacuous (both directions; restore the document afterwards):
 
     # tree -> doc: a function that is in no bucket must be reported
-    $ sed -i 's/`getStoreItem`, `runDefSkills`/`getStoreItem`/' \\
+    $ sed -i 's/^| `runDefSkills` |/| `runDefSkillsXX` |/' \\
           docs/leader-desync-migration.md
-    $ python3 tools/leader-census.py    # FAIL ... runDefSkills -- in no bucket
+    $ python3 tools/leader-census.py  # FAIL ... runDefSkills -- in no bucket,
+                                      # plus runDefSkillsXX -- not in the tree
 
     # doc -> tree: a bucketed name that does not exist must be reported
     $ sed -i 's/`partyAfterLeader`/`partyAfterLeaderXX`/' \\
@@ -43,8 +44,16 @@ Prove it non-vacuous (both directions; restore the document afterwards):
                                       # not in the tree, plus the real
                                       # function, now in no bucket
 
-Both were run when this script was written, on 2026-07-30, and reported
-exactly those lines.
+    # and the case that used to be a false positive: a state field named in
+    # a bucket's prose must NOT fail, being a token of the tree even though
+    # no top-level signature under Client/UI declares it
+    $ sed -i 's/read the pointman themselves/read `sleader` themselves/' \\
+          docs/leader-desync-migration.md
+    $ python3 tools/leader-census.py                            # 0 failed
+
+Both failing cases were run when this script was written, on 2026-07-30,
+and all three after the doc -> tree check was widened from signatures to
+tokens later the same day; each reported exactly the lines above.
 """
 
 import os
@@ -66,6 +75,11 @@ BUCKET_LEADS = [
 
 SIG = re.compile(r"^([a-z][A-Za-z0-9_']*)\s*::")
 IDENT = re.compile(r'`([a-z][A-Za-z0-9_\']*)`')
+
+# Every lowercase token in the sources, for the doc -> tree direction; see
+# scan_tree for why that check resolves against tokens rather than
+# signatures.
+TOKEN = re.compile(r'\b([a-z][A-Za-z0-9_\']*)\b')
 
 # Backticked in the buckets' prose as *parameter* names ("bound as `aid`"),
 # never as functions, so their absence from the tree means nothing.
@@ -89,8 +103,18 @@ def strip_parens(s):
 def scan_tree(root):
     """Return (by_name, point_free, all_names): every top-level function
     taking a bare ActorId parameter, mapped to (module, [bound parameter
-    names]), plus every top-level name in the tree, which is what tells a
-    stale bucket entry from a function the census simply does not cover."""
+    names]), plus every lowercase token occurring anywhere in the tree,
+    which is what tells a stale bucket entry from a name the census simply
+    does not cover.
+
+    That second set is deliberately every *token*, not every top-level
+    signature.  The check it feeds says "not in the tree", and a renamed or
+    deleted function leaves the tree entirely, so tokens catch it; whereas
+    signatures alone would also flag the record fields, local bindings and
+    accessors the buckets' prose legitimately names -- @sleader@ in a
+    sentence about what a Keep function reads is not a claim that a
+    top-level @sleader@ lives under Client/UI, and failing on it forces the
+    documentation to work around the checker."""
     files = []
     for d, _, fs in os.walk(root):
         files.extend(os.path.join(d, f) for f in fs if f.endswith('.hs'))
@@ -99,6 +123,7 @@ def scan_tree(root):
     for path in files:
         module = os.path.basename(path)[:-3]
         lines = open(path).read().split('\n')
+        all_names.update(TOKEN.findall('\n'.join(lines)))
         i = 0
         while i < len(lines):
             m = SIG.match(lines[i])
@@ -145,8 +170,10 @@ def find_params(lines, name, start):
 
 def scan_doc(path):
     """Return {bucket: set(names)} from section 03's buckets.  The read-live
-    bucket is a table whose second column holds the functions; the rest are
-    prose or bullet lists, where every backticked lowercase name counts."""
+    bucket is a table with one function per row, in the first column; only
+    that column counts, the later ones naming waits and callees that are not
+    bucket members.  The rest are prose or bullet lists, where every
+    backticked lowercase name counts."""
     text = open(path).read()
     start = text.index(BUCKET_LEADS[0][1])
     end = text.index('\n## ', start)
@@ -160,8 +187,8 @@ def scan_doc(path):
         for line in chunk.split('\n'):
             if key == 'read-live' and line.startswith('|'):
                 cells = line.split('|')
-                if len(cells) > 2 and '---' not in cells[2]:
-                    names.update(IDENT.findall(cells[2]))
+                if len(cells) > 1 and '---' not in cells[1]:
+                    names.update(IDENT.findall(cells[1]))
             elif key != 'read-live':
                 names.update(IDENT.findall(line))
         buckets[key] = names
