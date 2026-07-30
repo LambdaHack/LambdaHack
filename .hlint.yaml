@@ -56,12 +56,21 @@
 # Ignore some builtin hints
 # - ignore: {name: Use let}
 # - ignore: {name: Use const, within: SpecialModule} # Only within certain modules
-- ignore: {name: Reduce duplication}
-- ignore: {name: Use String}
+#
+# Every name below is one observed to fire: an unknown name is accepted in
+# silence, making a guessed one a no-op that reads like a rule. Four entries
+# inherited from `hlint --default` -- Reduce duplication, Use String, Use
+# LANGUAGE pragmas, Use sortOn -- suppressed nothing here and are gone; a hint
+# nothing has tripped is left enabled, as the `Use when` note below says. To
+# re-check, lint against a copy of this file with the ignores stripped and
+# confirm every entry here shows up among the families reported. The copy must
+# be complete, `-h` replacing this file rather than adding to it, and must end
+# in `.yaml`, hlint picking its parser by extension:
+#   grep -v '^- ignore' .hlint.yaml > SCRATCH.yaml && hlint . -h SCRATCH.yaml
+# The scoped entries name modules, hlint's `within` matching module names and
+# not paths.
 - ignore: {name: Use camelCase}
-- ignore: {name: Use LANGUAGE pragmas}
 - ignore: {name: Use tuple-section}
-- ignore: {name: Use sortOn}
 - ignore: {name: Redundant $, within: Game.LambdaHack.Client.UI.Frontend.Dom}
 - ignore: {name: "Use :", within: Main}
 - ignore: {name: "Monad law, left identity", within: Game.LambdaHack.Client.Bfs}
