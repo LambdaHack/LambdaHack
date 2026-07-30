@@ -21,7 +21,21 @@ deleted*
 >   the tool by name, so either that sentence is edited in the same commit
 >   or the tool stays;
 > - note the landing in `CHANGELOG.md` (the lines are drafted in §02), and
->   add to each record the outcome line it reserves;
+>   add to each record the outcome line it reserves.
+>   **? Open, and the author's to close:**
+>   does this commit add all of them, or does PR 0 append
+>   the two it resolves when it resolves them? PR 0 pins the apply dialog
+>   and lands the AS cases, which is what closes the post-mortem's "the
+>   apply-dialog one by nothing" and the abort-split record's "two are
+>   unpinned". *This commit*: one commit touches the records, and the status
+>   quo needs no decision. *PR 0*: the records stop under-claiming their own
+>   coverage the moment it lands, rather than staying wrong for two PRs, at
+>   the cost of a second commit into a frozen record — which is permitted,
+>   an outcome line per resolved claim being exactly the upkeep those
+>   records reserve, and not the forbidden updating of a post-mortem to
+>   match a later tree. Answer it before PR 0 lands, not here: this bullet
+>   is where it fires, PR 0 is where it binds, and if PR 0 goes first
+>   unanswered the default has been taken by omission;
 > - reword the inbound references, which no mechanical pass can see once
 >   the target is gone: the backticked `docs/leader-desync-migration.md`
 >   paths that command lists, and the pointers by *name* it does not —
@@ -319,6 +333,20 @@ go-ahead each time; the campaign ends at "branch with commits", never at
 > item selected, or the ground store, since every other path drops it
 > unforced or guards it (§03), which is why the years this code has stood
 > have produced no report. Until this is answered the table above stands.
+
+> **? Open, and the author's to close: are PR 0's two owed AS cases new
+> tests, or an added assertion inside AS4?** One of the two strengthens the
+> no-`resetPlayBack` invariant that AS4 already *enters* and neither AS4
+> nor AS7 observes (`docs/promptgetkey-hygiene.md`, its checklist), so it
+> may be an assertion in a case that exists rather than a case of its own.
+> The other is a genuine addition either way. *New tests*: the series
+> becomes AS1–AS15, §04.4's gate can enumerate it, and the two are
+> selectable in isolation. *Added assertion*: the series stays AS1–AS14,
+> AS4's own comment records what it now observes, and the count moves by
+> one rather than two — which changes PR 0's arithmetic above, so close
+> this before quoting those numbers anywhere. Until it is answered, §04.4's
+> row says "the whole AS series" and names no numbers, deliberately: naming
+> them would foreclose the second branch.
 
 Every commit below leaves the tree buildable, green and shippable, so
 there is no rollback procedure to write beyond reverting it. Steps 2 to 5
