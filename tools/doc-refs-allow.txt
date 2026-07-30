@@ -33,5 +33,6 @@ overlay-core.ts
 overlay-core.test.ts
 palette.ts
 run-wasm-game.mjs
+test/OverlayLayoutUnitTests.hs
 ts-src/src/generated/
 make gen-ts

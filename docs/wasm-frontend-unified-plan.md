@@ -38,9 +38,50 @@ game's `Content/Input.hs`, the engine's vs the game's
 `definition-src`'s `Content/RuleKind.hs`. Decisions *against* work,
 deferrals and their rationale are collected in Appendix B; non-gaps from
 the SDL2-vs-wasm audit in Appendix C; the GHCJS→JS-backend port
-investigation in Appendix A.
+investigation in Appendix A. Which half of this document a passage is in
+is answered by the ledger below, and by whether its item carries an
+outcome line.
 
-Contents: [Repo facts](#repo-facts-the-plan-builds-on) ·
+> **What this record is for, and what is frozen in it.** It is kept
+> indefinitely, for two readers: the one who wonders why the web stack reads
+> as it does, and the one who proposes a browser-side change and needs to
+> know whether it was already ruled out. Unlike the two pointman records it
+> is not frozen *yet*; unlike a migration plan it is never deleted. It
+> matures, and the ledger below says how far. The state is the genre, and
+> there is no second vocabulary:
+>
+> - an item with **no outcome line is live** — specification, or a premise
+>   the specification rests on. Its claims about *today's* tree are held to
+>   a plan's standard: a drifted count there is an error to fix, not a
+>   record that has aged.
+> - an item carrying **`Landed in <hash>` is frozen** — it describes the
+>   code as of that commit and is not maintained against later trees, bar
+>   one further outcome line per claim that resolves. Do not rewrite a
+>   landed item to match a later tree; that is the mistake this rule exists
+>   to prevent.
+>
+> **Landing an item** appends one outcome line to that item's body and
+> changes *nothing else* there. A claim the landing falsified is corrected
+> in a separate commit, so review can tell a relocation from a correction —
+> which commit `a7e825c2d` could not, having rewritten R2 from "Add a job
+> to…" into "Partly landed, in…" and bent a factual claim in the same diff.
+> An item that proposes an artifact may take its outcome line **only once
+> its entries in `tools/doc-refs-allow.txt` can be deleted**; that file's
+> comment already asks for exactly that deletion, and gating on it makes
+> "landed" a checked claim rather than a declared one. The gate binds the
+> eleven artifacts listed there and nothing else — an item proposing no new
+> file (1.3, 1.4, R5) is unchecked, and its outcome line rests on the same
+> reading as any other claim here.
+>
+> When the last item lands, every row reads landed, the three campaign-live
+> sections freeze with them, this callout becomes one line saying the
+> specification landed in full, and the document stops being restamped —
+> becoming the same genre `docs/leader-desync-bug.md` already is. It is
+> never deleted, because what gets consumed is the state, not the file.
+
+## Ledger — every item's state
+
+[Repo facts](#repo-facts-the-plan-builds-on) ·
 [Ground rules](#ground-rules) ·
 [Build & verification loop](#build--verification-loop) ·
 [Phase 0 — shared foundations](#phase-0--shared-foundations) ·
@@ -55,31 +96,43 @@ Appendices [A](#appendix-a--investigation-porting-the-ghcjs-target-to-ghcs-in-tr
 / [B](#appendix-b--decisions-against-and-deferrals)
 / [C](#appendix-c--verified-non-gaps-sdl2-vs-wasm-audit-record)
 
-### Work map
+Sections holding no items are stated once, here. **Frozen from the start:**
+Ground rules, Out of scope, and Appendices A, B and C. **Live until the last
+item lands**, because the work falsifies them: Repo facts, Build &
+verification loop, Sequencing. Everything else is per item:
 
-| Item | Deliverable | Size | Depends on | Status |
+| § | delivers | size | depends on | state |
 |---|---|---|---|---|
-| 0.0 | AltGraph fixes (keys, mouse/wheel); highlight-outline rule | tiny | — | todo |
-| 0.1 | `InputDecision` shared module; sync `lhKey` | small | 0.3 baseline | todo |
-| 0.2 | `CellStyle` + TS-table/fixture generator | medium | — | todo |
-| 0.3 | FFI-coverage battery (baseline before 0.1, then per-commit) | ongoing | — | todo |
-| 1.1 | crosshair cursor (CSS keyword; then generated SVG cursor) | trivial | 0.2 for the final form | todo |
-| 1.2 | working `Ctrl+P` screenshots | small–medium | 0.2 helps | todo |
-| 1.3 | fullscreen toggle with scaling | small | — | todo |
-| 1.4 | banner/title truthfulness | trivial, recurring | feature landings | todo |
-| 1.5 | `allFontsScale` honored in browser | small | 2.2's startup call (or a precursor); R4 for player control | todo |
-| 2.1 | `OverlayLayout` extraction + `Sdl.hs` on it | medium–large | determinism goldens (native harness) | todo |
-| 2.2 | browser canvas overlay renderer + font wiring | medium | 2.1, 0.2 | todo |
-| 2.3 | overlay transport over JSFFI | medium | 2.1, 2.2 | todo |
-| 2.4 | multi-font capability flip | tiny diff, big review | 2.1–2.3; determinism goldens | todo |
-| 2.5 | post-flip QA | small | 2.4 | todo |
-| 3.1 | `lhStart` reads WASI argv | small (+spike) | — | todo |
-| 3.2 | Node driver for the game reactor | small | 3.1 | todo |
-| 3.3 | `nodeBench*`/`nodeDeployedBench` targets | small | 3.2 | todo |
-
-R1–R6 (save robustness, CI, the JS-backend decision, URL parameters,
-performance, screenshot coherence) and the adopted multi-frontend
-practices are ongoing or unscheduled tracks described after the phases.
+| 0.0 | AltGraph fixes (keys, mouse/wheel); highlight-outline rule | tiny | — | live |
+| 0.1 | `InputDecision` shared module; sync `lhKey` | small | 0.3 baseline | live |
+| 0.2 | `CellStyle` + TS-table/fixture generator | medium | — | live |
+| 0.3 | FFI-coverage battery (baseline before 0.1, then per-commit) | ongoing | — | live |
+| 1.1 | crosshair cursor (CSS keyword; then generated SVG cursor) | trivial | 0.2 for the final form | live |
+| 1.2 | working `Ctrl+P` screenshots | small–medium | 0.2 helps | live |
+| 1.3 | fullscreen toggle with scaling | small | — | live |
+| 1.4 | banner/title truthfulness | trivial, recurring | feature landings | live |
+| 1.5 | `allFontsScale` honored in browser | small | 2.2's startup call (or a precursor); R4 for player control | live |
+| 2.1 | `OverlayLayout` extraction + `Sdl.hs` on it | medium–large | determinism goldens (native harness) | live |
+| 2.2 | browser canvas overlay renderer + font wiring | medium | 2.1, 0.2 | live |
+| 2.3 | overlay transport over JSFFI | medium | 2.1, 2.2 | live |
+| 2.4 | multi-font capability flip | tiny diff, big review | 2.1–2.3; determinism goldens | live |
+| 2.5 | post-flip QA | small | 2.4 | live |
+| 3.1 | `lhStart` reads WASI argv | small (+spike) | — | live |
+| 3.2 | Node driver for the game reactor | small | 3.1 | live |
+| 3.3 | `nodeBench*`/`nodeDeployedBench` targets | small | 3.2 | live |
+| R1 | save robustness: staging keys plus a generation pointer | medium | 3.2, for the lag re-measurement | live |
+| R2 | browser-and-frontend CI | ongoing | grows per phase | live |
+| R3 | retire GHCJS support | one commit | 2.5 (parity) | live |
+| R4 | URL-parameter options | small | 3.1 | live |
+| R5 | performance pass | exploratory | 2.5, 3.3 | live |
+| R6 | screenshot/overlay coherence | small | 1.2, 2.2 | live |
+| capability constants | named constants in place of behavioral CPP | moderate churn | — | live |
+| sum-typed selection | one frontend field replacing four `Bool`s | mechanical | before R4 | live |
+| RawFrontend contract | haddock contract, tasty harness, add-a-frontend checklist | medium | input side with 0.1; rest with 0.3 | live |
+| determinism goldens | fixed-seed final-state digests | medium | native harness before 2.1 | live |
+| frontend CI smokes | xvfb SDL, pty ANSI, a short nodeBench run | small each | 3.2 for the wasm one | live |
+| explicit widths | `punindex`, never the `Enum` instance, in frontend code | trivial | fix the one live violation with 0.2 | live |
+| functional core | the standing review bar for frontend modules | — | — | live |
 
 ## Repo facts the plan builds on
 
@@ -163,8 +216,9 @@ practices are ongoing or unscheduled tracks described after the phases.
 - Every test suite, old or new, runs in CI — a test that only runs on a
   developer's machine is treated as not existing. Each new test surface
   this plan introduces lands in CI in the same commit that introduces it;
-  the one pre-existing gap, doctests, is closed: they run as their own
-  job in the hand-written workflow, following CLAUDE.md's recipe.
+  the one pre-existing gap was doctests.
+  *Landed in `a7e825c2d`: they run as their own job in the hand-written
+  workflow, following CLAUDE.md's recipe.*
 - Follow the module-as-interface convention: new shared modules go under
   `engine-src/Game/LambdaHack/Client/UI/Frontend/` and are reached only
   via the `Frontend` subtree's existing interfaces.
@@ -822,11 +876,9 @@ part and bootstrapped from scratch on every run today. The
 frontend-CI-matrix practice (below) widens this with xvfb SDL and pty
 ANSI smokes.
 
-**Completeness requirement: everything runs in CI.** Today's inventory:
-the tasty suite and haddock run via the generated haskell-ci workflow;
-hlint, stylish-haskell, the `make test-gha` playtests, the doctests,
-`make test-ts` and `make test-wasm` via the hand-written one, one job
-each — six there. The doctest gap
+**Completeness requirement: everything runs in CI.** What runs there today
+is CLAUDE.md's to state, not this document's; a third copy of that
+inventory is what drifted. The doctest gap
 is closed the second of the two ways weighed here — a job following
 CLAUDE.md's recipe — because that recipe is known to work here, a run
 per library with `--with-repl=doctest`; haskell-ci's own doctest support
@@ -1064,16 +1116,16 @@ deliberate exclusions with their rationale: Appendix B.
     (Phase 3 may run before/alongside Phases 1-2 — it's independent, and
     doing it early unlocks the wasm-vs-native ratio and R1's save-lag
     measurement via 3.2's instrumented stub)
-R2 CI jobs — test-ts, test-wasm and doctest have landed; grow them per
-    phase (0.3's battery once it exists; a short nodeBench smoke run
-    joins after 3.3; the xvfb SDL + pty ANSI smokes complete the matrix)
+R2 CI jobs — grow them per phase (0.3's battery once it exists; a short
+    nodeBench smoke run joins after 3.3; the xvfb SDL + pty ANSI smokes
+    complete the matrix)
 0.3 FFI coverage — after the baseline, incremental with every
     FFI-touching commit
 capability constants / sum-typed selection — standalone refactors, any
     time; the sum type before R4 (URL params parse into it)
 RawFrontend contract — input-side cases with 0.1; the rest with 0.3
 determinism goldens — native harness before 2.1; cross-backend under
-    R2's test-wasm job, which has landed
+    R2's test-wasm job
 R1 / R4 — independent; R4 becomes loader-only after 3.1
 R3 GHCJS rip-out — one commit, after 2.5 (parity); Dom.hs/JSFile.hs stay
     as documented-dead examples
