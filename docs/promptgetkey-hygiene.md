@@ -18,7 +18,7 @@ it.
 
 > design: **functional core / imperative shell** · planned strictly
 > *after* the live-read design · file:line citations were verified against
-> the tree at commit **2b20a8284** (2026-07-29) — the newest commit
+> the tree at commit **2b20a8284** (2026-07-30) — the newest commit
 > touching any file they cite, so the verification stands until one of
 > those files moves. The tests they cite are on master, while this design
 > is the parked part; the citation pass proves a cited
@@ -43,8 +43,10 @@ it.
 >
 > - §01 · the checklist — **pinned** on master by the AS series
 >   (`test/FrameMUnitTests.hs`), which must stay green across both
->   refactors; seven of its eight bullets, that is — the special-event one
->   is entered by no test, as the bullet itself now records.
+>   refactors; six of its eight bullets, that is. Two are unpinned, each in
+>   its own way, and each bullet now records which: the special-event one,
+>   which no AS case enters, and the no-`resetPlayBack` one, which two of
+>   them enter and none observes.
 > - the split itself — **not applied**; the work list is
 >   `docs/leader-desync-migration.md`.
 
@@ -57,7 +59,7 @@ it.
 > invalidates threaded copies, and naming it would only decorate the bug.
 > What the abort-split may rely on from live-read: all leader reads are
 > live; what it must preserve: `promptGetKey`'s exact observable branch
-> behavior (the §01 checklist), which the FrameM contract tests pin.
+> behaviour (the §01 checklist), which the FrameM contract tests pin.
 
 ## 01 · The branch behaviour to preserve, and the split that would tidy it
 
@@ -102,15 +104,22 @@ sketched below; the invariants bind whatever replaces it.
   is the kind of implicit ordering a later refactor would happily break.
 - The "no macro" branch must *not* call `resetPlayBack` — today it leaves the
   macro stack untouched; wiping it there would be a semantic change hiding as a
-  simplification.
+  simplification. **Entered by AS4 and AS7, observed by neither**: both run on
+  `partyCliState`, whose `keyPending` and macro stack are empty already, and
+  neither reads macro state after the call — so a split that wiped it here
+  would keep the suite green. One of the two bullets whose preservation the
+  split cannot be checked for.
 - The "no macro" branch keeps its special-event logic: on `dm /= ColorFull`,
   `resetPressedKeys` unless the faction is under AI (shown as
-  `specialEventKeyReset` in the shell below). **The one bullet here that no
-  test pins** — every AS case reads with `ColorFull`, so nothing in the
-  suite enters this branch, and it is the only invariant on this list whose
-  preservation the split cannot be checked for. The migration document's
-  §04 step 1 therefore asks for the missing case before the extraction, not
-  after.
+  `specialEventKeyReset` in the shell below). **No AS case enters this
+  branch** — every one of them reads with `ColorFull`. The suite is not
+  wholly innocent of it: `test/Spec.hs`'s integration run reaches
+  `promptGetKey` with `ColorBW` down the shutdown path (`UpdKillExit` →
+  `WatchUpdAtomicM.hs:597`'s `displayMore ColorBW "Done."` →
+  `SlideshowM.hs:421`), where `gunderAI` suppresses the effect — entered and
+  unobserved, which pins nothing. The other unchecked bullet, and the reason
+  the migration document's §04 step 1 asks for the missing case before the
+  extraction rather than after.
 - The F1-help exemption (`keyPending /= KeyMacro [F1]` keeps a help-displaying
   macro alive through alarming messages) is part of the *interrupt decision*
   and moves into the pure `macroStep` with it (pinned by AS10).
@@ -157,6 +166,17 @@ the shared, fixture-tested `InputDecision` module the plan is establishing
 > that creates the module lands. The decision function is the point; its
 > address is not, and waiting on a different plan for an address would be
 > the wrong dependency.
+>
+> One thing to settle when that address is chosen, and not before: the
+> signature below takes a `KeyMacroFrame`, which lives in
+> `Client.UI.SessionUI` (`SessionUI.hs:124`), which imports
+> `Client.UI.Frontend` (`SessionUI.hs:28`). A home under
+> `Client/UI/Frontend/` therefore sits downstream of the very interface the
+> frontends are reached through, and `FrameM` importing it directly reaches
+> past `Client.UI.Frontend` into that directory, against `CLAUDE.md`'s
+> module-as-interface convention. The `FrameM` fallback has neither
+> problem, so "entirely internal to `FrameM` plus one new pure module"
+> below is exact only for that home.
 
 **Functional core** — `Client/UI/Frontend/InputDecision.hs`
 
@@ -209,7 +229,7 @@ promptGetKey dm ovs onBlank frontKeyKeys = do
                      <$> getsSession shistory)
                 <*> pure frontKeyKeys
                 <*> getsSession smacroFrame
-  case step of
+  km <- case step of
     VoiceKey k ks -> do popMacroKey ks; msgAdd MsgMacroOperation ...; return k
     _ -> do
       case step of
@@ -226,6 +246,10 @@ promptGetKey dm ovs onBlank frontKeyKeys = do
         sess { srunning = Nothing, sxhairGoTo = Nothing
              , sdisplayNeeded = False, sturnDisplayed = True }
       connFrontendFrontKey frontKeyKeys frame
+  -- Reached from BOTH arms, unchanged and unmoved (checklist, last but
+  -- one bullet); the only write in this function that is unconditional:
+  when sreqQueried $ ... addToMacro ...
+  return km
 ```
 
 Two names in that sketch are proposals, not existing code:
@@ -238,9 +262,15 @@ decisions; grep will not find either until the split is done.
 One further liberty in the same sketch: the real body binds `lidV <-
 viewedLevelUI` as its *first* line, ahead of the branch, so the voicing
 path computes it and discards it; the sketch defers the read into the
-branch that uses it. Harmless, `viewedLevelUI` being a getter — but said
-out loud, because in a document about branch-exactness an unremarked move
-across a branch is exactly what a reader should distrust.
+branch that uses it. Harmless — but not because `viewedLevelUI` is a
+getter, which is the wrong property to check: it reads `sleader`, through
+`getArenaUI`, and the deferred read now happens *after*
+`abortMacroPlayback` has written it. What makes the move safe is
+`restoreLeaderFromRun`'s own guard — it switches only to a run leader that
+`memActor` still finds on `getArenaUI`'s arena (`FrameM.hs:226-229`, pinned
+by AS13) — so the arena, and hence `lidV`, is the same on both sides of the
+write. Said out loud, because in a document about branch-exactness an
+unremarked move across a write is exactly what a reader should distrust.
 
 The end state is worth stating plainly: `promptGetKey` still mutates. The
 macro-frame advance, the voicing message, `recordHistory`, the common
@@ -265,14 +295,17 @@ audit step then pins the enumeration in code.
 `promptGetKey` is called from exactly two engine modules,
 `Client/UI.hs:194` and `SlideshowM.hs:421`, and its type does not change,
 so the abort-split is entirely internal to `FrameM` plus one new pure
-module. Both call sites are already exercised: the AS contract series
-drives `promptGetKey` directly from `test/FrameMUnitTests.hs`, and the
-store-dialog ESC test (`test/HandleHumanLocalMUnitTests.hs`) reaches it
-through the `SlideshowM` site. The pure `macroStep` slots into the
-existing test style directly: `test/SessionUIMock.hs` already simulates
-macro-frame transitions (`unwindMacros`), so play/abort/no-macro decision
-tables live next to established tests rather than requiring new harness
-machinery.
+module. One of the two call sites is exercised: the store-dialog ESC test
+(`test/HandleHumanLocalMUnitTests.hs`) reaches `promptGetKey` through the
+`SlideshowM` site, while the AS contract series calls the primitive
+directly from `test/FrameMUnitTests.hs` and so exercises neither site — it
+pins the primitive, which is what the split changes. `Client/UI.hs:194`,
+inside `stepQueryUI`, is entered by no unit test at all; nothing in the
+split reaches it, but a claim of coverage there would be wrong. The pure
+`macroStep` slots into the existing test style directly:
+`test/SessionUIMock.hs` already simulates macro-frame transitions
+(`unwindMacros`), so play/abort/no-macro decision tables live next to
+established tests rather than requiring new harness machinery.
 
 ### What would falsify this
 

@@ -13,7 +13,7 @@ unrepresentable.
 > commit **4a6eca154** · engine-src/…/**HandleHelperM.hs** ·
 > ✓ reproduced & fix verified · GHC 9.12.4 · design: **live-read** — one
 > source of truth. File:line citations were verified against the tree at
-> commit **2b20a8284** (2026-07-29) — the newest commit touching any file
+> commit **2b20a8284** (2026-07-30) — the newest commit touching any file
 > they cite, so the verification stands until one of those files moves,
 > whatever else lands. The fixtures and tests they cite are on master,
 > while the designs below are the parked part; the citation pass proves a
@@ -29,16 +29,20 @@ unrepresentable.
 > singleton state, and wants the analysis rather than the patch.
 >
 > §§01–09 describe the code *as of the stamped commit* and are not
-> maintained against later trees. Once the live-read design lands,
-> `promptGetKey` will no longer restore the pointman where §03 says it
-> does, and that is as it should be: a post-mortem describes a past state,
-> and the stamp says which one. The only upkeep those sections keep is an
-> outcome line per claim that resolves:
+> maintained against later trees. Once the live-read design lands, §03's
+> fourth writer still fires exactly where §03 says it does; what stops
+> being true is the clause after it, "entirely invisible to `transition`'s
+> captured `leader`", there being no captured leader left. The write
+> itself moves only with the abort-split, and then verbatim, into
+> `abortMacroPlayback`. Both are as it should be: a post-mortem describes
+> a past state, and the stamp says which one. The only upkeep those
+> sections keep is an outcome line per claim that resolves:
 >
 > - §07–§08 · the reproducer and its verification — **landed** on master,
 >   as the LR series and its harness (`3453b1777` through `8b5703e87`).
-> - §09 · the two live sibling bugs — **open**, pinned by tests; put the
->   fixing commit here when they close.
+> - §09 · the four live sibling bugs — **open**; three are pinned by tests
+>   (the two fling ones and the `getFull` quantity crash), the apply-dialog
+>   one by nothing. Put the fixing commit here when they close.
 > - §10–§11 · the live-read design and its performance argument — **not
 >   applied**; the work list is `docs/leader-desync-migration.md`, which is
 >   written to be deleted, unlike this file.
@@ -86,7 +90,7 @@ half is history, the live half is specification, per the callout above:
 | 04–05 | the crash timeline, and the rarity arithmetic | frozen |
 | 06 | the questions the report raised | frozen |
 | 07–08 | the keypress-level reproducer, and the one-line read that flips it | frozen · **landed** |
-| 09 | the diagnosis — the pointman is denormalised — and two live siblings | frozen · siblings **open** |
+| 09 | the diagnosis — the pointman is denormalized — and four live siblings | frozen · siblings **open** |
 | 10 | the fix: one accessor, no threaded identity, a witness for existence, and the behavioural rule that follows | **live** · not applied |
 | 11 | the performance argument, and the baseline a later comparison repeats | **live**, bar the measurement |
 | 12–13 | moved to `docs/leader-desync-migration.md`; the stub at the end says why the numbers stay behind | — |
@@ -219,9 +223,14 @@ next-in-cycle candidate — is what turns a silent no-op into a crash.*
 Even when the desync happens, `A-Tab` usually picks some *other* actor,
 succeeds, and `recCall` silently re-syncs — the bug self-heals with no
 visible symptom. The crash needs the restored `runLeader` to be *precisely*
-the next-in-cycle candidate: roughly a 1-in-(party-members-on-level) chance,
-layered on top of the run + macro + dialog + interrupt timing. That, far more
-than platform, is why days of normal play never hit it.
+the next-in-cycle candidate; since `partyAfterLeader` drops the pivot, the
+candidates are the *other* members on the level, so the coincidence is
+1-in-(*m*−1), layered on top of the run + macro + dialog + interrupt timing.
+Self-healing therefore needs three or more members on the level: with two,
+as in §04's timeline and the §07 reproducer, the sole candidate *is* the
+restored leader and the crash is certain — which is why that reproducer is
+deterministic rather than flaky. That, far more than platform, is why days
+of normal play never hit it.
 
 ## 06 · Answers to the specific questions
 
@@ -309,7 +318,7 @@ pointmanCycleLevel leaderStale verbose direction = do
 > **✗ Ruled out as a landing path.** Neither the one-liner above nor its
 > sibling (have `restoreLeaderFromRun` skip the restore while a dialog is
 > in progress and `sleader` is still a live party member) is to be merged
-> on its own: each is one more manual re-sync of the denormalised copy —
+> on its own: each is one more manual re-sync of the denormalized copy —
 > the same move §09 shows has already failed three times. The one-liner's
 > role is verification only: it proves the reproducer flips (above) and
 > re-verifies the [LR-flip] expectations before the real fix lands. The
@@ -328,7 +337,7 @@ cabal test
 ## 09 · The deeper question: which decision was faulty
 
 The one-line fixes in §08 work, but they are the same move that has been made
-three times before — a manual re-synchronisation of a cached copy against the
+three times before — a manual re-synchronization of a cached copy against the
 real value:
 
 - `8608d6f9c` added `recCall`'s re-read of `sleader` after each keypress in
@@ -340,7 +349,7 @@ real value:
 Each patched one call site and left the next one waiting. That is the
 signature of a **structural** fault, not a local one.
 
-### The fault: the pointman is denormalised
+### The fault: the pointman is denormalized
 
 "Who is the pointman" is stored in two places at once. The authoritative home
 is `sleader` in `StateClient`, written from eight sites — `pickLeader`, the
@@ -366,7 +375,7 @@ indistinguishable.
 > deaths reassign it). The fault is refining the `Maybe` on the volatile axis
 > (identity) instead of the stable one (existence).
 
-### Two more live bugs of the same family — the fling dialog
+### Four more live bugs of the same family — the item dialogs
 
 The stale copy is not only a crash risk; the same root cause is live today:
 
@@ -388,9 +397,41 @@ fling") or silently fling Y's copy of an item that only X's range check
 approved. Not a crash; quiet incoherence with the same root cause.
 (`alterDirHuman` / `pickPoint` spans an interactive wait the same way.)
 
-Under the live-read design (§10) all three read the live pointman at each
-evaluation, so the whole family collapses uniformly — evidence that the
-fix targets the disease, not the symptom.
+**(c) The apply dialog judges items for the actor it opened on.** The same
+shape as (a), one dialog over: `chooseItemApplyHuman`'s `psuit` calls
+`permittedApplyClient leader` *inside* the action
+(`HandleHumanLocalM.hs:579-585`) and hands it to `getGroupItem leader psuit`
+(`:586`), so `transition` re-runs the action per keypress but always for the
+entry actor, while the store permits switching. It differs from (a) exactly
+where the fix does: (a)'s call sits outside the closure and has to move in,
+this one is already inside and needs the *actor* read live — so a conversion
+that puts the read at the top of the body leaves it standing. Unlike (a) and
+(b) it is pinned by no test; no test enters the apply dialog at all.
+
+**(d) The dialog can return a quantity read from the wrong actor's bag,
+and that one crashes.** `getFull` closes a bag accessor over the entry
+actor's body (`InventoryM.hs:264-265`), runs the whole dialog, and then
+looks the chosen items up in *that* bag with `EM.!`
+(`InventoryM.hs:290-292`). Switch the pointman mid-dialog and the choice
+comes from the new actor's store, so the lookup misses: forcing the
+quantity dies with `IntMap.!: key 117 is not an element of the map`.
+Pinned by `test/InventoryMUnitTests.hs`, which drives a scripted Tab and
+Return through the real dialog and asserts that message. It is the odd one
+out twice over: the failure is a crash rather than quiet incoherence, and
+what went stale is not the identity but a value *derived* from it before
+the wait. Nobody has met it in play because the two single-item callers
+drop the quantity unforced — `getGroupItem` matches `[(iid, _)]` — and the
+move family's single-item path guards the same case with `EM.lookup` and a
+comment naming it, "selection from another actor"
+(`HandleHumanGlobalM.hs:775-777`); `moveItems`, reached with several items
+or from the ground, is what forces the thunk. That guard is worth reading
+twice: the author met this class here and defended one site of it.
+
+Under the live-read design (§10) every one of these reads the live
+pointman at each evaluation, so the family collapses uniformly — bar (d),
+which collapses only if the bag moves down with the read, which is what
+§10.3's placement rule is for. Either way, evidence that the fix targets
+the disease, not the symptom.
 
 ## 10 · The general fix (the live-read design): one source of truth
 
@@ -459,17 +500,20 @@ getLeaderUI _witness = do
     -- release build (@-fno-ignore-asserts@ is unconditional) then names
     -- the faction whose pointman went missing
 
--- | For interactions that outlive a single step (dialogs, runs, aiming):
--- the leader may have died or been reassigned meanwhile, so the caller
--- handles Nothing by exiting the interaction. Not defensive -- correct.
+-- | For entry points that must fail friendly when nobody is designated,
+-- and for a future in which an interaction can outlive the check that
+-- minted its witness: the leader may have died or been reassigned
+-- meanwhile, so the caller handles Nothing by exiting the interaction.
+-- Not defensive -- correct.
 getLeaderUIMaybe :: MonadClientUI m => m (Maybe ActorId)
 getLeaderUIMaybe = getsClient sleader
 ```
 
 The accessor's totality is architectural, not hopeful: `loopUI` is strictly
 sequential — `receiveResponse` then `handleResponse`, one message at a
-time (`Client/LoopM.hs:153-154`, and again at
-`Client/LoopM.hs:188-190`) — so while a dialog blocks inside
+time (`Client/LoopM.hs:188-190`; `loopAI` is shaped identically at
+`Client/LoopM.hs:153-154`, but no part of this argument rests on the AI
+side) — so while a dialog blocks inside
 `promptGetKey`, no `RespUpdAtomic` (hence no death, no server-side leader
 reassignment) can be processed, and the only mid-dialog `sleader` writers
 are client-local (`pickLeader`, `restoreLeaderFromRun`), both setting
@@ -591,18 +635,34 @@ instead — the ruling under the table. Parameters that mean "some actor" (not
 > goes is a second decision, and it is the one that actually fixes the
 > bug. The read must sit **after** every interactive wait that precedes
 > the use — a read placed at the top of the body and bound to a local is
-> the same stale copy under a new name. Two placements, each measured
-> against the battery rather than reasoned about:
+> the same stale copy under a new name. Three placements, the first and
+> the last measured against the battery rather than reasoned about, the
+> middle one measurable by nothing that exists yet:
 >
-> - **`psuitReq` must be called from inside `psuit`.** Dropping its
->   `ActorId` and leaving `chooseItemProjectHuman`'s single call
->   (`HandleHumanLocalM.hs:367`) where it is still bakes a closure over
+> - **`psuitReq` must also be *called* from inside `psuit`** — the
+>   placement is its caller's, not its own, `psuitReq`'s body
+>   (`HandleHumanLocalM.hs:510-527`) waiting nowhere and so reading at the
+>   top like anything else. Dropping its
+>   `ActorId` and leaving `chooseItemProjectHuman`'s entry call
+>   (`HandleHumanLocalM.hs:367`) as the only one still bakes a closure over
 >   the entry actor's body and position, because the closure, not the
 >   call, is what the dialog re-evaluates; sibling bug (a) would survive
->   the conversion intact. The call belongs in the `psuit` action
+>   the conversion intact. A call belongs in the `psuit` action
 >   (`HandleHumanLocalM.hs:389`), which `transition` re-runs on every
->   keypress. Verified: with the call moved there, the fling-dialog test
->   flips exactly as its comment records.
+>   keypress. The word is *also*, not *instead*: the entry call feeds two
+>   consumers that have to stay ahead of the dialog — the invalid-aim
+>   failure (`Left err -> failMsg err`, `HandleHumanLocalM.hs:370`) and the
+>   `sitemSel` fast path (`:381`) — and executing "move the call" literally
+>   deletes both. What the spike measured is the wholesale relocation, and
+>   it flips the fling-dialog test exactly as its comment records; the
+>   landing form keeps those two consumers on top of that.
+> - **The apply dialog needs the read, not the call, moved.**
+>   `chooseItemApplyHuman`'s `psuit` already calls `permittedApplyClient
+>   leader` inside the action (`HandleHumanLocalM.hs:579-585`), so §09's
+>   sibling (c) survives any relocation: what must become live is the
+>   *actor*, inside that action. Not measured against the battery, no test
+>   entering the apply dialog — which is the gap the migration document's
+>   §02 step 6 closes.
 > - **`pickPoint` must read after the key, not before it.** Its wait is
 >   `getConfirms` (`HandleHumanGlobalM.hs:1356`) and the leader's last use
 >   is the `shift (bpos b)` in the body's final line
@@ -610,8 +670,29 @@ instead — the ruling under the table. Parameters that mean "some actor" (not
 >   two, not at the top where the body binds `b` today. Verified the same
 >   way, against the `alterDir` test.
 >
-> The rule generalizes: for each converted function, find the wait, then
-> put the read below it.
+> The rule generalizes, in three parts. **One:** for each converted
+> function that waits, find the wait and put the read below it; where the
+> value is used inside a callback the dialog loop re-invokes, "below the
+> wait" means inside the callback, since that is what re-runs. **Two, and
+> it is the part a reading of this design would miss:** what moves is not
+> only the read. Wherever a body uses the identity *before* a wait to
+> derive something it uses *after* — a body, a store bag, a skill, a
+> calmness flag — that derivation is as stale as the identity was, and
+> moves down with the read; "move the read" is the special case where the
+> derived value is the identity itself. Live-read does not fix such a site
+> on its own, and the compiler will not point at one. The migration
+> document's §03 names the instances its reading found and marks them in
+> the table's last column; the sharpest of them is §09's sibling (d),
+> where the derived value is a store bag and the stale read is an `EM.!`,
+> so the site does not merely misreport — it dies, as
+> `test/InventoryMUnitTests.hs` now demonstrates. **Three:** a converted
+> function with no wait of its own — `chooseItemHuman` and
+> `chooseItemMenuHuman`, which never use
+> the identity again, `projectHuman` and `applyHuman`, whose only wait is
+> inside the pinned `projectItem`/`applyItem` — has nothing to place: it
+> converts to pure witness-passing, or reads at the top, and the rule has
+> no work to do. Reading part one as universal is what would send an
+> implementer hunting for a wait that is not there.
 
 Scope, counted rather than estimated: the `CmdLeader`-family boundary in
 `HandleHumanM` sheds an argument in 29 cases (14 via `weaveLeader`, 12
@@ -636,7 +717,8 @@ itemMenuHuman witness cmdSemInCxtOfKM`; `chooseItemHuman`
 
 The `CmdLeader` boundary in `cmdSemantics` stays the one place that turns
 `Maybe ActorId` into a friendly failure. It stops passing the `ActorId`
-down; what it hands downstream instead is the zero-width witness — kept
+down; what it hands downstream instead is the witness — one argument word,
+negligible rather than free, as §11 measures it — kept
 *abstract*, so the type-checker enforces both that commands hold a proof
 of existence and where such proofs come from:
 
@@ -651,7 +733,7 @@ module ...MonadClientUI
   ) where
 
 -- | A proof that a pointman exists, minted once per command.
--- Zero-width: carries existence, NOT identity, so it cannot go stale.
+-- Carries existence, NOT identity, so it cannot go stale.
 data HasPointman = HasPointman
 
 -- | The only way to obtain the witness: check the source of truth.
@@ -860,9 +942,13 @@ No regression is expected, for three grounded reasons.
 > `getLeaderUI` call *inside* a tight per-item/per-actor inner loop that runs
 > each frame — the rule is "don't cache identity *across* interactive steps,"
 > not "re-read inside every micro-loop"; still bind it once per step and use
-> that binding. And the `HasPointman` witness is erased at compile time — zero
-> runtime cost. The existing `bench*` targets won't measure any of this because
-> they don't exercise the code.
+> that binding. And the `HasPointman` witness costs one argument word
+> pointing at a single static closure — no allocation, no per-call work, and
+> GHC drops it outright wherever the callee ignores it, which after inlining
+> is everywhere it matters: negligible rather than erased, the nullary data
+> type of 4 above being an ordinary lifted value behind the abstract class
+> and the `CmdLeader` field. The existing `bench*` targets won't measure any
+> of this because they don't exercise the code.
 
 > **✗ Ruled out: the menu-navigation microbenchmark.** The honest check on
 > the changed layer would be a microbenchmark driving dialog navigation,
@@ -938,11 +1024,15 @@ be deleted when the work lands. What stays here is the reasoning, which
 is not.
 
 The numbering keeps its gap deliberately. `§13` and the range "sections
-09-13" are cited from shipped code — `test/FrameMUnitTests.hs` and
-`test/HandleHelperMUnitTests.hs` point at sections of this document by
-number — so renumbering the survivors would break references that no
-checker can see. A reader arriving at either number lands here and is
-redirected. §13 in particular was the plan for full-dialog coverage, which
+09-13" are cited from shipped code — five test modules point at sections of
+this document by number: `test/FrameMUnitTests.hs` (§03, §04, §13),
+`test/HandleHelperMUnitTests.hs` (§07, §10, "sections 09-13"),
+`test/HandleHumanGlobalMUnitTests.hs` (§04, §09),
+`test/HandleHumanLocalMUnitTests.hs` (§02, §09) and
+`test/InventoryMUnitTests.hs` (§10.3) — so renumbering the survivors would
+break references that no checker can see. A reader arriving
+at either number lands here and is redirected. §13 in particular was the
+plan for full-dialog coverage, which
 is why `test/FrameMUnitTests.hs` cites it from AS7; that plan has since
 been carried out, so what it promised now exists as the end-to-end fling
 and `alterDir` tests, and the harness facts it turned up are in
