@@ -114,6 +114,44 @@ outcome line.
 > and a frozen record still restamps when the files it cites move, as the
 > pointman records do.
 
+## How this lands
+
+The ledger says what the items are and the blocks say how to execute one;
+this says how they reach master, because the review is the scarce input and
+the fleet cannot decide it.
+
+**One review unit per ledger item, not per agent and not one for the
+campaign.** A single pull request carrying Phase 0 through 2 would be
+unreadable, and one per agent would make the bottleneck worse rather than
+better. `gh` is unauthenticated here, so the unit is a branch off local
+master read with `git log -p master..<branch>`; a GitHub PR exists only
+after an authorized push.
+
+**3.1 goes first, as a shakedown.** It is the smallest item whose
+correctness a machine can settle end to end, so it proves the whole ritual
+— the wasm loop, the gates, the outcome line, the ledger flip, the
+allowlist deletion, the restamp — before any item whose review needs
+judgment. Phase 3 then continues in parallel with Phases 0-2, sharing no
+file with them.
+
+**One item is reviewed entirely alone: the `Sdl.hs` drawing loop** (2.1's
+refactor together with 0.2's `CellStyle` adoption, which rewrite abutting
+regions of one hot loop). It rewrites shipped native rendering; SDL2 is
+exercised in CI nowhere beyond the init-and-quit backdoor; expensive
+assertions are off in every workflow; and its real gate is display-bound.
+Its branch carries `Sdl.hs` and nothing else, and its citation repair is a
+separate commit — 83 of this document's 108 `Sdl.hs` citations sit in the
+region it rewrites, and they will all still resolve.
+
+**2.4 splits**, so that each half gets the review it needs: the capability
+mechanism lands early, provably behaviour-preserving with
+`Wasm.supportsMultiFont = False`, and the one-boolean flip is reviewed
+alone as a product decision. Unsplit it would arrive as mechanism plus
+risk in one diff.
+
+**Never autonomously:** push, open or force-update a pull request, or take
+an outcome line on a partial landing.
+
 ## Ledger — every item's state
 
 [Repo facts](#repo-facts-the-plan-builds-on) ·
