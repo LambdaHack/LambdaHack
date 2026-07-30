@@ -25,7 +25,7 @@ Node benchmark tooling port (Phase 3).** Related goals (R1–R6) and adopted
 multi-frontend practices follow the phases.
 
 File:line references were verified against the tree at commit
-`ce0fad199` (2026-07-30), then machine-checked — re-run
+`4d762337b` (2026-07-30), then machine-checked — re-run
 `python3 tools/check-plan-citations.py docs/wasm-frontend-unified-plan.md`
 after landing work that touches cited files, and re-verify
 universally-quantified claims ("only X does
@@ -127,7 +127,8 @@ outcome line.
 [Multi-frontend practices](#multi-frontend-practices-adopted) ·
 [Out of scope](#out-of-scope) ·
 [Sequencing](#sequencing) ·
-Appendices [A](#appendix-a--investigation-porting-the-ghcjs-target-to-ghcs-in-tree-javascript-backend)
+Appendices
+[A](#appendix-a--investigation-porting-the-ghcjs-target-to-ghcs-in-tree-javascript-backend)
 / [B](#appendix-b--decisions-against-and-deferrals)
 / [C](#appendix-c--verified-non-gaps-sdl2-vs-wasm-audit-record)
 
@@ -138,7 +139,11 @@ frozen does not mean silent, and a claim in one that later resolves takes
 an outcome line, as the doctest bullet under Ground rules has. **Live
 until every item has landed or retired**, because the work falsifies them:
 Goals and approach, Repo facts, Build & verification loop, Sequencing, and
-this ledger. Everything else is per item:
+this ledger. Everything else is per item, and the row is the unit of rollback:
+each
+item is one commit, or the **Split** run of commits its block names, every
+one of them leaving the suite green — which is what makes a row something
+that can be reverted rather than unpicked.
 
 | § | delivers | size | depends on | state |
 |---|---|---|---|---|
@@ -172,6 +177,39 @@ this ledger. Everything else is per item:
 | frontend CI smokes | xvfb SDL, pty ANSI, a short nodeBench run | small each | 3.3 for the wasm one | not applied |
 | explicit widths | `punindex`, never the `Enum` instance, in frontend code | review rule; its one live violation is 0.2's | — | open · standing |
 | functional core | the standing review bar for frontend modules | review rule; nothing to execute | — | standing |
+
+## Log
+
+One line per surprise or re-plan, newest last, so that resuming this
+campaign needs this section rather than a re-read of three and a half
+thousand lines. Log-worthy: an item that turned out larger or smaller than
+its row says, a design question reopened, a count or classification here
+found wrong, an ordering constraint discovered, a **Decide first** ruled
+on. Not log-worthy: doing an item as written, or editing this file before
+the work starts — an entry recording only that the plan was written is one
+the next reader has to skip.
+
+- 2026-07-30 · plan restructured to mature rather than be split or
+  deleted; execution blocks added to all thirty-one items. Twenty-five of
+  them carry an unanswered **Decide first**, which is the campaign's real
+  blocking front — not the code. Three are hard blockers rather than
+  preferences: 0.3b's exports cannot be called after `wasi.start()`
+  returns, the RTS having exited; 0.2c cannot reach `cursorXhair`, which
+  `Sdl.hs` does not export; and 3.3 must choose between the node on PATH
+  and the ghc-wasm-bundled one, which differ in `node:wasi`.
+- 2026-07-30 · the RawFrontend contract item's gate was
+  `-p "/contract/"`, which is the pointman campaign's tag over the same
+  suite: vacuous as a gate here, and it would have moved a count that
+  document requires never to move. Retagged `[fe-contract]`, and the
+  namespace is now stated in the gates above.
+- 2026-07-30 · that retag did not separate the namespaces. `-p` matches a
+  substring of the test path — `-p "/ontract/"` selects the same tests as
+  `-p "/contract/"`, and `/^contract/` selects none — so `[fe-contract]`
+  sat inside the pointman campaign's filter, and the first frontend
+  contract test to land would still have moved that campaign's count.
+  Half the fix had been made and the whole one recorded. The series is
+  `[fe-invariant]` now, and the namespace paragraph states containment
+  rather than equality as the test.
 
 ## Repo facts the plan builds on
 
@@ -298,9 +336,9 @@ deliberate asymmetry, and its absence says the item is a single commit.
   Where two sub-items of one item cannot run concurrently — a shared new
   file, `package-lock.json`, a citation block that renumbers — **Owns**
   says so and says why.
-- **Done** — one shell line, run from the repo root, whose exit status
-  decides the item. It is runnable and unpiped, and it is the definition
-  of finished for everything a session *can* verify.
+- **Done** — the gates below that apply, named rather than spelled out,
+  plus whatever is this item's own. It is the definition of finished for
+  everything a session *can* verify.
 - **Hands back** — the acceptance no session can perform, opening with
   the word `display`, `browser` or `judgement`, followed by the
   substitute gate that *is* in **Done**. An item whose **Done** covers
@@ -309,6 +347,53 @@ deliberate asymmetry, and its absence says the item is a single commit.
 - **Decide first** — the questions an executing session must not answer
   for itself, with their branches. `nothing` means the item is ready to
   hand out as written.
+
+**The gates, once.** Every **Done** is built from these, run from the repo
+root. They are spelled out here and nowhere else: thirty-one items
+repeating one command chain is the second definition G1 forbids, and the
+chain that drifts is the one nobody re-reads.
+
+```
+native   cabal build && cabal test && hlint .
+         && stylish-haskell -i <the item's Haskell files>
+         && git diff --exit-code <those paths>     # stylish left them alone
+ts       make test-ts && (cd ts-src && npx tsc --noEmit)
+wasm     make build-wasm && make test-wasm
+deploy   make build-ts        # UNSANDBOXED: writes into the pages checkout
+docs     python3 tools/check-plan-citations.py $D    # $D = this document
+         && python3 tools/check-doc-refs.py $D
+```
+
+**Read the counts, not the exit status alone** — the rule the migration
+plan states for its own battery, and it binds here too: a suite that
+silently loses a test still passes. `cabal test --test-options='--list-tests'`
+is what settles a count claim, and a `-p` pattern selects on the test
+*name*, so a renamed test leaves its series without failing anything.
+Neither may be piped into `head`/`tail`: a pipeline exits with its last
+command's status, so a failed build reads as success, and a truncated
+listing is how a wrong count gets quoted.
+
+**Tasty tags are a repo-global namespace, shared with the pointman
+campaign.** `-p` filters the whole suite by name, not by module or by
+campaign, and it matches a *substring*, with no anchor available:
+`-p "/ontract/"` selects the same 26 tests as `-p "/contract/"`, and
+`-p "/^contract/"` selects none. A tag is therefore claimed by
+containment, not by equality, and a marker that merely *contains* another
+campaign's is not a fresh claim but a silent join. `[contract]` and
+`[LR-flip]` are the pointman campaign's, and
+`docs/leader-desync-migration.md` pins the size of each series step by
+step, so a marker of ours falling inside either filter moves a count that
+document treats as a finding. This campaign's frontend contract series is
+`[fe-invariant]`. A new series here claims a marker containing no other
+campaign's, and the item that mints it proves that by listing —
+`cabal test --test-options='--list-tests -p "/<marker>/"'` must select
+nothing before the series exists, which is the same command that reports
+26 for an existing marker and so is not a vacuous check. `[frontend]` is
+not available, incidentally: it is already a substring of eleven test
+names. Reusing — or containing — a tag breaks two things at once and
+neither loudly: the other campaign's cardinality invariant, and this
+campaign's gate, which would otherwise pass by selecting tests it did not
+write.
 
 The logistics live at the item and nowhere else. A central table of
 owned files, gates and open questions was proposed and is ruled out: it
@@ -442,8 +527,7 @@ once.
 `package-lock.json`. The two AltGraph fixes are not concurrent with each
 other: they share the new test file and the lock, which does not merge.
 
-**Done** — `make test-ts && (cd ts-src && npx tsc --noEmit) && python3
-tools/check-plan-citations.py docs/wasm-frontend-unified-plan.md`.
+**Done** — `ts`, `docs`.
 
 **Hands back** — *browser*: one AltGr chord on a European layout and one
 `A-MiddleButtonRelease` with AltGr held, since jsdom synthesises
@@ -551,15 +635,11 @@ items: `LambdaHack.cabal` and `test/Spec.hs` are also written by 0.2 and
 a time, and 0.0 lands first or is dropped, since the third commit
 rewrites the very listener it fixes.
 
-**Done** — `cabal build && cabal test && make test-wasm && make test-ts &&
-(cd ts-src && npx tsc --noEmit) && hlint . && stylish-haskell -i
-engine-src/Game/LambdaHack/Client/UI/Frontend/InputDecision.hs
-engine-src/Game/LambdaHack/Client/UI/Frontend/Sdl.hs
-engine-src/Game/LambdaHack/Client/UI/Frontend/Wasm.hs
-test/InputDecisionUnitTests.hs && git diff --exit-code engine-src test &&
-python3 tools/check-plan-citations.py
-docs/wasm-frontend-unified-plan.md && python3 tools/check-doc-refs.py
-docs/wasm-frontend-unified-plan.md`.
+**Done** — `native` (stylish over
+`engine-src/Game/LambdaHack/Client/UI/Frontend/InputDecision.hs`,
+`engine-src/Game/LambdaHack/Client/UI/Frontend/Sdl.hs`,
+`engine-src/Game/LambdaHack/Client/UI/Frontend/Wasm.hs`,
+`test/InputDecisionUnitTests.hs`), `ts`, `wasm`, `docs`.
 
 **Hands back** — *browser*: `preventDefault` from Haskell is the point of
 the change and no headless gate reaches it — Tab not moving focus,
@@ -687,11 +767,9 @@ the first and last both encode the highlight rule. `Sdl.hs` here is not
 concurrent with 0.1's second commit or with 2.1, and `terminal-core.ts`
 not with 0.0.
 
-**Done** — `cabal build && cabal test && make gen-ts && git diff
---exit-code ts-src/src/generated && make test-ts && (cd ts-src && npx tsc
---noEmit) && make test-wasm && hlint . && haskell-ci regenerate && git
-diff --exit-code .github/workflows/haskell-ci.yml && python3
-tools/check-doc-refs.py docs/wasm-frontend-unified-plan.md`.
+**Done** — `native`, `ts`, `wasm`, `docs`, plus `make gen-ts` && `git diff
+--exit-code ts-src/src/generated` && `haskell-ci regenerate` && `git diff
+--exit-code .github/workflows/haskell-ci.yml`.
 
 **Hands back** — *display*: the bench gate on the `Sdl.hs` commit.
 `make bench` runs `benchFrontendBattle`/`benchFrontendCrawl` through the
@@ -770,9 +848,7 @@ not concurrent with 0.0 or 3.2, which write the same lock file, and it
 does not merge; the stubs are defined once here and exported for 3.2's
 `run-wasm-game.mjs` to import rather than copy.
 
-**Done** — `make test-wasm && cabal build && cabal test && hlint . &&
-stylish-haskell -i test/FfiCoverageUnitTests.hs && git diff --exit-code
-test`.
+**Done** — `native` (stylish over `test/FfiCoverageUnitTests.hs`), `wasm`.
 
 **Hands back** — *judgement*, and only for the standing half: a reviewer
 confirms each FFI-touching commit carries its case. The substitute in
@@ -852,10 +928,8 @@ contended by 1.2 and 1.5, so the three serialize; take 1.1 first, it
 clears the file fastest. `../lambdahack.github.io` is redeployed by
 **Done**, not owned, and that command needs unsandboxed Bash.
 
-**Done** — `make test-ts && (cd ts-src && npx tsc --noEmit) && make
-build-wasm && make build-ts && grep -qF crosshair
-../lambdahack.github.io/bundle.js && python3
-tools/check-plan-citations.py docs/wasm-frontend-unified-plan.md`.
+**Done** — `ts`, `wasm`, `deploy`, `docs`, plus `grep -qF crosshair
+../lambdahack.github.io/bundle.js`.
 
 **Hands back** — *display*: that the pointer reads as a crosshair over the
 map, and, for the SVG form, that the browser accepted the data URI rather
@@ -932,12 +1006,9 @@ interface and returned object — nor with 1.1, which writes `terminal.ts`.
 `../lambdahack.github.io` is redeployed by **Done**, not owned, and that
 command needs unsandboxed Bash.
 
-**Done** — `cabal build && cabal test && hlint . && stylish-haskell -i
-engine-src/Game/LambdaHack/Client/UI/Frontend/*.hs test/*.hs && git diff
---exit-code -- engine-src test && make test-ts && (cd ts-src && npx tsc
---noEmit) && make build-wasm && make test-wasm && make build-ts && python3
-tools/check-plan-citations.py docs/wasm-frontend-unified-plan.md &&
-python3 tools/check-doc-refs.py docs/wasm-frontend-unified-plan.md`.
+**Done** — `native` (stylish over
+`engine-src/Game/LambdaHack/Client/UI/Frontend/*.hs`, `test/*.hs`), `ts`,
+`wasm`, `deploy`, `docs`.
 
 **Hands back** — *display*: press `Ctrl+P` in a browser and compare the
 downloaded PNG with the screen. That comparison is not merely eye-only,
@@ -1007,12 +1078,9 @@ import as a request rather than writing it here.
 `../lambdahack.github.io` is redeployed by **Done**, not owned, and that
 command needs unsandboxed Bash.
 
-**Done** — `make test-ts && (cd ts-src && npx tsc --noEmit) && make
-build-wasm && make build-ts && grep -qF Fullscreen
-../lambdahack.github.io/index.html && grep -qF fullscreenchange
-../lambdahack.github.io/bundle.js && python3
-tools/check-plan-citations.py docs/wasm-frontend-unified-plan.md &&
-python3 tools/check-doc-refs.py docs/wasm-frontend-unified-plan.md`.
+**Done** — `ts`, `wasm`, `deploy`, `docs`, plus `grep -qF Fullscreen
+../lambdahack.github.io/index.html` && `grep -qF fullscreenchange
+../lambdahack.github.io/bundle.js`.
 
 **Hands back** — *display*: that the page really enters fullscreen, that
 the scaled grid is centred and aspect-correct rather than clipped, and
@@ -1070,9 +1138,8 @@ the page is an error to fix, not drift to leave alone. Single-writer on
 `../lambdahack.github.io` is redeployed by **Done**, not owned, and that
 command needs unsandboxed Bash.
 
-**Done** — `make build-wasm && make build-ts && ! grep -qE 'proportional
-fonts|limited to the square font' ../lambdahack.github.io/index.html &&
-python3 tools/check-plan-citations.py docs/wasm-frontend-unified-plan.md`.
+**Done** — `wasm`, `deploy`, `docs`, plus `! grep -qE 'proportional
+fonts|limited to the square font' ../lambdahack.github.io/index.html`.
 
 **Hands back** — *judgement*: whether the replacement sentence is true of
 the shipped build. No display is needed and no command decides it — a
@@ -1143,11 +1210,9 @@ wrong if written against a hardcoded 16px. `../lambdahack.github.io` is
 redeployed by **Done**, not owned, and that command needs unsandboxed
 Bash.
 
-**Done** — `cabal build && cabal test && hlint . && stylish-haskell -i
-engine-src/Game/LambdaHack/Client/UI/Frontend/*.hs && git diff
---exit-code -- engine-src && make test-ts && (cd ts-src && npx tsc
---noEmit) && make build-wasm && make test-wasm && make build-ts && python3
-tools/check-plan-citations.py docs/wasm-frontend-unified-plan.md`.
+**Done** — `native` (stylish over
+`engine-src/Game/LambdaHack/Client/UI/Frontend/*.hs`), `ts`, `wasm`, `deploy`,
+`docs`.
 
 **Hands back** — *display*: that the grid renders larger. The item body
 carries no `Verify:` step — alone among 1.1, 1.2 and 1.3 — and the gap is
@@ -1690,16 +1755,11 @@ together. `Sdl.hs` has two other claimants — 0.2's `setSquareChar`/
 a time; 0.2 first is preferable, since then (2) inherits the `toEnum` fix
 instead of carrying it.
 
-**Done** — `cabal build && cabal test && make test-wasm && make
-test-medium && hlint . && stylish-haskell -i
-engine-src/Game/LambdaHack/Client/UI/Frontend/OverlayLayout.hs
-engine-src/Game/LambdaHack/Client/UI/Frontend/Sdl.hs
-test/OverlayLayoutUnitTests.hs test/Spec.hs && git diff --exit-code --
-engine-src test && python3 tools/check-plan-citations.py
-docs/wasm-frontend-unified-plan.md && python3 tools/check-doc-refs.py
-docs/wasm-frontend-unified-plan.md && python3
-tools/check-plan-citations.py CLAUDE.md && python3
-tools/check-doc-refs.py CLAUDE.md`.
+**Done** — `native` (stylish over
+`engine-src/Game/LambdaHack/Client/UI/Frontend/OverlayLayout.hs`,
+`engine-src/Game/LambdaHack/Client/UI/Frontend/Sdl.hs`,
+`test/OverlayLayoutUnitTests.hs`, `test/Spec.hs`), `wasm`, `docs`, plus `make
+test-medium`.
 
 **Hands back** — *display*: the perf gate and the visual look. `make
 bench` (`Makefile:123`) includes `benchFrontendBattle`/`benchFrontendCrawl`
@@ -1820,12 +1880,10 @@ branch table is 0.2's stanza and 0.2's file, not this item's: schedule it
 with 0.2's owner rather than editing the generator here, or two sessions
 edit one executable.
 
-**Done** — `make test-ts && (cd ts-src && npx tsc --noEmit) && cabal build
-&& make build-wasm && make test-wasm && make build-ts && test -f
-../lambdahack.github.io/DejaVuLGCSans-Bold.ttf.woff && test -f
-../lambdahack.github.io/Hack-Bold.ttf.woff && hlint . && stylish-haskell
--i engine-src/Game/LambdaHack/Client/UI/Frontend/Wasm.hs && git diff
---exit-code -- engine-src ts-src Makefile GameDefinition/index.html`.
+**Done** — `native` (stylish over
+`engine-src/Game/LambdaHack/Client/UI/Frontend/Wasm.hs`), `ts`, `wasm`,
+`deploy`, plus `test -f ../lambdahack.github.io/DejaVuLGCSans-Bold.ttf.woff`
+&& `test -f ../lambdahack.github.io/Hack-Bold.ttf.woff`.
 Run it unsandboxed: the build-ts step writes into the sibling pages
 checkout. The two file tests are the deployment gate and are non-vacuous
 today — neither font is in that checkout, which is the whole font
@@ -1910,13 +1968,11 @@ overlaps 2.1 on the module file, 2.2 on all four TS files and 2.4 on
 The 0.2 generator emitting the decoder's encode fixtures is 0.2's file,
 not this item's — schedule it there, as 2.2 does for its branch table.
 
-**Done** — `cabal build && cabal test && make build-wasm && make test-wasm
-&& make test-ts && (cd ts-src && npx tsc --noEmit) && make build-ts &&
-hlint . && stylish-haskell -i
-engine-src/Game/LambdaHack/Client/UI/Frontend/OverlayLayout.hs
-engine-src/Game/LambdaHack/Client/UI/Frontend/Wasm.hs
-test/OverlayLayoutUnitTests.hs && git diff --exit-code -- engine-src test
-ts-src`. Run it unsandboxed: the build-ts step writes into the sibling
+**Done** — `native` (stylish over
+`engine-src/Game/LambdaHack/Client/UI/Frontend/OverlayLayout.hs`,
+`engine-src/Game/LambdaHack/Client/UI/Frontend/Wasm.hs`,
+`test/OverlayLayoutUnitTests.hs`), `ts`, `wasm`, `deploy`. Run it unsandboxed:
+the build-ts step writes into the sibling
 pages checkout.
 
 **Hands back** — hands back nothing. §2.3's "verified by playing" argues
@@ -1998,16 +2054,16 @@ dead example file no configuration compiles, R3. Two files are shared —
 `Sdl.hs` with 2.1 and 0.2, `Wasm.hs` with 2.2 and 2.3 — and although (1)
 touches only their export lists, they do not merge, so serialize.
 
-**Done** — `cabal build && cabal test && make build-wasm && make test-wasm
-&& make build-ts && make test-ts && make test-medium && hlint . &&
-stylish-haskell -i engine-src/Game/LambdaHack/Client/UI/Frontend/Sdl.hs
-engine-src/Game/LambdaHack/Client/UI/Frontend/Wasm.hs
-engine-src/Game/LambdaHack/Client/UI/Frontend/ANSI.hs
-engine-src/Game/LambdaHack/Client/UI/Frontend/Teletype.hs
-engine-src/Game/LambdaHack/Client/UI/Frontend.hs
-engine-src/Game/LambdaHack/Client/UI/MonadClientUI.hs
-test/MonadClientUIUnitTests.hs && git diff --exit-code -- engine-src
-test`. Run it unsandboxed: the build-ts step writes into the sibling pages
+**Done** — `native` (stylish over
+`engine-src/Game/LambdaHack/Client/UI/Frontend/Sdl.hs`,
+`engine-src/Game/LambdaHack/Client/UI/Frontend/Wasm.hs`,
+`engine-src/Game/LambdaHack/Client/UI/Frontend/ANSI.hs`,
+`engine-src/Game/LambdaHack/Client/UI/Frontend/Teletype.hs`,
+`engine-src/Game/LambdaHack/Client/UI/Frontend.hs`,
+`engine-src/Game/LambdaHack/Client/UI/MonadClientUI.hs`,
+`test/MonadClientUIUnitTests.hs`), `ts`, `wasm`, `deploy`, plus `make
+test-medium`. Run it unsandboxed: the build-ts step writes into the sibling
+pages
 checkout.
 
 **Hands back** — *browser*: commit (2) is the moment players see something
@@ -2056,11 +2112,8 @@ before 1.2 has landed — `GameDefinition/index.html` and
 files belong to 2.2 and 2.3 as well, but both sit behind 2.4 in the chain,
 so there is no window in which two items hold them.
 
-**Done** — `make test-ts && (cd ts-src && npx tsc --noEmit) && make
-build-wasm && make build-ts && ! grep -qF 'proportional fonts'
-GameDefinition/index.html && python3 tools/check-doc-refs.py
-docs/wasm-frontend-unified-plan.md && python3
-tools/check-plan-citations.py docs/wasm-frontend-unified-plan.md`. Run it
+**Done** — `ts`, `wasm`, `deploy`, `docs`, plus `! grep -qF 'proportional
+fonts' GameDefinition/index.html`. Run it
 unsandboxed: the build-ts step writes into the sibling pages checkout.
 The banner grep is non-vacuous today — the phrase is still on the page —
 so it fails until (2) lands.
@@ -2132,10 +2185,8 @@ after the change, since the loader still passes the one-element argv
 `["LambdaHack"]` (`loader.ts:56`), and touching it would put another work
 stream's file under this item's lock for nothing.
 
-**Done** — `make build-wasm && cabal build exe:LambdaHack && cabal test
-&& hlint . && diff -q <(stylish-haskell GameDefinition/Main.hs)
-GameDefinition/Main.hs && python3 tools/check-plan-citations.py
-docs/wasm-frontend-unified-plan.md`.
+**Done** — `native`, `wasm`, `docs`, plus `cabal build exe:LambdaHack` &&
+`diff -q <(stylish-haskell GameDefinition/Main.hs) GameDefinition/Main.hs`.
 
 **Hands back** — *browser*: one `make serve-wasm` page load showing the
 game still starts on default options, no in-session gate running `lhStart`
@@ -2198,16 +2249,14 @@ dropped the flag, not that a stub is missing. Nothing runs concurrently
 with anything here — one new file, one lock file that does not merge, one
 allowlist line.
 
-**Done** — `. ~/.ghc-wasm/env && make build-wasm && T=$(mktemp -d) &&
-W=$(wasm32-wasi-cabal list-bin exe:LambdaHack) &&
-~/.ghc-wasm/wasm32-wasi-ghc/lib/post-link.mjs --input "$W" --output
-"$T/ghc_wasm_jsffi.mjs" && node ts-src/run-wasm-game.mjs "$W"
-"$T/ghc_wasm_jsffi.mjs" --newGame 1 --gameMode crawl --noAnim --maxFps
-100000 --frontendNull --benchmark --stopAfterFrames 200 --automateAll
---keepAutomated && ! node ts-src/run-wasm-game.mjs "$W"
-"$T/ghc_wasm_jsffi.mjs" --stopAfterFrames notanumber && make test-wasm &&
-make test-ts && (cd ts-src && npx tsc --noEmit) && python3
-tools/check-doc-refs.py docs/wasm-frontend-unified-plan.md`.
+**Done** — `ts`, `wasm`, `docs`, plus `. ~/.ghc-wasm/env` && `T=$(mktemp -d)`
+&& `W=$(wasm32-wasi-cabal list-bin exe:LambdaHack)` &&
+`~/.ghc-wasm/wasm32-wasi-ghc/lib/post-link.mjs --input "$W" --output
+"$T/ghc_wasm_jsffi.mjs"` && `node ts-src/run-wasm-game.mjs "$W"
+"$T/ghc_wasm_jsffi.mjs" --newGame 1 --gameMode crawl --noAnim --maxFps 100000
+--frontendNull --benchmark --stopAfterFrames 200 --automateAll
+--keepAutomated` && `! node ts-src/run-wasm-game.mjs "$W"
+"$T/ghc_wasm_jsffi.mjs" --stopAfterFrames notanumber`.
 
 **Hands back** — hands back nothing. Every integration point in the item
 is an exit status, the negated second run being the non-vacuity control
@@ -2276,18 +2325,15 @@ row, and the `make nodeDeployedBench` deletion from
 **Owns** — `Makefile`, `.claude/skills/playtests/SKILL.md`,
 `tools/doc-refs-allow.txt` and this document, plus
 `docs/leader-desync-migration.md` conditionally. That last is the fleet
-hazard: its line 291 cites `Makefile:146-148` — `test:`, a blank line,
+hazard: it cites, in §02 step 3, `Makefile:146-148` — `test:`, a blank line,
 `test-gha:` — three lines below the block this item rewrites, so any
 change in that block's line count slides the citation onto other lines
 while it still *resolves*, leaving `tools/check-plan-citations.py` green
 over a document that has started to lie. The `Makefile` is also 0.2's
 (`make gen-ts`) and R2's, so 3.3 holds it alone.
 
-**Done** — `make nodeBench && make nodeDeployedBench && make test-wasm &&
-python3 tools/check-plan-citations.py docs/wasm-frontend-unified-plan.md
-&& python3 tools/check-plan-citations.py docs/leader-desync-migration.md
-&& python3 tools/check-doc-refs.py docs/wasm-frontend-unified-plan.md &&
-grep -q nodeDeployedBench .claude/skills/playtests/SKILL.md && ! grep -q
+**Done** — `wasm`, `docs`, plus `make nodeBench` && `make nodeDeployedBench`
+&& `grep -q nodeDeployedBench .claude/skills/playtests/SKILL.md` && `! grep -q
 nodeMinifiedBench Makefile`.
 
 **Hands back** — *judgement*: "plausible frame counts" and the
@@ -2386,10 +2432,8 @@ not concurrent with R3 or with capability constants, all three rewriting
 those same two `#if` sites; the `LambdaHack.cabal` edit is not concurrent
 with 0.1, 0.2, 2.1, 2.2 or R3.
 
-**Done** — `cabal test && make test-wasm && hlint . && stylish-haskell -i
-$(git ls-files '*.hs') && git diff --exit-code && python3
-tools/check-doc-refs.py docs/wasm-frontend-unified-plan.md && python3
-tools/check-plan-citations.py docs/wasm-frontend-unified-plan.md`.
+**Done** — `native` (stylish over `$(git`, `ls-files`, `'*.hs')`), `wasm`,
+`docs`, plus `git diff --exit-code`.
 
 **Hands back** — *judgement*: whether R1a's measured `setItem` cost is low
 enough to re-enable periodic saving, which is R1c's entire branch and has
@@ -2452,9 +2496,9 @@ variant of `benchFrontendBattle` the xvfb smoke drives). Never
 The jobs are not concurrent with each other: they share one YAML file,
 which does not merge.
 
-**Done** — `python3 -c "import yaml;
-yaml.safe_load(open('.github/workflows/lint-and-test-suites.yml'))" &&
-make build-wasm` — the parse, plus the job's own payload run locally, the
+**Done** — `wasm`, plus `python3 -c "import yaml;
+yaml.safe_load(open('.github/workflows/lint-and-test-suites.yml'))"` — the
+parse, plus the job's own payload run locally, the
 second half substituted per commit.
 
 **Hands back** — *judgement*: whether the job is green on a GHA runner,
@@ -2528,14 +2572,12 @@ must hold `LambdaHack.cabal` exclusively — 0.1, 0.2, 2.1 and 2.2 all add
 collapses — and the three engine `#if` sites are also R1's and the
 capability-constants practice's, whichever lands first shaping R3's diff.
 
-**Done** — `cabal test && make test-wasm && make test-gha && hlint . &&
-stylish-haskell -i $(git ls-files '*.hs') && git diff --exit-code && !
-git grep -q
-'USE_GHCJS\|USE_JSFILE\|REMOVE_TELETYPE\|supportNodeJS\|ghcjs-options'
--- ':!*.md' ':!LambdaHack.cabal.bkp' ':!LambdaHack.cabal.flattened'
+**Done** — `native` (stylish over `$(git`, `ls-files`, `'*.hs')`), `wasm`,
+`docs`, plus `make test-gha` && `git diff --exit-code` && `! git grep -q
+'USE_GHCJS\|USE_JSFILE\|REMOVE_TELETYPE\|supportNodeJS\|ghcjs-options' --
+':!*.md' ':!LambdaHack.cabal.bkp' ':!LambdaHack.cabal.flattened'
 ':!engine-src/Game/LambdaHack/Client/UI/Frontend/Dom.hs'
-':!engine-src/Game/LambdaHack/Common/JSFile.hs' && python3
-tools/check-plan-citations.py docs/wasm-frontend-unified-plan.md`. The
+':!engine-src/Game/LambdaHack/Common/JSFile.hs'`. The
 grep half is non-vacuous: run against today's tree it finds matches and
 fails the line, so it can only pass after the rip-out.
 
@@ -2590,9 +2632,7 @@ this document. Not concurrent with R5: R5's `?benchmark` mode is one of
 this allowlist's own entries and edits the same `loader.ts` call. Not
 concurrent with 1.3 or 1.4 for `index.html`.
 
-**Done** — `make test-ts && (cd ts-src && npx tsc --noEmit) && python3
-tools/check-doc-refs.py docs/wasm-frontend-unified-plan.md && python3
-tools/check-plan-citations.py docs/wasm-frontend-unified-plan.md`.
+**Done** — `ts`, `docs`.
 
 **Hands back** — *browser*: that a parameter typed into the address bar
 actually reaches the engine. No headless path exists — 3.2's Node driver
@@ -2641,8 +2681,7 @@ here.
 Not concurrent with R4 (`loader.ts`, and `?benchmark=` sits in R4's
 parameter allowlist) nor with 2.2 (`terminal.ts`).
 
-**Done** — `make test-ts && (cd ts-src && npx tsc --noEmit) && python3
-tools/check-doc-refs.py docs/wasm-frontend-unified-plan.md`, which decides
+**Done** — `ts`, `docs`, which decides
 R5a only.
 
 **Hands back** — *browser*: the whole rendering half, R5b, and no
@@ -2681,8 +2720,7 @@ and `ts-src/src/overlay-core.ts`, code neither of whose owners it is, and
 must then hold both exclusively. Decide first settles which of the two
 Owns lists is the real one.
 
-**Done** — `make test-ts && (cd ts-src && npx tsc --noEmit) && python3
-tools/check-doc-refs.py docs/wasm-frontend-unified-plan.md`.
+**Done** — `ts`, `docs`.
 
 **Hands back** — nothing. The comparison is over draw-command lists, not
 pixels, so no canvas, no fonts and no browser are involved; that a real
@@ -2743,15 +2781,14 @@ two of the constants (`Server/LoopM.hs:336`, `WatchUpdAtomicM.hs:586`)
 and R3 deletes their `USE_JSFILE` halves, so both follow this item rather
 than overlapping it.
 
-**Done** — `cabal build && cabal test && make test-wasm && ! git grep -lE
-'USE_JSFILE|USE_WASMFILE' -- engine-src/Game/LambdaHack/Server/LoopM.hs
-engine-src/Game/LambdaHack/Client && stylish-haskell -i
-engine-src/Game/LambdaHack/Common/{File,HSFile,WasmFile,JSFile}.hs
-engine-src/Game/LambdaHack/Server/LoopM.hs
-engine-src/Game/LambdaHack/Client/UI/HandleHumanLocalM.hs
-engine-src/Game/LambdaHack/Client/UI/Watch/WatchUpdAtomicM.hs && git diff
---quiet -- engine-src && hlint . && python3 tools/check-plan-citations.py
-docs/wasm-frontend-unified-plan.md`. That `git grep` names three files
+**Done** — `native` (stylish over
+`engine-src/Game/LambdaHack/Common/{File,HSFile,WasmFile,JSFile}.hs`,
+`engine-src/Game/LambdaHack/Server/LoopM.hs`,
+`engine-src/Game/LambdaHack/Client/UI/HandleHumanLocalM.hs`,
+`engine-src/Game/LambdaHack/Client/UI/Watch/WatchUpdAtomicM.hs`), `wasm`,
+`docs`, plus `! git grep -lE 'USE_JSFILE|USE_WASMFILE' --
+engine-src/Game/LambdaHack/Server/LoopM.hs engine-src/Game/LambdaHack/Client`.
+That `git grep` names three files
 today, which is what makes its later silence evidence rather than a
 vacuous search.
 
@@ -2806,15 +2843,14 @@ dispatches through `Frontend.hs:186-196`, and R3 deletes the
 `#ifndef REMOVE_TELETYPE` guards at `Frontend.hs:86` and `:190` — the
 exact lines this item turns into cases.
 
-**Done** — `cabal build && cabal test && make test-wasm && make
-test-short && ! git grep -q 'frontendName soptions ==' -- '*.hs' &&
-LH=$(cabal list-bin exe:LambdaHack) && ! "$LH" --frontendNull
---frontendTeletype --newGame 1 --gameMode dig --benchmark
---stopAfterFrames 1 --automateAll && hlint . && stylish-haskell -i
-engine-src/Game/LambdaHack/Common/ClientOptions.hs
-engine-src/Game/LambdaHack/Server/Commandline.hs
-engine-src/Game/LambdaHack/Client/UI/{Frontend,DrawM,MonadClientUI}.hs
-test/UnitTestHelpers.hs && git diff --quiet -- engine-src test`. Both
+**Done** — `native` (stylish over
+`engine-src/Game/LambdaHack/Common/ClientOptions.hs`,
+`engine-src/Game/LambdaHack/Server/Commandline.hs`,
+`engine-src/Game/LambdaHack/Client/UI/{Frontend,DrawM,MonadClientUI}.hs`,
+`test/UnitTestHelpers.hs`), `wasm`, plus `make test-short` && `! git grep -q
+'frontendName soptions ==' -- '*.hs'` && `LH=$(cabal list-bin exe:LambdaHack)`
+&& `! "$LH" --frontendNull --frontendTeletype --newGame 1 --gameMode dig
+--benchmark --stopAfterFrames 1 --automateAll`. Both
 negated checks pass *today* and so are non-vacuous: the grep finds two
 sites, and the double `--frontend` invocation exits 0 because guard order
 silently picks null. `make test-short` plays whole games — minutes, not
@@ -2893,14 +2929,12 @@ is also the determinism goldens' only edit point, and
 `ts-src/run-wasm-test.mjs` is extended by 0.3 and by 3.2 as well: one
 holder at a time for each.
 
-**Done** — `cabal build && cabal test --test-options='-p "/contract/"' &&
-cabal test && make test-wasm && cabal build --builddir=dist-norelease
---flags=-release test && hlint . && stylish-haskell -i
-engine-src/Game/LambdaHack/Client/UI/Frontend.hs
-engine-src/Game/LambdaHack/Client/UI/Frontend/Common.hs
-test/FrontendContractUnitTests.hs && git diff --quiet -- engine-src test
-LambdaHack.cabal && python3 tools/check-doc-refs.py
-docs/wasm-frontend-unified-plan.md`. The `-release` build is the point of
+**Done** — `native` (stylish over
+`engine-src/Game/LambdaHack/Client/UI/Frontend.hs`,
+`engine-src/Game/LambdaHack/Client/UI/Frontend/Common.hs`,
+`test/FrontendContractUnitTests.hs`), `wasm`, `docs`, plus `cabal test
+--test-options='-p "/fe-invariant/"'` && `cabal build --builddir=dist-norelease
+--flags=-release test`. The `-release` build is the point of
 that clause, not padding: it is the only thing that catches a harness
 leaning on the `EXPOSE_INTERNAL` block, and the separate `--builddir`
 keeps the flag flip from forcing a rebuild of the session's own
@@ -2960,12 +2994,9 @@ with the RawFrontend contract harness: both add a module to the same
 over committed literals rather than a file, it owns no data file; if over
 a file, that file joins this list rather than living beside the test.
 
-**Done** — `cabal build && cabal test --test-options='-p "/golden/"' &&
-cabal test && make test-wasm && hlint . && stylish-haskell -i
-test/DeterminismGoldenUnitTests.hs test/UnitTestHelpers.hs
-test/SessionUIMock.hs test/Spec.hs && git diff --quiet -- test
-LambdaHack.cabal && python3 tools/check-doc-refs.py
-docs/wasm-frontend-unified-plan.md`.
+**Done** — `native` (stylish over `test/DeterminismGoldenUnitTests.hs`,
+`test/UnitTestHelpers.hs`, `test/SessionUIMock.hs`, `test/Spec.hs`), `wasm`,
+`docs`, plus `cabal test --test-options='-p "/golden/"'`.
 
 **Hands back** — *judgement*: whether the digest is actually sensitive to
 what 2.1 and 2.4 change is the entire value of the item, and no run
@@ -3026,10 +3057,9 @@ per phase, and 0.2 and 0.3 each add a job — so one holder at a time, and
 the three commits here are serialized against each other for the same
 reason.
 
-**Done** — `cabal build && make smokeANSI &&
-make smokeSdl --dry-run && make smokeNodeBench --dry-run &&
-python3 tools/check-doc-refs.py
-docs/wasm-frontend-unified-plan.md`. `--dry-run` gates the two targets that
+**Done** — `native`, `docs`, plus `make smokeANSI` && `make smokeSdl
+--dry-run` && `make smokeNodeBench --dry-run`. `--dry-run` gates the two
+targets that
 cannot execute here on existing and on expanding, without running them;
 `check-doc-refs.py` resolves all three names against the makefile, which
 is what makes the allowlist deletion a checked claim.
@@ -3086,7 +3116,8 @@ that per-cell loop onto `CellStyle`; fixing it standalone contradicts the
 coupling stated just above and collides with 0.2's diff. The rule
 retires with the campaign rather than taking a hash.
 
-**Done** — `! git grep -nE 'Point\{\.\.\} = toEnum' --
+**Done** — no gate of its own, only
+`! git grep -nE 'Point\{\.\.\} = toEnum' --
 'engine-src/Game/LambdaHack/Client/UI/Frontend/*.hs'
 ':!engine-src/Game/LambdaHack/Client/UI/Frontend/Dom.hs'`. It returns
 nonzero today, naming `Sdl.hs:590` — which is what proves it a real
@@ -3135,6 +3166,44 @@ this rule into a frontend-interface-as-value record is Appendix B.4's
 recorded don't-do, deferred with named revisit triggers, so an agent
 proposing it is re-opening a ruling rather than extending the practice.
 If a trigger has genuinely fired, that is B.4's revision, not this item's.
+
+## What would falsify this
+
+Worth stating, because a campaign this long otherwise reads as
+unfalsifiable. Three claims carry it, and each has a check that would sink
+it rather than merely inconvenience it.
+
+**G1, that shared knowledge is cheaper than duplicated knowledge.** What
+would sink it is a shared module that cannot decide without knowing which
+frontend is asking — a `CellStyle` or an `OverlayLayout` whose body
+branches on the caller rather than on a parameter it was given. That is
+duplication with a worse interface, and the check is 2.1's `Sdl.hs`
+refactor: if the native consumer needs the module to know it is native,
+G1 has failed for that rule and the rule belongs back in the frontend.
+The floor-glyph parameter is the shape that passes; a frontend tag is the
+shape that fails.
+
+**G2, that SDL2's behaviour is the bar.** What would sink it is SDL2
+being wrong, and it already was once: 0.0 assumed the three fill-only
+highlight kinds draw no outline, and SDL2 in fact draws a black ring —
+the erase half of a workaround for a 2.0.16 rectangle bug, not a design
+choice anyone made. Parity copied it faithfully. So the bar is SDL2's
+*intent* where the two can be told apart, and where they cannot, the
+audit record in Appendix C is what has to say which was checked. A second
+such discovery would not sink G2, but a pattern of them would mean the
+bar is a workaround inventory.
+
+**The boundary-cost ruling**, that a per-chunk `js_measureText` crossing
+is too expensive to consider. It is the reason 2.1's pen is split into a
+measurement-free cutoff and a fit function, and it rests on no
+measurement of this codebase. R5's instrument is the check; the recorded
+alternative in 2.1 — batch the whole frame's measurements into one
+crossing — is what the ruling loses to if the numbers say so. Until then
+it stands, and it is a ruling rather than a fact.
+
+What would *not* falsify anything here: an item turning out larger than
+its row says, or a **Decide first** resolving against the sketch in its
+body. Both are the plan working. The Log is where they go.
 
 ## Out of scope
 
