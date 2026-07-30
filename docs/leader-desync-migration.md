@@ -10,7 +10,9 @@ deleted*
 > conversion inventory, the artifacts still to write, and the state of the
 > test battery. Nothing here is worth keeping afterwards — the records
 > carry the reasoning, the code carries the result — but deleting it is
-> not the one-line act it reads as, seven files pointing at it, which
+> not the one-line act it reads as, eight files naming it — seven to be
+> reworded, the eighth being `tools/leader-census.py`, which the first
+> bullet below disposes of — as
 > `git grep -n leader-desync-migration -- . ':!docs/leader-desync-migration.md'`
 > lists in full. When §04's last step is done:
 >
@@ -21,21 +23,30 @@ deleted*
 > - note the landing in `CHANGELOG.md` (the lines are drafted in §02), and
 >   add to each record the outcome line it reserves;
 > - reword the inbound references, which no mechanical pass can see once
->   the target is gone: five backticked `docs/leader-desync-migration.md`
->   paths in each record, plus nine prose "the migration document's §NN"
->   pointers in the post-mortem and five in the abort-split record;
+>   the target is gone: the backticked `docs/leader-desync-migration.md`
+>   paths that command lists, and the pointers by *name* it does not —
+>   `git grep -nE 'migration (document|plan)'` over `CLAUDE.md`, both
+>   records and the wasm plan, whitespace-tolerant because the phrase wraps
+>   across line breaks and a line-oriented grep answers 1 where a wrapping
+>   one answers 11. Counting those by hand is what went wrong here before;
+>   the second list is read, never driven to zero, since §11 goes on saying
+>   "the migration" of the *work* after this file is gone;
 > - edit `CLAUDE.md` twice: the sentence in "Where to look next" that names
 >   this file, and the pointman gotcha's "Until the live-read design lands"
 >   clause, which the landing is what resolves;
 > - and the four sites outside the documents, which are the ones a reader
->   forgets: `docs/wasm-frontend-unified-plan.md` names this file twice and
->   *runs* `check-plan-citations.py` against it in a recorded command, which
->   will fail once it is gone; `test/HandleHumanLocalMUnitTests.hs:193` and
+>   forgets: `docs/wasm-frontend-unified-plan.md` names this file three
+>   times, one of them the tag-ownership sentence, which keeps its claim and
+>   drops only the citation; `test/HandleHumanLocalMUnitTests.hs:193` and
 >   `test/InventoryMUnitTests.hs:72` cite it from test comments; and
 >   `tools/check-doc-examples.py:57` names it in its own non-vacuity recipe;
 > - then re-run `python3 tools/check-doc-refs.py` over `CLAUDE.md`, both
 >   records and the wasm plan — the pass that catches a backticked path left
->   behind.
+>   behind — and re-run the `git grep -n` above, which must come back empty
+>   bar whatever branch the first bullet took. Exit 2 from `check-doc-refs`
+>   means the run did not happen, `../lambdahack.github.io` being unmounted,
+>   not that nothing is left; that is the ordinary sandboxed case and the
+>   one way this bullet passes vacuously.
 >
 > File:line citations were verified against the tree at commit
 > `4b92b291a` (2026-07-30) — the newest commit touching any file they
@@ -64,13 +75,13 @@ unit of rollback §01 relies on.
 |---|---|---|---|
 | §02.0 spike | `MonadClientUI` plus the three frames of `PointmanCycleLevel`, and the five test call sites that break with them (`HandleHelperMUnitTests.hs:121`, `:141`, `:176`, `FrameMUnitTests.hs:343`, `:377`) | the library compiles and the witness reads tolerably at a real call site; then, once those five take a witness, the suite compiles and LR1/LR2/LR5 are green while LR3/LR4 and the two bridge tests are red and LR6 unrepresentable — the spike working, not failing | pending |
 | §02.1 witness, accessors | `MonadClientUI` only, ~30 lines | `cabal build`; the contract series green and its count unmoved; nothing else changes, this step having no callers yet | pending |
-| §02.2–4 dialog chain, assertions, flips | `InventoryM` (7 functions), `HandleHumanLocalM` (`chooseItemDialogMode`, the three `chooseItem*Human` wrappers, and `psuitReq`, which loses its own `ActorId`), `HandleHumanGlobalM` (`itemMenuHuman`, `chooseItemMenuHuman`, and `psuitReq`'s second call site in `projectItem`), `HandleHumanM` (their boundary cases and the `CmdLeader` field type), `HandleHelperM` (the one assertion `4a6eca154` disabled), test edits across all five test modules, nearer 20 than the 14 first estimated | the contract series green *unchanged* and its count unmoved; the flip series green *with the flipped values* and its count unmoved, each flip verified first against the candidate as step 4 spells out; `stylish-haskell -i` leaves every touched file alone | pending |
+| §02.2–4 dialog chain, assertions, flips | `InventoryM` (7 functions), `HandleHumanLocalM` (`chooseItemDialogMode`, the three `chooseItem*Human` wrappers, and `psuitReq`, which loses its own `ActorId`), `HandleHumanGlobalM` (`itemMenuHuman`, `chooseItemMenuHuman`, and `psuitReq`'s second call site in `projectItem`), `HandleHumanM` (their boundary cases and the `CmdLeader` field type), `HandleHelperM` (the one assertion `4a6eca154` disabled), test edits across all five test modules, nearer 20 than the 14 first estimated | the contract series green *unchanged* and its count unmoved; the flip series green *with the flipped values* and its count down one as step 4 deletes LR6 (11 → 10), each flip verified first against the candidate as step 4 spells out; `stylish-haskell -i` leaves every touched file alone | pending |
 | §02.5 sweep | the remainder of §03's read-live set (fourteen functions, judgment calls), then the fifteen convert-half of §03's tail with the sixteen boundary cases dispatching them, across 4 modules | `cabal build`; both series green with counts unmoved; `hlint .` says `No hints`; `stylish-haskell -i` leaves every touched file alone; no `CmdLeader` case passes an `ActorId`, read off `cmdSemanticsLeader` alone | pending |
-| §02.6 verification | nothing; it is the gate | full suite; `make test-short`, `make test-medium`; the manual timeline session, a fling-dialog switch and an apply-dialog switch (§03's sibling (c), which no test reaches) | pending |
+| §02.6 verification | nothing; it is the gate | full suite; `make test-short`, `make test-medium`; the manual timeline session, a fling-dialog switch and an apply-dialog switch (§03's sibling (c), pinned by PR 0 but checked here in the real frontend) | pending |
 | §04.1 extract `macroStep` | one pure function, plus the eight-row table in §04; the two AS cases it depends on land earlier, in §01's PR 0 | the table passes; the whole AS series untouched and green, the two new cases included — they were written against the unsplit primitive and must survive the split unedited | pending |
 | §04.2 name `abortMacroPlayback` | `FrameM`, ~10 lines | AS4–AS6 green *without edits* | pending |
 | §04.3 audit the residual writes | `FrameM` only; the drafted haddock in §04 | the haddock lists every write the body performs | pending |
-| §04.4 AS series unchanged | nothing; it is the gate | AS1–AS13 and X1/X2 pass with no edits to them | pending |
+| §04.4 AS series unchanged | nothing; it is the gate | the whole AS series — PR 0's two additions included, which is what the gate is for — and X1/X2 pass with no edits to them | pending |
 | §05 battery | — | landed on master: the series and its harness in `3453b1777` through `8b5703e87`, then sibling (d)'s pin and the `permittedProjectClient` retag in `643337f51` | **done** |
 
 ### Running this plan
@@ -95,15 +106,19 @@ silently loses a test still passes:
 ```
 cabal build                                      # library, executable, suite
 cabal test                                       # 154 tests today
-cabal test --test-options='-p "/contract/"'      # 26, and they never move
-cabal test --test-options='-p "/LR-flip/"'       # 10, and they move once
+cabal test --test-options='-p "/contract/"'      # 26 today; moves once
+cabal test --test-options='-p "/LR-flip/"'       # 10 today; moves twice
 hlint .                                          # must print: No hints
 stylish-haskell -i <each .hs the step touched>   # must leave them unchanged
 python3 tools/leader-census.py                   # before step 2 only; see §03
 ```
 
-PR 0 of §01 moves the first three of those numbers, and moves them to 157,
-28 and 11; no other step may move any of them. A count that shifts
+Those three counts move at exactly two points and nowhere else. PR 0 of
+§01 takes them to 157, 28 and 11 — two AS cases and one flip pin — and §02
+step 4 then deletes LR6, taking them to 156, 28 and 10. A "count unmoved"
+in the table above is against whichever of the three baselines its row
+follows, and this is the only place the sequence is stated, so a row that
+disagrees with it is wrong there rather than here. A count that shifts
 otherwise is the finding, not a nuisance: both patterns select on the test
 *name*, so a renamed test leaves its series silently. Builds take minutes —
 set the timeout rather than reading one as a hang — and the flag set stays
@@ -445,8 +460,8 @@ of step 1.
    **LR6 is deleted, not flipped**: it pins that a dangling stale `ActorId`
    yields an arbitrary pick, and after the conversion there is no argument
    to dangle, so there is nothing to edit it to. Its going takes the flip
-   series to nine and the suite to 153, which is the one movement of those
-   counts §00 permits besides PR 0's; say so in the commit, since an
+   series 11 → 10 and the suite 157 → 156, the second of the two movements
+   §00's count sequence permits; say so in the commit, since an
    unexplained count drop is exactly what §00 tells a reader to treat as a
    finding. **And a [contract] test that needs a signature edit is not a
    contract test that moved**: `getFull`'s three plain cases
@@ -507,7 +522,7 @@ of step 1.
    the window, not only that a fixture can. Plus a pointman switch inside
    the fling dialog *and* inside the apply dialog, to confirm the
    post-mortem's §09 siblings are gone — the apply one by hand because
-   nothing else covers it, no test entering that dialog; and `make
+   it is the real frontend and PR 0's pin is not; and `make
    frontendCrawl` for a visual pass over menus. The last three are a
    human's, not a run's: the session and the two switches are played by
    hand, and `frontendCrawl` opens an SDL2 window, so a headless session
@@ -699,8 +714,8 @@ That is the post-mortem's §09 sibling (c), and it differs from (a) in the
 only way that matters to this step: (a) gains a `psuitReq` call inside the
 closure while keeping its entry one, this one is inside already and needs
 its *actor* read live. A conversion that puts `getLeaderUI` at the top of
-the body satisfies the compiler and leaves the bug. Nothing pins it: no
-test enters the apply dialog, which is why §02 step 6 checks it by hand.
+the body satisfies the compiler and leaves the bug. PR 0 pins it; §02
+step 6 also switches it by hand, that being the real frontend.
 
 **And the last column found a class the design had not named: it is not
 only the identity that goes stale, but what a body derives from it before
