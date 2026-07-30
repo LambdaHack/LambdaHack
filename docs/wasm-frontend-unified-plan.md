@@ -121,7 +121,7 @@ practices are ongoing or unscheduled tracks described after the phases.
   (`terminal.ts`, `terminal-core.ts` + tests, `loader.ts`, `serve*.ts`).
   The game page is `GameDefinition/index.html`. `make build-ts` builds
   `ts-src/` and deploys bundle + wasm + JSFFI glue + `index.html` into the
-  sibling checkout `../lambdahack.github.io` (Makefile:318-326), the
+  sibling checkout `../lambdahack.github.io` (Makefile:322-330), the
   GitHub Pages site players actually load.
 - **Fonts.** `config.ui.default` sets `chosenFontset = "dejavuBold"`
   (line 67); its `[fonts]` section names the web fonts directly:
@@ -317,7 +317,7 @@ makes those two frontends candidate consumers of the substitution rule
 too, though they use neither AltWhite nor highlights).
 
 Two riders on the `Sdl.hs` side of this work: derive `colorToRGBA`
-(`Sdl.hs:904-921`, a hand-maintained palette copy by its own comment)
+(`Sdl.hs:904-922`, a hand-maintained palette copy by its own comment)
 from `Color.colorToRGB`, closing the Haskell-vs-Haskell copy alongside
 the Haskell-vs-TS ones; and since `Sdl.hs`'s per-cell drawing is a hot
 path, gate its adoption of `CellStyle` on before/after `make bench` runs
@@ -735,7 +735,7 @@ then call and await `lhStart()`. Two integration points to cover:
   `nativeBenchCrawl`/`nativeBenchBattle`), but invoking the 3.2 driver on
   `wasm32-wasi-cabal list-bin exe:LambdaHack` plus post-linked glue (the
   `test-wasm` target shows the exact `post-link.mjs` recipe,
-  Makefile:309-316). `nodeBench` stays the aggregate of both.
+  Makefile:313-320). `nodeBench` stays the aggregate of both.
 - `nodeMinifiedBench` → rename to `nodeDeployedBench` (there is no
   "minified" wasm; the honest name is "the deployed artifact"): run the
   same two benchmarks against `../lambdahack.github.io/LambdaHack.wasm` +
@@ -838,12 +838,13 @@ kept as the resurrection manual). Instead, once WASM reaches parity
   stack's logic, which is why this plan cites them.)
 - **Everything else GHCJS goes**: the `impl(ghcjs)` cabal conditionals
   (`ghcjs-dom`/`ghcjs-base` deps and the exposed/other-module lines,
-  `LambdaHack.cabal:152-156` and `371-391`), the `ghcjs-options` knobs
-  (`GHCJS_GC_INTERVAL`, `GHCJS_BUSY_YIELD`, `-dedupe`, `GHCJS_BROWSER`,
-  `LambdaHack.cabal:163-177`), the `supportNodeJS` flag's GHCJS
-  semantics, `Frontend.hs:43-44`'s `USE_GHCJS` import branch, `File.hs`'s
-  `USE_JSFILE` branch, `TieKnot.hs:114-118`'s GHC.Compact escape hatch,
-  and the `USE_JSFILE` halves of the browser conditions in
+  `LambdaHack.cabal:148-152` and `LambdaHack.cabal:380-400`), the
+  `ghcjs-options` knobs (`GHCJS_GC_INTERVAL`, `GHCJS_BUSY_YIELD`,
+  `-dedupe`, `GHCJS_BROWSER`, `LambdaHack.cabal:165-173`), the
+  `supportNodeJS` flag's GHCJS semantics, `Frontend.hs:43-44`'s
+  `USE_GHCJS` import branch, `File.hs`'s `USE_JSFILE` branch,
+  `TieKnot.hs:114-118`'s GHC.Compact escape hatch, and the `USE_JSFILE`
+  halves of the browser conditions in
   `Server/LoopM.hs`/`WatchUpdAtomicM.hs`/`HandleHumanLocalM.hs` (or of
   their capability-constant successors, if that practice lands first).
   Update CLAUDE.md's and the README's GHCJS mentions in the same commit.
@@ -913,7 +914,7 @@ property, not the frontend's.)
 `sfrontendANSI`/`sfrontendTeletype`/`sfrontendNull`/`sfrontendLazy` are
 four independent `Bool`s (`ClientOptions.hs:62-68`) whose simultaneous
 truth is resolved by guard order in two places (`Frontend.hs:84-92` and
-`186-196`). One sum-typed field (`FrontendDefault | FrontendANSI |
+`Frontend.hs:186-196`). One sum-typed field (`FrontendDefault | FrontendANSI |
 FrontendTeletype | FrontendNull | FrontendLazy`) makes the guard chains
 total cases and turns conflicting flags into a parse error. Mechanical,
 moderate churn (options parser, UnitTestHelpers' stub options). Do before
@@ -1068,8 +1069,8 @@ are listed in A.7 and cited inline by number.
 ### A.1 The old GHCJS target is unbuildable — waiting was never an option
 
 - The repo requires GHC ≥ 9.10: `tested-with: GHC ==9.10.3 || ==9.12.4 ||
-  ==9.14.1` (`LambdaHack.cabal:47`) and `default-language: GHC2024`
-  (`LambdaHack.cabal:98`), which only exists in GHC 9.10+.
+  ==9.14.1` (`LambdaHack.cabal:43`) and `default-language: GHC2024`
+  (`LambdaHack.cabal:94`), which only exists in GHC 9.10+.
 - The standalone GHCJS compiler's last releases track GHC 8.6/8.10 [8]; it
   was never updated past that — its successor *is* the in-tree backend.
 - Therefore `Dom.hs` (283 lines), `JSFile.hs`, and every `impl(ghcjs)`
@@ -1125,7 +1126,7 @@ away under `USE_BROWSER`).
 - The new backend's documented convention for `foreign import javascript`
   is a **JS function expression** (typically an arrow function); the old
   GHCJS `$r = ...` result-assignment sugar is not documented as supported
-  [1]. Repo impact: exactly two import strings, `JSFile.hs:30-33`
+  [1]. Repo impact: exactly two import strings, `JSFile.hs:35-39`
   (`LZString.compressToUTF16`/`decompressFromUTF16`) — a mechanical
   rewrite.
 - There is no true `foreign export javascript` on the JS backend;
@@ -1191,15 +1192,16 @@ so the cheapest step retires the most uncertainty.
    until proven unnecessary. Everything after the spike is
    known-shape work.
 2. **Cabal + `JSFile.hs`, 1–2 days.** `impl(ghcjs)` → `arch(javascript)`
-   everywhere (library conditionals at `LambdaHack.cabal:152-156` and
-   `371-391`, plus the executable's); delete the dead old-compiler knobs
-   (`ghcjs-options`: `GHCJS_GC_INTERVAL`, `GHCJS_BUSY_YIELD`, `-dedupe`,
-   `GHCJS_BROWSER`, `LambdaHack.cabal:163-177` — none has a new-backend
-   equivalent; the new backend takes plain `ghc-options`); revisit the
-   `supportNodeJS` flag's meaning; rewrite the two `$r =` FFI strings as
-   arrow functions. The `USE_GHCJS`/`USE_JSFILE` CPP names can stay (they
-   name the *frontend/file-layer choice*, not the compiler), which keeps
-   the churn out of the eight source files that test them.
+   everywhere (library conditionals at `LambdaHack.cabal:148-152` and
+   `LambdaHack.cabal:380-400`, plus the executable's); delete the dead
+   old-compiler knobs (`ghcjs-options`: `GHCJS_GC_INTERVAL`,
+   `GHCJS_BUSY_YIELD`, `-dedupe`, `GHCJS_BROWSER`,
+   `LambdaHack.cabal:165-173` — none has a new-backend equivalent; the
+   new backend takes plain `ghc-options`); revisit the `supportNodeJS`
+   flag's meaning; rewrite the two `$r =` FFI strings as arrow
+   functions. The `USE_GHCJS`/`USE_JSFILE` CPP names can stay (they name
+   the *frontend/file-layer choice*, not the compiler), which keeps the
+   churn out of the eight source files that test them.
 3. **`Dom.hs` against ghcjs-dom, 2–5 days — the tail risk.** In the good
    case it compiles nearly as-is (the API surface `Dom.hs` uses — `on`,
    `EventM`, `RequestAnimationFrameCallback`, table/cell types — exists in
