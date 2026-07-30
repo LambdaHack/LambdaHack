@@ -566,61 +566,470 @@ measured change rather than a guess.
 
 ### 2.1 Extract `OverlayLayout`: the pure half of `Sdl.hs`'s overlay drawing
 
-**New module** `Game.LambdaHack.Client.UI.Frontend.OverlayLayout` holding
-every per-line decision that today lives interleaved with SDL IO in
-`Sdl.hs:593-713`:
+**New module** `Game.LambdaHack.Client.UI.Frontend.OverlayLayout`, holding
+every per-line and per-chunk decision that today sits interleaved with SDL
+IO in `Sdl.hs:593-713`. It is cut along the *measurement* line, and that
+seam is the design: chunking, colours, faces and the two fixed-pitch line
+cuts are pure and take no metrics at all, while the proportional pen — the
+one quantity that depends on rendered width — advances through two small
+pure functions the consumer calls with the width it has just measured. The
+ruler stays in the frontend; the cutoff rule, the clamp rule and the
+trimmed-line marker get one definition.
 
-- prop-line chunking: split an `AttrString` into same-fg runs, including
-  the subtle space-inherits-the-*next*-non-space-chunk's-color rule
-  (`drawPropLine`'s `isSpace`/`sameAttr`/`span`, `Sdl.hs:679-697`) —
-  exactly the kind of knowledge that would drift in a hand-port;
-- prop font choice per chunk: `fg >= White && fg /= BrBlack` → regular,
-  else bold (`drawPropChunk`, `Sdl.hs:700-702`);
-- even-row `White`→`AltWhite` (shared with/via `CellStyle`);
-- the coordinate-scaling *rule* — `xPx = x * halfSize`, `yPx = row *
-  boxSize` — parameterized by `halfSize`, **not** baked to SDL's pixel
-  values: `Sdl.hs` derives `halfSize` as half the loaded map font's real
-  `TTF.height` plus the fontset's `cellSizeAdd`, the font itself having
-  been loaded at a point size already multiplied by `sallFontsScale`
-  (`Sdl.hs:150-184`), while the browser's cell
-  box comes from CSS. Emitted positions therefore stay in *logical*
-  `PointUI` units; each consumer applies its own metrics (see 2.2/2.3);
-- line-overrun cutoffs (`take (2 * rwidth - x)` for mono, the
-  `x >= (rwidth-1) * boxSize` rejection for prop — restated in logical
-  units) — including the **trimmed-line marker**: when a prop chunk is
-  cut short, SDL stamps `Color.trimmedLineAttrW32` (a `$` marker) into
-  the last square column of that row (`Sdl.hs:577-578`), a rule that's
-  easy to lose in extraction because it lives inside the texture-scaling
-  helper, not the layout loop;
-- the layer-ordering rule: prop, then square, then mono last so overrun
-  warnings win (`Sdl.hs:728-733`) — encoded as a documented
-  constant/order, not a re-discovery.
+**Metrics.** Everything device-space is parameterized, never baked to SDL's
+numbers:
 
-Output type: per line, a logical start position plus chunks
-`(fontKind, colorIdx, text)`. **Measurement is the one thing that stays
-frontend-side**: prop-chunk x-advance depends on rendered width, so the
-module emits chunks and each consumer advances its own cursor (SDL from
-`TTF.shaded` surface widths as today; the browser from canvas
-`measureText`). Mono and square chunks need no measurement at all (fixed
-`halfSize`/`boxSize` advance per char). The alternative — Haskell calling
-a sync `js_measureText` per chunk — is rejected on boundary-cost grounds
-(a wasm↔JS crossing per chunk per frame), unless cursor-advance in the
-consumer proves insufficient in practice.
+```haskell
+-- | Cell metrics in one consumer's own device units: SDL pixels of the
+-- loaded map font, or the browser's CSS pixels measured off the rendered
+-- span grid (2.2).
+data LayoutMetrics = LayoutMetrics
+  { lmHalfSize :: Int  -- ^ one 'PointUI' step, and the mono pitch
+                       --   (@Sdl.hs:623@)
+  , lmBoxSize  :: Int  -- ^ one square cell: the square pitch and the row
+                       --   height of all three layers
+                       --   (@Sdl.hs:623@, @Sdl.hs:666@, @Sdl.hs:708@)
+  , lmWidth    :: Int  -- ^ @rwidth coscreen@, screen width in squares
+  }
+  deriving (Show, Eq)
 
-**Refactor `Sdl.hs` to consume the module** — this is the proof the
-extraction is faithful, and it de-risks everything downstream: if native
-playtests (`make test-medium`, `make frontendCrawl` for visual
-confirmation) pass with `Sdl.hs` on the shared module, the browser
-consumer starts from known-correct layout data. Perf-gate the refactor
-too: before/after `make bench` runs
-(`benchFrontendBattle`/`benchFrontendCrawl` exercise the refactored
-drawing path with fixed seeds). Tasty tests cover chunking
-edge cases (leading/trailing/multi-space runs, color changes at spaces,
-overrun cutoffs), plus QuickCheck properties (QuickCheck is already a
-library dependency — `Point.hs` imports it): the chunk texts of a line
-concatenate back to the input minus the overrun cut, and every chunk is
-single-colored under the space-inheritance rule. Fixed cases catch the
-known edges; properties catch the unknown ones.
+-- | The only constructor, so that "map font determines cell size for all
+-- others" (@Sdl.hs:183-184@) cannot come apart in a consumer. @Sdl.hs@
+-- passes half the loaded map font's size, that font having been opened at
+-- a point size already multiplied by @sallFontsScale@ (@Sdl.hs:152@); the
+-- browser passes half its measured grid box.
+mkLayoutMetrics :: Int -> Int -> LayoutMetrics
+mkLayoutMetrics halfSize width =
+  assert (halfSize > 0 && width > 1)
+  $ LayoutMetrics halfSize (2 * halfSize) width
+```
+
+**The metric-free half.** Its invariant is visible in the signatures: none
+of these takes a `LayoutMetrics`, so none of them can emit a device-space
+number.
+
+```haskell
+-- | Which of the two proportional faces draws a chunk
+-- (@Sdl.hs:700-702@, over the two fonts loaded at @Sdl.hs:186-187@).
+--
+-- Deliberately not 'Overlay.DisplayFont': that type names the three
+-- overlay *layers* (@Overlay.hs:56@), is kept abstract on purpose so that
+-- 'FontSetup' overrides cannot be bypassed (@Overlay.hs:44-51@), and
+-- refuses width questions outright (@textSize PropFont@ is an @error@,
+-- @Overlay.hs:64-67@) — which is the one question this module poses. It
+-- has no bold constructor either, so it cannot express this choice.
+--
+-- Two constructors and no square or mono ones: those layers have exactly
+-- one face each, so their per-item font choice does not exist.
+data PropFont = PropRegular | PropBold
+  deriving (Show, Eq, Ord, Enum, Bounded)
+
+-- | The face rule, on the already even-row-adjusted colour. @AltWhite@
+-- sorts between @White@ and @BrBlack@ (@Color.hs:33-51@), so the even-row
+-- substitution provably cannot flip a chunk from regular to bold — which
+-- is why 'chunkPropLine' may apply it before reading the colour here, as
+-- @Sdl.hs:693-694,700@ does.
+propFontOf :: Color.Color -> PropFont
+propFontOf fg | fg >= Color.White && fg /= Color.BrBlack = PropRegular
+              | otherwise = PropBold
+
+-- | One maximal same-colour run of a proportional line. It carries no
+-- position: its x is the running sum of the *measured* widths of every
+-- chunk before it (@Sdl.hs:696-697@), which is the whole reason the
+-- placement half of this module exists.
+data PropChunk = PropChunk
+  { pcFont     :: PropFont      -- ^ 'propFontOf' of 'pcColor'
+  , pcColor    :: Color.Color   -- ^ even-row adjusted (@Sdl.hs:693-694@)
+  , pcText     :: Text          -- ^ colours dropped (@Sdl.hs:695@);
+                                --   never empty
+  , pcAllSpace :: Bool          -- ^ @T.all isSpace pcText@
+                                --   (@Sdl.hs:703@). Not a convenience: it
+                                --   decides whether an overrunning run may
+                                --   claim the last cell (@Sdl.hs:553@) and
+                                --   whether the cut raises the marker
+                                --   (@Sdl.hs:577@), so it is the one
+                                --   measurement-rule input that must reach
+                                --   the consumer, and 2.3 carries it.
+  }
+  deriving (Show, Eq)
+
+-- | One proportional line, still at its logical 'PointUI' start.
+data PropLine = PropLine
+  { plStartX :: Int  -- ^ 'PointUI' x, in half-cells; multiplied by
+                     --   @lmHalfSize@ exactly once, in 'startPropLine'
+                     --   (@Sdl.hs:673@)
+  , plRow    :: Int
+  , plChunks :: [PropChunk]
+  }
+  deriving (Show, Eq)
+
+-- | Which fixed-pitch layer a run belongs to. Total, unlike a face tag:
+-- these two layers are the ones with a pitch.
+data CellLayer = LayerSquare | LayerMono
+  deriving (Show, Eq, Ord, Enum, Bounded)
+
+-- | Device advance of one cell: a box for square (@Sdl.hs:666@), a half
+-- for mono (@Sdl.hs:623@).
+cellPitch :: LayoutMetrics -> CellLayer -> Int
+cellPitch LayoutMetrics{lmHalfSize, lmBoxSize} = \case
+  LayerSquare -> lmBoxSize
+  LayerMono -> lmHalfSize
+
+-- | A run of cells in one fixed-pitch layer, already cut to the screen.
+--
+-- The cells stay raw 'Color.AttrCharW32' words, @bg@ included, because the
+-- square layer really carries highlights: @bg@ enters the atlas key when
+-- it is @HighlightBackground@ (@Sdl.hs:644-646@), picks the grey fill
+-- (@Sdl.hs:657-659@) and drives @chooseAndDrawHighlight@ (@Sdl.hs:669@,
+-- defined at @Sdl.hs:504-518@). The even-row and floor-glyph substitutions
+-- are *not* applied here — they are 0.2's `CellStyle` rules, applied by
+-- the painter per cell; restating them would be the second definition G1
+-- forbids.
+data CellRun = CellRun
+  { crLayer :: CellLayer
+  , crRow   :: Int
+  , crCol   :: Int  -- ^ leftmost cell, in units of 'cellPitch': square
+                    --   columns after @uiToSquare@'s @div 2@
+                    --   (@PointUI.hs:39-41@, applied at @Sdl.hs:628@),
+                    --   'PointUI' half-cells for mono (@Sdl.hs:595@)
+  , crCells :: AttrString  -- ^ non-empty
+  }
+  deriving (Show, Eq)
+
+-- | One frame's overlays. The field order is the draw order — prop, then
+-- square, then mono last, so a mono overrun warning wins over the
+-- proportional text beneath it (@Sdl.hs:728-733@, and the engine says the
+-- same of the layers at @Overlay.hs:38-42@) — and 2.3's payload carries
+-- its three sections in that order, so neither consumer has to know the
+-- rule to obey it. @singleArray@ is not here: the map is not an overlay
+-- and is drawn by diffing (@Sdl.hs:720-723@).
+data FrameLayout = FrameLayout
+  { flProp   :: [PropLine]
+  , flSquare :: [CellRun]
+  , flMono   :: [CellRun]
+  }
+  deriving (Show, Eq)
+
+-- | Lay out a whole frame. The 'Int' is @rwidth coscreen@.
+layOutFrame :: Int -> SingleFrame -> FrameLayout
+
+-- | Split a line into maximal same-colour chunks (@Sdl.hs:679-695@),
+-- resolving two rules that a hand-port would drift on: a *leading* space
+-- run takes the colour of the next non-space character, or its own if the
+-- line is all spaces (@Sdl.hs:683-687@), while an *interior* space run
+-- joins the run to its left, spaces matching any colour in @sameAttr@
+-- (@Sdl.hs:688-689@). Even-row @White@ becomes @AltWhite@
+-- (@Sdl.hs:693-694@) via `CellStyle`, not by a second copy of the rule.
+--
+-- Asserts each cell's @bg@ is @HighlightNone@ or @HighlightNoneCursor@
+-- (@Sdl.hs:691-692@) — an assertion that today can only fire with SDL
+-- running and after this extraction fires under @cabal test@ too.
+--
+-- Cuts nothing: cutting is 'propFit''s business. That is what turns the
+-- concatenation property below into an equality.
+chunkPropLine :: Int -> AttrString -> [PropChunk]  -- ^ row, then the line
+
+-- | @take (rwidth - col)@ after @uiToSquare@ (@Sdl.hs:628-629@); drops
+-- runs left empty.
+layOutSquare :: Int -> OverlaySpace -> [CellRun]
+
+-- | @take (2 * rwidth - x)@, in half-cells (@Sdl.hs:596@), plus the mono
+-- @bg@ assertion (@Sdl.hs:611-612@).
+layOutMono :: Int -> OverlaySpace -> [CellRun]
+
+-- | The half of the overrun cutoff that *is* expressible in logical units:
+-- may a line starting at this 'PointUI' x be drawn at all? Exactly
+-- equivalent to 'propCutoff' on the line's first chunk, because
+-- @lmBoxSize == 2 * lmHalfSize@ and @lmHalfSize > 0@:
+--
+-- > xUI * halfSize >= (rwidth - 1) * boxSize  <=>  xUI >= 2 * (rwidth - 1)
+propLineStartFits :: Int -> Int -> Bool
+propLineStartFits width xUI = xUI < 2 * (width - 1)
+```
+
+**The measured half.** Two functions and an opaque pen. `PropCursor` is
+constructible only by `startPropLine` and advanceable only by `propFit`, so
+no consumer can present the cutoff rule with an x the module did not
+compute.
+
+```haskell
+-- | Pen state for one proportional line, in device units.
+data PropCursor = PropCursor
+  { pcurXPx :: Int  -- ^ not exported
+  , pcurRow :: Int
+  }
+  deriving (Show, Eq)
+
+-- | The one place a logical x becomes a device x (@Sdl.hs:673@).
+startPropLine :: LayoutMetrics -> PropLine -> PropCursor
+startPropLine LayoutMetrics{lmHalfSize} PropLine{plStartX, plRow} =
+  PropCursor (plStartX * lmHalfSize) plRow
+
+-- | Has the pen reached the last column? Then this chunk and every later
+-- chunk of the line is dropped — "for KISS, reject it" (@Sdl.hs:676-678@).
+-- Measurement-free on purpose: @Sdl.hs@ tests it *before* rendering the
+-- chunk, so a consumer that calls this first never rasterizes a chunk it
+-- then throws away.
+propCutoff :: LayoutMetrics -> PropCursor -> Bool
+propCutoff LayoutMetrics{lmBoxSize, lmWidth} PropCursor{pcurXPx} =
+  pcurXPx >= (lmWidth - 1) * lmBoxSize
+
+-- | Where a measured chunk goes, how much of it survives, and whether the
+-- cut raises the trimmed-line marker.
+data PropFit = PropFit
+  { pfXPx     :: Int            -- ^ device x to draw at (@Sdl.hs:708@)
+  , pfWidthPx :: Int            -- ^ device width to draw *and to clip to*:
+                                --   the whole chunk when it fits, else the
+                                --   cut width. @Sdl.hs@ uses it as both the
+                                --   source crop (@Sdl.hs:558-559@) and the
+                                --   target width (@Sdl.hs:709@); canvas
+                                --   @fillText@ has no width argument, so
+                                --   the browser needs it as a clip rect.
+  , pfMarker  :: Maybe CellRun  -- ^ draw it *now*, before the next chunk
+  , pfNext    :: PropCursor
+  }
+  deriving (Show, Eq)
+
+-- | Resolve one measured chunk: the three-way clamp of @Sdl.hs:551-554@
+-- and the marker condition of @Sdl.hs:577@, which is exactly "the run was
+-- cut and it was not blank".
+--
+-- The consumer supplies the natural rendered width in its own device
+-- units, rounded *up*, so that "it fits" is never optimistic: @Sdl.hs@
+-- passes the rendered surface's width (@Sdl.hs:549-550@, produced by the
+-- @TTF.shaded@ call at @Sdl.hs:704-705@), the browser
+-- @ceil (measureText t)@.
+--
+-- Precondition: @not (propCutoff lm cur)@, which is also what makes the
+-- third branch positive — the guard gives @remaining > lmBoxSize@.
+propFit :: LayoutMetrics -> PropCursor -> PropChunk -> Int -> PropFit
+propFit lm@LayoutMetrics{lmBoxSize, lmWidth} cur PropChunk{pcAllSpace}
+        widthRaw =
+  assert (not (propCutoff lm cur) && widthRaw >= 0)
+  $ PropFit { pfXPx = pcurXPx cur
+            , pfWidthPx = width
+            , pfMarker = if trimmed
+                         then Just (trimmedMarkerRun lm (pcurRow cur))
+                         else Nothing
+            , pfNext = cur {pcurXPx = pcurXPx cur + width} }
+ where
+  remaining = lmWidth * lmBoxSize - pcurXPx cur          -- Sdl.hs:551
+  width | widthRaw <= remaining = widthRaw               -- Sdl.hs:552
+        | pcAllSpace = remaining                         -- Sdl.hs:553
+        | otherwise = remaining - lmBoxSize              -- Sdl.hs:554
+  trimmed = width /= widthRaw && not pcAllSpace          -- Sdl.hs:577
+
+-- | The @$@ stamped into the last square column of a trimmed row
+-- (@Sdl.hs:577-578@; @Color.hs:236-237@ defines it as a @BrBlack@ @'$'@),
+-- expressed as an ordinary square-layer run so that no frontend needs
+-- marker code of its own. Distinct from the engine-level @$@ that
+-- @truncateAttrLine@ splices into an over-long line (@Frame.hs:200@):
+-- that one counts logical cells before a frontend sees the string, this
+-- one reacts to rendered width. Both use the same word; do not unify them.
+trimmedMarkerRun :: LayoutMetrics -> Int -> CellRun
+trimmedMarkerRun LayoutMetrics{lmWidth} row =
+  CellRun { crLayer = LayerSquare
+          , crRow = row
+          , crCol = lmWidth - 1
+          , crCells = [Color.trimmedLineAttrW32] }
+```
+
+**Two invariants the arithmetic gives for free**, worth asserting rather
+than commenting. Both clamping branches leave the pen at or past the
+cutoff: `pcAllSpace` yields `xPx + width == lmWidth * lmBoxSize`, and the
+third branch yields exactly `(lmWidth - 1) * lmBoxSize`, which the `>=` in
+`propCutoff` catches. So **a clamped chunk always ends its line**, hence at
+most one marker per line and "draw `pfMarker` immediately" is bit-exact
+with SDL. And since the precondition gives `remaining > lmBoxSize`, the
+third branch's width is always positive: no zero-width blit.
+
+**A correction the design forces.** The plan's blanket statement that
+emitted positions stay in logical `PointUI` units is true of everything
+this module *emits* and false of the pen: after the first chunk the x is a
+running sum of measured widths (`Sdl.hs:696-697`). Logical on the wire and
+in `FrameLayout`; device-space only inside `PropCursor`, which never
+travels. The one exactly-logical piece of the cutoff is `propLineStartFits`
+above.
+
+**Rejected: a character-count cutoff.** Replacing the pixel rule with a
+column count would make the module self-contained, and it does not work.
+The engine already wraps proportional text by character count
+(`splitAttrString`, `Overlay.hs:232-235`, reached for prop text through
+`indentSplitAttrString`, `Overlay.hs:237-238`) and deliberately refuses to
+model proportional width at all — `textSize PropFont` is an `error`
+(`Overlay.hs:64-67`) and the wrap's own comment says the space width
+"varies wildly" (`Overlay.hs:239-240`). A character-count cutoff would
+therefore either duplicate that wrap and never fire, letting a wide-glyph
+overrun paint past the screen edge, or fire on lines that fit and truncate
+normal menu text. The pixel rule is the safety net for exactly the case the
+character model cannot see; it stays, and with it the measured half.
+
+**Refactor `Sdl.hs` to consume the module** — the proof the extraction is
+faithful, and what de-risks everything downstream: if the native playtests
+(`make test-medium`, `make frontendCrawl` for a visual look) pass with
+`Sdl.hs` on the shared module, the browser consumer starts from
+known-correct layout data. `drawPropOverlay`/`drawPropLine`/`drawPropChunk`
+(`Sdl.hs:670-713`) and the two line cuts (`Sdl.hs:596`, `Sdl.hs:629`) go;
+`scaleSurfaceToTextureProp` (`Sdl.hs:546-579`) loses its `x`, `row` and
+`allSpace` parameters, its width arithmetic and its `setSquareChar` call,
+shrinking to the crop-and-blit it is named for — which is the rule leaving
+the texture helper, the place the plan flagged as easiest to lose it in.
+What stays in `Sdl.hs`: font handles, `TTF.shaded`, the vertical crop and
+centring (`Sdl.hs:555-562` — blit mechanics with no canvas counterpart,
+declined deliberately rather than generalized), atlases, `SDL.copy`,
+`chooseAndDrawHighlight`, and the per-cell glyph decisions that are 0.2's
+business. Perf-gate the adoption as 0.2's is gated: before/after `make
+bench` (`benchFrontendBattle`/`benchFrontendCrawl`, fixed seeds), since
+`Sdl.hs`'s per-cell drawing is a hot path. Fix `Sdl.hs:590`'s `toEnum`
+violation in the same commit if 0.2 has not already, the loop being touched
+either way.
+
+**How the marker travels.** It is a rule, not a datum, and it travels as
+one. The rule is the single line `trimmed = width /= widthRaw && not
+pcAllSpace` inside `propFit`, inseparable from the clamp that produced
+`width` — which is why the plan's earlier "output type: chunks" could not
+express it: the marker is a function of a measurement, so it can only be
+decided when the measurement arrives, and it cannot be known at encode
+time. On the wire, therefore, **it has no slot**; what travels is
+`pcAllSpace`, one bit per chunk, and whichever `propFit` runs re-derives
+the marker. In the consumer it appears as `pfMarker :: Maybe CellRun`, a
+fully formed square-layer run at column `lmWidth - 1` — so a frontend draws
+it with the same routine it draws every other `CellRun`, and a browser
+implementer never has to learn it exists. Returning it from `propFit`
+rather than appending it to `flSquare` also preserves the ordering
+subtlety: `Sdl.hs` writes it from inside the proportional pass
+(`Sdl.hs:577-578`, called from `Sdl.hs:706-707`), *before*
+`drawSquareOverlay` runs at all (`Sdl.hs:731-732`), so a genuine
+square-overlay cell in the last column still overwrites it. Its content
+needs no special casing anywhere: `trimmedLineAttrW32` is a `BrBlack` `'$'`
+(`Color.hs:236-237`), so `AltWhite` cannot apply to it and its
+`HighlightNone` background takes `workaroundOverwriteHighlight`
+(`Sdl.hs:515`) like any other unhighlighted cell.
+
+**What this means for 2.3's transport.** The format sketched there — per
+line `y`, logical `xStart`, chunk count; per chunk `fontKind|colorIdx`,
+length, codepoints — changes in four ways, all of them staying inside the
+same idiom: a packed `Word32` buffer passed by address, no string
+marshalling, no serialization dependency.
+
+1. **Three sections, in draw order**, behind a header of three counts. The
+   sketched format cannot carry the two cell layers at all, though 2.3
+   already promises all three travel; making the sections structural is
+   what lets a decoder obey the layer rule without knowing it.
+2. **Cell layers ship raw `AttrCharW32` words**: per run, layer tag, row,
+   col, count, then the already-cut cells verbatim. `fontKind|colorIdx`
+   plus codepoints would silently drop `bg`, which the square layer needs
+   three times over (`Sdl.hs:644-646,657-659,669`); an `AttrCharW32`
+   already packs char, fg and bg into one word, and `terminal-core.ts`
+   decodes exactly that word for the map grid today. Lossless *and* less
+   encoder work.
+3. **The prop chunk header splits into three fields.** Layer is no longer
+   part of it, the layers being separate sections, so the face is a
+   one-bit choice between the two proportional fonts (`Sdl.hs:700-702`);
+   the colour index is its own field; and `pcAllSpace` gets a bit, because
+   `propFit` consumes it (`Sdl.hs:553`, `Sdl.hs:577`) and it is
+   measurement-free, so the module owns it and the consumer needs it.
+4. **`xStart` stays logical, and now load-bearing rather than stylistic:**
+   it is logical precisely because the receiving consumer's
+   `startPropLine` computes the device x. Nothing device-space is encoded.
+
+The encoder still lives next to `OverlayLayout` and is still pure; tasty
+still round-trips it on fixed cases and on QuickCheck-generated
+`OverlaySpace` values; the 0.2 generator still emits decoder fixtures.
+
+**The browser's share of the rule**, decided here because it decides what
+this module exports: TS re-implements `propCutoff` and `propFit` — two
+comparisons and a three-way `min`, with no string, colour or chunking
+knowledge — pinned by 0.2-generated branch-complete fixtures, a table of
+`(halfSize, width, cursorX, allSpace, widthRaw) -> (stop | x, width,
+marker)` run by vitest in CI, exactly as `CellStyle`'s TS twin is pinned.
+This respects the standing ruling against a sync `js_measureText` crossing
+per chunk per frame rather than arguing it down. Recorded alternative, with
+its trigger: batch instead — one crossing per frame carrying every chunk's
+text out and every measured width back, then run the real `propFit` in
+Haskell. It costs a round trip and a frame of latency, and it is worth
+taking only if the twin ever needs to grow past pure integer arithmetic.
+Today it does not, and the subtle knowledge — space inheritance, face
+choice, the recolouring, the two cell cuts, the layer order — never crosses
+under either option.
+
+**Tests.** Nothing above touches SDL or a canvas, so
+`test/OverlayLayoutUnitTests.hs` (the harness's `<Module>UnitTests.hs`
+naming, wired into `test/Spec.hs`'s list beside the others) needs no
+`SessionUIMock`; `chunkPropLine` is reached through the repo's
+`EXPOSE_INTERNAL` idiom (`PointUI.hs:5-8`), and QuickCheck is already in
+the suite (`test/SessionUIUnitTests.hs:10`).
+
+Fixed cases, chunking: the empty line; one character; leading spaces before
+a coloured run (the next-non-space inheritance); trailing spaces, the only
+way an all-space chunk arises; a multi-space run *between* two
+differently-coloured runs, which joins the left one — the case a hand-port
+gets backwards; an all-space line, taking the `[] -> w` fallback
+(`Sdl.hs:686`); a colour change with no space at the boundary; a line whose
+spaces are *coloured*, which pins the deliberate difference between the
+chunker's `(== spaceAttrW32)` (`Sdl.hs:680`; a default-attribute space,
+`Color.hs:230-231`) and `pcAllSpace`'s `Char.isSpace` (`Sdl.hs:703`) —
+unifying those two would silently change which lines get the marker; and
+even against odd rows over a `White` cell, paired with the assertion that
+both still choose `PropRegular`.
+
+Fixed cases, placement — one row per branch of `Sdl.hs:552-554` and
+`Sdl.hs:676-678`: the pen below the limit; the pen exactly at
+`(lmWidth - 1) * lmBoxSize`, which the `>=` stops; `widthRaw` under
+`remaining`; `widthRaw == remaining`, fitting exactly with no marker, the
+case an off-by-one in a port flips; `widthRaw` over, not all-space (clamp
+to `remaining - lmBoxSize`, marker fires); the same all-space (clamp to
+`remaining`, *no* marker — the asymmetry that makes `pcAllSpace`
+load-bearing); a clamped chunk followed by more chunks, asserting the tail
+is dropped and the line ends; and `remaining == lmBoxSize + 1`, the
+tightest case in which the third branch stays positive.
+
+QuickCheck properties, over arbitrary `AttrString`s built from a legal fg
+colour, a `HighlightNone`/`HighlightNoneCursor` bg and a printable char, so
+that `Sdl.hs:691-692`'s assertion holds by construction:
+
+- *chunking is total*: `concatMap (T.unpack . pcText) (chunkPropLine row
+  al) == attrStringToString al` (`Overlay.hs:111-112`), for all rows and
+  lines. Separating chunking from fitting is what strengthens the plan's
+  earlier "concatenate back to the input minus the overrun cut" into a
+  plain equality — the cut is now a different function's claim.
+- *chunks are single-coloured under space inheritance*: splitting the input
+  by the chunk lengths, every cell of a chunk's slice satisfies
+  `fgFromW32 ac == pcColor c || ac == spaceAttrW32` (`Sdl.hs:688-689`).
+- *no chunk is empty, and the lengths sum to the input's.* This is also the
+  termination argument: `Sdl.hs:697` recurses on the remaining string, not
+  on the pen, so a zero-advance measurement cannot loop — worth a property
+  rather than a comment, since the naive reading of that recursion says
+  otherwise.
+- *the derived fields agree*: `pcFont c == propFontOf (pcColor c)` and
+  `pcAllSpace c == T.all isSpace (pcText c)`, so neither can be supplied
+  independently across the boundary.
+- *placement stays on screen*: `pfWidthPx <= widthRaw`; `pfXPx +
+  pfWidthPx <= lmWidth * lmBoxSize`; `isJust pfMarker` implies both
+  `pfWidthPx < widthRaw` and `pfXPx + pfWidthPx <= (lmWidth - 1) *
+  lmBoxSize`, i.e. the marker cell is left unpainted; and the pen is
+  monotonic.
+- *scale invariance*, the formal content of "not baked to SDL's pixel
+  values": for all `k > 0`, `propFit (mkLayoutMetrics (k * h) w)` on a
+  `k`-scaled cursor and a `k`-scaled `widthRaw` gives the `k`-scaling of
+  `propFit (mkLayoutMetrics h w)` on the originals. The metric-free half
+  is invariant by construction, taking no metrics.
+- *logical and device cutoffs agree*: for all `w`, `h > 0` and `xUI >= 0`,
+  `propLineStartFits w xUI` equals `not (propCutoff (mkLayoutMetrics h w)
+  (startPropLine …))` on that line's first chunk.
+- *the cuts are the module's*: `layOutSquare`/`layOutMono` emit no run
+  longer than `width - crCol` / `2 * width - crCol`, and emit the input
+  unchanged when it fits.
+- *transport round trip*: `decode . encode == id` on generated
+  `FrameLayout`s (2.3).
+
+Non-vacuity, per the repo's rule: each of the six placement rows must be
+shown to fail when its own line of `propFit` is perturbed — drop the
+`- lmBoxSize`, flip the `not pcAllSpace`, weaken the `>=` to `>` — and the
+proof recorded next to the table, since a table built on a wrong
+`remaining` passes six ways at once. The refactor's own proof stays the
+native one: `make test-medium`, a `make frontendCrawl` look, and before and
+after `make bench`.
 
 ### 2.2 Browser overlay renderer, in isolation
 
@@ -675,11 +1084,15 @@ Verify: vitest green; live game pixel-identical to before (nothing wired).
 (`Wasm.hs:79`; `OverlaySpace = [(PointUI, AttrString)]`, `Frame.hs:100`).
 Add an **additive** `js_submitOverlays` alongside `js_submitFrame`, using
 the same idiom the frame already uses: a packed `Word32` buffer passed by
-address (per line: `y`, logical `xStart`, chunk count; per chunk:
-fontKind|colorIdx, length, then codepoints — everything is numeric and
-fits `Word32`, no string marshalling, no new serialization dependency).
-Positions stay in logical `PointUI` units per 2.1; TS scales by its own
-measured cell box. The encoder lives next to `OverlayLayout` and is pure;
+address — everything is numeric and fits `Word32`, no string marshalling,
+no new serialization dependency. The payload's shape is specified once, in
+2.1, under "What this means for 2.3's transport": three sections in draw
+order behind a header of counts, cell layers shipping raw `AttrCharW32`
+words, the prop chunk header split into face, colour index and the
+`pcAllSpace` bit, and `xStart` logical because the receiving consumer's
+`startPropLine` is what turns it into a device x. Restating it here is the
+second definition G1 forbids, and the field list is exactly what drifts.
+The encoder lives next to `OverlayLayout` and is pure;
 tasty round-trips it on fixed cases and on QuickCheck-generated arbitrary
 `OverlaySpace` values, and the 0.2 generator emits encode fixtures the TS
 decoder is tested against. All three overlay kinds (prop/square/mono)
