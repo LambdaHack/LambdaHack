@@ -36,7 +36,11 @@ it.
 > The excerpt at the head of §01 describes the code *as of the stamped
 > commit* and is not maintained against later trees — after the split
 > lands it is history, while the invariants under it are the part that
-> survives. The split sketched after those invariants is the live part, on
+> survives. The split sketched after those invariants is the live part,
+> executed rather than merely read — `docs/leader-desync-migration.md`
+> hands it to a session, which will do exactly what it says and nothing it
+> implies, so a gap here is a question for that plan and not a judgment
+> call at the keyboard. It follows
 > the post-mortem's model (its §§10–11 callout): a specification until it
 > lands or is abandoned, so its claims about today's tree are re-verified
 > with the migration document rather than left to age. Outcome lines:

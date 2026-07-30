@@ -75,6 +75,19 @@ unit of rollback §01 relies on.
 
 ### Running this plan
 
+**Who runs it.** A session, autonomously, not a person working from
+memory of the campaign — the same executor
+`docs/wasm-frontend-unified-plan.md` writes for, and the reason that plan
+spells out per item what a session cannot do. Nothing below is addressed
+to someone who already knows which check opens a window or which count
+was true last week. Two consequences bind every row: a session does
+exactly what is written and nothing that is merely implied, so an
+unstated step is an unperformed one; and it cannot tell a check it is
+expected to skip from one it has failed to run, so a row whose acceptance
+it cannot complete has to say so rather than leave the gap to judgment.
+That this had to be stated is itself the evidence — the intent was read
+off the prose and got read wrong.
+
 **The gates, once.** Every "check when done" above is one of these, run from
 the repo root. Read the counts, not the exit status alone — a suite that
 silently loses a test still passes:

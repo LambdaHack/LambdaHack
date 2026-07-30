@@ -47,6 +47,11 @@ unrepresentable.
 >   applied**; the work list is `docs/leader-desync-migration.md`, which is
 >   written to be deleted, unlike this file.
 >
+> §§10–11 are executed, not merely read: `docs/leader-desync-migration.md`
+> hands them to a session, so they are read by a machine that will do
+> exactly what they say and nothing they imply. Where they underspecify,
+> the plan is where the question goes, not the implementer's judgment.
+>
 > **§§10–11 are the exception: not frozen, because not yet history.** They
 > are the specification `docs/leader-desync-migration.md` executes, plus
 > the argument that executing it needs no performance gate — so their
