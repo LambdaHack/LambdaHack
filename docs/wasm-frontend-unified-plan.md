@@ -702,7 +702,8 @@ reach `InputDecision` directly, so either `Frontend.hs` re-exports it or
 the convention takes a stated exception; whichever, it binds 0.2 and 2.1
 too. (3) Whether the table-driven test of SDL's `keyTranslate` is in
 scope here: it is exported only under `EXPOSE_INTERNAL` (`Sdl.hs:4-8`),
-which `test/CLAUDE.md` warns compiles here and breaks under `-release`,
+which `release` no longer defines by default, so a test reaching it does
+not compile at all — the trap `test/CLAUDE.md` records, now immediate,
 and reaching it needs an sdl2 build-depend plus a `#ifndef USE_BROWSER`
 guard, because `Frontend.Sdl` is not a module under `os(wasi)` and `make
 test-wasm` links the same suite. Either accept that cost or test
@@ -1823,9 +1824,12 @@ first chunk. Left open, SDL and the browser diverge on precisely the case
 the module exists to unify. (b) how `chunkPropLine` reaches its tests:
 §2.1 routes it through `EXPOSE_INTERNAL` (`PointUI.hs:5-8`), while
 `test/CLAUDE.md:15` rules that a name a unit test consumes must sit
-*outside* that block, because `release` defaults to `True`
+*outside* that block, because `release` defaults to `False`
 (`LambdaHack.cabal:83-85`, `LambdaHack.cabal:135-136`) and the idiom
-therefore compiles here and breaks the suite under `-release`. Two repo
+therefore breaks the suite in the ordinary build. That default was `True`
+when this was written, which left the breakage to a flag nobody passed;
+flipping it forces the first branch below rather than merely favouring
+it. Two repo
 documents disagree; either correct §2.1's sentence to `Common/Kind.hs:15-16`'s
 "internal and used in unit tests" group in commit (1), or record why the
 block is acceptable here — but do not silently pick. (c) the name and
@@ -2973,12 +2977,11 @@ holder at a time for each.
 `engine-src/Game/LambdaHack/Client/UI/Frontend.hs`,
 `engine-src/Game/LambdaHack/Client/UI/Frontend/Common.hs`,
 `test/FrontendContractUnitTests.hs`), `wasm`, `docs`, plus `cabal test
---test-options='-p "/fe-invariant/"'` && `cabal build --builddir=dist-norelease
---flags=-release test`. The `-release` build is the point of
-that clause, not padding: it is the only thing that catches a harness
-leaning on the `EXPOSE_INTERNAL` block, and the separate `--builddir`
-keeps the flag flip from forcing a rebuild of the session's own
-artifacts.
+--test-options='-p "/fe-invariant/"'`. That used to carry a second
+build, `cabal build --builddir=dist-norelease --flags=-release test`,
+as the only thing catching a harness leaning on the `EXPOSE_INTERNAL`
+block; `release` now defaults `False`, so the ordinary build is that
+build and the clause would only re-state the default.
 
 **Hands back** — *display*: SDL2 is the frontend whose folklore the
 contract most needs to bind — the bound main thread via
@@ -2991,10 +2994,11 @@ itself, run against null, lazy and Teletype natively and against the real
 **Decide first** — (1) the export gating. `nullStartup`, `lazyStartup`,
 `display` and `frameTimeoutThread` leave `Frontend.hs` only inside
 `#ifdef EXPOSE_INTERNAL` (`Frontend.hs:9-13`), which `flag(release)`
-defines (`LambdaHack.cabal:83-86`, `:135-136`) and which defaults `True`
-— so a harness driving them compiles here and breaks under `-release`,
-exactly the trap `test/CLAUDE.md` records for `emptyUnknownTile`
-(`Common/Kind.hs:16`). Branches: hoist the four names into the
+defines (`LambdaHack.cabal:83-86`, `:135-136`) and which defaults `False`
+— so a harness driving them does not compile at all, which is the trap
+`test/CLAUDE.md` records for `emptyUnknownTile` (`Common/Kind.hs:16`) in
+the form it takes now that the default no longer hides it until someone
+passes `-release`. Branches: hoist the four names into the
 unconditional export list, following that precedent, and say so in the
 item; or drive only `chanFrontendIO`, which starts a whole frontend chain
 and cannot isolate the `fshowNow` handshake. Whether the hoist is this
