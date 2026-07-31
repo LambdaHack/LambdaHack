@@ -284,6 +284,25 @@ the next reader has to skip.
   measurement instead. The pattern is worth the entry: each was a *reason*
   for a hands-back, so each made a check look impossible that was merely
   unattempted.
+- 2026-08-05 · the **Decide first** fields were re-read against the rest
+  of the document. Four claims found wrong, three of them R3's: its (a)
+  posed a question the item's own body had answered as checked fact from
+  the start — no README clause survives, `README.md:79-81` is R1's and
+  R5's — so the field is three questions now; its mention inventory
+  listed the `nodeBench*` targets and their `SKILL.md` sentence, both
+  claimed by 3.3's Split all along; and its renumbering count said nine,
+  missing the live `Frontend.hs:41-48` in the capability constants'
+  intro. The fourth is 0.2's bench-gate question, which still handed the
+  gate to a human run — the reason 2.1's block retired when `xvfb-run`
+  arrived; 0.2's Done and Hands back follow 2.1's now.
+- 2026-08-05 · the TS typecheck got its standing home: `make test-ts`
+  runs `npx tsc --noEmit` before vitest — inside the recipe line, so the
+  Makefile's line count and every cited line stay put — and the CI job
+  inherits it by running the target. The `ts` gate shrank to
+  `make test-ts`, and the trap bullet that made every TS-touching Done
+  carry the clause retired with the gap. Non-vacuity measured with a
+  planted type error: vitest alone passed over it; the reworked target
+  fails on it.
 
 ## Repo facts the plan builds on
 
@@ -377,7 +396,10 @@ the next reader has to skip.
 ## Build & verification loop
 
 `make build-wasm`, `make build-ts`, `make serve-wasm`, browser at
-`localhost:8080` (`make run-wasm`). TS tests: `make test-ts` (vitest).
+`localhost:8080` (`make run-wasm`). TS tests: `make test-ts`
+(`npx tsc --noEmit`, then vitest). The typecheck stays in the target:
+it is the only TS type check anywhere — esbuild strips types unchecked,
+and vitest passed over a planted type error that `tsc` then caught.
 Native Haskell tests: `cabal test`. Wasm-compiled Haskell tests:
 `make test-wasm` (drives the tasty binary through Node via
 `ts-src/run-wasm-test.mjs`; the `common options` stanza applies
@@ -440,7 +462,7 @@ chain that drifts is the one nobody re-reads.
 native   cabal build && cabal test && hlint .
          && stylish-haskell -i <the item's Haskell files>
          && git diff --exit-code <those paths>     # stylish left them alone
-ts       make test-ts && (cd ts-src && npx tsc --noEmit)
+ts       make test-ts        # npx tsc --noEmit runs inside the target
 wasm     make build-wasm && make test-wasm
 deploy   make build-ts        # UNSANDBOXED: writes into the pages checkout
 docs     python3 tools/check-plan-citations.py $D    # $D = this document
@@ -502,20 +524,14 @@ gate closes the loop: an item that proposes an artifact takes its
 outcome line only once its allowlist entries can be deleted, and
 **Owns** is what makes them findable from the commit that lands it.
 
-Three traps have each already produced a wrong result in this repo or
-this campaign, so a session is told all three rather than trusted to
-know them.
+Two traps have each already produced a wrong result in this repo or
+this campaign, so a session is told both rather than trusted to know
+them.
 
 - A **Done** line piped into `tail` or `head` reports the *pipe's* exit
   status, so a failed build reads as success — which is how this
   campaign recorded one false positive already. **Done** lines are
   `&&`-chains, never pipelines; long output is scrolled, not trimmed.
-- `npx tsc --noEmit` — the `typecheck` script in `ts-src/package.json` —
-  runs in no Makefile target and in no CI job, and esbuild strips types
-  without checking them, so a TypeScript regression compiles, bundles
-  and deploys through `make build-ts` in silence. Every TS-touching
-  item's **Done** runs it explicitly, in the shape
-  `(cd ts-src && npx tsc --noEmit)`.
 - A green `tools/check-plan-citations.py` proves that every `file:line`
   resolves, not that the line still says what the claim needs: the file
   is long enough and something else slid into the slot. An item that
@@ -871,15 +887,18 @@ not with 0.0.
 
 **Done** — `native`, `ts`, `wasm`, `docs`, plus `make gen-ts` && `git diff
 --exit-code ts-src/src/generated` && `haskell-ci regenerate` && `git diff
---exit-code .github/workflows/haskell-ci.yml`.
+--exit-code .github/workflows/haskell-ci.yml`, and, on the `Sdl.hs`
+commit, the `make bench` pair under `xvfb-run`.
 
-**Hands back** — *display*: the bench gate on the `Sdl.hs` commit.
-`make bench` runs `benchFrontendBattle`/`benchFrontendCrawl` through the
-real SDL2 frontend, so it opens a window, and the game redirects its own
+**Hands back** — *browser*, for `cursor.ts`: pixel parity against the
+native pointer is the claim and only an eye settles it. The bench gate
+on the `Sdl.hs` commit stopped handing back a display when `xvfb-run`
+arrived: the pair runs in-session now, as 2.1's block records — llvmpipe
+numbers comparing only against each other, the game redirecting its own
 stdout to `~/.LambdaHack/stdout.txt` whenever stdout is not a terminal,
-so each report must be harvested between runs. Also *browser*, for
-`cursor.ts`: pixel parity against the native pointer is the claim and
-only an eye settles it. Done's substitutes are the fixture equality
+so each report is harvested between runs — and a run on the real display
+is handed back only if Decide first (3) rules that llvmpipe cannot
+settle the acceptance. Done's substitutes are the fixture equality
 between `CellStyle.styleCell` and `styledCell` — which is the whole
 correctness claim, the bench gate being about cost — and `cabal test`'s
 SDL cases, which run font discovery and decoding but never the renderer.
@@ -897,9 +916,14 @@ generator emits from `Color.highlightToColor`, where
 `chooseAndDrawHighlight`'s (`Sdl.hs:504-518`) — must be a branch over the
 three kinds, or 0.0's fix is silently reverted by the generator while its
 vitest case goes on passing. (3) The bench gate's acceptance: no
-threshold, repetition count or regression rule is stated, and the target
-is display-bound; either state one and hand the gate to a human run, or
-rule the gate unnecessary and record why. (4) The `cursor.ts` blocker:
+threshold, repetition count or regression rule is stated, and the venue
+splits the question — since `xvfb-run` arrived the pair runs in-session
+(Done carries it on the `Sdl.hs` commit, as 2.1's does), with llvmpipe
+numbers comparing only against each other, never against the real
+display. Either state an acceptance,
+saying whether an in-session llvmpipe pair settles it or only a run on
+the real display does, or rule the gate unnecessary and record why.
+(4) The `cursor.ts` blocker:
 `cursorXhair` (`Sdl.hs:421-455`) is not in `Sdl.hs`'s export list, not
 even inside its `EXPOSE_INTERNAL` block, and `Frontend.Sdl` is not a
 module under `os(wasi)`, so the generator cannot reach it as written —
@@ -2710,26 +2734,26 @@ games and so covers the only removal with live source consumers,
 `-DREMOVE_TELETYPE`. The `CLAUDE.md` rewording is authored text and gets a
 human read rather than a mechanical edit.
 
-**Decide first** — four. (a) The README clause: `README.md` contains no
-occurrence of "GHCJS" at all, so either the clause is dropped or a
-specific browser-era sentence is named — `README.md:107-108`'s
-Chrome/Local-Storage line is the only close candidate. (b) Whether
+**Decide first** — three. (a) Whether
 `Dom.hs` and `JSFile.hs` stay in the sdist: dropping the `impl(ghcjs)`
 stanzas removes them from every `exposed-modules`/`other-modules` list, so
 they leave the tarball unless `extra-source-files` gains them; `hlint` and
 stylish keep covering them either way, both quantifying over tracked
-`.hs` files. (c) The GHCJS mentions R3 does not claim and nothing else
-does: `Makefile:133-143`'s `nodeBench*` targets (3.3's) and
-`.claude/skills/playtests/SKILL.md`'s description of them as dead GHCJS
-remnants, `GameDefinition/Main.hs:38`'s comment (still true of wasm),
+`.hs` files. (b) The GHCJS mentions R3 does not claim and nothing else
+does: `GameDefinition/Main.hs:38`'s comment (still true of wasm),
 `Point.hs:32`'s "not supported yet by GHCJS", and the `impl(ghcjs)`
-stanzas in the two tracked cabal archives `CLAUDE.md` calls kept verbatim.
-(d) Whether the citation renumbering rides this commit: deleting
+stanzas in the two tracked cabal archives `CLAUDE.md` calls kept verbatim
+— not `Makefile:133-143`'s `nodeBench*` targets or
+`.claude/skills/playtests/SKILL.md`'s description of them as dead GHCJS
+remnants, both 3.3's, whose Split names that sentence among the claims
+its rewrite falsifies.
+(c) Whether the citation renumbering rides this commit: deleting
 `Frontend.hs:43-44` and the two guard pairs shifts later lines by two,
-four or six, and nine citations here point into that file —
-`Frontend.hs:148`, `159-183`, `186-196` and `84-92` in live items,
-`41-48` and `93` inside the frozen appendices, where renumbering is
-neither the drift the freeze rule protects nor a correction.
+four or six, and ten citations here point into that file —
+`Frontend.hs:148`, `159-183`, `186-196`, `84-92` and `41-48` in live
+items, `41-48` again and `93` inside the frozen appendices, where
+renumbering is neither the drift the freeze rule protects nor a
+correction.
 
 **R4 — URL-parameter options.** Server/client options sit at defaults in
 the browser for lack of argv. After 3.1, `lhStart` parses whatever WASI

@@ -132,7 +132,7 @@ jobs:
           node-version: '22'
           cache: npm
           cache-dependency-path: ts-src/package-lock.json
-      # `make test-ts` runs vitest out of node_modules without installing.
+      # `make test-ts` runs tsc and vitest out of node_modules without installing.
       - name: Install ts-src dependencies
         run: cd ts-src && npm ci
       - name: TypeScript tests

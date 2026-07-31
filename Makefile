@@ -331,7 +331,7 @@ build-ts:
 
 test-ts:
 	cd ts-src; \
-	npx vitest run
+	npx tsc --noEmit && npx vitest run
 
 serve-wasm:
 	cd ../lambdahack.github.io; \

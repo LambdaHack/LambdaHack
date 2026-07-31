@@ -81,7 +81,7 @@ The hard-won facts for writing and driving tests with this harness are in `test/
 
 ### WASM and TypeScript test suites
 
-The WASM test suite drives the compiled wasm test binary through Node/wasmtime via `ts-src/run-wasm-test.mjs`; the TypeScript tests run vitest over `ts-src/`. Both run in CI, one job each in `lint-and-test-suites.yml`; the wasm job installs the toolchain from scratch, so locally they need `~/.ghc-wasm/env` (sandboxing notes at the end of this file):
+The WASM test suite drives the compiled wasm test binary through Node/wasmtime via `ts-src/run-wasm-test.mjs`; the TypeScript tests typecheck (`npx tsc --noEmit`) and run vitest over `ts-src/`. Both run in CI, one job each in `lint-and-test-suites.yml`; the wasm job installs the toolchain from scratch, so locally they need `~/.ghc-wasm/env` (sandboxing notes at the end of this file):
 
 ```
 make test-wasm
