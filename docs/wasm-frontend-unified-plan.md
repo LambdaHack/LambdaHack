@@ -1797,19 +1797,21 @@ instead of carrying it.
 `engine-src/Game/LambdaHack/Client/UI/Frontend/OverlayLayout.hs`,
 `engine-src/Game/LambdaHack/Client/UI/Frontend/Sdl.hs`,
 `test/OverlayLayoutUnitTests.hs`, `test/Spec.hs`), `wasm`, `docs`, plus `make
-test-medium`.
+test-medium` and the `make bench` pair under `xvfb-run`.
 
-**Hands back** — *display*: the perf gate and the visual look. `make
+**Hands back** — hands back nothing on display, as of 2026-07-31. `make
 bench` (`Makefile:123`) includes `benchFrontendBattle`/`benchFrontendCrawl`
 (`Makefile:109-110`, `Makefile:115-116`), which pass neither
 `--frontendNull` nor `--frontendLazy` and so drive the real SDL renderer —
-exactly the per-cell hot path (2) rewrites — and `xvfb-run` is not
-installed on this machine, so the headless `benchBattle`/`benchCrawl`
-cannot substitute: they never enter that path at all. The `make
-frontendCrawl` look is display-bound for the same reason. What stands in
-Done instead is `make test-medium` plus the determinism goldens, which
-prove the extraction faithful rather than cheap; (2) leaves behind a
-before/after script for a human to run the `bench` pair from.
+exactly the per-cell hot path (2) rewrites, and the reason the headless
+`benchBattle`/`benchCrawl` cannot substitute: they never enter that path
+at all. `xvfb-run` is installed now, so that pair runs here, and so does
+the `make frontendCrawl` look, frame by frame through `xwd` — subject to
+the two conditions a bare install does not supply, which are CLAUDE.md's
+to state. One limit is not lifted: the headless renderer is llvmpipe, so a
+before/after pair must be measured wholly under it and never against a
+number from the real display, which is what (2)'s before/after script is
+still for.
 
 **Decide first** — three. (a) `layOutFrame`'s contract, which has a
 signature and no body: `Sdl.hs` applies the start cutoff inside the
@@ -3081,7 +3083,8 @@ frontend goes permanently untested the way `Dom.hs` did.
 
 **Split** — three commits, ordered by which gate can run at all: the
 pty-driven ANSI smoke (verifiable in-session), the `xvfb-run` SDL smoke
-(verifiable only in CI), and the `nodeBench` smoke, which waits on 3.3.
+(likewise, since the display arrived — see Hands back), and the
+`nodeBench` smoke, which waits on 3.3.
 The third carries the outcome line; the item is in no
 `tools/doc-refs-allow.txt` gate beyond the three target names this block
 introduces, which its own commit deletes as it lands.
@@ -3095,20 +3098,22 @@ per phase, and 0.2 and 0.3 each add a job — so one holder at a time, and
 the three commits here are serialized against each other for the same
 reason.
 
-**Done** — `native`, `docs`, plus `make smokeANSI` && `make smokeSdl
---dry-run` && `make smokeNodeBench --dry-run`. `--dry-run` gates the two
-targets that
-cannot execute here on existing and on expanding, without running them;
+**Done** — `native`, `docs`, plus `make smokeANSI` && `make smokeSdl` &&
+`make smokeNodeBench --dry-run`. `--dry-run` gates the one target that
+cannot execute here on existing and on expanding, without running it;
 `check-doc-refs.py` resolves all three names against the makefile, which
 is what makes the allowlist deletion a checked claim.
 
-**Hands back** — *display*: `xvfb-run` is not reachable in-session
-(`command -v xvfb-run` finds nothing, which under the wrapper is
-indistinguishable from a path the mount hides), so the SDL smoke's first
-real execution is the CI run — and that needs a push, which needs an
-explicit go-ahead that no agent may give itself. The substitute gates in
-Done are `make smokeSdl --dry-run`, which proves the target and its recipe
-exist, and `make smokeANSI`, which runs the pty half end to end.
+**Hands back** — hands back nothing. *Display*: `xvfb-run` and `Xvfb` were
+installed on 2026-07-31 and a whole game has since played out in the real
+SDL2 frontend here, so the SDL smoke is gated in-session like the ANSI
+one, rather than first executing in a CI run that would need a push and
+so an explicit go-ahead. Two conditions the bare install does not supply
+— a missing `/tmp/.X11-unix` and a GLX segfault — are CLAUDE.md's to
+state and this item's to obey: the `smokeSdl` recipe carries them or the
+target reproduces neither here nor in CI. One limit survives: the
+renderer is llvmpipe, so an in-session frame *count* is a gate and an
+in-session *timing* is not.
 
 **Decide first** — (1) each smoke's pass criterion, against one repo fact
 that makes the obvious guess wrong: the executable redirects its own
