@@ -2913,10 +2913,12 @@ reads either. The substitute gates in Done are the nonzero exit on
 (`CmdAtomic.hs:130`), so four `Bool`s becoming one constructor changes
 the wire format — while `compatibleVersion` compares only the first three
 version-branch components (`Save.hs:142-143`) and the package is
-`0.11.0.1`, so a bump to `0.11.0.2` still *accepts and misdecodes* old
-saves; only `0.11.1.0` rejects them. Branches: bump the third component
-in this commit, or declare the breakage acceptable and record that in the
-item. (2) Constructor availability under CPP. Both chains are themselves
+`0.12.0.0`, whose first three differ from every `0.11.*` release, so
+saves written before it are already rejected rather than misdecoded.
+That settles this branch without a further bump: it was open while the
+package was `0.11.0.1`, where `0.11.0.2` would still have *accepted and
+misdecoded* old saves and only `0.11.1.0` refused them.
+(2) Constructor availability under CPP. Both chains are themselves
 pruned — `Frontend.hs:86`/`:190` under `#ifndef REMOVE_TELETYPE`,
 `Frontend.hs:89`/`:193` under `#ifndef USE_BROWSER` — while
 `Server/Commandline.hs` carries no build CPP and offers all four

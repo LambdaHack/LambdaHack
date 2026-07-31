@@ -1,3 +1,13 @@
+## [v0.12.0.0](https://github.com/LambdaHack/LambdaHack/compare/v0.11.0.1...v0.12.0.0)
+
+- Add a WASM browser build (frontend, file backend, mouse support, save/load and deployment), superseding GHCJS as the browser target
+- Move the browser-side TypeScript harness into this repository
+- Split the package back into four libraries, one per source tree
+- Default the release flag to False, so internal exports stay hidden unless asked for
+- Switch to GHC2024 and to GHC 9.10 or newer
+- Give the unit-test harness a walkable stub board, party fixtures, real key bindings and scripted keys
+- Extend CI with hlint, stylish-haskell, doctests, playtests and the WASM and TypeScript suites
+
 ## [v0.11.0.1](https://github.com/LambdaHack/LambdaHack/compare/v0.11.0.0...v0.11.0.1)
 
 - Split the long Content.ModeKind texts into lines, [#283](https://github.com/LambdaHack/LambdaHack/issues/283)
