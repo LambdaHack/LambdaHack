@@ -117,6 +117,16 @@ publication, so the range row fails as a range even though that commit is
 also unpublished. Swap those two checks and the first row silently starts
 proving the second one's branch instead.
 
+A leading dot needs its own pair, since there the *extraction* failed and
+not the check: `.hlint.yaml:24` must resolve and print `- arguments:
+[-XNoStarIsType]`, and `.hlint.yaml:999999` must report OUT-OF-RANGE.
+Until the dot was allowed into CITE_RE the first was extracted as
+`hlint.yaml` and reported UNRESOLVED, which is how the bug read from the
+outside -- a document could not cite a dotfile at all, and saying so
+looked like a missing file. That the widening regresses nothing is
+checked by extracting the four stamped documents with the old pattern and
+the new and diffing the results: 355 citations, identical.
+
 plus a control that must still pass (`Point.hs:26`). A run reporting
 fewer than seven failures means extraction, resolution or the `git show`
 branch has silently stopped covering that kind. Two rows are there
@@ -265,7 +275,7 @@ SEARCH_ROOTS = ["engine-src", "definition-src", "GameDefinition", "ts-src",
 # commit resolves here and nowhere else.
 PUBLISHED_REF = "origin/master"
 CITE_RE = re.compile(
-    r"`?([A-Za-z][A-Za-z0-9_./-]*"
+    r"`?(\.?[A-Za-z][A-Za-z0-9_./-]*"
     r"\.(?:hs|ts|py|c|h|cabal|mjs|html|md|txt|yaml|yml)|Makefile)"
     r":(\d+(?:-\d+)?(?:,\d+(?:-\d+)?)*)")
 URL_RE = re.compile(
