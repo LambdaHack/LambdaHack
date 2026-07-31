@@ -54,14 +54,17 @@ a `>>>` block, so the outputs branch has no *live document* to run
 against -- keep the branch anyway; the horde-ad copy uses it. And for the
 types branch there are live positive controls worth running: on the four
 documents with fenced Haskell it should extract and resolve 18, 0, 12 and
-6 capitalised names (leader-desync-bug, leader-desync-migration,
-promptgetkey-hygiene, wasm-frontend-unified-plan) with none unresolved,
-the count being the thing to check, since "0 unresolved" reads the same
-whether the extractor works or finds nothing. The zero is expected and is
-its own control: that document's only fence is an all-comment haddock
-draft, so a nonzero count there would mean comment stripping had stopped
-working. The counts are not printed -- load the module and call
-`strip_comments`/`NAME_RE` over `FENCE_RE` yourself.
+31 capitalised names (leader-desync-bug, leader-desync-migration,
+promptgetkey-hygiene, wasm-frontend-unified-plan; measured 2026-07-31)
+with none unresolved, the count being the thing to check, since
+"0 unresolved" reads the same whether the extractor works or finds
+nothing. The zero is expected and is its own control: that document's two
+fences are both all-comment haddock drafts, so a nonzero count there
+would mean comment stripping had stopped working. The counts are not
+printed -- load the module and call `strip_comments`/`NAME_RE` over
+`FENCE_RE` yourself. They move whenever those documents gain a fence, so
+re-take them with the edit rather than reading a stale one as a pass:
+the 31 stood at 6 until it was re-measured here.
 
 The noise this had to survive, since a later reader may be tempted to
 widen it: comments inside a fenced block contribute words like `NOTE`
@@ -69,7 +72,8 @@ and `MUTATES`, and promptgetkey-hygiene.md declares the `MacroStep`
 constructors it is proposing. Stripping comments and treating a
 document's own `data` constructors as local took twelve false positives
 to zero across both repos, with horde-ad's one true positive still
-reported.
+reported. Any widening should be measured the same way before it is
+kept.
 """
 
 import contextlib

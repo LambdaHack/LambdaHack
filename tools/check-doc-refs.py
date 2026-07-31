@@ -134,6 +134,25 @@ resolve, and a URL ending in a slash failed through `dir_shaped` instead.
 No document here backticks a bare URL today; all 45 occurrences are
 written as markdown links, so these rows are that branch's only control.
 
+A scratch document proves the branch fires; it does not prove the branch
+reaches the corpus. The horde-ad copy learned that the expensive way: its
+command extractor read fenced blocks alone, so the cabal-target check had
+been examining one `cabal test` line of six in a document that indents its
+blocks instead of fencing them. Both copies now take the whole document,
+and the shape of the mistake is worth keeping in view here, where
+README.md writes ten of its commands as four-space-indented lines. A check
+can be live on its scratch document and vacuous on the corpus, so look at
+the corpus too.
+
+The sibling rows have a failure mode of their own, in the same spirit.
+Sibling matching is gated on path shape, and was not always: a bare prose
+token resolved inside the horde-ad copy's upstream checkout until it was.
+`../lambdahack.github.io` invites exactly that, holding `README.md`,
+`LICENSE`, `COPYLEFT`, `index.html` and `manifest.json` — names any
+document uses as prose. A big foreign tree turns a checker into a rubber
+stamp faster than a small one, so widen the sibling test only against
+these rows.
+
 Then three runs for the ways a run can fail to happen. Pass a document
 name that does not exist and confirm one line on stderr and exit 2, not
 a traceback. Point SIBLING_ROOTS at a name that does not exist and
@@ -143,7 +162,9 @@ to SKIP/UNVERIFIED rather than failing. That
 second run also shows the cost, which is why the recipe keeps it visible:
 the genuinely-local `engine-src/.../NoSuchModule.hs` downgrades to SKIP
 as well, because without the checkouts nothing tells a missing local file
-from an upstream one.
+from an upstream one. So --without-siblings does not merely leave the
+upstream names unchecked, it blunts the local path check too — reason
+enough to ask for the mount rather than reach for the flag.
 
 Reproduced 2026-07-29: five failures and exit 1, then exit 2, then the
 degraded run. Re-run 2026-07-31 with the two URL rows added: still five
@@ -226,7 +247,8 @@ CABAL_NAME_RE = re.compile(r"^name:\s*(\S+)", re.M)
 # shorthand the documents use
 # (`Implementation.Monad{Client,Server}Implementation`), and URLs
 # carrying a query or a fragment. A plain URL has none of them -- only
-# this set was described as marking URLs, and a backticked
+# `:` and `/`, so it needs the separate test below. This set was
+# described as marking URLs, and a backticked
 # `https://example.com/a/b.md` was reported as a path that does not
 # resolve, as was any URL ending in a slash.
 NOT_IN_PATH = set("<>#?&=…{}")

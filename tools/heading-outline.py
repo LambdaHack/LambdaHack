@@ -30,6 +30,20 @@ Both live controls are this repo's alone: the horde-ad copy has neither a
 Setext heading nor a `#` inside a fence, so it proves those two branches
 on a scratch file instead. Keep them here.
 
+Keeping them is not something to leave to memory, and that copy is the
+cautionary tale: its Setext control named README.md's headings, was true
+when written and false two commits later the same day, that file having
+been restyled to ATX, and it went five days unnoticed -- a checker's own
+proof drifting exactly as the documents it checks do, and reporting
+nothing, because a recipe nobody re-runs cannot fail. The controls here
+are the same shape and one restyle away from the same end, so the
+fallback is written down rather than reconstructed under pressure: a
+scratch file holding an ATX heading, a `===`-underlined line, a
+`---`-underlined line, a fenced block containing a `#` line and a `===`
+line, and one more ATX heading after it; confirm four headings, the
+Setext pair among them at levels 1 and 2, and nothing from inside the
+fence.
+
 The frontmatter skip has a live control in both repos: run it on any
 `SKILL.md` and confirm the only heading reported is the `#` title, not a
 `## description: …` section. Before the skip, every skill file in reach

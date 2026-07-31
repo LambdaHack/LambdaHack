@@ -182,6 +182,11 @@ name a commit well behind HEAD -- correctly, because the cited lines come
 from there, and re-verification is owed when *they* move, not when
 anything moves.
 
+The date a stamp carries is the day the reading was done, not the date of
+the commit it names. The two are spelled alike and mean different things,
+which is why this docstring gives commit dates in words wherever it names
+one.
+
 What the flag cannot do is know that you *read* the document. The stamp
 asserts two things -- that the citations resolve in some named tree, and
 that they still say what the surrounding claims need -- and only the
