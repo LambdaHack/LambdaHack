@@ -156,17 +156,17 @@ list, not the refactor, is what binds a later one.
 Whether a pending macro should play, abort, or is absent is a pure function of
 `sreqQueried`, the report, the legal keys and the macro frame. It belongs in
 the shared, fixture-tested `InputDecision` module the plan is establishing
-(Phases 0/2), not buried in a frontend-adjacent IO action:
+(item 0.1), not buried in a frontend-adjacent IO action:
 
 > **⚠ That module does not exist yet, and belongs to another plan.**
 > `Client/UI/Frontend/InputDecision.hs` is an artifact of
-> `docs/wasm-frontend-unified-plan.md`, Phases 0 and 2, which have not
+> `docs/wasm-frontend-unified-plan.md`'s item 0.1, which has not
 > landed; nothing in this repository defines `macroStep`'s intended home
 > today. So the abort-split is gated on *two* pieces of work, not one.
 > The de-gating is deliberate and cheap: if that module is still absent
 > when live-read is done, put `macroStep` in a pure section of `FrameM`
 > itself, next to `dropEmptyMacroFrames` (already pure and already
-> fixture-tested by AS2), and move it to `InputDecision` when the phase
+> fixture-tested by AS2), and move it to `InputDecision` when the item
 > that creates the module lands. The decision function is the point; its
 > address is not, and waiting on a different plan for an address would be
 > the wrong dependency.

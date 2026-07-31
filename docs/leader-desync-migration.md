@@ -49,11 +49,14 @@ deleted*
 >   this file, and the pointman gotcha's "Until the live-read design lands"
 >   clause, which the landing is what resolves;
 > - and the four sites outside the documents, which are the ones a reader
->   forgets: `docs/wasm-frontend-unified-plan.md` names this file three
->   times, one of them the tag-ownership sentence, which keeps its claim and
->   drops only the citation; `test/HandleHumanLocalMUnitTests.hs:193` and
+>   forgets: `docs/wasm-frontend-unified-plan.md` names this file four
+>   times — the tag-ownership sentence, which keeps its claim and drops only
+>   the citation, 3.3's **Split** and **Owns**, and 2.4's **Owns**;
+>   `test/HandleHumanLocalMUnitTests.hs:193` and
 >   `test/InventoryMUnitTests.hs:72` cite it from test comments; and
->   `tools/check-doc-examples.py:57` names it in its own non-vacuity recipe;
+>   `tools/check-doc-examples.py:56-57` names it among four live controls,
+>   and its 0 is the one proving comment stripping still works — drop the
+>   entry, and say that the control goes with it;
 > - then re-run `python3 tools/check-doc-refs.py` over `CLAUDE.md`, both
 >   records and the wasm plan — the pass that catches a backticked path left
 >   behind — and re-run the `git grep -n` above, which must come back empty
@@ -88,10 +91,10 @@ unit of rollback §01 relies on.
 | step | touches | check when done | state |
 |---|---|---|---|
 | §02.0 spike | `MonadClientUI` plus the three frames of `PointmanCycleLevel`, and the five test call sites that break with them (`HandleHelperMUnitTests.hs:121`, `:141`, `:176`, `FrameMUnitTests.hs:343`, `:377`) | the library compiles and the witness reads tolerably at a real call site; then, once those five take a witness, the suite compiles and LR1/LR2/LR5 are green while LR3/LR4 and the two bridge tests are red and LR6 unrepresentable — the spike working, not failing | pending |
-| §02.1 witness, accessors | `MonadClientUI` only, ~30 lines. The one file two campaigns write: `docs/wasm-frontend-unified-plan.md` cites into it seven times (`MonadClientUI.hs:166` once, and `MonadClientUI.hs:329` six times — all `getFontSetup`, which its 2.4 rewrites and which may land at any time). The bodies are disjoint and an export-list clash is loud, so the hazard is neither — it is that ~30 lines inserted above `:166` slide all seven onto other lines *while they still resolve*, leaving `tools/check-plan-citations.py` green over a document that has started to lie. It is the only such file: of the four both campaigns name, §03's DrawM ruling is a decision *not* to write, the wasm rip-out's `HandleHumanLocalM.hs:813-815` lies in a function holding neither `leader` nor `ActorId`, and `SessionUIMock.hs` is read rather than written. A mechanism for one file would be machinery that must be maintained or become a lie; revisit that only if a third campaign appears or a second file joins this one | `cabal build`; the contract series green and its count unmoved; nothing else changes, this step having no callers yet; and, because of the above, re-run that checker over the wasm plan and re-read the seven printed snippets — a green run is not sufficient here | pending |
+| §02.1 witness, accessors | `MonadClientUI` only, ~30 lines. A file two campaigns write, and the sharper of the two: `docs/wasm-frontend-unified-plan.md` cites into it seven times (`MonadClientUI.hs:166` once, and `MonadClientUI.hs:329` six times — all `getFontSetup`, which its 2.4 rewrites and which may land at any time). The bodies are disjoint and an export-list clash is loud, so the hazard is neither — it is that ~30 lines inserted above `:166` slide all seven onto other lines *while they still resolve*, leaving `tools/check-plan-citations.py` green over a document that has started to lie. It is not the only such file, and the test that excluded the others was the wrong one: a citation slides when the line count *above* it changes, not when the cited function converts. So `HandleHumanLocalM.hs` joins — §02 converts `chooseItemDialogMode` and the `chooseItem*Human` wrappers well above the wasm rip-out's cited `HandleHumanLocalM.hs:815` — while of the other two both campaigns name, §03's DrawM ruling is a decision *not* to write and `SessionUIMock.hs` is read rather than written. The second file the ruling below reserved has therefore arrived: a mechanism would be machinery that must be maintained or become a lie, so reopening that is the author's, and until then each side warns by hand — this row, and that plan's 2.4 and capability-constants blocks | `cabal build`; the contract series green and its count unmoved; nothing else changes, this step having no callers yet; and, because of the above, re-run that checker over the wasm plan and re-read the seven printed snippets — a green run is not sufficient here | pending |
 | §02.2–4 dialog chain, assertions, flips | `InventoryM` (7 functions), `HandleHumanLocalM` (`chooseItemDialogMode`, the three `chooseItem*Human` wrappers, and `psuitReq`, which loses its own `ActorId`), `HandleHumanGlobalM` (`itemMenuHuman`, `chooseItemMenuHuman`, and `psuitReq`'s second call site in `projectItem`), `HandleHumanM` (their boundary cases and the `CmdLeader` field type), `HandleHelperM` (the one assertion `4a6eca154` disabled), test edits across all five test modules, nearer 20 than the 14 first estimated | the contract series green *unchanged* and its count unmoved; the flip series green *with the flipped values* and its count down one as step 4 deletes LR6 (11 → 10), each flip verified first against the candidate as step 4 spells out; `stylish-haskell -i` leaves every touched file alone | pending |
 | §02.5 sweep | the remainder of §03's read-live set (fourteen functions, judgment calls), then the fifteen convert-half of §03's tail with the sixteen boundary cases dispatching them, across 4 modules | `cabal build`; both series green with counts unmoved; `hlint .` says `No hints`; `stylish-haskell -i` leaves every touched file alone; no `CmdLeader` case passes an `ActorId`, read off `cmdSemanticsLeader` alone | pending |
-| §02.6 verification | nothing; it is the gate | full suite; `make test-short`, `make test-medium`; the manual timeline session, a fling-dialog switch and an apply-dialog switch (§03's sibling (c), pinned by PR 0 but checked here in the real frontend) | pending |
+| §02.6 verification | nothing; it is the gate | full suite; `make test-short`, `make test-medium`; then, played by hand and so reported unrun rather than green: the timeline session, a fling-dialog switch and an apply-dialog switch (§03's sibling (c), pinned by PR 0 but checked here in the real frontend) | pending |
 | §04.1 extract `macroStep` | one pure function, plus the eight-row table in §04; the two AS cases it depends on land earlier, in §01's PR 0 | the table passes; the whole AS series untouched and green, the two new cases included — they were written against the unsplit primitive and must survive the split unedited | pending |
 | §04.2 name `abortMacroPlayback` | `FrameM`, ~10 lines | AS4–AS6 green *without edits* | pending |
 | §04.3 audit the residual writes | `FrameM` only; the drafted haddock in §04 | the haddock lists every write the body performs | pending |
@@ -114,8 +117,9 @@ That this had to be stated is itself the evidence — the intent was read
 off the prose and got read wrong.
 
 **The gates, once.** Every "check when done" above is one of these, run from
-the repo root. Read the counts, not the exit status alone — a suite that
-silently loses a test still passes:
+the repo root. Read the counts and the printed snippets, not the exit
+status alone — a suite that silently loses a test still passes, and a
+citation that slid still resolves:
 
 ```
 cabal build                                      # library, executable, suite
@@ -123,8 +127,10 @@ cabal test                                       # 154 tests today
 cabal test --test-options='-p "/contract/"'      # 26 today; moves once
 cabal test --test-options='-p "/LR-flip/"'       # 10 today; moves twice
 hlint .                                          # must print: No hints
-stylish-haskell -i <each .hs the step touched>   # must leave them unchanged
+stylish-haskell -i <each .hs the step touched>
+  && git diff --exit-code <those paths>          # stylish left them alone
 python3 tools/leader-census.py                   # before step 2 only; see §03
+python3 tools/check-plan-citations.py <this file, then the post-mortem>
 ```
 
 Those three counts move at exactly two points and nowhere else. PR 0 of
@@ -134,10 +140,16 @@ in the table above is against whichever of the three baselines its row
 follows, and this is the only place the sequence is stated, so a row that
 disagrees with it is wrong there rather than here. A count that shifts
 otherwise is the finding, not a nuisance: both patterns select on the test
-*name*, so a renamed test leaves its series silently. Builds take minutes —
+*name*, so a renamed test leaves its series silently, and, matching by
+containment, a marker merely *containing* `contract` or `LR-flip` joins it —
+`docs/wasm-frontend-unified-plan.md` keeps the other campaign's markers
+outside both, twice having had to. Builds take minutes —
 set the timeout rather than reading one as a hang — and the flag set stays
 fixed for the campaign, `+with_expensive_assertions` included, since
-changing it rebuilds every local package.
+changing it rebuilds every local package. The citation pass is owed after
+every code step and not only at the end: steps 2 to 5 rewrite the very
+lines §03 and the post-mortem's §10 cite, and `--restamp` then follows the
+reading pass, as the header says.
 
 **What may be fanned out, and what may not.** The conversion is a
 type-directed cascade inside *one* library and *one* test-suite component:
@@ -192,10 +204,10 @@ non-vacuity recipes.
 One line per surprise or re-plan, newest last, so that resuming needs this
 section rather than a re-read. Log-worthy: a step that turned out larger
 or smaller than its row says, a design question reopened, a count or
-classification here found wrong, an ordering constraint discovered. Not
-log-worthy: doing a step as written, or editing this file before the work
-starts — an entry that records only that the plan was written is one the
-next reader has to skip.
+classification here found wrong, an ordering constraint discovered, a
+**? Open** question closed. Not log-worthy: doing a step as written, or
+editing this file before the work starts — an entry that records only that
+the plan was written is one the next reader has to skip.
 
 - 2026-07-29 · plan split out of the two records; the battery is on master;
   nothing of §02 or §04 started. The open design question is the one §02.0
@@ -553,8 +565,10 @@ of step 1.
    it is the real frontend and PR 0's pin is not; and `make
    frontendCrawl` for a visual pass over menus. The last three are a
    human's, not a run's: the session and the two switches are played by
-   hand, and `frontendCrawl` opens an SDL2 window, so a headless session
-   cannot do it at all. Performance needs no gate — the post-mortem's §11:
+   hand, and `frontendCrawl` runs `--automateAll`, so reaching a menu means
+   mashing keys to regain control (`UI.hs:92-96`) — `xvfb-run` has shown
+   its window here since 2026-07-31, but nothing installed presses keys
+   into it. Performance needs no gate — the post-mortem's §11:
    no benchmark reaches this layer.
 
 ### The artifacts §02 asks for, drafted
@@ -882,12 +896,11 @@ no use of the leader afterwards.
 The abort-split is the final step of the joint migration — strictly after
 §02, assuming the live-read design is complete and its verification step
 passed, and with `macroStep`'s home settled per the callout in the
-abort-split record's §01 (either `InputDecision`, if the wasm plan's
-Phases 0/2 have landed by then, or `FrameM`'s own pure section until they
-do):
+abort-split record's §01 (either `InputDecision`, if the wasm plan's item
+0.1 has landed by then, or `FrameM`'s own pure section until it does):
 
 1. Extract `macroStep` into whichever home the preamble's condition
-   settles — `InputDecision` only if the wasm plan's Phases 0/2 have landed
+   settles — `InputDecision` only if the wasm plan's item 0.1 has landed
    by then, `FrameM`'s own pure section otherwise, and the abort-split
    record's §01 warns that the first home also puts the module downstream
    of `Client.UI.Frontend` — with the *decision* half of that record's §01
