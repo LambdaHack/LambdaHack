@@ -337,5 +337,7 @@ serve-wasm:
 	cd ../lambdahack.github.io; \
 	node serve.mjs . 8080
 
+BROWSER ?= firefox
+
 run-wasm:
-	firefox http://localhost:8080/
+	$(BROWSER) http://localhost:8080/
