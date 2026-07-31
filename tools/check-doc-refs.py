@@ -110,6 +110,13 @@ scratch document holding
     `Makefile`, `make play`, `--sniff`     controls, must pass
     `cabal run LambdaHack`                 cabal-target control
     `wasm32-wasi-cabal build exe:LambdaHack`  wrapper + component prefix
+    `Point.hs:26,32`                       citation, skipped for the
+                                           sibling to check; so are
+                                           `:26` and `:26-32`, while a
+                                           malformed `Point.hs:26,`
+                                           stays unclassified, which is
+                                           what keeps the comma form from
+                                           being a blanket accept
     `Client.UI`, `Definition.*`            module controls
     `+with_expensive_assertions`           cabal-flag control
     `Ability.SkMove`, `K.KM`               upgrade-only, unclassified
@@ -219,7 +226,13 @@ PATH_EXT = ("hs", "ts", "mjs", "py", "cabal", "html", "md", "yaml", "yml",
 
 TICK_RE = re.compile(r"`([^`\n]+)`")
 FENCE_RE = re.compile(r"^\s*(```|~~~)")
-CITE_RE = re.compile(r":\d+(-\d+)?$")
+CITE_RE = re.compile(r":\d+(?:-\d+)?(?:,\d+(?:-\d+)?)*$")
+# The comma form is `check-plan-citations.py`'s: its `spans` expands
+# "26,32" and "353,362,771-781" and checks every member. Recognising only
+# ":26" and ":26-32" here left the comma form in the unclassified tail --
+# not a failure, which is worse: the tail is what a reader eyeballs, and it
+# carried items the sibling had already checked. Reported from horde-ad,
+# where the same divergence bit a document citing a dot-directory path.
 # Leading flags are skipped, so `make -n foo` and `make --dry-run foo` name
 # the target `foo` rather than a target called `-n`. A document that shows
 # how to gate a target it cannot run writes the flag somewhere, and the
