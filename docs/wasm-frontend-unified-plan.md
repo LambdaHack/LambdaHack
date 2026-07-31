@@ -266,6 +266,14 @@ the next reader has to skip.
   twenty-four carry an unanswered **Decide first**, not twenty-five. All
   four labels re-derive to thirty apiece, so no item lacks an execution
   block; the arithmetic was simply wrong.
+- 2026-07-31 · a blind review of that branch, and a study of whether keys
+  can be injected into the SDL2 frontend. Corrected here: the determinism
+  goldens item cited `UnitTestHelpers.hs:630`, `:142` and `:588`, all of
+  which resolve and none of which is the definition named — `test/CLAUDE.md`
+  had the right lines all along, so the disagreement between two documents
+  is where this should have been caught. And the RawFrontend contract's
+  "no in-session run enters its event loop" is false: `xvfb-run` plays
+  whole games through it, and XTEST keys reach it with nothing installed.
 
 ## Repo facts the plan builds on
 
@@ -3044,8 +3052,11 @@ build and the clause would only re-state the default.
 **Hands back** — *display*: SDL2 is the frontend whose folklore the
 contract most needs to bind — the bound main thread via
 `startupBound`/`workaroundOnMainThreadMVar`, the frame-queue handshake —
-and no in-session run enters its event loop, so SDL is covered by the
-haddock and by review alone. The substitute gate in Done is the harness
+and no in-session *harness* reaches it — `xvfb-run` does now play whole
+games through that loop and `xdotool` keys do reach it (CLAUDE.md), but that
+exercises the frontend rather than isolating the `fshowNow` handshake, so
+SDL is covered by the haddock and by review alone. The substitute gate in
+Done is the harness
 itself, run against null, lazy and Teletype natively and against the real
 `Wasm.hs` under `make test-wasm`.
 
@@ -3115,8 +3126,9 @@ which a *game-state* digest can see, while "final-state digest" reads as
 precisely that. Branches: digest the rendered frames and overlays;
 digest final client and server state, which guards macro and command
 semantics only; or two golden families, one each. (2) Which harness.
-`test/` offers `CliMock` over a 3x3 stub board (`UnitTestHelpers.hs:630`,
-with `scriptedFchanFrontend` at `:142` and `scriptedCliState` at `:588`),
+`test/` offers `CliMock` over a 3x3 stub board (`UnitTestHelpers.hs:636`,
+with `scriptedFchanFrontend` at `UnitTestHelpers.hs:143` and
+`scriptedCliState` at `UnitTestHelpers.hs:594`),
 not a seeded whole game; the seeded-game shape is the `--frontendNull
 --benchmark --stopAfterFrames` one the Makefile bench targets use,
 through `tieKnot`, which the suite already depends on. (3) The digest

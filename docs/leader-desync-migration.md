@@ -10,9 +10,11 @@ deleted*
 > conversion inventory, the artifacts still to write, and the state of the
 > test battery. Nothing here is worth keeping afterwards — the records
 > carry the reasoning, the code carries the result — but deleting it is
-> not the one-line act it reads as, eight files naming it — seven to be
+> not the one-line act it reads as, nine files naming it — seven to be
 > reworded, the eighth being `tools/leader-census.py`, which the first
-> bullet below disposes of — as
+> bullet below disposes of, and the ninth
+> `tools/check-plan-citations.py:71`, where the name sits inside a dated
+> measurement and so ages rather than needing a reword — as
 > `git grep -n leader-desync-migration -- . ':!docs/leader-desync-migration.md'`
 > lists in full. When §04's last step is done:
 >
@@ -48,7 +50,7 @@ deleted*
 > - edit `CLAUDE.md` twice: the sentence in "Where to look next" that names
 >   this file, and the pointman gotcha's "Until the live-read design lands"
 >   clause, which the landing is what resolves;
-> - and the four sites outside the documents, which are the ones a reader
+> - and the five sites outside the documents, which are the ones a reader
 >   forgets: `docs/wasm-frontend-unified-plan.md` names this file four
 >   times — the tag-ownership sentence, which keeps its claim and drops only
 >   the citation, 3.3's **Split** and **Owns**, and 2.4's **Owns**;
@@ -56,7 +58,8 @@ deleted*
 >   `test/InventoryMUnitTests.hs:72` cite it from test comments; and
 >   `tools/check-doc-examples.py:56-57` names it among four live controls,
 >   and its 0 is the one proving comment stripping still works — drop the
->   entry, and say that the control goes with it;
+>   entry, and say that the control goes with it; and
+>   `tools/check-plan-citations.py:71` needs nothing, per the head bullet;
 > - then re-run `python3 tools/check-doc-refs.py` over `CLAUDE.md`, both
 >   records and the wasm plan — the pass that catches a backticked path left
 >   behind — and re-run the `git grep -n` above, which must come back empty
@@ -91,7 +94,7 @@ unit of rollback §01 relies on.
 | step | touches | check when done | state |
 |---|---|---|---|
 | §02.0 spike | `MonadClientUI` plus the three frames of `PointmanCycleLevel`, and the five test call sites that break with them (`HandleHelperMUnitTests.hs:121`, `:141`, `:176`, `FrameMUnitTests.hs:343`, `:377`) | the library compiles and the witness reads tolerably at a real call site; then, once those five take a witness, the suite compiles and LR1/LR2/LR5 are green while LR3/LR4 and the two bridge tests are red and LR6 unrepresentable — the spike working, not failing | pending |
-| §02.1 witness, accessors | `MonadClientUI` only, ~30 lines. A file two campaigns write, and the sharper of the two: `docs/wasm-frontend-unified-plan.md` cites into it seven times (`MonadClientUI.hs:166` once, and `MonadClientUI.hs:329` six times — all `getFontSetup`, which its 2.4 rewrites and which may land at any time). The bodies are disjoint and an export-list clash is loud, so the hazard is neither — it is that ~30 lines inserted above `:166` slide all seven onto other lines *while they still resolve*, leaving `tools/check-plan-citations.py` green over a document that has started to lie. It is not the only such file, and the test that excluded the others was the wrong one: a citation slides when the line count *above* it changes, not when the cited function converts. So `HandleHumanLocalM.hs` joins — §02 converts `chooseItemDialogMode` and the `chooseItem*Human` wrappers well above the wasm rip-out's cited `HandleHumanLocalM.hs:815` — while of the other two both campaigns name, §03's DrawM ruling is a decision *not* to write and `SessionUIMock.hs` is read rather than written. The second file the ruling below reserved has therefore arrived: a mechanism would be machinery that must be maintained or become a lie, so reopening that is the author's, and until then each side warns by hand — this row, and that plan's 2.4 and capability-constants blocks | `cabal build`; the contract series green and its count unmoved; nothing else changes, this step having no callers yet; and, because of the above, re-run that checker over the wasm plan and re-read the seven printed snippets — a green run is not sufficient here | pending |
+| §02.1 witness, accessors | `MonadClientUI` only, ~30 lines. A file two campaigns write, and the sharper of the two: `docs/wasm-frontend-unified-plan.md` cites into it nine times (`MonadClientUI.hs:166` once, `MonadClientUI.hs:329` six times — all `getFontSetup`, which its 2.4 rewrites and which may land at any time — and `MonadClientUI.hs:455` and `MonadClientUI.hs:469` once each, this plan's own citations mirrored back by that plan's 2.4). The bodies are disjoint and an export-list clash is loud, so the hazard is neither — it is that ~30 lines inserted above `:166` slide all nine onto other lines *while they still resolve*, leaving `tools/check-plan-citations.py` green over a document that has started to lie. It is not the only such file, and the test that excluded the others was the wrong one: a citation slides when the line count *above* it changes, not when the cited function converts. So `HandleHumanLocalM.hs` joins — §02 converts `chooseItemDialogMode` and the `chooseItem*Human` wrappers well above the wasm rip-out's cited `HandleHumanLocalM.hs:815` — and so does `test/UnitTestHelpers.hs`, which PR 0 writes and two of that plan's items own; of the other two both campaigns name, §03's DrawM ruling is a decision *not* to write and `SessionUIMock.hs` is read rather than written. Files that plan only *cites* are a wider set and a different hazard, met by §00's citation gate rather than here. The second and third files the ruling below reserved have therefore arrived: a mechanism would be machinery that must be maintained or become a lie, so reopening that is the author's, and until then each side warns by hand — this row, and that plan's 2.4 and capability-constants blocks | `cabal build`; the contract series green and its count unmoved; nothing else changes, this step having no callers yet; and, because of the above, re-run that checker over the wasm plan and re-read the four printed snippets, which stand for those nine sites, the checker printing one per distinct line — a green run is not sufficient here | pending |
 | §02.2–4 dialog chain, assertions, flips | `InventoryM` (7 functions), `HandleHumanLocalM` (`chooseItemDialogMode`, the three `chooseItem*Human` wrappers, and `psuitReq`, which loses its own `ActorId`), `HandleHumanGlobalM` (`itemMenuHuman`, `chooseItemMenuHuman`, and `psuitReq`'s second call site in `projectItem`), `HandleHumanM` (their boundary cases and the `CmdLeader` field type), `HandleHelperM` (the one assertion `4a6eca154` disabled), test edits across all five test modules, nearer 20 than the 14 first estimated | the contract series green *unchanged* and its count unmoved; the flip series green *with the flipped values* and its count down one as step 4 deletes LR6 (11 → 10), each flip verified first against the candidate as step 4 spells out; `stylish-haskell -i` leaves every touched file alone | pending |
 | §02.5 sweep | the remainder of §03's read-live set (fourteen functions, judgment calls), then the fifteen convert-half of §03's tail with the sixteen boundary cases dispatching them, across 4 modules | `cabal build`; both series green with counts unmoved; `hlint .` says `No hints`; `stylish-haskell -i` leaves every touched file alone; no `CmdLeader` case passes an `ActorId`, read off `cmdSemanticsLeader` alone | pending |
 | §02.6 verification | nothing; it is the gate | full suite; `make test-short`, `make test-medium`; then, played by hand and so reported unrun rather than green: the timeline session, a fling-dialog switch and an apply-dialog switch (§03's sibling (c), pinned by PR 0 but checked here in the real frontend) | pending |
@@ -130,7 +133,7 @@ hlint .                                          # must print: No hints
 stylish-haskell -i <each .hs the step touched>
   && git diff --exit-code <those paths>          # stylish left them alone
 python3 tools/leader-census.py                   # before step 2 only; see §03
-python3 tools/check-plan-citations.py <this file, then the post-mortem>
+python3 tools/check-plan-citations.py <this file, the post-mortem, the plan>
 ```
 
 Those three counts move at exactly two points and nowhere else. PR 0 of
@@ -148,8 +151,11 @@ set the timeout rather than reading one as a hang — and the flag set stays
 fixed for the campaign, `+with_expensive_assertions` included, since
 changing it rebuilds every local package. The citation pass is owed after
 every code step and not only at the end: steps 2 to 5 rewrite the very
-lines §03 and the post-mortem's §10 cite, and `--restamp` then follows the
-reading pass, as the header says.
+lines §03 and the post-mortem's §10 cite, and the wasm plan's Appendix C
+cites `HandleHumanGlobalM.hs` and `HandleHelperM.hs` lines the same
+conversions slide — cited there, not written, so no **Owns** covers them
+and a frozen appendix restamps green while pointing at the wrong lines.
+`--restamp` then follows the reading pass, as the header says.
 
 **What may be fanned out, and what may not.** The conversion is a
 type-directed cascade inside *one* library and *one* test-suite component:
@@ -314,6 +320,15 @@ the plan was written is one the next reader has to skip.
   that plan's mentions was three and is four. Added, from the same
   comparison: the citation pass and a stylish verdict to §00's gates,
   which had neither.
+- 2026-07-31 · that branch was then reviewed blind, and it had falsified a
+  count of its own: adding `MonadClientUI.hs:455` and `:469` to the wasm
+  plan took that plan from seven citations into the file to nine, and
+  §02.1 went on saying seven — in the very commit that chased the
+  analogous count from three to four, three lines away. Two more came with
+  it: the deletion ritual's own grep lists nine files, not eight, and
+  `test/UnitTestHelpers.hs` is a third file both campaigns write. The
+  lesson is worth having paid for: fixing one instance of a count is not
+  fixing the count.
 
 ## 01 · Sequencing: two designs, one campaign
 
@@ -578,9 +593,12 @@ of step 1.
    frontendCrawl` for a visual pass over menus. The last three are a
    human's, not a run's: the session and the two switches are played by
    hand, and `frontendCrawl` runs `--automateAll`, so reaching a menu means
-   mashing keys to regain control (`UI.hs:92-96`) — `xvfb-run` has shown
-   its window here since 2026-07-31, but nothing installed presses keys
-   into it. Performance needs no gate — the post-mortem's §11:
+   mashing keys to regain control (`UI.hs:92-96`). Keys *can* be pressed
+   here — `xdotool`, per CLAUDE.md's sandboxing notes — so what stays a
+   human's is the judgement and the sequencing, not the typing: no run has
+   yet reached the §04 window
+   itself, and whether `A-Tab` survives inside a menu is unsettled.
+   Performance needs no gate — the post-mortem's §11:
    no benchmark reaches this layer.
 
 ### The artifacts §02 asks for, drafted
