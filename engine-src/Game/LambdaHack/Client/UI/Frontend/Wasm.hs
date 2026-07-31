@@ -1,4 +1,4 @@
-{-# LANGUAGE ForeignFunctionInterface, MagicHash #-}
+{-# LANGUAGE MagicHash #-}
 -- | Text frontend running in a browser via the wasm32-wasi backend, driven by
 -- a thin TypeScript terminal-emulator over the GHC wasm JSFFI.
 --

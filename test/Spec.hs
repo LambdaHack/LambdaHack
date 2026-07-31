@@ -72,8 +72,15 @@ integrationTests = testGroup "integrationTests" $
       serverOptions <- handleParseResult $ execParserPure defaultPrefs serverOptionsPI args
       tieKnot serverOptions
   ]
+  ++ sdlFontsetTests
+
+-- | One SDL init-and-quit case per fontset, and none in a browser build,
+-- which has no SDL frontend to initialize. Kept a binding of its own rather
+-- than spliced into the list above, so that the argument of `testGroup` is
+-- the same shape in both builds.
+sdlFontsetTests :: [TestTree]
 #ifndef USE_BROWSER
-  ++
+sdlFontsetTests =
   let corule = RK.makeData Content.RuleKind.standardRules
       uiOptions = unsafePerformIO $ mkUIOptions corule defClientOptions
       testFontset :: Int -> String -> TestTree
@@ -90,4 +97,6 @@ integrationTests = testGroup "integrationTests" $
           serverOptions2 <- handleParseResult $ execParserPure defaultPrefs serverOptionsPI args2
           tieKnot serverOptions2
   in zipWith testFontset [0..] $ map (T.unpack . fst) $ uFontsets uiOptions
+#else
+sdlFontsetTests = []
 #endif

@@ -164,15 +164,19 @@ emptyAttrLine :: AttrLine
 emptyAttrLine = AttrLine []
 
 attrStringToAL :: AttrString -> AttrLine
-attrStringToAL s =
+-- The argument is named only for the assertions, so the other arm spells the
+-- eta-reduced form rather than binding a name it would not use.
 #ifdef WITH_EXPENSIVE_ASSERTIONS
+attrStringToAL s =
   assert (allB (\ac -> Color.charFromW32 ac /= '\n') s) $  -- expensive in menus
   assert (null s || last s /= Color.spaceAttrW32
           `blame` attrStringToString s) $
     -- only expensive for menus, but often violated by code changes, so disabled
     -- outside test runs
-#endif
     AttrLine s
+#else
+attrStringToAL = AttrLine
+#endif
 
 firstParagraph :: AttrString -> AttrLine
 firstParagraph s = case linesAttr s of
@@ -185,9 +189,9 @@ textToAL !t =
       f c l = let !ac = Color.attrChar1ToW32 c
               in ac : l
       s = T.foldr f [] t
-  in AttrLine $
+  in AttrLine
 #ifdef WITH_EXPENSIVE_ASSERTIONS
-  assert (null s || last s /= Color.spaceAttrW32 `blame` t)
+     $ assert (null s || last s /= Color.spaceAttrW32 `blame` t)
 #endif
     s
 
@@ -200,9 +204,9 @@ textFgToAL !fg !t =
       f c l = let !ac = Color.attrChar2ToW32 fg c
               in ac : l
       s = T.foldr f [] t
-  in AttrLine $
+  in AttrLine
 #ifdef WITH_EXPENSIVE_ASSERTIONS
-  assert (null s || last s /= Color.spaceAttrW32 `blame` t)
+     $ assert (null s || last s /= Color.spaceAttrW32 `blame` t)
 #endif
     s
 

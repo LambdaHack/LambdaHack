@@ -1,4 +1,3 @@
-{-# LANGUAGE ForeignFunctionInterface #-}
 -- | Saving/loading to JS storage, mimicking operations on files, for the
 -- wasm32-wasi frontend. Mirrors JSFile.hs (the GHCJS equivalent) exactly in
 -- storage format and behavior -- same lz-string compression, same

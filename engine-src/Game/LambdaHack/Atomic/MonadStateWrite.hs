@@ -120,9 +120,9 @@ swapActorMap source sbody target tbody = do
       addBig _aid1 aid2 (Just _aid) =
 #ifdef WITH_EXPENSIVE_ASSERTIONS
         assert (_aid == _aid1 `blame` "wrong actor present"
-                              `swith` (_aid, _aid1, aid2, sbody, tbody))
+                              `swith` (_aid, _aid1, aid2, sbody, tbody)) $
 #endif
-        (Just aid2)
+        Just aid2
       updBig = EM.alter (addBig source target) (bpos sbody)
                . EM.alter (addBig target source) (bpos tbody)
   if not (bproj sbody) && not (bproj tbody)

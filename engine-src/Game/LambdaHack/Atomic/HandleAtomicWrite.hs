@@ -216,9 +216,9 @@ updSpotActor aid body = do
 #ifdef WITH_EXPENSIVE_ASSERTIONS
         -- Not so much expensive, as doubly impossible.
         assert (aid `notElem` l `blame` "actor already added"
-                                `swith` (aid, body, l))
+                                `swith` (aid, body, l)) $
 #endif
-        (Just $ aid : l)
+        Just $ aid : l
   let h Nothing = Just aid
       h (Just aid2) = error $ "an actor already present there"
                               `showFailure` (aid, body, aid2)

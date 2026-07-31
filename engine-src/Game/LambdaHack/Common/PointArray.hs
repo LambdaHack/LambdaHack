@@ -78,11 +78,15 @@ instance UnboxRepClass c => Binary (Array c) where
 
 toUnboxRep :: UnboxRepClass c => c -> UnboxRep c
 {-# INLINE toUnboxRep #-}
-toUnboxRep c =
+-- The argument is named only for the assertion, so the other arm spells the
+-- eta-reduced form rather than binding a name it would not use.
 #ifdef WITH_EXPENSIVE_ASSERTIONS
+toUnboxRep c =
   assert (c <= fromUnboxRep maxBound) $
-#endif
     toUnboxRepUnsafe c
+#else
+toUnboxRep = toUnboxRepUnsafe
+#endif
 
 empty :: UnboxRepClass c => Array c
 empty = Array 0 0 U.empty
