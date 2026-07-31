@@ -130,9 +130,9 @@ the fleet cannot decide it.
 **One review unit per ledger item, not per agent and not one for the
 campaign.** A single pull request carrying Phase 0 through 2 would be
 unreadable, and one per agent would make the bottleneck worse rather than
-better. `gh` is unauthenticated here, so the unit is a branch off local
-master read with `git log -p master..<branch>`; a GitHub PR exists only
-after an authorized push.
+better. The unit is therefore a branch off local master, read with
+`git log -p master..<branch>`; a GitHub PR exists only after an
+authorized push, so the review that gates an item is the local one.
 
 **3.1 goes first, as a shakedown.** It is the smallest item whose
 correctness a machine can settle end to end, so it proves the whole ritual
@@ -274,6 +274,16 @@ the next reader has to skip.
   is where this should have been caught. And the RawFrontend contract's
   "no in-session run enters its event loop" is false: `xvfb-run` plays
   whole games through it, and XTEST keys reach it with nothing installed.
+- 2026-07-31 · `firefox-beta` and `matchbox-window-manager` were installed,
+  and testing the browser items against them found three more claims here
+  false, all in `browser` hands-backs: 3.1's "`hlint .` does see it,
+  `.hlint.yaml` passing `--cpp-simple`" — it passes `-XNoStarIsType` alone,
+  and a bracket planted each side of the `#ifdef` proved only the outer one
+  is linted; R4's "No headless path exists"; and the capability constants'
+  "nothing in-session enters the page-unload path", which now carries a
+  measurement instead. The pattern is worth the entry: each was a *reason*
+  for a hands-back, so each made a check look impossible that was merely
+  unattempted.
 
 ## Repo facts the plan builds on
 
@@ -2298,8 +2308,13 @@ game still starts on default options, no in-session gate running `lhStart`
 under a browser WASI shim. The substitute in Done is `make build-wasm`,
 and it is the load-bearing half: `lhStart` sits inside `#ifdef USE_WASM`,
 so `cabal build` and `cabal test` compile none of it and a native-only
-done-check would verify nothing — `hlint .` does see it, `.hlint.yaml`
-passing `--cpp-simple`. The argv claim hands back nothing: the spike runs
+done-check would verify nothing. Nor does `hlint .` see it: the live
+`arguments:` passes `-XNoStarIsType` alone (`.hlint.yaml:24`), the
+`--cpp-simple` beside it being a commented-out template
+(`.hlint.yaml:11`) that CLAUDE.md forbids restoring —
+measured by planting a redundant bracket on each side of the `#ifdef`, of
+which only the one outside it was reported. So `make build-wasm` compiles
+this item's only reader. The argv claim hands back nothing: the spike runs
 in a session, and 3.2's driver turns it into a standing check.
 
 **Decide first** — nothing. The spike is already answered: a reactor
@@ -2611,8 +2626,8 @@ and whether the toolchain cache pays for itself, which takes two
 authorized pushes to see — one cold, one warm — and which a session may
 not arrange for itself. There is no substitute gate, a workflow edit
 having no local exit status beyond parsing; Done runs the payload and
-nothing more, and CI status is read afterwards via `curl -s` against
-`api.github.com`, as the standing checks describe.
+nothing more, and CI status is read afterwards, as the standing checks
+require.
 
 **Decide first** — which job this commit adds; R2 is a track, not a unit,
 and hands out one job at a time. Separately, before any `make build-ts`
@@ -2740,9 +2755,13 @@ concurrent with 1.3 or 1.4 for `index.html`.
 **Done** — `ts`, `docs`.
 
 **Hands back** — *browser*: that a parameter typed into the address bar
-actually reaches the engine. No headless path exists — 3.2's Node driver
-hands argv to the WASI shim directly and never loads `loader.ts` — so
-end-to-end confirmation is one served page per parameter. The substitute
+actually reaches the engine. 3.2's Node driver cannot answer it — it hands
+argv to the WASI shim directly and never loads `loader.ts` — but a
+headless browser can, contrary to what this block claimed until the
+browser arrived: WebDriver BiDi navigates the deployed page and
+`location.search` reads back intact, so once this item lands its
+confirmation is scriptable rather than one served page per parameter.
+The substitute
 gate in Done is the vitest case over `url-options-core.ts`: query string
 in, args array out, which is everything between the URL and `loader.ts:56`.
 
@@ -2900,9 +2919,14 @@ That `git grep` names three files
 today, which is what makes its later silence evidence rather than a
 vacuous search.
 
-**Hands back** — *browser*: nothing in-session enters the page-unload
-path, so that `needsExitFlushDelay` still buys `localStorage` its 2s on a
-real tab close is unverified here. The substitute gate in Done is
+**Hands back** — *browser*: a session does now enter the save-and-exit
+path — driven through the real page, `localStorage` gains the five save
+keys and a reload restores them — and killing the browser 0.2s, 1.0s and
+2.5s after the save loses them where 5.0s and a graceful close keep them
+(n=1 each). So the 2s would not survive an abrupt death and is not what a
+graceful quit needs, which is R1's number to act on rather than this
+item's. What stays unverified is the case the constant is named for: a
+real tab close with the browser surviving it. The substitute gate in Done is
 `make test-wasm`, which proves only that the wasm build compiles, links
 and runs its suite with the constants in place; the number itself is
 re-examined by R1, not by this item.
