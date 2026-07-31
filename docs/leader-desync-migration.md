@@ -302,6 +302,18 @@ the plan was written is one the next reader has to skip.
   Log-worthy because it is a design question reopened by a finding, and
   because an unanswered question that lives only in a chat is the thing
   this section exists to prevent.
+- 2026-07-31 · a field-by-field comparison against
+  `docs/wasm-frontend-unified-plan.md`, which moved things both ways.
+  Three classifications here were wrong. §02.1's "the only such file"
+  asked whether the cited function converts, where what slides a citation
+  is a changed line count *above* it — so `HandleHumanLocalM.hs` joins,
+  and the cell's own second-file trigger has fired, which is a mechanism
+  question reopened rather than bookkeeping. Step 6's reason for keeping
+  the visual pass a human's stopped being true when xvfb arrived, though
+  the conclusion survives on another. And the deletion ritual's count of
+  that plan's mentions was three and is four. Added, from the same
+  comparison: the citation pass and a stylish verdict to §00's gates,
+  which had neither.
 
 ## 01 · Sequencing: two designs, one campaign
 
