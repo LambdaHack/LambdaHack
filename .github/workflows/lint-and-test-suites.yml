@@ -65,8 +65,18 @@ jobs:
             dist-newstyle
           key: playtest-${{ runner.os }}-ghc-${{ steps.setup.outputs.ghc-version }}-${{ hashFiles('LambdaHack.cabal') }}
           restore-keys: playtest-${{ runner.os }}-ghc-${{ steps.setup.outputs.ghc-version }}-
+      # --enable-optimization is stated rather than inherited from cabal's
+      # default, which a checkout without cabal.project.local supplies
+      # anyway: this build is the whole of the repo's optimized coverage --
+      # haskell-ci.yml passes --disable-optimization everywhere -- so the
+      # flag belongs where a reader of this file sees it. The same applies
+      # to the wasm builds in the Makefile. Not to the doctest job below:
+      # its artifact is never run, its doctests are interpreted, and its
+      # recipe is quoted verbatim in CLAUDE.md and README.md, where the
+      # flag would force an optimized rebuild on a reader who has the
+      # unoptimized development config in place.
       - name: Build
-        run: cabal build exe:LambdaHack
+        run: cabal build exe:LambdaHack --enable-optimization
       # The teletype and null frontends run headless, so no display is needed.
       - name: Playtests
         run: make test-gha

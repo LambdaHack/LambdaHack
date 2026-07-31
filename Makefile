@@ -20,7 +20,7 @@ configure-debug:
 	cabal configure --enable-profiling --profiling-detail=all-functions -fwith_expensive_assertions --disable-optimization
 
 configure-prof:
-	cabal configure --enable-profiling --profiling-detail=exported-functions
+	cabal configure --enable-profiling --profiling-detail=exported-functions --enable-optimization
 
 chrome-log:
 	google-chrome --enable-logging --v=1 file:///home/mikolaj/r/lambdahack.github.io/index.html &
@@ -272,8 +272,8 @@ configure-binary-v2:
 	cabal configure --disable-tests --disable-library-profiling --disable-profiling --enable-optimization
 
 build-binary-v2:
-	cabal build --only-dependencies .
-	cabal build exe:LambdaHack
+	cabal build --only-dependencies . --enable-optimization
+	cabal build exe:LambdaHack --enable-optimization
 
 copy-directory:
 	mkdir -p LambdaHackTheGame/GameDefinition
@@ -304,7 +304,7 @@ build-binary-macosx: build-directory
 
 build-wasm:
 	. ~/.ghc-wasm/env; \
-	wasm32-wasi-cabal build exe:LambdaHack
+	wasm32-wasi-cabal build exe:LambdaHack --enable-optimization
 
 # Chained with && so the log ends at the command that failed; otherwise
 # a build failure runs on into post-link and the test driver, and their
@@ -314,7 +314,7 @@ test-wasm:
 	. ~/.ghc-wasm/env; \
 	T=$$(mktemp -d); \
 	trap 'rm -rf "$$T"' EXIT; \
-	wasm32-wasi-cabal build test && \
+	wasm32-wasi-cabal build test --enable-optimization && \
 	W=$$(wasm32-wasi-cabal list-bin test) && \
 	~/.ghc-wasm/wasm32-wasi-ghc/lib/post-link.mjs --input "$$W" --output "$$T/ghc_wasm_jsffi.mjs" && \
 	node ts-src/run-wasm-test.mjs "$$W" "$$T/ghc_wasm_jsffi.mjs"
