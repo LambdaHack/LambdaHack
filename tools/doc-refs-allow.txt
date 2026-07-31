@@ -9,13 +9,15 @@
 # Adding an entry is also the easy way to silently defang the checker, so
 # re-run its docstring's non-vacuity test after touching this file.
 
-# Named as a phantom rather than as a repo file. The inner sandbox mounts
-# /dev/null over eleven dotfile names in the repo root (see CLAUDE.md's
-# sandboxing notes), so `test -e` answers differently on its two sides and
-# this path resolved in a sandboxed run of this checker while failing in an
-# unsandboxed one -- the entry is what makes the verdict the same either
-# way. Of the eleven only this one needs it: the rest carry no extension
-# this checker reads as a path, so they stay unclassified.
+# Named as a phantom rather than as a repo file. The inner sandbox
+# bind-mounts /dev/null over eleven dotfile names in the session's own
+# working directory, once per Bash call (CLAUDE.md's sandboxing notes),
+# so this path's existence follows who is looking rather than what is in
+# the repo: it resolved in a sandboxed run of this checker, failed in an
+# unsandboxed one, and fails from a session rooted in a sibling checkout,
+# which gets no phantoms at all. The entry is what makes the verdict the
+# same everywhere. Of the eleven only this one needs it: the rest carry
+# no extension this checker reads as a path, so they stay unclassified.
 .mcp.json
 
 # Superseded planning documents, named by the unified plan as history.
