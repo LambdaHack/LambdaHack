@@ -31,11 +31,61 @@ wrong ranges and links whose commit or path is not in this repository
 (foreign-repo links cannot be verified locally and are reported as
 failures).
 
+`git show` proves only that the commit is in *this* clone's object
+database, which an unpushed or squashed-away commit is too — such a link
+resolves for one person on one machine and 404s everywhere else. So a
+resolved permalink is then required to be an ancestor of PUBLISHED_REF,
+and one that is not fails as UNPUBLISHED; if that ref is absent the run
+stops (exit 2) rather than degrading to the weaker check, as
+check-doc-refs.py does for an unmounted sibling.
+
+The document's own stamp gets the same treatment, split by severity,
+because the two states differ in whether they can heal. A stamp naming a
+commit that is not an ancestor of HEAD is ORPHANED and fails: a squash or
+amend dropped it and nothing but re-verification brings it back. A stamp
+naming a commit that is in HEAD but not yet on PUBLISHED_REF only earns a
+note: pushing the branch unrewritten makes it true. This repo has stood
+in the first state — CLAUDE.md records that both pointman documents
+briefly named a commit that was on no branch — and the plain pass said
+nothing, because until now it never read a stamp at all.
+
+Stamp failures are counted apart from citation failures, and deliberately:
+--restamp refuses on a failed citation pass, so folding the stamp verdict
+into that count would let an orphaned stamp block the one command that
+repairs it. They still both set the exit status. For the same reason
+--restamp *writes* an unpublished anchor rather than refusing -- an
+orphaned stamp left in place is strictly worse than an unpushed one -- and
+prints an advisory naming the push it depends on.
+
 Scope limits, deliberate: prose-style citations ("config.ui.default line
 67") are not extracted, nor is a range left dangling from its filename
 ("`LambdaHack.cabal:152-156` and `371-391`") — a bare `371-391` in
 backticks is indistinguishable from any other pair of numbers, so a
 document that wants the second range checked must repeat the filename.
+
+Refuted, and not to be reopened without new evidence: extending that to
+the *colon-led* continuation the documents also write ("`:379`, `:398`,
+`:431` — three `defAction`s"), which unlike a bare number looks
+unambiguous. Measured 2026-07-31 over every tracked `.md` here bar
+CHANGELOG.md, attaching each `` `:NNNN` `` to the nearest preceding
+citation: 58 of them, all in `docs/` — 45 in leader-desync-migration.md,
+9 in the wasm plan, 4 in leader-desync-bug.md. Every one of the 58
+resolves against the file it would attach to, so the rule reports a clean
+pass over the lot. At least three of those passes are lies: the `:379`,
+`:398`, `:431` above sit in a table row about `transition` in
+`InventoryM`, but the nearest preceding citation is `MonadClientUI.hs`
+2355 characters back, and at 498 lines that file is long enough to
+swallow all three — `ok` printed against `toMsgShared`, a POSIX time
+subtraction and `getPOSIXTime`. That is the "a citation that resolves can
+still lie" class, manufactured by the checker meant to catch it.
+
+No gap threshold separates the cases. Here correct attachments run to 660
+characters (the `HandleHumanGlobalM` rows, whose subject really is the
+nearest cited file) against 2339-2355 for the wrong ones; the horde-ad
+copy measured correct ones to 184 and wrong ones from 1538. Two corpora,
+two cuts, neither derivable from the other — the separation is an
+artifact of each document's prose, not a rule. Repeat the filename.
+
 And the *claims* around citations are not checked
 — in particular, universally-quantified claims ("only X does Y", "exactly
 two", "never") must be re-verified by repo-wide grep, not by re-reading
@@ -53,6 +103,20 @@ all seven are reported and the exit status is 1 —
     PERMALINK range  .../blob/b4d5cc2e4/CLAUDE.md#L99999
     PERMALINK repo   https://github.com/ghc/ghc/blob/0123456789abcdef/x.hs#L1
 
+and, in scratch documents of their own because each needs a whole file to
+itself, the two publication kinds and the two notes —
+
+    UNPUBLISHED      .../blob/b4d5cc2e4/CLAUDE.md#L1-L3
+    ORPHANED stamp   a stamp naming `0000000aa`
+    note, two stamps a document quoting two other documents' stamps
+    note, unpushed   a stamp naming a commit in HEAD but not yet pushed
+
+The two permalink rows name the same commit deliberately, and the order
+of the checks is what lets them: OUT-OF-RANGE is tested before
+publication, so the range row fails as a range even though that commit is
+also unpublished. Swap those two checks and the first row silently starts
+proving the second one's branch instead.
+
 plus a control that must still pass (`Point.hs:26`). A run reporting
 fewer than seven failures means extraction, resolution or the `git show`
 branch has silently stopped covering that kind. Two rows are there
@@ -69,6 +133,38 @@ warn about, and invisible in the exit status by construction.
 Reproduced 2026-07-30: seven failures and exit 1, the control resolving
 to the `Point.hs` hack comment. A recipe with no date behind it is a
 claim like any other.
+
+The four publication branches, reproduced 2026-07-31: a document pinning
+`b4d5cc2e4` at a valid range (that commit resolves, at 716 lines, while
+being an ancestor of neither HEAD nor `origin/master`) reported
+UNPUBLISHED, exit 1; one stamped `0000000aa` reported ORPHANED, exit 1;
+one carrying two stamps printed the quotation note and exited 0; one
+stamped `c2872c219`, in HEAD and not yet pushed, printed the unpushed
+note and exited 0; and a copy of this script with PUBLISHED_REF set to
+`origin/no-such-ref` stopped with exit 2. Each ran with `Point.hs:26` as
+a control, resolving throughout, and the seven-kind recipe above re-ran
+unchanged at seven. `0000000aa` is well-formed and nameless rather than a
+real dropped commit: a reflog hash would prove the same branch today and
+become unresolvable at the next gc, which is how a live row turns vacuous
+without anyone touching it.
+
+None of those five branches has a live control in the tracked corpus, and
+two of them cannot have one here at all. The seven stamped documents all
+name commits that are ancestors of both HEAD and `origin/master`, so
+ORPHANED, the unpushed note and the two-stamps note each need a scratch
+document written for the occasion; `c2872c219` stops serving the moment
+master is pushed unrewritten, and a squash before that orphans it
+instead, so either way this paragraph then wants a fresh hash. Neither
+permalink branch can be exercised by a tracked document, nor can the
+exit-2 stop: no `.md` here carries a pinned `blob/<sha>/` link at all,
+README's whole-file pointers being deliberately `blob/master` -- eleven
+of those across three documents, which is what proves the search for the
+pinned form non-vacuous rather than merely silent. The stop sits inside
+the permalink loop, so a bogus PUBLISHED_REF says nothing without one:
+this script copied with PUBLISHED_REF set to `origin/no-such-ref` exits 0
+on `CLAUDE.md` and 2 on a scratch document holding a single link pinned
+at `2b20a8284`. Write that scratch document rather than hunting the tree
+for one that serves.
 
 Passing --restamp rewrites the document's own stamp, so the ritual the
 documents ask for -- "re-run the pass and restamp after any replay of
@@ -101,6 +197,7 @@ It refuses to write when anything is off, and the refusals are the point:
     a cited file modified against HEAD     -> refuses, file untouched, 1
     no stamp, or two stamps                -> refuses, file untouched, 1
     a stamp but no file:line citation      -> refuses, file untouched, 1
+    the anchor it would write is unpushed  -> writes, plus an advisory, 0
 
 The dirty-cited-file refusal is the subtle one: with a cited file
 modified, the pass verified the working tree, and no commit hash names
@@ -119,13 +216,34 @@ that were four refusals. Reproduced 2026-07-29: rows in order 0, 0, 1, 1,
 1, 1, with the file rewritten in the first row only -- and the hash it
 wrote was the last commit touching `tools/heading-outline.py`, not HEAD,
 which is the row that would have passed vacuously under the earlier
-HEAD-based rule.
+HEAD-based rule. Re-run 2026-07-31 with the seventh row added: 0, 0, 1,
+1, 1, 1, 0, the last writing `c2872c219` and printing the advisory. Pick
+that seventh row's document by what it cites, not by habit: the anchor a
+citation of `tools/heading-outline.py` now yields is published, so that
+scratch document drives the first two rows and no longer this one, which
+needs a cited file whose newest commit is still unpushed -- any document
+citing `CLAUDE.md` supplies one while this branch runs ahead of
+`origin/master`. The
+dirty-cited-file row needs no file deliberately touched -- point the
+scratch document at whatever the working tree already has modified.
 
-Seven here, six in the horde-ad copy: the AMBIGUOUS row needs two files
-sharing a basename, which this repo has (`LoopM.hs` in both `Client/`
-and `Server/`) and that one has nowhere. So this is the only live proof
-of that branch — keep the row even if the duplicate is ever resolved.
-The two copies otherwise differ only in SEARCH_ROOTS.
+Seven failing kinds here, six in the horde-ad copy: the AMBIGUOUS row
+needs a basename shared by two files *and* absent from the repo root,
+since `resolve` returns at its `os.path.exists` check before reaching the
+ambiguity branch. `LoopM.hs`, in both `Client/` and `Server/`, is such a
+pair; `CLAUDE.md`, in the root and in `test/`, is not, and neither is
+horde-ad's `bench/`-and-`test/` pair, which the root file shadows the
+same way. So this is the only live proof of that branch — keep the row
+even if the duplicate is ever resolved. In code the two copies differ in
+SEARCH_ROOTS and in nothing else; their docstrings differ further than
+dates, controls and worked examples, so don't read a divergence there as
+one copy having fallen behind. Each names the branches its own repo
+cannot exercise, which are not the same branches; the horde-ad copy
+states two facts about the shared code that this one leaves out, that a
+stamp's date is the day of the reading rather than of the commit it
+names, and that extracted citations are deduplicated; and the refusal
+table here has a seventh row its copy lacks, for an advisory both of them
+print.
 """
 
 import datetime
@@ -136,6 +254,11 @@ import sys
 
 SEARCH_ROOTS = ["engine-src", "definition-src", "GameDefinition", "ts-src",
                 "test", "tools", "docs", ".github", ".claude", "."]
+# The ref a pinned commit has to be reachable from to count as published.
+# `git show` is an object-database lookup with no reachability requirement,
+# so without this a link or stamp naming an unpushed or squashed-away
+# commit resolves here and nowhere else.
+PUBLISHED_REF = "origin/master"
 CITE_RE = re.compile(
     r"`?([A-Za-z][A-Za-z0-9_./-]*"
     r"\.(?:hs|ts|py|c|h|cabal|mjs|html|md|txt|yaml|yml)|Makefile)"
@@ -164,6 +287,20 @@ def spans(spec):
         lo, _, hi = part.partition("-")
         out.append((int(lo), int(hi or lo)))
     return out
+
+
+def reachable_from(sha, ref):
+    """Is sha an ancestor of ref? None if ref does not exist here."""
+    if subprocess.run(["git", "rev-parse", "--verify", "--quiet",
+                       f"{ref}^{{commit}}"], capture_output=True).returncode:
+        return None
+    return subprocess.run(["git", "merge-base", "--is-ancestor", sha, ref],
+                          capture_output=True).returncode == 0
+
+
+def published(sha):
+    """Is sha reachable from PUBLISHED_REF? None if that ref is absent."""
+    return reachable_from(sha, PUBLISHED_REF)
 
 
 def all_files_named(basename):
@@ -262,6 +399,14 @@ def restamp(doc, text, cited_paths, failures):
         + m.group(5) + text[m.end():])
     print(f"\n{doc}: stamp {m.group(2)} ({m.group(4)})"
           f" -> {anchor} ({today})")
+    # Written, not refused: leaving an orphaned stamp in place would be
+    # strictly worse than naming a commit that is merely unpushed. But the
+    # unpushed state is exactly what a later squash turns into an orphan,
+    # so it is said every time rather than left to be remembered.
+    if published(anchor) is False:
+        print(f"  advisory: {anchor} is not on {PUBLISHED_REF}. Push this"
+              f" branch without rewriting that commit, or re-run --restamp"
+              f" after the push; a squash before it orphans the stamp.")
     return 0
 
 
@@ -312,16 +457,54 @@ def main():
                   f"(file has {len(lines)} lines at that commit)")
             failures += 1
             continue
+        pub = published(sha)
+        if pub is None:
+            print(f"stopping: {PUBLISHED_REF} does not exist here, so"
+                  f" whether {sha[:9]} is published cannot be told."
+                  f" Fetch it, or set PUBLISHED_REF to the ref this"
+                  f" repository publishes from.", file=sys.stderr)
+            sys.exit(2)
+        if not pub:
+            print(f"FAIL {path}#L{lo}-L{hi} @ {sha[:9]} — UNPUBLISHED"
+                  f" (resolves here but is not an ancestor of"
+                  f" {PUBLISHED_REF}, so the link 404s for everyone else)")
+            failures += 1
+            continue
         span = f"L{lo}" if lo == hi else f"L{lo}-L{hi}"
         print(f"ok   {path}#{span} @ {sha[:9]}"
               f" | {lines[lo - 1].strip()[:70]}")
+    # Counted apart from citation failures: --restamp is gated on those,
+    # and an orphaned stamp is the very thing it repairs, so folding it in
+    # would make a bad stamp block its own fix.
+    stamp_failures = 0
+    found = list(STAMP_RE.finditer(text))
+    # Only a document's *own* stamp is checked, and a document has one.
+    # Several means it is quoting other documents' stamps -- which a
+    # findings or handover document does -- and a quotation is not a claim
+    # about this file's tree. This is the same precondition --restamp
+    # enforces, so the two agree on what counts as a stamp.
+    if len(found) > 1:
+        print(f"note {len(found)} stamps found — quotations, not this"
+              f" document's own; none checked")
+        found = []
+    for m in found:
+        sha = m.group(2)
+        if reachable_from(sha, "HEAD") is False:
+            print(f"FAIL stamp @ {sha[:9]} — ORPHANED (not an ancestor of"
+                  f" HEAD; a squash or amend dropped it, so no clone can"
+                  f" resolve the tree this document claims to name)")
+            stamp_failures += 1
+        elif published(sha) is False:
+            print(f"note stamp @ {sha[:9]} — not on {PUBLISHED_REF} yet;"
+                  f" sound only if this branch is pushed without"
+                  f" rewriting that commit")
     print(f"\n{len(cites) + len(urlcites)} citations checked,"
           f" {failures} failed"
           f" — now eyeball the snippets against the document's claims.")
     if "--restamp" in flags:
         resolved = [resolve(name)[0] for name, _lo, _hi in cites]
         return restamp(doc, text, [p for p in resolved if p], failures)
-    return 1 if failures else 0
+    return 1 if failures or stamp_failures else 0
 
 
 if __name__ == "__main__":

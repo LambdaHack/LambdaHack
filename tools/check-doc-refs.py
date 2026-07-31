@@ -115,6 +115,8 @@ scratch document holding
     `Ability.SkMove`, `K.KM`               upgrade-only, unclassified
     `blob/master`, `group/bench`, `KP_/`   must stay unclassified
     `.../ghc-9.12/...`                     an elision, not a sibling path
+    `https://example.com/a/b.md`           a URL, not a path
+    `https://lambdahack.github.io/`        the trailing-slash shape
 
 and confirm exactly five failures and exit status 1. The controls matter
 as much as the failures: without them an extractor that silently matches
@@ -124,7 +126,13 @@ to start crying wolf on every document in the repo. Two of them are not
 decoration but recorded false positives: the plain `\\bcabal` pattern
 matched inside `wasm32-wasi-cabal` and read `exe:LambdaHack` as a stanza
 called "exe", and `.../ghc-9.12/...` was read as a sibling path until the
-`../` test was made to require the slash.
+`../` test was made to require the slash. The two URL rows are a third:
+NOT_IN_PATH was taken to mark URLs, and it does not — a URL with no query
+and no fragment carries none of its characters, so a backticked
+`https://example.com/a/b.md` was reported as a path that does not
+resolve, and a URL ending in a slash failed through `dir_shaped` instead.
+No document here backticks a bare URL today; all 45 occurrences are
+written as markdown links, so these rows are that branch's only control.
 
 Then three runs for the ways a run can fail to happen. Pass a document
 name that does not exist and confirm one line on stderr and exit 2, not
@@ -138,12 +146,20 @@ as well, because without the checkouts nothing tells a missing local file
 from an upstream one.
 
 Reproduced 2026-07-29: five failures and exit 1, then exit 2, then the
-degraded run.
+degraded run. Re-run 2026-07-31 with the two URL rows added: still five
+failures and exit 1, both URLs unclassified.
 
-The horde-ad copy of this script differs only in the configuration block
-and in this recipe. Two branches this recipe exercises are dead there —
-that repo has no makefile and no command-line parser — so the `make` and
-`--flag` cases are proven here and nowhere else; keep them.
+The horde-ad copy of this script differs in the configuration block and,
+alone among the code below it, in `MAKE_RE`, which here skips a target's
+leading flags so that `make -n foo` names `foo` rather than a target
+called `-n`. Two branches this recipe exercises are dead there — that
+repo has no makefile and no command-line parser — so the `make` and
+`--flag` cases are proven here and nowhere else; keep them. The
+docstrings diverge more widely than this recipe: the sibling-checkout
+policy is stated at different lengths, and the `paths` and `modules`
+bullets carry each repo's own examples and namespace. That is a prose
+difference throughout, so a reader syncing one file to the other should
+sync neither.
 """
 
 import fnmatch
@@ -206,9 +222,15 @@ CABAL_FLAG_RE = re.compile(r"^flag\s+([A-Za-z][A-Za-z0-9_-]*)", re.M)
 CABAL_STANZA_RE = re.compile(
     r"^(?:test-suite|benchmark|library|executable)\s+(\S+)", re.M)
 CABAL_NAME_RE = re.compile(r"^name:\s*(\S+)", re.M)
-# A repo path cannot hold these; they mark URLs, templates and the
-# brace shorthand the documents use (`HordeAd.OpsTensor{,Ranked}`).
+# A repo path cannot hold these; they mark templates, the brace
+# shorthand the documents use
+# (`Implementation.Monad{Client,Server}Implementation`), and URLs
+# carrying a query or a fragment. A plain URL has none of them -- only
+# this set was described as marking URLs, and a backticked
+# `https://example.com/a/b.md` was reported as a path that does not
+# resolve, as was any URL ending in a slash.
 NOT_IN_PATH = set("<>#?&=…{}")
+URL_SCHEME_RE = re.compile(r"^[A-Za-z][A-Za-z0-9+.-]*://")
 
 
 def cabal_text():
@@ -273,7 +295,7 @@ def path_shaped(token, top_level):
     prose. It must carry a known extension, end in a slash, or start at a
     directory that exists here.
     """
-    if NOT_IN_PATH & set(token):
+    if NOT_IN_PATH & set(token) or URL_SCHEME_RE.match(token):
         return False
     ext = token.rsplit(".", 1)[-1] if "." in token[1:] else None
     # A lone trailing slash is not enough. Demand an inner slash or a
