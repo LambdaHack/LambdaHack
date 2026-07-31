@@ -10,8 +10,11 @@
 #
 # - arguments: [--color, --cpp-simple, -XQuasiQuotes]
 #
-# -XNoStarIsType suppresses nothing here, no file using `*` as a type. It is
-# kept so that this line matches horde-ad's, where it is load-bearing.
+# -XNoStarIsType suppresses nothing here, no file using `*` as a type. It
+# mirrors NoStarIsType in the cabal's default-extensions, which hlint cannot
+# read, so the two are not to drift apart. This line does not match
+# horde-ad's and is not to be synced with it: --cpp-simple is load-bearing
+# here and unusable there, and CLAUDE.md records the measurement behind it.
 - arguments: [--cpp-simple, -XNoStarIsType]
 
 # Control which extensions/flags/modules/functions can be used
