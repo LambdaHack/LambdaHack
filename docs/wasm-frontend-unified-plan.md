@@ -303,6 +303,15 @@ the next reader has to skip.
   carry the clause retired with the gap. Non-vacuity measured with a
   planted type error: vitest alone passed over it; the reworked target
   fails on it.
+- 2026-08-05 · the frame-timing baseline ruled, closing 2.2's (a), R5's
+  first two questions and 2.5's whole field: the capture is step (0) of
+  2.2's Split, gating its first merge; the probe is the throwaway
+  `performance.now()` one, its diff recorded so 2.5 re-applies it; the
+  venue is in-session under one Xvfb setup for capture and re-measurement
+  alike, numbers compared only within it; the number lands at Phase 2's
+  intro, dated, with its protocol. R5a stays where the ledger puts it,
+  and R5's instrument keeps only R5's own pass. Twenty-three items now
+  carry an unanswered **Decide first**, seven none.
 
 ## Repo facts the plan builds on
 
@@ -1376,10 +1385,14 @@ missing on screen: under `singleFontSetup` the engine pre-flattens all
 overlay text into the square-font `singleArray`, which is why the wasm
 build shows menus and the log today, just in the map font.)
 
-Before 2.2 lands, capture a browser frame-timing **baseline** — with R5's
-harness if it exists by then, else a temporary `performance.now()` probe —
-and re-measure at 2.5, so multi-font's rendering cost is an attributed,
-measured change rather than a guess.
+Before 2.2 lands, capture a browser frame-timing **baseline** and
+re-measure at 2.5, so multi-font's rendering cost is an attributed,
+measured change rather than a guess. Ruled on 2026-08-05: the capture
+is step (0) of 2.2's Split, uses the throwaway `performance.now()`
+probe — R5a is not pulled forward — runs in-session under the same
+Xvfb setup as 2.5's re-measurement, the two numbers comparing only
+within that setup, and lands here: a dated number with its protocol
+and the probe's diff, appended to this paragraph when taken.
 
 ### 2.1 Extract `OverlayLayout`: the pure half of `Sdl.hs`'s overlay drawing
 
@@ -1982,8 +1995,13 @@ itself never crosses, so there is nothing there to pin.
 
 Verify: vitest green; live game pixel-identical to before (nothing wired).
 
-**Split** — three code commits plus the record commit. (1) the font
-wiring: `Wasm.hs`'s one-shot `js_setupFonts`, its `globalThis` hook in
+**Split** — a capture, then three code commits plus the record commit.
+(0) the pre-Phase-2 frame-timing baseline, before (1) merges: drive the
+page in-session under the Xvfb setup with the throwaway
+`performance.now()` probe applied, never committed, and append the
+number, its protocol and the probe's diff to Phase 2's intro — no code
+lands here, and (1) must not merge without the record standing. (1) the
+font wiring: `Wasm.hs`'s one-shot `js_setupFonts`, its `globalThis` hook in
 `loader.ts`, the `FontFace` declarations in `terminal.ts`, and the
 `Makefile` copy of the referenced `GameDefinition/fonts/*.ttf.woff` into
 the pages checkout. It depends on nothing else in Phase 2 — `sfonts` and
@@ -2016,7 +2034,9 @@ edit one executable.
 **Done** — `native` (stylish over
 `engine-src/Game/LambdaHack/Client/UI/Frontend/Wasm.hs`), `ts`, `wasm`,
 `deploy`, plus `test -f ../lambdahack.github.io/DejaVuLGCSans-Bold.ttf.woff`
-&& `test -f ../lambdahack.github.io/Hack-Bold.ttf.woff`.
+&& `test -f ../lambdahack.github.io/Hack-Bold.ttf.woff`, plus the
+baseline number standing recorded at Phase 2's intro before (1) merges
+(Split (0)).
 Run it unsandboxed: the build-ts step writes into the sibling pages
 checkout. The two file tests are the deployment gate and are non-vacuous
 today — neither font is in that checkout, which is the whole font
@@ -2032,18 +2052,15 @@ test-ts` plus the two font-deployment tests rather than a look. The HiDPI
 and browser-zoom checks are deferred to 2.5 by the plan itself, not by
 this block.
 
-**Decide first** — three. (a) the pre-Phase-2 frame-timing baseline. Phase
-2's intro requires it captured *before* 2.2 lands and re-measured at 2.5,
-and no item owns capturing it; the moment (1) or (3) merges, the
-left-hand side is unrecoverable and 2.5 finds the comparison has no other
-half. Decide who captures it, with which probe — R5's harness if it exists
-by then, else a temporary `performance.now()` one — and where the number
-is written down, since recording it in this plan is an edit to a live
-section. (b) the browser's argument to `mkLayoutMetrics`, which
+**Decide first** — two, the third ruled on 2026-08-05: the baseline is
+Split (0)'s now — throwaway probe, in-session, the number and probe
+diff recorded at Phase 2's intro — so what stood here as (a) is that
+step's instruction rather than a question. (a) the browser's argument
+to `mkLayoutMetrics`, which
 reconstructs `lmBoxSize = 2 * halfSize`: a measured grid box that is odd
 or fractional — the normal case under devicePixelRatio scaling, not the
 corner case — makes `lmBoxSize` disagree with the grid's actual pitch.
-Round the box down to even, round the half, or reject and fall back? (c)
+Round the box down to even, round the half, or reject and fall back? (b)
 `js_setupFonts`'s marshalling. A font *name* list is unavoidably strings,
 which is the one thing 2.3's payload design exists to avoid, so the
 one-shot call needs a stated encoding before it is written rather than an
@@ -2229,7 +2246,7 @@ native playtest battery §2.4 asks for.
 - HiDPI and browser-zoom spot checks (the 2.2 pitfalls, exercised for
   real).
 - Frame-timing re-measurement against the pre-Phase-2 baseline (Phase 2
-  intro; R5's harness).
+  intro; re-apply the probe diff recorded there).
 
 **Split** — three commits around one human checklist. (1) R6 closure: the
 single shared TS drawing entry point that the live overlay renderer and
@@ -2261,18 +2278,21 @@ so it fails until (2) lands.
 irreducibly a human's. The side-by-side visual comparison with SDL2
 (menus, message log, help, item descriptions, and the mono-overwrites-prop
 overrun), the HiDPI and browser-zoom spot checks 2.2's pitfalls defer
-here, and the frame-timing re-measurement — which additionally needs a
-left-hand side no item owns; see 2.2's Decide first. What is in Done is
+here, and the frame-timing re-measurement's verdict — the runs
+themselves are a session's now, capture and re-measurement under one
+Xvfb setup with the left-hand side captured by 2.2's Split (0)
+(Phase 2's intro has the record). What is in Done is
 the fifth and the R6 case: the banner grep, and the draw-command
 comparison that is the one checklist line with a machine verdict and the
 one that would otherwise regress in silence, screenshots quietly going
 map-only.
 
-**Decide first** — one. Whether the pre-Phase-2 frame-timing baseline
-exists at all. If 2.2 landed without capturing it, the re-measurement has
-no other half, and this item must either strike that checklist line with a
+**Decide first** — nothing, since 2026-08-05: 2.2's Split (0) captures
+the baseline before anything of 2.2 merges, closing the question this
+field carried. One instruction survives it: should the record show the
+capture was skipped regardless, either strike that checklist line with a
 recorded reason or re-derive a baseline from a build at the pre-2.2
-commit — not quietly measure against nothing and call the number a
+commit — never quietly measure against nothing and call the number a
 comparison.
 
 ---
@@ -2808,19 +2828,22 @@ R4 + 3.1, a `?benchmark` URL mode running the same `--automateAll`
 AI-vs-AI game with the real DOM frontend — the browser analogue of
 `benchFrontendCrawl` — while `terminal.ts` collects `submitFrame`-to-paint
 timings (rAF timestamps) and reports count/mean/p95 at game end. Used
-three times: the pre-Phase-2 baseline, the 2.5 re-measurement, and
-whatever R5 then decides to chase. No committed scope beyond that —
-measure first; the frame path itself (one buffer address per frame) is
-already about as cheap as the boundary allows.
+for R5's own pass alone: the pre-Phase-2 baseline and the 2.5
+re-measurement use the throwaway `performance.now()` probe recorded at
+Phase 2's intro instead (ruled 2026-08-05), so neither waits on R4 or
+3.1. No committed scope beyond that — measure first; the frame path
+itself (one buffer address per frame) is already about as cheap as the
+boundary allows.
 
 **Split** — R5a is the instrument: the `?benchmark` URL mode plus the rAF
 frame-timing collector, its pure half in a `*-core.ts` under vitest, and
 it carries the deletion of its two `tools/doc-refs-allow.txt` entries.
-R5b is the three measurement runs the item names, each landing as a
-recorded number in this document and nothing else; its third run carries
-the outcome line. R5c is whatever the numbers justify chasing, which the
-item deliberately leaves uncommitted — not schedulable, and no commit
-here.
+R5b is the measurement pass the item exists for — R5a's browser
+rendering numbers beside the `make nativeBench`-vs-`make nodeBench`
+ratio — each landing as a recorded number in this document and nothing
+else, and it carries the outcome line. R5c is whatever the numbers
+justify chasing, which the item deliberately leaves uncommitted — not
+schedulable, and no commit here.
 
 **Owns** — the new `ts-src/src/frame-timing-core.ts` and
 `ts-src/src/frame-timing-core.test.ts`, `ts-src/src/terminal.ts` (the
@@ -2832,23 +2855,26 @@ parameter allowlist) nor with 2.2 (`terminal.ts`).
 **Done** — `ts`, `docs`, which decides
 R5a only.
 
-**Hands back** — *browser*: the whole rendering half, R5b, and no
-substitute exists anywhere in this plan. Phase 3's `nodeBench*` targets
-run `--frontendNull`, so `Wasm.hs`'s frontend never starts and no frame is
-ever painted; the three runs are `make build-ts` (unsandboxed) plus
-`make serve-wasm` and a human at the page, three times. What Done does
-gate is the collector's arithmetic — count/mean/p95 over a fixed
-timestamp list — and beside it sits the game-logic half, `make nativeBench`
-against `make nodeBench` on one machine with one seed set, which a session
-can run but not judge, and which must not be parallelized across agents.
+**Hands back** — *judgement*: what the numbers are worth. The rendering
+half is a session's to run now: the pass is `make build-ts` (unsandboxed)
+plus `make serve-wasm` and the page driven in-session under the Xvfb
+setup, llvmpipe numbers comparing only within that setup, with a
+real-display pair only if a verdict is challenged. Phase 3's `nodeBench*`
+targets run `--frontendNull`, so `Wasm.hs`'s frontend never starts and no
+frame is ever painted — R5a has no substitute anywhere in this plan.
+What Done does gate is the collector's arithmetic — count/mean/p95 over a
+fixed timestamp list — and beside it sits the game-logic half,
+`make nativeBench` against `make nodeBench` on one machine with one seed
+set, which a session can run but not judge, and which must not be
+parallelized across agents.
 
-**Decide first** — three. Whether §2's pre-2.2 baseline uses R5a or the
-sanctioned temporary `performance.now()` probe: the first pulls R5a ahead
-of R4 and 3.1 onto Phase 2's critical path, the second leaves R5 where the
-ledger puts it and throws the probe away at 2.5. Who takes the three
-browser measurements, given that no session can. And what result is worth
-chasing — "runs rather slowly" has no threshold here, and R5c exists only
-if someone sets one.
+**Decide first** — one, the other two ruled on 2026-08-05. §2's pre-2.2
+baseline uses the throwaway probe — R5a is not pulled ahead of R4 and
+3.1 onto Phase 2's critical path, and R5 stays where the ledger puts it.
+And a session takes the measurements, in-session under one Xvfb setup
+with numbers compared only within it — "no session can" predated
+`firefox-beta`. Open: what result is worth chasing — "runs rather
+slowly" has no threshold here, and R5c exists only if someone sets one.
 
 **R6 — Screenshot/overlay coherence.** Every renderer of "the current
 screen" (the live grid, the 1.2 screenshot rasterizer, any future export)
