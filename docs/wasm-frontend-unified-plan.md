@@ -2854,9 +2854,10 @@ and ordered, ruled 2026-08-07: the cache commit first — `~/.ghc-wasm` and
 the wasm cabal store, the toolchain bootstrap being the expensive part of
 every wasm job including the next one — then a `make build-wasm` job,
 which feeds 0.3's export-half coverage when that lands. One non-job
-commit rides the same ruling: `build-ts`'s `;` chains become `&&`, so the
-deploy-carrying Done gates across this plan stop trusting an exit status
-that cannot fail. The rest land with the artifact each runs: 0.2's
+commit rode the same ruling and landed on master (`2b4b7d71f`):
+`build-ts` chains with `&&` now, so the deploy-carrying Done gates
+across this plan no longer trust an exit status that cannot fail. The
+rest land with the artifact each runs: 0.2's
 generated-file freshness check, 0.3's FFI battery, a short `nodeBench`
 smoke after 3.3, and the practice's `xvfb` SDL and pty ANSI smokes.
 
@@ -2886,10 +2887,11 @@ jobs are the cache then `make build-wasm`, as the Split now states. And
 CI gets no `make build-ts` job: its verifiable pieces are covered
 piecewise — `tsc` and vitest in `test-ts`, the wasm build in the
 `build-wasm` job, 0.2's freshness check when it lands — and the deploy
-write has no meaningful destination on a runner; what the target does get
-is the `;`→`&&` hygiene fix, as its own commit, because several items'
-Done lines gate on `build-ts`'s exit status unsandboxed and today that
-status cannot report a failed post-link or copy.
+write has no meaningful destination on a runner; what the target got is
+the `;`→`&&` hygiene fix, landed on master (`2b4b7d71f`) with its
+measured proof — a planted npm-ci failure exited 0 under the old chains
+and 2 under the new — because several items' Done lines gate on
+`build-ts`'s exit status unsandboxed.
 
 **R3 — Retire GHCJS support (one browser target is enough).** The
 original GHCJS target is unbuildable, permanently: this codebase requires
