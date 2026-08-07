@@ -35,8 +35,14 @@ unrepresentable.
 > captured `leader`", there being no captured leader left. The write
 > itself moves only with the abort-split, and then verbatim, into
 > `abortMacroPlayback`. Both are as it should be: a post-mortem describes
-> a past state, and the stamp says which one. The only upkeep those
-> sections keep is an outcome line per claim that resolves:
+> a past state, and the stamp says which one. Those sections take two
+> kinds of upkeep and no third. One is an outcome line per claim that
+> resolves. The other, added 2026-08-07 when the real frontend sharpened
+> two of §04's mechanisms, is a callout that annotates a section without
+> rewriting the prose under it — for a finding that changes what a reader
+> would *do*, never one that merely restates the history better; §04
+> carries the only one, and §03 a clause pointing into it. The outcome
+> lines:
 >
 > - §07–§08 · the reproducer and its verification — **landed** on master,
 >   as the LR series and its harness (`3453b1777` through `8b5703e87`).
@@ -170,7 +176,9 @@ reads can be invalidated between the read and its use. The whole family is
 a property of the *human* client's dialogs.
 
 Two supporting facts open the window: running is itself macro-driven
-(`macroRun25 = ["C-comma", "C-v"]`), and `srunning` is cleared only when a
+(`macroRun25 = ["C-comma", "C-v"]` — but only the single-actor run-ahead
+is, per §04's callout, so what carries a *rotating* run into a dialog is a
+recorded macro), and `srunning` is cleared only when a
 *real* (non-macro) key is read — so pure macro playback carries a live run
 across command boundaries, right into an item dialog.
 
@@ -222,6 +230,36 @@ next-in-cycle candidate — is what turns a silent no-op into a crash.*
    (`PointmanCycleLevel`). With the stale `C`, the "next member on this level"
    is computed as `A`. **If that equals the just-restored leader**,
    `pickLeader` no-ops and the assertion crashes the game.
+
+> **⚠ Two mechanisms this recipe states loosely, sharpened 2026-08-07 by
+> driving the real frontend.** Neither touches the window or the analysis;
+> both decide which keys reach it, so a session reproducing §04 by hand
+> needs them, and one of them makes a failed attempt look like a success.
+>
+> **Only `C-Tab` cycles inside a dialog** — wherever this record names
+> those keys, which is the opening paragraph, the timeline above, step 4,
+> and §05's self-healing sentence, that last one naming `A-Tab` alone and
+> so reading as the very case that cannot happen. A dialog binds one key
+> per cycling command, `revCmd`'s first (`InventoryM.hs:392`), and it reads
+> `brevMap`, which admits only bindings carrying a command category, where
+> the `bcmdMap` beside it takes every one
+> (`engine-src/Game/LambdaHack/Client/UI/Content/Input.hs:86-93`). `A-Tab`
+> carries none (`GameDefinition/game-src/Client/UI/Content/Input.hs:60`),
+> `C-Tab` carries `CmdMove` (`:62`). So `A-Tab` does nothing in a dialog
+> while still working at top level, through `bcmdMap` — and a tester who
+> presses it there sees exactly what an unreached window looks like.
+>
+> **The run that rotates the pointman is not the macro-driven one.** §03's
+> `macroRun25` parenthetical is injected only `when runAhead`, the same
+> flag that cuts `runMembers` down to `[leader]`
+> (`HandleHumanGlobalM.hs:322-333`). So shift+direction — `RunDir`, which
+> passes `runAhead = True` (`HandleHumanM.hs:111-112`) — runs a single
+> actor and rotates nobody, while the rotating multi-actor run comes from
+> the go-to-xhair family (`HandleHumanGlobalM.hs:659`, `:671`, `:677`, all
+> passing `False`) and injects no macro. Step 1's "macro mixing
+> squad-running with menu keys" therefore means a *recorded* macro driving
+> a go-to-xhair run; shift+direction will not open the window however long
+> it plays.
 
 ## 05 · Why it "apparently crashes rarely"
 

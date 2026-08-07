@@ -371,9 +371,9 @@ the plan was written is one the next reader has to skip.
   `C-Tab` has `CmdMove` (`:62`), so only `C-Tab` is reachable inside a
   dialog, while `A-Tab` still works at top level, through `bcmdMap`.
   Verified twice over, by reading and by pressing. So step 6's
-  session, and the post-mortem's §04 recipe, should press `C-Tab` inside
-  the menu — pressing `A-Tab` there looks exactly like a window that was
-  never reached. **And the multi-actor run and the injected macro come
+  session should press `C-Tab` inside the menu — pressing `A-Tab` there
+  looks exactly like a window that was never reached. **And the
+  multi-actor run and the injected macro come
   from opposite branches of one `if`**: `moveRunHuman`'s `runMembers` is
   `[leader]` when `runAhead`, the full selection otherwise, and
   `macroRun25` is injected only `when runAhead`
@@ -386,7 +386,11 @@ the plan was written is one the next reader has to skip.
   afternoon of the latter never opened it. What the spike did *not* reach
   is the window itself; the machinery is all proven — recording,
   replay, dialogs, mid-dialog switching, all scriptable headlessly — so
-  what step 6 keeps is the judgement, not the typing.
+  what step 6 keeps is the judgement, not the typing. Both mechanisms now
+  live in the post-mortem's §04 as a callout, since they outlive this
+  file; that callout is the copy to correct if either is ever found
+  wrong, and it is what took the record's frozen half its second kind of
+  upkeep.
 - 2026-08-07 · two probes for PR 0, both answering yes with a caveat.
   `permittedApply` returns *distinct* verdicts per apply skill through the
   stub content — `ApplyNoEffects`, `ApplyFood`, `ApplyUnskilled` for
@@ -670,8 +674,9 @@ of step 1.
    a manual session replaying the post-mortem's §04 timeline (multi-hero
    run inside a recorded macro that opens the item menu, then `C-Tab` —
    not `A-Tab`, which the dialog does not bind, and not shift+direction
-   for the run, which rotates no pointman; the 2026-08-07 log entry has
-   both mechanisms) — X1 of §05 already drives that window through the
+   for the run, which rotates no pointman; the post-mortem's §04 callout
+   has both mechanisms and outlives this file) — X1 of §05 already drives
+   that window through the
    real `promptGetKey`, so what the session adds is everything the mock
    supplies instead: a real frontend, a macro recorded by actual
    keypresses rather than a `smacroFrame` seeded in the fixture, and the
