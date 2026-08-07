@@ -91,8 +91,8 @@ unit of rollback §01 relies on.
 
 | step | touches | check when done | state |
 |---|---|---|---|
-| §02.0 spike | `MonadClientUI` plus the three frames of `PointmanCycleLevel`, and the five test call sites that break with them (`HandleHelperMUnitTests.hs:121`, `:141`, `:176`, `FrameMUnitTests.hs:343`, `:377`) | the library compiles and the witness reads tolerably at a real call site; then, once those five take a witness, the suite compiles and LR1/LR2/LR5 are green while LR3/LR4 and the two bridge tests are red and LR6 unrepresentable — the spike working, not failing | pending |
-| §02.1 witness, accessors | `MonadClientUI` only, ~30 lines. A file two campaigns write, and the sharper of the two: `docs/wasm-frontend-unified-plan.md` cites into it nine times (`MonadClientUI.hs:166` once, `MonadClientUI.hs:329` six times — all `getFontSetup`, which its 2.4 rewrites and which may land at any time — and `MonadClientUI.hs:455` and `MonadClientUI.hs:469` once each, this plan's own citations mirrored back by that plan's 2.4). The bodies are disjoint and an export-list clash is loud, so the hazard is neither — it is that ~30 lines inserted above `:166` slide all nine onto other lines *while they still resolve*, leaving `tools/check-plan-citations.py` green over a document that has started to lie. It is not the only such file, and the test that excluded the others was the wrong one: a citation slides when the line count *above* it changes, not when the cited function converts. So `HandleHumanLocalM.hs` joins — §02 converts `chooseItemDialogMode` and the `chooseItem*Human` wrappers well above the wasm rip-out's cited `HandleHumanLocalM.hs:815` — and so does `test/UnitTestHelpers.hs`, which PR 0 writes and two of that plan's items own; of the other two both campaigns name, §03's DrawM ruling is a decision *not* to write and `SessionUIMock.hs` is read rather than written. Files that plan only *cites* are a wider set and a different hazard, met by §00's citation gate rather than here. The second and third files the ruling below reserved have therefore arrived, and the reopened question was ruled on 2026-08-07: no mechanism — machinery that must be maintained or become a lie, for the little both campaigns have left to run — so each side goes on warning by hand, this row and that plan's 2.4 and capability-constants blocks, with this row's snippet re-reading as the check a green run cannot replace; reopen again only if the shared set grows | `cabal build`; the contract series green and its count unmoved; nothing else changes, this step having no callers yet; and, because of the above, re-run that checker over the wasm plan and re-read the four printed snippets, which stand for those nine sites, the checker printing one per distinct line — a green run is not sufficient here | pending |
+| §02.0 spike | `MonadClientUI` plus the three frames of `PointmanCycleLevel`, and the five test call sites that break with them (`HandleHelperMUnitTests.hs:121`, `:141`, `:176`, `FrameMUnitTests.hs:343`, `:377`) | the library compiles and the witness reads tolerably at a real call site; then, once those five take a witness, the suite compiles and LR1/LR2/LR5 are green while LR3/LR4 and the two bridge tests are red and LR6 unrepresentable — the spike working, not failing | **done** 2026-08-07, on branch `spike-pointman-witness` (`af673d1f4`), parked not merged: the acceptance was met exactly, 4 of 153 failing and those four LR3, LR4, X1, X2, with all 26 contract tests green and `hlint`/stylish clean. The design stands, so the witness-free variant stays passed over and step 1 proceeds. Five findings for the steps below are in the Log |
+| §02.1 witness, accessors | `MonadClientUI` only, ~30 lines. A file two campaigns write, and the sharper of the two: `docs/wasm-frontend-unified-plan.md` cites into it nine times (`MonadClientUI.hs:166` once, `MonadClientUI.hs:329` six times — all `getFontSetup`, which its 2.4 rewrites and which may land at any time — and `MonadClientUI.hs:455` and `MonadClientUI.hs:469` once each, this plan's own citations mirrored back by that plan's 2.4). The bodies are disjoint and an export-list clash is loud, so the hazard is neither — it is that ~30 lines inserted above `:166` slide all nine onto other lines *while they still resolve*, leaving `tools/check-plan-citations.py` green over a document that has started to lie. It is not the only such file, and the test that excluded the others was the wrong one: a citation slides when the line count *above* it changes, not when the cited function converts. So `HandleHumanLocalM.hs` joins — §02 converts `chooseItemDialogMode` and the `chooseItem*Human` wrappers well above the wasm rip-out's cited `HandleHumanLocalM.hs:815` — and so does `test/UnitTestHelpers.hs`, which PR 0 writes and two of that plan's items own; of the other two both campaigns name, §03's DrawM ruling is a decision *not* to write and `SessionUIMock.hs` is read rather than written. Files that plan only *cites* are a wider set and a different hazard, met by §00's citation gate rather than here. The second and third files the ruling below reserved have therefore arrived, and the reopened question was ruled on 2026-08-07: no mechanism — machinery that must be maintained or become a lie, for the little both campaigns have left to run — so each side goes on warning by hand, this row and that plan's 2.4 and capability-constants blocks, with this row's snippet re-reading as the check a green run cannot replace; reopen again only if the shared set grows. **Append, do not insert**: the spike put the whole block below `MonadClientUI.hs:469` and slid nothing, so the hazard this cell describes is avoidable rather than merely detectable, and the snippet re-reading below is the fallback for inserting high, not the plan | `cabal build`; the contract series green and its count unmoved; nothing else changes, this step having no callers yet; and, if the block goes in anywhere but the end of the file, re-run that checker over the wasm plan and re-read the four printed snippets, which stand for those nine sites, the checker printing one per distinct line — a green run is not sufficient there | pending |
 | §02.2–4 dialog chain, assertions, flips | `InventoryM` (7 functions), `HandleHumanLocalM` (`chooseItemDialogMode`, the three `chooseItem*Human` wrappers, and `psuitReq`, which loses its own `ActorId`), `HandleHumanGlobalM` (`itemMenuHuman`, `chooseItemMenuHuman`, and `psuitReq`'s second call site in `projectItem`), `HandleHumanM` (their boundary cases and the `CmdLeader` field type), `HandleHelperM` (the one assertion `4a6eca154` disabled), test edits across all five test modules, nearer 20 than the 14 first estimated | the contract series green *unchanged* and its count unmoved; the flip series green *with the flipped values* and its count down one as step 4 deletes LR6 (11 → 10), each flip verified first against the candidate as step 4 spells out; `stylish-haskell -i` leaves every touched file alone | pending |
 | §02.5 sweep | the remainder of §03's read-live set (fourteen functions, judgment calls), then the fifteen convert-half of §03's tail with the sixteen boundary cases dispatching them, across 4 modules | `cabal build`; both series green with counts unmoved; `hlint .` says `No hints`; `stylish-haskell -i` leaves every touched file alone; no `CmdLeader` case passes an `ActorId`, read off `cmdSemanticsLeader` alone | pending |
 | §02.6 verification | nothing; it is the gate | full suite; `make test-short`, `make test-medium`; then, played by hand and so reported unrun rather than green: the timeline session, a fling-dialog switch and an apply-dialog switch (§03's sibling (c), pinned by PR 0 but checked here in the real frontend) | pending |
@@ -191,7 +191,14 @@ have — a `ChanFrontend` that *records* `FrontResetKeys` rather than
 printing it (`UnitTestHelpers.hs:135`), that request being the branch's
 only effect — and a characterization of sibling (c) in the apply dialog,
 which no test enters at all. Sibling (d)'s pin landed ahead of them, in
-`test/InventoryMUnitTests.hs`.
+`test/InventoryMUnitTests.hs`. Two things the 2026-08-07 probes add to
+that list, both cheap and both invisible until someone starts writing:
+the special-event case must run on a *party* fixture, `stubCliState`'s
+faction being under AI and so silencing the very effect it observes; and
+the sibling (c) pin needs `permittedApplyClient` moved out of
+`HandleHumanLocalM`'s `EXPOSE_INTERNAL` block into the tests-visible
+group beside `permittedProjectClient`, but needs no walkable board, its
+verdicts differing per skill on the plain one.
 
 **Claims here that no pass can re-run.** Four assertions in these three
 documents rest on experiments whose artifact was never recorded: the two
@@ -332,6 +339,70 @@ the plan was written is one the next reader has to skip.
   `test/UnitTestHelpers.hs` is a third file both campaigns write. The
   lesson is worth having paid for: fixing one instance of a count is not
   fixing the count.
+- 2026-08-07 · the §02.0 spike ran, met its acceptance to the letter and is
+  parked on `spike-pointman-witness` (`af673d1f4`). Five things it settled
+  that the steps below inherit. **The insertion point is a choice, and the
+  right one deletes §02.1's hazard**: appending the ~30 lines *below*
+  `MonadClientUI.hs:469` rather than inserting above `:166` slides none of
+  the wasm plan's nine citations, so that row's "a green run is not
+  sufficient" acceptance applies only if step 1 inserts high, and step 1
+  should not. **The two boundary helpers need a new constraint**: `addLeader`
+  and `weaveLeader` were `Monad m` and the witness makes them
+  `MonadClientUI m`, which is what lets the unconverted handlers keep
+  working through one shim in two places rather than 26. **`HandleHumanM`
+  loses an import**: the boundary stops reading `sleader` itself, so
+  `Game.LambdaHack.Client.State` goes redundant there and GHC says so.
+  **The test monad has no `MonadFail`**, so `Just witness <-
+  mintHasPointman` does not typecheck under `CliMock` and every minting
+  test site wants `fromMaybe (error …) <$> mintHasPointman` — or a helper
+  in `test/UnitTestHelpers.hs`, worth adding once step 4 has ten such
+  sites rather than four. And **LR6 confirmed unrepresentable** by
+  construction: it was the one call site that could not be given a witness
+  and keep its meaning, which is the deletion §02 step 4 already rules.
+- 2026-08-07 · a reachability spike in the real SDL frontend under Xvfb,
+  driving the game with `xdotool`, settled step 6's unsettled clause and
+  found more than it went looking for. **`A-Tab` does not act inside an
+  item dialog; `C-Tab` does** — the dialog binds its cycle key through
+  `revCmd` (`InventoryM.hs:392`), which reads `brevMap`, and that map is
+  built only from bindings with non-empty categories, where the `bcmdMap`
+  beside it takes every one
+  (`engine-src/Game/LambdaHack/Client/UI/Content/Input.hs:86-93`). `A-Tab`
+  has none (`GameDefinition/game-src/Client/UI/Content/Input.hs:60`) and
+  `C-Tab` has `CmdMove` (`:62`), so only `C-Tab` is reachable inside a
+  dialog, while `A-Tab` still works at top level, through `bcmdMap`.
+  Verified twice over, by reading and by pressing. So step 6's
+  session, and the post-mortem's §04 recipe, should press `C-Tab` inside
+  the menu — pressing `A-Tab` there looks exactly like a window that was
+  never reached. **And the multi-actor run and the injected macro come
+  from opposite branches of one `if`**: `moveRunHuman`'s `runMembers` is
+  `[leader]` when `runAhead`, the full selection otherwise, and
+  `macroRun25` is injected only `when runAhead`
+  (`HandleHumanGlobalM.hs:322-333`) — so shift+direction (`RunDir`, which
+  passes `runAhead = True`, `HandleHumanM.hs:111-112`) runs one actor and
+  rotates no pointman, while the rotating multi-actor run comes from the
+  go-to-xhair family (`:659`, `:671`, `:677`, all passing `False`) and
+  injects no macro. The §04 window therefore needs a *recorded* macro
+  driving a go-to-xhair run, not shift+direction, which is why an
+  afternoon of the latter never opened it. What the spike did *not* reach
+  is the window itself; the machinery is all proven — recording,
+  replay, dialogs, mid-dialog switching, all scriptable headlessly — so
+  what step 6 keeps is the judgement, not the typing.
+- 2026-08-07 · two probes for PR 0, both answering yes with a caveat.
+  `permittedApply` returns *distinct* verdicts per apply skill through the
+  stub content — `ApplyNoEffects`, `ApplyFood`, `ApplyUnskilled` for
+  skills 2, 1 and 0 — so sibling (c)'s pin can be written the way the
+  `psuitReq` one was, on per-actor failure verdicts, and needs no walkable
+  board, which §05's "cheapest cover is the same board" sentence assumed
+  it would. The caveat is an export: `permittedApplyClient` sits inside
+  `HandleHumanLocalM`'s `EXPOSE_INTERNAL` block, so PR 0 must first move
+  it to the "Operations both internal and used in unit tests" group where
+  `permittedProjectClient` already sits. And the special-event AS case is
+  clear on the fixture that would have silenced it: `partyFaction` sets
+  `gunderAI = False` (`UnitTestHelpers.hs:467`), so the branch's
+  `unless (gunderAI fact)` lets the effect fire — but `testFaction`, which
+  `stubCliState` uses, sets it `True` (`:350`), so that case must be
+  written on a party fixture. The recording `ChanFrontend` remains the one
+  thing the harness lacks.
 - 2026-08-07 · every question this document held for the author is ruled,
   each recorded where it stood: sibling (d) does not reorder the PRs
   (§01); PR 0 appends the two outcome lines it resolves (the header
@@ -597,8 +668,10 @@ of step 1.
    playtests (AI-driven — they exercise the client loop, not the dialogs —
    and minutes each, so budget for them rather than reading one as a hang);
    a manual session replaying the post-mortem's §04 timeline (multi-hero
-   run inside a recorded macro that opens the item menu, then
-   `A-Tab`/`C-Tab`) — X1 of §05 already drives that window through the
+   run inside a recorded macro that opens the item menu, then `C-Tab` —
+   not `A-Tab`, which the dialog does not bind, and not shift+direction
+   for the run, which rotates no pointman; the 2026-08-07 log entry has
+   both mechanisms) — X1 of §05 already drives that window through the
    real `promptGetKey`, so what the session adds is everything the mock
    supplies instead: a real frontend, a macro recorded by actual
    keypresses rather than a `smacroFrame` seeded in the fixture, and the
@@ -612,9 +685,10 @@ of step 1.
    hand, and `frontendCrawl` runs `--automateAll`, so reaching a menu means
    mashing keys to regain control (`UI.hs:92-96`). Keys *can* be pressed
    here — `xdotool`, per CLAUDE.md's sandboxing notes — so what stays a
-   human's is the judgement and the sequencing, not the typing: no run has
-   yet reached the §04 window
-   itself, and whether `A-Tab` survives inside a menu is unsettled.
+   human's is the judgement and the sequencing, not the typing. The
+   2026-08-07 spike drove all of that headlessly, a mid-dialog pointman
+   switch included, so what stays unproven is only the §04 window itself,
+   which no run has yet reached.
    Performance needs no gate — the post-mortem's §11:
    no benchmark reaches this layer.
 
