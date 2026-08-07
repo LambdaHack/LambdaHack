@@ -67,7 +67,7 @@ deleted*
 >   one way this bullet passes vacuously.
 >
 > File:line citations were verified against the tree at commit
-> `4b92b291a` (2026-07-30) — the newest commit touching any file they
+> `c59b92209` (2026-08-07) — the newest commit touching any file they
 > cite; re-run `python3 tools/check-plan-citations.py
 > docs/leader-desync-migration.md --restamp` after the reading pass, and
 > re-verify the only/every/never claims by repo-wide grep. Verify the

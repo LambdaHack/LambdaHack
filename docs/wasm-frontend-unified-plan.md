@@ -27,7 +27,7 @@ Node benchmark tooling port (Phase 3).** Related goals (R1–R6) and adopted
 multi-frontend practices follow the phases.
 
 File:line citations were verified against the tree at commit
-`4d762337b` (2026-07-30) — the newest commit touching any file they cite,
+`c59b92209` (2026-08-07) — the newest commit touching any file they cite,
 so the verification stands until one of those files moves — then
 machine-checked; re-run
 `python3 tools/check-plan-citations.py docs/wasm-frontend-unified-plan.md`
@@ -1498,7 +1498,7 @@ Xvfb setup as 2.5's re-measurement, the two numbers comparing only
 within that setup, and lands here: a dated number with its protocol
 and the probe's diff, appended to this paragraph when taken.
 
-**Taken 2026-08-07**, pre-2.2 (code tree of `935760870`): **mean
+**Taken 2026-08-07**, pre-2.2 (code tree of `c59b92209`): **mean
 0.77ms, p95 3.00ms** per frame at n=2870, measured as `submitFrame`
 entry to end of `applyFrame` inside the rAF callback by the throwaway
 probe below, which publishes cumulative n/mean/p95 through

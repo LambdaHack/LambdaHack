@@ -13,7 +13,7 @@ unrepresentable.
 > commit **4a6eca154** · engine-src/…/**HandleHelperM.hs** ·
 > ✓ reproduced & fix verified · GHC 9.12.4 · design: **live-read** — one
 > source of truth. File:line citations were verified against the tree at
-> commit **2b20a8284** (2026-07-30) — the newest commit touching any file
+> commit **2b20a8284** (2026-08-07) — the newest commit touching any file
 > they cite, so the verification stands until one of those files moves,
 > whatever else lands. The fixtures and tests they cite are on master,
 > while the designs below are the parked part; the citation pass proves a
