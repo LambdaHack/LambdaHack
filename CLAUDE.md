@@ -183,7 +183,7 @@ Author-generic style conventions are collected in the portable-notes section at 
 
 ## Portable notes: same author, same machine
 
-Nothing in this section is LambdaHack-specific: it should hold for other projects by the same author, in the same coding style, developed on the same machine behind the same outer sandbox. Examples are from LambdaHack unless attributed.
+Nothing in this section is LambdaHack-specific: it should hold for other projects by the same author, in the same coding style, developed on the same machine behind the same outer sandbox. A sibling checkout worked on from a session rooted here is inside that scope even when the sibling is another maintainer's repo — the machine did not change, and the patch is still authored here; only the coding-style specifics yield, to the style apparent in the file being edited, as those rules themselves prescribe. Examples are from LambdaHack unless attributed.
 
 ### Coding style
 
