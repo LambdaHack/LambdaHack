@@ -320,13 +320,13 @@ test-wasm:
 	node ts-src/run-wasm-test.mjs "$$W" "$$T/ghc_wasm_jsffi.mjs"
 
 build-ts:
-	. ~/.ghc-wasm/env; \
-	cp GameDefinition/index.html ../lambdahack.github.io; \
-	cd ts-src; \
-	npm ci; \
-	BUILD_OUTDIR=../../lambdahack.github.io npm run build; \
-	W=$$(cd ~/r/LambdaHack && wasm32-wasi-cabal list-bin exe:LambdaHack); \
-	~/.ghc-wasm/wasm32-wasi-ghc/lib/post-link.mjs --input "$$W" --output ../../lambdahack.github.io/ghc_wasm_jsffi.mjs; \
+	. ~/.ghc-wasm/env && \
+	cp GameDefinition/index.html ../lambdahack.github.io && \
+	cd ts-src && \
+	npm ci && \
+	BUILD_OUTDIR=../../lambdahack.github.io npm run build && \
+	W=$$(cd ~/r/LambdaHack && wasm32-wasi-cabal list-bin exe:LambdaHack) && \
+	~/.ghc-wasm/wasm32-wasi-ghc/lib/post-link.mjs --input "$$W" --output ../../lambdahack.github.io/ghc_wasm_jsffi.mjs && \
 	cp "$$W" ../../lambdahack.github.io/LambdaHack.wasm
 
 test-ts:
