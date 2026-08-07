@@ -331,6 +331,25 @@ the next reader has to skip.
   `EXPOSE_INTERNAL` test-route sentence. No item carries an unanswered
   **Decide first** now; the campaign's blocking front is execution, not
   rulings.
+- 2026-08-07 · the five unrecorded experiments re-run and the baseline
+  taken, one spike session. A single throwaway probe build — an
+  `lhProbe*` block in `Wasm.hs` plus three `--export=` lines, reverted —
+  settled them all: the sync-export syntax is a trailing ` sync` in the
+  export string, compiling under the reactor wiring and linking into the
+  command suite, so 0.1's fallback died unfired; `getArgs` surfaces
+  `node:wasi` args with `getProgName` holding argv[0]; every exit class
+  rejects the export's promise as `RuntimeError` carrying the shown
+  exception; a post-resolution fault escapes the promise — in the probed
+  forked-thread shape via the RTS's own stderr report rather than a Node
+  `uncaughtException`; startup on an empty store never touches
+  `LZString`; and the unmodified reactor pushed 79 frames through the
+  driver stubs in five seconds, demonstrating the (c′) mechanism before
+  0.3 is dispatched. The frame-timing baseline landed at Phase 2's
+  intro — mean 0.77ms, p95 3.00ms at n=2870, intro-animation protocol —
+  so 2.2's Split (0) gate is already satisfied. Two probe-shaped
+  corrections rode along: 3.1's "not yet validated" sentence became its
+  recorded artifact, and the claims-no-pass-can-re-run inventory now
+  points at artifacts instead of folklore.
 
 ## Repo facts the plan builds on
 
@@ -440,14 +459,18 @@ Neither module's code is *executed*: the integration test passes
 `nullStartup` stands in for `Chosen.startup`. Running them is exactly
 what 0.3's FFI battery adds).
 
-**Claims here that no pass can re-run.** Five live assertions rest on
+**Claims here that no pass can re-run.** Five live assertions rested on
 experiments whose artifact was never recorded: 0.1's sync-export spike,
 0.3's "RTS is not initialised" measurement, 3.1's `getArgs` spike, and
-3.2's exit-propagation and `LZString` probes. Everything else here a
-reader or a checker can settle; these can be settled only by redoing the
-experiment. Re-establish one before leaning on it in a decision, and when
-an item redoes it, record the command and the output beside the claim, the
-way CLAUDE.md records what the headless SDL run needs.
+3.2's exit-propagation and `LZString` probes. All five were redone on
+2026-08-07 — one throwaway probe build, a `lhProbe*` export block in
+`Wasm.hs` plus three `--export=` lines (reverted, never committed),
+driven by a scratch Node script mirroring `run-wasm-test.mjs`'s wiring —
+and each claim now carries its command shape and output beside it.
+The rule stands for the next such claim: it can be settled only by
+redoing the experiment, so re-establish it before leaning on it in a
+decision, and record the artifact beside the claim, the way CLAUDE.md
+records what the headless SDL run needs.
 
 
 ## Handing an item to a session
@@ -704,7 +727,14 @@ frontend-universal, not web-specific. The browser-zoom passthrough
   was validated empirically against the real GHC wasm toolchain (a sync
   export's `preventDefault` demonstrably suppressed Tab's default; the
   browser makes a few shortcuts like Ctrl+T non-preventable by design, so
-  don't test with those). Known trade-off: sync exports don't yet
+  don't test with those). Re-spiked 2026-08-07, per Split (0), and
+  recorded: the syntax is a trailing ` sync` in the export string —
+  `foreign export javascript "lhProbeSync sync" lhProbeSync :: Int -> IO
+  Int` — which compiled under the reactor's `-no-hs-main`/`--export=`
+  wiring, linked unchanged into the command-linked test suite, and
+  returned its value synchronously when called from Node (`42`, not a
+  thenable), so the async fallback branch died unfired. Known trade-off:
+  sync exports don't yet
   propagate uncaught Haskell exceptions to the JS call site — wrap the
   short body so nothing can throw past the boundary.
 - Modifiers and `.key` are read off the event from Haskell via `unsafe`
@@ -750,7 +780,9 @@ a throwaway probe against the current toolchain proving the sync
 earlier validation left no record of its syntax, which is what this step
 writes into this item's body; no code lands. If it fails, land the first
 two commits, leave `lhKey` async with `preventDefault` staying in TS, and
-record the ruling. Then `InputDecision` and its tasty tests with no
+record the ruling. Performed 2026-08-07: the record sits in the
+`Wasm.hs` changes bullet above, and it held, so the fallback is dead.
+Then `InputDecision` and its tasty tests with no
 consumer wired; then `Sdl.hs`'s verbatim squash/Esc block
 (`Sdl.hs:343-349`) replaced by a `decideKey` call that ignores
 `kdPreventBrowser` — the smallest consumer, native, no FFI; then the
@@ -797,9 +829,9 @@ frontendCrawl`): `cabal test`'s SDL cases exercise init-and-quit and font
 decoding, never the event loop where `decideKey` now sits.
 
 **Decide first** — nothing, all three ruled on 2026-08-07. (1) The
-sync-export spike is Split (0)'s re-spike, its syntax and linker
-coexistence recorded here when run, the async fallback pre-authorized —
-so no session waits on a fresh ruling either way. (2) `Frontend.hs`
+sync-export spike is Split (0)'s re-spike — run the same day: syntax and
+linker coexistence recorded in the body's bullet, the async fallback
+dead unfired. (2) `Frontend.hs`
 re-exports `InputDecision` — the module-as-interface convention takes no
 exception — and the same channel binds 0.2's and 2.1's new modules and
 the test suite and generator that consume them. The known cost is
@@ -1036,7 +1068,13 @@ mechanism is the thin reactor driver the Split now specifies — a slice of
 the question stands recorded: the test binary's own `lhKey`/`lhWheel`/
 `lhMouseUp` die after `wasi.start` returns ("newBoundTask: RTS is not
 initialised", a command's `_start` running `hs_exit` on the way out), and
-`lhStart` lives in `GameDefinition/Main.hs`, which the suite never links.
+`lhStart` lives in `GameDefinition/Main.hs`, which the suite never links —
+re-established 2026-08-07: tasty `--help` under the test driver's wiring
+exits 0, and a subsequent `lhKey` call throws with the RTS printing
+exactly that message. The mechanism itself was demonstrated the same
+day: the unmodified reactor under a scratch driver — `wasi.initialize`,
+the stubs, `lhStart` — pushed 79 frames of 80×24 through the
+`lhSubmitFrame` stub in five seconds with the game loop live.
 The refused branches, so they are not re-proposed: re-entrant calls from
 the `lhSubmitFrame` stub would cover only the command-linked copies of
 the export bodies, resting on an unspiked re-entry mechanism, and leave
@@ -1459,6 +1497,65 @@ probe — R5a is not pulled forward — runs in-session under the same
 Xvfb setup as 2.5's re-measurement, the two numbers comparing only
 within that setup, and lands here: a dated number with its protocol
 and the probe's diff, appended to this paragraph when taken.
+
+**Taken 2026-08-07**, pre-2.2 (code tree of `935760870`): **mean
+0.77ms, p95 3.00ms** per frame at n=2870, measured as `submitFrame`
+entry to end of `applyFrame` inside the rAF callback by the throwaway
+probe below, which publishes cumulative n/mean/p95 through
+`document.title`. Protocol: `make build-ts` with the probe applied,
+`make serve-wasm`, `firefox-beta --no-remote` with a scratch profile
+(first-run pages suppressed) under Xvfb `:99` at 1280x900x24 with
+matchbox; the intro animation is left running with no input — it
+repaints continuously at roughly 23 frames a second, which is the whole
+load — and the title is read via `xdotool getwindowname` once p95 holds
+steady across successive readings (here mean 0.83→0.81→0.77 over the
+run's last minute, p95 pinned at 3.00 throughout). llvmpipe numbers,
+comparable only within this setup. A first run that also drove 150
+arrow keys after the intro read mean 1.36ms, p95 4.00ms at n=581 —
+warm-up dominated, and the keyed frames add no load the animation
+lacks, so the input-free protocol is the one 2.5 repeats. The probe's
+diff, re-applied verbatim at 2.5:
+
+```diff
+--- a/ts-src/src/terminal.ts
++++ b/ts-src/src/terminal.ts
+@@ -118,6 +118,10 @@ export function mountTerminal(
+   let pendingFrame: Uint32Array | null = null;
+   let rafHandle: number | null = null;
+ 
++  // THROWAWAY frame-timing probe (2026-08-07) -- never commit.
++  const lhProbeSamples: number[] = [];
++  let lhProbeT0 = 0;
++
+   // Apply one already-snapshotted frame's cell diffs to the DOM. Deferred
+   // to requestAnimationFrame by submitFrame() below, batching same-tick
+   // calls into a single browser paint, mirroring Dom.hs's
+@@ -139,6 +143,7 @@ export function mountTerminal(
+   // Snapshots the framebuffer and schedules a render; does not paint
+   // synchronously itself (see applyFrame, deferred below via rAF).
+   function submitFrame(addr: number, w: number, h: number): void {
++    lhProbeT0 = performance.now();  // THROWAWAY probe -- never commit.
+     if (w !== cols || h !== rows) buildGrid(w, h);
+     // Snapshot synchronously: the wasm buffer at `addr` is only valid for
+     // the duration of this call (Wasm.hs's display uses an `unsafe` FFI
+@@ -152,6 +157,16 @@ export function mountTerminal(
+         const frame = pendingFrame;
+         pendingFrame = null;
+         if (frame) applyFrame(frame);
++        // THROWAWAY frame-timing probe (2026-08-07) -- never commit.
++        if (frame) {
++          lhProbeSamples.push(performance.now() - lhProbeT0);
++          const n = lhProbeSamples.length;
++          const sorted = [...lhProbeSamples].sort((a, b) => a - b);
++          const mean = lhProbeSamples.reduce((a, b) => a + b, 0) / n;
++          const p95 = sorted[Math.max(0, Math.ceil(n * 0.95) - 1)];
++          document.title =
++            `LHPROBE n=${n} mean=${mean.toFixed(2)} p95=${p95.toFixed(2)}`;
++        }
+       });
+     }
+   }
+```
 
 ### 2.1 Extract `OverlayLayout`: the pure half of `Sdl.hs`'s overlay drawing
 
@@ -2067,7 +2164,9 @@ Verify: vitest green; live game pixel-identical to before (nothing wired).
 page in-session under the Xvfb setup with the throwaway
 `performance.now()` probe applied, never committed, and append the
 number, its protocol and the probe's diff to Phase 2's intro — no code
-lands here, and (1) must not merge without the record standing. (1) the
+lands here, and (1) must not merge without the record standing.
+Performed 2026-08-07: the record stands at the intro, so this gate is
+already satisfied. (1) the
 font wiring: `Wasm.hs`'s one-shot setup import — the extensible call 1.5
 shares, one JSON `JSString` with named fields per this item's (b)
 ruling — its `globalThis` hook in
@@ -2401,9 +2500,13 @@ loader passes `["LambdaHack"]` (`loader.ts:56`), so `getArgs` returns `[]`
 there and browser behavior is provably unchanged, while a Node harness can
 pass real flags. Update the stale "there is no argv in the browser"
 comment to describe the new contract (argv comes from the WASI host; the
-browser host passes none). **Spike first**: confirm with a one-liner that
-`getArgs` in reactor mode does surface Node-WASI-supplied args — the one
-assumption here not yet validated against the toolchain. This entry point
+browser host passes none). **Spike**: performed and recorded 2026-08-07 —
+a throwaway `lhProbeArgs` export in the reactor, driven under
+`node:wasi` with `--newGame 1 --gameMode crawl` as WASI args, printed
+`getProgName="LambdaHack.wasm"
+getArgs=["--newGame","1","--gameMode","crawl"]`, so `getArgs` surfaces
+host-supplied args in reactor mode, with argv[0] held separately by
+`getProgName` and no drop needed. This entry point
 is what R4 later feeds from URL parameters, so 3.1 is shared
 infrastructure, not bench-only plumbing.
 
@@ -2411,10 +2514,10 @@ infrastructure, not bench-only plumbing.
 First `GameDefinition/Main.hs`: `getArgs` in place of the literal `[]`,
 and the comment rewritten to the new contract. Second the landing —
 outcome line plus the ledger row. Third, separate because the landing
-falsified them, the corrections this item's own text needs: re-range the
-`GameDefinition/Main.hs:82-89` citation and retire "the one assumption
-here not yet validated against the toolchain", which the spike has since
-answered.
+falsified it, the correction this item's own text needs: re-range the
+`GameDefinition/Main.hs:82-89` citation. (The "not yet validated"
+retirement this commit once carried was overtaken by the recorded spike
+of 2026-08-07 — the body's Spike paragraph holds the artifact.)
 
 **Owns** — `GameDefinition/Main.hs` and this document. Deliberately not
 `CLAUDE.md`: its "there is no argv and no config file on disk" stays true
@@ -2439,11 +2542,13 @@ which only the one outside it was reported. So `make build-wasm` compiles
 this item's only reader. The argv claim hands back nothing: the spike runs
 in a session, and 3.2's driver turns it into a standing check.
 
-**Decide first** — nothing. The spike is already answered: a reactor
-linked with this repo's flags and driven through `node:wasi` reports
-`getArgs=["--newGame","1",...]` with `getProgName` holding argv[0]
-separately, so `getArgs` needs no argv[0] drop of its own and the
-browser's one-element argv yields `[]`, exactly as the item predicts.
+**Decide first** — nothing. The spike is answered and, since 2026-08-07,
+carries a recorded artifact — the body's Spike paragraph holds the
+command shape and output: a reactor linked with this repo's flags and
+driven through `node:wasi` reports the host args from `getArgs` with
+`getProgName` holding argv[0] separately, so `getArgs` needs no argv[0]
+drop of its own and the browser's one-element argv yields `[]`, exactly
+as the item predicts.
 
 ### 3.2 A Node driver for the game reactor
 
@@ -2473,7 +2578,15 @@ integration points to cover:
   termination can surface. A fault raised in the RTS scheduler loop on a
   later tick escapes the awaited promise entirely, so install
   `process.on('uncaughtException')` as well — Node exiting 1 there is
-  luck, not a mechanism.
+  luck, not a mechanism. Re-established 2026-08-07 with a throwaway
+  `lhProbeCrash` export: `error`, `exitWith (ExitFailure 3)` and
+  `exitWith ExitSuccess` rejected the call's promise with
+  `RuntimeError: probe-error` / `ExitFailure 3` / `ExitSuccess`
+  respectively, and a post-resolution fault escaped the promise as
+  claimed — though in the forked-thread shape probed it surfaced as the
+  RTS's own stderr report rather than a Node `uncaughtException`, so the
+  handler stays as defense for the scheduler-loop shape the original
+  measurement met.
 - **Measurement for free:** the driver reports peak `WebAssembly.Memory`
   size at exit — the wasm counterpart of `benchMemoryAnim`'s `+RTS -s`,
   and memory was precisely the GHCJS era's pain point (the old
@@ -2519,12 +2632,14 @@ them. (b) The exit-propagation bullet's correction landed with the
 ruling fold itself — the measured rule now stands in the bullet — so no
 driver session can build against the wrong claim. (c) lz-string rides
 0.3's import half, which needs it for the round-trip cases; this item
-adds nothing to `package.json`. The measurement stands recorded: the
-probe reached `WasmFile.hs`'s startup on an empty store without touching
-`globalThis.LZString`, so only a run that *saves* needs it — R1's
-measurement, not the benchmark, which leaves through
-`ReqUIGameDropAndExit` — and the npm-registry moment belongs to 0.3's
-landing, where CI's `npm ci` covers it.
+adds nothing to `package.json`. The measurement stands recorded, and
+re-established 2026-08-07: `lhStart` under the scratch driver on an
+empty store issued `getItem`s for the config, saves and scores keys plus
+one uncompressed `setItem` of `config.ui.ini`, with the `LZString` stub
+untouched — so only a run that *saves* needs it, R1's measurement, not
+the benchmark, which leaves through `ReqUIGameDropAndExit` — and the
+npm-registry moment belongs to 0.3's landing, where CI's `npm ci`
+covers it.
 
 ### 3.3 Repurpose the Makefile targets
 
