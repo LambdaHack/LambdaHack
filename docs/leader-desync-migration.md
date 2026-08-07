@@ -18,26 +18,24 @@ deleted*
 > `git grep -n leader-desync-migration -- . ':!docs/leader-desync-migration.md'`
 > lists in full. When §04's last step is done:
 >
-> - delete this file, and `tools/leader-census.py` with it — except that
->   the post-mortem's §10.3 rests its census-rather-than-floor claim on
->   the tool by name, so either that sentence is edited in the same commit
->   or the tool stays;
+> - delete this file, and `tools/leader-census.py` with it; the
+>   post-mortem's §10.3 rests its census-rather-than-floor claim on the
+>   tool by name, so the same commit recasts that sentence to the past
+>   tense — ruled 2026-08-07 over keeping the tool, which after the
+>   migration is a checker that stays green while certifying nothing,
+>   per §03;
 > - note the landing in `CHANGELOG.md` (the lines are drafted in §02), and
->   add to each record the outcome line it reserves.
->   **? Open, and the author's to close:**
->   does this commit add all of them, or does PR 0 append
->   the two it resolves when it resolves them? PR 0 pins the apply dialog
->   and lands the AS cases, which is what closes the post-mortem's "the
->   apply-dialog one by nothing" and the abort-split record's "two are
->   unpinned". *This commit*: one commit touches the records, and the status
->   quo needs no decision. *PR 0*: the records stop under-claiming their own
->   coverage the moment it lands, rather than staying wrong for two PRs, at
->   the cost of a second commit into a frozen record — which is permitted,
->   an outcome line per resolved claim being exactly the upkeep those
->   records reserve, and not the forbidden updating of a post-mortem to
->   match a later tree. Answer it before PR 0 lands, not here: this bullet
->   is where it fires, PR 0 is where it binds, and if PR 0 goes first
->   unanswered the default has been taken by omission;
+>   add to each record the outcome line it reserves — bar the two PR 0
+>   appends when it lands. **✓ Ruled 2026-08-07: PR 0 appends its two.**
+>   It pins the apply dialog and lands the AS cases, which is what closes
+>   the post-mortem's "the apply-dialog one by nothing" and the
+>   abort-split record's "two are unpinned", and it appends those two
+>   lines itself rather than leaving both records under-claiming their
+>   own coverage for two PRs. The cost, a second commit into a frozen
+>   record, is permitted — an outcome line per resolved claim is exactly
+>   the upkeep those records reserve, the post-mortem's §09 line saying
+>   outright to put the fixing commit there when a sibling closes, and
+>   not the forbidden updating of a post-mortem to match a later tree;
 > - reword the inbound references, which no mechanical pass can see once
 >   the target is gone: the backticked `docs/leader-desync-migration.md`
 >   paths that command lists, and the pointers by *name* it does not —
@@ -94,7 +92,7 @@ unit of rollback §01 relies on.
 | step | touches | check when done | state |
 |---|---|---|---|
 | §02.0 spike | `MonadClientUI` plus the three frames of `PointmanCycleLevel`, and the five test call sites that break with them (`HandleHelperMUnitTests.hs:121`, `:141`, `:176`, `FrameMUnitTests.hs:343`, `:377`) | the library compiles and the witness reads tolerably at a real call site; then, once those five take a witness, the suite compiles and LR1/LR2/LR5 are green while LR3/LR4 and the two bridge tests are red and LR6 unrepresentable — the spike working, not failing | pending |
-| §02.1 witness, accessors | `MonadClientUI` only, ~30 lines. A file two campaigns write, and the sharper of the two: `docs/wasm-frontend-unified-plan.md` cites into it nine times (`MonadClientUI.hs:166` once, `MonadClientUI.hs:329` six times — all `getFontSetup`, which its 2.4 rewrites and which may land at any time — and `MonadClientUI.hs:455` and `MonadClientUI.hs:469` once each, this plan's own citations mirrored back by that plan's 2.4). The bodies are disjoint and an export-list clash is loud, so the hazard is neither — it is that ~30 lines inserted above `:166` slide all nine onto other lines *while they still resolve*, leaving `tools/check-plan-citations.py` green over a document that has started to lie. It is not the only such file, and the test that excluded the others was the wrong one: a citation slides when the line count *above* it changes, not when the cited function converts. So `HandleHumanLocalM.hs` joins — §02 converts `chooseItemDialogMode` and the `chooseItem*Human` wrappers well above the wasm rip-out's cited `HandleHumanLocalM.hs:815` — and so does `test/UnitTestHelpers.hs`, which PR 0 writes and two of that plan's items own; of the other two both campaigns name, §03's DrawM ruling is a decision *not* to write and `SessionUIMock.hs` is read rather than written. Files that plan only *cites* are a wider set and a different hazard, met by §00's citation gate rather than here. The second and third files the ruling below reserved have therefore arrived: a mechanism would be machinery that must be maintained or become a lie, so reopening that is the author's, and until then each side warns by hand — this row, and that plan's 2.4 and capability-constants blocks | `cabal build`; the contract series green and its count unmoved; nothing else changes, this step having no callers yet; and, because of the above, re-run that checker over the wasm plan and re-read the four printed snippets, which stand for those nine sites, the checker printing one per distinct line — a green run is not sufficient here | pending |
+| §02.1 witness, accessors | `MonadClientUI` only, ~30 lines. A file two campaigns write, and the sharper of the two: `docs/wasm-frontend-unified-plan.md` cites into it nine times (`MonadClientUI.hs:166` once, `MonadClientUI.hs:329` six times — all `getFontSetup`, which its 2.4 rewrites and which may land at any time — and `MonadClientUI.hs:455` and `MonadClientUI.hs:469` once each, this plan's own citations mirrored back by that plan's 2.4). The bodies are disjoint and an export-list clash is loud, so the hazard is neither — it is that ~30 lines inserted above `:166` slide all nine onto other lines *while they still resolve*, leaving `tools/check-plan-citations.py` green over a document that has started to lie. It is not the only such file, and the test that excluded the others was the wrong one: a citation slides when the line count *above* it changes, not when the cited function converts. So `HandleHumanLocalM.hs` joins — §02 converts `chooseItemDialogMode` and the `chooseItem*Human` wrappers well above the wasm rip-out's cited `HandleHumanLocalM.hs:815` — and so does `test/UnitTestHelpers.hs`, which PR 0 writes and two of that plan's items own; of the other two both campaigns name, §03's DrawM ruling is a decision *not* to write and `SessionUIMock.hs` is read rather than written. Files that plan only *cites* are a wider set and a different hazard, met by §00's citation gate rather than here. The second and third files the ruling below reserved have therefore arrived, and the reopened question was ruled on 2026-08-07: no mechanism — machinery that must be maintained or become a lie, for the little both campaigns have left to run — so each side goes on warning by hand, this row and that plan's 2.4 and capability-constants blocks, with this row's snippet re-reading as the check a green run cannot replace; reopen again only if the shared set grows | `cabal build`; the contract series green and its count unmoved; nothing else changes, this step having no callers yet; and, because of the above, re-run that checker over the wasm plan and re-read the four printed snippets, which stand for those nine sites, the checker printing one per distinct line — a green run is not sufficient here | pending |
 | §02.2–4 dialog chain, assertions, flips | `InventoryM` (7 functions), `HandleHumanLocalM` (`chooseItemDialogMode`, the three `chooseItem*Human` wrappers, and `psuitReq`, which loses its own `ActorId`), `HandleHumanGlobalM` (`itemMenuHuman`, `chooseItemMenuHuman`, and `psuitReq`'s second call site in `projectItem`), `HandleHumanM` (their boundary cases and the `CmdLeader` field type), `HandleHelperM` (the one assertion `4a6eca154` disabled), test edits across all five test modules, nearer 20 than the 14 first estimated | the contract series green *unchanged* and its count unmoved; the flip series green *with the flipped values* and its count down one as step 4 deletes LR6 (11 → 10), each flip verified first against the candidate as step 4 spells out; `stylish-haskell -i` leaves every touched file alone | pending |
 | §02.5 sweep | the remainder of §03's read-live set (fourteen functions, judgment calls), then the fifteen convert-half of §03's tail with the sixteen boundary cases dispatching them, across 4 modules | `cabal build`; both series green with counts unmoved; `hlint .` says `No hints`; `stylish-haskell -i` leaves every touched file alone; no `CmdLeader` case passes an `ActorId`, read off `cmdSemanticsLeader` alone | pending |
 | §02.6 verification | nothing; it is the gate | full suite; `make test-short`, `make test-medium`; then, played by hand and so reported unrun rather than green: the timeline session, a fling-dialog switch and an apply-dialog switch (§03's sibling (c), pinned by PR 0 but checked here in the real frontend) | pending |
@@ -203,7 +201,12 @@ Everything else here a reader or a checker can settle; these can be
 settled only by redoing the experiment. Re-establish one before leaning on
 it in a decision, and when a step redoes it, record the command and the
 output beside the claim, the way the scripts under `tools/` record their
-non-vacuity recipes.
+non-vacuity recipes. **✓ Ruled 2026-08-07: they stay flagged rather than
+being re-run eagerly** — each is redone by the step that leans on it, step
+4's flip loop covering the verdict table and both placement verifications
+by construction, the §02.0 spike superseding the rank-2 one against the
+real tree, and §11's interleaved A/B protocol needing no fresh absolutes —
+and an eager artifact would be taken against lines steps 2 to 5 rewrite.
 
 ### Log
 
@@ -329,6 +332,20 @@ the plan was written is one the next reader has to skip.
   `test/UnitTestHelpers.hs` is a third file both campaigns write. The
   lesson is worth having paid for: fixing one instance of a count is not
   fixing the count.
+- 2026-08-07 · every question this document held for the author is ruled,
+  each recorded where it stood: sibling (d) does not reorder the PRs
+  (§01); PR 0 appends the two outcome lines it resolves (the header
+  ritual); its owed AS cases are new tests, AS14 and AS15, the
+  assertion-in-AS4 branch refuted by its fixture's empty macro stack
+  (§01); the unrecorded-experiment claims stay flagged, each redone by
+  the step that leans on it (§00); the shared-file hazard stays
+  hand-warned on both sides (§02.1's row); and at deletion the census
+  tool goes, §10.3's sentence recast in the same commit (the header). One
+  count found wrong in the same pass: §02's drafted `CHANGELOG.md` line
+  said three item dialog siblings, written before (d) made them four.
+  Nothing outside this file moves today — the records' edits are the
+  scheduled ones, PR 0's two outcome lines and the deletion commit's
+  recast.
 
 ## 01 · Sequencing: two designs, one campaign
 
@@ -358,34 +375,34 @@ Pushing any of them, and opening any of them, needs the author's explicit
 go-ahead each time; the campaign ends at "branch with commits", never at
 "pushed".
 
-> **? Open, and the author's to close: does sibling (d) change this
-> order?** The table was written while (d) was a hazard on paper. It is
-> now a proven crash — a partial-map failure in `getFull`, not the quiet
-> incoherence the rest of the family produces — and that cuts both ways,
-> which is why it is recorded here rather than acted on. *For* reordering:
-> a crash a player can reach argues for landing live-read first, since
-> PR 0 fixes nothing and PR 1 is what closes it. *Against*: PR 0 is what
-> makes PR 1 checkable, sibling (c) has no test at all, and the campaign
-> has already been wrong twice in ways only a test caught — reordering
-> saves little and spends the safety net exactly where this work has needed
-> it. Weighing against hurry too: forcing the bad thunk needs more than one
-> item selected, or the ground store, since every other path drops it
-> unforced or guards it (§03), which is why the years this code has stood
-> have produced no report. Until this is answered the table above stands.
+> **✓ Ruled 2026-08-07: sibling (d) does not change this order.** The
+> table was written while (d) was a hazard on paper; it is now a proven
+> crash — a partial-map failure in `getFull`, not the quiet incoherence
+> the rest of the family produces. The case for reordering — a crash a
+> player can reach argues for landing live-read first, since PR 0 fixes
+> nothing and PR 1 is what closes it — lost on three grounds: (d)'s
+> promotion changed the campaign's evidence, not any PR's contents, the
+> crash being pinned by a test already; PR 0 is what makes PR 1
+> checkable, sibling (c) has no test at all, and the campaign has already
+> been wrong twice in ways only a test caught — reordering saves little
+> and spends the safety net exactly where this work has needed it; and
+> forcing the bad thunk needs more than one item selected, or the ground
+> store, since every other path drops it unforced or guards it (§03),
+> which is why the years this code has stood have produced no report. The
+> table above stands.
 
-> **? Open, and the author's to close: are PR 0's two owed AS cases new
-> tests, or an added assertion inside AS4?** One of the two strengthens the
-> no-`resetPlayBack` invariant that AS4 already *enters* and neither AS4
-> nor AS7 observes (`docs/promptgetkey-hygiene.md`, its checklist), so it
-> may be an assertion in a case that exists rather than a case of its own.
-> The other is a genuine addition either way. *New tests*: the series
-> becomes AS1–AS15, §04.4's gate can enumerate it, and the two are
-> selectable in isolation. *Added assertion*: the series stays AS1–AS14,
-> AS4's own comment records what it now observes, and the count moves by
-> one rather than two — which changes PR 0's arithmetic above, so close
-> this before quoting those numbers anywhere. Until it is answered, §04.4's
-> row says "the whole AS series" and names no numbers, deliberately: naming
-> them would foreclose the second branch.
+> **✓ Ruled 2026-08-07: PR 0's two owed AS cases are new tests**, the
+> series becoming AS1–AS15 and the counts moving as §00 states. One of
+> the two strengthens the no-`resetPlayBack` invariant that AS4 already
+> *enters* and neither AS4 nor AS7 observes (`docs/promptgetkey-hygiene.md`,
+> its checklist), so an assertion inside AS4 was the live alternative —
+> refuted by the fixture: AS4 runs on a macro stack that is empty
+> already, so an unchanged-stack assertion there passes vacuously, and
+> observing the invariant takes a non-empty stack behind an empty pending
+> frame — a different setup, hence a case of its own. That also leaves
+> AS4, a [contract] case, unedited ahead of the refactor it guards, and
+> matches the series' one-invariant-per-case shape (the interrupt inputs
+> of AS5/AS6/AS9, the guards of AS11–AS13).
 
 Every commit below leaves the tree buildable, green and shippable, so
 there is no rollback procedure to write beyond reverting it. Steps 2 to 5
@@ -626,7 +643,7 @@ either it or this (the post-mortem's §06), so neither entry carries a
 link:
 
 ```
-- Read the pointman live rather than threading it through the UI, fixing the TAB-during-item-manipulation crash and three item dialog siblings
+- Read the pointman live rather than threading it through the UI, fixing the TAB-during-item-manipulation crash and four item dialog siblings
 - Split promptGetKey's interrupted-macro cleanup into a pure decision and a named abort action
 ```
 
