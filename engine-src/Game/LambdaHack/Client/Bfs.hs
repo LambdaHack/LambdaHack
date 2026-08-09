@@ -254,14 +254,14 @@ findPathBfs lbig lalter fovLit pathSource pathGoal sepsRaw arr =
       track :: PointI -> BfsDistance -> [Point] -> [Point]
       track !pos !oldDist !suffix | oldDist == minKnownBfs =
         assert (pos == pathSourceI) suffix
-      track pos oldDist suffix | oldDist == succBfsDistance minKnownBfs =
+      track !pos !oldDist !suffix | oldDist == succBfsDistance minKnownBfs =
         let !posP = toEnum pos
         in posP : suffix  -- avoid calculating minP and dist for the last call
-      track pos oldDist suffix =
+      track !pos !oldDist !suffix =
         let !dist = predBfsDistance oldDist
             minChild :: PointI -> Bool -> Word8 -> [VectorI] -> PointI
-            minChild !minP _ _ [] = minP
-            minChild minP maxDark minAlter (mv : mvs) =
+            minChild minP _ _ [] = minP
+            minChild !minP maxDark minAlter (mv : mvs) =
               let !p = pos + mv
                   backtrackingMove =
                     BfsDistance (arr `PointArray.accessI` p) /= dist
