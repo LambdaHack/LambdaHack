@@ -22,6 +22,13 @@ Two shapes of that claim are mechanical:
            document pretty-prints across lines what a test holds as one
            string with explicit separators.
 
+A fenced block that declares `module Main` is skipped by the types
+branch: it is a self-contained program (an issue reproducer, say) whose
+names resolve against its own imports rather than this repo's sources.
+The self-test carries a control for the skip, proved non-vacuous the
+same way as the others: removing the skip in a copy turned it red, at
+two type findings against the expected one.
+
 Both are deliberately narrow. What they cannot see is the more common
 defect: an example naming a real thing that is nonetheless the *wrong*
 real thing. Where the wrong name and the right one both exist in the
@@ -49,9 +56,11 @@ copy: blanking the name pattern, disabling the output comparison, and
 dropping the doc-local exclusion turned it red at 0/1, 1/0 and 2/1
 findings. A control that cannot fail proves nothing, self-tests included.
 
-Two things the self-test cannot cover here. No document in this repo has
-a `>>>` block, so the outputs branch has no *live document* to run
-against -- keep the branch anyway; the horde-ad copy uses it. And for the
+Three things the self-test cannot cover here. No document in this repo
+has a `>>>` block, so the outputs branch has no *live document* to run
+against -- keep the branch anyway; the horde-ad copy uses it. Nor does
+any document here declare `module Main`, so the skip above rests on its
+self-test control alone, the live one being horde-ad's. And for the
 types branch there are live positive controls worth running: on the four
 documents with fenced Haskell it should extract and resolve 18, 0, 12 and
 31 capitalised names (leader-desync-bug, leader-desync-migration,
@@ -125,7 +134,13 @@ def norm(s):
 def check_types(doc, text, src):
     if not FENCE_LANGS:
         return 0
-    code = strip_comments("".join(FENCE_RE.findall(text)))
+    # A fence that declares `module Main` is a self-contained program (an
+    # issue reproducer, say), not an excerpt of this repo's API: its names
+    # resolve against its own imports, which this checker cannot see, so
+    # the block is skipped rather than failed.
+    bodies = [b for b in FENCE_RE.findall(text)
+              if not re.search(r"^module\s+Main\b", b, re.M)]
+    code = strip_comments("".join(bodies))
     if not code.strip():
         return 0
     loc = local_names(code)
@@ -160,6 +175,7 @@ def check_outputs(doc, text, src):
 
 
 SELF_TEST_TYPE = "ControlTypeThatCannotExistAnywhere"
+SELF_TEST_SKIP = "ControlTypeInsideStandaloneProgram"
 SELF_TEST_OUT = "control output present in no tracked source of this repository"
 
 
@@ -197,6 +213,10 @@ def self_test():
         f"useLocal _ = {SELF_TEST_TYPE}\n"
         "```\n\n"
         "```hs\n"
+        "module Main (main) where\n"
+        f"standalone :: {SELF_TEST_SKIP}\n"
+        "```\n\n"
+        "```hs\n"
         ">>> controlExpr\n"
         f"{SELF_TEST_OUT}\n"
         "```\n\n"
@@ -211,7 +231,8 @@ def self_test():
     lines = [ln for ln in buf.getvalue().splitlines() if ln.strip()]
     ok = (types == 1 and outs == 1
           and any(SELF_TEST_TYPE in ln for ln in lines)
-          and not any("Local" in ln or "NOTE" in ln for ln in lines))
+          and not any("Local" in ln or "NOTE" in ln
+                      or SELF_TEST_SKIP in ln for ln in lines))
     for ln in lines:
         print("  " + ln)
     print(f"\nself-test: {types} type finding(s), {outs} output finding(s),"

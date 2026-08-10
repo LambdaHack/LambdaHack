@@ -57,10 +57,7 @@ deleted*
 > - then re-run `python3 tools/check-doc-refs.py` over `CLAUDE.md`, both
 >   records and the wasm plan — the pass that catches a backticked path left
 >   behind — and re-run the `git grep -n` above, which must come back empty
->   bar whatever branch the first bullet took. Exit 2 from `check-doc-refs`
->   means the run did not happen, `../lambdahack.github.io` being unmounted,
->   not that nothing is left; that is the ordinary sandboxed case and the
->   one way this bullet passes vacuously.
+>   bar whatever branch the first bullet took.
 >
 > File:line citations were verified against the tree at commit
 > `4b92b291a` (2026-07-30) — the newest commit touching any file they
