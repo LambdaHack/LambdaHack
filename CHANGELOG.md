@@ -2096,8 +2096,7 @@
 - split highscore tables wrt game modes
 - move score calculation formula to content
 - don't keep the default/example config file commented out; was misleading
-- I was naughty again and changed v0.5.0.0 of LambdaHack content API slightly
-  one last time
+- I was naughty again and changed v0.5.0.0 of LambdaHack content API slightly one last time
 
 ## [v0.4.100.0, aka 'The last thaw'](https://github.com/LambdaHack/LambdaHack/compare/v0.4.99.0...v0.4.100.0)
 
