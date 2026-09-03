@@ -230,8 +230,12 @@ Coding style
 
 Stylish Haskell is used for slight auto-formatting at buffer save; see
 [.stylish-haskell.yaml](https://github.com/LambdaHack/LambdaHack/blob/master/.stylish-haskell.yaml).
-CI re-runs it and fails on any change. Screen is 80-columns wide. Indentation
-is 2 spaces wide. Spaces are used, not tabs. Spurious whitespace avoided.
+CI re-runs it over every tracked Haskell file, pinned to the same release, since
+a formatter that disagrees with the editor is worse than none. That file
+is the authority on what is applied automatically; which of the rules below
+it enforces is deliberately not restated here, so that the two cannot drift
+apart. Screen is 80-columns wide. Indentation is 2 spaces wide. Spaces are used,
+not tabs. Spurious whitespace avoided.
 
 Spaces around arithmetic operators encouraged. Inline comments (`--`) should
 be prefixed with exactly two spaces, unless indented to match other comments.
