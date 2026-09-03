@@ -1753,21 +1753,21 @@ and drops rejected lines, or it emits every `PropLine` and each consumer applies
 `propCutoff` to the first chunk. Left open, SDL and the browser diverge
 on precisely the case the module exists to unify. (b) how `chunkPropLine`
 reaches its tests: sec. 2.1 routes it through `EXPOSE_INTERNAL`
-(`PointUI.hs:5-8`), while `test/CLAUDE.md:15` rules that a name a unit test
-consumes must sit *outside* that block, because `release` defaults to `False`
-(`LambdaHack.cabal:83-85`, `LambdaHack.cabal:135-136`) and the idiom therefore
-breaks the suite in the ordinary build. That default was `True` when
-this was written, which left the breakage to a flag nobody passed; flipping
-it forces the first branch below rather than merely favouring it. Two repo
-documents disagree; either correct sec. 2.1's sentence
-to `Common/Kind.hs:15-16`'s "internal and used in unit tests" group in commit
-(1), or record why the block is acceptable here --- but do not silently pick.
-(c) the name and signature of the even-row `White`->`AltWhite` recolour
-`chunkPropLine` consumes: 0.2 specifies `styleCell` as one whole-cell function,
-and this module needs only the recolour, applied to a `Color.Color` and a row
-before any chunking. 0.2 must name that finer export before either item starts,
-or both invent one and sec. 2.1's ban on a second copy of the rule is broken
-by construction.
+(`PointUI.hs:5-8`), while `test/CLAUDE.md`'s `emptyUnknownTile` bullet rules
+that a name a unit test consumes must sit *outside* that block, because
+`release` defaults to `False` (`LambdaHack.cabal:83-85`,
+`LambdaHack.cabal:135-136`) and the idiom therefore breaks the suite
+in the ordinary build. That default was `True` when this was written, which left
+the breakage to a flag nobody passed; flipping it forces the first branch below
+rather than merely favouring it. Two repo documents disagree; either correct
+sec. 2.1's sentence to `Common/Kind.hs:15-16`'s "internal and used in unit
+tests" group in commit (1), or record why the block is acceptable here ---
+but do not silently pick. (c) the name and signature of the even-row
+`White`->`AltWhite` recolour `chunkPropLine` consumes: 0.2 specifies `styleCell`
+as one whole-cell function, and this module needs only the recolour, applied
+to a `Color.Color` and a row before any chunking. 0.2 must name that finer
+export before either item starts, or both invent one and sec. 2.1's ban
+on a second copy of the rule is broken by construction.
 
 ### 2.2 Browser overlay renderer, in isolation
 
@@ -2488,8 +2488,9 @@ in one commit:
   above) --- or of their capability-constant successors, if that practice lands
   first. Update CLAUDE.md's GHCJS mentions in the same commit. The README needs
   no GHCJS edit --- it contains the string nowhere (checked repo-wide); what
-  it carries is browser-era prose (`README.md:79-81`) that R1 and R5 own,
-  not this rip-out.
+  it carries is browser-era prose --- the "The game runs rather slowly
+  in the browser" paragraph under "Installation of the sample game from binary
+  archives" --- that R1 and R5 own, not this rip-out.
 
 Timed after parity, not before, so the rip-out doesn't tangle with Phase 0--2
 diffs touching the same cabal stanzas and CPP sites.
@@ -2525,9 +2526,11 @@ than a mechanical edit.
 
 **Decide first** --- four. (a) The README clause: `README.md` contains
 no occurrence of "GHCJS" at all, so either the clause is dropped or a specific
-browser-era sentence is named --- `README.md:107-108`'s Chrome/Local-Storage
-line is the only close candidate. (b) Whether `Dom.hs` and `JSFile.hs` stay
-in the sdist: dropping the `impl(ghcjs)` stanzas removes them from every
+browser-era sentence is named --- README's "`Inspect/Application/Local Storage`
+under RMB menu when run inside the Chrome browser" is the only close candidate;
+the line numbers this document used to give for it had drifted onto the font
+paragraph. (b) Whether `Dom.hs` and `JSFile.hs` stay in the sdist: dropping
+the `impl(ghcjs)` stanzas removes them from every
 `exposed-modules`/`other-modules` list, so they leave the tarball unless
 `extra-source-files` gains them; `hlint` and stylish keep covering them either
 way, both quantifying over tracked `.hs` files. (c) The GHCJS mentions R3 does
