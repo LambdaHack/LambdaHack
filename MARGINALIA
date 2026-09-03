@@ -1,0 +1,58 @@
+The only structure here is a date paired with an observation. Anything is
+permitted: a sentence, a fragment, a figure, a retraction, a note to nobody.
+Nothing checks this file and nothing should.
+
+IT IS WRITE-ONLY. Do not read it in the course of ordinary work, in whole or
+in part. Git is the archaeology of record: commits and their messages say what
+changed, when and why, tied to the diff. Read this only when that has been
+tried and has failed.
+
+Write to it at one moment, and it is the compulsion itself rather than any of
+its objects: you are about to put into a document something you have just
+learned -- why a line reads as it does, what a mistake cost, how a tool
+surprised you, that a claim was wrong -- because leaving it unwritten feels
+unsafe. That sentence comes here instead. Firing too often is harmless: a
+false fire costs one moment's thought and produces the split you wanted
+anyway, where a missed one leaves a paragraph of archaeology inside an
+instruction for good.
+
+Note what is NOT on that list. Why something was REMOVED is usually a guard --
+"why we deleted X" and "don't re-add X" are one sentence -- and guards stay
+with the rules, by the don't-do ruling. Only a removal nobody would ever undo,
+a rename or a typo or a rephrasing, is archaeology and belongs here.
+
+It is ALSO, deliberately, an escape hatch. If you know a thing is already in
+the commit history and cannot leave it unwritten anyway, write it here. That
+is the design and not an abuse of it: a redundant paragraph in a file nobody
+reads costs nothing, and the same paragraph inside an instruction costs
+everyone who executes the instruction.
+
+WHAT IT IS NOT AN ESCAPE HATCH FROM IS THE SPLIT. The rule keeps its guard --
+one clause, a date and an outcome, wherever an editor might plausibly undo the
+line -- and this file takes the rest. Writing the whole thing here to avoid
+deciding which half is the guard is the one use that defeats the purpose:
+prohibitions drain into a file nobody reads, and the containment measure
+becomes the leak. The test for the guard: would a future editor plausibly undo
+the line, and would the sentence stop them?
+
+Do not polish entries. Nothing downstream consumes them.
+
+This is a containment measure, not a fixture. It exists because the models
+writing here keep putting history inside instructions; when they stop, it is
+retired -- and retiring it is not `rm`: stop routing to it, triage what
+accumulated, delete the residue. Written down now because that decision would
+otherwise be improvised on a day when the file looks like clutter.
+
+This is not CHANGELOG.md, which faces users and lists what shipped. This faces
+whoever works here next, and mostly it faces no one.
+
+2026-09-03
+The document checkers, `check-doc-wrap.py` and `check-twin-sync.py` arrived
+here as a port from horde-ad, which had been the only copy maintained since
+2026-08-14. Everything below the docstring and the per-repo configuration is
+now byte-identical between the two, bar the MAKE_RE comment, which said
+"inert here" in a copy where it is live. `check-twin-sync.py` will report that
+one file as drifted until the neutral wording lands in horde-ad too. The
+defect records were seeded from the horde-ad docstrings rather than watched
+failing in this tree; the port commit is their fix_rev because this tree's
+copies did carry every one of the bugs until it.
