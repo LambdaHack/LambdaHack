@@ -1,11 +1,14 @@
 dist
 dist-*
+cabal-dev
 *.o
 *.hi
+*.hie
 *.chi
 *.chs.h
 *.dyn_o
 *.dyn_hi
+.hpc
 .hsenv
 .cabal-sandbox/
 cabal.sandbox.config
@@ -15,9 +18,17 @@ cabal.sandbox.config
 *.eventlog
 .stack-work/
 cabal.project.local
+cabal.project.local~
 .HTF/
 .ghc.environment*
 node_modules/
+*.swp
+*.swo
+*~
+# .claude/ holds untracked session state (settings.local.json), except
+# the skill documents, which are repo documents like the nested CLAUDE.md
+# files; a directory ignore is impenetrable to a bare negation, hence the
+# unignored-parent ladder.
 .claude/*
 !.claude/skills/
 tools/__pycache__/

@@ -29,7 +29,9 @@ jobs:
       # Pinned, unlike hlint above: a different stylish-haskell formats
       # differently, and a CI check that disagrees with the editor's
       # on-save pass is worse than no check. Bump this in step with the
-      # version installed locally.
+      # version installed locally. Checked rather than assumed on
+      # 2026-09-03: the binary on PATH here reports this same version and
+      # leaves every tracked .hs file unchanged, so the two agree.
       - name: Install stylish-haskell
         run: |
           mkdir -p "$HOME/bin"
