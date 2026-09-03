@@ -105,13 +105,17 @@ unclassified tail, the missing-document exit, the --without-siblings
 degradation and the liveness of the absent-sibling stop. The controls
 matter as much as the failures: without them an extractor that silently
 matches nothing would look like a clean document. And the
-must-stay-unclassified rows guard the other direction: `blob/master` and
-`KP_/` are prose, and sibling matching is gated on path shape precisely
+must-stay-unclassified rows guard the other direction, and one of them is
+what proves the path-shape gate: sibling matching is gated on path shape
 because a bare prose token once resolved inside the horde-ad copy's
-upstream checkout. `../lambdahack.github.io` invites exactly that,
+upstream checkout, and `../lambdahack.github.io` invites exactly that,
 holding `README.md`, `LICENSE`, `COPYLEFT`, `index.html` and
-`manifest.json` --- names any document uses as prose --- so a big foreign
-tree turns a checker into a rubber stamp faster than a small one, and the
+`manifest.json` --- names any document uses as prose. Those five all
+resolve locally too, so the row that bites is the deployment sibling's
+own `LambdaHack.wasm` and `bundle.js`: present there, absent here, and
+carrying extensions this checker does not read as paths, so the gate is
+the only thing keeping them out of the ok column. A big foreign tree
+turns a checker into a rubber stamp faster than a small one, and the
 sibling test is widened only against these rows. Two rows of 2026-08-28:
 the same document through main() from a subdirectory, every checker
 having said "run from the repo root" and none having enforced it, and a
@@ -225,7 +229,10 @@ target no other row does.
 check, while the malformed `Point.hs:26,` stays unclassified, which keeps
 the comma form from being a blanket accept.
 `Ability.SkMove` and `K.KM` are upgrade-only, unclassified.
-`blob/master` and `group/bench` and `KP_/` are prose;
+`blob/master` and `group/bench` and `KP_/` are prose, and so are the
+deployment sibling's own artifacts `LambdaHack.wasm` and `bundle.js`,
+whose extensions this checker does not read as paths: the path-shape gate
+is what keeps a big foreign tree from resolving them.
 `.../ghc-9.12/...` is an elision, not a sibling path;
 `https://example.com/a/b.md` and `https://lambdahack.github.io/` are
 URLs. None of these may be read as a path.
@@ -243,6 +250,7 @@ SELF_TEST_OK = ["Frontend/ANSI.hs", "tools/leader-census.py", "Makefile",
 SELF_TEST_SKIPPED = ["Point.hs:26,32", "Point.hs:26", "Point.hs:26-32"]
 SELF_TEST_UNCLASSIFIED = ["+noSuchFlag", "Point.hs:26,", "Ability.SkMove",
                           "K.KM", "blob/master", "group/bench", "KP_/",
+                          "LambdaHack.wasm", "bundle.js",
                           ".../ghc-9.12/...",
                           "https://example.com/a/b.md",
                           "https://lambdahack.github.io/"]
