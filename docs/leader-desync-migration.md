@@ -67,8 +67,8 @@ to be deleted*
 >   --- and re-run the `git grep -n` above, which must come back empty bar
 >   whatever branch the first bullet took.
 >
-> File:line citations were verified against the tree at commit `4b92b291a`
-> (2026-07-30) --- the newest commit touching any file they cite; re-run
+> File:line citations were verified against the tree at commit `ce7a40c13`
+> (2026-09-04) --- the newest commit touching any file they cite; re-run
 > `python3 tools/check-plan-citations.py docs/leader-desync-migration.md --restamp`
 > after the reading pass, and re-verify the only/every/never claims by repo-wide
 > grep. Verify the post-mortem's secs. 10--11 in the same pass: they

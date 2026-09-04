@@ -17,7 +17,7 @@ entirely in the post-mortem; nothing here is needed to understand or land it.
 
 > design: **functional core / imperative shell** -- planned strictly *after*
 > the live-read design -- file:line citations were verified against the tree
-> at commit **2b20a8284** (2026-07-30) --- the newest commit touching any file
+> at commit **2b20a8284** (2026-09-04) --- the newest commit touching any file
 > they cite, so the verification stands until one of those files moves.
 > The tests they cite are on master, while this design is the parked part;
 > the citation pass proves a cited line exists --- that stamp, that it still
