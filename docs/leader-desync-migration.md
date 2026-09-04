@@ -443,12 +443,12 @@ the claimant list is at C2), `test/HandleHumanLocalMUnitTests.hs`,
 citations, in the repair commit only), and this document. **The claimant list
 for `HandleHumanLocalM.hs` lives here**: PR 0, C3, C4 and C6 on this side, one
 holder at a time in that order, and the wasm plan's R3
-and its capability-constants practice, both citing `HandleHumanLocalM.hs:815`
-below everything this campaign converts. **So does `InventoryM.hs`'s**: C3
-and C4. **And `HandleHumanGlobalM.hs`'s**: C3, C5 and C6.
-**And the post-mortem's**: PR 0 and 04.4 for the outcome lines it reserves, C3,
-C4, C5, C6 and C7 for the citation repairs and restamps of its live secs.
-10--11. PR 0 also writes `test/HandleHumanLocalMUnitTests.hs`;
+and its capability-constants practice, both citing `HandleHumanLocalM.hs:815`,
+which PR 0, C3 and C4 edit above and so slide, C6's tail alone reaching below
+it. **So does `InventoryM.hs`'s**: C3 and C4. **And `HandleHumanGlobalM.hs`'s**:
+C3, C5 and C6. **And the post-mortem's**: PR 0 and 04.4 for the outcome lines
+it reserves, C3, C4, C5, C6 and C7 for the citation repairs and restamps
+of its live secs. 10--11. PR 0 also writes `test/HandleHumanLocalMUnitTests.hs`;
 `test/InventoryMUnitTests.hs` has one writer until 04.4's deletion commit.
 
 **Done** --- `native` (stylish over every touched `.hs`), `contract` unchanged

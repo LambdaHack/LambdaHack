@@ -3188,9 +3188,9 @@ at `GameDefinition/Main.hs:38` sits in a file 3.1 also writes, its new import
 shifting that line, and the three engine `#if` sites are also R1's
 and the capability-constants practice's, whichever lands first shaping R3's
 diff. The pointman campaign is a further claimant on two of these: its PR 0, C3,
-C4 and C6 write `HandleHumanLocalM.hs` above the `:815` this item cites,
-the claimant list at that campaign's C3, and its 04.4 writes `CLAUDE.md`
-at that campaign's landing.
+C4 and C6 write `HandleHumanLocalM.hs`, the first three above the `:815`
+this item cites, the claimant list at that campaign's C3, and its 04.4 writes
+`CLAUDE.md` at that campaign's landing.
 
 **Done** --- `native` (stylish over `$(git ls-files '*.hs')`, repo-wide here
 because the rip-out's Haskell files are scattered across the tree
