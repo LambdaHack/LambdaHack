@@ -210,6 +210,7 @@ NEW_RE = re.compile(r"\bnew `([^`\n]+)`")
 # its "`Makefile` is 0.1's" and its parenthesized citation of
 # `terminal.ts` keep R1 off those files' edges, as 1.2's "is deliberately
 # not here" does 1.2 and 0.1's "as for `twice.ts` at 0.2" does 0.1; the
+# bare `cabal` two items name is a tool, not a file they contend for; the
 # open list "and the module's" is not counted.
 # `dropped.ts` is out of scope, in a block the phrase above does not head.
 # In the second: `Own.hs` is contended three ways and C1 alone fails to
@@ -272,7 +273,7 @@ Body naming `foo.ts` as evidence, which is not an **Owns**.
 
 ### 0.2 Second
 
-**Owns** --- `ts-src/src/loader.ts`, `ts-src/src/terminal.ts`, `ts-src/src/foo.ts`, `ts-src/src/twice.ts`, `engine-src/X/Shared.hs`, the new `test/NewUnitTests.hs`, `tools/doc-refs-allow.txt`, whose `test/NewUnitTests.hs` and `twice.ts` entries this commit deletes, and `docs/wasm-frontend-unified-plan.md`. Not concurrent with 1.1 on `terminal.ts` and `foo.ts`; `loader.ts`'s claimant list is 0.1's.
+**Owns** --- `ts-src/src/loader.ts`, `ts-src/src/terminal.ts`, `ts-src/src/foo.ts`, `ts-src/src/twice.ts`, `engine-src/X/Shared.hs`, the new `test/NewUnitTests.hs`, built with `cabal`, `tools/doc-refs-allow.txt`, whose `test/NewUnitTests.hs` and `twice.ts` entries this commit deletes, and `docs/wasm-frontend-unified-plan.md`. Not concurrent with 1.1 on `terminal.ts` and `foo.ts`; `loader.ts`'s claimant list is 0.1's.
 
 **Done** --- `native`, `docs`.
 
@@ -298,7 +299,7 @@ Body naming `foo.ts` as evidence, which is not an **Owns**.
 
 **Split** --- three commits. (1) `ts-src/src/new-core.ts` gains a case. (2) the landing, with the deletion of three entries --- `twice.ts` and `orphan-not.ts` --- from `tools/doc-refs-allow.txt`; `Makefile` gains nothing.
 
-**Owns** --- `ts-src/src/new-core.ts`, `ts-src/src/terminal.ts`, `ts-src/src/twice.ts` and `tools/doc-refs-allow.txt`; `ts-src/src/foo.ts` is deliberately not here.
+**Owns** --- `ts-src/src/new-core.ts`, `ts-src/src/terminal.ts`, `ts-src/src/twice.ts` and `tools/doc-refs-allow.txt`, built with `cabal`; `ts-src/src/foo.ts` is deliberately not here.
 
 **Done** --- `ts`.
 
@@ -537,8 +538,10 @@ def path_key(token, ambiguous):
     base = t.rstrip("/").rsplit("/", 1)[-1]
     if not base or base.startswith("."):
         return None
+    # A bare word is a path only with an extension: `cabal` and `ts` are
+    # a tool and a gate, not files, though both are extensions.
     if "/" not in t and base != "Makefile" and \
-            base.rsplit(".", 1)[-1] not in PATH_EXT:
+            ("." not in base or base.rsplit(".", 1)[-1] not in PATH_EXT):
         return None
     if "/" in t and not (base.rsplit(".", 1)[-1] in PATH_EXT or
                          t.endswith("/") or base == "Makefile"):
