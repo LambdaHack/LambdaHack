@@ -453,9 +453,14 @@ def self_test():
 
 
 def main():
+    # From the root before anything, the self-test included, as every
+    # checker here does: this one's self-test names no root-relative path,
+    # but two siblings' did and reported wrongly from a subdirectory.
+    args = [a for a in sys.argv[1:] if a != "--self-test"]
+    docs = chdir_root(args)
     if sys.argv[1:] == ["--self-test"]:
         return self_test()
-    docs = chdir_root(sys.argv[1:]) or tracked_markdown()
+    docs = docs or tracked_markdown()
     if not docs:
         print("BLOCKED: git tracks no Markdown file here, nothing checked")
         return 2

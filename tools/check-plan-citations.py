@@ -672,9 +672,13 @@ def main():
               f" only --restamp and --self-test are understood",
               file=sys.stderr)
         sys.exit(2)
+    # From the root before anything, the self-test included, as every
+    # checker here does: this one's self-test names no root-relative path,
+    # but two siblings' did and reported wrongly from a subdirectory.
+    docs = chdir_root(args)
     if "--self-test" in flags:
         return self_test()
-    docs = chdir_root(args) or ["CLAUDE.md"]
+    docs = docs or ["CLAUDE.md"]
     require_readable(docs)
     if "--restamp" in flags and len(docs) > 1:
         print("--restamp takes one document: the stamp it writes is that"
