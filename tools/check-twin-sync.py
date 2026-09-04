@@ -149,10 +149,11 @@ def self_test():
         if mutate("configuration", 'TWIN_ROOT = "%s"' % TWIN_ROOT,
                   'TWIN_ROOT = "../no-such-twin/tools"'):
             bad.append("configuration-only change read as drift")
-        if myself not in mutate(
-                "code", '"""The part of a script the twins must agree on."""',
-                '"""The part of a script the twins must agree on."""'
-                '  # mutated'):
+        # A line of comparable() itself: the first anchor here was a
+        # literal only this call carried, so the case mutated the self-test
+        # in the twin and not the function it names (check-twin-sync-03).
+        if myself not in mutate("code", "        tree = ast.parse(text)\n",
+                                "        tree = ast.parse(text)  # mutated\n"):
             bad.append("a mutated code line was not read as drift")
         # Shared files that are not Python are compared whole, and the
         # per-repo ones in TWIN_SKIP not at all: two scratch copies, so
