@@ -101,8 +101,10 @@ Non-vacuity: run `python3 tools/check-doc-refs.py --self-test`. The
 scratch document and its expected verdicts live in the configuration
 block (the SELF_TEST_* settings), repo-specific like the rest of it; the
 engine below asserts the failure count, every FAIL and ok row, the
-unclassified tail, the missing-document exit, the --without-siblings
-degradation and the liveness of the absent-sibling stop. The controls
+unclassified tail, the prose a fence of the wrong kind once made command
+text, the missing-document exit, the --without-siblings degradation, the
+run with no sibling configured and the liveness of the absent-sibling
+stop. The controls
 matter as much as the failures: without them an extractor that silently
 matches nothing would look like a clean document. And the
 must-stay-unclassified rows guard the other direction, and one of them is
@@ -236,11 +238,24 @@ is what keeps a big foreign tree from resolving them.
 `.../ghc-9.12/...` is an elision, not a sibling path;
 `https://example.com/a/b.md` and `https://lambdahack.github.io/` are
 URLs. None of these may be read as a path.
+A tilde block showing a backtick fence must close only on a tilde fence:
+~~~
+```
+~~~
+so this prose line, make no-such-prose-target, is not a command, while a
+block after it still is:
+```
+make no-such-fenced-target
+```
 """
-SELF_TEST_FAILURES = 6
+SELF_TEST_FAILURES = 7
 SELF_TEST_FAIL = ["NoSuchModule.hs", "NoSuchTwin.hs", "no-such-stanza",
                   "no-such-target", "Game.LambdaHack.Client.NoSuch",
-                  "../lambdahack.github.io/no-such.js"]
+                  "../lambdahack.github.io/no-such.js",
+                  "no-such-fenced-target"]
+# Prose that a fence of the wrong kind once turned into command text: in no
+# FAIL, ok or allow line.
+SELF_TEST_PROSE = ["no-such-prose-target"]
 SELF_TEST_OK = ["Frontend/ANSI.hs", "tools/leader-census.py", "Makefile",
                 "make play", "make shot", "cabal LambdaHack",
                 "ghc_wasm_jsffi.mjs", "Game.LambdaHack.Client.UI",
@@ -256,7 +271,7 @@ SELF_TEST_UNCLASSIFIED = ["+noSuchFlag", "Point.hs:26,", "Ability.SkMove",
                           "https://lambdahack.github.io/"]
 # The one local-drift row that must degrade to SKIP with the sibling
 # off, and the failure count that survives the degradation.
-SELF_TEST_DEGRADED_FAILURES = 3
+SELF_TEST_DEGRADED_FAILURES = 4
 SELF_TEST_DEGRADED_SKIP = "engine-src/Game/LambdaHack/Client/NoSuchModule.hs"
 # --- end per-repo configuration --------------------------------------
 
@@ -264,7 +279,7 @@ PATH_EXT = ("hs", "ts", "mjs", "py", "cabal", "html", "md", "yaml", "yml",
             "json", "sh", "txt", "c", "h")
 
 TICK_RE = re.compile(r"`([^`\n]+)`")
-FENCE_RE = re.compile(r"^\s*(```|~~~)")
+FENCE_RE = re.compile(r"^\s*(`{3,}|~{3,})")
 
 
 def unwrapped(text):
@@ -447,11 +462,19 @@ def command_text(text):
     see must not depend on where the prose happens to break.
     """
     parts = TICK_RE.findall(unwrapped(text))
-    in_fence = False
+    # The open fence, kind and length: CommonMark closes a block only with
+    # a fence of the same character at least as long, so a backtick fence
+    # shown inside a tilde block is content. One boolean flipped by any
+    # fence line read it as the closer, and the phase stayed inverted for
+    # the rest of the document (check-doc-refs-05).
+    fence = None
     for line in text.splitlines():
-        if FENCE_RE.match(line):
-            in_fence = not in_fence
-        elif in_fence or line.startswith("    ") or line.startswith("\t"):
+        m = FENCE_RE.match(line)
+        if m and fence is None:
+            fence = m.group(1)
+        elif m and m.group(1)[0] == fence[0] and len(m.group(1)) >= len(fence):
+            fence = None
+        elif fence or line.startswith("    ") or line.startswith("\t"):
             parts.append(line)
     return "\n".join(parts)
 
@@ -602,7 +625,11 @@ def check_doc(doc, known, top_level, allow_paths, cabalflags, siblings,
             else:
                 out["unclassified"].append(token)
         elif path_shaped(token, top_level):
-            if sib_active:
+            # Degraded only by --without-siblings, never by having no
+            # sibling to consult: with SIBLING_ROOTS empty the same
+            # boolean read as the waiver and local drift became SKIP
+            # (check-doc-refs-06).
+            if sib_active or not SIBLING_ROOTS:
                 print(f"FAIL path   {token} --- does not resolve")
                 failures += 1
             else:
@@ -721,6 +748,9 @@ def self_test():
         for t in SELF_TEST_OK:
             if not any(t in l for l in oks):
                 bad.append("no ok line names %r" % t)
+        for t in SELF_TEST_PROSE:
+            if any(t in l for l in fails + oks):
+                bad.append("prose %r was read as command text" % t)
         for t in SELF_TEST_UNCLASSIFIED:
             if t not in out["unclassified"]:
                 bad.append("%r not among the unclassified" % t)
@@ -776,6 +806,19 @@ def self_test():
                            " checkout")
         finally:
             SIBLING_ROOTS = saved
+
+        # No sibling configured at all, the docstring's way to switch the
+        # sibling check off: local drift stays a failure.
+        SIBLING_ROOTS = []
+        try:
+            failures, output, out = run_doc(no_siblings=False)
+            fails = [l for l in output.splitlines() if l.startswith("FAIL")]
+            if not any(SELF_TEST_DEGRADED_SKIP in l for l in fails) \
+                    or SELF_TEST_DEGRADED_SKIP in out["unverified"]:
+                bad.append("with no sibling configured, local drift"
+                           " degraded to SKIP")
+        finally:
+            SIBLING_ROOTS = saved
     finally:
         os.unlink(doc)
     for b in bad:
@@ -790,9 +833,14 @@ def main():
     args = [a for a in sys.argv[1:] if a not in flags]
     verbose = "-v" in sys.argv[1:]
     no_siblings = "--without-siblings" in sys.argv[1:]
+    # From the root before anything, the self-test included: its sibling
+    # rows are root-relative like the rest of the configuration, and
+    # dispatched first it reported BLOCKED from any subdirectory
+    # (check-doc-refs-07).
+    docs = chdir_root(args)
     if "--self-test" in sys.argv[1:]:
         return self_test()
-    docs = chdir_root(args) or ["CLAUDE.md"]
+    docs = docs or ["CLAUDE.md"]
     require_readable(docs)
 
     missing = [] if no_siblings else missing_siblings()

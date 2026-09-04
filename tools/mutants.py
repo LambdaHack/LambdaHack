@@ -149,4 +149,18 @@ MUTANTS = [
     ('heading-outline any leading rule read as frontmatter', 'heading-outline.py',
      "        if lines[i].strip() and not YAML_LINE.match(lines[i]):\n            return 0\n",
      "        if False:\n            return 0\n", ST),
+    # check-doc-refs: a fence closed by one of another kind (check-doc-refs-05)
+    ('check-doc-refs closes a block with a fence of any kind', 'check-doc-refs.py',
+     "        elif m and m.group(1)[0] == fence[0] and len(m.group(1)) >= len(fence):\n",
+     "        elif m:\n", ST),
+    # check-doc-refs: SIBLING_ROOTS = [] degrades local drift to SKIP (check-doc-refs-06)
+    ('check-doc-refs no sibling configured degrades local drift', 'check-doc-refs.py',
+     "            if sib_active or not SIBLING_ROOTS:\n", "            if sib_active:\n", ST),
+    # check-doc-refs: the self-test dispatched before the move to the root
+    # (check-doc-refs-07); judged from the tool's own directory, where the
+    # root's judge cannot tell
+    ('check-doc-refs self-test dispatched before chdir_root', 'check-doc-refs.py',
+     '    docs = chdir_root(args)\n    if "--self-test" in sys.argv[1:]:\n        return self_test()\n',
+     '    if "--self-test" in sys.argv[1:]:\n        return self_test()\n    docs = chdir_root(args)\n',
+     'cd {dir} && python3 {file} --self-test'),
 ]
