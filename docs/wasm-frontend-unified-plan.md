@@ -421,6 +421,21 @@ that the plan was written is one the next reader has to skip.
   **Hands back** names and not on a green **Done**; and the citation-repair
   obligation is stated once, in "Handing an item to a session", scoped to live
   items.
+- 2026-09-04 -- two corrections to the entry above, which is history and
+  is not edited to hold them, per the precedent the 2026-07-31 entry set.
+  Its two **Owns** counts were true when they were measured and false
+  by the time the pass closed, that same pass having added this document
+  to three more items' **Owns** as it went; the property is what the sentence
+  needed and all it needs, which is that `tools/doc-refs-allow.txt`
+  and this document are each named by most items' **Owns**, so neither
+  is the campaign's most contended anything. And 3.1 hands back nothing now,
+  ruled today: its page load moved into **Done**, `firefox-beta` under Xvfb
+  being what 2.2's Split (0) already drove to take the frame-timing baseline,
+  so the claim that no in-session gate reached it had outlived the browser's
+  arrival. That matters beyond the item --- an outcome line waits on what
+  **Hands back** names, so the shakedown would otherwise have stopped
+  at **Done** and proved neither the ledger flip nor the restamp it is chosen
+  to rehearse.
 
 ## Repo facts the plan builds on
 
@@ -2691,21 +2706,29 @@ stream's file under this item's lock for nothing.
 
 **Done** --- `native` (stylish over `GameDefinition/Main.hs`), `wasm` ---
 of whose two halves only `make build-wasm` bears on this item, `make test-wasm`
-linking `Main.hs` in no configuration --- and `docs`.
+linking `Main.hs` in no configuration --- `docs`, and one page load in-session:
+`make build-ts` unsandboxed, `make serve-wasm` in the background, the deployed
+page opened under the browser-under-Xvfb setup `CLAUDE.md` describes,
+and the game still starting on default options.
 
-**Hands back** --- *browser*: one `make serve-wasm` page load showing the game
-still starts on default options, no in-session gate running `lhStart`
-under a browser WASI shim. The substitute in Done is `make build-wasm`,
-and it is the load-bearing half: `lhStart` sits inside `#ifdef USE_WASM`,
-so `cabal build` and `cabal test` compile none of it and a native-only
-done-check would verify nothing. Nor does `hlint .` see it: the live
-`arguments:` passes `-XNoStarIsType` alone (`.hlint.yaml:24`),
+**Hands back** --- hands back nothing, ruled 2026-09-04. The page load this item
+used to hand back is a session's to run: `firefox-beta` under Xvfb with matchbox
+is what 2.2's Split (0) drove to take the frame-timing baseline recorded
+at Phase 2's intro, and what R5's rendering half uses, so "no in-session gate
+reaches it" stopped being true when that browser arrived. It moves into **Done**
+above, which matters beyond this item: an outcome line waits on what this label
+names, so a shakedown that handed anything back could not prove the ledger flip
+and the restamp it is chosen to rehearse. What survives here is why `wasm`'s
+halves are unequal: `make build-wasm` is the load-bearing one, because `lhStart`
+sits inside `#ifdef USE_WASM`, so `cabal build` and `cabal test` compile none
+of it and a native-only done-check would verify nothing. Nor does `hlint .` see
+it: the live `arguments:` passes `-XNoStarIsType` alone (`.hlint.yaml:24`),
 the `--cpp-simple` beside it being a commented-out template (`.hlint.yaml:11`)
 that CLAUDE.md forbids restoring --- measured by planting a redundant bracket
 on each side of the `#ifdef`, of which only the one outside it was reported.
-So `make build-wasm` compiles this item's only reader. The argv claim hands back
-nothing: the spike runs in a session, and 3.2's driver turns it into a standing
-check.
+So `make build-wasm` compiles this item's only reader. The argv claim needed
+no human either: the spike ran in a session, and 3.2's driver turns it
+into a standing check.
 
 **Decide first** --- nothing. The spike is answered and, since 2026-08-07,
 carries a recorded artifact --- the body's Spike paragraph holds the command
