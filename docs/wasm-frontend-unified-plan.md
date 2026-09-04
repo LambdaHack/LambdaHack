@@ -12,7 +12,8 @@ and `sdl2-to-wasm-parity-plan.md`. It pursues two goals at once:
 - **G2 --- SDL2 parity.** Close every real gap between the SDL2 frontend
   and the WASM/browser build: pointer cursor, screenshots, fullscreen (including
   scaling), display scale, and multi-font (proportional + mono) rendering ---
-  plus the input/rendering fidelity fixes in 0.0.
+  plus the input/rendering fidelity fixes in 0.0. SDL2's behaviour is not always
+  its intent: What would falsify this has the rule and the case.
 
 The ordering follows from G1: multi-font done naively would re-implement
 in TypeScript the layout logic that lives in `Sdl.hs`'s
@@ -24,11 +25,13 @@ set ported with 11 of 13 values missing; a palette color slip). So:
 tooling port (Phase 3).** Related goals (R1--R6) and adopted multi-frontend
 practices follow the phases.
 
-File:line references were verified against the tree at commit `4d762337b`
-(2026-07-30), then machine-checked --- re-run
+File:line citations were verified against the tree at commit `4d762337b`
+(2026-07-30) --- the newest commit touching any file they cite,
+so the verification stands until one of those files moves ---
+then machine-checked; re-run
 `python3 tools/check-plan-citations.py docs/wasm-frontend-unified-plan.md` after
-landing work that touches cited files, and re-verify universally-quantified
-claims ("only X does Y", "exactly two") by repo-wide grep, never by re-reading
+landing work that touches cited files, with `--restamp` after the reading pass,
+and re-verify the only/every/never claims by repo-wide grep, never by re-reading
 one file. Thirteen file basenames are duplicated among this repo's tracked `.hs`
 files; the four this plan cites are therefore qualified wherever they appear:
 `Server/LoopM.hs` vs `Client/LoopM.hs`, the engine's vs the game's
@@ -76,6 +79,10 @@ line.
 > has written. The first is a bug report, the second a specification, and only
 > the second may be edited to match a tree that moved.
 >
+> One claim in either state is exempt, by the same borrow: a recorded
+> measurement ages rather than drifts, so it is re-measured against its stated
+> protocol rather than corrected.
+>
 > **Landing an item** does two things and nothing else: it appends an outcome
 > line, and it flips that item's ledger row from `open` or `not applied`
 > to `landed` in that hash. The outcome line goes **immediately after the item's
@@ -102,10 +109,9 @@ line.
 > as any other claim here; and an item whose artifact turns out unneeded clears
 > the gate by deleting the entry together with the sentence that named it.
 >
-> When every item has landed or retired, the four campaign-live sections freeze
-> with them --- Goals and approach, Repo facts, Build & verification loop,
-> Sequencing --- the ledger's own rows stop moving, and this callout becomes one
-> line saying the specification landed in full. Restamping does not stop:
+> When every item has landed or retired, the sections the ledger lists as live
+> freeze with them, its own rows stop moving, and this callout becomes one line
+> saying the specification landed in full. Restamping does not stop:
 > the standing checks quantify over every document in the repo, and a frozen
 > record still restamps when the files it cites move, as the pointman records
 > do.
@@ -165,15 +171,16 @@ practices](#multi-frontend-practices-adopted) -- [Out of scope](#out-of-scope)
 
 Sections holding no items are stated once, here, and the two lists
 are exhaustive over the sections the per-item rule does not cover. **Frozen
-from the start:** Ground rules, Out of scope, and Appendices A, B and C ---
-frozen does not mean silent, and a claim in one that later resolves takes
-an outcome line, as the doctest bullet under Ground rules has. **Live until
-every item has landed or retired**, because the work falsifies them: Goals
-and approach, Repo facts, Build & verification loop, Sequencing,
-and this ledger. Everything else is per item, and the row is the unit
-of rollback: each item is one commit, or the **Split** run of commits its block
-names, every one of them leaving the suite green --- which is what makes a row
-something that can be reverted rather than unpicked.
+from the start:** the Log, entry by entry as each is dated, Ground rules, Out
+of scope, and Appendices A, B and C --- frozen does not mean silent, and a claim
+in one that later resolves takes an outcome line, as the doctest bullet
+under Ground rules has. **Live until every item has landed or retired**, because
+the work falsifies them: Goals and approach, How this lands, Repo facts, Build &
+verification loop, Handing an item to a session, What would falsify this,
+Sequencing, and this ledger. Everything else is per item, and the row
+is the unit of rollback: each item is one commit, or the **Split** run
+of commits its block names, every one of them leaving the suite green --- which
+is what makes a row something that can be reverted rather than unpicked.
 
 | sec. | delivers | size | depends on | state |
 |---|---|---|---|---|
@@ -339,6 +346,15 @@ breakage. Neither module's code is *executed*: the integration test passes
 stands in for `Chosen.startup`. Running them is exactly what 0.3's FFI battery
 adds).
 
+**Claims here that no pass can re-run.** Five live assertions rest
+on experiments whose artifact was never recorded: 0.1's sync-export spike, 0.3's
+"RTS is not initialised" measurement, 3.1's `getArgs` spike, and 3.2's
+exit-propagation and `LZString` probes. Everything else here a reader
+or a checker can settle; these can be settled only by redoing the experiment.
+Re-establish one before leaning on it in a decision, and when an item redoes it,
+record the command and the output beside the claim, the way CLAUDE.md records
+what the headless SDL run needs.
+
 
 ## Handing an item to a session
 
@@ -423,7 +439,11 @@ and, decisively, it could not freeze. The maturation rule is per item ---
 a landed item's logistics are frozen history like the rest of it --- whereas
 a table's rows would go on sitting beside live ones, current-looking long after
 the commits that consumed them, which is exactly the aged record the freeze
-callout at the top of this document exists to prevent.
+callout at the top of this document exists to prevent. Only that last reason
+turns on this document rather than on tables, so a table is right only where
+the whole plan is deleted when the work lands and no row outlives its body ---
+which is the pointman campaign's sec. 00 and not this file. The other two
+reasons bind there too.
 
 **Owns** is a checked field, not prose. `tools/check-doc-refs.py` resolves
 the backticked paths in this document, so naming an artifact the item has
@@ -637,7 +657,10 @@ the third.
 and `test/InputDecisionUnitTests.hs`; `LambdaHack.cabal` and `test/Spec.hs`
 for their registration; `engine-src/Game/LambdaHack/Client/UI/Frontend/`'s
 `Sdl.hs` and `Wasm.hs`; `ts-src/src/terminal.ts`, `ts-src/src/loader.ts`,
-`ts-src/src/terminal-input.test.ts`; `tools/doc-refs-allow.txt`. Nothing else.
+`ts-src/src/terminal-input.test.ts`; `tools/doc-refs-allow.txt`; and,
+in a commit of its own after the landing, `CLAUDE.md`'s frontend bullet, whose
+first module name this item delivers, and the "does not exist yet" callout
+in `docs/promptgetkey-hygiene.md`'s live half, which it retires. Nothing else.
 The input-side `RawFrontend` contract cases the practice assigns here land
 in `test/InputDecisionUnitTests.hs` --- the contract harness file belongs
 to the contract item and is not created by this one. Across items:
@@ -672,14 +695,19 @@ holds, proceed as written; if it does not, land the first two commits and leave
 The module-as-interface carve-out: the test suite --- and, in 0.2, a generator
 executable outside the subtree --- must reach `InputDecision` directly,
 so either `Frontend.hs` re-exports it or the convention takes a stated
-exception; whichever, it binds 0.2 and 2.1 too. (3) Whether the table-driven
-test of SDL's `keyTranslate` is in scope here: it is exported only
-under `EXPOSE_INTERNAL` (`Sdl.hs:4-8`), which `release` no longer defines
-by default, so a test reaching it does not compile at all --- the trap
-`test/CLAUDE.md` records, now immediate, and reaching it needs an sdl2
-build-depend plus a `#ifndef USE_BROWSER` guard, because `Frontend.Sdl` is
-not a module under `os(wasi)` and `make test-wasm` links the same suite. Either
-accept that cost or test `keyTranslateWeb` alone and say so.
+exception; whichever, it binds 0.2 and 2.1 too. A third consumer decides between
+them: `docs/promptgetkey-hygiene.md` would park `macroStep` here, and it takes
+a `KeyMacroFrame` from `SessionUI`, which imports `Client.UI.Frontend`
+(`SessionUI.hs:28`) --- so the re-export branch closes as an import cycle
+and only the exception keeps that home open. That record's `FrameM` fallback
+absorbs either answer. (3) Whether the table-driven test of SDL's `keyTranslate`
+is in scope here: it is exported only under `EXPOSE_INTERNAL` (`Sdl.hs:4-8`),
+which `release` no longer defines by default, so a test reaching it does
+not compile at all --- the trap `test/CLAUDE.md` records, now immediate,
+and reaching it needs an sdl2 build-depend plus a `#ifndef USE_BROWSER` guard,
+because `Frontend.Sdl` is not a module under `os(wasi)` and `make test-wasm`
+links the same suite. Either accept that cost or test `keyTranslateWeb` alone
+and say so.
 
 ### 0.2 `CellStyle` + a build-time generator for TS tables and fixtures
 
@@ -704,7 +732,9 @@ from `Color.colorToRGB`, closing the Haskell-vs-Haskell copy alongside
 the Haskell-vs-TS ones; and since `Sdl.hs`'s per-cell drawing is a hot path,
 gate its adoption of `CellStyle` on before/after `make bench` runs
 (`benchFrontendBattle`/`benchFrontendCrawl` exercise exactly that path,
-with fixed seeds).
+with fixed seeds), the two binaries built back-to-back on one flag set and run
+interleaved --- CLAUDE.md's toggle-based A/B recipe, and this item's to obey
+rather than to restate.
 
 **Build-time generator** --- a small native executable (new `.cabal` executable
 stanza; regenerate `haskell-ci.yml` afterwards rather than hand-editing, per
@@ -759,7 +789,10 @@ and `ts-src/src/generated/cursor.ts`; modified `LambdaHack.cabal`,
 today, without which importing `fixtures.json` fails `tsc --noEmit`),
 `ts-src/src/terminal-core.ts` and its test, `ts-src/src/terminal.ts`,
 `engine-src/Game/LambdaHack/Client/UI/Frontend/Sdl.hs`,
-`.github/workflows/lint-and-test-suites.yml` and `tools/doc-refs-allow.txt`.
+`.github/workflows/lint-and-test-suites.yml`, `tools/doc-refs-allow.txt`, and,
+in a commit of its own after the landing, `CLAUDE.md` --- the frontend bullet,
+whose second module name this item delivers, and the Gotchas bullet's "awaits
+its scheduled fix" for `Sdl.hs:590`, which this item's last commit retires.
 The generated files are **committed**, not ignored: `git diff --exit-code`
 is vacuous on untracked files, so an untracked `ts-src/src/generated/` would
 defang the freshness check the item exists to install. `haskell-ci regenerate`
@@ -1707,13 +1740,15 @@ and `test/Spec.hs`; the module goes in the library's *unconditional*
 so `make test-wasm` compiles it too and the wasm consumer inherits a module
 already proved to build there. (2) the `Sdl.hs` refactor onto it, carrying
 `Sdl.hs:590`'s `toEnum` fix if 0.2 has not already. (3) the citation repair
-of this plan and of the repo-root `CLAUDE.md` against the shrunken `Sdl.hs` ---
-mandatory and separate, per the freeze callout, and unskippable because
-`tools/check-plan-citations.py` proves a line exists and nothing more, so every
-surviving citation into the deleted region re-points silently and the pass stays
-green. (4) the outcome line naming (2)'s hash, the ledger flip, and the deletion
-of this item's two `tools/doc-refs-allow.txt` entries. (3) before (4),
-so a correction is never in the same diff as the landing record.
+of this plan and of the repo-root `CLAUDE.md` against the shrunken `Sdl.hs`,
+plus that file's frontend bullet, whose last module name this item delivers,
+retiring the clause --- mandatory and separate, per the freeze callout,
+and unskippable because `tools/check-plan-citations.py` proves a line exists
+and nothing more, so every surviving citation into the deleted region re-points
+silently and the pass stays green. (4) the outcome line naming (2)'s hash,
+the ledger flip, and the deletion of this item's two `tools/doc-refs-allow.txt`
+entries. (3) before (4), so a correction is never in the same diff
+as the landing record.
 
 **Owns** --- `engine-src/Game/LambdaHack/Client/UI/Frontend/OverlayLayout.hs`,
 `test/OverlayLayoutUnitTests.hs`, `test/Spec.hs`, `LambdaHack.cabal`,
@@ -2007,11 +2042,16 @@ no `tools/doc-refs-allow.txt` entries.
 `engine-src/Game/LambdaHack/Client/UI/Frontend/Teletype.hs`,
 `engine-src/Game/LambdaHack/Client/UI/Frontend.hs`,
 `engine-src/Game/LambdaHack/Client/UI/MonadClientUI.hs`,
-`test/MonadClientUIUnitTests.hs` and `docs/wasm-frontend-unified-plan.md`.
-`Dom.hs` is deliberately not here: a dead example file no configuration
-compiles, R3. Two files are shared --- `Sdl.hs` with 2.1 and 0.2, `Wasm.hs`
-with 2.2 and 2.3 --- and although (1) touches only their export lists, they do
-not merge, so serialize.
+`test/MonadClientUIUnitTests.hs`, `docs/wasm-frontend-unified-plan.md` and,
+should (1) not be the two-lines-for-two replacement sketched above,
+`docs/leader-desync-migration.md` --- 3.3's fleet hazard again, here
+over `MonadClientUI.hs`: that plan cites `partActorLeader`
+(`MonadClientUI.hs:455`) and `partPronounLeader` (`MonadClientUI.hs:469`), both
+below the gate (1) rewrites, so a changed line count leaves them resolving
+and wrong. `Dom.hs` is deliberately not here: a dead example file
+no configuration compiles, R3. Two files are shared --- `Sdl.hs` with 2.1
+and 0.2, `Wasm.hs` with 2.2 and 2.3 --- and although (1) touches only their
+export lists, they do not merge, so serialize.
 
 **Done** --- `native` (stylish
 over `engine-src/Game/LambdaHack/Client/UI/Frontend/Sdl.hs`,
@@ -2703,7 +2743,10 @@ not concurrent --- the second does not compile without the first. Nothing else
 may hold these files meanwhile: R1's whole point is flipping two
 of the constants (`Server/LoopM.hs:336`, `WatchUpdAtomicM.hs:586`) and R3
 deletes their `USE_JSFILE` halves, so both follow this item rather
-than overlapping it.
+than overlapping it. The pointman campaign is a third claimant
+on `HandleHumanLocalM.hs`, converting several functions above
+the `HandleHumanLocalM.hs:815` this item and R3 both cite, so re-read those two
+snippets if it has landed.
 
 **Done** --- `native` (stylish
 over `engine-src/Game/LambdaHack/Common/{File,HSFile,WasmFile,JSFile}.hs`,
@@ -3078,8 +3121,8 @@ Worth stating, because a campaign this long otherwise reads as unfalsifiable.
 Three claims carry it, and each has a check that would sink it rather
 than merely inconvenience it.
 
-**G1, that shared knowledge is cheaper than duplicated knowledge.** What would
-sink it is a shared module that cannot decide without knowing which frontend
+**G1, that one canonical definition can serve every frontend.** What would sink
+it is a shared module that cannot decide without knowing which frontend
 is asking --- a `CellStyle` or an `OverlayLayout` whose body branches
 on the caller rather than on a parameter it was given. That is duplication
 with a worse interface, and the check is 2.1's `Sdl.hs` refactor: if the native
