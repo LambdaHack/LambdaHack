@@ -996,23 +996,24 @@ No regression is expected, for three grounded reasons.
 > reaches this layer.
 
 **Baseline numbers for the post-landing comparison.** Recorded 2026-07-22
-on the parked commit `47e05bf60`, as a no-regression tripwire: per the above,
-the migration should leave every figure below unchanged to within the stated
-noise. Environment: AMD Ryzen 7 5800X (16 threads), machine otherwise idle; GHC
-9.12.4, `-O1` **with `+with_expensive_assertions`** (the development
-`cabal.project.local`) --- a future comparison must use the same flag set,
-and interleaved A/B runs of pre/post binaries built back-to-back (CLAUDE.md's
-toggle-based A/B recipe) beat comparing against these absolute numbers.
-Protocol: the `benchNull` trio plus `benchMemoryAnim`, exact Makefile arguments
-and RNG seeds; wall/user seconds are the median of 5 timed reps (3
-for `benchMemoryAnim`), run round-robin, spreads in parentheses; clips/s
-(the game's time-tick throughput) and FPS are medians of the same reps, taken
-from the `--benchmark` report each run prints. Allocation and residency come
-from one added `+RTS -s` run per target. Both output channels are redirected
-by the game itself whenever stdout is not a terminal (`Main.hs`), e.g.
-under a test harness: the `--benchmark` report lands
-in `~/.LambdaHack/stdout.txt` and the RTS summary in `~/.LambdaHack/stderr.txt`
---- harvest them there after each run.
+on a parked commit that is reachable from no branch, so the tree cannot
+be checked out and the numbers stand by the protocol below rather than
+by that tree, as a no-regression tripwire: per the above, the migration should
+leave every figure below unchanged to within the stated noise. Environment: AMD
+Ryzen 7 5800X (16 threads), machine otherwise idle; GHC 9.12.4, `-O1`
+**with `+with_expensive_assertions`** (the development `cabal.project.local`)
+--- a future comparison must use the same flag set, and interleaved A/B runs
+of pre/post binaries built back-to-back (CLAUDE.md's toggle-based A/B recipe)
+beat comparing against these absolute numbers. Protocol: the `benchNull` trio
+plus `benchMemoryAnim`, exact Makefile arguments and RNG seeds; wall/user
+seconds are the median of 5 timed reps (3 for `benchMemoryAnim`), run
+round-robin, spreads in parentheses; clips/s (the game's time-tick throughput)
+and FPS are medians of the same reps, taken from the `--benchmark` report each
+run prints. Allocation and residency come from one added `+RTS -s` run per
+target. Both output channels are redirected by the game itself whenever stdout
+is not a terminal (`Main.hs`), e.g. under a test harness: the `--benchmark`
+report lands in `~/.LambdaHack/stdout.txt` and the RTS summary
+in `~/.LambdaHack/stderr.txt` --- harvest them there after each run.
 
 | target | wall s | user s | clips/s | FPS | frames | bytes allocated | max residency B |
 | --- | --- | --- | --- | --- | --- | --- | --- |

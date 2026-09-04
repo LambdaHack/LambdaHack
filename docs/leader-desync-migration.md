@@ -116,7 +116,7 @@ it was wrong because nobody had tried it.
 | sec. 04.2 name `abortMacroPlayback` | `FrameM`, ~10 lines | AS4--AS6 green *without edits* | pending |
 | sec. 04.3 audit the residual writes | `FrameM` only; the drafted haddock in sec. 04 | the haddock lists every write the body performs | pending |
 | sec. 04.4 AS series unchanged | nothing; it is the gate | the whole AS series --- PR 0's two additions included, which is what the gate is for --- and X1/X2 pass with no edits to them | pending |
-| sec. 05 battery | --- | landed on master: the series and its harness in `3453b1777` through `8b5703e87`, then sibling (d)'s pin and the `permittedProjectClient` retag in `643337f51` | **done** |
+| sec. 05 battery | --- | landed on master: the series and its harness in `3453b1777` through `8b5703e87`, then sibling (d)'s pin and the `permittedProjectClient` retag in `4b92b291a` | **done** |
 
 ### Running this plan
 
