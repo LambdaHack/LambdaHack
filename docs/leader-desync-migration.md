@@ -12,7 +12,7 @@ to be deleted*
 > the code carries the result --- but deleting it is not the one-line act
 > it reads as, ten files naming it --- seven to be reworded; the eighth
 > `tools/leader-census.py`, which the first bullet below disposes of; the ninth
-> `tools/checks.py:52`, whose `UNCOVERED` entry excuses that tool and goes
+> `tools/checks.py:64`, whose `UNCOVERED` entry excuses that tool and goes
 > in the same commit; and the tenth `tools/check-plan-citations.py:117`, where
 > the name sits inside a dated measurement and so ages rather than needing
 > a reword --- as
@@ -58,7 +58,7 @@ to be deleted*
 >   and `test/InventoryMUnitTests.hs:72` cite it from test comments;
 >   `tools/check-doc-examples.py:78-86` names it among four live controls,
 >   and its 0 is the one proving comment stripping still works --- drop
->   the entry, and say that the control goes with it; `tools/checks.py:52`
+>   the entry, and say that the control goes with it; `tools/checks.py:64`
 >   excuses `tools/leader-census.py` from coverage by naming this file,
 >   so that entry goes with the tool in the same commit;
 >   and `tools/check-plan-citations.py:117` needs nothing, per the head bullet;
@@ -67,7 +67,7 @@ to be deleted*
 >   --- and re-run the `git grep -n` above, which must come back empty bar
 >   whatever branch the first bullet took.
 >
-> File:line citations were verified against the tree at commit `ce7a40c13`
+> File:line citations were verified against the tree at commit `6f564870c`
 > (2026-09-04) --- the newest commit touching any file they cite; re-run
 > `python3 tools/check-plan-citations.py docs/leader-desync-migration.md --restamp`
 > after the reading pass, and re-verify the only/every/never claims by repo-wide
