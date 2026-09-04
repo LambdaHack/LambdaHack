@@ -361,22 +361,24 @@ was written is one the next reader has to skip.
   `A-Tab` has none (`GameDefinition/game-src/Client/UI/Content/Input.hs:60`)
   and `C-Tab` has `CmdMove` (`:62`), so only `C-Tab` is reachable inside
   a dialog, while `A-Tab` still works at top level, through `bcmdMap`. Verified
-  twice over, by reading and by pressing. So step 6's session,
-  and the post-mortem's sec. 04 recipe, should press `C-Tab` inside the menu ---
-  pressing `A-Tab` there looks exactly like a window that was never reached.
-  **And the multi-actor run and the injected macro come from opposite branches
-  of one `if`**: `moveRunHuman`'s `runMembers` is `[leader]` when `runAhead`,
-  the full selection otherwise, and `macroRun25` is injected only
-  `when runAhead` (`HandleHumanGlobalM.hs:322-333`) --- so shift+direction
-  (`RunDir`, which passes `runAhead = True`, `HandleHumanM.hs:111-112`) runs one
-  actor and rotates no pointman, while the rotating multi-actor run comes
-  from the go-to-xhair family (`:659`, `:671`, `:677`, all passing `False`)
-  and injects no macro. The sec. 04 window therefore needs a *recorded* macro
-  driving a go-to-xhair run, not shift+direction, which is why an afternoon
-  of the latter never opened it. What the spike did *not* reach is the window
-  itself; the machinery is all proven --- recording, replay, dialogs, mid-dialog
-  switching, all scriptable headlessly --- so what step 6 keeps
-  is the judgement, not the typing.
+  twice over, by reading and by pressing. So step 6's session should press
+  `C-Tab` inside the menu --- pressing `A-Tab` there looks exactly like a window
+  that was never reached. **And the multi-actor run and the injected macro come
+  from opposite branches of one `if`**: `moveRunHuman`'s `runMembers`
+  is `[leader]` when `runAhead`, the full selection otherwise, and `macroRun25`
+  is injected only `when runAhead` (`HandleHumanGlobalM.hs:322-333`) ---
+  so shift+direction (`RunDir`, which passes `runAhead = True`,
+  `HandleHumanM.hs:111-112`) runs one actor and rotates no pointman, while
+  the rotating multi-actor run comes from the go-to-xhair family (`:659`,
+  `:671`, `:677`, all passing `False`) and injects no macro. The sec. 04 window
+  therefore needs a *recorded* macro driving a go-to-xhair run,
+  not shift+direction, which is why an afternoon of the latter never opened it.
+  What the spike did *not* reach is the window itself; the machinery is all
+  proven --- recording, replay, dialogs, mid-dialog switching, all scriptable
+  headlessly --- so what step 6 keeps is the judgement, not the typing. Both
+  mechanisms now live in the post-mortem's sec. 04 as a callout, since they
+  outlive this file; that callout is the copy to correct if either is ever found
+  wrong, and it is what took the record's frozen half its second kind of upkeep.
 - 2026-08-07 -- two probes for PR 0, both answering yes with a caveat.
   `permittedApply` returns *distinct* verdicts per apply skill through the stub
   content --- `ApplyNoEffects`, `ApplyFood`, `ApplyUnskilled` for skills 2, 1
@@ -651,17 +653,17 @@ or becomes the beginning of step 1.
    replaying the post-mortem's sec. 04 timeline (multi-hero run inside
    a recorded macro that opens the item menu, then `C-Tab` --- not `A-Tab`,
    which the dialog does not bind, and not shift+direction for the run, which
-   rotates no pointman; the 2026-08-07 log entry has both mechanisms) --- X1
-   of sec. 05 already drives that window through the real `promptGetKey`,
-   so what the session adds is everything the mock supplies instead: a real
-   frontend, a macro recorded by actual keypresses rather than a `smacroFrame`
-   seeded in the fixture, and the sample game's own bindings and party ---
-   evidence that a player can reach the window, not only that a fixture can.
-   Plus a pointman switch inside the fling dialog *and* inside the apply dialog,
-   to confirm the post-mortem's sec. 09 siblings are gone --- the apply one
-   by hand because it is the real frontend and PR 0's pin is not;
-   and `make frontendCrawl` for a visual pass over menus. The last three
-   are a human's, not a run's: the session and the two switches are played
+   rotates no pointman; the post-mortem's sec. 04 callout has both mechanisms
+   and outlives this file) --- X1 of sec. 05 already drives that window through
+   the real `promptGetKey`, so what the session adds is everything the mock
+   supplies instead: a real frontend, a macro recorded by actual keypresses
+   rather than a `smacroFrame` seeded in the fixture, and the sample game's own
+   bindings and party --- evidence that a player can reach the window, not only
+   that a fixture can. Plus a pointman switch inside the fling dialog
+   *and* inside the apply dialog, to confirm the post-mortem's sec. 09 siblings
+   are gone --- the apply one by hand because it is the real frontend and PR 0's
+   pin is not; and `make frontendCrawl` for a visual pass over menus. The last
+   three are a human's, not a run's: the session and the two switches are played
    by hand, and `frontendCrawl` runs `--automateAll`, so reaching a menu means
    mashing keys to regain control (`UI.hs:92-96`). Keys *can* be pressed here
    --- `xdotool`, per CLAUDE.md's sandboxing notes --- so what stays a human's
