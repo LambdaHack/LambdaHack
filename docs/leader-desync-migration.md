@@ -104,25 +104,25 @@ served; only the claim that no finer split stays green was wrong, and
 it was wrong because nobody had tried it.
 
 Every row is an item --- the C-rows and PR 0 below "Running this plan", sec.
-04's rows and sec. 05's at the end of the section that specifies them ---
-opening on a heading that carries the row's name and closing with the execution
-block `docs/wasm-frontend-unified-plan.md` defines under "Handing an item
-to a session" --- **Split** where the item is several commits, then **Owns**,
-**Done**, **Hands back** and **Decide first**, each written out even
-as `nothing` --- which is read there and not restated here.
-`tools/check-plan-crossrefs.py` reads this document against itself and, run
-with no argument, both documents against each other, so a file both campaigns
-write is named on both sides by item id, and the claimant list for such a file
-lives at one item of one campaign with the rest pointing at it. Three things
-are this document's own. The gates **Done** names are defined once,
-under "Running this plan", and a gate that selects a series states the count
-it expects, since the count is what is read. The lock does not serialize
-on this document, as it does not on that plan: a ledger flip and a Log line
-are the item's own lines. And the states are the ones the pointman records lent
-that plan --- `landed` in a named commit, `open` for code that is wrong today,
-`not applied` for a design nothing has built --- with that plan's rule
-on the one row whose remaining evidence is a human's: a green **Done** does
-not flip C7.
+04's rows after the steps that specify them and before the drafts, sec. 05's
+at the end of that section --- opening on a heading that carries the row's name
+and closing with the execution block `docs/wasm-frontend-unified-plan.md`
+defines under "Handing an item to a session" --- **Split** where the item
+is several commits, then **Owns**, **Done**, **Hands back** and **Decide
+first**, each written out even as `nothing` --- which is read there
+and not restated here. `tools/check-plan-crossrefs.py` reads this document
+against itself and, run with no argument, both documents against each other,
+so a file both campaigns write is named on both sides by item id,
+and the claimant list for such a file lives at one item of one campaign
+with the rest pointing at it. Three things are this document's own. The gates
+**Done** names are defined once, under "Running this plan", and a gate
+that selects a series states the count it expects, since the count is what
+is read. The lock does not serialize on this document, as it does not
+on that plan: a ledger flip and a Log line are the item's own lines.
+And the states are the ones the pointman records lent that plan --- `landed`
+in a named commit, `open` for code that is wrong today, `not applied`
+for a design nothing has built --- with that plan's rule on the one row whose
+remaining evidence is a human's: a green **Done** does not flip C7.
 
 | row | delivers | size | depends on | state |
 |---|---|---|---|---|
@@ -131,8 +131,8 @@ not flip C7.
 | C1 | witness and accessors (step 1) | tiny | C0; PR 0 | not applied |
 | C2 | boundary and shim (from steps 2 and 5) | small | C1 | not applied |
 | C3 | dialog chain (step 2, with the flips step 4 earns it) | medium | C2 | not applied |
-| C4 | the cycle pair, and the assertion (step 3, with its flips from step 4) | small | C2 | not applied |
-| C5 | the waiting three (step 5, with alterDir's flip from step 4) | small | C3; C4 | not applied |
+| C4 | the cycle pair, and the assertion (step 3, with its flips from step 4) | small | C3 | not applied |
+| C5 | the waiting three (step 5, with alterDir's flip from step 4) | small | C4 | not applied |
 | C6 | the tail: sec. 03's remainder, and the shim retired (step 5) | medium | C5 | not applied |
 | C7 | verification (step 6) | the gate, and a human's session | C6 | not applied |
 | 04.1 | extract `macroStep` | small | C7 | not applied |
@@ -311,10 +311,12 @@ to 157, 28 and 11, the first of the two movements "Running this plan" permits,
 and the AS series to fifteen.
 
 **Split** --- two commits, the titles drafted in sec. 02. (1) the two AS cases,
-with the recording `ChanFrontend` in `test/UnitTestHelpers.hs`,
-and the abort-split record's outcome line, whose "two are unpinned" this closes.
-(2) the apply pin with its export move, and the post-mortem's outcome line,
-whose "the apply-dialog one by nothing" this closes --- the two appends the head
+named `contract AS14` and `contract AS15` as the series is, since the `AS` gate
+selects on that prefix and its count of fifteen rests on it, with the recording
+`ChanFrontend` in `test/UnitTestHelpers.hs`, and the abort-split record's
+outcome line, whose "two are unpinned" this closes. (2) the apply pin
+with its export move, and the post-mortem's outcome line, whose
+"the apply-dialog one by nothing" this closes --- the two appends the head
 callout rules PR 0 makes. (2) carries the ledger flip.
 
 **Owns** --- `test/FrameMUnitTests.hs`, `test/HandleHumanLocalMUnitTests.hs`,
