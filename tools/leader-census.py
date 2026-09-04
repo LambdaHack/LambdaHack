@@ -58,6 +58,7 @@ tokens later the same day; each reported exactly the lines above.
 
 import os
 import re
+import subprocess
 import sys
 
 TREE = 'engine-src/Game/LambdaHack/Client/UI'
@@ -195,8 +196,41 @@ def scan_doc(path):
     return buckets
 
 
+def chdir_root(paths):
+    """Run from the repository root whatever the cwd -- the configuration's
+    paths are root-relative -- and return PATHS rebased to it. Outside a
+    repository nothing moves."""
+    # answered dropped-status: an empty top is the failure, and the next line tests it
+    top = subprocess.run(["git", "rev-parse", "--show-toplevel"],
+                         capture_output=True, text=True).stdout.strip()
+    if not top:
+        return paths
+    paths = [os.path.relpath(os.path.abspath(p), top) for p in paths]
+    os.chdir(top)
+    return paths
+
+
+def require_readable(paths):
+    """Exit cleanly on a mistyped name rather than with a traceback.
+
+    Exit 2 means the run did not happen, as distinct from 1, which means
+    it ran and found something.
+    """
+    for p in paths:
+        if not os.path.isfile(p):
+            print(f'no such document: {p}', file=sys.stderr)
+            sys.exit(2)
+
+
 def main():
-    doc = sys.argv[1] if len(sys.argv) > 1 else DOC
+    # From the root, TREE and DOC being root-relative: run from elsewhere
+    # this died with a traceback at 1, or walked a missing TREE and called
+    # every bucketed name absent (leader-census-01).
+    doc = (chdir_root(sys.argv[1:2]) or [DOC])[0]
+    require_readable([doc])
+    if not os.path.isdir(TREE):
+        print(f'no such directory: {TREE}', file=sys.stderr)
+        return 2
     by_name, point_free, all_names = scan_tree(TREE)
     buckets = scan_doc(doc)
     bucketed = set().union(*buckets.values())
