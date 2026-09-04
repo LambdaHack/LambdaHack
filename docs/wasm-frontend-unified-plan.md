@@ -32,13 +32,15 @@ then machine-checked; re-run
 `python3 tools/check-plan-citations.py docs/wasm-frontend-unified-plan.md` after
 landing work that touches cited files, with `--restamp` after the reading pass,
 and re-verify the only/every/never claims by repo-wide grep, never by re-reading
-one file. Thirteen file basenames are duplicated among this repo's tracked `.hs`
-files; the four this plan cites are therefore qualified wherever they appear:
+one file. Some file basenames are duplicated among this repo's tracked `.hs`
+files, so every citation here to one of them names its directory as well:
 `Server/LoopM.hs` vs `Client/LoopM.hs`, the engine's vs the game's
 `Content/Input.hs`, the engine's vs the game's `Client/UI/Content/Screen.hs`,
-and `GameDefinition`'s vs `definition-src`'s `Content/RuleKind.hs`. Decisions
-*against* work, deferrals and their rationale are collected in Appendix B;
-non-gaps from the SDL2-vs-wasm audit in Appendix C; the GHCJS->JS-backend port
+`GameDefinition`'s vs `definition-src`'s `Content/RuleKind.hs`,
+`Client/State.hs` vs `Common/State.hs` and `Server/State.hs`,
+and `Server/CommonM.hs` vs `Client/CommonM.hs`. Decisions *against* work,
+deferrals and their rationale are collected in Appendix B; non-gaps
+from the SDL2-vs-wasm audit in Appendix C; the GHCJS->JS-backend port
 investigation in Appendix A. Which half of this document a passage is
 in is answered by the ledger below, and by whether its item carries an outcome
 line.
@@ -67,7 +69,7 @@ line.
 >   is the one thing that must not happen.
 > - **not applied** --- the design is specified and the artifact does not exist.
 >   Its claims about *today's* tree are held to a plan's standard.
-> - **standing** --- the item never lands, because it recurs (1.4, R2)
+> - **standing** --- the item never lands, because it recurs (0.3, 1.4, R2)
 >   or because it is a review rule with nothing to execute (explicit widths,
 >   functional core). It retires when the campaign does. The asymmetry
 >   is deliberate: the pointman records have no such case and need no such word.
@@ -77,7 +79,15 @@ line.
 > rows apart and mean different things --- AltGraph chords are lost
 > in the shipped browser build today, while `OverlayLayout` is a module nobody
 > has written. The first is a bug report, the second a specification, and only
-> the second may be edited to match a tree that moved.
+> the second may be edited to match a tree that moved. The rule fires
+> at the item and the state lives in the ledger, so before editing any claim
+> in an item's body, read that item's row: `landed` means leave it alone.
+> The state *label* is deliberately not repeated at the item --- a second copy
+> of the column is what drifts out of step with it. Two things are
+> not that copy: the outcome line, which is the landing's own frozen record
+> rather than a label, and a `standing` item saying so where its **Split**
+> or **Owns** turns on it, as 1.4's and R2's do --- *this row never flips*
+> is a rule about their commits, not a reading of the column.
 >
 > One claim in either state is exempt, by the same borrow: a recorded
 > measurement ages rather than drifts, so it is re-measured against its stated
@@ -85,13 +95,18 @@ line.
 >
 > **Landing an item** does two things and nothing else: it appends an outcome
 > line, and it flips that item's ledger row from `open` or `not applied`
-> to `landed` in that hash. The outcome line goes **immediately after the item's
+> to `landed -- <hash>`. The outcome line goes **immediately after the item's
 > opening paragraph**, before any subsection, so that opening the item
 > at its head answers the question; its shape is the doctest bullet's
-> under Ground rules. A claim the landing falsified is corrected in a *separate*
-> commit, so review can tell a relocation from a correction --- which commit
-> `a7e825c2d` could not, having rewritten R2 from "Add a job to..." into "Partly
-> landed, in..." and bent a factual claim in the same diff.
+> under Ground rules, the only worked one this document carries until a row
+> flips. The hash in both places names the commit that did the work. No commit
+> can name its own, so the record is a `.md`-only commit written after that one
+> --- which is what a **Split** means when it says a code commit "carries
+> the outcome line": the record follows that commit and names it. Several
+> **Split**s number the record separately instead (2.1's (4), 2.2's (4), 2.3's
+> (3)), and those say outright which commit's hash goes in. A claim the landing
+> falsified is corrected separately, under the citation-repair rule in "Handing
+> an item to a session", which is where the separation is argued.
 >
 > **Landing part of an item takes no outcome line**, and the row stays live:
 > a partial landing is recorded in the item's body as specification for what
@@ -128,15 +143,20 @@ and the fleet cannot decide it.
 **One review unit per ledger item, not per agent and not one for the campaign.**
 A single pull request carrying Phase 0 through 2 would be unreadable, and one
 per agent would make the bottleneck worse rather than better. The unit
-is therefore a branch off local master, read with `git log -p master..<branch>`;
-a GitHub PR exists only after an authorized push, so the review that gates
-an item is the local one.
+is therefore a branch off whichever local branch carries this document --- today
+`unify-campaign-docs` and not `master`, whose copy of this file is older,
+so branching off master hands the session a different version of the item
+it was given --- read with `git log -p <that branch>..<branch>`; a GitHub PR
+exists only after an authorized push, so the review that gates an item
+is the local one.
 
 **3.1 goes first, as a shakedown.** It is the smallest item whose correctness
-a machine can settle end to end, so it proves the whole ritual --- the wasm
-loop, the gates, the outcome line, the ledger flip, the allowlist deletion,
-the restamp --- before any item whose review needs judgment. Phase 3
-then continues in parallel with Phases 0-2, sharing no file with them.
+a machine can settle end to end, so it proves the ritual --- the wasm loop,
+the gates, the outcome line, the ledger flip and the restamp its own citation
+repair owes --- before any item whose review needs judgment. It rehearses
+no allowlist deletion, proposing no artifact and so having no entry to delete;
+the items that build one carry that step. Phase 3 then continues in parallel
+with Phases 0-2, sharing no file with them.
 
 **One item is reviewed entirely alone: the `Sdl.hs` drawing loop** (2.1's
 refactor together with 0.2's `CellStyle` adoption, which rewrite abutting
@@ -144,7 +164,7 @@ regions of one hot loop). It rewrites shipped native rendering; SDL2
 is exercised in CI nowhere beyond the init-and-quit backdoor; expensive
 assertions are off in every workflow; and its real gate is display-bound.
 Its branch carries `Sdl.hs` and nothing else, and its citation repair
-is a separate commit --- 83 of this document's 108 `Sdl.hs` citations sit
+is a separate commit --- most of this document's `Sdl.hs` citations sit
 in the region it rewrites, and they will all still resolve.
 
 **2.4 splits**, so that each half gets the review it needs: the capability
@@ -154,7 +174,9 @@ alone as a product decision. Unsplit it would arrive as mechanism plus risk
 in one diff.
 
 **Never autonomously:** push, open or force-update a pull request, or take
-an outcome line on a partial landing.
+an outcome line on a partial landing. Permission to make a change
+is not permission to publish it, and a green **Done** line is evidence about one
+commit rather than the judgement that an item is finished.
 
 ## Ledger --- every item's state
 
@@ -180,10 +202,14 @@ in one that later resolves takes an outcome line, as the doctest bullet
 under Ground rules has. **Live until every item has landed or retired**, because
 the work falsifies them: Goals and approach, How this lands, Repo facts, Build &
 verification loop, Handing an item to a session, What would falsify this,
-Sequencing, and this ledger. Everything else is per item, and the row
-is the unit of rollback: each item is one commit, or the **Split** run
-of commits its block names, every one of them leaving the suite green --- which
-is what makes a row something that can be reverted rather than unpicked.
+Sequencing, this ledger, and the intros that open a phase or the practices ---
+Phase 2's is the one that matters, since 2.2's Split (0) appends
+the frame-timing baseline to it and 2.5 re-measures against it, and its recorded
+numbers are exempt as measurements the way an item's are. Everything else is per
+item, and the row is the unit of rollback: each item is one commit,
+or the **Split** run of commits its block names, every one of them leaving
+the suite green --- which is what makes a row something that can be reverted
+rather than unpicked.
 
 | sec. | delivers | size | depends on | state |
 |---|---|---|---|---|
@@ -192,16 +218,16 @@ is what makes a row something that can be reverted rather than unpicked.
 | 0.2 | `CellStyle` + TS-table/fixture generator | medium | --- | not applied |
 | 0.3 | FFI-coverage battery (baseline before 0.1, then per-commit) | ongoing | --- | not applied -- standing |
 | 1.1 | crosshair cursor (CSS keyword; then generated SVG cursor) | trivial | 0.2 for the final form | not applied |
-| 1.2 | working `Ctrl+P` screenshots | small--medium | 0.2 helps | open |
+| 1.2 | working `Ctrl+P` screenshots | small--medium | 0.3 for the reactor driver; 0.2 helps | open |
 | 1.3 | fullscreen toggle with scaling | small | --- | not applied |
 | 1.4 | banner/title truthfulness | trivial, recurring | feature landings | open -- standing |
-| 1.5 | `allFontsScale` honored in browser | small | 2.2's startup call (or a precursor); R4 for player control | open |
+| 1.5 | `allFontsScale` honored in browser | small | 2.2's startup call (or a precursor); 0.3 for the reactor driver; R4 for player control | open |
 | 2.1 | `OverlayLayout` extraction + `Sdl.hs` on it | medium--large | 0.2 for `CellStyle`; determinism goldens (native harness) | not applied |
 | 2.2 | browser canvas overlay renderer + font wiring | medium | 2.1, 0.2, 1.2 | not applied |
 | 2.3 | overlay transport over JSFFI | medium | 2.1, 2.2; 0.3 for the end-to-end battery | not applied |
 | 2.4 | multi-font capability flip | tiny diff, big review | 2.1--2.3; determinism goldens | not applied |
-| 2.5 | post-flip QA | small | 2.4 | not applied |
-| 3.1 | `lhStart` reads WASI argv | small (+spike) | --- | not applied |
+| 2.5 | post-flip QA | small | 2.4; 1.2 for the draw-op module | not applied |
+| 3.1 | `lhStart` reads WASI argv | small | --- | not applied |
 | 3.2 | Node driver for the game reactor | small | 3.1, 0.3 | not applied |
 | 3.3 | `nodeBench*`/`nodeDeployedBench` targets | small | 3.2 | not applied |
 | R1 | save robustness: staging keys plus a generation pointer | medium | 3.2, for the lag re-measurement | open |
@@ -221,13 +247,12 @@ is what makes a row something that can be reverted rather than unpicked.
 ## Log
 
 One line per surprise or re-plan, newest last, so that resuming this campaign
-needs this section rather than a re-read of three and a half thousand lines.
-Log-worthy: an item that turned out larger or smaller than its row says,
-a design question reopened, a count or classification here found wrong,
-an ordering constraint discovered, a **Decide first** ruled on. Not log-worthy:
-doing an item as written, or editing this file before the work starts ---
-an entry recording only that the plan was written is one the next reader has
-to skip.
+needs this section rather than a re-read of the whole plan. Log-worthy: an item
+that turned out larger or smaller than its row says, a design question reopened,
+a count or classification here found wrong, an ordering constraint discovered,
+a **Decide first** ruled on. Not log-worthy: doing an item as written,
+or editing this file before the work starts --- an entry recording only
+that the plan was written is one the next reader has to skip.
 
 - 2026-07-30 -- plan restructured to mature rather than be split or deleted;
   execution blocks added to all thirty-one items. Twenty-five of them carry
@@ -363,33 +388,68 @@ to skip.
   at n=2905 against 0.77ms at n=2870 --- and found the protocol's real defect,
   that the published mean is cumulative and so meaningless without the n
   it is read at. The intro now states that, the versions, and no hash.
+- 2026-09-04 -- a second reading of the same branch, this time with a blind walk
+  of 3.1 by a session that tried to execute it, and the repairs for both folded
+  into one pass. From the earlier half: `Sdl.hs:645-669` re-ranged to `:636-669`
+  and `UnitTestHelpers.hs:207` to `:208`; 2.1's placement table restored
+  to its eight rows from six; 3.3's `--dbgMsgSer --logPriority 4` bullet
+  reversed, the two bench pairs sharing those flags rather than differing
+  on them; and `[fe-golden]` minted for the determinism goldens. From the walk:
+  3.1 still scheduled a spike its own body records as performed, promised
+  a one-range citation repair where the change moves every `Main.hs` citation
+  this document carries, and never mentioned the `System.Environment` import
+  the change needs --- unguarded, an unused-import warning no gate of 3.1's
+  would fail on. Counts and classifications found wrong: the header named four
+  duplicated `.hs` basenames where the plan in fact cites six, so it states
+  the property now; `Sdl.hs:105` is a log priority among the surviving `toEnum`
+  sites called geometry; the `HighlightBackground` fill `#251F1F` is reachable
+  from neither of 0.2's two named generator sources, the gap ruling (4) had
+  already met over `cursorXhair`; the hot frontend files run a hundred
+  to a couple of hundred lines rather than a couple of hundred each; and two
+  superlatives died to one count --- of the thirty **Owns** fields, sixteen name
+  `tools/doc-refs-allow.txt` and seventeen name this document, so neither
+  it nor the workflow file is the campaign's most anything. Ownership gaps
+  closed rather than argued: `Frontend.hs` joined the four items whose own
+  rulings make them edit it, `README.md` got owners for the three clauses
+  this campaign falsifies in it (the page's `#status` div quotes
+  that paragraph), and `terminal.ts`, `loader.ts` and `ts-src/run-wasm-game.mjs`
+  got one claimant list each --- at 0.0, 0.1 and 0.3, the shape 1.4 already used
+  for `index.html` --- in place of a pairwise exclusion graph that had gone
+  asymmetric. Three decisions written in rather than left to be re-taken:
+  the review unit branches off the branch carrying this document
+  and not `master`, whose copy of it is older; an outcome line waits on what
+  **Hands back** names and not on a green **Done**; and the citation-repair
+  obligation is stated once, in "Handing an item to a session", scoped to live
+  items.
 
 ## Repo facts the plan builds on
 
-- **How the wasm frontend works today, in five lines.** The game compiles
-  to a wasm *reactor* (`-no-hs-main`) exporting `lhStart`, `lhKey`, `lhWheel`,
-  `lhMouseUp`; `ts-src/src/loader.ts` instantiates it with a WASI shim and calls
-  `lhStart`. Each frame, `Wasm.hs`'s `display` passes the `Word32` cell buffer's
-  address to `globalThis.lhSubmitFrame`; `terminal.ts` snapshots it and repaints
-  a DOM grid of `<span>` cells (diffing against the previous frame) via the pure
-  `styledCell` in `terminal-core.ts`. Input flows the other way: DOM events ->
-  `lhKey`/`lhWheel`/`lhMouseUp` exports -> the engine's key channel. Saves
-  bypass all of this --- `WasmFile.hs` talks to `localStorage` directly
-  over JSFFI.
-- **`Dom.hs`/`JSFile.hs` (the GHCJS frontend) are dead code** --- the repo
-  requires GHC 9.10+ while standalone GHCJS ended at GHC 8.10 (Appendix A.1).
-  They still appear throughout this plan as the *canonical origin*
-  of web-frontend logic: `Wasm.hs` and `terminal.ts` were ported from them,
-  so where the web stack's intent is in question, `Dom.hs` is the reference.
-  Their fate is decided (R3): no revival --- they stay as documented-dead
-  example code, and every other trace of GHCJS is ripped out once WASM reaches
-  parity.
-- **Layout and deployment.** The TS harness lives in `ts-src/src/`
-  (`terminal.ts`, `terminal-core.ts` + tests, `loader.ts`, `serve*.ts`).
-  The game page is `GameDefinition/index.html`. `make build-ts` builds `ts-src/`
-  and deploys bundle + wasm + JSFFI glue + `index.html` into the sibling
-  checkout `../lambdahack.github.io` (Makefile:322-330), the GitHub Pages site
-  players actually load.
+- **How the wasm frontend works today, in five lines.** `ts-src/src/loader.ts`
+  instantiates the reactor `CLAUDE.md` describes with a WASI shim and calls
+  `lhStart`, the first of its four exports (`lhStart`, `lhKey`, `lhWheel`,
+  `lhMouseUp`). Each frame, `Wasm.hs`'s `display` passes the `Word32` cell
+  buffer's address to `globalThis.lhSubmitFrame`; `terminal.ts` snapshots
+  it and repaints a DOM grid of `<span>` cells (diffing against the previous
+  frame) via the pure `styledCell` in `terminal-core.ts`. Input flows the other
+  way: DOM events -> `lhKey`/`lhWheel`/`lhMouseUp` exports -> the engine's key
+  channel. Saves bypass all of this --- `WasmFile.hs` talks to `localStorage`
+  directly over JSFFI.
+- **`Dom.hs`/`JSFile.hs` (the GHCJS frontend) are dead code**, permanently
+  and for the version reasons Appendix A.1 sets out. They still appear
+  throughout this plan as the *canonical origin* of web-frontend logic:
+  `Wasm.hs` and `terminal.ts` were ported from them, so where the web stack's
+  intent is in question, `Dom.hs` is the reference. Their fate is decided (R3):
+  no revival --- they stay as documented-dead example code, and every other
+  trace of GHCJS is ripped out once WASM reaches parity.
+- **Layout and deployment.** What `make build-ts` deploys is `CLAUDE.md`'s;
+  the `ts-src/` layout is stated in neither document, and each item's **Owns**
+  is where the files this plan writes are named --- `ts-src/src/serve.ts`
+  and its `ts-src/src/serve-core.ts`, the local dev server `make serve-wasm`
+  runs, being claimed by no item here. What this plan adds is where the deploy
+  lands and why it is load-bearing here: the sibling checkout
+  `../lambdahack.github.io` (Makefile:322-330) is the GitHub Pages site players
+  actually load, so an artifact that does not reach it has not shipped, which
+  is what several **Done** lines grep for.
 - **Fonts.** `config.ui.default` sets `chosenFontset = "dejavuBold"` (line 67);
   its `[fonts]` section names the web fonts directly:
   `dejavuBold = FontProportional "DejaVuLGCSans-Bold.ttf.woff" 13 HintingHeavy`,
@@ -478,7 +538,6 @@ it can be settled only by redoing the experiment, so re-establish it before
 leaning on it in a decision, and record the artifact beside the claim, the way
 CLAUDE.md records what the headless SDL run needs.
 
-
 ## Handing an item to a session
 
 Every item ends with the same execution block: four labels in a fixed order ---
@@ -494,9 +553,17 @@ and its absence says the item is a single commit.
 - **Owns** --- the files the item writes, exhaustively, and a locking discipline
   over them: while the item is in flight nothing else writes those files,
   and the item writes nothing else. A file in two items' **Owns** is therefore
-  a sequencing constraint, not a merge to attempt. Where two sub-items of one
-  item cannot run concurrently --- a shared new file, `package-lock.json`,
-  a citation block that renumbers --- **Owns** says so and says why.
+  a sequencing constraint, not a merge to attempt. Nothing enforces that,
+  so a session's first act is to check the set is free: the item's own
+  cross-item notes name the other claimants, and the branch list says which
+  of them is in flight. Where two sub-items of one item cannot run concurrently
+  --- a shared new file, `package-lock.json`, a citation block that renumbers
+  --- **Owns** says so and says why. This document is the one entry the lock
+  does not serialize on, and it is in nearly every **Owns**: an outcome line
+  and a ledger row are the item's own two lines, which no other landing touches,
+  so they need no exclusive hold. A citation repair does need one, re-cutting
+  ranges other items also carry, so that commit takes the file the way `Sdl.hs`
+  is taken.
 - **Done** --- the gates below that apply, named rather than spelled out, plus
   whatever is this item's own. It is the definition of finished for everything
   a session *can* verify.
@@ -504,7 +571,11 @@ and its absence says the item is a single commit.
   with the word `display`, `browser` or `judgement`, followed by the substitute
   gate that *is* in **Done**. An item whose **Done** covers its whole acceptance
   says "hands back nothing", and the label exists so that the rest cannot
-  be mistaken for one of those.
+  be mistaken for one of those. The outcome line waits on what this label hands
+  back: a session runs **Done**, reports the handed-back check as outstanding,
+  and stops. A green **Done** does not flip a row whose remaining evidence
+  is a human's, any more than it does on a partial landing --- and where
+  **Split** applies, the line waits for the commit **Split** names as well.
 - **Decide first** --- the questions an executing session must not answer
   for itself, with their branches. `nothing` means the item is ready to hand out
   as written.
@@ -521,38 +592,47 @@ native   cabal build && cabal test && hlint .
 ts       make test-ts        # npm run typecheck runs inside the target
 wasm     make build-wasm && make test-wasm
 deploy   make build-ts        # UNSANDBOXED: writes into the pages checkout
-docs     python3 tools/check-plan-citations.py $D    # $D = this document
-         && python3 tools/check-doc-refs.py $D
+docs     the repo's standing document passes over $D, which CLAUDE.md
+         lists and this document does not ($D = this document); what
+         they cost is the paragraph below
 ```
 
-**Read the counts, not the exit status alone** --- the rule the migration plan
-states for its own battery, and it binds here too: a suite that silently loses
-a test still passes. `cabal test --test-options='--list-tests'` is what settles
-a count claim, and a `-p` pattern selects on the test *name*, so a renamed test
-leaves its series without failing anything. Neither may be piped
-into `head`/`tail`: a pipeline exits with its last command's status, so a failed
-build reads as success, and a truncated listing is how a wrong count gets
-quoted.
+**What `docs` costs, and when.** The mechanical passes are seconds. The one
+that is not is `CLAUDE.md`'s reading pass --- this document, end to end ---
+and it is exactly what `--restamp` asserts and cannot check. So the read is owed
+once per landing, taken after the item's last edit to this file and before
+the restamp; the commits before it run the mechanical passes and leave the stamp
+alone. The ledger's size cells size the code, so this cost is on top of every
+one of them, and it is the largest single thing a `small` row asks for.
+
+**Read the counts, not the exit status alone** --- `CLAUDE.md`'s rule
+and the one `docs/leader-desync-migration.md` states for its own battery,
+binding here too: a suite that silently loses a test still passes, and a listing
+is what settles a count claim. Never pipe one, or a **Done** line: the trap
+bullet below has why.
 
 **Tasty tags are a repo-global namespace, shared with the pointman campaign.**
-`-p` filters the whole suite by name, not by module or by campaign,
-and it matches a *substring*, with no anchor available: `-p "/ontract/"` selects
-the same 26 tests as `-p "/contract/"`, and `-p "/^contract/"` selects none.
-A tag is therefore claimed by containment, not by equality, and a marker
+`-p` matches by containment with no anchor available; `CLAUDE.md`'s tasty bullet
+carries both halves --- the anchor's two failure modes on this very `contract`
+example, and containment on `LR1`, which selects LR1 together with LR10 through
+LR13. A tag is therefore claimed by containment, not by equality, and a marker
 that merely *contains* another campaign's is not a fresh claim but a silent
 join. `[contract]` and `[LR-flip]` are the pointman campaign's,
 and `docs/leader-desync-migration.md` pins the size of each series step by step,
 so a marker of ours falling inside either filter moves a count that document
-treats as a finding. This campaign's frontend contract series
-is `[fe-invariant]`. A new series here claims a marker containing no other
-campaign's, and the item that mints it proves that by listing ---
-`cabal test --test-options='--list-tests -p "/<marker>/"'` must select nothing
-before the series exists, which is the same command that reports 26
-for an existing marker and so is not a vacuous check. `[frontend]`
-is not available, incidentally: it is already a substring of eleven test names.
-Reusing --- or containing --- a tag breaks two things at once and neither
-loudly: the other campaign's cardinality invariant, and this campaign's gate,
-which would otherwise pass by selecting tests it did not write.
+treats as a finding. This campaign claims two series: `[fe-invariant]`
+for the frontend contract cases, and `[fe-golden]` for the determinism goldens,
+whose bare `golden` would be an ordinary English word inviting exactly
+the containment this paragraph is about. A new series here claims a marker
+containing no other campaign's, and the item that mints it proves
+that by listing --- `cabal test --test-options='--list-tests -p "/<marker>/"'`
+must select nothing before the series exists, which is the same command
+that reports a count for a marker that does exist and so is not a vacuous check.
+`[frontend]` is not available, incidentally: it is already a substring of test
+names the suite carries. Reusing --- or containing --- a tag breaks two things
+at once and neither loudly: the other campaign's cardinality invariant,
+and this campaign's gate, which would otherwise pass by selecting tests it did
+not write.
 
 The logistics live at the item and nowhere else. A central table of owned files,
 gates and open questions was proposed and is ruled out: it would duplicate every
@@ -575,7 +655,17 @@ in `tools/doc-refs-allow.txt`, with its reason, alongside the entries the item
 bodies already need. The existing landing gate closes the loop: an item
 that proposes an artifact takes its outcome line only once its allowlist entries
 can be deleted, and **Owns** is what makes them findable from the commit
-that lands it.
+that lands it. Every such item therefore writes `tools/doc-refs-allow.txt`
+and carries it in **Owns** by that rule rather than by enumeration --- most
+items that build anything write it, and the one-holder-at-a-time discipline
+binds it as it binds `Sdl.hs`. Deleting the entry is the executing session's act
+and not something a checker will prompt: `tools/check-doc-refs.py` tries
+`resolves` before `is_allowed` --- named rather than cited by line, the file
+being one this campaign does not own --- so the moment the artifact exists
+its token prints `ok path` and the stale entry is never read again --- which
+is why the allowlist's own header asks for the deletion by hand, and why
+a survivor means a proposed artifact was never built rather than a check
+that failed.
 
 Two traps have each already produced a wrong result in this repo
 or this campaign, so a session is told both rather than trusted to know them.
@@ -586,25 +676,36 @@ or this campaign, so a session is told both rather than trusted to know them.
   output is scrolled, not trimmed.
 - A green `tools/check-plan-citations.py` proves that every `file:line`
   resolves, not that the line still says what the claim needs: the file is long
-  enough and something else slid into the slot. An item that moves lines
-  in a cited file re-reads the snippets the checker prints and repairs
-  the citations in a *separate* commit, so review can tell a relocation
-  from a correction.
+  enough and something else slid into the slot. So **any commit that moves
+  a line this document cites owes a citation-repair commit** --- the snippets
+  the checker prints re-read, the ranges re-cut --- and the restamp that follows
+  it. That repair stays *separate* from the landing, as does any correction
+  of a claim the landing falsified, so review can tell a relocation
+  from a correction: commit `a7e825c2d` could not, having rewritten R2 from "Add
+  a job to..." into "Partly landed, in..." and bent a factual claim in the same
+  diff. The obligation reaches live items only. A citation inside a frozen
+  section or a `landed` item is left as it stands, reading against the tree
+  that section was stamped against --- R3's ruling (c) says so
+  of the appendices, and 2.1 meets it head-on, its refactor sliding the `Sdl.hs`
+  lines that Appendix C and B.5 cite.
 
 This is not a fan-out plan, and the width it does have is spent before any code
-is. The hot files are small: `ts-src/src/terminal.ts` is 219 lines with twelve
-writers across the campaign, `Wasm.hs` 138 with six of them rewriting the same
-four-line `startup` body, `ts-src/src/loader.ts` 102,
-and `GameDefinition/index.html` 95 with no automated gate on it at all.
-"Different regions of the same file" is real concurrency in a large module
-and applies nowhere here --- two items in one of these files are two items
-in the same paragraph. Landing concurrency accordingly runs about five items
-at its widest and two or three typically, widest where **Owns** sets
-are genuinely disjoint: Phase 3 against Phases 1-2, the standalone refactors
-against everything. The parallel effort that paid first was upstream
-of the code, on the **Decide first** questions, each blocking an item
-that was otherwise ready to hand out --- a front closed on 2026-08-07, every
-field ruled.
+is. The hot files are small --- a hundred to a couple of hundred lines each,
+`GameDefinition/index.html` with no automated gate on it at all --- and each
+carries a writer in nearly every phase, several of them rewriting the same
+four-line `startup` body in `Wasm.hs`; which items those are is **Owns**'s
+to say, per item, and nothing here counts them a second time. "Different regions
+of the same file" is real concurrency in a large module and applies nowhere here
+--- two items in one of these files are two items in the same paragraph. Landing
+concurrency accordingly runs about five items at its widest and two or three
+typically, widest where **Owns** sets are genuinely disjoint: 3.1
+and the standalone refactors against everything. Phase 3 is only mostly disjoint
+from Phases 1-2, and the exceptions are named where they live --- 3.2 shares
+`ts-src/run-wasm-game.mjs` with 1.2 and 1.5, per the claimant list at 0.3,
+and 3.3 shares the `Makefile` and `tools/doc-refs-allow.txt` with items in both
+other phases. The parallel effort that paid first was upstream of the code,
+on the **Decide first** questions, each blocking an item that was otherwise
+ready to hand out --- a front closed on 2026-08-07, every field ruled.
 
 Worktree isolation helps exactly where a collision would be loud: a new module
 no one else has a copy of (0.1's `InputDecision`, 2.1's `OverlayLayout`),
@@ -616,13 +717,6 @@ in its own frontend, differently, merge clean and produce precisely
 the near-duplicate drift this plan exists to eliminate. Isolation also removes
 the one mechanism that catches it: diffing analogous positions in a single tree.
 Parity work stays in one checkout.
-
-Three things a session never does on its own authority: push; open
-or force-update a pull request; and take an outcome line on a partial landing.
-Permission to make a change is not permission to publish it, and a green
-**Done** line is evidence about one commit, not the judgement that an item
-is finished --- where **Split** applies, the outcome line waits for the commit
-it names.
 
 ---
 
@@ -669,14 +763,25 @@ tests (the ground-rule exception above), the highlight rule
 its `terminal-core.test.ts` case.
 
 **Split** --- the jsdom harness first (`ts-src/src/terminal-input.test.ts`,
-`npm i -D jsdom`, a per-file `// @vitest-environment jsdom` docblock),
+`npm i -D jsdom`, a per-file `// @vitest-environment jsdom` docblock), which
+also deletes its own `tools/doc-refs-allow.txt` entry as it creates the file,
 then the two AltGraph fixes as **one** commit, with the highlight fix
-concurrent. The three fixes are one ledger row, so the document is edited once.
+concurrent. The three fixes are one ledger row, so the document is edited once,
+and the outcome line and the ledger flip ride whichever of the two fix commits
+lands last.
 
 **Owns** --- `ts-src/src/terminal.ts`, `ts-src/src/terminal-input.test.ts`,
 `ts-src/src/terminal-core.ts` and its test, `ts-src/package.json`
-and `package-lock.json`. The two AltGraph fixes are not concurrent with each
+and `package-lock.json`, and `tools/doc-refs-allow.txt`, whose
+`ts-src/src/terminal-input.test.ts` entry the harness commit deletes
+as it creates the file. The two AltGraph fixes are not concurrent with each
 other: they share the new test file and the lock, which does not merge.
+**The claimant list for `ts-src/src/terminal.ts` lives here**,
+as `GameDefinition/index.html`'s does at 1.4, and it is every item that writes
+the file rather than only the ones that write this listener: 0.0, 0.1, 0.2, 1.1,
+1.2, 1.5, 2.2, 2.3 and R5 --- one holder at a time, and an item that finds
+itself writing the file without appearing here has a list to fix rather
+than a lock to take.
 
 **Done** --- `ts`, `docs`.
 
@@ -694,10 +799,14 @@ The highlight rule hands back nothing: the vitest case pins it.
 ```haskell
 data KeyDecision = KeyDecision
   { kdModifier       :: K.Modifier  -- squashed modifier to actually send
-  , kdKey            :: K.Key
   , kdResetChan      :: Bool        -- True for Esc
   , kdPreventBrowser :: Bool        -- True unless an allowed passthrough
   }
+-- No key field: nothing here remaps a key, and both consumers translate
+-- it before they ask (@Sdl.hs:341@, and @keyTranslateWeb@ in @lhKey@),
+-- so each already holds the value it sends. Dead keys reach only
+-- @kdPreventBrowser@; if a rule ever does remap, the field returns and
+-- this comment goes.
 
 decideKey :: K.Modifier -> K.Key -> KeyDecision
 decideWheel :: Double -> Maybe K.Key      -- WheelNorth/WheelSouth/Nothing
@@ -709,10 +818,14 @@ This subsumes four currently-independent copies of the same decisions:
 `lhKey`/`lhWheel`/`lhMouseUp`, `terminal.ts`'s
 `CTRL_PASSTHROUGH_KEYS`/`DEAD_KEYS` (the cross-language copy that produced
 the 11-of-13-DeadKeys bug), and `Sdl.hs`'s verbatim copy of the
-modifier-squash + Esc-reset block (`Sdl.hs:343-349`), which is replaced
+modifier-squash + Esc-reset block (`Sdl.hs:343-347,349`), which is replaced
 by a `decideKey` call that ignores `kdPreventBrowser` --- the module
-is frontend-universal, not web-specific. The browser-zoom passthrough
-(`C-+`/`C--`/`C-0`) stays allowlisted here; it coexists with 1.5's
+is frontend-universal, not web-specific. The two pieces are disjoint on purpose:
+`Sdl.hs:348`'s `p <- SDL.getAbsoluteMouseLocation` sits between them
+and **stays**, `Sdl.hs:350` consuming it, and cutting the block as one range
+leaves `p` unbound with the obvious repair deleting exactly the mouse-position
+behaviour Appendix C's first bullet records as a booby trap. The browser-zoom
+passthrough (`C-+`/`C--`/`C-0`) stays allowlisted here; it coexists with 1.5's
 `allFontsScale`.
 
 **`Wasm.hs` changes:**
@@ -776,35 +889,42 @@ leave `lhKey` async with `preventDefault` staying in TS, and record the ruling.
 Performed 2026-08-07: the record sits in the `Wasm.hs` changes bullet above,
 and it held, so the fallback is dead. Then `InputDecision` and its tasty tests
 with no consumer wired; then `Sdl.hs`'s verbatim squash/Esc block
-(`Sdl.hs:343-349`) replaced by a `decideKey` call that ignores
-`kdPreventBrowser` --- the smallest consumer, native, no FFI; then the `lhKey`
-rewrite with `terminal.ts` and `loader.ts` in the same commit and nothing else
-in it, as the ground rules require. The second and third are disjoint and could
-run concurrently once the first lands; they are serialized only so the signature
-change arrives alone. The outcome line, and the deletion
-of `Client/UI/Frontend/InputDecision.hs` and of this item's new
-`test/InputDecisionUnitTests.hs` entry from `tools/doc-refs-allow.txt`, ride
-the third.
+(`Sdl.hs:343-347,349`, the mouse read between them left alone) replaced
+by a `decideKey` call that ignores `kdPreventBrowser` --- the smallest consumer,
+native, no FFI; then the `lhKey` rewrite with `terminal.ts` and `loader.ts`
+in the same commit and nothing else in it, as the ground rules require.
+The second and third are disjoint and could run concurrently once the first
+lands; they are serialized only so the signature change arrives alone.
+The outcome line, and the deletion of `Client/UI/Frontend/InputDecision.hs`
+and of this item's new `test/InputDecisionUnitTests.hs` entry
+from `tools/doc-refs-allow.txt`, ride the third.
 
 **Owns** --- new
 `engine-src/Game/LambdaHack/Client/UI/Frontend/InputDecision.hs`
 and `test/InputDecisionUnitTests.hs`; `LambdaHack.cabal` and `test/Spec.hs`
 for their registration; `engine-src/Game/LambdaHack/Client/UI/Frontend/`'s
-`Sdl.hs` and `Wasm.hs`; `ts-src/src/terminal.ts`, `ts-src/src/loader.ts`,
-`ts-src/src/terminal-input.test.ts`; `tools/doc-refs-allow.txt`; and,
-in a commit of its own after the landing, `CLAUDE.md`'s frontend bullet, whose
-first module name this item delivers. It owns nothing
-in `docs/promptgetkey-hygiene.md`: that record's sec. 01 was rewritten
-onto `FrameM`'s pure section on 2026-09-04, when this item's own ruling (2)
-below made `InputDecision` an import cycle for `macroStep`, so there
-is no callout left for a landing to retire. Nothing else. The input-side
-`RawFrontend` contract cases the practice assigns here land
+`Sdl.hs` and `Wasm.hs`; `engine-src/Game/LambdaHack/Client/UI/Frontend.hs`,
+its export list only, carrying the re-export ruling (2) requires;
+`ts-src/src/terminal.ts`, `ts-src/src/loader.ts`,
+`ts-src/src/terminal-input.test.ts`; `tools/doc-refs-allow.txt`;
+`docs/wasm-frontend-unified-plan.md` --- the second and third commits shift
+the `Sdl.hs`, `terminal.ts` and `loader.ts` citations, so this item owes
+the citation-repair commit and its restamp; and, in a commit of its own after
+the landing, `CLAUDE.md`'s frontend bullet, whose first module name this item
+delivers. It owns nothing in `docs/promptgetkey-hygiene.md`: that record's sec.
+01 was rewritten onto `FrameM`'s pure section on 2026-09-04, when this item's
+own ruling (2) below made `InputDecision` an import cycle for `macroStep`,
+so there is no callout left for a landing to retire. Nothing else.
+The input-side `RawFrontend` contract cases the practice assigns here land
 in `test/InputDecisionUnitTests.hs` --- the contract harness file belongs
 to the contract item and is not created by this one. Across items:
 `LambdaHack.cabal` and `test/Spec.hs` are also written by 0.2 and 0.3, `Sdl.hs`
-by 0.2 and 2.1, `terminal.ts` by 0.0 and 0.2 --- one owner at a time, and 0.0
-lands first or is dropped, since the third commit rewrites the very listener
-it fixes.
+by 0.2 and 2.1, `Frontend.hs` by 0.2, 1.2, 2.1, 2.4, R3 and the two practices
+that rewrite its guard chains, `terminal.ts` by the list at 0.0 --- one owner
+at a time, and 0.0 lands first or is dropped, since the third commit rewrites
+the very listener it fixes. **The claimant list for `ts-src/src/loader.ts` lives
+here**, on the same footing as 0.0's for `terminal.ts`: 0.1, 1.2, 1.3, 1.5, 2.2,
+2.3, R4 and R5.
 
 **Done** --- `native` (stylish
 over `engine-src/Game/LambdaHack/Client/UI/Frontend/InputDecision.hs`,
@@ -845,7 +965,7 @@ the uniformity-diff review rule covers the SDL side.
 per-cell decision currently in `Dom.hs`'s `setChar` (`Dom.hs:251-273`): decode
 `AttrCharW32`, even-row `White`->`AltWhite`, glyph substitution (space->nbsp,
 dim floor->`'\x22C5'`), highlight->border and background color (per 0.0's rule).
-`Sdl.hs`'s `setSquareChar` (`Sdl.hs:645-669`) contains the *same* AltWhite
+`Sdl.hs`'s `setSquareChar` (`Sdl.hs:636-669`) contains the *same* AltWhite
 and floor-substitution rules (with a bitmap-font variant, `'\x0007'`), while
 `setMonoChar` (`Sdl.hs:603-624`) shares only the AltWhite rule --- which is also
 the honest statement of what each call site consumes. So the module is written
@@ -877,7 +997,16 @@ repo policy) that emits into `ts-src/src/generated/`:
 1. `palette.ts`: `PALETTE` / `HIGHLIGHT_TO_COLOR` / page-chrome colors
    from the real `colorToRGB`/`highlightToColor` (`Color` has no `Bounded` ---
    enumerate `[Black .. BrWhite]` explicitly; `Highlight` via
-   `[minBound .. maxBound]`).
+   `[minBound .. maxBound]`). One value the browser needs is reachable
+   from neither source: the `HighlightBackground` cell fill `#251F1F`, which
+   is `Sdl.hs:902`'s `greyRGBA` --- a third of `colorToRGBA BrBlack` by its own
+   comment, and carried by no `Color` constructor --- hand-copied today
+   at `Dom.hs:268` and `terminal-core.ts:99`, across two languages. It
+   is a highlight-rule output like the border colour beside it, so `CellStyle`
+   names it once, `Sdl.hs` reads it there in place of `greyRGBA`,
+   and the generator emits it from that name. Same reachability problem ruling
+   (4) meets over `cursorXhair`, different remedy: this one already has a home
+   in `CellStyle` and the art has none.
 2. `fixtures.json`: behavioral fixtures from `CellStyle.styleCell`
    over a representative input sample (floor bright/dim, space, ordinary glyph,
    even/odd row x `White`, every `Highlight`), plus `(i, w) -> (col, row)`
@@ -903,19 +1032,26 @@ a deployed artifact.
 by nobody; then the generator executable, `make gen-ts`, the committed
 `ts-src/src/generated/` files, `terminal-core.ts` consuming the generated
 palette and asserting `styledCell` against every fixture,
-and the regenerate-and-diff CI step; then `cursor.ts`, which is also 1.1's final
-form; then `Sdl.hs` adopting `CellStyle`, `colorToRGBA` derived
+and the regenerate-and-diff CI step; then the crosshair commit ruling (4)
+requires --- the ASCII-art alpha/BW pair out of `Sdl.hs` into an SDL-free pure
+module of its own under `engine-src/Game/LambdaHack/Client/UI/Frontend/`,
+`cursorXhair` reading it, and `cursor.ts` generated from it, which is also 1.1's
+final form; then `Sdl.hs` adopting `CellStyle`, `colorToRGBA` derived
 from `Color.colorToRGB`, and the `Sdl.hs:590` `punindex` fix, behind the bench
 gate. `gen-ts` must be a prerequisite target with its own shell, never an inline
 step in `build-ts`: that recipe sources `~/.ghc-wasm/env`, which points
 `CC`/`LD`/`AR` at wasi-sdk while leaving `cabal` and `ghc` native, so a native
 build inside it links with `wasm-ld` and fails. The outcome line,
-and the deletion of this item's eight `tools/doc-refs-allow.txt` entries ---
+and the deletion of this item's `tools/doc-refs-allow.txt` entries ---
 `CellStyle.hs`, `palette.ts`, `fixtures.json`, `cursor.ts`,
-`ts-src/src/generated/`, `make gen-ts`, plus the two it adds --- ride the last
-to land, which cannot precede the `cursor.ts` commit.
+`ts-src/src/generated/`, `make gen-ts`, `test/CellStyleUnitTests.hs`,
+`GameDefinition/gen-src/GenTsTables.hs`, and the crosshair module's, added
+under whatever name the executing session mints for it and before that name
+is written anywhere --- ride the last to land, which cannot precede
+the crosshair commit.
 
 **Owns** --- new `engine-src/Game/LambdaHack/Client/UI/Frontend/CellStyle.hs`,
+the crosshair-art module beside it that ruling (4) requires,
 `test/CellStyleUnitTests.hs`, `GameDefinition/gen-src/GenTsTables.hs`,
 `ts-src/src/generated/palette.ts`, `ts-src/src/generated/fixtures.json`
 and `ts-src/src/generated/cursor.ts`; modified `LambdaHack.cabal`,
@@ -923,7 +1059,12 @@ and `ts-src/src/generated/cursor.ts`; modified `LambdaHack.cabal`,
 today, without which importing `fixtures.json` fails `tsc --noEmit`),
 `ts-src/src/terminal-core.ts` and its test, `ts-src/src/terminal.ts`,
 `engine-src/Game/LambdaHack/Client/UI/Frontend/Sdl.hs`,
-`.github/workflows/lint-and-test-suites.yml`, `tools/doc-refs-allow.txt`, and,
+`engine-src/Game/LambdaHack/Client/UI/Frontend.hs` (export list only,
+re-exporting both new modules per 0.1's ruling (2)),
+`.github/workflows/lint-and-test-suites.yml`, `tools/doc-refs-allow.txt`,
+`docs/wasm-frontend-unified-plan.md` --- the last commit rewrites `Sdl.hs:590`,
+`Sdl.hs:603-624`, `Sdl.hs:636-669` and `Sdl.hs:904-922`, all cited here,
+so this item owes the citation-repair commit and its restamp --- and,
 in a commit of its own after the landing, `CLAUDE.md` --- the frontend bullet,
 whose second module name this item delivers, and the Gotchas bullet's "awaits
 its scheduled fix" for `Sdl.hs:590`, which this item's last commit retires.
@@ -937,7 +1078,8 @@ carries no haddock examples, the doctest recipe naming exactly four components,
 in which a fifth's examples would run nowhere. The four commits are strictly
 serial: each consumes what the previous adds, and the first and last both encode
 the highlight rule. `Sdl.hs` here is not concurrent with 0.1's second commit
-or with 2.1, and `terminal-core.ts` not with 0.0.
+or with 2.1, `terminal-core.ts` not with 0.0, `terminal.ts` per the list at 0.0,
+and `Frontend.hs` per the claimants 0.1's Owns names.
 
 **Done** --- `native`, `ts`, `wasm`, `docs`, plus `make gen-ts` &&
 `git diff --exit-code ts-src/src/generated` && `haskell-ci regenerate` &&
@@ -950,11 +1092,10 @@ under `xvfb-run`.
 pointer is the claim and only an eye settles it. The bench gate on the `Sdl.hs`
 commit stopped handing back a display when `xvfb-run` arrived: the pair runs
 in-session now, as 2.1's block records --- llvmpipe numbers comparing only
-against each other, the game redirecting its own stdout
-to `~/.LambdaHack/stdout.txt` whenever stdout is not a terminal, so each report
-is harvested between runs --- and a run on the real display is handed back only
-if the llvmpipe verdict is challenged, per Decide first (3)'s ruling. Done's
-substitutes are the fixture equality between `CellStyle.styleCell`
+against each other, and each report harvested between runs through the stdout
+redirect `CLAUDE.md` describes --- and a run on the real display is handed back
+only if the llvmpipe verdict is challenged, per Decide first (3)'s ruling.
+Done's substitutes are the fixture equality between `CellStyle.styleCell`
 and `styledCell` --- which is the whole correctness claim, the bench gate being
 about cost --- and `cabal test`'s SDL cases, which run font discovery
 and decoding but never the renderer.
@@ -1026,26 +1167,33 @@ and the commit deletes the `run-wasm-game.mjs` entry
 from `tools/doc-refs-allow.txt` as the file appears. The standing half --- every
 new FFI declaration lands with its coverage case --- is a review rule,
 not a commit; by its own size cell 0.3 retires with the campaign rather
-than acquiring a hash, so it takes no outcome line. Its one
-`tools/doc-refs-allow.txt` entry therefore leaves with the export-half commit
-named above rather than with a landing, which is the one artifact deletion
-in this plan that no outcome line gates.
+than acquiring a hash, so it takes no outcome line. Its two
+`tools/doc-refs-allow.txt` entries therefore leave with the commits that create
+their files rather than with a landing --- `test/FfiCoverageUnitTests.hs`
+with the import half, `run-wasm-game.mjs` with the export half --- and they
+are the two artifact deletions in this plan that no outcome line gates.
 
 **Owns** --- `ts-src/run-wasm-test.mjs`, the new `ts-src/run-wasm-game.mjs`
 (created here as 3.2's seed; 3.2 grows it into the benchmark driver), new
 `test/FfiCoverageUnitTests.hs`, `test/Spec.hs`, `LambdaHack.cabal`,
-`tools/doc-refs-allow.txt` (the `run-wasm-game.mjs` entry),
-and `ts-src/package.json` and `package-lock.json` (lz-string as a devDependency
---- it must come from npm, never from the sibling checkout, whose
-`lz-string*.js` is a deployed artifact). Nothing else. The two commits
-are serial: the export half's driver imports the setup and stubs the import half
-installs --- defined once, shared by both drivers rather than copied. Across
-items: not concurrent with 0.0, which writes the same lock file, and it does
-not merge.
+`tools/doc-refs-allow.txt` (the `test/FfiCoverageUnitTests.hs`
+and `run-wasm-game.mjs` entries), `ts-src/package.json` and `package-lock.json`
+(lz-string as a devDependency --- it must come from npm, never from the sibling
+checkout, whose `lz-string*.js` is a deployed artifact),
+and `docs/wasm-frontend-unified-plan.md`: the import half rewrites
+`run-wasm-test.mjs:34-67`, cited here together with that file's line count,
+so this item owes the citation-repair commit and its restamp. Nothing else.
+The two commits are serial: the export half's driver imports the setup and stubs
+the import half installs --- defined once, shared by both drivers rather
+than copied. Across items: not concurrent with 0.0, which writes the same lock
+file, and it does not merge. **The claimant list for `ts-src/run-wasm-game.mjs`
+lives here**, the file being created here: 0.3, 1.2, 1.5 and 3.2, each adding
+its own coverage case --- one holder at a time, as for `terminal.ts` at 0.0.
 
 **Done** --- `native` (stylish over `test/FfiCoverageUnitTests.hs`), `wasm`,
-plus, on the export half, `make build-wasm` and a run of the seeded driver
-against the fresh reactor, nonzero on a missing export or an absent frame.
+`docs`, plus, on the export half, `make build-wasm` and a run of the seeded
+driver against the fresh reactor, nonzero on a missing export or an absent
+frame.
 
 **Hands back** --- *judgement*, and only for the standing half: a reviewer
 confirms each FFI-touching commit carries its case. The substitute in Done
@@ -1112,7 +1260,6 @@ to `cursor: url(<data-URI>) 13 13, crosshair` --- the keyword staying
 as the fallback. Pixel-parity with the native pointer, sourced from the one
 canonical definition. Verify by hovering, both before and after the 0.2 upgrade.
 
-
 **Split** --- two commits, in this order: the `crosshair` keyword line first,
 then the generated SVG data-URI form once 0.2 has emitted `cursor.ts`.
 The keyword commit takes **no** outcome line and leaves the row live, per
@@ -1126,7 +1273,7 @@ the ledger row. Neither deletes a `tools/doc-refs-allow.txt` entry ---
 this one-liner obliges a citation repair and a restamp. `terminal.ts`
 is contended by 1.2 and 1.5, so the three serialize; take 1.1 first, it clears
 the file fastest. `../lambdahack.github.io` is redeployed by **Done**,
-not owned, and that command needs unsandboxed Bash.
+not owned.
 
 **Done** --- `ts`, `wasm`, `deploy`, `docs`, plus
 `grep -qF crosshair ../lambdahack.github.io/bundle.js`.
@@ -1185,7 +1332,6 @@ loaded rather than a fallback face. **Forward dependency (R6):** after Phase 2
 lands, this rasterizer must also draw the overlay layers, or screenshots
 silently regress to map-only --- tracked in 2.5's checklist.
 
-
 **Split** --- three commits. (1) The filename helper plus its tasty test,
 with `Sdl.hs` switched onto it: native only, no TS and no wasm in the diff. (2)
 The pure rasterizer --- the neutral draw-op module holding the op types
@@ -1205,19 +1351,23 @@ line and the ledger flip.
 
 **Owns** --- `engine-src/Game/LambdaHack/Client/UI/Frontend/Sdl.hs`
 and `Wasm.hs` beside it, the helper's home module
-under `engine-src/Game/LambdaHack/Client/UI/Frontend/`, a new tasty module
-registered in `test/Spec.hs` and `LambdaHack.cabal`,
+under `engine-src/Game/LambdaHack/Client/UI/Frontend/`,
+`engine-src/Game/LambdaHack/Client/UI/Frontend.hs` for the re-export that module
+reaches its consumers through (0.1's ruling (2), which binds every new module
+here), a new tasty module registered in `test/Spec.hs` and `LambdaHack.cabal`,
 `ts-src/src/screenshot-core.ts` and its test, the neutral draw-op module they
 consume, `ts-src/src/terminal.ts`, `ts-src/src/loader.ts`,
 `ts-src/run-wasm-game.mjs`, `tools/doc-refs-allow.txt`,
 and `docs/wasm-frontend-unified-plan.md` --- the `Sdl.hs` citations,
 `Wasm.hs:79`, `loader.ts:56`, `terminal.ts:135` and `terminal.ts:203` all shift.
-Cannot run concurrently with 1.5: four shared files, three of them at the same
-lines --- `startup`'s body and the `foreign import javascript` block
+Cannot run concurrently with 1.5: they share `Wasm.hs`, `ts-src/src/loader.ts`,
+`ts-src/src/terminal.ts` and `ts-src/run-wasm-game.mjs`, three of those
+at the same lines --- `startup`'s body and the `foreign import javascript` block
 in `Wasm.hs`, `loader.ts`'s `declare global` and its `globalThis.lh*` wiring,
-`terminal.ts`'s `Terminal` interface and returned object --- nor with 1.1, which
-writes `terminal.ts`. `../lambdahack.github.io` is redeployed by **Done**,
-not owned, and that command needs unsandboxed Bash.
+`terminal.ts`'s `Terminal` interface and returned object. The claimant lists
+for the three shared TS files are at 0.0, 0.1 and 0.3, and this item is on all
+three --- 1.1 among the `terminal.ts` claimants is the other near neighbour.
+`../lambdahack.github.io` is redeployed by **Done**, not owned.
 
 **Done** --- `native` (stylish
 over `engine-src/Game/LambdaHack/Client/UI/Frontend/*.hs`, `test/*.hs`), `ts`,
@@ -1275,22 +1425,34 @@ scaler makes). Factor any pure scale-computation helper into a `*-core.ts`
 for vitest; the `requestFullscreen` call itself is a run-the-game check (jsdom
 can't).
 
+**Split** --- two commits. The button, the scaling helper and its vitest,
+with `loader.ts`'s one import and call; then the banner commit this item's
+landing owes under 1.4's rule, the "fullscreen" clause coming off
+`GameDefinition/index.html` with only that phrase in the alternation. The second
+carries the outcome line and flips the ledger row; the two
+`tools/doc-refs-allow.txt` entries leave with the first, which creates the files
+they name.
 
 **Owns** --- `GameDefinition/index.html`, `ts-src/src/fullscreen-core.ts`
 and `ts-src/src/fullscreen-core.test.ts`, the one import and one call they need
-in `ts-src/src/loader.ts`, `tools/doc-refs-allow.txt` (its two entries go
-in the same commit that creates the files),
+in `ts-src/src/loader.ts`, `tools/doc-refs-allow.txt` (its two entries leave
+with the commit that creates the files),
 and `docs/wasm-frontend-unified-plan.md` --- the import shifts `loader.ts:56`,
 cited twice, so this item is not citation-safe either. Not concurrent with 1.4,
 which rewrites the same `<table id="banner">` region, nor with 1.5, which
-rewrites the `#screen` rule's scaling-blur comment, nor with 1.2 or 1.5
-on `loader.ts`; where those hold `loader.ts`, hand them the import as a request
-rather than writing it here. `../lambdahack.github.io` is redeployed
-by **Done**, not owned, and that command needs unsandboxed Bash.
+rewrites the `#screen` rule's scaling-blur comment; `index.html`'s claimant list
+is 1.4's and `loader.ts`'s is 0.1's, and this item is on both. Where another
+claimant holds `loader.ts`, hand it the import as a request rather than writing
+it here. `../lambdahack.github.io` is redeployed by **Done**, not owned.
 
 **Done** --- `ts`, `wasm`, `deploy`, `docs`, plus
 `grep -qF Fullscreen ../lambdahack.github.io/index.html` &&
-`grep -qF fullscreenchange ../lambdahack.github.io/bundle.js`.
+`grep -qF fullscreenchange ../lambdahack.github.io/bundle.js` and, on the banner
+commit, `! grep -qE 'fullscreen' ../lambdahack.github.io/index.html` --- which
+bites only if the button's markup spells the word nowhere in lower case,
+so the label is capitalised and no id, class or attribute of the button may
+be `fullscreen`; a session that wants one renames it rather than weakening
+the grep.
 
 **Hands back** --- *display*: that the page really enters fullscreen,
 that the scaled grid is centred and aspect-correct rather than clipped,
@@ -1323,20 +1485,28 @@ aren't persistent (they are, via `WasmFile.hs`/localStorage) and will go staler
 as features land ("For proportional fonts, fullscreen, and persistent save
 games, use the native binary"). Update the text as each feature ships.
 The "savefiles are prone to corruption" caveat stays until R1 addresses it.
-(The GHCJS-era page's community features are deliberately not restored,
-and the page `<title>` stays hardcoded --- Appendix B.)
-
+**The page is not the only one**: the `#status` div opens "from README:"
+and quotes `README.md`'s "Installation of the sample game from binary archives"
+paragraph, so the square-font and savefile-corruption sentences are in two
+files, and this item's rule binds both --- a clause deleted from the page
+is deleted from the README in the same commit. (The GHCJS-era page's community
+features are deliberately not restored, and the page `<title>` stays hardcoded
+--- Appendix B.)
 
 **Split** --- recurring by design: one commit per capability landing, each
 deleting only the clause its feature falsified --- 1.3 for "fullscreen", 2.4
-for "proportional fonts" and for the `#status` div's "limited to the square
-font", R1 for "Savefiles are prone to corruption", R5 for "runs rather slowly"
-once its bars are cleared. Each runs the **Done** line below with only its own
-phrase in the alternation. No commit carries an outcome line and the ledger row
-never flips: 1.4 is a standing item and retires with the campaign. It deletes
-no `tools/doc-refs-allow.txt` entry.
+for "proportional fonts" and for the `#status` div's and the README's "limited
+to the square font", R1 for "Savefiles are prone to corruption", R5 for "runs
+rather slowly" once its bars are cleared. One commit belongs to no landing
+and can be taken today: "and persistent save games" is already false ---
+persistence works, via `WasmFile.hs`, and Out of scope says so --- so no feature
+will ever falsify it and nothing else in this Split reaches it. Each runs
+the **Done** line below with only its own phrase in the alternation. No commit
+carries an outcome line and the ledger row never flips: 1.4 is a standing item
+and retires with the campaign. It deletes no `tools/doc-refs-allow.txt` entry.
 
-**Owns** --- `GameDefinition/index.html`,
+**Owns** --- `GameDefinition/index.html`, `README.md` (the browser paragraph
+the `#status` div quotes, and nothing else in that file),
 and `docs/wasm-frontend-unified-plan.md` wherever this item's own body quotes
 the banner: 1.4 is `open -- standing`, so a quote that no longer matches
 the page is an error to fix, not drift to leave alone. Single-writer
@@ -1344,12 +1514,18 @@ on `index.html`, and the list is every item that writes the file, not only
 the ones that write the banner --- 1.3 adds its button to the same
 `<table id="banner">`, 1.5 rewrites the `#screen` comment and 2.2 the `#screen`
 positioning context beside it, R5 deletes the "runs rather slowly" clause when
-its bars are cleared, and 2.4's and R1's banner commits land under this item's
-rule --- so none of them may be in flight together. `../lambdahack.github.io`
-is redeployed by **Done**, not owned, and that command needs unsandboxed Bash.
+its bars are cleared, R4 writes the file if its knobs get on-page documentation,
+and 2.4's and R1's banner commits land under this item's rule --- so none
+of them may be in flight together. `README.md`'s claimants are the subset
+that touches the quoted paragraph: this item, 2.4, R1 and R5.
+`../lambdahack.github.io` is redeployed by **Done**, not owned.
 
 **Done** --- `wasm`, `deploy`, `docs`, plus
-`! grep -qE 'proportional fonts|limited to the square font' ../lambdahack.github.io/index.html`.
+`! grep -qE 'proportional fonts|limited to the square font' ../lambdahack.github.io/index.html`
+&& `! grep -qE 'limited to the square font' README.md`, the same alternation
+over each page carrying the clause --- the deployed one, so a forgotten
+`make build-ts` fails the first, and the source `README.md`, which no build
+deploys.
 
 **Hands back** --- *judgement*: whether the replacement sentence is true
 of the shipped build. No display is needed and no command decides it --- a grep
@@ -1357,18 +1533,19 @@ proves a stale phrase is gone, never that what replaced it is accurate,
 and the `#status` div carries two further claims of the same kind whose truth
 is owned by 2.4 and R1 rather than by whoever edits the page. The substitute
 gate in **Done** is exactly that absence grep, run over the deployed
-`index.html` rather than the source, so a forgotten `make build-ts` fails it.
+`index.html` rather than the source, so a forgotten `make build-ts` fails it ---
+and over `README.md`, which is source because no build deploys it.
 
 **Decide first** --- nothing, ruled on 2026-08-07: the banner
 is a post-condition of every capability item. Each such item's landing sequence
 ends with its own banner commit under this item's rule --- deleting only
 the clause its feature falsified, running this item's Done with its own phrase
 in the alternation --- so the page stops lying the day the feature ships,
-and `index.html` joins 2.4's and R1's **Owns** (1.3 and 1.5 already carry it).
-The coordination cost was already being paid: the single-writer constraints
-on `index.html` stand regardless, and each clause deletion is disjoint,
-so no two landings contend for the same words. Sequencing's "banner last"
-reading is struck.
+and `index.html` joins 2.4's and R1's **Owns** (1.3 and 1.5 already carry it),
+`README.md` alongside it wherever the clause stands in both. The coordination
+cost was already being paid: the single-writer constraints on `index.html` stand
+regardless, and each clause deletion is disjoint, so no two landings contend
+for the same words. Sequencing's "banner last" reading is struck.
 
 ### 1.5 `allFontsScale` in the browser, alongside browser zoom
 
@@ -1385,20 +1562,15 @@ the way SDL accepts FreeType's. Auxiliary (prop/mono) font sizes multiply
 by the scale too, which 2.2's font wiring already specifies.
 
 Mechanics: `sallFontsScale` is already in the embedded config/options; pass
-it to TS in the one extensible startup call ruled on 2026-08-07 for 2.2's font
-wiring --- a Haskell-side `unsafe` import of a `globalThis` hook
-(the established `lhSubmitFrame` direction: Haskell pushes when it owns
-the data), named for the general job rather than any one field, carrying
-a single JSON payload with named fields, 2.2's fonts and this item's scale,
-unknown fields ignored; whichever item lands first creates the call
-and the other fills its field, so no signature ever changes --- and set the grid
-container's `font-size` accordingly. Cell metrics stay consistent because 2.2
-imposes integer cell metrics on the grid (its (a) ruling) rather than hardcoding
-16px. Until R4 lands there is no way for a *player* to change the value
-in the browser (no config file, no argv), so the full player-facing feature
-is `1.5 + R4 (?allFontsScale=)`; 1.5 alone makes the engine-side value honored
-instead of silently ignored.
-
+it to TS in the one extensible startup call, which 2.2 specifies
+under "The startup payload, specified here" and to which this item adds one
+named field --- whichever of the two lands first creates the call and the other
+fills its field --- and set the grid container's `font-size` accordingly. Cell
+metrics stay consistent because 2.2 imposes integer cell metrics on the grid
+(its (a) ruling) rather than hardcoding 16px. Until R4 lands there is no way
+for a *player* to change the value in the browser (no config file, no argv),
+so the full player-facing feature is `1.5 + R4 (?allFontsScale=)`; 1.5 alone
+makes the engine-side value honored instead of silently ignored.
 
 **Split** --- two commits: the startup channel and the `font-size` it sets
 (`Wasm.hs` binding the `ClientOptions` its `startup` discards today, `loader.ts`
@@ -1413,44 +1585,49 @@ it is not a partial landing of this item. Neither commit deletes
 a `tools/doc-refs-allow.txt` entry.
 
 **Owns** --- `engine-src/Game/LambdaHack/Client/UI/Frontend/Wasm.hs`,
-`ts-src/src/loader.ts`, `ts-src/src/terminal.ts`, `ts-src/run-wasm-test.mjs`,
-`GameDefinition/index.html` (only the `#screen` rule's blur comment, which
-a scaled `font-size` no longer wholly describes)
-and `docs/wasm-frontend-unified-plan.md` --- `Wasm.hs:79`, `loader.ts:56`,
-`terminal.ts:135` and `terminal.ts:203` all shift. Cannot run concurrently
-with 1.2 (four shared files, three at the same lines), with 1.1 (the same
-`container.style.*` batch in `buildGrid`), or with 1.3 and 1.4 on `index.html`.
-No ordering against 1.3 survives its ruling: that helper measures the live grid
-and assumes no cell size. `../lambdahack.github.io` is redeployed by **Done**,
-not owned, and that command needs unsandboxed Bash.
+`ts-src/src/loader.ts`, `ts-src/src/terminal.ts`, `ts-src/run-wasm-game.mjs` ---
+the reactor driver its Split writes, seeded by 0.3's export half and grown
+by 3.2, so not concurrent with either --- `GameDefinition/index.html` (only
+the `#screen` rule's blur comment, which a scaled `font-size` no longer wholly
+describes) and `docs/wasm-frontend-unified-plan.md` --- `Wasm.hs:79`,
+`loader.ts:56`, `terminal.ts:135` and `terminal.ts:203` all shift. Cannot run
+concurrently with 1.2 --- the four shared files its **Owns** names, three
+of them at the same lines --- nor with 1.1, which writes the same
+`container.style.*` batch in `buildGrid`; the claimant lists for `terminal.ts`,
+`loader.ts`, `ts-src/run-wasm-game.mjs` and `index.html` are at 0.0, 0.1, 0.3
+and 1.4, and this item is on all four. No ordering against 1.3 survives
+its ruling: that helper measures the live grid and assumes no cell size.
+`../lambdahack.github.io` is redeployed by **Done**, not owned.
 
 **Done** --- `native` (stylish
 over `engine-src/Game/LambdaHack/Client/UI/Frontend/*.hs`), `ts`, `wasm`,
-`deploy`, `docs`.
+`deploy`, `docs`, plus a run of `ts-src/run-wasm-game.mjs` against a fresh
+reactor: `make test-wasm` drives the other driver and never enters `Wasm.hs`,
+so nothing else in this list executes the coverage case the Split adds.
 
-**Hands back** --- *display*: that the grid renders larger. The item body
-carries no `Verify:` step --- alone among 1.1, 1.2 and 1.3 --- and the gap
-is not one a browser channel would close, because a session cannot even
-*produce* the interesting case: `allFontsScale = 1.0` sits
+**Hands back** --- *display*: that the grid renders larger. The item body says
+how to check nothing --- alone among 1.1, 1.2 and 1.3, whose bodies each name
+a check, labelled `Verify:` at 1.2 and in plain prose at the other two ---
+and the gap is not one a browser channel would close, because a session cannot
+even *produce* the interesting case: `allFontsScale = 1.0` sits
 in `config.ui.default`, which is embedded at compile time via `rcfgUIDefault`,
 and the browser has no argv and no config file until R4, so exercising any other
 scale means a throwaway edit there plus a full wasm rebuild --- an edit
 that must not be committed, since it changes native behavior too. The substitute
-gate in **Done** is `make test-wasm`, which link-checks the new import string
-and nothing more.
+gates in **Done** are `make test-wasm`, which link-checks the new import string,
+and the reactor-driver run, which proves the startup payload arrives carrying
+this item's field.
 
-**Decide first** --- nothing, ruled on 2026-08-07: the startup call is the one
-extensible payload the Mechanics paragraph now specifies --- Haskell pushes
-through a `globalThis` hook, one JSON `JSString`, named fields for 2.2's fonts
-and this item's scale, creator being whichever item lands first ---
-so a scale-only `lhSetFontScale` is refused and no later field forces
-the signature change the ground rules forbid; the payload's encoding is 2.2's
-(b) ruling, shared. One thing that looked like a decision and is not: SDL's
-"bitmap at 1.0, scalable otherwise" branch (`Sdl.hs:169-183`) needs no browser
-counterpart, because the `dejavuBold` fontset points both `fontMapScalable`
-and `fontMapBitmap` at `16x16xwScalable`, i.e. at the same `16x16xw.woff`
-the page already loads --- so `16 * scale` px on the deployed font is correct
-and deploys no new font.
+**Decide first** --- nothing, ruled on 2026-08-07: this item's scale is a named
+field of the one extensible startup payload, so a scale-only `lhSetFontScale`
+is refused and no later field forces the signature change the ground rules
+forbid. The payload itself --- hook, encoding, extensibility --- is specified
+at 2.2 and deliberately not restated here. One thing that looked like a decision
+and is not: SDL's "bitmap at 1.0, scalable otherwise" branch (`Sdl.hs:169-183`)
+needs no browser counterpart, because the `dejavuBold` fontset points both
+`fontMapScalable` and `fontMapBitmap` at `16x16xwScalable`, i.e. at the same
+`16x16xw.woff` the page already loads --- so `16 * scale` px on the deployed
+font is correct and deploys no new font.
 
 ---
 
@@ -1564,11 +1741,17 @@ data LayoutMetrics = LayoutMetrics
   }
   deriving (Show, Eq)
 
--- | The only constructor, so that "map font determines cell size for all
--- others" (@Sdl.hs:183-184@) cannot come apart in a consumer. @Sdl.hs@
--- passes half the loaded map font's size, that font having been opened at
--- a point size already multiplied by @sallFontsScale@ (@Sdl.hs:152@); the
--- browser passes half its measured grid box.
+-- | The only constructor exported, the data constructor staying inside the
+-- module as 'PropCursor'\'s does, so that "map font determines cell size
+-- for all others" (@Sdl.hs:183-184@) cannot come apart in a consumer or in
+-- a test fixture. @Sdl.hs@ passes half the loaded map font's size, that
+-- font having been opened at a point size already multiplied by
+-- @sallFontsScale@ (@Sdl.hs:152@); the browser passes half its measured
+-- grid box. @width@ is the same @rwidth coscreen@ the caller passes to
+-- 'layOutFrame' --- the one quantity this record shares with the
+-- metric-free half, and two different values there would leave the line
+-- filter and the pen clamping against different screens, so a consumer
+-- binds it once and uses that binding twice.
 mkLayoutMetrics :: Int -> Int -> LayoutMetrics
 mkLayoutMetrics halfSize width =
   assert (halfSize > 0 && width > 1)
@@ -1889,12 +2072,17 @@ so the field list has one definition. Four properties fix it:
    per `FrameLayout` field. Making the sections structural is what lets
    a decoder obey the layer rule without knowing it, and it is the only shape
    that carries the two cell layers at all.
-2. **Cell layers ship raw `AttrCharW32` words**: per run, layer tag, row, col,
-   count, then the already-cut cells verbatim. `fontKind|colorIdx` plus
-   codepoints would silently drop `bg`, which the square layer needs three times
-   over (`Sdl.hs:644-646,657-659,669`); an `AttrCharW32` already packs char, fg
-   and bg into one word, and `terminal-core.ts` decodes exactly that word
-   for the map grid today. Lossless *and* less encoder work.
+2. **Cell layers ship raw `AttrCharW32` words**: per run, row, col, count,
+   then the already-cut cells verbatim. No layer tag on the wire --- the section
+   carries it, as it carries the face's absence from the chunk header in item 3:
+   `layOutSquare` fills one section and `layOutMono` the other, so the encoder
+   would be writing a constant the decoder can read off the section it is in.
+   `CellRun` keeps its `crLayer` in Haskell, the marker run escaping its section
+   and the painter reading its pitch through `cellPitch`. `fontKind|colorIdx`
+   plus codepoints would silently drop `bg`, which the square layer needs three
+   times over (`Sdl.hs:644-646,657-659,669`); an `AttrCharW32` already packs
+   char, fg and bg into one word, and `terminal-core.ts` decodes exactly
+   that word for the map grid today. Lossless *and* less encoder work.
 3. **The prop chunk header splits into three fields**, and on the wire each
    is a word of its own, per 2.3's no-sub-word-packing ruling. Layer
    is no longer part of it, the layers being separate sections, so the face
@@ -1998,12 +2186,13 @@ so that `Sdl.hs:691-692`'s assertion holds by construction:
 - *transport round trip*: `decode . encode == id` on generated `FrameLayout`s
   (2.3).
 
-Non-vacuity, per the repo's rule: each of the six placement rows must be shown
-to fail when its own line of `propFit` is perturbed --- drop the `- lmBoxSize`,
-flip the `not pcAllSpace`, weaken the `>=` to `>` --- and the proof recorded
-next to the table, since a table built on a wrong `remaining` passes six ways
-at once. The refactor's own proof stays the native one: `make test-medium`,
-a `make frontendCrawl` look, and before and after `make bench`.
+Non-vacuity, per the repo's rule: each of the eight placement rows must be shown
+to fail when the line of `propCutoff` or `propFit` it exercises is perturbed ---
+drop the `- lmBoxSize`, flip the `not pcAllSpace`, weaken the `>=` to `>` ---
+and the proof recorded next to the table, since a table built on a wrong
+`remaining` passes several ways at once. The refactor's own proof stays
+the native one: `make test-medium`, a `make frontendCrawl` look, and before
+and after `make bench`.
 
 **Split** --- four commits. (1) the module and its tests with no consumer:
 `engine-src/Game/LambdaHack/Client/UI/Frontend/OverlayLayout.hs`,
@@ -2026,6 +2215,8 @@ as the landing record.
 **Owns** --- `engine-src/Game/LambdaHack/Client/UI/Frontend/OverlayLayout.hs`,
 `test/OverlayLayoutUnitTests.hs`, `test/Spec.hs`, `LambdaHack.cabal`,
 `engine-src/Game/LambdaHack/Client/UI/Frontend/Sdl.hs`,
+`engine-src/Game/LambdaHack/Client/UI/Frontend.hs` (export list only,
+re-exporting the new module per 0.1's ruling (2)),
 `docs/wasm-frontend-unified-plan.md`, `CLAUDE.md`
 and `tools/doc-refs-allow.txt`. It does not write the wire encoder: that lands
 in the same module file under 2.3, so the two items are never in flight
@@ -2096,12 +2287,24 @@ the Haskell side owns *which* fonts at *what size* (from `sfonts` / the chosen
 fontset, sizes multiplied by `sallFontsScale` exactly as `Sdl.hs:loadFontFile`
 does), the web side owns the *bytes* (static `.woff` assets). Concretely:
 at startup `Wasm.hs` resolves the chosen fontset and passes file names +
-effective px sizes to JS in the one-shot extensible setup call --- one JSON
-`JSString`, the payload 1.5's scale field shares, per this item's (b) ruling; TS
-declares them with the `FontFace` API from `./<filename>` URLs. **TS hardcodes
-nothing about fonts**; `make build-ts` is extended to copy the referenced
+effective px sizes to JS in the one-shot setup call specified below; TS declares
+them with the `FontFace` API from `./<filename>` URLs. **TS hardcodes nothing
+about fonts**; `make build-ts` is extended to copy the referenced
 `GameDefinition/fonts/*.ttf.woff` into the pages checkout (only `16x16xw.woff`
 is deployed today).
+
+**The startup payload, specified here.** 1.5 shares this call and points here
+for its shape, as 2.3 points at 2.1 for the wire payload's, so the field list
+has one definition. One call, named for the general job and not for any one
+field: a Haskell-side `unsafe` import of a `globalThis` hook --- the established
+`lhSubmitFrame` direction, Haskell pushing when it owns the data --- taking
+a single JSON `JSString`, `JSON.parse` on the JS side against a declared TS
+interface, unknown fields ignored. Its fields are named, this item's fonts
+and 1.5's `allFontsScale` being the two the plan needs; whichever item lands
+first creates the call and the other adds its field, so no signature ever
+changes and a field-specific `lhSetFontScale` is refused. The boundary is stated
+so the confusion dies: 2.3's string ban is about per-frame cost, and a one-shot
+startup call is exactly where JSON is right.
 
 Known browser pitfalls to handle here, not discover in 2.4:
 
@@ -2130,24 +2333,25 @@ the pre-Phase-2 frame-timing baseline, before (1) merges: drive the page
 in-session under the Xvfb setup with the throwaway `performance.now()` probe
 applied, never committed, and append the number, its protocol and the probe's
 diff to Phase 2's intro --- no code lands here, and (1) must not merge without
-the record standing. Performed 2026-08-07: the record stands at the intro,
+the record standing. Performed 2026-08-07 and re-taken 2026-09-04, when a replay
+orphaned the commit its anchor named: the record stands at the intro,
 so this gate is already satisfied. (1) the font wiring: `Wasm.hs`'s one-shot
-setup import --- the extensible call 1.5 shares, one JSON `JSString` with named
-fields per this item's (b) ruling --- its `globalThis` hook in `loader.ts`,
-the `FontFace` declarations in `terminal.ts`, and the `Makefile` copy
-of the referenced `GameDefinition/fonts/*.ttf.woff` into the pages checkout.
-It depends on nothing else in Phase 2 --- `sfonts` and `schosenFontset`
-are already populated in the browser build --- so it lands first and unblocks
-1.5, which names it as its dependency. (2) `ts-src/src/overlay-core.ts`'s
-`propCutoff`/`propFit` twin and its vitest table; sec. 2.1 gives both functions
-as complete Haskell bodies, so it can be *written* before 2.1 lands, but it may
-only *land* once 0.2's generator emits the branch-complete table, hand-written
-fixtures being forbidden here. (3) the canvas shell: the absolutely-positioned
-`<canvas>`, the devicePixelRatio-sized backing store, the imposed integer cell
-size with its one-cell verify-measurement (the (a) ruling), and the draw-command
-core all three of 2.1's sections pass through --- reached through the shared
-entry point 1.2's draw-op module defines, R6's criterion. (4) the outcome line
-naming (3)'s hash, the ledger flip, and the deletion of `overlay-core.ts`
+setup import --- the payload specified in the body, which 1.5 shares ---
+its `globalThis` hook in `loader.ts`, the `FontFace` declarations
+in `terminal.ts`, and the `Makefile` copy of the referenced
+`GameDefinition/fonts/*.ttf.woff` into the pages checkout. It depends on nothing
+else in Phase 2 --- `sfonts` and `schosenFontset` are already populated
+in the browser build --- so it lands first and unblocks 1.5, which names
+it as its dependency. (2) `ts-src/src/overlay-core.ts`'s `propCutoff`/`propFit`
+twin and its vitest table; sec. 2.1 gives both functions as complete Haskell
+bodies, so it can be *written* before 2.1 lands, but it may only *land* once
+0.2's generator emits the branch-complete table, hand-written fixtures being
+forbidden here. (3) the canvas shell: the absolutely-positioned `<canvas>`,
+the devicePixelRatio-sized backing store, the imposed integer cell size
+with its one-cell verify-measurement (the (a) ruling), and the draw-command core
+all three of 2.1's sections pass through --- reached through the shared entry
+point 1.2's draw-op module defines, R6's criterion. (4) the outcome line naming
+(3)'s hash, the ledger flip, and the deletion of `overlay-core.ts`
 and `overlay-core.test.ts` from `tools/doc-refs-allow.txt`.
 
 **Owns** --- `ts-src/src/overlay-core.ts`, `ts-src/src/overlay-core.test.ts`,
@@ -2164,13 +2368,12 @@ the generator here, or two sessions edit one executable.
 
 **Done** --- `native` (stylish
 over `engine-src/Game/LambdaHack/Client/UI/Frontend/Wasm.hs`), `ts`, `wasm`,
-`deploy`, plus `test -f ../lambdahack.github.io/DejaVuLGCSans-Bold.ttf.woff` &&
+`deploy`, `docs`, plus
+`test -f ../lambdahack.github.io/DejaVuLGCSans-Bold.ttf.woff` &&
 `test -f ../lambdahack.github.io/Hack-Bold.ttf.woff`, plus the baseline number
-standing recorded at Phase 2's intro before (1) merges (Split (0)). Run
-it unsandboxed: the build-ts step writes into the sibling pages checkout.
-The two file tests are the deployment gate and are non-vacuous today --- neither
-font is in that checkout, which is the whole font deployment gap this item
-closes.
+standing recorded at Phase 2's intro before (1) merges (Split (0)). The two file
+tests are the deployment gate and are non-vacuous today --- neither font
+is in that checkout, which is the whole font deployment gap this item closes.
 
 **Hands back** --- *browser*: that the declared `FontFace`s actually load
 and that the canvas sits pixel-aligned over the span grid. sec. 2.2's own "live
@@ -2193,11 +2396,10 @@ backing-store sharpness; a measured grid box that is odd or fractional
 was the normal case under a chasing design, accumulating sub-pixel disagreement
 across the row. A startup assert measures one cell back, and if the imposition
 did not take, the flip is refused and the single-font path stays. (b)
-The one-shot setup call's marshalling is one JSON `JSString` --- `JSON.parse`
-on the JS side, a declared TS interface, unknown fields ignored ---
-the extensible payload 1.5's ruling shares; and the boundary is stated
-so the confusion dies: 2.3's string ban is about per-frame cost, and a one-shot
-startup call is exactly where JSON is right.
+The one-shot setup call is the extensible JSON payload the body now specifies
+under "The startup payload, specified here", 1.5's scale field riding it;
+the ruling is that paragraph, and restating its field list here is the second
+definition G1 forbids.
 
 ### 2.3 Transport: overlays across the JSFFI boundary
 
@@ -2252,8 +2454,7 @@ does for its branch table.
 **Done** --- `native` (stylish
 over `engine-src/Game/LambdaHack/Client/UI/Frontend/OverlayLayout.hs`,
 `engine-src/Game/LambdaHack/Client/UI/Frontend/Wasm.hs`,
-`test/OverlayLayoutUnitTests.hs`), `ts`, `wasm`, `deploy`. Run it unsandboxed:
-the build-ts step writes into the sibling pages checkout.
+`test/OverlayLayoutUnitTests.hs`), `ts`, `wasm`, `deploy`, `docs`.
 
 **Hands back** --- hands back nothing. sec. 2.3's "verified by playing" argues
 its own case away in the next sentence: `getFontSetup` still gates on `"sdl"`
@@ -2297,7 +2498,7 @@ multiFont = Frontend.supportsMultiFont soptions
 Re-check `test/MonadClientUIUnitTests.hs`'s `getFontSetup works in stub` after
 the flip. It is platform-independent today, and stays so only as long
 as the stub pins a frontend: `stubClientOptions` sets `sfrontendNull = True`
-(`test/UnitTestHelpers.hs:207`), which is the *first* guard in `frontendName`,
+(`test/UnitTestHelpers.hs:208`), which is the *first* guard in `frontendName`,
 so it never reaches `Chosen.frontendName` and `multiFont` is `False`
 under `cabal test` and `make test-wasm` alike. Add a case that pins
 `supportsMultiFont` itself, so the flip is covered rather than merely
@@ -2319,9 +2520,10 @@ for `Sdl.hs` reproduces it exactly --- which is why (1) may land at any time,
 even before 2.1. (2) `Wasm.supportsMultiFont = True`, one line and nothing else.
 (3) the banner commit this item's **Owns** carries under 1.4's rule:
 the "proportional fonts" and "limited to the square font" clauses come off
-`GameDefinition/index.html`, run with 1.4's **Done** and only those phrases
-in the alternation. (4) the outcome line naming (2)'s hash and the ledger flip;
-this item has no `tools/doc-refs-allow.txt` entries.
+`GameDefinition/index.html` and the second off `README.md` too, run with 1.4's
+**Done** and only those phrases in the alternation. (4) the outcome line naming
+(2)'s hash and the ledger flip; this item has no `tools/doc-refs-allow.txt`
+entries.
 
 **Owns** --- `engine-src/Game/LambdaHack/Client/UI/Frontend/Sdl.hs`,
 `engine-src/Game/LambdaHack/Client/UI/Frontend/Wasm.hs`,
@@ -2329,9 +2531,10 @@ this item has no `tools/doc-refs-allow.txt` entries.
 `engine-src/Game/LambdaHack/Client/UI/Frontend/Teletype.hs`,
 `engine-src/Game/LambdaHack/Client/UI/Frontend.hs`,
 `engine-src/Game/LambdaHack/Client/UI/MonadClientUI.hs`,
-`test/MonadClientUIUnitTests.hs`, `GameDefinition/index.html` ---
-the "proportional fonts" and "limited to the square font" clauses its flip
-falsifies, deleted in this item's landing sequence under 1.4's rule, per
+`test/MonadClientUIUnitTests.hs`, `GameDefinition/index.html` and `README.md`
+--- the "proportional fonts" and "limited to the square font" clauses its flip
+falsifies, the second of them in both files since the `#status` div quotes
+the README, deleted in this item's landing sequence under 1.4's rule, per
 that item's 2026-08-07 ruling --- `docs/wasm-frontend-unified-plan.md` and,
 should (1) not be the two-lines-for-two replacement sketched above,
 `docs/leader-desync-migration.md` --- 3.3's fleet hazard again, here
@@ -2350,9 +2553,8 @@ over `engine-src/Game/LambdaHack/Client/UI/Frontend/Sdl.hs`,
 `engine-src/Game/LambdaHack/Client/UI/Frontend/Teletype.hs`,
 `engine-src/Game/LambdaHack/Client/UI/Frontend.hs`,
 `engine-src/Game/LambdaHack/Client/UI/MonadClientUI.hs`,
-`test/MonadClientUIUnitTests.hs`), `ts`, `wasm`, `deploy`, plus
-`make test-medium`. Run it unsandboxed: the build-ts step writes
-into the sibling pages checkout.
+`test/MonadClientUIUnitTests.hs`), `ts`, `wasm`, `deploy`, `docs`, plus
+`make test-medium`.
 
 **Hands back** --- *browser*: commit (2) is the moment players see something
 different, and it is the whole human-review budget of Phase 2 concentrated
@@ -2377,41 +2579,46 @@ asks for.
 - Frame-timing re-measurement against the pre-Phase-2 baseline (Phase 2 intro;
   re-apply the probe diff recorded there).
 
-**Split** --- two commits around one human checklist. (1) R6 closure: the single
-shared TS drawing entry point that the live overlay renderer and 1.2's
-screenshot rasterizer both call, plus the vitest case rendering a fixture frame
-with overlays through both and comparing draw-command lists rather than pixels.
-(2) after the human checklist is signed off, the outcome line naming (1)'s hash
-and the ledger flip. No banner commit: 1.4's 2026-08-07 ruling made the banner
-a post-condition of every capability item, so the "proportional fonts" clause
-comes off in 2.4's landing sequence, and 2.4 sits before this item in the chain.
-Nothing in `tools/doc-refs-allow.txt`: 2.1's and 2.2's four entries went
-with their own items, and any survivor here is the gate telling you a proposed
-artifact was never built.
+**Split** --- two commits around one human checklist. (1) R6's own commit,
+landing here: the vitest case rendering a fixture frame with overlays through
+the live overlay renderer and through 1.2's screenshot rasterizer, comparing
+draw-command lists rather than pixels. It does not build the shared entry point
+the two call --- that is an acceptance criterion of 1.2, which creates it,
+and of 2.2, which imports it, so if it is missing at this point the defect
+is upstream and the repair belongs to those items. (2) after the human checklist
+is signed off, the outcome line naming (1)'s hash and the ledger flip. No banner
+commit: 1.4's 2026-08-07 ruling made the banner a post-condition of every
+capability item, so the "proportional fonts" clause comes off in 2.4's landing
+sequence, and 2.4 sits before this item in the chain. Nothing
+in `tools/doc-refs-allow.txt`: 2.1's and 2.2's four entries went with their own
+items, and any survivor here is the gate telling you a proposed artifact
+was never built.
 
 **Owns** --- `ts-src/src/overlay-core.ts`, `ts-src/src/overlay-core.test.ts`,
 the `*-core.ts` 1.2 creates for its screenshot draw-command core --- 1.2 fixes
 that name and this item must not invent it, so 2.5 cannot start before 1.2 has
-landed --- and `docs/wasm-frontend-unified-plan.md`. Nothing else;
-`GameDefinition/index.html` left this list with the banner commit, which
-is 2.4's. The two `overlay-core` files belong to 2.2 and 2.3 as well, but both
-sit behind 2.4 in the chain, so there is no window in which two items hold them.
+landed --- and `docs/wasm-frontend-unified-plan.md`. Nothing else: Split (1)
+is R6's commit, so `ts-src/src/render-coherence.test.ts`
+and the `tools/doc-refs-allow.txt` entry it deletes stay in R6's **Owns**
+and are not claimed twice; `GameDefinition/index.html` left this list
+with the banner commit, which is 2.4's. The two `overlay-core` files belong
+to 2.2 and 2.3 as well, but both sit behind 2.4 in the chain, so there
+is no window in which two items hold them.
 
-**Done** --- `ts`, `wasm`, `deploy`, `docs`. Run it unsandboxed: the build-ts
-step writes into the sibling pages checkout. No banner grep here: 2.4 deletes
+**Done** --- `ts`, `wasm`, `deploy`, `docs`. No banner grep here: 2.4 deletes
 that clause and carries the check, and a grep run after 2.4 has landed would
 pass having tested nothing.
 
-**Hands back** --- *judgement*: four of the five checklist items are irreducibly
-a human's. The side-by-side visual comparison with SDL2 (menus, message log,
-help, item descriptions, and the mono-overwrites-prop overrun), the HiDPI
-and browser-zoom spot checks 2.2's pitfalls defer here, and the frame-timing
-re-measurement's verdict --- the runs themselves are a session's now, capture
-and re-measurement under one Xvfb setup with the left-hand side captured
-by 2.2's Split (0) (Phase 2's intro has the record). What is in Done
-is the fifth and the R6 case: the banner grep, and the draw-command comparison
-that is the one checklist line with a machine verdict and the one that would
-otherwise regress in silence, screenshots quietly going map-only.
+**Hands back** --- *judgement*: three of the four checklist items
+are irreducibly a human's. The side-by-side visual comparison with SDL2 (menus,
+message log, help, item descriptions, and the mono-overwrites-prop overrun),
+the HiDPI and browser-zoom spot checks 2.2's pitfalls defer here,
+and the frame-timing re-measurement's verdict --- the runs themselves
+are a session's now, capture and re-measurement under one Xvfb setup
+with the left-hand side captured by 2.2's Split (0) (Phase 2's intro has
+the record). What is in Done is the fourth, the R6 case: the draw-command
+comparison that is the one checklist line with a machine verdict and the one
+that would otherwise regress in silence, screenshots quietly going map-only.
 
 **Decide first** --- nothing, since 2026-08-05: 2.2's Split (0) captures
 the baseline before anything of 2.2 merges, closing the question this field
@@ -2457,11 +2664,22 @@ later feeds from URL parameters, so 3.1 is shared infrastructure, not bench-only
 plumbing.
 
 **Split** --- two commits, then a third that is not part of the landing. First
-`GameDefinition/Main.hs`: `getArgs` in place of the literal `[]`,
-and the comment rewritten to the new contract. Second the landing --- outcome
-line plus the ledger row. Third, separate because the landing falsified it,
-the correction this item's own text needs: re-range
-the `GameDefinition/Main.hs:82-89` citation. (The "not yet validated" retirement
+`GameDefinition/Main.hs`: `getArgs` in place of the literal `[]`, the comment
+rewritten to the new contract, and `import System.Environment (getArgs)` ---
+a new import, since `getArgs` occurs in no tracked `.hs` file today
+and `Core/Prelude.hs` re-exports no `System.Environment`. Imports precede
+declarations, so it cannot ride the `#ifdef USE_WASM` block that carries
+its only consumer: it goes in the file's import block under an `#ifdef USE_WASM`
+of its own, beside the `#ifndef USE_BROWSER` one already there. Unguarded
+it is an unused import on every native build, which is a warning and leaves
+`native` green, so no gate this item names would catch it. Second the landing
+--- outcome line plus the ledger row. Third, separate from the landing per
+the citation-repair rule, the correction the first commit forces: the import
+shifts every line below it, so *every* `Main.hs` citation in this document
+is re-ranged, not one --- `:38`, `:49-56` and `:82-89`, each of them cited more
+than once and all of them still resolving after the shift, which is the trap
+the citation-repair rule is about --- and the restamp rides that commit,
+`Main.hs` being a file this document cites. (The "not yet validated" retirement
 this commit once carried was overtaken by the recorded spike of 2026-08-07 ---
 the body's Spike paragraph holds the artifact.)
 
@@ -2471,8 +2689,9 @@ after the change, since the loader still passes the one-element argv
 `["LambdaHack"]` (`loader.ts:56`), and touching it would put another work
 stream's file under this item's lock for nothing.
 
-**Done** --- `native`, `wasm`, `docs`, plus `cabal build exe:LambdaHack` &&
-`diff -q <(stylish-haskell GameDefinition/Main.hs) GameDefinition/Main.hs`.
+**Done** --- `native` (stylish over `GameDefinition/Main.hs`), `wasm` ---
+of whose two halves only `make build-wasm` bears on this item, `make test-wasm`
+linking `Main.hs` in no configuration --- and `docs`.
 
 **Hands back** --- *browser*: one `make serve-wasm` page load showing the game
 still starts on default options, no in-session gate running `lhStart`
@@ -2544,8 +2763,10 @@ row --- the `run-wasm-game.mjs` deletion from `tools/doc-refs-allow.txt` rides
 
 **Owns** --- `ts-src/run-wasm-game.mjs` (0.3's seed, grown here)
 and this document. The package files, the lock file, the allowlist line
-and every stub are 0.3's per its ruling and this item's (c); nothing runs
-concurrently with anything here --- one file.
+and every stub are 0.3's per its ruling and this item's (c). One file,
+but not an uncontended one: `ts-src/run-wasm-game.mjs` has the claimant list
+0.3's **Owns** carries --- 0.3, 1.2, 1.5 and this item --- so one holder
+at a time here as anywhere.
 
 **Done** --- `ts`, `wasm`, `docs`, plus `. ~/.ghc-wasm/env` && `T=$(mktemp -d)`
 && `W=$(wasm32-wasi-cabal list-bin exe:LambdaHack)` &&
@@ -2584,9 +2805,10 @@ it.
 
 - `nodeBenchCrawl` / `nodeBenchBattle`: mirroring
   `nativeBenchCrawl`/`nativeBenchBattle` exactly --- same flags and `RNGOPTS`,
-  the GHCJS-era `--dbgMsgSer --logPriority 4` extras dropped (ruled 2026-08-07:
-  the ratio is honest only if the halves differ along nothing but the compared
-  axis) --- invoking the 3.2 driver
+  which the two pairs already share verbatim, `--dbgMsgSer --logPriority 4`
+  included (ruled 2026-08-07: the ratio is honest only if the halves differ
+  along nothing but the compared axis, so neither half drops a flag the other
+  keeps) --- invoking the 3.2 driver
   on `wasm32-wasi-cabal list-bin exe:LambdaHack` plus post-linked glue
   (the `test-wasm` target shows the exact `post-link.mjs` recipe,
   Makefile:313-320), under `~/.ghc-wasm/env`'s node, which the recipe sources
@@ -2621,21 +2843,26 @@ it cites, in sec. 02 step 3, `Makefile:146-148` --- `test:`, a blank line,
 `test-gha:` --- three lines below the block this item rewrites, so any change
 in that block's line count slides the citation onto other lines while it still
 *resolves*, leaving `tools/check-plan-citations.py` green over a document
-that has started to lie. The `Makefile` is also 0.2's (`make gen-ts`) and R2's,
-so 3.3 holds it alone.
+that has started to lie. The `Makefile` is also 0.2's (`make gen-ts`), 2.2's
+(the font copy into the pages checkout), R2's (a job's own target)
+and the frontend CI smokes' (`smokeANSI`, `smokeSdl`, `smokeNodeBench`), so 3.3
+holds it alone.
 
-**Done** --- `wasm`, `docs`, plus `make nodeBench` && `make nodeDeployedBench`
-&& `grep -q nodeDeployedBench .claude/skills/playtests/SKILL.md` &&
-`! grep -q nodeMinifiedBench Makefile`.
+**Done** --- `wasm`, `deploy`, `docs`, plus `make nodeBench` &&
+`make nodeDeployedBench` &&
+`grep -q nodeDeployedBench .claude/skills/playtests/SKILL.md` &&
+`! grep -q nodeMinifiedBench Makefile`. The `deploy` gate is what makes
+the second benchmark mean anything: without it `nodeDeployedBench` times
+whatever `../lambdahack.github.io/LambdaHack.wasm` was left there last, which
+is the artifact this item is supposed to be validating.
 
 **Hands back** --- *judgement*: "plausible frame counts" and the wasm-vs-native
 ratio are readings, not exit statuses, and the two halves are harvested
-asymmetrically --- the native binary redirects its own stdout
-to `~/.LambdaHack/stdout.txt` whenever stdout is not a terminal
-(`GameDefinition/Main.hs`, under `#ifndef USE_BROWSER`), overwritten on every
-launch, while the wasm run is exempt from that `#ifdef` and prints
-to the terminal, so a session comparing the two reads one from a file and one
-from stdout, or silently compares nothing. Done gates the half
+asymmetrically --- the native binary takes the stdout redirect `CLAUDE.md`
+describes, while the wasm run is exempt --- that redirect sits inside
+`Main.hs`'s `#ifndef USE_BROWSER`, which no browser build compiles ---
+and prints to the terminal, so a session comparing the two reads one from a file
+and one from stdout, or silently compares nothing. Done gates the half
 that is mechanical: both benchmarks run to completion, and a crash or hang fails
 the target.
 
@@ -2644,11 +2871,11 @@ the target.
 in the recipe: they source the env for `list-bin` and `post-link.mjs` anyway,
 `make test-wasm` already runs the same node on the same class of binary, CI's
 toolchain install supplies it, and `node:wasi` is least broken on the newest
-engine. (b) The executing session runs `make build-ts` itself, unsandboxed, per
-the precedent in 2.2's, 2.3's and 2.5's Done lines --- the deployed half
-then validates exactly what the deploy pipeline produced, which is this target's
-stated role --- and committing or pushing the pages repo stays the author's. (c)
-The flags mirror `nativeBench*` exactly, as the first bullet now states; the two
+engine. (b) The executing session runs `make build-ts` itself, unsandboxed,
+as the `deploy` gate's own annotation says --- the deployed half then validates
+exactly what the deploy pipeline produced, which is this target's stated role
+--- and committing or pushing the pages repo stays the author's. (c) The flags
+mirror `nativeBench*` exactly, as the first bullet now states; the two
 asymmetries that cannot be dropped are recorded rather than removed ---
 the browser build hardwires `sdumpInitRngs = True` (`TieKnot.hs:140`),
 a constant seed-dump prepend the native side does not emit, and the development
@@ -2670,7 +2897,7 @@ is **cross-key consistency**: a game save writes several files (server +
 per-faction clients), and a tab killed mid-sequence leaves a mixed-generation
 set of individually-valid saves. Fix shape: write each save cycle to staging
 keys, then commit with a single generation-pointer key flip; readers resolve
-through the pointer. Test plan (runnable under `make test-wasm` with 3.2's
+through the pointer. Test plan (runnable under `make test-wasm` with 0.3's
 localStorage stub): simulate an interrupted cycle --- staging keys written,
 pointer not flipped --- and assert the reader serves the previous generation
 intact; plus an `encodeEOF`/`strictDecodeEOF` round-trip in the wasm
@@ -2708,27 +2935,40 @@ from `tools/doc-refs-allow.txt`. R1c acts on R1a's number against the ruled
 100ms bar --- at or under, periodic autosave re-enabled; above, a save driven
 from `pagehide`/`visibilitychange`. R1d is the banner commit this item's
 **Owns** carries under 1.4's rule --- the "Savefiles are prone to corruption"
-clause R1b falsifies comes off `GameDefinition/index.html`, run with 1.4's
-**Done** and only that phrase in the alternation --- and carries the outcome
-line.
+clause R1b falsifies comes off `GameDefinition/index.html` and off `README.md`,
+run with 1.4's **Done** and only that phrase in the alternation --- and carries
+the outcome line.
 
 **Owns** --- `engine-src/Game/LambdaHack/Common/WasmFile.hs`, including
 the header's "Mirrors JSFile.hs ... exactly in storage format" claim, which
-R1b's layout change falsifies and which R3 does not touch; the new
-`test/WasmFileUnitTests.hs` (CPP-guarded to an empty group natively, the way
-`test/Spec.hs` already guards its SDL cases), `test/Spec.hs`, and the test-suite
-`other-modules` list in `LambdaHack.cabal`; `Server/LoopM.hs:336-342`
-and `WatchUpdAtomicM.hs:585-595`; and `GameDefinition/index.html` ---
-the "Savefiles are prone to corruption" clause R1b falsifies, deleted
-in this item's landing sequence under 1.4's rule, per that item's 2026-08-07
-ruling. It does not write `ts-src/run-wasm-test.mjs` --- the localStorage stub
-is 0.3's, per that item's own ruling, and a stub behaviour the test needs lands
-there first, as a 0.3 change. R1c is not concurrent with R3 or with capability
-constants, all three rewriting those same two `#if` sites;
-the `LambdaHack.cabal` edit is not concurrent with 0.1, 0.2, 2.1, 2.2 or R3.
+R1b's layout change falsifies and which R3 does not touch;
+`engine-src/Game/LambdaHack/Common/File.hs`, whose interface gains
+the cycle-commit operation, `engine-src/Game/LambdaHack/Common/HSFile.hs`, which
+implements it as a no-op, and `engine-src/Game/LambdaHack/Server/CommonM.hs`,
+whose `writeSaveAll` calls it --- the three files this item's own ruling names
+and which the capability-constants practice also holds, so those two serialize
+on all of them; the new `test/WasmFileUnitTests.hs` (CPP-guarded to an empty
+group natively, the way `test/Spec.hs` already guards its SDL cases),
+`test/Spec.hs`, and the test-suite `other-modules` list in `LambdaHack.cabal`;
+`Server/LoopM.hs:336-342` and `WatchUpdAtomicM.hs:585-595`;
+and `GameDefinition/index.html` with `README.md` beside it --- the "Savefiles
+are prone to corruption" clause R1b falsifies stands in both, the `#status` div
+quoting the README's paragraph, and R1d deletes it from both in one commit
+under 1.4's rule, per that item's 2026-08-07 ruling; `tools/doc-refs-allow.txt`,
+whose `test/WasmFileUnitTests.hs` entry R1b's commit deletes; and this document,
+which R1a edits alone to record its number. It does not write
+`ts-src/run-wasm-test.mjs` --- the localStorage stub is 0.3's, per that item's
+own ruling, and a stub behaviour the test needs lands there first, as a 0.3
+change. R1c is not concurrent with R3 or with capability constants, all three
+rewriting those same two `#if` sites; the `LambdaHack.cabal` edit
+is not concurrent with 0.1, 0.2, 2.1, 2.2 or R3.
 
-**Done** --- `native` (stylish over `$(git`, `ls-files`, `'*.hs')`), `wasm`,
-`docs`, plus `git diff --exit-code`.
+**Done** --- `native` (stylish
+over `engine-src/Game/LambdaHack/Common/WasmFile.hs`,
+`engine-src/Game/LambdaHack/Server/LoopM.hs`,
+`engine-src/Game/LambdaHack/Client/UI/Watch/WatchUpdAtomicM.hs`,
+`test/WasmFileUnitTests.hs`, `test/Spec.hs`), `wasm`, `docs`, plus
+`git diff --exit-code` over those paths.
 
 **Hands back** --- *judgement*: a real tab kill mid-cycle, which the Node stub
 can only simulate. R1a's number no longer waits on judgement --- the 100ms bar
@@ -2860,7 +3100,8 @@ in one commit:
   no GHCJS edit --- it contains the string nowhere (checked repo-wide); what
   it carries is browser-era prose --- the "The game runs rather slowly
   in the browser" paragraph under "Installation of the sample game from binary
-  archives" --- that R1 and R5 own, not this rip-out.
+  archives", which the page's `#status` div quotes verbatim --- owned clause
+  by clause by 2.4, R1 and R5 under 1.4's rule, not by this rip-out.
 
 Timed after parity, not before, so the rip-out doesn't tangle with Phase 0--2
 diffs touching the same cabal stanzas and CPP sites.
@@ -2882,8 +3123,10 @@ clause, updated or dropped --- and `CLAUDE.md` and this document. It must hold
 --- and the three engine `#if` sites are also R1's and the capability-constants
 practice's, whichever lands first shaping R3's diff.
 
-**Done** --- `native` (stylish over `$(git`, `ls-files`, `'*.hs')`), `wasm`,
-`docs`, plus `make test-gha` && `git diff --exit-code` &&
+**Done** --- `native` (stylish over `$(git ls-files '*.hs')`, repo-wide here
+because the rip-out's Haskell files are scattered across the tree
+and its **Owns** names them all), `wasm`, `docs`, plus `make test-gha` &&
+`git diff --exit-code` &&
 `! git grep -q 'USE_GHCJS\|USE_JSFILE\|REMOVE_TELETYPE\|supportNodeJS\|ghcjs-options' -- ':!*.md' ':!LambdaHack.cabal.bkp' ':!LambdaHack.cabal.flattened' ':!engine-src/Game/LambdaHack/Client/UI/Frontend/Dom.hs' ':!engine-src/Game/LambdaHack/Common/JSFile.hs'`.
 The grep half is non-vacuous: run against today's tree it finds matches
 and fails the line, so it can only pass after the rip-out.
@@ -2933,9 +3176,10 @@ six once rather than special-casing the default set.
 and `ts-src/src/url-options-core.test.ts`, `ts-src/src/loader.ts`
 (the `new WASI(["LambdaHack"], [], fds)` argv construction at `loader.ts:56`),
 `GameDefinition/index.html` if the knobs get on-page documentation,
-and this document. Not concurrent with R5: R5's `?benchmark` mode is one
-of this allowlist's own entries and edits the same `loader.ts` call.
-Not concurrent with 1.3 or 1.4 for `index.html`.
+`tools/doc-refs-allow.txt`, whose two `url-options-core` entries this item's one
+commit deletes as it creates the files, and this document. Not concurrent
+with R5: R5's `?benchmark` mode is one of this allowlist's own entries and edits
+the same `loader.ts` call. Not concurrent with 1.3 or 1.4 for `index.html`.
 
 **Done** --- `ts`, `docs`.
 
@@ -2989,17 +3233,19 @@ the outcome line. R5c exists only if a ruled bar is crossed --- the game-logic
 ratio beyond 3x, or `submitFrame`-to-paint p95 beyond one 60Hz frame, 16.7ms,
 an exceedance confirmed on the real display before R5c opens ---
 and is otherwise not schedulable, with no commit here; below both bars, "runs
-rather slowly" is stale and R5 deletes that clause itself, under 1.4's rule
-and with `GameDefinition/index.html` in its **Owns** for the purpose.
+rather slowly" is stale and R5 deletes that clause itself, from the page
+and from `README.md`, under 1.4's rule and with both files in its **Owns**
+for the purpose.
 
 **Owns** --- the new `ts-src/src/frame-timing-core.ts`
 and `ts-src/src/frame-timing-core.test.ts`, `ts-src/src/terminal.ts`
 (the `submitFrame`-to-paint instrumentation), `ts-src/src/loader.ts`
-(the `?benchmark` entry), `GameDefinition/index.html` (the "runs rather slowly"
-clause, deleted under 1.4's rule when both bars are cleared), and this document;
-R5b writes this document alone. Not concurrent with R4 (`loader.ts`,
-and `?benchmark=` sits in R4's parameter allowlist) nor with 2.2
-(`terminal.ts`).
+(the `?benchmark` entry), `GameDefinition/index.html` and `README.md` (the "runs
+rather slowly" clause, which stands in both, deleted under 1.4's rule when both
+bars are cleared), `tools/doc-refs-allow.txt` (R5a's two `frame-timing-core`
+entries), and this document; R5b writes this document alone. Not concurrent
+with R4 (`loader.ts`, and `?benchmark=` sits in R4's parameter allowlist)
+nor with 2.2 (`terminal.ts`).
 
 **Done** --- `ts`, `docs`, which decides R5a only.
 
@@ -3035,13 +3281,15 @@ drawing entry point in one TS function both paths call, and by a vitest case
 rendering a fixture frame with overlays through both --- comparing draw-command
 lists (per 1.2/2.2's functional-core structure), not pixels.
 
-**Owns** --- the new `ts-src/src/render-coherence.test.ts` and 2.5's checklist
-line here, and nothing else: the shared drawing entry point is a stated
-acceptance criterion of 1.2 and 2.2 --- ruled 2026-08-07, both items' bodies now
-carry it --- so the degraded branch, a two-file refactor
-of `ts-src/src/terminal.ts` and `ts-src/src/overlay-core.ts` that R6 would have
-to hold exclusively, cannot arise. The op-list representation R6 compares
-is defined by 1.2 and reused by 2.2, and R6 states no shape of its own.
+**Owns** --- the new `ts-src/src/render-coherence.test.ts`,
+`tools/doc-refs-allow.txt`, whose `render-coherence.test.ts` entry the same
+commit deletes, and 2.5's checklist line here, and nothing else: the shared
+drawing entry point is a stated acceptance criterion of 1.2 and 2.2 --- ruled
+2026-08-07, both items' bodies now carry it --- so the degraded branch,
+a two-file refactor of `ts-src/src/terminal.ts` and `ts-src/src/overlay-core.ts`
+that R6 would have to hold exclusively, cannot arise. The op-list representation
+R6 compares is defined by 1.2 and reused by 2.2, and R6 states no shape
+of its own.
 
 **Done** --- `ts`, `docs`.
 
@@ -3154,11 +3402,12 @@ after all.
 `sfrontendANSI`/`sfrontendTeletype`/`sfrontendNull`/`sfrontendLazy` are four
 independent `Bool`s (`ClientOptions.hs:62-68`) whose simultaneous truth
 is resolved by guard order in two places (`Frontend.hs:84-92`
-and `Frontend.hs:186-196`). One sum-typed field (`FrontendDefault | FrontendANSI
-| FrontendTeletype | FrontendNull | FrontendLazy`) makes the guard chains total
-cases and turns conflicting flags into a parse error. Mechanical, moderate churn
-(options parser, UnitTestHelpers' stub options). Do before R4, so URL parameters
-parse into the sum type, not the Bools.
+and `Frontend.hs:186-196`). One sum-typed field, with the constructors
+`FrontendDefault`, `FrontendANSI`, `FrontendTeletype`, `FrontendNull`
+and `FrontendLazy`, makes the guard chains total cases and turns conflicting
+flags into a parse error. Mechanical, moderate churn (options parser,
+UnitTestHelpers' stub options). Do before R4, so URL parameters parse
+into the sum type, not the Bools.
 
 **Owns** --- `Common/ClientOptions.hs` (the field), `Server/Commandline.hs`
 (the four parsers at `Commandline.hs:316-334` and their bindings at `:82-85`),
@@ -3167,7 +3416,7 @@ and `Client/UI/MonadClientUI.hs` --- the two `frontendName soptions ==` string
 compares the sum type subsumes (`DrawM.hs:597`, `MonadClientUI.hs:329`), which
 this item's churn list omits and which `git grep 'frontendName soptions =='`
 shows are the only two in the tree --- and `test/UnitTestHelpers.hs`, whose
-`:207` is the sole fixture setting an `sfrontend*` field. Serialize against 2.4
+`:208` is the sole fixture setting an `sfrontend*` field. Serialize against 2.4
 and R3 rather than running beside them: 2.4 rewrites `MonadClientUI.hs:329`
 and dispatches through `Frontend.hs:186-196`, and R3 deletes
 the `#ifndef REMOVE_TELETYPE` guards at `Frontend.hs:86` and `:190` ---
@@ -3195,8 +3444,8 @@ on `--frontendNull --frontendTeletype` and `make test-short`, which drives
 **Decide first** --- nothing, all three ruled on 2026-08-07. (1) The save format
 needs no bump, confirming the analysis this field carried: `ClientOptions`
 derives `Generic` with `instance Binary ClientOptions`
-(`ClientOptions.hs:79-81`), is written into every client save
-(`Client/State.hs:193` and `:210`) and is carried by `UpdRestart`
+(`ClientOptions.hs:79-81`), is written into and read back out of every client
+save (`Client/State.hs:193` and `:210`) and is carried by `UpdRestart`
 (`CmdAtomic.hs:130`), so four `Bool`s becoming one constructor changes the wire
 format --- but `compatibleVersion` compares only the first three version-branch
 components (`Save.hs:142-143`) and the package is `0.12.0.0`, whose first three
@@ -3250,12 +3499,13 @@ the outcome line and the `tools/doc-refs-allow.txt` deletion.
 **Owns** --- `Client/UI/Frontend/Common.hs` (haddock), `Client/UI/Frontend.hs`
 (export list only), the new `test/FrontendContractUnitTests.hs`, `test/Spec.hs`,
 the `test-suite test` stanza of `LambdaHack.cabal` (`LambdaHack.cabal:481-515`),
-`ts-src/run-wasm-test.mjs` and one job
-in `.github/workflows/lint-and-test-suites.yml`. Two shared-file caveats.
-The input-side cases are specified to land inside 0.1's commit, so whichever
-of the two lands first creates the test module and the other extends it ---
-never concurrently. The cabal stanza's `other-modules` list is also
-the determinism goldens' only edit point, and `ts-src/run-wasm-test.mjs`
+`ts-src/run-wasm-test.mjs`, `tools/doc-refs-allow.txt`
+(the `test/FrontendContractUnitTests.hs` entry, deleted by the third commit)
+and one job in `.github/workflows/lint-and-test-suites.yml`. Two shared-file
+caveats. The input-side cases are specified to land inside 0.1's commit,
+so whichever of the two lands first creates the test module and the other
+extends it --- never concurrently. The cabal stanza's `other-modules` list
+is also the determinism goldens' only edit point, and `ts-src/run-wasm-test.mjs`
 is extended by 0.3 and by 3.2 as well: one holder at a time for each.
 
 **Done** --- `native` (stylish
@@ -3319,24 +3569,28 @@ line and the `tools/doc-refs-allow.txt` deletion.
 
 **Owns** --- the new `test/DeterminismGoldenUnitTests.hs`, `test/Spec.hs`,
 the `test-suite test` stanza of `LambdaHack.cabal` (`LambdaHack.cabal:481-515`),
-and whatever fixtures the digest needs in `test/UnitTestHelpers.hs`
-and `test/SessionUIMock.hs`. Not concurrent with the RawFrontend contract
-harness: both add a module to the same `other-modules` list and both extend
-`test/Spec.hs`. If the digest is over committed literals rather than a file,
-it owns no data file; if over a file, that file joins this list rather
-than living beside the test.
+whatever fixtures the digest needs in `test/UnitTestHelpers.hs`
+and `test/SessionUIMock.hs`, and `tools/doc-refs-allow.txt`
+(the `test/DeterminismGoldenUnitTests.hs` entry, deleted by the second commit).
+Not concurrent with the RawFrontend contract harness: both add a module
+to the same `other-modules` list and both extend `test/Spec.hs`. If the digest
+is over committed literals rather than a file, it owns no data file; if
+over a file, that file joins this list rather than living beside the test.
 
 **Done** --- `native` (stylish over `test/DeterminismGoldenUnitTests.hs`,
 `test/UnitTestHelpers.hs`, `test/SessionUIMock.hs`, `test/Spec.hs`), `wasm`,
-`docs`, plus `cabal test --test-options='-p "/golden/"'`.
+`docs`, plus `cabal test --test-options='-p "/fe-golden/"'` --- a second series
+marker for this campaign, minted under the tasty-tag rule above, so the first
+commit lists before the series exists and shows that the marker selects nothing.
 
 **Hands back** --- *judgement*: whether the digest is actually sensitive to what
 2.1 and 2.4 change is the entire value of the item, and no run answers it ---
 a green golden that guards nothing looks exactly like a green golden that guards
 everything. The substitute gate is the non-vacuity proof the standing checks
 demand of any new self-checking assertion: perturb one drawing or layout input,
-re-run `cabal test --test-options='-p "/golden/"'`, expect failure, and record
-the perturbation next to the test.
+re-run `cabal test --test-options='-p "/fe-golden/"'` --- this item's own
+marker, never the bare `golden` the tasty-tag rule forbids --- expect failure,
+and record the perturbation next to the test.
 
 **Decide first** --- nothing, all three ruled on 2026-08-07. (1) Two golden
 families, as the body now states: frame-and-overlay digests --- the family 2.1's
@@ -3382,12 +3636,15 @@ in no `tools/doc-refs-allow.txt` gate beyond the three target names this block
 introduces, which its own commit deletes as it lands.
 
 **Owns** --- `Makefile`, gaining `smokeANSI`, `smokeSdl` and `smokeNodeBench`,
-and `.github/workflows/lint-and-test-suites.yml`, one job each.
+`.github/workflows/lint-and-test-suites.yml`, one job each,
+and `tools/doc-refs-allow.txt`, whose `make smokeANSI`, `make smokeSdl`
+and `make smokeNodeBench` entries leave with the commits that add those targets.
 Not `.github/workflows/haskell-ci.yml`, which is generated from the cabal file
-and whose hand edits vanish on the next regenerate. The workflow file
-is the campaign's busiest contention point --- R2 grows it per phase, and 0.2
-and 0.3 each add a job --- so one holder at a time, and the three commits here
-are serialized against each other for the same reason.
+and whose hand edits vanish on the next regenerate. The workflow file has four
+claimants --- R2, which grows it per phase, 0.2's freshness job, the RawFrontend
+contract's harness job, and this item's three --- so one holder at a time,
+and the three commits here are serialized against each other for the same
+reason.
 
 **Done** --- `native`, `docs`, plus `make smokeANSI` && `make smokeSdl` &&
 `make smokeNodeBench --dry-run`. `--dry-run` gates the one target that cannot
@@ -3452,8 +3709,9 @@ It returns nonzero today, naming `Sdl.hs:590` --- which is what proves it a real
 search rather than a silent one --- and must return zero from 0.2 onward,
 so it is an acceptance criterion on 0.2's diff and a check on every later
 frontend diff, not a task of its own. Deliberately not a bare `toEnum` grep:
-eleven other `toEnum` sites in `Sdl.hs` are legitimate SDL geometry conversions,
-and a gate that flags them would stop being read.
+every other `toEnum` in `Sdl.hs` is a legitimate conversion into an SDL numeric
+type --- geometry mostly, and a log priority at `Sdl.hs:105` --- and a gate
+that flags them would stop being read.
 
 **Hands back** --- *judgement*: the grep catches only the shape already seen,
 `Point{..} = toEnum`. Whether a newly written decoding site passes the width
@@ -3544,6 +3802,10 @@ rationale: Appendix B.
 
 ## Sequencing
 
+This orders the work; which item is handed out *first* is How this lands',
+and it is 3.1, as the shakedown that proves the ritual on an item a machine can
+settle.
+
 ```
 0.0 immediate fixes: AltGraph on keys AND mouse/wheel; highlight-outline
     rule (fill-only kinds; four-sided outlines)
@@ -3564,8 +3826,8 @@ rationale: Appendix B.
 2.3 overlay transport (visual no-op, additive FFI)
 2.4 capability flip (the visible change; heaviest review)
 2.5 QA + R6 closure
-3.1 lhStart reads WASI argv (spike first; independent of Phases 1-2;
-    shared infrastructure with R4)
+3.1 lhStart reads WASI argv (spike done and recorded in the item;
+    independent of Phases 1-2; shared infrastructure with R4)
 3.2 Node reactor driver (grows 0.3's seed driver; exit propagation)
 3.3 repurpose nodeBench* targets; nodeMinifiedBench -> nodeDeployedBench
     (Phase 3 may run before/alongside Phases 1-2 --- it's independent, and
@@ -3886,8 +4148,14 @@ since the superseded document may be deleted):
   Haskell value anywhere near it; `Dom.hs`'s single `focus divMap` call very
   likely has the same bfcache gap, just never tested.
 - *`#screen` font-size (16px) is a web-presentational constant*
-  with no canonical Haskell value behind it; nothing to generate. (Its player
-  -facing counterpart is now handled properly by 1.5's `allFontsScale`.)
+  with no canonical Haskell value behind it; nothing to generate.
+  (Its player-facing counterpart is now handled properly by 1.5's
+  `allFontsScale`.) *Superseded on 2026-08-07 by 2.2's ruling (a): the browser
+  derives `lmHalfSize` from the map font's configured size times
+  `sallFontsScale` and imposes the cell dimensions on the grid, so the 16 does
+  have a canonical Haskell value behind it --- `16x16xwScalable`'s
+  in `config.ui.default` (line 99) --- and the grid takes it rather
+  than hardcoding one.*
 - *Save persistence needs no rework* --- `WasmFile.hs` mirrors `JSFile.hs`'s
   exact localStorage format as a proper Haskell sibling module; it
   is the existing exemplar of the pattern this plan applies elsewhere.
@@ -3980,7 +4248,7 @@ or not-applicable. Recorded with evidence so nobody re-treads it:
 
 The GHCJS files (`Dom.hs`, `JSFile.hs`, the `impl(ghcjs)` cabal stanzas,
 and the GHCJS-era page) were likewise audited line-by-line against SDL2: every
-difference is a browser-platform limitation, a DOM-instead-of- textures
+difference is a browser-platform limitation, a DOM-instead-of-textures
 mechanism, a JS-performance workaround (the disabled autosave,
 the `GHCJS_GC_INTERVAL`/`-dedupe` knobs), or plain missing effort (the known
 parity gaps) --- with faithful adaptations elsewhere (`JSFile.hs` preserves
