@@ -616,6 +616,20 @@
    "unit": "(resolve('no/.../Nope.hs'), resolve('no/.../Nope.hs'), 'hits=%d' % all_files_named.cache_info().hits)[2]",
    "expect_text": "'hits=1'",
    "bug_text": "AttributeError"
+  },
+  {
+   "id": "Makefile-01",
+   "program": "Makefile",
+   "name": "serve-wasm chained its cd with `;`, so a failed cd did not stop the recipe",
+   "family": "unverified-state",
+   "fix_rev": "7b84ed60d",
+   "trigger": "`make serve-wasm` with `../lambdahack.github.io` absent, which the outer sandbox wrapper also produces by not mounting it",
+   "ok": "the recipe stops at the cd and make reports the missing checkout",
+   "bug": "the cd's failure was skipped and `node serve.mjs . 8080` ran in the repo root, where no serve.mjs exists, so make failed on node's missing-module error instead of on the absent checkout",
+   "proved": "ran",
+   "harm": "latent",
+   "discovery": "review",
+   "notes": "Found by a blind reader in the docs/wasm-frontend-unified-plan.md review of 2026-09-04, which reported it as serving the repo root on :8080; that consequence is wrong here, no serve.mjs existing at the root, and the real cost is a misleading diagnostic. It would become a wrong-tree serve if a serve.mjs ever sat at the root. The same `;`-to-`&&` sweep had already fixed build-ts in 2b4b7d71f and stopped there. The corpus root is `tools/`, so `defect-run.py` resolves a program under it and cannot reach one at the repository root: this is a tier-1 record, not a replayable case."
   }
  ]
 }
