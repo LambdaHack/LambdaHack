@@ -164,9 +164,9 @@ GRAMMARS = [
         "allow_file": None,
         "allow_block": None,
         # Its items open on `### C1 ---`, `### PR 0 ---`, `### 04.1 ---`
-        # and `### 05 ---` headings; `PR 0` carries a space, and `04.1`
+        # and `### 05 ---` headings; `PR N` carries a space, and `04.1`
         # cannot be read as the plan's `4.1` since a digit precedes it.
-        "openers": (re.compile(r"^### (C\d|PR 0|04\.\d|05) "),),
+        "openers": (re.compile(r"^### (C\d|PR \d|04\.\d|05) "),),
         "practices": {},
         "unserialized": ("docs/leader-desync-migration.md",),
     },
@@ -586,12 +586,19 @@ def opens(grammar, line):
     return None
 
 
+def is_configured(path, grammar):
+    """Whether PATH is GRAMMAR's own document, by root-relative name or by
+    an absolute path ending in it, as a defect record hands it over."""
+    p, d = os.path.normpath(path), os.path.normpath(grammar["doc"])
+    return p == d or p.endswith(os.sep + d)
+
+
 def grammar_for(path, lines):
     """The configuration entry a document is read under: the one whose path
     it is, or --- for a copy under another name --- the one whose openers
     find an item in it. None where none does or two do."""
     for g in GRAMMARS:
-        if os.path.normpath(path) == os.path.normpath(g["doc"]):
+        if is_configured(path, g):
             return g
     fits = [g for g in GRAMMARS
             if any(opens(g, line) is not None for line in lines)]
@@ -601,9 +608,9 @@ def grammar_for(path, lines):
 class Doc:
     """One document under its grammar: its ledger, its items, its entries."""
 
-    def __init__(self, grammar, text, allow_text, ambiguous, findings):
+    def __init__(self, grammar, path, text, allow_text, ambiguous, findings):
         self.g = grammar
-        self.path = grammar["doc"]
+        self.path = path      # the configured name, or a copy's as given
         self.lines = text.split("\n")
         self.ambiguous = ambiguous
         self.findings = findings
@@ -1022,7 +1029,8 @@ def load(doc_path, allow_override, ambiguous, findings):
         if not os.path.isfile(allow_path):
             raise Blocked(f"no such file: {allow_path}")
         allow_text = open(allow_path, encoding="utf-8").read()
-    doc = Doc(g, text, allow_text, ambiguous, findings)
+    shown = g["doc"] if is_configured(doc_path, g) else doc_path
+    doc = Doc(g, shown, text, allow_text, ambiguous, findings)
     if not doc.order or not doc.items:
         raise Blocked(f"no ledger row or no item found in {doc_path}; the"
                       f" grammar for {g['doc']} does not fit it")
