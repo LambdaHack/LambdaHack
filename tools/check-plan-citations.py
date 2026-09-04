@@ -141,7 +141,10 @@ The failing kinds each carry a history of having been silently
 uncovered, which is why the self-test pins them one by one. NON-SOURCE:
 only Haskell and web sources were extracted once, so a citation into a
 `.md`, `.py` or `.yml` file was skipped rather than checked, and a
-document citing nothing but those reported a clean zero. CONTINUATION:
+document citing nothing but those reported a clean zero; `.json` and
+`.sh` were still missing on 2026-09-04, and check-doc-refs skips every
+`path:NN` token as this pass's, so a citation into either was checked by
+nobody. CONTINUATION:
 extraction took only the first number of a comma-continued citation, so
 seven sub-references in `docs/wasm-frontend-unified-plan.md` had never
 been checked while the run reported "85 citations checked, 0 failed"
@@ -248,6 +251,7 @@ one copy having fallen behind. `tools/check-twin-sync.py` compares the
 code whenever both checkouts are mounted."""
 
 import datetime
+import functools
 import os
 import re
 import shutil
@@ -279,9 +283,13 @@ def chdir_root(paths):
     os.chdir(top)
     return paths
 
+# The extensions are check-doc-refs.py's PATH_EXT: that pass skips every
+# backticked `path:NN` token as this one's, so an extension missing here is
+# cited by nobody (check-plan-citations-07). Two twin-synced files, so the
+# list is written twice and each names the other.
 CITE_RE = re.compile(
     r"`?(\.?[A-Za-z][A-Za-z0-9_./-]*"
-    r"\.(?:hs|ts|py|c|h|cabal|mjs|html|md|txt|yaml|yml)|Makefile)"
+    r"\.(?:hs|ts|py|c|h|cabal|mjs|html|md|txt|yaml|yml|json|sh)|Makefile)"
     r":(\d+(?:-\d+)?(?:,\d+(?:-\d+)?)*)")
 URL_RE = re.compile(
     r"https://github\.com/[\w.-]+/[\w.-]+/blob/([0-9a-f]{7,40})/"
@@ -329,7 +337,10 @@ def published(sha):
     return reachable_from(sha, PUBLISHED_REF)
 
 
+@functools.lru_cache(maxsize=None)
 def all_files_named(basename):
+    # One find per basename: per citation it was one per `/.../` or bare
+    # name, most of a run's time on a long document (check-plan-citations-08).
     # answered dropped-status: the find's failure is an empty listing, and
     # an empty listing is what the caller reports
     out = subprocess.run(
@@ -493,6 +504,8 @@ def self_test():
             os.makedirs("tools")
             open("test/Dup.hs", "w").write("dup\n")
             open("tools/Dup.hs", "w").write("dup\n")
+            open("d.json", "w").write("{}\n")
+            open("s.sh", "w").write("true\n")
             git("add", "-A")
             git("commit", "-qm", "c1")
             c1 = subprocess.run(["git", "rev-parse", "HEAD"],
@@ -529,7 +542,8 @@ def self_test():
                 "too. `a.hs:1,999999` continuation tail.\n"
                 "`note.md:1` prose line. `Dup.hs:1` ambiguous.\n"
                 "`.dot.yaml:1` dotfile control, `.dot.yaml:999999` its"
-                " pair.\n"
+                " pair. `d.json:1` and `s.sh:1` are extensions once\n"
+                "cited by nobody.\n"
                 "%s#L1 pinned ok. %s#L99999 pinned range.\n"
                 "%s#L0 pinned zero. %s#L3-L1 pinned backwards.\n"
                 "https://github.com/ghc/ghc/blob/0123456789abcdef01234567"
@@ -545,6 +559,7 @@ def self_test():
                      "AMBIGUOUS", "ORPHANED", "UNPUBLISHED",
                      "not in this repository",
                      "ok   a.hs:1 |", "ok   .dot.yaml:1 |",
+                     "ok   d.json:1 |", "ok   s.sh:1 |",
                      "a.hs#L1 @", "13 failed", "a.hs:0-0 --- OUT",
                      "a.hs:3-2 --- OUT", "#L0-L0 @", "#L3-L1 @")
             expect("continuation collapses with the plain row",

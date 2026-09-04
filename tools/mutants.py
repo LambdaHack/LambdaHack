@@ -168,4 +168,8 @@ MUTANTS = [
      '    docs = chdir_root(args)\n    if "--self-test" in sys.argv[1:]:\n        return self_test()\n',
      '    if "--self-test" in sys.argv[1:]:\n        return self_test()\n    docs = chdir_root(args)\n',
      'cd {dir} && python3 {file} --self-test'),
+    # check-plan-citations: CITE_RE blind to json and sh (check-plan-citations-07)
+    ('check-plan-citations CITE_RE blind to json and sh', 'check-plan-citations.py',
+     '    r"\\.(?:hs|ts|py|c|h|cabal|mjs|html|md|txt|yaml|yml|json|sh)|Makefile)"\n',
+     '    r"\\.(?:hs|ts|py|c|h|cabal|mjs|html|md|txt|yaml|yml)|Makefile)"\n', ST),
 ]
