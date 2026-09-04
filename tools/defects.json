@@ -325,6 +325,31 @@
    "expect_text": "could not be read",
    "bug_exit": 0,
    "bug_text": "->"
+  },
+  {
+   "id": "check-plan-citations-06",
+   "program": "check-plan-citations.py",
+   "name": "a stamp the formatter wrapped inside a blockquote read as no stamp, so --restamp refused it and the stamp's own orphan and publication checks passed in silence",
+   "family": "scan-for-parse",
+   "fix_rev": "3a03d4670",
+   "trigger": "a stamp whose hash ends one line and whose date opens the next behind a blockquote `>`",
+   "ok": "the stamp is found, checked and rewritten, its line break preserved",
+   "bug": "no stamp found, exit 1, and the stamp itself never validated",
+   "proved": "ran",
+   "harm": "fired",
+   "harm_count": 2,
+   "discovery": "in-use",
+   "notes": "Found while restamping this repo's five documents: two of them, docs/leader-desync-bug.md and docs/leader-desync-migration.md, were in exactly that shape, so their stamps had never been checked for orphaning or publication at all. Which break lands where moves whenever a paragraph above is edited, so no document can be kept out of the shape. The horde-ad copy carries the same pattern and the same defect; check-twin-sync could not be run here, that checkout not being mounted.",
+   "plant": "a blockquoted stamp wrapped so the hash ends one line and the date opens the next behind a `>`",
+   "plant_cmd": "git init -q . && printf 'line one\\nline two\\n' > a.hs && printf '%s\\n' '`a.hs:1` cited.' '' '> Citations were verified against the tree at commit **0000000aa**' '> (2020-01-01).' > r.md && git add a.hs r.md && git -c user.email=t@t -c user.name=t -c commit.gpgsign=false commit -qm base",
+   "invoke": [
+    "r.md",
+    "--restamp"
+   ],
+   "expect_exit": 0,
+   "expect_text": "0000000aa (2020-01-01) ->",
+   "bug_exit": 1,
+   "bug_text": "no stamp"
   }
  ]
 }
