@@ -163,4 +163,9 @@ MUTANTS = [
      '    docs = chdir_root(args)\n    if "--self-test" in sys.argv[1:]:\n        return self_test()\n',
      '    if "--self-test" in sys.argv[1:]:\n        return self_test()\n    docs = chdir_root(args)\n',
      'cd {dir} && python3 {file} --self-test'),
+    # check-doc-examples: the same (check-doc-examples-04)
+    ('check-doc-examples self-test dispatched before chdir_root', 'check-doc-examples.py',
+     '    docs = chdir_root(args)\n    if "--self-test" in sys.argv[1:]:\n        return self_test()\n',
+     '    if "--self-test" in sys.argv[1:]:\n        return self_test()\n    docs = chdir_root(args)\n',
+     'cd {dir} && python3 {file} --self-test'),
 ]

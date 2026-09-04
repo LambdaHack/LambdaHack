@@ -342,9 +342,15 @@ def require_readable(paths):
 
 
 def main():
+    # From the root before anything, the self-test included: its
+    # from-the-root control is a relative path, and dispatched first the
+    # subdirectory-agreement row fired from any subdirectory on an unbroken
+    # checker (check-doc-examples-04).
+    args = [a for a in sys.argv[1:] if a != "--self-test"]
+    docs = chdir_root(args)
     if "--self-test" in sys.argv[1:]:
         return self_test()
-    docs = chdir_root(sys.argv[1:]) or ["README.md"]
+    docs = docs or ["README.md"]
     require_readable(docs)
     src = sources()
     if src is None and SOURCE_LIST:
