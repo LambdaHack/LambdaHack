@@ -37,6 +37,7 @@ STEPS = [
     ('check-doc-refs self-test', ['python3', '{root}/check-doc-refs.py', '--self-test']),
     ('check-doc-wrap self-test', ['python3', '{root}/check-doc-wrap.py', '--self-test']),
     ('check-plan-citations self-test', ['python3', '{root}/check-plan-citations.py', '--self-test']),
+    ('check-plan-crossrefs self-test', ['python3', '{root}/check-plan-crossrefs.py', '--self-test']),
     ('check-twin-sync self-test', ['python3', '{root}/check-twin-sync.py', '--self-test']),
     ('heading-outline self-test', ['python3', '{root}/heading-outline.py', '--self-test']),
     ('pyflakes', ['bash', '-c',
@@ -48,6 +49,9 @@ STEPS = [
     ('doc refs',               ['bash', '-c', DOCS % 'check-doc-refs.py']),
     ('doc wrap',               ['bash', '-c', DOCS % 'check-doc-wrap.py']),
     ('doc examples',           ['bash', '-c', DOCS % 'check-doc-examples.py']),
+    # One document read against itself: the campaign plan's own
+    # cross-reference graph, which no pass over every document can see.
+    ('plan crossrefs',         ['python3', '{root}/check-plan-crossrefs.py']),
     ('records validate',       ['python3', '{bin}/defect-cases.py', '{root}']),
     ('cases, ok direction',    ['python3', '{bin}/defect-run.py', '{root}']),
     ('cases, bug direction',   ['python3', '{bin}/defect-run.py', '--audit', '{root}']),

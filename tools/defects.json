@@ -728,6 +728,56 @@
    "harm": "latent",
    "discovery": "review",
    "notes": "Ported from horde-ad on 2026-09-04, where a code review found it. Prose, so no case."
+  },
+  {
+   "id": "check-plan-crossrefs-01",
+   "kind": "control",
+   "program": "check-plan-crossrefs.py",
+   "name": "the plan at 91f28c8f3, before the 2026-09-04 campaign's fixes, draws the graph findings that campaign found by hand: A1 at 0.0, R4 and R6, A2 on run-wasm-game.mjs, A3 at 1.2 and 1.5, A4 at 0.3, 2.2, 2.3 and 2.4",
+   "notes": "The historical corpus, so the checker's proof is the document's own defects rather than a planted one. The handoff also expected A3 at 2.5, and it is not drawn: 2.5's Split at that revision restated R6's deliverable in prose and never named render-coherence.test.ts, so there is no token to read and the finding was a reader's inference. A control, not a defect: the defects were the document's, and the corpus root is tools/, which defect-run.py cannot reach the document from.",
+   "plant_cmd": "git -C {repo} show 91f28c8f3:docs/wasm-frontend-unified-plan.md > plan.md && git -C {repo} show 91f28c8f3:tools/doc-refs-allow.txt > allow.txt",
+   "invoke": [
+    "plan.md",
+    "--allowlist",
+    "allow.txt"
+   ],
+   "expect_exit": 1,
+   "expect_text": [
+    "A1 `ts-src/src/terminal-input.test.ts` --- claimed by no item; written by 0.0 and 0.1, and 0.0's **Owns** does not name `tools/doc-refs-allow.txt`",
+    "A1 `url-options-core.ts` --- claimed by R4, whose **Owns** does not name `tools/doc-refs-allow.txt`",
+    "A1 `render-coherence.test.ts` --- claimed by R6, whose **Owns** does not name `tools/doc-refs-allow.txt`",
+    "A2 `run-wasm-game.mjs` --- 3.2's **Owns** names neither 1.2",
+    "A3 1.2 --- writes `run-wasm-game.mjs`, created by 0.3, which its depends-on cell does not reach",
+    "A3 1.5 --- writes `run-wasm-game.mjs`, created by 0.3, which its depends-on cell does not reach",
+    "A4 0.3 --- **Owns** names `tools/doc-refs-allow.txt` and **Done** lacks `docs`",
+    "A4 2.2 --- **Owns** names `docs/wasm-frontend-unified-plan.md` and **Done** lacks `docs`",
+    "A4 2.3 --- **Owns** names `docs/wasm-frontend-unified-plan.md` and **Done** lacks `docs`",
+    "A4 2.4 --- **Owns** names `docs/wasm-frontend-unified-plan.md` and **Done** lacks `docs`"
+   ]
+  },
+  {
+   "id": "check-plan-crossrefs-02",
+   "kind": "control",
+   "program": "check-plan-crossrefs.py",
+   "name": "the same findings are silent over the plan as committed, so each assertion is loud at one end of the history and quiet at the other",
+   "notes": "The complement of check-plan-crossrefs-01: an assertion silent at both ends is not working, and one loud at both ends is either right or wrong about the live document, which is read before the checker is touched. The exit status is not asserted, the live document carrying findings of its own.",
+   "invoke": [
+    "{repo}/docs/wasm-frontend-unified-plan.md",
+    "--allowlist",
+    "{repo}/tools/doc-refs-allow.txt"
+   ],
+   "expect_absent": [
+    "A1 `ts-src/src/terminal-input.test.ts` --- claimed by no item; written by 0.0 and 0.1, and 0.0's **Owns** does not name `tools/doc-refs-allow.txt`",
+    "A1 `url-options-core.ts` --- claimed by R4, whose **Owns** does not name `tools/doc-refs-allow.txt`",
+    "A1 `render-coherence.test.ts` --- claimed by R6, whose **Owns** does not name `tools/doc-refs-allow.txt`",
+    "A2 `run-wasm-game.mjs` --- 3.2's **Owns** names neither 1.2",
+    "A3 1.2 --- writes `run-wasm-game.mjs`, created by 0.3, which its depends-on cell does not reach",
+    "A3 1.5 --- writes `run-wasm-game.mjs`, created by 0.3, which its depends-on cell does not reach",
+    "A4 0.3 --- **Owns** names `tools/doc-refs-allow.txt` and **Done** lacks `docs`",
+    "A4 2.2 --- **Owns** names `docs/wasm-frontend-unified-plan.md` and **Done** lacks `docs`",
+    "A4 2.3 --- **Owns** names `docs/wasm-frontend-unified-plan.md` and **Done** lacks `docs`",
+    "A4 2.4 --- **Owns** names `docs/wasm-frontend-unified-plan.md` and **Done** lacks `docs`"
+   ]
   }
  ]
 }
