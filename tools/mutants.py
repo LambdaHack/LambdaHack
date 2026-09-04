@@ -220,6 +220,9 @@ MUTANTS = [
      'NEG_BEFORE_RE = re.compile(r"\\b(?:not|never|neither|nor|no|nothing)\\b"\n'
      '                           r"(?:\\s+[\\w\'-]+){0,3}\\s*$", re.I)\n',
      'NEG_BEFORE_RE = re.compile(r"(?!x)x")\n', ST),
+    ('check-plan-crossrefs pointer at another list read as ownership', 'check-plan-crossrefs.py',
+     "NEG_AFTER_RE = re.compile(r\"^'s (?:does|is) at\\b|^ at (?:ID)\\b\"\n",
+     "NEG_AFTER_RE = re.compile(r\"^'s (?:does|is) at\\b\"\n", ST),
     ('check-plan-crossrefs disclaimer after a token ignored', 'check-plan-crossrefs.py',
      "                    or self.neg_after_re.search(after))\n",
      "                    or False)\n", ST),

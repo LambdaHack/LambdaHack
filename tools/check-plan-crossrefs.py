@@ -176,7 +176,8 @@ GRAMMARS = [
 DOC_ALIASES = ("this document", "this plan")
 # **Owns** and **Split** name a file in order to disclaim it as often as
 # to claim it: "Not `haskell-ci.yml`", "`Dom.hs` is deliberately not
-# here", "`cursor.ts` there are 0.2's". The phrases are curated from the
+# here", "`cursor.ts` there are 0.2's", "as for `terminal.ts` at 0.0" ---
+# a pointer at another item's list. The phrases are curated from the
 # documents and read in a window around the token --- the clause before
 # it and the clause after, other tokens blanked so a list is transparent
 # --- rather than over a whole sentence, where a bare "not" would strip
@@ -185,7 +186,9 @@ DOC_ALIASES = ("this document", "this plan")
 # file the item writes.
 NEG_BEFORE_RE = re.compile(r"\b(?:not|never|neither|nor|no|nothing)\b"
                            r"(?:\s+[\w'-]+){0,3}\s*$", re.I)
-NEG_AFTER_RE = re.compile(r"^'s (?:does|is) at\b|\b(?:is|are) (?:ID)'s\b"
+NEG_AFTER_RE = re.compile(r"^'s (?:does|is) at\b|^ at (?:ID)\b"
+                          r"|^'s (?:claimant )?(?:list )?(?:is )?at (?:ID)\b"
+                          r"|\b(?:is|are) (?:ID)'s\b"
                           r"|\bstays? in\b|\bleft this list\b|\bcannot arise\b"
                           r"|\bnot owned\b|\bnot here\b|\bnot edited\b"
                           r"|\bowned by (?:ID)\b", re.I)
@@ -206,7 +209,8 @@ NEW_RE = re.compile(r"\bnew `([^`\n]+)`")
 # because its row waits on 0.2, which waits on 0.1; R1's "Not `foo.ts`",
 # its "`Makefile` is 0.1's" and its parenthesized citation of
 # `terminal.ts` keep R1 off those files' edges, as 1.2's "is deliberately
-# not here" does 1.2; the open list "and the module's" is not counted.
+# not here" does 1.2 and 0.1's "as for `twice.ts` at 0.2" does 0.1; the
+# open list "and the module's" is not counted.
 # `dropped.ts` is out of scope, in a block the phrase above does not head.
 # In the second: `Own.hs` is contended three ways and C1 alone fails to
 # name the list at C3; C3 writes the `Pure.hs` 04.1 creates and reaches it
@@ -258,7 +262,7 @@ Body naming `foo.ts` as evidence, which is not an **Owns**.
 
 **Split** --- two commits. (1) `ts-src/src/new-core.ts` and `ts-src/src/new-core.test.ts`, with the deletion of both `tools/doc-refs-allow.txt` entries. (2) the landing, and the `make gen-scratch` entry.
 
-**Owns** --- the new `ts-src/src/new-core.ts`, `ts-src/src/new-core.test.ts`, `ts-src/src/loader.ts`, `Makefile`, `tools/doc-refs-allow.txt` and this document. **The claimant list for `loader.ts` lives here**: 0.1, 0.2, 1.1 and R1.
+**Owns** --- the new `ts-src/src/new-core.ts`, `ts-src/src/new-core.test.ts`, `ts-src/src/loader.ts`, `Makefile`, `tools/doc-refs-allow.txt` and this document. **The claimant list for `loader.ts` lives here**: 0.1, 0.2, 1.1 and R1, one holder at a time, as for `ts-src/src/twice.ts` at 0.2.
 
 **Done** --- `ts`, `docs`.
 
