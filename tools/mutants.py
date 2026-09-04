@@ -98,6 +98,12 @@ MUTANTS = [
     # check-plan-citations: "short-circuiting the publication test"
     ('check-plan-citations publication test short-circuited', 'check-plan-citations.py',
      "    return reachable_from(sha, PUBLISHED_REF)\n", "    return True\n", ST),
+    # check-plan-citations: a stamp the formatter wrapped inside a blockquote
+    # read as no stamp at all -- --restamp refused it and its orphan and
+    # publication checks passed in silence (2026-09-04)
+    ('check-plan-citations stamp regex blind to a wrapped line', 'check-plan-citations.py',
+     '    r"((?:`|\\*\\*)[\\s>]*\\()(\\d{4}-\\d{2}-\\d{2})(\\))")\n',
+     '    r"((?:`|\\*\\*)\\s*\\()(\\d{4}-\\d{2}-\\d{2})(\\))")\n', ST),
     # check-plan-citations: "disabling the dirty-cited-file refusal"
     ('check-plan-citations dirty-cited-file refusal disabled', 'check-plan-citations.py',
      "        if dirty:\n", "        if False:\n", ST),

@@ -290,10 +290,16 @@ URL_RE = re.compile(
 # `hash` or a blockquoted **hash**, always followed by an ISO date in
 # parentheses. The date is what keeps this from matching the other commit
 # hashes documents mention (a bug's commit, a baseline's commit).
+# `[\s>]*` wherever the stamp allows a gap, because the formatter may put a
+# line break anywhere in it and a break inside a blockquote carries a `>`
+# onto the next line. A stamp the wrapper split between the hash and its
+# date read as no stamp at all, so --restamp refused a document that had
+# one -- and which break lands where moves whenever a paragraph above is
+# edited, so this is not a shape any document can be kept in.
 STAMP_RE = re.compile(
-    r"(verified against[^`*]{0,120}?commit\s*>?\s*(?:`|\*\*))"
+    r"(verified against[^`*]{0,120}?commit[\s>]*(?:`|\*\*))"
     r"([0-9a-f]{7,40})"
-    r"((?:`|\*\*)\s*\()(\d{4}-\d{2}-\d{2})(\))")
+    r"((?:`|\*\*)[\s>]*\()(\d{4}-\d{2}-\d{2})(\))")
 
 
 def spans(spec):
@@ -615,6 +621,24 @@ def self_test():
             expect("no citation refuses", p.returncode, 1)
             contains("no citation refuses", p.stdout,
                      "no file:line citations")
+
+            # A stamp the formatter wrapped, inside a blockquote, so that the
+            # hash ends one line and the date opens the next behind a `>`.
+            # This read as no stamp at all: --restamp refused a document that
+            # had one, and the stamp's own orphan and publication checks
+            # passed over it in silence. Two of this repo's five stamped
+            # documents were in that shape when it was found.
+            open("r7.md", "w").write(
+                "`a.hs:1` cited.\n\n> Citations were verified against the"
+                " tree at commit **0000000aa**\n> (2020-01-01).\n")
+            p = run("r7.md", "--restamp")
+            expect("wrapped stamp is found", p.returncode, 0)
+            contains("wrapped stamp is found", p.stdout, "0000000aa (2020-01-01) ->")
+            contains("wrapped stamp is checked", p.stdout, "ORPHANED")
+            after = open("r7.md").read()
+            if "**\n> (" not in after:
+                bad.append("wrapped stamp rewritten without its line break:"
+                           f" {after!r}")
         finally:
             os.chdir(prev)
     for b in bad:
