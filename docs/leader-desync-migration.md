@@ -112,17 +112,17 @@ is several commits, then **Owns**, **Done**, **Hands back** and **Decide
 first**, each written out even as `nothing` --- which is read there
 and not restated here. `tools/check-plan-crossrefs.py` reads this document
 against itself and, run with no argument, both documents against each other,
-so a file both campaigns write is named on both sides by item id,
-and the claimant list for such a file lives at one item of one campaign
-with the rest pointing at it. Three things are this document's own. The gates
-**Done** names are defined once, under "Running this plan", and a gate
-that selects a series states the count it expects, since the count is what
-is read. The lock does not serialize on this document, as it does not
-on that plan: a ledger flip and a Log line are the item's own lines.
-And the states are the ones the pointman records lent that plan --- `landed`
-in a named commit, `open` for code that is wrong today, `not applied`
-for a design nothing has built --- with that plan's rule on the one row whose
-remaining evidence is a human's: a green **Done** does not flip C7.
+so a file both campaigns write is named on both sides by item id, outright
+or through the claimant list one item holds for it. Three things
+are this document's own. The gates **Done** names are defined once,
+under "Running this plan", and a gate that selects a series states the count
+it expects, since the count is what is read. The lock does not serialize
+on this document, as it does not on that plan: a ledger flip, and a Log line
+where the Log's rule earns one, are the item's own lines. And the states
+are the ones the pointman records lent that plan --- `landed` in a named commit,
+`open` for code that is wrong today, `not applied` for a design nothing has
+built --- with that plan's rule on the one row whose remaining evidence
+is a human's: a green **Done** does not flip C7.
 
 | row | delivers | size | depends on | state |
 |---|---|---|---|---|
@@ -166,7 +166,7 @@ native     cabal build && cabal test && hlint .      # 154 tests today; hlint
            && git diff --exit-code <those paths>     # stylish left them alone
 contract   cabal test --test-options='-p "/contract/"'     # 26 today; moves once
 LR-flip    cabal test --test-options='-p "/LR-flip/"'      # 10 today; moves twice
-AS         cabal test --test-options='-p "/contract AS/"'  # 13 today; moves once
+AS         cabal test --test-options='-p "contract AS"'    # 13 today; moves once
 census     python3 tools/leader-census.py             # green before C3; sec. 03
 cite       python3 tools/check-plan-citations.py <this file, the post-mortem,
            the wasm plan>, the printed snippets re-read, never the exit alone
