@@ -957,7 +957,8 @@ R1, R3, the RawFrontend contract and the determinism goldens, R3 holding
 it exclusively when its turn comes. `test/Spec.hs`: the same items without R3.
 `engine-src/Game/LambdaHack/Client/UI/Frontend.hs`: 0.1, 0.2, 1.2, 2.1, 2.4, R3,
 the RawFrontend contract for its export list and the sum-typed selection
-for both guard chains.
+for both guard chains. The pointman campaign's 04.4 also writes `CLAUDE.md`, two
+sentences at that campaign's landing, beside 0.2, 2.1 and R3.
 
 **Done** --- `native` (stylish
 over `engine-src/Game/LambdaHack/Client/UI/Frontend/InputDecision.hs`,
@@ -1115,7 +1116,8 @@ in which a fifth's examples would run nowhere. The four commits are strictly
 serial: each consumes what the previous adds, and the first and last both encode
 the highlight rule. `Sdl.hs` here is not concurrent with 0.1's second commit
 or with 2.1, `terminal-core.ts` not with 0.0, `terminal.ts` per the list at 0.0,
-and `Frontend.hs` per the claimants 0.1's Owns names.
+and `Frontend.hs` per the claimants 0.1's Owns names; the pointman campaign's
+04.4 also writes `CLAUDE.md`, at that campaign's landing.
 
 **Done** --- `native`, `ts`, `wasm`, `docs`, plus `make gen-ts` &&
 `git diff --exit-code ts-src/src/generated` && `haskell-ci regenerate` &&
@@ -2264,7 +2266,8 @@ together. **The claimant list for `Sdl.hs` lives here**: 0.1's `decideKey` call,
 0.2's `setSquareChar`/ `setMonoChar` rewrite, whose region abuts (2)'s, 1.2's
 filename helper, this item and 2.4's `supportsMultiFont` export --- so exactly
 one of the five holds the file at a time; 0.2 first is preferable, since
-then (2) inherits the `toEnum` fix instead of carrying it.
+then (2) inherits the `toEnum` fix instead of carrying it. The pointman
+campaign's 04.4 also writes `CLAUDE.md`, at that campaign's landing.
 
 **Done** --- `native` (stylish
 over `engine-src/Game/LambdaHack/Client/UI/Frontend/OverlayLayout.hs`,
@@ -2592,7 +2595,9 @@ no configuration compiles, R3. The shared files: `Sdl.hs` and `Wasm.hs`, whose
 claimant lists are at 2.1 and 2.2, `Frontend.hs`, whose list is at 0.1,
 and `MonadClientUI.hs`, whose `:329` the sum-typed selection practice also
 rewrites --- and although (1) touches only export lists and one gate, they do
-not merge, so serialize.
+not merge, so serialize. The pointman campaign's C1 appends its witness
+and accessors to the same file below `:469`, per that campaign's own ruling,
+so it slides nothing here; one holder at a time all the same.
 
 **Done** --- `native` (stylish
 over `engine-src/Game/LambdaHack/Client/UI/Frontend/Sdl.hs`,
@@ -3182,7 +3187,10 @@ adding `exposed-modules` there, into the very conditional nest R3 collapses ---
 at `GameDefinition/Main.hs:38` sits in a file 3.1 also writes, its new import
 shifting that line, and the three engine `#if` sites are also R1's
 and the capability-constants practice's, whichever lands first shaping R3's
-diff.
+diff. The pointman campaign is a further claimant on two of these: its PR 0, C3,
+C4 and C6 write `HandleHumanLocalM.hs` above the `:815` this item cites,
+the claimant list at that campaign's C3, and its 04.4 writes `CLAUDE.md`
+at that campaign's landing.
 
 **Done** --- `native` (stylish over `$(git ls-files '*.hs')`, repo-wide here
 because the rip-out's Haskell files are scattered across the tree
@@ -3414,9 +3422,9 @@ may hold these files meanwhile: R1's whole point is flipping two
 of the constants (`Server/LoopM.hs:336`, `WatchUpdAtomicM.hs:586`) and R3
 deletes their `USE_JSFILE` halves, so both follow this item rather
 than overlapping it. The pointman campaign is a third claimant
-on `HandleHumanLocalM.hs`, converting several functions above
-the `HandleHumanLocalM.hs:815` this item and R3 both cite, so re-read those two
-snippets if it has landed.
+on `HandleHumanLocalM.hs` --- its PR 0, C3, C4 and C6, the claimant list at C3
+--- converting several functions above the `HandleHumanLocalM.hs:815` this item
+and R3 both cite, so re-read those two snippets if it has landed.
 
 **Done** --- `native` (stylish
 over `engine-src/Game/LambdaHack/Common/{File,HSFile,WasmFile,JSFile}.hs`,
@@ -3485,7 +3493,9 @@ and dispatches through `Frontend.hs:186-196`, and R3 deletes
 the `#ifndef REMOVE_TELETYPE` guards at `Frontend.hs:86` and `:190` ---
 the exact lines this item turns into cases. `Frontend.hs`'s claimant list
 is at 0.1, and the determinism goldens also write `test/UnitTestHelpers.hs`,
-for their fixtures.
+for their fixtures. The pointman campaign holds both files too: its C1 appends
+to `MonadClientUI.hs` below `:469`, and its PR 0 adds a recording `ChanFrontend`
+to `test/UnitTestHelpers.hs`.
 
 **Done** --- `native` (stylish
 over `engine-src/Game/LambdaHack/Common/ClientOptions.hs`,
@@ -3643,7 +3653,8 @@ and `test/SessionUIMock.hs`, and `tools/doc-refs-allow.txt`
 Not concurrent with the RawFrontend contract harness: both add a module
 to the same `other-modules` list and both extend `test/Spec.hs`, whose claimant
 lists, with `LambdaHack.cabal`'s, are at 0.1; and the sum-typed selection also
-writes `test/UnitTestHelpers.hs`. If the digest is over committed literals
+writes `test/UnitTestHelpers.hs`, as does the pointman campaign's PR 0,
+for its recording `ChanFrontend`. If the digest is over committed literals
 rather than a file, it owns no data file; if over a file, that file joins
 this list rather than living beside the test.
 
