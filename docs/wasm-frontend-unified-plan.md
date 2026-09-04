@@ -214,7 +214,7 @@ rather than unpicked.
 | sec. | delivers | size | depends on | state |
 |---|---|---|---|---|
 | 0.0 | AltGraph fixes (keys, mouse/wheel); highlight-outline rule | tiny | --- | open |
-| 0.1 | `InputDecision` shared module; sync `lhKey` | small | 0.3 baseline | not applied |
+| 0.1 | `InputDecision` shared module; sync `lhKey` | small | 0.0; 0.3 baseline | not applied |
 | 0.2 | `CellStyle` + TS-table/fixture generator | medium | --- | not applied |
 | 0.3 | FFI-coverage battery (baseline before 0.1, then per-commit) | ongoing | --- | not applied -- standing |
 | 1.1 | crosshair cursor (CSS keyword; then generated SVG cursor) | trivial | 0.2 for the final form | not applied |
@@ -436,6 +436,20 @@ that the plan was written is one the next reader has to skip.
   **Hands back** names, so the shakedown would otherwise have stopped
   at **Done** and proved neither the ledger flip nor the restamp it is chosen
   to rehearse.
+- 2026-09-04 -- `tools/check-plan-crossrefs.py` landed (`8b5f72924`), reading
+  this document against itself, and its first run over the tip found 60 places
+  where an **Owns** shared a file with an item it did not name. Repaired
+  on the one-list-per-file shape 0.0, 0.1, 0.3 and 1.4 already had: lists added
+  at 2.1 for `Sdl.hs`, 2.2 for `Wasm.hs`, 0.3 for `ts-src/run-wasm-test.mjs`
+  and 0.1 for `LambdaHack.cabal`, `test/Spec.hs` and `Frontend.hs`, and every
+  other claimant pointed at its list. Three claims found wrong on the way:
+  the RawFrontend contract said 3.2 extends `run-wasm-test.mjs`, which 2.3 does
+  and 3.2 never touches; 0.1's ledger row omitted 0.0, whose harness commit
+  creates the test file 0.1 writes and which 0.1's own **Owns** says lands
+  first; and R3 said 2.2 extends the `os(wasi)` block of `LambdaHack.cabal`,
+  a clause standing since 2026-07-30 that 2.2's body never backed in any
+  revision --- its one Haskell change is a foreign import, which no cabal block
+  sees --- so the clause is gone.
 
 ## Repo facts the plan builds on
 
@@ -787,7 +801,8 @@ lands last.
 
 **Owns** --- `ts-src/src/terminal.ts`, `ts-src/src/terminal-input.test.ts`,
 `ts-src/src/terminal-core.ts` and its test, `ts-src/package.json`
-and `package-lock.json`, and `tools/doc-refs-allow.txt`, whose
+and `package-lock.json` --- both written by 0.3 as well, for lz-string,
+so not concurrent with it --- and `tools/doc-refs-allow.txt`, whose
 `ts-src/src/terminal-input.test.ts` entry the harness commit deletes
 as it creates the file. The two AltGraph fixes are not concurrent with each
 other: they share the new test file and the lock, which does not merge.
@@ -932,14 +947,17 @@ own ruling (2) below made `InputDecision` an import cycle for `macroStep`,
 so there is no callout left for a landing to retire. Nothing else.
 The input-side `RawFrontend` contract cases the practice assigns here land
 in `test/InputDecisionUnitTests.hs` --- the contract harness file belongs
-to the contract item and is not created by this one. Across items:
-`LambdaHack.cabal` and `test/Spec.hs` are also written by 0.2 and 0.3, `Sdl.hs`
-by 0.2 and 2.1, `Frontend.hs` by 0.2, 1.2, 2.1, 2.4, R3 and the two practices
-that rewrite its guard chains, `terminal.ts` by the list at 0.0 --- one owner
-at a time, and 0.0 lands first or is dropped, since the third commit rewrites
-the very listener it fixes. **The claimant list for `ts-src/src/loader.ts` lives
-here**, on the same footing as 0.0's for `terminal.ts`: 0.1, 1.2, 1.3, 1.5, 2.2,
-2.3, R4 and R5.
+to the contract item and is not created by this one. Across items: `Sdl.hs`'s
+claimant list is at 2.1, `Wasm.hs`'s at 2.2 and `terminal.ts`'s at 0.0 --- one
+owner at a time, and 0.0 lands first or is dropped, since the third commit
+rewrites the very listener it fixes. **Four claimant lists live here**,
+on the same footing as 0.0's for `terminal.ts`. `ts-src/src/loader.ts`: 0.1,
+1.2, 1.3, 1.5, 2.2, 2.3, R4 and R5. `LambdaHack.cabal`: 0.1, 0.2, 0.3, 1.2, 2.1,
+R1, R3, the RawFrontend contract and the determinism goldens, R3 holding
+it exclusively when its turn comes. `test/Spec.hs`: the same items without R3.
+`engine-src/Game/LambdaHack/Client/UI/Frontend.hs`: 0.1, 0.2, 1.2, 2.1, 2.4, R3,
+the RawFrontend contract for its export list and the sum-typed selection
+for both guard chains.
 
 **Done** --- `native` (stylish
 over `engine-src/Game/LambdaHack/Client/UI/Frontend/InputDecision.hs`,
@@ -1076,7 +1094,10 @@ today, without which importing `fixtures.json` fails `tsc --noEmit`),
 `engine-src/Game/LambdaHack/Client/UI/Frontend/Sdl.hs`,
 `engine-src/Game/LambdaHack/Client/UI/Frontend.hs` (export list only,
 re-exporting both new modules per 0.1's ruling (2)),
-`.github/workflows/lint-and-test-suites.yml`, `tools/doc-refs-allow.txt`,
+`.github/workflows/lint-and-test-suites.yml` (its claimant list is
+at the frontend CI smokes; the `Makefile`'s at 3.3, `Sdl.hs`'s at 2.1,
+`terminal.ts`'s at 0.0, and `LambdaHack.cabal`'s, `test/Spec.hs`'s
+and `Frontend.hs`'s at 0.1), `tools/doc-refs-allow.txt`,
 `docs/wasm-frontend-unified-plan.md` --- the last commit rewrites `Sdl.hs:590`,
 `Sdl.hs:603-624`, `Sdl.hs:636-669` and `Sdl.hs:904-922`, all cited here,
 so this item owes the citation-repair commit and its restamp --- and,
@@ -1204,6 +1225,8 @@ than copied. Across items: not concurrent with 0.0, which writes the same lock
 file, and it does not merge. **The claimant list for `ts-src/run-wasm-game.mjs`
 lives here**, the file being created here: 0.3, 1.2, 1.5 and 3.2, each adding
 its own coverage case --- one holder at a time, as for `terminal.ts` at 0.0.
+So does `ts-src/run-wasm-test.mjs`'s: 0.3, 2.3 and the RawFrontend contract.
+`LambdaHack.cabal`'s and `test/Spec.hs`'s are at 0.1.
 
 **Done** --- `native` (stylish over `test/FfiCoverageUnitTests.hs`), `wasm`,
 `docs`, plus, on the export half, `make build-wasm` and a run of the seeded
@@ -1285,10 +1308,10 @@ the ledger row. Neither deletes a `tools/doc-refs-allow.txt` entry ---
 **Owns** --- `ts-src/src/terminal.ts`, and, in the landing commit only,
 `docs/wasm-frontend-unified-plan.md`: a line inserted in `buildGrid` shifts
 `terminal.ts:135` and `terminal.ts:203`, both cited above, so even
-this one-liner obliges a citation repair and a restamp. `terminal.ts`
-is contended by 1.2 and 1.5, so the three serialize; take 1.1 first, it clears
-the file fastest. `../lambdahack.github.io` is redeployed by **Done**,
-not owned.
+this one-liner obliges a citation repair and a restamp. `terminal.ts`'s claimant
+list is at 0.0, 1.2 and 1.5 being the near neighbours, so the three serialize;
+take 1.1 first, it clears the file fastest. `../lambdahack.github.io`
+is redeployed by **Done**, not owned.
 
 **Done** --- `ts`, `wasm`, `deploy`, `docs`, plus
 `grep -qF crosshair ../lambdahack.github.io/bundle.js`.
@@ -1380,9 +1403,11 @@ Cannot run concurrently with 1.5: they share `Wasm.hs`, `ts-src/src/loader.ts`,
 at the same lines --- `startup`'s body and the `foreign import javascript` block
 in `Wasm.hs`, `loader.ts`'s `declare global` and its `globalThis.lh*` wiring,
 `terminal.ts`'s `Terminal` interface and returned object. The claimant lists
-for the three shared TS files are at 0.0, 0.1 and 0.3, and this item is on all
-three --- 1.1 among the `terminal.ts` claimants is the other near neighbour.
-`../lambdahack.github.io` is redeployed by **Done**, not owned.
+for the three shared TS files are at 0.0, 0.1 and 0.3, for `Sdl.hs` at 2.1,
+for `Wasm.hs` at 2.2 and for `LambdaHack.cabal` and `test/Spec.hs` at 0.1,
+and this item is on all of them --- 1.1 among the `terminal.ts` claimants
+is the other near neighbour. `../lambdahack.github.io` is redeployed
+by **Done**, not owned.
 
 **Done** --- `native` (stylish
 over `engine-src/Game/LambdaHack/Client/UI/Frontend/*.hs`, `test/*.hs`), `ts`,
@@ -2235,10 +2260,11 @@ re-exporting the new module per 0.1's ruling (2)),
 `docs/wasm-frontend-unified-plan.md`, `CLAUDE.md`
 and `tools/doc-refs-allow.txt`. It does not write the wire encoder: that lands
 in the same module file under 2.3, so the two items are never in flight
-together. `Sdl.hs` has two other claimants --- 0.2's `setSquareChar`/
-`setMonoChar` rewrite, whose region abuts (2)'s, and 2.4's `supportsMultiFont`
-export --- so exactly one of the three holds the file at a time; 0.2 first
-is preferable, since then (2) inherits the `toEnum` fix instead of carrying it.
+together. **The claimant list for `Sdl.hs` lives here**: 0.1's `decideKey` call,
+0.2's `setSquareChar`/ `setMonoChar` rewrite, whose region abuts (2)'s, 1.2's
+filename helper, this item and 2.4's `supportsMultiFont` export --- so exactly
+one of the five holds the file at a time; 0.2 first is preferable, since
+then (2) inherits the `toEnum` fix instead of carrying it.
 
 **Done** --- `native` (stylish
 over `engine-src/Game/LambdaHack/Client/UI/Frontend/OverlayLayout.hs`,
@@ -2375,11 +2401,14 @@ and `overlay-core.test.ts` from `tools/doc-refs-allow.txt`.
 `GameDefinition/index.html` (only the `#screen` positioning context the canvas
 overlays), `docs/wasm-frontend-unified-plan.md` and `tools/doc-refs-allow.txt`.
 Sub-commits (2) and (3) are not concurrent --- they share the two new
-`overlay-core` files --- and neither is (1) with (3), which share `terminal.ts`.
-`Wasm.hs` is written by 2.3 and 2.4 as well, so one item holds it at a time.
-The generator extension that emits (2)'s branch table is 0.2's stanza and 0.2's
-file, not this item's: schedule it with 0.2's owner rather than editing
-the generator here, or two sessions edit one executable.
+`overlay-core` files, which 2.3 and 2.5 write later, behind 2.4 in the chain ---
+and neither is (1) with (3), which share `terminal.ts`. **The claimant list
+for `Wasm.hs` lives here**: 0.1, 1.2, 1.5, this item, 2.3 and 2.4, one holder
+at a time; `terminal.ts`'s list is at 0.0, `loader.ts`'s at 0.1, `index.html`'s
+at 1.4 and the `Makefile`'s at 3.3, and this item is on all four. The generator
+extension that emits (2)'s branch table is 0.2's stanza and 0.2's file,
+not this item's: schedule it with 0.2's owner rather than editing the generator
+here, or two sessions edit one executable.
 
 **Done** --- `native` (stylish
 over `engine-src/Game/LambdaHack/Client/UI/Frontend/Wasm.hs`), `ts`, `wasm`,
@@ -2461,10 +2490,12 @@ and 2.2's having gone with their own items.
 `ts-src/src/overlay-core.ts`, `ts-src/src/overlay-core.test.ts`,
 `ts-src/src/terminal.ts`, `ts-src/src/loader.ts`, `ts-src/run-wasm-test.mjs`
 and `docs/wasm-frontend-unified-plan.md`. It overlaps 2.1 on the module file,
-2.2 on all four TS files and 2.4 on `Wasm.hs`, so it runs alone: this
-is the strict chain's one real join. The 0.2 generator emitting the decoder's
-encode fixtures is 0.2's file, not this item's --- schedule it there, as 2.2
-does for its branch table.
+2.2 on all four TS files, 2.4 on `Wasm.hs` and 2.5 on the two `overlay-core`
+files, so it runs alone: this is the strict chain's one real join. The claimant
+lists are at 0.0 for `terminal.ts`, 0.1 for `loader.ts`, 2.2 for `Wasm.hs`
+and 0.3 for `ts-src/run-wasm-test.mjs`, and this item is on all four. The 0.2
+generator emitting the decoder's encode fixtures is 0.2's file, not this item's
+--- schedule it there, as 2.2 does for its branch table.
 
 **Done** --- `native` (stylish
 over `engine-src/Game/LambdaHack/Client/UI/Frontend/OverlayLayout.hs`,
@@ -2557,9 +2588,11 @@ over `MonadClientUI.hs`: that plan cites `partActorLeader`
 (`MonadClientUI.hs:455`) and `partPronounLeader` (`MonadClientUI.hs:469`), both
 below the gate (1) rewrites, so a changed line count leaves them resolving
 and wrong. `Dom.hs` is deliberately not here: a dead example file
-no configuration compiles, R3. Two files are shared --- `Sdl.hs` with 2.1
-and 0.2, `Wasm.hs` with 2.2 and 2.3 --- and although (1) touches only their
-export lists, they do not merge, so serialize.
+no configuration compiles, R3. The shared files: `Sdl.hs` and `Wasm.hs`, whose
+claimant lists are at 2.1 and 2.2, `Frontend.hs`, whose list is at 0.1,
+and `MonadClientUI.hs`, whose `:329` the sum-typed selection practice also
+rewrites --- and although (1) touches only export lists and one gate, they do
+not merge, so serialize.
 
 **Done** --- `native` (stylish
 over `engine-src/Game/LambdaHack/Client/UI/Frontend/Sdl.hs`,
@@ -2698,9 +2731,10 @@ the citation-repair rule is about --- and the restamp rides that commit,
 this commit once carried was overtaken by the recorded spike of 2026-08-07 ---
 the body's Spike paragraph holds the artifact.)
 
-**Owns** --- `GameDefinition/Main.hs` and this document. Deliberately
-not `CLAUDE.md`: its "there is no argv and no config file on disk" stays true
-after the change, since the loader still passes the one-element argv
+**Owns** --- `GameDefinition/Main.hs`, which R3 also writes, rewording the `:38`
+comment the new import shifts, so one holder at a time; and this document.
+Deliberately not `CLAUDE.md`: its "there is no argv and no config file on disk"
+stays true after the change, since the loader still passes the one-element argv
 `["LambdaHack"]` (`loader.ts:56`), and touching it would put another work
 stream's file under this item's lock for nothing.
 
@@ -2861,15 +2895,15 @@ from `tools/doc-refs-allow.txt`.
 
 **Owns** --- `Makefile`, `.claude/skills/playtests/SKILL.md`,
 `tools/doc-refs-allow.txt` and this document, plus
-`docs/leader-desync-migration.md` conditionally. That last is the fleet hazard:
-it cites, in sec. 02 step 3, `Makefile:146-148` --- `test:`, a blank line,
-`test-gha:` --- three lines below the block this item rewrites, so any change
-in that block's line count slides the citation onto other lines while it still
-*resolves*, leaving `tools/check-plan-citations.py` green over a document
-that has started to lie. The `Makefile` is also 0.2's (`make gen-ts`), 2.2's
-(the font copy into the pages checkout), R2's (a job's own target)
-and the frontend CI smokes' (`smokeANSI`, `smokeSdl`, `smokeNodeBench`), so 3.3
-holds it alone.
+`docs/leader-desync-migration.md` conditionally, as 2.4 holds it conditionally
+too. That last is the fleet hazard: it cites, in sec. 02 step 3,
+`Makefile:146-148` --- `test:`, a blank line, `test-gha:` --- three lines below
+the block this item rewrites, so any change in that block's line count slides
+the citation onto other lines while it still *resolves*, leaving
+`tools/check-plan-citations.py` green over a document that has started to lie.
+The `Makefile` is also 0.2's (`make gen-ts`), 2.2's (the font copy
+into the pages checkout), R2's (a job's own target) and the frontend CI smokes'
+(`smokeANSI`, `smokeSdl`, `smokeNodeBench`), so 3.3 holds it alone.
 
 **Done** --- `wasm`, `deploy`, `docs`, plus `make nodeBench` &&
 `make nodeDeployedBench` &&
@@ -2972,19 +3006,19 @@ whose `writeSaveAll` calls it --- the three files this item's own ruling names
 and which the capability-constants practice also holds, so those two serialize
 on all of them; the new `test/WasmFileUnitTests.hs` (CPP-guarded to an empty
 group natively, the way `test/Spec.hs` already guards its SDL cases),
-`test/Spec.hs`, and the test-suite `other-modules` list in `LambdaHack.cabal`;
-`Server/LoopM.hs:336-342` and `WatchUpdAtomicM.hs:585-595`;
-and `GameDefinition/index.html` with `README.md` beside it --- the "Savefiles
-are prone to corruption" clause R1b falsifies stands in both, the `#status` div
-quoting the README's paragraph, and R1d deletes it from both in one commit
-under 1.4's rule, per that item's 2026-08-07 ruling; `tools/doc-refs-allow.txt`,
-whose `test/WasmFileUnitTests.hs` entry R1b's commit deletes; and this document,
-which R1a edits alone to record its number. It does not write
-`ts-src/run-wasm-test.mjs` --- the localStorage stub is 0.3's, per that item's
-own ruling, and a stub behaviour the test needs lands there first, as a 0.3
-change. R1c is not concurrent with R3 or with capability constants, all three
-rewriting those same two `#if` sites; the `LambdaHack.cabal` edit
-is not concurrent with 0.1, 0.2, 2.1, 2.2 or R3.
+`test/Spec.hs`, and the test-suite `other-modules` list in `LambdaHack.cabal`,
+both with their claimant lists at 0.1; `Server/LoopM.hs:336-342`
+and `WatchUpdAtomicM.hs:585-595`; and `GameDefinition/index.html`
+with `README.md` beside it --- the "Savefiles are prone to corruption" clause
+R1b falsifies stands in both, the `#status` div quoting the README's paragraph,
+and R1d deletes it from both in one commit under 1.4's rule, per that item's
+2026-08-07 ruling; `tools/doc-refs-allow.txt`, whose `test/WasmFileUnitTests.hs`
+entry R1b's commit deletes; and this document, which R1a edits alone to record
+its number. It does not write `ts-src/run-wasm-test.mjs` --- the localStorage
+stub is 0.3's, per that item's own ruling, and a stub behaviour the test needs
+lands there first, as a 0.3 change. R1c is not concurrent with R3
+or with capability constants, all three rewriting those same two `#if` sites;
+the `LambdaHack.cabal` edit is not concurrent with 0.1, 0.2, 2.1, 2.2 or R3.
 
 **Done** --- `native` (stylish
 over `engine-src/Game/LambdaHack/Common/WasmFile.hs`,
@@ -3057,10 +3091,11 @@ after 3.3, and the practice's `xvfb` SDL and pty ANSI smokes.
 
 **Owns** --- `.github/workflows/lint-and-test-suites.yml`, plus the `Makefile`
 where a job needs a target of its own (the `--stopAfterFrames` variant
-of `benchFrontendBattle` the xvfb smoke drives). Never
-`.github/workflows/haskell-ci.yml`, which `haskell-ci regenerate` owns. The jobs
-are not concurrent with each other: they share one YAML file, which does
-not merge.
+of `benchFrontendBattle` the xvfb smoke drives) --- the claimant lists
+are at the frontend CI smokes for the workflow file and at 3.3
+for the `Makefile`. Never `.github/workflows/haskell-ci.yml`, which
+`haskell-ci regenerate` owns. The jobs are not concurrent with each other: they
+share one YAML file, which does not merge.
 
 **Done** --- `wasm`, plus
 `python3 -c "import yaml; yaml.safe_load(open('.github/workflows/lint-and-test-suites.yml'))"`
@@ -3141,10 +3176,13 @@ the two orphan GHCJS comments nothing else claims ---
 `GameDefinition/Main.hs:38`, reworded in wasm/browser terms since the fact
 survives the compiler it names, and `Point.hs:32`'s "not supported yet by GHCJS"
 clause, updated or dropped --- and `CLAUDE.md` and this document. It must hold
-`LambdaHack.cabal` exclusively --- 0.1, 0.2, 2.1 and 2.2 all add
-`exposed-modules` there and 2.2 extends the very `os(wasi)` block R3 collapses
---- and the three engine `#if` sites are also R1's and the capability-constants
-practice's, whichever lands first shaping R3's diff.
+`LambdaHack.cabal` exclusively --- its claimant list at 0.1 names every item
+adding `exposed-modules` there, into the very conditional nest R3 collapses ---
+`Frontend.hs`'s claimant list is at 0.1 as well, the orphan comment
+at `GameDefinition/Main.hs:38` sits in a file 3.1 also writes, its new import
+shifting that line, and the three engine `#if` sites are also R1's
+and the capability-constants practice's, whichever lands first shaping R3's
+diff.
 
 **Done** --- `native` (stylish over `$(git ls-files '*.hs')`, repo-wide here
 because the rip-out's Haskell files are scattered across the tree
@@ -3203,6 +3241,7 @@ and `ts-src/src/url-options-core.test.ts`, `ts-src/src/loader.ts`
 commit deletes as it creates the files, and this document. Not concurrent
 with R5: R5's `?benchmark` mode is one of this allowlist's own entries and edits
 the same `loader.ts` call. Not concurrent with 1.3 or 1.4 for `index.html`.
+`loader.ts`'s claimant list is at 0.1 and `index.html`'s at 1.4.
 
 **Done** --- `ts`, `docs`.
 
@@ -3268,7 +3307,8 @@ rather slowly" clause, which stands in both, deleted under 1.4's rule when both
 bars are cleared), `tools/doc-refs-allow.txt` (R5a's two `frame-timing-core`
 entries), and this document; R5b writes this document alone. Not concurrent
 with R4 (`loader.ts`, and `?benchmark=` sits in R4's parameter allowlist)
-nor with 2.2 (`terminal.ts`).
+nor with 2.2 (`terminal.ts`). The claimant lists are at 0.1 for `loader.ts`, 0.0
+for `terminal.ts` and 1.4 for `index.html` and `README.md`.
 
 **Done** --- `ts`, `docs`, which decides R5a only.
 
@@ -3443,7 +3483,9 @@ shows are the only two in the tree --- and `test/UnitTestHelpers.hs`, whose
 and R3 rather than running beside them: 2.4 rewrites `MonadClientUI.hs:329`
 and dispatches through `Frontend.hs:186-196`, and R3 deletes
 the `#ifndef REMOVE_TELETYPE` guards at `Frontend.hs:86` and `:190` ---
-the exact lines this item turns into cases.
+the exact lines this item turns into cases. `Frontend.hs`'s claimant list
+is at 0.1, and the determinism goldens also write `test/UnitTestHelpers.hs`,
+for their fixtures.
 
 **Done** --- `native` (stylish
 over `engine-src/Game/LambdaHack/Common/ClientOptions.hs`,
@@ -3528,8 +3570,11 @@ and one job in `.github/workflows/lint-and-test-suites.yml`. Two shared-file
 caveats. The input-side cases are specified to land inside 0.1's commit,
 so whichever of the two lands first creates the test module and the other
 extends it --- never concurrently. The cabal stanza's `other-modules` list
-is also the determinism goldens' only edit point, and `ts-src/run-wasm-test.mjs`
-is extended by 0.3 and by 3.2 as well: one holder at a time for each.
+is also the determinism goldens' only edit point --- the claimant lists
+for `LambdaHack.cabal`, `test/Spec.hs` and `Frontend.hs` are at 0.1 ---
+`ts-src/run-wasm-test.mjs`'s list is at 0.3, 2.3 and not 3.2 being the other
+item extending it, and the workflow file's at the frontend CI smokes: one holder
+at a time for each.
 
 **Done** --- `native` (stylish
 over `engine-src/Game/LambdaHack/Client/UI/Frontend.hs`,
@@ -3596,9 +3641,11 @@ whatever fixtures the digest needs in `test/UnitTestHelpers.hs`
 and `test/SessionUIMock.hs`, and `tools/doc-refs-allow.txt`
 (the `test/DeterminismGoldenUnitTests.hs` entry, deleted by the second commit).
 Not concurrent with the RawFrontend contract harness: both add a module
-to the same `other-modules` list and both extend `test/Spec.hs`. If the digest
-is over committed literals rather than a file, it owns no data file; if
-over a file, that file joins this list rather than living beside the test.
+to the same `other-modules` list and both extend `test/Spec.hs`, whose claimant
+lists, with `LambdaHack.cabal`'s, are at 0.1; and the sum-typed selection also
+writes `test/UnitTestHelpers.hs`. If the digest is over committed literals
+rather than a file, it owns no data file; if over a file, that file joins
+this list rather than living beside the test.
 
 **Done** --- `native` (stylish over `test/DeterminismGoldenUnitTests.hs`,
 `test/UnitTestHelpers.hs`, `test/SessionUIMock.hs`, `test/Spec.hs`), `wasm`,
@@ -3667,7 +3714,7 @@ and whose hand edits vanish on the next regenerate. The workflow file has four
 claimants --- R2, which grows it per phase, 0.2's freshness job, the RawFrontend
 contract's harness job, and this item's three --- so one holder at a time,
 and the three commits here are serialized against each other for the same
-reason.
+reason; the `Makefile`'s claimant list is at 3.3.
 
 **Done** --- `native`, `docs`, plus `make smokeANSI` && `make smokeSdl` &&
 `make smokeNodeBench --dry-run`. `--dry-run` gates the one target that cannot
