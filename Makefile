@@ -334,7 +334,7 @@ test-ts:
 	npm run typecheck && npx vitest run
 
 serve-wasm:
-	cd ../lambdahack.github.io; \
+	cd ../lambdahack.github.io && \
 	node serve.mjs . 8080
 
 BROWSER ?= firefox
