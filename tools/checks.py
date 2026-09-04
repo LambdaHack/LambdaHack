@@ -9,8 +9,8 @@ defect records in both directions and the mutants. The Haskell build, the
 test suites, the playtests and hlint stay in CLAUDE.md's list: a build
 inside a command meant to run often makes it run rarely.
 
-A linter off PATH is a finding and not a skip, so `command -v` decides and
-its silence fails the step by name. The twin sync and the reference check
+A linter that cannot be found is a finding and not a skip: a probe decides
+and its silence fails the step by name. The twin sync and the reference check
 are BLOCKED at exit 2 with a sibling checkout unmounted, which check-all
 reports as a check that did not happen, never as one that passed.
 """
@@ -19,8 +19,11 @@ SCAN = ['.']
 TIMEOUT = 3600
 
 # A checker's 2 is a document that could not be checked, not one that failed,
-# and the loop hands it on as 2; a 1 anywhere is 1.
-DOCS = ("cd \"{root}/..\" && worst=0; for d in $(git ls-files '*.md' | grep -v '^CHANGELOG.md$'); "
+# and the loop hands it on as 2; a 1 anywhere is 1. A cd or a listing that
+# fails is a pass that did not happen, 2 as well, where it was a loop over
+# nothing exiting 0 (checks-02).
+DOCS = ("cd \"{root}/..\" || exit 2; docs=$(git ls-files '*.md' | grep -v '^CHANGELOG.md$') || exit 2; "
+        "worst=0; for d in $docs; "
         "do python3 tools/%s \"$d\"; rc=$?; [ $rc -eq 1 ] && worst=1; "
         "[ $rc -eq 2 ] && [ $worst -ne 1 ] && worst=2; done; exit $worst")
 
@@ -32,9 +35,9 @@ STEPS = [
     ('check-twin-sync self-test', ['python3', '{root}/check-twin-sync.py', '--self-test']),
     ('heading-outline self-test', ['python3', '{root}/heading-outline.py', '--self-test']),
     ('pyflakes', ['bash', '-c',
-                  'cd "{root}" && { python3 -m pyflakes --version >/dev/null 2>&1 || { echo "pyflakes is not on PATH (command -v pyflakes finds nothing), so tools/*.py went unlinted"; exit 1; }; } && python3 -m pyflakes *.py']),
+                  'cd "{root}" && { python3 -m pyflakes --version >/dev/null 2>&1 || { echo "python3 -m pyflakes --version failed, so tools/*.py went unlinted"; exit 1; }; } && python3 -m pyflakes *.py']),
     ('shellcheck', ['bash', '-c',
-                    'cd "{root}/.." && { command -v shellcheck >/dev/null || { echo "shellcheck is not on PATH (command -v shellcheck finds nothing), so the shell scripts went unlinted"; exit 1; }; } && files=$(git ls-files "*.sh") && { [ -z "$files" ] || shellcheck -S warning -f gcc $files; }']),
+                    'cd "{root}/.." && { command -v shellcheck >/dev/null || { echo "shellcheck is not on PATH (command -v shellcheck finds nothing), so the shell scripts went unlinted"; exit 1; }; } && files=$(git ls-files "*.sh") && if [ -z "$files" ]; then echo "no tracked shell script; nothing linted"; else shellcheck -S warning -f gcc $files; fi']),
     ('twin sync',              ['python3', '{root}/check-twin-sync.py']),
     ('doc citations',          ['bash', '-c', DOCS % 'check-plan-citations.py']),
     ('doc refs',               ['bash', '-c', DOCS % 'check-doc-refs.py']),
