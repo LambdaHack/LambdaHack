@@ -330,8 +330,8 @@ build-ts:
 	cp "$$W" ../../lambdahack.github.io/LambdaHack.wasm
 
 test-ts:
-	cd ts-src; \
-	npx vitest run
+	cd ts-src && \
+	npm run typecheck && npx vitest run
 
 serve-wasm:
 	cd ../lambdahack.github.io; \
