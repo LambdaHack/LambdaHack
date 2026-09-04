@@ -40,10 +40,13 @@ fallback is written down rather than reconstructed under pressure, and
 since 2026-08-28 `--self-test` builds it: a scratch file holding an ATX
 heading, a `===`-underlined line, a `---`-underlined line, a fenced
 block containing a `#` line and a `===` line, a `---` rule right after
-the closing fence, a list item with a `---` rule under it, and one more
-ATX heading after it; four headings, the Setext pair among them at
-levels 1 and 2, and nothing from inside or right after the fence or
-under the item.
+the closing fence, a list item with a `---` rule under it, a tilde block
+holding a backtick fence and a `#` line, and one more ATX heading after
+it; four headings, the Setext pair among them at levels 1 and 2, and
+nothing from inside or right after either fence or under the item.
+Further scratch files hold the frontmatter rows: a real frontmatter loses
+its `description:` line, and a document opening with a rule keeps the
+heading after it, Setext or ATX.
 
 The rule after the fence and the rule under the list item are the two
 rows added then, each for a defect: a closing fence is not a heading's
@@ -70,7 +73,11 @@ import sys
 ATX = re.compile(r'^(#{1,6}) +(.*?)\s*#*\s*$')
 RULE_EQ = re.compile(r'^=+\s*$')
 RULE_DASH = re.compile(r'^-+\s*$')
-FENCE = re.compile(r'^\s*(```|~~~)')
+FENCE = re.compile(r'^\s*(`{3,}|~{3,})')
+# What may sit between frontmatter's delimiters: a key or a continuation.
+# Anything else says the opening `---` was a rule; a YAML comment would
+# too, since `#` is how a heading framed by two rules opens.
+YAML_LINE = re.compile(r'^(\s+\S|[A-Za-z_][\w-]*\s*:)')
 # A `---` under a list item closes the list; it underlines nothing.
 LIST_ITEM = re.compile(r'^\s*([-*+]|\d+[.)])\s')
 
@@ -90,21 +97,34 @@ def frontmatter_end(lines):
     for i in range(1, len(lines)):
         if lines[i].strip() == '---':
             return i + 1
+        # A line no frontmatter holds: the opening `---` was a rule, and
+        # taking it for frontmatter dropped every heading up to the next
+        # rule (heading-outline-04).
+        if lines[i].strip() and not YAML_LINE.match(lines[i]):
+            return 0
     return 0
 
 
 def outline(path):
     lines = open(path, encoding='utf-8').read().splitlines()
     headings = []
-    in_fence = False
+    fence = None
     prev = ''
     body = frontmatter_end(lines)
     for i, line in enumerate(lines):
         if i < body:
             continue
-        if FENCE.match(line) or in_fence:
-            if FENCE.match(line):
-                in_fence = not in_fence
+        # The open fence, kind and length: CommonMark closes a block only
+        # with a fence of the same character at least as long. One boolean
+        # flipped by any fence line let a backtick fence inside a tilde
+        # block promote the fenced `#` lines and swallow every heading
+        # after it (heading-outline-03).
+        m = FENCE.match(line)
+        if m and fence is None:
+            fence = m.group(1)
+        elif m and m.group(1)[0] == fence[0] and len(m.group(1)) >= len(fence):
+            fence = None
+        if m or fence:
             prev = ''      # neither a fence nor its contents underlines
             continue
         atx = ATX.match(line)
@@ -135,21 +155,33 @@ def require_readable(paths):
 def self_test():
     """Build the docstring's scratch file and assert its outline."""
     import tempfile
-    doc = ("# Top\n\nSetext one\n===\n\nSetext two\n---\n\n```\n"
-           "# not a heading\nfenced\n===\n```\n---\n\n- item\n---\n\n"
-           "## Last\n")
-    with tempfile.NamedTemporaryFile("w", suffix=".md", delete=False) as fh:
-        fh.write(doc)
-    try:
-        got = [(lv, tx) for _, lv, tx in outline(fh.name)]
-    finally:
-        os.unlink(fh.name)
-    want = [(1, 'Top'), (1, 'Setext one'), (2, 'Setext two'), (2, 'Last')]
-    if got == want:
-        print('ok:   the scratch outline is as expected')
-        return 0
-    print(f'FAIL: outline {got}, expected {want}')
-    return 1
+    docs = [
+        ("# Top\n\nSetext one\n===\n\nSetext two\n---\n\n```\n"
+         "# not a heading\nfenced\n===\n```\n---\n\n- item\n---\n\n"
+         "~~~\n```\n# nor this\n~~~\n\n## Last\n",
+         [(1, 'Top'), (1, 'Setext one'), (2, 'Setext two'), (2, 'Last')]),
+        # Frontmatter is skipped whole; a document opening with a rule is
+        # not frontmatter and keeps its headings.
+        ("---\ndescription: x\n---\n# Title\n", [(1, 'Title')]),
+        ("---\n\nTitle\n---\n\n## Later\n", [(2, 'Title'), (2, 'Later')]),
+        ("---\n# Title\n---\n", [(1, 'Title')]),
+    ]
+    bad = []
+    for doc, want in docs:
+        with tempfile.NamedTemporaryFile("w", suffix=".md",
+                                         delete=False) as fh:
+            fh.write(doc)
+        try:
+            got = [(lv, tx) for _, lv, tx in outline(fh.name)]
+        finally:
+            os.unlink(fh.name)
+        if got != want:
+            bad.append(f'FAIL: outline {got}, expected {want}')
+    for b in bad:
+        print(b)
+    if not bad:
+        print('ok:   every scratch outline is as expected')
+    return 1 if bad else 0
 
 
 def main(argv):

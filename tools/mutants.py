@@ -140,6 +140,13 @@ MUTANTS = [
      "                     and not LIST_ITEM.match(prev))\n", "                     and True)\n", ST),
     # heading-outline: the original fenced-`#`/`===` branch of the hand recipe
     ('heading-outline fenced lines read as headings', 'heading-outline.py',
-     "        if FENCE.match(line) or in_fence:\n", "        if False:\n", ST),
-
+     "        if m or fence:\n", "        if False:\n", ST),
+    # heading-outline: a fence closed by one of another kind (heading-outline-03)
+    ('heading-outline closes a block with a fence of any kind', 'heading-outline.py',
+     "        elif m and m.group(1)[0] == fence[0] and len(m.group(1)) >= len(fence):\n",
+     "        elif m:\n", ST),
+    # heading-outline: any leading rule taken for frontmatter (heading-outline-04)
+    ('heading-outline any leading rule read as frontmatter', 'heading-outline.py',
+     "        if lines[i].strip() and not YAML_LINE.match(lines[i]):\n            return 0\n",
+     "        if False:\n            return 0\n", ST),
 ]
