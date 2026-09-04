@@ -220,6 +220,8 @@ MUTANTS = [
      'NEG_BEFORE_RE = re.compile(r"\\b(?:not|never|neither|nor|no|nothing)\\b"\n'
      '                           r"(?:\\s+[\\w\'-]+){0,3}\\s*$", re.I)\n',
      'NEG_BEFORE_RE = re.compile(r"(?!x)x")\n', ST),
+    ('check-plan-crossrefs absolute path to the configured document read as a copy', 'check-plan-crossrefs.py',
+     "    return p == d or p.endswith(os.sep + d)\n", "    return p == d\n", ST),
     ('check-plan-crossrefs bare extension word read as a path', 'check-plan-crossrefs.py',
      '            ("." not in base or base.rsplit(".", 1)[-1] not in PATH_EXT):\n',
      '            base.rsplit(".", 1)[-1] not in PATH_EXT:\n', ST),

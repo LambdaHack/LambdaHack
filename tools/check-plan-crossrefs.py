@@ -1091,6 +1091,16 @@ def self_test():
         if note and note not in out:
             bad.append(f"{label}: missing note: {note}")
 
+    # A document is its grammar's own by root-relative name or by an
+    # absolute path ending in it, as a defect record hands one over, and a
+    # copy under another name is not, whatever directory it sits in.
+    own = GRAMMARS[0]["doc"]
+    if not is_configured(own, GRAMMARS[0]) or \
+            not is_configured("/x/y/" + own, GRAMMARS[0]) or \
+            is_configured("/x/y/plan.md", GRAMMARS[0]) or \
+            is_configured(own + ".bak", GRAMMARS[0]):
+        bad.append("is_configured: the configured document is not told"
+                   " from a copy by root-relative name and absolute suffix")
     with tempfile.TemporaryDirectory() as tmp:
         doc = os.path.join(tmp, "plan.md")
         doc2 = os.path.join(tmp, "work-list.md")
