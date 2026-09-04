@@ -283,8 +283,9 @@ findings for the items below are in the Log.
 reverts or becomes C1's first draft, and the files it touched there are C1's,
 C3's and C4's to write.
 
-**Done** --- landed: `native`, `contract` and `LR-flip` on the branch,
-with the four reds named above and no others.
+**Done** --- landed, on the branch: `cabal build`, `contract` green whole,
+`LR-flip` red at exactly the four named above and nowhere else, `hlint .`
+and stylish clean.
 
 **Hands back** --- nothing.
 
@@ -294,7 +295,7 @@ witness-free (the post-mortem's sec. 10.4), it answered.
 ### PR 0 --- coverage, ahead of the engine change
 
 The three tests sec. 01's table row names and "Owed, and not started" above
-sizes: AS14 and AS15, characterizing the *unsplit* `promptGetKey` ---
+describes: AS14 and AS15, characterizing the *unsplit* `promptGetKey` ---
 the special-event branch, which needs a `ChanFrontend` that *records*
 `FrontResetKeys` rather than printing it (`UnitTestHelpers.hs:135`) and must run
 on a party fixture, `stubCliState`'s faction being under AI
