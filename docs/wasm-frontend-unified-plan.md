@@ -246,6 +246,15 @@ to skip.
   been made and the whole one recorded. The series is `[fe-invariant]` now,
   and the namespace paragraph states containment rather than equality
   as the test.
+- 2026-07-31 -- a field-by-field comparison against the three pointman
+  documents. It moved lifecycle machinery in --- the stamp's anchor invariant,
+  the carve-out for a recorded measurement, the inventory of claims no pass can
+  re-run --- and couplings out: 2.4 and capability constants now name the files
+  the other campaign cites into. Two counts it re-derived, and the entry above
+  is history and cannot be edited to hold them: the ledger has **thirty** items,
+  not thirty-one, and twenty-four carry an unanswered **Decide first**,
+  not twenty-five. All four labels re-derive to thirty apiece, so no item lacks
+  an execution block; the arithmetic was simply wrong.
 
 ## Repo facts the plan builds on
 
@@ -387,9 +396,9 @@ and its absence says the item is a single commit.
   as written.
 
 **The gates, once.** Every **Done** is built from these, run from the repo root.
-They are spelled out here and nowhere else: thirty-one items repeating one
-command chain is the second definition G1 forbids, and the chain that drifts
-is the one nobody re-reads.
+They are spelled out here and nowhere else: thirty items repeating one command
+chain is the second definition G1 forbids, and the chain that drifts is the one
+nobody re-reads.
 
 ```
 native   cabal build && cabal test && hlint .
