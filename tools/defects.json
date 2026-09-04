@@ -778,6 +778,20 @@
     "A4 2.3 --- **Owns** names `docs/wasm-frontend-unified-plan.md` and **Done** lacks `docs`",
     "A4 2.4 --- **Owns** names `docs/wasm-frontend-unified-plan.md` and **Done** lacks `docs`"
    ]
+  },
+  {
+   "id": "check-plan-crossrefs-03",
+   "kind": "control",
+   "program": "check-plan-crossrefs.py",
+   "name": "the migration document reads clean under its own grammar, and the run says A1 had nothing to read rather than passing an empty allowlist block",
+   "notes": "The pointman work list took the execution-block grammar on 2026-09-04 (its sec. 00 Log), and this pins the shape it must keep while it is live and edited: silent alone. A control rather than a defect, nothing having been fixed; what the joint run over both documents sees is pinned apart.",
+   "invoke": [
+    "{repo}/docs/leader-desync-migration.md"
+   ],
+   "expect_exit": 0,
+   "expect_text": [
+    "A1 not run over docs/leader-desync-migration.md"
+   ]
   }
  ]
 }

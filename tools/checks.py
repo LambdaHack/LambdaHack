@@ -49,8 +49,8 @@ STEPS = [
     ('doc refs',               ['bash', '-c', DOCS % 'check-doc-refs.py']),
     ('doc wrap',               ['bash', '-c', DOCS % 'check-doc-wrap.py']),
     ('doc examples',           ['bash', '-c', DOCS % 'check-doc-examples.py']),
-    # One document read against itself: the campaign plan's own
-    # cross-reference graph, which no pass over every document can see.
+    # Both campaign plans read against themselves and each other: the
+    # cross-reference graph no pass over every document can see.
     ('plan crossrefs',         ['python3', '{root}/check-plan-crossrefs.py']),
     ('records validate',       ['python3', '{bin}/defect-cases.py', '{root}']),
     ('cases, ok direction',    ['python3', '{bin}/defect-run.py', '{root}']),

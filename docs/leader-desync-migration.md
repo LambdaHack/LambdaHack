@@ -77,14 +77,14 @@ to be deleted*
 
 ## 00 -- Status, size and per-step checks
 
-Keep this table current as the work proceeds; it is the reason this document
+Keep this ledger current as the work proceeds; it is the reason this document
 lives in the repository rather than in someone's head. Steps 1 to 5 of sec. 02
-are **six commits**, C1 to C6 below, and every row of that table is green
+are **six commits**, C1 to C6 below, and every row of the ledger is green
 on its own --- as is every other row here, which is what makes the rows the unit
-of rollback sec. 01 relies on. The abort-split rows keep their `sec. 04.N` names
-and the live-read ones do not, which is deliberate rather than half-finished:
-over there each numbered step *is* one commit, so one name serves both, and here
-it stopped being true.
+of rollback sec. 01 relies on. The abort-split rows keep sec. 04's step numbers
+as their names and the live-read ones do not, which is deliberate rather
+than half-finished: over there each numbered step *is* one commit, so one name
+serves both, and here it stopped being true.
 
 That is a 2026-08-07 repartition, and the reason it is worth recording
 is that the shape it replaced had an argument behind it. Steps 2 to 5 were one
@@ -103,20 +103,43 @@ lands with exactly the flips it earns. The principle is unchanged and better
 served; only the claim that no finer split stays green was wrong, and
 it was wrong because nobody had tried it.
 
-| row | touches | check when done | state |
-|---|---|---|---|
-| C0 -- spike (step 0) | `MonadClientUI` plus the three frames of `PointmanCycleLevel`, and the five test call sites that break with them (`HandleHelperMUnitTests.hs:121`, `:141`, `:176`, `FrameMUnitTests.hs:343`, `:377`) | the library compiles and the witness reads tolerably at a real call site; then, once those five take a witness, the suite compiles and LR1/LR2/LR5 are green while LR3/LR4 and the two bridge tests are red and LR6 unrepresentable --- the spike working, not failing | **done** 2026-08-07, on branch `spike-pointman-witness` (`af673d1f4`), parked not merged: the acceptance was met exactly, 4 of 153 failing and those four LR3, LR4, X1, X2, with all 26 contract tests green and `hlint`/stylish clean. The design stands, so the witness-free variant stays passed over and step 1 proceeds. Five findings for the steps below are in the Log |
-| C1 -- witness, accessors (step 1) | `MonadClientUI` only, ~30 lines. A file two campaigns write, and the sharper of the two: `docs/wasm-frontend-unified-plan.md` cites into it nine times (`MonadClientUI.hs:166` once, `MonadClientUI.hs:329` six times --- all `getFontSetup`, which its 2.4 rewrites and which may land at any time --- and `MonadClientUI.hs:455` and `MonadClientUI.hs:469` once each, this plan's own citations mirrored back by that plan's 2.4). The bodies are disjoint and an export-list clash is loud, so the hazard is neither --- it is that ~30 lines inserted above `:166` slide all nine onto other lines *while they still resolve*, leaving `tools/check-plan-citations.py` green over a document that has started to lie. It is not the only such file, and the test that excluded the others was the wrong one: a citation slides when the line count *above* it changes, not when the cited function converts. So `HandleHumanLocalM.hs` joins --- sec. 02 converts `chooseItemDialogMode` and the `chooseItem*Human` wrappers well above the wasm rip-out's cited `HandleHumanLocalM.hs:815` --- and so does `test/UnitTestHelpers.hs`, which PR 0 writes and two of that plan's items own; of the other two both campaigns name, sec. 03's DrawM ruling is a decision *not* to write and `SessionUIMock.hs` is read rather than written. Files that plan only *cites* are a wider set and a different hazard, met by sec. 00's citation gate rather than here. The second and third files the ruling below reserved have therefore arrived, and the reopened question was ruled on 2026-08-07: no mechanism --- machinery that must be maintained or become a lie, for the little both campaigns have left to run --- so each side goes on warning by hand, this row and that plan's 2.4 and capability-constants blocks, with this row's snippet re-reading as the check a green run cannot replace; reopen again only if the shared set grows. **Append, do not insert**: the spike put the whole block below `MonadClientUI.hs:469` and slid nothing, so the hazard this cell describes is avoidable rather than merely detectable, and the snippet re-reading below is the fallback for inserting high, not the plan | `cabal build`; the contract series green and its count unmoved; nothing else changes, this step having no callers yet; and, if the block goes in anywhere but the end of the file, re-run that checker over the wasm plan and re-read the four printed snippets, which stand for those nine sites, the checker printing one per distinct line --- a green run is not sufficient there | pending |
-| C2 -- boundary and shim (from steps 2 and 5) | `HandleHumanM` only: the `CmdLeader` field becomes `HasPointman -> ...`, `cmdSemantics` mints instead of reading `sleader`, and the shim goes into `addLeader` and `weaveLeader`, which take a `MonadClientUI` constraint where they had `Monad`; the twelve direct cases get a written-out lambda each. `Game.LambdaHack.Client.State` goes redundant here and its import comes out. No handler converts | `cabal build`; **both** series green with both counts unmoved --- this commit changes no behaviour at all, which is the whole of its claim, and a single moved expectation means a handler was converted by accident | pending |
-| C3 -- dialog chain (step 2, with the flips step 4 earns it) | `InventoryM` (7 functions), `HandleHumanLocalM` (`chooseItemDialogMode`, the three `chooseItem*Human` wrappers, and `psuitReq`, which loses its own `ActorId`), `HandleHumanGlobalM` (`itemMenuHuman`, `chooseItemMenuHuman`, and `psuitReq`'s second call site in `projectItem`), their boundary cases losing the shim, and the test edits these earn | the contract series green *unchanged*; the flip series green with four flipped --- the `psuitReq` verdict pin, the fling dialog, `getFull`, and PR 0's apply pin --- each verified first against the candidate as step 4 spells out; `stylish-haskell -i` leaves every touched file alone; the citation pass over this file, the post-mortem and the wasm plan, its printed snippets re-read rather than its exit status --- this commit rewrites lines all three cite | pending |
-| C4 -- the cycle pair, and the assertion (step 3, with its flips from step 4) | `HandleHelperM`'s `pointmanCycle` and `pointmanCycleLevel` with their two `*Human` wrappers, the assertion `4a6eca154` disabled re-enabled beside them, those boundary cases losing the shim, and the LR call sites | the contract series green *unchanged*; LR3, LR4, X1 and X2 flipped and LR5 changed in shape, LR6 deleted, so the flip count falls by one (11 -> 10) --- say so in the commit, an unexplained count drop being what sec. 00 tells a reader to treat as a finding; and the citation pass over this file, the post-mortem and the wasm plan, its printed snippets re-read rather than its exit status | pending |
-| C5, C6 -- the waiting three, then the tail (step 5, with alterDir's flip from step 4) | first `pickPoint` with `alterDirHuman` and `closeDirHuman`, which flips `alterDir`; then, in a commit of its own, the remainder of sec. 03's read-live set, the fifteen convert-half of sec. 03's tail with the sixteen boundary cases dispatching them, and the shim retired from `addLeader`/`weaveLeader` --- two commits, the second flipping nothing | `cabal build`; both series green, `alterDir` on its flipped value after the first and both counts unmoved after the second; `hlint .` says `No hints`; `stylish-haskell -i` leaves every touched file alone; no `CmdLeader` case passes an `ActorId` and no shim survives, both read off `cmdSemanticsLeader` alone; and the citation pass over this file, the post-mortem and the wasm plan after each of the two, its printed snippets re-read rather than its exit status | pending |
-| C7 -- verification (step 6) | nothing; it is the gate | full suite; `make test-short`, `make test-medium`; then, played by hand and so reported unrun rather than green: the timeline session, a fling-dialog switch and an apply-dialog switch (sec. 03's sibling (c), pinned by PR 0 but checked here in the real frontend); and the citation pass over this file, the post-mortem and the wasm plan a last time, with `--restamp` after the reading | pending |
-| sec. 04.1 extract `macroStep` | one pure function, plus the eight-row table in sec. 04; the two AS cases it depends on land earlier, in sec. 01's PR 0 | the table passes; the whole AS series untouched and green, the two new cases included --- they were written against the unsplit primitive and must survive the split unedited | pending |
-| sec. 04.2 name `abortMacroPlayback` | `FrameM`, ~10 lines | AS4--AS6 green *without edits* | pending |
-| sec. 04.3 audit the residual writes | `FrameM` only; the drafted haddock in sec. 04 | the haddock lists every write the body performs | pending |
-| sec. 04.4 AS series unchanged | nothing; it is the gate | the whole AS series --- PR 0's two additions included, which is what the gate is for --- and X1/X2 pass with no edits to them | pending |
-| sec. 05 battery | --- | landed on master: the series and its harness in `3453b1777` through `8b5703e87`, then sibling (d)'s pin and the `permittedProjectClient` retag in `4b92b291a` | **done** |
+Every row is an item --- the C-rows and PR 0 below "Running this plan", sec.
+04's rows and sec. 05's at the end of the section that specifies them ---
+opening on a heading that carries the row's name and closing with the execution
+block `docs/wasm-frontend-unified-plan.md` defines under "Handing an item
+to a session" --- **Split** where the item is several commits, then **Owns**,
+**Done**, **Hands back** and **Decide first**, each written out even
+as `nothing` --- which is read there and not restated here.
+`tools/check-plan-crossrefs.py` reads this document against itself and, run
+with no argument, both documents against each other, so a file both campaigns
+write is named on both sides by item id, and the claimant list for such a file
+lives at one item of one campaign with the rest pointing at it. Three things
+are this document's own. The gates **Done** names are defined once,
+under "Running this plan", and a gate that selects a series states the count
+it expects, since the count is what is read. The lock does not serialize
+on this document, as it does not on that plan: a ledger flip and a Log line
+are the item's own lines. And the states are the ones the pointman records lent
+that plan --- `landed` in a named commit, `open` for code that is wrong today,
+`not applied` for a design nothing has built --- with that plan's rule
+on the one row whose remaining evidence is a human's: a green **Done** does
+not flip C7.
+
+| row | delivers | size | depends on | state |
+|---|---|---|---|---|
+| C0 | the spike: witness and accessors on one path (step 0) | half a day | --- | landed -- parked on `spike-pointman-witness` (`af673d1f4`), not merged |
+| PR 0 | coverage: AS14, AS15 and the apply-dialog pin | small | --- | not applied |
+| C1 | witness and accessors (step 1) | tiny | C0; PR 0 | not applied |
+| C2 | boundary and shim (from steps 2 and 5) | small | C1 | not applied |
+| C3 | dialog chain (step 2, with the flips step 4 earns it) | medium | C2 | not applied |
+| C4 | the cycle pair, and the assertion (step 3, with its flips from step 4) | small | C2 | not applied |
+| C5 | the waiting three (step 5, with alterDir's flip from step 4) | small | C3; C4 | not applied |
+| C6 | the tail: sec. 03's remainder, and the shim retired (step 5) | medium | C5 | not applied |
+| C7 | verification (step 6) | the gate, and a human's session | C6 | not applied |
+| 04.1 | extract `macroStep` | small | C7 | not applied |
+| 04.2 | name `abortMacroPlayback` | tiny | 04.1 | not applied |
+| 04.3 | audit the residual writes | tiny | 04.2 | not applied |
+| 04.4 | AS series unchanged, then the landing | the gate, then the deletion | 04.3 | not applied |
+| 05 | the test battery | --- | --- | landed on master (`3453b1777` through `8b5703e87`, then `4b92b291a`) |
 
 ### Running this plan
 
@@ -132,33 +155,37 @@ it cannot complete has to say so rather than leave the gap to judgment.
 That this had to be stated is itself the evidence --- the intent was read off
 the prose and got read wrong.
 
-**The gates, once.** Every "check when done" above is one of these, run
-from the repo root. Read the counts and the printed snippets, not the exit
-status alone --- a suite that silently loses a test still passes, and a citation
-that slid still resolves:
+**The gates, once.** Every **Done** below is built from these, named rather
+than spelled out, run from the repo root. Read the counts and the printed
+snippets, not the exit status alone --- a suite that silently loses a test still
+passes, and a citation that slid still resolves:
 
 ```
-cabal build                                      # library, executable, suite
-cabal test                                       # 154 tests today
-cabal test --test-options='-p "/contract/"'      # 26 today; moves once
-cabal test --test-options='-p "/LR-flip/"'       # 10 today; moves twice
-hlint .                                          # must print: No hints
-stylish-haskell -i <each .hs the step touched>
-  && git diff --exit-code <those paths>          # stylish left them alone
-python3 tools/leader-census.py                   # before step 2 only; sec. 03
-python3 tools/check-plan-citations.py <this file, the post-mortem, the plan>
+native     cabal build && cabal test && hlint .      # 154 tests today; hlint
+           && stylish-haskell -i <the item's .hs>    #   must print: No hints
+           && git diff --exit-code <those paths>     # stylish left them alone
+contract   cabal test --test-options='-p "/contract/"'     # 26 today; moves once
+LR-flip    cabal test --test-options='-p "/LR-flip/"'      # 10 today; moves twice
+AS         cabal test --test-options='-p "/contract AS/"'  # 13 today; moves once
+census     python3 tools/leader-census.py             # green before C3; sec. 03
+cite       python3 tools/check-plan-citations.py <this file, the post-mortem,
+           the wasm plan>, the printed snippets re-read, never the exit alone
+docs       the repo's standing document passes over this document, which
+           CLAUDE.md lists; the reading pass is what `--restamp` asserts
+playtests  make test-short && make test-medium       # minutes each
 ```
 
 Those three counts move at exactly two points and nowhere else,
-and the repartition does not add a third: PR 0 of sec. 01 takes them to 157, 28
-and 11 --- two AS cases and one flip pin --- and C4 then deletes LR6, taking
-them to 156, 28 and 10. Every other commit of PR 1 flips expectations without
-moving a count, which is why "count unmoved" is a real check on each of them
-rather than a formality. The three counts were re-measured on the unmodified
-tree on 2026-08-07 and are 154, 26 and 10 as stated. A "count unmoved"
-in the table above is against whichever of the three baselines its row follows,
-and this is the only place the sequence is stated, so a row that disagrees
-with it is wrong there rather than here. A count that shifts otherwise
+and the repartition does not add a third: PR 0 takes them to 157, 28 and 11 ---
+two AS cases and one flip pin, the AS series itself going from thirteen
+to fifteen --- and C4 then deletes LR6, taking them to 156, 28 and 10. Every
+other commit of PR 1 flips expectations without moving a count, which is why
+"count unmoved" is a real check on each of them rather than a formality.
+The three counts were re-measured on the unmodified tree on 2026-08-07
+and are 154, 26 and 10 as stated. A "count unmoved" in a **Done** below
+is against whichever of the three baselines its row follows, and this
+is the only place the sequence is stated, so a row that disagrees with
+it is wrong there rather than here. A count that shifts otherwise
 is the finding, not a nuisance: both patterns select on the test *name*,
 so a renamed test leaves its series silently, and, matching by containment,
 a marker merely *containing* `contract` or `LR-flip` joins it ---
@@ -237,6 +264,323 @@ loop covering the verdict table and both placement verifications
 by construction, the sec. 02.0 spike superseding the rank-2 one against the real
 tree, and sec. 11's interleaved A/B protocol needing no fresh absolutes ---
 and an eager artifact would be taken against lines steps 2 to 5 rewrite.
+
+### C0 --- spike (step 0)
+
+`MonadClientUI` plus the three frames of `PointmanCycleLevel`, and the five test
+call sites that break with them (`HandleHelperMUnitTests.hs:121`, `:141`,
+`:176`, `FrameMUnitTests.hs:343`, `:377`). Its acceptance: the library compiles
+and the witness reads tolerably at a real call site; then, once those five take
+a witness, the suite compiles and LR1/LR2/LR5 are green while LR3/LR4
+and the two bridge tests are red and LR6 unrepresentable --- the spike working,
+not failing. Met exactly on 2026-08-07, on branch `spike-pointman-witness`
+(`af673d1f4`), parked not merged: 4 of 153 failing and those four LR3, LR4, X1,
+X2, with all 26 contract tests green and `hlint`/stylish clean. The design
+stands, so the witness-free variant stays passed over and C1 proceeds. Five
+findings for the items below are in the Log.
+
+**Owns** --- nothing on master: the spike is parked on its branch and either
+reverts or becomes C1's first draft, and the files it touched there are C1's,
+C3's and C4's to write.
+
+**Done** --- landed: `native`, `contract` and `LR-flip` on the branch,
+with the four reds named above and no others.
+
+**Hands back** --- nothing.
+
+**Decide first** --- nothing; the one question it carried, witness versus
+witness-free (the post-mortem's sec. 10.4), it answered.
+
+### PR 0 --- coverage, ahead of the engine change
+
+The three tests sec. 01's table row names and "Owed, and not started" above
+sizes: AS14 and AS15, characterizing the *unsplit* `promptGetKey` ---
+the special-event branch, which needs a `ChanFrontend` that *records*
+`FrontResetKeys` rather than printing it (`UnitTestHelpers.hs:135`) and must run
+on a party fixture, `stubCliState`'s faction being under AI
+(`UnitTestHelpers.hs:350`) and so silencing the effect;
+and the no-`resetPlayBack` invariant, observed on a non-empty macro stack behind
+an empty pending frame --- and the apply-dialog pin of the post-mortem's sibling
+(c), written the way the `psuitReq` one was, on per-actor failure verdicts
+(`ApplyNoEffects`, `ApplyFood`, `ApplyUnskilled` for skills 2, 1 and 0), which
+needs `permittedApplyClient` moved out of `HandleHumanLocalM`'s
+`EXPOSE_INTERNAL` block into the group beside `permittedProjectClient`
+and no walkable board. All three pin today's behaviour and land green; nothing
+here touches the engine beyond that export move. It takes the three counts
+to 157, 28 and 11, the first of the two movements "Running this plan" permits,
+and the AS series to fifteen.
+
+**Split** --- two commits, the titles drafted in sec. 02. (1) the two AS cases,
+with the recording `ChanFrontend` in `test/UnitTestHelpers.hs`,
+and the abort-split record's outcome line, whose "two are unpinned" this closes.
+(2) the apply pin with its export move, and the post-mortem's outcome line,
+whose "the apply-dialog one by nothing" this closes --- the two appends the head
+callout rules PR 0 makes. (2) carries the ledger flip.
+
+**Owns** --- `test/FrameMUnitTests.hs`, `test/HandleHumanLocalMUnitTests.hs`,
+`test/UnitTestHelpers.hs`,
+`engine-src/Game/LambdaHack/Client/UI/HandleHumanLocalM.hs` (its export list
+only), `docs/leader-desync-bug.md` and `docs/promptgetkey-hygiene.md` (one
+outcome line each, the head callout's ruling), and this document. The claimant
+list for `HandleHumanLocalM.hs` and for the post-mortem is at C3,
+for `test/FrameMUnitTests.hs` at 04.1; C3 also writes
+`test/HandleHumanLocalMUnitTests.hs`; the wasm plan's determinism goldens
+and sum-typed selection both write `test/UnitTestHelpers.hs`; and 04.4 appends
+to both records after this item.
+
+**Done** --- `native` (stylish over the three test files
+and `HandleHumanLocalM.hs`), `contract` at 28, `LR-flip` at 11, `AS` at 15,
+`docs`; and, for the special-event case, the non-vacuity the harness cannot
+supply: run it once against `testFaction` in place of the party fixture
+and watch it fail, that being the fixture that silences the effect.
+
+**Hands back** --- nothing.
+
+**Decide first** --- nothing, ruled 2026-08-07: the two AS cases are new tests
+rather than an assertion inside AS4 (sec. 01's callout), and PR 0 appends
+the two outcome lines itself (the head callout).
+
+### C1 --- witness and accessors (step 1)
+
+`MonadClientUI` only, ~30 lines: the abstract `HasPointman`, the checking
+`mintHasPointman`, `getLeaderUI` (witness required) and the `Maybe` variant
+for entry points, per sec. 02 step 1. A file two campaigns write,
+and the sharper of the two: `docs/wasm-frontend-unified-plan.md` cites
+into it nine times (`MonadClientUI.hs:166` once, `MonadClientUI.hs:329` six
+times --- all `getFontSetup`, which its 2.4 rewrites and which may land at any
+time --- and `MonadClientUI.hs:455` and `MonadClientUI.hs:469` once each,
+this plan's own citations mirrored back by that plan's 2.4). The bodies
+are disjoint and an export-list clash is loud, so the hazard is neither ---
+it is that ~30 lines inserted above `:166` slide all nine onto other lines
+*while they still resolve*, leaving `tools/check-plan-citations.py` green
+over a document that has started to lie. It is not the only such file,
+and the test that excluded the others was the wrong one: a citation slides when
+the line count *above* it changes, not when the cited function converts.
+So `HandleHumanLocalM.hs` joins --- sec. 02 converts `chooseItemDialogMode`
+and the `chooseItem*Human` wrappers well above the wasm rip-out's cited
+`HandleHumanLocalM.hs:815` --- and so does `test/UnitTestHelpers.hs`, which PR 0
+writes and two of that plan's items own; of the other two both campaigns name,
+sec. 03's DrawM ruling is a decision *not* to write and `SessionUIMock.hs`
+is read rather than written. Files that plan only *cites* are a wider set
+and a different hazard, met by the `cite` gate rather than here. The second
+and third files the ruling below reserved have therefore arrived,
+and the reopened question was ruled on 2026-08-07: no mechanism --- machinery
+that must be maintained or become a lie, for the little both campaigns have left
+to run --- so each side goes on warning by hand, this item and that plan's 2.4
+and capability-constants blocks, with this item's snippet re-reading
+as the check a green run cannot replace; reopen again only if the shared set
+grows. **Append, do not insert**: the spike put the whole block below
+`MonadClientUI.hs:469` and slid nothing, so the hazard this item describes
+is avoidable rather than merely detectable, and the snippet re-reading
+in **Done** is the fallback for inserting high, not the plan.
+
+**Owns** --- `engine-src/Game/LambdaHack/Client/UI/MonadClientUI.hs`
+and this document. The wasm plan's 2.4 and its sum-typed selection practice
+write the same file, both at `MonadClientUI.hs:329`; the bodies are disjoint
+and the hazard is the slide above, so serialize and append.
+
+**Done** --- `native`, `contract` unmoved, `LR-flip` unmoved, `docs`; nothing
+else changes, this step having no callers yet; and, if the block goes
+in anywhere but the end of the file, `cite` over the wasm plan with the four
+printed snippets re-read, which stand for those nine sites, the checker printing
+one per distinct line --- a green run is not sufficient there.
+
+**Hands back** --- nothing.
+
+**Decide first** --- nothing, ruled 2026-08-07: the insertion point is the end
+of the file, and the shared-file hazard stays hand-warned on both sides rather
+than mechanized (both in the Log).
+
+### C2 --- boundary and shim (from steps 2 and 5)
+
+`HandleHumanM` only: the `CmdLeader` field becomes `HasPointman -> ...`,
+`cmdSemantics` mints instead of reading `sleader`, and the shim goes
+into `addLeader` and `weaveLeader`, which take a `MonadClientUI` constraint
+where they had `Monad`; the twelve direct cases get a written-out lambda each.
+`Game.LambdaHack.Client.State` goes redundant here and its import comes out.
+No handler converts.
+
+**Owns** --- `engine-src/Game/LambdaHack/Client/UI/HandleHumanM.hs`
+and this document. **The claimant list for `HandleHumanM.hs` lives here**: C2,
+then C3, C4, C5 and C6, each taking the boundary cases of the handlers
+it converts, one holder at a time in that order.
+
+**Done** --- `native`, `contract` unmoved, `LR-flip` unmoved, `docs`:
+this commit changes no behaviour at all, which is the whole of its claim,
+and a single moved expectation means a handler was converted by accident.
+
+**Hands back** --- nothing.
+
+**Decide first** --- nothing, ruled 2026-08-07: the shim in two helpers is what
+the spike settled (the Log).
+
+### C3 --- dialog chain (step 2, with the flips step 4 earns it)
+
+`InventoryM` (7 functions), `HandleHumanLocalM` (`chooseItemDialogMode`,
+the three `chooseItem*Human` wrappers, and `psuitReq`, which loses its own
+`ActorId`), `HandleHumanGlobalM` (`itemMenuHuman`, `chooseItemMenuHuman`,
+and `psuitReq`'s second call site in `projectItem`), their boundary cases losing
+the shim, and the test edits these earn: the four flips, and the witness
+the [contract] cases step 4 names need in order to compile. It rewrites lines
+this document, the post-mortem's sec. 10 and the wasm plan's Appendix C cite.
+
+**Split** --- two commits. (1) the conversion with its flips, titled as sec. 02
+drafts. (2) the citation-repair commit "Running this plan" owes after every code
+step: `cite` over this document and the post-mortem, the printed snippets
+re-read and the ranges re-cut, then `--restamp` for both; what the pass finds
+in the wasm plan's frozen Appendix C is recorded in the Log and left there. (2)
+carries the ledger flip.
+
+**Owns** --- `engine-src/Game/LambdaHack/Client/UI/InventoryM.hs`,
+`engine-src/Game/LambdaHack/Client/UI/HandleHumanLocalM.hs`,
+`engine-src/Game/LambdaHack/Client/UI/HandleHumanGlobalM.hs`,
+`engine-src/Game/LambdaHack/Client/UI/HandleHumanM.hs` (its boundary cases;
+the claimant list is at C2), `test/HandleHumanLocalMUnitTests.hs`,
+`test/InventoryMUnitTests.hs`, `docs/leader-desync-bug.md` (secs. 10--11's
+citations, in the repair commit only), and this document. **The claimant list
+for `HandleHumanLocalM.hs` lives here**: PR 0, C3, C4 and C6 on this side, one
+holder at a time in that order, and the wasm plan's R3
+and its capability-constants practice, both citing `HandleHumanLocalM.hs:815`
+below everything this campaign converts. **So does `InventoryM.hs`'s**: C3
+and C4. **And `HandleHumanGlobalM.hs`'s**: C3, C5 and C6.
+**And the post-mortem's**: PR 0 and 04.4 for the outcome lines it reserves, C3,
+C4, C5, C6 and C7 for the citation repairs and restamps of its live secs.
+10--11. PR 0 also writes `test/HandleHumanLocalMUnitTests.hs`;
+`test/InventoryMUnitTests.hs` has one writer until 04.4's deletion commit.
+
+**Done** --- `native` (stylish over every touched `.hs`), `contract` unchanged
+at 28, `LR-flip` at 11 with four flipped --- the `psuitReq` verdict pin,
+the fling dialog, `getFull`, and PR 0's apply pin --- each verified first
+against the candidate as step 4 spells out, `census` read for its counts, `cite`
+over this document, the post-mortem and the wasm plan with the printed snippets
+re-read rather than the exit status, and `docs`.
+
+**Hands back** --- nothing.
+
+**Decide first** --- nothing, ruled 2026-07-30 (the Log): the apply closure has
+its *actor* read live inside `psuit` and its call stays put, and `psuitReq`
+reads at the top, its callers being the closure cases (sec. 03).
+
+### C4 --- the cycle pair, and the assertion (step 3, with its flips from step 4)
+
+`HandleHelperM`'s `pointmanCycle` and `pointmanCycleLevel` with their two
+`*Human` wrappers in `HandleHumanLocalM`, the dialog's own calls
+at `InventoryM.hs:398` and `:431`, the assertion `4a6eca154` disabled re-enabled
+beside them, those boundary cases losing the shim, and the LR call sites:
+LR3--LR6 obtain a witness through `mintHasPointman`, LR6 is deleted, and X1/X2's
+cycling outcome flips. Know what re-enabling switches on, per step 3: both
+assertions are live in every build from here on.
+
+**Split** --- two commits, (1) the conversion with its flips and (2)
+the citation repair, exactly as C3's; (2) carries the ledger flip.
+
+**Owns** --- `engine-src/Game/LambdaHack/Client/UI/HandleHelperM.hs`,
+`engine-src/Game/LambdaHack/Client/UI/HandleHumanLocalM.hs` (the two wrappers;
+the claimant list is at C3),
+`engine-src/Game/LambdaHack/Client/UI/InventoryM.hs` (the two call sites; list
+at C3), `engine-src/Game/LambdaHack/Client/UI/HandleHumanM.hs` (list at C2),
+`test/HandleHelperMUnitTests.hs`, `test/FrameMUnitTests.hs` (X1 and X2's cycling
+outcome; list at 04.1), `docs/leader-desync-bug.md` in the repair commit (list
+at C3), and this document. **The claimant list for `HandleHelperM.hs` lives
+here**: C4 and C6. `test/HandleHelperMUnitTests.hs` has one writer until 04.4's
+deletion commit.
+
+**Done** --- `native`, `contract` unchanged at 28, `LR-flip` at 10 with LR3,
+LR4, X1 and X2 flipped and LR5 changed in shape, LR6 deleted, so the flip count
+falls by one (11 -> 10) and the suite to 156 --- say so in the commit,
+an unexplained count drop being what sec. 00 tells a reader to treat
+as a finding; `census` read for its counts; `cite` over this document,
+the post-mortem and the wasm plan, its printed snippets re-read rather
+than its exit status; and `docs`.
+
+**Hands back** --- nothing.
+
+**Decide first** --- nothing, ruled 2026-08-07: LR6 is deleted rather
+than flipped, confirmed unrepresentable by the spike (the Log).
+
+### C5 --- the waiting three (step 5, with alterDir's flip from step 4)
+
+`pickPoint` with `alterDirHuman` and `closeDirHuman`, the first of step 5's two
+halves: `pickPoint`'s read sits between its `getConfirms` and its last use,
+the two `*DirHuman` hold across that wait, and `closeDirHuman` keeps its top
+read (sec. 03's table). It flips `alterDir`; their boundary cases lose the shim.
+
+**Split** --- two commits, (1) the conversion with its flip and (2) the citation
+repair, exactly as C3's; (2) carries the ledger flip.
+
+**Owns** --- `engine-src/Game/LambdaHack/Client/UI/HandleHumanGlobalM.hs` (list
+at C3), `engine-src/Game/LambdaHack/Client/UI/HandleHumanM.hs` (list at C2),
+`test/HandleHumanGlobalMUnitTests.hs`, `docs/leader-desync-bug.md` in the repair
+commit (list at C3), and this document. **The claimant list
+for `test/HandleHumanGlobalMUnitTests.hs` lives here**: C5 for the `alterDir`
+flip, then C6 for the `projectHuman` pair's witness.
+
+**Done** --- `native`, `contract` unmoved, `LR-flip` unmoved at 10
+with `alterDir` on its flipped value, verified first against the candidate
+as step 4 spells out; `cite` as C3's; `docs`.
+
+**Hands back** --- nothing.
+
+**Decide first** --- nothing.
+
+### C6 --- the tail (step 5's remainder)
+
+The remainder of sec. 03's read-live set after C3 to C5 ---
+`pickLeaderWithPointer` with its wrapper, `projectHuman`, `applyHuman`,
+`moveItemHuman`, `moveOrSelectItem` (with `calmE`, `overStash` and `eqpFree`
+derived below each wait) and `selectItemsToMove` --- then the fifteen
+convert-half of sec. 03's tail with the sixteen boundary cases dispatching them,
+and the shim retired from `addLeader`/`weaveLeader`. It flips nothing and ends
+on the invariant read off `cmdSemanticsLeader` alone: no case passes
+an `ActorId` and no shim survives. The pinned-site comments drafted after sec.
+02 go in at `projectItem` and `meleeAid` here, `projectItem` receiving
+its witness from `projectHuman` in the same commit.
+
+**Split** --- two commits, (1) the conversion and (2) the citation repair,
+exactly as C3's; (2) carries the ledger flip.
+
+**Owns** --- `engine-src/Game/LambdaHack/Client/UI/HandleHelperM.hs` (list
+at C4), `engine-src/Game/LambdaHack/Client/UI/HandleHumanLocalM.hs` (list
+at C3), `engine-src/Game/LambdaHack/Client/UI/HandleHumanGlobalM.hs` (list
+at C3), `engine-src/Game/LambdaHack/Client/UI/HandleHumanM.hs` (list at C2),
+`test/HandleHumanGlobalMUnitTests.hs` (list at C5), `docs/leader-desync-bug.md`
+in the repair commit (list at C3), and this document.
+
+**Done** --- `native` with `hlint .` printing `No hints` and stylish leaving
+every touched file alone, `contract` and `LR-flip` both unmoved, `census` read
+a last time, `cite` as C3's, `docs`; and the invariant above, read rather
+than run.
+
+**Hands back** --- nothing.
+
+**Decide first** --- nothing: the nineteen keep-param entries and the "some
+actor" parameters stay, the post-mortem's sec. 10 ruling on each ("Never",
+above).
+
+### C7 --- verification (step 6)
+
+Nothing to write but the ledger and the Log; step 6 says what it runs and what
+stays a human's, and the sec. 04 window is what no run has yet reached.
+
+**Owns** --- this document, and `docs/leader-desync-bug.md` for the `--restamp`
+its **Done** ends on (list at C3).
+
+**Done** --- `native` at 156 tests, `contract` at 28, `LR-flip` at 10,
+`playtests`, `cite` over this document, the post-mortem and the wasm plan a last
+time with `--restamp` for the first two after the reading, and `docs`
+with the reading pass run whole.
+
+**Hands back** --- *judgement*: the timeline session of the post-mortem's sec.
+04 in the real frontend --- a recorded macro driving a go-to-xhair run,
+then `C-Tab` inside the item menu, the post-mortem's sec. 04 callout having both
+mechanisms --- a fling-dialog switch and an apply-dialog switch,
+and `make frontendCrawl` for a visual pass over menus, played by hand
+and so reported unrun rather than green, which is what keeps this row
+`not applied` after a green **Done**. The substitute gates in **Done**: X1
+drives the window through the real `promptGetKey`, and the `LR-flip` series
+flipped whole pins the two dialog siblings, the apply one through PR 0's pin.
+
+**Decide first** --- nothing.
 
 ### Log
 
@@ -465,6 +809,25 @@ was written is one the next reader has to skip.
   on this branch, closed that home as an import cycle: both this document
   and the abort-split record now name `FrameM`'s pure section outright,
   and the abort-split is gated on the live-read design alone.
+- 2026-09-04 -- the ledger rewritten into the execution-block grammar
+  of `docs/wasm-frontend-unified-plan.md`, which the two campaigns had shared
+  in lifecycle machinery and not in how an item is handed out: a `touches` cell
+  named modules and a "check when done" cell named gates by description,
+  so a session executing a row had no exhaustive lock set, no named gate
+  and no statement of what to hand back, and the checker that reads that plan
+  against itself exited 2 on this document. Every row is an item now,
+  with **Owns**, **Done**, **Hands back** and **Decide first**
+  and a `depends on` cell, and the states are the shared vocabulary. Three
+  things moved with it. PR 0 has a row, having been the one unstarted piece
+  of work without one --- the two outcome lines it appends to the records had
+  no **Owns** to sit in. The `C5, C6` row is two rows, C6 waiting on C5.
+  And the deletion ritual of the head callout is 04.4's second commit,
+  so that its files have an **Owns**. `tools/check-plan-crossrefs.py` reads
+  this document now, alone and jointly with the wasm plan; the joint run is what
+  sees a file both campaigns write, and its first run was loud
+  on `MonadClientUI.hs`, `HandleHumanLocalM.hs`, `UnitTestHelpers.hs`
+  and `CLAUDE.md`, every finding on that plan's side, its items not yet naming
+  this document's by id --- fixed there, in a commit of its own.
 
 ## 01 -- Sequencing: two designs, one campaign
 
@@ -1120,6 +1483,98 @@ the alternative as an import cycle. It is gated on the live-read design alone:
    that does change, the cycling outcome, has already changed by then ---
    in the live-read step (sec. 02, step 4).
 
+### 04.1 --- extract `macroStep`
+
+One pure function in `FrameM`'s pure section beside `dropEmptyMacroFrames`,
+with the decision table drafted below as its test list; step 1 above has
+the rest. The two AS cases it depends on are PR 0's and land earlier.
+
+**Owns** --- `engine-src/Game/LambdaHack/Client/UI/FrameM.hs`,
+`test/FrameMUnitTests.hs` (the pure cases beside the AS series --- or a module
+of their own, per **Decide first**) and this document. **The claimant list
+for `FrameM.hs` lives here**: 04.1, 04.2 and 04.3, one commit each
+in that order. **So does `test/FrameMUnitTests.hs`'s**: PR 0, C4 and 04.1.
+
+**Done** --- `native`, `AS` at 15 and untouched --- PR 0's two cases included,
+written against the unsplit primitive and surviving the split unedited ---
+`contract` at 28, `docs`; plus the eight pure cases of the table below green.
+
+**Hands back** --- nothing.
+
+**Decide first** --- where the pure cases live, step 1 allowing either: (a)
+beside the AS series in `test/FrameMUnitTests.hs`, which adds no module
+and touches no file another campaign holds; (b) a module of their own, which
+adds it to `test/Spec.hs` and to the test-suite `other-modules`
+in `LambdaHack.cabal`, both contended in the wasm plan with their claimant lists
+at its 0.1. (a) is the recommendation; either way the AS series keeps driving
+the same decisions through the real `promptGetKey`.
+
+### 04.2 --- name `abortMacroPlayback`
+
+`FrameM`, ~10 lines: the abort action named, the common cleanup kept
+in the shell with the read-before-clear ordering noted in the record's sec. 01
+(step 2).
+
+**Owns** --- `engine-src/Game/LambdaHack/Client/UI/FrameM.hs` (list at 04.1)
+and this document.
+
+**Done** --- `native`, `AS` at 15 with AS4--AS6 green *without edits*,
+`contract` at 28, `docs`.
+
+**Hands back** --- nothing.
+
+**Decide first** --- nothing.
+
+### 04.3 --- audit the residual writes
+
+`FrameM` only: the walk step 3 describes, ending in the haddock drafted below.
+
+**Owns** --- `engine-src/Game/LambdaHack/Client/UI/FrameM.hs` (list at 04.1)
+and this document.
+
+**Done** --- `native`, `AS` at 15, `contract` at 28, `docs`; and the haddock
+lists every write the body performs, checked by reading the body against it.
+
+**Hands back** --- nothing.
+
+**Decide first** --- nothing: hoisting an effect to the callers is allowed only
+where all of them want it and the sec. 05 outcomes survive, per step 3, which
+decides each site.
+
+### 04.4 --- AS series unchanged, then the landing
+
+The gate of step 4, then the deletion ritual of the head callout, which
+is this campaign's landing and is spelled out there rather than here.
+
+**Split** --- two commits. (1) nothing but this document: the gate's result
+in the Log and the ledger flip. (2) the deletion commit the head callout spells
+out, bullet by bullet, which carries the two records' remaining outcome lines
+and the `CHANGELOG.md` lines drafted in sec. 02.
+
+**Owns** --- this document, deleted in (2) with `tools/leader-census.py`;
+`tools/checks.py` (its `UNCOVERED` entry); `CHANGELOG.md` (both drafted lines);
+`docs/leader-desync-bug.md` and `docs/promptgetkey-hygiene.md` (the outcome
+lines the head callout reserves, and sec. 10.3's recast; the post-mortem's
+claimant list is at C3, and PR 0 writes the abort-split record before this);
+`CLAUDE.md` (its two sentences; the wasm plan's 0.1, 0.2, 2.1 and R3 hold
+it too, and each names this item); `docs/wasm-frontend-unified-plan.md`
+(its four sites, under that plan's rule that the lock does not serialize on it);
+`test/HandleHumanLocalMUnitTests.hs` and `test/InventoryMUnitTests.hs` (one
+comment each, after PR 0 and C3); and `tools/check-doc-examples.py`
+(its live-control entry, and the sentence saying the control went with it).
+
+**Done** --- `AS` at 15 with no edits to it, `contract` at 28 with X1 and X2
+passing unedited; then, for (2), `docs` over `CLAUDE.md`, both records
+and the wasm plan, the `check-doc-refs.py` run and the empty `git grep` the head
+callout ends on, and `check-all tools` whole, since `tools/checks.py` and a live
+control move.
+
+**Hands back** --- nothing.
+
+**Decide first** --- nothing, ruled 2026-08-07: the census tool goes
+with this document, sec. 10.3's sentence recast in the same commit (the head
+callout).
+
 ### The haddock that step 3 asks for, drafted
 
 Step 3 ends with "`promptGetKey`'s haddock exhaustively lists the state it may
@@ -1298,6 +1753,21 @@ with the stale captured leader, as `InventoryM`'s `cycleLevelKeyDef` would. Same
 > unit-test mock with a blank frame (`onBlank = True`) --- no real frontend
 > needed --- which is what makes the AS contract series cheap enough to keep
 > green across both refactors.
+
+### 05 --- the battery, landed
+
+The series and its harness in `3453b1777` through `8b5703e87`, then sibling
+(d)'s pin and the `permittedProjectClient` retag in `4b92b291a`. Its counts
+are the baseline "Running this plan" states.
+
+**Owns** --- nothing; landed.
+
+**Done** --- landed: `contract` at 26 and `LR-flip` at 10, the baseline,
+and `AS` at 13.
+
+**Hands back** --- nothing.
+
+**Decide first** --- nothing.
 
 ---
 
