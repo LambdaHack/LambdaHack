@@ -97,38 +97,30 @@ lists globs to report as "allow" instead of failing. Every entry there
 carries its reason; an unexplained one hides the drift this checker
 exists to find. Pass -v to also list the unclassified backticks.
 
-Non-vacuity: run `python3 tools/check-doc-refs.py --self-test`. The
-scratch document and its expected verdicts live in the configuration
-block (the SELF_TEST_* settings), repo-specific like the rest of it; the
-engine below asserts the failure count, every FAIL and ok row, the
-unclassified tail, the prose a fence of the wrong kind once made command
-text, the missing-document exit, the --without-siblings degradation, the
-run with no sibling configured and the liveness of the absent-sibling
-stop. The controls
-matter as much as the failures: without them an extractor that silently
-matches nothing would look like a clean document. And the
-must-stay-unclassified rows guard the other direction, and one of them is
-what proves the path-shape gate: sibling matching is gated on path shape
-because a bare prose token once resolved inside the horde-ad copy's
-upstream checkout, and `../lambdahack.github.io` invites exactly that,
-holding `README.md`, `LICENSE`, `COPYLEFT`, `index.html` and
-`manifest.json` --- names any document uses as prose. Those five all
-resolve locally too, so the row that bites is the deployment sibling's
-own `LambdaHack.wasm` and `bundle.js`: present there, absent here, and
-carrying extensions this checker does not read as paths, so the gate is
-the only thing keeping them out of the ok column. A big foreign tree
-turns a checker into a rubber stamp faster than a small one, and the
-sibling test is widened only against these rows. Two rows of 2026-08-28:
-the same document through main() from a subdirectory, every checker
-having said "run from the repo root" and none having enforced it, and a
-PATH without wrap80, where the run must say that spans were read wrapped
-and the wrapped-span row must then not fire. Each went red with its fix
-reverted in a copy. The self-test was itself proved non-vacuous by
-breaking the checker in a copy (2026-08-14): a dead cabal-target loop, a
-dead sibling resolution, dropping the path-shape gate off the sibling
-arm, and a CITE_RE blind to the range citation each turned it red --- the
-path-shape break on exactly the rubber-stamp rows, the CITE_RE one on
-exactly the skipped-citation guard.
+Non-vacuity: run `python3 tools/check-doc-refs.py --self-test`. The scratch
+document and its expected verdicts live in the configuration block (the
+SELF_TEST_* settings), repo-specific like the rest of it; the engine below
+asserts the failure count, every FAIL and ok row, the unclassified tail, the
+prose a fence of the wrong kind once made command text, the missing-document
+exit, the --without-siblings degradation, the run with no sibling configured
+and the liveness of the absent-sibling stop. The controls matter as much as
+the failures: without them an extractor that silently matches nothing would
+look like a clean document. And the must-stay-unclassified rows guard the
+other direction, and one of them is what proves the path-shape gate: sibling
+matching is gated on path shape because a bare prose token once resolved
+inside the horde-ad copy's upstream checkout, and `../lambdahack.github.io`
+invites exactly that, holding `README.md`, `LICENSE`, `COPYLEFT`, `index.html`
+and `manifest.json` --- names any document uses as prose. Those five all
+resolve locally too, so the row that bites is the deployment sibling's own
+`LambdaHack.wasm` and `bundle.js`: present there, absent here, and carrying
+extensions this checker does not read as paths, so the gate is the only thing
+keeping them out of the ok column. A big foreign tree turns a checker into a
+rubber stamp faster than a small one, and the sibling test is widened only
+against these rows. Two later rows: the same document through main() from a
+subdirectory, every checker having said "run from the repo root" and none
+having enforced it, and a PATH without wrap80, where the run must say that
+spans were read wrapped and the wrapped-span row must then not fire. That the
+self-test bites is mutants.py's to show.
 
 Four of the rows are recorded false positives rather than decoration. The
 plain `\\bcabal` pattern matched inside `wasm32-wasi-cabal` and read

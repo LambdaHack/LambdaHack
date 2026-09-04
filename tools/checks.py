@@ -18,14 +18,19 @@ reports as a check that did not happen, never as one that passed.
 SCAN = ['.']
 TIMEOUT = 3600
 
-# A checker's 2 is a document that could not be checked, not one that failed,
-# and the loop hands it on as 2; a 1 anywhere is 1. A cd or a listing that
-# fails is a pass that did not happen, 2 as well, where it was a loop over
-# nothing exiting 0 (checks-02).
-DOCS = ("cd \"{root}/..\" || exit 2; docs=$(git ls-files '*.md' | grep -v '^CHANGELOG.md$') || exit 2; "
-        "worst=0; for d in $docs; "
-        "do python3 tools/%s \"$d\"; rc=$?; [ $rc -eq 1 ] && worst=1; "
-        "[ $rc -eq 2 ] && [ $worst -ne 1 ] && worst=2; done; exit $worst")
+# One run of the checker over every document: each takes the list and
+# aggregates as check-all does, a failure over a document that could not be
+# checked, so no loop re-derives the verdict here -- the loop that did kept
+# 0 over a status it did not define (checks-04) and split a name on its
+# space (checks-05). What is left to say is that the pass did not happen: a
+# root that cannot be entered or a listing with nothing in it, git failing
+# among its causes, is 2 with its reason, where it was a loop over nothing
+# exiting 0 (checks-02). A status the checkers do not define reaches
+# check-all as it is, and anything but 0 and 2 is a failure there.
+DOCS = ('cd "{root}/.." || { echo "cannot enter the repository root"; exit 2; }; '
+        "readarray -t docs < <(git ls-files '*.md' ':!CHANGELOG.md'); "
+        '[ ${#docs[@]} -gt 0 ] || { echo "git lists no tracked Markdown file, or could not be run; nothing checked"; exit 2; }; '
+        'python3 tools/%s "${docs[@]}"')
 
 STEPS = [
     ('check-doc-examples self-test', ['python3', '{root}/check-doc-examples.py', '--self-test']),

@@ -172,4 +172,23 @@ MUTANTS = [
     ('check-plan-citations CITE_RE blind to json and sh', 'check-plan-citations.py',
      '    r"\\.(?:hs|ts|py|c|h|cabal|mjs|html|md|txt|yaml|yml|json|sh)|Makefile)"\n',
      '    r"\\.(?:hs|ts|py|c|h|cabal|mjs|html|md|txt|yaml|yml)|Makefile)"\n', ST),
+    # check-doc-wrap: indented code no longer exempt (check-doc-wrap-07)
+    ('check-doc-wrap indented code block read as prose', 'check-doc-wrap.py',
+     "        elif fence is None and indented and (blank or code):\n", "        elif False:\n", ST),
+    # check-doc-wrap: a fence line at any indentation opens or closes a block again
+    # (check-doc-wrap-08)
+    ('check-doc-wrap indented fence line read as a fence', 'check-doc-wrap.py',
+     'FENCE = re.compile(r"^ {0,3}(`{3,}|~{3,})")\n', 'FENCE = re.compile(r"^\\s*(`{3,}|~{3,})")\n', ST),
+    # check-doc-examples: the from-the-root control may agree at exit 2 again
+    # (check-doc-examples-05). Judged with README.md aside, where the self-test
+    # must FAIL: the judge is that failure, so it passes on the guarded checker
+    # and fails on the mutant, which reports PASS over two runs that did not
+    # happen. A judge whose setup fails exits 0 and the mutant survives, loudly.
+    ('check-doc-examples control passes over two runs that did not happen', 'check-doc-examples.py',
+     "    if here.returncode == 2:\n        ok = False\n", "    if False:\n        ok = False\n",
+     'cd {dir} && mv ../README.md ../README.md.aside || exit 0; python3 {file} --self-test; rc=$?; '
+     'mv ../README.md.aside ../README.md; test $rc -ne 0'),
+    # check-twin-sync: the code case's mutation of comparable() writes nothing
+    ('check-twin-sync code case mutates nothing', 'check-twin-sync.py',
+     '            lines[at] += "  # mutated"\n', '            lines[at] += ""\n', ST),
 ]

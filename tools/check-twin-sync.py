@@ -31,15 +31,12 @@ verdict names the file, not the hunk -- the fix is to diff the two
 copies and port, which no summary replaces.
 
 Non-vacuity: run --self-test. It copies this repo's tools into a scratch
-"twin", confirms the identical copies pass, then confirms that a
-docstring-only change and a configuration-only change both still pass
-while a mutated code line fails, and that a shared shell script is
-compared whole while a TWIN_SKIP file is not. The self-test was itself proved
-non-vacuous by breaking the checker in a copy (2026-08-14): a
-comparable() that returns the empty string for every script turns the
-mutated-code case green and the self-test red. Each mutation now asserts
-that its target text exists, the configuration case having replaced a
-literal TWIN_ROOT that only this repo's copy carries.
+"twin", confirms the identical copies pass, then confirms that a docstring-only
+change and a configuration-only change both still pass while a mutated
+code line fails, and that a shared shell script is compared whole while a
+TWIN_SKIP file is not. Each mutation asserts that its target text exists, the
+configuration case having replaced a literal TWIN_ROOT that only this repo's
+copy carries. That the self-test bites is mutants.py's to show.
 """
 import ast
 import glob
@@ -149,12 +146,25 @@ def self_test():
         if mutate("configuration", 'TWIN_ROOT = "%s"' % TWIN_ROOT,
                   'TWIN_ROOT = "../no-such-twin/tools"'):
             bad.append("configuration-only change read as drift")
-        # A line of comparable() itself: the first anchor here was a
-        # literal only this call carried, so the case mutated the self-test
-        # in the twin and not the function it names (check-twin-sync-03).
-        if myself not in mutate("code", "        tree = ast.parse(text)\n",
-                                "        tree = ast.parse(text)  # mutated\n"):
-            bad.append("a mutated code line was not read as drift")
+        # A line of comparable() itself, found inside that function by its
+        # AST range: the first anchor here was a literal only this call
+        # carried, so the case mutated the self-test in the twin and not the
+        # function it names (check-twin-sync-03), and a first occurrence
+        # would name the wrong line again at the next reordering.
+        lines = text.split("\n")
+        fn = next((n for n in ast.walk(ast.parse(text))
+                   if isinstance(n, ast.FunctionDef) and n.name == "comparable"),
+                  None)
+        at = None if fn is None else next(
+            (i for i in range(fn.lineno - 1, fn.end_lineno)
+             if "tree = ast.parse(text)" in lines[i]), None)
+        if at is None:
+            bad.append("code: comparable() has no ast.parse line to mutate")
+        else:
+            lines[at] += "  # mutated"
+            open(victim, "w").write("\n".join(lines))
+            if myself not in compare(here, twin)[0]:
+                bad.append("a mutated code line was not read as drift")
         # Shared files that are not Python are compared whole, and the
         # per-repo ones in TWIN_SKIP not at all: two scratch copies, so
         # that nothing is written into the real tools/.

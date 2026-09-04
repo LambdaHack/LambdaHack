@@ -61,22 +61,17 @@ repairs it. They still both set the exit status. For the same reason
 orphaned stamp left in place is strictly worse than an unpushed one -- and
 prints an advisory naming the push it depends on.
 
-Non-vacuity: run `python3 tools/check-plan-citations.py --self-test`.
-It builds a scratch git repository -- files, commits, an origin/master
-ref, an unpublished commit -- and a control document holding every
-failing kind beside its passing controls, asserts each verdict and the
-exact failure count, and then walks --restamp through its refusal table:
-the rewrite, the already-current no-op, the unresolved-citation,
-dirty-cited-file, no-stamp, two-stamp and no-citation refusals, and the
-unpublished-anchor advisory. The self-test was itself proved non-vacuous
-by breaking the checker in a copy (2026-08-14): disabling the PROSE-LINE
-refusal, short-circuiting the publication test, and disabling the
-dirty-cited-file refusal each turned it red, naming exactly the branches
-broken. Its line-zero, backwards-range and second-document rows were
-added 2026-08-28 for three defects found by review, and reverting each
-fix in a copy turned it red on that row alone; the subdirectory row
-likewise, the search roots being root-relative and the script now moving
-there itself.
+Non-vacuity: run `python3 tools/check-plan-citations.py --self-test`. It
+builds a scratch git repository -- files, commits, an origin/master ref,
+an unpublished commit -- and a control document holding every failing kind
+beside its passing controls, asserts each verdict and the exact failure
+count, and then walks --restamp through its refusal table: the rewrite, the
+already-current no-op, the unresolved-citation, dirty-cited-file, no-stamp,
+two-stamp and no-citation refusals, and the unpublished-anchor advisory. Its
+line-zero, backwards-range and second-document rows were added for three
+defects found by review, and the subdirectory row for a fourth, the search
+roots being root-relative and the script now moving there itself. That the
+self-test bites is mutants.py's to show.
 
 It replaces a hand-run recipe of seven failing kinds and four
 publication branches, reproduced 2026-07-30 and 2026-07-31, which had to

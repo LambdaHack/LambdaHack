@@ -25,16 +25,13 @@ Two shapes of that claim are mechanical:
            distinctive in this much source, it would match by coincidence
            -- so a short output rests on the reading alone.
 
-A fenced block that declares `module Main` is skipped by the types
-branch: it is a self-contained program (an issue reproducer, say) whose
-names resolve against its own imports rather than this repo's sources.
-The self-test carries a control for the skip, proved non-vacuous the
-same way as the others: removing the skip in a copy turned it red, at
-two type findings against the expected one. A reproducer that needs no
-`main` names some other module instead, and that name is a declaration
-rather than a reference, so `local_names` takes it: its own control is a
-block declaring a module and using nothing, and removing that line from
-a copy reported the module's name and turned the self-test red.
+A fenced block that declares `module Main` is skipped by the types branch: it
+is a self-contained program (an issue reproducer, say) whose names resolve
+against its own imports rather than this repo's sources. The self-test carries
+a control for the skip. A reproducer that needs no `main` names some other
+module instead, and that name is a declaration rather than a reference, so
+`local_names` takes it: its own control is a block declaring a module and using
+nothing.
 
 Both are deliberately narrow. What they cannot see is the more common
 defect: an example naming a real thing that is nonetheless the *wrong*
@@ -52,22 +49,19 @@ Non-vacuity (per CLAUDE.md's "prove a checker non-vacuous"): run
 
     python3 tools/check-doc-examples.py --self-test
 
-It builds the control document itself, against this repo's real source
-list, and confirms both branches fire -- one type finding, one output
-finding -- while none of the passing controls is reported, and that a
-source list naming nothing reads as none rather than as an empty corpus
-(added 2026-08-28, when a run from `docs/` was found to hang on the old
-`cat $(...)` and, with stdin closed, to fail every name; reverting the
-fix in a copy turned the self-test red), and that a run from a
-subdirectory reports what one from the root does. Exit 0 on PASS, 1 on
-FAIL. Building it beats writing one out by hand, which gets skipped, or
-assembled a little differently each time and then proves whatever that
-day's document happened to hold.
+It builds the control document itself, against this repo's real source list,
+and confirms both branches fire -- one type finding, one output finding --
+while none of the passing controls is reported, that a source list naming
+nothing reads as none rather than as an empty corpus (added when a run from
+`docs/` was found to hang on the old `cat $(...)` and, with stdin closed, to
+fail every name), and that a run from a subdirectory reports what one from the
+root does, the root run having happened: agreement at exit 2 is two runs that
+did not. Exit 0 on PASS, 1 on FAIL. Building it beats writing one out by hand,
+which gets skipped, or assembled a little differently each time and then proves
+whatever that day's document happened to hold.
 
-The self-test was itself proved non-vacuous by breaking each branch in a
-copy: blanking the name pattern, disabling the output comparison, and
-dropping the doc-local exclusion turned it red at 0/1, 1/0 and 2/1
-findings. A control that cannot fail proves nothing, self-tests included.
+That the self-test bites is mutants.py's to show: a control that cannot fail
+proves nothing, self-tests included.
 
 Three things the self-test cannot cover here. No document in this repo
 has a `>>>` block, so the outputs branch has no *live document* to run
@@ -320,6 +314,11 @@ def self_test():
             (there.returncode, there.stdout.strip().splitlines()[-1:]):
         ok = False
         print("  a run from a subdirectory disagrees with one from the root")
+    # Agreement at exit 2 is two runs that did not happen: with README.md
+    # absent both said so alike and the row passed (check-doc-examples-05).
+    if here.returncode == 2:
+        ok = False
+        print("  the from-the-root control did not run")
     print(f"\nself-test: {types} type finding(s), {outs} output finding(s),"
           f" expected 1 and 1")
     print("self-test: PASS --- both branches fire and no control was reported"

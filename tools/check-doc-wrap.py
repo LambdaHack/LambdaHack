@@ -34,22 +34,18 @@ document "at neither fixed point", so on a wrap80-less machine every
 document failed with a wrong diagnosis while the BLOCKED branch sat
 unreachable below it.
 
-Non-vacuity: run `python3 tools/check-doc-wrap.py --self-test`. It
-builds a scratch git repository holding a wrapped document, a
-one-line-per-paragraph one and a wrapped bulleted list, and asserts
-every branch: both untouched forms pass; a hand-lengthened line and a
-re-wrap to a narrower width fail as hand-wrapping; one paragraph left on
-one line, and one list item joined back to one line, pass as mid-edit; a
-planted "2b." enumerator fails; a hand-wrapped committed document and an
-untracked one are refused; a committed document checked from its own
-subdirectory passes; a repository tracking no Markdown reports BLOCKED
-rather than "0 of 0 failed"; and a PATH carrying git but no wrap80
-reports BLOCKED, exit 2. The self-test was itself proved non-vacuous by
-breaking the checker in a copy (2026-08-14): disabling the
-fake-enumerator branch, counting every differing paragraph as mid-edit,
-and folding BLOCKED back into exit 1 each turned it red, naming exactly
-the cases those branches carry; the subdirectory and no-document rows
-(2026-08-28) each went red with its fix reverted.
+Non-vacuity: run `python3 tools/check-doc-wrap.py --self-test`. It builds a
+scratch git repository holding a wrapped document, a one-line-per-paragraph
+one and a wrapped bulleted list, and asserts every branch: both untouched
+forms pass; a hand-lengthened line and a re-wrap to a narrower width fail
+as hand-wrapping; one paragraph left on one line, and one list item joined
+back to one line, pass as mid-edit; a planted "2b." enumerator fails, and one
+inside a fenced or an indented code block does not, a fence line indented four
+spaces being code on either side of a block; a hand-wrapped committed document
+and an untracked one are refused; a committed document checked from its own
+subdirectory passes; a repository tracking no Markdown reports BLOCKED rather
+than "0 of 0 failed"; and a PATH carrying git but no wrap80 reports BLOCKED,
+exit 2. That the self-test bites is mutants.py's to show.
 
 What the hand-run history of this check still testifies to, kept because
 each was a real catch or a real ruling: the one-line-per-paragraph half
@@ -152,7 +148,9 @@ def tracked_markdown():
 # plain "1990. The year" is a real list item and is left alone.
 FAKE_MARKER = re.compile(r"^\s*(\d+[a-z]|[a-z]|[A-Z]|[ivxlcIVXLC]+)[.)]\s")
 REAL_MARKER = re.compile(r"^\s*([-*+]\s|\d{1,9}[.)]\s)")
-FENCE = re.compile(r"^\s*(`{3,}|~{3,})")
+# Up to three spaces of indentation, as CommonMark has it: four make the line
+# indented code, on either side of a block (check-doc-wrap-08).
+FENCE = re.compile(r"^ {0,3}(`{3,}|~{3,})")
 
 
 def fake_markers(text):
@@ -161,15 +159,25 @@ def fake_markers(text):
     # a fence of the same character at least as long, so a backtick fence
     # shown inside a tilde block is content. One boolean flipped by any
     # fence line read it as the closer (check-doc-wrap-06).
-    out, fence = [], None
+    # answered boolean-pair-state: the fence, the typed one, keeps kind and length
+    out, fence, code, blank = [], None, False, True
     for i, l in enumerate(text.split("\n"), 1):
         m = FENCE.match(l)
+        indented = l.startswith("    ") or l.startswith("\t")
         if m and fence is None:
             fence = m.group(1)
         elif m and m.group(1)[0] == fence[0] and len(m.group(1)) >= len(fence):
             fence = None
+        elif fence is None and indented and (blank or code):
+            # An indented code block: four spaces after a blank line, and
+            # every indented line after that. A shell `case` arm in one was
+            # reported as an enumerator (check-doc-wrap-07).
+            code = True
         elif fence is None and FAKE_MARKER.match(l) and not REAL_MARKER.match(l):
             out.append((i, l.strip()))
+        if l.strip() and not indented:
+            code = False
+        blank = not l.strip()
     return out
 
 
@@ -396,6 +404,18 @@ def self_test():
             expect("shorter fence inside a block", len(got), 0, "")
             got = fake_markers("~~~\nx\n~~~\n1a. shown\n")
             expect("closed block", len(got), 1, "")
+            # Indented code after a blank line is content; an indented line
+            # continuing a paragraph is prose.
+            got = fake_markers("para\n\n    x) echo hi;;\n    y) echo ho;;\n")
+            expect("indented code block", len(got), 0, "")
+            got = fake_markers("para\n    a) foo\n")
+            expect("indented paragraph continuation", len(got), 1, "")
+            # A fence line indented four spaces is code, not a fence, on
+            # either side of a block.
+            got = fake_markers("para\n\n    ```\n1a. shown\n")
+            expect("indented fence line outside a block", len(got), 1, "")
+            got = fake_markers("```\n    ```\n1a. shown\n```\n")
+            expect("indented fence line inside a block", len(got), 0, "")
 
             wl = open("l.md").read()
             flat_l = subprocess.run(["wrap80", "--unwrap", "l.md"],
