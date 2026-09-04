@@ -792,6 +792,58 @@
    "expect_text": [
     "A1 not run over docs/leader-desync-migration.md"
    ]
+  },
+  {
+   "id": "check-plan-crossrefs-04",
+   "kind": "control",
+   "program": "check-plan-crossrefs.py",
+   "name": "the joint run at 6f564870c, the migration document's first commit in the execution-block grammar, draws the cross-campaign contention that commit left standing on purpose: four files both campaigns write, named by id on the pointman side only",
+   "notes": "The historical corpus for the joint run, as check-plan-crossrefs-01 is for the plan alone. The plan's side was fixed in the commit after 6f564870c, kept apart from the rewrite that exposed it; the migration document at that commit reads clean alone (check-plan-crossrefs-03), so every one of these is an edge only the joint run can see. A control, not a defect: the findings were the plan's.",
+   "plant_cmd": "git -C {repo} show 6f564870c:docs/wasm-frontend-unified-plan.md > plan.md && git -C {repo} show 6f564870c:docs/leader-desync-migration.md > work-list.md && git -C {repo} show 6f564870c:tools/doc-refs-allow.txt > allow.txt",
+   "invoke": [
+    "plan.md",
+    "work-list.md",
+    "--allowlist",
+    "allow.txt"
+   ],
+   "expect_exit": 1,
+   "expect_text": [
+    "A2 `CLAUDE.md` --- 0.1's **Owns** names neither 04.4 nor a claimant list naming it",
+    "A2 `CLAUDE.md` --- 0.2's **Owns** names neither 04.4 nor a claimant list naming it",
+    "A2 `CLAUDE.md` --- 2.1's **Owns** names neither 04.4 nor a claimant list naming it",
+    "A2 `CLAUDE.md` --- R3's **Owns** names neither 04.4 nor a claimant list naming it",
+    "A2 `HandleHumanLocalM.hs` --- R3's **Owns** names neither C3, C4, C6, PR 0 nor a claimant list naming them",
+    "A2 `HandleHumanLocalM.hs` --- capability constants's **Owns** names neither C3, C4, C6, PR 0 nor a claimant list naming them",
+    "A2 `MonadClientUI.hs` --- 2.4's **Owns** names neither C1 nor a claimant list naming it",
+    "A2 `MonadClientUI.hs` --- sum-typed selection's **Owns** names neither C1 nor a claimant list naming it",
+    "A2 `UnitTestHelpers.hs` --- determinism goldens's **Owns** names neither PR 0 nor a claimant list naming it",
+    "A2 `UnitTestHelpers.hs` --- sum-typed selection's **Owns** names neither PR 0 nor a claimant list naming it"
+   ]
+  },
+  {
+   "id": "check-plan-crossrefs-05",
+   "kind": "control",
+   "program": "check-plan-crossrefs.py",
+   "name": "the same cross-campaign findings are silent over both documents as committed, so each assertion is loud at one end of the history and quiet at the other",
+   "notes": "The complement of check-plan-crossrefs-04, on the model of -02: an assertion silent at both ends is not working. The exit status is not asserted, the live documents carrying findings of their own from time to time.",
+   "invoke": [
+    "{repo}/docs/wasm-frontend-unified-plan.md",
+    "{repo}/docs/leader-desync-migration.md",
+    "--allowlist",
+    "{repo}/tools/doc-refs-allow.txt"
+   ],
+   "expect_absent": [
+    "A2 `CLAUDE.md` --- 0.1's **Owns** names neither 04.4 nor a claimant list naming it",
+    "A2 `CLAUDE.md` --- 0.2's **Owns** names neither 04.4 nor a claimant list naming it",
+    "A2 `CLAUDE.md` --- 2.1's **Owns** names neither 04.4 nor a claimant list naming it",
+    "A2 `CLAUDE.md` --- R3's **Owns** names neither 04.4 nor a claimant list naming it",
+    "A2 `HandleHumanLocalM.hs` --- R3's **Owns** names neither C3, C4, C6, PR 0 nor a claimant list naming them",
+    "A2 `HandleHumanLocalM.hs` --- capability constants's **Owns** names neither C3, C4, C6, PR 0 nor a claimant list naming them",
+    "A2 `MonadClientUI.hs` --- 2.4's **Owns** names neither C1 nor a claimant list naming it",
+    "A2 `MonadClientUI.hs` --- sum-typed selection's **Owns** names neither C1 nor a claimant list naming it",
+    "A2 `UnitTestHelpers.hs` --- determinism goldens's **Owns** names neither PR 0 nor a claimant list naming it",
+    "A2 `UnitTestHelpers.hs` --- sum-typed selection's **Owns** names neither PR 0 nor a claimant list naming it"
+   ]
   }
  ]
 }
