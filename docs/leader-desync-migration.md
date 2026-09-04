@@ -164,9 +164,9 @@ passes, and a citation that slid still resolves:
 native     cabal build && cabal test && hlint .      # 154 tests today; hlint
            && stylish-haskell -i <the item's .hs>    #   must print: No hints
            && git diff --exit-code <those paths>     # stylish left them alone
-contract   cabal test --test-options='-p "/contract/"'     # 26 today; moves once
-LR-flip    cabal test --test-options='-p "/LR-flip/"'      # 10 today; moves twice
-AS         cabal test --test-options='-p "contract AS"'    # 13 today; moves once
+contract   cabal test --test-options='-p "/contract/"'    # 26 today; moves once
+LR-flip    cabal test --test-options='-p "/LR-flip/"'    # 10 today; moves twice
+AS         cabal test --test-options='-p "contract AS"'   # 13 today; moves once
 census     python3 tools/leader-census.py             # green before C3; sec. 03
 cite       python3 tools/check-plan-citations.py <this file, the post-mortem,
            the wasm plan>, the printed snippets re-read, never the exit alone
