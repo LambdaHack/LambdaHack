@@ -898,15 +898,15 @@ of the leader afterwards.
 
 The abort-split is the final step of the joint migration --- strictly after sec.
 02, assuming the live-read design is complete and its verification step passed,
-and with `macroStep`'s home settled per the callout in the abort-split record's
-sec. 01 (either `InputDecision`, if the wasm plan's item 0.1 has landed by then,
-or `FrameM`'s own pure section until it does):
+and with `macroStep`'s home already settled: `FrameM`'s own pure section, per
+the abort-split record's sec. 01 and the wasm plan's 0.1 ruling that closed
+the alternative as an import cycle. It is gated on the live-read design alone:
 
-1. Extract `macroStep` into whichever home the preamble's condition settles ---
-   `InputDecision` only if the wasm plan's item 0.1 has landed by then,
-   `FrameM`'s own pure section otherwise, and the abort-split record's sec. 01
-   warns that the first home also puts the module downstream
-   of `Client.UI.Frontend` --- with the *decision* half of that record's sec. 01
+1. Extract `macroStep` into a pure section of `FrameM`, beside
+   `dropEmptyMacroFrames`, whatever the wasm plan's item 0.1 has done
+   by then --- that item's own 2026-08-07 ruling makes `InputDecision` an import
+   cycle for this function, and the abort-split record's sec. 01 carries
+   the reason --- with the *decision* half of that record's sec. 01
    branch-exactness checklist as its test table. Four of that checklist's eight
    bullets are about the decision and become pure cases --- the interrupt-inputs
    bullet, which is two cases rather than one (not queried; a disturbing

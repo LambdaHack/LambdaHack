@@ -149,36 +149,34 @@ concerns, following this repo's own functional-core / imperative-shell rule.
 What follows is one refactor that satisfies the list above; the list,
 not the refactor, is what binds a later one.
 
-### 1 -- The interrupt decision is pure --- move it to `InputDecision`
+### 1 -- The interrupt decision is pure --- move it to `FrameM`'s pure section
 
 Whether a pending macro should play, abort, or is absent is a pure function
 of `sreqQueried`, the report, the legal keys and the macro frame. It belongs
-in the shared, fixture-tested `InputDecision` module the plan is establishing
-(item 0.1), not buried in a frontend-adjacent IO action:
+in a pure section of `FrameM` itself, next to `dropEmptyMacroFrames` (already
+pure and already fixture-tested by AS2), not buried in a frontend-adjacent IO
+action:
 
-> **(!) That module does not exist yet, and belongs to another plan.**
-> `Client/UI/Frontend/InputDecision.hs` is an artifact
-> of `docs/wasm-frontend-unified-plan.md`'s item 0.1, which has not landed;
-> nothing in this repository defines `macroStep`'s intended home today.
-> So the abort-split is gated on *two* pieces of work, not one. The de-gating
-> is deliberate and cheap: if that module is still absent when live-read
-> is done, put `macroStep` in a pure section of `FrameM` itself, next
-> to `dropEmptyMacroFrames` (already pure and already fixture-tested by AS2),
-> and move it to `InputDecision` when the item that creates the module lands.
-> The decision function is the point; its address is not, and waiting
-> on a different plan for an address would be the wrong dependency.
->
-> One thing to settle when that address is chosen, and not before: the signature
-> below takes a `KeyMacroFrame`, which lives in `Client.UI.SessionUI`
-> (`SessionUI.hs:124`), which imports `Client.UI.Frontend` (`SessionUI.hs:28`).
-> A home under `Client/UI/Frontend/` therefore sits downstream of the very
-> interface the frontends are reached through, and `FrameM` importing
-> it directly reaches past `Client.UI.Frontend` into that directory, against
-> `CLAUDE.md`'s module-as-interface convention. The `FrameM` fallback has
-> neither problem, so "entirely internal to `FrameM` plus one new pure module"
-> below is exact only for that home.
+> **Why `FrameM` and not `InputDecision`, settled 2026-08-07.** The shared,
+> fixture-tested `Client/UI/Frontend/InputDecision.hs`
+> that `docs/wasm-frontend-unified-plan.md`'s item 0.1 creates was this design's
+> first choice, and that plan's own ruling closes it: `Frontend.hs` re-exports
+> `InputDecision`, so parking `macroStep` there is an import cycle.
+> The signature below takes a `KeyMacroFrame`, which lives
+> in `Client.UI.SessionUI` (`SessionUI.hs:124`), which imports
+> `Client.UI.Frontend` (`SessionUI.hs:28`); a home under `Client/UI/Frontend/`
+> therefore sits downstream of the very interface the frontends are reached
+> through, and `FrameM` importing it directly reaches past `Client.UI.Frontend`
+> into that directory, against `CLAUDE.md`'s module-as-interface convention.
+> `FrameM`'s own pure section has neither problem, so "entirely internal
+> to `FrameM` plus one new pure module" below is exact, and the abort-split
+> is gated on the live-read design alone rather than on two pieces of work.
+> Recorded here rather than left to an outcome line because the wrong home
+> was this section's heading, its lead sentence and the label on the fence
+> below, and a session executing the split would have read all three before
+> reaching any note.
 
-**Functional core** --- `Client/UI/Frontend/InputDecision.hs`
+**Functional core** --- a pure section of `FrameM`
 
 ```haskell
 data MacroStep = VoiceKey K.KM KeyMacro   -- play this key, remaining macro
