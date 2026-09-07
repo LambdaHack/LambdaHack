@@ -169,12 +169,11 @@ action:
 > through, and `FrameM` importing it directly reaches past `Client.UI.Frontend`
 > into that directory, against `CLAUDE.md`'s module-as-interface convention.
 > `FrameM`'s own pure section has neither problem, so "entirely internal
-> to `FrameM` plus one new pure module" below is exact, and the abort-split
-> is gated on the live-read design alone rather than on two pieces of work.
-> Recorded here rather than left to an outcome line because the wrong home
-> was this section's heading, its lead sentence and the label on the fence
-> below, and a session executing the split would have read all three before
-> reaching any note.
+> to `FrameM`" below is exact, and the abort-split is gated on the live-read
+> design alone rather than on two pieces of work. Recorded here rather than left
+> to an outcome line because the wrong home was this section's heading, its lead
+> sentence and the label on the fence below, and a session executing the split
+> would have read all three before reaching any note.
 
 **Functional core** --- a pure section of `FrameM`
 
@@ -292,17 +291,17 @@ audit step then pins the enumeration in code.
 
 `promptGetKey` is called from exactly two engine modules, `Client/UI.hs:194`
 and `SlideshowM.hs:421`, and its type does not change, so the abort-split
-is entirely internal to `FrameM` plus one new pure module. One of the two call
-sites is exercised: the store-dialog ESC test
-(`test/HandleHumanLocalMUnitTests.hs`) reaches `promptGetKey` through
-the `SlideshowM` site, while the AS contract series calls the primitive directly
-from `test/FrameMUnitTests.hs` and so exercises neither site --- it pins
-the primitive, which is what the split changes. `Client/UI.hs:194`, inside
-`stepQueryUI`, is entered by no unit test at all; nothing in the split reaches
-it, but a claim of coverage there would be wrong. The pure `macroStep` slots
-into the existing test style directly: `test/SessionUIMock.hs` already simulates
-macro-frame transitions (`unwindMacros`), so play/abort/no-macro decision tables
-live next to established tests rather than requiring new harness machinery.
+is entirely internal to `FrameM`. One of the two call sites is exercised:
+the store-dialog ESC test (`test/HandleHumanLocalMUnitTests.hs`) reaches
+`promptGetKey` through the `SlideshowM` site, while the AS contract series calls
+the primitive directly from `test/FrameMUnitTests.hs` and so exercises neither
+site --- it pins the primitive, which is what the split changes.
+`Client/UI.hs:194`, inside `stepQueryUI`, is entered by no unit test at all;
+nothing in the split reaches it, but a claim of coverage there would be wrong.
+The pure `macroStep` slots into the existing test style directly:
+`test/SessionUIMock.hs` already simulates macro-frame transitions
+(`unwindMacros`), so play/abort/no-macro decision tables live next
+to established tests rather than requiring new harness machinery.
 
 ### What would falsify this
 
