@@ -95,31 +95,31 @@ to be deleted*
 >   configures this document in `GRAMMARS`
 >   (`tools/check-plan-crossrefs.py:161,171`), in its self-test fixtures
 >   (`tools/check-plan-crossrefs.py:447,449`) and in its module docstring
->   (`tools/check-plan-crossrefs.py:13`), whose "Two carry that grammar"
->   and whose account of what the joint run alone can see are falsified
->   by the deletion and repaired by no `GRAMMARS` edit; and `tools/checks.py`
->   runs that script with no argument, so once the file is gone it raises
->   `Blocked: no such file` and exits 2, which is never a pass here --- remove
->   the entry, knowing that the entry *is* the second grammar: `SELF_TEST_DOC_2`
->   is a copy under another name and fits by that grammar's openers,
->   so the self-test's work-list-alone, joint and shared-id sub-checks
->   and the `tools/mutants.py` block headed "the second grammar and the joint
->   run" lose what they exercise. That last is read off the code rather
->   than run: proving it wants the entry actually removed, which is a tooling
->   edit and not this document's. And `tools/defects.json` carries three
->   `check-plan-crossrefs` records that break with this file, not two, each
->   differently and none of them under `--audit`, all three being
->   `"kind": "control"` and so skipped in the bug direction. `-03` invokes
->   this path and asserts `expect_text`, which a `BLOCKED` run cannot print,
->   so it fails loudly. `-05` invokes it with `expect_absent` alone, so
->   with the document gone every absent string is duly absent and the case
->   passes **vacuously** --- the silent shape this repository's conventions
->   exist to prevent. `-04` replays both documents out of `6f564870c`, which
->   the deletion cannot reach, but grammar selection is by fit rather
->   than by name (`tools/check-plan-crossrefs.py:610-612`), so once
->   the `GRAMMARS` entry is gone the replayed work list fits none, the run
->   is `BLOCKED` at 2 and the case's `expect_exit: 1` fails. All three
->   are retired or re-planted in the same commit;
+>   (`tools/check-plan-crossrefs.py:13`); and `tools/checks.py` runs that script
+>   with no argument, so once the file is gone it raises `Blocked: no such file`
+>   and exits 2, which is never a pass here. **Ruled 2026-09-07 by Mikolaj:
+>   the entry stays, as dead configuration.** Removing it would remove
+>   the second grammar itself --- `SELF_TEST_DOC_2` is a copy under another name
+>   and fits by that grammar's openers --- and would take with
+>   it the self-test's work-list-alone, joint and shared-id sub-checks,
+>   the `tools/mutants.py` block headed "the second grammar and the joint run",
+>   and `tools/defects.json`'s `check-plan-crossrefs-04`, which replays both
+>   documents out of `6f564870c` and so survives the deletion but
+>   not the entry's, grammar selection being by fit rather than by name
+>   (`tools/check-plan-crossrefs.py:610-612`). Keeping it costs one guard
+>   and one reword, both tooling edits owned there and named here: the script
+>   skips a configured document that is absent instead of blocking on it,
+>   so `checks.py` stays green, and the docstring's "Two carry that grammar"
+>   and its account of what the joint run alone can see are recast to say one
+>   of the two has left the tree and survives in the fixtures. Two defect
+>   records still want disposing, neither under `--audit`, all three
+>   `check-plan-crossrefs` records being `"kind": "control"` and so skipped
+>   in the bug direction: `-03` invokes this path outright and asserts
+>   `expect_text` that a `BLOCKED` run cannot print, so it fails loudly,
+>   and `-05` invokes it with `expect_absent` alone, so every absent string
+>   is duly absent and the case passes **vacuously** --- the silent shape
+>   this repository's conventions exist to prevent. Retire or re-plant those two
+>   in the same commit; `-04` needs nothing once the entry stays;
 > - and the sites no grep above reaches, because they name this campaign without
 >   naming this file. One is spelled out here, its repair being neither a reword
 >   nor a deletion: `test/CLAUDE.md` never spells this file's name, yet
