@@ -1441,14 +1441,18 @@ at the boundary, and everything below it, `runParams` included, is that one read
 threaded down. What the walk buys is that both answers are now read rather
 than assumed, which one level's could not be.
 
-**The walk was then performed whole, 2026-09-07, over the tail's thirty-three
-entries: twelve hold, twenty-one are clean.** It is not twelve findings. All
-twelve are links of one chain, and every one of them reaches a wait at one
-of two sites: `verifyEscape`'s and `verifyToolEffect`'s `displayYesNo` inside
-`processTileActions`, and `meleeAid`'s own. Five are on the Convert half ---
-`alterWithPointerHuman`, `moveOnceToXhairHuman`, `continueToXhairHuman`,
-`runOnceToXhairHuman` and `moveRunHuman` --- and seven on the Keep half:
-`alterTileAtPos`, `alterCommon`, `verifyAlters`, `moveSearchAlter`, `goToXhair`,
+**The walk was then performed, 2026-09-07, over two of the three groups
+it is owed on --- the tail's thirty-three entries, of which twelve hold
+and twenty-one are clean.** The thirteen read-live rows whose wait column reads
+`---` were not walked and are still owed, on the same items' **Done** cells
+that already carry them; this paragraph discharges the tail and nothing else.
+It is not twelve findings. All twelve are links of one chain, and every one
+of them reaches a wait at one of two sites: `verifyEscape`'s
+and `verifyToolEffect`'s `displayYesNo` inside `processTileActions`,
+and `meleeAid`'s own. Five are on the Convert half --- `alterWithPointerHuman`,
+`moveOnceToXhairHuman`, `continueToXhairHuman`, `runOnceToXhairHuman`
+and `moveRunHuman` --- and seven on the Keep half: `alterTileAtPos`,
+`alterCommon`, `verifyAlters`, `moveSearchAlter`, `goToXhair`,
 `goToXhairExplorationMode` and `goToXhairGoTo`. So the reasoning above covers
 them: they are links of a chain whose bottom is pinned already, the identity
 is one boundary read threaded down, and the comment sec. 10.6 requires stays
