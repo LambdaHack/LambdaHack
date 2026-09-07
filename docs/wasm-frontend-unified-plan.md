@@ -143,12 +143,20 @@ and the fleet cannot decide it.
 **One review unit per ledger item, not per agent and not one for the campaign.**
 A single pull request carrying Phase 0 through 2 would be unreadable, and one
 per agent would make the bottleneck worse rather than better. The unit
-is therefore a branch off whichever local branch carries this document --- today
-`unify-campaign-docs` and not `master`, whose copy of this file is older,
-so branching off master hands the session a different version of the item
-it was given --- read with `git log -p <that branch>..<branch>`; a GitHub PR
-exists only after an authorized push, so the review that gates an item
-is the local one.
+is therefore a branch off whichever ref carries the newest copy of this document
+--- resolved at execution time,
+`git log -1 --format=%H -- docs/wasm-frontend-unified-plan.md`, and never read
+off a name, because branching off an older copy hands the session a different
+version of the item it was given. A name will not serve: this paragraph named
+`unify-campaign-docs`, which has since merged into `master` and been overtaken
+there by further commits touching this file, so the name came to point
+at exactly the older copy it was written to steer a session away from. Read
+the unit with `git log -p <that commit>..<branch>`; a GitHub PR exists only
+after an authorized push, so the review that gates an item is the local one.
+**A review branch is named for its item** --- `item-0.1`, `item-2.1`, `item-R3`
+--- so that `git branch --list` maps onto the ledger, which is what makes
+the lock check under **Owns** something a session can run rather than a phrase
+with no referent.
 
 **3.1 goes first, as a shakedown.** It is the smallest item whose correctness
 a machine can settle end to end, so it proves the ritual --- the wasm loop,
@@ -232,7 +240,7 @@ rather than unpicked.
 | 3.3 | `nodeBench*`/`nodeDeployedBench` targets | small | 3.2 | not applied |
 | R1 | save robustness: staging keys plus a generation pointer | medium | 3.2, for the lag re-measurement | open |
 | R2 | browser-and-frontend CI | ongoing | grows per phase | standing |
-| R3 | retire GHCJS support | one commit | 2.5 (parity) | not applied |
+| R3 | retire GHCJS support | one commit, plus repair and record | 2.5 (parity) | not applied |
 | R4 | URL-parameter options | small | 3.1 | not applied |
 | R5 | performance pass | exploratory | 2.5, 3.3; R4 + 3.1 for the browser-side instrument | not applied |
 | R6 | screenshot/overlay coherence | small | 1.2, 2.2 | not applied |
@@ -241,7 +249,7 @@ rather than unpicked.
 | RawFrontend contract | haddock contract, tasty harness, add-a-frontend checklist | medium | input side with 0.1; rest with 0.3 | not applied |
 | determinism goldens | fixed-seed frame-and-overlay and final-state digests | medium | native harness before 2.1 | not applied |
 | frontend CI smokes | xvfb SDL, pty ANSI, a short nodeBench run | small each | 3.3 for the wasm one | not applied |
-| explicit widths | `punindex`, never the `Enum` instance, in frontend code | review rule; its one live violation is 0.2's | --- | open -- standing |
+| explicit widths | `punindex`, never the `Enum` instance, in frontend code | review rule; its one live violation goes with 0.2 or 2.1, whichever rewrites the loop first | --- | open -- standing |
 | functional core | the standing review bar for frontend modules | review rule; nothing to execute | --- | standing |
 
 ## Log
@@ -503,12 +511,11 @@ that the plan was written is one the next reader has to skip.
 - **Font deployment gap.** `../lambdahack.github.io` currently contains only
   `16x16xw.woff` --- committed by hand in 2019, not produced by any build ---
   plus `lz-string*.js`, used by `WasmFile.hs`'s save compression.
-  `make build-ts` copies no fonts, so the other ten files
-  in `GameDefinition/fonts/` never reach the pages repo, and the deployed
-  `index.html` references none of them. Any step adding font usage must extend
-  `build-ts` to copy the needed `GameDefinition/fonts/*.ttf.woff` files (prefer
-  the Makefile over committing to the pages repo, so the repo of record stays
-  this one).
+  `make build-ts` copies no fonts, so the other files in `GameDefinition/fonts/`
+  never reach the pages repo, and the deployed `index.html` references none
+  of them. Any step adding font usage must extend `build-ts` to copy the needed
+  `GameDefinition/fonts/*.ttf.woff` files (prefer the Makefile over committing
+  to the pages repo, so the repo of record stays this one).
 
 ## Ground rules
 
@@ -584,11 +591,13 @@ and its absence says the item is a single commit.
   and the item writes nothing else. A file in two items' **Owns** is therefore
   a sequencing constraint, not a merge to attempt. Nothing enforces that,
   so a session's first act is to check the set is free: the item's own
-  cross-item notes name the other claimants, and the branch list says which
-  of them is in flight. Where two sub-items of one item cannot run concurrently
-  --- a shared new file, `package-lock.json`, a citation block that renumbers
-  --- **Owns** says so and says why. This document is the one entry the lock
-  does not serialize on, and it is in nearly every **Owns**: an outcome line
+  cross-item notes name the other claimants, and `git branch --list` says which
+  of them is in flight, review branches being named for their items (How
+  this lands). A branch whose name maps to no item is asked about rather
+  than read as idle. Where two sub-items of one item cannot run concurrently ---
+  a shared new file, `package-lock.json`, a citation block that renumbers ---
+  **Owns** says so and says why. This document is the one entry the lock does
+  not serialize on, and it is in nearly every **Owns**: an outcome line
   and a ledger row are the item's own two lines, which no other landing touches,
   so they need no exclusive hold. A citation repair does need one, re-cutting
   ranges other items also carry, so that commit takes the file the way `Sdl.hs`
@@ -837,6 +846,17 @@ data KeyDecision = KeyDecision
 -- so each already holds the value it sends. Dead keys reach only
 -- @kdPreventBrowser@; if a rule ever does remap, the field returns and
 -- this comment goes.
+--
+-- What each holds is not the same value, though, and this field list
+-- leaves that standing. @Sdl.hs:339-341@ translates under the raw
+-- left/right shift bits, independent of Ctrl and Alt; @lhKey@ passes
+-- @modifier == K.Shift@ (@Wasm.hs:92@), which is @False@ whenever Ctrl or
+-- Alt is also down --- so @C-S-\<key\>@ translates shifted natively and
+-- unshifted in the browser, which is exactly the divergence this module
+-- exists to end. The flag is consumed upstream of @decideKey@, so closing
+-- it means deciding the shift flag here too, and that is a signature this
+-- item has not specified. Appendix C's 2026-09-07 outcome line records
+-- the behaviour.
 
 decideKey :: K.Modifier -> K.Key -> KeyDecision
 decideWheel :: Double -> Maybe K.Key      -- WheelNorth/WheelSouth/Nothing
@@ -950,15 +970,21 @@ in `test/InputDecisionUnitTests.hs` --- the contract harness file belongs
 to the contract item and is not created by this one. Across items: `Sdl.hs`'s
 claimant list is at 2.1, `Wasm.hs`'s at 2.2 and `terminal.ts`'s at 0.0 --- one
 owner at a time, and 0.0 lands first or is dropped, since the third commit
-rewrites the very listener it fixes. **Four claimant lists live here**,
+rewrites the very listener it fixes. **Five claimant lists live here**,
 on the same footing as 0.0's for `terminal.ts`. `ts-src/src/loader.ts`: 0.1,
 1.2, 1.3, 1.5, 2.2, 2.3, R4 and R5. `LambdaHack.cabal`: 0.1, 0.2, 0.3, 1.2, 2.1,
 R1, R3, the RawFrontend contract and the determinism goldens, R3 holding
 it exclusively when its turn comes. `test/Spec.hs`: the same items without R3.
 `engine-src/Game/LambdaHack/Client/UI/Frontend.hs`: 0.1, 0.2, 1.2, 2.1, 2.4, R3,
 the RawFrontend contract for its export list and the sum-typed selection
-for both guard chains. The pointman campaign's 04.4 also writes `CLAUDE.md`, two
-sentences at that campaign's landing, beside 0.2, 2.1 and R3.
+for both guard chains. And `CLAUDE.md`'s, which the sweep that installed
+this discipline missed although four items edit one sentence of it: 0.1, 0.2
+and 2.1 for the frontend bullet's three module names, 0.2 or 2.1 again
+for the Gotchas bullet's "awaits its scheduled fix" --- whichever of them fixes
+`Sdl.hs:590` --- R3 for the GHCJS mentions, and the pointman campaign's 04.4
+for two sentences at that campaign's landing --- one holder at a time,
+as for the four above, and each of the five edits it in a commit of its own
+after its landing.
 
 **Done** --- `native` (stylish
 over `engine-src/Game/LambdaHack/Client/UI/Frontend/InputDecision.hs`,
@@ -1104,7 +1130,10 @@ and `Frontend.hs`'s at 0.1), `tools/doc-refs-allow.txt`,
 so this item owes the citation-repair commit and its restamp --- and,
 in a commit of its own after the landing, `CLAUDE.md` --- the frontend bullet,
 whose second module name this item delivers, and the Gotchas bullet's "awaits
-its scheduled fix" for `Sdl.hs:590`, which this item's last commit retires.
+its scheduled fix" for `Sdl.hs:590`, which this item's last commit retires
+*if it is the first of the two to rewrite that loop* --- 2.1's refactor rewrites
+it too, and the retirement follows the fix rather than the item, so whichever
+lands first carries it and the other finds the clause already gone.
 The generated files are **committed**, not ignored: `git diff --exit-code`
 is vacuous on untracked files, so an untracked `ts-src/src/generated/` would
 defang the freshness check the item exists to install. `haskell-ci regenerate`
@@ -1116,8 +1145,9 @@ in which a fifth's examples would run nowhere. The four commits are strictly
 serial: each consumes what the previous adds, and the first and last both encode
 the highlight rule. `Sdl.hs` here is not concurrent with 0.1's second commit
 or with 2.1, `terminal-core.ts` not with 0.0, `terminal.ts` per the list at 0.0,
-and `Frontend.hs` per the claimants 0.1's Owns names; the pointman campaign's
-04.4 also writes `CLAUDE.md`, at that campaign's landing.
+and `Frontend.hs` per the claimants 0.1's Owns names; `CLAUDE.md`'s claimant
+list is at 0.1 as well, and this item is on it twice, for the frontend bullet
+and for the Gotchas one.
 
 **Done** --- `native`, `ts`, `wasm`, `docs`, plus `make gen-ts` &&
 `git diff --exit-code ts-src/src/generated` && `haskell-ci regenerate` &&
@@ -1238,10 +1268,18 @@ frame.
 **Hands back** --- *judgement*, and only for the standing half: a reviewer
 confirms each FFI-touching commit carries its case. The substitute in Done
 is `make test-wasm`, which fails when a covered declaration breaks but never
-when an uncovered one is added --- the cheap mechanization, a checker asserting
+when an uncovered one is added. The cheap mechanization --- a checker asserting
 that the count of `foreign import/export javascript` declarations equals
-the battery's case count, is not proposed by this plan and would close the gap
-if written. The two executable halves hand back nothing.
+the battery's case count --- is **refused** rather than merely unproposed,
+and refused on what it would actually prove: two equal counts pin cardinality
+and not correspondence, so a declaration added in the same commit as a case
+deleted passes it; and the case count has to be declared somewhere
+for the checker to read, which puts a hand-maintained number in place
+of the coverage it claims to assert. Revisit if a trigger fires: an uncovered
+FFI declaration reaches master; the declarations outgrow what a reviewer checks
+in one reading; or the case count becomes derivable from the battery itself
+rather than declared beside it, which retires the second objection. The two
+executable halves hand back nothing.
 
 **Decide first** --- nothing, all three ruled on 2026-08-07. (1) The export
 mechanism is the thin reactor driver the Split now specifies --- a slice of 3.2
@@ -1526,26 +1564,48 @@ the effective cell size today.
 aren't persistent (they are, via `WasmFile.hs`/localStorage) and will go staler
 as features land ("For proportional fonts, fullscreen, and persistent save
 games, use the native binary"). Update the text as each feature ships.
-The "savefiles are prone to corruption" caveat stays until R1 addresses it.
-**The page is not the only one**: the `#status` div opens "from README:"
-and quotes `README.md`'s "Installation of the sample game from binary archives"
-paragraph, so the square-font and savefile-corruption sentences are in two
-files, and this item's rule binds both --- a clause deleted from the page
-is deleted from the README in the same commit. (The GHCJS-era page's community
-features are deliberately not restored, and the page `<title>` stays hardcoded
---- Appendix B.)
+The savefile-corruption caveat stays until R1 addresses it. **The page
+is not the only one**: the `#status` div opens "from README:" and quotes
+`README.md`'s "Installation of the sample game from binary archives" paragraph,
+so the square-font and savefile-corruption sentences are in two files,
+and this item's rule binds both --- a clause deleted from the page is deleted
+from the README in the same commit. (The GHCJS-era page's community features
+are deliberately not restored, and the page `<title>` stays hardcoded ---
+Appendix B.)
 
 **Split** --- recurring by design: one commit per capability landing, each
-deleting only the clause its feature falsified --- 1.3 for "fullscreen", 2.4
-for "proportional fonts" and for the `#status` div's and the README's "limited
-to the square font", R1 for "Savefiles are prone to corruption", R5 for "runs
-rather slowly" once its bars are cleared. One commit belongs to no landing
-and can be taken today: "and persistent save games" is already false ---
-persistence works, via `WasmFile.hs`, and Out of scope says so --- so no feature
-will ever falsify it and nothing else in this Split reaches it. Each runs
-the **Done** line below with only its own phrase in the alternation. No commit
-carries an outcome line and the ledger row never flips: 1.4 is a standing item
-and retires with the campaign. It deletes no `tools/doc-refs-allow.txt` entry.
+deleting the clause its feature falsified *and repairing the sentence around
+it* --- 1.3 for "fullscreen", 2.4 for "proportional fonts" and for the `#status`
+div's and the README's "limited to the square font", R1
+for the savefile-corruption clause (`[Ss]avefiles are prone to corruption`,
+the bracket for the README's lower case), R5 for "runs rather slowly" once
+its bars are cleared. One commit belongs to no landing and can be taken today:
+"and persistent save games" is already false --- persistence works, via
+`WasmFile.hs`, and Out of scope says so --- so no feature will ever falsify
+it and nothing else in this Split reaches it. Each runs the **Done** line below
+with only its own phrase in the alternation.
+
+Delete-only is not enough, and the repair belongs here rather than to three
+sessions inventing it separately: every clause above sits inside a carrier
+sentence that stops parsing without it. Both carriers, with their end states.
+The banner's (`GameDefinition/index.html:63-66`) is a list of reasons to prefer
+the native binary, so it shortens as items go --- three with an Oxford comma,
+then two joined by "and", then one with neither --- and when the last goes
+the whole "For ... use the native binary instead." sentence goes with it,
+its `<a>` to the releases page included, while "This is the experimental wasm
+build." and everything from "If the game window is too large" onward stay
+untouched throughout. The quoted README paragraph
+(`GameDefinition/index.html:82-87`, and in `README.md` the paragraph opening
+"Installation of the sample game from binary archives") is three claims
+supporting one conclusion, "Hence, after trying out the game, you may prefer
+to use a native binary": each deletion re-joins the remainder into a grammatical
+paragraph, the README's "Also," moving to whichever claim then stands second,
+and when the last claim goes the conclusion goes with it --- taking the div's
+whole "from README:" block, and leaving the README's section to open
+on "Pre-compiled game binaries are available through the release page".
+No commit carries an outcome line and the ledger row never flips: 1.4
+is a standing item and retires with the campaign. It deletes
+no `tools/doc-refs-allow.txt` entry.
 
 **Owns** --- `GameDefinition/index.html`, `README.md` (the browser paragraph
 the `#status` div quotes, and nothing else in that file),
@@ -1580,14 +1640,15 @@ and over `README.md`, which is source because no build deploys it.
 
 **Decide first** --- nothing, ruled on 2026-08-07: the banner
 is a post-condition of every capability item. Each such item's landing sequence
-ends with its own banner commit under this item's rule --- deleting only
-the clause its feature falsified, running this item's Done with its own phrase
-in the alternation --- so the page stops lying the day the feature ships,
-and `index.html` joins 2.4's and R1's **Owns** (1.3 and 1.5 already carry it),
-`README.md` alongside it wherever the clause stands in both. The coordination
-cost was already being paid: the single-writer constraints on `index.html` stand
-regardless, and each clause deletion is disjoint, so no two landings contend
-for the same words. Sequencing's "banner last" reading is struck.
+ends with its own banner commit under this item's rule --- deleting the clause
+its feature falsified, repairing the carrier sentence as the **Split**
+specifies, and running this item's Done with its own phrase in the alternation
+--- so the page stops lying the day the feature ships, and `index.html` joins
+2.4's and R1's **Owns** (1.3 and 1.5 already carry it), `README.md` alongside
+it wherever the clause stands in both. The coordination cost was already being
+paid: the single-writer constraints on `index.html` stand regardless, and each
+clause deletion is disjoint, so no two landings contend for the same words.
+Sequencing's "banner last" reading is struck.
 
 ### 1.5 `allFontsScale` in the browser, alongside browser zoom
 
@@ -1776,28 +1837,33 @@ numbers:
 data LayoutMetrics = LayoutMetrics
   { lmHalfSize :: Int  -- ^ one 'PointUI' step, and the mono pitch
                        --   (@Sdl.hs:623@)
-  , lmBoxSize  :: Int  -- ^ one square cell: the square pitch and the row
-                       --   height of all three layers
-                       --   (@Sdl.hs:623@, @Sdl.hs:666@, @Sdl.hs:708@)
   , lmWidth    :: Int  -- ^ @rwidth coscreen@, screen width in squares
   }
   deriving (Show, Eq)
 
+-- | One square cell: the square pitch and the row height of all three
+-- layers (@Sdl.hs:623@, @Sdl.hs:666@, @Sdl.hs:708@). Derived, not stored,
+-- so that "map font determines cell size for all others"
+-- (@Sdl.hs:183-184@) cannot come apart in a consumer or in a test fixture
+-- --- an inconsistent record stops being representable, which a hidden
+-- data constructor alone cannot deliver once the tests reach this module
+-- through the "internal and used in unit tests" export group.
+lmBoxSize :: LayoutMetrics -> Int
+lmBoxSize = (2 *) . lmHalfSize
+
 -- | The only constructor exported, the data constructor staying inside the
--- module as 'PropCursor'\'s does, so that "map font determines cell size
--- for all others" (@Sdl.hs:183-184@) cannot come apart in a consumer or in
--- a test fixture. @Sdl.hs@ passes half the loaded map font's size, that
--- font having been opened at a point size already multiplied by
--- @sallFontsScale@ (@Sdl.hs:152@); the browser passes half its measured
--- grid box. @width@ is the same @rwidth coscreen@ the caller passes to
--- 'layOutFrame' --- the one quantity this record shares with the
+-- module as 'PropCursor'\'s does. @Sdl.hs@ passes half the loaded map
+-- font's size, that font having been opened at a point size already
+-- multiplied by @sallFontsScale@ (@Sdl.hs:152@); the browser passes half
+-- its measured grid box. @width@ is the same @rwidth coscreen@ the caller
+-- passes to 'layOutFrame' --- the one quantity this record shares with the
 -- metric-free half, and two different values there would leave the line
 -- filter and the pen clamping against different screens, so a consumer
 -- binds it once and uses that binding twice.
 mkLayoutMetrics :: Int -> Int -> LayoutMetrics
 mkLayoutMetrics halfSize width =
   assert (halfSize > 0 && width > 1)
-  $ LayoutMetrics halfSize (2 * halfSize) width
+  $ LayoutMetrics halfSize width
 ```
 
 **The metric-free half.** Its invariant is visible in the signatures: none
@@ -1836,20 +1902,25 @@ propFontOf fg | fg >= Color.White && fg /= Color.BrBlack = PropRegular
 -- chunk before it (@Sdl.hs:696-697@), which is the whole reason the
 -- placement half of this module exists.
 data PropChunk = PropChunk
-  { pcFont     :: PropFont      -- ^ 'propFontOf' of 'pcColor'
-  , pcColor    :: Color.Color   -- ^ even-row adjusted (@Sdl.hs:693-694@)
-  , pcText     :: Text          -- ^ colours dropped (@Sdl.hs:695@);
-                                --   never empty
-  , pcAllSpace :: Bool          -- ^ @T.all isSpace pcText@
-                                --   (@Sdl.hs:703@). Not a convenience: it
-                                --   decides whether an overrunning run may
-                                --   claim the last cell (@Sdl.hs:553@) and
-                                --   whether the cut raises the marker
-                                --   (@Sdl.hs:577@), so it is the one
-                                --   measurement-rule input that must reach
-                                --   the consumer, and 2.3 carries it.
+  { pcColor :: Color.Color   -- ^ even-row adjusted (@Sdl.hs:693-694@)
+  , pcText  :: Text          -- ^ colours dropped (@Sdl.hs:695@);
+                             --   never empty
   }
   deriving (Show, Eq)
+
+-- | Which face draws this chunk. Derived, not stored, so it cannot be
+-- supplied out of step with 'pcColor'.
+pcFont :: PropChunk -> PropFont
+pcFont = propFontOf . pcColor
+
+-- | @T.all isSpace@ of the text (@Sdl.hs:703@), derived likewise. Not a
+-- convenience: it decides whether an overrunning run may claim the last
+-- cell (@Sdl.hs:553@) and whether the cut raises the marker
+-- (@Sdl.hs:577@), so it is the one measurement-rule input that must reach
+-- the consumer, and 2.3 carries it on the wire as a bit rather than
+-- letting the far side re-derive the rule.
+pcAllSpace :: PropChunk -> Bool
+pcAllSpace = T.all isSpace . pcText
 
 -- | One proportional line, still at its logical 'PointUI' start.
 data PropLine = PropLine
@@ -1869,9 +1940,9 @@ data CellLayer = LayerSquare | LayerMono
 -- | Device advance of one cell: a box for square (@Sdl.hs:666@), a half
 -- for mono (@Sdl.hs:623@).
 cellPitch :: LayoutMetrics -> CellLayer -> Int
-cellPitch LayoutMetrics{lmHalfSize, lmBoxSize} = \case
-  LayerSquare -> lmBoxSize
-  LayerMono -> lmHalfSize
+cellPitch lm = \case
+  LayerSquare -> lmBoxSize lm
+  LayerMono -> lmHalfSize lm
 
 -- | A run of cells in one fixed-pitch layer, already cut to the screen.
 --
@@ -1944,7 +2015,8 @@ layOutMono :: Int -> OverlaySpace -> [CellRun]
 -- | The half of the overrun cutoff that *is* expressible in logical units:
 -- may a line starting at this 'PointUI' x be drawn at all? Exactly
 -- equivalent to 'propCutoff' on the line's first chunk, because
--- @lmBoxSize == 2 * lmHalfSize@ and @lmHalfSize > 0@:
+-- 'lmBoxSize' is @2 * lmHalfSize@ by definition and @lmHalfSize > 0@ by
+-- 'mkLayoutMetrics'\'s assertion:
 --
 -- > xUI * halfSize >= (rwidth - 1) * boxSize  <=>  xUI >= 2 * (rwidth - 1)
 propLineStartFits :: Int -> Int -> Bool
@@ -1974,8 +2046,8 @@ startPropLine LayoutMetrics{lmHalfSize} PropLine{plStartX, plRow} =
 -- chunk, so a consumer that calls this first never rasterizes a chunk it
 -- then throws away.
 propCutoff :: LayoutMetrics -> PropCursor -> Bool
-propCutoff LayoutMetrics{lmBoxSize, lmWidth} PropCursor{pcurXPx} =
-  pcurXPx >= (lmWidth - 1) * lmBoxSize
+propCutoff lm PropCursor{pcurXPx} =
+  pcurXPx >= (lmWidth lm - 1) * lmBoxSize lm
 
 -- | Where a measured chunk goes, how much of it survives, and whether the
 -- cut raises the trimmed-line marker.
@@ -2006,8 +2078,7 @@ data PropFit = PropFit
 -- Precondition: @not (propCutoff lm cur)@, which is also what makes the
 -- third branch positive --- the guard gives @remaining > lmBoxSize@.
 propFit :: LayoutMetrics -> PropCursor -> PropChunk -> Int -> PropFit
-propFit lm@LayoutMetrics{lmBoxSize, lmWidth} cur PropChunk{pcAllSpace}
-        widthRaw =
+propFit lm cur chunk widthRaw =
   assert (not (propCutoff lm cur) && widthRaw >= 0)
   $ PropFit { pfXPx = pcurXPx cur
             , pfWidthPx = width
@@ -2016,11 +2087,13 @@ propFit lm@LayoutMetrics{lmBoxSize, lmWidth} cur PropChunk{pcAllSpace}
                          else Nothing
             , pfNext = cur {pcurXPx = pcurXPx cur + width} }
  where
-  remaining = lmWidth * lmBoxSize - pcurXPx cur          -- Sdl.hs:551
+  boxSize = lmBoxSize lm
+  allSpace = pcAllSpace chunk
+  remaining = lmWidth lm * boxSize - pcurXPx cur         -- Sdl.hs:551
   width | widthRaw <= remaining = widthRaw               -- Sdl.hs:552
-        | pcAllSpace = remaining                         -- Sdl.hs:553
-        | otherwise = remaining - lmBoxSize              -- Sdl.hs:554
-  trimmed = width /= widthRaw && not pcAllSpace          -- Sdl.hs:577
+        | allSpace = remaining                           -- Sdl.hs:553
+        | otherwise = remaining - boxSize                -- Sdl.hs:554
+  trimmed = width /= widthRaw && not allSpace            -- Sdl.hs:577
 
 -- | The @$@ stamped into the last square column of a trimmed row
 -- (@Sdl.hs:577-578@; @Color.hs:236-237@ defines it as a @BrBlack@ @'$'@),
@@ -2056,10 +2129,10 @@ piece of it is `propLineStartFits` above.
 **Rejected: a character-count cutoff.** Replacing the pixel rule with a column
 count would make the module self-contained, and it does not work. The engine
 already wraps proportional text by character count (`splitAttrString`,
-`Overlay.hs:232-235`, reached for prop text through `indentSplitAttrString`,
-`Overlay.hs:237-238`) and deliberately refuses to model proportional width
+`Overlay.hs:236-239`, reached for prop text through `indentSplitAttrString`,
+`Overlay.hs:241-242`) and deliberately refuses to model proportional width
 at all --- `textSize PropFont` is an `error` (`Overlay.hs:64-67`) and the wrap's
-own comment says the space width "varies wildly" (`Overlay.hs:239-240`).
+own comment says the space width "varies wildly" (`Overlay.hs:243-244`).
 A character-count cutoff would therefore either duplicate that wrap and never
 fire, letting a wide-glyph overrun paint past the screen edge, or fire on lines
 that fit and truncate normal menu text. The pixel rule is the safety net
@@ -2206,9 +2279,12 @@ so that `Sdl.hs:691-692`'s assertion holds by construction:
   not on the pen, so a zero-advance measurement cannot loop --- worth a property
   rather than a comment, since the naive reading of that recursion says
   otherwise.
-- *the derived fields agree*: `pcFont c == propFontOf (pcColor c)`
-  and `pcAllSpace c == T.all isSpace (pcText c)`, so neither can be supplied
-  independently across the boundary.
+- *no property for the derived fields*: `pcFont` and `pcAllSpace` are functions
+  of a two-field record, so "they agree" is a tautology and the QuickCheck
+  property earlier drafts carried is deleted rather than kept green. It never
+  reached the boundary it read as guarding either, being a Haskell-side property
+  over a Haskell producer; what pins the far side is the 0.2-generated branch
+  table, as everywhere else here.
 - *placement stays on screen*: `pfWidthPx <= widthRaw`;
   `pfXPx + pfWidthPx <= lmWidth * lmBoxSize`; `isJust pfMarker` implies both
   `pfWidthPx < widthRaw` and `pfXPx + pfWidthPx <= (lmWidth - 1) * lmBoxSize`,
@@ -2246,7 +2322,9 @@ already proved to build there. (2) the `Sdl.hs` refactor onto it, carrying
 `Sdl.hs:590`'s `toEnum` fix if 0.2 has not already. (3) the citation repair
 of this plan and of the repo-root `CLAUDE.md` against the shrunken `Sdl.hs`,
 plus that file's frontend bullet, whose last module name this item delivers,
-retiring the clause --- mandatory and separate, per the freeze callout,
+retiring the clause --- and, if (2) carried the `Sdl.hs:590` fix, the Gotchas
+bullet's "awaits its scheduled fix" clause with it, the retirement following
+the fix rather than the item --- mandatory and separate, per the freeze callout,
 and unskippable because `tools/check-plan-citations.py` proves a line exists
 and nothing more, so every surviving citation into the deleted region re-points
 silently and the pass stays green. (4) the outcome line naming (2)'s hash,
@@ -2266,8 +2344,8 @@ together. **The claimant list for `Sdl.hs` lives here**: 0.1's `decideKey` call,
 0.2's `setSquareChar`/ `setMonoChar` rewrite, whose region abuts (2)'s, 1.2's
 filename helper, this item and 2.4's `supportsMultiFont` export --- so exactly
 one of the five holds the file at a time; 0.2 first is preferable, since
-then (2) inherits the `toEnum` fix instead of carrying it. The pointman
-campaign's 04.4 also writes `CLAUDE.md`, at that campaign's landing.
+then (2) inherits the `toEnum` fix instead of carrying it. `CLAUDE.md`'s
+claimant list is at 0.1, and this item is on it.
 
 **Done** --- `native` (stylish
 over `engine-src/Game/LambdaHack/Client/UI/Frontend/OverlayLayout.hs`,
@@ -2358,13 +2436,32 @@ Known browser pitfalls to handle here, not discover in 2.4:
   widths measured earlier.
 - **devicePixelRatio.** Size the canvas backing store at `cssSize * dpr`
   and scale the context, or overlay text is blurry on any HiDPI screen.
+- **The mono layer has a pitch the browser's pointer cannot address.**
+  `Sdl.hs:277` divides a click's pixel x by `halfSize`, so SDL reports an odd
+  `PointUI` x for a click in a cell's right half, while `Wasm.hs:112`
+  and `Wasm.hs:128` build their point with `squareToUI` (`PointUI.hs:35-37`),
+  always even. That is unobservable today, the square layer being the only one
+  on screen, and observable the moment this item draws the mono layer at exactly
+  that pitch. Nothing here fixes it --- the mouse handlers belong to 0.0 and 0.1
+  --- but a session flipping 2.4 and finding mono overlays unclickable
+  at half-cell resolution should not have to rediscover why. Appendix C's
+  2026-09-07 outcome line records it.
 - **Cell metrics from one source.** Derive the browser's `halfSize`
   as an integer from font size x `allFontsScale` and *impose*
   `boxSize = 2 * halfSize` on the grid's cell dimensions in CSS px (the (a)
   ruling), verifying with one measured cell (a span's `getBoundingClientRect`)
   rather than re-hardcoding `16px` --- keeps zoom, `allFontsScale`, and any
   future font-size change coherent, and mirrors how `Sdl.hs` takes the cell size
-  from the loaded font rather than from config.
+  from the loaded font rather than from config. `mkLayoutMetrics`'s other
+  argument needs no new channel and gets none: the browser's `lmWidth`
+  is `submitFrame`'s `w`, the same value `buildGrid` sizes the grid from,
+  so the twin clamps against the screen `layOutFrame` already filtered against
+  in Haskell. The overlay decoder asserts the two agree. That is the whole
+  of the hazard 2.1's `mkLayoutMetrics` haddock names --- two different widths
+  leaving the line filter and the pen clamping against different screens ---
+  reaching across the FFI, where it would otherwise be silent: the vitest branch
+  table supplies both halves itself, so no gate in this plan would see a browser
+  measuring against a width the Haskell side never used.
 
 Fixtures for the browser's `propCutoff`/`propFit` twin come from the 0.2
 generator calling `OverlayLayout` --- no hand-written fixtures. Chunking itself
@@ -2949,20 +3046,22 @@ re-runs the comparison with assertions off on its own initiative.
 
 ## Related goals
 
-**R1 --- Save robustness.** The banner's "savefiles are prone to corruption when
-the browser is closed mid-save" caveat is the last banner claim with no plan
-behind it. Grounding (from `WasmFile.hs`): each file maps to one localStorage
-key written by a single synchronous `setItem` of the lz-string-compressed
-payload with an `"OK"` EOF marker --- a *single* key is already effectively
-atomic, and truncation is detected on read. The real residual risk
-is **cross-key consistency**: a game save writes several files (server +
-per-faction clients), and a tab killed mid-sequence leaves a mixed-generation
-set of individually-valid saves. Fix shape: write each save cycle to staging
-keys, then commit with a single generation-pointer key flip; readers resolve
-through the pointer. Test plan (runnable under `make test-wasm` with 0.3's
-localStorage stub): simulate an interrupted cycle --- staging keys written,
-pointer not flipped --- and assert the reader serves the previous generation
-intact; plus an `encodeEOF`/`strictDecodeEOF` round-trip in the wasm
+**R1 --- Save robustness.** The banner's savefile-corruption caveat ---
+"Savefiles are prone to corruption on the browser, e.g., when it's closed while
+the game is still saving progress" on the page, and the same sentence
+lower-cased and hung off an "Also," in the README the `#status` div quotes ---
+is the last banner claim with no plan behind it. Grounding (from `WasmFile.hs`):
+each file maps to one localStorage key written by a single synchronous `setItem`
+of the lz-string-compressed payload with an `"OK"` EOF marker --- a *single* key
+is already effectively atomic, and truncation is detected on read. The real
+residual risk is **cross-key consistency**: a game save writes several files
+(server + per-faction clients), and a tab killed mid-sequence leaves
+a mixed-generation set of individually-valid saves. Fix shape: write each save
+cycle to staging keys, then commit with a single generation-pointer key flip;
+readers resolve through the pointer. Test plan (runnable under `make test-wasm`
+with 0.3's localStorage stub): simulate an interrupted cycle --- staging keys
+written, pointer not flipped --- and assert the reader serves the previous
+generation intact; plus an `encodeEOF`/`strictDecodeEOF` round-trip in the wasm
 environment.
 
 Two engine-side facts shape this goal:
@@ -2996,10 +3095,13 @@ its interrupted-cycle test, and carries the `test/WasmFileUnitTests.hs` deletion
 from `tools/doc-refs-allow.txt`. R1c acts on R1a's number against the ruled
 100ms bar --- at or under, periodic autosave re-enabled; above, a save driven
 from `pagehide`/`visibilitychange`. R1d is the banner commit this item's
-**Owns** carries under 1.4's rule --- the "Savefiles are prone to corruption"
-clause R1b falsifies comes off `GameDefinition/index.html` and off `README.md`,
-run with 1.4's **Done** and only that phrase in the alternation --- and carries
-the outcome line.
+**Owns** carries under 1.4's rule --- the savefile-corruption clause R1b
+falsifies comes off `GameDefinition/index.html` and off `README.md`, run
+with 1.4's **Done** and only `[Ss]avefiles are prone to corruption`
+in the alternation. The bracket is load-bearing, 1.4's **Done** grepping
+case-sensitively: the page capitalises the sentence and the README does not,
+so either literal alone passes over one of the two files and the negated grep
+would come back green having tested nothing there. R1d carries the outcome line.
 
 **Owns** --- `engine-src/Game/LambdaHack/Common/WasmFile.hs`, including
 the header's "Mirrors JSFile.hs ... exactly in storage format" claim, which
@@ -3014,16 +3116,17 @@ group natively, the way `test/Spec.hs` already guards its SDL cases),
 `test/Spec.hs`, and the test-suite `other-modules` list in `LambdaHack.cabal`,
 both with their claimant lists at 0.1; `Server/LoopM.hs:336-342`
 and `WatchUpdAtomicM.hs:585-595`; and `GameDefinition/index.html`
-with `README.md` beside it --- the "Savefiles are prone to corruption" clause
-R1b falsifies stands in both, the `#status` div quoting the README's paragraph,
-and R1d deletes it from both in one commit under 1.4's rule, per that item's
-2026-08-07 ruling; `tools/doc-refs-allow.txt`, whose `test/WasmFileUnitTests.hs`
-entry R1b's commit deletes; and this document, which R1a edits alone to record
-its number. It does not write `ts-src/run-wasm-test.mjs` --- the localStorage
-stub is 0.3's, per that item's own ruling, and a stub behaviour the test needs
-lands there first, as a 0.3 change. R1c is not concurrent with R3
-or with capability constants, all three rewriting those same two `#if` sites;
-the `LambdaHack.cabal` edit is not concurrent with 0.1, 0.2, 2.1, 2.2 or R3.
+with `README.md` beside it --- the savefile-corruption clause R1b falsifies
+stands in both, capitalised in one and not the other, the `#status` div quoting
+the README's paragraph rather than copying it, and R1d deletes it from both
+in one commit under 1.4's rule, per that item's 2026-08-07 ruling;
+`tools/doc-refs-allow.txt`, whose `test/WasmFileUnitTests.hs` entry R1b's commit
+deletes; and this document, which R1a edits alone to record its number. It does
+not write `ts-src/run-wasm-test.mjs` --- the localStorage stub is 0.3's, per
+that item's own ruling, and a stub behaviour the test needs lands there first,
+as a 0.3 change. R1c is not concurrent with R3 or with capability constants, all
+three rewriting those same two `#if` sites; the `LambdaHack.cabal` edit
+is not concurrent with 0.1, 0.2, 2.1, 2.2 or R3.
 
 **Done** --- `native` (stylish
 over `engine-src/Game/LambdaHack/Common/WasmFile.hs`,
@@ -3163,11 +3266,24 @@ in one commit:
   no GHCJS edit --- it contains the string nowhere (checked repo-wide); what
   it carries is browser-era prose --- the "The game runs rather slowly
   in the browser" paragraph under "Installation of the sample game from binary
-  archives", which the page's `#status` div quotes verbatim --- owned clause
-  by clause by 2.4, R1 and R5 under 1.4's rule, not by this rip-out.
+  archives", which the page's `#status` div quotes with small edits --- the page
+  says "for both map and texts" where the README says "for all purposes, though
+  it's scalable", opens the savefile sentence in capitals where the README hangs
+  it off an "Also,", and drops the README's "(which takes a long time)" ---
+  owned clause by clause by 2.4, R1 and R5 under 1.4's rule, not
+  by this rip-out.
 
 Timed after parity, not before, so the rip-out doesn't tangle with Phase 0--2
 diffs touching the same cabal stanzas and CPP sites.
+
+**Split** --- three commits, on 2.1's pattern, because **Decide first** (c)
+already makes the renumbering a commit of its own and the label's absence would
+otherwise assert this is one commit. (1) the rip-out, everything the body lists,
+in one diff. (2) the `.md`-only citation renumbering (c) specifies, live items
+only, with the restamp riding it. (3) the outcome line naming (1)'s hash
+and the ledger flip. (2) before (3), so a correction is never in the same diff
+as the landing record. Nothing to delete from `tools/doc-refs-allow.txt`:
+this item proposes no artifact.
 
 **Owns** --- `LambdaHack.cabal` (the `supportNodeJS` flag, the `impl(ghcjs)`
 `cpp-options` stanza and the comment above it, `-DREMOVE_TELETYPE`,
@@ -3190,7 +3306,8 @@ and the capability-constants practice's, whichever lands first shaping R3's
 diff. The pointman campaign is a further claimant on two of these: its PR 0, C3,
 C4 and C6 write `HandleHumanLocalM.hs`, the first three above the `:815`
 this item cites, the claimant list at that campaign's C3, and its 04.4 writes
-`CLAUDE.md` at that campaign's landing.
+`CLAUDE.md` at that campaign's landing --- that file's claimant list is at 0.1,
+and this item is on it.
 
 **Done** --- `native` (stylish over `$(git ls-files '*.hs')`, repo-wide here
 because the rip-out's Haskell files are scattered across the tree
@@ -3238,8 +3355,8 @@ array it already passes to the WASI shim (`loader.ts:56`), reusing the real
 options parser with no engine-side parsing code at all. This gives browser users
 what argv gives native ones with no new UI surface --- an address-bar knob.
 `?fontset=` only becomes meaningful once 2.2's font wiring exists,
-and non-default fontsets need their `.woff` files deployed too --- deploy all
-six once rather than special-casing the default set.
+and non-default fontsets need their `.woff` files deployed too --- deploy them
+all once rather than special-casing the default set.
 
 **Owns** --- the new `ts-src/src/url-options-core.ts`
 and `ts-src/src/url-options-core.test.ts`, `ts-src/src/loader.ts`
@@ -3769,20 +3886,22 @@ width, correct at frontend call sites only via the engine's
 `Client/UI/Content/Screen.hs`'s `rwidth == RK.rWidthMax` assertion). The switch
 is the same arithmetic with one *fewer* global read, in a non-hot once-per-frame
 loop, so it needs no benchmark. One live violation exists: **`Sdl.hs:590`**
-(`setMapChar`'s `let Point{..} = toEnum i`) --- fix it when 0.2 puts `Sdl.hs`'s
-per-cell drawing onto `CellStyle`, which touches exactly that loop.
-(`Dom.hs:254` has the same pattern next to the correct form at `Dom.hs:160`,
-but it's a dead example file, R3 --- leave it.) The rule binds all live
-and future frontend code from now on. The `Enum` instance itself and its global
-stay engine-internal, permanently --- the engine-wide removal of the hack
-is rejected outright (Appendix B has the ruling and the hack's documentation
-of record).
+(`setMapChar`'s `let Point{..} = toEnum i`) --- fix it with whichever of 0.2
+and 2.1 reaches it first, 0.2 putting `Sdl.hs`'s per-cell drawing
+onto `CellStyle` and 2.1 refactoring the overlay half out of it, both touching
+exactly that loop and both **Split**s saying so. (`Dom.hs:254` has the same
+pattern next to the correct form at `Dom.hs:160`, but it's a dead example file,
+R3 --- leave it.) The rule binds all live and future frontend code from now on.
+The `Enum` instance itself and its global stay engine-internal, permanently ---
+the engine-wide removal of the hack is rejected outright (Appendix B has
+the ruling and the hack's documentation of record).
 
 **Owns** --- nothing --- this is a review rule, not an item to execute.
-Its whole executable residue is `Sdl.hs:590`, owned by 0.2, which rewrites
-that per-cell loop onto `CellStyle`; fixing it standalone contradicts
-the coupling stated just above and collides with 0.2's diff. The rule retires
-with the campaign rather than taking a hash.
+Its whole executable residue is `Sdl.hs:590`, owned by whichever of 0.2 and 2.1
+rewrites that loop first, together with the `CLAUDE.md` Gotchas clause the fix
+retires; fixing it standalone contradicts the coupling stated just above
+and collides with both items' diffs. The rule retires with the campaign rather
+than taking a hash.
 
 **Done** --- no gate of its own, only
 `! git grep -nE 'Point\{\.\.\} = toEnum' -- 'engine-src/Game/LambdaHack/Client/UI/Frontend/*.hs' ':!engine-src/Game/LambdaHack/Client/UI/Frontend/Dom.hs'`.
@@ -4268,6 +4387,36 @@ hunting for anything SDL2 does that the wasm stack doesn't. Beyond the gaps
 in this plan (cursor, screenshots, fullscreen incl. scaling, `allFontsScale`,
 multi-font, the 0.0 fixes), everything else checked out as parity
 or not-applicable. Recorded with evidence so nobody re-treads it:
+
+*Re-audited from the source alone on 2026-09-07, and the "everything else" above
+does not hold: six behaviours are recorded nowhere in this plan. (1) **Half-cell
+mouse x is unreachable in the browser.** `Sdl.hs:277` divides a click's pixel x
+by `halfSize`, so SDL reports an odd `PointUI` x for a click in a cell's right
+half; `Wasm.hs:112` and `Wasm.hs:128` build their point with `squareToUI`
+(`PointUI.hs:35-37`), so the browser's is always even. Unobservable while
+the square layer is the only one on screen; observable the moment Phase 2 lands
+the mono layer, whose pitch is exactly `halfSize`. (2) **The shift flag handed
+to key translation differs under a compound modifier.** `Sdl.hs:337-341`
+computes it from the raw left/right shift bits, independent of Ctrl and Alt;
+`Wasm.hs:92` passes `modifier == K.Shift`, which is `False` whenever Ctrl or Alt
+is also down --- so `C-S-<key>` translates as shifted natively and as unshifted
+in the browser. (3) **`--printEachScreen` has no browser counterpart.**
+`sprintEachScreen` is read at `Sdl.hs:739` and nowhere else, and 1.2 restores
+`Ctrl+P` alone. (4) **Game-end page lifecycle.** `Sdl.hs:322-333` frees
+the fonts, destroys renderer and window and exits; `Wasm.hs:74-75`
+is `shutdown = return ()`, so a finished game leaves a live-looking frozen page.
+The "Window-close semantics" bullet below covers the player closing the tab,
+not the engine finishing. (5) **Fixed-pitch glyph cropping and centring.**
+`Sdl.hs:521-544` crops an oversized glyph surface to the cell box and centres
+it over a black fill, for the square layer (`Sdl.hs:662`) and the mono one
+(`Sdl.hs:618`) alike; the DOM grid's `1ch`/`1em` cells do not. 2.1 declines
+to generalize the *proportional* crop and says so --- this is the other site.
+(6) **Keycode 167** (`Sdl.hs:828-830`, the paragraph key) has
+no `keyTranslateWeb` clause. Trivial; no binding uses it. Two of the six
+are carried into the live items a session would otherwise execute without them
+--- (2) into 0.1's `KeyDecision` comment, (1) into 2.2's pitfalls --- and (3)
+to (6) live here, with no ledger item invented for them, until someone schedules
+one.*
 
 - **Mouse position attached to keyboard events.** SDL sends the *current* mouse
   position with every keypress (`getAbsoluteMouseLocation`, `Sdl.hs:348-350`);
