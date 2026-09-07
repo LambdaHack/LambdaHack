@@ -234,13 +234,7 @@ so an unstated step is an unperformed one; and it cannot tell a check
 it is expected to skip from one it has failed to run, so a row whose acceptance
 it cannot complete has to say so rather than leave the gap to judgment.
 That this had to be stated is itself the evidence --- the intent was read off
-the prose and got read wrong. Ruled campaign 3, 2026-09-07: the two permanent
-records state the same property for themselves rather than pointing here,
-and the three copies stand. Each record's sentence also scopes a lifecycle claim
-to that record's own sections --- the post-mortem's secs. 10--11,
-the abort-split record's sketch after the invariants --- which this paragraph
-has no frozen half to supply, so the three may genuinely diverge; what a pointer
-could share is one clause, and the scoping is all the rest.
+the prose and got read wrong.
 
 **The gates, once.** Every **Done** below is built from these, named rather
 than spelled out, run from the repo root. Read the counts and the printed
