@@ -1441,6 +1441,38 @@ at the boundary, and everything below it, `runParams` included, is that one read
 threaded down. What the walk buys is that both answers are now read rather
 than assumed, which one level's could not be.
 
+**The walk was then performed whole, 2026-09-07, over the tail's thirty-three
+entries: twelve hold, twenty-one are clean.** It is not twelve findings. All
+twelve reach one of two waits --- `verifyEscape`'s and `verifyToolEffect`'s
+`displayYesNo` inside `processTileActions`, and `meleeAid`'s own --- down
+a single chain: `moveOnceToXhairHuman` and `continueToXhairHuman` through
+`goToXhair`, `goToXhairExplorationMode` and `goToXhairGoTo` into `moveRunHuman`,
+and `alterWithPointerHuman` through `alterTileAtPos`, each reaching
+`alterCommon` and `verifyAlters` below it. So the reasoning above covers them:
+they are links of a chain whose bottom is pinned already, the identity is one
+boundary read threaded down, and the comment sec. 10.6 requires stays
+at the pinned end rather than at each link. **No entry moves bucket
+on this evidence**, and none should be moved without asking sec. 10.6's
+choose-versus-confirm question at the site --- both waits here *confirm*, one
+leaving the dungeon and one an attack already aimed, which is why the chain ends
+where it does. Three exact results are worth keeping. `applyItem`'s documented
+near-miss is confirmed clean: it asks `displayYesNo`
+(`HandleHumanGlobalM.hs:1044`, `:1047`) and afterwards uses only `go`, `iid`
+and `fromCStore`, none of them derived from the leader. `runOnceToXhairHuman`
+reaches the chain and is guarded out of it, `HandleHumanGlobalM.hs:723` fixing
+its `run` argument `True`, which takes `moveSearchAlter`'s `:481` arm and leaves
+`meleeAid` behind its own `not run` --- clean by path rather than by structure,
+so it is the one entry a later constant could flip. And three clean entries
+are handed an identity already stale by a caller the read-live table covers
+rather than this tail: `moveItems` from `moveOrSelectItem`, `closeTileAtPos`
+from `closeDirHuman`, `permittedApplyClient` from inside `psuit`. One caution
+the walk earned about its own citations, binding on anyone re-running it: a use
+written inside a `let`-bound action is cited where it is *written*, not where
+it *runs*, so `meleeAid`'s `updateTarget leader` reads
+as `HandleHumanGlobalM.hs:399`, ahead of the waits at `:408` and `:412`,
+and in fact executes after both, through the `returnCmd` calls at `:410`
+and `:414`. A line number alone says the opposite of the truth there.
+
 **Read live** --- the identity must stop being threaded through each. The table
 is the work list, one row per function, and its last column is the only decision
 that fixes anything: a read placed above the wait is the stale copy under a new

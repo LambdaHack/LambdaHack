@@ -85,8 +85,8 @@ its item carries an outcome line.
 >   is deliberate: the pointman records have no such case and need no such word.
 >
 > The distinction a reader will trip on is **open** against **not applied**,
-> because the ledger sorts by item number and not by it: 0.0 and 2.1 sit four
-> rows apart and mean different things --- AltGraph chords are lost
+> because the ledger sorts by item number and not by it: 0.0 and 2.1 are two
+> rows of one table and mean different things --- AltGraph chords are lost
 > in the shipped browser build today, while `OverlayLayout` is a module nobody
 > has written. The first is a bug report, the second a specification, and only
 > the second may be edited to match a tree that moved. The rule fires
