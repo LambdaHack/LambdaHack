@@ -542,11 +542,11 @@ getLeaderUI _witness = do
     -- release build (@-fno-ignore-asserts@ is unconditional) then names
     -- the faction whose pointman went missing
 
--- | For entry points that must fail friendly when nobody is designated,
--- and for a future in which an interaction can outlive the check that
+-- | For a future in which an interaction can outlive the check that
 -- minted its witness: the leader may have died or been reassigned
 -- meanwhile, so the caller handles Nothing by exiting the interaction.
--- Not defensive -- correct.
+-- Not defensive -- correct. No caller needs it today: every converted
+-- function is reachable only under a mint, the entry points included.
 getLeaderUIMaybe :: MonadClientUI m => m (Maybe ActorId)
 getLeaderUIMaybe = getsClient sleader
 ```
