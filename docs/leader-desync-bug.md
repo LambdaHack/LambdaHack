@@ -571,8 +571,9 @@ by `projectItem`, whose own identity is pinned (6 below), but which is reached
 only from the entry point `projectHuman`, so a witness arrives there too:
 the witness travels even where the identity does not. No converted function
 is reachable without a mint, so `getLeaderUIMaybe` is needed by none of them ---
-its role is exactly the one stated above, entry points and future-proofing,
-and the count says so.
+the thirteen entry points included, the boundary minting for those too.
+The count therefore refutes the entry-point half of the prediction above rather
+than confirming it: future-proofing is the whole of the role it leaves.
 
 The future-proofing is not idle, though: the loop machinery already anticipates
 state racing commands (`sreqPending`'s warning: *"server updated game state
@@ -649,9 +650,9 @@ instead --- the ruling under the table. Parameters that mean "some actor"
 | meaning of the param | examples | action |
 |---|---|---|
 | "the pointman now", held across interactive waits | transition, getItem/getFull/getGroupItem/getStoreItem, itemMenuHuman, chooseItem\*Human, chooseItemDialogMode, pointmanCycle(Level), pickLeaderWithPointer, psuitReq closure, the runDefSkills/runDefInventory right-pane callbacks, projectHuman, applyHuman, alterDirHuman/pickPoint | **drop / read live** |
-| "some actor" --- a target, pivot or subject | pickLeader (switch target), partyAfterLeader (rotation pivot), skillsOverlay / skillCloseUp / skillsInRightPane (described subject), accessModeBag (pure), lookAt\*, projectItem / meleeAid (the confirmation's subject --- 6 below) | **keep** |
+| "some actor" --- a target, pivot or subject | pickLeader (switch target), partyAfterLeader (rotation pivot), skillsOverlay / skillCloseUp / skillsInRightPane (described subject), accessModeBag (pure), lookAt\*, projectItem / meleeAid / processTileActions (the confirmation's subject --- 6 below) | **keep** |
 | "the pointman", single atomic step, no wait inside, dispatched *at* the boundary | waitHuman, yellHuman, selectActorHuman, acceptHuman, the `xhair*Human` family, ... (fifteen, listed in the migration document's tail) | **convert** --- the ruling below |
-| the same, but called *below* the boundary on an identity its caller has just read | alterCommon, closeTileAtPos, applyItem, moveItems, permitted\*Client, goToXhair\*, ... (the other nineteen there) | **keep** --- the ruling below |
+| the same, but called *below* the boundary on an identity its caller has just read | alterCommon, closeTileAtPos, applyItem, moveItems, permitted\*Client, goToXhair\*, ... (the other eighteen there) | **keep** --- the ruling below |
 
 > **Decision: the mechanical tail is not optional, and it splits.** "Convert
 > for uniformity or leave" is not a choice a mechanical sweep can defer
@@ -660,13 +661,13 @@ instead --- the ruling under the table. Parameters that mean "some actor"
 > by site. The fifteen dispatched *at* the boundary convert: then no `CmdLeader`
 > case passes an `ActorId` at all, which is an invariant checkable by reading
 > `cmdSemanticsLeader` alone instead of by classifying each handler.
-> The nineteen called *below* it keep the parameter, and converting them would
+> The eighteen called *below* it keep the parameter, and converting them would
 > be a regression dressed as uniformity: the caller has just read the live
 > pointman, so passing it down is ordinary parameter passing, whereas a re-read
 > in each callee would let one multi-step operation act for two different
 > actors. Their parameter means "the actor this step is for" --- the "some
 > actor" row --- and per `CLAUDE.md`'s comments rule that is stated once,
-> at `getLeaderUI`, not at nineteen call sites.
+> at `getLeaderUI`, not at eighteen call sites.
 
 > **(!) Converting a function is not deleting its parameter.** The partition
 > says *which* values must stop being threaded; where the live read then goes
@@ -912,10 +913,13 @@ the player said yes to flinging *this* actor's item. So identity is pinned
 there, and the partition already provides the vocabulary for it: both keep
 an explicit `ActorId` parameter, meaning "the actor this confirmation is about",
 which is the "some actor" column rather than an oversight, and the migration
-document's inventory lists them under Keep for that reason. It is the one place
-where this ruling overrides the wait test of 3 rather than agreeing with it,
+document's inventory lists them under Keep for that reason --- together
+with `processTileActions`, a third such site, whose two confirmations sit one
+level down in helpers it calls, so there the wait test did not merely have
+to be overridden: it could not see the wait at all. It is the one place where
+this ruling overrides the wait test of 3 rather than agreeing with it,
 so an inventory that applies that test mechanically will misfile them, and one
-built for this very refactor did.
+built for this very refactor did, twice.
 
 So the rule to write into the code is: read live wherever the interaction
 *chooses*, pin deliberately wherever it *confirms* --- and where a parameter
@@ -923,7 +927,7 @@ is pinned *across a wait*, say in a comment that it is pinned and why, because
 an unexplained `ActorId` is what produced this document. A parameter merely
 handed to a helper inside one atomic step needs no such note: nothing can
 intervene to make it stale, and 3's ruling states that convention once,
-at `getLeaderUI`, rather than at each of the nineteen sites it covers.
+at `getLeaderUI`, rather than at each of the eighteen sites it covers.
 
 ### 7 -- What would falsify this
 
