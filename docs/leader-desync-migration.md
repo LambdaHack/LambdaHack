@@ -68,7 +68,7 @@ to be deleted*
 >   whatever branch the first bullet took.
 >
 > File:line citations were verified against the tree at commit `6f564870c`
-> (2026-09-04) --- the newest commit touching any file they cite; re-run
+> (2026-09-07) --- the newest commit touching any file they cite; re-run
 > `python3 tools/check-plan-citations.py docs/leader-desync-migration.md --restamp`
 > after the reading pass, and re-verify the only/every/never claims by repo-wide
 > grep. Verify the post-mortem's secs. 10--11 in the same pass: they

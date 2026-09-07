@@ -25,8 +25,8 @@ set ported with 11 of 13 values missing; a palette color slip). So:
 tooling port (Phase 3).** Related goals (R1--R6) and adopted multi-frontend
 practices follow the phases.
 
-File:line citations were verified against the tree at commit `ce7a40c13`
-(2026-09-04) --- the newest commit touching any file they cite,
+File:line citations were verified against the tree at commit `7b84ed60d`
+(2026-09-07) --- the newest commit touching any file they cite,
 so the verification stands until one of those files moves ---
 then machine-checked; re-run
 `python3 tools/check-plan-citations.py docs/wasm-frontend-unified-plan.md` after
