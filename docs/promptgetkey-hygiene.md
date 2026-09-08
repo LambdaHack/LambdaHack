@@ -324,8 +324,8 @@ of the effect.
 > its correctness argument is "the restore is an ordinary write to the single
 > source of truth, observed by every (live) reader" --- a statement that is only
 > true once live-read has landed. Concretely: land the live-read design (steps
-> 1--5 of sec. 02 of `docs/leader-desync-migration.md`), re-enable the disabled
-> assertion, flip the LR-series test expectations, and only then extract
+> 1--5 of sec. 02 of `docs/leader-desync-migration.md`, the re-enabled assertion
+> and the flipped LR-series expectations among them), and only then extract
 > `macroStep`/`abortMacroPlayback`. The AS-series tests are deliberately written
 > as *contract tests* against `promptGetKey`'s unchanged type --- they must pass
 > before live-read, after it, and after the abort-split, so they serve

@@ -695,7 +695,11 @@ instead --- the ruling under the table. Parameters that mean "some actor"
 >   `chooseItemApplyHuman`'s `psuit` already calls `permittedApplyClient leader`
 >   inside the action (`HandleHumanLocalM.hs:579-585`), so sec. 09's sibling (c)
 >   survives any relocation: what must become live is the *actor*, inside
->   that action. Not measured against the battery, no test entering the apply
+>   that action. Its second `permittedApplyClient leader` call,
+>   in the `sitemSel` fast path outside the closure
+>   (`HandleHumanLocalM.hs:571`), is the entry call above over again ---
+>   pre-wait, in a branch that returns without opening the dialog --- and stays
+>   as it is. Not measured against the battery, no test entering the apply
 >   dialog --- which is the gap the migration document's sec. 02 step 6 closes.
 > - **`pickPoint` must read after the key, not before it.** Its wait
 >   is `getConfirms` (`HandleHumanGlobalM.hs:1356`) and the leader's last use
