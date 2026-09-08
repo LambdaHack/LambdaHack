@@ -363,9 +363,10 @@ frozen appendices follows the text it named, its prose untouched --- the fourth
 kind of upkeep the records admit, ruled 2026-09-08 by Mikolaj
 over the record-and-leave this paragraph carried earlier that day, which left
 a restamp asserting a reading of a slid line. So the frozen ranges are
-on the repair commit's list with the live ones: C2's and C3's **Owns** hold
-the post-mortem whole for it, and C3 to C6 hold the wasm plan for its Appendix
-C. `--restamp` then follows the reading pass, as the header says.
+on the repair commit's list with the live ones: C2 to C6 and C8 hold
+the post-mortem for it in their **Owns**, frozen sections included, and C3 to C6
+hold the wasm plan for its Appendix C. `--restamp` then follows the reading
+pass, as the header says.
 
 **What may be fanned out, and what may not.** The conversion is a type-directed
 cascade inside *one* library and *one* test-suite component: change a signature

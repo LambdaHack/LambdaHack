@@ -3747,14 +3747,15 @@ got updated; R1's re-measurement flips one constant instead of editing ifdefs.
 (Server code consuming a File-layer constant respects the client-server split
 --- it's the storage backend's property, not the frontend's.)
 
-**Split** --- two commits, exports before uses: first the File-layer modules
-gain the constants (`Common/HSFile.hs`, `Common/WasmFile.hs`,
-`Common/JSFile.hs`, re-exported through `Common/File.hs`, whose selection
-`#ifdef` at `File.hs:9-15` stays untouched), then the three engine consumers
-branch on values and lose their `#if`s; then the citation repair the second
-owes, with its restamp, the three `#if` sites being lines cited here.
-The outcome line names the second commit's hash and follows the third; the item
-sits in no `tools/doc-refs-allow.txt` gate, so it deletes nothing there.
+**Split** --- two commits and their repair, exports before uses: first
+the File-layer modules gain the constants (`Common/HSFile.hs`,
+`Common/WasmFile.hs`, `Common/JSFile.hs`, re-exported through `Common/File.hs`,
+whose selection `#ifdef` at `File.hs:9-15` stays untouched), then the three
+engine consumers branch on values and lose their `#if`s; then the citation
+repair the second owes, with its restamp, the three `#if` sites being lines
+cited here. The outcome line names the second commit's hash and follows
+the third; the item sits in no `tools/doc-refs-allow.txt` gate, so it deletes
+nothing there.
 
 **Owns** --- `Common/File.hs`, `Common/HSFile.hs`, `Common/WasmFile.hs`,
 `Common/JSFile.hs`, `Server/LoopM.hs`, `Client/UI/HandleHumanLocalM.hs`,
@@ -3992,10 +3993,10 @@ jobs landed --- the only kind of test that catches native-vs-wasm *behavioral*
 drift (FFI-adjacent paths, numeric assumptions); per-frontend unit tests can't.
 Medium effort.
 
-**Split** --- two commits, as the item's own staging says: the native harness,
-which must precede 2.1, then the wasm stage, which only adds the same goldens
-to `make test-wasm` and to R2's existing job; then the citation repair
-with its restamp that the first owes, its stanza edit landing inside
+**Split** --- two commits and their repair, as the item's own staging says:
+the native harness, which must precede 2.1, then the wasm stage, which only adds
+the same goldens to `make test-wasm` and to R2's existing job; then the citation
+repair with its restamp that the first owes, its stanza edit landing inside
 `LambdaHack.cabal:481-515` and its fixtures in a file cited here. The second
 carries the outcome line and the `tools/doc-refs-allow.txt` deletion, the record
 following the repair.
@@ -4067,14 +4068,14 @@ startup/shutdown check, and --- once 3.2 exists --- a short `nodeBench` run,
 which is what would first execute `Wasm.hs` in CI. No shipped frontend goes
 permanently untested the way `Dom.hs` did.
 
-**Split** --- three commits, ordered by which gate can run at all:
-the pty-driven ANSI smoke (verifiable in-session), the `xvfb-run` SDL smoke
-(likewise, since the display arrived --- see Hands back), and the `nodeBench`
-smoke, which waits on 3.3. Each job lands in a workflow file and a `Makefile`
-cited here, so each owes the citation repair with its restamp, a commit
-of its own after it. The third carries the outcome line; the item is
-in no `tools/doc-refs-allow.txt` gate beyond the three target names this block
-introduces, which its own commit deletes as it lands.
+**Split** --- three commits, a repair after each, ordered by which gate can run
+at all: the pty-driven ANSI smoke (verifiable in-session), the `xvfb-run` SDL
+smoke (likewise, since the display arrived --- see Hands back),
+and the `nodeBench` smoke, which waits on 3.3. Each job lands in a workflow file
+and a `Makefile` cited here, so each owes the citation repair with its restamp,
+a commit of its own after it. The third carries the outcome line; the item
+is in no `tools/doc-refs-allow.txt` gate beyond the three target names
+this block introduces, which its own commit deletes as it lands.
 
 **Owns** --- `Makefile`, gaining `smokeANSI`, `smokeSdl` and `smokeNodeBench`,
 `.github/workflows/lint-and-test-suites.yml`, one job each,
