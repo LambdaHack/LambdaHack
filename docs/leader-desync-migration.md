@@ -491,13 +491,13 @@ here touches the engine beyond that export move. It takes the three counts
 to 157, 28 and 11, the first of the four movements "Running this plan" permits,
 and the AS series to fifteen. **Append, do not insert**, on C1's model
 and for C1's reason: `test/UnitTestHelpers.hs` is the most-cited file
-this campaign writes --- `test/CLAUDE.md`, a seeded rules file, carries ten
-citations into it, the wasm plan four and this document two of its own, every
-one of them further down the file than the stub at `:135` --- so the recording
-`ChanFrontend` goes at the end of the file, where it slides nothing ---
-and the apply pin goes at the end of `test/HandleHumanLocalMUnitTests.hs`
-for the same reason, `test/CLAUDE.md` citing its `:306` --- and `cite`
-in **Done** is the fallback for inserting beside the stub rather than the plan.
+this campaign writes --- `test/CLAUDE.md`, a seeded rules file, the wasm plan
+and this document all cite into it, and none of those citations sits above
+the stub at `:135` --- so the recording `ChanFrontend` goes at the end
+of the file, where it slides nothing --- and the apply pin goes at the end
+of `test/HandleHumanLocalMUnitTests.hs` for the same reason, `test/CLAUDE.md`
+citing its `:306` --- and `cite` in **Done** is the fallback for inserting
+beside the stub rather than the plan.
 
 **Split** --- two commits, and a third only if (1) put the recording stub beside
 the existing one instead of appending it: the citation repair
@@ -555,38 +555,37 @@ the two outcome lines itself (the head callout).
 sec. 02 step 1, with the pinned-parameter note sec. 02 drafts sitting
 on `getLeaderUI` from the start, since the sites C6 writes point at it. A file
 two campaigns write, and the sharper of the two:
-`docs/wasm-frontend-unified-plan.md` cites into it nine times
-(`MonadClientUI.hs:166` once, `MonadClientUI.hs:329` six times --- all
+`docs/wasm-frontend-unified-plan.md` cites into it at four lines
+(`MonadClientUI.hs:166`; `MonadClientUI.hs:329`, over and over --- all
 `getFontSetup`, which its 2.4 rewrites and which may land at any time ---
-and `MonadClientUI.hs:455` and `MonadClientUI.hs:469` once each, this plan's own
-citations mirrored back by that plan's 2.4). The bodies are disjoint
-and an export-list clash is loud, so the hazard is neither --- it is that ~30
-lines inserted above `:166` slide all nine onto other lines *while they still
-resolve*, leaving `tools/check-plan-citations.py` green over a document that has
-started to lie. It is not the only such file, and the test that excluded
-the others was the wrong one: a citation slides when the line count *above*
-it changes, not when the cited function converts. So `HandleHumanLocalM.hs`
-joins --- sec. 02 converts `chooseItemDialogMode` and the `chooseItem*Human`
-wrappers well above the wasm rip-out's cited `HandleHumanLocalM.hs:815` ---
-and so does `test/UnitTestHelpers.hs`, which PR 0 writes and two of that plan's
-items own; of the other two both campaigns name, sec. 03's DrawM ruling
-is a decision *not* to write and `SessionUIMock.hs` is read rather than written.
-Files that plan only *cites* are a wider set and a different hazard, met
-by the `cite` gate rather than here. The second and third files the ruling below
-reserved have therefore arrived, and the reopened question was ruled
-on 2026-08-07: no mechanism --- machinery that must be maintained or become
-a lie, for the little both campaigns have left to run --- so each side goes
-on warning by hand, this item and that plan's 2.4 and capability-constants
-blocks, with this item's snippet re-reading as the check a green run cannot
-replace; reopen again only if the shared set grows. **Append, do not insert**:
-the spike put the whole block below `MonadClientUI.hs:469` and slid nothing,
-so the hazard this item describes is avoidable rather than merely detectable,
-and the snippet re-reading in **Done** is the fallback for inserting high,
-not the plan.
+and `MonadClientUI.hs:455` and `MonadClientUI.hs:469`, this plan's own citations
+mirrored back by that plan's 2.4). The bodies are disjoint and an export-list
+clash is loud, so the hazard is neither --- it is that ~30 lines inserted above
+`:166` slide every one of them onto other lines *while they still resolve*,
+leaving `tools/check-plan-citations.py` green over a document that has started
+to lie. It is not the only such file, and the test that excluded the others
+was the wrong one: a citation slides when the line count *above* it changes,
+not when the cited function converts. So `HandleHumanLocalM.hs` joins --- sec.
+02 converts `chooseItemDialogMode` and the `chooseItem*Human` wrappers well
+above the wasm rip-out's cited `HandleHumanLocalM.hs:815` --- and so does
+`test/UnitTestHelpers.hs`, which PR 0 writes and two of that plan's items own;
+of the other two both campaigns name, sec. 03's DrawM ruling is a decision
+*not* to write and `SessionUIMock.hs` is read rather than written. Files
+that plan only *cites* are a wider set and a different hazard, met by the `cite`
+gate rather than here. The second and third files the ruling below reserved have
+therefore arrived, and the reopened question was ruled on 2026-08-07:
+no mechanism --- machinery that must be maintained or become a lie,
+for the little both campaigns have left to run --- so each side goes on warning
+by hand, this item and that plan's 2.4 and capability-constants blocks,
+with this item's snippet re-reading as the check a green run cannot replace;
+reopen again only if the shared set grows. **Append, do not insert**: the spike
+put the whole block below `MonadClientUI.hs:469` and slid nothing, so the hazard
+this item describes is avoidable rather than merely detectable, and the snippet
+re-reading in **Done** is the fallback for inserting high, not the plan.
 
 **Owns** --- `engine-src/Game/LambdaHack/Client/UI/MonadClientUI.hs`
 and this document; plus, in a citation-repair commit and only if the block
-was not appended, `docs/wasm-frontend-unified-plan.md`, whose nine citations
+was not appended, `docs/wasm-frontend-unified-plan.md`, whose citations
 an insertion above `:166` would slide --- PR 0's shape, the repair being
 this campaign's since its commit did the sliding. The wasm plan's 2.4
 and its sum-typed selection practice write the same file, both
@@ -596,7 +595,7 @@ above, so serialize and append.
 **Done** --- `native`, `contract` unmoved, `LR-flip` unmoved, `docs`; nothing
 else changes, this step having no callers yet; and, if the block goes
 in anywhere but the end of the file, `cite`, its wasm-plan run read for the four
-printed snippets that stand for those nine sites, the checker printing one per
+printed snippets that stand for those sites, the checker printing one per
 distinct line --- a green run is not sufficient there.
 
 **Hands back** --- nothing.
@@ -617,8 +616,9 @@ it moves and this is a citation-sliding step like C3 to C6: the post-mortem's
 live sec. 10.4 cites `:217-218`, `:220-225`, `:170`, `:208` and `:209`,
 its frozen sec. 04 callout `:111-112` --- which this document's own frozen Log
 cites too, in its second 2026-08-07 entry --- and sec. 03 below `:129`, all
-of which go on resolving after the shift; the frozen ones re-cut with the live,
-per "Running this plan".
+of which go on resolving after the shift, and sec. 00's three probes read a line
+range of it; the frozen ones re-cut with the live, per "Running this plan",
+and the probes' range with them.
 
 **Split** --- two commits, (1) the boundary change and (2) the citation repair,
 exactly as C3's; (2) carries the ledger flip.
