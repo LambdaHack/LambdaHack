@@ -626,7 +626,7 @@ and its absence says the item is a single commit.
 
 - **Split** --- the landing order for an item worked as several commits,
   and which of them carries the outcome line and the `tools/doc-refs-allow.txt`
-  deletions --- the record commit being the one **Hands back** waits on.
+  deletions --- the record commit being the one that waits on **Hands back**.
 - **Owns** --- the files the item writes, exhaustively, and a locking discipline
   over them: while the item is in flight nothing else writes those files,
   and the item writes nothing else. A file in two items' **Owns** is therefore

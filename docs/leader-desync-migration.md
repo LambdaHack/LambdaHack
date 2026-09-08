@@ -262,7 +262,7 @@ That this had to be stated is itself the evidence --- the intent was read off
 the prose and got read wrong. Two things the ledger leaves unsaid follow
 from it. An unmet `depends on` cell is a stop: a row whose dependency has
 not flipped to `landed` is not handed out, and a session finding itself on one
-says so and stops: the missing row is handed out in its turn, not taken up
+says so and stops, the missing row being handed out in its turn, not taken up
 by the session that met its absence. A cell names the nearest row and the chain
 is read transitively, and `landed` is met wherever the commit sits, C0's parked
 spike included. And the review unit is the wasm plan's, adopted whole: a branch
@@ -2014,7 +2014,7 @@ commit if the pure cases sit above its `FrameMUnitTests.hs:194`,
 commit, both citing `FrameM.hs` lines the extraction slides (the post-mortem's
 claimant list is at C3; the abort-split record's is here: PR 0, 04.1, 04.2, 04.3
 and 04.4), and this document. **The claimant list for `FrameM.hs` lives here**:
-04.1, 04.2 and 04.3, one commit each in that order. **So does
+04.1, 04.2 and 04.3, one `FrameM.hs` commit each in that order. **So does
 `test/FrameMUnitTests.hs`'s**: PR 0, C4 and 04.1.
 
 **Done** --- `native`, at 165 tests: the eight pure cases of the table below
