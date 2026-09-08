@@ -226,20 +226,22 @@ and Appendix B.7's 2026-08-07 one are the two such, and the pointman
 post-mortem's framing callout is where this kind is defined and bounded. The two
 are named apart because they are different acts: an outcome line records
 a landing, an audit note records that the section was re-read and found wanting.
-Neither licenses rewriting the prose *under* the note, which is what R3's ruling
-(c) refuses for the appendices' citations; the note itself stays with whoever
-acts on it, so carrying one of its findings into a live item is recorded
-in the note rather than by editing the section it annotates. **Live until every
-item has landed or retired**, because the work falsifies them: Goals
-and approach, How this lands, Repo facts, Build & verification loop, Handing
-an item to a session, What would falsify this, Sequencing, this ledger,
-and the intros that open a phase or the practices --- Phase 2's is the one
-that matters, since 2.2's Split (0) appends the frame-timing baseline to
-it and 2.5 re-measures against it, and its recorded numbers are exempt
-as measurements the way an item's are. Everything else is per item, and the row
-is the unit of rollback: each item is one commit, or the **Split** run
-of commits its block names, every one of them leaving the suite green --- which
-is what makes a row something that can be reverted rather than unpicked.
+Neither licenses rewriting the prose *under* the note. A citation range re-cut
+that changes no prose is not that: a frozen section takes it as the pointman
+post-mortem's fourth kind of upkeep, ruled 2026-09-08, which is what R3's ruling
+(c) does for the appendices' citations. The note itself stays with whoever acts
+on it, so carrying one of its findings into a live item is recorded in the note
+rather than by editing the section it annotates. **Live until every item has
+landed or retired**, because the work falsifies them: Goals and approach, How
+this lands, Repo facts, Build & verification loop, Handing an item to a session,
+What would falsify this, Sequencing, this ledger, and the intros that open
+a phase or the practices --- Phase 2's is the one that matters, since 2.2's
+Split (0) appends the frame-timing baseline to it and 2.5 re-measures against
+it, and its recorded numbers are exempt as measurements the way an item's are.
+Everything else is per item, and the row is the unit of rollback: each item
+is one commit, or the **Split** run of commits its block names, every one
+of them leaving the suite green --- which is what makes a row something that can
+be reverted rather than unpicked.
 
 | sec. | delivers | size | depends on | state |
 |---|---|---|---|---|
@@ -771,11 +773,11 @@ or this campaign, so a session is told both rather than trusted to know them.
   of a claim the landing falsified, so review can tell a relocation
   from a correction: commit `a7e825c2d` could not, having rewritten R2 from "Add
   a job to..." into "Partly landed, in..." and bent a factual claim in the same
-  diff. The obligation reaches live items only. A citation inside a frozen
-  section or a `landed` item is left as it stands, reading against the tree
-  that section was stamped against --- R3's ruling (c) says so
-  of the appendices, and 2.1 meets it head-on, its refactor sliding the `Sdl.hs`
-  lines that Appendix C and B.5 cite.
+  diff. The obligation reaches frozen sections and `landed` items too, since
+  2026-09-08: a slid citation there is re-cut and the prose around it left
+  as it stands, the pointman post-mortem's fourth kind of upkeep --- R3's ruling
+  (c) does so for the appendices, and 2.1 meets it head-on, its refactor sliding
+  the `Sdl.hs` lines that Appendix C and B.5 cite.
 
 This is not a fan-out plan, and the width it does have is spent before any code
 is. The hot files are small --- a hundred to a couple of hundred lines each,
@@ -3485,11 +3487,11 @@ diffs touching the same cabal stanzas and CPP sites.
 **Split** --- three commits, on 2.1's pattern, because **Decide first** (c)
 already makes the renumbering a commit of its own and the label's absence would
 otherwise assert this is one commit. (1) the rip-out, everything the body lists,
-in one diff. (2) the `.md`-only citation renumbering (c) specifies, live items
-only, with the restamp riding it. (3) the outcome line naming (1)'s hash
-and the ledger flip. (2) before (3), so a correction is never in the same diff
-as the landing record. Nothing to delete from `tools/doc-refs-allow.txt`:
-this item proposes no artifact.
+in one diff. (2) the `.md`-only citation renumbering (c) specifies, the frozen
+appendices' ranges included, with the restamp riding it. (3) the outcome line
+naming (1)'s hash and the ledger flip. (2) before (3), so a correction is never
+in the same diff as the landing record. Nothing to delete
+from `tools/doc-refs-allow.txt`: this item proposes no artifact.
 
 **Owns** --- `LambdaHack.cabal` (the `supportNodeJS` flag, the `impl(ghcjs)`
 `cpp-options` stanza and the comment above it, `-DREMOVE_TELETYPE`,
@@ -3543,16 +3545,17 @@ no standing exceptions; the `impl(ghcjs)` stanzas in the two tracked cabal
 archives are explicitly out of scope, kept verbatim by their own definition ---
 as are `Makefile:133-143`'s `nodeBench*` targets
 and `.claude/skills/playtests/SKILL.md`'s description of them, both 3.3's. (c)
-The citation renumbering is a separate `.md`-only commit right after
-the rip-out, live items only --- 2.1's correction-never-with-the-landing
-pattern, generalized. Deleting `Frontend.hs:43-44` and the two guard pairs
-shifts later lines by two, four or six, and the live citations into that file
-(`Frontend.hs:148`, `159-183`, `186-196`, `84-92`, `41-48`, and the sum-typed
-selection's `:86` and `:190`, which this rip-out deletes outright rather
-than shifts, so their sentence is reworded rather than re-cut) are repaired
-there; the frozen appendices' `41-48` and `93` stay untouched per the freeze
-rule, reading against the tree the investigation stamped. The restamp rides
-that `.md` commit.
+The citation renumbering is a separate `.md`-only commit right after the rip-out
+--- 2.1's correction-never-with-the-landing pattern, generalized. Deleting
+`Frontend.hs:43-44` and the two guard pairs shifts later lines by two, four
+or six, and the live citations into that file (`Frontend.hs:148`, `159-183`,
+`186-196`, `84-92`, `41-48`, and the sum-typed selection's `:86` and `:190`,
+which this rip-out deletes outright rather than shifts, so their sentence
+is reworded rather than re-cut) are repaired there, and so are the frozen
+appendices' `41-48` and `93`, re-cut with their prose untouched --- ruled
+2026-09-08, the fourth kind of upkeep the pointman post-mortem admits,
+over the freeze rule's earlier reading that left them pointing at slid lines.
+The restamp rides that `.md` commit.
 
 **R4 --- URL-parameter options.** Server/client options sit at defaults
 in the browser for lack of argv. After 3.1, `lhStart` parses whatever WASI argv
