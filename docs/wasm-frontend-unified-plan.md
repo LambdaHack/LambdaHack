@@ -1288,6 +1288,8 @@ in the plan (0.1's `lhKey` signature rewrite) is made against tested ground.
 After that, each new FFI declaration lands with its coverage case in the same
 commit.
 
+<!-- probe: git -C .. grep -h 'foreign \(import\|export\) javascript' -- engine-src/Game/LambdaHack/Client/UI/Frontend/Wasm.hs engine-src/Game/LambdaHack/Common/WasmFile.hs GameDefinition/Main.hs | grep -vc '^-- ' :: 11 -->
+
 **Split** --- the import half first: seven of the eleven declarations
 that a repo-wide grep finds outside the dead `Dom.hs`/`JSFile.hs` ---
 `WasmFile.hs`'s six, reachable only through `Common/File.hs`'s seven exported
@@ -3842,6 +3844,8 @@ at `Frontend.hs:86` and `:190` --- the exact lines this item turns into cases.
 `test/UnitTestHelpers.hs`, for their fixtures. The pointman campaign holds both
 files too: its C1 appends to `MonadClientUI.hs` below `:469`, and its PR 0 adds
 a recording `ChanFrontend` to `test/UnitTestHelpers.hs`.
+
+<!-- probe: git -C .. grep -h 'frontendName soptions ==' -- '*.hs' | wc -l :: 2 -->
 
 **Done** --- `native`, `wasm`, `docs`, plus `make test-short` &&
 `! git grep -q 'frontendName soptions ==' -- '*.hs'` &&

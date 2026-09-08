@@ -22,13 +22,24 @@ BLOCKED at 2 in the clone and its mutants are LOST, which is the honest
 reading.
 """
 
+import pathlib
+
 COPY = 'clone'
 SIBLINGS = ['../horde-ad', '../lambdahack.github.io']
 TIMEOUT = 600
 
 ST = ['python3', '{file}', '--self-test']
+# The probe runner is the doc-verification skill's, user-scope, outside this
+# tree; a judge over a document rather than over a tool.
+PROBES = ['python3', str(pathlib.Path.home() / '.claude/skills/doc-verification/run-probes.py'), '{file}']
 
 MUTANTS = [
+    # A document probe with its expectation moved: the doc-probes step of
+    # checks.py, judged by the probe runner over that document, must fail.
+    ('doc probe expectation moved', '../docs/leader-desync-migration.md',
+     "':!docs/leader-desync-migration.md' | wc -l :: 13 -->",
+     "':!docs/leader-desync-migration.md' | wc -l :: 99 -->",
+     PROBES),
     # check-doc-examples: "blanking the name pattern ... 0/1 findings"
     ('check-doc-examples name pattern blanked', 'check-doc-examples.py',
      'NAME_RE = re.compile(r"\\b([A-Z][A-Za-z0-9_]{3,})\\b")\n', 'NAME_RE = re.compile(r"(?!x)x")\n', ST),

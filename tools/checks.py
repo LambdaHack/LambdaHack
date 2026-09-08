@@ -32,6 +32,8 @@ DOCS = ('cd "{root}/.." || { echo "cannot enter the repository root"; exit 2; };
         '[ ${#docs[@]} -gt 0 ] || { echo "git lists no tracked Markdown file, or could not be run; nothing checked"; exit 2; }; '
         'python3 tools/%s "${docs[@]}"')
 
+DOCS_HOME = DOCS.replace('python3 tools/%s', 'python3 %s')
+
 STEPS = [
     ('check-doc-examples self-test', ['python3', '{root}/check-doc-examples.py', '--self-test']),
     ('check-doc-refs self-test', ['python3', '{root}/check-doc-refs.py', '--self-test']),
@@ -49,6 +51,10 @@ STEPS = [
     ('doc refs',               ['bash', '-c', DOCS % 'check-doc-refs.py']),
     ('doc wrap',               ['bash', '-c', DOCS % 'check-doc-wrap.py']),
     ('doc examples',           ['bash', '-c', DOCS % 'check-doc-examples.py']),
+    # The probes the documents carry beside their counted claims: each is a
+    # claim's own check, run where the document sits, and the runner is the
+    # doc-verification skill's, which is user-scope and lives outside this tree.
+    ('doc probes',             ['bash', '-c', DOCS_HOME % '$HOME/.claude/skills/doc-verification/run-probes.py']),
     # Both campaign plans read against themselves and each other: the
     # cross-reference graph no pass over every document can see.
     ('plan crossrefs',         ['python3', '{root}/check-plan-crossrefs.py']),

@@ -101,7 +101,10 @@ to be deleted*
 >   and its 0 is the one proving comment stripping still works --- drop
 >   the entry, and say that the control goes with it. `tools/checks.py:64`
 >   excuses `tools/leader-census.py` from coverage by naming this file,
->   so that entry goes with the tool in the same commit. Two are code rather
+>   so that entry goes with the tool in the same commit. `tools/mutants.py`
+>   names this file as the target of its `doc probe expectation moved` mutant,
+>   which retires with it, the `doc probes` step of `tools/checks.py`
+>   then running over the wasm plan's probes alone. Two are code rather
 >   than prose and a reword will not serve. `tools/check-plan-crossrefs.py`
 >   configures this document in `GRAMMARS`
 >   (`tools/check-plan-crossrefs.py:161,171`), in its self-test fixtures
@@ -162,6 +165,8 @@ to be deleted*
 > of that record --- the design this plan executes --- so they drift
 > with this file rather than ageing with its frozen sections.
 
+<!-- probe: git -C .. grep -l leader-desync-migration -- . ':!docs/leader-desync-migration.md' | wc -l :: 13 -->
+
 ## 00 -- Status, size and per-step checks
 
 Keep this ledger current as the work proceeds; it is the reason this document
@@ -190,6 +195,10 @@ in a commit of its own, handlers convert in groups afterwards, and each group
 lands with exactly the flips it earns. The principle is unchanged and better
 served; only the claim that no finer split stays green was wrong, and
 it was wrong because nobody had tried it.
+
+<!-- probe: sed -n 92,219p ../engine-src/Game/LambdaHack/Client/UI/HandleHumanM.hs | grep -c 'CmdLeader \$' :: 12 -->
+<!-- probe: sed -n 92,219p ../engine-src/Game/LambdaHack/Client/UI/HandleHumanM.hs | grep -c 'weaveLeader ' :: 14 -->
+<!-- probe: sed -n 92,219p ../engine-src/Game/LambdaHack/Client/UI/HandleHumanM.hs | grep -c 'addLeader ' :: 3 -->
 
 Every row is an item --- the C-rows and PR 0 below "Running this plan", sec.
 04's rows after the steps that specify them and before the drafts, sec. 05's
@@ -652,6 +661,9 @@ converts them, `moveItemHuman` mints the witness locally on `projectHuman`'s
 pattern and the two below thread it beside their `ActorId`, a parameter added
 and not the conversion, so the three stay C6's. It rewrites lines this document,
 the post-mortem's sec. 10 and the wasm plan's Appendix C cite.
+
+<!-- probe: git -C .. grep -h 'getFull leader psuit' -- engine-src | grep -vc '^getFull' :: 2 -->
+<!-- probe: git -C .. grep -h 'psuitReq leader' -- engine-src | grep -v '::' | grep -vc '^psuitReq' :: 2 -->
 
 **Split** --- two commits. (1) the conversion with its flips, titled as sec. 02
 drafts. (2) the citation-repair commit "Running this plan" owes after every code
@@ -1668,6 +1680,8 @@ never cover them: each converting row reads its rows' continuations, and its own
 block's, by hand against the source. Derived by `tools/leader-census.py`'s
 surface plus a reading of every body, each row then re-derived independently;
 the last column is the part no tool checks.
+
+<!-- probe: wrap80 --unwrap leader-desync-migration.md | grep -cE '\| (inherit|mint) \| --- \|' :: 13 -->
 
 | function | module | mints? | the wait it spans | last use after it | the read goes |
 |---|---|---|---|---|---|
