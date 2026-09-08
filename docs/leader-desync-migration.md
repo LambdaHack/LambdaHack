@@ -99,7 +99,7 @@ to be deleted*
 >   and `test/InventoryMUnitTests.hs:72` cite it from test comments.
 >   `tools/check-doc-examples.py:72-75` names it among four live controls,
 >   and its 0 is the one proving comment stripping still works --- drop
->   the entry, and say that the control goes with it. `tools/checks.py:64`
+>   the entry, and say that the control goes with it. `tools/checks.py:70`
 >   excuses `tools/leader-census.py` from coverage by naming this file,
 >   so that entry goes with the tool in the same commit. `tools/mutants.py`
 >   names this file as the target of its `doc probe expectation moved` mutant,
@@ -155,8 +155,8 @@ to be deleted*
 >   are not edited to match a later tree. A survivor that is neither is a site
 >   the bullets above missed.
 >
-> File:line citations were verified against the tree at commit `f15820209`
-> (2026-09-07). This stamp sits below the ritual and is no step of it: it
+> File:line citations were verified against the tree at commit `2be3b3717`
+> (2026-09-08). This stamp sits below the ritual and is no step of it: it
 > is the document's own maintenance, for as long as there is a document
 > to stamp. Re-run
 > `python3 tools/check-plan-citations.py docs/leader-desync-migration.md --restamp`
@@ -335,33 +335,32 @@ other commit of PR 1 flips expectations without moving a count, which is why
 "count unmoved" is a real check on each of them rather than a formality.
 The three counts were re-measured on the unmodified tree on 2026-08-07
 and are 154, 26 and 10 as stated. A "count unmoved" in a **Done** below
-is against whichever of the three baselines its row follows, and this
-is the only place the sequence is stated, so a row that disagrees with
-it is wrong there rather than here. A count that shifts otherwise
-is the finding, not a nuisance: both patterns select on the test *name*,
-so a renamed test leaves its series silently, and, matching by containment,
-a marker merely *containing* `contract` or `LR-flip` joins it ---
-`docs/wasm-frontend-unified-plan.md` keeps the other campaign's markers outside
-both, twice having had to. Builds take minutes --- set the timeout rather
-than reading one as a hang --- and the flag set stays fixed for the campaign,
-`+with_expensive_assertions` included, since changing it rebuilds every local
-package. The citation pass is owed after every code step and not only
-at the end: steps 2 to 5 rewrite the very lines sec. 03 and the post-mortem
-cite, its frozen sections included, and the wasm plan's Appendix C cites
-`HandleHumanGlobalM.hs`, `HandleHelperM.hs` and `HandleHumanLocalM.hs` lines
-the same conversions slide --- cited there, not written, so the `cite` gate runs
-over it, and a frozen appendix would otherwise restamp green while pointing
-at the wrong lines. What to do when the pass finds one there is *re-cut it,
-in the repair commit that slid it*: a slid citation in the post-mortem's frozen
-secs. 01--09, in the abort-split record's frozen excerpt, in this document's
-frozen Log or in the wasm plan's frozen appendices follows the text it named,
-its prose untouched --- the fourth kind of upkeep the records admit, ruled
-2026-09-08 by Mikolaj over the record-and-leave this paragraph carried earlier
-that day, which left a restamp asserting a reading of a slid line. So the frozen
-ranges are on the repair commit's list with the live ones: C2's and C3's
-**Owns** hold the post-mortem whole for it, and C3 to C6 hold the wasm plan
-for its Appendix C. `--restamp` then follows the reading pass, as the header
-says.
+is against whichever of the four baselines its row follows, and this is the only
+place the sequence is stated, so a row that disagrees with it is wrong there
+rather than here. A count that shifts otherwise is the finding, not a nuisance:
+both patterns select on the test *name*, so a renamed test leaves its series
+silently, and, matching by containment, a marker merely *containing* `contract`
+or `LR-flip` joins it --- `docs/wasm-frontend-unified-plan.md` keeps the other
+campaign's markers outside both, twice having had to. Builds take minutes ---
+set the timeout rather than reading one as a hang --- and the flag set stays
+fixed for the campaign, `+with_expensive_assertions` included, since changing
+it rebuilds every local package. The citation pass is owed after every code step
+and not only at the end: steps 2 to 5 rewrite the very lines sec. 03
+and the post-mortem cite, its frozen sections included, and the wasm plan's
+Appendix C cites `HandleHumanGlobalM.hs`, `HandleHelperM.hs`
+and `HandleHumanLocalM.hs` lines the same conversions slide --- cited there,
+not written, so the `cite` gate runs over it, and a frozen appendix would
+otherwise restamp green while pointing at the wrong lines. What to do when
+the pass finds one there is *re-cut it, in the repair commit that slid it*:
+a slid citation in the post-mortem's frozen secs. 01--09, in the abort-split
+record's frozen excerpt, in this document's frozen Log or in the wasm plan's
+frozen appendices follows the text it named, its prose untouched --- the fourth
+kind of upkeep the records admit, ruled 2026-09-08 by Mikolaj
+over the record-and-leave this paragraph carried earlier that day, which left
+a restamp asserting a reading of a slid line. So the frozen ranges are
+on the repair commit's list with the live ones: C2's and C3's **Owns** hold
+the post-mortem whole for it, and C3 to C6 hold the wasm plan for its Appendix
+C. `--restamp` then follows the reading pass, as the header says.
 
 **What may be fanned out, and what may not.** The conversion is a type-directed
 cascade inside *one* library and *one* test-suite component: change a signature
@@ -444,7 +443,7 @@ and an eager artifact would be taken against lines steps 2 to 5 rewrite.
 
 `MonadClientUI` plus the three frames of `PointmanCycleLevel`, and the five test
 call sites that break with them (`HandleHelperMUnitTests.hs:121`, `:141`,
-`:176`, `FrameMUnitTests.hs:343`, `:377`). Its acceptance: the library compiles
+`:176`, `FrameMUnitTests.hs:344`, `:379`). Its acceptance: the library compiles
 and the witness reads tolerably at a real call site; then, once those five take
 a witness, the suite compiles and LR1/LR2/LR5 are green while LR3/LR4
 and the two bridge tests are red and LR6 unrepresentable --- the spike working,
@@ -695,8 +694,8 @@ for `pickLeaderWithPointer`'s call at `InventoryM.hs:379`.
 **And `HandleHumanGlobalM.hs`'s**: C3, C5 and C6. **And the post-mortem's**: PR
 0 and 04.4 for the outcome lines it reserves, C2, C3, C8, C4, C5, C6 and C7
 for the citation repairs and restamps, the frozen sections' ranges re-cut
-with the live ones, and 04.1 to 04.3 for the `FrameM.hs` re-cuts. PR 0 also
-writes `test/HandleHumanLocalMUnitTests.hs`; `test/InventoryMUnitTests.hs`
+with the live ones, and 04.1, 04.2 and 04.3 for the `FrameM.hs` re-cuts. PR 0
+also writes `test/HandleHumanLocalMUnitTests.hs`; `test/InventoryMUnitTests.hs`
 is C3's, then C8's, until 04.4's deletion commit.
 
 **Done** --- `native` at 157 tests, `contract` unchanged at 28 --- the five
@@ -1998,14 +1997,18 @@ with the decision table drafted below as its test list, authored
 with `test/CLAUDE.md` open first; step 1 above has the rest. The two AS cases
 it depends on are PR 0's and land earlier.
 
+**Split** --- two commits, (1) the extraction with its pure cases and (2)
+the citation repair, exactly as C3's, over both records
+and over `test/CLAUDE.md` where **Owns** says so; (2) carries the ledger flip.
+
 **Owns** --- `engine-src/Game/LambdaHack/Client/UI/FrameM.hs`,
 `test/FrameMUnitTests.hs` (the pure cases beside the AS series --- or a module
 of their own, per **Decide first**), `test/CLAUDE.md` in a citation-repair
 commit if the pure cases sit above its `FrameMUnitTests.hs:194`,
 `docs/leader-desync-bug.md` and `docs/promptgetkey-hygiene.md` in that repair
 commit, both citing `FrameM.hs` lines the extraction slides (the post-mortem's
-claimant list is at C3; the abort-split record's is here: PR 0, 04.1 to 04.3,
-04.4), and this document. **The claimant list for `FrameM.hs` lives here**:
+claimant list is at C3; the abort-split record's is here: PR 0, 04.1, 04.2, 04.3
+and 04.4), and this document. **The claimant list for `FrameM.hs` lives here**:
 04.1, 04.2 and 04.3, one commit each in that order. **So does
 `test/FrameMUnitTests.hs`'s**: PR 0, C4 and 04.1.
 
@@ -2032,8 +2035,12 @@ the same decisions through the real `promptGetKey`.
 in the shell with the read-before-clear ordering noted in the record's sec. 01
 (step 2).
 
-**Owns** --- `engine-src/Game/LambdaHack/Client/UI/FrameM.hs` (list at 04.1)
-and this document.
+**Split** --- two commits, (1) the naming and (2) the citation repair, exactly
+as C3's; (2) carries the ledger flip.
+
+**Owns** --- `engine-src/Game/LambdaHack/Client/UI/FrameM.hs` (list at 04.1),
+`docs/leader-desync-bug.md` (list at C3) and `docs/promptgetkey-hygiene.md`
+(list at 04.1), both in the repair commit, and this document.
 
 **Done** --- `native`, `AS` at 15 with AS4--AS6 green *without edits*,
 `contract` at 29, `cite` as 04.1's, `docs`.
@@ -2046,8 +2053,12 @@ and this document.
 
 `FrameM` only: the walk step 3 describes, ending in the haddock drafted below.
 
-**Owns** --- `engine-src/Game/LambdaHack/Client/UI/FrameM.hs` (list at 04.1)
-and this document.
+**Split** --- two commits, (1) the audit and (2) the citation repair, exactly
+as C3's; (2) carries the ledger flip.
+
+**Owns** --- `engine-src/Game/LambdaHack/Client/UI/FrameM.hs` (list at 04.1),
+`docs/leader-desync-bug.md` (list at C3) and `docs/promptgetkey-hygiene.md`
+(list at 04.1), both in the repair commit, and this document.
 
 **Done** --- `native`, `AS` at 15, `contract` at 29, `cite` as 04.1's, `docs`;
 and the haddock lists every write the body performs, checked by reading the body
@@ -2076,10 +2087,10 @@ a follow-up touching only `.md` files, no document here citing one by line.
 `tools/checks.py` (its `UNCOVERED` entry); `CHANGELOG.md` (the abort-split line,
 after C7's); `docs/leader-desync-bug.md` and `docs/promptgetkey-hygiene.md`
 (the outcome lines the head callout reserves, sec. 10.3's recast and the secs.
-10--11 exception paragraph's deletion; the post-mortem's claimant list is at C3,
-and PR 0 writes the abort-split record before this); `CLAUDE.md` (the sentences
-the head callout enumerates; the wasm plan's 0.1 and R3 name this item,
-and its 0.2 and 2.1 reach it through 0.1's claimant list);
+10--11 exception paragraph's deletion; the post-mortem's claimant list is at C3
+and the abort-split record's at 04.1); `CLAUDE.md` (the sentences the head
+callout enumerates; the wasm plan's 0.1 and R3 name this item, and its 0.2
+and 2.1 reach it through 0.1's claimant list);
 `docs/wasm-frontend-unified-plan.md` (the sites the head callout enumerates,
 under that plan's rule that the lock does not serialize on it; PR 0, C1 and C3
 to C6 are the other claimants here, each for a citation repair);

@@ -3295,9 +3295,10 @@ No SDL2 analogue (SDL's own window-close path deliberately exits without a fresh
 save --- `Sdl.hs:475-484`), but this is the browser-build equivalent of "your
 progress is safe", which is what parity is *for*.
 
-**Split** --- four commits. R1a re-measures the browser save lag under wasm
-from 0.3's instrumented stub and records the number here, editing this document
-alone. R1b is the staging-key/generation-pointer change in `WasmFile.hs` plus
+**Split** --- four commits, plus the citation repair two of them owe. R1a
+re-measures the browser save lag under wasm from 0.3's instrumented stub
+and records the number here, editing this document alone. R1b
+is the staging-key/generation-pointer change in `WasmFile.hs` plus
 its interrupted-cycle test, and carries the `test/WasmFileUnitTests.hs` deletion
 from `tools/doc-refs-allow.txt`. R1c acts on R1a's number against the ruled
 100ms bar --- at or under, periodic autosave re-enabled; above, a save driven
