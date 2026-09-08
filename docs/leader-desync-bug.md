@@ -31,7 +31,7 @@ unrepresentable.
 > captured `leader`", there being no captured leader left. The write itself
 > moves only with the abort-split, and then verbatim, into `abortMacroPlayback`.
 > Both are as it should be: a post-mortem describes a past state, and the stamp
-> says which one. Those sections take three kinds of upkeep and no fourth. One
+> says which one. Those sections take four kinds of upkeep and no fifth. One
 > is an outcome line per claim that resolves. The second, added 2026-08-07 when
 > the real frontend sharpened two of sec. 04's mechanisms, is a callout
 > that annotates a section without rewriting the prose under it ---
@@ -40,9 +40,12 @@ unrepresentable.
 > the second and exists only for it: where a section's own prose states loosely
 > what a callout sharpens, a clause inside that prose may point
 > into the callout, adding no fact of its own; sec. 03 carries the only one.
-> Stating two kinds while making an edit of the third is what this paragraph
-> said until 2026-09-04, when a review read the rule against the commit
-> that wrote it. The outcome lines:
+> The fourth, ruled 2026-09-08, is a citation range re-cut that changes
+> no prose: when a later commit slides a line a frozen section cites,
+> the pointer follows the text it named, so a restamp never asserts a reading
+> of a slid line. Stating two kinds while making an edit of the third is what
+> this paragraph said until 2026-09-04, when a review read the rule against
+> the commit that wrote it. The outcome lines:
 >
 > - secs. 07--08 -- the reproducer and its verification --- **landed**
 >   on master, as the LR series and its harness (`3453b1777` through
