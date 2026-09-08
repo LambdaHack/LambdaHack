@@ -1,6 +1,6 @@
 -- | Tests for FrameM's macro-playback machinery, i.e. the abort-split
 -- series plus the bridge tests touching both designs (see
--- docs/promptgetkey-hygiene.md; the §04 crash window they guard is in
+-- docs/promptgetkey-hygiene.md; the sec. 04 crash window they guard is in
 -- docs/leader-desync-bug.md).
 --
 -- The abort-split design (extracting a pure @macroStep@ decision and a
@@ -96,7 +96,7 @@ promptGetKeyContractTests =
   [ -- [contract] Voicing: a pending macro key that is legal and
     -- uninterrupted is consumed and returned; crucially, the run survives
     -- (srunning stays Just) and the pointman is untouched -- the enabler
-    -- of the §04 crash window that both designs must keep in mind.
+    -- of the sec. 04 crash window that both designs must keep in mind.
     testCase
       "contract AS3: promptGetKey voices a macro key; run and pointman survive"
       $ do
@@ -118,7 +118,7 @@ promptGetKeyContractTests =
 
   , -- [contract] Natural end: no macro pending -> a real key is read,
     -- the run is cancelled, but the pointman is NOT restored (stays C).
-    -- This is the branch-exactness of promptgetkey-hygiene.md §01:
+    -- This is the branch-exactness of promptgetkey-hygiene.md sec. 01:
     -- natural run end /= macro abort.
     testCase
       "contract AS4: promptGetKey with no macro clears the run, keeps pointman"
@@ -140,8 +140,8 @@ promptGetKeyContractTests =
   , -- [contract] Abort via an illegal macro key ("a faulty key in a macro
     -- is a good reason to interrupt it"): macro wiped, run cancelled, and
     -- the pointman RESTORED to the run leader A. This is the hidden write
-    -- of leader-desync-bug.md §03 -- the effect the abort-split design
-    -- names abortMacroPlayback (promptgetkey-hygiene.md §01) and the
+    -- of leader-desync-bug.md sec. 03 -- the effect the abort-split design
+    -- names abortMacroPlayback (promptgetkey-hygiene.md sec. 01) and the
     -- live-read design makes safe. Its observable outcome must never
     -- change.
     testCase
@@ -188,7 +188,7 @@ promptGetKeyContractTests =
   , -- [contract] Rendered (non-blank) frames work under the mock too:
     -- promptGetKey with onBlank = False draws the full HUD frame
     -- (drawHudFrame) over the stub board before reading the key. Pinned
-    -- because the full-dialog coverage plan (leader-desync-bug.md §13)
+    -- because the full-dialog coverage plan (leader-desync-bug.md sec. 13)
     -- depends on dialogs rendering on the tiny fixture.
     testCase
       "contract AS7: promptGetKey renders a HUD frame on the stub board" $ do
@@ -309,11 +309,11 @@ restoreLeaderGuardTests =
       result @?= Just testActorId2
   ]
 
--- * Bridge tests: the §04 window through the real promptGetKey
+-- * Bridge tests: the sec. 04 window through the real promptGetKey
 
 bridgeTests :: [TestTree]
 bridgeTests =
-  [ -- The full crash window of §04, with the leader restore performed by
+  [ -- The full crash window of sec. 04, with the leader restore performed by
     -- the REAL promptGetKey (unlike HandleHelperMUnitTests.LR3, which calls
     -- restoreLeaderFromRun directly): run rotates pointman to C; dialog
     -- captures C; macro dies inside the dialog; promptGetKey restores
@@ -325,7 +325,8 @@ bridgeTests =
     -- cycling reads the pointman live and advances, so flip it to
     -- 'Just testActorId2'.
     testCase
-      "LR-flip X1: §04 window end-to-end; stale cycling no-ops after restore"
+      ("LR-flip X1: sec. 04 window end-to-end; "
+       ++ "stale cycling no-ops after restore")
       $ do
       let testFn = do
             updateClientLeader testActorId   -- run leader A
@@ -346,7 +347,7 @@ bridgeTests =
       (result, _) <- executorCli testFn partyCliState
       result @?= (testActorId2, Just testActorId, Just testActorId)
 
-  , -- The §04 window again, with the post-abort keypress arriving as a
+  , -- The sec. 04 window again, with the post-abort keypress arriving as a
     -- REAL key from the (scripted) frontend: after promptGetKey aborts
     -- the macro (via sreqQueried = False, as in AS6) and restores the
     -- pointman, its real-key read returns the scripted C-Tab; the test
@@ -355,7 +356,8 @@ bridgeTests =
     -- InventoryM's cycleLevelKeyDef would. The promptGetKey observations
     -- are [contract]; the final component is [LR-flip], as in X1: flip it
     -- to 'Just testActorId2' when the live-read design lands.
-    testCase "LR-flip X2: §04 window ending in a literal scripted C-Tab" $ do
+    testCase "LR-flip X2: sec. 04 window ending in a literal scripted C-Tab"
+      $ do
       cliS <- partyCliStateScripted [K.mkKM "C-Tab"]
       let testFn = do
             updateClientLeader testActorId   -- run leader A

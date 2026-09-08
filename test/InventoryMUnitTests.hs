@@ -68,8 +68,8 @@ inventoryMUnitTests = testGroup "inventoryMUnitTests"
     -- rather than merely describing the wrong actor's item.
     -- This is not the identity going stale but a value *derived* from it
     -- before the wait, which live-read fixes only if the derivation moves
-    -- down with the read: see docs/leader-desync-bug.md §10.3 and the
-    -- placement table in docs/leader-desync-migration.md §03.
+    -- down with the read: see docs/leader-desync-bug.md sec. 10.3 and the
+    -- placement table in docs/leader-desync-migration.md sec. 03.
     -- Why no player has hit it: both single-item callers drop the quantity
     -- unforced -- @getGroupItem@ matches @[(iid, _)]@ -- and the move
     -- family's single-item path guards the same case with @EM.lookup@ and

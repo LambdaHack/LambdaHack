@@ -1,6 +1,6 @@
 -- | Tests for global human-command handlers, currently pinning the
 -- selection/execution sibling of the leader-desync family
--- (see docs/leader-desync-bug.md, §09, sibling bug (b)).
+-- (see docs/leader-desync-bug.md, sec. 09, sibling bug (b)).
 module HandleHumanGlobalMUnitTests (handleHumanGlobalMUnitTests) where
 
 import Prelude ()
@@ -32,7 +32,7 @@ import UnitTestHelpers
 handleHumanGlobalMUnitTests :: TestTree
 handleHumanGlobalMUnitTests = testGroup "handleHumanGlobalMUnitTests"
   [ -- [contract] Sibling bug (b) of the leader desync
-    -- (docs/leader-desync-bug.md, §09): the fling key is
+    -- (docs/leader-desync-bug.md, sec. 09): the fling key is
     -- @ComposeUnlessError (ChooseItemProject ts) Project@ -- two separate
     -- boundary dispatches, each reading the pointman afresh. If the player
     -- switches the pointman INSIDE the choose dialog, the selection
@@ -81,10 +81,10 @@ handleHumanGlobalMUnitTests = testGroup "handleHumanGlobalMUnitTests"
           (showFailError err /= "*no item to fling*")
         Right _ -> return ()  -- even better: the request itself
 
-  , -- [LR-flip] The remaining §09 site: @alterDirHuman@ asks for a
+  , -- [LR-flip] The remaining sec. 09 site: @alterDirHuman@ asks for a
     -- direction through @pickPoint@, which spans an interactive wait and
     -- only then shifts the HELD leader's position to get the square to
-    -- modify. Here the wait is the one from the post-mortem's §04 window:
+    -- modify. Here the wait is the one from the post-mortem's sec. 04 window:
     -- a macro dies inside @promptGetKey@, which restores the pointman to
     -- the run leader A -- and the command carries on with the leader it
     -- was handed. Both runs press the same key and differ only in that

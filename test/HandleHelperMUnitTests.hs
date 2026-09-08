@@ -98,7 +98,7 @@ liveReadSeries =
       result @?= (Nothing, Just testActorId2)
 
   , -- [LR-flip] The reproducer for commit 4a6eca154 (kept from the original
-    -- §07 test): a stale captured leader makes cycling a silent no-op
+    -- sec. 07 test): a stale captured leader makes cycling a silent no-op
     -- (with the disabled assertion restored, a crash). Every step is the
     -- genuine engine operation: step 2 is the run rotation's write pair
     -- (RunM.hs:90-91), step 4 the restoreLeaderFromRun that promptGetKey
@@ -227,7 +227,7 @@ liveReadSeries =
       result @?= (True, Just testActorId)
 
   , -- [contract] ...but same-level cycling still works for banned factions
-    -- (the ban only guards the cross-level case) -- the §10 partition
+    -- (the ban only guards the cross-level case) -- the sec. 10 partition
     -- subtlety that a live-read rewrite must not change.
     testCase
       "contract LR11: banned faction still allows pointmanCycleLevel on level"
@@ -256,7 +256,7 @@ liveReadSeries =
   , -- [contract] The CmdLeader boundary: with no pointman designated, the
     -- dispatch refuses with a friendly failure instead of reaching the
     -- handler -- the one place that turns 'Maybe ActorId' into an MError,
-    -- kept by the live-read design (docs/leader-desync-bug.md, §10).
+    -- kept by the live-read design (docs/leader-desync-bug.md, sec. 10).
     testCase "contract LR13: dispatch refuses when no pointman designated" $ do
       let testFn = do
             merr <- dispatchCmd $ HumanCmd.PointmanCycleLevel Forward

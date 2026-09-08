@@ -1,6 +1,6 @@
 -- | Tests for local (client-side-only) human-command handlers, mostly
 -- around the item-projection pipeline, plus the fling-dialog sibling of
--- the leader-desync family (see docs/leader-desync-bug.md, §09,
+-- the leader-desync family (see docs/leader-desync-bug.md, sec. 09,
 -- sibling bug (a)).
 module HandleHumanLocalMUnitTests (handleHumanLocalMUnitTests) where
 
@@ -181,7 +181,7 @@ handleHumanLocalMUnitTests = testGroup "handleHumanLocalMUnitTests"
                                 -- because @eps@ is initialized that way,
                                 -- for "randomness"
   , -- [contract] The premise sibling bug (a) rests on
-    -- (docs/leader-desync-bug.md, §09), and the ruling that keeps
+    -- (docs/leader-desync-bug.md, sec. 09), and the ruling that keeps
     -- @permittedProjectClient@ a "some actor" function: its verdict is
     -- about the actor it is *given*, never about the pointman. The
     -- verdicts are actor-dependent -- here through the projecting skill;
@@ -189,7 +189,7 @@ handleHumanLocalMUnitTests = testGroup "handleHumanLocalMUnitTests"
     -- reusing an entry actor's captured closure after a switch report the
     -- wrong suitability, and what the two rows after this one pin.
     -- The pointman is switched between the two rounds of calls below and
-    -- neither verdict moves. That is the contract, not a flip: §03 of
+    -- neither verdict moves. That is the contract, not a flip: sec. 03 of
     -- docs/leader-desync-migration.md keeps this function's @ActorId@, so
     -- live-read must leave both answers exactly as they are; a conversion
     -- that made it read @sleader@ would collapse the second round to two
@@ -329,7 +329,7 @@ handleHumanLocalMUnitTests = testGroup "handleHumanLocalMUnitTests"
     -- machinery: a scripted Tab inside A's equipment-store dialog runs the
     -- dialog's own cycling handler (InventoryM's cycleKeyDef ->
     -- pointmanCycle, InventoryM.hs:431) and recCall re-enters the dialog
-    -- for the new pointman C -- the §02 re-sync introduced by commit
+    -- for the new pointman C -- the sec. 02 re-sync introduced by commit
     -- 8608d6f9c, pinned here for the first time. recCall re-enters
     -- transition (the key loop), not getFull, so C's store contents don't
     -- gate the re-entry: the script is now dry, the re-entered dialog reads
