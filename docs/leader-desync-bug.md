@@ -13,14 +13,10 @@ unrepresentable.
 > commit **4a6eca154** -- engine-src/.../**HandleHelperM.hs** -- reproduced &
 > fix verified -- GHC 9.12.4 -- design: **live-read** --- one source of truth.
 > File:line citations were verified against the tree at commit **2b20a8284**
-> (2026-09-07) --- the newest commit touching any file they cite,
-> so the verification stands until one of those files moves, whatever else
-> lands. The fixtures and tests they cite are on master, while the designs below
-> are the parked part; the citation pass proves a cited line exists ---
-> that stamp, that it still says what the claim needs; re-run
-> `python3 tools/check-plan-citations.py docs/leader-desync-bug.md` after
-> touching cited files, and re-verify the only/every/never claims by repo-wide
-> grep, never by re-reading one file.
+> (2026-09-07). The fixtures and tests they cite are on master, while
+> the designs below are the parked part. Re-run
+> `python3 tools/check-plan-citations.py docs/leader-desync-bug.md --restamp`
+> after the reading pass; what the stamp asserts is `CLAUDE.md`'s to say.
 
 > **What this record is for, and what is frozen in it.** It is kept
 > indefinitely, for two readers: the one who wonders why the pointman code reads
@@ -1078,6 +1074,6 @@ record: the crash and its analysis (secs. 01--09) happened, the live-read design
 (sec. 10) and the performance reasoning (sec. 11) are the recommendation
 that follows, and the work list they feed lives
 in `docs/leader-desync-migration.md` until it lands. Verified against GHC 9.12.4
-and a green suite --- the test count lives in that document's sec. 05, where
+and a green suite --- the test count lives in that document's sec. 00, where
 it is maintained; the reproducer and battery are on master, the design
 is not yet.*

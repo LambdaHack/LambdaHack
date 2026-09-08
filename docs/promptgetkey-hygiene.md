@@ -17,14 +17,10 @@ entirely in the post-mortem; nothing here is needed to understand or land it.
 
 > design: **functional core / imperative shell** -- planned strictly *after*
 > the live-read design -- file:line citations were verified against the tree
-> at commit **2b20a8284** (2026-09-07) --- the newest commit touching any file
-> they cite, so the verification stands until one of those files moves.
-> The tests they cite are on master, while this design is the parked part;
-> the citation pass proves a cited line exists --- that stamp, that it still
-> says what the claim needs; re-run
-> `python3 tools/check-plan-citations.py docs/promptgetkey-hygiene.md` after
-> touching cited files, and re-verify the only/every/never claims by repo-wide
-> grep, never by re-reading one file.
+> at commit **2b20a8284** (2026-09-07). The tests they cite are on master, while
+> this design is the parked part. Re-run
+> `python3 tools/check-plan-citations.py docs/promptgetkey-hygiene.md --restamp`
+> after the reading pass; what the stamp asserts is `CLAUDE.md`'s to say.
 
 > **What this record is for, and what is frozen in it.** It is kept indefinitely
 > as the specification of `promptGetKey`'s branch behaviour: the checklist
@@ -149,7 +145,7 @@ concerns, following this repo's own functional-core / imperative-shell rule.
 What follows is one refactor that satisfies the list above; the list,
 not the refactor, is what binds a later one.
 
-### 1 -- The interrupt decision is pure --- move it to `FrameM`'s pure section
+#### 1 -- The interrupt decision is pure --- move it to `FrameM`'s pure section
 
 Whether a pending macro should play, abort, or is absent is a pure function
 of `sreqQueried`, the report, the legal keys and the macro frame. It belongs
@@ -198,7 +194,7 @@ macroStep sreqQueried disturbs frontKeyKeys mf =
        KeyMacro _  -> AbortPlayback
 ```
 
-### 2 -- The effect is named --- `abortMacroPlayback`
+#### 2 -- The effect is named --- `abortMacroPlayback`
 
 **Named state transition** --- `FrameM.hs`
 
@@ -215,7 +211,7 @@ abortMacroPlayback = do
   resetPressedKeys
 ```
 
-### 3 -- `promptGetKey` becomes a thin shell that orchestrates
+#### 3 -- `promptGetKey` becomes a thin shell that orchestrates
 
 **Imperative shell** --- `FrameM.hs`
 
@@ -352,4 +348,4 @@ behaviour, the invariants that outlive any refactor of it, and the split
 that would tidy it. The split is a recommendation, not applied changes; the work
 list lives in `docs/leader-desync-migration.md` until it lands. Verified against
 GHC 9.12.4 and a green suite --- the test count lives in that document's sec.
-05, where it is maintained.*
+00, where it is maintained.*
