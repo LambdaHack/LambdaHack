@@ -355,7 +355,11 @@ is everything that reads rather than writes: the per-function placement analyses
 behind sec. 03's table, the flip verifications of step 4, the authoring of PR
 0's tests, and an adversarial pass after each commit asking whether any
 converted function still holds an identity across a wait. Fan out to decide,
-converge to edit, fan out to refute.
+converge to edit, fan out to refute. Ruled 2026-09-08: this paragraph grants
+and does not prescribe --- how many readers a session sends, with what prompt,
+is the session's under the user-scope `CLAUDE.md`'s agent rule, which names
+a base rate and no budget; what comes back is stated where the reading is owed,
+the callee walk's *site by site* in sec. 03.
 
 **Stop and ask.** Three outcomes are not the implementer's to settle. One
 is stated here: step 0 finding that the witness reads badly at real call sites,
