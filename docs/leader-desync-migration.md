@@ -76,7 +76,7 @@ to be deleted*
 >   those by hand is what went wrong here before; the second list is read, never
 >   driven to zero, since sec. 11 goes on saying "the migration" of the *work*
 >   after this file is gone;
-> - edit `CLAUDE.md` five times: in "Where to look next", the paragraph's lead
+> - edit `CLAUDE.md` six times: in "Where to look next", the paragraph's lead
 >   sentence, "Two permanent records cover UI client state, and one temporary
 >   plan drives the work on it", which ends on the two records and no plan,
 >   the sentence that names this file, and the carve-out sentence between them,
@@ -89,6 +89,8 @@ to be deleted*
 >   "the two campaign plans, `docs/wasm-frontend-unified-plan.md`
 >   and `docs/leader-desync-migration.md`", which wants the sentence rewritten
 >   rather than the path excised, excision leaving one document named as two;
+>   and the re-stamping bullet's 2026-09-08 ruling, whose trigger this deletion
+>   is, recast to say it fired;
 > - and the sites outside the pointman records, which are the ones a reader
 >   forgets. `docs/wasm-frontend-unified-plan.md` names this file
 >   at the tag-ownership sentence, which keeps its claim and drops only
@@ -146,6 +148,9 @@ to be deleted*
 >   than one phrasing: one line-oriented pattern over the wrapped form returned
 >   a count a second pattern contradicted, which is why this is a class
 >   and not a list;
+> - and retire the line-citation form with this file, ruled 2026-09-08:
+>   `CLAUDE.md`'s re-stamping bullet holds the ruling, the narrower form
+>   that survives it and the machinery that goes with the old one;
 > - then re-run `python3 tools/check-doc-refs.py` over `CLAUDE.md`, both records
 >   and the wasm plan --- the pass that catches a backticked path left behind
 >   --- and re-run the `git grep -n` above, which is read rather than driven
