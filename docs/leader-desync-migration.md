@@ -333,14 +333,15 @@ the same conversions slide --- cited there, not written, so the `cite` gate runs
 over it, and a frozen appendix would otherwise restamp green while pointing
 at the wrong lines. What to do when the pass finds one there is *re-cut it,
 in the repair commit that slid it*: a slid citation in the post-mortem's frozen
-secs. 01--09, in this document's frozen Log or in the wasm plan's frozen
-appendices follows the text it named, its prose untouched --- the fourth kind
-of upkeep the records admit, ruled 2026-09-08 by Mikolaj
-over the record-and-leave this paragraph carried earlier that day, which left
-a restamp asserting a reading of a slid line. So the frozen ranges are
-on the repair commit's list with the live ones: C2's and C3's **Owns** hold
-the post-mortem whole for it, and C3 to C6 hold the wasm plan for its Appendix
-C. `--restamp` then follows the reading pass, as the header says.
+secs. 01--09, in the abort-split record's frozen excerpt, in this document's
+frozen Log or in the wasm plan's frozen appendices follows the text it named,
+its prose untouched --- the fourth kind of upkeep the records admit, ruled
+2026-09-08 by Mikolaj over the record-and-leave this paragraph carried earlier
+that day, which left a restamp asserting a reading of a slid line. So the frozen
+ranges are on the repair commit's list with the live ones: C2's and C3's
+**Owns** hold the post-mortem whole for it, and C3 to C6 hold the wasm plan
+for its Appendix C. `--restamp` then follows the reading pass, as the header
+says.
 
 **What may be fanned out, and what may not.** The conversion is a type-directed
 cascade inside *one* library and *one* test-suite component: change a signature
