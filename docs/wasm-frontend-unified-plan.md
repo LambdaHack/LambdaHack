@@ -67,9 +67,10 @@ by the ledger below, and by whether its item carries an outcome line.
 >
 > - **landed**, with the commit that did it --- the item describes the code
 >   as of that commit and is not maintained against later trees, bar one further
->   outcome line per claim that *resolves*. Ordinary drift in a landed item
->   is left alone; rewriting one to match a later tree is the mistake this rule
->   exists to prevent.
+>   outcome line per claim that *resolves* and the re-cut of a citation a later
+>   commit slid, which changes no prose (the citation-repair rule under Handing
+>   an item). Ordinary drift in a landed item is left alone; rewriting one
+>   to match a later tree is the mistake this rule exists to prevent.
 > - **open** --- the code is wrong *now*, and the item says how. A drifted claim
 >   here is an error to fix, and "fixing" it by writing the defect up as solved
 >   is the one thing that must not happen.
