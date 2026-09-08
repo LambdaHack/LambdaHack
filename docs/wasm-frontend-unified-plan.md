@@ -38,18 +38,18 @@ practices follow the phases.
 File:line citations were verified against the tree at commit `7b84ed60d`
 (2026-09-07); re-run
 `python3 tools/check-plan-citations.py docs/wasm-frontend-unified-plan.md --restamp`
-after the reading pass. Some file basenames are duplicated among this repo's
-tracked `.hs` files, so every citation here to one of them names its directory
-as well: `Server/LoopM.hs` vs `Client/LoopM.hs`, the engine's vs the game's
-`Content/Input.hs`, the engine's vs the game's `Client/UI/Content/Screen.hs`,
-`GameDefinition`'s vs `definition-src`'s `Content/RuleKind.hs`,
-`Client/State.hs` vs `Common/State.hs` and `Server/State.hs`,
-and `Server/CommonM.hs` vs `Client/CommonM.hs`. Decisions *against* work,
-deferrals and their rationale are collected in Appendix B; the SDL2-vs-wasm
-audit record in Appendix C, its verified non-gaps and its 2026-09-07 gap list
-alike; the GHCJS->JS-backend port investigation in Appendix A. Which half
-of this document a passage is in is answered by the ledger below, and by whether
-its item carries an outcome line.
+after the reading pass, and what the stamp asserts is `CLAUDE.md`'s to say. Some
+file basenames are duplicated among this repo's tracked `.hs` files, so every
+citation here to one of them names its directory as well: `Server/LoopM.hs` vs
+`Client/LoopM.hs`, the engine's vs the game's `Content/Input.hs`, the engine's
+vs the game's `Client/UI/Content/Screen.hs`, `GameDefinition`'s vs
+`definition-src`'s `Content/RuleKind.hs`, `Client/State.hs` vs `Common/State.hs`
+and `Server/State.hs`, and `Server/CommonM.hs` vs `Client/CommonM.hs`. Decisions
+*against* work, deferrals and their rationale are collected in Appendix B;
+the SDL2-vs-wasm audit record in Appendix C, its verified non-gaps
+and its 2026-09-07 gap list alike; the GHCJS->JS-backend port investigation
+in Appendix A. Which half of this document a passage is in is answered
+by the ledger below, and by whether its item carries an outcome line.
 
 > **What this record is for, and what is frozen in it.** It is kept
 > indefinitely, for two readers: the one who wonders why the web stack reads
@@ -109,10 +109,10 @@ its item carries an outcome line.
 > can name its own, so the record is a `.md`-only commit written after that one
 > --- which is what a **Split** means when it says a code commit "carries
 > the outcome line": the record follows that commit and names it. Several
-> **Split**s number the record separately instead (2.1's (4), 2.2's (5), 2.3's
-> (4)), and those say outright which commit's hash goes in. A claim the landing
-> falsified is corrected separately, under the citation-repair rule in "Handing
-> an item to a session", which is where the separation is argued.
+> **Split**s number the record separately instead, and those say outright which
+> commit's hash goes in. A claim the landing falsified is corrected separately,
+> under the citation-repair rule in "Handing an item to a session", which
+> is where the separation is argued.
 >
 > **Landing part of an item takes no outcome line**, and the row stays live:
 > a partial landing is recorded in the item's body as specification for what
@@ -623,9 +623,7 @@ and its absence says the item is a single commit.
 
 - **Split** --- the landing order for an item worked as several commits,
   and which of them carries the outcome line and the `tools/doc-refs-allow.txt`
-  deletions --- and, where **Hands back** names a check, the outcome line waits
-  until that check has been reported back, whichever commit **Split** names
-  for it.
+  deletions --- the record commit being the one **Hands back** waits on.
 - **Owns** --- the files the item writes, exhaustively, and a locking discipline
   over them: while the item is in flight nothing else writes those files,
   and the item writes nothing else. A file in two items' **Owns** is therefore
@@ -672,10 +670,10 @@ native   cabal build && cabal test && hlint .
 ts       make test-ts        # npm run typecheck runs inside the target
 wasm     make build-wasm && make test-wasm
 deploy   make build-ts        # UNSANDBOXED: writes into the pages checkout
-docs     the repo's standing document passes over every document the
-         item's Owns names, this one always among them; CLAUDE.md lists
-         the passes and this document does not; what they cost is the
-         paragraph below
+docs     the repo's standing document passes over every .md document
+         the item's Owns names, this one always among them; CLAUDE.md
+         lists the passes and this document does not; what they cost is
+         the paragraph below
 ```
 
 **What `docs` costs, and when.** The mechanical passes are seconds, and they run
@@ -790,8 +788,8 @@ of the same file" is real concurrency in a large module and applies nowhere here
 concurrency accordingly runs about five items at its widest and two or three
 typically, widest where **Owns** sets are genuinely disjoint: 3.1 against
 everything; the standalone refactors against everything but the items their own
-blocks serialize them with (R1, R3, 2.4). Phase 3 is only mostly disjoint
-from Phases 1-2, and the exceptions are named where they live --- 3.2 shares
+blocks serialize them with. Phase 3 is only mostly disjoint from Phases 1-2,
+and the exceptions are named where they live --- 3.2 shares
 `ts-src/run-wasm-game.mjs` with 1.2, 1.5 and 1.6, per the claimant list at 0.3,
 and 3.3 shares the `Makefile` and `tools/doc-refs-allow.txt` with items in both
 other phases. The parallel effort that paid first was upstream of the code,
@@ -860,25 +858,28 @@ also deletes its own `tools/doc-refs-allow.txt` entry as it creates the file,
 then the two AltGraph fixes as **one** commit, with the highlight fix
 concurrent. The three fixes are one ledger row; the outcome line and the ledger
 flip ride whichever of the two fix commits lands last, after a citation-repair
-commit of its own: the AltGraph fix rewrites `terminal.ts:203` and the highlight
-fix `terminal-core.ts:99`, both cited here, so the sentences citing them
-are reworded rather than re-ranged, and the restamp rides that commit.
+commit of its own: the AltGraph fix rewrites `terminal.ts:203`, cited here,
+so the sentence citing it is reworded rather than re-ranged, and the restamp
+rides that commit; the highlight fix rewrites one entry of `terminal-core.ts`'s
+`HIGHLIGHT_TO_COLOR` table, which this document does not cite ---
+its `terminal-core.ts:99` is `bgColor`'s fill, which the fix leaves standing ---
+so that half owes no repair.
 
 **Owns** --- `ts-src/src/terminal.ts`, `ts-src/src/terminal-input.test.ts`,
 `ts-src/src/terminal-core.ts` and its test, `ts-src/package.json`
 and `package-lock.json` --- both written by 0.3 as well, for lz-string,
-so not concurrent with it --- `docs/wasm-frontend-unified-plan.md` --- the two
-fix commits rewrite `terminal.ts:203` and `terminal-core.ts:99`, cited here,
-so this item owes the citation-repair commit and its restamp ---
-and `tools/doc-refs-allow.txt`, whose `ts-src/src/terminal-input.test.ts` entry
-the harness commit deletes as it creates the file. The two AltGraph fixes
-are not concurrent with each other: they share the new test file and the lock,
-which does not merge. **The claimant list for `ts-src/src/terminal.ts` lives
-here**, as `GameDefinition/index.html`'s does at 1.4, and it is every item
-that writes the file rather than only the ones that write this listener: 0.0,
-0.1, 0.2, 1.1, 1.2, 1.5, 2.2, 2.3 and R5 --- one holder at a time, and an item
-that finds itself writing the file without appearing here has a list to fix
-rather than a lock to take.
+so not concurrent with it --- `docs/wasm-frontend-unified-plan.md` ---
+the AltGraph commit rewrites `terminal.ts:203`, cited here, so this item owes
+the citation-repair commit and its restamp --- and `tools/doc-refs-allow.txt`,
+whose `ts-src/src/terminal-input.test.ts` entry the harness commit deletes
+as it creates the file. The two AltGraph fixes are not concurrent with each
+other: they share the new test file and the lock, which does not merge.
+**The claimant list for `ts-src/src/terminal.ts` lives here**,
+as `GameDefinition/index.html`'s does at 1.4, and it is every item that writes
+the file rather than only the ones that write this listener: 0.0, 0.1, 0.2, 1.1,
+1.2, 1.5, 2.2, 2.3 and R5 --- one holder at a time, and an item that finds
+itself writing the file without appearing here has a list to fix rather
+than a lock to take.
 
 **Done** --- `ts`, `docs`.
 
@@ -1049,12 +1050,12 @@ this discipline missed although four items edit one sentence of it: 0.1, 0.2
 and 2.1 for the frontend bullet's three module names, 0.2 or 2.1 again
 for the Gotchas bullet's "awaits its scheduled fix" --- whichever of them fixes
 `Sdl.hs:590` --- R3 for the GHCJS mentions, and the pointman campaign's 04.4
-for four sentences at that campaign's landing --- one holder at a time,
-as for the four above. Where the edit rides is each item's **Split** to say,
-and they differ on purpose: 2.1 folds it into the citation-repair commit
-that rewrites the same file's `Sdl.hs` lines, R3 into the rip-out whose
-deletions the reworded sentences describe, and 04.4 into the deletion commit
-that resolves the clause.
+for the sentences that campaign's landing falsifies, enumerated in its head
+callout --- one holder at a time, as for the four above. Where the edit rides
+is each item's **Split** to say, and they differ on purpose: 2.1 folds
+it into the citation-repair commit that rewrites the same file's `Sdl.hs` lines,
+R3 into the rip-out whose deletions the reworded sentences describe, and 04.4
+into the deletion commit that resolves the clause.
 
 **Done** --- `native`, `ts`, `wasm`, `docs`.
 
@@ -2687,30 +2688,29 @@ with its one-cell verify-measurement (the (a) ruling), the fixed-pitch crop
 and centring the pitfalls specify --- on the canvas and, as `overflow: hidden`,
 on the grid's cells --- and the draw-command core all three of 2.1's sections
 pass through --- reached through the shared entry point 1.2's draw-op module
-defines, R6's criterion. (4) separate per the citation-repair rule: (1)'s import
-lands in `Wasm.hs`'s `foreign import javascript` block and shifts every
-`Wasm.hs` line cited here below it, its `loader.ts` hook shifts `loader.ts:56`,
-and its `FontFace` declarations shift whatever `terminal.ts` line cited here
-sits below them, so the ranges are re-cut and the restamp rides this commit. (5)
-the outcome line naming (3)'s hash, the ledger flip, and the deletion
-of `overlay-core.ts` and `overlay-core.test.ts` from `tools/doc-refs-allow.txt`.
+defines, R6's criterion. (4) separate per the citation-repair rule: the citation
+repair (1) and (3) owe, the checker's printed snippets naming the lines they
+moved --- (1)'s import and hook and (3)'s `#screen` edit each sit above lines
+cited here --- with the restamp riding this commit. (5) the outcome line naming
+(3)'s hash, the ledger flip, and the deletion of `overlay-core.ts`
+and `overlay-core.test.ts` from `tools/doc-refs-allow.txt`.
 
 **Owns** --- `ts-src/src/overlay-core.ts`, `ts-src/src/overlay-core.test.ts`,
 `ts-src/src/terminal.ts`, `ts-src/src/loader.ts`,
 `engine-src/Game/LambdaHack/Client/UI/Frontend/Wasm.hs`, `Makefile`,
 `GameDefinition/index.html` (only the `#screen` positioning context the canvas
-overlays), `docs/wasm-frontend-unified-plan.md` --- (1) shifts the `Wasm.hs`,
-`loader.ts` and `terminal.ts` citations, so this item owes the citation-repair
-commit and its restamp --- and `tools/doc-refs-allow.txt`. Sub-commits (2)
-and (3) are not concurrent --- they share the two new `overlay-core` files,
-which 2.3 and 2.5 write later, behind 2.4 in the chain --- and neither is (1)
-with (3), which share `terminal.ts`. **The claimant list for `Wasm.hs` lives
-here**: 0.1, 1.2, 1.5, 1.6, this item, 2.3 and 2.4, one holder at a time;
-`terminal.ts`'s list is at 0.0, `loader.ts`'s at 0.1, `index.html`'s at 1.4
-and the `Makefile`'s at 3.3, and this item is on all four. The generator
-extension that emits (2)'s branch table is 0.2's stanza and 0.2's file,
-not this item's: schedule it with 0.2's owner rather than editing the generator
-here, or two sessions edit one executable.
+overlays), `docs/wasm-frontend-unified-plan.md` --- (1) and (3) move lines cited
+here, so this item owes the citation-repair commit and its restamp ---
+and `tools/doc-refs-allow.txt`. Sub-commits (2) and (3) are not concurrent ---
+they share the two new `overlay-core` files, which 2.3 and 2.5 write later,
+behind 2.4 in the chain --- and neither is (1) with (3), which share
+`terminal.ts`. **The claimant list for `Wasm.hs` lives here**: 0.1, 1.2, 1.5,
+1.6, this item, 2.3 and 2.4, one holder at a time; `terminal.ts`'s list
+is at 0.0, `loader.ts`'s at 0.1, `index.html`'s at 1.4 and the `Makefile`'s
+at 3.3, and this item is on all four. The generator extension that emits (2)'s
+branch table is 0.2's stanza and 0.2's file, not this item's: schedule
+it with 0.2's owner rather than editing the generator here, or two sessions edit
+one executable.
 
 **Done** --- `native`, `ts`, `wasm`, `deploy`, `docs`, plus
 `test -f ../lambdahack.github.io/DejaVuLGCSans-Bold.ttf.woff` &&
@@ -2781,11 +2781,9 @@ in `ts-src/src/overlay-core.ts`, its `globalThis` hook in `loader.ts`,
 the hand-off in `terminal.ts`, and the `run-wasm-test.mjs` coverage case --- one
 commit, because 0.3's rule is that a new `foreign import/export` lands
 with its coverage case in the same diff. (3) separate per the citation-repair
-rule: (2)'s import lands in `Wasm.hs`'s `foreign import javascript` block
-and shifts every `Wasm.hs` line cited here below it, and its `loader.ts`,
-`terminal.ts` and `run-wasm-test.mjs` edits shift whatever this document cites
-below them, so the ranges are re-cut and the restamp rides this commit. (4)
-the outcome line naming (2)'s hash and the ledger flip; this item has
+rule: the citation repair (2) owes, the checker's printed snippets naming
+the lines it moved, with the restamp riding this commit. (4) the outcome line
+naming (2)'s hash and the ledger flip; this item has
 no `tools/doc-refs-allow.txt` entries, 2.1's and 2.2's having gone with their
 own items.
 
@@ -2794,15 +2792,15 @@ own items.
 `engine-src/Game/LambdaHack/Client/UI/Frontend/Wasm.hs`,
 `ts-src/src/overlay-core.ts`, `ts-src/src/overlay-core.test.ts`,
 `ts-src/src/terminal.ts`, `ts-src/src/loader.ts`, `ts-src/run-wasm-test.mjs`
-and `docs/wasm-frontend-unified-plan.md` --- (2) shifts the `Wasm.hs` citations
-and whatever the three TS files' cited lines sit below its edits, so this item
-owes the citation-repair commit and its restamp. It overlaps 2.1 on the module
-file, 2.2 on all four TS files, 2.4 on `Wasm.hs` and 2.5 on the two
-`overlay-core` files, so it runs alone: this is the strict chain's one real
-join. The claimant lists are at 0.0 for `terminal.ts`, 0.1 for `loader.ts`, 2.2
-for `Wasm.hs` and 0.3 for `ts-src/run-wasm-test.mjs`, and this item is on all
-four. The 0.2 generator emitting the decoder's encode fixtures is 0.2's file,
-not this item's --- schedule it there, as 2.2 does for its branch table.
+and `docs/wasm-frontend-unified-plan.md` --- (2) moves lines cited here,
+so this item owes the citation-repair commit and its restamp. It overlaps 2.1
+on the module file, 2.2 on all four TS files, 2.4 on `Wasm.hs` and 2.5
+on the two `overlay-core` files, so it runs alone: this is the strict chain's
+one real join. The claimant lists are at 0.0 for `terminal.ts`, 0.1
+for `loader.ts`, 2.2 for `Wasm.hs` and 0.3 for `ts-src/run-wasm-test.mjs`,
+and this item is on all four. The 0.2 generator emitting the decoder's encode
+fixtures is 0.2's file, not this item's --- schedule it there, as 2.2 does
+for its branch table.
 
 **Done** --- `native`, `ts`, `wasm`, `deploy`, `docs`.
 
@@ -2872,11 +2870,10 @@ even before 2.1. (2) `Wasm.supportsMultiFont = True`, one line and nothing else.
 the "proportional fonts" and "limited to the square font" clauses come off
 `GameDefinition/index.html` and the second off `README.md` too, run with 1.4's
 **Done** and only those phrases in the alternation. (4) separate per
-the citation-repair rule: (1) rewrites the cited `MonadClientUI.hs:329`, adds
-an export and a constant to each of the four frontend modules and a dispatch
-to `Frontend.hs`, sliding every citation here into `Sdl.hs`, `ANSI.hs`,
-`Teletype.hs` and `Frontend.hs` below its edits, so the ranges are re-cut
-and the restamp rides this commit. (5) the outcome line naming (2)'s hash
+the citation-repair rule: the citation repair (1) owes --- it rewrites the cited
+`MonadClientUI.hs:329` and adds lines to each of the four frontend modules
+and to `Frontend.hs`, the checker's printed snippets naming what slid ---
+with the restamp riding this commit. (5) the outcome line naming (2)'s hash
 and the ledger flip; this item has no `tools/doc-refs-allow.txt` entries.
 
 **Owns** --- `engine-src/Game/LambdaHack/Client/UI/Frontend/Sdl.hs`,
@@ -2890,8 +2887,7 @@ and the ledger flip; this item has no `tools/doc-refs-allow.txt` entries.
 falsifies, the second of them in both files since the `#status` div quotes
 the README, deleted in this item's landing sequence under 1.4's rule, per
 that item's 2026-08-07 ruling --- `docs/wasm-frontend-unified-plan.md` --- (1)
-slides this document's `Sdl.hs`, `ANSI.hs`, `Teletype.hs` and `Frontend.hs`
-citations and rewrites `MonadClientUI.hs:329`, so this item owes
+moves lines cited here and rewrites `MonadClientUI.hs:329`, so this item owes
 the citation-repair commit and its restamp --- and, should (1) not
 be the two-lines-for-two replacement sketched above,
 `docs/leader-desync-migration.md` --- 3.3's fleet hazard again, here
@@ -2939,12 +2935,14 @@ draw-command lists rather than pixels. It does not build the shared entry point
 the two call --- that is an acceptance criterion of 1.2, which creates it,
 and of 2.2, which imports it, so if it is missing at this point the defect
 is upstream and the repair belongs to those items. (2) after the human checklist
-is signed off, the outcome line naming (1)'s hash and the ledger flip. No banner
-commit: 1.4's 2026-08-07 ruling made the banner a post-condition of every
-capability item, so the "proportional fonts" clause comes off in 2.4's landing
-sequence, and 2.4 sits before this item in the chain. Commit (1) is R6's whole
-commit and lands under R6's **Owns**, allowlist line included; (2) carries both
-rows' outcome lines.
+is signed off, this item's outcome line naming (1)'s hash and the ledger flip.
+No banner commit: 1.4's 2026-08-07 ruling made the banner a post-condition
+of every capability item, so the "proportional fonts" clause comes off in 2.4's
+landing sequence, and 2.4 sits before this item in the chain. R6's outcome line
+does not wait for (2): R6 hands back nothing, so its record --- the `.md`-only
+commit naming (1)'s hash and flipping R6's row --- follows (1) at once,
+and a row left `not applied` until the checklist is signed would misreport
+the one thing the ledger is for. **Owns** says why (1) is R6's.
 
 **Owns** --- `ts-src/src/overlay-core.ts`, `ts-src/src/overlay-core.test.ts`,
 the `*-core.ts` 1.2 creates for its screenshot draw-command core --- 1.2 fixes
@@ -3193,8 +3191,10 @@ headless under wasm, which nothing else in CI does.
 targets onto the 3.2 driver, and `nodeMinifiedBench` renamed. Then, separate
 because the rewrite falsified them, the claims elsewhere that these targets
 are dead --- the `nodeBench*` sentence in `.claude/skills/playtests/SKILL.md`,
-and `docs/leader-desync-migration.md` if the block's line count moved. Last
-the landing: outcome line, ledger row, and the `make nodeDeployedBench` deletion
+and `docs/leader-desync-migration.md` if the block's line count moved --- and,
+if it moved, this document's own `Makefile` citations below the block, re-cut
+in the same commit with the restamp riding it. Last the landing: outcome line,
+ledger row, and the `make nodeDeployedBench` deletion
 from `tools/doc-refs-allow.txt`.
 
 **Owns** --- `Makefile`, `.claude/skills/playtests/SKILL.md`,
@@ -3303,7 +3303,10 @@ with 1.4's **Done** and only `[Ss]avefiles are prone to corruption`
 in the alternation. The bracket is load-bearing, 1.4's **Done** grepping
 case-sensitively: the page capitalises the sentence and the README does not,
 so either literal alone passes over one of the two files and the negated grep
-would come back green having tested nothing there. R1d carries the outcome line.
+would come back green having tested nothing there. R1b and R1c each owe
+the citation repair with its restamp, a commit of its own after each: R1c
+rewrites the two `#if` sites cited here and R1b the `WasmFile.hs` layout 0.3's
+ruling cites into. R1d carries the outcome line.
 
 **Owns** --- `engine-src/Game/LambdaHack/Common/WasmFile.hs`, including
 the header's "Mirrors JSFile.hs ... exactly in storage format" claim, which
@@ -3323,12 +3326,13 @@ stands in both, capitalised in one and not the other, the `#status` div quoting
 the README's paragraph rather than copying it, and R1d deletes it from both
 in one commit under 1.4's rule, per that item's 2026-08-07 ruling;
 `tools/doc-refs-allow.txt`, whose `test/WasmFileUnitTests.hs` entry R1b's commit
-deletes; and this document, which R1a edits alone to record its number. It does
-not write `ts-src/run-wasm-test.mjs` --- the localStorage stub is 0.3's, per
-that item's own ruling, and a stub behaviour the test needs lands there first,
-as a 0.3 change. R1c is not concurrent with R3 or with capability constants, all
-three rewriting those same two `#if` sites; the `LambdaHack.cabal` edit
-is not concurrent with 0.1, 0.2, 2.1, 2.2 or R3.
+deletes; and this document, which R1a edits alone to record its number and R1b's
+and R1c's citation repairs re-cut. It does not write `ts-src/run-wasm-test.mjs`
+--- the localStorage stub is 0.3's, per that item's own ruling, and a stub
+behaviour the test needs lands there first, as a 0.3 change. R1c
+is not concurrent with R3 or with capability constants, all three rewriting
+those same two `#if` sites; the `LambdaHack.cabal` edit is not concurrent
+with 0.1, 0.2, 2.1, 2.2 or R3.
 
 **Done** --- `native`, `wasm`, `docs`.
 
@@ -3398,11 +3402,13 @@ after 3.3, and the practice's `xvfb` SDL and pty ANSI smokes.
 where a job needs a target of its own (the `--stopAfterFrames` variant
 of `benchFrontendBattle` the xvfb smoke drives) --- the claimant lists
 are at the frontend CI smokes for the workflow file and at 3.3
-for the `Makefile`. Never `.github/workflows/haskell-ci.yml`, which
+for the `Makefile` --- and `docs/wasm-frontend-unified-plan.md`,
+for the citation repair a job owes when it moves a line cited here in either
+file, with its restamp. Never `.github/workflows/haskell-ci.yml`, which
 `haskell-ci regenerate` owns. The jobs are not concurrent with each other: they
 share one YAML file, which does not merge.
 
-**Done** --- `wasm`, plus
+**Done** --- `wasm`, `docs`, plus
 `python3 -c "import yaml; yaml.safe_load(open('.github/workflows/lint-and-test-suites.yml'))"`
 --- the parse, plus the job's own payload run locally, the second half
 substituted per commit.
@@ -3450,11 +3456,14 @@ in one commit:
   has source consumers, `Frontend.hs:86` and `Frontend.hs:190`'s
   `#ifndef REMOVE_TELETYPE` guards, permanently true once no `ghcjs-options`
   line can define the macro, so those go too. Then the `supportNodeJS` flag
-  entirely, it having no non-GHCJS use --- including the tracked
-  `cabal.project.local.js`, whose only GHCJS-specific line
-  is `flags: -supportNodeJS`. Then `Frontend.hs:43-44`'s `USE_GHCJS` import
-  branch, `File.hs`'s `USE_JSFILE` branch, `TieKnot.hs:114-118`'s GHC.Compact
-  escape hatch, and the `USE_JSFILE` halves of the browser conditions
+  entirely, it having no non-GHCJS use --- and with it the tracked
+  `cabal.project.local.js`, whole: it is the local cabal configuration
+  of the GHCJS build and nothing reads it, its other lines being ordinary build
+  settings for that build, so the file goes with the target rather than only
+  its `flags: -supportNodeJS` line, which is what **Owns** below says.
+  Then `Frontend.hs:43-44`'s `USE_GHCJS` import branch, `File.hs`'s `USE_JSFILE`
+  branch, `TieKnot.hs:114-118`'s GHC.Compact escape hatch, and the `USE_JSFILE`
+  halves of the browser conditions
   in `Server/LoopM.hs`/`WatchUpdAtomicM.hs`/`HandleHumanLocalM.hs`
   and `TieKnot.hs:138` (the `sdumpInitRngs` hardwiring plus main-thread
   workaround skip, a second `TieKnot.hs` site distinct from the GHC.Compact one
@@ -3557,15 +3566,22 @@ what argv gives native ones with no new UI surface --- an address-bar knob.
 and non-default fontsets need their `.woff` files deployed too --- deploy them
 all once rather than special-casing the default set.
 
+**Split** --- three commits, on 2.1's pattern, since the label's absence would
+otherwise assert this is one commit. (1) the change, which deletes the two
+allowlist entries as it creates the files. (2) the citation repair (1) owes,
+with its restamp: it rewrites `loader.ts:56`, cited here. (3) the outcome line
+naming (1)'s hash and the ledger flip.
+
 **Owns** --- the new `ts-src/src/url-options-core.ts`
 and `ts-src/src/url-options-core.test.ts`, `ts-src/src/loader.ts`
 (the `new WASI(["LambdaHack"], [], fds)` argv construction at `loader.ts:56`),
 `GameDefinition/index.html` if the knobs get on-page documentation,
-`tools/doc-refs-allow.txt`, whose two `url-options-core` entries this item's one
-commit deletes as it creates the files, and this document. Not concurrent
-with R5: R5's `?benchmark` mode is one of this allowlist's own entries and edits
-the same `loader.ts` call. Not concurrent with 1.3 or 1.4 for `index.html`.
-`loader.ts`'s claimant list is at 0.1 and `index.html`'s at 1.4.
+`tools/doc-refs-allow.txt`, whose two `url-options-core` entries commit (1)
+deletes as it creates the files, and this document, the citation-repair commit
+and its restamp included. Not concurrent with R5: R5's `?benchmark` mode is one
+of this allowlist's own entries and edits the same `loader.ts` call.
+Not concurrent with 1.3 or 1.4 for `index.html`. `loader.ts`'s claimant list
+is at 0.1 and `index.html`'s at 1.4.
 
 **Done** --- `ts`, `docs`.
 
@@ -3611,7 +3627,9 @@ per frame) is already about as cheap as the boundary allows.
 
 **Split** --- R5a is the instrument: the `?benchmark` URL mode plus the rAF
 frame-timing collector, its pure half in a `*-core.ts` under vitest,
-and it carries the deletion of its two `tools/doc-refs-allow.txt` entries. R5b
+and it carries the deletion of its two `tools/doc-refs-allow.txt` entries;
+its `terminal.ts` and `loader.ts` edits move lines cited here, so it owes
+the citation-repair commit and its restamp, a commit of its own after it. R5b
 is the measurement pass the item exists for --- R5a's browser rendering numbers
 beside the `make nativeBench`-vs-`make nodeBench` ratio --- each landing
 as a recorded number in this document and nothing else, and it carries
@@ -3670,13 +3688,13 @@ lists (per 1.2/2.2's functional-core structure), not pixels.
 
 **Owns** --- the new `ts-src/src/render-coherence.test.ts`,
 `tools/doc-refs-allow.txt`, whose `render-coherence.test.ts` entry the same
-commit deletes, and 2.5's checklist line here, and nothing else: the shared
-drawing entry point is a stated acceptance criterion of 1.2 and 2.2 --- ruled
-2026-08-07, both items' bodies now carry it --- so the degraded branch,
-a two-file refactor of `ts-src/src/terminal.ts` and `ts-src/src/overlay-core.ts`
-that R6 would have to hold exclusively, cannot arise. The op-list representation
-R6 compares is defined by 1.2 and reused by 2.2, and R6 states no shape
-of its own.
+commit deletes, and, in this document, 2.5's checklist line and this item's own
+outcome line and ledger row, and nothing else: the shared drawing entry point
+is a stated acceptance criterion of 1.2 and 2.2 --- ruled 2026-08-07, both
+items' bodies now carry it --- so the degraded branch, a two-file refactor
+of `ts-src/src/terminal.ts` and `ts-src/src/overlay-core.ts` that R6 would have
+to hold exclusively, cannot arise. The op-list representation R6 compares
+is defined by 1.2 and reused by 2.2, and R6 states no shape of its own.
 
 **Done** --- `ts`, `docs`.
 
@@ -3726,15 +3744,18 @@ got updated; R1's re-measurement flips one constant instead of editing ifdefs.
 gain the constants (`Common/HSFile.hs`, `Common/WasmFile.hs`,
 `Common/JSFile.hs`, re-exported through `Common/File.hs`, whose selection
 `#ifdef` at `File.hs:9-15` stays untouched), then the three engine consumers
-branch on values and lose their `#if`s. The second commit carries the outcome
-line; the item sits in no `tools/doc-refs-allow.txt` gate, so it deletes nothing
-there.
+branch on values and lose their `#if`s; then the citation repair the second
+owes, with its restamp, the three `#if` sites being lines cited here.
+The outcome line names the second commit's hash and follows the third; the item
+sits in no `tools/doc-refs-allow.txt` gate, so it deletes nothing there.
 
 **Owns** --- `Common/File.hs`, `Common/HSFile.hs`, `Common/WasmFile.hs`,
 `Common/JSFile.hs`, `Server/LoopM.hs`, `Client/UI/HandleHumanLocalM.hs`,
-`Client/UI/Watch/WatchUpdAtomicM.hs`. The two commits are strictly ordered,
-not concurrent --- the second does not compile without the first. Nothing else
-may hold these files meanwhile: R1's whole point is flipping two
+`Client/UI/Watch/WatchUpdAtomicM.hs`, and `docs/wasm-frontend-unified-plan.md`
+--- the second commit moves lines cited here, so this item owes
+the citation-repair commit and its restamp. The two code commits are strictly
+ordered, not concurrent --- the second does not compile without the first.
+Nothing else may hold these files meanwhile: R1's whole point is flipping two
 of the constants (`Server/LoopM.hs:336`, `WatchUpdAtomicM.hs:586`) and R3
 deletes their `USE_JSFILE` halves, so neither may hold these files while
 this item does. That is mutual exclusion and not precedence: R3's **Owns**
@@ -3793,24 +3814,32 @@ flags into a parse error. Mechanical, moderate churn (options parser,
 UnitTestHelpers' stub options). Do before R4, so URL parameters parse
 into the sum type, not the Bools.
 
+**Split** --- three commits, on 2.1's pattern, since the label's absence would
+otherwise assert this is one commit. (1) the change, one diff because the type
+change is what forces every site to move together. (2) the citation repair (1)
+owes, with its restamp: every file (1) rewrites is cited here, the checker's
+printed snippets naming what slid. (3) the outcome line naming (1)'s hash
+and the ledger flip.
+
 **Owns** --- `Common/ClientOptions.hs` (the field), `Server/Commandline.hs`
 (the four parsers at `Commandline.hs:316-334` and their bindings at `:82-85`),
 `Client/UI/Frontend.hs` (both guard chains), `Client/UI/DrawM.hs`
 and `Client/UI/MonadClientUI.hs` --- the two `frontendName soptions ==` string
 compares the sum type subsumes (`DrawM.hs:597`, `MonadClientUI.hs:329`), which
 this item's churn list omits and which `git grep 'frontendName soptions =='`
-shows are the only two in the tree --- and `test/UnitTestHelpers.hs`, whose
-`:208` is the sole fixture setting an `sfrontend*` field. Serialize against 2.4
-and R3 rather than running beside them: 2.4 rewrites `MonadClientUI.hs:329`
-and dispatches through `Frontend.hs:186-196`, and R3 deletes
-the `#ifndef REMOVE_TELETYPE` guards at `Frontend.hs:86` and `:190` ---
-the exact lines this item turns into cases. `Frontend.hs`'s claimant list
-is at 0.1, and the determinism goldens also write `test/UnitTestHelpers.hs`,
-for their fixtures. The pointman campaign holds both files too: its C1 appends
-to `MonadClientUI.hs` below `:469`, and its PR 0 adds a recording `ChanFrontend`
-to `test/UnitTestHelpers.hs`.
+shows are the only two in the tree --- `test/UnitTestHelpers.hs`, whose `:208`
+is the sole fixture setting an `sfrontend*` field,
+and `docs/wasm-frontend-unified-plan.md`, for the citation-repair commit
+and its restamp. Serialize against 2.4 and R3 rather than running beside them:
+2.4 rewrites `MonadClientUI.hs:329` and dispatches through
+`Frontend.hs:186-196`, and R3 deletes the `#ifndef REMOVE_TELETYPE` guards
+at `Frontend.hs:86` and `:190` --- the exact lines this item turns into cases.
+`Frontend.hs`'s claimant list is at 0.1, and the determinism goldens also write
+`test/UnitTestHelpers.hs`, for their fixtures. The pointman campaign holds both
+files too: its C1 appends to `MonadClientUI.hs` below `:469`, and its PR 0 adds
+a recording `ChanFrontend` to `test/UnitTestHelpers.hs`.
 
-**Done** --- `native`, `wasm`, plus `make test-short` &&
+**Done** --- `native`, `wasm`, `docs`, plus `make test-short` &&
 `! git grep -q 'frontendName soptions ==' -- '*.hs'` &&
 `LH=$(cabal list-bin exe:LambdaHack)` &&
 `! "$LH" --frontendNull --frontendTeletype --newGame 1 --gameMode dig --benchmark --stopAfterFrames 1 --automateAll`.
@@ -3877,23 +3906,26 @@ precede the harness that uses them; the native harness second, driving
 and not before 0.3's baseline battery, because `ts-src/run-wasm-test.mjs`
 supplies no `globalThis.lhSubmitFrame` today --- 73 lines wiring WASI
 and `ghc_wasm_jsffi` and nothing else (`run-wasm-test.mjs:34-67`) ---
-so the first foreign call out of `Wasm.hs` traps. The third commit carries
-the outcome line and the `tools/doc-refs-allow.txt` deletion.
+so the first foreign call out of `Wasm.hs` traps. A fourth, the citation repair
+with its restamp, follows the third, each of the three moving lines cited here.
+The third commit carries the outcome line and the `tools/doc-refs-allow.txt`
+deletion, the record following the repair.
 
 **Owns** --- `Client/UI/Frontend/Common.hs` (haddock), `Client/UI/Frontend.hs`
 (export list only), the new `test/FrontendContractUnitTests.hs`, `test/Spec.hs`,
 the `test-suite test` stanza of `LambdaHack.cabal` (`LambdaHack.cabal:481-515`),
 `ts-src/run-wasm-test.mjs`, `tools/doc-refs-allow.txt`
-(the `test/FrontendContractUnitTests.hs` entry, deleted by the third commit)
-and one job in `.github/workflows/lint-and-test-suites.yml`. Two shared-file
-caveats. The input-side cases are specified to land inside 0.1's commit,
-so whichever of the two lands first creates the test module and the other
-extends it --- never concurrently. The cabal stanza's `other-modules` list
-is also the determinism goldens' only edit point --- the claimant lists
-for `LambdaHack.cabal`, `test/Spec.hs` and `Frontend.hs` are at 0.1 ---
-`ts-src/run-wasm-test.mjs`'s list is at 0.3, 2.3 and not 3.2 being the other
-item extending it, and the workflow file's at the frontend CI smokes: one holder
-at a time for each.
+(the `test/FrontendContractUnitTests.hs` entry, deleted by the third commit),
+one job in `.github/workflows/lint-and-test-suites.yml`,
+and `docs/wasm-frontend-unified-plan.md`, for the citation-repair commit
+and its restamp. Two shared-file caveats. The input-side cases are specified
+to land inside 0.1's commit, so whichever of the two lands first creates
+the test module and the other extends it --- never concurrently. The cabal
+stanza's `other-modules` list is also the determinism goldens' only edit point
+--- the claimant lists for `LambdaHack.cabal`, `test/Spec.hs` and `Frontend.hs`
+are at 0.1 --- `ts-src/run-wasm-test.mjs`'s list is at 0.3, 2.3 and not 3.2
+being the other item extending it, and the workflow file's at the frontend CI
+smokes: one holder at a time for each.
 
 **Done** --- `native`, `wasm`, `docs`, plus
 `cabal test --test-options='-p "/fe-invariant/"'` --- the series marker minted
@@ -3953,19 +3985,23 @@ Medium effort.
 
 **Split** --- two commits, as the item's own staging says: the native harness,
 which must precede 2.1, then the wasm stage, which only adds the same goldens
-to `make test-wasm` and to R2's existing job. The second carries the outcome
-line and the `tools/doc-refs-allow.txt` deletion.
+to `make test-wasm` and to R2's existing job; then the citation repair
+with its restamp that the first owes, its stanza edit landing inside
+`LambdaHack.cabal:481-515` and its fixtures in a file cited here. The second
+carries the outcome line and the `tools/doc-refs-allow.txt` deletion, the record
+following the repair.
 
 **Owns** --- the new `test/DeterminismGoldenUnitTests.hs`, `test/Spec.hs`,
 the `test-suite test` stanza of `LambdaHack.cabal` (`LambdaHack.cabal:481-515`),
 whatever fixtures the digest needs in `test/UnitTestHelpers.hs`
-and `test/SessionUIMock.hs`, and `tools/doc-refs-allow.txt`
-(the `test/DeterminismGoldenUnitTests.hs` entry, deleted by the second commit).
-Not concurrent with the RawFrontend contract harness: both add a module
-to the same `other-modules` list and both extend `test/Spec.hs`, whose claimant
-lists, with `LambdaHack.cabal`'s, are at 0.1; and the sum-typed selection also
-writes `test/UnitTestHelpers.hs`, as does the pointman campaign's PR 0,
-for its recording `ChanFrontend`. If the digest is over committed literals
+and `test/SessionUIMock.hs`, `tools/doc-refs-allow.txt`
+(the `test/DeterminismGoldenUnitTests.hs` entry, deleted by the second commit),
+and `docs/wasm-frontend-unified-plan.md`, for the citation-repair commit
+and its restamp. Not concurrent with the RawFrontend contract harness: both add
+a module to the same `other-modules` list and both extend `test/Spec.hs`, whose
+claimant lists, with `LambdaHack.cabal`'s, are at 0.1; and the sum-typed
+selection also writes `test/UnitTestHelpers.hs`, as does the pointman campaign's
+PR 0, for its recording `ChanFrontend`. If the digest is over committed literals
 rather than a file, it owns no data file; if over a file, that file joins
 this list rather than living beside the test.
 
@@ -4025,20 +4061,23 @@ permanently untested the way `Dom.hs` did.
 **Split** --- three commits, ordered by which gate can run at all:
 the pty-driven ANSI smoke (verifiable in-session), the `xvfb-run` SDL smoke
 (likewise, since the display arrived --- see Hands back), and the `nodeBench`
-smoke, which waits on 3.3. The third carries the outcome line; the item is
+smoke, which waits on 3.3. Each job lands in a workflow file and a `Makefile`
+cited here, so each owes the citation repair with its restamp, a commit
+of its own after it. The third carries the outcome line; the item is
 in no `tools/doc-refs-allow.txt` gate beyond the three target names this block
 introduces, which its own commit deletes as it lands.
 
 **Owns** --- `Makefile`, gaining `smokeANSI`, `smokeSdl` and `smokeNodeBench`,
 `.github/workflows/lint-and-test-suites.yml`, one job each,
-and `tools/doc-refs-allow.txt`, whose `make smokeANSI`, `make smokeSdl`
-and `make smokeNodeBench` entries leave with the commits that add those targets.
-Not `.github/workflows/haskell-ci.yml`, which is generated from the cabal file
-and whose hand edits vanish on the next regenerate. The workflow file has four
-claimants --- R2, which grows it per phase, 0.2's freshness job, the RawFrontend
-contract's harness job, and this item's three --- so one holder at a time,
-and the three commits here are serialized against each other for the same
-reason; the `Makefile`'s claimant list is at 3.3.
+`tools/doc-refs-allow.txt`, whose `make smokeANSI`, `make smokeSdl`
+and `make smokeNodeBench` entries leave with the commits that add those targets,
+and `docs/wasm-frontend-unified-plan.md`, for the citation repairs and their
+restamps. Not `.github/workflows/haskell-ci.yml`, which is generated
+from the cabal file and whose hand edits vanish on the next regenerate.
+The workflow file has four claimants --- R2, which grows it per phase, 0.2's
+freshness job, the RawFrontend contract's harness job, and this item's three ---
+so one holder at a time, and the three commits here are serialized against each
+other for the same reason; the `Makefile`'s claimant list is at 3.3.
 
 **Done** --- `native`, `docs`, plus `make smokeANSI` && `make smokeSdl` &&
 `make smokeNodeBench --dry-run`. `--dry-run` gates the one target that cannot
