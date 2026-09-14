@@ -66,6 +66,9 @@ export function mountTerminal(
     container.style.fontFamily = "lambdaHackFont, monospace";
     container.style.lineHeight = "1em";
     container.style.whiteSpace = "pre";
+    // SDL2 shows its cursorXhair bitmap over the map (Sdl.hs createCursor);
+    // the keyword is the browser's nearest stock pointer.
+    container.style.cursor = "crosshair";
     spans = new Array(w * h);
     const frag = document.createDocumentFragment();
     for (let i = 0; i < w * h; i++) {
