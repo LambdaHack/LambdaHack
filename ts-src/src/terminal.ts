@@ -3,7 +3,7 @@
 // unchanged cells (the engine sends full frames). Not unit-tested (DOM wiring);
 // all the decisions live in terminal-core.
 
-import { styledCell } from "./terminal-core.js";
+import { altModifier, styledCell } from "./terminal-core.js";
 
 export interface Terminal {
   submitFrame(addr: number, w: number, h: number): void;
@@ -77,7 +77,7 @@ export function mountTerminal(
       el.addEventListener(
         "wheel",
         (e) => {
-          onWheel(col, row, e.deltaY, e.ctrlKey, e.shiftKey, e.altKey, e.metaKey);
+          onWheel(col, row, e.deltaY, e.ctrlKey, e.shiftKey, altModifier(e), e.metaKey);
           e.preventDefault();
           e.stopPropagation();
         },
@@ -89,7 +89,7 @@ export function mountTerminal(
         e.stopPropagation();
       });
       el.addEventListener("mouseup", (e) => {
-        onMouseUp(col, row, e.button, e.ctrlKey, e.shiftKey, e.altKey, e.metaKey);
+        onMouseUp(col, row, e.button, e.ctrlKey, e.shiftKey, altModifier(e), e.metaKey);
         e.preventDefault();
         e.stopPropagation();
       });
@@ -200,10 +200,11 @@ export function mountTerminal(
   // time whenever pressed outside the game area, which is wrong; this
   // scoping fixes that for every key uniformly, not just Tab specifically.
   container.addEventListener("keydown", (e) => {
-    onKey(e.key, e.ctrlKey, e.shiftKey, e.altKey, e.metaKey);
+    const alt = altModifier(e);
+    onKey(e.key, e.ctrlKey, e.shiftKey, alt, e.metaKey);
 
-    const ctrlOnly = e.ctrlKey && !e.shiftKey && !e.altKey && !e.metaKey;
-    const altOnly = e.altKey && !e.ctrlKey && !e.shiftKey && !e.metaKey;
+    const ctrlOnly = e.ctrlKey && !e.shiftKey && !alt && !e.metaKey;
+    const altOnly = alt && !e.ctrlKey && !e.shiftKey && !e.metaKey;
     const isDeadKey = DEAD_KEYS.has(e.key);
 
     const passThrough =

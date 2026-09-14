@@ -8,6 +8,7 @@ import {
   bgColor,
   highlightColor,
   styledCell,
+  altModifier,
 } from "./terminal-core.js";
 
 // AttrCharW32 layout (Definition/Color.hs): code = w>>16, fg = (w>>8)&0xFF, bg = w&0xFF
@@ -17,7 +18,7 @@ const enc = (code: number, fg: number, bg: number) => (code << 16) | (fg << 8) |
 const Black = 0, Green = 2, White = 7, AltWhite = 8, BrBlack = 9,
   BrRed = 10, BrCyan = 15, BrWhite = 16;
 // Highlight enum indices (Definition/Color.hs, data Highlight)
-const HiNone = 0, HiBackground = 1, HiGreen = 2, HiRed = 9;
+const HiNone = 0, HiBackground = 1, HiGreen = 2, HiRed = 9, HiNoneCursor = 13;
 
 const SPACE = 32, AT = 64, FLOOR = 0xb7 /* '·' */, MIDDOT = 0x22c5 /* '⋅' */;
 
@@ -92,12 +93,11 @@ describe("bgColor (cell background fill)", () => {
   });
 });
 
-describe("highlightColor (border, via highlightToColor)", () => {
-  it("maps HighlightNone to black", () => {
+describe("highlightColor (border, SDL2's chooseAndDrawHighlight rule)", () => {
+  it("draws the three non-highlight kinds in black, HighlightBackground included", () => {
     expect(highlightColor(HiNone)).toBe("#000000");
-  });
-  it("maps HighlightBackground to BrBlack", () => {
-    expect(highlightColor(HiBackground)).toBe("#6F5F5F");
+    expect(highlightColor(HiBackground)).toBe("#000000");
+    expect(highlightColor(HiNoneCursor)).toBe("#000000");
   });
   it("maps colored highlights through highlightToColor", () => {
     expect(highlightColor(HiRed)).toBe("#D50505");
@@ -122,6 +122,22 @@ describe("styledCell (full per-cell resolution)", () => {
   it("uses the highlight tint and border for HighlightBackground", () => {
     const s = styledCell(enc(AT, BrCyan, HiBackground), 1);
     expect(s.background).toBe("#251F1F");
-    expect(s.border).toBe("#6F5F5F");
+    expect(s.border).toBe("#000000");
+  });
+});
+
+describe("altModifier (AltGr counts as Alt, as in Sdl.hs and Dom.hs)", () => {
+  const ev = (altKey: boolean, altGraph: boolean) => ({
+    altKey,
+    getModifierState: (k: string) => k === "AltGraph" && altGraph,
+  });
+  it("is true for a plain Alt chord", () => {
+    expect(altModifier(ev(true, false))).toBe(true);
+  });
+  it("is true for an AltGr-only chord, which reports altKey false", () => {
+    expect(altModifier(ev(false, true))).toBe(true);
+  });
+  it("is false with neither held", () => {
+    expect(altModifier(ev(false, false))).toBe(false);
   });
 });

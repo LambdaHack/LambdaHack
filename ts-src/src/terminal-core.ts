@@ -62,7 +62,9 @@ const HIGHLIGHT_TO_COLOR: readonly number[] = [
 const WHITE = 7;
 const ALT_WHITE = 8;
 const BR_BLACK = 9;
+const HIGHLIGHT_NONE = 0;
 const HIGHLIGHT_BACKGROUND = 1;
+const HIGHLIGHT_NONE_CURSOR = 13;
 const FLOOR_SYMBOL = 0xb7; // '·', Content/TileKind.hs floorSymbol
 const FLOOR_DIM = "⋅"; // '⋅', Dom.hs substitution for dim floor
 const NBSP = " "; // Dom.hs renders ' ' as a non-breaking space
@@ -99,9 +101,34 @@ export function bgColor(bg: number): string {
   return bg === HIGHLIGHT_BACKGROUND ? "#251F1F" : "#000000";
 }
 
-/** Highlight border hex for a Highlight index (via highlightToColor). */
+/**
+ * Highlight border hex for a Highlight index. SDL2 (Sdl.hs's
+ * chooseAndDrawHighlight) outlines every cell, but draws the three
+ * non-highlight kinds in black -- the erase half of its rectangle
+ * workaround -- and only the rest in highlightToColor; the Dom.hs
+ * border-color write of highlightToColor for every kind, which put a
+ * BrBlack ring around each backlit cell, was an artifact of that
+ * frontend's table CSS.
+ */
 export function highlightColor(bg: number): string {
+  if (bg === HIGHLIGHT_NONE || bg === HIGHLIGHT_BACKGROUND || bg === HIGHLIGHT_NONE_CURSOR) {
+    return PALETTE[0];
+  }
   return PALETTE[HIGHLIGHT_TO_COLOR[bg]];
+}
+
+/**
+ * The Alt modifier as the engine wants it: Sdl.hs folds AltGr into Alt
+ * (modTranslate) and Dom.hs ORs getAltKey with getAltGraphKey, so a
+ * chord held with AltGr alone, the usual case on European layouts, is
+ * an Alt chord. Takes the event's two readings rather than the event,
+ * so it is testable without a DOM.
+ */
+export function altModifier(e: {
+  altKey: boolean;
+  getModifierState(key: string): boolean;
+}): boolean {
+  return e.altKey || e.getModifierState("AltGraph");
 }
 
 /** Fully resolve a cell word at a given screen row into what to draw. */
