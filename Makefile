@@ -333,6 +333,22 @@ test-ts:
 	cd ts-src && \
 	npm run typecheck && npx vitest run
 
+# The deployed-page gate: the page as build-ts would deploy it, in a
+# scratch directory, loaded in headless Firefox and required to boot,
+# paint and repaint on a key (ts-src/page-gate.mjs says how). Local only,
+# by ruling; run before every browser landing.
+page-gate: build-wasm
+	. ~/.ghc-wasm/env && \
+	T=$$(mktemp -d) && \
+	trap 'rm -rf "$$T"' EXIT && \
+	cp GameDefinition/index.html GameDefinition/fonts/16x16xw.woff "$$T" && \
+	(cd ts-src && npm ci && BUILD_OUTDIR="$$T" npm run build) && \
+	cp ts-src/node_modules/lz-string/libs/lz-string.min.js "$$T" && \
+	W=$$(wasm32-wasi-cabal list-bin exe:LambdaHack) && \
+	~/.ghc-wasm/wasm32-wasi-ghc/lib/post-link.mjs --input "$$W" --output "$$T/ghc_wasm_jsffi.mjs" && \
+	cp "$$W" "$$T/LambdaHack.wasm" && \
+	node ts-src/page-gate.mjs "$$T"
+
 serve-wasm:
 	cd ../lambdahack.github.io && \
 	node serve.mjs . 8080

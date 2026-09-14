@@ -16,7 +16,12 @@
   "devDependencies": {
     "@types/node": "^22",
     "esbuild": "^0.24",
+    "lz-string": "^1.5.0",
     "typescript": "^5",
     "vitest": "^3"
+  },
+  "allowScripts": {
+    "esbuild@0.24.2": true,
+    "esbuild@0.28.1": true
   }
 }
