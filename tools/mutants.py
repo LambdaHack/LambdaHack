@@ -37,7 +37,7 @@ MUTANTS = [
     # A document probe with its expectation moved: the doc-probes step of
     # checks.py, judged by the probe runner over that document, must fail.
     ('doc probe expectation moved', '../docs/leader-desync-migration.md',
-     "':!docs/leader-desync-migration.md' | wc -l :: 13 -->",
+     "':!docs/leader-desync-migration.md' | wc -l :: 14 -->",
      "':!docs/leader-desync-migration.md' | wc -l :: 99 -->",
      PROBES),
     # check-doc-examples: "blanking the name pattern ... 0/1 findings"

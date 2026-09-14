@@ -96,8 +96,10 @@ to be deleted*
 >   at the tag-ownership sentence, which keeps its claim and drops only
 >   the citation, and at 3.3's **Split** and **Owns** and 2.4's **Owns**, where
 >   the verb is delete rather than reword: both hold this document
->   *conditionally*, so the condition goes with the path.
->   `test/HandleHumanLocalMUnitTests.hs:193`
+>   *conditionally*, so the condition goes with the path; its head and the head
+>   callout of `docs/wasm-frontend-unified-plan.md` each name this file once
+>   more, as the model of a document deleted when its work lands, a clause
+>   to drop. `test/HandleHumanLocalMUnitTests.hs:193`
 >   and `test/InventoryMUnitTests.hs:72` cite it from test comments.
 >   `tools/check-doc-examples.py:72-75` names it among four live controls,
 >   and its 0 is the one proving comment stripping still works --- drop
@@ -170,7 +172,7 @@ to be deleted*
 > of that record --- the design this plan executes --- so they drift
 > with this file rather than ageing with its frozen sections.
 
-<!-- probe: git -C .. grep -l leader-desync-migration -- . ':!docs/leader-desync-migration.md' | wc -l :: 13 -->
+<!-- probe: git -C .. grep -l leader-desync-migration -- . ':!docs/leader-desync-migration.md' | wc -l :: 14 -->
 
 ## 00 -- Status, size and per-step checks
 
