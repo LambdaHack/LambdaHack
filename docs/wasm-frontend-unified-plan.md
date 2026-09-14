@@ -528,6 +528,14 @@ only that the plan was written is one the next reader has to skip.
   credited SDL2 with a crisp doubled `.bdf` at scale 2.0; measured the same
   evening, it renders the outline font there, as README says. Appendix B takes
   a new dated ruling from now on, the freeze rule amended for it.
+- 2026-09-14 -- the page gate landed, `make page-gate`
+  and `ts-src/page-gate.mjs`, the campaign's acceptance test the review found
+  missing: the deployed page in headless Firefox, frames after `lhStart`, a key
+  changing the screen, an overlay after 2.4. Ruled local only and never a CI
+  job; `page` joins every browser item's Done. Its first run passed on the tree
+  as it stands, six frames of 80x24 and a `?` repainting; both controls failed
+  as they should. lz-string came in as a devDependency with it, ahead of 0.3,
+  which wants it for the same reason.
 
 ## Repo facts the plan builds on
 
@@ -694,6 +702,8 @@ native   cabal build && cabal test && hlint .
 ts       make test-ts        # npm run typecheck runs inside the target
 wasm     make build-wasm && make test-wasm
 deploy   make build-ts        # UNSANDBOXED: writes into the pages checkout
+page     make page-gate       # the page as deployed, in headless Firefox:
+         boots, paints, repaints on a key; PAGE_GATE_OVERLAYS=1 from 2.4 on
 docs     the repo's standing document passes over every .md document
          the item's Owns names, this one always among them; CLAUDE.md
          lists the passes and this document does not; what they cost is
@@ -709,6 +719,20 @@ after the item's last edit to this file; the commits before it run
 the mechanical passes. The ledger's size cells size the code, so this cost
 is on top of every one of them, and it is the largest single thing a `small` row
 asks for.
+
+**The page gate**, ruled 2026-09-14 by Mikolaj: local only, run before every
+browser landing, and never a CI job --- CI stays blind to the page
+by that choice, R2's ruling against a `build-ts` job standing.
+`ts-src/page-gate.mjs` builds the page as `build-ts` would deploy it
+into a scratch directory, serves it, loads it in headless Firefox over WebDriver
+BiDi and asserts three things: frames arrive after `lhStart`, a `?` changes
+the screen, and, once 2.4 lands, an overlay is submitted. It observes the page
+by wrapping the `globalThis` hooks the loader installs and by hashing `#screen`,
+a canvas's data URL where one exists, so 0.4 owes it no change. Its two
+controls, run the day it was written: a site missing `LambdaHack.wasm` fails
+both frame assertions, and `PAGE_GATE_OVERLAYS=1` fails before 2.4. It
+is the campaign's acceptance test: what a human still walks at 2.5 is the look,
+not whether the page runs.
 
 **Read the counts, not the exit status alone** --- `CLAUDE.md`'s rule, binding
 here too: a suite that silently loses a test still passes, and a listing is what
@@ -1067,7 +1091,7 @@ on purpose: 2.1 folds it into the re-anchoring commit that follows its `Sdl.hs`
 rewrite, R3 into the rip-out whose deletions the reworded sentences describe,
 and 04.4 into the deletion commit that resolves the clause.
 
-**Done** --- `native`, `ts`, `wasm`, `docs`.
+**Done** --- `native`, `ts`, `wasm`, `page`, `docs`.
 
 **Hands back** --- *browser*: `preventDefault` from Haskell is the point
 of the change and no headless gate reaches it --- Tab not moving focus,
@@ -1426,9 +1450,8 @@ and `docs/wasm-frontend-unified-plan.md` --- Split (0)'s number in B.10,
 the outcome line, the row, and the Repo facts bullet on how the frontend works
 today, which this landing re-cuts.
 
-**Done** --- `ts`, `wasm`, `deploy`, `docs`, plus Split (0)'s number standing
-in B.10 before (1) merges, and the deployed page loading
-under the browser-under-Xvfb setup `CLAUDE.md` describes.
+**Done** --- `ts`, `wasm`, `deploy`, `page`, `docs`, plus Split (0)'s number
+standing in B.10 before (1) merges.
 
 **Hands back** --- *display*: that the map on the canvas reads as the DOM
 build's at scale 1.0, the `xwd` pair of Split (0) being a session's to take
@@ -1588,7 +1611,7 @@ in `Wasm.hs`, `loader.ts`'s `declare global` and its `globalThis.lh*` wiring,
 so whichever of the three lands first shapes the others' diffs.
 `../lambdahack.github.io` is redeployed by **Done**, not owned.
 
-**Done** --- `native`, `ts`, `wasm`, `deploy`, `docs`, plus both runs
+**Done** --- `native`, `ts`, `wasm`, `deploy`, `page`, `docs`, plus both runs
 of `ts-src/run-wasm-game.mjs` against a fresh reactor, as 1.5's Done says
 of its own: `make test-wasm` drives the other driver and never enters `Wasm.hs`.
 
@@ -1866,7 +1889,7 @@ in `buildGrid`, so whichever lands first shapes the others' diffs. No ordering
 against 1.3 survives its ruling: that helper measures the live grid and assumes
 no cell size. `../lambdahack.github.io` is redeployed by **Done**, not owned.
 
-**Done** --- `native`, `ts`, `wasm`, `deploy`, `docs`, plus a run
+**Done** --- `native`, `ts`, `wasm`, `deploy`, `page`, `docs`, plus a run
 of `ts-src/run-wasm-game.mjs` against a fresh reactor: `make test-wasm` drives
 the other driver and never enters `Wasm.hs`, so nothing else in this list
 executes the coverage case the Split adds.
@@ -1933,10 +1956,10 @@ and 1.5 write the same `foreign import javascript` block, the same
 `globalThis.lh*` wiring and the same driver, so whichever lands first shapes
 the others' diffs.
 
-**Done** --- `native`, `ts`, `wasm`, `deploy`, `docs`, plus the driver run (1)
-adds, against a fresh reactor --- nothing else in this list executes `shutdown`
---- and, in-session, the deployed page under the browser-under-Xvfb setup
-`CLAUDE.md` describes, driven to the game's own exit through its menu
+**Done** --- `native`, `ts`, `wasm`, `deploy`, `page`, `docs`, plus the driver
+run (1) adds, against a fresh reactor --- nothing else in this list executes
+`shutdown` --- and, in-session, the deployed page under the browser-under-Xvfb
+setup `CLAUDE.md` describes, driven to the game's own exit through its menu
 with `xdotool` and the finished state read back over WebDriver BiDi, which R4's
 block records as reaching the deployed page.
 
@@ -2787,7 +2810,7 @@ overlays), `docs/wasm-frontend-unified-plan.md` and `tools/doc-refs-allow.txt`.
 The generator extension that emits (2)'s branch table is 0.2's stanza and 0.2's
 file, not this item's: schedule it there rather than editing the generator here.
 
-**Done** --- `native`, `ts`, `wasm`, `deploy`, `docs`, plus
+**Done** --- `native`, `ts`, `wasm`, `deploy`, `page`, `docs`, plus
 `test -f ../lambdahack.github.io/DejaVuLGCSans-Bold.ttf.woff` &&
 `test -f ../lambdahack.github.io/Hack-Bold.ttf.woff`, plus the baseline number
 standing recorded at Phase 2's intro before (1) merges (Split (0)). The two file
@@ -2870,7 +2893,7 @@ and `docs/wasm-frontend-unified-plan.md`. The 0.2 generator emitting
 the decoder's encode fixtures is 0.2's file, not this item's --- schedule
 it there, as 2.2 does for its branch table.
 
-**Done** --- `native`, `ts`, `wasm`, `deploy`, `docs`.
+**Done** --- `native`, `ts`, `wasm`, `deploy`, `page`, `docs`.
 
 **Hands back** --- hands back nothing. sec. 2.3's "verified by playing" argues
 its own case away in the next sentence: `getFontSetup` still gates on `"sdl"`
@@ -2970,7 +2993,8 @@ the pointman campaign's C1 appends its witness and accessors to the same file
 below `partPronounLeader`, per that campaign's own ruling, so it rewrites
 nothing cited here.
 
-**Done** --- `native`, `ts`, `wasm`, `deploy`, `docs`, plus `make test-medium`.
+**Done** --- `native`, `ts`, `wasm`, `deploy`, `page`
+with `PAGE_GATE_OVERLAYS=1`, `docs`, plus `make test-medium`.
 
 **Hands back** --- *browser*: commit (2) is the moment players see something
 different, and it is the whole human-review budget of Phase 2 concentrated
@@ -3007,9 +3031,9 @@ in the chain. R6's commit stood here as (1) until 2026-09-14 and retired with R6
 `GameDefinition/index.html` left this list with the banner commit, which
 is 2.4's.
 
-**Done** --- `ts`, `wasm`, `deploy`, `docs`. No banner grep here: 2.4 deletes
-that clause and carries the check, and a grep run after 2.4 has landed would
-pass having tested nothing.
+**Done** --- `ts`, `wasm`, `deploy`, `page`, `docs`. No banner grep here: 2.4
+deletes that clause and carries the check, and a grep run after 2.4 has landed
+would pass having tested nothing.
 
 **Hands back** --- *judgement*: every checklist item is a human's.
 The side-by-side visual comparison with SDL2 (menus, message log, help, item
@@ -3088,10 +3112,8 @@ it would widen this item for nothing.
 
 **Done** --- `native`, `wasm` --- of whose two halves only `make build-wasm`
 bears on this item, `make test-wasm` linking `Main.hs` in no configuration ---
-`docs`, and one page load in-session: `make build-ts` unsandboxed,
-`make serve-wasm` in the background, the deployed page opened
-under the browser-under-Xvfb setup `CLAUDE.md` describes, and the game still
-starting on default options.
+`page` and `docs`, the page gate being the page load this line used to spell
+out.
 
 **Hands back** --- hands back nothing, ruled 2026-09-04. The page load this item
 used to hand back is a session's to run: `firefox-beta` under Xvfb with matchbox
@@ -3374,7 +3396,7 @@ the test needs lands there first, as a 0.3 change. R1c, R3 and the capability
 constants rewrite the same two `#if` sites, so whichever lands first shapes
 the others' diffs.
 
-**Done** --- `native`, `wasm`, `docs`.
+**Done** --- `native`, `wasm`, `page`, `docs`.
 
 **Hands back** --- *judgement*: a real tab kill mid-cycle, which the Node stub
 can only simulate. R1a's number no longer waits on judgement --- the 100ms bar
@@ -3463,10 +3485,12 @@ are the cache then `make build-wasm`, as the Split now states. And CI gets
 no `make build-ts` job: its verifiable pieces are covered piecewise --- `tsc`
 and vitest in `test-ts`, the wasm build in the `build-wasm` job, 0.2's freshness
 check when it lands --- and the deploy write has no meaningful destination
-on a runner; what the target got is the `;`->`&&` hygiene fix, landed on master
-(`2b4b7d71f`) with its measured proof --- a planted npm-ci failure exited 0
-under the old chains and 2 under the new --- because several items' Done lines
-gate on `build-ts`'s exit status unsandboxed.
+on a runner; nor, ruled 2026-09-14, a page job, `make page-gate` running locally
+before every browser landing and CI staying blind to the page by choice; what
+the target got is the `;`->`&&` hygiene fix, landed on master (`2b4b7d71f`)
+with its measured proof --- a planted npm-ci failure exited 0 under the old
+chains and 2 under the new --- because several items' Done lines gate
+on `build-ts`'s exit status unsandboxed.
 
 **R3 --- Retire GHCJS support (one browser target is enough).** The original
 GHCJS target is unbuildable, permanently: this codebase requires GHC 9.10+
@@ -3621,7 +3645,7 @@ included. R5's `?benchmark` mode is one of this allowlist's own entries
 and edits the same `loader.ts` call, so whichever lands first shapes the other's
 diff.
 
-**Done** --- `ts`, `docs`.
+**Done** --- `ts`, `page`, `docs`.
 
 **Hands back** --- *browser*: that a parameter typed into the address bar
 actually reaches the engine. 3.2's Node driver cannot answer it --- it hands
@@ -3687,7 +3711,7 @@ entries), and this document; R5b writes this document alone. `?benchmark=` sits
 in R4's parameter allowlist, so whichever of the two lands first shapes
 the other's `loader.ts` diff.
 
-**Done** --- `ts`, `docs`, which decides R5a only.
+**Done** --- `ts`, `page`, `docs`, which decides R5a only.
 
 **Hands back** --- *judgement*: what the numbers are worth. The rendering half
 is a session's to run now: the pass is `make build-ts` (unsandboxed) plus
@@ -3813,8 +3837,8 @@ the decoder module and the atlas under names the executing session mints, their
 `tools/doc-refs-allow.txt` entries added before the names are written anywhere,
 and `docs/wasm-frontend-unified-plan.md`.
 
-**Done** --- `ts`, `wasm`, `deploy`, `docs`, plus `test -f` on the deployed
-atlas.
+**Done** --- `ts`, `wasm`, `deploy`, `page`, `docs`, plus `test -f`
+on the deployed atlas.
 
 **Hands back** --- *display*: that a 1.0 map on the canvas is the `.bdf` pixel
 for pixel, an `xwd` of each side diffed, and that the switch to the outline font
