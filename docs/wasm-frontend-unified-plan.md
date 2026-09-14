@@ -211,7 +211,8 @@ Sections holding no items are stated once, here, and the two lists
 are exhaustive over the sections the per-item rule does not cover. **Frozen
 from the start:** the Log, entry by entry as each is dated, Ground rules, Out
 of scope, and Appendices A, B and C --- frozen does not mean silent,
-and a frozen section takes two kinds of addition and no third. A claim
+and a frozen section takes two kinds of addition and, in Appendix B alone, a new
+dated ruling, that appendix being where rulings live --- and no fourth. A claim
 that later *resolves* takes an outcome line, as the doctest bullet under Ground
 rules has. A claim that a later reading *refutes or sharpens* takes a dated
 audit note appended to the section or to the bullet it refutes, and only where
@@ -243,6 +244,7 @@ rather than unpicked.
 | 0.1 | `InputDecision` shared module; sync `lhKey` | small | 0.0; 0.3 baseline | not applied |
 | 0.2 | `CellStyle` + TS-table/fixture generator | medium | --- | not applied |
 | 0.3 | FFI-coverage battery (baseline before 0.1, then per-commit) | ongoing | --- | not applied -- standing |
+| 0.4 | canvas painter in place of the DOM grid (B.10) | medium | --- | not applied |
 | 1.1 | crosshair cursor (CSS keyword; then generated SVG cursor) | trivial | 0.2 for the final form | not applied |
 | 1.2 | working `Ctrl+P` and `--printEachScreen` screenshots | small--medium | 0.3 for the reactor driver; 3.1 for the per-frame case; 0.2 helps | open |
 | 1.3 | fullscreen toggle with scaling | small | --- | landed -- d211caa38 |
@@ -262,7 +264,8 @@ rather than unpicked.
 | R3 | retire GHCJS support | one commit, plus repair and record | 2.5 (parity) | not applied |
 | R4 | URL-parameter options | small | 3.1; sum-typed selection | not applied |
 | R5 | performance pass | exploratory | 2.5, 3.3; R4 + 3.1 for the browser-side instrument | not applied |
-| R6 | screenshot/overlay coherence | small | 1.2, 2.2 | not applied |
+| R6 | screenshot/overlay coherence | small | 1.2, 2.2 | retired -- B.10 |
+| R7 | pixel-perfect bitmap map fonts on the canvas, scaled whole by integers, the scalable font only off `allFontsScale` 1.0 | medium | 0.4; 1.5 for the scale; R4 for a player-chosen fontset | not applied |
 | capability constants | named constants in place of behavioral CPP | --- | --- | not applied |
 | sum-typed selection | one frontend field replacing four `Bool`s | mechanical, moderate churn | --- | not applied |
 | RawFrontend contract | haddock contract, tasty harness, add-a-frontend checklist | medium | input side with 0.1; rest with 0.3 | not applied |
@@ -515,6 +518,16 @@ only that the plan was written is one the next reader has to skip.
   lines, since whichever lands first shapes the other's diff;
   `tools/check-plan-crossrefs.py` drops its A2, the contention graph, and keeps
   the rest.
+- 2026-09-14 -- ruled by Mikolaj: one canvas, no DOM grid (B.10), the question
+  the review found unruled. 0.4 is the painter, R6 retires, 1.2 and 2.2 carry
+  re-cut notes at their heads, and R7 records the work the canvas makes possible
+  and the DOM never could: pixel-perfect `.bdf` map fonts from a glyph atlas,
+  the whole canvas scaled by integers where SDL2's fullscreen scaling softens,
+  the scalable font only when `allFontsScale` leaves 1.0 as in SDL2, and later
+  a rule that keeps the bitmap wherever it looks crisper. R7's first draft
+  credited SDL2 with a crisp doubled `.bdf` at scale 2.0; measured the same
+  evening, it renders the outline font there, as README says. Appendix B takes
+  a new dated ruling from now on, the freeze rule amended for it.
 
 ## Repo facts the plan builds on
 
@@ -1378,12 +1391,60 @@ to the fixture's. The export half's criteria follow the same shape when
 it lands: a known synthetic event produces the expected key on the frontend
 channel.
 
+### 0.4 Canvas painter: one renderer for the browser
+
+Ruled 2026-09-14 (B.10). `terminal.ts` keeps its name, its listeners, its focus
+and bfcache handling and its per-cell diff, and replaces the span grid with one
+`<canvas>` inside `#screen`: a backing store of `cols * boxSize`
+by `rows * boxSize` device pixels, `boxSize` the map font's cell as `Sdl.hs`
+takes it from the loaded font, its CSS size that divided by `devicePixelRatio`.
+Per changed cell, a `fillRect` of the background, the glyph by `fillText`
+centred in the cell in the `lambdaHackFont` face, and a `strokeRect` one pixel
+inside the cell in the border colour --- the three values `styledCell` already
+resolves, so `terminal-core.ts` and its tests stand, and the ring is SDL2's
+`drawRect` rather than an inset box-shadow imitating it. The pointer reports
+pixels, and the wheel and mouseup handlers build their `PointUI` by `halfSize`
+as SDL2's `pointTranslate` does, which closes Appendix C's (1). Fonts load
+before the first paint, `document.fonts.ready` awaited once. The painter
+is the draw-op core 1.2 and 2.2 consume: a pure function from a cell run
+to fill, text and stroke commands in `terminal-core.ts`, and a thin interpreter
+over the 2D context, so op lists stay testable without a canvas and 2.1's three
+overlay sections draw through the same core.
+
+**Split** --- (0) the measurement B.10 could not make from the armchair:
+the painter as a throwaway on this item's branch, driven under the protocol
+at Phase 2's intro, p95 against the recorded 3.00ms in the same Xvfb setup, plus
+one `xwd` frame beside the DOM build's for the glyphs; the number goes into B.10
+before (1) merges. Then (1) the painter, `index.html`'s `#screen` rule
+for the canvas, the op-list vitest cases, `fullscreen.ts` unchanged
+in interface; and (2) the outcome line and the ledger flip.
+
+**Owns** --- `ts-src/src/terminal.ts`, `ts-src/src/terminal-core.ts`
+and its test, `ts-src/src/fullscreen.ts` (its transform applies to the canvas
+now), `GameDefinition/index.html` (the `#screen` rule, the banner untouched)
+and `docs/wasm-frontend-unified-plan.md` --- Split (0)'s number in B.10,
+the outcome line, the row, and the Repo facts bullet on how the frontend works
+today, which this landing re-cuts.
+
+**Done** --- `ts`, `wasm`, `deploy`, `docs`, plus Split (0)'s number standing
+in B.10 before (1) merges, and the deployed page loading
+under the browser-under-Xvfb setup `CLAUDE.md` describes.
+
+**Hands back** --- *display*: that the map on the canvas reads as the DOM
+build's at scale 1.0, the `xwd` pair of Split (0) being a session's to take
+and a human's to judge, and one AltGr click at half-cell precision.
+The substitute gates in Done are the op-list cases and the page load.
+
+**Decide first** --- nothing: the shape is B.10's and the number is Split (0)'s
+to take.
+
 ---
 
 ## Phase 1 --- small parity wins
 
 Independent of each other; any order. 1.1 and 1.3 don't depend on Phase 0; 1.2
-benefits from 0.2's generated palette but can precede it. 1.2's per-frame case
+benefits from 0.2's generated palette but can precede it; since B.10 it waits
+on 0.4, which makes its rasterizer a `toBlob` call. 1.2's per-frame case
 and 1.6's driver case wait on 3.1, which is handed out first regardless.
 
 ### 1.1 Crosshair cursor over the map (trivial)
@@ -1424,6 +1485,13 @@ which proves the string shipped and nothing about how it painted.
 **Decide first** --- nothing.
 
 ### 1.2 Screenshots: make `Ctrl+P` real (small--medium)
+
+*Re-cut owed since 2026-09-14 (B.10): on 0.4's canvas painter the rasterizer
+of step 3, the draw-op module and `screenshot-core.ts` are not built ---
+a screenshot is the canvas's own `toBlob`, and `--printEachScreen` the same call
+after each paint --- so this item shrinks to steps 1 and 2 plus
+the `<a download>` and the driver case, and its three `tools/doc-refs-allow.txt`
+entries leave when it is re-cut. The body below predates the ruling.*
 
 Today `C-P` -> `PrintScreen` -> `printScreenHuman` shows *"Screenshot printed."*
 and calls `fprintScreen`, which for wasm
@@ -2576,6 +2644,14 @@ session's, the existence, home and signature shape are the ruling.
 
 ### 2.2 Browser overlay renderer, in isolation
 
+*Re-cut owed since 2026-09-14 (B.10): the canvas is 0.4's, the only renderer,
+not a layer over a span grid, so the pitfalls of alignment, the imposed cell
+metrics with their one-cell verify-measurement and the `overflow: hidden` crop
+go --- the fixed-pitch crop is a clip rect in the painter, as in `Sdl.hs` ---
+and the three sections draw through 0.4's draw-op core; ruling (a) below
+is thereby moot, while (1)'s font wiring, (2)'s twin and the transport stand.
+The body below predates the ruling.*
+
 A single absolutely-positioned `<canvas>` over the existing `<span>` grid
 (the grid can't host variable-width text; canvas `fillText`+`measureText`
 is the direct analogue of SDL2's measure-then-blit). New
@@ -2914,50 +2990,36 @@ asks for.
 
 - Side-by-side visual comparison with SDL2: menus, message log, help, item
   descriptions; mono-overwrites-prop overrun behavior.
-- Screenshot rasterizer (1.2) extended to draw the overlay layers (R6).
+- Screenshots after the flip show the overlay layers, which one renderer gives
+  by construction (B.10); a `Ctrl+P` after the flip confirms it.
 - HiDPI and browser-zoom spot checks (the 2.2 pitfalls, exercised for real).
 - Frame-timing re-measurement against the pre-Phase-2 baseline (Phase 2 intro;
   re-apply the probe diff recorded there).
 
-**Split** --- two commits around one human checklist. (1) R6's own commit,
-landing here: the vitest case rendering a fixture frame with overlays through
-the live overlay renderer and through 1.2's screenshot rasterizer, comparing
-draw-command lists rather than pixels. It does not build the shared entry point
-the two call --- that is an acceptance criterion of 1.2, which creates it,
-and of 2.2, which imports it, so if it is missing at this point the defect
-is upstream and the repair belongs to those items. (2) after the human checklist
-is signed off, this item's outcome line naming (1)'s hash and the ledger flip.
-No banner commit: 1.4's 2026-08-07 ruling made the banner a post-condition
-of every capability item, so the "proportional fonts" clause comes off in 2.4's
-landing sequence, and 2.4 sits before this item in the chain. R6's outcome line
-does not wait for (2): R6 hands back nothing, so its record --- the `.md`-only
-commit naming (1)'s hash and flipping R6's row --- follows (1) at once,
-and a row left `not applied` until the checklist is signed would misreport
-the one thing the ledger is for. **Owns** says why (1) is R6's.
+**Split** --- one commit, after the human checklist is signed off: this item's
+outcome line and the ledger flip. No banner commit: 1.4's 2026-08-07 ruling made
+the banner a post-condition of every capability item, so the "proportional
+fonts" clause comes off in 2.4's landing sequence, and 2.4 sits before this item
+in the chain. R6's commit stood here as (1) until 2026-09-14 and retired with R6
+(B.10).
 
-**Owns** --- `ts-src/src/overlay-core.ts`, `ts-src/src/overlay-core.test.ts`,
-the `*-core.ts` 1.2 creates for its screenshot draw-command core --- 1.2 fixes
-that name and this item must not invent it, so 2.5 cannot start before 1.2 has
-landed --- and `docs/wasm-frontend-unified-plan.md`. Nothing else: Split (1)
-is R6's commit, so `ts-src/src/render-coherence.test.ts`
-and the `tools/doc-refs-allow.txt` entry it deletes stay in R6's **Owns**
-and are not claimed twice; `GameDefinition/index.html` left this list
-with the banner commit, which is 2.4's.
+**Owns** --- `docs/wasm-frontend-unified-plan.md` and nothing else:
+`GameDefinition/index.html` left this list with the banner commit, which
+is 2.4's.
 
 **Done** --- `ts`, `wasm`, `deploy`, `docs`. No banner grep here: 2.4 deletes
 that clause and carries the check, and a grep run after 2.4 has landed would
 pass having tested nothing.
 
-**Hands back** --- *judgement*: three of the four checklist items
-are irreducibly a human's. The side-by-side visual comparison with SDL2 (menus,
-message log, help, item descriptions, and the mono-overwrites-prop overrun),
-the HiDPI and browser-zoom spot checks 2.2's pitfalls defer here,
-and the frame-timing re-measurement's verdict --- the runs themselves
-are a session's now, capture and re-measurement under one Xvfb setup
-with the left-hand side captured by 2.2's Split (0) (Phase 2's intro has
-the record). What is in Done is the fourth, the R6 case: the draw-command
-comparison that is the one checklist line with a machine verdict and the one
-that would otherwise regress in silence, screenshots quietly going map-only.
+**Hands back** --- *judgement*: every checklist item is a human's.
+The side-by-side visual comparison with SDL2 (menus, message log, help, item
+descriptions, and the mono-overwrites-prop overrun), the HiDPI and browser-zoom
+spot checks 2.2's pitfalls defer here, and the frame-timing re-measurement's
+verdict --- the runs themselves are a session's now, capture and re-measurement
+under one Xvfb setup with the left-hand side captured by 2.2's Split (0) (Phase
+2's intro has the record). The screenshot line is a glance too: one renderer
+draws the PNG and the screen, so it cannot regress to map-only on its own
+(B.10).
 
 **Decide first** --- nothing, since 2026-08-05: 2.2's Split (0) captures
 the baseline before anything of 2.2 merges, closing the question this field
@@ -3659,6 +3721,11 @@ drawing entry point in one TS function both paths call, and by a vitest case
 rendering a fixture frame with overlays through both --- comparing draw-command
 lists (per 1.2/2.2's functional-core structure), not pixels.
 
+*Retired 2026-09-14 by B.10: with one renderer there is nothing to cohere.
+The test file is never built, its `tools/doc-refs-allow.txt` entry standing
+as long as this body names it, and the shared entry point it asked of 1.2
+and 2.2 is 0.4's draw-op core.*
+
 **Owns** --- the new `ts-src/src/render-coherence.test.ts`,
 `tools/doc-refs-allow.txt`, whose `render-coherence.test.ts` entry the same
 commit deletes, and, in this document, 2.5's checklist line and this item's own
@@ -3687,6 +3754,76 @@ in a module of its own that 1.2 creates and 2.2 imports --- sequencing decides,
 a module named for screenshots would break one-meaning-per-name; the neutral
 name is the executing session's, its `tools/doc-refs-allow.txt` entry added
 before it is written anywhere.
+
+**R7 --- Pixel-perfect bitmap map fonts.** The native build draws the map
+with the fontset's bitmap font whenever `allFontsScale` is 1.0 and
+with the scalable one otherwise
+(`Sdl.hs:if fromJust sallFontsScale == 1.0 then do`), and in fullscreen scales
+the whole frame to the display through `rendererLogicalSize`
+(`Sdl.hs:unless (fromMaybe NotFullscreen`), which README warns softens
+the square font's edges. Measured 2026-09-14: under Xvfb, with the `dejavu`
+fontset, whose bitmap slot is the `.bdf`, and `allFontsScale = 2.0` in the user
+config, the native build renders the outline woff at 32px, antialiased ---
+in the game's own `Ctrl+Shift+P` screenshot the lit map pixels form uniform 2x2
+blocks 44 percent of the time, where a doubled bitmap gives all of them ---
+and identically with `dejavuBold`, whose both slots are the woff; the crisp
+doubled `.bdf` is not what SDL2 does today, only what it should, and this item
+brings it to the browser first. The browser has drawn only the outline
+`16x16xw.woff`, because a `@font-face` reads the sfnt formats alone, TrueType,
+OpenType, WOFF and WOFF2, and neither BDF nor Windows FNT --- which is why
+that woff was made in 2019 from the same bitmap. A canvas draws images,
+so a bitmap font is a glyph atlas: decode the BDF, plain text, once --- at build
+time into a PNG and a codepoint table, committed and freshness-checked like
+0.2's generated files --- and paint each cell with `drawImage` from it, which
+is what SDL2 does with the surfaces FreeType renders. Pixel-perfect under four
+rules. The backing store is in device pixels and every blit lands at integer
+device coordinates with image smoothing off, so a 16x16 tile occupies sixteen
+device pixels a side. Integer scales only, the largest that fits, the rest
+letterbox: a bitmap at 1.5x is a contradiction, and the letterbox is SDL2's own
+logical-size rule. A fractional `devicePixelRatio`, browser zoom at 1.25 or 1.5,
+is handled by working in device pixels throughout, the cell an integer number
+of them and the canvas's CSS size whatever that divides to, recomputed on zoom
+and resize, so the map sits on device pixels exactly and only the page around
+it is fractional. And fullscreen re-renders at the fitting integer scale rather
+than through 1.3's transform, which stays for the outline font, where resampling
+is what SDL2 does too. The `.fnt` files are Windows raster fonts FreeType reads
+for SDL2; Mikolaj converts them to BDF, so one decoder serves every bitmap font
+under `GameDefinition/fonts/`. Two stages. R7a follows SDL2's font choice
+and improves on its scaling: the bitmap whenever `allFontsScale` is 1.0
+and the scalable font otherwise, and the canvas scaled as a whole by the largest
+integer factor that fits, pixel for pixel, under browser zoom and fullscreen
+alike, where SDL2's fullscreen scaling softens. R7b, later and a ruling
+of its own: keep the bitmap beyond that --- at every integer `allFontsScale`,
+where SDL2 takes the outline font today, and at any factor where it still looks
+crisper than the outline font --- which wants a criterion for crisper
+that a session can apply, so it opens no earlier than a side-by-side of the two
+at 1.25x, 1.5x and 2x. On the DOM route none of this was reachable at any price,
+a span having no way to hold a glyph bitmap.
+
+**Split** --- (1) the BDF decoder and atlas generator with its tests
+and the committed atlas, consumed by nobody; (2) the painter drawing
+from the atlas at 1.0 and integer scales and from the outline font otherwise,
+`make build-ts` copying the atlas beside the woff; (3) the outcome line
+and the ledger flip, for R7a. R7b waits on its ruling and takes no commit here.
+
+**Owns** --- `ts-src/src/terminal.ts`, `ts-src/src/terminal-core.ts`
+and its test, `ts-src/src/fullscreen.ts`, `Makefile` (the atlas copy
+into the pages checkout), `GameDefinition/fonts/` (the converted BDFs),
+the decoder module and the atlas under names the executing session mints, their
+`tools/doc-refs-allow.txt` entries added before the names are written anywhere,
+and `docs/wasm-frontend-unified-plan.md`.
+
+**Done** --- `ts`, `wasm`, `deploy`, `docs`, plus `test -f` on the deployed
+atlas.
+
+**Hands back** --- *display*: that a 1.0 map on the canvas is the `.bdf` pixel
+for pixel, an `xwd` of each side diffed, and that the switch to the outline font
+when `allFontsScale` leaves 1.0 reads as SDL2's behaviour and not
+as a regression. The substitute gate in Done is the decoder's tests: a glyph's
+pixels out equal to the BDF's bitmap in.
+
+**Decide first** --- R7b's criterion for crisper. R7a has none: B.10
+and the four rules above decide it.
 
 ## Multi-frontend practices (adopted)
 
@@ -4227,6 +4364,8 @@ settle.
     input-bug class; brings the key-translation table tests, jsdom
     forwarding tests, and the input-side RawFrontend contract cases)
 0.2 CellStyle + generator (unblocks 1.2's palette reuse and 2.2's fixtures)
+0.4 canvas painter (B.10) --- before 1.2 and 2.2, both of which it shrinks;
+    its Split (0) measures the frame cost against the Phase 2 baseline
 1.1 / 1.2 / 1.3 / 1.4 / 1.5 / 1.6 --- any order; each
     capability's landing ends with its own banner commit, per 1.4's rule
     (1.5's full player-facing form needs R4; its trivial form is
@@ -4237,7 +4376,7 @@ settle.
 2.2 browser overlay renderer (visual no-op)
 2.3 overlay transport (visual no-op, additive FFI)
 2.4 capability flip (the visible change; heaviest review)
-2.5 QA + R6 closure
+2.5 QA (R6 retired, B.10)
 3.1 lhStart reads WASI argv (spike done and recorded in the item;
     independent of Phases 1-2; shared infrastructure with R4)
 3.2 Node reactor driver (grows 0.3's seed driver; exit propagation)
@@ -4259,6 +4398,7 @@ R1 / R4 --- independent; R4 becomes loader-only after 3.1
 R3 GHCJS rip-out --- one commit, after 2.5 (parity); Dom.hs/JSFile.hs stay
     as documented-dead examples
 R5 --- after 2.5 and 3.3, measurement first
+R7 --- after 0.4 and 1.5; R7b after its own ruling
 ```
 
 Rationale, condensed: the input cluster goes first (mechanism already validated,
@@ -4493,7 +4633,8 @@ menus, help) loses after Phase 2. Decision: keep the affordances only where they
 are free (the DOM `<span>` grid keeps them by nature; don't disable selection
 there), but spend no effort preserving them for overlay text --- no hidden DOM
 mirror, no copy button, no ARIA layer. SDL2 parity is the bar, and canvas meets
-it.
+it. *Extended 2026-09-14 by B.10: the map's DOM affordances go with the grid,
+and the ANSI frontend is the screen-reader route.*
 
 **B.2 The GHCJS-era page's community features stay gone.** The old page
 (pages-repo `index.html`, GHCJS era) carried a cactus.chat Matrix comments
@@ -4565,6 +4706,7 @@ since the superseded document may be deleted):
   (`rwidth`/`rheight`); the rest (`gridTemplateColumns`, `lineHeight`,
   `whiteSpace`) is CSS mechanics with no Haskell-side counterpart, exactly
   as `Dom.hs`'s own `<table>` CSS choices aren't derived from anything deeper.
+  *Moot since B.10 (2026-09-14): there is no grid to construct.*
 - *Focus management stays in TS.* The bfcache/`pageshow`/mousedown-refocus
   orchestration in `terminal.ts` is browser-lifecycle work with no canonical
   Haskell value anywhere near it; `Dom.hs`'s single `focus divMap` call very
@@ -4598,6 +4740,34 @@ the page's `<title>` is hardcoded in `index.html`. Sourcing it from Haskell
 at startup was proposed as a one-line G1 nicety and dropped: the page title
 is page chrome, not game knowledge worth an FFI call.
 
+**B.10 One canvas, no DOM grid.** Ruled 2026-09-14 by Mikolaj, on the review
+that measured this plan against the code it governs: the browser draws map
+and overlays on a single `<canvas>`, and the DOM span grid `terminal.ts` builds
+today goes. The DOM-plus-canvas split the plan had assumed since 2.2 was never
+ruled on, and it was the source of a cluster of work: 1.2's rasterizer
+was a second renderer of the screen, R6 existed to keep two renderers coherent,
+2.2 spent its body aligning a canvas to a grid it did not draw --- integer cell
+metrics imposed on spans, a measured cell and a startup assert,
+`overflow: hidden` imitating SDL2's glyph crop, a backing store for the overlay
+alone --- and Appendix C's half-cell mouse gap followed from spans reporting
+cells. On one canvas a screenshot is `toBlob` after the filename helper, there
+is nothing to cohere, the crop is a clip rect per cell as in `Sdl.hs`,
+the metrics are the painter's own, the pointer gives pixels and the browser's
+`pointTranslate` becomes SDL2's division by `halfSize`, and the highlight ring
+is a `strokeRect` one pixel inside the cell, which is `drawRect`. What goes
+with the grid is the map's DOM text, selectable and visible to screen readers;
+B.1 already gave that up for every overlay, and the ANSI frontend serves
+a screen reader natively. Canvas text goes through the same font engine as DOM
+text, so the outline map font draws the same glyphs; the frame cost is the one
+thing not known from the armchair, and 0.4's Split (0) measures it against
+the baseline at Phase 2's intro before the painter merges, the number
+to be recorded here. Consequences: 0.4 is the painter; 1.2 shrinks to the helper
+and one call; R6 retires; 2.2 loses its alignment and crop pitfalls and draws
+its three sections through the painter's core; 1.3's transform stays
+for the outline font, R7 replacing it for bitmap fonts; B.7's grid-construction
+bullet is moot; and the bitmap map fonts, which no DOM can show at all, become
+R7.
+
 ---
 
 ## Appendix C --- Verified non-gaps (SDL2-vs-wasm audit record)
@@ -4618,7 +4788,8 @@ half; `Wasm.hs:row deltaY modCtrl` and `Wasm.hs:row button modCtrl` build their
 point with `squareToUI` (`PointUI.hs:squareToUI :: PointSquare`),
 so the browser's is always even. Unobservable while the square layer is the only
 one on screen; observable the moment Phase 2 lands the mono layer, whose pitch
-is exactly `halfSize`. (2) **The shift flag handed to key translation differs
+is exactly `halfSize`. *0.4 closes it, ruled 2026-09-14 (B.10): a canvas pointer
+gives pixels.* (2) **The shift flag handed to key translation differs
 under a compound modifier.**
 `Sdl.hs:let sym = SDL.keyboardEventKeysym keyboardEvent` computes it
 from the raw left/right shift bits, independent of Ctrl and Alt;
