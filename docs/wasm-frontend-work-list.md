@@ -18,8 +18,8 @@
 > or `not applied` to `landed -- <hash>`. The outcome line goes **immediately
 > after the item's opening paragraph** in the record, before any subsection,
 > so that opening the item at its head answers the question; its shape
-> is the doctest bullet's under Ground rules, the only worked one this document
-> carries until a row flips. The hash in both places names the commit that did
+> is the doctest bullet's under the record's Ground rules, and the outcome lines
+> of 0.0 and 1.3 there. The hash in both places names the commit that did
 > the work. No commit can name its own, so the record is a `.md`-only commit
 > written after that one --- which is what a **Split** means when it says a code
 > commit "carries the outcome line": the record follows that commit and names
@@ -73,12 +73,13 @@ an authorized push, so the review that gates an item is the local one.
 **A review branch is named for its item** --- `item-0.1`, `item-2.1`, `item-R3`
 --- so that `git branch --list 'item-*'` maps onto the ledger.
 
-**3.1 goes first, as a shakedown.** It is the smallest item whose correctness
-a machine can settle end to end, so it proves the ritual --- the wasm loop,
-the gates, the outcome line and the ledger flip --- before any item whose review
-needs judgment. It rehearses no allowlist deletion, proposing no artifact
-and so having no entry to delete; the items that build one carry that step.
-Phase 3 then continues in parallel with Phases 0-2, sharing no file with them.
+**3.1 was to go first, as a shakedown**, the smallest item whose correctness
+a machine can settle end to end; 0.0, 1.1 and 1.3 went first instead
+on 2026-09-14 and rehearsed the ritual --- the gates, the outcome line
+and the ledger flip --- so what 3.1 keeps is its ordering role: 1.2's per-frame
+case and 1.6's driver case wait on it. It rehearses no allowlist deletion,
+proposing no artifact and so having no entry to delete; the items that build one
+carry that step. Phase 3 shares no file with Phases 0-2.
 
 **One item is reviewed entirely alone: the `Sdl.hs` drawing loop** (2.1's
 refactor together with 0.2's `CellStyle` adoption, which rewrite abutting
@@ -210,17 +211,17 @@ asks for.
 
 **The page gate**, ruled 2026-09-14 by Mikolaj: local only, run before every
 browser landing, and never a CI job --- CI stays blind to the page
-by that choice, R2's ruling against a `build-ts` job standing.
-`ts-src/page-gate.mjs` builds the page as `build-ts` would deploy it
-into a scratch directory, serves it, loads it in headless Firefox over WebDriver
-BiDi and asserts three things: frames arrive after `lhStart`, a `?` changes
-the screen, and, once 2.4 lands, an overlay is submitted. It observes the page
-by wrapping the `globalThis` hooks the loader installs and by hashing `#screen`,
-a canvas's data URL where one exists, so 0.4 owes it no change. Its two
-controls, run the day it was written: a site missing `LambdaHack.wasm` fails
-both frame assertions, and `PAGE_GATE_OVERLAYS=1` fails before 2.4. It
-is the campaign's acceptance test: what a human still walks at 2.5 is the look,
-not whether the page runs.
+by that choice, R2's ruling against a `build-ts` job standing. `make page-gate`
+builds the page as `build-ts` would deploy it into a scratch directory,
+and `ts-src/page-gate.mjs` serves it, loads it in headless Firefox
+over WebDriver BiDi and asserts three things: frames arrive after `lhStart`,
+a `?` changes the screen, and, once 2.4 lands, an overlay is submitted.
+It observes the page by wrapping the `globalThis` hooks the loader installs
+and by hashing `#screen`, a canvas's data URL where one exists, so 0.4 owes
+it no change. Its two controls, run the day it was written: a site missing
+`LambdaHack.wasm` fails both frame assertions, and `PAGE_GATE_OVERLAYS=1` fails
+before 2.4. It is the campaign's acceptance test: what a human still walks
+at 2.5 is the look, not whether the page runs.
 
 **Read the counts, not the exit status alone** --- `CLAUDE.md`'s rule, binding
 here too: a suite that silently loses a test still passes, and a listing is what
@@ -386,7 +387,7 @@ a throwaway probe against the current toolchain proving the sync
 validation left no record of its syntax, which is what this step writes
 into this item's body; no code lands. If it fails, land the first two commits,
 leave `lhKey` async with `preventDefault` staying in TS, and record the ruling.
-Performed 2026-08-07: the record sits in the `Wasm.hs` changes bullet above,
+Performed 2026-08-07: the record sits in the record's `Wasm.hs` changes bullet,
 and it held, so the fallback is dead. Then `InputDecision` and its tasty tests
 with no consumer wired; then `Sdl.hs`'s verbatim squash/Esc block
 (`Sdl.hs:modifierNoShift = case modifier of`, the mouse read between them left
@@ -404,7 +405,7 @@ the third.
 and `test/InputDecisionUnitTests.hs`; `LambdaHack.cabal` and `test/Spec.hs`
 for their registration; `engine-src/Game/LambdaHack/Client/UI/Frontend/`'s
 `Sdl.hs` and `Wasm.hs`; `engine-src/Game/LambdaHack/Client/UI/Frontend.hs`,
-its export list only, carrying the re-export ruling (2) requires;
+its export list only, carrying the re-export the record's ruling (2) requires;
 `engine-src/Game/LambdaHack/Client/UI/Key.hs`, one clause in `keyTranslateWeb`,
 which no other item writes and which shifts no citation,
 `Key.hs:keyTranslateWeb ::` naming the function's head;
@@ -415,9 +416,9 @@ block cited here and so owing a re-anchoring; and, in a commit of its own after
 the landing, `CLAUDE.md`'s frontend bullet, whose first module name this item
 delivers. It owns nothing in `docs/promptgetkey-hygiene.md`: that record's sec.
 01 was rewritten onto `FrameM`'s pure section on 2026-09-04, when this item's
-own ruling (2) below made `InputDecision` an import cycle for `macroStep`,
-so there is no callout left for a landing to retire. Nothing else.
-The input-side `RawFrontend` contract cases the practice assigns here land
+own ruling (2), in the record, made `InputDecision` an import cycle
+for `macroStep`, so there is no callout left for a landing to retire. Nothing
+else. The input-side `RawFrontend` contract cases the practice assigns here land
 in `test/InputDecisionUnitTests.hs` --- the contract harness file belongs
 to the contract item and is not created by this one. 0.0 lands first
 or is dropped, since the third commit rewrites the very listener it fixes. Four
@@ -452,11 +453,12 @@ now sits.
 by nobody; then the generator executable, `make gen-ts`, the committed
 `ts-src/src/generated/` files, `terminal-core.ts` consuming the generated
 palette and asserting `styledCell` against every fixture,
-and the regenerate-and-diff CI step; then the crosshair commit ruling (4)
-requires --- the ASCII-art alpha/BW pair out of `Sdl.hs` into an SDL-free pure
-module of its own under `engine-src/Game/LambdaHack/Client/UI/Frontend/`,
-`cursorXhair` reading it, and `cursor.ts` generated from it, which is also 1.1's
-final form; then `Sdl.hs` adopting `CellStyle`, `colorToRGBA` derived
+and the regenerate-and-diff CI step; then the crosshair commit the record's
+ruling (4) requires --- the ASCII-art alpha/BW pair out of `Sdl.hs`
+into an SDL-free pure module of its own
+under `engine-src/Game/LambdaHack/Client/UI/Frontend/`, `cursorXhair` reading
+it, and `cursor.ts` generated from it, which is also 1.1's final form;
+then `Sdl.hs` adopting `CellStyle`, `colorToRGBA` derived
 from `Color.colorToRGB`, and the `Sdl.hs:let Point{..} = toEnum i` `punindex`
 fix, behind the bench gate. `gen-ts` must be a prerequisite target with its own
 shell, never an inline step in `build-ts`: that recipe sources
@@ -471,7 +473,7 @@ is written anywhere --- ride the last to land, which cannot precede
 the crosshair commit.
 
 **Owns** --- new `engine-src/Game/LambdaHack/Client/UI/Frontend/CellStyle.hs`,
-the crosshair-art module beside it that ruling (4) requires,
+the crosshair-art module beside it that the record's ruling (4) requires,
 `test/CellStyleUnitTests.hs`, `GameDefinition/gen-src/GenTsTables.hs`,
 `ts-src/src/generated/palette.ts`, `ts-src/src/generated/fixtures.json`
 and `ts-src/src/generated/cursor.ts`; modified `LambdaHack.cabal`,
@@ -480,7 +482,7 @@ today, without which importing `fixtures.json` fails `tsc --noEmit`),
 `ts-src/src/terminal-core.ts` and its test, `ts-src/src/terminal.ts`,
 `engine-src/Game/LambdaHack/Client/UI/Frontend/Sdl.hs`,
 `engine-src/Game/LambdaHack/Client/UI/Frontend.hs` (export list only,
-re-exporting both new modules per 0.1's ruling (2)),
+re-exporting both new modules per 0.1's ruling (2) in the record),
 `.github/workflows/lint-and-test-suites.yml`, `tools/doc-refs-allow.txt`,
 `docs/wasm-frontend-unified-plan.md` --- the last commit rewrites `setMapChar`,
 `setMonoChar`, `setSquareChar` and `colorToRGBA`, all anchored here,
@@ -631,7 +633,7 @@ The keyword commit landed in `91d75ca5e`; the row stays live for the SVG form.
 `docs/wasm-frontend-unified-plan.md`. `../lambdahack.github.io` is redeployed
 by **Done**, not owned.
 
-**Done** --- `ts`, `wasm`, `deploy`, `docs`, plus
+**Done** --- `ts`, `wasm`, `deploy`, `page`, `docs`, plus
 `grep -qF crosshair ../lambdahack.github.io/bundle.js`.
 
 **Hands back** --- *display*: that the pointer reads as a crosshair
@@ -666,11 +668,11 @@ are disjoint; 3 needs 2, and carries the outcome line and the ledger flip.
 and `Wasm.hs` beside it, the helper's home module
 under `engine-src/Game/LambdaHack/Client/UI/Frontend/`,
 `engine-src/Game/LambdaHack/Client/UI/Frontend.hs` for the re-export that module
-reaches its consumers through (0.1's ruling (2), which binds every new module
-here), a new tasty module registered in `test/Spec.hs` and `LambdaHack.cabal`,
-`ts-src/src/screenshot-core.ts` and its test, the neutral draw-op module they
-consume, `ts-src/src/terminal.ts`, `ts-src/src/loader.ts`,
-`ts-src/run-wasm-game.mjs`, `tools/doc-refs-allow.txt`,
+reaches its consumers through (0.1's ruling (2) in the record, which binds every
+new module here), a new tasty module registered in `test/Spec.hs`
+and `LambdaHack.cabal`, `ts-src/src/screenshot-core.ts` and its test,
+the neutral draw-op module they consume, `ts-src/src/terminal.ts`,
+`ts-src/src/loader.ts`, `ts-src/run-wasm-game.mjs`, `tools/doc-refs-allow.txt`,
 and `docs/wasm-frontend-unified-plan.md` --- the `Sdl.hs` citations,
 `Wasm.hs:display ScreenContent{rwidth,`,
 `loader.ts:const wasi = new WASI(["LambdaHack"], [], fds);`,
@@ -804,7 +806,7 @@ the page is an error to fix, not drift to leave alone. Every item that writes
 the quoted paragraph write `README.md` too: this item, 2.4, R1 and R5.
 `../lambdahack.github.io` is redeployed by **Done**, not owned.
 
-**Done** --- `wasm`, `deploy`, `docs`, plus
+**Done** --- `wasm`, `deploy`, `page`, `docs`, plus
 `! grep -qE 'proportional fonts|limited to the square font' ../lambdahack.github.io/index.html`
 && `U=$(mktemp)` && `wrap80 --unwrap README.md > "$U"` &&
 `! grep -qE 'limited to the square font' "$U"`, each page's own phrases --- both
@@ -946,7 +948,7 @@ so a correction is never in the same diff as the landing record.
 `test/OverlayLayoutUnitTests.hs`, `test/Spec.hs`, `LambdaHack.cabal`,
 `engine-src/Game/LambdaHack/Client/UI/Frontend/Sdl.hs`,
 `engine-src/Game/LambdaHack/Client/UI/Frontend.hs` (export list only,
-re-exporting the new module per 0.1's ruling (2)),
+re-exporting the new module per 0.1's ruling (2) in the record),
 `docs/wasm-frontend-unified-plan.md`, `CLAUDE.md`
 and `tools/doc-refs-allow.txt`. It does not write the wire encoder: that lands
 in the same module file under 2.3. 0.2 first is preferable, since then (2)
@@ -979,10 +981,10 @@ in-session under the Xvfb setup with the throwaway `performance.now()` probe
 applied, never committed, and append the number, its protocol and the probe's
 diff to Phase 2's intro --- no code lands here, and (1) must not merge without
 the record standing. Performed 2026-08-07 and re-taken 2026-09-04, when a replay
-orphaned the commit its anchor named: the record stands at the intro,
-so this gate is already satisfied. (1) the font wiring: `Wasm.hs`'s one-shot
-setup import --- the payload specified in the body, which 1.5 shares ---
-its `globalThis` hook in `loader.ts`, the `FontFace` declarations
+orphaned the commit its anchor named: the record stands at the record's Phase 2
+intro, so this gate is already satisfied. (1) the font wiring: `Wasm.hs`'s
+one-shot setup import --- the payload specified in the body, which 1.5 shares
+--- its `globalThis` hook in `loader.ts`, the `FontFace` declarations
 in `terminal.ts`, and the `Makefile` copy of the referenced
 `GameDefinition/fonts/*.ttf.woff` into the pages checkout. It depends on nothing
 else in Phase 2 --- `sfonts` and `schosenFontset` are already populated
@@ -1095,8 +1097,8 @@ the README, deleted in this item's landing sequence under 1.4's rule, per
 that item's 2026-08-07 ruling --- `docs/wasm-frontend-unified-plan.md` --- (1)
 rewrites the `multiFont` gate the citations anchor on, so this item owes
 the re-anchoring --- and, should (1) not be the two-lines-for-two replacement
-sketched above, `docs/leader-desync-migration.md` --- 3.3's hazard again, here
-over `MonadClientUI.hs`: that plan cites `partActorLeader`
+the record sketches, `docs/leader-desync-migration.md` --- 3.3's hazard again,
+here over `MonadClientUI.hs`: that plan cites `partActorLeader`
 (`MonadClientUI.hs:partActorLeader ::`) and `partPronounLeader`
 (`MonadClientUI.hs:partPronounLeader ::`), both below the gate (1) rewrites,
 so a changed line count leaves them resolving and wrong. `Dom.hs`

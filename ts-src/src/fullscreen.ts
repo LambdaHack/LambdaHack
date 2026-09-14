@@ -37,9 +37,14 @@ export function mountFullscreen(
   function sync(): void {
     const on = active();
     // The banner is page chrome; in fullscreen only the game is shown,
-    // as SDL2 shows only its window.
+    // as SDL2 shows only its window. The button is not inside it -- a
+    // hidden ancestor would hide it too, and Escape would be the only way
+    // out -- and floats over the letterbox while fullscreen is on.
     for (const el of chrome) el.hidden = on;
     button!.textContent = toggleLabel(on);
+    button!.style.position = on ? "fixed" : "";
+    button!.style.top = on ? "4px" : "";
+    button!.style.right = on ? "8px" : "";
     applyFit();
   }
 

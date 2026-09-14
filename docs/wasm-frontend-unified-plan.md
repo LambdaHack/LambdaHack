@@ -104,9 +104,11 @@ list, and by whether its body here carries an outcome line.
 > or **Owns** turns on it, as 1.4's and R2's do --- *this row never flips*
 > is a rule about their commits, not a reading of the column.
 >
-> One claim in either state is exempt, by the same borrow: a recorded
-> measurement ages rather than drifts, so it is re-measured against its stated
-> protocol rather than corrected.
+> A row a ruling retires before it lands reads `retired -- <ruling>`, as R6's
+> does since B.10, the ruling being its outcome; the rest of the vocabulary
+> is the four above. One claim in either state is exempt, by the same borrow:
+> a recorded measurement ages rather than drifts, so it is re-measured against
+> its stated protocol rather than corrected.
 >
 > **Landing an item** appends an outcome line here, immediately after the item's
 > opening paragraph and before any subsection, so that opening the item
@@ -351,9 +353,9 @@ only that the plan was written is one the next reader has to skip.
   and 1.6's driver case reach game end only through argv, so both wait on 3.1,
   first anyway as the shakedown --- and one **Decide first** is open again,
   1.6's: which side signals the end is a design ruling, not a scheduling one.
-- 2026-09-14 -- the first three items landed, 0.0, 1.1's keyword half and 1.3,
-  in one session and three commits, after a review that measured the plan
-  against the code it governs. Each departed from its Split, and the outcome
+- 2026-09-14 -- the first landings, 0.0, 1.1's keyword half and 1.3, in one
+  session and three commits, after a review that measured the plan against
+  the code it governs. 0.0 and 1.3 departed from their Splits, and their outcome
   lines say how: 0.0 took no jsdom harness, a pure `altModifier` being testable
   on a plain object; 1.3 folded its banner clause into the landing commit
   and put its wiring in a `fullscreen.ts` beside `loader.ts` rather than inside
@@ -393,6 +395,11 @@ only that the plan was written is one the next reader has to skip.
   as it stands, six frames of 80x24 and a `?` repainting; both controls failed
   as they should. lz-string came in as a devDependency with it, ahead of 0.3,
   which wants it for the same reason.
+- 2026-09-14 -- a blind reader of the day's diff found 1.3's button inside
+  the banner it hides, so fullscreen could be left by Escape alone; the button
+  now sits in its own `#controls` element and floats over the letterbox. Found
+  on the same pass: pointers in the new work list aimed at text that had moved
+  to the record, and 1.1's Done lacking the page gate.
 - 2026-09-14 -- the plan split, on the review's finding that one file carried
   two genres: this record keeps the designs, the rulings --- an item's closed
   **Decide first** now reads **Rulings** at its end --- the decisions against,
@@ -3047,15 +3054,15 @@ is a `strokeRect` one pixel inside the cell, which is `drawRect`. What goes
 with the grid is the map's DOM text, selectable and visible to screen readers;
 B.1 already gave that up for every overlay, and the ANSI frontend serves
 a screen reader natively. Canvas text goes through the same font engine as DOM
-text, so the outline map font draws the same glyphs; the frame cost is the one
-thing not known from the armchair, and 0.4's Split (0) measures it against
-the baseline at Phase 2's intro before the painter merges, the number
-to be recorded here. Consequences: 0.4 is the painter; 1.2 shrinks to the helper
-and one call; R6 retires; 2.2 loses its alignment and crop pitfalls and draws
-its three sections through the painter's core; 1.3's transform stays
-for the outline font, R7 replacing it for bitmap fonts; B.7's grid-construction
-bullet is moot; and the bitmap map fonts, which no DOM can show at all, become
-R7.
+text, so the outline map font should draw the same glyphs, which 0.4's Split (0)
+checks with an `xwd` pair; the frame cost is the other thing not known
+from the armchair, and the same step measures it against the baseline at Phase
+2's intro before the painter merges, the number to be recorded here.
+Consequences: 0.4 is the painter; 1.2 shrinks to the helper and one call; R6
+retires; 2.2 loses its alignment and crop pitfalls and draws its three sections
+through the painter's core; 1.3's transform stays for the outline font, R7
+replacing it for bitmap fonts; B.7's grid-construction bullet is moot;
+and the bitmap map fonts, which no DOM can show at all, become R7.
 
 ---
 

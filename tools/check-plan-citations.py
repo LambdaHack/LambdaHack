@@ -28,9 +28,9 @@ not survive its round trip; cite the words beside such a token instead.
 A slid line therefore never goes stale, a rewritten one fails loudly,
 and the document carries no stamp for such citations and never restamps
 --- which is why --restamp still counts only file:line citations and
-refuses a document holding none. An anchor cannot contain its own delimiter, so
-a line whose only unique text has a backtick in it is cited by the text
-beside it. Into a `.md` file, the one target the numeric form refuses,
+refuses a document holding none. An anchor can contain neither a backtick nor an `@`, whichever
+delimits it, so a line whose only unique text has one in it is cited by
+the text beside it. Into a `.md` file, the one target the numeric form refuses,
 an anchor is matched against paragraphs rather than lines --- the file
 read through `wrap80 --unwrap`, as check-doc-refs.py reads its spans ---
 because a wrap can fall inside any phrase and moves whenever a paragraph
