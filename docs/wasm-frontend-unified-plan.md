@@ -27,20 +27,22 @@ and `sdl2-to-wasm-parity-plan.md`. It pursues two goals at once:
 
 The ordering follows from G1: multi-font done naively would re-implement
 in TypeScript the layout logic that lives in `Sdl.hs`'s
-`drawPropOverlay`/`drawPropLine`/`drawPropChunk` (`Sdl.hs:670-713`) --- a much
-larger instance of the hand-porting that already produced real bugs (a DeadKey
-set ported with 11 of 13 values missing; a palette color slip). So:
+`drawPropOverlay`/`drawPropLine`/`drawPropChunk` (`Sdl.hs:drawPropOverlay ::`)
+--- a much larger instance of the hand-porting that already produced real bugs
+(a DeadKey set ported with 11 of 13 values missing; a palette color slip). So:
 **shared-Haskell foundations first (Phase 0), small parity wins on top (Phase
 1), multi-font as a shared-module extraction (Phase 2), and the Node benchmark
 tooling port (Phase 3).** Related goals (R1--R6) and adopted multi-frontend
 practices follow the phases.
 
-File:line citations were verified against the tree at commit `d211caa38`
-(2026-09-14); re-run
-`python3 tools/check-plan-citations.py docs/wasm-frontend-unified-plan.md --restamp`
-after the reading pass, and what the stamp asserts is `CLAUDE.md`'s to say. Some
-file basenames are duplicated among this repo's tracked `.hs` files, so every
-citation here to one of them names its directory as well: `Server/LoopM.hs` vs
+Citations name a file and a text anchor its cited line carries, which
+`tools/check-plan-citations.py` finds and prints with the line's number; there
+is no stamp and nothing restamps, and a rewritten line fails the pass instead
+of sliding under it. Ruled 2026-09-08, applied 2026-09-14, when the first three
+landings had each cost a repair commit for lines they merely slid. The Log's
+entries quote the line numbers they corrected, as history. Some file basenames
+are duplicated among this repo's tracked `.hs` files, so every citation here
+to one of them names its directory as well: `Server/LoopM.hs` vs
 `Client/LoopM.hs`, the engine's vs the game's `Content/Input.hs`, the engine's
 vs the game's `Client/UI/Content/Screen.hs`, `GameDefinition`'s vs
 `definition-src`'s `Content/RuleKind.hs`, `Client/State.hs` vs `Common/State.hs`
@@ -67,10 +69,10 @@ by the ledger below, and by whether its item carries an outcome line.
 >
 > - **landed**, with the commit that did it --- the item describes the code
 >   as of that commit and is not maintained against later trees, bar one further
->   outcome line per claim that *resolves* and the re-cut of a citation a later
->   commit slid, which changes no prose (the citation-repair rule under Handing
->   an item). Ordinary drift in a landed item is left alone; rewriting one
->   to match a later tree is the mistake this rule exists to prevent.
+>   outcome line per claim that *resolves* and the re-anchoring of a citation
+>   whose line a later commit rewrote, which changes no prose. Ordinary drift
+>   in a landed item is left alone; rewriting one to match a later tree
+>   is the mistake this rule exists to prevent.
 > - **open** --- the code is wrong *now*, and the item says how. A drifted claim
 >   here is an error to fix, and "fixing" it by writing the defect up as solved
 >   is the one thing that must not happen.
@@ -112,8 +114,8 @@ by the ledger below, and by whether its item carries an outcome line.
 > the outcome line": the record follows that commit and names it. Several
 > **Split**s number the record separately instead, and those say outright which
 > commit's hash goes in. A claim the landing falsified is corrected separately,
-> under the citation-repair rule in "Handing an item to a session", which
-> is where the separation is argued.
+> so that review can tell a relocation from a correction (Handing an item
+> to a session).
 >
 > **Landing part of an item takes no outcome line**, and the row stays live:
 > a partial landing is recorded in the item's body as specification for what
@@ -136,10 +138,7 @@ by the ledger below, and by whether its item carries an outcome line.
 >
 > When every item has landed or retired, the sections the ledger lists as live
 > freeze with them, its own rows stop moving, and this callout becomes one line
-> saying the specification landed in full. Restamping does not stop:
-> the standing checks quantify over every document in the repo, and a frozen
-> record still restamps when the files it cites move, as the pointman records
-> do.
+> saying the specification landed in full.
 
 ## How this lands
 
@@ -174,20 +173,19 @@ to no item is asked about" would then ask about all of them.
 
 **3.1 goes first, as a shakedown.** It is the smallest item whose correctness
 a machine can settle end to end, so it proves the ritual --- the wasm loop,
-the gates, the outcome line, the ledger flip and the restamp its own citation
-repair owes --- before any item whose review needs judgment. It rehearses
-no allowlist deletion, proposing no artifact and so having no entry to delete;
-the items that build one carry that step. Phase 3 then continues in parallel
-with Phases 0-2, sharing no file with them.
+the gates, the outcome line and the ledger flip --- before any item whose review
+needs judgment. It rehearses no allowlist deletion, proposing no artifact
+and so having no entry to delete; the items that build one carry that step.
+Phase 3 then continues in parallel with Phases 0-2, sharing no file with them.
 
 **One item is reviewed entirely alone: the `Sdl.hs` drawing loop** (2.1's
 refactor together with 0.2's `CellStyle` adoption, which rewrite abutting
 regions of one hot loop). It rewrites shipped native rendering; SDL2
 is exercised in CI nowhere beyond the init-and-quit backdoor; expensive
 assertions are off in every workflow; and its real gate is display-bound.
-Its branch carries `Sdl.hs` and nothing else, and its citation repair
-is a separate commit --- most of this document's `Sdl.hs` citations sit
-in the region it rewrites, and they will all still resolve.
+Its branch carries `Sdl.hs` and nothing else; most of this document's `Sdl.hs`
+anchors sit in the region it rewrites, so the pass will name every one
+the refactor breaks, and the re-anchoring is a separate commit.
 
 **2.4 splits**, so that each half gets the review it needs: the capability
 mechanism lands early, provably behaviour-preserving
@@ -227,22 +225,22 @@ and Appendix B.7's 2026-08-07 one are the two such, and the pointman
 post-mortem's framing callout is where this kind is defined and bounded. The two
 are named apart because they are different acts: an outcome line records
 a landing, an audit note records that the section was re-read and found wanting.
-Neither licenses rewriting the prose *under* the note. A citation range re-cut
-that changes no prose is not that: a frozen section takes it as the pointman
-post-mortem's fourth kind of upkeep, ruled 2026-09-08, which is what R3's ruling
-(c) does for the appendices' citations. The note itself stays with whoever acts
-on it, so carrying one of its findings into a live item is recorded in the note
-rather than by editing the section it annotates. **Live until every item has
-landed or retired**, because the work falsifies them: Goals and approach, How
-this lands, Repo facts, Build & verification loop, Handing an item to a session,
-What would falsify this, Sequencing, this ledger, and the intros that open
-a phase or the practices --- Phase 2's is the one that matters, since 2.2's
-Split (0) appends the frame-timing baseline to it and 2.5 re-measures against
-it, and its recorded numbers are exempt as measurements the way an item's are.
-Everything else is per item, and the row is the unit of rollback: each item
-is one commit, or the **Split** run of commits its block names, every one
-of them leaving the suite green --- which is what makes a row something that can
-be reverted rather than unpicked.
+Neither licenses rewriting the prose *under* the note. A citation re-anchored
+after its line was rewritten, changing no prose, is not that: a frozen section
+takes it as the pointman post-mortem's fourth kind of upkeep, ruled 2026-09-08.
+The note itself stays with whoever acts on it, so carrying one of its findings
+into a live item is recorded in the note rather than by editing the section
+it annotates. **Live until every item has landed or retired**, because the work
+falsifies them: Goals and approach, How this lands, Repo facts, Build &
+verification loop, Handing an item to a session, What would falsify this,
+Sequencing, this ledger, and the intros that open a phase or the practices ---
+Phase 2's is the one that matters, since 2.2's Split (0) appends
+the frame-timing baseline to it and 2.5 re-measures against it, and its recorded
+numbers are exempt as measurements the way an item's are. Everything else is per
+item, and the row is the unit of rollback: each item is one commit,
+or the **Split** run of commits its block names, every one of them leaving
+the suite green --- which is what makes a row something that can be reverted
+rather than unpicked.
 
 | sec. | delivers | size | depends on | state |
 |---|---|---|---|---|
@@ -506,6 +504,13 @@ only that the plan was written is one the next reader has to skip.
   and put its wiring in a `fullscreen.ts` beside `loader.ts` rather than inside
   it. The citation repairs and the restamp ride this one `.md` commit for all
   three, not one per item.
+- 2026-09-14 -- line citations retired for text anchors, the checker taught
+  the form, the stamp gone, and the citation-repair commit with its restamp
+  struck from every Split and Owns: the three landings had each owed one
+  for lines they merely slid. Only an item that rewrites a cited line now owes
+  a re-anchoring, and the pass names which. The Log keeps its numbers
+  as history. The checker's horde-ad twin was unmounted and takes the same code
+  when next mounted.
 
 ## Repo facts the plan builds on
 
@@ -532,18 +537,18 @@ only that the plan was written is one the next reader has to skip.
   and its `ts-src/src/serve-core.ts`, the local dev server `make serve-wasm`
   runs, being claimed by no item here. What this plan adds is where the deploy
   lands and why it is load-bearing here: the sibling checkout
-  `../lambdahack.github.io` (Makefile:322-330) is the GitHub Pages site players
-  actually load, so an artifact that does not reach it has not shipped, which
-  is what several **Done** lines grep for.
-- **Fonts.** `config.ui.default` sets `chosenFontset = "dejavuBold"` (line 67);
+  `../lambdahack.github.io` (`Makefile:build-ts:`) is the GitHub Pages site
+  players actually load, so an artifact that does not reach it has not shipped,
+  which is what several **Done** lines grep for.
+- **Fonts.** `config.ui.default` sets `chosenFontset = "dejavuBold"`;
   its `[fonts]` section names the web fonts directly:
   `dejavuBold = FontProportional "DejaVuLGCSans-Bold.ttf.woff" 13 HintingHeavy`,
-  `dejavuMono = FontMonospace "Hack-Bold.ttf.woff" 13 HintingHeavy` (lines
-  89-103). The `.woff` files live in `GameDefinition/fonts/`.
+  `dejavuMono = FontMonospace "Hack-Bold.ttf.woff" 13 HintingHeavy`. The `.woff`
+  files live in `GameDefinition/fonts/`.
 - **The browser build has the fontset config but not the font bytes.**
   `config.ui.default` is embedded at compile time via Template Haskell
-  (`rcfgUIDefault`, `GameDefinition/Content/RuleKind.hs:34`; merged
-  with the on-disk user config in `UIOptionsParse.hs:mkUIOptions`),
+  (`rcfgUIDefault`, `GameDefinition/Content/RuleKind.hs:, rcfgUIDefault = $(do`;
+  merged with the on-disk user config in `UIOptionsParse.hs:mkUIOptions ::`),
   so `schosenFontset`/`sfontsets`/`sfonts` are populated even with no argv ---
   the multi-font gate's `not (T.null (fontPropRegular chosenFontset))` conjunct
   already passes for the default fontset; only the frontend check blocks it.
@@ -552,10 +557,11 @@ only that the plan was written is one the next reader has to skip.
   `$(embedDir "GameDefinition/fonts")`), deliberately keeping font bytes out
   of the browser payload. In the browser, fonts are **static web assets
   by design**: Haskell knows their names and sizes
-  (`sfonts :: [(Text, FontDefinition)]`, `Common/ClientOptions.hs:35`;
-  `FontDefinition` itself, whose constructors carry filename and size,
-  at `Common/Misc.hs:28`) but cannot supply bytes. Phase 2.2's font wiring
-  is built around exactly that split.
+  (`sfonts :: [(Text, FontDefinition)]`,
+  `Common/ClientOptions.hs:[(Text, FontDefinition)]`; `FontDefinition` itself,
+  whose constructors carry filename and size,
+  at `Common/Misc.hs:data FontDefinition =`) but cannot supply bytes. Phase
+  2.2's font wiring is built around exactly that split.
 - **Font deployment gap.** `../lambdahack.github.io` currently carries just one
   of those fonts, `16x16xw.woff` --- committed by hand in 2019, not produced
   by any build --- beside `lz-string*.js`, used by `WasmFile.hs`'s save
@@ -648,9 +654,7 @@ and its absence says the item is a single commit.
   that renumbers --- **Owns** says so and says why. This document is the one
   entry the lock does not serialize on, and it is in nearly every **Owns**:
   an outcome line and a ledger row are the item's own two lines, which no other
-  landing touches, so they need no exclusive hold. A citation repair does need
-  one, re-cutting ranges other items also carry, so that commit takes the file
-  the way `Sdl.hs` is taken.
+  landing touches, so they need no exclusive hold.
 - **Done** --- the gates below that apply, named rather than spelled out, plus
   whatever is this item's own. It is the definition of finished for everything
   a session *can* verify.
@@ -689,14 +693,13 @@ docs     the repo's standing document passes over every .md document
 
 **What `docs` costs, and when.** The mechanical passes are seconds, and they run
 over each document the item's **Owns** names and not only over this one, since
-a hand-reflowed paragraph or a slid citation in another document is invisible
+a hand-reflowed paragraph or a broken anchor in another document is invisible
 to every pass over this file. The one that is not seconds is `CLAUDE.md`'s
-reading pass, and it is owed over this document, end to end --- and
-it is exactly what `--restamp` asserts and cannot check. So the read is owed
-once per landing, taken after the item's last edit to this file and before
-the restamp; the commits before it run the mechanical passes and leave the stamp
-alone. The ledger's size cells size the code, so this cost is on top of every
-one of them, and it is the largest single thing a `small` row asks for.
+reading pass, and it is owed over this document, end to end, once per landing,
+after the item's last edit to this file; the commits before it run
+the mechanical passes. The ledger's size cells size the code, so this cost
+is on top of every one of them, and it is the largest single thing a `small` row
+asks for.
 
 **Read the counts, not the exit status alone** --- `CLAUDE.md`'s rule, binding
 here too: a suite that silently loses a test still passes, and a listing is what
@@ -773,20 +776,20 @@ or this campaign, so a session is told both rather than trusted to know them.
   so a failed build reads as success --- which is how this campaign recorded one
   false positive already. **Done** lines are `&&`-chains, never pipelines; long
   output is scrolled, not trimmed.
-- A green `tools/check-plan-citations.py` proves that every `file:line`
-  resolves, not that the line still says what the claim needs: the file is long
-  enough and something else slid into the slot. So **any commit that moves
-  a line this document cites owes a citation-repair commit** --- the snippets
-  the checker prints re-read, the ranges re-cut --- and the restamp that follows
-  it. That repair stays *separate* from the landing, as does any correction
-  of a claim the landing falsified, so review can tell a relocation
-  from a correction: commit `a7e825c2d` could not, having rewritten R2 from "Add
-  a job to..." into "Partly landed, in..." and bent a factual claim in the same
-  diff. The obligation reaches frozen sections and `landed` items too, since
-  2026-09-08: a slid citation there is re-cut and the prose around it left
-  as it stands, the pointman post-mortem's fourth kind of upkeep --- R3's ruling
-  (c) does so for the appendices, and 2.1 meets it head-on, its refactor sliding
-  the `Sdl.hs` lines that Appendix C and B.5 cite.
+- A green `tools/check-plan-citations.py` proves that every anchor is found
+  on exactly one line, not that the line still says what the claim needs,
+  so the snippets it prints are re-read after any commit that rewrites a cited
+  line, and **an item whose commit rewrites such a line owes a re-anchoring,
+  a `.md`-only commit after the landing**, named by the pass rather than
+  by the item. Until 2026-09-14 the citations were line numbers, which a commit
+  above them slid onto other text with the pass still green, and every item owed
+  a repair commit for it. A correction of a claim the landing falsified stays
+  *separate* from the landing, as the re-anchoring does, so review can tell
+  a relocation from a correction: commit `a7e825c2d` could not, having rewritten
+  R2 from "Add a job to..." into "Partly landed, in..." and bent a factual claim
+  in the same diff. That reaches frozen sections and `landed` items too:
+  an anchor a rewrite broke is re-anchored and the prose around it left
+  as it stands, the pointman post-mortem's fourth kind of upkeep.
 
 This is not a fan-out plan, and the width it does have is spent before any code
 is. The hot files are small --- a hundred to a couple of hundred lines each,
@@ -833,40 +836,42 @@ that file and its `tools/doc-refs-allow.txt` entry are 0.1's now, which names
 both --- and the highlight rule is `highlightColor`'s three-kind branch, pinned
 in `terminal-core.test.ts`. The `#251F1F` fill is untouched.*
 
-- **AltGraph, keyboard.** `terminal.ts:207` forwarded `e.altKey` only (since
-  `403aafe13` it forwards the `alt` that `altModifier` computes
-  at `terminal.ts:206`); `Dom.hs:126-127` ORs `getAltKey || getAltGraphKey`,
-  so AltGraph-only chords (common on European layouts) are lost in the WASM
-  build. Forward `e.altKey || e.getModifierState("AltGraph")`; 0.1's redesign
-  then subsumes the fix.
+- **AltGraph, keyboard.** `terminal.ts:onKey(e.key, e.ctrlKey,` forwarded
+  `e.altKey` only (since `403aafe13` it forwards the `alt` that `altModifier`
+  computes at `terminal.ts:const alt = altModifier(e);`);
+  `Dom.hs:modAltG <- ask` ORs `getAltKey || getAltGraphKey`, so AltGraph-only
+  chords (common on European layouts) are lost in the WASM build. Forward
+  `e.altKey || e.getModifierState("AltGraph")`; 0.1's redesign then subsumes
+  the fix.
 - **AltGraph, mouse and wheel.** SDL folds AltGr (and the GUI keys) into Alt
   for mouse events too --- `modTranslate` reads `keyModifierAltGr` and applies
-  to button/wheel events via `getModState` (`Sdl.hs:353,362,771-781`). The wasm
+  to button/wheel events via `getModState` (`Sdl.hs:modTranslate ::`). The wasm
   handlers pass only `e.altKey`, so e.g. the `A-MiddleButtonRelease` binding
-  (`GameDefinition/.../Content/Input.hs:202`) can't fire with AltGr. Same
-  one-line fix per handler.
+  (`GameDefinition/.../Content/Input.hs:, ("A-MiddleButtonRelease", mouseMMBMute)`)
+  can't fire with AltGr. Same one-line fix per handler.
 - **Highlight outlines follow SDL2.** The rule (also encoded in 0.2's
   `CellStyle` and pinned by its fixtures), read off `chooseAndDrawHighlight`
-  (`Sdl.hs:504-518`): *every* kind gets a four-sided `SDL.drawRect`
-  over the whole cell box, but the colour differs. Kinds other
-  than `HighlightNone`/`HighlightBackground`/`HighlightNoneCursor` go through
-  `drawHighlight`, which sets `highlightToColor bg` and resets to `blackRGBA`
-  afterwards (`Sdl.hs:498-503`). Those three instead take
-  `workaroundOverwriteHighlight`, drawing the same rect in the renderer's
-  *current* colour --- always `blackRGBA` outside `drawHighlight` --- because
-  rectangle drawing is broken in SDL 2.0.16 (LambdaHack issue #281) and a stale
-  rect must be erased rather than left for the glyph to cover. So the browser
-  rule is **black border**, not "no border", for the three kinds. It reads
-  as no border on the black map background, but `HighlightBackground`
-  is the vision backlight (`DrawM.hs:377-381,416-417`, on by default via
-  `smarkVision = 1`, `SessionUI.hs:207`), and its grey wash is blitted *before*
-  `chooseAndDrawHighlight` runs (`Sdl.hs:666-669`) --- so SDL really shows
-  a grey cell ringed in black there, and today's `terminal.ts:138`
-  `inset 0 0 0 1px` box-shadow is wrong only in its `BrBlack` colour,
-  not in drawing a ring at all. Fix in `terminal-core.ts` (border colour black
-  for the three kinds) with a `terminal-core.test.ts` case. Background for why
-  the wasm build behaved this way, and the ruling on GHCJS's two-edge rendering,
-  is in Appendix B.
+  (`Sdl.hs:chooseAndDrawHighlight !col !row !bg = do`): *every* kind gets
+  a four-sided `SDL.drawRect` over the whole cell box, but the colour differs.
+  Kinds other than `HighlightNone`/`HighlightBackground`/`HighlightNoneCursor`
+  go through `drawHighlight`, which sets `highlightToColor bg` and resets
+  to `blackRGBA` afterwards (`Sdl.hs:drawHighlight !col !row !color = do`).
+  Those three instead take `workaroundOverwriteHighlight`, drawing the same rect
+  in the renderer's *current* colour --- always `blackRGBA` outside
+  `drawHighlight` --- because rectangle drawing is broken in SDL 2.0.16
+  (LambdaHack issue #281) and a stale rect must be erased rather than left
+  for the glyph to cover. So the browser rule is **black border**,
+  not "no border", for the three kinds. It reads as no border on the black map
+  background, but `HighlightBackground` is the vision backlight
+  (`DrawM.hs:backlightVision ::`, on by default via `smarkVision = 1`,
+  `SessionUI.hs:, smarkVision = 1`), and its grey wash is blitted *before*
+  `chooseAndDrawHighlight` runs (`Sdl.hs:let tgtR = SDL.Rectangle (vp (col`) ---
+  so SDL really shows a grey cell ringed in black there, and today's
+  `terminal.ts:Highlight square as an inset outline` `inset 0 0 0 1px`
+  box-shadow is wrong only in its `BrBlack` colour, not in drawing a ring
+  at all. Fix in `terminal-core.ts` (border colour black for the three kinds)
+  with a `terminal-core.test.ts` case. Background for why the wasm build behaved
+  this way, and the ruling on GHCJS's two-edge rendering, is in Appendix B.
 
 All three fixes land with tests: the two AltGraph fixes get the jsdom forwarding
 tests (the ground-rule exception above), the highlight rule
@@ -878,19 +883,20 @@ also deletes its own `tools/doc-refs-allow.txt` entry as it creates the file,
 then the two AltGraph fixes as **one** commit, with the highlight fix
 concurrent. The three fixes are one ledger row; the outcome line and the ledger
 flip ride whichever of the two fix commits lands last, after a citation-repair
-commit of its own: the AltGraph fix rewrites `terminal.ts:206-207`, cited here,
-so the sentence citing it is reworded rather than re-ranged, and the restamp
-rides that commit; the highlight fix rewrites one entry of `terminal-core.ts`'s
+commit of its own: the AltGraph fix rewrites
+`terminal.ts:const alt = altModifier(e);`, cited here, so the sentence citing
+it is reworded rather than re-ranged, and the restamp rides that commit;
+the highlight fix rewrites one entry of `terminal-core.ts`'s
 `HIGHLIGHT_TO_COLOR` table, which this document does not cite ---
-its `terminal-core.ts:99` is `bgColor`'s fill, which the fix leaves standing ---
-so that half owes no repair.
+its `terminal-core.ts:Cell background-fill` is `bgColor`'s fill, which the fix
+leaves standing --- so that half owes no repair.
 
 **Owns** --- `ts-src/src/terminal.ts`, `ts-src/src/terminal-input.test.ts`,
 `ts-src/src/terminal-core.ts` and its test, `ts-src/package.json`
 and `package-lock.json` --- both written by 0.3 as well, for lz-string,
 so not concurrent with it --- `docs/wasm-frontend-unified-plan.md` ---
-the AltGraph commit rewrites `terminal.ts:206-207`, cited here, so this item
-owes the citation-repair commit and its restamp ---
+the AltGraph commit rewrites `terminal.ts:const alt = altModifier(e);`, cited
+here, so this item owes the citation-repair commit and its restamp ---
 and `tools/doc-refs-allow.txt`, whose `ts-src/src/terminal-input.test.ts` entry
 the harness commit deletes as it creates the file. The two AltGraph fixes
 are not concurrent with each other: they share the new test file and the lock,
@@ -920,19 +926,18 @@ data KeyDecision = KeyDecision
   , kdResetChan      :: Bool        -- True for Esc
   , kdPreventBrowser :: Bool        -- True unless an allowed passthrough
   }
--- No key field: nothing here remaps a key, and both consumers translate
--- it before they ask (@Sdl.hs:341@, and @keyTranslateWeb@ in @lhKey@),
--- so each already holds *a* translated key. That the two are not the
--- same key under a compound modifier is left standing by this field
--- list and is not closed by this item: @Sdl.hs:339-341@ translates
--- under the raw left/right shift bits, independent of Ctrl and Alt,
--- while @lhKey@ passes @modifier == K.Shift@ (@Wasm.hs:92@), @False@
--- whenever Ctrl or Alt is also down, so @C-S-\<key\>@ translates
--- shifted natively and unshifted in the browser. The flag is consumed
--- upstream of @decideKey@, so closing that divergence means deciding
--- the shift flag here too, a signature this item has not specified;
--- Appendix C's 2026-09-07 audit note records the behaviour. Dead keys
--- reach only @kdPreventBrowser@; if a rule ever does remap, the field
+-- No key field: nothing here remaps a key, and both consumers translate it
+-- before they ask (@Sdl.hs:SDL.keysymKeycode@, and @keyTranslateWeb@ in
+-- @lhKey@), so each already holds *a* translated key. That the two are not the
+-- same key under a compound modifier is left standing by this field list and
+-- is not closed by this item: @Sdl.hs:shiftPressed =@ translates under the raw
+-- left/right shift bits, independent of Ctrl and Alt, while @lhKey@ passes
+-- @modifier == K.Shift@ (@Wasm.hs:K.keyTranslateWeb@), @False@ whenever Ctrl or
+-- Alt is also down, so @C-S-\<key\>@ translates shifted natively and unshifted
+-- in the browser. The flag is consumed upstream of @decideKey@, so closing that
+-- divergence means deciding the shift flag here too, a signature this item has
+-- not specified; Appendix C's 2026-09-07 audit note records the behaviour. Dead
+-- keys reach only @kdPreventBrowser@; if a rule ever does remap, the field
 -- returns and this comment goes.
 
 decideKey :: K.Modifier -> K.Key -> KeyDecision
@@ -945,15 +950,15 @@ This subsumes four currently-independent copies of the same decisions:
 `lhKey`/`lhWheel`/`lhMouseUp`, `terminal.ts`'s
 `CTRL_PASSTHROUGH_KEYS`/`DEAD_KEYS` (the cross-language copy that produced
 the 11-of-13-DeadKeys bug), and `Sdl.hs`'s verbatim copy of the
-modifier-squash + Esc-reset block (`Sdl.hs:343-347,349`), which is replaced
-by a `decideKey` call that ignores `kdPreventBrowser` --- the module
-is frontend-universal, not web-specific. The two pieces are disjoint on purpose:
-`Sdl.hs:348`'s `p <- SDL.getAbsoluteMouseLocation` sits between them
-and **stays**, `Sdl.hs:350` consuming it, and cutting the block as one range
-leaves `p` unbound with the obvious repair deleting exactly the mouse-position
-behaviour Appendix C's first bullet records as a booby trap. The browser-zoom
-passthrough (`C-+`/`C--`/`C-0`) stays allowlisted here; it coexists with 1.5's
-`allFontsScale`.
+modifier-squash + Esc-reset block (`Sdl.hs:modifierNoShift = case modifier of`),
+which is replaced by a `decideKey` call that ignores `kdPreventBrowser` ---
+the module is frontend-universal, not web-specific. The two pieces are disjoint
+on purpose: the keyboard handler's `p <- SDL.getAbsoluteMouseLocation` sits
+between them and **stays**, `Sdl.hs:rf modifierNoShift` consuming it,
+and cutting the block as one range leaves `p` unbound with the obvious repair
+deleting exactly the mouse-position behaviour Appendix C's first bullet records
+as a booby trap. The browser-zoom passthrough (`C-+`/`C--`/`C-0`) stays
+allowlisted here; it coexists with 1.5's `allFontsScale`.
 
 **`Wasm.hs` changes:**
 
@@ -993,21 +998,23 @@ updates (sync, takes the event).
 
 - tasty tests for `decideKey`: each passthrough char, DeadKey, Esc, each squash
   case;
-- table-driven tasty tests for `keyTranslateWeb` (`Key.hs:472+`),
+- table-driven tasty tests for `keyTranslateWeb` (`Key.hs:keyTranslateWeb ::`),
   the key-translation layer's web table, untested today and the home
   of the DeadKey bug class --- and for it alone, ruled 2026-08-07: reaching
-  SDL's `keyTranslate` (`Sdl.hs:783-890`) costs `EXPOSE_INTERNAL` for tests,
-  an sdl2 build-depend in the suite and a `#ifndef USE_BROWSER` guard,
-  so it stays covered by the uniformity-diff review rule instead. One known hole
-  in that table is in scope for a fix as well as for the tests, scheduled
-  2026-09-07: SDL maps keycode 167, the paragraph key, to backquote, or tilde
-  under shift (`Sdl.hs:828-830`), where `keyTranslateWeb` has no clause.
-  The clause mirroring SDL's goes into `Key.hs` in the commit that brings
-  these tests, keyed on the sign itself, U+00A7 --- the shifted key reports
-  a different, layout-dependent character on the web, and whether any
-  of those is mapped is the executing session's to settle against the MDN table
-  --- and the table pins the presence rather than the absence. Trivial,
-  no binding using it; Appendix C's 2026-09-07 audit note records the gap;
+  SDL's `keyTranslate` (`Sdl.hs:keyTranslate :: Bool`) costs `EXPOSE_INTERNAL`
+  for tests, an sdl2 build-depend in the suite and a `#ifndef USE_BROWSER`
+  guard, so it stays covered by the uniformity-diff review rule instead. One
+  known hole in that table is in scope for a fix as well as for the tests,
+  scheduled 2026-09-07: SDL maps keycode 167, the paragraph key, to backquote,
+  or tilde under shift
+  (`Sdl.hs:on some keyboards the key below ESC is paragraph`), where
+  `keyTranslateWeb` has no clause. The clause mirroring SDL's goes into `Key.hs`
+  in the commit that brings these tests, keyed on the sign itself, U+00A7 ---
+  the shifted key reports a different, layout-dependent character on the web,
+  and whether any of those is mapped is the executing session's to settle
+  against the MDN table --- and the table pins the presence rather
+  than the absence. Trivial, no binding using it; Appendix C's 2026-09-07 audit
+  note records the gap;
 - the jsdom forwarding tests for the `terminal.ts` listener (ground-rule
   exception);
 - the input-side RawFrontend contract cases (key delivered while a frame
@@ -1025,15 +1032,16 @@ leave `lhKey` async with `preventDefault` staying in TS, and record the ruling.
 Performed 2026-08-07: the record sits in the `Wasm.hs` changes bullet above,
 and it held, so the fallback is dead. Then `InputDecision` and its tasty tests
 with no consumer wired; then `Sdl.hs`'s verbatim squash/Esc block
-(`Sdl.hs:343-347,349`, the mouse read between them left alone) replaced
-by a `decideKey` call that ignores `kdPreventBrowser` --- the smallest consumer,
-native, no FFI; then the `lhKey` rewrite with `terminal.ts` and `loader.ts`
-in the same commit and nothing else in it, as the ground rules require.
-The second and third are disjoint and could run concurrently once the first
-lands; they are serialized only so the signature change arrives alone.
-The outcome line, and the deletion of `Client/UI/Frontend/InputDecision.hs`
-and of this item's new `test/InputDecisionUnitTests.hs` entry
-from `tools/doc-refs-allow.txt`, ride the third.
+(`Sdl.hs:modifierNoShift = case modifier of`, the mouse read between them left
+alone) replaced by a `decideKey` call that ignores `kdPreventBrowser` ---
+the smallest consumer, native, no FFI; then the `lhKey` rewrite
+with `terminal.ts` and `loader.ts` in the same commit and nothing else in it,
+as the ground rules require. The second and third are disjoint and could run
+concurrently once the first lands; they are serialized only so the signature
+change arrives alone. The outcome line, and the deletion
+of `Client/UI/Frontend/InputDecision.hs` and of this item's new
+`test/InputDecisionUnitTests.hs` entry from `tools/doc-refs-allow.txt`, ride
+the third.
 
 **Owns** --- new
 `engine-src/Game/LambdaHack/Client/UI/Frontend/InputDecision.hs`
@@ -1042,12 +1050,12 @@ for their registration; `engine-src/Game/LambdaHack/Client/UI/Frontend/`'s
 `Sdl.hs` and `Wasm.hs`; `engine-src/Game/LambdaHack/Client/UI/Frontend.hs`,
 its export list only, carrying the re-export ruling (2) requires;
 `engine-src/Game/LambdaHack/Client/UI/Key.hs`, one clause in `keyTranslateWeb`,
-which no other item writes and which shifts no citation, `Key.hs:472+` naming
-the function's head; `ts-src/src/terminal.ts`, `ts-src/src/loader.ts`,
+which no other item writes and which shifts no citation,
+`Key.hs:keyTranslateWeb ::` naming the function's head;
+`ts-src/src/terminal.ts`, `ts-src/src/loader.ts`,
 `ts-src/src/terminal-input.test.ts`; `tools/doc-refs-allow.txt`;
-`docs/wasm-frontend-unified-plan.md` --- the second and third commits shift
-the `Sdl.hs`, `terminal.ts` and `loader.ts` citations, so this item owes
-the citation-repair commit and its restamp; and, in a commit of its own after
+`docs/wasm-frontend-unified-plan.md`, the third commit rewriting the `Sdl.hs`
+block cited here and so owing a re-anchoring; and, in a commit of its own after
 the landing, `CLAUDE.md`'s frontend bullet, whose first module name this item
 delivers. It owns nothing in `docs/promptgetkey-hygiene.md`: that record's sec.
 01 was rewritten onto `FrameM`'s pure section on 2026-09-04, when this item's
@@ -1069,13 +1077,14 @@ for both guard chains. And `CLAUDE.md`'s, which the sweep that installed
 this discipline missed although four items edit one sentence of it: 0.1, 0.2
 and 2.1 for the frontend bullet's three module names, 0.2 or 2.1 again
 for the Gotchas bullet's "awaits its scheduled fix" --- whichever of them fixes
-`Sdl.hs:590` --- R3 for the GHCJS mentions, and the pointman campaign's 04.4
-for the sentences that campaign's landing falsifies, enumerated in its head
-callout --- one holder at a time, as for the four above. Where the edit rides
-is each item's **Split** to say, and they differ on purpose: 2.1 folds
-it into the citation-repair commit that rewrites the same file's `Sdl.hs` lines,
-R3 into the rip-out whose deletions the reworded sentences describe, and 04.4
-into the deletion commit that resolves the clause.
+`Sdl.hs:let Point{..} = toEnum i` --- R3 for the GHCJS mentions,
+and the pointman campaign's 04.4 for the sentences that campaign's landing
+falsifies, enumerated in its head callout --- one holder at a time, as
+for the four above. Where the edit rides is each item's **Split** to say,
+and they differ on purpose: 2.1 folds it into the re-anchoring commit
+that follows its `Sdl.hs` rewrite, R3 into the rip-out whose deletions
+the reworded sentences describe, and 04.4 into the deletion commit that resolves
+the clause.
 
 **Done** --- `native`, `ts`, `wasm`, `docs`.
 
@@ -1098,37 +1107,39 @@ takes no exception --- and the same channel binds 0.2's and 2.1's new modules
 and the test suite and generator that consume them. The known cost is accepted:
 `docs/promptgetkey-hygiene.md`'s idea of parking `macroStep` here closes
 as an import cycle (`KeyMacroFrame` sits in `SessionUI`, which imports
-`Client.UI.Frontend`, `SessionUI.hs:28`), so that record's `FrameM` fallback
-is the parking's only home --- and since 2026-09-04 it is that record's stated
-home rather than its fallback, this ruling having been applied there and
-in the migration plan's sec. 04 rather than left to an outcome line whose
-condition could never come true. (3) `keyTranslateWeb` alone is in test scope,
-as the Verify bullet now states with the three costs that ruled SDL's table out;
-the uniformity-diff review rule covers the SDL side.
+`Client.UI.Frontend`, `SessionUI.hs:import Game.LambdaHack.Client.UI.Frontend`),
+so that record's `FrameM` fallback is the parking's only home --- and since
+2026-09-04 it is that record's stated home rather than its fallback, this ruling
+having been applied there and in the migration plan's sec. 04 rather than left
+to an outcome line whose condition could never come true. (3) `keyTranslateWeb`
+alone is in test scope, as the Verify bullet now states with the three costs
+that ruled SDL's table out; the uniformity-diff review rule covers the SDL side.
 
 ### 0.2 `CellStyle` + a build-time generator for TS tables and fixtures
 
 **New module** `Game.LambdaHack.Client.UI.Frontend.CellStyle` holding the pure
-per-cell decision currently in `Dom.hs`'s `setChar` (`Dom.hs:251-273`): decode
-`AttrCharW32`, even-row `White`->`AltWhite`, glyph substitution (space->nbsp,
-dim floor->`'\x22C5'`), highlight->border and background color (per 0.0's rule).
-`Sdl.hs`'s `setSquareChar` (`Sdl.hs:636-669`) contains the *same* AltWhite
+per-cell decision currently in `Dom.hs`'s `setChar`
+(`Dom.hs:let setChar :: Int`): decode `AttrCharW32`, even-row
+`White`->`AltWhite`, glyph substitution (space->nbsp, dim floor->`'\x22C5'`),
+highlight->border and background color (per 0.0's rule). `Sdl.hs`'s
+`setSquareChar` (`Sdl.hs:setSquareChar :: Int`) contains the *same* AltWhite
 and floor-substitution rules (with a bitmap-font variant, `'\x0007'`), while
-`setMonoChar` (`Sdl.hs:603-624`) shares only the AltWhite rule --- which is also
-the honest statement of what each call site consumes. So the module is written
-for and consumed by **both** native and browser frontends, parameterized
-by the per-frontend floor-glyph choice (`'\x0007'` for SDL bitmap fonts,
-`'\x22C5'` for SDL scalable and the web, `'.'` in ANSI and Teletype ---
-`ANSI.hs:273`, `Teletype.hs:57`, which makes those two frontends candidate
-consumers of the substitution rule too, though they use neither AltWhite
-nor highlights). The even-row `White`->`AltWhite` recolour is additionally
-exported as a small named function of its own --- row and `Color` in, `Color`
-out, the exact name the executing session's --- which `styleCell` consumes
-internally and 2.1's `chunkPropLine` imports: one definition, ruled 2026-08-07,
-so neither item invents a second copy.
+`setMonoChar` (`Sdl.hs:setMonoChar :: Int`) shares only the AltWhite rule ---
+which is also the honest statement of what each call site consumes.
+So the module is written for and consumed by **both** native and browser
+frontends, parameterized by the per-frontend floor-glyph choice (`'\x0007'`
+for SDL bitmap fonts, `'\x22C5'` for SDL scalable and the web, `'.'` in ANSI
+and Teletype --- `ANSI.hs:== floorSymbol then`,
+`Teletype.hs:acCharRaw == floorSymbol`, which makes those two frontends
+candidate consumers of the substitution rule too, though they use neither
+AltWhite nor highlights). The even-row `White`->`AltWhite` recolour
+is additionally exported as a small named function of its own --- row
+and `Color` in, `Color` out, the exact name the executing session's --- which
+`styleCell` consumes internally and 2.1's `chunkPropLine` imports: one
+definition, ruled 2026-08-07, so neither item invents a second copy.
 
 Two riders on the `Sdl.hs` side of this work: derive `colorToRGBA`
-(`Sdl.hs:904-922`, a hand-maintained palette copy by its own comment)
+(`Sdl.hs:colorToRGBA ::`, a hand-maintained palette copy by its own comment)
 from `Color.colorToRGB`, closing the Haskell-vs-Haskell copy alongside
 the Haskell-vs-TS ones; and since `Sdl.hs`'s per-cell drawing is a hot path,
 gate its adoption of `CellStyle` on before/after `make bench` runs
@@ -1146,9 +1157,10 @@ repo policy) that emits into `ts-src/src/generated/`:
    enumerate `[Black .. BrWhite]` explicitly; `Highlight` via
    `[minBound .. maxBound]`). One value the browser needs is reachable
    from neither source: the `HighlightBackground` cell fill `#251F1F`, which
-   is `Sdl.hs:902`'s `greyRGBA` --- a third of `colorToRGBA BrBlack` by its own
-   comment, and carried by no `Color` constructor --- hand-copied today
-   at `Dom.hs:268` and `terminal-core.ts:99`, across two languages. It
+   is `Sdl.hs:greyRGBA = SDL.V4`'s `greyRGBA` --- a third
+   of `colorToRGBA BrBlack` by its own comment, and carried by no `Color`
+   constructor --- hand-copied today at `Dom.hs:then "#251F1F"`
+   and `terminal-core.ts:Cell background-fill`, across two languages. It
    is a highlight-rule output like the border colour beside it, so `CellStyle`
    names it once, `Sdl.hs` reads it there in place of `greyRGBA`,
    and the generator emits it from that name. Same reachability problem ruling
@@ -1184,13 +1196,13 @@ requires --- the ASCII-art alpha/BW pair out of `Sdl.hs` into an SDL-free pure
 module of its own under `engine-src/Game/LambdaHack/Client/UI/Frontend/`,
 `cursorXhair` reading it, and `cursor.ts` generated from it, which is also 1.1's
 final form; then `Sdl.hs` adopting `CellStyle`, `colorToRGBA` derived
-from `Color.colorToRGB`, and the `Sdl.hs:590` `punindex` fix, behind the bench
-gate. `gen-ts` must be a prerequisite target with its own shell, never an inline
-step in `build-ts`: that recipe sources `~/.ghc-wasm/env`, which points
-`CC`/`LD`/`AR` at wasi-sdk while leaving `cabal` and `ghc` native, so a native
-build inside it links with `wasm-ld` and fails. The outcome line,
-and the deletion of this item's `tools/doc-refs-allow.txt` entries ---
-`CellStyle.hs`, `palette.ts`, `fixtures.json`, `cursor.ts`,
+from `Color.colorToRGB`, and the `Sdl.hs:let Point{..} = toEnum i` `punindex`
+fix, behind the bench gate. `gen-ts` must be a prerequisite target with its own
+shell, never an inline step in `build-ts`: that recipe sources
+`~/.ghc-wasm/env`, which points `CC`/`LD`/`AR` at wasi-sdk while leaving `cabal`
+and `ghc` native, so a native build inside it links with `wasm-ld` and fails.
+The outcome line, and the deletion of this item's `tools/doc-refs-allow.txt`
+entries --- `CellStyle.hs`, `palette.ts`, `fixtures.json`, `cursor.ts`,
 `ts-src/src/generated/`, `make gen-ts`, `test/CellStyleUnitTests.hs`,
 `GameDefinition/gen-src/GenTsTables.hs`, and the crosshair module's, added
 under whatever name the executing session mints for it and before that name
@@ -1212,12 +1224,12 @@ re-exporting both new modules per 0.1's ruling (2)),
 at the frontend CI smokes; the `Makefile`'s at 3.3, `Sdl.hs`'s at 2.1,
 `terminal.ts`'s at 0.0, and `LambdaHack.cabal`'s, `test/Spec.hs`'s
 and `Frontend.hs`'s at 0.1), `tools/doc-refs-allow.txt`,
-`docs/wasm-frontend-unified-plan.md` --- the last commit rewrites `Sdl.hs:590`,
-`Sdl.hs:603-624`, `Sdl.hs:636-669` and `Sdl.hs:904-922`, all cited here,
-so this item owes the citation-repair commit and its restamp --- and,
-in a commit of its own after the landing, `CLAUDE.md` --- the frontend bullet,
-whose second module name this item delivers, and the Gotchas bullet's "awaits
-its scheduled fix" for `Sdl.hs:590`, which this item's last commit retires
+`docs/wasm-frontend-unified-plan.md` --- the last commit rewrites `setMapChar`,
+`setMonoChar`, `setSquareChar` and `colorToRGBA`, all anchored here,
+so this item owes the re-anchoring --- and, in a commit of its own after
+the landing, `CLAUDE.md` --- the frontend bullet, whose second module name
+this item delivers, and the Gotchas bullet's "awaits its scheduled fix"
+for `Sdl.hs:let Point{..} = toEnum i`, which this item's last commit retires
 *if it is the first of the two to reach that line* --- 2.1 holds `Sdl.hs` too
 and carries the one-line fix when it takes the file first, though its own edits
 fall either side of `setMapChar` rather than inside it, and the retirement
@@ -1263,30 +1275,31 @@ fields, each frontend rendering it through its own thin step --- SDL directly,
 the DOM grid and 2.2's canvas via the generated `PALETTE` hex lookup that exists
 for exactly that mapping; the hot path stays monomorphic, and 2.1 and 2.2
 inherit the record. (2) The highlight-border rule is a `CellStyle` output field:
-the three-kind branch --- `chooseAndDrawHighlight`'s (`Sdl.hs:504-518`), border
-versus background versus none --- becomes structured output in `Color` terms,
-pinned by the fixtures since every `Highlight` is in the sample, so a TS drift
-fails vitest instead of passing it; the trap stands recorded:
-`HIGHLIGHT_TO_COLOR` alone, where `HighlightBackground -> BrBlack` is correct,
-would silently revert 0.0's fix. (3) The bench gate's acceptance: interleaved
-A/B pairs per the toggle recipe (`benchFrontendBattle` and `benchFrontendCrawl`,
-fixed seeds), accepted if the `CellStyle` binary's times stay within
-the interleaved pairs' own spread, failed on a consistent regression beyond it;
-the in-session llvmpipe pair settles the verdict --- the cost under test
-is per-cell CPU work, which software rendering exposes rather than masks ---
-and a real-display pair is handed back only if that verdict is challenged. (4)
-The crosshair ASCII art moves into an SDL-free pure shared module that `Sdl.hs`
-and the generator both consume --- per-pixel art serving the SVG directly, where
-the packed 1-bpp `Word8` vectors `cursorXhair` returns are an SDL encoding ---
-because `cursorXhair` is exported nowhere and `Frontend.Sdl` is no module at all
-under `os(wasi)`. What this does *not* buy is a generator free of SDL:
+the three-kind branch --- `chooseAndDrawHighlight`'s
+(`Sdl.hs:chooseAndDrawHighlight !col !row !bg = do`), border versus background
+versus none --- becomes structured output in `Color` terms, pinned
+by the fixtures since every `Highlight` is in the sample, so a TS drift fails
+vitest instead of passing it; the trap stands recorded: `HIGHLIGHT_TO_COLOR`
+alone, where `HighlightBackground -> BrBlack` is correct, would silently revert
+0.0's fix. (3) The bench gate's acceptance: interleaved A/B pairs per the toggle
+recipe (`benchFrontendBattle` and `benchFrontendCrawl`, fixed seeds), accepted
+if the `CellStyle` binary's times stay within the interleaved pairs' own spread,
+failed on a consistent regression beyond it; the in-session llvmpipe pair
+settles the verdict --- the cost under test is per-cell CPU work, which software
+rendering exposes rather than masks --- and a real-display pair is handed back
+only if that verdict is challenged. (4) The crosshair ASCII art moves
+into an SDL-free pure shared module that `Sdl.hs` and the generator both consume
+--- per-pixel art serving the SVG directly, where the packed 1-bpp `Word8`
+vectors `cursorXhair` returns are an SDL encoding --- because `cursorXhair`
+is exported nowhere and `Frontend.Sdl` is no module at all under `os(wasi)`.
+What this does *not* buy is a generator free of SDL:
 `GameDefinition/gen-src/GenTsTables.hs` reaches `CellStyle` and, at 2.2,
 `OverlayLayout`, both under `engine-src`, so it build-depends
 on `lib:LambdaHack`, whose native branch carries `sdl2` and `sdl2-ttf`
-(`LambdaHack.cabal:387-388`) whichever module it imports. The freshness CI job
-therefore needs the `libsdl2-dev libsdl2-ttf-dev` apt line the workflow's other
-two Haskell jobs already carry (`.github/workflows/lint-and-test-suites.yml:57`,
-`:94`), and its **Done** says so.
+(`LambdaHack.cabal:build-depends: sdl2`) whichever module it imports.
+The freshness CI job therefore needs the `libsdl2-dev libsdl2-ttf-dev` apt line
+the workflow's other two Haskell jobs already carry
+(`.github/workflows/lint-and-test-suites.yml`, twice), and its **Done** says so.
 
 ### 0.3 FFI-coverage test (baseline first, then per-commit)
 
@@ -1339,17 +1352,16 @@ are the two artifact deletions in this plan that no outcome line gates.
 and `run-wasm-game.mjs` entries), `ts-src/package.json` and `package-lock.json`
 (lz-string as a devDependency --- it must come from npm, never from the sibling
 checkout, whose `lz-string*.js` is a deployed artifact),
-and `docs/wasm-frontend-unified-plan.md`: the import half rewrites
-`run-wasm-test.mjs:34-67`, cited here together with that file's line count,
-so this item owes the citation-repair commit and its restamp. Nothing else.
-The two commits are serial: the export half's driver imports the setup and stubs
-the import half installs --- defined once, shared by both drivers rather
-than copied. Across items: not concurrent with 0.0, which writes the same lock
-file, and it does not merge. **The claimant list for `ts-src/run-wasm-game.mjs`
-lives here**, the file being created here: 0.3, 1.2, 1.5, 1.6 and 3.2, each
-adding its own coverage case --- one holder at a time, as for `terminal.ts`
-at 0.0. So does `ts-src/run-wasm-test.mjs`'s: 0.3, 2.3 and the RawFrontend
-contract. `LambdaHack.cabal`'s and `test/Spec.hs`'s are at 0.1.
+and `docs/wasm-frontend-unified-plan.md`, the import half rewriting the driver's
+wiring cited here. Nothing else. The two commits are serial: the export half's
+driver imports the setup and stubs the import half installs --- defined once,
+shared by both drivers rather than copied. Across items: not concurrent
+with 0.0, which writes the same lock file, and it does not merge. **The claimant
+list for `ts-src/run-wasm-game.mjs` lives here**, the file being created here:
+0.3, 1.2, 1.5, 1.6 and 3.2, each adding its own coverage case --- one holder
+at a time, as for `terminal.ts` at 0.0. So does `ts-src/run-wasm-test.mjs`'s:
+0.3, 2.3 and the RawFrontend contract. `LambdaHack.cabal`'s and `test/Spec.hs`'s
+are at 0.1.
 
 **Done** --- `native`, `wasm`, `docs`, plus, on the export half,
 `make build-wasm` and a run of the seeded driver against the fresh reactor,
@@ -1401,9 +1413,9 @@ cases carry the wasm-only guard. (3) "A known input/output" is the proposed
 list, adopted as the acceptance criteria: an `encodeEOF`/`strictDecodeEOF` round
 trip returning the original value; `doesFileExist` False before a write and True
 after; `renameFile` leaving the new key holding the old bytes and the old key
-absent (`WasmFile.hs:107-114`); a damaged EOF marker rejected rather
-than silently decoded, which is also R1's stated wasm round-trip test; and,
-for `js_submitFrame`, the stub recording exactly one call per frame
+absent (`WasmFile.hs:renameFile :: FilePath`); a damaged EOF marker rejected
+rather than silently decoded, which is also R1's stated wasm round-trip test;
+and, for `js_submitFrame`, the stub recording exactly one call per frame
 with `(addr, w, h)` matching `rwidth`/`rheight` and the first cell word equal
 to the fixture's. The export half's criteria follow the same shape when
 it lands: a known synthetic event produces the expected key on the frontend
@@ -1423,8 +1435,9 @@ and 1.6's driver case wait on 3.1, which is handed out first regardless.
 add `container.style.cursor = "crosshair"` --- the zero-dependency interim step,
 and a good toolchain warm-up. The final form comes with 0.2: its generator emits
 an SVG data-URI cursor from SDL2's own bitmap definition (`cursorXhair`'s
-ASCII-art alpha/BW pair, `Sdl.hs:421-455`; 32x27, hotspot (13,13) per
-the `createCursor` call at `Sdl.hs:211-213`), and `terminal.ts` switches
+ASCII-art alpha/BW pair, `Sdl.hs:cursorXhair :: (VS.Vector`; 32x27, hotspot
+(13,13) per the `createCursor` call
+at `Sdl.hs:createCursor cursorBW cursorAlpha`), and `terminal.ts` switches
 to `cursor: url(<data-URI>) 13 13, crosshair` --- the keyword staying
 as the fallback. Pixel-parity with the native pointer, sourced from the one
 canonical definition. Verify by hovering, both before and after the 0.2 upgrade.
@@ -1438,12 +1451,10 @@ the ledger row. Neither deletes a `tools/doc-refs-allow.txt` entry ---
 The keyword commit landed in `91d75ca5e`; the row stays live for the SVG form.
 
 **Owns** --- `ts-src/src/terminal.ts`, and, in the landing commit only,
-`docs/wasm-frontend-unified-plan.md`: a line inserted in `buildGrid` shifts
-`terminal.ts:138` and `terminal.ts:206-207`, both cited above, so even
-this one-liner obliges a citation repair and a restamp. `terminal.ts`'s claimant
-list is at 0.0, 1.2 and 1.5 being the near neighbours, so the three serialize;
-take 1.1 first, it clears the file fastest. `../lambdahack.github.io`
-is redeployed by **Done**, not owned.
+`docs/wasm-frontend-unified-plan.md`. `terminal.ts`'s claimant list is at 0.0,
+1.2 and 1.5 being the near neighbours, so the three serialize; take 1.1 first,
+it clears the file fastest. `../lambdahack.github.io` is redeployed by **Done**,
+not owned.
 
 **Done** --- `ts`, `wasm`, `deploy`, `docs`, plus
 `grep -qF crosshair ../lambdahack.github.io/bundle.js`.
@@ -1460,34 +1471,36 @@ which proves the string shipped and nothing about how it painted.
 ### 1.2 Screenshots: make `Ctrl+P` real (small--medium)
 
 Today `C-P` -> `PrintScreen` -> `printScreenHuman` shows *"Screenshot printed."*
-and calls `fprintScreen`, which for wasm is the `Common.hs:67` dummy. This item
-restores that key and, since 2026-09-07, `--printEachScreen` with it: the flag
-that dumps every frame is read at `Sdl.hs:739` and nowhere else, after
-`SDL.present`, and its browser counterpart is `Wasm.hs`'s `display` calling
-the same `fprintScreen` action after `js_submitFrame` when `sprintEachScreen`
-is set --- which needs `startup` to keep the `ClientOptions` it discards today,
-the edit 1.5 makes too, so whichever of the two lands first makes it. Two things
-about it are not obvious. That call reaches TS before the rAF paint,
-so the rasterizer reads the pending snapshot when there is one and the applied
-grid otherwise, or every per-frame PNG shows the frame before. And nothing
-in the browser can set the flag --- the loader passes no argv and R4's allowlist
-admits no debug flag --- so its consumer is the reactor driver, where Split
-(3)'s coverage case runs a second time under `--printEachScreen` and asserts one
-call per frame; that run is why this item waits on 3.1. Appendix C's 2026-09-07
-audit note records the gap. The fix follows `Sdl.hs:273`'s own pattern (override
+and calls `fprintScreen`, which for wasm
+is the `Common.hs:fprintScreen = return` dummy. This item restores that key and,
+since 2026-09-07, `--printEachScreen` with it: the flag that dumps every frame
+is read at `Sdl.hs:when sprintEachScreen $ printScreen sess` and nowhere else,
+after `SDL.present`, and its browser counterpart is `Wasm.hs`'s `display`
+calling the same `fprintScreen` action after `js_submitFrame` when
+`sprintEachScreen` is set --- which needs `startup` to keep the `ClientOptions`
+it discards today, the edit 1.5 makes too, so whichever of the two lands first
+makes it. Two things about it are not obvious. That call reaches TS before
+the rAF paint, so the rasterizer reads the pending snapshot when there is one
+and the applied grid otherwise, or every per-frame PNG shows the frame before.
+And nothing in the browser can set the flag --- the loader passes no argv
+and R4's allowlist admits no debug flag --- so its consumer is the reactor
+driver, where Split (3)'s coverage case runs a second time
+under `--printEachScreen` and asserts one call per frame; that run is why
+this item waits on 3.1. Appendix C's 2026-09-07 audit note records the gap.
+The fix follows `Sdl.hs:let rf = rfWithoutPrintScreen`'s own pattern (override
 the field after `createRawFrontend`), with the **filename scheme living
 in Haskell**, shared with SDL2:
 
-1. Extract `Sdl.hs:743-755`'s timestamp scheme (`"prtscn" <> dateText`,
-   spaces->`_`, `:`->`.`) into a small shared pure helper, in a new pure sibling
-   module under `Client/UI/Frontend/` (ruled 2026-08-07; `Frontend.Common` keeps
-   its IO character, and the choice fixes the tasty module's name
-   and its `LambdaHack.cabal` stanza), unit-tested in tasty against a fixed
-   time; `Sdl.hs` calls it too. Timezone: UTC in the browser --- under wasi
-   `getTimeZone` resolves to UTC, and that divergence from SDL's local-time
-   names is accepted (document it in the helper's haddock;
-   a `js_tzOffsetMinutes` FFI import was considered and rejected as not worth
-   the extra FFI surface).
+1. Extract `Sdl.hs:printScreen :: FrontendSession`'s timestamp scheme
+   (`"prtscn" <> dateText`, spaces->`_`, `:`->`.`) into a small shared pure
+   helper, in a new pure sibling module under `Client/UI/Frontend/` (ruled
+   2026-08-07; `Frontend.Common` keeps its IO character, and the choice fixes
+   the tasty module's name and its `LambdaHack.cabal` stanza), unit-tested
+   in tasty against a fixed time; `Sdl.hs` calls it too. Timezone: UTC
+   in the browser --- under wasi `getTimeZone` resolves to UTC,
+   and that divergence from SDL's local-time names is accepted (document
+   it in the helper's haddock; a `js_tzOffsetMinutes` FFI import was considered
+   and rejected as not worth the extra FFI surface).
 2. `Wasm.hs`:
    `foreign import javascript unsafe "globalThis.lhPrintScreen($1)" js_printScreen :: JSString -> IO ()`;
    `startup` sets `fprintScreen` to compute the name (`.png`, not `.bmp` ---
@@ -1543,11 +1556,13 @@ here), a new tasty module registered in `test/Spec.hs` and `LambdaHack.cabal`,
 consume, `ts-src/src/terminal.ts`, `ts-src/src/loader.ts`,
 `ts-src/run-wasm-game.mjs`, `tools/doc-refs-allow.txt`,
 and `docs/wasm-frontend-unified-plan.md` --- the `Sdl.hs` citations,
-`Wasm.hs:79`, `loader.ts:57`, `terminal.ts:138` and `terminal.ts:206-207` all
-shift. Cannot run concurrently with 1.5: they share `Wasm.hs`,
-`ts-src/src/loader.ts`, `ts-src/src/terminal.ts` and `ts-src/run-wasm-game.mjs`,
-three of those at the same lines --- `startup`'s body
-and the `foreign import javascript` block in `Wasm.hs`, `loader.ts`'s
+`Wasm.hs:display ScreenContent{rwidth,`,
+`loader.ts:const wasi = new WASI(["LambdaHack"], [], fds);`,
+`terminal.ts:Highlight square as an inset outline`
+and `terminal.ts:const alt = altModifier(e);` all shift. Cannot run concurrently
+with 1.5: they share `Wasm.hs`, `ts-src/src/loader.ts`, `ts-src/src/terminal.ts`
+and `ts-src/run-wasm-game.mjs`, three of those at the same lines --- `startup`'s
+body and the `foreign import javascript` block in `Wasm.hs`, `loader.ts`'s
 `declare global` and its `globalThis.lh*` wiring, `terminal.ts`'s `Terminal`
 interface and returned object. Nor with 1.6, which writes the same
 `foreign import javascript` block, the same `globalThis.lh*` wiring and the same
@@ -1594,13 +1609,13 @@ ruling --- via the stub-and-injected-`Ctrl+P` case Split (3) now carries.
 ### 1.3 Fullscreen toggle with scaling (small, no Haskell)
 
 Page-level only (`sfullscreenMode` is a startup-time SDL choice,
-`ClientOptions.hs:18-39`, with no in-game command even natively). Add
-a "Fullscreen" button --- the word alone, no glyph before it: the page sets
-`font-family: lambdaHackFont, monospace`, and that face covers the Latin
-alphabet and stops well below the geometric-shape block, so an icon codepoint
-would fall through to whatever generic `monospace` supplies and no gate here
-asks what that draws --- to `GameDefinition/index.html` next to the banner;
-`click` -> `document.documentElement.requestFullscreen()` /
+`ClientOptions.hs:data FullscreenMode =`, with no in-game command even
+natively). Add a "Fullscreen" button --- the word alone, no glyph before it:
+the page sets `font-family: lambdaHackFont, monospace`, and that face covers
+the Latin alphabet and stops well below the geometric-shape block, so an icon
+codepoint would fall through to whatever generic `monospace` supplies
+and no gate here asks what that draws --- to `GameDefinition/index.html` next
+to the banner; `click` -> `document.documentElement.requestFullscreen()` /
 `document.exitFullscreen()` toggled on `document.fullscreenElement`; keep
 the label synced via `fullscreenchange` (covers browser-`Escape` exit). A button
 beats telling players to press F11: several browsers leave some chrome visible
@@ -1618,14 +1633,14 @@ to the grid after the click, since the button took it.*
 
 **Scaling is part of parity, not a nicety:** SDL fullscreen sets
 `rendererLogicalSize` so the whole frame scales up to fill the screen
-with aspect ratio preserved (`Sdl.hs:237-240`); a bare `requestFullscreen()`
-would just center the fixed 16px grid in a sea of black. While fullscreen, scale
-`#screen` to fit --- e.g. a CSS `transform: scale(min(vw/gridW, vh/gridH))`
-computed on `fullscreenchange`/`resize` (transform keeps the DOM layout
-untouched; bitmap-font blur at non-integer scales is the same trade-off SDL's
-scaler makes). Factor any pure scale-computation helper into a `*-core.ts`
-for vitest; the `requestFullscreen` call itself is a run-the-game check (jsdom
-can't).
+with aspect ratio preserved (`Sdl.hs:unless (fromMaybe NotFullscreen`); a bare
+`requestFullscreen()` would just center the fixed 16px grid in a sea of black.
+While fullscreen, scale `#screen` to fit --- e.g. a CSS
+`transform: scale(min(vw/gridW, vh/gridH))` computed
+on `fullscreenchange`/`resize` (transform keeps the DOM layout untouched;
+bitmap-font blur at non-integer scales is the same trade-off SDL's scaler
+makes). Factor any pure scale-computation helper into a `*-core.ts` for vitest;
+the `requestFullscreen` call itself is a run-the-game check (jsdom can't).
 
 **Split** --- two commits. The button, the scaling helper and its vitest,
 with `loader.ts`'s one import and call; then the banner commit this item's
@@ -1639,13 +1654,14 @@ they name.
 and `ts-src/src/fullscreen-core.test.ts`, the one import and one call they need
 in `ts-src/src/loader.ts`, `tools/doc-refs-allow.txt` (its two entries leave
 with the commit that creates the files),
-and `docs/wasm-frontend-unified-plan.md` --- the import shifts `loader.ts:57`,
-cited twice, so this item is not citation-safe either. Not concurrent with 1.4,
-which rewrites the same `<table id="banner">` region, nor with 1.5, which
-rewrites the `#screen` rule's scaling-blur comment; `index.html`'s claimant list
-is 1.4's and `loader.ts`'s is 0.1's, and this item is on both. Where another
-claimant holds `loader.ts`, hand it the import as a request rather than writing
-it here. `../lambdahack.github.io` is redeployed by **Done**, not owned.
+and `docs/wasm-frontend-unified-plan.md` --- the import shifts
+`loader.ts:const wasi = new WASI(["LambdaHack"], [], fds);`, cited twice,
+so this item is not citation-safe either. Not concurrent with 1.4, which
+rewrites the same `<table id="banner">` region, nor with 1.5, which rewrites
+the `#screen` rule's scaling-blur comment; `index.html`'s claimant list is 1.4's
+and `loader.ts`'s is 0.1's, and this item is on both. Where another claimant
+holds `loader.ts`, hand it the import as a request rather than writing it here.
+`../lambdahack.github.io` is redeployed by **Done**, not owned.
 
 **Done** --- `ts`, `wasm`, `deploy`, `docs`, plus
 `grep -qF Fullscreen ../lambdahack.github.io/index.html` &&
@@ -1710,21 +1726,21 @@ Each runs the **Done** line below with only its own phrase in the alternation.
 Delete-only is not enough, and the repair belongs here rather than to three
 sessions inventing it separately: every clause above sits inside a carrier
 sentence that stops parsing without it. Both carriers, with their end states.
-The banner's (`GameDefinition/index.html:73-76`) is a list of reasons to prefer
-the native binary, so it shortens as items go --- three with an Oxford comma,
-then two joined by "and", then one with neither --- and when the last goes
-the whole "For ... use the native binary instead." sentence goes with it,
-its `<a>` to the releases page included, while "This is the experimental wasm
-build." and everything from "If the game window is too large" onward stay
-untouched throughout. The quoted README paragraph
-(`GameDefinition/index.html:95-100`, and in `README.md` the paragraph
-under the heading "Installation of the sample game from binary archives")
-is three claims supporting one conclusion, "Hence, after trying out the game,
-you may prefer to use a native binary". Its first two share one sentence in both
-files --- "The game runs rather slowly in the browser (fastest on Chrome)
-and you are limited to the square font ..." --- so R5's clause and 2.4's
-are not independently deletable: whichever lands first deletes its own clause
-together with the "and you" that joins them and re-opens the survivor
+The banner's (`GameDefinition/index.html:proportional fonts`) is a list
+of reasons to prefer the native binary, so it shortens as items go --- three
+with an Oxford comma, then two joined by "and", then one with neither ---
+and when the last goes the whole "For ... use the native binary instead."
+sentence goes with it, its `<a>` to the releases page included, while
+"This is the experimental wasm build." and everything from "If the game window
+is too large" onward stay untouched throughout. The quoted README paragraph
+(`GameDefinition/index.html:The game runs rather slowly`, and in `README.md`
+the paragraph under the heading "Installation of the sample game from binary
+archives") is three claims supporting one conclusion, "Hence, after trying out
+the game, you may prefer to use a native binary". Its first two share one
+sentence in both files --- "The game runs rather slowly in the browser (fastest
+on Chrome) and you are limited to the square font ..." --- so R5's clause
+and 2.4's are not independently deletable: whichever lands first deletes its own
+clause together with the "and you" that joins them and re-opens the survivor
 as a sentence of its own, "The game runs rather slowly in the browser (fastest
 on Chrome)." or "You are limited to the square font for both map and texts."
 on the page and "You are limited to the square font for all purposes, though
@@ -1797,13 +1813,14 @@ The browser build supports *both* mechanisms, as complementary: `allFontsScale`
 (the game's own display-scale setting, as in SDL2) *and* the browser's native
 zoom (`C-+`/`C--`/`C-0`, allowlisted in 0.1).
 
-Mirror SDL2's semantics (`Sdl.hs:169-183`): at scale 1.0 use the pixel-perfect
-rendering --- for the web that means the map font's `.woff` drawn at its native
-16px, exactly what the page does today (the `index.html` comment about avoiding
-scaling blur) --- and at any other scale fall back to scalable rendering, i.e.
-the same outline font at `16 * scale` px, accepting the browser's rasterization
-the way SDL accepts FreeType's. Auxiliary (prop/mono) font sizes multiply
-by the scale too, which 2.2's font wiring already specifies.
+Mirror SDL2's semantics (`Sdl.hs:if fromJust sallFontsScale`): at scale 1.0 use
+the pixel-perfect rendering --- for the web that means the map font's `.woff`
+drawn at its native 16px, exactly what the page does today (the `index.html`
+comment about avoiding scaling blur) --- and at any other scale fall back
+to scalable rendering, i.e. the same outline font at `16 * scale` px, accepting
+the browser's rasterization the way SDL accepts FreeType's. Auxiliary
+(prop/mono) font sizes multiply by the scale too, which 2.2's font wiring
+already specifies.
 
 Mechanics: `sallFontsScale` is already in the embedded config/options; pass
 it to TS in the one extensible startup call, which 2.2 specifies
@@ -1833,14 +1850,17 @@ a `tools/doc-refs-allow.txt` entry.
 the reactor driver its Split writes, seeded by 0.3's export half and grown
 by 3.2, so not concurrent with either --- `GameDefinition/index.html` (only
 the `#screen` rule's blur comment, which a scaled `font-size` no longer wholly
-describes) and `docs/wasm-frontend-unified-plan.md` --- `Wasm.hs:79`,
-`loader.ts:57`, `terminal.ts:138` and `terminal.ts:206-207` all shift. Cannot
-run concurrently with 1.2 --- the four shared files its **Owns** names, three
-of them at the same lines --- nor with 1.1, which writes the same
-`container.style.*` batch in `buildGrid`; the claimant lists for `terminal.ts`,
-`loader.ts`, `ts-src/run-wasm-game.mjs` and `index.html` are at 0.0, 0.1, 0.3
-and 1.4, and this item is on all four. No ordering against 1.3 survives
-its ruling: that helper measures the live grid and assumes no cell size.
+describes) and `docs/wasm-frontend-unified-plan.md` ---
+`Wasm.hs:display ScreenContent{rwidth,`,
+`loader.ts:const wasi = new WASI(["LambdaHack"], [], fds);`,
+`terminal.ts:Highlight square as an inset outline`
+and `terminal.ts:const alt = altModifier(e);` all shift. Cannot run concurrently
+with 1.2 --- the four shared files its **Owns** names, three of them at the same
+lines --- nor with 1.1, which writes the same `container.style.*` batch
+in `buildGrid`; the claimant lists for `terminal.ts`, `loader.ts`,
+`ts-src/run-wasm-game.mjs` and `index.html` are at 0.0, 0.1, 0.3 and 1.4,
+and this item is on all four. No ordering against 1.3 survives its ruling:
+that helper measures the live grid and assumes no cell size.
 `../lambdahack.github.io` is redeployed by **Done**, not owned.
 
 **Done** --- `native`, `ts`, `wasm`, `deploy`, `docs`, plus a run
@@ -1866,27 +1886,27 @@ field of the one extensible startup payload, so a scale-only `lhSetFontScale`
 is refused and no later field forces the signature change the ground rules
 forbid. The payload itself --- hook, encoding, extensibility --- is specified
 at 2.2 and deliberately not restated here. One thing that looked like a decision
-and is not: SDL's "bitmap at 1.0, scalable otherwise" branch (`Sdl.hs:169-183`)
-needs no browser counterpart, because the `dejavuBold` fontset points both
-`fontMapScalable` and `fontMapBitmap` at `16x16xwScalable`, i.e. at the same
-`16x16xw.woff` the page already loads --- so `16 * scale` px on the deployed
-font is correct and deploys no new font.
+and is not: SDL's "bitmap at 1.0, scalable otherwise" branch
+(`Sdl.hs:if fromJust sallFontsScale`) needs no browser counterpart, because
+the `dejavuBold` fontset points both `fontMapScalable` and `fontMapBitmap`
+at `16x16xwScalable`, i.e. at the same `16x16xw.woff` the page already loads ---
+so `16 * scale` px on the deployed font is correct and deploys no new font.
 
 ### 1.6 Game-end page lifecycle (small)
 
 At game end SDL frees its fonts, destroys renderer and window and quits
-(`Sdl.hs:322-333`); the browser build's `shutdown` is `return ()` and the loader
-discards `lhStart`'s promise, so a finished game leaves a live-looking frozen
-page whose grid goes on swallowing keys. The engine reaches the frontend
-at that moment all the same --- `UpdKillExit` ends in `frontendShutdown`, which
-is `FrontShutdown`, which `Frontend.hs` answers with `fshutdown` ---
-so the counterpart keeps SDL's shape: `shutdown` calls a new `unsafe` import,
-`globalThis.lhShutdown()`, wired in `loader.ts` beside `lhSubmitFrame`,
-and the page marks itself finished --- a status line in the place
-the load-failure message already uses, naming a reload as the way to play again.
-Restarting in place, `lhStart` called a second time on the live instance,
-is unmeasured and not proposed. Crashes are out of scope: a Haskell `error`
-rejects `lhStart`'s promise (3.2's measurement), the loader discards
+(`Sdl.hs:SDL.destroyRenderer srenderer`); the browser build's `shutdown`
+is `return ()` and the loader discards `lhStart`'s promise, so a finished game
+leaves a live-looking frozen page whose grid goes on swallowing keys. The engine
+reaches the frontend at that moment all the same --- `UpdKillExit` ends
+in `frontendShutdown`, which is `FrontShutdown`, which `Frontend.hs` answers
+with `fshutdown` --- so the counterpart keeps SDL's shape: `shutdown` calls
+a new `unsafe` import, `globalThis.lhShutdown()`, wired in `loader.ts` beside
+`lhSubmitFrame`, and the page marks itself finished --- a status line
+in the place the load-failure message already uses, naming a reload as the way
+to play again. Restarting in place, `lhStart` called a second time on the live
+instance, is unmeasured and not proposed. Crashes are out of scope: a Haskell
+`error` rejects `lhStart`'s promise (3.2's measurement), the loader discards
 that promise today, and R4's ruling is where a handler for it is first
 specified. The import is a new FFI declaration, so 0.3's rule gives
 it a coverage case in the same commit: the reactor driver installs
@@ -1894,14 +1914,10 @@ a `globalThis.lhShutdown` stub, runs the game under `--stopAfterFrames` ---
 3.1's argv, which is the dependency --- and asserts the stub was called once,
 before `lhStart`'s promise settled. 1.4's rule reaches no banner clause here.
 
-**Split** --- three commits, on 3.1's pattern. (1) the code: the import,
-`shutdown` calling it, the `loader.ts` hook and finished state, and the driver
-case, one commit because 0.3's rule wants a declaration and its case in one
-diff. (2) the landing: the outcome line naming (1)'s hash and the ledger flip.
-(3) separate per the citation-repair rule: the import lands in `Wasm.hs`'s
-`foreign import javascript` block and shifts every `Wasm.hs` line cited here
-below it, and a line in `loader.ts`'s `declare global` shifts `loader.ts:57`,
-so the ranges are re-cut and the restamp rides this commit. No allowlist entry:
+**Split** --- two commits. (1) the code: the import, `shutdown` calling it,
+the `loader.ts` hook and finished state, and the driver case, one commit because
+0.3's rule wants a declaration and its case in one diff. (2) the landing:
+the outcome line naming (1)'s hash and the ledger flip. No allowlist entry:
 this item proposes no file.
 
 **Owns** --- `engine-src/Game/LambdaHack/Client/UI/Frontend/Wasm.hs`,
@@ -2024,48 +2040,49 @@ The probe's diff, re-applied verbatim at 2.5:
 
 **New module** `Game.LambdaHack.Client.UI.Frontend.OverlayLayout`, holding every
 per-line and per-chunk decision that today sits interleaved with SDL IO
-in `Sdl.hs:593-713`. It is cut along the *measurement* line, and that seam
-is the design: chunking, colours, faces and the two fixed-pitch line cuts
-are pure and take no metrics at all, while the proportional pen --- the one
-quantity that depends on rendered width --- advances through two small pure
-functions: a measurement-free cutoff test, called *before* a chunk is rendered,
-and a fit function called with the width just measured. The ruler stays
-in the frontend; the cutoff rule, the clamp rule and the trimmed-line marker get
-one definition.
+in `Sdl.hs:drawMonoOverlay ::`. It is cut along the *measurement* line,
+and that seam is the design: chunking, colours, faces and the two fixed-pitch
+line cuts are pure and take no metrics at all, while the proportional pen ---
+the one quantity that depends on rendered width --- advances through two small
+pure functions: a measurement-free cutoff test, called *before* a chunk
+is rendered, and a fit function called with the width just measured. The ruler
+stays in the frontend; the cutoff rule, the clamp rule and the trimmed-line
+marker get one definition.
 
 **Metrics.** Everything device-space is parameterized, never baked to SDL's
 numbers:
 
 ```haskell
--- | Cell metrics in one consumer's own device units: SDL pixels of the
--- loaded map font, or the browser's CSS pixels imposed on the span grid
--- (2.2's (a) ruling: the grid takes the metrics, not the reverse).
+-- | Cell metrics in one consumer's own device units: SDL pixels of the loaded
+-- map font, or the browser's CSS pixels imposed on the span grid (2.2's (a)
+-- ruling: the grid takes the metrics, not the reverse).
 data LayoutMetrics = LayoutMetrics
   { lmHalfSize :: Int  -- ^ one 'PointUI' step, and the mono pitch
-                       --   (@Sdl.hs:623@)
+                       --   (@Sdl.hs:halfSize) (row@)
   , lmWidth    :: Int  -- ^ @rwidth coscreen@, screen width in squares
   }
   deriving (Show, Eq)
 
 -- | One square cell: the square pitch and the row height of all three
--- layers (@Sdl.hs:623@, @Sdl.hs:666@, @Sdl.hs:708@). Derived, not stored,
--- so that "map font determines cell size for all others"
--- (@Sdl.hs:183-184@) cannot come apart in a consumer or in a test fixture
--- --- an inconsistent record stops being representable, which a hidden
--- data constructor alone cannot deliver once the tests reach this module
--- through the "internal and used in unit tests" export group.
+-- layers (@Sdl.hs:halfSize) (row@, @Sdl.hs:tgtR = SDL.Rectangle (vp (col@,
+-- @Sdl.hs:SDL.Rectangle (vp x (row@). Derived, not stored, so that "map font
+-- determines cell size for all others" (@Sdl.hs:font determines@) cannot come
+-- apart in a consumer or in a test fixture --- an inconsistent record stops
+-- being representable, which a hidden data constructor alone cannot deliver
+-- once the tests reach this module through the "internal and used in unit
+-- tests" export group.
 lmBoxSize :: LayoutMetrics -> Int
 lmBoxSize = (2 *) . lmHalfSize
 
 -- | The only constructor exported, the data constructor staying inside the
--- module as 'PropCursor'\'s does. @Sdl.hs@ passes half the loaded map
--- font's size, that font having been opened at a point size already
--- multiplied by @sallFontsScale@ (@Sdl.hs:152@); the browser passes half
--- its measured grid box. @width@ is the same @rwidth coscreen@ the caller
--- passes to 'layOutFrame' --- the one quantity this record shares with the
--- metric-free half, and two different values there would leave the line
--- filter and the pen clamping against different screens, so a consumer
--- binds it once and uses that binding twice.
+-- module as 'PropCursor'\'s does. @Sdl.hs@ passes half the loaded map font's
+-- size, that font having been opened at a point size already multiplied by
+-- @sallFontsScale@ (@Sdl.hs:intToDouble fsize@); the browser passes half its
+-- measured grid box. @width@ is the same @rwidth coscreen@ the caller passes to
+-- 'layOutFrame' --- the one quantity this record shares with the metric-free
+-- half, and two different values there would leave the line filter and the pen
+-- clamping against different screens, so a consumer binds it once and uses that
+-- binding twice.
 mkLayoutMetrics :: Int -> Int -> LayoutMetrics
 mkLayoutMetrics halfSize width =
   assert (halfSize > 0 && width > 1)
@@ -2079,51 +2096,53 @@ a `CellLayer` into a device advance, and is here only to sit beside the type
 it interprets.
 
 ```haskell
--- | Which of the two proportional faces draws a chunk
--- (@Sdl.hs:700-702@, over the two fonts loaded at @Sdl.hs:186-187@).
+-- | Which of the two proportional faces draws a chunk (@Sdl.hs:Color.White &&@,
+-- over the two fonts loaded at @Sdl.hs:(fontPropRegular@).
 --
--- Deliberately not 'Overlay.DisplayFont': that type names the three
--- overlay *layers* (@Overlay.hs:56@), is kept abstract on purpose so that
--- 'FontSetup' overrides cannot be bypassed (@Overlay.hs:44-51@), and
--- refuses width questions outright (@textSize PropFont@ is an @error@,
--- @Overlay.hs:64-67@) --- which is the one question this module poses. It
--- has no bold constructor either, so it cannot express this choice.
+-- Deliberately not 'Overlay.DisplayFont': that type names the three overlay
+-- *layers* (@Overlay.hs:data DisplayFont@), is kept abstract on purpose so that
+-- 'FontSetup' overrides cannot be bypassed (@Overlay.hs:frontend-enforced@),
+-- and refuses width questions outright (@textSize PropFont@ is an @error@,
+-- @Overlay.hs:textSize :: DisplayFont@) --- which is the one question this
+-- module poses. It has no bold constructor either, so it cannot express this
+-- choice.
 --
--- Two constructors and no square or mono ones: those layers have exactly
--- one face each, so their per-item font choice does not exist.
+-- Two constructors and no square or mono ones: those layers have exactly one
+-- face each, so their per-item font choice does not exist.
 data PropFont = PropRegular | PropBold
   deriving (Show, Eq, Ord, Enum, Bounded)
 
--- | The face rule, on the already even-row-adjusted colour. @AltWhite@
--- sorts between @White@ and @BrBlack@ (@Color.hs:33-51@), so the even-row
+-- | The face rule, on the already even-row-adjusted colour. @AltWhite@ sorts
+-- between @White@ and @BrBlack@ (@Color.hs:data Color =@), so the even-row
 -- substitution provably cannot flip a chunk from regular to bold --- which
 -- is why 'chunkPropLine' may apply it before reading the colour here, as
--- @Sdl.hs:693-694,700@ does.
+-- @Sdl.hs:(sameRest, otherRest)@ does.
 propFontOf :: Color.Color -> PropFont
 propFontOf fg | fg >= Color.White && fg /= Color.BrBlack = PropRegular
               | otherwise = PropBold
 
--- | One maximal same-colour run of a proportional line. It carries no
--- position: its x is the running sum of the *measured* widths of every
--- chunk before it (@Sdl.hs:696-697@), which is the whole reason the
--- placement half of this module exists.
+-- | One maximal same-colour run of a proportional line. It carries no position:
+-- its x is the running sum of the *measured* widths of every chunk before it
+-- (@Sdl.hs:<- drawPropChunk@), which is the whole reason the placement half of
+-- this module exists.
 data PropChunk = PropChunk
-  { pcColor :: Color.Color   -- ^ even-row adjusted (@Sdl.hs:693-694@)
-  , pcText  :: Text          -- ^ colours dropped (@Sdl.hs:695@);
+  { pcColor :: Color.Color   -- ^ even-row adjusted
+                             --   (@Sdl.hs:(sameRest, otherRest)@)
+  , pcText  :: Text          -- ^ colours dropped (@Sdl.hs:attrStringToString@);
                              --   never empty
   }
   deriving (Show, Eq)
 
--- | Which face draws this chunk. Derived, not stored, so it cannot be
--- supplied out of step with 'pcColor'.
+-- | Which face draws this chunk. Derived, not stored, so it cannot be supplied
+-- out of step with 'pcColor'.
 pcFont :: PropChunk -> PropFont
 pcFont = propFontOf . pcColor
 
--- | @T.all isSpace@ of the text (@Sdl.hs:703@), derived likewise. Not a
--- convenience: it decides whether an overrunning run may claim the last
--- cell (@Sdl.hs:553@) and whether the cut raises the marker
--- (@Sdl.hs:577@), so it is the one measurement-rule input that must reach
--- the consumer, and 2.3 carries it on the wire as a bit rather than
+-- | @T.all isSpace@ of the text (@Sdl.hs:Char.isSpace@), derived likewise. Not
+-- a convenience: it decides whether an overrunning run may claim the last cell
+-- (@Sdl.hs:allSpace = remainingWidth@) and whether the cut raises the marker
+-- (@Sdl.hs:not allSpace)@), so it is the one measurement-rule input that must
+-- reach the consumer, and 2.3 carries it on the wire as a bit rather than
 -- letting the far side re-derive the rule.
 pcAllSpace :: PropChunk -> Bool
 pcAllSpace = T.all isSpace . pcText
@@ -2132,19 +2151,20 @@ pcAllSpace = T.all isSpace . pcText
 data PropLine = PropLine
   { plStartX :: Int  -- ^ 'PointUI' x, in half-cells; multiplied by
                      --   @lmHalfSize@ exactly once, in 'startPropLine'
-                     --   (@Sdl.hs:673@)
+                     --   (@Sdl.hs:halfSize) y al)@)
   , plRow    :: Int
   , plChunks :: [PropChunk]
   }
   deriving (Show, Eq)
 
--- | Which fixed-pitch layer a run belongs to. Total, unlike a face tag:
--- these two layers are the ones with a pitch.
+-- | Which fixed-pitch layer a run belongs to. Total, unlike a face tag: these
+-- two layers are the ones with a pitch.
 data CellLayer = LayerSquare | LayerMono
   deriving (Show, Eq, Ord, Enum, Bounded)
 
--- | Device advance of one cell: a box for square (@Sdl.hs:666@), a half
--- for mono (@Sdl.hs:623@).
+-- | Device advance of one cell: a box for square
+(@Sdl.hs:tgtR = SDL.Rectangle (vp (col@), a half for mono
+(@Sdl.hs:halfSize) (row@).
 cellPitch :: LayoutMetrics -> CellLayer -> Int
 cellPitch lm = \case
   LayerSquare -> lmBoxSize lm
@@ -2152,32 +2172,34 @@ cellPitch lm = \case
 
 -- | A run of cells in one fixed-pitch layer, already cut to the screen.
 --
--- The cells stay raw 'Color.AttrCharW32' words, @bg@ included, because the
--- square layer really carries highlights: @bg@ enters the atlas key when
--- it is @HighlightBackground@ (@Sdl.hs:644-646@), picks the grey fill
--- (@Sdl.hs:657-659@) and drives @chooseAndDrawHighlight@ (@Sdl.hs:669@,
--- defined at @Sdl.hs:504-518@). The even-row and floor-glyph substitutions
--- are *not* applied here --- they are 0.2's `CellStyle` rules, applied by
--- the painter per cell; restating them would be the second definition G1
--- forbids.
+-- The cells stay raw 'Color.AttrCharW32' words, @bg@ included, because
+-- the square layer really carries highlights: @bg@ enters the atlas
+-- key when it is @HighlightBackground@ (@Sdl.hs:ac = if bg ==@),
+-- picks the grey fill (@Sdl.hs:background =@) and drives
+-- @chooseAndDrawHighlight@ (@Sdl.hs:chooseAndDrawHighlight col@, defined
+-- at @Sdl.hs:chooseAndDrawHighlight !col@). The even-row and floor-glyph
+-- substitutions are *not* applied here --- they are 0.2's `CellStyle` rules,
+-- applied by the painter per cell; restating them would be the second
+-- definition G1 forbids.
 data CellRun = CellRun
   { crLayer :: CellLayer
   , crRow   :: Int
   , crCol   :: Int  -- ^ leftmost cell, in units of 'cellPitch': square
                     --   columns after @uiToSquare@'s @div 2@
-                    --   (@PointUI.hs:39-41@, applied at @Sdl.hs:628@),
-                    --   'PointUI' half-cells for mono (@Sdl.hs:595@)
+                    --   (@PointUI.hs:uiToSquare ::@, applied at
+                    --   @Sdl.hs:let PointSquare@), 'PointUI' half-cells
+                    --   for mono (@Sdl.hs:drawMonoOverlay =@)
   , crCells :: AttrString  -- ^ non-empty
   }
   deriving (Show, Eq)
 
 -- | One frame's overlays. The field order is the draw order --- prop, then
--- square, then mono last, so a mono overrun warning wins over the
--- proportional text beneath it (@Sdl.hs:728-733@, and the engine says the
--- same of the layers at @Overlay.hs:38-42@) --- and 2.3's payload carries
--- its three sections in that order, so neither consumer has to know the
--- rule to obey it. @singleArray@ is not here: the map is not an overlay
--- and is drawn by diffing (@Sdl.hs:720-723@).
+-- square, then mono last, so a mono overrun warning wins over the proportional
+-- text beneath it (@Sdl.hs:Mono overlay@, and the engine says the same of the
+-- layers at @Overlay.hs:UI. Overlays@) --- and 2.3's payload carries its three
+-- sections in that order, so neither consumer has to know the rule to obey it.
+-- @singleArray@ is not here: the map is not an overlay and is drawn by diffing
+-- (@Sdl.hs:unless arraysEqual@).
 data FrameLayout = FrameLayout
   { flProp   :: [PropLine]
   , flSquare :: [CellRun]
@@ -2187,22 +2209,23 @@ data FrameLayout = FrameLayout
 
 -- | Lay out a whole frame. The 'Int' is @rwidth coscreen@. Applies
 -- 'propLineStartFits' itself and drops rejected lines --- the test is
--- measurement-free, so the pure module can, and a consumer never sees a
--- line the cutoff refused (ruled 2026-08-07: divergence on exactly the
--- case this module unifies is impossible by construction).
+-- measurement-free, so the pure module can, and a consumer never sees a line
+-- the cutoff refused (ruled 2026-08-07: divergence on exactly the case this
+-- module unifies is impossible by construction).
 layOutFrame :: Int -> SingleFrame -> FrameLayout
 
--- | Split a line into maximal same-colour chunks (@Sdl.hs:679-695@),
+-- | Split a line into maximal same-colour chunks (@Sdl.hs:drawPropLine x row@),
 -- resolving two rules that a hand-port would drift on: a *leading* space
--- run takes the colour of the next non-space character, or its own if the
--- line is all spaces (@Sdl.hs:683-687@), while an *interior* space run
--- joins the run to its left, spaces matching any colour in @sameAttr@
--- (@Sdl.hs:688-689@). Even-row @White@ becomes @AltWhite@
--- (@Sdl.hs:693-694@) via `CellStyle`, not by a second copy of the rule.
+-- run takes the colour of the next non-space character, or its own if
+-- the line is all spaces (@Sdl.hs:$ if isSpace@), while an *interior*
+-- space run joins the run to its left, spaces matching any colour in
+-- @sameAttr@ (@Sdl.hs:Color.fgFromW32@). Even-row @White@ becomes @AltWhite@
+-- (@Sdl.hs:(sameRest, otherRest)@) via `CellStyle`, not by a second copy of the
+-- rule.
 --
 -- Asserts each cell's @bg@ is @HighlightNone@ or @HighlightNoneCursor@
--- (@Sdl.hs:691-692@) --- an assertion that today can only fire with SDL
--- running and after this extraction fires under @cabal test@ too.
+-- (@Sdl.hs:(sameRest, otherRest)@) --- an assertion that today can only fire
+-- with SDL running and after this extraction fires under @cabal test@ too.
 --
 -- Cuts nothing: cutting is 'propFit''s business. That is what turns the
 -- concatenation property below into an equality.
@@ -2210,19 +2233,19 @@ chunkPropLine :: Int          -- ^ row, for the even-row rule
               -> AttrString   -- ^ the line
               -> [PropChunk]
 
--- | @take (rwidth - col)@ after @uiToSquare@ (@Sdl.hs:628-629@); drops
+-- | @take (rwidth - col)@ after @uiToSquare@ (@Sdl.hs:let PointSquare@); drops
 -- runs left empty.
 layOutSquare :: Int -> OverlaySpace -> [CellRun]
 
--- | @take (2 * rwidth - x)@, in half-cells (@Sdl.hs:596@), plus the mono
--- @bg@ assertion (@Sdl.hs:611-612@).
+-- | @take (2 * rwidth - x)@, in half-cells (@Sdl.hs:let lineCut =@), plus the
+-- mono @bg@ assertion (@Sdl.hs:setMonoChar ::@).
 layOutMono :: Int -> OverlaySpace -> [CellRun]
 
 -- | The half of the overrun cutoff that *is* expressible in logical units:
--- may a line starting at this 'PointUI' x be drawn at all? Exactly
--- equivalent to 'propCutoff' on the line's first chunk, because
--- 'lmBoxSize' is @2 * lmHalfSize@ by definition and @lmHalfSize > 0@ by
--- 'mkLayoutMetrics'\'s assertion:
+-- may a line starting at this 'PointUI' x be drawn at all? Exactly equivalent
+-- to 'propCutoff' on the line's first chunk, because 'lmBoxSize' is @2 *
+-- lmHalfSize@ by definition and @lmHalfSize > 0@ by 'mkLayoutMetrics'\'s
+-- assertion:
 --
 -- > xUI * halfSize >= (rwidth - 1) * boxSize  <=>  xUI >= 2 * (rwidth - 1)
 propLineStartFits :: Int -> Int -> Bool
@@ -2241,29 +2264,32 @@ data PropCursor = PropCursor
   }
   deriving (Show, Eq)
 
--- | The one place a logical x becomes a device x (@Sdl.hs:673@).
+-- | The one place a logical x becomes a device x (@Sdl.hs:halfSize) y al)@).
 startPropLine :: LayoutMetrics -> PropLine -> PropCursor
 startPropLine LayoutMetrics{lmHalfSize} PropLine{plStartX, plRow} =
   PropCursor (plStartX * lmHalfSize) plRow
 
--- | Has the pen reached the last column? Then this chunk and every later
--- chunk of the line is dropped --- "for KISS, reject it" (@Sdl.hs:676-678@).
--- Measurement-free on purpose: @Sdl.hs@ tests it *before* rendering the
--- chunk, so a consumer that calls this first never rasterizes a chunk it
--- then throws away.
+-- | Has the pen reached the last column? Then this chunk and every later chunk
+-- of the line is dropped --- "for KISS, reject it" (@Sdl.hs:drawPropLine x _@).
+-- Measurement-free on purpose: @Sdl.hs@ tests it *before* rendering the chunk,
+-- so a consumer that calls this first never rasterizes a chunk it then throws
+-- away.
 propCutoff :: LayoutMetrics -> PropCursor -> Bool
 propCutoff lm PropCursor{pcurXPx} =
   pcurXPx >= (lmWidth lm - 1) * lmBoxSize lm
 
--- | Where a measured chunk goes, how much of it survives, and whether the
--- cut raises the trimmed-line marker.
+-- | Where a measured chunk goes, how much of it survives, and whether the cut
+-- raises the trimmed-line marker.
 data PropFit = PropFit
-  { pfXPx     :: Int            -- ^ device x to draw at (@Sdl.hs:708@)
+  { pfXPx     :: Int            -- ^ device x to draw at
+                                --   (@Sdl.hs:SDL.Rectangle (vp x (row@)
   , pfWidthPx :: Int            -- ^ device width to draw *and to clip to*:
                                 --   the whole chunk when it fits, else the
                                 --   cut width. @Sdl.hs@ uses it as both the
-                                --   source crop (@Sdl.hs:558-559@) and the
-                                --   target width (@Sdl.hs:709@); canvas
+                                --   source crop
+                                --   (@Sdl.hs:textSurfaceRaw allSpace =@) and
+                                --   the target width
+                                --   (@Sdl.hs:(toEnum boxSize))@); canvas
                                 --   @fillText@ has no width argument, so
                                 --   the browser needs it as a clip rect.
   , pfMarker  :: Maybe CellRun  -- ^ draw it *now*, before the next chunk
@@ -2271,18 +2297,19 @@ data PropFit = PropFit
   }
   deriving (Show, Eq)
 
--- | Resolve one measured chunk: the three-way clamp of @Sdl.hs:551-554@
--- and the marker condition of @Sdl.hs:577@, which is exactly "the run was
--- cut and it was not blank".
+-- | Resolve one measured chunk: the three-way clamp of
+-- @Sdl.hs:remainingWidth = rwidth@ and the marker condition of
+-- @Sdl.hs:not allSpace)@, which is exactly "the run was cut and it was not
+-- blank".
 --
--- The consumer supplies the natural rendered width in its own device
--- units, rounded *up*, so that "it fits" is never optimistic: @Sdl.hs@
--- passes the rendered surface's width (@Sdl.hs:549-550@, produced by the
--- @TTF.shaded@ call at @Sdl.hs:704-705@), the browser
--- @ceil (measureText t)@.
+-- The consumer supplies the natural rendered width in its own device units,
+-- rounded *up*, so that "it fits" is never optimistic: @Sdl.hs@ passes the
+-- rendered surface's width (@Sdl.hs:textSurfaceRaw allSpace =@, produced by
+-- the @TTF.shaded@ call at @Sdl.hs:TTF.shaded (fromJust@), the browser @ceil
+-- (measureText t)@.
 --
--- Precondition: @not (propCutoff lm cur)@, which is also what makes the
--- third branch positive --- the guard gives @remaining > lmBoxSize@.
+-- Precondition: @not (propCutoff lm cur)@, which is also what makes the third
+-- branch positive --- the guard gives @remaining > lmBoxSize@.
 propFit :: LayoutMetrics -> PropCursor -> PropChunk -> Int -> PropFit
 propFit lm cur chunk widthRaw =
   assert (not (propCutoff lm cur) && widthRaw >= 0)
@@ -2295,19 +2322,23 @@ propFit lm cur chunk widthRaw =
  where
   boxSize = lmBoxSize lm
   allSpace = pcAllSpace chunk
-  remaining = lmWidth lm * boxSize - pcurXPx cur         -- Sdl.hs:551
-  width | widthRaw <= remaining = widthRaw               -- Sdl.hs:552
-        | allSpace = remaining                           -- Sdl.hs:553
-        | otherwise = remaining - boxSize                -- Sdl.hs:554
-  trimmed = width /= widthRaw && not allSpace            -- Sdl.hs:577
+  -- Each of the next five lines mirrors the same clause of @Sdl.hs@'s
+  -- @scaleSurfaceToTextureProp@, from @Sdl.hs:remainingWidth = rwidth@ on,
+  -- and the last the marker test at @Sdl.hs:not allSpace)@.
+  remaining = lmWidth lm * boxSize - pcurXPx cur
+  width | widthRaw <= remaining = widthRaw
+        | allSpace = remaining
+        | otherwise = remaining - boxSize
+  trimmed = width /= widthRaw && not allSpace
 
 -- | The @$@ stamped into the last square column of a trimmed row
--- (@Sdl.hs:577-578@; @Color.hs:236-237@ defines it as a @BrBlack@ @'$'@),
--- expressed as an ordinary square-layer run so that no frontend needs
--- marker code of its own. Distinct from the engine-level @$@ that
--- @truncateAttrLine@ splices into an over-long line (@Frame.hs:200@):
--- that one counts logical cells before a frontend sees the string, this
--- one reacts to rendered width. Both use the same word; do not unify them.
+-- (@Sdl.hs:not allSpace)@; @Color.hs:trimmedLineAttrW32 ::@ defines
+-- it as a @BrBlack@ @'$'@), expressed as an ordinary square-layer run
+-- so that no frontend needs marker code of its own. Distinct from the
+-- engine-level @$@ that @truncateAttrLine@ splices into an over-long line
+-- (@Frame.hs:[Color.trimmedLineAttrW32]@): that one counts logical cells before
+-- a frontend sees the string, this one reacts to rendered width. Both use the
+-- same word; do not unify them.
 trimmedMarkerRun :: LayoutMetrics -> Int -> CellRun
 trimmedMarkerRun LayoutMetrics{lmWidth} row =
   CellRun { crLayer = LayerSquare
@@ -2328,40 +2359,45 @@ is always positive: no zero-width blit.
 **Where logical units end.** Everything `FrameLayout` emits is logical,
 and so is everything on the wire; device space exists only inside `PropCursor`,
 which never travels. The pen is where it must: after the first chunk its x
-is a running sum of measured widths (`Sdl.hs:696-697`), which is why the cutoff
-cannot be stated in logical units past the line start. The one exactly-logical
-piece of it is `propLineStartFits` above.
+is a running sum of measured widths
+(`Sdl.hs:width <- drawPropChunk x row fg t`), which is why the cutoff cannot
+be stated in logical units past the line start. The one exactly-logical piece
+of it is `propLineStartFits` above.
 
 **Rejected: a character-count cutoff.** Replacing the pixel rule with a column
 count would make the module self-contained, and it does not work. The engine
 already wraps proportional text by character count (`splitAttrString`,
-`Overlay.hs:236-239`, reached for prop text through `indentSplitAttrString`,
-`Overlay.hs:241-242`) and deliberately refuses to model proportional width
-at all --- `textSize PropFont` is an `error` (`Overlay.hs:64-67`) and the wrap's
-own comment says the space width "varies wildly" (`Overlay.hs:243-244`).
-A character-count cutoff would therefore either duplicate that wrap and never
-fire, letting a wide-glyph overrun paint past the screen edge, or fire on lines
-that fit and truncate normal menu text. The pixel rule is the safety net
-for exactly the case the character model cannot see; it stays, and with
-it the measured half.
+`Overlay.hs:splitAttrString ::`, reached for prop text through
+`indentSplitAttrString`, `Overlay.hs:indentSplitAttrString ::`) and deliberately
+refuses to model proportional width at all --- `textSize PropFont` is an `error`
+(`Overlay.hs:textSize :: DisplayFont`) and the wrap's own comment says the space
+width "varies wildly"
+(`Overlay.hs:Sadly this depends on how wide the space is`). A character-count
+cutoff would therefore either duplicate that wrap and never fire, letting
+a wide-glyph overrun paint past the screen edge, or fire on lines that fit
+and truncate normal menu text. The pixel rule is the safety net for exactly
+the case the character model cannot see; it stays, and with it the measured
+half.
 
 **Refactor `Sdl.hs` to consume the module** --- the proof the extraction
 is faithful, and what de-risks everything downstream: if the native playtests
 (`make test-medium`, `make frontendCrawl` for a visual look) pass with `Sdl.hs`
 on the shared module, the browser consumer starts from known-correct layout
-data. `drawPropOverlay`/`drawPropLine`/`drawPropChunk` (`Sdl.hs:670-713`)
-and the two line cuts (`Sdl.hs:596`, `Sdl.hs:629`) go;
-`scaleSurfaceToTextureProp` (`Sdl.hs:546-579`) loses its `x`, `row`
-and `allSpace` parameters, its width arithmetic and its `setSquareChar` call,
-shrinking to the crop-and-blit it is named for --- which is the rule leaving
-the texture helper, the place the plan flagged as easiest to lose it in. What
-stays in `Sdl.hs`: font handles, `TTF.shaded`, the vertical crop and centring
-(`Sdl.hs:555-562` --- blit mechanics with no canvas counterpart, declined
-deliberately rather than generalized), atlases, `SDL.copy`,
-`chooseAndDrawHighlight`, and the per-cell glyph decisions that are 0.2's
-business. Perf-gate the adoption as 0.2's is gated: before/after `make bench`
+data. `drawPropOverlay`/`drawPropLine`/`drawPropChunk`
+(`Sdl.hs:drawPropOverlay ::`) and the two line cuts
+(`Sdl.hs:let lineCut = take`, `Sdl.hs:take (rwidth coscreen`) go;
+`scaleSurfaceToTextureProp` (`Sdl.hs:scaleSurfaceToTextureProp ::`) loses
+its `x`, `row` and `allSpace` parameters, its width arithmetic
+and its `setSquareChar` call, shrinking to the crop-and-blit it is named for ---
+which is the rule leaving the texture helper, the place the plan flagged
+as easiest to lose it in. What stays in `Sdl.hs`: font handles, `TTF.shaded`,
+the vertical crop and centring (`Sdl.hs:textSurfaceRaw allSpace =` --- blit
+mechanics with no canvas counterpart, declined deliberately rather
+than generalized), atlases, `SDL.copy`, `chooseAndDrawHighlight`,
+and the per-cell glyph decisions that are 0.2's business. Perf-gate the adoption
+as 0.2's is gated: before/after `make bench`
 (`benchFrontendBattle`/`benchFrontendCrawl`, fixed seeds), since `Sdl.hs`'s
-per-cell drawing is a hot path. Carry `Sdl.hs:590`'s `toEnum` fix in the same
+per-cell drawing is a hot path. Carry the `setMapChar` `toEnum` fix in the same
 commit if 0.2 has not already --- that line is in `setMapChar`, which sits
 between the `scaleSurfaceToTextureProp` this item shrinks and the `593-713`
 it extracts, so this is a one-line edit the file's holder makes rather
@@ -2380,12 +2416,15 @@ as `pfMarker :: Maybe CellRun`, a fully formed square-layer run at column
 other `CellRun`, and a browser implementer never has to learn it exists.
 Returning it from `propFit` rather than appending it to `flSquare` also
 preserves the ordering subtlety: `Sdl.hs` writes it from inside the proportional
-pass (`Sdl.hs:577-578`, called from `Sdl.hs:706-707`), *before*
-`drawSquareOverlay` runs at all (`Sdl.hs:731-732`), so a genuine square-overlay
-cell in the last column still overwrites it. Its content needs no special casing
-anywhere: `trimmedLineAttrW32` is a `BrBlack` `'$'` (`Color.hs:236-237`),
-so `AltWhite` cannot apply to it and its `HighlightNone` background takes
-`workaroundOverwriteHighlight` (`Sdl.hs:515`) like any other unhighlighted cell.
+pass (`Sdl.hs:when (width /= widthRaw && not allSpace) $`, called
+from `Sdl.hs:(width, textTexture) <-`), *before* `drawSquareOverlay` runs at all
+(`Sdl.hs:drawPropOverlay $ singlePropOverlay curFrame`), so a genuine
+square-overlay cell in the last column still overwrites it. Its content needs
+no special casing anywhere: `trimmedLineAttrW32` is a `BrBlack` `'$'`
+(`Color.hs:trimmedLineAttrW32 :: AttrCharW32`), so `AltWhite` cannot apply
+to it and its `HighlightNone` background takes `workaroundOverwriteHighlight`
+(`Sdl.hs:Color.HighlightNone -> workaroundOverwriteHighlight`) like any other
+unhighlighted cell.
 
 **2.3's payload, specified here.** 2.3 owns the mechanism --- an additive
 `js_submitOverlays`, a packed `Word32` buffer passed by address, no string
@@ -2404,16 +2443,18 @@ so the field list has one definition. Four properties fix it:
    `CellRun` keeps its `crLayer` in Haskell, the marker run escaping its section
    and the painter reading its pitch through `cellPitch`. `fontKind|colorIdx`
    plus codepoints would silently drop `bg`, which the square layer needs three
-   times over (`Sdl.hs:644-646,657-659,669`); an `AttrCharW32` already packs
-   char, fg and bg into one word, and `terminal-core.ts` decodes exactly
-   that word for the map grid today. Lossless *and* less encoder work.
+   times over (`Sdl.hs:setSquareChar ::`); an `AttrCharW32` already packs char,
+   fg and bg into one word, and `terminal-core.ts` decodes exactly that word
+   for the map grid today. Lossless *and* less encoder work.
 3. **The prop chunk header splits into three fields**, and on the wire each
    is a word of its own, per 2.3's no-sub-word-packing ruling. Layer
    is no longer part of it, the layers being separate sections, so the face
-   is a one-bit *choice* between the two proportional fonts (`Sdl.hs:700-702`)
-   carried in a whole word; the colour index is its own field; and `pcAllSpace`
-   gets one too, because `propFit` consumes it (`Sdl.hs:553`, `Sdl.hs:577`)
-   and it is measurement-free, so the module owns it and the consumer needs it.
+   is a one-bit *choice* between the two proportional fonts
+   (`Sdl.hs:fg /= Color.BrBlack`) carried in a whole word; the colour index
+   is its own field; and `pcAllSpace` gets one too, because `propFit` consumes
+   it (`Sdl.hs:allSpace = remainingWidth`,
+   `Sdl.hs:when (width /= widthRaw && not allSpace) $`) and
+   it is measurement-free, so the module owns it and the consumer needs it.
 4. **`xStart` is logical**, and load-bearing rather than stylistic:
    it is logical precisely because the receiving consumer's `startPropLine`
    is what computes the device x. Nothing device-space is encoded.
@@ -2442,52 +2483,56 @@ crosses under either option.
 so `test/OverlayLayoutUnitTests.hs` (the harness's `<Module>UnitTests.hs`
 naming, wired into `test/Spec.hs`'s list beside the others) needs
 no `SessionUIMock`; `chunkPropLine` is exported through the ordinary list's
-"internal and used in unit tests" group (`Common/Kind.hs:15-16`'s pattern ---
-the `EXPOSE_INTERNAL` idiom this sentence once named would not compile
-in the ordinary build, `release` defaulting `False`), and QuickCheck is already
-in the suite (`test/SessionUIUnitTests.hs:10`).
+"internal and used in unit tests" group
+(`Common/Kind.hs:Operations both internal`'s pattern --- the `EXPOSE_INTERNAL`
+idiom this sentence once named would not compile in the ordinary build,
+`release` defaulting `False`), and QuickCheck is already in the suite
+(`test/SessionUIUnitTests.hs:import Test.Tasty.QuickCheck`).
 
 Fixed cases, chunking: the empty line; one character; leading spaces before
 a coloured run (the next-non-space inheritance); trailing spaces, the only way
 an all-space chunk arises; a multi-space run *between* two differently-coloured
 runs, which joins the left one --- the case a hand-port gets backwards;
-an all-space line, taking the `[] -> w` fallback (`Sdl.hs:686`); a colour change
-with no space at the boundary; a line whose spaces are *coloured*, which pins
-the deliberate difference between the chunker's `(== spaceAttrW32)`
-(`Sdl.hs:680`; a default-attribute space, `Color.hs:230-231`) and `pcAllSpace`'s
-`Char.isSpace` (`Sdl.hs:703`) --- unifying those two would silently change which
-lines get the marker; and even against odd rows over a `White` cell, paired
-with the assertion that both still choose `PropRegular`.
+an all-space line, taking the `[] -> w` fallback (`Sdl.hs:[] -> w`); a colour
+change with no space at the boundary; a line whose spaces are *coloured*, which
+pins the deliberate difference between the chunker's `(== spaceAttrW32)`
+(`Sdl.hs:let isSpace = (== Color.spaceAttrW32)`; a default-attribute space,
+`Color.hs:spaceAttrW32 :: AttrCharW32`) and `pcAllSpace`'s `Char.isSpace`
+(`Sdl.hs:allSpace = T.all Char.isSpace t`) --- unifying those two would silently
+change which lines get the marker; and even against odd rows over a `White`
+cell, paired with the assertion that both still choose `PropRegular`.
 
-Fixed cases, placement --- one row per branch of `Sdl.hs:552-554`
-and `Sdl.hs:676-678`: the pen below the limit; the pen exactly
-at `(lmWidth - 1) * lmBoxSize`, which the `>=` stops; `widthRaw`
-under `remaining`; `widthRaw == remaining`, fitting exactly with no marker,
-the case an off-by-one in a port flips; `widthRaw` over, not all-space (clamp
-to `remaining - lmBoxSize`, marker fires); the same all-space (clamp
-to `remaining`, *no* marker --- the asymmetry that makes `pcAllSpace`
-load-bearing); a clamped chunk followed by more chunks, asserting the tail
-is dropped and the line ends; and `remaining == lmBoxSize + 1`, the tightest
-case in which the third branch stays positive.
+Fixed cases, placement --- one row per branch
+of `Sdl.hs:widthRaw <= remainingWidth` and `Sdl.hs:drawPropLine x _ _`: the pen
+below the limit; the pen exactly at `(lmWidth - 1) * lmBoxSize`, which the `>=`
+stops; `widthRaw` under `remaining`; `widthRaw == remaining`, fitting exactly
+with no marker, the case an off-by-one in a port flips; `widthRaw` over,
+not all-space (clamp to `remaining - lmBoxSize`, marker fires); the same
+all-space (clamp to `remaining`, *no* marker --- the asymmetry that makes
+`pcAllSpace` load-bearing); a clamped chunk followed by more chunks, asserting
+the tail is dropped and the line ends; and `remaining == lmBoxSize + 1`,
+the tightest case in which the third branch stays positive.
 
 QuickCheck properties, over arbitrary `AttrString`s built from a legal fg
 colour, a `HighlightNone`/`HighlightNoneCursor` bg and a printable char,
-so that `Sdl.hs:691-692`'s assertion holds by construction:
+so that `Sdl.hs:(sameRest, otherRest) = span sameAttr rest`'s assertion holds
+by construction:
 
 - *chunking is total*:
   `concatMap (T.unpack . pcText) (chunkPropLine row al) == attrStringToString al`
-  (`Overlay.hs:111-112`), for all rows and lines. Separating chunking
-  from fitting is what strengthens the plan's earlier "concatenate back
+  (`Overlay.hs:attrStringToString ::`), for all rows and lines. Separating
+  chunking from fitting is what strengthens the plan's earlier "concatenate back
   to the input minus the overrun cut" into a plain equality --- the cut is now
   a different function's claim.
 - *chunks are single-coloured under space inheritance*: splitting the input
   by the chunk lengths, every cell of a chunk's slice satisfies
-  `fgFromW32 ac == pcColor c || ac == spaceAttrW32` (`Sdl.hs:688-689`).
+  `fgFromW32 ac == pcColor c || ac == spaceAttrW32`
+  (`Sdl.hs:sameAttr ac = Color.fgFromW32 ac == fgRaw`).
 - *no chunk is empty, and the lengths sum to the input's.* This is also
-  the termination argument: `Sdl.hs:697` recurses on the remaining string,
-  not on the pen, so a zero-advance measurement cannot loop --- worth a property
-  rather than a comment, since the naive reading of that recursion says
-  otherwise.
+  the termination argument: `Sdl.hs:width) row otherRest` recurses
+  on the remaining string, not on the pen, so a zero-advance measurement cannot
+  loop --- worth a property rather than a comment, since the naive reading
+  of that recursion says otherwise.
 - *no property for the derived fields*: `pcFont` and `pcAllSpace` are functions
   of a two-field record, so "they agree" is a tautology and the QuickCheck
   property earlier drafts carried is deleted rather than kept green. It never
@@ -2539,15 +2584,16 @@ and `test/Spec.hs`; the module goes in the library's *unconditional*
 `exposed-modules`, not the `else` branch that carries `Sdl.hs`,
 so `make test-wasm` compiles it too and the wasm consumer inherits a module
 already proved to build there. (2) the `Sdl.hs` refactor onto it, carrying
-`Sdl.hs:590`'s `toEnum` fix if 0.2 has not already. (3) the citation repair
-of this plan and of the repo-root `CLAUDE.md` against the shrunken `Sdl.hs`,
-plus that file's frontend bullet, whose last module name this item delivers,
-retiring the clause --- and, if (2) carried the `Sdl.hs:590` fix, the Gotchas
+the `setMapChar` `toEnum` fix if 0.2 has not already. (3) the re-anchoring
+of this plan's and the repo-root `CLAUDE.md`'s `Sdl.hs` citations against
+the shrunken file, most of which the pass will name broken, plus that file's
+frontend bullet, whose last module name this item delivers, retiring the clause
+--- and, if (2) carried the `Sdl.hs:let Point{..} = toEnum i` fix, the Gotchas
 bullet's "awaits its scheduled fix" clause with it, the retirement following
-the fix rather than the item --- mandatory and separate, per the freeze callout
-and the citation-repair rule. (4) the outcome line naming (2)'s hash, the ledger
-flip, and the deletion of this item's two `tools/doc-refs-allow.txt` entries.
-(3) before (4), so a correction is never in the same diff as the landing record.
+the fix rather than the item --- mandatory and separate, per the freeze callout.
+(4) the outcome line naming (2)'s hash, the ledger flip, and the deletion
+of this item's two `tools/doc-refs-allow.txt` entries. (3) before (4),
+so a correction is never in the same diff as the landing record.
 
 **Owns** --- `engine-src/Game/LambdaHack/Client/UI/Frontend/OverlayLayout.hs`,
 `test/OverlayLayoutUnitTests.hs`, `test/Spec.hs`, `LambdaHack.cabal`,
@@ -2568,8 +2614,9 @@ claimant list is at 0.1, and this item is on it.
 and the `make bench` pair under `xvfb-run`.
 
 **Hands back** --- hands back nothing on display, as of 2026-07-31. `make bench`
-(`Makefile:123`) includes `benchFrontendBattle`/`benchFrontendCrawl`
-(`Makefile:109-110`, `Makefile:115-116`), which pass neither `--frontendNull`
+(`Makefile:bench: benchBattle benchAnimBattle`) includes
+`benchFrontendBattle`/`benchFrontendCrawl` (`Makefile:benchFrontendBattle:`,
+`Makefile:benchFrontendCrawl:`), which pass neither `--frontendNull`
 nor `--frontendLazy` and so drive the real SDL renderer --- exactly the per-cell
 hot path (2) rewrites, and the reason the headless `benchBattle`/`benchCrawl`
 cannot substitute: they never enter that path at all. `xvfb-run` is installed
@@ -2585,18 +2632,18 @@ filters with `propLineStartFits` and drops rejected lines, as its haddock above
 now states: the start-cutoff test is measurement-free by this item's own seam
 design, so the pure module can apply it, and a consumer-side `propCutoff` call
 would be one copied decision per frontend --- the class being killed; `Sdl.hs`'s
-in-recursion cutoff (`Sdl.hs:676-678`, re-entered per chunk at `Sdl.hs:697`)
-transcribes into the filter. (b) `chunkPropLine` reaches its tests through
-the ordinary export list's "internal and used in unit tests" group
-(`Common/Kind.hs:15-16`'s pattern), the sec. 2.1 sentence that once routed
-it through `EXPOSE_INTERNAL` corrected above --- `release` defaults `False`
-(`LambdaHack.cabal:83-85`, `LambdaHack.cabal:135-136`), so the idiom would
-not compile in the ordinary build, the trap `test/CLAUDE.md`'s
-`emptyUnknownTile` bullet records. (c) The even-row `White`->`AltWhite` recolour
-is 0.2's named export, specified in its body: `CellStyle` defines it once,
-`styleCell` consumes it internally, this module imports the same one ---
-the name is the executing session's, the existence, home and signature shape
-are the ruling.
+in-recursion cutoff (`Sdl.hs:drawPropLine x _ _`, re-entered per chunk
+at `Sdl.hs:width) row otherRest`) transcribes into the filter. (b)
+`chunkPropLine` reaches its tests through the ordinary export list's "internal
+and used in unit tests" group (`Common/Kind.hs:Operations both internal`'s
+pattern), the sec. 2.1 sentence that once routed it through `EXPOSE_INTERNAL`
+corrected above --- `release` defaults `False` (`LambdaHack.cabal:flag release`,
+`LambdaHack.cabal:if flag(release)`), so the idiom would not compile
+in the ordinary build, the trap `test/CLAUDE.md`'s `emptyUnknownTile` bullet
+records. (c) The even-row `White`->`AltWhite` recolour is 0.2's named export,
+specified in its body: `CellStyle` defines it once, `styleCell` consumes
+it internally, this module imports the same one --- the name is the executing
+session's, the existence, home and signature shape are the ruling.
 
 ### 2.2 Browser overlay renderer, in isolation
 
@@ -2620,14 +2667,14 @@ come free, and no effort is spent recreating them for overlay text (Appendix B).
 
 Fonts, the G1 way --- following the `rFontFiles = []`-under-`USE_BROWSER` split:
 the Haskell side owns *which* fonts at *what size* (from `sfonts` / the chosen
-fontset, sizes multiplied by `sallFontsScale` exactly as `Sdl.hs:loadFontFile`
-does), the web side owns the *bytes* (static `.woff` assets). Concretely:
-at startup `Wasm.hs` resolves the chosen fontset and passes file names +
-effective px sizes to JS in the one-shot setup call specified below; TS declares
-them with the `FontFace` API from `./<filename>` URLs. **TS hardcodes nothing
-about fonts**; `make build-ts` is extended to copy the referenced
-`GameDefinition/fonts/*.ttf.woff` into the pages checkout (only `16x16xw.woff`
-is deployed today).
+fontset, sizes multiplied by `sallFontsScale` exactly
+as `Sdl.hs:loadFontFile fname fsize =` does), the web side owns the *bytes*
+(static `.woff` assets). Concretely: at startup `Wasm.hs` resolves the chosen
+fontset and passes file names + effective px sizes to JS in the one-shot setup
+call specified below; TS declares them with the `FontFace` API
+from `./<filename>` URLs. **TS hardcodes nothing about fonts**; `make build-ts`
+is extended to copy the referenced `GameDefinition/fonts/*.ttf.woff`
+into the pages checkout (only `16x16xw.woff` is deployed today).
 
 **The startup payload, specified here.** 1.5 shares this call and points here
 for its shape, as 2.3 points at 2.1 for the wire payload's, so the field list
@@ -2651,9 +2698,10 @@ Known browser pitfalls to handle here, not discover in 2.4:
 - **devicePixelRatio.** Size the canvas backing store at `cssSize * dpr`
   and scale the context, or overlay text is blurry on any HiDPI screen.
 - **The mono layer has a pitch the browser's pointer cannot address.**
-  `Sdl.hs:277` divides a click's pixel x by `halfSize`, so SDL reports an odd
-  `PointUI` x for a click in a cell's right half, while `Wasm.hs:112`
-  and `Wasm.hs:128` build their point with `squareToUI` (`PointUI.hs:35-37`),
+  `Sdl.hs:pointTranslate (SDL.P (SDL.V2 x y)) =` divides a click's pixel x
+  by `halfSize`, so SDL reports an odd `PointUI` x for a click in a cell's right
+  half, while `Wasm.hs:row deltaY modCtrl` and `Wasm.hs:row button modCtrl`
+  build their point with `squareToUI` (`PointUI.hs:squareToUI :: PointSquare`),
   always even. That is unobservable today, the square layer being the only one
   on screen, and observable the moment this item draws the mono layer at exactly
   that pitch. Nothing here fixes it --- the mouse handlers belong to 0.0 and 0.1
@@ -2661,19 +2709,20 @@ Known browser pitfalls to handle here, not discover in 2.4:
   at half-cell resolution should not have to rediscover why. Appendix C's
   2026-09-07 audit note records it.
 - **Fixed-pitch glyphs are cropped and centred natively and are not here.**
-  `Sdl.hs:521-544` crops an oversized glyph surface to the cell box and centres
-  it over a black fill, for the square layer (`Sdl.hs:662`) and the mono one
-  (`Sdl.hs:618`) alike; the DOM grid's `1ch`/`1em` cells do neither. It reaches
-  this item because the canvas shell draws both fixed-pitch layers
-  at `cellPitch`, so a glyph wider than its cell overhangs rather than being
-  cropped. 2.1 declines to generalize the *proportional* crop and says so;
-  this is the other site, and this item closes it, since 2026-09-07, in Split
-  (3): the canvas shell crops each fixed-pitch cell to its box and centres
-  the glyph in it --- a clip rect per `CellRun` cell in the draw-command list,
-  which the op-list tests pin --- and the grid's cells take `overflow: hidden`
-  beside the dimensions the (a) ruling imposes on them, their
-  `text-align: center` already there. Appendix C's 2026-09-07 audit note records
-  the gap.
+  `Sdl.hs:scaleSurfaceToTexture ::` crops an oversized glyph surface to the cell
+  box and centres it over a black fill, for the square layer
+  (`Sdl.hs:scaleSurfaceToTexture boxSize`) and the mono one
+  (`Sdl.hs:scaleSurfaceToTexture halfSize`) alike; the DOM grid's `1ch`/`1em`
+  cells do neither. It reaches this item because the canvas shell draws both
+  fixed-pitch layers at `cellPitch`, so a glyph wider than its cell overhangs
+  rather than being cropped. 2.1 declines to generalize the *proportional* crop
+  and says so; this is the other site, and this item closes it, since
+  2026-09-07, in Split (3): the canvas shell crops each fixed-pitch cell
+  to its box and centres the glyph in it --- a clip rect per `CellRun` cell
+  in the draw-command list, which the op-list tests pin --- and the grid's cells
+  take `overflow: hidden` beside the dimensions the (a) ruling imposes on them,
+  their `text-align: center` already there. Appendix C's 2026-09-07 audit note
+  records the gap.
 - **Cell metrics from one source.** Derive the browser's `halfSize`
   as an integer from font size x `allFontsScale` and *impose*
   `boxSize = 2 * halfSize` on the grid's cell dimensions in CSS px (the (a)
@@ -2697,17 +2746,17 @@ never crosses, so there is nothing there to pin.
 
 Verify: vitest green; live game pixel-identical to before (nothing wired).
 
-**Split** --- a capture, then three code commits, the citation repair
-and the record commit. (0) the pre-Phase-2 frame-timing baseline, before (1)
-merges: drive the page in-session under the Xvfb setup with the throwaway
-`performance.now()` probe applied, never committed, and append the number,
-its protocol and the probe's diff to Phase 2's intro --- no code lands here,
-and (1) must not merge without the record standing. Performed 2026-08-07
-and re-taken 2026-09-04, when a replay orphaned the commit its anchor named:
-the record stands at the intro, so this gate is already satisfied. (1) the font
-wiring: `Wasm.hs`'s one-shot setup import --- the payload specified in the body,
-which 1.5 shares --- its `globalThis` hook in `loader.ts`, the `FontFace`
-declarations in `terminal.ts`, and the `Makefile` copy of the referenced
+**Split** --- a capture, then three code commits and the record commit. (0)
+the pre-Phase-2 frame-timing baseline, before (1) merges: drive the page
+in-session under the Xvfb setup with the throwaway `performance.now()` probe
+applied, never committed, and append the number, its protocol and the probe's
+diff to Phase 2's intro --- no code lands here, and (1) must not merge without
+the record standing. Performed 2026-08-07 and re-taken 2026-09-04, when a replay
+orphaned the commit its anchor named: the record stands at the intro,
+so this gate is already satisfied. (1) the font wiring: `Wasm.hs`'s one-shot
+setup import --- the payload specified in the body, which 1.5 shares ---
+its `globalThis` hook in `loader.ts`, the `FontFace` declarations
+in `terminal.ts`, and the `Makefile` copy of the referenced
 `GameDefinition/fonts/*.ttf.woff` into the pages checkout. It depends on nothing
 else in Phase 2 --- `sfonts` and `schosenFontset` are already populated
 in the browser build --- so it lands first and unblocks 1.5, which names
@@ -2721,29 +2770,24 @@ with its one-cell verify-measurement (the (a) ruling), the fixed-pitch crop
 and centring the pitfalls specify --- on the canvas and, as `overflow: hidden`,
 on the grid's cells --- and the draw-command core all three of 2.1's sections
 pass through --- reached through the shared entry point 1.2's draw-op module
-defines, R6's criterion. (4) separate per the citation-repair rule: the citation
-repair (1) and (3) owe, the checker's printed snippets naming the lines they
-moved --- (1)'s import and hook and (3)'s `#screen` edit each sit above lines
-cited here --- with the restamp riding this commit. (5) the outcome line naming
-(3)'s hash, the ledger flip, and the deletion of `overlay-core.ts`
-and `overlay-core.test.ts` from `tools/doc-refs-allow.txt`.
+defines, R6's criterion. (4) the outcome line naming (3)'s hash, the ledger
+flip, and the deletion of `overlay-core.ts` and `overlay-core.test.ts`
+from `tools/doc-refs-allow.txt`.
 
 **Owns** --- `ts-src/src/overlay-core.ts`, `ts-src/src/overlay-core.test.ts`,
 `ts-src/src/terminal.ts`, `ts-src/src/loader.ts`,
 `engine-src/Game/LambdaHack/Client/UI/Frontend/Wasm.hs`, `Makefile`,
 `GameDefinition/index.html` (only the `#screen` positioning context the canvas
-overlays), `docs/wasm-frontend-unified-plan.md` --- (1) and (3) move lines cited
-here, so this item owes the citation-repair commit and its restamp ---
-and `tools/doc-refs-allow.txt`. Sub-commits (2) and (3) are not concurrent ---
-they share the two new `overlay-core` files, which 2.3 and 2.5 write later,
-behind 2.4 in the chain --- and neither is (1) with (3), which share
-`terminal.ts`. **The claimant list for `Wasm.hs` lives here**: 0.1, 1.2, 1.5,
-1.6, this item, 2.3 and 2.4, one holder at a time; `terminal.ts`'s list
-is at 0.0, `loader.ts`'s at 0.1, `index.html`'s at 1.4 and the `Makefile`'s
-at 3.3, and this item is on all four. The generator extension that emits (2)'s
-branch table is 0.2's stanza and 0.2's file, not this item's: schedule
-it with 0.2's owner rather than editing the generator here, or two sessions edit
-one executable.
+overlays), `docs/wasm-frontend-unified-plan.md` and `tools/doc-refs-allow.txt`.
+Sub-commits (2) and (3) are not concurrent --- they share the two new
+`overlay-core` files, which 2.3 and 2.5 write later, behind 2.4 in the chain ---
+and neither is (1) with (3), which share `terminal.ts`. **The claimant list
+for `Wasm.hs` lives here**: 0.1, 1.2, 1.5, 1.6, this item, 2.3 and 2.4, one
+holder at a time; `terminal.ts`'s list is at 0.0, `loader.ts`'s at 0.1,
+`index.html`'s at 1.4 and the `Makefile`'s at 3.3, and this item is on all four.
+The generator extension that emits (2)'s branch table is 0.2's stanza and 0.2's
+file, not this item's: schedule it with 0.2's owner rather than editing
+the generator here, or two sessions edit one executable.
 
 **Done** --- `native`, `ts`, `wasm`, `deploy`, `docs`, plus
 `test -f ../lambdahack.github.io/DejaVuLGCSans-Bold.ttf.woff` &&
@@ -2755,11 +2799,12 @@ is in that checkout, which is the whole font deployment gap this item closes.
 **Hands back** --- *browser*: that the declared `FontFace`s actually load
 and that the canvas sits pixel-aligned over the span grid. sec. 2.2's own "live
 game pixel-identical to before" needs no human --- `getFontSetup` still gates
-on `"sdl"` (`MonadClientUI.hs:329`), so the overlays are provably `[]`
-and the vitest case asserting zero draw calls on an empty payload decides it,
-which is why the substitute gate in Done is `make test-ts` plus the two
-font-deployment tests rather than a look. The HiDPI and browser-zoom checks
-are deferred to 2.5 by the plan itself, not by this block.
+on `"sdl"` (`MonadClientUI.hs:= Frontend.frontendName`), so the overlays
+are provably `[]` and the vitest case asserting zero draw calls on an empty
+payload decides it, which is why the substitute gate in Done is `make test-ts`
+plus the two font-deployment tests rather than a look. The HiDPI
+and browser-zoom checks are deferred to 2.5 by the plan itself, not
+by this block.
 
 **Decide first** --- nothing: one ruled on 2026-08-05 --- the baseline is Split
 (0)'s, throwaway probe, in-session, the number and probe diff recorded at Phase
@@ -2781,22 +2826,23 @@ definition G1 forbids.
 ### 2.3 Transport: overlays across the JSFFI boundary
 
 `Wasm.hs`'s `display` currently drops three of `SingleFrame`'s four fields
-(`Wasm.hs:79`; `OverlaySpace = [(PointUI, AttrString)]`, `Frame.hs:100`). Add
-an **additive** `js_submitOverlays` alongside `js_submitFrame`, using the same
-idiom the frame already uses: a packed `Word32` buffer passed by address ---
-everything is numeric and fits `Word32`, no string marshalling, no new
-serialization dependency. The payload's shape is specified once, in 2.1,
-under "2.3's payload, specified here": three sections in draw order behind
-a header of counts, cell layers shipping raw `AttrCharW32` words, the prop chunk
-header split into face, colour index and the `pcAllSpace` bit, and `xStart`
-logical because the receiving consumer's `startPropLine` is what turns it
-into a device x. Restating it here is the second definition G1 forbids,
-and the field list is exactly what drifts. The encoder lives next
-to `OverlayLayout` and is pure; tasty round-trips it on fixed cases
-and on QuickCheck-generated arbitrary `OverlaySpace` values, and the 0.2
-generator emits encode fixtures the TS decoder is tested against. All three
-overlay kinds (prop/square/mono) travel and draw through the same path,
-on the same canvas, in the 2.1 layer order.
+(`Wasm.hs:display ScreenContent{rwidth,`;
+`OverlaySpace = [(PointUI, AttrString)]`,
+`Frame.hs:type OverlaySpace = [(PointUI, AttrString)]`). Add an **additive**
+`js_submitOverlays` alongside `js_submitFrame`, using the same idiom the frame
+already uses: a packed `Word32` buffer passed by address --- everything
+is numeric and fits `Word32`, no string marshalling, no new serialization
+dependency. The payload's shape is specified once, in 2.1, under "2.3's payload,
+specified here": three sections in draw order behind a header of counts, cell
+layers shipping raw `AttrCharW32` words, the prop chunk header split into face,
+colour index and the `pcAllSpace` bit, and `xStart` logical because
+the receiving consumer's `startPropLine` is what turns it into a device x.
+Restating it here is the second definition G1 forbids, and the field list
+is exactly what drifts. The encoder lives next to `OverlayLayout` and is pure;
+tasty round-trips it on fixed cases and on QuickCheck-generated arbitrary
+`OverlaySpace` values, and the 0.2 generator emits encode fixtures the TS
+decoder is tested against. All three overlay kinds (prop/square/mono) travel
+and draw through the same path, on the same canvas, in the 2.1 layer order.
 
 Because `getFontSetup` still gates on `"sdl"`, the overlays are provably `[]`
 in the live game --- this step is a visual no-op, verified by playing.
@@ -2806,42 +2852,38 @@ asserts the 2.2 renderer makes zero draw calls on an empty overlay payload
 (the live game's case until 2.4); and the `run-wasm-test.mjs` battery (0.3)
 drives `js_submitOverlays` end-to-end.
 
-**Split** --- four commits. (1) the pure encoder and its tasty round trip, both
+**Split** --- three commits. (1) the pure encoder and its tasty round trip, both
 inside 2.1's module and test files --- no FFI, no TS, so the wire layout
 is frozen and reviewable on its own. (2) the transport: the additive
 `js_submitOverlays`, `Wasm.hs`'s `display` filling the buffer, the TS decoder
 in `ts-src/src/overlay-core.ts`, its `globalThis` hook in `loader.ts`,
 the hand-off in `terminal.ts`, and the `run-wasm-test.mjs` coverage case --- one
 commit, because 0.3's rule is that a new `foreign import/export` lands
-with its coverage case in the same diff. (3) separate per the citation-repair
-rule: the citation repair (2) owes, the checker's printed snippets naming
-the lines it moved, with the restamp riding this commit. (4) the outcome line
-naming (2)'s hash and the ledger flip; this item has
-no `tools/doc-refs-allow.txt` entries, 2.1's and 2.2's having gone with their
-own items.
+with its coverage case in the same diff. (3) the outcome line naming (2)'s hash
+and the ledger flip; this item has no `tools/doc-refs-allow.txt` entries, 2.1's
+and 2.2's having gone with their own items.
 
 **Owns** --- `engine-src/Game/LambdaHack/Client/UI/Frontend/OverlayLayout.hs`,
 `test/OverlayLayoutUnitTests.hs`,
 `engine-src/Game/LambdaHack/Client/UI/Frontend/Wasm.hs`,
 `ts-src/src/overlay-core.ts`, `ts-src/src/overlay-core.test.ts`,
 `ts-src/src/terminal.ts`, `ts-src/src/loader.ts`, `ts-src/run-wasm-test.mjs`
-and `docs/wasm-frontend-unified-plan.md` --- (2) moves lines cited here,
-so this item owes the citation-repair commit and its restamp. It overlaps 2.1
-on the module file, 2.2 on all four TS files, 2.4 on `Wasm.hs` and 2.5
-on the two `overlay-core` files, so it runs alone: this is the strict chain's
-one real join. The claimant lists are at 0.0 for `terminal.ts`, 0.1
-for `loader.ts`, 2.2 for `Wasm.hs` and 0.3 for `ts-src/run-wasm-test.mjs`,
-and this item is on all four. The 0.2 generator emitting the decoder's encode
-fixtures is 0.2's file, not this item's --- schedule it there, as 2.2 does
-for its branch table.
+and `docs/wasm-frontend-unified-plan.md`. It overlaps 2.1 on the module file,
+2.2 on all four TS files, 2.4 on `Wasm.hs` and 2.5 on the two `overlay-core`
+files, so it runs alone: this is the strict chain's one real join. The claimant
+lists are at 0.0 for `terminal.ts`, 0.1 for `loader.ts`, 2.2 for `Wasm.hs`
+and 0.3 for `ts-src/run-wasm-test.mjs`, and this item is on all four. The 0.2
+generator emitting the decoder's encode fixtures is 0.2's file, not this item's
+--- schedule it there, as 2.2 does for its branch table.
 
 **Done** --- `native`, `ts`, `wasm`, `deploy`, `docs`.
 
 **Hands back** --- hands back nothing. sec. 2.3's "verified by playing" argues
 its own case away in the next sentence: `getFontSetup` still gates on `"sdl"`
-(`MonadClientUI.hs:329`), the overlays are provably `[]`, and playing proves
-nothing the zero-draw-call vitest case and the `run-wasm-test.mjs` end-to-end
-case do not. Phase 2's browser budget is spent at 2.4 instead.
+(`MonadClientUI.hs:= Frontend.frontendName`), the overlays are provably `[]`,
+and playing proves nothing the zero-draw-call vitest case
+and the `run-wasm-test.mjs` end-to-end case do not. Phase 2's browser budget
+is spent at 2.4 instead.
 
 **Decide first** --- nothing, all three ruled on 2026-08-07. (a) The wire layout
 is flat words with element counts: one scalar per `Word32`, no sub-word packing
@@ -2865,11 +2907,12 @@ no `tools/doc-refs-allow.txt` churn.
 Each frontend module exports a constant `supportsMultiFont :: Bool` (`Sdl.hs`,
 `Wasm.hs`: `True`; ANSI/Teletype: `False`; `Dom.hs` is a dead example file
 no configuration compiles, R3), and `Frontend.hs` dispatches it exactly like
-`frontendName` already dispatches per-frontend values (`Frontend.hs:186-196`,
-including the null/lazy/teletype/ANSI option guards). A name list like
+`frontendName` already dispatches per-frontend values
+(`Frontend.hs:frontendName :: ClientOptions`, including
+the null/lazy/teletype/ANSI option guards). A name list like
 `frontendName soptions `elem` ["sdl", "wasm"]` would be a drift-prone string
-list of the same shape G1 fights. Then `getFontSetup` (`MonadClientUI.hs:329`)
-becomes:
+list of the same shape G1 fights. Then `getFontSetup`
+(`MonadClientUI.hs:= Frontend.frontendName`) becomes:
 
 ```haskell
 multiFont = Frontend.supportsMultiFont soptions
@@ -2879,9 +2922,9 @@ multiFont = Frontend.supportsMultiFont soptions
 Re-check `test/MonadClientUIUnitTests.hs`'s `getFontSetup works in stub` after
 the flip. It is platform-independent today, and stays so only as long
 as the stub pins a frontend: `stubClientOptions` sets `sfrontendNull = True`
-(`test/UnitTestHelpers.hs:208`), which is the *first* guard in `frontendName`,
-so it never reaches `Chosen.frontendName` and `multiFont` is `False`
-under `cabal test` and `make test-wasm` alike. Add a case that pins
+(`test/UnitTestHelpers.hs:, sfrontendNull = True`), which is the *first* guard
+in `frontendName`, so it never reaches `Chosen.frontendName` and `multiFont`
+is `False` under `cabal test` and `make test-wasm` alike. Add a case that pins
 `supportsMultiFont` itself, so the flip is covered rather than merely
 not broken.
 
@@ -2893,21 +2936,20 @@ the native playtest battery on (`make test-medium` at minimum).
 mechanism, behaviour-preserving: `supportsMultiFont` exported by `Sdl.hs`
 (`True`), `Wasm.hs` (`False`, for now), `ANSI.hs` and `Teletype.hs` (`False`),
 the `Frontend.hs` dispatch mirroring `frontendName`'s CPP-guarded guard chain
-(`Frontend.hs:186-196`), `getFontSetup` reading it (`MonadClientUI.hs:329`),
-and the new `MonadClientUIUnitTests.hs` case pinning it. This is provably
-a no-op: today's gate is `frontendName soptions == "sdl"`, already `False`
-for wasm, ANSI, Teletype, null and lazy alike, so a dispatch true only
-for `Sdl.hs` reproduces it exactly --- which is why (1) may land at any time,
-even before 2.1. (2) `Wasm.supportsMultiFont = True`, one line and nothing else.
-(3) the banner commit this item's **Owns** carries under 1.4's rule:
-the "proportional fonts" and "limited to the square font" clauses come off
-`GameDefinition/index.html` and the second off `README.md` too, run with 1.4's
-**Done** and only those phrases in the alternation. (4) separate per
-the citation-repair rule: the citation repair (1) owes --- it rewrites the cited
-`MonadClientUI.hs:329` and adds lines to each of the four frontend modules
-and to `Frontend.hs`, the checker's printed snippets naming what slid ---
-with the restamp riding this commit. (5) the outcome line naming (2)'s hash
-and the ledger flip; this item has no `tools/doc-refs-allow.txt` entries.
+(`Frontend.hs:frontendName :: ClientOptions`), `getFontSetup` reading
+it (`MonadClientUI.hs:= Frontend.frontendName`), and the new
+`MonadClientUIUnitTests.hs` case pinning it. This is provably a no-op: today's
+gate is `frontendName soptions == "sdl"`, already `False` for wasm, ANSI,
+Teletype, null and lazy alike, so a dispatch true only for `Sdl.hs` reproduces
+it exactly --- which is why (1) may land at any time, even before 2.1. (2)
+`Wasm.supportsMultiFont = True`, one line and nothing else. (3) the banner
+commit this item's **Owns** carries under 1.4's rule: the "proportional fonts"
+and "limited to the square font" clauses come off `GameDefinition/index.html`
+and the second off `README.md` too, run with 1.4's **Done** and only
+those phrases in the alternation. (4) the re-anchoring (1) owes: it rewrites
+the `multiFont` gate in `MonadClientUI.hs`, which every citation of that line
+anchors on. (5) the outcome line naming (2)'s hash and the ledger flip;
+this item has no `tools/doc-refs-allow.txt` entries.
 
 **Owns** --- `engine-src/Game/LambdaHack/Client/UI/Frontend/Sdl.hs`,
 `engine-src/Game/LambdaHack/Client/UI/Frontend/Wasm.hs`,
@@ -2920,21 +2962,21 @@ and the ledger flip; this item has no `tools/doc-refs-allow.txt` entries.
 falsifies, the second of them in both files since the `#status` div quotes
 the README, deleted in this item's landing sequence under 1.4's rule, per
 that item's 2026-08-07 ruling --- `docs/wasm-frontend-unified-plan.md` --- (1)
-moves lines cited here and rewrites `MonadClientUI.hs:329`, so this item owes
-the citation-repair commit and its restamp --- and, should (1) not
-be the two-lines-for-two replacement sketched above,
-`docs/leader-desync-migration.md` --- 3.3's fleet hazard again, here
-over `MonadClientUI.hs`: that plan cites `partActorLeader`
-(`MonadClientUI.hs:455`) and `partPronounLeader` (`MonadClientUI.hs:469`), both
-below the gate (1) rewrites, so a changed line count leaves them resolving
-and wrong. `Dom.hs` is deliberately not here: a dead example file
-no configuration compiles, R3. The shared files: `Sdl.hs` and `Wasm.hs`, whose
-claimant lists are at 2.1 and 2.2, `Frontend.hs`, whose list is at 0.1,
-and `MonadClientUI.hs`, whose `:329` the sum-typed selection practice also
-rewrites --- and although (1) touches only export lists and one gate, they do
-not merge, so serialize. The pointman campaign's C1 appends its witness
-and accessors to the same file below `:469`, per that campaign's own ruling,
-so it slides nothing here; one holder at a time all the same.
+rewrites the `multiFont` gate the citations anchor on, so this item owes
+the re-anchoring --- and, should (1) not be the two-lines-for-two replacement
+sketched above, `docs/leader-desync-migration.md` --- 3.3's fleet hazard again,
+here over `MonadClientUI.hs`: that plan cites `partActorLeader`
+(`MonadClientUI.hs:partActorLeader ::`) and `partPronounLeader`
+(`MonadClientUI.hs:partPronounLeader ::`), both below the gate (1) rewrites,
+so a changed line count leaves them resolving and wrong. `Dom.hs`
+is deliberately not here: a dead example file no configuration compiles, R3.
+The shared files: `Sdl.hs` and `Wasm.hs`, whose claimant lists are at 2.1
+and 2.2, `Frontend.hs`, whose list is at 0.1, and `MonadClientUI.hs`, whose
+`multiFont` gate the sum-typed selection practice also rewrites --- and although
+(1) touches only export lists and one gate, they do not merge, so serialize.
+The pointman campaign's C1 appends its witness and accessors to the same file
+below `partPronounLeader`, per that campaign's own ruling, so it rewrites
+nothing cited here; one holder at a time all the same.
 
 **Done** --- `native`, `ts`, `wasm`, `deploy`, `docs`, plus `make test-medium`.
 
@@ -3015,7 +3057,7 @@ measure against nothing and call the number a comparison.
 ## Phase 3 --- port the Node benchmark targets from GHCJS to WASM
 
 The Makefile still carries `nodeBenchCrawl`/`nodeBenchBattle`/`nodeBench`/
-`nodeMinifiedBench` (Makefile:133-143), but they invoke the GHCJS
+`nodeMinifiedBench` (`Makefile:nodeBenchCrawl:`), but they invoke the GHCJS
 `.jsexe/all.js`, which the Makefile can no longer build --- they are dead
 as written. What they did matters: headless AI-vs-AI benchmarks
 of the browser-targeted build under Node
@@ -3030,15 +3072,16 @@ mechanism R4 needs anyway.
 
 ### 3.1 Argv into the reactor: `lhStart` reads WASI args
 
-`lhStart` (`GameDefinition/Main.hs:82-89`) parses an empty list where `main`
-parses real argv. Change it to parse `getArgs`: GHC's wasm RTS gets argv
+`lhStart` (`GameDefinition/Main.hs:lhStart = do`) parses an empty list where
+`main` parses real argv. Change it to parse `getArgs`: GHC's wasm RTS gets argv
 from WASI `args_get`, which every host shim controls --- the browser loader
-passes `["LambdaHack"]` (`loader.ts:57`), so `getArgs` returns `[]` there
-and browser behavior is provably unchanged, while a Node harness can pass real
-flags. Update the stale "there is no argv in the browser" comment to describe
-the new contract (argv comes from the WASI host; the browser host passes none).
-**Spike**: performed and recorded 2026-08-07 --- a throwaway `lhProbeArgs`
-export in the reactor, driven under `node:wasi`
+passes `["LambdaHack"]`
+(`loader.ts:const wasi = new WASI(["LambdaHack"], [], fds);`), so `getArgs`
+returns `[]` there and browser behavior is provably unchanged, while a Node
+harness can pass real flags. Update the stale "there is no argv in the browser"
+comment to describe the new contract (argv comes from the WASI host; the browser
+host passes none). **Spike**: performed and recorded 2026-08-07 --- a throwaway
+`lhProbeArgs` export in the reactor, driven under `node:wasi`
 with `--newGame 1 --gameMode crawl` as WASI args, printed
 `getProgName="LambdaHack.wasm" getArgs=["--newGame","1","--gameMode","crawl"]`,
 so `getArgs` surfaces host-supplied args in reactor mode, with argv[0] held
@@ -3046,32 +3089,27 @@ separately by `getProgName` and no drop needed. This entry point is what R4
 later feeds from URL parameters, so 3.1 is shared infrastructure, not bench-only
 plumbing.
 
-**Split** --- two commits, then a third that is not part of the landing. First
-`GameDefinition/Main.hs`: `getArgs` in place of the literal `[]`, the comment
-rewritten to the new contract, and `import System.Environment (getArgs)` ---
-a new import, since `getArgs` occurs in no tracked `.hs` file today
-and `Core/Prelude.hs` re-exports no `System.Environment`. Imports precede
-declarations, so it cannot ride the `#ifdef USE_WASM` block that carries
-its only consumer: it goes in the file's import block under an `#ifdef USE_WASM`
-of its own, beside the `#ifndef USE_BROWSER` one already there. Unguarded
-it is an unused import on every native build, which is a warning and leaves
-`native` green, so no gate this item names would catch it. Second the landing
---- outcome line plus the ledger row. Third, separate from the landing per
-the citation-repair rule, the correction the first commit forces: the import
-shifts every line below it, so *every* `Main.hs` citation in this document
-is re-ranged, not one --- `:38`, `:49-56` and `:82-89`, all of them still
-resolving after the shift, which is the trap the citation-repair rule is about
---- and the restamp rides that commit, `Main.hs` being a file this document
-cites. (The "not yet validated" retirement this commit once carried
+**Split** --- two commits. First `GameDefinition/Main.hs`: `getArgs` in place
+of the literal `[]`, the comment rewritten to the new contract,
+and `import System.Environment (getArgs)` --- a new import, since `getArgs`
+occurs in no tracked `.hs` file today and `Core/Prelude.hs` re-exports
+no `System.Environment`. Imports precede declarations, so it cannot ride
+the `#ifdef USE_WASM` block that carries its only consumer: it goes
+in the file's import block under an `#ifdef USE_WASM` of its own, beside
+the `#ifndef USE_BROWSER` one already there. Unguarded it is an unused import
+on every native build, which is a warning and leaves `native` green, so no gate
+this item names would catch it. Second the landing --- outcome line plus
+the ledger row. (The "not yet validated" retirement a third commit once carried
 was overtaken by the recorded spike of 2026-08-07 --- the body's Spike paragraph
 holds the artifact.)
 
-**Owns** --- `GameDefinition/Main.hs`, which R3 also writes, rewording the `:38`
-comment the new import shifts, so one holder at a time; and this document.
-Deliberately not `CLAUDE.md`: its "there is no argv and no config file on disk"
-stays true after the change, since the loader still passes the one-element argv
-`["LambdaHack"]` (`loader.ts:57`), and touching it would put another work
-stream's file under this item's lock for nothing.
+**Owns** --- `GameDefinition/Main.hs`, which R3 also writes, rewording its GHCJS
+comment, so one holder at a time; and this document. Deliberately
+not `CLAUDE.md`: its "there is no argv and no config file on disk" stays true
+after the change, since the loader still passes the one-element argv
+`["LambdaHack"]` (`loader.ts:const wasi = new WASI(["LambdaHack"], [], fds);`),
+and touching it would put another work stream's file under this item's lock
+for nothing.
 
 **Done** --- `native`, `wasm` --- of whose two halves only `make build-wasm`
 bears on this item, `make test-wasm` linking `Main.hs` in no configuration ---
@@ -3087,14 +3125,15 @@ at Phase 2's intro, and what R5's rendering half uses, so "no in-session gate
 reaches it" stopped being true when that browser arrived. It moves into **Done**
 above, which matters beyond this item: an outcome line waits on what this label
 names, so a shakedown that handed anything back could not prove the ledger flip
-and the restamp it is chosen to rehearse. What survives here is why `wasm`'s
-halves are unequal: `make build-wasm` is the load-bearing one, because `lhStart`
-sits inside `#ifdef USE_WASM`, so `cabal build` and `cabal test` compile none
-of it and a native-only done-check would verify nothing. Nor does `hlint .` see
-it: the live `arguments:` passes `-XNoStarIsType` alone (`.hlint.yaml:24`),
-the `--cpp-simple` beside it being a commented-out template (`.hlint.yaml:11`)
-that CLAUDE.md forbids restoring --- measured by planting a redundant bracket
-on each side of the `#ifdef`, of which only the one outside it was reported.
+it is chosen to rehearse. What survives here is why `wasm`'s halves are unequal:
+`make build-wasm` is the load-bearing one, because `lhStart` sits inside
+`#ifdef USE_WASM`, so `cabal build` and `cabal test` compile none of it
+and a native-only done-check would verify nothing. Nor does `hlint .` see it:
+the live `arguments:` passes `-XNoStarIsType` alone
+(`.hlint.yaml:arguments: [-XNoStarIsType]`), the `--cpp-simple` beside it being
+a commented-out template (`.hlint.yaml:arguments: [--color,`) that CLAUDE.md
+forbids restoring --- measured by planting a redundant bracket on each side
+of the `#ifdef`, of which only the one outside it was reported.
 So `make build-wasm` compiles this item's only reader. The argv claim needed
 no human either: the spike ran in a session, and 3.2's driver turns it
 into a standing check.
@@ -3203,8 +3242,8 @@ it.
   keeps) --- invoking the 3.2 driver
   on `wasm32-wasi-cabal list-bin exe:LambdaHack` plus post-linked glue
   (the `test-wasm` target shows the exact `post-link.mjs` recipe,
-  Makefile:313-320), under `~/.ghc-wasm/env`'s node, which the recipe sources
-  for `list-bin` anyway and which the recipe states. `nodeBench` stays
+  `Makefile:test-wasm:`), under `~/.ghc-wasm/env`'s node, which the recipe
+  sources for `list-bin` anyway and which the recipe states. `nodeBench` stays
   the aggregate of both.
 - `nodeMinifiedBench` -> rename to `nodeDeployedBench` (there is no "minified"
   wasm; the honest name is "the deployed artifact"): run the same two benchmarks
@@ -3224,11 +3263,9 @@ headless under wasm, which nothing else in CI does.
 targets onto the 3.2 driver, and `nodeMinifiedBench` renamed. Then, separate
 because the rewrite falsified them, the claims elsewhere that these targets
 are dead --- the `nodeBench*` sentence in `.claude/skills/playtests/SKILL.md`,
-and `docs/leader-desync-migration.md` if the block's line count moved --- and,
-if it moved, this document's own `Makefile` citations below the block, re-cut
-in the same commit with the restamp riding it. Last the landing: outcome line,
-ledger row, and the `make nodeDeployedBench` deletion
-from `tools/doc-refs-allow.txt`.
+and `docs/leader-desync-migration.md` if the block's line count moved, that plan
+citing the `Makefile` by line. Last the landing: outcome line, ledger row,
+and the `make nodeDeployedBench` deletion from `tools/doc-refs-allow.txt`.
 
 **Owns** --- `Makefile`, `.claude/skills/playtests/SKILL.md`,
 `tools/doc-refs-allow.txt` and this document, plus
@@ -3271,11 +3308,12 @@ exactly what the deploy pipeline produced, which is this target's stated role
 --- and committing or pushing the pages repo stays the author's. (c) The flags
 mirror `nativeBench*` exactly, as the first bullet now states; the two
 asymmetries that cannot be dropped are recorded rather than removed ---
-the browser build hardwires `sdumpInitRngs = True` (`TieKnot.hs:140`),
-a constant seed-dump prepend the native side does not emit, and the development
-`cabal.project.local` carries `+with_expensive_assertions`, reaching both halves
-symmetrically --- so numbers are recorded with the config named, and no session
-re-runs the comparison with assertions off on its own initiative.
+the browser build hardwires `sdumpInitRngs = True`
+(`TieKnot.hs:let serverOptionsJS`), a constant seed-dump prepend the native side
+does not emit, and the development `cabal.project.local` carries
+`+with_expensive_assertions`, reaching both halves symmetrically --- so numbers
+are recorded with the config named, and no session re-runs the comparison
+with assertions off on its own initiative.
 
 ---
 
@@ -3302,31 +3340,31 @@ environment.
 Two engine-side facts shape this goal:
 
 - **Periodic autosave is disabled entirely in browser builds** ---
-  `Server/LoopM.hs:335-342` (not to be confused with `Client/LoopM.hs`) skips
-  the periodic `writeSaveAll` under `USE_JSFILE`/`USE_WASMFILE`,
-  with the comment *"Saving on the browser causes a huge lag"*. That measurement
-  is GHCJS-era; re-measure under wasm as soon as 3.2 exists --- it instruments
-  0.3's localStorage stub, which then reports `setItem` durations from any
-  nodeBench run. If it's now acceptable --- ruled 2026-08-07: a full
-  `writeSaveAll` cycle's total `setItem` time at or under 100ms, a marginal
-  hitch at autosave cadence --- re-enabling periodic saves shrinks the loss
-  window far more than any atomicity work; above the bar, a save triggered
-  from JS `pagehide`/`visibilitychange` is the alternative (needs investigation
-  of what the server monad allows mid-turn).
+  `Server/LoopM.hs:Saving on the browser causes a huge lag` (not to be confused
+  with `Client/LoopM.hs`) skips the periodic `writeSaveAll`
+  under `USE_JSFILE`/`USE_WASMFILE`, with the comment *"Saving on the browser
+  causes a huge lag"*. That measurement is GHCJS-era; re-measure under wasm
+  as soon as 3.2 exists --- it instruments 0.3's localStorage stub, which
+  then reports `setItem` durations from any nodeBench run. If it's now
+  acceptable --- ruled 2026-08-07: a full `writeSaveAll` cycle's total `setItem`
+  time at or under 100ms, a marginal hitch at autosave cadence --- re-enabling
+  periodic saves shrinks the loss window far more than any atomicity work; above
+  the bar, a save triggered from JS `pagehide`/`visibilitychange`
+  is the alternative (needs investigation of what the server monad allows
+  mid-turn).
 - The exit path already contains a browser-specific mitigation to be preserved
-  (or obsoleted knowingly): `WatchUpdAtomicM.hs:585-592` waits 2s
+  (or obsoleted knowingly): `WatchUpdAtomicM.hs:UpdKillExit{} -> do` waits 2s
   at `UpdKillExit` because *"some browsers seem to trash Local Storage when page
   reloaded or closed ... while they still internally finish the saving
   in the background"*.
 
 No SDL2 analogue (SDL's own window-close path deliberately exits without a fresh
-save --- `Sdl.hs:475-484`), but this is the browser-build equivalent of "your
-progress is safe", which is what parity is *for*.
+save --- `Sdl.hs:a forced shutdown,`), but this is the browser-build equivalent
+of "your progress is safe", which is what parity is *for*.
 
-**Split** --- four commits, plus the citation repair two of them owe. R1a
-re-measures the browser save lag under wasm from 0.3's instrumented stub
-and records the number here, editing this document alone. R1b
-is the staging-key/generation-pointer change in `WasmFile.hs` plus
+**Split** --- four commits. R1a re-measures the browser save lag under wasm
+from 0.3's instrumented stub and records the number here, editing this document
+alone. R1b is the staging-key/generation-pointer change in `WasmFile.hs` plus
 its interrupted-cycle test, and carries the `test/WasmFileUnitTests.hs` deletion
 from `tools/doc-refs-allow.txt`. R1c acts on R1a's number against the ruled
 100ms bar --- at or under, periodic autosave re-enabled; above, a save driven
@@ -3337,10 +3375,10 @@ with 1.4's **Done** and only `[Ss]avefiles are prone to corruption`
 in the alternation. The bracket is load-bearing, 1.4's **Done** grepping
 case-sensitively: the page capitalises the sentence and the README does not,
 so either literal alone passes over one of the two files and the negated grep
-would come back green having tested nothing there. R1b and R1c each owe
-the citation repair with its restamp, a commit of its own after each: R1c
-rewrites the two `#if` sites cited here and R1b the `WasmFile.hs` layout 0.3's
-ruling cites into. R1d carries the outcome line.
+would come back green having tested nothing there. R1b and R1c each rewrite
+lines cited here, R1c the two `#if` sites and R1b the `WasmFile.hs` layout 0.3's
+ruling cites into, so each owes the re-anchoring the pass will name. R1d carries
+the outcome line.
 
 **Owns** --- `engine-src/Game/LambdaHack/Common/WasmFile.hs`, including
 the header's "Mirrors JSFile.hs ... exactly in storage format" claim, which
@@ -3353,20 +3391,19 @@ two of which the capability-constants practice also holds, so those two
 serialize; the new `test/WasmFileUnitTests.hs` (CPP-guarded to an empty group
 natively, the way `test/Spec.hs` already guards its SDL cases), `test/Spec.hs`,
 and the test-suite `other-modules` list in `LambdaHack.cabal`, both with their
-claimant lists at 0.1; `Server/LoopM.hs:336-342`
-and `WatchUpdAtomicM.hs:585-595`; and `GameDefinition/index.html`
+claimant lists at 0.1; `Server/LoopM.hs:!defined(USE_JSFILE) &&`
+and `WatchUpdAtomicM.hs:UpdKillExit{} -> do`; and `GameDefinition/index.html`
 with `README.md` beside it --- the savefile-corruption clause R1b falsifies
 stands in both, capitalised in one and not the other, the `#status` div quoting
 the README's paragraph rather than copying it, and R1d deletes it from both
 in one commit under 1.4's rule, per that item's 2026-08-07 ruling;
 `tools/doc-refs-allow.txt`, whose `test/WasmFileUnitTests.hs` entry R1b's commit
 deletes; and this document, which R1a edits alone to record its number and R1b's
-and R1c's citation repairs re-cut. It does not write `ts-src/run-wasm-test.mjs`
---- the localStorage stub is 0.3's, per that item's own ruling, and a stub
-behaviour the test needs lands there first, as a 0.3 change. R1c
-is not concurrent with R3 or with capability constants, all three rewriting
-those same two `#if` sites; the `LambdaHack.cabal` edit is not concurrent
-with 0.1, 0.2, 2.1, 2.2 or R3.
+and R1c's re-anchorings edit. It does not write `ts-src/run-wasm-test.mjs` ---
+the localStorage stub is 0.3's, per that item's own ruling, and a stub behaviour
+the test needs lands there first, as a 0.3 change. R1c is not concurrent with R3
+or with capability constants, all three rewriting those same two `#if` sites;
+the `LambdaHack.cabal` edit is not concurrent with 0.1, 0.2, 2.1, 2.2 or R3.
 
 **Done** --- `native`, `wasm`, `docs`.
 
@@ -3380,19 +3417,19 @@ environment.
 
 **Decide first** --- nothing, all three ruled on 2026-08-07.
 The generation-pointer flip is a File-layer cycle-commit operation:
-`Common/File.hs`'s interface gains it, `writeSaveAll` (`Server/CommonM.hs:254`)
-calls it, `HSFile.hs` implements it as a no-op and `WasmFile.hs`
-as the staging-keys-then-pointer-flip --- the only branch that closes the named
-cross-key risk, and it goes through the existing backend abstraction; a per-file
-pointer is refused, leaving as it would the mixed-generation set alive. Saves
-already sitting in players' localStorage under the flat `path`-as-key layout
-are read as generation zero: the reader falls back to the legacy keys when
-the pointer is absent, the first committed cycle writes generation one plus
-the pointer, and the legacy keys are cleaned only after a successful commit ---
-abandoning progress is the failure the banner caveat describes, self-inflicted.
-And R1c's branch is decided by R1a's number against the 100ms bar the body now
-carries, the `pagehide` branch keeping its server-monad investigation
-if it opens.
+`Common/File.hs`'s interface gains it, `writeSaveAll`
+(`Server/CommonM.hs:writeSaveAll :: MonadServerAtomic`) calls it, `HSFile.hs`
+implements it as a no-op and `WasmFile.hs` as the staging-keys-then-pointer-flip
+--- the only branch that closes the named cross-key risk, and it goes through
+the existing backend abstraction; a per-file pointer is refused, leaving
+as it would the mixed-generation set alive. Saves already sitting in players'
+localStorage under the flat `path`-as-key layout are read as generation zero:
+the reader falls back to the legacy keys when the pointer is absent, the first
+committed cycle writes generation one plus the pointer, and the legacy keys
+are cleaned only after a successful commit --- abandoning progress
+is the failure the banner caveat describes, self-inflicted. And R1c's branch
+is decided by R1a's number against the 100ms bar the body now carries,
+the `pagehide` branch keeping its server-monad investigation if it opens.
 
 **R2 --- Browser-and-frontend CI.** None of Phase 0's drift protection fires
 unless CI runs it. Partly landed,
@@ -3437,10 +3474,10 @@ where a job needs a target of its own (the `--stopAfterFrames` variant
 of `benchFrontendBattle` the xvfb smoke drives) --- the claimant lists
 are at the frontend CI smokes for the workflow file and at 3.3
 for the `Makefile` --- and `docs/wasm-frontend-unified-plan.md`,
-for the citation repair a job owes when it moves a line cited here in either
-file, with its restamp. Never `.github/workflows/haskell-ci.yml`, which
-`haskell-ci regenerate` owns. The jobs are not concurrent with each other: they
-share one YAML file, which does not merge.
+for the re-anchoring a job owes when it rewrites a line cited here in either
+file. Never `.github/workflows/haskell-ci.yml`, which `haskell-ci regenerate`
+owns. The jobs are not concurrent with each other: they share one YAML file,
+which does not merge.
 
 **Done** --- `wasm`, `docs`, plus
 `python3 -c "import yaml; yaml.safe_load(open('.github/workflows/lint-and-test-suites.yml'))"`
@@ -3483,47 +3520,50 @@ in one commit:
   them, both quantifying over tracked `.hs` files.
 - **Everything else GHCJS goes**: the `impl(ghcjs)` cabal conditionals
   (`ghcjs-dom`/`ghcjs-base` deps and the exposed/other-module lines,
-  `LambdaHack.cabal:148-152` and `LambdaHack.cabal:380-400`),
+  `LambdaHack.cabal:-DUSE_BROWSER -DUSE_GHCJS -DUSE_JSFILE`
+  and `LambdaHack.cabal:Game.LambdaHack.Client.UI.Frontend.Dom`),
   the `ghcjs-options` knobs (`GHCJS_GC_INTERVAL`, `GHCJS_BUSY_YIELD`, `-dedupe`,
-  `GHCJS_BROWSER`, `LambdaHack.cabal:165-173`) and the fifth,
-  `-DREMOVE_TELETYPE` (`LambdaHack.cabal:152`) --- which unlike the other four
-  has source consumers, `Frontend.hs:86` and `Frontend.hs:190`'s
-  `#ifndef REMOVE_TELETYPE` guards, permanently true once no `ghcjs-options`
-  line can define the macro, so those go too. Then the `supportNodeJS` flag
-  entirely, it having no non-GHCJS use --- and with it the tracked
-  `cabal.project.local.js`, whole: it is the local cabal configuration
-  of the GHCJS build and nothing reads it, its other lines being ordinary build
-  settings for that build, so the file goes with the target rather than only
-  its `flags: -supportNodeJS` line, which is what **Owns** below says.
-  Then `Frontend.hs:43-44`'s `USE_GHCJS` import branch, `File.hs`'s `USE_JSFILE`
-  branch, `TieKnot.hs:114-118`'s GHC.Compact escape hatch, and the `USE_JSFILE`
-  halves of the browser conditions
+  `GHCJS_BROWSER`, `LambdaHack.cabal:Haskell GC in GHCJS every 10s`)
+  and the fifth, `-DREMOVE_TELETYPE`
+  (`LambdaHack.cabal:ghcjs-options: -DREMOVE_TELETYPE`) --- which unlike
+  the other four has source consumers, `Frontend.hs:= Teletype.startup`
+  and `Frontend.hs:-> Teletype.frontendName`'s `#ifndef REMOVE_TELETYPE` guards,
+  permanently true once no `ghcjs-options` line can define the macro,
+  so those go too. Then the `supportNodeJS` flag entirely, it having
+  no non-GHCJS use --- and with it the tracked `cabal.project.local.js`, whole:
+  it is the local cabal configuration of the GHCJS build and nothing reads it,
+  its other lines being ordinary build settings for that build, so the file goes
+  with the target rather than only its `flags: -supportNodeJS` line, which
+  is what **Owns** below says. Then `Frontend.hs:#elif defined(USE_GHCJS)`'s
+  `USE_GHCJS` import branch, `File.hs`'s `USE_JSFILE` branch,
+  `TieKnot.hs:#ifdef USE_JSFILE`'s GHC.Compact escape hatch,
+  and the `USE_JSFILE` halves of the browser conditions
   in `Server/LoopM.hs`/`WatchUpdAtomicM.hs`/`HandleHumanLocalM.hs`
-  and `TieKnot.hs:138` (the `sdumpInitRngs` hardwiring plus main-thread
-  workaround skip, a second `TieKnot.hs` site distinct from the GHC.Compact one
-  above) --- or of their capability-constant successors, if that practice lands
-  first. Update CLAUDE.md's GHCJS mentions in the same commit. The README needs
-  no GHCJS edit --- it contains the string nowhere (checked repo-wide); what
-  it carries is browser-era prose --- the "The game runs rather slowly
-  in the browser" paragraph under "Installation of the sample game from binary
-  archives", which the page's `#status` div quotes with small edits --- the page
-  says "for both map and texts" where the README says "for all purposes, though
-  it's scalable", opens the savefile sentence in capitals where the README hangs
-  it off an "Also,", and drops the README's "(which takes a long time)" ---
-  owned clause by clause by 2.4, R1 and R5 under 1.4's rule, not
-  by this rip-out.
+  and `TieKnot.hs:#if defined(USE_JSFILE)` (the `sdumpInitRngs` hardwiring plus
+  main-thread workaround skip, a second `TieKnot.hs` site distinct
+  from the GHC.Compact one above) --- or of their capability-constant
+  successors, if that practice lands first. Update CLAUDE.md's GHCJS mentions
+  in the same commit. The README needs no GHCJS edit --- it contains the string
+  nowhere (checked repo-wide); what it carries is browser-era prose ---
+  the "The game runs rather slowly in the browser" paragraph under "Installation
+  of the sample game from binary archives", which the page's `#status` div
+  quotes with small edits --- the page says "for both map and texts" where
+  the README says "for all purposes, though it's scalable", opens the savefile
+  sentence in capitals where the README hangs it off an "Also,", and drops
+  the README's "(which takes a long time)" --- owned clause by clause by 2.4, R1
+  and R5 under 1.4's rule, not by this rip-out.
 
 Timed after parity, not before, so the rip-out doesn't tangle with Phase 0--2
 diffs touching the same cabal stanzas and CPP sites.
 
 **Split** --- three commits, on 2.1's pattern, because **Decide first** (c)
-already makes the renumbering a commit of its own and the label's absence would
+already makes the re-anchoring a commit of its own and the label's absence would
 otherwise assert this is one commit. (1) the rip-out, everything the body lists,
-in one diff. (2) the `.md`-only citation renumbering (c) specifies, the frozen
-appendices' ranges included, with the restamp riding it. (3) the outcome line
-naming (1)'s hash and the ledger flip. (2) before (3), so a correction is never
-in the same diff as the landing record. Nothing to delete
-from `tools/doc-refs-allow.txt`: this item proposes no artifact.
+in one diff. (2) the `.md`-only re-anchoring (c) specifies, the frozen
+appendices' citations included. (3) the outcome line naming (1)'s hash
+and the ledger flip. (2) before (3), so a correction is never in the same diff
+as the landing record. Nothing to delete from `tools/doc-refs-allow.txt`:
+this item proposes no artifact.
 
 **Owns** --- `LambdaHack.cabal` (the `supportNodeJS` flag, the `impl(ghcjs)`
 `cpp-options` stanza and the comment above it, `-DREMOVE_TELETYPE`,
@@ -3531,23 +3571,25 @@ the `ghcjs-options` knob block, and the two `impl(ghcjs)` module/dependency
 branches), `cabal.project.local.js` (deleted), `Frontend.hs` (the `USE_GHCJS`
 import branch and both `#ifndef REMOVE_TELETYPE` guards), `File.hs`'s
 `USE_JSFILE` branch, `TieKnot.hs` (both sites), the `USE_JSFILE` halves
-at `Server/LoopM.hs:336`, `HandleHumanLocalM.hs:815`
-and `WatchUpdAtomicM.hs:586`, header comments only in `Dom.hs` and `JSFile.hs`,
-the two orphan GHCJS comments nothing else claims ---
-`GameDefinition/Main.hs:38`, reworded in wasm/browser terms since the fact
-survives the compiler it names, and `Point.hs:32`'s "not supported yet by GHCJS"
-clause, updated or dropped --- and `CLAUDE.md` and this document. It must hold
-`LambdaHack.cabal` exclusively --- its claimant list at 0.1 names every item
-adding `exposed-modules` there, into the very conditional nest R3 collapses ---
-`Frontend.hs`'s claimant list is at 0.1 as well, the orphan comment
-at `GameDefinition/Main.hs:38` sits in a file 3.1 also writes, its new import
-shifting that line, and the three engine `#if` sites are also R1's
-and the capability-constants practice's, whichever lands first shaping R3's
-diff. The pointman campaign is a further claimant on two of these: its PR 0, C3,
-C4 and C6 write `HandleHumanLocalM.hs`, the first three above the `:815`
-this item cites, the claimant list at that campaign's C3, and its 04.4 writes
-`CLAUDE.md` at that campaign's landing --- that file's claimant list is at 0.1,
-and this item is on it.
+at `Server/LoopM.hs:!defined(USE_JSFILE) &&`,
+`HandleHumanLocalM.hs:!defined(USE_JSFILE) &&`
+and `WatchUpdAtomicM.hs:#if defined(USE_JSFILE)`, header comments only
+in `Dom.hs` and `JSFile.hs`, the two orphan GHCJS comments nothing else claims
+--- `GameDefinition/Main.hs:This test is faulty in the browser`, reworded
+in wasm/browser terms since the fact survives the compiler it names,
+and `Point.hs:not supported yet by GHCJS (not verified)`'s "not supported yet
+by GHCJS" clause, updated or dropped --- and `CLAUDE.md` and this document.
+It must hold `LambdaHack.cabal` exclusively --- its claimant list at 0.1 names
+every item adding `exposed-modules` there, into the very conditional nest R3
+collapses --- `Frontend.hs`'s claimant list is at 0.1 as well, the orphan
+comment at `GameDefinition/Main.hs:This test is faulty in the browser` sits
+in a file 3.1 also writes, its new import shifting that line, and the three
+engine `#if` sites are also R1's and the capability-constants practice's,
+whichever lands first shaping R3's diff. The pointman campaign is a further
+claimant on two of these: its PR 0, C3, C4 and C6 write `HandleHumanLocalM.hs`,
+the first three above the `#if` site this item cites, the claimant list
+at that campaign's C3, and its 04.4 writes `CLAUDE.md` at that campaign's
+landing --- that file's claimant list is at 0.1, and this item is on it.
 
 **Done** --- `native`, with stylish widened past the gate's Owns-derived list
 to `$(git ls-files '*.hs')` --- the one item that widens it, and repo-wide here
@@ -3571,30 +3613,28 @@ than a mechanical edit.
 and `JSFile.hs` are tree-only: they leave the sdist with the module lists,
 no `extra-source-files` entry --- the examples live in the repo, as the first
 bullet now states. (b) The two orphan GHCJS comments ---
-`GameDefinition/Main.hs:38` and `Point.hs:32` --- join this item's Owns
-and are reworded in the rip-out commit, so the post-rip-out grep gate needs
+`GameDefinition/Main.hs:This test is faulty in the browser`
+and `Point.hs:not supported yet by GHCJS (not verified)` --- join this item's
+Owns and are reworded in the rip-out commit, so the post-rip-out grep gate needs
 no standing exceptions; the `impl(ghcjs)` stanzas in the two tracked cabal
 archives are explicitly out of scope, kept verbatim by their own definition ---
-as are `Makefile:133-143`'s `nodeBench*` targets
+as are `Makefile:nodeBenchCrawl:`'s `nodeBench*` targets
 and `.claude/skills/playtests/SKILL.md`'s description of them, both 3.3's. (c)
-The citation renumbering is a separate `.md`-only commit right after the rip-out
---- 2.1's correction-never-with-the-landing pattern, generalized. Deleting
-`Frontend.hs:43-44` and the two guard pairs shifts later lines by two, four
-or six, and the live citations into that file (`Frontend.hs:148`, `159-183`,
-`186-196`, `84-92`, `41-48`, and the sum-typed selection's `:86` and `:190`,
-which this rip-out deletes outright rather than shifts, so their sentence
-is reworded rather than re-cut) are repaired there, and so are the frozen
-appendices' `41-48` and `93`, re-cut with their prose untouched --- ruled
-2026-09-08, the fourth kind of upkeep the pointman post-mortem admits,
-over the freeze rule's earlier reading that left them pointing at slid lines.
-The restamp rides that `.md` commit.
+The re-anchoring is a separate `.md`-only commit right after the rip-out ---
+2.1's correction-never-with-the-landing pattern, generalized. The rip-out
+deletes lines this document anchors on --- the `USE_GHCJS` import branch,
+the two `REMOVE_TELETYPE` guards the sum-typed selection cites, the cabal
+stanzas --- so the pass names them and their sentences are reworded there,
+the frozen appendices' with their prose untouched, ruled 2026-09-08
+as the fourth kind of upkeep the pointman post-mortem admits.
 
 **R4 --- URL-parameter options.** Server/client options sit at defaults
 in the browser for lack of argv. After 3.1, `lhStart` parses whatever WASI argv
 the host supplies --- so the whole feature reduces to the *loader* translating
 an allowlist of URL query parameters (e.g. `?fontset=`, `?allFontsScale=` ---
 the player-facing half of 1.5 --- `?benchmark=`, debug flags) into the args
-array it already passes to the WASI shim (`loader.ts:57`), reusing the real
+array it already passes to the WASI shim
+(`loader.ts:const wasi = new WASI(["LambdaHack"], [], fds);`), reusing the real
 options parser with no engine-side parsing code at all. This gives browser users
 what argv gives native ones with no new UI surface --- an address-bar knob.
 `?fontset=` only becomes meaningful once 2.2's font wiring exists,
@@ -3603,17 +3643,18 @@ all once rather than special-casing the default set.
 
 **Split** --- three commits, on 2.1's pattern, since the label's absence would
 otherwise assert this is one commit. (1) the change, which deletes the two
-allowlist entries as it creates the files. (2) the citation repair (1) owes,
-with its restamp: it rewrites `loader.ts:57`, cited here. (3) the outcome line
-naming (1)'s hash and the ledger flip.
+allowlist entries as it creates the files. (2) the re-anchoring (1) owes:
+it rewrites the `new WASI` line cited here. (3) the outcome line naming (1)'s
+hash and the ledger flip.
 
 **Owns** --- the new `ts-src/src/url-options-core.ts`
 and `ts-src/src/url-options-core.test.ts`, `ts-src/src/loader.ts`
-(the `new WASI(["LambdaHack"], [], fds)` argv construction at `loader.ts:57`),
+(the `new WASI(["LambdaHack"], [], fds)` argv construction
+at `loader.ts:const wasi = new WASI(["LambdaHack"], [], fds);`),
 `GameDefinition/index.html` if the knobs get on-page documentation,
 `tools/doc-refs-allow.txt`, whose two `url-options-core` entries commit (1)
-deletes as it creates the files, and this document, the citation-repair commit
-and its restamp included. Not concurrent with R5: R5's `?benchmark` mode is one
+deletes as it creates the files, and this document, the re-anchoring commit
+included. Not concurrent with R5: R5's `?benchmark` mode is one
 of this allowlist's own entries and edits the same `loader.ts` call.
 Not concurrent with 1.3 or 1.4 for `index.html`. `loader.ts`'s claimant list
 is at 0.1 and `index.html`'s at 1.4.
@@ -3628,7 +3669,7 @@ WebDriver BiDi navigates the deployed page and `location.search` reads back
 intact, so once this item lands its confirmation is scriptable rather than one
 served page per parameter. The substitute gate in Done is the vitest case
 over `url-options-core.ts`: query string in, args array out, which is everything
-between the URL and `loader.ts:57`.
+between the URL and `loader.ts:const wasi = new WASI(["LambdaHack"], [], fds);`.
 
 **Decide first** --- nothing, all three ruled on 2026-08-07, all player-visible.
 The allowlist is the minimal named set --- `?fontset=`, `?allFontsScale=`, plus
@@ -3662,9 +3703,7 @@ per frame) is already about as cheap as the boundary allows.
 
 **Split** --- R5a is the instrument: the `?benchmark` URL mode plus the rAF
 frame-timing collector, its pure half in a `*-core.ts` under vitest,
-and it carries the deletion of its two `tools/doc-refs-allow.txt` entries;
-its `terminal.ts` and `loader.ts` edits move lines cited here, so it owes
-the citation-repair commit and its restamp, a commit of its own after it. R5b
+and it carries the deletion of its two `tools/doc-refs-allow.txt` entries. R5b
 is the measurement pass the item exists for --- R5a's browser rendering numbers
 beside the `make nativeBench`-vs-`make nodeBench` ratio --- each landing
 as a recorded number in this document and nothing else, and it carries
@@ -3740,15 +3779,15 @@ right is 2.5's.
 
 **Decide first** --- nothing, both ruled on 2026-08-07, before 1.2 starts
 as the field required. "Both renderers reach the four `SingleFrame` fields
-(`Frame.hs:93-97`) through one shared TS entry point" is handed to the 1.2
-and 2.2 agents as an acceptance criterion --- the branch that keeps R6 the small
-test its Owns now assumes; imposing it afterwards would have been a deliberate
-rework of two landed items. And the entry point lives in a module of its own
-that 1.2 creates and 2.2 imports --- sequencing decides, `overlay-core.ts`
-not existing until Phase 2, and a live renderer importing a module named
-for screenshots would break one-meaning-per-name; the neutral name
-is the executing session's, its `tools/doc-refs-allow.txt` entry added before
-it is written anywhere.
+(`Frame.hs:data SingleFrame = SingleFrame`) through one shared TS entry point"
+is handed to the 1.2 and 2.2 agents as an acceptance criterion --- the branch
+that keeps R6 the small test its Owns now assumes; imposing it afterwards would
+have been a deliberate rework of two landed items. And the entry point lives
+in a module of its own that 1.2 creates and 2.2 imports --- sequencing decides,
+`overlay-core.ts` not existing until Phase 2, and a live renderer importing
+a module named for screenshots would break one-meaning-per-name; the neutral
+name is the executing session's, its `tools/doc-refs-allow.txt` entry added
+before it is written anywhere.
 
 ## Multi-frontend practices (adopted)
 
@@ -3756,12 +3795,13 @@ G1 is one practice among several that make a codebase with N frontends cheap
 to extend. These are adopted; the rejected companions are in Appendix B.
 
 **Capability constants instead of behavioral CPP.** Module *selection* by CPP
-is fine (`File.hs:9-15`, `Frontend.hs:41-48`); behavioral forks scattered around
-the engine are not: the autosave skip (`Server/LoopM.hs:336`), the history-dump
-key omission (`HandleHumanLocalM.hs:815`), and the 2s exit flush wait
-(`WatchUpdAtomicM.hs:586`) are each an `#if` over the same two macros, whose
-*reason* lives in a comment far from the backend it describes --- and not even
-in the same *sense*: the first two
+is fine (`File.hs:#ifdef USE_JSFILE`, `Frontend.hs:#ifdef USE_WASM`); behavioral
+forks scattered around the engine are not: the autosave skip
+(`Server/LoopM.hs:!defined(USE_JSFILE) &&`), the history-dump key omission
+(`HandleHumanLocalM.hs:!defined(USE_JSFILE) &&`), and the 2s exit flush wait
+(`WatchUpdAtomicM.hs:#if defined(USE_JSFILE)`) are each an `#if` over the same
+two macros, whose *reason* lives in a comment far from the backend it describes
+--- and not even in the same *sense*: the first two
 are `#if !defined(USE_JSFILE) && !defined(USE_WASMFILE)`, guarding the native
 behaviour, while the exit wait is the positive
 `#if defined(USE_JSFILE) || defined(USE_WASMFILE)`, browser 2s in the `#if`
@@ -3778,28 +3818,28 @@ got updated; R1's re-measurement flips one constant instead of editing ifdefs.
 **Split** --- two commits and their repair, exports before uses: first
 the File-layer modules gain the constants (`Common/HSFile.hs`,
 `Common/WasmFile.hs`, `Common/JSFile.hs`, re-exported through `Common/File.hs`,
-whose selection `#ifdef` at `File.hs:9-15` stays untouched), then the three
-engine consumers branch on values and lose their `#if`s; then the citation
-repair the second owes, with its restamp, the three `#if` sites being lines
-cited here. The outcome line names the second commit's hash and follows
-the third; the item sits in no `tools/doc-refs-allow.txt` gate, so it deletes
-nothing there.
+whose selection `#ifdef` at `File.hs:#ifdef USE_JSFILE` stays untouched),
+then the three engine consumers branch on values and lose their `#if`s;
+then the re-anchoring the second owes, the three `#if` sites being lines cited
+here that it rewrites. The outcome line names the second commit's hash
+and follows the third; the item sits in no `tools/doc-refs-allow.txt` gate,
+so it deletes nothing there.
 
 **Owns** --- `Common/File.hs`, `Common/HSFile.hs`, `Common/WasmFile.hs`,
 `Common/JSFile.hs`, `Server/LoopM.hs`, `Client/UI/HandleHumanLocalM.hs`,
-`Client/UI/Watch/WatchUpdAtomicM.hs`, and `docs/wasm-frontend-unified-plan.md`
---- the second commit moves lines cited here, so this item owes
-the citation-repair commit and its restamp. The two code commits are strictly
+`Client/UI/Watch/WatchUpdAtomicM.hs`, and `docs/wasm-frontend-unified-plan.md`,
+for the re-anchoring the second commit owes. The two code commits are strictly
 ordered, not concurrent --- the second does not compile without the first.
 Nothing else may hold these files meanwhile: R1's whole point is flipping two
-of the constants (`Server/LoopM.hs:336`, `WatchUpdAtomicM.hs:586`) and R3
-deletes their `USE_JSFILE` halves, so neither may hold these files while
-this item does. That is mutual exclusion and not precedence: R3's **Owns**
-and body both say "whichever lands first", Sequencing schedules this item any
-time, and neither `depends on` cell names it. The pointman campaign is a third
-claimant on `HandleHumanLocalM.hs` --- its PR 0, C3, C4 and C6, the claimant
-list at C3 --- converting several functions above the `HandleHumanLocalM.hs:815`
-this item and R3 both cite, so re-read those two snippets if it has landed.
+of the constants (`Server/LoopM.hs:!defined(USE_JSFILE) &&`,
+`WatchUpdAtomicM.hs:#if defined(USE_JSFILE)`) and R3 deletes their `USE_JSFILE`
+halves, so neither may hold these files while this item does. That is mutual
+exclusion and not precedence: R3's **Owns** and body both say "whichever lands
+first", Sequencing schedules this item any time, and neither `depends on` cell
+names it. The pointman campaign is a third claimant on `HandleHumanLocalM.hs`
+--- its PR 0, C3, C4 and C6, the claimant list at C3 --- converting several
+functions above the `HandleHumanLocalM.hs:!defined(USE_JSFILE) &&` this item
+and R3 both cite, so re-read those two snippets if it has landed.
 
 **Done** --- `native`, `wasm`, `docs`, plus
 `! git grep -lE 'USE_JSFILE|USE_WASMFILE' -- engine-src/Game/LambdaHack/Server/LoopM.hs engine-src/Game/LambdaHack/Client`.
@@ -3822,12 +3862,12 @@ by this item.
 `GameDefinition/game-src/TieKnot.hs` sites stay out of scope, and the item says
 so: `TieKnot.hs` *is* the knot --- the wiring layer where compile-time backend
 choice is legitimately visible, not a fork scattered around the engine, which
-is this practice's target class --- and besides, `TieKnot.hs:114` (`GHC.Compact`
-absent under GHCJS) cannot become a runtime `Bool` at all; R3 removes their
-GHCJS halves on its own schedule. (2) `Common/JSFile.hs` mirrors the constants:
-three lines in a dead file, guarded by the uniformity-diff rule instead
-of the compiler --- and since `JSFile.hs` survives R3 as the documented example
-of an alternative backend, the example then shows the complete interface
+is this practice's target class --- and besides, `TieKnot.hs:#ifdef USE_JSFILE`
+(`GHC.Compact` absent under GHCJS) cannot become a runtime `Bool` at all; R3
+removes their GHCJS halves on its own schedule. (2) `Common/JSFile.hs` mirrors
+the constants: three lines in a dead file, guarded by the uniformity-diff rule
+instead of the compiler --- and since `JSFile.hs` survives R3 as the documented
+example of an alternative backend, the example then shows the complete interface
 a fourth-backend author must export, the `USE_JSFILE` re-export arm staying
 coherent in principle until R3 deletes it. (3) The naming rule: each constant
 is a positive statement of the exporting backend's own property --- no negation
@@ -3841,39 +3881,43 @@ after all.
 
 **Sum-typed frontend selection.**
 `sfrontendANSI`/`sfrontendTeletype`/`sfrontendNull`/`sfrontendLazy` are four
-independent `Bool`s (`ClientOptions.hs:62-68`) whose simultaneous truth
-is resolved by guard order in two places (`Frontend.hs:84-92`
-and `Frontend.hs:186-196`). One sum-typed field, with the constructors
-`FrontendDefault`, `FrontendANSI`, `FrontendTeletype`, `FrontendNull`
-and `FrontendLazy`, makes the guard chains total cases and turns conflicting
-flags into a parse error. Mechanical, moderate churn (options parser,
-UnitTestHelpers' stub options). Do before R4, so URL parameters parse
+independent `Bool`s (`ClientOptions.hs:, sfrontendANSI ::`) whose simultaneous
+truth is resolved by guard order in two places
+(`Frontend.hs:sfrontendNull soptions =`
+and `Frontend.hs:frontendName :: ClientOptions`). One sum-typed field,
+with the constructors `FrontendDefault`, `FrontendANSI`, `FrontendTeletype`,
+`FrontendNull` and `FrontendLazy`, makes the guard chains total cases and turns
+conflicting flags into a parse error. Mechanical, moderate churn (options
+parser, UnitTestHelpers' stub options). Do before R4, so URL parameters parse
 into the sum type, not the Bools.
 
 **Split** --- three commits, on 2.1's pattern, since the label's absence would
 otherwise assert this is one commit. (1) the change, one diff because the type
-change is what forces every site to move together. (2) the citation repair (1)
-owes, with its restamp: every file (1) rewrites is cited here, the checker's
-printed snippets naming what slid. (3) the outcome line naming (1)'s hash
-and the ledger flip.
+change is what forces every site to move together. (2) the re-anchoring (1)
+owes: every file (1) rewrites is cited here, and the pass names what broke. (3)
+the outcome line naming (1)'s hash and the ledger flip.
 
 **Owns** --- `Common/ClientOptions.hs` (the field), `Server/Commandline.hs`
-(the four parsers at `Commandline.hs:316-334` and their bindings at `:82-85`),
-`Client/UI/Frontend.hs` (both guard chains), `Client/UI/DrawM.hs`
-and `Client/UI/MonadClientUI.hs` --- the two `frontendName soptions ==` string
-compares the sum type subsumes (`DrawM.hs:597`, `MonadClientUI.hs:329`), which
-this item's churn list omits and which `git grep 'frontendName soptions =='`
-shows are the only two in the tree --- `test/UnitTestHelpers.hs`, whose `:208`
+(the four parsers at `Commandline.hs:frontendANSIP :: Parser Bool` and their
+bindings at `Commandline.hs:<- frontendANSIP`), `Client/UI/Frontend.hs` (both
+guard chains), `Client/UI/DrawM.hs` and `Client/UI/MonadClientUI.hs` --- the two
+`frontendName soptions ==` string compares the sum type subsumes
+(`DrawM.hs:unless (frontendName soptions`,
+`MonadClientUI.hs:= Frontend.frontendName`), which this item's churn list omits
+and which `git grep 'frontendName soptions =='` shows are the only two
+in the tree --- `test/UnitTestHelpers.hs`, whose `sfrontendNull = True`
 is the sole fixture setting an `sfrontend*` field,
-and `docs/wasm-frontend-unified-plan.md`, for the citation-repair commit
-and its restamp. Serialize against 2.4 and R3 rather than running beside them:
-2.4 rewrites `MonadClientUI.hs:329` and dispatches through
-`Frontend.hs:186-196`, and R3 deletes the `#ifndef REMOVE_TELETYPE` guards
-at `Frontend.hs:86` and `:190` --- the exact lines this item turns into cases.
-`Frontend.hs`'s claimant list is at 0.1, and the determinism goldens also write
-`test/UnitTestHelpers.hs`, for their fixtures. The pointman campaign holds both
-files too: its C1 appends to `MonadClientUI.hs` below `:469`, and its PR 0 adds
-a recording `ChanFrontend` to `test/UnitTestHelpers.hs`.
+and `docs/wasm-frontend-unified-plan.md`, for the re-anchoring commit. Serialize
+against 2.4 and R3 rather than running beside them: 2.4 rewrites
+`MonadClientUI.hs:= Frontend.frontendName` and dispatches through
+`Frontend.hs:frontendName :: ClientOptions`, and R3 deletes
+the `#ifndef REMOVE_TELETYPE` guards at `Frontend.hs:= Teletype.startup`
+and `Frontend.hs:-> Teletype.frontendName` --- the exact lines this item turns
+into cases. `Frontend.hs`'s claimant list is at 0.1, and the determinism goldens
+also write `test/UnitTestHelpers.hs`, for their fixtures. The pointman campaign
+holds both files too: its C1 appends to `MonadClientUI.hs` below
+`partPronounLeader`, and its PR 0 adds a recording `ChanFrontend`
+to `test/UnitTestHelpers.hs`.
 
 <!-- probe: git -C .. grep -h 'frontendName soptions ==' -- '*.hs' | wc -l :: 2 -->
 
@@ -3895,12 +3939,13 @@ on `--frontendNull --frontendTeletype` and `make test-short`, which drives
 **Decide first** --- nothing, all three ruled on 2026-08-07. (1) The save format
 needs no bump, confirming the analysis this field carried: `ClientOptions`
 derives `Generic` with `instance Binary ClientOptions`
-(`ClientOptions.hs:79-81`), is written into and read back out of every client
-save (`Client/State.hs:193` and `:210`) and is carried by `UpdRestart`
-(`CmdAtomic.hs:130`), so four `Bool`s becoming one constructor changes the wire
-format --- but `compatibleVersion` compares only the first three version-branch
-components (`Save.hs:142-143`) and the package is `0.12.0.0`, whose first three
-differ from every `0.11.*` release, so every pre-existing save is refused
+(`ClientOptions.hs:instance Binary ClientOptions`), is written into and read
+back out of every client save (`Client/State.hs:put soptions` and `:210`)
+and is carried by `UpdRestart` (`CmdAtomic.hs:UpdRestart FactionId`), so four
+`Bool`s becoming one constructor changes the wire format ---
+but `compatibleVersion` compares only the first three version-branch components
+(`Save.hs:compatibleVersion ::`) and the package is `0.12.0.0`, whose first
+three differ from every `0.11.*` release, so every pre-existing save is refused
 by version comparison before `Binary` ever sees it; recorded so no session
 re-derives the arithmetic. (2) Five constructors always, an unavailable one
 erroring at startup with a message naming the build: the type stays total
@@ -3917,53 +3962,54 @@ verbatim.
 
 **The RawFrontend contract, written down and tested.** The engine-side protocol
 every frontend must fit is real but implicit: the `fshowNow` handshake's four
-numbered steps are split between `display` (`Frontend.hs:148`)
-and `frameTimeoutThread` (`Frontend.hs:159-183`) with a third participant
-in `saveKMP` (`Common.hs:80`); `fdisplay` semantics legitimately differ per
-frontend (SDL blocks until drawn via its frame-queue handshake, wasm
-snapshots-and-returns with painting deferred to rAF, Dom schedules a rAF
-callback, lazy does nothing) --- yet nothing states which properties
-are *required* and which are incidental; the threading rules (SDL needs
-the bound main thread via `startupBound`/`workaroundOnMainThreadMVar`, wasm
-is a single-threaded reactor) are likewise folklore the wasm port had
-to reverse-engineer. Deliverables: a haddock contract on `RawFrontend`'s fields;
-a tasty contract-test harness run against `nullStartup`/`lazyStartup`/`Teletype`
-natively and, via `make test-wasm`, against the real `Wasm.hs` (key delivered
-while a frame is pending; Esc reset; shutdown with a frame queued;
-`FrontPressed` semantics); and a "how to add a frontend" checklist.
-The input-side cases land together with 0.1 --- they guard exactly what
-it rewires in `Wasm.hs`; the rest pairs with 0.3.
+numbered steps are split between `display` (`Frontend.hs:putMVar fshowNow ()`)
+and `frameTimeoutThread` (`Frontend.hs:frameTimeoutThread :: Int`) with a third
+participant in `saveKMP` (`Common.hs:void $ tryTakeMVar $ fshowNow rf`);
+`fdisplay` semantics legitimately differ per frontend (SDL blocks until drawn
+via its frame-queue handshake, wasm snapshots-and-returns with painting deferred
+to rAF, Dom schedules a rAF callback, lazy does nothing) --- yet nothing states
+which properties are *required* and which are incidental; the threading rules
+(SDL needs the bound main thread via
+`startupBound`/`workaroundOnMainThreadMVar`, wasm is a single-threaded reactor)
+are likewise folklore the wasm port had to reverse-engineer. Deliverables:
+a haddock contract on `RawFrontend`'s fields; a tasty contract-test harness run
+against `nullStartup`/`lazyStartup`/`Teletype` natively and, via
+`make test-wasm`, against the real `Wasm.hs` (key delivered while a frame
+is pending; Esc reset; shutdown with a frame queued; `FrontPressed` semantics);
+and a "how to add a frontend" checklist. The input-side cases land together
+with 0.1 --- they guard exactly what it rewires in `Wasm.hs`; the rest pairs
+with 0.3.
 
 **Split** --- three commits. The haddock contract on `RawFrontend`'s fields
-(`Frontend/Common.hs:24-31`) first, since it is what the harness then asserts
-against --- carrying the hoist of `nullStartup`, `lazyStartup`, `display`
-and `frameTimeoutThread` into `Frontend.hs`'s unconditional export list
-under the "internal and used in unit tests" group (ruled 2026-08-07), so exports
-precede the harness that uses them; the native harness second, driving
-`nullStartup`/`lazyStartup`/`Teletype.startup`; the wasm case third,
-and not before 0.3's baseline battery, because `ts-src/run-wasm-test.mjs`
-supplies no `globalThis.lhSubmitFrame` today --- 73 lines wiring WASI
-and `ghc_wasm_jsffi` and nothing else (`run-wasm-test.mjs:34-67`) ---
-so the first foreign call out of `Wasm.hs` traps. A fourth, the citation repair
-with its restamp, follows the third, each of the three moving lines cited here.
-The third commit carries the outcome line and the `tools/doc-refs-allow.txt`
-deletion, the record following the repair.
+(`Frontend/Common.hs:data RawFrontend = RawFrontend`) first, since it is what
+the harness then asserts against --- carrying the hoist of `nullStartup`,
+`lazyStartup`, `display` and `frameTimeoutThread` into `Frontend.hs`'s
+unconditional export list under the "internal and used in unit tests" group
+(ruled 2026-08-07), so exports precede the harness that uses them; the native
+harness second, driving `nullStartup`/`lazyStartup`/`Teletype.startup`; the wasm
+case third, and not before 0.3's baseline battery, because
+`ts-src/run-wasm-test.mjs` supplies no `globalThis.lhSubmitFrame` today --- 73
+lines wiring WASI and `ghc_wasm_jsffi` and nothing else
+(`run-wasm-test.mjs:const wasi = new WASI({`) --- so the first foreign call out
+of `Wasm.hs` traps. The third commit carries the outcome line
+and the `tools/doc-refs-allow.txt` deletion.
 
 **Owns** --- `Client/UI/Frontend/Common.hs` (haddock), `Client/UI/Frontend.hs`
 (export list only), the new `test/FrontendContractUnitTests.hs`, `test/Spec.hs`,
-the `test-suite test` stanza of `LambdaHack.cabal` (`LambdaHack.cabal:481-515`),
-`ts-src/run-wasm-test.mjs`, `tools/doc-refs-allow.txt`
-(the `test/FrontendContractUnitTests.hs` entry, deleted by the third commit),
-one job in `.github/workflows/lint-and-test-suites.yml`,
-and `docs/wasm-frontend-unified-plan.md`, for the citation-repair commit
-and its restamp. Two shared-file caveats. The input-side cases are specified
-to land inside 0.1's commit, so whichever of the two lands first creates
-the test module and the other extends it --- never concurrently. The cabal
-stanza's `other-modules` list is also the determinism goldens' only edit point
---- the claimant lists for `LambdaHack.cabal`, `test/Spec.hs` and `Frontend.hs`
-are at 0.1 --- `ts-src/run-wasm-test.mjs`'s list is at 0.3, 2.3 and not 3.2
-being the other item extending it, and the workflow file's at the frontend CI
-smokes: one holder at a time for each.
+the `test-suite test` stanza of `LambdaHack.cabal`
+(`LambdaHack.cabal:test-suite test`), `ts-src/run-wasm-test.mjs`,
+`tools/doc-refs-allow.txt` (the `test/FrontendContractUnitTests.hs` entry,
+deleted by the third commit), one job
+in `.github/workflows/lint-and-test-suites.yml`,
+and `docs/wasm-frontend-unified-plan.md`. Two shared-file caveats.
+The input-side cases are specified to land inside 0.1's commit, so whichever
+of the two lands first creates the test module and the other extends it ---
+never concurrently. The cabal stanza's `other-modules` list is also
+the determinism goldens' only edit point --- the claimant lists
+for `LambdaHack.cabal`, `test/Spec.hs` and `Frontend.hs` are at 0.1 ---
+`ts-src/run-wasm-test.mjs`'s list is at 0.3, 2.3 and not 3.2 being the other
+item extending it, and the workflow file's at the frontend CI smokes: one holder
+at a time for each.
 
 **Done** --- `native`, `wasm`, `docs`, plus
 `cabal test --test-options='-p "/fe-invariant/"'` --- the series marker minted
@@ -3989,23 +4035,24 @@ itself, run against null, lazy and Teletype natively and against the real
 
 **Decide first** --- nothing, all three ruled on 2026-08-07. (1) The four names
 --- `nullStartup`, `lazyStartup`, `display`, `frameTimeoutThread`, today only
-inside `#ifdef EXPOSE_INTERNAL` (`Frontend.hs:9-13`), which defaults off
-(`LambdaHack.cabal:83-86`, `:135-136`) so a harness driving them would
-not compile --- hoist into the unconditional export list under the "internal
-and used in unit tests" group, the `emptyUnknownTile` precedent
-(`Common/Kind.hs:16`), riding this item's first commit as the Split now states;
-driving only `chanFrontendIO` is refused, a whole frontend chain being unable
-to isolate the `fshowNow` handshake the harness exists to pin. (2) One test
-module with an `#ifdef USE_WASM` split over the shared case table ---
-the pattern the suite already uses for its SDL cases, one registration
-in `test/Spec.hs`, the `[fe-invariant]` series countable in one place;
-`Sdl.hs`/`ANSI.hs` and `Wasm.hs` are never co-exposed
-(`LambdaHack.cabal:375-391`), which is what forces a split of some kind. (3)
-The "how to add a frontend" checklist is haddock in `Frontend/Common.hs`, beside
-the contract fields commit (1) writes --- read where a frontend author
-is already looking and shipped to downstream authors via Hackage; a `docs/` file
-and README are refused, one starting a third documentation genre and the other
-addressing the wrong audience.
+inside `#ifdef EXPOSE_INTERNAL` (`Frontend.hs:#ifdef EXPOSE_INTERNAL`), which
+defaults off (`LambdaHack.cabal:flag release`, `:135-136`) so a harness driving
+them would not compile --- hoist into the unconditional export list
+under the "internal and used in unit tests" group, the `emptyUnknownTile`
+precedent (`Common/Kind.hs:, emptyUnknownTile, emptyUIFaction`), riding
+this item's first commit as the Split now states; driving only `chanFrontendIO`
+is refused, a whole frontend chain being unable to isolate the `fshowNow`
+handshake the harness exists to pin. (2) One test module
+with an `#ifdef USE_WASM` split over the shared case table --- the pattern
+the suite already uses for its SDL cases, one registration in `test/Spec.hs`,
+the `[fe-invariant]` series countable in one place; `Sdl.hs`/`ANSI.hs`
+and `Wasm.hs` are never co-exposed
+(`LambdaHack.cabal:Game.LambdaHack.Client.UI.Frontend.Wasm`), which is what
+forces a split of some kind. (3) The "how to add a frontend" checklist
+is haddock in `Frontend/Common.hs`, beside the contract fields commit (1) writes
+--- read where a frontend author is already looking and shipped to downstream
+authors via Hackage; a `docs/` file and README are refused, one starting a third
+documentation genre and the other addressing the wrong audience.
 
 **Determinism goldens --- native first, then cross-backend.** The tasty suite
 already compiles and runs under both native (`cabal test`) and wasm
@@ -4021,25 +4068,22 @@ jobs landed --- the only kind of test that catches native-vs-wasm *behavioral*
 drift (FFI-adjacent paths, numeric assumptions); per-frontend unit tests can't.
 Medium effort.
 
-**Split** --- two commits and their repair, as the item's own staging says:
-the native harness, which must precede 2.1, then the wasm stage, which only adds
-the same goldens to `make test-wasm` and to R2's existing job; then the citation
-repair with its restamp that the first owes, its stanza edit landing inside
-`LambdaHack.cabal:481-515` and its fixtures in a file cited here. The second
-carries the outcome line and the `tools/doc-refs-allow.txt` deletion, the record
-following the repair.
+**Split** --- two commits, as the item's own staging says: the native harness,
+which must precede 2.1, then the wasm stage, which only adds the same goldens
+to `make test-wasm` and to R2's existing job. The second carries the outcome
+line and the `tools/doc-refs-allow.txt` deletion.
 
 **Owns** --- the new `test/DeterminismGoldenUnitTests.hs`, `test/Spec.hs`,
-the `test-suite test` stanza of `LambdaHack.cabal` (`LambdaHack.cabal:481-515`),
-whatever fixtures the digest needs in `test/UnitTestHelpers.hs`
-and `test/SessionUIMock.hs`, `tools/doc-refs-allow.txt`
-(the `test/DeterminismGoldenUnitTests.hs` entry, deleted by the second commit),
-and `docs/wasm-frontend-unified-plan.md`, for the citation-repair commit
-and its restamp. Not concurrent with the RawFrontend contract harness: both add
-a module to the same `other-modules` list and both extend `test/Spec.hs`, whose
-claimant lists, with `LambdaHack.cabal`'s, are at 0.1; and the sum-typed
-selection also writes `test/UnitTestHelpers.hs`, as does the pointman campaign's
-PR 0, for its recording `ChanFrontend`. If the digest is over committed literals
+the `test-suite test` stanza of `LambdaHack.cabal`
+(`LambdaHack.cabal:test-suite test`), whatever fixtures the digest needs
+in `test/UnitTestHelpers.hs` and `test/SessionUIMock.hs`,
+`tools/doc-refs-allow.txt` (the `test/DeterminismGoldenUnitTests.hs` entry,
+deleted by the second commit), and `docs/wasm-frontend-unified-plan.md`.
+Not concurrent with the RawFrontend contract harness: both add a module
+to the same `other-modules` list and both extend `test/Spec.hs`, whose claimant
+lists, with `LambdaHack.cabal`'s, are at 0.1; and the sum-typed selection also
+writes `test/UnitTestHelpers.hs`, as does the pointman campaign's PR 0,
+for its recording `ChanFrontend`. If the digest is over committed literals
 rather than a file, it owns no data file; if over a file, that file joins
 this list rather than living beside the test.
 
@@ -4067,10 +4111,11 @@ extraction and 2.4's flip actually gate on, which a game-state digest cannot see
 and the cross-backend behavioral drift the wasm stage exists for; the digest
 fold is shared between them. (2) Each family runs on the harness that naturally
 produces its input: the frame family on the scripted `CliMock`/`SessionUIMock`
-machinery (`UnitTestHelpers.hs:636`, `scriptedFchanFrontend`
-at `UnitTestHelpers.hs:143`, `scriptedCliState` at `UnitTestHelpers.hs:594`),
-whose scripted frontend captures the very frames the digest guards,
-and the state family on a seeded whole game through `tieKnot` ---
+machinery (`UnitTestHelpers.hs:newtype CliMock a = CliMock`,
+`scriptedFchanFrontend` at `UnitTestHelpers.hs:scriptedFchanFrontend ::`,
+`scriptedCliState` at `UnitTestHelpers.hs:scriptedCliState ::`), whose scripted
+frontend captures the very frames the digest guards, and the state family
+on a seeded whole game through `tieKnot` ---
 the `--frontendNull --benchmark --stopAfterFrames` shape the Makefile bench
 targets use, which the suite already depends on and which captures no frames,
 the reason it cannot serve the first family. (3) The digest is a hand-rolled
@@ -4087,35 +4132,34 @@ at all. Teletype comes closest --- the `make test-gha` playtests drive
 `Wasm.hs` but runs the suite with `--frontendNull`, so the wasm frontend
 is never entered, and `make build-wasm`/`make build-ts` run in no workflow,
 leaving the reactor's `--export=` wiring exercised nowhere. SDL2 is reached only
-via the `slogPriority == Just 0` init-and-quit backdoor (`Sdl.hs:196-207`) ---
-which does run its font discovery and decoding, once per configured fontset,
-ahead of the backdoor branch, but never its event loop or renderer. Add
-an `xvfb-run` job driving a real SDL game for a few frames (a tiny
-`--stopAfterFrames` variant of `benchFrontendBattle`), a pty-driven ANSI
-startup/shutdown check, and --- once 3.2 exists --- a short `nodeBench` run,
-which is what would first execute `Wasm.hs` in CI. No shipped frontend goes
-permanently untested the way `Dom.hs` did.
+via the `slogPriority == Just 0` init-and-quit backdoor
+(`Sdl.hs:if slogPriority == Just 0 then do`) --- which does run its font
+discovery and decoding, once per configured fontset, ahead of the backdoor
+branch, but never its event loop or renderer. Add an `xvfb-run` job driving
+a real SDL game for a few frames (a tiny `--stopAfterFrames` variant
+of `benchFrontendBattle`), a pty-driven ANSI startup/shutdown check, and ---
+once 3.2 exists --- a short `nodeBench` run, which is what would first execute
+`Wasm.hs` in CI. No shipped frontend goes permanently untested the way `Dom.hs`
+did.
 
-**Split** --- three commits, a repair after each, ordered by which gate can run
-at all: the pty-driven ANSI smoke (verifiable in-session), the `xvfb-run` SDL
-smoke (likewise, since the display arrived --- see Hands back),
-and the `nodeBench` smoke, which waits on 3.3. Each job lands in a workflow file
-and a `Makefile` cited here, so each owes the citation repair with its restamp,
-a commit of its own after it. The third carries the outcome line; the item
-is in no `tools/doc-refs-allow.txt` gate beyond the three target names
-this block introduces, which its own commit deletes as it lands.
+**Split** --- three commits, ordered by which gate can run at all:
+the pty-driven ANSI smoke (verifiable in-session), the `xvfb-run` SDL smoke
+(likewise, since the display arrived --- see Hands back), and the `nodeBench`
+smoke, which waits on 3.3. The third carries the outcome line; the item is
+in no `tools/doc-refs-allow.txt` gate beyond the three target names this block
+introduces, which its own commit deletes as it lands.
 
 **Owns** --- `Makefile`, gaining `smokeANSI`, `smokeSdl` and `smokeNodeBench`,
 `.github/workflows/lint-and-test-suites.yml`, one job each,
 `tools/doc-refs-allow.txt`, whose `make smokeANSI`, `make smokeSdl`
 and `make smokeNodeBench` entries leave with the commits that add those targets,
-and `docs/wasm-frontend-unified-plan.md`, for the citation repairs and their
-restamps. Not `.github/workflows/haskell-ci.yml`, which is generated
-from the cabal file and whose hand edits vanish on the next regenerate.
-The workflow file has four claimants --- R2, which grows it per phase, 0.2's
-freshness job, the RawFrontend contract's harness job, and this item's three ---
-so one holder at a time, and the three commits here are serialized against each
-other for the same reason; the `Makefile`'s claimant list is at 3.3.
+and `docs/wasm-frontend-unified-plan.md`.
+Not `.github/workflows/haskell-ci.yml`, which is generated from the cabal file
+and whose hand edits vanish on the next regenerate. The workflow file has four
+claimants --- R2, which grows it per phase, 0.2's freshness job, the RawFrontend
+contract's harness job, and this item's three --- so one holder at a time,
+and the three commits here are serialized against each other for the same
+reason; the `Makefile`'s claimant list is at 3.3.
 
 **Done** --- `native`, `docs`, plus `make smokeANSI` && `make smokeSdl` &&
 `make smokeNodeBench --dry-run`. `--dry-run` gates the one target that cannot
@@ -4138,19 +4182,20 @@ gates on exit status *and* a frame-count assertion against the benchmark report,
 each reading its own source --- the repo fact that makes one source wrong per
 smoke: the executable redirects its own stdout and stderr
 to `~/.LambdaHack/stdout.txt` and `~/.LambdaHack/stderr.txt` whenever stdout
-is not a terminal (`GameDefinition/Main.hs:49-56`), so under `script` the pty
-*is* a terminal and the ANSI smoke greps its pty capture, while under `xvfb-run`
-it is not and the SDL smoke greps the harvested `~/.LambdaHack/stdout.txt`,
-freshly overwritten each launch. The grep that must find the report line
-is the built-in non-vacuity control; exit status alone cannot distinguish a game
-that ran from one that quit at frame zero. (2) The SDL smoke
-is `benchFrontendBattle`'s variant (`Makefile:109-110`, no `--frontend` flag,
-so SDL) at `--stopAfterFrames 60` --- past startup and well into the render loop
-while keeping the job's game portion to seconds --- and the playtest job's apt
-line gains `xvfb` in the same commit. (3) The ANSI smoke's driver
-is `script -e`, present at `/usr/bin/script` and propagating the child's exit
-status: zero new code, and the smoke's termination is `--stopAfterFrames`'s
-business, so a python pty helper would be maintained machinery ahead of need.
+is not a terminal (`GameDefinition/Main.hs:unless isTerminal $ do`),
+so under `script` the pty *is* a terminal and the ANSI smoke greps its pty
+capture, while under `xvfb-run` it is not and the SDL smoke greps the harvested
+`~/.LambdaHack/stdout.txt`, freshly overwritten each launch. The grep that must
+find the report line is the built-in non-vacuity control; exit status alone
+cannot distinguish a game that ran from one that quit at frame zero. (2) The SDL
+smoke is `benchFrontendBattle`'s variant (`Makefile:benchFrontendBattle:`,
+no `--frontend` flag, so SDL) at `--stopAfterFrames 60` --- past startup
+and well into the render loop while keeping the job's game portion to seconds
+--- and the playtest job's apt line gains `xvfb` in the same commit. (3)
+The ANSI smoke's driver is `script -e`, present at `/usr/bin/script`
+and propagating the child's exit status: zero new code, and the smoke's
+termination is `--stopAfterFrames`'s business, so a python pty helper would
+be maintained machinery ahead of need.
 
 **Frontends pass widths explicitly.** Frontend code decodes linear indices
 with the explicitly-parameterized `punindex (rwidth coscreen)`, never the `Enum`
@@ -4158,36 +4203,39 @@ instance: `toEnum i` depends on the global `speedupHackXSize` (the *dungeon*
 width, correct at frontend call sites only via the engine's
 `Client/UI/Content/Screen.hs`'s `rwidth == RK.rWidthMax` assertion). The switch
 is the same arithmetic with one *fewer* global read, in a non-hot once-per-frame
-loop, so it needs no benchmark. One live violation exists: **`Sdl.hs:590`**
-(`setMapChar`'s `let Point{..} = toEnum i`) --- and it belongs to 0.2, whose
-adoption of `CellStyle` rewrites the per-cell drawing `setMapChar` drives. 2.1
-does not rewrite that loop: it shrinks `scaleSurfaceToTextureProp` above
-it and extracts the overlay half from `Sdl.hs:593-713` below it,
+loop, so it needs no benchmark. One live violation exists:
+**`Sdl.hs:let Point{..} = toEnum i`** (`setMapChar`'s
+`let Point{..} = toEnum i`) --- and it belongs to 0.2, whose adoption
+of `CellStyle` rewrites the per-cell drawing `setMapChar` drives. 2.1 does
+not rewrite that loop: it shrinks `scaleSurfaceToTextureProp` above
+it and extracts the overlay half from `Sdl.hs:drawMonoOverlay ::` below it,
 and `setMapChar` sits between the two, untouched by either. It holds the whole
 file all the same, so if 0.2 has not landed first 2.1 *carries* the one-line fix
-rather than inheriting it, which is what both **Split**s say. (`Dom.hs:254` has
-the same pattern next to the correct form at `Dom.hs:160`, but it's a dead
+rather than inheriting it, which is what both **Split**s say.
+(`Dom.hs:let Point{..} = toEnum i` has the same pattern next to the correct form
+at `Dom.hs:let Point{..} = punindex (rwidth coscreen) i`, but it's a dead
 example file, R3 --- leave it.) The rule binds all live and future frontend code
 from now on. The `Enum` instance itself and its global stay engine-internal,
 permanently --- the engine-wide removal of the hack is rejected outright
 (Appendix B has the ruling and the hack's documentation of record).
 
 **Owns** --- nothing --- this is a review rule, not an item to execute.
-Its whole executable residue is `Sdl.hs:590`, owned by 0.2, which rewrites
-that loop, or carried by 2.1 if 2.1 takes `Sdl.hs` first, together
-with the `CLAUDE.md` Gotchas clause the fix retires; fixing it standalone
-contradicts the coupling stated just above and collides with both items' diffs.
-The rule retires with the campaign rather than taking a hash.
+Its whole executable residue is `Sdl.hs:let Point{..} = toEnum i`, owned by 0.2,
+which rewrites that loop, or carried by 2.1 if 2.1 takes `Sdl.hs` first,
+together with the `CLAUDE.md` Gotchas clause the fix retires; fixing
+it standalone contradicts the coupling stated just above and collides with both
+items' diffs. The rule retires with the campaign rather than taking a hash.
 
 **Done** --- no gate of its own, only
 `! git grep -nE 'Point\{\.\.\} = toEnum' -- 'engine-src/Game/LambdaHack/Client/UI/Frontend/*.hs' ':!engine-src/Game/LambdaHack/Client/UI/Frontend/Dom.hs'`.
-It returns nonzero today, naming `Sdl.hs:590` --- which is what proves it a real
-search rather than a silent one --- and must return zero from 0.2 onward,
-so it is an acceptance criterion on 0.2's diff and a check on every later
-frontend diff, not a task of its own. Deliberately not a bare `toEnum` grep:
-every other `toEnum` in `Sdl.hs` is a legitimate conversion into an SDL numeric
-type --- geometry mostly, and a log priority at `Sdl.hs:105` --- and a gate
-that flags them would stop being read.
+It returns nonzero today, naming `Sdl.hs:let Point{..} = toEnum i` --- which
+is what proves it a real search rather than a silent one --- and must return
+zero from 0.2 onward, so it is an acceptance criterion on 0.2's diff and a check
+on every later frontend diff, not a task of its own. Deliberately not a bare
+`toEnum` grep: every other `toEnum` in `Sdl.hs` is a legitimate conversion
+into an SDL numeric type --- geometry mostly, and a log priority
+at `Sdl.hs:SDL.logSetAllPriority $` --- and a gate that flags them would stop
+being read.
 
 **Hands back** --- *judgement*: the grep catches only the shape already seen,
 `Point{..} = toEnum`. Whether a newly written decoding site passes the width
@@ -4352,9 +4400,10 @@ inline by number.
 ### A.1 The old GHCJS target is unbuildable --- waiting was never an option
 
 - The repo requires GHC >= 9.10:
-  `tested-with: GHC ==9.10.3 || ==9.12.4 || ==9.14.1` (`LambdaHack.cabal:43`)
-  and `default-language: GHC2024` (`LambdaHack.cabal:94`), which only exists
-  in GHC 9.10+.
+  `tested-with: GHC ==9.10.3 || ==9.12.4 || ==9.14.1`
+  (`LambdaHack.cabal:tested-with: GHC ==9.10.3`) and `default-language: GHC2024`
+  (`LambdaHack.cabal:default-language: GHC2024`), which only exists in GHC
+  9.10+.
 - The standalone GHCJS compiler's last releases track GHC 8.6/8.10 [8];
   it was never updated past that --- its successor *is* the in-tree backend.
 - Therefore `Dom.hs` (283 lines), `JSFile.hs`, and every `impl(ghcjs)` block
@@ -4386,7 +4435,8 @@ inline by number.
 ### A.3 Template Haskell --- the make-or-break requirement, and it holds
 
 This repo cannot build without cross-target TH: `rcfgUIDefault` embeds
-`config.ui.default` via a TH splice (`GameDefinition/Content/RuleKind.hs:34`),
+`config.ui.default` via a TH splice
+(`GameDefinition/Content/RuleKind.hs:, rcfgUIDefault = $(do`),
 `Client.UI.Content.Screen` runs a TH splice that reads and parses
 `GameDefinition/PLAYING.md` at compile time (plus `embedDir` for fonts, though
 that one is `#ifdef`'d away under `USE_BROWSER`).
@@ -4407,7 +4457,8 @@ that one is `#ifdef`'d away under `USE_BROWSER`).
 - The new backend's documented convention for `foreign import javascript`
   is a **JS function expression** (typically an arrow function); the old GHCJS
   `$r = ...` result-assignment sugar is not documented as supported [1]. Repo
-  impact: exactly two import strings, `JSFile.hs:35-39`
+  impact: exactly two import strings,
+  `JSFile.hs:= LZString.compressToUTF16($1);"`
   (`LZString.compressToUTF16`/`decompressFromUTF16`) --- a mechanical rewrite.
 - There is no true `foreign export javascript` on the JS backend; callback-style
   quasi-exports go through `GHC.JS.Foreign.Callback`
@@ -4467,20 +4518,23 @@ so the cheapest step retires the most uncertainty.
    build really calls `compact` at startup, and the old-GHCJS escape hatch
    `#ifdef USE_JSFILE`
    (`let cops = copsRaw -- until GHCJS implements GHC.Compact`,
-   `TieKnot.hs:114-118`) already exists --- keep it for the new backend until
-   proven unnecessary. Everything after the spike is known-shape work.
+   `TieKnot.hs:#ifdef USE_JSFILE`) already exists --- keep it for the new
+   backend until proven unnecessary. Everything after the spike is known-shape
+   work.
 2. **Cabal + `JSFile.hs`, 1--2 days.** `impl(ghcjs)` -> `arch(javascript)`
    everywhere --- all three sites: the `common options` cpp-options conditional
-   (`LambdaHack.cabal:148-152`), inherited by every component, and the `library`
-   stanza's frontend and file-backend conditionals (`LambdaHack.cabal:380-400`).
+   (`LambdaHack.cabal:-DUSE_BROWSER -DUSE_GHCJS -DUSE_JSFILE`), inherited
+   by every component, and the `library` stanza's frontend and file-backend
+   conditionals (`LambdaHack.cabal:Game.LambdaHack.Client.UI.Frontend.Dom`).
    The executable has no `impl(ghcjs)` conditional of its own; it inherits them.
    Delete the dead old-compiler knobs (`ghcjs-options`: `GHCJS_GC_INTERVAL`,
-   `GHCJS_BUSY_YIELD`, `-dedupe`, `GHCJS_BROWSER`, `LambdaHack.cabal:165-173`
-   --- none has a new-backend equivalent; the new backend takes plain
-   `ghc-options`); revisit the `supportNodeJS` flag's meaning; rewrite the two
-   `$r =` FFI strings as arrow functions. The `USE_GHCJS`/`USE_JSFILE` CPP names
-   can stay (they name the *frontend/file-layer choice*, not the compiler),
-   which keeps the churn out of the eight source files that test them.
+   `GHCJS_BUSY_YIELD`, `-dedupe`, `GHCJS_BROWSER`,
+   `LambdaHack.cabal:Haskell GC in GHCJS every 10s` --- none has a new-backend
+   equivalent; the new backend takes plain `ghc-options`); revisit
+   the `supportNodeJS` flag's meaning; rewrite the two `$r =` FFI strings
+   as arrow functions. The `USE_GHCJS`/`USE_JSFILE` CPP names can stay (they
+   name the *frontend/file-layer choice*, not the compiler), which keeps
+   the churn out of the eight source files that test them.
 3. **`Dom.hs` against ghcjs-dom, 2--5 days --- the tail risk.** In the good case
    it compiles nearly as-is (the API surface `Dom.hs` uses --- `on`, `EventM`,
    `RequestAnimationFrameCallback`, table/cell types --- exists in both
@@ -4576,36 +4630,40 @@ module exports one value, e.g. `frontend :: FrontendImpl` (name, startup,
 capability record), and `Frontend.hs` consumes only that --- so adding
 a capability becomes adding a field the type-checker forces every frontend
 to answer, instead of today's parallel conventions (a module exporting
-`startup`/`frontendName` wired by CPP as `Chosen`, `Frontend.hs:41-48`;
-`fprintScreen` as a dummy field overridden post-construction by exactly one
-frontend, `Common.hs:67`/`Sdl.hs:273`; 2.4's `supportsMultiFont` constant).
-Rejected for now. Revisit if any trigger fires: capabilities accumulate beyond
-the two now planned; a bug appears that this design would have prevented (e.g.
-a frontend silently missing a newly-required export); or another adopted item
-turns out to depend on it.
+`startup`/`frontendName` wired by CPP as `Chosen`,
+`Frontend.hs:#ifdef USE_WASM`; `fprintScreen` as a dummy field overridden
+post-construction by exactly one frontend,
+`Common.hs:fprintScreen = return`/`Sdl.hs:let rf = rfWithoutPrintScreen`; 2.4's
+`supportsMultiFont` constant). Rejected for now. Revisit if any trigger fires:
+capabilities accumulate beyond the two now planned; a bug appears
+that this design would have prevented (e.g. a frontend silently missing
+a newly-required export); or another adopted item turns out to depend on it.
 
 **B.5 No hoisting of the frame-diff fold.** The changed-cell fold is duplicated
-verbatim in Haskell (`Sdl.hs:722-723`, `Dom.hs:277-279`), but it's two lines
+verbatim in Haskell (`Sdl.hs:U.foldM'_ setMapChar 0 $`,
+`Dom.hs:<- newRequestAnimationFrameCallbackSync`), but it's two lines
 of content-free traversal --- not worth the churn.
 
 **B.6 Engine-wide `speedupHackXSize` removal: rejected outright.** The hack
 stays permanently: it is set once at startup, it is now documented (below),
 and any clean alternative would churn the engine's hottest loops for zero
 player-visible value. No rework, no benchmark experiment. Why the hack exists
-(confirmed from its own documentation, `Point.hs:26-40`): a global `NOINLINE`
-one-element `PrimArray` carries the dungeon's X size into the `Enum` instances
-of `Point` and `Vector`, because `Enum` methods can't take a width argument
-and these conversions sit in the engine's hottest loops; `PrimArray` was chosen
-over `IORef` explicitly for lower read overhead; it is mutated exactly once,
-at startup (`TieKnot.hs:60-63`, `unsafeThaw`/write/`unsafeFreeze`), before first
-use; the comment names Backpack as the possible clean alternative, unverified
-over GHCJS-era doubts (moot for wasm, untested for the JS backend).
-The candidate reworks that were on the table (threading the width through call
-sites, or a Backpack signature) would have touched FOV/pathfinding/`PointArray`
-hot loops and required before/after runs of the bench battery to prove
-no regression --- cost with no payoff, hence the rejection. This paragraph
-is the hack's documentation of record. (The *frontend-side* rule --- explicit
-`punindex`, no benchmark needed --- is adopted; see Multi-frontend practices.)
+(confirmed from its own documentation,
+`Point.hs:This is a hack to pass the X size of the dungeon`): a global
+`NOINLINE` one-element `PrimArray` carries the dungeon's X size into the `Enum`
+instances of `Point` and `Vector`, because `Enum` methods can't take a width
+argument and these conversions sit in the engine's hottest loops; `PrimArray`
+was chosen over `IORef` explicitly for lower read overhead; it is mutated
+exactly once, at startup (`TieKnot.hs:speedupHackXSizeThawed <-`,
+`unsafeThaw`/write/`unsafeFreeze`), before first use; the comment names Backpack
+as the possible clean alternative, unverified over GHCJS-era doubts (moot
+for wasm, untested for the JS backend). The candidate reworks that were
+on the table (threading the width through call sites, or a Backpack signature)
+would have touched FOV/pathfinding/`PointArray` hot loops and required
+before/after runs of the bench battery to prove no regression --- cost
+with no payoff, hence the rejection. This paragraph is the hack's documentation
+of record. (The *frontend-side* rule --- explicit `punindex`, no benchmark
+needed --- is adopted; see Multi-frontend practices.)
 
 **B.7 No-action findings from the alignment analysis** (kept self-contained
 since the superseded document may be deleted):
@@ -4631,8 +4689,7 @@ since the superseded document may be deleted):
   derives `lmHalfSize` from the map font's configured size times
   `sallFontsScale` and imposes the cell dimensions on the grid, so the 16 does
   have a canonical Haskell value behind it --- `16x16xwScalable`'s
-  in `config.ui.default` (line 99) --- and the grid takes it rather
-  than hardcoding one.*
+  in `config.ui.default` --- and the grid takes it rather than hardcoding one.*
 - *Save persistence needs no rework* --- `WasmFile.hs` mirrors `JSFile.hs`'s
   exact localStorage format as a proper Haskell sibling module; it
   is the existing exemplar of the pattern this plan applies elsewhere.
@@ -4649,10 +4706,10 @@ at parity (R3 has the inventory). Appendix A remains the resurrection manual
 if this is ever revisited.
 
 **B.9 No `document.title` from `stitle`.** SDL sets its window title
-from the `stitle` option (`Sdl.hs:107-108`) while the page's `<title>`
-is hardcoded in `index.html`. Sourcing it from Haskell at startup was proposed
-as a one-line G1 nicety and dropped: the page title is page chrome, not game
-knowledge worth an FFI call.
+from the `stitle` option (`Sdl.hs:let title = T.pack $ fromJust stitle`) while
+the page's `<title>` is hardcoded in `index.html`. Sourcing it from Haskell
+at startup was proposed as a one-line G1 nicety and dropped: the page title
+is page chrome, not game knowledge worth an FFI call.
 
 ---
 
@@ -4667,29 +4724,36 @@ or not-applicable. Recorded with evidence so nobody re-treads it:
 
 *Re-audited from the source alone on 2026-09-07, and the "everything else" above
 does not hold: six behaviours are recorded nowhere in this plan. (1) **Half-cell
-mouse x is unreachable in the browser.** `Sdl.hs:277` divides a click's pixel x
+mouse x is unreachable in the browser.**
+`Sdl.hs:pointTranslate (SDL.P (SDL.V2 x y)) =` divides a click's pixel x
 by `halfSize`, so SDL reports an odd `PointUI` x for a click in a cell's right
-half; `Wasm.hs:112` and `Wasm.hs:128` build their point with `squareToUI`
-(`PointUI.hs:35-37`), so the browser's is always even. Unobservable while
-the square layer is the only one on screen; observable the moment Phase 2 lands
-the mono layer, whose pitch is exactly `halfSize`. (2) **The shift flag handed
-to key translation differs under a compound modifier.** `Sdl.hs:337-341`
-computes it from the raw left/right shift bits, independent of Ctrl and Alt;
-`Wasm.hs:92` passes `modifier == K.Shift`, which is `False` whenever Ctrl or Alt
-is also down --- so `C-S-<key>` translates as shifted natively and as unshifted
-in the browser. (3) **`--printEachScreen` has no browser counterpart.**
-`sprintEachScreen` is read at `Sdl.hs:739` and nowhere else, and 1.2 restores
-`Ctrl+P` alone. (4) **Game-end page lifecycle.** `Sdl.hs:322-333` frees
-the fonts, destroys renderer and window and exits; `Wasm.hs:74-75`
-is `shutdown = return ()`, so a finished game leaves a live-looking frozen page.
-The "Window-close semantics" bullet below covers the player closing the tab,
-not the engine finishing. (5) **Fixed-pitch glyph cropping and centring.**
-`Sdl.hs:521-544` crops an oversized glyph surface to the cell box and centres
-it over a black fill, for the square layer (`Sdl.hs:662`) and the mono one
-(`Sdl.hs:618`) alike; the DOM grid's `1ch`/`1em` cells do not. 2.1 declines
-to generalize the *proportional* crop and says so --- this is the other site.
-(6) **Keycode 167** (`Sdl.hs:828-830`, the paragraph key) has
-no `keyTranslateWeb` clause. Trivial; no binding uses it. Five of the six
+half; `Wasm.hs:row deltaY modCtrl` and `Wasm.hs:row button modCtrl` build their
+point with `squareToUI` (`PointUI.hs:squareToUI :: PointSquare`),
+so the browser's is always even. Unobservable while the square layer is the only
+one on screen; observable the moment Phase 2 lands the mono layer, whose pitch
+is exactly `halfSize`. (2) **The shift flag handed to key translation differs
+under a compound modifier.**
+`Sdl.hs:let sym = SDL.keyboardEventKeysym keyboardEvent` computes it
+from the raw left/right shift bits, independent of Ctrl and Alt;
+`Wasm.hs:key = K.keyTranslateWeb (fromJSString` passes `modifier == K.Shift`,
+which is `False` whenever Ctrl or Alt is also down --- so `C-S-<key>` translates
+as shifted natively and as unshifted in the browser. (3) **`--printEachScreen`
+has no browser counterpart.** `sprintEachScreen` is read
+at `Sdl.hs:when sprintEachScreen $ printScreen sess` and nowhere else, and 1.2
+restores `Ctrl+P` alone. (4) **Game-end page lifecycle.**
+`Sdl.hs:SDL.destroyRenderer srenderer` frees the fonts, destroys renderer
+and window and exits; `Wasm.hs:shutdown :: IO ()` is `shutdown = return ()`,
+so a finished game leaves a live-looking frozen page. The "Window-close
+semantics" bullet below covers the player closing the tab, not the engine
+finishing. (5) **Fixed-pitch glyph cropping and centring.**
+`Sdl.hs:scaleSurfaceToTexture ::` crops an oversized glyph surface to the cell
+box and centres it over a black fill, for the square layer
+(`Sdl.hs:scaleSurfaceToTexture boxSize`) and the mono one
+(`Sdl.hs:scaleSurfaceToTexture halfSize`) alike; the DOM grid's `1ch`/`1em`
+cells do not. 2.1 declines to generalize the *proportional* crop and says so ---
+this is the other site. (6) **Keycode 167**
+(`Sdl.hs:on some keyboards the key below ESC is paragraph`, the paragraph key)
+has no `keyTranslateWeb` clause. Trivial; no binding uses it. Five of the six
 are named at the live items a session would otherwise execute without them ---
 (2) at 0.1's `KeyDecision` comment and (6) at its `keyTranslateWeb` test bullet,
 (1) and (5) at 2.2's pitfalls, (3) at 1.2's body --- while (4) bears on no item
@@ -4699,57 +4763,66 @@ so it bears on an item now --- (5) into 2.2 and (6) into 0.1; G2 names the same
 four, and the two it leaves are (1) and (2).*
 
 - **Mouse position attached to keyboard events.** SDL sends the *current* mouse
-  position with every keypress (`getAbsoluteMouseLocation`, `Sdl.hs:348-350`);
-  web frontends send `PointUI 0 0`, and every KMP overwrites the session's
-  `spointer` (`MonadClientUI.hs:166`) --- so in the browser, each keystroke
-  clobbers the remembered pointer. Traced every `spointer` consumer
-  (`HandleHumanGlobalM.hs:119,1271,1359`; `HandleHumanLocalM.hs:698,1303,1330`;
-  `HandleHelperM.hs:244`; `SlideshowM.hs:350`) --- the list is exhaustive,
-  by repo-wide grep for `getsSession spointer`. Every one of them reads
-  `spointer` only on a mouse-button release, and the triggering mouse KMP itself
-  sets `spointer` correctly first, so there is no observable difference today.
-  Six reach that read from the mouse bindings themselves
-  (`GameDefinition/.../Content/Input.hs:188-236` --- the mouse section plus
-  the `"safe1".."safe6"` `CmdInternal` pseudo-keys, which are not typeable
-  on any keyboard and exist only for the mouse machinery and macros
-  to reference). The other two are entered from the *keyboard* and gate the read
-  on a `K.LeftButtonRelease` case inside their own confirm loop: `pickPoint`
-  (`HandleHumanGlobalM.hs:1359`, reached from `alterDirHuman`/`closeDirHuman`,
-  bound to `M`/`m`) and `displayChoiceScreen`'s `interpretKey`
-  (`SlideshowM.hs:350`). The invariant is therefore about the *read*, not about
-  the binding. This is a booby trap: **any future key binding
-  for a `*WithPointer`/`ByArea` command would behave differently on web.** 0.1's
-  `InputDecision` should document the invariant.
-- **Key auto-repeat.** Neither side filters it: `Sdl.hs:334-336` accepts every
-  `Pressed` event without consulting the repeat flag; the browser keydown
-  listener forwards repeats likewise. Parity by mutual omission.
+  position with every keypress (`getAbsoluteMouseLocation`,
+  `Sdl.hs:when (key == K.Esc) $ resetChanKey (fchanKey rf)`); web frontends send
+  `PointUI 0 0`, and every KMP overwrites the session's `spointer`
+  (`MonadClientUI.hs:{spointer = K.kmpPointer`) --- so in the browser, each
+  keystroke clobbers the remembered pointer. Traced every `spointer` consumer
+  (three in `HandleHumanGlobalM.hs`, three in `HandleHumanLocalM.hs`, one each
+  in `HandleHelperM.hs` and `SlideshowM.hs`) --- the list is exhaustive,
+  by repo-wide grep for `getsSession spointer`, which the probe
+  under this bullet counts. Every one of them reads `spointer` only
+  on a mouse-button release, and the triggering mouse KMP itself sets `spointer`
+  correctly first, so there is no observable difference today. Six reach
+  that read from the mouse bindings themselves
+  (`GameDefinition/.../Content/Input.hs:, ( "LeftButtonRelease"` --- the mouse
+  section plus the `"safe1".."safe6"` `CmdInternal` pseudo-keys, which
+  are not typeable on any keyboard and exist only for the mouse machinery
+  and macros to reference). The other two are entered from the *keyboard*
+  and gate the read on a `K.LeftButtonRelease` case inside their own confirm
+  loop: `pickPoint` (`HandleHumanGlobalM.hs:pickPoint ::`, reached
+  from `alterDirHuman`/`closeDirHuman`, bound to `M`/`m`)
+  and `displayChoiceScreen`'s `interpretKey`
+  (`SlideshowM.hs:PointUI mx my <- getsSession spointer`). The invariant
+  is therefore about the *read*, not about the binding. This is a booby trap:
+  **any future key binding for a `*WithPointer`/`ByArea` command would behave
+  differently on web.** 0.1's `InputDecision` should document the invariant.
+
+<!-- probe: git -C .. grep -h 'getsSession spointer' -- '*.hs' | wc -l :: 8 -->
+- **Key auto-repeat.** Neither side filters it:
+  `Sdl.hs:handleEvent e = case SDL.eventPayload e of` accepts every `Pressed`
+  event without consulting the repeat flag; the browser keydown listener
+  forwards repeats likewise. Parity by mutual omission.
 - **Natural-scrolling wheel direction.** SDL branches
-  on `mouseWheelEventDirection`/`ScrollFlipped` (`Sdl.hs:363-370`); browsers
-  normalize direction into `deltaY` before the event reaches script. Handled
-  at different layers, same result.
+  on `mouseWheelEventDirection`/`ScrollFlipped`
+  (`Sdl.hs:= SDL.mouseWheelEventPos`); browsers normalize direction
+  into `deltaY` before the event reaches script. Handled at different layers,
+  same result.
 - **Window-close semantics.** SDL's close/quit path deliberately exits without
-  a fresh save (`forceShutdown`; the `display` comment at `Sdl.hs:475-484`
-  spells out why) --- so a closed browser tab losing unsaved progress is parity,
-  not a regression. Improving on it is R1.
-- **Redraw on expose/restore/resize** (`Sdl.hs:376-385`): repainting after
-  occlusion is the DOM's job in a browser; nothing to port. Same
-  for the texture-invalidation workarounds.
+  a fresh save (`forceShutdown`; the `display` comment
+  at `Sdl.hs:a forced shutdown,` spells out why) --- so a closed browser tab
+  losing unsaved progress is parity, not a regression. Improving on it is R1.
+- **Redraw on expose/restore/resize** (`Sdl.hs:SDL.WindowRestoredEvent{} ->`):
+  repainting after occlusion is the DOM's job in a browser; nothing to port.
+  Same for the texture-invalidation workarounds.
 - **VSync and frame pacing.** SDL uses `AcceleratedVSyncRenderer`
   (non-benchmark) plus its own poll loop; the web side batches through
   `requestAnimationFrame` --- the browser analogue. The `--maxFps` logic itself
-  lives in shared code (`Frontend.hs:93`), not in any frontend.
-- **HighDPI.** `windowHighDPI` (`Sdl.hs:227`) has no DOM-grid counterpart
-  to port (browser text is DPR-aware natively); the canvas-DPR concern is a 2.2
-  pitfall item.
-- **PrintScreen key (as opposed to `C-P`).** SDL maps the key (`Sdl.hs:841`)
-  but no binding uses `K.PrintScreen` bare
-  (`GameDefinition/.../Content/Input.hs:185` binds only `C-P`),
+  lives in shared code (`Frontend.hs:fromMaybe defaultMaxFps`), not in any
+  frontend.
+- **HighDPI.** `windowHighDPI` (`Sdl.hs:, SDL.windowHighDPI = True`) has
+  no DOM-grid counterpart to port (browser text is DPR-aware natively);
+  the canvas-DPR concern is a 2.2 pitfall item.
+- **PrintScreen key (as opposed to `C-P`).** SDL maps the key
+  (`Sdl.hs:KeycodePrintScreen -> K.PrintScreen`) but no binding uses
+  `K.PrintScreen` bare
+  (`GameDefinition/.../Content/Input.hs:("C-P", ([CmdMeta],` binds only `C-P`),
   so `keyTranslateWeb`'s lack of a `"PrintScreen"` case changes nothing.
-- **Key-translation coverage.** `keyTranslateWeb` (`Key.hs:472+`) covers
-  the same command-relevant key set as SDL's `keyTranslate` (`Sdl.hs:783-890`)
-  including F-keys, navigation, KP digits with the shift convention, and dead
-  keys; the residual differences are the layout/NumLock quirks declared out
-  of scope.
+- **Key-translation coverage.** `keyTranslateWeb` (`Key.hs:keyTranslateWeb ::`)
+  covers the same command-relevant key set as SDL's `keyTranslate`
+  (`Sdl.hs:keyTranslate :: Bool`) including F-keys, navigation, KP digits
+  with the shift convention, and dead keys; the residual differences
+  are the layout/NumLock quirks declared out of scope.
 - **Frame-delivery blocking.** SDL's `display` blocks until the frame is drawn
   (`sframeQueue`/`sframeDrawn` handshake); wasm's returns after the synchronous
   buffer snapshot with painting deferred to rAF. A timing nuance inside the same
