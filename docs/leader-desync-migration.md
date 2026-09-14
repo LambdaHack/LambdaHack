@@ -92,7 +92,7 @@ to be deleted*
 >   and the re-stamping bullet's 2026-09-08 ruling, whose trigger this deletion
 >   is, recast to say it fired;
 > - and the sites outside the pointman records, which are the ones a reader
->   forgets. `docs/wasm-frontend-unified-plan.md` names this file
+>   forgets. `docs/wasm-frontend-work-list.md` names this file
 >   at the tag-ownership sentence, which keeps its claim and drops only
 >   the citation, and at 3.3's **Split** and **Owns** and 2.4's **Owns**, where
 >   the verb is delete rather than reword: both hold this document
@@ -208,26 +208,26 @@ it was wrong because nobody had tried it.
 Every row is an item --- the C-rows and PR 0 below "Running this plan", sec.
 04's rows after the steps that specify them and before the drafts, sec. 05's
 at the end of that section --- opening on a heading that carries the row's name
-and closing with the execution block `docs/wasm-frontend-unified-plan.md`
-defines under "Handing an item to a session" --- **Split** where the item
-is several commits, then **Owns**, **Done**, **Hands back** and **Decide
-first**, each written out even as `nothing` --- which is read there
-and not restated here. The `depends on` cell is not among them and
-is not repeated at the block, a second copy being what drifts, so an item
-is read from its ledger row before its block, the row's `depends on` cell being
-the stop "Running this plan" states. `tools/check-plan-crossrefs.py` reads
-this document against itself and, run with no argument, both documents against
-each other, so a file both campaigns write is named on both sides by item id,
-outright or through the claimant list one item holds for it. Three things
-are this document's own. The gates **Done** names are defined once,
-under "Running this plan", and a gate that selects a series states the count
-it expects, since the count is what is read. The lock does not serialize
-on this document, as it does not on that plan: a ledger flip, and a Log line
-where the Log's rule earns one, are the item's own lines. And the states
-are the ones the pointman records lent that plan --- `landed` in a named commit,
-`open` for code that is wrong today, `not applied` for a design nothing has
-built --- with that plan's rule on the one row whose remaining evidence
-is a human's: a green **Done** does not flip C7.
+and closing with the execution block `docs/wasm-frontend-work-list.md` defines
+under "Handing an item to a session" --- **Split** where the item is several
+commits, then **Owns**, **Done**, **Hands back** and **Decide first**, each
+written out even as `nothing` --- which is read there and not restated here.
+The `depends on` cell is not among them and is not repeated at the block,
+a second copy being what drifts, so an item is read from its ledger row before
+its block, the row's `depends on` cell being the stop "Running this plan"
+states. `tools/check-plan-crossrefs.py` reads this document against itself and,
+run with no argument, both documents against each other, so a file both
+campaigns write is named on both sides by item id, outright or through
+the claimant list one item holds for it. Three things are this document's own.
+The gates **Done** names are defined once, under "Running this plan", and a gate
+that selects a series states the count it expects, since the count is what
+is read. The lock does not serialize on this document, as it does not
+on that plan: a ledger flip, and a Log line where the Log's rule earns one,
+are the item's own lines. And the states are the ones the pointman records lent
+that plan --- `landed` in a named commit, `open` for code that is wrong today,
+`not applied` for a design nothing has built --- with that plan's rule
+on the one row whose remaining evidence is a human's: a green **Done** does
+not flip C7.
 
 | row | delivers | size | depends on | state |
 |---|---|---|---|---|
@@ -250,9 +250,9 @@ is a human's: a green **Done** does not flip C7.
 ### Running this plan
 
 **Who runs it.** A session, autonomously, not a person working from memory
-of the campaign --- the same executor `docs/wasm-frontend-unified-plan.md`
-writes for, and the reason that plan spells out per item what a session cannot
-do. Nothing below is addressed to someone who already knows which check opens
+of the campaign --- the same executor `docs/wasm-frontend-work-list.md` writes
+for, and the reason that plan spells out per item what a session cannot do.
+Nothing below is addressed to someone who already knows which check opens
 a window or which count was true last week. Two consequences bind every row:
 a session does exactly what is written and nothing that is merely implied,
 so an unstated step is an unperformed one; and it cannot tell a check
@@ -322,7 +322,7 @@ playtests  make test-short && make test-medium       # minutes each
 ```
 
 Ruled campaign 3, 2026-09-07: that block stays stated in full here even though
-`docs/wasm-frontend-unified-plan.md` states a near-identical `native` chain,
+`docs/wasm-frontend-work-list.md` states a near-identical `native` chain,
 and the same holds of the Log intro's log-worthy rule. A session executing one
 campaign must not have to open the other campaign's document to learn what
 a gate name means, and the price decides it: nearly every **Done** cell here

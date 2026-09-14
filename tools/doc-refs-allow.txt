@@ -33,7 +33,7 @@ compiler/GHC/*
 # for real, which beats an entry asserting it exists somewhere.
 post-link.mjs
 
-# Artifacts docs/wasm-frontend-unified-plan.md proposes but has not built
+# Artifacts the wasm campaign proposes (docs/wasm-frontend-work-list.md) but has not built
 # yet (Phases 0-3). Each should disappear from here as its phase lands.
 CellStyle.hs
 Client/UI/Frontend/InputDecision.hs

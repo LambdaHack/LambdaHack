@@ -9,8 +9,9 @@ anywhere in the repository.
 A plan here is a document of items, each closing with the same execution
 block (**Split**, **Owns**, **Done**, **Hands back**, **Decide first**) and
 each with a ledger row whose `depends on` cell names the items it waits
-for. Two carry that grammar: `docs/wasm-frontend-unified-plan.md`, thirty-odd
-items, and `docs/leader-desync-migration.md`, whose rows took the block on
+for. Two carry that grammar: `docs/wasm-frontend-work-list.md`, thirty-odd
+items whose designs sit in `docs/wasm-frontend-unified-plan.md` since
+2026-09-14, and `docs/leader-desync-migration.md`, whose rows took the block on
 2026-09-04 so that the same executor is handed both campaigns' items the
 same way. Between the items sits a graph nobody writes down as a graph:
 which item writes which file, which item
@@ -138,13 +139,19 @@ PRACTICES = {
 }
 GRAMMARS = [
     {
-        "doc": "docs/wasm-frontend-unified-plan.md",
+        "doc": "docs/wasm-frontend-work-list.md",
         # The allowlist is grouped by comment block; only the block whose
-        # comment carries this phrase holds artifacts the plan proposes.
+        # comment carries one of these phrases holds artifacts the campaign
+        # proposes --- the second is the wording a snapshot before the
+        # 2026-09-14 split carries, which a defect control still replays.
         # The other blocks are phantoms, foreign repositories, superseded
         # documents and toolchain output, and belong to no item.
         "allow_file": "tools/doc-refs-allow.txt",
-        "allow_block": "Artifacts docs/wasm-frontend-unified-plan.md proposes",
+        "allow_block": ("Artifacts the wasm campaign proposes",
+                        "Artifacts docs/wasm-frontend-unified-plan.md proposes"),
+        # The permanent record beside it, whose outcome lines a landing
+        # writes: naming it asks for the docs gate as naming this file does.
+        "record": "docs/wasm-frontend-unified-plan.md",
         # How an item opens: a `### N.N` heading or a bold `**RN --- ...**`
         # paragraph, group 1 being the id; the practices open on their
         # titles.
@@ -163,6 +170,7 @@ GRAMMARS = [
         # cannot be read as the plan's `4.1` since a digit precedes it.
         "openers": (re.compile(r"^### (C\d|PR \d|04\.\d|05) "),),
         "practices": {},
+        "record": None,
     },
 ]
 # **Owns** names the document it sits in by these phrases as often as by
@@ -221,7 +229,7 @@ SELF_TEST_ALLOW = """\
 # Phantoms, out of scope.
 dropped.ts
 
-# Artifacts docs/wasm-frontend-unified-plan.md proposes but has not built
+# Artifacts the wasm campaign proposes but has not built
 # yet.
 new-core.ts
 new-core.test.ts
@@ -267,7 +275,7 @@ Body naming `foo.ts` as evidence, which is not an **Owns**.
 
 ### 0.2 Second
 
-**Owns** --- `ts-src/src/loader.ts`, `ts-src/src/terminal.ts`, `ts-src/src/foo.ts`, `ts-src/src/twice.ts`, `engine-src/X/Shared.hs`, the new `test/NewUnitTests.hs`, built with `cabal`, `tools/doc-refs-allow.txt`, whose `test/NewUnitTests.hs` and `twice.ts` entries this commit deletes, and `docs/wasm-frontend-unified-plan.md`. Not concurrent with 1.1 on `terminal.ts` and `foo.ts`; `loader.ts`'s claimant list is 0.1's.
+**Owns** --- `ts-src/src/loader.ts`, `ts-src/src/terminal.ts`, `ts-src/src/foo.ts`, `ts-src/src/twice.ts`, `engine-src/X/Shared.hs`, the new `test/NewUnitTests.hs`, built with `cabal`, `tools/doc-refs-allow.txt`, whose `test/NewUnitTests.hs` and `twice.ts` entries this commit deletes, and `docs/wasm-frontend-work-list.md`. Not concurrent with 1.1 on `terminal.ts` and `foo.ts`; `loader.ts`'s claimant list is 0.1's.
 
 **Done** --- `native`, `docs`.
 
@@ -413,7 +421,7 @@ SELF_TEST_DOC_2 = """\
 
 ### 04.3 --- audit
 
-**Owns** --- `test/Pure.hs` (list at 04.1), `docs/wasm-frontend-unified-plan.md` and this document.
+**Owns** --- `test/Pure.hs` (list at 04.1), `docs/wasm-frontend-work-list.md` and this document.
 
 **Done** --- `native`.
 
@@ -448,7 +456,7 @@ SELF_TEST_QUIET_ALONE = ["Shared.hs", "wasm-frontend-unified-plan.md"]
 SELF_TEST_NOTE_2 = "A1 not run over "
 # The joint run draws both lists and these, which neither draws alone.
 SELF_TEST_FAIL_JOINT = [
-    "A4 04.3 --- **Owns** names `docs/wasm-frontend-unified-plan.md` and"
+    "A4 04.3 --- **Owns** names `docs/wasm-frontend-work-list.md` and"
     " **Done** lacks `docs`",
 ]
 SELF_TEST_QUIET_JOINT = []
@@ -614,6 +622,8 @@ class Doc:
         self.entries = (self.in_scope_entries(allow_text)
                         if grammar["allow_block"] else [])
         self.doc_key = path_key(grammar["doc"], ambiguous)
+        self.record_key = (path_key(grammar["record"], ambiguous)
+                           if grammar["record"] else None)
         self.allow_key = (path_key(grammar["allow_file"], ambiguous)
                           if grammar["allow_file"] else None)
         self.parse_ledger()
@@ -627,7 +637,7 @@ class Doc:
                 continue
             if line.startswith("#"):
                 comment.append(line)
-                if self.g["allow_block"] in " ".join(comment):
+                if any(p in " ".join(comment) for p in self.g["allow_block"]):
                     in_scope = True
                 continue
             body = line.split("#", 1)[0].strip()
@@ -721,7 +731,8 @@ class Plan:
         # The documents and allowlists whose naming asks for the gate.
         self.gated = [(k, name) for d in docs
                       for k, name in ((d.doc_key, d.g["doc"]),
-                                      (d.allow_key, d.g["allow_file"]))
+                                      (d.allow_key, d.g["allow_file"]),
+                                      (d.record_key, d.g["record"]))
                       if k]
 
     # --- the derived graph -------------------------------------------

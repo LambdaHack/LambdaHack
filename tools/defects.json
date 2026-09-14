@@ -761,7 +761,7 @@
    "name": "the same findings are silent over the plan as committed, so each assertion is loud at one end of the history and quiet at the other",
    "notes": "The complement of check-plan-crossrefs-01: an assertion silent at both ends is not working, and one loud at both ends is either right or wrong about the live document, which is read before the checker is touched. The exit status is not asserted, the live document carrying findings of its own.",
    "invoke": [
-    "{repo}/docs/wasm-frontend-unified-plan.md",
+    "{repo}/docs/wasm-frontend-work-list.md",
     "--allowlist",
     "{repo}/tools/doc-refs-allow.txt"
    ],

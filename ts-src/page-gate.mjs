@@ -2,7 +2,7 @@
 // loaded in headless Firefox over WebDriver BiDi, must boot the reactor,
 // paint, and repaint on a key. It is the one check in the repository that
 // asks whether the page players load works, and it runs locally, before
-// every browser landing, by ruling (docs/wasm-frontend-unified-plan.md,
+// every browser landing, by ruling (docs/wasm-frontend-work-list.md,
 // the page gate under Handing an item); CI stays blind to the page by that
 // same ruling. Exit 0 when every assertion holds, 1 when one fails, 2 when
 // the run did not happen: no Firefox, no BiDi endpoint, no server.
