@@ -35,8 +35,8 @@ set ported with 11 of 13 values missing; a palette color slip). So:
 tooling port (Phase 3).** Related goals (R1--R6) and adopted multi-frontend
 practices follow the phases.
 
-File:line citations were verified against the tree at commit `7b84ed60d`
-(2026-09-07); re-run
+File:line citations were verified against the tree at commit `d211caa38`
+(2026-09-14); re-run
 `python3 tools/check-plan-citations.py docs/wasm-frontend-unified-plan.md --restamp`
 after the reading pass, and what the stamp asserts is `CLAUDE.md`'s to say. Some
 file basenames are duplicated among this repo's tracked `.hs` files, so every
@@ -246,13 +246,13 @@ be reverted rather than unpicked.
 
 | sec. | delivers | size | depends on | state |
 |---|---|---|---|---|
-| 0.0 | AltGraph fixes (keys, mouse/wheel); highlight-outline rule | tiny | --- | open |
+| 0.0 | AltGraph fixes (keys, mouse/wheel); highlight-outline rule | tiny | --- | landed -- 403aafe13 |
 | 0.1 | `InputDecision` shared module; sync `lhKey` | small | 0.0; 0.3 baseline | not applied |
 | 0.2 | `CellStyle` + TS-table/fixture generator | medium | --- | not applied |
 | 0.3 | FFI-coverage battery (baseline before 0.1, then per-commit) | ongoing | --- | not applied -- standing |
 | 1.1 | crosshair cursor (CSS keyword; then generated SVG cursor) | trivial | 0.2 for the final form | not applied |
 | 1.2 | working `Ctrl+P` and `--printEachScreen` screenshots | small--medium | 0.3 for the reactor driver; 3.1 for the per-frame case; 0.2 helps | open |
-| 1.3 | fullscreen toggle with scaling | small | --- | not applied |
+| 1.3 | fullscreen toggle with scaling | small | --- | landed -- d211caa38 |
 | 1.4 | banner/title truthfulness | trivial, recurring | feature landings | open -- standing |
 | 1.5 | `allFontsScale` honored in browser | small | 2.2's startup call (or a precursor); 0.3 for the reactor driver; R4 for player control | open |
 | 1.6 | game-end page lifecycle: a finished game says so | small | 3.1 for the driver case to reach game end; 0.3 for the driver | open |
@@ -498,6 +498,14 @@ only that the plan was written is one the next reader has to skip.
   and 1.6's driver case reach game end only through argv, so both wait on 3.1,
   first anyway as the shakedown --- and one **Decide first** is open again,
   1.6's: which side signals the end is a design ruling, not a scheduling one.
+- 2026-09-14 -- the first three items landed, 0.0, 1.1's keyword half and 1.3,
+  in one session and three commits, after a review that measured the plan
+  against the code it governs. Each departed from its Split, and the outcome
+  lines say how: 0.0 took no jsdom harness, a pure `altModifier` being testable
+  on a plain object; 1.3 folded its banner clause into the landing commit
+  and put its wiring in a `fullscreen.ts` beside `loader.ts` rather than inside
+  it. The citation repairs and the restamp ride this one `.md` commit for all
+  three, not one per item.
 
 ## Repo facts the plan builds on
 
@@ -817,11 +825,20 @@ Parity work stays in one checkout.
 
 ### 0.0 Immediate fixes (ship before anything else)
 
-- **AltGraph, keyboard.** `terminal.ts:203` forwards `e.altKey` only;
-  `Dom.hs:126-127` ORs `getAltKey || getAltGraphKey`, so AltGraph-only chords
-  (common on European layouts) are lost in the WASM build. Forward
-  `e.altKey || e.getModifierState("AltGraph")`; 0.1's redesign then subsumes
-  the fix.
+*Landed in `403aafe13`, as one commit rather than the Split's two plus
+a harness: the AltGraph pair go through a pure `altModifier`
+in `terminal-core.ts`, tested there on a plain object rather than under jsdom,
+so no jsdom harness and no `ts-src/src/terminal-input.test.ts` were added ---
+that file and its `tools/doc-refs-allow.txt` entry are 0.1's now, which names
+both --- and the highlight rule is `highlightColor`'s three-kind branch, pinned
+in `terminal-core.test.ts`. The `#251F1F` fill is untouched.*
+
+- **AltGraph, keyboard.** `terminal.ts:207` forwarded `e.altKey` only (since
+  `403aafe13` it forwards the `alt` that `altModifier` computes
+  at `terminal.ts:206`); `Dom.hs:126-127` ORs `getAltKey || getAltGraphKey`,
+  so AltGraph-only chords (common on European layouts) are lost in the WASM
+  build. Forward `e.altKey || e.getModifierState("AltGraph")`; 0.1's redesign
+  then subsumes the fix.
 - **AltGraph, mouse and wheel.** SDL folds AltGr (and the GUI keys) into Alt
   for mouse events too --- `modTranslate` reads `keyModifierAltGr` and applies
   to button/wheel events via `getModState` (`Sdl.hs:353,362,771-781`). The wasm
@@ -844,7 +861,7 @@ Parity work stays in one checkout.
   is the vision backlight (`DrawM.hs:377-381,416-417`, on by default via
   `smarkVision = 1`, `SessionUI.hs:207`), and its grey wash is blitted *before*
   `chooseAndDrawHighlight` runs (`Sdl.hs:666-669`) --- so SDL really shows
-  a grey cell ringed in black there, and today's `terminal.ts:135`
+  a grey cell ringed in black there, and today's `terminal.ts:138`
   `inset 0 0 0 1px` box-shadow is wrong only in its `BrBlack` colour,
   not in drawing a ring at all. Fix in `terminal-core.ts` (border colour black
   for the three kinds) with a `terminal-core.test.ts` case. Background for why
@@ -861,7 +878,7 @@ also deletes its own `tools/doc-refs-allow.txt` entry as it creates the file,
 then the two AltGraph fixes as **one** commit, with the highlight fix
 concurrent. The three fixes are one ledger row; the outcome line and the ledger
 flip ride whichever of the two fix commits lands last, after a citation-repair
-commit of its own: the AltGraph fix rewrites `terminal.ts:203`, cited here,
+commit of its own: the AltGraph fix rewrites `terminal.ts:206-207`, cited here,
 so the sentence citing it is reworded rather than re-ranged, and the restamp
 rides that commit; the highlight fix rewrites one entry of `terminal-core.ts`'s
 `HIGHLIGHT_TO_COLOR` table, which this document does not cite ---
@@ -872,17 +889,17 @@ so that half owes no repair.
 `ts-src/src/terminal-core.ts` and its test, `ts-src/package.json`
 and `package-lock.json` --- both written by 0.3 as well, for lz-string,
 so not concurrent with it --- `docs/wasm-frontend-unified-plan.md` ---
-the AltGraph commit rewrites `terminal.ts:203`, cited here, so this item owes
-the citation-repair commit and its restamp --- and `tools/doc-refs-allow.txt`,
-whose `ts-src/src/terminal-input.test.ts` entry the harness commit deletes
-as it creates the file. The two AltGraph fixes are not concurrent with each
-other: they share the new test file and the lock, which does not merge.
-**The claimant list for `ts-src/src/terminal.ts` lives here**,
-as `GameDefinition/index.html`'s does at 1.4, and it is every item that writes
-the file rather than only the ones that write this listener: 0.0, 0.1, 0.2, 1.1,
-1.2, 1.5, 2.2, 2.3 and R5 --- one holder at a time, and an item that finds
-itself writing the file without appearing here has a list to fix rather
-than a lock to take.
+the AltGraph commit rewrites `terminal.ts:206-207`, cited here, so this item
+owes the citation-repair commit and its restamp ---
+and `tools/doc-refs-allow.txt`, whose `ts-src/src/terminal-input.test.ts` entry
+the harness commit deletes as it creates the file. The two AltGraph fixes
+are not concurrent with each other: they share the new test file and the lock,
+which does not merge. **The claimant list for `ts-src/src/terminal.ts` lives
+here**, as `GameDefinition/index.html`'s does at 1.4, and it is every item
+that writes the file rather than only the ones that write this listener: 0.0,
+0.1, 0.2, 1.1, 1.2, 1.5, 2.2, 2.3 and R5 --- one holder at a time, and an item
+that finds itself writing the file without appearing here has a list to fix
+rather than a lock to take.
 
 **Done** --- `ts`, `docs`.
 
@@ -1418,10 +1435,11 @@ The keyword commit takes **no** outcome line and leaves the row live, per
 the partial-landing rule; the SVG commit carries the outcome line and flips
 the ledger row. Neither deletes a `tools/doc-refs-allow.txt` entry ---
 `cursor.ts` and `ts-src/src/generated/` there are 0.2's, and 1.1 is ungated.
+The keyword commit landed in `91d75ca5e`; the row stays live for the SVG form.
 
 **Owns** --- `ts-src/src/terminal.ts`, and, in the landing commit only,
 `docs/wasm-frontend-unified-plan.md`: a line inserted in `buildGrid` shifts
-`terminal.ts:135` and `terminal.ts:203`, both cited above, so even
+`terminal.ts:138` and `terminal.ts:206-207`, both cited above, so even
 this one-liner obliges a citation repair and a restamp. `terminal.ts`'s claimant
 list is at 0.0, 1.2 and 1.5 being the near neighbours, so the three serialize;
 take 1.1 first, it clears the file fastest. `../lambdahack.github.io`
@@ -1525,17 +1543,18 @@ here), a new tasty module registered in `test/Spec.hs` and `LambdaHack.cabal`,
 consume, `ts-src/src/terminal.ts`, `ts-src/src/loader.ts`,
 `ts-src/run-wasm-game.mjs`, `tools/doc-refs-allow.txt`,
 and `docs/wasm-frontend-unified-plan.md` --- the `Sdl.hs` citations,
-`Wasm.hs:79`, `loader.ts:56`, `terminal.ts:135` and `terminal.ts:203` all shift.
-Cannot run concurrently with 1.5: they share `Wasm.hs`, `ts-src/src/loader.ts`,
-`ts-src/src/terminal.ts` and `ts-src/run-wasm-game.mjs`, three of those
-at the same lines --- `startup`'s body and the `foreign import javascript` block
-in `Wasm.hs`, `loader.ts`'s `declare global` and its `globalThis.lh*` wiring,
-`terminal.ts`'s `Terminal` interface and returned object. Nor with 1.6, which
-writes the same `foreign import javascript` block, the same `globalThis.lh*`
-wiring and the same driver. The claimant lists for the three shared TS files
-are at 0.0, 0.1 and 0.3, for `Sdl.hs` at 2.1, for `Wasm.hs` at 2.2
-and for `LambdaHack.cabal` and `test/Spec.hs` at 0.1, and this item is on all
-of them --- 1.1 among the `terminal.ts` claimants is the other near neighbour.
+`Wasm.hs:79`, `loader.ts:57`, `terminal.ts:138` and `terminal.ts:206-207` all
+shift. Cannot run concurrently with 1.5: they share `Wasm.hs`,
+`ts-src/src/loader.ts`, `ts-src/src/terminal.ts` and `ts-src/run-wasm-game.mjs`,
+three of those at the same lines --- `startup`'s body
+and the `foreign import javascript` block in `Wasm.hs`, `loader.ts`'s
+`declare global` and its `globalThis.lh*` wiring, `terminal.ts`'s `Terminal`
+interface and returned object. Nor with 1.6, which writes the same
+`foreign import javascript` block, the same `globalThis.lh*` wiring and the same
+driver. The claimant lists for the three shared TS files are at 0.0, 0.1
+and 0.3, for `Sdl.hs` at 2.1, for `Wasm.hs` at 2.2 and for `LambdaHack.cabal`
+and `test/Spec.hs` at 0.1, and this item is on all of them --- 1.1 among
+the `terminal.ts` claimants is the other near neighbour.
 `../lambdahack.github.io` is redeployed by **Done**, not owned.
 
 **Done** --- `native`, `ts`, `wasm`, `deploy`, `docs`, plus both runs
@@ -1588,6 +1607,15 @@ beats telling players to press F11: several browsers leave some chrome visible
 under F11, and the Fullscreen API is the closer analogue of SDL2's
 `BigBorderlessWindow`.
 
+*Landed in `d211caa38`, as one commit rather than the Split's two: the banner's
+"fullscreen" clause came off in the same commit, under 1.4's rule but not
+in a commit of its own. The wiring sits in a new `ts-src/src/fullscreen.ts`
+beside `loader.ts`'s one import and call, on `terminal.ts`'s pattern,
+and the arithmetic in `fullscreen-core.ts` under vitest. The page,
+not `#screen`, goes fullscreen, the banner hidden meanwhile, and the grid
+is scaled by `transform` with a `translateY` that centres it; focus returns
+to the grid after the click, since the button took it.*
+
 **Scaling is part of parity, not a nicety:** SDL fullscreen sets
 `rendererLogicalSize` so the whole frame scales up to fill the screen
 with aspect ratio preserved (`Sdl.hs:237-240`); a bare `requestFullscreen()`
@@ -1611,7 +1639,7 @@ they name.
 and `ts-src/src/fullscreen-core.test.ts`, the one import and one call they need
 in `ts-src/src/loader.ts`, `tools/doc-refs-allow.txt` (its two entries leave
 with the commit that creates the files),
-and `docs/wasm-frontend-unified-plan.md` --- the import shifts `loader.ts:56`,
+and `docs/wasm-frontend-unified-plan.md` --- the import shifts `loader.ts:57`,
 cited twice, so this item is not citation-safe either. Not concurrent with 1.4,
 which rewrites the same `<table id="banner">` region, nor with 1.5, which
 rewrites the `#screen` rule's scaling-blur comment; `index.html`'s claimant list
@@ -1656,8 +1684,8 @@ the effective cell size today.
 
 `GameDefinition/index.html`'s banner and status text still claim save games
 aren't persistent (they are, via `WasmFile.hs`/localStorage) and will go staler
-as features land ("For proportional fonts, fullscreen, and persistent save
-games, use the native binary"). Update the text as each feature ships.
+as features land ("For proportional fonts and persistent save games, use
+the native binary"). Update the text as each feature ships.
 The savefile-corruption caveat stays until R1 addresses it. **The page
 is not the only one**: the `#status` div opens "from README:" and quotes
 `README.md`'s "Installation of the sample game from binary archives" paragraph,
@@ -1669,27 +1697,27 @@ Appendix B.)
 
 **Split** --- recurring by design: one commit per capability landing, each
 deleting the clause its feature falsified *and repairing the sentence around
-it* --- 1.3 for "fullscreen", 2.4 for "proportional fonts" and for the `#status`
-div's and the README's "limited to the square font", R1
-for the savefile-corruption clause (`[Ss]avefiles are prone to corruption`,
-the bracket for the README's lower case), R5 for "runs rather slowly" once
-its bars are cleared. One commit belongs to no landing and can be taken today:
-"and persistent save games" is already false --- persistence works, via
-`WasmFile.hs`, and Out of scope says so --- so no feature will ever falsify
-it and nothing else in this Split reaches it. Each runs the **Done** line below
-with only its own phrase in the alternation.
+it* --- 1.3 for "fullscreen", off since `d211caa38`, 2.4 for "proportional
+fonts" and for the `#status` div's and the README's "limited to the square
+font", R1 for the savefile-corruption clause
+(`[Ss]avefiles are prone to corruption`, the bracket for the README's lower
+case), R5 for "runs rather slowly" once its bars are cleared. One commit belongs
+to no landing and can be taken today: "and persistent save games" is already
+false --- persistence works, via `WasmFile.hs`, and Out of scope says so ---
+so no feature will ever falsify it and nothing else in this Split reaches it.
+Each runs the **Done** line below with only its own phrase in the alternation.
 
 Delete-only is not enough, and the repair belongs here rather than to three
 sessions inventing it separately: every clause above sits inside a carrier
 sentence that stops parsing without it. Both carriers, with their end states.
-The banner's (`GameDefinition/index.html:63-66`) is a list of reasons to prefer
+The banner's (`GameDefinition/index.html:73-76`) is a list of reasons to prefer
 the native binary, so it shortens as items go --- three with an Oxford comma,
 then two joined by "and", then one with neither --- and when the last goes
 the whole "For ... use the native binary instead." sentence goes with it,
 its `<a>` to the releases page included, while "This is the experimental wasm
 build." and everything from "If the game window is too large" onward stay
 untouched throughout. The quoted README paragraph
-(`GameDefinition/index.html:82-87`, and in `README.md` the paragraph
+(`GameDefinition/index.html:95-100`, and in `README.md` the paragraph
 under the heading "Installation of the sample game from binary archives")
 is three claims supporting one conclusion, "Hence, after trying out the game,
 you may prefer to use a native binary". Its first two share one sentence in both
@@ -1806,8 +1834,8 @@ the reactor driver its Split writes, seeded by 0.3's export half and grown
 by 3.2, so not concurrent with either --- `GameDefinition/index.html` (only
 the `#screen` rule's blur comment, which a scaled `font-size` no longer wholly
 describes) and `docs/wasm-frontend-unified-plan.md` --- `Wasm.hs:79`,
-`loader.ts:56`, `terminal.ts:135` and `terminal.ts:203` all shift. Cannot run
-concurrently with 1.2 --- the four shared files its **Owns** names, three
+`loader.ts:57`, `terminal.ts:138` and `terminal.ts:206-207` all shift. Cannot
+run concurrently with 1.2 --- the four shared files its **Owns** names, three
 of them at the same lines --- nor with 1.1, which writes the same
 `container.style.*` batch in `buildGrid`; the claimant lists for `terminal.ts`,
 `loader.ts`, `ts-src/run-wasm-game.mjs` and `index.html` are at 0.0, 0.1, 0.3
@@ -1872,7 +1900,7 @@ case, one commit because 0.3's rule wants a declaration and its case in one
 diff. (2) the landing: the outcome line naming (1)'s hash and the ledger flip.
 (3) separate per the citation-repair rule: the import lands in `Wasm.hs`'s
 `foreign import javascript` block and shifts every `Wasm.hs` line cited here
-below it, and a line in `loader.ts`'s `declare global` shifts `loader.ts:56`,
+below it, and a line in `loader.ts`'s `declare global` shifts `loader.ts:57`,
 so the ranges are re-cut and the restamp rides this commit. No allowlist entry:
 this item proposes no file.
 
@@ -3005,7 +3033,7 @@ mechanism R4 needs anyway.
 `lhStart` (`GameDefinition/Main.hs:82-89`) parses an empty list where `main`
 parses real argv. Change it to parse `getArgs`: GHC's wasm RTS gets argv
 from WASI `args_get`, which every host shim controls --- the browser loader
-passes `["LambdaHack"]` (`loader.ts:56`), so `getArgs` returns `[]` there
+passes `["LambdaHack"]` (`loader.ts:57`), so `getArgs` returns `[]` there
 and browser behavior is provably unchanged, while a Node harness can pass real
 flags. Update the stale "there is no argv in the browser" comment to describe
 the new contract (argv comes from the WASI host; the browser host passes none).
@@ -3042,7 +3070,7 @@ holds the artifact.)
 comment the new import shifts, so one holder at a time; and this document.
 Deliberately not `CLAUDE.md`: its "there is no argv and no config file on disk"
 stays true after the change, since the loader still passes the one-element argv
-`["LambdaHack"]` (`loader.ts:56`), and touching it would put another work
+`["LambdaHack"]` (`loader.ts:57`), and touching it would put another work
 stream's file under this item's lock for nothing.
 
 **Done** --- `native`, `wasm` --- of whose two halves only `make build-wasm`
@@ -3566,7 +3594,7 @@ in the browser for lack of argv. After 3.1, `lhStart` parses whatever WASI argv
 the host supplies --- so the whole feature reduces to the *loader* translating
 an allowlist of URL query parameters (e.g. `?fontset=`, `?allFontsScale=` ---
 the player-facing half of 1.5 --- `?benchmark=`, debug flags) into the args
-array it already passes to the WASI shim (`loader.ts:56`), reusing the real
+array it already passes to the WASI shim (`loader.ts:57`), reusing the real
 options parser with no engine-side parsing code at all. This gives browser users
 what argv gives native ones with no new UI surface --- an address-bar knob.
 `?fontset=` only becomes meaningful once 2.2's font wiring exists,
@@ -3576,12 +3604,12 @@ all once rather than special-casing the default set.
 **Split** --- three commits, on 2.1's pattern, since the label's absence would
 otherwise assert this is one commit. (1) the change, which deletes the two
 allowlist entries as it creates the files. (2) the citation repair (1) owes,
-with its restamp: it rewrites `loader.ts:56`, cited here. (3) the outcome line
+with its restamp: it rewrites `loader.ts:57`, cited here. (3) the outcome line
 naming (1)'s hash and the ledger flip.
 
 **Owns** --- the new `ts-src/src/url-options-core.ts`
 and `ts-src/src/url-options-core.test.ts`, `ts-src/src/loader.ts`
-(the `new WASI(["LambdaHack"], [], fds)` argv construction at `loader.ts:56`),
+(the `new WASI(["LambdaHack"], [], fds)` argv construction at `loader.ts:57`),
 `GameDefinition/index.html` if the knobs get on-page documentation,
 `tools/doc-refs-allow.txt`, whose two `url-options-core` entries commit (1)
 deletes as it creates the files, and this document, the citation-repair commit
@@ -3600,7 +3628,7 @@ WebDriver BiDi navigates the deployed page and `location.search` reads back
 intact, so once this item lands its confirmation is scriptable rather than one
 served page per parameter. The substitute gate in Done is the vitest case
 over `url-options-core.ts`: query string in, args array out, which is everything
-between the URL and `loader.ts:56`.
+between the URL and `loader.ts:57`.
 
 **Decide first** --- nothing, all three ruled on 2026-08-07, all player-visible.
 The allowlist is the minimal named set --- `?fontset=`, `?allFontsScale=`, plus
