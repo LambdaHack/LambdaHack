@@ -13,7 +13,7 @@ for. Two carry that grammar: `docs/wasm-frontend-unified-plan.md`, thirty-odd
 items, and `docs/leader-desync-migration.md`, whose rows took the block on
 2026-09-04 so that the same executor is handed both campaigns' items the
 same way. Between the items sits a graph nobody writes down as a graph:
-which item writes which file, which items contend for one, which item
+which item writes which file, which item
 creates the artifact another consumes, which `tools/doc-refs-allow.txt`
 entry is whose to delete. The plan refuses a central table of that graph,
 with reasons, so the graph is maintained by hand across the items and
@@ -39,15 +39,13 @@ What it asserts, in the order the campaign measured their yield:
       proposed an artifact and never spoke of its entry is the usual cause.
       A document configured with no allowlist block has nothing here to
       read, and the run says so rather than passing an empty block.
-  A2  the contention graph is symmetric. For every file two or more
-      **Owns** name, each claimant's **Owns** names every other claimant,
-      or names a claimant whose **Owns** holds a list naming it --- the
-      one-list-per-file shape the plan settled on for `terminal.ts`,
-      `loader.ts`, `run-wasm-game.mjs` and `index.html`. The plan documents
-      and the allowlist are excluded: each plan says of itself that the
-      lock does not serialize on it, and of the allowlist that its
-      claimants are every item that builds anything, by rule rather than
-      by enumeration.
+  A2  retired on 2026-09-14 together with the locks it checked: the
+      wasm plan runs one item at a time in one checkout, so no file is
+      contended and no **Owns** owes a claimant list. It asserted that
+      the contention graph was symmetric, and drew sixty findings about
+      the plan's own bookkeeping and none about a landing. The number
+      stays so the others keep theirs; the pointman work list still
+      carries claimant lists, checked by nobody.
   A3  an item that writes a file another item creates reaches that item
       through the ledger's `depends on` cells, transitively: waiting on an
       item that waits on the creator is waiting on the creator.
@@ -153,9 +151,6 @@ GRAMMARS = [
         "openers": (re.compile(r"^### (\d\.\d) "),
                     re.compile(r"^\*\*(R\d) --- ")),
         "practices": PRACTICES,
-        # Files the plan says the lock does not serialize on, so no A2 edge.
-        "unserialized": ("docs/wasm-frontend-unified-plan.md",
-                         "tools/doc-refs-allow.txt"),
     },
     {
         "doc": "docs/leader-desync-migration.md",
@@ -168,7 +163,6 @@ GRAMMARS = [
         # cannot be read as the plan's `4.1` since a digit precedes it.
         "openers": (re.compile(r"^### (C\d|PR \d|04\.\d|05) "),),
         "practices": {},
-        "unserialized": ("docs/leader-desync-migration.md",),
     },
 ]
 # **Owns** names the document it sits in by these phrases as often as by
@@ -299,7 +293,7 @@ Body naming `foo.ts` as evidence, which is not an **Owns**.
 
 **Split** --- three commits. (1) `ts-src/src/new-core.ts` gains a case. (2) the landing, with the deletion of three entries --- `twice.ts` and `orphan-not.ts` --- from `tools/doc-refs-allow.txt`; `Makefile` gains nothing.
 
-**Owns** --- `ts-src/src/new-core.ts`, `ts-src/src/terminal.ts`, `ts-src/src/twice.ts` and `tools/doc-refs-allow.txt`, built with `cabal`; `ts-src/src/foo.ts` is deliberately not here.
+**Owns** --- `ts-src/src/new-core.ts`, `ts-src/src/terminal.ts`, `ts-src/src/twice.ts` and `tools/doc-refs-allow.txt`, built with `cabal`; `ts-src/src/foo.ts` is deliberately not here, and not `test/NewUnitTests.hs` either, though the evidence sits at (`test/NewUnitTests.hs:1`).
 
 **Done** --- `ts`.
 
@@ -335,14 +329,6 @@ SELF_TEST_FAIL = [
     "A1 `twice.ts` --- claimed by 0.2 and 1.2",
     "A1 `test/RUnitTests.hs` --- claimed by R1, whose **Owns** does not name"
     " `tools/doc-refs-allow.txt`",
-    "A2 `new-core.ts` --- 0.1's **Owns** names neither 1.2 nor",
-    "A2 `new-core.ts` --- 1.1's **Owns** names neither 1.2 nor",
-    "A2 `new-core.ts` --- 1.2's **Owns** names neither 0.1, 1.1 nor",
-    "A2 `twice.ts` --- 0.2's **Owns** names neither 1.2 nor",
-    "A2 `twice.ts` --- 1.2's **Owns** names neither 0.2 nor",
-    "A2 `terminal.ts` --- 0.2's **Owns** names neither 1.2 nor",
-    "A2 `terminal.ts` --- 1.1's **Owns** names neither 1.2 nor",
-    "A2 `terminal.ts` --- 1.2's **Owns** names neither 0.2, 1.1 nor",
     "A3 1.2 --- writes `new-core.ts`, created by 0.1",
     "A4 1.2 --- **Owns** names `tools/doc-refs-allow.txt` and **Done**"
     " lacks `docs`",
@@ -352,7 +338,10 @@ SELF_TEST_FAIL = [
 # Names that must appear in no FAIL line: the controls.
 SELF_TEST_QUIET = ["loader.ts", "foo.ts", "dropped.ts", "new-core.test.ts",
                    "gen-scratch", "Makefile", "A3 1.1", "A4 0.1", "A4 0.2",
-                   "A4 R1", "A5 0.1", "A5 1.1"]
+                   "A4 R1", "A5 0.1", "A5 1.1",
+                   # 1.2's disclaimed mentions of 0.2's new module, which it
+                   # does not depend on: read as ownership, A3 draws them.
+                   "writes `NewUnitTests.hs`"]
 SELF_TEST_DOC_2 = """\
 # Scratch work list
 
@@ -442,7 +431,6 @@ SELF_TEST_DOC_2 = """\
 """
 SELF_TEST_FAIL_2 = [
     "A0 05 --- no **Hands back** label",
-    "A2 `Own.hs` --- C1's **Owns** names neither C2, C3 nor",
     "A3 C3 --- writes `Pure.hs`, created by 04.1",
     "A4 C2 --- **Owns** names `docs/leader-desync-migration.md` and **Done**"
     " lacks `docs`",
@@ -450,21 +438,20 @@ SELF_TEST_FAIL_2 = [
     " **Done** lacks `docs`",
     "A5 C2 --- **Split** says two commits and enumerates 1",
 ]
-SELF_TEST_QUIET_2 = ["Made.hs", "A2 `Own.hs` --- C2", "A2 `Own.hs` --- C3",
-                     "A2 `Pure.hs`", "A3 04.1", "A3 04.3", "A4 C1", "A4 C3",
+SELF_TEST_QUIET_2 = ["Made.hs", "A3 04.1", "A3 04.3", "A4 C1", "A4 C3",
                      "A4 04.1"]
-# Quiet in either document alone, loud jointly: the cross-campaign edge,
-# and the other document's name in an **Owns**.
+# Quiet in either document alone, loud jointly: the other document's name
+# in an **Owns**; `Shared.hs`, the cross-campaign edge A2 drew, is quiet
+# everywhere now.
 SELF_TEST_QUIET_ALONE = ["Shared.hs", "wasm-frontend-unified-plan.md"]
 # What the second document's run must print in place of A1.
 SELF_TEST_NOTE_2 = "A1 not run over "
 # The joint run draws both lists and these, which neither draws alone.
 SELF_TEST_FAIL_JOINT = [
-    "A2 `Shared.hs` --- 0.2's **Owns** names neither C1 nor",
     "A4 04.3 --- **Owns** names `docs/wasm-frontend-unified-plan.md` and"
     " **Done** lacks `docs`",
 ]
-SELF_TEST_QUIET_JOINT = ["A2 `Shared.hs` --- C1"]
+SELF_TEST_QUIET_JOINT = []
 # --- end per-document configuration -------------------------------------
 
 PATH_EXT = ("hs", "ts", "mjs", "py", "cabal", "html", "md", "yaml", "yml",
@@ -731,8 +718,6 @@ class Plan:
             re.I)
         self.attrib_re = re.compile(ATTRIB_RE.pattern.replace(
             "(ID)", "(" + "|".join(re.escape(i) for i in ids) + ")"))
-        self.unserialized = {path_key(u, ambiguous)
-                             for d in docs for u in d.g["unserialized"]}
         # The documents and allowlists whose naming asks for the gate.
         self.gated = [(k, name) for d in docs
                       for k, name in ((d.doc_key, d.g["doc"]),
@@ -902,33 +887,6 @@ class Plan:
                             f" does not name `{allow_file}`")
         return notes
 
-    def contention(self):
-        by_file = {}
-        for iid in self.items:
-            for k in self.owns(iid):
-                by_file.setdefault(k, set()).add(iid)
-        return {f: c for f, c in by_file.items()
-                if len(c) > 1 and f not in self.unserialized
-                and not f.endswith("/")}
-
-    def acknowledges(self, x, y, claimants, named):
-        if y in named[x]:
-            return True
-        return any(y in named[lst] for lst in named[x]
-                   if lst in claimants and lst != x)
-
-    def check_a2(self):
-        named = {i: self.mentions(i) for i in self.items}
-        for f, claimants in sorted(self.contention().items()):
-            for x in sorted(claimants):
-                missing = [y for y in sorted(claimants) if y != x and
-                           not self.acknowledges(x, y, claimants, named)]
-                if missing:
-                    self.findings.append(
-                        f"A2 `{f}` --- {x}'s **Owns** names neither"
-                        f" {', '.join(missing)} nor a claimant list naming"
-                        f" {'it' if len(missing) == 1 else 'them'}")
-
     def creators(self):
         """file key -> items that create it: the claimants of its allowlist
         entry, and any **Owns** calling it new."""
@@ -992,7 +950,6 @@ class Plan:
 
     def check(self):
         notes = self.check_a1()
-        self.check_a2()
         self.check_a3()
         self.check_a4()
         self.check_a5()
@@ -1011,9 +968,6 @@ class Plan:
         for doc in self.docs:
             for e, who in self.claims(doc).items():
                 print(f"    {e}: {sorted(who)}")
-        print("  contended:")
-        for f, c in sorted(self.contention().items()):
-            print(f"    {f}: {sorted(c)}")
 
 
 def load(doc_path, allow_override, ambiguous, findings):

@@ -217,9 +217,6 @@ MUTANTS = [
     ('check-plan-crossrefs A1 allowlist-in-Owns check disabled', 'check-plan-crossrefs.py',
      "                    if x in self.items and doc.allow_key not in self.owns(x):\n",
      "                    if False:\n", ST),
-    ('check-plan-crossrefs A2 every claimant acknowledged', 'check-plan-crossrefs.py',
-     "        if y in named[x]:\n            return True\n",
-     "        if True:\n            return True\n", ST),
     ('check-plan-crossrefs A3 closure reaches every item', 'check-plan-crossrefs.py',
      "        seen, todo = set(), [iid]\n", "        seen, todo = set(self.items), [iid]\n", ST),
     ('check-plan-crossrefs A3 closure no longer transitive', 'check-plan-crossrefs.py',
@@ -239,9 +236,10 @@ MUTANTS = [
      'NEG_BEFORE_RE = re.compile(r"(?!x)x")\n', ST),
     ('check-plan-crossrefs absolute path to the configured document read as a copy', 'check-plan-crossrefs.py',
      "    return p == d or p.endswith(os.sep + d)\n", "    return p == d\n", ST),
-    ('check-plan-crossrefs bare extension word read as a path', 'check-plan-crossrefs.py',
-     '            ("." not in base or base.rsplit(".", 1)[-1] not in PATH_EXT):\n',
-     '            base.rsplit(".", 1)[-1] not in PATH_EXT:\n', ST),
+    # check-plan-crossrefs: the bare-extension guard in path_key (`cabal`,
+    # `ts` read as files) had A2 as its only witness and lost it when A2
+    # retired on 2026-09-14; the guard stays, and no assertion can now see
+    # it break, so it carries no mutant.
     ('check-plan-crossrefs pointer at another list read as ownership', 'check-plan-crossrefs.py',
      "NEG_AFTER_RE = re.compile(r\"^'s (?:does|is) at\\b|^ at (?:ID)\\b\"\n",
      "NEG_AFTER_RE = re.compile(r\"^'s (?:does|is) at\\b\"\n", ST),
