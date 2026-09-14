@@ -6,6 +6,7 @@
 
 import { WASI, OpenFile, File, ConsoleStdout, PreopenDirectory } from "@bjorn3/browser_wasi_shim";
 import { mountTerminal } from "./terminal.js";
+import { mountFullscreen } from "./fullscreen.js";
 
 interface LhExports {
   memory: WebAssembly.Memory;
@@ -83,6 +84,8 @@ async function main(): Promise<void> {
     },
   );
   globalThis.lhSubmitFrame = (addr, w, h) => term.submitFrame(addr, w, h);
+  const banner = document.getElementById("banner");
+  mountFullscreen(document.getElementById("fsToggle"), screen, banner ? [banner] : []);
 
   wasi.initialize(inst as unknown as { exports: { memory: WebAssembly.Memory; _initialize?: () => unknown } });
   // Mirrors Dom.hs's replaceChild_ of the "pleaseWait" placeholder: drop the

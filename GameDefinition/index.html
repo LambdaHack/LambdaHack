@@ -31,6 +31,16 @@
       a:hover, a:focus { color: #ffffff; }  /* user hovers, or focus */
       a:active         { color: #ffffff; }  /* active links          */
       #banner { table-layout: fixed; border-collapse: collapse; }
+      #fsToggle {
+        background: #000000;
+        color: #c4beb1;
+        border: 1px solid #c4beb1;
+        font-family: lambdaHackFont, monospace;
+        font-size: 16px;
+        padding: 4px 8px;
+        cursor: pointer;
+      }
+      #fsToggle:hover, #fsToggle:focus { color: #ffffff; border-color: #ffffff; }
       #screen {
         /* The grid sizes itself from the engine's frame on first paint.
            16px matches the bitmap font's native pixel size, avoiding
@@ -60,14 +70,17 @@
         </td>
         <td>
           <h4 style="line-height:130%">
-            This is the experimental wasm build. For proportional fonts,
-            fullscreen, and persistent save games, use the
+            This is the experimental wasm build. For proportional fonts
+            and persistent save games, use the
             <a href="https://github.com/LambdaHack/LambdaHack/releases">native binary</a>
             instead. If the game window is too large, zoom out
             (Control-minus). Press NumLock if the numpad is erratic, or use
             another key scheme or mouse. Press '?' for help or read
             <a href="https://github.com/LambdaHack/LambdaHack/blob/master/GameDefinition/PLAYING.md">PLAYING</a>.
           </h4>
+        </td>
+        <td style="width:9em; text-align:center">
+          <button id="fsToggle" type="button">Fullscreen</button>
         </td>
       </tr>
     </table>

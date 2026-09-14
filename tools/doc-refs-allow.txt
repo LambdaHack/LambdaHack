@@ -49,8 +49,6 @@ ts-src/src/generated/
 GameDefinition/gen-src/GenTsTables.hs
 frame-timing-core.test.ts
 frame-timing-core.ts
-fullscreen-core.test.ts
-fullscreen-core.ts
 make nodeDeployedBench
 make smokeANSI
 make smokeNodeBench
