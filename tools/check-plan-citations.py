@@ -10,7 +10,35 @@ For every citation of the form `path/to/File.hs:12` or `File.hs:12-34`
 the Makefile --- documents cite each other and the tools), the script
 resolves the file, checks the line range exists, and prints the first
 cited line so a human can compare it against what the surrounding
-sentence claims. A `/.../` component in a cited path is treated as a
+sentence claims.
+
+A citation may name a text anchor instead of a line: `File.hs:some text`,
+in backticks or between `@` signs (haddock's code markup, for a document
+that drafts a module), where what follows the colon starts with neither
+a digit nor a space and runs to the closing delimiter. The anchor is a
+fixed string that exactly one line of the file must contain, runs of
+whitespace on either side counting as one space, since the formatter
+collapses them in prose; the script prints that line with its number,
+and fails ANCHOR-MISSING when no line carries it and ANCHOR-AMBIGUOUS
+when several do, listing them. An anchor also carries no word that
+would open a heading, a quote, a table row or a list item were a wrap
+to put it first on a line (`#ifdef`, `>=`, `|`, a bare `-` or `*`),
+because the formatter breaks inside backticks and such a paragraph does
+not survive its round trip; cite the words beside such a token instead.
+A slid line therefore never goes stale, a rewritten one fails loudly,
+and the document carries no stamp for such citations and never restamps
+--- which is why --restamp still counts only file:line citations and
+refuses a document holding none. An anchor cannot contain its own delimiter, so
+a line whose only unique text has a backtick in it is cited by the text
+beside it. Into a `.md` file, the one target the numeric form refuses,
+an anchor is matched against paragraphs rather than lines --- the file
+read through `wrap80 --unwrap`, as check-doc-refs.py reads its spans ---
+because a wrap can fall inside any phrase and moves whenever a paragraph
+above is edited; the report then names the paragraph, and a run that
+finds no wrap80 to unwrap with stops at 2 rather than reporting every
+such anchor missing. The form was ruled on 2026-09-08 and first applied on
+2026-09-14 to docs/wasm-frontend-unified-plan.md, whose citation-repair
+commits it retired. A `/.../` component in a cited path is treated as a
 wildcard (the document uses it to abbreviate long paths). A citation may
 name several lines or ranges, comma-separated with no space
 (`Sdl.hs:353,362,771-781`); each member is resolved and printed on its
@@ -282,10 +310,15 @@ def chdir_root(paths):
 # backticked `path:NN` token as this one's, so an extension missing here is
 # cited by nobody (check-plan-citations-07). Two twin-synced files, so the
 # list is written twice and each names the other.
+CITED_FILE = (r"(\.?[A-Za-z][A-Za-z0-9_./-]*"
+              r"\.(?:hs|ts|py|c|h|cabal|mjs|html|md|txt|yaml|yml|json|sh)|Makefile)")
 CITE_RE = re.compile(
-    r"`?(\.?[A-Za-z][A-Za-z0-9_./-]*"
-    r"\.(?:hs|ts|py|c|h|cabal|mjs|html|md|txt|yaml|yml|json|sh)|Makefile)"
-    r":(\d+(?:-\d+)?(?:,\d+(?:-\d+)?)*)")
+    r"`?" + CITED_FILE + r":(\d+(?:-\d+)?(?:,\d+(?:-\d+)?)*)")
+# The anchor form. The first character after the colon excludes a digit,
+# so the numeric form above keeps every match it had, and a space, so a
+# shell command's `file.hs: ` cannot start one; the closing delimiter
+# must repeat the opening one.
+ANCHOR_RE = re.compile(r"([`@])" + CITED_FILE + r":([^0-9\s`@][^`@\n]*)\1")
 URL_RE = re.compile(
     r"https://github\.com/[\w.-]+/[\w.-]+/blob/([0-9a-f]{7,40})/"
     r"([A-Za-z0-9_./-]+)#L(\d+)(?:-L(\d+))?")
@@ -493,7 +526,7 @@ def self_test():
             open("a.hs", "w").write("line one\nline two\nline three\n")
             os.makedirs("sub")
             open("sub/b.py", "w").write("print(1)\n")
-            open("note.md", "w").write("prose\n")
+            open("note.md", "w").write("prose that\nwraps here\n")
             open(".dot.yaml", "w").write("key: value\n")
             os.makedirs("test")
             os.makedirs("tools")
@@ -501,6 +534,7 @@ def self_test():
             open("tools/Dup.hs", "w").write("dup\n")
             open("d.json", "w").write("{}\n")
             open("s.sh", "w").write("true\n")
+            open("sp.hs", "w").write("double  spaced   words\n")
             git("add", "-A")
             git("commit", "-qm", "c1")
             c1 = subprocess.run(["git", "rev-parse", "HEAD"],
@@ -539,6 +573,12 @@ def self_test():
                 "`.dot.yaml:1` dotfile control, `.dot.yaml:999999` its"
                 " pair. `d.json:1` and `s.sh:1` are extensions once\n"
                 "cited by nobody.\n"
+                "`a.hs:line two` anchor control, @a.hs:line three@ its"
+                " haddock twin, `a.hs:no such text` missing,\n"
+                "`a.hs:line` ambiguous. `a.hs: line one` is a shell\n"
+                "command and not a citation. `sp.hs:double spaced words`\n"
+                "matches across a run of spaces. `note.md:that wraps`\n"
+                "spans a wrap and matches the paragraph.\n"
                 "%s#L1 pinned ok. %s#L99999 pinned range.\n"
                 "%s#L0 pinned zero. %s#L3-L1 pinned backwards.\n"
                 "https://github.com/ghc/ghc/blob/0123456789abcdef01234567"
@@ -555,14 +595,20 @@ def self_test():
                      "not in this repository",
                      "ok   a.hs:1 |", "ok   .dot.yaml:1 |",
                      "ok   d.json:1 |", "ok   s.sh:1 |",
-                     "a.hs#L1 @", "13 failed", "a.hs:0-0 --- OUT",
+                     "ok   a.hs:2 <- 'line two'", "ok   a.hs:3 <- 'line three'",
+                     "ok   sp.hs:1 <- 'double spaced words'",
+                     "ok   note.md:paragraph 1 <- 'that wraps'",
+                     "ANCHOR-MISSING", "ANCHOR-AMBIGUOUS (lines 1, 2, 3, 4",
+                     "a.hs#L1 @", "15 failed", "a.hs:0-0 --- OUT",
                      "a.hs:3-2 --- OUT", "#L0-L0 @", "#L3-L1 @")
+            expect("a shell command's colon-space is not an anchor",
+                   "' line one'" in p.stdout, False)
             expect("continuation collapses with the plain row",
                    p.stdout.count("a.hs:999999"), 1)
             p = run("../doc.md", cwd="sub")
             expect("same verdict from a subdirectory", p.returncode, 1)
             contains("same verdict from a subdirectory", p.stdout,
-                     "13 failed")
+                     "15 failed")
 
             open("two.md", "w").write(
                 "`a.hs:1` cited.\n\n"
@@ -730,6 +776,49 @@ def check(doc, do_restamp):
             continue
         span = f"{lo}" if lo == hi else f"{lo}-{hi}"
         print(f"ok   {name}:{span} | {lines[lo - 1].strip()[:80]}")
+    anchors = sorted({(m.group(2), m.group(3))
+                      for m in ANCHOR_RE.finditer(text)})
+    for name, anchor in anchors:
+        path, err = resolve(name)
+        if err:
+            print(f"FAIL {name}:{anchor} --- {err}")
+            failures += 1
+            continue
+        text_ = open(path, encoding="utf-8", errors="replace").read()
+        unit = "line"
+        if name.endswith(".md"):
+            # Prose is matched per paragraph: a wrap can fall inside any
+            # phrase and moves with every edit above it, so the line is
+            # not the unit. wrap80 defines the paragraph, as it does for
+            # check-doc-refs.py; without it the run did not happen.
+            if not shutil.which("wrap80"):
+                print("stopping: wrap80 is not on PATH, so an anchor into"
+                      f" {name} cannot be matched per paragraph",
+                      file=sys.stderr)
+                sys.exit(2)
+            text_ = subprocess.run(["wrap80", "--unwrap"], input=text_,
+                                   text=True, capture_output=True,
+                                   check=True).stdout
+            unit = "paragraph"
+        lines = text_.splitlines()
+        # Whitespace runs collapse on both sides: the formatter collapses
+        # them in the document, and source aligns with them.
+        norm = " ".join(anchor.split())
+        hits = [i for i, ln in enumerate(lines, 1) if norm in " ".join(ln.split())]
+        if not hits:
+            print(f"FAIL {name}:{anchor} --- ANCHOR-MISSING (no {unit} of"
+                  f" {path} contains it)")
+            failures += 1
+            continue
+        if len(hits) > 1:
+            print(f"FAIL {name}:{anchor} --- ANCHOR-AMBIGUOUS ({unit}s"
+                  f" {', '.join(map(str, hits))} all contain it; lengthen"
+                  f" the anchor)")
+            failures += 1
+            continue
+        where = f"{hits[0]}" if unit == "line" else f"paragraph {hits[0]}"
+        print(f"ok   {name}:{where} <- {anchor!r}"
+              f" | {lines[hits[0] - 1].strip()[:80]}")
     urlcites = sorted({(m.group(1), m.group(2), int(m.group(3)),
                         int(m.group(4) or m.group(3)))
                        for m in URL_RE.finditer(text)})
@@ -788,7 +877,7 @@ def check(doc, do_restamp):
             print(f"note stamp @ {sha[:9]} --- not on {PUBLISHED_REF} yet;"
                   f" sound only if this branch is pushed without"
                   f" rewriting that commit")
-    print(f"\n{len(cites) + len(urlcites)} citations checked,"
+    print(f"\n{len(cites) + len(anchors) + len(urlcites)} citations checked,"
           f" {failures} failed"
           f" --- now eyeball the snippets against the document's claims.")
     if do_restamp:

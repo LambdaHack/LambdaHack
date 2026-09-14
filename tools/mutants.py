@@ -103,9 +103,15 @@ MUTANTS = [
     ('check-doc-wrap repository tracking no Markdown reported as 0 of 0 failed', 'check-doc-wrap.py',
      '        print("BLOCKED: git tracks no Markdown file here, nothing checked")\n        return 2\n',
      '        pass\n', ST),
+    # check-plan-citations: an ambiguous anchor accepted as resolved, which
+    # is the slid-line trap the anchor form exists to close (2026-09-14)
+    ('check-plan-citations ambiguous anchor accepted', 'check-plan-citations.py',
+     '        if len(hits) > 1:\n            print(f"FAIL {name}:{anchor} --- ANCHOR-AMBIGUOUS ({unit}s"\n',
+     '        if False:\n            print(f"FAIL {name}:{anchor} --- ANCHOR-AMBIGUOUS ({unit}s"\n', ST),
     # check-plan-citations: "disabling the PROSE-LINE refusal" (2026-08-14)
     ('check-plan-citations PROSE-LINE refusal disabled', 'check-plan-citations.py',
-     '        if name.endswith(".md"):\n', '        if False:\n', ST),
+     '        if name.endswith(".md"):\n            print(f"FAIL {name}:{lo}-{hi} --- PROSE-LINE',
+     '        if False:\n            print(f"FAIL {name}:{lo}-{hi} --- PROSE-LINE', ST),
     # check-plan-citations: "short-circuiting the publication test"
     ('check-plan-citations publication test short-circuited', 'check-plan-citations.py',
      "    return reachable_from(sha, PUBLISHED_REF)\n", "    return True\n", ST),
@@ -181,8 +187,8 @@ MUTANTS = [
      'cd {dir} && python3 {file} --self-test'),
     # check-plan-citations: CITE_RE blind to json and sh (check-plan-citations-07)
     ('check-plan-citations CITE_RE blind to json and sh', 'check-plan-citations.py',
-     '    r"\\.(?:hs|ts|py|c|h|cabal|mjs|html|md|txt|yaml|yml|json|sh)|Makefile)"\n',
-     '    r"\\.(?:hs|ts|py|c|h|cabal|mjs|html|md|txt|yaml|yml)|Makefile)"\n', ST),
+     '              r"\\.(?:hs|ts|py|c|h|cabal|mjs|html|md|txt|yaml|yml|json|sh)|Makefile)")\n',
+     '              r"\\.(?:hs|ts|py|c|h|cabal|mjs|html|md|txt|yaml|yml)|Makefile)")\n', ST),
     # check-doc-wrap: indented code no longer exempt (check-doc-wrap-07)
     ('check-doc-wrap indented code block read as prose', 'check-doc-wrap.py',
      "        elif fence is None and indented and (blank or code):\n", "        elif False:\n", ST),
