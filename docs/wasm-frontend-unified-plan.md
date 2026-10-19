@@ -36,13 +36,13 @@ tooling port (Phase 3).** Related goals (R1--R7) and adopted multi-frontend
 practices follow the phases.
 
 Citations name a file and a text anchor its cited line carries, which
-`tools/check-plan-citations.py` finds and prints with the line's number; there
-is no stamp and nothing restamps, and a rewritten line fails the pass instead
-of sliding under it. Ruled 2026-09-08, applied 2026-09-14, when the first three
-landings had each cost a repair commit for lines they merely slid. The Log's
-entries quote the line numbers they corrected, as history. Some file basenames
-are duplicated among this repo's tracked `.hs` files, so every citation here
-to one of them names its directory as well: `Server/LoopM.hs` vs
+`../tools/check-plan-citations.py` finds and prints with the line's number;
+there is no stamp and nothing restamps, and a rewritten line fails the pass
+instead of sliding under it. Ruled 2026-09-08, applied 2026-09-14, when
+the first three landings had each cost a repair commit for lines they merely
+slid. The Log's entries quote the line numbers they corrected, as history. Some
+file basenames are duplicated among this repo's tracked `.hs` files, so every
+citation here to one of them names its directory as well: `Server/LoopM.hs` vs
 `Client/LoopM.hs`, the engine's vs the game's `Content/Input.hs`, the engine's
 vs the game's `Client/UI/Content/Screen.hs`, `GameDefinition`'s vs
 `definition-src`'s `Content/RuleKind.hs`, `Client/State.hs` vs `Common/State.hs`

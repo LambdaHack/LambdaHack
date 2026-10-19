@@ -272,7 +272,7 @@ the whole plan is deleted when the work lands and no row outlives its body ---
 which is the pointman campaign's sec. 00 and not this file. The other two
 reasons bind there too.
 
-**Owns** is a checked field, not prose. `tools/check-doc-refs.py` resolves
+**Owns** is a checked field, not prose. `../tools/check-doc-refs.py` resolves
 the backticked paths in this document, so naming an artifact the item has
 not built yet fails the run until the file exists; such a name carries an entry
 in `tools/doc-refs-allow.txt`, with its reason, alongside the entries the item
@@ -283,7 +283,7 @@ that lands it. Every such item therefore writes `tools/doc-refs-allow.txt`
 and carries it in **Owns** by that rule rather than by enumeration --- most
 items that build anything write it, and the one-holder-at-a-time discipline
 binds it as it binds `Sdl.hs`. Deleting the entry is the executing session's act
-and not something a checker will prompt: `tools/check-doc-refs.py` tries
+and not something a checker will prompt: `../tools/check-doc-refs.py` tries
 `resolves` before `is_allowed` --- named rather than cited by line, the file
 being one this campaign does not own --- so the moment the artifact exists
 its token prints `ok path` and the stale entry is never read again --- which
@@ -298,7 +298,7 @@ or this campaign, so a session is told both rather than trusted to know them.
   so a failed build reads as success --- which is how this campaign recorded one
   false positive already. **Done** lines are `&&`-chains, never pipelines; long
   output is scrolled, not trimmed.
-- A green `tools/check-plan-citations.py` proves that every anchor is found
+- A green `../tools/check-plan-citations.py` proves that every anchor is found
   on exactly one line, not that the line still says what the claim needs,
   so the snippets it prints are re-read after any commit that rewrites a cited
   line, and **an item whose commit rewrites such a line owes a re-anchoring,
@@ -1253,7 +1253,8 @@ too. That last is the hazard: it cites, in sec. 02 step 3, `Makefile:146-148`
 --- `test:`, a blank line, `test-gha:` --- three lines below the block this item
 rewrites, so any change in that block's line count slides the citation
 onto other lines while it still *resolves*, leaving
-`tools/check-plan-citations.py` green over a document that has started to lie.
+`../tools/check-plan-citations.py` green over a document that has started
+to lie.
 
 **Done** --- `wasm`, `deploy`, `docs`, plus `make nodeBench` &&
 `make nodeDeployedBench` &&

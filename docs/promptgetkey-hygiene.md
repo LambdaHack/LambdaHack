@@ -19,7 +19,7 @@ entirely in the post-mortem; nothing here is needed to understand or land it.
 > the live-read design -- file:line citations were verified against the tree
 > at commit **2b20a8284** (2026-09-07). The tests they cite are on master, while
 > this design is the parked part. Re-run
-> `python3 tools/check-plan-citations.py docs/promptgetkey-hygiene.md --restamp`
+> `python3 ../tools/check-plan-citations.py docs/promptgetkey-hygiene.md --restamp`
 > after the reading pass; what the stamp asserts is `CLAUDE.md`'s to say.
 
 > **What this record is for, and what is frozen in it.** It is kept indefinitely

@@ -22,20 +22,19 @@ to be deleted*
 > outliving the work. But deleting it is not the one-line act it reads as:
 > `git grep -n leader-desync-migration -- . ':!docs/leader-desync-migration.md'`
 > lists every file naming it, most of them wanting a reword and the rest
-> something else that the bullets below spell out. One wants nothing at all:
-> `tools/check-plan-citations.py:110-113` names this file inside a dated
-> measurement, which ages rather than drifting. When sec. 04's last step is done
-> --- which sec. 00's ledger says and the code does not, 04.4's **Split** (1)
-> being the commit that records the gate's result and flips that row,
-> so a session that cannot point at the flipped row has not reached this ritual:
+> something else that the bullets below spell out. When sec. 04's last step
+> is done --- which sec. 00's ledger says and the code does not, 04.4's
+> **Split** (1) being the commit that records the gate's result and flips
+> that row, so a session that cannot point at the flipped row has not reached
+> this ritual:
 >
 > - delete this file, and `tools/leader-census.py` with it; the post-mortem's
 >   sec. 10.3 rests its census-rather-than-floor claim on the tool by name,
 >   so the same commit recasts that sentence to the past tense --- and drops
 >   the backticked path with the tool rather than carrying it into the recast,
->   since `python3 tools/check-doc-refs.py docs/leader-desync-bug.md` resolves
->   that path today (`ok path tools/leader-census.py`) and fails on
->   it the moment the file is gone, which is the last bullet's own run,
+>   since `python3 ../tools/check-doc-refs.py docs/leader-desync-bug.md`
+>   resolves that path today (`ok path tools/leader-census.py`) and fails
+>   on it the moment the file is gone, which is the last bullet's own run,
 >   and `tools/doc-refs-allow.txt` is for an artifact not yet built rather
 >   than for one that will never exist again. Ruled 2026-08-07 over keeping
 >   the tool, which after the migration is a checker that stays green while
@@ -43,9 +42,10 @@ to be deleted*
 >   merely existing and break with it, neither reachable from the grep above ---
 >   the first never spells this file's name, and the second is a record
 >   that does not, in a file the grep lists for other records:
->   `tools/check-doc-refs.py` names it as a *passing* control in its self-test
->   document (`tools/check-doc-refs.py:216`) and in `SELF_TEST_OK`
->   (`tools/check-doc-refs.py:251`), so `--self-test` fails once the file
+>   `tools/check-doc-refs.config.py` names it as a *passing* control
+>   in the shared reference checker's self-test document
+>   (`tools/check-doc-refs.config.py:43`) and in `SELF_TEST_OK`
+>   (`tools/check-doc-refs.config.py:78`), so `--self-test` fails once the file
 >   is gone --- swap that control to another tracked script under `tools/` ---
 >   and `tools/defects.json` carries the record `leader-census-01` against it,
 >   retired in the same commit;
@@ -101,16 +101,13 @@ to be deleted*
 >   more, as the model of a document deleted when its work lands, a clause
 >   to drop. `test/HandleHumanLocalMUnitTests.hs:193`
 >   and `test/InventoryMUnitTests.hs:72` cite it from test comments.
->   `tools/check-doc-examples.py:72-75` names it among four live controls,
->   and its 0 is the one proving comment stripping still works --- drop
->   the entry, and say that the control goes with it. `tools/checks.py:70`
->   excuses `tools/leader-census.py` from coverage by naming this file,
->   so that entry goes with the tool in the same commit. `tools/mutants.py`
->   names this file as the target of its `doc probe expectation moved` mutant,
->   which retires with it, the `doc probes` step of `tools/checks.py`
->   then running over the wasm plan's probes alone. Two are code rather
->   than prose and a reword will not serve. `tools/check-plan-crossrefs.py`
->   configures this document in `GRAMMARS`
+>   `tools/checks.py:68` excuses `tools/leader-census.py` from coverage
+>   by naming this file, so that entry goes with the tool in the same commit.
+>   `tools/mutants.py` names this file as the target
+>   of its `doc probe expectation moved` mutant, which retires with it,
+>   the `doc probes` step of `tools/checks.py` then running over the wasm plan's
+>   probes alone. Two are code rather than prose and a reword will not serve.
+>   `tools/check-plan-crossrefs.py` configures this document in `GRAMMARS`
 >   (`tools/check-plan-crossrefs.py:161,171`), in its self-test fixtures
 >   (`tools/check-plan-crossrefs.py:447,449`) and in its module docstring
 >   (`tools/check-plan-crossrefs.py:13`); and `tools/checks.py` runs that script
@@ -153,26 +150,26 @@ to be deleted*
 > - and retire the line-citation form with this file, ruled 2026-09-08:
 >   `CLAUDE.md`'s re-stamping bullet holds the ruling, the narrower form
 >   that survives it and the machinery that goes with the old one;
-> - then re-run `python3 tools/check-doc-refs.py` over `CLAUDE.md`, both records
->   and the wasm plan --- the pass that catches a backticked path left behind
->   --- and re-run the `git grep -n` above, which is read rather than driven
->   to zero. What survives it by design: the exemption this callout opens on,
->   and `tools/defects.json`'s frozen `notes` fields and history-reading
->   `plant_cmd`s, which record what was true when they were written and
->   are not edited to match a later tree. A survivor that is neither is a site
->   the bullets above missed.
+> - then re-run `python3 ../tools/check-doc-refs.py` over `CLAUDE.md`, both
+>   records and the wasm plan --- the pass that catches a backticked path left
+>   behind --- and re-run the `git grep -n` above, which is read rather
+>   than driven to zero. What survives it by design: the exemption this callout
+>   opens on, and `tools/defects.json`'s frozen `notes` fields
+>   and history-reading `plant_cmd`s, which record what was true when they
+>   were written and are not edited to match a later tree. A survivor
+>   that is neither is a site the bullets above missed.
 >
 > File:line citations were verified against the tree at commit `2be3b3717`
 > (2026-09-08). This stamp sits below the ritual and is no step of it: it
 > is the document's own maintenance, for as long as there is a document
 > to stamp. Re-run
-> `python3 tools/check-plan-citations.py docs/leader-desync-migration.md --restamp`
+> `python3 ../tools/check-plan-citations.py docs/leader-desync-migration.md --restamp`
 > after the reading pass; what the stamp asserts is `CLAUDE.md`'s to say. Verify
 > the post-mortem's secs. 10--11 in the same pass: they are the live half
 > of that record --- the design this plan executes --- so they drift
 > with this file rather than ageing with its frozen sections.
 
-<!-- probe: git -C .. grep -l leader-desync-migration -- . ':!docs/leader-desync-migration.md' | wc -l :: 14 -->
+<!-- probe: git -C .. grep -l leader-desync-migration -- . ':!docs/leader-desync-migration.md' | wc -l :: 12 -->
 
 ## 00 -- Status, size and per-step checks
 
@@ -305,7 +302,7 @@ census     python3 tools/leader-census.py             # green before C3; then
                                                       #   at C3, 54 at C4, 51
                                                       #   at C5, 30 at C6;
                                                       #   sec. 03
-cite       python3 tools/check-plan-citations.py over every .md document
+cite       python3 ../tools/check-plan-citations.py over every .md document
            the item's Owns names, CHANGELOG.md excepted as CLAUDE.md
            excepts it; plus the wasm plan while its Appendix C cites the
            files this campaign rewrites, and test/CLAUDE.md where the item
@@ -564,26 +561,27 @@ and `MonadClientUI.hs:455` and `MonadClientUI.hs:469`, this plan's own citations
 mirrored back by that plan's 2.4). The bodies are disjoint and an export-list
 clash is loud, so the hazard is neither --- it is that ~30 lines inserted above
 `:166` slide every one of them onto other lines *while they still resolve*,
-leaving `tools/check-plan-citations.py` green over a document that has started
-to lie. It is not the only such file, and the test that excluded the others
-was the wrong one: a citation slides when the line count *above* it changes,
-not when the cited function converts. So `HandleHumanLocalM.hs` joins --- sec.
-02 converts `chooseItemDialogMode` and the `chooseItem*Human` wrappers well
-above the wasm rip-out's cited `HandleHumanLocalM.hs:815` --- and so does
-`test/UnitTestHelpers.hs`, which PR 0 writes and two of that plan's items own;
-of the other two both campaigns name, sec. 03's DrawM ruling is a decision
-*not* to write and `SessionUIMock.hs` is read rather than written. Files
-that plan only *cites* are a wider set and a different hazard, met by the `cite`
-gate rather than here. The second and third files the ruling below reserved have
-therefore arrived, and the reopened question was ruled on 2026-08-07:
-no mechanism --- machinery that must be maintained or become a lie,
-for the little both campaigns have left to run --- so each side goes on warning
-by hand, this item and that plan's 2.4 and capability-constants blocks,
-with this item's snippet re-reading as the check a green run cannot replace;
-reopen again only if the shared set grows. **Append, do not insert**: the spike
-put the whole block below `MonadClientUI.hs:469` and slid nothing, so the hazard
-this item describes is avoidable rather than merely detectable, and the snippet
-re-reading in **Done** is the fallback for inserting high, not the plan.
+leaving `../tools/check-plan-citations.py` green over a document that has
+started to lie. It is not the only such file, and the test that excluded
+the others was the wrong one: a citation slides when the line count *above*
+it changes, not when the cited function converts. So `HandleHumanLocalM.hs`
+joins --- sec. 02 converts `chooseItemDialogMode` and the `chooseItem*Human`
+wrappers well above the wasm rip-out's cited `HandleHumanLocalM.hs:815` ---
+and so does `test/UnitTestHelpers.hs`, which PR 0 writes and two of that plan's
+items own; of the other two both campaigns name, sec. 03's DrawM ruling
+is a decision *not* to write and `SessionUIMock.hs` is read rather than written.
+Files that plan only *cites* are a wider set and a different hazard, met
+by the `cite` gate rather than here. The second and third files the ruling below
+reserved have therefore arrived, and the reopened question was ruled
+on 2026-08-07: no mechanism --- machinery that must be maintained or become
+a lie, for the little both campaigns have left to run --- so each side goes
+on warning by hand, this item and that plan's 2.4 and capability-constants
+blocks, with this item's snippet re-reading as the check a green run cannot
+replace; reopen again only if the shared set grows. **Append, do not insert**:
+the spike put the whole block below `MonadClientUI.hs:469` and slid nothing,
+so the hazard this item describes is avoidable rather than merely detectable,
+and the snippet re-reading in **Done** is the fallback for inserting high,
+not the plan.
 
 **Owns** --- `engine-src/Game/LambdaHack/Client/UI/MonadClientUI.hs`
 and this document; plus, in a citation-repair commit and only if the block
@@ -1127,16 +1125,16 @@ that the plan was written is one the next reader has to skip.
   right all along, so the repartition's justifying sentence contradicted
   the table it justified. The deletion ritual's census is ten files, not nine,
   `tools/checks.py:52` being the tenth; and two of its `tools/*.py` citations
-  had slid when those tools were synced with horde-ad,
-  `check-doc-examples.py:56-57` to `:78-86` and `check-plan-citations.py:71`
-  to `:117` --- both resolving, both naming lines that do not carry the name,
-  which is the failure this document's own gate sentence warns of, landing
-  inside the bullet that added it. sec. 00 and sec. 02 both called steps 2 to 5
-  six commits where C1 is step 1 and the six span steps 1 to 5. The citation
-  pass the gates paragraph owes after every code step was named in no row's
-  acceptance cell, so at C3 to C6 --- the commits that slide the citations ---
-  nothing fired; it is in those cells now. The row column was headed `commit`
-  while C0 is a parked spike and C7 a gate. And sec. 04 still sent the executor
+  had slid when those tools were synced with horde-ad, `check-doc-examples.py`'s
+  lines 56--57 to 78--86 and `check-plan-citations.py`'s line 71 to 117 --- both
+  resolving, both naming lines that do not carry the name, which is the failure
+  this document's own gate sentence warns of, landing inside the bullet
+  that added it. sec. 00 and sec. 02 both called steps 2 to 5 six commits where
+  C1 is step 1 and the six span steps 1 to 5. The citation pass the gates
+  paragraph owes after every code step was named in no row's acceptance cell,
+  so at C3 to C6 --- the commits that slide the citations --- nothing fired;
+  it is in those cells now. The row column was headed `commit` while C0
+  is a parked spike and C7 a gate. And sec. 04 still sent the executor
   to `InputDecision` conditionally, after the wasm plan's own 0.1 ruling, made
   on this branch, closed that home as an import cycle: both this document
   and the abort-split record now name `FrameM`'s pure section outright,
@@ -1681,12 +1679,12 @@ it is *written*, so a use inside a closure the wait then runs precedes
 the wait's line --- `:393` before `:398`, `:581` before `:586` --- exactly
 the `let`-bound caution the walk paragraph states of `meleeAid`.
 And the colon-led continuations (`:379` and its kind) are ones
-`tools/check-plan-citations.py` does not resolve, by its own recorded refusal
-(`tools/check-plan-citations.py:107-114`), so the `cite` gate's printed snippets
-never cover them: each converting row reads its rows' continuations, and its own
-block's, by hand against the source. Derived by `tools/leader-census.py`'s
-surface plus a reading of every body, each row then re-derived independently;
-the last column is the part no tool checks.
+`../tools/check-plan-citations.py` does not resolve, by its own recorded refusal
+in its docstring, so the `cite` gate's printed snippets never cover them: each
+converting row reads its rows' continuations, and its own block's, by hand
+against the source. Derived by `tools/leader-census.py`'s surface plus a reading
+of every body, each row then re-derived independently; the last column
+is the part no tool checks.
 
 <!-- probe: wrap80 --unwrap leader-desync-migration.md | grep -cE '\| (inherit|mint) \| --- \|' :: 13 -->
 
@@ -2103,9 +2101,9 @@ and 2.1 reach it through 0.1's claimant list);
 under that plan's rule that the lock does not serialize on it; PR 0, C1 and C3
 to C6 are the other claimants here, each for a citation repair);
 `test/HandleHumanLocalMUnitTests.hs` and `test/InventoryMUnitTests.hs` (one
-comment each, after PR 0, C3 and C8); `tools/check-doc-examples.py`
+comment each, after PR 0, C3 and C8); `../tools/check-doc-examples.py`
 (its live-control entry, and the sentence saying the control went with it);
-`tools/check-doc-refs.py` (its self-test document and `SELF_TEST_OK`, whose
+`../tools/check-doc-refs.py` (its self-test document and `SELF_TEST_OK`, whose
 passing control was this campaign's tool); `tools/check-plan-crossrefs.py`
 (its docstring, its `GRAMMARS` entry and its self-test fixtures)
 with `tools/mutants.py` beside it, the second grammar going with that entry

@@ -89,8 +89,8 @@ carries it as controls: the plan at `91f28c8f3`, before the campaign's
 fixes, must draw the findings the campaign found by hand, and the joint
 run at the migration document's first commit in this grammar must draw
 the cross-campaign findings that commit left standing on purpose. This
-checker encodes two documents' field grammars, so it has no horde-ad twin
-and `check-twin-sync.py` does not know it."""
+checker encodes two documents' field grammars, so it stays in this
+repository rather than among ~/slop's shared tools."""
 
 import contextlib
 import io

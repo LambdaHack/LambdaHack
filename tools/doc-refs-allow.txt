@@ -1,5 +1,5 @@
 # Paths and build targets a document may name although they are not in
-# the repo, read by tools/check-doc-refs.py. One glob per line; a line
+# the repo, read by ~/slop/tools/check-doc-refs.py. One glob per line; a line
 # starting with "make " or "cabal " allows a target instead of a path.
 # Text after "#" is the reason, and the reason is the point of the entry:
 # an unexplained line here silently hides real drift, which is exactly

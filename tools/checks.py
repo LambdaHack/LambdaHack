@@ -2,17 +2,19 @@
 
 `{bin}` is the shared bin directory (`~/.claude/bin`), `{root}` this
 directory, `tools/`. What is here is the seconds-to-minutes half of
-CLAUDE.md's standing checks: every tool's self-test, the two linters over
-the Python and the shell here, the twin sync against horde-ad, the
-mechanical document passes over every tracked `.md` but CHANGELOG.md, the
-defect records in both directions and the mutants. The Haskell build, the
-test suites, the playtests and hlint stay in CLAUDE.md's list: a build
-inside a command meant to run often makes it run rarely.
+CLAUDE.md's standing checks: this repository's tools' self-tests, the
+shared reference checker's over this repository's own rows, the two linters
+over the Python and the shell here, the mechanical document passes over
+every tracked `.md` but CHANGELOG.md, the defect records in both directions
+and the mutants. The document checkers themselves are the shared ones in
+~/slop/tools, whose own checks run there. The Haskell build, the test
+suites, the playtests and hlint stay in CLAUDE.md's list: a build inside a
+command meant to run often makes it run rarely.
 
 A linter that cannot be found is a finding and not a skip: a probe decides
-and its silence fails the step by name. The twin sync and the reference check
-are BLOCKED at exit 2 with a sibling checkout unmounted, which check-all
-reports as a check that did not happen, never as one that passed.
+and its silence fails the step by name. The reference check is BLOCKED at
+exit 2 with a sibling checkout unmounted, which check-all reports as a check
+that did not happen, never as one that passed.
 """
 
 SCAN = ['.']
@@ -30,23 +32,19 @@ TIMEOUT = 3600
 DOCS = ('cd "{root}/.." || { echo "cannot enter the repository root"; exit 2; }; '
         "readarray -t docs < <(git ls-files '*.md' ':!CHANGELOG.md'); "
         '[ ${#docs[@]} -gt 0 ] || { echo "git lists no tracked Markdown file, or could not be run; nothing checked"; exit 2; }; '
-        'python3 tools/%s "${docs[@]}"')
+        'python3 ../tools/%s "${docs[@]}"')
 
-DOCS_HOME = DOCS.replace('python3 tools/%s', 'python3 %s')
+DOCS_HOME = DOCS.replace('python3 ../tools/%s', 'python3 %s')
 
 STEPS = [
-    ('check-doc-examples self-test', ['python3', '{root}/check-doc-examples.py', '--self-test']),
-    ('check-doc-refs self-test', ['python3', '{root}/check-doc-refs.py', '--self-test']),
-    ('check-doc-wrap self-test', ['python3', '{root}/check-doc-wrap.py', '--self-test']),
-    ('check-plan-citations self-test', ['python3', '{root}/check-plan-citations.py', '--self-test']),
+    # The shared checker over this repository's rows, which reach the
+    # makefile and option-parser branches horde-ad's cannot.
+    ('check-doc-refs self-test', ['python3', '{root}/../../tools/check-doc-refs.py', '--self-test'], '{root}/..'),
     ('check-plan-crossrefs self-test', ['python3', '{root}/check-plan-crossrefs.py', '--self-test']),
-    ('check-twin-sync self-test', ['python3', '{root}/check-twin-sync.py', '--self-test']),
-    ('heading-outline self-test', ['python3', '{root}/heading-outline.py', '--self-test']),
     ('pyflakes', ['bash', '-c',
                   'cd "{root}" && { python3 -m pyflakes --version >/dev/null 2>&1 || { echo "python3 -m pyflakes --version failed, so tools/*.py went unlinted"; exit 1; }; } && python3 -m pyflakes *.py']),
     ('shellcheck', ['bash', '-c',
                     'cd "{root}/.." && { command -v shellcheck >/dev/null || { echo "shellcheck is not on PATH (command -v shellcheck finds nothing), so the shell scripts went unlinted"; exit 1; }; } && files=$(git ls-files "*.sh") && if [ -z "$files" ]; then echo "no tracked shell script; nothing linted"; else shellcheck -S warning -f gcc $files; fi']),
-    ('twin sync',              ['python3', '{root}/check-twin-sync.py']),
     ('doc citations',          ['bash', '-c', DOCS % 'check-plan-citations.py']),
     ('doc refs',               ['bash', '-c', DOCS % 'check-doc-refs.py']),
     ('doc wrap',               ['bash', '-c', DOCS % 'check-doc-wrap.py']),

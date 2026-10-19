@@ -15,7 +15,7 @@ unrepresentable.
 > File:line citations were verified against the tree at commit **2b20a8284**
 > (2026-09-07). The fixtures and tests they cite are on master, while
 > the designs below are the parked part. Re-run
-> `python3 tools/check-plan-citations.py docs/leader-desync-bug.md --restamp`
+> `python3 ../tools/check-plan-citations.py docs/leader-desync-bug.md --restamp`
 > after the reading pass; what the stamp asserts is `CLAUDE.md`'s to say.
 
 > **What this record is for, and what is frozen in it.** It is kept
