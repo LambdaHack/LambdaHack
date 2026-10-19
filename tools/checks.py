@@ -55,7 +55,7 @@ STEPS = [
     ('doc probes',             ['bash', '-c', DOCS_HOME % '$HOME/.claude/skills/doc-verification/run-probes.py']),
     # Both campaign plans read against themselves and each other: the
     # cross-reference graph no pass over every document can see.
-    ('plan crossrefs',         ['python3', '{root}/check-plan-crossrefs.py']),
+    ('plan crossrefs',         ['python3', '{root}/check-plan-crossrefs.py'], '{root}/..'),
     ('records validate',       ['python3', '{bin}/defect-cases.py', '{root}']),
     ('cases, ok direction',    ['python3', '{bin}/defect-run.py', '{root}']),
     ('cases, bug direction',   ['python3', '{bin}/defect-run.py', '--audit', '{root}']),
