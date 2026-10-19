@@ -30,7 +30,7 @@ The author-generic conventions and the machine-specific session facts are in `~/
 cabal build
 ```
 
-Run `cabal` unsandboxed (sandboxing notes in `~/slop/CLAUDE.md`). A full build takes long: give Bash a generous timeout or run it in the background rather than concluding it hung.
+A full build takes long: give Bash a generous timeout or run it in the background rather than concluding it hung.
 
 Run the sample game (opens an SDL2 window, so for a human at a display, or for a session under the `xvfb-run` recipe in the session facts below):
 
