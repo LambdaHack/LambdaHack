@@ -23,7 +23,7 @@ configure-prof:
 	cabal configure --enable-profiling --profiling-detail=exported-functions --enable-optimization
 
 chrome-log:
-	google-chrome --enable-logging --v=1 file:///home/mikolaj/r/lambdahack.github.io/index.html &
+	google-chrome --enable-logging --v=1 file://$(CURDIR)/../lambdahack.github.io/index.html &
 
 chrome-prof:
 	google-chrome --no-sandbox --js-flags="--logfile=%t.log --prof" ../lambdahack.github.io/index.html
@@ -325,7 +325,7 @@ build-ts:
 	cd ts-src && \
 	npm ci && \
 	BUILD_OUTDIR=../../lambdahack.github.io npm run build && \
-	W=$$(cd ~/r/LambdaHack && wasm32-wasi-cabal list-bin exe:LambdaHack) && \
+	W=$$(cd $(CURDIR) && wasm32-wasi-cabal list-bin exe:LambdaHack) && \
 	~/.ghc-wasm/wasm32-wasi-ghc/lib/post-link.mjs --input "$$W" --output ../../lambdahack.github.io/ghc_wasm_jsffi.mjs && \
 	cp "$$W" ../../lambdahack.github.io/LambdaHack.wasm
 
