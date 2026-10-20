@@ -1470,24 +1470,18 @@ not be parallelized across agents.
 
 **Decide first** --- nothing; the rulings are the record's.
 
-**R6 --- Screenshot/overlay coherence.** Design and rulings in the record.
+**R6 --- Screenshot/overlay coherence.** Design and rulings in the record;
+retired by B.10, so nothing here is executed.
 
-**Owns** --- the new `ts-src/src/render-coherence.test.ts`,
-`tools/doc-refs-allow.txt`, whose `render-coherence.test.ts` entry the same
-commit deletes, and, in this document, 2.5's checklist line and this item's own
-outcome line and ledger row, and nothing else: the shared drawing entry point
-is a stated acceptance criterion of 1.2 and 2.2 --- ruled 2026-08-07, both
-items' bodies now carry it --- so the degraded branch, a two-file refactor
-of `ts-src/src/terminal.ts` and `ts-src/src/overlay-core.ts` that R6 would have
-to make, cannot arise. The op-list representation R6 compares is defined by 1.2
-and reused by 2.2, and R6 states no shape of its own.
+**Owns** --- `tools/doc-refs-allow.txt`, only to keep
+its `render-coherence.test.ts` entry claimed: the entry stands as long
+as the record's retired R6 body names that file. With one renderer there
+is nothing to compare, and neither 1.2 nor 2.2 carries a shared entry point
+for it.
 
-**Done** --- `ts`, `docs`.
+**Done** --- `docs`, which deleting the entry would owe.
 
-**Hands back** --- nothing. The comparison is over draw-command lists,
-not pixels, so no canvas, no fonts and no browser are involved; that a real
-`Ctrl+P` PNG matches a real screen is 1.2's residue, and that the overlays look
-right is 2.5's.
+**Hands back** --- nothing.
 
 **Decide first** --- nothing; the rulings are the record's.
 
