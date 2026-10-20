@@ -38,6 +38,8 @@ What it asserts, in the order the campaign measured their yield:
       matches that no item names outright. An entry nobody claims is
       reported with the items that write its file, since the item that
       proposed an artifact and never spoke of its entry is the usual cause.
+      A row that has landed or retired claims nothing, its text being
+      history, so an entry only such a row names is claimed by no item.
       A document configured with no allowlist block has nothing here to
       read, and the run says so rather than passing an empty block.
   A2  retired on 2026-09-14 together with the locks it checked: the
@@ -49,7 +51,8 @@ What it asserts, in the order the campaign measured their yield:
       carries claimant lists, checked by nobody.
   A3  an item that writes a file another item creates reaches that item
       through the ledger's `depends on` cells, transitively: waiting on an
-      item that waits on the creator is waiting on the creator.
+      item that waits on the creator is waiting on the creator. A row that
+      has landed or retired writes nothing still to come, so A3 skips it.
   A4  an item whose **Owns** names a plan or the allowlist carries the
       `docs` gate in **Done**, which is what re-runs the document passes.
   A5  a numeral agrees with the list beside it, in the two narrow shapes
@@ -237,6 +240,8 @@ test/NewUnitTests.hs
 test/RUnitTests.hs
 twice.ts
 orphan.ts
+handed.ts
+stranded.ts
 make gen-scratch
 """
 SELF_TEST_DOC = """\
@@ -250,6 +255,7 @@ SELF_TEST_DOC = """\
 | 0.2 | b | tiny | 0.1 | open |
 | 1.1 | c | tiny | 0.2 | open |
 | 1.2 | d | tiny | --- | open |
+| 1.3 | g | tiny | --- | landed -- 0123abc |
 | R1 | e | tiny | 1.1 | open |
 | determinism goldens | f | tiny | 0.1--0.2 | open |
 
@@ -263,9 +269,9 @@ SELF_TEST_DOC = """\
 
 Body naming `foo.ts` as evidence, which is not an **Owns**.
 
-**Split** --- two commits. (1) `ts-src/src/new-core.ts` and `ts-src/src/new-core.test.ts`, with the deletion of both `tools/doc-refs-allow.txt` entries. (2) the landing, and the `make gen-scratch` entry.
+**Split** --- two commits. (1) `ts-src/src/new-core.ts` and `ts-src/src/new-core.test.ts`, with the deletion of both `tools/doc-refs-allow.txt` entries. (2) the landing, and the `make gen-scratch` and `handed.ts` entries.
 
-**Owns** --- the new `ts-src/src/new-core.ts`, `ts-src/src/new-core.test.ts`, `ts-src/src/loader.ts`, `Makefile`, `tools/doc-refs-allow.txt` and this document. **The claimant list for `loader.ts` lives here**: 0.1, 0.2, 1.1 and R1, one holder at a time, as for `ts-src/src/twice.ts` at 0.2.
+**Owns** --- the new `ts-src/src/new-core.ts`, `ts-src/src/new-core.test.ts`, `ts-src/src/loader.ts`, `ts-src/src/handed.ts`, `Makefile`, `tools/doc-refs-allow.txt` and this document. **The claimant list for `loader.ts` lives here**: 0.1, 0.2, 1.1 and R1, one holder at a time, as for `ts-src/src/twice.ts` at 0.2.
 
 **Done** --- `ts`, `docs`.
 
@@ -309,6 +315,18 @@ Body naming `foo.ts` as evidence, which is not an **Owns**.
 
 **Decide first** --- nothing.
 
+### 1.3 Landed
+
+**Split** --- a single commit, deleting the `handed.ts` and `stranded.ts` entries from `tools/doc-refs-allow.txt`.
+
+**Owns** --- `ts-src/src/handed.ts`, `ts-src/src/stranded.ts`, `tools/doc-refs-allow.txt` and this document.
+
+**Done** --- `ts`, `docs`.
+
+**Hands back** --- nothing.
+
+**Decide first** --- nothing.
+
 ## Related goals
 
 **R1 --- Fifth.** Body.
@@ -334,6 +352,8 @@ Body naming `foo.ts` as evidence, which is not an **Owns**.
 SELF_TEST_FAIL = [
     "A0 determinism goldens --- no **Hands back** label",
     "A1 `orphan.ts` --- claimed by no item",
+    # landed 1.3 names it, and a landed row claims nothing
+    "A1 `stranded.ts` --- claimed by no item",
     "A1 `twice.ts` --- claimed by 0.2 and 1.2",
     "A1 `test/RUnitTests.hs` --- claimed by R1, whose **Owns** does not name"
     " `tools/doc-refs-allow.txt`",
@@ -345,6 +365,9 @@ SELF_TEST_FAIL = [
 ]
 # Names that must appear in no FAIL line: the controls.
 SELF_TEST_QUIET = ["loader.ts", "foo.ts", "dropped.ts", "new-core.test.ts",
+                   # live 0.1 claims it; landed 1.3's claim is history,
+                   # and so is its writing a file 0.1 now creates
+                   "handed.ts", "A3 1.3",
                    "gen-scratch", "Makefile", "A3 1.1", "A4 0.1", "A4 0.2",
                    "A4 R1", "A5 0.1", "A5 1.1",
                    # 1.2's disclaimed mentions of 0.2's new module, which it
@@ -617,6 +640,7 @@ class Doc:
         self.ambiguous = ambiguous
         self.findings = findings
         self.ledger = {}      # id -> depends-on cell
+        self.state = {}       # id -> state cell
         self.order = []       # ledger ids in order
         self.items = {}       # id -> {"line": n, "fields": {label: text}}
         self.entries = (self.in_scope_entries(allow_text)
@@ -659,6 +683,7 @@ class Doc:
             if iid in self.ledger:
                 self.findings.append(f"A0 {iid} --- two ledger rows")
             self.ledger[iid] = cells[3]
+            self.state[iid] = cells[4]
             self.order.append(iid)
 
     def parse_items(self):
@@ -742,6 +767,11 @@ class Plan:
 
     def doc_of(self, iid):
         return self.items[iid]["doc"]
+
+    def historical(self, iid):
+        """Whether IID's row has landed or retired, its text being history."""
+        return self.doc_of(iid).state.get(iid, "").startswith(
+            ("landed", "retired"))
 
     def disclaimed(self, text, m):
         """Whether the token at match M is named to be disclaimed: a
@@ -835,6 +865,8 @@ class Plan:
         explicit = {e: set() for e in doc.entries}
         anaphoric = {e: set() for e in doc.entries}
         for iid in doc.items:
+            if self.historical(iid):
+                continue
             text = self.field(iid, SPLIT) + "\n" + self.field(iid, "Owns")
             for m in NEW_RE.finditer(text):
                 for e in doc.entries:
@@ -918,6 +950,8 @@ class Plan:
     def check_a3(self):
         made = self.creators()
         for x in sorted(self.items):
+            if self.historical(x):
+                continue
             reach = self.closure(x)
             for k in sorted(self.writes(x)):
                 for y in sorted(made.get(k, ())):
