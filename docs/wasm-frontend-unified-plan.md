@@ -458,6 +458,12 @@ only that the plan was written is one the next reader has to skip.
   as history, claiming no allowlist entry and writing nothing still to come,
   which is how `ts-src/src/terminal-input.test.ts` had lost its live owner
   unseen.
+- 2026-10-20 -- ruled by Mikolaj: 0.1's input-side contract cases land
+  in a commit of their own before the `lhKey` rewrite, written to pass
+  on today's code, so the rewrite must keep them green. With it, 1.2's Split
+  names its 0.3 and 3.1 dependencies, 1.5 stubs its startup hook in the test
+  driver, through which 0.3's battery runs `Frontend.Wasm.startup`, and 0.4's
+  Owns names 0.1's rewrite of the same mouse exports.
 
 ## Repo facts the plan builds on
 
@@ -737,7 +743,8 @@ updates (sync, takes the event).
   exception);
 - the input-side RawFrontend contract cases (key delivered while a frame
   is pending, Esc reset, `FrontPressed` --- see the contract practice), landing
-  with this step since they guard exactly what it rewires;
+  in a commit of their own before the `lhKey` rewrite and written to pass
+  on today's code, since they guard exactly what it rewires;
 - then run the game: Ctrl+- zoom, Tab, Esc, AltGraph chords, right-click, wheel.
 
 **Rulings** --- all three ruled on 2026-08-07. (1) The sync-export spike

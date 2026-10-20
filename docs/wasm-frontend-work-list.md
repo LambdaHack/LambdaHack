@@ -381,7 +381,7 @@ The highlight rule hands back nothing: the vitest case pins it.
 
 ### 0.1 `InputDecision`: one Haskell brain for keyboard/mouse decisions
 
-**Split** --- a re-spike, then four commits. (0) the sync-export re-spike:
+**Split** --- a re-spike, then five commits. (0) the sync-export re-spike:
 a throwaway probe against the current toolchain proving the sync
 `foreign export javascript` compiles and coexists with the reactor's
 `-optl-Wl,--export=` wiring and the command-linked test suite --- the earlier
@@ -397,11 +397,15 @@ the smallest consumer, native, no FFI; then the jsdom harness,
 `ts-src/package.json` and its lock gaining jsdom
 and `ts-src/src/terminal-input.test.ts` pinning today's forwarding,
 its `tools/doc-refs-allow.txt` entry deleted as the file appears;
-then the `lhKey` rewrite with `terminal.ts`, `loader.ts`, the forwarding tests'
-new expectations and `ts-src/run-wasm-game.mjs`'s `lhKey` injection
-with its coverage case in the same commit and nothing else in it, as the ground
-rules require. The `Sdl.hs` commit and the rewrite are disjoint; they
-are ordered so that the signature change arrives alone. The outcome line,
+then the input-side contract cases, written to pass on today's code so
+that the rewrite must keep them green, creating
+`test/FrontendContractUnitTests.hs` with its registration, minting
+`[fe-invariant]` and deleting the module's `tools/doc-refs-allow.txt` entry
+as the file appears; then the `lhKey` rewrite with `terminal.ts`, `loader.ts`,
+the forwarding tests' new expectations and `ts-src/run-wasm-game.mjs`'s `lhKey`
+injection with its coverage case in the same commit and nothing else in it,
+as the ground rules require. The `Sdl.hs` commit and the rewrite are disjoint;
+they are ordered so that the signature change arrives alone. The outcome line,
 and the deletion of `Client/UI/Frontend/InputDecision.hs` and of this item's new
 `test/InputDecisionUnitTests.hs` entry from `tools/doc-refs-allow.txt`, ride
 the rewrite.
@@ -428,12 +432,11 @@ in the record, made `InputDecision` an import cycle for `macroStep`, so there
 is no callout left for a landing to retire. Nothing else. The input-side
 `RawFrontend` contract cases the practice assigns here create the new
 `test/FrontendContractUnitTests.hs`, the contract's one module (its ruling (2)
-in the record), with its registration, minting `[fe-invariant]` and deleting
-the module's `tools/doc-refs-allow.txt` entry as the file appears;
-the contract's harness extends it. 0.0 lands first or is dropped, since
-the `lhKey` commit rewrites the very listener it fixes. Four items edit one
-sentence of `CLAUDE.md`: 0.1, 0.2 and 2.1 for the frontend bullet's three module
-names, 0.2 or 2.1 again for the Gotchas bullet's "awaits its scheduled fix" ---
+in the record), in the commit of their own the Split places; the contract's
+harness extends it. 0.0 lands first or is dropped, since the `lhKey` commit
+rewrites the very listener it fixes. Four items edit one sentence
+of `CLAUDE.md`: 0.1, 0.2 and 2.1 for the frontend bullet's three module names,
+0.2 or 2.1 again for the Gotchas bullet's "awaits its scheduled fix" ---
 whichever of them fixes `Sdl.hs:let Point{..} = toEnum i` --- R3 for the GHCJS
 mentions, and the pointman campaign's 04.4 for the sentences that campaign's
 landing falsifies, enumerated in its head callout. Where the edit rides is each
@@ -572,8 +575,9 @@ the import half, `CLAUDE.md`'s session fact naming `build-ts` alone among
 the wasm targets as needing an unsandboxed call. Nothing else. The two commits
 are serial: the export half's driver imports the setup and stubs the import half
 installs --- defined once, shared by both drivers rather than copied. Later
-items add to the game driver, 1.2, 1.5 and 3.2 each their own coverage case,
-and 2.3 and the RawFrontend contract to the test driver.
+items add to the game driver, 0.1, 0.4, 1.2, 1.5 and 3.2 each their own coverage
+case, and to the test driver, 2.3 and the RawFrontend contract their cases
+and 1.5 its startup hook's stub.
 
 **Done** --- `native`, `wasm`, `docs`, plus, on the export half,
 `make build-wasm` and a run of the seeded driver against the fresh reactor,
@@ -618,7 +622,9 @@ now), `GameDefinition/index.html` (the `#screen` rule, the banner untouched),
 and `lhMouseUp`), `ts-src/src/loader.ts`, `ts-src/run-wasm-game.mjs`
 for the coverage case, and `docs/wasm-frontend-unified-plan.md` --- Split (0)'s
 number and probe in B.10, the outcome line, the row, and the Repo facts bullet
-on how the frontend works today, which this landing re-cuts.
+on how the frontend works today, which this landing re-cuts. 0.1 rewrites
+the same two exports' bodies onto `decideWheel` and `decideMouseButton`,
+so whichever lands first shapes the other's diff.
 
 **Done** --- `native`, `ts`, `wasm`, `deploy`, `page`, `docs`, plus Split (0)'s
 number standing in B.10 before (1) merges, and a run
@@ -671,7 +677,8 @@ with its `<a download>` click, and 0.3's coverage case
 in `ts-src/run-wasm-game.mjs` --- the reactor driver installs
 a `globalThis.lhPrintScreen` stub, injects `Ctrl+P` through `lhKey` and asserts
 one call with a filename of the expected shape, then runs again
-under `--printEachScreen` and asserts one call per frame. (2) needs (1) and 0.4,
+under `--printEachScreen` and asserts one call per frame. (2) needs (1), 0.4,
+0.3 for the reactor driver and 3.1 for the `--printEachScreen` run's argv,
 and carries the outcome line and the ledger flip.
 
 **Owns** --- `engine-src/Game/LambdaHack/Client/UI/Frontend/Sdl.hs`
@@ -690,7 +697,8 @@ so whichever of the two lands first shapes the other's diff.
 
 **Done** --- `native`, `ts`, `wasm`, `deploy`, `page`, `docs`, plus both runs
 of `ts-src/run-wasm-game.mjs` against a fresh reactor, as 1.5's Done says
-of its own: `make test-wasm` drives the other driver and never enters `Wasm.hs`.
+of its own: `make test-wasm` drives the other driver, where nothing calls
+`fprintScreen`.
 
 **Hands back** --- *display*: press `Ctrl+P` in a browser and see a PNG download
 under the helper's name, showing the screen. The PNG is the painter's own
@@ -836,14 +844,17 @@ and over `README.md`, which is source because no build deploys it.
 wiring, `terminal.ts` handing the scale to 0.4's painter, which re-derives
 its cell from the font loaded at that size, so the scale survives every
 dimension change, and 0.3's coverage case in `ts-src/run-wasm-game.mjs`,
-the reactor driver, since `--frontendNull` means `run-wasm-test.mjs` never
-executes `Wasm.hs`. (2) the outcome line naming (1)'s hash and the ledger flip:
-1.5's player-facing half belongs to R4, so withholding it is not a partial
-landing of this item. Neither commit deletes a `tools/doc-refs-allow.txt` entry.
+the reactor driver, asserting the payload arrives, with a stub for the startup
+hook among the stubs `ts-src/run-wasm-test.mjs` installs, since 0.3's battery
+there runs `Frontend.Wasm.startup` and would trap on an undefined hook. (2)
+the outcome line naming (1)'s hash and the ledger flip: 1.5's player-facing half
+belongs to R4, so withholding it is not a partial landing of this item. Neither
+commit deletes a `tools/doc-refs-allow.txt` entry.
 
 **Owns** --- `engine-src/Game/LambdaHack/Client/UI/Frontend/Wasm.hs`,
 `ts-src/src/loader.ts`, `ts-src/src/terminal.ts`, `ts-src/run-wasm-game.mjs` ---
 the reactor driver 0.3's export half seeds and 3.2 grows ---
+`ts-src/run-wasm-test.mjs` for the startup hook's stub,
 and `docs/wasm-frontend-unified-plan.md`. It does not write
 `GameDefinition/index.html`: the `#screen` rule and its blur comment are 0.4's,
 which rewrites that rule for the canvas. 1.2 writes the same lines in the four
@@ -852,9 +863,9 @@ against 1.3 survives its ruling: that helper measures the live grid and assumes
 no cell size. `../lambdahack.github.io` is redeployed by **Done**, not owned.
 
 **Done** --- `native`, `ts`, `wasm`, `deploy`, `page`, `docs`, plus a run
-of `ts-src/run-wasm-game.mjs` against a fresh reactor: `make test-wasm` drives
-the other driver and never enters `Wasm.hs`, so nothing else in this list
-executes the coverage case the Split adds.
+of `ts-src/run-wasm-game.mjs` against a fresh reactor, the one thing
+in this list that executes the coverage case the Split adds: `make test-wasm`
+drives the other driver, where the startup hook is only stubbed.
 
 **Hands back** --- *display*: that the map renders larger. The item body says
 how to check nothing --- alone among 1.1, 1.2 and 1.3, whose bodies each name
@@ -1640,7 +1651,7 @@ of `Wasm.hs` traps. The third commit carries the outcome line.
 in `.github/workflows/lint-and-test-suites.yml`,
 and `docs/wasm-frontend-unified-plan.md`. The input-side cases land inside 0.1,
 which creates the test module and mints `[fe-invariant]`, and this item's
-harness extends it; 2.3, not 3.2, is the other item extending
+harness extends it; 2.3 and 1.5, not 3.2, are the other items extending
 `ts-src/run-wasm-test.mjs`.
 
 **Done** --- `native`, `wasm`, `docs`, plus
