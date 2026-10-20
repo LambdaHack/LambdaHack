@@ -427,6 +427,9 @@ only that the plan was written is one the next reader has to skip.
   its import, its driver case and its waits on 3.1 and 0.3, resting on a premise
   its browser run checks first. R7b keeps the bitmap at integer `allFontsScale`
   alone, the criterion for crisper being arithmetic.
+- 2026-10-20 -- 1.2's reopened ruling (b) ruled by Mikolaj: a bare `toBlob`,
+  so under 1.3's fullscreen the PNG is the unscaled frame where SDL's is
+  of the scaled window.
 
 ## Repo facts the plan builds on
 
@@ -975,25 +978,29 @@ in Haskell**, shared with SDL2:
    2.4 flips, so 1.5's scale reaches it through `boxSize`. 1.3's fullscreen does
    not: it scales the grid by a CSS transform and leaves the backing store
    as it is, so a bare `toBlob` saves the unscaled frame where SDL's
-   `printScreen` reads the live `SDL.windowSize`, which the work list's **Decide
-   first** asks about.
+   `printScreen` reads the live `SDL.windowSize`, and that stands by ruling (b):
+   the PNG is the frame at its own size with fullscreen on or off.
 
 Verify: tasty test for the filename helper; Split (2)'s two reactor-driver runs,
 the machine criterion; run the game, press `Ctrl+P` --- a one-time human glance
 that a PNG downloads under the helper's name and shows the screen.
 
 **Rulings** --- all four ruled on 2026-08-07, (a) and (b) re-cut on 2026-10-20
-for B.10. (a) The machine criteria are the tasty test and the driver runs:
-the draw-op list (a) named is 0.4's, and the PNG is the canvas's own pixels,
-so the look is a one-time human glance and no tolerance comparison is built. (b)
-The screenshot honors the live rendered size, parity with SDL's `printScreen`
-reading the live `SDL.windowSize`; the backing store has it under 1.5's scale
-and not under 1.3's fullscreen, which reopens (b) there. (c) The filename helper
-lives in a new pure sibling module under `Client/UI/Frontend/`, as the body now
-states; `Frontend.Common` is untouched. (d) 0.3's per-commit rule binds
-`js_printScreen` --- the field's "nothing headless executes `Wasm.hs`" premise
-retired with 0.3's reactor-driver ruling --- via the stub-and-injected-`Ctrl+P`
-case Split (2) now carries.
+for B.10 and (b) re-ruled by Mikolaj the same day. (a) The machine criteria
+are the tasty test and the driver runs: the draw-op list (a) named is 0.4's,
+and the PNG is the canvas's own pixels, so the look is a one-time human glance
+and no tolerance comparison is built. (b) The screenshot honors the live
+rendered size under 1.5's scale, which the backing store has, and
+not under 1.3's fullscreen, where SDL's `printScreen` saves the scaled window:
+a bare `toBlob`, B.10's one call. Weighed and not taken: the canvas drawn
+at 1.3's fit scale into an offscreen canvas first, parity with SDL at the price
+of a second call and of `drawImage`'s resampling, which need not blur
+as the transform does on screen. (c) The filename helper lives in a new pure
+sibling module under `Client/UI/Frontend/`, as the body now states;
+`Frontend.Common` is untouched. (d) 0.3's per-commit rule binds `js_printScreen`
+--- the field's "nothing headless executes `Wasm.hs`" premise retired with 0.3's
+reactor-driver ruling --- via the stub-and-injected-`Ctrl+P` case Split (2) now
+carries.
 
 ### 1.3 Fullscreen toggle with scaling (small, no Haskell)
 

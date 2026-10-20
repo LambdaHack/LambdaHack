@@ -690,16 +690,7 @@ and the two reactor-driver runs, which are what executes `Wasm.hs`;
 so `Wasm.hs` never executes there and an undefined `globalThis.lhPrintScreen`
 would go unnoticed.
 
-**Decide first** --- one question, the record's ruling (b) meeting B.10: what
-the PNG holds under 1.3's fullscreen. 1.3 scales the grid by a CSS transform,
-so the backing store, and with it a bare `toBlob`, stays at the unscaled frame,
-while SDL's `printScreen` saves the whole window, scaled. (i) The bare `toBlob`:
-B.10's one call, the same PNG with fullscreen on or off, and (b) holding
-for 1.5's scale but not for 1.3's. (ii) The canvas drawn at 1.3's fit scale
-into an offscreen canvas, then `toBlob`: (b) as ruled, at one more call, the PNG
-resampled by `drawImage`, which need not blur as the transform does on screen.
-The fields above assume (i); under (ii) `ts-src/src/fullscreen.ts`, which holds
-the scale, joins **Owns**.
+**Decide first** --- nothing; the rulings are the record's.
 
 ### 1.3 Fullscreen toggle with scaling (small, no Haskell)
 
