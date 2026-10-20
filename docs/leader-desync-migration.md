@@ -281,13 +281,15 @@ passes, and a citation that slid still resolves:
 
 ```
 native     cabal build && cabal test && hlint .        # 154 tests today
-           && stylish-haskell -i <every .hs the        # hlint must print:
-                                  item's Owns names>   #   No hints -- and a
-           && git diff --exit-code <those paths>       #   hint that needs a
-                                                       #   new .hlint.yaml
+           && git add <every .hs the                   # hlint must print:
+                      item's Owns names>               #   No hints -- and a
+           && stylish-haskell -i <those paths>         #   hint that needs a
+           && git diff --exit-code <those paths>       #   new .hlint.yaml
                                                        #   exception stops and
                                                        #   asks; stylish must
-                                                       #   leave them alone
+                                                       #   leave them alone,
+                                                       #   staged first so a
+                                                       #   new file diffs too
 contract   cabal test --test-options='-p "/contract/"'  # 26 today; moves twice
                                                         #   a red outcome stops
                                                         #   and asks; a site
