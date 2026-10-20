@@ -422,6 +422,11 @@ only that the plan was written is one the next reader has to skip.
   cell metrics with their startup assert, its `overflow: hidden` and its own
   backing store went, ruling (a) with them; the font wiring, the twin
   and the fixed-pitch crop, now a clip rect in the draw-op list, stand.
+- 2026-10-20 -- two **Decide first** questions ruled by Mikolaj. 1.6's end
+  is signalled by the loader on `lhStart`'s settlement, so the item drops
+  its import, its driver case and its waits on 3.1 and 0.3, resting on a premise
+  its browser run checks first. R7b keeps the bitmap at integer `allFontsScale`
+  alone, the criterion for crisper being arithmetic.
 
 ## Repo facts the plan builds on
 
@@ -909,7 +914,7 @@ overlay sections draw through the same core.
 
 Independent of each other; any order. 1.1 and 1.3 don't depend on Phase 0; since
 B.10 1.2 waits on 0.4, whose canvas its screenshot is. 1.2's per-frame case
-and 1.6's driver case wait on 3.1, which is handed out first regardless.
+waits on 3.1, which is handed out first regardless.
 
 ### 1.1 Crosshair cursor over the map (trivial)
 
@@ -1111,22 +1116,30 @@ so `16 * scale` px on the deployed font is correct and deploys no new font.
 At game end SDL frees its fonts, destroys renderer and window and quits
 (`Sdl.hs:SDL.destroyRenderer srenderer`); the browser build's `shutdown`
 is `return ()` and the loader discards `lhStart`'s promise, so a finished game
-leaves a live-looking frozen page whose grid goes on swallowing keys. The engine
-reaches the frontend at that moment all the same --- `UpdKillExit` ends
-in `frontendShutdown`, which is `FrontShutdown`, which `Frontend.hs` answers
-with `fshutdown` --- so the counterpart keeps SDL's shape: `shutdown` calls
-a new `unsafe` import, `globalThis.lhShutdown()`, wired in `loader.ts` beside
-`lhSubmitFrame`, and the page marks itself finished --- a status line
-in the place the load-failure message already uses, naming a reload as the way
-to play again. Restarting in place, `lhStart` called a second time on the live
-instance, is unmeasured and not proposed. Crashes are out of scope: a Haskell
-`error` rejects `lhStart`'s promise (3.2's measurement), the loader discards
-that promise today, and R4's ruling is where a handler for it is first
-specified. The import is a new FFI declaration, so 0.3's rule gives
-it a coverage case in the same commit: the reactor driver installs
-a `globalThis.lhShutdown` stub, runs the game under `--stopAfterFrames` ---
-3.1's argv, which is the dependency --- and asserts the stub was called once,
-before `lhStart`'s promise settled. 1.4's rule reaches no banner clause here.
+leaves a live-looking frozen page whose grid goes on swallowing keys,
+and a crash leaves the same page. The loader fixes both by keeping `lhStart`'s
+promise and acting on how it settles, under 3.2's success rule: resolved,
+or rejected with the message `ExitSuccess`, marks the page finished --- a status
+line in the place the load-failure message already uses, naming a reload
+as the way to play again --- and any other rejection marks it crashed,
+with the exception's message. `shutdown` stays `return ()`, so no FFI
+declaration is added and 0.3's rule asks no coverage case. Restarting in place,
+`lhStart` called a second time on the live instance, is unmeasured
+and not proposed. A fault raised in the RTS scheduler loop on a later tick
+escapes the promise, as 3.2 records, and so this handler. R4's on-page message
+for a rejected parameter is a branch of the same handler, whichever of the two
+items lands first creating it. 1.4's rule reaches no banner clause here.
+
+**Rulings** --- ruled 2026-10-20 by Mikolaj: the loader signals the end,
+on `lhStart`'s settlement, and not `shutdown` through a new import in SDL's
+shape. Taken for showing a crash as well as a clean end, for needing no FFI
+and no wait on 3.1 and 0.3, and for building once the handler R4 needs anyway;
+given up are SDL's shape, a Haskell-side moment and a headless gate, the page
+being checked in a browser alone, and Appendix C's (4) now reads as a non-gap,
+`shutdown` doing nothing by design. The premise is 3.2's probe on a throwaway
+`lhProbeCrash` export: no real save-and-exit has been seen to settle
+the promise, so Done's browser run is the first to see it, and should
+it not settle, the ruling reopens.
 
 ---
 
@@ -2400,13 +2413,21 @@ under `GameDefinition/fonts/`. Two stages. R7a follows SDL2's font choice
 and improves on its scaling: the bitmap whenever `allFontsScale` is 1.0
 and the scalable font otherwise, and the canvas scaled as a whole by the largest
 integer factor that fits, pixel for pixel, under browser zoom and fullscreen
-alike, where SDL2's fullscreen scaling softens. R7b, later and a ruling
-of its own: keep the bitmap beyond that --- at every integer `allFontsScale`,
-where SDL2 takes the outline font today, and at any factor where it still looks
-crisper than the outline font --- which wants a criterion for crisper
-that a session can apply, so it opens no earlier than a side-by-side of the two
-at 1.25x, 1.5x and 2x. On the DOM route none of this was reachable at any price,
-a span having no way to hold a glyph bitmap.
+alike, where SDL2's fullscreen scaling softens. R7b, later: keep the bitmap
+beyond that at every integer `allFontsScale`, where SDL2 takes the outline font
+today, and the outline font at every other factor. On the DOM route none
+of this was reachable at any price, a span having no way to hold a glyph bitmap.
+
+**Rulings** --- ruled 2026-10-20 by Mikolaj: R7b's criterion for crisper
+is the integer one, applied by arithmetic, with no side-by-side owed ---
+the bitmap at an integer `allFontsScale` and the outline font at any other,
+where a nearest-neighbour bitmap's pixels come out unevenly wide. Weighed
+the same day and not taken, so they are not re-proposed without new evidence:
+a bound on that unevenness, which picks the outline font at 1.25x and 1.5x
+anyway; an image metric over captures, whose weighting of blur against
+unevenness nobody can set from first principles and whose instrument would have
+to be built and proved; and a per-factor table from a human side-by-side, a new
+look for every new factor.
 
 ## Multi-frontend practices (adopted)
 

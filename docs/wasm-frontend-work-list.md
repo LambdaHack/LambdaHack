@@ -77,9 +77,9 @@ an authorized push, so the review that gates an item is the local one.
 a machine can settle end to end; 0.0, 1.1 and 1.3 went first instead
 on 2026-09-14 and rehearsed the ritual --- the gates, the outcome line
 and the ledger flip --- so what 3.1 keeps is its ordering role: 1.2's per-frame
-case and 1.6's driver case wait on it. It rehearses no allowlist deletion,
-proposing no artifact and so having no entry to delete; the items that build one
-carry that step. Phase 3 shares no file with Phases 0-2.
+case waits on it. It rehearses no allowlist deletion, proposing no artifact
+and so having no entry to delete; the items that build one carry that step.
+Phase 3 shares no file with Phases 0-2.
 
 **One item is reviewed entirely alone: the `Sdl.hs` drawing loop** (2.1's
 refactor together with 0.2's `CellStyle` adoption, which rewrite abutting
@@ -119,7 +119,7 @@ sections of the record are frozen and which live is its head callout's to say.
 | 1.3 | fullscreen toggle with scaling | small | --- | landed -- d211caa38 |
 | 1.4 | banner/title truthfulness | trivial, recurring | feature landings | open -- standing |
 | 1.5 | `allFontsScale` honored in browser | small | 2.2's startup call (or a precursor); 0.3 for the reactor driver; R4 for player control | open |
-| 1.6 | game-end page lifecycle: a finished game says so | small | 3.1 for the driver case to reach game end; 0.3 for the driver | open |
+| 1.6 | game-end page lifecycle: a finished or crashed game says so | small | --- | open |
 | 2.1 | `OverlayLayout` extraction + `Sdl.hs` on it | medium--large | 0.2 for `CellStyle`; determinism goldens (native harness) | not applied |
 | 2.2 | browser canvas overlay renderer + font wiring | medium | 2.1, 0.2, 0.4 | not applied |
 | 2.3 | overlay transport over JSFFI | medium | 2.1, 2.2; 0.3 for the end-to-end battery | not applied |
@@ -321,8 +321,7 @@ items in one of them are two items in the same paragraph, and the locks
 and claimant lists this plan carried until 2026-09-14 could not have made them
 concurrent. What the campaign did parallelize was upstream of the code,
 on the **Decide first** questions, each blocking an item that was otherwise
-ready to hand out --- a front closed on 2026-08-07 and reopened once since,
-at 1.6.
+ready to hand out.
 
 Worktree isolation helps exactly where a collision would be loud: a new module
 no one else has a copy of (0.1's `InputDecision`, 2.1's `OverlayLayout`),
@@ -565,7 +564,7 @@ and `docs/wasm-frontend-unified-plan.md`, the import half rewriting the driver's
 wiring cited here. Nothing else. The two commits are serial: the export half's
 driver imports the setup and stubs the import half installs --- defined once,
 shared by both drivers rather than copied. Later items add to the game driver,
-1.2, 1.5, 1.6 and 3.2 each their own coverage case, and 2.3 and the RawFrontend
+1.2, 1.5 and 3.2 each their own coverage case, and 2.3 and the RawFrontend
 contract to the test driver.
 
 **Done** --- `native`, `wasm`, `docs`, plus, on the export half,
@@ -670,11 +669,11 @@ and `LambdaHack.cabal`, `ts-src/src/terminal.ts`, `ts-src/src/loader.ts`,
 the `Sdl.hs` citations, `Wasm.hs:display ScreenContent{rwidth,`,
 `loader.ts:const wasi = new WASI(["LambdaHack"], [], fds);`,
 `terminal.ts:Highlight square as an inset outline`
-and `terminal.ts:const alt = altModifier(e);` all shift. 1.5 and 1.6 write
-the same lines --- `startup`'s body and the `foreign import javascript` block
+and `terminal.ts:const alt = altModifier(e);` all shift. 1.5 writes the same
+lines --- `startup`'s body and the `foreign import javascript` block
 in `Wasm.hs`, `loader.ts`'s `declare global` and its `globalThis.lh*` wiring,
 `terminal.ts`'s `Terminal` interface and returned object, and the driver ---
-so whichever of the three lands first shapes the others' diffs.
+so whichever of the two lands first shapes the other's diff.
 `../lambdahack.github.io` is redeployed by **Done**, not owned.
 
 **Done** --- `native`, `ts`, `wasm`, `deploy`, `page`, `docs`, plus both runs
@@ -879,44 +878,35 @@ this item's field.
 
 ### 1.6 Game-end page lifecycle (small)
 
-**Split** --- two commits. (1) the code: the import, `shutdown` calling it,
-the `loader.ts` hook and finished state, and the driver case, one commit because
-0.3's rule wants a declaration and its case in one diff. (2) the landing:
+**Split** --- two commits. (1) the code: `loader.ts` keeping `lhStart`'s promise
+and marking the page finished or crashed by how it settles. (2) the landing:
 the outcome line naming (1)'s hash and the ledger flip. No allowlist entry:
 this item proposes no file.
 
-**Owns** --- `engine-src/Game/LambdaHack/Client/UI/Frontend/Wasm.hs`,
-`ts-src/src/loader.ts`, `ts-src/run-wasm-game.mjs`
-and `docs/wasm-frontend-unified-plan.md`. It does not write
-`ts-src/src/terminal.ts`, the grid needing no change, keys into a finished
-reactor going nowhere, nor `GameDefinition/index.html`, the loader creating
-the element it needs as the load-failure path reuses the one it finds. 1.2
-and 1.5 write the same `foreign import javascript` block, the same
-`globalThis.lh*` wiring and the same driver, so whichever lands first shapes
-the others' diffs.
+**Owns** --- `ts-src/src/loader.ts` and `docs/wasm-frontend-unified-plan.md`.
+It does not write `engine-src/Game/LambdaHack/Client/UI/Frontend/Wasm.hs`,
+`shutdown` staying `return ()` by the ruling, nor `ts-src/src/terminal.ts`,
+the grid needing no change, keys into a finished reactor going nowhere,
+nor `GameDefinition/index.html`, the loader creating the element it needs
+as the load-failure path reuses the one it finds. R4 writes the same `lhStart`
+call, its rejected-parameter message being a branch of this handler,
+so whichever lands first shapes the other's diff.
 
-**Done** --- `native`, `ts`, `wasm`, `deploy`, `page`, `docs`, plus the driver
-run (1) adds, against a fresh reactor --- nothing else in this list executes
-`shutdown` --- and, in-session, the deployed page under the browser-under-Xvfb
-setup `CLAUDE.md` describes, driven to the game's own exit through its menu
-with `xdotool` and the finished state read back over WebDriver BiDi, which R4's
-block records as reaching the deployed page.
+**Done** --- `ts`, `wasm`, `deploy`, `page`, `docs`, plus, in-session,
+the deployed page under the browser-under-Xvfb setup `CLAUDE.md` describes,
+driven to the game's own exit through its menu with `xdotool` and the finished
+state read back over WebDriver BiDi, which R4's block records as reaching
+the deployed page. That run is the first to see a real save-and-exit settle
+`lhStart`'s promise, the ruling's premise, so a page left without the finished
+state stops the item and reopens the ruling.
 
-**Hands back** --- *judgement*: whether the finished page reads as finished
-to a player, the wording being nobody's gate. The substitute gates in Done
-are the driver's stub call, which proves the signal leaves the engine,
-and the in-session DOM read, which proves the page shows something on it.
+**Hands back** --- *judgement*: whether the finished and crashed pages read
+as such to a player, the wording being nobody's gate. The substitute gate
+in Done is the in-session DOM read after a real exit, which proves the page
+shows something on it; the crashed branch has none, no in-session route crashing
+the deployed game, so it is read in review.
 
-**Decide first** --- one question, the item's shape turning on it: which side
-signals the end. The sketch above keeps SDL's shape --- `shutdown` through
-the new import, a Haskell-side moment and a headless gate under 0.3's rule ---
-against the loader alone acting on `lhStart`'s settlement, which 3.2's probe
-measured reaching the promise for `error` and `exitWith` alike: one handler
-for a clean end and a crash, no FFI, and `shutdown` left as it is, at the cost
-of no gate short of the browser and of the audit's fourth finding reading
-as a non-gap. The fields above assume the first; under the second, `Wasm.hs`
-and `ts-src/run-wasm-game.mjs` leave **Owns**, the driver run leaves **Done**,
-and the row's 0.3 and 3.1 dependencies go with them.
+**Decide first** --- nothing; the rulings are the record's.
 
 ## Phase 2 --- multi-font, as extraction rather than re-implementation
 
@@ -1432,7 +1422,8 @@ at `loader.ts:const wasi = new WASI(["LambdaHack"], [], fds);`),
 deletes as it creates the files, and this document, the re-anchoring commit
 included. R5's `?benchmark` mode is one of this allowlist's own entries
 and edits the same `loader.ts` call, so whichever lands first shapes the other's
-diff.
+diff. So does 1.6, whose handler on `lhStart`'s settlement this item's
+rejected-parameter message is a branch of.
 
 **Done** --- `ts`, `page`, `docs`.
 
@@ -1518,7 +1509,8 @@ right is 2.5's.
 and the committed atlas, consumed by nobody; (2) the painter drawing
 from the atlas at 1.0 and integer scales and from the outline font otherwise,
 `make build-ts` copying the atlas beside the woff; (3) the outcome line
-and the ledger flip, for R7a. R7b waits on its ruling and takes no commit here.
+and the ledger flip, for R7a. R7b, ruled in the record, takes no commit here:
+it follows R7a's landing as a change of the font choice alone.
 
 **Owns** --- `ts-src/src/terminal.ts`, `ts-src/src/terminal-core.ts`
 and its test, `ts-src/src/fullscreen.ts`, `Makefile` (the atlas copy
@@ -1536,8 +1528,7 @@ when `allFontsScale` leaves 1.0 reads as SDL2's behaviour and not
 as a regression. The substitute gate in Done is the decoder's tests: a glyph's
 pixels out equal to the BDF's bitmap in.
 
-**Decide first** --- R7b's criterion for crisper. R7a has none: B.10
-and the four rules above decide it.
+**Decide first** --- nothing; the rulings are the record's.
 
 ## Multi-frontend practices (adopted)
 
@@ -1835,8 +1826,8 @@ settle.
 1.1 / 1.2 / 1.3 / 1.4 / 1.5 / 1.6 --- any order; each
     capability's landing ends with its own banner commit, per 1.4's rule
     (1.5's full player-facing form needs R4; its trivial form is
-    independent; 1.2's per-frame case and 1.6's driver case wait on
-    3.1, first anyway as the shakedown)
+    independent; 1.2's per-frame case waits on 3.1, first anyway
+    as the shakedown)
 2.1 OverlayLayout extraction + Sdl.hs refactor (native-only,
     playtest- and bench-gated)
 2.2 browser overlay renderer (visual no-op)
@@ -1864,7 +1855,7 @@ R1 / R4 --- independent; R4 becomes loader-only after 3.1
 R3 GHCJS rip-out --- one commit, after 2.5 (parity); Dom.hs/JSFile.hs stay
     as documented-dead examples
 R5 --- after 2.5 and 3.3, measurement first
-R7 --- after 0.4 and 1.5; R7b after its own ruling
+R7 --- after 0.4 and 1.5; R7b after R7a
 ```
 
 Rationale, condensed: the input cluster goes first (mechanism already validated,
