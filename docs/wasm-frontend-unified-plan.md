@@ -433,6 +433,10 @@ only that the plan was written is one the next reader has to skip.
 - 2026-10-20 -- 1.5 re-cut for B.10, with an ordering constraint found: it hands
   its scale to 0.4's painter, so it waits on 0.4, and the `#screen` comment
   it was to repair is 0.4's, which rewrites that rule.
+- 2026-10-20 -- ruled by Mikolaj (B.11): 0.2's generated files are written
+  and checked by a tasty case in the existing suite, in place of a generator
+  executable, its Makefile target and its CI job, giving up the deploy gate; R2
+  no longer adds a freshness job.
 
 ## Repo facts the plan builds on
 
@@ -720,7 +724,7 @@ is Split (0)'s re-spike --- run the same day: syntax and linker coexistence
 recorded in the body's bullet, the async fallback dead unfired. (2)
 `Frontend.hs` re-exports `InputDecision` --- the module-as-interface convention
 takes no exception --- and the same channel binds 0.2's and 2.1's new modules
-and the test suite and generator that consume them. The known cost is accepted:
+and the test suite that consumes them. The known cost is accepted:
 `docs/promptgetkey-hygiene.md`'s idea of parking `macroStep` here closes
 as an import cycle (`KeyMacroFrame` sits in `SessionUI`, which imports
 `Client.UI.Frontend`, `SessionUI.hs:import Game.LambdaHack.Client.UI.Frontend`),
@@ -731,7 +735,7 @@ to an outcome line whose condition could never come true. (3) `keyTranslateWeb`
 alone is in test scope, as the Verify bullet now states with the three costs
 that ruled SDL's table out; the uniformity-diff review rule covers the SDL side.
 
-### 0.2 `CellStyle` + a build-time generator for TS tables and fixtures
+### 0.2 `CellStyle` + generated TS tables and fixtures
 
 **New module** `Game.LambdaHack.Client.UI.Frontend.CellStyle` holding the pure
 per-cell decision currently in `Dom.hs`'s `setChar`
@@ -764,9 +768,8 @@ with fixed seeds), the two binaries built back-to-back on one flag set and run
 interleaved --- CLAUDE.md's toggle-based A/B recipe, and this item's to obey
 rather than to restate.
 
-**Build-time generator** --- a small native executable (new `.cabal` executable
-stanza; regenerate `haskell-ci.yml` afterwards rather than hand-editing, per
-repo policy) that emits into `ts-src/src/generated/`:
+**Generated files** --- computed by a tasty case, the freshness case,
+and committed under `ts-src/src/generated/`:
 
 1. `palette.ts`: `PALETTE` / `HIGHLIGHT_TO_COLOR` / page-chrome colors
    from the real `colorToRGB`/`highlightToColor` (`Color` has no `Bounded` ---
@@ -779,9 +782,9 @@ repo policy) that emits into `ts-src/src/generated/`:
    and `terminal-core.ts:Cell background-fill`, across two languages. It
    is a highlight-rule output like the border colour beside it, so `CellStyle`
    names it once, `Sdl.hs` reads it there in place of `greyRGBA`,
-   and the generator emits it from that name. Same reachability problem ruling
-   (4) meets over `cursorXhair`, different remedy: this one already has a home
-   in `CellStyle` and the art has none.
+   and the freshness case writes it from that name. Same reachability problem
+   ruling (4) meets over `cursorXhair`, different remedy: this one already has
+   a home in `CellStyle` and the art has none.
 2. `fixtures.json`: behavioral fixtures from `CellStyle.styleCell`
    over a representative input sample (floor bright/dim, space, ordinary glyph,
    even/odd row x `White`, every `Highlight`), plus `(i, w) -> (col, row)`
@@ -798,43 +801,45 @@ repo policy) that emits into `ts-src/src/generated/`:
 one; `terminal-core.test.ts` asserts `styledCell` matches every fixture ---
 a mismatch means TS drifted from `CellStyle.hs`, full stop.
 
-**Freshness enforcement:** a Makefile target (`make gen-ts`) that `build-ts`
-depends on, plus a CI check that regenerates and fails on `git diff --exit-code`
---- an out-of-date generated file must be structurally unable to reach
-a deployed artifact.
+**Freshness enforcement:** the freshness case fails on any difference between
+a file it computes and the committed copy, and run with a regeneration switch
+it rewrites the copies instead, so `cabal test` is the check, in CI on every GHC
+the matrix builds. It lives in `test/CellStyleUnitTests.hs` and needs what
+the suite's SDL fontset cases already have: the files listed
+in `extra-source-files`, since CI tests an unpacked sdist,
+and `#ifndef USE_BROWSER` around it, since the suite also runs as wasm
+under `make test-wasm`. The switch is `tasty-golden`'s `--accept`
+or a hand-rolled tasty option, the executing session's choice, `tasty-golden`
+being no dependency today and the suite building under wasi too. Its name must
+not contain `fe-golden`, which the determinism goldens claim, `-p` selecting
+by containment. No deploy is gated: `make build-ts` bundles the committed copies
+as they stand, so a stale one reaches the page unless `cabal test` ran first,
+which B.11 accepts.
 
-**Rulings** --- all four ruled on 2026-08-07. (1) `styleCell`'s result type
-is one concrete record of engine `Color`s plus the atlas/glyph fields, each
-frontend rendering it through its own thin step --- SDL directly, the DOM grid
-and 2.2's canvas via the generated `PALETTE` hex lookup that exists for exactly
-that mapping; the hot path stays monomorphic, and 2.1 and 2.2 inherit
-the record. (2) The highlight-border rule is a `CellStyle` output field:
-the three-kind branch --- `chooseAndDrawHighlight`'s
-(`Sdl.hs:chooseAndDrawHighlight !col !row !bg = do`), border versus background
-versus none --- becomes structured output in `Color` terms, pinned
-by the fixtures since every `Highlight` is in the sample, so a TS drift fails
-vitest instead of passing it; the trap stands recorded: `HIGHLIGHT_TO_COLOR`
-alone, where `HighlightBackground -> BrBlack` is correct, would silently revert
-0.0's fix. (3) The bench gate's acceptance: interleaved A/B pairs per the toggle
-recipe (`benchFrontendBattle` and `benchFrontendCrawl`, fixed seeds), accepted
-if the `CellStyle` binary's times stay within the interleaved pairs' own spread,
-failed on a consistent regression beyond it; the in-session llvmpipe pair
-settles the verdict --- the cost under test is per-cell CPU work, which software
-rendering exposes rather than masks --- and a real-display pair is handed back
-only if that verdict is challenged. (4) The crosshair ASCII art moves
-into an SDL-free pure shared module that `Sdl.hs` and the generator both consume
---- per-pixel art serving the SVG directly, where the packed 1-bpp `Word8`
-vectors `cursorXhair` returns are an SDL encoding --- because `cursorXhair`
-is exported nowhere and `Frontend.Sdl` is no module at all under `os(wasi)`.
-What this does *not* buy is a generator free of SDL:
-`GameDefinition/gen-src/GenTsTables.hs` reaches `CellStyle` and, at 2.2,
-`OverlayLayout`, both under `engine-src`, so it build-depends
-on `lib:LambdaHack`, whose native branch carries `sdl2` and `sdl2-ttf`
-(`LambdaHack.cabal:build-depends: sdl2`) whichever module it imports.
-The freshness CI job therefore needs the `libsdl2-dev libsdl2-ttf-dev` apt line
-the workflow's other two Haskell jobs already carry
-(`.github/workflows/lint-and-test-suites.yml`, twice), and its **Done** says so.
-
+**Rulings** --- all four ruled on 2026-08-07, (4) re-cut on 2026-10-20 for B.11.
+(1) `styleCell`'s result type is one concrete record of engine `Color`s plus
+the atlas/glyph fields, each frontend rendering it through its own thin step ---
+SDL directly, the DOM grid and 2.2's canvas via the generated `PALETTE` hex
+lookup that exists for exactly that mapping; the hot path stays monomorphic,
+and 2.1 and 2.2 inherit the record. (2) The highlight-border rule
+is a `CellStyle` output field: the three-kind branch ---
+`chooseAndDrawHighlight`'s (`Sdl.hs:chooseAndDrawHighlight !col !row !bg = do`),
+border versus background versus none --- becomes structured output in `Color`
+terms, pinned by the fixtures since every `Highlight` is in the sample, so a TS
+drift fails vitest instead of passing it; the trap stands recorded:
+`HIGHLIGHT_TO_COLOR` alone, where `HighlightBackground -> BrBlack` is correct,
+would silently revert 0.0's fix. (3) The bench gate's acceptance: interleaved
+A/B pairs per the toggle recipe (`benchFrontendBattle` and `benchFrontendCrawl`,
+fixed seeds), accepted if the `CellStyle` binary's times stay within
+the interleaved pairs' own spread, failed on a consistent regression beyond it;
+the in-session llvmpipe pair settles the verdict --- the cost under test
+is per-cell CPU work, which software rendering exposes rather than masks ---
+and a real-display pair is handed back only if that verdict is challenged. (4)
+The crosshair ASCII art moves into an SDL-free pure shared module that `Sdl.hs`
+and the freshness case both consume --- per-pixel art serving the SVG directly,
+where the packed 1-bpp `Word8` vectors `cursorXhair` returns are an SDL encoding
+--- because `cursorXhair` is exported nowhere and `Frontend.Sdl` is no module
+at all under `os(wasi)`.
 ### 0.3 FFI-coverage test (baseline first, then per-commit)
 
 GHC's wasm JSFFI is a trust-the-embedded-string mechanism with no arity
@@ -928,14 +933,14 @@ which takes its scale. 1.2's per-frame case waits on 3.1.
 among its container styles since `91d75ca5e` --- the zero-dependency interim
 step, landed without an outcome line, the row staying live for the final form;
 Mikolaj confirmed on 2026-10-20 that the pointer reads as a crosshair
-over the whole grid. The final form comes with 0.2: its generator emits an SVG
-data-URI cursor from SDL2's own bitmap definition (`cursorXhair`'s ASCII-art
-alpha/BW pair, `Sdl.hs:cursorXhair :: (VS.Vector`; 32x27, hotspot (13,13) per
-the `createCursor` call at `Sdl.hs:createCursor cursorBW cursorAlpha`),
-and `terminal.ts` switches to `cursor: url(<data-URI>) 13 13, crosshair` ---
-the keyword staying as the fallback. Pixel-parity with the native pointer,
-sourced from the one canonical definition. Verify by hovering, both before
-and after the 0.2 upgrade.
+over the whole grid. The final form comes with 0.2: its freshness case writes
+an SVG data-URI cursor from SDL2's own bitmap definition (`cursorXhair`'s
+ASCII-art alpha/BW pair, `Sdl.hs:cursorXhair :: (VS.Vector`; 32x27, hotspot
+(13,13) per the `createCursor` call
+at `Sdl.hs:createCursor cursorBW cursorAlpha`), and `terminal.ts` switches
+to `cursor: url(<data-URI>) 13 13, crosshair` --- the keyword staying
+as the fallback. Pixel-parity with the native pointer, sourced from the one
+canonical definition. Verify by hovering, both before and after the 0.2 upgrade.
 
 ### 1.2 Screenshots: make `Ctrl+P` real (small)
 
@@ -1660,7 +1665,7 @@ so the field list has one definition. Four properties fix it:
 
 The encoder still lives next to `OverlayLayout` and is still pure; tasty still
 round-trips it on fixed cases and on QuickCheck-generated `OverlaySpace` values;
-the 0.2 generator still emits decoder fixtures.
+0.2's freshness case still writes decoder fixtures.
 
 **The browser's share of the rule**, decided here because it decides what
 this module exports: TS re-implements `propCutoff` and `propFit` --- two
@@ -1876,9 +1881,9 @@ Known browser pitfalls to handle here, not discover in 2.4:
   in this plan would see a browser measuring against a width the Haskell side
   never used.
 
-Fixtures for the browser's `propCutoff`/`propFit` twin come from the 0.2
-generator calling `OverlayLayout` --- no hand-written fixtures. Chunking itself
-never crosses, so there is nothing there to pin.
+Fixtures for the browser's `propCutoff`/`propFit` twin come from 0.2's freshness
+case calling `OverlayLayout` --- no hand-written fixtures. Chunking itself never
+crosses, so there is nothing there to pin.
 
 Verify: vitest green; live game pixel-identical to before (nothing wired).
 
@@ -1912,7 +1917,7 @@ the receiving consumer's `startPropLine` is what turns it into a device x.
 Restating it here is the second definition G1 forbids, and the field list
 is exactly what drifts. The encoder lives next to `OverlayLayout` and is pure;
 tasty round-trips it on fixed cases and on QuickCheck-generated arbitrary
-`OverlaySpace` values, and the 0.2 generator emits encode fixtures the TS
+`OverlaySpace` values, and 0.2's freshness case writes encode fixtures the TS
 decoder is tested against. All three overlay kinds (prop/square/mono) travel
 and draw through the same path, on the same canvas, in the 2.1 layer order.
 
@@ -1931,7 +1936,7 @@ elements. What that decides about the chunk header's own fields is stated
 in 2.1's item 3, which is where the header is specified; restating the field
 list here is the second definition G1 forbids, and this ruling deliberately does
 not. The full field order is written once, as the haddock table on the encoder
-in commit (1), and the TS side is pinned by generator-emitted fixtures, never
+in commit (1), and the TS side is pinned by generated fixtures, never
 by a second reading of that table; overlays are menu text rather than the map,
 so packing buys nothing and a whole mismatch class dies with it. (b) The Haskell
 `decode` that the `decode . encode == id` property needs is a test-only helper,
@@ -2204,11 +2209,11 @@ in `.github/workflows/lint-and-test-suites.yml` (the hand-written workflow ---
 do not touch the generated haskell-ci one): a `test-wasm` job that installs
 ghc-wasm-meta and runs `make test-wasm`, and `make test-ts` split off as its own
 Node-only job, so TS regressions fail in seconds. Still to add, each when
-it exists: `make build-wasm`, the 0.3 FFI-coverage battery and the 0.2
-generated-file freshness check. Still to do regardless: cache `~/.ghc-wasm`
-and the wasm cabal store, the toolchain being the expensive part
-and bootstrapped from scratch on every run today. The frontend-CI-matrix
-practice (below) widens this with xvfb SDL and pty ANSI smokes.
+it exists: `make build-wasm` and the 0.3 FFI-coverage battery. Still to do
+regardless: cache `~/.ghc-wasm` and the wasm cabal store, the toolchain being
+the expensive part and bootstrapped from scratch on every run today.
+The frontend-CI-matrix practice (below) widens this with xvfb SDL and pty ANSI
+smokes.
 
 **Completeness requirement: everything runs in CI.** What runs there today
 is CLAUDE.md's to state, not this document's; a third copy of that inventory
@@ -2227,14 +2232,13 @@ that introduces it.
 at a time, in the Split's order. The next two jobs are the cache
 then `make build-wasm`, as the Split now states. And CI gets no `make build-ts`
 job: its verifiable pieces are covered piecewise --- `tsc` and vitest
-in `test-ts`, the wasm build in the `build-wasm` job, 0.2's freshness check when
-it lands --- and the deploy write has no meaningful destination on a runner;
-nor, ruled 2026-09-14, a page job, `make page-gate` running locally before every
-browser landing and CI staying blind to the page by choice; what the target got
-is the `;`->`&&` hygiene fix, landed on master (`2b4b7d71f`) with its measured
-proof --- a planted npm-ci failure exited 0 under the old chains and 2
-under the new --- because several items' Done lines gate on `build-ts`'s exit
-status unsandboxed.
+in `test-ts`, the wasm build in the `build-wasm` job --- and the deploy write
+has no meaningful destination on a runner; nor, ruled 2026-09-14, a page job,
+`make page-gate` running locally before every browser landing and CI staying
+blind to the page by choice; what the target got is the `;`->`&&` hygiene fix,
+landed on master (`2b4b7d71f`) with its measured proof --- a planted npm-ci
+failure exited 0 under the old chains and 2 under the new --- because several
+items' Done lines gate on `build-ts`'s exit status unsandboxed.
 
 **R3 --- Retire GHCJS support (one browser target is enough).** The original
 GHCJS target is unbuildable, permanently: this codebase requires GHC 9.10+
@@ -3079,6 +3083,23 @@ retires; 2.2 loses its alignment and crop pitfalls and draws its three sections
 through the painter's core; 1.3's transform stays for the outline font, R7
 replacing it for bitmap fonts; B.7's grid-construction bullet is moot;
 and the bitmap map fonts, which no DOM can show at all, become R7.
+
+**B.11 No generator executable for the TS tables.** Ruled 2026-10-20 by Mikolaj:
+0.2's generated files are written and checked by a tasty case in the existing
+suite, not, as designed until then, by a native executable of their own, run
+by a Makefile target that `build-ts` depended on and diffed by a CI job carrying
+the SDL apt line. What drifts is a handful of pure values, and the suite already
+links the library, already has SDL in CI and, in its SDL fontset cases, already
+reads committed files. Given up is the deploy gate: `make build-ts` bundles
+the committed copies as they stand, so a stale one reaches the page unless
+`cabal test` ran first. Accepted because a copy goes stale through an edit
+to the Haskell it is computed from, which owes `cabal test` under the standing
+checks in `CLAUDE.md`; a hand edit of a copy is caught by the same case,
+at the next `cabal test`, locally or in CI. Should the gate be wanted back,
+it is a prerequisite target with its own shell, never an inline step
+in `build-ts`: that recipe sources `~/.ghc-wasm/env`, which points
+`CC`/`LD`/`AR` at wasi-sdk while leaving `cabal` and `ghc` native, so a native
+build inside it links with `wasm-ld` and fails.
 
 ---
 

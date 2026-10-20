@@ -46,7 +46,6 @@ palette.ts
 run-wasm-game.mjs
 test/OverlayLayoutUnitTests.hs
 ts-src/src/generated/
-GameDefinition/gen-src/GenTsTables.hs
 frame-timing-core.test.ts
 frame-timing-core.ts
 make nodeDeployedBench
@@ -63,4 +62,3 @@ test/WasmFileUnitTests.hs
 ts-src/src/terminal-input.test.ts
 url-options-core.test.ts
 url-options-core.ts
-make gen-ts

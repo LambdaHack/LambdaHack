@@ -111,7 +111,7 @@ sections of the record are frozen and which live is its head callout's to say.
 |---|---|---|---|---|
 | 0.0 | AltGraph fixes (keys, mouse/wheel); highlight-outline rule | tiny | --- | landed -- 403aafe13 |
 | 0.1 | `InputDecision` shared module; sync `lhKey` | small | 0.0; 0.3 baseline | not applied |
-| 0.2 | `CellStyle` + TS-table/fixture generator | medium | --- | not applied |
+| 0.2 | `CellStyle` + generated TS tables and fixtures | medium | --- | not applied |
 | 0.3 | FFI-coverage battery (baseline before 0.1, then per-commit) | ongoing | --- | not applied -- standing |
 | 0.4 | canvas painter in place of the DOM grid (B.10) | medium | --- | not applied |
 | 1.1 | crosshair cursor (CSS keyword; then generated SVG cursor) | trivial | 0.2 for the final form | not applied |
@@ -446,71 +446,57 @@ now sits.
 
 **Decide first** --- nothing; the rulings are the record's.
 
-### 0.2 `CellStyle` + a build-time generator for TS tables and fixtures
+### 0.2 `CellStyle` + generated TS tables and fixtures
 
 **Split** --- four commits. `CellStyle` plus its tasty tests, consumed
-by nobody; then the generator executable, `make gen-ts`, the committed
-`ts-src/src/generated/` files, `terminal-core.ts` consuming the generated
-palette and asserting `styledCell` against every fixture,
-and the regenerate-and-diff CI step; then the crosshair commit the record's
-ruling (4) requires --- the ASCII-art alpha/BW pair out of `Sdl.hs`
-into an SDL-free pure module of its own
+by nobody; then the freshness case, the committed `ts-src/src/generated/` files
+with their `extra-source-files` lines, and `terminal-core.ts` consuming
+the generated palette and asserting `styledCell` against every fixture;
+then the crosshair commit the record's ruling (4) requires --- the ASCII-art
+alpha/BW pair out of `Sdl.hs` into an SDL-free pure module of its own
 under `engine-src/Game/LambdaHack/Client/UI/Frontend/`, `cursorXhair` reading
 it, and `cursor.ts` generated from it, which is also 1.1's final form;
 then `Sdl.hs` adopting `CellStyle`, `colorToRGBA` derived
 from `Color.colorToRGB`, and the `Sdl.hs:let Point{..} = toEnum i` `punindex`
-fix, behind the bench gate. `gen-ts` must be a prerequisite target with its own
-shell, never an inline step in `build-ts`: that recipe sources
-`~/.ghc-wasm/env`, which points `CC`/`LD`/`AR` at wasi-sdk while leaving `cabal`
-and `ghc` native, so a native build inside it links with `wasm-ld` and fails.
-The outcome line, and the deletion of this item's `tools/doc-refs-allow.txt`
-entries --- `CellStyle.hs`, `palette.ts`, `fixtures.json`, `cursor.ts`,
-`ts-src/src/generated/`, `make gen-ts`, `test/CellStyleUnitTests.hs`,
-`GameDefinition/gen-src/GenTsTables.hs`, and the crosshair module's, added
-under whatever name the executing session mints for it and before that name
-is written anywhere --- ride the last to land, which cannot precede
-the crosshair commit.
+fix, behind the bench gate. The outcome line, and the deletion of this item's
+`tools/doc-refs-allow.txt` entries --- `CellStyle.hs`, `palette.ts`,
+`fixtures.json`, `cursor.ts`, `ts-src/src/generated/`,
+`test/CellStyleUnitTests.hs`, and the crosshair module's, added under whatever
+name the executing session mints for it and before that name is written anywhere
+--- ride the last to land, which cannot precede the crosshair commit.
 
 **Owns** --- new `engine-src/Game/LambdaHack/Client/UI/Frontend/CellStyle.hs`,
 the crosshair-art module beside it that the record's ruling (4) requires,
-`test/CellStyleUnitTests.hs`, `GameDefinition/gen-src/GenTsTables.hs`,
-`ts-src/src/generated/palette.ts`, `ts-src/src/generated/fixtures.json`
-and `ts-src/src/generated/cursor.ts`; modified `LambdaHack.cabal`,
-`test/Spec.hs`, `Makefile`, `ts-src/tsconfig.json` (`resolveJsonModule`, absent
-today, without which importing `fixtures.json` fails `tsc --noEmit`),
-`ts-src/src/terminal-core.ts` and its test, `ts-src/src/terminal.ts`,
+`test/CellStyleUnitTests.hs`, `ts-src/src/generated/palette.ts`,
+`ts-src/src/generated/fixtures.json` and `ts-src/src/generated/cursor.ts`;
+modified `LambdaHack.cabal`, `test/Spec.hs`, `ts-src/tsconfig.json`
+(`resolveJsonModule`, absent today, without which importing `fixtures.json`
+fails `tsc --noEmit`), `ts-src/src/terminal-core.ts` and its test,
+`ts-src/src/terminal.ts`,
 `engine-src/Game/LambdaHack/Client/UI/Frontend/Sdl.hs`,
 `engine-src/Game/LambdaHack/Client/UI/Frontend.hs` (export list only,
 re-exporting both new modules per 0.1's ruling (2) in the record),
-`.github/workflows/lint-and-test-suites.yml`, `tools/doc-refs-allow.txt`,
-`docs/wasm-frontend-unified-plan.md` --- the last commit rewrites `setMapChar`,
-`setMonoChar`, `setSquareChar` and `colorToRGBA`, all anchored here,
-so this item owes the re-anchoring --- and, in a commit of its own after
-the landing, `CLAUDE.md` --- the frontend bullet, whose second module name
-this item delivers, and the Gotchas bullet's "awaits its scheduled fix"
-for `Sdl.hs:let Point{..} = toEnum i`, which this item's last commit retires
-*if it is the first of the two to reach that line* --- 2.1 edits `Sdl.hs` too
-and carries the one-line fix when it lands first, though its own edits fall
-either side of `setMapChar` rather than inside it, and the retirement follows
-the fix rather than the item, so whichever lands first carries it and the other
-finds the clause already gone. The generated files are **committed**,
-not ignored: `git diff --exit-code` is vacuous on untracked files,
-so an untracked `ts-src/src/generated/` would defang the freshness check
-the item exists to install. `haskell-ci regenerate` is run as policy requires
-and measurably produces no diff --- the generated workflow builds `all`
-at package granularity and never enumerates components ---
-so `.github/workflows/haskell-ci.yml` is checked, not edited; and the generator
-carries no haddock examples, the doctest recipe naming exactly four components,
-in which a fifth's examples would run nowhere. The four commits are strictly
-serial: each consumes what the previous adds, and the first and last both encode
+`tools/doc-refs-allow.txt`, `docs/wasm-frontend-unified-plan.md` --- the last
+commit rewrites `setMapChar`, `setMonoChar`, `setSquareChar` and `colorToRGBA`,
+all anchored here, so this item owes the re-anchoring --- and, in a commit
+of its own after the landing, `CLAUDE.md` --- the frontend bullet, whose second
+module name this item delivers, and the Gotchas bullet's "awaits its scheduled
+fix" for `Sdl.hs:let Point{..} = toEnum i`, which this item's last commit
+retires *if it is the first of the two to reach that line* --- 2.1 edits
+`Sdl.hs` too and carries the one-line fix when it lands first, though its own
+edits fall either side of `setMapChar` rather than inside it, and the retirement
+follows the fix rather than the item, so whichever lands first carries
+it and the other finds the clause already gone. The generated files
+are **committed**, not ignored: they are what the freshness case compares
+against and what `make build-ts` bundles. The four commits are strictly serial:
+each consumes what the previous adds, and the first and last both encode
 the highlight rule.
 
-**Done** --- `native`, `ts`, `wasm`, `docs`, plus `make gen-ts` &&
-`git diff --exit-code ts-src/src/generated` && `haskell-ci regenerate` &&
-`git diff --exit-code .github/workflows/haskell-ci.yml`, the CI job running
-that pair carrying the `libsdl2-dev libsdl2-ttf-dev` apt line its **Decide
-first** (4) explains, and, on the `Sdl.hs` commit, the `make bench` pair
-under `xvfb-run`.
+**Done** --- `native`, `ts`, `wasm`, `docs`, plus the freshness case's two
+proofs --- one byte changed in a committed copy fails `cabal test`
+and the regeneration switch restores it, and `tar tzf` over `cabal sdist`'s
+tarball lists the three copies --- and, on the `Sdl.hs` commit, the `make bench`
+pair under `xvfb-run`.
 
 **Hands back** --- *browser*, for `cursor.ts`: pixel parity against the native
 pointer is the claim and only an eye settles it. The bench gate on the `Sdl.hs`
@@ -966,9 +952,9 @@ in the browser build --- so it lands first and unblocks 1.5, which names
 it as its dependency. (2) `ts-src/src/overlay-core.ts`'s `propCutoff`/`propFit`
 twin and its vitest table; sec. 2.1 gives both functions as complete Haskell
 bodies, so it can be *written* before 2.1 lands, but it may only *land* once
-0.2's generator emits the branch-complete table, hand-written fixtures being
-forbidden here. (3) the overlay renderer: all three of 2.1's sections drawn
-through 0.4's draw-op core onto its canvas, each fixed-pitch cell clipped
+0.2's freshness case writes the branch-complete table, hand-written fixtures
+being forbidden here. (3) the overlay renderer: all three of 2.1's sections
+drawn through 0.4's draw-op core onto its canvas, each fixed-pitch cell clipped
 to its box with the glyph centred, as the pitfalls specify. (4) the outcome line
 naming (3)'s hash, the ledger flip, and the deletion of `overlay-core.ts`
 and `overlay-core.test.ts` from `tools/doc-refs-allow.txt`.
@@ -977,8 +963,8 @@ and `overlay-core.test.ts` from `tools/doc-refs-allow.txt`.
 `ts-src/src/terminal.ts`, `ts-src/src/loader.ts`,
 `engine-src/Game/LambdaHack/Client/UI/Frontend/Wasm.hs`, `Makefile`,
 `docs/wasm-frontend-unified-plan.md` and `tools/doc-refs-allow.txt`.
-The generator extension that emits (2)'s branch table is 0.2's stanza and 0.2's
-file, not this item's: schedule it there rather than editing the generator here.
+The freshness-case extension that writes (2)'s branch table is 0.2's file,
+not this item's: schedule it there rather than editing the case here.
 
 **Done** --- `native`, `ts`, `wasm`, `deploy`, `page`, `docs`, plus
 `test -f ../lambdahack.github.io/DejaVuLGCSans-Bold.ttf.woff` &&
@@ -1016,7 +1002,7 @@ and 2.2's having gone with their own items.
 `engine-src/Game/LambdaHack/Client/UI/Frontend/Wasm.hs`,
 `ts-src/src/overlay-core.ts`, `ts-src/src/overlay-core.test.ts`,
 `ts-src/src/terminal.ts`, `ts-src/src/loader.ts`, `ts-src/run-wasm-test.mjs`
-and `docs/wasm-frontend-unified-plan.md`. The 0.2 generator emitting
+and `docs/wasm-frontend-unified-plan.md`. 0.2's freshness case writing
 the decoder's encode fixtures is 0.2's file, not this item's --- schedule
 it there, as 2.2 does for its branch table.
 
@@ -1311,9 +1297,9 @@ of every wasm job including the next one --- then a `make build-wasm` job, which
 feeds 0.3's export-half coverage when that lands. One non-job commit rode
 the same ruling and landed on master (`2b4b7d71f`): `build-ts` chains with `&&`
 now, so the deploy-carrying Done gates across this plan no longer trust an exit
-status that cannot fail. The rest land with the artifact each runs: 0.2's
-generated-file freshness check, 0.3's FFI battery, a short `nodeBench` smoke
-after 3.3, and the practice's `xvfb` SDL and pty ANSI smokes.
+status that cannot fail. The rest land with the artifact each runs: 0.3's FFI
+battery, a short `nodeBench` smoke after 3.3, and the practice's `xvfb` SDL
+and pty ANSI smokes.
 
 **Owns** --- `.github/workflows/lint-and-test-suites.yml`, plus the `Makefile`
 where a job needs a target of its own (the `--stopAfterFrames` variant
@@ -1798,7 +1784,7 @@ This orders the work.
 0.1 InputDecision (sync export re-spiked as its step (0); fixes the live
     input-bug class; brings the key-translation table tests, jsdom
     forwarding tests, and the input-side RawFrontend contract cases)
-0.2 CellStyle + generator (unblocks 2.2's fixtures)
+0.2 CellStyle + generated files (unblocks 2.2's fixtures)
 0.4 canvas painter (B.10) --- before 1.2, 1.5 and 2.2, which build on it;
     its Split (0) measures the frame cost against the Phase 2 baseline
 1.1 / 1.2 / 1.3 / 1.4 / 1.5 / 1.6 --- any order; each
@@ -1836,8 +1822,8 @@ R7 --- after 0.4 and 1.5; R7b after R7a
 ```
 
 Rationale, condensed: the input cluster goes first (mechanism already validated,
-fixes live bugs, small); the generator second because two later steps consume
-its output; multi-font last because it is the largest item and every earlier
+fixes live bugs, small); the generated files second because two later steps
+consume them; multi-font last because it is the largest item and every earlier
 phase either de-risks it (0.2 fixtures, 2.1 native-side proof) or is what
 it builds on (2.3 uses 0.3's test harness, 2.2 uses 0.2's palette).
 
