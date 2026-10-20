@@ -437,6 +437,13 @@ only that the plan was written is one the next reader has to skip.
   and checked by a tasty case in the existing suite, in place of a generator
   executable, its Makefile target and its CI job, giving up the deploy gate; R2
   no longer adds a freshness job.
+- 2026-10-20 -- ruled by Mikolaj, on a review of how the campaign's rules
+  outlive it: the RawFrontend contract's haddock and checklist may land ahead
+  of its harness, the checklist carrying the explicit-widths and functional-core
+  rules (that item's ruling (4)); the widths grep becomes a `tools/checks.py`
+  step, added with the fix (that practice's ruling); the ANSI and SDL smokes
+  move early in Sequencing; and B.4 stays rejected, no trigger having fired
+  (its 2026-10-20 note).
 
 ## Repo facts the plan builds on
 
@@ -2545,29 +2552,36 @@ against `nullStartup`/`lazyStartup`/`Teletype` natively and, via
 `make test-wasm`, against the real `Wasm.hs` (key delivered while a frame
 is pending; Esc reset; shutdown with a frame queued; `FrontPressed` semantics);
 and a "how to add a frontend" checklist. The input-side cases land together
-with 0.1 --- they guard exactly what it rewires in `Wasm.hs`; the rest pairs
-with 0.3.
+with 0.1 --- they guard exactly what it rewires in `Wasm.hs`; the rest
+of the harness pairs with 0.3, and the haddock and checklist wait on neither
+(ruling (4)).
 
-**Rulings** --- all three ruled on 2026-08-07. (1) The four names ---
-`nullStartup`, `lazyStartup`, `display`, `frameTimeoutThread`, today only inside
-`#ifdef EXPOSE_INTERNAL` (`Frontend.hs:#ifdef EXPOSE_INTERNAL`), which defaults
-off (`LambdaHack.cabal:flag release`, `:135-136`) so a harness driving them
-would not compile --- hoist into the unconditional export list
-under the "internal and used in unit tests" group, the `emptyUnknownTile`
-precedent (`Common/Kind.hs:, emptyUnknownTile, emptyUIFaction`), riding
-this item's first commit as the Split now states; driving only `chanFrontendIO`
-is refused, a whole frontend chain being unable to isolate the `fshowNow`
-handshake the harness exists to pin. (2) One test module
-with an `#ifdef USE_WASM` split over the shared case table --- the pattern
-the suite already uses for its SDL cases, one registration in `test/Spec.hs`,
-the `[fe-invariant]` series countable in one place; `Sdl.hs`/`ANSI.hs`
-and `Wasm.hs` are never co-exposed
+**Rulings** --- (1) to (3) ruled on 2026-08-07, (4) by Mikolaj on 2026-10-20.
+(1) The four names --- `nullStartup`, `lazyStartup`, `display`,
+`frameTimeoutThread`, today only inside `#ifdef EXPOSE_INTERNAL`
+(`Frontend.hs:#ifdef EXPOSE_INTERNAL`), which defaults off
+(`LambdaHack.cabal:flag release`, `:135-136`) so a harness driving them would
+not compile --- hoist into the unconditional export list under the "internal
+and used in unit tests" group, the `emptyUnknownTile` precedent
+(`Common/Kind.hs:, emptyUnknownTile, emptyUIFaction`), riding this item's first
+commit as the Split now states; driving only `chanFrontendIO` is refused,
+a whole frontend chain being unable to isolate the `fshowNow` handshake
+the harness exists to pin. (2) One test module with an `#ifdef USE_WASM` split
+over the shared case table --- the pattern the suite already uses for its SDL
+cases, one registration in `test/Spec.hs`, the `[fe-invariant]` series countable
+in one place; `Sdl.hs`/`ANSI.hs` and `Wasm.hs` are never co-exposed
 (`LambdaHack.cabal:Game.LambdaHack.Client.UI.Frontend.Wasm`), which is what
 forces a split of some kind. (3) The "how to add a frontend" checklist
 is haddock in `Frontend/Common.hs`, beside the contract fields commit (1) writes
 --- read where a frontend author is already looking and shipped to downstream
 authors via Hackage; a `docs/` file and README are refused, one starting a third
-documentation genre and the other addressing the wrong audience.
+documentation genre and the other addressing the wrong audience. (4) The haddock
+contract and the checklist are commit (1) and may land alone, ahead of 0.1
+and 0.3, taking no outcome line: they describe code that exists today.
+The checklist is where a frontend author meets the two review rules,
+so it carries both --- decode screen indices with `punindex (rwidth coscreen)`,
+never `toEnum`, and ask of every new line "would another frontend have to copy
+this?"
 
 **Determinism goldens --- native first, then cross-backend.** The tasty suite
 already compiles and runs under both native (`cabal test`) and wasm
@@ -2662,6 +2676,12 @@ example file, R3 --- leave it.) The rule binds all live and future frontend code
 from now on. The `Enum` instance itself and its global stay engine-internal,
 permanently --- the engine-wide removal of the hack is rejected outright
 (Appendix B has the ruling and the hack's documentation of record).
+
+**Rulings** --- ruled 2026-10-20 by Mikolaj: the grep for `Point{..} = toEnum`
+in the frontend modules, today a line of the work list's Done, becomes
+a standing check, a step of `tools/checks.py` added by the commit that removes
+the violation, so the rule has a mechanical floor once its one violation
+is gone. It catches that spelling only, so the review question stands beside it.
 
 **Functional core, imperative shell --- per frontend (the review bar).**
 `CellStyle`/`InputDecision`/`OverlayLayout` and the `ts-src`
@@ -2982,6 +3002,13 @@ post-construction by exactly one frontend,
 capabilities accumulate beyond the two now planned; a bug appears
 that this design would have prevented (e.g. a frontend silently missing
 a newly-required export); or another adopted item turns out to depend on it.
+Weighed again on 2026-10-20 and kept, on a proposal to build it inside sum-typed
+selection: no trigger has fired --- that item's rulings specify it without
+this design, so it overlaps rather than depends, and R7, cited as a new
+capability, changes no Haskell frontend module; the sum type's total `case`s
+already make `-Wall` flag a frontend a dispatch misses; and this design would
+check capabilities, not the explicit-widths and functional-core rules
+the proposal meant to preserve.
 
 **B.5 No hoisting of the frame-diff fold.** The changed-cell fold is duplicated
 verbatim in Haskell (`Sdl.hs:U.foldM'_ setMapChar 0 $`,

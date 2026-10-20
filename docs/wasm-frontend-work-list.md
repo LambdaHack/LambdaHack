@@ -137,10 +137,10 @@ sections of the record are frozen and which live is its head callout's to say.
 | R7 | pixel-perfect bitmap map fonts on the canvas, scaled whole by integers, the scalable font only off `allFontsScale` 1.0 | medium | 0.4; 1.5 for the scale; R4 for a player-chosen fontset | not applied |
 | capability constants | named constants in place of behavioral CPP | --- | --- | not applied |
 | sum-typed selection | one frontend field replacing four `Bool`s | mechanical, moderate churn | --- | not applied |
-| RawFrontend contract | haddock contract, tasty harness, add-a-frontend checklist | medium | input side with 0.1; rest with 0.3 | not applied |
+| RawFrontend contract | haddock contract, tasty harness, add-a-frontend checklist | medium | haddock and checklist: nothing; input side with 0.1; rest with 0.3 | not applied |
 | determinism goldens | fixed-seed frame-and-overlay and final-state digests | medium | --- | not applied |
 | frontend CI smokes | xvfb SDL, pty ANSI, a short nodeBench run | small each | 3.3 for the wasm one | not applied |
-| explicit widths | `punindex`, never the `Enum` instance, in frontend code | review rule; its one live violation is 0.2's, or 2.1's to carry if 2.1 takes `Sdl.hs` first | --- | open -- standing |
+| explicit widths | `punindex`, never the `Enum` instance, in frontend code | review rule; its one live violation is 0.2's, or 2.1's to carry if 2.1 takes `Sdl.hs` first, and the fix adds a `tools/checks.py` step | --- | open -- standing |
 | functional core | the standing review bar for frontend modules | review rule; nothing to execute | --- | standing |
 
 ## Handing an item to a session
@@ -458,7 +458,8 @@ under `engine-src/Game/LambdaHack/Client/UI/Frontend/`, `cursorXhair` reading
 it, and `cursor.ts` generated from it, which is also 1.1's final form;
 then `Sdl.hs` adopting `CellStyle`, `colorToRGBA` derived
 from `Color.colorToRGB`, and the `Sdl.hs:let Point{..} = toEnum i` `punindex`
-fix, behind the bench gate. The outcome line, and the deletion of this item's
+fix with the explicit-widths step it adds to `tools/checks.py`, behind the bench
+gate. The outcome line, and the deletion of this item's
 `tools/doc-refs-allow.txt` entries --- `CellStyle.hs`, `palette.ts`,
 `fixtures.json`, `cursor.ts`, `ts-src/src/generated/`,
 `test/CellStyleUnitTests.hs`, and the crosshair module's, added under whatever
@@ -476,21 +477,22 @@ fails `tsc --noEmit`), `ts-src/src/terminal-core.ts` and its test,
 `engine-src/Game/LambdaHack/Client/UI/Frontend/Sdl.hs`,
 `engine-src/Game/LambdaHack/Client/UI/Frontend.hs` (export list only,
 re-exporting both new modules per 0.1's ruling (2) in the record),
-`tools/doc-refs-allow.txt`, `docs/wasm-frontend-unified-plan.md` --- the last
-commit rewrites `setMapChar`, `setMonoChar`, `setSquareChar` and `colorToRGBA`,
-all anchored here, so this item owes the re-anchoring --- and, in a commit
-of its own after the landing, `CLAUDE.md` --- the frontend bullet, whose second
-module name this item delivers, and the Gotchas bullet's "awaits its scheduled
-fix" for `Sdl.hs:let Point{..} = toEnum i`, which this item's last commit
-retires *if it is the first of the two to reach that line* --- 2.1 edits
-`Sdl.hs` too and carries the one-line fix when it lands first, though its own
-edits fall either side of `setMapChar` rather than inside it, and the retirement
-follows the fix rather than the item, so whichever lands first carries
-it and the other finds the clause already gone. The generated files
-are **committed**, not ignored: they are what the freshness case compares
-against and what `make build-ts` bundles. The four commits are strictly serial:
-each consumes what the previous adds, and the first and last both encode
-the highlight rule.
+`tools/checks.py` and `tools/mutants.py` for the explicit-widths step
+and its mutant if this item carries the fix, `tools/doc-refs-allow.txt`,
+`docs/wasm-frontend-unified-plan.md` --- the last commit rewrites `setMapChar`,
+`setMonoChar`, `setSquareChar` and `colorToRGBA`, all anchored here,
+so this item owes the re-anchoring --- and, in a commit of its own after
+the landing, `CLAUDE.md` --- the frontend bullet, whose second module name
+this item delivers, and the Gotchas bullet's "awaits its scheduled fix"
+for `Sdl.hs:let Point{..} = toEnum i`, which this item's last commit retires
+*if it is the first of the two to reach that line* --- 2.1 edits `Sdl.hs` too
+and carries the one-line fix when it lands first, though its own edits fall
+either side of `setMapChar` rather than inside it, and the retirement follows
+the fix rather than the item, so whichever lands first carries it and the other
+finds the clause already gone. The generated files are **committed**,
+not ignored: they are what the freshness case compares against and what
+`make build-ts` bundles. The four commits are strictly serial: each consumes
+what the previous adds, and the first and last both encode the highlight rule.
 
 **Done** --- `native`, `ts`, `wasm`, `docs`, plus the freshness case's two
 proofs --- one byte changed in a committed copy fails `cabal test`
@@ -893,7 +895,8 @@ and `test/Spec.hs`; the module goes in the library's *unconditional*
 `exposed-modules`, not the `else` branch that carries `Sdl.hs`,
 so `make test-wasm` compiles it too and the wasm consumer inherits a module
 already proved to build there. (2) the `Sdl.hs` refactor onto it, carrying
-the `setMapChar` `toEnum` fix if 0.2 has not already. (3) the re-anchoring
+the `setMapChar` `toEnum` fix, with the explicit-widths step it adds
+to `tools/checks.py`, if 0.2 has not already. (3) the re-anchoring
 of this plan's and the repo-root `CLAUDE.md`'s `Sdl.hs` citations against
 the shrunken file, most of which the pass will name broken, plus that file's
 frontend bullet, whose last module name this item delivers, retiring the clause
@@ -909,10 +912,11 @@ so a correction is never in the same diff as the landing record.
 `engine-src/Game/LambdaHack/Client/UI/Frontend/Sdl.hs`,
 `engine-src/Game/LambdaHack/Client/UI/Frontend.hs` (export list only,
 re-exporting the new module per 0.1's ruling (2) in the record),
-`docs/wasm-frontend-unified-plan.md`, `CLAUDE.md`
-and `tools/doc-refs-allow.txt`. It does not write the wire encoder: that lands
-in the same module file under 2.3. 0.2 first is preferable, since then (2)
-inherits the `toEnum` fix instead of carrying it.
+`docs/wasm-frontend-unified-plan.md`, `CLAUDE.md`, `tools/doc-refs-allow.txt`,
+and `tools/checks.py` and `tools/mutants.py` for the explicit-widths step
+and its mutant if (2) carries the fix. It does not write the wire encoder:
+that lands in the same module file under 2.3. 0.2 first is preferable, since
+then (2) inherits the `toEnum` fix instead of carrying it.
 
 **Done** --- `native`, `wasm`, `docs`, plus `make test-medium`
 and the `make bench` pair under `xvfb-run`.
@@ -1597,15 +1601,18 @@ on `--frontendNull --frontendTeletype` and `make test-short`, which drives
 in the record.
 
 **Split** --- three commits. The haddock contract on `RawFrontend`'s fields
-(`Frontend/Common.hs:data RawFrontend = RawFrontend`) first, since it is what
-the harness then asserts against --- carrying the hoist of `nullStartup`,
-`lazyStartup`, `display` and `frameTimeoutThread` into `Frontend.hs`'s
-unconditional export list under the "internal and used in unit tests" group
-(ruled 2026-08-07), so exports precede the harness that uses them; the native
-harness second, driving `nullStartup`/`lazyStartup`/`Teletype.startup`; the wasm
-case third, and not before 0.3's baseline battery, because
-`ts-src/run-wasm-test.mjs` supplies no `globalThis.lhSubmitFrame` today --- 73
-lines wiring WASI and `ghc_wasm_jsffi` and nothing else
+(`Frontend/Common.hs:data RawFrontend = RawFrontend`) and the "how to add
+a frontend" checklist first, since the contract is what the harness then asserts
+against, and free to land alone ahead of 0.1 and 0.3 as a partial landing taking
+no outcome line (the record's ruling (4)) --- carrying the hoist
+of `nullStartup`, `lazyStartup`, `display` and `frameTimeoutThread`
+into `Frontend.hs`'s unconditional export list under the "internal and used
+in unit tests" group (ruled 2026-08-07), so exports precede the harness
+that uses them; the native harness second, driving
+`nullStartup`/`lazyStartup`/`Teletype.startup`; the wasm case third,
+and not before 0.3's baseline battery, because `ts-src/run-wasm-test.mjs`
+supplies no `globalThis.lhSubmitFrame` today --- 73 lines wiring WASI
+and `ghc_wasm_jsffi` and nothing else
 (`run-wasm-test.mjs:const wasi = new WASI({`) --- so the first foreign call out
 of `Wasm.hs` traps. The third commit carries the outcome line
 and the `tools/doc-refs-allow.txt` deletion.
@@ -1726,18 +1733,23 @@ so an in-session frame *count* is a gate and an in-session *timing* is not.
 **Owns** --- nothing --- this is a review rule, not an item to execute.
 Its whole executable residue is `Sdl.hs:let Point{..} = toEnum i`, owned by 0.2,
 which rewrites that loop, or carried by 2.1 if 2.1 takes `Sdl.hs` first,
-together with the `CLAUDE.md` Gotchas clause the fix retires; fixing
-it standalone contradicts the coupling stated just above and collides with both
-items' diffs. The rule retires with the campaign rather than taking a hash.
+together with the `CLAUDE.md` Gotchas clause the fix retires and the standing
+check the fix adds: the grep below as a step of `tools/checks.py`, a mutant
+in `tools/mutants.py` restoring the `toEnum` form in `Sdl.hs` to prove the step
+bites, and the step's place in `CLAUDE.md`'s list of what `check-all tools` runs
+(the record's ruling); fixing it standalone contradicts the coupling stated just
+above and collides with both items' diffs. The rule retires with the campaign
+rather than taking a hash.
 
 **Done** --- no gate of its own, only
 `! git grep -nE 'Point\{\.\.\} = toEnum' -- 'engine-src/Game/LambdaHack/Client/UI/Frontend/*.hs' ':!engine-src/Game/LambdaHack/Client/UI/Frontend/Dom.hs'`.
 It returns nonzero today, naming `Sdl.hs:let Point{..} = toEnum i` --- which
 is what proves it a real search rather than a silent one --- and must return
-zero from 0.2 onward, so it is an acceptance criterion on 0.2's diff and a check
-on every later frontend diff, not a task of its own. Deliberately not a bare
-`toEnum` grep: every other `toEnum` in `Sdl.hs` is a legitimate conversion
-into an SDL numeric type --- geometry mostly, and a log priority
+zero once the fix lands, so it is an acceptance criterion on that commit's diff
+and, as a `tools/checks.py` step from then on, a check whenever
+`check-all tools` runs, not a task of its own. Deliberately not a bare `toEnum`
+grep: every other `toEnum` in `Sdl.hs` is a legitimate conversion into an SDL
+numeric type --- geometry mostly, and a log priority
 at `Sdl.hs:SDL.logSetAllPriority $` --- and a gate that flags them would stop
 being read.
 
@@ -1781,6 +1793,9 @@ This orders the work.
 0.3-baseline --- FFI battery for the existing surface, before 0.1
     (imports via the test driver; exports via the thin reactor driver,
     3.2's seed)
+frontend CI smokes, ANSI and SDL --- early, beside 0.3-baseline: they
+    depend on nothing, and no other CI check runs those event loops
+    (the nodeBench smoke waits on 3.3)
 0.1 InputDecision (sync export re-spiked as its step (0); fixes the live
     input-bug class; brings the key-translation table tests, jsdom
     forwarding tests, and the input-side RawFrontend contract cases)
@@ -1805,13 +1820,13 @@ This orders the work.
     doing it early unlocks the wasm-vs-native ratio and R1's save-lag
     measurement via 3.2's instrumented stub)
 R2 CI jobs --- grow them per phase (0.3's battery once it exists; a short
-    nodeBench smoke run joins after 3.3; the xvfb SDL + pty ANSI smokes
-    complete the matrix)
+    nodeBench smoke run joins after 3.3)
 0.3 FFI coverage --- after the baseline, incremental with every
     FFI-touching commit
 capability constants / sum-typed selection --- standalone refactors, any
     time; the sum type before R4 (URL params parse into it)
-RawFrontend contract --- input-side cases with 0.1; the rest with 0.3
+RawFrontend contract --- haddock and checklist any time; input-side cases
+    with 0.1; the rest with 0.3
 determinism goldens --- native harness before 2.1; cross-backend under
     R2's test-wasm job
 R1 / R4 --- independent; R4 becomes loader-only after 3.1
