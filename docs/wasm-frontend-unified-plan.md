@@ -430,6 +430,9 @@ only that the plan was written is one the next reader has to skip.
 - 2026-10-20 -- 1.2's reopened ruling (b) ruled by Mikolaj: a bare `toBlob`,
   so under 1.3's fullscreen the PNG is the unscaled frame where SDL's is
   of the scaled window.
+- 2026-10-20 -- 1.5 re-cut for B.10, with an ordering constraint found: it hands
+  its scale to 0.4's painter, so it waits on 0.4, and the `#screen` comment
+  it was to repair is 0.4's, which rewrites that rule.
 
 ## Repo facts the plan builds on
 
@@ -916,8 +919,9 @@ overlay sections draw through the same core.
 ## Phase 1 --- small parity wins
 
 Independent of each other; any order. 1.1 and 1.3 don't depend on Phase 0; since
-B.10 1.2 waits on 0.4, whose canvas its screenshot is. 1.2's per-frame case
-waits on 3.1, which is handed out first regardless.
+B.10 1.2 waits on 0.4, whose canvas its screenshot is, and 1.5 on 0.4's painter,
+which takes its scale. 1.2's per-frame case waits on 3.1, which is handed out
+first regardless.
 
 ### 1.1 Crosshair cursor over the map (trivial)
 
@@ -1077,9 +1081,9 @@ commit under this item's rule --- deleting the clause its feature falsified,
 repairing the carrier sentence as the **Split** specifies, and running
 this item's Done with its own phrase in the alternation --- so the page stops
 lying the day the feature ships, and `index.html` joins 2.4's and R1's **Owns**
-(1.3 and 1.5 already carry it), `README.md` alongside it wherever the clause
-stands in both. Each clause deletion is disjoint, so no two landings touch
-the same words. Sequencing's "banner last" reading is struck.
+(1.3 already carries it), `README.md` alongside it wherever the clause stands
+in both. Each clause deletion is disjoint, so no two landings touch the same
+words. Sequencing's "banner last" reading is struck.
 
 ### 1.5 `allFontsScale` in the browser, alongside browser zoom
 
@@ -1089,8 +1093,8 @@ zoom (`C-+`/`C--`/`C-0`, allowlisted in 0.1).
 
 Mirror SDL2's semantics (`Sdl.hs:if fromJust sallFontsScale`): at scale 1.0 use
 the pixel-perfect rendering --- for the web that means the map font's `.woff`
-drawn at its native 16px, exactly what the page does today (the `index.html`
-comment about avoiding scaling blur) --- and at any other scale fall back
+drawn at its native 16px, as the page draws it today and 0.4's painter after it,
+until R7a puts the `.bdf` itself there --- and at any other scale fall back
 to scalable rendering, i.e. the same outline font at `16 * scale` px, accepting
 the browser's rasterization the way SDL accepts FreeType's. Auxiliary
 (prop/mono) font sizes multiply by the scale too, which 2.2's font wiring
@@ -1100,12 +1104,14 @@ Mechanics: `sallFontsScale` is already in the embedded config/options; pass
 it to TS in the one extensible startup call, which 2.2 specifies
 under "The startup payload, specified here" and to which this item adds one
 named field --- whichever of the two lands first creates the call and the other
-fills its field --- and set the grid container's `font-size` accordingly. Cell
-metrics stay consistent because 0.4's painter takes its cell from the loaded
-font, as `Sdl.hs` does, rather than hardcoding 16px. Until R4 lands there
-is no way for a *player* to change the value in the browser (no config file,
-no argv), so the full player-facing feature is `1.5 + R4 (?allFontsScale=)`; 1.5
-alone makes the engine-side value honored instead of silently ignored.
+fills its field --- and hand it to 0.4's painter, which loads the map font
+at `16 * scale` px and takes its cell from the loaded font, as `Sdl.hs` does,
+rather than from a hardcoded 16px, so cell metrics stay consistent. That is why
+this item waits on 0.4: on the DOM grid the same change would be a `font-size`
+the painter then replaces. Until R4 lands there is no way for a *player*
+to change the value in the browser (no config file, no argv), so the full
+player-facing feature is `1.5 + R4 (?allFontsScale=)`; 1.5 alone makes
+the engine-side value honored instead of silently ignored.
 
 **Rulings** --- ruled on 2026-08-07: this item's scale is a named field
 of the one extensible startup payload, so a scale-only `lhSetFontScale`

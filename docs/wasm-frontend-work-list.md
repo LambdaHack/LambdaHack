@@ -118,7 +118,7 @@ sections of the record are frozen and which live is its head callout's to say.
 | 1.2 | working `Ctrl+P` and `--printEachScreen` screenshots | small | 0.4 for the canvas; 0.3 for the reactor driver; 3.1 for the per-frame case | open |
 | 1.3 | fullscreen toggle with scaling | small | --- | landed -- d211caa38 |
 | 1.4 | banner/title truthfulness | trivial, recurring | feature landings | open -- standing |
-| 1.5 | `allFontsScale` honored in browser | small | 2.2's startup call (or a precursor); 0.3 for the reactor driver; R4 for player control | open |
+| 1.5 | `allFontsScale` honored in browser | small | 0.4 for the painter; 2.2's startup call (or a precursor); 0.3 for the reactor driver; R4 for player control | open |
 | 1.6 | game-end page lifecycle: a finished or crashed game says so | small | --- | open |
 | 2.1 | `OverlayLayout` extraction + `Sdl.hs` on it | medium--large | 0.2 for `CellStyle`; determinism goldens (native harness) | not applied |
 | 2.2 | browser canvas overlay renderer + font wiring | medium | 2.1, 0.2, 0.4 | not applied |
@@ -787,9 +787,9 @@ the `#status` div quotes, and nothing else in that file),
 and `docs/wasm-frontend-unified-plan.md` wherever this item's own body quotes
 the banner: 1.4 is `open -- standing`, so a quote that no longer matches
 the page is an error to fix, not drift to leave alone. Every item that writes
-`index.html` writes the banner or the `#screen` rule beside it --- 1.3, 1.5,
-2.2, R4, R5 and the banner commits of 2.4 and R1 --- and the four that touch
-the quoted paragraph write `README.md` too: this item, 2.4, R1 and R5.
+`index.html` writes the banner or the `#screen` rule beside it --- 0.4, 1.3, R4,
+R5 and the banner commits of 2.4 and R1 --- and the four that touch the quoted
+paragraph write `README.md` too: this item, 2.4, R1 and R5.
 `../lambdahack.github.io` is redeployed by **Done**, not owned.
 
 **Done** --- `wasm`, `deploy`, `page`, `docs`, plus
@@ -820,30 +820,27 @@ and over `README.md`, which is source because no build deploys it.
 
 ### 1.5 `allFontsScale` in the browser, alongside browser zoom
 
-**Split** --- two commits: the startup channel and the `font-size` it sets
-(`Wasm.hs` binding the `ClientOptions` its `startup` discards today, `loader.ts`
-wiring, `terminal.ts` applying the scale inside `buildGrid` so it survives every
+**Split** --- two commits. (1) the startup channel and the scale it carries:
+`Wasm.hs` binding the `ClientOptions` its `startup` discards today, `loader.ts`
+wiring, `terminal.ts` handing the scale to 0.4's painter, which re-derives
+its cell from the font loaded at that size, so the scale survives every
 dimension change, and 0.3's coverage case in `ts-src/run-wasm-game.mjs`,
 the reactor driver, since `--frontendNull` means `run-wasm-test.mjs` never
-executes `Wasm.hs`), then the `#screen` comment repair
-in `GameDefinition/index.html`, split off because that file is 1.4's
-and that repair is 1.4's rule. The first commit carries the outcome line
-and flips the ledger row: 1.5's player-facing half belongs to R4, so withholding
-it is not a partial landing of this item. Neither commit deletes
-a `tools/doc-refs-allow.txt` entry.
+executes `Wasm.hs`. (2) the outcome line naming (1)'s hash and the ledger flip:
+1.5's player-facing half belongs to R4, so withholding it is not a partial
+landing of this item. Neither commit deletes a `tools/doc-refs-allow.txt` entry.
 
 **Owns** --- `engine-src/Game/LambdaHack/Client/UI/Frontend/Wasm.hs`,
 `ts-src/src/loader.ts`, `ts-src/src/terminal.ts`, `ts-src/run-wasm-game.mjs` ---
 the reactor driver 0.3's export half seeds and 3.2 grows ---
-`GameDefinition/index.html` (only the `#screen` rule's blur comment, which
-a scaled `font-size` no longer wholly describes)
 and `docs/wasm-frontend-unified-plan.md` ---
 `Wasm.hs:display ScreenContent{rwidth,`,
 `loader.ts:const wasi = new WASI(["LambdaHack"], [], fds);`,
 `terminal.ts:Highlight square as an inset outline`
-and `terminal.ts:const alt = altModifier(e);` all shift. 1.2 and 1.1 write
-the same lines, 1.2 the four shared files and 1.1 the `container.style.*` batch
-in `buildGrid`, so whichever lands first shapes the others' diffs. No ordering
+and `terminal.ts:const alt = altModifier(e);` all shift. It does not write
+`GameDefinition/index.html`: the `#screen` rule and its blur comment are 0.4's,
+which rewrites that rule for the canvas. 1.2 writes the same lines in the four
+shared files, so whichever lands first shapes the other's diff. No ordering
 against 1.3 survives its ruling: that helper measures the live grid and assumes
 no cell size. `../lambdahack.github.io` is redeployed by **Done**, not owned.
 
@@ -852,7 +849,7 @@ of `ts-src/run-wasm-game.mjs` against a fresh reactor: `make test-wasm` drives
 the other driver and never enters `Wasm.hs`, so nothing else in this list
 executes the coverage case the Split adds.
 
-**Hands back** --- *display*: that the grid renders larger. The item body says
+**Hands back** --- *display*: that the map renders larger. The item body says
 how to check nothing --- alone among 1.1, 1.2 and 1.3, whose bodies each name
 a check, labelled `Verify:` at 1.2 and in plain prose at the other two ---
 and the gap is not one a browser channel would close, because a session cannot
@@ -1812,13 +1809,13 @@ settle.
     input-bug class; brings the key-translation table tests, jsdom
     forwarding tests, and the input-side RawFrontend contract cases)
 0.2 CellStyle + generator (unblocks 2.2's fixtures)
-0.4 canvas painter (B.10) --- before 1.2 and 2.2, both of which it shrinks;
+0.4 canvas painter (B.10) --- before 1.2, 1.5 and 2.2, which build on it;
     its Split (0) measures the frame cost against the Phase 2 baseline
 1.1 / 1.2 / 1.3 / 1.4 / 1.5 / 1.6 --- any order; each
     capability's landing ends with its own banner commit, per 1.4's rule
-    (1.5's full player-facing form needs R4; its trivial form is
-    independent; 1.2's per-frame case waits on 3.1, first anyway
-    as the shakedown)
+    (1.2 and 1.5 come after 0.4, 1.5's full player-facing form after
+    R4 too; 1.2's per-frame case waits on 3.1, first anyway as
+    the shakedown)
 2.1 OverlayLayout extraction + Sdl.hs refactor (native-only,
     playtest- and bench-gated)
 2.2 browser overlay renderer (visual no-op)
