@@ -186,13 +186,15 @@ is the one nobody re-reads.
 
 ```
 native   cabal build && cabal test && hlint .
-         && stylish-haskell -i <every .hs the item's Owns names>
+         && git add <every .hs the item's Owns names>   # new files diff too
+         && stylish-haskell -i <those paths>
          && git diff --exit-code <those paths>     # stylish left them alone
 ts       make test-ts        # npm run typecheck runs inside the target
 wasm     make build-wasm && make test-wasm
 deploy   make build-ts        # UNSANDBOXED: writes into the pages checkout
-page     make page-gate       # the page as deployed, in headless Firefox:
-         boots, paints, repaints on a key; PAGE_GATE_OVERLAYS=1 from 2.4 on
+page     make page-gate       # UNSANDBOXED: runs npm ci; the page as
+         deployed, in headless Firefox: boots, paints, repaints on a key;
+         PAGE_GATE_OVERLAYS=1 from 2.4 on
 docs     the repo's standing document passes over every .md document
          the item's Owns names, the record and this file always among them; CLAUDE.md
          lists the passes and this document does not; what they cost is
@@ -406,9 +408,8 @@ for their registration; `engine-src/Game/LambdaHack/Client/UI/Frontend/`'s
 `Sdl.hs` and `Wasm.hs`; `engine-src/Game/LambdaHack/Client/UI/Frontend.hs`,
 its export list only, carrying the re-export the record's ruling (2) requires;
 `engine-src/Game/LambdaHack/Client/UI/Key.hs`, one clause in `keyTranslateWeb`,
-which no other item writes and which shifts no citation,
-`Key.hs:keyTranslateWeb ::` naming the function's head;
-`ts-src/src/terminal.ts`, `ts-src/src/loader.ts`,
+which no other item writes, `Key.hs:keyTranslateWeb ::` naming the function's
+head; `ts-src/src/terminal.ts`, `ts-src/src/loader.ts`,
 `ts-src/src/terminal-input.test.ts`; `tools/doc-refs-allow.txt`;
 `docs/wasm-frontend-unified-plan.md`, the third commit rewriting the `Sdl.hs`
 block cited here and so owing a re-anchoring; and, in a commit of its own after
@@ -524,7 +525,9 @@ functions since `WasmFile` is a hidden other-module, and `Wasm.hs`'s
 on a constructed `SingleFrame` --- together with the JS stubs
 (`globalThis.localStorage`, `globalThis.LZString`, `globalThis.lhSubmitFrame`)
 that `run-wasm-test.mjs` must install before `wasi.start` and does not have
-today. Then the export half, its mechanism ruled 2026-08-07: a thin
+today, `LZString` being the real library, a devDependency since the page gate,
+and never the sibling checkout's `lz-string*.js`, a deployed artifact.
+Then the export half, its mechanism ruled 2026-08-07: a thin
 `ts-src/run-wasm-game.mjs` --- 3.2's seed, created here and grown there ---
 that instantiates the real reactor binary from `make build-wasm` with the same
 stubs, `wasi.initialize`s it, calls `lhStart` and injects
@@ -545,15 +548,12 @@ are the two artifact deletions in this plan that no outcome line gates.
 (created here as 3.2's seed; 3.2 grows it into the benchmark driver), new
 `test/FfiCoverageUnitTests.hs`, `test/Spec.hs`, `LambdaHack.cabal`,
 `tools/doc-refs-allow.txt` (the `test/FfiCoverageUnitTests.hs`
-and `run-wasm-game.mjs` entries), `ts-src/package.json` and `package-lock.json`
-(lz-string as a devDependency --- it must come from npm, never from the sibling
-checkout, whose `lz-string*.js` is a deployed artifact),
-and `docs/wasm-frontend-unified-plan.md`, the import half rewriting the driver's
-wiring cited here. Nothing else. The two commits are serial: the export half's
-driver imports the setup and stubs the import half installs --- defined once,
-shared by both drivers rather than copied. Later items add to the game driver,
-1.2, 1.5 and 3.2 each their own coverage case, and 2.3 and the RawFrontend
-contract to the test driver.
+and `run-wasm-game.mjs` entries) and `docs/wasm-frontend-unified-plan.md`,
+the import half rewriting the driver's wiring cited here. Nothing else. The two
+commits are serial: the export half's driver imports the setup and stubs
+the import half installs --- defined once, shared by both drivers rather
+than copied. Later items add to the game driver, 1.2, 1.5 and 3.2 each their own
+coverage case, and 2.3 and the RawFrontend contract to the test driver.
 
 **Done** --- `native`, `wasm`, `docs`, plus, on the export half,
 `make build-wasm` and a run of the seeded driver against the fresh reactor,
@@ -653,12 +653,8 @@ under `engine-src/Game/LambdaHack/Client/UI/Frontend/`,
 reaches its consumers through (0.1's ruling (2) in the record, which binds every
 new module here), a new tasty module registered in `test/Spec.hs`
 and `LambdaHack.cabal`, `ts-src/src/terminal.ts`, `ts-src/src/loader.ts`,
-`ts-src/run-wasm-game.mjs`, and `docs/wasm-frontend-unified-plan.md` ---
-the `Sdl.hs` citations, `Wasm.hs:display ScreenContent{rwidth,`,
-`loader.ts:const wasi = new WASI(["LambdaHack"], [], fds);`,
-`terminal.ts:Highlight square as an inset outline`
-and `terminal.ts:const alt = altModifier(e);` all shift. 1.5 writes the same
-lines --- `startup`'s body and the `foreign import javascript` block
+`ts-src/run-wasm-game.mjs`, and `docs/wasm-frontend-unified-plan.md`. 1.5 writes
+the same lines --- `startup`'s body and the `foreign import javascript` block
 in `Wasm.hs`, `loader.ts`'s `declare global` and its `globalThis.lh*` wiring,
 `terminal.ts`'s `Terminal` interface and returned object, and the driver ---
 so whichever of the two lands first shapes the other's diff.
@@ -674,9 +670,8 @@ backing store, and whether the fonts loaded is 0.4's to check, its painter
 awaiting `document.fonts.ready` before the first paint. The substitute gates
 in **Done** are the tasty test pinning the filename against a fixed time
 and the two reactor-driver runs, which are what executes `Wasm.hs`;
-`make test-wasm` adds nothing here, since it passes `--frontendNull`,
-so `Wasm.hs` never executes there and an undefined `globalThis.lhPrintScreen`
-would go unnoticed.
+`make test-wasm` adds nothing here: nothing it runs calls `fprintScreen`,
+so an undefined `globalThis.lhPrintScreen` would go unnoticed there.
 
 **Decide first** --- nothing; the rulings are the record's.
 
@@ -821,11 +816,7 @@ landing of this item. Neither commit deletes a `tools/doc-refs-allow.txt` entry.
 **Owns** --- `engine-src/Game/LambdaHack/Client/UI/Frontend/Wasm.hs`,
 `ts-src/src/loader.ts`, `ts-src/src/terminal.ts`, `ts-src/run-wasm-game.mjs` ---
 the reactor driver 0.3's export half seeds and 3.2 grows ---
-and `docs/wasm-frontend-unified-plan.md` ---
-`Wasm.hs:display ScreenContent{rwidth,`,
-`loader.ts:const wasi = new WASI(["LambdaHack"], [], fds);`,
-`terminal.ts:Highlight square as an inset outline`
-and `terminal.ts:const alt = altModifier(e);` all shift. It does not write
+and `docs/wasm-frontend-unified-plan.md`. It does not write
 `GameDefinition/index.html`: the `#screen` rule and its blur comment are 0.4's,
 which rewrites that rule for the canvas. 1.2 writes the same lines in the four
 shared files, so whichever lands first shapes the other's diff. No ordering
@@ -1355,11 +1346,11 @@ by GHCJS" clause, updated or dropped --- and `CLAUDE.md` and this document.
 Every item adding `exposed-modules` to `LambdaHack.cabal` writes into the very
 conditional nest R3 collapses, the orphan comment
 at `GameDefinition/Main.hs:This test is faulty in the browser` sits in a file
-3.1 also writes, its new import shifting that line, and the three engine `#if`
-sites are also R1's and the capability-constants practice's, so whichever lands
-first shapes R3's diff. The pointman campaign writes two of these too: its PR 0,
-C3, C4 and C6 write `HandleHumanLocalM.hs`, the first three above the `#if` site
-this item cites, and its 04.4 writes `CLAUDE.md` at that campaign's landing.
+3.1 also writes, and the three engine `#if` sites are also R1's
+and the capability-constants practice's, so whichever lands first shapes R3's
+diff. The pointman campaign writes two of these too: its PR 0, C3, C4 and C6
+write `HandleHumanLocalM.hs`, the first three above the `#if` site this item
+cites, and its 04.4 writes `CLAUDE.md` at that campaign's landing.
 
 **Done** --- `native`, with stylish widened past the gate's Owns-derived list
 to `$(git ls-files '*.hs')` --- the one item that widens it, and repo-wide here
@@ -1461,13 +1452,10 @@ not be parallelized across agents.
 **R6 --- Screenshot/overlay coherence.** Design and rulings in the record;
 retired by B.10, so nothing here is executed.
 
-**Owns** --- `tools/doc-refs-allow.txt`, only to keep
-its `render-coherence.test.ts` entry claimed: the entry stands as long
-as the record's retired R6 body names that file. With one renderer there
-is nothing to compare, and neither 1.2 nor 2.2 carries a shared entry point
-for it.
+**Owns** --- nothing. With one renderer there is nothing to compare, and neither
+1.2 nor 2.2 carries a shared entry point for it.
 
-**Done** --- `docs`, which deleting the entry would owe.
+**Done** --- nothing.
 
 **Hands back** --- nothing.
 

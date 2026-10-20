@@ -18,12 +18,13 @@ and `sdl2-to-wasm-parity-plan.md`. It pursues two goals at once:
   cropping in 2.2. That is not every real gap, and the goal no longer claims
   it is: the 2026-09-07 re-audit recorded in Appendix C found six more, of which
   four were scheduled the same day --- its (3) into 1.2, (4) as 1.6, (5)
-  into 2.2 and (6) into 0.1, each with a ledger row --- and two are carried
-  into item bodies and closed by nothing, 0.1 saying outright
-  that the compound-modifier shift flag needs a signature it has not specified
-  and 2.2 that nothing there fixes the half-cell mouse pitch; those two carry
-  no ledger row, so they have no state. SDL2's behaviour is not always
-  its intent: What would falsify this has the rule and the case.
+  into 2.2 and (6) into 0.1, each with a ledger row --- and two were carried
+  into item bodies and closed by nothing: the half-cell mouse pitch, which B.10
+  has since given to 0.4, its handlers building the point by `halfSize`,
+  and the compound-modifier shift flag, which 0.1 says outright needs
+  a signature it has not specified, and which carries no ledger row and so has
+  no state. SDL2's behaviour is not always its intent: What would falsify
+  this has the rule and the case.
 
 The ordering follows from G1: multi-font done naively would re-implement
 in TypeScript the layout logic that lives in `Sdl.hs`'s
@@ -2631,9 +2632,9 @@ discovery and decoding, once per configured fontset, ahead of the backdoor
 branch, but never its event loop or renderer. Add an `xvfb-run` job driving
 a real SDL game for a few frames (a tiny `--stopAfterFrames` variant
 of `benchFrontendBattle`), a pty-driven ANSI startup/shutdown check, and ---
-once 3.2 exists --- a short `nodeBench` run, which is what would first execute
-`Wasm.hs` in CI. No shipped frontend goes permanently untested the way `Dom.hs`
-did.
+once 3.2 exists --- a short `nodeBench` run of the reactor build, though
+on the null frontend, so `Wasm.hs` stays unexercised there. No shipped frontend
+goes permanently untested the way `Dom.hs` did.
 
 **Rulings** --- all three ruled on 2026-08-07. (1) Each smoke gates on exit
 status *and* a frame-count assertion against the benchmark report, each reading

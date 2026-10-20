@@ -52,7 +52,6 @@ make nodeDeployedBench
 make smokeANSI
 make smokeNodeBench
 make smokeSdl
-render-coherence.test.ts
 test/CellStyleUnitTests.hs
 test/DeterminismGoldenUnitTests.hs
 test/FfiCoverageUnitTests.hs
