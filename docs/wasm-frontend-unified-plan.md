@@ -411,6 +411,12 @@ only that the plan was written is one the next reader has to skip.
   than at each of a hundred sites. `tools/check-plan-crossrefs.py` reads
   the work list and treats naming the record as it treats naming the work list,
   and its snapshot control keeps the old allowlist phrase.
+- 2026-10-20 -- 1.2 re-cut for B.10, smaller than its row said: a screenshot
+  is 0.4's canvas by `toBlob`, so the rasterizer and its draw-op module went,
+  with the rasterizer's `tools/doc-refs-allow.txt` entries, and the Split is two
+  commits. The re-cut reopened ruling (b), now 1.2's **Decide first**: 1.3's
+  fullscreen scales the canvas by a CSS transform, so a bare `toBlob` saves
+  the unscaled frame where SDL's screenshot is of the scaled window.
 
 ## Repo facts the plan builds on
 
@@ -891,9 +897,8 @@ overlay sections draw through the same core.
 
 ## Phase 1 --- small parity wins
 
-Independent of each other; any order. 1.1 and 1.3 don't depend on Phase 0; 1.2
-benefits from 0.2's generated palette but can precede it; since B.10 it waits
-on 0.4, which makes its rasterizer a `toBlob` call. 1.2's per-frame case
+Independent of each other; any order. 1.1 and 1.3 don't depend on Phase 0; since
+B.10 1.2 waits on 0.4, whose canvas its screenshot is. 1.2's per-frame case
 and 1.6's driver case wait on 3.1, which is handed out first regardless.
 
 ### 1.1 Crosshair cursor over the map (trivial)
@@ -910,14 +915,7 @@ the keyword staying as the fallback. Pixel-parity with the native pointer,
 sourced from the one canonical definition. Verify by hovering, both before
 and after the 0.2 upgrade.
 
-### 1.2 Screenshots: make `Ctrl+P` real (small--medium)
-
-*Re-cut owed since 2026-09-14 (B.10): on 0.4's canvas painter the rasterizer
-of step 3, the draw-op module and `screenshot-core.ts` are not built ---
-a screenshot is the canvas's own `toBlob`, and `--printEachScreen` the same call
-after each paint --- so this item shrinks to steps 1 and 2 plus
-the `<a download>` and the driver case, and its three `tools/doc-refs-allow.txt`
-entries leave when it is re-cut. The body below predates the ruling.*
+### 1.2 Screenshots: make `Ctrl+P` real (small)
 
 Today `C-P` -> `PrintScreen` -> `printScreenHuman` shows *"Screenshot printed."*
 and calls `fprintScreen`, which for wasm
@@ -929,11 +927,11 @@ calling the same `fprintScreen` action after `js_submitFrame` when
 `sprintEachScreen` is set --- which needs `startup` to keep the `ClientOptions`
 it discards today, the edit 1.5 makes too, so whichever of the two lands first
 makes it. Two things about it are not obvious. That call reaches TS before
-the rAF paint, so the rasterizer reads the pending snapshot when there is one
-and the applied grid otherwise, or every per-frame PNG shows the frame before.
+the rAF paint, so the capture waits for that paint when a frame is pending
+and runs at once otherwise, or every per-frame PNG shows the frame before.
 And nothing in the browser can set the flag --- the loader passes no argv
 and R4's allowlist admits no debug flag --- so its consumer is the reactor
-driver, where Split (3)'s coverage case runs a second time
+driver, where Split (2)'s coverage case runs a second time
 under `--printEachScreen` and asserts one call per frame; that run is why
 this item waits on 3.1. Appendix C's 2026-09-07 audit note records the gap.
 The fix follows `Sdl.hs:let rf = rfWithoutPrintScreen`'s own pattern (override
@@ -955,41 +953,31 @@ in Haskell**, shared with SDL2:
    `startup` sets `fprintScreen` to compute the name (`.png`, not `.bmp` ---
    canvas exports PNG natively) and call it.
 3. TS: `lhPrintScreen(name)` (wired in `loader.ts` next to `lhSubmitFrame`)
-   rasterizes the current cell buffer (`prev`, `cols`, `rows` in `terminal.ts`)
-   to an offscreen `<canvas>` via `styledCell` + the generated palette,
-   then triggers an `<a download>` click. Structure it as a functional core
-   over **draw commands**: a pure function emits the op list (fill rect, draw
-   glyph at position with color), and a thin interpreter executes it
-   on the canvas --- the op list is vitest-testable with no canvas dependency,
-   and 2.2's overlay renderer reuses the same shape. Two rulings of 2026-08-07
-   bind that shape: the op types and the shared drawing entry point live
-   in a neutrally-named module of their own that this item creates and 2.2
-   imports --- R6's seam, handed to both items as an acceptance criterion ---
-   and the core takes the live grid's measured cell metrics as a parameter,
-   so the screenshot shows what the screen shows under 1.5's scale or 1.3's
-   fullscreen, as SDL's `printScreen` reads the live `SDL.windowSize`.
+   takes 0.4's canvas by `toBlob` as a PNG and triggers an `<a download>` click
+   with the name. There is no second renderer (B.10): the PNG is the painter's
+   backing store, `cols * boxSize` by `rows * boxSize`, overlays included once
+   2.4 flips, so 1.5's scale reaches it through `boxSize`. 1.3's fullscreen does
+   not: it scales the grid by a CSS transform and leaves the backing store
+   as it is, so a bare `toBlob` saves the unscaled frame where SDL's
+   `printScreen` reads the live `SDL.windowSize`, which the work list's **Decide
+   first** asks about.
 
-Verify: tasty test for the filename helper; vitest asserting the draw-op list
-for a small fixture frame, plus a golden op list captured from a real frame ---
-the machine criterion, ruled; run the game, press `Ctrl+P` --- the PNG-vs-screen
-look is a one-time human glance, checking among other things that the fonts
-loaded rather than a fallback face. **Forward dependency (R6):** after Phase 2
-lands, this rasterizer must also draw the overlay layers, or screenshots
-silently regress to map-only --- tracked in 2.5's checklist.
+Verify: tasty test for the filename helper; Split (2)'s two reactor-driver runs,
+the machine criterion; run the game, press `Ctrl+P` --- a one-time human glance
+that a PNG downloads under the helper's name and shows the screen.
 
-**Rulings** --- all four ruled on 2026-08-07. (a) The machine criterion
-is the draw-op list --- the fixture vitest plus a golden op list captured
-from a real frame --- and pixel-level "matches" is explicitly a one-time human
-glance, which also catches the fallback-font trap; no tolerance comparison
-is built, per the Hands back's own argument that it has no strict reading. (b)
-The rasterizer honors the live rendered size, parity with SDL's `printScreen`
-reading the live `SDL.windowSize`: the core takes the measured cell metrics
-as a parameter, degrading to the only size there is until 1.5 and 1.3 land. (c)
-The filename helper lives in a new pure sibling module
-under `Client/UI/Frontend/`, as the body now states; `Frontend.Common`
-is untouched. (d) 0.3's per-commit rule binds `js_printScreen` --- the field's
-"nothing headless executes `Wasm.hs`" premise retired with 0.3's reactor-driver
-ruling --- via the stub-and-injected-`Ctrl+P` case Split (3) now carries.
+**Rulings** --- all four ruled on 2026-08-07, (a) and (b) re-cut on 2026-10-20
+for B.10. (a) The machine criteria are the tasty test and the driver runs:
+the draw-op list (a) named is 0.4's, and the PNG is the canvas's own pixels,
+so the look is a one-time human glance and no tolerance comparison is built. (b)
+The screenshot honors the live rendered size, parity with SDL's `printScreen`
+reading the live `SDL.windowSize`; the backing store has it under 1.5's scale
+and not under 1.3's fullscreen, which reopens (b) there. (c) The filename helper
+lives in a new pure sibling module under `Client/UI/Frontend/`, as the body now
+states; `Frontend.Common` is untouched. (d) 0.3's per-commit rule binds
+`js_printScreen` --- the field's "nothing headless executes `Wasm.hs`" premise
+retired with 0.3's reactor-driver ruling --- via the stub-and-injected-`Ctrl+P`
+case Split (2) now carries.
 
 ### 1.3 Fullscreen toggle with scaling (small, no Haskell)
 

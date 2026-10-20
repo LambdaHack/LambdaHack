@@ -115,7 +115,7 @@ sections of the record are frozen and which live is its head callout's to say.
 | 0.3 | FFI-coverage battery (baseline before 0.1, then per-commit) | ongoing | --- | not applied -- standing |
 | 0.4 | canvas painter in place of the DOM grid (B.10) | medium | --- | not applied |
 | 1.1 | crosshair cursor (CSS keyword; then generated SVG cursor) | trivial | 0.2 for the final form | not applied |
-| 1.2 | working `Ctrl+P` and `--printEachScreen` screenshots | small--medium | 0.3 for the reactor driver; 3.1 for the per-frame case; 0.2 helps | open |
+| 1.2 | working `Ctrl+P` and `--printEachScreen` screenshots | small | 0.4 for the canvas; 0.3 for the reactor driver; 3.1 for the per-frame case | open |
 | 1.3 | fullscreen toggle with scaling | small | --- | landed -- d211caa38 |
 | 1.4 | banner/title truthfulness | trivial, recurring | feature landings | open -- standing |
 | 1.5 | `allFontsScale` honored in browser | small | 2.2's startup call (or a precursor); 0.3 for the reactor driver; R4 for player control | open |
@@ -124,7 +124,7 @@ sections of the record are frozen and which live is its head callout's to say.
 | 2.2 | browser canvas overlay renderer + font wiring | medium | 2.1, 0.2, 1.2 | not applied |
 | 2.3 | overlay transport over JSFFI | medium | 2.1, 2.2; 0.3 for the end-to-end battery | not applied |
 | 2.4 | multi-font capability flip | tiny diff, big review | 2.1--2.3; determinism goldens | not applied |
-| 2.5 | post-flip QA | small | 2.4; 1.2 for the draw-op module | not applied |
+| 2.5 | post-flip QA | small | 2.4; 1.2 for `Ctrl+P` | not applied |
 | 3.1 | `lhStart` reads WASI argv | small | --- | not applied |
 | 3.2 | Node driver for the game reactor | small | 3.1, 0.3 | not applied |
 | 3.3 | `nodeBench*`/`nodeDeployedBench` targets | small | 3.2 | not applied |
@@ -645,24 +645,19 @@ which proves the string shipped and nothing about how it painted.
 
 **Decide first** --- nothing.
 
-### 1.2 Screenshots: make `Ctrl+P` real (small--medium)
+### 1.2 Screenshots: make `Ctrl+P` real (small)
 
-**Split** --- three commits. (1) The filename helper plus its tasty test,
+**Split** --- two commits. (1) The filename helper plus its tasty test,
 with `Sdl.hs` switched onto it: native only, no TS and no wasm in the diff. (2)
-The pure rasterizer --- the neutral draw-op module holding the op types
-and the shared entry point (its `tools/doc-refs-allow.txt` entry added before
-the name is written anywhere), with `ts-src/src/screenshot-core.ts`
-and `ts-src/src/screenshot-core.test.ts` consuming it, emitting the draw-op list
-and nothing else --- which also deletes all three of this item's
-`tools/doc-refs-allow.txt` entries, the draw-op module's included, since
-the files they name now exist. (3) The wiring: `Wasm.hs`'s `js_printScreen`
-import and its `fprintScreen` override, `lhPrintScreen` in `loader.ts`,
-the frame snapshot out of `terminal.ts`, the `<a download>` interpreter,
-and 0.3's coverage case in `ts-src/run-wasm-game.mjs` --- the reactor driver
-installs a `globalThis.lhPrintScreen` stub, injects `Ctrl+P` through `lhKey`
-and asserts one call with a filename of the expected shape, then runs again
-under `--printEachScreen` and asserts one call per frame. Commits 1 and 2
-are disjoint; 3 needs 2, and carries the outcome line and the ledger flip.
+The wiring: `Wasm.hs`'s `js_printScreen` import and its `fprintScreen` override,
+`lhPrintScreen` in `loader.ts`, the capture in `terminal.ts` --- 0.4's canvas
+by `toBlob`, after the pending frame's paint when one is pending ---
+with its `<a download>` click, and 0.3's coverage case
+in `ts-src/run-wasm-game.mjs` --- the reactor driver installs
+a `globalThis.lhPrintScreen` stub, injects `Ctrl+P` through `lhKey` and asserts
+one call with a filename of the expected shape, then runs again
+under `--printEachScreen` and asserts one call per frame. (2) needs (1) and 0.4,
+and carries the outcome line and the ledger flip.
 
 **Owns** --- `engine-src/Game/LambdaHack/Client/UI/Frontend/Sdl.hs`
 and `Wasm.hs` beside it, the helper's home module
@@ -670,11 +665,9 @@ under `engine-src/Game/LambdaHack/Client/UI/Frontend/`,
 `engine-src/Game/LambdaHack/Client/UI/Frontend.hs` for the re-export that module
 reaches its consumers through (0.1's ruling (2) in the record, which binds every
 new module here), a new tasty module registered in `test/Spec.hs`
-and `LambdaHack.cabal`, `ts-src/src/screenshot-core.ts` and its test,
-the neutral draw-op module they consume, `ts-src/src/terminal.ts`,
-`ts-src/src/loader.ts`, `ts-src/run-wasm-game.mjs`, `tools/doc-refs-allow.txt`,
-and `docs/wasm-frontend-unified-plan.md` --- the `Sdl.hs` citations,
-`Wasm.hs:display ScreenContent{rwidth,`,
+and `LambdaHack.cabal`, `ts-src/src/terminal.ts`, `ts-src/src/loader.ts`,
+`ts-src/run-wasm-game.mjs`, and `docs/wasm-frontend-unified-plan.md` ---
+the `Sdl.hs` citations, `Wasm.hs:display ScreenContent{rwidth,`,
 `loader.ts:const wasi = new WASI(["LambdaHack"], [], fds);`,
 `terminal.ts:Highlight square as an inset outline`
 and `terminal.ts:const alt = altModifier(e);` all shift. 1.5 and 1.6 write
@@ -688,23 +681,26 @@ so whichever of the three lands first shapes the others' diffs.
 of `ts-src/run-wasm-game.mjs` against a fresh reactor, as 1.5's Done says
 of its own: `make test-wasm` drives the other driver and never enters `Wasm.hs`.
 
-**Hands back** --- *display*: press `Ctrl+P` in a browser and compare
-the downloaded PNG with the screen. That comparison is not merely eye-only,
-it is undefined --- canvas `measureText`/`fillText` placement is not the DOM
-grid's `1ch`/`1em` placement and glyph rasterization differs per browser,
-so "matches" has no strict reading, which is why the op-list goldens
-are the machine criterion and the look is ruled a one-time glance (see **Decide
-first**) --- and a second failure mode is invisible with every gate green:
-`lambdaHackFont` exists only as the `@font-face` in `GameDefinition/index.html`,
-so a rasterizer that does not await `document.fonts.ready` silently draws
-the PNG in a fallback font. The substitute gates in **Done** are the tasty test
-pinning the filename against a fixed time, the vitest assertion on the draw-op
-list and the two reactor-driver runs, which are what executes `Wasm.hs`;
+**Hands back** --- *display*: press `Ctrl+P` in a browser and see a PNG download
+under the helper's name, showing the screen. The PNG is the painter's own
+backing store, and whether the fonts loaded is 0.4's to check, its painter
+awaiting `document.fonts.ready` before the first paint. The substitute gates
+in **Done** are the tasty test pinning the filename against a fixed time
+and the two reactor-driver runs, which are what executes `Wasm.hs`;
 `make test-wasm` adds nothing here, since it passes `--frontendNull`,
 so `Wasm.hs` never executes there and an undefined `globalThis.lhPrintScreen`
 would go unnoticed.
 
-**Decide first** --- nothing; the rulings are the record's.
+**Decide first** --- one question, the record's ruling (b) meeting B.10: what
+the PNG holds under 1.3's fullscreen. 1.3 scales the grid by a CSS transform,
+so the backing store, and with it a bare `toBlob`, stays at the unscaled frame,
+while SDL's `printScreen` saves the whole window, scaled. (i) The bare `toBlob`:
+B.10's one call, the same PNG with fullscreen on or off, and (b) holding
+for 1.5's scale but not for 1.3's. (ii) The canvas drawn at 1.3's fit scale
+into an offscreen canvas, then `toBlob`: (b) as ruled, at one more call, the PNG
+resampled by `drawImage`, which need not blur as the transform does on screen.
+The fields above assume (i); under (ii) `ts-src/src/fullscreen.ts`, which holds
+the scale, joins **Owns**.
 
 ### 1.3 Fullscreen toggle with scaling (small, no Haskell)
 
@@ -1840,7 +1836,7 @@ settle.
 0.1 InputDecision (sync export re-spiked as its step (0); fixes the live
     input-bug class; brings the key-translation table tests, jsdom
     forwarding tests, and the input-side RawFrontend contract cases)
-0.2 CellStyle + generator (unblocks 1.2's palette reuse and 2.2's fixtures)
+0.2 CellStyle + generator (unblocks 2.2's fixtures)
 0.4 canvas painter (B.10) --- before 1.2 and 2.2, both of which it shrinks;
     its Split (0) measures the frame cost against the Phase 2 baseline
 1.1 / 1.2 / 1.3 / 1.4 / 1.5 / 1.6 --- any order; each

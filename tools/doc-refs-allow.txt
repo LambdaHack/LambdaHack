@@ -54,8 +54,6 @@ make smokeANSI
 make smokeNodeBench
 make smokeSdl
 render-coherence.test.ts
-screenshot-core.test.ts
-screenshot-core.ts
 test/CellStyleUnitTests.hs
 test/DeterminismGoldenUnitTests.hs
 test/FfiCoverageUnitTests.hs
