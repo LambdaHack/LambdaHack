@@ -20,11 +20,10 @@ and `sdl2-to-wasm-parity-plan.md`. It pursues two goals at once:
   four were scheduled the same day --- its (3) into 1.2, (4) as 1.6, (5)
   into 2.2 and (6) into 0.1, each with a ledger row --- and two were carried
   into item bodies and closed by nothing: the half-cell mouse pitch, which B.10
-  has since given to 0.4, its handlers building the point by `halfSize`,
-  and the compound-modifier shift flag, which 0.1 says outright needs
-  a signature it has not specified, and which carries no ledger row and so has
-  no state. SDL2's behaviour is not always its intent: What would falsify
-  this has the rule and the case.
+  has since given to 0.4, and the compound-modifier shift flag, which 0.1 says
+  outright needs a signature it has not specified, and which carries no ledger
+  row and so has no state. SDL2's behaviour is not always its intent: What would
+  falsify this has the rule and the case.
 
 The ordering follows from G1: multi-font done naively would re-implement
 in TypeScript the layout logic that lives in `Sdl.hs`'s
@@ -445,6 +444,20 @@ only that the plan was written is one the next reader has to skip.
   step, added with the fix (that practice's ruling); the ANSI and SDL smokes
   move early in Sequencing; and B.4 stays rejected, no trigger having fired
   (its 2026-10-20 note).
+- 2026-10-20 -- ruled by Mikolaj on eight gaps a review of the plan found. 0.3's
+  import half adds the `npm ci` its `LZString` stub needs to the `test-wasm`
+  recipe and CI job. 0.1 takes the jsdom harness, the game driver's `lhKey`
+  injection and a driver run in Done, and creates
+  `test/FrontendContractUnitTests.hs`, minting `[fe-invariant]`, the contract's
+  harness extending it. 2.1 and 2.3 write their own fixtures by freshness cases,
+  not 0.2. 0.4 takes `Wasm.hs`'s mouse exports for the half-cell column. 1.5
+  creates the startup call and 2.2 adds its fonts. R4 no longer waits
+  on sum-typed selection, its ruled parameters selecting no frontend. 2.5's
+  baseline is 0.4's canvas number in B.10. With them
+  `tools/check-plan-crossrefs.py` treats a landed or retired row's text
+  as history, claiming no allowlist entry and writing nothing still to come,
+  which is how `ts-src/src/terminal-input.test.ts` had lost its live owner
+  unseen.
 
 ## Repo facts the plan builds on
 
@@ -816,13 +829,15 @@ the matrix builds. It lives in `test/CellStyleUnitTests.hs` and needs what
 the suite's SDL fontset cases already have: the files listed
 in `extra-source-files`, since CI tests an unpacked sdist,
 and `#ifndef USE_BROWSER` around it, since the suite also runs as wasm
-under `make test-wasm`. The switch is `tasty-golden`'s `--accept`
-or a hand-rolled tasty option, the executing session's choice, `tasty-golden`
-being no dependency today and the suite building under wasi too. Its name must
-not contain `fe-golden`, which the determinism goldens claim, `-p` selecting
-by containment. No deploy is gated: `make build-ts` bundles the committed copies
-as they stand, so a stale one reaches the page unless `cabal test` ran first,
-which B.11 accepts.
+under `make test-wasm`. 2.1's branch table and 2.3's encode fixtures are written
+by freshness cases of their own, in `test/OverlayLayoutUnitTests.hs`,
+on the same terms. The switch is `tasty-golden`'s `--accept` or a hand-rolled
+tasty option, the executing session's choice, `tasty-golden` being no dependency
+today and the suite building under wasi too. Its name must not contain
+`fe-golden`, which the determinism goldens claim, `-p` selecting by containment.
+No deploy is gated: `make build-ts` bundles the committed copies as they stand,
+so a stale one reaches the page unless `cabal test` ran first, which B.11
+accepts.
 
 **Rulings** --- all four ruled on 2026-08-07, (4) re-cut on 2026-10-20 for B.11.
 (1) `styleCell`'s result type is one concrete record of engine `Color`s plus
@@ -917,13 +932,16 @@ centred in the cell in the `lambdaHackFont` face, and a `strokeRect` one pixel
 inside the cell in the border colour --- the three values `styledCell` already
 resolves, so `terminal-core.ts` and its tests stand, and the ring is SDL2's
 `drawRect` rather than an inset box-shadow imitating it. The pointer reports
-pixels, and the wheel and mouseup handlers build their `PointUI` by `halfSize`
-as SDL2's `pointTranslate` does, which closes Appendix C's (1). Fonts load
-before the first paint, `document.fonts.ready` awaited once. The painter
-is the draw-op core 1.2 and 2.2 consume: a pure function from a cell run
-to fill, text and stroke commands in `terminal-core.ts`, and a thin interpreter
-over the 2D context, so op lists stay testable without a canvas and 2.1's three
-overlay sections draw through the same core.
+pixels, and the wheel and mouseup handlers divide them by `halfSize` as SDL2's
+`pointTranslate` does, passing the half-cell column to `lhWheel`
+and `lhMouseUp`, which build their `PointUI` from it directly rather
+than by `squareToUI`, whose doubling made every column even; that closes
+Appendix C's (1). Fonts load before the first paint, `document.fonts.ready`
+awaited once. The painter is the draw-op core 1.2 and 2.2 consume: a pure
+function from a cell run to fill, text and stroke commands
+in `terminal-core.ts`, and a thin interpreter over the 2D context, so op lists
+stay testable without a canvas and 2.1's three overlay sections draw through
+the same core.
 
 **Rulings** --- the shape is B.10's and the number is Split (0)'s to take.
 
@@ -1114,16 +1132,16 @@ already specifies.
 
 Mechanics: `sallFontsScale` is already in the embedded config/options; pass
 it to TS in the one extensible startup call, which 2.2 specifies
-under "The startup payload, specified here" and to which this item adds one
-named field --- whichever of the two lands first creates the call and the other
-fills its field --- and hand it to 0.4's painter, which loads the map font
-at `16 * scale` px and takes its cell from the loaded font, as `Sdl.hs` does,
-rather than from a hardcoded 16px, so cell metrics stay consistent. That is why
-this item waits on 0.4: on the DOM grid the same change would be a `font-size`
-the painter then replaces. Until R4 lands there is no way for a *player*
-to change the value in the browser (no config file, no argv), so the full
-player-facing feature is `1.5 + R4 (?allFontsScale=)`; 1.5 alone makes
-the engine-side value honored instead of silently ignored.
+under "The startup payload, specified here" and which this item creates
+with its one named field, 2.2 adding its fonts after --- and hand it to 0.4's
+painter, which loads the map font at `16 * scale` px and takes its cell
+from the loaded font, as `Sdl.hs` does, rather than from a hardcoded 16px,
+so cell metrics stay consistent. That is why this item waits on 0.4: on the DOM
+grid the same change would be a `font-size` the painter then replaces. Until R4
+lands there is no way for a *player* to change the value in the browser
+(no config file, no argv), so the full player-facing feature
+is `1.5 + R4 (?allFontsScale=)`; 1.5 alone makes the engine-side value honored
+instead of silently ignored.
 
 **Rulings** --- ruled on 2026-08-07: this item's scale is a named field
 of the one extensible startup payload, so a scale-only `lhSetFontScale`
@@ -1183,6 +1201,11 @@ the throwaway `performance.now()` probe --- R5a is not pulled forward --- runs
 in-session under the same Xvfb setup as 2.5's re-measurement, the two numbers
 comparing only within that setup, and lands here: a dated number
 with its protocol and the probe's diff, appended to this paragraph when taken.
+Re-ruled 2026-10-20 by Mikolaj: B.10 put the canvas between this number and 2.2,
+so the baseline 2.5 compares against is 0.4's, taken by 0.4's Split (0)
+on the canvas against this one and recorded in B.10 with its probe;
+this DOM-grid number stays as history, and the move from DOM to canvas
+is charged to 0.4.
 
 **Taken 2026-09-04**, pre-2.2, on this branch's tip with the probe below applied
 and nothing else: **p95 3.00ms** per frame, and **mean 0.75ms read at n=2905**,
@@ -1205,7 +1228,7 @@ re-measurement can tell a toolchain change from a rendering one: wasm GHC
 An earlier run that also drove 150 arrow keys after the intro read mean 1.36ms,
 p95 4.00ms at n=581 --- warm-up dominated, and the keyed frames add no load
 the animation lacks, so the input-free protocol is the one 2.5 repeats.
-The probe's diff, re-applied verbatim at 2.5:
+The probe's diff, which 0.4's Split (0) adapts to the canvas:
 
 ```diff
 --- a/ts-src/src/terminal.ts
@@ -1673,7 +1696,7 @@ so the field list has one definition. Four properties fix it:
 
 The encoder still lives next to `OverlayLayout` and is still pure; tasty still
 round-trips it on fixed cases and on QuickCheck-generated `OverlaySpace` values;
-0.2's freshness case still writes decoder fixtures.
+2.3's freshness case still writes decoder fixtures.
 
 **The browser's share of the rule**, decided here because it decides what
 this module exports: TS re-implements `propCutoff` and `propFit` --- two
@@ -1835,16 +1858,16 @@ from `./<filename>` URLs. **TS hardcodes nothing about fonts**; `make build-ts`
 is extended to copy the referenced `GameDefinition/fonts/*.ttf.woff`
 into the pages checkout (only `16x16xw.woff` is deployed today).
 
-**The startup payload, specified here.** 1.5 shares this call and points here
+**The startup payload, specified here.** 1.5 creates this call and points here
 for its shape, as 2.3 points at 2.1 for the wire payload's, so the field list
 has one definition. One call, named for the general job and not for any one
 field: a Haskell-side `unsafe` import of a `globalThis` hook --- the established
 `lhSubmitFrame` direction, Haskell pushing when it owns the data --- taking
 a single JSON `JSString`, `JSON.parse` on the JS side against a declared TS
 interface, unknown fields ignored. Its fields are named, this item's fonts
-and 1.5's `allFontsScale` being the two the plan needs; whichever item lands
-first creates the call and the other adds its field, so no signature ever
-changes and a field-specific `lhSetFontScale` is refused. The boundary is stated
+and 1.5's `allFontsScale` being the two the plan needs; 1.5 creates the call
+with its field and this item adds its own, so no signature ever changes
+and a field-specific `lhSetFontScale` is refused. The boundary is stated
 so the confusion dies: 2.3's string ban is about per-frame cost, and a one-shot
 startup call is exactly where JSON is right.
 
@@ -1889,24 +1912,25 @@ Known browser pitfalls to handle here, not discover in 2.4:
   in this plan would see a browser measuring against a width the Haskell side
   never used.
 
-Fixtures for the browser's `propCutoff`/`propFit` twin come from 0.2's freshness
+Fixtures for the browser's `propCutoff`/`propFit` twin come from 2.1's freshness
 case calling `OverlayLayout` --- no hand-written fixtures. Chunking itself never
 crosses, so there is nothing there to pin.
 
 Verify: vitest green; live game pixel-identical to before (nothing wired).
 
-**Rulings** --- one ruled on 2026-08-05 --- the baseline is Split (0)'s,
-throwaway probe, in-session, the number and probe diff recorded at Phase 2's
-intro --- and the other two on 2026-08-07, (a) re-cut on 2026-10-20 for B.10.
-(a) The browser's argument to `mkLayoutMetrics` takes rather than chases, per
-the explicit-widths practice: it is the painter's own integer `halfSize`,
-so there is no grid to impose cell dimensions on and no cell to measure back
-at startup, both of which went with the span grid; a measured box that is odd
-or fractional, the normal case under a chasing design, stays refused. (b)
-The one-shot setup call is the extensible JSON payload the body now specifies
-under "The startup payload, specified here", 1.5's scale field riding it;
-the ruling is that paragraph, and restating its field list here is the second
-definition G1 forbids.
+**Rulings** --- one ruled on 2026-08-05 and re-cut on 2026-10-20 ---
+the baseline is 0.4's Split (0) number in B.10, taken in-session on the canvas
+with the throwaway probe of Phase 2's intro --- and the other two on 2026-08-07,
+(a) re-cut on 2026-10-20 for B.10. (a) The browser's argument
+to `mkLayoutMetrics` takes rather than chases, per the explicit-widths practice:
+it is the painter's own integer `halfSize`, so there is no grid to impose cell
+dimensions on and no cell to measure back at startup, both of which went
+with the span grid; a measured box that is odd or fractional, the normal case
+under a chasing design, stays refused. (b) The one-shot setup call
+is the extensible JSON payload the body now specifies under "The startup
+payload, specified here", 1.5's scale field riding it; the ruling
+is that paragraph, and restating its field list here is the second definition G1
+forbids.
 
 ### 2.3 Transport: overlays across the JSFFI boundary
 
@@ -1925,9 +1949,10 @@ the receiving consumer's `startPropLine` is what turns it into a device x.
 Restating it here is the second definition G1 forbids, and the field list
 is exactly what drifts. The encoder lives next to `OverlayLayout` and is pure;
 tasty round-trips it on fixed cases and on QuickCheck-generated arbitrary
-`OverlaySpace` values, and 0.2's freshness case writes encode fixtures the TS
-decoder is tested against. All three overlay kinds (prop/square/mono) travel
-and draw through the same path, on the same canvas, in the 2.1 layer order.
+`OverlaySpace` values, and this item's freshness case writes encode fixtures
+the TS decoder is tested against. All three overlay kinds (prop/square/mono)
+travel and draw through the same path, on the same canvas, in the 2.1 layer
+order.
 
 Because `getFontSetup` still gates on `"sdl"`, the overlays are provably `[]`
 in the live game --- this step is a visual no-op, verified by playing.
@@ -1991,15 +2016,16 @@ the native playtest battery on (`make test-medium` at minimum).
   by construction (B.10); a `Ctrl+P` after the flip confirms it.
 - HiDPI and browser-zoom spot checks (0.4's device-pixel backing store
   under the overlays, exercised for real).
-- Frame-timing re-measurement against the pre-Phase-2 baseline (Phase 2 intro;
-  re-apply the probe diff recorded there).
+- Frame-timing re-measurement against 0.4's canvas baseline (B.10; re-apply
+  the probe diff recorded there).
 
-**Rulings** --- since 2026-08-05: 2.2's Split (0) captures the baseline before
-anything of 2.2 merges, closing the question this field carried. One instruction
-survives it: should the record show the capture was skipped regardless, either
-strike that checklist line with a recorded reason or re-derive a baseline
-from a build at the pre-2.2 commit --- never quietly measure against nothing
-and call the number a comparison.
+**Rulings** --- since 2026-08-05, re-cut 2026-10-20: 0.4's Split (0) captures
+the baseline, on the canvas, before 0.4's painter merges, closing the question
+this field carried. One instruction survives it: should the record show
+the capture was skipped regardless, either strike that checklist line
+with a recorded reason or re-derive a baseline from a build at the pre-2.2
+commit --- never quietly measure against nothing and call the number
+a comparison.
 
 ---
 
@@ -2358,11 +2384,12 @@ frontend). Its instrument: after R4 + 3.1, a `?benchmark` URL mode running
 the same `--automateAll` AI-vs-AI game with the real DOM frontend ---
 the browser analogue of `benchFrontendCrawl` --- while `terminal.ts` collects
 `submitFrame`-to-paint timings (rAF timestamps) and reports count/mean/p95
-at game end. Used for R5's own pass alone: the pre-Phase-2 baseline and the 2.5
-re-measurement use the throwaway `performance.now()` probe recorded at Phase 2's
-intro instead (ruled 2026-08-05), so neither waits on R4 or 3.1. No committed
-scope beyond that --- measure first; the frame path itself (one buffer address
-per frame) is already about as cheap as the boundary allows.
+at game end. Used for R5's own pass alone: 0.4's baseline and the 2.5
+re-measurement use the throwaway `performance.now()` probe, recorded at Phase
+2's intro and adapted to the canvas in B.10, instead (ruled 2026-08-05),
+so neither waits on R4 or 3.1. No committed scope beyond that --- measure first;
+the frame path itself (one buffer address per frame) is already about as cheap
+as the boundary allows.
 
 **Rulings** --- two ruled on 2026-08-05, the third on 2026-08-07. sec. 2's
 pre-2.2 baseline uses the throwaway probe --- R5a is not pulled ahead of R4
@@ -2509,8 +2536,7 @@ and `Frontend.hs:frontendName :: ClientOptions`). One sum-typed field,
 with the constructors `FrontendDefault`, `FrontendANSI`, `FrontendTeletype`,
 `FrontendNull` and `FrontendLazy`, makes the guard chains total cases and turns
 conflicting flags into a parse error. Mechanical, moderate churn (options
-parser, UnitTestHelpers' stub options). Do before R4, so URL parameters parse
-into the sum type, not the Bools.
+parser, UnitTestHelpers' stub options).
 
 **Rulings** --- all three ruled on 2026-08-07. (1) The save format needs
 no bump, confirming the analysis this field carried: `ClientOptions` derives
@@ -2553,9 +2579,9 @@ against `nullStartup`/`lazyStartup`/`Teletype` natively and, via
 `make test-wasm`, against the real `Wasm.hs` (key delivered while a frame
 is pending; Esc reset; shutdown with a frame queued; `FrontPressed` semantics);
 and a "how to add a frontend" checklist. The input-side cases land together
-with 0.1 --- they guard exactly what it rewires in `Wasm.hs`; the rest
-of the harness pairs with 0.3, and the haddock and checklist wait on neither
-(ruling (4)).
+with 0.1, which creates the harness module --- they guard exactly what
+it rewires in `Wasm.hs`; the rest of the harness pairs with 0.3, and the haddock
+and checklist wait on neither (ruling (4)).
 
 **Rulings** --- (1) to (3) ruled on 2026-08-07, (4) by Mikolaj on 2026-10-20.
 (1) The four names --- `nullStartup`, `lazyStartup`, `display`,
