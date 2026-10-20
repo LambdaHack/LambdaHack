@@ -1157,13 +1157,11 @@ used to hand back is a session's to run: `firefox-beta` under Xvfb with matchbox
 is what 2.2's Split (0) drove to take the frame-timing baseline recorded
 at Phase 2's intro, and what R5's rendering half uses, so "no in-session gate
 reaches it" stopped being true when that browser arrived. It moves into **Done**
-above, which matters beyond this item: an outcome line waits on what this label
-names, so a shakedown that handed anything back could not prove the ledger flip
-it is chosen to rehearse. What survives here is why `wasm`'s halves are unequal:
-`make build-wasm` is the load-bearing one, because `lhStart` sits inside
-`#ifdef USE_WASM`, so `cabal build` and `cabal test` compile none of it
-and a native-only done-check would verify nothing. Nor does `hlint .` see it:
-the live `arguments:` passes `-XNoStarIsType` alone
+above. What survives here is why `wasm`'s halves are unequal: `make build-wasm`
+is the load-bearing one, because `lhStart` sits inside `#ifdef USE_WASM`,
+so `cabal build` and `cabal test` compile none of it and a native-only
+done-check would verify nothing. Nor does `hlint .` see it: the live
+`arguments:` passes `-XNoStarIsType` alone
 (`.hlint.yaml:arguments: [-XNoStarIsType]`), the `--cpp-simple` beside it being
 a commented-out template (`.hlint.yaml:arguments: [--color,`) that CLAUDE.md
 forbids restoring --- measured by planting a redundant bracket on each side
@@ -1789,9 +1787,7 @@ in the shell.
 
 ## Sequencing
 
-This orders the work; which item is handed out *first* is How this lands',
-and it is 3.1, as the shakedown that proves the ritual on an item a machine can
-settle.
+This orders the work.
 
 ```
 0.0 immediate fixes: AltGraph on keys AND mouse/wheel; highlight-outline
@@ -1808,8 +1804,7 @@ settle.
 1.1 / 1.2 / 1.3 / 1.4 / 1.5 / 1.6 --- any order; each
     capability's landing ends with its own banner commit, per 1.4's rule
     (1.2 and 1.5 come after 0.4, 1.5's full player-facing form after
-    R4 too; 1.2's per-frame case waits on 3.1, first anyway as
-    the shakedown)
+    R4 too; 1.2's per-frame case waits on 3.1)
 2.1 OverlayLayout extraction + Sdl.hs refactor (native-only,
     playtest- and bench-gated)
 2.2 browser overlay renderer (visual no-op)

@@ -920,8 +920,7 @@ overlay sections draw through the same core.
 
 Independent of each other; any order. 1.1 and 1.3 don't depend on Phase 0; since
 B.10 1.2 waits on 0.4, whose canvas its screenshot is, and 1.5 on 0.4's painter,
-which takes its scale. 1.2's per-frame case waits on 3.1, which is handed out
-first regardless.
+which takes its scale. 1.2's per-frame case waits on 3.1.
 
 ### 1.1 Crosshair cursor over the map (trivial)
 
