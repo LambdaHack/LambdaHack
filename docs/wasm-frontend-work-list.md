@@ -121,7 +121,7 @@ sections of the record are frozen and which live is its head callout's to say.
 | 1.5 | `allFontsScale` honored in browser | small | 2.2's startup call (or a precursor); 0.3 for the reactor driver; R4 for player control | open |
 | 1.6 | game-end page lifecycle: a finished game says so | small | 3.1 for the driver case to reach game end; 0.3 for the driver | open |
 | 2.1 | `OverlayLayout` extraction + `Sdl.hs` on it | medium--large | 0.2 for `CellStyle`; determinism goldens (native harness) | not applied |
-| 2.2 | browser canvas overlay renderer + font wiring | medium | 2.1, 0.2, 1.2 | not applied |
+| 2.2 | browser canvas overlay renderer + font wiring | medium | 2.1, 0.2, 0.4 | not applied |
 | 2.3 | overlay transport over JSFFI | medium | 2.1, 2.2; 0.3 for the end-to-end battery | not applied |
 | 2.4 | multi-font capability flip | tiny diff, big review | 2.1--2.3; determinism goldens | not applied |
 | 2.5 | post-flip QA | small | 2.4; 1.2 for `Ctrl+P` | not applied |
@@ -989,21 +989,16 @@ it as its dependency. (2) `ts-src/src/overlay-core.ts`'s `propCutoff`/`propFit`
 twin and its vitest table; sec. 2.1 gives both functions as complete Haskell
 bodies, so it can be *written* before 2.1 lands, but it may only *land* once
 0.2's generator emits the branch-complete table, hand-written fixtures being
-forbidden here. (3) the canvas shell: the absolutely-positioned `<canvas>`,
-the devicePixelRatio-sized backing store, the imposed integer cell size
-with its one-cell verify-measurement (the (a) ruling), the fixed-pitch crop
-and centring the pitfalls specify --- on the canvas and, as `overflow: hidden`,
-on the grid's cells --- and the draw-command core all three of 2.1's sections
-pass through --- reached through the shared entry point 1.2's draw-op module
-defines, R6's criterion. (4) the outcome line naming (3)'s hash, the ledger
-flip, and the deletion of `overlay-core.ts` and `overlay-core.test.ts`
-from `tools/doc-refs-allow.txt`.
+forbidden here. (3) the overlay renderer: all three of 2.1's sections drawn
+through 0.4's draw-op core onto its canvas, each fixed-pitch cell clipped
+to its box with the glyph centred, as the pitfalls specify. (4) the outcome line
+naming (3)'s hash, the ledger flip, and the deletion of `overlay-core.ts`
+and `overlay-core.test.ts` from `tools/doc-refs-allow.txt`.
 
 **Owns** --- `ts-src/src/overlay-core.ts`, `ts-src/src/overlay-core.test.ts`,
 `ts-src/src/terminal.ts`, `ts-src/src/loader.ts`,
 `engine-src/Game/LambdaHack/Client/UI/Frontend/Wasm.hs`, `Makefile`,
-`GameDefinition/index.html` (only the `#screen` positioning context the canvas
-overlays), `docs/wasm-frontend-unified-plan.md` and `tools/doc-refs-allow.txt`.
+`docs/wasm-frontend-unified-plan.md` and `tools/doc-refs-allow.txt`.
 The generator extension that emits (2)'s branch table is 0.2's stanza and 0.2's
 file, not this item's: schedule it there rather than editing the generator here.
 
@@ -1014,15 +1009,14 @@ standing recorded at Phase 2's intro before (1) merges (Split (0)). The two file
 tests are the deployment gate and are non-vacuous today --- neither font
 is in that checkout, which is the whole font deployment gap this item closes.
 
-**Hands back** --- *browser*: that the declared `FontFace`s actually load
-and that the canvas sits pixel-aligned over the span grid. sec. 2.2's own "live
-game pixel-identical to before" needs no human --- `getFontSetup` still gates
-on `"sdl"` (`MonadClientUI.hs:= Frontend.frontendName`), so the overlays
-are provably `[]` and the vitest case asserting zero draw calls on an empty
-payload decides it, which is why the substitute gate in Done is `make test-ts`
-plus the two font-deployment tests rather than a look. The HiDPI
-and browser-zoom checks are deferred to 2.5 by the plan itself, not
-by this block.
+**Hands back** --- *browser*: that the declared `FontFace`s actually load. sec.
+2.2's own "live game pixel-identical to before" needs no human ---
+`getFontSetup` still gates on `"sdl"`
+(`MonadClientUI.hs:= Frontend.frontendName`), so the overlays are provably `[]`
+and the vitest case asserting zero draw calls on an empty payload decides it,
+which is why the substitute gate in Done is `make test-ts` plus the two
+font-deployment tests rather than a look. The HiDPI and browser-zoom checks
+are deferred to 2.5 by the plan itself, not by this block.
 
 **Decide first** --- nothing; the rulings are the record's.
 
@@ -1142,12 +1136,11 @@ would pass having tested nothing.
 **Hands back** --- *judgement*: every checklist item is a human's.
 The side-by-side visual comparison with SDL2 (menus, message log, help, item
 descriptions, and the mono-overwrites-prop overrun), the HiDPI and browser-zoom
-spot checks 2.2's pitfalls defer here, and the frame-timing re-measurement's
-verdict --- the runs themselves are a session's now, capture and re-measurement
-under one Xvfb setup with the left-hand side captured by 2.2's Split (0) (Phase
-2's intro has the record). The screenshot line is a glance too: one renderer
-draws the PNG and the screen, so it cannot regress to map-only on its own
-(B.10).
+spot checks, and the frame-timing re-measurement's verdict --- the runs
+themselves are a session's now, capture and re-measurement under one Xvfb setup
+with the left-hand side captured by 2.2's Split (0) (Phase 2's intro has
+the record). The screenshot line is a glance too: one renderer draws the PNG
+and the screen, so it cannot regress to map-only on its own (B.10).
 
 **Decide first** --- nothing; the rulings are the record's.
 

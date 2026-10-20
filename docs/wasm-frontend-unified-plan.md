@@ -417,6 +417,11 @@ only that the plan was written is one the next reader has to skip.
   commits. The re-cut reopened ruling (b), now 1.2's **Decide first**: 1.3's
   fullscreen scales the canvas by a CSS transform, so a bare `toBlob` saves
   the unscaled frame where SDL's screenshot is of the scaled window.
+- 2026-10-20 -- 2.2 re-cut for B.10, smaller than its body said: the canvas
+  is 0.4's, so the overlay canvas over the span grid, its alignment, its imposed
+  cell metrics with their startup assert, its `overflow: hidden` and its own
+  backing store went, ruling (a) with them; the font wiring, the twin
+  and the fixed-pitch crop, now a clip rect in the draw-op list, stand.
 
 ## Repo facts the plan builds on
 
@@ -1084,11 +1089,11 @@ it to TS in the one extensible startup call, which 2.2 specifies
 under "The startup payload, specified here" and to which this item adds one
 named field --- whichever of the two lands first creates the call and the other
 fills its field --- and set the grid container's `font-size` accordingly. Cell
-metrics stay consistent because 2.2 imposes integer cell metrics on the grid
-(its (a) ruling) rather than hardcoding 16px. Until R4 lands there is no way
-for a *player* to change the value in the browser (no config file, no argv),
-so the full player-facing feature is `1.5 + R4 (?allFontsScale=)`; 1.5 alone
-makes the engine-side value honored instead of silently ignored.
+metrics stay consistent because 0.4's painter takes its cell from the loaded
+font, as `Sdl.hs` does, rather than hardcoding 16px. Until R4 lands there
+is no way for a *player* to change the value in the browser (no config file,
+no argv), so the full player-facing feature is `1.5 + R4 (?allFontsScale=)`; 1.5
+alone makes the engine-side value honored instead of silently ignored.
 
 **Rulings** --- ruled on 2026-08-07: this item's scale is a named field
 of the one extensible startup payload, so a scale-only `lhSetFontScale`
@@ -1223,8 +1228,8 @@ numbers:
 
 ```haskell
 -- | Cell metrics in one consumer's own device units: SDL pixels of the loaded
--- map font, or the browser's CSS pixels imposed on the span grid (2.2's (a)
--- ruling: the grid takes the metrics, not the reverse).
+-- map font, or the device pixels of 0.4's canvas painter, which takes its
+-- cell from the loaded font as SDL does (B.10).
 data LayoutMetrics = LayoutMetrics
   { lmHalfSize :: Int  -- ^ one 'PointUI' step, and the mono pitch
                        --   (@Sdl.hs:halfSize) (row@)
@@ -1766,31 +1771,20 @@ session's, the existence, home and signature shape are the ruling.
 
 ### 2.2 Browser overlay renderer, in isolation
 
-*Re-cut owed since 2026-09-14 (B.10): the canvas is 0.4's, the only renderer,
-not a layer over a span grid, so the pitfalls of alignment, the imposed cell
-metrics with their one-cell verify-measurement and the `overflow: hidden` crop
-go --- the fixed-pitch crop is a clip rect in the painter, as in `Sdl.hs` ---
-and the three sections draw through 0.4's draw-op core; ruling (a) below
-is thereby moot, while (1)'s font wiring, (2)'s twin and the transport stand.
-The body below predates the ruling.*
-
-A single absolutely-positioned `<canvas>` over the existing `<span>` grid
-(the grid can't host variable-width text; canvas `fillText`+`measureText`
-is the direct analogue of SDL2's measure-then-blit). New
+The overlays draw on 0.4's canvas, the only renderer (B.10), where canvas
+`fillText`+`measureText` is the direct analogue of SDL2's measure-then-blit. New
 `overlay-core.ts`/`overlay-core.test.ts` for the pure parts ---
 the `propCutoff`/`propFit` twin 2.1 specifies, which takes widths as plain
-numbers, measurement staying in the canvas shell --- pinned by 2.1's
-0.2-generated branch table rather than by hand-written cases. The renderer draws
-all three of 2.1's sections, not only the proportional one: a `CellRun` is drawn
+numbers, measurement staying in the renderer --- pinned by 2.1's 0.2-generated
+branch table rather than by hand-written cases. The renderer draws all three
+of 2.1's sections, not only the proportional one: a `CellRun` is drawn
 at its layer's `cellPitch` with `CellStyle`'s per-cell rules applied
-by the painter, in the prop, square, mono order 2.1 fixes. Like 1.2's
-rasterizer, the renderer is a functional core emitting draw commands executed
-by a thin canvas interpreter, so the tests assert op lists --- no canvas
-dependency.
+by the painter, in the prop, square, mono order 2.1 fixes, through 0.4's draw-op
+core, so the tests assert op lists --- no canvas dependency.
 
 Text drawn on canvas is not selectable or visible to screen readers;
-that trade-off is accepted --- the DOM grid keeps those affordances where they
-come free, and no effort is spent recreating them for overlay text (Appendix B).
+that trade-off is accepted for overlay text (Appendix B) and, since B.10,
+for the map too, the ANSI frontend serving a screen reader natively.
 
 Fonts, the G1 way --- following the `rFontFiles = []`-under-`USE_BROWSER` split:
 the Haskell side owns *which* fonts at *what size* (from `sfonts` / the chosen
@@ -1822,50 +1816,40 @@ Known browser pitfalls to handle here, not discover in 2.4:
   finishes loading silently measures a fallback font; await `FontFace.load()`
   (or `document.fonts.ready`) before the first overlay draw, and don't cache
   widths measured earlier.
-- **devicePixelRatio.** Size the canvas backing store at `cssSize * dpr`
-  and scale the context, or overlay text is blurry on any HiDPI screen.
-- **The mono layer has a pitch the browser's pointer cannot address.**
+- **The mono layer has a pitch today's pointer cannot address.**
   `Sdl.hs:pointTranslate (SDL.P (SDL.V2 x y)) =` divides a click's pixel x
   by `halfSize`, so SDL reports an odd `PointUI` x for a click in a cell's right
-  half, while `Wasm.hs:row deltaY modCtrl` and `Wasm.hs:row button modCtrl`
-  build their point with `squareToUI` (`PointUI.hs:squareToUI :: PointSquare`),
-  always even. That is unobservable today, the square layer being the only one
-  on screen, and observable the moment this item draws the mono layer at exactly
-  that pitch. Nothing here fixes it --- the mouse handlers belong to 0.0 and 0.1
-  --- but a session flipping 2.4 and finding mono overlays unclickable
-  at half-cell resolution should not have to rediscover why. Appendix C's
-  2026-09-07 audit note records it.
-- **Fixed-pitch glyphs are cropped and centred natively and are not here.**
+  half, while today's mouse handlers build their point with `squareToUI`
+  (`PointUI.hs:squareToUI :: PointSquare`), always even. 0.4's handlers divide
+  the pointer's pixels by `halfSize` as SDL does, so the mono layer this item
+  draws is clickable at its own pitch. Appendix C's 2026-09-07 audit note
+  records the gap.
+- **Fixed-pitch glyphs are cropped and centred natively.**
   `Sdl.hs:scaleSurfaceToTexture ::` crops an oversized glyph surface to the cell
   box and centres it over a black fill, for the square layer
   (`Sdl.hs:scaleSurfaceToTexture boxSize`) and the mono one
-  (`Sdl.hs:scaleSurfaceToTexture halfSize`) alike; the DOM grid's `1ch`/`1em`
-  cells do neither. It reaches this item because the canvas shell draws both
-  fixed-pitch layers at `cellPitch`, so a glyph wider than its cell overhangs
-  rather than being cropped. 2.1 declines to generalize the *proportional* crop
-  and says so; this is the other site, and this item closes it, since
-  2026-09-07, in Split (3): the canvas shell crops each fixed-pitch cell
-  to its box and centres the glyph in it --- a clip rect per `CellRun` cell
-  in the draw-command list, which the op-list tests pin --- and the grid's cells
-  take `overflow: hidden` beside the dimensions the (a) ruling imposes on them,
-  their `text-align: center` already there. Appendix C's 2026-09-07 audit note
+  (`Sdl.hs:scaleSurfaceToTexture halfSize`) alike. This item draws both
+  fixed-pitch layers at `cellPitch`, so a glyph wider than its cell would
+  overhang. 2.1 declines to generalize the *proportional* crop and says so;
+  this is the other site, and this item closes it, since 2026-09-07, in Split
+  (3): each fixed-pitch cell is clipped to its box with the glyph centred
+  in it --- a clip rect per `CellRun` cell in the draw-command list, as `Sdl.hs`
+  crops (B.10), which the op-list tests pin. Appendix C's 2026-09-07 audit note
   records the gap.
-- **Cell metrics from one source.** Derive the browser's `halfSize`
-  as an integer from font size x `allFontsScale` and *impose*
-  `boxSize = 2 * halfSize` on the grid's cell dimensions in CSS px (the (a)
-  ruling), verifying with one measured cell (a span's `getBoundingClientRect`)
-  rather than re-hardcoding `16px` --- keeps zoom, `allFontsScale`, and any
-  future font-size change coherent, and mirrors how `Sdl.hs` takes the cell size
-  from the loaded font rather than from config. `mkLayoutMetrics`'s other
-  argument needs no new channel and gets none: the browser's `lmWidth`
-  is `submitFrame`'s `w`, the same value `buildGrid` sizes the grid from,
-  so the twin clamps against the screen `layOutFrame` already filtered against
-  in Haskell. The overlay decoder asserts the two agree. That is the whole
-  of the hazard 2.1's `mkLayoutMetrics` haddock names --- two different widths
-  leaving the line filter and the pen clamping against different screens ---
-  reaching across the FFI, where it would otherwise be silent: the vitest branch
-  table supplies both halves itself, so no gate in this plan would see a browser
-  measuring against a width the Haskell side never used.
+- **Cell metrics from one source.** The browser's `lmHalfSize` is 0.4's
+  painter's `halfSize`, its `boxSize` taken from the loaded font as `Sdl.hs`
+  takes it rather than from config, so overlays and map draw at multiples of one
+  integer under zoom, `allFontsScale` and any future font-size change.
+  `mkLayoutMetrics`'s other argument needs no new channel and gets none:
+  the browser's `lmWidth` is `submitFrame`'s `w`, the same value the painter
+  sizes its canvas from, so the twin clamps against the screen `layOutFrame`
+  already filtered against in Haskell. The overlay decoder asserts the two
+  agree. That is the whole of the hazard 2.1's `mkLayoutMetrics` haddock names
+  --- two different widths leaving the line filter and the pen clamping against
+  different screens --- reaching across the FFI, where it would otherwise
+  be silent: the vitest branch table supplies both halves itself, so no gate
+  in this plan would see a browser measuring against a width the Haskell side
+  never used.
 
 Fixtures for the browser's `propCutoff`/`propFit` twin come from the 0.2
 generator calling `OverlayLayout` --- no hand-written fixtures. Chunking itself
@@ -1875,16 +1859,12 @@ Verify: vitest green; live game pixel-identical to before (nothing wired).
 
 **Rulings** --- one ruled on 2026-08-05 --- the baseline is Split (0)'s,
 throwaway probe, in-session, the number and probe diff recorded at Phase 2's
-intro --- and the other two on 2026-08-07. (a) The browser's argument
-to `mkLayoutMetrics` imposes rather than chases, per the explicit-widths
-practice: `lmHalfSize` is derived as an integer --- the half rounded from font
-size x `allFontsScale` --- the grid's cell dimensions are set explicitly
-from it in CSS px, and the canvas draws at multiples of the same integer,
-so grid and metrics agree by construction and devicePixelRatio affects only
-backing-store sharpness; a measured grid box that is odd or fractional
-was the normal case under a chasing design, accumulating sub-pixel disagreement
-across the row. A startup assert measures one cell back, and if the imposition
-did not take, the flip is refused and the single-font path stays. (b)
+intro --- and the other two on 2026-08-07, (a) re-cut on 2026-10-20 for B.10.
+(a) The browser's argument to `mkLayoutMetrics` takes rather than chases, per
+the explicit-widths practice: it is the painter's own integer `halfSize`,
+so there is no grid to impose cell dimensions on and no cell to measure back
+at startup, both of which went with the span grid; a measured box that is odd
+or fractional, the normal case under a chasing design, stays refused. (b)
 The one-shot setup call is the extensible JSON payload the body now specifies
 under "The startup payload, specified here", 1.5's scale field riding it;
 the ruling is that paragraph, and restating its field list here is the second
@@ -1971,7 +1951,8 @@ the native playtest battery on (`make test-medium` at minimum).
   descriptions; mono-overwrites-prop overrun behavior.
 - Screenshots after the flip show the overlay layers, which one renderer gives
   by construction (B.10); a `Ctrl+P` after the flip confirms it.
-- HiDPI and browser-zoom spot checks (the 2.2 pitfalls, exercised for real).
+- HiDPI and browser-zoom spot checks (0.4's device-pixel backing store
+  under the overlays, exercised for real).
 - Frame-timing re-measurement against the pre-Phase-2 baseline (Phase 2 intro;
   re-apply the probe diff recorded there).
 
