@@ -547,6 +547,11 @@ that file and its `tools/doc-refs-allow.txt` entry are 0.1's now, which names
 both --- and the highlight rule is `highlightColor`'s three-kind branch, pinned
 in `terminal-core.test.ts`. The `#251F1F` fill is untouched.*
 
+*Its hand-back confirmed by Mikolaj on 2026-10-20 in a browser, on a keyboard
+layout with AltGr: an AltGr chord arrives with `A-`, an AltGr middle click aims
+without the description, as `A-MiddleButtonRelease` should, and an AltGr wheel
+arrives as `A-WHEEL-UP`.*
+
 - **AltGraph, keyboard.** `terminal.ts:onKey(e.key, e.ctrlKey,` forwarded
   `e.altKey` only (since `403aafe13` it forwards the `alt` that `altModifier`
   computes at `terminal.ts:const alt = altModifier(e);`);
@@ -905,10 +910,11 @@ and 1.6's driver case wait on 3.1, which is handed out first regardless.
 
 `ts-src/src/terminal.ts` `buildGrid` sets `container.style.cursor = "crosshair"`
 among its container styles since `91d75ca5e` --- the zero-dependency interim
-step, landed without an outcome line, the row staying live for the final form.
-The final form comes with 0.2: its generator emits an SVG data-URI cursor
-from SDL2's own bitmap definition (`cursorXhair`'s ASCII-art alpha/BW pair,
-`Sdl.hs:cursorXhair :: (VS.Vector`; 32x27, hotspot (13,13) per
+step, landed without an outcome line, the row staying live for the final form;
+Mikolaj confirmed on 2026-10-20 that the pointer reads as a crosshair
+over the whole grid. The final form comes with 0.2: its generator emits an SVG
+data-URI cursor from SDL2's own bitmap definition (`cursorXhair`'s ASCII-art
+alpha/BW pair, `Sdl.hs:cursorXhair :: (VS.Vector`; 32x27, hotspot (13,13) per
 the `createCursor` call at `Sdl.hs:createCursor cursorBW cursorAlpha`),
 and `terminal.ts` switches to `cursor: url(<data-URI>) 13 13, crosshair` ---
 the keyword staying as the fallback. Pixel-parity with the native pointer,
@@ -1003,6 +1009,13 @@ and the arithmetic in `fullscreen-core.ts` under vitest. The page,
 not `#screen`, goes fullscreen, the banner hidden meanwhile, and the grid
 is scaled by `transform` with a `translateY` that centres it; focus returns
 to the grid after the click, since the button took it.*
+
+*Its hand-back confirmed by Mikolaj on 2026-10-20 on a 1080p screen: the page
+enters fullscreen and leaves it by the button, Escape and F11, the grid centred
+and aspect-correct, and the blur at a non-integer scale acceptable. A scale read
+from a docked developer console is the fit to the viewport the console leaves
+--- 1.19792 there, 460 px of height over the grid's 384 --- not the fullscreen
+one.*
 
 **Scaling is part of parity, not a nicety:** SDL fullscreen sets
 `rendererLogicalSize` so the whole frame scales up to fill the screen
