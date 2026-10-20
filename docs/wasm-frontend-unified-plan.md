@@ -898,16 +898,17 @@ and 1.6's driver case wait on 3.1, which is handed out first regardless.
 
 ### 1.1 Crosshair cursor over the map (trivial)
 
-`ts-src/src/terminal.ts` `buildGrid` already sets a batch of container styles;
-add `container.style.cursor = "crosshair"` --- the zero-dependency interim step,
-and a good toolchain warm-up. The final form comes with 0.2: its generator emits
-an SVG data-URI cursor from SDL2's own bitmap definition (`cursorXhair`'s
-ASCII-art alpha/BW pair, `Sdl.hs:cursorXhair :: (VS.Vector`; 32x27, hotspot
-(13,13) per the `createCursor` call
-at `Sdl.hs:createCursor cursorBW cursorAlpha`), and `terminal.ts` switches
-to `cursor: url(<data-URI>) 13 13, crosshair` --- the keyword staying
-as the fallback. Pixel-parity with the native pointer, sourced from the one
-canonical definition. Verify by hovering, both before and after the 0.2 upgrade.
+`ts-src/src/terminal.ts` `buildGrid` sets `container.style.cursor = "crosshair"`
+among its container styles since `91d75ca5e` --- the zero-dependency interim
+step, landed without an outcome line, the row staying live for the final form.
+The final form comes with 0.2: its generator emits an SVG data-URI cursor
+from SDL2's own bitmap definition (`cursorXhair`'s ASCII-art alpha/BW pair,
+`Sdl.hs:cursorXhair :: (VS.Vector`; 32x27, hotspot (13,13) per
+the `createCursor` call at `Sdl.hs:createCursor cursorBW cursorAlpha`),
+and `terminal.ts` switches to `cursor: url(<data-URI>) 13 13, crosshair` ---
+the keyword staying as the fallback. Pixel-parity with the native pointer,
+sourced from the one canonical definition. Verify by hovering, both before
+and after the 0.2 upgrade.
 
 ### 1.2 Screenshots: make `Ctrl+P` real (small--medium)
 
