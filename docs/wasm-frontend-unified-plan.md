@@ -679,6 +679,22 @@ decideWheel :: Double -> Maybe K.Key      -- WheelNorth/WheelSouth/Nothing
 decideMouseButton :: Int -> K.Key         -- DOM button code -> *ButtonRelease
 ```
 
+*Landed in `83b10c8a5`, the `lhKey` rewrite, with one commit the Split had
+not placed: `Wasm.hs`'s wheel and button bodies moved onto `decideWheel`
+and `decideMouseButton` alone, in `f8b849af8`. The rewrite also has `lhKey` call
+the RTS's `rts_scheduleWork`, as the `Wasm.hs` changes bullet below records.
+The paragraph key, U+00A7, is read as backquote only unshifted, a shifted one
+being another key's on German keyboards, and none of its shifted characters
+is mapped. jsdom is held at 26, the newest admitting Node 18. The input-side
+contract cases run natively on a frontend built as `lazyStartup` builds its own,
+`nullStartup` and `lazyStartup` staying internal until the contract's harness
+exports them, and on `Wasm.startup` under `make test-wasm`.*
+
+*Its hand-backs confirmed by Mikolaj on 2026-10-21: the `Sdl.hs` look
+under `make frontendCrawl`, and the browser checks, after the first
+of these found the page repainting on keys only rarely, which the scheduler run
+fixed.*
+
 This subsumes four independent copies of the same decisions: `Dom.hs`'s
 keydown/wheel/mouseup handlers (the canonical origin), `Wasm.hs`'s
 `lhKey`/`lhWheel`/`lhMouseUp`, `terminal.ts`'s

@@ -111,7 +111,7 @@ sections of the record are frozen and which live is its head callout's to say.
 | sec. | delivers | size | depends on | state |
 |---|---|---|---|---|
 | 0.0 | AltGraph fixes (keys, mouse/wheel); highlight-outline rule | tiny | --- | landed -- 403aafe13 |
-| 0.1 | `InputDecision` shared module; sync `lhKey` | small | 0.0; 0.3 baseline | not applied |
+| 0.1 | `InputDecision` shared module; sync `lhKey` | small | 0.0; 0.3 baseline | landed -- 83b10c8a5 |
 | 0.2 | `CellStyle` + generated TS tables and fixtures | medium | --- | not applied |
 | 0.3 | FFI-coverage battery (baseline before 0.1, then per-commit) | ongoing | --- | standing |
 | 0.4 | canvas painter in place of the DOM grid (B.10) | medium | 0.3 for the reactor driver | not applied |
