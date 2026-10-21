@@ -860,13 +860,13 @@ and committed under `ts-src/src/generated/`:
    from neither source: the `HighlightBackground` cell fill `#251F1F`, which
    is `Sdl.hs:greyRGBA = SDL.V4`'s `greyRGBA` --- a third
    of `colorToRGBA BrBlack` by its own comment, and carried by no `Color`
-   constructor --- hand-copied today at `Dom.hs:then "#251F1F"`
-   and `terminal-core.ts:Cell background-fill`, across two languages. It
-   is a highlight-rule output like the border colour beside it, so `CellStyle`
-   names it once, `Sdl.hs` reads it there in place of `greyRGBA`,
-   and the freshness case writes it from that name. Same reachability problem
-   ruling (4) meets over `cursorXhair`, different remedy: this one already has
-   a home in `CellStyle` and the art has none.
+   constructor --- hand-copied at `Dom.hs:then "#251F1F"`,
+   and in `terminal-core.ts` until `15c90625a`. It is a highlight-rule output
+   like the border colour beside it, so `CellStyle` names it once, `Sdl.hs`
+   reads it there in place of `greyRGBA`, and the freshness case writes
+   it from that name. Same reachability problem ruling (4) meets
+   over `cursorXhair`, different remedy: this one already has a home
+   in `CellStyle` and the art has none.
 2. `fixtures.json`: behavioral fixtures from `CellStyle.styleCell`
    over a representative input sample (floor bright/dim, space, ordinary glyph,
    even/odd row x `White`, every `Highlight`), plus `(i, w) -> (col, row)`
@@ -1029,10 +1029,10 @@ among its container styles since `91d75ca5e` --- the zero-dependency interim
 step, landed without an outcome line, the row staying live for the final form;
 Mikolaj confirmed on 2026-10-20 that the pointer reads as a crosshair
 over the whole grid. The final form comes with 0.2: its freshness case writes
-an SVG data-URI cursor from SDL2's own bitmap definition (`cursorXhair`'s
-ASCII-art alpha/BW pair, `Sdl.hs:cursorXhair :: (VS.Vector`; 32x27, hotspot
-(13,13) per the `createCursor` call
-at `Sdl.hs:createCursor cursorBW cursorAlpha`), and `terminal.ts` switches
+an SVG data-URI cursor from SDL2's own bitmap definition (the ASCII art
+at `MouseCursor.hs:xhairCursorPixels ::` since `53f508d1a`, which
+`Sdl.hs:cursorXhair :: (VS.Vector` packs for SDL; 32x27, hotspot (13,13)
+at `MouseCursor.hs:xhairCursorHotspot = (13, 13)`), and `terminal.ts` switches
 to `cursor: url(<data-URI>) 13 13, crosshair` --- the keyword staying
 as the fallback. Pixel-parity with the native pointer, sourced from the one
 canonical definition. Verify by hovering, both before and after the 0.2 upgrade.

@@ -486,8 +486,8 @@ the crosshair-art module beside it that the record's ruling (4) requires,
 `test/CellStyleUnitTests.hs`, `ts-src/src/generated/palette.ts`,
 `ts-src/src/generated/fixtures.json` and `ts-src/src/generated/cursor.ts`;
 modified `LambdaHack.cabal`, `test/Spec.hs`, `ts-src/tsconfig.json`
-(`resolveJsonModule`, absent today, without which importing `fixtures.json`
-fails `tsc --noEmit`), `ts-src/src/terminal-core.ts` and its test,
+(`resolveJsonModule`, without which importing `fixtures.json` fails
+`tsc --noEmit`), `ts-src/src/terminal-core.ts` and its test,
 `ts-src/src/terminal.ts`,
 `engine-src/Game/LambdaHack/Client/UI/Frontend/Sdl.hs`, which the crosshair
 commit alone writes, `engine-src/Game/LambdaHack/Client/UI/Frontend.hs` (export
@@ -624,7 +624,7 @@ then the generated SVG data-URI form once 0.2 has emitted `cursor.ts`.
 The keyword commit takes **no** outcome line and leaves the row live, per
 the partial-landing rule; the SVG commit carries the outcome line and flips
 the ledger row. Neither deletes a `tools/doc-refs-allow.txt` entry ---
-`cursor.ts` and `ts-src/src/generated/` there are 0.2's, and 1.1 is ungated.
+`cursor.ts` and `ts-src/src/generated/` were 0.2's, and 1.1 is ungated.
 The keyword commit landed in `91d75ca5e`; the row stays live for the SVG form.
 
 **Owns** --- `ts-src/src/terminal.ts`, and, in the landing commit only,
