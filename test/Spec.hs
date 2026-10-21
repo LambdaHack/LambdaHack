@@ -44,7 +44,8 @@ import ReqFailureUnitTests
 import SessionUIUnitTests
 
 main :: IO ()
-main = defaultMain tests
+main = defaultMainWithIngredients
+         (includingOptions freshnessOptions : defaultIngredients) tests
 
 tests :: TestTree
 tests = testGroup "Tests" [ actorStateUnitTests

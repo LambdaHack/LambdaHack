@@ -7,6 +7,8 @@
 //   char codepoint = w >>> 16 ; fg = (w >>> 8) & 0xFF ; bg = w & 0xFF
 // fg indexes the Color enum, bg indexes the Highlight enum.
 
+import { BACKLIGHT_FILL, HIGHLIGHT_TO_COLOR, PALETTE } from "./generated/palette.js";
+
 export interface Cell {
   code: number; // glyph codepoint
   fg: number; // Color enum index
@@ -20,45 +22,7 @@ export interface StyledCell {
   border: string; // highlight border hex
 }
 
-// Color enum index -> hex (Definition/Color.hs colorToRGB), indexed by fromEnum.
-const PALETTE: readonly string[] = [
-  "#000000", // Black
-  "#D50505", // Red
-  "#059D05", // Green
-  "#CA4A05", // Brown
-  "#0556F4", // Blue
-  "#AF0EAF", // Magenta
-  "#059696", // Cyan
-  "#B8BFCB", // White
-  "#C4BEB1", // AltWhite
-  "#6F5F5F", // BrBlack
-  "#FF5555", // BrRed
-  "#65F136", // BrGreen
-  "#EBD642", // BrYellow
-  "#4D98F4", // BrBlue
-  "#FF77FF", // BrMagenta
-  "#52F4E5", // BrCyan
-  "#FFFFFF", // BrWhite
-];
-
-// Highlight enum index -> Color enum index (Definition/Color.hs highlightToColor).
-const HIGHLIGHT_TO_COLOR: readonly number[] = [
-  0, // HighlightNone -> Black
-  9, // HighlightBackground -> BrBlack
-  2, // HighlightGreen -> Green
-  4, // HighlightBlue -> Blue
-  3, // HighlightBrown -> Brown
-  6, // HighlightCyan -> Cyan
-  9, // HighlightGrey -> BrBlack
-  7, // HighlightWhite -> White
-  14, // HighlightMagenta -> BrMagenta
-  1, // HighlightRed -> Red
-  12, // HighlightYellow -> BrYellow
-  12, // HighlightYellowAim -> BrYellow
-  1, // HighlightRedAim -> Red
-  0, // HighlightNoneCursor -> Black
-];
-
+const BLACK = 0;
 const WHITE = 7;
 const ALT_WHITE = 8;
 const BR_BLACK = 9;
@@ -72,6 +36,14 @@ const NBSP = " "; // Dom.hs renders ' ' as a non-breaking space
 /** Split a Word32 cell into glyph codepoint and color/highlight indices. */
 export function decodeCell(w: number): Cell {
   return { code: w >>> 16, fg: (w >>> 8) & 0xff, bg: w & 0xff };
+}
+
+/**
+ * The screen column and row of a frame index, given the screen width,
+ * as Haskell's punindex decodes it.
+ */
+export function cellPosition(i: number, width: number): { col: number; row: number } {
+  return { col: i % width, row: Math.floor(i / width) };
 }
 
 /** Whether a Color index is "bright" (BrRed..BrWhite), mirroring isBright. */
@@ -98,7 +70,7 @@ export function fgColor(fg: number): string {
 
 /** Cell background-fill hex for a Highlight index. */
 export function bgColor(bg: number): string {
-  return bg === HIGHLIGHT_BACKGROUND ? "#251F1F" : "#000000";
+  return bg === HIGHLIGHT_BACKGROUND ? BACKLIGHT_FILL : PALETTE[BLACK];
 }
 
 /**
@@ -112,7 +84,7 @@ export function bgColor(bg: number): string {
  */
 export function highlightColor(bg: number): string {
   if (bg === HIGHLIGHT_NONE || bg === HIGHLIGHT_BACKGROUND || bg === HIGHLIGHT_NONE_CURSOR) {
-    return PALETTE[0];
+    return PALETTE[BLACK];
   }
   return PALETTE[HIGHLIGHT_TO_COLOR[bg]];
 }

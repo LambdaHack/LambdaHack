@@ -9,7 +9,9 @@ import {
   highlightColor,
   styledCell,
   altModifier,
+  cellPosition,
 } from "./terminal-core.js";
+import fixtures from "./generated/fixtures.json";
 
 // AttrCharW32 layout (Definition/Color.hs): code = w>>16, fg = (w>>8)&0xFF, bg = w&0xFF
 const enc = (code: number, fg: number, bg: number) => (code << 16) | (fg << 8) | bg;
@@ -123,6 +125,21 @@ describe("styledCell (full per-cell resolution)", () => {
     const s = styledCell(enc(AT, BrCyan, HiBackground), 1);
     expect(s.background).toBe("#251F1F");
     expect(s.border).toBe("#000000");
+  });
+});
+
+// The fixtures are generated from CellStyle.styleCell by
+// test/CellStyleUnitTests.hs: a mismatch means terminal-core.ts drifted
+// from CellStyle.hs.
+describe("styledCell against CellStyle.styleCell's fixtures", () => {
+  it.each(fixtures.cells)("w=$w row=$row", ({ w, row, ...expected }) => {
+    expect(styledCell(w, row)).toEqual(expected);
+  });
+});
+
+describe("cellPosition against punindex's fixtures", () => {
+  it.each(fixtures.positions)("i=$i width=$width", ({ i, width, ...expected }) => {
+    expect(cellPosition(i, width)).toEqual(expected);
   });
 });
 

@@ -4,7 +4,7 @@
 // tested under jsdom (terminal-input.test.ts); the rendering decisions live in
 // terminal-core, and the key ones in Haskell.
 
-import { altModifier, styledCell } from "./terminal-core.js";
+import { altModifier, cellPosition, styledCell } from "./terminal-core.js";
 
 export interface Terminal {
   submitFrame(addr: number, w: number, h: number): void;
@@ -71,8 +71,7 @@ export function mountTerminal(
     for (let i = 0; i < w * h; i++) {
       const el = document.createElement("span");
       el.style.textAlign = "center";
-      const col = i % w;
-      const row = Math.floor(i / w);
+      const { col, row } = cellPosition(i, w);
       // { passive: false } is required to preventDefault() a wheel listener.
       el.addEventListener(
         "wheel",
@@ -126,7 +125,7 @@ export function mountTerminal(
     for (let i = 0; i < buf.length; i++) {
       if (buf[i] === prev[i]) continue;
       prev[i] = buf[i];
-      const s = styledCell(buf[i], (i / cols) | 0);
+      const s = styledCell(buf[i], cellPosition(i, cols).row);
       const el = spans[i];
       el.textContent = s.char;
       el.style.color = s.color;

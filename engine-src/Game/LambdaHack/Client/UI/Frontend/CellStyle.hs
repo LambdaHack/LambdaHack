@@ -1,7 +1,9 @@
 -- | The per-cell drawing decisions for the frontends that draw the screen
 -- cell by cell, SDL and the browser: the glyph a cell shows, its colour,
 -- its fill and the outline around it, which a frontend renders through
--- a thin step of its own.
+-- a thin step of its own. The browser's, @styledCell@
+-- in @ts-src/src/terminal-core.ts@, is pinned to 'styleCell' by fixtures
+-- the test suite writes into @ts-src/src/generated/@.
 module Game.LambdaHack.Client.UI.Frontend.CellStyle
   ( CellStyle(..), CellGlyphs(..), styleCell, rowColor, backlightRGB
   ) where
