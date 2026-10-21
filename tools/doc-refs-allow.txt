@@ -54,6 +54,5 @@ test/DeterminismGoldenUnitTests.hs
 test/FrontendContractUnitTests.hs
 test/InputDecisionUnitTests.hs
 test/WasmFileUnitTests.hs
-ts-src/src/terminal-input.test.ts
 url-options-core.test.ts
 url-options-core.ts

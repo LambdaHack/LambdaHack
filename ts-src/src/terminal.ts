@@ -1,7 +1,8 @@
 // Renderer wiring: a DOM grid of <span> cells, repainted from the engine's
 // Word32 frame buffer via the pure styledCell logic. Per-cell diffing skips
-// unchanged cells (the engine sends full frames). Not unit-tested (DOM wiring);
-// all the decisions live in terminal-core.
+// unchanged cells (the engine sends full frames). Its input forwarding is
+// tested under jsdom (terminal-input.test.ts); all the decisions live in
+// terminal-core.
 
 import { altModifier, styledCell } from "./terminal-core.js";
 
