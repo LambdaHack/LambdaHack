@@ -679,8 +679,8 @@ decideWheel :: Double -> Maybe K.Key      -- WheelNorth/WheelSouth/Nothing
 decideMouseButton :: Int -> K.Key         -- DOM button code -> *ButtonRelease
 ```
 
-This subsumes four currently-independent copies of the same decisions:
-`Dom.hs`'s keydown/wheel/mouseup handlers (the canonical origin), `Wasm.hs`'s
+This subsumes four independent copies of the same decisions: `Dom.hs`'s
+keydown/wheel/mouseup handlers (the canonical origin), `Wasm.hs`'s
 `lhKey`/`lhWheel`/`lhMouseUp`, `terminal.ts`'s
 `CTRL_PASSTHROUGH_KEYS`/`DEAD_KEYS` (the cross-language copy that produced
 the 11-of-13-DeadKeys bug), and `Sdl.hs`'s verbatim copy of the
@@ -900,10 +900,11 @@ and `ts-src/run-wasm-game.mjs`: the baseline, covering every such declaration
 --- the imports under `make test-wasm`, and the exports by the game driver run
 by hand against a `make build-wasm` reactor, its checks made on the frames
 the `lhSubmitFrame` stub records rather than on the frontend channel ruling (3)
-names. Still to do: the standing half, and the game driver's run in CI,
-with R2's `build-wasm` job.
+names; after it, the imports 0.1 gave `lhKey`, covered by that driver's `lhKey`
+case. Still to do: the standing half, and the game driver's run in CI, with R2's
+`build-wasm` job.
 
-<!-- probe: git -C .. grep -h 'foreign \(import\|export\) javascript' -- engine-src/Game/LambdaHack/Client/UI/Frontend/Wasm.hs engine-src/Game/LambdaHack/Common/WasmFile.hs GameDefinition/Main.hs | grep -vc '^-- ' :: 11 -->
+<!-- probe: git -C .. grep -h 'foreign \(import\|export\) javascript' -- engine-src/Game/LambdaHack/Client/UI/Frontend/Wasm.hs engine-src/Game/LambdaHack/Common/WasmFile.hs GameDefinition/Main.hs | grep -vc '^-- ' :: 17 -->
 
 **Rulings** --- all three ruled on 2026-08-07. (1) The export mechanism
 is the thin reactor driver the Split now specifies --- a slice of 3.2 pulled
