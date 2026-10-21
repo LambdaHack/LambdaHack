@@ -485,6 +485,7 @@ test-suite test
   main-is:            Spec.hs
   other-modules:      ActorStateUnitTests
                       CommonMUnitTests
+                      FfiCoverageUnitTests
                       FrameMUnitTests
                       HandleHelperMUnitTests
                       HandleHumanGlobalMUnitTests
@@ -513,3 +514,9 @@ test-suite test
                       ,text
                       ,transformers
                       ,vector
+  if os(wasi)
+    build-depends:    ghc-experimental
+  else
+    build-depends:    ,bytestring
+                      ,directory
+                      ,filepath

@@ -145,9 +145,12 @@ jobs:
     timeout-minutes: 120
     steps:
       - uses: actions/checkout@v4
+      # `make test-wasm` runs npm ci in ts-src, for the driver's lz-string.
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
+          cache: npm
+          cache-dependency-path: ts-src/package-lock.json
       # Installs into ~/.ghc-wasm, which every wasm Makefile recipe sources.
       - name: Install the ghc-wasm-meta toolchain
         run: curl https://gitlab.haskell.org/haskell-wasm/ghc-wasm-meta/-/raw/master/bootstrap.sh | sh

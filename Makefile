@@ -310,6 +310,7 @@ build-wasm:
 # a build failure runs on into post-link and the test driver, and their
 # complaints about the missing binary bury the real error. The trap both
 # removes the temporary directory and lets the last command's status stand.
+# The npm ci installs lz-string, which the driver's LZString stub loads.
 test-wasm:
 	. ~/.ghc-wasm/env; \
 	T=$$(mktemp -d); \
@@ -317,6 +318,7 @@ test-wasm:
 	wasm32-wasi-cabal build test --enable-optimization && \
 	W=$$(wasm32-wasi-cabal list-bin test) && \
 	~/.ghc-wasm/wasm32-wasi-ghc/lib/post-link.mjs --input "$$W" --output "$$T/ghc_wasm_jsffi.mjs" && \
+	(cd ts-src && npm ci) && \
 	node ts-src/run-wasm-test.mjs "$$W" "$$T/ghc_wasm_jsffi.mjs"
 
 build-ts:

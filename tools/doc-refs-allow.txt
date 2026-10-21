@@ -54,7 +54,6 @@ make smokeNodeBench
 make smokeSdl
 test/CellStyleUnitTests.hs
 test/DeterminismGoldenUnitTests.hs
-test/FfiCoverageUnitTests.hs
 test/FrontendContractUnitTests.hs
 test/InputDecisionUnitTests.hs
 test/WasmFileUnitTests.hs
