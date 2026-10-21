@@ -894,7 +894,13 @@ once with a known input/output. Sequenced deliberately: the **baseline battery
 for the existing surface lands before 0.1**, so the riskiest FFI change
 in the plan (0.1's `lhKey` signature rewrite) is made against tested ground.
 After that, each new FFI declaration lands with its coverage case in the same
-commit.
+commit. Partly landed, in `test/FfiCoverageUnitTests.hs`
+and `ts-src/run-wasm-game.mjs`: the baseline, covering every such declaration
+--- the imports under `make test-wasm`, and the exports by the game driver run
+by hand against a `make build-wasm` reactor, its checks made on the frames
+the `lhSubmitFrame` stub records rather than on the frontend channel ruling (3)
+names. Still to do: the standing half, and the game driver's run in CI,
+with R2's `build-wasm` job.
 
 <!-- probe: git -C .. grep -h 'foreign \(import\|export\) javascript' -- engine-src/Game/LambdaHack/Client/UI/Frontend/Wasm.hs engine-src/Game/LambdaHack/Common/WasmFile.hs GameDefinition/Main.hs | grep -vc '^-- ' :: 11 -->
 

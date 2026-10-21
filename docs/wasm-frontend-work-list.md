@@ -112,7 +112,7 @@ sections of the record are frozen and which live is its head callout's to say.
 | 0.0 | AltGraph fixes (keys, mouse/wheel); highlight-outline rule | tiny | --- | landed -- 403aafe13 |
 | 0.1 | `InputDecision` shared module; sync `lhKey` | small | 0.0; 0.3 baseline | not applied |
 | 0.2 | `CellStyle` + generated TS tables and fixtures | medium | --- | not applied |
-| 0.3 | FFI-coverage battery (baseline before 0.1, then per-commit) | ongoing | --- | not applied -- standing |
+| 0.3 | FFI-coverage battery (baseline before 0.1, then per-commit) | ongoing | --- | standing |
 | 0.4 | canvas painter in place of the DOM grid (B.10) | medium | 0.3 for the reactor driver | not applied |
 | 1.1 | crosshair cursor (CSS keyword; then generated SVG cursor) | trivial | 0.2 for the final form | not applied |
 | 1.2 | working `Ctrl+P` and `--printEachScreen` screenshots | small | 0.4 for the canvas; 0.3 for the reactor driver; 3.1 for the per-frame case | open |
