@@ -391,7 +391,7 @@ leave `lhKey` async with `preventDefault` staying in TS, and record the ruling.
 Performed 2026-08-07: the record sits in the record's `Wasm.hs` changes bullet,
 and it held, so the fallback is dead. Then `InputDecision` and its tasty tests
 with no consumer wired; then `Sdl.hs`'s verbatim squash/Esc block
-(`Sdl.hs:modifierNoShift = case modifier of`, the mouse read between them left
+(`Sdl.hs:decideKey (modTranslate ksm) key`, the mouse read between them left
 alone) replaced by a `decideKey` call that ignores `kdPreventBrowser` ---
 the smallest consumer, native, no FFI; then the jsdom harness,
 `ts-src/package.json` and its lock gaining jsdom

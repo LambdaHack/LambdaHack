@@ -684,13 +684,13 @@ This subsumes four currently-independent copies of the same decisions:
 `lhKey`/`lhWheel`/`lhMouseUp`, `terminal.ts`'s
 `CTRL_PASSTHROUGH_KEYS`/`DEAD_KEYS` (the cross-language copy that produced
 the 11-of-13-DeadKeys bug), and `Sdl.hs`'s verbatim copy of the
-modifier-squash + Esc-reset block (`Sdl.hs:modifierNoShift = case modifier of`),
+modifier-squash + Esc-reset block (`Sdl.hs:decideKey (modTranslate ksm) key`),
 which is replaced by a `decideKey` call that ignores `kdPreventBrowser` ---
 the module is frontend-universal, not web-specific. The two pieces are disjoint
 on purpose: the keyboard handler's `p <- SDL.getAbsoluteMouseLocation` sits
-between them and **stays**, `Sdl.hs:rf modifierNoShift` consuming it,
-and cutting the block as one range leaves `p` unbound with the obvious repair
-deleting exactly the mouse-position behaviour Appendix C's first bullet records
+between them and **stays**, `Sdl.hs:rf kdModifier` consuming it, and cutting
+the block as one range leaves `p` unbound with the obvious repair deleting
+exactly the mouse-position behaviour Appendix C's first bullet records
 as a booby trap. The browser-zoom passthrough (`C-+`/`C--`/`C-0`) stays
 allowlisted here; it coexists with 1.5's `allFontsScale`.
 
@@ -3235,7 +3235,7 @@ four, and the two it leaves are (1) and (2).*
 
 - **Mouse position attached to keyboard events.** SDL sends the *current* mouse
   position with every keypress (`getAbsoluteMouseLocation`,
-  `Sdl.hs:when (key == K.Esc) $ resetChanKey (fchanKey rf)`); web frontends send
+  `Sdl.hs:when kdResetChan $ resetChanKey (fchanKey rf)`); web frontends send
   `PointUI 0 0`, and every KMP overwrites the session's `spointer`
   (`MonadClientUI.hs:{spointer = K.kmpPointer`) --- so in the browser, each
   keystroke clobbers the remembered pointer. Traced every `spointer` consumer
