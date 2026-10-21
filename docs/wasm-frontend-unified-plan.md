@@ -2270,7 +2270,7 @@ it builds, the battery's import half riding the `test-wasm` job already. Still
 to do: cache `~/.ghc-wasm` and the wasm cabal store, the toolchain being
 the expensive part and bootstrapped from scratch on every run today.
 The frontend-CI-matrix practice (below) widens this with xvfb SDL and pty ANSI
-smokes.
+smokes, which run in the playtest job, and a `nodeBench` smoke after 3.3.
 
 **Completeness requirement: everything runs in CI.** What runs there today
 is CLAUDE.md's to state, not this document's; a third copy of that inventory
@@ -2668,17 +2668,17 @@ no preopen-path coupling in the wasm run, and a legitimate golden change is one
 pasted literal in a reviewable diff; `tasty-golden` and `hashable` stay out
 of the stanza.
 
-**A CI smoke for every shipped frontend.** No frontend's event loop runs in CI
-at all. Teletype comes closest --- the `make test-gha` playtests drive
+**A CI smoke for every shipped frontend.** Before these smokes no frontend's
+event loop but teletype's ran in CI, the `make test-gha` playtests driving
 `--frontendTeletype` through whole games. `make test-wasm` compiles and links
 `Wasm.hs` but runs the suite with `--frontendNull`, so the wasm frontend
 is entered only by 0.3's frame case, through `startup` and `fdisplay`,
 and `make build-wasm`/`make build-ts` run in no workflow, leaving the reactor's
-`--export=` wiring exercised by none. SDL2 is reached only via
+`--export=` wiring exercised by none. SDL2 was reached only via
 the `slogPriority == Just 0` init-and-quit backdoor
 (`Sdl.hs:if slogPriority == Just 0 then do`) --- which does run its font
 discovery and decoding, once per configured fontset, ahead of the backdoor
-branch, but never its event loop or renderer. Add an `xvfb-run` job driving
+branch, but never its event loop or renderer. Add an `xvfb-run` smoke driving
 a real SDL game for a few frames (a tiny `--stopAfterFrames` variant
 of `benchFrontendBattle`), a pty-driven ANSI startup/shutdown check, and ---
 once 3.2 exists --- a short `nodeBench` run of the reactor build, though

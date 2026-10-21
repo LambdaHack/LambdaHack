@@ -84,11 +84,12 @@ Phase 3 shares no file with Phases 0-2.
 **One item is reviewed entirely alone: the `Sdl.hs` drawing loop** (2.1's
 refactor together with its `CellStyle` adoption, which rewrite abutting regions
 of one hot loop). It rewrites shipped native rendering; SDL2 is exercised in CI
-nowhere beyond the init-and-quit backdoor; expensive assertions are off in every
-workflow; and its real gate is display-bound. Its branch carries `Sdl.hs`
-and nothing else; most of this document's `Sdl.hs` anchors sit in the region
-it rewrites, so the pass will name every one the refactor breaks,
-and the re-anchoring is a separate commit.
+only by the init-and-quit backdoor and by `make smokeSdl`'s few self-played
+frames, which require frames to arrive and not what they show; expensive
+assertions are off in every workflow; and its real gate is display-bound.
+Its branch carries `Sdl.hs` and nothing else; most of this document's `Sdl.hs`
+anchors sit in the region it rewrites, so the pass will name every one
+the refactor breaks, and the re-anchoring is a separate commit.
 
 **2.4 splits**, so that each half gets the review it needs: the capability
 mechanism lands early, provably behaviour-preserving
@@ -1319,12 +1320,11 @@ feeds 0.3's export-half coverage, the game driver run against the reactor
 it builds. One non-job commit rode the same ruling and landed on master
 (`2b4b7d71f`): `build-ts` chains with `&&` now, so the deploy-carrying Done
 gates across this plan no longer trust an exit status that cannot fail. The rest
-land with the artifact each runs: a short `nodeBench` smoke after 3.3,
-and the practice's `xvfb` SDL and pty ANSI smokes.
+land with the artifact each runs, as the practice's `xvfb` SDL and pty ANSI
+smokes did: a short `nodeBench` smoke after 3.3.
 
 **Owns** --- `.github/workflows/lint-and-test-suites.yml`, plus the `Makefile`
-where a job needs a target of its own (the `--stopAfterFrames` variant
-of `benchFrontendBattle` the xvfb smoke drives) ---
+where a job needs a target of its own ---
 and `docs/wasm-frontend-unified-plan.md`, for the re-anchoring a job owes when
 it rewrites a line cited here in either file. Never
 `.github/workflows/haskell-ci.yml`, which `haskell-ci regenerate` owns.
@@ -1714,10 +1714,11 @@ gate beyond the three target names this block introduces, which its own commit
 deletes as it lands.
 
 **Owns** --- `Makefile`, gaining `smokeANSI`, `smokeSdl` and `smokeNodeBench`,
-`.github/workflows/lint-and-test-suites.yml`, one job each,
-`tools/doc-refs-allow.txt`, whose `make smokeANSI`, `make smokeSdl`
-and `make smokeNodeBench` entries leave with the commits that add those targets,
-and `docs/wasm-frontend-unified-plan.md`.
+`.github/workflows/lint-and-test-suites.yml`, one step each in the playtest job,
+whose apt line ruling (2) gives `xvfb`, `tools/doc-refs-allow.txt`, whose
+`make smokeANSI`, `make smokeSdl` and `make smokeNodeBench` entries leave
+with the commits that add those targets, `docs/wasm-frontend-unified-plan.md`,
+and `CLAUDE.md`, whose CI paragraphs say what the smokes cover.
 Not `.github/workflows/haskell-ci.yml`, which is generated from the cabal file
 and whose hand edits vanish on the next regenerate.
 
