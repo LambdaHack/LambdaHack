@@ -89,14 +89,9 @@ display ScreenContent{rwidth, rheight} SingleFrame{singleArray} =
 -- | Handle a keydown delivered from JS: the @KeyboardEvent@ itself, read
 -- for its key and modifiers, and taken from the browser unless 'decideKey'
 -- leaves it a passthrough. A sync export, so that the decision lands before
--- the keydown dispatch returns; a sync export propagates no exception to its
--- caller, so one is caught and reported here instead. It also returns once
--- its own thread is done, leaving the threads the key wakes to wait for the
--- next event that enters the RTS scheduler, which an idle game never gets,
--- so 'lhKey' asks for a scheduler run after the keydown handler, as an async
--- export runs one before it returns.
+-- the keydown dispatch returns, and so built on 'syncExport'.
 lhKey :: JSVal -> IO ()
-lhKey e = Ex.handle reportException $ do
+lhKey e = syncExport "lhKey" $ do
   jsKey <- js_key e
   modCtrl <- js_ctrlKey e
   modShift <- js_shiftKey e
@@ -111,16 +106,45 @@ lhKey e = Ex.handle reportException $ do
   forM_ mrf $ \rf -> do
     when kdResetChan $ resetChanKey (fchanKey rf)
     saveKMP rf kdModifier key (PointUI 0 0)
-    rts_scheduleWork
- where
-  reportException :: Ex.SomeException -> IO ()
-  reportException ex = hPutStrLn stderr $ "lhKey: " ++ Ex.displayException ex
 
 foreign export javascript "lhKey sync"
   lhKey :: JSVal -> IO ()
 
+-- | Run the body of a sync JSFFI export, and do the two things such
+-- an export does not do for itself. Every sync export is built on this,
+-- which @tools/check-sync-exports.py@ enforces; an async export needs
+-- neither. A sync export passes no exception to its JS caller, so one is
+-- caught and reported here. Nor does it run the threads it wakes: GHC runs
+-- it as it runs a C FFI export, through @rts_inCall@, whose scheduler
+-- returns once the export's own thread finishes, so a thread the body woke
+-- stays in the run queue. In a reactor nothing runs that thread until JS
+-- calls in again, and four kinds of call run the queue until it is empty:
+-- an async export, a settled promise of an async import, a @throwTo@
+-- on an async export's promise, and the @setImmediate@ the scheduler loop
+-- requests when it stops after 15 ms. An idle game has none of them
+-- due, so the key 'lhKey' queues would wait for an unrelated event. Hence
+-- 'rts_scheduleWork' after the body, unconditionally, since the loop it
+-- schedules returns at once from an empty run queue. A @yield@ in its place
+-- is not enough, and did not suffice for 'lhKey': it runs the threads
+-- the export woke, but a thread one of those wakes goes to the end
+-- of the queue, behind the export's own, which then finishes and leaves
+-- the scheduler. GHC's JS backend needs none of this, its wakeup itself
+-- starting the main loop. The gap is GHC's, reported at
+-- https://gitlab.haskell.org/ghc/ghc/-/work_items/28010; once every GHC
+-- the wasm build is made with carries a fix, the 'rts_scheduleWork' call
+-- goes.
+syncExport :: String -> IO () -> IO ()
+syncExport name body = do
+  Ex.handle reportException body
+  rts_scheduleWork
+ where
+  reportException :: Ex.SomeException -> IO ()
+  reportException ex =
+    hPutStrLn stderr $ name ++ ": " ++ Ex.displayException ex
+
 -- | Run the RTS scheduler loop once the current JavaScript task is done,
--- through the @setImmediate@ the post-linked JSFFI glue provides.
+-- through the @setImmediate@ the post-linked JSFFI glue provides. No public
+-- RTS header declares it, so a GHC may change or drop it unannounced.
 foreign import ccall unsafe "rts_scheduleWork"
   rts_scheduleWork :: IO ()
 

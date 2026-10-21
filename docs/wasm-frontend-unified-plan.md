@@ -480,6 +480,15 @@ only that the plan was written is one the next reader has to skip.
   itself and its timers kept the scheduler running. `lhKey` now calls
   `rts_scheduleWork`, a `yield` there having not sufficed, and the driver
   and the page gate each press Escape on a quiet screen.
+- 2026-10-21 -- so that no later sync export can miss it, the scheduler run
+  moved out of `lhKey` into `Wasm.hs`'s `syncExport`, together
+  with the exception handler, and `tools/check-sync-exports.py` fails a sync
+  export not built on it. Why the `yield` had not sufficed, measured
+  on a reproducer outside the tree: it runs the threads the export woke,
+  but a thread one of those wakes goes to the end of the queue, behind
+  the export's own, which then finishes and leaves the scheduler. The gap
+  is GHC's, reported as GHC
+  [#28010](https://gitlab.haskell.org/ghc/ghc/-/work_items/28010).
 
 ## Repo facts the plan builds on
 

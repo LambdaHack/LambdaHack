@@ -37,6 +37,7 @@ STEPS = [
     # makefile and option-parser branches horde-ad's cannot.
     ('check-doc-refs self-test', ['python3', '{root}/../../tools/check-doc-refs.py', '--self-test'], '{root}/..'),
     ('check-plan-crossrefs self-test', ['python3', '{root}/check-plan-crossrefs.py', '--self-test']),
+    ('check-sync-exports self-test', ['python3', '{root}/check-sync-exports.py', '--self-test']),
     ('pyflakes', ['bash', '-c',
                   'cd "{root}" && { python3 -m pyflakes --version >/dev/null 2>&1 || { echo "python3 -m pyflakes --version failed, so tools/*.py went unlinted"; exit 1; }; } && python3 -m pyflakes *.py']),
     ('shellcheck', ['bash', '-c',
@@ -52,6 +53,9 @@ STEPS = [
     # Both campaign plans read against themselves and each other: the
     # cross-reference graph no pass over every document can see.
     ('plan crossrefs',         ['python3', '{root}/check-plan-crossrefs.py'], '{root}/..'),
+    # Every sync JSFFI export built on syncExport, whose scheduler run GHC's
+    # sync exports lack; Wasm.hs says why.
+    ('sync exports',           ['python3', '{root}/check-sync-exports.py'], '{root}/..'),
     ('records validate',       ['python3', '{bin}/defect-cases.py', '{root}']),
     ('cases, ok direction',    ['python3', '{bin}/defect-run.py', '{root}']),
     ('cases, bug direction',   ['python3', '{bin}/defect-run.py', '--audit', '{root}']),
