@@ -631,7 +631,7 @@ The keyword commit landed in `91d75ca5e`; the row stays live for the SVG form.
 by **Done**, not owned.
 
 **Done** --- `ts`, `wasm`, `deploy`, `page`, `docs`, plus
-`grep -qF crosshair ../lambdahack.github.io/bundle.js`.
+`grep -qF 'data:image/svg+xml' ../lambdahack.github.io/bundle.js`.
 
 **Hands back** --- *display*: that the pointer reads as a crosshair
 over the map, and, for the SVG form, that the browser accepted the data URI
