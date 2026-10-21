@@ -85,7 +85,7 @@ to be deleted*
 >   reaches it, the by-path one does not; the pointman gotcha's "Until
 >   the live-read design lands" clause, which the landing is what resolves;
 >   and the standing-checks bullet that hands `tools/check-plan-crossrefs.py`
->   "the two campaign plans, `docs/wasm-frontend-unified-plan.md`
+>   "the two campaign work lists, `docs/wasm-frontend-work-list.md`
 >   and `docs/leader-desync-migration.md`", which wants the sentence rewritten
 >   rather than the path excised, excision leaving one document named as two;
 > - and the sites outside the pointman records, which are the ones a reader
