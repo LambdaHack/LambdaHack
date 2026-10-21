@@ -52,10 +52,10 @@ jobs:
     timeout-minutes: 240
     steps:
       - uses: actions/checkout@v4
-      - name: Install SDL2 dev libraries
+      - name: Install SDL2 dev libraries and Xvfb
         run: |
           sudo apt-get update
-          sudo apt-get install -y libsdl2-dev libsdl2-ttf-dev
+          sudo apt-get install -y libsdl2-dev libsdl2-ttf-dev xvfb
       - uses: haskell-actions/setup@v2
         id: setup
         with:
@@ -86,6 +86,9 @@ jobs:
       - name: ANSI smoke
         if: ${{ !cancelled() && steps.build.outcome == 'success' }}
         run: make smokeANSI
+      - name: SDL smoke
+        if: ${{ !cancelled() && steps.build.outcome == 'success' }}
+        run: make smokeSdl
       # The teletype and null frontends run headless, so no display is needed.
       - name: Playtests
         if: ${{ !cancelled() && steps.build.outcome == 'success' }}

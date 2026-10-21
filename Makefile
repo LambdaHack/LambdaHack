@@ -375,3 +375,16 @@ smokeFrames=N=$$(sed -n 's/.*Session time: .*; frames: \([0-9]*\)\..*/\1/p' $(1)
 smokeANSI:
 	script -e -q -c '$$(cabal list-bin exe:LambdaHack) $(SMOKEOPTS) --frontendANSI' /tmp/smokeANSI.log < /dev/null > /dev/null
 	$(call smokeFrames,/tmp/smokeANSI.log)
+
+# Under xvfb-run stdout is not a terminal, and > /dev/null keeps it so
+# when make runs in one, so the report is in ~/.LambdaHack/stdout.txt,
+# deleted first lest an earlier game's report pass for this one's.
+# Xvfb needs /tmp/.X11-unix, which the dev machine's /tmp lacks, and
+# segfaults there in GLX init through NVIDIA's EGL unless EGL is pinned
+# to Mesa.
+MESAEGL=/usr/share/glvnd/egl_vendor.d/50_mesa.json
+smokeSdl:
+	mkdir -p /tmp/.X11-unix
+	rm -f ~/.LambdaHack/stdout.txt
+	$(if $(wildcard $(MESAEGL)),__EGL_VENDOR_LIBRARY_FILENAMES=$(MESAEGL)) LIBGL_ALWAYS_SOFTWARE=1 xvfb-run -a $$(cabal list-bin exe:LambdaHack) $(SMOKEOPTS) > /dev/null
+	$(call smokeFrames,~/.LambdaHack/stdout.txt)

@@ -49,7 +49,6 @@ frame-timing-core.test.ts
 frame-timing-core.ts
 make nodeDeployedBench
 make smokeNodeBench
-make smokeSdl
 test/CellStyleUnitTests.hs
 test/DeterminismGoldenUnitTests.hs
 test/FrontendContractUnitTests.hs
