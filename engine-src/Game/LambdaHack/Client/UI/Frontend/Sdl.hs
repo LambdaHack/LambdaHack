@@ -44,6 +44,7 @@ import qualified SDL.Vect as Vect
 import           Game.LambdaHack.Client.UI.Content.Screen
 import           Game.LambdaHack.Client.UI.Frame
 import           Game.LambdaHack.Client.UI.Frontend.Common
+import           Game.LambdaHack.Client.UI.Frontend.InputDecision
 import qualified Game.LambdaHack.Client.UI.Key as K
 import           Game.LambdaHack.Client.UI.Overlay
 import           Game.LambdaHack.Client.UI.PointUI
@@ -339,15 +340,13 @@ startupFun coscreen soptions@ClientOptions{..} rfMVar = do
                 shiftPressed = SDL.keyModifierLeftShift ksm
                                || SDL.keyModifierRightShift ksm
                 key = keyTranslate shiftPressed $ SDL.keysymKeycode sym
-                modifier = modTranslate ksm
-                modifierNoShift = case modifier of  -- to prevent S-!, etc.
-                  K.Shift -> K.NoModifier
-                  K.ControlShift -> K.Control
-                  K.AltShift -> K.Alt
-                  _ -> modifier
+                -- No browser to keep a key from, so kdPreventBrowser is
+                -- ignored.
+                KeyDecision{kdModifier, kdResetChan} =
+                  decideKey (modTranslate ksm) key
             p <- SDL.getAbsoluteMouseLocation
-            when (key == K.Esc) $ resetChanKey (fchanKey rf)
-            saveKMP rf modifierNoShift key (pointTranslate p)
+            when kdResetChan $ resetChanKey (fchanKey rf)
+            saveKMP rf kdModifier key (pointTranslate p)
         SDL.MouseButtonEvent mouseButtonEvent
           | SDL.mouseButtonEventMotion mouseButtonEvent == SDL.Released -> do
             modifier <- modTranslate <$> SDL.getModState
