@@ -359,3 +359,19 @@ BROWSER ?= firefox
 
 run-wasm:
 	$(BROWSER) http://localhost:8080/
+
+# The frontend smokes: a few frames of benchFrontendBattle through the
+# event loop of a shipped frontend other than teletype, whose loop the
+# playtests enter. Exit status alone cannot tell a game that ran from one
+# that quit at frame zero, so each smoke also requires the frame count
+# of the benchmark report to reach --stopAfterFrames, read where stdout
+# went: GameDefinition/Main.hs redirects it to ~/.LambdaHack/stdout.txt
+# unless it is a terminal.
+SMOKEFRAMES=60
+SMOKEOPTS=--dbgMsgSer --logPriority 4 --newGame 3 --noAnim --maxFps 100000 --benchmark --benchMessages --stopAfterFrames $(SMOKEFRAMES) --automateAll --keepAutomated --gameMode battle $(RNGOPTS1)
+smokeFrames=N=$$(sed -n 's/.*Session time: .*; frames: \([0-9]*\)\..*/\1/p' $(1)) && echo "frames: $$N" && test "$$N" -ge $(SMOKEFRAMES)
+
+# Under script the pty is a terminal, so the report is in its capture.
+smokeANSI:
+	script -e -q -c '$$(cabal list-bin exe:LambdaHack) $(SMOKEOPTS) --frontendANSI' /tmp/smokeANSI.log < /dev/null > /dev/null
+	$(call smokeFrames,/tmp/smokeANSI.log)

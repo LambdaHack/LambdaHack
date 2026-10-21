@@ -1,10 +1,11 @@
 # Hand-written workflow complementing the auto-generated haskell-ci.yml
 # (which does cabal build/test/haddock across GHC versions, unoptimized).
 # This one keeps the README's promise that CI checks the code with
-# `hlint .`, and carries every suite haskell-ci cannot: the optimized
-# build exercised by the teletype playtests of `make test-gha`, the
-# doctests, and the WASM and TypeScript suites. One job each, so a
-# failure names itself.
+# `hlint .`, and carries every suite haskell-ci cannot: the doctests,
+# the WASM and TypeScript suites, and, exercising the optimized build,
+# the teletype playtests of `make test-gha` and the frontend smokes. One
+# job each, so a failure names itself; the smokes share the playtest
+# job's build, each a step of its own.
 name: Lint-and-Test-Suites
 on:
   - push
@@ -78,9 +79,16 @@ jobs:
       # flag would force an optimized rebuild on a reader who has the
       # unoptimized development config in place.
       - name: Build
+        id: build
         run: cabal build exe:LambdaHack --enable-optimization
+      # The suites below share the build, so each runs whenever it
+      # succeeded, whatever became of the others.
+      - name: ANSI smoke
+        if: ${{ !cancelled() && steps.build.outcome == 'success' }}
+        run: make smokeANSI
       # The teletype and null frontends run headless, so no display is needed.
       - name: Playtests
+        if: ${{ !cancelled() && steps.build.outcome == 'success' }}
         run: make test-gha
   doctest:
     name: doctest
