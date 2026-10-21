@@ -475,8 +475,9 @@ executable LambdaHack
                       ,this-game-src
                       ,async
                       ,base
-                      ,filepath
                       ,optparse-applicative
+  if !os(wasi)
+    build-depends:    ,filepath
 
 test-suite test
   import: options, exe-options

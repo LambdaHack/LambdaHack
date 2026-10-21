@@ -4,20 +4,25 @@ import Prelude ()
 
 import Game.LambdaHack.Core.Prelude
 
+import Options.Applicative
+import Test.Tasty
+import Test.Tasty.HUnit
+
+import Game.LambdaHack.Server
+
+import TieKnot
+
+#ifndef USE_BROWSER
 import qualified Data.Text as T
-import           Options.Applicative
 import           System.IO.Unsafe (unsafePerformIO)
-import           Test.Tasty
-import           Test.Tasty.HUnit
 
 import           Game.LambdaHack.Client.UI.UIOptions
 import           Game.LambdaHack.Client.UI.UIOptionsParse
 import           Game.LambdaHack.Common.ClientOptions
 import qualified Game.LambdaHack.Content.RuleKind as RK
-import           Game.LambdaHack.Server
 
 import qualified Content.RuleKind
-import           TieKnot
+#endif
 
 import ActorStateUnitTests
 import CommonMUnitTests
