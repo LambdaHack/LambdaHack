@@ -710,7 +710,13 @@ allowlisted here; it coexists with 1.5's `allFontsScale`.
   synchronously when called from Node (`42`, not a thenable), so the async
   fallback branch died unfired. Known trade-off: sync exports don't yet
   propagate uncaught Haskell exceptions to the JS call site --- wrap the short
-  body so nothing can throw past the boundary.
+  body so nothing can throw past the boundary. A second, found 2026-10-21 when
+  the page stopped repainting on keys while the game idled: a sync export
+  returns once its own thread is done, so the threads a key wakes wait
+  for the next event to enter the RTS scheduler, which an idle game never gets;
+  `lhKey` therefore calls the RTS's `rts_scheduleWork`, which asks
+  for a scheduler run right after the keydown handler, as an async export runs
+  one before it returns.
 - Modifiers and `.key` are read off the event from Haskell via `unsafe` imports
   (`"$1.key"`, `"$1.ctrlKey"`, `"$1.altKey || $1.getModifierState('AltGraph')"`,
   ...), putting the AltGraph OR in one place, next to where `Dom.hs` does
