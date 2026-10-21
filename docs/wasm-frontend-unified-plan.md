@@ -1039,9 +1039,9 @@ the same core.
 ## Phase 1 --- small parity wins
 
 Independent of each other; any order. 1.3 doesn't depend on Phase 0, nor does
-1.1's first form, its final form coming with 0.2; since B.10 1.2 waits on 0.4,
-whose canvas its screenshot is, and 1.5 on 0.4's painter, which takes its scale.
-1.2's per-frame case waits on 3.1.
+1.1's first form, its final form resting on 0.2's `cursor.ts`; since B.10 1.2
+waits on 0.4, whose canvas its screenshot is, and 1.5 on 0.4's painter, which
+takes its scale. 1.2's per-frame case waits on 3.1.
 
 ### 1.1 Crosshair cursor over the map (trivial)
 
@@ -1049,15 +1049,15 @@ whose canvas its screenshot is, and 1.5 on 0.4's painter, which takes its scale.
 among its container styles since `91d75ca5e` --- the zero-dependency interim
 step, landed without an outcome line, the row staying live for the final form;
 Mikolaj confirmed on 2026-10-20 that the pointer reads as a crosshair
-over the whole grid. The final form comes with 0.2: its freshness case writes
+over the whole grid. The final form rests on 0.2, whose freshness case writes
 an SVG data-URI cursor from SDL2's own bitmap definition (the ASCII art
 at `MouseCursor.hs:xhairCursorPixels ::` since `53f508d1a`, which
 `Sdl.hs:cursorXhair :: (VS.Vector` packs for SDL; 32x27, hotspot (13,13)
-at `MouseCursor.hs:xhairCursorHotspot = (13, 13)`), and `terminal.ts` switches
+at `MouseCursor.hs:xhairCursorHotspot = (13, 13)`): `terminal.ts` switches
 to `cursor: url(<data-URI>) 13 13, crosshair`, taking the URI and the hotspot
 both from `cursor.ts` --- the keyword staying as the fallback. Pixel-parity
 with the native pointer, sourced from the one canonical definition. Verify
-by hovering, both before and after the 0.2 upgrade.
+by hovering, both before and after the switch.
 
 ### 1.2 Screenshots: make `Ctrl+P` real (small)
 
