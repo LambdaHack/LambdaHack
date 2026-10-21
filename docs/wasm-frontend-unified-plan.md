@@ -843,6 +843,24 @@ and `Color` in, `Color` out, the exact name the executing session's --- which
 `styleCell` consumes internally and 2.1's `chunkPropLine` imports: one
 definition, ruled 2026-08-07, so neither item invents a second copy.
 
+*Landed in `53f508d1a`, the crosshair commit, after `3840a808a` and `15c90625a`.
+The frontend passes its substitute glyphs as a record, `CellGlyphs`, the space's
+beside the dim floor's, since SDL draws a plain space; the recolour
+is `rowColor` and the fill `backlightRGB`. The switch is a tasty option
+of the suite's own, `--regenerate`. The index fixtures pin `cellPosition`, which
+`terminal-core.ts` gained and `terminal.ts` now decodes frame indices with.
+The crosshair module is `MouseCursor.hs`, which holds the cursor's size
+and hotspot too, so `Sdl.hs`'s `createCursor` call and the freshness case
+writing `cursor.ts` both read them there. `Sdl.hs` takes nothing else
+from this item: the riders below, and its reading of `backlightRGB` in place
+of `greyRGBA`, went with the drawing loop's adoption of `CellStyle` to 2.1,
+as ruled 2026-10-21.*
+
+*Its hand-back confirmed by Mikolaj on 2026-10-22: over a page using
+`cursor.ts`, Firefox's pointer matched SDL's in shape and hotspot. On the page's
+first load Firefox showed a plain cross until the window was moved, and
+with a fresh profile the right pointer at once.*
+
 Two riders on the `Sdl.hs` side of this work: derive `colorToRGBA`
 (`Sdl.hs:colorToRGBA ::`, a hand-maintained palette copy by its own comment)
 from `Color.colorToRGB`, closing the Haskell-vs-Haskell copy alongside
