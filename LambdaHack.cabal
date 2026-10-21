@@ -59,7 +59,8 @@ extra-source-files: GameDefinition/config.ui.default,
                     GameDefinition/fonts/DejaVuLGCSans-Bold.ttf.woff,
                     GameDefinition/fonts/Hack-Bold.ttf.woff,
                     ts-src/src/generated/palette.ts,
-                    ts-src/src/generated/fixtures.json
+                    ts-src/src/generated/fixtures.json,
+                    ts-src/src/generated/cursor.ts
 extra-doc-files:    GameDefinition/InGameHelp.txt,
                     README.md,
                     CHANGELOG.md,
@@ -253,6 +254,7 @@ library
                       Game.LambdaHack.Client.UI.Frontend.CellStyle
                       Game.LambdaHack.Client.UI.Frontend.Common
                       Game.LambdaHack.Client.UI.Frontend.InputDecision
+                      Game.LambdaHack.Client.UI.Frontend.MouseCursor
                       Game.LambdaHack.Client.UI.Frontend.Teletype
                       Game.LambdaHack.Client.UI.HandleHelperM
                       Game.LambdaHack.Client.UI.HandleHumanGlobalM

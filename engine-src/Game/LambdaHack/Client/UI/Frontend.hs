@@ -10,6 +10,8 @@ module Game.LambdaHack.Client.UI.Frontend
   , KeyDecision(..), decideKey, decideWheel, decideMouseButton
     -- * Cell styling shared by the frontends
   , CellStyle(..), CellGlyphs(..), styleCell, rowColor, backlightRGB
+    -- * The mouse cursor shared by the frontends
+  , CursorPixel(..), xhairCursorPixels, xhairCursorSize, xhairCursorHotspot
 #ifdef EXPOSE_INTERNAL
     -- * Internal operations
   , FrontSetup, getKey, fchanFrontend, display, defaultMaxFps, microInSec
@@ -37,6 +39,7 @@ import           Game.LambdaHack.Client.UI.Frame
 import           Game.LambdaHack.Client.UI.Frontend.CellStyle
 import           Game.LambdaHack.Client.UI.Frontend.Common
 import           Game.LambdaHack.Client.UI.Frontend.InputDecision
+import           Game.LambdaHack.Client.UI.Frontend.MouseCursor
 import qualified Game.LambdaHack.Client.UI.Frontend.Teletype as Teletype
 import           Game.LambdaHack.Client.UI.Key (KMP (..))
 import qualified Game.LambdaHack.Client.UI.Key as K

@@ -1,7 +1,7 @@
 -- | Tests for CellStyle, the per-cell drawing decisions shared
--- by the frontends, and the freshness case for the files
--- in @ts-src/src/generated/@ that are computed from them
--- (@docs/wasm-frontend-unified-plan.md@, 0.2).
+-- by the frontends, and for MouseCursor, the cursor they share,
+-- and the freshness case for the files in @ts-src/src/generated/@
+-- that are computed from the two (@docs/wasm-frontend-unified-plan.md@, 0.2).
 module CellStyleUnitTests (cellStyleUnitTests, freshnessOptions) where
 
 import Prelude ()
@@ -23,7 +23,16 @@ import           System.Directory (doesFileExist)
 #endif
 
 import           Game.LambdaHack.Client.UI.Frontend
-  (CellGlyphs (..), CellStyle (..), backlightRGB, rowColor, styleCell)
+  ( CellGlyphs (..)
+  , CellStyle (..)
+  , CursorPixel (..)
+  , backlightRGB
+  , rowColor
+  , styleCell
+  , xhairCursorHotspot
+  , xhairCursorPixels
+  , xhairCursorSize
+  )
 import           Game.LambdaHack.Content.TileKind (floorSymbol)
 import qualified Game.LambdaHack.Definition.Color as Color
 
@@ -84,6 +93,18 @@ cellStyleUnitTests = testGroup "cellStyleUnitTests" $
   , testCase "backlightRGB is a third of BrBlack in every channel" $
       hexChannels backlightRGB
         @?= map (`div` 3) (hexChannels $ Color.colorToRGB Color.BrBlack)
+  , testCase "xhairCursorSize is the art's, in whole bytes per row for SDL" $ do
+      let (width, height) = xhairCursorSize
+      length xhairCursorPixels @?= height
+      forM_ xhairCursorPixels $ \row -> length row @?= width
+      width `mod` 8 @?= 0
+  , testCase "xhairCursorHotspot is the centre the art is symmetric about" $ do
+      let (x, y) = xhairCursorHotspot
+      forM_ [1 .. y] $ \k ->
+        xhairCursorPixels !! (y - k) @?= xhairCursorPixels !! (y + k)
+      forM_ xhairCursorPixels $ \row ->
+        forM_ [1 .. x] $ \k -> row !! (x - k) @?= row !! (x + k)
+      xhairCursorPixels !! y !! x @?= CursorWhite
   ]
   ++ freshnessTests
 
@@ -141,6 +162,7 @@ freshnessTests :: [TestTree]
 freshnessTests =
   [ freshnessCase "palette.ts" paletteTs
   , freshnessCase "fixtures.json" fixturesJson
+  , freshnessCase "cursor.ts" cursorTs
   ]
 
 freshnessCase :: FilePath -> Text -> TestTree
@@ -227,6 +249,61 @@ fixturesJson = T.unlines $
                   , ("col", tshow px), ("row", tshow py) ]
   positionSample = [0, 1, width - 1, width, width + 1, 2 * width - 1]
                    ++ [5 * width + 7]
+
+-- | The cursor the browser is to show over the map, as SDL shows it.
+cursorTs :: Text
+cursorTs = T.unlines $
+  generatedHeader
+  ++ [ ""
+     , "// The crosshair mouse cursor (Frontend/MouseCursor.hs"
+     , "// xhairCursorPixels) as an SVG data URI, and its hotspot, the pixel"
+     , "// at the mouse position."
+     , "export const XHAIR_CURSOR_URL ="
+     , "  \"data:image/svg+xml,"
+       <> T.concatMap uriEscape xhairCursorSvg <> "\";"
+     , "export const XHAIR_CURSOR_HOTSPOT_X = " <> tshow hotspotX <> ";"
+     , "export const XHAIR_CURSOR_HOTSPOT_Y = " <> tshow hotspotY <> ";" ]
+ where
+  (hotspotX, hotspotY) = xhairCursorHotspot
+
+-- | 'xhairCursorPixels' as SVG: a path per colour, a one-pixel-high
+-- rectangle per run of that colour's pixels in a row.
+xhairCursorSvg :: Text
+xhairCursorSvg =
+  let (width, height) = xhairCursorSize
+      path colour pixel =
+        "<path fill='" <> colour <> "' d='"
+        <> T.concat [ "M" <> tshow x <> "," <> tshow y <> "h" <> tshow n
+                      <> "v1h-" <> tshow n <> "z"
+                    | (y, row) <- zip [0 :: Int ..] xhairCursorPixels
+                    , (x, n) <- pixelRuns pixel row ]
+        <> "'/>"
+  in "<svg xmlns='http://www.w3.org/2000/svg' width='" <> tshow width
+     <> "' height='" <> tshow height <> "' shape-rendering='crispEdges'>"
+     <> path "#000000" CursorBlack <> path "#FFFFFF" CursorWhite
+     <> "</svg>"
+
+-- | The start and length of each run of the pixel in a row.
+pixelRuns :: CursorPixel -> [CursorPixel] -> [(Int, Int)]
+pixelRuns pixel = go 0
+ where
+  go _ [] = []
+  go x row@(p : _) =
+    let (run, rest) = span (== p) row
+        n = length run
+    in [(x, n) | p == pixel] ++ go (x + n) rest
+
+-- | A character percent-encoded where a data URI that CSS takes unquoted
+-- needs it.
+uriEscape :: Char -> Text
+uriEscape c
+  | c `elem` uriSafe = T.singleton c
+  | otherwise = assert (n < 0x80) $
+      T.pack ['%', hexDigits !! (n `div` 16), hexDigits !! (n `mod` 16)]
+ where
+  n = fromEnum c
+  uriSafe = ['A' .. 'Z'] ++ ['a' .. 'z'] ++ ['0' .. '9'] ++ "-_.~/:=,;"
+  hexDigits = "0123456789ABCDEF"
 
 -- | Cells for each glyph rule and each highlight, on an even row
 -- and an odd, and for each colour.

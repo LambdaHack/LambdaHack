@@ -45,6 +45,7 @@ import           Game.LambdaHack.Client.UI.Content.Screen
 import           Game.LambdaHack.Client.UI.Frame
 import           Game.LambdaHack.Client.UI.Frontend.Common
 import           Game.LambdaHack.Client.UI.Frontend.InputDecision
+import           Game.LambdaHack.Client.UI.Frontend.MouseCursor
 import qualified Game.LambdaHack.Client.UI.Key as K
 import           Game.LambdaHack.Client.UI.Overlay
 import           Game.LambdaHack.Client.UI.PointUI
@@ -209,8 +210,12 @@ startupFun coscreen soptions@ClientOptions{..} rfMVar = do
   SDL.initialize [SDL.InitVideo]
   -- This cursor size if fine for default size and Full HD 1.5x size.
   let (cursorAlpha, cursorBW) = cursorXhair
+      (cursorWidth, cursorHeight) = xhairCursorSize
+      (hotspotX, hotspotY) = xhairCursorHotspot
   xhairCursor <-
-    createCursor cursorBW cursorAlpha (SDL.V2 32 27) (SDL.P (SDL.V2 13 13))
+    createCursor cursorBW cursorAlpha
+                 (SDL.V2 (toEnum cursorWidth) (toEnum cursorHeight))
+                 (SDL.P (SDL.V2 (toEnum hotspotX) (toEnum hotspotY)))
   SDL.activeCursor SDL.$= xhairCursor
 --  xhairCursor <-
 --    throwIfNull "SDL.Input.Mouse.createSystemCursor" "SDL_createSystemCursor"
@@ -419,39 +424,12 @@ boolListToWord8List =
 
 cursorXhair :: (VS.Vector Word8, VS.Vector Word8)  -- alpha, BW
 cursorXhair =
-  let charToBool '.' = (True, True)  -- visible black
-      charToBool '#' = (True, False)  -- visible white
-      charToBool _ = (False, False)  -- transparent white
+  let pixelToBool CursorBlack = (True, True)  -- visible black
+      pixelToBool CursorWhite = (True, False)  -- visible white
+      pixelToBool CursorClear = (False, False)  -- transparent white
       toVS = VS.fromList . boolListToWord8List
-  in toVS *** toVS $ unzip $ map charToBool $ concat
-
-    [ "            ...                 "
-    , "            .#.                 "
-    , "        ..  .#.  ..             "
-    , "      ..##  .#.  ##..           "
-    , "     .##    .#.    ##.          "
-    , "    .#      .#.      #.         "
-    , "   .#       .#.       #.        "
-    , "   .#       ...       #.        "
-    , "  .#                   #.       "
-    , "  .#                   #.       "
-    , "                                "
-    , "             .                  "
-    , "........    .#.    ........     "
-    , ".######.   .###.   .######.     "
-    , "........    .#.    ........     "
-    , "             .                  "
-    , "                                "
-    , "  .#                   #.       "
-    , "  .#                   #.       "
-    , "   .#       ...       #.        "
-    , "   .#       .#.       #.        "
-    , "    .#      .#.      #.         "
-    , "     .##    .#.    ##.          "
-    , "      ..##  .#.  ##..           "
-    , "        ..  .#.  ..             "
-    , "            .#.                 "
-    , "            ...                 " ]
+  in assert (fst xhairCursorSize `mod` 8 == 0)  -- whole bytes per row
+     $ toVS *** toVS $ unzip $ map pixelToBool $ concat xhairCursorPixels
 
 shutdown :: FrontendSession -> IO ()
 shutdown FrontendSession{..} = writeIORef scontinueSdlLoop False
