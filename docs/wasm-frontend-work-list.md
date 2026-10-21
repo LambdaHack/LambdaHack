@@ -516,7 +516,7 @@ is the whole correctness claim.
 
 ### 0.3 FFI-coverage test (baseline first, then per-commit)
 
-**Split** --- the import half first: seven of the eleven declarations
+**Split** --- the import half first: the declarations the suite reaches
 in `Wasm.hs`, `WasmFile.hs` and `GameDefinition/Main.hs` --- `WasmFile.hs`'s
 six, reachable only through `Common/File.hs`'s seven exported functions since
 `WasmFile` is a hidden other-module, and `Wasm.hs`'s `js_submitFrame`, reached
@@ -603,9 +603,7 @@ now), `GameDefinition/index.html` (the `#screen` rule, the banner untouched),
 and `lhMouseUp`), `ts-src/src/loader.ts`, `ts-src/run-wasm-game.mjs`
 for the coverage case, and `docs/wasm-frontend-unified-plan.md` --- Split (0)'s
 number and probe in B.10, the outcome line, the row, and the Repo facts bullet
-on how the frontend works today, which this landing re-cuts. 0.1 rewrites
-the same two exports' bodies onto `decideWheel` and `decideMouseButton`,
-so whichever lands first shapes the other's diff.
+on how the frontend works today, which this landing re-cuts.
 
 **Done** --- `native`, `ts`, `wasm`, `deploy`, `page`, `docs`, plus Split (0)'s
 number standing in B.10 before (1) merges, and a run
@@ -1619,13 +1617,13 @@ in the record.
 **Split** --- three commits. The haddock contract on `RawFrontend`'s fields
 (`Frontend/Common.hs:data RawFrontend = RawFrontend`) and the "how to add
 a frontend" checklist first, since the contract is what the harness then asserts
-against, and free to land alone ahead of 0.1 as a partial landing taking
-no outcome line (the record's ruling (4)) --- carrying the hoist
-of `nullStartup`, `lazyStartup`, `display` and `frameTimeoutThread`
-into `Frontend.hs`'s unconditional export list under the "internal and used
-in unit tests" group (ruled 2026-08-07), so exports precede the harness
-that uses them; the native harness second, once 0.1 has created its module,
-driving `nullStartup`/`lazyStartup`/`Teletype.startup`; the wasm case third,
+against, and free to land alone as a partial landing taking no outcome line
+(the record's ruling (4)) --- carrying the hoist of `nullStartup`,
+`lazyStartup`, `display` and `frameTimeoutThread` into `Frontend.hs`'s
+unconditional export list under the "internal and used in unit tests" group
+(ruled 2026-08-07), so exports precede the harness that uses them; the native
+harness second, once 0.1 has created its module, driving
+`nullStartup`/`lazyStartup`/`Teletype.startup`; the wasm case third,
 on the `globalThis.lhSubmitFrame` stub 0.3's baseline battery installs
 in `ts-src/run-wasm-test.mjs`
 (`run-wasm-test.mjs:globalThis.lhSubmitFrame = (addr, w, h) => {`), without
@@ -1641,12 +1639,11 @@ The input-side cases land inside 0.1, which creates the test module and mints
 extending `ts-src/run-wasm-test.mjs`; this one and 3.2 do not.
 
 **Done** --- `native`, `wasm`, `docs`, plus
-`cabal test --test-options='-p "/fe-invariant/"'` --- the series marker minted
-under the tasty-tag rule above, so 0.1's commit that mints it lists before
-the series exists and shows that the marker selects nothing, and states
-the other half of that rule's proof beside it: `fe-invariant` contains neither
-`contract` nor `LR-flip`, which the listing cannot show and only reading
-the marker can. That used to carry a second build,
+`cabal test --test-options='-p "/fe-invariant/"'` --- the series marker 0.1's
+commit minted under the tasty-tag rule above: it selected nothing when listed
+before the series existed, and `fe-invariant` contains neither `contract`
+nor `LR-flip`, the other half of that rule's proof, which the listing cannot
+show. That used to carry a second build,
 `cabal build --builddir=dist-norelease --flags=-release test`, as the only thing
 catching a harness leaning on the `EXPOSE_INTERNAL` block; `release` now
 defaults `False`, so the ordinary build is that build and the clause would only
@@ -1678,12 +1675,10 @@ the `test-suite test` stanza of `LambdaHack.cabal`
 in `test/UnitTestHelpers.hs` and `test/SessionUIMock.hs`,
 `tools/doc-refs-allow.txt` (the `test/DeterminismGoldenUnitTests.hs` entry,
 deleted by the second commit), and `docs/wasm-frontend-unified-plan.md`.
-The RawFrontend contract harness adds a module to the same `other-modules` list
-and extends `test/Spec.hs` too, and the sum-typed selection writes
-`test/UnitTestHelpers.hs`, as does the pointman campaign's PR 0,
-for its recording `ChanFrontend`. If the digest is over committed literals
-rather than a file, it owns no data file; if over a file, that file joins
-this list rather than living beside the test.
+The sum-typed selection writes `test/UnitTestHelpers.hs`, as does the pointman
+campaign's PR 0, for its recording `ChanFrontend`. If the digest
+is over committed literals rather than a file, it owns no data file; if
+over a file, that file joins this list rather than living beside the test.
 
 **Done** --- `native`, `wasm`, `docs`, plus
 `cabal test --test-options='-p "/fe-golden/"'` --- a second series marker

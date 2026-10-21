@@ -473,6 +473,13 @@ only that the plan was written is one the next reader has to skip.
   of commits. 2.1's module lands ahead of the branch and the explicit-widths
   step after it, re-cutting that practice's ruling of 2026-10-20, which put
   the step in the commit that removes the violation.
+- 2026-10-21 -- 0.1 landed in `83b10c8a5`, and a sync JSFFI export proved
+  to leave the threads it wakes unscheduled: the built page repainted on keys
+  only when another event entered the RTS scheduler, which the game driver
+  and the page gate both missed, pressing their keys while the game played
+  itself and its timers kept the scheduler running. `lhKey` now calls
+  `rts_scheduleWork`, a `yield` there having not sufficed, and the driver
+  and the page gate each press Escape on a quiet screen.
 
 ## Repo facts the plan builds on
 
@@ -575,8 +582,9 @@ to the test-suite under `os(wasi)`, so the suite is *compiled and linked*
 in the real browser configuration --- `WasmFile.hs` as the file backend,
 `Wasm.hs` as the chosen frontend --- which catches wasm-only compile and link
 breakage. 0.3's FFI battery executes both modules' code, `WasmFile.hs` through
-`Common/File.hs`'s exports and `Wasm.hs` through `startup` and `fdisplay`;
-the rest of the suite does not enter `Wasm.hs`, the integration test passing
+`Common/File.hs`'s exports and `Wasm.hs` through `startup` and `fdisplay`,
+and 0.1's input-side contract cases enter `Wasm.hs` through `startup`; the rest
+of the suite does not enter `Wasm.hs`, the integration test passing
 `--frontendNull` and every fixture setting `sfrontendNull = True`,
 so `nullStartup` stands in for `Chosen.startup`).
 
@@ -2696,6 +2704,7 @@ event loop but teletype's ran in CI, the `make test-gha` playtests driving
 `--frontendTeletype` through whole games. `make test-wasm` compiles and links
 `Wasm.hs` but runs the suite with `--frontendNull`, so the wasm frontend
 is entered only by 0.3's frame case, through `startup` and `fdisplay`,
+and by 0.1's contract cases, through `startup`,
 and `make build-wasm`/`make build-ts` run in no workflow, leaving the reactor's
 `--export=` wiring exercised by none. SDL2 was reached only via
 the `slogPriority == Just 0` init-and-quit backdoor
