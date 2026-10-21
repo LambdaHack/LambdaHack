@@ -191,6 +191,21 @@
    "expect_text": [
     "A1 not run over docs/leader-desync-migration.md"
    ]
+  },
+  {
+   "id": "Wasm-01",
+   "program": "engine-src/Game/LambdaHack/Client/UI/Frontend/Wasm.hs",
+   "name": "lhKey, a sync JSFFI export, left the threads its key woke in the run queue, so an idle game acted on a key only when another event entered the RTS scheduler",
+   "family": "other:unscheduled-wakeup",
+   "fix_rev": "83b10c8a5",
+   "trigger": "in the browser, a key pressed on a quiet screen, with no game timer due",
+   "ok": "lhKey asks for a scheduler run after its body, so the game acts on the key and repaints at once",
+   "bug": "the threads the key woke stayed in the run queue, so nothing repainted until another event entered the RTS scheduler",
+   "proved": "ran",
+   "harm": "fired",
+   "discovery": "in-use",
+   "no_audit": "other:introduced-and-fixed-in-one-commit",
+   "notes": "Introduced and fixed within 83b10c8a5, whose parent's lhKey is an async export, so no commit carries the bug. Found by Mikolaj's browser check of 0.1 on 2026-10-21; the game driver and the page gate missed it, pressing their keys while the game played itself and its timers kept the scheduler running, and both now press Escape on a quiet screen. Watched again on 2026-10-21 with rts_scheduleWork deleted from syncExport, where the fix has lived since: ts-src/run-wasm-game.mjs fails with `lhKey([object Object]) repainted nothing within 5s`. tools/check-sync-exports.py requires syncExport of every sync export. A tier-1 record, no commit carrying the bug to replay."
   }
  ]
 }
