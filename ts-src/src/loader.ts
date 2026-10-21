@@ -11,7 +11,9 @@ import { mountFullscreen } from "./fullscreen.js";
 interface LhExports {
   memory: WebAssembly.Memory;
   lhStart: () => Promise<void>;
-  lhKey: (key: string, ctrl: boolean, shift: boolean, alt: boolean, meta: boolean) => Promise<void>;
+  // A sync export, so that it decides the key's default action before
+  // the keydown dispatch returns.
+  lhKey: (e: KeyboardEvent) => void;
   lhWheel: (
     col: number,
     row: number,
@@ -73,9 +75,7 @@ async function main(): Promise<void> {
   const term = mountTerminal(
     screen,
     () => lh.memory,
-    (k, c, s, a, m) => {
-      void lh.lhKey(k, c, s, a, m);
-    },
+    (e) => lh.lhKey(e),
     (col, row, deltaY, c, s, a, m) => {
       void lh.lhWheel(col, row, deltaY, c, s, a, m);
     },

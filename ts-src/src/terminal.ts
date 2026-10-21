@@ -1,8 +1,8 @@
 // Renderer wiring: a DOM grid of <span> cells, repainted from the engine's
 // Word32 frame buffer via the pure styledCell logic. Per-cell diffing skips
 // unchanged cells (the engine sends full frames). Its input forwarding is
-// tested under jsdom (terminal-input.test.ts); all the decisions live in
-// terminal-core.
+// tested under jsdom (terminal-input.test.ts); the rendering decisions live in
+// terminal-core, and the key ones in Haskell.
 
 import { altModifier, styledCell } from "./terminal-core.js";
 
@@ -10,13 +10,9 @@ export interface Terminal {
   submitFrame(addr: number, w: number, h: number): void;
 }
 
-export type KeyHandler = (
-  key: string,
-  ctrl: boolean,
-  shift: boolean,
-  alt: boolean,
-  meta: boolean,
-) => void;
+// Takes the event itself: the handler reads the key and modifiers off it
+// and decides whether the browser keeps its default action.
+export type KeyHandler = (e: KeyboardEvent) => void;
 
 // col/row are 0-based screen-cell coordinates, matching Dom.hs's per-cell
 // mouse handlers (Point{px,py} derived from the cell, not sub-cell offset).
@@ -160,24 +156,6 @@ export function mountTerminal(
     }
   }
 
-  // Keys a Ctrl-only chord should still pass to the browser for, mirroring
-  // Dom.hs's `browserKeys = "+-0tTnNdxcv"` allowlist: zoom, tab/window
-  // management, bookmark, clipboard. Both cases of t/n are listed there (and
-  // ported here) to also cover Caps Lock, not Shift -- the modifier check
-  // below requires a bare Ctrl chord, so Ctrl+Shift+T doesn't qualify.
-  const CTRL_PASSTHROUGH_KEYS = new Set([
-    "+", "-", "0", "t", "T", "n", "N", "d", "x", "c", "v",
-  ]);
-
-  // Verified against Key.hs's keyTranslateWeb: every KeyboardEvent.key value
-  // its DeadKey clauses cover -- chiefly, any modifier key pressed by itself
-  // (Shift, Control, Alt/AltGraph, Meta, CapsLock, NumLock, Win,
-  // Menu/ContextMenu) plus the literal "Dead" compose-key event.
-  const DEAD_KEYS = new Set([
-    "Dead", "Shift", "Control", "Meta", "Menu", "ContextMenu",
-    "Alt", "AltGraph", "Num_Lock", "NumLock", "Caps_Lock", "CapsLock", "Win",
-  ]);
-
   // Clicking anywhere on the grid (re)focuses the container itself: <span>
   // cells aren't independently focusable, and a click on one doesn't
   // automatically move DOM focus onto its parent. Without this, a mouse
@@ -203,22 +181,9 @@ export function mountTerminal(
   // scoping it would both cycle the party AND move page focus at the same
   // time whenever pressed outside the game area, which is wrong; this
   // scoping fixes that for every key uniformly, not just Tab specifically.
-  container.addEventListener("keydown", (e) => {
-    const alt = altModifier(e);
-    onKey(e.key, e.ctrlKey, e.shiftKey, alt, e.metaKey);
-
-    const ctrlOnly = e.ctrlKey && !e.shiftKey && !alt && !e.metaKey;
-    const altOnly = alt && !e.ctrlKey && !e.shiftKey && !e.metaKey;
-    const isDeadKey = DEAD_KEYS.has(e.key);
-
-    const passThrough =
-      altOnly || (ctrlOnly && CTRL_PASSTHROUGH_KEYS.has(e.key)) || isDeadKey;
-
-    if (!passThrough) {
-      e.preventDefault();
-      e.stopPropagation();
-    }
-  });
+  // Whether the browser keeps a key's default action is decided in Haskell
+  // (InputDecision's decideKey), by the handler, before it returns.
+  container.addEventListener("keydown", (e) => onKey(e));
 
   return { submitFrame };
 }

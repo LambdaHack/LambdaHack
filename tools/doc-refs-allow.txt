@@ -36,7 +36,6 @@ post-link.mjs
 # Artifacts the wasm campaign proposes (docs/wasm-frontend-work-list.md) but has not built
 # yet (Phases 0-3). Each should disappear from here as its phase lands.
 CellStyle.hs
-Client/UI/Frontend/InputDecision.hs
 Client/UI/Frontend/OverlayLayout.hs
 cursor.ts
 fixtures.json
@@ -51,7 +50,6 @@ make nodeDeployedBench
 make smokeNodeBench
 test/CellStyleUnitTests.hs
 test/DeterminismGoldenUnitTests.hs
-test/InputDecisionUnitTests.hs
 test/WasmFileUnitTests.hs
 url-options-core.test.ts
 url-options-core.ts

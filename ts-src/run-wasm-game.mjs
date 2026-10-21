@@ -9,11 +9,14 @@
 // The checks lean on the game's default start, which plays itself
 // ("press any key to regain control") and so submits frames steadily
 // until a key arrives: the four exports exist; lhStart starts the game
-// and its frames arrive; a '?' through lhKey stops the stream, which then
-// stays quiet for a second, as it did not for 15s without the key;
-// on that quiet screen a wheel south through lhWheel repaints it and a
-// wheel north repaints it back exactly; and a left button release through
-// lhMouseUp repaints it too.
+// and its frames arrive; a '?' through lhKey, a sync export taking the
+// event, is taken from the browser before lhKey returns and stops the
+// stream, which then stays quiet for a second, as it did not for 15s
+// without the key; on that quiet screen a wheel south through lhWheel
+// repaints it and a wheel north repaints it back exactly; a left button
+// release through lhMouseUp repaints it too; and lhKey leaves the browser
+// a bare Control chord of '+', an Alt, AltGraph and Meta chord, and Shift
+// pressed alone.
 //
 // Usage: node run-wasm-game.mjs <LambdaHack.wasm> <ghc_wasm_jsffi.mjs>
 //   <ghc_wasm_jsffi.mjs> is post-link.mjs's output for that binary, as in
@@ -55,6 +58,18 @@ instance = await instantiate(wasmPath, jsffiPath, wasi);
 const lh = instance.exports;
 const calls = globalThis.lhSubmitFrameCalls;
 const noMods = [false, false, false, false];
+
+// A stand-in for the page's KeyboardEvent: the fields lhKey reads, and
+// a count of the calls that take the key from the browser.
+function keyEvent(key, { ctrlKey = false, shiftKey = false, altKey = false,
+                         metaKey = false, altGraph = false } = {}) {
+  return {
+    key, ctrlKey, shiftKey, altKey, metaKey, prevented: 0, stopped: 0,
+    getModifierState(k) { return k === 'AltGraph' && altGraph; },
+    preventDefault() { this.prevented += 1; },
+    stopPropagation() { this.stopped += 1; },
+  };
+}
 
 // lhStart's promise settles only when the game ends, which no check here
 // asks for, so a settled one is a failure wherever it is noticed.
@@ -119,7 +134,13 @@ async function run() {
   const { w, h } = calls[0];
   ok(`lhStart starts the game: ${calls.length} frames of ${w}x${h} so far`);
 
-  await lh.lhKey('?', ...noMods);
+  const help = keyEvent('?', { shiftKey: true });
+  if (lh.lhKey(help) instanceof Promise) fail('lhKey is not a sync export');
+  if (help.prevented !== 1 || help.stopped !== 1) {
+    fail(`lhKey left '?' to the browser: preventDefault ${help.prevented}`
+         + ` times, stopPropagation ${help.stopped} times`);
+  }
+  ok("lhKey takes '?' from the browser before it returns");
   if (!(await waitQuiet(1000, 15000))) {
     fail("frames kept coming for 15s after a '?' through lhKey");
   }
@@ -135,6 +156,25 @@ async function run() {
 
   await repaint('lhMouseUp', [10, 10, 0, ...noMods]);
   ok('lhMouseUp reaches the game: a left button release repaints the screen');
+
+  // On that quiet screen, with no timer due, a key through the sync lhKey
+  // must be acted on with no other event to follow it.
+  await repaint('lhKey', [keyEvent('Escape')]);
+  ok('lhKey repaints a quiet screen: Escape is acted on with no other event');
+
+  // Last, since these reach the game too, whose screen nothing checks after.
+  const passed = [
+    ["Control '+'", keyEvent('+', { ctrlKey: true })],
+    ["Alt 'x'", keyEvent('x', { altKey: true })],
+    ["AltGraph 'x'", keyEvent('x', { altGraph: true })],
+    ["Meta 'x'", keyEvent('x', { metaKey: true })],
+    ['Shift alone', keyEvent('Shift', { shiftKey: true })],
+  ];
+  for (const [what, e] of passed) {
+    lh.lhKey(e);
+    if (e.prevented || e.stopped) fail(`lhKey took ${what} from the browser`);
+  }
+  ok(`lhKey leaves the browser ${passed.map(([what]) => what).join(', ')}`);
   alive();
 }
 

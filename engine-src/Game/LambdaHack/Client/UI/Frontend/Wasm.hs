@@ -5,7 +5,9 @@
 -- Display: each frame's raw @Word32@ cell array (the AttrCharW32 encoding:
 -- @char = w >> 16@, @fg = (w >> 8) & 0xFF@, @bg = w & 0xFF@) is handed to JS by
 -- address into wasm linear memory; the TS side decodes and paints. Input: JS
--- calls the exported @lhKey@ on keydown, which translates and queues the key.
+-- calls the exported @lhKey@ with each keydown event in the terminal, and
+-- @lhKey@ decides the browser's default action and translates and queues
+-- the key.
 module Game.LambdaHack.Client.UI.Frontend.Wasm
   (
 #ifdef USE_WASM
@@ -18,6 +20,7 @@ import Prelude ()
 
 import Game.LambdaHack.Core.Prelude
 
+import qualified Control.Exception as Ex
 import           Data.IORef
 import           Data.Primitive.ByteArray (ByteArray (..), ByteArray#)
 import qualified Data.Vector.Primitive as VP
@@ -25,7 +28,8 @@ import qualified Data.Vector.Unboxed as U
 import qualified Data.Vector.Unboxed.Base as VU
 import           Data.Word (Word32)
 import           Foreign.Storable (sizeOf)
-import           GHC.Wasm.Prim (JSString (..), fromJSString)
+import           GHC.Wasm.Prim (JSString (..), JSVal, fromJSString)
+import           System.IO (hPutStrLn, stderr)
 import           System.IO.Unsafe (unsafePerformIO)
 
 import           Game.LambdaHack.Client.UI.Content.Screen
@@ -82,25 +86,66 @@ display ScreenContent{rwidth, rheight} SingleFrame{singleArray} =
   in word32BackingArray v $ \ba# byteOffset ->
        js_submitFrame ba# byteOffset rwidth rheight
 
--- | Handle a keydown delivered from JS: the @KeyboardEvent.key@ string plus the
--- ctrl/shift/alt/meta modifier flags. Mirrors the web (Dom) frontend's keydown
--- logic, including the shift squashing that prevents e.g. S-! .
-lhKey :: JSString -> Bool -> Bool -> Bool -> Bool -> IO ()
-lhKey jsKey modCtrl modShift modAlt modMeta = do
+-- | Handle a keydown delivered from JS: the @KeyboardEvent@ itself, read
+-- for its key and modifiers, and taken from the browser unless 'decideKey'
+-- leaves it a passthrough. A sync export, so that the decision lands before
+-- the keydown dispatch returns; a sync export propagates no exception to its
+-- caller, so one is caught and reported here instead. It also returns once
+-- its own thread is done, leaving the threads the key wakes to wait for the
+-- next event that enters the RTS scheduler, which an idle game never gets,
+-- so 'lhKey' asks for a scheduler run after the keydown handler, as an async
+-- export runs one before it returns.
+lhKey :: JSVal -> IO ()
+lhKey e = Ex.handle reportException $ do
+  jsKey <- js_key e
+  modCtrl <- js_ctrlKey e
+  modShift <- js_shiftKey e
+  modAlt <- js_altKey e
+  modMeta <- js_metaKey e
+  let modifier = modifierTranslate modCtrl modShift modAlt modMeta
+      key = K.keyTranslateWeb (fromJSString jsKey) (modifier == K.Shift)
+      KeyDecision{kdModifier, kdResetChan, kdPreventBrowser} =
+        decideKey modifier key
+  when kdPreventBrowser $ js_preventDefaultAndStop e
   mrf <- readIORef rfRef
   forM_ mrf $ \rf -> do
-    let modifier = modifierTranslate modCtrl modShift modAlt modMeta
-        key = K.keyTranslateWeb (fromJSString jsKey) (modifier == K.Shift)
-        modifierNoShift = case modifier of  -- to prevent S-!, etc.
-          K.Shift -> K.NoModifier
-          K.ControlShift -> K.Control
-          K.AltShift -> K.Alt
-          _ -> modifier
-    when (key == K.Esc) $ resetChanKey (fchanKey rf)
-    saveKMP rf modifierNoShift key (PointUI 0 0)
+    when kdResetChan $ resetChanKey (fchanKey rf)
+    saveKMP rf kdModifier key (PointUI 0 0)
+    rts_scheduleWork
+ where
+  reportException :: Ex.SomeException -> IO ()
+  reportException ex = hPutStrLn stderr $ "lhKey: " ++ Ex.displayException ex
 
-foreign export javascript "lhKey"
-  lhKey :: JSString -> Bool -> Bool -> Bool -> Bool -> IO ()
+foreign export javascript "lhKey sync"
+  lhKey :: JSVal -> IO ()
+
+-- | Run the RTS scheduler loop once the current JavaScript task is done,
+-- through the @setImmediate@ the post-linked JSFFI glue provides.
+foreign import ccall unsafe "rts_scheduleWork"
+  rts_scheduleWork :: IO ()
+
+-- | The fields of a @KeyboardEvent@ 'lhKey' reads. @unsafe@: synchronous,
+-- as the sync export they serve must be.
+foreign import javascript unsafe "$1.key"
+  js_key :: JSVal -> IO JSString
+
+foreign import javascript unsafe "$1.ctrlKey"
+  js_ctrlKey :: JSVal -> IO Bool
+
+foreign import javascript unsafe "$1.shiftKey"
+  js_shiftKey :: JSVal -> IO Bool
+
+-- | AltGraph counts as Alt, as in Dom.hs.
+foreign import javascript unsafe "$1.altKey || $1.getModifierState('AltGraph')"
+  js_altKey :: JSVal -> IO Bool
+
+foreign import javascript unsafe "$1.metaKey"
+  js_metaKey :: JSVal -> IO Bool
+
+-- | Take the event from the browser; Dom.hs never calls one of these
+-- without the other.
+foreign import javascript unsafe "($1.preventDefault(), $1.stopPropagation())"
+  js_preventDefaultAndStop :: JSVal -> IO ()
 
 -- | Handle a wheel event delivered from JS over a given screen cell
 -- (0-based column/row).

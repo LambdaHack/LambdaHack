@@ -2,7 +2,7 @@
 // Input forwarding in terminal.ts, driven by synthetic DOM events: the one
 // piece of DOM wiring with tests of its own, since the AltGraph class of bug
 // lived exactly there (docs/wasm-frontend-unified-plan.md, Ground rules).
-// Synthetic events in, forwarded argument tuples and default actions out.
+// Synthetic events in, forwarded arguments and default actions out.
 import { describe, it, expect, vi } from "vitest";
 import { mountTerminal } from "./terminal.js";
 
@@ -29,23 +29,13 @@ function keydown(target: EventTarget, init: KeyboardEventInit): KeyboardEvent {
 }
 
 describe("keydown forwarding", () => {
-  it("forwards the key and the four modifier flags", () => {
+  it("forwards the event itself, for the handler to read", () => {
     const { container, onKey } = mount();
-    keydown(container, { key: "a" });
-    keydown(container, { key: "B", ctrlKey: true, shiftKey: true, metaKey: true });
-    expect(onKey.mock.calls).toEqual([
-      ["a", false, false, false, false],
-      ["B", true, true, false, true],
-    ]);
-  });
-  it("forwards AltGraph as Alt", () => {
-    const { container, onKey } = mount();
-    keydown(container, { key: "@", modifierAltGraph: true });
-    keydown(container, { key: "x", altKey: true });
-    expect(onKey.mock.calls).toEqual([
-      ["@", false, false, true, false],
-      ["x", false, false, true, false],
-    ]);
+    const a = keydown(container, { key: "a" });
+    const altGr = keydown(container, { key: "@", modifierAltGraph: true });
+    expect(onKey).toHaveBeenCalledTimes(2);
+    expect(onKey.mock.calls[0][0]).toBe(a);
+    expect(onKey.mock.calls[1][0]).toBe(altGr);
   });
   it("forwards nothing from outside the container", () => {
     const { onKey } = mount();
@@ -54,18 +44,11 @@ describe("keydown forwarding", () => {
     keydown(elsewhere, { key: "Tab" });
     expect(onKey).not.toHaveBeenCalled();
   });
-  it("takes a game key from the browser, Tab among them", () => {
+  it("leaves each key's default action to the handler", () => {
     const { container } = mount();
-    expect(keydown(container, { key: "Tab" }).defaultPrevented).toBe(true);
-    expect(keydown(container, { key: "a" }).defaultPrevented).toBe(true);
-    expect(keydown(container, { key: "a", ctrlKey: true }).defaultPrevented).toBe(true);
-  });
-  it("leaves the browser zoom, an Alt chord and a dead key", () => {
-    const { container } = mount();
+    expect(keydown(container, { key: "Tab" }).defaultPrevented).toBe(false);
+    expect(keydown(container, { key: "a" }).defaultPrevented).toBe(false);
     expect(keydown(container, { key: "+", ctrlKey: true }).defaultPrevented).toBe(false);
-    expect(keydown(container, { key: "0", ctrlKey: true }).defaultPrevented).toBe(false);
-    expect(keydown(container, { key: "a", altKey: true }).defaultPrevented).toBe(false);
-    expect(keydown(container, { key: "Shift", shiftKey: true }).defaultPrevented).toBe(false);
   });
 });
 
