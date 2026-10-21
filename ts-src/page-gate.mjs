@@ -1,11 +1,12 @@
-// The deployed-page gate: build outputs in a directory, served here and
-// loaded in headless Firefox over WebDriver BiDi, must boot the reactor,
-// paint, and repaint on a key. It is the one check in the repository that
-// asks whether the page players load works, and it runs locally, before
-// every browser landing, by ruling (docs/wasm-frontend-work-list.md,
-// the page gate under Handing an item); CI stays blind to the page by that
-// same ruling. Exit 0 when every assertion holds, 1 when one fails, 2 when
-// the run did not happen: no Firefox, no BiDi endpoint, no server.
+// The deployed-page gate: build outputs in a directory, served here
+// and loaded in headless Firefox over WebDriver BiDi, must boot the
+// reactor, paint, and repaint on a key, on a quiet screen too. It is the
+// one check in the repository that asks whether the page players load
+// works, and it runs locally, before every browser landing, by ruling
+// (docs/wasm-frontend-work-list.md, the page gate under Handing an item);
+// CI stays blind to the page by that same ruling. Exit 0 when every
+// assertion holds, 1 when one fails, 2 when the run did not happen: no
+// Firefox, no BiDi endpoint, no server.
 //
 // Usage: node page-gate.mjs <site-dir>   (Node 22+, for the global WebSocket)
 //   PAGE_GATE_OVERLAYS=1 also requires an overlay submission, once 2.4 lands.
@@ -113,7 +114,24 @@ async function gate() {
   for (let i = 0; i < 40 && after === before; i++) { await sleep(250); after = await evaluate(HASH); framesAfter = await evaluate("globalThis.__lhGate.frames"); }
   if (after === before) fail(`the screen did not change within 10s of a '?' key (frames ${framesBefore} -> ${framesAfter})`);
   else console.log(`ok   a key changes the frame: screen ${before} -> ${after}, frames ${framesBefore} -> ${framesAfter}`);
-  // 3. an overlay submission, once 2.4 lands.
+  // 3. a key on a quiet screen changes it too: with the game idle no timer
+  // re-enters the RTS scheduler, which a key delivered by a sync export once
+  // waited for. Quiet is a second with no frame; Escape leaves the help.
+  let seen = await evaluate("globalThis.__lhGate.frames"), still = 0;
+  for (let i = 0; i < 40 && still < 4; i++) {
+    await sleep(250);
+    const f = await evaluate("globalThis.__lhGate.frames");
+    still = f === seen ? still + 1 : 0; seen = f;
+  }
+  const quiet = await evaluate(HASH);
+  await send("input.performActions", { context, actions: [{ type: "key", id: "kbd",
+    actions: [{ type: "keyDown", value: "\uE00C" }, { type: "keyUp", value: "\uE00C" }] }] });
+  let changed = quiet;
+  for (let i = 0; i < 12 && changed === quiet; i++) { await sleep(250); changed = await evaluate(HASH); }
+  if (still < 4) fail("the screen never went quiet for a second within 10s of the '?'");
+  else if (changed === quiet) fail(`a quiet screen did not change within 3s of an Escape key (frames ${seen})`);
+  else console.log(`ok   a key changes a quiet screen: ${quiet} -> ${changed}`);
+  // 4. an overlay submission, once 2.4 lands.
   const overlays = await evaluate("globalThis.__lhGate.overlays");
   if (wantOverlays) {
     if (overlays < 1) fail("no overlay submission after the key (PAGE_GATE_OVERLAYS=1)");
