@@ -107,10 +107,11 @@ carries an outcome line.
 > of the column.
 >
 > A row a ruling retires before it lands reads `retired -- <ruling>`, as R6's
-> does since B.10, the ruling being its outcome; the rest of the vocabulary
-> is the four above. One claim in either state is exempt, by the same borrow:
-> a recorded measurement ages rather than drifts, so it is re-measured against
-> its stated protocol rather than corrected.
+> does since B.10, the ruling being its outcome, and a standing row whose code
+> is wrong now reads `open -- standing`, as 1.4's and explicit widths' do;
+> the rest of the vocabulary is the four above. One claim in either state
+> is exempt, by the same borrow: a recorded measurement ages rather than drifts,
+> so it is re-measured against its stated protocol rather than corrected.
 >
 > **Landing an item** appends an outcome line here, immediately after the item's
 > opening paragraph and before any subsection, so that opening the item
