@@ -28,6 +28,7 @@ import ActorStateUnitTests
 import CommonMUnitTests
 import FfiCoverageUnitTests
 import FrameMUnitTests
+import FrontendContractUnitTests
 import HandleHelperMUnitTests
 import HandleHumanGlobalMUnitTests
 import HandleHumanLocalMUnitTests
@@ -49,6 +50,7 @@ tests = testGroup "Tests" [ actorStateUnitTests
                           , commonMUnitTests
                           , ffiCoverageUnitTests
                           , frameMUnitTests
+                          , frontendContractUnitTests
                           , handleHelperMUnitTests
                           , handleHumanGlobalMUnitTests
                           , handleHumanLocalMUnitTests

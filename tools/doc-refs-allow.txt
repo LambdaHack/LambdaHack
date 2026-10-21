@@ -51,7 +51,6 @@ make nodeDeployedBench
 make smokeNodeBench
 test/CellStyleUnitTests.hs
 test/DeterminismGoldenUnitTests.hs
-test/FrontendContractUnitTests.hs
 test/InputDecisionUnitTests.hs
 test/WasmFileUnitTests.hs
 url-options-core.test.ts

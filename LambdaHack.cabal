@@ -489,6 +489,7 @@ test-suite test
                       CommonMUnitTests
                       FfiCoverageUnitTests
                       FrameMUnitTests
+                      FrontendContractUnitTests
                       HandleHelperMUnitTests
                       HandleHumanGlobalMUnitTests
                       HandleHumanLocalMUnitTests
@@ -511,6 +512,7 @@ test-suite test
                       ,enummapset
                       ,optparse-applicative
                       ,splitmix
+                      ,stm
                       ,tasty >= 1.0
                       ,tasty-quickcheck
                       ,tasty-hunit
