@@ -289,12 +289,10 @@ and carries it in **Owns** by that rule rather than by enumeration --- most
 items that build anything write it, and the one-holder-at-a-time discipline
 binds it as it binds `Sdl.hs`. Deleting the entry is the executing session's act
 and not something a checker will prompt: `../tools/check-doc-refs.py` tries
-`resolves` before `is_allowed` --- named rather than cited by line, the file
-being one this campaign does not own --- so the moment the artifact exists
-its token prints `ok path` and the stale entry is never read again --- which
-is why the allowlist's own header asks for the deletion by hand, and why
-a survivor means a proposed artifact was never built rather than a check
-that failed.
+`resolves` before `is_allowed`, so the moment the artifact exists its token
+prints `ok path` and the stale entry is never read again --- which is why
+the allowlist's own header asks for the deletion by hand, and why a survivor
+means a proposed artifact was never built rather than a check that failed.
 
 Two traps have each already produced a wrong result in this repo
 or this campaign, so a session is told both rather than trusted to know them.
@@ -316,7 +314,7 @@ or this campaign, so a session is told both rather than trusted to know them.
   R2 from "Add a job to..." into "Partly landed, in..." and bent a factual claim
   in the same diff. That reaches frozen sections and `landed` items too:
   an anchor a rewrite broke is re-anchored and the prose around it left
-  as it stands, the pointman post-mortem's fourth kind of upkeep.
+  as it stands.
 
 **One item is in flight at a time, in one checkout.** The hot files are small
 --- a hundred to a couple of hundred lines each, `GameDefinition/index.html`
@@ -1065,24 +1063,18 @@ this item has no `tools/doc-refs-allow.txt` entries.
 `engine-src/Game/LambdaHack/Client/UI/Frontend/Teletype.hs`,
 `engine-src/Game/LambdaHack/Client/UI/Frontend.hs`,
 `engine-src/Game/LambdaHack/Client/UI/MonadClientUI.hs`,
-`test/MonadClientUIUnitTests.hs`, `GameDefinition/index.html` and `README.md`
---- the "proportional fonts" and "limited to the square font" clauses its flip
+`test/MonadClientUIUnitTests.hs`, `GameDefinition/index.html`, `README.md` ---
+the "proportional fonts" and "limited to the square font" clauses its flip
 falsifies, the second of them in both files since the `#status` div quotes
 the README, deleted in this item's landing sequence under 1.4's rule, per
-that item's 2026-08-07 ruling --- `docs/wasm-frontend-unified-plan.md` --- (1)
-rewrites the `multiFont` gate the citations anchor on, so this item owes
-the re-anchoring --- and, should (1) not be the two-lines-for-two replacement
-the record sketches, `docs/leader-desync-migration.md` --- 3.3's hazard again,
-here over `MonadClientUI.hs`: that plan cites `partActorLeader`
-(`MonadClientUI.hs:partActorLeader ::`) and `partPronounLeader`
-(`MonadClientUI.hs:partPronounLeader ::`), both below the gate (1) rewrites,
-so a changed line count leaves them resolving and wrong. `Dom.hs`
-is deliberately not here: a dead example file no configuration compiles, R3.
-The sum-typed selection practice also rewrites the `multiFont` gate
-in `MonadClientUI.hs`, so whichever lands first shapes the other's diff;
-the pointman campaign's C1 appends its witness and accessors to the same file
-below `partPronounLeader`, per that campaign's own ruling, so it rewrites
-nothing cited here.
+that item's 2026-08-07 ruling --- and `docs/wasm-frontend-unified-plan.md` ---
+(1) rewrites the `multiFont` gate the citations anchor on, so this item owes
+the re-anchoring. `Dom.hs` is deliberately not here: a dead example file
+no configuration compiles, R3. The sum-typed selection practice also rewrites
+the `multiFont` gate in `MonadClientUI.hs`, so whichever lands first shapes
+the other's diff; the pointman campaign's C1 appends its witness and accessors
+to the same file below `partPronounLeader`, per that campaign's own ruling,
+so it rewrites nothing cited here.
 
 **Done** --- `native`, `ts`, `wasm`, `deploy`, `page`
 with `PAGE_GATE_OVERLAYS=1`, `docs`, plus `make test-medium`.
@@ -1214,20 +1206,12 @@ not this one's; 3.2 owes the numbers, not their reading.
 **Split** --- three commits. The `Makefile` rewrite first: both `nodeBench*`
 targets onto the 3.2 driver, and `nodeMinifiedBench` renamed. Then, separate
 because the rewrite falsified them, the claims elsewhere that these targets
-are dead --- the `nodeBench*` sentence in `.claude/skills/playtests/SKILL.md`,
-and `docs/leader-desync-migration.md` if the block's line count moved, that plan
-citing the `Makefile` by line. Last the landing: outcome line, ledger row,
-and the `make nodeDeployedBench` deletion from `tools/doc-refs-allow.txt`.
+are dead --- the `nodeBench*` sentence in `.claude/skills/playtests/SKILL.md`.
+Last the landing: outcome line, ledger row, and the `make nodeDeployedBench`
+deletion from `tools/doc-refs-allow.txt`.
 
 **Owns** --- `Makefile`, `.claude/skills/playtests/SKILL.md`,
-`tools/doc-refs-allow.txt` and this document, plus
-`docs/leader-desync-migration.md` conditionally, as 2.4 carries it conditionally
-too. That last is the hazard: it cites, in sec. 02 step 3, `Makefile:146-148`
---- `test:`, a blank line, `test-gha:` --- three lines below the block this item
-rewrites, so any change in that block's line count slides the citation
-onto other lines while it still *resolves*, leaving
-`../tools/check-plan-citations.py` green over a document that has started
-to lie.
+`tools/doc-refs-allow.txt` and this document.
 
 **Done** --- `wasm`, `deploy`, `docs`, plus `make nodeBench` &&
 `make nodeDeployedBench` &&
@@ -1704,10 +1688,9 @@ and record the perturbation next to the test.
 **Split** --- three commits, ordered by which gate can run at all:
 the pty-driven ANSI smoke (verifiable in-session), the `xvfb-run` SDL smoke
 (likewise, since the display arrived --- see Hands back), and the `nodeBench`
-smoke, which waits on 3.3. The targets sit at the `Makefile`'s end, below every
-line of it a document cites by number, so that adding one slides no citation.
-The third carries the outcome line; the item is in no `tools/doc-refs-allow.txt`
-gate beyond the three target names this block introduces, which its own commit
+smoke, which waits on 3.3. The targets sit at the `Makefile`'s end. The third
+carries the outcome line; the item is in no `tools/doc-refs-allow.txt` gate
+beyond the three target names this block introduces, which its own commit
 deletes as it lands.
 
 **Owns** --- `Makefile`, gaining `smokeANSI`, `smokeSdl` and `smokeNodeBench`,

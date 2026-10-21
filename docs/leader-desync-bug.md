@@ -12,11 +12,9 @@ unrepresentable.
 
 > commit **4a6eca154** -- engine-src/.../**HandleHelperM.hs** -- reproduced &
 > fix verified -- GHC 9.12.4 -- design: **live-read** --- one source of truth.
-> File:line citations were verified against the tree at commit **2b20a8284**
-> (2026-09-07). The fixtures and tests they cite are on master, while
-> the designs below are the parked part. Re-run
-> `python3 ../tools/check-plan-citations.py docs/leader-desync-bug.md --restamp`
-> after the reading pass; what the stamp asserts is `CLAUDE.md`'s to say.
+> Secs. 01--09 cite code by permalinks pinned at commit **2b20a8284**, secs.
+> 10--11 by text anchors. The fixtures and tests they cite are on master, while
+> the designs below are the parked part.
 
 > **What this record is for, and what is frozen in it.** It is kept
 > indefinitely, for two readers: the one who wonders why the pointman code reads
@@ -24,26 +22,25 @@ unrepresentable.
 > meets the same shape of bug elsewhere, a cached copy of volatile singleton
 > state, and wants the analysis rather than the patch.
 >
-> secs. 01--09 describe the code *as of the stamped commit* and
-> are not maintained against later trees. Once the live-read design lands, sec.
-> 03's fourth writer still fires exactly where sec. 03 says it does; what stops
-> being true is the clause after it, "entirely invisible to `transition`'s
+> secs. 01--09 describe the code *as of the commit their permalinks pin*
+> and are not maintained against later trees. Once the live-read design lands,
+> sec. 03's fourth writer still fires exactly where sec. 03 says it does; what
+> stops being true is the clause after it, "entirely invisible to `transition`'s
 > captured `leader`", there being no captured leader left. The write itself
 > moves only with the abort-split, and then verbatim, into `abortMacroPlayback`.
-> Both are as it should be: a post-mortem describes a past state, and the stamp
-> says which one. Those sections take four kinds of upkeep and no fifth. One
-> is an outcome line per claim that resolves. The second, added 2026-08-07 when
-> the real frontend sharpened two of sec. 04's mechanisms, is a callout
-> that annotates a section without rewriting the prose under it ---
+> Both are as it should be: a post-mortem describes a past state,
+> and the permalinks say which one. Those sections take three kinds of upkeep
+> and no fourth. One is an outcome line per claim that resolves. The second,
+> added 2026-08-07 when the real frontend sharpened two of sec. 04's mechanisms,
+> is a callout that annotates a section without rewriting the prose under it ---
 > for a finding that changes what a reader would *do*, never one that merely
 > restates the history better; sec. 04 carries the only one. The third rides
 > the second and exists only for it: where a section's own prose states loosely
 > what a callout sharpens, a clause inside that prose may point
 > into the callout, adding no fact of its own; sec. 03 carries the only one.
-> The fourth, ruled 2026-09-08, is a citation range re-cut that changes
-> no prose: when a later commit slides a line a frozen section cites,
-> the pointer follows the text it named, so a restamp never asserts a reading
-> of a slid line. Stating two kinds while making an edit of the third is what
+> Until 2026-10-21 their citations were line numbers under a stamp, and a fourth
+> kind re-cut a range a later commit slid; the permalinks that replaced them
+> cannot slide. Stating two kinds while making an edit of the third is what
 > this paragraph said until 2026-09-04, when a review read the rule against
 > the commit that wrote it. The outcome lines:
 >
@@ -155,21 +152,22 @@ is the culprit:
 
 1. `pickLeader` (`HandleHelperM.hs`) --- the expected one, and the one `recCall`
    re-syncs against.
-2. **`RunM.hs:90`** --- a multi-actor run *rotates* `sleader` through the squad
-   every step (`updateClientLeader r`), stashing the original in `runLeader`.
-   Mid-run, `sleader /= runLeader` *by design*.
-3. **`HandleHumanGlobalM.hs:693`** --- `multiActorGoTo`, the mouse-driven
-   go-to-crosshair run, rotates `sleader` through the squad the same way.
-4. **`FrameM.hs:157`** --- `promptGetKey`, called by *every* dialog to draw
-   and read a key, does interrupted-macro cleanup: if a macro is pending
+2. **[RunM.hs#L90][runm-90]** --- a multi-actor run *rotates* `sleader` through
+   the squad every step (`updateClientLeader r`), stashing the original
+   in `runLeader`. Mid-run, `sleader /= runLeader` *by design*.
+3. **[HandleHumanGlobalM.hs#L693][hhg-693]** --- `multiActorGoTo`,
+   the mouse-driven go-to-crosshair run, rotates `sleader` through the squad
+   the same way.
+4. **[FrameM.hs#L157][framem-157]** --- `promptGetKey`, called by *every* dialog
+   to draw and read a key, does interrupted-macro cleanup: if a macro is pending
    and playback is interrupted, it runs `restoreLeaderFromRun`, which snaps
    `sleader` back to `runLeader`. This fires deep inside `displayChoiceScreen`,
    entirely invisible to `transition`'s captured `leader`.
 
 Re-verified by repo-wide grep, as such a claim must be: those four are the only
 writers under `Client/UI`. Outside it there are four more ---
-`Client/HandleAtomicM.hs:144` and three in the AI (`Client/AI.hs` twice,
-`Client/AI/PickActorM.hs` once) --- the eight that sec. 09 counts.
+[Client/HandleAtomicM.hs#L144][ha-144] and three in the AI (`Client/AI.hs`
+twice, `Client/AI/PickActorM.hs` once) --- the eight that sec. 09 counts.
 
 The AI's three writers are outside this design's scope and cannot go stale:
 no interactive wait exists on that side, so nothing an AI client reads can
@@ -204,10 +202,10 @@ Within a single item dialog, while a macro drives a stalled multi-hero run:
   sleader     dialog's `leader`    event
   -------     -----------------    -----------------------------------------
   A           ---                  multi-hero run starts;   runLeader = A
-  A -> C      ---                  run step rotates pointman  (RunM.hs:90)
+  A -> C      ---                  run step rotates pointman  (RunM.hs)
   C           C  (captured)        dialog opens; transition binds leader = C
   C -> A      C  (STALE!)          macro dies in dialog -> promptGetKey ->
-                                     restoreLeaderFromRun  (FrameM.hs:157)
+                                     restoreLeaderFromRun  (FrameM.hs)
   A           C                    A-Tab / C-Tab pressed ->
                                      pointmanCycleLevel C ...
                                        "next member after C" = A
@@ -242,23 +240,25 @@ the next-in-cycle candidate --- is what turns a silent no-op into a crash.*
 > those keys, which is the opening paragraph, the timeline above, step 4,
 > and sec. 05's self-healing sentence, that last one naming `A-Tab` alone
 > and so reading as the very case that cannot happen. A dialog binds one key per
-> cycling command, `revCmd`'s first (`InventoryM.hs:392`), and it reads
-> `brevMap`, which admits only bindings carrying a command category, where
-> the `bcmdMap` beside it takes every one
-> (`engine-src/Game/LambdaHack/Client/UI/Content/Input.hs:86-93`). `A-Tab`
-> carries none (`GameDefinition/game-src/Client/UI/Content/Input.hs:60`),
-> `C-Tab` carries `CmdMove` (`:62`). So `A-Tab` does nothing in a dialog while
-> still working at top level, through `bcmdMap` --- and a tester who presses
-> it there sees exactly what an unreached window looks like.
+> cycling command, `revCmd`'s first ([InventoryM.hs#L392][inv-392]),
+> and it reads `brevMap`, which admits only bindings carrying a command
+> category, where the `bcmdMap` beside it takes every one
+> ([engine-src/Game/LambdaHack/Client/UI/Content/Input.hs#L86-L93][einput-86]).
+> `A-Tab` carries none
+> ([GameDefinition/game-src/Client/UI/Content/Input.hs#L60][ginput-60]), `C-Tab`
+> carries `CmdMove` ([#L62][ginput-62]). So `A-Tab` does nothing in a dialog
+> while still working at top level, through `bcmdMap` --- and a tester who
+> presses it there sees exactly what an unreached window looks like.
 >
 > **The run that rotates the pointman is not the macro-driven one.** sec. 03's
 > `macroRun25` parenthetical is injected only `when runAhead`, the same flag
-> that cuts `runMembers` down to `[leader]` (`HandleHumanGlobalM.hs:322-333`).
-> So shift+direction --- `RunDir`, which passes `runAhead = True`
-> (`HandleHumanM.hs:111-112`) --- runs a single actor and rotates nobody, while
-> the rotating multi-actor run comes from the go-to-xhair family
-> (`HandleHumanGlobalM.hs:659`, `:671`, `:677`, all passing `False`) and injects
-> no macro. Step 1's "macro mixing squad-running with menu keys" therefore means
+> that cuts `runMembers` down to `[leader]`
+> ([HandleHumanGlobalM.hs#L322-L333][hhg-322]). So shift+direction --- `RunDir`,
+> which passes `runAhead = True` ([HandleHumanM.hs#L111-L112][hhm-111]) --- runs
+> a single actor and rotates nobody, while the rotating multi-actor run comes
+> from the go-to-xhair family ([HandleHumanGlobalM.hs#L659][hhg-659],
+> [#L671][hhg-671], [#L677][hhg-677], all passing `False`) and injects no macro.
+> Step 1's "macro mixing squad-running with menu keys" therefore means
 > a *recorded* macro driving a go-to-xhair run; shift+direction will not open
 > the window however long it plays.
 
@@ -394,14 +394,14 @@ of a **structural** fault, not a local one.
 
 "Who is the pointman" is stored in two places at once. The authoritative home
 is `sleader` in `StateClient`, written from eight sites --- `pickLeader`,
-the run rotation (`RunM.hs:90`), `restoreLeaderFromRun`, the mouse-run
-continuation (`HandleHumanGlobalM.hs:693`), the AI pickers, and --- decisively
---- `Client/HandleAtomicM.hs:144`, where the *server* reassigns the leader when
-the current one dies or is affected. Simultaneously, the same identity is frozen
-into a by-value `ActorId` argument threaded through the entire UI command layer:
-`chooseItemHuman`, `chooseItemDialogMode`, `transition`, `getItem`,
-`itemMenuHuman`, `projectHuman`, `applyHuman`, the `pointmanCycle*` and `xhair*`
-families --- dozens of functions.
+the run rotation ([RunM.hs#L90][runm-90]), `restoreLeaderFromRun`, the mouse-run
+continuation ([HandleHumanGlobalM.hs#L693][hhg-693]), the AI pickers, and ---
+decisively --- [Client/HandleAtomicM.hs#L144][ha-144], where the *server*
+reassigns the leader when the current one dies or is affected. Simultaneously,
+the same identity is frozen into a by-value `ActorId` argument threaded through
+the entire UI command layer: `chooseItemHuman`, `chooseItemDialogMode`,
+`transition`, `getItem`, `itemMenuHuman`, `projectHuman`, `applyHuman`,
+the `pointmanCycle*` and `xhair*` families --- dozens of functions.
 
 Two representations of one fact, kept in sync by hand. Because both are just
 `ActorId`, the compiler offers no help; a stale copy and a live one
@@ -441,22 +441,22 @@ approved. Not a crash; quiet incoherence with the same root cause.
 **(c) The apply dialog judges items for the actor it opened on.** The same shape
 as (a), one dialog over: `chooseItemApplyHuman`'s `psuit` calls
 `permittedApplyClient leader` *inside* the action
-(`HandleHumanLocalM.hs:579-585`) and hands it to `getGroupItem leader psuit`
-(`:586`), so `transition` re-runs the action per keypress but always
-for the entry actor, while the store permits switching. It differs from (a)
-exactly where the fix does: (a)'s call sits outside the closure and has to move
-in, this one is already inside and needs the *actor* read live ---
-so a conversion that puts the read at the top of the body leaves it standing.
-Unlike (a) and (b) it is pinned by no test; no test enters the apply dialog
-at all.
+([HandleHumanLocalM.hs#L579-L585][hhl-579]) and hands
+it to `getGroupItem leader psuit` ([#L586][hhl-586]), so `transition` re-runs
+the action per keypress but always for the entry actor, while the store permits
+switching. It differs from (a) exactly where the fix does: (a)'s call sits
+outside the closure and has to move in, this one is already inside and needs
+the *actor* read live --- so a conversion that puts the read at the top
+of the body leaves it standing. Unlike (a) and (b) it is pinned by no test;
+no test enters the apply dialog at all.
 
 **(d) The dialog can return a quantity read from the wrong actor's bag,
 and that one crashes.** `getFull` closes a bag accessor over the entry actor's
-body (`InventoryM.hs:264-265`), runs the whole dialog, and then looks the chosen
-items up in *that* bag with `EM.!` (`InventoryM.hs:290-292`). Switch
-the pointman mid-dialog and the choice comes from the new actor's store,
-so the lookup misses: forcing the quantity dies
-with `IntMap.!: key 117 is not an element of the map`. Pinned
+body ([InventoryM.hs#L264-L265][inv-264]), runs the whole dialog, and then looks
+the chosen items up in *that* bag with `EM.!`
+([InventoryM.hs#L290-L292][inv-290]). Switch the pointman mid-dialog
+and the choice comes from the new actor's store, so the lookup misses: forcing
+the quantity dies with `IntMap.!: key 117 is not an element of the map`. Pinned
 by `test/InventoryMUnitTests.hs`, which drives a scripted Tab and Return through
 the real dialog and asserts that message. It is the odd one out twice over:
 the failure is a crash rather than quiet incoherence, and what went stale
@@ -464,10 +464,10 @@ is not the identity but a value *derived* from it before the wait. Nobody has
 met it in play because the two single-item callers drop the quantity unforced
 --- `getGroupItem` matches `[(iid, _)]` --- and the move family's single-item
 path guards the same case with `EM.lookup` and a comment naming it, "selection
-from another actor" (`HandleHumanGlobalM.hs:775-777`); `moveItems`, reached
-with several items or from the ground, is what forces the thunk. That guard
-is worth reading twice: the author met this class here and defended one site
-of it.
+from another actor" ([HandleHumanGlobalM.hs#L775-L777][hhg-775]); `moveItems`,
+reached with several items or from the ground, is what forces the thunk.
+That guard is worth reading twice: the author met this class here and defended
+one site of it.
 
 Under the live-read design (sec. 10) every one of these reads the live pointman
 at each evaluation, so the family collapses uniformly --- bar (d), which
@@ -552,14 +552,15 @@ getLeaderUIMaybe = getsClient sleader
 
 The accessor's totality is architectural, not hopeful: `loopUI` is strictly
 sequential --- `receiveResponse` then `handleResponse`, one message at a time
-(`Client/LoopM.hs:188-190`; `loopAI` is shaped identically
-at `Client/LoopM.hs:153-154`, but no part of this argument rests on the AI side)
---- so while a dialog blocks inside `promptGetKey`, no `RespUpdAtomic` (hence
-no death, no server-side leader reassignment) can be processed, and the only
-mid-dialog `sleader` writers are client-local (`pickLeader`,
-`restoreLeaderFromRun`), both setting `Just`. With a witness in scope
-`getLeaderUI` is therefore total in practice; the `Maybe` variant is needed only
-at entry points and for future-proofing, not sprinkled through dialogs.
+(`Client/LoopM.hs:loopUI timeSinceLastQuery = do`; `loopAI` is shaped
+identically at `Client/LoopM.hs:loopAI = do`, but no part of this argument rests
+on the AI side) --- so while a dialog blocks inside `promptGetKey`,
+no `RespUpdAtomic` (hence no death, no server-side leader reassignment) can
+be processed, and the only mid-dialog `sleader` writers are client-local
+(`pickLeader`, `restoreLeaderFromRun`), both setting `Just`. With a witness
+in scope `getLeaderUI` is therefore total in practice; the `Maybe` variant
+is needed only at entry points and for future-proofing, not sprinkled through
+dialogs.
 
 How often the `Maybe` variant is actually needed is now counted rather
 than predicted. Of the read-live set in the migration document's inventory,
@@ -679,37 +680,41 @@ instead --- the ruling under the table. Parameters that mean "some actor"
 >
 > - **`psuitReq` must also be *called* from inside `psuit`** --- the placement
 >   is its caller's, not its own, `psuitReq`'s body
->   (`HandleHumanLocalM.hs:510-527`) waiting nowhere and so reading at the top
->   like anything else. Dropping its `ActorId` and leaving
->   `chooseItemProjectHuman`'s entry call (`HandleHumanLocalM.hs:367`)
->   as the only one still bakes a closure over the entry actor's body
->   and position, because the closure, not the call, is what the dialog
->   re-evaluates; sibling bug (a) would survive the conversion intact. A call
->   belongs in the `psuit` action (`HandleHumanLocalM.hs:389`), which
->   `transition` re-runs on every keypress. The word is *also*, not *instead*:
->   the entry call feeds two consumers that have to stay ahead of the dialog ---
->   the invalid-aim failure (`Left err -> failMsg err`,
->   `HandleHumanLocalM.hs:370`) and the `sitemSel` fast path (`:381`) ---
->   and executing "move the call" literally deletes both. What the spike
->   measured is the wholesale relocation, and it flips the fling-dialog test
->   exactly as its comment records; the landing form keeps those two consumers
->   on top of that.
+>   (`HandleHumanLocalM.hs:psuitReq leader = do`) waiting nowhere and so reading
+>   at the top like anything else. Dropping its `ActorId` and leaving
+>   `chooseItemProjectHuman`'s entry call
+>   (`HandleHumanLocalM.hs:mpsuitReq <- psuitReq leader`) as the only one still
+>   bakes a closure over the entry actor's body and position, because
+>   the closure, not the call, is what the dialog re-evaluates; sibling bug (a)
+>   would survive the conversion intact. A call belongs in the `psuit` action
+>   (`HandleHumanLocalM.hs:Here the player does not explicitly pick an item`),
+>   which `transition` re-runs on every keypress. The word is *also*,
+>   not *instead*: the entry call feeds two consumers that have to stay ahead
+>   of the dialog --- the invalid-aim failure (`Left err -> failMsg err`,
+>   `HandleHumanLocalM.hs:If xhair aim invalid`) and the `sitemSel` fast path
+>   (`HandleHumanLocalM.hs:isRight (psuitReqFun itemFull)`) --- and executing
+>   "move the call" literally deletes both. What the spike measured
+>   is the wholesale relocation, and it flips the fling-dialog test exactly
+>   as its comment records; the landing form keeps those two consumers on top
+>   of that.
 > - **The apply dialog needs the read, not the call, moved.**
 >   `chooseItemApplyHuman`'s `psuit` already calls `permittedApplyClient leader`
->   inside the action (`HandleHumanLocalM.hs:579-585`), so sec. 09's sibling (c)
->   survives any relocation: what must become live is the *actor*, inside
->   that action. Its second `permittedApplyClient leader` call,
->   in the `sitemSel` fast path outside the closure
->   (`HandleHumanLocalM.hs:571`), is the entry call above over again ---
->   pre-wait, in a branch that returns without opening the dialog --- and stays
->   as it is. Not measured against the battery, no test entering the apply
->   dialog --- which is the gap the migration document's sec. 02 step 6 closes.
+>   inside the action (`HandleHumanLocalM.hs:let psuit :: m Suitability`),
+>   so sec. 09's sibling (c) survives any relocation: what must become live
+>   is the *actor*, inside that action. Its second `permittedApplyClient leader`
+>   call, in the `sitemSel` fast path outside the closure
+>   (`HandleHumanLocalM.hs:fromRight False (mp (Just fromCStore) itemFull kit)`),
+>   is the entry call above over again --- pre-wait, in a branch that returns
+>   without opening the dialog --- and stays as it is. Not measured against
+>   the battery, no test entering the apply dialog --- which is the gap
+>   the migration document's sec. 02 step 6 closes.
 > - **`pickPoint` must read after the key, not before it.** Its wait
->   is `getConfirms` (`HandleHumanGlobalM.hs:1356`) and the leader's last use
->   is the `shift (bpos b)` in the body's final line
->   (`HandleHumanGlobalM.hs:1362`), so the read has to happen between the two,
->   not at the top where the body binds `b` today. Verified the same way,
->   against the `alterDir` test.
+>   is `getConfirms`
+>   (`HandleHumanGlobalM.hs:km <- getConfirms ColorFull keys slides`)
+>   and the leader's last use is the `shift (bpos b)` in the body's final line
+>   (`HandleHumanGlobalM.hs:return $ shift (bpos b)`), so the read has to happen
+>   between the two, not at the top where the body binds `b` today. Verified
+>   the same way, against the `alterDir` test.
 >
 > The rule generalizes, in three parts. **One:** for each converted function
 > that waits, find the wait and put the read below it; where the value is used
@@ -748,10 +753,11 @@ are the only entries carrying semantic weight. Return types simplify too:
 `m (FailOrCmd ())` --- its `ActorId` result existed only to propagate the switch
 that `sleader` now propagates by itself. That is checkable rather
 than plausible: the result has exactly one consumer, `chooseItemMenuHuman`
-(`HandleHumanGlobalM.hs:1640-1642`), which passes it straight
-on to `itemMenuHuman`, so the site becomes
+(`HandleHumanGlobalM.hs:Right leader2 -> itemMenuHuman leader2`), which passes
+it straight on to `itemMenuHuman`, so the site becomes
 `Right () -> itemMenuHuman witness cmdSemInCxtOfKM`; `chooseItemHuman`
-(`HandleHumanLocalM.hs:123`) already throws the `ActorId` away.
+(`HandleHumanLocalM.hs:either Just (const Nothing) <$> chooseItemDialogMode`)
+already throws the `ActorId` away.
 
 ### 4 -- Keep the boundary; move the refinement to the existence axis
 
@@ -802,13 +808,16 @@ cmdSemantics cmd = case cmdSemanticsLeader cmd of
 ```
 
 The 29 cases do not name `CmdLeader` directly, though: all but twelve go through
-two one-line helpers, `addLeader` and `weaveLeader` (`HandleHumanM.hs:220-225`;
-the third helper of that group, `addNoError`, sits just above them
-at `HandleHumanM.hs:217-218` and builds a `CmdNoNeed`, so it never carries
-the leader), and three of the twelve are point-free ---
-`pickLeaderWithPointerHuman`, `xhairUnknownHuman` and `xhairItemHuman`
-(`HandleHumanM.hs:170`, `:208`, `:209`). So the mechanical part of the sweep
-is two helper signatures plus the cases that spell the lambda out;
+two one-line helpers, `addLeader` and `weaveLeader`
+(`HandleHumanM.hs:addLeader :: Monad m`; the third helper of that group,
+`addNoError`, sits just above them at `HandleHumanM.hs:addNoError :: Monad m`
+and builds a `CmdNoNeed`, so it never carries the leader), and three
+of the twelve are point-free --- `pickLeaderWithPointerHuman`,
+`xhairUnknownHuman` and `xhairItemHuman`
+(`HandleHumanM.hs:fmap Left . pickLeaderWithPointerHuman`,
+`HandleHumanM.hs:fmap Left . xhairUnknownHuman`,
+`HandleHumanM.hs:fmap Left . xhairItemHuman`). So the mechanical part
+of the sweep is two helper signatures plus the cases that spell the lambda out;
 the point-free ones need `\witness ->` written back in wherever the handler
 stops taking the identity.
 
@@ -901,28 +910,28 @@ the executing actor cannot use.
 For dialogs that *select* something, that rule is what a player means:
 the prompts, the stores and the item list all follow the pointman,
 so the selection should too. The item-menu path already assumes it,
-at `HandleHumanGlobalM.hs:1622`, where the code makes an actor the pointman
-and then hands that same actor onwards --- a live read returns exactly what
-the argument carried.
+at `HandleHumanGlobalM.hs:itemMenuHuman newAid cmdSemInCxtOfKM`, where the code
+makes an actor the pointman and then hands that same actor onwards --- a live
+read returns exactly what the argument carried.
 
 There is a counter-case, and the design should name it rather than inherit
-it by accident. `projectItem` (`HandleHumanGlobalM.hs:967`) and `meleeAid`
-(`HandleHumanGlobalM.hs:386`) do not select; they *confirm* an action already
-chosen for a particular actor, and then call `updateTarget leader`.
-If the pointman changes during that confirmation --- which today only
-the macro-abort restore can do, since a yes/no prompt offers no switch key ---
-then acting for the new pointman honours the keystroke but not the intent:
-the player said yes to flinging *this* actor's item. So identity is pinned
-there, and the partition already provides the vocabulary for it: both keep
-an explicit `ActorId` parameter, meaning "the actor this confirmation is about",
-which is the "some actor" column rather than an oversight, and the migration
-document's inventory lists them under Keep for that reason --- together
-with `processTileActions`, a third such site, whose two confirmations sit one
-level down in helpers it calls, so there the wait test did not merely have
-to be overridden: it could not see the wait at all. It is the one place where
-this ruling overrides the wait test of 3 rather than agreeing with it,
-so an inventory that applies that test mechanically will misfile them, and one
-built for this very refactor did, twice.
+it by accident. `projectItem` (`HandleHumanGlobalM.hs:projectItem ::`)
+and `meleeAid` (`HandleHumanGlobalM.hs:meleeAid ::`) do not select; they
+*confirm* an action already chosen for a particular actor, and then call
+`updateTarget leader`. If the pointman changes during that confirmation ---
+which today only the macro-abort restore can do, since a yes/no prompt offers
+no switch key --- then acting for the new pointman honours the keystroke
+but not the intent: the player said yes to flinging *this* actor's item.
+So identity is pinned there, and the partition already provides the vocabulary
+for it: both keep an explicit `ActorId` parameter, meaning "the actor
+this confirmation is about", which is the "some actor" column rather
+than an oversight, and the migration document's inventory lists them under Keep
+for that reason --- together with `processTileActions`, a third such site, whose
+two confirmations sit one level down in helpers it calls, so there the wait test
+did not merely have to be overridden: it could not see the wait at all.
+It is the one place where this ruling overrides the wait test of 3 rather
+than agreeing with it, so an inventory that applies that test mechanically will
+misfile them, and one built for this very refactor did, twice.
 
 So the rule to write into the code is: read live wherever the interaction
 *chooses*, pin deliberately wherever it *confirms* --- and where a parameter
@@ -955,8 +964,8 @@ No regression is expected, for three grounded reasons.
 - **`getsClient sleader` is free.** In the real monad
   it is `getsClient f = CliImplementation $ gets $ f . cliClient`
   over `StateT CliState IO`, and it is `INLINE`d
-  (`MonadClientImplementation.hs:66-67`); reading the leader is then two
-  record-field projections (`cliClient`, then `_sleader`) --- O(1),
+  (`MonadClientImplementation.hs:INLINE getsClient`); reading the leader
+  is then two record-field projections (`cliClient`, then `_sleader`) --- O(1),
   no allocation, the same order as passing an `ActorId` (a newtype over `Int`)
   down the stack.
 - **None of the changed code is a hot path.** The leader-threaded functions
@@ -1048,7 +1057,7 @@ of the intended coverage.
 
 These numbers stay in this record rather than in the migration document, because
 a measurement does not expire, it merely ages: the protocol above is what
-a post-migration comparison must repeat. As of the stamp they have
+a post-migration comparison must repeat. So far they have
 **not** been re-measured after any part of the design; when they are,
 the comparison belongs here, next to the baseline it answers.
 
@@ -1084,3 +1093,22 @@ in `docs/leader-desync-migration.md` until it lands. Verified against GHC 9.12.4
 and a green suite --- the test count lives in that document's sec. 00, where
 it is maintained; the reproducer and battery are on master, the design
 is not yet.*
+
+[runm-90]: https://github.com/LambdaHack/LambdaHack/blob/2b20a82843658f8d3a9fb9524ffbcdc9ad3cc75c/engine-src/Game/LambdaHack/Client/UI/RunM.hs#L90
+[hhg-693]: https://github.com/LambdaHack/LambdaHack/blob/2b20a82843658f8d3a9fb9524ffbcdc9ad3cc75c/engine-src/Game/LambdaHack/Client/UI/HandleHumanGlobalM.hs#L693
+[framem-157]: https://github.com/LambdaHack/LambdaHack/blob/2b20a82843658f8d3a9fb9524ffbcdc9ad3cc75c/engine-src/Game/LambdaHack/Client/UI/FrameM.hs#L157
+[ha-144]: https://github.com/LambdaHack/LambdaHack/blob/2b20a82843658f8d3a9fb9524ffbcdc9ad3cc75c/engine-src/Game/LambdaHack/Client/HandleAtomicM.hs#L144
+[inv-392]: https://github.com/LambdaHack/LambdaHack/blob/2b20a82843658f8d3a9fb9524ffbcdc9ad3cc75c/engine-src/Game/LambdaHack/Client/UI/InventoryM.hs#L392
+[einput-86]: https://github.com/LambdaHack/LambdaHack/blob/2b20a82843658f8d3a9fb9524ffbcdc9ad3cc75c/engine-src/Game/LambdaHack/Client/UI/Content/Input.hs#L86-L93
+[ginput-60]: https://github.com/LambdaHack/LambdaHack/blob/2b20a82843658f8d3a9fb9524ffbcdc9ad3cc75c/GameDefinition/game-src/Client/UI/Content/Input.hs#L60
+[ginput-62]: https://github.com/LambdaHack/LambdaHack/blob/2b20a82843658f8d3a9fb9524ffbcdc9ad3cc75c/GameDefinition/game-src/Client/UI/Content/Input.hs#L62
+[hhg-322]: https://github.com/LambdaHack/LambdaHack/blob/2b20a82843658f8d3a9fb9524ffbcdc9ad3cc75c/engine-src/Game/LambdaHack/Client/UI/HandleHumanGlobalM.hs#L322-L333
+[hhm-111]: https://github.com/LambdaHack/LambdaHack/blob/2b20a82843658f8d3a9fb9524ffbcdc9ad3cc75c/engine-src/Game/LambdaHack/Client/UI/HandleHumanM.hs#L111-L112
+[hhg-659]: https://github.com/LambdaHack/LambdaHack/blob/2b20a82843658f8d3a9fb9524ffbcdc9ad3cc75c/engine-src/Game/LambdaHack/Client/UI/HandleHumanGlobalM.hs#L659
+[hhg-671]: https://github.com/LambdaHack/LambdaHack/blob/2b20a82843658f8d3a9fb9524ffbcdc9ad3cc75c/engine-src/Game/LambdaHack/Client/UI/HandleHumanGlobalM.hs#L671
+[hhg-677]: https://github.com/LambdaHack/LambdaHack/blob/2b20a82843658f8d3a9fb9524ffbcdc9ad3cc75c/engine-src/Game/LambdaHack/Client/UI/HandleHumanGlobalM.hs#L677
+[hhl-579]: https://github.com/LambdaHack/LambdaHack/blob/2b20a82843658f8d3a9fb9524ffbcdc9ad3cc75c/engine-src/Game/LambdaHack/Client/UI/HandleHumanLocalM.hs#L579-L585
+[hhl-586]: https://github.com/LambdaHack/LambdaHack/blob/2b20a82843658f8d3a9fb9524ffbcdc9ad3cc75c/engine-src/Game/LambdaHack/Client/UI/HandleHumanLocalM.hs#L586
+[inv-264]: https://github.com/LambdaHack/LambdaHack/blob/2b20a82843658f8d3a9fb9524ffbcdc9ad3cc75c/engine-src/Game/LambdaHack/Client/UI/InventoryM.hs#L264-L265
+[inv-290]: https://github.com/LambdaHack/LambdaHack/blob/2b20a82843658f8d3a9fb9524ffbcdc9ad3cc75c/engine-src/Game/LambdaHack/Client/UI/InventoryM.hs#L290-L292
+[hhg-775]: https://github.com/LambdaHack/LambdaHack/blob/2b20a82843658f8d3a9fb9524ffbcdc9ad3cc75c/engine-src/Game/LambdaHack/Client/UI/HandleHumanGlobalM.hs#L775-L777

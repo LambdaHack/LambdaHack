@@ -16,28 +16,26 @@ that must stay green across both refactors, which
 entirely in the post-mortem; nothing here is needed to understand or land it.
 
 > design: **functional core / imperative shell** -- planned strictly *after*
-> the live-read design -- file:line citations were verified against the tree
-> at commit **2b20a8284** (2026-09-07). The tests they cite are on master, while
-> this design is the parked part. Re-run
-> `python3 ../tools/check-plan-citations.py docs/promptgetkey-hygiene.md --restamp`
-> after the reading pass; what the stamp asserts is `CLAUDE.md`'s to say.
+> the live-read design -- the head of sec. 01 cites code by a permalink pinned
+> at commit **2b20a8284**, the rest by text anchors. The tests they cite
+> are on master, while this design is the parked part.
 
 > **What this record is for, and what is frozen in it.** It is kept indefinitely
 > as the specification of `promptGetKey`'s branch behaviour: the checklist
 > in sec. 01 is what any later refactor of that primitive has to preserve,
 > whether or not the abort-split itself ever happens.
 >
-> The excerpt at the head of sec. 01 describes the code *as of the stamped
-> commit* and is not maintained against later trees --- after the split lands
-> it is history, while the invariants under it are the part that survives.
-> The split sketched after those invariants is the live part, executed rather
-> than merely read --- `docs/leader-desync-migration.md` hands it to a session,
-> which will do exactly what it says and nothing it implies, so a gap here
-> is a question for that plan and not a judgment call at the keyboard.
-> It follows the post-mortem's model (its secs. 10--11 callout): a specification
-> until it lands or is abandoned, so its claims about today's tree
-> are re-verified with the migration document rather than left to age. Outcome
-> lines:
+> The excerpt at the head of sec. 01 describes the code *as of the commit
+> its permalink pins* and is not maintained against later trees --- after
+> the split lands it is history, while the invariants under it are the part
+> that survives. The split sketched after those invariants is the live part,
+> executed rather than merely read --- `docs/leader-desync-migration.md` hands
+> it to a session, which will do exactly what it says and nothing it implies,
+> so a gap here is a question for that plan and not a judgment call
+> at the keyboard. It follows the post-mortem's model (its secs. 10--11
+> callout): a specification until it lands or is abandoned, so its claims about
+> today's tree are re-verified with the migration document rather than left
+> to age. Outcome lines:
 >
 > - sec. 01 -- the checklist --- **pinned** on master by the AS series
 >   (`test/FrameMUnitTests.hs`), which must stay green across both refactors;
@@ -67,7 +65,7 @@ does interrupted-macro cleanup on one of its paths: restoring the leader
 naming-mismatch note; both words appear below), resetting playback, cancelling
 the run:
 
-**The hidden mutation** --- `FrameM.hs:138-167`
+**The hidden mutation** --- [FrameM.hs#L138-L167][framem-138]
 
 ```haskell
     KeyMacro kms -> do
@@ -113,11 +111,11 @@ below; the invariants bind whatever replaces it.
   this branch** --- every one of them reads with `ColorFull`. The suite
   is not wholly innocent of it: `test/Spec.hs`'s integration run reaches
   `promptGetKey` with `ColorBW` down the shutdown path (`UpdKillExit` ->
-  `WatchUpdAtomicM.hs:597`'s `displayMore ColorBW "Done."` ->
-  `SlideshowM.hs:421`), where `gunderAI` suppresses the effect --- entered
-  and unobserved, which pins nothing. The other unchecked bullet, and the reason
-  the migration document's sec. 04 step 1 asks for the missing case before
-  the extraction rather than after.
+  `WatchUpdAtomicM.hs:displayMore ColorBW "Done."` ->
+  `SlideshowM.hs:pkm <- promptGetKey`), where `gunderAI` suppresses the effect
+  --- entered and unobserved, which pins nothing. The other unchecked bullet,
+  and the reason the migration document's sec. 04 step 1 asks for the missing
+  case before the extraction rather than after.
 - The F1-help exemption (`keyPending /= KeyMacro [F1]` keeps a help-displaying
   macro alive through alarming messages) is part of the *interrupt decision*
   and moves into the pure `macroStep` with it (pinned by AS10).
@@ -159,17 +157,19 @@ action:
 > first choice, and that plan's own ruling closes it: `Frontend.hs` re-exports
 > `InputDecision`, so parking `macroStep` there is an import cycle.
 > The signature below takes a `KeyMacroFrame`, which lives
-> in `Client.UI.SessionUI` (`SessionUI.hs:124`), which imports
-> `Client.UI.Frontend` (`SessionUI.hs:28`); a home under `Client/UI/Frontend/`
-> therefore sits downstream of the very interface the frontends are reached
-> through, and `FrameM` importing it directly reaches past `Client.UI.Frontend`
-> into that directory, against `CLAUDE.md`'s module-as-interface convention.
-> `FrameM`'s own pure section has neither problem, so "entirely internal
-> to `FrameM`" below is exact, and the abort-split is gated on the live-read
-> design alone rather than on two pieces of work. Recorded here rather than left
-> to an outcome line because the wrong home was this section's heading, its lead
-> sentence and the label on the fence below, and a session executing the split
-> would have read all three before reaching any note.
+> in `Client.UI.SessionUI` (`SessionUI.hs:data KeyMacroFrame`), which imports
+> `Client.UI.Frontend`
+> (`SessionUI.hs:import Game.LambdaHack.Client.UI.Frontend`); a home
+> under `Client/UI/Frontend/` therefore sits downstream of the very interface
+> the frontends are reached through, and `FrameM` importing it directly reaches
+> past `Client.UI.Frontend` into that directory, against `CLAUDE.md`'s
+> module-as-interface convention. `FrameM`'s own pure section has neither
+> problem, so "entirely internal to `FrameM`" below is exact,
+> and the abort-split is gated on the live-read design alone rather than on two
+> pieces of work. Recorded here rather than left to an outcome line because
+> the wrong home was this section's heading, its lead sentence and the label
+> on the fence below, and a session executing the split would have read all
+> three before reaching any note.
 
 **Functional core** --- a pure section of `FrameM`
 
@@ -260,10 +260,10 @@ is the wrong property to check: it reads `sleader`, through `getArenaUI`,
 and the deferred read now happens *after* `abortMacroPlayback` has written it.
 What makes the move safe is `restoreLeaderFromRun`'s own guard --- it switches
 only to a run leader that `memActor` still finds on `getArenaUI`'s arena
-(`FrameM.hs:226-229`, pinned by AS13) --- so the arena, and hence `lidV`,
-is the same on both sides of the write. Said out loud, because in a document
-about branch-exactness an unremarked move across a write is exactly what
-a reader should distrust.
+(`FrameM.hs:memA <- getsState $ memActor runLeader arena`, pinned by AS13) ---
+so the arena, and hence `lidV`, is the same on both sides of the write. Said out
+loud, because in a document about branch-exactness an unremarked move across
+a write is exactly what a reader should distrust.
 
 The end state is worth stating plainly: `promptGetKey` still mutates.
 The macro-frame advance, the voicing message, `recordHistory`, the common
@@ -285,18 +285,19 @@ audit step then pins the enumeration in code.
 
 ### Blast radius and testability
 
-`promptGetKey` is called from exactly two engine modules, `Client/UI.hs:194`
-and `SlideshowM.hs:421`, and its type does not change, so the abort-split
-is entirely internal to `FrameM`. One of the two call sites is exercised:
-the store-dialog ESC test (`test/HandleHumanLocalMUnitTests.hs`) reaches
-`promptGetKey` through the `SlideshowM` site, while the AS contract series calls
-the primitive directly from `test/FrameMUnitTests.hs` and so exercises neither
-site --- it pins the primitive, which is what the split changes.
-`Client/UI.hs:194`, inside `stepQueryUI`, is entered by no unit test at all;
-nothing in the split reaches it, but a claim of coverage there would be wrong.
-The pure `macroStep` slots into the existing test style directly:
-`test/SessionUIMock.hs` already simulates macro-frame transitions
-(`unwindMacros`), so play/abort/no-macro decision tables live next
+`promptGetKey` is called from exactly two engine modules,
+`Client/UI.hs:promptGetKey ColorFull ovs False`
+and `SlideshowM.hs:pkm <- promptGetKey`, and its type does not change,
+so the abort-split is entirely internal to `FrameM`. One of the two call sites
+is exercised: the store-dialog ESC test (`test/HandleHumanLocalMUnitTests.hs`)
+reaches `promptGetKey` through the `SlideshowM` site, while the AS contract
+series calls the primitive directly from `test/FrameMUnitTests.hs`
+and so exercises neither site --- it pins the primitive, which is what the split
+changes. `Client/UI.hs:promptGetKey ColorFull ovs False`, inside `stepQueryUI`,
+is entered by no unit test at all; nothing in the split reaches it, but a claim
+of coverage there would be wrong. The pure `macroStep` slots into the existing
+test style directly: `test/SessionUIMock.hs` already simulates macro-frame
+transitions (`unwindMacros`), so play/abort/no-macro decision tables live next
 to established tests rather than requiring new harness machinery.
 
 ### What would falsify this
@@ -349,3 +350,5 @@ that would tidy it. The split is a recommendation, not applied changes; the work
 list lives in `docs/leader-desync-migration.md` until it lands. Verified against
 GHC 9.12.4 and a green suite --- the test count lives in that document's sec.
 00, where it is maintained.*
+
+[framem-138]: https://github.com/LambdaHack/LambdaHack/blob/2b20a82843658f8d3a9fb9524ffbcdc9ad3cc75c/engine-src/Game/LambdaHack/Client/UI/FrameM.hs#L138-L167

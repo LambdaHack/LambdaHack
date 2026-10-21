@@ -40,18 +40,19 @@ Citations name a file and a text anchor its cited line carries, which
 there is no stamp and nothing restamps, and a rewritten line fails the pass
 instead of sliding under it. Ruled 2026-09-08, applied 2026-09-14, when
 the first three landings had each cost a repair commit for lines they merely
-slid. The Log's entries quote the line numbers they corrected, as history. Some
-file basenames are duplicated among this repo's tracked `.hs` files, so every
-citation here to one of them names its directory as well: `Server/LoopM.hs` vs
-`Client/LoopM.hs`, the engine's vs the game's `Content/Input.hs`, the engine's
-vs the game's `Client/UI/Content/Screen.hs`, `GameDefinition`'s vs
-`definition-src`'s `Content/RuleKind.hs`, `Client/State.hs` vs `Common/State.hs`
-and `Server/State.hs`, and `Server/CommonM.hs` vs `Client/CommonM.hs`. Decisions
-*against* work, deferrals and their rationale are collected in Appendix B;
-the SDL2-vs-wasm audit record in Appendix C, its verified non-gaps
-and its 2026-09-07 gap list alike; the GHCJS->JS-backend port investigation
-in Appendix A. Whether an item has landed is answered by its row in the work
-list, and by whether its body here carries an outcome line.
+slid. The Log's entries name the line numbers they corrected in words,
+as history. Some file basenames are duplicated among this repo's tracked `.hs`
+files, so every citation here to one of them names its directory as well:
+`Server/LoopM.hs` vs `Client/LoopM.hs`, the engine's vs the game's
+`Content/Input.hs`, the engine's vs the game's `Client/UI/Content/Screen.hs`,
+`GameDefinition`'s vs `definition-src`'s `Content/RuleKind.hs`,
+`Client/State.hs` vs `Common/State.hs` and `Server/State.hs`,
+and `Server/CommonM.hs` vs `Client/CommonM.hs`. Decisions *against* work,
+deferrals and their rationale are collected in Appendix B; the SDL2-vs-wasm
+audit record in Appendix C, its verified non-gaps and its 2026-09-07 gap list
+alike; the GHCJS->JS-backend port investigation in Appendix A. Whether an item
+has landed is answered by its row in the work list, and by whether its body here
+carries an outcome line.
 
 > **What this record is for, and what is frozen in it.** It is kept
 > indefinitely, for two readers: the one who wonders why the web stack reads
@@ -177,9 +178,9 @@ only that the plan was written is one the next reader has to skip.
   an execution block; the arithmetic was simply wrong.
 - 2026-07-31 -- a blind review of that branch, and a study of whether keys can
   be injected into the SDL2 frontend. Corrected here: the determinism goldens
-  item cited `UnitTestHelpers.hs:630`, `:142` and `:588`, all of which resolve
-  and none of which is the definition named --- `test/CLAUDE.md` had the right
-  lines all along, so the disagreement between two documents is where
+  item cited lines 630, 142 and 588 of `UnitTestHelpers.hs`, all of which
+  resolve and none of which is the definition named --- `test/CLAUDE.md` had
+  the right lines all along, so the disagreement between two documents is where
   this should have been caught. And the RawFrontend contract's "no in-session
   run enters its event loop" is false: `xvfb-run` plays whole games through it,
   and XTEST keys reach it with nothing installed.
@@ -199,10 +200,10 @@ only that the plan was written is one the next reader has to skip.
   paragraph is R1's and R5's --- so the field is three questions now;
   its mention inventory listed the `nodeBench*` targets and their `SKILL.md`
   sentence, both claimed by 3.3's Split all along; and its renumbering count
-  said nine, missing the live `Frontend.hs:41-48` in the capability constants'
-  intro. The fourth is 0.2's bench-gate question, which still handed the gate
-  to a human run --- the reason 2.1's block retired when `xvfb-run` arrived;
-  0.2's Done and Hands back follow 2.1's now.
+  said nine, missing the live citation of lines 41--48 of `Frontend.hs`
+  in the capability constants' intro. The fourth is 0.2's bench-gate question,
+  which still handed the gate to a human run --- the reason 2.1's block retired
+  when `xvfb-run` arrived; 0.2's Done and Hands back follow 2.1's now.
 - 2026-08-05 -- the TS typecheck got its standing home: `make test-ts` runs
   `npx tsc --noEmit` before vitest --- inside the recipe line, so the Makefile's
   line count and every cited line stay put --- and the CI job inherits
@@ -282,10 +283,10 @@ only that the plan was written is one the next reader has to skip.
   it is read at. The intro now states that, the versions, and no hash.
 - 2026-09-04 -- a second reading of the same branch, this time with a blind walk
   of 3.1 by a session that tried to execute it, and the repairs for both folded
-  into one pass. From the earlier half: `Sdl.hs:645-669` re-ranged to `:636-669`
-  and `UnitTestHelpers.hs:207` to `:208`; 2.1's placement table restored
-  to its eight rows from six; 3.3's `--dbgMsgSer --logPriority 4` bullet
-  reversed, the two bench pairs sharing those flags rather than differing
+  into one pass. From the earlier half: `Sdl.hs`'s lines 645--669 re-ranged
+  to 636--669 and `UnitTestHelpers.hs`'s line 207 to 208; 2.1's placement table
+  restored to its eight rows from six; 3.3's `--dbgMsgSer --logPriority 4`
+  bullet reversed, the two bench pairs sharing those flags rather than differing
   on them; and `[fe-golden]` minted for the determinism goldens. From the walk:
   3.1 still scheduled a spike its own body records as performed, promised
   a one-range citation repair where the change moves every `Main.hs` citation
@@ -293,10 +294,10 @@ only that the plan was written is one the next reader has to skip.
   the change needs --- unguarded, an unused-import warning no gate of 3.1's
   would fail on. Counts and classifications found wrong: the header named four
   duplicated `.hs` basenames where the plan in fact cites six, so it states
-  the property now; `Sdl.hs:105` is a log priority among the surviving `toEnum`
-  sites called geometry; the `HighlightBackground` fill `#251F1F` is reachable
-  from neither of 0.2's two named generator sources, the gap ruling (4) had
-  already met over `cursorXhair`; the hot frontend files run a hundred
+  the property now; `Sdl.hs`'s line 105 is a log priority among the surviving
+  `toEnum` sites called geometry; the `HighlightBackground` fill `#251F1F`
+  is reachable from neither of 0.2's two named generator sources, the gap ruling
+  (4) had already met over `cursorXhair`; the hot frontend files run a hundred
   to a couple of hundred lines rather than a couple of hundred each; and two
   superlatives died to one count --- of the thirty **Owns** fields, sixteen name
   `tools/doc-refs-allow.txt` and seventeen name this document, so neither
@@ -489,6 +490,10 @@ only that the plan was written is one the next reader has to skip.
   the export's own, which then finishes and leaves the scheduler. The gap
   is GHC's, reported as GHC
   [#28010](https://gitlab.haskell.org/ghc/ghc/-/work_items/28010).
+- 2026-10-21 -- the line form retired from every document and refused
+  by the citation pass: the Log's quoted numbers are spelled in words, and two
+  colon-led line numbers among the practices, which no pass had read since
+  2026-09-14, became anchors.
 
 ## Repo facts the plan builds on
 
@@ -2606,25 +2611,25 @@ parser, UnitTestHelpers' stub options).
 no bump, confirming the analysis this field carried: `ClientOptions` derives
 `Generic` with `instance Binary ClientOptions`
 (`ClientOptions.hs:instance Binary ClientOptions`), is written into and read
-back out of every client save (`Client/State.hs:put soptions` and `:210`)
-and is carried by `UpdRestart` (`CmdAtomic.hs:UpdRestart FactionId`), so four
-`Bool`s becoming one constructor changes the wire format ---
-but `compatibleVersion` compares only the first three version-branch components
-(`Save.hs:compatibleVersion ::`) and the package is `0.12.0.0`, whose first
-three differ from every `0.11.*` release, so every pre-existing save is refused
-by version comparison before `Binary` ever sees it; recorded so no session
-re-derives the arithmetic. (2) Five constructors always, an unavailable one
-erroring at startup with a message naming the build: the type stays total
-everywhere --- `Binary` and `Show` identical per build, no feedback into (1) ---
-and asking for a frontend the build does not carry becomes an explicit error
-rather than a silent substitution, guard-order accidents becoming errors being
-this practice's whole theme; the path is real beyond the browser edge case,
-since 3.2's driver passes argv to pruned-chain builds. Fall-through
-to `FrontendDefault` and the CPP-pruned type are refused. (3) The parser reshape
-is sanctioned --- an `<|>` of `flag'`s, conflicts as parse errors, `--help` free
-to change --- with one constraint riding it: the long-form flag names stay
-byte-identical, so every Makefile target, script and doc invocation survives
-verbatim.
+back out of every client save (`Client/State.hs:put soptions`
+and `Client/State.hs:soptions <- get`) and is carried by `UpdRestart`
+(`CmdAtomic.hs:UpdRestart FactionId`), so four `Bool`s becoming one constructor
+changes the wire format --- but `compatibleVersion` compares only the first
+three version-branch components (`Save.hs:compatibleVersion ::`) and the package
+is `0.12.0.0`, whose first three differ from every `0.11.*` release, so every
+pre-existing save is refused by version comparison before `Binary` ever sees it;
+recorded so no session re-derives the arithmetic. (2) Five constructors always,
+an unavailable one erroring at startup with a message naming the build: the type
+stays total everywhere --- `Binary` and `Show` identical per build, no feedback
+into (1) --- and asking for a frontend the build does not carry becomes
+an explicit error rather than a silent substitution, guard-order accidents
+becoming errors being this practice's whole theme; the path is real beyond
+the browser edge case, since 3.2's driver passes argv to pruned-chain builds.
+Fall-through to `FrontendDefault` and the CPP-pruned type are refused. (3)
+The parser reshape is sanctioned --- an `<|>` of `flag'`s, conflicts as parse
+errors, `--help` free to change --- with one constraint riding it: the long-form
+flag names stay byte-identical, so every Makefile target, script and doc
+invocation survives verbatim.
 
 **The RawFrontend contract, written down and tested.** The engine-side protocol
 every frontend must fit is real but implicit: the `fshowNow` handshake's four
@@ -2651,9 +2656,10 @@ and checklist wait on neither (ruling (4)).
 (1) The four names --- `nullStartup`, `lazyStartup`, `display`,
 `frameTimeoutThread`, today only inside `#ifdef EXPOSE_INTERNAL`
 (`Frontend.hs:#ifdef EXPOSE_INTERNAL`), which defaults off
-(`LambdaHack.cabal:flag release`, `:135-136`) so a harness driving them would
-not compile --- hoist into the unconditional export list under the "internal
-and used in unit tests" group, the `emptyUnknownTile` precedent
+(`LambdaHack.cabal:flag release`, `LambdaHack.cabal:if flag(release)`)
+so a harness driving them would not compile --- hoist into the unconditional
+export list under the "internal and used in unit tests" group,
+the `emptyUnknownTile` precedent
 (`Common/Kind.hs:, emptyUnknownTile, emptyUIFaction`), riding this item's first
 commit as the Split now states; driving only `chanFrontendIO` is refused,
 a whole frontend chain being unable to isolate the `fshowNow` handshake
