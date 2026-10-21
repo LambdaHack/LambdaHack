@@ -31,6 +31,7 @@ import           System.IO.Unsafe (unsafePerformIO)
 import           Game.LambdaHack.Client.UI.Content.Screen
 import           Game.LambdaHack.Client.UI.Frame
 import           Game.LambdaHack.Client.UI.Frontend.Common
+import           Game.LambdaHack.Client.UI.Frontend.InputDecision
 import qualified Game.LambdaHack.Client.UI.Key as K
 import           Game.LambdaHack.Client.UI.PointUI
 import           Game.LambdaHack.Common.ClientOptions
@@ -102,18 +103,14 @@ foreign export javascript "lhKey"
   lhKey :: JSString -> Bool -> Bool -> Bool -> Bool -> IO ()
 
 -- | Handle a wheel event delivered from JS over a given screen cell
--- (0-based column/row). Only deltaY beyond a small epsilon counts,
--- to filter out zero-delta glitches.
+-- (0-based column/row).
 lhWheel :: Int -> Int -> Double -> Bool -> Bool -> Bool -> Bool -> IO ()
 lhWheel col row deltaY modCtrl modShift modAlt modMeta = do
   mrf <- readIORef rfRef
   forM_ mrf $ \rf -> do
     let modifier = modifierTranslate modCtrl modShift modAlt modMeta
         pUI = squareToUI $ PointSquare col row
-        mkey | deltaY < -0.01 = Just K.WheelNorth
-             | deltaY > 0.01 = Just K.WheelSouth
-             | otherwise = Nothing  -- probably a glitch
-    forM_ mkey $ \key -> saveKMP rf modifier key pUI
+    forM_ (decideWheel deltaY) $ \key -> saveKMP rf modifier key pUI
 
 foreign export javascript "lhWheel"
   lhWheel :: Int -> Int -> Double -> Bool -> Bool -> Bool -> Bool -> IO ()
@@ -126,12 +123,7 @@ lhMouseUp col row button modCtrl modShift modAlt modMeta = do
   forM_ mrf $ \rf -> do
     let modifier = modifierTranslate modCtrl modShift modAlt modMeta
         pUI = squareToUI $ PointSquare col row
-        key = case button of
-          0 -> K.LeftButtonRelease
-          1 -> K.MiddleButtonRelease
-          2 -> K.RightButtonRelease  -- not handled in contextmenu
-          _ -> K.LeftButtonRelease  -- any other is alternate left
-    saveKMP rf modifier key pUI
+    saveKMP rf modifier (decideMouseButton button) pUI
 
 foreign export javascript "lhMouseUp"
   lhMouseUp :: Int -> Int -> Int -> Bool -> Bool -> Bool -> Bool -> IO ()
