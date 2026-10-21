@@ -169,7 +169,7 @@ Browser-build runtime differences: there is no argv and no config file on disk -
 
 Author-generic style conventions are in `~/slop/CLAUDE.md`; what follows is LambdaHack-specific.
 
-- Frontend code follows functional-core/imperative-shell: rendering and input *decisions* belong in shared pure modules under `Client/UI/Frontend/` (tested against fixtures), while frontend modules keep only event capture, output mutation and plumbing. The review question for any new line in a frontend module: would another frontend have to copy it? (Of the shared modules, `InputDecision` exists, and `CellStyle` and `OverlayLayout` are being established by the plan's Phases 0 and 2; until they are, the rule binds new code.)
+- Frontend code follows functional-core/imperative-shell: rendering and input *decisions* belong in shared pure modules under `Client/UI/Frontend/` (tested against fixtures), while frontend modules keep only event capture, output mutation and plumbing. The review question for any new line in a frontend module: would another frontend have to copy it? (Of the shared modules, `InputDecision` and `CellStyle` exist, and `OverlayLayout` is being established by the plan's Phase 2; until it is, the rule binds new code.)
 
 ## Gotchas
 
