@@ -25,6 +25,7 @@ import qualified Content.RuleKind
 #endif
 
 import ActorStateUnitTests
+import CellStyleUnitTests
 import CommonMUnitTests
 import FfiCoverageUnitTests
 import FrameMUnitTests
@@ -47,6 +48,7 @@ main = defaultMain tests
 
 tests :: TestTree
 tests = testGroup "Tests" [ actorStateUnitTests
+                          , cellStyleUnitTests
                           , commonMUnitTests
                           , ffiCoverageUnitTests
                           , frameMUnitTests

@@ -8,6 +8,8 @@ module Game.LambdaHack.Client.UI.Frontend
   , frontendName
     -- * Input decisions shared by the frontends
   , KeyDecision(..), decideKey, decideWheel, decideMouseButton
+    -- * Cell styling shared by the frontends
+  , CellStyle(..), CellGlyphs(..), styleCell, rowColor, backlightRGB
 #ifdef EXPOSE_INTERNAL
     -- * Internal operations
   , FrontSetup, getKey, fchanFrontend, display, defaultMaxFps, microInSec
@@ -32,6 +34,7 @@ import           System.IO (hFlush, stdout)
 
 import           Game.LambdaHack.Client.UI.Content.Screen
 import           Game.LambdaHack.Client.UI.Frame
+import           Game.LambdaHack.Client.UI.Frontend.CellStyle
 import           Game.LambdaHack.Client.UI.Frontend.Common
 import           Game.LambdaHack.Client.UI.Frontend.InputDecision
 import qualified Game.LambdaHack.Client.UI.Frontend.Teletype as Teletype
