@@ -31,9 +31,9 @@
 > **Landing part of an item takes no outcome line**, and the row stays live:
 > a partial landing is recorded in the item's body as specification for what
 > remains, which is what R2 does today. **A standing item never lands** --- 0.3,
-> 1.4, R2, explicit widths and functional core are ongoing or recurring by their
-> own size cells --- so it retires when the campaign does, rather than acquiring
-> a hash.
+> 1.4 and R2 are ongoing or recurring by their own size cells, explicit widths
+> and functional core review rules by theirs --- so it retires when the campaign
+> does, rather than acquiring a hash.
 >
 > An item that proposes an artifact may take its outcome line **only once
 > its entries in `tools/doc-refs-allow.txt` can be deleted**; that file's
@@ -79,7 +79,6 @@ on 2026-09-14 and rehearsed the ritual --- the gates, the outcome line
 and the ledger flip --- so what 3.1 keeps is its ordering role: 1.2's per-frame
 case waits on it. It rehearses no allowlist deletion, proposing no artifact
 and so having no entry to delete; the items that build one carry that step.
-Phase 3 shares no file with Phases 0-2.
 
 **One item is reviewed entirely alone: the `Sdl.hs` drawing loop** (2.1's
 refactor together with its `CellStyle` adoption, which rewrite abutting regions
@@ -1821,7 +1820,8 @@ RawFrontend contract --- haddock and checklist any time; the native harness
     with 0.3
 determinism goldens --- native harness before 2.1; cross-backend under
     R2's test-wasm job
-R1 / R4 --- independent; R4 becomes loader-only after 3.1
+R1 --- independent but for its save-lag re-measurement, after 3.2
+R4 --- after 3.1, which leaves it loader-only
 R3 GHCJS rip-out --- one commit, after 2.5 (parity); Dom.hs/JSFile.hs stay
     as documented-dead examples
 R5 --- after 2.5 and 3.3, measurement first

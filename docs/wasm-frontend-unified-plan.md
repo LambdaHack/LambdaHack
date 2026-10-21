@@ -91,19 +91,20 @@ carries an outcome line.
 >   is deliberate: the pointman records have no such case and need no such word.
 >
 > The distinction a reader will trip on is **open** against **not applied**,
-> because the work list's ledger sorts by item number and not by it: 0.0 and 2.1
-> are two rows of one table and mean different things --- AltGraph chords
-> are lost in the shipped browser build today, while `OverlayLayout` is a module
-> nobody has written. The first is a bug report, the second a specification,
-> and only the second may be edited to match a tree that moved. The rule fires
-> at the item and the state lives in the ledger, so before editing any claim
-> in an item's body, read that item's row in the work list: `landed` means leave
-> it alone. The state *label* is deliberately not repeated at the item ---
-> a second copy of the column is what drifts out of step with it. Two things
-> are not that copy: the outcome line, which is the landing's own frozen record
-> rather than a label, and a `standing` item saying so where its **Split**
-> or **Owns** turns on it, as 1.4's and R2's do --- *this row never flips*
-> is a rule about their commits, not a reading of the column.
+> because the work list's ledger sorts by item number and not by it: 1.2 and 2.1
+> are two rows of one table and mean different things --- `C-P` reports
+> a screenshot that the shipped browser build never saves, while `OverlayLayout`
+> is a module nobody has written. The first is a bug report, the second
+> a specification, and only the second may be edited to match a tree that moved.
+> The rule fires at the item and the state lives in the ledger, so before
+> editing any claim in an item's body, read that item's row in the work list:
+> `landed` means leave it alone. The state *label* is deliberately not repeated
+> at the item --- a second copy of the column is what drifts out of step
+> with it. Two things are not that copy: the outcome line, which
+> is the landing's own frozen record rather than a label, and a `standing` item
+> saying so where its **Split** or **Owns** turns on it, as 1.4's and R2's do
+> --- *this row never flips* is a rule about their commits, not a reading
+> of the column.
 >
 > A row a ruling retires before it lands reads `retired -- <ruling>`, as R6's
 > does since B.10, the ruling being its outcome; the rest of the vocabulary
@@ -954,7 +955,7 @@ and even one that did would still pay the per-call wasm<->JS boundary cost ---
 it could not reproduce ghcjs-dom's zero-cost typed bindings, because GHCJS never
 crosses a runtime boundary at all). Mitigation: extend the `make test-wasm`
 battery (`run-wasm-test.mjs`) so every `foreign import/export javascript`
-in the wasm build --- today spread over `Wasm.hs`, `WasmFile.hs`,
+in the game's wasm build --- today spread over `Wasm.hs`, `WasmFile.hs`,
 *and* `GameDefinition/Main.hs` (the `lhStart` export) --- is exercised at least
 once with a known input/output. Sequenced deliberately: the **baseline battery
 for the existing surface lands before 0.1**, so the riskiest FFI change
