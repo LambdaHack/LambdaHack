@@ -34,7 +34,7 @@ drift, and `cabal build no-such-stanza` an unknown cabal target;
 `Game.LambdaHack.Client.NoSuch` a missing module of our namespace and
 `../lambdahack.github.io/no-such.js` missing in a live sibling: all five
 must fail, as must the wrapped-span row below.
-`--noSuchFlag` is listed, never failed, while `--restamp` is external,
+`--noSuchFlag` is listed, never failed, while `--foreign` is external,
 another tool's; `+noSuchFlag` stays unclassified.
 A span the formatter wrapped, `two words
 across a break`, must not hide `engine-src/Game/LambdaHack/Client/NoSuchTwin.hs`,
@@ -79,7 +79,7 @@ SELF_TEST_OK = ["Frontend/ANSI.hs", "tools/leader-census.py", "Makefile",
                 "make play", "make shot", "cabal LambdaHack",
                 "ghc_wasm_jsffi.mjs", "Game.LambdaHack.Client.UI",
                 "Definition.*", "--sniff", "+with_expensive_assertions",
-                "--restamp"]
+                "--foreign"]
 # Citation shapes pass 1 owns: skipped here, in no bucket and no row.
 SELF_TEST_SKIPPED = ["Point.hs:26,32", "Point.hs:26", "Point.hs:26-32"]
 SELF_TEST_UNCLASSIFIED = ["+noSuchFlag", "Point.hs:26,", "Ability.SkMove",
