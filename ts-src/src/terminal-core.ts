@@ -1,7 +1,8 @@
-// Pure rendering logic for the LambdaHack wasm web frontend: turn the engine's
-// raw AttrCharW32 cell words into glyphs + colors. No DOM, no wasm — this is the
-// only unit-tested part of the web UI (the loader and the actual drawing are
-// thin wiring around these functions).
+// Pure logic for the LambdaHack wasm web frontend: turn the engine's raw
+// AttrCharW32 cell words into glyphs + colors, frame indices into screen
+// cells, and a key event's modifiers into the engine's Alt. No DOM, no
+// wasm: the loader and the actual drawing are thin wiring around these
+// functions.
 //
 // Encoding (see LambdaHack's Definition/Color.hs attrCharToW32):
 //   char codepoint = w >>> 16 ; fg = (w >>> 8) & 0xFF ; bg = w & 0xFF
