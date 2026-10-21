@@ -1707,9 +1707,11 @@ and record the perturbation next to the test.
 **Split** --- three commits, ordered by which gate can run at all:
 the pty-driven ANSI smoke (verifiable in-session), the `xvfb-run` SDL smoke
 (likewise, since the display arrived --- see Hands back), and the `nodeBench`
-smoke, which waits on 3.3. The third carries the outcome line; the item is
-in no `tools/doc-refs-allow.txt` gate beyond the three target names this block
-introduces, which its own commit deletes as it lands.
+smoke, which waits on 3.3. The targets sit at the `Makefile`'s end, below every
+line of it a document cites by number, so that adding one slides no citation.
+The third carries the outcome line; the item is in no `tools/doc-refs-allow.txt`
+gate beyond the three target names this block introduces, which its own commit
+deletes as it lands.
 
 **Owns** --- `Makefile`, gaining `smokeANSI`, `smokeSdl` and `smokeNodeBench`,
 `.github/workflows/lint-and-test-suites.yml`, one job each,

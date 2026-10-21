@@ -2683,7 +2683,10 @@ a real SDL game for a few frames (a tiny `--stopAfterFrames` variant
 of `benchFrontendBattle`), a pty-driven ANSI startup/shutdown check, and ---
 once 3.2 exists --- a short `nodeBench` run of the reactor build, though
 on the null frontend, so `Wasm.hs` stays unexercised there. No shipped frontend
-goes permanently untested the way `Dom.hs` did.
+goes permanently untested the way `Dom.hs` did. Partly landed,
+in the `Makefile`'s `smokeANSI` and `smokeSdl`, which the playtest job runs
+on its optimized build, each gated as ruling (1) says. Still to do:
+the `nodeBench` smoke, after 3.3.
 
 **Rulings** --- all three ruled on 2026-08-07. (1) Each smoke gates on exit
 status *and* a frame-count assertion against the benchmark report, each reading
