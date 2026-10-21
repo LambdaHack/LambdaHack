@@ -558,6 +558,12 @@ keyTranslateWeb [' ']        _ = Space
 keyTranslateWeb ['\n']       _ = Return
 keyTranslateWeb ['\r']       _ = DeadKey
 keyTranslateWeb ['\t']       _ = Tab
+-- on some keyboards the key below ESC is paragraph, read as backquote,
+-- as Sdl.hs's keyTranslate reads it; but not under Shift alone, the only
+-- Shift the flag shows, since a browser reports the character typed, and
+-- a shifted paragraph is another key's (Shift-3 on German keyboards),
+-- while this key's shifted character varies
+keyTranslateWeb "\x00A7"     False = Char '`'
 -- standard characters
 keyTranslateWeb [c]          _ = Char c
 keyTranslateWeb s            _ = Unknown s

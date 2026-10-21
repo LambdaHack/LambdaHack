@@ -6,6 +6,8 @@ module Game.LambdaHack.Client.UI.Frontend
     FrontReq(..), ChanFrontend(..), chanFrontendIO
     -- * Re-exported part of the raw frontend
   , frontendName
+    -- * Input decisions shared by the frontends
+  , KeyDecision(..), decideKey, decideWheel, decideMouseButton
 #ifdef EXPOSE_INTERNAL
     -- * Internal operations
   , FrontSetup, getKey, fchanFrontend, display, defaultMaxFps, microInSec
@@ -31,6 +33,7 @@ import           System.IO (hFlush, stdout)
 import           Game.LambdaHack.Client.UI.Content.Screen
 import           Game.LambdaHack.Client.UI.Frame
 import           Game.LambdaHack.Client.UI.Frontend.Common
+import           Game.LambdaHack.Client.UI.Frontend.InputDecision
 import qualified Game.LambdaHack.Client.UI.Frontend.Teletype as Teletype
 import           Game.LambdaHack.Client.UI.Key (KMP (..))
 import qualified Game.LambdaHack.Client.UI.Key as K

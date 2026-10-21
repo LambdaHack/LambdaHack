@@ -31,6 +31,7 @@ import FrameMUnitTests
 import HandleHelperMUnitTests
 import HandleHumanGlobalMUnitTests
 import HandleHumanLocalMUnitTests
+import InputDecisionUnitTests
 import InventoryMUnitTests
 import ItemDescriptionUnitTests
 import ItemKindUnitTests
@@ -51,6 +52,7 @@ tests = testGroup "Tests" [ actorStateUnitTests
                           , handleHelperMUnitTests
                           , handleHumanGlobalMUnitTests
                           , handleHumanLocalMUnitTests
+                          , inputDecisionUnitTests
                           , inventoryMUnitTests
                           , itemDescriptionUnitTests
                           , itemKindUnitTests

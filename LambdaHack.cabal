@@ -249,6 +249,7 @@ library
                       Game.LambdaHack.Client.UI.FrameM
                       Game.LambdaHack.Client.UI.Frontend
                       Game.LambdaHack.Client.UI.Frontend.Common
+                      Game.LambdaHack.Client.UI.Frontend.InputDecision
                       Game.LambdaHack.Client.UI.Frontend.Teletype
                       Game.LambdaHack.Client.UI.HandleHelperM
                       Game.LambdaHack.Client.UI.HandleHumanGlobalM
@@ -491,6 +492,7 @@ test-suite test
                       HandleHelperMUnitTests
                       HandleHumanGlobalMUnitTests
                       HandleHumanLocalMUnitTests
+                      InputDecisionUnitTests
                       InventoryMUnitTests
                       ItemDescriptionUnitTests
                       ItemKindUnitTests
