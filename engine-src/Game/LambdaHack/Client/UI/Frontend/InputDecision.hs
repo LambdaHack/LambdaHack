@@ -35,6 +35,13 @@ data KeyDecision = KeyDecision
 -- Appendix C, records the behaviour. Dead keys reach only
 -- 'kdPreventBrowser'; if a rule ever does remap, the field returns and this
 -- comment goes.
+--
+-- Nor a pointer field: the position a key press carries is each frontend's
+-- own, SDL sending the mouse position with every key and the browser
+-- @PointUI 0 0@, and every key overwrites the session's @spointer@ with
+-- it, so a key binding for a @*WithPointer@ or @ByArea@ command would
+-- behave differently in the browser (docs/wasm-frontend-unified-plan.md,
+-- Appendix C).
 
 -- | Decide a key press, given the modifier held, unsquashed, and the key
 -- as the frontend translated it.
