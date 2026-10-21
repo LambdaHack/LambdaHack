@@ -2,7 +2,7 @@
 
 How to *invoke* the suite, and the engine-wide conventions and gotchas, are in the repo-root `CLAUDE.md` --- running `cabal test` from the repo root does not load this file, which arrives only when a session opens something under `test/`. What follows is for writing and reading the tests themselves.
 
-File:line citations were verified against the tree at commit `480875f01` (2026-10-21); the citation pass proves a cited line exists --- this stamp, that it still says what the claim around it needs.
+File:line citations were verified against the tree at commit `12914062a` (2026-10-21); the citation pass proves a cited line exists --- this stamp, that it still says what the claim around it needs.
 
 ## The mock and frontend stubs
 
@@ -40,6 +40,6 @@ A test carrying both concerns --- the bridge tests X1 and X2, whose `promptGetKe
 
 ## The suite runs one test at a time, and has to
 
-Don't add `-j` to a `--test-options` string, and don't read the absence of one as room to. The eleven `integrationTests` (`Spec.hs:66`) deadlock in parallel: each drives a whole `tieKnot`, and `tieKnot` blocks on two process-wide `unsafePerformIO` globals --- `workaroundOnMainThreadMVar` (`Misc.hs:140-142`), taken at `TieKnot.hs:155`, and `childrenServer` (`ProtocolM.hs:167-169`) --- of which there is one per process however many sessions want them. Measured 2026-07-31: the group passes in 7.95 s by default, in 5.62 s at `-j2`, and at `-j8` completes not one of its eleven before being killed at 150 s. The `-j2` figure is the part worth keeping in mind --- the concurrency is real and it is faster right up until it hangs, so a passing `-j2` run is no evidence that `-j` is safe.
+Don't add `-j` to a `--test-options` string, and don't read the absence of one as room to. The eleven `integrationTests` (`Spec.hs:70`) deadlock in parallel: each drives a whole `tieKnot`, and `tieKnot` blocks on two process-wide `unsafePerformIO` globals --- `workaroundOnMainThreadMVar` (`Misc.hs:140-142`), taken at `TieKnot.hs:155`, and `childrenServer` (`ProtocolM.hs:167-169`) --- of which there is one per process however many sessions want them. Measured 2026-07-31: the group passes in 7.95 s by default, in 5.62 s at `-j2`, and at `-j8` completes not one of its eleven before being killed at 150 s. The `-j2` figure is the part worth keeping in mind --- the concurrency is real and it is faster right up until it hangs, so a passing `-j2` run is no evidence that `-j` is safe.
 
 Nothing in the repository declares that default. It falls out of the binary not being `-threaded` --- a flag that appears in no tracked `.cabal`, `.hs` or `Makefile` line --- because tasty 1.5.4 sets `NumThreads` to `getNumProcessors` when `rtsSupportsBoundThreads` and to 1 otherwise. So the suite is sequential on a 16-core machine only for want of a flag, and adding `-threaded` for any unrelated reason would flip the default to 16 and hang the suite with no line of configuration changed. If it is ever added, pin these tests with `localOption (NumThreads 1)` on the `integrationTests` group in the same commit --- on that group alone, since the other tests are pure and parallelize correctly.
