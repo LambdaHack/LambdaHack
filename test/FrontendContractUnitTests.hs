@@ -26,7 +26,7 @@ import           Game.LambdaHack.Client.UI.Frame
 import           Game.LambdaHack.Client.UI.Frontend
   (KeyDecision (..), decideKey)
 import           Game.LambdaHack.Client.UI.Frontend.Common
-  (RawFrontend (..), createRawFrontend, resetChanKey, saveKMP)
+  (RawFrontend (..), resetChanKey, saveKMP)
 import           Game.LambdaHack.Client.UI.Key (KMP (..))
 import qualified Game.LambdaHack.Client.UI.Key as K
 import           Game.LambdaHack.Client.UI.PointUI
@@ -34,6 +34,8 @@ import           Game.LambdaHack.Client.UI.PointUI
 #ifdef USE_WASM
 import qualified Game.LambdaHack.Client.UI.Frontend.Wasm as Wasm
 import           Game.LambdaHack.Common.ClientOptions
+#else
+import qualified Game.LambdaHack.Client.UI.Frontend.Common as Common
 #endif
 
 frontendContractUnitTests :: TestTree
@@ -68,7 +70,7 @@ startupUnderTest :: ScreenContent -> IO RawFrontend
 startupUnderTest coscreen = Wasm.startup coscreen defClientOptions
 #else
 startupUnderTest coscreen =
-  createRawFrontend coscreen (\_ -> return ()) (return ())
+  Common.createRawFrontend coscreen (\_ -> return ()) (return ())
 #endif
 
 -- | The steps the SDL and wasm frontends' key handlers take with a key
