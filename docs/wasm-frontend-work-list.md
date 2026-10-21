@@ -355,8 +355,8 @@ then the two AltGraph fixes as **one** commit, with the highlight fix
 concurrent. The three fixes are one ledger row; the outcome line and the ledger
 flip ride whichever of the two fix commits lands last, after a citation-repair
 commit of its own: the AltGraph fix rewrites
-`terminal.ts:const alt = altModifier(e);`, cited here, so the sentence citing
-it is reworded rather than re-ranged, and the restamp rides that commit;
+`terminal-core.ts:export function altModifier`, cited here, so the sentence
+citing it is reworded rather than re-ranged, and the restamp rides that commit;
 the highlight fix rewrites one entry of `terminal-core.ts`'s
 `HIGHLIGHT_TO_COLOR` table, which this document does not cite ---
 its `terminal-core.ts:Cell background-fill` is `bgColor`'s fill, which the fix
@@ -365,7 +365,7 @@ leaves standing --- so that half owes no repair.
 **Owns** --- `ts-src/src/terminal.ts`, `ts-src/src/terminal-input.test.ts`,
 `ts-src/src/terminal-core.ts` and its test, `ts-src/package.json`
 and `package-lock.json`, `docs/wasm-frontend-unified-plan.md` --- the AltGraph
-commit rewrites `terminal.ts:const alt = altModifier(e);`, cited here,
+commit rewrites `terminal-core.ts:export function altModifier`, cited here,
 so this item owes the citation-repair commit and its restamp ---
 and `tools/doc-refs-allow.txt`, whose `ts-src/src/terminal-input.test.ts` entry
 the harness commit deletes as it creates the file.

@@ -609,11 +609,11 @@ layout with AltGr: an AltGr chord arrives with `A-`, an AltGr middle click aims
 without the description, as `A-MiddleButtonRelease` should, and an AltGr wheel
 arrives as `A-WHEEL-UP`.*
 
-- **AltGraph, keyboard.** `terminal.ts:onKey(e.key, e.ctrlKey,` forwarded
-  `e.altKey` only (since `403aafe13` it forwards the `alt` that `altModifier`
-  computes at `terminal.ts:const alt = altModifier(e);`);
-  `Dom.hs:modAltG <- ask` ORs `getAltKey || getAltGraphKey`, so AltGraph-only
-  chords (common on European layouts) are lost in the WASM build. Forward
+- **AltGraph, keyboard.** `terminal.ts:(e) => onKey(e)` forwarded `e.altKey`
+  only (since `403aafe13` it forwards the `alt` that `altModifier` computes
+  at `terminal-core.ts:export function altModifier`); `Dom.hs:modAltG <- ask`
+  ORs `getAltKey || getAltGraphKey`, so AltGraph-only chords (common on European
+  layouts) are lost in the WASM build. Forward
   `e.altKey || e.getModifierState("AltGraph")`; 0.1's redesign then subsumes
   the fix.
 - **AltGraph, mouse and wheel.** SDL folds AltGr (and the GUI keys) into Alt
