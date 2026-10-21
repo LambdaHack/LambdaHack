@@ -494,6 +494,9 @@ only that the plan was written is one the next reader has to skip.
   by the citation pass: the Log's quoted numbers are spelled in words, and two
   colon-led line numbers among the practices, which no pass had read since
   2026-09-14, became anchors.
+- 2026-10-22 -- ruled by Mikolaj: 0.2's `palette.ts` carries no page-chrome
+  colours, nothing 0.2 writes consuming them, and 1.1 takes the cursor's hotspot
+  from `cursor.ts`, as it takes the URI, rather than writing it by hand.
 
 ## Repo facts the plan builds on
 
@@ -853,11 +856,11 @@ to obey rather than to restate.
 **Generated files** --- computed by a tasty case, the freshness case,
 and committed under `ts-src/src/generated/`:
 
-1. `palette.ts`: `PALETTE` / `HIGHLIGHT_TO_COLOR` / page-chrome colors
-   from the real `colorToRGB`/`highlightToColor` (`Color` has no `Bounded` ---
-   enumerate `[Black .. BrWhite]` explicitly; `Highlight` via
-   `[minBound .. maxBound]`). One value the browser needs is reachable
-   from neither source: the `HighlightBackground` cell fill `#251F1F`, which
+1. `palette.ts`: `PALETTE` / `HIGHLIGHT_TO_COLOR` from the real
+   `colorToRGB`/`highlightToColor` (`Color` has no `Bounded` --- enumerate
+   `[Black .. BrWhite]` explicitly; `Highlight` via `[minBound .. maxBound]`).
+   One value the browser needs is reachable from neither source:
+   the `HighlightBackground` cell fill `#251F1F`, which
    is `Sdl.hs:greyRGBA = SDL.V4`'s `greyRGBA` --- a third
    of `colorToRGBA BrBlack` by its own comment, and carried by no `Color`
    constructor --- hand-copied at `Dom.hs:then "#251F1F"`,
@@ -1033,9 +1036,10 @@ an SVG data-URI cursor from SDL2's own bitmap definition (the ASCII art
 at `MouseCursor.hs:xhairCursorPixels ::` since `53f508d1a`, which
 `Sdl.hs:cursorXhair :: (VS.Vector` packs for SDL; 32x27, hotspot (13,13)
 at `MouseCursor.hs:xhairCursorHotspot = (13, 13)`), and `terminal.ts` switches
-to `cursor: url(<data-URI>) 13 13, crosshair` --- the keyword staying
-as the fallback. Pixel-parity with the native pointer, sourced from the one
-canonical definition. Verify by hovering, both before and after the 0.2 upgrade.
+to `cursor: url(<data-URI>) 13 13, crosshair`, taking the URI and the hotspot
+both from `cursor.ts` --- the keyword staying as the fallback. Pixel-parity
+with the native pointer, sourced from the one canonical definition. Verify
+by hovering, both before and after the 0.2 upgrade.
 
 ### 1.2 Screenshots: make `Ctrl+P` real (small)
 
