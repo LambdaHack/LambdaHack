@@ -515,22 +515,21 @@ is the whole correctness claim.
 ### 0.3 FFI-coverage test (baseline first, then per-commit)
 
 **Split** --- the import half first: seven of the eleven declarations
-that a repo-wide grep finds outside the dead `Dom.hs`/`JSFile.hs` ---
-`WasmFile.hs`'s six, reachable only through `Common/File.hs`'s seven exported
-functions since `WasmFile` is a hidden other-module, and `Wasm.hs`'s
-`js_submitFrame`, reached by `Frontend.Wasm.startup` plus `fdisplay`
-on a constructed `SingleFrame` --- together with the JS stubs
-(`globalThis.localStorage`, `globalThis.LZString`, `globalThis.lhSubmitFrame`)
-that `run-wasm-test.mjs` must install before `wasi.start` and does not have
-today, `LZString` being the real library, a devDependency since the page gate
-and never the sibling checkout's `lz-string*.js`, a deployed artifact, rather
-than an identity stub, so that the save path runs the compression it ships with.
-The same commit adds the `npm ci` that installs it to the `test-wasm` recipe
-and to CI's `test-wasm` job, neither of which runs one today,
-so `make test-wasm` wants an unsandboxed call from then on. Then the export
-half, its mechanism ruled 2026-08-07: a thin `ts-src/run-wasm-game.mjs` ---
-3.2's seed, created here and grown there --- that instantiates the real reactor
-binary from `make build-wasm` with the same stubs, `wasi.initialize`s it, calls
+in `Wasm.hs`, `WasmFile.hs` and `GameDefinition/Main.hs` --- `WasmFile.hs`'s
+six, reachable only through `Common/File.hs`'s seven exported functions since
+`WasmFile` is a hidden other-module, and `Wasm.hs`'s `js_submitFrame`, reached
+by `Frontend.Wasm.startup` plus `fdisplay` on a constructed `SingleFrame` ---
+together with the JS stubs (`globalThis.localStorage`, `globalThis.LZString`,
+`globalThis.lhSubmitFrame`) that `run-wasm-test.mjs` must install before
+`wasi.start`, `LZString` being the real library, a devDependency since the page
+gate and never the sibling checkout's `lz-string*.js`, a deployed artifact,
+rather than an identity stub, so that the save path runs the compression
+it ships with. The same commit adds the `npm ci` that installs it
+to the `test-wasm` recipe and to CI's `test-wasm` job, so `make test-wasm` wants
+an unsandboxed call from then on. Then the export half, its mechanism ruled
+2026-08-07: a thin `ts-src/run-wasm-game.mjs` --- 3.2's seed, created here
+and grown there --- that instantiates the real reactor binary
+from `make build-wasm` with the same stubs, `wasi.initialize`s it, calls
 `lhStart` and injects `lhKey`/`lhWheel`/`lhMouseUp`, asserting frames arrive;
 no argv is needed, defaults suffice for coverage. That covers the reactor
 linkage and `lhStart` itself, which no branch inside the command-linked test
@@ -552,13 +551,12 @@ and `run-wasm-game.mjs` entries), the `Makefile`'s `test-wasm` recipe
 and the `test-wasm` job of `.github/workflows/lint-and-test-suites.yml`,
 for the import half's `npm ci`, `docs/wasm-frontend-unified-plan.md`, the import
 half rewriting the driver's wiring cited here, and, in a commit of its own after
-the import half, `CLAUDE.md`'s session fact naming `build-ts` alone among
-the wasm targets as needing an unsandboxed call. Nothing else. The two commits
-are serial: the export half's driver imports the setup and stubs the import half
-installs --- defined once, shared by both drivers rather than copied. Later
-items add to the game driver, 0.1, 0.4, 1.2, 1.5 and 3.2 each their own coverage
-case, and to the test driver, 2.3 and the RawFrontend contract their cases
-and 1.5 its startup hook's stub.
+the import half, `CLAUDE.md`'s session fact on which wasm targets need
+an unsandboxed call. Nothing else. The two commits are serial: the export half's
+driver imports the setup and stubs the import half installs --- defined once,
+shared by both drivers rather than copied. Later items add to the game driver,
+0.1, 0.4, 1.2, 1.5 and 3.2 each their own coverage case, and to the test driver,
+2.3 and the RawFrontend contract their cases and 1.5 its startup hook's stub.
 
 **Done** --- `native`, `wasm`, `docs`, plus, on the export half,
 `make build-wasm` and a run of the seeded driver against the fresh reactor,
@@ -1315,12 +1313,12 @@ item, so no commit carries an outcome line and none has
 and ordered, ruled 2026-08-07: the cache commit first --- `~/.ghc-wasm`
 and the wasm cabal store, the toolchain bootstrap being the expensive part
 of every wasm job including the next one --- then a `make build-wasm` job, which
-feeds 0.3's export-half coverage when that lands. One non-job commit rode
-the same ruling and landed on master (`2b4b7d71f`): `build-ts` chains with `&&`
-now, so the deploy-carrying Done gates across this plan no longer trust an exit
-status that cannot fail. The rest land with the artifact each runs: 0.3's FFI
-battery, a short `nodeBench` smoke after 3.3, and the practice's `xvfb` SDL
-and pty ANSI smokes.
+feeds 0.3's export-half coverage, the game driver run against the reactor
+it builds. One non-job commit rode the same ruling and landed on master
+(`2b4b7d71f`): `build-ts` chains with `&&` now, so the deploy-carrying Done
+gates across this plan no longer trust an exit status that cannot fail. The rest
+land with the artifact each runs: a short `nodeBench` smoke after 3.3,
+and the practice's `xvfb` SDL and pty ANSI smokes.
 
 **Owns** --- `.github/workflows/lint-and-test-suites.yml`, plus the `Makefile`
 where a job needs a target of its own (the `--stopAfterFrames` variant
@@ -1617,18 +1615,18 @@ in the record.
 **Split** --- three commits. The haddock contract on `RawFrontend`'s fields
 (`Frontend/Common.hs:data RawFrontend = RawFrontend`) and the "how to add
 a frontend" checklist first, since the contract is what the harness then asserts
-against, and free to land alone ahead of 0.1 and 0.3 as a partial landing taking
+against, and free to land alone ahead of 0.1 as a partial landing taking
 no outcome line (the record's ruling (4)) --- carrying the hoist
 of `nullStartup`, `lazyStartup`, `display` and `frameTimeoutThread`
 into `Frontend.hs`'s unconditional export list under the "internal and used
 in unit tests" group (ruled 2026-08-07), so exports precede the harness
 that uses them; the native harness second, once 0.1 has created its module,
 driving `nullStartup`/`lazyStartup`/`Teletype.startup`; the wasm case third,
-and not before 0.3's baseline battery, because `ts-src/run-wasm-test.mjs`
-supplies no `globalThis.lhSubmitFrame` today --- 73 lines wiring WASI
-and `ghc_wasm_jsffi` and nothing else
-(`run-wasm-test.mjs:const wasi = new WASI({`) --- so the first foreign call out
-of `Wasm.hs` traps. The third commit carries the outcome line.
+on the `globalThis.lhSubmitFrame` stub 0.3's baseline battery installs
+in `ts-src/run-wasm-test.mjs`
+(`run-wasm-test.mjs:globalThis.lhSubmitFrame = (addr, w, h) => {`), without
+which the first foreign call out of `Wasm.hs` traps. The third commit carries
+the outcome line.
 
 **Owns** --- `Client/UI/Frontend/Common.hs` (haddock), `Client/UI/Frontend.hs`
 (export list only), `test/FrontendContractUnitTests.hs`, which 0.1 creates,
@@ -1830,7 +1828,7 @@ frontend CI smokes, ANSI and SDL --- early, beside 0.3-baseline: they
     (Phase 3 may run before or between Phases 1-2 --- it's independent, and
     doing it early unlocks the wasm-vs-native ratio and R1's save-lag
     measurement via 3.2's instrumented stub)
-R2 CI jobs --- grow them per phase (0.3's battery once it exists; a short
+R2 CI jobs --- grow them per phase (0.3's game driver with build-wasm; a short
     nodeBench smoke run joins after 3.3)
 0.3 FFI coverage --- after the baseline, incremental with every
     FFI-touching commit

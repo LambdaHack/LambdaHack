@@ -574,10 +574,11 @@ the `common options` stanza applies `USE_BROWSER`/`USE_WASM`/`USE_WASMFILE`
 to the test-suite under `os(wasi)`, so the suite is *compiled and linked*
 in the real browser configuration --- `WasmFile.hs` as the file backend,
 `Wasm.hs` as the chosen frontend --- which catches wasm-only compile and link
-breakage. Neither module's code is *executed*: the integration test passes
-`--frontendNull` and every fixture sets `sfrontendNull = True`, so `nullStartup`
-stands in for `Chosen.startup`. Running them is exactly what 0.3's FFI battery
-adds).
+breakage. 0.3's FFI battery executes both modules' code, `WasmFile.hs` through
+`Common/File.hs`'s exports and `Wasm.hs` through `startup` and `fdisplay`;
+the rest of the suite does not enter `Wasm.hs`, the integration test passing
+`--frontendNull` and every fixture setting `sfrontendNull = True`,
+so `nullStartup` stands in for `Chosen.startup`).
 
 **Claims here that no pass can re-run.** Five live assertions rested
 on experiments whose artifact was never recorded: 0.1's sync-export spike, 0.3's
@@ -2095,8 +2096,9 @@ yields `[]`, exactly as the item predicts.
 the game exe is a *reactor* (`_initialize` + exported `lhStart`). Grow
 the sibling `run-wasm-game.mjs` that 0.3's export half seeds (ruled 2026-08-07;
 the setup code is imported from the test driver, not copied) to: pass
-`[args...]` as WASI argv as it already does, `wasi.initialize(instance)`,
-then call and await `lhStart()`. Two integration points to cover:
+`[args...]` as WASI argv as `run-wasm-test.mjs` already does,
+`wasi.initialize(instance)`, then call and await `lhStart()`. Two integration
+points to cover:
 
 - **`WasmFile.hs` reaches for `globalThis.localStorage`
   and `globalThis.LZString` unconditionally** --- neither exists under Node.
@@ -2260,9 +2262,10 @@ unless CI runs it. Partly landed,
 in `.github/workflows/lint-and-test-suites.yml` (the hand-written workflow ---
 do not touch the generated haskell-ci one): a `test-wasm` job that installs
 ghc-wasm-meta and runs `make test-wasm`, and `make test-ts` split off as its own
-Node-only job, so TS regressions fail in seconds. Still to add, each when
-it exists: `make build-wasm` and the 0.3 FFI-coverage battery. Still to do
-regardless: cache `~/.ghc-wasm` and the wasm cabal store, the toolchain being
+Node-only job, so TS regressions fail in seconds. Still to add:
+`make build-wasm`, with a run of 0.3's game driver against the reactor
+it builds, the battery's import half riding the `test-wasm` job already. Still
+to do: cache `~/.ghc-wasm` and the wasm cabal store, the toolchain being
 the expensive part and bootstrapped from scratch on every run today.
 The frontend-CI-matrix practice (below) widens this with xvfb SDL and pty ANSI
 smokes.
@@ -2638,9 +2641,8 @@ digests from a seeded whole game --- in two stages. The native-only harness
 lands **before 2.1**: it guards the two most dangerous shared-code changes
 in the plan (2.1's `Sdl.hs` refactor and 2.4's flip) regardless of wasm.
 Then the same goldens run under `make test-wasm`, routine in CI since R2's first
-jobs landed --- the only kind of test that catches native-vs-wasm *behavioral*
-drift (FFI-adjacent paths, numeric assumptions); per-frontend unit tests can't.
-Medium effort.
+jobs landed --- catching native-vs-wasm *behavioral* drift (FFI-adjacent paths,
+numeric assumptions) that per-frontend unit tests can't. Medium effort.
 
 **Rulings** --- all three ruled on 2026-08-07. (1) Two golden families,
 as the body now states: frame-and-overlay digests --- the family 2.1's
@@ -2668,9 +2670,10 @@ of the stanza.
 at all. Teletype comes closest --- the `make test-gha` playtests drive
 `--frontendTeletype` through whole games. `make test-wasm` compiles and links
 `Wasm.hs` but runs the suite with `--frontendNull`, so the wasm frontend
-is never entered, and `make build-wasm`/`make build-ts` run in no workflow,
-leaving the reactor's `--export=` wiring exercised nowhere. SDL2 is reached only
-via the `slogPriority == Just 0` init-and-quit backdoor
+is entered only by 0.3's frame case, through `startup` and `fdisplay`,
+and `make build-wasm`/`make build-ts` run in no workflow, leaving the reactor's
+`--export=` wiring exercised by none. SDL2 is reached only via
+the `slogPriority == Just 0` init-and-quit backdoor
 (`Sdl.hs:if slogPriority == Just 0 then do`) --- which does run its font
 discovery and decoding, once per configured fontset, ahead of the backdoor
 branch, but never its event loop or renderer. Add an `xvfb-run` job driving
