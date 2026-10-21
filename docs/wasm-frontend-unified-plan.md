@@ -2096,18 +2096,18 @@ yields `[]`, exactly as the item predicts.
 the game exe is a *reactor* (`_initialize` + exported `lhStart`). Grow
 the sibling `run-wasm-game.mjs` that 0.3's export half seeds (ruled 2026-08-07;
 the setup code is imported from the test driver, not copied) to: pass
-`[args...]` as WASI argv as `run-wasm-test.mjs` already does,
-`wasi.initialize(instance)`, then call and await `lhStart()`. Two integration
-points to cover:
+`[args...]` as WASI argv, as `run-wasm-test.mjs` does and as 1.2 may already
+have made the seed do, `wasi.initialize(instance)`, then call and await
+`lhStart()`. Two integration points to cover:
 
 - **`WasmFile.hs` reaches for `globalThis.localStorage`
   and `globalThis.LZString` unconditionally** --- neither exists under Node.
-  The in-memory `localStorage` stub and the lz-string devDependency are 0.3's,
-  installed by the shared setup this driver imports (ruled 2026-08-07; lz-string
-  must come from npm, never the sibling checkout). With `--frontendNull`,
-  `Wasm.hs`'s frontend (and thus `lhSubmitFrame` etc.) never starts,
-  so the display stubs the seed installs are never called --- and this item adds
-  no stub of its own.
+  The in-memory `localStorage` stub is 0.3's and the lz-string devDependency
+  the page gate's, both installed by the shared setup this driver imports (ruled
+  2026-08-07; lz-string must come from npm, never the sibling checkout).
+  With `--frontendNull`, `Wasm.hs`'s frontend (and thus `lhSubmitFrame` etc.)
+  never starts, so the display stubs the seed installs are never called ---
+  and this item adds no stub of its own.
 - **Exit propagation:** `make` must see failures. Await the `lhStart()` promise
   --- measured on this toolchain, a Haskell `error`, `exitWith (ExitFailure 3)`
   and `exitWith ExitSuccess` all surface as the same rejected promise carrying
@@ -2140,14 +2140,15 @@ the seed installs the stubs deliberately, 0.3's coverage needing frames,
 and `--frontendNull` runs simply never call them. (b) The exit-propagation
 bullet's correction landed with the ruling fold itself --- the measured rule now
 stands in the bullet --- so no driver session can build against the wrong claim.
-(c) lz-string rides 0.3's import half, which needs it for the round-trip cases;
-this item adds nothing to `package.json`. The measurement stands recorded,
-and re-established 2026-08-07: `lhStart` under the scratch driver on an empty
-store issued `getItem`s for the config, saves and scores keys plus one
-uncompressed `setItem` of `config.ui.ini`, with the `LZString` stub untouched
---- so only a run that *saves* needs it, R1's measurement, not the benchmark,
-which leaves through `ReqUIGameDropAndExit` --- and the npm-registry moment
-belongs to 0.3's landing, where CI's `npm ci` covers it.
+(c) lz-string, a devDependency since the page gate, serves 0.3's import half,
+which needs it for the round-trip cases; this item adds nothing
+to `package.json`. The measurement stands recorded, and re-established
+2026-08-07: `lhStart` under the scratch driver on an empty store issued
+`getItem`s for the config, saves and scores keys plus one uncompressed `setItem`
+of `config.ui.ini`, with the `LZString` stub untouched --- so only a run
+that *saves* needs it, R1's measurement, not the benchmark, which leaves through
+`ReqUIGameDropAndExit` --- and the npm-registry moment belongs to 0.3's landing,
+where CI's `npm ci` covers it.
 
 ### 3.3 Repurpose the Makefile targets
 
@@ -2173,8 +2174,9 @@ belongs to 0.3's landing, where CI's `npm ci` covers it.
 counts; compare against `nativeBench` on the same machine for a first real
 wasm-vs-native data point (feeding R5). A crash or hang must fail the target
 (3.2's exit propagation). Once stable, a short `--stopAfterFrames` variant
-is a natural cheap addition to R2's CI job --- it exercises the whole engine
-headless under wasm, which nothing else in CI does.
+is a natural cheap addition to R2's CI job --- it runs the whole engine headless
+as the reactor, where `make test-wasm`'s integration test runs it only
+in the command-linked test binary.
 
 **Rulings** --- all three ruled on 2026-08-07. (a) The targets use
 `~/.ghc-wasm/env`'s node (v26.4.0 today, against v18.19.1 on `PATH`), stated
@@ -2213,8 +2215,8 @@ cycle to staging keys, then commit with a single generation-pointer key flip;
 readers resolve through the pointer. Test plan (runnable under `make test-wasm`
 with 0.3's localStorage stub): simulate an interrupted cycle --- staging keys
 written, pointer not flipped --- and assert the reader serves the previous
-generation intact; plus an `encodeEOF`/`strictDecodeEOF` round-trip in the wasm
-environment.
+generation intact; 0.3's `encodeEOF`/`strictDecodeEOF` round trip, which already
+runs in the wasm environment, stays green through the pointer.
 
 Two engine-side facts shape this goal:
 

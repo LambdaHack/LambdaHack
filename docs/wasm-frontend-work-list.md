@@ -363,12 +363,11 @@ leaves standing --- so that half owes no repair.
 
 **Owns** --- `ts-src/src/terminal.ts`, `ts-src/src/terminal-input.test.ts`,
 `ts-src/src/terminal-core.ts` and its test, `ts-src/package.json`
-and `package-lock.json` --- both written by 0.3 as well, for lz-string ---
-`docs/wasm-frontend-unified-plan.md` --- the AltGraph commit rewrites
-`terminal.ts:const alt = altModifier(e);`, cited here, so this item owes
-the citation-repair commit and its restamp --- and `tools/doc-refs-allow.txt`,
-whose `ts-src/src/terminal-input.test.ts` entry the harness commit deletes
-as it creates the file.
+and `package-lock.json`, `docs/wasm-frontend-unified-plan.md` --- the AltGraph
+commit rewrites `terminal.ts:const alt = altModifier(e);`, cited here,
+so this item owes the citation-repair commit and its restamp ---
+and `tools/doc-refs-allow.txt`, whose `ts-src/src/terminal-input.test.ts` entry
+the harness commit deletes as it creates the file.
 
 **Done** --- `ts`, `docs`.
 
@@ -556,7 +555,7 @@ an unsandboxed call. Nothing else. The two commits are serial: the export half's
 driver imports the setup and stubs the import half installs --- defined once,
 shared by both drivers rather than copied. Later items add to the game driver,
 0.1, 0.4, 1.2, 1.5 and 3.2 each their own coverage case, and to the test driver,
-2.3 and the RawFrontend contract their cases and 1.5 its startup hook's stub.
+2.3 its case and 1.5 its startup hook's stub.
 
 **Done** --- `native`, `wasm`, `docs`, plus, on the export half,
 `make build-wasm` and a run of the seeded driver against the fresh reactor,
@@ -656,8 +655,9 @@ with its `<a download>` click, and 0.3's coverage case
 in `ts-src/run-wasm-game.mjs` --- the reactor driver installs
 a `globalThis.lhPrintScreen` stub, injects `Ctrl+P` through `lhKey` and asserts
 one call with a filename of the expected shape, then runs again
-under `--printEachScreen` and asserts one call per frame. (2) needs (1), 0.4,
-0.3 for the reactor driver and 3.1 for the `--printEachScreen` run's argv,
+under `--printEachScreen`, the driver passing its extra arguments through
+as WASI argv, and asserts one call per frame. (2) needs (1), 0.4, 0.3
+for the reactor driver and 3.1 for the `--printEachScreen` run's argv,
 and carries the outcome line and the ledger flip.
 
 **Owns** --- `engine-src/Game/LambdaHack/Client/UI/Frontend/Sdl.hs`
@@ -667,12 +667,13 @@ under `engine-src/Game/LambdaHack/Client/UI/Frontend/`,
 reaches its consumers through (0.1's ruling (2) in the record, which binds every
 new module here), a new tasty module registered in `test/Spec.hs`
 and `LambdaHack.cabal`, `ts-src/src/terminal.ts`, `ts-src/src/loader.ts`,
-`ts-src/run-wasm-game.mjs`, and `docs/wasm-frontend-unified-plan.md`. 1.5 writes
-the same lines --- `startup`'s body and the `foreign import javascript` block
-in `Wasm.hs`, `loader.ts`'s `declare global` and its `globalThis.lh*` wiring,
-`terminal.ts`'s `Terminal` interface and returned object, and the driver ---
-so whichever of the two lands first shapes the other's diff.
-`../lambdahack.github.io` is redeployed by **Done**, not owned.
+`ts-src/run-wasm-game.mjs`, whose argv pass-through is this item's unless 3.2
+lands first, and `docs/wasm-frontend-unified-plan.md`. 1.5 writes the same lines
+--- `startup`'s body and the `foreign import javascript` block in `Wasm.hs`,
+`loader.ts`'s `declare global` and its `globalThis.lh*` wiring, `terminal.ts`'s
+`Terminal` interface and returned object, and the driver --- so whichever
+of the two lands first shapes the other's diff. `../lambdahack.github.io`
+is redeployed by **Done**, not owned.
 
 **Done** --- `native`, `ts`, `wasm`, `deploy`, `page`, `docs`, plus both runs
 of `ts-src/run-wasm-game.mjs` against a fresh reactor, as 1.5's Done says
@@ -1185,9 +1186,10 @@ the wrong bullet. The driver growth; then the landing: outcome line and ledger
 row --- the `run-wasm-game.mjs` deletion from `tools/doc-refs-allow.txt` rides
 0.3's export half, where the file now appears.
 
-**Owns** --- `ts-src/run-wasm-game.mjs` (0.3's seed, grown here)
-and this document. The package files, the lock file, the allowlist line
-and every stub are 0.3's per its ruling and this item's (c).
+**Owns** --- `ts-src/run-wasm-game.mjs` (0.3's seed, grown here; its argv
+pass-through is 1.2's if 1.2 lands first) and this document. The allowlist line
+and every stub are 0.3's per its ruling and this item's (c), and lz-string has
+been in the package and lock files since the page gate.
 
 **Done** --- `ts`, `wasm`, `docs`, plus `. ~/.ghc-wasm/env` && `T=$(mktemp -d)`
 && `W=$(wasm32-wasi-cabal list-bin exe:LambdaHack)` &&
@@ -1300,8 +1302,8 @@ can only simulate. R1a's number no longer waits on judgement --- the 100ms bar
 is ruled, so R1c's branch is decided by where the measurement lands.
 The substitute gate in Done is the interrupted-cycle case under `make test-wasm`
 --- staging keys written, pointer not flipped, the previous generation still
-served intact --- plus the `encodeEOF`/`strictDecodeEOF` round-trip in the wasm
-environment.
+served intact --- plus 0.3's `encodeEOF`/`strictDecodeEOF` round trip, which
+already runs in the wasm environment and stays green through the pointer.
 
 **Decide first** --- nothing; the rulings are the record's.
 
@@ -1631,12 +1633,10 @@ the outcome line.
 **Owns** --- `Client/UI/Frontend/Common.hs` (haddock), `Client/UI/Frontend.hs`
 (export list only), `test/FrontendContractUnitTests.hs`, which 0.1 creates,
 `test/Spec.hs`, the `test-suite test` stanza of `LambdaHack.cabal`
-(`LambdaHack.cabal:test-suite test`), `ts-src/run-wasm-test.mjs`, one job
-in `.github/workflows/lint-and-test-suites.yml`,
-and `docs/wasm-frontend-unified-plan.md`. The input-side cases land inside 0.1,
-which creates the test module and mints `[fe-invariant]`, and this item's
-harness extends it; 2.3 and 1.5, not 3.2, are the other items extending
-`ts-src/run-wasm-test.mjs`.
+(`LambdaHack.cabal:test-suite test`), and `docs/wasm-frontend-unified-plan.md`.
+The input-side cases land inside 0.1, which creates the test module and mints
+`[fe-invariant]`, and this item's harness extends it; 2.3 and 1.5 are the items
+extending `ts-src/run-wasm-test.mjs`; this one and 3.2 do not.
 
 **Done** --- `native`, `wasm`, `docs`, plus
 `cabal test --test-options='-p "/fe-invariant/"'` --- the series marker minted
