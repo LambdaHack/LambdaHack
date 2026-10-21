@@ -464,6 +464,15 @@ only that the plan was written is one the next reader has to skip.
   names its 0.3 and 3.1 dependencies, 1.5 stubs its startup hook in the test
   driver, through which 0.3's battery runs `Frontend.Wasm.startup`, and 0.4's
   Owns names 0.1's rewrite of the same mouse exports.
+- 2026-10-21 -- ruled by Mikolaj: the `Sdl.hs` drawing loop is reviewed alone,
+  on a branch carrying `Sdl.hs` and nothing else, as How this lands says,
+  and 0.2's and 2.1's Splits, which put `tools/checks.py` on that branch, yield.
+  With it, the loop's adoption of `CellStyle` moves from 0.2's last commit
+  to 2.1, ahead of the refactor on that branch: kept in 0.2, it would leave
+  that row open until 2.1's branch lands, 2.1's module landing inside 0.2's run
+  of commits. 2.1's module lands ahead of the branch and the explicit-widths
+  step after it, re-cutting that practice's ruling of 2026-10-20, which put
+  the step in the commit that removes the violation.
 
 ## Repo facts the plan builds on
 
@@ -1637,13 +1646,9 @@ the vertical crop and centring (`Sdl.hs:textSurfaceRaw allSpace =` --- blit
 mechanics with no canvas counterpart, declined deliberately rather
 than generalized), atlases, `SDL.copy`, `chooseAndDrawHighlight`,
 and the per-cell glyph decisions that are 0.2's business. Perf-gate the adoption
-as 0.2's is gated: before/after `make bench`
+as `CellStyle`'s is gated: before/after `make bench`
 (`benchFrontendBattle`/`benchFrontendCrawl`, fixed seeds), since `Sdl.hs`'s
-per-cell drawing is a hot path. Carry the `setMapChar` `toEnum` fix in the same
-commit if 0.2 has not already --- that line is in `setMapChar`, which sits
-between the `scaleSurfaceToTextureProp` this item shrinks and the `593-713`
-it extracts, so this is a one-line edit the file's holder makes rather
-than a by-product of the refactor.
+per-cell drawing is a hot path.
 
 **How the marker travels.** It is a rule, not a datum, and it travels as one.
 The rule is the single line `trimmed = width /= widthRaw && not pcAllSpace`
@@ -2697,25 +2702,25 @@ width, correct at frontend call sites only via the engine's
 is the same arithmetic with one *fewer* global read, in a non-hot once-per-frame
 loop, so it needs no benchmark. One live violation exists:
 **`Sdl.hs:let Point{..} = toEnum i`** (`setMapChar`'s
-`let Point{..} = toEnum i`) --- and it belongs to 0.2, whose adoption
-of `CellStyle` rewrites the per-cell drawing `setMapChar` drives. 2.1 does
-not rewrite that loop: it shrinks `scaleSurfaceToTextureProp` above
-it and extracts the overlay half from `Sdl.hs:drawMonoOverlay ::` below it,
-and `setMapChar` sits between the two, untouched by either. It holds the whole
-file all the same, so if 0.2 has not landed first 2.1 *carries* the one-line fix
-rather than inheriting it, which is what both **Split**s say.
-(`Dom.hs:let Point{..} = toEnum i` has the same pattern next to the correct form
+`let Point{..} = toEnum i`) --- and it belongs to `Sdl.hs`'s adoption
+of `CellStyle`, which rewrites the per-cell drawing `setMapChar` drives
+and which 2.1 carries ahead of its refactor. The refactor does not rewrite
+that loop: it shrinks `scaleSurfaceToTextureProp` above it and extracts
+the overlay half from `Sdl.hs:drawMonoOverlay ::` below it, and `setMapChar`
+sits between the two, untouched by either. (`Dom.hs:let Point{..} = toEnum i`
+has the same pattern next to the correct form
 at `Dom.hs:let Point{..} = punindex (rwidth coscreen) i`, but it's a dead
 example file, R3 --- leave it.) The rule binds all live and future frontend code
 from now on. The `Enum` instance itself and its global stay engine-internal,
 permanently --- the engine-wide removal of the hack is rejected outright
 (Appendix B has the ruling and the hack's documentation of record).
 
-**Rulings** --- ruled 2026-10-20 by Mikolaj: the grep for `Point{..} = toEnum`
-in the frontend modules, today a line of the work list's Done, becomes
-a standing check, a step of `tools/checks.py` added by the commit that removes
-the violation, so the rule has a mechanical floor once its one violation
-is gone. It catches that spelling only, so the review question stands beside it.
+**Rulings** --- ruled 2026-10-20 by Mikolaj, re-cut 2026-10-21: the grep
+for `Point{..} = toEnum` in the frontend modules, today a line of the work
+list's Done, becomes a standing check, a step of `tools/checks.py` added after
+the commit that removes the violation, which lands on a branch carrying `Sdl.hs`
+alone, so the rule has a mechanical floor once its one violation is gone.
+It catches that spelling only, so the review question stands beside it.
 
 **Functional core, imperative shell --- per frontend (the review bar).**
 `CellStyle`/`InputDecision`/`OverlayLayout` and the `ts-src`

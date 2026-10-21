@@ -82,13 +82,13 @@ and so having no entry to delete; the items that build one carry that step.
 Phase 3 shares no file with Phases 0-2.
 
 **One item is reviewed entirely alone: the `Sdl.hs` drawing loop** (2.1's
-refactor together with 0.2's `CellStyle` adoption, which rewrite abutting
-regions of one hot loop). It rewrites shipped native rendering; SDL2
-is exercised in CI nowhere beyond the init-and-quit backdoor; expensive
-assertions are off in every workflow; and its real gate is display-bound.
-Its branch carries `Sdl.hs` and nothing else; most of this document's `Sdl.hs`
-anchors sit in the region it rewrites, so the pass will name every one
-the refactor breaks, and the re-anchoring is a separate commit.
+refactor together with its `CellStyle` adoption, which rewrite abutting regions
+of one hot loop). It rewrites shipped native rendering; SDL2 is exercised in CI
+nowhere beyond the init-and-quit backdoor; expensive assertions are off in every
+workflow; and its real gate is display-bound. Its branch carries `Sdl.hs`
+and nothing else; most of this document's `Sdl.hs` anchors sit in the region
+it rewrites, so the pass will name every one the refactor breaks,
+and the re-anchoring is a separate commit.
 
 **2.4 splits**, so that each half gets the review it needs: the capability
 mechanism lands early, provably behaviour-preserving
@@ -120,7 +120,7 @@ sections of the record are frozen and which live is its head callout's to say.
 | 1.4 | banner/title truthfulness | trivial, recurring | feature landings | open -- standing |
 | 1.5 | `allFontsScale` honored in browser | small | 0.4 for the painter; 0.3 for the reactor driver; R4 for player control | open |
 | 1.6 | game-end page lifecycle: a finished or crashed game says so | small | --- | open |
-| 2.1 | `OverlayLayout` extraction + `Sdl.hs` on it | medium--large | 0.2 for `CellStyle`; determinism goldens (native harness) | not applied |
+| 2.1 | `OverlayLayout` extraction + `Sdl.hs` on it and on `CellStyle` | medium--large | 0.2 for `CellStyle`; determinism goldens (native harness) | not applied |
 | 2.2 | browser canvas overlay renderer + font wiring | medium | 2.1, 0.2, 0.4; 1.5 for the startup call | not applied |
 | 2.3 | overlay transport over JSFFI | medium | 2.1, 2.2; 0.3 for the end-to-end battery | not applied |
 | 2.4 | multi-font capability flip | tiny diff, big review | 2.1--2.3; determinism goldens | not applied |
@@ -140,7 +140,7 @@ sections of the record are frozen and which live is its head callout's to say.
 | RawFrontend contract | haddock contract, tasty harness, add-a-frontend checklist | medium | haddock and checklist: nothing; native harness after 0.1, which creates its module; wasm case with 0.3 | not applied |
 | determinism goldens | fixed-seed frame-and-overlay and final-state digests | medium | --- | not applied |
 | frontend CI smokes | xvfb SDL, pty ANSI, a short nodeBench run | small each | 3.3 for the wasm one | not applied |
-| explicit widths | `punindex`, never the `Enum` instance, in frontend code | review rule; its one live violation is 0.2's, or 2.1's to carry if 2.1 takes `Sdl.hs` first, and the fix adds a `tools/checks.py` step | --- | open -- standing |
+| explicit widths | `punindex`, never the `Enum` instance, in frontend code | review rule; its one live violation is 2.1's, and the fix adds a `tools/checks.py` step | --- | open -- standing |
 | functional core | the standing review bar for frontend modules | review rule; nothing to execute | --- | standing |
 
 ## Handing an item to a session
@@ -436,14 +436,14 @@ in the record), in the commit of their own the Split places; the contract's
 harness extends it. 0.0 lands first or is dropped, since the `lhKey` commit
 rewrites the very listener it fixes. Four items edit one sentence
 of `CLAUDE.md`: 0.1, 0.2 and 2.1 for the frontend bullet's three module names,
-0.2 or 2.1 again for the Gotchas bullet's "awaits its scheduled fix" ---
-whichever of them fixes `Sdl.hs:let Point{..} = toEnum i` --- R3 for the GHCJS
-mentions, and the pointman campaign's 04.4 for the sentences that campaign's
-landing falsifies, enumerated in its head callout. Where the edit rides is each
-item's **Split** to say, and they differ on purpose: 2.1 folds it
-into the re-anchoring commit that follows its `Sdl.hs` rewrite, R3
-into the rip-out whose deletions the reworded sentences describe, and 04.4
-into the deletion commit that resolves the clause.
+2.1 again for the Gotchas bullet's "awaits its scheduled fix", which its fix
+of `Sdl.hs:let Point{..} = toEnum i` falsifies, R3 for the GHCJS mentions,
+and the pointman campaign's 04.4 for the sentences that campaign's landing
+falsifies, enumerated in its head callout. Where the edit rides is each item's
+**Split** to say, and they differ on purpose: 2.1 folds it into the re-anchoring
+commit that follows its `Sdl.hs` rewrite, R3 into the rip-out whose deletions
+the reworded sentences describe, and 04.4 into the deletion commit that resolves
+the clause.
 
 **Done** --- `native`, `ts`, `wasm`, `page`, `docs`, plus a run
 of `ts-src/run-wasm-game.mjs` against the fresh reactor, injecting `lhKey`
@@ -465,23 +465,21 @@ now sits.
 
 ### 0.2 `CellStyle` + generated TS tables and fixtures
 
-**Split** --- four commits. `CellStyle` plus its tasty tests, consumed
+**Split** --- three commits. `CellStyle` plus its tasty tests, consumed
 by nobody; then the freshness case, the committed `ts-src/src/generated/` files
 with their `extra-source-files` lines, and `terminal-core.ts` consuming
 the generated palette and asserting `styledCell` against every fixture;
 then the crosshair commit the record's ruling (4) requires --- the ASCII-art
 alpha/BW pair out of `Sdl.hs` into an SDL-free pure module of its own
 under `engine-src/Game/LambdaHack/Client/UI/Frontend/`, `cursorXhair` reading
-it, and `cursor.ts` generated from it, which is also 1.1's final form;
-then `Sdl.hs` adopting `CellStyle`, `colorToRGBA` derived
-from `Color.colorToRGB`, and the `Sdl.hs:let Point{..} = toEnum i` `punindex`
-fix with the explicit-widths step it adds to `tools/checks.py`, behind the bench
-gate. The outcome line, and the deletion of this item's
+it, and `cursor.ts` generated from it, which is also 1.1's final form.
+`Sdl.hs`'s drawing loop adopts `CellStyle` in 2.1, on the branch How this lands
+reviews alone. The outcome line, and the deletion of this item's
 `tools/doc-refs-allow.txt` entries --- `CellStyle.hs`, `palette.ts`,
 `fixtures.json`, `cursor.ts`, `ts-src/src/generated/`,
 `test/CellStyleUnitTests.hs`, and the crosshair module's, added under whatever
 name the executing session mints for it and before that name is written anywhere
---- ride the last to land, which cannot precede the crosshair commit.
+--- ride the crosshair commit, the last of the three.
 
 **Owns** --- new `engine-src/Game/LambdaHack/Client/UI/Frontend/CellStyle.hs`,
 the crosshair-art module beside it that the record's ruling (4) requires,
@@ -491,43 +489,26 @@ modified `LambdaHack.cabal`, `test/Spec.hs`, `ts-src/tsconfig.json`
 (`resolveJsonModule`, absent today, without which importing `fixtures.json`
 fails `tsc --noEmit`), `ts-src/src/terminal-core.ts` and its test,
 `ts-src/src/terminal.ts`,
-`engine-src/Game/LambdaHack/Client/UI/Frontend/Sdl.hs`,
-`engine-src/Game/LambdaHack/Client/UI/Frontend.hs` (export list only,
-re-exporting both new modules per 0.1's ruling (2) in the record),
-`tools/checks.py` and `tools/mutants.py` for the explicit-widths step
-and its mutant if this item carries the fix, `tools/doc-refs-allow.txt`,
-`docs/wasm-frontend-unified-plan.md` --- the last commit rewrites `setMapChar`,
-`setMonoChar`, `setSquareChar` and `colorToRGBA`, all anchored here,
-so this item owes the re-anchoring --- and, in a commit of its own after
-the landing, `CLAUDE.md` --- the frontend bullet, whose second module name
-this item delivers, and the Gotchas bullet's "awaits its scheduled fix"
-for `Sdl.hs:let Point{..} = toEnum i`, which this item's last commit retires
-*if it is the first of the two to reach that line* --- 2.1 edits `Sdl.hs` too
-and carries the one-line fix when it lands first, though its own edits fall
-either side of `setMapChar` rather than inside it, and the retirement follows
-the fix rather than the item, so whichever lands first carries it and the other
-finds the clause already gone. The generated files are **committed**,
-not ignored: they are what the freshness case compares against and what
-`make build-ts` bundles. The four commits are strictly serial: each consumes
-what the previous adds, and the first and last both encode the highlight rule.
+`engine-src/Game/LambdaHack/Client/UI/Frontend/Sdl.hs`, which the crosshair
+commit alone writes, `engine-src/Game/LambdaHack/Client/UI/Frontend.hs` (export
+list only, re-exporting both new modules per 0.1's ruling (2) in the record),
+`tools/doc-refs-allow.txt`, `docs/wasm-frontend-unified-plan.md`,
+for the outcome line and whatever re-anchoring the pass names after
+the crosshair commit rewrites `cursorXhair`, and, in a commit of its own after
+the landing, `CLAUDE.md`'s frontend bullet, whose second module name this item
+delivers. The generated files are **committed**, not ignored: they are what
+the freshness case compares against and what `make build-ts` bundles. The three
+commits are strictly serial: each consumes what the previous adds.
 
 **Done** --- `native`, `ts`, `wasm`, `docs`, plus the freshness case's two
 proofs --- one byte changed in a committed copy fails `cabal test`
 and the regeneration switch restores it, and `tar tzf` over `cabal sdist`'s
-tarball lists the three copies --- and, on the `Sdl.hs` commit, the `make bench`
-pair under `xvfb-run`.
+tarball lists the three copies.
 
 **Hands back** --- *browser*, for `cursor.ts`: pixel parity against the native
-pointer is the claim and only an eye settles it. The bench gate on the `Sdl.hs`
-commit stopped handing back a display when `xvfb-run` arrived: the pair runs
-in-session now, as 2.1's block records --- llvmpipe numbers comparing only
-against each other, and each report harvested between runs through the stdout
-redirect `CLAUDE.md` describes --- and a run on the real display is handed back
-only if the llvmpipe verdict is challenged, per Decide first (3)'s ruling.
-Done's substitutes are the fixture equality between `CellStyle.styleCell`
-and `styledCell` --- which is the whole correctness claim, the bench gate being
-about cost --- and `cabal test`'s SDL cases, which run font discovery
-and decoding but never the renderer.
+pointer is the claim and only an eye settles it. Done's substitute
+is the fixture equality between `CellStyle.styleCell` and `styledCell`, which
+is the whole correctness claim.
 
 **Decide first** --- nothing; the rulings are the record's.
 
@@ -918,26 +899,30 @@ the deployed game, so it is read in review.
 
 ### 2.1 Extract `OverlayLayout`: the pure half of `Sdl.hs`'s overlay drawing
 
-**Split** --- four commits. (1) the module and its tests with no consumer:
+**Split** --- six commits. (1) the module and its tests with no consumer:
 `engine-src/Game/LambdaHack/Client/UI/Frontend/OverlayLayout.hs`,
 `test/OverlayLayoutUnitTests.hs` with the freshness case that writes 2.2's
 branch-complete `propCutoff`/`propFit` table into `ts-src/src/generated/`, both
 of `LambdaHack.cabal`'s module lists and the table's `extra-source-files` line,
-and `test/Spec.hs`; the module goes in the library's *unconditional*
-`exposed-modules`, not the `else` branch that carries `Sdl.hs`,
-so `make test-wasm` compiles it too and the wasm consumer inherits a module
-already proved to build there. (2) the `Sdl.hs` refactor onto it, carrying
-the `setMapChar` `toEnum` fix, with the explicit-widths step it adds
-to `tools/checks.py`, if 0.2 has not already. (3) the re-anchoring
+`Frontend.hs`'s re-export of it, and `test/Spec.hs`; the module goes
+in the library's *unconditional* `exposed-modules`, not the `else` branch
+that carries `Sdl.hs`, so `make test-wasm` compiles it too and the wasm consumer
+inherits a module already proved to build there. (2) `Sdl.hs` adopting
+`CellStyle`, `colorToRGBA` derived from `Color.colorToRGB`,
+and the `Sdl.hs:let Point{..} = toEnum i` `punindex` fix. (3) the `Sdl.hs`
+refactor onto `OverlayLayout`. (4) the explicit-widths step
+in `tools/checks.py`, with its mutant in `tools/mutants.py` and its place
+in `CLAUDE.md`'s list of what `check-all tools` runs. (5) the re-anchoring
 of this plan's and the repo-root `CLAUDE.md`'s `Sdl.hs` citations against
 the shrunken file, most of which the pass will name broken, plus that file's
-frontend bullet, whose last module name this item delivers, retiring the clause
---- and, if (2) carried the `Sdl.hs:let Point{..} = toEnum i` fix, the Gotchas
-bullet's "awaits its scheduled fix" clause with it, the retirement following
-the fix rather than the item --- mandatory and separate, per the freeze callout.
-(4) the outcome line naming (2)'s hash, the ledger flip, and the deletion
-of this item's two `tools/doc-refs-allow.txt` entries. (3) before (4),
-so a correction is never in the same diff as the landing record.
+frontend bullet, whose last module name this item delivers, retiring the clause,
+and the Gotchas bullet's "awaits its scheduled fix" clause, which (2)'s fix
+falsifies --- mandatory and separate, per the freeze callout. (6) the outcome
+line naming (2)'s and (3)'s hashes, the ledger flip, and the deletion
+of this item's two `tools/doc-refs-allow.txt` entries. (2) and (3)
+are the branch How this lands reviews alone, carrying `Sdl.hs` and nothing else,
+so (1) lands ahead of it, a partial landing, and (4) to (6) after it; (5) before
+(6), so a correction is never in the same diff as the landing record.
 
 **Owns** --- `engine-src/Game/LambdaHack/Client/UI/Frontend/OverlayLayout.hs`,
 `test/OverlayLayoutUnitTests.hs`, `test/Spec.hs`, `LambdaHack.cabal`,
@@ -947,26 +932,27 @@ so a correction is never in the same diff as the landing record.
 re-exporting the new module per 0.1's ruling (2) in the record),
 `docs/wasm-frontend-unified-plan.md`, `CLAUDE.md`, `tools/doc-refs-allow.txt`,
 and `tools/checks.py` and `tools/mutants.py` for the explicit-widths step
-and its mutant if (2) carries the fix. It does not write the wire encoder:
-that lands in the same module file under 2.3. 0.2 first is preferable, since
-then (2) inherits the `toEnum` fix instead of carrying it.
+and its mutant. It does not write the wire encoder: that lands in the same
+module file under 2.3.
 
 **Done** --- `native`, `wasm`, `docs`, plus `make test-medium`, the `make bench`
-pair under `xvfb-run`, and the freshness case's proof as 0.2's Done states it.
+pair under `xvfb-run` on each of (2) and (3), and the freshness case's proof
+as 0.2's Done states it.
 
 **Hands back** --- hands back nothing on display, as of 2026-07-31. `make bench`
 (`Makefile:bench: benchBattle benchAnimBattle`) includes
 `benchFrontendBattle`/`benchFrontendCrawl` (`Makefile:benchFrontendBattle:`,
 `Makefile:benchFrontendCrawl:`), which pass neither `--frontendNull`
 nor `--frontendLazy` and so drive the real SDL renderer --- exactly the per-cell
-hot path (2) rewrites, and the reason the headless `benchBattle`/`benchCrawl`
-cannot substitute: they never enter that path at all. `xvfb-run` is installed
-now, so that pair runs here, and so does the `make frontendCrawl` look, frame
-by frame through `xwd` --- subject to the two conditions a bare install does
-not supply, which are CLAUDE.md's to state. One limit is not lifted:
-the headless renderer is llvmpipe, so a before/after pair must be measured
-wholly under it and never against a number from the real display, which is what
-(2)'s before/after script is still for.
+hot path (2) and (3) rewrite, and the reason the headless
+`benchBattle`/`benchCrawl` cannot substitute: they never enter that path at all.
+`xvfb-run` is installed now, so that pair runs here, and so does
+the `make frontendCrawl` look, frame by frame through `xwd` --- subject
+to the two conditions a bare install does not supply, which are CLAUDE.md's
+to state. One limit is not lifted: the headless renderer is llvmpipe,
+so a before/after pair must be measured wholly under it and never against
+a number from the real display, which is what the before/after scripts of (2)
+and (3) are still for.
 
 **Decide first** --- nothing; the rulings are the record's.
 
@@ -1756,15 +1742,15 @@ so an in-session frame *count* is a gate and an in-session *timing* is not.
 **Frontends pass widths explicitly.** Design and rulings in the record.
 
 **Owns** --- nothing --- this is a review rule, not an item to execute.
-Its whole executable residue is `Sdl.hs:let Point{..} = toEnum i`, owned by 0.2,
-which rewrites that loop, or carried by 2.1 if 2.1 takes `Sdl.hs` first,
-together with the `CLAUDE.md` Gotchas clause the fix retires and the standing
-check the fix adds: the grep below as a step of `tools/checks.py`, a mutant
-in `tools/mutants.py` restoring the `toEnum` form in `Sdl.hs` to prove the step
-bites, and the step's place in `CLAUDE.md`'s list of what `check-all tools` runs
-(the record's ruling); fixing it standalone contradicts the coupling stated just
-above and collides with both items' diffs. The rule retires with the campaign
-rather than taking a hash.
+Its whole executable residue is `Sdl.hs:let Point{..} = toEnum i`, owned by 2.1,
+whose `CellStyle` adoption rewrites that loop, together with the `CLAUDE.md`
+Gotchas clause the fix retires and the standing check the fix adds: the grep
+below as a step of `tools/checks.py`, a mutant in `tools/mutants.py` restoring
+the `toEnum` form in `Sdl.hs` to prove the step bites, and the step's place
+in `CLAUDE.md`'s list of what `check-all tools` runs (the record's ruling);
+fixing it standalone contradicts the coupling stated just above and collides
+with that commit's diff. The rule retires with the campaign rather than taking
+a hash.
 
 **Done** --- no gate of its own, only
 `! git grep -nE 'Point\{\.\.\} = toEnum' -- 'engine-src/Game/LambdaHack/Client/UI/Frontend/*.hs' ':!engine-src/Game/LambdaHack/Client/UI/Frontend/Dom.hs'`.
@@ -1831,8 +1817,8 @@ frontend CI smokes, ANSI and SDL --- early, beside 0.3-baseline: they
     capability's landing ends with its own banner commit, per 1.4's rule
     (1.2 and 1.5 come after 0.4, 1.5's full player-facing form after
     R4 too; 1.2's per-frame case waits on 3.1)
-2.1 OverlayLayout extraction + Sdl.hs refactor (native-only,
-    playtest- and bench-gated)
+2.1 OverlayLayout extraction + Sdl.hs onto it and CellStyle
+    (native-only, playtest- and bench-gated)
 2.2 browser overlay renderer (visual no-op)
 2.3 overlay transport (visual no-op, additive FFI)
 2.4 capability flip (the visible change; heaviest review)
