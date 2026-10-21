@@ -911,18 +911,18 @@ inherits a module already proved to build there. (2) `Sdl.hs` adopting
 `CellStyle`, `colorToRGBA` derived from `Color.colorToRGB`,
 and the `Sdl.hs:let Point{..} = toEnum i` `punindex` fix. (3) the `Sdl.hs`
 refactor onto `OverlayLayout`. (4) the explicit-widths step
-in `tools/checks.py`, with its mutant in `tools/mutants.py` and its place
-in `CLAUDE.md`'s list of what `check-all tools` runs. (5) the re-anchoring
-of this plan's and the repo-root `CLAUDE.md`'s `Sdl.hs` citations against
-the shrunken file, most of which the pass will name broken, plus that file's
-frontend bullet, whose last module name this item delivers, retiring the clause,
-and the Gotchas bullet's "awaits its scheduled fix" clause, which (2)'s fix
-falsifies --- mandatory and separate, per the freeze callout. (6) the outcome
-line naming (2)'s and (3)'s hashes, the ledger flip, and the deletion
-of this item's two `tools/doc-refs-allow.txt` entries. (2) and (3)
-are the branch How this lands reviews alone, carrying `Sdl.hs` and nothing else,
-so (1) lands ahead of it, a partial landing, and (4) to (6) after it; (5) before
-(6), so a correction is never in the same diff as the landing record.
+in `tools/checks.py`, with its mutant in `tools/mutants.py`. (5)
+the re-anchoring of this plan's and the repo-root `CLAUDE.md`'s `Sdl.hs`
+citations against the shrunken file, most of which the pass will name broken,
+plus that file's frontend bullet, whose last module name this item delivers,
+retiring the clause, and the Gotchas bullet's "awaits its scheduled fix" clause,
+which (2)'s fix falsifies --- mandatory and separate, per the freeze callout.
+(6) the outcome line naming (2)'s and (3)'s hashes, the ledger flip,
+and the deletion of this item's two `tools/doc-refs-allow.txt` entries. (2)
+and (3) are the branch How this lands reviews alone, carrying `Sdl.hs`
+and nothing else, so (1) lands ahead of it, a partial landing, and (4) to (6)
+after it; (5) before (6), so a correction is never in the same diff
+as the landing record.
 
 **Owns** --- `engine-src/Game/LambdaHack/Client/UI/Frontend/OverlayLayout.hs`,
 `test/OverlayLayoutUnitTests.hs`, `test/Spec.hs`, `LambdaHack.cabal`,
@@ -1743,12 +1743,11 @@ so an in-session frame *count* is a gate and an in-session *timing* is not.
 Its whole executable residue is `Sdl.hs:let Point{..} = toEnum i`, owned by 2.1,
 whose `CellStyle` adoption rewrites that loop, together with the `CLAUDE.md`
 Gotchas clause the fix retires and the standing check the fix adds: the grep
-below as a step of `tools/checks.py`, a mutant in `tools/mutants.py` restoring
-the `toEnum` form in `Sdl.hs` to prove the step bites, and the step's place
-in `CLAUDE.md`'s list of what `check-all tools` runs (the record's ruling);
-fixing it standalone contradicts the coupling stated just above and collides
-with that commit's diff. The rule retires with the campaign rather than taking
-a hash.
+below as a step of `tools/checks.py` and a mutant in `tools/mutants.py`
+restoring the `toEnum` form in `Sdl.hs` to prove the step bites (the record's
+ruling); fixing it standalone contradicts the coupling stated just above
+and collides with that commit's diff. The rule retires with the campaign rather
+than taking a hash.
 
 **Done** --- no gate of its own, only
 `! git grep -nE 'Point\{\.\.\} = toEnum' -- 'engine-src/Game/LambdaHack/Client/UI/Frontend/*.hs' ':!engine-src/Game/LambdaHack/Client/UI/Frontend/Dom.hs'`.

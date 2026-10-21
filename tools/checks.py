@@ -2,14 +2,10 @@
 
 `{bin}` is the shared bin directory (`~/.claude/bin`), `{root}` this
 directory, `tools/`. What is here is the seconds-to-minutes half of
-CLAUDE.md's standing checks: this repository's tools' self-tests, the
-shared reference checker's over this repository's own rows, the two linters
-over the Python and the shell here, the mechanical document passes over
-every tracked `.md` but CHANGELOG.md, the defect records in both directions
-and the mutants. The document checkers themselves are the shared ones in
-~/slop/tools, whose own checks run there. The Haskell build, the test
-suites, the playtests and hlint stay in CLAUDE.md's list: a build inside a
-command meant to run often makes it run rarely.
+CLAUDE.md's standing checks. The document checkers themselves are the shared
+ones in ~/slop/tools, whose own checks run there. The Haskell build, the
+test suites, the playtests and hlint stay in CLAUDE.md's list: a build
+inside a command meant to run often makes it run rarely.
 
 A linter that cannot be found is a finding and not a skip: a probe decides
 and its silence fails the step by name. The reference check is BLOCKED at
