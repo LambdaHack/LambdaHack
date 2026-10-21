@@ -234,23 +234,23 @@ settles a count claim. Never pipe one, or a **Done** line: the trap bullet below
 has why.
 
 **Tasty tags are a repo-global namespace, shared with the pointman campaign.**
-`-p` matches by containment with no anchor available; `CLAUDE.md`'s tasty bullet
-carries both halves --- the anchor's two failure modes on this very `contract`
-example, and containment on `LR1`, which selects LR1 together with LR10 through
-LR13. A tag is therefore claimed by containment, not by equality, and a marker
-that merely *contains* another campaign's is not a fresh claim but a silent
-join. `[contract]` and `[LR-flip]` are the pointman campaign's,
-and `docs/leader-desync-migration.md` pins the size of each series step by step,
-so a marker of ours falling inside either filter moves a count that document
-treats as a finding. This campaign claims two series: `[fe-invariant]`
-for the frontend contract cases, and `[fe-golden]` for the determinism goldens,
-whose bare `golden` would be an ordinary English word inviting exactly
-the containment this paragraph is about. A new series here claims a marker
-containing no other campaign's, and the minting item owes two proofs, one per
-direction, because the listing settles only one of them. Freshness:
-`cabal test --test-options='--list-tests -p "/<marker>/"'` must select nothing
-before the series exists, which is the same command that reports a count
-for a marker that does exist and so is not a vacuous check. Containment:
+`-p` matches by containment with no anchor available; `~/slop/CLAUDE.md`'s tasty
+bullet carries both halves, the anchor's two failure modes and containment,
+and `test/CLAUDE.md` shows containment on `LR1`, which selects LR1 together
+with LR10 through LR13. A tag is therefore claimed by containment,
+not by equality, and a marker that merely *contains* another campaign's is
+not a fresh claim but a silent join. `[contract]` and `[LR-flip]`
+are the pointman campaign's, and `docs/leader-desync-migration.md` pins the size
+of each series step by step, so a marker of ours falling inside either filter
+moves a count that document treats as a finding. This campaign claims two
+series: `[fe-invariant]` for the frontend contract cases, and `[fe-golden]`
+for the determinism goldens, whose bare `golden` would be an ordinary English
+word inviting exactly the containment this paragraph is about. A new series here
+claims a marker containing no other campaign's, and the minting item owes two
+proofs, one per direction, because the listing settles only one of them.
+Freshness: `cabal test --test-options='--list-tests -p "/<marker>/"'` must
+select nothing before the series exists, which is the same command that reports
+a count for a marker that does exist and so is not a vacuous check. Containment:
 the marker must not *contain* `contract` or `LR-flip`, which no listing can
 show, since it reports what existing names contain the marker and never what
 the marker contains --- a literal substring test of the candidate against

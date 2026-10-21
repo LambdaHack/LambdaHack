@@ -833,8 +833,8 @@ the Haskell-vs-TS ones; and since `Sdl.hs`'s per-cell drawing is a hot path,
 gate its adoption of `CellStyle` on before/after `make bench` runs
 (`benchFrontendBattle`/`benchFrontendCrawl` exercise exactly that path,
 with fixed seeds), the two binaries built back-to-back on one flag set and run
-interleaved --- CLAUDE.md's toggle-based A/B recipe, and this item's to obey
-rather than to restate.
+interleaved --- `~/slop/CLAUDE.md`'s toggle-based A/B recipe, and this item's
+to obey rather than to restate.
 
 **Generated files** --- computed by a tasty case, the freshness case,
 and committed under `ts-src/src/generated/`:
@@ -1003,9 +1003,10 @@ the same core.
 
 ## Phase 1 --- small parity wins
 
-Independent of each other; any order. 1.1 and 1.3 don't depend on Phase 0; since
-B.10 1.2 waits on 0.4, whose canvas its screenshot is, and 1.5 on 0.4's painter,
-which takes its scale. 1.2's per-frame case waits on 3.1.
+Independent of each other; any order. 1.3 doesn't depend on Phase 0, nor does
+1.1's first form, its final form coming with 0.2; since B.10 1.2 waits on 0.4,
+whose canvas its screenshot is, and 1.5 on 0.4's painter, which takes its scale.
+1.2's per-frame case waits on 3.1.
 
 ### 1.1 Crosshair cursor over the map (trivial)
 
@@ -1751,7 +1752,7 @@ round-trips it on fixed cases and on QuickCheck-generated `OverlaySpace` values;
 **The browser's share of the rule**, decided here because it decides what
 this module exports: TS re-implements `propCutoff` and `propFit` --- two
 comparisons and a three-way `min`, with no string, colour or chunking knowledge
---- pinned by 0.2-generated branch-complete fixtures, a table
+--- pinned by branch-complete fixtures 2.1's own freshness case writes, a table
 of `(halfSize, width, cursorX, allSpace, widthRaw) -> (stop | x, width, marker)`
 run by vitest in CI, exactly as `CellStyle`'s TS twin is pinned. This keeps
 the boundary-cost ruling this section already makes against a sync
@@ -1822,8 +1823,8 @@ by construction:
   of a two-field record, so "they agree" is a tautology and the QuickCheck
   property earlier drafts carried is deleted rather than kept green. It never
   reached the boundary it read as guarding either, being a Haskell-side property
-  over a Haskell producer; what pins the far side is the 0.2-generated branch
-  table, as everywhere else here.
+  over a Haskell producer; what pins the far side is the branch table 2.1's
+  freshness case writes, as everywhere else here.
 - *placement stays on screen*, for all cursors satisfying
   `not (propCutoff lm cur)`, which is `propFit`'s own precondition and so
   is a domain condition rather than a case to exercise: `pfWidthPx <= widthRaw`;
@@ -1886,10 +1887,10 @@ The overlays draw on 0.4's canvas, the only renderer (B.10), where canvas
 `fillText`+`measureText` is the direct analogue of SDL2's measure-then-blit. New
 `overlay-core.ts`/`overlay-core.test.ts` for the pure parts ---
 the `propCutoff`/`propFit` twin 2.1 specifies, which takes widths as plain
-numbers, measurement staying in the renderer --- pinned by 2.1's 0.2-generated
-branch table rather than by hand-written cases. The renderer draws all three
-of 2.1's sections, not only the proportional one: a `CellRun` is drawn
-at its layer's `cellPitch` with `CellStyle`'s per-cell rules applied
+numbers, measurement staying in the renderer --- pinned by the branch table
+2.1's freshness case writes rather than by hand-written cases. The renderer
+draws all three of 2.1's sections, not only the proportional one: a `CellRun`
+is drawn at its layer's `cellPitch` with `CellStyle`'s per-cell rules applied
 by the painter, in the prop, square, mono order 2.1 fixes, through 0.4's draw-op
 core, so the tests assert op lists --- no canvas dependency.
 
