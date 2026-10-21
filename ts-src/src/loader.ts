@@ -1,7 +1,7 @@
 // Browser loader wiring: instantiate the LambdaHack wasm reactor with an
 // in-memory WASI shim and the generated JSFFI glue, hook up frame submission
-// + keyboard, then start the game. Mirrors web/harness.mjs (the node
-// integration harness), but renders to the DOM instead of capturing frames.
+// + keyboard, then start the game. Mirrors ../run-wasm-game.mjs (the Node
+// driver for the reactor), but renders to the DOM instead of recording frames.
 // Not unit-tested.
 
 import { WASI, OpenFile, File, ConsoleStdout, PreopenDirectory } from "@bjorn3/browser_wasi_shim";
