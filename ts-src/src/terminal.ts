@@ -4,6 +4,11 @@
 // tested under jsdom (terminal-input.test.ts); the rendering decisions live in
 // terminal-core, and the key ones in Haskell.
 
+import {
+  XHAIR_CURSOR_HOTSPOT_X,
+  XHAIR_CURSOR_HOTSPOT_Y,
+  XHAIR_CURSOR_URL,
+} from "./generated/cursor.js";
 import { altModifier, cellPosition, styledCell } from "./terminal-core.js";
 
 export interface Terminal {
@@ -63,9 +68,10 @@ export function mountTerminal(
     container.style.fontFamily = "lambdaHackFont, monospace";
     container.style.lineHeight = "1em";
     container.style.whiteSpace = "pre";
-    // SDL2 shows its cursorXhair bitmap over the map (Sdl.hs createCursor);
-    // the keyword is the browser's nearest stock pointer.
-    container.style.cursor = "crosshair";
+    // SDL2's crosshair pointer, generated from the same art (MouseCursor.hs);
+    // the keyword is the fallback where the image fails to load.
+    container.style.cursor =
+      `url(${XHAIR_CURSOR_URL}) ${XHAIR_CURSOR_HOTSPOT_X} ${XHAIR_CURSOR_HOTSPOT_Y}, crosshair`;
     spans = new Array(w * h);
     const frag = document.createDocumentFragment();
     for (let i = 0; i < w * h; i++) {
