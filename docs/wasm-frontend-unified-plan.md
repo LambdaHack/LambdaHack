@@ -26,14 +26,14 @@ and `sdl2-to-wasm-parity-plan.md`. It pursues two goals at once:
   What would falsify this has the rule and the case.
 
 The ordering follows from G1: multi-font done naively would re-implement
-in TypeScript the layout logic that lives in `Sdl.hs`'s
-`drawPropOverlay`/`drawPropLine`/`drawPropChunk` (`Sdl.hs:drawPropOverlay ::`)
---- a much larger instance of the hand-porting that already produced real bugs
-(a DeadKey set ported with 11 of 13 values missing; a palette color slip). So:
-**shared-Haskell foundations first (Phase 0), small parity wins on top (Phase
-1), multi-font as a shared-module extraction (Phase 2), and the Node benchmark
-tooling port (Phase 3).** Related goals (R1--R7) and adopted multi-frontend
-practices follow the phases.
+in TypeScript the layout logic that lived in `Sdl.hs`'s
+`drawPropOverlay`/`drawPropLine`/`drawPropChunk` ([Sdl.hs#L648][sdl-648]) until
+2.1 --- a much larger instance of the hand-porting that already produced real
+bugs (a DeadKey set ported with 11 of 13 values missing; a palette color slip).
+So: **shared-Haskell foundations first (Phase 0), small parity wins on top
+(Phase 1), multi-font as a shared-module extraction (Phase 2), and the Node
+benchmark tooling port (Phase 3).** Related goals (R1--R7) and adopted
+multi-frontend practices follow the phases.
 
 Citations name a file and a text anchor its cited line carries, which
 `../tools/check-plan-citations.py` finds and prints with the line's number;
@@ -107,10 +107,10 @@ carries an outcome line.
 >
 > A row a ruling retires before it lands reads `retired -- <ruling>`, as R6's
 > does since B.10, the ruling being its outcome, and a standing row whose code
-> is wrong now reads `open -- standing`, as 1.4's and explicit widths' do;
-> the rest of the vocabulary is the four above. One claim in either state
-> is exempt, by the same borrow: a recorded measurement ages rather than drifts,
-> so it is re-measured against its stated protocol rather than corrected.
+> is wrong now reads `open -- standing`, as 1.4's does; the rest
+> of the vocabulary is the four above. One claim in either state is exempt,
+> by the same borrow: a recorded measurement ages rather than drifts, so
+> it is re-measured against its stated protocol rather than corrected.
 >
 > **Landing an item** appends an outcome line here, immediately after the item's
 > opening paragraph and before any subsection, so that opening the item
@@ -1646,7 +1646,8 @@ layOutFrame :: Int -> SingleFrame -> FrameLayout
 -- (@Sdl.hs:(sameRest, otherRest)@) via `CellStyle`, not by a second copy of the
 -- rule.
 --
--- Asserts each cell's @bg@ is @HighlightNone@ or @HighlightNoneCursor@
+-- Asserts that the cell each chunk takes its colour from has a @bg@ of
+-- @HighlightNone@ or @HighlightNoneCursor@
 -- (@Sdl.hs:(sameRest, otherRest)@) --- an assertion that today can only fire
 -- with SDL running and after this extraction fires under @cabal test@ too.
 --
@@ -1909,8 +1910,8 @@ idiom this sentence once named would not compile in the ordinary build,
 (`test/SessionUIUnitTests.hs:import Test.Tasty.QuickCheck`).
 
 Fixed cases, chunking: the empty line; one character; leading spaces before
-a coloured run (the next-non-space inheritance); trailing spaces, the only way
-an all-space chunk arises; a multi-space run *between* two differently-coloured
+a coloured run (the next-non-space inheritance); trailing spaces, which join
+the run to their left; a multi-space run *between* two differently-coloured
 runs, which joins the left one --- the case a hand-port gets backwards;
 an all-space line, taking the `[] -> w` fallback (`Sdl.hs:[] -> w`); a colour
 change with no space at the boundary; a line whose spaces are *coloured*, which
@@ -1945,7 +1946,7 @@ by construction:
   a different function's claim.
 - *chunks are single-coloured under space inheritance*: splitting the input
   by the chunk lengths, every cell of a chunk's slice satisfies
-  `fgFromW32 ac == pcColor c || ac == spaceAttrW32`
+  `rowColor row (fgFromW32 ac) == pcColor c || ac == spaceAttrW32`
   (`Sdl.hs:sameAttr ac = Color.fgFromW32 ac == fgRaw`).
 - *no chunk is empty, and the lengths sum to the input's.* This is also
   the termination argument: `Sdl.hs:width) row otherRest` recurses
@@ -2893,15 +2894,11 @@ instance: `toEnum i` depends on the global `speedupHackXSize` (the *dungeon*
 width, correct at frontend call sites only via the engine's
 `Client/UI/Content/Screen.hs`'s `rwidth == RK.rWidthMax` assertion). The switch
 is the same arithmetic with one *fewer* global read, in a non-hot once-per-frame
-loop, so it needs no benchmark. One live violation exists:
-**`Sdl.hs:let Point{..} = toEnum i`** (`setMapChar`'s
-`let Point{..} = toEnum i`) --- and it belongs to `Sdl.hs`'s adoption
-of `CellStyle`, which rewrites the per-cell drawing `setMapChar` drives
-and which 2.1 carries ahead of its refactor. The refactor does not rewrite
-that loop: it shrinks `scaleSurfaceToTextureProp` above it and extracts
-the overlay half from `Sdl.hs:drawMonoOverlay ::` below it, and `setMapChar`
-sits between the two, untouched by either. (`Dom.hs:let Point{..} = toEnum i`
-has the same pattern next to the correct form
+loop, so it needs no benchmark. Its one live violation, `setMapChar`'s
+`let Point{..} = toEnum i` ([Sdl.hs#L568][sdl-568]), went with `Sdl.hs`'s
+adoption of `CellStyle` in `3fcc93a1e`, and a step of `tools/checks.py` now
+fails that spelling in any frontend module but `Dom.hs`.
+(`Dom.hs:let Point{..} = toEnum i` has the same pattern next to the correct form
 at `Dom.hs:let Point{..} = punindex (rwidth coscreen) i`, but it's a dead
 example file, R3 --- leave it.) The rule binds all live and future frontend code
 from now on. The `Enum` instance itself and its global stay engine-internal,
@@ -2909,8 +2906,8 @@ permanently --- the engine-wide removal of the hack is rejected outright
 (Appendix B has the ruling and the hack's documentation of record).
 
 **Rulings** --- ruled 2026-10-20 by Mikolaj, re-cut 2026-10-21: the grep
-for `Point{..} = toEnum` in the frontend modules, today a line of the work
-list's Done, becomes a standing check, a step of `tools/checks.py` added after
+for `Point{..} = toEnum` in the frontend modules, then a line of the work list's
+Done, becomes a standing check, a step of `tools/checks.py` added after
 the commit that removes the violation, which lands on a branch carrying `Sdl.hs`
 alone, so the rule has a mechanical floor once its one violation is gone.
 It catches that spelling only, so the review question stands beside it.
@@ -3575,3 +3572,5 @@ passthrough, and B.1.
 [terminal-133]: https://github.com/LambdaHack/LambdaHack/blob/b2f76b8fec66713f8fa4b0c773a9d9c5071d9b35/ts-src/src/terminal.ts#L133-L134
 [wasm-177]: https://github.com/LambdaHack/LambdaHack/blob/b2f76b8fec66713f8fa4b0c773a9d9c5071d9b35/engine-src/Game/LambdaHack/Client/UI/Frontend/Wasm.hs#L177-L181
 [wasm-190]: https://github.com/LambdaHack/LambdaHack/blob/b2f76b8fec66713f8fa4b0c773a9d9c5071d9b35/engine-src/Game/LambdaHack/Client/UI/Frontend/Wasm.hs#L190-L194
+[sdl-568]: https://github.com/LambdaHack/LambdaHack/blob/5c58af62ec9d875dfcb051ba5fade405e5b36f8d/engine-src/Game/LambdaHack/Client/UI/Frontend/Sdl.hs#L568
+[sdl-648]: https://github.com/LambdaHack/LambdaHack/blob/5c58af62ec9d875dfcb051ba5fade405e5b36f8d/engine-src/Game/LambdaHack/Client/UI/Frontend/Sdl.hs#L648

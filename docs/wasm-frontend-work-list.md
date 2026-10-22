@@ -135,7 +135,7 @@ sections of the record are frozen and which live is its head callout's to say.
 | RawFrontend contract | haddock contract, tasty harness, add-a-frontend checklist | medium | haddock and checklist: nothing; native harness after 0.1, which creates its module; wasm case with 0.3 | not applied |
 | determinism goldens | fixed-seed frame-and-overlay and final-state digests | medium | --- | not applied |
 | frontend CI smokes | xvfb SDL, pty ANSI, a short nodeBench run | small each | 3.3 for the wasm one | not applied |
-| explicit widths | `punindex`, never the `Enum` instance, in frontend code | review rule; its one live violation is 2.1's, and the fix adds a `tools/checks.py` step | --- | open -- standing |
+| explicit widths | `punindex`, never the `Enum` instance, in frontend code | review rule, and a `tools/checks.py` step | --- | standing |
 | functional core | the standing review bar for frontend modules | review rule; nothing to execute | --- | standing |
 
 ## Handing an item to a session
@@ -932,8 +932,9 @@ after it; (5) before (6), so a correction is never in the same diff
 as the landing record.
 
 **Owns** --- `engine-src/Game/LambdaHack/Client/UI/Frontend/OverlayLayout.hs`,
-`test/OverlayLayoutUnitTests.hs`, `test/Spec.hs`, `LambdaHack.cabal`,
-`ts-src/src/generated/` for the branch table,
+`test/OverlayLayoutUnitTests.hs`, `test/CellStyleUnitTests.hs` for the freshness
+switch and JSON writers the table's case shares, `test/Spec.hs`,
+`LambdaHack.cabal`, `ts-src/src/generated/prop-fit.json`, the branch table,
 `engine-src/Game/LambdaHack/Client/UI/Frontend/Sdl.hs`,
 `engine-src/Game/LambdaHack/Client/UI/Frontend.hs` (export list only,
 re-exporting the new module per 0.1's ruling (2) in the record),
@@ -1728,27 +1729,21 @@ so an in-session frame *count* is a gate and an in-session *timing* is not.
 
 **Frontends pass widths explicitly.** Design and rulings in the record.
 
-**Owns** --- nothing --- this is a review rule, not an item to execute.
-Its whole executable residue is `Sdl.hs:let Point{..} = toEnum i`, owned by 2.1,
-whose `CellStyle` adoption rewrites that loop, together with the `CLAUDE.md`
-Gotchas clause the fix retires and the standing check the fix adds: the grep
-below as a step of `tools/checks.py` and a mutant in `tools/mutants.py`
-restoring the `toEnum` form in `Sdl.hs` to prove the step bites (the record's
-ruling); fixing it standalone contradicts the coupling stated just above
-and collides with that commit's diff. The rule retires with the campaign rather
+**Owns** --- nothing --- this is a review rule, not an item to execute. Its one
+executable residue, `setMapChar`'s decode by `toEnum` ([Sdl.hs#L568][sdl-568]),
+went with 2.1's `CellStyle` adoption in `3fcc93a1e`, and the standing check
+added after it is a step of `tools/checks.py`, with a mutant
+in `tools/mutants.py` restoring the `toEnum` form in `Sdl.hs` to prove the step
+bites (the record's ruling). The rule retires with the campaign rather
 than taking a hash.
 
-**Done** --- no gate of its own, only
-`! git grep -nE 'Point\{\.\.\} = toEnum' -- 'engine-src/Game/LambdaHack/Client/UI/Frontend/*.hs' ':!engine-src/Game/LambdaHack/Client/UI/Frontend/Dom.hs'`.
-It returns nonzero today, naming `Sdl.hs:let Point{..} = toEnum i` --- which
-is what proves it a real search rather than a silent one --- and must return
-zero once the fix lands, so it is an acceptance criterion on that commit's diff
-and, as a `tools/checks.py` step from then on, a check whenever
-`check-all tools` runs, not a task of its own. Deliberately not a bare `toEnum`
-grep: every other `toEnum` in `Sdl.hs` is a legitimate conversion into an SDL
-numeric type --- geometry mostly, and a log priority
-at `Sdl.hs:SDL.logSetAllPriority $` --- and a gate that flags them would stop
-being read.
+**Done** --- no gate of its own: the `tools/checks.py` step, run
+by `check-all tools`, fails a frontend module but `Dom.hs` that decodes
+with `Point{..} = toEnum`, and its mutant proves it a real search rather
+than a silent one. Deliberately not a bare `toEnum` grep: every other `toEnum`
+in `Sdl.hs` is a legitimate conversion into an SDL numeric type --- geometry
+mostly, a log priority at `Sdl.hs:SDL.logSetAllPriority $` and the colour
+channels in `hexToRGBA` --- and a gate that flags them would stop being read.
 
 **Hands back** --- *judgement*: the grep catches only the shape already seen,
 `Point{..} = toEnum`. Whether a newly written decoding site passes the width
@@ -1842,3 +1837,5 @@ phase either de-risks it (0.2 fixtures, 2.1 native-side proof) or is what
 it builds on (2.3 uses 0.3's test harness, 2.2 uses 0.2's palette).
 
 ---
+
+[sdl-568]: https://github.com/LambdaHack/LambdaHack/blob/5c58af62ec9d875dfcb051ba5fade405e5b36f8d/engine-src/Game/LambdaHack/Client/UI/Frontend/Sdl.hs#L568
