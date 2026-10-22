@@ -668,9 +668,9 @@ arrives as `A-WHEEL-UP`.*
   `SessionUI.hs:, smarkVision = 1`), and its grey wash is blitted *before*
   `chooseAndDrawHighlight` runs (`Sdl.hs:let tgtR = SDL.Rectangle (vp (col`) ---
   so SDL really shows a grey cell ringed in black there, and today's
-  `terminal.ts:Highlight square as an inset outline` `inset 0 0 0 1px`
-  box-shadow is wrong only in its `BrBlack` colour, not in drawing a ring
-  at all. Fix in `terminal-core.ts` (border colour black for the three kinds)
+  [terminal.ts#L133-L134][terminal-133] `inset 0 0 0 1px` box-shadow is wrong
+  only in its `BrBlack` colour, not in drawing a ring at all. Fix
+  in `terminal-core.ts` (border colour black for the three kinds)
   with a `terminal-core.test.ts` case. Background for why the wasm build behaved
   this way, and the ruling on GHCJS's two-edge rendering, is in Appendix B.
 
@@ -3278,8 +3278,8 @@ does not hold: six behaviours are recorded nowhere in this plan. (1) **Half-cell
 mouse x is unreachable in the browser.**
 `Sdl.hs:pointTranslate (SDL.P (SDL.V2 x y)) =` divides a click's pixel x
 by `halfSize`, so SDL reports an odd `PointUI` x for a click in a cell's right
-half; `Wasm.hs:row deltaY modCtrl` and `Wasm.hs:row button modCtrl` build their
-point with `squareToUI` (`PointUI.hs:squareToUI :: PointSquare`),
+half; [Wasm.hs#L177-L181][wasm-177] and [Wasm.hs#L190-L194][wasm-190] build
+their point with `squareToUI` (`PointUI.hs:squareToUI :: PointSquare`),
 so the browser's is always even. Unobservable while the square layer is the only
 one on screen; observable the moment Phase 2 lands the mono layer, whose pitch
 is exactly `halfSize`. *0.4 closes it, ruled 2026-09-14 (B.10): a canvas pointer
@@ -3391,3 +3391,7 @@ parity gaps) --- with faithful adaptations elsewhere (`JSFile.hs` preserves
 the browser-zoom passthrough is deliberate). The GHCJS features that exceeded
 SDL2 (runtime zoom, free DOM text affordances) are handled by 1.5, 0.1's
 passthrough, and B.1.
+
+[terminal-133]: https://github.com/LambdaHack/LambdaHack/blob/b2f76b8fec66713f8fa4b0c773a9d9c5071d9b35/ts-src/src/terminal.ts#L133-L134
+[wasm-177]: https://github.com/LambdaHack/LambdaHack/blob/b2f76b8fec66713f8fa4b0c773a9d9c5071d9b35/engine-src/Game/LambdaHack/Client/UI/Frontend/Wasm.hs#L177-L181
+[wasm-190]: https://github.com/LambdaHack/LambdaHack/blob/b2f76b8fec66713f8fa4b0c773a9d9c5071d9b35/engine-src/Game/LambdaHack/Client/UI/Frontend/Wasm.hs#L190-L194
