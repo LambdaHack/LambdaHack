@@ -234,7 +234,10 @@ CI re-runs it over every tracked Haskell file, pinned to the same release, since
 a formatter that disagrees with the editor is worse than none. That file
 is the authority on what is applied automatically; which of the rules below
 it enforces is deliberately not restated here, so that the two cannot drift
-apart. Screen is 80-columns wide. Indentation is 2 spaces wide. Spaces are used,
+apart. The TypeScript and Node scripts under `ts-src` are formatted by Prettier,
+run by `npm run format` there; see its
+[.prettierrc.json](https://github.com/LambdaHack/LambdaHack/blob/master/ts-src/.prettierrc.json).
+Screen is 80-columns wide. Indentation is 2 spaces wide. Spaces are used,
 not tabs. Spurious whitespace avoided.
 
 Spaces around arithmetic operators encouraged. Inline comments (`--`) should

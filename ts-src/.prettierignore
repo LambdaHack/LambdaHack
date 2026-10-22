@@ -1,0 +1,6 @@
+# Build output and installed packages.
+dist/
+node_modules/
+package-lock.json
+# Written byte for byte by the Haskell test suite, which checks them fresh.
+src/generated/
