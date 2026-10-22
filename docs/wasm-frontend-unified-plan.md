@@ -547,9 +547,11 @@ only that the plan was written is one the next reader has to skip.
   it and repaints the changed cells on one `<canvas>` (diffing against
   the previous frame) by the draw ops the pure `cellRunOps`
   in `terminal-core.ts` computes. Input flows the other way: DOM events ->
-  `lhKey`/`lhWheel`/`lhMouseUp` exports -> the engine's key channel. Saves
-  bypass all of this --- `WasmFile.hs` talks to `localStorage` directly
-  over JSFFI.
+  `lhKey`/`lhWheel`/`lhMouseUp` exports -> the engine's key channel. Two hooks
+  more: `startup` hands `globalThis.lhConfigure` the startup payload as JSON,
+  and `fprintScreen` hands `globalThis.lhPrintScreen` the name to save
+  the canvas under. Saves bypass all of this --- `WasmFile.hs` talks
+  to `localStorage` directly over JSFFI.
 - **`Dom.hs`/`JSFile.hs` (the GHCJS frontend) are dead code**, permanently
   and for the version reasons Appendix A.1 sets out. They still appear
   throughout this plan as the *canonical origin* of web-frontend logic:
@@ -1006,10 +1008,11 @@ and `ts-src/run-wasm-game.mjs`: the baseline, covering every such declaration
 by hand against a `make build-wasm` reactor, its checks made on the frames
 the `lhSubmitFrame` stub records rather than on the frontend channel ruling (3)
 names; after it, the imports 0.1 gave `lhKey`, covered by that driver's `lhKey`
-case, and 1.2's `js_printScreen`, by its `Ctrl+P` case. Still to do:
-the standing half, and the game driver's run in CI, with R2's `build-wasm` job.
+case, 1.2's `js_printScreen`, by its `Ctrl+P` case, and 1.5's `js_configure`,
+by its startup-payload case. Still to do: the standing half, and the game
+driver's run in CI, with R2's `build-wasm` job.
 
-<!-- probe: git -C .. grep -h 'foreign \(import\|export\) javascript' -- engine-src/Game/LambdaHack/Client/UI/Frontend/Wasm.hs engine-src/Game/LambdaHack/Common/WasmFile.hs GameDefinition/Main.hs | grep -vc '^-- ' :: 18 -->
+<!-- probe: git -C .. grep -h 'foreign \(import\|export\) javascript' -- engine-src/Game/LambdaHack/Client/UI/Frontend/Wasm.hs engine-src/Game/LambdaHack/Common/WasmFile.hs GameDefinition/Main.hs | grep -vc '^-- ' :: 19 -->
 
 **Rulings** --- all three ruled on 2026-08-07. (1) The export mechanism
 is the thin reactor driver the Split now specifies --- a slice of 3.2 pulled
@@ -1262,8 +1265,8 @@ the effective cell size today.
 (they are, via `WasmFile.hs`/localStorage) and will go staler as features land
 ("For proportional fonts and persistent save games, use the native binary").
 Update the text as each feature ships. The savefile-corruption caveat stays
-until R1 addresses it. **The page is not the only one**: the `#status` div opens
-"from README:" and quotes `README.md`'s "Installation of the sample game
+until R1 addresses it. **The page is not the only one**: the `#status` div
+carries "from README:" and quotes `README.md`'s "Installation of the sample game
 from binary archives" paragraph, so the square-font and savefile-corruption
 sentences are in two files, and this item's rule binds both --- a clause deleted
 from the page is deleted from the README in the same commit. (The GHCJS-era
@@ -2023,9 +2026,10 @@ as `Sdl.hs:loadFontFile fname fsize =` does), the web side owns the *bytes*
 (static `.woff` assets). Concretely: at startup `Wasm.hs` resolves the chosen
 fontset and passes file names + effective px sizes to JS in the one-shot setup
 call specified below; TS declares them with the `FontFace` API
-from `./<filename>` URLs. **TS hardcodes nothing about fonts**; `make build-ts`
-is extended to copy the referenced `GameDefinition/fonts/*.ttf.woff`
-into the pages checkout (only `16x16xw.woff` is deployed today).
+from `./<filename>` URLs. **TS hardcodes nothing about the prop and mono
+fonts**, the map font being R7's; `make build-ts` is extended to copy
+the referenced `GameDefinition/fonts/*.ttf.woff` into the pages checkout (only
+`16x16xw.woff` is deployed today).
 
 **The startup payload, specified here.** 1.5 creates this call and points here
 for its shape, as 2.3 points at 2.1 for the wire payload's, so the field list
@@ -2263,7 +2267,10 @@ integration points to cover:
   2026-08-07; lz-string must come from npm, never the sibling checkout).
   With `--frontendNull`, `Wasm.hs`'s frontend (and thus `lhSubmitFrame` etc.)
   never starts, so the display stubs the seed installs are never called ---
-  and this item adds no stub of its own.
+  and this item adds no stub of its own. Its frame and payload checks cannot
+  pass there, so the driver makes the seed's coverage checks only without
+  `--frontendNull`, checking exit propagation and the measurements alone
+  under it.
 - **Exit propagation:** `make` must see failures. Await the `lhStart()` promise
   --- measured on this toolchain, a Haskell `error`, `exitWith (ExitFailure 3)`
   and `exitWith ExitSuccess` all surface as the same rejected promise carrying
@@ -2288,7 +2295,7 @@ integration points to cover:
   times and reports `setItem` durations and payload sizes, so R1's save-lag
   re-measurement falls out of any nodeBench run.
 
-**Rulings** --- all three ruled on 2026-08-07. (a) A sibling file, seeded
+**Rulings** --- (a) to (c) ruled on 2026-08-07. (a) A sibling file, seeded
 by 0.3's export half and grown here, its setup imported from the test driver
 rather than copied; the extend branch is refused --- two lifecycles in one
 script --- and the display-stub sentence was reconciled rather than obeyed:
@@ -2304,7 +2311,9 @@ to `package.json`. The measurement stands recorded, and re-established
 of `config.ui.ini`, with the `LZString` stub untouched --- so only a run
 that *saves* needs it, R1's measurement, not the benchmark, which leaves through
 `ReqUIGameDropAndExit` --- and the npm-registry moment belongs to 0.3's landing,
-where CI's `npm ci` covers it.
+where CI's `npm ci` covers it. (d) Ruled 2026-10-22 by Mikolaj: the seed's
+coverage checks run only without `--frontendNull`, and **Done** runs the driver
+both ways, so that this item's own gate exercises them too.
 
 ### 3.3 Repurpose the Makefile targets
 
@@ -3471,8 +3480,8 @@ four, and the two it leaves are (1) and (2).*
 
 - **Mouse position attached to keyboard events.** SDL sends the *current* mouse
   position with every keypress (`getAbsoluteMouseLocation`,
-  `Sdl.hs:when kdResetChan $ resetChanKey (fchanKey rf)`); web frontends send
-  `PointUI 0 0`, and every KMP overwrites the session's `spointer`
+  `Sdl.hs:rf kdModifier`); web frontends send `PointUI 0 0`, and every KMP
+  overwrites the session's `spointer`
   (`MonadClientUI.hs:{spointer = K.kmpPointer`) --- so in the browser, each
   keystroke clobbers the remembered pointer. Traced every `spointer` consumer
   (three in `HandleHumanGlobalM.hs`, three in `HandleHumanLocalM.hs`, one each

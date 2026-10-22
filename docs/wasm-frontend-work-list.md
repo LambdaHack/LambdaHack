@@ -28,12 +28,14 @@
 > is corrected separately, so that review can tell a relocation
 > from a correction (Handing an item to a session).
 >
-> **Landing part of an item takes no outcome line**, and the row stays live:
-> a partial landing is recorded in the item's body as specification for what
-> remains, which is what R2 does today. **A standing item never lands** --- 0.3,
-> 1.4 and R2 are ongoing or recurring by their own size cells, explicit widths
-> and functional core review rules by theirs --- so it retires when the campaign
-> does, rather than acquiring a hash.
+> **Landing part of an item takes no outcome line**, and the row stays live,
+> in the state of what remains, as frontend CI smokes reads `not applied`
+> for its unbuilt `nodeBench` smoke: a partial landing is recorded in the item's
+> body as specification for what remains, which is what R2 does today.
+> **A standing item never lands** --- 0.3, 1.4 and R2 are ongoing or recurring
+> by their own size cells, explicit widths and functional core review rules
+> by theirs --- so it retires when the campaign does, rather than acquiring
+> a hash.
 >
 > An item that proposes an artifact may take its outcome line **only once
 > its entries in `tools/doc-refs-allow.txt` can be deleted**; that file's
@@ -1188,11 +1190,11 @@ been in the package and lock files since the page gate.
 `~/.ghc-wasm/wasm32-wasi-ghc/lib/post-link.mjs --input "$W" --output "$T/ghc_wasm_jsffi.mjs"`
 &&
 `node ts-src/run-wasm-game.mjs "$W" "$T/ghc_wasm_jsffi.mjs" --newGame 1 --gameMode crawl --noAnim --maxFps 100000 --frontendNull --benchmark --stopAfterFrames 200 --automateAll --keepAutomated`
-&&
+&& `node ts-src/run-wasm-game.mjs "$W" "$T/ghc_wasm_jsffi.mjs"` &&
 `! node ts-src/run-wasm-game.mjs "$W" "$T/ghc_wasm_jsffi.mjs" --stopAfterFrames notanumber`.
 
 **Hands back** --- hands back nothing. Every integration point in the item
-is an exit status, the negated second run being the non-vacuity control
+is an exit status, the negated last run being the non-vacuity control
 that proves the driver's success rule can still fail. *Judgement* survives only
 in the third bullet --- whether the reported peak `WebAssembly.Memory`
 and `setItem` timings measure what R1 wants --- and that is R1's gate,
@@ -1611,8 +1613,7 @@ harness second, once 0.1 has created its module, driving
 on the `globalThis.lhSubmitFrame` stub 0.3's baseline battery installs
 in `ts-src/run-wasm-test.mjs`
 (`run-wasm-test.mjs:globalThis.lhSubmitFrame = (addr, w, h) => {`), without
-which the first foreign call out of `Wasm.hs` traps. The third commit carries
-the outcome line.
+which `display`'s foreign call traps. The third commit carries the outcome line.
 
 **Owns** --- `Client/UI/Frontend/Common.hs` (haddock), `Client/UI/Frontend.hs`
 (export list only), `test/FrontendContractUnitTests.hs`, which 0.1 creates,
