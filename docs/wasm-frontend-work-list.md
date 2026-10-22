@@ -624,7 +624,7 @@ The keyword commit takes **no** outcome line and leaves the row live, per
 the partial-landing rule; the SVG commit carries the outcome line and flips
 the ledger row. Neither deletes a `tools/doc-refs-allow.txt` entry ---
 `cursor.ts` and `ts-src/src/generated/` were 0.2's, and 1.1 is ungated.
-The keyword commit landed in `91d75ca5e`; the row stays live for the SVG form.
+The keyword commit landed in `91d75ca5e` and the SVG commit in `0a72de79c`.
 
 **Owns** --- `ts-src/src/terminal.ts`, and, in the landing commit only,
 `docs/wasm-frontend-unified-plan.md`. `../lambdahack.github.io` is redeployed
