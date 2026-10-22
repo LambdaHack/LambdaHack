@@ -75,14 +75,15 @@ runServer serverOptions = do
 
 #ifdef USE_WASM
 -- | Reactor entry point for the wasm32-wasi (browser) build, exported to JS as
--- @lhStart@. There is no argv in the browser, so server options are taken at
--- their defaults (an empty argument list). The build is linked with
--- @-no-hs-main@, so this, not @main@, starts the game.
+-- @lhStart@. Server options are parsed from the argv the WASI host supplies:
+-- the browser loader passes the program name alone, so they sit at their
+-- defaults there, while a Node driver can pass real flags. The build is
+-- linked with @-no-hs-main@, so this, not @main@, starts the game.
 lhStart :: IO ()
 lhStart = do
-  -- Bang to fail early if the default server options are inparseable.
-  !serverOptions <- OA.handleParseResult $
-    OA.execParserPure OA.defaultPrefs serverOptionsPI []
+  -- Bang to fail here, not inside server code, so that savefiles are
+  -- not removed, because they are not the source of the failure.
+  !serverOptions <- OA.execParser serverOptionsPI
   runServer serverOptions
 
 foreign export javascript "lhStart" lhStart :: IO ()
