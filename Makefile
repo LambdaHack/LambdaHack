@@ -335,10 +335,11 @@ test-ts:
 	cd ts-src && \
 	npm run typecheck && npx vitest run
 
-# The deployed-page gate: the page as build-ts would deploy it, in a
-# scratch directory, loaded in headless Firefox and required to boot,
-# paint and repaint on a key (ts-src/page-gate.mjs says how). Local only,
-# by ruling; run before every browser landing.
+# The deployed-page gate: the page as build-ts would deploy it,
+# in a scratch directory, loaded in headless Firefox and headless
+# Chromium and required to boot, paint and repaint on a key in each
+# (ts-src/page-gate.mjs says how). Local only, by ruling; run before
+# every browser landing.
 page-gate: build-wasm
 	. ~/.ghc-wasm/env && \
 	T=$$(mktemp -d) && \
