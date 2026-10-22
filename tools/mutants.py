@@ -6,14 +6,16 @@ tool's own self-test -- to FAIL on it; a mutant whose anchor has moved is
 LOST, not caught. These replace the proofs that were dated sentences in each
 tool's docstring, "proved non-vacuous by breaking the checker in a copy
 (2026-08-14)", which expire the moment the code under them moves, with
-nothing to say so. Each is a mutant of this repository's own tools and
-documents, watched failing before it was written down; the shared document
-checkers' are in ~/slop/tools/mutants.py, with the checkers.
+nothing to say so. Each is a mutant of this repository's own tools,
+documents or code a check reads, watched failing before it was written down;
+the shared document checkers' are in ~/slop/tools/mutants.py, with
+the checkers.
 
 The clone is what lets the judges run: every tool finds the repository from
 its own path and asks git about it.
 """
 
+import importlib.util
 import pathlib
 
 COPY = 'clone'
@@ -24,6 +26,17 @@ ST = ['python3', '{file}', '--self-test']
 # The probe runner is the doc-verification skill's, user-scope, outside this
 # tree; a judge over a document rather than over a tool.
 PROBES = ['python3', str(pathlib.Path.home() / '.claude/skills/doc-verification/run-probes.py'), '{file}']
+
+
+def step(name):
+    """The argv of a checks.py step, so that a mutant of what the step checks
+    is judged by the step as check-all runs it, not by a copy of it."""
+    spec = importlib.util.spec_from_file_location(
+        'checks', pathlib.Path(__file__).with_name('checks.py'))
+    checks = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(checks)
+    return next(s[1] for s in checks.STEPS if s[0] == name)
+
 
 MUTANTS = [
     # A document probe with its expectation moved: the doc-probes step of
@@ -133,4 +146,10 @@ MUTANTS = [
      "    if not found:\n", "    if False:\n", ST),
     ('check-sync-exports no source read as a clean tree', 'check-sync-exports.py',
      "    if not files:\n", "    if False:\n", ST),
+    # The explicit-widths step of checks.py, judged by that step: the decode
+    # by the Enum instance it exists to catch, put back into Sdl.hs.
+    ('explicit widths toEnum decode restored',
+     '../engine-src/Game/LambdaHack/Client/UI/Frontend/Sdl.hs',
+     '          let Point{..} = punindex (rwidth coscreen) i\n',
+     '          let Point{..} = toEnum i\n', step('explicit widths')),
 ]

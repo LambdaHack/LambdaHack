@@ -56,6 +56,18 @@ STEPS = [
     # Every sync JSFFI export built on syncExport, whose scheduler run GHC's
     # sync exports lack; Wasm.hs says why.
     ('sync exports',           ['python3', '{root}/check-sync-exports.py'], '{root}/..'),
+    # No frontend decodes a screen index by the Enum instance of Point,
+    # which reads the dungeon's width: the explicit-widths practice of
+    # docs/wasm-frontend-unified-plan.md. It catches that spelling only.
+    # Dom.hs, a dead example, is left alone, as the practice leaves it.
+    # git grep exits 1 when it finds nothing and above 1 when it fails.
+    ('explicit widths',        ['bash', '-c',
+                                "git grep -nE 'Point\\{\\.\\.\\} = toEnum' -- "
+                                "'engine-src/Game/LambdaHack/Client/UI/Frontend/*.hs' "
+                                "':!engine-src/Game/LambdaHack/Client/UI/Frontend/Dom.hs'; "
+                                'case $? in 0) echo "a frontend decodes a screen index with toEnum, not punindex (rwidth coscreen)"; exit 1;; '
+                                '1) exit 0;; *) echo "git grep failed, so nothing was checked"; exit 2;; esac'],
+     '{root}/..'),
     ('records validate',       ['python3', '{bin}/defect-cases.py', '{root}']),
     ('cases, ok direction',    ['python3', '{bin}/defect-run.py', '{root}']),
     ('cases, bug direction',   ['python3', '{bin}/defect-run.py', '--audit', '{root}']),
