@@ -610,7 +610,12 @@ and `lhMouseUp` at an odd half-cell column.
 
 **Hands back** --- *display*: that the map on the canvas reads as the DOM
 build's at scale 1.0, the `xwd` pair of Split (0) being a session's to take
-and a human's to judge, and one AltGr click at half-cell precision.
+and a human's to judge, and two clicks: a left click on the right half of a menu
+choice's last letter, which activates it where the left half of the cell after
+it does not, and an AltGr middle click on the map, which snaps the crosshair
+to the cell without the description a plain middle click prints. The main menu
+drops a modified click, under SDL too, its only mouse keys being the unmodified
+ones of `SlideshowM.hs`'s `navigationKeys`, so no one click checks both.
 The substitute gates in Done are the op-list cases and the page load.
 
 **Decide first** --- nothing; the rulings are the record's.
