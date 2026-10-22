@@ -2174,6 +2174,11 @@ separately by `getProgName` and no drop needed. This entry point is what R4
 later feeds from URL parameters, so 3.1 is shared infrastructure, not bench-only
 plumbing.
 
+*Landed in `77e64a697`, through `OA.execParser`, the parse `main` makes, which
+reads `getArgs` itself, so the change took no import and no `#ifdef` of its own.
+Under `node:wasi`, `--help` as WASI args now prints the usage and settles
+`lhStart`'s promise, where an empty argv starts the game.*
+
 **Rulings** --- The spike is answered and, since 2026-08-07, carries a recorded
 artifact --- the body's Spike paragraph holds the command shape and output:
 a reactor linked with this repo's flags and driven through `node:wasi` reports
