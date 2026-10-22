@@ -1013,20 +1013,20 @@ channel.
 
 ### 0.4 Canvas painter: one renderer for the browser
 
-Ruled 2026-09-14 (B.10). `terminal.ts` keeps its name, its listeners, its focus
-and bfcache handling and its per-cell diff, and replaces the span grid with one
-`<canvas>` inside `#screen`: a backing store of `cols * boxSize`
-by `rows * boxSize` device pixels, `boxSize` the map font's cell as `Sdl.hs`
-takes it from the loaded font, its CSS size that divided by `devicePixelRatio`.
-Per changed cell, a `fillRect` of the background, the glyph by `fillText`
-centred in the cell in the `lambdaHackFont` face, and a `strokeRect` one pixel
-inside the cell in the border colour --- the three values `styledCell` already
-resolves, so `terminal-core.ts` and its tests stand, and the ring is SDL2's
-`drawRect` rather than an inset box-shadow imitating it. The pointer reports
-pixels, and the wheel and mouseup handlers divide them by `halfSize` as SDL2's
-`pointTranslate` does, passing the half-cell column to `lhWheel`
-and `lhMouseUp`, which build their `PointUI` from it directly rather
-than by `squareToUI`, whose doubling made every column even; that closes
+Ruled 2026-09-14 (B.10). `terminal.ts` keeps its name, its listeners, 1.1's
+cursor, its focus and bfcache handling and its per-cell diff, and replaces
+the span grid with one `<canvas>` inside `#screen`: a backing store
+of `cols * boxSize` by `rows * boxSize` device pixels, `boxSize` the map font's
+cell as `Sdl.hs` takes it from the loaded font, its CSS size that divided
+by `devicePixelRatio`. Per changed cell, a `fillRect` of the background,
+the glyph by `fillText` centred in the cell in the `lambdaHackFont` face,
+and a `strokeRect` one pixel inside the cell in the border colour --- the three
+values `styledCell` already resolves, so `terminal-core.ts` and its tests stand,
+and the ring is SDL2's `drawRect` rather than an inset box-shadow imitating it.
+The pointer reports pixels, and the wheel and mouseup handlers divide them
+by `halfSize` as SDL2's `pointTranslate` does, passing the half-cell column
+to `lhWheel` and `lhMouseUp`, which build their `PointUI` from it directly
+rather than by `squareToUI`, whose doubling made every column even; that closes
 Appendix C's (1). Fonts load before the first paint, `document.fonts.ready`
 awaited once. The painter is the draw-op core 1.2 and 2.2 consume: a pure
 function from a cell run to fill, text and stroke commands
@@ -3193,6 +3193,7 @@ since the superseded document may be deleted):
   `sallFontsScale` and imposes the cell dimensions on the grid, so the 16 does
   have a canonical Haskell value behind it --- `16x16xwScalable`'s
   in `config.ui.default` --- and the grid takes it rather than hardcoding one.*
+  *That ruling was re-cut on 2026-10-20 for B.10, which left no grid.*
 - *Save persistence needs no rework* --- `WasmFile.hs` mirrors `JSFile.hs`'s
   exact localStorage format as a proper Haskell sibling module; it
   is the existing exemplar of the pattern this plan applies elsewhere.

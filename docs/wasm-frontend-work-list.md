@@ -74,8 +74,8 @@ an authorized push, so the review that gates an item is the local one.
 --- so that `git branch --list 'item-*'` maps onto the ledger.
 
 **3.1 was to go first, as a shakedown**, the smallest item whose correctness
-a machine can settle end to end; 0.0, 1.1 and 1.3 went first instead
-on 2026-09-14 and rehearsed the ritual --- the gates, the outcome line
+a machine can settle end to end; 0.0, 1.1's keyword half and 1.3 went first
+instead on 2026-09-14 and rehearsed the ritual --- the gates, the outcome line
 and the ledger flip --- so what 3.1 keeps is its ordering role: 1.2's per-frame
 case waits on it. It rehearses no allowlist deletion, proposing no artifact
 and so having no entry to delete; the items that build one carry that step.
@@ -905,7 +905,8 @@ of `LambdaHack.cabal`'s module lists and the table's `extra-source-files` line,
 in the library's *unconditional* `exposed-modules`, not the `else` branch
 that carries `Sdl.hs`, so `make test-wasm` compiles it too and the wasm consumer
 inherits a module already proved to build there. (2) `Sdl.hs` adopting
-`CellStyle`, `colorToRGBA` derived from `Color.colorToRGB`,
+`CellStyle`, its backlight fill read from `backlightRGB` in place of `greyRGBA`,
+`colorToRGBA` derived from `Color.colorToRGB`,
 and the `Sdl.hs:let Point{..} = toEnum i` `punindex` fix. (3) the `Sdl.hs`
 refactor onto `OverlayLayout`. (4) the explicit-widths step
 in `tools/checks.py`, with its mutant in `tools/mutants.py`. (5)
@@ -1139,9 +1140,9 @@ was overtaken by the recorded spike of 2026-08-07 --- the body's Spike paragraph
 holds the artifact.)
 
 **Owns** --- `GameDefinition/Main.hs`, which R3 also writes, rewording its GHCJS
-comment; and this document. Deliberately not `CLAUDE.md`: its "there is no argv
-and no config file on disk" stays true after the change, since the loader still
-passes the one-element argv `["LambdaHack"]`
+comment; and `docs/wasm-frontend-unified-plan.md`. Deliberately not `CLAUDE.md`:
+its "there is no argv and no config file on disk" stays true after the change,
+since the loader still passes the one-element argv `["LambdaHack"]`
 (`loader.ts:const wasi = new WASI(["LambdaHack"], [], fds);`), and touching
 it would widen this item for nothing.
 
@@ -1179,9 +1180,10 @@ row --- the `run-wasm-game.mjs` deletion from `tools/doc-refs-allow.txt` rides
 0.3's export half, where the file now appears.
 
 **Owns** --- `ts-src/run-wasm-game.mjs` (0.3's seed, grown here; its argv
-pass-through is 1.2's if 1.2 lands first) and this document. The allowlist line
-and every stub are 0.3's per its ruling and this item's (c), and lz-string has
-been in the package and lock files since the page gate.
+pass-through is 1.2's if 1.2 lands first)
+and `docs/wasm-frontend-unified-plan.md`. The allowlist line and every stub
+are 0.3's per its ruling and this item's (c), and lz-string has been
+in the package and lock files since the page gate.
 
 **Done** --- `ts`, `wasm`, `docs`, plus `. ~/.ghc-wasm/env` && `T=$(mktemp -d)`
 && `W=$(wasm32-wasi-cabal list-bin exe:LambdaHack)` &&
@@ -1210,7 +1212,7 @@ Last the landing: outcome line, ledger row, and the `make nodeDeployedBench`
 deletion from `tools/doc-refs-allow.txt`.
 
 **Owns** --- `Makefile`, `.claude/skills/playtests/SKILL.md`,
-`tools/doc-refs-allow.txt` and this document.
+`tools/doc-refs-allow.txt` and `docs/wasm-frontend-unified-plan.md`.
 
 **Done** --- `wasm`, `deploy`, `docs`, plus `make nodeBench` &&
 `make nodeDeployedBench` &&
@@ -1237,8 +1239,9 @@ the target.
 **R1 --- Save robustness.** Design and rulings in the record.
 
 **Split** --- four commits. R1a re-measures the browser save lag under wasm
-from 0.3's instrumented stub and records the number here, editing this document
-alone. R1b is the staging-key/generation-pointer change in `WasmFile.hs` plus
+from 0.3's instrumented stub and records the number
+in `docs/wasm-frontend-unified-plan.md`, editing it alone. R1b
+is the staging-key/generation-pointer change in `WasmFile.hs` plus
 its interrupted-cycle test, and carries the `test/WasmFileUnitTests.hs` deletion
 from `tools/doc-refs-allow.txt`. R1c acts on R1a's number against the ruled
 100ms bar --- at or under, periodic autosave re-enabled; above, a save driven
@@ -1272,12 +1275,12 @@ stands in both, capitalised in one and not the other, the `#status` div quoting
 the README's paragraph rather than copying it, and R1d deletes it from both
 in one commit under 1.4's rule, per that item's 2026-08-07 ruling;
 `tools/doc-refs-allow.txt`, whose `test/WasmFileUnitTests.hs` entry R1b's commit
-deletes; and this document, which R1a edits alone to record its number and R1b's
-and R1c's re-anchorings edit. It does not write `ts-src/run-wasm-test.mjs` ---
-the localStorage stub is 0.3's, per that item's own ruling, and a stub behaviour
-the test needs lands there first, as a 0.3 change. R1c, R3 and the capability
-constants rewrite the same two `#if` sites, so whichever lands first shapes
-the others' diffs.
+deletes; and `docs/wasm-frontend-unified-plan.md`, which R1a edits alone
+to record its number and R1b's and R1c's re-anchorings edit. It does not write
+`ts-src/run-wasm-test.mjs` --- the localStorage stub is 0.3's, per that item's
+own ruling, and a stub behaviour the test needs lands there first, as a 0.3
+change. R1c, R3 and the capability constants rewrite the same two `#if` sites,
+so whichever lands first shapes the others' diffs.
 
 **Done** --- `native`, `wasm`, `page`, `docs`.
 
@@ -1351,9 +1354,10 @@ in `Dom.hs` and `JSFile.hs`, the two orphan GHCJS comments nothing else claims
 --- `GameDefinition/Main.hs:This test is faulty in the browser`, reworded
 in wasm/browser terms since the fact survives the compiler it names,
 and `Point.hs:not supported yet by GHCJS (not verified)`'s "not supported yet
-by GHCJS" clause, updated or dropped --- and `CLAUDE.md` and this document.
-Every item adding `exposed-modules` to `LambdaHack.cabal` writes into the very
-conditional nest R3 collapses, the orphan comment
+by GHCJS" clause, updated or dropped --- and `CLAUDE.md`
+and `docs/wasm-frontend-unified-plan.md`. Every item adding `exposed-modules`
+to `LambdaHack.cabal` writes into the very conditional nest R3 collapses,
+the orphan comment
 at `GameDefinition/Main.hs:This test is faulty in the browser` sits in a file
 3.1 also writes, and the three engine `#if` sites are also R1's
 and the capability-constants practice's, so whichever lands first shapes R3's
@@ -1395,11 +1399,11 @@ and `ts-src/src/url-options-core.test.ts`, `ts-src/src/loader.ts`
 at `loader.ts:const wasi = new WASI(["LambdaHack"], [], fds);`),
 `GameDefinition/index.html` if the knobs get on-page documentation,
 `tools/doc-refs-allow.txt`, whose two `url-options-core` entries commit (1)
-deletes as it creates the files, and this document, the re-anchoring commit
-included. R5's `?benchmark` mode is one of this allowlist's own entries
-and edits the same `loader.ts` call, so whichever lands first shapes the other's
-diff. So does 1.6, whose handler on `lhStart`'s settlement this item's
-rejected-parameter message is a branch of.
+deletes as it creates the files, and `docs/wasm-frontend-unified-plan.md`,
+the re-anchoring commit included. R5's `?benchmark` mode is one
+of this allowlist's own entries and edits the same `loader.ts` call,
+so whichever lands first shapes the other's diff. So does 1.6, whose handler
+on `lhStart`'s settlement this item's rejected-parameter message is a branch of.
 
 **Done** --- `ts`, `page`, `docs`.
 
@@ -1423,10 +1427,10 @@ frame-timing collector, its pure half in a `*-core.ts` under vitest,
 and it carries the deletion of its two `tools/doc-refs-allow.txt` entries. R5b
 is the measurement pass the item exists for --- R5a's browser rendering numbers
 beside the `make nativeBench`-vs-`make nodeBench` ratio --- each landing
-as a recorded number in this document and nothing else, and it carries
-the outcome line. R5c exists only if a ruled bar is crossed --- the game-logic
-ratio beyond 3x, or `submitFrame`-to-paint p95 beyond one 60Hz frame, 16.7ms,
-an exceedance confirmed on the real display before R5c opens ---
+as a recorded number in `docs/wasm-frontend-unified-plan.md` and nothing else,
+and it carries the outcome line. R5c exists only if a ruled bar is crossed ---
+the game-logic ratio beyond 3x, or `submitFrame`-to-paint p95 beyond one 60Hz
+frame, 16.7ms, an exceedance confirmed on the real display before R5c opens ---
 and is otherwise not schedulable, with no commit here; below both bars, "runs
 rather slowly" is stale and R5 deletes that clause itself, from the page
 and from `README.md`, under 1.4's rule and with both files in its **Owns**
@@ -1438,9 +1442,9 @@ and `ts-src/src/frame-timing-core.test.ts`, `ts-src/src/terminal.ts`
 (the `?benchmark` entry), `GameDefinition/index.html` and `README.md` (the "runs
 rather slowly" clause, which stands in both, deleted under 1.4's rule when both
 bars are cleared), `tools/doc-refs-allow.txt` (R5a's two `frame-timing-core`
-entries), and this document; R5b writes this document alone. `?benchmark=` sits
-in R4's parameter allowlist, so whichever of the two lands first shapes
-the other's `loader.ts` diff.
+entries), and `docs/wasm-frontend-unified-plan.md`; R5b writes it alone.
+`?benchmark=` sits in R4's parameter allowlist, so whichever of the two lands
+first shapes the other's `loader.ts` diff.
 
 **Done** --- `ts`, `page`, `docs`, which decides R5a only.
 
