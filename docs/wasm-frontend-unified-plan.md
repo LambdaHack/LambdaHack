@@ -3381,6 +3381,18 @@ removed them at no cost the runs resolve. The probe's diff:*
      // import specifically so the GC can't move/reuse it mid-call). Reading
 ```
 
+*Measured again on 2026-10-22 in Chromium 156.0.8078.47, under the protocol
+above with Chromium and a fresh profile in place of firefox-beta, on the same
+two trees and probes: read every 15 seconds for five minutes, the canvas's p95
+ended at **9.40ms** and **13.40ms**, means 1.92ms at n=3184 and 3.11ms
+at n=4581, and the DOM grid's at 12.40ms and 14.40ms, means 2.66ms at n=3109
+and 3.77ms at n=4626. The canvas read lower in both pairs, by 3.00ms and 1.00ms
+at p95, less than the 4.00ms between its own two runs, so in Chromium too
+the move costs nothing this instrument resolves, and that canvas pair
+is the baseline 2.5 re-measures against in Chromium. The two builds' main menus
+show the same glyph shapes at the same places, the antialiasing differing:
+the canvas's screen holds 54 colours to the grid's 159.*
+
 **B.11 No generator executable for the TS tables.** Ruled 2026-10-20 by Mikolaj:
 0.2's generated files are written and checked by a tasty case in the existing
 suite, not, as designed until then, by a native executable of their own, run

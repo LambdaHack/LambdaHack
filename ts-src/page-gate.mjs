@@ -27,8 +27,9 @@
 // fails both frame assertions with exit 1, and PAGE_GATE_OVERLAYS=1 fails
 // against a tree before 2.4; the same tree passes with six frames of 80x24
 // and a '?' repainting. The Chromium leg's, run 2026-10-22: the site without
-// LambdaHack.wasm fails its three key and frame assertions with exit 1, and
-// a missing chromedriver exits 2.
+// LambdaHack.wasm fails its three key and frame assertions with exit 1,
+// a missing chromedriver exits 2, and a build whose syncExport drops its
+// rts_scheduleWork call fails the Escape assertion, in both browsers.
 
 import { spawn } from "node:child_process";
 import { mkdir, writeFile } from "node:fs/promises";
