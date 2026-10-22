@@ -14,8 +14,10 @@ interface LhExports {
   // A sync export, so that it decides the key's default action before
   // the keydown dispatch returns.
   lhKey: (e: KeyboardEvent) => void;
+  // x is the PointUI column, in half-cells, as terminal.ts's handlers
+  // pass it.
   lhWheel: (
-    col: number,
+    x: number,
     row: number,
     deltaY: number,
     ctrl: boolean,
@@ -24,7 +26,7 @@ interface LhExports {
     meta: boolean,
   ) => Promise<void>;
   lhMouseUp: (
-    col: number,
+    x: number,
     row: number,
     button: number,
     ctrl: boolean,
@@ -76,11 +78,11 @@ async function main(): Promise<void> {
     screen,
     () => lh.memory,
     (e) => lh.lhKey(e),
-    (col, row, deltaY, c, s, a, m) => {
-      void lh.lhWheel(col, row, deltaY, c, s, a, m);
+    (x, row, deltaY, c, s, a, m) => {
+      void lh.lhWheel(x, row, deltaY, c, s, a, m);
     },
-    (col, row, button, c, s, a, m) => {
-      void lh.lhMouseUp(col, row, button, c, s, a, m);
+    (x, row, button, c, s, a, m) => {
+      void lh.lhMouseUp(x, row, button, c, s, a, m);
     },
   );
   globalThis.lhSubmitFrame = (addr, w, h) => term.submitFrame(addr, w, h);

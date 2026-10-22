@@ -42,13 +42,12 @@
       }
       #fsToggle:hover, #fsToggle:focus { color: #ffffff; border-color: #ffffff; }
       #screen {
-        /* The grid sizes itself from the engine's frame on first paint.
-           16px matches the bitmap font's native pixel size, avoiding
-           scaling blur (master's td font-size is also 16px). */
+        /* As wide as its canvas, which terminal.ts sizes from the engine's
+           frame and the map font's cell on first paint. */
         margin: 0 auto;
         width: max-content;
-        font-size: 16px;
       }
+      #screen > canvas { display: block; }
       /* Visible only for keyboard-triggered focus (Tab), not mouse clicks --
          #screen is tabindex=0 and was previously outline:none, meaning a
          keyboard-only user tabbing here got no visible indicator at all. */

@@ -12,11 +12,13 @@
 // and its frames arrive; a '?' through lhKey, a sync export taking the
 // event, is taken from the browser before lhKey returns and stops the
 // stream, which then stays quiet for a second, as it did not for 15s
-// without the key; on that quiet screen a wheel south through lhWheel
-// repaints it and a wheel north repaints it back exactly; a left button
-// release through lhMouseUp repaints it too; and lhKey leaves the browser
-// a bare Control chord of '+', an Alt, AltGraph and Meta chord, and Shift
-// pressed alone.
+// without the key; on that quiet screen, the main menu, a wheel south
+// through lhWheel repaints it and a wheel north repaints it back exactly;
+// lhMouseUp's column is in half-cells, as lhWheel's is: a left button
+// release one half-cell past a menu choice's label repaints the menu
+// unchanged, and one on the label's last half-cell, an odd column,
+// activates the choice; and lhKey leaves the browser a bare Control chord
+// of '+', an Alt, AltGraph and Meta chord, and Shift pressed alone.
 //
 // Usage: node run-wasm-game.mjs <LambdaHack.wasm> <ghc_wasm_jsffi.mjs>
 //   <ghc_wasm_jsffi.mjs> is post-link.mjs's output for that binary, as in
@@ -54,6 +56,16 @@ const wasi = new WASI({
 });
 let instance;
 await installStubs(() => instance.exports.memory);
+// The latest frame's text, a string per row, for finding a menu choice.
+let screenRows = [];
+const recordFrame = globalThis.lhSubmitFrame;
+globalThis.lhSubmitFrame = (addr, w, h) => {
+  recordFrame(addr, w, h);
+  const cells = new DataView(instance.exports.memory.buffer, addr, 4 * w * h);
+  screenRows = Array.from({ length: h }, (_, y) => Array.from(
+    { length: w }, (_, x) => String.fromCodePoint(cells.getUint32(4 * (y * w + x), true) >>> 16),
+  ).join(''));
+};
 instance = await instantiate(wasmPath, jsffiPath, wasi);
 const lh = instance.exports;
 const calls = globalThis.lhSubmitFrameCalls;
@@ -147,15 +159,28 @@ async function run() {
   ok(`lhKey reaches the game: the stream stopped at ${calls.length} frames`);
 
   const menu = calls[calls.length - 1].hash;
-  const scrolled = await repaint('lhWheel', [10, 10, 100, ...noMods]);
-  const back = await repaint('lhWheel', [10, 10, -100, ...noMods]);
+  const scrolled = await repaint('lhWheel', [21, 10, 100, ...noMods]);
+  const back = await repaint('lhWheel', [21, 10, -100, ...noMods]);
   if (scrolled === menu || back !== menu) {
     fail(`lhWheel south then north went ${menu} -> ${scrolled} -> ${back}`);
   }
   ok(`lhWheel reaches the game: south then north repaints ${menu} -> ${scrolled} -> ${back}`);
 
-  await repaint('lhMouseUp', [10, 10, 0, ...noMods]);
-  ok('lhMouseUp reaches the game: a left button release repaints the screen');
+  // A choice is clickable on its label's half-cells (SlideshowM.hs's
+  // onChoice), so its last one is odd, and were the column a cell
+  // doubled, as before 0.4, that click would miss as the one past it does.
+  const label = 'see command help';
+  const row = screenRows.findIndex((r) => r.includes(label));
+  if (row < 0) fail(`no '${label}' on the menu:\n${screenRows.join('\n')}`);
+  const last = 2 * (screenRows[row].indexOf(label) + label.length) - 1;
+  const past = await repaint('lhMouseUp', [last + 1, row, 0, ...noMods]);
+  if (past !== menu) {
+    fail(`a left button release at (${last + 1}, ${row}), past '${label}', changed the menu`);
+  }
+  const chosen = await repaint('lhMouseUp', [last, row, 0, ...noMods]);
+  if (chosen === menu) fail(`a left button release at (${last}, ${row}), on '${label}', missed it`);
+  ok(`lhMouseUp reaches the game in half-cells: '${label}' ends at (${last}, ${row}),`
+     + ` a release past it repaints the menu and one on it activates the choice`);
 
   // On that quiet screen, with no timer due, a key through the sync lhKey
   // must be acted on with no other event to follow it.

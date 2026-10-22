@@ -1,5 +1,5 @@
 // Fullscreen wiring: a button toggles the page in and out of the
-// Fullscreen API, and while it is in, the cell grid is scaled to fill the
+// Fullscreen API, and while it is in, the game's canvas is scaled to fill the
 // viewport with its aspect ratio kept (the arithmetic is fullscreen-core).
 // Page-level only: sfullscreenMode is a startup-time SDL choice with no
 // in-game command even natively. Not unit-tested (DOM wiring).
@@ -52,7 +52,7 @@ export function mountFullscreen(
     // requestFullscreen needs a trusted user gesture: this click is one.
     const p = active() ? document.exitFullscreen() : document.documentElement.requestFullscreen();
     p.catch((e: unknown) => console.warn("[lh] fullscreen toggle failed", e));
-    // The click moved focus to the button; keys are read on the grid.
+    // The click moved focus to the button; keys are read on the screen.
     screen.focus();
   });
   // Covers the browser's own exit (Escape, F11) as well as our toggle.

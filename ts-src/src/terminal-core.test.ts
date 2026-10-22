@@ -10,6 +10,9 @@ import {
   styledCell,
   altModifier,
   cellPosition,
+  cellMetrics,
+  cellRunOps,
+  pointerPoint,
 } from "./terminal-core.js";
 import fixtures from "./generated/fixtures.json";
 
@@ -140,6 +143,66 @@ describe("styledCell against CellStyle.styleCell's fixtures", () => {
 describe("cellPosition against punindex's fixtures", () => {
   it.each(fixtures.positions)("i=$i width=$width", ({ i, width, ...expected }) => {
     expect(cellPosition(i, width)).toEqual(expected);
+  });
+});
+
+describe("cellMetrics (the cell from the loaded font, as Sdl.hs takes it)", () => {
+  it("makes a 16px-high font a 16-pixel cell with the line box filling it", () => {
+    expect(cellMetrics(13, 3)).toEqual({ boxSize: 16, halfSize: 8, baseline: 13 });
+  });
+  it("rounds the font's height up, as TTF_FontHeight does", () => {
+    expect(cellMetrics(12.2, 3.1)).toEqual({ boxSize: 16, halfSize: 8, baseline: 13 });
+  });
+  it("evens an odd height down, cropping the line box's top row", () => {
+    expect(cellMetrics(14, 3)).toEqual({ boxSize: 16, halfSize: 8, baseline: 13 });
+  });
+});
+
+describe("cellRunOps (the draw ops of a cell run)", () => {
+  const m = cellMetrics(13, 3);
+  it("fills, writes and rings each cell in turn, at its column and row", () => {
+    expect(cellRunOps({ col: 2, row: 1, words: [enc(AT, BrRed, HiNone), enc(AT, Green, HiRed)] }, 16, m))
+      .toEqual([
+        { kind: "fill", x: 32, y: 16, w: 16, h: 16, color: "#000000" },
+        { kind: "text", x: 32, y: 16, w: 16, h: 16, baseline: 13, text: "@", color: "#FF5555" },
+        { kind: "stroke", x: 32, y: 16, w: 16, h: 16, color: "#000000" },
+        { kind: "fill", x: 48, y: 16, w: 16, h: 16, color: "#000000" },
+        { kind: "text", x: 48, y: 16, w: 16, h: 16, baseline: 13, text: "@", color: "#059D05" },
+        { kind: "stroke", x: 48, y: 16, w: 16, h: 16, color: "#D50505" },
+      ]);
+  });
+  it("lays cells out at the given pitch, a half cell for the mono layer", () => {
+    const ops = cellRunOps({ col: 3, row: 0, words: [enc(AT, BrRed, HiNone)] }, m.halfSize, m);
+    expect(ops.map(({ kind, x, w }) => [kind, x, w]))
+      .toEqual([["fill", 24, 8], ["text", 24, 8], ["stroke", 24, 8]]);
+  });
+  it("draws a backlit cell's tint and black ring, and no glyph for a space", () => {
+    expect(cellRunOps({ col: 0, row: 0, words: [enc(SPACE, White, HiBackground)] }, 16, m)).toEqual([
+      { kind: "fill", x: 0, y: 0, w: 16, h: 16, color: "#251F1F" },
+      { kind: "stroke", x: 0, y: 0, w: 16, h: 16, color: "#000000" },
+    ]);
+  });
+  it("styles each cell by its row, as styledCell does", () => {
+    const [, text] = cellRunOps({ col: 0, row: 2, words: [enc(AT, White, HiNone)] }, 16, m);
+    expect(text).toMatchObject({ kind: "text", color: styledCell(enc(AT, White, HiNone), 2).color });
+  });
+});
+
+describe("pointerPoint (pixels to the engine's point, as Sdl.hs's pointTranslate)", () => {
+  const m = cellMetrics(13, 3);
+  // An 80x24 screen of 16-pixel cells, rendered at its own size.
+  const at = (x: number, y: number) => pointerPoint(x, y, 1280, 384, 1280, 384, m);
+  it("gives a cell's left half an even x and its right half an odd one", () => {
+    expect(at(10 * 16 + 7, 5 * 16)).toEqual({ x: 20, y: 5 });
+    expect(at(10 * 16 + 8, 5 * 16 + 15)).toEqual({ x: 21, y: 5 });
+  });
+  it("scales by the rendered box, as under a CSS transform or devicePixelRatio", () => {
+    expect(pointerPoint(10 * 32 + 16, 5 * 32, 2560, 768, 1280, 384, m)).toEqual({ x: 21, y: 5 });
+    expect(pointerPoint(10 * 8 + 4, 5 * 8, 640, 192, 1280, 384, m)).toEqual({ x: 21, y: 5 });
+  });
+  it("counts the box's far edges as inside it", () => {
+    expect(at(1280, 384)).toEqual({ x: 159, y: 23 });
+    expect(at(-1, -1)).toEqual({ x: 0, y: 0 });
   });
 });
 

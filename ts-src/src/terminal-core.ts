@@ -1,6 +1,7 @@
 // Pure logic for the LambdaHack wasm web frontend: turn the engine's raw
-// AttrCharW32 cell words into glyphs + colors, frame indices into screen
-// cells, and a key event's modifiers into the engine's Alt. No DOM, no
+// AttrCharW32 cell words into glyphs + colors and runs of them into draw
+// ops, frame indices into screen cells, pointer pixels into the engine's
+// points, and a key event's modifiers into the engine's Alt. No DOM, no
 // wasm: the loader and the actual drawing are thin wiring around these
 // functions.
 //
@@ -113,5 +114,102 @@ export function styledCell(w: number, row: number): StyledCell {
     color: fgColor(efg),
     background: bgColor(bg),
     border: highlightColor(bg),
+  };
+}
+
+/**
+ * The map font's cell in device pixels, as Sdl.hs takes it from the loaded
+ * font: halfSize is half the font's height rounded down and boxSize twice
+ * that. baseline is the glyph's baseline below the cell's top, the font's
+ * line box being centred in the cell as Sdl.hs's scaleSurfaceToTexture
+ * centres a glyph's surface, cropping an odd row off the top.
+ */
+export interface CellMetrics {
+  boxSize: number;
+  halfSize: number;
+  baseline: number;
+}
+
+/** CellMetrics from the loaded font's ascent and descent, in device pixels. */
+export function cellMetrics(ascent: number, descent: number): CellMetrics {
+  const height = Math.ceil(ascent + descent);
+  const halfSize = Math.floor(height / 2);
+  const boxSize = 2 * halfSize;
+  return { boxSize, halfSize, baseline: Math.floor((boxSize - height) / 2) + Math.ceil(ascent) };
+}
+
+/**
+ * One canvas drawing command over a rectangle, in device pixels: filling
+ * it; a glyph centred in it, its baseline that far below its top, cropped
+ * to it as Sdl.hs's scaleSurfaceToTexture crops a glyph to its cell; or
+ * a one-pixel ring along its inner edge, which is SDL2's drawRect.
+ */
+export type DrawOp =
+  | { kind: "fill"; x: number; y: number; w: number; h: number; color: string }
+  | {
+      kind: "text";
+      x: number;
+      y: number;
+      w: number;
+      h: number;
+      baseline: number;
+      text: string;
+      color: string;
+    }
+  | { kind: "stroke"; x: number; y: number; w: number; h: number; color: string };
+
+/** Consecutive cells of one screen row, from column col on, as frame words. */
+export interface CellRun {
+  col: number;
+  row: number;
+  words: ArrayLike<number>;
+}
+
+/**
+ * The draw ops for a cell run whose cells are pitch device pixels wide:
+ * per cell, its background, its glyph and its highlight ring, in the order
+ * Sdl.hs draws them. A blank glyph draws nothing and gets no op.
+ */
+export function cellRunOps(run: CellRun, pitch: number, m: CellMetrics): DrawOp[] {
+  const ops: DrawOp[] = [];
+  const y = run.row * m.boxSize;
+  for (let k = 0; k < run.words.length; k++) {
+    const x = (run.col + k) * pitch;
+    const h = m.boxSize;
+    const s = styledCell(run.words[k], run.row);
+    ops.push({ kind: "fill", x, y, w: pitch, h, color: s.background });
+    if (s.char !== NBSP) {
+      ops.push({
+        kind: "text", x, y, w: pitch, h, baseline: m.baseline, text: s.char, color: s.color,
+      });
+    }
+    ops.push({ kind: "stroke", x, y, w: pitch, h, color: s.border });
+  }
+  return ops;
+}
+
+/**
+ * The engine's point under the pointer, as Sdl.hs's pointTranslate gives
+ * it: x in half-cells and y in cells. Takes the pointer's offset from
+ * the canvas's rendered box and that box's size, which a CSS transform
+ * scales, and the backing store's size, so it holds under 1.3's fullscreen
+ * fit and at any devicePixelRatio. A pointer on the box's far edge counts
+ * as inside it.
+ */
+export function pointerPoint(
+  offsetX: number,
+  offsetY: number,
+  boxWidth: number,
+  boxHeight: number,
+  canvasWidth: number,
+  canvasHeight: number,
+  m: CellMetrics,
+): { x: number; y: number } {
+  const clamp = (v: number, n: number) => Math.min(Math.max(v, 0), n - 1);
+  return {
+    x: clamp(Math.floor((offsetX * canvasWidth) / boxWidth / m.halfSize),
+             canvasWidth / m.halfSize),
+    y: clamp(Math.floor((offsetY * canvasHeight) / boxHeight / m.boxSize),
+             canvasHeight / m.boxSize),
   };
 }

@@ -171,28 +171,28 @@ foreign import javascript unsafe "$1.metaKey"
 foreign import javascript unsafe "($1.preventDefault(), $1.stopPropagation())"
   js_preventDefaultAndStop :: JSVal -> IO ()
 
--- | Handle a wheel event delivered from JS over a given screen cell
--- (0-based column/row).
+-- | Handle a wheel event delivered from JS over a given screen point:
+-- the 0-based 'PointUI' column, in half-cells, as @Sdl.hs@'s
+-- @pointTranslate@ gives it, and the 0-based row.
 lhWheel :: Int -> Int -> Double -> Bool -> Bool -> Bool -> Bool -> IO ()
-lhWheel col row deltaY modCtrl modShift modAlt modMeta = do
+lhWheel x row deltaY modCtrl modShift modAlt modMeta = do
   mrf <- readIORef rfRef
   forM_ mrf $ \rf -> do
     let modifier = modifierTranslate modCtrl modShift modAlt modMeta
-        pUI = squareToUI $ PointSquare col row
-    forM_ (decideWheel deltaY) $ \key -> saveKMP rf modifier key pUI
+    forM_ (decideWheel deltaY) $ \key ->
+      saveKMP rf modifier key (PointUI x row)
 
 foreign export javascript "lhWheel"
   lhWheel :: Int -> Int -> Double -> Bool -> Bool -> Bool -> Bool -> IO ()
 
--- | Handle a mouseup delivered from JS over a given screen cell (0-based
--- column/row) with the DOM @MouseEvent.button@ code.
+-- | Handle a mouseup delivered from JS over a given screen point, given
+-- as to 'lhWheel', with the DOM @MouseEvent.button@ code.
 lhMouseUp :: Int -> Int -> Int -> Bool -> Bool -> Bool -> Bool -> IO ()
-lhMouseUp col row button modCtrl modShift modAlt modMeta = do
+lhMouseUp x row button modCtrl modShift modAlt modMeta = do
   mrf <- readIORef rfRef
   forM_ mrf $ \rf -> do
     let modifier = modifierTranslate modCtrl modShift modAlt modMeta
-        pUI = squareToUI $ PointSquare col row
-    saveKMP rf modifier (decideMouseButton button) pUI
+    saveKMP rf modifier (decideMouseButton button) (PointUI x row)
 
 foreign export javascript "lhMouseUp"
   lhMouseUp :: Int -> Int -> Int -> Bool -> Bool -> Bool -> Bool -> IO ()
