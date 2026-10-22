@@ -19,6 +19,7 @@ import           Data.IORef
 import qualified Data.Text as T
 import           Data.Time.Clock.POSIX
 import           Data.Time.LocalTime
+import qualified Data.Vector as V
 import qualified Data.Vector.Storable as VS
 import qualified Data.Vector.Unboxed as U
 import           Data.Word (Word32, Word8)
@@ -43,6 +44,7 @@ import qualified SDL.Vect as Vect
 
 import           Game.LambdaHack.Client.UI.Content.Screen
 import           Game.LambdaHack.Client.UI.Frame
+import           Game.LambdaHack.Client.UI.Frontend.CellStyle
 import           Game.LambdaHack.Client.UI.Frontend.Common
 import           Game.LambdaHack.Client.UI.Frontend.InputDecision
 import           Game.LambdaHack.Client.UI.Frontend.MouseCursor
@@ -50,12 +52,12 @@ import           Game.LambdaHack.Client.UI.Frontend.Screenshot
 import qualified Game.LambdaHack.Client.UI.Key as K
 import           Game.LambdaHack.Client.UI.Overlay
 import           Game.LambdaHack.Client.UI.PointUI
+import           Game.LambdaHack.Common.Area (punindex)
 import           Game.LambdaHack.Common.ClientOptions
 import           Game.LambdaHack.Common.File
 import           Game.LambdaHack.Common.Misc
 import           Game.LambdaHack.Common.Point
 import qualified Game.LambdaHack.Common.PointArray as PointArray
-import           Game.LambdaHack.Content.TileKind (floorSymbol)
 import qualified Game.LambdaHack.Definition.Color as Color
 
 -- These are needed until SDL is fixed and all our devs move
@@ -473,13 +475,18 @@ drawFrame coscreen ClientOptions{..} sess@FrontendSession{..} curFrame = do
       tt2Square = Vect.V2 (toEnum boxSize) (toEnum boxSize)
       vp :: Int -> Int -> Vect.Point Vect.V2 CInt
       vp x y = Vect.P $ Vect.V2 (toEnum x) (toEnum y)
+      -- Make all visible floors bold (no bold font variant for 16x16x,
+      -- so only the dot can be bold).
+      squareGlyphs = CellGlyphs
+        { cgDimFloor = if mapFontIsBitmap then '\x0007' else '\x22C5'
+        , cgSpace = ' ' }
       drawHighlight !col !row !color = do
         SDL.rendererDrawColor srenderer SDL.$= colorToRGBA color
         let rect = SDL.Rectangle (vp (col * boxSize) (row * boxSize)) tt2Square
         SDL.drawRect srenderer $ Just rect
         SDL.rendererDrawColor srenderer SDL.$= blackRGBA
           -- reset back to black
-      chooseAndDrawHighlight !col !row !bg = do
+      chooseAndDrawHighlight !col !row !border = do
 -- Rectangle drawing is broken in SDL 2.0.16
 -- (https://github.com/LambdaHack/LambdaHack/issues/281)
 -- and simple workarounds fail with old SDL, e.g., four lines instead of
@@ -489,11 +496,10 @@ drawFrame coscreen ClientOptions{..} sess@FrontendSession{..} curFrame = do
              let rect = SDL.Rectangle (vp (col * boxSize) (row * boxSize))
                                       tt2Square
              SDL.drawRect srenderer $ Just rect
-       case bg of
-        Color.HighlightNone -> workaroundOverwriteHighlight
-        Color.HighlightBackground -> workaroundOverwriteHighlight
-        Color.HighlightNoneCursor -> workaroundOverwriteHighlight
-        _ -> drawHighlight col row $ Color.highlightToColor bg
+       -- Black is the draw colour already set.
+       if border == Color.Black
+       then workaroundOverwriteHighlight
+       else drawHighlight col row border
 -- workarounds end
       -- This also frees the surface it gets.
       scaleSurfaceToTexture :: Int -> SDL.Surface -> IO SDL.Texture
@@ -565,7 +571,7 @@ drawFrame coscreen ClientOptions{..} sess@FrontendSession{..} curFrame = do
         if w == wPrev
         then return $! i + 1
         else do
-          let Point{..} = toEnum i
+          let Point{..} = punindex (rwidth coscreen) i
           setSquareChar px py (Color.AttrCharW32 w)
           return $! i + 1
       drawMonoOverlay :: OverlaySpace -> IO ()
@@ -583,8 +589,7 @@ drawFrame coscreen ClientOptions{..} sess@FrontendSession{..} curFrame = do
         atlas <- readIORef smonoAtlas
         let Color.AttrChar{acAttr=Color.Attr{fg=fgRaw, bg}, acChar} =
               Color.attrCharFromW32 w
-            fg | even row && fgRaw == Color.White = Color.AltWhite
-               | otherwise = fgRaw
+            fg = rowColor row fgRaw
             ac = Color.attrChar2ToW32 fg acChar
             !_A = assert (bg `elem` [ Color.HighlightNone
                                     , Color.HighlightNoneCursor ]) ()
@@ -614,29 +619,15 @@ drawFrame coscreen ClientOptions{..} sess@FrontendSession{..} curFrame = do
       setSquareChar :: Int -> Int -> Color.AttrCharW32 -> IO ()
       setSquareChar !col !row !w = do
         atlas <- readIORef squareAtlas
-        let Color.AttrChar{ acAttr=Color.Attr{fg=fgRaw, bg}
-                          , acChar=acCharRaw } =
-              Color.attrCharFromW32 w
-            fg | even row && fgRaw == Color.White = Color.AltWhite
-               | otherwise = fgRaw
-            ac = if bg == Color.HighlightBackground
+        let CellStyle{..} = styleCell squareGlyphs row w
+            ac = if csBacklit
                  then w
-                 else Color.attrChar2ToW32 fg acCharRaw
+                 else Color.attrChar2ToW32 csFg (Color.charFromW32 w)
         textTexture <- case EM.lookup ac atlas of
           Nothing -> do
-            -- Make all visible floors bold (no bold font variant for 16x16x,
-            -- so only the dot can be bold).
-            let acChar = if not (Color.isBright fg)
-                            && acCharRaw == floorSymbol  -- '\x00B7'
-                         then if mapFontIsBitmap
-                              then '\x0007'
-                              else '\x22C5'
-                         else acCharRaw
-                background = if bg == Color.HighlightBackground
-                             then greyRGBA
-                             else blackRGBA
-            textSurfaceRaw <- TTF.shadedGlyph squareFont (colorToRGBA fg)
-                                              background acChar
+            let background = if csBacklit then backlightRGBA else blackRGBA
+            textSurfaceRaw <- TTF.shadedGlyph squareFont (colorToRGBA csFg)
+                                              background csGlyph
             textTexture <- scaleSurfaceToTexture boxSize textSurfaceRaw
             writeIORef squareAtlas $ EM.insert ac textTexture atlas
             return textTexture
@@ -644,7 +635,7 @@ drawFrame coscreen ClientOptions{..} sess@FrontendSession{..} curFrame = do
         let tgtR = SDL.Rectangle (vp (col * boxSize) (row * boxSize)) tt2Square
         SDL.copy srenderer textTexture Nothing (Just tgtR)
         -- Potentially overwrite a portion of the glyph.
-        chooseAndDrawHighlight col row bg
+        chooseAndDrawHighlight col row csBorder
       drawPropOverlay :: OverlaySpace -> IO ()
       drawPropOverlay =
         mapM_ (\(PointUI x y, al) ->
@@ -870,27 +861,22 @@ sDL_ALPHA_OPAQUE = 255
 blackRGBA :: SDL.V4 Word8
 blackRGBA = SDL.V4 0 0 0 sDL_ALPHA_OPAQUE
 
--- A third of @colorToRGBA Color.BrBlack@ to compensate for the use
--- as background (high area) as opposed to glyphs (usually small area).
-greyRGBA :: SDL.V4 Word8
-greyRGBA = SDL.V4 0x25 0x1F 0x1F sDL_ALPHA_OPAQUE
+-- | The fill of a cell under 'Color.HighlightBackground'.
+backlightRGBA :: SDL.V4 Word8
+backlightRGBA = hexToRGBA backlightRGB
 
--- This code is sadly duplicated from "Game.LambdaHack.Definition.Color".
+-- | The colours of "Game.LambdaHack.Definition.Color", read once.
 colorToRGBA :: Color.Color -> SDL.V4 Word8
-colorToRGBA Color.Black     = blackRGBA
-colorToRGBA Color.Red       = SDL.V4 0xD5 0x05 0x05 sDL_ALPHA_OPAQUE
-colorToRGBA Color.Green     = SDL.V4 0x05 0x9D 0x05 sDL_ALPHA_OPAQUE
-colorToRGBA Color.Brown     = SDL.V4 0xCA 0x4A 0x05 sDL_ALPHA_OPAQUE
-colorToRGBA Color.Blue      = SDL.V4 0x05 0x56 0xF4 sDL_ALPHA_OPAQUE
-colorToRGBA Color.Magenta   = SDL.V4 0xAF 0x0E 0xAF sDL_ALPHA_OPAQUE
-colorToRGBA Color.Cyan      = SDL.V4 0x05 0x96 0x96 sDL_ALPHA_OPAQUE
-colorToRGBA Color.White     = SDL.V4 0xB8 0xBF 0xCB sDL_ALPHA_OPAQUE
-colorToRGBA Color.AltWhite  = SDL.V4 0xC4 0xBE 0xB1 sDL_ALPHA_OPAQUE
-colorToRGBA Color.BrBlack   = SDL.V4 0x6F 0x5F 0x5F sDL_ALPHA_OPAQUE
-colorToRGBA Color.BrRed     = SDL.V4 0xFF 0x55 0x55 sDL_ALPHA_OPAQUE
-colorToRGBA Color.BrGreen   = SDL.V4 0x65 0xF1 0x36 sDL_ALPHA_OPAQUE
-colorToRGBA Color.BrYellow  = SDL.V4 0xEB 0xD6 0x42 sDL_ALPHA_OPAQUE
-colorToRGBA Color.BrBlue    = SDL.V4 0x4D 0x98 0xF4 sDL_ALPHA_OPAQUE
-colorToRGBA Color.BrMagenta = SDL.V4 0xFF 0x77 0xFF sDL_ALPHA_OPAQUE
-colorToRGBA Color.BrCyan    = SDL.V4 0x52 0xF4 0xE5 sDL_ALPHA_OPAQUE
-colorToRGBA Color.BrWhite   = SDL.V4 0xFF 0xFF 0xFF sDL_ALPHA_OPAQUE
+colorToRGBA c = colorsRGBA V.! fromEnum c
+
+colorsRGBA :: V.Vector (SDL.V4 Word8)
+colorsRGBA = V.fromList $ map (hexToRGBA . Color.colorToRGB)
+                              [Color.Black .. Color.BrWhite]
+
+hexToRGBA :: Text -> SDL.V4 Word8
+hexToRGBA t = case T.unpack t of
+  ['#', r1, r2, g1, g2, b1, b2] ->
+    SDL.V4 (channel r1 r2) (channel g1 g2) (channel b1 b2) sDL_ALPHA_OPAQUE
+  _ -> error $ "not #RRGGBB" `showFailure` t
+ where
+  channel high low = toEnum $ 16 * Char.digitToInt high + Char.digitToInt low
