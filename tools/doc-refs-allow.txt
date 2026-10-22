@@ -35,10 +35,8 @@ post-link.mjs
 
 # Artifacts the wasm campaign proposes (docs/wasm-frontend-work-list.md) but has not built
 # yet (Phases 0-3). Each should disappear from here as its phase lands.
-Client/UI/Frontend/OverlayLayout.hs
 overlay-core.ts
 overlay-core.test.ts
-test/OverlayLayoutUnitTests.hs
 frame-timing-core.test.ts
 frame-timing-core.ts
 make nodeDeployedBench

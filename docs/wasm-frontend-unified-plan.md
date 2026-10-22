@@ -1478,6 +1478,20 @@ and a fit function called with the width just measured. The ruler stays
 in the frontend; the cutoff rule, the clamp rule and the trimmed-line marker get
 one definition.
 
+*Landed in `3fcc93a1e` and `bfd562927`, the Split's (2) and (3), after
+`b42a2ebe2`, its (1), whose tests write the branch table,
+`ts-src/src/generated/prop-fit.json`, through 0.2's freshness case and switch,
+exported from `test/CellStyleUnitTests.hs`; `6354a14c6` is its (4). It landed
+ahead of the determinism goldens, as the Log's ruling of 2026-10-23 says,
+and in their place each of (2) and (3) was measured against the commit before,
+under Xvfb: the screenshots of every frame drawn in the first 300
+of `make bench`'s seeded battle and crawl games are identical but
+for the seconds of a date the game prints, and over ten interleaved rounds
+of `benchFrontendBattle` and `benchFrontendCrawl`, with the null-frontend
+`benchBattle` as control, the median ratio of user-space instruction counts
+is within 0.004% of 1 and that of session times within 2.2%, the control's being
+the widest.*
+
 **Metrics.** Everything device-space is parameterized, never baked to SDL's
 numbers:
 
