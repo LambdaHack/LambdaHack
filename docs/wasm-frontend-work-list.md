@@ -593,7 +593,8 @@ into `Wasm.hs`'s `lhWheel` and `lhMouseUp`, their types unchanged and their
 first argument's meaning changed, with the game driver's coverage case pinning
 it; and (2) the outcome line and the ledger flip.
 
-**Owns** --- `ts-src/src/terminal.ts`, `ts-src/src/terminal-core.ts`
+**Owns** --- `ts-src/src/terminal.ts` and its forwarding tests
+in `ts-src/src/terminal-input.test.ts`, `ts-src/src/terminal-core.ts`
 and its test, `ts-src/src/fullscreen.ts` (its transform applies to the canvas
 now), `GameDefinition/index.html` (the `#screen` rule, the banner untouched),
 `engine-src/Game/LambdaHack/Client/UI/Frontend/Wasm.hs` (`lhWheel`
@@ -681,7 +682,7 @@ of its own: `make test-wasm` drives the other driver, where nothing calls
 **Hands back** --- *display*: press `Ctrl+P` in a browser and see a PNG download
 under the helper's name, showing the screen. The PNG is the painter's own
 backing store, and whether the fonts loaded is 0.4's to check, its painter
-awaiting `document.fonts.ready` before the first paint. The substitute gates
+awaiting `document.fonts.load` before the first paint. The substitute gates
 in **Done** are the tasty test pinning the filename against a fixed time
 and the two reactor-driver runs, which are what executes `Wasm.hs`;
 `make test-wasm` adds nothing here: nothing it runs calls `fprintScreen`,
@@ -834,11 +835,11 @@ commit deletes a `tools/doc-refs-allow.txt` entry.
 the reactor driver 0.3's export half seeds and 3.2 grows ---
 `ts-src/run-wasm-test.mjs` for the startup hook's stub,
 and `docs/wasm-frontend-unified-plan.md`. It does not write
-`GameDefinition/index.html`: the `#screen` rule and its blur comment are 0.4's,
-which rewrites that rule for the canvas. 1.2 writes the same lines in the four
-shared files, so whichever lands first shapes the other's diff. No ordering
-against 1.3 survives its ruling: that helper measures the live grid and assumes
-no cell size. `../lambdahack.github.io` is redeployed by **Done**, not owned.
+`GameDefinition/index.html`, whose `#screen` rule 0.4 rewrote for the canvas.
+1.2 writes the same lines in the four shared files, so whichever lands first
+shapes the other's diff. No ordering against 1.3 survives its ruling:
+that helper measures the live screen and assumes no cell size.
+`../lambdahack.github.io` is redeployed by **Done**, not owned.
 
 **Done** --- `native`, `ts`, `wasm`, `deploy`, `page`, `docs`, plus a run
 of `ts-src/run-wasm-game.mjs` against a fresh reactor, the one thing
@@ -971,8 +972,8 @@ twin and its vitest table; sec. 2.1 gives both functions as complete Haskell
 bodies, so it can be *written* before 2.1 lands, but it may only *land* once
 2.1's freshness case writes the branch-complete table, hand-written fixtures
 being forbidden here. (3) the overlay renderer: all three of 2.1's sections
-drawn through 0.4's draw-op core onto its canvas, each fixed-pitch cell clipped
-to its box with the glyph centred, as the pitfalls specify. (4) the outcome line
+drawn through 0.4's draw-op core onto its canvas, each fixed-pitch cell's glyph
+clipped to its box by that core, as the pitfalls say. (4) the outcome line
 naming (3)'s hash, the ledger flip, and the deletion of `overlay-core.ts`
 and `overlay-core.test.ts` from `tools/doc-refs-allow.txt`.
 

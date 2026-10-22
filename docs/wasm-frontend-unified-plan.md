@@ -15,7 +15,7 @@ and `sdl2-to-wasm-parity-plan.md`. It pursues two goals at once:
   scaling), display scale, multi-font (proportional + mono) rendering,
   and the game-end page lifecycle (1.6) --- plus the input/rendering fidelity
   fixes in 0.0, the paragraph key's web clause in 0.1 and fixed-pitch glyph
-  cropping in 2.2. That is not every real gap, and the goal no longer claims
+  cropping in 0.4. That is not every real gap, and the goal no longer claims
   it is: the 2026-09-07 re-audit recorded in Appendix C found six more, of which
   four were scheduled the same day --- its (3) into 1.2, (4) as 1.6, (5)
   into 2.2 and (6) into 0.1, each with a ledger row --- and two were carried
@@ -507,11 +507,12 @@ only that the plan was written is one the next reader has to skip.
   `lhStart`, the first of its four exports (`lhStart`, `lhKey`, `lhWheel`,
   `lhMouseUp`). Each frame, `Wasm.hs`'s `display` passes the `Word32` cell
   buffer's address to `globalThis.lhSubmitFrame`; `terminal.ts` snapshots
-  it and repaints a DOM grid of `<span>` cells (diffing against the previous
-  frame) via the pure `styledCell` in `terminal-core.ts`. Input flows the other
-  way: DOM events -> `lhKey`/`lhWheel`/`lhMouseUp` exports -> the engine's key
-  channel. Saves bypass all of this --- `WasmFile.hs` talks to `localStorage`
-  directly over JSFFI.
+  it and repaints the changed cells on one `<canvas>` (diffing against
+  the previous frame) by the draw ops the pure `cellRunOps`
+  in `terminal-core.ts` computes. Input flows the other way: DOM events ->
+  `lhKey`/`lhWheel`/`lhMouseUp` exports -> the engine's key channel. Saves
+  bypass all of this --- `WasmFile.hs` talks to `localStorage` directly
+  over JSFFI.
 - **`Dom.hs`/`JSFile.hs` (the GHCJS frontend) are dead code**, permanently
   and for the version reasons Appendix A.1 sets out. They still appear
   throughout this plan as the *canonical origin* of web-frontend logic:
@@ -1019,15 +1020,16 @@ the span grid with one `<canvas>` inside `#screen`: a backing store
 of `cols * boxSize` by `rows * boxSize` device pixels, `boxSize` the map font's
 cell as `Sdl.hs` takes it from the loaded font, its CSS size that divided
 by `devicePixelRatio`. Per changed cell, a `fillRect` of the background,
-the glyph by `fillText` centred in the cell in the `lambdaHackFont` face,
-and a `strokeRect` one pixel inside the cell in the border colour --- the three
-values `styledCell` already resolves, so `terminal-core.ts` and its tests stand,
-and the ring is SDL2's `drawRect` rather than an inset box-shadow imitating it.
-The pointer reports pixels, and the wheel and mouseup handlers divide them
-by `halfSize` as SDL2's `pointTranslate` does, passing the half-cell column
-to `lhWheel` and `lhMouseUp`, which build their `PointUI` from it directly
-rather than by `squareToUI`, whose doubling made every column even; that closes
-Appendix C's (1). Fonts load before the first paint, `document.fonts.ready`
+the glyph by `fillText` centred in the cell and clipped to it, as `Sdl.hs`
+crops, in the `lambdaHackFont` face, and a `strokeRect` one pixel inside
+the cell in the border colour --- the three values `styledCell` already
+resolves, so `terminal-core.ts` and its tests stand, and the ring is SDL2's
+`drawRect` rather than an inset box-shadow imitating it. The pointer reports
+pixels, and the wheel and mouseup handlers divide them by `halfSize` as SDL2's
+`pointTranslate` does, passing the half-cell column to `lhWheel`
+and `lhMouseUp`, which build their `PointUI` from it directly rather
+than by `squareToUI`, whose doubling made every column even; that closes
+Appendix C's (1). Fonts load before the first paint, `document.fonts.load`
 awaited once. The painter is the draw-op core 1.2 and 2.2 consume: a pure
 function from a cell run to fill, text and stroke commands
 in `terminal-core.ts`, and a thin interpreter over the 2D context, so op lists
@@ -1109,7 +1111,7 @@ in Haskell**, shared with SDL2:
    with the name. There is no second renderer (B.10): the PNG is the painter's
    backing store, `cols * boxSize` by `rows * boxSize`, overlays included once
    2.4 flips, so 1.5's scale reaches it through `boxSize`. 1.3's fullscreen does
-   not: it scales the grid by a CSS transform and leaves the backing store
+   not: it scales the canvas by a CSS transform and leaves the backing store
    as it is, so a bare `toBlob` saves the unscaled frame where SDL's
    `printScreen` reads the live `SDL.windowSize`, and that stands by ruling (b):
    the PNG is the frame at its own size with fullscreen on or off.
@@ -1258,7 +1260,7 @@ so `16 * scale` px on the deployed font is correct and deploys no new font.
 At game end SDL frees its fonts, destroys renderer and window and quits
 (`Sdl.hs:SDL.destroyRenderer srenderer`); the browser build's `shutdown`
 is `return ()` and the loader discards `lhStart`'s promise, so a finished game
-leaves a live-looking frozen page whose grid goes on swallowing keys,
+leaves a live-looking frozen page whose screen goes on swallowing keys,
 and a crash leaves the same page. The loader fixes both by keeping `lhStart`'s
 promise and acting on how it settles, under 3.2's success rule: resolved,
 or rejected with the message `ExitSuccess`, marks the page finished --- a status
@@ -1972,14 +1974,14 @@ Known browser pitfalls to handle here, not discover in 2.4:
   finishes loading silently measures a fallback font; await `FontFace.load()`
   (or `document.fonts.ready`) before the first overlay draw, and don't cache
   widths measured earlier.
-- **The mono layer has a pitch today's pointer cannot address.**
+- **The mono layer's pitch is the pointer's since 0.4.**
   `Sdl.hs:pointTranslate (SDL.P (SDL.V2 x y)) =` divides a click's pixel x
   by `halfSize`, so SDL reports an odd `PointUI` x for a click in a cell's right
-  half, while today's mouse handlers build their point with `squareToUI`
-  (`PointUI.hs:squareToUI :: PointSquare`), always even. 0.4's handlers divide
-  the pointer's pixels by `halfSize` as SDL does, so the mono layer this item
-  draws is clickable at its own pitch. Appendix C's 2026-09-07 audit note
-  records the gap.
+  half, and 0.4's handlers divide the pointer's pixels by `halfSize` the same
+  way, where the DOM grid's had built their point with `squareToUI`
+  (`PointUI.hs:squareToUI :: PointSquare`), always even; so the mono layer
+  this item draws is clickable at its own pitch. Appendix C's 2026-09-07 audit
+  note records the gap.
 - **Fixed-pitch glyphs are cropped and centred natively.**
   `Sdl.hs:scaleSurfaceToTexture ::` crops an oversized glyph surface to the cell
   box and centres it over a black fill, for the square layer
@@ -1987,11 +1989,11 @@ Known browser pitfalls to handle here, not discover in 2.4:
   (`Sdl.hs:scaleSurfaceToTexture halfSize`) alike. This item draws both
   fixed-pitch layers at `cellPitch`, so a glyph wider than its cell would
   overhang. 2.1 declines to generalize the *proportional* crop and says so;
-  this is the other site, and this item closes it, since 2026-09-07, in Split
-  (3): each fixed-pitch cell is clipped to its box with the glyph centred
-  in it --- a clip rect per `CellRun` cell in the draw-command list, as `Sdl.hs`
-  crops (B.10), which the op-list tests pin. Appendix C's 2026-09-07 audit note
-  records the gap.
+  this is the other site, and 0.4's draw-op core closes it: its text op clips
+  each cell's glyph to the cell's box with the glyph centred in it, as `Sdl.hs`
+  crops (B.10), so both layers this item draws through that core are cropped,
+  which the op-list tests pin. Appendix C's 2026-09-07 audit note records
+  the gap.
 - **Cell metrics from one source.** The browser's `lmHalfSize` is 0.4's
   painter's `halfSize`, its `boxSize` taken from the loaded font as `Sdl.hs`
   takes it rather than from config, so overlays and map draw at multiples of one
