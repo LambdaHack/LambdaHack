@@ -746,11 +746,10 @@ it* --- 1.3 for "fullscreen", off since `d211caa38`, 2.4 for "proportional
 fonts" and for the `#status` div's and the README's "limited to the square
 font", R1 for the savefile-corruption clause
 (`[Ss]avefiles are prone to corruption`, the bracket for the README's lower
-case), R5 for "runs rather slowly" once its bars are cleared. One commit belongs
-to no landing and can be taken today: "and persistent save games" is already
-false --- persistence works, via `WasmFile.hs`, and Out of scope says so ---
-so no feature will ever falsify it and nothing else in this Split reaches it.
-Each runs the **Done** line below with only its own phrase in the alternation.
+case), R5 for "runs rather slowly" once its bars are cleared. One commit
+belonged to no landing: "and persistent save games", false all along since
+persistence works via `WasmFile.hs`, off since `ab4b65989`. Each runs
+the **Done** line below with only its own phrase in the alternation.
 
 Delete-only is not enough, and the repair belongs here rather than to three
 sessions inventing it separately: every clause above sits inside a carrier

@@ -1261,17 +1261,16 @@ the effective cell size today.
 
 ### 1.4 Banner truth maintenance (trivial, recurring)
 
-`GameDefinition/index.html`'s banner still claims save games aren't persistent
-(they are, via `WasmFile.hs`/localStorage) and will go staler as features land
-("For proportional fonts and persistent save games, use the native binary").
-Update the text as each feature ships. The savefile-corruption caveat stays
-until R1 addresses it. **The page is not the only one**: the `#status` div
-carries "from README:" and quotes `README.md`'s "Installation of the sample game
-from binary archives" paragraph, so the square-font and savefile-corruption
-sentences are in two files, and this item's rule binds both --- a clause deleted
-from the page is deleted from the README in the same commit. (The GHCJS-era
-page's community features are deliberately not restored, and the page `<title>`
-stays hardcoded --- Appendix B.)
+`GameDefinition/index.html`'s banner will go staler as features land
+("For proportional fonts, use the native binary"). Update the text as each
+feature ships. The savefile-corruption caveat stays until R1 addresses it.
+**The page is not the only one**: the `#status` div carries "from README:"
+and quotes `README.md`'s "Installation of the sample game from binary archives"
+paragraph, so the square-font and savefile-corruption sentences are in two
+files, and this item's rule binds both --- a clause deleted from the page
+is deleted from the README in the same commit. (The GHCJS-era page's community
+features are deliberately not restored, and the page `<title>` stays hardcoded
+--- Appendix B.)
 
 **Rulings** --- ruled on 2026-08-07: the banner is a post-condition of every
 capability item. Each such item's landing sequence ends with its own banner
