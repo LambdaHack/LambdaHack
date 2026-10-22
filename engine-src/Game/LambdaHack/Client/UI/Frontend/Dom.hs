@@ -149,7 +149,7 @@ runWeb coscreen _ rfMVar = do
     when (key == K.Esc) $ IO.liftIO $ resetChanKey (fchanKey rf)
     IO.liftIO $ saveKMP rf modifierNoShift key (PointUI 0 0)
     -- Pass through C-+ and others, but disable special behaviour on Tab, etc.
-    let browserKeys = "+-0tTnNdxcv"
+    let browserKeys = "+-0"
     unless (modifier == K.Alt
             || modifier == K.Control && key `elem` map K.Char browserKeys
             || key == K.DeadKey) $ do  -- NumLock in particular

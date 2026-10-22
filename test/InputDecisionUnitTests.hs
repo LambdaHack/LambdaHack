@@ -34,10 +34,11 @@ inputDecisionUnitTests = testGroup "inputDecisionUnitTests"
           kdPreventBrowser (decideKey K.Control (K.Char c)) @?= False
           kdPreventBrowser (decideKey K.NoModifier (K.Char c)) @?= True
           kdPreventBrowser (decideKey K.ControlShift (K.Char c)) @?= True
-      | c <- "+-0tTnNdxcv"
+      | c <- "+-0"
       ]
   , testCase "decideKey keeps other Control chords from the browser" $ do
       kdPreventBrowser (decideKey K.Control (K.Char 'a')) @?= True
+      kdPreventBrowser (decideKey K.Control (K.Char 't')) @?= True
       kdPreventBrowser (decideKey K.Control K.Tab) @?= True
   , testCase "decideKey keeps Tab from the browser" $
       kdPreventBrowser (decideKey K.NoModifier K.Tab) @?= True

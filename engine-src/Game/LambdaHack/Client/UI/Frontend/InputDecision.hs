@@ -60,11 +60,9 @@ decideKey modifier key = KeyDecision
             || key == K.DeadKey  -- NumLock in particular
   }
 
--- | The keys whose bare Control chords the browser keeps: zoom, tab
--- and window management, bookmark, clipboard. Both cases of @t@ and @n@
--- are there for Caps Lock, Shift making the chord another modifier.
+-- | The keys whose bare Control chords the browser keeps: those of zoom.
 browserKeys :: String
-browserKeys = "+-0tTnNdxcv"
+browserKeys = "+-0"
 
 -- | Decide a wheel turn, given the DOM @WheelEvent.deltaY@. Only a delta
 -- beyond a small epsilon counts, to filter out zero-delta glitches.
