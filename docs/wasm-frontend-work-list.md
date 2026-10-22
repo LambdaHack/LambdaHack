@@ -424,11 +424,11 @@ harness extends it. 0.0 lands first or is dropped, since the `lhKey` commit
 rewrites the very listener it fixes. Four items edit one sentence
 of `CLAUDE.md`: 0.1, 0.2 and 2.1 for the frontend bullet's three module names,
 2.1 again for the Gotchas bullet's "awaits its scheduled fix", which its fix
-of `Sdl.hs:let Point{..} = toEnum i` falsifies, R3 for the GHCJS mentions,
-and the pointman campaign's 04.4 for the sentences that campaign's landing
-falsifies, enumerated in its head callout. Where the edit rides is each item's
-**Split** to say, and they differ on purpose: 2.1 folds it into the re-anchoring
-commit that follows its `Sdl.hs` rewrite, R3 into the rip-out whose deletions
+of [Sdl.hs#L568][sdl-568] falsifies, R3 for the GHCJS mentions, and the pointman
+campaign's 04.4 for the sentences that campaign's landing falsifies, enumerated
+in its head callout. Where the edit rides is each item's **Split** to say,
+and they differ on purpose: 2.1 folds it into the re-anchoring commit
+that follows its `Sdl.hs` rewrite, R3 into the rip-out whose deletions
 the reworded sentences describe, and 04.4 into the deletion commit that resolves
 the clause.
 
@@ -915,21 +915,20 @@ in the library's *unconditional* `exposed-modules`, not the `else` branch
 that carries `Sdl.hs`, so `make test-wasm` compiles it too and the wasm consumer
 inherits a module already proved to build there. (2) `Sdl.hs` adopting
 `CellStyle`, its backlight fill read from `backlightRGB` in place of `greyRGBA`,
-`colorToRGBA` derived from `Color.colorToRGB`,
-and the `Sdl.hs:let Point{..} = toEnum i` `punindex` fix. (3) the `Sdl.hs`
-refactor onto `OverlayLayout`. (4) the explicit-widths step
-in `tools/checks.py`, with its mutant in `tools/mutants.py`. (5)
-the re-anchoring of this plan's and the repo-root `CLAUDE.md`'s `Sdl.hs`
-citations against the shrunken file, most of which the pass will name broken,
-plus that file's frontend bullet, whose last module name this item delivers,
-retiring the clause, and the Gotchas bullet's "awaits its scheduled fix" clause,
-which (2)'s fix falsifies --- mandatory and separate, per Handing an item
-to a session. (6) the outcome line naming (2)'s and (3)'s hashes, the ledger
-flip, and the deletion of this item's two `tools/doc-refs-allow.txt` entries.
-(2) and (3) are the branch How this lands reviews alone, carrying `Sdl.hs`
-and nothing else, so (1) lands ahead of it, a partial landing, and (4) to (6)
-after it; (5) before (6), so a correction is never in the same diff
-as the landing record.
+`colorToRGBA` derived from `Color.colorToRGB`, and the [Sdl.hs#L568][sdl-568]
+`punindex` fix. (3) the `Sdl.hs` refactor onto `OverlayLayout`. (4)
+the explicit-widths step in `tools/checks.py`, with its mutant
+in `tools/mutants.py`. (5) the re-anchoring of this plan's and the repo-root
+`CLAUDE.md`'s `Sdl.hs` citations against the shrunken file, most of which
+the pass will name broken, plus that file's frontend bullet, whose last module
+name this item delivers, retiring the clause, and the Gotchas bullet's "awaits
+its scheduled fix" clause, which (2)'s fix falsifies --- mandatory and separate,
+per Handing an item to a session. (6) the outcome line naming (2)'s and (3)'s
+hashes, the ledger flip, and the deletion of this item's two
+`tools/doc-refs-allow.txt` entries. (2) and (3) are the branch How this lands
+reviews alone, carrying `Sdl.hs` and nothing else, so (1) lands ahead of it,
+a partial landing, and (4) to (6) after it; (5) before (6), so a correction
+is never in the same diff as the landing record.
 
 **Owns** --- `engine-src/Game/LambdaHack/Client/UI/Frontend/OverlayLayout.hs`,
 `test/OverlayLayoutUnitTests.hs`, `test/CellStyleUnitTests.hs` for the freshness

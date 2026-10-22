@@ -40,9 +40,12 @@ Citations name a file and a text anchor its cited line carries, which
 there is no stamp and nothing restamps, and a rewritten line fails the pass
 instead of sliding under it. Ruled 2026-09-08, applied 2026-09-14, when
 the first three landings had each cost a repair commit for lines they merely
-slid. The Log's entries name the line numbers they corrected in words,
-as history. Some file basenames are duplicated among this repo's tracked `.hs`
-files, so every citation here to one of them names its directory as well:
+slid. Where text describing an earlier tree cites a line the code has since
+rewritten, the citation is instead a GitHub permalink pinned to a published
+commit carrying that tree, which the same checker settles against the commit.
+The Log's entries name the line numbers they corrected in words, as history.
+Some file basenames are duplicated among this repo's tracked `.hs` files,
+so every citation here to one of them names its directory as well:
 `Server/LoopM.hs` vs `Client/LoopM.hs`, the engine's vs the game's
 `Content/Input.hs`, the engine's vs the game's `Client/UI/Content/Screen.hs`,
 `GameDefinition`'s vs `definition-src`'s `Content/RuleKind.hs`,
@@ -695,27 +698,27 @@ arrives as `A-WHEEL-UP`.*
   can't fire with AltGr. Same one-line fix per handler.
 - **Highlight outlines follow SDL2.** The rule (also encoded in 0.2's
   `CellStyle` and pinned by its fixtures), read off `chooseAndDrawHighlight`
-  (`Sdl.hs:chooseAndDrawHighlight !col !row !bg = do`): *every* kind gets
-  a four-sided `SDL.drawRect` over the whole cell box, but the colour differs.
-  Kinds other than `HighlightNone`/`HighlightBackground`/`HighlightNoneCursor`
-  go through `drawHighlight`, which sets `highlightToColor bg` and resets
-  to `blackRGBA` afterwards (`Sdl.hs:drawHighlight !col !row !color = do`).
-  Those three instead take `workaroundOverwriteHighlight`, drawing the same rect
-  in the renderer's *current* colour --- always `blackRGBA` outside
-  `drawHighlight` --- because rectangle drawing is broken in SDL 2.0.16
-  (LambdaHack issue #281) and a stale rect must be erased rather than left
-  for the glyph to cover. So the browser rule is **black border**,
-  not "no border", for the three kinds. It reads as no border on the black map
-  background, but `HighlightBackground` is the vision backlight
-  (`DrawM.hs:backlightVision ::`, on by default via `smarkVision = 1`,
-  `SessionUI.hs:, smarkVision = 1`), and its grey wash is blitted *before*
-  `chooseAndDrawHighlight` runs (`Sdl.hs:let tgtR = SDL.Rectangle (vp (col`) ---
-  so SDL really shows a grey cell ringed in black there, and today's
-  [terminal.ts#L133-L134][terminal-133] `inset 0 0 0 1px` box-shadow is wrong
-  only in its `BrBlack` colour, not in drawing a ring at all. Fix
-  in `terminal-core.ts` (border colour black for the three kinds)
-  with a `terminal-core.test.ts` case. Background for why the wasm build behaved
-  this way, and the ruling on GHCJS's two-edge rendering, is in Appendix B.
+  ([Sdl.hs#L482][sdl-482]): *every* kind gets a four-sided `SDL.drawRect`
+  over the whole cell box, but the colour differs. Kinds other
+  than `HighlightNone`/`HighlightBackground`/`HighlightNoneCursor` go through
+  `drawHighlight`, which sets `highlightToColor bg` and resets to `blackRGBA`
+  afterwards (`Sdl.hs:drawHighlight !col !row !color = do`). Those three instead
+  take `workaroundOverwriteHighlight`, drawing the same rect in the renderer's
+  *current* colour --- always `blackRGBA` outside `drawHighlight` --- because
+  rectangle drawing is broken in SDL 2.0.16 (LambdaHack issue #281) and a stale
+  rect must be erased rather than left for the glyph to cover. So the browser
+  rule is **black border**, not "no border", for the three kinds. It reads
+  as no border on the black map background, but `HighlightBackground`
+  is the vision backlight (`DrawM.hs:backlightVision ::`, on by default via
+  `smarkVision = 1`, `SessionUI.hs:, smarkVision = 1`), and its grey wash
+  is blitted *before* `chooseAndDrawHighlight` runs
+  (`Sdl.hs:let tgtR = SDL.Rectangle (vp (col`) --- so SDL really shows a grey
+  cell ringed in black there, and today's [terminal.ts#L133-L134][terminal-133]
+  `inset 0 0 0 1px` box-shadow is wrong only in its `BrBlack` colour,
+  not in drawing a ring at all. Fix in `terminal-core.ts` (border colour black
+  for the three kinds) with a `terminal-core.test.ts` case. Background for why
+  the wasm build behaved this way, and the ruling on GHCJS's two-edge rendering,
+  is in Appendix B.
 
 All three fixes land with tests: the two AltGraph fixes get the jsdom forwarding
 tests (the ground-rule exception above), the highlight rule
@@ -925,15 +928,14 @@ and committed under `ts-src/src/generated/`:
    `[Black .. BrWhite]` explicitly; `Highlight` via `[minBound .. maxBound]`).
    One value the browser needs is reachable from neither source:
    the `HighlightBackground` cell fill `#251F1F`, which
-   is `Sdl.hs:greyRGBA = SDL.V4`'s `greyRGBA` --- a third
-   of `colorToRGBA BrBlack` by its own comment, and carried by no `Color`
-   constructor --- hand-copied at `Dom.hs:then "#251F1F"`,
-   and in `terminal-core.ts` until `15c90625a`. It is a highlight-rule output
-   like the border colour beside it, so `CellStyle` names it once, `Sdl.hs`
-   reads it there in place of `greyRGBA`, and the freshness case writes
-   it from that name. Same reachability problem ruling (4) meets
-   over `cursorXhair`, different remedy: this one already has a home
-   in `CellStyle` and the art has none.
+   is [Sdl.hs#L876][sdl-876]'s `greyRGBA` --- a third of `colorToRGBA BrBlack`
+   by its own comment, and carried by no `Color` constructor --- hand-copied
+   at `Dom.hs:then "#251F1F"`, and in `terminal-core.ts` until `15c90625a`.
+   It is a highlight-rule output like the border colour beside it,
+   so `CellStyle` names it once, `Sdl.hs` reads it there in place of `greyRGBA`,
+   and the freshness case writes it from that name. Same reachability problem
+   ruling (4) meets over `cursorXhair`, different remedy: this one already has
+   a home in `CellStyle` and the art has none.
 2. `fixtures.json`: behavioral fixtures from `CellStyle.styleCell`
    over a representative input sample (floor bright/dim, space, ordinary glyph,
    even/odd row x `White`, every `Highlight`), plus `(i, w) -> (col, row)`
@@ -974,23 +976,23 @@ SDL directly, the DOM grid and 2.2's canvas via the generated `PALETTE` hex
 lookup that exists for exactly that mapping; the hot path stays monomorphic,
 and 2.1 and 2.2 inherit the record. (2) The highlight-border rule
 is a `CellStyle` output field: the three-kind branch ---
-`chooseAndDrawHighlight`'s (`Sdl.hs:chooseAndDrawHighlight !col !row !bg = do`),
-border versus background versus none --- becomes structured output in `Color`
-terms, pinned by the fixtures since every `Highlight` is in the sample, so a TS
-drift fails vitest instead of passing it; the trap stands recorded:
-`HIGHLIGHT_TO_COLOR` alone, where `HighlightBackground -> BrBlack` is correct,
-would silently revert 0.0's fix. (3) The bench gate's acceptance: interleaved
-A/B pairs per the toggle recipe (`benchFrontendBattle` and `benchFrontendCrawl`,
-fixed seeds), accepted if the `CellStyle` binary's times stay within
-the interleaved pairs' own spread, failed on a consistent regression beyond it;
-the in-session llvmpipe pair settles the verdict --- the cost under test
-is per-cell CPU work, which software rendering exposes rather than masks ---
-and a real-display pair is handed back only if that verdict is challenged. (4)
-The crosshair ASCII art moves into an SDL-free pure shared module that `Sdl.hs`
-and the freshness case both consume --- per-pixel art serving the SVG directly,
-where the packed 1-bpp `Word8` vectors `cursorXhair` returns are an SDL encoding
---- because `cursorXhair` is exported nowhere and `Frontend.Sdl` is no module
-at all under `os(wasi)`.
+`chooseAndDrawHighlight`'s ([Sdl.hs#L482][sdl-482]), border versus background
+versus none --- becomes structured output in `Color` terms, pinned
+by the fixtures since every `Highlight` is in the sample, so a TS drift fails
+vitest instead of passing it; the trap stands recorded: `HIGHLIGHT_TO_COLOR`
+alone, where `HighlightBackground -> BrBlack` is correct, would silently revert
+0.0's fix. (3) The bench gate's acceptance: interleaved A/B pairs per the toggle
+recipe (`benchFrontendBattle` and `benchFrontendCrawl`, fixed seeds), accepted
+if the `CellStyle` binary's times stay within the interleaved pairs' own spread,
+failed on a consistent regression beyond it; the in-session llvmpipe pair
+settles the verdict --- the cost under test is per-cell CPU work, which software
+rendering exposes rather than masks --- and a real-display pair is handed back
+only if that verdict is challenged. (4) The crosshair ASCII art moves
+into an SDL-free pure shared module that `Sdl.hs` and the freshness case both
+consume --- per-pixel art serving the SVG directly, where the packed 1-bpp
+`Word8` vectors `cursorXhair` returns are an SDL encoding --- because
+`cursorXhair` is exported nowhere and `Frontend.Sdl` is no module at all
+under `os(wasi)`.
 ### 0.3 FFI-coverage test (baseline first, then per-commit)
 
 GHC's wasm JSFFI is a trust-the-embedded-string mechanism with no arity
@@ -1462,14 +1464,14 @@ The probe's diff, which 0.4's Split (0) adapts to the canvas:
 
 **New module** `Game.LambdaHack.Client.UI.Frontend.OverlayLayout`, holding every
 per-line and per-chunk decision that today sits interleaved with SDL IO
-in `Sdl.hs:drawMonoOverlay ::`. It is cut along the *measurement* line,
-and that seam is the design: chunking, colours, faces and the two fixed-pitch
-line cuts are pure and take no metrics at all, while the proportional pen ---
-the one quantity that depends on rendered width --- advances through two small
-pure functions: a measurement-free cutoff test, called *before* a chunk
-is rendered, and a fit function called with the width just measured. The ruler
-stays in the frontend; the cutoff rule, the clamp rule and the trimmed-line
-marker get one definition.
+in [Sdl.hs#L571][sdl-571]. It is cut along the *measurement* line, and that seam
+is the design: chunking, colours, faces and the two fixed-pitch line cuts
+are pure and take no metrics at all, while the proportional pen --- the one
+quantity that depends on rendered width --- advances through two small pure
+functions: a measurement-free cutoff test, called *before* a chunk is rendered,
+and a fit function called with the width just measured. The ruler stays
+in the frontend; the cutoff rule, the clamp rule and the trimmed-line marker get
+one definition.
 
 **Metrics.** Everything device-space is parameterized, never baked to SDL's
 numbers:
@@ -1487,7 +1489,7 @@ data LayoutMetrics = LayoutMetrics
 
 -- | One square cell: the square pitch and the row height of all three
 -- layers (@Sdl.hs:halfSize) (row@, @Sdl.hs:tgtR = SDL.Rectangle (vp (col@,
--- @Sdl.hs:SDL.Rectangle (vp x (row@). Derived, not stored, so that "map font
+-- <https://github.com/LambdaHack/LambdaHack/blob/5c58af62ec9d875dfcb051ba5fade405e5b36f8d/engine-src/Game/LambdaHack/Client/UI/Frontend/Sdl.hs#L686>). Derived, not stored, so that "map font
 -- determines cell size for all others" (@Sdl.hs:font determines@) cannot come
 -- apart in a consumer or in a test fixture --- an inconsistent record stops
 -- being representable, which a hidden data constructor alone cannot deliver
@@ -1519,7 +1521,7 @@ a `CellLayer` into a device advance, and is here only to sit beside the type
 it interprets.
 
 ```haskell
--- | Which of the two proportional faces draws a chunk (@Sdl.hs:Color.White &&@,
+-- | Which of the two proportional faces draws a chunk (<https://github.com/LambdaHack/LambdaHack/blob/5c58af62ec9d875dfcb051ba5fade405e5b36f8d/engine-src/Game/LambdaHack/Client/UI/Frontend/Sdl.hs#L678>,
 -- over the two fonts loaded at @Sdl.hs:(fontPropRegular@).
 --
 -- Deliberately not 'Overlay.DisplayFont': that type names the three overlay
@@ -1539,19 +1541,19 @@ data PropFont = PropRegular | PropBold
 -- between @White@ and @BrBlack@ (@Color.hs:data Color =@), so the even-row
 -- substitution provably cannot flip a chunk from regular to bold --- which
 -- is why 'chunkPropLine' may apply it before reading the colour here, as
--- @Sdl.hs:(sameRest, otherRest)@ does.
+-- <https://github.com/LambdaHack/LambdaHack/blob/5c58af62ec9d875dfcb051ba5fade405e5b36f8d/engine-src/Game/LambdaHack/Client/UI/Frontend/Sdl.hs#L668> does.
 propFontOf :: Color.Color -> PropFont
 propFontOf fg | fg >= Color.White && fg /= Color.BrBlack = PropRegular
               | otherwise = PropBold
 
 -- | One maximal same-colour run of a proportional line. It carries no position:
 -- its x is the running sum of the *measured* widths of every chunk before it
--- (@Sdl.hs:<- drawPropChunk@), which is the whole reason the placement half of
+-- (<https://github.com/LambdaHack/LambdaHack/blob/5c58af62ec9d875dfcb051ba5fade405e5b36f8d/engine-src/Game/LambdaHack/Client/UI/Frontend/Sdl.hs#L674>), which is the whole reason the placement half of
 -- this module exists.
 data PropChunk = PropChunk
   { pcColor :: Color.Color   -- ^ even-row adjusted
-                             --   (@Sdl.hs:(sameRest, otherRest)@)
-  , pcText  :: Text          -- ^ colours dropped (@Sdl.hs:attrStringToString@);
+                             --   (<https://github.com/LambdaHack/LambdaHack/blob/5c58af62ec9d875dfcb051ba5fade405e5b36f8d/engine-src/Game/LambdaHack/Client/UI/Frontend/Sdl.hs#L668>)
+  , pcText  :: Text          -- ^ colours dropped (<https://github.com/LambdaHack/LambdaHack/blob/5c58af62ec9d875dfcb051ba5fade405e5b36f8d/engine-src/Game/LambdaHack/Client/UI/Frontend/Sdl.hs#L673>);
                              --   never empty
   }
   deriving (Show, Eq)
@@ -1561,10 +1563,10 @@ data PropChunk = PropChunk
 pcFont :: PropChunk -> PropFont
 pcFont = propFontOf . pcColor
 
--- | @T.all isSpace@ of the text (@Sdl.hs:Char.isSpace@), derived likewise. Not
+-- | @T.all isSpace@ of the text (<https://github.com/LambdaHack/LambdaHack/blob/5c58af62ec9d875dfcb051ba5fade405e5b36f8d/engine-src/Game/LambdaHack/Client/UI/Frontend/Sdl.hs#L681>), derived likewise. Not
 -- a convenience: it decides whether an overrunning run may claim the last cell
--- (@Sdl.hs:allSpace = remainingWidth@) and whether the cut raises the marker
--- (@Sdl.hs:not allSpace)@), so it is the one measurement-rule input that must
+-- (<https://github.com/LambdaHack/LambdaHack/blob/5c58af62ec9d875dfcb051ba5fade405e5b36f8d/engine-src/Game/LambdaHack/Client/UI/Frontend/Sdl.hs#L531>) and whether the cut raises the marker
+-- (<https://github.com/LambdaHack/LambdaHack/blob/5c58af62ec9d875dfcb051ba5fade405e5b36f8d/engine-src/Game/LambdaHack/Client/UI/Frontend/Sdl.hs#L555>), so it is the one measurement-rule input that must
 -- reach the consumer, and 2.3 carries it on the wire as a bit rather than
 -- letting the far side re-derive the rule.
 pcAllSpace :: PropChunk -> Bool
@@ -1574,7 +1576,7 @@ pcAllSpace = T.all isSpace . pcText
 data PropLine = PropLine
   { plStartX :: Int  -- ^ 'PointUI' x, in half-cells; multiplied by
                      --   @lmHalfSize@ exactly once, in 'startPropLine'
-                     --   (@Sdl.hs:halfSize) y al)@)
+                     --   (<https://github.com/LambdaHack/LambdaHack/blob/5c58af62ec9d875dfcb051ba5fade405e5b36f8d/engine-src/Game/LambdaHack/Client/UI/Frontend/Sdl.hs#L651>)
   , plRow    :: Int
   , plChunks :: [PropChunk]
   }
@@ -1597,10 +1599,10 @@ cellPitch lm = \case
 --
 -- The cells stay raw 'Color.AttrCharW32' words, @bg@ included, because
 -- the square layer really carries highlights: @bg@ enters the atlas
--- key when it is @HighlightBackground@ (@Sdl.hs:ac = if bg ==@),
--- picks the grey fill (@Sdl.hs:background =@) and drives
--- @chooseAndDrawHighlight@ (@Sdl.hs:chooseAndDrawHighlight col@, defined
--- at @Sdl.hs:chooseAndDrawHighlight !col@). The even-row and floor-glyph
+-- key when it is @HighlightBackground@ (<https://github.com/LambdaHack/LambdaHack/blob/5c58af62ec9d875dfcb051ba5fade405e5b36f8d/engine-src/Game/LambdaHack/Client/UI/Frontend/Sdl.hs#L622>),
+-- picks the grey fill (<https://github.com/LambdaHack/LambdaHack/blob/5c58af62ec9d875dfcb051ba5fade405e5b36f8d/engine-src/Game/LambdaHack/Client/UI/Frontend/Sdl.hs#L635>) and drives
+-- @chooseAndDrawHighlight@ (<https://github.com/LambdaHack/LambdaHack/blob/5c58af62ec9d875dfcb051ba5fade405e5b36f8d/engine-src/Game/LambdaHack/Client/UI/Frontend/Sdl.hs#L647>, defined
+-- at <https://github.com/LambdaHack/LambdaHack/blob/5c58af62ec9d875dfcb051ba5fade405e5b36f8d/engine-src/Game/LambdaHack/Client/UI/Frontend/Sdl.hs#L482>). The even-row and floor-glyph
 -- substitutions are *not* applied here --- they are 0.2's `CellStyle` rules,
 -- applied by the painter per cell; restating them would be the second
 -- definition G1 forbids.
@@ -1610,15 +1612,15 @@ data CellRun = CellRun
   , crCol   :: Int  -- ^ leftmost cell, in units of 'cellPitch': square
                     --   columns after @uiToSquare@'s @div 2@
                     --   (@PointUI.hs:uiToSquare ::@, applied at
-                    --   @Sdl.hs:let PointSquare@), 'PointUI' half-cells
-                    --   for mono (@Sdl.hs:drawMonoOverlay =@)
+                    --   <https://github.com/LambdaHack/LambdaHack/blob/5c58af62ec9d875dfcb051ba5fade405e5b36f8d/engine-src/Game/LambdaHack/Client/UI/Frontend/Sdl.hs#L606>), 'PointUI' half-cells
+                    --   for mono (<https://github.com/LambdaHack/LambdaHack/blob/5c58af62ec9d875dfcb051ba5fade405e5b36f8d/engine-src/Game/LambdaHack/Client/UI/Frontend/Sdl.hs#L572>)
   , crCells :: AttrString  -- ^ non-empty
   }
   deriving (Show, Eq)
 
 -- | One frame's overlays. The field order is the draw order --- prop, then
 -- square, then mono last, so a mono overrun warning wins over the proportional
--- text beneath it (@Sdl.hs:Mono overlay@, and the engine says the same of the
+-- text beneath it (<https://github.com/LambdaHack/LambdaHack/blob/5c58af62ec9d875dfcb051ba5fade405e5b36f8d/engine-src/Game/LambdaHack/Client/UI/Frontend/Sdl.hs#L706>, and the engine says the same of the
 -- layers at @Overlay.hs:UI. Overlays@) --- and 2.3's payload carries its three
 -- sections in that order, so neither consumer has to know the rule to obey it.
 -- @singleArray@ is not here: the map is not an overlay and is drawn by diffing
@@ -1637,18 +1639,18 @@ data FrameLayout = FrameLayout
 -- module unifies is impossible by construction).
 layOutFrame :: Int -> SingleFrame -> FrameLayout
 
--- | Split a line into maximal same-colour chunks (@Sdl.hs:drawPropLine x row@),
+-- | Split a line into maximal same-colour chunks (<https://github.com/LambdaHack/LambdaHack/blob/5c58af62ec9d875dfcb051ba5fade405e5b36f8d/engine-src/Game/LambdaHack/Client/UI/Frontend/Sdl.hs#L657>),
 -- resolving two rules that a hand-port would drift on: a *leading* space
 -- run takes the colour of the next non-space character, or its own if
--- the line is all spaces (@Sdl.hs:$ if isSpace@), while an *interior*
+-- the line is all spaces (<https://github.com/LambdaHack/LambdaHack/blob/5c58af62ec9d875dfcb051ba5fade405e5b36f8d/engine-src/Game/LambdaHack/Client/UI/Frontend/Sdl.hs#L661>), while an *interior*
 -- space run joins the run to its left, spaces matching any colour in
--- @sameAttr@ (@Sdl.hs:Color.fgFromW32@). Even-row @White@ becomes @AltWhite@
--- (@Sdl.hs:(sameRest, otherRest)@) via `CellStyle`, not by a second copy of the
+-- @sameAttr@ (<https://github.com/LambdaHack/LambdaHack/blob/5c58af62ec9d875dfcb051ba5fade405e5b36f8d/engine-src/Game/LambdaHack/Client/UI/Frontend/Sdl.hs#L666>). Even-row @White@ becomes @AltWhite@
+-- (<https://github.com/LambdaHack/LambdaHack/blob/5c58af62ec9d875dfcb051ba5fade405e5b36f8d/engine-src/Game/LambdaHack/Client/UI/Frontend/Sdl.hs#L668>) via `CellStyle`, not by a second copy of the
 -- rule.
 --
 -- Asserts that the cell each chunk takes its colour from has a @bg@ of
 -- @HighlightNone@ or @HighlightNoneCursor@
--- (@Sdl.hs:(sameRest, otherRest)@) --- an assertion that today can only fire
+-- (<https://github.com/LambdaHack/LambdaHack/blob/5c58af62ec9d875dfcb051ba5fade405e5b36f8d/engine-src/Game/LambdaHack/Client/UI/Frontend/Sdl.hs#L668>) --- an assertion that today can only fire
 -- with SDL running and after this extraction fires under @cabal test@ too.
 --
 -- Cuts nothing: cutting is 'propFit''s business. That is what turns the
@@ -1657,11 +1659,11 @@ chunkPropLine :: Int          -- ^ row, for the even-row rule
               -> AttrString   -- ^ the line
               -> [PropChunk]
 
--- | @take (rwidth - col)@ after @uiToSquare@ (@Sdl.hs:let PointSquare@); drops
+-- | @take (rwidth - col)@ after @uiToSquare@ (<https://github.com/LambdaHack/LambdaHack/blob/5c58af62ec9d875dfcb051ba5fade405e5b36f8d/engine-src/Game/LambdaHack/Client/UI/Frontend/Sdl.hs#L606>); drops
 -- runs left empty.
 layOutSquare :: Int -> OverlaySpace -> [CellRun]
 
--- | @take (2 * rwidth - x)@, in half-cells (@Sdl.hs:let lineCut =@), plus the
+-- | @take (2 * rwidth - x)@, in half-cells (<https://github.com/LambdaHack/LambdaHack/blob/5c58af62ec9d875dfcb051ba5fade405e5b36f8d/engine-src/Game/LambdaHack/Client/UI/Frontend/Sdl.hs#L574>), plus the
 -- mono @bg@ assertion (@Sdl.hs:setMonoChar ::@).
 layOutMono :: Int -> OverlaySpace -> [CellRun]
 
@@ -1688,13 +1690,13 @@ data PropCursor = PropCursor
   }
   deriving (Show, Eq)
 
--- | The one place a logical x becomes a device x (@Sdl.hs:halfSize) y al)@).
+-- | The one place a logical x becomes a device x (<https://github.com/LambdaHack/LambdaHack/blob/5c58af62ec9d875dfcb051ba5fade405e5b36f8d/engine-src/Game/LambdaHack/Client/UI/Frontend/Sdl.hs#L651>).
 startPropLine :: LayoutMetrics -> PropLine -> PropCursor
 startPropLine LayoutMetrics{lmHalfSize} PropLine{plStartX, plRow} =
   PropCursor (plStartX * lmHalfSize) plRow
 
 -- | Has the pen reached the last column? Then this chunk and every later chunk
--- of the line is dropped --- "for KISS, reject it" (@Sdl.hs:drawPropLine x _@).
+-- of the line is dropped --- "for KISS, reject it" (<https://github.com/LambdaHack/LambdaHack/blob/5c58af62ec9d875dfcb051ba5fade405e5b36f8d/engine-src/Game/LambdaHack/Client/UI/Frontend/Sdl.hs#L654>).
 -- Measurement-free on purpose: @Sdl.hs@ tests it *before* rendering the chunk,
 -- so a consumer that calls this first never rasterizes a chunk it then throws
 -- away.
@@ -1706,14 +1708,14 @@ propCutoff lm PropCursor{pcurXPx} =
 -- raises the trimmed-line marker.
 data PropFit = PropFit
   { pfXPx     :: Int            -- ^ device x to draw at
-                                --   (@Sdl.hs:SDL.Rectangle (vp x (row@)
+                                --   (<https://github.com/LambdaHack/LambdaHack/blob/5c58af62ec9d875dfcb051ba5fade405e5b36f8d/engine-src/Game/LambdaHack/Client/UI/Frontend/Sdl.hs#L686>)
   , pfWidthPx :: Int            -- ^ device width to draw *and to clip to*:
                                 --   the whole chunk when it fits, else the
                                 --   cut width. @Sdl.hs@ uses it as both the
                                 --   source crop
-                                --   (@Sdl.hs:textSurfaceRaw allSpace =@) and
+                                --   (<https://github.com/LambdaHack/LambdaHack/blob/5c58af62ec9d875dfcb051ba5fade405e5b36f8d/engine-src/Game/LambdaHack/Client/UI/Frontend/Sdl.hs#L526>) and
                                 --   the target width
-                                --   (@Sdl.hs:(toEnum boxSize))@); canvas
+                                --   (<https://github.com/LambdaHack/LambdaHack/blob/5c58af62ec9d875dfcb051ba5fade405e5b36f8d/engine-src/Game/LambdaHack/Client/UI/Frontend/Sdl.hs#L687>); canvas
                                 --   @fillText@ has no width argument, so
                                 --   the browser needs it as a clip rect.
   , pfMarker  :: Maybe CellRun  -- ^ draw it *now*, before the next chunk
@@ -1722,13 +1724,13 @@ data PropFit = PropFit
   deriving (Show, Eq)
 
 -- | Resolve one measured chunk: the three-way clamp of
--- @Sdl.hs:remainingWidth = rwidth@ and the marker condition of
--- @Sdl.hs:not allSpace)@, which is exactly "the run was cut and it was not
+-- <https://github.com/LambdaHack/LambdaHack/blob/5c58af62ec9d875dfcb051ba5fade405e5b36f8d/engine-src/Game/LambdaHack/Client/UI/Frontend/Sdl.hs#L529> and the marker condition of
+-- <https://github.com/LambdaHack/LambdaHack/blob/5c58af62ec9d875dfcb051ba5fade405e5b36f8d/engine-src/Game/LambdaHack/Client/UI/Frontend/Sdl.hs#L555>, which is exactly "the run was cut and it was not
 -- blank".
 --
 -- The consumer supplies the natural rendered width in its own device units,
 -- rounded *up*, so that "it fits" is never optimistic: @Sdl.hs@ passes the
--- rendered surface's width (@Sdl.hs:textSurfaceRaw allSpace =@, produced by
+-- rendered surface's width (<https://github.com/LambdaHack/LambdaHack/blob/5c58af62ec9d875dfcb051ba5fade405e5b36f8d/engine-src/Game/LambdaHack/Client/UI/Frontend/Sdl.hs#L526>, produced by
 -- the @TTF.shaded@ call at @Sdl.hs:TTF.shaded (fromJust@), the browser @ceil
 -- (measureText t)@.
 --
@@ -1747,8 +1749,8 @@ propFit lm cur chunk widthRaw =
   boxSize = lmBoxSize lm
   allSpace = pcAllSpace chunk
   -- Each of the next five lines mirrors the same clause of @Sdl.hs@'s
-  -- @scaleSurfaceToTextureProp@, from @Sdl.hs:remainingWidth = rwidth@ on,
-  -- and the last the marker test at @Sdl.hs:not allSpace)@.
+  -- @scaleSurfaceToTextureProp@, from <https://github.com/LambdaHack/LambdaHack/blob/5c58af62ec9d875dfcb051ba5fade405e5b36f8d/engine-src/Game/LambdaHack/Client/UI/Frontend/Sdl.hs#L529> on,
+  -- and the last the marker test at <https://github.com/LambdaHack/LambdaHack/blob/5c58af62ec9d875dfcb051ba5fade405e5b36f8d/engine-src/Game/LambdaHack/Client/UI/Frontend/Sdl.hs#L555>.
   remaining = lmWidth lm * boxSize - pcurXPx cur
   width | widthRaw <= remaining = widthRaw
         | allSpace = remaining
@@ -1756,7 +1758,7 @@ propFit lm cur chunk widthRaw =
   trimmed = width /= widthRaw && not allSpace
 
 -- | The @$@ stamped into the last square column of a trimmed row
--- (@Sdl.hs:not allSpace)@; @Color.hs:trimmedLineAttrW32 ::@ defines
+-- (<https://github.com/LambdaHack/LambdaHack/blob/5c58af62ec9d875dfcb051ba5fade405e5b36f8d/engine-src/Game/LambdaHack/Client/UI/Frontend/Sdl.hs#L555>; @Color.hs:trimmedLineAttrW32 ::@ defines
 -- it as a @BrBlack@ @'$'@), expressed as an ordinary square-layer run
 -- so that no frontend needs marker code of its own. Distinct from the
 -- engine-level @$@ that @truncateAttrLine@ splices into an over-long line
@@ -1783,10 +1785,9 @@ is always positive: no zero-width blit.
 **Where logical units end.** Everything `FrameLayout` emits is logical,
 and so is everything on the wire; device space exists only inside `PropCursor`,
 which never travels. The pen is where it must: after the first chunk its x
-is a running sum of measured widths
-(`Sdl.hs:width <- drawPropChunk x row fg t`), which is why the cutoff cannot
-be stated in logical units past the line start. The one exactly-logical piece
-of it is `propLineStartFits` above.
+is a running sum of measured widths ([Sdl.hs#L674][sdl-674]), which is why
+the cutoff cannot be stated in logical units past the line start. The one
+exactly-logical piece of it is `propLineStartFits` above.
 
 **Rejected: a character-count cutoff.** Replacing the pixel rule with a column
 count would make the module self-contained, and it does not work. The engine
@@ -1807,21 +1808,19 @@ half.
 is faithful, and what de-risks everything downstream: if the native playtests
 (`make test-medium`, `make frontendCrawl` for a visual look) pass with `Sdl.hs`
 on the shared module, the browser consumer starts from known-correct layout
-data. `drawPropOverlay`/`drawPropLine`/`drawPropChunk`
-(`Sdl.hs:drawPropOverlay ::`) and the two line cuts
-(`Sdl.hs:let lineCut = take`, `Sdl.hs:take (rwidth coscreen`) go;
-`scaleSurfaceToTextureProp` (`Sdl.hs:scaleSurfaceToTextureProp ::`) loses
-its `x`, `row` and `allSpace` parameters, its width arithmetic
-and its `setSquareChar` call, shrinking to the crop-and-blit it is named for ---
-which is the rule leaving the texture helper, the place the plan flagged
-as easiest to lose it in. What stays in `Sdl.hs`: font handles, `TTF.shaded`,
-the vertical crop and centring (`Sdl.hs:textSurfaceRaw allSpace =` --- blit
-mechanics with no canvas counterpart, declined deliberately rather
-than generalized), atlases, `SDL.copy`, `chooseAndDrawHighlight`,
-and the per-cell glyph decisions that are 0.2's business. Perf-gate the adoption
-as `CellStyle`'s is gated: before/after `make bench`
-(`benchFrontendBattle`/`benchFrontendCrawl`, fixed seeds), since `Sdl.hs`'s
-per-cell drawing is a hot path.
+data. `drawPropOverlay`/`drawPropLine`/`drawPropChunk` ([Sdl.hs#L648][sdl-648])
+and the two line cuts ([Sdl.hs#L574][sdl-574], [Sdl.hs#L607][sdl-607]) go;
+`scaleSurfaceToTextureProp` ([Sdl.hs#L524][sdl-524]) loses its `x`, `row`
+and `allSpace` parameters, its width arithmetic and its `setSquareChar` call,
+shrinking to the crop-and-blit it is named for --- which is the rule leaving
+the texture helper, the place the plan flagged as easiest to lose it in. What
+stays in `Sdl.hs`: font handles, `TTF.shaded`, the vertical crop and centring
+([`scaleSurfaceToTextureProp`][sdl-526] --- blit mechanics with no canvas
+counterpart, declined deliberately rather than generalized), atlases,
+`SDL.copy`, `chooseAndDrawHighlight`, and the per-cell glyph decisions
+that are 0.2's business. Perf-gate the adoption as `CellStyle`'s is gated:
+before/after `make bench` (`benchFrontendBattle`/`benchFrontendCrawl`, fixed
+seeds), since `Sdl.hs`'s per-cell drawing is a hot path.
 
 **How the marker travels.** It is a rule, not a datum, and it travels as one.
 The rule is the single line `trimmed = width /= widthRaw && not pcAllSpace`
@@ -1836,15 +1835,13 @@ as `pfMarker :: Maybe CellRun`, a fully formed square-layer run at column
 other `CellRun`, and a browser implementer never has to learn it exists.
 Returning it from `propFit` rather than appending it to `flSquare` also
 preserves the ordering subtlety: `Sdl.hs` writes it from inside the proportional
-pass (`Sdl.hs:when (width /= widthRaw && not allSpace) $`, called
-from `Sdl.hs:(width, textTexture) <-`), *before* `drawSquareOverlay` runs at all
-(`Sdl.hs:drawPropOverlay $ singlePropOverlay curFrame`), so a genuine
+pass ([Sdl.hs#L555][sdl-555], called from [Sdl.hs#L684][sdl-684]), *before*
+`drawSquareOverlay` runs at all ([Sdl.hs#L709][sdl-709]), so a genuine
 square-overlay cell in the last column still overwrites it. Its content needs
 no special casing anywhere: `trimmedLineAttrW32` is a `BrBlack` `'$'`
 (`Color.hs:trimmedLineAttrW32 :: AttrCharW32`), so `AltWhite` cannot apply
 to it and its `HighlightNone` background takes `workaroundOverwriteHighlight`
-(`Sdl.hs:Color.HighlightNone -> workaroundOverwriteHighlight`) like any other
-unhighlighted cell.
+([Sdl.hs#L493][sdl-493]) like any other unhighlighted cell.
 
 **2.3's payload, specified here.** 2.3 owns the mechanism --- an additive
 `js_submitOverlays`, a packed `Word32` buffer passed by address, no string
@@ -1870,10 +1867,9 @@ so the field list has one definition. Four properties fix it:
    is a word of its own, per 2.3's no-sub-word-packing ruling. Layer
    is no longer part of it, the layers being separate sections, so the face
    is a one-bit *choice* between the two proportional fonts
-   (`Sdl.hs:fg /= Color.BrBlack`) carried in a whole word; the colour index
-   is its own field; and `pcAllSpace` gets one too, because `propFit` consumes
-   it (`Sdl.hs:allSpace = remainingWidth`,
-   `Sdl.hs:when (width /= widthRaw && not allSpace) $`) and
+   ([Sdl.hs#L678][sdl-678]) carried in a whole word; the colour index is its own
+   field; and `pcAllSpace` gets one too, because `propFit` consumes
+   it ([Sdl.hs#L531][sdl-531], [Sdl.hs#L555][sdl-555]) and
    it is measurement-free, so the module owns it and the consumer needs it.
 4. **`xStart` is logical**, and load-bearing rather than stylistic:
    it is logical precisely because the receiving consumer's `startPropLine`
@@ -1913,30 +1909,29 @@ Fixed cases, chunking: the empty line; one character; leading spaces before
 a coloured run (the next-non-space inheritance); trailing spaces, which join
 the run to their left; a multi-space run *between* two differently-coloured
 runs, which joins the left one --- the case a hand-port gets backwards;
-an all-space line, taking the `[] -> w` fallback (`Sdl.hs:[] -> w`); a colour
-change with no space at the boundary; a line whose spaces are *coloured*, which
-pins the deliberate difference between the chunker's `(== spaceAttrW32)`
-(`Sdl.hs:let isSpace = (== Color.spaceAttrW32)`; a default-attribute space,
+an all-space line, taking the `[] -> w` fallback ([Sdl.hs#L664][sdl-664]);
+a colour change with no space at the boundary; a line whose spaces
+are *coloured*, which pins the deliberate difference between the chunker's
+`(== spaceAttrW32)` ([Sdl.hs#L658][sdl-658]; a default-attribute space,
 `Color.hs:spaceAttrW32 :: AttrCharW32`) and `pcAllSpace`'s `Char.isSpace`
-(`Sdl.hs:allSpace = T.all Char.isSpace t`) --- unifying those two would silently
-change which lines get the marker; and even against odd rows over a `White`
-cell, paired with the assertion that both still choose `PropRegular`.
+([Sdl.hs#L681][sdl-681]) --- unifying those two would silently change which
+lines get the marker; and even against odd rows over a `White` cell, paired
+with the assertion that both still choose `PropRegular`.
 
-Fixed cases, placement --- one row per branch
-of `Sdl.hs:widthRaw <= remainingWidth` and `Sdl.hs:drawPropLine x _ _`: the pen
-below the limit; the pen exactly at `(lmWidth - 1) * lmBoxSize`, which the `>=`
-stops; `widthRaw` under `remaining`; `widthRaw == remaining`, fitting exactly
-with no marker, the case an off-by-one in a port flips; `widthRaw` over,
-not all-space (clamp to `remaining - lmBoxSize`, marker fires); the same
-all-space (clamp to `remaining`, *no* marker --- the asymmetry that makes
-`pcAllSpace` load-bearing); a clamped chunk followed by more chunks, asserting
-the tail is dropped and the line ends; and `remaining == lmBoxSize + 1`,
-the tightest case in which the third branch stays positive.
+Fixed cases, placement --- one row per branch of [Sdl.hs#L530][sdl-530]
+and [Sdl.hs#L654][sdl-654]: the pen below the limit; the pen exactly
+at `(lmWidth - 1) * lmBoxSize`, which the `>=` stops; `widthRaw`
+under `remaining`; `widthRaw == remaining`, fitting exactly with no marker,
+the case an off-by-one in a port flips; `widthRaw` over, not all-space (clamp
+to `remaining - lmBoxSize`, marker fires); the same all-space (clamp
+to `remaining`, *no* marker --- the asymmetry that makes `pcAllSpace`
+load-bearing); a clamped chunk followed by more chunks, asserting the tail
+is dropped and the line ends; and `remaining == lmBoxSize + 1`, the tightest
+case in which the third branch stays positive.
 
 QuickCheck properties, over arbitrary `AttrString`s built from a legal fg
 colour, a `HighlightNone`/`HighlightNoneCursor` bg and a printable char,
-so that `Sdl.hs:(sameRest, otherRest) = span sameAttr rest`'s assertion holds
-by construction:
+so that [Sdl.hs#L668][sdl-668]'s assertion holds by construction:
 
 - *chunking is total*:
   `concatMap (T.unpack . pcText) (chunkPropLine row al) == attrStringToString al`
@@ -1947,12 +1942,12 @@ by construction:
 - *chunks are single-coloured under space inheritance*: splitting the input
   by the chunk lengths, every cell of a chunk's slice satisfies
   `rowColor row (fgFromW32 ac) == pcColor c || ac == spaceAttrW32`
-  (`Sdl.hs:sameAttr ac = Color.fgFromW32 ac == fgRaw`).
+  ([Sdl.hs#L666][sdl-666]).
 - *no chunk is empty, and the lengths sum to the input's.* This is also
-  the termination argument: `Sdl.hs:width) row otherRest` recurses
-  on the remaining string, not on the pen, so a zero-advance measurement cannot
-  loop --- worth a property rather than a comment, since the naive reading
-  of that recursion says otherwise.
+  the termination argument: [Sdl.hs#L675][sdl-675] recurses on the remaining
+  string, not on the pen, so a zero-advance measurement cannot loop --- worth
+  a property rather than a comment, since the naive reading of that recursion
+  says otherwise.
 - *no property for the derived fields*: `pcFont` and `pcAllSpace` are functions
   of a two-field record, so "they agree" is a tautology and the QuickCheck
   property earlier drafts carried is deleted rather than kept green. It never
@@ -2002,12 +1997,12 @@ with `propLineStartFits` and drops rejected lines, as its haddock above now
 states: the start-cutoff test is measurement-free by this item's own seam
 design, so the pure module can apply it, and a consumer-side `propCutoff` call
 would be one copied decision per frontend --- the class being killed; `Sdl.hs`'s
-in-recursion cutoff (`Sdl.hs:drawPropLine x _ _`, re-entered per chunk
-at `Sdl.hs:width) row otherRest`) transcribes into the filter. (b)
-`chunkPropLine` reaches its tests through the ordinary export list's "internal
-and used in unit tests" group (`Common/Kind.hs:Operations both internal`'s
-pattern), the sec. 2.1 sentence that once routed it through `EXPOSE_INTERNAL`
-corrected above --- `release` defaults `False` (`LambdaHack.cabal:flag release`,
+in-recursion cutoff ([Sdl.hs#L654][sdl-654], re-entered per chunk
+at [Sdl.hs#L675][sdl-675]) transcribes into the filter. (b) `chunkPropLine`
+reaches its tests through the ordinary export list's "internal and used in unit
+tests" group (`Common/Kind.hs:Operations both internal`'s pattern), the sec. 2.1
+sentence that once routed it through `EXPOSE_INTERNAL` corrected above ---
+`release` defaults `False` (`LambdaHack.cabal:flag release`,
 `LambdaHack.cabal:if flag(release)`), so the idiom would not compile
 in the ordinary build, the trap `test/CLAUDE.md`'s `emptyUnknownTile` bullet
 records. (c) The even-row `White`->`AltWhite` recolour is 0.2's named export,
@@ -3572,5 +3567,27 @@ passthrough, and B.1.
 [terminal-133]: https://github.com/LambdaHack/LambdaHack/blob/b2f76b8fec66713f8fa4b0c773a9d9c5071d9b35/ts-src/src/terminal.ts#L133-L134
 [wasm-177]: https://github.com/LambdaHack/LambdaHack/blob/b2f76b8fec66713f8fa4b0c773a9d9c5071d9b35/engine-src/Game/LambdaHack/Client/UI/Frontend/Wasm.hs#L177-L181
 [wasm-190]: https://github.com/LambdaHack/LambdaHack/blob/b2f76b8fec66713f8fa4b0c773a9d9c5071d9b35/engine-src/Game/LambdaHack/Client/UI/Frontend/Wasm.hs#L190-L194
+[sdl-482]: https://github.com/LambdaHack/LambdaHack/blob/5c58af62ec9d875dfcb051ba5fade405e5b36f8d/engine-src/Game/LambdaHack/Client/UI/Frontend/Sdl.hs#L482
+[sdl-493]: https://github.com/LambdaHack/LambdaHack/blob/5c58af62ec9d875dfcb051ba5fade405e5b36f8d/engine-src/Game/LambdaHack/Client/UI/Frontend/Sdl.hs#L493
+[sdl-524]: https://github.com/LambdaHack/LambdaHack/blob/5c58af62ec9d875dfcb051ba5fade405e5b36f8d/engine-src/Game/LambdaHack/Client/UI/Frontend/Sdl.hs#L524
+[sdl-526]: https://github.com/LambdaHack/LambdaHack/blob/5c58af62ec9d875dfcb051ba5fade405e5b36f8d/engine-src/Game/LambdaHack/Client/UI/Frontend/Sdl.hs#L526
+[sdl-530]: https://github.com/LambdaHack/LambdaHack/blob/5c58af62ec9d875dfcb051ba5fade405e5b36f8d/engine-src/Game/LambdaHack/Client/UI/Frontend/Sdl.hs#L530
+[sdl-531]: https://github.com/LambdaHack/LambdaHack/blob/5c58af62ec9d875dfcb051ba5fade405e5b36f8d/engine-src/Game/LambdaHack/Client/UI/Frontend/Sdl.hs#L531
+[sdl-555]: https://github.com/LambdaHack/LambdaHack/blob/5c58af62ec9d875dfcb051ba5fade405e5b36f8d/engine-src/Game/LambdaHack/Client/UI/Frontend/Sdl.hs#L555
 [sdl-568]: https://github.com/LambdaHack/LambdaHack/blob/5c58af62ec9d875dfcb051ba5fade405e5b36f8d/engine-src/Game/LambdaHack/Client/UI/Frontend/Sdl.hs#L568
+[sdl-571]: https://github.com/LambdaHack/LambdaHack/blob/5c58af62ec9d875dfcb051ba5fade405e5b36f8d/engine-src/Game/LambdaHack/Client/UI/Frontend/Sdl.hs#L571
+[sdl-574]: https://github.com/LambdaHack/LambdaHack/blob/5c58af62ec9d875dfcb051ba5fade405e5b36f8d/engine-src/Game/LambdaHack/Client/UI/Frontend/Sdl.hs#L574
+[sdl-607]: https://github.com/LambdaHack/LambdaHack/blob/5c58af62ec9d875dfcb051ba5fade405e5b36f8d/engine-src/Game/LambdaHack/Client/UI/Frontend/Sdl.hs#L607
 [sdl-648]: https://github.com/LambdaHack/LambdaHack/blob/5c58af62ec9d875dfcb051ba5fade405e5b36f8d/engine-src/Game/LambdaHack/Client/UI/Frontend/Sdl.hs#L648
+[sdl-654]: https://github.com/LambdaHack/LambdaHack/blob/5c58af62ec9d875dfcb051ba5fade405e5b36f8d/engine-src/Game/LambdaHack/Client/UI/Frontend/Sdl.hs#L654
+[sdl-658]: https://github.com/LambdaHack/LambdaHack/blob/5c58af62ec9d875dfcb051ba5fade405e5b36f8d/engine-src/Game/LambdaHack/Client/UI/Frontend/Sdl.hs#L658
+[sdl-664]: https://github.com/LambdaHack/LambdaHack/blob/5c58af62ec9d875dfcb051ba5fade405e5b36f8d/engine-src/Game/LambdaHack/Client/UI/Frontend/Sdl.hs#L664
+[sdl-666]: https://github.com/LambdaHack/LambdaHack/blob/5c58af62ec9d875dfcb051ba5fade405e5b36f8d/engine-src/Game/LambdaHack/Client/UI/Frontend/Sdl.hs#L666
+[sdl-668]: https://github.com/LambdaHack/LambdaHack/blob/5c58af62ec9d875dfcb051ba5fade405e5b36f8d/engine-src/Game/LambdaHack/Client/UI/Frontend/Sdl.hs#L668
+[sdl-674]: https://github.com/LambdaHack/LambdaHack/blob/5c58af62ec9d875dfcb051ba5fade405e5b36f8d/engine-src/Game/LambdaHack/Client/UI/Frontend/Sdl.hs#L674
+[sdl-675]: https://github.com/LambdaHack/LambdaHack/blob/5c58af62ec9d875dfcb051ba5fade405e5b36f8d/engine-src/Game/LambdaHack/Client/UI/Frontend/Sdl.hs#L675
+[sdl-678]: https://github.com/LambdaHack/LambdaHack/blob/5c58af62ec9d875dfcb051ba5fade405e5b36f8d/engine-src/Game/LambdaHack/Client/UI/Frontend/Sdl.hs#L678
+[sdl-681]: https://github.com/LambdaHack/LambdaHack/blob/5c58af62ec9d875dfcb051ba5fade405e5b36f8d/engine-src/Game/LambdaHack/Client/UI/Frontend/Sdl.hs#L681
+[sdl-684]: https://github.com/LambdaHack/LambdaHack/blob/5c58af62ec9d875dfcb051ba5fade405e5b36f8d/engine-src/Game/LambdaHack/Client/UI/Frontend/Sdl.hs#L684
+[sdl-709]: https://github.com/LambdaHack/LambdaHack/blob/5c58af62ec9d875dfcb051ba5fade405e5b36f8d/engine-src/Game/LambdaHack/Client/UI/Frontend/Sdl.hs#L709
+[sdl-876]: https://github.com/LambdaHack/LambdaHack/blob/5c58af62ec9d875dfcb051ba5fade405e5b36f8d/engine-src/Game/LambdaHack/Client/UI/Frontend/Sdl.hs#L876
