@@ -1,8 +1,9 @@
 // Browser loader wiring: instantiate the LambdaHack wasm reactor with an
 // in-memory WASI shim and the generated JSFFI glue, hook up frame submission,
-// screenshots, the startup payload + keyboard, then start the game. Mirrors
-// ../run-wasm-game.mjs (the Node driver for the reactor), but renders to the
-// DOM instead of recording frames. Not unit-tested.
+// screenshots, the startup payload + keyboard, then start the game and say
+// on the page how it ended. Mirrors ../run-wasm-game.mjs (the Node driver
+// for the reactor), but renders to the DOM instead of recording frames. Not
+// unit-tested.
 
 import {
   WASI,
@@ -125,7 +126,44 @@ async function main(): Promise<void> {
   // loading message only once everything is wired and about to start, not
   // before, so it stays visible for the whole duration of a slow load.
   status?.remove();
-  void lh.lhStart();
+  // lhStart's promise settles when the game ends, and under the success rule
+  // measured in docs/wasm-frontend-unified-plan.md's 3.2 a resolution or
+  // a rejection with the message ExitSuccess is a finished game and any
+  // other rejection a crash. The page says which, since its screen goes on
+  // showing the last frame.
+  lh.lhStart().then(
+    () => showEnd(FINISHED),
+    (e: unknown) => {
+      if (e instanceof Error && e.message === "ExitSuccess") {
+        showEnd(FINISHED);
+      } else {
+        console.error(e);
+        const message = e instanceof Error ? e.message : String(e);
+        showEnd(
+          `The game crashed: ${message}. See console for details.` +
+            " Reload the page to play again.",
+          RED,
+        );
+      }
+    },
+  );
+}
+
+const FINISHED = "The game has ended. Reload the page to play again.";
+const RED = "#d50505"; // From the game's own palette
+
+// Says how the game ended in place of the banner's text, leaving fullscreen
+// first, since fullscreen hides the banner.
+function showEnd(text: string, color?: string): void {
+  if (document.fullscreenElement) {
+    document
+      .exitFullscreen()
+      .catch((e: unknown) => console.warn("[lh] fullscreen exit failed", e));
+  }
+  const bannerText = document.getElementById("bannerText");
+  if (!bannerText) return;
+  bannerText.textContent = text;
+  if (color) bannerText.style.color = color;
 }
 
 main().catch((e) => {
@@ -134,6 +172,6 @@ main().catch((e) => {
   if (status) {
     status.textContent =
       "Failed to load LambdaHack wasm. See console for details.";
-    status.style.color = "#d50505"; // Red, from the game's own palette
+    status.style.color = RED;
   }
 });
