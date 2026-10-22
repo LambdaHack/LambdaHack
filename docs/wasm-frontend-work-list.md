@@ -1131,19 +1131,13 @@ so it cannot regress to map-only on its own (B.10).
 
 ### 3.1 Argv into the reactor: `lhStart` reads WASI args
 
-**Split** --- two commits. First `GameDefinition/Main.hs`: `getArgs` in place
-of the literal `[]`, the comment rewritten to the new contract,
-and `import System.Environment (getArgs)` --- a new import, since `getArgs`
-occurs in no tracked `.hs` file today and `Core/Prelude.hs` re-exports
-no `System.Environment`. Imports precede declarations, so it cannot ride
-the `#ifdef USE_WASM` block that carries its only consumer: it goes
-in the file's import block under an `#ifdef USE_WASM` of its own, beside
-the `#ifndef USE_BROWSER` one already there. Unguarded it is an unused import
-on every native build, which is a warning and leaves `native` green, so no gate
-this item names would catch it. Second the landing --- outcome line plus
-the ledger row. (The "not yet validated" retirement a third commit once carried
-was overtaken by the recorded spike of 2026-08-07 --- the body's Spike paragraph
-holds the artifact.)
+**Split** --- two commits. First `GameDefinition/Main.hs`: `OA.execParser`,
+the parse `main` makes, in place of the pure parse of the literal `[]`,
+and the comment rewritten to the new contract; `execParser` reads `getArgs`
+itself, so no import and no `#ifdef` of its own are needed. Second the landing
+--- outcome line plus the ledger row. (The "not yet validated" retirement
+a third commit once carried was overtaken by the recorded spike of 2026-08-07
+--- the body's Spike paragraph holds the artifact.)
 
 **Owns** --- `GameDefinition/Main.hs`, which R3 also writes, rewording its GHCJS
 comment; and `docs/wasm-frontend-unified-plan.md`. Deliberately not `CLAUDE.md`:
