@@ -316,14 +316,12 @@ or this campaign, so a session is told both rather than trusted to know them.
   as it stands.
 
 **One item is in flight at a time, in one checkout.** The hot files are small
---- a hundred to a couple of hundred lines each, `GameDefinition/index.html`
-with no automated gate on it at all --- and nearly every phase writes them,
-several items rewriting the same four-line `startup` body in `Wasm.hs`, so two
-items in one of them are two items in the same paragraph, and the locks
-and claimant lists this plan carried until 2026-09-14 could not have made them
-concurrent. What the campaign did parallelize was upstream of the code,
-on the **Decide first** questions, each blocking an item that was otherwise
-ready to hand out.
+and nearly every phase writes them, several items rewriting the same four-line
+`startup` body in `Wasm.hs`, so two items in one of them are two items
+in the same paragraph, and the locks and claimant lists this plan carried until
+2026-09-14 could not have made them concurrent. What the campaign did
+parallelize was upstream of the code, on the **Decide first** questions, each
+blocking an item that was otherwise ready to hand out.
 
 Worktree isolation helps exactly where a collision would be loud: a new module
 no one else has a copy of (0.1's `InputDecision`, 2.1's `OverlayLayout`),
@@ -876,7 +874,7 @@ this item proposes no file.
 **Owns** --- `ts-src/src/loader.ts` and `docs/wasm-frontend-unified-plan.md`.
 It does not write `engine-src/Game/LambdaHack/Client/UI/Frontend/Wasm.hs`,
 `shutdown` staying `return ()` by the ruling, nor `ts-src/src/terminal.ts`,
-the grid needing no change, keys into a finished reactor going nowhere,
+the painter needing no change, keys into a finished reactor going nowhere,
 nor `GameDefinition/index.html`, the loader creating the element it needs
 as the load-failure path reuses the one it finds. R4 writes the same `lhStart`
 call, its rejected-parameter message being a branch of this handler,
@@ -983,7 +981,9 @@ naming (3)'s hash, the ledger flip, and the deletion of `overlay-core.ts`
 and `overlay-core.test.ts` from `tools/doc-refs-allow.txt`.
 
 **Owns** --- `ts-src/src/overlay-core.ts`, `ts-src/src/overlay-core.test.ts`,
-`ts-src/src/terminal.ts`, `ts-src/src/loader.ts`,
+`ts-src/src/terminal.ts`, `ts-src/src/terminal-core.ts` and its test
+for the draw op a proportional chunk needs, its glyphs drawn from the chunk's
+left edge, `ts-src/src/loader.ts`,
 `engine-src/Game/LambdaHack/Client/UI/Frontend/Wasm.hs`, `Makefile`,
 `docs/wasm-frontend-unified-plan.md` and `tools/doc-refs-allow.txt`. 2.1's
 freshness case writes (2)'s branch table; this item edits neither the case
@@ -1484,10 +1484,11 @@ retired by B.10, so nothing here is executed.
 
 **Split** --- (1) the BDF decoder and atlas generator with its tests
 and the committed atlas, consumed by nobody; (2) the painter drawing
-from the atlas at 1.0 and integer scales and from the outline font otherwise,
-`make build-ts` copying the atlas beside the woff; (3) the outcome line
-and the ledger flip, for R7a. R7b, ruled in the record, takes no commit here:
-it follows R7a's landing as a change of the font choice alone.
+from the atlas at `allFontsScale` 1.0, the canvas scaled whole by integers,
+and from the outline font otherwise, `make build-ts` copying the atlas beside
+the woff; (3) the outcome line and the ledger flip, for R7a. R7b, ruled
+in the record, takes no commit here: it follows R7a's landing as a change
+of the font choice alone.
 
 **Owns** --- `ts-src/src/terminal.ts`, `ts-src/src/terminal-core.ts`
 and its test, `ts-src/src/fullscreen.ts`, `Makefile` (the atlas copy
@@ -1801,7 +1802,7 @@ frontend CI smokes, ANSI and SDL --- early, beside 0.3-baseline: they
     forwarding tests, and the input-side RawFrontend contract cases)
 0.2 CellStyle + generated files (gives 2.2 its palette)
 0.4 canvas painter (B.10) --- before 1.2, 1.5 and 2.2, which build on it;
-    its Split (0) measures the frame cost against the Phase 2 baseline
+    its Split (0) measures the frame cost beside the DOM grid's
 1.1 / 1.2 / 1.3 / 1.4 / 1.5 / 1.6 --- any order; each
     capability's landing ends with its own banner commit, per 1.4's rule
     (1.2 and 1.5 come after 0.4, 1.5's full player-facing form after

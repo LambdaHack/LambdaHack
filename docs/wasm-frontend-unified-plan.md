@@ -19,11 +19,11 @@ and `sdl2-to-wasm-parity-plan.md`. It pursues two goals at once:
   it is: the 2026-09-07 re-audit recorded in Appendix C found six more, of which
   four were scheduled the same day --- its (3) into 1.2, (4) as 1.6, (5)
   into 2.2 and (6) into 0.1, each with a ledger row --- and two were carried
-  into item bodies and closed by nothing: the half-cell mouse pitch, which B.10
-  has since given to 0.4, and the compound-modifier shift flag, which 0.1 says
-  outright needs a signature it has not specified, and which carries no ledger
-  row and so has no state. SDL2's behaviour is not always its intent: What would
-  falsify this has the rule and the case.
+  into item bodies without a row of their own: the half-cell mouse pitch, which
+  0.4 has since closed under B.10, and the compound-modifier shift flag, which
+  0.1 says outright needs a signature it has not specified, and which carries
+  no ledger row and so has no state. SDL2's behaviour is not always its intent:
+  What would falsify this has the rule and the case.
 
 The ordering follows from G1: multi-font done naively would re-implement
 in TypeScript the layout logic that lives in `Sdl.hs`'s
@@ -1237,12 +1237,11 @@ zoom (`C-+`/`C--`/`C-0`, allowlisted in 0.1).
 
 Mirror SDL2's semantics (`Sdl.hs:if fromJust sallFontsScale`): at scale 1.0 use
 the pixel-perfect rendering --- for the web that means the map font's `.woff`
-drawn at its native 16px, as the page draws it today and 0.4's painter after it,
-until R7a puts the `.bdf` itself there --- and at any other scale fall back
-to scalable rendering, i.e. the same outline font at `16 * scale` px, accepting
-the browser's rasterization the way SDL accepts FreeType's. Auxiliary
-(prop/mono) font sizes multiply by the scale too, which 2.2's font wiring
-already specifies.
+drawn at its native 16px, as 0.4's painter draws it, until R7a puts the `.bdf`
+itself there --- and at any other scale fall back to scalable rendering, i.e.
+the same outline font at `16 * scale` px, accepting the browser's rasterization
+the way SDL accepts FreeType's. Auxiliary (prop/mono) font sizes multiply
+by the scale too, which 2.2's font wiring already specifies.
 
 Mechanics: `sallFontsScale` is already in the embedded config/options; pass
 it to TS in the one extensible startup call, which 2.2 specifies
@@ -1317,9 +1316,9 @@ comparing only within that setup, and lands here: a dated number
 with its protocol and the probe's diff, appended to this paragraph when taken.
 Re-ruled 2026-10-20 by Mikolaj: B.10 put the canvas between this number and 2.2,
 so the baseline 2.5 compares against is 0.4's, taken by 0.4's Split (0)
-on the canvas against this one and recorded in B.10 with its probe;
-this DOM-grid number stays as history, and the move from DOM to canvas
-is charged to 0.4.
+on the canvas, beside the DOM grid re-measured rather than against this one,
+and recorded in B.10 with its probe; this DOM-grid number stays as history,
+and the move from DOM to canvas is charged to 0.4.
 
 **Taken 2026-09-04**, pre-2.2, on this branch's tip with the probe below applied
 and nothing else: **p95 3.00ms** per frame, and **mean 0.75ms read at n=2905**,
@@ -1426,8 +1425,9 @@ lmBoxSize = (2 *) . lmHalfSize
 -- | The only constructor exported, the data constructor staying inside the
 -- module as 'PropCursor'\'s does. @Sdl.hs@ passes half the loaded map font's
 -- size, that font having been opened at a point size already multiplied by
--- @sallFontsScale@ (@Sdl.hs:intToDouble fsize@); the browser passes half its
--- measured grid box. @width@ is the same @rwidth coscreen@ the caller passes to
+-- @sallFontsScale@ (@Sdl.hs:intToDouble fsize@); the browser passes its
+-- painter's @halfSize@, half the cell it takes from the loaded map font
+-- the same way. @width@ is the same @rwidth coscreen@ the caller passes to
 -- 'layOutFrame' --- the one quantity this record shares with the metric-free
 -- half, and two different values there would leave the line filter and the pen
 -- clamping against different screens, so a consumer binds it once and uses that
@@ -2495,7 +2495,7 @@ supply the game-logic half of the measurement (headless wasm vs `nativeBench`
 on the same machine, same seeds); the remaining half is browser-side rendering,
 which nothing in Phase 3 touches (`--frontendNull` never starts the wasm
 frontend). Its instrument: after R4 + 3.1, a `?benchmark` URL mode running
-the same `--automateAll` AI-vs-AI game with the real DOM frontend ---
+the same `--automateAll` AI-vs-AI game with the real browser frontend ---
 the browser analogue of `benchFrontendCrawl` --- while `terminal.ts` collects
 `submitFrame`-to-paint timings (rAF timestamps) and reports count/mean/p95
 at game end. Used for R5's own pass alone: 0.4's baseline and the 2.5
@@ -3442,7 +3442,11 @@ four, and the two it leaves are (1) and (2).*
   frontend.
 - **HighDPI.** `windowHighDPI` (`Sdl.hs:, SDL.windowHighDPI = True`) has
   no DOM-grid counterpart to port (browser text is DPR-aware natively);
-  the canvas-DPR concern is a 2.2 pitfall item.
+  the canvas-DPR concern is a 2.2 pitfall item. *That pitfall left 2.2,
+  with its own backing store, in its re-cut for B.10 on 2026-10-20; the canvas
+  is 0.4's since `9eb0c2c3c`, its backing store in device pixels and repainted
+  when `devicePixelRatio` changes, and 2.5 keeps the HiDPI and browser-zoom spot
+  checks.*
 - **PrintScreen key (as opposed to `C-P`).** SDL maps the key
   (`Sdl.hs:KeycodePrintScreen -> K.PrintScreen`) but no binding uses
   `K.PrintScreen` bare
