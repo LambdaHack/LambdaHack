@@ -91,9 +91,9 @@ carries an outcome line.
 >   is deliberate: the pointman records have no such case and need no such word.
 >
 > The distinction a reader will trip on is **open** against **not applied**,
-> because the work list's ledger sorts by item number and not by it: 1.2 and 2.1
-> are two rows of one table and mean different things --- `C-P` reports
-> a screenshot that the shipped browser build never saves, while `OverlayLayout`
+> because the work list's ledger sorts by item number and not by it: 1.5 and 2.1
+> are two rows of one table and mean different things --- `allFontsScale` sets
+> a scale that the shipped browser build ignores, while `OverlayLayout`
 > is a module nobody has written. The first is a bug report, the second
 > a specification, and only the second may be edited to match a tree that moved.
 > The rule fires at the item and the state lives in the ledger, so before
@@ -1167,6 +1167,14 @@ in Haskell**, shared with SDL2:
    as it is, so a bare `toBlob` saves the unscaled frame where SDL's
    `printScreen` reads the live `SDL.windowSize`, and that stands by ruling (b):
    the PNG is the frame at its own size with fullscreen on or off.
+
+*Landed in `23dd759c3` and `3f6954acb`, the Split's (1) and (2),
+then `225533cd1`, the page gate's Chromium leg, and `37cd2f315`, fullscreen
+with the keyboard locked, which a Firefox player's `Ctrl+P` needs. Beyond
+this body: `decideKey` keeps every Control chord but zoom's from the browser,
+and F11 leaves fullscreen in both browsers.*
+
+*Its hand-back confirmed by Mikolaj on 2026-10-22, in Firefox.*
 
 Verify: tasty test for the filename helper; Split (2)'s two reactor-driver runs,
 the machine criterion; run the game, press `Ctrl+P` --- a one-time human glance

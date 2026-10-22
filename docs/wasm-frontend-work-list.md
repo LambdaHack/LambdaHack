@@ -108,7 +108,7 @@ sections of the record are frozen and which live is its head callout's to say.
 | 0.3 | FFI-coverage battery (baseline before 0.1, then per-commit) | ongoing | --- | standing |
 | 0.4 | canvas painter in place of the DOM grid (B.10) | medium | 0.3 for the reactor driver | landed -- 9eb0c2c3c |
 | 1.1 | crosshair cursor (CSS keyword; then generated SVG cursor) | trivial | 0.2 for the final form | landed -- 0a72de79c |
-| 1.2 | working `Ctrl+P` and `--printEachScreen` screenshots | small | 0.4 for the canvas; 0.3 for the reactor driver; 3.1 for the per-frame case; 0.1 for `decideKey`; 1.3 for `fullscreen.ts` | open |
+| 1.2 | working `Ctrl+P` and `--printEachScreen` screenshots | small | 0.4 for the canvas; 0.3 for the reactor driver; 3.1 for the per-frame case; 0.1 for `decideKey`; 1.3 for `fullscreen.ts` | landed -- 37cd2f315 |
 | 1.3 | fullscreen toggle with scaling | small | --- | landed -- d211caa38 |
 | 1.4 | banner/title truthfulness | trivial, recurring | feature landings | open -- standing |
 | 1.5 | `allFontsScale` honored in browser | small | 0.4 for the painter; 0.3 for the reactor driver; R4 for player control | open |
