@@ -790,9 +790,9 @@ and `docs/wasm-frontend-unified-plan.md` wherever this item's own body quotes
 the banner: 1.4 is `open -- standing`, so a quote that no longer matches
 the page is an error to fix, not drift to leave alone. Every item that writes
 `index.html` writes the banner or the `#screen` rule beside it --- 0.4, 1.2,
-1.3, R4, R5 and the banner commits of 2.4 and R1 --- and the four that touch
-the quoted paragraph write `README.md` too: this item, 2.4, R1 and R5.
-`../lambdahack.github.io` is redeployed by **Done**, not owned.
+1.3, 1.6, R4, R5 and the banner commits of 2.4 and R1 --- and the four
+that touch the quoted paragraph write `README.md` too: this item, 2.4, R1
+and R5. `../lambdahack.github.io` is redeployed by **Done**, not owned.
 
 **Done** --- `wasm`, `deploy`, `page`, `docs`, plus
 `! grep -qE 'proportional fonts|limited to the square font' ../lambdahack.github.io/index.html`
@@ -867,26 +867,30 @@ this item's field.
 ### 1.6 Game-end page lifecycle (small)
 
 **Split** --- two commits. (1) the code: `loader.ts` keeping `lhStart`'s promise
-and marking the page finished or crashed by how it settles. (2) the landing:
+and marking the page finished or crashed by how it settles, in place
+of the banner's text, which `index.html` gives an id. (2) the landing:
 the outcome line naming (1)'s hash and the ledger flip. No allowlist entry:
 this item proposes no file.
 
-**Owns** --- `ts-src/src/loader.ts` and `docs/wasm-frontend-unified-plan.md`.
-It does not write `engine-src/Game/LambdaHack/Client/UI/Frontend/Wasm.hs`,
-`shutdown` staying `return ()` by the ruling, nor `ts-src/src/terminal.ts`,
-the painter needing no change, keys into a finished reactor going nowhere,
-nor `GameDefinition/index.html`, the loader creating the element it needs
-as the load-failure path reuses the one it finds. R4 writes the same `lhStart`
+**Owns** --- `ts-src/src/loader.ts`, `GameDefinition/index.html` for the id
+on the banner's text, and `docs/wasm-frontend-unified-plan.md`. It does
+not write `engine-src/Game/LambdaHack/Client/UI/Frontend/Wasm.hs`, `shutdown`
+staying `return ()` by the ruling, nor `ts-src/src/terminal.ts`, the painter
+needing no change, keys into a finished reactor going nowhere,
+nor `ts-src/src/fullscreen.ts`, whose `fullscreenchange` listener shows
+the banner again when the loader leaves fullscreen. R4 writes the same `lhStart`
 call, its rejected-parameter message being a branch of this handler,
 so whichever lands first shapes the other's diff.
 
 **Done** --- `ts`, `wasm`, `deploy`, `page`, `docs`, plus, in-session,
 the deployed page under the browser-under-Xvfb setup `CLAUDE.md` describes,
-driven to the game's own exit through its menu with `xdotool` and the finished
-state read back over WebDriver BiDi, which R4's block records as reaching
-the deployed page. That run is the first to see a real save-and-exit settle
-`lhStart`'s promise, the ruling's premise, so a page left without the finished
-state stops the item and reopens the ruling.
+driven to the game's own exit through its menu with `xdotool`, once in a window
+and once in fullscreen by the page's button, clicked with `xdotool`, since
+Firefox refuses fullscreen to a WebDriver click, and the finished state read
+back over WebDriver BiDi, which R4's block records as reaching the deployed
+page. That run is the first to see a real save-and-exit settle `lhStart`'s
+promise, the ruling's premise, so a page left without the finished state stops
+the item and reopens the ruling.
 
 **Hands back** --- *judgement*: whether the finished and crashed pages read
 as such to a player, the wording being nobody's gate. The substitute gate

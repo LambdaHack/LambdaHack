@@ -536,6 +536,10 @@ only that the plan was written is one the next reader has to skip.
   Holding Escape, the other way out under the lock, sends the game a run
   of Escapes before it leaves. 1.2's **Decide first** is ruled with it:
   a Firefox player takes a screenshot in fullscreen.
+- 2026-10-22 -- ruled by Mikolaj at 1.6's hand-back: the line saying how
+  the game ended replaces the banner's text, a status line under the banner,
+  as first built, having looked iffy. Fullscreen hides the banner, so the page
+  leaves fullscreen first.
 
 ## Repo facts the plan builds on
 
@@ -1336,16 +1340,17 @@ is `return ()` and the loader discards `lhStart`'s promise, so a finished game
 leaves a live-looking frozen page whose screen goes on swallowing keys,
 and a crash leaves the same page. The loader fixes both by keeping `lhStart`'s
 promise and acting on how it settles, under 3.2's success rule: resolved,
-or rejected with the message `ExitSuccess`, marks the page finished --- a status
-line in the place the load-failure message already uses, naming a reload
-as the way to play again --- and any other rejection marks it crashed,
-with the exception's message. `shutdown` stays `return ()`, so no FFI
-declaration is added and 0.3's rule asks no coverage case. Restarting in place,
-`lhStart` called a second time on the live instance, is unmeasured
-and not proposed. A fault raised in the RTS scheduler loop on a later tick
-escapes the promise, as 3.2 records, and so this handler. R4's on-page message
-for a rejected parameter is a branch of the same handler, whichever of the two
-items lands first creating it. 1.4's rule reaches no banner clause here.
+or rejected with the message `ExitSuccess`, marks the page finished --- a line
+in place of the banner's text naming a reload as the way to play again, the page
+first leaving fullscreen, where the banner is hidden --- and any other rejection
+marks it crashed, the line giving the exception's message. `shutdown` stays
+`return ()`, so no FFI declaration is added and 0.3's rule asks no coverage
+case. Restarting in place, `lhStart` called a second time on the live instance,
+is unmeasured and not proposed. A fault raised in the RTS scheduler loop
+on a later tick escapes the promise, as 3.2 records, and so this handler. R4's
+on-page message for a rejected parameter is a branch of the same handler,
+whichever of the two items lands first creating it. 1.4's rule reaches no banner
+clause here.
 
 **Rulings** --- ruled 2026-10-20 by Mikolaj: the loader signals the end,
 on `lhStart`'s settlement, and not `shutdown` through a new import in SDL's
@@ -1356,7 +1361,9 @@ being checked in a browser alone, and Appendix C's (4) now reads as a non-gap,
 `shutdown` doing nothing by design. The premise is 3.2's probe on a throwaway
 `lhProbeCrash` export: no real save-and-exit has been seen to settle
 the promise, so Done's browser run is the first to see it, and should
-it not settle, the ruling reopens.
+it not settle, the ruling reopens. Ruled 2026-10-22 by Mikolaj,
+at the hand-back: the line replaces the banner's text, a status line
+under the banner having looked iffy.
 
 ---
 
