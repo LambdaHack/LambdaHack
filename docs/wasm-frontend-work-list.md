@@ -111,7 +111,7 @@ sections of the record are frozen and which live is its head callout's to say.
 | 1.2 | working `Ctrl+P` and `--printEachScreen` screenshots | small | 0.4 for the canvas; 0.3 for the reactor driver; 3.1 for the per-frame case; 0.1 for `decideKey`; 1.3 for `fullscreen.ts` | landed -- 37cd2f315 |
 | 1.3 | fullscreen toggle with scaling | small | --- | landed -- d211caa38 |
 | 1.4 | banner/title truthfulness | trivial, recurring | feature landings | open -- standing |
-| 1.5 | `allFontsScale` honored in browser | small | 0.4 for the painter; 0.3 for the reactor driver; R4 for player control | open |
+| 1.5 | `allFontsScale` honored in browser | small | 0.4 for the painter; 0.3 for the reactor driver; R4 for player control | landed -- 433743890 |
 | 1.6 | game-end page lifecycle: a finished or crashed game says so | small | --- | open |
 | 2.1 | `OverlayLayout` extraction + `Sdl.hs` on it and on `CellStyle` | medium--large | 0.2 for `CellStyle`; determinism goldens (native harness) | not applied |
 | 2.2 | browser canvas overlay renderer + font wiring | medium | 2.1, 0.2, 0.4; 1.5 for the startup call | not applied |
