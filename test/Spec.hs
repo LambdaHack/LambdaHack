@@ -40,6 +40,7 @@ import ItemKindUnitTests
 import ItemRevUnitTests
 import LevelUnitTests
 import MonadClientUIUnitTests
+import OverlayLayoutUnitTests
 import ReqFailureUnitTests
 import ScreenshotUnitTests
 import SessionUIUnitTests
@@ -64,6 +65,7 @@ tests = testGroup "Tests" [ actorStateUnitTests
                           , itemKindUnitTests
                           , itemRevUnitTests
                           , levelUnitTests
+                          , overlayLayoutUnitTests
                           , reqFailureUnitTests
                           , screenshotUnitTests
                           , macroTests

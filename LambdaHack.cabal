@@ -60,7 +60,8 @@ extra-source-files: GameDefinition/config.ui.default,
                     GameDefinition/fonts/Hack-Bold.ttf.woff,
                     ts-src/src/generated/palette.ts,
                     ts-src/src/generated/fixtures.json,
-                    ts-src/src/generated/cursor.ts
+                    ts-src/src/generated/cursor.ts,
+                    ts-src/src/generated/prop-fit.json
 extra-doc-files:    GameDefinition/InGameHelp.txt,
                     README.md,
                     CHANGELOG.md,
@@ -255,6 +256,7 @@ library
                       Game.LambdaHack.Client.UI.Frontend.Common
                       Game.LambdaHack.Client.UI.Frontend.InputDecision
                       Game.LambdaHack.Client.UI.Frontend.MouseCursor
+                      Game.LambdaHack.Client.UI.Frontend.OverlayLayout
                       Game.LambdaHack.Client.UI.Frontend.Screenshot
                       Game.LambdaHack.Client.UI.Frontend.Teletype
                       Game.LambdaHack.Client.UI.HandleHelperM
@@ -507,6 +509,7 @@ test-suite test
                       ItemRevUnitTests
                       LevelUnitTests
                       MonadClientUIUnitTests
+                      OverlayLayoutUnitTests
                       ReqFailureUnitTests
                       ScreenshotUnitTests
                       SessionUIMock

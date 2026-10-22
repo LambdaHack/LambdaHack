@@ -14,11 +14,20 @@ module Game.LambdaHack.Client.UI.Frontend
   , CursorPixel(..), xhairCursorPixels, xhairCursorSize, xhairCursorHotspot
     -- * Screenshot names shared by the frontends
   , screenshotName
+    -- * Overlay layout shared by the frontends
+  , LayoutMetrics, lmHalfSize, lmWidth, lmBoxSize, mkLayoutMetrics
+  , PropFont(..), PropChunk(..), pcFont, pcAllSpace, PropLine(..)
+  , CellLayer(..), cellPitch, CellRun(..), FrameLayout(..)
+  , layOutFrame, layOutSquare, layOutMono, propLineStartFits
+  , PropCursor, startPropLine, propCutoff, PropFit(..), propFit
+  , trimmedMarkerRun
 #ifdef EXPOSE_INTERNAL
     -- * Internal operations
   , FrontSetup, getKey, fchanFrontend, display, defaultMaxFps, microInSec
   , frameTimeoutThread, lazyStartup, nullStartup, seqFrame
 #endif
+    -- * Operations both internal and used in unit tests
+  , chunkPropLine
   ) where
 
 import Prelude ()
@@ -42,6 +51,7 @@ import           Game.LambdaHack.Client.UI.Frontend.CellStyle
 import           Game.LambdaHack.Client.UI.Frontend.Common
 import           Game.LambdaHack.Client.UI.Frontend.InputDecision
 import           Game.LambdaHack.Client.UI.Frontend.MouseCursor
+import           Game.LambdaHack.Client.UI.Frontend.OverlayLayout
 import           Game.LambdaHack.Client.UI.Frontend.Screenshot
 import qualified Game.LambdaHack.Client.UI.Frontend.Teletype as Teletype
 import           Game.LambdaHack.Client.UI.Key (KMP (..))

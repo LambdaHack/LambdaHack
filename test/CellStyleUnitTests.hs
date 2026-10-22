@@ -1,8 +1,14 @@
--- | Tests for CellStyle, the per-cell drawing decisions shared
--- by the frontends, and for MouseCursor, the cursor they share,
--- and the freshness case for the files in @ts-src/src/generated/@
--- that are computed from the two (@docs/wasm-frontend-unified-plan.md@, 0.2).
-module CellStyleUnitTests (cellStyleUnitTests, freshnessOptions) where
+-- | Tests for CellStyle, the per-cell drawing decisions shared by the
+-- frontends, and for MouseCursor, the cursor they share, and the freshness
+-- case for the files in @ts-src/src/generated/@ that are computed from the
+-- two (@docs/wasm-frontend-unified-plan.md@, 0.2), whose switch and writers
+-- @OverlayLayoutUnitTests@ shares.
+module CellStyleUnitTests
+  ( cellStyleUnitTests, freshnessOptions
+#ifndef USE_BROWSER
+  , freshnessCase, jsonItems, jsonObject, jsonString
+#endif
+  ) where
 
 import Prelude ()
 
@@ -160,13 +166,14 @@ freshnessOptions = [Option (Proxy :: Proxy Regenerate)]
 freshnessTests :: [TestTree]
 #ifndef USE_BROWSER
 freshnessTests =
-  [ freshnessCase "palette.ts" paletteTs
-  , freshnessCase "fixtures.json" fixturesJson
-  , freshnessCase "cursor.ts" cursorTs
+  [ freshnessCase "CellStyleUnitTests.hs" "palette.ts" paletteTs
+  , freshnessCase "CellStyleUnitTests.hs" "fixtures.json" fixturesJson
+  , freshnessCase "CellStyleUnitTests.hs" "cursor.ts" cursorTs
   ]
 
-freshnessCase :: FilePath -> Text -> TestTree
-freshnessCase name content = askOption $ \(Regenerate regenerate) ->
+-- | The freshness case of one file, given the test module computing it.
+freshnessCase :: FilePath -> FilePath -> Text -> TestTree
+freshnessCase source name content = askOption $ \(Regenerate regenerate) ->
   testCase ("generated " ++ name ++ " is fresh") $ do
     -- Relative to the directory the .cabal file is in, where cabal runs
     -- the suite, and which the SDL fontset cases rely on too.
@@ -177,7 +184,7 @@ freshnessCase name content = askOption $ \(Regenerate regenerate) ->
     if | committed == Just bytes -> return ()
        | regenerate -> BS.writeFile path bytes
        | otherwise ->
-         assertFailure $ path ++ " differs from what CellStyleUnitTests.hs"
+         assertFailure $ path ++ " differs from what " ++ source
                          ++ " computes; rewrite it with"
                          ++ " cabal test --test-options=--regenerate"
 
