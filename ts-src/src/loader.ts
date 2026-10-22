@@ -1,8 +1,8 @@
 // Browser loader wiring: instantiate the LambdaHack wasm reactor with an
-// in-memory WASI shim and the generated JSFFI glue, hook up frame submission
-// + keyboard, then start the game. Mirrors ../run-wasm-game.mjs (the Node
-// driver for the reactor), but renders to the DOM instead of recording frames.
-// Not unit-tested.
+// in-memory WASI shim and the generated JSFFI glue, hook up frame submission,
+// screenshots + keyboard, then start the game. Mirrors ../run-wasm-game.mjs
+// (the Node driver for the reactor), but renders to the DOM instead of
+// recording frames. Not unit-tested.
 
 import { WASI, OpenFile, File, ConsoleStdout, PreopenDirectory } from "@bjorn3/browser_wasi_shim";
 import { mountTerminal } from "./terminal.js";
@@ -39,6 +39,8 @@ interface LhExports {
 declare global {
   // eslint-disable-next-line no-var
   var lhSubmitFrame: ((addr: number, w: number, h: number) => void) | undefined;
+  // eslint-disable-next-line no-var
+  var lhPrintScreen: ((name: string) => void) | undefined;
 }
 
 async function main(): Promise<void> {
@@ -86,6 +88,7 @@ async function main(): Promise<void> {
     },
   );
   globalThis.lhSubmitFrame = (addr, w, h) => term.submitFrame(addr, w, h);
+  globalThis.lhPrintScreen = (name) => term.printScreen(name);
   const banner = document.getElementById("banner");
   mountFullscreen(document.getElementById("fsToggle"), screen, banner ? [banner] : []);
 

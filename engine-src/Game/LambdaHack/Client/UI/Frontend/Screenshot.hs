@@ -15,7 +15,8 @@ import Data.Time.LocalTime (TimeZone, utcToLocalTime)
 -- time zone, with no directory and no extension, each frontend adding
 -- the extension of the format it saves: @prtscn@ followed by the first 25
 -- characters of the shown local time, spaces turned into underscores
--- and colons into dots.
+-- and colons into dots. Under wasi @getTimeZone@ returns UTC, so
+-- the browser frontend's names are in UTC where SDL's are in local time.
 screenshotName :: TimeZone -> UTCTime -> String
 screenshotName timezone utcTime =
   let unspace = map $ \c -> case c of  -- prevent the need for backquoting

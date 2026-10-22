@@ -17,13 +17,17 @@
 // lhMouseUp's column is in half-cells, as lhWheel's is: a left button
 // release one half-cell past a menu choice's label repaints the menu
 // unchanged, and one on the label's last half-cell, an odd column,
-// activates the choice; and lhKey leaves the browser a bare Control chord
-// of '+', an Alt, AltGraph and Meta chord, and Shift pressed alone.
+// activates the choice; C-P through lhKey saves one screenshot through
+// lhPrintScreen, under a name of screenshotName's shape with png for its
+// extension, and under --printEachScreen every frame saves one besides;
+// and lhKey leaves the browser a bare Control chord of '+', an Alt,
+// AltGraph and Meta chord, and Shift pressed alone.
 //
-// Usage: node run-wasm-game.mjs <LambdaHack.wasm> <ghc_wasm_jsffi.mjs>
+// Usage: node run-wasm-game.mjs <LambdaHack.wasm> <ghc_wasm_jsffi.mjs> [arg...]
 //   <ghc_wasm_jsffi.mjs> is post-link.mjs's output for that binary, as in
-//   run-wasm-test.mjs's usage. Exit 0 when every check holds, 1 when one
-//   fails, 2 when the run did not happen.
+//   run-wasm-test.mjs's usage, and the args go to lhStart as its WASI
+//   argv. Exit 0 when every check holds, 1 when one fails, 2 when the run
+//   did not happen.
 
 import { mkdtempSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
@@ -32,9 +36,11 @@ import { WASI } from 'node:wasi';
 
 import { installStubs, instantiate, requireFiles } from './run-wasm-test.mjs';
 
-const [, , wasmPath, jsffiPath] = process.argv;
-requireFiles('usage: node run-wasm-game.mjs <LambdaHack.wasm> <ghc_wasm_jsffi.mjs>',
-             wasmPath, jsffiPath);
+const [, , wasmPath, jsffiPath, ...extraArgs] = process.argv;
+const usage = 'usage: node run-wasm-game.mjs <LambdaHack.wasm>'
+  + ' <ghc_wasm_jsffi.mjs> [arg...]';
+requireFiles(usage, wasmPath, jsffiPath);
+const printEachScreen = extraArgs.includes('--printEachScreen');
 
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 const ok = (msg) => console.log(`ok   ${msg}`);
@@ -44,12 +50,13 @@ const fail = (msg) => { throw new Failed(msg); };
 // The page's loader gives the reactor the argv ["LambdaHack"], no
 // environment and an empty root directory; so does this, the root being
 // a fresh temporary directory, Node's WASI preopening host directories,
-// removed at exit, a failing one included.
+// removed at exit, a failing one included, and the argv carrying this
+// script's args after the program name.
 const root = mkdtempSync(join(tmpdir(), 'lh-reactor-'));
 process.on('exit', () => rmSync(root, { recursive: true, force: true }));
 const wasi = new WASI({
   version: 'preview1',
-  args: ['LambdaHack'],
+  args: ['LambdaHack', ...extraArgs],
   env: {},
   preopens: { '/': root },
   returnOnExit: true,
@@ -65,6 +72,12 @@ globalThis.lhSubmitFrame = (addr, w, h) => {
   screenRows = Array.from({ length: h }, (_, y) => Array.from(
     { length: w }, (_, x) => String.fromCodePoint(cells.getUint32(4 * (y * w + x), true) >>> 16),
   ).join(''));
+};
+// The names lhPrintScreen is given, each with the count of frames
+// submitted before it.
+const prints = [];
+globalThis.lhPrintScreen = (name) => {
+  prints.push({ name, frames: globalThis.lhSubmitFrameCalls.length });
 };
 instance = await instantiate(wasmPath, jsffiPath, wasi);
 const lh = instance.exports;
@@ -186,6 +199,31 @@ async function run() {
   // must be acted on with no other event to follow it.
   await repaint('lhKey', [keyEvent('Escape')]);
   ok('lhKey repaints a quiet screen: Escape is acted on with no other event');
+
+  // Under --printEachScreen each frame is printed right after it is
+  // submitted, and otherwise none is; then the game's C-P, Control
+  // and Shift with 'P', prints once more.
+  const eachFrame = prints.every((p, i) => p.frames === i + 1);
+  const framePrints = printEachScreen ? calls.length : 0;
+  if (prints.length !== framePrints || printEachScreen && !eachFrame) {
+    fail(`${prints.length} screenshots for ${calls.length} frames before C-P`
+         + `${printEachScreen ? ' under' : ' without'} --printEachScreen`);
+  }
+  const printed = prints.length;
+  lh.lhKey(keyEvent('P', { ctrlKey: true, shiftKey: true }));
+  if (!(await waitFor(() => prints.length > printed, 5000))) {
+    fail('C-P through lhKey printed no screenshot within 5s');
+  }
+  await waitQuiet(500, 5000);
+  if (prints.length !== (printEachScreen ? calls.length : 0) + 1) {
+    fail(`${prints.length} screenshots for ${calls.length} frames after C-P`);
+  }
+  const shape = /^prtscn\d{4}-\d\d-\d\d_\d\d\.\d\d\.\d\d(\.\d+)?\.png$/;
+  const bad = prints.find((p) => !shape.test(p.name));
+  if (bad) fail(`lhPrintScreen got the name ${bad.name}`);
+  const which = printEachScreen ? 'each frame' : 'no frame';
+  ok(`C-P prints one screenshot and ${which} one: ${prints.length} for`
+     + ` ${calls.length} frames, the last ${prints.at(-1).name}`);
 
   // Last, since these reach the game too, whose screen nothing checks after.
   const passed = [

@@ -64,7 +64,7 @@ createRawFrontend fcoscreen fdisplay fshutdown = do
     , fshutdown
     , fshowNow
     , fchanKey
-    , fprintScreen = return ()  -- dummy, except for SDL2
+    , fprintScreen = return ()  -- dummy, except for SDL2 and wasm
     , fcoscreen
     }
 

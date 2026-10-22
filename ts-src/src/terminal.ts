@@ -22,6 +22,7 @@ import {
 
 export interface Terminal {
   submitFrame(addr: number, w: number, h: number): void;
+  printScreen(name: string): void;
 }
 
 // Takes the event itself: the handler reads the key and modifiers off it
@@ -180,6 +181,8 @@ export function mountTerminal(
 
   let pendingFrame: { buf: Uint32Array; w: number; h: number } | null = null;
   let rafHandle: number | null = null;
+  // Screenshots asked for while a frame was pending, taken after its paint.
+  let pendingPrints: string[] = [];
 
   // Paints wait for the map font: measureText and fillText before it loads
   // would use a fallback face.
@@ -190,7 +193,36 @@ export function mountTerminal(
       const frame = pendingFrame;
       pendingFrame = null;
       if (frame) applyFrame(frame.buf, frame.w, frame.h);
+      const prints = pendingPrints;
+      pendingPrints = [];
+      for (const name of prints) savePng(name);
     });
+  }
+
+  // Offer the canvas as a PNG download under `name`, the backing store
+  // as it is, whatever size CSS shows it at.
+  function savePng(name: string): void {
+    canvas.toBlob((blob) => {
+      if (!blob) return;
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = name;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      // Revoked later, not at once: the download the click starts may
+      // still be reading it.
+      setTimeout(() => URL.revokeObjectURL(url), 60_000);
+    }, "image/png");
+  }
+
+  // Under --printEachScreen the engine asks for a frame's screenshot right
+  // after submitting the frame, before its paint, so a print with a frame
+  // pending waits for that paint, or it would save the frame before.
+  function printScreen(name: string): void {
+    if (pendingFrame) pendingPrints.push(name);
+    else savePng(name);
   }
 
   // Snapshots the framebuffer and schedules a render; does not paint
@@ -300,5 +332,5 @@ export function mountTerminal(
   // (InputDecision's decideKey), by the handler, before it returns.
   container.addEventListener("keydown", (e) => onKey(e));
 
-  return { submitFrame };
+  return { submitFrame, printScreen };
 }

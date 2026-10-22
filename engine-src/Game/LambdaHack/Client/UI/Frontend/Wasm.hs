@@ -7,7 +7,8 @@
 -- address into wasm linear memory; the TS side decodes and paints. Input: JS
 -- calls the exported @lhKey@ with each keydown event in the terminal, and
 -- @lhKey@ decides the browser's default action and translates and queues
--- the key.
+-- the key. Screenshots: a name is handed to JS, which saves the screen
+-- under it.
 module Game.LambdaHack.Client.UI.Frontend.Wasm
   (
 #ifdef USE_WASM
@@ -23,12 +24,15 @@ import Game.LambdaHack.Core.Prelude
 import qualified Control.Exception as Ex
 import           Data.IORef
 import           Data.Primitive.ByteArray (ByteArray (..), ByteArray#)
+import           Data.Time.Clock (getCurrentTime)
+import           Data.Time.LocalTime (getTimeZone)
 import qualified Data.Vector.Primitive as VP
 import qualified Data.Vector.Unboxed as U
 import qualified Data.Vector.Unboxed.Base as VU
 import           Data.Word (Word32)
 import           Foreign.Storable (sizeOf)
-import           GHC.Wasm.Prim (JSString (..), JSVal, fromJSString)
+import           GHC.Wasm.Prim (JSString (..), JSVal, fromJSString, toJSString)
+import           System.FilePath ((<.>))
 import           System.IO (hPutStrLn, stderr)
 import           System.IO.Unsafe (unsafePerformIO)
 
@@ -36,6 +40,7 @@ import           Game.LambdaHack.Client.UI.Content.Screen
 import           Game.LambdaHack.Client.UI.Frame
 import           Game.LambdaHack.Client.UI.Frontend.Common
 import           Game.LambdaHack.Client.UI.Frontend.InputDecision
+import           Game.LambdaHack.Client.UI.Frontend.Screenshot
 import qualified Game.LambdaHack.Client.UI.Key as K
 import           Game.LambdaHack.Client.UI.PointUI
 import           Game.LambdaHack.Common.ClientOptions
@@ -71,20 +76,39 @@ frontendName = "wasm"
 
 -- | Set up the frontend input and output.
 startup :: ScreenContent -> ClientOptions -> IO RawFrontend
-startup coscreen _ = do
-  rf <- createRawFrontend coscreen (display coscreen) shutdown
+startup coscreen ClientOptions{sprintEachScreen} = do
+  rfWithoutPrintScreen <-
+    createRawFrontend coscreen (display coscreen sprintEachScreen) shutdown
+  let rf = rfWithoutPrintScreen {fprintScreen = printScreen}
   writeIORef rfRef $ Just rf
   return rf
 
 shutdown :: IO ()
 shutdown = return () -- nothing to clean up
 
--- | Output to the screen via the frontend.
-display :: ScreenContent -> SingleFrame -> IO ()
-display ScreenContent{rwidth, rheight} SingleFrame{singleArray} =
+-- | Output to the screen via the frontend, and print each screen
+-- if so asked.
+display :: ScreenContent -> Bool -> SingleFrame -> IO ()
+display ScreenContent{rwidth, rheight} printEachScreen
+        SingleFrame{singleArray} = do
   let v = PointArray.avector singleArray :: U.Vector Word32
-  in word32BackingArray v $ \ba# byteOffset ->
-       js_submitFrame ba# byteOffset rwidth rheight
+  word32BackingArray v $ \ba# byteOffset ->
+    js_submitFrame ba# byteOffset rwidth rheight
+  when printEachScreen printScreen
+
+-- | Save a screenshot, named as SDL names its own, with the extension
+-- of the PNG the canvas exports in place of SDL's bitmap.
+printScreen :: IO ()
+printScreen = do
+  utcTime <- getCurrentTime
+  timezone <- getTimeZone utcTime
+  js_printScreen $ toJSString $ screenshotName timezone utcTime <.> "png"
+
+-- | Save a screenshot under the given file name. The JS side (set up
+-- by the loader as @globalThis.lhPrintScreen@) saves the screen as it is
+-- once the frame submitted last is painted.
+foreign import javascript unsafe "globalThis.lhPrintScreen($1)"
+  js_printScreen :: JSString -> IO ()
 
 -- | Handle a keydown delivered from JS: the @KeyboardEvent@ itself, read
 -- for its key and modifiers, and taken from the browser unless 'decideKey'
