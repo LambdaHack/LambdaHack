@@ -9,19 +9,21 @@
 // The checks lean on the game's default start, which plays itself
 // ("press any key to regain control") and so submits frames steadily
 // until a key arrives: the four exports exist; lhStart starts the game
-// and its frames arrive; a '?' through lhKey, a sync export taking the
-// event, is taken from the browser before lhKey returns and stops the
-// stream, which then stays quiet for a second, as it did not for 15s
-// without the key; on that quiet screen, the main menu, a wheel south
-// through lhWheel repaints it and a wheel north repaints it back exactly;
-// lhMouseUp's column is in half-cells, as lhWheel's is: a left button
-// release one half-cell past a menu choice's label repaints the menu
-// unchanged, and one on the label's last half-cell, an odd column,
-// activates the choice; C-P through lhKey saves one screenshot through
-// lhPrintScreen, under a name of screenshotName's shape with png for its
-// extension, and under --printEachScreen every frame saves one besides;
-// and lhKey leaves the browser a bare Control chord of '+', an Alt,
-// AltGraph and Meta chord, and Shift pressed alone.
+// and its frames arrive, after one startup payload through lhConfigure
+// carrying an allFontsScale, the X of an "--allFontsScale X" pair of args
+// where there is one; a '?' through lhKey, a sync export taking the event,
+// is taken from the browser before lhKey returns and stops the stream,
+// which then stays quiet for a second, as it did not for 15s without the
+// key; on that quiet screen, the main menu, a wheel south through lhWheel
+// repaints it and a wheel north repaints it back exactly; lhMouseUp's
+// column is in half-cells, as lhWheel's is: a left button release one
+// half-cell past a menu choice's label repaints the menu unchanged, and
+// one on the label's last half-cell, an odd column, activates the choice;
+// C-P through lhKey saves one screenshot through lhPrintScreen, under a
+// name of screenshotName's shape with png for its extension, and under
+// --printEachScreen every frame saves one besides; and lhKey leaves the
+// browser a bare Control chord of '+', an Alt, AltGraph and Meta chord,
+// and Shift pressed alone.
 //
 // Usage: node run-wasm-game.mjs <LambdaHack.wasm> <ghc_wasm_jsffi.mjs> [arg...]
 //   <ghc_wasm_jsffi.mjs> is post-link.mjs's output for that binary, as in
@@ -42,6 +44,9 @@ const usage =
   " <ghc_wasm_jsffi.mjs> [arg...]";
 requireFiles(usage, wasmPath, jsffiPath);
 const printEachScreen = extraArgs.includes("--printEachScreen");
+// The scale an "--allFontsScale X" pair in the args gives, if any.
+const scaleAt = extraArgs.indexOf("--allFontsScale");
+const argScale = scaleAt < 0 ? undefined : Number(extraArgs[scaleAt + 1]);
 
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 const ok = (msg) => console.log(`ok   ${msg}`);
@@ -189,6 +194,24 @@ async function run() {
   }
   const { w, h } = calls[0];
   ok(`lhStart starts the game: ${calls.length} frames of ${w}x${h} so far`);
+
+  // Wasm.hs's startup hands the page one payload, before any frame.
+  const configures = globalThis.lhConfigureCalls;
+  const scale = configures[0]?.payload.allFontsScale;
+  if (
+    configures.length !== 1 ||
+    configures[0].frames !== 0 ||
+    typeof scale !== "number"
+  ) {
+    fail(`lhConfigure got ${JSON.stringify(configures)}`);
+  }
+  if (argScale !== undefined && scale !== argScale) {
+    fail(`allFontsScale ${scale} in the payload, ${argScale} in the args`);
+  }
+  ok(
+    "lhConfigure gets the startup payload before the first frame:" +
+      ` allFontsScale ${scale}`,
+  );
 
   const help = keyEvent("?", { shiftKey: true });
   if (lh.lhKey(help) instanceof Promise) fail("lhKey is not a sync export");

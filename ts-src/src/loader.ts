@@ -1,8 +1,8 @@
 // Browser loader wiring: instantiate the LambdaHack wasm reactor with an
 // in-memory WASI shim and the generated JSFFI glue, hook up frame submission,
-// screenshots + keyboard, then start the game. Mirrors ../run-wasm-game.mjs
-// (the Node driver for the reactor), but renders to the DOM instead of
-// recording frames. Not unit-tested.
+// screenshots, the startup payload + keyboard, then start the game. Mirrors
+// ../run-wasm-game.mjs (the Node driver for the reactor), but renders to the
+// DOM instead of recording frames. Not unit-tested.
 
 import {
   WASI,
@@ -42,11 +42,20 @@ interface LhExports {
   ) => Promise<void>;
 }
 
+// The startup payload Wasm.hs's startup hands lhConfigure: named fields, each
+// present when the engine has its value, any others ignored.
+interface StartupPayload {
+  // The scale Sdl.hs multiplies its font sizes by.
+  allFontsScale?: number;
+}
+
 declare global {
   // eslint-disable-next-line no-var
   var lhSubmitFrame: ((addr: number, w: number, h: number) => void) | undefined;
   // eslint-disable-next-line no-var
   var lhPrintScreen: ((name: string) => void) | undefined;
+  // eslint-disable-next-line no-var
+  var lhConfigure: ((json: string) => void) | undefined;
 }
 
 async function main(): Promise<void> {
@@ -95,6 +104,11 @@ async function main(): Promise<void> {
   );
   globalThis.lhSubmitFrame = (addr, w, h) => term.submitFrame(addr, w, h);
   globalThis.lhPrintScreen = (name) => term.printScreen(name);
+  globalThis.lhConfigure = (json) => {
+    const payload = JSON.parse(json) as StartupPayload;
+    if (payload.allFontsScale !== undefined)
+      term.setFontScale(payload.allFontsScale);
+  };
   const banner = document.getElementById("banner");
   mountFullscreen(
     document.getElementById("fsToggle"),

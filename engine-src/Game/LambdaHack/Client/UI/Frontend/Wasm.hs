@@ -8,7 +8,8 @@
 -- calls the exported @lhKey@ with each keydown event in the terminal, and
 -- @lhKey@ decides the browser's default action and translates and queues
 -- the key. Screenshots: a name is handed to JS, which saves the screen
--- under it.
+-- under it. Startup: the font scale the page draws by is handed to JS once,
+-- as JSON.
 module Game.LambdaHack.Client.UI.Frontend.Wasm
   (
 #ifdef USE_WASM
@@ -76,12 +77,31 @@ frontendName = "wasm"
 
 -- | Set up the frontend input and output.
 startup :: ScreenContent -> ClientOptions -> IO RawFrontend
-startup coscreen ClientOptions{sprintEachScreen} = do
+startup coscreen soptions@ClientOptions{sprintEachScreen} = do
+  js_configure $ toJSString $ startupPayload soptions
   rfWithoutPrintScreen <-
     createRawFrontend coscreen (display coscreen sprintEachScreen) shutdown
   let rf = rfWithoutPrintScreen {fprintScreen = printScreen}
   writeIORef rfRef $ Just rf
   return rf
+
+-- | The startup payload: a JSON object of named fields, each present when
+-- the options carry its value. @allFontsScale@ is the scale @Sdl.hs@
+-- multiplies its font sizes by.
+startupPayload :: ClientOptions -> String
+startupPayload ClientOptions{sallFontsScale} =
+  "{" ++ intercalate "," fields ++ "}"
+ where
+  fields = [ "\"allFontsScale\":" ++ show scale
+           | Just scale <- [sallFontsScale] ]
+
+-- | Hand the page the startup payload, before the first frame. The JS side
+-- (set up by the loader as @globalThis.lhConfigure@) parses it and sizes
+-- the screen by it. One call carries every field, so that a new one changes
+-- no signature, and JSON, which a frame's cost rules out, is cheap once per
+-- game.
+foreign import javascript unsafe "globalThis.lhConfigure($1)"
+  js_configure :: JSString -> IO ()
 
 shutdown :: IO ()
 shutdown = return () -- nothing to clean up

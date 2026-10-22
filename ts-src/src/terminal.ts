@@ -23,6 +23,7 @@ import {
 export interface Terminal {
   submitFrame(addr: number, w: number, h: number): void;
   printScreen(name: string): void;
+  setFontScale(scale: number): void;
 }
 
 // Takes the event itself: the handler reads the key and modifiers off it
@@ -51,8 +52,9 @@ export type MouseHandler = (
   meta: boolean,
 ) => void;
 
-// The map font, at the 16 CSS pixels the DOM grid drew it at, its bitmap's
-// native size.
+// The map font, at allFontsScale 1.0 the 16 CSS pixels the DOM grid drew it
+// at, its bitmap's native size, and at any other scale that many times 16, as
+// Sdl.hs scales its scalable font.
 const FONT_FAMILY = "lambdaHackFont";
 const FONT_CSS_PX = 16;
 
@@ -66,6 +68,9 @@ export function mountTerminal(
   let cols = 0;
   let rows = 0;
   let dpr = 0;
+  // The engine's allFontsScale, and the one the canvas was laid out at.
+  let fontScale = 1;
+  let laidOutScale = 0;
   let metrics: CellMetrics | null = null;
   let prev = new Uint32Array(0);
   let lastFrame: Uint32Array | null = null;
@@ -89,13 +94,15 @@ export function mountTerminal(
 
   // Size the canvas for a w by h frame at the current devicePixelRatio:
   // the backing store in device pixels, cols * boxSize by rows * boxSize,
-  // boxSize taken from the map font loaded at FONT_CSS_PX CSS pixels, and
-  // the CSS size that divided by devicePixelRatio.
+  // boxSize taken from the map font loaded at FONT_CSS_PX times allFontsScale
+  // CSS pixels, and the CSS size that divided by devicePixelRatio.
   function layOut(w: number, h: number): void {
     cols = w;
     rows = h;
     dpr = window.devicePixelRatio;
-    const font = `${FONT_CSS_PX * dpr}px ${FONT_FAMILY}, monospace`;
+    laidOutScale = fontScale;
+    const px = FONT_CSS_PX * fontScale * dpr;
+    const font = `${px}px ${FONT_FAMILY}, monospace`;
     ctx.font = font;
     const tm = ctx.measureText("M");
     const m = cellMetrics(tm.fontBoundingBoxAscent, tm.fontBoundingBoxDescent);
@@ -160,7 +167,12 @@ export function mountTerminal(
   // into a single browser paint, mirroring Dom.hs's
   // requestAnimationFrame_/newRequestAnimationFrameCallbackSync.
   function applyFrame(buf: Uint32Array, w: number, h: number): void {
-    if (w !== cols || h !== rows || window.devicePixelRatio !== dpr)
+    if (
+      w !== cols ||
+      h !== rows ||
+      window.devicePixelRatio !== dpr ||
+      fontScale !== laidOutScale
+    )
       layOut(w, h);
     const m = metrics!;
     let i = 0;
@@ -354,5 +366,11 @@ export function mountTerminal(
   // (InputDecision's decideKey), by the handler, before it returns.
   container.addEventListener("keydown", (e) => onKey(e));
 
-  return { submitFrame, printScreen };
+  // The scale the engine sizes its fonts by, from its startup payload; the
+  // canvas is laid out at it from the next frame on.
+  function setFontScale(scale: number): void {
+    fontScale = scale;
+  }
+
+  return { submitFrame, printScreen, setFontScale };
 }
