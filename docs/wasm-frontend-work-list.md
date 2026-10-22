@@ -760,7 +760,7 @@ with an Oxford comma, then two joined by "and", then one with neither ---
 and when the last goes the whole "For ... use the native binary instead."
 sentence goes with it, its `<a>` to the releases page included, while
 "This is the experimental wasm build." and everything from "If the game window
-is too large" onward stay untouched throughout. The quoted README paragraph
+is too large" onward are not this item's to touch. The quoted README paragraph
 (`GameDefinition/index.html:The game runs rather slowly`, and in `README.md`
 the paragraph under the heading "Installation of the sample game from binary
 archives") is three claims supporting one conclusion, "Hence, after trying out
@@ -789,10 +789,10 @@ the `#status` div quotes, and nothing else in that file),
 and `docs/wasm-frontend-unified-plan.md` wherever this item's own body quotes
 the banner: 1.4 is `open -- standing`, so a quote that no longer matches
 the page is an error to fix, not drift to leave alone. Every item that writes
-`index.html` writes the banner or the `#screen` rule beside it --- 0.4, 1.2,
-1.3, 1.6, R4, R5 and the banner commits of 2.4 and R1 --- and the four
-that touch the quoted paragraph write `README.md` too: this item, 2.4, R1
-and R5. `../lambdahack.github.io` is redeployed by **Done**, not owned.
+`index.html` writes the banner, the `#status` div or the `#screen` rule beside
+them --- 0.4, 1.2, 1.3, 1.6, R4, R5 and the banner commits of 2.4 and R1 ---
+and the four that touch the quoted paragraph write `README.md` too: this item,
+2.4, R1 and R5. `../lambdahack.github.io` is redeployed by **Done**, not owned.
 
 **Done** --- `wasm`, `deploy`, `page`, `docs`, plus
 `! grep -qE 'proportional fonts|limited to the square font' ../lambdahack.github.io/index.html`
@@ -812,11 +812,12 @@ be missed for either reason and each guard covers one.
 **Hands back** --- *judgement*: whether the replacement sentence is true
 of the shipped build. No display is needed and no command decides it --- a grep
 proves a stale phrase is gone, never that what replaced it is accurate,
-and the `#status` div carries two further claims of the same kind whose truth
-is owned by 2.4 and R1 rather than by whoever edits the page. The substitute
-gate in **Done** is exactly that absence grep, run over the deployed
-`index.html` rather than the source, so a forgotten `make build-ts` fails it ---
-and over `README.md`, which is source because no build deploys it.
+and the `#status` div carries further claims of the same kind, each owned
+by the item whose landing falsifies it rather than by whoever edits the page.
+The substitute gate in **Done** is exactly that absence grep, run
+over the deployed `index.html` rather than the source, so a forgotten
+`make build-ts` fails it --- and over `README.md`, which is source because
+no build deploys it.
 
 **Decide first** --- nothing; the rulings are the record's.
 
@@ -1403,8 +1404,9 @@ at `loader.ts:const wasi = new WASI(["LambdaHack"], [], fds);`),
 deletes as it creates the files, and `docs/wasm-frontend-unified-plan.md`,
 the re-anchoring commit included. R5's `?benchmark` mode is one
 of this allowlist's own entries and edits the same `loader.ts` call,
-so whichever lands first shapes the other's diff. So does 1.6, whose handler
-on `lhStart`'s settlement this item's rejected-parameter message is a branch of.
+so whichever lands first shapes the other's diff. This item's rejected-parameter
+message is a branch of 1.6's handler on `lhStart`'s settlement, which has
+landed.
 
 **Done** --- `ts`, `page`, `docs`.
 
@@ -1797,8 +1799,8 @@ frontend CI smokes, ANSI and SDL --- early, beside 0.3-baseline: they
 0.2 CellStyle + generated files (gives 2.2 its palette)
 0.4 canvas painter (B.10) --- before 1.2, 1.5 and 2.2, which build on it;
     its Split (0) measures the frame cost beside the DOM grid's
-1.1 / 1.2 / 1.3 / 1.4 / 1.5 / 1.6 --- any order; each
-    capability's landing ends with its own banner commit, per 1.4's rule
+1.1 / 1.2 / 1.3 / 1.4 / 1.5 / 1.6 --- any order; a landing
+    falsifying a banner clause ends with a banner commit, per 1.4's rule
     (1.2 and 1.5 come after 0.4, 1.2 after 1.3 and 0.1 too, 1.5's full
     player-facing form after R4 too; 1.2's per-frame case waits on 3.1)
 2.1 OverlayLayout extraction + Sdl.hs onto it and CellStyle

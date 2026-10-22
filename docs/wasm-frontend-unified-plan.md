@@ -546,16 +546,16 @@ only that the plan was written is one the next reader has to skip.
 - **How the wasm frontend works today, in five lines.** `ts-src/src/loader.ts`
   instantiates the reactor `CLAUDE.md` describes with a WASI shim and calls
   `lhStart`, the first of its four exports (`lhStart`, `lhKey`, `lhWheel`,
-  `lhMouseUp`). Each frame, `Wasm.hs`'s `display` passes the `Word32` cell
-  buffer's address to `globalThis.lhSubmitFrame`; `terminal.ts` snapshots
-  it and repaints the changed cells on one `<canvas>` (diffing against
-  the previous frame) by the draw ops the pure `cellRunOps`
-  in `terminal-core.ts` computes. Input flows the other way: DOM events ->
-  `lhKey`/`lhWheel`/`lhMouseUp` exports -> the engine's key channel. Two hooks
-  more: `startup` hands `globalThis.lhConfigure` the startup payload as JSON,
-  and `fprintScreen` hands `globalThis.lhPrintScreen` the name to save
-  the canvas under. Saves bypass all of this --- `WasmFile.hs` talks
-  to `localStorage` directly over JSFFI.
+  `lhMouseUp`), saying in the banner how the game ended once `lhStart`'s promise
+  settles. Each frame, `Wasm.hs`'s `display` passes the `Word32` cell buffer's
+  address to `globalThis.lhSubmitFrame`; `terminal.ts` snapshots it and repaints
+  the changed cells on one `<canvas>` (diffing against the previous frame)
+  by the draw ops the pure `cellRunOps` in `terminal-core.ts` computes. Input
+  flows the other way: DOM events -> `lhKey`/`lhWheel`/`lhMouseUp` exports ->
+  the engine's key channel. Two hooks more: `startup` hands
+  `globalThis.lhConfigure` the startup payload as JSON, and `fprintScreen` hands
+  `globalThis.lhPrintScreen` the name to save the canvas under. Saves bypass all
+  of this --- `WasmFile.hs` talks to `localStorage` directly over JSFFI.
 - **`Dom.hs`/`JSFile.hs` (the GHCJS frontend) are dead code**, permanently
   and for the version reasons Appendix A.1 sets out. They still appear
   throughout this plan as the *canonical origin* of web-frontend logic:
