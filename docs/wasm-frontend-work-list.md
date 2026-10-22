@@ -13,20 +13,20 @@
 > in one checkout. The state vocabulary is `docs/leader-desync-bug.md`'s, stated
 > in the record's head; a row here carries it.
 >
-> **Landing an item** does two things and nothing else: it appends an outcome
-> line to the record, and it flips that item's row below from `open`
-> or `not applied` to `landed -- <hash>`. The outcome line goes **immediately
-> after the item's opening paragraph** in the record, before any subsection,
-> so that opening the item at its head answers the question; its shape
-> is the doctest bullet's under the record's Ground rules, and the outcome lines
-> of 0.0 and 1.3 there. The hash in both places names the commit that did
-> the work. No commit can name its own, so the record is a `.md`-only commit
-> written after that one --- which is what a **Split** means when it says a code
-> commit "carries the outcome line": the record follows that commit and names
-> it. Several **Split**s number the record separately instead, and those say
-> outright which commit's hash goes in. A claim the landing falsified
-> is corrected separately, so that review can tell a relocation
-> from a correction (Handing an item to a session).
+> **Landing an item** does two things: it appends an outcome line to the record,
+> and it flips that item's row below from `open` or `not applied`
+> to `landed -- <hash>`. The outcome line goes **immediately after the item's
+> opening paragraph** in the record, before any subsection, so that opening
+> the item at its head answers the question; its shape is the doctest bullet's
+> under the record's Ground rules, and the outcome lines of 0.0 and 1.3 there.
+> The hash in both places names the commit that did the work. No commit can name
+> its own, so the record is a commit touching no code, written after that one
+> --- which is what a **Split** means when it says a code commit "carries
+> the outcome line": the record follows that commit and names it. Several
+> **Split**s number the record separately instead, and those say outright which
+> commit's hash goes in. A claim the landing falsified is corrected separately,
+> so that review can tell a relocation from a correction (Handing an item
+> to a session).
 >
 > **Landing part of an item takes no outcome line**, and the row stays live,
 > in the state of what remains, as frontend CI smokes reads `not applied`
@@ -277,9 +277,9 @@ that lands it. Every such item therefore writes `tools/doc-refs-allow.txt`
 and carries it in **Owns** by that rule rather than by enumeration --- most
 items that build anything write it, and the one-holder-at-a-time discipline
 binds it as it binds `Sdl.hs`. Deleting the entry is the executing session's act
-and not something a checker will prompt: `../tools/check-doc-refs.py` tries
-`resolves` before `is_allowed`, so the moment the artifact exists its token
-prints `ok path` and the stale entry is never read again --- which is why
+and not something a checker will prompt: once the artifact exists,
+`../tools/check-doc-refs.py` prints `ok path` for its path and `allow path`
+for its module name while the entry stands, and fails neither --- which is why
 the allowlist's own header asks for the deletion by hand, and why a survivor
 means a proposed artifact was never built rather than a check that failed.
 
@@ -975,15 +975,15 @@ with their handling in `loader.ts`, the `FontFace` declarations
 in `terminal.ts`, and the `Makefile` copy of the referenced
 `GameDefinition/fonts/*.ttf.woff` into the pages checkout. It depends on nothing
 else in Phase 2 --- `sfonts` and `schosenFontset` are already populated
-in the browser build. (2) `ts-src/src/overlay-core.ts`'s `propCutoff`/`propFit`
-twin and its vitest table; sec. 2.1 gives both functions as complete Haskell
-bodies, so it can be *written* before 2.1 lands, but it may only *land* once
-2.1's freshness case writes the branch-complete table, hand-written fixtures
-being forbidden here. (3) the overlay renderer: all three of 2.1's sections
-drawn through 0.4's draw-op core onto its canvas, each fixed-pitch cell's glyph
-clipped to its box by that core, as the pitfalls say. (4) the outcome line
-naming (3)'s hash, the ledger flip, and the deletion of `overlay-core.ts`
-and `overlay-core.test.ts` from `tools/doc-refs-allow.txt`.
+in the browser build. (2) `ts-src/src/overlay-core.ts`'s twin
+of `OverlayLayout.hs`'s `propCutoff` and `propFit`, and its vitest table, taken
+from the branch-complete `ts-src/src/generated/prop-fit.json` 2.1's freshness
+case writes, hand-written fixtures being forbidden here. (3) the overlay
+renderer: all three of 2.1's sections drawn through 0.4's draw-op core
+onto its canvas, each fixed-pitch cell's glyph clipped to its box by that core,
+as the pitfalls say. (4) the outcome line naming (3)'s hash, the ledger flip,
+and the deletion of `overlay-core.ts` and `overlay-core.test.ts`
+from `tools/doc-refs-allow.txt`.
 
 **Owns** --- `ts-src/src/overlay-core.ts`, `ts-src/src/overlay-core.test.ts`,
 `ts-src/src/terminal.ts`, `ts-src/src/terminal-core.ts` and its test
@@ -1028,6 +1028,8 @@ no `tools/doc-refs-allow.txt` entries, 2.1's and 2.2's having gone with their
 own items.
 
 **Owns** --- `engine-src/Game/LambdaHack/Client/UI/Frontend/OverlayLayout.hs`,
+`engine-src/Game/LambdaHack/Client/UI/Frontend.hs` (export list only,
+re-exporting the new names per 0.1's ruling (2) in the record),
 `test/OverlayLayoutUnitTests.hs`, `LambdaHack.cabal` and `ts-src/src/generated/`
 for the encode fixtures,
 `engine-src/Game/LambdaHack/Client/UI/Frontend/Wasm.hs`,
@@ -1058,7 +1060,7 @@ it (`MonadClientUI.hs:= Frontend.frontendName`), and the new
 `MonadClientUIUnitTests.hs` case pinning it. This is provably a no-op: today's
 gate is `frontendName soptions == "sdl"`, already `False` for wasm, ANSI,
 Teletype, null and lazy alike, so a dispatch true only for `Sdl.hs` reproduces
-it exactly --- which is why (1) may land at any time, even before 2.1. (2)
+it exactly --- which is why (1) may land at any time. (2)
 `Wasm.supportsMultiFont = True`, one line and nothing else. (3) the banner
 commit this item's **Owns** carries under 1.4's rule: the "proportional fonts"
 and "limited to the square font" clauses come off `GameDefinition/index.html`
@@ -1359,13 +1361,11 @@ in `Dom.hs` and `JSFile.hs`, the two orphan GHCJS comments nothing else claims
 in wasm/browser terms since the fact survives the compiler it names,
 and `Point.hs:not supported yet by GHCJS (not verified)`'s "not supported yet
 by GHCJS" clause, updated or dropped --- and `CLAUDE.md`
-and `docs/wasm-frontend-unified-plan.md`. Every item adding `exposed-modules`
-to `LambdaHack.cabal` writes into the very conditional nest R3 collapses,
-and the three engine `#if` sites are also R1's and the capability-constants
-practice's, so whichever lands first shapes R3's diff. The pointman campaign
-writes two of these too: its PR 0, C3, C4 and C6 write `HandleHumanLocalM.hs`,
-the first three above the `#if` site this item cites, and its 04.4 writes
-`CLAUDE.md` at that campaign's landing.
+and `docs/wasm-frontend-unified-plan.md`. The three engine `#if` sites are also
+R1's and the capability-constants practice's, so whichever lands first shapes
+R3's diff. The pointman campaign writes two of these too: its PR 0, C3, C4
+and C6 write `HandleHumanLocalM.hs`, the first three above the `#if` site
+this item cites, and its 04.4 writes `CLAUDE.md` at that campaign's landing.
 
 **Done** --- `native`, with stylish widened past the gate's Owns-derived list
 to `$(git ls-files '*.hs')` --- the one item that widens it, and repo-wide here

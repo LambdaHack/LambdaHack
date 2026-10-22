@@ -94,19 +94,20 @@ carries an outcome line.
 >   is deliberate: the pointman records have no such case and need no such word.
 >
 > The distinction a reader will trip on is **open** against **not applied**,
-> because the work list's ledger sorts by item number and not by it: R1 and 2.1
+> because the work list's ledger sorts by item number and not by it: R1 and 2.2
 > are two rows of one table and mean different things --- a tab killed mid-save
-> leaves saves of mixed generations, while `OverlayLayout` is a module nobody
-> has written. The first is a bug report, the second a specification, and only
-> the second may be edited to match a tree that moved. The rule fires
-> at the item and the state lives in the ledger, so before editing any claim
-> in an item's body, read that item's row in the work list: `landed` means leave
-> it alone. The state *label* is deliberately not repeated at the item ---
-> a second copy of the column is what drifts out of step with it. Two things
-> are not that copy: the outcome line, which is the landing's own frozen record
-> rather than a label, and a `standing` item saying so where its **Split**
-> or **Owns** turns on it, as 1.4's and R2's do --- *this row never flips*
-> is a rule about their commits, not a reading of the column.
+> leaves saves of mixed generations, while `ts-src/src/overlay-core.ts`
+> is a file nobody has written. The first is a bug report, the second
+> a specification, and only the second may be edited to match a tree that moved.
+> The rule fires at the item and the state lives in the ledger, so before
+> editing any claim in an item's body, read that item's row in the work list:
+> `landed` means leave it alone. The state *label* is deliberately not repeated
+> at the item --- a second copy of the column is what drifts out of step
+> with it. Two things are not that copy: the outcome line, which
+> is the landing's own frozen record rather than a label, and a `standing` item
+> saying so where its **Split** or **Owns** turns on it, as 1.4's and R2's do
+> --- *this row never flips* is a rule about their commits, not a reading
+> of the column.
 >
 > A row a ruling retires before it lands reads `retired -- <ruling>`, as R6's
 > does since B.10, the ruling being its outcome, and a standing row whose code
@@ -119,9 +120,9 @@ carries an outcome line.
 > opening paragraph and before any subsection, so that opening the item
 > at its head answers the question, and flips the item's row in the work list;
 > the hash in both places names the commit that did the work, and the record
-> is a `.md`-only commit written after it. Partial landings, standing items,
-> the allowlist gate and what a **Split**'s record commit is are the work list's
-> head to state.
+> is a commit touching no code, written after it. Partial landings, standing
+> items, the allowlist gate and what a **Split**'s record commit is are the work
+> list's head to state.
 >
 > **What this document takes, and no fifth kind:** an outcome line per claim
 > that resolves; a dated audit note where a later reading refutes or sharpens
@@ -2907,17 +2908,17 @@ with the explicitly-parameterized `punindex (rwidth coscreen)`, never the `Enum`
 instance: `toEnum i` depends on the global `speedupHackXSize` (the *dungeon*
 width, correct at frontend call sites only via the engine's
 `Client/UI/Content/Screen.hs`'s `rwidth == RK.rWidthMax` assertion). The switch
-is the same arithmetic with one *fewer* global read, in a non-hot once-per-frame
-loop, so it needs no benchmark. Its one live violation, `setMapChar`'s
-`let Point{..} = toEnum i` ([Sdl.hs#L568][sdl-568]), went with `Sdl.hs`'s
-adoption of `CellStyle` in `3fcc93a1e`, and a step of `tools/checks.py` now
-fails that spelling in any frontend module but `Dom.hs`.
-(`Dom.hs:let Point{..} = toEnum i` has the same pattern next to the correct form
-at `Dom.hs:let Point{..} = punindex (rwidth coscreen) i`, but it's a dead
-example file, R3 --- leave it.) The rule binds all live and future frontend code
-from now on. The `Enum` instance itself and its global stay engine-internal,
-permanently --- the engine-wide removal of the hack is rejected outright
-(Appendix B has the ruling and the hack's documentation of record).
+is the same arithmetic with one *fewer* global read. Its one live violation,
+`setMapChar`'s `let Point{..} = toEnum i` ([Sdl.hs#L568][sdl-568]), went
+with `Sdl.hs`'s adoption of `CellStyle` in `3fcc93a1e`, and a step
+of `tools/checks.py` now fails that spelling in any frontend module
+but `Dom.hs`. (`Dom.hs:let Point{..} = toEnum i` has the same pattern next
+to the correct form at `Dom.hs:let Point{..} = punindex (rwidth coscreen) i`,
+but it's a dead example file, R3 --- leave it.) The rule binds all live
+and future frontend code from now on. The `Enum` instance itself and its global
+stay engine-internal, permanently --- the engine-wide removal of the hack
+is rejected outright (Appendix B has the ruling and the hack's documentation
+of record).
 
 **Rulings** --- ruled 2026-10-20 by Mikolaj, re-cut 2026-10-21: the grep
 for `Point{..} = toEnum` in the frontend modules, then a line of the work list's
