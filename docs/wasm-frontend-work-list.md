@@ -851,13 +851,13 @@ drives the other driver, where the startup hook is only stubbed.
 **Hands back** --- *display*: that the map renders larger. The item body says
 how to check nothing --- alone among 1.1, 1.2 and 1.3, whose bodies each name
 a check, labelled `Verify:` at 1.2 and in plain prose at the other two ---
-and the gap is not one a browser channel would close, because a session cannot
-even *produce* the interesting case: `allFontsScale = 1.0` sits
-in `config.ui.default`, which is embedded at compile time via `rcfgUIDefault`,
-and the browser has no argv and no config file until R4, so exercising any other
-scale means a throwaway edit there plus a full wasm rebuild --- an edit
-that must not be committed, since it changes native behavior too. The substitute
-gates in **Done** are `make test-wasm`, which link-checks the new import string,
+and the interesting case wants a throwaway edit, never committed:
+`allFontsScale = 1.0` sits in `config.ui.default`, which is embedded at compile
+time via `rcfgUIDefault`, and the argv the loader passes
+(`loader.ts:const wasi = new WASI(["LambdaHack"], [], fds);`), which `lhStart`
+has parsed since 3.1, overrides it, so `"--allFontsScale", "2"` appended there
+and a `make build-ts` produce it without a wasm rebuild. The substitute gates
+in **Done** are `make test-wasm`, which link-checks the new import string,
 and the reactor-driver run, which proves the startup payload arrives carrying
 this item's field.
 
