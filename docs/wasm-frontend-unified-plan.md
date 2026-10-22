@@ -3245,6 +3245,71 @@ through the painter's core; 1.3's transform stays for the outline font, R7
 replacing it for bitmap fonts; B.7's grid-construction bullet is moot;
 and the bitmap map fonts, which no DOM can show at all, become R7.
 
+*Measured 2026-10-22 by 0.4's Split (0), on the painter of `9eb0c2c3c`
+with the probe below applied, under Phase 2's protocol but for two things.
+Firefox is now 159.0b5, so the DOM grid was re-measured beside the canvas,
+as `c5120693f` builds it with Phase 2's probe, rather than set against
+the 3.00ms read on 156.0b2: the two builds ran alternately, two runs each, each
+site laid out as `make page-gate` lays out its scratch directory and served
+by the server `make serve-wasm` runs. And the profile's `user.js` also
+suppresses the terms-of-use dialog 159 opens over the page, which takes
+the keyboard, with `termsofuse.bypassNotification`, an accepted `termsofuse`
+version and date and `browser.preonboarding.enabled` off; its privacy-notice bar
+stays. Read every 15 seconds for five minutes, the canvas's p95 settled
+at **3.00ms** and **2.00ms**, means 0.80ms at n=4904 and 0.66ms at n=4478,
+and the DOM grid's at 3.00ms and 2.00ms, means 0.76ms at n=4501 and 0.91ms
+at n=3404: the spread between runs exceeds the difference between the builds,
+so the move to the canvas costs nothing this instrument resolves, and the canvas
+pair is the baseline 2.5 re-measures against. Each build's `xwd` frame
+of the main menu, taken after the timing, shows the same glyph shapes
+at the same places, 36 of the 12490 full-ink pixels present in one build only
+and the antialiasing differing; the look is a human's to judge, 0.4's hand-back.
+The painter without its clip also left stray pixels in blank cells: Firefox's
+coloured antialiasing puts one pixel past the cell for 194 of the map font's 385
+glyphs, mostly letters, and the per-cell diff kept that pixel wherever
+the letter's cell alone was repainted. The clip to the cell, `Sdl.hs`'s crop,
+removed them at no cost the runs resolve. The probe's diff:*
+
+```diff
+--- a/ts-src/src/terminal.ts
++++ b/ts-src/src/terminal.ts
+@@ -181,6 +181,10 @@
+   let pendingFrame: { buf: Uint32Array; w: number; h: number } | null = null;
+   let rafHandle: number | null = null;
+ 
++  // THROWAWAY frame-timing probe (2026-08-07) -- never commit.
++  const lhProbeSamples: number[] = [];
++  let lhProbeT0 = 0;
++
+   // Paints wait for the map font: measureText and fillText before it loads
+   // would use a fallback face.
+   function schedulePaint(): void {
+@@ -190,12 +194,23 @@
+       const frame = pendingFrame;
+       pendingFrame = null;
+       if (frame) applyFrame(frame.buf, frame.w, frame.h);
++      // THROWAWAY frame-timing probe (2026-08-07) -- never commit.
++      if (frame) {
++        lhProbeSamples.push(performance.now() - lhProbeT0);
++        const n = lhProbeSamples.length;
++        const sorted = [...lhProbeSamples].sort((a, b) => a - b);
++        const mean = lhProbeSamples.reduce((a, b) => a + b, 0) / n;
++        const p95 = sorted[Math.max(0, Math.ceil(n * 0.95) - 1)];
++        document.title =
++          `LHPROBE n=${n} mean=${mean.toFixed(2)} p95=${p95.toFixed(2)}`;
++      }
+     });
+   }
+ 
+   // Snapshots the framebuffer and schedules a render; does not paint
+   // synchronously itself (see applyFrame, deferred via rAF).
+   function submitFrame(addr: number, w: number, h: number): void {
++    lhProbeT0 = performance.now();  // THROWAWAY probe -- never commit.
+     // Snapshot synchronously: the wasm buffer at `addr` is only valid for
+     // the duration of this call (Wasm.hs's display uses an `unsafe` FFI
+     // import specifically so the GC can't move/reuse it mid-call). Reading
+```
+
 **B.11 No generator executable for the TS tables.** Ruled 2026-10-20 by Mikolaj:
 0.2's generated files are written and checked by a tasty case in the existing
 suite, not, as designed until then, by a native executable of their own, run
