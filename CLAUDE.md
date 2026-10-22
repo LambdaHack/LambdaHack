@@ -81,7 +81,7 @@ The hard-won facts for writing and driving tests with this harness are in `test/
 
 ### WASM and TypeScript test suites
 
-The WASM test suite drives the compiled wasm test binary through Node/wasmtime via `ts-src/run-wasm-test.mjs`; the TypeScript tests typecheck (`ts-src`'s `typecheck` script) and run vitest over `ts-src/`. Both run in CI, one job each in `lint-and-test-suites.yml`; the wasm job installs the toolchain from scratch, so locally they need `~/.ghc-wasm/env` (session facts at the end of this file):
+The WASM test suite drives the compiled wasm test binary through Node/wasmtime via `ts-src/run-wasm-test.mjs`; the TypeScript tests typecheck (`ts-src`'s `typecheck` script), check Prettier's formatting (its `format:check`) and run vitest over `ts-src/`. Both run in CI, one job each in `lint-and-test-suites.yml`; the wasm job installs the toolchain from scratch, so locally they need `~/.ghc-wasm/env` (session facts at the end of this file):
 
 ```
 make test-wasm
@@ -102,7 +102,7 @@ For Haskell, two tools: `hlint .` (using the liberal `.hlint.yaml`) and stylish-
 
 Stylish-haskell honors no `LANGUAGE` pragma that sits below a CPP conditional, and on a file it cannot parse it exits 1 and changes nothing --- so the file is silently left unformatted, in the editor as much as in CI. No tracked file is in that state today, which is a property to keep rather than one to lean on: this repo puts pragmas above the `#ifdef`s, and the extensions stylish sees otherwise come from the cabal file's `default-extensions`, found by searching upwards from the file.
 
-The TypeScript and the Node scripts under `ts-src/` have a formatter of their own, Prettier at stylish-haskell's 80 columns (`ts-src/.prettierrc.json`), its release pinned in `ts-src/package.json`: `npm run format` there applies it and `npm run format:check` checks it. It skips `ts-src/src/generated/`, which the Haskell suite writes and checks byte for byte, and it breaks no comment or string, so a line over 80 it leaves is for a hand to break. No CI job runs it.
+The TypeScript and the Node scripts under `ts-src/` have a formatter of their own, Prettier at stylish-haskell's 80 columns (`ts-src/.prettierrc.json`), its release pinned in `ts-src/package.json`: `npm run format` there applies it and `npm run format:check` checks it. It skips `ts-src/src/generated/`, which the Haskell suite writes and checks byte for byte, and it breaks no comment or string, so a line over 80 it leaves is for a hand to break. `make test-ts` runs the check, and CI with it.
 
 ### CI
 

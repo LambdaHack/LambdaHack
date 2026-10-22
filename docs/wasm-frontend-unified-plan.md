@@ -630,21 +630,21 @@ only that the plan was written is one the next reader has to skip.
 
 `make build-wasm`, `make build-ts`, `make serve-wasm`, browser
 at `localhost:8080` (`make run-wasm`). TS tests: `make test-ts` (`ts-src`'s own
-`typecheck` script, then vitest). The typecheck stays in the target: it
-is the only TS type check that runs anywhere --- esbuild strips types unchecked,
-and vitest passed over a planted type error that `tsc` then caught. Native
-Haskell tests: `cabal test`. Wasm-compiled Haskell tests: `make test-wasm`
-(drives the tasty binary through Node via `ts-src/run-wasm-test.mjs`;
-the `common options` stanza applies `USE_BROWSER`/`USE_WASM`/`USE_WASMFILE`
-to the test-suite under `os(wasi)`, so the suite is *compiled and linked*
-in the real browser configuration --- `WasmFile.hs` as the file backend,
-`Wasm.hs` as the chosen frontend --- which catches wasm-only compile and link
-breakage. 0.3's FFI battery executes both modules' code, `WasmFile.hs` through
-`Common/File.hs`'s exports and `Wasm.hs` through `startup` and `fdisplay`,
-and 0.1's input-side contract cases enter `Wasm.hs` through `startup`; the rest
-of the suite does not enter `Wasm.hs`, the integration test passing
-`--frontendNull` and every fixture setting `sfrontendNull = True`,
-so `nullStartup` stands in for `Chosen.startup`).
+`typecheck` script, its `format:check`, then vitest). The typecheck stays
+in the target: it is the only TS type check that runs anywhere --- esbuild
+strips types unchecked, and vitest passed over a planted type error that `tsc`
+then caught. Native Haskell tests: `cabal test`. Wasm-compiled Haskell tests:
+`make test-wasm` (drives the tasty binary through Node via
+`ts-src/run-wasm-test.mjs`; the `common options` stanza applies
+`USE_BROWSER`/`USE_WASM`/`USE_WASMFILE` to the test-suite under `os(wasi)`,
+so the suite is *compiled and linked* in the real browser configuration ---
+`WasmFile.hs` as the file backend, `Wasm.hs` as the chosen frontend --- which
+catches wasm-only compile and link breakage. 0.3's FFI battery executes both
+modules' code, `WasmFile.hs` through `Common/File.hs`'s exports and `Wasm.hs`
+through `startup` and `fdisplay`, and 0.1's input-side contract cases enter
+`Wasm.hs` through `startup`; the rest of the suite does not enter `Wasm.hs`,
+the integration test passing `--frontendNull` and every fixture setting
+`sfrontendNull = True`, so `nullStartup` stands in for `Chosen.startup`).
 
 **Claims here that no pass can re-run.** Five live assertions rested
 on experiments whose artifact was never recorded: 0.1's sync-export spike, 0.3's

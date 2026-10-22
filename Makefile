@@ -333,7 +333,7 @@ build-ts:
 
 test-ts:
 	cd ts-src && \
-	npm run typecheck && npx vitest run
+	npm run typecheck && npm run format:check && npx vitest run
 
 # The deployed-page gate: the page as build-ts would deploy it,
 # in a scratch directory, loaded in headless Firefox and headless

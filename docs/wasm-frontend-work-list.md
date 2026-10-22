@@ -182,7 +182,7 @@ native   cabal build && cabal test && hlint .
          && git add <every .hs the item's Owns names>   # new files diff too
          && stylish-haskell -i <those paths>
          && git diff --exit-code <those paths>     # stylish left them alone
-ts       make test-ts        # npm run typecheck runs inside the target
+ts       make test-ts        # typecheck and format:check run inside it
 wasm     make build-wasm && make test-wasm  # UNSANDBOXED after 0.3's npm ci
 deploy   make build-ts        # UNSANDBOXED: writes into the pages checkout
 page     make page-gate       # UNSANDBOXED: runs npm ci; the page as
