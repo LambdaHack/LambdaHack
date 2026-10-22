@@ -5,7 +5,11 @@
 // Page-level only: sfullscreenMode is a startup-time SDL choice with no
 // in-game command even natively. Not unit-tested (DOM wiring).
 
-import { fitTransform, fitTransformCss, toggleLabel } from "./fullscreen-core.js";
+import {
+  fitTransform,
+  fitTransformCss,
+  toggleLabel,
+} from "./fullscreen-core.js";
 
 export function mountFullscreen(
   button: HTMLElement | null,
@@ -27,9 +31,11 @@ export function mountFullscreen(
   // the browser keeps in a window: Firefox (151 on) through the keyboardLock
   // option, which Chromium ignores, and Chromium through navigator.keyboard,
   // which Firefox lacks. Under either lock a held Escape still leaves.
-  const keyboard = (navigator as Navigator & {
-    keyboard?: { lock?: () => Promise<void>; unlock?: () => void };
-  }).keyboard;
+  const keyboard = (
+    navigator as Navigator & {
+      keyboard?: { lock?: () => Promise<void>; unlock?: () => void };
+    }
+  ).keyboard;
   async function enter(): Promise<void> {
     const options = { keyboardLock: "browser" } as FullscreenOptions;
     await document.documentElement.requestFullscreen(options);
@@ -40,7 +46,12 @@ export function mountFullscreen(
   // not change, so the fit is stable under its own application.
   function applyFit(): void {
     if (active()) {
-      const t = fitTransform(screen.offsetWidth, screen.offsetHeight, window.innerWidth, window.innerHeight);
+      const t = fitTransform(
+        screen.offsetWidth,
+        screen.offsetHeight,
+        window.innerWidth,
+        window.innerHeight,
+      );
       screen.style.transformOrigin = "top center";
       screen.style.transform = fitTransformCss(t);
     } else {
@@ -80,8 +91,11 @@ export function mountFullscreen(
       if (e.key !== "F11" || !active()) return;
       e.preventDefault();
       e.stopPropagation();
-      document.exitFullscreen().catch((err: unknown) =>
-        console.warn("[lh] fullscreen exit failed", err));
+      document
+        .exitFullscreen()
+        .catch((err: unknown) =>
+          console.warn("[lh] fullscreen exit failed", err),
+        );
     },
     true,
   );

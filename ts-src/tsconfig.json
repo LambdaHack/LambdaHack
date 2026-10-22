@@ -10,7 +10,7 @@
     "noUnusedLocals": true,
     "noUnusedParameters": true,
     "noEmit": true,
-      "skipLibCheck": true,
+    "skipLibCheck": true,
     "forceConsistentCasingInFileNames": true,
     "outDir": "../../lambdahack.github.io",
     "rootDir": "./src"

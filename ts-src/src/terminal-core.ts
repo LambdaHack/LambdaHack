@@ -9,7 +9,11 @@
 //   char codepoint = w >>> 16 ; fg = (w >>> 8) & 0xFF ; bg = w & 0xFF
 // fg indexes the Color enum, bg indexes the Highlight enum.
 
-import { BACKLIGHT_FILL, HIGHLIGHT_TO_COLOR, PALETTE } from "./generated/palette.js";
+import {
+  BACKLIGHT_FILL,
+  HIGHLIGHT_TO_COLOR,
+  PALETTE,
+} from "./generated/palette.js";
 
 export interface Cell {
   code: number; // glyph codepoint
@@ -44,7 +48,10 @@ export function decodeCell(w: number): Cell {
  * The screen column and row of a frame index, given the screen width,
  * as Haskell's punindex decodes it.
  */
-export function cellPosition(i: number, width: number): { col: number; row: number } {
+export function cellPosition(
+  i: number,
+  width: number,
+): { col: number; row: number } {
   return { col: i % width, row: Math.floor(i / width) };
 }
 
@@ -85,7 +92,11 @@ export function bgColor(bg: number): string {
  * frontend's table CSS.
  */
 export function highlightColor(bg: number): string {
-  if (bg === HIGHLIGHT_NONE || bg === HIGHLIGHT_BACKGROUND || bg === HIGHLIGHT_NONE_CURSOR) {
+  if (
+    bg === HIGHLIGHT_NONE ||
+    bg === HIGHLIGHT_BACKGROUND ||
+    bg === HIGHLIGHT_NONE_CURSOR
+  ) {
     return PALETTE[BLACK];
   }
   return PALETTE[HIGHLIGHT_TO_COLOR[bg]];
@@ -135,7 +146,11 @@ export function cellMetrics(ascent: number, descent: number): CellMetrics {
   const height = Math.ceil(ascent + descent);
   const halfSize = Math.floor(height / 2);
   const boxSize = 2 * halfSize;
-  return { boxSize, halfSize, baseline: Math.floor((boxSize - height) / 2) + Math.ceil(ascent) };
+  return {
+    boxSize,
+    halfSize,
+    baseline: Math.floor((boxSize - height) / 2) + Math.ceil(ascent),
+  };
 }
 
 /**
@@ -156,7 +171,14 @@ export type DrawOp =
       text: string;
       color: string;
     }
-  | { kind: "stroke"; x: number; y: number; w: number; h: number; color: string };
+  | {
+      kind: "stroke";
+      x: number;
+      y: number;
+      w: number;
+      h: number;
+      color: string;
+    };
 
 /** Consecutive cells of one screen row, from column col on, as frame words. */
 export interface CellRun {
@@ -170,7 +192,11 @@ export interface CellRun {
  * per cell, its background, its glyph and its highlight ring, in the order
  * Sdl.hs draws them. A blank glyph draws nothing and gets no op.
  */
-export function cellRunOps(run: CellRun, pitch: number, m: CellMetrics): DrawOp[] {
+export function cellRunOps(
+  run: CellRun,
+  pitch: number,
+  m: CellMetrics,
+): DrawOp[] {
   const ops: DrawOp[] = [];
   const y = run.row * m.boxSize;
   for (let k = 0; k < run.words.length; k++) {
@@ -180,7 +206,14 @@ export function cellRunOps(run: CellRun, pitch: number, m: CellMetrics): DrawOp[
     ops.push({ kind: "fill", x, y, w: pitch, h, color: s.background });
     if (s.char !== NBSP) {
       ops.push({
-        kind: "text", x, y, w: pitch, h, baseline: m.baseline, text: s.char, color: s.color,
+        kind: "text",
+        x,
+        y,
+        w: pitch,
+        h,
+        baseline: m.baseline,
+        text: s.char,
+        color: s.color,
       });
     }
     ops.push({ kind: "stroke", x, y, w: pitch, h, color: s.border });
@@ -207,9 +240,13 @@ export function pointerPoint(
 ): { x: number; y: number } {
   const clamp = (v: number, n: number) => Math.min(Math.max(v, 0), n - 1);
   return {
-    x: clamp(Math.floor((offsetX * canvasWidth) / boxWidth / m.halfSize),
-             canvasWidth / m.halfSize),
-    y: clamp(Math.floor((offsetY * canvasHeight) / boxHeight / m.boxSize),
-             canvasHeight / m.boxSize),
+    x: clamp(
+      Math.floor((offsetX * canvasWidth) / boxWidth / m.halfSize),
+      canvasWidth / m.halfSize,
+    ),
+    y: clamp(
+      Math.floor((offsetY * canvasHeight) / boxHeight / m.boxSize),
+      canvasHeight / m.boxSize,
+    ),
   };
 }

@@ -14,7 +14,10 @@ const H = 3;
 // and so a 16-pixel cell.
 beforeAll(() => {
   vi.spyOn(HTMLCanvasElement.prototype, "getContext").mockReturnValue({
-    measureText: () => ({ fontBoundingBoxAscent: 13, fontBoundingBoxDescent: 3 }),
+    measureText: () => ({
+      fontBoundingBoxAscent: 13,
+      fontBoundingBoxDescent: 3,
+    }),
     fillRect() {},
     fillText() {},
     strokeRect() {},
@@ -28,7 +31,8 @@ beforeAll(() => {
     value: { load: () => Promise.resolve([]) },
     configurable: true,
   });
-  window.matchMedia = () => ({ addEventListener() {} }) as unknown as MediaQueryList;
+  window.matchMedia = () =>
+    ({ addEventListener() {} }) as unknown as MediaQueryList;
   vi.stubGlobal("requestAnimationFrame", (f: FrameRequestCallback) => {
     f(0);
     return 1;
@@ -42,7 +46,13 @@ async function mount() {
   const onWheel = vi.fn();
   const onMouseUp = vi.fn();
   const memory = { buffer: new ArrayBuffer(4 * W * H) } as WebAssembly.Memory;
-  const term = mountTerminal(container, () => memory, onKey, onWheel, onMouseUp);
+  const term = mountTerminal(
+    container,
+    () => memory,
+    onKey,
+    onWheel,
+    onMouseUp,
+  );
   // The first frame, painted once the font has loaded, lays out the canvas
   // the pointer is read against: W * 16 by H * 16 pixels, rendered here
   // at twice that.
@@ -51,13 +61,20 @@ async function mount() {
   await Promise.resolve();
   const canvas = container.querySelector("canvas")!;
   vi.spyOn(canvas, "getBoundingClientRect").mockReturnValue({
-    left: 100, top: 50, width: 2 * W * 16, height: 2 * H * 16,
+    left: 100,
+    top: 50,
+    width: 2 * W * 16,
+    height: 2 * H * 16,
   } as DOMRect);
   return { container, canvas, onKey, onWheel, onMouseUp };
 }
 
 function keydown(target: EventTarget, init: KeyboardEventInit): KeyboardEvent {
-  const e = new KeyboardEvent("keydown", { bubbles: true, cancelable: true, ...init });
+  const e = new KeyboardEvent("keydown", {
+    bubbles: true,
+    cancelable: true,
+    ...init,
+  });
   target.dispatchEvent(e);
   return e;
 }
@@ -82,7 +99,9 @@ describe("keydown forwarding", () => {
     const { container } = await mount();
     expect(keydown(container, { key: "Tab" }).defaultPrevented).toBe(false);
     expect(keydown(container, { key: "a" }).defaultPrevented).toBe(false);
-    expect(keydown(container, { key: "+", ctrlKey: true }).defaultPrevented).toBe(false);
+    expect(
+      keydown(container, { key: "+", ctrlKey: true }).defaultPrevented,
+    ).toBe(false);
   });
 });
 
@@ -94,21 +113,38 @@ describe("mouse forwarding", () => {
   });
   it("forwards a wheel turn with its point and delta, and stops the page scrolling", async () => {
     const { canvas, onWheel } = await mount();
-    const e = new WheelEvent("wheel", { bubbles: true, cancelable: true, deltaY: -3, shiftKey: true, ...at(5, 1) });
+    const e = new WheelEvent("wheel", {
+      bubbles: true,
+      cancelable: true,
+      deltaY: -3,
+      shiftKey: true,
+      ...at(5, 1),
+    });
     canvas.dispatchEvent(e);
     expect(onWheel.mock.calls).toEqual([[5, 1, -3, false, true, false, false]]);
     expect(e.defaultPrevented).toBe(true);
   });
   it("forwards a button release with its point, in half-cells, and DOM button code", async () => {
     const { canvas, onMouseUp } = await mount();
-    const e = new MouseEvent("mouseup", { bubbles: true, cancelable: true, button: 2, modifierAltGraph: true, ...at(7, 2) });
+    const e = new MouseEvent("mouseup", {
+      bubbles: true,
+      cancelable: true,
+      button: 2,
+      modifierAltGraph: true,
+      ...at(7, 2),
+    });
     canvas.dispatchEvent(e);
-    expect(onMouseUp.mock.calls).toEqual([[7, 2, 2, false, false, true, false]]);
+    expect(onMouseUp.mock.calls).toEqual([
+      [7, 2, 2, false, false, true, false],
+    ]);
     expect(e.defaultPrevented).toBe(true);
   });
   it("suppresses the browser's context menu", async () => {
     const { canvas } = await mount();
-    const e = new MouseEvent("contextmenu", { bubbles: true, cancelable: true });
+    const e = new MouseEvent("contextmenu", {
+      bubbles: true,
+      cancelable: true,
+    });
     canvas.dispatchEvent(e);
     expect(e.defaultPrevented).toBe(true);
   });

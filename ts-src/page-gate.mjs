@@ -46,7 +46,8 @@ const BROWSER = process.env.BROWSER ?? "firefox-beta";
 const CHROMIUM = process.env.CHROMIUM ?? "/usr/lib/chromium/chromium";
 const CHROMEDRIVER = process.env.CHROMEDRIVER ?? "chromedriver";
 const BROWSERS = (process.env.PAGE_GATE_BROWSERS ?? "firefox,chromium")
-  .split(",").filter(Boolean);
+  .split(",")
+  .filter(Boolean);
 
 const children = [];
 function blocked(msg) {
@@ -54,15 +55,21 @@ function blocked(msg) {
   for (const c of children) c.kill();
   process.exit(2);
 }
-function fail(msg) { console.error("FAIL: " + msg); process.exitCode = 1; }
+function fail(msg) {
+  console.error("FAIL: " + msg);
+  process.exitCode = 1;
+}
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
 // --- static server, the bundle's own serve.mjs -------------------------
-const server = spawn("node", [join(site, "serve.mjs"), site, String(PORT)],
-  { stdio: ["ignore", "pipe", "inherit"] });
+const server = spawn("node", [join(site, "serve.mjs"), site, String(PORT)], {
+  stdio: ["ignore", "pipe", "inherit"],
+});
 children.push(server);
 await new Promise((ok, no) => {
-  server.stdout.on("data", (d) => { if (String(d).includes("serving")) ok(); });
+  server.stdout.on("data", (d) => {
+    if (String(d).includes("serving")) ok();
+  });
   server.on("exit", (c) => no(new Error(`serve.mjs exited ${c}`)));
 }).catch((e) => blocked(e.message));
 
@@ -72,74 +79,115 @@ await new Promise((ok, no) => {
 async function startFirefox() {
   const profile = resolve(site, "ff-profile");
   await mkdir(profile, { recursive: true });
-  await writeFile(join(profile, "user.js"), [
-    'user_pref("browser.shell.checkDefaultBrowser", false);',
-    'user_pref("browser.startup.homepage_override.mstone", "ignore");',
-    'user_pref("browser.aboutwelcome.enabled", false);',
-    'user_pref("datareporting.policy.'
-      + 'dataSubmissionPolicyBypassNotification", true);',
-    'user_pref("toolkit.telemetry.reportingpolicy.firstRun", false);',
-    "",
-  ].join("\n"));
-  const ff = spawn(BROWSER,
-    ["--headless", "--no-remote", "--profile", profile,
-     "--remote-debugging-port=0", "about:blank"],
-    { stdio: ["ignore", "pipe", "pipe"] });
+  await writeFile(
+    join(profile, "user.js"),
+    [
+      'user_pref("browser.shell.checkDefaultBrowser", false);',
+      'user_pref("browser.startup.homepage_override.mstone", "ignore");',
+      'user_pref("browser.aboutwelcome.enabled", false);',
+      'user_pref("datareporting.policy.' +
+        'dataSubmissionPolicyBypassNotification", true);',
+      'user_pref("toolkit.telemetry.reportingpolicy.firstRun", false);',
+      "",
+    ].join("\n"),
+  );
+  const ff = spawn(
+    BROWSER,
+    [
+      "--headless",
+      "--no-remote",
+      "--profile",
+      profile,
+      "--remote-debugging-port=0",
+      "about:blank",
+    ],
+    { stdio: ["ignore", "pipe", "pipe"] },
+  );
   children.push(ff);
   ff.on("error", (e) => blocked(`cannot start ${BROWSER}: ${e.message}`));
   const wsUrl = await new Promise((ok) => {
     const t = setTimeout(() => ok(null), 30000);
     const look = (d) => {
       const m = /WebDriver BiDi listening on (ws:\/\/\S+)/.exec(String(d));
-      if (m) { clearTimeout(t); ok(m[1]); }
+      if (m) {
+        clearTimeout(t);
+        ok(m[1]);
+      }
     };
-    ff.stdout.on("data", look); ff.stderr.on("data", look);
+    ff.stdout.on("data", look);
+    ff.stderr.on("data", look);
   });
   if (!wsUrl) blocked(`${BROWSER} printed no BiDi endpoint within 30s`);
   return {
     url: wsUrl + "/session",
     newSession: true,
-    stop: async () => { ff.kill(); },
+    stop: async () => {
+      ff.kill();
+    },
   };
 }
 
 // Headless Chromium serves no BiDi of its own: chromedriver starts it and
 // hands back a WebSocket bound to the session it opened.
 async function startChromium() {
-  const driver = spawn(CHROMEDRIVER, [`--port=${DRIVER_PORT}`],
-    { stdio: "ignore" });
+  const driver = spawn(CHROMEDRIVER, [`--port=${DRIVER_PORT}`], {
+    stdio: "ignore",
+  });
   children.push(driver);
-  driver.on("error",
-    (e) => blocked(`cannot start ${CHROMEDRIVER}: ${e.message}`));
+  driver.on("error", (e) =>
+    blocked(`cannot start ${CHROMEDRIVER}: ${e.message}`),
+  );
   const base = `http://127.0.0.1:${DRIVER_PORT}`;
   let ready = false;
   for (let i = 0; i < 60 && !ready; i++) {
     await sleep(250);
-    ready = await fetch(base + "/status").then((r) => r.json())
-      .then((j) => j.value?.ready === true, () => false);
+    ready = await fetch(base + "/status")
+      .then((r) => r.json())
+      .then(
+        (j) => j.value?.ready === true,
+        () => false,
+      );
   }
   if (!ready) blocked(`${CHROMEDRIVER} not ready within 15s`);
-  const args = ["--headless=new", "--no-first-run",
-    "--no-default-browser-check", "--password-store=basic",
-    `--user-data-dir=${resolve(site, "chromium-profile")}`];
-  const capabilities = { alwaysMatch: {
-    browserName: "chrome", webSocketUrl: true,
-    "goog:chromeOptions": { binary: CHROMIUM, args },
-  } };
+  const args = [
+    "--headless=new",
+    "--no-first-run",
+    "--no-default-browser-check",
+    "--password-store=basic",
+    `--user-data-dir=${resolve(site, "chromium-profile")}`,
+  ];
+  const capabilities = {
+    alwaysMatch: {
+      browserName: "chrome",
+      webSocketUrl: true,
+      "goog:chromeOptions": { binary: CHROMIUM, args },
+    },
+  };
   const res = await fetch(base + "/session", {
-    method: "POST", headers: { "content-type": "application/json" },
+    method: "POST",
+    headers: { "content-type": "application/json" },
     body: JSON.stringify({ capabilities }),
-  }).then((r) => r.json(), (e) => ({ error: String(e) }));
+  }).then(
+    (r) => r.json(),
+    (e) => ({ error: String(e) }),
+  );
   const url = res.value?.capabilities?.webSocketUrl;
   if (!url) {
-    blocked(`${CHROMEDRIVER} opened no BiDi session: `
-            + JSON.stringify(res).slice(0, 300));
+    blocked(
+      `${CHROMEDRIVER} opened no BiDi session: ` +
+        JSON.stringify(res).slice(0, 300),
+    );
   }
-  return { url, newSession: false, stop: async () => {
-    await fetch(`${base}/session/${res.value.sessionId}`,
-      { method: "DELETE" }).catch(() => {});
-    driver.kill();
-  } };
+  return {
+    url,
+    newSession: false,
+    stop: async () => {
+      await fetch(`${base}/session/${res.value.sessionId}`, {
+        method: "DELETE",
+      }).catch(() => {});
+      driver.kill();
+    },
+  };
 }
 
 // --- a minimal BiDi client -------------------------------------------
@@ -149,16 +197,19 @@ async function connect(url) {
     ws.onopen = ok;
     ws.onerror = () => no(new Error("websocket"));
   }).catch((e) => blocked(e.message));
-  let nextId = 1; const pending = new Map();
+  let nextId = 1;
+  const pending = new Map();
   ws.onmessage = (ev) => {
     const m = JSON.parse(ev.data);
     if (m.id && pending.has(m.id)) {
-      pending.get(m.id)(m); pending.delete(m.id);
+      pending.get(m.id)(m);
+      pending.delete(m.id);
     }
   };
   function send(method, params) {
     return new Promise((ok) => {
-      const id = nextId++; pending.set(id, ok);
+      const id = nextId++;
+      pending.set(id, ok);
       ws.send(JSON.stringify({ id, method, params }));
     }).then((m) => {
       if (m.type === "error") {
@@ -178,7 +229,8 @@ const HASH = `(() => { const el = document.getElementById("screen");
 async function gate(name, send) {
   const tree = await send("browsingContext.getTree", {});
   const context = tree.contexts[0].context;
-  await send("script.addPreloadScript", { functionDeclaration: `() => {
+  await send("script.addPreloadScript", {
+    functionDeclaration: `() => {
     const g = { frames: 0, sizes: [], overlays: 0 };
     globalThis.__lhGate = g;
     let frame; let overlay;
@@ -192,85 +244,127 @@ async function gate(name, send) {
       configurable: true,
       get() { return overlay; },
       set(f) { overlay = (...xs) => { g.overlays++; return f(...xs); }; } });
-  }` });
+  }`,
+  });
   async function evaluate(expression) {
-    const r = await send("script.evaluate", { expression, target: { context },
-      awaitPromise: true, resultOwnership: "none" });
+    const r = await send("script.evaluate", {
+      expression,
+      target: { context },
+      awaitPromise: true,
+      resultOwnership: "none",
+    });
     if (r.type !== "success") {
       throw new Error(`evaluate failed: ${JSON.stringify(r).slice(0, 300)}`);
     }
     return r.result.value;
   }
   const count = () => evaluate("globalThis.__lhGate.frames");
-  const press = (value) => send("input.performActions", { context,
-    actions: [{ type: "key", id: "kbd",
-      actions: [{ type: "keyDown", value }, { type: "keyUp", value }] }] });
-  await send("browsingContext.navigate",
-    { context, url: `http://localhost:${PORT}/`, wait: "complete" });
+  const press = (value) =>
+    send("input.performActions", {
+      context,
+      actions: [
+        {
+          type: "key",
+          id: "kbd",
+          actions: [
+            { type: "keyDown", value },
+            { type: "keyUp", value },
+          ],
+        },
+      ],
+    });
+  await send("browsingContext.navigate", {
+    context,
+    url: `http://localhost:${PORT}/`,
+    wait: "complete",
+  });
   // 1. frames arrive after lhStart.
   let frames = 0;
   for (let i = 0; i < 120 && frames < 2; i++) {
-    await sleep(500); frames = await count();
+    await sleep(500);
+    frames = await count();
   }
-  const size =
-    await evaluate("JSON.stringify(globalThis.__lhGate.sizes[0] ?? null)");
+  const size = await evaluate(
+    "JSON.stringify(globalThis.__lhGate.sizes[0] ?? null)",
+  );
   if (frames < 2) {
     fail(`${name}: no second frame within 60s of load (frames=${frames})`);
   } else {
-    console.log(`ok   ${name}: frames arrive: ${frames} within the wait,`
-                + ` the first ${size} cells`);
+    console.log(
+      `ok   ${name}: frames arrive: ${frames} within the wait,` +
+        ` the first ${size} cells`,
+    );
   }
   // 2. a key changes the frame: '?' opens the help overlay.
   const before = await evaluate(HASH);
   const framesBefore = await count();
   await press("?");
-  let after = before, framesAfter = framesBefore;
+  let after = before,
+    framesAfter = framesBefore;
   for (let i = 0; i < 40 && after === before; i++) {
-    await sleep(250); after = await evaluate(HASH); framesAfter = await count();
+    await sleep(250);
+    after = await evaluate(HASH);
+    framesAfter = await count();
   }
   if (after === before) {
-    fail(`${name}: the screen did not change within 10s of a '?' key`
-         + ` (frames ${framesBefore} -> ${framesAfter})`);
+    fail(
+      `${name}: the screen did not change within 10s of a '?' key` +
+        ` (frames ${framesBefore} -> ${framesAfter})`,
+    );
   } else {
-    console.log(`ok   ${name}: a key changes the frame: screen ${before}`
-                + ` -> ${after}, frames ${framesBefore} -> ${framesAfter}`);
+    console.log(
+      `ok   ${name}: a key changes the frame: screen ${before}` +
+        ` -> ${after}, frames ${framesBefore} -> ${framesAfter}`,
+    );
   }
   // 3. a key on a quiet screen changes it too: with the game idle no timer
   // re-enters the RTS scheduler, which a key delivered by a sync export once
   // waited for. Quiet is a second with no frame; Escape leaves the help.
-  let seen = await count(), still = 0;
+  let seen = await count(),
+    still = 0;
   for (let i = 0; i < 40 && still < 4; i++) {
     await sleep(250);
     const f = await count();
-    still = f === seen ? still + 1 : 0; seen = f;
+    still = f === seen ? still + 1 : 0;
+    seen = f;
   }
   const quiet = await evaluate(HASH);
   await press("");
   let changed = quiet;
   for (let i = 0; i < 12 && changed === quiet; i++) {
-    await sleep(250); changed = await evaluate(HASH);
+    await sleep(250);
+    changed = await evaluate(HASH);
   }
   if (still < 4) {
-    fail(`${name}: the screen never went quiet for a second within 10s`
-         + " of the '?'");
+    fail(
+      `${name}: the screen never went quiet for a second within 10s` +
+        " of the '?'",
+    );
   } else if (changed === quiet) {
-    fail(`${name}: a quiet screen did not change within 3s of an Escape key`
-         + ` (frames ${seen})`);
+    fail(
+      `${name}: a quiet screen did not change within 3s of an Escape key` +
+        ` (frames ${seen})`,
+    );
   } else {
-    console.log(`ok   ${name}: a key changes a quiet screen: ${quiet}`
-                + ` -> ${changed}`);
+    console.log(
+      `ok   ${name}: a key changes a quiet screen: ${quiet}` + ` -> ${changed}`,
+    );
   }
   // 4. an overlay submission, once 2.4 lands.
   const overlays = await evaluate("globalThis.__lhGate.overlays");
   if (wantOverlays) {
     if (overlays < 1) {
-      fail(`${name}: no overlay submission after the key`
-           + " (PAGE_GATE_OVERLAYS=1)");
+      fail(
+        `${name}: no overlay submission after the key` +
+          " (PAGE_GATE_OVERLAYS=1)",
+      );
     } else console.log(`ok   ${name}: overlays submitted: ${overlays}`);
   } else {
-    console.log(`note ${name}: overlays submitted: ${overlays}`
-                + " (not required until 2.4; PAGE_GATE_OVERLAYS=1 requires"
-                + " one)");
+    console.log(
+      `note ${name}: overlays submitted: ${overlays}` +
+        " (not required until 2.4; PAGE_GATE_OVERLAYS=1 requires" +
+        " one)",
+    );
   }
 }
 
@@ -282,8 +376,12 @@ for (const name of BROWSERS) {
   try {
     if (browser.newSession) await send("session.new", { capabilities: {} });
     await gate(name, send);
-  } catch (e) { fail(`${name}: ${e.message ?? e}`); }
-  finally { close(); await browser.stop(); }
+  } catch (e) {
+    fail(`${name}: ${e.message ?? e}`);
+  } finally {
+    close();
+    await browser.stop();
+  }
 }
 server.kill();
 process.exit(process.exitCode ?? 0);

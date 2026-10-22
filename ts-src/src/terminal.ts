@@ -80,7 +80,8 @@ export function mountTerminal(
   // SDL2's crosshair pointer, generated from the same art (MouseCursor.hs);
   // the keyword is the fallback where the image fails to load.
   container.style.cursor =
-    `url(${XHAIR_CURSOR_URL}) ${XHAIR_CURSOR_HOTSPOT_X} ${XHAIR_CURSOR_HOTSPOT_Y}, crosshair`;
+    `url(${XHAIR_CURSOR_URL})` +
+    ` ${XHAIR_CURSOR_HOTSPOT_X} ${XHAIR_CURSOR_HOTSPOT_Y}, crosshair`;
 
   function focusTerminal(): void {
     container.focus();
@@ -159,7 +160,8 @@ export function mountTerminal(
   // into a single browser paint, mirroring Dom.hs's
   // requestAnimationFrame_/newRequestAnimationFrameCallbackSync.
   function applyFrame(buf: Uint32Array, w: number, h: number): void {
-    if (w !== cols || h !== rows || window.devicePixelRatio !== dpr) layOut(w, h);
+    if (w !== cols || h !== rows || window.devicePixelRatio !== dpr)
+      layOut(w, h);
     const m = metrics!;
     let i = 0;
     while (i < buf.length) {
@@ -251,17 +253,19 @@ export function mountTerminal(
   // the browser to resample it. The query matches the ratio it was made
   // at, so each change is caught once and a new query made.
   function watchPixelRatio(): void {
-    window.matchMedia(`(resolution: ${window.devicePixelRatio}dppx)`).addEventListener(
-      "change",
-      () => {
-        if (lastFrame && !pendingFrame) {
-          pendingFrame = { buf: lastFrame, w: cols, h: rows };
-          schedulePaint();
-        }
-        watchPixelRatio();
-      },
-      { once: true },
-    );
+    window
+      .matchMedia(`(resolution: ${window.devicePixelRatio}dppx)`)
+      .addEventListener(
+        "change",
+        () => {
+          if (lastFrame && !pendingFrame) {
+            pendingFrame = { buf: lastFrame, w: cols, h: rows };
+            schedulePaint();
+          }
+          watchPixelRatio();
+        },
+        { once: true },
+      );
   }
   watchPixelRatio();
 
@@ -285,7 +289,16 @@ export function mountTerminal(
     "wheel",
     (e) => {
       const p = pointUnder(e);
-      if (p) onWheel(p.x, p.y, e.deltaY, e.ctrlKey, e.shiftKey, altModifier(e), e.metaKey);
+      if (p)
+        onWheel(
+          p.x,
+          p.y,
+          e.deltaY,
+          e.ctrlKey,
+          e.shiftKey,
+          altModifier(e),
+          e.metaKey,
+        );
       e.preventDefault();
       e.stopPropagation();
     },
@@ -298,7 +311,16 @@ export function mountTerminal(
   });
   canvas.addEventListener("mouseup", (e) => {
     const p = pointUnder(e);
-    if (p) onMouseUp(p.x, p.y, e.button, e.ctrlKey, e.shiftKey, altModifier(e), e.metaKey);
+    if (p)
+      onMouseUp(
+        p.x,
+        p.y,
+        e.button,
+        e.ctrlKey,
+        e.shiftKey,
+        altModifier(e),
+        e.metaKey,
+      );
     e.preventDefault();
     e.stopPropagation();
   });

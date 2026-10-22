@@ -21,10 +21,10 @@
 //   lz-string comes from `npm ci` in this directory, which `make test-wasm`
 //   runs. Exit status is the binary's, or 2 when the run did not happen.
 
-import { existsSync, readFileSync } from 'node:fs';
-import { basename, resolve } from 'node:path';
-import { pathToFileURL } from 'node:url';
-import { WASI } from 'node:wasi';
+import { existsSync, readFileSync } from "node:fs";
+import { basename, resolve } from "node:path";
+import { pathToFileURL } from "node:url";
+import { WASI } from "node:wasi";
 
 // Exit 2 unless the two files the run needs exist.
 export function requireFiles(usage, wasmPath, jsffiPath) {
@@ -47,11 +47,19 @@ export function memoryStorage() {
   const items = new Map();
   return {
     getItem: (k) => (items.has(String(k)) ? items.get(String(k)) : null),
-    setItem: (k, v) => { items.set(String(k), String(v)); },
-    removeItem: (k) => { items.delete(String(k)); },
-    clear: () => { items.clear(); },
+    setItem: (k, v) => {
+      items.set(String(k), String(v));
+    },
+    removeItem: (k) => {
+      items.delete(String(k));
+    },
+    clear: () => {
+      items.clear();
+    },
     key: (i) => [...items.keys()][i] ?? null,
-    get length() { return items.size; },
+    get length() {
+      return items.size;
+    },
   };
 }
 
@@ -64,14 +72,19 @@ export function memoryStorage() {
 export async function installStubs(memoryOf) {
   let LZString;
   try {
-    ({ default: LZString } = await import('lz-string'));
+    ({ default: LZString } = await import("lz-string"));
   } catch (e) {
-    console.error(`${basename(process.argv[1])}: cannot load lz-string, `
-                  + `which npm ci in ts-src installs: ${e.message}`);
+    console.error(
+      `${basename(process.argv[1])}: cannot load lz-string, ` +
+        `which npm ci in ts-src installs: ${e.message}`,
+    );
     process.exit(2);
   }
-  Object.defineProperty(globalThis, 'localStorage',
-                        { value: memoryStorage(), configurable: true, writable: true });
+  Object.defineProperty(globalThis, "localStorage", {
+    value: memoryStorage(),
+    configurable: true,
+    writable: true,
+  });
   globalThis.LZString = LZString;
   const calls = [];
   globalThis.lhSubmitFrameCalls = calls;
@@ -106,11 +119,13 @@ export async function instantiate(wasmPath, jsffiPath, wasi) {
 if (import.meta.url === pathToFileURL(resolve(process.argv[1])).href) {
   const [, , wasmPath, jsffiPath, ...extraArgs] = process.argv;
   requireFiles(
-    'usage: node run-wasm-test.mjs <foo.wasm> <ghc_wasm_jsffi.mjs> [args...]',
-    wasmPath, jsffiPath);
+    "usage: node run-wasm-test.mjs <foo.wasm> <ghc_wasm_jsffi.mjs> [args...]",
+    wasmPath,
+    jsffiPath,
+  );
 
   const wasi = new WASI({
-    version: 'preview1',
+    version: "preview1",
     // Haskell's getArgs excludes argv[0], so this only affects things that
     // read the program name directly (getProgName, --help banners); use a
     // short name instead of the full build-tree path for those.
@@ -125,7 +140,7 @@ if (import.meta.url === pathToFileURL(resolve(process.argv[1])).href) {
     // JSFFI instantiation failure happening first. This only ever runs a
     // locally built test binary, not untrusted code, so preopening
     // everything is simpler than guessing exactly which path the RTS wants.
-    preopens: { '/': '/' },
+    preopens: { "/": "/" },
     returnOnExit: true,
   });
 

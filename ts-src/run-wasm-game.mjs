@@ -29,36 +29,39 @@
 //   argv. Exit 0 when every check holds, 1 when one fails, 2 when the run
 //   did not happen.
 
-import { mkdtempSync, rmSync } from 'node:fs';
-import { tmpdir } from 'node:os';
-import { join } from 'node:path';
-import { WASI } from 'node:wasi';
+import { mkdtempSync, rmSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
+import { WASI } from "node:wasi";
 
-import { installStubs, instantiate, requireFiles } from './run-wasm-test.mjs';
+import { installStubs, instantiate, requireFiles } from "./run-wasm-test.mjs";
 
 const [, , wasmPath, jsffiPath, ...extraArgs] = process.argv;
-const usage = 'usage: node run-wasm-game.mjs <LambdaHack.wasm>'
-  + ' <ghc_wasm_jsffi.mjs> [arg...]';
+const usage =
+  "usage: node run-wasm-game.mjs <LambdaHack.wasm>" +
+  " <ghc_wasm_jsffi.mjs> [arg...]";
 requireFiles(usage, wasmPath, jsffiPath);
-const printEachScreen = extraArgs.includes('--printEachScreen');
+const printEachScreen = extraArgs.includes("--printEachScreen");
 
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 const ok = (msg) => console.log(`ok   ${msg}`);
 class Failed extends Error {}
-const fail = (msg) => { throw new Failed(msg); };
+const fail = (msg) => {
+  throw new Failed(msg);
+};
 
 // The page's loader gives the reactor the argv ["LambdaHack"], no
 // environment and an empty root directory; so does this, the root being
 // a fresh temporary directory, Node's WASI preopening host directories,
 // removed at exit, a failing one included, and the argv carrying this
 // script's args after the program name.
-const root = mkdtempSync(join(tmpdir(), 'lh-reactor-'));
-process.on('exit', () => rmSync(root, { recursive: true, force: true }));
+const root = mkdtempSync(join(tmpdir(), "lh-reactor-"));
+process.on("exit", () => rmSync(root, { recursive: true, force: true }));
 const wasi = new WASI({
-  version: 'preview1',
-  args: ['LambdaHack', ...extraArgs],
+  version: "preview1",
+  args: ["LambdaHack", ...extraArgs],
   env: {},
-  preopens: { '/': root },
+  preopens: { "/": root },
   returnOnExit: true,
 });
 let instance;
@@ -69,9 +72,11 @@ const recordFrame = globalThis.lhSubmitFrame;
 globalThis.lhSubmitFrame = (addr, w, h) => {
   recordFrame(addr, w, h);
   const cells = new DataView(instance.exports.memory.buffer, addr, 4 * w * h);
-  screenRows = Array.from({ length: h }, (_, y) => Array.from(
-    { length: w }, (_, x) => String.fromCodePoint(cells.getUint32(4 * (y * w + x), true) >>> 16),
-  ).join(''));
+  screenRows = Array.from({ length: h }, (_, y) =>
+    Array.from({ length: w }, (_, x) =>
+      String.fromCodePoint(cells.getUint32(4 * (y * w + x), true) >>> 16),
+    ).join(""),
+  );
 };
 // The names lhPrintScreen is given, each with the count of frames
 // submitted before it.
@@ -86,13 +91,33 @@ const noMods = [false, false, false, false];
 
 // A stand-in for the page's KeyboardEvent: the fields lhKey reads, and
 // a count of the calls that take the key from the browser.
-function keyEvent(key, { ctrlKey = false, shiftKey = false, altKey = false,
-                         metaKey = false, altGraph = false } = {}) {
+function keyEvent(
+  key,
+  {
+    ctrlKey = false,
+    shiftKey = false,
+    altKey = false,
+    metaKey = false,
+    altGraph = false,
+  } = {},
+) {
   return {
-    key, ctrlKey, shiftKey, altKey, metaKey, prevented: 0, stopped: 0,
-    getModifierState(k) { return k === 'AltGraph' && altGraph; },
-    preventDefault() { this.prevented += 1; },
-    stopPropagation() { this.stopped += 1; },
+    key,
+    ctrlKey,
+    shiftKey,
+    altKey,
+    metaKey,
+    prevented: 0,
+    stopped: 0,
+    getModifierState(k) {
+      return k === "AltGraph" && altGraph;
+    },
+    preventDefault() {
+      this.prevented += 1;
+    },
+    stopPropagation() {
+      this.stopped += 1;
+    },
   };
 }
 
@@ -138,32 +163,40 @@ async function repaint(name, args) {
   const n = calls.length;
   await lh[name](...args);
   if (!(await waitFor(() => calls.length > n, 5000))) {
-    fail(`${name}(${args.slice(0, 3).join(', ')}) repainted nothing within 5s`);
+    fail(`${name}(${args.slice(0, 3).join(", ")}) repainted nothing within 5s`);
   }
   await waitQuiet(500, 5000);
   return calls[calls.length - 1].hash;
 }
 
 async function run() {
-  const names = ['lhStart', 'lhKey', 'lhWheel', 'lhMouseUp'];
-  const missing = names.filter((n) => typeof lh[n] !== 'function');
-  if (missing.length) fail(`missing exports: ${missing.join(', ')}`);
-  ok(`exports present: ${names.join(', ')}`);
+  const names = ["lhStart", "lhKey", "lhWheel", "lhMouseUp"];
+  const missing = names.filter((n) => typeof lh[n] !== "function");
+  if (missing.length) fail(`missing exports: ${missing.join(", ")}`);
+  ok(`exports present: ${names.join(", ")}`);
   wasi.initialize(instance);
 
-  lh.lhStart().then(() => { ended = 'lhStart returned'; },
-                    (e) => { ended = `lhStart threw: ${e}`; });
+  lh.lhStart().then(
+    () => {
+      ended = "lhStart returned";
+    },
+    (e) => {
+      ended = `lhStart threw: ${e}`;
+    },
+  );
   if (!(await waitFor(() => calls.length >= 10, 60000))) {
     fail(`only ${calls.length} frames within 60s of lhStart`);
   }
   const { w, h } = calls[0];
   ok(`lhStart starts the game: ${calls.length} frames of ${w}x${h} so far`);
 
-  const help = keyEvent('?', { shiftKey: true });
-  if (lh.lhKey(help) instanceof Promise) fail('lhKey is not a sync export');
+  const help = keyEvent("?", { shiftKey: true });
+  if (lh.lhKey(help) instanceof Promise) fail("lhKey is not a sync export");
   if (help.prevented !== 1 || help.stopped !== 1) {
-    fail(`lhKey left '?' to the browser: preventDefault ${help.prevented}`
-         + ` times, stopPropagation ${help.stopped} times`);
+    fail(
+      `lhKey left '?' to the browser: preventDefault ${help.prevented}` +
+        ` times, stopPropagation ${help.stopped} times`,
+    );
   }
   ok("lhKey takes '?' from the browser before it returns");
   if (!(await waitQuiet(1000, 15000))) {
@@ -172,47 +205,61 @@ async function run() {
   ok(`lhKey reaches the game: the stream stopped at ${calls.length} frames`);
 
   const menu = calls[calls.length - 1].hash;
-  const scrolled = await repaint('lhWheel', [21, 10, 100, ...noMods]);
-  const back = await repaint('lhWheel', [21, 10, -100, ...noMods]);
+  const scrolled = await repaint("lhWheel", [21, 10, 100, ...noMods]);
+  const back = await repaint("lhWheel", [21, 10, -100, ...noMods]);
   if (scrolled === menu || back !== menu) {
     fail(`lhWheel south then north went ${menu} -> ${scrolled} -> ${back}`);
   }
-  ok(`lhWheel reaches the game: south then north repaints ${menu} -> ${scrolled} -> ${back}`);
+  ok(
+    "lhWheel reaches the game: south then north repaints" +
+      ` ${menu} -> ${scrolled} -> ${back}`,
+  );
 
   // A choice is clickable on its label's half-cells (SlideshowM.hs's
   // onChoice), so its last one is odd, and were the column a cell
   // doubled, as before 0.4, that click would miss as the one past it does.
-  const label = 'see command help';
+  const label = "see command help";
   const row = screenRows.findIndex((r) => r.includes(label));
-  if (row < 0) fail(`no '${label}' on the menu:\n${screenRows.join('\n')}`);
+  if (row < 0) fail(`no '${label}' on the menu:\n${screenRows.join("\n")}`);
   const last = 2 * (screenRows[row].indexOf(label) + label.length) - 1;
-  const past = await repaint('lhMouseUp', [last + 1, row, 0, ...noMods]);
+  const past = await repaint("lhMouseUp", [last + 1, row, 0, ...noMods]);
   if (past !== menu) {
-    fail(`a left button release at (${last + 1}, ${row}), past '${label}', changed the menu`);
+    fail(
+      `a left button release at (${last + 1}, ${row}), past '${label}',` +
+        " changed the menu",
+    );
   }
-  const chosen = await repaint('lhMouseUp', [last, row, 0, ...noMods]);
-  if (chosen === menu) fail(`a left button release at (${last}, ${row}), on '${label}', missed it`);
-  ok(`lhMouseUp reaches the game in half-cells: '${label}' ends at (${last}, ${row}),`
-     + ` a release past it repaints the menu and one on it activates the choice`);
+  const chosen = await repaint("lhMouseUp", [last, row, 0, ...noMods]);
+  if (chosen === menu)
+    fail(
+      `a left button release at (${last}, ${row}), on '${label}', missed it`,
+    );
+  ok(
+    `lhMouseUp reaches the game in half-cells: '${label}' ends at` +
+      ` (${last}, ${row}), a release past it repaints the menu and one on it` +
+      " activates the choice",
+  );
 
   // On that quiet screen, with no timer due, a key through the sync lhKey
   // must be acted on with no other event to follow it.
-  await repaint('lhKey', [keyEvent('Escape')]);
-  ok('lhKey repaints a quiet screen: Escape is acted on with no other event');
+  await repaint("lhKey", [keyEvent("Escape")]);
+  ok("lhKey repaints a quiet screen: Escape is acted on with no other event");
 
   // Under --printEachScreen each frame is printed right after it is
   // submitted, and otherwise none is; then the game's C-P, Control
   // and Shift with 'P', prints once more.
   const eachFrame = prints.every((p, i) => p.frames === i + 1);
   const framePrints = printEachScreen ? calls.length : 0;
-  if (prints.length !== framePrints || printEachScreen && !eachFrame) {
-    fail(`${prints.length} screenshots for ${calls.length} frames before C-P`
-         + `${printEachScreen ? ' under' : ' without'} --printEachScreen`);
+  if (prints.length !== framePrints || (printEachScreen && !eachFrame)) {
+    fail(
+      `${prints.length} screenshots for ${calls.length} frames before C-P` +
+        `${printEachScreen ? " under" : " without"} --printEachScreen`,
+    );
   }
   const printed = prints.length;
-  lh.lhKey(keyEvent('P', { ctrlKey: true, shiftKey: true }));
+  lh.lhKey(keyEvent("P", { ctrlKey: true, shiftKey: true }));
   if (!(await waitFor(() => prints.length > printed, 5000))) {
-    fail('C-P through lhKey printed no screenshot within 5s');
+    fail("C-P through lhKey printed no screenshot within 5s");
   }
   await waitQuiet(500, 5000);
   if (prints.length !== (printEachScreen ? calls.length : 0) + 1) {
@@ -221,23 +268,25 @@ async function run() {
   const shape = /^prtscn\d{4}-\d\d-\d\d_\d\d\.\d\d\.\d\d(\.\d+)?\.png$/;
   const bad = prints.find((p) => !shape.test(p.name));
   if (bad) fail(`lhPrintScreen got the name ${bad.name}`);
-  const which = printEachScreen ? 'each frame' : 'no frame';
-  ok(`C-P prints one screenshot and ${which} one: ${prints.length} for`
-     + ` ${calls.length} frames, the last ${prints.at(-1).name}`);
+  const which = printEachScreen ? "each frame" : "no frame";
+  ok(
+    `C-P prints one screenshot and ${which} one: ${prints.length} for` +
+      ` ${calls.length} frames, the last ${prints.at(-1).name}`,
+  );
 
   // Last, since these reach the game too, whose screen nothing checks after.
   const passed = [
-    ["Control '+'", keyEvent('+', { ctrlKey: true })],
-    ["Alt 'x'", keyEvent('x', { altKey: true })],
-    ["AltGraph 'x'", keyEvent('x', { altGraph: true })],
-    ["Meta 'x'", keyEvent('x', { metaKey: true })],
-    ['Shift alone', keyEvent('Shift', { shiftKey: true })],
+    ["Control '+'", keyEvent("+", { ctrlKey: true })],
+    ["Alt 'x'", keyEvent("x", { altKey: true })],
+    ["AltGraph 'x'", keyEvent("x", { altGraph: true })],
+    ["Meta 'x'", keyEvent("x", { metaKey: true })],
+    ["Shift alone", keyEvent("Shift", { shiftKey: true })],
   ];
   for (const [what, e] of passed) {
     lh.lhKey(e);
     if (e.prevented || e.stopped) fail(`lhKey took ${what} from the browser`);
   }
-  ok(`lhKey leaves the browser ${passed.map(([what]) => what).join(', ')}`);
+  ok(`lhKey leaves the browser ${passed.map(([what]) => what).join(", ")}`);
   alive();
 }
 

@@ -3,8 +3,12 @@ import { contentType } from "./serve-core.js";
 
 describe("contentType", () => {
   it("serves JS and MJS as text/javascript (so ES modules load)", () => {
-    expect(contentType("/dist/bundle.js")).toBe("text/javascript; charset=utf-8");
-    expect(contentType("/dist/ghc_wasm_jsffi.mjs")).toBe("text/javascript; charset=utf-8");
+    expect(contentType("/dist/bundle.js")).toBe(
+      "text/javascript; charset=utf-8",
+    );
+    expect(contentType("/dist/ghc_wasm_jsffi.mjs")).toBe(
+      "text/javascript; charset=utf-8",
+    );
   });
   it("serves wasm as application/wasm", () => {
     expect(contentType("/dist/LambdaHack.wasm")).toBe("application/wasm");

@@ -4,7 +4,13 @@
 // (the Node driver for the reactor), but renders to the DOM instead of
 // recording frames. Not unit-tested.
 
-import { WASI, OpenFile, File, ConsoleStdout, PreopenDirectory } from "@bjorn3/browser_wasi_shim";
+import {
+  WASI,
+  OpenFile,
+  File,
+  ConsoleStdout,
+  PreopenDirectory,
+} from "@bjorn3/browser_wasi_shim";
 import { mountTerminal } from "./terminal.js";
 import { mountFullscreen } from "./fullscreen.js";
 
@@ -90,9 +96,17 @@ async function main(): Promise<void> {
   globalThis.lhSubmitFrame = (addr, w, h) => term.submitFrame(addr, w, h);
   globalThis.lhPrintScreen = (name) => term.printScreen(name);
   const banner = document.getElementById("banner");
-  mountFullscreen(document.getElementById("fsToggle"), screen, banner ? [banner] : []);
+  mountFullscreen(
+    document.getElementById("fsToggle"),
+    screen,
+    banner ? [banner] : [],
+  );
 
-  wasi.initialize(inst as unknown as { exports: { memory: WebAssembly.Memory; _initialize?: () => unknown } });
+  wasi.initialize(
+    inst as unknown as {
+      exports: { memory: WebAssembly.Memory; _initialize?: () => unknown };
+    },
+  );
   // Mirrors Dom.hs's replaceChild_ of the "pleaseWait" placeholder: drop the
   // loading message only once everything is wired and about to start, not
   // before, so it stays visible for the whole duration of a slow load.
@@ -104,7 +118,8 @@ main().catch((e) => {
   console.error(e);
   const status = document.getElementById("status");
   if (status) {
-    status.textContent = "Failed to load LambdaHack wasm. See console for details.";
+    status.textContent =
+      "Failed to load LambdaHack wasm. See console for details.";
     status.style.color = "#d50505"; // Red, from the game's own palette
   }
 });
