@@ -528,6 +528,15 @@ only that the plan was written is one the next reader has to skip.
   of the seven it keeps in a window, `C-Esc` lost besides; fullscreen
   with the lock, `keyboardLock: "browser"` in Firefox
   and `navigator.keyboard.lock()` in Chromium, passes every chord in both.
+- 2026-10-22 -- ruled by Mikolaj: no second key bindings for the chords
+  a browser keeps in a window, the player going fullscreen for them. 1.3's
+  toggle now enters fullscreen with the keyboard locked; `decideKey` keeps every
+  Control chord but zoom's from the browser, in a window as in fullscreen; F11
+  leaves fullscreen in both browsers, the page leaving on it where Chromium's
+  lock hands it over and does nothing more; and the banner tells the player.
+  Holding Escape, the other way out under the lock, sends the game a run
+  of Escapes before it leaves. 1.2's **Decide first** is ruled with it:
+  a Firefox player takes a screenshot in fullscreen.
 
 ## Repo facts the plan builds on
 
@@ -1084,7 +1093,8 @@ dropping a modified click as under SDL; `20193a152` split it in two.*
 
 ## Phase 1 --- small parity wins
 
-Independent of each other; any order. 1.3 doesn't depend on Phase 0, nor does
+Independent of each other but for 1.2, whose keyboard lock extends 1.3's
+`fullscreen.ts`; any order otherwise. 1.3 doesn't depend on Phase 0, nor does
 1.1's first form, its final form resting on 0.2's `cursor.ts`; since B.10 1.2
 waits on 0.4, whose canvas its screenshot is, and 1.5 on 0.4's painter, which
 takes its scale. 1.2's per-frame case waits on 3.1.
@@ -2157,7 +2167,8 @@ the native playtest battery on (`make test-medium` at minimum).
 - Side-by-side visual comparison with SDL2: menus, message log, help, item
   descriptions; mono-overwrites-prop overrun behavior.
 - Screenshots after the flip show the overlay layers, which one renderer gives
-  by construction (B.10); a `Ctrl+P` after the flip confirms it.
+  by construction (B.10); a `Ctrl+P` after the flip, the page made fullscreen
+  by its Fullscreen button, confirms it.
 - HiDPI and browser-zoom spot checks (0.4's device-pixel backing store
   under the overlays, exercised for real).
 - Frame-timing re-measurement against 0.4's canvas baseline (B.10; re-apply

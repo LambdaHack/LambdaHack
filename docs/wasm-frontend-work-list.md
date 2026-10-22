@@ -108,7 +108,7 @@ sections of the record are frozen and which live is its head callout's to say.
 | 0.3 | FFI-coverage battery (baseline before 0.1, then per-commit) | ongoing | --- | standing |
 | 0.4 | canvas painter in place of the DOM grid (B.10) | medium | 0.3 for the reactor driver | landed -- 9eb0c2c3c |
 | 1.1 | crosshair cursor (CSS keyword; then generated SVG cursor) | trivial | 0.2 for the final form | landed -- 0a72de79c |
-| 1.2 | working `Ctrl+P` and `--printEachScreen` screenshots | small | 0.4 for the canvas; 0.3 for the reactor driver; 3.1 for the per-frame case | open |
+| 1.2 | working `Ctrl+P` and `--printEachScreen` screenshots | small | 0.4 for the canvas; 0.3 for the reactor driver; 3.1 for the per-frame case; 0.1 for `decideKey`; 1.3 for `fullscreen.ts` | open |
 | 1.3 | fullscreen toggle with scaling | small | --- | landed -- d211caa38 |
 | 1.4 | banner/title truthfulness | trivial, recurring | feature landings | open -- standing |
 | 1.5 | `allFontsScale` honored in browser | small | 0.4 for the painter; 0.3 for the reactor driver; R4 for player control | open |
@@ -636,19 +636,22 @@ which proves the string shipped and nothing about how it painted.
 
 ### 1.2 Screenshots: make `Ctrl+P` real (small)
 
-**Split** --- two commits. (1) The filename helper plus its tasty test,
-with `Sdl.hs` switched onto it: native only, no TS and no wasm in the diff. (2)
-The wiring: `Wasm.hs`'s `js_printScreen` import and its `fprintScreen` override,
-`lhPrintScreen` in `loader.ts`, the capture in `terminal.ts` --- 0.4's canvas
-by `toBlob`, after the pending frame's paint when one is pending ---
-with its `<a download>` click, and 0.3's coverage case
-in `ts-src/run-wasm-game.mjs` --- the reactor driver installs
-a `globalThis.lhPrintScreen` stub, injects `Ctrl+P` through `lhKey` and asserts
-one call with a filename of the expected shape, then runs again
+**Split** --- two commits, and two more from Mikolaj's rulings of 2026-10-22.
+(1) The filename helper plus its tasty test, with `Sdl.hs` switched onto it:
+native only, no TS and no wasm in the diff. (2) The wiring: `Wasm.hs`'s
+`js_printScreen` import and its `fprintScreen` override, `lhPrintScreen`
+in `loader.ts`, the capture in `terminal.ts` --- 0.4's canvas by `toBlob`, after
+the pending frame's paint when one is pending --- with its `<a download>` click,
+and 0.3's coverage case in `ts-src/run-wasm-game.mjs` --- the reactor driver
+installs a `globalThis.lhPrintScreen` stub, injects `Ctrl+P` through `lhKey`
+and asserts one call with a filename of the expected shape, then runs again
 under `--printEachScreen`, the driver passing its extra arguments through
 as WASI argv, and asserts one call per frame. (2) needs (1), 0.4, 0.3
-for the reactor driver and 3.1 for the `--printEachScreen` run's argv,
-and carries the outcome line and the ledger flip.
+for the reactor driver and 3.1 for the `--printEachScreen` run's argv. (3)
+The page gate's Chromium leg. (4) Fullscreen with the keyboard locked:
+`fullscreen.ts` asking for the lock and leaving on F11, `decideKey` keeping
+every Control chord but zoom's from the browser, and the banner's sentence.
+The outcome line and the ledger flip follow in a record commit.
 
 **Owns** --- `engine-src/Game/LambdaHack/Client/UI/Frontend/Sdl.hs`
 and `Wasm.hs` beside it, the helper's home module
@@ -661,34 +664,34 @@ in `test/Spec.hs` and `LambdaHack.cabal`, `ts-src/src/terminal.ts`,
 `ts-src/src/loader.ts`, `ts-src/run-wasm-game.mjs`, with its argv pass-through,
 `ts-src/page-gate.mjs` for the gate's Chromium leg, the `Makefile`'s comment
 on the gate, `CLAUDE.md`'s build block and its browser bullet,
-and `docs/wasm-frontend-unified-plan.md`. `../lambdahack.github.io`
-is redeployed by **Done**, not owned.
+`ts-src/src/fullscreen.ts` for the keyboard lock and F11,
+`engine-src/Game/LambdaHack/Client/UI/Frontend/InputDecision.hs`
+with `test/InputDecisionUnitTests.hs` and `Dom.hs`'s copy of its list,
+`GameDefinition/index.html`'s banner, and `docs/wasm-frontend-unified-plan.md`.
+`../lambdahack.github.io` is redeployed by **Done**, not owned.
 
 **Done** --- `native`, `ts`, `wasm`, `deploy`, `page`, `docs`, plus both runs
 of `ts-src/run-wasm-game.mjs` against a fresh reactor, as 1.5's Done says
 of its own: `make test-wasm` drives the other driver, where nothing calls
-`fprintScreen`; and the deployed page in Chromium under the Xvfb setup
-`CLAUDE.md` describes, where `Ctrl+P` downloads a PNG under the helper's name.
+`fprintScreen`; and the deployed page in Chromium and in Firefox under the Xvfb
+setup `CLAUDE.md` describes, where in fullscreen, entered by the page's button,
+`Ctrl+P` downloads a PNG under the helper's name and `C-t` opens no tab, and F11
+and a held Escape each leave fullscreen.
 
-**Hands back** --- *display*: press `Ctrl+P` in Firefox and see a PNG download
-under the helper's name, showing the screen, once **Decide first** below gives
-Firefox a way to it, Firefox taking that chord in a window for a private window
-(the record's 1.2). The PNG is the painter's own backing store, and whether
-the fonts loaded is 0.4's to check, its painter awaiting `document.fonts.load`
-before the first paint. The substitute gates in **Done** are the tasty test
-pinning the filename against a fixed time and the two reactor-driver runs, which
-are what executes `Wasm.hs`; `make test-wasm` adds nothing here: nothing it runs
-calls `fprintScreen`, so an undefined `globalThis.lhPrintScreen` would go
-unnoticed there.
+**Hands back** --- *display*: press `Ctrl+P` in Firefox with the page
+fullscreen, by its Fullscreen button, and see a PNG download under the helper's
+name, showing the screen; in a window Firefox takes that chord for a private
+window (the record's 1.2). The PNG is the painter's own backing store,
+and whether the fonts loaded is 0.4's to check, its painter awaiting
+`document.fonts.load` before the first paint. The substitute gates in **Done**
+are the tasty test pinning the filename against a fixed time and the two
+reactor-driver runs, which are what executes `Wasm.hs`; `make test-wasm` adds
+nothing here: nothing it runs calls `fprintScreen`, so an undefined
+`globalThis.lhPrintScreen` would go unnoticed there.
 
-**Decide first** --- how a Firefox player takes a screenshot, Firefox taking
-`Ctrl+P` for itself (2026-10-22 in the record's Log): not at all, the item
-landing as it stands; through a second binding of `PrintScreen`, shared with SDL
-by `GameDefinition/game-src/Client/UI/Content/Input.hs`; through a control
-on the page; through Firefox players clearing `Ctrl+P` in `about:keyboard`,
-which frees it in a window; or through 1.3's `requestFullscreen` asking
-for `keyboardLock: "browser"`, which hands the page `Ctrl+P` and the other keys
-Firefox keeps, in fullscreen only (the record's Log, the same day).
+**Decide first** --- nothing; ruled 2026-10-22 (the record's Log): a Firefox
+player takes a screenshot in fullscreen, which the page's toggle enters
+with the keyboard locked.
 
 ### 1.3 Fullscreen toggle with scaling (small, no Haskell)
 
@@ -785,9 +788,9 @@ the `#status` div quotes, and nothing else in that file),
 and `docs/wasm-frontend-unified-plan.md` wherever this item's own body quotes
 the banner: 1.4 is `open -- standing`, so a quote that no longer matches
 the page is an error to fix, not drift to leave alone. Every item that writes
-`index.html` writes the banner or the `#screen` rule beside it --- 0.4, 1.3, R4,
-R5 and the banner commits of 2.4 and R1 --- and the four that touch the quoted
-paragraph write `README.md` too: this item, 2.4, R1 and R5.
+`index.html` writes the banner or the `#screen` rule beside it --- 0.4, 1.2,
+1.3, R4, R5 and the banner commits of 2.4 and R1 --- and the four that touch
+the quoted paragraph write `README.md` too: this item, 2.4, R1 and R5.
 `../lambdahack.github.io` is redeployed by **Done**, not owned.
 
 **Done** --- `wasm`, `deploy`, `page`, `docs`, plus
@@ -1792,8 +1795,8 @@ frontend CI smokes, ANSI and SDL --- early, beside 0.3-baseline: they
     its Split (0) measures the frame cost beside the DOM grid's
 1.1 / 1.2 / 1.3 / 1.4 / 1.5 / 1.6 --- any order; each
     capability's landing ends with its own banner commit, per 1.4's rule
-    (1.2 and 1.5 come after 0.4, 1.5's full player-facing form after
-    R4 too; 1.2's per-frame case waits on 3.1)
+    (1.2 and 1.5 come after 0.4, 1.2 after 1.3 and 0.1 too, 1.5's full
+    player-facing form after R4 too; 1.2's per-frame case waits on 3.1)
 2.1 OverlayLayout extraction + Sdl.hs onto it and CellStyle
     (native-only, playtest- and bench-gated)
 2.2 browser overlay renderer (visual no-op)
