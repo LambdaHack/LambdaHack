@@ -1036,6 +1036,19 @@ in `terminal-core.ts`, and a thin interpreter over the 2D context, so op lists
 stay testable without a canvas and 2.1's three overlay sections draw through
 the same core.
 
+*Landed in `9eb0c2c3c`, the Split's (1), with (0)'s number recorded in B.10
+after it, by `91ca6700f`, so that the record names the painter it measured. One
+thing beyond this body: a change of `devicePixelRatio`, as browser zoom makes,
+repaints the last frame at the new ratio rather than leaving the browser
+to resample the canvas.*
+
+*Its hand-back confirmed by Mikolaj on 2026-10-22: the frames of Split (0) read
+as the DOM build's, and on the deployed page a left click on a menu choice's
+last half-cell activates it and an AltGr middle click on the map snaps
+the crosshair without the description. The one AltGr click at half-cell
+precision first asked for, tried in the menu, did nothing there, the menu
+dropping a modified click as under SDL; `20193a152` split it in two.*
+
 **Rulings** --- the shape is B.10's and the number is Split (0)'s to take.
 
 ---
