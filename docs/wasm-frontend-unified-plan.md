@@ -513,6 +513,10 @@ only that the plan was written is one the next reader has to skip.
   the three reserved ones cleared in the profile's customKeys.json, the file
   Firefox 147's `about:keyboard` writes, reach the page too, while the tab keys
   stay Firefox's, with one tab open as with two.
+- 2026-10-22 -- ruled by Mikolaj: his browser hand-backs are taken in Firefox
+  alone, and a session runs each browser test of its own in Chromium as well,
+  installed for it from the xtradeb PPA. 1.2's hand-back moves to Firefox
+  with it, where `Ctrl+P` waits on that item's **Decide first**.
 
 ## Repo facts the plan builds on
 
@@ -1145,12 +1149,12 @@ in Haskell**, shared with SDL2:
 
 Verify: tasty test for the filename helper; Split (2)'s two reactor-driver runs,
 the machine criterion; run the game, press `Ctrl+P` --- a one-time human glance
-that a PNG downloads under the helper's name and shows the screen.
-Not in Firefox, which takes that chord for a new private window, and the page
-saves nothing: Firefox passes a page the keydowns of Control and Shift but never
-the `P`'s, so no `preventDefault`, such as `lhKey` calls and `Dom.hs` called,
-can stop the window, nor can `permissions.default.shortcuts` set to allow
-(measured 2026-10-22 on firefox-beta under Xvfb, where the same page given
+that a PNG downloads under the helper's name and shows the screen. In a Firefox
+window that chord opens a new private window, and the page saves nothing:
+Firefox passes a page the keydowns of Control and Shift but never the `P`'s,
+so no `preventDefault`, such as `lhKey` calls and `Dom.hs` called, can stop
+the window, nor can `permissions.default.shortcuts` set to allow (measured
+2026-10-22 on firefox-beta under Xvfb, where the same page given
 `--printEachScreen` downloaded a PNG of each frame).
 
 **Rulings** --- all four ruled on 2026-08-07, (a) and (b) re-cut on 2026-10-20

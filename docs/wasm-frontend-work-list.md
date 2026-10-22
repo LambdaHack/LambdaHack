@@ -216,9 +216,13 @@ the `globalThis` hooks the loader installs and by hashing `#screen`, a canvas's
 data URL where one exists, so 0.4 owes it no change. Its two controls, run
 the day it was written: a site missing `LambdaHack.wasm` fails both frame
 assertions, and `PAGE_GATE_OVERLAYS=1` fails before 2.4; and, run 2026-10-21,
-an `lhKey` without its scheduler run fails the quiet-screen assertion. It
-is the campaign's acceptance test: what a human still walks at 2.5 is the look,
-not whether the page runs.
+an `lhKey` without its scheduler run fails the quiet-screen assertion. It drives
+Firefox alone; Chromium, whose run of each browser test a session owes too
+by Mikolaj's ruling of 2026-10-22, serves WebDriver BiDi only through
+chromedriver, from xtradeb's chromium-driver package, not installed, so that run
+is a session's own until the gate grows a Chromium leg. It is the campaign's
+acceptance test: what a human still walks at 2.5 is the look, not whether
+the page runs.
 
 **Read the counts, not the exit status alone** --- `CLAUDE.md`'s rule, binding
 here too: a suite that silently loses a test still passes, and a listing is what
@@ -661,17 +665,19 @@ is redeployed by **Done**, not owned.
 **Done** --- `native`, `ts`, `wasm`, `deploy`, `page`, `docs`, plus both runs
 of `ts-src/run-wasm-game.mjs` against a fresh reactor, as 1.5's Done says
 of its own: `make test-wasm` drives the other driver, where nothing calls
-`fprintScreen`.
+`fprintScreen`; and the deployed page in Chromium under the Xvfb setup
+`CLAUDE.md` describes, where `Ctrl+P` downloads a PNG under the helper's name.
 
-**Hands back** --- *display*: press `Ctrl+P` in a browser other than Firefox,
-which takes that chord for a private window (the record's 1.2), and see a PNG
-download under the helper's name, showing the screen. The PNG is the painter's
-own backing store, and whether the fonts loaded is 0.4's to check, its painter
-awaiting `document.fonts.load` before the first paint. The substitute gates
-in **Done** are the tasty test pinning the filename against a fixed time
-and the two reactor-driver runs, which are what executes `Wasm.hs`;
-`make test-wasm` adds nothing here: nothing it runs calls `fprintScreen`,
-so an undefined `globalThis.lhPrintScreen` would go unnoticed there.
+**Hands back** --- *display*: press `Ctrl+P` in Firefox and see a PNG download
+under the helper's name, showing the screen, once **Decide first** below gives
+Firefox a way to it, Firefox taking that chord in a window for a private window
+(the record's 1.2). The PNG is the painter's own backing store, and whether
+the fonts loaded is 0.4's to check, its painter awaiting `document.fonts.load`
+before the first paint. The substitute gates in **Done** are the tasty test
+pinning the filename against a fixed time and the two reactor-driver runs, which
+are what executes `Wasm.hs`; `make test-wasm` adds nothing here: nothing it runs
+calls `fprintScreen`, so an undefined `globalThis.lhPrintScreen` would go
+unnoticed there.
 
 **Decide first** --- how a Firefox player takes a screenshot, Firefox taking
 `Ctrl+P` for itself (2026-10-22 in the record's Log): not at all, the item
