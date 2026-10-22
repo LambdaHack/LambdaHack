@@ -300,12 +300,12 @@ or this campaign, so a session is told both rather than trusted to know them.
   as it stands.
 
 **One item is in flight at a time, in one checkout.** The hot files are small
-and nearly every phase writes them, several items rewriting the same four-line
-`startup` body in `Wasm.hs`, so two items in one of them are two items
-in the same paragraph, and the locks and claimant lists this plan carried until
-2026-09-14 could not have made them concurrent. What the campaign did
-parallelize was upstream of the code, on the **Decide first** questions, each
-blocking an item that was otherwise ready to hand out.
+and nearly every phase writes them, several items rewriting the same `startup`
+body in `Wasm.hs`, so two items in one of them are two items in the same
+paragraph, and the locks and claimant lists this plan carried until 2026-09-14
+could not have made them concurrent. What the campaign did parallelize
+was upstream of the code, on the **Decide first** questions, each blocking
+an item that was otherwise ready to hand out.
 
 Worktree isolation helps exactly where a collision would be loud: a new module
 no one else has a copy of (0.1's `InputDecision`, 2.1's `OverlayLayout`),
@@ -651,14 +651,11 @@ and `Wasm.hs` beside it, the helper's home module
 under `engine-src/Game/LambdaHack/Client/UI/Frontend/`,
 `engine-src/Game/LambdaHack/Client/UI/Frontend.hs` for the re-export that module
 reaches its consumers through (0.1's ruling (2) in the record, which binds every
-new module here), a new tasty module registered in `test/Spec.hs`
-and `LambdaHack.cabal`, `ts-src/src/terminal.ts`, `ts-src/src/loader.ts`,
-`ts-src/run-wasm-game.mjs`, whose argv pass-through is this item's unless 3.2
-lands first, and `docs/wasm-frontend-unified-plan.md`. 1.5 writes the same lines
---- `startup`'s body and the `foreign import javascript` block in `Wasm.hs`,
-`loader.ts`'s `declare global` and its `globalThis.lh*` wiring, `terminal.ts`'s
-`Terminal` interface and returned object, and the driver --- so whichever
-of the two lands first shapes the other's diff. `../lambdahack.github.io`
+new module here), `engine-src/Game/LambdaHack/Client/UI/Frontend/Common.hs`
+for the comment on `fprintScreen`'s default, a new tasty module registered
+in `test/Spec.hs` and `LambdaHack.cabal`, `ts-src/src/terminal.ts`,
+`ts-src/src/loader.ts`, `ts-src/run-wasm-game.mjs`, with its argv pass-through,
+and `docs/wasm-frontend-unified-plan.md`. `../lambdahack.github.io`
 is redeployed by **Done**, not owned.
 
 **Done** --- `native`, `ts`, `wasm`, `deploy`, `page`, `docs`, plus both runs
@@ -666,16 +663,24 @@ of `ts-src/run-wasm-game.mjs` against a fresh reactor, as 1.5's Done says
 of its own: `make test-wasm` drives the other driver, where nothing calls
 `fprintScreen`.
 
-**Hands back** --- *display*: press `Ctrl+P` in a browser and see a PNG download
-under the helper's name, showing the screen. The PNG is the painter's own
-backing store, and whether the fonts loaded is 0.4's to check, its painter
+**Hands back** --- *display*: press `Ctrl+P` in a browser other than Firefox,
+which takes that chord for a private window (the record's 1.2), and see a PNG
+download under the helper's name, showing the screen. The PNG is the painter's
+own backing store, and whether the fonts loaded is 0.4's to check, its painter
 awaiting `document.fonts.load` before the first paint. The substitute gates
 in **Done** are the tasty test pinning the filename against a fixed time
 and the two reactor-driver runs, which are what executes `Wasm.hs`;
 `make test-wasm` adds nothing here: nothing it runs calls `fprintScreen`,
 so an undefined `globalThis.lhPrintScreen` would go unnoticed there.
 
-**Decide first** --- nothing; the rulings are the record's.
+**Decide first** --- how a Firefox player takes a screenshot, Firefox taking
+`Ctrl+P` for itself (2026-10-22 in the record's Log): not at all, the item
+landing as it stands; through a second binding of `PrintScreen`, shared with SDL
+by `GameDefinition/game-src/Client/UI/Content/Input.hs`; through a control
+on the page; through Firefox players clearing `Ctrl+P` in `about:keyboard`,
+which frees it in a window; or through 1.3's `requestFullscreen` asking
+for `keyboardLock: "browser"`, which hands the page `Ctrl+P` and the other keys
+Firefox keeps, in fullscreen only (the record's Log, the same day).
 
 ### 1.3 Fullscreen toggle with scaling (small, no Haskell)
 
@@ -806,10 +811,10 @@ and over `README.md`, which is source because no build deploys it.
 ### 1.5 `allFontsScale` in the browser, alongside browser zoom
 
 **Split** --- two commits. (1) the startup channel and the scale it carries:
-`Wasm.hs` binding the `ClientOptions` its `startup` discards today, `loader.ts`
-wiring, `terminal.ts` handing the scale to 0.4's painter, which re-derives
-its cell from the font loaded at that size, so the scale survives every
-dimension change, and 0.3's coverage case in `ts-src/run-wasm-game.mjs`,
+`Wasm.hs` reading the scale off the `ClientOptions` its `startup` binds,
+`loader.ts` wiring, `terminal.ts` handing the scale to 0.4's painter, which
+re-derives its cell from the font loaded at that size, so the scale survives
+every dimension change, and 0.3's coverage case in `ts-src/run-wasm-game.mjs`,
 the reactor driver, asserting the payload arrives, with a stub for the startup
 hook among the stubs `ts-src/run-wasm-test.mjs` installs, since 0.3's battery
 there runs `Frontend.Wasm.startup` and would trap on an undefined hook. (2)
@@ -823,10 +828,9 @@ the reactor driver 0.3's export half seeds and 3.2 grows ---
 `ts-src/run-wasm-test.mjs` for the startup hook's stub,
 and `docs/wasm-frontend-unified-plan.md`. It does not write
 `GameDefinition/index.html`, whose `#screen` rule 0.4 rewrote for the canvas.
-1.2 writes the same lines in the four shared files, so whichever lands first
-shapes the other's diff. No ordering against 1.3 survives its ruling:
-that helper measures the live screen and assumes no cell size.
-`../lambdahack.github.io` is redeployed by **Done**, not owned.
+No ordering against 1.3 survives its ruling: that helper measures the live
+screen and assumes no cell size. `../lambdahack.github.io` is redeployed
+by **Done**, not owned.
 
 **Done** --- `native`, `ts`, `wasm`, `deploy`, `page`, `docs`, plus a run
 of `ts-src/run-wasm-game.mjs` against a fresh reactor, the one thing
@@ -1163,11 +1167,10 @@ the wrong bullet. The driver growth; then the landing: outcome line and ledger
 row --- the `run-wasm-game.mjs` deletion from `tools/doc-refs-allow.txt` rides
 0.3's export half, where the file now appears.
 
-**Owns** --- `ts-src/run-wasm-game.mjs` (0.3's seed, grown here; its argv
-pass-through is 1.2's if 1.2 lands first)
-and `docs/wasm-frontend-unified-plan.md`. The allowlist line and every stub
-are 0.3's per its ruling and this item's (c), and lz-string has been
-in the package and lock files since the page gate.
+**Owns** --- `ts-src/run-wasm-game.mjs` (0.3's seed, grown here, its argv
+pass-through 1.2's) and `docs/wasm-frontend-unified-plan.md`. The allowlist line
+and every stub are 0.3's per its ruling and this item's (c), and lz-string has
+been in the package and lock files since the page gate.
 
 **Done** --- `ts`, `wasm`, `docs`, plus `. ~/.ghc-wasm/env` && `T=$(mktemp -d)`
 && `W=$(wasm32-wasi-cabal list-bin exe:LambdaHack)` &&

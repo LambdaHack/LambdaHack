@@ -499,6 +499,20 @@ only that the plan was written is one the next reader has to skip.
 - 2026-10-22 -- ruled by Mikolaj: 0.2's `palette.ts` carries no page-chrome
   colours, nothing 0.2 writes consuming them, and 1.1 takes the cursor's hotspot
   from `cursor.ts`, as it takes the URI, rather than writing it by hand.
+- 2026-10-22 -- 1.2's code is committed, in `23dd759c3` and `3f6954acb`, its row
+  waiting on the hand-back. Firefox takes `Ctrl+P`, Control with Shift-p,
+  for a new private window, so there the page saves no screenshot. How a Firefox
+  player takes one is open, Mikolaj's to rule.
+- 2026-10-22 -- each of the game's Control, Alt and function-key bindings
+  pressed into a page that prevents every keydown, on firefox-beta 159
+  under Xvfb: Firefox keeps from the page `C-t`, `C-q` and `C-P`, which
+  it reserves, and `C-Tab`, `C-BackTab`, `C-PgUp` and `C-PgDn`, which switch
+  tabs, and passes it every other one; inside
+  `requestFullscreen({keyboardLock: "browser"})`, an option since Firefox 151
+  that leaves fullscreen on a held Escape, it passes all of them. In a window,
+  the three reserved ones cleared in the profile's customKeys.json, the file
+  Firefox 147's `about:keyboard` writes, reach the page too, while the tab keys
+  stay Firefox's, with one tab open as with two.
 
 ## Repo facts the plan builds on
 
@@ -969,10 +983,10 @@ and `ts-src/run-wasm-game.mjs`: the baseline, covering every such declaration
 by hand against a `make build-wasm` reactor, its checks made on the frames
 the `lhSubmitFrame` stub records rather than on the frontend channel ruling (3)
 names; after it, the imports 0.1 gave `lhKey`, covered by that driver's `lhKey`
-case. Still to do: the standing half, and the game driver's run in CI, with R2's
-`build-wasm` job.
+case, and 1.2's `js_printScreen`, by its `Ctrl+P` case. Still to do:
+the standing half, and the game driver's run in CI, with R2's `build-wasm` job.
 
-<!-- probe: git -C .. grep -h 'foreign \(import\|export\) javascript' -- engine-src/Game/LambdaHack/Client/UI/Frontend/Wasm.hs engine-src/Game/LambdaHack/Common/WasmFile.hs GameDefinition/Main.hs | grep -vc '^-- ' :: 17 -->
+<!-- probe: git -C .. grep -h 'foreign \(import\|export\) javascript' -- engine-src/Game/LambdaHack/Client/UI/Frontend/Wasm.hs engine-src/Game/LambdaHack/Common/WasmFile.hs GameDefinition/Main.hs | grep -vc '^-- ' :: 18 -->
 
 **Rulings** --- all three ruled on 2026-08-07. (1) The export mechanism
 is the thin reactor driver the Split now specifies --- a slice of 3.2 pulled
@@ -1132,6 +1146,12 @@ in Haskell**, shared with SDL2:
 Verify: tasty test for the filename helper; Split (2)'s two reactor-driver runs,
 the machine criterion; run the game, press `Ctrl+P` --- a one-time human glance
 that a PNG downloads under the helper's name and shows the screen.
+Not in Firefox, which takes that chord for a new private window, and the page
+saves nothing: Firefox passes a page the keydowns of Control and Shift but never
+the `P`'s, so no `preventDefault`, such as `lhKey` calls and `Dom.hs` called,
+can stop the window, nor can `permissions.default.shortcuts` set to allow
+(measured 2026-10-22 on firefox-beta under Xvfb, where the same page given
+`--printEachScreen` downloaded a PNG of each frame).
 
 **Rulings** --- all four ruled on 2026-08-07, (a) and (b) re-cut on 2026-10-20
 for B.10 and (b) re-ruled by Mikolaj the same day. (a) The machine criteria
@@ -2191,9 +2211,9 @@ yields `[]`, exactly as the item predicts.
 the game exe is a *reactor* (`_initialize` + exported `lhStart`). Grow
 the sibling `run-wasm-game.mjs` that 0.3's export half seeds (ruled 2026-08-07;
 the setup code is imported from the test driver, not copied) to: pass
-`[args...]` as WASI argv, as `run-wasm-test.mjs` does and as 1.2 may already
-have made the seed do, `wasi.initialize(instance)`, then call and await
-`lhStart()`. Two integration points to cover:
+`[args...]` as WASI argv, as `run-wasm-test.mjs` does and as 1.2 made the seed
+do, `wasi.initialize(instance)`, then call and await `lhStart()`. Two
+integration points to cover:
 
 - **`WasmFile.hs` reaches for `globalThis.localStorage`
   and `globalThis.LZString` unconditionally** --- neither exists under Node.
