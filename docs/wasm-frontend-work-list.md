@@ -186,8 +186,8 @@ ts       make test-ts        # npm run typecheck runs inside the target
 wasm     make build-wasm && make test-wasm  # UNSANDBOXED after 0.3's npm ci
 deploy   make build-ts        # UNSANDBOXED: writes into the pages checkout
 page     make page-gate       # UNSANDBOXED: runs npm ci; the page as
-         deployed, in headless Firefox: boots, paints, repaints on a key;
-         PAGE_GATE_OVERLAYS=1 from 2.4 on
+         deployed, in headless Firefox and Chromium: boots, paints,
+         repaints on a key; PAGE_GATE_OVERLAYS=1 from 2.4 on
 docs     the repo's standing document passes over every .md document
          the item's Owns names, the record and this file always among them; CLAUDE.md
          lists the passes and this document does not; what they cost is
@@ -209,20 +209,20 @@ browser landing, and never a CI job --- CI stays blind to the page
 by that choice, R2's ruling against a `build-ts` job standing. `make page-gate`
 builds the page as `build-ts` would deploy it into a scratch directory,
 and `ts-src/page-gate.mjs` serves it, loads it in headless Firefox
-over WebDriver BiDi and asserts that frames arrive after `lhStart`, that a `?`
-changes the screen and an Escape changes it again once it is quiet, and, once
-2.4 lands, that an overlay is submitted. It observes the page by wrapping
-the `globalThis` hooks the loader installs and by hashing `#screen`, a canvas's
-data URL where one exists, so 0.4 owes it no change. Its two controls, run
-the day it was written: a site missing `LambdaHack.wasm` fails both frame
-assertions, and `PAGE_GATE_OVERLAYS=1` fails before 2.4; and, run 2026-10-21,
-an `lhKey` without its scheduler run fails the quiet-screen assertion. It drives
-Firefox alone; Chromium, whose run of each browser test a session owes too
-by Mikolaj's ruling of 2026-10-22, serves WebDriver BiDi only through
-chromedriver, from xtradeb's chromium-driver package, not installed, so that run
-is a session's own until the gate grows a Chromium leg. It is the campaign's
-acceptance test: what a human still walks at 2.5 is the look, not whether
-the page runs.
+and in headless Chromium over WebDriver BiDi, Chromium's through chromedriver
+from xtradeb's chromium-driver package, and asserts in each that frames arrive
+after `lhStart`, that a `?` changes the screen and an Escape changes it again
+once it is quiet, and, once 2.4 lands, that an overlay is submitted. It observes
+the page by wrapping the `globalThis` hooks the loader installs and by hashing
+`#screen`, a canvas's data URL where one exists, so 0.4 owes it no change.
+Its two controls, run the day it was written: a site missing `LambdaHack.wasm`
+fails both frame assertions, and `PAGE_GATE_OVERLAYS=1` fails before 2.4; and,
+run 2026-10-21, an `lhKey` without its scheduler run fails the quiet-screen
+assertion. The Chromium leg came with 1.2, after Mikolaj's ruling of 2026-10-22
+that a session's browser tests run in Chromium too, and its controls ran
+that day: the site missing `LambdaHack.wasm` fails it, and a missing
+chromedriver stops the run at 2. It is the campaign's acceptance test: what
+a human still walks at 2.5 is the look, not whether the page runs.
 
 **Read the counts, not the exit status alone** --- `CLAUDE.md`'s rule, binding
 here too: a suite that silently loses a test still passes, and a listing is what
@@ -659,6 +659,8 @@ new module here), `engine-src/Game/LambdaHack/Client/UI/Frontend/Common.hs`
 for the comment on `fprintScreen`'s default, a new tasty module registered
 in `test/Spec.hs` and `LambdaHack.cabal`, `ts-src/src/terminal.ts`,
 `ts-src/src/loader.ts`, `ts-src/run-wasm-game.mjs`, with its argv pass-through,
+`ts-src/page-gate.mjs` for the gate's Chromium leg, the `Makefile`'s comment
+on the gate, `CLAUDE.md`'s build block and its browser bullet,
 and `docs/wasm-frontend-unified-plan.md`. `../lambdahack.github.io`
 is redeployed by **Done**, not owned.
 

@@ -517,6 +517,10 @@ only that the plan was written is one the next reader has to skip.
   alone, and a session runs each browser test of its own in Chromium as well,
   installed for it from the xtradeb PPA. 1.2's hand-back moves to Firefox
   with it, where `Ctrl+P` waits on that item's **Decide first**.
+- 2026-10-22 -- ruled by Mikolaj: 1.2 gives the page gate its Chromium leg,
+  through chromedriver from xtradeb's chromium-driver package,
+  so `make page-gate` runs its assertions in headless Firefox and in headless
+  Chromium.
 
 ## Repo facts the plan builds on
 

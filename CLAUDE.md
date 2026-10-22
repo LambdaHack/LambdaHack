@@ -46,8 +46,8 @@ make build-ts           # build the TS harness in ts-src/; deploy it, the
                         # GameDefinition/index.html into ../lambdahack.github.io
 make serve-wasm         # serve ../lambdahack.github.io locally on :8080
 make run-wasm           # open in firefox
-make page-gate          # the page as deployed, loaded in headless firefox:
-                        # boots, paints, repaints on a key
+make page-gate          # the page as deployed, loaded in headless firefox
+                        # and chromium: boots, paints, repaints on a key
 ```
 
 ### Tests
