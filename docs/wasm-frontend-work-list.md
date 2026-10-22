@@ -73,13 +73,6 @@ an authorized push, so the review that gates an item is the local one.
 **A review branch is named for its item** --- `item-0.1`, `item-2.1`, `item-R3`
 --- so that `git branch --list 'item-*'` maps onto the ledger.
 
-**3.1 was to go first, as a shakedown**, the smallest item whose correctness
-a machine can settle end to end; 0.0, 1.1's keyword half and 1.3 went first
-instead on 2026-09-14 and rehearsed the ritual --- the gates, the outcome line
-and the ledger flip --- so what 3.1 keeps is its ordering role: 1.2's per-frame
-case waits on it. It rehearses no allowlist deletion, proposing no artifact
-and so having no entry to delete; the items that build one carry that step.
-
 **One item is reviewed entirely alone: the `Sdl.hs` drawing loop** (2.1's
 refactor together with its `CellStyle` adoption, which rewrite abutting regions
 of one hot loop). It rewrites shipped native rendering; SDL2 is exercised in CI
@@ -264,17 +257,8 @@ not write.
 
 The logistics live at the item and nowhere else. A central table of owned files,
 gates and open questions was proposed and is ruled out: it would duplicate every
-item's name and half its body; it would drift from the bodies the first time
-an item was edited without it, in the direction that reads as authoritative;
-and, decisively, it could not freeze. The maturation rule is per item ---
-a landed item's logistics are frozen history like the rest of it --- whereas
-a table's rows would go on sitting beside live ones, current-looking long after
-the commits that consumed them, which is exactly the aged record the freeze
-callout at the top of this document exists to prevent. Only that last reason
-turns on this document rather than on tables, so a table is right only where
-the whole plan is deleted when the work lands and no row outlives its body ---
-which is the pointman campaign's sec. 00 and not this file. The other two
-reasons bind there too.
+item's name and half its body, and it would drift from the bodies the first time
+an item was edited without it, in the direction that reads as authoritative.
 
 **Owns** is a checked field, not prose. `../tools/check-doc-refs.py` resolves
 the backticked paths in this document, so naming an artifact the item has
@@ -918,10 +902,10 @@ the re-anchoring of this plan's and the repo-root `CLAUDE.md`'s `Sdl.hs`
 citations against the shrunken file, most of which the pass will name broken,
 plus that file's frontend bullet, whose last module name this item delivers,
 retiring the clause, and the Gotchas bullet's "awaits its scheduled fix" clause,
-which (2)'s fix falsifies --- mandatory and separate, per the freeze callout.
-(6) the outcome line naming (2)'s and (3)'s hashes, the ledger flip,
-and the deletion of this item's two `tools/doc-refs-allow.txt` entries. (2)
-and (3) are the branch How this lands reviews alone, carrying `Sdl.hs`
+which (2)'s fix falsifies --- mandatory and separate, per Handing an item
+to a session. (6) the outcome line naming (2)'s and (3)'s hashes, the ledger
+flip, and the deletion of this item's two `tools/doc-refs-allow.txt` entries.
+(2) and (3) are the branch How this lands reviews alone, carrying `Sdl.hs`
 and nothing else, so (1) lands ahead of it, a partial landing, and (4) to (6)
 after it; (5) before (6), so a correction is never in the same diff
 as the landing record.
@@ -1357,13 +1341,11 @@ and `Point.hs:not supported yet by GHCJS (not verified)`'s "not supported yet
 by GHCJS" clause, updated or dropped --- and `CLAUDE.md`
 and `docs/wasm-frontend-unified-plan.md`. Every item adding `exposed-modules`
 to `LambdaHack.cabal` writes into the very conditional nest R3 collapses,
-the orphan comment
-at `GameDefinition/Main.hs:This test is faulty in the browser` sits in a file
-3.1 also writes, and the three engine `#if` sites are also R1's
-and the capability-constants practice's, so whichever lands first shapes R3's
-diff. The pointman campaign writes two of these too: its PR 0, C3, C4 and C6
-write `HandleHumanLocalM.hs`, the first three above the `#if` site this item
-cites, and its 04.4 writes `CLAUDE.md` at that campaign's landing.
+and the three engine `#if` sites are also R1's and the capability-constants
+practice's, so whichever lands first shapes R3's diff. The pointman campaign
+writes two of these too: its PR 0, C3, C4 and C6 write `HandleHumanLocalM.hs`,
+the first three above the `#if` site this item cites, and its 04.4 writes
+`CLAUDE.md` at that campaign's landing.
 
 **Done** --- `native`, with stylish widened past the gate's Owns-derived list
 to `$(git ls-files '*.hs')` --- the one item that widens it, and repo-wide here

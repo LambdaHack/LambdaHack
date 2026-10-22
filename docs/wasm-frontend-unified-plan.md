@@ -1206,18 +1206,17 @@ the effective cell size today.
 
 ### 1.4 Banner truth maintenance (trivial, recurring)
 
-`GameDefinition/index.html`'s banner and status text still claim save games
-aren't persistent (they are, via `WasmFile.hs`/localStorage) and will go staler
-as features land ("For proportional fonts and persistent save games, use
-the native binary"). Update the text as each feature ships.
-The savefile-corruption caveat stays until R1 addresses it. **The page
-is not the only one**: the `#status` div opens "from README:" and quotes
-`README.md`'s "Installation of the sample game from binary archives" paragraph,
-so the square-font and savefile-corruption sentences are in two files,
-and this item's rule binds both --- a clause deleted from the page is deleted
-from the README in the same commit. (The GHCJS-era page's community features
-are deliberately not restored, and the page `<title>` stays hardcoded ---
-Appendix B.)
+`GameDefinition/index.html`'s banner still claims save games aren't persistent
+(they are, via `WasmFile.hs`/localStorage) and will go staler as features land
+("For proportional fonts and persistent save games, use the native binary").
+Update the text as each feature ships. The savefile-corruption caveat stays
+until R1 addresses it. **The page is not the only one**: the `#status` div opens
+"from README:" and quotes `README.md`'s "Installation of the sample game
+from binary archives" paragraph, so the square-font and savefile-corruption
+sentences are in two files, and this item's rule binds both --- a clause deleted
+from the page is deleted from the README in the same commit. (The GHCJS-era
+page's community features are deliberately not restored, and the page `<title>`
+stays hardcoded --- Appendix B.)
 
 **Rulings** --- ruled on 2026-08-07: the banner is a post-condition of every
 capability item. Each such item's landing sequence ends with its own banner
@@ -1512,8 +1511,8 @@ data CellLayer = LayerSquare | LayerMono
   deriving (Show, Eq, Ord, Enum, Bounded)
 
 -- | Device advance of one cell: a box for square
-(@Sdl.hs:tgtR = SDL.Rectangle (vp (col@), a half for mono
-(@Sdl.hs:halfSize) (row@).
+-- (@Sdl.hs:tgtR = SDL.Rectangle (vp (col@), a half for mono
+-- (@Sdl.hs:halfSize) (row@).
 cellPitch :: LayoutMetrics -> CellLayer -> Int
 cellPitch lm = \case
   LayerSquare -> lmBoxSize lm
@@ -2152,7 +2151,7 @@ additionally benchmarking the *deployed* artifact from `../lambdahack.github.io`
 rather than the build tree. This phase repurposes those targets for the wasm
 build, restoring the browser half of the native-vs-browser benchmark comparison.
 
-Independent of Phases 1--2; only 3.1 touches the engine, and it's the same
+Independent of Phases 1--2; only 3.1 touches Haskell, and it's the same
 mechanism R4 needs anyway.
 
 ### 3.1 Argv into the reactor: `lhStart` reads WASI args
