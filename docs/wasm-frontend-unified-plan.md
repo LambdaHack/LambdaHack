@@ -91,16 +91,16 @@ carries an outcome line.
 >   is deliberate: the pointman records have no such case and need no such word.
 >
 > The distinction a reader will trip on is **open** against **not applied**,
-> because the work list's ledger sorts by item number and not by it: 1.6 and 2.1
-> are two rows of one table and mean different things --- a finished game leaves
-> a page that looks live, while `OverlayLayout` is a module nobody has written.
-> The first is a bug report, the second a specification, and only the second may
-> be edited to match a tree that moved. The rule fires at the item and the state
-> lives in the ledger, so before editing any claim in an item's body, read
-> that item's row in the work list: `landed` means leave it alone. The state
-> *label* is deliberately not repeated at the item --- a second copy
-> of the column is what drifts out of step with it. Two things are
-> not that copy: the outcome line, which is the landing's own frozen record
+> because the work list's ledger sorts by item number and not by it: R1 and 2.1
+> are two rows of one table and mean different things --- a tab killed mid-save
+> leaves saves of mixed generations, while `OverlayLayout` is a module nobody
+> has written. The first is a bug report, the second a specification, and only
+> the second may be edited to match a tree that moved. The rule fires
+> at the item and the state lives in the ledger, so before editing any claim
+> in an item's body, read that item's row in the work list: `landed` means leave
+> it alone. The state *label* is deliberately not repeated at the item ---
+> a second copy of the column is what drifts out of step with it. Two things
+> are not that copy: the outcome line, which is the landing's own frozen record
 > rather than a label, and a `standing` item saying so where its **Split**
 > or **Owns** turns on it, as 1.4's and R2's do --- *this row never flips*
 > is a rule about their commits, not a reading of the column.
@@ -1351,6 +1351,12 @@ on a later tick escapes the promise, as 3.2 records, and so this handler. R4's
 on-page message for a rejected parameter is a branch of the same handler,
 whichever of the two items lands first creating it. 1.4's rule reaches no banner
 clause here.
+
+*Landed in `2e9908375`, the Split's (1). Beyond this body: a save-and-exit
+through the main menu resolved `lhStart`'s promise, in Firefox and in Chromium,
+rather than rejecting it with `ExitSuccess`, so the ruling's premise holds.*
+
+*Its hand-back confirmed by Mikolaj on 2026-10-22.*
 
 **Rulings** --- ruled 2026-10-20 by Mikolaj: the loader signals the end,
 on `lhStart`'s settlement, and not `shutdown` through a new import in SDL's
