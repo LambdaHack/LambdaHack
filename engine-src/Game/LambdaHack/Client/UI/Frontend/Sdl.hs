@@ -48,9 +48,9 @@ import           Game.LambdaHack.Client.UI.Frontend.CellStyle
 import           Game.LambdaHack.Client.UI.Frontend.Common
 import           Game.LambdaHack.Client.UI.Frontend.InputDecision
 import           Game.LambdaHack.Client.UI.Frontend.MouseCursor
+import           Game.LambdaHack.Client.UI.Frontend.OverlayLayout
 import           Game.LambdaHack.Client.UI.Frontend.Screenshot
 import qualified Game.LambdaHack.Client.UI.Key as K
-import           Game.LambdaHack.Client.UI.Overlay
 import           Game.LambdaHack.Client.UI.PointUI
 import           Game.LambdaHack.Common.Area (punindex)
 import           Game.LambdaHack.Common.ClientOptions
@@ -472,6 +472,8 @@ drawFrame coscreen ClientOptions{..} sess@FrontendSession{..} curFrame = do
   prevFrame <- readIORef spreviousFrame
   let halfSize = squareFontSize `div` 2
       boxSize = 2 * halfSize
+      screenWidth = rwidth coscreen
+      lm = mkLayoutMetrics halfSize screenWidth
       tt2Square = Vect.V2 (toEnum boxSize) (toEnum boxSize)
       vp :: Int -> Int -> Vect.Point Vect.V2 CInt
       vp x y = Vect.P $ Vect.V2 (toEnum x) (toEnum y)
@@ -527,16 +529,10 @@ drawFrame coscreen ClientOptions{..} sess@FrontendSession{..} curFrame = do
         SDL.freeSurface textSurface
         return textTexture
       -- This also frees the surface it gets.
-      scaleSurfaceToTextureProp :: Int -> Int -> SDL.Surface -> Bool
-                                -> IO (Int, SDL.Texture)
-      scaleSurfaceToTextureProp x row textSurfaceRaw allSpace = do
-        Vect.V2 sw sh <- SDL.surfaceDimensions textSurfaceRaw
-        let widthRaw = fromEnum sw
-            remainingWidth = rwidth coscreen * boxSize - x
-            width | widthRaw <= remainingWidth = widthRaw
-                  | allSpace = remainingWidth
-                  | otherwise = remainingWidth - boxSize
-            height = min boxSize $ fromEnum sh
+      scaleSurfaceToTextureProp :: Int -> SDL.Surface -> IO SDL.Texture
+      scaleSurfaceToTextureProp width textSurfaceRaw = do
+        Vect.V2 _ sh <- SDL.surfaceDimensions textSurfaceRaw
+        let height = min boxSize $ fromEnum sh
             xsrc = 0
             ysrc = max 0 (fromEnum sh - height) `divUp` 2
             srcR = SDL.Rectangle (vp xsrc ysrc)
@@ -558,9 +554,7 @@ drawFrame coscreen ClientOptions{..} sess@FrontendSession{..} curFrame = do
         SDL.freeSurface textSurfaceRaw
         textTexture <- SDL.createTextureFromSurface srenderer textSurface
         SDL.freeSurface textSurface
-        when (width /= widthRaw && not allSpace) $
-          setSquareChar (rwidth coscreen - 1) row Color.trimmedLineAttrW32
-        return (width, textTexture)
+        return textTexture
       -- <https://www.libsdl.org/projects/SDL_ttf/docs/SDL_ttf_42.html#SEC42>
       -- Note that @Point@ here refers to screen coordinates with square font
       -- (as @PointSquare@ normally should) and not game map coordinates.
@@ -574,25 +568,23 @@ drawFrame coscreen ClientOptions{..} sess@FrontendSession{..} curFrame = do
           let Point{..} = punindex (rwidth coscreen) i
           setSquareChar px py (Color.AttrCharW32 w)
           return $! i + 1
-      drawMonoOverlay :: OverlaySpace -> IO ()
-      drawMonoOverlay =
-        mapM_ (\(PointUI x y, al) ->
-                 let lineCut = take (2 * rwidth coscreen - x) al
-                 in drawMonoLine x y lineCut)
-      drawMonoLine :: Int -> Int -> AttrString -> IO ()
-      drawMonoLine _ _ [] = return ()
-      drawMonoLine x row (w : rest) = do
-        setMonoChar x row w
-        drawMonoLine (x + 1) row rest
+      drawCellRun :: CellRun -> IO ()
+      drawCellRun CellRun{..} =
+        let setChar = case crLayer of
+              LayerSquare -> setSquareChar
+              LayerMono -> setMonoChar
+            drawCells _ [] = return ()
+            drawCells !col (w : rest) = do
+              setChar col crRow w
+              drawCells (col + 1) rest
+        in drawCells crCol crCells
       setMonoChar :: Int -> Int -> Color.AttrCharW32 -> IO ()
       setMonoChar !x !row !w = do
         atlas <- readIORef smonoAtlas
-        let Color.AttrChar{acAttr=Color.Attr{fg=fgRaw, bg}, acChar} =
+        let Color.AttrChar{acAttr=Color.Attr{fg=fgRaw}, acChar} =
               Color.attrCharFromW32 w
             fg = rowColor row fgRaw
             ac = Color.attrChar2ToW32 fg acChar
-            !_A = assert (bg `elem` [ Color.HighlightNone
-                                    , Color.HighlightNoneCursor ]) ()
         textTexture <- case EM.lookup ac atlas of
           Nothing -> do
             textSurfaceRaw <-
@@ -605,17 +597,6 @@ drawFrame coscreen ClientOptions{..} sess@FrontendSession{..} curFrame = do
         let tt2Mono = Vect.V2 (toEnum halfSize) (toEnum boxSize)
             tgtR = SDL.Rectangle (vp (x * halfSize) (row * boxSize)) tt2Mono
         SDL.copy srenderer textTexture Nothing (Just tgtR)
-      drawSquareOverlay :: OverlaySpace -> IO ()
-      drawSquareOverlay =
-        mapM_ (\(pUI, al) ->
-                 let PointSquare col row = uiToSquare pUI
-                     lineCut = take (rwidth coscreen - col) al
-                 in drawSquareLine col row lineCut)
-      drawSquareLine :: Int -> Int -> AttrString -> IO ()
-      drawSquareLine _ _ [] = return ()
-      drawSquareLine col row (w : rest) = do
-        setSquareChar col row w
-        drawSquareLine (col + 1) row rest
       setSquareChar :: Int -> Int -> Color.AttrCharW32 -> IO ()
       setSquareChar !col !row !w = do
         atlas <- readIORef squareAtlas
@@ -636,50 +617,29 @@ drawFrame coscreen ClientOptions{..} sess@FrontendSession{..} curFrame = do
         SDL.copy srenderer textTexture Nothing (Just tgtR)
         -- Potentially overwrite a portion of the glyph.
         chooseAndDrawHighlight col row csBorder
-      drawPropOverlay :: OverlaySpace -> IO ()
-      drawPropOverlay =
-        mapM_ (\(PointUI x y, al) ->
-                 drawPropLine (x * halfSize) y al)
-      drawPropLine :: Int -> Int -> AttrString -> IO ()
-      drawPropLine _ _ [] = return ()
-      drawPropLine x _ _ | x >= (rwidth coscreen - 1) * boxSize =
-        -- This chunk starts at $ sign or beyond so, for KISS, reject it.
-        return ()
-      drawPropLine x row (w : rest) = do
-        let isSpace = (== Color.spaceAttrW32)
-            Color.AttrChar{acAttr=Color.Attr{fg=fgRaw, bg}} =
-              Color.attrCharFromW32
-              $ if isSpace w
-                then case filter (not . isSpace) rest of
-                  w2 : _ -> w2
-                  [] -> w
-                else w
-            sameAttr ac = Color.fgFromW32 ac == fgRaw
-                          || isSpace ac  -- matches all colours
-            (sameRest, otherRest) = span sameAttr rest
-            !_A = assert (bg `elem` [ Color.HighlightNone
-                                    , Color.HighlightNoneCursor ]) ()
-            fg | even row && fgRaw == Color.White = Color.AltWhite
-               | otherwise = fgRaw
-            t = T.pack . attrStringToString  $ w : sameRest
-        width <- drawPropChunk x row fg t
-        drawPropLine (x + width) row otherRest
-      drawPropChunk :: Int -> Int -> Color.Color -> T.Text -> IO Int
-      drawPropChunk x row fg t = do
-        let font = if fg >= Color.White && fg /= Color.BrBlack
-                   then spropFont
-                   else sboldFont
-            allSpace = T.all Char.isSpace t
+      drawPropLine :: PropLine -> IO ()
+      drawPropLine line =
+        drawPropChunks (plRow line) (startPropLine lm line) (plChunks line)
+      drawPropChunks :: Int -> PropCursor -> [PropChunk] -> IO ()
+      drawPropChunks _ _ [] = return ()
+      drawPropChunks _ cur _ | propCutoff lm cur = return ()
+      drawPropChunks row cur (chunk : rest) = do
+        let font = case pcFont chunk of
+              PropRegular -> spropFont
+              PropBold -> sboldFont
+            fg = pcColor chunk
         textSurfaceRaw <- TTF.shaded (fromJust font) (colorToRGBA fg)
-                                     blackRGBA t
-        (width, textTexture) <-
-          scaleSurfaceToTextureProp x row textSurfaceRaw allSpace
-        let tgtR = SDL.Rectangle (vp x (row * boxSize))
-                                 (Vect.V2 (toEnum width) (toEnum boxSize))
+                                     blackRGBA (pcText chunk)
+        Vect.V2 sw _ <- SDL.surfaceDimensions textSurfaceRaw
+        let PropFit{..} = propFit lm cur chunk (fromEnum sw)
+        textTexture <- scaleSurfaceToTextureProp pfWidthPx textSurfaceRaw
+        let tgtR = SDL.Rectangle (vp pfXPx (row * boxSize))
+                                 (Vect.V2 (toEnum pfWidthPx) (toEnum boxSize))
         -- Potentially overwrite some of the screen.
         SDL.copy srenderer textTexture Nothing (Just tgtR)
         SDL.destroyTexture textTexture
-        return width
+        mapM_ drawCellRun pfMarker
+        drawPropChunks row pfNext rest
   let arraysEqual = singleArray curFrame == singleArray prevFrame
       overlaysEqual =
         singleMonoOverlay curFrame == singleMonoOverlay prevFrame
@@ -694,12 +654,11 @@ drawFrame coscreen ClientOptions{..} sess@FrontendSession{..} curFrame = do
     texture <- readIORef stexture
     SDL.rendererRenderTarget srenderer SDL.$= Just texture
     SDL.copy srenderer basicTexture Nothing Nothing  -- overwrite last content
-    -- Mono overlay rendered last, because more likely to come after
-    -- the proportional one and so to have a warning message about overrun
-    -- that needs to be overlaid on top of the proportional overlay.
-    drawPropOverlay $ singlePropOverlay curFrame
-    drawSquareOverlay $ singleSquareOverlay curFrame
-    drawMonoOverlay $ singleMonoOverlay curFrame
+    -- In the order of the fields, mono last.
+    let FrameLayout{..} = layOutFrame screenWidth curFrame
+    mapM_ drawPropLine flProp
+    mapM_ drawCellRun flSquare
+    mapM_ drawCellRun flMono
     writeIORef spreviousFrame curFrame
     SDL.rendererRenderTarget srenderer SDL.$= Nothing
     SDL.copy srenderer texture Nothing Nothing  -- overwrite the backbuffer
