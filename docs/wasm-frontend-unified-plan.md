@@ -521,6 +521,13 @@ only that the plan was written is one the next reader has to skip.
   through chromedriver from xtradeb's chromium-driver package,
   so `make page-gate` runs its assertions in headless Firefox and in headless
   Chromium.
+- 2026-10-22 -- the same chords in Chromium 156, and in plain fullscreen, 1.3's
+  today, in both browsers. A Chromium window keeps from the page `C-t`
+  and the four tab keys, `C-q` and `C-P` reaching it; plain fullscreen passes
+  Chromium every chord but `C-Esc`, which leaves fullscreen, and Firefox none
+  of the seven it keeps in a window, `C-Esc` lost besides; fullscreen
+  with the lock, `keyboardLock: "browser"` in Firefox
+  and `navigator.keyboard.lock()` in Chromium, passes every chord in both.
 
 ## Repo facts the plan builds on
 
