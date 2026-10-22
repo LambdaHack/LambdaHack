@@ -56,3 +56,5 @@ one file as drifted until the neutral wording lands in horde-ad too. The
 defect records were seeded from the horde-ad docstrings rather than watched
 failing in this tree; the port commit is their fix_rev because this tree's
 copies did carry every one of the bugs until it.
+
+2026-10-22, item 0.4's Split (0). The first timing chain ran with Firefox 159's terms-of-use modal over the page, which also swallowed the '?' meant for the menu shots; it was redone with the modal suppressed. The canvas frames then showed dim red pixels in blank cells, first read as lying 5 pixels into a cell, which no overhang could explain; the Firefox window's content starts 5 screen pixels in, so they sat in the neighbour's first column, and a per-glyph test in Firefox showed 194 of the 385 glyphs spilling exactly one pixel there. The clip went in before the cause was known, on B.10's ruling; the test came after, when asked which glyphs it clips.
