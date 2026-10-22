@@ -1655,7 +1655,7 @@ itself, run against null, lazy and Teletype natively and against the real
 in the record.
 
 **Split** --- two commits, as the item's own staging says: the native harness,
-which must precede 2.1, then the wasm stage, which only adds the same goldens
+which must precede 2.4, then the wasm stage, which only adds the same goldens
 to `make test-wasm` and to R2's existing job. The second carries the outcome
 line and the `tools/doc-refs-allow.txt` deletion.
 
@@ -1679,13 +1679,14 @@ neither `contract` nor `LR-flip`, which the listing cannot show and only reading
 the marker can.
 
 **Hands back** --- *judgement*: whether the digest is actually sensitive to what
-2.1 and 2.4 change is the entire value of the item, and no run answers it ---
-a green golden that guards nothing looks exactly like a green golden that guards
+2.4 changes is the entire value of the item, and no run answers it --- a green
+golden that guards nothing looks exactly like a green golden that guards
 everything. The substitute gate is the non-vacuity proof the standing checks
-demand of any new self-checking assertion: perturb one drawing or layout input,
-re-run `cabal test --test-options='-p "/fe-golden/"'` --- this item's own
-marker, never the bare `golden` the tasty-tag rule forbids --- expect failure,
-and record the perturbation next to the test.
+demand of any new self-checking assertion: perturb one input to the frames
+or overlays the engine builds, re-run
+`cabal test --test-options='-p "/fe-golden/"'` --- this item's own marker, never
+the bare `golden` the tasty-tag rule forbids --- expect failure, and record
+the perturbation next to the test.
 
 **Decide first** --- nothing; the rulings are the record's.
 
@@ -1819,7 +1820,7 @@ capability constants / sum-typed selection --- standalone refactors, any
 RawFrontend contract --- haddock and checklist any time; the native harness
     after 0.1, whose input-side cases create its module; the wasm case
     with 0.3
-determinism goldens --- native harness before 2.1; cross-backend under
+determinism goldens --- native harness before 2.4; cross-backend under
     R2's test-wasm job
 R1 --- independent but for its save-lag re-measurement, after 3.2
 R4 --- after 3.1, which leaves it loader-only

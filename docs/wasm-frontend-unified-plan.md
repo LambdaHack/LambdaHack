@@ -543,6 +543,11 @@ only that the plan was written is one the next reader has to skip.
   the game ended replaces the banner's text, a status line under the banner,
   as first built, having looked iffy. Fullscreen hides the banner, so the page
   leaves fullscreen first.
+- 2026-10-23 -- ruled by Mikolaj at 2.1's landing: 2.1 lands ahead
+  of the determinism goldens its row depends on, the frames their harness
+  captures being the engine's, upstream of the `Sdl.hs` drawing 2.1 rewrote;
+  a screenshot comparison of each of its `Sdl.hs` steps with the commit before
+  stands in for them, and their native harness now precedes 2.4.
 
 ## Repo facts the plan builds on
 
@@ -2812,32 +2817,32 @@ already compiles and runs under both native (`cabal test`) and wasm
 (`make test-wasm`), and `test/SessionUIMock.hs` already unwinds key macros
 through the real `HandleHumanM` machinery. Add golden tests --- fixed seed,
 scripted keys, committed digests, in the two ruled families: frame-and-overlay
-digests from the scripted machinery, which are the 2.1/2.4 gate, and final-state
+digests from the scripted machinery, which are 2.4's gate, and final-state
 digests from a seeded whole game --- in two stages. The native-only harness
-lands **before 2.1**: it guards the two most dangerous shared-code changes
-in the plan (2.1's `Sdl.hs` refactor and 2.4's flip) regardless of wasm.
-Then the same goldens run under `make test-wasm`, routine in CI since R2's first
-jobs landed --- catching native-vs-wasm *behavioral* drift (FFI-adjacent paths,
-numeric assumptions) that per-frontend unit tests can't. Medium effort.
+lands **before 2.4**: it guards that flip regardless of wasm, 2.1 having landed
+ahead of it by the Log's ruling of 2026-10-23. Then the same goldens run
+under `make test-wasm`, routine in CI since R2's first jobs landed --- catching
+native-vs-wasm *behavioral* drift (FFI-adjacent paths, numeric assumptions)
+that per-frontend unit tests can't. Medium effort.
 
-**Rulings** --- all three ruled on 2026-08-07. (1) Two golden families,
-as the body now states: frame-and-overlay digests --- the family 2.1's
-extraction and 2.4's flip actually gate on, which a game-state digest cannot see
---- and final-state digests, guarding macro and command semantics
-and the cross-backend behavioral drift the wasm stage exists for; the digest
-fold is shared between them. (2) Each family runs on the harness that naturally
-produces its input: the frame family on the scripted `CliMock`/`SessionUIMock`
-machinery (`UnitTestHelpers.hs:newtype CliMock a = CliMock`,
-`scriptedFchanFrontend` at `UnitTestHelpers.hs:scriptedFchanFrontend ::`,
-`scriptedCliState` at `UnitTestHelpers.hs:scriptedCliState ::`), whose scripted
-frontend captures the very frames the digest guards, and the state family
-on a seeded whole game through `tieKnot` ---
-the `--frontendNull --benchmark --stopAfterFrames` shape the Makefile bench
-targets use, which the suite already depends on and which captures no frames,
-the reason it cannot serve the first family. (3) The digest is a hand-rolled
-FNV-style fold over the `Binary` `encode` bytes --- dependency-free,
-deterministic, trivially resolving under `wasm32-wasi-cabal` ---
-with the digests as committed hex literals in the test file: no data file,
+**Rulings** --- all three ruled on 2026-08-07, (1) re-cut on 2026-10-23
+for 2.1's landing. (1) Two golden families, as the body now states:
+frame-and-overlay digests --- the family 2.4's flip actually gates on, which
+a game-state digest cannot see --- and final-state digests, guarding macro
+and command semantics and the cross-backend behavioral drift the wasm stage
+exists for; the digest fold is shared between them. (2) Each family runs
+on the harness that naturally produces its input: the frame family
+on the scripted `CliMock`/`SessionUIMock` machinery
+(`UnitTestHelpers.hs:newtype CliMock a = CliMock`, `scriptedFchanFrontend`
+at `UnitTestHelpers.hs:scriptedFchanFrontend ::`, `scriptedCliState`
+at `UnitTestHelpers.hs:scriptedCliState ::`), whose scripted frontend captures
+the very frames the digest guards, and the state family on a seeded whole game
+through `tieKnot` --- the `--frontendNull --benchmark --stopAfterFrames` shape
+the Makefile bench targets use, which the suite already depends on and which
+captures no frames, the reason it cannot serve the first family. (3) The digest
+is a hand-rolled FNV-style fold over the `Binary` `encode` bytes ---
+dependency-free, deterministic, trivially resolving under `wasm32-wasi-cabal`
+--- with the digests as committed hex literals in the test file: no data file,
 no preopen-path coupling in the wasm run, and a legitimate golden change is one
 pasted literal in a reviewable diff; `tasty-golden` and `hashable` stay out
 of the stanza.
