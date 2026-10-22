@@ -41,6 +41,7 @@ import ItemRevUnitTests
 import LevelUnitTests
 import MonadClientUIUnitTests
 import ReqFailureUnitTests
+import ScreenshotUnitTests
 import SessionUIUnitTests
 
 main :: IO ()
@@ -64,6 +65,7 @@ tests = testGroup "Tests" [ actorStateUnitTests
                           , itemRevUnitTests
                           , levelUnitTests
                           , reqFailureUnitTests
+                          , screenshotUnitTests
                           , macroTests
                           , monadClientUIUnitTests
                           , integrationTests

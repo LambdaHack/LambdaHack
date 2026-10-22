@@ -46,6 +46,7 @@ import           Game.LambdaHack.Client.UI.Frame
 import           Game.LambdaHack.Client.UI.Frontend.Common
 import           Game.LambdaHack.Client.UI.Frontend.InputDecision
 import           Game.LambdaHack.Client.UI.Frontend.MouseCursor
+import           Game.LambdaHack.Client.UI.Frontend.Screenshot
 import qualified Game.LambdaHack.Client.UI.Key as K
 import           Game.LambdaHack.Client.UI.Overlay
 import           Game.LambdaHack.Client.UI.PointUI
@@ -724,12 +725,8 @@ printScreen FrontendSession{..} = do
   tryCreateDir $ dataDir </> "screenshots"
   utcTime <- getCurrentTime
   timezone <- getTimeZone utcTime
-  let unspace = map $ \c -> case c of  -- prevent the need for backquoting
-        ' ' -> '_'
-        ':' -> '.'
-        _ -> c
-      dateText = unspace $ take 25 $ show $ utcToLocalTime timezone utcTime
-      fileName = dataDir </> "screenshots" </> "prtscn" <> dateText <.> "bmp"
+  let fileName = dataDir </> "screenshots"
+                 </> screenshotName timezone utcTime <.> "bmp"
       SDL.Internal.Types.Renderer renderer = srenderer
   Vect.V2 sw sh <- SDL.get $ SDL.windowSize swindow
   ptrOut <- SDL.Raw.Video.createRGBSurface 0 sw sh 32 0 0 0 0

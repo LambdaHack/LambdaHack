@@ -255,6 +255,7 @@ library
                       Game.LambdaHack.Client.UI.Frontend.Common
                       Game.LambdaHack.Client.UI.Frontend.InputDecision
                       Game.LambdaHack.Client.UI.Frontend.MouseCursor
+                      Game.LambdaHack.Client.UI.Frontend.Screenshot
                       Game.LambdaHack.Client.UI.Frontend.Teletype
                       Game.LambdaHack.Client.UI.HandleHelperM
                       Game.LambdaHack.Client.UI.HandleHumanGlobalM
@@ -507,6 +508,7 @@ test-suite test
                       LevelUnitTests
                       MonadClientUIUnitTests
                       ReqFailureUnitTests
+                      ScreenshotUnitTests
                       SessionUIMock
                       SessionUIUnitTests
                       UnitTestHelpers
@@ -523,6 +525,7 @@ test-suite test
                       ,tasty-quickcheck
                       ,tasty-hunit
                       ,text
+                      ,time
                       ,transformers
                       ,vector
   if os(wasi)
