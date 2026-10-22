@@ -1061,6 +1061,12 @@ the URI and the hotspot both from `cursor.ts` --- the keyword staying
 as the fallback. Pixel-parity with the native pointer, sourced from the one
 canonical definition. Verify by hovering, both before and after the switch.
 
+*Landed in `0a72de79c`, as designed, the Split's second commit after
+`91d75ca5e`.*
+
+*Its hand-back confirmed by Mikolaj on 2026-10-22 on the deployed page:
+the pointer over the map is SDL's crosshair, shown at once.*
+
 ### 1.2 Screenshots: make `Ctrl+P` real (small)
 
 Today `C-P` -> `PrintScreen` -> `printScreenHuman` shows *"Screenshot printed."*
