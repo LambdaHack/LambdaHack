@@ -83,6 +83,11 @@ frontendName = "wasm"
 -- | Set up the frontend input and output.
 startup :: ScreenContent -> ClientOptions -> IO RawFrontend
 startup coscreen soptions@ClientOptions{sprintEachScreen} = do
+  -- Where the fontset does not resolve, say why, as @Sdl.hs@ does, but go on.
+  case resolveFonts soptions of
+    Left reason -> hPutStrLn stderr $
+      "Fonts not resolved, every text drawn in the map font: " ++ reason
+    Right _ -> return ()
   js_configure $ toJSString $ startupPayload soptions
   rfWithoutPrintScreen <-
     createRawFrontend coscreen (display coscreen sprintEachScreen) shutdown
@@ -96,8 +101,8 @@ startup coscreen soptions@ClientOptions{sprintEachScreen} = do
 -- auxiliary fonts as 'resolveFonts' resolves them for @Sdl.hs@ too, under
 -- @propRegular@, @propBold@ and @mono@, each a file name and a size in
 -- pixels; a bitmap font, which no browser loads, is left out, and all of
--- them where the fontset does not resolve, the page drawing every text in
--- the map font then.
+-- them where the fontset does not resolve, which 'startup' reports, the
+-- page drawing every text in the map font then.
 startupPayload :: ClientOptions -> String
 startupPayload soptions@ClientOptions{sallFontsScale} =
   jsonObject $ [ ("allFontsScale", show scale)
