@@ -104,9 +104,7 @@ loopCli ccui sUIOptions clientOptions startsNewGame = do
   debugPossiblyPrint $ cliendKindText <+> "client"
                        <+> tshow side <+> "starting 2/4."
   -- At this point @ClientState@ not overriten dumbly and @State@ valid.
-  tabA <- createTabBFS
-  tabB <- createTabBFS
-  modifyClient $ \cli -> cli {stabs = (tabA, tabB)}
+  initTabsBFS
   cmd1 <- receiveResponse
   debugPossiblyPrint $ cliendKindText <+> "client"
                        <+> tshow side <+> "starting 3/4."

@@ -4,7 +4,7 @@ module Game.LambdaHack.Common.Point
   ( Point(..), PointI
   , chessDist, euclidDistSq, adjacent, bresenhamsLineAlgorithm, fromTo
   , originPoint, insideP
-  , speedupHackXSize
+  , speedupHackXSize, setSpeedupHackXSize
 #ifdef EXPOSE_INTERNAL
     -- * Internal operations
   , bresenhamsLineAlgorithmBegin, balancedWord
@@ -31,13 +31,21 @@ import Game.LambdaHack.Definition.Defs
 -- Perhaps this can be done cleanly and efficiently at link-time
 -- via Backpack, but it's probably not supported yet by GHCJS (not verified).
 -- For now, we need to be careful never to modify this array,
--- except for setting it at program start before it's used for the first time.
+-- except for setting it at program start before it's used for the first time,
+-- and in the test harness before each test, every fixture being one width.
 -- Which is easy, because @Point@ is never mentioned in content definitions.
 -- The @PrimArray@ has much smaller overhead than @IORef@
 -- and reading from it looks cleaner, hence its use.
 speedupHackXSize :: PA.PrimArray X
 {-# NOINLINE speedupHackXSize #-}
 speedupHackXSize = PA.primArrayFromList [80]  -- updated at program startup
+
+-- | Set the X size of the dungeon 'speedupHackXSize' holds.
+setSpeedupHackXSize :: X -> IO ()
+setSpeedupHackXSize width = do
+  thawed <- PA.unsafeThawPrimArray speedupHackXSize
+  PA.writePrimArray thawed 0 width
+  void $ PA.unsafeFreezePrimArray thawed
 
 -- | 2D points in cartesian representation. Coordinates grow to the right
 -- and down, so that the (0, 0) point is in the top-left corner

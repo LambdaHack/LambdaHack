@@ -443,7 +443,6 @@ library this-game-src
                       ,file-embed >= 0.0.11
                       ,ghc-compact
                       ,optparse-applicative
-                      ,primitive
                       ,splitmix
                       ,template-haskell
                       ,text

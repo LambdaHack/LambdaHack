@@ -221,9 +221,8 @@ handleHumanLocalMUnitTests = testGroup "handleHumanLocalMUnitTests"
     -- aiming pipeline, with no walkable tiles needed, because both
     -- verdicts are failures: with the xhair on C's own position, A's line
     -- to it is blocked by the (unwalkable, unknown) terrain, while C's
-    -- line to itself is degenerate. The heroes are moved to row 0 first,
-    -- the only row of the stub board the aiming pipeline can index (see
-    -- 'enumRowStride').
+    -- line to itself is degenerate. A is moved one cell further from C
+    -- first, so that the unknown cell between them blocks its line.
     -- After the live-read design lands, @psuitReq@ loses its ActorId
     -- argument and reads the live pointman, so the two calls below become
     -- one call before and one after a pointman switch.
@@ -232,13 +231,12 @@ handleHumanLocalMUnitTests = testGroup "handleHumanLocalMUnitTests"
       $ do
       let moveTo pos b = b {bpos = pos}
           cliS = partyCliState {cliState =
-            updateActorD (EM.adjust (moveTo (Point 0 0)) testActorId
-                          . EM.adjust (moveTo (Point 2 0)) testActorId2)
+            updateActorD (EM.adjust (moveTo (Point 0 1)) testActorId)
                          (cliState partyCliState)}
           testFn = do
             updateClientLeader testActorId
             modifySession $ \sess ->
-              sess {sxhair = Just $ TPoint TUnknown testLevelId (Point 2 0)}
+              sess {sxhair = Just $ TPoint TUnknown testLevelId (bpos heroC)}
             resA <- psuitReq testActorId
             resC <- psuitReq testActorId2
             let verdict = fromLeft "suitability computed"

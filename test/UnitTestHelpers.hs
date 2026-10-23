@@ -82,7 +82,8 @@ import           Game.LambdaHack.Client.UI.SessionUI
 import           Game.LambdaHack.Client.UI.UIOptions (UIOptions (..))
 import           Game.LambdaHack.Common.Actor
   (Actor (..), ResDelta (..), Watchfulness (..))
-import           Game.LambdaHack.Common.Area (Area, toArea, trivialArea)
+import           Game.LambdaHack.Common.Area
+  (Area, punindex, toArea, trivialArea)
 import           Game.LambdaHack.Common.ClientOptions
   (ClientOptions (..), FullscreenMode (..), defClientOptions)
 import           Game.LambdaHack.Common.Faction (Faction (..))
@@ -93,11 +94,12 @@ import           Game.LambdaHack.Common.Level (Level (..))
 import           Game.LambdaHack.Common.Misc (FontSet (..))
 import           Game.LambdaHack.Common.MonadStateRead
 import           Game.LambdaHack.Common.Perception (emptyPer)
-import           Game.LambdaHack.Common.Point (Point (..))
+import           Game.LambdaHack.Common.Point (Point (..), setSpeedupHackXSize)
 import qualified Game.LambdaHack.Common.PointArray as PointArray
 import           Game.LambdaHack.Common.State
   ( State
   , emptyState
+  , scops
   , unknownTileMap
   , updateActorD
   , updateActorMaxSkills
@@ -264,7 +266,7 @@ testArea :: Area
 testArea = fromJust(toArea (0, 0, 0, 0))
 
 testLevelDimension :: Int
-testLevelDimension = 3
+testLevelDimension = 4
 
 stubLevel :: Level
 stubLevel = Level
@@ -498,17 +500,10 @@ actorUIB = ActorUI { bsymbol = 'b', bname = "Bruno"
 actorUIC = ActorUI { bsymbol = 'c', bname = "Cadet"
                    , bpronoun = "he/him", bcolor = BrGreen }
 
--- | The stride the 'Point' 'Enum' instance puts between rows: it reads
--- @speedupHackXSize@, still at its default 80 in the test binary rather
--- than at the level width, and 'PointArray' indexes by that encoding. So
--- an array to be read at any @y > 0@ has to be this wide, whatever width
--- the content declares for the level.
-enumRowStride :: Int
-enumRowStride = fromEnum (Point 0 1)
-
 -- | A walkable stub board, for tests whose aiming or altering pipeline
 -- has to get past the terrain: the heroes' two positions are floor, the
--- rest of the array is impenetrable wall.
+-- rest of the board, around them and between them and its edge, is
+-- impenetrable wall.
 --
 -- The fence is not decoration. The BFS -- which any frame drawn with an
 -- xhair set queries, for the path to the xhair -- walks tile
@@ -516,13 +511,20 @@ enumRowStride = fromEnum (Point 0 1)
 -- tiles it cannot path through; a board that lets it reach the array's
 -- edge crashes on an out-of-bounds index instead. Unknown space would not
 -- fence it either (see 'wallTile'). That is why
--- 'stubLevel' -- nine unfenced cells of unknown space -- is no use for
--- such tests, and why this board is a full row stride wide.
+-- 'stubLevel' -- unfenced unknown space -- is no use for such tests.
+--
+-- The array is unfolded in index order, each index read by 'punindex' at
+-- the board's width, rather than updated by 'PointArray.//', whose
+-- 'fromEnum' reads the width 'executorCli' sets: a test may build its
+-- fixture before 'executorCli' runs.
 walkableLevel :: Level
 walkableLevel = stubLevel
-  { ltile = PointArray.replicateA enumRowStride testLevelDimension wallTileId
-            PointArray.// [(bpos heroA, floorTileId), (bpos heroC, floorTileId)]
-  }
+  { ltile = PointArray.unfoldrNA testLevelDimension testLevelDimension
+                                 (\i -> (tileAt i, i + 1)) 0 }
+ where
+  tileAt i = if punindex testLevelDimension i `elem` [bpos heroA, bpos heroC]
+             then floorTileId
+             else wallTileId
 
 partyCliStateWith :: Level -> Faction -> [(ActorId, Actor, ActorUI)] -> CliState
 partyCliStateWith lvl fact actorTriples =
@@ -589,8 +591,8 @@ partyCliStateScripted = scriptedCliState partyCliState
 
 -- | Dialog prompts wrap via @indentSplitAttrString@, which asserts a
 -- screen wider than 4, so tests that open real dialogs enlarge the stub
--- screen first. The level can stay 3x3: the map is drawn over
--- @rWidthMax@/@rHeightMax@, which the stub content keeps at 3.
+-- screen first. The level can stay 4x4: the map is drawn over
+-- @rWidthMax@/@rHeightMax@, which the stub content keeps at 4.
 enlargeScreen :: SessionUI -> SessionUI
 enlargeScreen = resizeScreen 24 12
 
@@ -631,17 +633,6 @@ withSkills skills cliS = cliS {cliState =
 -- | The skill to fling, and no other.
 projectSkills :: Ability.Skills
 projectSkills = Ability.addSk Ability.SkProject 1 Ability.zeroSkills
-
--- | Fill in the BFS scratch arrays that 'emptyStateClient' leaves
--- 'undefined', as the real client does once at startup
--- (@Client.LoopM.loopCli@) and 'executorCli' does for every test: any
--- frame drawn while an xhair is set needs them, the path to the xhair
--- being a BFS query.
-initBfsTabs :: MonadClient m => m ()
-initBfsTabs = do
-  tabA <- createTabBFS
-  tabB <- createTabBFS
-  modifyClient $ \cli -> cli {stabs = (tabA, tabB)}
 
 
 -- * Monad harness mock
@@ -700,8 +691,20 @@ instance MonadClientAtomic CliMock where
   {-# INLINE execPutState #-}
   execPutState = putState
 
+-- | Run a test under the mock as the game starts a client. The width the
+-- 'Point' 'Enum' instance reads is set to the stub content's, every fixture's,
+-- as @TieKnot@ sets it to the game's, so that a level's rows lie that far
+-- apart whatever ran before. And the BFS scratch arrays are filled in, as the
+-- client fills them, any frame drawn while an xhair is set needing them, the
+-- path to the xhair being a BFS query.
 executorCli :: CliMock a -> CliState -> IO (a, CliState)
-executorCli m = runStateT $ runCliMock $ initBfsTabs >> m
+executorCli m cliS = do
+  setSpeedupHackXSize testLevelDimension
+  flip runStateT cliS $ runCliMock $ do
+    width <- getsState $ rWidthMax . corule . scops
+    let !_A = assert (width == testLevelDimension) ()
+    initTabsBFS
+    m
 
 
 -- | Transform 'Report' type to a list of 'Text'.

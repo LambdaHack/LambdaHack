@@ -3316,7 +3316,7 @@ player-visible value. No rework, no benchmark experiment. Why the hack exists
 instances of `Point` and `Vector`, because `Enum` methods can't take a width
 argument and these conversions sit in the engine's hottest loops; `PrimArray`
 was chosen over `IORef` explicitly for lower read overhead; it is mutated
-exactly once, at startup (`TieKnot.hs:speedupHackXSizeThawed <-`,
+exactly once, at startup (`Point.hs:setSpeedupHackXSize width = do`,
 `unsafeThaw`/write/`unsafeFreeze`), before first use; the comment names Backpack
 as the possible clean alternative, unverified over GHCJS-era doubts (moot
 for wasm, untested for the JS backend). The candidate reworks that were
@@ -3325,7 +3325,9 @@ would have touched FOV/pathfinding/`PointArray` hot loops and required
 before/after runs of the bench battery to prove no regression --- cost
 with no payoff, hence the rejection. This paragraph is the hack's documentation
 of record. (The *frontend-side* rule --- explicit `punindex`, no benchmark
-needed --- is adopted; see Multi-frontend practices.)
+needed --- is adopted; see Multi-frontend practices.) *Since 2026-10-23 the test
+harness also sets it, before each test it runs under the mock, to the stub
+board's width.*
 
 **B.7 No-action findings from the alignment analysis** (kept self-contained
 since the superseded document may be deleted):

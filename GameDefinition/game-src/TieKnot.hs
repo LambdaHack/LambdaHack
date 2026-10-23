@@ -9,7 +9,6 @@ import Prelude ()
 import Game.LambdaHack.Core.Prelude
 
 import           Control.Concurrent.Async
-import qualified Data.Primitive.PrimArray as PA
 import           GHC.Compact
 import qualified System.Random.SplitMix32 as SM
 
@@ -18,7 +17,7 @@ import qualified Game.LambdaHack.Client.UI.Content.Input as IC
 import qualified Game.LambdaHack.Client.UI.Content.Screen as SC
 import           Game.LambdaHack.Client.UI.ContentClientUI
 import           Game.LambdaHack.Common.Kind
-import           Game.LambdaHack.Common.Point (speedupHackXSize)
+import           Game.LambdaHack.Common.Point (setSpeedupHackXSize)
 import qualified Game.LambdaHack.Common.Tile as Tile
 import qualified Game.LambdaHack.Content.CaveKind as CK
 import qualified Game.LambdaHack.Content.FactionKind as FK
@@ -61,10 +60,7 @@ tieKnotForAsync options@ServerOptions{ sallClear
                                      , sboostRandomItem
                                      , sdungeonRng } = do
   -- Set the X size of the dungeon from content ASAP, before it's used.
-  speedupHackXSizeThawed <- PA.unsafeThawPrimArray speedupHackXSize
-  PA.writePrimArray speedupHackXSizeThawed 0 $
-    RK.rWidthMax Content.RuleKind.standardRules
-  void $ PA.unsafeFreezePrimArray speedupHackXSizeThawed
+  setSpeedupHackXSize $ RK.rWidthMax Content.RuleKind.standardRules
   -- This setup ensures the boosting option doesn't affect generating initial
   -- RNG for dungeon, etc., and also, that setting dungeon RNG on commandline
   -- equal to what was generated last time, ensures the same item boost.

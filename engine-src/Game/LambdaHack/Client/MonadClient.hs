@@ -7,7 +7,7 @@ module Game.LambdaHack.Client.MonadClient
   , MonadClient(modifyClient)
     -- * Assorted primitives
   , getClient, putClient
-  , debugPossiblyPrint, createTabBFS, dumpTextFile, rndToAction
+  , debugPossiblyPrint, initTabsBFS, dumpTextFile, rndToAction
   , condInMeleeM, insertInMeleeM
   ) where
 
@@ -68,6 +68,14 @@ createTabBFS = do
   liftIO $ stToIO $ do
     tabAMutable <- PA.newPrimArray (rWidthMax * rHeightMax)  -- always enough
     PA.unsafeFreezePrimArray tabAMutable
+
+-- | Fill in the BFS scratch arrays, which 'emptyStateClient' leaves
+-- undefined, once the state, and so the content, is valid.
+initTabsBFS :: MonadClient m => m ()
+initTabsBFS = do
+  tabA <- createTabBFS
+  tabB <- createTabBFS
+  modifyClient $ \cli -> cli {stabs = (tabA, tabB)}
 
 dumpTextFile :: MonadClientRead m => Text -> FilePath -> m FilePath
 dumpTextFile t filename = liftIO $ do
