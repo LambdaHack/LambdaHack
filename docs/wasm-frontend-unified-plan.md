@@ -2235,8 +2235,14 @@ list of the same shape G1 fights. Then `getFontSetup`
 
 ```haskell
 multiFont = Frontend.supportsMultiFont soptions
-            && not (T.null (fontPropRegular chosenFontset))
+            && either error (isJust . Frontend.cfAuxiliary)
+                      (Frontend.resolveFonts soptions)
 ```
+
+*Ruled 2026-10-23 by Mikolaj: on a fontset that does not resolve the browser
+matches SDL exactly, its startup dying with `resolveFonts`'s reason as SDL's
+does, so the `error` above is unreachable under both; the work list's 2.4
+schedules it before the flip.*
 
 Re-check `test/MonadClientUIUnitTests.hs`'s `getFontSetup works in stub` after
 the flip. It is platform-independent today, and stays so only as long

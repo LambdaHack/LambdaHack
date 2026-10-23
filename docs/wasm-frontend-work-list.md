@@ -120,7 +120,7 @@ sections of the record are frozen and which live is its head callout's to say.
 | 2.1 | `OverlayLayout` extraction + `Sdl.hs` on it and on `CellStyle` | medium--large | 0.2 for `CellStyle`; determinism goldens (native harness) | landed -- bfd562927 |
 | 2.2 | browser canvas overlay renderer + font wiring | medium | 2.1, 0.2, 0.4; 1.5 for the startup call | landed -- e549ef42e |
 | 2.3 | overlay transport over JSFFI | medium | 2.1, 2.2; 0.3 for the end-to-end battery | not applied |
-| 2.4 | multi-font capability flip | tiny diff, big review | 2.1--2.3; determinism goldens | not applied |
+| 2.4 | multi-font capability flip | tiny diff, big review | 2.1--2.3; determinism goldens; 0.1 for `FrontendContractUnitTests.hs` | not applied |
 | 2.5 | post-flip QA | small | 2.4; 1.2 for `Ctrl+P` | not applied |
 | 3.1 | `lhStart` reads WASI argv | small | --- | landed -- 77e64a697 |
 | 3.2 | Node driver for the game reactor | small | 3.1, 0.3 | not applied |
@@ -1114,7 +1114,7 @@ is spent at 2.4 instead.
 
 ### 2.4 Flip the switch --- as a capability, not a name list
 
-**Split** --- six commits, and the split is the point. (1) the capability
+**Split** --- seven commits, and the split is the point. (1) the capability
 mechanism, behaviour-preserving: `supportsMultiFont` exported by `Sdl.hs`
 (`True`), `Wasm.hs` (`False`, for now), `ANSI.hs` and `Teletype.hs` (`False`),
 the `Frontend.hs` dispatch mirroring `frontendName`'s CPP-guarded guard chain
@@ -1123,19 +1123,29 @@ it (`MonadClientUI.hs:= Frontend.frontendName`), and the new
 `MonadClientUIUnitTests.hs` case pinning it. This is provably a no-op: today's
 gate is `frontendName soptions == "sdl"`, already `False` for wasm, ANSI,
 Teletype, null and lazy alike, so a dispatch true only for `Sdl.hs` reproduces
-it exactly --- which is why (1) may land at any time. (2)
-`Wasm.supportsMultiFont = True`, one line and nothing else. (3) the page gate's
-overlay assertion made unconditional, `ts-src/page-gate.mjs`'s
-`PAGE_GATE_OVERLAYS` switch deleted with the gate table's mention of it
-and the `tools/mutants-deep.py` mutant anchored on it, since a check that runs
-only where a caller sets a variable is skipped by every plain `make page-gate`.
-(4) the banner commit this item's **Owns** carries under 1.4's rule:
-the "proportional fonts" and "limited to the square font" clauses come off
-`GameDefinition/index.html` and the second off `README.md` too, run with 1.4's
-**Done** and only those phrases in the alternation. (5) the re-anchoring (1)
-owes: it rewrites the `multiFont` gate in `MonadClientUI.hs`, which every
-citation of that line anchors on. (6) the outcome line naming (2)'s hash
-and the ledger flip; this item has no `tools/doc-refs-allow.txt` entries.
+it exactly --- which is why (1) may land at any time. (2) the browser matching
+SDL exactly on a fontset that does not resolve: its startup dies
+with `resolveFonts`'s reason,
+as `Sdl.hs:ChosenFonts{..} <- either die return $ resolveFonts soptions` does,
+where today it reports the reason and goes on with every text in the map font,
+so that `getFontSetup`, which resolves the fontset under the browser too once
+(3) lands, never meets one the startup let through; the two tests that start
+the browser frontend on `defClientOptions`, whose fontset does not resolve
+(`FrontendContractUnitTests.hs:startupUnderTest coscreen = Wasm.startup coscreen defClientOptions`
+and `FfiCoverageUnitTests.hs:rf <- Wasm.startup coscreen defClientOptions`), get
+options that resolve. (3) `Wasm.supportsMultiFont = True`, one line and nothing
+else. (4) the page gate's overlay assertion made unconditional,
+`ts-src/page-gate.mjs`'s `PAGE_GATE_OVERLAYS` switch deleted with the gate
+table's mention of it and the `tools/mutants-deep.py` mutant anchored on it,
+since a check that runs only where a caller sets a variable is skipped by every
+plain `make page-gate`. (5) the banner commit this item's **Owns** carries
+under 1.4's rule: the "proportional fonts" and "limited to the square font"
+clauses come off `GameDefinition/index.html` and the second off `README.md` too,
+run with 1.4's **Done** and only those phrases in the alternation. (6)
+the re-anchoring (1) owes: it rewrites the `multiFont` gate
+in `MonadClientUI.hs`, which every citation of that line anchors on. (7)
+the outcome line naming (3)'s hash and the ledger flip; this item has
+no `tools/doc-refs-allow.txt` entries.
 
 **Owns** --- `engine-src/Game/LambdaHack/Client/UI/Frontend/Sdl.hs`,
 `engine-src/Game/LambdaHack/Client/UI/Frontend/Wasm.hs`,
@@ -1143,8 +1153,9 @@ and the ledger flip; this item has no `tools/doc-refs-allow.txt` entries.
 `engine-src/Game/LambdaHack/Client/UI/Frontend/Teletype.hs`,
 `engine-src/Game/LambdaHack/Client/UI/Frontend.hs`,
 `engine-src/Game/LambdaHack/Client/UI/MonadClientUI.hs`,
-`test/MonadClientUIUnitTests.hs`, `ts-src/page-gate.mjs`,
-`tools/mutants-deep.py` (both for (3), with this document's gate table),
+`test/MonadClientUIUnitTests.hs`, `test/FrontendContractUnitTests.hs`,
+`test/FfiCoverageUnitTests.hs` (both for (2)), `ts-src/page-gate.mjs`,
+`tools/mutants-deep.py` (both for (4), with this document's gate table),
 `GameDefinition/index.html`, `README.md` --- the "proportional fonts"
 and "limited to the square font" clauses its flip falsifies, the second of them
 in both files since the `#status` div quotes the README, deleted in this item's
@@ -1161,12 +1172,12 @@ nothing cited here.
 **Done** --- `native`, `ts`, `wasm`, `deploy`, `page`, `docs`, plus
 `make test-medium`.
 
-**Hands back** --- *browser*: commit (2) is the moment players see something
+**Hands back** --- *browser*: commit (3) is the moment players see something
 different, and it is the whole human-review budget of Phase 2 concentrated
 into a one-line diff --- menus, message log, help and item descriptions
 rendering in the proportional fonts, and the mono-overwrites-prop overrun
 behaving. That concentration is what the split buys: the mechanism is reviewed
-in (1) with no behaviour change, the risk in (2) with no mechanism left
+in (1) with no behaviour change, the risk in (3) with no mechanism left
 to re-read. In Done instead: `cabal test` pins the capability itself through
 the new `MonadClientUIUnitTests.hs` case --- which is what stops the stub's
 `sfrontendNull = True` from making the flip merely not-broken rather

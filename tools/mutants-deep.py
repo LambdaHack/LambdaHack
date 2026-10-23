@@ -48,7 +48,7 @@ MUTANTS = [
      '../engine-src/Game/LambdaHack/Client/UI/Frontend/Wasm.hs',
      '  Ex.handle reportException body\n  rts_scheduleWork\n',
      '  Ex.handle reportException body\n', PAGE_GATE),
-    # Overlays required before 2.4 submits any; 2.4's commit (3), which
+    # Overlays required before 2.4 submits any; 2.4's commit (4), which
     # deletes the switch, deletes this mutant with its anchor.
     ('page gate: overlays required before 2.4', '../ts-src/page-gate.mjs',
      'const wantOverlays = process.env.PAGE_GATE_OVERLAYS === "1";\n',
