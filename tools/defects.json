@@ -273,6 +273,20 @@
    "harm": "latent",
    "discovery": "review",
    "notes": "Found by the code review of 2026-10-23 over the year's diff. Measured that day before the fix: about twelve frames a second arrive before any key, in both browsers. The gate as a whole still caught a lost key, through the quiet-screen wait the Escape assertion began with; what was vacuous was the ok line of its own assertion. A tier-1 record: the corpus root is tools/, and the gate needs a wasm build and two browsers."
+  },
+  {
+   "id": "FrameMUnitTests-01",
+   "program": "test/FrameMUnitTests.hs",
+   "name": "AS7 was named and documented as pinning a rendered HUD frame, but the stub frontends never build a frame and the stub board cannot, so a crash inside a frame's construction passed it",
+   "family": "false-comment",
+   "fix_rev": "self",
+   "trigger": "an `error` planted in drawFrameTerrain's per-cell function, `DrawM.hs:g !pI !tile`",
+   "ok": "AS7, now `promptGetKey draws a HUD frame`, and test/CLAUDE.md say the frame is never built, and why",
+   "bug": "AS7 `promptGetKey renders a HUD frame on the stub board` passed with the error planted, its name, its comment and test/CLAUDE.md saying the frame rendered",
+   "proved": "ran",
+   "harm": "latent",
+   "discovery": "review",
+   "notes": "Found by the code review of 2026-10-23 over the year's diff. Making both stub frontends force each frame was tried that day and dropped by Mikolaj's ruling, since AS7 and six dialog tests then failed on three fixture gaps in turn: the empty cocave the status line names its level's cave from, index 81 of a 9-element vector, (1,1) under the Enum width hack, and DrawM.hs's status-line width assertion against the stub's 3-column rules. test/CLAUDE.md records the three. A tier-1 record: the corpus root is tools/, and the case is the test suite's."
   }
  ]
 }

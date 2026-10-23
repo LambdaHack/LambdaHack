@@ -306,7 +306,7 @@ handleHumanLocalMUnitTests = testGroup "handleHumanLocalMUnitTests"
   , -- [contract] The first test through the real dialog machinery:
     -- chooseItemHuman opens the equipment store dialog
     -- (chooseItemDialogMode -> getStoreItem -> displayChoiceScreen),
-    -- which renders its frames and
+    -- which draws its frames and
     -- reads keys via promptGetKey -- answered ESC by the stub frontend --
     -- so the dialog exits with "never mind". Also pins promptGetKey's
     -- second engine call site (SlideshowM.hs:421). The screen (not the

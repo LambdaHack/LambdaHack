@@ -185,13 +185,15 @@ promptGetKeyContractTests =
       (result, _) <- executorCli testFn partyCliState
       result @?= (KeyMacro [], False, Just testActorId)
 
-  , -- [contract] Rendered (non-blank) frames work under the mock too:
-    -- promptGetKey with onBlank = False draws the full HUD frame
-    -- (drawHudFrame) over the stub board before reading the key. Pinned
-    -- because the full-dialog coverage plan (leader-desync-bug.md sec. 13)
-    -- depends on dialogs rendering on the tiny fixture.
+  , -- [contract] Non-blank frames run under the mock too: promptGetKey
+    -- with onBlank = False runs drawHudFrame over the stub board before
+    -- reading the key. The frame it yields is never built, the stub
+    -- frontends leaving it unforced and the stub board unable to build one
+    -- (test/CLAUDE.md), so a crash inside its construction passes here.
+    -- Pinned because the full-dialog coverage plan (leader-desync-bug.md
+    -- sec. 13) depends on dialogs running on the tiny fixture.
     testCase
-      "contract AS7: promptGetKey renders a HUD frame on the stub board" $ do
+      "contract AS7: promptGetKey draws a HUD frame on the stub board" $ do
       let testFn = do
             updateClientLeader testActorId
             promptGetKey ColorFull EM.empty False []

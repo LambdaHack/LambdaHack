@@ -2284,7 +2284,7 @@ Stated jointly, the classifications mean:
 | AS4 | natural end: no macro -> run cancelled, pointman *not* restored (sec. 01 branch-exactness) |
 | AS5 | abort via illegal macro key: macro wiped, run cancelled, pointman *restored* to the run leader --- the hidden write, pinned through the real `promptGetKey` |
 | AS6 | abort via `sreqQueried = False`: same outcome through the other interrupt input that `macroStep` must reproduce |
-| AS7 | rendered (non-blank) frames work under the mock: `drawHudFrame` over the stub board --- pinned because the end-to-end fling test above depends on it |
+| AS7 | non-blank frames run under the mock: `drawHudFrame` over the stub board, the frame itself never built (`test/CLAUDE.md` says why) --- pinned because the end-to-end fling test above depends on it |
 | AS8 | keys voiced from a macro are recorded into an in-game macro being defined --- the "recorded here, not in @UI.humanCommand@" semantics that sec. 04's audit step keeps inside the primitive |
 | AS9 | abort via a disturbing report --- the third interrupt input, driven by the real `stopPlayBack`: same outcome as AS5/AS6 |
 | AS10 | the F1 exemption: a help-displaying macro survives the same disturbing report --- voiced, run intact, pointman untouched |
