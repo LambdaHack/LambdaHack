@@ -574,6 +574,9 @@ only that the plan was written is one the next reader has to skip.
   written.
 - 2026-10-23 -- the removal ruled in the entry above written as R8, its design
   and Mikolaj's preference for reverting 5b7b552a6 in B.12.
+- 2026-10-23 -- R8's **Decide first** ruled by Mikolaj: the mono layer keeps
+  a routine of its own in both frontends, `setSquareChar` being SDL's per-cell
+  hot path and the two frontends kept matching; B.12's Rulings has it.
 
 ## Repo facts the plan builds on
 
@@ -3512,6 +3515,14 @@ on 2026-10-23 conflicts in one hunk, the `chooseAndDrawHighlight` that 955dae890
 and 3fcc93a1e rewrote, and cannot reach the rule's copies made since, which
 are edits by hand either way. Whether `cellRunOps`, once it draws no ring
 for those kinds, draws the mono layer too is R8's **Decide first**.
+
+**Rulings** --- one, ruled 2026-10-23 by Mikolaj, closing R8's **Decide first**:
+both frontends keep the mono layer's routine apart from the square one's,
+`setMonoChar` beside `setSquareChar` in SDL and `monoRunOps` beside `cellRunOps`
+in the browser, though once the ring goes one routine could draw both layers
+in each, given a font, its baseline and a glyph table without the dim-dot swap.
+`setSquareChar` is SDL's per-cell hot path, and the two frontends are kept
+matching.
 
 ---
 

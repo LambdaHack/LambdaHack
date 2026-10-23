@@ -1521,16 +1521,15 @@ rather than black for the three uncoloured kinds, with its haddock, its tests
 and the fixtures its freshness case rewrites, `Sdl.hs` following if the border's
 type changes; `terminal-core.ts`'s `highlightColor` and `cellRunOps` drawing
 no stroke for those kinds, with their tests and `overlay-core.test.ts`'s marker
-case; and **Decide first** (1)'s branch. (3) the correction of the live claims
-(1) and (2) falsify, G2 under What would falsify this among them,
-and the re-anchoring the citation pass names, if any. (4) the outcome line
-under B.12 naming (1)'s and (2)'s hashes, and the ledger flip.
+case. (3) the correction of the live claims (1) and (2) falsify, G2 under What
+would falsify this among them, and the re-anchoring the citation pass names,
+if any. (4) the outcome line under B.12 naming (1)'s and (2)'s hashes,
+and the ledger flip.
 
 **Owns** --- `engine-src/Game/LambdaHack/Client/UI/Frontend/Sdl.hs`,
 `engine-src/Game/LambdaHack/Client/UI/Frontend/CellStyle.hs`,
 `test/CellStyleUnitTests.hs`, `ts-src/src/generated/fixtures.json`,
-`ts-src/src/terminal-core.ts` and its test, `ts-src/src/overlay-core.test.ts`,
-`ts-src/src/overlay-core.ts` on **Decide first** (1)'s second branch,
+`ts-src/src/terminal-core.ts` and its test, `ts-src/src/overlay-core.test.ts`
 and `docs/wasm-frontend-unified-plan.md`.
 
 **Done** --- `native`, `ts`, `wasm`, `deploy`, `page`, `docs`, plus
@@ -1543,11 +1542,7 @@ around a cell without a coloured highlight, and that a coloured highlight leaves
 nothing behind when it moves, on SDL 2.0.18 or later. The substitute gate
 in Done is the screenshot pair.
 
-**Decide first** --- (1) once `cellRunOps` draws no ring for those kinds,
-whether it also draws the mono layer, taking a face and a glyph table,
-`monoRunOps` going; or `monoRunOps` stays, differing from it in face
-and in leaving the dim dot alone. Deferred here by the Log's ruling
-of 2026-10-23 at 2.2's landing.
+**Decide first** --- nothing; the rulings are the record's.
 
 ## Multi-frontend practices (adopted)
 
