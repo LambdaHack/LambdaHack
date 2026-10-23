@@ -315,6 +315,20 @@
    "harm": "latent",
    "discovery": "review",
    "notes": "Found by the code review of 2026-10-23 over the year's diff; both directions watched that day on an unoptimized build. A tier-1 record: the corpus root is tools/, and the case is the test suite's."
+  },
+  {
+   "id": "HandleHumanLocalMUnitTests-01",
+   "program": "test/HandleHumanLocalMUnitTests.hs",
+   "name": "the ESC store-dialog test, and its scripted-Tab sibling, put the item in sitemD and the bag but gave it no role in sroles, so the dialog listed nothing and the item setup had no effect",
+   "family": "vacuous-check",
+   "fix_rev": "self",
+   "trigger": "the ESC test with its updateItemD and giveItem lines deleted",
+   "ok": "withEqpItem gives the item its role, and the new Return twin, which selects it, fails without the role: expected `(Nothing,Just (ItemId 113,CEqp,False))`, got `(Just \"*never mind*\",Nothing)`",
+   "bug": "the ESC test passed with the item setup deleted",
+   "proved": "ran",
+   "harm": "latent",
+   "discovery": "review",
+   "notes": "Found by the code review of 2026-10-23 over the year's diff; the Tab sibling, which had the same dead setup, was found by asking where else that shape occurs. The twin carries no [contract] marker, which would move the count docs/leader-desync-migration.md tracks. A tier-1 record: the corpus root is tools/, and the case is the test suite's."
   }
  ]
 }

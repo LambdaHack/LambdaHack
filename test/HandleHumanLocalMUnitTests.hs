@@ -76,6 +76,22 @@ aimAtHeroC :: MonadClientUI m => m ()
 aimAtHeroC = modifySession $ \sess ->
   sess {sxhair = Just $ TPoint TUnknown testLevelId (bpos heroC)}
 
+-- A's equipment holds the stub item, with the role the store dialog lists
+-- an item by: without the role the dialog reads the store as empty,
+-- however full the bag.
+withEqpItem :: CliState -> CliState
+withEqpItem cliS = cliS
+  { cliState = updateItemD (EM.insert testItemId stubItem)
+               $ updateActorD (EM.adjust giveItem testActorId)
+               $ cliState cliS
+  , cliSession = seeItem <$> cliSession cliS }
+ where
+  giveItem b = b {beqp = EM.singleton testItemId (1, [])}
+  seeItem sess = let ItemRoles roles = sroles sess
+                 in sess {sroles = ItemRoles
+                                   $ EM.adjust (ES.insert testItemId) SItem
+                                               roles}
+
 handleHumanLocalMUnitTests :: TestTree
 handleHumanLocalMUnitTests = testGroup "handleHumanLocalMUnitTests"
   [ testCase "verify stubLevel has tile element" $
@@ -309,21 +325,32 @@ handleHumanLocalMUnitTests = testGroup "handleHumanLocalMUnitTests"
     -- which draws its frames and
     -- reads keys via promptGetKey -- answered ESC by the stub frontend --
     -- so the dialog exits with "never mind". Also pins promptGetKey's
-    -- second engine call site (SlideshowM.hs:421). The screen (not the
-    -- level) is enlarged first: dialog prompts wrap via
-    -- indentSplitAttrString, which asserts a screen wider than 4.
+    -- second engine call site (SlideshowM.hs:421). The store lists A's
+    -- item, so the screen (not the level) is enlarged for an item menu's
+    -- two panes and the BFS the item's description queries is set up.
     testCase "contract chooseItemHuman: ESC exits the real store dialog" $ do
-      let giveItem b = b {beqp = EM.singleton testItemId (1, [])}
-          cliS = partyCliState {cliState =
-              updateItemD (EM.insert testItemId stubItem)
-            $ updateActorD (EM.adjust giveItem testActorId)
-            $ cliState partyCliState}
-          testFn = do
-            modifySession enlargeScreen
+      let testFn = do
+            modifySession enlargeScreenForItems
+            initBfsTabs
             updateClientLeader testActorId
             chooseItemHuman testActorId (MStore CEqp)
-      (result, _) <- executorCli testFn cliS
+      (result, _) <- executorCli testFn (withEqpItem partyCliState)
       fmap showFailError result @?= Just "*never mind*"
+
+  , -- The ESC test's twin: a scripted Return picks the item the store
+    -- dialog lists first, which only a listed item can be, and the dialog
+    -- returns with it selected.
+    testCase "chooseItemHuman: Return selects the listed item of a store" $ do
+      cliS0 <- partyCliStateScripted [K.returnKM]
+      let testFn = do
+            modifySession enlargeScreenForItems
+            initBfsTabs
+            updateClientLeader testActorId
+            merr <- chooseItemHuman testActorId (MStore CEqp)
+            itemSel <- getsSession sitemSel
+            return (fmap showFailError merr, itemSel)
+      (result, _) <- executorCli testFn (withEqpItem cliS0)
+      result @?= (Nothing, Just (testItemId, CEqp, False))
 
   , -- [contract] The mid-dialog pointman switch through the REAL dialog
     -- machinery: a scripted Tab inside A's equipment-store dialog runs the
@@ -340,17 +367,13 @@ handleHumanLocalMUnitTests = testGroup "handleHumanLocalMUnitTests"
       "contract chooseItemHuman: scripted Tab switches pointman mid-dialog"
       $ do
       cliS0 <- partyCliStateScripted [K.mkKM "Tab"]
-      let giveItem b = b {beqp = EM.singleton testItemId (1, [])}
-          cliS = cliS0 {cliState =
-              updateItemD (EM.insert testItemId stubItem)
-            $ updateActorD (EM.adjust giveItem testActorId)
-            $ cliState cliS0}
-          testFn = do
-            modifySession enlargeScreen
+      let testFn = do
+            modifySession enlargeScreenForItems
+            initBfsTabs
             updateClientLeader testActorId
             merr <- chooseItemHuman testActorId (MStore CEqp)
             leaderAfter <- getsClient sleader
             return (fmap showFailError merr, leaderAfter)
-      (result, _) <- executorCli testFn cliS
+      (result, _) <- executorCli testFn (withEqpItem cliS0)
       result @?= (Just "*never mind*", Just testActorId2)
   ]
