@@ -7,8 +7,6 @@ module UnitTestHelpers
   , reportToTexts
   , stubLevel
   , walkableLevel
-  , floorTileId
-  , wallTileId
   , stubState
   , stubCliState
   , stubItem
@@ -32,11 +30,11 @@ module UnitTestHelpers
   , partyCliStateWalkable
   , partyCliStateScripted
   , scriptedCliState
-  , initBfsTabs
   , enlargeScreen
-  , enlargeScreenForItems
+  , withEqpItems
+  , withSkills
+  , projectSkills
   , runParamsA
-  , scriptedFchanFrontend
 #ifdef EXPOSE_INTERNAL
     -- * Internal operations
   , fchanFrontendStub
@@ -52,6 +50,7 @@ import qualified Control.Monad.IO.Class as IO
 import           Control.Monad.Trans.State.Strict
   (StateT (StateT, runStateT), gets, state)
 import qualified Data.EnumMap.Strict as EM
+import qualified Data.EnumSet as ES
 import           Data.IORef (newIORef, readIORef, writeIORef)
 import qualified Data.Text as Text
 
@@ -78,7 +77,8 @@ import qualified Game.LambdaHack.Client.UI.Key as K
 import           Game.LambdaHack.Client.UI.Msg
 import           Game.LambdaHack.Client.UI.Overlay
 import           Game.LambdaHack.Client.UI.PointUI (PointUI (..))
-import           Game.LambdaHack.Client.UI.SessionUI (RunParams (..))
+import           Game.LambdaHack.Client.UI.SessionUI
+  (ItemRoles (..), RunParams (..))
 import           Game.LambdaHack.Client.UI.UIOptions (UIOptions (..))
 import           Game.LambdaHack.Common.Actor
   (Actor (..), ResDelta (..), Watchfulness (..))
@@ -104,6 +104,7 @@ import           Game.LambdaHack.Common.State
   , updateCOpsAndCachedData
   , updateDungeon
   , updateFactionD
+  , updateItemD
   )
 import qualified Game.LambdaHack.Common.Tile as Tile
 import           Game.LambdaHack.Common.Time (timeZero)
@@ -115,7 +116,7 @@ import qualified Game.LambdaHack.Content.TileKind as TK
 import qualified Game.LambdaHack.Core.Dice as Dice
 import qualified Game.LambdaHack.Definition.Ability as Ability
 import           Game.LambdaHack.Definition.Color (Color (..))
-import           Game.LambdaHack.Definition.Defs (ContentId, X, Y)
+import           Game.LambdaHack.Definition.Defs (ContentId, SLore (..), X, Y)
 import           Game.LambdaHack.Definition.DefsInternal (toContentId)
 import           Game.LambdaHack.Definition.Flavour
 
@@ -150,8 +151,11 @@ scriptedFchanFrontend kms = do
         km : rest -> do
           writeIORef keysRef rest
           return KMP {kmpKeyMod = km, kmpPointer = PointUI 0 0}
-        [] -> return KMP {kmpKeyMod = K.escKM, kmpPointer = PointUI 0 0}
-    _ -> case fchanFrontendStub of ChanFrontend stub -> stub req
+        [] -> stub req
+    _ -> stub req
+ where
+  stub :: FrontReq a -> IO a
+  stub req = case fchanFrontendStub of ChanFrontend f -> f req
 
 -- * Mock client state implementation
 
@@ -197,14 +201,8 @@ stubClientOptions = defClientOptions
                           , fontPropRegular = "propRegular"
                           , fontPropBold = "propBold"
                           , fontMono = "mono" })]
-  -- Unit tests never want the real, platform-specific frontend (Sdl/Dom/
-  -- Wasm): they already stand in for it via 'fchanFrontendStub' below.
-  -- Reporting the null frontend here keeps Frontend.frontendName and
-  -- Frontend.chanFrontendIO from ever calling into it -- good test
-  -- isolation regardless of platform, and doubly so for wasm32-wasi:
-  -- Frontend.Wasm uses GHC's JSFFI, and even just linking it into the
-  -- test binary (let alone calling it) requires the JS glue that
-  -- `make test-wasm` sets up via run-wasm-test.mjs.
+  -- Unit tests stand in for the frontend with 'fchanFrontendStub' above,
+  -- so they report the null one ("null test" to Frontend.frontendName).
   , sfrontendNull = True
   }
 
@@ -381,24 +379,27 @@ testActorWithItem :: Actor
 testActorWithItem =
   testActor { beqp = EM.singleton testItemId (1,[])}
 
+-- | An empty state with the stub content, built once for every stub state.
+stubCOpsState :: State
+stubCOpsState = updateCOpsAndCachedData stubCOpsUpdate emptyState
+
+-- | A stub state of one level and one faction, holding the given actors,
+-- none of them skilled.
+stateWith :: Level -> Faction -> [(ActorId, Actor)] -> State
+stateWith lvl fact actors =
+  let factionUpdate _ = EM.singleton testFactionId fact
+      actorDUpdate _ = EM.fromList actors
+      actorMaxSkillsUpdate _ =
+        EM.fromList $ map (\(aid, _) -> (aid, Ability.zeroSkills)) actors
+      dungeonUpdate _ = EM.singleton testLevelId lvl
+      s1 = updateFactionD factionUpdate stubCOpsState
+      s2 = updateActorD actorDUpdate s1
+      s3 = updateActorMaxSkills actorMaxSkillsUpdate s2
+  in updateDungeon dungeonUpdate s3
+
 -- Stublike state that should barely function for testing.
 stubState :: State
-stubState =
-  let singletonFactionUpdate _ = EM.singleton testFactionId testFaction
-      singletonDungeonUpdate _ = EM.singleton testLevelId stubLevel
-      singletonActorDUpdate _ = EM.singleton testActorId testActor
-      singletonActorMaxSkillsUpdate _ =
-        EM.singleton testActorId Ability.zeroSkills
-      stateWithMaxLevelDimension =
-        updateCOpsAndCachedData stubCOpsUpdate emptyState
-      stateWithFaction =
-        updateFactionD singletonFactionUpdate stateWithMaxLevelDimension
-      stateWithActorD = updateActorD singletonActorDUpdate stateWithFaction
-      stateWithActorMaxSkills =
-        updateActorMaxSkills singletonActorMaxSkillsUpdate stateWithActorD
-      stateWithDungeon =
-        updateDungeon singletonDungeonUpdate stateWithActorMaxSkills
-  in stateWithDungeon
+stubState = stateWith stubLevel testFaction [(testActorId, testActor)]
 
 testStateWithItem :: State
 testStateWithItem =
@@ -429,16 +430,20 @@ stubSessionUI =
     , schanF = fchanFrontendStub
     }
 
+-- | The stub faction's client state over the given state.
+stubClient :: State -> StateClient
+stubClient s = (emptyStateClient testFactionId)
+  { soptions = stubClientOptions
+  , sfper = EM.singleton testLevelId emptyPer
+  , salter = createSalter s }
+    -- the client's cached per-level alter-skill map; the BFS indexes it by
+    -- level id, so without it any frame drawn while an xhair is set (the
+    -- path to the xhair is a BFS query) dies on a missing key
+
 stubCliState :: CliState
 stubCliState = CliState
   { cliState = stubState
-  , cliClient = (emptyStateClient testFactionId)
-      { soptions = stubClientOptions
-      , sfper = EM.singleton testLevelId emptyPer
-      , salter = createSalter stubState }
-        -- the client's cached per-level alter-skill map; the BFS indexes
-        -- it by level id, so without it any frame drawn while an xhair is
-        -- set (the path to the xhair is a BFS query) dies on a missing key
+  , cliClient = stubClient stubState
   , cliSession = let target = TPoint TUnknown testLevelId (Point 1 0)
                  in Just (stubSessionUI {sxhair = Just target})
   }
@@ -470,11 +475,8 @@ partyFaction = testFaction
 -- between levels is banned ('bannedPointmanSwitchBetweenLevels' is 'True').
 -- Used to pin the banned-faction semantics of the cycling commands.
 partyFactionBanned :: Faction
-partyFactionBanned = testFaction
-  { gkind = emptyUIFaction { FK.fskillsOther = Ability.meleeAdjacent
-                           , FK.fhasPointman = True
-                           , FK.fspawnsFast = True }
-  , gunderAI = False }
+partyFactionBanned =
+  partyFaction {gkind = (gkind partyFaction) {FK.fspawnsFast = True}}
 
 -- | Live heroes of 'partyFaction' on 'testLevelId'. @A@ ('testActorId')
 -- is the run's original leader; @C@ ('testActorId2') is the member a
@@ -513,8 +515,7 @@ enumRowStride = fromEnum (Point 0 1)
 -- neighbourhoods without bounds checks, as every real level is ringed by
 -- tiles it cannot path through; a board that lets it reach the array's
 -- edge crashes on an out-of-bounds index instead. Unknown space would not
--- fence it, either: its @talter@ of 1 is exactly the skill the BFS raises
--- itself to, so as to path through unexplored terrain. That is why
+-- fence it either (see 'wallTile'). That is why
 -- 'stubLevel' -- nine unfenced cells of unknown space -- is no use for
 -- such tests, and why this board is a full row stride wide.
 walkableLevel :: Level
@@ -523,39 +524,26 @@ walkableLevel = stubLevel
             PointArray.// [(bpos heroA, floorTileId), (bpos heroC, floorTileId)]
   }
 
-partyStateWith :: Level -> Faction -> [(ActorId, Actor)] -> State
-partyStateWith lvl fact actors =
-  let factionUpdate _ = EM.singleton testFactionId fact
-      actorDUpdate _ = EM.fromList actors
-      actorMaxSkillsUpdate _ =
-        EM.fromList $ map (\(aid, _) -> (aid, Ability.zeroSkills)) actors
-      dungeonUpdate _ = EM.singleton testLevelId lvl
-      s0 = updateCOpsAndCachedData stubCOpsUpdate emptyState
-      s1 = updateFactionD factionUpdate s0
-      s2 = updateActorD actorDUpdate s1
-      s3 = updateActorMaxSkills actorMaxSkillsUpdate s2
-  in updateDungeon dungeonUpdate s3
-
 partyCliStateWith :: Level -> Faction -> [(ActorId, Actor, ActorUI)] -> CliState
 partyCliStateWith lvl fact actorTriples =
-  let s = partyStateWith lvl fact $ map (\(aid, b, _) -> (aid, b)) actorTriples
+  let s = stateWith lvl fact $ map (\(aid, b, _) -> (aid, b)) actorTriples
   in CliState
     { cliState = s
-    , cliClient = (emptyStateClient testFactionId)
-        { soptions = stubClientOptions
-        , sfper = EM.singleton testLevelId emptyPer
-        , salter = createSalter s }  -- see 'stubCliState'
+    , cliClient = stubClient s
     , cliSession = Just $ stubSessionUI
         { sactorUI =
             EM.fromList $ map (\(aid, _, bUI) -> (aid, bUI)) actorTriples }
     }
 
+-- | Heroes @A@ and @C@, the party of every two-hero fixture.
+twoHeroes :: [(ActorId, Actor, ActorUI)]
+twoHeroes = [(testActorId, heroA, actorUIA), (testActorId2, heroC, actorUIC)]
+
 -- | A client state with a two-hero party (@A@, @C@) on a single level,
 -- no leader set yet (tests set it via 'updateClientLeader'), suitable for
 -- driving the pointman-cycling code the way keypresses do.
 partyCliState :: CliState
-partyCliState = partyCliStateWith stubLevel partyFaction
-  [(testActorId, heroA, actorUIA), (testActorId2, heroC, actorUIC)]
+partyCliState = partyCliStateWith stubLevel partyFaction twoHeroes
 
 -- | A three-hero party (@A@, @B@, @C@), for desyncs that pick the wrong
 -- member rather than no member.
@@ -568,15 +556,13 @@ partyCliState3 = partyCliStateWith stubLevel partyFaction
 -- | A two-hero party of a faction banned from switching pointman
 -- between levels.
 partyCliStateBanned :: CliState
-partyCliStateBanned = partyCliStateWith stubLevel partyFactionBanned
-  [(testActorId, heroA, actorUIA), (testActorId2, heroC, actorUIC)]
+partyCliStateBanned = partyCliStateWith stubLevel partyFactionBanned twoHeroes
 
 -- | 'partyCliState' on the 'walkableLevel': the same two heroes in the
 -- same places, with the terrain under and between them walkable, so that
 -- aiming from one to the other succeeds.
 partyCliStateWalkable :: CliState
-partyCliStateWalkable = partyCliStateWith walkableLevel partyFaction
-  [(testActorId, heroA, actorUIA), (testActorId2, heroC, actorUIC)]
+partyCliStateWalkable = partyCliStateWith walkableLevel partyFaction twoHeroes
 
 -- | A run led by hero A with the whole two-hero party as members,
 -- as a multi-hero run start ('moveRunHuman') would set up. Also reused
@@ -618,11 +604,39 @@ resizeScreen :: X -> Y -> SessionUI -> SessionUI
 resizeScreen rwidth rheight sess = sess {sccui = (sccui sess)
   {coscreen = (coscreen (sccui sess)) {rwidth, rheight}}}
 
+-- | Each listed actor's equipment holds just the listed item, registered
+-- as 'stubItem', with what a dialog displaying it needs besides: the role
+-- the store dialog lists an item by, without which the dialog reads the
+-- store as empty however full the bag, and the screen of
+-- 'enlargeScreenForItems'.
+withEqpItems :: [(ActorId, ItemId)] -> CliState -> CliState
+withEqpItems held cliS = cliS
+  { cliState = updateItemD (EM.union $ EM.fromList $ map (, stubItem) iids)
+               $ updateActorD (\actorD -> foldr give actorD held)
+               $ cliState cliS
+  , cliSession = enlargeScreenForItems . seeItems <$> cliSession cliS }
+ where
+  iids = map snd held
+  give (aid, iid) = EM.adjust (\b -> b {beqp = EM.singleton iid (1, [])}) aid
+  seeItems sess =
+    let ItemRoles roles = sroles sess
+    in sess {sroles = ItemRoles
+                      $ EM.adjust (ES.union $ ES.fromList iids) SItem roles}
+
+-- | The listed actors' skills, in place of the none every fixture gives.
+withSkills :: [(ActorId, Ability.Skills)] -> CliState -> CliState
+withSkills skills cliS = cliS {cliState =
+  updateActorMaxSkills (EM.union $ EM.fromList skills) (cliState cliS)}
+
+-- | The skill to fling, and no other.
+projectSkills :: Ability.Skills
+projectSkills = Ability.addSk Ability.SkProject 1 Ability.zeroSkills
+
 -- | Fill in the BFS scratch arrays that 'emptyStateClient' leaves
--- 'undefined'; the real client fills them once at startup
--- (@Client.LoopM.loopCli@), which no fixture goes through. A test needs
--- this whenever a frame is drawn while an xhair is set, because the path
--- to the xhair is a BFS query.
+-- 'undefined', as the real client does once at startup
+-- (@Client.LoopM.loopCli@) and 'executorCli' does for every test: any
+-- frame drawn while an xhair is set needs them, the path to the xhair
+-- being a BFS query.
 initBfsTabs :: MonadClient m => m ()
 initBfsTabs = do
   tabA <- createTabBFS
@@ -687,7 +701,7 @@ instance MonadClientAtomic CliMock where
   execPutState = putState
 
 executorCli :: CliMock a -> CliState -> IO (a, CliState)
-executorCli = runStateT . runCliMock
+executorCli m = runStateT $ runCliMock $ initBfsTabs >> m
 
 
 -- | Transform 'Report' type to a list of 'Text'.

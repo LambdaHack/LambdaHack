@@ -7,9 +7,8 @@ import Prelude ()
 
 import Game.LambdaHack.Core.Prelude
 
-import qualified Data.EnumMap.Strict as EM
-import           Test.Tasty
-import           Test.Tasty.HUnit
+import Test.Tasty
+import Test.Tasty.HUnit
 
 import           Game.LambdaHack.Client.MonadClient (getsClient)
 import           Game.LambdaHack.Client.State (sleader)
@@ -21,10 +20,6 @@ import           Game.LambdaHack.Client.UI.HandleHumanGlobalM
 import qualified Game.LambdaHack.Client.UI.Key as K
 import           Game.LambdaHack.Client.UI.SessionUI
   (KeyMacro (..), KeyMacroFrame (..), emptyMacroFrame)
-import           Game.LambdaHack.Common.Actor (Actor (..))
-import           Game.LambdaHack.Common.State
-  (updateActorD, updateActorMaxSkills, updateItemD)
-import qualified Game.LambdaHack.Definition.Ability as Ability
 import           Game.LambdaHack.Definition.Defs (CStore (..))
 
 import UnitTestHelpers
@@ -55,15 +50,9 @@ handleHumanGlobalMUnitTests = testGroup "handleHumanGlobalMUnitTests"
     testCase
       "contract Project executed by a different actor than the item selection"
       $ do
-      let projSk = Ability.addSk Ability.SkProject 1 Ability.zeroSkills
-          skills = EM.fromList
-            [(testActorId, projSk), (testActorId2, projSk)]
-          giveItem b = b {beqp = EM.singleton testItemId (1, [])}
-          cliS = partyCliState {cliState =
-              updateItemD (EM.insert testItemId stubItem)
-            $ updateActorD (EM.adjust giveItem testActorId)
-            $ updateActorMaxSkills (const skills)
-            $ cliState partyCliState}
+      let cliS = withSkills [ (testActorId, projectSkills)
+                            , (testActorId2, projectSkills) ]
+                 $ withEqpItems [(testActorId, testItemId)] partyCliState
           -- What A's ChooseItemProject dialog leaves behind on success:
           select = modifySession $ \sess ->
             sess {sitemSel = Just (testItemId, CEqp, False)}
@@ -100,10 +89,9 @@ handleHumanGlobalMUnitTests = testGroup "handleHumanGlobalMUnitTests"
     -- pointman after the key.
     testCase "LR-flip alterDir: the held leader picks the square to modify"
       $ do
-      let dirRight = K.mkKM "Right"  -- keypad Right is the (1, 0) move
+      let dirRight = K.rightKM  -- keypad Right is the (1, 0) move
           testFn leaderHeld = do
             modifySession enlargeScreen
-            initBfsTabs
             updateClientLeader testActorId   -- run leader A
             updateClientLeader testActorId2  -- run rotated pointman to C
             modifySession $ \sess ->

@@ -10,7 +10,6 @@ import Game.LambdaHack.Core.Prelude
 
 import           Data.Either (fromLeft)
 import qualified Data.EnumMap.Strict as EM
-import qualified Data.EnumSet as ES
 import qualified Data.Text as T
 
 import Test.Tasty
@@ -33,8 +32,7 @@ import qualified Game.LambdaHack.Client.UI.HumanCmd as HumanCmd
 import qualified Game.LambdaHack.Client.UI.Key as K
 import           Game.LambdaHack.Client.UI.Msg
 import           Game.LambdaHack.Client.UI.MsgM
-import           Game.LambdaHack.Client.UI.SessionUI
-  (AimMode (..), ItemRoles (..))
+import           Game.LambdaHack.Client.UI.SessionUI (AimMode (..))
 import           Game.LambdaHack.Client.UI.TutorialHints
 import           Game.LambdaHack.Common.Actor (Actor (..))
 import           Game.LambdaHack.Common.ActorState
@@ -49,7 +47,7 @@ import           Game.LambdaHack.Common.State
 import           Game.LambdaHack.Content.TileKind
 import qualified Game.LambdaHack.Definition.Ability as Ability
 import           Game.LambdaHack.Definition.Defs
-  (CStore (..), ItemDialogMode (..), SLore (..))
+  (CStore (..), ItemDialogMode (..))
 import           Game.LambdaHack.Definition.DefsInternal
   (toContentId, toContentSymbol)
 
@@ -66,31 +64,18 @@ testItemFull = ItemFull
 -- The walkable-board party with one skill set shared by both heroes, for
 -- the aiming branches the unknown board cannot reach (see 'walkableLevel').
 walkableParty :: Ability.Skills -> CliState
-walkableParty skills = partyCliStateWalkable {cliState =
-  updateActorMaxSkills
-    (const $ EM.fromList [(testActorId, skills), (testActorId2, skills)])
-    (cliState partyCliStateWalkable)}
+walkableParty skills =
+  withSkills [(testActorId, skills), (testActorId2, skills)]
+             partyCliStateWalkable
 
 -- Aim at C's position, one walkable step from A.
 aimAtHeroC :: MonadClientUI m => m ()
 aimAtHeroC = modifySession $ \sess ->
   sess {sxhair = Just $ TPoint TUnknown testLevelId (bpos heroC)}
 
--- A's equipment holds the stub item, with the role the store dialog lists
--- an item by: without the role the dialog reads the store as empty,
--- however full the bag.
+-- A's equipment holds the stub item, which the store dialog lists.
 withEqpItem :: CliState -> CliState
-withEqpItem cliS = cliS
-  { cliState = updateItemD (EM.insert testItemId stubItem)
-               $ updateActorD (EM.adjust giveItem testActorId)
-               $ cliState cliS
-  , cliSession = seeItem <$> cliSession cliS }
- where
-  giveItem b = b {beqp = EM.singleton testItemId (1, [])}
-  seeItem sess = let ItemRoles roles = sroles sess
-                 in sess {sroles = ItemRoles
-                                   $ EM.adjust (ES.insert testItemId) SItem
-                                               roles}
+withEqpItem = withEqpItems [(testActorId, testItemId)]
 
 handleHumanLocalMUnitTests :: TestTree
 handleHumanLocalMUnitTests = testGroup "handleHumanLocalMUnitTests"
@@ -161,9 +146,8 @@ handleHumanLocalMUnitTests = testGroup "handleHumanLocalMUnitTests"
           Right posRange -> assertFailure $ "expected an unskilled actor, got: "
             ++ show posRange
   , testCase "psuitReq: walkable board, skilled actor" $ do
-      let projSk = Ability.addSk Ability.SkProject 1 Ability.zeroSkills
-          testFn = aimAtHeroC >> psuitReq testActorId
-      (result, _) <- executorCli testFn (walkableParty projSk)
+      let testFn = aimAtHeroC >> psuitReq testActorId
+      (result, _) <- executorCli testFn (walkableParty projectSkills)
       case result of
         Left err -> assertFailure $ "expected a suitability function, got: "
           ++ T.unpack err
@@ -215,12 +199,9 @@ handleHumanLocalMUnitTests = testGroup "handleHumanLocalMUnitTests"
     testCase
       "contract permittedProjectClient judges its argument, not the pointman"
       $ do
-      let skills = EM.fromList
-            [ ( testActorId
-              , Ability.addSk Ability.SkProject 1 Ability.zeroSkills )
-            , (testActorId2, Ability.zeroSkills) ]
-          cliS = partyCliState {cliState =
-            updateActorMaxSkills (const skills) (cliState partyCliState)}
+      let cliS = withSkills [ (testActorId, projectSkills)
+                            , (testActorId2, Ability.zeroSkills) ]
+                            partyCliState
           testFn = do
             updateClientLeader testActorId
             funA1 <- permittedProjectClient testActorId
@@ -240,10 +221,9 @@ handleHumanLocalMUnitTests = testGroup "handleHumanLocalMUnitTests"
     -- aiming pipeline, with no walkable tiles needed, because both
     -- verdicts are failures: with the xhair on C's own position, A's line
     -- to it is blocked by the (unwalkable, unknown) terrain, while C's
-    -- line to itself is degenerate. The heroes are moved to row 0 first:
-    -- the aiming pipeline indexes ltile via Point's Enum width hack
-    -- (speedupHackXSize, still at its default 80 in the test binary), so
-    -- on the 3x3 stub board only row-0 positions stay in bounds.
+    -- line to itself is degenerate. The heroes are moved to row 0 first,
+    -- the only row of the stub board the aiming pipeline can index (see
+    -- 'enumRowStride').
     -- After the live-read design lands, @psuitReq@ loses its ActorId
     -- argument and reads the live pointman, so the two calls below become
     -- one call before and one after a pointman switch.
@@ -285,28 +265,14 @@ handleHumanLocalMUnitTests = testGroup "handleHumanLocalMUnitTests"
     -- temporarily making this dialog's @psuit@ re-read the pointman.
     testCase "LR-flip fling dialog: a mid-dialog switch keeps A's closure"
       $ do
-      let projSk = Ability.addSk Ability.SkProject 1 Ability.zeroSkills
-          skills = EM.fromList [ (testActorId, projSk)
-                               , (testActorId2, Ability.zeroSkills) ]
-          giveItem b = b {beqp = EM.singleton testItemId (1, [])}
-          seeItem sess = let ItemRoles roles = sroles sess
-                         in sess {sroles = ItemRoles
-                                  $ EM.adjust (ES.insert testItemId) SItem
-                                              roles}
-            -- the dialog lists only items given a role; without this the
-            -- store reads as empty however full the bag is
       cliS0 <- scriptedCliState partyCliStateWalkable
                                 [K.mkKM "C-Tab", K.returnKM]
-      let cliS = cliS0
-            { cliState = updateItemD (EM.insert testItemId stubItem)
-                         $ updateActorD (EM.adjust giveItem testActorId
-                                         . EM.adjust giveItem testActorId2)
-                         $ updateActorMaxSkills (const skills)
-                         $ cliState cliS0
-            , cliSession = seeItem <$> cliSession cliS0 }
+      let cliS = withSkills [ (testActorId, projectSkills)
+                            , (testActorId2, Ability.zeroSkills) ]
+                 $ withEqpItems [ (testActorId, testItemId)
+                                , (testActorId2, testItemId) ]
+                   cliS0
           testFn = do
-            modifySession enlargeScreenForItems
-            initBfsTabs
             updateClientLeader testActorId
             aimAtHeroC
             merr <- chooseItemProjectHuman testActorId []
@@ -325,13 +291,11 @@ handleHumanLocalMUnitTests = testGroup "handleHumanLocalMUnitTests"
     -- which draws its frames and
     -- reads keys via promptGetKey -- answered ESC by the stub frontend --
     -- so the dialog exits with "never mind". Also pins promptGetKey's
-    -- second engine call site (SlideshowM.hs:421). The store lists A's
-    -- item, so the screen (not the level) is enlarged for an item menu's
-    -- two panes and the BFS the item's description queries is set up.
+    -- second engine call site
+    -- (SlideshowM.hs:pkm <- promptGetKey dm ovs sfBlank legalKeys). The
+    -- store lists A's item.
     testCase "contract chooseItemHuman: ESC exits the real store dialog" $ do
       let testFn = do
-            modifySession enlargeScreenForItems
-            initBfsTabs
             updateClientLeader testActorId
             chooseItemHuman testActorId (MStore CEqp)
       (result, _) <- executorCli testFn (withEqpItem partyCliState)
@@ -343,8 +307,6 @@ handleHumanLocalMUnitTests = testGroup "handleHumanLocalMUnitTests"
     testCase "chooseItemHuman: Return selects the listed item of a store" $ do
       cliS0 <- partyCliStateScripted [K.returnKM]
       let testFn = do
-            modifySession enlargeScreenForItems
-            initBfsTabs
             updateClientLeader testActorId
             merr <- chooseItemHuman testActorId (MStore CEqp)
             itemSel <- getsSession sitemSel
@@ -355,7 +317,8 @@ handleHumanLocalMUnitTests = testGroup "handleHumanLocalMUnitTests"
   , -- [contract] The mid-dialog pointman switch through the REAL dialog
     -- machinery: a scripted Tab inside A's equipment-store dialog runs the
     -- dialog's own cycling handler (InventoryM's cycleKeyDef ->
-    -- pointmanCycle, InventoryM.hs:431) and recCall re-enters the dialog
+    -- InventoryM.hs:err <- pointmanCycle leader False direction) and
+    -- recCall re-enters the dialog
     -- for the new pointman C -- the sec. 02 re-sync introduced by commit
     -- 8608d6f9c, pinned here for the first time. recCall re-enters
     -- transition (the key loop), not getFull, so C's store contents don't
@@ -368,8 +331,6 @@ handleHumanLocalMUnitTests = testGroup "handleHumanLocalMUnitTests"
       $ do
       cliS0 <- partyCliStateScripted [K.mkKM "Tab"]
       let testFn = do
-            modifySession enlargeScreenForItems
-            initBfsTabs
             updateClientLeader testActorId
             merr <- chooseItemHuman testActorId (MStore CEqp)
             leaderAfter <- getsClient sleader

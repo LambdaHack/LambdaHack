@@ -18,19 +18,18 @@ import Prelude ()
 import Game.LambdaHack.Core.Prelude
 
 import qualified Control.Exception as Ex
-import qualified Data.Map.Strict as M
 import           Test.Tasty
 import           Test.Tasty.HUnit
 
 import           Game.LambdaHack.Client.MonadClient (MonadClient, getsClient)
 import           Game.LambdaHack.Client.State (sleader)
-import qualified Game.LambdaHack.Client.UI.Content.Input as IC
-import           Game.LambdaHack.Client.UI.ContentClientUI (coinput)
 import           Game.LambdaHack.Client.UI.FrameM (restoreLeaderFromRun)
 import           Game.LambdaHack.Client.UI.HandleHelperM
 import           Game.LambdaHack.Client.UI.HandleHumanM (cmdSemInCxtOfKM)
 import qualified Game.LambdaHack.Client.UI.HumanCmd as HumanCmd
-import           Game.LambdaHack.Client.UI.MonadClientUI (MonadClientUI (..))
+import qualified Game.LambdaHack.Client.UI.Key as K
+import           Game.LambdaHack.Client.UI.MonadClientUI
+  (MonadClientUI (..), revCmdMap)
 import           Game.LambdaHack.Client.UI.SessionUI (SessionUI (..))
 import           Game.LambdaHack.Definition.Defs (Direction (..))
 
@@ -39,17 +38,18 @@ import UnitTestHelpers
 -- Dispatch a command through the real key-loop entry point
 -- (cmdSemInCxtOfKM), with the key looked up in the fixture CCUI's real
 -- bindings (the sample game's) -- exactly what the key loop does with a
--- keypress (Client/UI.hs:198-203). In particular the pointman handed to
--- the command's handler is read from sleader at dispatch time, so it is
--- in sync by construction, as for any top-level keystroke.
+-- keypress (Client/UI.hs:cmdSemInCxtOfKM km cmd). In particular the
+-- pointman handed to the command's handler is read from sleader at
+-- dispatch time, so it is in sync by construction, as for any top-level
+-- keystroke.
 -- The PointmanCycle* commands are client-local, so no request can result.
 dispatchCmd :: (MonadClient m, MonadClientUI m)
             => HumanCmd.HumanCmd -> m MError
 dispatchCmd cmd = do
-  coinputContent <- getsSession $ coinput . sccui
-  let km = case M.lookup cmd (IC.brevMap coinputContent) of
-        Just (km1 : _) -> km1
-        _ -> error $ "no sample game key binding" `showFailure` cmd
+  revCmd <- revCmdMap
+  let km = revCmd cmd
+  when (km == K.undefinedKM) $
+    error $ "no sample game key binding" `showFailure` cmd
   either id (\_req -> error $ "local command sent a request"
                               `showFailure` cmd)
     <$> cmdSemInCxtOfKM km cmd
@@ -101,20 +101,21 @@ liveReadSeries =
     -- sec. 07 test): a stale captured leader makes cycling a silent no-op
     -- (with the disabled assertion restored, a crash). Every step is the
     -- genuine engine operation: step 2 is the run rotation's write pair
-    -- (RunM.hs:90-91), step 4 the restoreLeaderFromRun that promptGetKey
-    -- runs on interrupted macro playback (see FrameMUnitTests.X1 for the
-    -- same window driven through the real promptGetKey) and step 5 the
-    -- item dialogs' cycling call (InventoryM.hs:398).
+    -- (RunM.hs:updateClientLeader r), step 4 the restoreLeaderFromRun that
+    -- promptGetKey runs on interrupted macro playback (see
+    -- FrameMUnitTests.X1 for the same window driven through the real
+    -- promptGetKey) and step 5 the item dialogs' cycling call
+    -- (InventoryM.hs:err <- pointmanCycleLevel leader False direction).
     -- After the live-read design lands: flip the last component to
     -- 'Just testActorId2'.
     testCase "LR-flip LR3: stale leader makes pointmanCycleLevel a no-op" $ do
       let testFn = do
             updateClientLeader testActorId   -- 1. run leader A is the pointman
-            -- 2. run rotates pointman to C (the RunM.hs:90-91 write pair):
+            -- 2. run rotates pointman to C (the run rotation's write pair):
             updateClientLeader testActorId2
             modifySession $ \sess -> sess {srunning = Just runParamsA}
             leaderCapturedByDialog <-        -- 3. dialog binds C
-              fromMaybe testActorId2 <$> getsClient sleader
+              fromJust <$> getsClient sleader
             restoreLeaderFromRun             -- 4. macro dies: restore to A
             leaderBefore <- getsClient sleader
             -- 5. C-Tab inside the dialog, with the stale captured leader:
@@ -136,7 +137,7 @@ liveReadSeries =
             updateClientLeader testActorId3  -- pointman B (captured by dialog)
             modifySession $ \sess -> sess {srunning = Just runParamsA}
             leaderCaptured <-
-              fromMaybe testActorId3 <$> getsClient sleader
+              fromJust <$> getsClient sleader
             restoreLeaderFromRun             -- hidden restore to A
             _merr <- pointmanCycleLevel leaderCaptured False Forward
             getsClient sleader
@@ -155,7 +156,7 @@ liveReadSeries =
             updateClientLeader testActorId2  -- pointman C (captured)
             modifySession $ \sess -> sess {srunning = Just runParamsA}
             leaderCaptured <-
-              fromMaybe testActorId2 <$> getsClient sleader
+              fromJust <$> getsClient sleader
             restoreLeaderFromRun             -- hidden restore to A
             pointmanCycle leaderCaptured False Forward
       result <- Ex.try (executorCli testFn partyCliState)

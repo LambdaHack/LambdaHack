@@ -338,7 +338,7 @@ bridgeTests =
             updateClientLeader testActorId   -- run leader A
             updateClientLeader testActorId2  -- run rotates pointman to C
             leaderCapturedByDialog <-
-              fromMaybe testActorId2 <$> getsClient sleader
+              fromJust <$> getsClient sleader
             modifySession $ \sess ->
               sess { sreqQueried = True
                    , srunning = Just runParamsA
@@ -369,7 +369,7 @@ bridgeTests =
             updateClientLeader testActorId   -- run leader A
             updateClientLeader testActorId2  -- run rotated pointman to C
             leaderCapturedByDialog <-
-              fromMaybe testActorId2 <$> getsClient sleader
+              fromJust <$> getsClient sleader
             modifySession $ \sess ->
               sess { sreqQueried = False
                    , srunning = Just runParamsA
