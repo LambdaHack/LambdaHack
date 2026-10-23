@@ -1000,9 +1000,9 @@ nor the table.
 **Done** --- `native`, `ts`, `wasm`, `deploy`, `page`, `docs`, plus
 `test -f ../lambdahack.github.io/DejaVuLGCSans-Bold.ttf.woff` &&
 `test -f ../lambdahack.github.io/Hack-Bold.ttf.woff`, plus 0.4's baseline number
-standing in B.10 (Split (0)). The two file tests are the deployment gate
-and are non-vacuous today --- neither font is in that checkout, which
-is the whole font deployment gap this item closes.
+standing in B.10 (Split (0)). The two file tests are the deployment gate;
+neither font was in that checkout before this item's `make build-ts`, which
+is the gap it closed.
 
 **Hands back** --- *browser*: that the declared `FontFace`s actually load. sec.
 2.2's own "live game pixel-identical to before" needs no human ---

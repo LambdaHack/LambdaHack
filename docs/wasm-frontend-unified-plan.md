@@ -94,9 +94,9 @@ carries an outcome line.
 >   is deliberate: the pointman records have no such case and need no such word.
 >
 > The distinction a reader will trip on is **open** against **not applied**,
-> because the work list's ledger sorts by item number and not by it: R1 and 2.2
+> because the work list's ledger sorts by item number and not by it: R1 and R4
 > are two rows of one table and mean different things --- a tab killed mid-save
-> leaves saves of mixed generations, while `ts-src/src/overlay-core.ts`
+> leaves saves of mixed generations, while `ts-src/src/url-options-core.ts`
 > is a file nobody has written. The first is a bug report, the second
 > a specification, and only the second may be edited to match a tree that moved.
 > The rule fires at the item and the state lives in the ledger, so before
@@ -626,15 +626,12 @@ only that the plan was written is one the next reader has to skip.
   whose constructors carry filename and size,
   at `Common/Misc.hs:data FontDefinition =`) but cannot supply bytes. Phase
   2.2's font wiring is built around exactly that split.
-- **Font deployment gap.** `../lambdahack.github.io` currently carries just one
-  of those fonts, `16x16xw.woff` --- committed by hand in 2019, not produced
-  by any build --- beside `lz-string*.js`, used by `WasmFile.hs`'s save
-  compression. `make build-ts` copies no fonts, so the other files
-  in `GameDefinition/fonts/` never reach the pages repo, and the deployed
-  `index.html` references none of them. Any step adding font usage must extend
-  `build-ts` to copy the needed `GameDefinition/fonts/*.ttf.woff` files (prefer
-  the Makefile over committing to the pages repo, so the repo of record stays
-  this one).
+- **Font deployment.** `../lambdahack.github.io` carries the map font,
+  `16x16xw.woff` --- committed by hand in 2019, not produced by any build ---
+  beside `lz-string*.js`, used by `WasmFile.hs`'s save compression. Since 2.2,
+  `make build-ts` copies every `GameDefinition/fonts/*.ttf.woff` there too, any
+  of which the startup payload may name for `terminal.ts` to declare;
+  the deployed `index.html` references none of them.
 
 ## Ground rules
 
@@ -2192,7 +2189,8 @@ tasty round-trips it on fixed cases and on QuickCheck-generated arbitrary
 `OverlaySpace` values, and this item's freshness case writes encode fixtures
 the TS decoder is tested against. All three overlay kinds (prop/square/mono)
 travel and draw through the same path, on the same canvas, in the 2.1 layer
-order.
+order. The TS decoder also asserts, as 2.2's "Cell metrics from one source"
+requires, that the width the overlays were laid out for is `submitFrame`'s `w`.
 
 Because `getFontSetup` still gates on `"sdl"`, the overlays are provably `[]`
 in the live game --- this step is a visual no-op, verified by playing.
@@ -2611,9 +2609,9 @@ array it already passes to the WASI shim
 (`loader.ts:const wasi = new WASI(["LambdaHack"], [], fds);`), reusing the real
 options parser with no engine-side parsing code at all. This gives browser users
 what argv gives native ones with no new UI surface --- an address-bar knob.
-`?fontset=` only becomes meaningful once 2.2's font wiring exists,
-and non-default fontsets need their `.woff` files deployed too --- deploy them
-all once rather than special-casing the default set.
+`?fontset=` only becomes meaningful once 2.2's font wiring exists, and 2.2's
+`make build-ts` deploys every fontset's `.ttf.woff` files, not the default set's
+alone.
 
 **Rulings** --- all three ruled on 2026-08-07, all player-visible. The allowlist
 is the minimal named set --- `?fontset=`, `?allFontsScale=`, plus R5's
@@ -3271,6 +3269,10 @@ borders, a highlight effectively showed only on a tile's bottom and right edges
 not none, for `None`/`Background`/`NoneCursor` --- see 0.0); every kind outlines
 all four tile sides; the wasm `inset` box-shadow's four-sided drawing is correct
 and stays.
+
+*2026-10-23: the black ring for `None`/`Background`/`NoneCursor` is SDL2's
+LambdaHack issue #281 workaround, which goes by Mikolaj's ruling in the Log;
+a coloured highlight keeps its four-sided ring.*
 
 **B.4 No frontend-interface-as-value record (yet).** The idea: each frontend
 module exports one value, e.g. `frontend :: FrontendImpl` (name, startup,
