@@ -25,10 +25,12 @@ so a commented-out export is not one; an equation whose `=` is not on
 its first line, a guarded one for instance, is a finding, never a pass,
 and so is a signature broken before its `::`.
 
-Every run prints each sync export it found, so a tree with none says so
-rather than passing in silence. Exit 0 when every one is built on
-`syncExport`, 1 with findings, 2 when the run did not happen: outside a git
-repository, or with no tracked `*.hs` file.
+A JS name exported twice is a finding at each export after the first, every
+one of them checked. Every run prints each sync export it found, so a tree
+with none says so rather than passing in silence. Exit 0 when every one is
+built on `syncExport`, 1 with findings, 2 when the run did not happen:
+outside a git repository, with no tracked `*.hs` file, or with one that is
+not UTF-8.
 
 Non-vacuity: `--self-test` runs the engine over scratch sources, one per
 finding and controls for the shapes it must leave alone; that the self-test
@@ -46,20 +48,43 @@ STATIC_RE = re.compile(
     r'foreign\s+export\s+javascript\s+"(\w+)\s+sync"\s+(\w+)\s*::')
 WRAPPER_RE = re.compile(r'foreign\s+import\s+javascript\s+"wrapper\s+sync"')
 APPLIED_RE = re.compile(r'\bsyncExport\s+"(\w+)"')
-# A run of two or more dashes not followed by another symbol character
-# begins a line comment; `{-` begins a block comment, pragmas included.
-LINE_COMMENT_RE = re.compile(r"--+(?![!#$%&*+./<=>?@\\^|~:-]).*")
-BLOCK_COMMENT_RE = re.compile(r"\{-.*?-\}", re.S)
-
-
-def blank(m):
-    return re.sub(r"[^\n]", " ", m.group(0))
+# The comment scan of ~/slop/tools/hssource.py, which this copies rather
+# than imports, pragmas being blanked here as block comments. A string or
+# character literal is stepped over whole, so a `{-` or `--` inside opens
+# nothing; a line comment is two dashes or more with neither a symbol nor
+# a dash on either side, so `<--` and `-->` are operators. Outside a block
+# comment the scan meets a literal, a line comment or an opening; inside
+# one, an opening, as block comments nest, or a close.
+SYM = r"!#$%&*+./<=>?@\\^|~:"
+LITERALS = (r"\"(?:[^\"\\\n]|\\.)*\""
+            r"|(?<![\w'])'(?:[^'\\\n]|\\.[^'\n]*)'")
+LINE_COMMENT = rf"(?<![{SYM}-])--+(?![{SYM}-])[^\n]*"
+OUTSIDE = re.compile(rf"{LITERALS}|\{{-|{LINE_COMMENT}", re.S)
+INSIDE = re.compile(r"\{-|-\}")
 
 
 def strip_comments(text):
     """The text with every comment blanked, newlines kept, so that a match
-    offset still gives the line it was found on."""
-    return LINE_COMMENT_RE.sub(blank, BLOCK_COMMENT_RE.sub(blank, text))
+    offset still gives the line it was found on; an opening never closed
+    is left as code."""
+    spans, pos, depth, start = [], 0, 0, 0
+    while m := (INSIDE if depth else OUTSIDE).search(text, pos):
+        pos = m.end()
+        if m.group(0) == "{-":
+            if not depth:
+                start = m.start()
+            depth += 1
+        elif depth:
+            depth -= 1
+            if not depth:
+                spans.append((start, pos))
+        elif m.group(0).startswith("-"):
+            spans.append((m.start(), pos))
+    out, kept = [], 0
+    for s, e in spans:
+        out += [text[kept:s], re.sub(r"[^\n]", " ", text[s:e])]
+        kept = e
+    return "".join(out) + text[kept:]
 
 
 def line_of(text, pos):
@@ -113,19 +138,23 @@ def scan(files):
     lines first, the number of findings among them and the number of sync
     exports found."""
     oks, fails = [], []
-    static = {}
     codes = {path: strip_comments(text) for path, text in files.items()}
-    for path, code in codes.items():
-        for m in STATIC_RE.finditer(code):
-            static[m.group(1)] = (path, line_of(code, m.start()), m.group(2))
-    for js, (path, line, hs) in sorted(static.items()):
+    static = sorted((m.group(1), path, line_of(code, m.start()), m.group(2))
+                    for path, code in codes.items()
+                    for m in STATIC_RE.finditer(code))
+    first = {}
+    for js, path, line, hs in static:
+        failed = len(fails)
+        if js in first:
+            fails.append(f"FAIL {js} ({path}:{line}): exported again, after"
+                         f" {first[js]}")
+        first.setdefault(js, f"{path}:{line}")
         code = codes[path]
         eqs = equations(code, hs)
         if not eqs:
             fails.append(f"FAIL {js} ({path}:{line}): no equation of `{hs}`"
                          f" with its `=` on the first line in {path}")
             continue
-        failed = len(fails)
         for s, rhs in eqs:
             eq = (f"FAIL {js} ({path}:{line}): the equation of `{hs}`"
                   f" at {path}:{line_of(code, s)}")
@@ -139,7 +168,7 @@ def scan(files):
             oks.append(f"ok   {js} ({path}:{line}) is built on syncExport")
     for path, code in sorted(codes.items()):
         for m in APPLIED_RE.finditer(code):
-            if m.group(1) not in static:
+            if m.group(1) not in first:
                 fails.append(f'FAIL syncExport "{m.group(1)}" at'
                              f" {path}:{line_of(code, m.start())} names no"
                              f" sync export")
@@ -206,6 +235,23 @@ lhNamed = syncExport "lhNamed" body
     body = pure ()
 
 foreign export javascript "lhNamed sync" lhNamed :: IO ()
+
+{- outer {- inner -} still the outer comment
+foreign export javascript "lhNested sync" lhNested :: IO ()
+-}
+
+lhDash :: IO ()
+lhDash = syncExport "lhDash" (putStrLn "--")
+
+foreign export javascript "lhDash sync" lhDash :: IO ()
+
+(<--) :: IO () -> IO () -> IO ()
+a <-- b = a >> b
+
+lhArrow :: IO ()
+lhArrow = syncExport "lhArrow" (pure () <-- pure ())
+
+foreign export javascript "lhArrow sync" lhArrow :: IO ()
 ''',
     "Bad.hs": '''\
 module Bad where
@@ -258,11 +304,30 @@ lhThen :: IO ()
 lhThen = syncExport "lhThen" body >> pure ()
 
 foreign export javascript "lhThen sync" lhThen :: IO ()
+
+-- the old {- syntax
+lhHidden :: IO ()
+lhHidden = pure ()
+
+foreign export javascript "lhHidden sync" lhHidden :: IO ()
+
+-- and its -} close
+
+lhDupA :: IO ()
+lhDupA = pure ()
+
+foreign export javascript "lhDup sync" lhDupA :: IO ()
+
+lhDupB :: IO ()
+lhDupB = syncExport "lhDup" $ pure ()
+
+foreign export javascript "lhDup sync" lhDupB :: IO ()
 ''',
 }
 
 SELF_TEST_OK = ["ok   lhKey (Good.hs:7)", "ok   otherName (Good.hs:14)",
-                "ok   lhParen (Good.hs:33)", "ok   lhNamed (Good.hs:40)"]
+                "ok   lhParen (Good.hs:33)", "ok   lhNamed (Good.hs:40)",
+                "ok   lhDash (Good.hs:49)", "ok   lhArrow (Good.hs:57)"]
 SELF_TEST_FAIL = [
     "FAIL lhPaste (Bad.hs:6): the equation of `lhPaste` at Bad.hs:4",
     "FAIL lhCopy (Bad.hs:11): the equation of `lhCopy` at Bad.hs:9",
@@ -275,12 +340,15 @@ SELF_TEST_FAIL = [
     "FAIL lhGuard (Bad.hs:40): the equation of `lhGuard` at Bad.hs:37 has no",
     "FAIL lhSeq (Bad.hs:45): the equation of `lhSeq` at Bad.hs:43 is not",
     "FAIL lhThen (Bad.hs:50): the equation of `lhThen` at Bad.hs:48 is not",
+    "FAIL lhHidden (Bad.hs:56): the equation of `lhHidden` at Bad.hs:54 is",
+    "FAIL lhDup (Bad.hs:63): the equation of `lhDupA` at Bad.hs:61 is not",
+    "FAIL lhDup (Bad.hs:68): exported again, after Bad.hs:63",
 ]
 # Shapes that must stay quiet: an async export without syncExport, the
-# commented-out exports and wrapper, syncExport's own definition, a JS
-# name that is not the Haskell one, the wrapped equations of lhTwo and
-# lhGuard, and every type signature.
-SELF_TEST_QUIET = ["lhWheel", "lhComment", "lhBlock", "Good.hs:25",
+# commented-out exports and wrapper, the one in a nested block comment,
+# syncExport's own definition, a JS name that is not the Haskell one, the
+# wrapped equations of lhTwo and lhGuard, and every type signature.
+SELF_TEST_QUIET = ["lhWheel", "lhComment", "lhBlock", "lhNested", "Good.hs:25",
                    "Good.hs:27", "Good.hs:28", "otherName (Good.hs:14): ",
                    "at Bad.hs:16", "at Bad.hs:36", "at Good.hs:3 ",
                    "at Good.hs:10 ", "at Bad.hs:3 ", "at Bad.hs:8 ",
@@ -359,8 +427,12 @@ def main():
         return 2
     files = {}
     for n in names:
-        with open(n, encoding="utf-8") as f:
-            files[n] = f.read()
+        try:
+            with open(n, encoding="utf-8") as f:
+                files[n] = f.read()
+        except UnicodeDecodeError as e:
+            print(f"BLOCKED: {n} is not UTF-8 ({e}); nothing checked")
+            return 2
     return run(files)
 
 
