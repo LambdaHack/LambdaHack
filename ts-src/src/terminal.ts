@@ -1,9 +1,10 @@
 // Renderer wiring: one <canvas>, repainted from the engine's Word32 frame
-// buffer through the pure draw-op core (terminal-core's cellRunOps) and
-// a thin interpreter of its ops below. Per-cell diffing skips unchanged
-// cells (the engine sends full frames). Its input forwarding is tested
-// under jsdom (terminal-input.test.ts); the rendering decisions live in
-// terminal-core, and the key ones in Haskell.
+// buffer and its overlays through the pure draw-op cores (terminal-core's
+// cellRunOps, overlay-core's overlayOps) and a thin interpreter of their ops
+// below. Per-cell diffing skips unchanged cells (the engine sends full
+// frames) but those the last frame's overlays covered. Its input forwarding
+// is tested under jsdom (terminal-input.test.ts); the rendering decisions
+// live in terminal-core and overlay-core, and the key ones in Haskell.
 
 import {
   XHAIR_CURSOR_HOTSPOT_X,
@@ -15,11 +16,18 @@ import {
   cellMetrics,
   cellPosition,
   cellRunOps,
+  faceBaseline,
   pointerPoint,
   type CellMetrics,
   type DrawOp,
   type Face,
 } from "./terminal-core.js";
+import {
+  NO_OVERLAYS,
+  overlaidCells,
+  overlayOps,
+  type FrameLayout,
+} from "./overlay-core.js";
 
 export interface Terminal {
   submitFrame(addr: number, w: number, h: number): void;
@@ -86,6 +94,17 @@ const FACE_FAMILY: Record<Face, string> = {
   mono: "lambdaHackMono",
 };
 
+// A prev entry no frame word equals, so that the diff repaints its cell.
+const REPAINT = 0xffffffff;
+
+// A frame and its overlays, as submitted.
+interface Frame {
+  buf: Uint32Array;
+  w: number;
+  h: number;
+  layout: FrameLayout;
+}
+
 export function mountTerminal(
   container: HTMLElement,
   getMemory: () => WebAssembly.Memory,
@@ -101,9 +120,18 @@ export function mountTerminal(
   let laidOutScale = 0;
   let metrics: CellMetrics | null = null;
   let prev = new Uint32Array(0);
-  let lastFrame: Uint32Array | null = null;
+  let lastFrame: Frame | null = null;
+  // The cells the last frame's overlays drew over.
+  let overlaid: number[] = [];
   let hasFocusedOnce = false;
   let fontLoaded = false;
+  // The startup payload's fonts, and how many of them are still loading.
+  let fontSpecs: OverlayFonts = {};
+  let facesLoading = 0;
+  // The face the context's font is set to, if known, and the baselines
+  // of the faces measured at the current layout.
+  let currentFace: Face | null = null;
+  let baselines: Partial<Record<Face, number>> = {};
 
   const canvas = document.createElement("canvas");
   canvas.width = 0;
@@ -129,8 +157,7 @@ export function mountTerminal(
     rows = h;
     dpr = window.devicePixelRatio;
     laidOutScale = fontScale;
-    const px = FONT_CSS_PX * fontScale * dpr;
-    const font = `${px}px ${FONT_FAMILY}, monospace`;
+    const font = faceFont("map");
     ctx.font = font;
     const tm = ctx.measureText("M");
     const m = cellMetrics(tm.fontBoundingBoxAscent, tm.fontBoundingBoxDescent);
@@ -141,11 +168,14 @@ export function mountTerminal(
     canvas.style.width = `${canvas.width / dpr}px`;
     canvas.style.height = `${canvas.height / dpr}px`;
     ctx.font = font;
+    currentFace = "map";
+    baselines = {};
     ctx.textAlign = "center";
     ctx.textBaseline = "alphabetic";
     ctx.lineWidth = 1;
     // Force a full repaint of the new canvas.
-    prev = new Uint32Array(w * h).fill(0xffffffff);
+    prev = new Uint32Array(w * h).fill(REPAINT);
+    overlaid = [];
     if (!hasFocusedOnce) {
       hasFocusedOnce = true;
       // Needed *in addition to* the pageshow listener below, not instead of
@@ -162,7 +192,47 @@ export function mountTerminal(
     }
   }
 
-  // The thin interpreter of terminal-core's draw ops over the 2D context.
+  // The CSS font a face is drawn in at the current layout, in device
+  // pixels: the map font at FONT_CSS_PX times allFontsScale CSS pixels,
+  // the others at the sizes the startup payload gives them, and a face
+  // it does not name at the map font's size.
+  function faceFont(face: Face): string {
+    const size =
+      (face === "map" ? undefined : fontSpecs[face]?.size) ??
+      FONT_CSS_PX * laidOutScale;
+    return `${size * dpr}px ${FACE_FAMILY[face]}, monospace`;
+  }
+
+  function setFace(face: Face): void {
+    if (face === currentFace) return;
+    ctx.font = faceFont(face);
+    currentFace = face;
+  }
+
+  // A face's baseline in a cell at the current layout, from the loaded
+  // face as the map font's is.
+  function baselineOf(face: Face): number {
+    let baseline = baselines[face];
+    if (baseline === undefined) {
+      setFace(face);
+      const tm = ctx.measureText("M");
+      baseline = faceBaseline(
+        metrics!.boxSize,
+        tm.fontBoundingBoxAscent,
+        tm.fontBoundingBoxDescent,
+      );
+      baselines[face] = baseline;
+    }
+    return baseline;
+  }
+
+  // A text's natural width in a face, in device pixels.
+  function measure(face: Face, text: string): number {
+    setFace(face);
+    return ctx.measureText(text).width;
+  }
+
+  // The thin interpreter of the draw ops over the 2D context.
   function draw(ops: DrawOp[]): void {
     for (const op of ops) {
       switch (op.kind) {
@@ -171,12 +241,20 @@ export function mountTerminal(
           ctx.fillRect(op.x, op.y, op.w, op.h);
           break;
         case "text":
+        case "textLeft":
+          // Set outside save, so that restore keeps it.
+          setFace(op.face);
           ctx.save();
           ctx.beginPath();
           ctx.rect(op.x, op.y, op.w, op.h);
           ctx.clip();
           ctx.fillStyle = op.color;
-          ctx.fillText(op.text, op.x + op.w / 2, op.y + op.baseline);
+          if (op.kind === "text") {
+            ctx.fillText(op.text, op.x + op.w / 2, op.y + op.baseline);
+          } else {
+            ctx.textAlign = "left";
+            ctx.fillText(op.text, op.x, op.y + op.baseline);
+          }
           ctx.restore();
           break;
         case "stroke":
@@ -189,12 +267,14 @@ export function mountTerminal(
     }
   }
 
-  // Paint one already-snapshotted frame's changed cells, each stretch
-  // of them within a row as one cell run. Deferred to
-  // requestAnimationFrame by submitFrame() below, batching same-tick calls
-  // into a single browser paint, mirroring Dom.hs's
+  // Paint one already-snapshotted frame's changed cells, each
+  // stretch of them within a row as one cell run, and then all
+  // its overlays, as Sdl.hs draws them over its map. Deferred
+  // to requestAnimationFrame by submitFrame() below, batching
+  // same-tick calls into a single browser paint, mirroring Dom.hs's
   // requestAnimationFrame_/newRequestAnimationFrameCallbackSync.
-  function applyFrame(buf: Uint32Array, w: number, h: number): void {
+  function applyFrame(frame: Frame): void {
+    const { buf, w, h, layout } = frame;
     if (
       w !== cols ||
       h !== rows ||
@@ -203,6 +283,8 @@ export function mountTerminal(
     )
       layOut(w, h);
     const m = metrics!;
+    // The map under the last frame's overlays is repainted, changed or not.
+    for (const i of overlaid) prev[i] = REPAINT;
     let i = 0;
     while (i < buf.length) {
       if (buf[i] === prev[i]) {
@@ -218,23 +300,33 @@ export function mountTerminal(
       draw(cellRunOps({ col, row, words }, m.boxSize, m));
       i = end;
     }
-    lastFrame = buf;
+    const ops = overlayOps(layout, cols, m, baselineOf, measure);
+    draw(ops);
+    overlaid = overlaidCells(ops, m, cols, rows);
+    lastFrame = frame;
   }
 
-  let pendingFrame: { buf: Uint32Array; w: number; h: number } | null = null;
+  let pendingFrame: Frame | null = null;
   let rafHandle: number | null = null;
   // Screenshots asked for while a frame was pending, taken after its paint.
   let pendingPrints: string[] = [];
 
-  // Paints wait for the map font: measureText and fillText before it loads
-  // would use a fallback face.
+  // Paints wait for the map font, and a frame with proportional or mono
+  // overlays for the faces it draws them in: measureText and fillText
+  // before a face loads would use a fallback.
   function schedulePaint(): void {
     if (rafHandle !== null || !fontLoaded) return;
+    if (
+      facesLoading > 0 &&
+      pendingFrame &&
+      pendingFrame.layout.prop.length + pendingFrame.layout.mono.length > 0
+    )
+      return;
     rafHandle = requestAnimationFrame(() => {
       rafHandle = null;
       const frame = pendingFrame;
       pendingFrame = null;
-      if (frame) applyFrame(frame.buf, frame.w, frame.h);
+      if (frame) applyFrame(frame);
       const prints = pendingPrints;
       pendingPrints = [];
       for (const name of prints) savePng(name);
@@ -276,7 +368,7 @@ export function mountTerminal(
     // it from a later rAF callback would risk reading stale/reused memory,
     // so only the drawing work in applyFrame is deferred, not the read.
     const buf = new Uint32Array(getMemory().buffer, addr, w * h).slice();
-    pendingFrame = { buf, w, h };
+    pendingFrame = { buf, w, h, layout: NO_OVERLAYS };
     schedulePaint();
   }
 
@@ -299,7 +391,7 @@ export function mountTerminal(
         "change",
         () => {
           if (lastFrame && !pendingFrame) {
-            pendingFrame = { buf: lastFrame, w: cols, h: rows };
+            pendingFrame = lastFrame;
             schedulePaint();
           }
           watchPixelRatio();
@@ -401,18 +493,28 @@ export function mountTerminal(
   }
 
   // Declare the startup payload's fonts and start them loading, each from
-  // its file beside the page.
+  // its file beside the page; as each settles, loaded or not, the faces'
+  // baselines are measured again.
   function setFonts(fonts: OverlayFonts): void {
+    fontSpecs = fonts;
+    currentFace = null;
+    baselines = {};
     for (const face of OVERLAY_FACES) {
       const spec = fonts[face];
       if (!spec) continue;
       const fontFace = new FontFace(FACE_FAMILY[face], `url("./${spec.file}")`);
       document.fonts.add(fontFace);
+      facesLoading++;
       fontFace
         .load()
         .catch((e: unknown) =>
           console.warn(`[lh] font ${spec.file} failed to load`, e),
-        );
+        )
+        .finally(() => {
+          facesLoading--;
+          baselines = {};
+          schedulePaint();
+        });
     }
   }
 

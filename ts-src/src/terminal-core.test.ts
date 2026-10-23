@@ -12,6 +12,7 @@ import {
   cellPosition,
   cellMetrics,
   cellRunOps,
+  faceBaseline,
   pointerPoint,
 } from "./terminal-core.js";
 import fixtures from "./generated/fixtures.json";
@@ -203,9 +204,22 @@ describe("cellMetrics (the cell from the loaded font, as Sdl.hs takes it)", () =
   });
 });
 
+describe("faceBaseline (a face's line box centred in the cell, as in Sdl.hs)", () => {
+  it("centres a shorter face, its odd row below it", () => {
+    expect(faceBaseline(16, 10, 3)).toBe(11);
+  });
+  it("crops a taller face, its odd row off the top", () => {
+    expect(faceBaseline(16, 15, 4)).toBe(13);
+  });
+  it("is the map font's baseline in its own cell", () => {
+    const m = cellMetrics(14, 3);
+    expect(faceBaseline(m.boxSize, 14, 3)).toBe(m.baseline);
+  });
+});
+
 describe("cellRunOps (the draw ops of a cell run)", () => {
   const m = cellMetrics(13, 3);
-  it("fills, writes and rings each cell in turn, at its column and row", () => {
+  it("fills, writes in the map font and rings each cell in turn, at its column and row", () => {
     expect(
       cellRunOps(
         {
@@ -227,6 +241,7 @@ describe("cellRunOps (the draw ops of a cell run)", () => {
         baseline: 13,
         text: "@",
         color: "#FF5555",
+        face: "map",
       },
       { kind: "stroke", x: 32, y: 16, w: 16, h: 16, color: "#000000" },
       { kind: "fill", x: 48, y: 16, w: 16, h: 16, color: "#000000" },
@@ -239,11 +254,12 @@ describe("cellRunOps (the draw ops of a cell run)", () => {
         baseline: 13,
         text: "@",
         color: "#059D05",
+        face: "map",
       },
       { kind: "stroke", x: 48, y: 16, w: 16, h: 16, color: "#D50505" },
     ]);
   });
-  it("lays cells out at the given pitch, a half cell for the mono layer", () => {
+  it("lays cells out at the given pitch", () => {
     const ops = cellRunOps(
       { col: 3, row: 0, words: [enc(AT, BrRed, HiNone)] },
       m.halfSize,

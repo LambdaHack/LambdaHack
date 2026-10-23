@@ -1,9 +1,10 @@
 // Pure logic for the LambdaHack wasm web frontend: turn the engine's raw
 // AttrCharW32 cell words into glyphs + colors and runs of them into draw
-// ops, frame indices into screen cells, pointer pixels into the engine's
-// points, and a key event's modifiers into the engine's Alt. No DOM, no
-// wasm: the loader and the actual drawing are thin wiring around these
-// functions.
+// ops, each text in a face, a face's ascent and descent into its baseline
+// in a cell, frame indices into screen cells, pointer pixels into the
+// engine's points, and a key event's modifiers into the engine's Alt. No
+// DOM, no wasm: the loader and the actual drawing are thin wiring around
+// these functions.
 //
 // Encoding (see LambdaHack's Definition/Color.hs attrCharToW32):
 //   char codepoint = w >>> 16 ; fg = (w >>> 8) & 0xFF ; bg = w & 0xFF
@@ -138,9 +139,8 @@ export type Face = "map" | "propRegular" | "propBold" | "mono";
 /**
  * The map font's cell in device pixels, as Sdl.hs takes it from the loaded
  * font: halfSize is half the font's height rounded down and boxSize twice
- * that. baseline is the glyph's baseline below the cell's top, the font's
- * line box being centred in the cell as Sdl.hs's scaleSurfaceToTexture
- * centres a glyph's surface, cropping an odd row off the top.
+ * that. baseline is the font's faceBaseline in that cell, an odd height
+ * cropping a row off the top.
  */
 export interface CellMetrics {
   boxSize: number;
@@ -156,20 +156,38 @@ export function cellMetrics(ascent: number, descent: number): CellMetrics {
   return {
     boxSize,
     halfSize,
-    baseline: Math.floor((boxSize - height) / 2) + Math.ceil(ascent),
+    baseline: faceBaseline(boxSize, ascent, descent),
   };
+}
+
+/**
+ * A face's baseline below the top of a cell boxSize device pixels high,
+ * given the loaded face's ascent and descent: its line box centred
+ * in the cell as Sdl.hs's scaleSurfaceToTexture centres a glyph's surface,
+ * the odd row of a taller box cropped off the top and that of a shorter one
+ * left below it.
+ */
+export function faceBaseline(
+  boxSize: number,
+  ascent: number,
+  descent: number,
+): number {
+  const height = Math.ceil(ascent + descent);
+  return Math.floor((boxSize - height) / 2) + Math.ceil(ascent);
 }
 
 /**
  * One canvas drawing command over a rectangle, in device pixels: filling
  * it; a glyph centred in it, its baseline that far below its top, cropped
- * to it as Sdl.hs's scaleSurfaceToTexture crops a glyph to its cell; or
- * a one-pixel ring along its inner edge, which is SDL2's drawRect.
+ * to it as Sdl.hs's scaleSurfaceToTexture crops a glyph to its cell; a run
+ * of glyphs from its left edge, cropped to it likewise, as Sdl.hs's
+ * scaleSurfaceToTextureProp crops a proportional chunk; or a one-pixel ring
+ * along its inner edge, which is SDL2's drawRect. Text is drawn in a face.
  */
 export type DrawOp =
   | { kind: "fill"; x: number; y: number; w: number; h: number; color: string }
   | {
-      kind: "text";
+      kind: "text" | "textLeft";
       x: number;
       y: number;
       w: number;
@@ -177,6 +195,7 @@ export type DrawOp =
       baseline: number;
       text: string;
       color: string;
+      face: Face;
     }
   | {
       kind: "stroke";
@@ -196,8 +215,9 @@ export interface CellRun {
 
 /**
  * The draw ops for a cell run whose cells are pitch device pixels wide:
- * per cell, its background, its glyph and its highlight ring, in the order
- * Sdl.hs draws them. A blank glyph draws nothing and gets no op.
+ * per cell, its background, its glyph in the map font and its highlight
+ * ring, in the order Sdl.hs draws them. A blank glyph draws nothing and gets
+ * no op.
  */
 export function cellRunOps(
   run: CellRun,
@@ -221,6 +241,7 @@ export function cellRunOps(
         baseline: m.baseline,
         text: s.char,
         color: s.color,
+        face: "map",
       });
     }
     ops.push({ kind: "stroke", x, y, w: pitch, h, color: s.border });

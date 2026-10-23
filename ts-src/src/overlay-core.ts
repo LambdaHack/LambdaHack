@@ -1,14 +1,59 @@
 // The browser's half of OverlayLayout.hs's overlay layout: the proportional
-// pen, which places each chunk of a proportional line by the width
-// the renderer measured, re-implemented here and pinned to the Haskell
-// by the branch table the test suite writes into generated/prop-fit.json.
-// No DOM, no canvas: widths come in as numbers.
+// pen, which places each chunk of a proportional line by the width the
+// renderer measured, re-implemented here and pinned to the Haskell by the
+// branch table the test suite writes into generated/prop-fit.json, and the
+// draw ops of a frame's three overlays, through terminal-core's draw-op core,
+// as Sdl.hs draws them, with the map cells they cover. No DOM, no canvas:
+// widths come in as numbers.
 
-import type { CellRun } from "./terminal-core.js";
+import {
+  cellRunOps,
+  decodeCell,
+  fgColor,
+  resolveFg,
+  type CellMetrics,
+  type CellRun,
+  type DrawOp,
+  type Face,
+} from "./terminal-core.js";
 
 const DOLLAR = 0x24;
+const SPACE = 0x20;
+const BLACK = 0;
 const BR_BLACK = 9;
 const HIGHLIGHT_NONE = 0;
+
+/**
+ * A frame's overlays, decoded: OverlayLayout.hs's FrameLayout, its fields
+ * in draw order, the section a cell run is in being its layer.
+ */
+export interface FrameLayout {
+  prop: PropLine[];
+  square: CellRun[];
+  mono: CellRun[];
+}
+
+/** One proportional line, OverlayLayout.hs's PropLine. */
+export interface PropLine {
+  startX: number; // the PointUI x, in half-cells
+  row: number;
+  chunks: PropChunk[];
+}
+
+/**
+ * One same-colour run of a proportional line, OverlayLayout.hs's PropChunk,
+ * with its face and whether its text is all white space, which the Haskell
+ * derives, given.
+ */
+export interface PropChunk {
+  face: "propRegular" | "propBold";
+  color: number; // Color index, after the even-row recolour
+  allSpace: boolean;
+  text: string;
+}
+
+/** A frame with no overlays. */
+export const NO_OVERLAYS: FrameLayout = { prop: [], square: [], mono: [] };
 
 /**
  * Cell metrics in device pixels, OverlayLayout.hs's LayoutMetrics: halfSize
@@ -103,4 +148,105 @@ export function trimmedMarkerRun(lm: LayoutMetrics, row: number): CellRun {
     row,
     words: [(DOLLAR << 16) | (BR_BLACK << 8) | HIGHLIGHT_NONE],
   };
+}
+
+/**
+ * The draw ops of a frame's overlays over a screen width squares wide, in
+ * cells of m, in OverlayLayout.hs's draw order and as Sdl.hs draws them:
+ * each proportional chunk on black from its left edge, placed and cut by
+ * propFit at the ceiling of the width measure gives it, and followed by the
+ * trimmed-line marker where propFit raises it; each square run's cells as the
+ * map's; and each mono run's cells as monoRunOps draws them. baseline gives a
+ * face's baseline below a cell's top. Neither function is called for a frame
+ * with no overlays, nor measure for a chunk past the cutoff.
+ */
+export function overlayOps(
+  layout: FrameLayout,
+  width: number,
+  m: CellMetrics,
+  baseline: (face: Face) => number,
+  measure: (face: Face, text: string) => number,
+): DrawOp[] {
+  const lm = layoutMetrics(m.halfSize, width);
+  const ops: DrawOp[] = [];
+  for (const line of layout.prop) {
+    const y = line.row * m.boxSize;
+    let cur = startPropLine(lm, line.startX, line.row);
+    for (const chunk of line.chunks) {
+      if (propCutoff(lm, cur)) break;
+      const widthRaw = Math.ceil(measure(chunk.face, chunk.text));
+      const fit = propFit(lm, cur, chunk.allSpace, widthRaw);
+      const box = { x: fit.x, y, w: fit.widthPx, h: m.boxSize };
+      ops.push({ kind: "fill", ...box, color: fgColor(BLACK) });
+      ops.push({
+        kind: "textLeft",
+        ...box,
+        baseline: baseline(chunk.face),
+        text: chunk.text,
+        color: fgColor(chunk.color),
+        face: chunk.face,
+      });
+      if (fit.marker) ops.push(...cellRunOps(fit.marker, m.boxSize, m));
+      cur = fit.next;
+    }
+  }
+  for (const run of layout.square) ops.push(...cellRunOps(run, m.boxSize, m));
+  for (const run of layout.mono) ops.push(...monoRunOps(run, m, baseline));
+  return ops;
+}
+
+// A mono run's draw ops, as Sdl.hs's setMonoChar draws its cells, which
+// carry no highlight: a glyph per half cell in the mono face, its colour
+// recoloured for the row and its character not substituted, on black and
+// with no ring, a space drawing no glyph.
+function monoRunOps(
+  run: CellRun,
+  m: CellMetrics,
+  baseline: (face: Face) => number,
+): DrawOp[] {
+  const ops: DrawOp[] = [];
+  const y = run.row * m.boxSize;
+  for (let k = 0; k < run.words.length; k++) {
+    const x = (run.col + k) * m.halfSize;
+    const box = { x, y, w: m.halfSize, h: m.boxSize };
+    const { code, fg } = decodeCell(run.words[k]);
+    ops.push({ kind: "fill", ...box, color: fgColor(BLACK) });
+    if (code !== SPACE) {
+      ops.push({
+        kind: "text",
+        ...box,
+        baseline: baseline("mono"),
+        text: String.fromCodePoint(code),
+        color: fgColor(resolveFg(fg, run.row)),
+        face: "mono",
+      });
+    }
+  }
+  return ops;
+}
+
+/**
+ * The cells of a screen cols by rows cells of m that ops draw over,
+ * as frame indices in ascending order: those the next frame repaints
+ * from its map before drawing its own overlays.
+ */
+export function overlaidCells(
+  ops: DrawOp[],
+  m: CellMetrics,
+  cols: number,
+  rows: number,
+): number[] {
+  const cells = new Set<number>();
+  for (const { x, y, w, h } of ops) {
+    const colEnd = Math.min(cols, Math.ceil((x + w) / m.boxSize));
+    const rowEnd = Math.min(rows, Math.ceil((y + h) / m.boxSize));
+    for (let row = Math.max(0, Math.floor(y / m.boxSize)); row < rowEnd; row++)
+      for (
+        let col = Math.max(0, Math.floor(x / m.boxSize));
+        col < colEnd;
+        col++
+      )
+        cells.add(row * cols + col);
+  }
+  return [...cells].sort((a, b) => a - b);
 }
