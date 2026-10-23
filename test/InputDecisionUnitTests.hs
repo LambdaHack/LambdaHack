@@ -101,6 +101,7 @@ keyTranslateWebTable =
   , ("a", False, K.Char 'a')
   , ("A", True, K.Char 'A')
   , ("\x00A7", False, K.Char '`')
+  , ("\x00A7", True, K.Char '\x00A7')
   , ("Unidentified", False, K.Begin)
   , ("NoSuchKey", False, K.Unknown "NoSuchKey")
   ]
