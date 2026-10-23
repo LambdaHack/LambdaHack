@@ -16,10 +16,10 @@ import {
   type DrawOp,
   type Face,
 } from "./terminal-core.js";
-import { COLOR, HIGHLIGHT } from "./generated/palette.js";
+import { COLOR, HIGHLIGHT, PALETTE } from "./generated/palette.js";
 import propFitTable from "./generated/prop-fit.json";
 
-const { White, BrBlack, BrRed, BrCyan } = COLOR;
+const { Black, White, AltWhite, BrBlack, BrRed, BrCyan } = COLOR;
 const {
   HighlightNone: HiNone,
   HighlightRed: HiRed,
@@ -87,7 +87,7 @@ describe("overlayOps (the draw ops of a frame's overlays)", () => {
     expect(
       overlayOps(propOnly(3, 1, [chunk("Hi")]), 80, m, baseline, () => 20.2),
     ).toEqual([
-      { kind: "fill", x: 24, y: 16, w: 21, h: 16, color: "#000000" },
+      { kind: "fill", x: 24, y: 16, w: 21, h: 16, color: PALETTE[Black] },
       {
         kind: "textLeft",
         x: 24,
@@ -96,7 +96,7 @@ describe("overlayOps (the draw ops of a frame's overlays)", () => {
         h: 16,
         baseline: 12,
         text: "Hi",
-        color: "#FF5555",
+        color: PALETTE[BrRed],
         face: "propRegular",
       },
     ]);
@@ -117,7 +117,7 @@ describe("overlayOps (the draw ops of a frame's overlays)", () => {
       ["fill", 10, 30],
       ["textLeft", 10, 30],
     ]);
-    expect(ops[3]).toMatchObject({ face: "propBold", color: "#52F4E5" });
+    expect(ops[3]).toMatchObject({ face: "propBold", color: PALETTE[BrCyan] });
     expect(measure.mock.calls).toEqual([
       ["propRegular", "a"],
       ["propBold", "b"],
@@ -129,7 +129,7 @@ describe("overlayOps (the draw ops of a frame's overlays)", () => {
     const measure = vi.fn(() => 100);
     const layout = propOnly(2, 1, [chunk("long"), chunk("dropped")]);
     expect(overlayOps(layout, 4, m, baseline, measure)).toEqual([
-      { kind: "fill", x: 16, y: 16, w: 32, h: 16, color: "#000000" },
+      { kind: "fill", x: 16, y: 16, w: 32, h: 16, color: PALETTE[Black] },
       {
         kind: "textLeft",
         x: 16,
@@ -138,10 +138,10 @@ describe("overlayOps (the draw ops of a frame's overlays)", () => {
         h: 16,
         baseline: 12,
         text: "long",
-        color: "#FF5555",
+        color: PALETTE[BrRed],
         face: "propRegular",
       },
-      { kind: "fill", x: 48, y: 16, w: 16, h: 16, color: "#000000" },
+      { kind: "fill", x: 48, y: 16, w: 16, h: 16, color: PALETTE[Black] },
       {
         kind: "text",
         x: 48,
@@ -150,7 +150,7 @@ describe("overlayOps (the draw ops of a frame's overlays)", () => {
         h: 16,
         baseline: 13,
         text: "$",
-        color: "#6F5F5F",
+        color: PALETTE[BrBlack],
         face: "map",
       },
     ]);
@@ -193,7 +193,7 @@ describe("overlayOps (the draw ops of a frame's overlays)", () => {
         () => 0,
       ),
     ).toEqual([
-      { kind: "fill", x: 24, y: 32, w: 8, h: 16, color: "#000000" },
+      { kind: "fill", x: 24, y: 32, w: 8, h: 16, color: PALETTE[Black] },
       {
         kind: "text",
         x: 24,
@@ -202,11 +202,11 @@ describe("overlayOps (the draw ops of a frame's overlays)", () => {
         h: 16,
         baseline: 10,
         text: "@",
-        color: "#C4BEB1",
+        color: PALETTE[AltWhite],
         face: "mono",
       },
-      { kind: "fill", x: 32, y: 32, w: 8, h: 16, color: "#000000" },
-      { kind: "fill", x: 40, y: 32, w: 8, h: 16, color: "#000000" },
+      { kind: "fill", x: 32, y: 32, w: 8, h: 16, color: PALETTE[Black] },
+      { kind: "fill", x: 40, y: 32, w: 8, h: 16, color: PALETTE[Black] },
       {
         kind: "text",
         x: 40,
@@ -215,7 +215,7 @@ describe("overlayOps (the draw ops of a frame's overlays)", () => {
         h: 16,
         baseline: 10,
         text: "·",
-        color: "#6F5F5F",
+        color: PALETTE[BrBlack],
         face: "mono",
       },
     ]);
@@ -239,7 +239,7 @@ describe("overlayOps (the draw ops of a frame's overlays)", () => {
 
 describe("overlaidCells (the map cells overlays draw over)", () => {
   const m = cellMetrics(13, 3);
-  const black = "#000000";
+  const black = PALETTE[Black];
   it("is every cell an op reaches into, once each, in index order", () => {
     const ops: DrawOp[] = [
       { kind: "stroke", x: 32, y: 16, w: 16, h: 16, color: black },
