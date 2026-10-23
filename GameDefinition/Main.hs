@@ -53,18 +53,13 @@ main = do
     fstderr <- SIO.openFile (dataDir </> "stderr.txt") SIO.WriteMode
     GHC.IO.Handle.hDuplicateTo fstdout SIO.stdout
     GHC.IO.Handle.hDuplicateTo fstderr SIO.stderr
+#else
+  -- Work around display of one character per line in the JS console.
+  SIO.hSetBuffering SIO.stderr SIO.LineBuffering
 #endif
-  runServer
-
--- | Parse commandline options, tie the engine, content and clients knot,
--- run the game and handle exit.
-runServer :: IO ()
-runServer = do
   -- Bang to fail here, not inside server code, so that savefiles are
   -- not removed, because they are not the source of the failure.
   !serverOptions <- OA.execParser serverOptionsPI
-  -- Work around display of one character per line in, e.g., JS console.
-  SIO.hSetBuffering SIO.stderr SIO.LineBuffering
   resOrEx :: Either Ex.SomeException () <- Ex.try $ tieKnot serverOptions
   let unwrapEx e = case Ex.fromException e of
         Just (ExceptionInLinkedThread _ ex) -> unwrapEx ex
@@ -79,9 +74,10 @@ runServer = do
 -- @lhStart@. Server options are parsed from the argv the WASI host supplies:
 -- the browser loader passes the program name alone, so they sit at their
 -- defaults there, while a Node driver can pass real flags. The build is
--- linked with @-no-hs-main@, so this, not @main@, starts the game.
+-- linked with @-no-hs-main@, so this, @main@ under the name JS calls,
+-- starts the game.
 lhStart :: IO ()
-lhStart = runServer
+lhStart = main
 
 foreign export javascript "lhStart" lhStart :: IO ()
 #endif

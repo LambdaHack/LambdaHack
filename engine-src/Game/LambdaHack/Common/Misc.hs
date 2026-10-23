@@ -21,9 +21,12 @@ import           Data.Int (Int64)
 import qualified Data.Map as M
 import           GHC.Generics (Generic)
 import qualified NLP.Miniutter.English as MU
-import           System.Directory (getAppUserDataDirectory)
 import           System.Environment (getProgName)
 import           System.IO.Unsafe (unsafePerformIO)
+
+#ifndef USE_WASM
+import System.Directory (getAppUserDataDirectory)
+#endif
 
 data FontDefinition =
     FontProportional Text Int HintingMode  -- ^ filename, size, hinting mode
@@ -97,15 +100,16 @@ squashedWWandW parts =
 -- | Personal data directory for the game. Depends on the OS and the game,
 -- e.g., for LambdaHack under Linux it's @~\/.LambdaHack\/@.
 appDataDir :: IO FilePath
-#ifdef USE_WASM
--- On wasm32-wasi there is no effective user id nor home directory, so
--- getAppUserDataDirectory throws "unsupported operation". Use a fixed path
--- under the (virtual) filesystem root instead.
-appDataDir = return "/LambdaHack"
-#else
 appDataDir = do
   progName <- getProgName
   let name = takeWhile Char.isAlphaNum progName
+#ifdef USE_WASM
+  -- On wasm32-wasi there is no effective user id nor home directory, so
+  -- getAppUserDataDirectory throws "unsupported operation". Use a path
+  -- under the (virtual) filesystem root instead, named as natively: in
+  -- the browser by the argv[0] the loader passes.
+  return $ "/" ++ name
+#else
   getAppUserDataDirectory name
 #endif
 

@@ -2292,10 +2292,10 @@ mechanism R4 needs anyway.
 
 ### 3.1 Argv into the reactor: `lhStart` reads WASI args
 
-`lhStart` (`GameDefinition/Main.hs:lhStart = runServer`) parses an empty list
-where `main` parses real argv. Change it to parse `getArgs`: GHC's wasm RTS gets
-argv from WASI `args_get`, which every host shim controls --- the browser loader
-passes `["LambdaHack"]`
+`lhStart` (`GameDefinition/Main.hs:Reactor entry point for the wasm32-wasi`)
+parses an empty list where `main` parses real argv. Change it to parse
+`getArgs`: GHC's wasm RTS gets argv from WASI `args_get`, which every host shim
+controls --- the browser loader passes `["LambdaHack"]`
 (`loader.ts:const wasi = new WASI(["LambdaHack"], [], fds);`), so `getArgs`
 returns `[]` there and browser behavior is provably unchanged, while a Node
 harness can pass real flags. Update the stale "there is no argv in the browser"
