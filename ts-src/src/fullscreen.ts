@@ -42,8 +42,9 @@ export function mountFullscreen(
     await keyboard?.lock?.();
   }
 
-  // offsetWidth/offsetHeight read the layout box, which a transform does
-  // not change, so the fit is stable under its own application.
+  // offsetWidth/offsetHeight/offsetLeft read the layout box, which
+  // a transform does not change, so the fit is stable under its own
+  // application.
   function applyFit(): void {
     if (active()) {
       const t = fitTransform(
@@ -51,8 +52,9 @@ export function mountFullscreen(
         screen.offsetHeight,
         window.innerWidth,
         window.innerHeight,
+        screen.offsetLeft,
       );
-      screen.style.transformOrigin = "top center";
+      screen.style.transformOrigin = "top left";
       screen.style.transform = fitTransformCss(t);
     } else {
       screen.style.transform = "";

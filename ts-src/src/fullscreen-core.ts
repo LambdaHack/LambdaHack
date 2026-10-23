@@ -6,28 +6,37 @@
 export interface FitTransform {
   /** Uniform scale factor that fits the grid into the viewport. */
   scale: number;
+  /** Horizontal offset in CSS px that centres the scaled grid. */
+  dx: number;
   /** Vertical offset in CSS px that centres the scaled grid. */
   dy: number;
 }
 
 /**
- * Fit a gridW x gridH box into a viewW x viewH viewport. The grid is
- * already centred horizontally by its own margin, so only the vertical
- * offset is returned; both stay finite for any positive grid.
+ * Fit a gridW x gridH box, laid out with its left edge at gridLeft and
+ * its top at 0, into a viewW x viewH viewport, scaled about its top left
+ * corner. The offset is not assumed from the grid's auto margins, which
+ * centre it only while it is narrower than the viewport; all three stay
+ * finite for any positive grid.
  */
 export function fitTransform(
   gridW: number,
   gridH: number,
   viewW: number,
   viewH: number,
+  gridLeft: number,
 ): FitTransform {
   const scale = Math.min(viewW / gridW, viewH / gridH);
-  return { scale, dy: (viewH - gridH * scale) / 2 };
+  return {
+    scale,
+    dx: (viewW - gridW * scale) / 2 - gridLeft,
+    dy: (viewH - gridH * scale) / 2,
+  };
 }
 
 /** The CSS transform that applies a fit, translate first so it is in px. */
 export function fitTransformCss(t: FitTransform): string {
-  return `translateY(${t.dy}px) scale(${t.scale})`;
+  return `translate(${t.dx}px, ${t.dy}px) scale(${t.scale})`;
 }
 
 /** The toggle button's label for the current state. */

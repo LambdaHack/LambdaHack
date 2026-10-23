@@ -343,6 +343,20 @@
    "harm": "fired",
    "discovery": "review",
    "notes": "Found by the code review of 2026-10-23 over the year's diff. build-ts stopped copying the two files in 4db5c55fa, the page repository having committed them; page-gate, added in 6f0a8b893, took this repository's. A tier-1 record: the corpus root is tools/."
+  },
+  {
+   "id": "fullscreen-01",
+   "program": "ts-src/src/fullscreen.ts",
+   "name": "the fullscreen fit scaled #screen about its top centre, trusting its auto margins to centre it, which they do only while the grid is narrower than the viewport",
+   "family": "other:holds-in-a-range",
+   "fix_rev": "self",
+   "trigger": "a 1920 px grid in a 1366 px viewport, as allFontsScale 1.5 or a high browser zoom gives",
+   "ok": "fitTransform takes the box's offsetLeft and returns dx, the scale about the top left corner: the grid spans 0--1366 and the page does not scroll",
+   "bug": "the scaled grid spanned 277--1643, its right part off-screen, with scrollWidth 1643",
+   "proved": "ran",
+   "harm": "latent",
+   "discovery": "review",
+   "notes": "Found by the code review of 2026-10-23 over the year's diff, which reasoned it from CSS; measured that day in headless Chromium on a page with #screen's CSS, the old and new transforms applied by hand, and a narrower grid shown placed the same by both. Firefox was not measured. The core's vitest case pins the centring for a box starting anywhere. A tier-1 record: the corpus root is tools/."
   }
  ]
 }
