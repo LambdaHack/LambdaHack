@@ -468,6 +468,31 @@
    "notes": "Found by the /simplify review of 2026-10-23 (its 55.4). The break is the mutant 'A4 gates the work list in every run' in tools/mutants.py, replayed that day against both spellings of the control. A self-test's data, so no case; the mutant is the proof."
   },
   {
+   "id": "check-plan-crossrefs-12",
+   "program": "check-plan-crossrefs.py",
+   "name": "A5's step markers matched one digit, so a **Split** saying ten commits and enumerating (1) to (10) was reported as enumerating 9",
+   "family": "scan-for-parse",
+   "fix_rev": "self",
+   "trigger": "an item whose **Split** says `ten commits.` and enumerates (1) to (10)",
+   "ok": "no finding: exit 0",
+   "bug": "`FAIL A5 0.2 --- **Split** says ten commits and enumerates 9` and exit 1",
+   "proved": "ran",
+   "harm": "latent",
+   "discovery": "review",
+   "notes": "Found by the code review of 2026-10-23 over the year's diff. The number words run to twelve and the marker pattern stopped at 9; no live **Split** enumerates past nine, so it never fired.",
+   "plant": "a two-item work list whose second item's **Split** is as above, and an empty allowlist",
+   "plant_cmd": "printf '%s\\n' '# Scratch work list' '' '## 00 -- Status' '' '| row | delivers | size | depends on | state |' '|---|---|---|---|---|' '| 0.1 | a | tiny | --- | not applied |' '| 0.2 | b | tiny | --- | not applied |' '' '### 0.1 --- first' '' '**Owns** --- `ts-src/src/y.ts`.' '' '**Done** --- `native`.' '' '**Hands back** --- nothing.' '' '**Decide first** --- nothing.' '' '### 0.2 --- second' '' '**Split** --- ten commits. (1) step. (2) step. (3) step. (4) step. (5) step. (6) step. (7) step. (8) step. (9) step. (10) step.' '' '**Owns** --- `ts-src/src/x.ts`.' '' '**Done** --- `native`.' '' '**Hands back** --- nothing.' '' '**Decide first** --- nothing.' > plan.md && : > allow.txt",
+   "invoke": [
+    "plan.md",
+    "--allowlist",
+    "allow.txt"
+   ],
+   "expect_exit": 0,
+   "expect_text": "0 failed over 2 ledger rows",
+   "bug_exit": 1,
+   "bug_text": "says ten commits and enumerates 9"
+  },
+  {
    "id": "page-gate-01",
    "program": "ts-src/page-gate.mjs",
    "name": "the gate's 'a key changes the frame' assertion compared the screen hash before and after '?' while the insert-coin self-play repainted continuously, so it passed with no key delivered",

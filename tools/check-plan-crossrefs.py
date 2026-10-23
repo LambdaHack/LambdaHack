@@ -422,6 +422,8 @@ SELF_TEST_DOC_2 = """\
 
 ### 04.2 --- name
 
+**Split** --- ten commits. (1) a. (2) b. (3) c. (4) d. (5) e. (6) f. (7) g. (8) h. (9) i. (10) j.
+
 **Owns** --- nothing.
 
 **Done** --- `native`.
@@ -458,8 +460,10 @@ SELF_TEST_FAIL_2 = [
     " **Done** lacks `docs`",
     "A5 C2 --- **Split** says two commits and enumerates 1",
 ]
+# The second document's controls, among them 04.2's ten commits,
+# enumerated to (10).
 SELF_TEST_QUIET_2 = ["Made.hs", "A3 04.1", "A3 04.3", "A4 C1", "A4 C3",
-                     "A4 04.1"]
+                     "A4 04.1", "A5 04.2"]
 # Quiet in either document alone, loud jointly: the other document's name
 # in an **Owns**; `Shared.hs`, the cross-campaign edge A2 drew, is quiet
 # everywhere now.
@@ -488,7 +492,7 @@ NUMBER_LIST_RE = re.compile(
     r"(?: --- |: )((?:`[^`\n]+`(?:'s)?(?:, and |, or |, |"
     r" and | or ))*`[^`\n]+`(?:'s)?)(.{0,6})")
 COMMITS_RE = re.compile(r"\b(" + "|".join(NUMBERS) + r") commits\.")
-MARKER_RE = re.compile(r"\((\d)\)")
+MARKER_RE = re.compile(r"\((\d+)\)")
 
 
 class Blocked(Exception):
