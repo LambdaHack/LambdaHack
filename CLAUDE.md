@@ -42,8 +42,9 @@ The WASM (browser) build requires `~/.ghc-wasm/env` (ghc-wasm-meta toolchain):
 ```
 make build-wasm         # wasm32-wasi-cabal build exe:LambdaHack
 make build-ts           # build the TS harness in ts-src/; deploy it, the
-                        # wasm binary, the JSFFI glue and
-                        # GameDefinition/index.html into ../lambdahack.github.io
+                        # wasm binary, the JSFFI glue, GameDefinition/index.html
+                        # and GameDefinition/fonts/*.ttf.woff into
+                        # ../lambdahack.github.io
 make serve-wasm         # serve ../lambdahack.github.io locally on :8080
 make run-wasm           # open in firefox
 make page-gate          # the page as deployed, loaded in headless firefox

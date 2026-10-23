@@ -421,14 +421,15 @@ is no callout left for a landing to retire. Nothing else. The input-side
 `test/FrontendContractUnitTests.hs`, the contract's one module (its ruling (2)
 in the record), in the commit of their own the Split places; the contract's
 harness extends it. 0.0 lands first or is dropped, since the `lhKey` commit
-rewrites the very listener it fixes. Four items edit one sentence
-of `CLAUDE.md`: 0.1, 0.2 and 2.1 for the frontend bullet's three module names,
-2.1 again for the Gotchas bullet's "awaits its scheduled fix", which its fix
-of [Sdl.hs#L568][sdl-568] falsifies, R3 for the GHCJS mentions, and the pointman
-campaign's 04.4 for the sentences that campaign's landing falsifies, enumerated
-in its head callout. Where the edit rides is each item's **Split** to say,
-and they differ on purpose: 2.1 folds it into the re-anchoring commit
-that follows its `Sdl.hs` rewrite, R3 into the rip-out whose deletions
+rewrites the very listener it fixes. Several items edit `CLAUDE.md`: 0.1, 0.2
+and 2.1 for the frontend bullet's three module names, 2.1 again for the Gotchas
+bullet's "awaits its scheduled fix", which its fix of [Sdl.hs#L568][sdl-568]
+falsifies, 2.2 for the build-ts target's list of what it deploys, R3
+for the GHCJS mentions, and the pointman campaign's 04.4 for the sentences
+that campaign's landing falsifies, enumerated in its head callout. Where
+the edit rides is each item's **Split** to say, and they differ on purpose: 2.1
+folds it into the re-anchoring commit that follows its `Sdl.hs` rewrite, 2.2
+into the correction its code commits owed, R3 into the rip-out whose deletions
 the reworded sentences describe, and 04.4 into the deletion commit that resolves
 the clause.
 
@@ -990,6 +991,8 @@ from `tools/doc-refs-allow.txt`.
 for the draw op a proportional chunk needs, its glyphs drawn from the chunk's
 left edge, `ts-src/src/loader.ts`,
 `engine-src/Game/LambdaHack/Client/UI/Frontend/Wasm.hs`, `Makefile`,
+`ts-src/tsconfig.json` for the DOM.Iterable library the font declarations need,
+`CLAUDE.md` for the deployment its `make build-ts` line lists,
 `docs/wasm-frontend-unified-plan.md` and `tools/doc-refs-allow.txt`. 2.1's
 freshness case writes (2)'s branch table; this item edits neither the case
 nor the table.
