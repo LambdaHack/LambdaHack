@@ -329,8 +329,8 @@ Parity work stays in one checkout.
 
 ## Items
 
-Each item's design and rulings are in the record, under the same heading; what
-is here is how it lands.
+Each item's design and rulings are in the record, under the same heading, R8's
+under B.12; what is here is how it lands.
 
 ## Phase 0 --- shared foundations
 
@@ -806,7 +806,7 @@ The README half greps an unwrapped copy rather than the file: `wrap80` keeps
 that file wrapped, so a deletion earlier in the paragraph reflows what remains
 and a later landing's line-oriented grep passes over a clause that is still
 there, split across two lines --- and that silence reads exactly like success.
-An `&&` chain and never a pipeline, per the trap bullet below: piped,
+An `&&` chain and never a pipeline, per the trap bullet above: piped,
 the negation would report the grep's status whatever `wrap80` did. The `[Ss]`
 bracket R1's **Split** explains guards the other axis, case; a phrase can
 be missed for either reason and each guard covers one.

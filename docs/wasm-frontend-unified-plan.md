@@ -2218,7 +2218,7 @@ so packing buys nothing and a whole mismatch class dies with it. (b) The Haskell
 `decode` that the `decode . encode == id` property needs is a test-only helper,
 exported through the same ordinary "internal and used in unit tests" group 2.1's
 (b) ruled --- no `EXPOSE_INTERNAL` reopening. (c) "Next to `OverlayLayout`"
-means the same module file, as this block and 2.1's Owns already assumed ---
+means the same module file, as 2.3's **Owns** and 2.1's already assumed ---
 no sibling module, no `tools/doc-refs-allow.txt` churn.
 
 ### 2.4 Flip the switch --- as a capability, not a name list
@@ -2276,10 +2276,11 @@ a comparison.
 ## Phase 3 --- port the Node benchmark targets from GHCJS to WASM
 
 The Makefile still carries `nodeBenchCrawl`/`nodeBenchBattle`/`nodeBench`/
-`nodeMinifiedBench` (`Makefile:nodeBenchCrawl:`), but they invoke the GHCJS
-`.jsexe/all.js`, which the Makefile can no longer build --- they are dead
-as written. What they did matters: headless AI-vs-AI benchmarks
-of the browser-targeted build under Node
+`nodeMinifiedBench` (`Makefile:nodeBenchCrawl:`), but they invoke GHCJS output
+that is gone, the `.jsexe/all.js` the Makefile can no longer build and,
+for `nodeMinifiedBench`, a deployed bundle the pages checkout no longer carries
+--- they are dead as written. What they did matters: headless AI-vs-AI
+benchmarks of the browser-targeted build under Node
 (`--frontendNull --benchmark --stopAfterFrames N --automateAll ...`, same flag
 sets as the `nativeBench*` targets, sharing `RNGOPTS`), with `nodeMinifiedBench`
 additionally benchmarking the *deployed* artifact from `../lambdahack.github.io`
@@ -2504,7 +2505,7 @@ Node-only job, so TS regressions fail in seconds. Still to add:
 it builds, the battery's import half riding the `test-wasm` job already. Still
 to do: cache `~/.ghc-wasm` and the wasm cabal store, the toolchain being
 the expensive part and bootstrapped from scratch on every run today.
-The frontend-CI-matrix practice (below) widens this with xvfb SDL and pty ANSI
+The frontend CI smokes practice (below) widens this with xvfb SDL and pty ANSI
 smokes, which run in the playtest job, and a `nodeBench` smoke after 3.3.
 
 **Completeness requirement: everything runs in CI.** What runs there today
@@ -2564,7 +2565,7 @@ in one commit:
   it is the local cabal configuration of the GHCJS build and nothing reads it,
   its other lines being ordinary build settings for that build, so the file goes
   with the target rather than only its `flags: -supportNodeJS` line, which
-  is what **Owns** below says. Then `Frontend.hs:#elif defined(USE_GHCJS)`'s
+  is what its **Owns** says. Then `Frontend.hs:#elif defined(USE_GHCJS)`'s
   `USE_GHCJS` import branch, `File.hs`'s `USE_JSFILE` branch,
   `TieKnot.hs:#ifdef USE_JSFILE`'s GHC.Compact escape hatch,
   and the `USE_JSFILE` halves of the browser conditions
