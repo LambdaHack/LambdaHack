@@ -10,8 +10,8 @@
 -- branch behaviour through its unchanged type, and must pass before the
 -- live-read design, after it, and after the abort-split -- they are the
 -- safety net for the abort-split refactor, not characterizations to flip.
--- Only the bridge test X1 carries an [LR-flip] expectation, in its final
--- (cycling) step.
+-- Only the bridge tests X1 and X2 carry an [LR-flip] expectation, each in
+-- its final (cycling) step.
 module FrameMUnitTests (frameMUnitTests) where
 
 import Prelude ()
