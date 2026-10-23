@@ -21,9 +21,9 @@ and `sdl2-to-wasm-parity-plan.md`. It pursues two goals at once:
   into 2.2 and (6) into 0.1, each with a ledger row --- and two were carried
   into item bodies without a row of their own: the half-cell mouse pitch, which
   0.4 has since closed under B.10, and the compound-modifier shift flag, which
-  0.1 says outright needs a signature it has not specified, and which carries
-  no ledger row and so has no state. SDL2's behaviour is not always its intent:
-  What would falsify this has the rule and the case.
+  0.1 says outright needs a signature it has not specified, and which has since
+  become 1.7. SDL2's behaviour is not always its intent: What would falsify
+  this has the rule and the case.
 
 The ordering follows from G1: multi-font done naively would re-implement
 in TypeScript the layout logic that lived in `Sdl.hs`'s

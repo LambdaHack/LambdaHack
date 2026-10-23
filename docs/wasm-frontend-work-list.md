@@ -115,6 +115,8 @@ sections of the record are frozen and which live is its head callout's to say.
 | 1.4 | banner/title truthfulness | trivial, recurring | feature landings | open -- standing |
 | 1.5 | `allFontsScale` honored in browser | small | 0.4 for the painter; 0.3 for the reactor driver; R4 for player control | landed -- 433743890 |
 | 1.6 | game-end page lifecycle: a finished or crashed game says so | small | --- | landed -- 2e9908375 |
+| 1.7 | the browser's Shift flag raw, as SDL's: `C-S-<key>` shifted in both | small | 0.1 for `lhKey`; 0.3 for the reactor driver | not applied |
+| 1.8 | `--printEachScreen` saving a changed frame only, as SDL does | small | 1.2 | not applied |
 | 2.1 | `OverlayLayout` extraction + `Sdl.hs` on it and on `CellStyle` | medium--large | 0.2 for `CellStyle`; determinism goldens (native harness) | landed -- bfd562927 |
 | 2.2 | browser canvas overlay renderer + font wiring | medium | 2.1, 0.2, 0.4; 1.5 for the startup call | landed -- e549ef42e |
 | 2.3 | overlay transport over JSFFI | medium | 2.1, 2.2; 0.3 for the end-to-end battery | not applied |
@@ -910,6 +912,56 @@ the deployed game, so it is read in review.
 
 **Decide first** --- nothing; the rulings are the record's.
 
+### 1.7 The Shift flag under a compound modifier (small)
+
+**Split** --- two commits. (1) `lhKey` hands `keyTranslateWeb` the raw Shift bit
+it reads, as `Sdl.hs` does, where it hands `modifier == K.Shift`
+(`Wasm.hs:key = K.keyTranslateWeb (fromJSString`), false whenever Ctrl or Alt
+is down too, so that `C-S-<key>` translates as shifted in the browser
+as natively --- the second gap the record's Appendix C re-audit found;
+with it the paragraph-key clause, whose comment rests on the flag showing Shift
+alone (`Key.hs:on some keyboards the key below ESC is paragraph`),
+its `keyTranslateWeb` cases and the game driver's `lhKey` case gaining a `C-S-`
+key. (2) the outcome line under that gap, naming (1)'s hash, and the ledger
+flip. No allowlist entry: this item proposes no file.
+
+**Owns** --- `engine-src/Game/LambdaHack/Client/UI/Frontend/Wasm.hs`,
+`engine-src/Game/LambdaHack/Client/UI/Key.hs`, `test/InputDecisionUnitTests.hs`,
+`ts-src/run-wasm-game.mjs` and `docs/wasm-frontend-unified-plan.md`.
+
+**Done** --- `native`, `ts`, `wasm`, `reactor`, `deploy`, `page`, `docs`.
+
+**Hands back** --- *browser*: that a `C-S-` binding acts in Firefox and Chromium
+as it does natively, and that the key below Escape still reads as backquote
+under Ctrl.
+
+**Decide first** --- which `C-S-` binding the driver's case presses, its effect
+being what the case observes.
+
+### 1.8 `--printEachScreen` on a changed frame only (small)
+
+**Split** --- two commits. (1) the browser saving a screenshot
+under `--printEachScreen` only for a frame that differs from the one before,
+as SDL saves inside its unchanged-frame test
+(`Sdl.hs:unless (arraysEqual && overlaysEqual) $ do`), where
+`Wasm.hs:when printEachScreen printScreen` saves on every `display`,
+with the game driver's check that each frame prints one
+(`run-wasm-game.mjs:const framePrints = () =>`) following --- the parity half
+of the third gap the record's Appendix C re-audit found, 1.2 having closed
+the rest. (2) the outcome line under that gap, naming (1)'s hash, and the ledger
+flip. No allowlist entry: this item proposes no file.
+
+**Owns** --- `engine-src/Game/LambdaHack/Client/UI/Frontend/Wasm.hs`,
+`ts-src/run-wasm-game.mjs` and `docs/wasm-frontend-unified-plan.md`,
+and `ts-src/src/terminal.ts` if (a) keeps the previous frame in TS.
+
+**Done** --- `native`, `ts`, `wasm`, `reactor`, `deploy`, `page`, `docs`.
+
+**Hands back** --- nothing: the driver's count is the check.
+
+**Decide first** --- (a) which side keeps the previous frame: `Wasm.hs`, which
+keeps none today, or the TS painter, which already paints by diff.
+
 ## Phase 2 --- multi-font, as extraction rather than re-implementation
 
 ### 2.1 Extract `OverlayLayout`: the pure half of `Sdl.hs`'s overlay drawing
@@ -1062,7 +1114,7 @@ is spent at 2.4 instead.
 
 ### 2.4 Flip the switch --- as a capability, not a name list
 
-**Split** --- five commits, and the split is the point. (1) the capability
+**Split** --- six commits, and the split is the point. (1) the capability
 mechanism, behaviour-preserving: `supportsMultiFont` exported by `Sdl.hs`
 (`True`), `Wasm.hs` (`False`, for now), `ANSI.hs` and `Teletype.hs` (`False`),
 the `Frontend.hs` dispatch mirroring `frontendName`'s CPP-guarded guard chain
@@ -1072,14 +1124,18 @@ it (`MonadClientUI.hs:= Frontend.frontendName`), and the new
 gate is `frontendName soptions == "sdl"`, already `False` for wasm, ANSI,
 Teletype, null and lazy alike, so a dispatch true only for `Sdl.hs` reproduces
 it exactly --- which is why (1) may land at any time. (2)
-`Wasm.supportsMultiFont = True`, one line and nothing else. (3) the banner
-commit this item's **Owns** carries under 1.4's rule: the "proportional fonts"
-and "limited to the square font" clauses come off `GameDefinition/index.html`
-and the second off `README.md` too, run with 1.4's **Done** and only
-those phrases in the alternation. (4) the re-anchoring (1) owes: it rewrites
-the `multiFont` gate in `MonadClientUI.hs`, which every citation of that line
-anchors on. (5) the outcome line naming (2)'s hash and the ledger flip;
-this item has no `tools/doc-refs-allow.txt` entries.
+`Wasm.supportsMultiFont = True`, one line and nothing else. (3) the page gate's
+overlay assertion made unconditional, `ts-src/page-gate.mjs`'s
+`PAGE_GATE_OVERLAYS` switch deleted with the gate table's mention of it
+and the `tools/mutants-deep.py` mutant anchored on it, since a check that runs
+only where a caller sets a variable is skipped by every plain `make page-gate`.
+(4) the banner commit this item's **Owns** carries under 1.4's rule:
+the "proportional fonts" and "limited to the square font" clauses come off
+`GameDefinition/index.html` and the second off `README.md` too, run with 1.4's
+**Done** and only those phrases in the alternation. (5) the re-anchoring (1)
+owes: it rewrites the `multiFont` gate in `MonadClientUI.hs`, which every
+citation of that line anchors on. (6) the outcome line naming (2)'s hash
+and the ledger flip; this item has no `tools/doc-refs-allow.txt` entries.
 
 **Owns** --- `engine-src/Game/LambdaHack/Client/UI/Frontend/Sdl.hs`,
 `engine-src/Game/LambdaHack/Client/UI/Frontend/Wasm.hs`,
@@ -1087,21 +1143,23 @@ this item has no `tools/doc-refs-allow.txt` entries.
 `engine-src/Game/LambdaHack/Client/UI/Frontend/Teletype.hs`,
 `engine-src/Game/LambdaHack/Client/UI/Frontend.hs`,
 `engine-src/Game/LambdaHack/Client/UI/MonadClientUI.hs`,
-`test/MonadClientUIUnitTests.hs`, `GameDefinition/index.html`, `README.md` ---
-the "proportional fonts" and "limited to the square font" clauses its flip
-falsifies, the second of them in both files since the `#status` div quotes
-the README, deleted in this item's landing sequence under 1.4's rule, per
-that item's 2026-08-07 ruling --- and `docs/wasm-frontend-unified-plan.md` ---
-(1) rewrites the `multiFont` gate the citations anchor on, so this item owes
-the re-anchoring. `Dom.hs` is deliberately not here: a dead example file
-no configuration compiles, R3. The sum-typed selection practice also rewrites
-the `multiFont` gate in `MonadClientUI.hs`, so whichever lands first shapes
-the other's diff; the pointman campaign's C1 appends its witness and accessors
-to the same file below `partPronounLeader`, per that campaign's own ruling,
-so it rewrites nothing cited here.
+`test/MonadClientUIUnitTests.hs`, `ts-src/page-gate.mjs`,
+`tools/mutants-deep.py` (both for (3), with this document's gate table),
+`GameDefinition/index.html`, `README.md` --- the "proportional fonts"
+and "limited to the square font" clauses its flip falsifies, the second of them
+in both files since the `#status` div quotes the README, deleted in this item's
+landing sequence under 1.4's rule, per that item's 2026-08-07 ruling ---
+and `docs/wasm-frontend-unified-plan.md` --- (1) rewrites the `multiFont` gate
+the citations anchor on, so this item owes the re-anchoring. `Dom.hs`
+is deliberately not here: a dead example file no configuration compiles, R3.
+The sum-typed selection practice also rewrites the `multiFont` gate
+in `MonadClientUI.hs`, so whichever lands first shapes the other's diff;
+the pointman campaign's C1 appends its witness and accessors to the same file
+below `partPronounLeader`, per that campaign's own ruling, so it rewrites
+nothing cited here.
 
-**Done** --- `native`, `ts`, `wasm`, `deploy`, `page`
-with `PAGE_GATE_OVERLAYS=1`, `docs`, plus `make test-medium`.
+**Done** --- `native`, `ts`, `wasm`, `deploy`, `page`, `docs`, plus
+`make test-medium`.
 
 **Hands back** --- *browser*: commit (2) is the moment players see something
 different, and it is the whole human-review budget of Phase 2 concentrated
@@ -1840,10 +1898,11 @@ frontend CI smokes, ANSI and SDL --- early, beside 0.3-baseline: they
 0.2 CellStyle + generated files (gives 2.2 its palette)
 0.4 canvas painter (B.10) --- before 1.2, 1.5 and 2.2, which build on it;
     its Split (0) measures the frame cost beside the DOM grid's
-1.1 / 1.2 / 1.3 / 1.4 / 1.5 / 1.6 --- any order; a landing
+1.1 / 1.2 / 1.3 / 1.4 / 1.5 / 1.6 / 1.7 / 1.8 --- any order; a landing
     falsifying a banner clause ends with a banner commit, per 1.4's rule
     (1.2 and 1.5 come after 0.4, 1.2 after 1.3 and 0.1 too, 1.5's full
-    player-facing form after R4 too; 1.2's per-frame case waits on 3.1)
+    player-facing form after R4 too; 1.2's per-frame case waits on 3.1;
+    1.8 comes after 1.2)
 2.1 OverlayLayout extraction + Sdl.hs onto it and CellStyle
     (native-only, playtest- and bench-gated)
 2.2 browser overlay renderer (visual no-op)
