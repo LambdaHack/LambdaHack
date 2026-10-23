@@ -549,6 +549,29 @@ only that the plan was written is one the next reader has to skip.
   captures being the engine's, upstream of the `Sdl.hs` drawing 2.1 rewrote;
   a screenshot comparison of each of its `Sdl.hs` steps with the commit before
   stands in for them, and their native harness now precedes 2.4.
+- 2026-10-23 -- ruled by Mikolaj at 2.2's landing: the mono layer is drawn
+  as `Sdl.hs:setMonoChar ::` draws it, recoloured for the row and nothing more,
+  and not through `cellRunOps`, as 2.2's "with `CellStyle`'s per-cell rules
+  applied by the painter" reads. Those rules ring each cell, which in Hack-Bold
+  at 13px in a half cell covers 4.9% of the printable ASCII glyphs' ink
+  and a third of `M`'s, and swap a dim U+00B7 for U+22C5, which mono text
+  carries as `drawBullet`'s menu bullets. The swap makes the map font's dim
+  floor smaller, its U+22C5 being 2x1 pixels to its U+00B7's 2x2, while
+  Hack-Bold's two dots are the other way round, so in mono it would make
+  the bullets larger. Both are measured on a PIL rendering placed as the canvas
+  places glyphs. Whether `cellRunOps` takes a face and a glyph table and draws
+  both fixed-pitch layers is settled when the ring goes, the entry below.
+- 2026-10-23 -- ruled by Mikolaj: the LambdaHack issue #281 workaround goes,
+  in the step after 2.2 or the one after that. It is the black one-pixel ring
+  `Sdl.hs` draws around every square cell without a coloured highlight,
+  under "Rectangle drawing is broken in SDL 2.0.16", and its copies,
+  `CellStyle`'s black border for those cells and the browser's `strokeRect`. SDL
+  fixed the rectangle in 2.0.18, closing its issue 4001 on 2021-11-27,
+  and this machine runs SDL 2.30.0. On a working SDL the ring falls inside
+  the cell, where it covers 45 of the 4116 ink pixels of 99 map-font glyphs
+  at 16px, the font keeping a margin, so the drop gives SDL 2.0.16 its trails
+  back and otherwise changes almost nothing a player sees. The item is not yet
+  written.
 
 ## Repo facts the plan builds on
 
