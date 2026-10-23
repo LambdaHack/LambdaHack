@@ -357,6 +357,20 @@
    "harm": "latent",
    "discovery": "review",
    "notes": "Found by the code review of 2026-10-23 over the year's diff, which reasoned it from CSS; measured that day in headless Chromium on a page with #screen's CSS, the old and new transforms applied by hand, and a narrower grid shown placed the same by both. Firefox was not measured. The core's vitest case pins the centring for a box starting anywhere. A tier-1 record: the corpus root is tools/."
+  },
+  {
+   "id": "lint-and-test-suites-01",
+   "program": ".github/workflows/lint-and-test-suites.yml",
+   "name": "the playtest job printed nothing of a failing game, which with no terminal writes its stdout and stderr to ~/.LambdaHack rather than to the Makefile's redirections",
+   "family": "quiet-failure",
+   "fix_rev": "self",
+   "trigger": "a playtest of `make test-gha` failing on an assertion in CI",
+   "ok": "a step on the playtests' failure tails ~/.LambdaHack/stderr.txt and stdout.txt",
+   "bug": "the step failed with make's `Error 1`, the assertion text left on the discarded runner",
+   "proved": "asserted",
+   "harm": "unknown",
+   "discovery": "review",
+   "notes": "Found by the code review of 2026-10-23 over the year's diff. The redirection was watched that day: the game run with no terminal and an unknown game mode left 0 bytes on the shell's stdout and stderr and its error in $HOME/.LambdaHack/stderr.txt. The CI failure path itself was not run. A tier-1 record: the corpus root is tools/."
   }
  ]
 }

@@ -91,8 +91,16 @@ jobs:
         run: make smokeSdl
       # The teletype and null frontends run headless, so no display is needed.
       - name: Playtests
+        id: playtests
         if: ${{ !cancelled() && steps.build.outcome == 'success' }}
         run: make test-gha
+      # With no terminal the game writes its stdout and stderr to
+      # ~/.LambdaHack rather than to the Makefile's redirections (CLAUDE.md
+      # says why), each launch overwriting them, and make stops at the first
+      # failing game, so after a failure they hold that game's output.
+      - name: Playtest logs, on failure
+        if: ${{ !cancelled() && steps.playtests.outcome == 'failure' }}
+        run: tail -n 200 ~/.LambdaHack/stderr.txt ~/.LambdaHack/stdout.txt
   doctest:
     name: doctest
     runs-on: ubuntu-latest
