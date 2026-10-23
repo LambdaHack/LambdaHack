@@ -26,7 +26,7 @@ export interface StyledCell {
   char: string;
   color: string; // foreground hex
   background: string; // cell background-fill hex
-  border: string; // highlight border hex
+  border: string | null; // highlight border hex, null for none
 }
 
 const BLACK = 0;
@@ -84,21 +84,19 @@ export function bgColor(bg: number): string {
 }
 
 /**
- * Highlight border hex for a Highlight index. SDL2 (Sdl.hs's
- * chooseAndDrawHighlight) outlines every cell, but draws the three
- * non-highlight kinds in black -- the erase half of its rectangle
- * workaround -- and only the rest in highlightToColor; the Dom.hs
- * border-color write of highlightToColor for every kind, which put a
- * BrBlack ring around each backlit cell, was an artifact of that
- * frontend's table CSS.
+ * Highlight border hex for a Highlight index, or null for none. SDL2
+ * (Sdl.hs's chooseAndDrawHighlight) outlines a cell in highlightToColor,
+ * but not the three non-highlight kinds; the Dom.hs border-color write
+ * of highlightToColor for every kind, which put a BrBlack ring around
+ * each backlit cell, was an artifact of that frontend's table CSS.
  */
-export function highlightColor(bg: number): string {
+export function highlightColor(bg: number): string | null {
   if (
     bg === HIGHLIGHT_NONE ||
     bg === HIGHLIGHT_BACKGROUND ||
     bg === HIGHLIGHT_NONE_CURSOR
   ) {
-    return PALETTE[BLACK];
+    return null;
   }
   return PALETTE[HIGHLIGHT_TO_COLOR[bg]];
 }
@@ -217,7 +215,7 @@ export interface CellRun {
  * The draw ops for a cell run whose cells are pitch device pixels wide:
  * per cell, its background, its glyph in the map font and its highlight
  * ring, in the order Sdl.hs draws them. A blank glyph draws nothing and gets
- * no op.
+ * no op, and a cell without a ring gets none for it.
  */
 export function cellRunOps(
   run: CellRun,
@@ -244,7 +242,9 @@ export function cellRunOps(
         face: "map",
       });
     }
-    ops.push({ kind: "stroke", x, y, w: pitch, h, color: s.border });
+    if (s.border !== null) {
+      ops.push({ kind: "stroke", x, y, w: pitch, h, color: s.border });
+    }
   }
   return ops;
 }

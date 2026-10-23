@@ -157,7 +157,6 @@ describe("overlayOps (the draw ops of a frame's overlays)", () => {
         color: "#6F5F5F",
         face: "map",
       },
-      { kind: "stroke", x: 48, y: 16, w: 16, h: 16, color: "#000000" },
     ]);
     expect(measure).toHaveBeenCalledTimes(1);
   });

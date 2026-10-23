@@ -1,6 +1,6 @@
 -- | The per-cell drawing decisions for the frontends that draw the screen
 -- cell by cell, SDL and the browser: the glyph a cell shows, its colour,
--- its fill and the outline around it, which a frontend renders through
+-- its fill and the outline around it, if any, which a frontend renders through
 -- a thin step of its own. The browser's, @styledCell@
 -- in @ts-src/src/terminal-core.ts@, is pinned to 'styleCell' by fixtures
 -- the test suite writes into @ts-src/src/generated/@.
@@ -17,10 +17,10 @@ import qualified Game.LambdaHack.Definition.Color as Color
 
 -- | How to draw one cell.
 data CellStyle = CellStyle
-  { csGlyph   :: Char         -- ^ the character to draw
-  , csFg      :: Color.Color  -- ^ the colour to draw it in
-  , csBacklit :: Bool         -- ^ filled with 'backlightRGB', not black
-  , csBorder  :: Color.Color  -- ^ the outline around the cell
+  { csGlyph   :: Char               -- ^ the character to draw
+  , csFg      :: Color.Color        -- ^ the colour to draw it in
+  , csBacklit :: Bool               -- ^ filled with 'backlightRGB', not black
+  , csBorder  :: Maybe Color.Color  -- ^ the outline around the cell, if any
   }
   deriving (Show, Eq)
 
@@ -36,11 +36,11 @@ data CellGlyphs = CellGlyphs
 -- | Decide how to draw a cell, given the frontend's substitute glyphs
 -- and the cell's screen row.
 --
--- Every cell is outlined, as SDL's @chooseAndDrawHighlight@ draws a rectangle
--- around each one, but 'Color.HighlightNone', 'Color.HighlightBackground'
--- and 'Color.HighlightNoneCursor' are outlined in black, the erase half
--- of its workaround for broken rectangle drawing (LambdaHack issue #281),
--- although the second's 'Color.highlightToColor' is 'Color.BrBlack'.
+-- A cell is outlined in its highlight's 'Color.highlightToColor', as SDL's
+-- @chooseAndDrawHighlight@ draws a rectangle around it, but
+-- 'Color.HighlightNone', 'Color.HighlightBackground'
+-- and 'Color.HighlightNoneCursor' are not outlined, although the second's
+-- 'Color.highlightToColor' is 'Color.BrBlack'.
 styleCell :: CellGlyphs -> Int -> Color.AttrCharW32 -> CellStyle
 styleCell CellGlyphs{..} row w =
   let Color.AttrChar{acAttr=Color.Attr{fg=fgRaw, bg}, acChar} =
@@ -50,10 +50,10 @@ styleCell CellGlyphs{..} row w =
             | acChar == floorSymbol && not (Color.isBright fg) = cgDimFloor
             | otherwise = acChar
       border = case bg of
-        Color.HighlightNone -> Color.Black
-        Color.HighlightBackground -> Color.Black
-        Color.HighlightNoneCursor -> Color.Black
-        _ -> Color.highlightToColor bg
+        Color.HighlightNone -> Nothing
+        Color.HighlightBackground -> Nothing
+        Color.HighlightNoneCursor -> Nothing
+        _ -> Just $ Color.highlightToColor bg
   in CellStyle { csGlyph = glyph
                , csFg = fg
                , csBacklit = bg == Color.HighlightBackground

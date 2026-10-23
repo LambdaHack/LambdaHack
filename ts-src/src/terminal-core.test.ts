@@ -122,10 +122,10 @@ describe("bgColor (cell background fill)", () => {
 });
 
 describe("highlightColor (border, SDL2's chooseAndDrawHighlight rule)", () => {
-  it("draws the three non-highlight kinds in black, HighlightBackground included", () => {
-    expect(highlightColor(HiNone)).toBe("#000000");
-    expect(highlightColor(HiBackground)).toBe("#000000");
-    expect(highlightColor(HiNoneCursor)).toBe("#000000");
+  it("gives the three non-highlight kinds no border, HighlightBackground included", () => {
+    expect(highlightColor(HiNone)).toBeNull();
+    expect(highlightColor(HiBackground)).toBeNull();
+    expect(highlightColor(HiNoneCursor)).toBeNull();
   });
   it("maps colored highlights through highlightToColor", () => {
     expect(highlightColor(HiRed)).toBe("#D50505");
@@ -139,7 +139,7 @@ describe("styledCell (full per-cell resolution)", () => {
       char: "@",
       color: "#FF5555",
       background: "#000000",
-      border: "#000000",
+      border: null,
     });
   });
   it("applies the even-row White -> AltWhite tweak to the color", () => {
@@ -147,7 +147,7 @@ describe("styledCell (full per-cell resolution)", () => {
       char: "@",
       color: "#C4BEB1",
       background: "#000000",
-      border: "#000000",
+      border: null,
     });
   });
   it("substitutes the dim-floor glyph", () => {
@@ -155,10 +155,10 @@ describe("styledCell (full per-cell resolution)", () => {
       String.fromCodePoint(MIDDOT),
     );
   });
-  it("uses the highlight tint and border for HighlightBackground", () => {
+  it("uses the highlight tint and no border for HighlightBackground", () => {
     const s = styledCell(enc(AT, BrCyan, HiBackground), 1);
     expect(s.background).toBe("#251F1F");
-    expect(s.border).toBe("#000000");
+    expect(s.border).toBeNull();
   });
 });
 
@@ -219,7 +219,7 @@ describe("faceBaseline (a face's line box centred in the cell, as in Sdl.hs)", (
 
 describe("cellRunOps (the draw ops of a cell run)", () => {
   const m = cellMetrics(13, 3);
-  it("fills, writes in the map font and rings each cell in turn, at its column and row", () => {
+  it("fills, writes in the map font and rings each highlighted cell in turn, at its column and row", () => {
     expect(
       cellRunOps(
         {
@@ -243,7 +243,6 @@ describe("cellRunOps (the draw ops of a cell run)", () => {
         color: "#FF5555",
         face: "map",
       },
-      { kind: "stroke", x: 32, y: 16, w: 16, h: 16, color: "#000000" },
       { kind: "fill", x: 48, y: 16, w: 16, h: 16, color: "#000000" },
       {
         kind: "text",
@@ -261,7 +260,7 @@ describe("cellRunOps (the draw ops of a cell run)", () => {
   });
   it("lays cells out at the given pitch", () => {
     const ops = cellRunOps(
-      { col: 3, row: 0, words: [enc(AT, BrRed, HiNone)] },
+      { col: 3, row: 0, words: [enc(AT, BrRed, HiRed)] },
       m.halfSize,
       m,
     );
@@ -271,17 +270,14 @@ describe("cellRunOps (the draw ops of a cell run)", () => {
       ["stroke", 24, 8],
     ]);
   });
-  it("draws a backlit cell's tint and black ring, and no glyph for a space", () => {
+  it("draws a backlit cell's tint and no ring, and no glyph for a space", () => {
     expect(
       cellRunOps(
         { col: 0, row: 0, words: [enc(SPACE, White, HiBackground)] },
         16,
         m,
       ),
-    ).toEqual([
-      { kind: "fill", x: 0, y: 0, w: 16, h: 16, color: "#251F1F" },
-      { kind: "stroke", x: 0, y: 0, w: 16, h: 16, color: "#000000" },
-    ]);
+    ).toEqual([{ kind: "fill", x: 0, y: 0, w: 16, h: 16, color: "#251F1F" }]);
   });
   it("styles each cell by its row, as styledCell does", () => {
     const [, text] = cellRunOps(

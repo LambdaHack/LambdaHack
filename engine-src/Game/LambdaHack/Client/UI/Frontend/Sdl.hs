@@ -488,9 +488,8 @@ drawFrame coscreen ClientOptions{..} sess@FrontendSession{..} curFrame = do
         SDL.drawRect srenderer $ Just rect
         SDL.rendererDrawColor srenderer SDL.$= blackRGBA
           -- reset back to black
-      -- 'CellStyle' gives a cell without a coloured highlight a black border.
       chooseAndDrawHighlight !col !row !border =
-        when (border /= Color.Black) $ drawHighlight col row border
+        mapM_ (drawHighlight col row) border
       -- This also frees the surface it gets.
       scaleSurfaceToTexture :: Int -> SDL.Surface -> IO SDL.Texture
       scaleSurfaceToTexture xsize textSurfaceRaw = do

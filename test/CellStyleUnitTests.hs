@@ -85,16 +85,16 @@ cellStyleUnitTests = testGroup "cellStyleUnitTests" $
       forM_ [minBound .. maxBound] $ \bg ->
         assertEqual (show bg) (bg == Color.HighlightBackground)
                     (csBacklit $ styleCell browserGlyphs 1 $ highlit bg)
-  , testCase "styleCell outlines None, Background and NoneCursor in black" $
+  , testCase "styleCell outlines none of None, Background and NoneCursor" $
       forM_ [ Color.HighlightNone, Color.HighlightBackground
             , Color.HighlightNoneCursor ] $ \bg ->
-        assertEqual (show bg) Color.Black
+        assertEqual (show bg) Nothing
                     (csBorder $ styleCell browserGlyphs 1 $ highlit bg)
   , testCase "styleCell outlines every other kind in its highlightToColor" $
       forM_ [minBound .. maxBound] $ \bg ->
         unless (bg `elem` [ Color.HighlightNone, Color.HighlightBackground
                           , Color.HighlightNoneCursor ]) $
-          assertEqual (show bg) (Color.highlightToColor bg)
+          assertEqual (show bg) (Just $ Color.highlightToColor bg)
                       (csBorder $ styleCell browserGlyphs 1 $ highlit bg)
   , testCase "backlightRGB is a third of BrBlack in every channel" $
       hexChannels backlightRGB
@@ -248,7 +248,7 @@ fixturesJson = T.unlines $
          , ("background", jsonString $ if csBacklit
                                        then backlightRGB
                                        else Color.colorToRGB Color.Black)
-         , ("border", jsonString $ Color.colorToRGB csBorder) ]
+         , ("border", maybe "null" (jsonString . Color.colorToRGB) csBorder) ]
   width = RK.rWidthMax Content.RuleKind.standardRules
   positionFixture i =
     let Point{..} = punindex width i
