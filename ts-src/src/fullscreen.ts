@@ -1,15 +1,11 @@
 // Fullscreen wiring: a button toggles the page in and out of the
 // Fullscreen API, and while it is in, the keyboard is locked to the page
 // and the game's canvas is scaled to fill the viewport with its aspect ratio
-// kept (the arithmetic is fullscreen-core).
+// kept (the arithmetic is fullscreen-core, the centring the page's CSS).
 // Page-level only: sfullscreenMode is a startup-time SDL choice with no
 // in-game command even natively. Not unit-tested (DOM wiring).
 
-import {
-  fitTransform,
-  fitTransformCss,
-  toggleLabel,
-} from "./fullscreen-core.js";
+import { fitScale, toggleLabel } from "./fullscreen-core.js";
 
 /** Leave fullscreen, if the page is in it. */
 export function leaveFullscreen(): void {
@@ -50,22 +46,19 @@ export function mountFullscreen(
     await keyboard?.lock?.();
   }
 
-  // offsetWidth/offsetHeight/offsetLeft read the layout box, which
-  // a transform does not change, so the fit is stable under its own
-  // application.
+  // offsetWidth/offsetHeight read the layout box, which a transform does
+  // not change, so the fit is stable under its own application.
   function applyFit(): void {
     if (active()) {
-      const t = fitTransform(
+      const scale = fitScale(
         screen.offsetWidth,
         screen.offsetHeight,
         window.innerWidth,
         window.innerHeight,
-        screen.offsetLeft,
       );
-      screen.style.transformOrigin = "top left";
-      screen.style.transform = fitTransformCss(t);
+      screen.style.setProperty("--fit", String(scale));
     } else {
-      screen.style.transform = "";
+      screen.style.removeProperty("--fit");
     }
   }
 
@@ -74,13 +67,10 @@ export function mountFullscreen(
     // The banner is page chrome; in fullscreen only the game is shown,
     // as SDL2 shows only its window. The button is not inside it -- a
     // hidden ancestor would hide it too, and Escape would be the only way
-    // out -- and floats over the letterbox while fullscreen is on.
+    // out -- and the page's CSS floats it over the letterbox.
     for (const el of chrome) el.hidden = on;
     if (!on) keyboard?.unlock?.();
     button!.textContent = toggleLabel(on);
-    button!.style.position = on ? "fixed" : "";
-    button!.style.top = on ? "4px" : "";
-    button!.style.right = on ? "8px" : "";
     applyFit();
   }
 
@@ -108,5 +98,8 @@ export function mountFullscreen(
   // Covers the browser's own exit (Escape, F11) as well as our toggle.
   document.addEventListener("fullscreenchange", sync);
   window.addEventListener("resize", applyFit);
+  // The grid takes its size from the first frame, and changes it with the
+  // font scale, which neither event above announces.
+  new ResizeObserver(applyFit).observe(screen);
   sync();
 }

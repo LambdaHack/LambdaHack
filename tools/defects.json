@@ -577,7 +577,21 @@
    "proved": "ran",
    "harm": "latent",
    "discovery": "review",
-   "notes": "Found by the code review of 2026-10-23 over the year's diff, which reasoned it from CSS; measured that day in headless Chromium on a page with #screen's CSS, the old and new transforms applied by hand, and a narrower grid shown placed the same by both. Firefox was not measured. The core's vitest case pins the centring for a box starting anywhere. A tier-1 record: the corpus root is tools/."
+   "notes": "Found by the code review of 2026-10-23 over the year's diff, which reasoned it from CSS; measured that day in headless Chromium on a page with #screen's CSS, the old and new transforms applied by hand, and a narrower grid shown placed the same by both. Firefox was not measured. The core's vitest case pinned the centring for a box starting anywhere. A tier-1 record: the corpus root is tools/."
+  },
+  {
+   "id": "fullscreen-02",
+   "program": "ts-src/src/fullscreen.ts",
+   "name": "fullscreen entered before the first frame sized the grid fitted a 0x0 box, a scale of Infinity and NaN offsets, and nothing refitted once the grid took its size",
+   "family": "unverified-state",
+   "fix_rev": "self",
+   "trigger": "the page's Fullscreen button pressed while the wasm still loads",
+   "ok": "an unsized grid is left unscaled, and a ResizeObserver on #screen refits when the first frame sizes it",
+   "bug": "fitTransform(0, 0, 1920, 1080, 0) gave { scale: Infinity, dx: NaN, dy: NaN }, the transform holding until a resize or a fullscreen change",
+   "proved": "ran",
+   "harm": "latent",
+   "discovery": "review",
+   "notes": "Found by the /simplify review of 2026-10-23 (its 55.2), with 52.2, which moved the centring into the page's CSS and left the core the scale alone. The bug direction was watched in the vitest case of fullscreen-core.test.ts written against fitTransform before the fix; the case now asks fitScale. A tier-1 record: the corpus root is tools/."
   },
   {
    "id": "lint-and-test-suites-01",

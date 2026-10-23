@@ -51,6 +51,20 @@
         width: max-content;
       }
       #screen > canvas { display: block; }
+      /* In fullscreen the grid is centred in the viewport and scaled by
+         --fit, which fullscreen.ts sets to the scale that fits it, and
+         the toggle floats over the letterbox. */
+      :root:fullscreen #screen {
+        position: fixed;
+        left: 50%;
+        top: 50%;
+        transform: translate(-50%, -50%) scale(var(--fit, 1));
+      }
+      :root:fullscreen #fsToggle {
+        position: fixed;
+        top: 4px;
+        right: 8px;
+      }
       /* Visible only for keyboard-triggered focus (Tab), not mouse clicks --
          #screen is tabindex=0 and was previously outline:none, meaning a
          keyboard-only user tabbing here got no visible indicator at all. */
