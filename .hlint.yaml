@@ -80,7 +80,9 @@
 # in `.yaml`, hlint picking its parser by extension:
 #   grep -v '^- ignore' .hlint.yaml > SCRATCH.yaml && hlint . -h SCRATCH.yaml
 # The scoped entries name modules, hlint's `within` matching module names and
-# not paths.
+# not paths. The Dom entry shows up only with USE_GHCJS defined, as in the
+# ghcjs trio's run,
+# `--cpp-define=USE_BROWSER --cpp-define=USE_GHCJS --cpp-define=USE_JSFILE`.
 - ignore: {name: Use camelCase}
 - ignore: {name: Use tuple-section}
 - ignore: {name: Redundant $, within: Game.LambdaHack.Client.UI.Frontend.Dom}
