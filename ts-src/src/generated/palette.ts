@@ -47,6 +47,9 @@ export const HIGHLIGHT_TO_COLOR: readonly number[] = [
 // (Frontend/CellStyle.hs backlightRGB).
 export const BACKLIGHT_FILL = "#251F1F";
 
+// The glyph of a dim floor (Frontend/CellStyle.hs scalableGlyphs).
+export const DIM_FLOOR = "\u22c5";
+
 // Color and Highlight enum indices by constructor
 // (Definition/Color.hs), as fromEnum gives them.
 export const COLOR = {

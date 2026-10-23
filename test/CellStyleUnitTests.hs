@@ -24,6 +24,7 @@ import           Game.LambdaHack.Client.UI.Frontend
   , backlightRGB
   , rgbChannels
   , rowColor
+  , scalableGlyphs
   , styleCell
   , xhairCursorHotspot
   , xhairCursorPixels
@@ -53,42 +54,43 @@ cellStyleUnitTests = testGroup "cellStyleUnitTests" $
         when (fg /= Color.White) $
           assertEqual (show fg) fg (rowColor 0 fg)
   , testCase "styleCell recolours by row" $ do
-      csFg (styleCell browserGlyphs 0 $ cell Color.White '@') @?= Color.AltWhite
-      csFg (styleCell browserGlyphs 1 $ cell Color.White '@') @?= Color.White
+      csFg (styleCell scalableGlyphs 0 $ cell Color.White '@') @?= Color.AltWhite
+      csFg (styleCell scalableGlyphs 1 $ cell Color.White '@') @?= Color.White
   , testCase "styleCell draws a space as the frontend's space" $ do
-      csGlyph (styleCell browserGlyphs 1 $ cell Color.White ' ') @?= '\x00A0'
-      csGlyph (styleCell sdlGlyphs 1 $ cell Color.White ' ') @?= ' '
+      csGlyph (styleCell scalableGlyphs 1 $ cell Color.White ' ') @?= ' '
+      csGlyph (styleCell scalableGlyphs {cgSpace = '_'} 1
+               $ cell Color.White ' ') @?= '_'
   , testCase "styleCell draws a dim floor as the frontend's dim floor" $ do
-      csGlyph (styleCell browserGlyphs 1 $ cell Color.White floorSymbol)
+      csGlyph (styleCell scalableGlyphs 1 $ cell Color.White floorSymbol)
         @?= '\x22C5'
-      csGlyph (styleCell browserGlyphs 1 $ cell Color.BrBlack floorSymbol)
+      csGlyph (styleCell scalableGlyphs 1 $ cell Color.BrBlack floorSymbol)
         @?= '\x22C5'
       csGlyph (styleCell sdlGlyphs 1 $ cell Color.BrBlack floorSymbol)
         @?= '\x0007'
   , testCase "styleCell keeps a bright floor" $
-      csGlyph (styleCell browserGlyphs 1 $ cell Color.BrWhite floorSymbol)
+      csGlyph (styleCell scalableGlyphs 1 $ cell Color.BrWhite floorSymbol)
         @?= floorSymbol
   , -- Not a pin of whether the brightness is judged before or after the
     -- row recolour, which no input distinguishes, White and AltWhite both
     -- being dim.
     testCase "styleCell dims a White floor on an even row too" $
-      csGlyph (styleCell browserGlyphs 0 $ cell Color.White floorSymbol)
+      csGlyph (styleCell scalableGlyphs 0 $ cell Color.White floorSymbol)
         @?= '\x22C5'
   , testCase "styleCell passes an ordinary glyph through" $
-      csGlyph (styleCell browserGlyphs 1 $ cell Color.BrRed '@') @?= '@'
+      csGlyph (styleCell scalableGlyphs 1 $ cell Color.BrRed '@') @?= '@'
   , testCase "styleCell backlights HighlightBackground and nothing else" $
       forM_ [minBound .. maxBound] $ \bg ->
         assertEqual (show bg) (bg == Color.HighlightBackground)
-                    (csBacklit $ styleCell browserGlyphs 1 $ highlit bg)
+                    (csBacklit $ styleCell scalableGlyphs 1 $ highlit bg)
   , testCase "styleCell outlines none of None, Background and NoneCursor" $
       forM_ unoutlined $ \bg ->
         assertEqual (show bg) Nothing
-                    (csBorder $ styleCell browserGlyphs 1 $ highlit bg)
+                    (csBorder $ styleCell scalableGlyphs 1 $ highlit bg)
   , testCase "styleCell outlines every other kind in its highlightToColor" $
       forM_ [minBound .. maxBound] $ \bg ->
         unless (bg `elem` unoutlined) $
           assertEqual (show bg) (Just $ Color.highlightToColor bg)
-                      (csBorder $ styleCell browserGlyphs 1 $ highlit bg)
+                      (csBorder $ styleCell scalableGlyphs 1 $ highlit bg)
   , testCase "backlightRGB is a third of BrBlack in every channel" $ do
       let (r, g, b) = rgbChannels $ Color.colorToRGB Color.BrBlack
       rgbChannels backlightRGB @?= (r `div` 3, g `div` 3, b `div` 3)
@@ -105,10 +107,6 @@ cellStyleUnitTests = testGroup "cellStyleUnitTests" $
       xhairCursorPixels !! y !! x @?= CursorWhite
   ]
   ++ freshnessTests
-
--- | The browser's substitute glyphs, as @terminal-core.ts@ draws them.
-browserGlyphs :: CellGlyphs
-browserGlyphs = CellGlyphs {cgDimFloor = '\x22C5', cgSpace = '\x00A0'}
 
 -- | The SDL frontend's substitute glyphs under a bitmap map font.
 sdlGlyphs :: CellGlyphs
@@ -166,6 +164,10 @@ paletteTs = T.unlines $
      , "// (Frontend/CellStyle.hs backlightRGB)."
      , "export const BACKLIGHT_FILL = \"" <> backlightRGB <> "\";"
      , ""
+     , "// The glyph of a dim floor (Frontend/CellStyle.hs scalableGlyphs)."
+     , "export const DIM_FLOOR = "
+       <> jsonString (T.singleton $ cgDimFloor scalableGlyphs) <> ";"
+     , ""
      , "// Color and Highlight enum indices by constructor"
      , "// (Definition/Color.hs), as fromEnum gives them."
      , "export const COLOR = {" ]
@@ -180,7 +182,7 @@ paletteTs = T.unlines $
   indices l = [ "  " <> tshow c <> ": " <> tshow (fromEnum c) <> "," | c <- l ]
 
 -- | Fixtures that @terminal-core.test.ts@ asserts @styledCell@ and
--- @cellPosition@ against: 'styleCell' on the browser's glyphs, rendered
+-- @cellPosition@ against: 'styleCell' on 'scalableGlyphs', rendered
 -- to hex as @styledCell@ renders it, and 'punindex' at the sample game's
 -- 'RK.rWidthMax', which the engine's content validation makes the screen
 -- width and @TieKnot@ makes the width @toEnum@ decodes with.
@@ -190,7 +192,7 @@ fixturesJson = jsonDocument source
   , ("positions", map positionFixture positionSample) ]
  where
   cellFixture (row, w) =
-    let CellStyle{..} = styleCell browserGlyphs row w
+    let CellStyle{..} = styleCell scalableGlyphs row w
     in jsonObject
          [ ("w", tshow $ Color.attrCharW32 w)
          , ("row", tshow row)

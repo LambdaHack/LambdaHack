@@ -9,8 +9,8 @@ module Game.LambdaHack.Client.UI.Frontend
     -- * Input decisions shared by the frontends
   , KeyDecision(..), decideKey, decideWheel, decideMouseButton
     -- * Cell styling shared by the frontends
-  , CellStyle(..), CellGlyphs(..), styleCell, rowColor, backlightRGB
-  , rgbChannels
+  , CellStyle(..), CellGlyphs(..), scalableGlyphs, styleCell, rowColor
+  , backlightRGB, rgbChannels
     -- * The mouse cursor shared by the frontends
   , CursorPixel(..), xhairCursorPixels, xhairCursorSize, xhairCursorHotspot
     -- * Screenshot names shared by the frontends

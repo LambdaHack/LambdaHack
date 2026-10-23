@@ -81,9 +81,6 @@ describe("resolveFg (even-row White -> AltWhite)", () => {
 });
 
 describe("glyph (char substitutions)", () => {
-  it("renders a space as a non-breaking space (Dom.hs uses \\x00a0)", () => {
-    expect(glyph(SPACE, White)).toBe("\u00a0");
-  });
   it("renders a dim floor '·' as the middot '⋅'", () => {
     expect(glyph(FLOOR, White)).toBe(String.fromCodePoint(MIDDOT));
     expect(glyph(FLOOR, BrBlack)).toBe(String.fromCodePoint(MIDDOT));

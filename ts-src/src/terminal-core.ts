@@ -13,6 +13,7 @@
 import {
   BACKLIGHT_FILL,
   COLOR,
+  DIM_FLOOR,
   HIGHLIGHT,
   HIGHLIGHT_TO_COLOR,
   PALETTE,
@@ -32,8 +33,7 @@ export interface StyledCell {
 }
 
 const FLOOR_SYMBOL = 0xb7; // U+00B7, Content/TileKind.hs floorSymbol
-const FLOOR_DIM = "\u22c5"; // Dom.hs substitution for dim floor
-const NBSP = "\u00a0"; // Dom.hs renders ' ' as a non-breaking space
+export const SPACE = 0x20;
 
 /** Split a Word32 cell into glyph codepoint and color/highlight indices. */
 export function decodeCell(w: number): Cell {
@@ -66,10 +66,9 @@ export function resolveFg(fgRaw: number, row: number): number {
   return row % 2 === 0 && fgRaw === COLOR.White ? COLOR.AltWhite : fgRaw;
 }
 
-/** Glyph to draw, applying the web frontend's char substitutions. */
+/** Glyph to draw, applying the web frontend's char substitution. */
 export function glyph(code: number, fg: number): string {
-  if (code === 0x20) return NBSP;
-  if (code === FLOOR_SYMBOL && !isBright(fg)) return FLOOR_DIM;
+  if (code === FLOOR_SYMBOL && !isBright(fg)) return DIM_FLOOR;
   return String.fromCodePoint(code);
 }
 
@@ -226,7 +225,7 @@ export function cellRunOps(run: CellRun, m: CellMetrics): DrawOp[] {
     const box = { x, y, w: m.boxSize, h: m.boxSize };
     const s = styledCell(run.words[k], run.row);
     ops.push({ kind: "fill", ...box, color: s.background });
-    if (s.char !== NBSP) {
+    if (decodeCell(run.words[k]).code !== SPACE) {
       ops.push({
         kind: "text",
         ...box,

@@ -477,9 +477,9 @@ drawFrame coscreen ClientOptions{..} sess@FrontendSession{..} curFrame = do
       vp x y = Vect.P $ Vect.V2 (toEnum x) (toEnum y)
       -- Make all visible floors bold (no bold font variant for 16x16x,
       -- so only the dot can be bold).
-      squareGlyphs = CellGlyphs
-        { cgDimFloor = if mapFontIsBitmap then '\x0007' else '\x22C5'
-        , cgSpace = ' ' }
+      squareGlyphs = if mapFontIsBitmap
+                     then scalableGlyphs {cgDimFloor = '\x0007'}
+                     else scalableGlyphs
       drawHighlight !col !row !color = do
         SDL.rendererDrawColor srenderer SDL.$= colorToRGBA color
         let rect = SDL.Rectangle (vp (col * boxSize) (row * boxSize)) tt2Square

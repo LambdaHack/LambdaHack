@@ -13,6 +13,7 @@ import {
   encodeCell,
   fgColor,
   resolveFg,
+  SPACE,
   type CellMetrics,
   type CellRun,
   type DrawOp,
@@ -20,7 +21,6 @@ import {
 } from "./terminal-core.js";
 
 const DOLLAR = 0x24;
-const SPACE = 0x20;
 
 /**
  * A frame's overlays, decoded: OverlayLayout.hs's FrameLayout, its fields

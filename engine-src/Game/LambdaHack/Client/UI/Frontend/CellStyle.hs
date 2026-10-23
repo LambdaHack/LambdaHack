@@ -5,8 +5,8 @@
 -- in @ts-src/src/terminal-core.ts@, is pinned to 'styleCell' by fixtures
 -- the test suite writes into @ts-src/src/generated/@.
 module Game.LambdaHack.Client.UI.Frontend.CellStyle
-  ( CellStyle(..), CellGlyphs(..), styleCell, rowColor, backlightRGB
-  , rgbChannels
+  ( CellStyle(..), CellGlyphs(..), scalableGlyphs, styleCell, rowColor
+  , backlightRGB, rgbChannels
   ) where
 
 import Prelude ()
@@ -36,6 +36,11 @@ data CellGlyphs = CellGlyphs
   , cgSpace    :: Char  -- ^ for a space
   }
   deriving (Show, Eq)
+
+-- | The glyphs of a scalable map font, SDL's and the browser's: a dot
+-- operator for a dim floor and a space for a space.
+scalableGlyphs :: CellGlyphs
+scalableGlyphs = CellGlyphs {cgDimFloor = '\x22C5', cgSpace = ' '}
 
 -- | Decide how to draw a cell, given the frontend's substitute glyphs
 -- and the cell's screen row.
