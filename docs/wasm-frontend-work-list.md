@@ -130,7 +130,7 @@ sections of the record are frozen and which live is its head callout's to say.
 | R5 | performance pass | exploratory | 2.5, 3.3; R4 + 3.1 for the browser-side instrument | not applied |
 | R6 | screenshot/overlay coherence | small | 1.2, 2.2 | retired -- B.10 |
 | R7 | pixel-perfect bitmap map fonts on the canvas, scaled whole by integers, the scalable font only off `allFontsScale` 1.0 | medium | 0.4; 1.5 for the scale; R4 for a player-chosen fontset | not applied |
-| R8 | the LambdaHack issue #281 workaround retired: no black ring around a cell without a coloured highlight | small | 0.2, 2.2 | not applied |
+| R8 | the LambdaHack issue #281 workaround retired: no black ring around a cell without a coloured highlight | small | 0.2, 2.2 | landed -- d474dc271 |
 | capability constants | named constants in place of behavioral CPP | --- | --- | not applied |
 | sum-typed selection | one frontend field replacing four `Bool`s | mechanical, moderate churn | --- | not applied |
 | RawFrontend contract | haddock contract, tasty harness, add-a-frontend checklist | medium | haddock and checklist: nothing; native harness after 0.1, which creates its module; wasm case with 0.3 | not applied |

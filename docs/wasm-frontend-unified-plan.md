@@ -3517,6 +3517,18 @@ and 3fcc93a1e rewrote, and cannot reach the rule's copies made since, which
 are edits by hand either way. Whether `cellRunOps`, once it draws no ring
 for those kinds, draws the mono layer too is R8's **Decide first**.
 
+*Landed in `8a67cb831` and `d474dc271`, the Split's (1) and (2),
+then `abf421b35`, its (3); (1) is a `git revert` whose one conflict was the hunk
+the simulation above found. Beyond this body: `CellStyle`'s border became
+a `Maybe`, `Nothing` for the three kinds, and the browser's `highlightColor`
+returns `null` for them.*
+
+*Its hand-back confirmed by Mikolaj on 2026-10-23, for SDL and the page.
+Under Xvfb, the screenshots of every frame drawn in `make bench`'s seeded battle
+and crawl games before and after (1) differed only on cells' one-pixel rings,
+but for the time of day printed on the high-score screen, in which two runs
+before (1) differed as well.*
+
 **Rulings** --- one, ruled 2026-10-23 by Mikolaj, closing R8's **Decide first**:
 both frontends keep the mono layer's routine apart from the square one's,
 `setMonoChar` beside `setSquareChar` in SDL and `monoRunOps` beside `cellRunOps`
