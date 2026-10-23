@@ -906,6 +906,20 @@
    "notes": "Found by the code review of 2026-10-23 over the year's diff. That doctest exits 0 at a zero count is in the job's own log: definition's run printed `Examples: 0  Tried: 0  Errors: 0  Failures: 0` in a passing job (run 39825988301). The new step was driven that day with a stub cabal printing canned summaries: healthy counts pass, and a zero for lib:LambdaHack, a missing summary and a failed repl each exit 1. Locally doctest 0.25.0 rejected the `--interactive` cabal-install 3.18.2.0 passes it, and 0.25.0.2 runs the recipe, now `make doctest`, lib:LambdaHack's 22 examples passing. A tier-1 record: the corpus root is tools/."
   },
   {
+   "id": "run-wasm-test-01",
+   "program": "ts-src/run-wasm-test.mjs",
+   "name": "a wasm binary that failed to compile or link ended run-wasm-test.mjs in an uncaught CompileError at exit 1, a failing suite's status, for a run that never happened",
+   "family": "unverified-state",
+   "fix_rev": "self",
+   "trigger": "an empty file given as the wasm binary, beside a glue module exporting an empty import factory",
+   "ok": "`run-wasm-test.mjs: cannot instantiate a.wasm with g.mjs: CompileError: ...` and exit 2, and the same from run-wasm-game.mjs and for a glue module that throws",
+   "bug": "an uncaught `CompileError` and exit 1",
+   "proved": "ran",
+   "harm": "latent",
+   "discovery": "review",
+   "notes": "Found by the code review of 2026-10-23 over the year's diff. Watched both ways that day by hand, `node ts-src/run-wasm-test.mjs a.wasm g.mjs` over the trigger's files. The instantiation is shared with run-wasm-game.mjs, which exited 1 the same way and now exits 2 with it. A tier-1 record: the corpus root is tools/."
+  },
+  {
    "id": "loader-01",
    "program": "ts-src/src/loader.ts",
    "name": "a throw in the loader after the loading message was removed, a missing lhStart export among its causes, reached main's catch, which wrote only into that message, so the page said nothing of the failure",

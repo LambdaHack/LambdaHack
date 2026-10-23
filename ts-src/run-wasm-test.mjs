@@ -118,21 +118,30 @@ export async function installStubs(memoryOf) {
 }
 
 // Instantiate the binary at `wasmPath` under `wasi`, with the JSFFI glue
-// at `jsffiPath`. The glue needs the instance's own exports (mainly
-// `memory`) to implement ghc_wasm_jsffi, but imports have to be supplied
-// before an instance exists, so the knot is tied with a plain object
-// filled in right after instantiation.
+// at `jsffiPath`, exiting 2 where either cannot be loaded, compiled or
+// linked. The glue needs the instance's own exports (mainly `memory`) to
+// implement ghc_wasm_jsffi, but imports have to be supplied before an
+// instance exists, so the knot is tied with a plain object filled in right
+// after instantiation.
 export async function instantiate(wasmPath, jsffiPath, wasi) {
   const exportsPlaceholder = {};
-  const { default: makeJsffiImports } = await import(
-    pathToFileURL(resolve(jsffiPath)).href
-  );
-  const { instance } = await WebAssembly.instantiate(readFileSync(wasmPath), {
-    wasi_snapshot_preview1: wasi.wasiImport,
-    ghc_wasm_jsffi: makeJsffiImports(exportsPlaceholder),
-  });
-  Object.assign(exportsPlaceholder, instance.exports);
-  return instance;
+  try {
+    const { default: makeJsffiImports } = await import(
+      pathToFileURL(resolve(jsffiPath)).href
+    );
+    const { instance } = await WebAssembly.instantiate(readFileSync(wasmPath), {
+      wasi_snapshot_preview1: wasi.wasiImport,
+      ghc_wasm_jsffi: makeJsffiImports(exportsPlaceholder),
+    });
+    Object.assign(exportsPlaceholder, instance.exports);
+    return instance;
+  } catch (e) {
+    console.error(
+      `${basename(process.argv[1])}: cannot instantiate ${wasmPath}` +
+        ` with ${jsffiPath}: ${e}`,
+    );
+    process.exit(2);
+  }
 }
 
 if (import.meta.url === pathToFileURL(resolve(process.argv[1])).href) {
