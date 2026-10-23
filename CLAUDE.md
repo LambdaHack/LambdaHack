@@ -66,7 +66,7 @@ cabal test --test-options='--list-tests'
 
 The listing is how a count claim about the suite gets settled --- a `-p` pattern selects on the test *name*, so a renamed test leaves its series without failing anything, and only the enumeration shows it. Don't pipe the listing through `head`/`tail`; it is long, and truncating it is how a wrong count gets quoted.
 
-Doctests run in CI, as the `doctest` job of `lint-and-test-suites.yml`, which follows exactly the recipe below. Every library needs its own run --- a component's doctests are its own --- and today all 22 examples sit in `lib:LambdaHack`, the other three reporting 0, which is the count to check rather than the exit status. Note `--with-repl`, not `--with-compiler`: the latter hands cabal doctest as *the compiler*, so it tries to build the `definition` dependency with it and dies on `--make`:
+Doctests run in CI, as the `doctest` job of `lint-and-test-suites.yml`, which follows exactly the recipe below. Every library needs its own run --- a component's doctests are its own --- and today all 22 examples sit in `lib:LambdaHack`, the other three reporting 0, which is the count to check rather than the exit status, and the job checks it, failing where a run prints none or `lib:LambdaHack`'s is 0. Note `--with-repl`, not `--with-compiler`: the latter hands cabal doctest as *the compiler*, so it tries to build the `definition` dependency with it and dies on `--make`:
 
 ```
 cabal install doctest --ignore-project --overwrite-policy=always && cabal build

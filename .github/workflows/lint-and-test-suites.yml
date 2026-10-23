@@ -136,11 +136,22 @@ jobs:
       # One run per library: a component's doctests are its own. --with-repl,
       # not --with-compiler, which would hand cabal doctest as the compiler
       # and have it try to build the `definition` dependency with it.
+      # doctest exits 0 having found no example, so its count is read too:
+      # every run must print one, and lib:LambdaHack's, the library holding
+      # the examples (CLAUDE.md), must not be 0.
       - name: Doctests
         run: |
           for c in definition lib:LambdaHack this-game-content this-game-src; do
             cabal repl --build-depends=QuickCheck --build-depends=template-haskell \
-              --with-repl=doctest --repl-options='-w -Wdefault' "$c"
+              --with-repl=doctest --repl-options='-w -Wdefault' "$c" \
+              > doctest.log 2>&1 || { cat doctest.log; exit 1; }
+            cat doctest.log
+            n=$(sed -n 's/.*Examples: \([0-9]*\) .*/\1/p' doctest.log | tail -n 1)
+            [ -n "$n" ] || { echo "$c: doctest printed no example count"; exit 1; }
+            echo "$c: $n examples"
+            if [ "$c" = lib:LambdaHack ] && [ "$n" -eq 0 ]; then
+              echo "$c: no example found"; exit 1
+            fi
           done
   test-ts:
     name: TypeScript tests (make test-ts)

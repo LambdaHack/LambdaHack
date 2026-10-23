@@ -406,6 +406,20 @@
    "expect_text": "FAIL lhSeq (A.hs:6): the equation of `lhSeq` at A.hs:4 is not `syncExport \"lhSeq\"` applied to its whole right-hand side",
    "bug_exit": 0,
    "bug_text": "ok   lhSeq (A.hs:6) is built on syncExport"
+  },
+  {
+   "id": "lint-and-test-suites-02",
+   "program": ".github/workflows/lint-and-test-suites.yml",
+   "name": "the doctest job read the exit status alone, and doctest exits 0 having found no example",
+   "family": "vacuous-check",
+   "fix_rev": "self",
+   "trigger": "doctest loading lib:LambdaHack without its examples, after a cabal, doctest or --repl-options change",
+   "ok": "the step reads each run's `Examples:` count, failing on a run that prints none and on lib:LambdaHack's 0",
+   "bug": "the job stayed green with `Examples: 0` for every library",
+   "proved": "asserted",
+   "harm": "latent",
+   "discovery": "review",
+   "notes": "Found by the code review of 2026-10-23 over the year's diff. That doctest exits 0 at a zero count is in the job's own log: definition's run printed `Examples: 0  Tried: 0  Errors: 0  Failures: 0` in a passing job (run 39825988301). The new step was driven that day with a stub cabal printing canned summaries: healthy counts pass, and a zero for lib:LambdaHack, a missing summary and a failed repl each exit 1. Locally the recipe itself stops earlier, doctest 0.25.0 rejecting the `--interactive` cabal-install 3.18.2.0 passes it. A tier-1 record: the corpus root is tools/."
   }
  ]
 }
