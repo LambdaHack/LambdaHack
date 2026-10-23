@@ -1,3 +1,4 @@
+{-# LANGUAGE MagicHash, UnliftedFFITypes #-}
 -- | Saving/loading to JS storage, mimicking operations on files, for the
 -- wasm32-wasi frontend. Mirrors JSFile.hs (the GHCJS equivalent) exactly in
 -- storage format and behavior -- same lz-string compression, same
@@ -20,6 +21,8 @@ module Game.LambdaHack.Common.WasmFile
 -- to molify doctest, but don't break stylish-haskell parsing
     encodeEOF, strictDecodeEOF
   , tryCreateDir, doesFileExist, tryWriteFile, readFile, renameFile
+    -- * Operations both internal and used in unit tests
+  , compressToUTF16, decompressFromUTF16
 #endif
   ) where
 
@@ -29,11 +32,16 @@ import Prelude ()
 import Game.LambdaHack.Core.Prelude
 
 import           Data.Binary
-import qualified Data.ByteString.Lazy.Char8 as LBS
-import qualified Data.Text as T
+import qualified Data.ByteString as BS
+import qualified Data.ByteString.Internal as BS (create)
+import qualified Data.ByteString.Lazy as LBS
+import qualified Data.Text.Array as TA
 import           Data.Text.Encoding (decodeLatin1)
+import           Data.Text.Internal (Text (..))
 import           Data.Version
-import           GHC.Wasm.Prim (JSString (..), fromJSString, toJSString)
+import           Foreign.Ptr (Ptr)
+import           GHC.Exts (ByteArray#)
+import           GHC.Wasm.Prim (JSString (..), JSVal, fromJSString, toJSString)
 
 -- | Same lz-string routines JSFile.hs uses, reached as a page-global instead
 -- of via a GHCJS-specific import, since wasm32-wasi has no such binding.
@@ -43,22 +51,47 @@ foreign import javascript unsafe "globalThis.LZString.compressToUTF16($1)"
 foreign import javascript unsafe "globalThis.LZString.decompressFromUTF16($1)"
   decompressFromUTF16 :: JSString -> IO JSString
 
--- | Split into a presence check plus an unconditional get (rather than one
--- call returning a nullable/Maybe result, as ghcjs-dom's Storage.getItem
--- does) because GHC's wasm JSFFI has no built-in Maybe-JSString marshaling.
--- Callers must check existence before calling js_getItem, as
--- 'getExistingItem' does.
-foreign import javascript unsafe "globalThis.localStorage.getItem($1) !== null"
-  js_hasItem :: JSString -> IO Bool
-
+-- | The stored item, null where there is none: a 'JSVal', since GHC's
+-- wasm JSFFI marshals no nullable string, so that an item is fetched once
+-- and copied nowhere to tell whether it is there.
 foreign import javascript unsafe "globalThis.localStorage.getItem($1)"
-  js_getItem :: JSString -> IO JSString
+  js_getItem :: JSString -> IO JSVal
+
+foreign import javascript unsafe "$1 === null"
+  js_isNull :: JSVal -> Bool
 
 foreign import javascript unsafe "globalThis.localStorage.setItem($1, $2)"
   js_setItem :: JSString -> JSString -> IO ()
 
 foreign import javascript unsafe "globalThis.localStorage.removeItem($1)"
   js_removeItem :: JSString -> IO ()
+
+-- | The string a run of UTF-8 bytes in the payload of a 'ByteArray#'
+-- encodes, at an offset and of a length in bytes. The payload is read
+-- during the call, which runs no Haskell, so no GC moves it meanwhile.
+foreign import javascript unsafe
+  "new TextDecoder('utf-8', {ignoreBOM: true}).decode(new Uint8Array(__exports.memory.buffer, $1 + $2, $3))"
+  js_decodeUTF8 :: ByteArray# -> Int -> Int -> IO JSString
+
+foreign import javascript unsafe "$1.length"
+  js_length :: JSString -> IO Int
+
+-- | Write the code units of a string, each below 256, a byte apiece,
+-- into a buffer as long as the string.
+foreign import javascript unsafe
+  "const b = new Uint8Array(__exports.memory.buffer, $2, $1.length); for (let i = 0; i < b.length; i++) b[i] = $1.charCodeAt(i);"
+  js_writeLatin1 :: JSString -> Ptr Word8 -> IO ()
+
+-- | The string of a 'Text', from its UTF-8 bytes, with no 'String' between.
+textToJSString :: Text -> IO JSString
+textToJSString (Text (TA.ByteArray arr) off len) = js_decodeUTF8 arr off len
+
+-- | The bytes a string of code units below 256 holds, with no 'String'
+-- between: the inverse of 'decodeLatin1' followed by 'textToJSString'.
+latin1ToByteString :: JSString -> IO BS.ByteString
+latin1ToByteString s = do
+  n <- js_length s
+  BS.create n $ js_writeLatin1 s
 
 -- | Serialize and save data with an EOF marker, compressing. Identical
 -- format to JSFile.hs's encodeEOF: treat the bytestring as Latin1 characters
@@ -68,7 +101,7 @@ foreign import javascript unsafe "globalThis.localStorage.removeItem($1)"
 encodeEOF :: Binary b => FilePath -> Version -> b -> IO ()
 encodeEOF path v b = do
   let t = decodeLatin1 $ LBS.toStrict $ encode (v, (encode b, "OK" :: String))
-  item <- compressToUTF16 $ toJSString $ T.unpack t
+  item <- compressToUTF16 =<< textToJSString t
   js_setItem (toJSString path) item
 
 -- | Read and deserialize data with an EOF marker. Identical format/checks to
@@ -76,9 +109,8 @@ encodeEOF path v b = do
 strictDecodeEOF :: Binary b => FilePath -> IO (Version, b)
 strictDecodeEOF path = do
   item <- getExistingItem path
-  t <- decompressFromUTF16 item
-  let c1 = LBS.pack $ fromJSString t
-      (v1, (c2, s)) = decode c1
+  c1 <- latin1ToByteString =<< decompressFromUTF16 item
+  let (v1, (c2, s)) = decode $ LBS.fromStrict c1
   return $! if s == ("OK" :: String)
             then (v1, decode c2)
             else error $ "Fatal error: corrupted file " ++ path
@@ -88,13 +120,13 @@ tryCreateDir :: FilePath -> IO ()
 tryCreateDir _dir = return ()
 
 doesFileExist :: FilePath -> IO Bool
-doesFileExist path = js_hasItem (toJSString path)
+doesFileExist path = isJust <$> getItem path
 
 -- | Takes Text, not String, matching HSFile.hs's real signature.
 tryWriteFile :: FilePath -> Text -> IO ()
 tryWriteFile path content = do
-  exists <- js_hasItem (toJSString path)
-  unless exists $ js_setItem (toJSString path) (toJSString $ T.unpack content)
+  exists <- doesFileExist path
+  unless exists $ js_setItem (toJSString path) =<< textToJSString content
 
 readFile :: FilePath -> IO String
 readFile path = do
@@ -107,10 +139,14 @@ renameFile path path2 = do
   js_setItem (toJSString path2) item  -- overwrites
   js_removeItem (toJSString path)
 
+-- | The stored item, if any.
+getItem :: FilePath -> IO (Maybe JSString)
+getItem path = do
+  v <- js_getItem $ toJSString path
+  return $! if js_isNull v then Nothing else Just $ JSString v
+
 -- | The stored item, failing if there is none.
 getExistingItem :: FilePath -> IO JSString
-getExistingItem path = do
-  exists <- js_hasItem (toJSString path)
-  unless exists $ fail $ "Fatal error: no file " ++ path
-  js_getItem (toJSString path)
+getExistingItem path =
+  getItem path >>= maybe (fail $ "Fatal error: no file " ++ path) return
 #endif

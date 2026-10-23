@@ -521,7 +521,9 @@ test-suite test
                       ,transformers
                       ,vector
   if os(wasi)
-    build-depends:    ghc-experimental
+    build-depends:    ,binary
+                      ,bytestring
+                      ,ghc-experimental
   else
     build-depends:    ,bytestring
                       ,directory

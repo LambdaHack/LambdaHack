@@ -26,7 +26,10 @@ import           Test.Tasty.HUnit
 import qualified Game.LambdaHack.Common.File as File
 
 #ifdef USE_WASMFILE
-import GHC.Wasm.Prim (JSString (..), fromJSString, toJSString)
+import           Data.Binary (encode)
+import qualified Data.ByteString.Lazy as LBS
+import           Data.Text.Encoding (decodeLatin1)
+import           GHC.Wasm.Prim (fromJSString, toJSString)
 #else
 import qualified Data.ByteString.Char8 as BS
 import           System.Directory
@@ -81,7 +84,27 @@ ffiCoverageUnitTests = testGroup "ffiCoverageUnitTests" $
               "corrupted file" `isInfixOf` show e
           Right _ -> assertFailure "a damaged EOF marker was decoded"
   ]
+  ++ wasmFileTests
   ++ frontendTests
+
+-- | The stored form of a save, and none natively: under wasm a save is
+-- stored as the string its 'String' path stored, so that a save one build
+-- makes another loads.
+wasmFileTests :: [TestTree]
+#ifdef USE_WASMFILE
+wasmFileTests =
+  [ testCase "a save is stored as the String path stored it" $
+      withScratch $ \path -> do
+        File.encodeEOF (path "stored") version payload
+        stored <- File.readFile (path "stored")
+        let t = decodeLatin1 $ LBS.toStrict
+                $ encode (version, (encode payload, "OK" :: String))
+        expected <- File.compressToUTF16 $ toJSString $ T.unpack t
+        stored @?= fromJSString expected
+  ]
+#else
+wasmFileTests = []
+#endif
 
 -- | The frame case, and none natively, where no wasm frontend is linked.
 -- Kept a binding of its own, as @Spec.hs@ keeps @sdlFontsetTests@, so that
@@ -134,21 +157,13 @@ damageMarker :: FilePath -> FilePath -> IO ()
 #ifdef USE_WASMFILE
 damageMarker from to = do
   raw <- File.readFile from
-  plain <- fromJSString <$> js_decompress (toJSString raw)
+  plain <- fromJSString <$> File.decompressFromUTF16 (toJSString raw)
   case reverse plain of
     'K' : rest -> do
-      damaged <- js_compress $ toJSString $ reverse $ 'X' : rest
+      damaged <- File.compressToUTF16 $ toJSString $ reverse $ 'X' : rest
       -- Under wasm 'File.tryWriteFile' stores its text as the item itself.
       File.tryWriteFile to $ T.pack $ fromJSString damaged
     _ -> assertFailure "the save does not end in the EOF marker"
-
--- | The lz-string routines @WasmFile.hs@ calls, reached here to change
--- the payload inside a saved item.
-foreign import javascript unsafe "globalThis.LZString.compressToUTF16($1)"
-  js_compress :: JSString -> IO JSString
-
-foreign import javascript unsafe "globalThis.LZString.decompressFromUTF16($1)"
-  js_decompress :: JSString -> IO JSString
 #else
 damageMarker from to = do
   bytes <- BS.readFile from

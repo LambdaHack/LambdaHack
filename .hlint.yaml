@@ -94,6 +94,7 @@
 # guarded by CPP: stylish-haskell refuses to parse a LANGUAGE pragma below a
 # conditional and then leaves the file silently unformatted.
 - ignore: {name: Unused LANGUAGE pragma, within: Game.LambdaHack.Client.UI.Frontend.Wasm}
+- ignore: {name: Unused LANGUAGE pragma, within: Game.LambdaHack.Common.WasmFile}
 
 # A lambda whose argument is named on purpose. Every rewrite these two
 # offer here -- eta-reduction, a `.` chain, `flip`, a backtick section --

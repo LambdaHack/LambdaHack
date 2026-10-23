@@ -1049,7 +1049,7 @@ case, 1.2's `js_printScreen`, by its `Ctrl+P` case, and 1.5's `js_configure`,
 by its startup-payload case. Still to do: the standing half, and the game
 driver's run in CI, with R2's `build-wasm` job.
 
-<!-- probe: git -C .. grep -h 'foreign \(import\|export\) javascript' -- engine-src/Game/LambdaHack/Client/UI/Frontend/Wasm.hs engine-src/Game/LambdaHack/Common/WasmFile.hs GameDefinition/Main.hs | grep -vc '^-- ' :: 19 -->
+<!-- probe: git -C .. grep -h 'foreign \(import\|export\) javascript' -- engine-src/Game/LambdaHack/Client/UI/Frontend/Wasm.hs engine-src/Game/LambdaHack/Common/WasmFile.hs GameDefinition/Main.hs | grep -vc '^-- ' :: 22 -->
 
 **Rulings** --- all three ruled on 2026-08-07. (1) The export mechanism
 is the thin reactor driver the Split now specifies --- a slice of 3.2 pulled

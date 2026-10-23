@@ -2,6 +2,10 @@
 module Game.LambdaHack.Common.File
   ( encodeEOF, strictDecodeEOF
   , tryCreateDir, doesFileExist, tryWriteFile, readFile, renameFile
+#ifdef USE_WASMFILE
+    -- * Operations both internal and used in unit tests
+  , compressToUTF16, decompressFromUTF16
+#endif
   ) where
 
 import Prelude ()

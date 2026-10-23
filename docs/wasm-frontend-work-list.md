@@ -508,9 +508,9 @@ is the whole correctness claim.
 ### 0.3 FFI-coverage test (baseline first, then per-commit)
 
 **Split** --- the import half first: the declarations the suite reaches
-in `Wasm.hs`, `WasmFile.hs` and `GameDefinition/Main.hs` --- `WasmFile.hs`'s
-six, reachable only through `Common/File.hs`'s seven exported functions since
-`WasmFile` is a hidden other-module, and `Wasm.hs`'s `js_submitFrame`, reached
+in `Wasm.hs`, `WasmFile.hs` and `GameDefinition/Main.hs` --- `WasmFile.hs`'s,
+reachable only through `Common/File.hs`'s exported functions since `WasmFile`
+is a hidden other-module, and `Wasm.hs`'s `js_submitFrame`, reached
 by `Frontend.Wasm.startup` plus `fdisplay` on a constructed `SingleFrame` ---
 together with the JS stubs (`globalThis.localStorage`, `globalThis.LZString`,
 `globalThis.lhSubmitFrame`) that `run-wasm-test.mjs` must install before
