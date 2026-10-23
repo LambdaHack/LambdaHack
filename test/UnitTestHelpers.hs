@@ -24,6 +24,7 @@ module UnitTestHelpers
   , heroA
   , heroB
   , heroC
+  , freeFloorPos
   , partyCliState
   , partyCliState3
   , partyCliStateBanned
@@ -33,6 +34,7 @@ module UnitTestHelpers
   , enlargeScreen
   , withEqpItems
   , withSkills
+  , withPositions
   , projectSkills
   , runParamsA
 #ifdef EXPOSE_INTERNAL
@@ -82,6 +84,7 @@ import           Game.LambdaHack.Client.UI.SessionUI
 import           Game.LambdaHack.Client.UI.UIOptions (UIOptions (..))
 import           Game.LambdaHack.Common.Actor
   (Actor (..), ResDelta (..), Watchfulness (..))
+import           Game.LambdaHack.Common.ActorState (getActorBody)
 import           Game.LambdaHack.Common.Area
   (Area, punindex, toArea, trivialArea)
 import           Game.LambdaHack.Common.ClientOptions
@@ -90,7 +93,7 @@ import           Game.LambdaHack.Common.Faction (Faction (..))
 import           Game.LambdaHack.Common.Item
 import           Game.LambdaHack.Common.Kind
   (COps (..), emptyUIFaction, emptyUnknownTile)
-import           Game.LambdaHack.Common.Level (Level (..))
+import           Game.LambdaHack.Common.Level (Level (..), updateBigMap)
 import           Game.LambdaHack.Common.Misc (FontSet (..))
 import           Game.LambdaHack.Common.MonadStateRead
 import           Game.LambdaHack.Common.Perception (emptyPer)
@@ -386,14 +389,18 @@ stubCOpsState :: State
 stubCOpsState = updateCOpsAndCachedData stubCOpsUpdate emptyState
 
 -- | A stub state of one level and one faction, holding the given actors,
--- none of them skilled.
+-- none of them skilled, each non-projectile one standing in the level's
+-- 'lbig' at its position, where aiming and moving look for it.
 stateWith :: Level -> Faction -> [(ActorId, Actor)] -> State
 stateWith lvl fact actors =
   let factionUpdate _ = EM.singleton testFactionId fact
       actorDUpdate _ = EM.fromList actors
       actorMaxSkillsUpdate _ =
         EM.fromList $ map (\(aid, _) -> (aid, Ability.zeroSkills)) actors
-      dungeonUpdate _ = EM.singleton testLevelId lvl
+      bigs = [(bpos b, aid) | (aid, b) <- actors, not (bproj b)]
+      big = EM.fromList bigs
+      dungeonUpdate _ = assert (EM.size big == length bigs)
+                        $ EM.singleton testLevelId lvl {lbig = big}
       s1 = updateFactionD factionUpdate stubCOpsState
       s2 = updateActorD actorDUpdate s1
       s3 = updateActorMaxSkills actorMaxSkillsUpdate s2
@@ -489,6 +496,12 @@ heroA = testActor {bhp = 100, bpos = Point 1 1}
 heroB = testActor {bhp = 100, bpos = Point 0 1}
 heroC = testActor {bhp = 100, bpos = Point 2 1}
 
+-- | The square below @A@, floor on 'walkableLevel' and stood on by
+-- no actor: what a test aims at there, an actor's own square blocking
+-- the aim.
+freeFloorPos :: Point
+freeFloorPos = Point 1 2
+
 -- | UI presentations for the heroes. Distinct symbols keep the
 -- 'Game.LambdaHack.Client.UI.ActorUI.keySelected' party ordering stable at
 -- @[A, B, C]@ (@\'a\' < \'b\' < \'c\'@).
@@ -500,10 +513,10 @@ actorUIB = ActorUI { bsymbol = 'b', bname = "Bruno"
 actorUIC = ActorUI { bsymbol = 'c', bname = "Cadet"
                    , bpronoun = "he/him", bcolor = BrGreen }
 
--- | A walkable stub board, for tests whose aiming or altering pipeline
--- has to get past the terrain: the heroes' two positions are floor, the
--- rest of the board, around them and between them and its edge, is
--- impenetrable wall.
+-- | A walkable stub board, for tests whose aiming or altering pipeline has
+-- to get past the terrain: the heroes' two positions and 'freeFloorPos'
+-- are floor, the rest of the board, around them and between them and its
+-- edge, is impenetrable wall.
 --
 -- The fence is not decoration. The BFS -- which any frame drawn with an
 -- xhair set queries, for the path to the xhair -- walks tile
@@ -522,7 +535,8 @@ walkableLevel = stubLevel
   { ltile = PointArray.unfoldrNA testLevelDimension testLevelDimension
                                  (\i -> (tileAt i, i + 1)) 0 }
  where
-  tileAt i = if punindex testLevelDimension i `elem` [bpos heroA, bpos heroC]
+  tileAt i = if punindex testLevelDimension i
+                `elem` [bpos heroA, bpos heroC, freeFloorPos]
              then floorTileId
              else wallTileId
 
@@ -561,8 +575,8 @@ partyCliStateBanned :: CliState
 partyCliStateBanned = partyCliStateWith stubLevel partyFactionBanned twoHeroes
 
 -- | 'partyCliState' on the 'walkableLevel': the same two heroes in the
--- same places, with the terrain under and between them walkable, so that
--- aiming from one to the other succeeds.
+-- same places, with the terrain under them and at 'freeFloorPos' walkable,
+-- so that aiming from @A@ at that square succeeds.
 partyCliStateWalkable :: CliState
 partyCliStateWalkable = partyCliStateWith walkableLevel partyFaction twoHeroes
 
@@ -629,6 +643,20 @@ withEqpItems held cliS = cliS
 withSkills :: [(ActorId, Ability.Skills)] -> CliState -> CliState
 withSkills skills cliS = cliS {cliState =
   updateActorMaxSkills (EM.union $ EM.fromList skills) (cliState cliS)}
+
+-- | The listed actors moved to the listed positions, in the level's
+-- 'lbig' too.
+withPositions :: [(ActorId, Point)] -> CliState -> CliState
+withPositions moves cliS = cliS {cliState = foldr move (cliState cliS) moves}
+ where
+  move (aid, pos) s =
+    let b = getActorBody aid s
+        -- Off its old square, unless another actor has moved there.
+        unplace a = if a == aid then Nothing else Just a
+    in updateDungeon (EM.adjust (updateBigMap $ EM.insert pos aid
+                                              . EM.update unplace (bpos b))
+                                (blid b))
+       $ updateActorD (EM.adjust (\b2 -> b2 {bpos = pos}) aid) s
 
 -- | The skill to fling, and no other.
 projectSkills :: Ability.Skills

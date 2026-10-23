@@ -1016,6 +1016,20 @@
    "harm": "latent",
    "discovery": "review",
    "notes": "Found by the code review of 2026-10-23 over the year's diff. Both forms were run on the one-hero party in one build that day, the fixture's three names exported for it alone. A tier-1 record: the corpus root is tools/, and the case is the test suite's."
+  },
+  {
+   "id": "UnitTestHelpers-01",
+   "program": "test/UnitTestHelpers.hs",
+   "name": "no fixture put its actors in the level's lbig, so an actor blocked no aim, and the walkable psuitReq tests and the fling dialog passed aiming at hero C's own square",
+   "family": "other:unfaithful-fixture",
+   "fix_rev": "self",
+   "trigger": "A on the walkable board aiming at C's square, one step away",
+   "ok": "stateWith puts each non-projectile actor in lbig; the three tests aim at freeFloorPos, a floor square no actor stands on, and pass",
+   "bug": "the aim at C's square succeeded; with the actors in lbig and the tests unchanged, all three failed with `aiming blocked by an actor`",
+   "proved": "ran",
+   "harm": "latent",
+   "discovery": "review",
+   "notes": "Found by the code review of 2026-10-23 over the year's diff. The same run failed `LR-flip psuitReq verdict differs per actor`, whose fixture moved A through updateActorD alone and left it at its old square in lbig, A's aim then stopping there; withPositions moves an actor in both. A tier-1 record: the corpus root is tools/, and the case is the test suite's."
   }
  ]
 }

@@ -68,10 +68,10 @@ walkableParty skills =
   withSkills [(testActorId, skills), (testActorId2, skills)]
              partyCliStateWalkable
 
--- Aim at C's position, one walkable step from A.
-aimAtHeroC :: MonadClientUI m => m ()
-aimAtHeroC = modifySession $ \sess ->
-  sess {sxhair = Just $ TPoint TUnknown testLevelId (bpos heroC)}
+-- Aim at 'freeFloorPos', one walkable step from A.
+aimAtFreeFloor :: MonadClientUI m => m ()
+aimAtFreeFloor = modifySession $ \sess ->
+  sess {sxhair = Just $ TPoint TUnknown testLevelId freeFloorPos}
 
 -- A's equipment holds the stub item, which the store dialog lists.
 withEqpItem :: CliState -> CliState
@@ -136,7 +136,7 @@ handleHumanLocalMUnitTests = testGroup "handleHumanLocalMUnitTests"
         Right psuitReqFun -> assertFailure $ "expected a failed aim, got: "
           ++ show (psuitReqFun testItemFull)
   , testCase "psuitReq: walkable board, unskilled actor" $ do
-      let testFn = aimAtHeroC >> psuitReq testActorId
+      let testFn = aimAtFreeFloor >> psuitReq testActorId
       (result, _) <- executorCli testFn (walkableParty Ability.zeroSkills)
       case result of
         Left err -> assertFailure $ "expected a suitability function, got: "
@@ -146,7 +146,7 @@ handleHumanLocalMUnitTests = testGroup "handleHumanLocalMUnitTests"
           Right posRange -> assertFailure $ "expected an unskilled actor, got: "
             ++ show posRange
   , testCase "psuitReq: walkable board, skilled actor" $ do
-      let testFn = aimAtHeroC >> psuitReq testActorId
+      let testFn = aimAtFreeFloor >> psuitReq testActorId
       (result, _) <- executorCli testFn (walkableParty projectSkills)
       case result of
         Left err -> assertFailure $ "expected a suitability function, got: "
@@ -154,10 +154,10 @@ handleHumanLocalMUnitTests = testGroup "handleHumanLocalMUnitTests"
         Right psuitReqFun -> case psuitReqFun testItemFull of
           Left reqFail -> assertFailure $ "expected a permitted fling, got: "
             ++ show reqFail
-          Right posRange -> posRange @?= (bpos heroC, True)
+          Right posRange -> posRange @?= (freeFloorPos, True)
             -- the xhair position, and the range verdict: the stub item is
             -- weightless, so the range its throw modifier yields covers
-            -- the step to C (the range is computed from weight and
+            -- the step there (the range is computed from weight and
             -- velocity, not from the aiming path)
   , -- The fourth outcome, and the only one that never reaches the aiming
     -- pipeline: psuitReq returns before it whenever the viewed level is
@@ -229,10 +229,7 @@ handleHumanLocalMUnitTests = testGroup "handleHumanLocalMUnitTests"
     testCase
       "LR-flip psuitReq verdict differs per actor (desync sibling, captured)"
       $ do
-      let moveTo pos b = b {bpos = pos}
-          cliS = partyCliState {cliState =
-            updateActorD (EM.adjust (moveTo (Point 0 1)) testActorId)
-                         (cliState partyCliState)}
+      let cliS = withPositions [(testActorId, Point 0 1)] partyCliState
           testFn = do
             updateClientLeader testActorId
             modifySession $ \sess ->
@@ -272,7 +269,7 @@ handleHumanLocalMUnitTests = testGroup "handleHumanLocalMUnitTests"
                    cliS0
           testFn = do
             updateClientLeader testActorId
-            aimAtHeroC
+            aimAtFreeFloor
             merr <- chooseItemProjectHuman testActorId []
             itemSel <- getsSession sitemSel
             leaderAfter <- getsClient sleader
