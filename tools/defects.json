@@ -1030,6 +1030,20 @@
    "harm": "latent",
    "discovery": "review",
    "notes": "Found by the code review of 2026-10-23 over the year's diff. The same run failed `LR-flip psuitReq verdict differs per actor`, whose fixture moved A through updateActorD alone and left it at its old square in lbig, A's aim then stopping there; withPositions moves an actor in both. A tier-1 record: the corpus root is tools/, and the case is the test suite's."
+  },
+  {
+   "id": "LambdaHack.cabal-01",
+   "program": "LambdaHack.cabal",
+   "name": "both hashable bounds admitted versions before 1.4.0.0, where Eq is no superclass of Hashable, so Core/Prelude.hs's Binary instance for HashMap, whose HM.fromList needs Eq k, does not compile against them",
+   "family": "other:holds-in-a-range",
+   "fix_rev": "self",
+   "trigger": "a build plan resolving hashable below 1.4, such as `--constraint='hashable < 1.4'`",
+   "ok": "both bounds read `hashable >= 1.4`, so the solver refuses such a plan",
+   "bug": "the plan was admitted and definition-src's Core/Prelude.hs failed to compile, no Eq k in scope for HM.fromList",
+   "proved": "asserted",
+   "harm": "latent",
+   "discovery": "review",
+   "notes": "Found by the code review of 2026-10-23 over the year's diff. The superclass change is hashable's CHANGES.md entry for 1.4.0.0, read in its 1.4.3.0 tarball; the build against hashable 1.3 was not run, and the plan resolves 1.5.1.0. A tier-1 record: the corpus root is tools/."
   }
  ]
 }
