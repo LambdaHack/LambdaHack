@@ -3001,12 +3001,13 @@ is the shape that passes; a frontend tag is the shape that fails.
 
 **G2, that SDL2's behaviour is the bar.** What would sink it is SDL2 being
 wrong, and it already was once: 0.0 assumed the three fill-only highlight kinds
-draw no outline, and SDL2 in fact draws a black ring --- the erase half
+draw no outline, and SDL2 in fact drew a black ring --- the erase half
 of a workaround for a 2.0.16 rectangle bug, not a design choice anyone made.
-Parity copied it faithfully. So the bar is SDL2's *intent* where the two can
-be told apart, and where they cannot, the audit record in Appendix C is what has
-to say which was checked. A second such discovery would not sink G2,
-but a pattern of them would mean the bar is a workaround inventory.
+Parity copied it faithfully, until R8 dropped it from both. So the bar is SDL2's
+*intent* where the two can be told apart, and where they cannot, the audit
+record in Appendix C is what has to say which was checked. A second such
+discovery would not sink G2, but a pattern of them would mean the bar
+is a workaround inventory.
 
 **The boundary-cost ruling**, that a per-chunk `js_measureText` crossing is too
 expensive to consider. It is the reason 2.1's pen is split
