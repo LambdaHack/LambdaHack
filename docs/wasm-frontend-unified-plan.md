@@ -2066,6 +2066,22 @@ is drawn at its layer's `cellPitch` with `CellStyle`'s per-cell rules applied
 by the painter, in the prop, square, mono order 2.1 fixes, through 0.4's draw-op
 core, so the tests assert op lists --- no canvas dependency.
 
+*Landed in `e549ef42e`, the Split's (3), after `63813f480` and `37e87218a`,
+its (1) and (2); (0) had nothing to take, 0.4's baseline standing in B.10.
+Beyond this body: the mono layer is drawn as `Sdl.hs:setMonoChar ::` draws it,
+by the Log's ruling of 2026-10-23 at 2.2's landing; the painter repaints the map
+cells the last frame's overlays covered before drawing the next frame's,
+and holds a frame with proportional or mono overlays until the payload's fonts
+have settled, loaded or not; `ts-src/tsconfig.json` takes the DOM.Iterable
+library the `FontFace` declarations need; and `make page-gate` copies the fonts
+as `make build-ts` does. The empty overlays every frame still carries draw
+nothing and measure nothing, which an `overlay-core.test.ts` case asserts.*
+
+*Its hand-back confirmed by Mikolaj on 2026-10-23, in Firefox. In the session's
+own run, Firefox and Chromium reported all four faces loaded,
+and with `Hack-Bold.ttf.woff` missing only the mono face failed, the page still
+running.*
+
 Text drawn on canvas is not selectable or visible to screen readers;
 that trade-off is accepted for overlay text (Appendix B) and, since B.10,
 for the map too, the ANSI frontend serving a screen reader natively.
