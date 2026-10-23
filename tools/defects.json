@@ -493,6 +493,31 @@
    "bug_text": "says ten commits and enumerates 9"
   },
   {
+   "id": "check-plan-crossrefs-13",
+   "program": "check-plan-crossrefs.py",
+   "name": "A3 counted a landed item as the creator of a file its **Owns** calls new, so a later item writing that file was told its depends-on cell does not reach an item that had already landed",
+   "family": "unverified-state",
+   "fix_rev": "self",
+   "trigger": "0.1 landed, its **Owns** naming the new `ts-src/src/x.ts`, and 0.2 writing that file with no depends-on",
+   "ok": "no finding: exit 0",
+   "bug": "`FAIL A3 0.2 --- writes `x.ts`, created by 0.1, which its depends-on cell does not reach` and exit 1",
+   "proved": "ran",
+   "harm": "latent",
+   "discovery": "review",
+   "notes": "Found by the code review of 2026-10-23 over the year's diff. A3 skipped historical rows as writers and the allowlist claims skipped them as claimants, but the loop over **Owns** calling a file new did not; with 0.1 not applied the same plan draws the finding, rightly.",
+   "plant": "a two-item work list as above, and an empty allowlist",
+   "plant_cmd": "printf '%s\\n' '# Scratch work list' '' '## 00 -- Status' '' '| row | delivers | size | depends on | state |' '|---|---|---|---|---|' '| 0.1 | a | tiny | --- | landed in abc123 |' '| 0.2 | b | tiny | --- | not applied |' '' '### 0.1 --- first' '' '**Owns** --- the new `ts-src/src/x.ts`.' '' '**Done** --- `native`.' '' '**Hands back** --- nothing.' '' '**Decide first** --- nothing.' '' '### 0.2 --- second' '' '**Owns** --- `ts-src/src/x.ts`.' '' '**Done** --- `native`.' '' '**Hands back** --- nothing.' '' '**Decide first** --- nothing.' > plan.md && : > allow.txt",
+   "invoke": [
+    "plan.md",
+    "--allowlist",
+    "allow.txt"
+   ],
+   "expect_exit": 0,
+   "expect_text": "0 failed over 2 ledger rows",
+   "bug_exit": 1,
+   "bug_text": "created by 0.1, which its depends-on cell does not reach"
+  },
+  {
    "id": "page-gate-01",
    "program": "ts-src/page-gate.mjs",
    "name": "the gate's 'a key changes the frame' assertion compared the screen hash before and after '?' while the insert-coin self-play repainted continuously, so it passed with no key delivered",
