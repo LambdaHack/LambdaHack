@@ -413,9 +413,14 @@ export function mountTerminal(
     [e.ctrlKey, e.shiftKey, altModifier(e), e.metaKey] as const;
 
   // { passive: false } is required to preventDefault() a wheel listener.
+  // A Control wheel turn is the browser's zoom and is left to it, as
+  // InputDecision.hs's browserKeys leaves it the Control zoom keys; a menu,
+  // which takes a wheel turn whatever its modifiers, gets none with Control
+  // here.
   canvas.addEventListener(
     "wheel",
     (e) => {
+      if (e.ctrlKey) return;
       const p = pointUnder(e);
       if (p) onWheel(p.x, p.y, e.deltaY, ...mods(e));
       e.preventDefault();

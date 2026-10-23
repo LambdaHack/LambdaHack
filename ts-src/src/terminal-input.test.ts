@@ -124,6 +124,19 @@ describe("mouse forwarding", () => {
     expect(onWheel.mock.calls).toEqual([[5, 1, -3, false, true, false, false]]);
     expect(e.defaultPrevented).toBe(true);
   });
+  it("leaves a Control wheel turn, the browser's zoom, to the browser", async () => {
+    const { canvas, onWheel } = await mount();
+    const e = new WheelEvent("wheel", {
+      bubbles: true,
+      cancelable: true,
+      deltaY: -3,
+      ctrlKey: true,
+      ...at(5, 1),
+    });
+    canvas.dispatchEvent(e);
+    expect(onWheel).not.toHaveBeenCalled();
+    expect(e.defaultPrevented).toBe(false);
+  });
   it("forwards a button release with its point, in half-cells, and DOM button code", async () => {
     const { canvas, onMouseUp } = await mount();
     const e = new MouseEvent("mouseup", {

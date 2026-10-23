@@ -988,6 +988,20 @@
    "harm": "latent",
    "discovery": "review",
    "notes": "Found by the code review of 2026-10-23 over the year's diff. Watched both ways that day in headless Chromium (--dump-dom, a 30s virtual time budget) over a scratch deploy of the page, the unfixed and the fixed bundle each broken by the rename above; Firefox not measured for it, page-gate running both browsers over the unbroken page. A tier-1 record: the corpus root is tools/, and the page needs a wasm build and a browser."
+  },
+  {
+   "id": "terminal-01",
+   "program": "ts-src/src/terminal.ts",
+   "name": "the canvas's wheel listener forwarded and cancelled every wheel turn, a Control one included, so the browser's zoom by Control and the wheel did nothing over the game",
+   "family": "other:taken-from-the-browser",
+   "fix_rev": "self",
+   "trigger": "a wheel event over the canvas with ctrlKey set",
+   "ok": "no call to the wheel handler and the event's default left to the browser",
+   "bug": "the handler called with the turn, and the event's default prevented",
+   "proved": "ran",
+   "harm": "latent",
+   "discovery": "review",
+   "notes": "Found by the code review of 2026-10-23 over the year's diff. The vitest case in terminal-input.test.ts, a Control wheel turn, failed before the fix and passes after. The keys get the same treatment from InputDecision.hs's browserKeys, which leaves the browser the Control zoom keys. A menu takes a wheel turn whatever its modifiers, and in the browser now gets none with Control. A tier-1 record: the corpus root is tools/, and the case is vitest's."
   }
  ]
 }
