@@ -1002,6 +1002,20 @@
    "harm": "latent",
    "discovery": "review",
    "notes": "Found by the code review of 2026-10-23 over the year's diff. The vitest case in terminal-input.test.ts, a Control wheel turn, failed before the fix and passes after. The keys get the same treatment from InputDecision.hs's browserKeys, which leaves the browser the Control zoom keys. A menu takes a wheel turn whatever its modifiers, and in the browser now gets none with Control. A tier-1 record: the corpus root is tools/, and the case is vitest's."
+  },
+  {
+   "id": "HandleHelperMUnitTests-02",
+   "program": "test/HandleHelperMUnitTests.hs",
+   "name": "LR10 checked only that the banned faction's pointmanCycle was refused, not why, so a refusal for another reason passed it",
+   "family": "vacuous-check",
+   "fix_rev": "self",
+   "trigger": "LR10's action on a one-hero party of the unbanned faction, `partyCliStateWith stubLevel partyFaction (take 1 twoHeroes)`",
+   "ok": "LR10 compares the message, as LR13 does, and on that party fails: expected `*no manual level change for your team*`, got `*no other member in the party*`",
+   "bug": "LR10's `(isJust merr, leaderAfter)` form passed on that party",
+   "proved": "ran",
+   "harm": "latent",
+   "discovery": "review",
+   "notes": "Found by the code review of 2026-10-23 over the year's diff. Both forms were run on the one-hero party in one build that day, the fixture's three names exported for it alone. A tier-1 record: the corpus root is tools/, and the case is the test suite's."
   }
  ]
 }

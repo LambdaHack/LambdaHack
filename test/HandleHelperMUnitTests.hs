@@ -223,9 +223,10 @@ liveReadSeries =
             updateClientLeader testActorId
             merr <- dispatchCmd $ HumanCmd.PointmanCycle Forward
             leaderAfter <- getsClient sleader
-            return (isJust merr, leaderAfter)
+            return (fmap showFailError merr, leaderAfter)
       (result, _) <- executorCli testFn partyCliStateBanned
-      result @?= (True, Just testActorId)
+      result @?= ( Just "*no manual level change for your team*"
+                 , Just testActorId )
 
   , -- [contract] ...but same-level cycling still works for banned factions
     -- (the ban only guards the cross-level case) -- the sec. 10 partition
