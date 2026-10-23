@@ -21,38 +21,16 @@ import qualified Control.Exception as Ex
 import           Test.Tasty
 import           Test.Tasty.HUnit
 
-import           Game.LambdaHack.Client.MonadClient (MonadClient, getsClient)
+import           Game.LambdaHack.Client.MonadClient (getsClient)
 import           Game.LambdaHack.Client.State (sleader)
 import           Game.LambdaHack.Client.UI.FrameM (restoreLeaderFromRun)
 import           Game.LambdaHack.Client.UI.HandleHelperM
-import           Game.LambdaHack.Client.UI.HandleHumanM (cmdSemInCxtOfKM)
 import qualified Game.LambdaHack.Client.UI.HumanCmd as HumanCmd
-import qualified Game.LambdaHack.Client.UI.Key as K
-import           Game.LambdaHack.Client.UI.MonadClientUI
-  (MonadClientUI (..), revCmdMap)
+import           Game.LambdaHack.Client.UI.MonadClientUI (MonadClientUI (..))
 import           Game.LambdaHack.Client.UI.SessionUI (SessionUI (..))
 import           Game.LambdaHack.Definition.Defs (Direction (..))
 
 import UnitTestHelpers
-
--- Dispatch a command through the real key-loop entry point
--- (cmdSemInCxtOfKM), with the key looked up in the fixture CCUI's real
--- bindings (the sample game's) -- exactly what the key loop does with a
--- keypress (Client/UI.hs:cmdSemInCxtOfKM km cmd). In particular the
--- pointman handed to the command's handler is read from sleader at
--- dispatch time, so it is in sync by construction, as for any top-level
--- keystroke.
--- The PointmanCycle* commands are client-local, so no request can result.
-dispatchCmd :: (MonadClient m, MonadClientUI m)
-            => HumanCmd.HumanCmd -> m MError
-dispatchCmd cmd = do
-  revCmd <- revCmdMap
-  let km = revCmd cmd
-  when (km == K.undefinedKM) $
-    error $ "no sample game key binding" `showFailure` cmd
-  either id (\_req -> error $ "local command sent a request"
-                              `showFailure` cmd)
-    <$> cmdSemInCxtOfKM km cmd
 
 handleHelperMUnitTests :: TestTree
 handleHelperMUnitTests = testGroup "handleHelperMUnitTests" $
@@ -72,7 +50,7 @@ handleHelperMUnitTests = testGroup "handleHelperMUnitTests" $
 liveReadSeries :: [TestTree]
 liveReadSeries =
   [ -- [contract] The target invariant, driven through the real key-loop
-    -- dispatch (dispatchCmd above), which reads the pointman from 'sleader'
+    -- dispatch (dispatchCmd), which reads the pointman from 'sleader'
     -- and so is in sync by construction: cycling advances to the next party
     -- member on the level. After the live-read design lands, this is the
     -- only reachable behaviour.

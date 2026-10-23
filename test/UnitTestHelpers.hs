@@ -37,6 +37,7 @@ module UnitTestHelpers
   , withPositions
   , projectSkills
   , runParamsA
+  , dispatchCmd
 #ifdef EXPOSE_INTERNAL
     -- * Internal operations
   , fchanFrontendStub
@@ -74,8 +75,12 @@ import           Game.LambdaHack.Client.UI.ContentClientUI
   (coinput, coscreen, emptyCCUI)
 import           Game.LambdaHack.Client.UI.Frontend
   (ChanFrontend (..), FrontReq (..))
+import           Game.LambdaHack.Client.UI.HandleHelperM (MError)
+import           Game.LambdaHack.Client.UI.HandleHumanM (cmdSemInCxtOfKM)
+import qualified Game.LambdaHack.Client.UI.HumanCmd as HumanCmd
 import           Game.LambdaHack.Client.UI.Key (KMP (..))
 import qualified Game.LambdaHack.Client.UI.Key as K
+import           Game.LambdaHack.Client.UI.MonadClientUI (revCmdMap)
 import           Game.LambdaHack.Client.UI.Msg
 import           Game.LambdaHack.Client.UI.Overlay
 import           Game.LambdaHack.Client.UI.PointUI (PointUI (..))
@@ -733,6 +738,26 @@ executorCli m cliS = do
     let !_A = assert (width == testLevelDimension) ()
     initTabsBFS
     m
+
+-- | Dispatch a command through the real key-loop entry point
+-- (cmdSemInCxtOfKM), with the key looked up in the fixture CCUI's real
+-- bindings (the sample game's) -- exactly what the key loop does with a
+-- keypress (Client/UI.hs:cmdSemInCxtOfKM km cmd). In particular the
+-- pointman handed to the command's handler is read from sleader at
+-- dispatch time, so it is in sync by construction, as for any top-level
+-- keystroke.
+-- It takes client-local commands, such as the PointmanCycle* ones: a
+-- command resulting in a request is an error.
+dispatchCmd :: (MonadClient m, MonadClientUI m)
+            => HumanCmd.HumanCmd -> m MError
+dispatchCmd cmd = do
+  revCmd <- revCmdMap
+  let km = revCmd cmd
+  when (km == K.undefinedKM) $
+    error $ "no sample game key binding" `showFailure` cmd
+  either id (\_req -> error $ "local command sent a request"
+                              `showFailure` cmd)
+    <$> cmdSemInCxtOfKM km cmd
 
 
 -- | Transform 'Report' type to a list of 'Text'.
