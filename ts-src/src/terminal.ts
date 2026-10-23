@@ -18,13 +18,33 @@ import {
   pointerPoint,
   type CellMetrics,
   type DrawOp,
+  type Face,
 } from "./terminal-core.js";
 
 export interface Terminal {
   submitFrame(addr: number, w: number, h: number): void;
   printScreen(name: string): void;
   setFontScale(scale: number): void;
+  setFonts(fonts: OverlayFonts): void;
 }
+
+// A font the startup payload names: a file deployed beside the page, and
+// its size in CSS pixels, allFontsScale applied.
+export interface FontSpec {
+  file: string;
+  size: number;
+}
+
+// The startup payload's fonts, by the face each is, any of them absent.
+export type OverlayFonts = Partial<Record<OverlayFace, FontSpec>>;
+
+type OverlayFace = Exclude<Face, "map">;
+
+const OVERLAY_FACES: readonly OverlayFace[] = [
+  "propRegular",
+  "propBold",
+  "mono",
+];
 
 // Takes the event itself: the handler reads the key and modifiers off it
 // and decides whether the browser keeps its default action.
@@ -57,6 +77,14 @@ export type MouseHandler = (
 // Sdl.hs scales its scalable font.
 const FONT_FAMILY = "lambdaHackFont";
 const FONT_CSS_PX = 16;
+
+// The CSS family each face is declared under, the map font's by index.html.
+const FACE_FAMILY: Record<Face, string> = {
+  map: FONT_FAMILY,
+  propRegular: "lambdaHackPropRegular",
+  propBold: "lambdaHackPropBold",
+  mono: "lambdaHackMono",
+};
 
 export function mountTerminal(
   container: HTMLElement,
@@ -372,5 +400,21 @@ export function mountTerminal(
     fontScale = scale;
   }
 
-  return { submitFrame, printScreen, setFontScale };
+  // Declare the startup payload's fonts and start them loading, each from
+  // its file beside the page.
+  function setFonts(fonts: OverlayFonts): void {
+    for (const face of OVERLAY_FACES) {
+      const spec = fonts[face];
+      if (!spec) continue;
+      const fontFace = new FontFace(FACE_FAMILY[face], `url("./${spec.file}")`);
+      document.fonts.add(fontFace);
+      fontFace
+        .load()
+        .catch((e: unknown) =>
+          console.warn(`[lh] font ${spec.file} failed to load`, e),
+        );
+    }
+  }
+
+  return { submitFrame, printScreen, setFontScale, setFonts };
 }

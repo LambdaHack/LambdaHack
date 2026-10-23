@@ -12,7 +12,7 @@ import {
   ConsoleStdout,
   PreopenDirectory,
 } from "@bjorn3/browser_wasi_shim";
-import { mountTerminal } from "./terminal.js";
+import { mountTerminal, type OverlayFonts } from "./terminal.js";
 import { mountFullscreen } from "./fullscreen.js";
 
 interface LhExports {
@@ -48,6 +48,9 @@ interface LhExports {
 interface StartupPayload {
   // The scale Sdl.hs multiplies its font sizes by.
   allFontsScale?: number;
+  // The chosen fontset's fonts but the map font, each a file deployed beside
+  // the page and a size in CSS pixels, that scale applied.
+  fonts?: OverlayFonts;
 }
 
 declare global {
@@ -109,6 +112,7 @@ async function main(): Promise<void> {
     const payload = JSON.parse(json) as StartupPayload;
     if (payload.allFontsScale !== undefined)
       term.setFontScale(payload.allFontsScale);
+    if (payload.fonts !== undefined) term.setFonts(payload.fonts);
   };
   const banner = document.getElementById("banner");
   mountFullscreen(

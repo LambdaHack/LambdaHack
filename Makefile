@@ -323,7 +323,7 @@ test-wasm:
 
 build-ts:
 	. ~/.ghc-wasm/env && \
-	cp GameDefinition/index.html ../lambdahack.github.io && \
+	cp GameDefinition/index.html GameDefinition/fonts/*.ttf.woff ../lambdahack.github.io && \
 	cd ts-src && \
 	npm ci && \
 	BUILD_OUTDIR=../../lambdahack.github.io npm run build && \
@@ -344,7 +344,7 @@ page-gate: build-wasm
 	. ~/.ghc-wasm/env && \
 	T=$$(mktemp -d) && \
 	trap 'rm -rf "$$T"' EXIT && \
-	cp GameDefinition/index.html GameDefinition/fonts/16x16xw.woff "$$T" && \
+	cp GameDefinition/index.html GameDefinition/fonts/16x16xw.woff GameDefinition/fonts/*.ttf.woff "$$T" && \
 	(cd ts-src && npm ci && BUILD_OUTDIR="$$T" npm run build) && \
 	cp ts-src/node_modules/lz-string/libs/lz-string.min.js "$$T" && \
 	W=$$(wasm32-wasi-cabal list-bin exe:LambdaHack) && \

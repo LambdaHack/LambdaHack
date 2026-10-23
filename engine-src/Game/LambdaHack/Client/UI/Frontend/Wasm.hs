@@ -8,8 +8,8 @@
 -- calls the exported @lhKey@ with each keydown event in the terminal, and
 -- @lhKey@ decides the browser's default action and translates and queues
 -- the key. Screenshots: a name is handed to JS, which saves the screen
--- under it. Startup: the font scale the page draws by is handed to JS once,
--- as JSON.
+-- under it. Startup: the font scale the page draws by and the fonts it draws
+-- the overlays in are handed to JS once, as JSON.
 module Game.LambdaHack.Client.UI.Frontend.Wasm
   (
 #ifdef USE_WASM
@@ -23,8 +23,10 @@ import Prelude ()
 import Game.LambdaHack.Core.Prelude
 
 import qualified Control.Exception as Ex
+import qualified Data.Char as Char
 import           Data.IORef
 import           Data.Primitive.ByteArray (ByteArray (..), ByteArray#)
+import qualified Data.Text as T
 import           Data.Time.Clock (getCurrentTime)
 import           Data.Time.LocalTime (getTimeZone)
 import qualified Data.Vector.Primitive as VP
@@ -36,6 +38,7 @@ import           GHC.Wasm.Prim (JSString (..), JSVal, fromJSString, toJSString)
 import           System.FilePath ((<.>))
 import           System.IO (hPutStrLn, stderr)
 import           System.IO.Unsafe (unsafePerformIO)
+import           Text.Printf (printf)
 
 import           Game.LambdaHack.Client.UI.Content.Screen
 import           Game.LambdaHack.Client.UI.Frame
@@ -45,6 +48,7 @@ import           Game.LambdaHack.Client.UI.Frontend.Screenshot
 import qualified Game.LambdaHack.Client.UI.Key as K
 import           Game.LambdaHack.Client.UI.PointUI
 import           Game.LambdaHack.Common.ClientOptions
+import           Game.LambdaHack.Common.Misc (FontDefinition (..), FontSet (..))
 import qualified Game.LambdaHack.Common.PointArray as PointArray
 
 -- | Submit a frame: @(address, width, height)@ of a @Word32@ cell buffer in
@@ -87,19 +91,54 @@ startup coscreen soptions@ClientOptions{sprintEachScreen} = do
 
 -- | The startup payload: a JSON object of named fields, each present when
 -- the options carry its value. @allFontsScale@ is the scale @Sdl.hs@
--- multiplies its font sizes by.
+-- multiplies its font sizes by. @fonts@ names the chosen fontset's fonts
+-- but the map font, under @propRegular@, @propBold@ and @mono@, each a file
+-- name and a size in pixels, multiplied by that scale as @Sdl.hs@ multiplies
+-- it; a bitmap font, which has neither a size to scale nor a form a browser
+-- loads, is left out.
 startupPayload :: ClientOptions -> String
-startupPayload ClientOptions{sallFontsScale} =
-  "{" ++ intercalate "," fields ++ "}"
+startupPayload
+  ClientOptions{sallFontsScale, schosenFontset, sfontsets, sfonts} =
+  jsonObject $ [ ("allFontsScale", show scale)
+               | Just scale <- [sallFontsScale] ]
+               ++ [ ("fonts", jsonObject fonts) | not (null fonts) ]
  where
-  fields = [ "\"allFontsScale\":" ++ show scale
-           | Just scale <- [sallFontsScale] ]
+  fonts =
+    [ ( field
+      , jsonObject [ ("file", jsonString $ T.unpack fname)
+                   , ("size", show size) ] )
+    | Just scale <- [sallFontsScale]
+    , Just fontsetID <- [schosenFontset]
+    , Just fontset <- [lookup fontsetID sfontsets]
+    , (field, fontName) <- [ ("propRegular", fontPropRegular fontset)
+                           , ("propBold", fontPropBold fontset)
+                           , ("mono", fontMono fontset) ]
+    , Just (fname, fsize) <- [lookup fontName sfonts >>= outlineFont]
+    , let size = round $ scale * intToDouble fsize :: Int ]
+  outlineFont = \case
+    FontProportional fname fsize _ -> Just (fname, fsize)
+    FontMonospace fname fsize _ -> Just (fname, fsize)
+    FontMapScalable fname fsize _ _ -> Just (fname, fsize)
+    FontMapBitmap{} -> Nothing
+
+-- | A JSON object of the given fields, whose values are JSON already.
+jsonObject :: [(String, String)] -> String
+jsonObject fields =
+  "{" ++ intercalate "," [jsonString k ++ ":" ++ v | (k, v) <- fields] ++ "}"
+
+-- | A JSON string literal.
+jsonString :: String -> String
+jsonString s = "\"" ++ concatMap escape s ++ "\""
+ where
+  escape c | c == '"' || c == '\\' = ['\\', c]
+           | c < ' ' = printf "\\u%04x" (Char.ord c)
+           | otherwise = [c]
 
 -- | Hand the page the startup payload, before the first frame. The JS side
--- (set up by the loader as @globalThis.lhConfigure@) parses it and sizes
--- the screen by it. One call carries every field, so that a new one changes
--- no signature, and JSON, which a frame's cost rules out, is cheap once per
--- game.
+-- (set up by the loader as @globalThis.lhConfigure@) parses it, sizes
+-- the screen by it and loads the fonts it names. One call carries every
+-- field, so that a new one changes no signature, and JSON, which a frame's
+-- cost rules out, is cheap once per game.
 foreign import javascript unsafe "globalThis.lhConfigure($1)"
   js_configure :: JSString -> IO ()
 

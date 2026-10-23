@@ -129,6 +129,13 @@ export function styledCell(w: number, row: number): StyledCell {
 }
 
 /**
+ * A typeface the screen is drawn in: the map font, or one of the chosen
+ * fontset's three others, which the startup payload names and Sdl.hs draws
+ * the overlays in.
+ */
+export type Face = "map" | "propRegular" | "propBold" | "mono";
+
+/**
  * The map font's cell in device pixels, as Sdl.hs takes it from the loaded
  * font: halfSize is half the font's height rounded down and boxSize twice
  * that. baseline is the glyph's baseline below the cell's top, the font's
