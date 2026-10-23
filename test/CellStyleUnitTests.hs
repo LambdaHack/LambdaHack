@@ -76,7 +76,10 @@ cellStyleUnitTests = testGroup "cellStyleUnitTests" $
   , testCase "styleCell keeps a bright floor" $
       csGlyph (styleCell browserGlyphs 1 $ cell Color.BrWhite floorSymbol)
         @?= floorSymbol
-  , testCase "styleCell judges the floor's brightness after the row recolour" $
+  , -- Not a pin of whether the brightness is judged before or after the
+    -- row recolour, which no input distinguishes, White and AltWhite both
+    -- being dim.
+    testCase "styleCell dims a White floor on an even row too" $
       csGlyph (styleCell browserGlyphs 0 $ cell Color.White floorSymbol)
         @?= '\x22C5'
   , testCase "styleCell passes an ordinary glyph through" $

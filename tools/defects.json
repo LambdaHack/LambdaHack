@@ -287,6 +287,20 @@
    "harm": "latent",
    "discovery": "review",
    "notes": "Found by the code review of 2026-10-23 over the year's diff. Making both stub frontends force each frame was tried that day and dropped by Mikolaj's ruling, since AS7 and six dialog tests then failed on three fixture gaps in turn: the empty cocave the status line names its level's cave from, index 81 of a 9-element vector, (1,1) under the Enum width hack, and DrawM.hs's status-line width assertion against the stub's 3-column rules. test/CLAUDE.md records the three. A tier-1 record: the corpus root is tools/, and the case is the test suite's."
+  },
+  {
+   "id": "CellStyleUnitTests-01",
+   "program": "test/CellStyleUnitTests.hs",
+   "name": "a test named for styleCell judging the floor's brightness after the row recolour could not fail, rowColor mapping only White to AltWhite and both being dim",
+   "family": "vacuous-check",
+   "fix_rev": "self",
+   "trigger": "styleCell given `Color.isBright fgRaw` in place of `Color.isBright fg`",
+   "ok": "renamed `styleCell dims a White floor on an even row too`, the behaviour it does pin, with a comment that the order is unobservable; it fails when rowColor draws even-row White as BrWhite, getting `'\\183'` for the dim floor",
+   "bug": "the test passed with the brightness judged before the recolour",
+   "proved": "ran",
+   "harm": "latent",
+   "discovery": "review",
+   "notes": "Found by the code review of 2026-10-23 over the year's diff. No input distinguishes the two orders while White and AltWhite are both dim, so no test can pin one. A tier-1 record: the corpus root is tools/, and the case is the test suite's."
   }
  ]
 }
