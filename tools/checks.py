@@ -57,13 +57,17 @@ STEPS = [
     ('sync exports',           ['python3', '{root}/check-sync-exports.py'], '{root}/..'),
     # No frontend decodes a screen index by the Enum instance of Point,
     # which reads the dungeon's width: the explicit-widths practice of
-    # docs/wasm-frontend-unified-plan.md. It catches that spelling only.
-    # Dom.hs, a dead example, is left alone, as the practice leaves it.
-    # git grep exits 1 when it finds nothing and above 1 when it fails.
+    # docs/wasm-frontend-unified-plan.md. It catches the `Point{..} = toEnum`
+    # spelling only, white space aside. Dom.hs, a dead example, is left
+    # alone, as the practice leaves it. git grep exits 1 when it finds
+    # nothing, a pathspec matching no file included, so the pathspec is
+    # listed first (checks-06), and above 1 when it fails.
     ('explicit widths',        ['bash', '-c',
-                                "git grep -nE 'Point\\{\\.\\.\\} = toEnum' -- "
-                                "'engine-src/Game/LambdaHack/Client/UI/Frontend/*.hs' "
-                                "':!engine-src/Game/LambdaHack/Client/UI/Frontend/Dom.hs'; "
+                                "spec=('engine-src/Game/LambdaHack/Client/UI/Frontend/*.hs' "
+                                "':!engine-src/Game/LambdaHack/Client/UI/Frontend/Dom.hs'); "
+                                'files=$(git ls-files -- "${spec[@]}") || { echo "git ls-files failed, so nothing was checked"; exit 2; }; '
+                                '[ -n "$files" ] || { echo "no tracked file matches the frontend pathspec, so nothing was checked"; exit 2; }; '
+                                "git grep -nE 'Point[[:space:]]*\\{\\.\\.\\}[[:space:]]*=[[:space:]]*toEnum' -- \"${spec[@]}\"; "
                                 'case $? in 0) echo "a frontend decodes a screen index with toEnum, not punindex (rwidth coscreen)"; exit 1;; '
                                 '1) exit 0;; *) echo "git grep failed, so nothing was checked"; exit 2;; esac'],
      '{root}/..'),

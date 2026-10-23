@@ -202,4 +202,14 @@ MUTANTS = [
      '../engine-src/Game/LambdaHack/Client/UI/Frontend/Sdl.hs',
      '          let Point{..} = punindex (rwidth coscreen) i\n',
      '          let Point{..} = toEnum i\n', step('explicit widths')),
+    # The same decode spelt with white space (checks-07), and the step's
+    # guard against a pathspec matching no file (checks-06), which a mutant
+    # of checks.py itself leaves step() unable to see, so its case judges.
+    ('explicit widths spaced toEnum decode restored',
+     '../engine-src/Game/LambdaHack/Client/UI/Frontend/Sdl.hs',
+     '          let Point{..} = punindex (rwidth coscreen) i\n',
+     '          let Point {..} = toEnum i\n', step('explicit widths')),
+    ('explicit widths empty pathspec read as a pass', 'checks.py',
+     """                                '[ -n "$files" ] || { echo "no tracked file matches the frontend pathspec, so nothing was checked"; exit 2; }; '\n""",
+     '', ['python3', '{bin}/defect-run.py', '-k', 'checks-06', '{dir}']),
 ]
