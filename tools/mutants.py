@@ -24,7 +24,10 @@ TIMEOUT = 600
 
 ST = ['python3', '{file}', '--self-test']
 # The probe runner is the doc-verification skill's, user-scope, outside this
-# tree; a judge over a document rather than over a tool.
+# tree; a judge over a document rather than over a tool. It judges directly
+# rather than through the doc-probes step of checks.py: in a judge `{root}`
+# names the real tools/, so the step's cd ran the probes on the unmutated
+# tree and the mutant survived.
 PROBES = ['python3', str(pathlib.Path.home() / '.claude/skills/doc-verification/run-probes.py'), '{file}']
 
 
@@ -39,8 +42,8 @@ def step(name):
 
 
 MUTANTS = [
-    # A document probe with its expectation moved: the doc-probes step of
-    # checks.py, judged by the probe runner over that document, must fail.
+    # A document probe with its expectation moved: the probe runner over
+    # that document, which the doc-probes step of checks.py runs, must fail.
     ('doc probe expectation moved', '../docs/leader-desync-migration.md',
      "':!docs/leader-desync-migration.md' | wc -l :: 12 -->",
      "':!docs/leader-desync-migration.md' | wc -l :: 99 -->",
