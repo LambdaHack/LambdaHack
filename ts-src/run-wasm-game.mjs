@@ -36,7 +36,13 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { WASI } from "node:wasi";
 
-import { installStubs, instantiate, requireFiles } from "./run-wasm-test.mjs";
+import {
+  installStubs,
+  instantiate,
+  requireFiles,
+  sleep,
+  waitFor as poll,
+} from "./run-wasm-test.mjs";
 
 const [, , wasmPath, jsffiPath, ...extraArgs] = process.argv;
 const usage =
@@ -48,7 +54,6 @@ const printEachScreen = extraArgs.includes("--printEachScreen");
 const scaleAt = extraArgs.indexOf("--allFontsScale");
 const argScale = scaleAt < 0 ? undefined : Number(extraArgs[scaleAt + 1]);
 
-const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 const ok = (msg) => console.log(`ok   ${msg}`);
 class Failed extends Error {}
 const fail = (msg) => {
@@ -126,14 +131,11 @@ function alive() {
 }
 
 // Wait until `cond` holds, polling every 50ms, for at most `ms`.
-async function waitFor(cond, ms) {
-  const end = Date.now() + ms;
-  for (;;) {
+function waitFor(cond, ms) {
+  return poll(() => {
     alive();
-    if (cond()) return true;
-    if (Date.now() >= end) return false;
-    await sleep(50);
-  }
+    return cond();
+  }, ms);
 }
 
 // Wait for `quietMs` with no new frame, for at most `ms`.

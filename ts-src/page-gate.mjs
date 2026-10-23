@@ -32,6 +32,8 @@ import { spawn } from "node:child_process";
 import { mkdir, writeFile } from "node:fs/promises";
 import { join, resolve } from "node:path";
 
+import { sleep, waitFor } from "./run-wasm-test.mjs";
+
 const site = process.argv[2];
 if (!site) {
   console.error("usage: node page-gate.mjs <site-dir>");
@@ -62,15 +64,6 @@ function blocked(msg) {
 function fail(msg) {
   console.error("FAIL: " + msg);
   process.exitCode = 1;
-}
-const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
-// Whether cond comes to hold within ms, asked every step ms.
-async function waitFor(cond, ms, step = 250) {
-  for (let t = 0; t < ms; t += step) {
-    await sleep(step);
-    if (await cond()) return true;
-  }
-  return false;
 }
 process.on("uncaughtException", (e) => blocked(`uncaught: ${e?.stack ?? e}`));
 if (BROWSERS.length === 0) blocked("PAGE_GATE_BROWSERS names no browser");
@@ -166,6 +159,7 @@ async function startChromium() {
           () => false,
         ),
     15000,
+    250,
   );
   if (!ready) blocked(`${CHROMEDRIVER} not ready within 15s`);
   const args = [
@@ -342,12 +336,16 @@ async function gate(name, send) {
   } else {
     await press("?");
     seen = await count();
-    await waitFor(async () => {
-      const f = await count();
-      still = f === seen ? still + 1 : 0;
-      seen = f;
-      return still >= 4;
-    }, 10000);
+    await waitFor(
+      async () => {
+        const f = await count();
+        still = f === seen ? still + 1 : 0;
+        seen = f;
+        return still >= 4;
+      },
+      10000,
+      250,
+    );
     if (still < 4) {
       fail(
         `${name}: the screen never went quiet for a second within 10s` +
@@ -370,7 +368,11 @@ async function gate(name, send) {
     const quiet = await evaluate(HASH);
     await press("\uE00C");
     let changed = quiet;
-    await waitFor(async () => (changed = await evaluate(HASH)) !== quiet, 3000);
+    await waitFor(
+      async () => (changed = await evaluate(HASH)) !== quiet,
+      3000,
+      250,
+    );
     if (changed === quiet) {
       fail(
         `${name}: a quiet screen did not change within 3s of an Escape key` +
