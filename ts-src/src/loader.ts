@@ -156,12 +156,14 @@ function showEnd(text: string, color?: string): void {
   if (color) bannerText.style.color = color;
 }
 
-main().catch((e) => {
+// A failure before lhStart's promise exists, the loading message removed or
+// not, is said in the banner too.
+main().catch((e: unknown) => {
   console.error(e);
-  const status = document.getElementById("status");
-  if (status) {
-    status.textContent =
-      "Failed to load LambdaHack wasm. See console for details.";
-    status.style.color = RED;
-  }
+  document.getElementById("status")?.remove();
+  const message = e instanceof Error ? e.message : String(e);
+  showEnd(
+    `LambdaHack failed to start: ${message}. See console for details.`,
+    RED,
+  );
 });
