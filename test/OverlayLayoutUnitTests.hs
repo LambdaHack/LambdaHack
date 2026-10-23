@@ -58,7 +58,7 @@ import qualified Game.LambdaHack.Common.PointArray as PointArray
 import qualified Game.LambdaHack.Definition.Color as Color
 
 #ifndef USE_BROWSER
-import CellStyleUnitTests (freshnessCase, jsonItems, jsonObject, jsonString)
+import FreshnessCase (freshnessCase, jsonBool, jsonDocument, jsonObject)
 #endif
 
 overlayLayoutUnitTests :: TestTree
@@ -101,7 +101,7 @@ chunkingTests =
       chunksOn 1 @?= [PropChunk Color.White "a"]
       map pcFont (chunksOn 0 ++ chunksOn 1) @?= [PropRegular, PropRegular]
   , testCase "pcFont: bold below White and for BrBlack, regular otherwise" $
-      forM_ [Color.Black .. Color.BrWhite] $ \fg ->
+      forM_ [minBound .. maxBound] $ \fg ->
         assertEqual (show fg)
                     (if fg `elem` [ Color.White, Color.AltWhite, Color.BrRed
                                   , Color.BrGreen, Color.BrYellow, Color.BrBlue
@@ -198,18 +198,18 @@ placementTests =
 propertyTests :: [TestTree]
 propertyTests =
   [ testProperty "chunkPropLine is total" $
-      forAll ((,) <$> choose (0, 3) <*> genLine) $ \(row, al) ->
+      forAll genRowLine $ \(row, al) ->
         concatMap (T.unpack . pcText) (chunkPropLine row al)
           === attrStringToString al
   , testProperty "chunkPropLine's chunks are single-coloured" $
-      forAll ((,) <$> choose (0, 3) <*> genLine) $ \(row, al) ->
+      forAll genRowLine $ \(row, al) ->
         let chunks = chunkPropLine row al
             slices = splitPlaces (map (T.length . pcText) chunks) al
         in and [ rowColor row (Color.fgFromW32 ac) == pcColor c
                  || ac == Color.spaceAttrW32
                | (c, slice) <- zip chunks slices, ac <- slice ]
   , testProperty "chunkPropLine's chunks are non-empty and add up" $
-      forAll ((,) <$> choose (0, 3) <*> genLine) $ \(row, al) ->
+      forAll genRowLine $ \(row, al) ->
         let lengths = map (T.length . pcText) $ chunkPropLine row al
         in all (> 0) lengths && sum lengths == length al
   , testProperty "propFit keeps a chunk on screen and the pen moving on" $
@@ -248,20 +248,20 @@ propertyTests =
   , testProperty "layOutSquare and layOutMono cut to the screen and no more" $
       forAll ((,) <$> choose (2, 30) <*> genOverlay) $ \(width, ov) ->
         let fits limit col al = col + length al <= limit && not (null al)
+            squares = layOutSquare width ov
+            monos = layOutMono width ov
         in conjoin
              [ counterexample "a square run past the screen" $
-                 all (\CellRun{..} -> crCol + length crCells <= width)
-                     (layOutSquare width ov)
+                 all (\CellRun{..} -> crCol + length crCells <= width) squares
              , counterexample "a mono run past the screen" $
                  all (\CellRun{..} -> crCol + length crCells <= 2 * width)
-                     (layOutMono width ov)
+                     monos
              , counterexample "a square line that fits not drawn whole" $
-                 and [ CellRun LayerSquare row (x `div` 2) al
-                       `elem` layOutSquare width ov
+                 and [ CellRun LayerSquare row (x `div` 2) al `elem` squares
                      | (PointUI x row, al) <- ov
                      , fits width (x `div` 2) al ]
              , counterexample "a mono line that fits not drawn whole" $
-                 and [ CellRun LayerMono row x al `elem` layOutMono width ov
+                 and [ CellRun LayerMono row x al `elem` monos
                      | (PointUI x row, al) <- ov
                      , fits (2 * width) x al ] ]
   ]
@@ -305,13 +305,17 @@ genCell = frequency
   [ (1, return Color.spaceAttrW32)
   , (3, do
       fg <- frequency [ (3, elements [Color.Red, Color.White])
-                      , (1, elements [Color.Black .. Color.BrWhite]) ]
+                      , (1, elements [minBound .. maxBound]) ]
       bg <- elements [Color.HighlightNone, Color.HighlightNoneCursor]
       c <- elements "ab $"
       return $! Color.attrCharToW32 $ Color.AttrChar (Color.Attr fg bg) c) ]
 
 genLine :: Gen AttrString
 genLine = listOf genCell
+
+-- | A row and a line to draw on it.
+genRowLine :: Gen (Int, AttrString)
+genRowLine = (,) <$> choose (0, 3) <*> genLine
 
 genOverlay :: Gen OverlaySpace
 genOverlay =
@@ -352,28 +356,22 @@ assertAsserts l = do
 -- @make test-wasm@, away from the files.
 freshnessTests :: [TestTree]
 #ifndef USE_BROWSER
-freshnessTests =
-  [freshnessCase "OverlayLayoutUnitTests.hs" "prop-fit.json" propFitJson]
+freshnessTests = [freshnessCase source "prop-fit.json" propFitJson]
+
+source :: FilePath
+source = "OverlayLayoutUnitTests.hs"
 
 -- | The pen's branch table: rows @(halfSize, width, cursorX, allSpace,
--- widthRaw)@, each either @stop@, where 'propCutoff' drops the chunk,
--- or the chunk's @x@, @widthPx@ and whether it raises the @marker@ that
+-- widthRaw)@, each either @stop@, where 'propCutoff' drops the chunk, or the
+-- chunk's @x@, @widthPx@ and the @marker@ it raises, if any, the cell run
 -- 'trimmedMarkerRun' puts in the row's last column. Every branch of both
 -- functions is in it at three metrics, the narrowest screen 'mkLayoutMetrics'
 -- allows among them: pens at the line's start and a pixel short of the last
 -- column, each with widths from nothing to well past the rest of the row,
--- either side of it and on it, for a chunk of letters and one of spaces;
--- and pens at the last column, past it and at the screen's edge, which stop.
+-- either side of it and on it, for a chunk of letters and one of spaces; and
+-- pens at the last column, past it and at the screen's edge, which stop.
 propFitJson :: Text
-propFitJson = T.unlines $
-  [ "{"
-  , "  \"source\": "
-    <> jsonString "test/OverlayLayoutUnitTests.hs, the freshness case"
-    <> ","
-  , "  \"rows\": [" ]
-  ++ jsonItems (map row sample)
-  ++ [ "  ]"
-     , "}" ]
+propFitJson = jsonDocument source [("rows", map row sample)]
  where
   sample = concat
     [ [ (h, w, x, allSpace, widthRaw)
@@ -398,8 +396,13 @@ propFitJson = T.unlines $
          else let PropFit{..} = propFit lm cur (chunkOf allSpace) widthRaw
               in [ ("stop", jsonBool False), ("x", tshow pfXPx)
                  , ("widthPx", tshow pfWidthPx)
-                 , ("marker", jsonBool $ isJust pfMarker) ]
-  jsonBool b = if b then "true" else "false"
+                 , ("marker", maybe "null" markerRun pfMarker) ]
+  markerRun CellRun{..} =
+    jsonObject [ ("col", tshow crCol), ("row", tshow crRow)
+               , ( "words"
+                 , "[" <> T.intercalate ", "
+                            (map (tshow . Color.attrCharW32) crCells)
+                   <> "]" ) ]
 #else
 freshnessTests = []
 #endif

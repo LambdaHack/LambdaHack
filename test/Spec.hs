@@ -29,6 +29,7 @@ import CellStyleUnitTests
 import CommonMUnitTests
 import FfiCoverageUnitTests
 import FrameMUnitTests
+import FreshnessCase (freshnessOptions)
 import FrontendContractUnitTests
 import HandleHelperMUnitTests
 import HandleHumanGlobalMUnitTests

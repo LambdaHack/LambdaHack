@@ -46,41 +46,32 @@ inputDecisionUnitTests = testGroup "inputDecisionUnitTests"
       kdPreventBrowser (decideKey K.Alt (K.Char 'a')) @?= False
       kdPreventBrowser (decideKey K.AltShift (K.Char 'a')) @?= True
   , testCase "decideKey leaves the browser a dead key, under any modifier" $
-      forM_ allModifiers $ \modifier ->
+      forM_ [minBound .. maxBound] $ \modifier ->
         kdPreventBrowser (decideKey modifier K.DeadKey) @?= False
   , testCase "decideKey empties the key queue on Esc and no other key" $ do
-      forM_ allModifiers $ \modifier ->
+      forM_ [minBound .. maxBound] $ \modifier ->
         kdResetChan (decideKey modifier K.Esc) @?= True
       kdResetChan (decideKey K.NoModifier K.Return) @?= False
       kdResetChan (decideKey K.Control (K.Char 'c')) @?= False
-    -- 'K.Key' has no 'Show' instance, so keys are compared as 'K.showKey'
-    -- renders them, which tells apart every key the tables here name.
   , testCase "decideWheel turns a delta beyond 0.01 into the wheel's key" $
       forM_ [ (-100, Just K.WheelNorth), (-0.02, Just K.WheelNorth)
             , (-0.01, Nothing), (0, Nothing), (0.01, Nothing)
             , (0.02, Just K.WheelSouth), (100, Just K.WheelSouth) ] $
         \(deltaY, expected) ->
-          assertEqual ("deltaY " ++ show deltaY)
-                      (K.showKey <$> expected)
-                      (K.showKey <$> decideWheel deltaY)
+          assertEqual ("deltaY " ++ show deltaY) expected (decideWheel deltaY)
   , testCase "decideMouseButton reads DOM button codes, any other as left" $
       forM_ [ (0, K.LeftButtonRelease), (1, K.MiddleButtonRelease)
             , (2, K.RightButtonRelease), (3, K.LeftButtonRelease)
             , (4, K.LeftButtonRelease) ] $
         \(button, expected) ->
           assertEqual ("button " ++ show button)
-                      (K.showKey expected)
-                      (K.showKey $ decideMouseButton button)
+                      expected (decideMouseButton button)
   , testGroup "keyTranslateWeb"
       [ testCase (show s ++ (if shift then " with Shift" else "")) $
-          K.showKey (K.keyTranslateWeb s shift) @?= K.showKey expected
+          K.keyTranslateWeb s shift @?= expected
       | (s, shift, expected) <- keyTranslateWebTable
       ]
   ]
-
-allModifiers :: [K.Modifier]
-allModifiers =
-  [K.NoModifier, K.Shift, K.Control, K.ControlShift, K.Alt, K.AltShift]
 
 -- | @KeyboardEvent.key@ values, the flag 'K.keyTranslateWeb' takes for
 -- Shift held alone, and the key each translates to.

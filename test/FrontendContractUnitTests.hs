@@ -23,10 +23,9 @@ import           Test.Tasty.HUnit
 
 import           Game.LambdaHack.Client.UI.Content.Screen
 import           Game.LambdaHack.Client.UI.Frame
-import           Game.LambdaHack.Client.UI.Frontend
-  (KeyDecision (..), decideKey)
+import           Game.LambdaHack.Client.UI.Frontend (decideKey)
 import           Game.LambdaHack.Client.UI.Frontend.Common
-  (RawFrontend (..), resetChanKey, saveKMP)
+  (RawFrontend (..), deliverKey, keysPending)
 import           Game.LambdaHack.Client.UI.Key (KMP (..))
 import qualified Game.LambdaHack.Client.UI.Key as K
 import           Game.LambdaHack.Client.UI.PointUI
@@ -46,14 +45,14 @@ frontendContractUnitTests = testGroup "frontendContractUnitTests"
       timeout 200000 (readMVar shown) >>= (@?= Nothing)
       deliver rf K.NoModifier (K.Char 'a')
       timeout 5000000 (takeMVar shown) >>= (@?= Just ())
-      pressed rf >>= (@?= True)
+      keysPending rf >>= (@?= True)
       pending rf >>= (@?= [K.KM K.NoModifier (K.Char 'a')])
   , testCase "fe-invariant: a dead key shows a waiting frame only" $ do
       rf <- startupUnderTest coscreen
       shown <- frameWaiting rf
       deliver rf K.Shift K.DeadKey
       timeout 5000000 (takeMVar shown) >>= (@?= Just ())
-      pressed rf >>= (@?= False)
+      keysPending rf >>= (@?= False)
   , testCase "fe-invariant: Esc empties the keys pending before it" $ do
       rf <- startupUnderTest coscreen
       deliver rf K.NoModifier (K.Char 'a')
@@ -73,13 +72,11 @@ startupUnderTest coscreen =
   Common.createRawFrontend coscreen (\_ -> return ()) (return ())
 #endif
 
--- | The steps the SDL and wasm frontends' key handlers take with a key
--- they translated.
+-- | A key delivered as the SDL and wasm frontends' key handlers deliver
+-- one they translated.
 deliver :: RawFrontend -> K.Modifier -> K.Key -> IO ()
-deliver rf modifier key = do
-  let KeyDecision{kdModifier, kdResetChan} = decideKey modifier key
-  when kdResetChan $ resetChanKey $ fchanKey rf
-  saveKMP rf kdModifier key $ PointUI 0 0
+deliver rf modifier key =
+  deliverKey rf (decideKey modifier key) key $ PointUI 0 0
 
 -- | A frame displayed and not yet let go by the frame timeout thread,
 -- and the next frame's display blocked behind it, as @display@ in
@@ -95,10 +92,6 @@ frameWaiting rf = do
     fdisplay rf $ blankSingleFrame $ fcoscreen rf
     putMVar shown ()
   return shown
-
--- | What @FrontPressed@ returns, reading the same queue.
-pressed :: RawFrontend -> IO Bool
-pressed rf = not <$> STM.atomically (STM.isEmptyTQueue $ fchanKey rf)
 
 -- | The keys pending, emptying the queue.
 pending :: RawFrontend -> IO [K.KM]

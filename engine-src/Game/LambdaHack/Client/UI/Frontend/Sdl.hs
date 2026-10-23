@@ -350,11 +350,9 @@ startupFun coscreen soptions@ClientOptions{..} rfMVar = do
                 key = keyTranslate shiftPressed $ SDL.keysymKeycode sym
                 -- No browser to keep a key from, so kdPreventBrowser is
                 -- ignored.
-                KeyDecision{kdModifier, kdResetChan} =
-                  decideKey (modTranslate ksm) key
+                decision = decideKey (modTranslate ksm) key
             p <- SDL.getAbsoluteMouseLocation
-            when kdResetChan $ resetChanKey (fchanKey rf)
-            saveKMP rf kdModifier key (pointTranslate p)
+            deliverKey rf decision key (pointTranslate p)
         SDL.MouseButtonEvent mouseButtonEvent
           | SDL.mouseButtonEventMotion mouseButtonEvent == SDL.Released -> do
             modifier <- modTranslate <$> SDL.getModState
@@ -515,10 +513,9 @@ drawFrame coscreen ClientOptions{..} sess@FrontendSession{..} curFrame = do
         textTexture <- SDL.createTextureFromSurface srenderer textSurface
         SDL.freeSurface textSurface
         return textTexture
-      -- This also frees the surface it gets.
-      scaleSurfaceToTextureProp :: Int -> SDL.Surface -> IO SDL.Texture
-      scaleSurfaceToTextureProp width textSurfaceRaw = do
-        Vect.V2 _ sh <- SDL.surfaceDimensions textSurfaceRaw
+      -- This also frees the surface it gets, whose height is given.
+      scaleSurfaceToTextureProp :: Int -> CInt -> SDL.Surface -> IO SDL.Texture
+      scaleSurfaceToTextureProp width sh textSurfaceRaw = do
         let height = min boxSize $ fromEnum sh
             xsrc = 0
             ysrc = max 0 (fromEnum sh - height) `divUp` 2
@@ -617,9 +614,9 @@ drawFrame coscreen ClientOptions{..} sess@FrontendSession{..} curFrame = do
             fg = pcColor chunk
         textSurfaceRaw <- TTF.shaded (fromJust font) (colorToRGBA fg)
                                      blackRGBA (pcText chunk)
-        Vect.V2 sw _ <- SDL.surfaceDimensions textSurfaceRaw
+        Vect.V2 sw sh <- SDL.surfaceDimensions textSurfaceRaw
         let PropFit{..} = propFit lm cur chunk (fromEnum sw)
-        textTexture <- scaleSurfaceToTextureProp pfWidthPx textSurfaceRaw
+        textTexture <- scaleSurfaceToTextureProp pfWidthPx sh textSurfaceRaw
         let tgtR = SDL.Rectangle (vp pfXPx (row * boxSize))
                                  (Vect.V2 (toEnum pfWidthPx) (toEnum boxSize))
         -- Potentially overwrite some of the screen.
@@ -805,7 +802,7 @@ sDL_ALPHA_OPAQUE :: Word8
 sDL_ALPHA_OPAQUE = 255
 
 blackRGBA :: SDL.V4 Word8
-blackRGBA = SDL.V4 0 0 0 sDL_ALPHA_OPAQUE
+blackRGBA = colorToRGBA Color.Black
 
 -- | The fill of a cell under 'Color.HighlightBackground'.
 backlightRGBA :: SDL.V4 Word8
@@ -817,12 +814,8 @@ colorToRGBA c = colorsRGBA V.! fromEnum c
 
 colorsRGBA :: V.Vector (SDL.V4 Word8)
 colorsRGBA = V.fromList $ map (hexToRGBA . Color.colorToRGB)
-                              [Color.Black .. Color.BrWhite]
+                              [minBound .. maxBound]
 
 hexToRGBA :: Text -> SDL.V4 Word8
-hexToRGBA t = case T.unpack t of
-  ['#', r1, r2, g1, g2, b1, b2] ->
-    SDL.V4 (channel r1 r2) (channel g1 g2) (channel b1 b2) sDL_ALPHA_OPAQUE
-  _ -> error $ "not #RRGGBB" `showFailure` t
- where
-  channel high low = toEnum $ 16 * Char.digitToInt high + Char.digitToInt low
+hexToRGBA t = let (r, g, b) = rgbChannels t
+              in SDL.V4 (toEnum r) (toEnum g) (toEnum b) sDL_ALPHA_OPAQUE

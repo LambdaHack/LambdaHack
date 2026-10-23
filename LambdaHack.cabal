@@ -498,6 +498,7 @@ test-suite test
                       CommonMUnitTests
                       FfiCoverageUnitTests
                       FrameMUnitTests
+                      FreshnessCase
                       FrontendContractUnitTests
                       HandleHelperMUnitTests
                       HandleHumanGlobalMUnitTests

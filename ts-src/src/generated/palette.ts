@@ -46,3 +46,42 @@ export const HIGHLIGHT_TO_COLOR: readonly number[] = [
 // The fill of a cell under HighlightBackground
 // (Frontend/CellStyle.hs backlightRGB).
 export const BACKLIGHT_FILL = "#251F1F";
+
+// Color and Highlight enum indices by constructor
+// (Definition/Color.hs), as fromEnum gives them.
+export const COLOR = {
+  Black: 0,
+  Red: 1,
+  Green: 2,
+  Brown: 3,
+  Blue: 4,
+  Magenta: 5,
+  Cyan: 6,
+  White: 7,
+  AltWhite: 8,
+  BrBlack: 9,
+  BrRed: 10,
+  BrGreen: 11,
+  BrYellow: 12,
+  BrBlue: 13,
+  BrMagenta: 14,
+  BrCyan: 15,
+  BrWhite: 16,
+} as const;
+
+export const HIGHLIGHT = {
+  HighlightNone: 0,
+  HighlightBackground: 1,
+  HighlightGreen: 2,
+  HighlightBlue: 3,
+  HighlightBrown: 4,
+  HighlightCyan: 5,
+  HighlightGrey: 6,
+  HighlightWhite: 7,
+  HighlightMagenta: 8,
+  HighlightRed: 9,
+  HighlightYellow: 10,
+  HighlightYellowAim: 11,
+  HighlightRedAim: 12,
+  HighlightNoneCursor: 13,
+} as const;

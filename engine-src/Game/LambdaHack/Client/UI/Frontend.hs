@@ -10,6 +10,7 @@ module Game.LambdaHack.Client.UI.Frontend
   , KeyDecision(..), decideKey, decideWheel, decideMouseButton
     -- * Cell styling shared by the frontends
   , CellStyle(..), CellGlyphs(..), styleCell, rowColor, backlightRGB
+  , rgbChannels
     -- * The mouse cursor shared by the frontends
   , CursorPixel(..), xhairCursorPixels, xhairCursorSize, xhairCursorHotspot
     -- * Screenshot names shared by the frontends
@@ -145,9 +146,7 @@ fchanFrontend fs@FrontSetup{..} rf =
     FrontDelay k -> modifyMVar_ fdelay $ return . (+ k)
     FrontKey frontKeyKeys frontKeyFrame ->
       getKey fs rf frontKeyKeys frontKeyFrame
-    FrontPressed -> do
-      noKeysPending <- STM.atomically $ STM.isEmptyTQueue (fchanKey rf)
-      return $! not noKeysPending
+    FrontPressed -> keysPending rf
     FrontDiscardKey ->
       void $ STM.atomically $ STM.tryReadTQueue (fchanKey rf)
     FrontResetKeys -> resetChanKey (fchanKey rf)
@@ -179,7 +178,7 @@ microInSec = 1000000
 -- This thread is canceled forcefully, because the @threadDelay@
 -- may be much longer than an acceptable shutdown time.
 frameTimeoutThread :: Int -> MVar Int -> RawFrontend -> IO ()
-frameTimeoutThread delta fdelay RawFrontend{..} = do
+frameTimeoutThread delta fdelay rf@RawFrontend{..} = do
   let loop = do
         threadDelay delta
         let delayLoop = do
@@ -196,8 +195,8 @@ frameTimeoutThread delta fdelay RawFrontend{..} = do
               -- @fshowNow@ is ever empty only here, unless @saveKM@ empties it
               readMVar fshowNow  -- 4. wait for ack before starting delay
               -- @fshowNow@ is full at this point
-              noKeysPending <- STM.atomically $ STM.isEmptyTQueue fchanKey
-              unless noKeysPending $ do
+              pressed <- keysPending rf
+              when pressed $ do
                 void $ swapMVar fdelay 0  -- cancel delays lest they accumulate
                 showFrameAndRepeatIfKeys
         showFrameAndRepeatIfKeys

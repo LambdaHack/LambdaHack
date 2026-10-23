@@ -1,31 +1,20 @@
 -- | Tests for CellStyle, the per-cell drawing decisions shared by the
 -- frontends, and for MouseCursor, the cursor they share, and the freshness
--- case for the files in @ts-src/src/generated/@ that are computed from the
--- two (@docs/wasm-frontend-unified-plan.md@, 0.2), whose switch and writers
--- @OverlayLayoutUnitTests@ shares.
-module CellStyleUnitTests
-  ( cellStyleUnitTests, freshnessOptions
-#ifndef USE_BROWSER
-  , freshnessCase, jsonItems, jsonObject, jsonString
-#endif
-  ) where
+-- cases of the files in @ts-src/src/generated/@ that are computed from the
+-- two.
+module CellStyleUnitTests (cellStyleUnitTests) where
 
 import Prelude ()
 
 import Game.LambdaHack.Core.Prelude
 
-import           Data.Char (digitToInt)
-import           Data.Proxy (Proxy (..))
-import qualified Data.Text as T
-import           Test.Tasty
-import           Test.Tasty.HUnit hiding (assert)
-import           Test.Tasty.Options
+import Test.Tasty
+import Test.Tasty.HUnit hiding (assert)
 
 #ifndef USE_BROWSER
-import qualified Data.ByteString as BS
-import qualified Data.Text.Encoding as T
-import           Numeric (showHex)
-import           System.Directory (doesFileExist)
+import           Data.Containers.ListUtils (nubOrd)
+import qualified Data.Text as T
+import           Text.Printf (printf)
 #endif
 
 import           Game.LambdaHack.Client.UI.Frontend
@@ -33,6 +22,7 @@ import           Game.LambdaHack.Client.UI.Frontend
   , CellStyle (..)
   , CursorPixel (..)
   , backlightRGB
+  , rgbChannels
   , rowColor
   , styleCell
   , xhairCursorHotspot
@@ -48,6 +38,8 @@ import           Game.LambdaHack.Common.Point (Point (..))
 import qualified Game.LambdaHack.Content.RuleKind as RK
 
 import qualified Content.RuleKind
+
+import FreshnessCase
 #endif
 
 cellStyleUnitTests :: TestTree
@@ -57,7 +49,7 @@ cellStyleUnitTests = testGroup "cellStyleUnitTests" $
       rowColor 2 Color.White @?= Color.AltWhite
       rowColor 1 Color.White @?= Color.White
   , testCase "rowColor leaves every other colour alone on even rows" $
-      forM_ allColors $ \fg ->
+      forM_ [minBound .. maxBound] $ \fg ->
         when (fg /= Color.White) $
           assertEqual (show fg) fg (rowColor 0 fg)
   , testCase "styleCell recolours by row" $ do
@@ -89,24 +81,21 @@ cellStyleUnitTests = testGroup "cellStyleUnitTests" $
         assertEqual (show bg) (bg == Color.HighlightBackground)
                     (csBacklit $ styleCell browserGlyphs 1 $ highlit bg)
   , testCase "styleCell outlines none of None, Background and NoneCursor" $
-      forM_ [ Color.HighlightNone, Color.HighlightBackground
-            , Color.HighlightNoneCursor ] $ \bg ->
+      forM_ unoutlined $ \bg ->
         assertEqual (show bg) Nothing
                     (csBorder $ styleCell browserGlyphs 1 $ highlit bg)
   , testCase "styleCell outlines every other kind in its highlightToColor" $
       forM_ [minBound .. maxBound] $ \bg ->
-        unless (bg `elem` [ Color.HighlightNone, Color.HighlightBackground
-                          , Color.HighlightNoneCursor ]) $
+        unless (bg `elem` unoutlined) $
           assertEqual (show bg) (Just $ Color.highlightToColor bg)
                       (csBorder $ styleCell browserGlyphs 1 $ highlit bg)
-  , testCase "backlightRGB is a third of BrBlack in every channel" $
-      hexChannels backlightRGB
-        @?= map (`div` 3) (hexChannels $ Color.colorToRGB Color.BrBlack)
-  , testCase "xhairCursorSize is the art's, in whole bytes per row for SDL" $ do
-      let (width, height) = xhairCursorSize
-      length xhairCursorPixels @?= height
-      forM_ xhairCursorPixels $ \row -> length row @?= width
-      width `mod` 8 @?= 0
+  , testCase "backlightRGB is a third of BrBlack in every channel" $ do
+      let (r, g, b) = rgbChannels $ Color.colorToRGB Color.BrBlack
+      rgbChannels backlightRGB @?= (r `div` 3, g `div` 3, b `div` 3)
+  , -- Forcing xhairCursorSize also runs its assertion that the art's rows
+    -- are of one width.
+    testCase "xhairCursorSize is whole bytes per row for SDL" $
+      fst xhairCursorSize `mod` 8 @?= 0
   , testCase "xhairCursorHotspot is the centre the art is symmetric about" $ do
       let (x, y) = xhairCursorHotspot
       forM_ [1 .. y] $ \k ->
@@ -125,20 +114,13 @@ browserGlyphs = CellGlyphs {cgDimFloor = '\x22C5', cgSpace = '\x00A0'}
 sdlGlyphs :: CellGlyphs
 sdlGlyphs = CellGlyphs {cgDimFloor = '\x0007', cgSpace = ' '}
 
--- | Every colour, 'Color.Color' having no 'Bounded' instance.
-allColors :: [Color.Color]
-allColors = [Color.Black .. Color.BrWhite]
+-- | The highlights no outline is drawn for.
+unoutlined :: [Color.Highlight]
+unoutlined =
+  [Color.HighlightNone, Color.HighlightBackground, Color.HighlightNoneCursor]
 
 cell :: Color.Color -> Char -> Color.AttrCharW32
-cell fg = attrCell fg Color.HighlightNone
-
--- | The red, green and blue of a @#RRGGBB@ colour.
-hexChannels :: Text -> [Int]
-hexChannels t = case T.unpack t of
-  ['#', r1, r2, g1, g2, b1, b2] -> map channel [(r1, r2), (g1, g2), (b1, b2)]
-  _ -> error $ "not #RRGGBB: " ++ show t
- where
-  channel (high, low) = 16 * digitToInt high + digitToInt low
+cell = Color.attrChar2ToW32
 
 highlit :: Color.Highlight -> Color.AttrCharW32
 highlit bg = attrCell Color.BrCyan bg '@'
@@ -146,68 +128,30 @@ highlit bg = attrCell Color.BrCyan bg '@'
 attrCell :: Color.Color -> Color.Highlight -> Char -> Color.AttrCharW32
 attrCell fg bg c = Color.attrCharToW32 $ Color.AttrChar (Color.Attr fg bg) c
 
--- | The freshness case's switch, @--regenerate@, under which it rewrites
--- the committed files rather than comparing them.
-newtype Regenerate = Regenerate Bool
-
-instance IsOption Regenerate where
-  defaultValue = Regenerate False
-  parseValue = fmap Regenerate . safeReadBool
-  optionName = return "regenerate"
-  optionHelp = return "Rewrite the files in ts-src/src/generated/"
-  optionCLParser = flagCLParser Nothing (Regenerate True)
-
--- | The options the freshness case reads, for the suite's ingredients.
-freshnessOptions :: [OptionDescription]
-freshnessOptions = [Option (Proxy :: Proxy Regenerate)]
-
--- | The freshness case, one test per file: each committed file
--- in @ts-src/src/generated/@ against what it is computed from here,
--- since @make build-ts@ bundles the committed copies as they stand.
--- None in a browser build, which runs under @make test-wasm@, away
--- from the files.
+-- | The freshness cases of the files computed here.
 freshnessTests :: [TestTree]
 #ifndef USE_BROWSER
 freshnessTests =
-  [ freshnessCase "CellStyleUnitTests.hs" "palette.ts" paletteTs
-  , freshnessCase "CellStyleUnitTests.hs" "fixtures.json" fixturesJson
-  , freshnessCase "CellStyleUnitTests.hs" "cursor.ts" cursorTs
+  [ fresh "palette.ts" paletteTs
+  , fresh "fixtures.json" fixturesJson
+  , fresh "cursor.ts" cursorTs
   ]
+ where
+  fresh = freshnessCase source
 
--- | The freshness case of one file, given the test module computing it.
-freshnessCase :: FilePath -> FilePath -> Text -> TestTree
-freshnessCase source name content = askOption $ \(Regenerate regenerate) ->
-  testCase ("generated " ++ name ++ " is fresh") $ do
-    -- Relative to the directory the .cabal file is in, where cabal runs
-    -- the suite, and which the SDL fontset cases rely on too.
-    let path = "ts-src/src/generated/" ++ name
-        bytes = T.encodeUtf8 content
-    exists <- doesFileExist path
-    committed <- if exists then Just <$> BS.readFile path else return Nothing
-    if | committed == Just bytes -> return ()
-       | regenerate -> BS.writeFile path bytes
-       | otherwise ->
-         assertFailure $ path ++ " differs from what " ++ source
-                         ++ " computes; rewrite it with"
-                         ++ " cabal test --test-options=--regenerate"
-
--- | The header of a generated TypeScript file.
-generatedHeader :: [Text]
-generatedHeader =
-  [ "// Generated by the freshness case in test/CellStyleUnitTests.hs, which"
-  , "// fails while this file differs from what it computes; rewrite it with"
-  , "// cabal test --test-options=--regenerate, not by hand."
-  ]
+source :: FilePath
+source = "CellStyleUnitTests.hs"
 
 -- | The palette @terminal-core.ts@ renders colours with.
 paletteTs :: Text
 paletteTs = T.unlines $
-  generatedHeader
+  generatedHeader source
   ++ [ ""
      , "// Color enum index -> hex (Definition/Color.hs colorToRGB),"
      , "// indexed by fromEnum."
      , "export const PALETTE: readonly string[] = [" ]
-  ++ [ "  \"" <> Color.colorToRGB c <> "\", // " <> tshow c | c <- allColors ]
+  ++ [ "  \"" <> Color.colorToRGB c <> "\", // " <> tshow c
+     | c <- [minBound :: Color.Color .. maxBound] ]
   ++ [ "];"
      , ""
      , "// Highlight enum index -> Color enum index"
@@ -220,7 +164,20 @@ paletteTs = T.unlines $
      , ""
      , "// The fill of a cell under HighlightBackground"
      , "// (Frontend/CellStyle.hs backlightRGB)."
-     , "export const BACKLIGHT_FILL = \"" <> backlightRGB <> "\";" ]
+     , "export const BACKLIGHT_FILL = \"" <> backlightRGB <> "\";"
+     , ""
+     , "// Color and Highlight enum indices by constructor"
+     , "// (Definition/Color.hs), as fromEnum gives them."
+     , "export const COLOR = {" ]
+  ++ indices ([minBound .. maxBound] :: [Color.Color])
+  ++ [ "} as const;"
+     , ""
+     , "export const HIGHLIGHT = {" ]
+  ++ indices ([minBound .. maxBound] :: [Color.Highlight])
+  ++ [ "} as const;" ]
+ where
+  indices :: (Show a, Enum a) => [a] -> [Text]
+  indices l = [ "  " <> tshow c <> ": " <> tshow (fromEnum c) <> "," | c <- l ]
 
 -- | Fixtures that @terminal-core.test.ts@ asserts @styledCell@ and
 -- @cellPosition@ against: 'styleCell' on the browser's glyphs, rendered
@@ -228,18 +185,9 @@ paletteTs = T.unlines $
 -- 'RK.rWidthMax', which the engine's content validation makes the screen
 -- width and @TieKnot@ makes the width @toEnum@ decodes with.
 fixturesJson :: Text
-fixturesJson = T.unlines $
-  [ "{"
-  , "  \"source\": "
-    <> jsonString "test/CellStyleUnitTests.hs, the freshness case"
-    <> ","
-  , "  \"cells\": [" ]
-  ++ jsonItems (map cellFixture cellSample)
-  ++ [ "  ],"
-     , "  \"positions\": [" ]
-  ++ jsonItems (map positionFixture positionSample)
-  ++ [ "  ]"
-     , "}" ]
+fixturesJson = jsonDocument source
+  [ ("cells", map cellFixture cellSample)
+  , ("positions", map positionFixture positionSample) ]
  where
   cellFixture (row, w) =
     let CellStyle{..} = styleCell browserGlyphs row w
@@ -263,7 +211,7 @@ fixturesJson = T.unlines $
 -- | The cursor the browser is to show over the map, as SDL shows it.
 cursorTs :: Text
 cursorTs = T.unlines $
-  generatedHeader
+  generatedHeader source
   ++ [ ""
      , "// The crosshair mouse cursor (Frontend/MouseCursor.hs"
      , "// xhairCursorPixels) as an SVG data URI, and its hotspot, the pixel"
@@ -308,45 +256,22 @@ pixelRuns pixel = go 0
 uriEscape :: Char -> Text
 uriEscape c
   | c `elem` uriSafe = T.singleton c
-  | otherwise = assert (n < 0x80) $
-      T.pack ['%', hexDigits !! (n `div` 16), hexDigits !! (n `mod` 16)]
+  | otherwise = assert (n < 0x80) $ T.pack $ printf "%%%02X" n
  where
   n = fromEnum c
   uriSafe = ['A' .. 'Z'] ++ ['a' .. 'z'] ++ ['0' .. '9'] ++ "-_.~/:=,;"
-  hexDigits = "0123456789ABCDEF"
 
 -- | Cells for each glyph rule and each highlight, on an even row
--- and an odd, and for each colour.
+-- and an odd, and for each colour, each once.
 cellSample :: [(Int, Color.AttrCharW32)]
-cellSample =
+cellSample = nubOrd $
   [ (row, cell fg c) | c <- ['@', ' ', floorSymbol]
                      , fg <- [Color.White, Color.BrBlack, Color.BrWhite]
                      , row <- [0, 1] ]
-  ++ [ (1, cell fg '@') | fg <- allColors ]
+  ++ [ (1, cell fg '@') | fg <- [minBound .. maxBound] ]
   ++ [ (row, attrCell Color.White bg '@')
      | bg <- [minBound .. maxBound], row <- [0, 1] ]
 
-jsonItems :: [Text] -> [Text]
-jsonItems items =
-  zipWith (\item comma -> "    " <> item <> comma) items
-          (replicate (length items - 1) "," ++ [""])
-
-jsonObject :: [(Text, Text)] -> Text
-jsonObject fields =
-  "{" <> T.intercalate ", " [jsonString k <> ": " <> v | (k, v) <- fields]
-  <> "}"
-
--- | A JSON string, kept ASCII by escaping everything else.
-jsonString :: Text -> Text
-jsonString t = "\"" <> T.concatMap escape t <> "\""
- where
-  escape c
-    | c == '"' || c == '\\' = T.pack ['\\', c]
-    | c >= ' ' && c <= '~' = T.singleton c
-    | otherwise =
-      let hex = showHex (fromEnum c) ""
-      in assert (fromEnum c <= 0xFFFF) $
-           T.pack $ "\\u" ++ replicate (4 - length hex) '0' ++ hex
 #else
 freshnessTests = []
 #endif

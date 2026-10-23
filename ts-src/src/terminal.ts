@@ -178,16 +178,8 @@ export function mountTerminal(
     overlaid = [];
     if (!hasFocusedOnce) {
       hasFocusedOnce = true;
-      // Needed *in addition to* the pageshow listener below, not instead of
-      // it: main() is async (fetches/instantiates the wasm module before
-      // ever reaching mountTerminal), so on a fresh load the browser's own
-      // load/pageshow events can fire and complete before this module gets
-      // around to registering its pageshow listener at all -- that race is
-      // exactly what left fresh-load/reload without focus. This call, tied
-      // to the first real frame actually being painted, doesn't have that
-      // race. pageshow still covers bfcache-restored back/forward
-      // navigation, which never reaches this layOut path again since
-      // the frame size hasn't changed and no setup code reruns.
+      // The fresh-load focus, tied to the first frame painted; the pageshow
+      // listener below says why it is needed besides that listener.
       focusTerminal();
     }
   }
@@ -297,7 +289,7 @@ export function mountTerminal(
       while (end < rowEnd && buf[end] !== prev[end]) end++;
       const words = buf.subarray(i, end);
       prev.set(words, i);
-      draw(cellRunOps({ col, row, words }, m.boxSize, m));
+      draw(cellRunOps({ col, row, words }, m));
       i = end;
     }
     const ops = overlayOps(layout, cols, m, baselineOf, measure);
@@ -416,21 +408,16 @@ export function mountTerminal(
     );
   }
 
+  // The modifiers the pointer handlers take, in their order.
+  const mods = (e: MouseEvent) =>
+    [e.ctrlKey, e.shiftKey, altModifier(e), e.metaKey] as const;
+
   // { passive: false } is required to preventDefault() a wheel listener.
   canvas.addEventListener(
     "wheel",
     (e) => {
       const p = pointUnder(e);
-      if (p)
-        onWheel(
-          p.x,
-          p.y,
-          e.deltaY,
-          e.ctrlKey,
-          e.shiftKey,
-          altModifier(e),
-          e.metaKey,
-        );
+      if (p) onWheel(p.x, p.y, e.deltaY, ...mods(e));
       e.preventDefault();
       e.stopPropagation();
     },
@@ -443,16 +430,7 @@ export function mountTerminal(
   });
   canvas.addEventListener("mouseup", (e) => {
     const p = pointUnder(e);
-    if (p)
-      onMouseUp(
-        p.x,
-        p.y,
-        e.button,
-        e.ctrlKey,
-        e.shiftKey,
-        altModifier(e),
-        e.metaKey,
-      );
+    if (p) onMouseUp(p.x, p.y, e.button, ...mods(e));
     e.preventDefault();
     e.stopPropagation();
   });

@@ -6,11 +6,15 @@
 -- the test suite writes into @ts-src/src/generated/@.
 module Game.LambdaHack.Client.UI.Frontend.CellStyle
   ( CellStyle(..), CellGlyphs(..), styleCell, rowColor, backlightRGB
+  , rgbChannels
   ) where
 
 import Prelude ()
 
 import Game.LambdaHack.Core.Prelude
+
+import           Data.Char (digitToInt)
+import qualified Data.Text as T
 
 import           Game.LambdaHack.Content.TileKind (floorSymbol)
 import qualified Game.LambdaHack.Definition.Color as Color
@@ -71,3 +75,12 @@ rowColor row fg | even row && fg == Color.White = Color.AltWhite
 -- constructor has this value.
 backlightRGB :: Text
 backlightRGB = "#251F1F"
+
+-- | The red, green and blue of a @#RRGGBB@ colour, such as
+-- 'Color.colorToRGB' gives.
+rgbChannels :: Text -> (Int, Int, Int)
+rgbChannels t = case T.unpack t of
+  ['#', r1, r2, g1, g2, b1, b2] -> (channel r1 r2, channel g1 g2, channel b1 b2)
+  _ -> error $ "not #RRGGBB" `showFailure` t
+ where
+  channel high low = 16 * digitToInt high + digitToInt low

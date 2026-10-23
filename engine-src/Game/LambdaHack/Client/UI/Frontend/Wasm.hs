@@ -182,13 +182,10 @@ lhKey e = syncExport "lhKey" $ do
   modMeta <- js_metaKey e
   let modifier = modifierTranslate modCtrl modShift modAlt modMeta
       key = K.keyTranslateWeb (fromJSString jsKey) (modifier == K.Shift)
-      KeyDecision{kdModifier, kdResetChan, kdPreventBrowser} =
-        decideKey modifier key
-  when kdPreventBrowser $ js_preventDefaultAndStop e
+      decision = decideKey modifier key
+  when (kdPreventBrowser decision) $ js_preventDefaultAndStop e
   mrf <- readIORef rfRef
-  forM_ mrf $ \rf -> do
-    when kdResetChan $ resetChanKey (fchanKey rf)
-    saveKMP rf kdModifier key (PointUI 0 0)
+  forM_ mrf $ \rf -> deliverKey rf decision key (PointUI 0 0)
 
 foreign export javascript "lhKey sync"
   lhKey :: JSVal -> IO ()

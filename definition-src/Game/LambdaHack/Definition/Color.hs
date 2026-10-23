@@ -48,7 +48,7 @@ data Color =
   | BrMagenta
   | BrCyan
   | BrWhite
-  deriving (Show, Read, Eq, Ord, Enum, Generic)
+  deriving (Show, Read, Eq, Ord, Enum, Bounded, Generic)
 
 instance Binary Color where
   put = putWord8 . toEnum . fromEnum
@@ -95,8 +95,6 @@ cGameOver = BrWhite
 cTutorialHint = BrMagenta
 
 -- | Translationg to heavily modified Linux console color RGB values.
---
--- Warning: SDL frontend sadly duplicates this code.
 colorToRGB :: Color -> Text
 colorToRGB Black     = "#000000"
 colorToRGB Red       = "#D50505"

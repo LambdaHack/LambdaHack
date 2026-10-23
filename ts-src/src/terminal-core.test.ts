@@ -15,32 +15,27 @@ import {
   faceBaseline,
   pointerPoint,
 } from "./terminal-core.js";
+import { COLOR, HIGHLIGHT } from "./generated/palette.js";
 import fixtures from "./generated/fixtures.json";
 
 // AttrCharW32 layout (Definition/Color.hs): code = w>>16, fg = (w>>8)&0xFF, bg = w&0xFF
 const enc = (code: number, fg: number, bg: number) =>
   (code << 16) | (fg << 8) | bg;
 
-// Color enum indices (Definition/Color.hs, data Color)
-const Black = 0,
-  Green = 2,
-  White = 7,
-  AltWhite = 8,
-  BrBlack = 9,
-  BrRed = 10,
-  BrCyan = 15,
-  BrWhite = 16;
-// Highlight enum indices (Definition/Color.hs, data Highlight)
-const HiNone = 0,
-  HiBackground = 1,
-  HiGreen = 2,
-  HiRed = 9,
-  HiNoneCursor = 13;
+const { Black, Green, White, AltWhite, BrBlack, BrRed, BrCyan, BrWhite } =
+  COLOR;
+const {
+  HighlightNone: HiNone,
+  HighlightBackground: HiBackground,
+  HighlightGreen: HiGreen,
+  HighlightRed: HiRed,
+  HighlightNoneCursor: HiNoneCursor,
+} = HIGHLIGHT;
 
 const SPACE = 32,
   AT = 64,
-  FLOOR = 0xb7 /* '·' */,
-  MIDDOT = 0x22c5; /* '⋅' */
+  FLOOR = 0xb7 /* U+00B7 */,
+  MIDDOT = 0x22c5; /* U+22C5 */
 
 describe("decodeCell", () => {
   it("splits glyph/fg/bg out of the Word32", () => {
@@ -94,7 +89,7 @@ describe("glyph (char substitutions)", () => {
     expect(glyph(FLOOR, BrBlack)).toBe(String.fromCodePoint(MIDDOT));
   });
   it("keeps a bright floor as '·'", () => {
-    expect(glyph(FLOOR, BrWhite)).toBe("·");
+    expect(glyph(FLOOR, BrWhite)).toBe(String.fromCodePoint(FLOOR));
   });
   it("passes ordinary glyphs through", () => {
     expect(glyph(AT, BrRed)).toBe("@");
@@ -227,7 +222,6 @@ describe("cellRunOps (the draw ops of a cell run)", () => {
           row: 1,
           words: [enc(AT, BrRed, HiNone), enc(AT, Green, HiRed)],
         },
-        16,
         m,
       ),
     ).toEqual([
@@ -258,23 +252,10 @@ describe("cellRunOps (the draw ops of a cell run)", () => {
       { kind: "stroke", x: 48, y: 16, w: 16, h: 16, color: "#D50505" },
     ]);
   });
-  it("lays cells out at the given pitch", () => {
-    const ops = cellRunOps(
-      { col: 3, row: 0, words: [enc(AT, BrRed, HiRed)] },
-      m.halfSize,
-      m,
-    );
-    expect(ops.map(({ kind, x, w }) => [kind, x, w])).toEqual([
-      ["fill", 24, 8],
-      ["text", 24, 8],
-      ["stroke", 24, 8],
-    ]);
-  });
   it("draws a backlit cell's tint and no ring, and no glyph for a space", () => {
     expect(
       cellRunOps(
         { col: 0, row: 0, words: [enc(SPACE, White, HiBackground)] },
-        16,
         m,
       ),
     ).toEqual([{ kind: "fill", x: 0, y: 0, w: 16, h: 16, color: "#251F1F" }]);
@@ -282,7 +263,6 @@ describe("cellRunOps (the draw ops of a cell run)", () => {
   it("styles each cell by its row, as styledCell does", () => {
     const [, text] = cellRunOps(
       { col: 0, row: 2, words: [enc(AT, White, HiNone)] },
-      16,
       m,
     );
     expect(text).toMatchObject({

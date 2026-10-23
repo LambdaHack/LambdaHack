@@ -2,7 +2,7 @@
 // AttrCharW32 cell words into glyphs + colors and runs of them into draw
 // ops, each text in a face, a face's ascent and descent into its baseline
 // in a cell, frame indices into screen cells, pointer pixels into the
-// engine's points, and a key event's modifiers into the engine's Alt. No
+// engine's points, and a pointer event's modifiers into the engine's Alt. No
 // DOM, no wasm: the loader and the actual drawing are thin wiring around
 // these functions.
 //
@@ -12,6 +12,8 @@
 
 import {
   BACKLIGHT_FILL,
+  COLOR,
+  HIGHLIGHT,
   HIGHLIGHT_TO_COLOR,
   PALETTE,
 } from "./generated/palette.js";
@@ -29,20 +31,18 @@ export interface StyledCell {
   border: string | null; // highlight border hex, null for none
 }
 
-const BLACK = 0;
-const WHITE = 7;
-const ALT_WHITE = 8;
-const BR_BLACK = 9;
-const HIGHLIGHT_NONE = 0;
-const HIGHLIGHT_BACKGROUND = 1;
-const HIGHLIGHT_NONE_CURSOR = 13;
-const FLOOR_SYMBOL = 0xb7; // '·', Content/TileKind.hs floorSymbol
-const FLOOR_DIM = "⋅"; // '⋅', Dom.hs substitution for dim floor
-const NBSP = " "; // Dom.hs renders ' ' as a non-breaking space
+const FLOOR_SYMBOL = 0xb7; // U+00B7, Content/TileKind.hs floorSymbol
+const FLOOR_DIM = "\u22c5"; // Dom.hs substitution for dim floor
+const NBSP = "\u00a0"; // Dom.hs renders ' ' as a non-breaking space
 
 /** Split a Word32 cell into glyph codepoint and color/highlight indices. */
 export function decodeCell(w: number): Cell {
   return { code: w >>> 16, fg: (w >>> 8) & 0xff, bg: w & 0xff };
+}
+
+/** The Word32 cell of a glyph codepoint and color/highlight indices. */
+export function encodeCell(code: number, fg: number, bg: number): number {
+  return (code << 16) | (fg << 8) | bg;
 }
 
 /**
@@ -58,12 +58,12 @@ export function cellPosition(
 
 /** Whether a Color index is "bright" (BrRed..BrWhite), mirroring isBright. */
 export function isBright(fg: number): boolean {
-  return fg > BR_BLACK;
+  return fg > COLOR.BrBlack;
 }
 
 /** Even-row hack: plain White is shown as AltWhite on even rows (Dom.hs). */
 export function resolveFg(fgRaw: number, row: number): number {
-  return row % 2 === 0 && fgRaw === WHITE ? ALT_WHITE : fgRaw;
+  return row % 2 === 0 && fgRaw === COLOR.White ? COLOR.AltWhite : fgRaw;
 }
 
 /** Glyph to draw, applying the web frontend's char substitutions. */
@@ -80,7 +80,9 @@ export function fgColor(fg: number): string {
 
 /** Cell background-fill hex for a Highlight index. */
 export function bgColor(bg: number): string {
-  return bg === HIGHLIGHT_BACKGROUND ? BACKLIGHT_FILL : PALETTE[BLACK];
+  return bg === HIGHLIGHT.HighlightBackground
+    ? BACKLIGHT_FILL
+    : PALETTE[COLOR.Black];
 }
 
 /**
@@ -92,9 +94,9 @@ export function bgColor(bg: number): string {
  */
 export function highlightColor(bg: number): string | null {
   if (
-    bg === HIGHLIGHT_NONE ||
-    bg === HIGHLIGHT_BACKGROUND ||
-    bg === HIGHLIGHT_NONE_CURSOR
+    bg === HIGHLIGHT.HighlightNone ||
+    bg === HIGHLIGHT.HighlightBackground ||
+    bg === HIGHLIGHT.HighlightNoneCursor
   ) {
     return null;
   }
@@ -183,7 +185,14 @@ export function faceBaseline(
  * along its inner edge, which is SDL2's drawRect. Text is drawn in a face.
  */
 export type DrawOp =
-  | { kind: "fill"; x: number; y: number; w: number; h: number; color: string }
+  | {
+      kind: "fill" | "stroke";
+      x: number;
+      y: number;
+      w: number;
+      h: number;
+      color: string;
+    }
   | {
       kind: "text" | "textLeft";
       x: number;
@@ -194,14 +203,6 @@ export type DrawOp =
       text: string;
       color: string;
       face: Face;
-    }
-  | {
-      kind: "stroke";
-      x: number;
-      y: number;
-      w: number;
-      h: number;
-      color: string;
     };
 
 /** Consecutive cells of one screen row, from column col on, as frame words. */
@@ -212,30 +213,23 @@ export interface CellRun {
 }
 
 /**
- * The draw ops for a cell run whose cells are pitch device pixels wide:
- * per cell, its background, its glyph in the map font and its highlight
- * ring, in the order Sdl.hs draws them. A blank glyph draws nothing and gets
- * no op, and a cell without a ring gets none for it.
+ * The draw ops for a cell run of the map's square cells: per cell, its
+ * background, its glyph in the map font and its highlight ring, in the order
+ * Sdl.hs draws them. A blank glyph draws nothing and gets no op, and a cell
+ * without a ring gets none for it.
  */
-export function cellRunOps(
-  run: CellRun,
-  pitch: number,
-  m: CellMetrics,
-): DrawOp[] {
+export function cellRunOps(run: CellRun, m: CellMetrics): DrawOp[] {
   const ops: DrawOp[] = [];
   const y = run.row * m.boxSize;
   for (let k = 0; k < run.words.length; k++) {
-    const x = (run.col + k) * pitch;
-    const h = m.boxSize;
+    const x = (run.col + k) * m.boxSize;
+    const box = { x, y, w: m.boxSize, h: m.boxSize };
     const s = styledCell(run.words[k], run.row);
-    ops.push({ kind: "fill", x, y, w: pitch, h, color: s.background });
+    ops.push({ kind: "fill", ...box, color: s.background });
     if (s.char !== NBSP) {
       ops.push({
         kind: "text",
-        x,
-        y,
-        w: pitch,
-        h,
+        ...box,
         baseline: m.baseline,
         text: s.char,
         color: s.color,
@@ -243,7 +237,7 @@ export function cellRunOps(
       });
     }
     if (s.border !== null) {
-      ops.push({ kind: "stroke", x, y, w: pitch, h, color: s.border });
+      ops.push({ kind: "stroke", ...box, color: s.border });
     }
   }
   return ops;

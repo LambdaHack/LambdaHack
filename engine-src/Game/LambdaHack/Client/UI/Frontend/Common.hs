@@ -1,8 +1,8 @@
 -- | Screen frames and animations.
 module Game.LambdaHack.Client.UI.Frontend.Common
   ( RawFrontend(..)
-  , startupBound, createRawFrontend, resetChanKey, saveKMP
-  , modifierTranslate
+  , startupBound, createRawFrontend, resetChanKey, saveKMP, deliverKey
+  , keysPending, modifierTranslate
   ) where
 
 import Prelude ()
@@ -14,6 +14,8 @@ import qualified Control.Concurrent.STM as STM
 
 import           Game.LambdaHack.Client.UI.Content.Screen
 import           Game.LambdaHack.Client.UI.Frame
+import           Game.LambdaHack.Client.UI.Frontend.InputDecision
+  (KeyDecision (..))
 import           Game.LambdaHack.Client.UI.Key (KMP (..))
 import qualified Game.LambdaHack.Client.UI.Key as K
 import           Game.LambdaHack.Client.UI.PointUI
@@ -82,6 +84,19 @@ saveKMP !rf !modifier !key !kmpPointer = do
   unless (key == K.DeadKey) $
     -- Store the key in the channel.
     STM.atomically $ STM.writeTQueue (fchanKey rf) kmp
+
+-- | Deliver a key as its 'KeyDecision' directs: empty the keys pending
+-- before it, where the decision says so, and save it.
+deliverKey :: RawFrontend -> KeyDecision -> K.Key -> PointUI -> IO ()
+deliverKey rf KeyDecision{kdModifier, kdResetChan} key p = do
+  when kdResetChan $ resetChanKey $ fchanKey rf
+  saveKMP rf kdModifier key p
+
+-- | Whether any key waits in the keyboard channel.
+keysPending :: RawFrontend -> IO Bool
+keysPending rf = do
+  noKeysPending <- STM.atomically $ STM.isEmptyTQueue $ fchanKey rf
+  return $! not noKeysPending
 
 -- | Translates modifiers to our own encoding.
 modifierTranslate :: Bool -> Bool -> Bool -> Bool -> K.Modifier

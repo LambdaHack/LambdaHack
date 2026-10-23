@@ -6,9 +6,11 @@
 // as Sdl.hs draws them, with the map cells they cover. No DOM, no canvas:
 // widths come in as numbers.
 
+import { COLOR, HIGHLIGHT } from "./generated/palette.js";
 import {
   cellRunOps,
   decodeCell,
+  encodeCell,
   fgColor,
   resolveFg,
   type CellMetrics,
@@ -19,9 +21,6 @@ import {
 
 const DOLLAR = 0x24;
 const SPACE = 0x20;
-const BLACK = 0;
-const BR_BLACK = 9;
-const HIGHLIGHT_NONE = 0;
 
 /**
  * A frame's overlays, decoded: OverlayLayout.hs's FrameLayout, its fields
@@ -146,7 +145,7 @@ export function trimmedMarkerRun(lm: LayoutMetrics, row: number): CellRun {
   return {
     col: lm.width - 1,
     row,
-    words: [(DOLLAR << 16) | (BR_BLACK << 8) | HIGHLIGHT_NONE],
+    words: [encodeCell(DOLLAR, COLOR.BrBlack, HIGHLIGHT.HighlightNone)],
   };
 }
 
@@ -177,7 +176,7 @@ export function overlayOps(
       const widthRaw = Math.ceil(measure(chunk.face, chunk.text));
       const fit = propFit(lm, cur, chunk.allSpace, widthRaw);
       const box = { x: fit.x, y, w: fit.widthPx, h: m.boxSize };
-      ops.push({ kind: "fill", ...box, color: fgColor(BLACK) });
+      ops.push({ kind: "fill", ...box, color: fgColor(COLOR.Black) });
       ops.push({
         kind: "textLeft",
         ...box,
@@ -186,11 +185,11 @@ export function overlayOps(
         color: fgColor(chunk.color),
         face: chunk.face,
       });
-      if (fit.marker) ops.push(...cellRunOps(fit.marker, m.boxSize, m));
+      if (fit.marker) ops.push(...cellRunOps(fit.marker, m));
       cur = fit.next;
     }
   }
-  for (const run of layout.square) ops.push(...cellRunOps(run, m.boxSize, m));
+  for (const run of layout.square) ops.push(...cellRunOps(run, m));
   for (const run of layout.mono) ops.push(...monoRunOps(run, m, baseline));
   return ops;
 }
@@ -210,7 +209,7 @@ function monoRunOps(
     const x = (run.col + k) * m.halfSize;
     const box = { x, y, w: m.halfSize, h: m.boxSize };
     const { code, fg } = decodeCell(run.words[k]);
-    ops.push({ kind: "fill", ...box, color: fgColor(BLACK) });
+    ops.push({ kind: "fill", ...box, color: fgColor(COLOR.Black) });
     if (code !== SPACE) {
       ops.push({
         kind: "text",

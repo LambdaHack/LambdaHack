@@ -12,27 +12,23 @@ import {
 import {
   cellMetrics,
   cellRunOps,
+  encodeCell as enc,
   type DrawOp,
   type Face,
 } from "./terminal-core.js";
+import { COLOR, HIGHLIGHT } from "./generated/palette.js";
 import propFitTable from "./generated/prop-fit.json";
 
-// AttrCharW32 layout (Definition/Color.hs): code = w>>16, fg = (w>>8)&0xFF, bg = w&0xFF
-const enc = (code: number, fg: number, bg: number) =>
-  (code << 16) | (fg << 8) | bg;
-
-// Color and Highlight enum indices (Definition/Color.hs)
-const White = 7,
-  BrBlack = 9,
-  BrRed = 10,
-  BrCyan = 15;
-const HiNone = 0,
-  HiRed = 9,
-  HiNoneCursor = 13;
+const { White, BrBlack, BrRed, BrCyan } = COLOR;
+const {
+  HighlightNone: HiNone,
+  HighlightRed: HiRed,
+  HighlightNoneCursor: HiNoneCursor,
+} = HIGHLIGHT;
 
 const SPACE = 32,
   AT = 64,
-  FLOOR = 0xb7; /* '·' */
+  FLOOR = 0xb7; /* U+00B7 */
 
 // The rows are generated from OverlayLayout.propCutoff and propFit
 // by test/OverlayLayoutUnitTests.hs: a mismatch means overlay-core.ts drifted
@@ -48,11 +44,11 @@ describe("propCutoff and propFit against OverlayLayout's branch table", () => {
       expect("x" in row).toBe(!row.stop);
       if (!row.stop) {
         const fit = propFit(lm, cur, row.allSpace, row.widthRaw);
-        expect({
-          x: fit.x,
-          widthPx: fit.widthPx,
-          marker: fit.marker !== null,
-        }).toEqual({ x: row.x, widthPx: row.widthPx, marker: row.marker });
+        expect({ x: fit.x, widthPx: fit.widthPx, marker: fit.marker }).toEqual({
+          x: row.x,
+          widthPx: row.widthPx,
+          marker: row.marker,
+        });
         // The pen moves on by the width drawn.
         expect(fit.next).toEqual({ xPx: fit.x + fit.widthPx, row: 0 });
       }
@@ -175,7 +171,7 @@ describe("overlayOps (the draw ops of a frame's overlays)", () => {
         baseline,
         () => 0,
       ),
-    ).toEqual(cellRunOps(run, 16, m));
+    ).toEqual(cellRunOps(run, m));
   });
 
   it("draws a mono run a glyph per half cell, recoloured for the row only, on black with no ring", () => {

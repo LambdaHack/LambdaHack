@@ -66,6 +66,9 @@ data Key =
   | DeadKey
   deriving (Ord, Eq, Generic)
 
+instance Show Key where
+  show = showKey
+
 instance Binary Key
 
 instance NFData Key
@@ -78,7 +81,7 @@ data Modifier =
   | Shift
   | Control
   | Alt
-  deriving (Show, Ord, Eq, Generic)
+  deriving (Show, Ord, Eq, Enum, Bounded, Generic)
 
 instance Binary Modifier
 

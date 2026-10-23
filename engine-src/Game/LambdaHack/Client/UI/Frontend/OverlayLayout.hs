@@ -178,17 +178,11 @@ chunkPropLine _ [] = []
 chunkPropLine row (w : rest) =
   let isSpace = (== Color.spaceAttrW32)
       Color.AttrChar{acAttr=Color.Attr{fg=fgRaw, bg}} =
-        Color.attrCharFromW32
-        $ if isSpace w
-          then case filter (not . isSpace) rest of
-            w2 : _ -> w2
-            [] -> w
-          else w
+        Color.attrCharFromW32 $ fromMaybe w $ find (not . isSpace) (w : rest)
       sameAttr ac = Color.fgFromW32 ac == fgRaw
                     || isSpace ac  -- matches all colours
       (sameRest, otherRest) = span sameAttr rest
-      !_A = assert (bg `elem` [ Color.HighlightNone
-                              , Color.HighlightNoneCursor ]) ()
+      !_A = assert (unhighlighted bg) ()
       chunk = PropChunk { pcColor = rowColor row fgRaw
                         , pcText = T.pack $ attrStringToString $ w : sameRest }
   in chunk : chunkPropLine row otherRest
@@ -208,13 +202,15 @@ layOutSquare width ov =
 -- a highlight but the cursor's. The 'Int' is @rwidth coscreen@.
 layOutMono :: Int -> OverlaySpace -> [CellRun]
 layOutMono width ov =
-  [ assert (all monoBg cut `blame` cut) $ CellRun LayerMono row x cut
+  [ assert (all (unhighlighted . Color.bgFromW32) cut `blame` cut)
+    $ CellRun LayerMono row x cut
   | (PointUI x row, al) <- ov
   , let cut = take (2 * width - x) al
   , not (null cut) ]
- where
-  monoBg w = Color.bgFromW32 w `elem` [ Color.HighlightNone
-                                      , Color.HighlightNoneCursor ]
+
+-- | Whether a cell's highlight is none but the cursor's.
+unhighlighted :: Color.Highlight -> Bool
+unhighlighted = (`elem` [Color.HighlightNone, Color.HighlightNoneCursor])
 
 -- | Whether a proportional line starting at this 'PointUI' x may be drawn
 -- at all, given @rwidth coscreen@: the half of 'propCutoff' expressible
