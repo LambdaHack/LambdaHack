@@ -302,9 +302,10 @@ docs       the repo's standing document passes over every .md document
            the item's Owns names, CHANGELOG.md excepted as CLAUDE.md
            excepts it; CLAUDE.md lists the passes; the subset of
            `check-all tools` this plan names, 04.4 alone running it whole
-doctest    CLAUDE.md's doctest recipe, its lib:LambdaHack run, where the
-           item's Owns names a .hs carrying a >>> example --- 22 today,
-           and the count is what is read, since CI alone runs them
+doctest    CLAUDE.md's doctest recipe with DOCTEST_LIBS=lib:LambdaHack,
+           where the item's Owns names a .hs carrying a >>> example ---
+           22 today, and the count is what is read, since CI alone runs
+           them
 playtests  make test-short && make test-medium       # minutes each
 ```
 

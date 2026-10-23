@@ -204,11 +204,8 @@ Unit tests and integration tests can be run and displayed with
 
 and doctests with
 
-    cabal install doctest --ignore-project --overwrite-policy=always && cabal build
-    cabal repl --build-depends=QuickCheck --build-depends=template-haskell --with-repl=doctest --repl-options='-w -Wdefault' definition
-    cabal repl --build-depends=QuickCheck --build-depends=template-haskell --with-repl=doctest --repl-options='-w -Wdefault' lib:LambdaHack
-    cabal repl --build-depends=QuickCheck --build-depends=template-haskell --with-repl=doctest --repl-options='-w -Wdefault' this-game-content
-    cabal repl --build-depends=QuickCheck --build-depends=template-haskell --with-repl=doctest --repl-options='-w -Wdefault' this-game-src
+    cabal install doctest --ignore-project --overwrite-policy=always
+    make doctest
 
 The [Makefile](https://github.com/LambdaHack/LambdaHack/blob/master/Makefile)
 contains many sample automated playtest commands. Numerous tests that use

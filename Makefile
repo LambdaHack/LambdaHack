@@ -371,6 +371,31 @@ page-gate: build-wasm $(NPM_CI)
 	$(call deployPage,$$T) && \
 	node ts-src/page-gate.mjs "$$T"
 
+# The doctests, one run per library, a component's doctests being its
+# own, with doctest installed first by `cabal install doctest
+# --ignore-project --overwrite-policy=always`. --with-repl, not
+# --with-compiler, which would hand cabal doctest as the compiler and have
+# it try to build the `definition` dependency with it. doctest exits 0
+# having found no example, so its count is read too: every run must print
+# one, and lib:LambdaHack's, the library holding the examples, must not be 0.
+DOCTEST_LIBS ?= definition lib:LambdaHack this-game-content this-game-src
+doctest:
+	cabal build && \
+	T=$$(mktemp) && \
+	trap 'rm -f "$$T"' EXIT && \
+	for c in $(DOCTEST_LIBS); do \
+	  cabal repl --build-depends=QuickCheck --build-depends=template-haskell \
+	    --with-repl=doctest --repl-options='-w -Wdefault' "$$c" \
+	    > "$$T" 2>&1 || { cat "$$T"; exit 1; }; \
+	  cat "$$T"; \
+	  n=$$(sed -n 's/.*Examples: \([0-9]*\) .*/\1/p' "$$T" | tail -n 1); \
+	  [ -n "$$n" ] || { echo "$$c: doctest printed no example count"; exit 1; }; \
+	  echo "$$c: $$n examples"; \
+	  if [ "$$c" = lib:LambdaHack ] && [ "$$n" -eq 0 ]; then \
+	    echo "$$c: no example found"; exit 1; \
+	  fi; \
+	done
+
 serve-wasm:
 	cd ../lambdahack.github.io && \
 	node serve.mjs . 8080

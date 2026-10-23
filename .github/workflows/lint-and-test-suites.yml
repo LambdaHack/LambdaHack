@@ -4,8 +4,8 @@
 # `hlint .`, and carries every suite haskell-ci cannot: the doctests,
 # the WASM and TypeScript suites, and, exercising the optimized build,
 # the teletype playtests of `make test-gha` and the frontend smokes. One
-# job each, so a failure names itself; the smokes share the playtest
-# job's build, each a step of its own.
+# job each, so a failure names itself; the smokes and the doctests share
+# the playtest job's build, each a step of its own.
 name: Lint-and-Test-Suites
 on:
   - push
@@ -76,11 +76,10 @@ jobs:
       # anyway: this build is the whole of the repo's optimized coverage --
       # haskell-ci.yml builds everything unoptimized -- so the flag belongs
       # where a reader of this file sees it. The same applies to the wasm
-      # builds in the Makefile. Not to the doctest job below: its artifact
-      # is never run, its doctests are interpreted, and its recipe is quoted
-      # verbatim in CLAUDE.md and README.md, where the flag would force an
-      # optimized rebuild on a reader who has the unoptimized development
-      # config in place.
+      # builds in the Makefile. Not to `make doctest` below: its doctests
+      # are interpreted, and the target serves a reader too, on whose
+      # unoptimized development config the flag would force an optimized
+      # rebuild.
       - name: Build
         id: build
         run: cabal build exe:LambdaHack --enable-optimization
@@ -92,6 +91,15 @@ jobs:
       - name: SDL smoke
         if: ${{ !cancelled() && steps.build.outcome == 'success' }}
         run: make smokeSdl
+      # doctest is installed with --ignore-project, so that it is solved on
+      # its own, not against this project; both candidate bindirs go on
+      # PATH, since which one cabal picks depends on its version.
+      - name: Doctests
+        if: ${{ !cancelled() && steps.build.outcome == 'success' }}
+        run: |
+          cabal install doctest --ignore-project --overwrite-policy=always
+          export PATH="$HOME/.cabal/bin:$HOME/.local/bin:$PATH"
+          make doctest
       # The teletype and null frontends run headless, so no display is needed.
       - name: Playtests
         id: playtests
@@ -104,58 +112,6 @@ jobs:
       - name: Playtest logs, on failure
         if: ${{ !cancelled() && steps.playtests.outcome == 'failure' }}
         run: tail -n 200 ~/.LambdaHack/stderr.txt ~/.LambdaHack/stdout.txt
-  doctest:
-    name: doctest
-    runs-on: ubuntu-latest
-    timeout-minutes: 60
-    steps:
-      - uses: actions/checkout@v4
-      - name: Install SDL2 dev libraries
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y libsdl2-dev libsdl2-ttf-dev
-      - uses: haskell-actions/setup@v2
-        id: setup
-        with:
-          ghc-version: ${{ env.GHC_VERSION }}
-          cabal-version: 'latest'
-      - uses: actions/cache@v4
-        with:
-          path: |
-            ${{ steps.setup.outputs.cabal-store }}
-            dist-newstyle
-          key: doctest-${{ runner.os }}-ghc-${{ steps.setup.outputs.ghc-version }}-${{ hashFiles('LambdaHack.cabal') }}
-          restore-keys: doctest-${{ runner.os }}-ghc-${{ steps.setup.outputs.ghc-version }}-
-      # --ignore-project so doctest is solved on its own, not against this
-      # project; both candidate bindirs go on PATH, since which one cabal
-      # picks depends on its version.
-      - name: Install doctest
-        run: |
-          cabal install doctest --ignore-project --overwrite-policy=always
-          echo "$HOME/.cabal/bin" >> "$GITHUB_PATH"
-          echo "$HOME/.local/bin" >> "$GITHUB_PATH"
-      - name: Build
-        run: cabal build
-      # One run per library: a component's doctests are its own. --with-repl,
-      # not --with-compiler, which would hand cabal doctest as the compiler
-      # and have it try to build the `definition` dependency with it.
-      # doctest exits 0 having found no example, so its count is read too:
-      # every run must print one, and lib:LambdaHack's, the library holding
-      # the examples (CLAUDE.md), must not be 0.
-      - name: Doctests
-        run: |
-          for c in definition lib:LambdaHack this-game-content this-game-src; do
-            cabal repl --build-depends=QuickCheck --build-depends=template-haskell \
-              --with-repl=doctest --repl-options='-w -Wdefault' "$c" \
-              > doctest.log 2>&1 || { cat doctest.log; exit 1; }
-            cat doctest.log
-            n=$(sed -n 's/.*Examples: \([0-9]*\) .*/\1/p' doctest.log | tail -n 1)
-            [ -n "$n" ] || { echo "$c: doctest printed no example count"; exit 1; }
-            echo "$c: $n examples"
-            if [ "$c" = lib:LambdaHack ] && [ "$n" -eq 0 ]; then
-              echo "$c: no example found"; exit 1
-            fi
-          done
   test-ts:
     name: TypeScript tests (make test-ts)
     runs-on: ubuntu-latest
