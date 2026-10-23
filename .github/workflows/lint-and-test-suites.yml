@@ -167,10 +167,7 @@ jobs:
           node-version: ${{ env.NODE_VERSION }}
           cache: npm
           cache-dependency-path: ts-src/package-lock.json
-      # `make test-ts` runs tsc, prettier and vitest out of node_modules
-      # without installing.
-      - name: Install ts-src dependencies
-        run: cd ts-src && npm ci
+      # `make test-ts` installs ts-src's packages before it runs them.
       - name: TypeScript tests
         run: make test-ts
   test-wasm:
@@ -179,7 +176,10 @@ jobs:
     timeout-minutes: 120
     steps:
       - uses: actions/checkout@v4
-      # `make test-wasm` runs npm ci in ts-src, for the driver's lz-string.
+      # `make test-wasm` runs npm ci in ts-src, for the driver's lz-string,
+      # with this step's npm, whose cache it serves; the driver itself runs
+      # under ghc-wasm-meta's own node, which sourcing ~/.ghc-wasm/env puts
+      # first on PATH.
       - uses: actions/setup-node@v4
         with:
           node-version: ${{ env.NODE_VERSION }}

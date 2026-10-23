@@ -302,42 +302,48 @@ build-wasm:
 
 POSTLINK = ~/.ghc-wasm/wasm32-wasi-ghc/lib/post-link.mjs
 
+# ts-src's packages, installed whenever the lock or the manifest is newer
+# than the last install, for every target that runs ts-src's tools or
+# loads lz-string from them. npm ci needs the registry, so only a run that
+# installs needs the network.
+NPM_CI = ts-src/node_modules/.npm-ci
+$(NPM_CI): ts-src/package-lock.json ts-src/package.json
+	cd ts-src && npm ci && touch node_modules/.npm-ci
+
 # Chained with && so the log ends at the command that failed; otherwise
 # a build failure runs on into post-link and the test driver, and their
 # complaints about the missing binary bury the real error. The trap both
 # removes the temporary directory and lets the last command's status stand.
-# The npm ci installs lz-string, which the driver's LZString stub loads.
+# $(NPM_CI) installs lz-string, which the driver's LZString stub loads.
 # Each wasm list-bin repeats its build's --enable-optimization: the path
 # it names follows that setting, and under the development config's
 # `optimization: False` a bare list-bin names a noopt/ build instead.
-test-wasm:
+test-wasm: $(NPM_CI)
 	. ~/.ghc-wasm/env; \
 	T=$$(mktemp -d); \
 	trap 'rm -rf "$$T"' EXIT; \
 	wasm32-wasi-cabal build test --enable-optimization && \
 	W=$$(wasm32-wasi-cabal list-bin test --enable-optimization) && \
 	$(POSTLINK) --input "$$W" --output "$$T/ghc_wasm_jsffi.mjs" && \
-	(cd ts-src && npm ci) && \
 	node ts-src/run-wasm-test.mjs "$$W" "$$T/ghc_wasm_jsffi.mjs"
 
 # deployPage puts the page into the directory given: its own files, the
 # bundle, the glue and the binary. build-ts deploys it and page-gate gates
 # it, so the gate loads the files build-ts deploys.
-# lz-string.min.js is copied after the npm ci that installs it.
 PAGE_FILES = GameDefinition/index.html GameDefinition/fonts/16x16xw.woff GameDefinition/fonts/*.ttf.woff
 LZSTRING = ts-src/node_modules/lz-string/libs/lz-string.min.js
 deployPage = cp $(PAGE_FILES) "$(1)" && \
-	(cd ts-src && npm ci && BUILD_OUTDIR="$(1)" npm run build) && \
+	(cd ts-src && BUILD_OUTDIR="$(1)" npm run build) && \
 	cp $(LZSTRING) "$(1)" && \
 	W=$$(wasm32-wasi-cabal list-bin exe:LambdaHack --enable-optimization) && \
 	$(POSTLINK) --input "$$W" --output "$(1)/ghc_wasm_jsffi.mjs" && \
 	cp "$$W" "$(1)/LambdaHack.wasm"
 
-build-ts: build-wasm
+build-ts: build-wasm $(NPM_CI)
 	. ~/.ghc-wasm/env && \
 	$(call deployPage,$(CURDIR)/../lambdahack.github.io)
 
-test-ts:
+test-ts: $(NPM_CI)
 	cd ts-src && \
 	npm run typecheck && npm run format:check && npm test
 
@@ -346,7 +352,7 @@ test-ts:
 # Chromium and required to boot, paint and repaint on a key in each
 # (ts-src/page-gate.mjs says how). Local only, by ruling; run before
 # every browser landing.
-page-gate: build-wasm
+page-gate: build-wasm $(NPM_CI)
 	. ~/.ghc-wasm/env && \
 	T=$$(mktemp -d) && \
 	trap 'rm -rf "$$T"' EXIT && \

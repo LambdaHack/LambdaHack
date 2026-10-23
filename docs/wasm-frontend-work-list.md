@@ -175,7 +175,9 @@ deliberate asymmetry, and its absence says the item is a single commit.
   for itself, with their branches. `nothing` means the item is ready to hand out
   as written.
 
-**The gates, once.** Every **Done** is built from these, run from the repo root.
+**The gates, once.** Every **Done** is built from these, run from the repo root,
+each but `native` and `docs` installing `ts-src`'s packages first where its lock
+or manifest is newer than the last install, which wants an unsandboxed call.
 They are spelled out here and nowhere else: thirty-odd items repeating one
 command chain is the second definition G1 forbids, and the chain that drifts
 is the one nobody re-reads.
@@ -186,11 +188,12 @@ native   cabal build && cabal test && hlint .
          && stylish-haskell -i <those paths>
          && git diff --exit-code <those paths>     # stylish left them alone
 ts       make test-ts        # typecheck and format:check run inside it
-wasm     make build-wasm && make test-wasm  # UNSANDBOXED after 0.3's npm ci
+wasm     make build-wasm && make test-wasm
 deploy   make build-ts        # UNSANDBOXED: writes into the pages checkout
-page     make page-gate       # UNSANDBOXED: runs npm ci; the page as
-         deployed, in headless Firefox and Chromium: boots, paints,
-         repaints on a key; PAGE_GATE_OVERLAYS=1 from 2.4 on
+page     make page-gate       # UNSANDBOXED: Chromium will not start
+         sandboxed; the page as deployed, in headless Firefox and
+         Chromium: boots, paints, repaints on a key;
+         PAGE_GATE_OVERLAYS=1 from 2.4 on
 docs     the repo's standing document passes over every .md document
          the item's Owns names, the record and this file always among them; CLAUDE.md
          lists the passes and this document does not; what they cost is
