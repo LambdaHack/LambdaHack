@@ -151,12 +151,12 @@ deliberate asymmetry, and its absence says the item is a single commit.
 - **Split** --- the landing order for an item worked as several commits,
   and which of them carries the outcome line and the `tools/doc-refs-allow.txt`
   deletions --- the record commit being the one that waits on **Hands back**.
-- **Owns** --- the files the item writes, exhaustively, so that the `docs` gate
-  knows which documents it runs over and a reader knows what a landing touches.
-  One item is in flight at a time, in one checkout, so no two items ever write
-  a file together and nothing here serializes them; where another item writes
-  the same lines, **Owns** says so, since whichever lands first shapes
-  the other's diff.
+- **Owns** --- the files the item writes, exhaustively and in its first
+  sentence, the rest being commentary, so that the `docs` gate knows which
+  documents it runs over and a reader knows what a landing touches. One item
+  is in flight at a time, in one checkout, so no two items ever write a file
+  together and nothing here serializes them; where another item writes the same
+  lines, **Owns** says so, since whichever lands first shapes the other's diff.
 - **Done** --- the gates below that apply, named rather than spelled out, plus
   whatever is this item's own. It is the definition of finished for everything
   a session *can* verify.
@@ -402,11 +402,12 @@ and the deletion of `Client/UI/Frontend/InputDecision.hs` and of this item's new
 the rewrite.
 
 **Owns** --- new
-`engine-src/Game/LambdaHack/Client/UI/Frontend/InputDecision.hs`
-and `test/InputDecisionUnitTests.hs`; `LambdaHack.cabal` and `test/Spec.hs`
-for their registration; `engine-src/Game/LambdaHack/Client/UI/Frontend/`'s
-`Sdl.hs` and `Wasm.hs`; `engine-src/Game/LambdaHack/Client/UI/Frontend.hs`,
-its export list only, carrying the re-export the record's ruling (2) requires;
+`engine-src/Game/LambdaHack/Client/UI/Frontend/InputDecision.hs`,
+`test/InputDecisionUnitTests.hs` and `test/FrontendContractUnitTests.hs`;
+`LambdaHack.cabal` and `test/Spec.hs` for their registration;
+`engine-src/Game/LambdaHack/Client/UI/Frontend/`'s `Sdl.hs` and `Wasm.hs`;
+`engine-src/Game/LambdaHack/Client/UI/Frontend.hs`, its export list only,
+carrying the re-export the record's ruling (2) requires;
 `engine-src/Game/LambdaHack/Client/UI/Key.hs`, one clause in `keyTranslateWeb`,
 which no other item writes, `Key.hs:keyTranslateWeb ::` naming the function's
 head; `ts-src/src/terminal.ts`, `ts-src/src/loader.ts`,
@@ -1122,7 +1123,7 @@ fonts" clause comes off in 2.4's landing sequence, and 2.4 sits before this item
 in the chain. R6's commit stood here as (1) until 2026-09-14 and retired with R6
 (B.10).
 
-**Owns** --- `docs/wasm-frontend-unified-plan.md` and nothing else:
+**Owns** --- `docs/wasm-frontend-unified-plan.md` and nothing else.
 `GameDefinition/index.html` left this list with the banner commit, which
 is 2.4's.
 

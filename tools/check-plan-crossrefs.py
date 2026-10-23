@@ -65,6 +65,13 @@ What it asserts, in the order the campaign measured their yield:
       four labels, and every body has a row. The plan says a missing label
       is a defect rather than a shrug, so it is one here.
 
+An item writes the files the first sentence of its **Owns** names, by path
+or by a citation into one, the work list keeping that sentence the
+exhaustive list. The rest of the field names a file to disclaim it or to
+point at another item's list as often as to claim it, so it is read, as
+**Split** is, for an entry's claim, a file called new and A5's counts,
+and never for the files the item writes.
+
 Read the unwrapped form (`wrap80 --unwrap`) and nothing else: both plans are
 kept at 80 columns, an **Owns** field spans a dozen lines, and no
 line-oriented parse of it is sound. Without wrap80 the run is BLOCKED at 2
@@ -181,25 +188,9 @@ GRAMMARS = [
 # **Owns** names the document it sits in by these phrases as often as by
 # path.
 DOC_ALIASES = ("this document", "this plan")
-# **Owns** and **Split** name a file in order to disclaim it as often as
-# to claim it: "Not `haskell-ci.yml`", "`Dom.hs` is deliberately not
-# here", "`cursor.ts` there are 0.2's", "as for `terminal.ts` at 0.0" ---
-# a pointer at another item's list. The phrases are curated from the
-# documents and read in a window around the token --- the clause before
-# it and the clause after, other tokens blanked so a list is transparent
-# --- rather than over a whole sentence, where a bare "not" would strip
-# 2.4 of the two files that sit beside its "should (1) not be". A
-# citation in parentheses, "(`loader.ts:56`)", is evidence and names no
-# file the item writes.
-NEG_BEFORE_RE = re.compile(r"\b(?:not|never|neither|nor|no|nothing)\b"
-                           r"(?:\s+[\w'-]+){0,3}\s*$", re.I)
-NEG_AFTER_RE = re.compile(r"^'s (?:does|is) at\b|^ at (?:ID)\b"
-                          r"|^'s (?:claimant )?(?:list )?(?:is )?at (?:ID)\b"
-                          r"|\b(?:is|are) (?:ID)'s\b"
-                          r"|\bstays? in\b|\bleft this list\b|\bcannot arise\b"
-                          r"|\bnot owned\b|\bnot here\b|\bnot edited\b"
-                          r"|\bowned by (?:ID)\b", re.I)
-WINDOW = 80
+# Where the first sentence of **Owns** ends: at a full stop before
+# a capital, a backtick or bold.
+FIRST_SENTENCE_RE = re.compile(r"(?<=\.)\s+(?=[A-Z`*])")
 # The words a sentence uses when it speaks of an allowlist entry, the
 # negations that make such a sentence say there is none to delete, and the
 # shape that hands the deletion to another item ("rides 0.3's export
@@ -212,20 +203,17 @@ NEW_RE = re.compile(r"\bnew `([^`\n]+)`")
 # A scratch plan in each grammar, and the findings each must draw alone
 # and both must draw jointly. The controls matter as much as the failures.
 # In the first: 1.1 writes a file 0.1 creates and is silent because its
-# row waits on 0.2, which waits on 0.1; R1's "Not `foo.ts`", its
-# "`Makefile` is 0.1's" and its parenthesized citation of `terminal.ts`
-# keep R1 from writing those files, as 1.2's "is deliberately not here"
-# does 1.2 and 0.1's "as for `twice.ts` at 0.2" does 0.1; the bare `cabal`
-# two items name is a tool, not a file they write; the open list "and the
-# module's" is not counted; `loader.ts`, which four items write and none
-# creates, draws nothing.
+# row waits on 0.2, which waits on 0.1; 1.2 names 0.2's new module after
+# its first sentence, so it does not write it; the bare `cabal` two items
+# name is a tool, not a file they write; the open list "and the module's"
+# is not counted.
 # `dropped.ts` is out of scope, in a block the phrase above does not head.
-# In the second: C3 writes the `Pure.hs` 04.1 creates and reaches it
-# through no cell, where 04.3 reaches it through 04.2 and 04.1 reaches C2,
-# which creates `Made.hs`, only through the middle of a `C1--C3` range ---
-# its ends being plain mentions, the range's expansion is what the middle
-# proves. Jointly: 04.3 names the first document without the `docs` gate,
-# which the second alone cannot see.
+# In the second: C1, citing it by a text anchor, and C3 write the `Pure.hs`
+# 04.1 creates and reach it through no cell, where 04.3 reaches it through 04.2
+# and 04.1 reaches C2, which creates `Made.hs`, only through the middle of a
+# `C1--C3` range --- its ends being plain mentions, the range's expansion is
+# what the middle proves. Jointly: 04.3 names the first document without the
+# `docs` gate, which the second alone cannot see.
 SELF_TEST_ALLOW = """\
 # Scratch allowlist for the self-test.
 
@@ -305,9 +293,9 @@ Body naming `foo.ts` as evidence, which is not an **Owns**.
 
 ### 1.2 Fourth
 
-**Split** --- three commits. (1) `ts-src/src/new-core.ts` gains a case. (2) the landing, with the deletion of three entries --- `twice.ts` and `orphan-not.ts` --- from `tools/doc-refs-allow.txt`; `Makefile` gains nothing.
+**Split** --- three commits. (1) `ts-src/src/new-core.ts` gains a case. (2) the landing, with the deletion of three entries --- `twice.ts` and `orphan-not.ts` --- from `tools/doc-refs-allow.txt`.
 
-**Owns** --- `ts-src/src/new-core.ts`, `ts-src/src/terminal.ts`, `ts-src/src/twice.ts` and `tools/doc-refs-allow.txt`, built with `cabal`; `ts-src/src/foo.ts` is deliberately not here, and not `test/NewUnitTests.hs` either, though the evidence sits at (`test/NewUnitTests.hs:1`).
+**Owns** --- `ts-src/src/new-core.ts`, `ts-src/src/terminal.ts`, `ts-src/src/twice.ts` and `tools/doc-refs-allow.txt`, built with `cabal`. `ts-src/src/foo.ts` is deliberately not here, and not `test/NewUnitTests.hs` either, though the evidence sits at (`test/NewUnitTests.hs:1`).
 
 **Done** --- `ts`.
 
@@ -331,7 +319,7 @@ Body naming `foo.ts` as evidence, which is not an **Owns**.
 
 **R1 --- Fifth.** Body.
 
-**Owns** --- the new `test/RUnitTests.hs`, `ts-src/src/loader.ts` per the claimant list at 0.1, and this document. Not `ts-src/src/foo.ts`, whose claimants are 0.2 and 1.1. `Makefile` is 0.1's, and the evidence sits at (`ts-src/src/terminal.ts:3`).
+**Owns** --- the new `test/RUnitTests.hs`, `ts-src/src/loader.ts` per the claimant list at 0.1, and this document. Not `ts-src/src/foo.ts`, whose claimants are 0.2 and 1.1.
 
 **Done** --- `native`, `docs`.
 
@@ -368,7 +356,7 @@ SELF_TEST_QUIET = ["loader.ts", "foo.ts", "dropped.ts", "new-core.test.ts",
                    # live 0.1 claims it; landed 1.3's claim is history,
                    # and so is its writing a file 0.1 now creates
                    "handed.ts", "A3 1.3",
-                   "gen-scratch", "Makefile", "A3 1.1", "A4 0.1", "A4 0.2",
+                   "gen-scratch", "A3 1.1", "A4 0.1", "A4 0.2",
                    "A4 R1", "A5 0.1", "A5 1.1",
                    # 1.2's disclaimed mentions of 0.2's new module, which it
                    # does not depend on: read as ownership, A3 draws them.
@@ -390,7 +378,7 @@ SELF_TEST_DOC_2 = """\
 
 ### C1 --- first
 
-**Owns** --- `engine-src/X/Shared.hs`, `engine-src/X/Own.hs` and this document. The wasm plan's 0.2 writes `Shared.hs` as well.
+**Owns** --- `engine-src/X/Shared.hs`, `engine-src/X/Own.hs`, the case at `test/Pure.hs:pureCase ::` and this document. The wasm plan's 0.2 writes `Shared.hs` as well.
 
 **Done** --- `native`, `docs`.
 
@@ -462,6 +450,7 @@ SELF_TEST_DOC_2 = """\
 """
 SELF_TEST_FAIL_2 = [
     "A0 05 --- no **Hands back** label",
+    "A3 C1 --- writes `Pure.hs`, created by 04.1",
     "A3 C3 --- writes `Pure.hs`, created by 04.1",
     "A4 C2 --- **Owns** names `docs/leader-desync-migration.md` and **Done**"
     " lacks `docs`",
@@ -474,7 +463,7 @@ SELF_TEST_QUIET_2 = ["Made.hs", "A3 04.1", "A3 04.3", "A4 C1", "A4 C3",
 # Quiet in either document alone, loud jointly: the other document's name
 # in an **Owns**; `Shared.hs`, the cross-campaign edge A2 drew, is quiet
 # everywhere now.
-SELF_TEST_QUIET_ALONE = ["Shared.hs", "wasm-frontend-unified-plan.md"]
+SELF_TEST_QUIET_ALONE = ["Shared.hs", "wasm-frontend-work-list.md"]
 # What the second document's run must print in place of A1.
 SELF_TEST_NOTE_2 = "A1 not run over "
 # The joint run draws both lists and these, which neither draws alone.
@@ -498,8 +487,7 @@ NUMBER_LIST_RE = re.compile(
     r"targets|names|claimants|jobs|halves|clauses|tests|cases|sites|lines)"
     r"(?: --- |: )((?:`[^`\n]+`(?:'s)?(?:, and |, or |, |"
     r" and | or ))*`[^`\n]+`(?:'s)?)(.{0,6})")
-COMMITS_RE = re.compile(r"\b(two|three|four|five|six|seven|eight|nine|ten)"
-                        r" commits\.")
+COMMITS_RE = re.compile(r"\b(" + "|".join(NUMBERS) + r") commits\.")
 MARKER_RE = re.compile(r"\((\d)\)")
 
 
@@ -572,25 +560,31 @@ def ambiguous_basenames():
     return dup
 
 
+def is_file(base):
+    """Whether a path's last component names a file: a Makefile or a name
+    with a known extension. `cabal` and `ts` are a tool and a gate, not
+    files, though both are extensions."""
+    return base == "Makefile" or \
+        ("." in base and base.rsplit(".", 1)[-1] in PATH_EXT)
+
+
 def path_key(token, ambiguous):
     """The file a backticked token names, as the key the graph is built on:
     the basename, or the last two components where the basename is one the
-    repository carries twice. None for a token that is not a path."""
-    t = CITE_RE.sub("", token.strip())
+    repository carries twice. A citation, `File.hs:` and a line number or
+    a run of its text, names its file. None for a token that is not a
+    path: a path ends in `/` or names a file."""
+    t = token.strip()
+    head = t.split(":", 1)[0]
+    if head != t and is_file(head.rsplit("/", 1)[-1]):
+        t = head
     if not t or t[0] in "~$/+-" or t.startswith(("../", "http")):
         return None
     if any(c in t for c in " *{<>()=\"'") or ".." in t:
         return None
     base = t.rstrip("/").rsplit("/", 1)[-1]
-    if not base or base.startswith("."):
-        return None
-    # A bare word is a path only with an extension: `cabal` and `ts` are
-    # a tool and a gate, not files, though both are extensions.
-    if "/" not in t and base != "Makefile" and \
-            ("." not in base or base.rsplit(".", 1)[-1] not in PATH_EXT):
-        return None
-    if "/" in t and not (base.rsplit(".", 1)[-1] in PATH_EXT or
-                         t.endswith("/") or base == "Makefile"):
+    if not base or base.startswith(".") or \
+            not (t.endswith("/") or is_file(base)):
         return None
     if t.endswith("/"):
         return t
@@ -598,9 +592,6 @@ def path_key(token, ambiguous):
         parts = t.split("/")
         return "/".join(parts[-2:])
     return base
-
-
-BOUNDARY_RE = re.compile(r"(?<=[.;])\s+| --- ")
 
 
 def sentences(text):
@@ -778,8 +769,6 @@ class Plan:
                                 + "|".join(map(re.escape, ids + aliases))
                                 + r")(?!\d|\.\d)", re.I)
         self.range_re = re.compile(f"({id_alt})--({id_alt})")
-        self.neg_after_re = re.compile(
-            NEG_AFTER_RE.pattern.replace("(?:ID)", f"(?:{id_alt})"), re.I)
         self.attrib_re = re.compile(
             ATTRIB_RE.pattern.replace("(ID)", f"({id_alt})"))
         # The documents and allowlists whose naming asks for the gate.
@@ -806,52 +795,24 @@ class Plan:
         return self.doc_of(iid).state.get(iid, "").startswith(
             ("landed", "retired"))
 
-    def disclaimed(self, text, m):
-        """Whether the token at match M is named to be disclaimed: a
-        negation phrase closes the clause before it or opens the clause
-        after, other tokens blanked, or it is a parenthesized citation."""
-        if m.start() > 0 and text[m.start() - 1] == "(" and \
-                CITE_RE.search(m.group(1)):
-            return True
-        before = TICK_RE.sub("", text[:m.start()])
-        before = BOUNDARY_RE.split(before)[-1][-WINDOW:]
-        after = TICK_RE.sub("", text[m.end():])
-        after = BOUNDARY_RE.split(after)[0][:WINDOW]
-        return bool(NEG_BEFORE_RE.search(before)
-                    or self.neg_after_re.search(after))
-
-    def keys_in(self, text, doc):
-        """The file keys a field names as written, less the disclaimed;
-        DOC is the document the field sits in, which its aliases name."""
-        keys = set()
-        if text.strip().lower().startswith("nothing"):
-            return keys
-        for m in TICK_RE.finditer(text):
-            k = path_key(m.group(1), doc.ambiguous)
-            if k and not self.disclaimed(text, m):
-                keys.add(k)
-        if any(a in text for a in DOC_ALIASES):
-            keys.add(doc.doc_key)
-        return keys
+    def listed(self, iid):
+        """The first sentence of IID's **Owns**, the exhaustive list of
+        what it writes."""
+        return FIRST_SENTENCE_RE.split(self.field(iid, "Owns"), 1)[0]
 
     # The fields stay as read, so what is derived from them is computed
     # once a run.
     @functools.cache
     def owns(self, iid):
-        return self.keys_in(self.field(iid, "Owns"), self.doc_of(iid))
-
-    @functools.cache
-    def writes(self, iid):
-        return self.owns(iid) | self.keys_in(self.field(iid, SPLIT),
-                                             self.doc_of(iid))
-
-    def mentions(self, iid):
-        """The items an **Owns** names, by id or alias, itself excluded."""
-        out = set()
-        for m in self.id_re.findall(self.field(iid, "Owns")):
-            out.add(self.canonical(m))
-        out.discard(iid)
-        return out
+        """The file keys IID's list names, its document by an alias too."""
+        text, doc = self.listed(iid), self.doc_of(iid)
+        if text.strip().lower().startswith("nothing"):
+            return set()
+        keys = {k for m in TICK_RE.finditer(text)
+                if (k := path_key(m.group(1), doc.ambiguous))}
+        if any(a in text for a in DOC_ALIASES):
+            keys.add(doc.doc_key)
+        return keys
 
     def canonical(self, mention):
         low = mention.lower()
@@ -923,7 +884,7 @@ class Plan:
                 a = self.attrib_re.search(s)
                 who = self.canonical(a.group(1)) if a else iid
                 if toks:
-                    written = self.writes(who) if who in self.items else set()
+                    written = self.owns(who) if who in self.items else set()
                     for _, _, hits in toks:
                         for e in hits:
                             if e.startswith("make ") or any(
@@ -951,7 +912,7 @@ class Plan:
                 if not who:
                     writers = sorted(x for x in doc.items
                                      if any(entry_matches(k, e)
-                                            for k in self.writes(x)))
+                                            for k in self.owns(x)))
                     tail = ""
                     if writers:
                         tail = "; written by " + " and ".join(writers)
@@ -978,7 +939,7 @@ class Plan:
         for doc in self.docs:
             for e, who in self.claims(doc).items():
                 for iid in who:
-                    for k in self.writes(iid):
+                    for k in self.owns(iid):
                         if entry_matches(k, e):
                             out.setdefault(k, set()).add(iid)
         for iid in self.items:
@@ -994,7 +955,7 @@ class Plan:
             if self.historical(x):
                 continue
             reach = self.closure(x)
-            for k in sorted(self.writes(x)):
+            for k in sorted(self.owns(x)):
                 for y in sorted(made.get(k, ())):
                     if y != x and x not in made[k] and y not in reach:
                         self.findings.append(
@@ -1044,11 +1005,7 @@ class Plan:
     def dump(self):
         print("derived graph:")
         for iid in self.order:
-            print(f"  {iid}: owns {sorted(self.owns(iid))}")
-            extra = sorted(self.writes(iid) - self.owns(iid))
-            if extra:
-                print(f"      split also writes {extra}")
-            print(f"      names {sorted(self.mentions(iid))};"
+            print(f"  {iid}: owns {sorted(self.owns(iid))};"
                   f" depends on {sorted(self.deps(iid))}")
         print("  claims:")
         for doc in self.docs:

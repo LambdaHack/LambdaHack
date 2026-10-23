@@ -73,25 +73,18 @@ MUTANTS = [
     ('check-plan-crossrefs A5 commit count never compared', 'check-plan-crossrefs.py',
      "                    markers[-1] != NUMBERS[m.group(1)]:\n",
      "                    False:\n", ST),
-    ('check-plan-crossrefs disclaimer before a token ignored', 'check-plan-crossrefs.py',
-     'NEG_BEFORE_RE = re.compile(r"\\b(?:not|never|neither|nor|no|nothing)\\b"\n'
-     '                           r"(?:\\s+[\\w\'-]+){0,3}\\s*$", re.I)\n',
-     'NEG_BEFORE_RE = re.compile(r"(?!x)x")\n', ST),
+    ('check-plan-crossrefs commentary after the first sentence read as a list', 'check-plan-crossrefs.py',
+     '        return FIRST_SENTENCE_RE.split(self.field(iid, "Owns"), 1)[0]\n',
+     '        return self.field(iid, "Owns")\n', ST),
     ('check-plan-crossrefs absolute path to the configured document read as a copy', 'check-plan-crossrefs.py',
      "    return p == d or p.endswith(os.sep + d)\n", "    return p == d\n", ST),
-    # check-plan-crossrefs: the bare-extension guard in path_key (`cabal`,
+    # check-plan-crossrefs: the bare-extension guard in is_file (`cabal`,
     # `ts` read as files) had A2 as its only witness and lost it when A2
     # retired on 2026-09-14; the guard stays, and no assertion can now see
     # it break, so it carries no mutant.
-    ('check-plan-crossrefs pointer at another list read as ownership', 'check-plan-crossrefs.py',
-     "NEG_AFTER_RE = re.compile(r\"^'s (?:does|is) at\\b|^ at (?:ID)\\b\"\n",
-     "NEG_AFTER_RE = re.compile(r\"^'s (?:does|is) at\\b\"\n", ST),
-    ('check-plan-crossrefs disclaimer after a token ignored', 'check-plan-crossrefs.py',
-     "                    or self.neg_after_re.search(after))\n",
-     "                    or False)\n", ST),
-    ('check-plan-crossrefs parenthesized citation read as ownership', 'check-plan-crossrefs.py',
-     '        if m.start() > 0 and text[m.start() - 1] == "(" and \\\n',
-     '        if False and \\\n', ST),
+    ('check-plan-crossrefs citation by a text anchor names no file', 'check-plan-crossrefs.py',
+     '    if head != t and is_file(head.rsplit("/", 1)[-1]):\n',
+     '    if False:\n', ST),
     ('check-plan-crossrefs missing label not a finding', 'check-plan-crossrefs.py',
      '                if label not in self.items[iid]["fields"]:\n',
      '                if False:\n', ST),
@@ -109,6 +102,13 @@ MUTANTS = [
      "            self.items.update(d.items) if not self.items else None\n", ST),
     ('check-plan-crossrefs depends-on range no longer expanded', 'check-plan-crossrefs.py',
      "        for a, b in self.range_re.findall(cell):\n", "        for a, b in []:\n", ST),
+    # The alone-quiet control on the work list's name, which named the
+    # wasm record until 2026-10-23, a name no scratch item carries
+    # (check-plan-crossrefs-11): the gate list taken from the configuration
+    # rather than from the documents read.
+    ('check-plan-crossrefs A4 gates the work list in every run', 'check-plan-crossrefs.py',
+     '                      for k, name in ((d.doc_key, d.g["doc"]),\n',
+     '                      for k, name in ((path_key(GRAMMARS[0]["doc"], set()), GRAMMARS[0]["doc"]), (d.doc_key, d.g["doc"]),\n', ST),
     ('check-plan-crossrefs A4 asks only the item\'s own document', 'check-plan-crossrefs.py',
      "            for k, name in self.gated:\n",
      "            for k, name in [(self.doc_of(x).doc_key, self.doc_of(x).path)]:\n", ST),
