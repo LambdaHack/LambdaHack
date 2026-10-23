@@ -77,7 +77,8 @@ document to make this pass; a legitimately absent name is an allowlist
 entry with its reason, and a wrong verdict is this checker's to fix.
 
 Exit 0 clean, 1 with findings, 2 when the run did not happen: no document,
-no allowlist, no wrap80, a document that fits none of the grammars below
+no allowlist, either not UTF-8, documents in two repositories, no wrap80,
+a document that fits none of the grammars below
 or two of them, two documents sharing an item id, or a document in which
 its grammar found no ledger and no item --- each a retargeting error rather
 than a clean plan.
@@ -515,12 +516,35 @@ def unwrapped(text):
         return None
 
 
+def toplevel(where="."):
+    """The toplevel of the repository holding the directory WHERE, or ""
+    outside one or with no git to ask."""
+    # answered dropped-status: an empty top is the failure, and each caller
+    # tests it
+    try:
+        return subprocess.run(["git", "-C", where, "rev-parse",
+                               "--show-toplevel"],
+                              capture_output=True, text=True).stdout.strip()
+    except OSError:
+        return ""
+
+
 def chdir_root(paths):
     """Run from the repository root whatever the cwd -- the configuration's
-    paths are root-relative -- and return PATHS rebased to it. Outside a
-    repository nothing moves."""
-    top = subprocess.run(["git", "rev-parse", "--show-toplevel"],
-                         capture_output=True, text=True).stdout.strip()
+    paths are root-relative -- and return PATHS rebased to it. The root is
+    the repository holding the documents named, else the cwd's, and
+    documents in two repositories exit 2, a root being one configuration.
+    Outside a repository, or with no git to ask, nothing moves. The
+    behaviour of ~/slop/tools/common.py's chdir_root with its OUTSIDE,
+    copied (check-plan-crossrefs-08 to -10)."""
+    tops = {t for t in (toplevel(os.path.dirname(os.path.abspath(p)))
+                        for p in paths) if t}
+    if len(tops) > 1:
+        print("the documents named sit in %d repositories (%s), and a run"
+              " reads one repository's settings: check each apart"
+              % (len(tops), ", ".join(sorted(tops))), file=sys.stderr)
+        sys.exit(2)
+    top = tops.pop() if tops else toplevel()
     if not top:
         return paths
     paths = [os.path.relpath(os.path.abspath(p), top) for p in paths]
@@ -530,8 +554,13 @@ def chdir_root(paths):
 
 def ambiguous_basenames():
     """Basenames git tracks more than once, which stay qualified as keys.
-    Outside a repository there are none, and keys are basenames."""
-    p = subprocess.run(["git", "ls-files"], capture_output=True, text=True)
+    Outside a repository, or with no git to ask, there are none, and keys
+    are basenames."""
+    try:
+        p = subprocess.run(["git", "ls-files"], capture_output=True,
+                           text=True)
+    except OSError:
+        return set()
     if p.returncode != 0:
         return set()
     seen, dup = set(), set()
@@ -1027,11 +1056,21 @@ class Plan:
                 print(f"    {e}: {sorted(who)}")
 
 
+def read_text(path):
+    """PATH's text, or Blocked where it is missing or not UTF-8
+    (check-plan-crossrefs-07)."""
+    if not os.path.isfile(path):
+        raise Blocked(f"no such file: {path}")
+    try:
+        with open(path, encoding="utf-8") as f:
+            return f.read()
+    except UnicodeDecodeError as e:
+        raise Blocked(f"not UTF-8: {path} ({e})")
+
+
 def load(doc_path, allow_override, ambiguous, findings):
     """DOC_PATH read under its grammar, or Blocked with the reason."""
-    if not os.path.isfile(doc_path):
-        raise Blocked(f"no such file: {doc_path}")
-    text = unwrapped(open(doc_path, encoding="utf-8").read())
+    text = unwrapped(read_text(doc_path))
     if text is None:
         raise Blocked("wrap80 is not on PATH, and the fields here span"
                       " lines, so no line-oriented parse of them is sound")
@@ -1043,10 +1082,7 @@ def load(doc_path, allow_override, ambiguous, findings):
                       " table; none fits it, or two do")
     allow_text = ""
     if g["allow_file"]:
-        allow_path = allow_override or g["allow_file"]
-        if not os.path.isfile(allow_path):
-            raise Blocked(f"no such file: {allow_path}")
-        allow_text = open(allow_path, encoding="utf-8").read()
+        allow_text = read_text(allow_override or g["allow_file"])
     shown = g["doc"] if is_configured(doc_path, g) else doc_path
     doc = Doc(g, shown, text, allow_text, ambiguous, findings)
     if not doc.order or not doc.items:

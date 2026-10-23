@@ -47,13 +47,12 @@ Prove it non-vacuous (both directions; restore the document afterwards):
     # and the case that used to be a false positive: a state field named in
     # a bucket's prose must NOT fail, being a token of the tree even though
     # no top-level signature under Client/UI declares it
-    $ sed -i 's/read the pointman themselves/read `sleader` themselves/' \\
+    $ sed -i 's/the pointman themselves/`sleader` themselves/' \\
           docs/leader-desync-migration.md
     $ python3 tools/leader-census.py                            # 0 failed
 
-Both failing cases were run when this script was written, on 2026-07-30,
-and all three after the doc -> tree check was widened from signatures to
-tokens later the same day; each reported exactly the lines above.
+All three were last run on 2026-10-23, each reporting exactly the lines
+above.
 """
 
 import collections
@@ -172,12 +171,27 @@ def scan_doc(path):
     bucket is a table with one function per row, in the first column; only
     that column counts, the later ones naming waits and callees that are not
     bucket members.  The rest are prose or bullet lists, where every
-    backticked lowercase name counts."""
-    text = open(path, encoding='utf-8').read()
-    start = text.index(BUCKET_LEADS[0][1])
-    end = text.index('\n## ', start)
-    region = text[start:end]
-    cuts = [(key, region.index(lead)) for key, lead in BUCKET_LEADS]
+    backticked lowercase name counts.  The document is read one paragraph
+    per line, so that no line break splits a lead; a lead missing all the
+    same exits 2 (leader-census-04)."""
+    with open(path, encoding='utf-8') as f:
+        text = f.read()
+    try:
+        text = subprocess.run(['wrap80', '--unwrap'], input=text, text=True,
+                              capture_output=True, check=True).stdout
+    except (OSError, subprocess.CalledProcessError):
+        print(f'wrap80 --unwrap failed, so {path} is read as wrapped')
+    start = max(text.find(BUCKET_LEADS[0][1]), 0)
+    end = text.find('\n## ', start)
+    region = text[start:end] if end >= 0 else text[start:]
+    cuts = []
+    for key, lead in BUCKET_LEADS:
+        pos = region.find(lead)
+        if pos < 0:
+            print(f'BLOCKED: no bucket lead {lead} in {path}; nothing was'
+                  f' censused', file=sys.stderr)
+            sys.exit(2)
+        cuts.append((key, pos))
     buckets = {}
     for n, (key, pos) in enumerate(cuts):
         stop = cuts[n + 1][1] if n + 1 < len(cuts) else len(region)
@@ -194,22 +208,40 @@ def scan_doc(path):
     return buckets
 
 
+def toplevel(where='.'):
+    """The toplevel of the repository holding the directory WHERE, or ''
+    outside one or with no git to ask."""
+    # answered dropped-status: an empty top is the failure, and each caller
+    # tests it
+    try:
+        return subprocess.run(['git', '-C', where, 'rev-parse',
+                               '--show-toplevel'],
+                              capture_output=True, text=True).stdout.strip()
+    except OSError:
+        return ''
+
+
 def chdir_root(paths):
-    """Run from the repository root whatever the cwd -- the configuration's
-    paths are root-relative -- and return PATHS rebased to it. Outside a
-    repository nothing moves."""
-    # answered dropped-status: an empty top is the failure, and the next line tests it
-    top = subprocess.run(["git", "rev-parse", "--show-toplevel"],
-                         capture_output=True, text=True).stdout.strip()
+    """Run from the repository root whatever the cwd -- TREE and DOC are
+    root-relative -- and return PATHS rebased to it. The root is the
+    repository holding the document named, else the cwd's; outside one,
+    or with no git to ask, exit 2. The behaviour of ~/slop/tools/common.py's
+    chdir_root, copied (leader-census-02, -05)."""
+    tops = {t for t in (toplevel(os.path.dirname(os.path.abspath(p)))
+                        for p in paths) if t}
+    top = tops.pop() if tops else toplevel()
     if not top:
-        return paths
+        print('not inside a git repository, or no git on PATH; TREE and DOC'
+              ' are root-relative, so nothing was censused', file=sys.stderr)
+        sys.exit(2)
     paths = [os.path.relpath(os.path.abspath(p), top) for p in paths]
     os.chdir(top)
     return paths
 
 
 def require_readable(paths):
-    """Exit cleanly on a mistyped name rather than with a traceback.
+    """Exit cleanly on a mistyped name, or a document that is not UTF-8,
+    rather than with a traceback (leader-census-03).
 
     Exit 2 means the run did not happen, as distinct from 1, which means
     it ran and found something.
@@ -217,6 +249,12 @@ def require_readable(paths):
     for p in paths:
         if not os.path.isfile(p):
             print(f'no such document: {p}', file=sys.stderr)
+            sys.exit(2)
+        try:
+            with open(p, encoding='utf-8') as fh:
+                fh.read()
+        except UnicodeDecodeError as e:
+            print(f'not UTF-8: {p} ({e})', file=sys.stderr)
             sys.exit(2)
 
 
