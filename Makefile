@@ -333,7 +333,7 @@ deployPage = cp $(PAGE_FILES) "$(1)" && \
 	$(POSTLINK) --input "$$W" --output "$(1)/ghc_wasm_jsffi.mjs" && \
 	cp "$$W" "$(1)/LambdaHack.wasm"
 
-build-ts:
+build-ts: build-wasm
 	. ~/.ghc-wasm/env && \
 	$(call deployPage,$(CURDIR)/../lambdahack.github.io)
 

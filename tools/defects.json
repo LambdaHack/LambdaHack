@@ -566,6 +566,20 @@
    "notes": "Found by the code review of 2026-10-23 over the year's diff. build-ts stopped copying the two files in 4db5c55fa, the page repository having committed them; page-gate, added in 6f0a8b893, took this repository's. A tier-1 record: the corpus root is tools/."
   },
   {
+   "id": "Makefile-04",
+   "program": "Makefile",
+   "name": "build-ts deployed whatever wasm binary list-bin named without building it, so a deploy after a source change shipped the previous build, or failed on none",
+   "family": "unverified-state",
+   "fix_rev": "self",
+   "trigger": "`make build-ts` after a Haskell edit, with no `make build-wasm` between",
+   "ok": "build-ts depends on build-wasm, so `make -n build-ts` shows the wasm build first",
+   "bug": "`make -n build-ts` showed no wasm build: the recipe copied the binary list-bin named, as page-gate, which depends on build-wasm, did not",
+   "proved": "ran",
+   "harm": "latent",
+   "discovery": "review",
+   "notes": "Found by the /simplify review of 2026-10-23 (its 55.6). Watched both ways with `make -n build-ts`, counting `wasm32-wasi-cabal build exe:LambdaHack`: 0 before, 1 after. No case: no corpus driver runs a Makefile."
+  },
+  {
    "id": "fullscreen-01",
    "program": "ts-src/src/fullscreen.ts",
    "name": "the fullscreen fit scaled #screen about its top centre, trusting its auto margins to centre it, which they do only while the grid is narrower than the viewport",
