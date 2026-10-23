@@ -572,6 +572,8 @@ only that the plan was written is one the next reader has to skip.
   at 16px, the font keeping a margin, so the drop gives SDL 2.0.16 its trails
   back and otherwise changes almost nothing a player sees. The item is not yet
   written.
+- 2026-10-23 -- the removal ruled in the entry above written as R8, its design
+  and Mikolaj's preference for reverting 5b7b552a6 in B.12.
 
 ## Repo facts the plan builds on
 
@@ -3490,6 +3492,26 @@ it is a prerequisite target with its own shell, never an inline step
 in `build-ts`: that recipe sources `~/.ghc-wasm/env`, which points
 `CC`/`LD`/`AR` at wasi-sdk while leaving `cabal` and `ghc` native, so a native
 build inside it links with `wasm-ld` and fails.
+
+**B.12 The LambdaHack issue #281 workaround goes, as R8.** Ruled 2026-10-23
+by Mikolaj, the Log carrying the ruling's measurements. The workaround
+is 5b7b552a6's: `chooseAndDrawHighlight` draws a black rectangle over every
+square cell without a coloured highlight --- `HighlightNone`,
+`HighlightBackground`, `HighlightNoneCursor` --- so that a deformed rectangle
+SDL 2.0.16 drew for a highlight is overdrawn once the highlight goes rather
+than left as a trail; 955dae890 simplified it. 0.2 copied it into `CellStyle`'s
+black border for those three kinds, pinned by its fixtures, and the browser
+draws that border, as a `strokeRect` since 0.4; B.3 rules the ring SDL2's
+canonical look. SDL fixed the rectangle in 2.0.18, so where G2 tells SDL2's
+intent from its workarounds this is a workaround, and it goes: a cell without
+a coloured highlight gets no ring, in SDL and in the browser, while a coloured
+highlight keeps its four-sided ring, and SDL 2.0.16 gets its trails back.
+Mikolaj prefers a revert of 5b7b552a6, and if that causes too big conflicts,
+morally reverting it is good enough. A revert simulated with `git merge-tree`
+on 2026-10-23 conflicts in one hunk, the `chooseAndDrawHighlight` that 955dae890
+and 3fcc93a1e rewrote, and cannot reach the rule's copies made since, which
+are edits by hand either way. Whether `cellRunOps`, once it draws no ring
+for those kinds, draws the mono layer too is R8's **Decide first**.
 
 ---
 

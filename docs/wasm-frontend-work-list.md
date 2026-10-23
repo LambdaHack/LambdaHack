@@ -130,6 +130,7 @@ sections of the record are frozen and which live is its head callout's to say.
 | R5 | performance pass | exploratory | 2.5, 3.3; R4 + 3.1 for the browser-side instrument | not applied |
 | R6 | screenshot/overlay coherence | small | 1.2, 2.2 | retired -- B.10 |
 | R7 | pixel-perfect bitmap map fonts on the canvas, scaled whole by integers, the scalable font only off `allFontsScale` 1.0 | medium | 0.4; 1.5 for the scale; R4 for a player-chosen fontset | not applied |
+| R8 | the LambdaHack issue #281 workaround retired: no black ring around a cell without a coloured highlight | small | 0.2, 2.2 | not applied |
 | capability constants | named constants in place of behavioral CPP | --- | --- | not applied |
 | sum-typed selection | one frontend field replacing four `Bool`s | mechanical, moderate churn | --- | not applied |
 | RawFrontend contract | haddock contract, tasty harness, add-a-frontend checklist | medium | haddock and checklist: nothing; native harness after 0.1, which creates its module; wasm case with 0.3 | not applied |
@@ -1508,6 +1509,46 @@ pixels out equal to the BDF's bitmap in.
 
 **Decide first** --- nothing; the rulings are the record's.
 
+**R8 --- Retire the LambdaHack issue #281 workaround.** Design and ruling
+in the record, at B.12.
+
+**Split** --- four commits. (1) `Sdl.hs` alone: `git revert 5b7b552a6`,
+Mikolaj's preference, its one conflict resolved so that `chooseAndDrawHighlight`
+draws nothing for a cell without a coloured highlight, as before that commit;
+if the conflict proves too big, a commit reverting it morally is good enough,
+by the same ruling. (2) the rule's copies: `CellStyle`'s border saying no ring
+rather than black for the three uncoloured kinds, with its haddock, its tests
+and the fixtures its freshness case rewrites, `Sdl.hs` following if the border's
+type changes; `terminal-core.ts`'s `highlightColor` and `cellRunOps` drawing
+no stroke for those kinds, with their tests and `overlay-core.test.ts`'s marker
+case; and **Decide first** (1)'s branch. (3) the correction of the live claims
+(1) and (2) falsify, G2 under What would falsify this among them,
+and the re-anchoring the citation pass names, if any. (4) the outcome line
+under B.12 naming (1)'s and (2)'s hashes, and the ledger flip.
+
+**Owns** --- `engine-src/Game/LambdaHack/Client/UI/Frontend/Sdl.hs`,
+`engine-src/Game/LambdaHack/Client/UI/Frontend/CellStyle.hs`,
+`test/CellStyleUnitTests.hs`, `ts-src/src/generated/fixtures.json`,
+`ts-src/src/terminal-core.ts` and its test, `ts-src/src/overlay-core.test.ts`,
+`ts-src/src/overlay-core.ts` on **Decide first** (1)'s second branch,
+and `docs/wasm-frontend-unified-plan.md`.
+
+**Done** --- `native`, `ts`, `wasm`, `deploy`, `page`, `docs`, plus
+the freshness case's proof as 0.2's Done states it, plus a screenshot pair
+of `make bench`'s seeded games under Xvfb, before and after (1), every pixel
+that differs lying on a cell's one-pixel ring.
+
+**Hands back** --- *display*: that SDL and the page look right with no ring
+around a cell without a coloured highlight, and that a coloured highlight leaves
+nothing behind when it moves, on SDL 2.0.18 or later. The substitute gate
+in Done is the screenshot pair.
+
+**Decide first** --- (1) once `cellRunOps` draws no ring for those kinds,
+whether it also draws the mono layer, taking a face and a glyph table,
+`monoRunOps` going; or `monoRunOps` stays, differing from it in face
+and in leaving the dim dot alone. Deferred here by the Log's ruling
+of 2026-10-23 at 2.2's landing.
+
 ## Multi-frontend practices (adopted)
 
 **Capability constants instead of behavioral CPP.** Design and rulings
@@ -1804,6 +1845,8 @@ frontend CI smokes, ANSI and SDL --- early, beside 0.3-baseline: they
 2.1 OverlayLayout extraction + Sdl.hs onto it and CellStyle
     (native-only, playtest- and bench-gated)
 2.2 browser overlay renderer (visual no-op)
+R8 #281 ring workaround retired --- after 2.2, before or after 2.3
+    (ruled 2026-10-23)
 2.3 overlay transport (visual no-op, additive FFI)
 2.4 capability flip (the visible change; heaviest review)
 2.5 QA (R6 retired, B.10)
