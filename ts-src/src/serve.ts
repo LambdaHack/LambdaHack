@@ -5,8 +5,9 @@
 //
 // Usage: node serve.mjs <root-dir> [port]
 
+import { createReadStream } from "node:fs";
+import { stat } from "node:fs/promises";
 import { createServer } from "node:http";
-import { readFile } from "node:fs/promises";
 import { join } from "node:path";
 import { contentType, sitePath } from "./serve-core.js";
 
@@ -20,11 +21,19 @@ const server = createServer((req, res) => {
     res.end("400 bad request");
     return;
   }
+  // Streamed rather than read whole, so that the first bytes leave at
+  // once, the wasm's among them, which the loader compiles as they come.
   const file = join(root, rel);
-  readFile(file)
-    .then((body) => {
-      res.writeHead(200, { "content-type": contentType(file) });
-      res.end(body);
+  stat(file)
+    .then((st) => {
+      if (!st.isFile()) throw new Error(`${file} is not a file`);
+      res.writeHead(200, {
+        "content-type": contentType(file),
+        "content-length": st.size,
+      });
+      createReadStream(file)
+        .on("error", () => res.destroy())
+        .pipe(res);
     })
     .catch(() => {
       res.writeHead(404, { "content-type": "text/plain; charset=utf-8" });
