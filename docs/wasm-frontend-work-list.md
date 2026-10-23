@@ -189,6 +189,7 @@ native   cabal build && cabal test && hlint .
          && git diff --exit-code <those paths>     # stylish left them alone
 ts       make test-ts        # typecheck and format:check run inside it
 wasm     make build-wasm && make test-wasm
+reactor  make test-reactor    # the reactor's exports, by the game driver
 deploy   make build-ts        # UNSANDBOXED: writes into the pages checkout
 page     make page-gate       # UNSANDBOXED: Chromium will not start
          sandboxed; the page as deployed, in headless Firefox and

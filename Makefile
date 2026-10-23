@@ -327,6 +327,18 @@ test-wasm: $(NPM_CI)
 	$(POSTLINK) --input "$$W" --output "$$T/ghc_wasm_jsffi.mjs" && \
 	node ts-src/run-wasm-test.mjs "$$W" "$$T/ghc_wasm_jsffi.mjs"
 
+# The reactor's exports, called as the page calls them, by
+# ts-src/run-wasm-game.mjs under Node, once plain and once under
+# --printEachScreen. No workflow runs it.
+test-reactor: build-wasm $(NPM_CI)
+	. ~/.ghc-wasm/env && \
+	T=$$(mktemp -d) && \
+	trap 'rm -rf "$$T"' EXIT && \
+	W=$$(wasm32-wasi-cabal list-bin exe:LambdaHack --enable-optimization) && \
+	$(POSTLINK) --input "$$W" --output "$$T/ghc_wasm_jsffi.mjs" && \
+	node ts-src/run-wasm-game.mjs "$$W" "$$T/ghc_wasm_jsffi.mjs" && \
+	node ts-src/run-wasm-game.mjs "$$W" "$$T/ghc_wasm_jsffi.mjs" --printEachScreen
+
 # deployPage puts the page into the directory given: its own files, the
 # bundle, the glue and the binary. build-ts deploys it and page-gate gates
 # it, so the gate loads the files build-ts deploys.
