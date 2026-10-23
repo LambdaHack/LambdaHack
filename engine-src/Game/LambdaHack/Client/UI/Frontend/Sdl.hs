@@ -488,21 +488,9 @@ drawFrame coscreen ClientOptions{..} sess@FrontendSession{..} curFrame = do
         SDL.drawRect srenderer $ Just rect
         SDL.rendererDrawColor srenderer SDL.$= blackRGBA
           -- reset back to black
-      chooseAndDrawHighlight !col !row !border = do
--- Rectangle drawing is broken in SDL 2.0.16
--- (https://github.com/LambdaHack/LambdaHack/issues/281)
--- and simple workarounds fail with old SDL, e.g., four lines instead of
--- a rectangle, so we have to manually erase the broken rectangles
--- instead of depending on glyphs overwriting them fully.
-       let workaroundOverwriteHighlight = do
-             let rect = SDL.Rectangle (vp (col * boxSize) (row * boxSize))
-                                      tt2Square
-             SDL.drawRect srenderer $ Just rect
-       -- Black is the draw colour already set.
-       if border == Color.Black
-       then workaroundOverwriteHighlight
-       else drawHighlight col row border
--- workarounds end
+      -- 'CellStyle' gives a cell without a coloured highlight a black border.
+      chooseAndDrawHighlight !col !row !border =
+        when (border /= Color.Black) $ drawHighlight col row border
       -- This also frees the surface it gets.
       scaleSurfaceToTexture :: Int -> SDL.Surface -> IO SDL.Texture
       scaleSurfaceToTexture xsize textSurfaceRaw = do
