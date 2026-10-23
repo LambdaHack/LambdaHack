@@ -329,6 +329,20 @@
    "harm": "latent",
    "discovery": "review",
    "notes": "Found by the code review of 2026-10-23 over the year's diff; the Tab sibling, which had the same dead setup, was found by asking where else that shape occurs. The twin carries no [contract] marker, which would move the count docs/leader-desync-migration.md tracks. A tier-1 record: the corpus root is tools/, and the case is the test suite's."
+  },
+  {
+   "id": "Makefile-03",
+   "program": "Makefile",
+   "name": "build-ts deployed index.html and the .ttf.woff fonts only, while page-gate also copied 16x16xw.woff and lz-string.min.js from this repository, so the gate loaded a page other than the deployed one",
+   "family": "two-spellings",
+   "fix_rev": "self",
+   "trigger": "`make build-ts` against ../lambdahack.github.io, which carries its own committed lz-string.min.js, beside `make page-gate`",
+   "ok": "both recipes copy $(PAGE_FILES) and $(LZSTRING), their copying differing only in the destination",
+   "bug": "the deployed lz-string.min.js was the page repository's older copy, which cmp finds differing from the npm 1.5.0 copy the gate loaded; 16x16xw.woff was byte-identical by chance",
+   "proved": "ran",
+   "harm": "fired",
+   "discovery": "review",
+   "notes": "Found by the code review of 2026-10-23 over the year's diff. build-ts stopped copying the two files in 4db5c55fa, the page repository having committed them; page-gate, added in 6f0a8b893, took this repository's. A tier-1 record: the corpus root is tools/."
   }
  ]
 }

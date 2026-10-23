@@ -324,15 +324,23 @@ test-wasm:
 	(cd ts-src && npm ci) && \
 	node ts-src/run-wasm-test.mjs "$$W" "$$T/ghc_wasm_jsffi.mjs"
 
+# The page's own files, beside the bundle, the glue and the binary: build-ts
+# deploys them and page-gate gates them, so the gate loads the files
+# build-ts deploys, the two recipes' copying differing only in its
+# destination.
+# lz-string.min.js is copied after the npm ci that installs it.
+PAGE_FILES = GameDefinition/index.html GameDefinition/fonts/16x16xw.woff GameDefinition/fonts/*.ttf.woff
+LZSTRING = ts-src/node_modules/lz-string/libs/lz-string.min.js
+
 build-ts:
 	. ~/.ghc-wasm/env && \
-	cp GameDefinition/index.html GameDefinition/fonts/*.ttf.woff ../lambdahack.github.io && \
-	cd ts-src && \
-	npm ci && \
-	BUILD_OUTDIR=../../lambdahack.github.io npm run build && \
-	W=$$(cd $(CURDIR) && wasm32-wasi-cabal list-bin exe:LambdaHack --enable-optimization) && \
-	~/.ghc-wasm/wasm32-wasi-ghc/lib/post-link.mjs --input "$$W" --output ../../lambdahack.github.io/ghc_wasm_jsffi.mjs && \
-	cp "$$W" ../../lambdahack.github.io/LambdaHack.wasm
+	D=$(CURDIR)/../lambdahack.github.io && \
+	cp $(PAGE_FILES) "$$D" && \
+	(cd ts-src && npm ci && BUILD_OUTDIR="$$D" npm run build) && \
+	cp $(LZSTRING) "$$D" && \
+	W=$$(wasm32-wasi-cabal list-bin exe:LambdaHack --enable-optimization) && \
+	~/.ghc-wasm/wasm32-wasi-ghc/lib/post-link.mjs --input "$$W" --output "$$D/ghc_wasm_jsffi.mjs" && \
+	cp "$$W" "$$D/LambdaHack.wasm"
 
 test-ts:
 	cd ts-src && \
@@ -347,9 +355,9 @@ page-gate: build-wasm
 	. ~/.ghc-wasm/env && \
 	T=$$(mktemp -d) && \
 	trap 'rm -rf "$$T"' EXIT && \
-	cp GameDefinition/index.html GameDefinition/fonts/16x16xw.woff GameDefinition/fonts/*.ttf.woff "$$T" && \
+	cp $(PAGE_FILES) "$$T" && \
 	(cd ts-src && npm ci && BUILD_OUTDIR="$$T" npm run build) && \
-	cp ts-src/node_modules/lz-string/libs/lz-string.min.js "$$T" && \
+	cp $(LZSTRING) "$$T" && \
 	W=$$(wasm32-wasi-cabal list-bin exe:LambdaHack --enable-optimization) && \
 	~/.ghc-wasm/wasm32-wasi-ghc/lib/post-link.mjs --input "$$W" --output "$$T/ghc_wasm_jsffi.mjs" && \
 	cp "$$W" "$$T/LambdaHack.wasm" && \
