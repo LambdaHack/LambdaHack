@@ -71,27 +71,19 @@ const wasi = new WASI({
 });
 let instance;
 await installStubs(() => instance.exports.memory);
-// The latest frame's text, a string per row, for finding a menu choice.
-let screenRows = [];
-const recordFrame = globalThis.lhSubmitFrame;
-globalThis.lhSubmitFrame = (addr, w, h) => {
-  recordFrame(addr, w, h);
-  const cells = new DataView(instance.exports.memory.buffer, addr, 4 * w * h);
-  screenRows = Array.from({ length: h }, (_, y) =>
-    Array.from({ length: w }, (_, x) =>
-      String.fromCodePoint(cells.getUint32(4 * (y * w + x), true) >>> 16),
-    ).join(""),
-  );
-};
-// The names lhPrintScreen is given, each with the count of frames
-// submitted before it.
-const prints = [];
-globalThis.lhPrintScreen = (name) => {
-  prints.push({ name, frames: globalThis.lhSubmitFrameCalls.length });
-};
 instance = await instantiate(wasmPath, jsffiPath, wasi);
 const lh = instance.exports;
 const calls = globalThis.lhSubmitFrameCalls;
+const prints = globalThis.lhPrintScreenCalls;
+// The latest frame's text, a string per row, for finding a menu choice.
+function screenRows() {
+  const { w, h, words } = globalThis.lhLastFrame;
+  return Array.from({ length: h }, (_, y) =>
+    Array.from({ length: w }, (_, x) =>
+      String.fromCodePoint(words[y * w + x] >>> 16),
+    ).join(""),
+  );
+}
 const noMods = [false, false, false, false];
 
 // A stand-in for the page's KeyboardEvent: the fields lhKey reads, and
@@ -242,9 +234,10 @@ async function run() {
   // onChoice), so its last one is odd, and were the column a cell
   // doubled, as before 0.4, that click would miss as the one past it does.
   const label = "see command help";
-  const row = screenRows.findIndex((r) => r.includes(label));
-  if (row < 0) fail(`no '${label}' on the menu:\n${screenRows.join("\n")}`);
-  const last = 2 * (screenRows[row].indexOf(label) + label.length) - 1;
+  const rows = screenRows();
+  const row = rows.findIndex((r) => r.includes(label));
+  if (row < 0) fail(`no '${label}' on the menu:\n${rows.join("\n")}`);
+  const last = 2 * (rows[row].indexOf(label) + label.length) - 1;
   const past = await repaint("lhMouseUp", [last + 1, row, 0, ...noMods]);
   if (past !== menu) {
     fail(
