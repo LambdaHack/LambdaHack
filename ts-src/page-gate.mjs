@@ -22,16 +22,9 @@
 // so a key's effect is a stopped frame count or a changed hash rather than
 // a claim about what it drew.
 //
-// Non-vacuity, run 2026-09-14: a site directory without LambdaHack.wasm
-// fails both frame assertions with exit 1, and PAGE_GATE_OVERLAYS=1 fails
-// against a tree before 2.4; the same tree passes with six frames of 80x24
-// and a '?' repainting. The Chromium leg's, run 2026-10-22: the site without
-// LambdaHack.wasm fails its three key and frame assertions with exit 1,
-// a missing chromedriver exits 2, and a build whose syncExport drops its
-// rts_scheduleWork call fails the Escape assertion, in both browsers. Run
-// 2026-10-23 with the '?' press removed: the self-play assertion fails in both
-// browsers, where its earlier form, a hash changed after the '?', passed in
-// both, the self-play repainting regardless.
+// Non-vacuity: the gate's controls are mutants in tools/mutants-deep.py,
+// each judged by `make page-gate` and replayed by
+// `selftest-mutants.py tools/mutants-deep.py`.
 
 import { spawn } from "node:child_process";
 import { mkdir, writeFile } from "node:fs/promises";
