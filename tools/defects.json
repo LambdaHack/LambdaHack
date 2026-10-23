@@ -524,6 +524,20 @@
    "notes": "Found by the code review of 2026-10-23 over the year's diff; both directions watched that day on an unoptimized build. A tier-1 record: the corpus root is tools/, and the case is the test suite's."
   },
   {
+   "id": "HandleHelperMUnitTests-01",
+   "program": "test/HandleHelperMUnitTests.hs",
+   "name": "LR5 caught every exception as the 'same leader' assertion firing, so a crash for any other reason, in the fixture or on a missing key, passed the test",
+   "family": "vacuous-check",
+   "fix_rev": "self",
+   "trigger": "an `error` call in LR5's action before pointmanCycle runs",
+   "ok": "the error propagates and LR5 fails, only an AssertionFailed passing it",
+   "bug": "LR5 passed: `LR-flip LR5: stale leader crashes pointmanCycle ('same leader' assert): OK`",
+   "proved": "ran",
+   "harm": "latent",
+   "discovery": "review",
+   "notes": "Found by the /simplify review of 2026-10-23 (its 55.1). The catch now asks for Control.Exception's AssertionFailed, as OverlayLayoutUnitTests' assertAsserts does, assert-failure's blame going to the trace and not into the exception (~/slop/CLAUDE.md). Both directions were watched that day on a copy of the test with `_ <- error \"an unrelated crash\"` before pointmanCycle. A tier-1 record: the corpus root is tools/."
+  },
+  {
    "id": "HandleHumanLocalMUnitTests-01",
    "program": "test/HandleHumanLocalMUnitTests.hs",
    "name": "the ESC store-dialog test, and its scripted-Tab sibling, put the item in sitemD and the bag but gave it no role in sroles, so the dialog listed nothing and the item setup had no effect",

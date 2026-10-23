@@ -160,9 +160,9 @@ liveReadSeries =
             restoreLeaderFromRun             -- hidden restore to A
             pointmanCycle leaderCaptured False Forward
       result <- Ex.try (executorCli testFn partyCliState)
-                :: IO (Either Ex.SomeException (MError, CliState))
+                :: IO (Either Ex.AssertionFailed (MError, CliState))
       case result of
-        Left _ -> return ()  -- crashed, as documented
+        Left _ -> return ()  -- the assertion fired, as documented
         Right _ -> assertFailure
           "expected the 'same leader' assertion to fire on a stale leader"
 
