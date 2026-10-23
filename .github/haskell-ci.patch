@@ -9,7 +9,7 @@
            cabal-plan
        - name: restore cache
          uses: actions/cache/restore@v6
-@@ -183,28 +183,28 @@
+@@ -183,37 +183,37 @@
            restore-keys: ${{ runner.os }}-${{ matrix.compiler }}-
        - name: install dependencies
          run: |
@@ -42,6 +42,18 @@
            rm -f cabal.project.local
 -          $CABAL v2-build $ARG_COMPILER --disable-tests --disable-benchmarks all
 +          $CABAL v2-build $ARG_COMPILER --disable-tests --disable-benchmarks --disable-optimization all
+       - name: prepare for constraint sets
+         run: |
+           rm -f cabal.project.local
+       - name: constraint set release
+         run: |
+-          if [ $((HCNUMVER >= 91200 && HCNUMVER < 91400)) -ne 0 ] ; then $CABAL v2-build $ARG_COMPILER --enable-tests --disable-benchmarks --constraint='LambdaHack +release' all --dry-run ; fi
++          if [ $((HCNUMVER >= 91200 && HCNUMVER < 91400)) -ne 0 ] ; then $CABAL v2-build $ARG_COMPILER --enable-tests --disable-benchmarks --disable-optimization --constraint='LambdaHack +release' all --dry-run ; fi
+           if [ $((HCNUMVER >= 91200 && HCNUMVER < 91400)) -ne 0 ] ; then cabal-plan topo | sort ; fi
+-          if [ $((HCNUMVER >= 91200 && HCNUMVER < 91400)) -ne 0 ] ; then $CABAL v2-build $ARG_COMPILER --enable-tests --disable-benchmarks --constraint='LambdaHack +release' --dependencies-only -j2 all ; fi
+-          if [ $((HCNUMVER >= 91200 && HCNUMVER < 91400)) -ne 0 ] ; then $CABAL v2-build $ARG_COMPILER --enable-tests --disable-benchmarks --constraint='LambdaHack +release' all ; fi
++          if [ $((HCNUMVER >= 91200 && HCNUMVER < 91400)) -ne 0 ] ; then $CABAL v2-build $ARG_COMPILER --enable-tests --disable-benchmarks --disable-optimization --constraint='LambdaHack +release' --dependencies-only -j2 all ; fi
++          if [ $((HCNUMVER >= 91200 && HCNUMVER < 91400)) -ne 0 ] ; then $CABAL v2-build $ARG_COMPILER --enable-tests --disable-benchmarks --disable-optimization --constraint='LambdaHack +release' all ; fi
        - name: save cache
          if: always()
          uses: actions/cache/save@v6

@@ -2,3 +2,13 @@
 -- regenerate drops them without a word.
 apt: libsdl2-ttf-dev
 github-patches: .github/haskell-ci.patch
+-- The image the workflow has run on; haskell-ci's default is now noble.
+distribution: jammy
+
+-- The 9.12 job also builds, tests included, with the release flag, the
+-- only build defining EXPOSE_INTERNAL, so the export lists it guards
+-- compile somewhere.
+constraint-set release
+  ghc: ==9.12.4
+  constraints: LambdaHack +release
+  tests: True

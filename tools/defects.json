@@ -371,6 +371,20 @@
    "harm": "unknown",
    "discovery": "review",
    "notes": "Found by the code review of 2026-10-23 over the year's diff. The redirection was watched that day: the game run with no terminal and an unknown game mode left 0 bytes on the shell's stdout and stderr and its error in $HOME/.LambdaHack/stderr.txt. The CI failure path itself was not run. A tier-1 record: the corpus root is tools/."
+  },
+  {
+   "id": "cabal.haskell-ci-01",
+   "program": "cabal.haskell-ci",
+   "name": "no CI job built with the release flag, the only build defining EXPOSE_INTERNAL, once the flag defaulted to False and haskell.yml was deleted, so the export lists it guards compiled nowhere",
+   "family": "other:uncovered-configuration",
+   "fix_rev": "self",
+   "trigger": "renaming a function listed only in an `#ifdef EXPOSE_INTERNAL` export list",
+   "ok": "a constraint set builds the libraries and tests with LambdaHack +release in the 9.12 job of haskell-ci.yml",
+   "bug": "every CI job stayed green while `cabal build -frelease` failed",
+   "proved": "asserted",
+   "harm": "latent",
+   "discovery": "review",
+   "notes": "Found by the code review of 2026-10-23 over the year's diff; that no workflow, cabal.haskell-ci or cabal.project names the flag was checked by grep, and that the release build compiles at the fixing tree by building it. The regenerated workflow pins distribution jammy, the image it ran on, the installed haskell-ci defaulting to noble; .github/haskell-ci.patch was rebuilt over the new steps, two regenerates giving the same file. A tier-1 record: the corpus root is tools/."
   }
  ]
 }
