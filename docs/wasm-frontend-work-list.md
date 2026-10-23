@@ -1360,8 +1360,8 @@ this item proposes no artifact.
 the `ghcjs-options` knob block, and the two `impl(ghcjs)` module/dependency
 branches), `cabal.project.local.js` (deleted), `Frontend.hs` (the `USE_GHCJS`
 import branch and both `#ifndef REMOVE_TELETYPE` guards), `File.hs`'s
-`USE_JSFILE` branch, `TieKnot.hs` (both sites), the `USE_JSFILE` halves
-at `Server/LoopM.hs:!defined(USE_JSFILE) &&`,
+`USE_JSFILE` branch, `TieKnot.hs`'s `USE_GHCJS` GHC.Compact branch,
+the `USE_JSFILE` halves at `Server/LoopM.hs:!defined(USE_JSFILE) &&`,
 `HandleHumanLocalM.hs:!defined(USE_JSFILE) &&`
 and `WatchUpdAtomicM.hs:#if defined(USE_JSFILE)`, header comments only
 in `Dom.hs` and `JSFile.hs`, the two orphan GHCJS comments nothing else claims

@@ -2567,22 +2567,20 @@ in one commit:
   with the target rather than only its `flags: -supportNodeJS` line, which
   is what its **Owns** says. Then `Frontend.hs:#elif defined(USE_GHCJS)`'s
   `USE_GHCJS` import branch, `File.hs`'s `USE_JSFILE` branch,
-  `TieKnot.hs:#ifdef USE_JSFILE`'s GHC.Compact escape hatch,
-  and the `USE_JSFILE` halves of the browser conditions
-  in `Server/LoopM.hs`/`WatchUpdAtomicM.hs`/`HandleHumanLocalM.hs`
-  and `TieKnot.hs:#if defined(USE_JSFILE)` (the `sdumpInitRngs` hardwiring plus
-  main-thread workaround skip, a second `TieKnot.hs` site distinct
-  from the GHC.Compact one above) --- or of their capability-constant
-  successors, if that practice lands first. Update CLAUDE.md's GHCJS mentions
-  in the same commit. The README needs no GHCJS edit --- it contains the string
-  nowhere (checked repo-wide); what it carries is browser-era prose ---
-  the "The game runs rather slowly in the browser" paragraph under "Installation
-  of the sample game from binary archives", which the page's `#status` div
-  quotes with small edits --- the page says "for both map and texts" where
-  the README says "for all purposes, though it's scalable", opens the savefile
-  sentence in capitals where the README hangs it off an "Also,", and drops
-  the README's "(which takes a long time)" --- owned clause by clause by 2.4, R1
-  and R5 under 1.4's rule, not by this rip-out.
+  `TieKnot.hs:#ifdef USE_GHCJS`'s GHC.Compact escape hatch, and the `USE_JSFILE`
+  halves of the browser conditions
+  in `Server/LoopM.hs`/`WatchUpdAtomicM.hs`/`HandleHumanLocalM.hs` ---
+  or of their capability-constant successors, if that practice lands first.
+  Update CLAUDE.md's GHCJS mentions in the same commit. The README needs
+  no GHCJS edit --- it contains the string nowhere (checked repo-wide); what
+  it carries is browser-era prose --- the "The game runs rather slowly
+  in the browser" paragraph under "Installation of the sample game from binary
+  archives", which the page's `#status` div quotes with small edits --- the page
+  says "for both map and texts" where the README says "for all purposes, though
+  it's scalable", opens the savefile sentence in capitals where the README hangs
+  it off an "Also,", and drops the README's "(which takes a long time)" ---
+  owned clause by clause by 2.4, R1 and R5 under 1.4's rule, not
+  by this rip-out.
 
 Timed after parity, not before, so the rip-out doesn't tangle with Phase 0--2
 diffs touching the same cabal stanzas and CPP sites.
@@ -2769,9 +2767,10 @@ got updated; R1's re-measurement flips one constant instead of editing ifdefs.
 `GameDefinition/game-src/TieKnot.hs` sites stay out of scope, and the item says
 so: `TieKnot.hs` *is* the knot --- the wiring layer where compile-time backend
 choice is legitimately visible, not a fork scattered around the engine, which
-is this practice's target class --- and besides, `TieKnot.hs:#ifdef USE_JSFILE`
+is this practice's target class --- and besides, `TieKnot.hs:#ifdef USE_GHCJS`
 (`GHC.Compact` absent under GHCJS) cannot become a runtime `Bool` at all; R3
-removes their GHCJS halves on its own schedule. (2) `Common/JSFile.hs` mirrors
+removes its GHCJS half on its own schedule, the other site, the browser's
+startup, being guarded by `USE_BROWSER` alone. (2) `Common/JSFile.hs` mirrors
 the constants: three lines in a dead file, guarded by the uniformity-diff rule
 instead of the compiler --- and since `JSFile.hs` survives R3 as the documented
 example of an alternative backend, the example then shows the complete interface
@@ -3167,11 +3166,11 @@ so the cheapest step retires the most uncertainty.
    backend implements green-threaded as GHCJS did); (b) **`ghc-compact`** ---
    the package is an unconditional dependency (`LambdaHack.cabal`), the wasm
    build really calls `compact` at startup, and the old-GHCJS escape hatch
-   `#ifdef USE_JSFILE`
+   `#ifdef USE_GHCJS`
    (`let cops = copsRaw -- until GHCJS implements GHC.Compact`,
-   `TieKnot.hs:#ifdef USE_JSFILE`) already exists --- keep it for the new
-   backend until proven unnecessary. Everything after the spike is known-shape
-   work.
+   `TieKnot.hs:until GHCJS implements GHC.Compact`) already exists --- keep
+   it for the new backend until proven unnecessary. Everything after the spike
+   is known-shape work.
 2. **Cabal + `JSFile.hs`, 1--2 days.** `impl(ghcjs)` -> `arch(javascript)`
    everywhere --- all three sites: the `common options` cpp-options conditional
    (`LambdaHack.cabal:-DUSE_BROWSER -DUSE_GHCJS -DUSE_JSFILE`), inherited

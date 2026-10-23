@@ -8,9 +8,7 @@ import Prelude ()
 
 import Game.LambdaHack.Core.Prelude
 
-import           Control.Concurrent
 import           Control.Concurrent.Async
-import qualified Control.Exception as Ex
 import qualified Data.Primitive.PrimArray as PA
 import           GHC.Compact
 import qualified System.Random.SplitMix32 as SM
@@ -20,7 +18,6 @@ import qualified Game.LambdaHack.Client.UI.Content.Input as IC
 import qualified Game.LambdaHack.Client.UI.Content.Screen as SC
 import           Game.LambdaHack.Client.UI.ContentClientUI
 import           Game.LambdaHack.Common.Kind
-import           Game.LambdaHack.Common.Misc
 import           Game.LambdaHack.Common.Point (speedupHackXSize)
 import qualified Game.LambdaHack.Common.Tile as Tile
 import qualified Game.LambdaHack.Content.CaveKind as CK
@@ -42,6 +39,13 @@ import qualified Content.PlaceKind
 import qualified Content.RuleKind
 import qualified Content.TileKind
 import           Implementation.MonadServerImplementation (executorSer)
+
+#ifndef USE_BROWSER
+import           Control.Concurrent
+import qualified Control.Exception as Ex
+
+import Game.LambdaHack.Common.Misc
+#endif
 
 -- | Tie the LambdaHack engine client, server and frontend code
 -- with the game-specific content definitions, and run the game.
@@ -111,7 +115,7 @@ tieKnotForAsync options@ServerOptions{ sallClear
   --
   -- Not using @compactWithSharing@, because it helps with residency,
   -- but nothing else and costs a bit at startup.
-#ifdef USE_JSFILE
+#ifdef USE_GHCJS
   let cops = copsRaw  -- until GHCJS implements GHC.Compact
 #else
   cops <- getCompact <$> compact copsRaw
@@ -135,7 +139,7 @@ tieKnotForAsync options@ServerOptions{ sallClear
 -- | Runs tieKnotForAsync in an async and applies the main thread workaround.
 tieKnot :: ServerOptions -> IO ()
 tieKnot serverOptions = do
-#if defined(USE_JSFILE) || defined(USE_WASMFILE)
+#ifdef USE_BROWSER
   -- Hard to tweak the config file when in the browser, so hardwire.
   let serverOptionsJS = serverOptions {sdumpInitRngs = True}
   a <- async $ tieKnotForAsync serverOptionsJS

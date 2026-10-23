@@ -1,4 +1,8 @@
 -- | Text frontend running in a browser.
+--
+-- Frozen, a documented example R3 keeps (docs/wasm-frontend-unified-plan.md):
+-- no build compiles it, so it no longer follows the shared rules of
+-- "Game.LambdaHack.Client.UI.Frontend.InputDecision".
 module Game.LambdaHack.Client.UI.Frontend.Dom
   (
 #ifdef USE_GHCJS
@@ -149,7 +153,7 @@ runWeb coscreen _ rfMVar = do
     when (key == K.Esc) $ IO.liftIO $ resetChanKey (fchanKey rf)
     IO.liftIO $ saveKMP rf modifierNoShift key (PointUI 0 0)
     -- Pass through C-+ and others, but disable special behaviour on Tab, etc.
-    let browserKeys = "+-0"
+    let browserKeys = "+-0tTnNdxcv"
     unless (modifier == K.Alt
             || modifier == K.Control && key `elem` map K.Char browserKeys
             || key == K.DeadKey) $ do  -- NumLock in particular
