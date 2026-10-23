@@ -29,12 +29,13 @@ A JS name exported twice is a finding at each export after the first, every
 one of them checked. Every run prints each sync export it found, so a tree
 with none says so rather than passing in silence. Exit 0 when every one is
 built on `syncExport`, 1 with findings, 2 when the run did not happen:
-outside a git repository, with no tracked `*.hs` file, or with one that is
-not UTF-8.
+outside a git repository, with no tracked `*.hs` file, or with one that
+cannot be read or is not UTF-8.
 
-Non-vacuity: `--self-test` runs the engine over scratch sources, one per
-finding and controls for the shapes it must leave alone; that the self-test
-bites is `tools/mutants.py`'s to show.
+Non-vacuity: `--self-test` runs the engine over scratch sources, one
+per finding and controls for the shapes it must leave alone, and reads
+a missing file and one that is not UTF-8; that the self-test bites is
+`tools/mutants.py`'s to show.
 """
 
 import contextlib
@@ -43,6 +44,7 @@ import os
 import re
 import subprocess
 import sys
+import tempfile
 
 STATIC_RE = re.compile(
     r'foreign\s+export\s+javascript\s+"(\w+)\s+sync"\s+(\w+)\s*::')
@@ -177,6 +179,21 @@ def scan(files):
                          f' "wrapper sync" import, whose closures this'
                          f" checker cannot follow to syncExport")
     return oks + fails, len(fails), len(static)
+
+
+def read(names):
+    """The text of each file in `names`, and None; or None, and the BLOCKED
+    line for the first that cannot be read or is not UTF-8."""
+    files = {}
+    for n in names:
+        try:
+            with open(n, encoding="utf-8") as f:
+                files[n] = f.read()
+        except UnicodeDecodeError as e:
+            return None, f"BLOCKED: {n} is not UTF-8 ({e}); nothing checked"
+        except OSError as e:
+            return None, f"BLOCKED: cannot read {n} ({e}); nothing checked"
+    return files, None
 
 
 def run(files):
@@ -394,6 +411,16 @@ def self_test():
     rc, out = capture({})
     if rc != 2:
         bad.append(f"no source: exit {rc}, wanted 2")
+    with tempfile.TemporaryDirectory() as d:
+        latin = os.path.join(d, "Latin.hs")
+        with open(latin, "wb") as f:
+            f.write(b"\xff\n")
+        gone = os.path.join(d, "Gone.hs")
+        for name, want in ((gone, "BLOCKED: cannot read"),
+                           (latin, "is not UTF-8")):
+            files, blocked = read([name])
+            if files is not None or want not in (blocked or ""):
+                bad.append(f"{name}: read gave {blocked!r}, wanted {want!r}")
     if bad:
         print("SELF-TEST FAILED:")
         for b in bad:
@@ -425,14 +452,10 @@ def main():
     except (OSError, subprocess.CalledProcessError) as e:
         print(f"BLOCKED: cannot list the repository's files: {e}")
         return 2
-    files = {}
-    for n in names:
-        try:
-            with open(n, encoding="utf-8") as f:
-                files[n] = f.read()
-        except UnicodeDecodeError as e:
-            print(f"BLOCKED: {n} is not UTF-8 ({e}); nothing checked")
-            return 2
+    files, blocked = read(names)
+    if blocked:
+        print(blocked)
+        return 2
     return run(files)
 
 

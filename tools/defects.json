@@ -783,6 +783,27 @@
    "bug_text": "UnicodeDecodeError"
   },
   {
+   "id": "check-sync-exports-08",
+   "program": "check-sync-exports.py",
+   "name": "a tracked .hs file deleted from the working tree ended in a FileNotFoundError traceback at exit 1, the findings status, for a run that never happened",
+   "family": "unverified-state",
+   "fix_rev": "self",
+   "trigger": "A.hs added to the index and then removed from the working tree",
+   "ok": "`BLOCKED: cannot read A.hs` and exit 2",
+   "bug": "a FileNotFoundError traceback and exit 1",
+   "proved": "ran",
+   "harm": "latent",
+   "discovery": "review",
+   "notes": "Found by the code review of 2026-10-23 over the year's diff; the fix for check-sync-exports-07 had caught the decoding error alone. Every error opening or reading a listed file is now caught.",
+   "plant": "a git repository whose one tracked file is missing from the working tree",
+   "plant_cmd": "git init -q . && printf 'module A where\\n' > A.hs && git add A.hs && rm A.hs",
+   "invoke": [],
+   "expect_exit": 2,
+   "expect_text": "BLOCKED: cannot read A.hs",
+   "bug_exit": 1,
+   "bug_text": "FileNotFoundError"
+  },
+  {
    "id": "lint-and-test-suites-02",
    "program": ".github/workflows/lint-and-test-suites.yml",
    "name": "the doctest job read the exit status alone, and doctest exits 0 having found no example",

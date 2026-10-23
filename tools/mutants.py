@@ -166,6 +166,11 @@ MUTANTS = [
      "    if not found:\n", "    if False:\n", ST),
     ('check-sync-exports no source read as a clean tree', 'check-sync-exports.py',
      "    if not files:\n", "    if False:\n", ST),
+    # The file reads (check-sync-exports-07, -08), 2026-10-23
+    ('check-sync-exports a file not UTF-8 ends in a traceback', 'check-sync-exports.py',
+     "        except UnicodeDecodeError as e:\n", "        except ZeroDivisionError as e:\n", ST),
+    ('check-sync-exports a file it cannot read ends in a traceback', 'check-sync-exports.py',
+     "        except OSError as e:\n", "        except ZeroDivisionError as e:\n", ST),
     # The explicit-widths step of checks.py, judged by that step: the decode
     # by the Enum instance it exists to catch, put back into Sdl.hs.
     ('explicit widths toEnum decode restored',
