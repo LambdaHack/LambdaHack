@@ -28,6 +28,7 @@ import ActorStateUnitTests
 import CellStyleUnitTests
 import CommonMUnitTests
 import FfiCoverageUnitTests
+import FontsUnitTests
 import FrameMUnitTests
 import FreshnessCase (freshnessOptions)
 import FrontendContractUnitTests
@@ -55,6 +56,7 @@ tests = testGroup "Tests" [ actorStateUnitTests
                           , cellStyleUnitTests
                           , commonMUnitTests
                           , ffiCoverageUnitTests
+                          , fontsUnitTests
                           , frameMUnitTests
                           , frontendContractUnitTests
                           , handleHelperMUnitTests

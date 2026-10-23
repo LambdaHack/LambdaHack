@@ -1333,7 +1333,7 @@ gives.*
 
 *Its hand-back confirmed by Mikolaj on 2026-10-22, in Firefox.*
 
-Mirror SDL2's semantics (`Sdl.hs:if fromJust sallFontsScale`): at scale 1.0 use
+Mirror SDL2's semantics (`Fonts.hs:if scale == 1.0`): at scale 1.0 use
 the pixel-perfect rendering --- for the web that means the map font's `.woff`
 drawn at its native 16px, as 0.4's painter draws it, until R7a puts the `.bdf`
 itself there --- and at any other scale fall back to scalable rendering, i.e.
@@ -1360,7 +1360,7 @@ is refused and no later field forces the signature change the ground rules
 forbid. The payload itself --- hook, encoding, extensibility --- is specified
 at 2.2 and deliberately not restated here. One thing that looked like a decision
 and is not: SDL's "bitmap at 1.0, scalable otherwise" branch
-(`Sdl.hs:if fromJust sallFontsScale`) needs no browser counterpart, because
+(`Fonts.hs:if scale == 1.0`) needs no browser counterpart, because
 the `dejavuBold` fontset points both `fontMapScalable` and `fontMapBitmap`
 at `16x16xwScalable`, i.e. at the same `16x16xw.woff` the page already loads ---
 so `16 * scale` px on the deployed font is correct and deploys no new font.
@@ -1546,13 +1546,13 @@ lmBoxSize = (2 *) . lmHalfSize
 -- | The only constructor exported, the data constructor staying inside the
 -- module as 'PropCursor'\'s does. @Sdl.hs@ passes half the loaded map font's
 -- size, that font having been opened at a point size already multiplied by
--- @sallFontsScale@ (@Sdl.hs:intToDouble fsize@); the browser passes its
--- painter's @halfSize@, half the cell it takes from the loaded map font
--- the same way. @width@ is the same @rwidth coscreen@ the caller passes to
--- 'layOutFrame' --- the one quantity this record shares with the metric-free
--- half, and two different values there would leave the line filter and the pen
--- clamping against different screens, so a consumer binds it once and uses that
--- binding twice.
+-- @sallFontsScale@ (@Fonts.hs:round $ scale * intToDouble size@); the browser
+-- passes its painter's @halfSize@, half the cell it takes from the loaded
+-- map font the same way. @width@ is the same @rwidth coscreen@ the caller
+-- passes to 'layOutFrame' --- the one quantity this record shares with the
+-- metric-free half, and two different values there would leave the line filter
+-- and the pen clamping against different screens, so a consumer binds it once
+-- and uses that binding twice.
 mkLayoutMetrics :: Int -> Int -> LayoutMetrics
 mkLayoutMetrics halfSize width =
   assert (halfSize > 0 && width > 1)
@@ -1567,7 +1567,7 @@ it interprets.
 
 ```haskell
 -- | Which of the two proportional faces draws a chunk (<https://github.com/LambdaHack/LambdaHack/blob/5c58af62ec9d875dfcb051ba5fade405e5b36f8d/engine-src/Game/LambdaHack/Client/UI/Frontend/Sdl.hs#L678>,
--- over the two fonts loaded at @Sdl.hs:(fontPropRegular@).
+-- over the two fonts loaded at @Sdl.hs:propFont <- fst <$> loadFont prop@).
 --
 -- Deliberately not 'Overlay.DisplayFont': that type names the three overlay
 -- *layers* (@Overlay.hs:data DisplayFont@), is kept abstract on purpose so that
@@ -2091,11 +2091,11 @@ for the map too, the ANSI frontend serving a screen reader natively.
 Fonts, the G1 way --- following the `rFontFiles = []`-under-`USE_BROWSER` split:
 the Haskell side owns *which* fonts at *what size* (from `sfonts` / the chosen
 fontset, sizes multiplied by `sallFontsScale` exactly
-as `Sdl.hs:loadFontFile fname fsize =` does), the web side owns the *bytes*
-(static `.woff` assets). Concretely: at startup `Wasm.hs` resolves the chosen
-fontset and passes file names + effective px sizes to JS in the one-shot setup
-call specified below; TS declares them with the `FontFace` API
-from `./<filename>` URLs. **TS hardcodes nothing about the prop and mono
+as `Fonts.hs:round $ scale * intToDouble size` does), the web side owns
+the *bytes* (static `.woff` assets). Concretely: at startup `Wasm.hs` resolves
+the chosen fontset and passes file names + effective px sizes to JS
+in the one-shot setup call specified below; TS declares them with the `FontFace`
+API from `./<filename>` URLs. **TS hardcodes nothing about the prop and mono
 fonts**, the map font being R7's; `make build-ts` is extended to copy
 the referenced `GameDefinition/fonts/*.ttf.woff` into the pages checkout (only
 `16x16xw.woff` is deployed today).
@@ -2686,9 +2686,8 @@ before it is written anywhere.
 
 **R7 --- Pixel-perfect bitmap map fonts.** The native build draws the map
 with the fontset's bitmap font whenever `allFontsScale` is 1.0 and
-with the scalable one otherwise
-(`Sdl.hs:if fromJust sallFontsScale == 1.0 then do`), and in fullscreen scales
-the whole frame to the display through `rendererLogicalSize`
+with the scalable one otherwise (`Fonts.hs:if scale == 1.0`), and in fullscreen
+scales the whole frame to the display through `rendererLogicalSize`
 (`Sdl.hs:unless (fromMaybe NotFullscreen`), which README warns softens
 the square font's edges. Measured 2026-09-14: under Xvfb, with the `dejavu`
 fontset, whose bitmap slot is the `.bdf`, and `allFontsScale = 2.0` in the user

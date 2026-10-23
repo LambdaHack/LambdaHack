@@ -66,7 +66,6 @@ import           Game.LambdaHack.Common.Faction
 import qualified Game.LambdaHack.Common.HighScore as HighScore
 import           Game.LambdaHack.Common.Item
 import           Game.LambdaHack.Common.Kind
-import           Game.LambdaHack.Common.Misc
 import           Game.LambdaHack.Common.MonadStateRead
 import           Game.LambdaHack.Common.Point
 import qualified Game.LambdaHack.Common.PointArray as PointArray
@@ -320,14 +319,10 @@ clearAimMode = do
 -- and so has to be distinct even if the underlying font is mono for both.
 getFontSetup :: MonadClientUI m => m FontSetup
 getFontSetup = do
-  soptions@ClientOptions{schosenFontset, sfontsets} <- getsClient soptions
-  let chosenFontsetID = fromJust schosenFontset
-      chosenFontset = case lookup chosenFontsetID sfontsets of
-        Nothing -> error $ "Fontset not defined in config file"
-                           `showFailure` chosenFontsetID
-        Just fs -> fs
-      multiFont = Frontend.frontendName soptions == "sdl"
-                  && not (T.null (fontPropRegular chosenFontset))
+  soptions <- getsClient soptions
+  let multiFont = Frontend.frontendName soptions == "sdl"
+                  && either error (isJust . Frontend.cfAuxiliary)
+                            (Frontend.resolveFonts soptions)
   return $! if multiFont then multiFontSetup else singleFontSetup
 
 scoreToSlideshow :: MonadClientUI m => Int -> Status -> m Slideshow

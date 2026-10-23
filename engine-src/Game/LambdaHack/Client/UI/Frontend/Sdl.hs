@@ -46,6 +46,7 @@ import           Game.LambdaHack.Client.UI.Content.Screen
 import           Game.LambdaHack.Client.UI.Frame
 import           Game.LambdaHack.Client.UI.Frontend.CellStyle
 import           Game.LambdaHack.Client.UI.Frontend.Common
+import           Game.LambdaHack.Client.UI.Frontend.Fonts
 import           Game.LambdaHack.Client.UI.Frontend.InputDecision
 import           Game.LambdaHack.Client.UI.Frontend.MouseCursor
 import           Game.LambdaHack.Client.UI.Frontend.OverlayLayout
@@ -110,51 +111,40 @@ startupFun coscreen soptions@ClientOptions{..} rfMVar = do
  SDL.logSetAllPriority $ toEnum $ fromMaybe 5 slogPriority
  TTF.initialize
  let title = T.pack $ fromJust stitle
-     chosenFontsetID = fromJust schosenFontset
  -- Unlike @error@, @die@ does not move savefiles aside.
- chosenFontset <- case lookup chosenFontsetID sfontsets of
-   Nothing -> die $ "Fontset not defined in config file"
-                    `showFailure` chosenFontsetID
-   Just fs -> return fs
+ ChosenFonts{..} <- either die return $ resolveFonts soptions
      -- If some auxiliary fonts are equal and at the same size, this wastefully
      -- opens them many times. However, native builds are efficient enough
      -- and slow machines should use the most frugal case (only square font)
      -- in which no waste occurs and all rendering is aided with an atlas.
- let findFontFile t =
-       if T.null t
-       then return Nothing
-       else case lookup t sfonts of
-         Nothing -> die $ "Font not defined in config file" `showFailure` t
-         Just (FontProportional fname fsize fhint) -> do
-           sdlFont <- loadFontFile fname fsize
+ let loadFont ChosenFont{..} = do
+       sdlFont <- loadFontFile cfFile cfSize
+       case cfDefinition of
+         FontProportional _ _ fhint -> do
            setHintMode sdlFont fhint
            -- TODO: when SDL_ttf can do it, check that not a bitmap font
            realSize <- TTF.height sdlFont
            let !_A = assert (realSize > 0) ()  -- sanity
-           return $ Just (sdlFont, realSize)
-         Just (FontMonospace fname fsize fhint) -> do
-           sdlFont <- loadFontFile fname fsize
+           return (sdlFont, realSize)
+         FontMonospace _ _ fhint -> do
            setHintMode sdlFont fhint
            isFontMono <- TTF.isMonospace sdlFont
            realSize <- TTF.height sdlFont
            let !_A = assert (isFontMono && realSize > 0) ()  -- sanity
-           return $ Just (sdlFont, realSize)
-         Just (FontMapScalable fname fsize fhint cellSizeAdd) -> do
-           sdlFont <- loadFontFile fname fsize
+           return (sdlFont, realSize)
+         FontMapScalable _ _ fhint cellSizeAdd -> do
            setHintMode sdlFont fhint
            isFontMono <- TTF.isMonospace sdlFont
            realSize <- TTF.height sdlFont
            let !_A = assert (isFontMono && realSize > 0) ()  -- sanity
-           return $ Just (sdlFont, realSize + cellSizeAdd)
-         Just (FontMapBitmap fname cellSizeAdd) -> do
-           sdlFont <- loadFontFile fname 0  -- size ignored for bitmap fonts
+           return (sdlFont, realSize + cellSizeAdd)
+         FontMapBitmap _ cellSizeAdd -> do
            isFontMono <- TTF.isMonospace sdlFont
            realSize <- TTF.height sdlFont
            let !_A = assert (isFontMono && realSize > 0) ()  -- sanity
-           return $ Just (sdlFont, realSize + cellSizeAdd)
-     loadFontFile fname fsize = do
+           return (sdlFont, realSize + cellSizeAdd)
+     loadFontFile fname fontSize = do
        let fontFileName = T.unpack fname
-           fontSize = round $ fromJust sallFontsScale * intToDouble fsize
        if isRelative fontFileName
        then do
          case lookup fontFileName $ rFontFiles coscreen of
@@ -170,33 +160,20 @@ startupFun coscreen soptions@ClientOptions{..} rfMVar = do
          else TTF.load fontFileName fontSize
      setHintMode _ HintingHeavy = return ()  -- default
      setHintMode sdlFont HintingLight = TTF.setHinting sdlFont TTF.Light
- (squareFont, squareFontSize, mapFontIsBitmap) <-
-   if fromJust sallFontsScale == 1.0 then do
-     mfontMapBitmap <- findFontFile $ fontMapBitmap chosenFontset
-     case mfontMapBitmap of
-       Just (sdlFont, size) -> return (sdlFont, size, True)
-       Nothing -> do
-         mfontMapScalable <- findFontFile $ fontMapScalable chosenFontset
-         case mfontMapScalable of
-           Just (sdlFont, size) -> return (sdlFont, size, False)
-           Nothing -> die "Neither bitmap nor scalable map font defined"
-   else do
-     mfontMapScalable <- findFontFile $ fontMapScalable chosenFontset
-     case mfontMapScalable of
-        Just (sdlFont, size) -> return (sdlFont, size, False)
-        Nothing -> die "Scaling requested but scalable map font not defined"
- let halfSize = squareFontSize `div` 2
+ (squareFont, squareFontSize) <- loadFont cfMap
+ let mapFontIsBitmap = case cfDefinition cfMap of
+       FontMapBitmap{} -> True
+       _ -> False
+     halfSize = squareFontSize `div` 2
      boxSize = 2 * halfSize  -- map font determines cell size for all others
  -- Real size of these fonts ignored.
- spropFont <- fst <$$> findFontFile (fontPropRegular chosenFontset)
- sboldFont <- fst <$$> findFontFile (fontPropBold chosenFontset)
- smonoFont <- fst <$$> findFontFile (fontMono chosenFontset)
- let !_A =
-       assert
-         (isJust spropFont && isJust sboldFont && isJust smonoFont
-          || isNothing spropFont && isNothing sboldFont && isNothing smonoFont
-          `blame` "Either all auxiliary fonts should be defined or none"
-          `swith` chosenFontset) ()
+ (spropFont, sboldFont, smonoFont) <- case cfAuxiliary of
+   Nothing -> return (Nothing, Nothing, Nothing)
+   Just (prop, bold, mono) -> do
+     propFont <- fst <$> loadFont prop
+     boldFont <- fst <$> loadFont bold
+     monoFont <- fst <$> loadFont mono
+     return (Just propFont, Just boldFont, Just monoFont)
  -- The hacky log priority 0 tells SDL frontend to init and quit at once,
  -- for testing on CIs without graphics access.
  if slogPriority == Just 0 then do

@@ -254,6 +254,7 @@ library
                       Game.LambdaHack.Client.UI.Frontend
                       Game.LambdaHack.Client.UI.Frontend.CellStyle
                       Game.LambdaHack.Client.UI.Frontend.Common
+                      Game.LambdaHack.Client.UI.Frontend.Fonts
                       Game.LambdaHack.Client.UI.Frontend.InputDecision
                       Game.LambdaHack.Client.UI.Frontend.MouseCursor
                       Game.LambdaHack.Client.UI.Frontend.OverlayLayout
@@ -485,6 +486,7 @@ test-suite test
                       CellStyleUnitTests
                       CommonMUnitTests
                       FfiCoverageUnitTests
+                      FontsUnitTests
                       FrameMUnitTests
                       FreshnessCase
                       FrontendContractUnitTests

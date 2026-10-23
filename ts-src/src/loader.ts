@@ -34,7 +34,7 @@ interface LhExports {
 // The startup payload Wasm.hs's startup hands lhConfigure: named fields, each
 // present when the engine has its value, any others ignored.
 interface StartupPayload {
-  // The scale Sdl.hs multiplies its font sizes by.
+  // The scale Fonts.hs's resolveFonts multiplies every font size by.
   allFontsScale?: number;
   // The chosen fontset's fonts but the map font, each a file deployed beside
   // the page and a size in CSS pixels, that scale applied.

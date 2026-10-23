@@ -8,6 +8,8 @@ module Game.LambdaHack.Client.UI.Frontend
   , frontendName
     -- * Input decisions shared by the frontends
   , KeyDecision(..), decideKey, decideWheel, decideMouseButton
+    -- * Fonts shared by the frontends
+  , ChosenFont(..), ChosenFonts(..), resolveFonts
     -- * Cell styling shared by the frontends
   , CellStyle(..), CellGlyphs(..), scalableGlyphs, styleCell, rowColor
   , backlightRGB, rgbChannels
@@ -50,6 +52,7 @@ import           Game.LambdaHack.Client.UI.Content.Screen
 import           Game.LambdaHack.Client.UI.Frame
 import           Game.LambdaHack.Client.UI.Frontend.CellStyle
 import           Game.LambdaHack.Client.UI.Frontend.Common
+import           Game.LambdaHack.Client.UI.Frontend.Fonts
 import           Game.LambdaHack.Client.UI.Frontend.InputDecision
 import           Game.LambdaHack.Client.UI.Frontend.MouseCursor
 import           Game.LambdaHack.Client.UI.Frontend.OverlayLayout

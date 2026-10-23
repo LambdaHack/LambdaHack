@@ -43,12 +43,13 @@ import           Text.Printf (printf)
 import           Game.LambdaHack.Client.UI.Content.Screen
 import           Game.LambdaHack.Client.UI.Frame
 import           Game.LambdaHack.Client.UI.Frontend.Common
+import           Game.LambdaHack.Client.UI.Frontend.Fonts
 import           Game.LambdaHack.Client.UI.Frontend.InputDecision
 import           Game.LambdaHack.Client.UI.Frontend.Screenshot
 import qualified Game.LambdaHack.Client.UI.Key as K
 import           Game.LambdaHack.Client.UI.PointUI
 import           Game.LambdaHack.Common.ClientOptions
-import           Game.LambdaHack.Common.Misc (FontDefinition (..), FontSet (..))
+import           Game.LambdaHack.Common.Misc (FontDefinition (..))
 import qualified Game.LambdaHack.Common.PointArray as PointArray
 
 -- | Submit a frame: @(address, width, height)@ of a @Word32@ cell buffer in
@@ -90,36 +91,32 @@ startup coscreen soptions@ClientOptions{sprintEachScreen} = do
   return rf
 
 -- | The startup payload: a JSON object of named fields, each present when
--- the options carry its value. @allFontsScale@ is the scale @Sdl.hs@
--- multiplies its font sizes by. @fonts@ names the chosen fontset's fonts
--- but the map font, under @propRegular@, @propBold@ and @mono@, each a file
--- name and a size in pixels, multiplied by that scale as @Sdl.hs@ multiplies
--- it; a bitmap font, which has neither a size to scale nor a form a browser
--- loads, is left out.
+-- the options carry its value. @allFontsScale@ is the scale 'resolveFonts'
+-- multiplies every font size by. @fonts@ names the chosen fontset's
+-- auxiliary fonts as 'resolveFonts' resolves them for @Sdl.hs@ too, under
+-- @propRegular@, @propBold@ and @mono@, each a file name and a size in
+-- pixels; a bitmap font, which no browser loads, is left out, and all of
+-- them where the fontset does not resolve, the page drawing every text in
+-- the map font then.
 startupPayload :: ClientOptions -> String
-startupPayload
-  ClientOptions{sallFontsScale, schosenFontset, sfontsets, sfonts} =
+startupPayload soptions@ClientOptions{sallFontsScale} =
   jsonObject $ [ ("allFontsScale", show scale)
                | Just scale <- [sallFontsScale] ]
                ++ [ ("fonts", jsonObject fonts) | not (null fonts) ]
  where
   fonts =
     [ ( field
-      , jsonObject [ ("file", jsonString $ T.unpack fname)
-                   , ("size", show size) ] )
-    | Just scale <- [sallFontsScale]
-    , Just fontsetID <- [schosenFontset]
-    , Just fontset <- [lookup fontsetID sfontsets]
-    , (field, fontName) <- [ ("propRegular", fontPropRegular fontset)
-                           , ("propBold", fontPropBold fontset)
-                           , ("mono", fontMono fontset) ]
-    , Just (fname, fsize) <- [lookup fontName sfonts >>= outlineFont]
-    , let size = round $ scale * intToDouble fsize :: Int ]
-  outlineFont = \case
-    FontProportional fname fsize _ -> Just (fname, fsize)
-    FontMonospace fname fsize _ -> Just (fname, fsize)
-    FontMapScalable fname fsize _ _ -> Just (fname, fsize)
-    FontMapBitmap{} -> Nothing
+      , jsonObject [ ("file", jsonString $ T.unpack cfFile)
+                   , ("size", show cfSize) ] )
+    | Right ChosenFonts{cfAuxiliary = Just (prop, bold, mono)} <-
+        [resolveFonts soptions]
+    , (field, ChosenFont{..}) <- [ ("propRegular", prop)
+                                 , ("propBold", bold)
+                                 , ("mono", mono) ]
+    , not $ isBitmap cfDefinition ]
+  isBitmap = \case
+    FontMapBitmap{} -> True
+    _ -> False
 
 -- | A JSON object of the given fields, whose values are JSON already.
 jsonObject :: [(String, String)] -> String
