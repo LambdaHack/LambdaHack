@@ -311,12 +311,15 @@ build-wasm:
 # complaints about the missing binary bury the real error. The trap both
 # removes the temporary directory and lets the last command's status stand.
 # The npm ci installs lz-string, which the driver's LZString stub loads.
+# Each wasm list-bin repeats its build's --enable-optimization: the path
+# it names follows that setting, and under the development config's
+# `optimization: False` a bare list-bin names a noopt/ build instead.
 test-wasm:
 	. ~/.ghc-wasm/env; \
 	T=$$(mktemp -d); \
 	trap 'rm -rf "$$T"' EXIT; \
 	wasm32-wasi-cabal build test --enable-optimization && \
-	W=$$(wasm32-wasi-cabal list-bin test) && \
+	W=$$(wasm32-wasi-cabal list-bin test --enable-optimization) && \
 	~/.ghc-wasm/wasm32-wasi-ghc/lib/post-link.mjs --input "$$W" --output "$$T/ghc_wasm_jsffi.mjs" && \
 	(cd ts-src && npm ci) && \
 	node ts-src/run-wasm-test.mjs "$$W" "$$T/ghc_wasm_jsffi.mjs"
@@ -327,7 +330,7 @@ build-ts:
 	cd ts-src && \
 	npm ci && \
 	BUILD_OUTDIR=../../lambdahack.github.io npm run build && \
-	W=$$(cd $(CURDIR) && wasm32-wasi-cabal list-bin exe:LambdaHack) && \
+	W=$$(cd $(CURDIR) && wasm32-wasi-cabal list-bin exe:LambdaHack --enable-optimization) && \
 	~/.ghc-wasm/wasm32-wasi-ghc/lib/post-link.mjs --input "$$W" --output ../../lambdahack.github.io/ghc_wasm_jsffi.mjs && \
 	cp "$$W" ../../lambdahack.github.io/LambdaHack.wasm
 
@@ -347,7 +350,7 @@ page-gate: build-wasm
 	cp GameDefinition/index.html GameDefinition/fonts/16x16xw.woff GameDefinition/fonts/*.ttf.woff "$$T" && \
 	(cd ts-src && npm ci && BUILD_OUTDIR="$$T" npm run build) && \
 	cp ts-src/node_modules/lz-string/libs/lz-string.min.js "$$T" && \
-	W=$$(wasm32-wasi-cabal list-bin exe:LambdaHack) && \
+	W=$$(wasm32-wasi-cabal list-bin exe:LambdaHack --enable-optimization) && \
 	~/.ghc-wasm/wasm32-wasi-ghc/lib/post-link.mjs --input "$$W" --output "$$T/ghc_wasm_jsffi.mjs" && \
 	cp "$$W" "$$T/LambdaHack.wasm" && \
 	node ts-src/page-gate.mjs "$$T"

@@ -1196,7 +1196,7 @@ and every stub are 0.3's per its ruling and this item's (c), and lz-string has
 been in the package and lock files since the page gate.
 
 **Done** --- `ts`, `wasm`, `docs`, plus `. ~/.ghc-wasm/env` && `T=$(mktemp -d)`
-&& `W=$(wasm32-wasi-cabal list-bin exe:LambdaHack)` &&
+&& `W=$(wasm32-wasi-cabal list-bin exe:LambdaHack --enable-optimization)` &&
 `~/.ghc-wasm/wasm32-wasi-ghc/lib/post-link.mjs --input "$W" --output "$T/ghc_wasm_jsffi.mjs"`
 &&
 `node ts-src/run-wasm-game.mjs "$W" "$T/ghc_wasm_jsffi.mjs" --newGame 1 --gameMode crawl --noAnim --maxFps 100000 --frontendNull --benchmark --stopAfterFrames 200 --automateAll --keepAutomated`
