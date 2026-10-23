@@ -20,21 +20,24 @@
         src: url("./16x16xw.woff");
       }
 
+      :root {
+        --fg: #c4beb1; /* AltWhite -- matches master's body default fg */
+      }
       html, body {
         margin: 0;
         background: #000000;
-        color: #c4beb1; /* AltWhite -- matches master's body default fg */
+        color: var(--fg);
         font-family: lambdaHackFont, monospace;
       }
-      a:link           { color: #ffffff; }  /* unvisited links       */
-      a:visited        { color: #c4beb1; }  /* visited links         */
-      a:hover, a:focus { color: #ffffff; }  /* user hovers, or focus */
-      a:active         { color: #ffffff; }  /* active links          */
+      a:link           { color: #ffffff; }    /* unvisited links       */
+      a:visited        { color: var(--fg); }  /* visited links         */
+      a:hover, a:focus { color: #ffffff; }    /* user hovers, or focus */
+      a:active         { color: #ffffff; }    /* active links          */
       #banner { table-layout: fixed; border-collapse: collapse; }
       #fsToggle {
         background: #000000;
-        color: #c4beb1;
-        border: 1px solid #c4beb1;
+        color: var(--fg);
+        border: 1px solid var(--fg);
         font-family: lambdaHackFont, monospace;
         font-size: 16px;
         padding: 4px 8px;
@@ -52,7 +55,7 @@
          #screen is tabindex=0 and was previously outline:none, meaning a
          keyboard-only user tabbing here got no visible indicator at all. */
       #screen:focus-visible {
-        outline: 2px solid #c4beb1;
+        outline: 2px solid var(--fg);
       }
       #status {
         text-align: left;

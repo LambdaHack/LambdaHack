@@ -22,7 +22,7 @@ import Game.LambdaHack.Common.File (tryCreateDir)
 import Game.LambdaHack.Common.Misc
 #endif
 
-import Game.LambdaHack.Server (ServerOptions, serverOptionsPI)
+import Game.LambdaHack.Server (serverOptionsPI)
 
 import TieKnot
 
@@ -54,14 +54,15 @@ main = do
     GHC.IO.Handle.hDuplicateTo fstdout SIO.stdout
     GHC.IO.Handle.hDuplicateTo fstderr SIO.stderr
 #endif
+  runServer
+
+-- | Parse commandline options, tie the engine, content and clients knot,
+-- run the game and handle exit.
+runServer :: IO ()
+runServer = do
   -- Bang to fail here, not inside server code, so that savefiles are
   -- not removed, because they are not the source of the failure.
   !serverOptions <- OA.execParser serverOptionsPI
-  runServer serverOptions
-
--- | Tie the engine, content and clients knot, run the game and handle exit.
-runServer :: ServerOptions -> IO ()
-runServer serverOptions = do
   -- Work around display of one character per line in, e.g., JS console.
   SIO.hSetBuffering SIO.stderr SIO.LineBuffering
   resOrEx :: Either Ex.SomeException () <- Ex.try $ tieKnot serverOptions
@@ -80,11 +81,7 @@ runServer serverOptions = do
 -- defaults there, while a Node driver can pass real flags. The build is
 -- linked with @-no-hs-main@, so this, not @main@, starts the game.
 lhStart :: IO ()
-lhStart = do
-  -- Bang to fail here, not inside server code, so that savefiles are
-  -- not removed, because they are not the source of the failure.
-  !serverOptions <- OA.execParser serverOptionsPI
-  runServer serverOptions
+lhStart = runServer
 
 foreign export javascript "lhStart" lhStart :: IO ()
 #endif

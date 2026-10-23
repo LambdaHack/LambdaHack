@@ -11,6 +11,14 @@ import {
   toggleLabel,
 } from "./fullscreen-core.js";
 
+/** Leave fullscreen, if the page is in it. */
+export function leaveFullscreen(): void {
+  if (document.fullscreenElement === null) return;
+  document
+    .exitFullscreen()
+    .catch((e: unknown) => console.warn("[lh] fullscreen exit failed", e));
+}
+
 export function mountFullscreen(
   button: HTMLElement | null,
   screen: HTMLElement,
@@ -93,11 +101,7 @@ export function mountFullscreen(
       if (e.key !== "F11" || !active()) return;
       e.preventDefault();
       e.stopPropagation();
-      document
-        .exitFullscreen()
-        .catch((err: unknown) =>
-          console.warn("[lh] fullscreen exit failed", err),
-        );
+      leaveFullscreen();
     },
     true,
   );

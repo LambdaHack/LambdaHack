@@ -2,7 +2,7 @@
 // in-memory WASI shim and the generated JSFFI glue, hook up frame submission,
 // screenshots, the startup payload + keyboard, then start the game and say
 // on the page how it ended. Mirrors ../run-wasm-game.mjs (the Node driver
-// for the reactor), but renders to the DOM instead of recording frames. Not
+// for the reactor), but paints a canvas instead of recording frames. Not
 // unit-tested.
 
 import {
@@ -12,8 +12,13 @@ import {
   ConsoleStdout,
   PreopenDirectory,
 } from "@bjorn3/browser_wasi_shim";
-import { mountTerminal, type OverlayFonts } from "./terminal.js";
-import { mountFullscreen } from "./fullscreen.js";
+import {
+  mountTerminal,
+  type MouseHandler,
+  type OverlayFonts,
+  type WheelHandler,
+} from "./terminal.js";
+import { leaveFullscreen, mountFullscreen } from "./fullscreen.js";
 
 interface LhExports {
   memory: WebAssembly.Memory;
@@ -21,26 +26,9 @@ interface LhExports {
   // A sync export, so that it decides the key's default action before
   // the keydown dispatch returns.
   lhKey: (e: KeyboardEvent) => void;
-  // x is the PointUI column, in half-cells, as terminal.ts's handlers
-  // pass it.
-  lhWheel: (
-    x: number,
-    row: number,
-    deltaY: number,
-    ctrl: boolean,
-    shift: boolean,
-    alt: boolean,
-    meta: boolean,
-  ) => Promise<void>;
-  lhMouseUp: (
-    x: number,
-    row: number,
-    button: number,
-    ctrl: boolean,
-    shift: boolean,
-    alt: boolean,
-    meta: boolean,
-  ) => Promise<void>;
+  // Taking what terminal.ts's handlers pass.
+  lhWheel: (...a: Parameters<WheelHandler>) => Promise<void>;
+  lhMouseUp: (...a: Parameters<MouseHandler>) => Promise<void>;
 }
 
 // The startup payload Wasm.hs's startup hands lhConfigure: named fields, each
@@ -81,12 +69,18 @@ async function main(): Promise<void> {
   ];
   const wasi = new WASI(["LambdaHack"], [], fds);
 
-  // Plain compile (not compileStreaming) so it works on static servers that
-  // don't serve .wasm with the application/wasm MIME type.
-  const wasmBytes = await (await fetch("./LambdaHack.wasm")).arrayBuffer();
-  const mod = await WebAssembly.compile(wasmBytes);
-  // @ts-expect-error generated at build time by post-link.mjs, served alongside.
-  const jsffiFactory = (await import("./ghc_wasm_jsffi.mjs")).default;
+  // The module is compiled as it downloads, and the glue fetched meanwhile;
+  // a static server that does not serve .wasm as application/wasm fails
+  // the streaming compile, and then the bytes are compiled whole.
+  const url = "./LambdaHack.wasm";
+  const [mod, jsffi] = await Promise.all([
+    WebAssembly.compileStreaming(fetch(url)).catch(async () =>
+      WebAssembly.compile(await (await fetch(url)).arrayBuffer()),
+    ),
+    // @ts-expect-error generated at build time by post-link.mjs, served alongside.
+    import("./ghc_wasm_jsffi.mjs"),
+  ]);
+  const jsffiFactory = jsffi.default;
   const importExports: Record<string, unknown> = {};
   const inst = await WebAssembly.instantiate(mod, {
     wasi_snapshot_preview1: wasi.wasiImport,
@@ -99,12 +93,8 @@ async function main(): Promise<void> {
     screen,
     () => lh.memory,
     (e) => lh.lhKey(e),
-    (x, row, deltaY, c, s, a, m) => {
-      void lh.lhWheel(x, row, deltaY, c, s, a, m);
-    },
-    (x, row, button, c, s, a, m) => {
-      void lh.lhMouseUp(x, row, button, c, s, a, m);
-    },
+    (...a) => void lh.lhWheel(...a),
+    (...a) => void lh.lhMouseUp(...a),
   );
   globalThis.lhSubmitFrame = (addr, w, h) => term.submitFrame(addr, w, h);
   globalThis.lhPrintScreen = (name) => term.printScreen(name);
@@ -159,11 +149,7 @@ const RED = "#d50505"; // From the game's own palette
 // Says how the game ended in place of the banner's text, leaving fullscreen
 // first, since fullscreen hides the banner.
 function showEnd(text: string, color?: string): void {
-  if (document.fullscreenElement) {
-    document
-      .exitFullscreen()
-      .catch((e: unknown) => console.warn("[lh] fullscreen exit failed", e));
-  }
+  leaveFullscreen();
   const bannerText = document.getElementById("bannerText");
   if (!bannerText) return;
   bannerText.textContent = text;

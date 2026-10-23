@@ -1,10 +1,10 @@
 // Pure logic for the dev static server: map a request URL to a site path, and
-// a file path to its HTTP Content-Type. Correctness matters — a browser
+// a file path to its HTTP Content-Type. Correctness matters --- a browser
 // refuses an ES module script served with the wrong type, so .js/.mjs MUST
 // be text/javascript, and the wasm is served as application/wasm. The server
 // itself (serve.ts) is thin wiring.
 
-import { normalize } from "node:path";
+import { extname, normalize } from "node:path";
 
 /**
  * The site path a request URL names: the query dropped, escapes decoded,
@@ -36,8 +36,5 @@ const TYPES: Record<string, string> = {
 
 /** HTTP Content-Type for a file path, by extension (case-insensitive). */
 export function contentType(path: string): string {
-  const dot = path.lastIndexOf(".");
-  const slash = Math.max(path.lastIndexOf("/"), path.lastIndexOf("\\"));
-  const ext = dot > slash ? path.slice(dot).toLowerCase() : "";
-  return TYPES[ext] ?? "application/octet-stream";
+  return TYPES[extname(path).toLowerCase()] ?? "application/octet-stream";
 }

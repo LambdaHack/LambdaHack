@@ -46,7 +46,8 @@ foreign import javascript unsafe "globalThis.LZString.decompressFromUTF16($1)"
 -- | Split into a presence check plus an unconditional get (rather than one
 -- call returning a nullable/Maybe result, as ghcjs-dom's Storage.getItem
 -- does) because GHC's wasm JSFFI has no built-in Maybe-JSString marshaling.
--- Callers must check existence before calling js_getItem.
+-- Callers must check existence before calling js_getItem, as
+-- 'getExistingItem' does.
 foreign import javascript unsafe "globalThis.localStorage.getItem($1) !== null"
   js_hasItem :: JSString -> IO Bool
 
@@ -74,9 +75,7 @@ encodeEOF path v b = do
 -- JSFile.hs's strictDecodeEOF.
 strictDecodeEOF :: Binary b => FilePath -> IO (Version, b)
 strictDecodeEOF path = do
-  exists <- js_hasItem (toJSString path)
-  unless exists $ fail $ "Fatal error: no file " ++ path
-  item <- js_getItem (toJSString path)
+  item <- getExistingItem path
   t <- decompressFromUTF16 item
   let c1 = LBS.pack $ fromJSString t
       (v1, (c2, s)) = decode c1
@@ -99,16 +98,19 @@ tryWriteFile path content = do
 
 readFile :: FilePath -> IO String
 readFile path = do
-  exists <- js_hasItem (toJSString path)
-  unless exists $ fail $ "Fatal error: no file " ++ path
-  item <- js_getItem (toJSString path)
+  item <- getExistingItem path
   return $! fromJSString item
 
 renameFile :: FilePath -> FilePath -> IO ()
 renameFile path path2 = do
-  exists <- js_hasItem (toJSString path)
-  unless exists $ fail $ "Fatal error: no file " ++ path
-  item <- js_getItem (toJSString path)
+  item <- getExistingItem path
   js_setItem (toJSString path2) item  -- overwrites
   js_removeItem (toJSString path)
+
+-- | The stored item, failing if there is none.
+getExistingItem :: FilePath -> IO JSString
+getExistingItem path = do
+  exists <- js_hasItem (toJSString path)
+  unless exists $ fail $ "Fatal error: no file " ++ path
+  js_getItem (toJSString path)
 #endif

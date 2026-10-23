@@ -383,34 +383,23 @@ library
 
   if os(wasi) {
     exposed-modules:    Game.LambdaHack.Client.UI.Frontend.Wasm
+    other-modules:      Game.LambdaHack.Common.WasmFile
     build-depends:      ghc-experimental
   }
+  elif impl(ghcjs) {
+    exposed-modules:    Game.LambdaHack.Client.UI.Frontend.Dom
+    other-modules:      Game.LambdaHack.Common.JSFile
+    build-depends:      ghcjs-dom >= 0.9.1.1,
+                        ghcjs-base
+  }
   else {
-    if impl(ghcjs) {
-      exposed-modules:  Game.LambdaHack.Client.UI.Frontend.Dom
-      build-depends:    ghcjs-dom >= 0.9.1.1
-    }
-    else {
-      exposed-modules:  Game.LambdaHack.Client.UI.Frontend.Sdl
+    exposed-modules:    Game.LambdaHack.Client.UI.Frontend.Sdl
                         Game.LambdaHack.Client.UI.Frontend.ANSI
-      build-depends:    sdl2 >= 2,
+    other-modules:      Game.LambdaHack.Common.HSFile
+    build-depends:      sdl2 >= 2,
                         sdl2-ttf >= 2,
-                        ansi-terminal >= 0.10
-    }
-  }
-
-  if os(wasi) {
-    other-modules:      Game.LambdaHack.Common.WasmFile
-  }
-  else {
-    if impl(ghcjs) {
-      other-modules:    Game.LambdaHack.Common.JSFile
-      build-depends:    ghcjs-base
-    }
-    else {
-      other-modules:    Game.LambdaHack.Common.HSFile
-      build-depends:    zlib >= 0.5.3.1
-    }
+                        ansi-terminal >= 0.10,
+                        zlib >= 0.5.3.1
   }
 library this-game-content
   import: options

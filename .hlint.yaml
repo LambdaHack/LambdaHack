@@ -102,11 +102,11 @@
 - ignore: {name: Avoid lambda}
 - ignore: {name: "Avoid lambda using `infix`"}
 
-# `if cond then return () else body` is how this codebase spells an early
-# exit, and it stays readable when the body is a screenful of nested
-# cases. The mirror hint, `Use when`, is deliberately left enabled: it
-# does not fire here, and silencing a hint nothing has tripped would hide
-# whatever trips it first.
+# `if cond then return () else body` keeps the condition beside the exit
+# it controls when the body is a screenful of nested cases or a chain of
+# else-ifs, which `unless` would move it away from. The mirror hint,
+# `Use when`, is deliberately left enabled: it does not fire here, and
+# silencing a hint nothing has tripped would hide whatever trips it first.
 - ignore: {name: Use unless}
 
 # Define some custom infix operators

@@ -2292,9 +2292,9 @@ mechanism R4 needs anyway.
 
 ### 3.1 Argv into the reactor: `lhStart` reads WASI args
 
-`lhStart` (`GameDefinition/Main.hs:lhStart = do`) parses an empty list where
-`main` parses real argv. Change it to parse `getArgs`: GHC's wasm RTS gets argv
-from WASI `args_get`, which every host shim controls --- the browser loader
+`lhStart` (`GameDefinition/Main.hs:lhStart = runServer`) parses an empty list
+where `main` parses real argv. Change it to parse `getArgs`: GHC's wasm RTS gets
+argv from WASI `args_get`, which every host shim controls --- the browser loader
 passes `["LambdaHack"]`
 (`loader.ts:const wasi = new WASI(["LambdaHack"], [], fds);`), so `getArgs`
 returns `[]` there and browser behavior is provably unchanged, while a Node

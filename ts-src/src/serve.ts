@@ -1,7 +1,7 @@
-// Minimal static file server for the built web bundle, run by node inside the
-// image (the base image ships no web server, and simple servers often mislabel
-// .mjs/.wasm). Bundled by esbuild to dist/serve.mjs. Wiring; the tested
-// parts are sitePath and contentType, in serve-core.ts.
+// Minimal static file server for the built web bundle, run by
+// `make serve-wasm` and by page-gate.mjs, since simple servers often mislabel
+// .mjs/.wasm. Bundled by esbuild to dist/serve.mjs. Wiring; the tested parts
+// are sitePath and contentType, in serve-core.ts.
 //
 // Usage: node serve.mjs <root-dir> [port]
 
