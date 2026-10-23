@@ -52,7 +52,8 @@ STEPS = [
     # cross-reference graph no pass over every document can see.
     ('plan crossrefs',         ['python3', '{root}/check-plan-crossrefs.py'], '{root}/..'),
     # Every sync JSFFI export built on syncExport, whose scheduler run GHC's
-    # sync exports lack; Wasm.hs says why.
+    # sync exports lack, Wasm.hs saying why; and the cabal files' --export=
+    # flags naming exactly the foreign exports.
     ('sync exports',           ['python3', '{root}/check-sync-exports.py'], '{root}/..'),
     # No frontend decodes a screen index by the Enum instance of Point,
     # which reads the dungeon's width: the explicit-widths practice of

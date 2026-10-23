@@ -1,8 +1,9 @@
 #!/usr/bin/env python3
-"""Check that every sync JSFFI export in the tree is built on `syncExport`.
+"""Check the JSFFI exports: the sync ones built on `syncExport`, all linked.
 
 Usage: python3 tools/check-sync-exports.py [--self-test]
-Reads every tracked `*.hs` file of the working directory's repository.
+Reads every tracked `*.hs` and `*.cabal` file of the working directory's
+repository.
 
 A sync JSFFI export, `foreign export javascript "NAME sync"`, owes two
 things that GHC does not do for it: it passes no exception to its JS caller,
@@ -25,12 +26,18 @@ so a commented-out export is not one; an equation whose `=` is not on
 its first line, a guarded one for instance, is a finding, never a pass,
 and so is a signature broken before its `::`.
 
+The linker keeps a foreign export in the wasm reactor only where an
+`--export=` flag names it, so each JS name that `foreign export javascript`
+exports, sync or not, must be named by such a flag in a tracked `*.cabal`
+file, and each flag must name an export; the cabal file's comment lines are
+skipped.
+
 A JS name exported twice is a finding at each export after the first, every
 one of them checked. Every run prints each sync export it found, so a tree
-with none says so rather than passing in silence. Exit 0 when every one is
-built on `syncExport`, 1 with findings, 2 when the run did not happen:
-outside a git repository, with no tracked `*.hs` file, or with one that
-cannot be read or is not UTF-8.
+with none says so rather than passing in silence. Exit 0 when every one
+is built on `syncExport` and the names agree, 1 with findings, 2 when the
+run did not happen: outside a git repository, with no tracked `*.hs` or no
+tracked `*.cabal` file, or with one that cannot be read or is not UTF-8.
 
 Non-vacuity: `--self-test` runs the engine over scratch sources, one
 per finding and controls for the shapes it must leave alone, and reads
@@ -50,6 +57,9 @@ STATIC_RE = re.compile(
     r'foreign\s+export\s+javascript\s+"(\w+)\s+sync"\s+(\w+)\s*::')
 WRAPPER_RE = re.compile(r'foreign\s+import\s+javascript\s+"wrapper\s+sync"')
 APPLIED_RE = re.compile(r'\bsyncExport\s+"(\w+)"')
+EXPORT_RE = re.compile(r'foreign\s+export\s+javascript\s+"(\w+)')
+FLAG_RE = re.compile(r"--export=(\w+)")
+CABAL_COMMENT_RE = re.compile(r"(?m)^[ \t]*--.*")
 # The comment scan of ~/slop/tools/hssource.py, which this copies rather
 # than imports, pragmas being blanked here as block comments. A string or
 # character literal is stepped over whole, so a `{-` or `--` inside opens
@@ -135,10 +145,34 @@ def built_on(code, rhs, js):
     return re.fullmatch(r"\s*(?:where\b.*)?", rest, re.S) is not None
 
 
-def scan(files):
-    """`files` maps a path to its text. Returns the lines to print, ok
-    lines first, the number of findings among them and the number of sync
-    exports found."""
+def linked(codes, cabals):
+    """The ok line and the findings of comparing the JS names exported in
+    `codes`, comment-blanked Haskell by path, with the `--export=` flags of
+    `cabals`, cabal files by path."""
+    exports = sorted((m.group(1), path, line_of(code, m.start()))
+                     for path, code in codes.items()
+                     for m in EXPORT_RE.finditer(code))
+    flags = sorted((m.group(1), path, line_of(code, m.start()))
+                   for path, text in cabals.items()
+                   for code in [CABAL_COMMENT_RE.sub("", text)]
+                   for m in FLAG_RE.finditer(code))
+    exported = {js for js, _, _ in exports}
+    flagged = {js for js, _, _ in flags}
+    fails = [f"FAIL {js} ({path}:{line}): exported, but no `--export={js}`"
+             f" in a tracked *.cabal file"
+             for js, path, line in exports if js not in flagged]
+    fails += [f"FAIL --export={js} ({path}:{line}) names no foreign export"
+              for js, path, line in flags if js not in exported]
+    if fails or not exports:
+        return [], fails
+    return [f"ok   every foreign export is named by an --export= flag, and"
+            f" every flag names one: {', '.join(sorted(exported))}"], fails
+
+
+def scan(files, cabals):
+    """`files` maps a path to its text, and `cabals` a cabal file's path to
+    its text. Returns the lines to print, ok lines first, the number of
+    findings among them and the number of sync exports found."""
     oks, fails = [], []
     codes = {path: strip_comments(text) for path, text in files.items()}
     static = sorted((m.group(1), path, line_of(code, m.start()), m.group(2))
@@ -178,7 +212,9 @@ def scan(files):
             fails.append(f"FAIL {path}:{line_of(code, m.start())}: a"
                          f' "wrapper sync" import, whose closures this'
                          f" checker cannot follow to syncExport")
-    return oks + fails, len(fails), len(static)
+    link_oks, link_fails = linked(codes, cabals)
+    fails += link_fails
+    return oks + link_oks + fails, len(fails), len(static)
 
 
 def read(names):
@@ -197,14 +233,21 @@ def read(names):
 
 
 def run(files):
-    if not files:
+    """`files` maps the path of each tracked *.hs and *.cabal file to its
+    text."""
+    hs = {p: t for p, t in files.items() if p.endswith(".hs")}
+    cabals = {p: t for p, t in files.items() if not p.endswith(".hs")}
+    if not hs:
         print("BLOCKED: no tracked *.hs file; nothing checked")
         return 2
-    lines, n, found = scan(files)
+    if not cabals:
+        print("BLOCKED: no tracked *.cabal file; nothing checked")
+        return 2
+    lines, n, found = scan(hs, cabals)
     for l in lines:
         print(l)
     if not found:
-        print(f"no sync export in {len(files)} tracked *.hs files;"
+        print(f"no sync export in {len(hs)} tracked *.hs files;"
               f" nothing to require")
     print(f"{found} sync export(s), {n} finding(s)")
     return 1 if n else 0
@@ -339,6 +382,29 @@ lhDupB :: IO ()
 lhDupB = syncExport "lhDup" $ pure ()
 
 foreign export javascript "lhDup sync" lhDupB :: IO ()
+
+lhUnlinked :: IO ()
+lhUnlinked = pure ()
+
+foreign export javascript "lhUnlinked" lhUnlinked :: IO ()
+''',
+    "Good.cabal": '''\
+executable good
+  -- -optl-Wl,--export=lhCommented
+  ghc-options: -no-hs-main
+               -optl-Wl,--export=lhKey -optl-Wl,--export=otherName
+               -optl-Wl,--export=lhWheel -optl-Wl,--export=lhParen
+               -optl-Wl,--export=lhNamed -optl-Wl,--export=lhDash
+               -optl-Wl,--export=lhArrow
+''',
+    "Bad.cabal": '''\
+executable bad
+  ghc-options: -optl-Wl,--export=lhPaste -optl-Wl,--export=lhCopy
+               -optl-Wl,--export=lhGone -optl-Wl,--export=lhTwo
+               -optl-Wl,--export=lhMouse -optl-Wl,--export=lhGuard
+               -optl-Wl,--export=lhSeq -optl-Wl,--export=lhThen
+               -optl-Wl,--export=lhHidden -optl-Wl,--export=lhDup
+               -optl-Wl,--export=lhNoSuch
 ''',
 }
 
@@ -360,16 +426,20 @@ SELF_TEST_FAIL = [
     "FAIL lhHidden (Bad.hs:56): the equation of `lhHidden` at Bad.hs:54 is",
     "FAIL lhDup (Bad.hs:63): the equation of `lhDupA` at Bad.hs:61 is not",
     "FAIL lhDup (Bad.hs:68): exported again, after Bad.hs:63",
+    "FAIL lhUnlinked (Bad.hs:73): exported, but no `--export=lhUnlinked`",
+    "FAIL --export=lhNoSuch (Bad.cabal:7) names no foreign export",
 ]
 # Shapes that must stay quiet: an async export without syncExport, the
 # commented-out exports and wrapper, the one in a nested block comment,
 # syncExport's own definition, a JS name that is not the Haskell one, the
-# wrapped equations of lhTwo and lhGuard, and every type signature.
+# wrapped equations of lhTwo and lhGuard, every type signature, and the
+# commented-out --export= flag.
 SELF_TEST_QUIET = ["lhWheel", "lhComment", "lhBlock", "lhNested", "Good.hs:25",
                    "Good.hs:27", "Good.hs:28", "otherName (Good.hs:14): ",
                    "at Bad.hs:16", "at Bad.hs:36", "at Good.hs:3 ",
                    "at Good.hs:10 ", "at Bad.hs:3 ", "at Bad.hs:8 ",
-                   "at Bad.hs:15 ", "at Bad.hs:35 "]
+                   "at Bad.hs:15 ", "at Bad.hs:35 ", "lhCommented"]
+SELF_TEST_GOOD = {p: SELF_TEST_FILES[p] for p in ("Good.hs", "Good.cabal")}
 
 
 def capture(files):
@@ -401,16 +471,20 @@ def self_test():
         for l in fails:
             if q in l:
                 bad.append(f"control failed: {l}")
-    rc, out = capture({"Good.hs": SELF_TEST_FILES["Good.hs"]})
-    if rc != 0:
-        bad.append(f"good source alone: exit {rc}, wanted 0:\n" + out)
-    rc, out = capture({"None.hs": "module None where\n"})
+    rc, out = capture(SELF_TEST_GOOD)
+    if rc != 0 or "ok   every foreign export is named" not in out:
+        bad.append(f"good source alone: exit {rc}, wanted 0 and the ok line"
+                   f" of the --export= comparison:\n" + out)
+    rc, out = capture({"None.hs": "module None where\n", "None.cabal": ""})
     if rc != 0 or "no sync export in 1 tracked" not in out:
         bad.append(f"source with no sync export: exit {rc}, wanted 0 and"
                    f" the nothing-to-require line:\n" + out)
-    rc, out = capture({})
-    if rc != 2:
-        bad.append(f"no source: exit {rc}, wanted 2")
+    for files, what in (({"None.cabal": ""}, "no source"),
+                        ({"Good.hs": SELF_TEST_FILES["Good.hs"]},
+                         "no cabal file")):
+        rc, out = capture(files)
+        if rc != 2:
+            bad.append(f"{what}: exit {rc}, wanted 2")
     with tempfile.TemporaryDirectory() as d:
         latin = os.path.join(d, "Latin.hs")
         with open(latin, "wb") as f:
@@ -446,7 +520,7 @@ def main():
                               capture_output=True, text=True,
                               check=True).stdout.strip()
         os.chdir(root)
-        names = subprocess.run(["git", "ls-files", "*.hs"],
+        names = subprocess.run(["git", "ls-files", "*.hs", "*.cabal"],
                                capture_output=True, text=True,
                                check=True).stdout.split()
     except (OSError, subprocess.CalledProcessError) as e:
