@@ -728,6 +728,7 @@ class Plan:
         self.findings = docs[0].findings
         self.items = {}
         self.order = []
+        self.row_doc = {}     # ledger id -> its document, item or not
         self.practices = {}
         seen = set()
         for d in docs:
@@ -737,6 +738,7 @@ class Plan:
                               " the joint run has no way to tell them apart")
             seen |= ids
             self.order += d.order
+            self.row_doc.update(dict.fromkeys(d.order, d))
             self.items.update(d.items)
             self.practices.update(d.g["practices"])
         ids = [i for i in self.order if i not in self.practices]
@@ -766,7 +768,11 @@ class Plan:
         return self.items.get(iid, {}).get("fields", {}).get(label, "")
 
     def doc_of(self, iid):
-        return self.items[iid]["doc"]
+        """The document of IID's item, else of its ledger row, a row with
+        no item being A0's to report; None for a name in a depends-on cell
+        that has neither."""
+        it = self.items.get(iid)
+        return it["doc"] if it else self.row_doc.get(iid)
 
     def historical(self, iid):
         """Whether IID's row has landed or retired, its text being history."""
@@ -827,6 +833,8 @@ class Plan:
         """The items a ledger cell names, a range `A--B` standing for every
         row of that document from A to B."""
         doc = self.doc_of(iid)
+        if doc is None:
+            return set()
         cell = doc.ledger.get(iid, "")
         out = set()
         for a, b in self.range_re.findall(cell):
@@ -1156,6 +1164,22 @@ def self_test():
             if rc != 2 or "BLOCKED" not in buf.getvalue():
                 bad.append(f"document with an item and no ledger: exit {rc},"
                            f" wanted BLOCKED at 2")
+            # A depends-on cell naming a row with no item, and a practice
+            # with neither: A0 reports the first, and A3's closure follows
+            # neither (check-plan-crossrefs-06).
+            open(doc, "w").write(
+                "# Scratch\n\n| sec. | delivers | size | depends on | state |\n"
+                "|---|---|---|---|---|\n| 0.1 | a | tiny | --- | open |\n"
+                "| 0.2 | b | tiny | 0.1, functional core | open |\n\n"
+                "### 0.2 Second\n\n**Owns** --- nothing.\n\n"
+                "**Done** --- `ts`.\n\n**Hands back** --- nothing.\n\n"
+                "**Decide first** --- nothing.\n")
+            open(allow, "w").write("")
+            buf = io.StringIO()
+            with contextlib.redirect_stdout(buf):
+                rc = run([doc], allow)
+            check("ledger row with no item", rc, buf.getvalue(), 1,
+                  ["A0 0.1 --- ledger row with no item"], [])
         finally:
             os.chdir(cwd)
     if bad:

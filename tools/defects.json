@@ -234,6 +234,31 @@
    "harm": "latent",
    "discovery": "review",
    "notes": "Found by the code review of 2026-10-23 over the year's diff, and watched on the bundled server: one malformed request, then no response to `/`. The decoding moved into serve-core.ts as sitePath, whose vitest cases include the malformed escape; with its catch removed that case fails on the URIError. A tier-1 record: the corpus root is tools/, and the case is vitest's."
+  },
+  {
+   "id": "check-plan-crossrefs-06",
+   "program": "check-plan-crossrefs.py",
+   "name": "a depends-on cell naming a ledger row with no item, or a practice with neither, crashed A3's closure with a KeyError, so the A0 finding for that row was never printed",
+   "family": "unverified-state",
+   "fix_rev": "self",
+   "trigger": "ledger rows 0.1 and 0.2, 0.2's depends-on cell naming 0.1, and no `### 0.1` item",
+   "ok": "exit 1 with `A0 0.1 --- ledger row with no item`",
+   "bug": "a traceback ending `KeyError: '0.1'`, at exit 1, the findings status, for a run that never finished, and no A0 line",
+   "proved": "ran",
+   "harm": "latent",
+   "discovery": "review",
+   "notes": "Found by the code review of 2026-10-23 over the year's diff. doc_of indexed the items alone, while deps and closure follow every id a depends-on cell names; a cell naming a practice that has no row and no item crashed the same way, at `KeyError: 'functional core'`. The self-test's `ledger row with no item` case covers both, and its mutant in tools/mutants.py restores the item-only lookup.",
+   "plant": "a plan whose ledger has rows 0.1 and 0.2, 0.2 depending on 0.1, and whose only item is 0.2, with an empty allowlist",
+   "plant_cmd": "printf '%s\\n' '# Scratch' '' '| sec. | delivers | size | depends on | state |' '|---|---|---|---|---|' '| 0.1 | a | tiny | --- | open |' '| 0.2 | b | tiny | 0.1 | open |' '' '### 0.2 Second' '' '**Owns** --- nothing.' '' '**Done** --- `ts`.' '' '**Hands back** --- nothing.' '' '**Decide first** --- nothing.' > plan.md && : > allow.txt",
+   "invoke": [
+    "plan.md",
+    "--allowlist",
+    "allow.txt"
+   ],
+   "expect_exit": 1,
+   "expect_text": "A0 0.1 --- ledger row with no item",
+   "expect_absent": "Traceback",
+   "bug_text": "KeyError: '0.1'"
   }
  ]
 }

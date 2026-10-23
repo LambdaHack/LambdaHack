@@ -114,6 +114,9 @@ MUTANTS = [
      "            for k, name in [(self.doc_of(x).doc_key, self.doc_of(x).path)]:\n", ST),
     ('check-plan-crossrefs two documents sharing an id read as one', 'check-plan-crossrefs.py',
      "            for iid in sorted(ids & seen):\n", "            for iid in []:\n", ST),
+    ('check-plan-crossrefs a ledger row with no item crashes the closure', 'check-plan-crossrefs.py',
+     '        return it["doc"] if it else self.row_doc.get(iid)\n',
+     '        return it["doc"]\n', ST),
     # check-sync-exports: one break per finding and per control it rests on,
     # each watched failing the day the checker was written (2026-10-21)
     ('check-sync-exports comments read as code', 'check-sync-exports.py',
