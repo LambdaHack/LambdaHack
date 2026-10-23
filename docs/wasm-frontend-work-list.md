@@ -214,14 +214,17 @@ builds the page as `build-ts` would deploy it into a scratch directory,
 and `ts-src/page-gate.mjs` serves it, loads it in headless Firefox
 and in headless Chromium over WebDriver BiDi, Chromium's through chromedriver
 from xtradeb's chromium-driver package, and asserts in each that frames arrive
-after `lhStart`, that a `?` changes the screen and an Escape changes it again
-once it is quiet, and, once 2.4 lands, that an overlay is submitted. It observes
+after `lhStart`, that a `?` stops the insert-coin self-play, frames arriving
+in the second before it and none in a second after, that an Escape then changes
+the quiet screen, and, once 2.4 lands, that an overlay is submitted. It observes
 the page by wrapping the `globalThis` hooks the loader installs and by hashing
 `#screen`, a canvas's data URL where one exists, so 0.4 owes it no change.
 Its two controls, run the day it was written: a site missing `LambdaHack.wasm`
 fails both frame assertions, and `PAGE_GATE_OVERLAYS=1` fails before 2.4; and,
 run 2026-10-21, an `lhKey` without its scheduler run fails the quiet-screen
-assertion. The Chromium leg came with 1.2, after Mikolaj's ruling of 2026-10-22
+assertion; and, run 2026-10-23, the gate without its `?` press fails
+the self-play assertion, whose earlier form, a hash changed after the `?`,
+passed. The Chromium leg came with 1.2, after Mikolaj's ruling of 2026-10-22
 that a session's browser tests run in Chromium too, and its controls ran
 that day: the site missing `LambdaHack.wasm` fails it, and a missing
 chromedriver stops the run at 2. It is the campaign's acceptance test: what

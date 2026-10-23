@@ -259,6 +259,20 @@
    "expect_text": "A0 0.1 --- ledger row with no item",
    "expect_absent": "Traceback",
    "bug_text": "KeyError: '0.1'"
+  },
+  {
+   "id": "page-gate-01",
+   "program": "ts-src/page-gate.mjs",
+   "name": "the gate's 'a key changes the frame' assertion compared the screen hash before and after '?' while the insert-coin self-play repainted continuously, so it passed with no key delivered",
+   "family": "vacuous-check",
+   "fix_rev": "self",
+   "trigger": "the gate run with its `press(\"?\")` removed, over a site whose game starts with no save",
+   "ok": "the assertion, now that frames arrive in the second before '?' and a second with none follows it, fails in both browsers: `the screen never went quiet for a second within 10s of a '?' key`",
+   "bug": "`ok   firefox: a key changes the frame` and the same for chromium, the hash having changed with no key; only the Escape assertion's quiet-screen wait failed",
+   "proved": "ran",
+   "harm": "latent",
+   "discovery": "review",
+   "notes": "Found by the code review of 2026-10-23 over the year's diff. Measured that day before the fix: about twelve frames a second arrive before any key, in both browsers. The gate as a whole still caught a lost key, through the quiet-screen wait the Escape assertion began with; what was vacuous was the ok line of its own assertion. A tier-1 record: the corpus root is tools/, and the gate needs a wasm build and two browsers."
   }
  ]
 }

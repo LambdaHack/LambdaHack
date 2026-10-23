@@ -1,14 +1,13 @@
-// The deployed-page gate: build outputs in a directory, served here
-// and loaded in headless Firefox and headless Chromium over WebDriver BiDi,
-// Chromium's through chromedriver, must boot the reactor, paint, and
-// repaint on a key, on a quiet screen too, in each browser. It is the
-// one check in the repository that asks whether the page players load
-// works, and it runs locally, before every browser landing, by ruling
-// (docs/wasm-frontend-work-list.md, the page gate under Handing an item);
-// CI stays blind to the page by that same ruling. Exit 0 when every
-// assertion holds in both browsers, 1 when one fails, 2 when the run did
-// not happen: no Firefox, Chromium or chromedriver, no BiDi endpoint, no
-// server.
+// The deployed-page gate: build outputs in a directory, served here and loaded
+// in headless Firefox and headless Chromium over WebDriver BiDi, Chromium's
+// through chromedriver, must boot the reactor, paint, stop its self-play
+// on a key and repaint on a key on a quiet screen, in each browser. It
+// is the one check in the repository that asks whether the page players
+// load works, and it runs locally, before every browser landing, by ruling
+// (docs/wasm-frontend-work-list.md, the page gate under Handing an item); CI
+// stays blind to the page by that same ruling. Exit 0 when every assertion
+// holds in both browsers, 1 when one fails, 2 when the run did not happen: no
+// Firefox, Chromium or chromedriver, no BiDi endpoint, no server.
 //
 // Usage: node page-gate.mjs <site-dir>   (Node 22+, for the global WebSocket)
 //   PAGE_GATE_OVERLAYS=1 also requires an overlay submission, once 2.4 lands.
@@ -21,7 +20,8 @@
 // so every call is counted with its size and the page's own code runs
 // unchanged. The screen is read back as a hash of #screen's innerHTML, or
 // of the canvas's data URL once 0.4 replaces the grid, so a key's effect
-// is a changed hash rather than a claim about what it drew.
+// is a stopped frame count or a changed hash rather than a claim about
+// what it drew.
 //
 // Non-vacuity, run 2026-09-14: a site directory without LambdaHack.wasm
 // fails both frame assertions with exit 1, and PAGE_GATE_OVERLAYS=1 fails
@@ -29,7 +29,10 @@
 // and a '?' repainting. The Chromium leg's, run 2026-10-22: the site without
 // LambdaHack.wasm fails its three key and frame assertions with exit 1,
 // a missing chromedriver exits 2, and a build whose syncExport drops its
-// rts_scheduleWork call fails the Escape assertion, in both browsers.
+// rts_scheduleWork call fails the Escape assertion, in both browsers. Run
+// 2026-10-23 with the '?' press removed: the self-play assertion fails in both
+// browsers, where its earlier form, a hash changed after the '?', passed in
+// both, the self-play repainting regardless.
 
 import { spawn } from "node:child_process";
 import { mkdir, writeFile } from "node:fs/promises";
@@ -296,31 +299,15 @@ async function gate(name, send) {
         ` the first ${size} cells`,
     );
   }
-  // 2. a key changes the frame: '?' opens the help overlay.
-  const before = await evaluate(HASH);
+  // 2. a key stops the self-play. With no save the game is the insert-coin
+  // screensaver, repainting until a key regains control, so the screen
+  // changes with or without one; what only a key does is stop it. Frames
+  // arrive in the second before '?', and a second with no frame follows
+  // it, the help overlay waiting for a key.
   const framesBefore = await count();
+  await sleep(1000);
+  const framesAtKey = await count();
   await press("?");
-  let after = before,
-    framesAfter = framesBefore;
-  for (let i = 0; i < 40 && after === before; i++) {
-    await sleep(250);
-    after = await evaluate(HASH);
-    framesAfter = await count();
-  }
-  if (after === before) {
-    fail(
-      `${name}: the screen did not change within 10s of a '?' key` +
-        ` (frames ${framesBefore} -> ${framesAfter})`,
-    );
-  } else {
-    console.log(
-      `ok   ${name}: a key changes the frame: screen ${before}` +
-        ` -> ${after}, frames ${framesBefore} -> ${framesAfter}`,
-    );
-  }
-  // 3. a key on a quiet screen changes it too: with the game idle no timer
-  // re-enters the RTS scheduler, which a key delivered by a sync export once
-  // waited for. Quiet is a second with no frame; Escape leaves the help.
   let seen = await count(),
     still = 0;
   for (let i = 0; i < 40 && still < 4; i++) {
@@ -329,6 +316,26 @@ async function gate(name, send) {
     still = f === seen ? still + 1 : 0;
     seen = f;
   }
+  if (framesAtKey === framesBefore) {
+    fail(
+      `${name}: no frame in the second before '?' (frames ${framesAtKey}),` +
+        " so a quiet screen after it would say nothing of the key",
+    );
+  } else if (still < 4) {
+    fail(
+      `${name}: the screen never went quiet for a second within 10s` +
+        ` of a '?' key (frames ${framesAtKey} -> ${seen})`,
+    );
+  } else {
+    console.log(
+      `ok   ${name}: a key stops the self-play: frames` +
+        ` ${framesBefore} -> ${framesAtKey} in the second before '?',` +
+        ` then none for a second at ${seen}`,
+    );
+  }
+  // 3. a key on a quiet screen changes it: with the game idle no timer
+  // re-enters the RTS scheduler, which a key delivered by a sync export once
+  // waited for. Escape leaves the help.
   const quiet = await evaluate(HASH);
   await press("");
   let changed = quiet;
@@ -337,10 +344,7 @@ async function gate(name, send) {
     changed = await evaluate(HASH);
   }
   if (still < 4) {
-    fail(
-      `${name}: the screen never went quiet for a second within 10s` +
-        " of the '?'",
-    );
+    fail(`${name}: no quiet screen to press Escape on`);
   } else if (changed === quiet) {
     fail(
       `${name}: a quiet screen did not change within 3s of an Escape key` +
