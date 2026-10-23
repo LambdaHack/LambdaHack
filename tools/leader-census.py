@@ -56,6 +56,7 @@ and all three after the doc -> tree check was widened from signatures to
 tokens later the same day; each reported exactly the lines above.
 """
 
+import collections
 import os
 import re
 import subprocess
@@ -81,10 +82,6 @@ IDENT = re.compile(r'`([a-z][A-Za-z0-9_\']*)`')
 # scan_tree for why that check resolves against tokens rather than
 # signatures.
 TOKEN = re.compile(r'\b([a-z][A-Za-z0-9_\']*)\b')
-
-# Backticked in the buckets' prose as *parameter* names ("bound as `aid`"),
-# never as functions, so their absence from the tree means nothing.
-PROSE_TOKENS = {'aid', 'source', 'target', 'born', 'leader'}
 
 
 def strip_parens(s):
@@ -123,8 +120,9 @@ def scan_tree(root):
     by_name, point_free, all_names = {}, [], set()
     for path in files:
         module = os.path.basename(path)[:-3]
-        lines = open(path).read().split('\n')
-        all_names.update(TOKEN.findall('\n'.join(lines)))
+        text = open(path, encoding='utf-8').read()
+        lines = text.split('\n')
+        all_names.update(TOKEN.findall(text))
         i = 0
         while i < len(lines):
             m = SIG.match(lines[i])
@@ -175,7 +173,7 @@ def scan_doc(path):
     that column counts, the later ones naming waits and callees that are not
     bucket members.  The rest are prose or bullet lists, where every
     backticked lowercase name counts."""
-    text = open(path).read()
+    text = open(path, encoding='utf-8').read()
     start = text.index(BUCKET_LEADS[0][1])
     end = text.index('\n## ', start)
     region = text[start:end]
@@ -237,8 +235,6 @@ def main():
 
     holds_leader = {n: v for n, v in by_name.items()
                     if any(p.startswith('leader') for p in v[1])}
-    leader_first = {n: v for n, v in holds_leader.items()
-                    if v[1][0].startswith('leader')}
     leader_later = {n: v for n, v in holds_leader.items()
                     if not v[1][0].startswith('leader')}
 
@@ -247,15 +243,16 @@ def main():
         if name not in bucketed:
             fails.append(f'FAIL {module}.{name} -- in no bucket of {doc}')
     for key, names in buckets.items():
-        for name in sorted(names - PROSE_TOKENS):
+        for name in sorted(names):
             if name not in all_names:
                 fails.append(f'FAIL {key}: {name} -- not in the tree')
 
     print(f'tree: {len(by_name)} functions under {TREE} take an ActorId')
     print(f'      {len(holds_leader)} bind a parameter named leader...'
-          f' ({len(leader_first)} first, {len(leader_later)} later)')
-    for module in sorted({v[0] for v in holds_leader.values()}):
-        n = sum(1 for v in holds_leader.values() if v[0] == module)
+          f' ({len(holds_leader) - len(leader_later)} first,'
+          f' {len(leader_later)} later)')
+    modules = collections.Counter(v[0] for v in holds_leader.values())
+    for module, n in sorted(modules.items()):
         print(f'        {module}: {n}')
     if leader_later:
         print('      bound later in the head (the third blind spot):')

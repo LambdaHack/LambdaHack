@@ -97,10 +97,14 @@ def built_on(code, rhs, js):
             depth += {"(": 1, ")": -1}.get(c, 0)
             if depth == 0:
                 break
-        rest = arg[i + 1:] if depth == 0 else "unclosed"
+        if depth != 0:
+            return False
+        rest = arg[i + 1:]
     else:
         name = re.match(r"[a-z_][\w']*", arg)
-        rest = arg[name.end():] if name else "no argument"
+        if not name:
+            return False
+        rest = arg[name.end():]
     return re.fullmatch(r"\s*(?:where\b.*)?", rest, re.S) is not None
 
 
@@ -121,20 +125,17 @@ def scan(files):
             fails.append(f"FAIL {js} ({path}:{line}): no equation of `{hs}`"
                          f" with its `=` on the first line in {path}")
             continue
-        unseen = [s for s, rhs in eqs if rhs is None]
-        bad = [s for s, rhs in eqs if rhs is not None and
-               not built_on(code, rhs, js)]
-        for s in unseen:
-            fails.append(f"FAIL {js} ({path}:{line}): the equation of `{hs}`"
-                         f" at {path}:{line_of(code, s)} has no `=` on its"
-                         f" first line, so it was not checked")
-        for s in bad:
-            fails.append(f"FAIL {js} ({path}:{line}): the equation of `{hs}`"
-                         f" at {path}:{line_of(code, s)} is not"
-                         f' `syncExport "{js}"` applied to its whole'
-                         f" right-hand side")
-        bad += unseen
-        if not bad:
+        failed = len(fails)
+        for s, rhs in eqs:
+            eq = (f"FAIL {js} ({path}:{line}): the equation of `{hs}`"
+                  f" at {path}:{line_of(code, s)}")
+            if rhs is None:
+                fails.append(f"{eq} has no `=` on its first line, so it was"
+                             f" not checked")
+            elif not built_on(code, rhs, js):
+                fails.append(f'{eq} is not `syncExport "{js}"` applied to its'
+                             f" whole right-hand side")
+        if len(fails) == failed:
             oks.append(f"ok   {js} ({path}:{line}) is built on syncExport")
     for path, code in sorted(codes.items()):
         for m in APPLIED_RE.finditer(code):
@@ -286,12 +287,17 @@ SELF_TEST_QUIET = ["lhWheel", "lhComment", "lhBlock", "Good.hs:25",
                    "at Bad.hs:15 ", "at Bad.hs:35 "]
 
 
-def self_test():
-    bad = []
+def capture(files):
+    """`run` over `files`: its exit status and what it printed."""
     buf = io.StringIO()
     with contextlib.redirect_stdout(buf):
-        rc = run(SELF_TEST_FILES)
-    out = buf.getvalue()
+        rc = run(files)
+    return rc, buf.getvalue()
+
+
+def self_test():
+    bad = []
+    rc, out = capture(SELF_TEST_FILES)
     lines = out.splitlines()
     if rc != 1:
         bad.append(f"scratch sources: exit {rc}, wanted 1")
@@ -310,21 +316,14 @@ def self_test():
         for l in fails:
             if q in l:
                 bad.append(f"control failed: {l}")
-    buf = io.StringIO()
-    with contextlib.redirect_stdout(buf):
-        rc = run({"Good.hs": SELF_TEST_FILES["Good.hs"]})
+    rc, out = capture({"Good.hs": SELF_TEST_FILES["Good.hs"]})
     if rc != 0:
-        bad.append(f"good source alone: exit {rc}, wanted 0:\n"
-                   + buf.getvalue())
-    buf = io.StringIO()
-    with contextlib.redirect_stdout(buf):
-        rc = run({"None.hs": "module None where\n"})
-    if rc != 0 or "no sync export in 1 tracked" not in buf.getvalue():
+        bad.append(f"good source alone: exit {rc}, wanted 0:\n" + out)
+    rc, out = capture({"None.hs": "module None where\n"})
+    if rc != 0 or "no sync export in 1 tracked" not in out:
         bad.append(f"source with no sync export: exit {rc}, wanted 0 and"
-                   f" the nothing-to-require line:\n" + buf.getvalue())
-    buf = io.StringIO()
-    with contextlib.redirect_stdout(buf):
-        rc = run({})
+                   f" the nothing-to-require line:\n" + out)
+    rc, out = capture({})
     if rc != 2:
         bad.append(f"no source: exit {rc}, wanted 2")
     if bad:

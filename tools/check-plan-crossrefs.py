@@ -24,8 +24,8 @@ read the document against the repository and never against itself. This
 one derives the graph at run time from the fields and stores nothing,
 which is the alternative that ruling did not have. The joint run derives
 it over the union of both documents' items, which is the only run that can
-see a file both campaigns write --- `MonadClientUI.hs`, `HandleHumanLocalM.hs`
---- named on one side and not the other.
+see an edge between the campaigns: an item writing a file the other
+campaign's item creates, or naming the other plan without the `docs` gate.
 
 What it asserts, in the order the campaign measured their yield:
 
@@ -96,6 +96,7 @@ checker encodes two documents' field grammars, so it stays in this
 repository rather than among ~/slop's shared tools."""
 
 import contextlib
+import functools
 import io
 import os
 import re
@@ -115,7 +116,7 @@ import tempfile
 DOCS_GATE = "docs"
 LABELS = ("Owns", "Done", "Hands back", "Decide first")
 SPLIT = "Split"
-FIELD_RE = re.compile(r"^\*\*(Split|Owns|Done|Hands back|Decide first)\*\*"
+FIELD_RE = re.compile(r"^\*\*(" + "|".join((SPLIT,) + LABELS) + r")\*\*"
                       r" --- ?(.*)$")
 # The wasm plan's practices open on a bold paragraph carrying the
 # practice's title, keyed here by the name its ledger row uses. Each also
@@ -171,9 +172,9 @@ GRAMMARS = [
         # Its items open on `### C1 ---`, `### PR 0 ---`, `### 04.1 ---`
         # and `### 05 ---` headings; `PR N` carries a space, and `04.1`
         # cannot be read as the plan's `4.1` since a digit precedes it.
+        "record": None,
         "openers": (re.compile(r"^### (C\d|PR \d|04\.\d|05) "),),
         "practices": {},
-        "record": None,
     },
 ]
 # **Owns** names the document it sits in by these phrases as often as by
@@ -209,23 +210,21 @@ NEW_RE = re.compile(r"\bnew `([^`\n]+)`")
 # --- self-test rows ------------------------------------------------------
 # A scratch plan in each grammar, and the findings each must draw alone
 # and both must draw jointly. The controls matter as much as the failures.
-# In the first: `loader.ts` is contended four ways and silent because 0.1
-# holds its claimant list; 1.1 writes a file 0.1 creates and is silent
-# because its row waits on 0.2, which waits on 0.1; R1's "Not `foo.ts`",
-# its "`Makefile` is 0.1's" and its parenthesized citation of
-# `terminal.ts` keep R1 off those files' edges, as 1.2's "is deliberately
-# not here" does 1.2 and 0.1's "as for `twice.ts` at 0.2" does 0.1; the
-# bare `cabal` two items name is a tool, not a file they contend for; the
-# open list "and the module's" is not counted.
+# In the first: 1.1 writes a file 0.1 creates and is silent because its
+# row waits on 0.2, which waits on 0.1; R1's "Not `foo.ts`", its
+# "`Makefile` is 0.1's" and its parenthesized citation of `terminal.ts`
+# keep R1 from writing those files, as 1.2's "is deliberately not here"
+# does 1.2 and 0.1's "as for `twice.ts` at 0.2" does 0.1; the bare `cabal`
+# two items name is a tool, not a file they write; the open list "and the
+# module's" is not counted; `loader.ts`, which four items write and none
+# creates, draws nothing.
 # `dropped.ts` is out of scope, in a block the phrase above does not head.
-# In the second: `Own.hs` is contended three ways and C1 alone fails to
-# name the list at C3; C3 writes the `Pure.hs` 04.1 creates and reaches it
+# In the second: C3 writes the `Pure.hs` 04.1 creates and reaches it
 # through no cell, where 04.3 reaches it through 04.2 and 04.1 reaches C2,
 # which creates `Made.hs`, only through the middle of a `C1--C3` range ---
 # its ends being plain mentions, the range's expansion is what the middle
-# proves. Jointly: `Shared.hs` is written on both sides
-# and C1 names 0.2 where 0.2 names nobody, and 04.3 names the first
-# document without the `docs` gate, which the second alone cannot see.
+# proves. Jointly: 04.3 names the first document without the `docs` gate,
+# which the second alone cannot see.
 SELF_TEST_ALLOW = """\
 # Scratch allowlist for the self-test.
 
@@ -493,7 +492,7 @@ NUMBERS = {"two": 2, "three": 3, "four": 4, "five": 5, "six": 6,
            "seven": 7, "eight": 8, "nine": 9, "ten": 10, "eleven": 11,
            "twelve": 12}
 NUMBER_LIST_RE = re.compile(
-    r"\b(two|three|four|five|six|seven|eight|nine|ten|eleven|twelve)\b"
+    r"\b(" + "|".join(NUMBERS) + r")\b"
     r"((?: (?:`[^`\n]+`|[\w'-]+)){0,3}) (entries|files|commits|modules|"
     r"targets|names|claimants|jobs|halves|clauses|tests|cases|sites|lines)"
     r"(?: --- |: )((?:`[^`\n]+`(?:'s)?(?:, and |, or |, |"
@@ -723,9 +722,9 @@ class Plan:
     """The documents read together: one graph over the union of their
     items, each item keeping the document it came from."""
 
-    def __init__(self, docs, ambiguous):
+    def __init__(self, docs, findings):
         self.docs = docs
-        self.findings = docs[0].findings
+        self.findings = findings
         self.items = {}
         self.order = []
         self.row_doc = {}     # ledger id -> its document, item or not
@@ -733,28 +732,27 @@ class Plan:
         seen = set()
         for d in docs:
             ids = set(d.order) | set(d.items)
-            for iid in sorted(ids & seen):
-                raise Blocked(f"item id {iid} appears in two documents;"
-                              " the joint run has no way to tell them apart")
+            shared = ids & seen
+            if shared:
+                raise Blocked(f"item id {min(shared)} appears in two"
+                              " documents; the joint run has no way to tell"
+                              " them apart")
             seen |= ids
             self.order += d.order
             self.row_doc.update(dict.fromkeys(d.order, d))
             self.items.update(d.items)
             self.practices.update(d.g["practices"])
         ids = [i for i in self.order if i not in self.practices]
-        alts = [re.escape(i) for i in ids]
-        for name, (_, aliases) in self.practices.items():
-            alts += [re.escape(a) for a in aliases]
-        self.id_re = re.compile(r"(?<![\w.])(" + "|".join(alts)
+        aliases = [a for _, names in self.practices.values() for a in names]
+        id_alt = "|".join(map(re.escape, ids))
+        self.id_re = re.compile(r"(?<![\w.])("
+                                + "|".join(map(re.escape, ids + aliases))
                                 + r")(?!\d|\.\d)", re.I)
-        self.range_re = re.compile(r"(" + "|".join(re.escape(i) for i in ids)
-                                   + r")--(" + "|".join(re.escape(i)
-                                                        for i in ids) + r")")
-        self.neg_after_re = re.compile(NEG_AFTER_RE.pattern.replace(
-            "(?:ID)", "(?:" + "|".join(re.escape(i) for i in ids) + ")"),
-            re.I)
-        self.attrib_re = re.compile(ATTRIB_RE.pattern.replace(
-            "(ID)", "(" + "|".join(re.escape(i) for i in ids) + ")"))
+        self.range_re = re.compile(f"({id_alt})--({id_alt})")
+        self.neg_after_re = re.compile(
+            NEG_AFTER_RE.pattern.replace("(?:ID)", f"(?:{id_alt})"), re.I)
+        self.attrib_re = re.compile(
+            ATTRIB_RE.pattern.replace("(ID)", f"({id_alt})"))
         # The documents and allowlists whose naming asks for the gate.
         self.gated = [(k, name) for d in docs
                       for k, name in ((d.doc_key, d.g["doc"]),
@@ -807,9 +805,13 @@ class Plan:
             keys.add(doc.doc_key)
         return keys
 
+    # The fields stay as read, so what is derived from them is computed
+    # once a run.
+    @functools.cache
     def owns(self, iid):
         return self.keys_in(self.field(iid, "Owns"), self.doc_of(iid))
 
+    @functools.cache
     def writes(self, iid):
         return self.owns(iid) | self.keys_in(self.field(iid, SPLIT),
                                              self.doc_of(iid))
@@ -829,6 +831,7 @@ class Plan:
                 return name
         return mention
 
+    @functools.cache
     def deps(self, iid):
         """The items a ledger cell names, a range `A--B` standing for every
         row of that document from A to B."""
@@ -866,6 +869,7 @@ class Plan:
                 out.append((m.start(), m.group(1), hits))
         return out
 
+    @functools.cache
     def claims(self, doc):
         """entry -> set of claimants, over DOC's entries and DOC's items:
         explicit claims first and the anaphoric ones ("its two entries")
@@ -1058,7 +1062,7 @@ def run(doc_paths, allow_override=None, verbose=False):
     try:
         docs = [load(p, allow_override, ambiguous, findings)
                 for p in doc_paths]
-        plan = Plan(docs, ambiguous)
+        plan = Plan(docs, findings)
     except Blocked as b:
         print(f"BLOCKED: {b}")
         return 2
@@ -1076,6 +1080,14 @@ def run(doc_paths, allow_override=None, verbose=False):
           f" and {entries} allowlist entries in {len(docs)} document(s):"
           f" {', '.join(d.path for d in docs)}")
     return 1 if findings else 0
+
+
+def capture(*args):
+    """`run` over ARGS: its exit status and what it printed."""
+    buf = io.StringIO()
+    with contextlib.redirect_stdout(buf):
+        rc = run(*args)
+    return rc, buf.getvalue()
 
 
 def self_test():
@@ -1118,50 +1130,33 @@ def self_test():
         cwd = os.getcwd()
         os.chdir(tmp)   # outside any repository: keys are basenames
         try:
-            buf = io.StringIO()
-            with contextlib.redirect_stdout(buf):
-                rc = run([doc], allow)
-            check("plan alone", rc, buf.getvalue(), 1, SELF_TEST_FAIL,
+            check("plan alone", *capture([doc], allow), 1, SELF_TEST_FAIL,
                   SELF_TEST_QUIET + SELF_TEST_QUIET_ALONE)
-            buf = io.StringIO()
-            with contextlib.redirect_stdout(buf):
-                rc = run([doc2], allow)
-            check("work list alone", rc, buf.getvalue(), 1, SELF_TEST_FAIL_2,
-                  SELF_TEST_QUIET_2 + SELF_TEST_QUIET_ALONE, SELF_TEST_NOTE_2)
-            buf = io.StringIO()
-            with contextlib.redirect_stdout(buf):
-                rc = run([doc, doc2], allow)
-            check("joint", rc, buf.getvalue(), 1,
+            check("work list alone", *capture([doc2], allow), 1,
+                  SELF_TEST_FAIL_2, SELF_TEST_QUIET_2 + SELF_TEST_QUIET_ALONE,
+                  SELF_TEST_NOTE_2)
+            check("joint", *capture([doc, doc2], allow), 1,
                   SELF_TEST_FAIL + SELF_TEST_FAIL_2 + SELF_TEST_FAIL_JOINT,
                   SELF_TEST_QUIET + SELF_TEST_QUIET_2 + SELF_TEST_QUIET_JOINT,
                   SELF_TEST_NOTE_2)
-            buf = io.StringIO()
-            with contextlib.redirect_stdout(buf), \
-                    contextlib.redirect_stderr(io.StringIO()):
-                rc = run([os.path.join(tmp, "absent.md")], allow)
+            rc, _ = capture([os.path.join(tmp, "absent.md")], allow)
             if rc != 2:
                 bad.append(f"missing document: exit {rc}, wanted 2")
             open(doc, "w").write("# Nothing here\n\nProse.\n")
-            buf = io.StringIO()
-            with contextlib.redirect_stdout(buf):
-                rc = run([doc], allow)
-            if rc != 2 or "BLOCKED" not in buf.getvalue():
+            rc, out = capture([doc], allow)
+            if rc != 2 or "BLOCKED" not in out:
                 bad.append(f"document without the grammar: exit {rc},"
                            f" wanted BLOCKED at 2")
             open(doc, "w").write(SELF_TEST_DOC_2)
-            buf = io.StringIO()
-            with contextlib.redirect_stdout(buf):
-                rc = run([doc, doc2], allow)
-            if rc != 2 or "two documents" not in buf.getvalue():
+            rc, out = capture([doc, doc2], allow)
+            if rc != 2 or "two documents" not in out:
                 bad.append(f"two documents sharing an id: exit {rc},"
                            f" wanted BLOCKED at 2")
             # An item and no ledger fits a grammar and is still no plan.
             open(doc, "w").write("# Scratch\n\n### 0.1 First\n\n"
                                  "**Owns** --- nothing.\n")
-            buf = io.StringIO()
-            with contextlib.redirect_stdout(buf):
-                rc = run([doc], allow)
-            if rc != 2 or "BLOCKED" not in buf.getvalue():
+            rc, out = capture([doc], allow)
+            if rc != 2 or "BLOCKED" not in out:
                 bad.append(f"document with an item and no ledger: exit {rc},"
                            f" wanted BLOCKED at 2")
             # A depends-on cell naming a row with no item, and a practice
@@ -1175,10 +1170,7 @@ def self_test():
                 "**Done** --- `ts`.\n\n**Hands back** --- nothing.\n\n"
                 "**Decide first** --- nothing.\n")
             open(allow, "w").write("")
-            buf = io.StringIO()
-            with contextlib.redirect_stdout(buf):
-                rc = run([doc], allow)
-            check("ledger row with no item", rc, buf.getvalue(), 1,
+            check("ledger row with no item", *capture([doc], allow), 1,
                   ["A0 0.1 --- ledger row with no item"], [])
         finally:
             os.chdir(cwd)

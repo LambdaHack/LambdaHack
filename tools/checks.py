@@ -25,12 +25,10 @@ TIMEOUT = 3600
 # among its causes, is 2 with its reason, where it was a loop over nothing
 # exiting 0 (checks-02). A status the checkers do not define reaches
 # check-all as it is, and anything but 0 and 2 is a failure there.
-DOCS = ('cd "{root}/.." || { echo "cannot enter the repository root"; exit 2; }; '
-        "readarray -t docs < <(git ls-files '*.md' ':!CHANGELOG.md'); "
-        '[ ${#docs[@]} -gt 0 ] || { echo "git lists no tracked Markdown file, or could not be run; nothing checked"; exit 2; }; '
-        'python3 ../tools/%s "${docs[@]}"')
-
-DOCS_HOME = DOCS.replace('python3 ../tools/%s', 'python3 %s')
+DOCS_LISTED = ('cd "{root}/.." || { echo "cannot enter the repository root"; exit 2; }; '
+               "readarray -t docs < <(git ls-files '*.md' ':!CHANGELOG.md'); "
+               '[ ${#docs[@]} -gt 0 ] || { echo "git lists no tracked Markdown file, or could not be run; nothing checked"; exit 2; }; ')
+DOCS = DOCS_LISTED + 'python3 ../tools/%s "${docs[@]}"'
 
 STEPS = [
     # The shared checker over this repository's rows, which reach the
@@ -49,7 +47,7 @@ STEPS = [
     # The probes the documents carry beside their counted claims: each is a
     # claim's own check, run where the document sits, and the runner is the
     # doc-verification skill's, which is user-scope and lives outside this tree.
-    ('doc probes',             ['bash', '-c', DOCS_HOME % '$HOME/.claude/skills/doc-verification/run-probes.py']),
+    ('doc probes',             ['bash', '-c', DOCS_LISTED + 'python3 $HOME/.claude/skills/doc-verification/run-probes.py "${docs[@]}"']),
     # Both campaign plans read against themselves and each other: the
     # cross-reference graph no pass over every document can see.
     ('plan crossrefs',         ['python3', '{root}/check-plan-crossrefs.py'], '{root}/..'),
