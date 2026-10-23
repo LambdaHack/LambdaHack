@@ -308,50 +308,55 @@ async function gate(name, send) {
   const framesBefore = await count();
   await sleep(1000);
   const framesAtKey = await count();
-  await press("?");
-  let seen = await count(),
+  let seen = framesAtKey,
     still = 0;
-  await waitFor(async () => {
-    const f = await count();
-    still = f === seen ? still + 1 : 0;
-    seen = f;
-    return still >= 4;
-  }, 10000);
   if (framesAtKey === framesBefore) {
     fail(
       `${name}: no frame in the second before '?' (frames ${framesAtKey}),` +
         " so a quiet screen after it would say nothing of the key",
     );
-  } else if (still < 4) {
-    fail(
-      `${name}: the screen never went quiet for a second within 10s` +
-        ` of a '?' key (frames ${framesAtKey} -> ${seen})`,
-    );
   } else {
-    console.log(
-      `ok   ${name}: a key stops the self-play: frames` +
-        ` ${framesBefore} -> ${framesAtKey} in the second before '?',` +
-        ` then none for a second at ${seen}`,
-    );
+    await press("?");
+    seen = await count();
+    await waitFor(async () => {
+      const f = await count();
+      still = f === seen ? still + 1 : 0;
+      seen = f;
+      return still >= 4;
+    }, 10000);
+    if (still < 4) {
+      fail(
+        `${name}: the screen never went quiet for a second within 10s` +
+          ` of a '?' key (frames ${framesAtKey} -> ${seen})`,
+      );
+    } else {
+      console.log(
+        `ok   ${name}: a key stops the self-play: frames` +
+          ` ${framesBefore} -> ${framesAtKey} in the second before '?',` +
+          ` then none for a second at ${seen}`,
+      );
+    }
   }
   // 3. a key on a quiet screen changes it: with the game idle no timer
   // re-enters the RTS scheduler, which a key delivered by a sync export once
   // waited for. Escape leaves the help.
-  const quiet = await evaluate(HASH);
-  await press("\uE00C");
-  let changed = quiet;
-  await waitFor(async () => (changed = await evaluate(HASH)) !== quiet, 3000);
   if (still < 4) {
     fail(`${name}: no quiet screen to press Escape on`);
-  } else if (changed === quiet) {
-    fail(
-      `${name}: a quiet screen did not change within 3s of an Escape key` +
-        ` (frames ${seen})`,
-    );
   } else {
-    console.log(
-      `ok   ${name}: a key changes a quiet screen: ${quiet}` + ` -> ${changed}`,
-    );
+    const quiet = await evaluate(HASH);
+    await press("\uE00C");
+    let changed = quiet;
+    await waitFor(async () => (changed = await evaluate(HASH)) !== quiet, 3000);
+    if (changed === quiet) {
+      fail(
+        `${name}: a quiet screen did not change within 3s of an Escape key` +
+          ` (frames ${seen})`,
+      );
+    } else {
+      console.log(
+        `ok   ${name}: a key changes a quiet screen: ${quiet} -> ${changed}`,
+      );
+    }
   }
   // 4. an overlay submission, once 2.4 lands.
   const overlays = await evaluate("globalThis.__lhGate.overlays");
