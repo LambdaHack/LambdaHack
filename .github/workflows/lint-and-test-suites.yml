@@ -11,6 +11,9 @@ on:
   - push
   - pull_request
   - workflow_dispatch
+env:
+  GHC_VERSION: '9.12.4'
+  NODE_VERSION: '22'
 jobs:
   hlint:
     name: hlint
@@ -59,7 +62,7 @@ jobs:
       - uses: haskell-actions/setup@v2
         id: setup
         with:
-          ghc-version: '9.12.4'
+          ghc-version: ${{ env.GHC_VERSION }}
           cabal-version: 'latest'
       - uses: actions/cache@v4
         with:
@@ -71,13 +74,13 @@ jobs:
       # --enable-optimization is stated rather than inherited from cabal's
       # default, which a checkout without cabal.project.local supplies
       # anyway: this build is the whole of the repo's optimized coverage --
-      # haskell-ci.yml passes --disable-optimization everywhere -- so the
-      # flag belongs where a reader of this file sees it. The same applies
-      # to the wasm builds in the Makefile. Not to the doctest job below:
-      # its artifact is never run, its doctests are interpreted, and its
-      # recipe is quoted verbatim in CLAUDE.md and README.md, where the
-      # flag would force an optimized rebuild on a reader who has the
-      # unoptimized development config in place.
+      # haskell-ci.yml builds everything unoptimized -- so the flag belongs
+      # where a reader of this file sees it. The same applies to the wasm
+      # builds in the Makefile. Not to the doctest job below: its artifact
+      # is never run, its doctests are interpreted, and its recipe is quoted
+      # verbatim in CLAUDE.md and README.md, where the flag would force an
+      # optimized rebuild on a reader who has the unoptimized development
+      # config in place.
       - name: Build
         id: build
         run: cabal build exe:LambdaHack --enable-optimization
@@ -114,7 +117,7 @@ jobs:
       - uses: haskell-actions/setup@v2
         id: setup
         with:
-          ghc-version: '9.12.4'
+          ghc-version: ${{ env.GHC_VERSION }}
           cabal-version: 'latest'
       - uses: actions/cache@v4
         with:
@@ -161,7 +164,7 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
-          node-version: '22'
+          node-version: ${{ env.NODE_VERSION }}
           cache: npm
           cache-dependency-path: ts-src/package-lock.json
       # `make test-ts` runs tsc, prettier and vitest out of node_modules
@@ -179,7 +182,7 @@ jobs:
       # `make test-wasm` runs npm ci in ts-src, for the driver's lz-string.
       - uses: actions/setup-node@v4
         with:
-          node-version: '22'
+          node-version: ${{ env.NODE_VERSION }}
           cache: npm
           cache-dependency-path: ts-src/package-lock.json
       # Installs into ~/.ghc-wasm, which every wasm Makefile recipe sources.

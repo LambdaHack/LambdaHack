@@ -272,8 +272,8 @@ async function run() {
   // submitted, and otherwise none is; then the game's C-P, Control
   // and Shift with 'P', prints once more.
   const eachFrame = prints.every((p, i) => p.frames === i + 1);
-  const framePrints = printEachScreen ? calls.length : 0;
-  if (prints.length !== framePrints || (printEachScreen && !eachFrame)) {
+  const framePrints = () => (printEachScreen ? calls.length : 0);
+  if (prints.length !== framePrints() || !eachFrame) {
     fail(
       `${prints.length} screenshots for ${calls.length} frames before C-P` +
         `${printEachScreen ? " under" : " without"} --printEachScreen`,
@@ -285,7 +285,7 @@ async function run() {
     fail("C-P through lhKey printed no screenshot within 5s");
   }
   await waitQuiet(500, 5000);
-  if (prints.length !== (printEachScreen ? calls.length : 0) + 1) {
+  if (prints.length !== framePrints() + 1) {
     fail(`${prints.length} screenshots for ${calls.length} frames after C-P`);
   }
   const shape = /^prtscn\d{4}-\d\d-\d\d_\d\d\.\d\d\.\d\d(\.\d+)?\.png$/;

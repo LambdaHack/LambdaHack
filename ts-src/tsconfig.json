@@ -11,9 +11,7 @@
     "noUnusedParameters": true,
     "noEmit": true,
     "skipLibCheck": true,
-    "forceConsistentCasingInFileNames": true,
-    "outDir": "../../lambdahack.github.io",
-    "rootDir": "./src"
+    "forceConsistentCasingInFileNames": true
   },
   "include": ["src/**/*"]
 }

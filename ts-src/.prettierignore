@@ -1,6 +1,5 @@
-# Build output and installed packages.
+# Build output.
 dist/
-node_modules/
 package-lock.json
 # Written byte for byte by the Haskell test suite, which checks them fresh.
 src/generated/

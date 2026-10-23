@@ -44,7 +44,7 @@ export function requireFiles(usage, wasmPath, jsffiPath) {
 // An in-memory stand-in for the browser's localStorage, with the methods
 // WasmFile.hs calls; getItem returns null for an absent key, as the
 // browser's does, which WasmFile.hs's presence check relies on.
-export function memoryStorage() {
+function memoryStorage() {
   const items = new Map();
   return {
     getItem: (k) => (items.has(String(k)) ? items.get(String(k)) : null),
@@ -98,7 +98,7 @@ export async function installStubs(memoryOf) {
     for (let i = 0; i < w * h; i++) {
       hash = Math.imul(hash ^ cells.getUint32(4 * i, true), 0x01000193) >>> 0;
     }
-    calls.push({ addr, w, h, first: cells.getUint32(0, true), hash });
+    calls.push({ w, h, first: cells.getUint32(0, true), hash });
   };
   const configures = [];
   globalThis.lhConfigureCalls = configures;
@@ -145,10 +145,9 @@ if (import.meta.url === pathToFileURL(resolve(process.argv[1])).href) {
     // that resolve through a preopened directory. wasmtime doesn't grant
     // filesystem access by default either (its own docs show `wasmtime run
     // --mapdir /::$PWD` is needed for RTS features that touch the
-    // filesystem) -- this requirement was just masked until now by the
-    // JSFFI instantiation failure happening first. This only ever runs a
-    // locally built test binary, not untrusted code, so preopening
-    // everything is simpler than guessing exactly which path the RTS wants.
+    // filesystem). This only ever runs a locally built test binary, not
+    // untrusted code, so preopening everything is simpler than guessing
+    // exactly which path the RTS wants.
     preopens: { "/": "/" },
     returnOnExit: true,
   });

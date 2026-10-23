@@ -17,11 +17,10 @@
 // What is observed, and how: a preload script wraps the globalThis hooks
 // the loader installs -- lhSubmitFrame, and lhSubmitOverlays once it exists
 // -- by defining them as accessor properties before loader.ts assigns them,
-// so every call is counted with its size and the page's own code runs
-// unchanged. The screen is read back as a hash of #screen's innerHTML, or
-// of the canvas's data URL once 0.4 replaces the grid, so a key's effect
-// is a stopped frame count or a changed hash rather than a claim about
-// what it drew.
+// so every call is counted, the first with its size, and the page's own code
+// runs unchanged. The screen is read back as a hash of the canvas's data URL,
+// so a key's effect is a stopped frame count or a changed hash rather than
+// a claim about what it drew.
 //
 // Non-vacuity, run 2026-09-14: a site directory without LambdaHack.wasm
 // fails both frame assertions with exit 1, and PAGE_GATE_OVERLAYS=1 fails
@@ -64,6 +63,14 @@ function fail(msg) {
   process.exitCode = 1;
 }
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+// Whether cond comes to hold within ms, asked every step ms.
+async function waitFor(cond, ms, step = 250) {
+  for (let t = 0; t < ms; t += step) {
+    await sleep(step);
+    if (await cond()) return true;
+  }
+  return false;
+}
 
 // --- static server, the bundle's own serve.mjs -------------------------
 const server = spawn("node", [join(site, "serve.mjs"), site, String(PORT)], {
@@ -142,16 +149,16 @@ async function startChromium() {
     blocked(`cannot start ${CHROMEDRIVER}: ${e.message}`),
   );
   const base = `http://127.0.0.1:${DRIVER_PORT}`;
-  let ready = false;
-  for (let i = 0; i < 60 && !ready; i++) {
-    await sleep(250);
-    ready = await fetch(base + "/status")
-      .then((r) => r.json())
-      .then(
-        (j) => j.value?.ready === true,
-        () => false,
-      );
-  }
+  const ready = await waitFor(
+    () =>
+      fetch(base + "/status")
+        .then((r) => r.json())
+        .then(
+          (j) => j.value?.ready === true,
+          () => false,
+        ),
+    15000,
+  );
   if (!ready) blocked(`${CHROMEDRIVER} not ready within 15s`);
   const args = [
     "--headless=new",
@@ -226,8 +233,7 @@ async function connect(url) {
 }
 
 const HASH = `(() => { const el = document.getElementById("screen");
-  const c = el && el.querySelector("canvas");
-  const s = c ? c.toDataURL() : (el ? el.innerHTML : ""); let h = 0;
+  const s = el?.querySelector("canvas")?.toDataURL() ?? ""; let h = 0;
   for (let i = 0; i < s.length; i++) h = (h * 31 + s.charCodeAt(i)) | 0;
   return String(h) + ":" + s.length; })()`;
 async function gate(name, send) {
@@ -235,13 +241,13 @@ async function gate(name, send) {
   const context = tree.contexts[0].context;
   await send("script.addPreloadScript", {
     functionDeclaration: `() => {
-    const g = { frames: 0, sizes: [], overlays: 0 };
+    const g = { frames: 0, first: null, overlays: 0 };
     globalThis.__lhGate = g;
     let frame; let overlay;
     Object.defineProperty(globalThis, "lhSubmitFrame", { configurable: true,
       get() { return frame; },
       set(f) {
-        frame = (a, w, h) => { g.frames++; g.sizes.push([w, h]);
+        frame = (a, w, h) => { g.frames++; g.first ??= [w, h];
                                return f(a, w, h); };
       } });
     Object.defineProperty(globalThis, "lhSubmitOverlays", {
@@ -284,13 +290,8 @@ async function gate(name, send) {
   });
   // 1. frames arrive after lhStart.
   let frames = 0;
-  for (let i = 0; i < 120 && frames < 2; i++) {
-    await sleep(500);
-    frames = await count();
-  }
-  const size = await evaluate(
-    "JSON.stringify(globalThis.__lhGate.sizes[0] ?? null)",
-  );
+  await waitFor(async () => (frames = await count()) >= 2, 60000, 500);
+  const size = await evaluate("JSON.stringify(globalThis.__lhGate.first)");
   if (frames < 2) {
     fail(`${name}: no second frame within 60s of load (frames=${frames})`);
   } else {
@@ -310,12 +311,12 @@ async function gate(name, send) {
   await press("?");
   let seen = await count(),
     still = 0;
-  for (let i = 0; i < 40 && still < 4; i++) {
-    await sleep(250);
+  await waitFor(async () => {
     const f = await count();
     still = f === seen ? still + 1 : 0;
     seen = f;
-  }
+    return still >= 4;
+  }, 10000);
   if (framesAtKey === framesBefore) {
     fail(
       `${name}: no frame in the second before '?' (frames ${framesAtKey}),` +
@@ -337,12 +338,9 @@ async function gate(name, send) {
   // re-enters the RTS scheduler, which a key delivered by a sync export once
   // waited for. Escape leaves the help.
   const quiet = await evaluate(HASH);
-  await press("");
+  await press("\uE00C");
   let changed = quiet;
-  for (let i = 0; i < 12 && changed === quiet; i++) {
-    await sleep(250);
-    changed = await evaluate(HASH);
-  }
+  await waitFor(async () => (changed = await evaluate(HASH)) !== quiet, 3000);
   if (still < 4) {
     fail(`${name}: no quiet screen to press Escape on`);
   } else if (changed === quiet) {

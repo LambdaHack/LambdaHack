@@ -1,9 +1,13 @@
 -- Hand edits belong here rather than in the generated file, where a plain
 -- regenerate drops them without a word.
 apt: libsdl2-ttf-dev
-github-patches: .github/haskell-ci.patch
 -- The image the workflow has run on; haskell-ci's default is now noble.
 distribution: jammy
+
+-- Every build here is unoptimized; the optimized one is
+-- lint-and-test-suites.yml's.
+raw-project
+  optimization: False
 
 -- The 9.12 job also builds, tests included, with the release flag, the
 -- only build defining EXPOSE_INTERNAL, so the export lists it guards

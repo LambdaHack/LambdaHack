@@ -22,12 +22,6 @@ configure-debug:
 configure-prof:
 	cabal configure --enable-profiling --profiling-detail=exported-functions --enable-optimization
 
-chrome-log:
-	google-chrome --enable-logging --v=1 file://$(CURDIR)/../lambdahack.github.io/index.html &
-
-chrome-prof:
-	google-chrome --no-sandbox --js-flags="--logfile=%t.log --prof" ../lambdahack.github.io/index.html
-
 # Low delay to display animations swiftly and not bore the public too much.
 # Delay can't be lower than 2, because browsers sometimes treat delay 1
 # specially and add their extra delay.
@@ -306,6 +300,8 @@ build-wasm:
 	. ~/.ghc-wasm/env; \
 	wasm32-wasi-cabal build exe:LambdaHack --enable-optimization
 
+POSTLINK = ~/.ghc-wasm/wasm32-wasi-ghc/lib/post-link.mjs
+
 # Chained with && so the log ends at the command that failed; otherwise
 # a build failure runs on into post-link and the test driver, and their
 # complaints about the missing binary bury the real error. The trap both
@@ -320,31 +316,30 @@ test-wasm:
 	trap 'rm -rf "$$T"' EXIT; \
 	wasm32-wasi-cabal build test --enable-optimization && \
 	W=$$(wasm32-wasi-cabal list-bin test --enable-optimization) && \
-	~/.ghc-wasm/wasm32-wasi-ghc/lib/post-link.mjs --input "$$W" --output "$$T/ghc_wasm_jsffi.mjs" && \
+	$(POSTLINK) --input "$$W" --output "$$T/ghc_wasm_jsffi.mjs" && \
 	(cd ts-src && npm ci) && \
 	node ts-src/run-wasm-test.mjs "$$W" "$$T/ghc_wasm_jsffi.mjs"
 
-# The page's own files, beside the bundle, the glue and the binary: build-ts
-# deploys them and page-gate gates them, so the gate loads the files
-# build-ts deploys, the two recipes' copying differing only in its
-# destination.
+# deployPage puts the page into the directory given: its own files, the
+# bundle, the glue and the binary. build-ts deploys it and page-gate gates
+# it, so the gate loads the files build-ts deploys.
 # lz-string.min.js is copied after the npm ci that installs it.
 PAGE_FILES = GameDefinition/index.html GameDefinition/fonts/16x16xw.woff GameDefinition/fonts/*.ttf.woff
 LZSTRING = ts-src/node_modules/lz-string/libs/lz-string.min.js
+deployPage = cp $(PAGE_FILES) "$(1)" && \
+	(cd ts-src && npm ci && BUILD_OUTDIR="$(1)" npm run build) && \
+	cp $(LZSTRING) "$(1)" && \
+	W=$$(wasm32-wasi-cabal list-bin exe:LambdaHack --enable-optimization) && \
+	$(POSTLINK) --input "$$W" --output "$(1)/ghc_wasm_jsffi.mjs" && \
+	cp "$$W" "$(1)/LambdaHack.wasm"
 
 build-ts:
 	. ~/.ghc-wasm/env && \
-	D=$(CURDIR)/../lambdahack.github.io && \
-	cp $(PAGE_FILES) "$$D" && \
-	(cd ts-src && npm ci && BUILD_OUTDIR="$$D" npm run build) && \
-	cp $(LZSTRING) "$$D" && \
-	W=$$(wasm32-wasi-cabal list-bin exe:LambdaHack --enable-optimization) && \
-	~/.ghc-wasm/wasm32-wasi-ghc/lib/post-link.mjs --input "$$W" --output "$$D/ghc_wasm_jsffi.mjs" && \
-	cp "$$W" "$$D/LambdaHack.wasm"
+	$(call deployPage,$(CURDIR)/../lambdahack.github.io)
 
 test-ts:
 	cd ts-src && \
-	npm run typecheck && npm run format:check && npx vitest run
+	npm run typecheck && npm run format:check && npm test
 
 # The deployed-page gate: the page as build-ts would deploy it,
 # in a scratch directory, loaded in headless Firefox and headless
@@ -355,12 +350,7 @@ page-gate: build-wasm
 	. ~/.ghc-wasm/env && \
 	T=$$(mktemp -d) && \
 	trap 'rm -rf "$$T"' EXIT && \
-	cp $(PAGE_FILES) "$$T" && \
-	(cd ts-src && npm ci && BUILD_OUTDIR="$$T" npm run build) && \
-	cp $(LZSTRING) "$$T" && \
-	W=$$(wasm32-wasi-cabal list-bin exe:LambdaHack --enable-optimization) && \
-	~/.ghc-wasm/wasm32-wasi-ghc/lib/post-link.mjs --input "$$W" --output "$$T/ghc_wasm_jsffi.mjs" && \
-	cp "$$W" "$$T/LambdaHack.wasm" && \
+	$(call deployPage,$$T) && \
 	node ts-src/page-gate.mjs "$$T"
 
 serve-wasm:
