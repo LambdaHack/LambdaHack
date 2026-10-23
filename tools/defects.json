@@ -385,6 +385,27 @@
    "harm": "latent",
    "discovery": "review",
    "notes": "Found by the code review of 2026-10-23 over the year's diff; that no workflow, cabal.haskell-ci or cabal.project names the flag was checked by grep, and that the release build compiles at the fixing tree by building it. The regenerated workflow pins distribution jammy, the image it ran on, the installed haskell-ci defaulting to noble; .github/haskell-ci.patch was rebuilt over the new steps, two regenerates giving the same file. A tier-1 record: the corpus root is tools/."
+  },
+  {
+   "id": "check-sync-exports-01",
+   "program": "check-sync-exports.py",
+   "name": "a sync export whose right-hand side merely began with `syncExport \"NAME\"` passed, so code sequenced after the application, outside syncExport's handler and scheduler run, went unreported",
+   "family": "scan-for-parse",
+   "fix_rev": "self",
+   "trigger": "`lhSeq e = syncExport \"lhSeq\" (decide e) >>= dispatch` as a sync export's equation",
+   "ok": "exit 1 with `FAIL lhSeq (A.hs:6): the equation of `lhSeq` at A.hs:4 is not `syncExport \"lhSeq\"` applied to its whole right-hand side`",
+   "bug": "`ok   lhSeq (A.hs:6) is built on syncExport` and exit 0",
+   "proved": "ran",
+   "harm": "latent",
+   "discovery": "review",
+   "notes": "Found by the code review of 2026-10-23 over the year's diff. A prefix match stood in for reading where the application ends; the argument is now a `$` and what follows it, or one parenthesized expression or name with at most a `where` clause after it, the equation ending at the next line in column 0. The self-test's lhSeq and lhThen draw the finding and lhParen and lhNamed stay quiet; its mutant in tools/mutants.py restores the head-only match.",
+   "plant": "a git repository whose one tracked file defines lhSeq as above and exports it sync",
+   "plant_cmd": "git init -q . && printf '%s\\n' 'module A where' '' 'lhSeq :: Int -> IO ()' 'lhSeq e = syncExport \"lhSeq\" (decide e) >>= dispatch' '' 'foreign export javascript \"lhSeq sync\" lhSeq :: Int -> IO ()' > A.hs && git add A.hs",
+   "invoke": [],
+   "expect_exit": 1,
+   "expect_text": "FAIL lhSeq (A.hs:6): the equation of `lhSeq` at A.hs:4 is not `syncExport \"lhSeq\"` applied to its whole right-hand side",
+   "bug_exit": 0,
+   "bug_text": "ok   lhSeq (A.hs:6) is built on syncExport"
   }
  ]
 }

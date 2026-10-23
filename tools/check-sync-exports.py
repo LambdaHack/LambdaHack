@@ -10,9 +10,12 @@ and it leaves the threads it wakes in the run queue, where nothing runs them
 until JS calls into the RTS again. `syncExport`, in
 `engine-src/Game/LambdaHack/Client/UI/Frontend/Wasm.hs`, does both, and its
 haddock says why and names the GHC issue. So each equation that defines
-a sync export's Haskell binding must have `syncExport "NAME"` at the head
-of its right-hand side, NAME being the export's JS name; and `syncExport`
-is applied to no other name, an async export owing neither.
+a sync export's Haskell binding must have as its whole right-hand side
+`syncExport "NAME"` applied to one argument, NAME being the export's JS
+name and the argument a `$` and what follows it, or a parenthesized
+expression or a name with nothing after it but a `where` clause, since
+code sequenced after the application runs outside `syncExport`; and
+`syncExport` is applied to no other name, an async export owing neither.
 
 A dynamic sync export, `foreign import javascript "wrapper sync"`, makes
 a JS function of whatever closure it is given at run time, which no textual
@@ -76,6 +79,31 @@ def equations(code, hs):
     return eqs
 
 
+def built_on(code, rhs, js):
+    """Whether the right-hand side at offset `rhs` is `syncExport "js"`
+    applied to one argument and to nothing more. The equation ends at the
+    next line starting in column 0; a string holding a parenthesis is
+    miscounted, which makes a finding, never a pass."""
+    m = re.match(rf'syncExport\s+"{re.escape(js)}"(?![\w"])\s*', code[rhs:])
+    if not m:
+        return False
+    end = re.search(r"\n(?=\S)", code[rhs:])
+    arg = code[rhs + m.end():rhs + end.start() if end else len(code)]
+    if arg.startswith("$"):
+        return True
+    if arg.startswith("("):
+        depth = 0
+        for i, c in enumerate(arg):
+            depth += {"(": 1, ")": -1}.get(c, 0)
+            if depth == 0:
+                break
+        rest = arg[i + 1:] if depth == 0 else "unclosed"
+    else:
+        name = re.match(r"[a-z_][\w']*", arg)
+        rest = arg[name.end():] if name else "no argument"
+    return re.fullmatch(r"\s*(?:where\b.*)?", rest, re.S) is not None
+
+
 def scan(files):
     """`files` maps a path to its text. Returns the lines to print, ok
     lines first, the number of findings among them and the number of sync
@@ -95,8 +123,7 @@ def scan(files):
             continue
         unseen = [s for s, rhs in eqs if rhs is None]
         bad = [s for s, rhs in eqs if rhs is not None and
-               not re.match(rf'syncExport\s+"{re.escape(js)}"(?![\w"])',
-                            code[rhs:])]
+               not built_on(code, rhs, js)]
         for s in unseen:
             fails.append(f"FAIL {js} ({path}:{line}): the equation of `{hs}`"
                          f" at {path}:{line_of(code, s)} has no `=` on its"
@@ -104,7 +131,8 @@ def scan(files):
         for s in bad:
             fails.append(f"FAIL {js} ({path}:{line}): the equation of `{hs}`"
                          f" at {path}:{line_of(code, s)} is not"
-                         f' `syncExport "{js}" ...`')
+                         f' `syncExport "{js}"` applied to its whole'
+                         f" right-hand side")
         bad += unseen
         if not bad:
             oks.append(f"ok   {js} ({path}:{line}) is built on syncExport")
@@ -165,6 +193,18 @@ foreign export javascript "lhWheel"
 
 syncExport :: String -> IO () -> IO ()
 syncExport name body = body
+
+lhParen :: IO ()
+lhParen = syncExport "lhParen" (pure ())
+
+foreign export javascript "lhParen sync" lhParen :: IO ()
+
+lhNamed :: IO ()
+lhNamed = syncExport "lhNamed" body
+  where
+    body = pure ()
+
+foreign export javascript "lhNamed sync" lhNamed :: IO ()
 ''',
     "Bad.hs": '''\
 module Bad where
@@ -207,10 +247,21 @@ lhGuard n
   | n > 0 = pure ()
 
 foreign export javascript "lhGuard sync" lhGuard :: Int -> IO ()
+
+lhSeq :: Int -> IO ()
+lhSeq e = syncExport "lhSeq" (decide e) >>= dispatch
+
+foreign export javascript "lhSeq sync" lhSeq :: Int -> IO ()
+
+lhThen :: IO ()
+lhThen = syncExport "lhThen" body >> pure ()
+
+foreign export javascript "lhThen sync" lhThen :: IO ()
 ''',
 }
 
-SELF_TEST_OK = ["ok   lhKey (Good.hs:7)", "ok   otherName (Good.hs:14)"]
+SELF_TEST_OK = ["ok   lhKey (Good.hs:7)", "ok   otherName (Good.hs:14)",
+                "ok   lhParen (Good.hs:33)", "ok   lhNamed (Good.hs:40)"]
 SELF_TEST_FAIL = [
     "FAIL lhPaste (Bad.hs:6): the equation of `lhPaste` at Bad.hs:4",
     "FAIL lhCopy (Bad.hs:11): the equation of `lhCopy` at Bad.hs:9",
@@ -221,6 +272,8 @@ SELF_TEST_FAIL = [
     'FAIL Bad.hs:26: a "wrapper sync" import',
     'FAIL syncExport "lhPiped" at Bad.hs:33 names no sync export',
     "FAIL lhGuard (Bad.hs:40): the equation of `lhGuard` at Bad.hs:37 has no",
+    "FAIL lhSeq (Bad.hs:45): the equation of `lhSeq` at Bad.hs:43 is not",
+    "FAIL lhThen (Bad.hs:50): the equation of `lhThen` at Bad.hs:48 is not",
 ]
 # Shapes that must stay quiet: an async export without syncExport, the
 # commented-out exports and wrapper, syncExport's own definition, a JS
