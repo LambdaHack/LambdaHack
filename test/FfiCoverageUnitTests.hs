@@ -68,6 +68,10 @@ ffiCoverageUnitTests = testGroup "ffiCoverageUnitTests" $
         File.renameFile (path "renameFrom") (path "renameTo")
         File.readFile (path "renameTo") >>= (@?= contents)
         File.doesFileExist (path "renameFrom") >>= (@?= False)
+  , testCase "tryWriteFile returns from a refused write, writing nothing" $
+      withScratch $ \path -> do
+        File.tryWriteFile (refused path) $ T.pack contents
+        File.doesFileExist (refused path) >>= (@?= False)
   , testCase "strictDecodeEOF rejects a file whose EOF marker is damaged" $
       withScratch $ \path -> do
         File.encodeEOF (path "damageSource") version payload
@@ -148,6 +152,16 @@ withScratch k = do
       Right () -> return dir
       Left e | isAlreadyExistsError e -> fresh tmp (n + 1)
              | otherwise -> Ex.throwIO e
+#endif
+
+-- | A file name the backend refuses to write: natively one in a directory
+-- that does not exist; under wasm a key under the prefix the driver's
+-- @localStorage@ refuses with the error a full browser storage throws.
+refused :: (String -> FilePath) -> FilePath
+#ifdef USE_WASMFILE
+refused path = "quotaExceeded/" ++ path "refused"
+#else
+refused path = path "absent" </> "refused"
 #endif
 
 -- | Copy an 'File.encodeEOF' save to a new name with the last character of

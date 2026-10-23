@@ -1,10 +1,10 @@
 {-# LANGUAGE MagicHash, UnliftedFFITypes #-}
 -- | Saving/loading to JS storage, mimicking operations on files, for the
 -- wasm32-wasi frontend. Mirrors JSFile.hs (the GHCJS equivalent) exactly in
--- storage format and behavior -- same lz-string compression, same
--- EOF-marker scheme, same raw @path@-as-key convention -- but via GHC's wasm
--- JSFFI (GHC.Wasm.Prim) instead of ghcjs-dom, since wasm32-wasi has no
--- DOM/Window binding layer and localStorage is reached as a plain JS global.
+-- storage format -- same lz-string compression, same EOF-marker scheme, same
+-- raw @path@-as-key convention -- but via GHC's wasm JSFFI (GHC.Wasm.Prim)
+-- instead of ghcjs-dom, since wasm32-wasi has no DOM/Window binding layer
+-- and localStorage is reached as a plain JS global.
 --
 -- This deliberately bypasses the WASI virtual filesystem (the empty
 -- in-memory PreopenDirectory the loader sets up for stdio) entirely: saves
@@ -62,6 +62,13 @@ foreign import javascript unsafe "$1 === null"
 
 foreign import javascript unsafe "globalThis.localStorage.setItem($1, $2)"
   js_setItem :: JSString -> JSString -> IO ()
+
+-- | Store an item, returning the error the storage throws where it refuses,
+-- a full one among them, and null where it stores the item: a throw out
+-- of an unsafe import is no Haskell exception, so it is caught here.
+foreign import javascript unsafe
+  "try { globalThis.localStorage.setItem($1, $2); return null; } catch (e) { return String(e); }"
+  js_trySetItem :: JSString -> JSString -> IO JSVal
 
 foreign import javascript unsafe "globalThis.localStorage.removeItem($1)"
   js_removeItem :: JSString -> IO ()
@@ -122,11 +129,14 @@ tryCreateDir _dir = return ()
 doesFileExist :: FilePath -> IO Bool
 doesFileExist path = isJust <$> getItem path
 
--- | Takes Text, not String, matching HSFile.hs's real signature.
+-- | Takes Text, not String, matching HSFile.hs's real signature, and
+-- prints the error of a refused write, as HSFile.hs prints its exception.
 tryWriteFile :: FilePath -> Text -> IO ()
 tryWriteFile path content = do
   exists <- doesFileExist path
-  unless exists $ js_setItem (toJSString path) =<< textToJSString content
+  unless exists $ do
+    err <- js_trySetItem (toJSString path) =<< textToJSString content
+    unless (js_isNull err) $ print $ fromJSString $ JSString err
 
 readFile :: FilePath -> IO String
 readFile path = do

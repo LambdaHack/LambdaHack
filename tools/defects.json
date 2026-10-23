@@ -1044,6 +1044,20 @@
    "harm": "latent",
    "discovery": "review",
    "notes": "Found by the code review of 2026-10-23 over the year's diff. The superclass change is hashable's CHANGES.md entry for 1.4.0.0, read in its 1.4.3.0 tarball; the build against hashable 1.3 was not run, and the plan resolves 1.5.1.0. A tier-1 record: the corpus root is tools/."
+  },
+  {
+   "id": "WasmFile-01",
+   "program": "engine-src/Game/LambdaHack/Common/WasmFile.hs",
+   "name": "tryWriteFile called localStorage.setItem through an unsafe import with no catch, so a refused write, a full storage's QuotaExceededError among them, unwound the whole program where HSFile.hs's twin prints its IOException and returns",
+   "family": "other:uncaught-host-error",
+   "fix_rev": "self",
+   "trigger": "tryWriteFile on a key the driver's localStorage stub refuses, `quotaExceeded/ffiCoverage/refused`",
+   "ok": "js_trySetItem catches the throw in JS and returns its text, which tryWriteFile prints; the FfiCoverage case `tryWriteFile returns from a refused write, writing nothing` passes under make test-wasm",
+   "bug": "the QuotaExceededError went uncaught through the wasm stack and killed the test binary, make test-wasm failing with `DOMException [QuotaExceededError]: The quota has been exceeded.`",
+   "proved": "ran",
+   "harm": "latent",
+   "discovery": "review",
+   "notes": "Found by the code review of 2026-10-23 over the year's diff. Its callers are the UI config writes in UIOptionsParse.hs and ProtocolM.hs and dumpTextFile in MonadClient.hs. Both directions were watched that day under make test-wasm; natively the same case passes over HSFile.hs, which prints `withFile: does not exist`. A tier-1 record: the corpus root is tools/, and the case is the test suite's."
   }
  ]
 }

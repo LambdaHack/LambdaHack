@@ -57,12 +57,20 @@ export function requireFiles(usage, wasmPath, jsffiPath) {
 
 // An in-memory stand-in for the browser's localStorage, with the methods
 // WasmFile.hs calls; getItem returns null for an absent key, as the
-// browser's does, which WasmFile.hs's presence check relies on.
+// browser's does, which WasmFile.hs's presence check relies on. setItem
+// refuses a key under quotaExceeded/ with the error a full browser storage
+// throws, for the suite's case of a refused write.
 function memoryStorage() {
   const items = new Map();
   return {
     getItem: (k) => (items.has(String(k)) ? items.get(String(k)) : null),
     setItem: (k, v) => {
+      if (String(k).startsWith("quotaExceeded/")) {
+        throw new DOMException(
+          "The quota has been exceeded.",
+          "QuotaExceededError",
+        );
+      }
       items.set(String(k), String(v));
     },
     removeItem: (k) => {
