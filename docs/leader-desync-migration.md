@@ -268,7 +268,7 @@ snippets, not the exit status alone --- a suite that silently loses a test still
 passes, and an anchor still resolves on a line rewritten around it:
 
 ```
-native     cabal build && cabal test && hlint .        # 154 tests today
+native     cabal build && cabal test && hlint .        # every test passing
            && git add <every .hs the                   # hlint must print:
                       item's Owns names>               #   No hints -- and a
            && stylish-haskell -i <those paths>         #   hint that needs a
@@ -316,26 +316,28 @@ a gate name means, and the price decides it: nearly every **Done** cell here
 names `native`, so a pointer would cost a cross-campaign read at each of them,
 against a chain that has moved once.
 
-Those three counts move at exactly three points, and the suite total
-at a fourth, and nowhere else, the 2026-08-07 repartition adding none of them:
-PR 0 takes them to 157, 28 and 11 --- two AS cases and one flip pin,
-the AS series itself going from thirteen to fifteen --- C8 adds its one
-`[contract]` case, taking them to 158, 29 and 11; C4 then deletes LR6, taking
-them to 157, 29 and 10; and 04.1 adds the eight pure cases of its decision
-table, which carry neither marker, so the suite total alone moves, to 165. Every
-other commit of PR 1 flips expectations without moving a count, which is why
-"count unmoved" is a real check on each of them rather than a formality.
-The three counts were re-measured on the unmodified tree on 2026-08-07
-and are 154, 26 and 10 as stated. A "count unmoved" in a **Done** below
-is against whichever of the four baselines its row follows, and this is the only
-place the sequence is stated, so a row that disagrees with it is wrong there
-rather than here. A count that shifts otherwise is the finding, not a nuisance:
-both patterns select on the test *name*, so a renamed test leaves its series
-silently, and, matching by containment, a marker merely *containing* `contract`
-or `LR-flip` joins it --- `docs/wasm-frontend-unified-plan.md` keeps the other
-campaign's markers outside both, twice having had to. Builds take minutes ---
-set the timeout rather than reading one as a hang --- and the flag set stays
-fixed for the campaign, `+with_expensive_assertions` included, since changing
+Those two counts move at exactly three points, and nowhere else, the 2026-08-07
+repartition adding none of them: PR 0 takes them to 28 and 11 --- two AS cases
+and one flip pin, the AS series itself going from thirteen to fifteen --- C8
+adds its one `[contract]` case, taking them to 29 and 11; and C4 then deletes
+LR6, taking them to 29 and 10. The suite's total is no such count, the wasm
+campaign adding tests of its own: `native` asks only that every test pass,
+and an item that adds or deletes tests says so in its commit, as PR 0, C8 and C4
+do and as 04.1 does with the eight pure cases of its decision table, which carry
+neither marker. Every other commit of PR 1 flips expectations without moving
+a count, which is why "count unmoved" is a real check on each of them rather
+than a formality. The two counts were re-measured on the unmodified tree
+on 2026-08-07 and are 26 and 10 as stated, as they still were on 2026-10-23.
+A "count unmoved" in a **Done** below is against whichever of the three
+baselines its row follows, and this is the only place the sequence is stated,
+so a row that disagrees with it is wrong there rather than here. A count
+that shifts otherwise is the finding, not a nuisance: both patterns select
+on the test *name*, so a renamed test leaves its series silently, and, matching
+by containment, a marker merely *containing* `contract` or `LR-flip` joins
+it --- `docs/wasm-frontend-unified-plan.md` keeps the other campaign's markers
+outside both, twice having had to. Builds take minutes --- set the timeout
+rather than reading one as a hang --- and the flag set stays fixed
+for the campaign, `+with_expensive_assertions` included, since changing
 it rebuilds every local package. The citation pass is owed after every code step
 and not only at the end: steps 2 to 5 rewrite the very lines sec. 03
 and the post-mortem's secs. 10--11 anchor on, and the wasm plan's Appendix C
@@ -470,9 +472,9 @@ an empty pending frame --- and the apply-dialog pin of the post-mortem's sibling
 needs `permittedApplyClient` moved out of `HandleHumanLocalM`'s
 `EXPOSE_INTERNAL` block into the group beside `permittedProjectClient`
 and no walkable board. All three pin today's behaviour and land green; nothing
-here touches the engine beyond that export move. It takes the three counts
-to 157, 28 and 11, the first of the four movements "Running this plan" permits,
-and the AS series to fifteen.
+here touches the engine beyond that export move. It takes the two counts to 28
+and 11, the first of the three movements "Running this plan" permits, and
+the AS series to fifteen.
 
 **Split** --- two commits, their titles drafted in sec. 02. (1) the two
 AS cases, named `contract AS14` and `contract AS15` as the series is, since
@@ -495,19 +497,20 @@ and sum-typed selection both write `test/UnitTestHelpers.hs`; 04.4 writes
 the wasm plan at this campaign's landing, and that plan's own lock does
 not serialize on itself; and 04.4 appends to both records after this item.
 
-**Done** --- `native` at 157 tests, `contract` at 28, `LR-flip` at 11,
-`AS` at 15, `docs`, the outcome lines going into the records here; `cite`
-with the printed snippets re-read, `doctest`; and, for each of the two AS cases,
-the non-vacuity the harness cannot supply. For the special-event one: run
-it once against `testFaction` in place of the party fixture and watch it fail,
-that being the fixture that silences the effect. For AS15: apply the break
-to the engine and revert it, as step 4's flip loop does --- call `resetPlayBack`
-in `promptGetKey`'s no-macro branch (`FrameM.hs`), run the case, watch it fail,
-revert. AS15 is written precisely because AS4 and AS7 enter that branch
-and observe nothing, so a vacuous AS15 passes 04.1's "must pass without edits"
-gate exactly as a real one does and reproduces the hole it was written to close.
-A probe applied and reverted inside one row is outside **Owns**, which locks
-what a commit carries, so `FrameM.hs` stays 04.1's.
+**Done** --- `native`, the three new tests among those passing, `contract`
+at 28, `LR-flip` at 11, `AS` at 15, `docs`, the outcome lines going
+into the records here; `cite` with the printed snippets re-read, `doctest`; and,
+for each of the two AS cases, the non-vacuity the harness cannot supply.
+For the special-event one: run it once against `testFaction` in place
+of the party fixture and watch it fail, that being the fixture that silences
+the effect. For AS15: apply the break to the engine and revert it, as step 4's
+flip loop does --- call `resetPlayBack` in `promptGetKey`'s no-macro branch
+(`FrameM.hs`), run the case, watch it fail, revert. AS15 is written precisely
+because AS4 and AS7 enter that branch and observe nothing, so a vacuous AS15
+passes 04.1's "must pass without edits" gate exactly as a real one does
+and reproduces the hole it was written to close. A probe applied and reverted
+inside one row is outside **Owns**, which locks what a commit carries,
+so `FrameM.hs` stays 04.1's.
 
 **Hands back** --- nothing.
 
@@ -631,16 +634,16 @@ for the re-anchorings, and C7 for the closing reading. PR 0 also writes
 `test/HandleHumanLocalMUnitTests.hs`; `test/InventoryMUnitTests.hs` is C3's,
 then C8's, until 04.4's deletion commit.
 
-**Done** --- `native` at 157 tests, `contract` unchanged at 28 --- the five
-sites above given their witness and pointman, their expectations audited as step
-4 says rather than assumed --- `LR-flip` at 11 with four flipped ---
-the `psuitReq` verdict pin, the fling dialog, `getFull`, and PR 0's apply pin,
-PR 0 being this row's dependency through C1 --- each verified first against
-the candidate as step 4 spells out, `census` read for its counts, `cite`
-with the printed snippets re-read rather than the exit status, `docs`,
-`doctest`, and --- read rather than run --- sec. 03's transitive callee walk
-over the read-live rows this item converts whose wait column reads `---`:
-`getItem`, `chooseItemHuman`, `psuitReq` and `chooseItemMenuHuman`.
+**Done** --- `native`, `contract` unchanged at 28 --- the five sites above given
+their witness and pointman, their expectations audited as step 4 says rather
+than assumed --- `LR-flip` at 11 with four flipped --- the `psuitReq` verdict
+pin, the fling dialog, `getFull`, and PR 0's apply pin, PR 0 being this row's
+dependency through C1 --- each verified first against the candidate as step 4
+spells out, `census` read for its counts, `cite` with the printed snippets
+re-read rather than the exit status, `docs`, `doctest`, and --- read rather
+than run --- sec. 03's transitive callee walk over the read-live rows this item
+converts whose wait column reads `---`: `getItem`, `chooseItemHuman`, `psuitReq`
+and `chooseItemMenuHuman`.
 
 **Hands back** --- nothing.
 
@@ -678,9 +681,9 @@ drafts, and (2) the re-anchoring, exactly as C3's; (2) carries the ledger flip.
 in the re-anchoring commit if (1) rewrote a line it anchors on (list at C3),
 and this document.
 
-**Done** --- `native` at 158 tests, `contract` at 29 with the new case ---
-the second of the four count movements "Running this plan" permits; say
-so in the commit --- `LR-flip` unmoved at 11, `cite` as C3's, `docs`.
+**Done** --- `native`, `contract` at 29 with the new case --- the second
+of the three count movements "Running this plan" permits; say so in the commit
+--- `LR-flip` unmoved at 11, `cite` as C3's, `docs`.
 
 **Hands back** --- *judgement*: whether the pane redrawn between two keypresses
 reads right to a player, which no test sees; the substitute gate in **Done**
@@ -723,9 +726,9 @@ anchors (1) rewrites (claimants at 04.4), and this document. **The claimant list
 for `HandleHelperM.hs` lives here**: C4 and C6. `test/HandleHelperMUnitTests.hs`
 has one writer until 04.4's deletion commit.
 
-**Done** --- `native`, `contract` unchanged at 28, `LR-flip` at 10 with LR3,
+**Done** --- `native`, `contract` unchanged at 29, `LR-flip` at 10 with LR3,
 LR4, X1 and X2 flipped and LR5 changed in shape, LR6 deleted, so the flip count
-falls by one (11 -> 10) and the suite to 157 --- say so in the commit,
+falls by one (11 -> 10) and the suite loses a test --- say so in the commit,
 an unexplained count drop being what sec. 00 tells a reader to treat
 as a finding; `census` read for its counts; `cite`, its printed snippets re-read
 rather than its exit status, as C3's; `docs`; `doctest`; and, read rather
@@ -824,8 +827,8 @@ and the sec. 04 window is what no run has yet reached.
 the abort-split one after it), and `docs/leader-desync-bug.md` for the reading
 its **Done** ends on (list at C3).
 
-**Done** --- `native` at 157 tests, `contract` at 29, `LR-flip` at 10,
-`playtests`, `cite` a last time, and `docs` with the reading pass run whole.
+**Done** --- `native`, `contract` at 29, `LR-flip` at 10, `playtests`, `cite`
+a last time, and `docs` with the reading pass run whole.
 
 **Hands back** --- *judgement*: the timeline session of the post-mortem's sec.
 04 in the real frontend --- a recorded macro driving a go-to-xhair run,
@@ -1303,8 +1306,8 @@ the beginning of step 1.
    Two rulings the flip needs, neither of which is an expected value. **LR6
    is deleted, not flipped**: it pins that a dangling stale `ActorId` yields
    an arbitrary pick, and after the conversion there is no argument to dangle,
-   so there is nothing to edit it to. Its going takes the flip series 11 -> 10
-   and the suite 158 -> 157, the third of the four movements sec. 00's count
+   so there is nothing to edit it to. Its going takes the flip series 11 -> 10,
+   and a test from the suite, the third of the three movements sec. 00's count
    sequence permits; say so in the commit, since an unexplained count drop
    is exactly what sec. 00 tells a reader to treat as a finding. **And a test
    that needs a signature edit, or a pointman designated so the witness can
@@ -2014,13 +2017,12 @@ and 04.4), and this document. **The claimant list for `FrameM.hs` lives here**:
 04.1, 04.2 and 04.3, one `FrameM.hs` commit each in that order. **So does
 `test/FrameMUnitTests.hs`'s**: PR 0, C4 and 04.1.
 
-**Done** --- `native`, at 165 tests: the eight pure cases of the table below
-are green and are the fourth and last count movement "Running this plan"
-permits, `AS` staying at 15 and untouched --- PR 0's two cases included, written
-against the unsplit primitive and surviving the split unedited ---
-and `contract` at 29, neither marker being on a pure case; `cite`,
-the extraction rewriting `FrameM.hs` lines the abort-split record anchors on;
-and `docs`.
+**Done** --- `native`, the eight pure cases of the table below among the tests
+passing, which move neither count "Running this plan" tracks, `AS` staying at 15
+and untouched --- PR 0's two cases included, written against the unsplit
+primitive and surviving the split unedited --- and `contract` at 29, neither
+marker being on a pure case; `cite`, the extraction rewriting `FrameM.hs` lines
+the abort-split record anchors on; and `docs`.
 
 **Hands back** --- nothing.
 
@@ -2108,16 +2110,16 @@ records the head callout disposes of). The last four are here because
 the ritual's work in them is not a rewording but a repair, and an **Owns**
 that omitted them would forbid the very commit that has to make it.
 
-**Done** --- `native` at 165, since (2) edits two test files; `AS` at 15
-with no edits to it; `contract` at 29; and `LR-flip` at 10 with X1 and X2
-passing unedited, that being the gate that reaches them --- both are named
-`LR-flip X1` and `LR-flip X2`, so no path of theirs contains `contract`
-and a green `contract` run is silent about them, the containment trap sec. 00
-warns of. Then, for (2), `docs` over its **Owns** less this document, which (2)
-deletes, the `check-doc-refs.py` run and the `git grep` the head callout ends
-on, read as that bullet says, and `check-all tools` whole --- self-tests,
-mutants and the defect records in both directions --- since `tools/checks.py`,
-checkers, a live control and defect records all move with the deletion.
+**Done** --- `native`, since (2) edits two test files; `AS` at 15 with no edits
+to it; `contract` at 29; and `LR-flip` at 10 with X1 and X2 passing unedited,
+that being the gate that reaches them --- both are named `LR-flip X1`
+and `LR-flip X2`, so no path of theirs contains `contract` and a green
+`contract` run is silent about them, the containment trap sec. 00 warns of.
+Then, for (2), `docs` over its **Owns** less this document, which (2) deletes,
+the `check-doc-refs.py` run and the `git grep` the head callout ends on, read
+as that bullet says, and `check-all tools` whole --- self-tests, mutants
+and the defect records in both directions --- since `tools/checks.py`, checkers,
+a live control and defect records all move with the deletion.
 
 **Hands back** --- nothing.
 
