@@ -77,16 +77,20 @@ pureMacroTests =
       keyMacroBuffer idle @?= Right mempty
 
   , -- [contract] Empty macro frames are dropped from the stack, but the
-    -- last frame always survives (it holds the user's in-game macro state).
+    -- last frame always survives (it holds the user's in-game macro state),
+    -- and a non-empty head stops the dropping, the stack under it kept.
     testCase
     "contract AS2: dropEmptyMacroFrames GCs empties, keeps the last frame" $ do
       let pending = emptyMacroFrame {keyPending = KeyMacro [kmX]}
           (mf1, stack1) = dropEmptyMacroFrames emptyMacroFrame [pending]
           (mf2, stack2) = dropEmptyMacroFrames emptyMacroFrame [emptyMacroFrame]
+          (mf3, stack3) = dropEmptyMacroFrames pending [emptyMacroFrame]
       keyPending mf1 @?= KeyMacro [kmX]
       null stack1 @? "non-empty frame must become the head"
       keyPending mf2 @?= KeyMacro []
       null stack2 @? "all-empty stack must collapse to the last frame"
+      keyPending mf3 @?= KeyMacro [kmX]
+      length stack3 @?= 1
   ]
 
 -- * promptGetKey contract tests (the abort-split design's safety net)
