@@ -30,6 +30,10 @@
 //   run-wasm-test.mjs's usage, and the args go to lhStart as its WASI
 //   argv. Exit 0 when every check holds, 1 when one fails, 2 when the run
 //   did not happen.
+//
+// Non-vacuity: some of the checks' controls are mutants in
+// tools/mutants-deep.py, each judged by `make test-reactor` and replayed by
+// `selftest-mutants.py tools/mutants-deep.py`.
 
 import { mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
