@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { contentType } from "./serve-core.js";
+import { contentType, sitePath } from "./serve-core.js";
 
 describe("contentType", () => {
   it("serves JS and MJS as text/javascript (so ES modules load)", () => {
@@ -30,5 +30,24 @@ describe("contentType", () => {
   });
   it("ignores dots in directory names", () => {
     expect(contentType("/a.b/c/file")).toBe("application/octet-stream");
+  });
+});
+
+describe("sitePath", () => {
+  it("maps the root to index.html and drops the query", () => {
+    expect(sitePath("/")).toBe("/index.html");
+    expect(sitePath("/?seed=1")).toBe("/index.html");
+    expect(sitePath("/bundle.js?v=2")).toBe("/bundle.js");
+  });
+  it("decodes percent-escapes", () => {
+    expect(sitePath("/a%20b.woff")).toBe("/a b.woff");
+  });
+  it("keeps parent-directory steps under the root", () => {
+    expect(sitePath("/../../etc/passwd")).toBe("/etc/passwd");
+    expect(sitePath("/%2e%2e/x")).toBe("/x");
+  });
+  it("refuses a malformed escape rather than throwing, a throw here having ended the server", () => {
+    expect(sitePath("/%E0%A4%A")).toBeNull();
+    expect(sitePath("/100%")).toBeNull();
   });
 });

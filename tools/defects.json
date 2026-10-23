@@ -220,6 +220,20 @@
    "harm": "latent",
    "discovery": "review",
    "notes": "Found by the code review of 2026-10-23 over the year's diff. Watched as list-bin's output under a scratch project carrying the development config, the -O path with the flag and the noopt/ path without it; the consequence, a stale noopt binary run or deployed or a missing file, is inferred and was not run. The live cabal.project.local carries no optimization line, and CI none at all, which is why nothing had fired. Item 3.2's Done recipe in docs/wasm-frontend-work-list.md made the same bare call and is fixed with it. A tier-1 record: the corpus root is tools/."
+  },
+  {
+   "id": "serve-01",
+   "program": "ts-src/src/serve.ts",
+   "name": "the static server called decodeURIComponent in its request listener unguarded, so one malformed percent-escape ended the process",
+   "family": "unverified-state",
+   "fix_rev": "self",
+   "trigger": "`GET /%E0%A4%A`, or any request path with a stray `%`",
+   "ok": "a 400 for that request, and the server goes on serving",
+   "bug": "an uncaught `URIError: URI malformed` and exit 1, every later request getting no response; under make serve-wasm the server is gone, and under page-gate its server child dies mid-run",
+   "proved": "ran",
+   "harm": "latent",
+   "discovery": "review",
+   "notes": "Found by the code review of 2026-10-23 over the year's diff, and watched on the bundled server: one malformed request, then no response to `/`. The decoding moved into serve-core.ts as sitePath, whose vitest cases include the malformed escape; with its catch removed that case fails on the URIError. A tier-1 record: the corpus root is tools/, and the case is vitest's."
   }
  ]
 }
