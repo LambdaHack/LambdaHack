@@ -6,8 +6,10 @@
 // load works, and it runs locally, before every browser landing, by ruling
 // (docs/wasm-frontend-work-list.md, the page gate under Handing an item); CI
 // stays blind to the page by that same ruling. Exit 0 when every assertion
-// holds in both browsers, 1 when one fails, 2 when the run did not happen: no
-// Firefox, Chromium or chromedriver, no BiDi endpoint, no server.
+// holds in both browsers, 1 when one fails, 2 when the run did not happen:
+// no browser named or an unknown one, no Firefox, Chromium or chromedriver,
+// no BiDi endpoint or one that closes or stops answering, no server, a throw
+// outside the assertions; a FAIL already printed keeps 1.
 //
 // Usage: node page-gate.mjs <site-dir>   (Node 22+, for the global WebSocket)
 //   PAGE_GATE_OVERLAYS=1 also requires an overlay submission, once 2.4 lands.
@@ -44,12 +46,18 @@ const CHROMEDRIVER = process.env.CHROMEDRIVER ?? "chromedriver";
 const BROWSERS = (process.env.PAGE_GATE_BROWSERS ?? "firefox,chromium")
   .split(",")
   .filter(Boolean);
+// How long a BiDi command may go unanswered.
+const COMMAND_MS = 60000;
 
+// Every child is killed at exit, whichever verdict ends the run, so that no
+// server or browser outlives the gate holding its port.
 const children = [];
+process.on("exit", () => {
+  for (const c of children) c.kill();
+});
 function blocked(msg) {
   console.error("BLOCKED: " + msg);
-  for (const c of children) c.kill();
-  process.exit(2);
+  process.exit(process.exitCode === 1 ? 1 : 2);
 }
 function fail(msg) {
   console.error("FAIL: " + msg);
@@ -63,6 +71,13 @@ async function waitFor(cond, ms, step = 250) {
     if (await cond()) return true;
   }
   return false;
+}
+process.on("uncaughtException", (e) => blocked(`uncaught: ${e?.stack ?? e}`));
+if (BROWSERS.length === 0) blocked("PAGE_GATE_BROWSERS names no browser");
+for (const name of BROWSERS) {
+  if (name !== "firefox" && name !== "chromium") {
+    blocked(`unknown browser ${name} in PAGE_GATE_BROWSERS`);
+  }
 }
 
 // --- static server, the bundle's own serve.mjs -------------------------
@@ -210,10 +225,20 @@ async function connect(url) {
       pending.delete(m.id);
     }
   };
+  // A browser that dies mid-gate closes the socket, and one that hangs
+  // answers nothing; either way the gate cannot go on.
+  ws.onclose = () => blocked("the BiDi connection closed mid-gate");
   function send(method, params) {
     return new Promise((ok) => {
       const id = nextId++;
-      pending.set(id, ok);
+      const timer = setTimeout(
+        () => blocked(`${method}: no reply within ${COMMAND_MS / 1000}s`),
+        COMMAND_MS,
+      );
+      pending.set(id, (m) => {
+        clearTimeout(timer);
+        ok(m);
+      });
       ws.send(JSON.stringify({ id, method, params }));
     }).then((m) => {
       if (m.type === "error") {
@@ -222,7 +247,13 @@ async function connect(url) {
       return m.result;
     });
   }
-  return { send, close: () => ws.close() };
+  return {
+    send,
+    close: () => {
+      ws.onclose = null;
+      ws.close();
+    },
+  };
 }
 
 const HASH = `(() => { const el = document.getElementById("screen");
@@ -371,7 +402,6 @@ async function gate(name, send) {
 
 for (const name of BROWSERS) {
   const start = { firefox: startFirefox, chromium: startChromium }[name];
-  if (!start) blocked(`unknown browser ${name} in PAGE_GATE_BROWSERS`);
   const browser = await start();
   const { send, close } = await connect(browser.url);
   try {
@@ -384,5 +414,4 @@ for (const name of BROWSERS) {
     await browser.stop();
   }
 }
-server.kill();
 process.exit(process.exitCode ?? 0);
