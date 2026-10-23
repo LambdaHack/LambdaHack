@@ -15,9 +15,10 @@ game mode each -- `testRaid-medium`, `testBrawl-medium`, `testShootout-medium`,
 `testHunt-medium`, `testFlight-medium`, `testZoo-medium`, `testAmbush-medium`,
 `testCrawl-medium`, `testSafari-medium`, `testBattle-medium`,
 `testDefense-medium`, `testDig-medium` and a few variants -- through
-the teletype frontend with `--automateAll`. Note the capitalised mode
-and the single hyphen: there is no `test-raid-medium`. Grep the Makefile
-for a mode name to find its exact invocation before adding a new one.
+the teletype frontend with `--automateAll`, bar `testDefense-medium`, which runs
+`--frontendLazy`. Note the capitalised mode and the single hyphen: there
+is no `test-raid-medium`. Grep the Makefile for a mode name to find its exact
+invocation before adding a new one.
 
 The headless targets select test frontends by flag: `--frontendNull` (frames
 forced but not displayed), `--frontendLazy` (frames not even computed),
