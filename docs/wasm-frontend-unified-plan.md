@@ -591,6 +591,18 @@ only that the plan was written is one the next reader has to skip.
   for a player on a German keyboard to play comfortably, by the key config,
   the engine or the help texts, the trade-offs between them his to rule; B.13
   has what is known and the trade-offs, the work list the row.
+- 2026-10-25 -- 1.8's **Decide first** ruled by Mikolaj: `Wasm.hs` keeps
+  the frame it displayed last, blank at first, as `Sdl.hs` keeps
+  `spreviousFrame`, and under `--printEachScreen` saves only a frame
+  that differs from it, `SingleFrame`'s derived `Eq` comparing the array
+  and the overlays, as SDL's unchanged-frame test does. Not the TS painter,
+  which the question offered for painting by diff: its diff compares a frame
+  with the cells painted so far, which it marks for repainting after a relayout
+  and under the last frame's overlays, so it would have kept the frame before
+  in a buffer of its own and needed a new argument to `lhPrintScreen` or a field
+  of the startup payload to tell such a save from `Ctrl+P`'s, which saves
+  an unchanged frame too; and the game driver, the item's check, never loads
+  `terminal.ts`.
 
 ## Repo facts the plan builds on
 

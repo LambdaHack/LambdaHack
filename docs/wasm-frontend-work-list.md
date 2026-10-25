@@ -340,7 +340,7 @@ Parity work stays in one checkout.
 
 Each item's design and rulings are in the record, under the same heading, R8's
 and R9's under B.12 and B.13, and 1.7's and 1.8's at Appendix C's gaps (2)
-and (3), with 1.7's ruling in the Log; what is here is how it lands.
+and (3), with their rulings in the Log; what is here is how it lands.
 
 ## Phase 0 --- shared foundations
 
@@ -956,27 +956,30 @@ that a browser reports the chord, and the Chromium run.
 
 ### 1.8 `--printEachScreen` on a changed frame only (small)
 
-**Split** --- two commits. (1) the browser saving a screenshot
-under `--printEachScreen` only for a frame that differs from the one before,
-as SDL saves inside its unchanged-frame test
+**Split** --- two commits. (1) `Wasm.hs` keeping the frame it displayed last,
+blank at first, as `Sdl.hs` keeps `spreviousFrame`, and saving a screenshot
+under `--printEachScreen` only for a frame that differs from it, as SDL saves
+inside its unchanged-frame test
 (`Sdl.hs:unless (arraysEqual && overlaysEqual) $ do`), where
-`Wasm.hs:when printEachScreen printScreen` saves on every `display`,
-with the game driver's check that each frame prints one
-(`run-wasm-game.mjs:const framePrints = () =>`) following --- the parity half
+`Wasm.hs:when printEachScreen printScreen` saves on every `display`; the game
+driver's check that each frame prints one
+(`run-wasm-game.mjs:const framePrints = () =>`) counting the frames that differ
+from the one before instead, of which its left-button release past a menu label
+paints none, that case requiring the menu unchanged; and the defect's record,
+with a deep mutant restoring the save on every `display` --- the parity half
 of the third gap the record's Appendix C re-audit found, 1.2 having closed
 the rest. (2) the outcome line under that gap, naming (1)'s hash, and the ledger
 flip. No allowlist entry: this item proposes no file.
 
 **Owns** --- `engine-src/Game/LambdaHack/Client/UI/Frontend/Wasm.hs`,
-`ts-src/run-wasm-game.mjs` and `docs/wasm-frontend-unified-plan.md`,
-and `ts-src/src/terminal.ts` if (a) keeps the previous frame in TS.
+`ts-src/run-wasm-game.mjs`, `tools/defects.json`, `tools/mutants-deep.py`
+and `docs/wasm-frontend-unified-plan.md`.
 
 **Done** --- `native`, `ts`, `wasm`, `reactor`, `deploy`, `page`, `docs`.
 
 **Hands back** --- nothing: the driver's count is the check.
 
-**Decide first** --- (a) which side keeps the previous frame: `Wasm.hs`, which
-keeps none today, or the TS painter, which already paints by diff.
+**Decide first** --- nothing; the ruling is the record's, in its Log.
 
 ## Phase 2 --- multi-font, as extraction rather than re-implementation
 
