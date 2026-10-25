@@ -1116,7 +1116,8 @@ for the encode fixtures,
 `engine-src/Game/LambdaHack/Client/UI/Frontend/Wasm.hs`,
 `ts-src/src/overlay-core.ts`, `ts-src/src/overlay-core.test.ts`,
 `ts-src/src/terminal.ts`, `ts-src/src/loader.ts`, `ts-src/run-wasm-test.mjs`
-and `docs/wasm-frontend-unified-plan.md`.
+and `test/FfiCoverageUnitTests.hs` for the coverage case, `ts-src/page-gate.mjs`
+for its header's naming of the hook, and `docs/wasm-frontend-unified-plan.md`.
 
 **Done** --- `native`, `ts`, `wasm`, `deploy`, `page`, `docs`, plus
 the freshness case's proof as 0.2's Done states it.
@@ -1147,8 +1148,9 @@ with `resolveFonts`'s reason,
 as `Sdl.hs:ChosenFonts{..} <- either die return $ resolveFonts soptions` does,
 where today it reports the reason and goes on with every text in the map font,
 so that `getFontSetup`, which resolves the fontset under the browser too once
-(3) lands, never meets one the startup let through; the two tests that start
-the browser frontend on `defClientOptions`, whose fontset does not resolve
+(3) lands, never meets one the startup let through; the test modules that start
+the browser frontend on `defClientOptions`, whose fontset does not resolve, each
+through its `startupUnderTest`
 (`FrontendContractUnitTests.hs:startupUnderTest coscreen = Wasm.startup coscreen defClientOptions`
 and
 `FfiCoverageUnitTests.hs:startupUnderTest coscreen = Wasm.startup coscreen defClientOptions`),

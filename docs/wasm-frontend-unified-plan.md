@@ -1072,11 +1072,12 @@ and `ts-src/run-wasm-game.mjs`: the baseline, covering every such declaration
 by hand against a `make build-wasm` reactor, its checks made on the frames
 the `lhSubmitFrame` stub records rather than on the frontend channel ruling (3)
 names; after it, the imports 0.1 gave `lhKey`, covered by that driver's `lhKey`
-case, 1.2's `js_printScreen`, by its `Ctrl+P` case, and 1.5's `js_configure`,
-by its startup-payload case. Still to do: the standing half, and the game
-driver's run in CI, with R2's `build-wasm` job.
+case, 1.2's `js_printScreen`, by its `Ctrl+P` case, 1.5's `js_configure`,
+by its startup-payload case, and 2.3's `js_submitOverlays`, by the suite's
+overlay case under `make test-wasm`. Still to do: the standing half,
+and the game driver's run in CI, with R2's `build-wasm` job.
 
-<!-- probe: git -C .. grep -h 'foreign \(import\|export\) javascript' -- engine-src/Game/LambdaHack/Client/UI/Frontend/Wasm.hs engine-src/Game/LambdaHack/Common/WasmFile.hs GameDefinition/Main.hs | grep -vc '^-- ' :: 23 -->
+<!-- probe: git -C .. grep -h 'foreign \(import\|export\) javascript' -- engine-src/Game/LambdaHack/Client/UI/Frontend/Wasm.hs engine-src/Game/LambdaHack/Common/WasmFile.hs GameDefinition/Main.hs | grep -vc '^-- ' :: 24 -->
 
 **Rulings** --- all three ruled on 2026-08-07. (1) The export mechanism
 is the thin reactor driver the Split now specifies --- a slice of 3.2 pulled
