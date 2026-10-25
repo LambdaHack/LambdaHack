@@ -730,8 +730,9 @@ catches wasm-only compile and link breakage. 0.3's FFI battery executes both
 modules' code, `WasmFile.hs` through `Common/File.hs`'s exports and `Wasm.hs`
 through `startup` and `fdisplay`, and 0.1's input-side contract cases enter
 `Wasm.hs` through `startup`; the rest of the suites do not enter `Wasm.hs`,
-the integration test passing `--frontendNull` and every fixture setting
-`sfrontendNull = True`, so `nullStartup` stands in for `Chosen.startup`).
+the integration test passing `--frontendNull`, so that `nullStartup` stands
+in for `Chosen.startup`, and the cases under the mock starting no frontend
+at all, the stubs of `test/UnitTestHelpers.hs` standing in for one).
 
 **Claims here that no pass can re-run.** Five live assertions rested
 on experiments whose artifact was never recorded: 0.1's sync-export spike, 0.3's
