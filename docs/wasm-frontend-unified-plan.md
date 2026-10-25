@@ -14,16 +14,17 @@ and `sdl2-to-wasm-parity-plan.md`. It pursues two goals at once:
   screenshots (`Ctrl+P` and `--printEachScreen` alike), fullscreen (including
   scaling), display scale, multi-font (proportional + mono) rendering,
   and the game-end page lifecycle (1.6) --- plus the input/rendering fidelity
-  fixes in 0.0, the paragraph key's web clause in 0.1 and fixed-pitch glyph
-  cropping in 0.4. That is not every real gap, and the goal no longer claims
-  it is: the 2026-09-07 re-audit recorded in Appendix C found six more, of which
-  four were scheduled the same day --- its (3) into 1.2, (4) as 1.6, (5)
-  into 2.2 and (6) into 0.1, each with a ledger row --- and two were carried
-  into item bodies without a row of their own: the half-cell mouse pitch, which
-  0.4 has since closed under B.10, and the compound-modifier shift flag, which
-  0.1 says outright needs a signature it has not specified, and which has since
-  become 1.7. SDL2's behaviour is not always its intent: What would falsify
-  this has the rule and the case.
+  fixes in 0.0, the paragraph key's web clause in 0.1, fixed-pitch glyph
+  cropping in 0.4 and the compound-modifier shift flag in 1.7. That is not every
+  real gap, and the goal no longer claims it is: the 2026-09-07 re-audit
+  recorded in Appendix C found six more, of which four were scheduled the same
+  day --- its (3) into 1.2, (4) as 1.6, (5) into 2.2 and (6) into 0.1, each
+  with a ledger row --- and two were carried into item bodies without a row
+  of their own: the half-cell mouse pitch, which 0.4 has since closed
+  under B.10, and the compound-modifier shift flag, which 0.1 says outright
+  needs a signature it has not specified, and which has since become 1.7. SDL2's
+  behaviour is not always its intent: What would falsify this has the rule
+  and the case.
 
 The ordering follows from G1: multi-font done naively would re-implement
 in TypeScript the layout logic that lived in `Sdl.hs`'s
@@ -67,8 +68,9 @@ carries an outcome line.
 > in `docs/wasm-frontend-work-list.md`, which is deleted when its last row
 > lands, as `docs/leader-desync-migration.md` will be. Wherever a body here
 > names one of those, it means that file's. The rulings that closed an item's
-> **Decide first** stay here, under **Rulings** at the end of the item; an open
-> question is the work list's alone.
+> **Decide first** stay here, under **Rulings** at the end of the item,
+> or in the Log for an item with no body here, as 1.7's; an open question
+> is the work list's alone.
 >
 > **The state vocabulary is `docs/leader-desync-bug.md`'s, borrowed whole**,
 > and the row that carries it is the work list's. Where the two ever disagree,
@@ -582,11 +584,9 @@ only that the plan was written is one the next reader has to skip.
   and SDL translates under Shift as `?`, so that it reaches `C-?`, the crosshair
   to the nearest unknown spot, where the flag today reaches `C-/`, the nearest
   item. The question presumed a binding spelled `C-S-`, which no keyboard chord
-  reaches, `decideKey` folding `ControlShift` into `Control`; of the keys whose
-  translation reads the flag, only Tab, Divide and the numpad's 5 change which
-  binding a chord reaches under Ctrl, the 5 from `C-KP_Begin`'s `Wait10`
-  to none, as natively, and both browsers keep Ctrl+Shift+Tab, `C-BackTab`,
-  from a page in a window.
+  reaches, `decideKey` folding `ControlShift` into `Control`;
+  and Ctrl+Shift+Tab, which the flag moves from `C-Tab` to `C-BackTab`, both
+  browsers keep from a page in a window.
 
 ## Repo facts the plan builds on
 
@@ -1143,10 +1143,11 @@ dropping a modified click as under SDL; `20193a152` split it in two.*
 ## Phase 1 --- small parity wins
 
 Independent of each other but for 1.2, whose keyboard lock extends 1.3's
-`fullscreen.ts`; any order otherwise. 1.3 doesn't depend on Phase 0, nor does
-1.1's first form, its final form resting on 0.2's `cursor.ts`; since B.10 1.2
-waits on 0.4, whose canvas its screenshot is, and 1.5 on 0.4's painter, which
-takes its scale. 1.2's per-frame case waits on 3.1.
+`fullscreen.ts`, and 1.8, which follows 1.2; any order otherwise. 1.3 doesn't
+depend on Phase 0, nor does 1.1's first form, its final form resting on 0.2's
+`cursor.ts`; since B.10 1.2 waits on 0.4, whose canvas its screenshot is,
+and 1.5 on 0.4's painter, which takes its scale. 1.2's per-frame case waits
+on 3.1.
 
 ### 1.1 Crosshair cursor over the map (trivial)
 

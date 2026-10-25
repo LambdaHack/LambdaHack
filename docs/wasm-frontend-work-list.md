@@ -338,7 +338,8 @@ Parity work stays in one checkout.
 ## Items
 
 Each item's design and rulings are in the record, under the same heading, R8's
-under B.12; what is here is how it lands.
+under B.12, and 1.7's and 1.8's at Appendix C's gaps (2) and (3), with 1.7's
+ruling in the Log; what is here is how it lands.
 
 ## Phase 0 --- shared foundations
 
@@ -553,8 +554,9 @@ the import half, `CLAUDE.md`'s session fact on which wasm targets need
 an unsandboxed call. Nothing else. The two commits are serial: the export half's
 driver imports the setup and stubs the import half installs --- defined once,
 shared by both drivers rather than copied. Later items add to the game driver,
-0.1, 0.4, 1.2, 1.5 and 3.2 each their own coverage case, and to the test driver,
-2.3 its case and 1.5 its startup hook's stub.
+0.1, 0.4, 1.2, 1.5 and 3.2 each their own coverage case, 1.7 a parity case
+and 1.8 a change to 1.2's, and to the test driver, 2.3 its case and 1.5
+its startup hook's stub.
 
 **Done** --- `native`, `wasm`, `docs`, plus, on the export half,
 `make build-wasm` and a run of the seeded driver against the fresh reactor,
