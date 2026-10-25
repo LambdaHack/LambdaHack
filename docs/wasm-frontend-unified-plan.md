@@ -3581,15 +3581,20 @@ under a compound modifier.**
 from the raw left/right shift bits, independent of Ctrl and Alt;
 `Wasm.hs:key = K.keyTranslateWeb (fromJSString` passes `modifier == K.Shift`,
 which is `False` whenever Ctrl or Alt is also down --- so `C-S-<key>` translates
-as shifted natively and as unshifted in the browser. (3) **`--printEachScreen`
-has no browser counterpart.** `sprintEachScreen` is read
-at `Sdl.hs:when sprintEachScreen $ printScreen sess` and nowhere else, and 1.2
-restores `Ctrl+P` alone. (4) **Game-end page lifecycle.**
-`Sdl.hs:SDL.destroyRenderer srenderer` frees the fonts, destroys renderer
-and window and exits; `Wasm.hs:shutdown :: IO ()` is `shutdown = return ()`,
-so a finished game leaves a live-looking frozen page. The "Window-close
-semantics" bullet below covers the player closing the tab, not the engine
-finishing. (5) **Fixed-pitch glyph cropping and centring.**
+as shifted natively and as unshifted in the browser. *Landed in `b1bc20b9b`,
+as 1.7: `lhKey` hands `keyTranslateWeb` the `shiftKey` bit, and the game driver
+requires Ctrl+Shift with the numpad's Divide to paint what `C-?` does; `Dom.hs`,
+frozen, keeps the old flag. Its hand-back confirmed on 2026-10-25 in Firefox
+by Mikolaj, and in Chromium under Xvfb: that chord sets the crosshair
+on the nearest unknown spot, and Ctrl with the key below Escape still reads
+as backquote.* (3) **`--printEachScreen` has no browser counterpart.**
+`sprintEachScreen` is read at `Sdl.hs:when sprintEachScreen $ printScreen sess`
+and nowhere else, and 1.2 restores `Ctrl+P` alone. (4) **Game-end page
+lifecycle.** `Sdl.hs:SDL.destroyRenderer srenderer` frees the fonts, destroys
+renderer and window and exits; `Wasm.hs:shutdown :: IO ()`
+is `shutdown = return ()`, so a finished game leaves a live-looking frozen page.
+The "Window-close semantics" bullet below covers the player closing the tab,
+not the engine finishing. (5) **Fixed-pitch glyph cropping and centring.**
 `Sdl.hs:scaleSurfaceToTexture ::` crops an oversized glyph surface to the cell
 box and centres it over a black fill, for the square layer
 (`Sdl.hs:scaleSurfaceToTexture boxSize`) and the mono one

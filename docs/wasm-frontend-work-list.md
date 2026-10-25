@@ -115,7 +115,7 @@ sections of the record are frozen and which live is its head callout's to say.
 | 1.4 | banner/title truthfulness | trivial, recurring | feature landings | open -- standing |
 | 1.5 | `allFontsScale` honored in browser | small | 0.4 for the painter; 0.3 for the reactor driver; R4 for player control | landed -- 433743890 |
 | 1.6 | game-end page lifecycle: a finished or crashed game says so | small | --- | landed -- 2e9908375 |
-| 1.7 | the browser's Shift flag raw, as SDL's: `C-S-<key>` shifted in both | small | 0.1 for `lhKey`; 0.3 for the reactor driver | not applied |
+| 1.7 | the browser's Shift flag raw, as SDL's: `C-S-<key>` shifted in both | small | 0.1 for `lhKey`; 0.3 for the reactor driver | landed -- b1bc20b9b |
 | 1.8 | `--printEachScreen` saving a changed frame only, as SDL does | small | 1.2 | not applied |
 | 2.1 | `OverlayLayout` extraction + `Sdl.hs` on it and on `CellStyle` | medium--large | 0.2 for `CellStyle`; determinism goldens (native harness) | landed -- bfd562927 |
 | 2.2 | browser canvas overlay renderer + font wiring | medium | 2.1, 0.2, 0.4; 1.5 for the startup call | landed -- e549ef42e |
