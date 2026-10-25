@@ -98,7 +98,8 @@ chunkingTests =
       chunks @?= [ PropChunk Color.Red "a", PropChunk Color.Blue "  "
                  , PropChunk Color.Red "b" ]
       map pcAllSpace chunks @?= [False, True, False]
-  , testCase "chunkPropLine: White is AltWhite on even rows, regular on both" $ do
+  , testCase
+      "chunkPropLine: White is AltWhite on even rows, regular on both" $ do
       let chunksOn row = chunkPropLine row (str Color.White "a")
       chunksOn 0 @?= [PropChunk Color.AltWhite "a"]
       chunksOn 1 @?= [PropChunk Color.White "a"]

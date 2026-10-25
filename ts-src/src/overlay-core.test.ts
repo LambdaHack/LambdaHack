@@ -136,24 +136,28 @@ describe("overlayOps (the draw ops of a frame's overlays)", () => {
     expect(baselineSpy).not.toHaveBeenCalled();
   });
 
-  it("draws a chunk on black from its left edge, as wide as measured rounded up", () => {
-    expect(
-      overlayOps(propOnly(3, 1, [chunk("Hi")]), 80, m, baseline, () => 20.2),
-    ).toEqual([
-      { kind: "fill", x: 24, y: 16, w: 21, h: 16, color: PALETTE[Black] },
-      {
-        kind: "textLeft",
-        x: 24,
-        y: 16,
-        w: 21,
-        h: 16,
-        baseline: 12,
-        text: "Hi",
-        color: PALETTE[BrRed],
-        face: "propRegular",
-      },
-    ]);
-  });
+  it(
+    "draws a chunk on black from its left edge," +
+      " as wide as measured rounded up",
+    () => {
+      expect(
+        overlayOps(propOnly(3, 1, [chunk("Hi")]), 80, m, baseline, () => 20.2),
+      ).toEqual([
+        { kind: "fill", x: 24, y: 16, w: 21, h: 16, color: PALETTE[Black] },
+        {
+          kind: "textLeft",
+          x: 24,
+          y: 16,
+          w: 21,
+          h: 16,
+          baseline: 12,
+          text: "Hi",
+          color: PALETTE[BrRed],
+          face: "propRegular",
+        },
+      ]);
+    },
+  );
 
   it("starts each chunk where the last ended, measured in its own face", () => {
     const measure = vi.fn((_face: Face, text: string) =>
@@ -177,38 +181,42 @@ describe("overlayOps (the draw ops of a frame's overlays)", () => {
     ]);
   });
 
-  it("cuts an overrun a cell short, marks the last column and drops the rest", () => {
-    // A screen four squares, 64 pixels, wide, the chunk starting at 16.
-    const measure = vi.fn(() => 100);
-    const layout = propOnly(2, 1, [chunk("long"), chunk("dropped")]);
-    expect(overlayOps(layout, 4, m, baseline, measure)).toEqual([
-      { kind: "fill", x: 16, y: 16, w: 32, h: 16, color: PALETTE[Black] },
-      {
-        kind: "textLeft",
-        x: 16,
-        y: 16,
-        w: 32,
-        h: 16,
-        baseline: 12,
-        text: "long",
-        color: PALETTE[BrRed],
-        face: "propRegular",
-      },
-      { kind: "fill", x: 48, y: 16, w: 16, h: 16, color: PALETTE[Black] },
-      {
-        kind: "text",
-        x: 48,
-        y: 16,
-        w: 16,
-        h: 16,
-        baseline: 13,
-        text: "$",
-        color: PALETTE[BrBlack],
-        face: "map",
-      },
-    ]);
-    expect(measure).toHaveBeenCalledTimes(1);
-  });
+  it(
+    "cuts an overrun a cell short, marks the last column" +
+      " and drops the rest",
+    () => {
+      // A screen four squares, 64 pixels, wide, the chunk starting at 16.
+      const measure = vi.fn(() => 100);
+      const layout = propOnly(2, 1, [chunk("long"), chunk("dropped")]);
+      expect(overlayOps(layout, 4, m, baseline, measure)).toEqual([
+        { kind: "fill", x: 16, y: 16, w: 32, h: 16, color: PALETTE[Black] },
+        {
+          kind: "textLeft",
+          x: 16,
+          y: 16,
+          w: 32,
+          h: 16,
+          baseline: 12,
+          text: "long",
+          color: PALETTE[BrRed],
+          face: "propRegular",
+        },
+        { kind: "fill", x: 48, y: 16, w: 16, h: 16, color: PALETTE[Black] },
+        {
+          kind: "text",
+          x: 48,
+          y: 16,
+          w: 16,
+          h: 16,
+          baseline: 13,
+          text: "$",
+          color: PALETTE[BrBlack],
+          face: "map",
+        },
+      ]);
+      expect(measure).toHaveBeenCalledTimes(1);
+    },
+  );
 
   it("draws a square run's cells as the map's", () => {
     const run = {
@@ -227,67 +235,75 @@ describe("overlayOps (the draw ops of a frame's overlays)", () => {
     ).toEqual(cellRunOps(run, m));
   });
 
-  it("draws a mono run a glyph per half cell, recoloured for the row only, on black with no ring", () => {
-    const run = {
-      col: 3,
-      row: 2,
-      words: [
-        enc(AT, White, HiNoneCursor),
-        enc(SPACE, White, HiNone),
-        enc(FLOOR, BrBlack, HiNone),
-      ],
-    };
-    expect(
-      overlayOps(
-        { prop: [], square: [], mono: [run] },
-        80,
-        m,
-        baseline,
-        () => 0,
-      ),
-    ).toEqual([
-      { kind: "fill", x: 24, y: 32, w: 8, h: 16, color: PALETTE[Black] },
-      {
-        kind: "text",
-        x: 24,
-        y: 32,
-        w: 8,
-        h: 16,
-        baseline: 10,
-        text: "@",
-        color: PALETTE[AltWhite],
-        face: "mono",
-      },
-      { kind: "fill", x: 32, y: 32, w: 8, h: 16, color: PALETTE[Black] },
-      { kind: "fill", x: 40, y: 32, w: 8, h: 16, color: PALETTE[Black] },
-      {
-        kind: "text",
-        x: 40,
-        y: 32,
-        w: 8,
-        h: 16,
-        baseline: 10,
-        text: "·",
-        color: PALETTE[BrBlack],
-        face: "mono",
-      },
-    ]);
-  });
+  it(
+    "draws a mono run a glyph per half cell, recoloured for the row only," +
+      " on black with no ring",
+    () => {
+      const run = {
+        col: 3,
+        row: 2,
+        words: [
+          enc(AT, White, HiNoneCursor),
+          enc(SPACE, White, HiNone),
+          enc(FLOOR, BrBlack, HiNone),
+        ],
+      };
+      expect(
+        overlayOps(
+          { prop: [], square: [], mono: [run] },
+          80,
+          m,
+          baseline,
+          () => 0,
+        ),
+      ).toEqual([
+        { kind: "fill", x: 24, y: 32, w: 8, h: 16, color: PALETTE[Black] },
+        {
+          kind: "text",
+          x: 24,
+          y: 32,
+          w: 8,
+          h: 16,
+          baseline: 10,
+          text: "@",
+          color: PALETTE[AltWhite],
+          face: "mono",
+        },
+        { kind: "fill", x: 32, y: 32, w: 8, h: 16, color: PALETTE[Black] },
+        { kind: "fill", x: 40, y: 32, w: 8, h: 16, color: PALETTE[Black] },
+        {
+          kind: "text",
+          x: 40,
+          y: 32,
+          w: 8,
+          h: 16,
+          baseline: 10,
+          text: "·",
+          color: PALETTE[BrBlack],
+          face: "mono",
+        },
+      ]);
+    },
+  );
 
-  it("draws the proportional lines, then the square runs, then the mono ones", () => {
-    const cell = [enc(AT, BrRed, HiNone)];
-    const layout: FrameLayout = {
-      prop: [{ startX: 0, row: 0, chunks: [chunk("x")] }],
-      square: [{ col: 0, row: 0, words: cell }],
-      mono: [{ col: 0, row: 0, words: cell }],
-    };
-    const ops = overlayOps(layout, 80, m, baseline, () => 8);
-    expect(ops.flatMap((op) => ("face" in op ? [op.face] : []))).toEqual([
-      "propRegular",
-      "map",
-      "mono",
-    ]);
-  });
+  it(
+    "draws the proportional lines, then the square runs," +
+      " then the mono ones",
+    () => {
+      const cell = [enc(AT, BrRed, HiNone)];
+      const layout: FrameLayout = {
+        prop: [{ startX: 0, row: 0, chunks: [chunk("x")] }],
+        square: [{ col: 0, row: 0, words: cell }],
+        mono: [{ col: 0, row: 0, words: cell }],
+      };
+      const ops = overlayOps(layout, 80, m, baseline, () => 8);
+      expect(ops.flatMap((op) => ("face" in op ? [op.face] : []))).toEqual([
+        "propRegular",
+        "map",
+        "mono",
+      ]);
+    },
+  );
 });
 
 describe("overlaidCells (the map cells overlays draw over)", () => {

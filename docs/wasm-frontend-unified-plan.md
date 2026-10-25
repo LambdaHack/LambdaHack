@@ -3601,6 +3601,19 @@ and the browser reads no config file, only `config.ui.default` and localStorage
 overrides; and rebinding a default changes it for every player. The measurement
 comes first.
 
+**B.14 Lines past 80 columns that stay.** Ruled 2026-10-25 by Mikolaj,
+on the rewrap of the lines past 80 columns in the files 2.3 touches:
+the `release` flag's description in `LambdaHack.cabal`
+(`LambdaHack.cabal:prepare for a release (expose internal functions and types, etc.)`)
+and the library's warning `ghc-options` there
+(`LambdaHack.cabal:-Wredundant-bang-patterns -Wredundant-strictness-flags`)
+are kept on one line each on purpose, and the usage
+in `ts-src/run-wasm-test.mjs` cites a `post-link.mjs` command from a context
+that does not honour 80 columns
+(`run-wasm-test.mjs:--input foo.wasm --output ghc_wasm_jsffi.mjs`).
+The `synopsis` keeps its one line too, Cabal defining it as a one-line summary.
+None is to be rewrapped.
+
 ---
 
 ## Appendix C --- Verified non-gaps (SDL2-vs-wasm audit record)

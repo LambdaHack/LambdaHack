@@ -5,7 +5,8 @@
 // extra ghc_wasm_jsffi import that GHC's JS FFI needs; that import can only
 // be satisfied by an actual JS host. This script provides one via Node,
 // wiring things up the way the GHC User's Guide's wasm backend chapter
-// describes: https://downloads.haskell.org/ghc/latest/docs/users_guide/wasm.html
+// describes:
+// https://downloads.haskell.org/ghc/latest/docs/users_guide/wasm.html
 //
 // It also stubs the page globals the build's `foreign import javascript`
 // declarations call into, where the browser has the page's loader and script

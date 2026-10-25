@@ -80,7 +80,7 @@ async function main(): Promise<void> {
     WebAssembly.compileStreaming(fetch(url)).catch(async () =>
       WebAssembly.compile(await (await fetch(url)).arrayBuffer()),
     ),
-    // @ts-expect-error generated at build time by post-link.mjs, served alongside.
+    // @ts-expect-error made by post-link.mjs at build time, served alongside.
     import("./ghc_wasm_jsffi.mjs"),
   ]);
   const jsffiFactory = jsffi.default;
