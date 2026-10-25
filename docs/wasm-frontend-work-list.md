@@ -1150,9 +1150,10 @@ so that `getFontSetup`, which resolves the fontset under the browser too once
 (3) lands, never meets one the startup let through; the two tests that start
 the browser frontend on `defClientOptions`, whose fontset does not resolve
 (`FrontendContractUnitTests.hs:startupUnderTest coscreen = Wasm.startup coscreen defClientOptions`
-and `FfiCoverageUnitTests.hs:rf <- Wasm.startup coscreen defClientOptions`), get
-options that resolve. (3) `Wasm.supportsMultiFont = True`, one line and nothing
-else. (4) the page gate's overlay assertion made unconditional,
+and
+`FfiCoverageUnitTests.hs:startupUnderTest coscreen = Wasm.startup coscreen defClientOptions`),
+get options that resolve. (3) `Wasm.supportsMultiFont = True`, one line
+and nothing else. (4) the page gate's overlay assertion made unconditional,
 `ts-src/page-gate.mjs`'s `PAGE_GATE_OVERLAYS` switch deleted with the gate
 table's mention of it and the `tools/mutants-deep.py` mutant anchored on it,
 since a check that runs only where a caller sets a variable is skipped by every
