@@ -2226,6 +2226,20 @@ travel and draw through the same path, on the same canvas, in the 2.1 layer
 order. The TS decoder also asserts, as 2.2's "Cell metrics from one source"
 requires, that the width the overlays were laid out for is `submitFrame`'s `w`.
 
+*Landed in `c6265677c`, the Split's (2), after `8b621a078`, its (1). Beyond
+this body: `display` submits a frame's overlays only where it has any,
+so the live game, whose overlays stay empty until 2.4, submits none,
+and the page gate's overlay count, which 2.4's (4) makes a requirement, counts
+frames that have some --- in the landing's run of the gate, none in Firefox
+or Chromium; `terminal.ts` pairs the overlays with the frame submitted next
+and decodes them there, which is where the width assertion compares the two
+submissions; the coverage case, in `test/FfiCoverageUnitTests.hs` over a stub
+in `run-wasm-test.mjs`, asserts that order and that skip as well as the words;
+and that module's frame and overlay cases start the frontend through
+a `startupUnderTest`, as `FrontendContractUnitTests.hs` does. The words
+of no overlays decode to a layout that draws and measures nothing, which
+an `overlay-core.test.ts` case asserts.*
+
 Because `getFontSetup` still gates on `"sdl"`, the overlays are provably `[]`
 in the live game --- this step is a visual no-op, verified by playing.
 The real-data path is exercised by tests instead: a tasty case constructs
