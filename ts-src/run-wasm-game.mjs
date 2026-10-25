@@ -39,7 +39,8 @@
 
 import { mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
-import { join } from "node:path";
+import { basename, join } from "node:path";
+import { fileURLToPath } from "node:url";
 import { WASI } from "node:wasi";
 
 import {
@@ -55,6 +56,32 @@ const usage =
   "usage: node run-wasm-game.mjs <LambdaHack.wasm>" +
   " <ghc_wasm_jsffi.mjs> [arg...]";
 requireFiles(usage, wasmPath, jsffiPath);
+
+// The page's decoder of a frame's overlays, overlay-core.ts's, bundled from its
+// source by esbuild, which npm ci in ts-src installs, so that the words are
+// read as the page reads them.
+async function loadDecoder() {
+  try {
+    const { build } = await import("esbuild");
+    const source = new URL("src/overlay-core.ts", import.meta.url);
+    const { outputFiles } = await build({
+      entryPoints: [fileURLToPath(source)],
+      bundle: true,
+      format: "esm",
+      write: false,
+      logLevel: "silent",
+    });
+    const code = Buffer.from(outputFiles[0].contents).toString("base64");
+    return (await import(`data:text/javascript;base64,${code}`))
+      .decodeFrameLayout;
+  } catch (e) {
+    console.error(
+      `${basename(process.argv[1])}: cannot bundle overlay-core.ts: ${e.message}`,
+    );
+    process.exit(2);
+  }
+}
+const decodeFrameLayout = await loadDecoder();
 const printEachScreen = extraArgs.includes("--printEachScreen");
 // The scale an "--allFontsScale X" pair in the args gives, if any.
 const scaleAt = extraArgs.indexOf("--allFontsScale");
@@ -86,13 +113,35 @@ instance = await instantiate(wasmPath, jsffiPath, wasi);
 const lh = instance.exports;
 const calls = globalThis.lhSubmitFrameCalls;
 const prints = globalThis.lhPrintScreenCalls;
-// The latest frame's text, a string per row, for finding a menu choice.
+const overlays = globalThis.lhSubmitOverlaysCalls;
+// The overlays of frame i, which Wasm.hs submits just before the frame where it
+// has any, if it has any.
+const overlaysOf = (i) => overlays.find((o) => o.frames === i);
+// The hash of frame i: its cells' hash continued over the words of its
+// overlays, so the cells' hash alone where it has none.
+function frameHash(i) {
+  const words = overlaysOf(i)?.words ?? [];
+  return words.reduce(
+    (hash, word) => Math.imul(hash ^ word, 0x01000193) >>> 0,
+    calls[i].hash,
+  );
+}
+const lastHash = () => frameHash(calls.length - 1);
+// The latest frame's text, a string per row, its square overlay laid over its
+// cells, for finding a menu choice, which a menu in the square font shows there
+// under the multi-font setup.
 function screenRows() {
   const { w, h, words } = globalThis.lhLastFrame;
+  const chars = Array.from(words, (word) => String.fromCodePoint(word >>> 16));
+  const o = overlaysOf(calls.length - 1);
+  const square = o ? decodeFrameLayout(o.words, o.w, w).square : [];
+  for (const run of square) {
+    run.words.forEach((word, k) => {
+      chars[run.row * w + run.col + k] = String.fromCodePoint(word >>> 16);
+    });
+  }
   return Array.from({ length: h }, (_, y) =>
-    Array.from({ length: w }, (_, x) =>
-      String.fromCodePoint(words[y * w + x] >>> 16),
-    ).join(""),
+    chars.slice(y * w, (y + 1) * w).join(""),
   );
 }
 const noMods = [false, false, false, false];
@@ -171,7 +220,7 @@ async function repaint(name, args) {
     fail(`${name}(${args.slice(0, 3).join(", ")}) repainted nothing within 5s`);
   }
   await waitQuiet(500, 5000);
-  return calls[calls.length - 1].hash;
+  return lastHash();
 }
 
 async function run() {
@@ -227,7 +276,7 @@ async function run() {
   }
   ok(`lhKey reaches the game: the stream stopped at ${calls.length} frames`);
 
-  const menu = calls[calls.length - 1].hash;
+  const menu = lastHash();
   const scrolled = await repaint("lhWheel", [21, 10, 100, ...noMods]);
   const back = await repaint("lhWheel", [21, 10, -100, ...noMods]);
   if (scrolled === menu || back !== menu) {
@@ -271,11 +320,11 @@ async function run() {
 
   // Under --printEachScreen each frame that differs from the one before is
   // printed right after it is submitted, the first included, which Wasm.hs
-  // compares with a blank frame, and otherwise none is; then the game's
-  // C-P, Control and Shift with 'P', prints once more. The release past
-  // the menu choice above repainted the menu unchanged, so a print of every
-  // frame fails this. While the browser is single-font its frames carry no
-  // overlays, so the cells' hash is all of a frame Wasm.hs compares.
+  // compares with a blank frame, and otherwise none is; then the game's C-P,
+  // Control and Shift with 'P', prints once more. The release past the menu
+  // choice above repainted the menu unchanged, so a print of every frame fails
+  // this. A frame's hash covers its cells and its overlays as laid out, which
+  // is all of what Wasm.hs compares but overlay text cut at the screen's edge.
   const changed = () =>
     calls.flatMap((c, i) => {
       const before = calls[i - 1];
@@ -283,7 +332,7 @@ async function run() {
         before &&
         c.w === before.w &&
         c.h === before.h &&
-        c.hash === before.hash;
+        frameHash(i) === frameHash(i - 1);
       return same ? [] : [i + 1];
     });
   const framePrints = () => (printEachScreen ? changed() : []);
