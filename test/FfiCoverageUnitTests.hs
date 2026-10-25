@@ -47,10 +47,11 @@ import           Game.LambdaHack.Client.UI.Frontend
 import           Game.LambdaHack.Client.UI.Frontend.Common (RawFrontend (..))
 import qualified Game.LambdaHack.Client.UI.Frontend.Wasm as Wasm
 import           Game.LambdaHack.Client.UI.PointUI (PointUI (..))
-import           Game.LambdaHack.Common.ClientOptions
 import           Game.LambdaHack.Common.Point
 import qualified Game.LambdaHack.Common.PointArray as PointArray
 import qualified Game.LambdaHack.Definition.Color as Color
+
+import UnitTestHelpers (multiFontClientOptions)
 #endif
 
 ffiCoverageUnitTests :: TestTree
@@ -215,9 +216,10 @@ submitFrameTest =
       js_frameHeight i >>= (@?= 3)
       js_frameFirstCell i >>= (@?= fromEnum (Color.attrCharW32 $ cell c))
 
--- | The frontend the frame and overlay cases run on.
+-- | The frontend the frame and overlay cases run on, on options whose fontset
+-- resolves, as 'Wasm.startup' requires.
 startupUnderTest :: ScreenContent -> IO RawFrontend
-startupUnderTest coscreen = Wasm.startup coscreen defClientOptions
+startupUnderTest coscreen = Wasm.startup coscreen multiFontClientOptions
 
 -- | What the driver's @lhSubmitFrame@ stub recorded, call by call.
 foreign import javascript unsafe "globalThis.lhSubmitFrameCalls.length"

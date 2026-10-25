@@ -36,6 +36,7 @@ import qualified Data.Vector.Unboxed.Base as VU
 import           Data.Word (Word32)
 import           Foreign.Storable (sizeOf)
 import           GHC.Wasm.Prim (JSString (..), JSVal, fromJSString, toJSString)
+import           System.Exit (die)
 import           System.FilePath ((<.>))
 import           System.IO (hPutStrLn, stderr)
 import           System.IO.Unsafe (unsafePerformIO)
@@ -99,12 +100,9 @@ supportsMultiFont = False  -- for now; turning it on is reviewed on its own
 -- | Set up the frontend input and output.
 startup :: ScreenContent -> ClientOptions -> IO RawFrontend
 startup coscreen soptions@ClientOptions{sprintEachScreen} = do
-  -- Where the fontset does not resolve, say why, as @Sdl.hs@ does, but go on.
-  case resolveFonts soptions of
-    Left reason -> hPutStrLn stderr $
-      "Fonts not resolved, every text drawn in the map font: " ++ reason
-    Right _ -> return ()
-  js_configure $ toJSString $ startupPayload soptions
+  -- Unlike @error@, @die@ does not move savefiles aside.
+  chosenFonts <- either die return $ resolveFonts soptions
+  js_configure $ toJSString $ startupPayload soptions chosenFonts
   previousFrame <- newIORef $ blankSingleFrame coscreen
   let displayFrame = display coscreen sprintEachScreen previousFrame
   rfWithoutPrintScreen <- createRawFrontend coscreen displayFrame shutdown
@@ -114,14 +112,13 @@ startup coscreen soptions@ClientOptions{sprintEachScreen} = do
 
 -- | The startup payload: a JSON object of named fields, each present when
 -- the options carry its value. @allFontsScale@ is the scale 'resolveFonts'
--- multiplies every font size by. @fonts@ names the chosen fontset's
--- auxiliary fonts as 'resolveFonts' resolves them for @Sdl.hs@ too, under
--- @propRegular@, @propBold@ and @mono@, each a file name and a size in
--- pixels; a bitmap font, which no browser loads, is left out, and all of
--- them where the fontset does not resolve, which 'startup' reports, the
--- page drawing every text in the map font then.
-startupPayload :: ClientOptions -> String
-startupPayload soptions@ClientOptions{sallFontsScale} =
+-- multiplies every font size by. @fonts@ names the chosen fontset's auxiliary
+-- fonts as 'resolveFonts' resolves them for @Sdl.hs@ too, under @propRegular@,
+-- @propBold@ and @mono@, each a file name and a size in pixels; a bitmap font,
+-- which no browser loads, is left out, and all of them where the fontset has
+-- none, the page drawing every text in the map font then.
+startupPayload :: ClientOptions -> ChosenFonts -> String
+startupPayload ClientOptions{sallFontsScale} ChosenFonts{cfAuxiliary} =
   jsonObject $ [ ("allFontsScale", show scale)
                | Just scale <- [sallFontsScale] ]
                ++ [ ("fonts", jsonObject fonts) | not (null fonts) ]
@@ -130,8 +127,7 @@ startupPayload soptions@ClientOptions{sallFontsScale} =
     [ ( field
       , jsonObject [ ("file", jsonString $ T.unpack cfFile)
                    , ("size", show cfSize) ] )
-    | Right ChosenFonts{cfAuxiliary = Just (prop, bold, mono)} <-
-        [resolveFonts soptions]
+    | Just (prop, bold, mono) <- [cfAuxiliary]
     , (field, ChosenFont{..}) <- [ ("propRegular", prop)
                                  , ("propBold", bold)
                                  , ("mono", mono) ]

@@ -32,7 +32,8 @@ import           Game.LambdaHack.Client.UI.PointUI
 
 #ifdef USE_WASM
 import qualified Game.LambdaHack.Client.UI.Frontend.Wasm as Wasm
-import           Game.LambdaHack.Common.ClientOptions
+
+import UnitTestHelpers (multiFontClientOptions)
 #else
 import qualified Game.LambdaHack.Client.UI.Frontend.Common as Common
 #endif
@@ -63,10 +64,11 @@ frontendContractUnitTests = testGroup "frontendContractUnitTests"
  where
   coscreen = emptyScreenContent {rwidth = 7, rheight = 3}
 
--- | The frontend the cases run on.
+-- | The frontend the cases run on, under wasm on options whose fontset
+-- resolves, as 'Wasm.startup' requires.
 startupUnderTest :: ScreenContent -> IO RawFrontend
 #ifdef USE_WASM
-startupUnderTest coscreen = Wasm.startup coscreen defClientOptions
+startupUnderTest coscreen = Wasm.startup coscreen multiFontClientOptions
 #else
 startupUnderTest coscreen =
   Common.createRawFrontend coscreen (\_ -> return ()) (return ())
