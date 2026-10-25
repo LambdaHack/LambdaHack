@@ -2655,6 +2655,12 @@ stanzas --- so the pass names them and their sentences are reworded there,
 the frozen appendices' with their prose untouched, ruled 2026-09-08
 as the fourth kind of upkeep the pointman post-mortem admits.
 
+*Ruled 2026-10-25 by Mikolaj: the comment in `.hlint.yaml` naming the defines
+under which its Dom ignore fires
+(`.hlint.yaml:The Dom entry shows up only with USE_GHCJS defined`) joins
+this item's Owns as (b)'s comments did and is reworded in the rip-out commit,
+rather than the grep gate excluding the file.*
+
 **R4 --- URL-parameter options.** Server/client options sit at defaults
 in the browser for lack of argv. After 3.1, `lhStart` parses whatever WASI argv
 the host supplies --- so the whole feature reduces to the *loader* translating

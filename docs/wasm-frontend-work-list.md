@@ -1465,7 +1465,9 @@ in `Dom.hs` and `JSFile.hs`, the two orphan GHCJS comments nothing else claims
 --- `GameDefinition/Main.hs:This test is faulty in the browser`, reworded
 in wasm/browser terms since the fact survives the compiler it names,
 and `Point.hs:not supported yet by GHCJS (not verified)`'s "not supported yet
-by GHCJS" clause, updated or dropped --- and `CLAUDE.md`
+by GHCJS" clause, updated or dropped --- `.hlint.yaml`'s comment naming
+the defines its Dom ignore fires under, reworded so that the grep in **Done**
+can pass, by the record's ruling of 2026-10-25, and `CLAUDE.md`
 and `docs/wasm-frontend-unified-plan.md`. The three engine `#if` sites are also
 R1's and the capability-constants practice's, so whichever lands first shapes
 R3's diff. The pointman campaign writes two of these too: its PR 0, C3, C4
