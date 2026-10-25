@@ -29,6 +29,12 @@ DOCS_LISTED = ('cd "{root}/.." || { echo "cannot enter the repository root"; exi
                "readarray -t docs < <(git ls-files '*.md' ':!CHANGELOG.md'); "
                '[ ${#docs[@]} -gt 0 ] || { echo "git lists no tracked Markdown file, or could not be run; nothing checked"; exit 2; }; ')
 DOCS = DOCS_LISTED + 'python3 ../tools/%s "${docs[@]}"'
+# GameDefinition/PLAYING.md keeps its own line breaks, at neither of wrap80's
+# fixed points, by Mikolaj's ruling of 2026-10-25, and the wrap pass refuses
+# such a document, so it skips that one.
+DOCS_WRAP = DOCS.replace("':!CHANGELOG.md'",
+                         "':!CHANGELOG.md' ':!GameDefinition/PLAYING.md'", 1)
+assert DOCS_WRAP != DOCS
 
 STEPS = [
     # The shared checker over this repository's rows, which reach the makefile
@@ -42,7 +48,7 @@ STEPS = [
                     'cd "{root}/.." && { command -v shellcheck >/dev/null || { echo "shellcheck is not on PATH (command -v shellcheck finds nothing), so the shell scripts went unlinted"; exit 1; }; } && files=$(git ls-files "*.sh") && if [ -z "$files" ]; then echo "no tracked shell script; nothing linted"; else shellcheck -S warning -f gcc $files; fi']),
     ('doc citations',          ['bash', '-c', DOCS % 'check-plan-citations.py']),
     ('doc refs',               ['bash', '-c', DOCS % 'check-doc-refs.py']),
-    ('doc wrap',               ['bash', '-c', DOCS % 'check-doc-wrap.py']),
+    ('doc wrap',               ['bash', '-c', DOCS_WRAP % 'check-doc-wrap.py']),
     ('doc examples',           ['bash', '-c', DOCS % 'check-doc-examples.py']),
     # The probes the documents carry beside their counted claims: each is a
     # claim's own check, run where the document sits, and the runner is the
