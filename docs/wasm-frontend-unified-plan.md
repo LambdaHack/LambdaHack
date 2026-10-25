@@ -3636,12 +3636,15 @@ and in Chromium under Xvfb: that chord sets the crosshair on the nearest unknown
 spot, and Ctrl with the key below Escape still reads as backquote.* (3)
 **`--printEachScreen` has no browser counterpart.** `sprintEachScreen` is read
 at `Sdl.hs:when sprintEachScreen $ printScreen sess` and nowhere else, and 1.2
-restores `Ctrl+P` alone. (4) **Game-end page lifecycle.**
-`Sdl.hs:SDL.destroyRenderer srenderer` frees the fonts, destroys renderer
-and window and exits; `Wasm.hs:shutdown :: IO ()` is `shutdown = return ()`,
-so a finished game leaves a live-looking frozen page. The "Window-close
-semantics" bullet below covers the player closing the tab, not the engine
-finishing. (5) **Fixed-pitch glyph cropping and centring.**
+restores `Ctrl+P` alone. *Landed in `946dc25c5`, as 1.8, after 1.2's `3f6954acb`
+gave the flag a browser counterpart saving after every frame: `display` saves
+only a frame that differs from the one it displayed last, as SDL saves only
+where it redraws, and the game driver requires one save per changed frame.* (4)
+**Game-end page lifecycle.** `Sdl.hs:SDL.destroyRenderer srenderer` frees
+the fonts, destroys renderer and window and exits; `Wasm.hs:shutdown :: IO ()`
+is `shutdown = return ()`, so a finished game leaves a live-looking frozen page.
+The "Window-close semantics" bullet below covers the player closing the tab,
+not the engine finishing. (5) **Fixed-pitch glyph cropping and centring.**
 `Sdl.hs:scaleSurfaceToTexture ::` crops an oversized glyph surface to the cell
 box and centres it over a black fill, for the square layer
 (`Sdl.hs:scaleSurfaceToTexture boxSize`) and the mono one
