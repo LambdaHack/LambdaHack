@@ -61,7 +61,8 @@ extra-source-files: GameDefinition/config.ui.default,
                     ts-src/src/generated/palette.ts,
                     ts-src/src/generated/fixtures.json,
                     ts-src/src/generated/cursor.ts,
-                    ts-src/src/generated/prop-fit.json
+                    ts-src/src/generated/prop-fit.json,
+                    ts-src/src/generated/overlay-wire.json
 extra-doc-files:    GameDefinition/InGameHelp.txt,
                     README.md,
                     CHANGELOG.md,

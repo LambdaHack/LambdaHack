@@ -23,14 +23,14 @@ module Game.LambdaHack.Client.UI.Frontend
   , CellLayer(..), cellPitch, CellRun(..), FrameLayout(..)
   , layOutFrame, layOutSquare, layOutMono, propLineStartFits
   , PropCursor, startPropLine, propCutoff, PropFit(..), propFit
-  , trimmedMarkerRun
+  , trimmedMarkerRun, encodeFrameLayout
 #ifdef EXPOSE_INTERNAL
     -- * Internal operations
   , FrontSetup, getKey, fchanFrontend, display, defaultMaxFps, microInSec
   , frameTimeoutThread, lazyStartup, nullStartup, seqFrame
 #endif
     -- * Operations both internal and used in unit tests
-  , chunkPropLine
+  , chunkPropLine, decodeFrameLayout
   ) where
 
 import Prelude ()

@@ -1,0 +1,10 @@
+{
+  "source": "test/OverlayLayoutUnitTests.hs, the freshness case",
+  "cases": [
+    {"name": "no overlays", "width": 80, "words": [0, 0, 0], "layout": {"prop": [], "square": [], "mono": []}},
+    {"name": "proportional lines", "width": 10, "words": [2, 0, 0, 0, 1, 2, 0, 12, 0, 4, 32, 32, 97, 98, 1, 1, 0, 1, 99, 4, 3, 0], "layout": {"prop": [{"startX": 0, "row": 1, "chunks": [{"face": "propRegular", "color": 12, "allSpace": false, "text": "  ab"}, {"face": "propBold", "color": 1, "allSpace": false, "text": "c"}]}, {"startX": 4, "row": 3, "chunks": []}], "square": [], "mono": []}},
+    {"name": "square runs", "width": 10, "words": [0, 2, 0, 4, 0, 1, 4194561, 0, 7, 3, 6358016, 6423552, 6489088], "layout": {"prop": [], "square": [{"col": 0, "row": 4, "words": [4194561]}, {"col": 7, "row": 0, "words": [6358016, 6423552, 6489088]}], "mono": []}},
+    {"name": "mono runs", "width": 10, "words": [0, 0, 2, 1, 17, 3, 6357504, 6423040, 6488576, 0, 0, 1, 7868429], "layout": {"prop": [], "square": [], "mono": [{"col": 17, "row": 1, "words": [6357504, 6423040, 6488576]}, {"col": 0, "row": 0, "words": [7868429]}]}},
+    {"name": "all three", "width": 10, "words": [1, 1, 1, 2, 0, 2, 0, 8, 0, 2, 104, 233, 1, 4, 1, 2, 32, 32, 1, 2, 1, 7536896, 2, 3, 1, 7143936], "layout": {"prop": [{"startX": 2, "row": 0, "chunks": [{"face": "propRegular", "color": 8, "allSpace": false, "text": "h\u00e9"}, {"face": "propBold", "color": 4, "allSpace": true, "text": "  "}]}], "square": [{"col": 2, "row": 1, "words": [7536896]}], "mono": [{"col": 3, "row": 2, "words": [7143936]}]}}
+  ]
+}

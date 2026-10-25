@@ -1,7 +1,7 @@
 -- | Tests for OverlayLayout, the overlay layout shared by the frontends,
--- and the freshness case for the table in @ts-src/src/generated/@ that pins
--- any re-implementation of its proportional pen
--- (@docs/wasm-frontend-unified-plan.md@, 2.1).
+-- and the freshness cases for the files in @ts-src/src/generated/@ that pin
+-- any re-implementation of its proportional pen and any decoder of its
+-- words on the wire (@docs/wasm-frontend-unified-plan.md@, 2.1 and 2.3).
 module OverlayLayoutUnitTests (overlayLayoutUnitTests) where
 
 import Prelude ()
@@ -37,6 +37,8 @@ import           Game.LambdaHack.Client.UI.Frontend
   , PropFont (..)
   , PropLine (..)
   , chunkPropLine
+  , decodeFrameLayout
+  , encodeFrameLayout
   , layOutFrame
   , layOutMono
   , layOutSquare
@@ -58,13 +60,14 @@ import qualified Game.LambdaHack.Common.PointArray as PointArray
 import qualified Game.LambdaHack.Definition.Color as Color
 
 #ifndef USE_BROWSER
-import FreshnessCase (freshnessCase, jsonBool, jsonDocument, jsonObject)
+import FreshnessCase
+  (freshnessCase, jsonBool, jsonDocument, jsonObject, jsonString)
 #endif
 
 overlayLayoutUnitTests :: TestTree
 overlayLayoutUnitTests = testGroup "overlayLayoutUnitTests" $
   chunkingTests ++ layoutTests ++ placementTests ++ propertyTests
-  ++ freshnessTests
+  ++ wireTests ++ freshnessTests
 
 chunkingTests :: [TestTree]
 chunkingTests =
@@ -266,6 +269,46 @@ propertyTests =
                      , fits (2 * width) x al ] ]
   ]
 
+wireTests :: [TestTree]
+wireTests =
+  [ testCase "encodeFrameLayout writes the sections in order, word by word" $
+      wireWords
+        @?= [ 1, 1, 1                -- a line, a square run and a mono run
+            , 2, 0, 2                -- the line, at x 2 on row 0, two chunks:
+            , 0, 8, 0, 2, 104, 233   -- regular, AltWhite, letters, "h\233"
+            , 1, 4, 1, 2, 32, 32     -- bold, Blue, all space, two spaces
+            , 1, 2, 1, cell Color.Red 's'    -- row 1, column 2, a cell
+            , 2, 3, 1, cell Color.Green 'm'  -- row 2, half-cell 3, a cell
+            ]
+  , testCase "encodeFrameLayout writes no overlays as three zero counts" $
+      encodeFrameLayout (layOutFrame 80 $ frame [] [] []) @?= [0, 0, 0]
+  , testCase "decodeFrameLayout refuses words it cannot have written" $ do
+      decodeFrameLayout (init wireWords) @?= Nothing
+      decodeFrameLayout (wireWords ++ [0]) @?= Nothing
+      -- The first chunk's face, then its all-space word, flipped.
+      decodeFrameLayout (take 6 wireWords ++ [1] ++ drop 7 wireWords)
+        @?= Nothing
+      decodeFrameLayout (take 8 wireWords ++ [1] ++ drop 9 wireWords)
+        @?= Nothing
+  , testProperty "decodeFrameLayout inverts encodeFrameLayout" $
+      forAll ((,,,) <$> choose (2, 40) <*> genOverlay <*> genOverlay
+                    <*> genOverlay) $ \(width, prop, square, mono) ->
+        let layout = layOutFrame width $ frame prop square mono
+        in decodeFrameLayout (encodeFrameLayout layout) === Just layout
+  ]
+ where
+  wireWords = encodeFrameLayout $ layOutFrame 10 wireFrame
+  cell fg c = Color.attrCharW32 $ Color.attrChar2ToW32 fg c
+
+-- | A frame with one overlay of each kind, on a screen 10 squares wide:
+-- a proportional line of a regular chunk, recoloured for its even row
+-- and with a letter beyond ASCII, and a bold one all coloured spaces.
+wireFrame :: SingleFrame
+wireFrame =
+  frame [(PointUI 2 0, str Color.White "h\233" ++ str Color.Blue "  ")]
+        [(PointUI 4 1, str Color.Red "s")]
+        [(PointUI 3 2, str Color.Green "m")]
+
 -- | A cursor at the given row and device x, started through metrics whose
 -- half-cell is one device unit, so that it may start anywhere.
 cursorAt :: Int -> Int -> PropCursor
@@ -351,12 +394,14 @@ assertAsserts l = do
     Left (_ :: AssertionFailed) -> return ()
     Right _ -> assertFailure $ "no assertion failed in " ++ show l
 
--- | The freshness case for the table pinning re-implementations
--- of 'propCutoff' and 'propFit'. None in a browser build, which runs under
+-- | The freshness cases for the table pinning re-implementations
+-- of 'propCutoff' and 'propFit' and for the fixtures pinning decoders
+-- of 'encodeFrameLayout''s words. None in a browser build, which runs under
 -- @make test-wasm@, away from the files.
 freshnessTests :: [TestTree]
 #ifndef USE_BROWSER
-freshnessTests = [freshnessCase source "prop-fit.json" propFitJson]
+freshnessTests = [ freshnessCase source "prop-fit.json" propFitJson
+                 , freshnessCase source "overlay-wire.json" overlayWireJson ]
 
 source :: FilePath
 source = "OverlayLayoutUnitTests.hs"
@@ -396,13 +441,64 @@ propFitJson = jsonDocument source [("rows", map row sample)]
          else let PropFit{..} = propFit lm cur (chunkOf allSpace) widthRaw
               in [ ("stop", jsonBool False), ("x", tshow pfXPx)
                  , ("widthPx", tshow pfWidthPx)
-                 , ("marker", maybe "null" markerRun pfMarker) ]
-  markerRun CellRun{..} =
-    jsonObject [ ("col", tshow crCol), ("row", tshow crRow)
-               , ( "words"
-                 , "[" <> T.intercalate ", "
-                            (map (tshow . Color.attrCharW32) crCells)
-                   <> "]" ) ]
+                 , ("marker", maybe "null" cellRunJson pfMarker) ]
+
+-- | The wire's fixtures: frames' overlays as 'encodeFrameLayout' writes
+-- them, each case named, with the width of the screen they are laid out
+-- for and the layout they decode to, as @overlay-core.ts@ types it.
+-- The frames: one with no overlays; proportional lines, of both faces, one
+-- dropped at the last column and one empty; square runs, a highlight
+-- in one and the other cut at the screen's edge; mono runs, likewise cut
+-- and with the cursor's highlight; and 'wireFrame', with all three.
+overlayWireJson :: Text
+overlayWireJson = jsonDocument source [("cases", map wireCase frames)]
+ where
+  frames =
+    [ ("no overlays", 80, frame [] [] [])
+    , ( "proportional lines", 10
+      , frame [ (PointUI 0 1, [sp, sp] ++ str Color.BrYellow "ab"
+                              ++ str Color.Red "c")
+              , (PointUI 18 2, str Color.Red "dropped")
+              , (PointUI 4 3, []) ]
+              [] [] )
+    , ( "square runs", 10
+      , frame [] [ (PointUI 0 4, [attrCell backlit '@'])
+                 , (PointUI 14 0, str Color.Blue "abcd") ] [] )
+    , ( "mono runs", 10
+      , frame [] [] [ (PointUI 17 1, str Color.Green "abcd")
+                    , (PointUI 0 0, [attrCell cursor 'x']) ] )
+    , ("all three", 10, wireFrame) ]
+  attrCell attr c = Color.attrCharToW32 $ Color.AttrChar attr c
+  cursor = Color.Attr Color.BrWhite Color.HighlightNoneCursor
+  wireCase (name, width, f) =
+    let layout = layOutFrame width f
+    in jsonObject [ ("name", jsonString name), ("width", tshow width)
+                  , ("words", jsonArray $ map tshow $ encodeFrameLayout layout)
+                  , ("layout", layoutJson layout) ]
+  layoutJson FrameLayout{..} =
+    jsonObject [ ("prop", jsonArray $ map propLineJson flProp)
+               , ("square", jsonArray $ map cellRunJson flSquare)
+               , ("mono", jsonArray $ map cellRunJson flMono) ]
+  propLineJson PropLine{..} =
+    jsonObject [ ("startX", tshow plStartX), ("row", tshow plRow)
+               , ("chunks", jsonArray $ map chunkJson plChunks) ]
+  chunkJson chunk@PropChunk{..} =
+    jsonObject [ ( "face"
+                 , jsonString $ case pcFont chunk of
+                     PropRegular -> "propRegular"
+                     PropBold -> "propBold" )
+               , ("color", tshow $ fromEnum pcColor)
+               , ("allSpace", jsonBool $ pcAllSpace chunk)
+               , ("text", jsonString pcText) ]
+
+-- | A cell run, as @overlay-core.ts@ types it.
+cellRunJson :: CellRun -> Text
+cellRunJson CellRun{..} =
+  jsonObject [ ("col", tshow crCol), ("row", tshow crRow)
+             , ("words", jsonArray $ map (tshow . Color.attrCharW32) crCells) ]
+
+jsonArray :: [Text] -> Text
+jsonArray items = "[" <> T.intercalate ", " items <> "]"
 #else
 freshnessTests = []
 #endif

@@ -1,13 +1,15 @@
 -- | The overlay layout of the frontends that draw the three overlays
--- themselves, SDL now and the browser to come: every per-line and per-chunk
--- decision, cut along the measurement line. Chunking, colours, faces and
--- the two fixed-pitch line cuts take no metrics at all. The proportional
--- pen, which advances by rendered widths only a frontend can measure, goes
--- through two functions: 'propCutoff', asked before a chunk is rendered, and
--- 'propFit', given the width just measured. The table the test suite writes
--- into @ts-src/src/generated/@ (@docs/wasm-frontend-unified-plan.md@, 2.1)
--- pins any re-implementation of those two to them, such as the browser is to
--- carry.
+-- themselves, SDL and the browser: every per-line and per-chunk decision,
+-- cut along the measurement line. Chunking, colours, faces and the two
+-- fixed-pitch line cuts take no metrics at all. The proportional pen, which
+-- advances by rendered widths only a frontend can measure, goes through two
+-- functions: 'propCutoff', asked before a chunk is rendered, and 'propFit',
+-- given the width just measured. The table the test suite writes into
+-- @ts-src/src/generated/@ (@docs/wasm-frontend-unified-plan.md@, 2.1) pins
+-- any re-implementation of those two to them, such as the browser carries.
+-- A frontend across an FFI is handed the layout as the words
+-- 'encodeFrameLayout' writes, which fixtures the suite writes there too
+-- pin its decoder to (2.3).
 module Game.LambdaHack.Client.UI.Frontend.OverlayLayout
   ( -- * Cell metrics
     LayoutMetrics, lmHalfSize, lmWidth, lmBoxSize, mkLayoutMetrics
@@ -18,16 +20,22 @@ module Game.LambdaHack.Client.UI.Frontend.OverlayLayout
     -- * The proportional pen, which advances by measured widths
   , PropCursor, startPropLine, propCutoff, PropFit(..), propFit
   , trimmedMarkerRun
+    -- * The layout on the wire to a frontend across an FFI
+  , encodeFrameLayout
     -- * Operations both internal and used in unit tests
-  , chunkPropLine
+  , chunkPropLine, decodeFrameLayout
   ) where
 
 import Prelude ()
 
 import Game.LambdaHack.Core.Prelude
 
+import           Control.Monad.Trans.Class (lift)
+import           Control.Monad.Trans.State.Strict (StateT (..), evalStateT, get)
+import           Data.Bits (toIntegralSized)
 import qualified Data.Char as Char
 import qualified Data.Text as T
+import           Data.Word (Word32)
 
 import           Game.LambdaHack.Client.UI.Frame
 import           Game.LambdaHack.Client.UI.Frontend.CellStyle (rowColor)
@@ -302,3 +310,90 @@ trimmedMarkerRun LayoutMetrics{lmWidth} row =
           , crRow = row
           , crCol = lmWidth - 1
           , crCells = [Color.trimmedLineAttrW32] }
+
+-- | A frame's overlays as the words a frontend across an FFI decodes,
+-- the browser in @ts-src/src/overlay-core.ts@: one scalar to a word,
+-- the cells' 'Color.AttrCharW32' words the only ones that pack several,
+-- and a count before every repeated group, counting its elements. In order:
+--
+-- > nProp nSquare nMono               the counts of the three sections
+-- > nProp proportional lines, each:
+-- >   startX row nChunks              then nChunks chunks, each:
+-- >     face colour allSpace nChars   then nChars codepoints
+-- > nSquare square runs, each:
+-- >   row col nCells                  then nCells AttrCharW32 words
+-- > nMono mono runs, each as a square run
+--
+-- The sections are the fields of 'FrameLayout', in its draw order, so no
+-- run carries its layer. @face@ is 'fromEnum' of 'pcFont', 0 for
+-- 'PropRegular' and 1 for 'PropBold', @colour@ that of 'pcColor', and
+-- @allSpace@ that of 'pcAllSpace', the one input of 'propFit' a consumer
+-- is given rather than re-derive. @startX@ is in 'PointUI' half-cells,
+-- the device x being the consumer's 'startPropLine' to compute.
+-- Crashes on a scalar no word holds.
+encodeFrameLayout :: FrameLayout -> [Word32]
+encodeFrameLayout FrameLayout{..} =
+  [count flProp, count flSquare, count flMono]
+  ++ concatMap propLine flProp
+  ++ concatMap (cellRun LayerSquare) flSquare
+  ++ concatMap (cellRun LayerMono) flMono
+ where
+  scalar :: Int -> Word32
+  scalar = toIntegralCrash
+  count :: [a] -> Word32
+  count = scalar . length
+  propLine PropLine{..} =
+    [scalar plStartX, scalar plRow, count plChunks]
+    ++ concatMap propChunk plChunks
+  propChunk chunk@PropChunk{..} =
+    [ scalar $ fromEnum $ pcFont chunk, scalar $ fromEnum pcColor
+    , scalar $ fromEnum $ pcAllSpace chunk, scalar $ T.length pcText ]
+    ++ map (scalar . Char.ord) (T.unpack pcText)
+  cellRun layer CellRun{..} =
+    assert (crLayer == layer `blame` (layer, crLayer))
+    $ [scalar crRow, scalar crCol, count crCells]
+      ++ map Color.attrCharW32 crCells
+
+-- | The layout 'encodeFrameLayout' wrote the words of, if it wrote them:
+-- none for words too few or too many, or for a chunk whose face or
+-- all-space word is out of step with its colour and text.
+decodeFrameLayout :: [Word32] -> Maybe FrameLayout
+decodeFrameLayout = evalStateT $ do
+  nProp <- int
+  nSquare <- int
+  nMono <- int
+  flProp <- replicateM nProp propLine
+  flSquare <- replicateM nSquare $ cellRun LayerSquare
+  flMono <- replicateM nMono $ cellRun LayerMono
+  get >>= guard . null
+  return FrameLayout{..}
+ where
+  word :: StateT [Word32] Maybe Word32
+  word = StateT uncons
+  int :: StateT [Word32] Maybe Int
+  int = word >>= lift . toIntegralSized
+  propLine = do
+    plStartX <- int
+    plRow <- int
+    nChunks <- int
+    plChunks <- replicateM nChunks propChunk
+    return PropLine{..}
+  propChunk = do
+    face <- int
+    colour <- int
+    allSpace <- int
+    nChars <- int
+    codes <- replicateM nChars int
+    guard $ colour <= fromEnum (maxBound :: Color.Color)
+            && all (<= Char.ord maxBound) codes
+    let chunk = PropChunk { pcColor = toEnum colour
+                          , pcText = T.pack $ map Char.chr codes }
+    guard $ face == fromEnum (pcFont chunk)
+            && allSpace == fromEnum (pcAllSpace chunk)
+    return chunk
+  cellRun crLayer = do
+    crRow <- int
+    crCol <- int
+    nCells <- int
+    crCells <- replicateM nCells $ Color.AttrCharW32 <$> word
+    return CellRun{..}
