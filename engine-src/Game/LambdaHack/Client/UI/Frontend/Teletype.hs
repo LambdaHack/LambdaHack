@@ -1,7 +1,7 @@
 -- | Line terminal text frontend based on stdin/stdout, intended for logging
 -- tests, but may be used on a teletype terminal, or with keyboard and printer.
 module Game.LambdaHack.Client.UI.Frontend.Teletype
-  ( startup, frontendName
+  ( startup, frontendName, supportsMultiFont
   ) where
 
 import Prelude ()
@@ -26,6 +26,11 @@ import qualified Game.LambdaHack.Definition.Color as Color
 -- | The name of the frontend.
 frontendName :: String
 frontendName = "teletype"
+
+-- | Whether the frontend draws text in proportional and monospace fonts as well
+-- as in the map font.
+supportsMultiFont :: Bool
+supportsMultiFont = False
 
 -- | Set up the frontend input and output.
 startup :: ScreenContent -> IO RawFrontend

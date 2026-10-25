@@ -5,7 +5,7 @@ module Game.LambdaHack.Client.UI.Frontend
   ( -- * Connection and initialization
     FrontReq(..), ChanFrontend(..), chanFrontendIO
     -- * Re-exported part of the raw frontend
-  , frontendName
+  , frontendName, supportsMultiFont
     -- * Input decisions shared by the frontends
   , KeyDecision(..), decideKey, decideWheel, decideMouseButton
     -- * Fonts shared by the frontends
@@ -218,6 +218,20 @@ frontendName soptions =
      | sfrontendANSI soptions -> ANSI.frontendName
 #endif
      | otherwise -> Chosen.frontendName
+
+-- | Whether the chosen frontend draws text in proportional and monospace fonts
+-- as well as in the map font.
+supportsMultiFont :: ClientOptions -> Bool
+supportsMultiFont soptions =
+  if | sfrontendNull soptions -> False
+     | sfrontendLazy soptions -> False
+#ifndef REMOVE_TELETYPE
+     | sfrontendTeletype soptions -> Teletype.supportsMultiFont
+#endif
+#ifndef USE_BROWSER
+     | sfrontendANSI soptions -> ANSI.supportsMultiFont
+#endif
+     | otherwise -> Chosen.supportsMultiFont
 
 lazyStartup :: ScreenContent -> IO RawFrontend
 lazyStartup coscreen = createRawFrontend coscreen (\_ -> return ()) (return ())

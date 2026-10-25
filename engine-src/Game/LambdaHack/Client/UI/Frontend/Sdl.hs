@@ -1,6 +1,6 @@
 -- | Text frontend based on SDL2.
 module Game.LambdaHack.Client.UI.Frontend.Sdl
-  ( startup, frontendName
+  ( startup, frontendName, supportsMultiFont
 #ifdef EXPOSE_INTERNAL
     -- * Internal operations
   , FontAtlas, FrontendSession(..), startupFun, shutdown, forceShutdown
@@ -95,6 +95,11 @@ data FrontendSession = FrontendSession
 -- | The name of the frontend.
 frontendName :: String
 frontendName = "sdl"
+
+-- | Whether the frontend draws text in proportional and monospace fonts as well
+-- as in the map font.
+supportsMultiFont :: Bool
+supportsMultiFont = True
 
 -- | Set up and start the main loop providing input and output.
 --

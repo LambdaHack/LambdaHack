@@ -1,6 +1,6 @@
 -- | Text frontend based on ANSI (via ansi-terminal).
 module Game.LambdaHack.Client.UI.Frontend.ANSI
-  ( startup, frontendName
+  ( startup, frontendName, supportsMultiFont
   ) where
 
 import Prelude ()
@@ -29,6 +29,11 @@ import qualified Game.LambdaHack.Definition.Color as Color
 -- | The name of the frontend.
 frontendName :: String
 frontendName = "ANSI"
+
+-- | Whether the frontend draws text in proportional and monospace fonts as well
+-- as in the map font.
+supportsMultiFont :: Bool
+supportsMultiFont = False
 
 -- | Starts the main program loop using the frontend input and output.
 startup :: ScreenContent -> IO RawFrontend

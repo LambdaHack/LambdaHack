@@ -320,7 +320,7 @@ clearAimMode = do
 getFontSetup :: MonadClientUI m => m FontSetup
 getFontSetup = do
   soptions <- getsClient soptions
-  let multiFont = Frontend.frontendName soptions == "sdl"
+  let multiFont = Frontend.supportsMultiFont soptions
                   && either error (isJust . Frontend.cfAuxiliary)
                             (Frontend.resolveFonts soptions)
   return $! if multiFont then multiFontSetup else singleFontSetup
