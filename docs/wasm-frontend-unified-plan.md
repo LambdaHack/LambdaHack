@@ -702,15 +702,15 @@ at `localhost:8080` (`make run-wasm`). TS tests: `make test-ts` (`ts-src`'s own
 in the target: it is the only TS type check that runs anywhere --- esbuild
 strips types unchecked, and vitest passed over a planted type error that `tsc`
 then caught. Native Haskell tests: `cabal test`. Wasm-compiled Haskell tests:
-`make test-wasm` (drives the tasty binary through Node via
-`ts-src/run-wasm-test.mjs`; the `common options` stanza applies
-`USE_BROWSER`/`USE_WASM`/`USE_WASMFILE` to the test-suite under `os(wasi)`,
-so the suite is *compiled and linked* in the real browser configuration ---
+`make test-wasm` (drives the tasty binaries, `test`'s and `test-game`'s, through
+Node via `ts-src/run-wasm-test.mjs`; the `common options` stanza applies
+`USE_BROWSER`/`USE_WASM`/`USE_WASMFILE` to the test suites under `os(wasi)`,
+so the suites are *compiled and linked* in the real browser configuration ---
 `WasmFile.hs` as the file backend, `Wasm.hs` as the chosen frontend --- which
 catches wasm-only compile and link breakage. 0.3's FFI battery executes both
 modules' code, `WasmFile.hs` through `Common/File.hs`'s exports and `Wasm.hs`
 through `startup` and `fdisplay`, and 0.1's input-side contract cases enter
-`Wasm.hs` through `startup`; the rest of the suite does not enter `Wasm.hs`,
+`Wasm.hs` through `startup`; the rest of the suites do not enter `Wasm.hs`,
 the integration test passing `--frontendNull` and every fixture setting
 `sfrontendNull = True`, so `nullStartup` stands in for `Chosen.startup`).
 
@@ -2926,8 +2926,8 @@ so it carries both --- decode screen indices with `punindex (rwidth coscreen)`,
 never `toEnum`, and ask of every new line "would another frontend have to copy
 this?"
 
-**Determinism goldens --- native first, then cross-backend.** The tasty suite
-already compiles and runs under both native (`cabal test`) and wasm
+**Determinism goldens --- native first, then cross-backend.** The tasty suites
+already compile and run under both native (`cabal test`) and wasm
 (`make test-wasm`), and `test/SessionUIMock.hs` already unwinds key macros
 through the real `HandleHumanM` machinery. Add golden tests --- fixed seed,
 scripted keys, committed digests, in the two ruled families: frame-and-overlay
@@ -2952,14 +2952,14 @@ at `UnitTestHelpers.hs:scriptedFchanFrontend ::`, `scriptedCliState`
 at `UnitTestHelpers.hs:scriptedCliState ::`), whose scripted frontend captures
 the very frames the digest guards, and the state family on a seeded whole game
 through `tieKnot` --- the `--frontendNull --benchmark --stopAfterFrames` shape
-the Makefile bench targets use, which the suite already depends on and which
-captures no frames, the reason it cannot serve the first family. (3) The digest
-is a hand-rolled FNV-style fold over the `Binary` `encode` bytes ---
-dependency-free, deterministic, trivially resolving under `wasm32-wasi-cabal`
---- with the digests as committed hex literals in the test file: no data file,
-no preopen-path coupling in the wasm run, and a legitimate golden change is one
-pasted literal in a reviewable diff; `tasty-golden` and `hashable` stay out
-of the stanza.
+the Makefile bench targets use, which the integration tests already depend
+on and which captures no frames, the reason it cannot serve the first family.
+(3) The digest is a hand-rolled FNV-style fold over the `Binary` `encode` bytes
+--- dependency-free, deterministic, trivially resolving
+under `wasm32-wasi-cabal` --- with the digests as committed hex literals
+in the test file: no data file, no preopen-path coupling in the wasm run,
+and a legitimate golden change is one pasted literal in a reviewable diff;
+`tasty-golden` and `hashable` stay out of the stanza.
 
 **A CI smoke for every shipped frontend.** Before these smokes no frontend's
 event loop but teletype's ran in CI, the `make test-gha` playtests driving

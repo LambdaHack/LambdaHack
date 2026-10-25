@@ -1799,7 +1799,7 @@ which `display`'s foreign call traps. The third commit carries the outcome line.
 **Owns** --- `Client/UI/Frontend/Common.hs` (haddock), `Client/UI/Frontend.hs`
 (export list only), `test/FrontendContractUnitTests.hs`, which 0.1 creates,
 `test/Spec.hs`, the `test-suite test` stanza of `LambdaHack.cabal`
-(`LambdaHack.cabal:test-suite test`), and `docs/wasm-frontend-unified-plan.md`.
+(`LambdaHack.cabal:main-is: Spec.hs`), and `docs/wasm-frontend-unified-plan.md`.
 The input-side cases land inside 0.1, which creates the test module and mints
 `[fe-invariant]`, and this item's harness extends it; 2.3 and 1.5 are the items
 extending `ts-src/run-wasm-test.mjs`; this one and 3.2 do not.
@@ -1837,7 +1837,7 @@ line and the `tools/doc-refs-allow.txt` deletion.
 
 **Owns** --- the new `test/DeterminismGoldenUnitTests.hs`, `test/Spec.hs`,
 the `test-suite test` stanza of `LambdaHack.cabal`
-(`LambdaHack.cabal:test-suite test`), whatever fixtures the digest needs
+(`LambdaHack.cabal:main-is: Spec.hs`), whatever fixtures the digest needs
 in `test/UnitTestHelpers.hs` and `test/SessionUIMock.hs`,
 `tools/doc-refs-allow.txt` (the `test/DeterminismGoldenUnitTests.hs` entry,
 deleted by the second commit), and `docs/wasm-frontend-unified-plan.md`.
