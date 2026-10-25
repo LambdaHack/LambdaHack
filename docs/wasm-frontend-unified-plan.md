@@ -2350,7 +2350,8 @@ the native playtest battery on (`make test-medium` at minimum).
 - HiDPI and browser-zoom spot checks (0.4's device-pixel backing store
   under the overlays, exercised for real).
 - Frame-timing re-measurement against 0.4's canvas baseline (B.10; re-apply
-  the probe diff recorded there).
+  the probe recorded there, its diff adapted to `terminal.ts` as it then stands,
+  as Phase 2's was adapted to the canvas).
 
 **Rulings** --- since 2026-08-05, re-cut 2026-10-20: 0.4's Split (0) captures
 the baseline, on the canvas, before 0.4's painter merges, closing the question

@@ -1379,7 +1379,7 @@ implements it as a no-op, and `engine-src/Game/LambdaHack/Server/CommonM.hs`,
 whose `writeSaveAll` calls it --- the three files this item's own ruling names,
 two of which the capability-constants practice also rewrites; the new
 `test/WasmFileUnitTests.hs` (CPP-guarded to an empty group natively, the way
-`test/Spec.hs` already guards its SDL cases), `test/Spec.hs`, and the test-suite
+`test/GameSpec.hs` guards its SDL cases), `test/Spec.hs`, and the test-suite
 `other-modules` list in `LambdaHack.cabal`;
 `Server/LoopM.hs:!defined(USE_JSFILE) &&`
 and `WatchUpdAtomicM.hs:UpdKillExit{} -> do`; and `GameDefinition/index.html`
