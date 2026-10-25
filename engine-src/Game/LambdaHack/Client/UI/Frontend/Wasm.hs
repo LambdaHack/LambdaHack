@@ -95,7 +95,7 @@ frontendName = "wasm"
 -- | Whether the frontend draws text in proportional and monospace fonts as well
 -- as in the map font.
 supportsMultiFont :: Bool
-supportsMultiFont = False  -- for now; turning it on is reviewed on its own
+supportsMultiFont = True
 
 -- | Set up the frontend input and output.
 startup :: ScreenContent -> ClientOptions -> IO RawFrontend
