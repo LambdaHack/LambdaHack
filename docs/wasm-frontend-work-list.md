@@ -1082,12 +1082,12 @@ is the gap it closed.
 
 **Hands back** --- *browser*: that the declared `FontFace`s actually load. sec.
 2.2's own "live game pixel-identical to before" needs no human ---
-`getFontSetup` still gates on `"sdl"`
-(`MonadClientUI.hs:= Frontend.frontendName`), so the overlays are provably `[]`
-and the vitest case asserting zero draw calls on an empty payload decides it,
-which is why the substitute gate in Done is `make test-ts` plus the two
-font-deployment tests rather than a look. The HiDPI and browser-zoom checks
-are deferred to 2.5 by the plan itself, not by this block.
+`getFontSetup` still gates on `"sdl"` (`MonadClientUI.hs:getFontSetup ::`),
+so the overlays are provably `[]` and the vitest case asserting zero draw calls
+on an empty payload decides it, which is why the substitute gate in Done
+is `make test-ts` plus the two font-deployment tests rather than a look.
+The HiDPI and browser-zoom checks are deferred to 2.5 by the plan itself,
+not by this block.
 
 **Decide first** --- nothing; the rulings are the record's.
 
@@ -1122,7 +1122,7 @@ the freshness case's proof as 0.2's Done states it.
 
 **Hands back** --- hands back nothing. sec. 2.3's "verified by playing" argues
 its own case away in the next sentence: `getFontSetup` still gates on `"sdl"`
-(`MonadClientUI.hs:= Frontend.frontendName`), the overlays are provably `[]`,
+(`MonadClientUI.hs:getFontSetup ::`), the overlays are provably `[]`,
 and playing proves nothing the zero-draw-call vitest case
 and the `run-wasm-test.mjs` end-to-end case do not. Phase 2's browser budget
 is spent at 2.4 instead.
@@ -1136,7 +1136,7 @@ mechanism, behaviour-preserving: `supportsMultiFont` exported by `Sdl.hs`
 (`True`), `Wasm.hs` (`False`, for now), `ANSI.hs` and `Teletype.hs` (`False`),
 the `Frontend.hs` dispatch mirroring `frontendName`'s CPP-guarded guard chain
 (`Frontend.hs:frontendName :: ClientOptions`), `getFontSetup` reading
-it (`MonadClientUI.hs:= Frontend.frontendName`), and the new
+it (`MonadClientUI.hs:= Frontend.supportsMultiFont`), and the new
 `MonadClientUIUnitTests.hs` case pinning it. This is provably a no-op: today's
 gate is `frontendName soptions == "sdl"`, already `False` for wasm, ANSI,
 Teletype, null and lazy alike, so a dispatch true only for `Sdl.hs` reproduces
@@ -1149,9 +1149,9 @@ so that `getFontSetup`, which resolves the fontset under the browser too once
 (3) lands, never meets one the startup let through; the test modules that start
 the browser frontend on `defClientOptions`, whose fontset does not resolve, each
 through its `startupUnderTest`
-(`FrontendContractUnitTests.hs:startupUnderTest coscreen = Wasm.startup coscreen defClientOptions`
+(`FrontendContractUnitTests.hs:startupUnderTest coscreen = Wasm.startup coscreen`
 and
-`FfiCoverageUnitTests.hs:startupUnderTest coscreen = Wasm.startup coscreen defClientOptions`),
+`FfiCoverageUnitTests.hs:startupUnderTest coscreen = Wasm.startup coscreen`),
 get options that resolve; then the driver commit **Owns** places before (3). (3)
 `Wasm.supportsMultiFont = True`, one line and nothing else. (4) the page gate's
 overlay assertion made unconditional, `ts-src/page-gate.mjs`'s

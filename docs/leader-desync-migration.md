@@ -541,8 +541,8 @@ did, below `MonadClientUI.hs:partPronounLeader ::`.
 
 **Owns** --- `engine-src/Game/LambdaHack/Client/UI/MonadClientUI.hs`
 and this document. The wasm plan's 2.4 writes the same file,
-at `MonadClientUI.hs:multiFont = Frontend.frontendName soptions`; the bodies
-are disjoint, so serialize.
+at `MonadClientUI.hs:multiFont = Frontend.supportsMultiFont soptions`;
+the bodies are disjoint, so serialize.
 
 **Done** --- `native`, `contract` unmoved, `LR-flip` unmoved, `docs`; nothing
 else changes, this step having no callers yet.

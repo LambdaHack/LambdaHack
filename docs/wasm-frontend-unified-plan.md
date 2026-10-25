@@ -2298,7 +2298,7 @@ no configuration compiles, R3), and `Frontend.hs` dispatches it exactly like
 the null/lazy/teletype/ANSI option guards). A name list like
 `frontendName soptions `elem` ["sdl", "wasm"]` would be a drift-prone string
 list of the same shape G1 fights. Then `getFontSetup`
-(`MonadClientUI.hs:= Frontend.frontendName`) becomes:
+(`MonadClientUI.hs:getFontSetup ::`) becomes:
 
 ```haskell
 multiFont = Frontend.supportsMultiFont soptions
