@@ -1058,6 +1058,20 @@
    "harm": "latent",
    "discovery": "review",
    "notes": "Found by the code review of 2026-10-23 over the year's diff. Its callers are the UI config writes in UIOptionsParse.hs and ProtocolM.hs and dumpTextFile in MonadClient.hs. Both directions were watched that day under make test-wasm; natively the same case passes over HSFile.hs, which prints `withFile: does not exist`. A tier-1 record: the corpus root is tools/, and the case is the test suite's."
+  },
+  {
+   "id": "Wasm-02",
+   "program": "engine-src/Game/LambdaHack/Client/UI/Frontend/Wasm.hs",
+   "name": "lhKey told keyTranslateWeb that Shift was pressed only where Shift was the one modifier held, while Sdl.hs translates under the raw Shift bit, so a chord of Shift with Ctrl or Alt translated unshifted in the browser and shifted natively",
+   "family": "two-spellings",
+   "fix_rev": "self",
+   "trigger": "in the browser, Ctrl+Shift with the numpad's Divide: `KeyboardEvent.key` `/`, with ctrlKey and shiftKey",
+   "ok": "lhKey hands keyTranslateWeb the shiftKey bit, so the chord translates as '?' and reaches C-?, the crosshair to the nearest unknown spot, as natively; the game driver's case `Ctrl+Shift with the numpad's '/' is C-?` passes under make test-reactor",
+   "bug": "lhKey handed `modifier == K.Shift`, False under Ctrl, so the chord translated as '/' and reached C-/, the crosshair to the nearest item; the driver's case failed with `Ctrl+Shift with the numpad's '/' painted ..., not C-?'s ...`, ending `but C-/'s` where an item was in reach",
+   "proved": "ran",
+   "harm": "latent",
+   "discovery": "review",
+   "notes": "Found by the source re-audit of 2026-09-07, gap (2) of docs/wasm-frontend-unified-plan.md's Appendix C, and fixed as the work list's item 1.7. The bug direction was watched on 2026-10-25 against the pre-fix reactor in three runs, each failing, one with the `but C-/'s` ending; the ok direction passed in both make test-reactor runs and in three seeded ones. Dom.hs, frozen and compiled by no build, still hands the old flag. A tier-1 record: the corpus root is tools/, the case is the game driver's, and the deep mutant `test-reactor: lhKey's Shift flag as Shift held alone` replays the bug direction."
   }
  ]
 }

@@ -74,7 +74,7 @@ inputDecisionUnitTests = testGroup "inputDecisionUnitTests"
   ]
 
 -- | @KeyboardEvent.key@ values, the flag 'K.keyTranslateWeb' takes for
--- Shift held alone, and the key each translates to.
+-- Shift held, and the key each translates to.
 keyTranslateWebTable :: [(String, Bool, K.Key)]
 keyTranslateWebTable =
   [ ("Tab", False, K.Tab)

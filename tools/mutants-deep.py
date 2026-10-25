@@ -96,6 +96,13 @@ MUTANTS = [
      '../engine-src/Game/LambdaHack/Client/UI/Frontend/Wasm.hs',
      '  Ex.handle reportException body\n  rts_scheduleWork\n',
      '  Ex.handle reportException body\n', TEST_REACTOR),
+    # lhKey's Shift flag false under Ctrl again, as Wasm-02 records: Ctrl
+    # and Shift with the numpad's '/' reaches C-/ in place of C-?.
+    ("test-reactor: lhKey's Shift flag as Shift held alone",
+     '../engine-src/Game/LambdaHack/Client/UI/Frontend/Wasm.hs',
+     '      key = K.keyTranslateWeb (fromJSString jsKey) modShift\n',
+     '      key = K.keyTranslateWeb (fromJSString jsKey)'
+     ' (modifier == K.Shift)\n', TEST_REACTOR),
     # A repl that runs nothing and exits 0, which doctest's own exit
     # status cannot tell from a pass: no run prints an example count.
     ('doctest: a repl that runs nothing', '../Makefile',

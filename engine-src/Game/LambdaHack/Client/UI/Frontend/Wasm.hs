@@ -183,7 +183,8 @@ lhKey e = syncExport "lhKey" $ do
   modAlt <- js_altKey e
   modMeta <- js_metaKey e
   let modifier = modifierTranslate modCtrl modShift modAlt modMeta
-      key = K.keyTranslateWeb (fromJSString jsKey) (modifier == K.Shift)
+      -- Shift as held, whatever else is, as Sdl.hs's keyTranslate takes it.
+      key = K.keyTranslateWeb (fromJSString jsKey) modShift
       decision = decideKey modifier key
   when (kdPreventBrowser decision) $ js_preventDefaultAndStop e
   mrf <- readIORef rfRef

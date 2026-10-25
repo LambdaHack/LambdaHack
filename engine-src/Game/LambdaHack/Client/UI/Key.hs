@@ -471,7 +471,7 @@ keyTranslate s               = Unknown s
 -- | Translate key from a Web API string description
 -- (<https://developer.mozilla.org/en-US/docs/Web/API/KeyboardEvent/key#Key_values>)
 -- to our internal key type. To be used in web frontends.
--- The argument says whether Shift is pressed.
+-- The argument says whether Shift is pressed, whatever other modifiers are.
 keyTranslateWeb :: String -> Bool -> Key
 keyTranslateWeb "1"          True = KP '1'
 keyTranslateWeb "2"          True = KP '2'
@@ -562,10 +562,9 @@ keyTranslateWeb ['\n']       _ = Return
 keyTranslateWeb ['\r']       _ = DeadKey
 keyTranslateWeb ['\t']       _ = Tab
 -- on some keyboards the key below ESC is paragraph, read as backquote,
--- as Sdl.hs's keyTranslate reads it; but not under Shift alone, the only
--- Shift the flag shows, since a browser reports the character typed, and
--- a shifted paragraph is another key's (Shift-3 on German keyboards),
--- while this key's shifted character varies
+-- as Sdl.hs's keyTranslate reads it; but not under Shift, since a browser
+-- reports the character typed, and a shifted paragraph is another key's
+-- (Shift-3 on German keyboards), while this key's shifted character varies
 keyTranslateWeb "\x00A7"     False = Char '`'
 -- standard characters
 keyTranslateWeb [c]          _ = Char c

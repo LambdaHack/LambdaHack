@@ -21,9 +21,10 @@
 // one on the label's last half-cell, an odd column, activates the choice;
 // C-P through lhKey saves one screenshot through lhPrintScreen, under a
 // name of screenshotName's shape with png for its extension, and under
-// --printEachScreen every frame saves one besides; and lhKey leaves the
-// browser a bare Control chord of '+', an Alt, AltGraph and Meta chord,
-// and Shift pressed alone.
+// --printEachScreen every frame saves one besides; Ctrl+Shift with the
+// numpad's '/' through lhKey paints what C-? does, as natively, and not
+// what C-/ does; and lhKey leaves the browser a bare Control chord of '+',
+// an Alt, AltGraph and Meta chord, and Shift pressed alone.
 //
 // Usage: node run-wasm-game.mjs <LambdaHack.wasm> <ghc_wasm_jsffi.mjs> [arg...]
 //   <ghc_wasm_jsffi.mjs> is post-link.mjs's output for that binary, as in
@@ -294,6 +295,30 @@ async function run() {
   ok(
     `C-P prints one screenshot and ${which} one: ${prints.length} for` +
       ` ${calls.length} frames, the last ${prints.at(-1).name}`,
+  );
+
+  // Ctrl+Shift with the numpad's Divide, whose key reads '/' under Shift,
+  // is C-? natively, Sdl.hs translating it under the raw Shift bit, and so
+  // here, lhKey handing keyTranslateWeb that bit: after C-/, which sets
+  // the crosshair on the nearest item or says there is none, it paints
+  // what C-? does after C-/, typed as '?'. The second C-/'s frame is not
+  // compared with the first's: where neither finds an item, C-? has moved
+  // the crosshair between them.
+  const ctrlShift = { ctrlKey: true, shiftKey: true };
+  const item = await repaint("lhKey", [keyEvent("/", { ctrlKey: true })]);
+  const unknown = await repaint("lhKey", [keyEvent("?", ctrlShift)]);
+  if (unknown === item) fail(`C-? and C-/ both painted ${item}`);
+  await repaint("lhKey", [keyEvent("/", { ctrlKey: true })]);
+  const divide = await repaint("lhKey", [keyEvent("/", ctrlShift)]);
+  if (divide !== unknown) {
+    fail(
+      `Ctrl+Shift with the numpad's '/' painted ${divide}, not C-?'s` +
+        ` ${unknown}${divide === item ? ", but C-/'s" : ""}`,
+    );
+  }
+  ok(
+    "Ctrl+Shift with the numpad's '/' is C-?, as natively: after C-/" +
+      ` it paints ${divide}, as C-? does, where C-/ paints ${item}`,
   );
 
   // Last, since these reach the game too, whose screen nothing checks after.

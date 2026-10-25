@@ -23,18 +23,10 @@ data KeyDecision = KeyDecision
 
 -- No key field: nothing here remaps a key, and both consumers translate it
 -- before they ask (Sdl.hs's @keyTranslate@ of @SDL.keysymKeycode@,
--- and @keyTranslateWeb@ in Wasm.hs's @lhKey@), so each already holds
--- *a* translated key. That the two are not the same key under a compound
--- modifier is not closed here: Sdl.hs translates under the raw left/right
--- shift bits, independent of Ctrl and Alt, while @lhKey@ passes
--- @modifier == K.Shift@, False whenever Ctrl or Alt is also down,
--- so @C-S-<key>@ translates shifted natively and unshifted in the browser.
--- The flag is consumed upstream of 'decideKey', so closing that divergence
--- means deciding the shift flag here too, which this signature does not;
--- the audit note of 2026-09-07 in docs/wasm-frontend-unified-plan.md,
--- Appendix C, records the behaviour. Dead keys reach only
--- 'kdPreventBrowser'; if a rule ever does remap, the field returns and this
--- comment goes.
+-- and @keyTranslateWeb@ in Wasm.hs's @lhKey@), each under the raw Shift
+-- bit, whatever else is held, so each already holds the translated key.
+-- Dead keys reach only 'kdPreventBrowser'; if a rule ever does remap, the
+-- field returns and this comment goes.
 --
 -- Nor a pointer field: the position a key press carries is each frontend's
 -- own, SDL sending the mouse position with every key and the browser
