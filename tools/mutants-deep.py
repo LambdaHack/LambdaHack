@@ -88,11 +88,11 @@ MUTANTS = [
      '../engine-src/Game/LambdaHack/Client/UI/Frontend/Wasm.hs',
      '  Ex.handle reportException body\n  rts_scheduleWork\n',
      '  Ex.handle reportException body\n', PAGE_GATE),
-    # Overlays required before 2.4 submits any; 2.4's commit (4), which
-    # deletes the switch, deletes this mutant with its anchor.
-    ('page gate: overlays required before 2.4', '../ts-src/page-gate.mjs',
-     'const wantOverlays = process.env.PAGE_GATE_OVERLAYS === "1";\n',
-     'const wantOverlays = true;\n', PAGE_GATE),
+    # The browser without the multi-font capability, as before 2.4: its frames
+    # carry no overlays, so the overlay assertion fails.
+    ('page gate: the browser without the multi-font capability',
+     '../engine-src/Game/LambdaHack/Client/UI/Frontend/Wasm.hs',
+     'supportsMultiFont = True\n', 'supportsMultiFont = False\n', PAGE_GATE),
     # No '?' through lhKey: the self-play goes on painting, so the stream
     # never stops, as in the page gate's twin above.
     ("test-reactor: the '?' key not sent", '../ts-src/run-wasm-game.mjs',

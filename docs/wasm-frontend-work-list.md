@@ -196,8 +196,7 @@ reactor  make test-reactor    # the reactor's exports, by the game driver
 deploy   make build-ts        # UNSANDBOXED: writes into the pages checkout
 page     make page-gate       # UNSANDBOXED: Chromium will not start
          sandboxed; the page as deployed, in headless Firefox and
-         Chromium: boots, paints, repaints on a key;
-         PAGE_GATE_OVERLAYS=1 from 2.4 on
+         Chromium: boots, paints, repaints on a key, submits overlays
 docs     the repo's standing document passes over every .md document
          the item's Owns names, the record and this file always among them; CLAUDE.md
          lists the passes and this document does not; what they cost is

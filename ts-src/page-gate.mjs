@@ -1,18 +1,17 @@
 // The deployed-page gate: build outputs in a directory, served here and loaded
 // in headless Firefox and headless Chromium over WebDriver BiDi, Chromium's
-// through chromedriver, must boot the reactor, paint, stop its self-play
-// on a key and repaint on a key on a quiet screen, in each browser. It
-// is the one check in the repository that asks whether the page players
-// load works, and it runs locally, before every browser landing, by ruling
-// (docs/wasm-frontend-work-list.md, the page gate under Handing an item); CI
-// stays blind to the page by that same ruling. Exit 0 when every assertion
-// holds in both browsers, 1 when one fails, 2 when the run did not happen:
-// no browser named or an unknown one, no Firefox, Chromium or chromedriver,
-// no BiDi endpoint or one that closes or stops answering, no server, a throw
-// outside the assertions; a FAIL already printed keeps 1.
+// through chromedriver, must boot the reactor, paint, stop its self-play on
+// a key, repaint on a key on a quiet screen and submit overlays, in each
+// browser. It is the one check in the repository that asks whether the page
+// players load works, and it runs locally, before every browser landing, by
+// ruling (docs/wasm-frontend-work-list.md, the page gate under Handing an
+// item); CI stays blind to the page by that same ruling. Exit 0 when every
+// assertion holds in both browsers, 1 when one fails, 2 when the run did
+// not happen: no browser named or an unknown one, no Firefox, Chromium or
+// chromedriver, no BiDi endpoint or one that closes or stops answering, no
+// server, a throw outside the assertions; a FAIL already printed keeps 1.
 //
 // Usage: node page-gate.mjs <site-dir>   (Node 22+, for the global WebSocket)
-//   PAGE_GATE_OVERLAYS=1 also requires an overlay submission, once 2.4 lands.
 //   PAGE_GATE_BROWSERS=firefox or =chromium runs one browser alone; BROWSER,
 //   CHROMIUM and CHROMEDRIVER name the binaries.
 //
@@ -38,7 +37,6 @@ if (!site) {
   console.error("usage: node page-gate.mjs <site-dir>");
   process.exit(2);
 }
-const wantOverlays = process.env.PAGE_GATE_OVERLAYS === "1";
 const PORT = 8123;
 const DRIVER_PORT = 8124;
 const BROWSER = process.env.BROWSER ?? "firefox-beta";
@@ -383,22 +381,11 @@ async function gate(name, send) {
       );
     }
   }
-  // 4. an overlay submission, once 2.4 lands.
+  // 4. an overlay submission.
   const overlays = await evaluate("globalThis.__lhGate.overlays");
-  if (wantOverlays) {
-    if (overlays < 1) {
-      fail(
-        `${name}: no overlay submission after the key` +
-          " (PAGE_GATE_OVERLAYS=1)",
-      );
-    } else console.log(`ok   ${name}: overlays submitted: ${overlays}`);
-  } else {
-    console.log(
-      `note ${name}: overlays submitted: ${overlays}` +
-        " (not required until 2.4; PAGE_GATE_OVERLAYS=1 requires" +
-        " one)",
-    );
-  }
+  if (overlays < 1) {
+    fail(`${name}: no overlay submission after the key`);
+  } else console.log(`ok   ${name}: overlays submitted: ${overlays}`);
 }
 
 for (const name of BROWSERS) {
