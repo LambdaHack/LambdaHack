@@ -612,10 +612,10 @@ only that the plan was written is one the next reader has to skip.
   `lhMouseUp`), saying in the banner how the game ended once `lhStart`'s promise
   settles. Each frame, `Wasm.hs`'s `display` passes the `Word32` cell buffer's
   address to `globalThis.lhSubmitFrame`; `terminal.ts` snapshots it and repaints
-  the changed cells on one `<canvas>` (diffing against the previous frame)
-  by the draw ops the pure `cellRunOps` in `terminal-core.ts` computes. Input
-  flows the other way: DOM events -> `lhKey`/`lhWheel`/`lhMouseUp` exports ->
-  the engine's key channel. Two hooks more: `startup` hands
+  the changed cells on one `<canvas>` (diffing against the cells it painted
+  last) by the draw ops the pure `cellRunOps` in `terminal-core.ts` computes.
+  Input flows the other way: DOM events -> `lhKey`/`lhWheel`/`lhMouseUp` exports
+  -> the engine's key channel. Two hooks more: `startup` hands
   `globalThis.lhConfigure` the startup payload as JSON, and `fprintScreen` hands
   `globalThis.lhPrintScreen` the name to save the canvas under. Saves bypass all
   of this --- `WasmFile.hs` talks to `localStorage` directly over JSFFI.
@@ -658,11 +658,12 @@ only that the plan was written is one the next reader has to skip.
   at `Common/Misc.hs:data FontDefinition =`) but cannot supply bytes. Phase
   2.2's font wiring is built around exactly that split.
 - **Font deployment.** `../lambdahack.github.io` carries the map font,
-  `16x16xw.woff` --- committed by hand in 2019, not produced by any build ---
-  beside `lz-string*.js`, used by `WasmFile.hs`'s save compression. Since 2.2,
-  `make build-ts` copies every `GameDefinition/fonts/*.ttf.woff` there too, any
-  of which the startup payload may name for `terminal.ts` to declare;
-  the deployed `index.html` references none of them.
+  `16x16xw.woff`, made in 2019 and produced by no build, and `lz-string.min.js`,
+  used by `WasmFile.hs`'s save compression, both copied there
+  by `make build-ts`, which since 2.2 copies every
+  `GameDefinition/fonts/*.ttf.woff` too, any of which the startup payload may
+  name for `terminal.ts` to declare; the deployed `index.html` references none
+  of them.
 
 ## Ground rules
 
@@ -2203,8 +2204,8 @@ forbids.
 
 ### 2.3 Transport: overlays across the JSFFI boundary
 
-`Wasm.hs`'s `display` currently drops three of `SingleFrame`'s four fields
-(`Wasm.hs:display ScreenContent{rwidth,`;
+`Wasm.hs`'s `display` currently hands JS one of `SingleFrame`'s four fields,
+`singleArray` (`Wasm.hs:display ScreenContent{rwidth,`;
 `OverlaySpace = [(PointUI, AttrString)]`,
 `Frame.hs:type OverlaySpace = [(PointUI, AttrString)]`). Add an **additive**
 `js_submitOverlays` alongside `js_submitFrame`, using the same idiom the frame
@@ -3583,10 +3584,9 @@ and the left-hand set's `z`, into each other's places
 `@`, `~`, `[`, `]`, `\`, `C-{` and `C-}`, characters a German layout types
 with AltGr, and AltGr reaches the game as Alt in both frontends, `Sdl.hs`'s
 `modTranslate` folding `keyModifierAltGr` into Alt and the browser by 0.0's rule
-(`terminal-core.ts:export function altModifier`). And the two read Shift
-differently: SDL by a US table in `keyTranslate`
-(`Sdl.hs:Keycode7 -> if shiftPressed`), the browser by the character typed,
-whose `/` under Shift reads as `?`
+(`Wasm.hs:$1.getModifierState('AltGraph')`). And the two read Shift differently:
+SDL by a US table in `keyTranslate` (`Sdl.hs:Keycode7 -> if shiftPressed`),
+the browser by the character typed, whose `/` under Shift reads as `?`
 (`Key.hs:keyTranslateWeb "/" True = Char '?'`), a clause meant for the numpad,
 so a German Shift+7, which types `/`, is expected to reach neither frontend
 as `/`. The help texts spell each key as `showKM` spells its binding. G2's bar

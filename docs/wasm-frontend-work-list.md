@@ -555,9 +555,9 @@ the import half, `CLAUDE.md`'s session fact on which wasm targets need
 an unsandboxed call. Nothing else. The two commits are serial: the export half's
 driver imports the setup and stubs the import half installs --- defined once,
 shared by both drivers rather than copied. Later items add to the game driver,
-0.1, 0.4, 1.2, 1.5 and 3.2 each their own coverage case, 1.7 a parity case
-and 1.8 a change to 1.2's, and to the test driver, 2.3 its case and 1.5
-its startup hook's stub.
+0.1, 0.4, 1.2, 1.5 and 3.2 each their own coverage case, 1.7 a parity case, 1.8
+a change to 1.2's and 2.4 the overlays to its frame comparisons, and to the test
+driver, 2.3 its case and 1.5 its startup hook's stub.
 
 **Done** --- `native`, `wasm`, `docs`, plus, on the export half,
 `make build-wasm` and a run of the seeded driver against the fresh reactor,
@@ -1174,6 +1174,10 @@ no `tools/doc-refs-allow.txt` entries.
 `test/MonadClientUIUnitTests.hs`, `test/FrontendContractUnitTests.hs`,
 `test/FfiCoverageUnitTests.hs` (both for (2)), `ts-src/page-gate.mjs`,
 `tools/mutants-deep.py` (both for (4), with this document's gate table),
+`ts-src/run-wasm-game.mjs`, in a commit before (3), whose checks compare frames
+by their cells alone
+(`run-wasm-test.mjs:calls.push({ w, h, first: words[0], hash });`), which
+are the whole frame only while the browser is single-font,
 `GameDefinition/index.html`, `README.md` --- the "proportional fonts"
 and "limited to the square font" clauses its flip falsifies, the second of them
 in both files since the `#status` div quotes the README, deleted in this item's
@@ -1187,7 +1191,7 @@ the pointman campaign's C1 appends its witness and accessors to the same file
 below `partPronounLeader`, per that campaign's own ruling, so it rewrites
 nothing cited here.
 
-**Done** --- `native`, `ts`, `wasm`, `deploy`, `page`, `docs`, plus
+**Done** --- `native`, `ts`, `wasm`, `reactor`, `deploy`, `page`, `docs`, plus
 `make test-medium`.
 
 **Hands back** --- *browser*: commit (3) is the moment players see something
