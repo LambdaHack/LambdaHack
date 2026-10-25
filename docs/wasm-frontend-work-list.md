@@ -137,7 +137,7 @@ sections of the record are frozen and which live is its head callout's to say.
 | capability constants | named constants in place of behavioral CPP | --- | --- | not applied |
 | sum-typed selection | one frontend field replacing four `Bool`s | mechanical, moderate churn | --- | not applied |
 | RawFrontend contract | haddock contract, tasty harness, add-a-frontend checklist | medium | haddock and checklist: nothing; native harness after 0.1, which creates its module; wasm case with 0.3 | not applied |
-| determinism goldens | fixed-seed frame-and-overlay and final-state digests | medium | --- | not applied |
+| determinism goldens | fixed-seed frame-and-overlay and final-state digests | medium | 2.4 for the wasm stage | not applied |
 | frontend CI smokes | xvfb SDL, pty ANSI, a short nodeBench run | small each | 3.3 for the wasm one | not applied |
 | explicit widths | `punindex`, never the `Enum` instance, in frontend code | review rule, and a `tools/checks.py` step | --- | standing |
 | functional core | the standing review bar for frontend modules | review rule; nothing to execute | --- | standing |
@@ -1831,7 +1831,9 @@ itself, run against null, lazy and Teletype natively and against the real
 in the record.
 
 **Split** --- two commits, as the item's own staging says: the native harness,
-which must precede 2.4, then the wasm stage, which lifts the harness's
+which must precede 2.4, then, after 2.4's (3) by the record's ruling (4),
+the wasm stage, which begins by diagnosing the history case, under wasm
+differing from native under both setups, and then lifts the harness's
 native-only guard in `test/GameSpec.hs`, so that `make test-wasm` and R2's
 existing job run the same goldens. The first landed in `f9a50d959`,
 with the `tools/doc-refs-allow.txt` deletion, run in `test-game`, the executable
@@ -1874,10 +1876,7 @@ the perturbation as a mutant, the native harness's being the `goldens:` ones
 in `tools/mutants-deep.py`, which the test's header names. Confirmed
 for the native harness on 2026-10-25, in the record's item.
 
-**Decide first** --- for the wasm stage, whether it lands after 2.4's (3),
-its multi-font cases then passing under wasm, or before 2.4, those cases kept
-native until (3). Either way it begins by diagnosing the history case, which
-differs from native under both setups (the record's Log, 2026-10-25).
+**Decide first** --- nothing; the rulings are the record's.
 
 **A CI smoke for every shipped frontend.** Design and rulings in the record.
 
@@ -2013,8 +2012,8 @@ RawFrontend contract --- haddock and checklist any time; the native harness
     after 0.1, whose input-side cases create its module; the wasm case
     with 0.3
 determinism goldens --- native harness before 2.4, landed; cross-backend
-    under R2's test-wasm job, its multi-font cases passing there only
-    after 2.4's (3)
+    under R2's test-wasm job after 2.4's (3), which its multi-font cases
+    then check under wasm
 R1 --- independent but for its save-lag re-measurement, after 3.2
 R4 --- after 3.1, which leaves it loader-only
 R3 GHCJS rip-out --- one commit, after 2.5 (parity); Dom.hs/JSFile.hs stay

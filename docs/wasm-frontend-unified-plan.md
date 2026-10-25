@@ -622,6 +622,8 @@ only that the plan was written is one the next reader has to skip.
   and the multi-font frame cases get their single-font digests, the browser
   still picking the single-font setup. So the wasm stage's multi-font cases pass
   under wasm only after 2.4's (3), and the history case wants a diagnosis first.
+- 2026-10-25 -- the determinism goldens' **Decide first** ruled by Mikolaj,
+  as their ruling (4): the wasm stage lands after 2.4's (3).
 
 ## Repo facts the plan builds on
 
@@ -2968,12 +2970,12 @@ setups (the Log, 2026-10-25).
 catch what 2.4 changes, on the evidence of the `goldens:` mutants, the monospace
 one failing only the multi-font cases.*
 
-**Rulings** --- all three ruled on 2026-08-07, (1) re-cut on 2026-10-23
-for 2.1's landing. (1) Two golden families, as the body now states:
-frame-and-overlay digests --- the family 2.4's flip actually gates on, which
-a game-state digest cannot see --- and final-state digests, guarding macro
-and command semantics and the cross-backend behavioral drift the wasm stage
-exists for; the digest fold is shared between them. (2) Each family runs
+**Rulings** --- (1) to (3) ruled on 2026-08-07, (1) re-cut on 2026-10-23
+for 2.1's landing, and (4) on 2026-10-25. (1) Two golden families, as the body
+now states: frame-and-overlay digests --- the family 2.4's flip actually gates
+on, which a game-state digest cannot see --- and final-state digests, guarding
+macro and command semantics and the cross-backend behavioral drift the wasm
+stage exists for; the digest fold is shared between them. (2) Each family runs
 on the harness that naturally produces its input: the frame family
 on the scripted `CliMock` machinery
 (`UnitTestHelpers.hs:newtype CliMock a = CliMock`, `scriptedFchanFrontend`
@@ -2991,7 +2993,10 @@ from `encode` and the frame family's from a `Put` the test writes (the Log,
 under `wasm32-wasi-cabal` --- with the digests as committed hex literals
 in the test file: no data file, no preopen-path coupling in the wasm run,
 and a legitimate golden change is one pasted literal in a reviewable diff;
-`tasty-golden` and `hashable` stay out of the stanza.
+`tasty-golden` and `hashable` stay out of the stanza. (4) The wasm stage lands
+after 2.4's (3), so that its multi-font cases, which get the single-font digests
+until then, pass under wasm from the commit that runs them there, checking
+that the browser builds the frames SDL builds.
 
 **A CI smoke for every shipped frontend.** Before these smokes no frontend's
 event loop but teletype's ran in CI, the `make test-gha` playtests driving
