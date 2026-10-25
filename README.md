@@ -71,11 +71,10 @@ so make sure you want to liberate your code and content to such an extent).
 Installation of the sample game from binary archives
 ----------------------------------------------------
 
-The game runs rather slowly in the browser (fastest on Chrome) and you
-are limited to the square font for all purposes, though it's scalable. Also,
-savefiles are prone to corruption on the browser, e.g., when it's closed while
-the game is still saving progress (which takes a long time). Hence, after trying
-out the game, you may prefer to use a native binary for your architecture,
+The game runs rather slowly in the browser (fastest on Chrome). Also, savefiles
+are prone to corruption on the browser, e.g., when it's closed while the game
+is still saving progress (which takes a long time). Hence, after trying out
+the game, you may prefer to use a native binary for your architecture,
 if it exists.
 
 Pre-compiled game binaries are available through the release page[11]. To use
