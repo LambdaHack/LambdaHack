@@ -2306,6 +2306,22 @@ multiFont = Frontend.supportsMultiFont soptions
                       (Frontend.resolveFonts soptions)
 ```
 
+*Landed in `778f76602`, the Split's (3), after `800c3785a`, `8f4edc80c`
+and `36ac9a84b` --- its (1), its (2) and the reactor driver's commit before (3)
+--- and before `8e9ab4763` and `7a8195426`, its (4) and (5). Beyond this body:
+the new `MonadClientUIUnitTests.hs` case pins `supportsMultiFont` through
+`getFontSetup`, natively SDL's `True` and every other frontend's single-font
+setup, while the browser's value is pinned by the page gate, whose overlay
+assertion (4) made unconditional, a mutant turning the capability off being
+its control; and the reactor driver tells frames apart by their overlays too
+and finds a menu choice in the square overlay, where a menu in the square font
+goes under the multi-font setup.*
+
+*Its hand-back confirmed by Mikolaj on 2026-10-25, in Firefox: menus,
+the message log, help and item descriptions in the proportional fonts,
+and the mono layer over the prop one. The page gate's run of the final page
+counted overlay submissions in Firefox and in Chromium.*
+
 *Ruled 2026-10-23 by Mikolaj: on a fontset that does not resolve the browser
 matches SDL exactly, its startup dying with `resolveFonts`'s reason as SDL's
 does, so the `error` above is unreachable under both; the work list's 2.4
@@ -2709,6 +2725,13 @@ nothing: every value delegates to the real options parser --- the item's own
 selling point --- with the loader only filtering to the allowlist, mapping query
 keys to argv strings and presenting rejections; the vitest covers exactly
 that query-to-args mapping.
+
+*Noted 2026-10-25, at 2.4's landing: since 2.4's (2) a fontset that parses
+but does not resolve ends the game at startup, `lhStart`'s promise rejecting
+with `ExitFailure 1` --- measured that day by `ts-src/run-wasm-game.mjs`
+with `--fontset nonesuch` --- which 1.6's lifecycle shows as a crash rather
+than a message naming the parameter, so a `?fontset=` value aborts legibly only
+where the allowlist holds no name the configuration does not define.*
 
 **R5 --- Performance pass (exploratory, after Phases 2 and 3).** The banner says
 the game "runs rather slowly in the browser". Phase 3's `nodeBench*` targets
