@@ -1,8 +1,8 @@
 // Browser loader wiring: instantiate the LambdaHack wasm reactor with an
-// in-memory WASI shim and the generated JSFFI glue, hook up frame submission,
-// screenshots, the startup payload + keyboard, then start the game and say
-// on the page how it ended. Mirrors ../run-wasm-game.mjs (the Node driver
-// for the reactor), but paints a canvas instead of recording frames. Not
+// in-memory WASI shim and the generated JSFFI glue, hook up frame and overlay
+// submission, screenshots, the startup payload + keyboard, then start the game
+// and say on the page how it ended. Mirrors ../run-wasm-game.mjs (the Node
+// driver for the reactor), but paints a canvas instead of recording frames. Not
 // unit-tested.
 
 import {
@@ -42,6 +42,9 @@ interface StartupPayload {
 }
 
 declare global {
+  // eslint-disable-next-line no-var
+  var lhSubmitOverlays:
+    ((addr: number, len: number, w: number) => void) | undefined;
   // eslint-disable-next-line no-var
   var lhSubmitFrame: ((addr: number, w: number, h: number) => void) | undefined;
   // eslint-disable-next-line no-var
@@ -96,6 +99,8 @@ async function main(): Promise<void> {
     (...a) => void lh.lhWheel(...a),
     (...a) => void lh.lhMouseUp(...a),
   );
+  globalThis.lhSubmitOverlays = (addr, len, w) =>
+    term.submitOverlays(addr, len, w);
   globalThis.lhSubmitFrame = (addr, w, h) => term.submitFrame(addr, w, h);
   globalThis.lhPrintScreen = (name) => term.printScreen(name);
   globalThis.lhConfigure = (json) => {

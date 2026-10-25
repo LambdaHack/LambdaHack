@@ -1,6 +1,7 @@
 import { describe, it, expect, vi } from "vitest";
 import {
   NO_OVERLAYS,
+  decodeFrameLayout,
   layoutMetrics,
   overlaidCells,
   overlayOps,
@@ -18,6 +19,7 @@ import {
 } from "./terminal-core.js";
 import { COLOR, HIGHLIGHT, PALETTE } from "./generated/palette.js";
 import propFitTable from "./generated/prop-fit.json";
+import overlayWire from "./generated/overlay-wire.json";
 
 const { Black, White, AltWhite, BrBlack, BrRed, BrCyan } = COLOR;
 const {
@@ -29,6 +31,57 @@ const {
 const SPACE = 32,
   AT = 64,
   FLOOR = 0xb7; /* U+00B7 */
+
+// The cases are generated from OverlayLayout.encodeFrameLayout by
+// test/OverlayLayoutUnitTests.hs: a mismatch means decodeFrameLayout drifted
+// from OverlayLayout.hs.
+describe("decodeFrameLayout against OverlayLayout's wire fixtures", () => {
+  it.each(overlayWire.cases)("decodes $name", (c) => {
+    expect(decodeFrameLayout(c.words, c.width, c.width)).toEqual(c.layout);
+  });
+  const fixture = (name: string) =>
+    overlayWire.cases.find((c) => c.name === name)!;
+  const all = fixture("all three");
+  it("refuses overlays laid out for another width than the frame's", () => {
+    expect(() =>
+      decodeFrameLayout(all.words, all.width, all.width + 1),
+    ).toThrow("laid out for 10 squares, a frame 11");
+  });
+  it("refuses words cut short, or running on past the overlays", () => {
+    const { words, width } = all;
+    expect(() => decodeFrameLayout(words.slice(0, -1), width, width)).toThrow(
+      "no word",
+    );
+    expect(() => decodeFrameLayout([...words, 0], width, width)).toThrow(
+      "1 words past the overlays",
+    );
+  });
+  it("refuses a face or an all-space word that is neither 0 nor 1", () => {
+    // The words of the first chunk, after the counts and the line's start.
+    const at = (k: number, w: number) =>
+      all.words.map((v, j) => (j === k ? w : v));
+    expect(() => decodeFrameLayout(at(6, 2), all.width, all.width)).toThrow(
+      "word 6 is 2",
+    );
+    expect(() => decodeFrameLayout(at(8, 2), all.width, all.width)).toThrow(
+      "word 8 is 2",
+    );
+  });
+  it("decodes no overlays to a layout that draws and measures nothing", () => {
+    const none = fixture("no overlays");
+    const measure = vi.fn(() => 0);
+    const layout = decodeFrameLayout(none.words, none.width, none.width);
+    const ops = overlayOps(
+      layout,
+      none.width,
+      cellMetrics(13, 3),
+      () => 13,
+      measure,
+    );
+    expect(ops).toEqual([]);
+    expect(measure).not.toHaveBeenCalled();
+  });
+});
 
 // The rows are generated from OverlayLayout.propCutoff and propFit
 // by test/OverlayLayoutUnitTests.hs: a mismatch means overlay-core.ts drifted

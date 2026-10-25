@@ -16,13 +16,12 @@
 //   PAGE_GATE_BROWSERS=firefox or =chromium runs one browser alone; BROWSER,
 //   CHROMIUM and CHROMEDRIVER name the binaries.
 //
-// What is observed, and how: a preload script wraps the globalThis hooks
-// the loader installs -- lhSubmitFrame, and lhSubmitOverlays once it exists
-// -- by defining them as accessor properties before loader.ts assigns them,
-// so every call is counted, the first with its size, and the page's own code
-// runs unchanged. The screen is read back as a hash of the canvas's data URL,
-// so a key's effect is a stopped frame count or a changed hash rather than
-// a claim about what it drew.
+// What is observed, and how: a preload script wraps the globalThis hooks the
+// loader installs -- lhSubmitFrame and lhSubmitOverlays -- by defining them as
+// accessor properties before loader.ts assigns them, so every call is counted,
+// the first with its size, and the page's own code runs unchanged. The screen
+// is read back as a hash of the canvas's data URL, so a key's effect is a
+// stopped frame count or a changed hash rather than a claim about what it drew.
 //
 // Non-vacuity: the gate's controls are mutants in tools/mutants-deep.py,
 // each judged by `make page-gate` and replayed by

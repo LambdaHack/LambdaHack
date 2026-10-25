@@ -4,10 +4,11 @@
 --
 -- Display: each frame's raw @Word32@ cell array (the AttrCharW32 encoding:
 -- @char = w >> 16@, @fg = (w >> 8) & 0xFF@, @bg = w & 0xFF@) is handed to JS by
--- address into wasm linear memory; the TS side decodes and paints. Input: JS
--- calls the exported @lhKey@ with each keydown event in the terminal, and
--- @lhKey@ decides the browser's default action and translates and queues
--- the key. Screenshots: a name is handed to JS, which saves the screen
+-- address into wasm linear memory, and before it, where the frame has any, its
+-- overlays, as the words 'encodeFrameLayout' writes; the TS side decodes and
+-- paints. Input: JS calls the exported @lhKey@ with each keydown event in the
+-- terminal, and @lhKey@ decides the browser's default action and translates and
+-- queues the key. Screenshots: a name is handed to JS, which saves the screen
 -- under it. Startup: the font scale the page draws by and the fonts it draws
 -- the overlays in are handed to JS once, as JSON.
 module Game.LambdaHack.Client.UI.Frontend.Wasm
@@ -45,12 +46,22 @@ import           Game.LambdaHack.Client.UI.Frame
 import           Game.LambdaHack.Client.UI.Frontend.Common
 import           Game.LambdaHack.Client.UI.Frontend.Fonts
 import           Game.LambdaHack.Client.UI.Frontend.InputDecision
+import           Game.LambdaHack.Client.UI.Frontend.OverlayLayout
 import           Game.LambdaHack.Client.UI.Frontend.Screenshot
 import qualified Game.LambdaHack.Client.UI.Key as K
 import           Game.LambdaHack.Client.UI.PointUI
 import           Game.LambdaHack.Common.ClientOptions
 import           Game.LambdaHack.Common.Misc (FontDefinition (..))
 import qualified Game.LambdaHack.Common.PointArray as PointArray
+
+-- | Submit a frame's overlays, before the frame and only where it has any:
+-- @(address, length, width)@ of a @Word32@ buffer in wasm linear memory,
+-- holding the words 'encodeFrameLayout' writes of the overlays laid out
+-- for a screen @width@ squares wide. The JS side (set up by the loader
+-- as @globalThis.lhSubmitOverlays@) snapshots them for the frame submitted
+-- next, which must be as wide. @unsafe@, as 'js_submitFrame' is.
+foreign import javascript unsafe "globalThis.lhSubmitOverlays($1 + $2, $3, $4)"
+  js_submitOverlays :: ByteArray# -> Int -> Int -> Int -> IO ()
 
 -- | Submit a frame: @(address, width, height)@ of a @Word32@ cell buffer in
 -- wasm linear memory. The JS side (set up by the loader
@@ -150,10 +161,17 @@ shutdown = return () -- nothing to clean up
 
 -- | Output to the screen via the frontend, and, if so asked, save
 -- a screenshot of each frame that differs from the one displayed last,
--- blank at first, as @Sdl.hs@ saves one only where it redraws.
+-- blank at first, as @Sdl.hs@ saves one only where it redraws. A frame's
+-- overlays go first, laid out as @Sdl.hs@ lays out its own, and only where
+-- there are any, so a frame without submits none.
 display :: ScreenContent -> Bool -> IORef SingleFrame -> SingleFrame -> IO ()
 display ScreenContent{rwidth, rheight} printEachScreen previousFrame
         curFrame@SingleFrame{singleArray} = do
+  let layout = layOutFrame rwidth curFrame
+  unless (layout == FrameLayout [] [] []) $ do
+    let overlays = U.fromList $ encodeFrameLayout layout
+    word32BackingArray overlays $ \ba# byteOffset ->
+      js_submitOverlays ba# byteOffset (U.length overlays) rwidth
   let v = PointArray.avector singleArray :: U.Vector Word32
   word32BackingArray v $ \ba# byteOffset ->
     js_submitFrame ba# byteOffset rwidth rheight

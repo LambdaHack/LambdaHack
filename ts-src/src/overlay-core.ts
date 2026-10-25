@@ -54,6 +54,66 @@ export interface PropChunk {
 /** A frame with no overlays. */
 export const NO_OVERLAYS: FrameLayout = { prop: [], square: [], mono: [] };
 
+// The faces a chunk's face word indexes, by OverlayLayout.hs's PropFont.
+const PROP_FACES: readonly PropChunk["face"][] = ["propRegular", "propBold"];
+
+/**
+ * A frame's overlays, decoded from the words OverlayLayout.hs's
+ * encodeFrameLayout writes, its haddock giving their order, and laid out
+ * for a screen laidOutFor squares wide, which must be the width of the frame
+ * they go with, frameWidth: the Haskell filtered the lines against the one
+ * and the pen clamps against the other. Throws where they differ, on words
+ * too few or too many, and on a face or an all-space word neither 0 nor 1.
+ */
+export function decodeFrameLayout(
+  words: ArrayLike<number>,
+  laidOutFor: number,
+  frameWidth: number,
+): FrameLayout {
+  const fail = (what: string): never => {
+    throw new Error(`decodeFrameLayout: ${what}`);
+  };
+  if (laidOutFor !== frameWidth)
+    fail(`overlays laid out for ${laidOutFor} squares, a frame ${frameWidth}`);
+  let i = 0;
+  const next = (): number =>
+    i < words.length ? words[i++] : fail(`no word ${i} of ${words.length}`);
+  // A word that indexes values, as it must.
+  const oneOf = <T>(values: readonly T[]): T => {
+    const w = next();
+    return w < values.length ? values[w] : fail(`word ${i - 1} is ${w}`);
+  };
+  const times = <T>(n: number, item: () => T): T[] =>
+    Array.from({ length: n }, () => item());
+  const propChunk = (): PropChunk => {
+    const face = oneOf(PROP_FACES);
+    const color = next();
+    const allSpace = oneOf([false, true]);
+    const text = String.fromCodePoint(...times(next(), next));
+    return { face, color, allSpace, text };
+  };
+  const propLine = (): PropLine => {
+    const startX = next();
+    const row = next();
+    return { startX, row, chunks: times(next(), propChunk) };
+  };
+  const cellRun = (): CellRun => {
+    const row = next();
+    const col = next();
+    return { col, row, words: times(next(), next) };
+  };
+  const nProp = next();
+  const nSquare = next();
+  const nMono = next();
+  const layout = {
+    prop: times(nProp, propLine),
+    square: times(nSquare, cellRun),
+    mono: times(nMono, cellRun),
+  };
+  if (i !== words.length) fail(`${words.length - i} words past the overlays`);
+  return layout;
+}
+
 /**
  * Cell metrics in device pixels, OverlayLayout.hs's LayoutMetrics: halfSize
  * is one PointUI step and the mono pitch, the painter's own, and width

@@ -24,12 +24,14 @@ import {
 } from "./terminal-core.js";
 import {
   NO_OVERLAYS,
+  decodeFrameLayout,
   overlaidCells,
   overlayOps,
   type FrameLayout,
 } from "./overlay-core.js";
 
 export interface Terminal {
+  submitOverlays(addr: number, len: number, w: number): void;
   submitFrame(addr: number, w: number, h: number): void;
   printScreen(name: string): void;
   setFontScale(scale: number): void;
@@ -351,6 +353,18 @@ export function mountTerminal(
     else savePng(name);
   }
 
+  // The overlays submitted for the frame to be submitted next: their words
+  // and the width of the screen they were laid out for.
+  let pendingOverlays: { words: Uint32Array; w: number } | null = null;
+
+  // Snapshots a frame's overlays, which the engine submits before the frame
+  // and only where it has any, for submitFrame to pair with that frame.
+  function submitOverlays(addr: number, len: number, w: number): void {
+    // Snapshot synchronously, as submitFrame does its buffer.
+    const words = new Uint32Array(getMemory().buffer, addr, len).slice();
+    pendingOverlays = { words, w };
+  }
+
   // Snapshots the framebuffer and schedules a render; does not paint
   // synchronously itself (see applyFrame, deferred via rAF).
   function submitFrame(addr: number, w: number, h: number): void {
@@ -360,7 +374,12 @@ export function mountTerminal(
     // it from a later rAF callback would risk reading stale/reused memory,
     // so only the drawing work in applyFrame is deferred, not the read.
     const buf = new Uint32Array(getMemory().buffer, addr, w * h).slice();
-    pendingFrame = { buf, w, h, layout: NO_OVERLAYS };
+    const overlays = pendingOverlays;
+    pendingOverlays = null;
+    const layout = overlays
+      ? decodeFrameLayout(overlays.words, overlays.w, w)
+      : NO_OVERLAYS;
+    pendingFrame = { buf, w, h, layout };
     schedulePaint();
   }
 
@@ -501,5 +520,5 @@ export function mountTerminal(
     }
   }
 
-  return { submitFrame, printScreen, setFontScale, setFonts };
+  return { submitOverlays, submitFrame, printScreen, setFontScale, setFonts };
 }

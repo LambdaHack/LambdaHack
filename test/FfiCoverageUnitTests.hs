@@ -7,10 +7,11 @@
 -- @localStorage@ stub and the real lz-string that @ts-src/run-wasm-test.mjs@
 -- installs, and natively over @HSFile.hs@ in a scratch directory, so that
 -- a drift between the backends fails @cabal test@ or @make test-wasm@.
--- The frame case is wasm-only: it drives @Wasm.hs@'s @js_submitFrame@
--- through 'Wasm.startup' and 'fdisplay' and reads back what the driver's
--- @lhSubmitFrame@ stub recorded. The reactor's exports, which this command
--- binary cannot exercise, are @ts-src/run-wasm-game.mjs@'s to cover.
+-- The frame and overlay cases are wasm-only: they drive @Wasm.hs@'s
+-- @js_submitFrame@ and @js_submitOverlays@ through 'Wasm.startup'
+-- and 'fdisplay' and read back what the driver's @lhSubmitFrame@
+-- and @lhSubmitOverlays@ stubs recorded. The reactor's exports, which this
+-- command binary cannot exercise, are @ts-src/run-wasm-game.mjs@'s to cover.
 module FfiCoverageUnitTests (ffiCoverageUnitTests) where
 
 import Prelude ()
@@ -41,8 +42,11 @@ import           System.IO.Error (isAlreadyExistsError)
 #ifdef USE_WASM
 import           Game.LambdaHack.Client.UI.Content.Screen
 import           Game.LambdaHack.Client.UI.Frame
+import           Game.LambdaHack.Client.UI.Frontend
+  (encodeFrameLayout, layOutFrame)
 import           Game.LambdaHack.Client.UI.Frontend.Common (RawFrontend (..))
 import qualified Game.LambdaHack.Client.UI.Frontend.Wasm as Wasm
+import           Game.LambdaHack.Client.UI.PointUI (PointUI (..))
 import           Game.LambdaHack.Common.ClientOptions
 import           Game.LambdaHack.Common.Point
 import qualified Game.LambdaHack.Common.PointArray as PointArray
@@ -110,12 +114,13 @@ wasmFileTests =
 wasmFileTests = []
 #endif
 
--- | The frame case, and none natively, where no wasm frontend is linked.
--- Kept a binding of its own, as @Spec.hs@ keeps @sdlFontsetTests@, so that
--- the argument of 'testGroup' is the same shape in both builds.
+-- | The frame and overlay cases, and none natively, where no wasm frontend
+-- is linked. Kept a binding of its own, as @Spec.hs@ keeps
+-- @sdlFontsetTests@, so that the argument of 'testGroup' is the same shape
+-- in both builds.
 frontendTests :: [TestTree]
 #ifdef USE_WASM
-frontendTests = [submitFrameTest]
+frontendTests = [submitFrameTest, submitOverlaysTest]
 #else
 frontendTests = []
 #endif
@@ -200,7 +205,7 @@ submitFrameTest =
           let blank = blankSingleFrame coscreen
           in blank {singleArray =
                       singleArray blank PointArray.// [(Point 0 0, cell c)]}
-    rf <- Wasm.startup coscreen defClientOptions
+    rf <- startupUnderTest coscreen
     n <- js_frameCount
     fdisplay rf $ frameOf 'A'
     fdisplay rf $ frameOf 'B'
@@ -209,6 +214,10 @@ submitFrameTest =
       js_frameWidth i >>= (@?= 7)
       js_frameHeight i >>= (@?= 3)
       js_frameFirstCell i >>= (@?= fromEnum (Color.attrCharW32 $ cell c))
+
+-- | The frontend the frame and overlay cases run on.
+startupUnderTest :: ScreenContent -> IO RawFrontend
+startupUnderTest coscreen = Wasm.startup coscreen defClientOptions
 
 -- | What the driver's @lhSubmitFrame@ stub recorded, call by call.
 foreign import javascript unsafe "globalThis.lhSubmitFrameCalls.length"
@@ -222,4 +231,50 @@ foreign import javascript unsafe "globalThis.lhSubmitFrameCalls[$1].h"
 
 foreign import javascript unsafe "globalThis.lhSubmitFrameCalls[$1].first"
   js_frameFirstCell :: Int -> IO Int
+
+-- | @Wasm.hs@'s @js_submitOverlays@, reached as the frame case reaches
+-- @js_submitFrame@: the driver's @lhSubmitOverlays@ stub records no call
+-- for a frame without overlays and one for a frame with them, made before
+-- that frame's, with the screen's width and the words it reads
+-- at the address given, which are those 'encodeFrameLayout' writes.
+submitOverlaysTest :: TestTree
+submitOverlaysTest =
+  testCase "js_submitOverlays passes a frame's overlays, before the frame" $ do
+    let coscreen = emptyScreenContent {rwidth = 7, rheight = 3}
+        blank = blankSingleFrame coscreen
+        line = map $ Color.attrChar2ToW32 Color.BrRed
+        overlaid = blank { singlePropOverlay = [(PointUI 2 1, line "ab")]
+                         , singleSquareOverlay = [(PointUI 0 0, line "s")]
+                         , singleMonoOverlay = [(PointUI 3 2, line "m")] }
+        expected = map fromEnum $ encodeFrameLayout $ layOutFrame 7 overlaid
+    rf <- startupUnderTest coscreen
+    n <- js_overlaysCount
+    frames <- js_frameCount
+    fdisplay rf blank
+    js_overlaysCount >>= (@?= n)
+    fdisplay rf overlaid
+    js_overlaysCount >>= (@?= n + 1)
+    js_overlaysWidth n >>= (@?= 7)
+    js_overlaysFramesBefore n >>= (@?= frames + 1)
+    len <- js_overlaysLength n
+    mapM (js_overlaysWord n) [0 .. len - 1] >>= (@?= expected)
+
+-- | What the driver's @lhSubmitOverlays@ stub recorded, call by call.
+foreign import javascript unsafe "globalThis.lhSubmitOverlaysCalls.length"
+  js_overlaysCount :: IO Int
+
+foreign import javascript unsafe "globalThis.lhSubmitOverlaysCalls[$1].w"
+  js_overlaysWidth :: Int -> IO Int
+
+foreign import javascript unsafe
+  "globalThis.lhSubmitOverlaysCalls[$1].frames"
+  js_overlaysFramesBefore :: Int -> IO Int
+
+foreign import javascript unsafe
+  "globalThis.lhSubmitOverlaysCalls[$1].words.length"
+  js_overlaysLength :: Int -> IO Int
+
+foreign import javascript unsafe
+  "globalThis.lhSubmitOverlaysCalls[$1].words[$2]"
+  js_overlaysWord :: Int -> Int -> IO Int
 #endif
