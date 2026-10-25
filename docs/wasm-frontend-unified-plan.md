@@ -781,7 +781,7 @@ data KeyDecision = KeyDecision
 -- same key under a compound modifier is left standing by this field list and
 -- is not closed by this item: @Sdl.hs:shiftPressed =@ translates under the raw
 -- left/right shift bits, independent of Ctrl and Alt, while @lhKey@ passes
--- @modifier == K.Shift@ (@Wasm.hs:K.keyTranslateWeb@), @False@ whenever Ctrl or
+-- @modifier == K.Shift@ (<https://github.com/LambdaHack/LambdaHack/blob/4403b8798cd5aef4c2c1ee29dac0953ba1bcde26/engine-src/Game/LambdaHack/Client/UI/Frontend/Wasm.hs#L186>), @False@ whenever Ctrl or
 -- Alt is also down, so @C-S-\<key\>@ translates shifted natively and unshifted
 -- in the browser. The flag is consumed upstream of @decideKey@, so closing that
 -- divergence means deciding the shift flag here too, a signature this item has
@@ -3579,22 +3579,22 @@ gives pixels.* (2) **The shift flag handed to key translation differs
 under a compound modifier.**
 `Sdl.hs:let sym = SDL.keyboardEventKeysym keyboardEvent` computes it
 from the raw left/right shift bits, independent of Ctrl and Alt;
-`Wasm.hs:key = K.keyTranslateWeb (fromJSString` passes `modifier == K.Shift`,
-which is `False` whenever Ctrl or Alt is also down --- so `C-S-<key>` translates
-as shifted natively and as unshifted in the browser. *Landed in `b1bc20b9b`,
-as 1.7: `lhKey` hands `keyTranslateWeb` the `shiftKey` bit, and the game driver
-requires Ctrl+Shift with the numpad's Divide to paint what `C-?` does; `Dom.hs`,
-frozen, keeps the old flag. Its hand-back confirmed on 2026-10-25 in Firefox
-by Mikolaj, and in Chromium under Xvfb: that chord sets the crosshair
-on the nearest unknown spot, and Ctrl with the key below Escape still reads
-as backquote.* (3) **`--printEachScreen` has no browser counterpart.**
-`sprintEachScreen` is read at `Sdl.hs:when sprintEachScreen $ printScreen sess`
-and nowhere else, and 1.2 restores `Ctrl+P` alone. (4) **Game-end page
-lifecycle.** `Sdl.hs:SDL.destroyRenderer srenderer` frees the fonts, destroys
-renderer and window and exits; `Wasm.hs:shutdown :: IO ()`
-is `shutdown = return ()`, so a finished game leaves a live-looking frozen page.
-The "Window-close semantics" bullet below covers the player closing the tab,
-not the engine finishing. (5) **Fixed-pitch glyph cropping and centring.**
+[Wasm.hs#L186][wasm-186] passes `modifier == K.Shift`, which is `False` whenever
+Ctrl or Alt is also down --- so `C-S-<key>` translates as shifted natively
+and as unshifted in the browser. *Landed in `b1bc20b9b`, as 1.7: `lhKey` hands
+`keyTranslateWeb` the `shiftKey` bit, and the game driver requires Ctrl+Shift
+with the numpad's Divide to paint what `C-?` does; `Dom.hs`, frozen, keeps
+the old flag. Its hand-back confirmed on 2026-10-25 in Firefox by Mikolaj,
+and in Chromium under Xvfb: that chord sets the crosshair on the nearest unknown
+spot, and Ctrl with the key below Escape still reads as backquote.* (3)
+**`--printEachScreen` has no browser counterpart.** `sprintEachScreen` is read
+at `Sdl.hs:when sprintEachScreen $ printScreen sess` and nowhere else, and 1.2
+restores `Ctrl+P` alone. (4) **Game-end page lifecycle.**
+`Sdl.hs:SDL.destroyRenderer srenderer` frees the fonts, destroys renderer
+and window and exits; `Wasm.hs:shutdown :: IO ()` is `shutdown = return ()`,
+so a finished game leaves a live-looking frozen page. The "Window-close
+semantics" bullet below covers the player closing the tab, not the engine
+finishing. (5) **Fixed-pitch glyph cropping and centring.**
 `Sdl.hs:scaleSurfaceToTexture ::` crops an oversized glyph surface to the cell
 box and centres it over a black fill, for the square layer
 (`Sdl.hs:scaleSurfaceToTexture boxSize`) and the mono one
@@ -3696,6 +3696,7 @@ passthrough, and B.1.
 [terminal-133]: https://github.com/LambdaHack/LambdaHack/blob/b2f76b8fec66713f8fa4b0c773a9d9c5071d9b35/ts-src/src/terminal.ts#L133-L134
 [wasm-177]: https://github.com/LambdaHack/LambdaHack/blob/b2f76b8fec66713f8fa4b0c773a9d9c5071d9b35/engine-src/Game/LambdaHack/Client/UI/Frontend/Wasm.hs#L177-L181
 [wasm-190]: https://github.com/LambdaHack/LambdaHack/blob/b2f76b8fec66713f8fa4b0c773a9d9c5071d9b35/engine-src/Game/LambdaHack/Client/UI/Frontend/Wasm.hs#L190-L194
+[wasm-186]: https://github.com/LambdaHack/LambdaHack/blob/4403b8798cd5aef4c2c1ee29dac0953ba1bcde26/engine-src/Game/LambdaHack/Client/UI/Frontend/Wasm.hs#L186
 [sdl-482]: https://github.com/LambdaHack/LambdaHack/blob/5c58af62ec9d875dfcb051ba5fade405e5b36f8d/engine-src/Game/LambdaHack/Client/UI/Frontend/Sdl.hs#L482
 [sdl-493]: https://github.com/LambdaHack/LambdaHack/blob/5c58af62ec9d875dfcb051ba5fade405e5b36f8d/engine-src/Game/LambdaHack/Client/UI/Frontend/Sdl.hs#L493
 [sdl-524]: https://github.com/LambdaHack/LambdaHack/blob/5c58af62ec9d875dfcb051ba5fade405e5b36f8d/engine-src/Game/LambdaHack/Client/UI/Frontend/Sdl.hs#L524

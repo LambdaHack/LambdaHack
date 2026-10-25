@@ -916,17 +916,17 @@ the deployed game, so it is read in review.
 
 **Split** --- two commits. (1) `lhKey` hands `keyTranslateWeb` the raw Shift bit
 it reads, as `Sdl.hs` does, where it hands `modifier == K.Shift`
-(`Wasm.hs:key = K.keyTranslateWeb (fromJSString`), false whenever Ctrl or Alt
-is down too, so that `C-S-<key>` translates as shifted in the browser
-as natively --- the second gap the record's Appendix C re-audit found;
-with it the paragraph-key clause, whose comment rests on the flag showing Shift
-alone (`Key.hs:on some keyboards the key below ESC is paragraph`),
-its `keyTranslateWeb` cases, and `InputDecision.hs`'s comment on the divergence,
-which the fix closes; the game driver gaining a case that presses Ctrl+Shift
-with the numpad's Divide and requires the frame `C-?` paints, where today's flag
-reaches `C-/`; and the defect's record, with a deep mutant restoring today's
-flag. (2) the outcome line under that gap, naming (1)'s hash, and the ledger
-flip. No allowlist entry: this item proposes no file.
+([Wasm.hs#L186][wasm-186]), false whenever Ctrl or Alt is down too,
+so that `C-S-<key>` translates as shifted in the browser as natively ---
+the second gap the record's Appendix C re-audit found; with it the paragraph-key
+clause, whose comment rests on the flag showing Shift alone
+([Key.hs#L564-L569][key-564]), its `keyTranslateWeb` cases,
+and `InputDecision.hs`'s comment on the divergence, which the fix closes;
+the game driver gaining a case that presses Ctrl+Shift with the numpad's Divide
+and requires the frame `C-?` paints, where today's flag reaches `C-/`;
+and the defect's record, with a deep mutant restoring today's flag. (2)
+the outcome line under that gap, naming (1)'s hash, and the ledger flip.
+No allowlist entry: this item proposes no file.
 
 **Owns** --- `engine-src/Game/LambdaHack/Client/UI/Frontend/Wasm.hs`,
 `engine-src/Game/LambdaHack/Client/UI/Key.hs`,
@@ -1970,3 +1970,5 @@ it builds on (2.3 uses 0.3's test harness, 2.2 uses 0.2's palette).
 ---
 
 [sdl-568]: https://github.com/LambdaHack/LambdaHack/blob/5c58af62ec9d875dfcb051ba5fade405e5b36f8d/engine-src/Game/LambdaHack/Client/UI/Frontend/Sdl.hs#L568
+[wasm-186]: https://github.com/LambdaHack/LambdaHack/blob/4403b8798cd5aef4c2c1ee29dac0953ba1bcde26/engine-src/Game/LambdaHack/Client/UI/Frontend/Wasm.hs#L186
+[key-564]: https://github.com/LambdaHack/LambdaHack/blob/4403b8798cd5aef4c2c1ee29dac0953ba1bcde26/engine-src/Game/LambdaHack/Client/UI/Key.hs#L564-L569
