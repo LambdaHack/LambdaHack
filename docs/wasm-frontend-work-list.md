@@ -1850,7 +1850,7 @@ integration tests discarding it (the record's Log, 2026-10-25),
 `tools/doc-refs-allow.txt` (the `test/DeterminismGoldenUnitTests.hs` entry,
 deleted by the first commit), and `docs/wasm-frontend-unified-plan.md`.
 The sum-typed selection writes `test/UnitTestHelpers.hs` too, and the pointman
-campaign's PR 0 writes `test/GameSpec.hs` and the `test-game` stanza,
+campaign's PR 0 and C8 write `test/GameSpec.hs` and the `test-game` stanza, each
 registering a test module of its own, the claimant list for both being
 at that PR 0.
 

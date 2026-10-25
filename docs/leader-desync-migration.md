@@ -504,9 +504,9 @@ only), `docs/leader-desync-bug.md` and `docs/promptgetkey-hygiene.md` (one
 outcome line each, the head callout's ruling), and this document. The claimant
 list for `HandleHumanLocalM.hs` and for the post-mortem is at C3,
 for `test/FrameMUnitTests.hs` at 04.1; C3 also writes
-`test/HandleHumanLocalMUnitTests.hs`; the wasm plan's determinism goldens write
-`test/GameSpec.hs` and the `test-game` stanza too; 04.4 writes the wasm plan
-at this campaign's landing, and that plan's own lock does not serialize
+`test/HandleHumanLocalMUnitTests.hs`; C8 and the wasm plan's determinism goldens
+write `test/GameSpec.hs` and the `test-game` stanza too; 04.4 writes the wasm
+plan at this campaign's landing, and that plan's own lock does not serialize
 on itself; and 04.4 appends to both records after this item.
 
 **Done** --- `native`, the three new tests among those passing, `contract`
@@ -643,8 +643,8 @@ call at `InventoryM.hs:merror <- pickLeaderWithPointer leader`.
 **And `HandleHumanGlobalM.hs`'s**: C3, C5 and C6. **And the post-mortem's**: PR
 0 and 04.4 for the outcome lines it reserves, C2, C3, C8, C4, C5 and C6
 for the re-anchorings, and C7 for the closing reading. PR 0 also writes
-`test/HandleHumanLocalMUnitTests.hs`; `test/InventoryMUnitTests.hs` is C3's,
-then C8's, until 04.4's deletion commit.
+`test/HandleHumanLocalMUnitTests.hs`; `test/InventoryMUnitTests.hs` is C3's
+until 04.4's deletion commit.
 
 **Done** --- `native`, `contract` unchanged at 28 --- the five sites above given
 their witness and pointman, their expectations audited as step 4 says rather
@@ -689,9 +689,10 @@ under its read-live table.
 drafts, and (2) the re-anchoring, exactly as C3's; (2) carries the ledger flip.
 
 **Owns** --- `engine-src/Game/LambdaHack/Client/UI/InventoryM.hs` (list at C3),
-`test/InventoryMUnitTests.hs` (list at C3), `docs/leader-desync-bug.md`
-in the re-anchoring commit if (1) rewrote a line it anchors on (list at C3),
-and this document.
+a test module of its own in `test-game`, with `test/GameSpec.hs`
+and the `test-suite test-game` stanza of `LambdaHack.cabal`, which register
+it (list at PR 0), `docs/leader-desync-bug.md` in the re-anchoring commit if (1)
+rewrote a line it anchors on (list at C3), and this document.
 
 **Done** --- `native`, `contract` at 29 with the new case --- the second
 of the three count movements "Running this plan" permits; say so in the commit
@@ -703,11 +704,15 @@ is the test, which pins that the pane was rebuilt for the restored pointman
 and not how it looks.
 
 **Decide first** --- nothing, ruled 2026-09-08: the pane follows the pointman,
-which is the author's ruling this row exists for; and the frame-recording
-`ChanFrontend` the test needs is local to `test/InventoryMUnitTests.hs`,
-the stub discarding frames
-(`UnitTestHelpers.hs:FrontFrame _ -> putStr "FrontFrame"`) and the Log's
-2026-09-08 entry keeping every C-row off `test/UnitTestHelpers.hs`.
+which is the author's ruling this row exists for; and, ruled 2026-10-25,
+the test records its frames through `recordingFchanFrontend`
+(`UnitTestHelpers.hs:recordingFchanFrontend ::`), which the determinism goldens
+added, rather than through a `ChanFrontend` of its own
+in `test/InventoryMUnitTests.hs`. Using it writes nothing
+in `test/UnitTestHelpers.hs`, so the Log's 2026-09-08 entry keeping every C-row
+off that file stands; and it builds every frame it is sent, so the test runs
+on `frameCliState`, in a test module of its own in `test-game`, the executable
+of that fixture's width, rather than in `test/InventoryMUnitTests.hs`.
 
 ### C4 --- the cycle pair, and the assertion (step 3, with its flips from step 4)
 
@@ -1117,6 +1122,14 @@ that the plan was written is one the next reader has to skip.
   every C-row on that claimant list for one line apiece, where the inline
   expression costs a review obligation and no lock. A re-plan of a Log-recorded
   decision, hence logged.
+- 2026-10-25 -- C8's recorder re-ruled by Mikolaj: its test shares
+  `recordingFchanFrontend`, which the determinism goldens' native harness put
+  in `test/UnitTestHelpers.hs`, instead of a `ChanFrontend` local
+  to `test/InventoryMUnitTests.hs`. The 2026-09-08 entry's ruling stands, since
+  using the recorder writes nothing in that file; the cost is a fixture whose
+  frames can be built, the recorder building each one, and so, by a ruling
+  of the same day, a test module of its own in `test-game` rather than a mode
+  of the recorder building no frame (`test/CLAUDE.md`).
 
 ## 01 -- Sequencing: two designs, one campaign
 
@@ -2109,7 +2122,7 @@ and 2.1 reach it through 0.1's claimant list);
 under that plan's rule that the lock does not serialize on it; C3 to C6
 are the other claimants here, each for a re-anchoring);
 `test/HandleHumanLocalMUnitTests.hs` and `test/InventoryMUnitTests.hs` (one
-comment each, after PR 0, C3 and C8); `../tools/check-doc-examples.py`
+comment each, after PR 0 and C3); `../tools/check-doc-examples.py`
 (its live-control entry, and the sentence saying the control went with it);
 `../tools/check-doc-refs.py` (its self-test document and `SELF_TEST_OK`, whose
 passing control was this campaign's tool); `tools/check-plan-crossrefs.py`
