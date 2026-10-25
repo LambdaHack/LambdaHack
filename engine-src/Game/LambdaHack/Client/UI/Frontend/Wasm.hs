@@ -89,8 +89,9 @@ startup coscreen soptions@ClientOptions{sprintEachScreen} = do
       "Fonts not resolved, every text drawn in the map font: " ++ reason
     Right _ -> return ()
   js_configure $ toJSString $ startupPayload soptions
-  rfWithoutPrintScreen <-
-    createRawFrontend coscreen (display coscreen sprintEachScreen) shutdown
+  previousFrame <- newIORef $ blankSingleFrame coscreen
+  let displayFrame = display coscreen sprintEachScreen previousFrame
+  rfWithoutPrintScreen <- createRawFrontend coscreen displayFrame shutdown
   let rf = rfWithoutPrintScreen {fprintScreen = printScreen}
   writeIORef rfRef $ Just rf
   return rf
@@ -147,15 +148,20 @@ foreign import javascript unsafe "globalThis.lhConfigure($1)"
 shutdown :: IO ()
 shutdown = return () -- nothing to clean up
 
--- | Output to the screen via the frontend, and print each screen
--- if so asked.
-display :: ScreenContent -> Bool -> SingleFrame -> IO ()
-display ScreenContent{rwidth, rheight} printEachScreen
-        SingleFrame{singleArray} = do
+-- | Output to the screen via the frontend, and, if so asked, save
+-- a screenshot of each frame that differs from the one displayed last,
+-- blank at first, as @Sdl.hs@ saves one only where it redraws.
+display :: ScreenContent -> Bool -> IORef SingleFrame -> SingleFrame -> IO ()
+display ScreenContent{rwidth, rheight} printEachScreen previousFrame
+        curFrame@SingleFrame{singleArray} = do
   let v = PointArray.avector singleArray :: U.Vector Word32
   word32BackingArray v $ \ba# byteOffset ->
     js_submitFrame ba# byteOffset rwidth rheight
-  when printEachScreen printScreen
+  when printEachScreen $ do
+    prevFrame <- readIORef previousFrame
+    unless (curFrame == prevFrame) $ do
+      writeIORef previousFrame curFrame
+      printScreen
 
 -- | Save a screenshot, named as SDL names its own, with the extension
 -- of the PNG the canvas exports in place of SDL's bitmap.

@@ -1072,6 +1072,20 @@
    "harm": "latent",
    "discovery": "review",
    "notes": "Found by the source re-audit of 2026-09-07, gap (2) of docs/wasm-frontend-unified-plan.md's Appendix C, and fixed as the work list's item 1.7. The bug direction was watched on 2026-10-25 against the pre-fix reactor in three runs, each failing, one with the `but C-/'s` ending; the ok direction passed in both make test-reactor runs and in three seeded ones. Dom.hs, frozen and compiled by no build, still hands the old flag. A tier-1 record: the corpus root is tools/, the case is the game driver's, and the deep mutant `test-reactor: lhKey's Shift flag as Shift held alone` replays the bug direction."
+  },
+  {
+   "id": "Wasm-03",
+   "program": "engine-src/Game/LambdaHack/Client/UI/Frontend/Wasm.hs",
+   "name": "display saved a screenshot of every frame under --printEachScreen, where Sdl.hs saves one only for a frame that differs from the one it drew last, so the browser saved a copy of each unchanged frame",
+   "family": "other:twin-without-its-guard",
+   "fix_rev": "self",
+   "trigger": "under --printEachScreen, a frame equal to the one before: in the game driver, the left button released one half-cell past a menu choice's label, which repaints the menu unchanged",
+   "ok": "display keeps the frame it displayed last, blank at first, and saves only one that differs from it, as natively; the driver's check `C-P prints one screenshot and each changed frame one` passes under make test-reactor's --printEachScreen run",
+   "bug": "display called printScreen after every js_submitFrame, so the release past the label saved a screenshot of the unchanged menu; in the run watched the driver's check failed with `19 screenshots for 19 frames, 18 of them changed, before C-P under --printEachScreen`",
+   "proved": "ran",
+   "harm": "latent",
+   "discovery": "review",
+   "notes": "Found by the source re-audit of 2026-09-07, gap (3) of docs/wasm-frontend-unified-plan.md's Appendix C, whose parity half the work list's item 1.8 fixes. Wasm.hs had copied SDL's `when sprintEachScreen $ printScreen sess` without the `unless (arraysEqual && overlaysEqual)` it runs under. The bug direction was watched on 2026-10-25 against the pre-fix reactor, where the plain run passed; the ok direction passed in both make test-reactor runs. Nothing in the page can set the flag, the loader passing no argv. A tier-1 record: the corpus root is tools/, the case is the game driver's, and the deep mutant `test-reactor: a screenshot of every frame under --printEachScreen` replays the bug direction."
   }
  ]
 }

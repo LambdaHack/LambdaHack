@@ -21,10 +21,11 @@
 // one on the label's last half-cell, an odd column, activates the choice;
 // C-P through lhKey saves one screenshot through lhPrintScreen, under a
 // name of screenshotName's shape with png for its extension, and under
-// --printEachScreen every frame saves one besides; Ctrl+Shift with the
-// numpad's '/' through lhKey paints what C-? does, as natively, and not
-// what C-/ does; and lhKey leaves the browser a bare Control chord of '+',
-// an Alt, AltGraph and Meta chord, and Shift pressed alone.
+// --printEachScreen every frame that differs from the one before saves one
+// besides; Ctrl+Shift with the numpad's '/' through lhKey paints what C-?
+// does, as natively, and not what C-/ does; and lhKey leaves the browser
+// a bare Control chord of '+', an Alt, AltGraph and Meta chord, and Shift
+// pressed alone.
 //
 // Usage: node run-wasm-game.mjs <LambdaHack.wasm> <ghc_wasm_jsffi.mjs> [arg...]
 //   <ghc_wasm_jsffi.mjs> is post-link.mjs's output for that binary, as in
@@ -268,14 +269,32 @@ async function run() {
   await repaint("lhKey", [keyEvent("Escape")]);
   ok("lhKey repaints a quiet screen: Escape is acted on with no other event");
 
-  // Under --printEachScreen each frame is printed right after it is
-  // submitted, and otherwise none is; then the game's C-P, Control
-  // and Shift with 'P', prints once more.
-  const eachFrame = prints.every((p, i) => p.frames === i + 1);
-  const framePrints = () => (printEachScreen ? calls.length : 0);
-  if (prints.length !== framePrints() || !eachFrame) {
+  // Under --printEachScreen each frame that differs from the one before is
+  // printed right after it is submitted, the first included, which Wasm.hs
+  // compares with a blank frame, and otherwise none is; then the game's
+  // C-P, Control and Shift with 'P', prints once more. The release past
+  // the menu choice above repainted the menu unchanged, so a print of every
+  // frame fails this. While the browser is single-font its frames carry no
+  // overlays, so the cells' hash is all of a frame Wasm.hs compares.
+  const changed = () =>
+    calls.flatMap((c, i) => {
+      const before = calls[i - 1];
+      const same =
+        before &&
+        c.w === before.w &&
+        c.h === before.h &&
+        c.hash === before.hash;
+      return same ? [] : [i + 1];
+    });
+  const framePrints = () => (printEachScreen ? changed() : []);
+  const expected = framePrints();
+  if (
+    prints.length !== expected.length ||
+    !prints.every((p, i) => p.frames === expected[i])
+  ) {
     fail(
-      `${prints.length} screenshots for ${calls.length} frames before C-P` +
+      `${prints.length} screenshots for ${calls.length} frames,` +
+        ` ${changed().length} of them changed, before C-P` +
         `${printEachScreen ? " under" : " without"} --printEachScreen`,
     );
   }
@@ -285,16 +304,20 @@ async function run() {
     fail("C-P through lhKey printed no screenshot within 5s");
   }
   await waitQuiet(500, 5000);
-  if (prints.length !== framePrints() + 1) {
-    fail(`${prints.length} screenshots for ${calls.length} frames after C-P`);
+  if (prints.length !== framePrints().length + 1) {
+    fail(
+      `${prints.length} screenshots for ${calls.length} frames,` +
+        ` ${changed().length} of them changed, after C-P`,
+    );
   }
   const shape = /^prtscn\d{4}-\d\d-\d\d_\d\d\.\d\d\.\d\d(\.\d+)?\.png$/;
   const bad = prints.find((p) => !shape.test(p.name));
   if (bad) fail(`lhPrintScreen got the name ${bad.name}`);
-  const which = printEachScreen ? "each frame" : "no frame";
+  const which = printEachScreen ? "each changed frame" : "no frame";
   ok(
     `C-P prints one screenshot and ${which} one: ${prints.length} for` +
-      ` ${calls.length} frames, the last ${prints.at(-1).name}`,
+      ` ${calls.length} frames, ${changed().length} of them changed,` +
+      ` the last ${prints.at(-1).name}`,
   );
 
   // Ctrl+Shift with the numpad's Divide, whose key reads '/' under Shift,

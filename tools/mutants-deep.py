@@ -103,6 +103,13 @@ MUTANTS = [
      '      key = K.keyTranslateWeb (fromJSString jsKey) modShift\n',
      '      key = K.keyTranslateWeb (fromJSString jsKey)'
      ' (modifier == K.Shift)\n', TEST_REACTOR),
+    # Every frame saved under --printEachScreen again, as Wasm-03 records:
+    # the release past a menu label repaints the menu unchanged and saves
+    # a screenshot the driver does not count.
+    ('test-reactor: a screenshot of every frame under --printEachScreen',
+     '../engine-src/Game/LambdaHack/Client/UI/Frontend/Wasm.hs',
+     '    unless (curFrame == prevFrame) $ do\n',
+     '    unless False $ do\n', TEST_REACTOR),
     # A repl that runs nothing and exits 0, which doctest's own exit
     # status cannot tell from a pass: no run prints an example count.
     ('doctest: a repl that runs nothing', '../Makefile',
