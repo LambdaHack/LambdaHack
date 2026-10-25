@@ -263,9 +263,12 @@ and `leader-desync-split` predate the naming and carry this campaign's early
 drafting, not an item, and `spike-pointman-witness` is C0's.
 
 **The gates, once.** Every **Done** below is built from these, named rather
-than spelled out, run from the repo root. Read the counts and the printed
-snippets, not the exit status alone --- a suite that silently loses a test still
-passes, and an anchor still resolves on a line rewritten around it:
+than spelled out, run from the repo root. `cabal test` runs both test
+executables, `test` and `test-game`, the cases whose frames are built running
+in the second, and prints a count for each, so the count a `cabal test` gate
+reads is their sum. Read the counts and the printed snippets, not the exit
+status alone --- a suite that silently loses a test still passes, and an anchor
+still resolves on a line rewritten around it:
 
 ```
 native     cabal build && cabal test && hlint .        # every test passing
@@ -400,12 +403,17 @@ from nothing: PR 0's three and 04.1's pure cases.
 
 **Owed, and not started**, so that the confidence of this document
 is not mistaken for coverage. PR 0 owes three tests: the two AS cases of sec. 04
-step 1, of which the special-event one needs something the harness does not have
---- a `ChanFrontend` that *records* `FrontResetKeys` rather than printing
+step 1 --- the special-event one needing a `ChanFrontend` that *records*
+`FrontResetKeys` rather than printing
 it (`UnitTestHelpers.hs:FrontResetKeys -> putStr "FrontResetKeys"`),
 that request being the branch's only effect --- and a characterization
-of sibling (c) in the apply dialog, which no test enters at all. Sibling (d)'s
-pin landed ahead of them, in `test/InventoryMUnitTests.hs`. Two things
+of sibling (c) in the apply dialog, which no test enters at all. The recorder
+is `recordingFchanFrontend` (`UnitTestHelpers.hs:recordingFchanFrontend ::`),
+which the determinism goldens' native harness added; it builds every frame
+it is sent, so the special-event case runs on `frameCliState`, a party fixture
+whose frames can be built, in a test module of its own in `test-game`,
+the executable of that fixture's width (`test/CLAUDE.md`). Sibling (d)'s pin
+landed ahead of them, in `test/InventoryMUnitTests.hs`. Two things
 the 2026-08-07 probes add to that list, both cheap and both invisible until
 someone starts writing: the special-event case must run on a *party* fixture,
 `stubCliState`'s faction being under AI and so silencing the very effect
@@ -480,23 +488,26 @@ the AS series to fifteen.
 **Split** --- two commits, their titles drafted in sec. 02. (1) the two
 AS cases, named `contract AS14` and `contract AS15` as the series is, since
 the `AS` gate selects on that prefix and its count of fifteen rests on it,
-with the recording `ChanFrontend` in `test/UnitTestHelpers.hs`,
-and the abort-split record's outcome line, whose "two are unpinned" this closes.
-(2) the apply pin with its export move, and the post-mortem's outcome line,
-whose "the apply-dialog one by nothing" this closes --- the two appends the head
+the special-event one in a test module of its own in `test-game`,
+on `recordingFchanFrontend` and `frameCliState`, and the abort-split record's
+outcome line, whose "two are unpinned" this closes. (2) the apply pin
+with its export move, and the post-mortem's outcome line, whose
+"the apply-dialog one by nothing" this closes --- the two appends the head
 callout rules PR 0 makes. (2) carries the ledger flip.
 
-**Owns** --- `test/FrameMUnitTests.hs`, `test/HandleHumanLocalMUnitTests.hs`,
-`test/UnitTestHelpers.hs`,
+**Owns** --- `test/FrameMUnitTests.hs`, a test module of its own in `test-game`
+for the special-event case, with `test/GameSpec.hs`
+and the `test-suite test-game` stanza of `LambdaHack.cabal`, which register it,
+`test/HandleHumanLocalMUnitTests.hs`,
 `engine-src/Game/LambdaHack/Client/UI/HandleHumanLocalM.hs` (its export list
 only), `docs/leader-desync-bug.md` and `docs/promptgetkey-hygiene.md` (one
 outcome line each, the head callout's ruling), and this document. The claimant
 list for `HandleHumanLocalM.hs` and for the post-mortem is at C3,
 for `test/FrameMUnitTests.hs` at 04.1; C3 also writes
-`test/HandleHumanLocalMUnitTests.hs`; the wasm plan's determinism goldens
-and sum-typed selection both write `test/UnitTestHelpers.hs`; 04.4 writes
-the wasm plan at this campaign's landing, and that plan's own lock does
-not serialize on itself; and 04.4 appends to both records after this item.
+`test/HandleHumanLocalMUnitTests.hs`; the wasm plan's determinism goldens write
+`test/GameSpec.hs` and the `test-game` stanza too; 04.4 writes the wasm plan
+at this campaign's landing, and that plan's own lock does not serialize
+on itself; and 04.4 appends to both records after this item.
 
 **Done** --- `native`, the three new tests among those passing, `contract`
 at 28, `LR-flip` at 11, `AS` at 15, `docs`, the outcome lines going
@@ -1335,17 +1346,16 @@ the beginning of step 1.
    these and the seven witness-needing sites above, inlines
    `fromMaybe (error ...) <$> mintHasPointman`, the mock having no `MonadFail`
    (the Log, 2026-08-07); the helper that entry weighed is refused at its own
-   threshold, for the lock: `test/UnitTestHelpers.hs` is held by PR 0 and by two
-   wasm-plan items, and a helper there would put every C-row on that claimant
-   list for one line apiece, so no C-row writes it (the Log, 2026-09-08) ---
-   and `psuitReq` losing its `ActorId` updates its four branch tests. The stub
-   fixtures deliberately leave `sleader` unset --- `partyCliState`'s own haddock
-   says so, and LR13 pins the boundary's refusal for exactly that state ---
-   so a test that needs a pointman designates one with `updateClientLeader`.
-   Audit every test that today calls dialog code with none designated, rather
-   than assuming the post-mortem's sec. 10.5 prediction that the expectations
-   are unaffected. Nothing in the [contract] series may move; that is what makes
-   it a contract.
+   threshold, for the lock: `test/UnitTestHelpers.hs` is held by two wasm-plan
+   items, and a helper there would put every C-row on that claimant list for one
+   line apiece, so no C-row writes it (the Log, 2026-09-08) --- and `psuitReq`
+   losing its `ActorId` updates its four branch tests. The stub fixtures
+   deliberately leave `sleader` unset --- `partyCliState`'s own haddock says so,
+   and LR13 pins the boundary's refusal for exactly that state --- so a test
+   that needs a pointman designates one with `updateClientLeader`. Audit every
+   test that today calls dialog code with none designated, rather than assuming
+   the post-mortem's sec. 10.5 prediction that the expectations are unaffected.
+   Nothing in the [contract] series may move; that is what makes it a contract.
 5. **Sweep what step 2 left**, in two halves, because only one of them
    is mechanical. (a) The read-live functions outside the dialog chain:
    the `pointmanCycle`/`pointmanCycleLevel`/`pickLeaderWithPointer` trio

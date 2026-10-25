@@ -603,6 +603,25 @@ only that the plan was written is one the next reader has to skip.
   of the startup payload to tell such a save from `Ctrl+P`'s, which saves
   an unchanged frame too; and the game driver, the item's check, never loads
   `terminal.ts`.
+- 2026-10-25 -- ruled by Mikolaj at the determinism goldens' native harness:
+  the state family reads the state a seeded game ends in from `tieKnot`, which
+  with `executorSer` now returns it, the item's **Owns** widening to the two
+  `game-src` modules and their callers. Under the ruled `--benchmark` shape
+  a game drops itself at its end, saving nothing, and no option reports
+  its state, so the harness ruling (2) named left nothing to digest. A consumer
+  of the state inside a monad would want an operation of that monad producing
+  the state, its digest or a part of it instead. Rulings (2) and (3)
+  are corrected for the frame family as well: that family runs on `CliMock`
+  alone, `SessionUIMock` drawing no frames, its scripted frontend captured none
+  until `recordingFchanFrontend` recorded them, and it folds over a `Put`
+  the test writes for the recorded requests, the state family alone folding
+  over `encode` bytes.
+- 2026-10-25 -- the native harness's goldens run under `make test-wasm`,
+  its native-only guard lifted: the state cases and the single-font frame cases
+  match native but for history, which differs from native under both setups,
+  and the multi-font frame cases get their single-font digests, the browser
+  still picking the single-font setup. So the wasm stage's multi-font cases pass
+  under wasm only after 2.4's (3), and the history case wants a diagnosis first.
 
 ## Repo facts the plan builds on
 
@@ -2937,7 +2956,12 @@ lands **before 2.4**: it guards that flip regardless of wasm, 2.1 having landed
 ahead of it by the Log's ruling of 2026-10-23. Then the same goldens run
 under `make test-wasm`, routine in CI since R2's first jobs landed --- catching
 native-vs-wasm *behavioral* drift (FFI-adjacent paths, numeric assumptions)
-that per-frontend unit tests can't. Medium effort.
+that per-frontend unit tests can't. Medium effort. Partly landed,
+in `f9a50d959`: the native harness, `test/DeterminismGoldenUnitTests.hs`, run
+in `test-game`, the executable `0efca9f8d` gave the cases on the sample game's
+content. Still to do: the wasm stage, whose multi-font cases pass under wasm
+only after 2.4's (3), and whose history case differs from native under both
+setups (the Log, 2026-10-25).
 
 **Rulings** --- all three ruled on 2026-08-07, (1) re-cut on 2026-10-23
 for 2.1's landing. (1) Two golden families, as the body now states:
@@ -2946,16 +2970,19 @@ a game-state digest cannot see --- and final-state digests, guarding macro
 and command semantics and the cross-backend behavioral drift the wasm stage
 exists for; the digest fold is shared between them. (2) Each family runs
 on the harness that naturally produces its input: the frame family
-on the scripted `CliMock`/`SessionUIMock` machinery
+on the scripted `CliMock` machinery
 (`UnitTestHelpers.hs:newtype CliMock a = CliMock`, `scriptedFchanFrontend`
-at `UnitTestHelpers.hs:scriptedFchanFrontend ::`, `scriptedCliState`
-at `UnitTestHelpers.hs:scriptedCliState ::`), whose scripted frontend captures
-the very frames the digest guards, and the state family on a seeded whole game
-through `tieKnot` --- the `--frontendNull --benchmark --stopAfterFrames` shape
-the Makefile bench targets use, which the integration tests already depend
-on and which captures no frames, the reason it cannot serve the first family.
-(3) The digest is a hand-rolled FNV-style fold over the `Binary` `encode` bytes
---- dependency-free, deterministic, trivially resolving
+at `UnitTestHelpers.hs:scriptedFchanFrontend ::`), whose scripted frontend,
+recording as `recordingFchanFrontend` does
+(`UnitTestHelpers.hs:recordingFchanFrontend ::`), captures the very frames
+the digest guards, and the state family on a seeded whole game through
+`tieKnot`, which returns the state the game ends in (the Log, 2026-10-25) ---
+the `--frontendNull --benchmark --stopAfterFrames` shape the Makefile bench
+targets use, which the integration tests already depend on and which captures
+no frames, the reason it cannot serve the first family. (3) The digest
+is a hand-rolled FNV-style fold over `Binary` bytes, the state family's
+from `encode` and the frame family's from a `Put` the test writes (the Log,
+2026-10-25) --- dependency-free, deterministic, trivially resolving
 under `wasm32-wasi-cabal` --- with the digests as committed hex literals
 in the test file: no data file, no preopen-path coupling in the wasm run,
 and a legitimate golden change is one pasted literal in a reviewable diff;

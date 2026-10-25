@@ -1746,18 +1746,18 @@ guard chains), `Client/UI/DrawM.hs` and `Client/UI/MonadClientUI.hs` --- the two
 (`DrawM.hs:unless (frontendName soptions`,
 `MonadClientUI.hs:= Frontend.frontendName`), which this item's churn list omits
 and which `git grep 'frontendName soptions =='` shows are the only two
-in the tree --- `test/UnitTestHelpers.hs`, whose `sfrontendNull = True`
-is the sole fixture setting an `sfrontend*` field,
-and `docs/wasm-frontend-unified-plan.md`, for the re-anchoring commit. 2.4
-rewrites `MonadClientUI.hs:= Frontend.frontendName` and dispatches through
+in the tree --- `test/UnitTestHelpers.hs`, whose `stubClientOptions`
+and `multiFontClientOptions` are the fixtures setting an `sfrontend*` field,
+`sfrontendNull` to `True` and `False`, and `docs/wasm-frontend-unified-plan.md`,
+for the re-anchoring commit. 2.4 rewrites
+`MonadClientUI.hs:= Frontend.frontendName` and dispatches through
 `Frontend.hs:frontendName :: ClientOptions`, and R3 deletes
 the `#ifndef REMOVE_TELETYPE` guards at `Frontend.hs:= Teletype.startup`
 and `Frontend.hs:-> Teletype.frontendName` --- the exact lines this item turns
 into cases --- so whichever lands first shapes the others' diffs.
 The determinism goldens also write `test/UnitTestHelpers.hs`, for their
-fixtures, and the pointman campaign writes both files too: its C1 appends
-to `MonadClientUI.hs` below `partPronounLeader`, and its PR 0 adds a recording
-`ChanFrontend` to `test/UnitTestHelpers.hs`.
+fixtures, and the pointman campaign's C1 appends to `MonadClientUI.hs` below
+`partPronounLeader`.
 
 <!-- probe: git -C .. grep -h 'frontendName soptions ==' -- '*.hs' | wc -l :: 2 -->
 
@@ -1831,20 +1831,28 @@ itself, run against null, lazy and Teletype natively and against the real
 in the record.
 
 **Split** --- two commits, as the item's own staging says: the native harness,
-which must precede 2.4, then the wasm stage, which only adds the same goldens
-to `make test-wasm` and to R2's existing job. The second carries the outcome
-line and the `tools/doc-refs-allow.txt` deletion.
+which must precede 2.4, then the wasm stage, which lifts the harness's
+native-only guard in `test/GameSpec.hs`, so that `make test-wasm` and R2's
+existing job run the same goldens. The first landed in `f9a50d959`,
+with the `tools/doc-refs-allow.txt` deletion, run in `test-game`, the executable
+`0efca9f8d` gave the cases on the sample game's content; the second carries
+the outcome line.
 
-**Owns** --- the new `test/DeterminismGoldenUnitTests.hs`, `test/Spec.hs`,
-the `test-suite test` stanza of `LambdaHack.cabal`
-(`LambdaHack.cabal:main-is: Spec.hs`), whatever fixtures the digest needs
-in `test/UnitTestHelpers.hs` and `test/SessionUIMock.hs`,
+**Owns** --- the new `test/DeterminismGoldenUnitTests.hs`, `test/GameSpec.hs`,
+the `test-suite test-game` stanza of `LambdaHack.cabal`
+(`LambdaHack.cabal:test-suite test-game`), whatever fixtures the digest needs
+in `test/UnitTestHelpers.hs`, `executorSer`
+in `GameDefinition/game-src/Implementation/MonadServerImplementation.hs`
+and `tieKnot` in `GameDefinition/game-src/TieKnot.hs`, which return the state
+a game ends in, with `GameDefinition/Main.hs` and `test/GameSpec.hs`'s
+integration tests discarding it (the record's Log, 2026-10-25),
+`tools/mutants-deep.py` for the mutants proving each family can fail,
 `tools/doc-refs-allow.txt` (the `test/DeterminismGoldenUnitTests.hs` entry,
-deleted by the second commit), and `docs/wasm-frontend-unified-plan.md`.
-The sum-typed selection writes `test/UnitTestHelpers.hs`, as does the pointman
-campaign's PR 0, for its recording `ChanFrontend`. If the digest
-is over committed literals rather than a file, it owns no data file; if
-over a file, that file joins this list rather than living beside the test.
+deleted by the first commit), and `docs/wasm-frontend-unified-plan.md`.
+The sum-typed selection writes `test/UnitTestHelpers.hs` too, and the pointman
+campaign's PR 0 writes `test/GameSpec.hs` and the `test-game` stanza,
+registering a test module of its own, the claimant list for both being
+at that PR 0.
 
 **Done** --- `native`, `wasm`, `docs`, plus
 `cabal test --test-options='-p "/fe-golden/"'` --- a second series marker
@@ -1862,9 +1870,13 @@ demand of any new self-checking assertion: perturb one input to the frames
 or overlays the engine builds, re-run
 `cabal test --test-options='-p "/fe-golden/"'` --- this item's own marker, never
 the bare `golden` the tasty-tag rule forbids --- expect failure, and record
-the perturbation next to the test.
+the perturbation as a mutant, the native harness's being the `goldens:` ones
+in `tools/mutants-deep.py`, which the test's header names.
 
-**Decide first** --- nothing; the rulings are the record's.
+**Decide first** --- for the wasm stage, whether it lands after 2.4's (3),
+its multi-font cases then passing under wasm, or before 2.4, those cases kept
+native until (3). Either way it begins by diagnosing the history case, which
+differs from native under both setups (the record's Log, 2026-10-25).
 
 **A CI smoke for every shipped frontend.** Design and rulings in the record.
 
@@ -1999,8 +2011,9 @@ capability constants / sum-typed selection --- standalone refactors, any
 RawFrontend contract --- haddock and checklist any time; the native harness
     after 0.1, whose input-side cases create its module; the wasm case
     with 0.3
-determinism goldens --- native harness before 2.4; cross-backend under
-    R2's test-wasm job
+determinism goldens --- native harness before 2.4, landed; cross-backend
+    under R2's test-wasm job, its multi-font cases passing there only
+    after 2.4's (3)
 R1 --- independent but for its save-lag re-measurement, after 3.2
 R4 --- after 3.1, which leaves it loader-only
 R3 GHCJS rip-out --- one commit, after 2.5 (parity); Dom.hs/JSFile.hs stay
