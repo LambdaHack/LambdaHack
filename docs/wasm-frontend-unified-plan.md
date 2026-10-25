@@ -587,6 +587,10 @@ only that the plan was written is one the next reader has to skip.
   reaches, `decideKey` folding `ControlShift` into `Control`;
   and Ctrl+Shift+Tab, which the flag moves from `C-Tab` to `C-BackTab`, both
   browsers keep from a page in a window.
+- 2026-10-25 -- ruled by Mikolaj: a late item, R9, finds a cheap way
+  for a player on a German keyboard to play comfortably, by the key config,
+  the engine or the help texts, the trade-offs between them his to rule; B.13
+  has what is known and the trade-offs, the work list the row.
 
 ## Repo facts the plan builds on
 
@@ -3554,6 +3558,36 @@ in the browser, though once the ring goes one routine could draw both layers
 in each, given a font, its baseline and a glyph table without the dim-dot swap.
 `setSquareChar` is SDL's per-cell hot path, and the two frontends are kept
 matching.
+
+**B.13 German keyboards, as R9.** Ruled 2026-10-25 by Mikolaj: late
+in the campaign, find a cheap way for a player on a German keyboard to play
+comfortably, through the key config, the engine or the help texts, or a mix,
+the trade-offs between them being hard and his to rule. What is known: both
+movement letter sets are on by default (`config.ui.default`'s
+`movementViKeys_hjklyubn` and `movementLeftHandKeys_axwdqezc`), each laid out
+by position on QWERTY, and QWERTZ moves a diagonal of each, the vi set's `y`
+and the left-hand set's `z`, into each other's places
+(`Key.hs:dirViChar = ['y'`, `Key.hs:dirLeftHandKey = map Char`). The game binds
+`@`, `~`, `[`, `]`, `\`, `C-{` and `C-}`, characters a German layout types
+with AltGr, and AltGr reaches the game as Alt in both frontends, `Sdl.hs`'s
+`modTranslate` folding `keyModifierAltGr` into Alt and the browser by 0.0's rule
+(`terminal-core.ts:export function altModifier`). And the two read Shift
+differently: SDL by a US table in `keyTranslate`
+(`Sdl.hs:Keycode7 -> if shiftPressed`), the browser by the character typed,
+whose `/` under Shift reads as `?`
+(`Key.hs:keyTranslateWeb "/" True = Char '?'`), a clause meant for the numpad,
+so a German Shift+7, which types `/`, is expected to reach neither frontend
+as `/`. The help texts spell each key as `showKM` spells its binding. G2's bar
+does not settle this item, SDL being expected to misread the layout too.
+The trade-offs: movement keys want the physical key and mnemonic ones
+the character, and reading keys by position, by SDL's scancodes
+or `KeyboardEvent.code`, changes every non-QWERTY layout and not German alone;
+delivering an AltGr-typed character bare undoes part of 0.0's rule, which gave
+an AltGr chord `A-` and an AltGr middle click its aim; a preset
+in `[additional_commands]` costs no code, but a player must pick it,
+and the browser reads no config file, only `config.ui.default` and localStorage
+overrides; and rebinding a default changes it for every player. The measurement
+comes first.
 
 ---
 

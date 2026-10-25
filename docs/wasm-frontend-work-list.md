@@ -133,6 +133,7 @@ sections of the record are frozen and which live is its head callout's to say.
 | R6 | screenshot/overlay coherence | small | 1.2, 2.2 | retired -- B.10 |
 | R7 | pixel-perfect bitmap map fonts on the canvas, scaled whole by integers, the scalable font only off `allFontsScale` 1.0 | medium | 0.4; 1.5 for the scale; R4 for a player-chosen fontset | not applied |
 | R8 | the LambdaHack issue #281 workaround retired: no black ring around a cell without a coloured highlight | small | 0.2, 2.2 | landed -- d474dc271 |
+| R9 | German keyboards: a cheap way to play comfortably on QWERTZ, by key config, engine or help texts | exploratory | 2.5 (parity); R4 for a preset picked in the browser | not applied |
 | capability constants | named constants in place of behavioral CPP | --- | --- | not applied |
 | sum-typed selection | one frontend field replacing four `Bool`s | mechanical, moderate churn | --- | not applied |
 | RawFrontend contract | haddock contract, tasty harness, add-a-frontend checklist | medium | haddock and checklist: nothing; native harness after 0.1, which creates its module; wasm case with 0.3 | not applied |
@@ -338,8 +339,8 @@ Parity work stays in one checkout.
 ## Items
 
 Each item's design and rulings are in the record, under the same heading, R8's
-under B.12, and 1.7's and 1.8's at Appendix C's gaps (2) and (3), with 1.7's
-ruling in the Log; what is here is how it lands.
+and R9's under B.12 and B.13, and 1.7's and 1.8's at Appendix C's gaps (2)
+and (3), with 1.7's ruling in the Log; what is here is how it lands.
 
 ## Phase 0 --- shared foundations
 
@@ -1635,6 +1636,40 @@ in Done is the screenshot pair.
 
 **Decide first** --- nothing; the rulings are the record's.
 
+**R9 --- German keyboards.** Design and ruling in the record, at B.13.
+
+**Split** --- R9a is the measurement: under Xvfb with `setxkbmap de`, each key
+of a German keyboard pressed with `xdotool`, bare, with Shift and with AltGr,
+natively and in Chromium and Firefox, and what each frontend reads recorded
+in the record as a table, beside the remedies it leaves open and what each
+costs; nothing else lands with it. R9b is the remedy Mikolaj rules
+from that table, split as its branch needs, and carries the outcome line;
+it is not schedulable before the ruling. No allowlist entry: R9a proposes
+no file.
+
+**Owns** --- `docs/wasm-frontend-unified-plan.md`, which R9a writes alone. R9b's
+files are named by the ruling that opens it, from among
+`GameDefinition/config.ui.default`,
+`GameDefinition/game-src/Client/UI/Content/Input.hs`,
+`engine-src/Game/LambdaHack/Client/UI/Key.hs`, the frontends and the help texts'
+sources.
+
+**Done** --- R9a: `docs`, plus the measurement as the Split says, each
+frontend's reading observed by the command a key runs, or by the unknown-command
+message a key no binding takes prints. R9b: the gates its branch touches.
+
+**Hands back** --- *judgement*: which trade-off to take, and whether the result
+plays comfortably, which a player on a German keyboard says. The substitute
+in **Done** is R9a's table, which says what each frontend reads and nothing
+about comfort.
+
+**Decide first** --- none for R9a; for R9b, after R9a: (a) the remedy, among
+a key-config preset, keys read by position, AltGr-typed characters delivered
+bare, rebound defaults and help texts naming keys as typed on the layout,
+or a mix; (b) whether it may change what every non-QWERTY layout gets,
+not German alone; (c) whether the browser may differ from SDL where SDL cannot
+follow.
+
 ## Multi-frontend practices (adopted)
 
 **Capability constants instead of behavioral CPP.** Design and rulings
@@ -1961,6 +1996,8 @@ R3 GHCJS rip-out --- one commit, after 2.5 (parity); Dom.hs/JSFile.hs stay
     as documented-dead examples
 R5 --- after 2.5 and 3.3, measurement first
 R7 --- after 0.4 and 1.5; R7b after R7a
+R9 --- late: after 2.5 (parity), R9a's measurement first, R9b on Mikolaj's
+    ruling
 ```
 
 Rationale, condensed: the input cluster goes first (mechanism already validated,
