@@ -557,7 +557,7 @@ driver imports the setup and stubs the import half installs --- defined once,
 shared by both drivers rather than copied. Later items add to the game driver,
 0.1, 0.4, 1.2, 1.5 and 3.2 each their own coverage case, 1.7 a parity case, 1.8
 a change to 1.2's and 2.4 the overlays to its frame comparisons, and to the test
-driver, 2.3 its case and 1.5 its startup hook's stub.
+driver, 2.3 its overlay hook's stub and 1.5 its startup hook's.
 
 **Done** --- `native`, `wasm`, `docs`, plus, on the export half,
 `make build-wasm` and a run of the seeded driver against the fresh reactor,

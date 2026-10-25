@@ -611,14 +611,16 @@ only that the plan was written is one the next reader has to skip.
   `lhStart`, the first of its four exports (`lhStart`, `lhKey`, `lhWheel`,
   `lhMouseUp`), saying in the banner how the game ended once `lhStart`'s promise
   settles. Each frame, `Wasm.hs`'s `display` passes the `Word32` cell buffer's
-  address to `globalThis.lhSubmitFrame`; `terminal.ts` snapshots it and repaints
-  the changed cells on one `<canvas>` (diffing against the cells it painted
-  last) by the draw ops the pure `cellRunOps` in `terminal-core.ts` computes.
-  Input flows the other way: DOM events -> `lhKey`/`lhWheel`/`lhMouseUp` exports
-  -> the engine's key channel. Two hooks more: `startup` hands
-  `globalThis.lhConfigure` the startup payload as JSON, and `fprintScreen` hands
-  `globalThis.lhPrintScreen` the name to save the canvas under. Saves bypass all
-  of this --- `WasmFile.hs` talks to `localStorage` directly over JSFFI.
+  address to `globalThis.lhSubmitFrame`, and before it, where the frame has
+  overlays, the address of their words to `globalThis.lhSubmitOverlays`;
+  `terminal.ts` snapshots it and repaints the changed cells on one `<canvas>`
+  (diffing against the cells it painted last) by the draw ops the pure
+  `cellRunOps` in `terminal-core.ts` computes. Input flows the other way: DOM
+  events -> `lhKey`/`lhWheel`/`lhMouseUp` exports -> the engine's key channel.
+  Two hooks more: `startup` hands `globalThis.lhConfigure` the startup payload
+  as JSON, and `fprintScreen` hands `globalThis.lhPrintScreen` the name to save
+  the canvas under. Saves bypass all of this --- `WasmFile.hs` talks
+  to `localStorage` directly over JSFFI.
 - **`Dom.hs`/`JSFile.hs` (the GHCJS frontend) are dead code**, permanently
   and for the version reasons Appendix A.1 sets out. They still appear
   throughout this plan as the *canonical origin* of web-frontend logic:
@@ -2694,8 +2696,9 @@ at game end. Used for R5's own pass alone: 0.4's baseline and the 2.5
 re-measurement use the throwaway `performance.now()` probe, recorded at Phase
 2's intro and adapted to the canvas in B.10, instead (ruled 2026-08-05),
 so neither waits on R4 or 3.1. No committed scope beyond that --- measure first;
-the frame path itself (one buffer address per frame) is already about as cheap
-as the boundary allows.
+the frame path itself (one buffer address per frame, and one more
+for its overlays where it has any) is already about as cheap as the boundary
+allows.
 
 **Rulings** --- two ruled on 2026-08-05, the third on 2026-08-07. sec. 2's
 pre-2.2 baseline uses the throwaway probe --- R5a is not pulled ahead of R4
@@ -2956,8 +2959,8 @@ of the stanza.
 event loop but teletype's ran in CI, the `make test-gha` playtests driving
 `--frontendTeletype` through whole games. `make test-wasm` compiles and links
 `Wasm.hs` but runs the suite with `--frontendNull`, so the wasm frontend
-is entered only by 0.3's frame case, through `startup` and `fdisplay`,
-and by 0.1's contract cases, through `startup`,
+is entered only by the frame and overlay cases of 0.3's battery and by 0.1's
+contract cases, through `startup` and `fdisplay`,
 and `make build-wasm`/`make build-ts` run in no workflow, leaving the reactor's
 `--export=` wiring exercised by none. SDL2 was reached only via
 the `slogPriority == Just 0` init-and-quit backdoor
