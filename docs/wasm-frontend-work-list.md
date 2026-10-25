@@ -961,15 +961,14 @@ blank at first, as `Sdl.hs` keeps `spreviousFrame`, and saving a screenshot
 under `--printEachScreen` only for a frame that differs from it, as SDL saves
 inside its unchanged-frame test
 (`Sdl.hs:unless (arraysEqual && overlaysEqual) $ do`), where
-`Wasm.hs:when printEachScreen printScreen` saves on every `display`; the game
-driver's check that each frame prints one
-(`run-wasm-game.mjs:const framePrints = () =>`) counting the frames that differ
-from the one before instead, of which its left-button release past a menu label
-paints none, that case requiring the menu unchanged; and the defect's record,
-with a deep mutant restoring the save on every `display` --- the parity half
-of the third gap the record's Appendix C re-audit found, 1.2 having closed
-the rest. (2) the outcome line under that gap, naming (1)'s hash, and the ledger
-flip. No allowlist entry: this item proposes no file.
+[Wasm.hs#L158][wasm-158] saves on every `display`; the game driver's check
+that each frame prints one ([run-wasm-game.mjs#L274][game-274]) counting
+the frames that differ from the one before instead, of which its left-button
+release past a menu label paints none, that case requiring the menu unchanged;
+and the defect's record, with a deep mutant restoring the save on every
+`display` --- the parity half of the third gap the record's Appendix C re-audit
+found, 1.2 having closed the rest. (2) the outcome line under that gap, naming
+(1)'s hash, and the ledger flip. No allowlist entry: this item proposes no file.
 
 **Owns** --- `engine-src/Game/LambdaHack/Client/UI/Frontend/Wasm.hs`,
 `ts-src/run-wasm-game.mjs`, `tools/defects.json`, `tools/mutants-deep.py`
@@ -2014,3 +2013,5 @@ it builds on (2.3 uses 0.3's test harness, 2.2 uses 0.2's palette).
 [sdl-568]: https://github.com/LambdaHack/LambdaHack/blob/5c58af62ec9d875dfcb051ba5fade405e5b36f8d/engine-src/Game/LambdaHack/Client/UI/Frontend/Sdl.hs#L568
 [wasm-186]: https://github.com/LambdaHack/LambdaHack/blob/4403b8798cd5aef4c2c1ee29dac0953ba1bcde26/engine-src/Game/LambdaHack/Client/UI/Frontend/Wasm.hs#L186
 [key-564]: https://github.com/LambdaHack/LambdaHack/blob/4403b8798cd5aef4c2c1ee29dac0953ba1bcde26/engine-src/Game/LambdaHack/Client/UI/Key.hs#L564-L569
+[wasm-158]: https://github.com/LambdaHack/LambdaHack/blob/4403b8798cd5aef4c2c1ee29dac0953ba1bcde26/engine-src/Game/LambdaHack/Client/UI/Frontend/Wasm.hs#L158
+[game-274]: https://github.com/LambdaHack/LambdaHack/blob/4403b8798cd5aef4c2c1ee29dac0953ba1bcde26/ts-src/run-wasm-game.mjs#L274
