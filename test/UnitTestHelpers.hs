@@ -286,8 +286,8 @@ stubClientOptions = defClientOptions
                           , fontPropRegular = "propRegular"
                           , fontPropBold = "propBold"
                           , fontMono = "mono" })]
-  -- Unit tests stand in for the frontend with 'fchanFrontendStub' above,
-  -- so they report the null one ("null test" to Frontend.frontendName).
+  -- Unit tests stand in for the frontend with 'fchanFrontendStub' above, so
+  -- they report the null one ("null test" to Frontend.frontendName).
   , sfrontendNull = True
   }
 
@@ -332,8 +332,8 @@ testLevel = Level
 
 -- * Stub identifiers
 
--- Using different arbitrary numbers for these so that if tests fail
--- due to missing keys we'll have more of a clue.
+-- Using different arbitrary numbers for these so that if tests fail due to
+-- missing keys we'll have more of a clue.
 testLevelId :: LevelId
 testLevelId = toEnum 111
 
@@ -546,8 +546,8 @@ stubSessionUI =
                         , bcolor = BrCyan }
   in (emptySessionUI stubUIOptions)
     { sactorUI = EM.singleton testActorId actorUI
-      -- The sample game's real key bindings, so tests can resolve real
-      -- keys (dispatchCmd, the X2 bridge) with no hand-rolled content.
+      -- The sample game's real key bindings, so tests can resolve real keys
+      -- (dispatchCmd, the X2 bridge) with no hand-rolled content.
     , sccui = emptyCCUI
         { coinput = IC.makeData Nothing Content.Input.standardKeysAndMouse
         , coscreen = emptyScreenContent { rwidth = testLevelDimension
@@ -562,8 +562,8 @@ stubClient s = (emptyStateClient testFactionId)
   , sfper = EM.singleton testLevelId emptyPer
   , salter = createSalter s }
     -- the client's cached per-level alter-skill map; the BFS indexes it by
-    -- level id, so without it any frame drawn while an xhair is set (the
-    -- path to the xhair is a BFS query) dies on a missing key
+    -- level id, so without it any frame drawn while an xhair is set (the path
+    -- to the xhair is a BFS query) dies on a missing key
 
 stubCliState :: CliState
 stubCliState = CliState
@@ -634,13 +634,12 @@ actorUIC = ActorUI { bsymbol = 'c', bname = "Cadet"
 -- are floor, the rest of the board, around them and between them and its
 -- edge, is impenetrable wall.
 --
--- The fence is not decoration. The BFS -- which any frame drawn with an
--- xhair set queries, for the path to the xhair -- walks tile
--- neighbourhoods without bounds checks, as every real level is ringed by
--- tiles it cannot path through; a board that lets it reach the array's
--- edge crashes on an out-of-bounds index instead. Unknown space would not
--- fence it either (see 'wallTile'). That is why
--- 'stubLevel' -- unfenced unknown space -- is no use for such tests.
+-- The fence is not decoration. The BFS -- which any frame drawn with an xhair
+-- set queries, for the path to the xhair -- walks tile neighbourhoods without
+-- bounds checks, as every real level is ringed by tiles it cannot path through;
+-- a board that lets it reach the array's edge crashes on an out-of-bounds index
+-- instead. Unknown space would not fence it either (see 'wallTile'). That is
+-- why 'stubLevel' -- unfenced unknown space -- is no use for such tests.
 walkableLevel :: Level
 walkableLevel = fencedLevel testLevelDimension testLevelDimension
 
@@ -811,9 +810,9 @@ projectSkills = Ability.addSk Ability.SkProject 1 Ability.zeroSkills
 -- | Client state transformation monad mock.
 newtype CliMock a = CliMock
   { runCliMock :: StateT CliState IO a }
-    -- we build off io so we can compile but we don't want to use it;
-    -- TODO: let's try to get rid of the IO. I can't see any problem right now.
-    -- We'd need to to define dummy liftIO in some monads, etc.
+    -- we build off io so we can compile but we don't want to use it; TODO:
+    -- let's try to get rid of the IO. I can't see any problem right now. We'd
+    -- need to to define dummy liftIO in some monads, etc.
   deriving (Monad, Functor, Applicative)
 
 instance MonadStateRead CliMock where

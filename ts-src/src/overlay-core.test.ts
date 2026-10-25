@@ -83,9 +83,9 @@ describe("decodeFrameLayout against OverlayLayout's wire fixtures", () => {
   });
 });
 
-// The rows are generated from OverlayLayout.propCutoff and propFit
-// by test/OverlayLayoutUnitTests.hs: a mismatch means overlay-core.ts drifted
-// from OverlayLayout.hs.
+// The rows are generated from OverlayLayout.propCutoff and propFit by
+// test/OverlayLayoutUnitTests.hs: a mismatch means overlay-core.ts drifted from
+// OverlayLayout.hs.
 describe("propCutoff and propFit against OverlayLayout's branch table", () => {
   it.each(propFitTable.rows)(
     "halfSize=$halfSize width=$width cursorX=$cursorX" +
@@ -110,8 +110,8 @@ describe("propCutoff and propFit against OverlayLayout's branch table", () => {
 });
 
 describe("overlayOps (the draw ops of a frame's overlays)", () => {
-  // 16-pixel cells, the map font's baseline 13 and every other face's
-  // a different one.
+  // 16-pixel cells, the map font's baseline 13 and every other face's a
+  // different one.
   const m = cellMetrics(13, 3);
   const baseline = (face: Face) =>
     ({ map: 13, propRegular: 12, propBold: 11, mono: 10 })[face];

@@ -3,8 +3,8 @@
 -- sections 09-13).
 --
 -- Test classification, reflecting that the abort-split design
--- (docs/promptgetkey-hygiene.md) is planned strictly after the live-read
--- design and assumes it:
+-- (docs/promptgetkey-hygiene.md) is planned strictly after the live-read design
+-- and assumes it:
 --
 -- * [LR-flip]  -- characterization of CURRENT (desync-prone) behaviour;
 --               the expected value flips as indicated when the live-read
@@ -50,10 +50,10 @@ handleHelperMUnitTests = testGroup "handleHelperMUnitTests" $
 liveReadSeries :: [TestTree]
 liveReadSeries =
   [ -- [contract] The target invariant, driven through the real key-loop
-    -- dispatch (dispatchCmd), which reads the pointman from 'sleader'
-    -- and so is in sync by construction: cycling advances to the next party
-    -- member on the level. After the live-read design lands, this is the
-    -- only reachable behaviour.
+    -- dispatch (dispatchCmd), which reads the pointman from 'sleader' and so
+    -- is in sync by construction: cycling advances to the next party member on
+    -- the level. After the live-read design lands, this is the only reachable
+    -- behaviour.
     testCase "contract LR1: in-sync pointmanCycleLevel advances A -> C" $ do
       let testFn = do
             updateClientLeader testActorId
@@ -80,12 +80,11 @@ liveReadSeries =
     -- (with the disabled assertion restored, a crash). Every step is the
     -- genuine engine operation: step 2 is the run rotation's write pair
     -- (RunM.hs:updateClientLeader r), step 4 the restoreLeaderFromRun that
-    -- promptGetKey runs on interrupted macro playback (see
-    -- FrameMUnitTests.X1 for the same window driven through the real
-    -- promptGetKey) and step 5 the item dialogs' cycling call
-    -- (InventoryM.hs:err <- pointmanCycleLevel leader False direction).
-    -- After the live-read design lands: flip the last component to
-    -- 'Just testActorId2'.
+    -- promptGetKey runs on interrupted macro playback (see FrameMUnitTests.X1
+    -- for the same window driven through the real promptGetKey) and step 5
+    -- the item dialogs' cycling call (InventoryM.hs:err <- pointmanCycleLevel
+    -- leader False direction). After the live-read design lands: flip the last
+    -- component to 'Just testActorId2'.
     testCase "LR-flip LR3: stale leader makes pointmanCycleLevel a no-op" $ do
       let testFn = do
             updateClientLeader testActorId   -- 1. run leader A is the pointman
@@ -104,10 +103,9 @@ liveReadSeries =
       result @?= (testActorId2, Just testActorId, Just testActorId)
 
   , -- [LR-flip] With three members the same desync picks the WRONG member
-    -- instead of no member: pointman restored to A, dialog still holds B;
-    -- "next after B" is C, but the correct answer (next after A) is B.
-    -- After the live-read design lands: flip the expectation to
-    -- 'Just testActorId3' (B).
+    -- instead of no member: pointman restored to A, dialog still holds B; "next
+    -- after B" is C, but the correct answer (next after A) is B. After the
+    -- live-read design lands: flip the expectation to 'Just testActorId3' (B).
     testCase
       "LR-flip LR4: stale leader makes pointmanCycleLevel pick the wrong member"
       $ do
@@ -123,10 +121,9 @@ liveReadSeries =
       result @?= Just testActorId2  -- C; correct would be B (testActorId3)
 
   , -- [LR-flip] The dungeon-wide twin pointmanCycle kept its "same leader"
-    -- assertion (only pointmanCycleLevel's was disabled by 4a6eca154), so
-    -- the same desync CRASHES it -- this is the changelog crash, pinned.
-    -- After the live-read design lands: no exception; expect
-    -- advancement to C instead.
+    -- assertion (only pointmanCycleLevel's was disabled by 4a6eca154), so the
+    -- same desync CRASHES it -- this is the changelog crash, pinned. After the
+    -- live-read design lands: no exception; expect advancement to C instead.
     testCase
       "LR-flip LR5: stale leader crashes pointmanCycle ('same leader' assert)"
       $ do
@@ -145,10 +142,10 @@ liveReadSeries =
           "expected the 'same leader' assertion to fire on a stale leader"
 
   , -- [LR-flip] A dangling stale ActorId (actor absent from the party, e.g.
-    -- conceptually dead) is silently tolerated: partyAfterLeader can't find
-    -- the pivot and returns the WHOLE party, so cycling picks the first
-    -- member -- an arbitrary result, not an error. After the live-read design
-    -- lands, the argument does not exist, so this case is unrepresentable.
+    -- conceptually dead) is silently tolerated: partyAfterLeader can't find the
+    -- pivot and returns the WHOLE party, so cycling picks the first member --
+    -- an arbitrary result, not an error. After the live-read design lands, the
+    -- argument does not exist, so this case is unrepresentable.
     testCase "LR-flip LR6: dangling stale ActorId yields an arbitrary pick" $ do
       let testFn = do
             updateClientLeader testActorId2  -- pointman C
@@ -180,8 +177,8 @@ liveReadSeries =
       result @?= [testActorId, testActorId3, testActorId2]  -- [A, B, C]
 
   , -- [contract] The pickLeader primitive both designs build on:
-    -- no-op (False) when the target already is the pointman,
-    -- a real switch (True) otherwise.
+    -- no-op (False) when the target already is the pointman, a real switch
+    -- (True) otherwise.
     testCase
       "contract LR9: pickLeader no-ops on current pointman, switches otherwise"
       $ do
@@ -221,9 +218,8 @@ liveReadSeries =
       result @?= (Nothing, Just testActorId2)
 
   , -- [contract] The dungeon-wide twin also advances when in sync, driven
-    -- through the real key-loop dispatch (Tab): the non-banned success
-    -- path of the same pointmanCycle whose live assertion the desync
-    -- crashes (LR5).
+    -- through the real key-loop dispatch (Tab): the non-banned success path of
+    -- the same pointmanCycle whose live assertion the desync crashes (LR5).
     testCase "contract LR12: in-sync pointmanCycle advances A -> C" $ do
       let testFn = do
             updateClientLeader testActorId
@@ -234,9 +230,9 @@ liveReadSeries =
       result @?= (Nothing, Just testActorId2)
 
   , -- [contract] The CmdLeader boundary: with no pointman designated, the
-    -- dispatch refuses with a friendly failure instead of reaching the
-    -- handler -- the one place that turns 'Maybe ActorId' into an MError,
-    -- kept by the live-read design (docs/leader-desync-bug.md, sec. 10).
+    -- dispatch refuses with a friendly failure instead of reaching the handler
+    -- -- the one place that turns 'Maybe ActorId' into an MError, kept by the
+    -- live-read design (docs/leader-desync-bug.md, sec. 10).
     testCase "contract LR13: dispatch refuses when no pointman designated" $ do
       let testFn = do
             merr <- dispatchCmd $ HumanCmd.PointmanCycleLevel Forward

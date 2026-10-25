@@ -49,8 +49,8 @@ freshnessOptions = [Option (Proxy :: Proxy Regenerate)]
 freshnessCase :: FilePath -> FilePath -> Text -> TestTree
 freshnessCase source name content = askOption $ \(Regenerate regenerate) ->
   testCase ("generated " ++ name ++ " is fresh") $ do
-    -- Relative to the directory the .cabal file is in, where cabal runs
-    -- the suite, and which the SDL fontset cases rely on too.
+    -- Relative to the directory the .cabal file is in, where cabal runs the
+    -- suite, and which the SDL fontset cases rely on too.
     let path = "ts-src/src/generated/" ++ name
         bytes = T.encodeUtf8 content
     exists <- doesFileExist path

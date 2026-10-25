@@ -16,23 +16,23 @@ that did not happen, never as one that passed.
 SCAN = ['.']
 TIMEOUT = 3600
 
-# One run of the checker over every document: each takes the list and
-# aggregates as check-all does, a failure over a document that could not be
-# checked, so no loop re-derives the verdict here -- the loop that did kept
-# 0 over a status it did not define (checks-04) and split a name on its
-# space (checks-05). What is left to say is that the pass did not happen: a
-# root that cannot be entered or a listing with nothing in it, git failing
-# among its causes, is 2 with its reason, where it was a loop over nothing
-# exiting 0 (checks-02). A status the checkers do not define reaches
-# check-all as it is, and anything but 0 and 2 is a failure there.
+# One run of the checker over every document: each takes the list and aggregates
+# as check-all does, a failure over a document that could not be checked, so no
+# loop re-derives the verdict here -- the loop that did kept 0 over a status it
+# did not define (checks-04) and split a name on its space (checks-05). What is
+# left to say is that the pass did not happen: a root that cannot be entered
+# or a listing with nothing in it, git failing among its causes, is 2 with its
+# reason, where it was a loop over nothing exiting 0 (checks-02). A status the
+# checkers do not define reaches check-all as it is, and anything but 0 and 2 is
+# a failure there.
 DOCS_LISTED = ('cd "{root}/.." || { echo "cannot enter the repository root"; exit 2; }; '
                "readarray -t docs < <(git ls-files '*.md' ':!CHANGELOG.md'); "
                '[ ${#docs[@]} -gt 0 ] || { echo "git lists no tracked Markdown file, or could not be run; nothing checked"; exit 2; }; ')
 DOCS = DOCS_LISTED + 'python3 ../tools/%s "${docs[@]}"'
 
 STEPS = [
-    # The shared checker over this repository's rows, which reach the
-    # makefile and option-parser branches horde-ad's cannot.
+    # The shared checker over this repository's rows, which reach the makefile
+    # and option-parser branches horde-ad's cannot.
     ('check-doc-refs self-test', ['python3', '{root}/../../tools/check-doc-refs.py', '--self-test'], '{root}/..'),
     ('check-plan-crossrefs self-test', ['python3', '{root}/check-plan-crossrefs.py', '--self-test']),
     ('check-sync-exports self-test', ['python3', '{root}/check-sync-exports.py', '--self-test']),
@@ -58,10 +58,10 @@ STEPS = [
     # No frontend decodes a screen index by the Enum instance of Point,
     # which reads the dungeon's width: the explicit-widths practice of
     # docs/wasm-frontend-unified-plan.md. It catches the `Point{..} = toEnum`
-    # spelling only, white space aside. Dom.hs, a dead example, is left
-    # alone, as the practice leaves it. git grep exits 1 when it finds
-    # nothing, a pathspec matching no file included, so the pathspec is
-    # listed first (checks-06), and above 1 when it fails.
+    # spelling only, white space aside. Dom.hs, a dead example, is left alone,
+    # as the practice leaves it. git grep exits 1 when it finds nothing, a
+    # pathspec matching no file included, so the pathspec is listed first
+    # (checks-06), and above 1 when it fails.
     ('explicit widths',        ['bash', '-c',
                                 "spec=('engine-src/Game/LambdaHack/Client/UI/Frontend/*.hs' "
                                 "':!engine-src/Game/LambdaHack/Client/UI/Frontend/Dom.hs'); "
@@ -78,6 +78,6 @@ STEPS = [
     ('selftest mutants',       ['python3', '{bin}/selftest-mutants.py', '{root}']),
 ]
 
-# leader-census.py is temporary, like the migration document it serves, and
-# is deleted with it; it has no self-test and takes no mutant.
+# leader-census.py is temporary, like the migration document it serves, and is
+# deleted with it; it has no self-test and takes no mutant.
 UNCOVERED = {'leader-census.py': 'temporary, deleted with docs/leader-desync-migration.md'}

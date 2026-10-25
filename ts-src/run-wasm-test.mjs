@@ -1,11 +1,10 @@
-// Runs a GHC wasm32-wasi *command* binary (built the normal way, with a
-// plain `_start` -- not a reactor) that also needs GHC's JSFFI glue.
+// Runs a GHC wasm32-wasi *command* binary (built the normal way, with a plain
+// `_start` -- not a reactor) that also needs GHC's JSFFI glue.
 //
 // `wasmtime` alone supplies the wasi_snapshot_preview1 import, but not the
-// extra ghc_wasm_jsffi import that GHC's JS FFI needs; that import can only
-// be satisfied by an actual JS host. This script provides one via Node,
-// wiring things up the way the GHC User's Guide's wasm backend chapter
-// describes:
+// extra ghc_wasm_jsffi import that GHC's JS FFI needs; that import can only be
+// satisfied by an actual JS host. This script provides one via Node, wiring
+// things up the way the GHC User's Guide's wasm backend chapter describes:
 // https://downloads.haskell.org/ghc/latest/docs/users_guide/wasm.html
 //
 // It also stubs the page globals the build's `foreign import javascript`
@@ -31,8 +30,8 @@ import { pathToFileURL } from "node:url";
 
 export const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
-// Whether `cond`, which may return a promise, comes to hold within `ms`,
-// asked every `step` ms, the first time after one step.
+// Whether `cond`, which may return a promise, comes to hold within `ms`, asked
+// every `step` ms, the first time after one step.
 export async function waitFor(cond, ms, step = 50) {
   const end = Date.now() + ms;
   do {
@@ -57,10 +56,10 @@ export function requireFiles(usage, wasmPath, jsffiPath) {
 }
 
 // An in-memory stand-in for the browser's localStorage, with the methods
-// WasmFile.hs calls; getItem returns null for an absent key, as the
-// browser's does, which WasmFile.hs's presence check relies on. setItem
-// refuses a key under quotaExceeded/ with the error a full browser storage
-// throws, for the suite's case of a refused write.
+// WasmFile.hs calls; getItem returns null for an absent key, as the browser's
+// does, which WasmFile.hs's presence check relies on. setItem refuses a key
+// under quotaExceeded/ with the error a full browser storage throws, for the
+// suite's case of a refused write.
 function memoryStorage() {
   const items = new Map();
   return {
@@ -150,12 +149,11 @@ export async function installStubs(memoryOf) {
   };
 }
 
-// Instantiate the binary at `wasmPath` under `wasi`, with the JSFFI glue
-// at `jsffiPath`, exiting 2 where either cannot be loaded, compiled or
-// linked. The glue needs the instance's own exports (mainly `memory`) to
-// implement ghc_wasm_jsffi, but imports have to be supplied before an
-// instance exists, so the knot is tied with a plain object filled in right
-// after instantiation.
+// Instantiate the binary at `wasmPath` under `wasi`, with the JSFFI glue at
+// `jsffiPath`, exiting 2 where either cannot be loaded, compiled or linked. The
+// glue needs the instance's own exports (mainly `memory`) to implement
+// ghc_wasm_jsffi, but imports have to be supplied before an instance exists, so
+// the knot is tied with a plain object filled in right after instantiation.
 export async function instantiate(wasmPath, jsffiPath, wasi) {
   const exportsPlaceholder = {};
   try {
@@ -190,19 +188,18 @@ if (import.meta.url === pathToFileURL(resolve(process.argv[1])).href) {
   const { WASI } = await import("node:wasi");
   const wasi = new WASI({
     version: "preview1",
-    // Haskell's getArgs excludes argv[0], so this only affects things that
-    // read the program name directly (getProgName, --help banners); use a
-    // short name instead of the full build-tree path for those.
+    // Haskell's getArgs excludes argv[0], so this only affects things that read
+    // the program name directly (getProgName, --help banners); use a short name
+    // instead of the full build-tree path for those.
     args: [basename(wasmPath), ...extraArgs],
     env: process.env,
-    // GHC's RTS init (hs_init_ghc) does a chdir to an absolute host path
-    // during startup (seemingly derived from PWD/argv0), and WASI only lets
-    // that resolve through a preopened directory. wasmtime doesn't grant
-    // filesystem access by default either (its own docs show `wasmtime run
-    // --mapdir /::$PWD` is needed for RTS features that touch the
-    // filesystem). This only ever runs a locally built test binary, not
-    // untrusted code, so preopening everything is simpler than guessing
-    // exactly which path the RTS wants.
+    // GHC's RTS init (hs_init_ghc) does a chdir to an absolute host path during
+    // startup (seemingly derived from PWD/argv0), and WASI only lets that
+    // resolve through a preopened directory. wasmtime doesn't grant filesystem
+    // access by default either (its own docs show `wasmtime run --mapdir
+    // /::$PWD` is needed for RTS features that touch the filesystem). This only
+    // ever runs a locally built test binary, not untrusted code, so preopening
+    // everything is simpler than guessing exactly which path the RTS wants.
     preopens: { "/": "/" },
     returnOnExit: true,
   });

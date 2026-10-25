@@ -8,9 +8,9 @@ import { extname, normalize } from "node:path";
 
 /**
  * The site path a request URL names: the query dropped, escapes decoded,
- * leading parent-directory steps cut and "/" mapped to index.html. Null
- * where the escapes do not decode, for which the server responds 400
- * rather than ending on decodeURIComponent's URIError.
+ * leading parent-directory steps cut and "/" mapped to index.html. Null where
+ * the escapes do not decode, for which the server responds 400 rather than
+ * ending on decodeURIComponent's URIError.
  */
 export function sitePath(url: string): string | null {
   let raw: string;

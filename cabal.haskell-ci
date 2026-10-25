@@ -9,9 +9,9 @@ distribution: jammy
 raw-project
   optimization: False
 
--- The 9.12 job also builds, tests included, with the release flag, the
--- only build defining EXPOSE_INTERNAL, so the export lists it guards
--- compile somewhere.
+-- The 9.12 job also builds, tests included, with the release flag, the only
+-- build defining EXPOSE_INTERNAL, so the export lists it guards compile
+-- somewhere.
 constraint-set release
   ghc: ==9.12.4
   constraints: LambdaHack +release

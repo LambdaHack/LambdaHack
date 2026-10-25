@@ -44,9 +44,9 @@ humanCommandMock = do
     sess <- get
     return $ renderTrace (smacroFrame sess : smacroStack sess)  -- log session
   abortOrCmd <- lift iterationMock -- do stuff
-  -- GC macro stack if there are no actions left to handle,
-  -- removing all unnecessary macro frames at once,
-  -- but leaving the last one for user's in-game macros.
+  -- GC macro stack if there are no actions left to handle, removing all
+  -- unnecessary macro frames at once, but leaving the last one for user's
+  -- in-game macros.
   lift $ modify $ \sess ->
           let (smacroFrameNew, smacroStackMew) =
                 dropEmptyMacroFrames (smacroFrame sess) (smacroStack sess)

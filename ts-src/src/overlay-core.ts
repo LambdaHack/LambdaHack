@@ -1,10 +1,10 @@
 // The browser's half of OverlayLayout.hs's overlay layout: the proportional
-// pen, which places each chunk of a proportional line by the width the
-// renderer measured, re-implemented here and pinned to the Haskell by the
-// branch table the test suite writes into generated/prop-fit.json, and the
-// draw ops of a frame's three overlays, through terminal-core's draw-op core,
-// as Sdl.hs draws them, with the map cells they cover. No DOM, no canvas:
-// widths come in as numbers.
+// pen, which places each chunk of a proportional line by the width the renderer
+// measured, re-implemented here and pinned to the Haskell by the branch table
+// the test suite writes into generated/prop-fit.json, and the draw ops of a
+// frame's three overlays, through terminal-core's draw-op core, as Sdl.hs draws
+// them, with the map cells they cover. No DOM, no canvas: widths come in as
+// numbers.
 
 import { COLOR, HIGHLIGHT } from "./generated/palette.js";
 import {
@@ -23,8 +23,8 @@ import {
 const DOLLAR = 0x24;
 
 /**
- * A frame's overlays, decoded: OverlayLayout.hs's FrameLayout, its fields
- * in draw order, the section a cell run is in being its layer.
+ * A frame's overlays, decoded: OverlayLayout.hs's FrameLayout, its fields in
+ * draw order, the section a cell run is in being its layer.
  */
 export interface FrameLayout {
   prop: PropLine[];
@@ -59,11 +59,11 @@ const PROP_FACES: readonly PropChunk["face"][] = ["propRegular", "propBold"];
 
 /**
  * A frame's overlays, decoded from the words OverlayLayout.hs's
- * encodeFrameLayout writes, its haddock giving their order, and laid out
- * for a screen laidOutFor squares wide, which must be the width of the frame
- * they go with, frameWidth: the Haskell filtered the lines against the one
- * and the pen clamps against the other. Throws where they differ, on words
- * too few or too many, and on a face or an all-space word neither 0 nor 1.
+ * encodeFrameLayout writes, its haddock giving their order, and laid out for a
+ * screen laidOutFor squares wide, which must be the width of the frame they go
+ * with, frameWidth: the Haskell filtered the lines against the one and the pen
+ * clamps against the other. Throws where they differ, on words too few or too
+ * many, and on a face or an all-space word neither 0 nor 1.
  */
 export function decodeFrameLayout(
   words: ArrayLike<number>,
@@ -116,8 +116,8 @@ export function decodeFrameLayout(
 
 /**
  * Cell metrics in device pixels, OverlayLayout.hs's LayoutMetrics: halfSize
- * is one PointUI step and the mono pitch, the painter's own, and width
- * the screen's width in squares, the frame's.
+ * is one PointUI step and the mono pitch, the painter's own, and width the
+ * screen's width in squares, the frame's.
  */
 export interface LayoutMetrics {
   halfSize: number;
@@ -153,8 +153,8 @@ export function startPropLine(
 
 /**
  * Whether the pen has reached the last column, in which case this chunk
- * and every later chunk of the line are dropped. Asked before the chunk
- * is measured.
+ * and every later chunk of the line are dropped. Asked before the chunk is
+ * measured.
  */
 export function propCutoff(lm: LayoutMetrics, cur: PropCursor): boolean {
   return cur.xPx >= (lm.width - 1) * boxSize(lm);
@@ -171,10 +171,10 @@ export interface PropFit {
 /**
  * Place one chunk, given whether its text is all white space and its natural
  * width, the ceiling of what measureText gives: OverlayLayout.hs's propFit,
- * its precondition, that propCutoff is false, thrown. A chunk that fits
- * is drawn whole; one that overruns the screen is cut, an all-space chunk
- * at the screen's edge and any other one cell short of it, which takes
- * the trimmed-line marker.
+ * its precondition, that propCutoff is false, thrown. A chunk that fits is
+ * drawn whole; one that overruns the screen is cut, an all-space chunk at
+ * the screen's edge and any other one cell short of it, which takes the
+ * trimmed-line marker.
  */
 export function propFit(
   lm: LayoutMetrics,
@@ -198,8 +198,8 @@ export function propFit(
 }
 
 /**
- * OverlayLayout.hs's trimmedMarkerRun: Color.hs's trimmedLineAttrW32,
- * a BrBlack '$', in the row's last square column, as a square-layer run.
+ * OverlayLayout.hs's trimmedMarkerRun: Color.hs's trimmedLineAttrW32, a BrBlack
+ * '$', in the row's last square column, as a square-layer run.
  */
 export function trimmedMarkerRun(lm: LayoutMetrics, row: number): CellRun {
   return {
@@ -211,13 +211,13 @@ export function trimmedMarkerRun(lm: LayoutMetrics, row: number): CellRun {
 
 /**
  * The draw ops of a frame's overlays over a screen width squares wide, in
- * cells of m, in OverlayLayout.hs's draw order and as Sdl.hs draws them:
- * each proportional chunk on black from its left edge, placed and cut by
- * propFit at the ceiling of the width measure gives it, and followed by the
- * trimmed-line marker where propFit raises it; each square run's cells as the
- * map's; and each mono run's cells as monoRunOps draws them. baseline gives a
- * face's baseline below a cell's top. Neither function is called for a frame
- * with no overlays, nor measure for a chunk past the cutoff.
+ * cells of m, in OverlayLayout.hs's draw order and as Sdl.hs draws them: each
+ * proportional chunk on black from its left edge, placed and cut by propFit at
+ * the ceiling of the width measure gives it, and followed by the trimmed-line
+ * marker where propFit raises it; each square run's cells as the map's; and
+ * each mono run's cells as monoRunOps draws them. baseline gives a face's
+ * baseline below a cell's top. Neither function is called for a frame with no
+ * overlays, nor measure for a chunk past the cutoff.
  */
 export function overlayOps(
   layout: FrameLayout,
@@ -254,10 +254,10 @@ export function overlayOps(
   return ops;
 }
 
-// A mono run's draw ops, as Sdl.hs's setMonoChar draws its cells, which
-// carry no highlight: a glyph per half cell in the mono face, its colour
-// recoloured for the row and its character not substituted, on black and
-// with no ring, a space drawing no glyph.
+// A mono run's draw ops, as Sdl.hs's setMonoChar draws its cells, which carry
+// no highlight: a glyph per half cell in the mono face, its colour recoloured
+// for the row and its character not substituted, on black and with no ring, a
+// space drawing no glyph.
 function monoRunOps(
   run: CellRun,
   m: CellMetrics,
@@ -285,9 +285,9 @@ function monoRunOps(
 }
 
 /**
- * The cells of a screen cols by rows cells of m that ops draw over,
- * as frame indices in ascending order: those the next frame repaints
- * from its map before drawing its own overlays.
+ * The cells of a screen cols by rows cells of m that ops draw over, as frame
+ * indices in ascending order: those the next frame repaints from its map before
+ * drawing its own overlays.
  */
 export function overlaidCells(
   ops: DrawOp[],

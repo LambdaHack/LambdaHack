@@ -26,8 +26,8 @@ ST = ['python3', '{file}', '--self-test']
 # The probe runner is the doc-verification skill's, user-scope, outside this
 # tree; a judge over a document rather than over a tool. It judges directly
 # rather than through the doc-probes step of checks.py: in a judge `{root}`
-# names the real tools/, so the step's cd ran the probes on the unmutated
-# tree and the mutant survived.
+# names the real tools/, so the step's cd ran the probes on the unmutated tree
+# and the mutant survived.
 PROBES = ['python3', str(pathlib.Path.home() / '.claude/skills/doc-verification/run-probes.py'), '{file}']
 
 
@@ -42,15 +42,15 @@ def step(name):
 
 
 MUTANTS = [
-    # A document probe with its expectation moved: the probe runner over
-    # that document, which the doc-probes step of checks.py runs, must fail.
+    # A document probe with its expectation moved: the probe runner over that
+    # document, which the doc-probes step of checks.py runs, must fail.
     ('doc probe expectation moved', '../docs/leader-desync-migration.md',
      "':!docs/leader-desync-migration.md' | wc -l :: 12 -->",
      "':!docs/leader-desync-migration.md' | wc -l :: 99 -->",
      PROBES),
-    # check-plan-crossrefs: one break per assertion, each proved caught the
-    # day the checker was written (2026-09-04), plus the disclaimer window
-    # and the grammar gates it rests on
+    # check-plan-crossrefs: one break per assertion, each proved caught the day
+    # the checker was written (2026-09-04), plus the disclaimer window and the
+    # grammar gates it rests on
     ('check-plan-crossrefs A1 claim vocabulary blanked', 'check-plan-crossrefs.py',
      'CLAIM_RE = re.compile(r"\\b(?:entry|entries|deletion)\\b")\n',
      'CLAIM_RE = re.compile(r"(?!x)x")\n', ST),
@@ -88,10 +88,10 @@ MUTANTS = [
      '        return self.field(iid, "Owns")\n', ST),
     ('check-plan-crossrefs absolute path to the configured document read as a copy', 'check-plan-crossrefs.py',
      "    return p == d or p.endswith(os.sep + d)\n", "    return p == d\n", ST),
-    # check-plan-crossrefs: the bare-extension guard in is_file (`cabal`,
-    # `ts` read as files) had A2 as its only witness and lost it when A2
-    # retired on 2026-09-14; the guard stays, and no assertion can now see
-    # it break, so it carries no mutant.
+    # check-plan-crossrefs: the bare-extension guard in is_file (`cabal`, `ts`
+    # read as files) had A2 as its only witness and lost it when A2 retired on
+    # 2026-09-14; the guard stays, and no assertion can now see it break, so it
+    # carries no mutant.
     ('check-plan-crossrefs citation by a text anchor names no file', 'check-plan-crossrefs.py',
      '    if head != t and is_file(head.rsplit("/", 1)[-1]):\n',
      '    if False:\n', ST),
@@ -100,8 +100,8 @@ MUTANTS = [
      '                if False:\n', ST),
     ('check-plan-crossrefs document without the grammar read as clean', 'check-plan-crossrefs.py',
      "    if not doc.order or not doc.items:\n", "    if False:\n", ST),
-    # check-plan-crossrefs: the second grammar and the joint run
-    # (2026-09-04), one break per branch the pointman document added
+    # check-plan-crossrefs: the second grammar and the joint run (2026-09-04),
+    # one break per branch the pointman document added
     ('check-plan-crossrefs grammar chosen by position, never by fit', 'check-plan-crossrefs.py',
      "    return fits[0] if len(fits) == 1 else None\n", "    return GRAMMARS[0]\n", ST),
     ('check-plan-crossrefs A1 silent over a document with no allowlist block', 'check-plan-crossrefs.py',
@@ -199,15 +199,15 @@ MUTANTS = [
      "    link_oks, link_fails = linked(files, cabals)\n", ST),
     ('check-sync-exports the agreeing names not printed', 'check-sync-exports.py',
      "    return [f\"ok   every foreign export is named", "    return [], fails\n    return [f\"ok   every foreign export is named", ST),
-    # The explicit-widths step of checks.py, judged by that step: the decode
-    # by the Enum instance it exists to catch, put back into Sdl.hs.
+    # The explicit-widths step of checks.py, judged by that step: the decode by
+    # the Enum instance it exists to catch, put back into Sdl.hs.
     ('explicit widths toEnum decode restored',
      '../engine-src/Game/LambdaHack/Client/UI/Frontend/Sdl.hs',
      '          let Point{..} = punindex (rwidth coscreen) i\n',
      '          let Point{..} = toEnum i\n', step('explicit widths')),
-    # The same decode spelt with white space (checks-07), and the step's
-    # guard against a pathspec matching no file (checks-06), which a mutant
-    # of checks.py itself leaves step() unable to see, so its case judges.
+    # The same decode spelt with white space (checks-07), and the step's guard
+    # against a pathspec matching no file (checks-06), which a mutant of
+    # checks.py itself leaves step() unable to see, so its case judges.
     ('explicit widths spaced toEnum decode restored',
      '../engine-src/Game/LambdaHack/Client/UI/Frontend/Sdl.hs',
      '          let Point{..} = punindex (rwidth coscreen) i\n',

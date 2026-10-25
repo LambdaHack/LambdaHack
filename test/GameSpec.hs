@@ -56,13 +56,13 @@ tests = testGroup "Tests" [ determinismGoldenUnitTests
 integrationTests :: TestTree
 integrationTests = testGroup "integrationTests" $
   -- This drives the real tieKnot, so initUI's chanFrontendIO statically
-  -- references Frontend.Wasm under wasm32-wasi (to implement its
-  -- "otherwise" branch) even though --frontendNull means nullStartup runs
-  -- instead at runtime. That reference used to make this test fail to
-  -- instantiate under `make test-wasm`'s plain wasmtime, since Frontend.Wasm
-  -- needs GHC's JSFFI glue merely to be linked in, whether or not it's
-  -- actually called. Works now that test-wasm runs the binary through
-  -- run-wasm-test.mjs, which supplies that glue via Node.
+  -- references Frontend.Wasm under wasm32-wasi (to implement its "otherwise"
+  -- branch) even though --frontendNull means nullStartup runs instead at
+  -- runtime. That reference used to make this test fail to instantiate under
+  -- `make test-wasm`'s plain wasmtime, since Frontend.Wasm needs GHC's JSFFI
+  -- glue merely to be linked in, whether or not it's actually called. Works now
+  -- that test-wasm runs the binary through run-wasm-test.mjs, which supplies
+  -- that glue via Node.
   [ testCase "Null frontend; 5 frames" $ do
       let seed = "SMGen 131 141"
           args = words "--dbgMsgSer --logPriority 4 --newGame 1 --noAnim --maxFps 100000 --frontendNull --benchmark --stopAfterFrames 5 --automateAll --keepAutomated --gameMode crawl"
@@ -83,10 +83,10 @@ sdlFontsetTests =
       testFontset :: Int -> String -> TestTree
       testFontset n fontsetName =
         testCase ("SDL frontend; init only; " ++ fontsetName ++ " fontset") $ do
-          -- This test only works when run from the same directory that
-          -- the .cabal file is in. And this is what Debian needs, so OK.
-          -- The hacky log priority 0 tells SDL frontend to init
-          -- and quit at once, for testing on CIs without graphics access.
+          -- This test only works when run from the same directory that the
+          -- .cabal file is in. And this is what Debian needs, so OK. The hacky
+          -- log priority 0 tells SDL frontend to init and quit at once, for
+          -- testing on CIs without graphics access.
           let seed = "SMGen " ++ show (13 + 2 * n) ++ " " ++ show (15 + 4 * n)
               args2 = words "--dbgMsgSer --logPriority 0 --newGame 3 --maxFps 100000 --benchmark --stopAfterFrames 5 --automateAll --keepAutomated --gameMode battle"
                       ++ [ "--setDungeonRng", seed, "--setMainRng", seed

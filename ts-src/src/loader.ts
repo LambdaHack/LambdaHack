@@ -23,8 +23,8 @@ import { leaveFullscreen, mountFullscreen } from "./fullscreen.js";
 interface LhExports {
   memory: WebAssembly.Memory;
   lhStart: () => Promise<void>;
-  // A sync export, so that it decides the key's default action before
-  // the keydown dispatch returns.
+  // A sync export, so that it decides the key's default action before the
+  // keydown dispatch returns.
   lhKey: (e: KeyboardEvent) => void;
   // Taking what terminal.ts's handlers pass.
   lhWheel: (...a: Parameters<WheelHandler>) => Promise<void>;
@@ -60,10 +60,10 @@ async function main(): Promise<void> {
 
   // In-memory filesystem: stdin, console stdout/stderr, and a writable root
   // for the game's data dir (/LambdaHack). Contents here are NOT retained
-  // across loads, but that's fine: save-file persistence is handled
-  // separately by WasmFile.hs, which talks to localStorage directly via
-  // JSFFI and never touches this filesystem at all. Only genuinely
-  // throwaway/scratch I/O should end up going through this.
+  // across loads, but that's fine: save-file persistence is handled separately
+  // by WasmFile.hs, which talks to localStorage directly via JSFFI and never
+  // touches this filesystem at all. Only genuinely throwaway/scratch I/O should
+  // end up going through this.
   const fds = [
     new OpenFile(new File([])),
     ConsoleStdout.lineBuffered((line) => console.log("[lh]", line)),
@@ -73,8 +73,8 @@ async function main(): Promise<void> {
   const wasi = new WASI(["LambdaHack"], [], fds);
 
   // The module is compiled as it downloads, and the glue fetched meanwhile;
-  // a static server that does not serve .wasm as application/wasm fails
-  // the streaming compile, and then the bytes are compiled whole.
+  // a static server that does not serve .wasm as application/wasm fails the
+  // streaming compile, and then the bytes are compiled whole.
   const url = "./LambdaHack.wasm";
   const [mod, jsffi] = await Promise.all([
     WebAssembly.compileStreaming(fetch(url)).catch(async () =>
@@ -126,10 +126,10 @@ async function main(): Promise<void> {
   // before, so it stays visible for the whole duration of a slow load.
   status?.remove();
   // lhStart's promise settles when the game ends, and under the success rule
-  // measured in docs/wasm-frontend-unified-plan.md's 3.2 a resolution or
-  // a rejection with the message ExitSuccess is a finished game and any
-  // other rejection a crash. The page says which, since its screen goes on
-  // showing the last frame.
+  // measured in docs/wasm-frontend-unified-plan.md's 3.2 a resolution or a
+  // rejection with the message ExitSuccess is a finished game and any other
+  // rejection a crash. The page says which, since its screen goes on showing
+  // the last frame.
   lh.lhStart().then(
     () => showEnd(FINISHED),
     (e: unknown) => {

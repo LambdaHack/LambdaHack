@@ -127,10 +127,10 @@ LABELS = ("Owns", "Done", "Hands back", "Decide first")
 SPLIT = "Split"
 FIELD_RE = re.compile(r"^\*\*(" + "|".join((SPLIT,) + LABELS) + r")\*\*"
                       r" --- ?(.*)$")
-# The wasm plan's practices open on a bold paragraph carrying the
-# practice's title, keyed here by the name its ledger row uses. Each also
-# lists how prose refers to it, since "the capability-constants practice"
-# is a mention. The pointman document has none.
+# The wasm plan's practices open on a bold paragraph carrying the practice's
+# title, keyed here by the name its ledger row uses. Each also lists how prose
+# refers to it, since "the capability-constants practice" is a mention. The
+# pointman document has none.
 PRACTICES = {
     "capability constants": ("Capability constants",
                              ("capability constants",
@@ -156,46 +156,43 @@ GRAMMARS = [
         # The allowlist is grouped by comment block; only the block whose
         # comment carries one of these phrases holds artifacts the campaign
         # proposes --- the second is the wording a snapshot before the
-        # 2026-09-14 split carries, which a defect control still replays.
-        # The other blocks are phantoms, foreign repositories, superseded
-        # documents and toolchain output, and belong to no item.
+        # 2026-09-14 split carries, which a defect control still replays. The
+        # other blocks are phantoms, foreign repositories, superseded documents
+        # and toolchain output, and belong to no item.
         "allow_file": "tools/doc-refs-allow.txt",
         "allow_block": ("Artifacts the wasm campaign proposes",
                         "Artifacts docs/wasm-frontend-unified-plan.md proposes"),
-        # The permanent record beside it, whose outcome lines a landing
-        # writes: naming it asks for the docs gate as naming this file does.
+        # The permanent record beside it, whose outcome lines a landing writes:
+        # naming it asks for the docs gate as naming this file does.
         "record": "docs/wasm-frontend-unified-plan.md",
         # How an item opens: a `### N.N` heading or a bold `**RN --- ...**`
-        # paragraph, group 1 being the id; the practices open on their
-        # titles.
+        # paragraph, group 1 being the id; the practices open on their titles.
         "openers": (re.compile(r"^### (\d\.\d) "),
                     re.compile(r"^\*\*(R\d) --- ")),
         "practices": PRACTICES,
     },
     {
         "doc": "docs/leader-desync-migration.md",
-        # The pointman campaign proposes no artifact: every test module of
-        # its sec. 05 has landed. A1 has nothing to read, and says so.
+        # The pointman campaign proposes no artifact: every test module of its
+        # sec. 05 has landed. A1 has nothing to read, and says so.
         "allow_file": None,
         "allow_block": None,
-        # Its items open on `### C1 ---`, `### PR 0 ---`, `### 04.1 ---`
-        # and `### 05 ---` headings; `PR N` carries a space, and `04.1`
-        # cannot be read as the plan's `4.1` since a digit precedes it.
+        # Its items open on `### C1 ---`, `### PR 0 ---`, `### 04.1 ---` and
+        # `### 05 ---` headings; `PR N` carries a space, and `04.1` cannot be
+        # read as the plan's `4.1` since a digit precedes it.
         "record": None,
         "openers": (re.compile(r"^### (C\d|PR \d|04\.\d|05) "),),
         "practices": {},
     },
 ]
-# **Owns** names the document it sits in by these phrases as often as by
-# path.
+# **Owns** names the document it sits in by these phrases as often as by path.
 DOC_ALIASES = ("this document", "this plan")
-# Where the first sentence of **Owns** ends: at a full stop before
-# a capital, a backtick or bold.
+# Where the first sentence of **Owns** ends: at a full stop before a capital, a
+# backtick or bold.
 FIRST_SENTENCE_RE = re.compile(r"(?<=\.)\s+(?=[A-Z`*])")
-# The words a sentence uses when it speaks of an allowlist entry, the
-# negations that make such a sentence say there is none to delete, and the
-# shape that hands the deletion to another item ("rides 0.3's export
-# half").
+# The words a sentence uses when it speaks of an allowlist entry, the negations
+# that make such a sentence say there is none to delete, and the shape that
+# hands the deletion to another item ("rides 0.3's export half").
 CLAIM_RE = re.compile(r"\b(?:entry|entries|deletion)\b")
 NEG_CLAIM_RE = re.compile(r"\b(?:no|nothing|neither|none)\b", re.I)
 ATTRIB_RE = re.compile(r"\b(?:rides?|is|are) (ID)'s\b")
@@ -221,8 +218,7 @@ SELF_TEST_ALLOW = """\
 # Phantoms, out of scope.
 dropped.ts
 
-# Artifacts the wasm campaign proposes but has not built
-# yet.
+# Artifacts the wasm campaign proposes but has not built yet.
 new-core.ts
 new-core.test.ts
 test/NewUnitTests.hs
@@ -354,8 +350,8 @@ SELF_TEST_FAIL = [
 ]
 # Names that must appear in no FAIL line: the controls.
 SELF_TEST_QUIET = ["loader.ts", "foo.ts", "dropped.ts", "new-core.test.ts",
-                   # live 0.1 claims it; landed 1.3's claim is history,
-                   # and so is its writing a file 0.1 now creates
+                   # live 0.1 claims it; landed 1.3's claim is history, and so
+                   # is its writing a file 0.1 now creates
                    "handed.ts", "A3 1.3",
                    "gen-scratch", "A3 1.1", "A4 0.1", "A4 0.2",
                    "A4 R1", "A5 0.1", "A5 1.1",
@@ -465,9 +461,9 @@ SELF_TEST_FAIL_2 = [
 # created and 04.2's ten commits, enumerated to (10).
 SELF_TEST_QUIET_2 = ["Made.hs", "A3 04.1", "A3 04.3", "A4 C1", "A4 C3",
                      "A4 04.1", "Old.hs", "A5 04.2"]
-# Quiet in either document alone, loud jointly: the other document's name
-# in an **Owns**; `Shared.hs`, the cross-campaign edge A2 drew, is quiet
-# everywhere now.
+# Quiet in either document alone, loud jointly: the other document's name in an
+# **Owns**; `Shared.hs`, the cross-campaign edge A2 drew, is quiet everywhere
+# now.
 SELF_TEST_QUIET_ALONE = ["Shared.hs", "wasm-frontend-work-list.md"]
 # What the second document's run must print in place of A1.
 SELF_TEST_NOTE_2 = "A1 not run over "
@@ -805,8 +801,8 @@ class Plan:
         what it writes."""
         return FIRST_SENTENCE_RE.split(self.field(iid, "Owns"), 1)[0]
 
-    # The fields stay as read, so what is derived from them is computed
-    # once a run.
+    # The fields stay as read, so what is derived from them is computed once a
+    # run.
     @functools.cache
     def owns(self, iid):
         """The file keys IID's list names, its document by an alias too."""
@@ -1110,9 +1106,9 @@ def self_test():
         if note and note not in out:
             bad.append(f"{label}: missing note: {note}")
 
-    # A document is its grammar's own by root-relative name or by an
-    # absolute path ending in it, as a defect record hands one over, and a
-    # copy under another name is not, whatever directory it sits in.
+    # A document is its grammar's own by root-relative name or by an absolute
+    # path ending in it, as a defect record hands one over, and a copy under
+    # another name is not, whatever directory it sits in.
     own = GRAMMARS[0]["doc"]
     if not is_configured(own, GRAMMARS[0]) or \
             not is_configured("/x/y/" + own, GRAMMARS[0]) or \
@@ -1159,9 +1155,9 @@ def self_test():
             if rc != 2 or "BLOCKED" not in out:
                 bad.append(f"document with an item and no ledger: exit {rc},"
                            f" wanted BLOCKED at 2")
-            # A depends-on cell naming a row with no item, and a practice
-            # with neither: A0 reports the first, and A3's closure follows
-            # neither (check-plan-crossrefs-06).
+            # A depends-on cell naming a row with no item, and a practice with
+            # neither: A0 reports the first, and A3's closure follows neither
+            # (check-plan-crossrefs-06).
             open(doc, "w").write(
                 "# Scratch\n\n| sec. | delivers | size | depends on | state |\n"
                 "|---|---|---|---|---|\n| 0.1 | a | tiny | --- | open |\n"
@@ -1203,8 +1199,8 @@ def main():
     if any(a.startswith("-") for a in args):
         print(USAGE, file=sys.stderr)
         return 2
-    # The default allowlist is root-relative like the rest of the
-    # configuration; only a path given on the command line is rebased.
+    # The default allowlist is root-relative like the rest of the configuration;
+    # only a path given on the command line is rebased.
     paths = chdir_root(args + ([allow] if allow else []))
     if "--self-test" in argv:
         return self_test()

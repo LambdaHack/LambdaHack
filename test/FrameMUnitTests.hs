@@ -3,15 +3,14 @@
 -- docs/promptgetkey-hygiene.md; the sec. 04 crash window they guard is in
 -- docs/leader-desync-bug.md).
 --
--- The abort-split design (extracting a pure @macroStep@ decision and a
--- named @abortMacroPlayback@ out of 'promptGetKey') is planned strictly
--- AFTER the live-read design and assumes it. Accordingly, the abort-split
--- series below are [contract] tests: they pin 'promptGetKey''s observable
--- branch behaviour through its unchanged type, and must pass before the
--- live-read design, after it, and after the abort-split -- they are the
--- safety net for the abort-split refactor, not characterizations to flip.
--- Only the bridge tests X1 and X2 carry an [LR-flip] expectation, each in
--- its final (cycling) step.
+-- The abort-split design (extracting a pure @macroStep@ decision and a named
+-- @abortMacroPlayback@ out of 'promptGetKey') is planned strictly AFTER the
+-- live-read design and assumes it. Accordingly, the abort-split series below
+-- are [contract] tests: they pin 'promptGetKey''s observable branch behaviour
+-- through its unchanged type, and must pass before the live-read design, after
+-- it, and after the abort-split -- they are the safety net for the abort-split
+-- refactor, not characterizations to flip. Only the bridge tests X1 and X2
+-- carry an [LR-flip] expectation, each in its final (cycling) step.
 module FrameMUnitTests (frameMUnitTests) where
 
 import Prelude ()
@@ -77,8 +76,8 @@ pureMacroTests =
       keyMacroBuffer idle @?= Right mempty
 
   , -- [contract] Empty macro frames are dropped from the stack, but the
-    -- last frame always survives (it holds the user's in-game macro state),
-    -- and a non-empty head stops the dropping, the stack under it kept.
+    -- last frame always survives (it holds the user's in-game macro state), and
+    -- a non-empty head stops the dropping, the stack under it kept.
     testCase
     "contract AS2: dropEmptyMacroFrames GCs empties, keeps the last frame" $ do
       let pending = emptyMacroFrame {keyPending = KeyMacro [kmX]}
@@ -99,8 +98,8 @@ promptGetKeyContractTests :: [TestTree]
 promptGetKeyContractTests =
   [ -- [contract] Voicing: a pending macro key that is legal and
     -- uninterrupted is consumed and returned; crucially, the run survives
-    -- (srunning stays Just) and the pointman is untouched -- the enabler
-    -- of the sec. 04 crash window that both designs must keep in mind.
+    -- (srunning stays Just) and the pointman is untouched -- the enabler of the
+    -- sec. 04 crash window that both designs must keep in mind.
     testCase
       "contract AS3: promptGetKey voices a macro key; run and pointman survive"
       $ do
@@ -121,9 +120,9 @@ promptGetKeyContractTests =
       result @?= (kmX, KeyMacro [], True, Just testActorId2)
 
   , -- [contract] Natural end: no macro pending -> a real key is read,
-    -- the run is cancelled, but the pointman is NOT restored (stays C).
-    -- This is the branch-exactness of promptgetkey-hygiene.md sec. 01:
-    -- natural run end /= macro abort.
+    -- the run is cancelled, but the pointman is NOT restored (stays C). This is
+    -- the branch-exactness of promptgetkey-hygiene.md sec. 01: natural run end
+    -- /= macro abort.
     testCase
       "contract AS4: promptGetKey with no macro clears the run, keeps pointman"
       $ do
@@ -143,11 +142,10 @@ promptGetKeyContractTests =
 
   , -- [contract] Abort via an illegal macro key ("a faulty key in a macro
     -- is a good reason to interrupt it"): macro wiped, run cancelled, and
-    -- the pointman RESTORED to the run leader A. This is the hidden write
-    -- of leader-desync-bug.md sec. 03 -- the effect the abort-split design
-    -- names abortMacroPlayback (promptgetkey-hygiene.md sec. 01) and the
-    -- live-read design makes safe. Its observable outcome must never
-    -- change.
+    -- the pointman RESTORED to the run leader A. This is the hidden write of
+    -- leader-desync-bug.md sec. 03 -- the effect the abort-split design names
+    -- abortMacroPlayback (promptgetkey-hygiene.md sec. 01) and the live-read
+    -- design makes safe. Its observable outcome must never change.
     testCase
     "contract AS5: promptGetKey aborts on illegal macro key, restores pointman"
       $ do
@@ -169,8 +167,8 @@ promptGetKeyContractTests =
       result @?= (KeyMacro [], False, Just testActorId)
 
   , -- [contract] Abort via "not queried" (special-event key request):
-    -- same outcome as AS5, through the other input of the interrupt
-    -- decision that the abort-split's pure macroStep must reproduce.
+    -- same outcome as AS5, through the other input of the interrupt decision
+    -- that the abort-split's pure macroStep must reproduce.
     testCase
     "contract AS6: promptGetKey aborts when not queried, restores pointman" $ do
       let testFn = do
@@ -190,12 +188,12 @@ promptGetKeyContractTests =
       result @?= (KeyMacro [], False, Just testActorId)
 
   , -- [contract] Non-blank frames run under the mock too: promptGetKey
-    -- with onBlank = False runs drawHudFrame over the stub board before
-    -- reading the key. The frame it yields is never built, the stub
-    -- frontends leaving it unforced and the stub board unable to build one
-    -- (test/CLAUDE.md), so a crash inside its construction passes here.
-    -- Pinned because the full-dialog coverage plan (leader-desync-bug.md
-    -- sec. 13) depends on dialogs running on the tiny fixture.
+    -- with onBlank = False runs drawHudFrame over the stub board before reading
+    -- the key. The frame it yields is never built, the stub frontends leaving
+    -- it unforced and the stub board unable to build one (test/CLAUDE.md), so a
+    -- crash inside its construction passes here. Pinned because the full-dialog
+    -- coverage plan (leader-desync-bug.md sec. 13) depends on dialogs running
+    -- on the tiny fixture.
     testCase
       "contract AS7: promptGetKey draws a HUD frame on the stub board" $ do
       let testFn = do
@@ -205,11 +203,11 @@ promptGetKeyContractTests =
       km @?= K.escKM
 
   , -- [contract] Keys voiced from a macro are recorded into an in-game
-    -- macro being defined -- "keys coming from macros are recorded as
-    -- well and this is well defined and essential" (the comment at the
-    -- recording site in promptGetKey, which the abort-split's audit step
-    -- keeps inside the primitive). Tab is used because it is bound in the
-    -- fixture CCUI (unbound keys are not recorded).
+    -- macro being defined -- "keys coming from macros are recorded as well and
+    -- this is well defined and essential" (the comment at the recording site
+    -- in promptGetKey, which the abort-split's audit step keeps inside the
+    -- primitive). Tab is used because it is bound in the fixture CCUI (unbound
+    -- keys are not recorded).
     testCase
       "contract AS8: promptGetKey records voiced keys into the open macro" $ do
       let kmTab = K.mkKM "Tab"
@@ -228,9 +226,9 @@ promptGetKeyContractTests =
 
   , -- [contract] Abort via a disturbing report -- the third interrupt
     -- input: the real stopPlayBack (a watch-event handler) adds a
-    -- MsgStopPlayback message, which disturbs resting and so interrupts
-    -- pending playback. Same outcome as AS5/AS6: macro wiped, run
-    -- cancelled, pointman restored to the run leader.
+    -- MsgStopPlayback message, which disturbs resting and so interrupts pending
+    -- playback. Same outcome as AS5/AS6: macro wiped, run cancelled, pointman
+    -- restored to the run leader.
     testCase "contract AS9: promptGetKey aborts on a disturbing report" $ do
       let testFn = do
             updateClientLeader testActorId
@@ -250,9 +248,9 @@ promptGetKeyContractTests =
       result @?= (KeyMacro [], False, Just testActorId)
 
   , -- [contract] ...but a help-displaying macro survives the same report:
-    -- the F1 exemption, part of the interrupt decision that moves into
-    -- the pure macroStep. The key is voiced, the run survives and the
-    -- pointman is untouched.
+    -- the F1 exemption, part of the interrupt decision that moves into the
+    -- pure macroStep. The key is voiced, the run survives and the pointman is
+    -- untouched.
     testCase
       "contract AS10: the F1 help macro survives a disturbing report" $ do
       let kmF1 = K.mkKM "F1"
@@ -288,8 +286,8 @@ restoreLeaderGuardTests =
       result @?= Just testActorId2
 
   , -- [contract] Guard: a faction that never runs with multiple actors
-    -- (here banned via fspawnsFast) keeps whatever pointman is current,
-    -- even with a run recorded.
+    -- (here banned via fspawnsFast) keeps whatever pointman is current, even
+    -- with a run recorded.
     testCase
       "contract AS12: restoreLeaderFromRun no-ops for a noRunWithMulti faction"
       $ do
@@ -322,14 +320,12 @@ bridgeTests =
   [ -- The full crash window of sec. 04, with the leader restore performed by
     -- the REAL promptGetKey (unlike HandleHelperMUnitTests.LR3, which calls
     -- restoreLeaderFromRun directly): run rotates pointman to C; dialog
-    -- captures C; macro dies inside the dialog; promptGetKey restores
-    -- pointman to A; cycling with the stale captured C is then a silent
-    -- no-op.
+    -- captures C; macro dies inside the dialog; promptGetKey restores pointman
+    -- to A; cycling with the stale captured C is then a silent no-op.
     --
-    -- The promptGetKey part (restore to A) is [contract] and never flips.
-    -- The final component is [LR-flip]: after the live-read design lands,
-    -- cycling reads the pointman live and advances, so flip it to
-    -- 'Just testActorId2'.
+    -- The promptGetKey part (restore to A) is [contract] and never flips. The
+    -- final component is [LR-flip]: after the live-read design lands, cycling
+    -- reads the pointman live and advances, so flip it to 'Just testActorId2'.
     testCase
       ("LR-flip X1: sec. 04 window end-to-end; "
        ++ "stale cycling no-ops after restore")
@@ -354,14 +350,14 @@ bridgeTests =
       result @?= (testActorId2, Just testActorId, Just testActorId)
 
   , -- The sec. 04 window again, with the post-abort keypress arriving as a
-    -- REAL key from the (scripted) frontend: after promptGetKey aborts
-    -- the macro (via sreqQueried = False, as in AS6) and restores the
-    -- pointman, its real-key read returns the scripted C-Tab; the test
-    -- resolves it through the fixture CCUI's real bindings and runs the
-    -- dialog's cycling call with the stale captured leader, as
-    -- InventoryM's cycleLevelKeyDef would. The promptGetKey observations
-    -- are [contract]; the final component is [LR-flip], as in X1: flip it
-    -- to 'Just testActorId2' when the live-read design lands.
+    -- REAL key from the (scripted) frontend: after promptGetKey aborts the
+    -- macro (via sreqQueried = False, as in AS6) and restores the pointman,
+    -- its real-key read returns the scripted C-Tab; the test resolves it
+    -- through the fixture CCUI's real bindings and runs the dialog's cycling
+    -- call with the stale captured leader, as InventoryM's cycleLevelKeyDef
+    -- would. The promptGetKey observations are [contract]; the final component
+    -- is [LR-flip], as in X1: flip it to 'Just testActorId2' when the live-read
+    -- design lands.
     testCase "LR-flip X2: sec. 04 window ending in a literal scripted C-Tab"
       $ do
       cliS <- partyCliStateScripted [K.mkKM "C-Tab"]
@@ -376,8 +372,8 @@ bridgeTests =
                    , smacroFrame =
                        emptyMacroFrame {keyPending = KeyMacro [kmX]} }
             km <- promptGetKey ColorFull EM.empty True []
-              -- macro dies (not queried); pointman restored to A;
-              -- the real-key read pops the scripted C-Tab
+              -- macro dies (not queried); pointman restored to A; the real-key
+              -- read pops the scripted C-Tab
             leaderRestored <- getsClient sleader
             coinputContent <- getsSession $ coinput . sccui
             case M.lookup km (IC.bcmdMap coinputContent) of

@@ -1,11 +1,10 @@
-# Hand-written workflow complementing the auto-generated haskell-ci.yml
-# (which does cabal build/test/haddock across GHC versions, unoptimized).
-# This one keeps the README's promise that CI checks the code with
-# `hlint .`, and carries every suite haskell-ci cannot: the doctests,
-# the WASM and TypeScript suites, and, exercising the optimized build,
-# the teletype playtests of `make test-gha` and the frontend smokes. One
-# job each, so a failure names itself; the smokes and the doctests share
-# the playtest job's build, each a step of its own.
+# Hand-written workflow complementing the auto-generated haskell-ci.yml (which
+# does cabal build/test/haddock across GHC versions, unoptimized). This one
+# keeps the README's promise that CI checks the code with `hlint .`, and carries
+# every suite haskell-ci cannot: the doctests, the WASM and TypeScript suites,
+# and, exercising the optimized build, the teletype playtests of `make test-gha`
+# and the frontend smokes. One job each, so a failure names itself; the smokes
+# and the doctests share the playtest job's build, each a step of its own.
 name: Lint-and-Test-Suites
 on:
   - push
@@ -31,19 +30,19 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       # Pinned, unlike hlint above: a different stylish-haskell formats
-      # differently, and a CI check that disagrees with the editor's
-      # on-save pass is worse than no check. Bump this in step with the
-      # version installed locally. Checked rather than assumed on
-      # 2026-09-03: the binary on PATH here reports this same version and
-      # leaves every tracked .hs file unchanged, so the two agree.
+      # differently, and a CI check that disagrees with the editor's on-save
+      # pass is worse than no check. Bump this in step with the version
+      # installed locally. Checked rather than assumed on 2026-09-03: the binary
+      # on PATH here reports this same version and leaves every tracked .hs file
+      # unchanged, so the two agree.
       - name: Install stylish-haskell
         run: |
           mkdir -p "$HOME/bin"
           curl -sL https://github.com/haskell/stylish-haskell/releases/download/v0.15.1.0/stylish-haskell-v0.15.1.0-linux-x86_64.tar.gz \
             | tar xz -C "$HOME/bin" --strip-components=1 --wildcards '*/stylish-haskell'
           echo "$HOME/bin" >> "$GITHUB_PATH"
-      # 0.15.1.0 has no check mode, so reformat in place and let git
-      # report; the diff it prints is the list of files to fix.
+      # 0.15.1.0 has no check mode, so reformat in place and let git report; the
+      # diff it prints is the list of files to fix.
       - name: stylish-haskell
         run: |
           stylish-haskell --version
@@ -65,9 +64,8 @@ jobs:
           ghc-version: ${{ env.GHC_VERSION }}
           cabal-version: 'latest'
       # A key per commit, since a cache is saved under a key once and never
-      # overwritten, so a fixed key would serve the first run's build for
-      # good; a run restores the newest under its cabal file, else under its
-      # GHC.
+      # overwritten, so a fixed key would serve the first run's build for good;
+      # a run restores the newest under its cabal file, else under its GHC.
       - uses: actions/cache@v4
         with:
           path: |
@@ -82,24 +80,23 @@ jobs:
       # anyway: this build is the whole of the repo's optimized coverage --
       # haskell-ci.yml builds everything unoptimized -- so the flag belongs
       # where a reader of this file sees it. The same applies to the wasm
-      # builds in the Makefile. Not to `make doctest` below: its doctests
-      # are interpreted, and the target serves a reader too, on whose
-      # unoptimized development config the flag would force an optimized
-      # rebuild.
+      # builds in the Makefile. Not to `make doctest` below: its doctests are
+      # interpreted, and the target serves a reader too, on whose unoptimized
+      # development config the flag would force an optimized rebuild.
       - name: Build
         id: build
         run: cabal build exe:LambdaHack --enable-optimization
-      # The suites below share the build, so each runs whenever it
-      # succeeded, whatever became of the others.
+      # The suites below share the build, so each runs whenever it succeeded,
+      # whatever became of the others.
       - name: ANSI smoke
         if: ${{ !cancelled() && steps.build.outcome == 'success' }}
         run: make smokeANSI
       - name: SDL smoke
         if: ${{ !cancelled() && steps.build.outcome == 'success' }}
         run: make smokeSdl
-      # doctest is installed with --ignore-project, so that it is solved on
-      # its own, not against this project; both candidate bindirs go on
-      # PATH, since which one cabal picks depends on its version.
+      # doctest is installed with --ignore-project, so that it is solved on its
+      # own, not against this project; both candidate bindirs go on PATH, since
+      # which one cabal picks depends on its version.
       - name: Doctests
         if: ${{ !cancelled() && steps.build.outcome == 'success' }}
         run: |
@@ -111,10 +108,10 @@ jobs:
         id: playtests
         if: ${{ !cancelled() && steps.build.outcome == 'success' }}
         run: make test-gha
-      # With no terminal the game writes its stdout and stderr to
-      # ~/.LambdaHack rather than to the Makefile's redirections (CLAUDE.md
-      # says why), each launch overwriting them, and make stops at the first
-      # failing game, so after a failure they hold that game's output.
+      # With no terminal the game writes its stdout and stderr to ~/.LambdaHack
+      # rather than to the Makefile's redirections (CLAUDE.md says why), each
+      # launch overwriting them, and make stops at the first failing game, so
+      # after a failure they hold that game's output.
       - name: Playtest logs, on failure
         if: ${{ !cancelled() && steps.playtests.outcome == 'failure' }}
         run: tail -n 200 ~/.LambdaHack/stderr.txt ~/.LambdaHack/stdout.txt
@@ -138,10 +135,10 @@ jobs:
     timeout-minutes: 120
     steps:
       - uses: actions/checkout@v4
-      # `make test-wasm` runs npm ci in ts-src, for the driver's lz-string,
-      # with this step's npm, whose cache it serves; the driver itself runs
-      # under ghc-wasm-meta's own node, which sourcing ~/.ghc-wasm/env puts
-      # first on PATH.
+      # `make test-wasm` runs npm ci in ts-src, for the driver's lz-string, with
+      # this step's npm, whose cache it serves; the driver itself runs under
+      # ghc-wasm-meta's own node, which sourcing ~/.ghc-wasm/env puts first on
+      # PATH.
       - uses: actions/setup-node@v4
         with:
           node-version: ${{ env.NODE_VERSION }}
@@ -150,11 +147,11 @@ jobs:
       # Installs into ~/.ghc-wasm, which every wasm Makefile recipe sources.
       - name: Install the ghc-wasm-meta toolchain
         run: curl https://gitlab.haskell.org/haskell-wasm/ghc-wasm-meta/-/raw/master/bootstrap.sh | sh
-      # The toolchain above ships no native build tools, and pretty-show
-      # (a dependency of lib:LambdaHack, directly and via assert-failure)
-      # needs happy to configure. Cabal looks it up on PATH, so a native
-      # one is what's wanted, not a cross-built one. The jobs above never
-      # notice: there cabal builds happy itself, with the host GHC.
+      # The toolchain above ships no native build tools, and pretty-show (a
+      # dependency of lib:LambdaHack, directly and via assert-failure) needs
+      # happy to configure. Cabal looks it up on PATH, so a native one is what's
+      # wanted, not a cross-built one. The jobs above never notice: there cabal
+      # builds happy itself, with the host GHC.
       - name: Install happy
         run: |
           sudo apt-get update

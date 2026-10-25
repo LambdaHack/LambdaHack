@@ -9,9 +9,9 @@ import { mountTerminal } from "./terminal.js";
 const W = 4;
 const H = 3;
 
-// jsdom has no 2D context, no font loading and no media queries: stand-ins
-// with what terminal.ts reads, a font whose line box is 16 pixels high
-// and so a 16-pixel cell.
+// jsdom has no 2D context, no font loading and no media queries: stand-ins with
+// what terminal.ts reads, a font whose line box is 16 pixels high and so a
+// 16-pixel cell.
 beforeAll(() => {
   vi.spyOn(HTMLCanvasElement.prototype, "getContext").mockReturnValue({
     measureText: () => ({
@@ -53,9 +53,9 @@ async function mount() {
     onWheel,
     onMouseUp,
   );
-  // The first frame, painted once the font has loaded, lays out the canvas
-  // the pointer is read against: W * 16 by H * 16 pixels, rendered here
-  // at twice that.
+  // The first frame, painted once the font has loaded, lays out the canvas the
+  // pointer is read against: W * 16 by H * 16 pixels, rendered here at twice
+  // that.
   term.submitFrame(0, W, H);
   await Promise.resolve();
   await Promise.resolve();

@@ -1,31 +1,30 @@
-// Drives the LambdaHack wasm *reactor* -- exe:LambdaHack as `make
-// build-wasm` builds it, the binary the page loads -- under Node, with the
-// page globals stubbed as run-wasm-test.mjs stubs them for the test suite,
-// and checks the exports the page calls, which the test suite cannot
-// exercise: its binary is a command, whose exports die with its RTS once
-// `_start` returns, and it does not link Main.hs's lhStart. Item 3.2 of
-// docs/wasm-frontend-work-list.md grows this into the benchmark driver.
+// Drives the LambdaHack wasm *reactor* -- exe:LambdaHack as `make build-wasm`
+// builds it, the binary the page loads -- under Node, with the page globals
+// stubbed as run-wasm-test.mjs stubs them for the test suite, and checks the
+// exports the page calls, which the test suite cannot exercise: its binary is
+// a command, whose exports die with its RTS once `_start` returns, and it does
+// not link Main.hs's lhStart. Item 3.2 of docs/wasm-frontend-work-list.md grows
+// this into the benchmark driver.
 //
-// The checks lean on the game's default start, which plays itself
-// ("press any key to regain control") and so submits frames steadily
-// until a key arrives: the four exports exist; lhStart starts the game
-// and its frames arrive, after one startup payload through lhConfigure
-// carrying an allFontsScale, the X of an "--allFontsScale X" pair of args
-// where there is one; a '?' through lhKey, a sync export taking the event,
-// is taken from the browser before lhKey returns and stops the stream,
-// which then stays quiet for a second, as it did not for 15s without the
-// key; on that quiet screen, the main menu, a wheel south through lhWheel
-// repaints it and a wheel north repaints it back exactly; lhMouseUp's
-// column is in half-cells, as lhWheel's is: a left button release one
-// half-cell past a menu choice's label repaints the menu unchanged, and
-// one on the label's last half-cell, an odd column, activates the choice;
-// C-P through lhKey saves one screenshot through lhPrintScreen, under a
-// name of screenshotName's shape with png for its extension, and under
+// The checks lean on the game's default start, which plays itself ("press any
+// key to regain control") and so submits frames steadily until a key arrives:
+// the four exports exist; lhStart starts the game and its frames arrive, after
+// one startup payload through lhConfigure carrying an allFontsScale, the X
+// of an "--allFontsScale X" pair of args where there is one; a '?' through
+// lhKey, a sync export taking the event, is taken from the browser before
+// lhKey returns and stops the stream, which then stays quiet for a second, as
+// it did not for 15s without the key; on that quiet screen, the main menu,
+// a wheel south through lhWheel repaints it and a wheel north repaints it
+// back exactly; lhMouseUp's column is in half-cells, as lhWheel's is: a left
+// button release one half-cell past a menu choice's label repaints the menu
+// unchanged, and one on the label's last half-cell, an odd column, activates
+// the choice; C-P through lhKey saves one screenshot through lhPrintScreen,
+// under a name of screenshotName's shape with png for its extension, and under
 // --printEachScreen every frame that differs from the one before saves one
-// besides; Ctrl+Shift with the numpad's '/' through lhKey paints what C-?
-// does, as natively, and not what C-/ does; and lhKey leaves the browser
-// a bare Control chord of '+', an Alt, AltGraph and Meta chord, and Shift
-// pressed alone.
+// besides; Ctrl+Shift with the numpad's '/' through lhKey paints what C-? does,
+// as natively, and not what C-/ does; and lhKey leaves the browser a bare
+// Control chord of '+', an Alt, AltGraph and Meta chord, and Shift pressed
+// alone.
 //
 // Usage: node run-wasm-game.mjs <LambdaHack.wasm> <ghc_wasm_jsffi.mjs> [arg...]
 //   <ghc_wasm_jsffi.mjs> is post-link.mjs's output for that binary, as in
@@ -93,11 +92,11 @@ const fail = (msg) => {
   throw new Failed(msg);
 };
 
-// The page's loader gives the reactor the argv ["LambdaHack"], no
-// environment and an empty root directory; so does this, the root being
-// a fresh temporary directory, Node's WASI preopening host directories,
-// removed at exit, a failing one included, and the argv carrying this
-// script's args after the program name.
+// The page's loader gives the reactor the argv ["LambdaHack"], no environment
+// and an empty root directory; so does this, the root being a fresh temporary
+// directory, Node's WASI preopening host directories, removed at exit, a
+// failing one included, and the argv carrying this script's args after the
+// program name.
 const root = mkdtempSync(join(tmpdir(), "lh-reactor-"));
 process.on("exit", () => rmSync(root, { recursive: true, force: true }));
 const wasi = new WASI({
@@ -146,8 +145,8 @@ function screenRows() {
 }
 const noMods = [false, false, false, false];
 
-// A stand-in for the page's KeyboardEvent: the fields lhKey reads, and
-// a count of the calls that take the key from the browser.
+// A stand-in for the page's KeyboardEvent: the fields lhKey reads, and a count
+// of the calls that take the key from the browser.
 function keyEvent(
   key,
   {
@@ -178,8 +177,8 @@ function keyEvent(
   };
 }
 
-// lhStart's promise settles only when the game ends, which no check here
-// asks for, so a settled one is a failure wherever it is noticed.
+// lhStart's promise settles only when the game ends, which no check here asks
+// for, so a settled one is a failure wherever it is noticed.
 let ended = null;
 function alive() {
   if (ended) fail(ended);
@@ -211,8 +210,8 @@ async function waitQuiet(quietMs, ms) {
   return false;
 }
 
-// Call an export with `args` on the quiet screen and wait for the
-// repaint it causes; return that frame's hash.
+// Call an export with `args` on the quiet screen and wait for the repaint it
+// causes; return that frame's hash.
 async function repaint(name, args) {
   const n = calls.length;
   await lh[name](...args);
@@ -287,9 +286,9 @@ async function run() {
       ` ${menu} -> ${scrolled} -> ${back}`,
   );
 
-  // A choice is clickable on its label's half-cells (SlideshowM.hs's
-  // onChoice), so its last one is odd, and were the column a cell
-  // doubled, as before 0.4, that click would miss as the one past it does.
+  // A choice is clickable on its label's half-cells (SlideshowM.hs's onChoice),
+  // so its last one is odd, and were the column a cell doubled, as before 0.4,
+  // that click would miss as the one past it does.
   const label = "see command help";
   const rows = screenRows();
   const row = rows.findIndex((r) => r.includes(label));
@@ -313,8 +312,8 @@ async function run() {
       " activates the choice",
   );
 
-  // On that quiet screen, with no timer due, a key through the sync lhKey
-  // must be acted on with no other event to follow it.
+  // On that quiet screen, with no timer due, a key through the sync lhKey must
+  // be acted on with no other event to follow it.
   await repaint("lhKey", [keyEvent("Escape")]);
   ok("lhKey repaints a quiet screen: Escape is acted on with no other event");
 
@@ -369,13 +368,12 @@ async function run() {
       ` the last ${prints.at(-1).name}`,
   );
 
-  // Ctrl+Shift with the numpad's Divide, whose key reads '/' under Shift,
-  // is C-? natively, Sdl.hs translating it under the raw Shift bit, and so
-  // here, lhKey handing keyTranslateWeb that bit: after C-/, which sets
-  // the crosshair on the nearest item or says there is none, it paints
-  // what C-? does after C-/, typed as '?'. The second C-/'s frame is not
-  // compared with the first's: where neither finds an item, C-? has moved
-  // the crosshair between them.
+  // Ctrl+Shift with the numpad's Divide, whose key reads '/' under Shift, is
+  // C-? natively, Sdl.hs translating it under the raw Shift bit, and so here,
+  // lhKey handing keyTranslateWeb that bit: after C-/, which sets the crosshair
+  // on the nearest item or says there is none, it paints what C-? does after
+  // C-/, typed as '?'. The second C-/'s frame is not compared with the first's:
+  // where neither finds an item, C-? has moved the crosshair between them.
   const ctrlShift = { ctrlKey: true, shiftKey: true };
   const item = await repaint("lhKey", [keyEvent("/", { ctrlKey: true })]);
   const unknown = await repaint("lhKey", [keyEvent("?", ctrlShift)]);

@@ -90,9 +90,9 @@ chunkingTests =
       chunkPropLine 1 (str Color.Red "a" ++ str Color.Blue "b")
         @?= [PropChunk Color.Red "a", PropChunk Color.Blue "b"]
   , testCase "chunkPropLine: coloured spaces are a colour, and all-space" $ do
-      -- The chunker's spaces are 'Color.spaceAttrW32' alone, while
-      -- 'pcAllSpace' asks 'Char.isSpace' of the text; unifying the two
-      -- would change which lines get the trimmed-line marker.
+      -- The chunker's spaces are 'Color.spaceAttrW32' alone, while 'pcAllSpace'
+      -- asks 'Char.isSpace' of the text; unifying the two would change which
+      -- lines get the trimmed-line marker.
       let chunks = chunkPropLine 1 $ str Color.Red "a" ++ str Color.Blue "  "
                                      ++ str Color.Red "b"
       chunks @?= [ PropChunk Color.Red "a", PropChunk Color.Blue "  "
@@ -154,15 +154,15 @@ layoutTests =
 -- column starts at 144 and whose screen ends at 160.
 --
 -- Each row fails when the line it exercises is perturbed, as run on this
--- module's first version: the cutoff's @>=@ weakened to @>@ fails
--- the second by its comparison, and the fifth, the seventh and the eighth
--- by 'propFit''s assertion that a cut chunk ends its line; strengthened
--- to @pcurXPx + 1 >=@, the first by its comparison and the eighth
--- by 'propFit''s precondition; the fit test's @<=@ weakened to @<@,
--- the fourth; the fitting width replaced by @remaining@, the third;
--- the @- boxSize@ dropped, the fifth, the seventh and the eighth;
--- the @not allSpace@ flipped, the fifth to the eighth; and the all-space cut
--- moved a cell short, the sixth --- these five by their comparisons.
+-- module's first version: the cutoff's @>=@ weakened to @>@ fails the second
+-- by its comparison, and the fifth, the seventh and the eighth by 'propFit''s
+-- assertion that a cut chunk ends its line; strengthened to @pcurXPx + 1 >=@,
+-- the first by its comparison and the eighth by 'propFit''s precondition; the
+-- fit test's @<=@ weakened to @<@, the fourth; the fitting width replaced by
+-- @remaining@, the third; the @- boxSize@ dropped, the fifth, the seventh
+-- and the eighth; the @not allSpace@ flipped, the fifth to the eighth; and
+-- the all-space cut moved a cell short, the sixth --- these five by their
+-- comparisons.
 placementTests :: [TestTree]
 placementTests =
   [ testCase "propCutoff: a pen short of the last column goes on" $

@@ -61,8 +61,8 @@ testItemFull = ItemFull
   , itemDisco = ItemDiscoFull emptyAspectRecord
   , itemSuspect = False }
 
--- The walkable-board party with one skill set shared by both heroes, for
--- the aiming branches the unknown board cannot reach (see 'walkableLevel').
+-- The walkable-board party with one skill set shared by both heroes, for the
+-- aiming branches the unknown board cannot reach (see 'walkableLevel').
 walkableParty :: Ability.Skills -> CliState
 walkableParty skills =
   withSkills [(testActorId, skills), (testActorId2, skills)]
@@ -125,9 +125,9 @@ handleHumanLocalMUnitTests = testGroup "handleHumanLocalMUnitTests"
             <> T.unpack (T.unlines renderedNewReports)
             <> "'"
   , -- psuitReq's three outcomes, one test each, each failing if any other
-    -- outcome is taken. Until the walkable board existed, only the first
-    -- was reachable: the stub board's unknown tiles are not walkable, so
-    -- the actor is walled in and a projectile wouldn't leave its position.
+    -- outcome is taken. Until the walkable board existed, only the first was
+    -- reachable: the stub board's unknown tiles are not walkable, so the actor
+    -- is walled in and a projectile wouldn't leave its position.
     testCase "psuitReq: unwalkable board obstructs aiming" $ do
       let testFn = psuitReq testActorId
       (result, _) <- executorCli testFn testCliStateWithItem
@@ -156,9 +156,9 @@ handleHumanLocalMUnitTests = testGroup "handleHumanLocalMUnitTests"
             ++ show reqFail
           Right posRange -> posRange @?= (freeFloorPos, True)
             -- the xhair position, and the range verdict: the stub item is
-            -- weightless, so the range its throw modifier yields covers
-            -- the step there (the range is computed from weight and
-            -- velocity, not from the aiming path)
+            -- weightless, so the range its throw modifier yields covers the
+            -- step there (the range is computed from weight and velocity, not
+            -- from the aiming path)
   , -- The fourth outcome, and the only one that never reaches the aiming
     -- pipeline: psuitReq returns before it whenever the viewed level is
     -- not the actor's (which is also what keeps xhairLegalEps's
@@ -178,8 +178,8 @@ handleHumanLocalMUnitTests = testGroup "handleHumanLocalMUnitTests"
       let testFn = xhairLegalEps testActorId
       result <- executorCli testFn testCliStateWithItem
       fst result @?= Right 114  -- not a coincidence this matches testFactionId,
-                                -- because @eps@ is initialized that way,
-                                -- for "randomness"
+                                -- because @eps@ is initialized that way, for
+                                -- "randomness"
   , -- [contract] The premise sibling bug (a) rests on
     -- (docs/leader-desync-bug.md, sec. 09), and the ruling that keeps
     -- @permittedProjectClient@ a "some actor" function: its verdict is
@@ -281,14 +281,12 @@ handleHumanLocalMUnitTests = testGroup "handleHumanLocalMUnitTests"
                                         -- fling at all
 
   , -- [contract] The first test through the real dialog machinery:
-    -- chooseItemHuman opens the equipment store dialog
-    -- (chooseItemDialogMode -> getStoreItem -> displayChoiceScreen),
-    -- which draws its frames and
-    -- reads keys via promptGetKey -- answered ESC by the stub frontend --
-    -- so the dialog exits with "never mind". Also pins promptGetKey's
-    -- second engine call site
-    -- (SlideshowM.hs:pkm <- promptGetKey dm ovs sfBlank legalKeys). The
-    -- store lists A's item.
+    -- chooseItemHuman opens the equipment store dialog (chooseItemDialogMode
+    -- -> getStoreItem -> displayChoiceScreen), which draws its frames and
+    -- reads keys via promptGetKey -- answered ESC by the stub frontend -- so
+    -- the dialog exits with "never mind". Also pins promptGetKey's second
+    -- engine call site (SlideshowM.hs:pkm <- promptGetKey dm ovs sfBlank
+    -- legalKeys). The store lists A's item.
     testCase "contract chooseItemHuman: ESC exits the real store dialog" $ do
       let testFn = do
             updateClientLeader testActorId
@@ -310,17 +308,16 @@ handleHumanLocalMUnitTests = testGroup "handleHumanLocalMUnitTests"
       result @?= (Nothing, Just (testItemId, CEqp, False))
 
   , -- [contract] The mid-dialog pointman switch through the REAL dialog
-    -- machinery: a scripted Tab inside A's equipment-store dialog runs the
-    -- dialog's own cycling handler (InventoryM's cycleKeyDef ->
-    -- InventoryM.hs:err <- pointmanCycle leader False direction) and
-    -- recCall re-enters the dialog
-    -- for the new pointman C -- the sec. 02 re-sync introduced by commit
-    -- 8608d6f9c, pinned here for the first time. recCall re-enters
-    -- transition (the key loop), not getFull, so C's store contents don't
-    -- gate the re-entry: the script is now dry, the re-entered dialog reads
-    -- ESC and exits with "never mind", and the switch to C sticks.
-    -- Contract, not flip: the held leader is in sync when Tab fires, so the
-    -- outcome survives the live-read design unchanged.
+    -- machinery: a scripted Tab inside A's equipment-store dialog runs
+    -- the dialog's own cycling handler (InventoryM's cycleKeyDef ->
+    -- InventoryM.hs:err <- pointmanCycle leader False direction) and recCall
+    -- re-enters the dialog for the new pointman C -- the sec. 02 re-sync
+    -- introduced by commit 8608d6f9c, pinned here for the first time.
+    -- recCall re-enters transition (the key loop), not getFull, so C's store
+    -- contents don't gate the re-entry: the script is now dry, the re-entered
+    -- dialog reads ESC and exits with "never mind", and the switch to C
+    -- sticks. Contract, not flip: the held leader is in sync when Tab fires, so
+    -- the outcome survives the live-read design unchanged.
     testCase
       "contract chooseItemHuman: scripted Tab switches pointman mid-dialog"
       $ do

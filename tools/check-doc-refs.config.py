@@ -5,19 +5,19 @@ lived in this repository's tools/, and which says what each setting does.
 
 SEARCH_ROOTS = ["engine-src", "definition-src", "GameDefinition", "ts-src",
                 "test", "tools", "docs", ".claude", ".github"]
-# Where the executable's `long "..."` options are declared; "" if the repo
-# ships no command-line parser, in which case every `--flag` falls
-# through to the external/unknown buckets.
+# Where the executable's `long "..."` options are declared; "" if the repo ships
+# no command-line parser, in which case every `--flag` falls through to the
+# external/unknown buckets.
 OPTIONS_FILE = "engine-src/Game/LambdaHack/Server/Commandline.hs"
-# Module prefix owned by this repo, the one namespace where an
-# unresolved module is a failure rather than a shrug; "" to disable.
+# Module prefix owned by this repo, the one namespace where an unresolved module
+# is a failure rather than a shrug; "" to disable.
 OUR_NAMESPACE = "Game.LambdaHack."
-# The file whose targets `make <target>` is resolved against; "" if the
-# repo has no makefile, which switches that check off.
+# The file whose targets `make <target>` is resolved against; "" if the repo has
+# no makefile, which switches that check off.
 MAKEFILE = "Makefile"
-# Sibling checkouts whose files this repo's documents cite. They are
-# resolved for real whenever present, and their absence stops the run
-# rather than degrading it, the checker's sibling policy. [] to disable.
+# Sibling checkouts whose files this repo's documents cite. They are resolved
+# for real whenever present, and their absence stops the run rather than
+# degrading it, the checker's sibling policy. [] to disable.
 SIBLING_ROOTS = ["../lambdahack.github.io",
                  # and ~/slop's shared tools
                  "../tools"]
@@ -88,7 +88,7 @@ SELF_TEST_UNCLASSIFIED = ["+noSuchFlag", "Point.hs:26,", "Ability.SkMove",
                           ".../ghc-9.12/...",
                           "https://example.com/a/b.md",
                           "https://lambdahack.github.io/"]
-# The one local-drift row that must degrade to SKIP with the sibling
-# off, and the failure count that survives the degradation.
+# The one local-drift row that must degrade to SKIP with the sibling off, and
+# the failure count that survives the degradation.
 SELF_TEST_DEGRADED_FAILURES = 4
 SELF_TEST_DEGRADED_SKIP = "engine-src/Game/LambdaHack/Client/NoSuchModule.hs"

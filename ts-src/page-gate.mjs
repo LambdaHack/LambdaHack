@@ -11,7 +11,7 @@
 // chromedriver, no BiDi endpoint or one that closes or stops answering, no
 // server, a throw outside the assertions; a FAIL already printed keeps 1.
 //
-// Usage: node page-gate.mjs <site-dir>   (Node 22+, for the global WebSocket)
+// Usage: node page-gate.mjs <site-dir> (Node 22+, for the global WebSocket)
 //   PAGE_GATE_BROWSERS=firefox or =chromium runs one browser alone; BROWSER,
 //   CHROMIUM and CHROMEDRIVER name the binaries.
 //
@@ -23,8 +23,8 @@
 // stopped frame count or a changed hash rather than a claim about what it drew.
 //
 // Non-vacuity: the gate's controls are mutants in tools/mutants-deep.py,
-// each judged by `make page-gate` and replayed by
-// `selftest-mutants.py tools/mutants-deep.py`.
+// each judged by `make page-gate` and replayed by `selftest-mutants.py
+// tools/mutants-deep.py`.
 
 import { spawn } from "node:child_process";
 import { mkdir, writeFile } from "node:fs/promises";
@@ -136,8 +136,8 @@ async function startFirefox() {
   };
 }
 
-// Headless Chromium serves no BiDi of its own: chromedriver starts it and
-// hands back a WebSocket bound to the session it opened.
+// Headless Chromium serves no BiDi of its own: chromedriver starts it and hands
+// back a WebSocket bound to the session it opened.
 async function startChromium() {
   const driver = spawn(CHROMEDRIVER, [`--port=${DRIVER_PORT}`], {
     stdio: "ignore",
@@ -216,8 +216,8 @@ async function connect(url) {
       pending.delete(m.id);
     }
   };
-  // A browser that dies mid-gate closes the socket, and one that hangs
-  // answers nothing; either way the gate cannot go on.
+  // A browser that dies mid-gate closes the socket, and one that hangs answers
+  // nothing; either way the gate cannot go on.
   ws.onclose = () => blocked("the BiDi connection closed mid-gate");
   function send(method, params) {
     return new Promise((ok) => {

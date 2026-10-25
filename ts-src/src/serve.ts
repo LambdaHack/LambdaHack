@@ -1,7 +1,7 @@
-// Minimal static file server for the built web bundle, run by
-// `make serve-wasm` and by page-gate.mjs, since simple servers often mislabel
-// .mjs/.wasm. Bundled by esbuild to dist/serve.mjs. Wiring; the tested parts
-// are sitePath and contentType, in serve-core.ts.
+// Minimal static file server for the built web bundle, run by `make serve-wasm`
+// and by page-gate.mjs, since simple servers often mislabel .mjs/.wasm. Bundled
+// by esbuild to dist/serve.mjs. Wiring; the tested parts are sitePath and
+// contentType, in serve-core.ts.
 //
 // Usage: node serve.mjs <root-dir> [port]
 
@@ -21,8 +21,8 @@ const server = createServer((req, res) => {
     res.end("400 bad request");
     return;
   }
-  // Streamed rather than read whole, so that the first bytes leave at
-  // once, the wasm's among them, which the loader compiles as they come.
+  // Streamed rather than read whole, so that the first bytes leave at once, the
+  // wasm's among them, which the loader compiles as they come.
   const file = join(root, rel);
   stat(file)
     .then((st) => {

@@ -41,12 +41,12 @@ Prove it non-vacuous (both directions; restore the document afterwards):
     $ sed -i 's/`partyAfterLeader`/`partyAfterLeaderXX`/' \\
           docs/leader-desync-migration.md
     $ python3 tools/leader-census.py  # FAIL ... partyAfterLeaderXX --
-                                      # not in the tree, plus the real
-                                      # function, now in no bucket
+                                      # not in the tree, plus the real function,
+                                      # now in no bucket
 
-    # and the case that used to be a false positive: a state field named in
-    # a bucket's prose must NOT fail, being a token of the tree even though
-    # no top-level signature under Client/UI declares it
+    # and the case that used to be a false positive: a state field named in a
+    # bucket's prose must NOT fail, being a token of the tree even though no
+    # top-level signature under Client/UI declares it
     $ sed -i 's/the pointman themselves/`sleader` themselves/' \\
           docs/leader-desync-migration.md
     $ python3 tools/leader-census.py                            # 0 failed
@@ -64,8 +64,8 @@ import sys
 TREE = 'engine-src/Game/LambdaHack/Client/UI'
 DOC = 'docs/leader-desync-migration.md'
 
-# Section 03's buckets, in document order.  Each is introduced by a bold lead
-# and runs to the next one; the last runs to the end of the section.
+# Section 03's buckets, in document order. Each is introduced by a bold lead and
+# runs to the next one; the last runs to the end of the section.
 BUCKET_LEADS = [
     ('read-live', '**Read live**'),
     ('keep', '**Keep**'),
@@ -78,8 +78,7 @@ SIG = re.compile(r"^([a-z][A-Za-z0-9_']*)\s*::")
 IDENT = re.compile(r'`([a-z][A-Za-z0-9_\']*)`')
 
 # Every lowercase token in the sources, for the doc -> tree direction; see
-# scan_tree for why that check resolves against tokens rather than
-# signatures.
+# scan_tree for why that check resolves against tokens rather than signatures.
 TOKEN = re.compile(r'\b([a-z][A-Za-z0-9_\']*)\b')
 
 
@@ -259,9 +258,9 @@ def require_readable(paths):
 
 
 def main():
-    # From the root, TREE and DOC being root-relative: run from elsewhere
-    # this died with a traceback at 1, or walked a missing TREE and called
-    # every bucketed name absent (leader-census-01).
+    # From the root, TREE and DOC being root-relative: run from elsewhere this
+    # died with a traceback at 1, or walked a missing TREE and called every
+    # bucketed name absent (leader-census-01).
     doc = (chdir_root(sys.argv[1:2]) or [DOC])[0]
     require_readable([doc])
     if not os.path.isdir(TREE):

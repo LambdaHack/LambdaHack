@@ -22,8 +22,8 @@ configure-debug:
 configure-prof:
 	cabal configure --enable-profiling --profiling-detail=exported-functions --enable-optimization
 
-# Low delay to display animations swiftly and not bore the public too much.
-# Delay can't be lower than 2, because browsers sometimes treat delay 1
+# Low delay to display animations swiftly and not bore the public too
+# much. Delay can't be lower than 2, because browsers sometimes treat delay 1
 # specially and add their extra delay.
 create-gif :
 	find ~/.LambdaHack/screenshots/ -name 'prtscn*.bmp' -print0 | xargs -0 -r mogrify -format gif
@@ -227,8 +227,8 @@ test-short-new:
 	$$(cabal list-bin exe:LambdaHack) --dbgMsgSer --logPriority 4 --boostRandomItem --newGame 5 --savePrefix battleDefense --dumpInitRngs --automateAll --keepAutomated --gameMode battleDefense --frontendTeletype --stopAfterSeconds 2 2> /tmp/teletypetest.log
 	$$(cabal list-bin exe:LambdaHack) --dbgMsgSer --logPriority 4 --boostRandomItem --newGame 5 --savePrefix battleSurvival --dumpInitRngs --automateAll --keepAutomated --gameMode battleSurvival --frontendTeletype --stopAfterSeconds 2 2> /tmp/teletypetest.log
 
-# $(RNGOPTS) is needed for determinism relative to seed
-# generated before game save
+# $(RNGOPTS) is needed for determinism relative to seed generated before game
+# save
 test-short-load:
 	$$(cabal list-bin exe:LambdaHack) --dbgMsgSer --logPriority 4 --boostRandomItem --savePrefix raid --dumpInitRngs --automateAll --keepAutomated --gameMode raid --frontendTeletype --stopAfterSeconds 2 $(RNGOPTS) 2> /tmp/teletypetest.log
 	$$(cabal list-bin exe:LambdaHack) --dbgMsgSer --logPriority 4 --boostRandomItem --savePrefix brawl --dumpInitRngs --automateAll --keepAutomated --gameMode brawl --frontendTeletype --stopAfterSeconds 2 $(RNGOPTS) 2> /tmp/teletypetest.log
@@ -296,24 +296,24 @@ build-wasm:
 
 POSTLINK = ~/.ghc-wasm/wasm32-wasi-ghc/lib/post-link.mjs
 
-# ts-src's packages, installed whenever the lock or the manifest is newer
-# than the last install, for every target that runs ts-src's tools or
-# loads lz-string from them. npm ci needs the registry, so only a run that
-# installs needs the network.
+# ts-src's packages, installed whenever the lock or the manifest is newer than
+# the last install, for every target that runs ts-src's tools or loads lz-string
+# from them. npm ci needs the registry, so only a run that installs needs the
+# network.
 NPM_CI = ts-src/node_modules/.npm-ci
 $(NPM_CI): ts-src/package-lock.json ts-src/package.json
 	cd ts-src && npm ci && touch node_modules/.npm-ci
 
-# Chained with && so the log ends at the command that failed; otherwise
-# a build failure runs on into post-link and the test driver, and their
-# complaints about the missing binary bury the real error. The trap both
-# removes the temporary directory and lets the last command's status stand.
-# The stub content's cases and the sample game's are two executables, test
-# and test-game, run in turn, the first to fail ending the recipe.
-# $(NPM_CI) installs lz-string, which the driver's LZString stub loads.
-# Each wasm list-bin repeats its build's --enable-optimization: the path
-# it names follows that setting, and under the development config's
-# `optimization: False` a bare list-bin names a noopt/ build instead.
+# Chained with && so the log ends at the command that failed; otherwise a build
+# failure runs on into post-link and the test driver, and their complaints about
+# the missing binary bury the real error. The trap both removes the temporary
+# directory and lets the last command's status stand. The stub content's cases
+# and the sample game's are two executables, test and test-game, run in turn,
+# the first to fail ending the recipe. $(NPM_CI) installs lz-string, which
+# the driver's LZString stub loads. Each wasm list-bin repeats its build's
+# --enable-optimization: the path it names follows that setting, and under the
+# development config's `optimization: False` a bare list-bin names a noopt/
+# build instead.
 test-wasm: $(NPM_CI)
 	. ~/.ghc-wasm/env; \
 	T=$$(mktemp -d); \
@@ -337,9 +337,9 @@ test-reactor: build-wasm $(NPM_CI)
 	node ts-src/run-wasm-game.mjs "$$W" "$$T/ghc_wasm_jsffi.mjs" && \
 	node ts-src/run-wasm-game.mjs "$$W" "$$T/ghc_wasm_jsffi.mjs" --printEachScreen
 
-# deployPage puts the page into the directory given: its own files, the
-# bundle, the glue and the binary. build-ts deploys it and page-gate gates
-# it, so the gate loads the files build-ts deploys.
+# deployPage puts the page into the directory given: its own files, the bundle,
+# the glue and the binary. build-ts deploys it and page-gate gates it, so the
+# gate loads the files build-ts deploys.
 PAGE_FILES = GameDefinition/index.html GameDefinition/fonts/16x16xw.woff GameDefinition/fonts/*.ttf.woff
 LZSTRING = ts-src/node_modules/lz-string/libs/lz-string.min.js
 deployPage = cp $(PAGE_FILES) "$(1)" && \
@@ -369,13 +369,13 @@ page-gate: build-wasm $(NPM_CI)
 	$(call deployPage,$$T) && \
 	node ts-src/page-gate.mjs "$$T"
 
-# The doctests, one run per library, a component's doctests being its
-# own, with doctest installed first by `cabal install doctest
-# --ignore-project --overwrite-policy=always`. --with-repl, not
-# --with-compiler, which would hand cabal doctest as the compiler and have
-# it try to build the `definition` dependency with it. doctest exits 0
-# having found no example, so its count is read too: every run must print
-# one, and lib:LambdaHack's, the library holding the examples, must not be 0.
+# The doctests, one run per library, a component's doctests being its own,
+# with doctest installed first by `cabal install doctest --ignore-project
+# --overwrite-policy=always`. --with-repl, not --with-compiler, which would
+# hand cabal doctest as the compiler and have it try to build the `definition`
+# dependency with it. doctest exits 0 having found no example, so its count is
+# read too: every run must print one, and lib:LambdaHack's, the library holding
+# the examples, must not be 0.
 DOCTEST_LIBS ?= definition lib:LambdaHack this-game-content this-game-src
 doctest:
 	cabal build && \
@@ -408,8 +408,8 @@ run-wasm:
 # playtests enter. Exit status alone cannot tell a game that ran from one
 # that quit at frame zero, so each smoke also requires the frame count
 # of the benchmark report to reach --stopAfterFrames, read where stdout
-# went: GameDefinition/Main.hs redirects it to ~/.LambdaHack/stdout.txt
-# unless it is a terminal.
+# went: GameDefinition/Main.hs redirects it to ~/.LambdaHack/stdout.txt unless
+# it is a terminal.
 SMOKEFRAMES=60
 SMOKEOPTS=--dbgMsgSer --logPriority 4 --newGame 3 --noAnim --maxFps 100000 --benchmark --benchMessages --stopAfterFrames $(SMOKEFRAMES) --automateAll --keepAutomated --gameMode battle $(RNGOPTS1)
 smokeFrames=N=$$(sed -n 's/.*Session time: .*; frames: \([0-9]*\)\..*/\1/p' $(1)) && echo "frames: $$N" && test "$$N" -ge $(SMOKEFRAMES)
@@ -419,12 +419,11 @@ smokeANSI:
 	script -e -q -c '$$(cabal list-bin exe:LambdaHack) $(SMOKEOPTS) --frontendANSI' /tmp/smokeANSI.log < /dev/null > /dev/null
 	$(call smokeFrames,/tmp/smokeANSI.log)
 
-# Under xvfb-run stdout is not a terminal, and > /dev/null keeps it so
-# when make runs in one, so the report is in ~/.LambdaHack/stdout.txt,
-# deleted first lest an earlier game's report pass for this one's.
-# Xvfb needs /tmp/.X11-unix, which the dev machine's /tmp lacks, and
-# segfaults there in GLX init through NVIDIA's EGL unless EGL is pinned
-# to Mesa.
+# Under xvfb-run stdout is not a terminal, and > /dev/null keeps it so when make
+# runs in one, so the report is in ~/.LambdaHack/stdout.txt, deleted first lest
+# an earlier game's report pass for this one's. Xvfb needs /tmp/.X11-unix, which
+# the dev machine's /tmp lacks, and segfaults there in GLX init through NVIDIA's
+# EGL unless EGL is pinned to Mesa.
 MESAEGL=/usr/share/glvnd/egl_vendor.d/50_mesa.json
 smokeSdl:
 	mkdir -p /tmp/.X11-unix

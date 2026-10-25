@@ -16,11 +16,11 @@
 #
 # No CPP flag: hlint's default pass defines nothing, which is the shipping
 # configuration now that flag(release) defaults False, so a plain run judges
-# the code that is actually built. --cpp-simple used to be passed and is not
-# to be restored: it strips every `#` line, so it lints both arms of every
-# #ifdef at once -- a program no build compiles, in which every bracket and
-# `$` an assertion needs is load-bearing, and which therefore reports a zero
-# it is structurally guaranteed to report.
+# the code that is actually built. --cpp-simple used to be passed and is not to
+# be restored: it strips every `#` line, so it lints both arms of every #ifdef
+# at once -- a program no build compiles, in which every bracket and `$` an
+# assertion needs is load-bearing, and which therefore reports a zero it is
+# structurally guaranteed to report.
 - arguments: [-XNoStarIsType]
 
 # Control which extensions/flags/modules/functions can be used
@@ -79,10 +79,10 @@
 # be complete, `-h` replacing this file rather than adding to it, and must end
 # in `.yaml`, hlint picking its parser by extension:
 #   grep -v '^- ignore' .hlint.yaml > SCRATCH.yaml && hlint . -h SCRATCH.yaml
-# The scoped entries name modules, hlint's `within` matching module names and
-# not paths. The Dom entry shows up only with USE_GHCJS defined, as in the
-# ghcjs trio's run,
-# `--cpp-define=USE_BROWSER --cpp-define=USE_GHCJS --cpp-define=USE_JSFILE`.
+# The scoped entries name modules, hlint's `within` matching module names
+# and not paths. The Dom entry shows up only with USE_GHCJS defined, as in
+# the ghcjs trio's run, `--cpp-define=USE_BROWSER --cpp-define=USE_GHCJS
+# --cpp-define=USE_JSFILE`.
 - ignore: {name: Use camelCase}
 - ignore: {name: Use tuple-section}
 - ignore: {name: Redundant $, within: Game.LambdaHack.Client.UI.Frontend.Dom}
@@ -98,18 +98,18 @@
 - ignore: {name: Unused LANGUAGE pragma, within: Game.LambdaHack.Client.UI.Frontend.Wasm}
 - ignore: {name: Unused LANGUAGE pragma, within: Game.LambdaHack.Common.WasmFile}
 
-# A lambda whose argument is named on purpose. Every rewrite these two
-# offer here -- eta-reduction, a `.` chain, `flip`, a backtick section --
-# drops the name that says what the argument is. Two hints, because
-# hlint counts the section form separately.
+# A lambda whose argument is named on purpose. Every rewrite these two offer
+# here -- eta-reduction, a `.` chain, `flip`, a backtick section -- drops the
+# name that says what the argument is. Two hints, because hlint counts the
+# section form separately.
 - ignore: {name: Avoid lambda}
 - ignore: {name: "Avoid lambda using `infix`"}
 
-# `if cond then return () else body` keeps the condition beside the exit
-# it controls when the body is a screenful of nested cases or a chain of
-# else-ifs, which `unless` would move it away from. The mirror hint,
-# `Use when`, is deliberately left enabled: it does not fire here, and
-# silencing a hint nothing has tripped would hide whatever trips it first.
+# `if cond then return () else body` keeps the condition beside the exit it
+# controls when the body is a screenful of nested cases or a chain of else-ifs,
+# which `unless` would move it away from. The mirror hint, `Use when`, is
+# deliberately left enabled: it does not fire here, and silencing a hint nothing
+# has tripped would hide whatever trips it first.
 - ignore: {name: Use unless}
 
 # Define some custom infix operators

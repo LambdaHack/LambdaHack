@@ -1,5 +1,5 @@
--- TODO: at some point we'll want our unit test hierarchy to match the
--- main codebase file hierarchy
+-- TODO: at some point we'll want our unit test hierarchy to match the main
+-- codebase file hierarchy
 module InventoryMUnitTests (inventoryMUnitTests) where
 
 import Prelude ()
@@ -97,8 +97,8 @@ inventoryMUnitTests = testGroup "inventoryMUnitTests"
                     True   -- @askWhenLone@: ask even for a lone item, so
                     False  -- the dialog opens at all -- and these are the
                            -- flags @getGroupItem@ itself passes
-                           -- (InventoryM.hs:stores True False), not a
-                           -- pair chosen here
+                           -- (InventoryM.hs:stores True False), not a pair
+                           -- chosen here
       (result, _) <- executorCli testFn cliS
       -- The identity is C's, and reading it forces nothing:
       case result of

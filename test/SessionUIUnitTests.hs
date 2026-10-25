@@ -297,8 +297,8 @@ macroTests = testGroup "macroTests" $
      , testProperty "In-game and predefined with limited multiple bindings" $
          forAll (listOf (elements "```ABCDvVabccc")) $
            \macro ->
-             -- The macros may still loop due to mutual recursion,
-             -- even though direct recursion is ruled out by filtering.
+             -- The macros may still loop due to mutual recursion, even though
+             -- direct recursion is ruled out by filtering.
              let macroA = filter (/= 'a') macro
                  macroB = filter (/= 'b') $ take 5 $ reverse macro
                  bindings = bindInput [ ("a", macroA)

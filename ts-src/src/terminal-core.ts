@@ -1,10 +1,9 @@
 // Pure logic for the LambdaHack wasm web frontend: turn the engine's raw
-// AttrCharW32 cell words into glyphs + colors and runs of them into draw
-// ops, each text in a face, a face's ascent and descent into its baseline
-// in a cell, frame indices into screen cells, pointer pixels into the
-// engine's points, and a pointer event's modifiers into the engine's Alt. No
-// DOM, no wasm: the loader and the actual drawing are thin wiring around
-// these functions.
+// AttrCharW32 cell words into glyphs + colors and runs of them into draw ops,
+// each text in a face, a face's ascent and descent into its baseline in a cell,
+// frame indices into screen cells, pointer pixels into the engine's points,
+// and a pointer event's modifiers into the engine's Alt. No DOM, no wasm: the
+// loader and the actual drawing are thin wiring around these functions.
 //
 // Encoding (see LambdaHack's Definition/Color.hs attrCharToW32):
 //   char codepoint = w >>> 16 ; fg = (w >>> 8) & 0xFF ; bg = w & 0xFF
@@ -46,8 +45,8 @@ export function encodeCell(code: number, fg: number, bg: number): number {
 }
 
 /**
- * The screen column and row of a frame index, given the screen width,
- * as Haskell's punindex decodes it.
+ * The screen column and row of a frame index, given the screen width, as
+ * Haskell's punindex decodes it.
  */
 export function cellPosition(
   i: number,
@@ -85,11 +84,11 @@ export function bgColor(bg: number): string {
 }
 
 /**
- * Highlight border hex for a Highlight index, or null for none. SDL2
- * (Sdl.hs's chooseAndDrawHighlight) outlines a cell in highlightToColor,
- * but not the three non-highlight kinds; the Dom.hs border-color write
- * of highlightToColor for every kind, which put a BrBlack ring around
- * each backlit cell, was an artifact of that frontend's table CSS.
+ * Highlight border hex for a Highlight index, or null for none. SDL2 (Sdl.hs's
+ * chooseAndDrawHighlight) outlines a cell in highlightToColor, but not the
+ * three non-highlight kinds; the Dom.hs border-color write of highlightToColor
+ * for every kind, which put a BrBlack ring around each backlit cell, was an
+ * artifact of that frontend's table CSS.
  */
 export function highlightColor(bg: number): string | null {
   if (
@@ -104,10 +103,10 @@ export function highlightColor(bg: number): string | null {
 
 /**
  * The Alt modifier as the engine wants it: Sdl.hs folds AltGr into Alt
- * (modTranslate) and Dom.hs ORs getAltKey with getAltGraphKey, so a
- * chord held with AltGr alone, the usual case on European layouts, is
- * an Alt chord. Takes the event's two readings rather than the event,
- * so it is testable without a DOM.
+ * (modTranslate) and Dom.hs ORs getAltKey with getAltGraphKey, so a chord held
+ * with AltGr alone, the usual case on European layouts, is an Alt chord. Takes
+ * the event's two readings rather than the event, so it is testable without a
+ * DOM.
  */
 export function altModifier(e: {
   altKey: boolean;
@@ -130,16 +129,16 @@ export function styledCell(w: number, row: number): StyledCell {
 
 /**
  * A typeface the screen is drawn in: the map font, or one of the chosen
- * fontset's three others, which the startup payload names and Sdl.hs draws
- * the overlays in.
+ * fontset's three others, which the startup payload names and Sdl.hs draws the
+ * overlays in.
  */
 export type Face = "map" | "propRegular" | "propBold" | "mono";
 
 /**
  * The map font's cell in device pixels, as Sdl.hs takes it from the loaded
- * font: halfSize is half the font's height rounded down and boxSize twice
- * that. baseline is the font's faceBaseline in that cell, an odd height
- * cropping a row off the top.
+ * font: halfSize is half the font's height rounded down and boxSize twice that.
+ * baseline is the font's faceBaseline in that cell, an odd height cropping a
+ * row off the top.
  */
 export interface CellMetrics {
   boxSize: number;
@@ -160,11 +159,10 @@ export function cellMetrics(ascent: number, descent: number): CellMetrics {
 }
 
 /**
- * A face's baseline below the top of a cell boxSize device pixels high,
- * given the loaded face's ascent and descent: its line box centred
- * in the cell as Sdl.hs's scaleSurfaceToTexture centres a glyph's surface,
- * the odd row of a taller box cropped off the top and that of a shorter one
- * left below it.
+ * A face's baseline below the top of a cell boxSize device pixels high, given
+ * the loaded face's ascent and descent: its line box centred in the cell as
+ * Sdl.hs's scaleSurfaceToTexture centres a glyph's surface, the odd row of a
+ * taller box cropped off the top and that of a shorter one left below it.
  */
 export function faceBaseline(
   boxSize: number,
@@ -178,8 +176,8 @@ export function faceBaseline(
 /**
  * One canvas drawing command over a rectangle, in device pixels: filling
  * it; a glyph centred in it, its baseline that far below its top, cropped
- * to it as Sdl.hs's scaleSurfaceToTexture crops a glyph to its cell; a run
- * of glyphs from its left edge, cropped to it likewise, as Sdl.hs's
+ * to it as Sdl.hs's scaleSurfaceToTexture crops a glyph to its cell; a
+ * run of glyphs from its left edge, cropped to it likewise, as Sdl.hs's
  * scaleSurfaceToTextureProp crops a proportional chunk; or a one-pixel ring
  * along its inner edge, which is SDL2's drawRect. Text is drawn in a face.
  */
@@ -243,12 +241,11 @@ export function cellRunOps(run: CellRun, m: CellMetrics): DrawOp[] {
 }
 
 /**
- * The engine's point under the pointer, as Sdl.hs's pointTranslate gives
- * it: x in half-cells and y in cells. Takes the pointer's offset from
- * the canvas's rendered box and that box's size, which a CSS transform
- * scales, and the backing store's size, so it holds under 1.3's fullscreen
- * fit and at any devicePixelRatio. A pointer on the box's far edge counts
- * as inside it.
+ * The engine's point under the pointer, as Sdl.hs's pointTranslate gives it: x
+ * in half-cells and y in cells. Takes the pointer's offset from the canvas's
+ * rendered box and that box's size, which a CSS transform scales, and the
+ * backing store's size, so it holds under 1.3's fullscreen fit and at any
+ * devicePixelRatio. A pointer on the box's far edge counts as inside it.
  */
 export function pointerPoint(
   offsetX: number,

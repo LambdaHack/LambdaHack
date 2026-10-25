@@ -81,8 +81,8 @@ ffiCoverageUnitTests = testGroup "ffiCoverageUnitTests" $
       withScratch $ \path -> do
         File.encodeEOF (path "damageSource") version payload
         damageMarker (path "damageSource") (path "damaged")
-        -- The undamaged original still decodes, so the rejection below
-        -- is the marker's alone.
+        -- The undamaged original still decodes, so the rejection below is the
+        -- marker's alone.
         (_, p) <- File.strictDecodeEOF (path "damageSource")
         p @?= payload
         r <- Ex.try (File.strictDecodeEOF (path "damaged")

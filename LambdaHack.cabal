@@ -42,9 +42,9 @@ license:       BSD-3-Clause
 license-file:  COPYLEFT
 tested-with:   GHC ==9.10.3 || ==9.12.4 || ==9.14.1
 
--- Enough files is included in the Hackage package to run CI and manual
--- tests off it, to be presentable on Hackage and to create user-friendly
--- binary packages.
+-- Enough files is included in the Hackage package to run CI and manual tests
+-- off it, to be presentable on Hackage and to create user-friendly binary
+-- packages.
 extra-source-files: GameDefinition/config.ui.default,
                     GameDefinition/PLAYING.md,
                     GameDefinition/fonts/16x16xw.woff,
@@ -142,12 +142,11 @@ common options
 
   -- Backend detection, shared by every component (library, executable,
   -- test-suite), since cpp-options set inside one stanza's own os(wasi)/
-  -- impl(ghcjs) conditionals aren't inherited by any other stanza, even
-  -- though os(wasi)/impl(ghcjs) themselves evaluate the same way
-  -- everywhere (it's the same compiler building every component in a
-  -- given invocation). Stanzas below only need to vary exposed-modules/
-  -- other-modules/build-depends -- which frontend and file backend get
-  -- compiled in -- not these flags.
+  -- impl(ghcjs) conditionals aren't inherited by any other stanza, even though
+  -- os(wasi)/impl(ghcjs) themselves evaluate the same way everywhere (it's the
+  -- same compiler building every component in a given invocation). Stanzas
+  -- below only need to vary exposed-modules/ other-modules/build-depends --
+  -- which frontend and file backend get compiled in -- not these flags.
   if os(wasi)
     cpp-options:      -DUSE_BROWSER -DUSE_WASM -DUSE_WASMFILE
   if impl(ghcjs)
@@ -161,8 +160,8 @@ common options
 
 common exe-options
   ghc-options:        -rtsopts
--- (Ignored by GHCJS) Minimize median lag at the cost of occasional bigger
--- GC lag, which fortunately sometimes fits into idle time between turns):
+-- (Ignored by GHCJS) Minimize median lag at the cost of occasional bigger GC
+-- lag, which fortunately sometimes fits into idle time between turns):
 -- (Ignored by GHCJS) Avoid frequent GCs. Only idle-GC during a break in
 -- gameplay (5s), not between slow keystrokes.
   ghc-options:        "-with-rtsopts=-A99m -I5"
@@ -531,8 +530,8 @@ test-suite test
                       ,directory
                       ,filepath
 
--- The cases on the sample game's content, a process of their own for its
--- Point width: see test/GameSpec.hs.
+-- The cases on the sample game's content, a process of their own for its Point
+-- width: see test/GameSpec.hs.
 test-suite test-game
   import: options, exe-options
   type:               exitcode-stdio-1.0
