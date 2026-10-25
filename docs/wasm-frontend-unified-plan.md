@@ -577,6 +577,16 @@ only that the plan was written is one the next reader has to skip.
 - 2026-10-23 -- R8's **Decide first** ruled by Mikolaj: the mono layer keeps
   a routine of its own in both frontends, `setSquareChar` being SDL's per-cell
   hot path and the two frontends kept matching; B.12's Rulings has it.
+- 2026-10-25 -- 1.7's **Decide first** ruled by Mikolaj: the game driver's case
+  presses Ctrl+Shift with the numpad's Divide, which the browser reports as `/`
+  and SDL translates under Shift as `?`, so that it reaches `C-?`, the crosshair
+  to the nearest unknown spot, where the flag today reaches `C-/`, the nearest
+  item. The question presumed a binding spelled `C-S-`, which no keyboard chord
+  reaches, `decideKey` folding `ControlShift` into `Control`; of the keys whose
+  translation reads the flag, only Tab, Divide and the numpad's 5 change which
+  binding a chord reaches under Ctrl, the 5 from `C-KP_Begin`'s `Wait10`
+  to none, as natively, and both browsers keep Ctrl+Shift+Tab, `C-BackTab`,
+  from a page in a window.
 
 ## Repo facts the plan builds on
 

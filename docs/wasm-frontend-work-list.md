@@ -921,22 +921,35 @@ is down too, so that `C-S-<key>` translates as shifted in the browser
 as natively --- the second gap the record's Appendix C re-audit found;
 with it the paragraph-key clause, whose comment rests on the flag showing Shift
 alone (`Key.hs:on some keyboards the key below ESC is paragraph`),
-its `keyTranslateWeb` cases and the game driver's `lhKey` case gaining a `C-S-`
-key. (2) the outcome line under that gap, naming (1)'s hash, and the ledger
+its `keyTranslateWeb` cases, and `InputDecision.hs`'s comment on the divergence,
+which the fix closes; the game driver gaining a case that presses Ctrl+Shift
+with the numpad's Divide and requires the frame `C-?` paints, where today's flag
+reaches `C-/`; and the defect's record, with a deep mutant restoring today's
+flag. (2) the outcome line under that gap, naming (1)'s hash, and the ledger
 flip. No allowlist entry: this item proposes no file.
 
 **Owns** --- `engine-src/Game/LambdaHack/Client/UI/Frontend/Wasm.hs`,
-`engine-src/Game/LambdaHack/Client/UI/Key.hs`, `test/InputDecisionUnitTests.hs`,
-`ts-src/run-wasm-game.mjs` and `docs/wasm-frontend-unified-plan.md`.
+`engine-src/Game/LambdaHack/Client/UI/Key.hs`,
+`engine-src/Game/LambdaHack/Client/UI/Frontend/InputDecision.hs`,
+`test/InputDecisionUnitTests.hs`, `ts-src/run-wasm-game.mjs`,
+`tools/defects.json`, `tools/mutants-deep.py`
+and `docs/wasm-frontend-unified-plan.md`. It does not write
+`engine-src/Game/LambdaHack/Client/UI/Frontend/Dom.hs`, which hands the flag
+as `lhKey` does today and is frozen.
 
-**Done** --- `native`, `ts`, `wasm`, `reactor`, `deploy`, `page`, `docs`.
+**Done** --- `native`, `ts`, `wasm`, `reactor`, `deploy`, `page`, `docs`, plus
+the Chromium half of the hand-back, in-session: the deployed page
+under the browser-under-Xvfb setup `CLAUDE.md` describes, the two chords pressed
+with `xdotool`.
 
-**Hands back** --- *browser*: that a `C-S-` binding acts in Firefox and Chromium
-as it does natively, and that the key below Escape still reads as backquote
-under Ctrl.
+**Hands back** --- *browser*, in Firefox: that Ctrl+Shift with the numpad's
+Divide sets the crosshair to the nearest unknown spot, as `C-?` does natively,
+and that the key below Escape still reads as backquote under Ctrl, the game's
+unknown-command message naming a backquote. The substitute gate in **Done**
+is the driver's case, which proves that `lhKey` hands the flag on and not
+that a browser reports the chord, and the Chromium run.
 
-**Decide first** --- which `C-S-` binding the driver's case presses, its effect
-being what the case observes.
+**Decide first** --- nothing; the ruling is the record's, in its Log.
 
 ### 1.8 `--printEachScreen` on a changed frame only (small)
 
