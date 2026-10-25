@@ -173,6 +173,7 @@ Browser-build runtime differences: there is no argv and no config file on disk -
 Author-generic style conventions are in `~/slop/CLAUDE.md`; what follows is LambdaHack-specific.
 
 - Frontend code follows functional-core/imperative-shell: rendering and input *decisions* belong in shared pure modules under `Client/UI/Frontend/` (tested against fixtures), while frontend modules keep only event capture, output mutation and plumbing. The review question for any new line in a frontend module: would another frontend have to copy it?
+- Comments in the libraries and the executable --- what a component compiles or embeds under `definition-src/`, `engine-src/` and `GameDefinition/`, `config.ui.default` included and the page `index.html` not --- may be wrapped by hand. Everywhere else a comment block is wrapped by `par 80`, as the user-scope `CLAUDE.md` says, unless another exception covers it: a generated file; a verbatim copy, `LambdaHack.cabal.bkp` and `LambdaHack.cabal.flattened`; text taken from an upstream template, all of `.stylish-haskell.yaml`, the template's blocks in `.hlint.yaml` and the PVP block opening `LambdaHack.cabal`; a block whose line breaks carry structure, a list, a table, a diagram, a command or a directive; and a comment `par` cannot take, having no repeated line prefix, as the CSS ones in `index.html`, left as it stands. Ruled by Mikolaj on 2026-10-25.
 
 ## Gotchas
 
