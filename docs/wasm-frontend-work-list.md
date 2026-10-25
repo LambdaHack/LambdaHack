@@ -1871,7 +1871,8 @@ or overlays the engine builds, re-run
 `cabal test --test-options='-p "/fe-golden/"'` --- this item's own marker, never
 the bare `golden` the tasty-tag rule forbids --- expect failure, and record
 the perturbation as a mutant, the native harness's being the `goldens:` ones
-in `tools/mutants-deep.py`, which the test's header names.
+in `tools/mutants-deep.py`, which the test's header names. Confirmed
+for the native harness on 2026-10-25, in the record's item.
 
 **Decide first** --- for the wasm stage, whether it lands after 2.4's (3),
 its multi-font cases then passing under wasm, or before 2.4, those cases kept

@@ -2964,6 +2964,10 @@ content. Still to do: the wasm stage, whose multi-font cases pass under wasm
 only after 2.4's (3), and whose history case differs from native under both
 setups (the Log, 2026-10-25).
 
+*The native harness's hand-back confirmed by Mikolaj on 2026-10-25: the digests
+catch what 2.4 changes, on the evidence of the `goldens:` mutants, the monospace
+one failing only the multi-font cases.*
+
 **Rulings** --- all three ruled on 2026-08-07, (1) re-cut on 2026-10-23
 for 2.1's landing. (1) Two golden families, as the body now states:
 frame-and-overlay digests --- the family 2.4's flip actually gates on, which
