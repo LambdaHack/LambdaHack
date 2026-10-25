@@ -1,9 +1,10 @@
 -- | The cases on the sample game's content, whose map is 80 wide: whole games
 -- through 'tieKnot', and the determinism goldens, which build frames on that
 -- content and play its games. They are a test executable of their own because
--- the 'Point' 'Enum' width is one value per process, set here once, before
--- anything is built, as 'tieKnot' sets it at a game's startup, while the cases
--- on the stub content, 4 wide, run under @test/Spec.hs@.
+-- the t'Game.LambdaHack.Common.Point.Point' 'Enum' width is one value per
+-- process, set here once, before anything is built, as 'tieKnot' sets it at
+-- a game's startup, while the cases on the stub content, 4 wide, run under
+-- @test/Spec.hs@.
 module Main (main) where
 
 import Prelude ()

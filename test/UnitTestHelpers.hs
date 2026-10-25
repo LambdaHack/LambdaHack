@@ -484,8 +484,8 @@ testActorWithItem =
 stubCOpsState :: State
 stubCOpsState = updateCOpsAndCachedData stubCOpsUpdate emptyState
 
--- | The width of the stub content's map, to which @test/Spec.hs@ sets
--- the 'Point' 'Enum' width of its process.
+-- | The width of the stub content's map, to which @test/Spec.hs@ sets the
+-- t'Point' 'Enum' width of its process.
 stubWidth :: X
 stubWidth = rWidthMax $ corule $ scops stubCOpsState
 
@@ -863,13 +863,13 @@ instance MonadClientAtomic CliMock where
   execPutState = putState
 
 -- | Run a test under the mock as the game starts a client. The fixture's
--- content must be as wide as the width the 'Point' 'Enum' instance reads,
--- which each test executable sets once, in its @main@, before any fixture
--- is built, as @TieKnot@ sets it at a game's startup: the width never
--- changing within a process is what keeps a fixture's 'Point' keys the same
--- whenever it is first evaluated. And the BFS scratch arrays are filled in,
--- as the client fills them, any frame drawn while an xhair is set needing
--- them, the path to the xhair being a BFS query.
+-- content must be as wide as the width the t'Point' 'Enum' instance reads,
+-- which each test executable sets once, in its @main@, before any fixture is
+-- built, as @TieKnot@ sets it at a game's startup: the width never changing
+-- within a process is what keeps a fixture's t'Point' keys the same whenever it
+-- is first evaluated. And the BFS scratch arrays are filled in, as the client
+-- fills them, any frame drawn while an xhair is set needing them, the path to
+-- the xhair being a BFS query.
 executorCli :: CliMock a -> CliState -> IO (a, CliState)
 executorCli m cliS =
   flip runStateT cliS $ runCliMock $ do
