@@ -31,7 +31,13 @@ module UnitTestHelpers
   , partyCliStateBanned
   , partyCliStateWalkable
   , partyCliStateScripted
+  , frameCliState
+  , stubClientOptions
+  , multiFontClientOptions
   , scriptedCliState
+  , FrontRecord(..)
+  , RealisedFrame(..)
+  , recordingFchanFrontend
   , enlargeScreen
   , withEqpItems
   , withSkills
@@ -50,13 +56,18 @@ import Prelude ()
 
 import Game.LambdaHack.Core.Prelude
 
+import           Control.Exception (evaluate)
 import qualified Control.Monad.IO.Class as IO
+import           Control.Monad.ST.Strict (ST)
 import           Control.Monad.Trans.State.Strict
   (StateT (StateT, runStateT), gets, state)
 import qualified Data.EnumMap.Strict as EM
 import qualified Data.EnumSet as ES
-import           Data.IORef (newIORef, readIORef, writeIORef)
+import           Data.IORef (modifyIORef', newIORef, readIORef, writeIORef)
 import qualified Data.Text as Text
+import qualified Data.Vector.Generic as G
+import qualified Data.Vector.Unboxed as U
+import           Data.Word (Word32)
 
 import           Game.LambdaHack.Atomic (MonadStateWrite (..))
 import           Game.LambdaHack.Client
@@ -74,6 +85,8 @@ import           Game.LambdaHack.Client.UI.Content.Screen
   (emptyScreenContent, rheight, rwidth)
 import           Game.LambdaHack.Client.UI.ContentClientUI
   (coinput, coscreen, emptyCCUI)
+import           Game.LambdaHack.Client.UI.Frame
+  (Frame, FrameBase (..), FrameForall (..), OverlaySpace)
 import           Game.LambdaHack.Client.UI.Frontend
   (ChanFrontend (..), FrontReq (..))
 import           Game.LambdaHack.Client.UI.HandleHelperM (MError)
@@ -100,7 +113,8 @@ import           Game.LambdaHack.Common.Item
 import           Game.LambdaHack.Common.Kind
   (COps (..), emptyUIFaction, emptyUnknownTile)
 import           Game.LambdaHack.Common.Level (Level (..), updateBigMap)
-import           Game.LambdaHack.Common.Misc (FontSet (..))
+import           Game.LambdaHack.Common.Misc
+  (FontDefinition (..), FontSet (..), HintingMode (..))
 import           Game.LambdaHack.Common.MonadStateRead
 import           Game.LambdaHack.Common.Perception (emptyPer)
 import           Game.LambdaHack.Common.Point (Point (..))
@@ -121,8 +135,10 @@ import qualified Game.LambdaHack.Common.Tile as Tile
 import           Game.LambdaHack.Common.Time (timeZero)
 import           Game.LambdaHack.Common.Types
   (ActorId, FactionId, ItemId, LevelId)
+import qualified Game.LambdaHack.Content.CaveKind as CK
 import qualified Game.LambdaHack.Content.FactionKind as FK
 import           Game.LambdaHack.Content.RuleKind (RuleContent (..))
+import qualified Game.LambdaHack.Content.RuleKind as RK
 import qualified Game.LambdaHack.Content.TileKind as TK
 import qualified Game.LambdaHack.Core.Dice as Dice
 import qualified Game.LambdaHack.Definition.Ability as Ability
@@ -132,6 +148,8 @@ import           Game.LambdaHack.Definition.DefsInternal (toContentId)
 import           Game.LambdaHack.Definition.Flavour
 
 import qualified Client.UI.Content.Input as Content.Input
+import qualified Content.CaveKind
+import qualified Content.RuleKind
 
 -- * UI frontend stub
 
@@ -167,6 +185,62 @@ scriptedFchanFrontend kms = do
  where
   stub :: FrontReq a -> IO a
   stub req = case fchanFrontendStub of ChanFrontend f -> f req
+
+-- | A request a client sent the frontend, as 'recordingFchanFrontend'
+-- records it.
+data FrontRecord =
+    RecordFrame RealisedFrame
+  | RecordDelay Int
+  | RecordKey [K.KM] RealisedFrame
+  | RecordPressed
+  | RecordDiscardKey
+  | RecordResetKeys
+  | RecordShutdown
+  | RecordPrintScreen
+  deriving (Show, Eq)
+
+-- | A frame's screen array, built as the frontend builds it, and its
+-- proportional, square and monospace overlays.
+data RealisedFrame = RealisedFrame
+  { realisedArray    :: U.Vector Word32
+  , realisedOverlays :: (OverlaySpace, OverlaySpace, OverlaySpace) }
+  deriving (Show, Eq)
+
+-- | Run a frame's base and its update, as @Frontend.display@ does. That
+-- writes into the base frame's array, which a later frame may share,
+-- so a frame has to be realised before the client goes on.
+realiseFrame :: Frame -> RealisedFrame
+realiseFrame ((m, upd), overlays) =
+  let new :: forall s. ST s (G.Mutable U.Vector s Word32)
+      new = do
+        v <- unFrameBase m
+        unFrameForall upd v
+        return v
+  in RealisedFrame (U.create new) overlays
+
+-- | A frontend stub answering keys as 'scriptedFchanFrontend' does and
+-- recording every request, in the order it was sent, each frame realised
+-- before the request returns. Returned with the action reading the record.
+recordingFchanFrontend :: [K.KM] -> IO (ChanFrontend, IO [FrontRecord])
+recordingFchanFrontend kms = do
+  ChanFrontend scripted <- scriptedFchanFrontend kms
+  recordsRef <- newIORef []
+  let record :: FrontRecord -> IO ()
+      record r = do
+        r2 <- evaluate r
+        modifyIORef' recordsRef (r2 :)
+      chanF = ChanFrontend $ \req -> case req of
+        FrontFrame frame -> record $ RecordFrame $ realiseFrame frame
+        FrontDelay k -> record $ RecordDelay k
+        FrontKey frontKeyKeys frame -> do
+          record $ RecordKey frontKeyKeys $ realiseFrame frame
+          scripted req
+        FrontPressed -> record RecordPressed >> return False
+        FrontDiscardKey -> record RecordDiscardKey
+        FrontResetKeys -> record RecordResetKeys
+        FrontShutdown -> record RecordShutdown
+        FrontPrintScreen -> record RecordPrintScreen
+  return (chanF, reverse <$> readIORef recordsRef)
 
 -- * Mock client state implementation
 
@@ -215,6 +289,22 @@ stubClientOptions = defClientOptions
   -- Unit tests stand in for the frontend with 'fchanFrontendStub' above,
   -- so they report the null one ("null test" to Frontend.frontendName).
   , sfrontendNull = True
+  }
+
+-- | Options under which @getFontSetup@ picks the multi-font setup, as it
+-- does under SDL: the frontend chosen at compile time, SDL in a native
+-- build, and a fontset whose fonts, auxiliary ones included, are all
+-- defined. Their files are never read.
+multiFontClientOptions :: ClientOptions
+multiFontClientOptions = stubClientOptions
+  { sfrontendNull = False
+  , sallFontsScale = Just 1.0
+  , sfonts =
+      [ ("scalable", FontMapScalable "scalable.ttf" 16 HintingHeavy 0)
+      , ("bitmap", FontMapBitmap "bitmap.fon" 0)
+      , ("propRegular", FontProportional "propRegular.ttf" 16 HintingHeavy)
+      , ("propBold", FontProportional "propBold.ttf" 16 HintingHeavy)
+      , ("mono", FontMonospace "mono.ttf" 16 HintingHeavy) ]
   }
 
 stubItem :: Item
@@ -399,11 +489,25 @@ stubCOpsState = updateCOpsAndCachedData stubCOpsUpdate emptyState
 stubWidth :: X
 stubWidth = rWidthMax $ corule $ scops stubCOpsState
 
--- | A stub state of one level and one faction, holding the given actors,
--- none of them skilled, each non-projectile one standing in the level's
--- 'lbig' at its position, where aiming and moving look for it.
-stateWith :: Level -> Faction -> [(ActorId, Actor)] -> State
-stateWith lvl fact actors =
+-- | An empty state with the content a frame needs to be built, which
+-- the stub content lacks: the sample game's rules, whose map is the size
+-- the status line is laid out for, and its caves, the status line naming
+-- the level's. The tiles are the stub ones.
+frameCOpsState :: State
+frameCOpsState =
+  let corule = RK.makeData Content.RuleKind.standardRules
+      cocave = CK.makeData corule Content.CaveKind.content
+                           Content.CaveKind.groupNamesSingleton
+                           Content.CaveKind.groupNames
+  in updateCOpsAndCachedData (\cops -> (stubCOpsUpdate cops) {corule, cocave})
+                             emptyState
+
+-- | A state of one level and one faction over the given content,
+-- holding the given actors, none of them skilled, each non-projectile one
+-- standing in the level's 'lbig' at its position, where aiming and moving
+-- look for it.
+stateWith :: State -> Level -> Faction -> [(ActorId, Actor)] -> State
+stateWith copsState lvl fact actors =
   let factionUpdate _ = EM.singleton testFactionId fact
       actorDUpdate _ = EM.fromList actors
       actorMaxSkillsUpdate _ =
@@ -412,14 +516,15 @@ stateWith lvl fact actors =
       big = EM.fromList bigs
       dungeonUpdate _ = assert (EM.size big == length bigs)
                         $ EM.singleton testLevelId lvl {lbig = big}
-      s1 = updateFactionD factionUpdate stubCOpsState
+      s1 = updateFactionD factionUpdate copsState
       s2 = updateActorD actorDUpdate s1
       s3 = updateActorMaxSkills actorMaxSkillsUpdate s2
   in updateDungeon dungeonUpdate s3
 
 -- Stublike state that should barely function for testing.
 stubState :: State
-stubState = stateWith stubLevel testFaction [(testActorId, testActor)]
+stubState =
+  stateWith stubCOpsState stubLevel testFaction [(testActorId, testActor)]
 
 testStateWithItem :: State
 testStateWithItem =
@@ -537,18 +642,22 @@ actorUIC = ActorUI { bsymbol = 'c', bname = "Cadet"
 -- fence it either (see 'wallTile'). That is why
 -- 'stubLevel' -- unfenced unknown space -- is no use for such tests.
 walkableLevel :: Level
-walkableLevel = stubLevel
-  { ltile = PointArray.unfoldrNA testLevelDimension testLevelDimension
-                                 (\i -> (tileAt i, i + 1)) 0 }
+walkableLevel = fencedLevel testLevelDimension testLevelDimension
+
+-- | 'walkableLevel' of the given size.
+fencedLevel :: X -> Y -> Level
+fencedLevel width height = stubLevel
+  { ltile = PointArray.unfoldrNA width height (\i -> (tileAt i, i + 1)) 0 }
  where
-  tileAt i = if punindex testLevelDimension i
-                `elem` [bpos heroA, bpos heroC, freeFloorPos]
+  tileAt i = if punindex width i `elem` [bpos heroA, bpos heroC, freeFloorPos]
              then floorTileId
              else wallTileId
 
-partyCliStateWith :: Level -> Faction -> [(ActorId, Actor, ActorUI)] -> CliState
-partyCliStateWith lvl fact actorTriples =
-  let s = stateWith lvl fact $ map (\(aid, b, _) -> (aid, b)) actorTriples
+partyCliStateWith :: State -> Level -> Faction -> [(ActorId, Actor, ActorUI)]
+                  -> CliState
+partyCliStateWith copsState lvl fact actorTriples =
+  let s = stateWith copsState lvl fact $ map (\(aid, b, _) -> (aid, b))
+                                             actorTriples
   in CliState
     { cliState = s
     , cliClient = stubClient s
@@ -565,12 +674,12 @@ twoHeroes = [(testActorId, heroA, actorUIA), (testActorId2, heroC, actorUIC)]
 -- no leader set yet (tests set it via 'updateClientLeader'), suitable for
 -- driving the pointman-cycling code the way keypresses do.
 partyCliState :: CliState
-partyCliState = partyCliStateWith stubLevel partyFaction twoHeroes
+partyCliState = partyCliStateWith stubCOpsState stubLevel partyFaction twoHeroes
 
 -- | A three-hero party (@A@, @B@, @C@), for desyncs that pick the wrong
 -- member rather than no member.
 partyCliState3 :: CliState
-partyCliState3 = partyCliStateWith stubLevel partyFaction
+partyCliState3 = partyCliStateWith stubCOpsState stubLevel partyFaction
   [ (testActorId, heroA, actorUIA)
   , (testActorId3, heroB, actorUIB)
   , (testActorId2, heroC, actorUIC) ]
@@ -578,13 +687,37 @@ partyCliState3 = partyCliStateWith stubLevel partyFaction
 -- | A two-hero party of a faction banned from switching pointman
 -- between levels.
 partyCliStateBanned :: CliState
-partyCliStateBanned = partyCliStateWith stubLevel partyFactionBanned twoHeroes
+partyCliStateBanned =
+  partyCliStateWith stubCOpsState stubLevel partyFactionBanned twoHeroes
 
 -- | 'partyCliState' on the 'walkableLevel': the same two heroes in the
 -- same places, with the terrain under them and at 'freeFloorPos' walkable,
 -- so that aiming from @A@ at that square succeeds.
 partyCliStateWalkable :: CliState
-partyCliStateWalkable = partyCliStateWith walkableLevel partyFaction twoHeroes
+partyCliStateWalkable =
+  partyCliStateWith stubCOpsState walkableLevel partyFaction twoHeroes
+
+-- | 'partyCliStateWalkable' over the content of 'frameCOpsState', on a board
+-- of its map's size and under the screen laid out over that map, with
+-- the heroes' trunk item registered, as every actor's is in a game,
+-- the given client options, and the message wrapping and history size
+-- of the sample game's @config.ui.default@, without which history cannot
+-- be shown: a fixture whose frames can be built.
+frameCliState :: ClientOptions -> CliState
+frameCliState options =
+  let RuleContent{rWidthMax, rHeightMax} = corule $ scops frameCOpsState
+      cliS = partyCliStateWith frameCOpsState (fencedLevel rWidthMax rHeightMax)
+                               partyFaction twoHeroes
+      historyMax = 5000
+      uiOptions sess = sess
+        { sUIOptions = (sUIOptions sess) { uMsgWrapColumn = 80
+                                         , uHistoryMax = historyMax }
+        , shistory = emptyHistory historyMax }
+  in cliS { cliState = updateItemD (EM.insert testItemId stubItem)
+                       $ cliState cliS
+          , cliClient = (cliClient cliS) {soptions = options}
+          , cliSession = enlargeScreenTo rWidthMax (rHeightMax + 3)
+                         . uiOptions <$> cliSession cliS }
 
 -- | A run led by hero A with the whole two-hero party as members,
 -- as a multi-hero run start ('moveRunHuman') would set up. Also reused
@@ -614,17 +747,21 @@ partyCliStateScripted = scriptedCliState partyCliState
 -- screen first. The level can stay 4x4: the map is drawn over
 -- @rWidthMax@/@rHeightMax@, which the stub content keeps at 4.
 enlargeScreen :: SessionUI -> SessionUI
-enlargeScreen = resizeScreen 24 12
+enlargeScreen = enlargeScreenTo 24 12
 
 -- | A menu that displays an item splits the screen into a label pane and
 -- a description pane, and each pane's width has to clear that same
 -- assertion, so a dialog with items in it needs more room still.
 enlargeScreenForItems :: SessionUI -> SessionUI
-enlargeScreenForItems = resizeScreen 60 20
+enlargeScreenForItems = enlargeScreenTo 60 20
 
-resizeScreen :: X -> Y -> SessionUI -> SessionUI
-resizeScreen rwidth rheight sess = sess {sccui = (sccui sess)
-  {coscreen = (coscreen (sccui sess)) {rwidth, rheight}}}
+-- | The screen enlarged to at least the given size.
+enlargeScreenTo :: X -> Y -> SessionUI -> SessionUI
+enlargeScreenTo width height sess =
+  let screen = coscreen (sccui sess)
+  in sess {sccui = (sccui sess)
+    {coscreen = screen { rwidth = max width (rwidth screen)
+                       , rheight = max height (rheight screen) }}}
 
 -- | Each listed actor's equipment holds just the listed item, registered
 -- as 'stubItem', with what a dialog displaying it needs besides: the role

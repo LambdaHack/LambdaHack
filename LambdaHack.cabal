@@ -538,11 +538,18 @@ test-suite test-game
   type:               exitcode-stdio-1.0
   hs-source-dirs:     test
   main-is:            GameSpec.hs
+  other-modules:      DeterminismGoldenUnitTests
+                      UnitTestHelpers
   build-depends:      ,LambdaHack
                       ,this-game-content
                       ,this-game-src
                       ,base
+                      ,binary
+                      ,bytestring
+                      ,enummapset
                       ,optparse-applicative
                       ,tasty >= 1.0
                       ,tasty-hunit
                       ,text
+                      ,transformers
+                      ,vector

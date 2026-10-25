@@ -60,7 +60,7 @@ main = do
   -- Bang to fail here, not inside server code, so that savefiles are
   -- not removed, because they are not the source of the failure.
   !serverOptions <- OA.execParser serverOptionsPI
-  resOrEx :: Either Ex.SomeException () <- Ex.try $ tieKnot serverOptions
+  resOrEx :: Either Ex.SomeException () <- Ex.try $ void $ tieKnot serverOptions
   let unwrapEx e = case Ex.fromException e of
         Just (ExceptionInLinkedThread _ ex) -> unwrapEx ex
         _ -> e

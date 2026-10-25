@@ -39,7 +39,6 @@ frame-timing-core.test.ts
 frame-timing-core.ts
 make nodeDeployedBench
 make smokeNodeBench
-test/DeterminismGoldenUnitTests.hs
 test/WasmFileUnitTests.hs
 url-options-core.test.ts
 url-options-core.ts

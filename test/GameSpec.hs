@@ -1,8 +1,9 @@
--- | The cases on the sample game's content, whose map is 80 wide: whole
--- games through 'tieKnot'. They are a test executable of their own because
+-- | The cases on the sample game's content, whose map is 80 wide: whole games
+-- through 'tieKnot', and the determinism goldens, which build frames on that
+-- content and play its games. They are a test executable of their own because
 -- the 'Point' 'Enum' width is one value per process, set here once, before
--- anything is built, as 'tieKnot' sets it at a game's startup, while
--- the cases on the stub content, 4 wide, run under @test/Spec.hs@.
+-- anything is built, as 'tieKnot' sets it at a game's startup, while the cases
+-- on the stub content, 4 wide, run under @test/Spec.hs@.
 module Main (main) where
 
 import Prelude ()
@@ -27,6 +28,8 @@ import           System.IO.Unsafe (unsafePerformIO)
 import Game.LambdaHack.Client.UI.UIOptions
 import Game.LambdaHack.Client.UI.UIOptionsParse
 import Game.LambdaHack.Common.ClientOptions
+
+import DeterminismGoldenUnitTests
 #endif
 
 main :: IO ()
@@ -38,8 +41,15 @@ main = do
 corule :: RK.RuleContent
 corule = RK.makeData Content.RuleKind.standardRules
 
+#ifdef USE_BROWSER
+-- | The determinism goldens are native only until their wasm stage.
+determinismGoldenUnitTests :: TestTree
+determinismGoldenUnitTests = testGroup "determinismGoldenUnitTests" []
+
+#endif
 tests :: TestTree
-tests = testGroup "Tests" [ integrationTests
+tests = testGroup "Tests" [ determinismGoldenUnitTests
+                          , integrationTests
                           ]
 
 integrationTests :: TestTree
@@ -57,7 +67,7 @@ integrationTests = testGroup "integrationTests" $
           args = words "--dbgMsgSer --logPriority 4 --newGame 1 --noAnim --maxFps 100000 --frontendNull --benchmark --stopAfterFrames 5 --automateAll --keepAutomated --gameMode crawl"
                  ++ [ "--setDungeonRng", seed, "--setMainRng", seed]
       serverOptions <- handleParseResult $ execParserPure defaultPrefs serverOptionsPI args
-      tieKnot serverOptions
+      void $ tieKnot serverOptions
   ]
   ++ sdlFontsetTests
 
@@ -81,7 +91,7 @@ sdlFontsetTests =
                       ++ [ "--setDungeonRng", seed, "--setMainRng", seed
                          , "--fontset", fontsetName ]
           serverOptions2 <- handleParseResult $ execParserPure defaultPrefs serverOptionsPI args2
-          tieKnot serverOptions2
+          void $ tieKnot serverOptions2
   in zipWith testFontset [0..] $ map (T.unpack . fst) $ uFontsets uiOptions
 #else
 sdlFontsetTests = []

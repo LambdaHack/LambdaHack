@@ -135,8 +135,9 @@ instance MonadServerAtomic SerImplementation where
 -- Don't inline this, to keep GHC hard work inside the library
 -- for easy access of code analysis tools.
 -- | Run the main server loop, with the given arguments and empty
--- initial states, in the @IO@ monad.
-executorSer :: COps -> CCUI -> ServerOptions -> UIOptions -> IO ()
+-- initial states, in the @IO@ monad, and return the global state
+-- the game ended in.
+executorSer :: COps -> CCUI -> ServerOptions -> UIOptions -> IO State
 executorSer cops@COps{corule} ccui soptionsNxtCmdline sUIOptions = do
   soptionsNxtRaw <- case uOverrideCmdline sUIOptions of
     []   -> return soptionsNxtCmdline
@@ -150,6 +151,7 @@ executorSer cops@COps{corule} ccui soptionsNxtCmdline sUIOptions = do
         executorCli ccui sUIOptions clientOptions startsNewGame cops
   -- Wire together game content, the main loop of game clients
   -- and the game server loop.
+  finalState <- newEmptyMVar
   let stateToFileName (_, ser) =
         ssavePrefixSer (soptions ser) <> Save.saveNameSer corule
       totalState serToSave = SerState
@@ -160,7 +162,9 @@ executorSer cops@COps{corule} ccui soptionsNxtCmdline sUIOptions = do
         , serToSave
         }
       m = loopSer soptionsNxt executorClient
-      exe = evalStateT (runSerImplementation m) . totalState
+      exe serToSave = do
+        serS <- execStateT (runSerImplementation m) (totalState serToSave)
+        putMVar finalState $ serState serS
       exeWithSaves = Save.wrapInSaves cops stateToFileName exe
       unwrapEx e = case Ex.fromException e of
         Just (ExceptionInLinkedThread _ ex) -> unwrapEx ex
@@ -189,3 +193,4 @@ executorSer cops@COps{corule} ccui soptionsNxtCmdline sUIOptions = do
   waitForChildren childrenServer  -- no crash, wait for clients indefinitely
 --  T.hPutStrLn stdout "Server exiting now."
 --  hFlush stdout
+  takeMVar finalState

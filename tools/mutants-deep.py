@@ -147,4 +147,17 @@ MUTANTS = [
      '../test/Spec.hs', '  setSpeedupHackXSize stubWidth\n', '',
      tasty('test', '$NF == "contract AS7: promptGetKey draws a HUD frame on'
            ' the stub board"')),
+    # Monospace text one column wider, which only the multi-font setup
+    # lays text out in: the multi-font goldens of help, history and
+    # the item's description fail, every single-font one standing.
+    ('goldens: monospace text one column wider',
+     '../engine-src/Game/LambdaHack/Client/UI/Overlay.hs',
+     'textSize MonoFont l = length l\n',
+     'textSize MonoFont l = length l + 1\n', tasty('test-game', '/fe-golden/')),
+    # Heroes one HP hardier, starting the state goldens' games with more.
+    ('goldens: heroes with one more HP',
+     '../GameDefinition/Content/ItemKindActor.hs',
+     'AddSkill SkMaxHP 80  -- partially from clothes and first aid\n',
+     'AddSkill SkMaxHP 81  -- partially from clothes and first aid\n',
+     tasty('test-game', '/fe-golden: the state/')),
 ]

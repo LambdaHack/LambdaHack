@@ -18,6 +18,7 @@ import qualified Game.LambdaHack.Client.UI.Content.Screen as SC
 import           Game.LambdaHack.Client.UI.ContentClientUI
 import           Game.LambdaHack.Common.Kind
 import           Game.LambdaHack.Common.Point (setSpeedupHackXSize)
+import           Game.LambdaHack.Common.State (State)
 import qualified Game.LambdaHack.Common.Tile as Tile
 import qualified Game.LambdaHack.Content.CaveKind as CK
 import qualified Game.LambdaHack.Content.FactionKind as FK
@@ -47,7 +48,8 @@ import Game.LambdaHack.Common.Misc
 #endif
 
 -- | Tie the LambdaHack engine client, server and frontend code
--- with the game-specific content definitions, and run the game.
+-- with the game-specific content definitions, run the game and return
+-- the global state it ended in.
 --
 -- The custom monad types to be used are determined by the @executorSer@
 -- call, which in turn calls @executorCli@. If other functions are used
@@ -55,7 +57,7 @@ import Game.LambdaHack.Common.Misc
 -- of computation differs. Which of the frontends is run inside the UI client
 -- depends on the flags supplied when compiling the engine library.
 -- Similarly for the choice of native vs JS builds.
-tieKnotForAsync :: ServerOptions -> IO ()
+tieKnotForAsync :: ServerOptions -> IO State
 tieKnotForAsync options@ServerOptions{ sallClear
                                      , sboostRandomItem
                                      , sdungeonRng } = do
@@ -133,7 +135,7 @@ tieKnotForAsync options@ServerOptions{ sallClear
   executorSer cops ccui soptionsNxt sUIOptions
 
 -- | Runs tieKnotForAsync in an async and applies the main thread workaround.
-tieKnot :: ServerOptions -> IO ()
+tieKnot :: ServerOptions -> IO State
 tieKnot serverOptions = do
 #ifdef USE_BROWSER
   -- Hard to tweak the config file when in the browser, so hardwire.
@@ -155,7 +157,8 @@ tieKnot serverOptions = do
   join (takeMVar workaroundOnMainThreadMVar)
   -- Wait in case frontend workaround not run on the main thread
   -- and so we'd exit too early and end the game.
-  wait a
+  finalState <- wait a
   -- Consume the void workaround if it was spurious to make @tieKnot@ reentrant.
   void $ tryTakeMVar workaroundOnMainThreadMVar
+  return finalState
 #endif
