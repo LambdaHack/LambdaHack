@@ -308,6 +308,8 @@ $(NPM_CI): ts-src/package-lock.json ts-src/package.json
 # a build failure runs on into post-link and the test driver, and their
 # complaints about the missing binary bury the real error. The trap both
 # removes the temporary directory and lets the last command's status stand.
+# The stub content's cases and the sample game's are two executables, test
+# and test-game, run in turn, the first to fail ending the recipe.
 # $(NPM_CI) installs lz-string, which the driver's LZString stub loads.
 # Each wasm list-bin repeats its build's --enable-optimization: the path
 # it names follows that setting, and under the development config's
@@ -316,10 +318,12 @@ test-wasm: $(NPM_CI)
 	. ~/.ghc-wasm/env; \
 	T=$$(mktemp -d); \
 	trap 'rm -rf "$$T"' EXIT; \
-	wasm32-wasi-cabal build test --enable-optimization && \
-	W=$$(wasm32-wasi-cabal list-bin test --enable-optimization) && \
-	$(POSTLINK) --input "$$W" --output "$$T/ghc_wasm_jsffi.mjs" && \
-	node ts-src/run-wasm-test.mjs "$$W" "$$T/ghc_wasm_jsffi.mjs"
+	wasm32-wasi-cabal build test test-game --enable-optimization && \
+	for c in test test-game; do \
+	  W=$$(wasm32-wasi-cabal list-bin $$c --enable-optimization) && \
+	  $(POSTLINK) --input "$$W" --output "$$T/ghc_wasm_jsffi.mjs" && \
+	  node ts-src/run-wasm-test.mjs "$$W" "$$T/ghc_wasm_jsffi.mjs" || exit 1; \
+	done
 
 # The reactor's exports, called as the page calls them, by
 # ts-src/run-wasm-game.mjs under Node, once plain and once under

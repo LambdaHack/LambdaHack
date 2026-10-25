@@ -513,7 +513,6 @@ test-suite test
                       ,base
                       ,containers
                       ,enummapset
-                      ,optparse-applicative
                       ,splitmix
                       ,stm
                       ,tasty >= 1.0
@@ -531,3 +530,19 @@ test-suite test
     build-depends:    ,bytestring
                       ,directory
                       ,filepath
+
+-- The cases on the sample game's content, a process of their own for its
+-- Point width: see test/GameSpec.hs.
+test-suite test-game
+  import: options, exe-options
+  type:               exitcode-stdio-1.0
+  hs-source-dirs:     test
+  main-is:            GameSpec.hs
+  build-depends:      ,LambdaHack
+                      ,this-game-content
+                      ,this-game-src
+                      ,base
+                      ,optparse-applicative
+                      ,tasty >= 1.0
+                      ,tasty-hunit
+                      ,text

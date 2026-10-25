@@ -1032,6 +1032,20 @@
    "notes": "Found by the code review of 2026-10-23 over the year's diff. The same run failed `LR-flip psuitReq verdict differs per actor`, whose fixture moved A through updateActorD alone and left it at its old square in lbig, A's aim then stopping there; withPositions moves an actor in both. A tier-1 record: the corpus root is tools/, and the case is the test suite's."
   },
   {
+   "id": "UnitTestHelpers-02",
+   "program": "test/UnitTestHelpers.hs",
+   "name": "executorCli set the process-wide Point width before each test, so a fixture first evaluated under another width, the hack's initial 80 or a whole game's, kept lbig keys that decode to other squares",
+   "family": "unverified-state",
+   "fix_rev": "self",
+   "trigger": "AS7 as its process's first test, the test binary given `-p '$NF == \"contract AS7: promptGetKey draws a HUD frame on the stub board\"'`, so that partyCliState is first evaluated under the width hack's initial 80",
+   "ok": "each test executable sets the width once, in its main, before any fixture is built, the cases on the sample game's content running in test-game, and executorCli only asserts that a fixture's content is that wide",
+   "bug": "partyCliState's lbig read back as (1,20) and (2,20) for heroes at (1,1) and (2,1), GHC having evaluated the fixture, a strict argument of executorCli, before its width was set; AS7 passed all the same, nothing it checks reading lbig",
+   "proved": "ran",
+   "harm": "latent",
+   "discovery": "in-use",
+   "notes": "Found on 2026-10-25, when the determinism goldens' frame fixture, 80 wide, ran behind commonMUnitTests, whose executorCli had set 4, and its lbig read back as (5,0) and (6,0). A first fix passed the fixture through GHC.Exts.lazy, so that executorCli evaluated it only after setting the width, with an assertion that every lbig key decodes to its actor's position; refused by Mikolaj the same day, a strictness hint ordering one evaluation site and leaving every other, where the fault is the harness changing a value the engine sets once per process. A tier-1 record: the corpus root is tools/, and the case is the test suite's."
+  },
+  {
    "id": "LambdaHack.cabal-01",
    "program": "LambdaHack.cabal",
    "name": "both hashable bounds admitted versions before 1.4.0.0, where Eq is no superclass of Hashable, so Core/Prelude.hs's Binary instance for HashMap, whose HM.fromList needs Eq k, does not compile against them",

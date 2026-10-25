@@ -4,6 +4,7 @@ module UnitTestHelpers
   ( CliState(..)
   , emptyCliState
   , executorCli
+  , stubWidth
   , reportToTexts
   , stubLevel
   , walkableLevel
@@ -102,7 +103,7 @@ import           Game.LambdaHack.Common.Level (Level (..), updateBigMap)
 import           Game.LambdaHack.Common.Misc (FontSet (..))
 import           Game.LambdaHack.Common.MonadStateRead
 import           Game.LambdaHack.Common.Perception (emptyPer)
-import           Game.LambdaHack.Common.Point (Point (..), setSpeedupHackXSize)
+import           Game.LambdaHack.Common.Point (Point (..))
 import qualified Game.LambdaHack.Common.PointArray as PointArray
 import           Game.LambdaHack.Common.State
   ( State
@@ -393,6 +394,11 @@ testActorWithItem =
 stubCOpsState :: State
 stubCOpsState = updateCOpsAndCachedData stubCOpsUpdate emptyState
 
+-- | The width of the stub content's map, to which @test/Spec.hs@ sets
+-- the 'Point' 'Enum' width of its process.
+stubWidth :: X
+stubWidth = rWidthMax $ corule $ scops stubCOpsState
+
 -- | A stub state of one level and one faction, holding the given actors,
 -- none of them skilled, each non-projectile one standing in the level's
 -- 'lbig' at its position, where aiming and moving look for it.
@@ -530,11 +536,6 @@ actorUIC = ActorUI { bsymbol = 'c', bname = "Cadet"
 -- edge crashes on an out-of-bounds index instead. Unknown space would not
 -- fence it either (see 'wallTile'). That is why
 -- 'stubLevel' -- unfenced unknown space -- is no use for such tests.
---
--- The array is unfolded in index order, each index read by 'punindex' at
--- the board's width, rather than updated by 'PointArray.//', whose
--- 'fromEnum' reads the width 'executorCli' sets: a test may build its
--- fixture before 'executorCli' runs.
 walkableLevel :: Level
 walkableLevel = stubLevel
   { ltile = PointArray.unfoldrNA testLevelDimension testLevelDimension
@@ -724,18 +725,20 @@ instance MonadClientAtomic CliMock where
   {-# INLINE execPutState #-}
   execPutState = putState
 
--- | Run a test under the mock as the game starts a client. The width the
--- 'Point' 'Enum' instance reads is set to the stub content's, every fixture's,
--- as @TieKnot@ sets it to the game's, so that a level's rows lie that far
--- apart whatever ran before. And the BFS scratch arrays are filled in, as the
--- client fills them, any frame drawn while an xhair is set needing them, the
--- path to the xhair being a BFS query.
+-- | Run a test under the mock as the game starts a client. The fixture's
+-- content must be as wide as the width the 'Point' 'Enum' instance reads,
+-- which each test executable sets once, in its @main@, before any fixture
+-- is built, as @TieKnot@ sets it at a game's startup: the width never
+-- changing within a process is what keeps a fixture's 'Point' keys the same
+-- whenever it is first evaluated. And the BFS scratch arrays are filled in,
+-- as the client fills them, any frame drawn while an xhair is set needing
+-- them, the path to the xhair being a BFS query.
 executorCli :: CliMock a -> CliState -> IO (a, CliState)
-executorCli m cliS = do
-  setSpeedupHackXSize testLevelDimension
+executorCli m cliS =
   flip runStateT cliS $ runCliMock $ do
     width <- getsState $ rWidthMax . corule . scops
-    let !_A = assert (width == testLevelDimension) ()
+    let processWidth = fromEnum $ Point 0 1  -- a row, in 'Enum''s encoding
+        !_A = assert (width == processWidth `blame` (width, processWidth)) ()
     initTabsBFS
     m
 

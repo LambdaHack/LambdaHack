@@ -1,14 +1,16 @@
 """The controls of the slow make targets -- the page gate, the doctest count,
-the ANSI smoke and the reactor driver -- as mutants their own runs must catch.
+the ANSI smoke and the reactor driver -- and of the test suites' cases whose
+mutants want a rebuild, as mutants their own runs must catch.
 
 Read by `selftest-mutants.py tools/mutants-deep.py`, on demand rather than by
-`check-all tools`: each judge is one of those targets in a shared clone of the
-repository, which builds what the target needs and runs it, so a replay
-takes long, and like the targets it runs unsandboxed; and without -j, since
-two page gates at once contend for the gate's fixed ports. Replay it
-when a target, or what it runs, changes in a way these could see. The clone
-carries the working tree's edits to tracked files and no untracked file, so
-a new file is tracked first, and no edit may land while it runs.
+`check-all tools`: each judge is one of those targets, or the cases a tasty
+pattern selects in one test executable, in a shared clone of the repository,
+which builds what the target needs and runs it, so a replay takes long, and
+like the targets it runs unsandboxed; and without -j, since two page gates at
+once contend for the gate's fixed ports. Replay it when a target, or what it
+runs, changes in a way these could see. The clone carries the working tree's
+edits to tracked files and no untracked file, so a new file is tracked first,
+and no edit may land while it runs.
 
 Each judge seeds its copy with this checkout's build of the platform it
 needs, and the wasm ones with ts-src's packages, the native ones with
@@ -54,6 +56,21 @@ DOCTEST = judge(NATIVE, 'doctest',
 SMOKE_ANSI = judge(NATIVE, 'smokeANSI',
                    'cabal build exe:LambdaHack > build.log 2>&1 '
                    '|| { cat build.log; exit 2; }; ')
+
+
+# The cases the tasty pattern selects in the test executable named: exit 0
+# where tasty passed, a pattern selecting no case included, 1 where it reported
+# a failed case, and 2 otherwise, as where the seeding or the build failed or
+# tasty could not parse the pattern.
+def tasty(component, pattern):
+    return (NATIVE + ' || exit 2; '
+            'cabal build ' + component + ' > build.log 2>&1 '
+            '|| { cat build.log; exit 2; }; '
+            '"$(cabal list-bin ' + component + ')" -p \'' + pattern + '\' '
+            '> judge.log 2>&1; s=$?; cat judge.log; '
+            'if [ $s -eq 0 ]; then exit 0; '
+            "elif grep -q ' tests failed ' judge.log; then exit 1; "
+            'else exit 2; fi')
 
 MUTANTS = [
     # The site without the binary: no frame arrives, so the frame
@@ -123,4 +140,11 @@ MUTANTS = [
     # count of the benchmark report falls short of --stopAfterFrames.
     ('smokeANSI: a game that stops at frame 1', '../Makefile',
      '--stopAfterFrames $(SMOKEFRAMES) ', '--stopAfterFrames 1 ', SMOKE_ANSI),
+    # The stub suite's width left at the hack's initial 80, the game's, as
+    # UnitTestHelpers-02 records the harness once did for a test run alone:
+    # AS7's fixture, 4 wide, is refused by executorCli's assertion.
+    ("test: main leaving the Point width at the game's",
+     '../test/Spec.hs', '  setSpeedupHackXSize stubWidth\n', '',
+     tasty('test', '$NF == "contract AS7: promptGetKey draws a HUD frame on'
+           ' the stub board"')),
 ]
