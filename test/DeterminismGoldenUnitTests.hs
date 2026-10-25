@@ -1,13 +1,13 @@
 -- | Determinism goldens (@docs/wasm-frontend-unified-plan.md@, the determinism
--- goldens practice): digests, each compared with a committed literal, in two
--- families. The frame family digests every request a client sends the frontend
--- while a scripted player opens one of the dialogs players read --- help,
--- history, the main menu, an item's description --- or looks at the HUD frame
--- beneath them. Each script runs twice, under the single-font setup a browser
--- has today and under the multi-font one SDL has, which 2.4 of the work list
--- gives the browser too, and each case's golden fails when the requests its
--- script sends under that setup change. The state family digests the state a
--- crawl game or a battle game ends in, the AI playing it for a fixed number of
+-- goldens practice): digests, each compared with a committed literal, in
+-- two families. The frame family digests every request a client sends the
+-- frontend while a scripted player opens one of the dialogs players read
+-- --- help, history, the main menu, an item's description --- or looks at
+-- the HUD frame beneath them. Each script runs twice, under the single-font
+-- setup the terminal frontends have and under the multi-font one SDL and the
+-- browser have, and each case's golden fails when the requests its script
+-- sends under that setup change. The state family digests the state a crawl
+-- game or a battle game ends in, the AI playing it for a fixed number of
 -- frames at the difficulty and with the seeds of the Makefile's @benchCrawl@
 -- or @benchBattle@. A legitimate change is the new digest the failure prints,
 -- pasted over the old one. The perturbations that prove each family can fail

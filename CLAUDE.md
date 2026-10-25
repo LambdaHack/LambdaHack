@@ -49,6 +49,7 @@ make serve-wasm         # serve ../lambdahack.github.io locally on :8080
 make run-wasm           # open in firefox
 make page-gate          # the page as deployed, loaded in headless firefox
                         # and chromium: boots, paints, repaints on a key
+                        # and submits overlays
 make test-reactor       # the reactor's exports, called as the page calls
                         # them by ts-src/run-wasm-game.mjs under node
 ```

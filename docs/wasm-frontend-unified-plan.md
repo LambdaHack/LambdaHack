@@ -636,12 +636,13 @@ only that the plan was written is one the next reader has to skip.
   overlays, the address of their words to `globalThis.lhSubmitOverlays`;
   `terminal.ts` snapshots it and repaints the changed cells on one `<canvas>`
   (diffing against the cells it painted last) by the draw ops the pure
-  `cellRunOps` in `terminal-core.ts` computes. Input flows the other way: DOM
-  events -> `lhKey`/`lhWheel`/`lhMouseUp` exports -> the engine's key channel.
-  Two hooks more: `startup` hands `globalThis.lhConfigure` the startup payload
-  as JSON, and `fprintScreen` hands `globalThis.lhPrintScreen` the name to save
-  the canvas under. Saves bypass all of this --- `WasmFile.hs` talks
-  to `localStorage` directly over JSFFI.
+  `cellRunOps` in `terminal-core.ts` computes, and draws the frame's overlays
+  over them by those `overlayOps` in `overlay-core.ts` computes. Input flows
+  the other way: DOM events -> `lhKey`/`lhWheel`/`lhMouseUp` exports ->
+  the engine's key channel. Two hooks more: `startup` hands
+  `globalThis.lhConfigure` the startup payload as JSON, and `fprintScreen` hands
+  `globalThis.lhPrintScreen` the name to save the canvas under. Saves bypass all
+  of this --- `WasmFile.hs` talks to `localStorage` directly over JSFFI.
 - **`Dom.hs`/`JSFile.hs` (the GHCJS frontend) are dead code**, permanently
   and for the version reasons Appendix A.1 sets out. They still appear
   throughout this plan as the *canonical origin* of web-frontend logic:
@@ -667,10 +668,10 @@ only that the plan was written is one the next reader has to skip.
   `config.ui.default` is embedded at compile time via Template Haskell
   (`rcfgUIDefault`, `GameDefinition/Content/RuleKind.hs:, rcfgUIDefault = $(do`;
   merged with the on-disk user config in `UIOptionsParse.hs:mkUIOptions ::`),
-  so `schosenFontset`/`sfontsets`/`sfonts` are populated even with no argv ---
-  the multi-font gate's `not (T.null (fontPropRegular chosenFontset))` conjunct
-  already passes for the default fontset; only the frontend check blocks it.
-  However, `GameDefinition/game-src/Client/UI/Content/Screen.hs` sets
+  so `schosenFontset`/`sfontsets`/`sfonts` are populated even with no argv
+  and the default fontset resolves, auxiliary fonts included, as the multi-font
+  gate requires beside the frontend's capability, which the browser has since
+  2.4. However, `GameDefinition/game-src/Client/UI/Content/Screen.hs` sets
   `rFontFiles = []` under `USE_BROWSER` (natively
   `$(embedDir "GameDefinition/fonts")`), deliberately keeping font bytes out
   of the browser payload. In the browser, fonts are **static web assets
@@ -1351,16 +1352,15 @@ the effective cell size today.
 
 ### 1.4 Banner truth maintenance (trivial, recurring)
 
-`GameDefinition/index.html`'s banner will go staler as features land
-("For proportional fonts, use the native binary"). Update the text as each
-feature ships. The savefile-corruption caveat stays until R1 addresses it.
-**The page is not the only one**: the `#status` div carries "from README:"
-and quotes `README.md`'s "Installation of the sample game from binary archives"
-paragraph, so the square-font and savefile-corruption sentences are in two
-files, and this item's rule binds both --- a clause deleted from the page
-is deleted from the README in the same commit. (The GHCJS-era page's community
-features are deliberately not restored, and the page `<title>` stays hardcoded
---- Appendix B.)
+`GameDefinition/index.html`'s banner will go staler as features land. Update
+the text as each feature ships. The savefile-corruption caveat stays until R1
+addresses it. **The page is not the only one**: the `#status` div carries
+"from README:" and quotes `README.md`'s "Installation of the sample game
+from binary archives" paragraph, so the speed and savefile-corruption sentences
+are in two files, and this item's rule binds both --- a clause deleted
+from the page is deleted from the README in the same commit. (The GHCJS-era
+page's community features are deliberately not restored, and the page `<title>`
+stays hardcoded --- Appendix B.)
 
 **Rulings** --- ruled on 2026-08-07: the banner is a post-condition of every
 capability item. Each such item's landing sequence ends with its own banner
@@ -1464,8 +1464,8 @@ under the banner having looked iffy.
 Strict chain 2.1 -> 2.2 -> 2.3 -> 2.4; each independently shippable and visually
 a no-op until 2.4 flips the switch. (Until then, nothing is missing on screen:
 under `singleFontSetup` the engine pre-flattens all overlay text
-into the square-font `singleArray`, which is why the wasm build shows menus
-and the log today, just in the map font.)
+into the square-font `singleArray`, which is why the wasm build showed menus
+and the log, just in the map font.)
 
 Before 2.2 lands, capture a browser frame-timing **baseline** and re-measure
 at 2.5, so multi-font's rendering cost is an attributed, measured change rather
@@ -2630,9 +2630,10 @@ in one commit:
   `GHCJS_BROWSER`, `LambdaHack.cabal:Haskell GC in GHCJS every 10s`)
   and the fifth, `-DREMOVE_TELETYPE`
   (`LambdaHack.cabal:ghcjs-options: -DREMOVE_TELETYPE`) --- which unlike
-  the other four has source consumers, `Frontend.hs:= Teletype.startup`
-  and `Frontend.hs:-> Teletype.frontendName`'s `#ifndef REMOVE_TELETYPE` guards,
-  permanently true once no `ghcjs-options` line can define the macro,
+  the other four has source consumers, `Frontend.hs:= Teletype.startup`,
+  `Frontend.hs:-> Teletype.frontendName`
+  and `Frontend.hs:-> Teletype.supportsMultiFont`'s `#ifndef REMOVE_TELETYPE`
+  guards, permanently true once no `ghcjs-options` line can define the macro,
   so those go too. Then the `supportNodeJS` flag entirely, it having
   no non-GHCJS use --- and with it the tracked `cabal.project.local.js`, whole:
   it is the local cabal configuration of the GHCJS build and nothing reads it,
@@ -2648,12 +2649,10 @@ in one commit:
   no GHCJS edit --- it contains the string nowhere (checked repo-wide); what
   it carries is browser-era prose --- the "The game runs rather slowly
   in the browser" paragraph under "Installation of the sample game from binary
-  archives", which the page's `#status` div quotes with small edits --- the page
-  says "for both map and texts" where the README says "for all purposes, though
-  it's scalable", opens the savefile sentence in capitals where the README hangs
-  it off an "Also,", and drops the README's "(which takes a long time)" ---
-  owned clause by clause by 2.4, R1 and R5 under 1.4's rule, not
-  by this rip-out.
+  archives", which the page's `#status` div quotes with small edits --- it opens
+  the savefile sentence in capitals where the README hangs it off an "Also,",
+  and drops the README's "(which takes a long time)" --- owned clause by clause
+  by R1 and R5 under 1.4's rule, as 2.4's clause was, not by this rip-out.
 
 Timed after parity, not before, so the rip-out doesn't tangle with Phase 0--2
 diffs touching the same cabal stanzas and CPP sites.
@@ -2672,10 +2671,10 @@ and `.claude/skills/playtests/SKILL.md`'s description of them, both 3.3's. (c)
 The re-anchoring is a separate `.md`-only commit right after the rip-out ---
 2.1's correction-never-with-the-landing pattern, generalized. The rip-out
 deletes lines this document anchors on --- the `USE_GHCJS` import branch,
-the two `REMOVE_TELETYPE` guards the sum-typed selection cites, the cabal
-stanzas --- so the pass names them and their sentences are reworded there,
-the frozen appendices' with their prose untouched, ruled 2026-09-08
-as the fourth kind of upkeep the pointman post-mortem admits.
+the `REMOVE_TELETYPE` guards the sum-typed selection cites, the cabal stanzas
+--- so the pass names them and their sentences are reworded there, the frozen
+appendices' with their prose untouched, ruled 2026-09-08 as the fourth kind
+of upkeep the pointman post-mortem admits.
 
 *Ruled 2026-10-25 by Mikolaj: the comment in `.hlint.yaml` naming the defines
 under which its Dom ignore fires
@@ -2776,34 +2775,35 @@ in the game's own `Ctrl+Shift+P` screenshot the lit map pixels form uniform 2x2
 blocks 44 percent of the time, where a doubled bitmap gives all of them ---
 and identically with `dejavuBold`, whose both slots are the woff; the crisp
 doubled `.bdf` is not what SDL2 does today, only what it should, and this item
-brings it to the browser first. The browser has drawn only the outline
-`16x16xw.woff`, because a `@font-face` reads the sfnt formats alone, TrueType,
-OpenType, WOFF and WOFF2, and neither BDF nor Windows FNT --- which is why
-that woff was made in 2019 from the same bitmap. A canvas draws images,
-so a bitmap font is a glyph atlas: decode the BDF, plain text, once --- at build
-time into a PNG and a codepoint table, committed and freshness-checked like
-0.2's generated files --- and paint each cell with `drawImage` from it, which
-is what SDL2 does with the surfaces FreeType renders. Pixel-perfect under four
-rules. The backing store is in device pixels and every blit lands at integer
-device coordinates with image smoothing off, so a 16x16 tile occupies sixteen
-device pixels a side. Integer scales only, the largest that fits, the rest
-letterbox: a bitmap at 1.5x is a contradiction, and the letterbox is SDL2's own
-logical-size rule. A fractional `devicePixelRatio`, browser zoom at 1.25 or 1.5,
-is handled by working in device pixels throughout, the cell an integer number
-of them and the canvas's CSS size whatever that divides to, recomputed on zoom
-and resize, so the map sits on device pixels exactly and only the page around
-it is fractional. And fullscreen re-renders at the fitting integer scale rather
-than through 1.3's transform, which stays for the outline font, where resampling
-is what SDL2 does too. The `.fnt` files are Windows raster fonts FreeType reads
-for SDL2; Mikolaj converts them to BDF, so one decoder serves every bitmap font
-under `GameDefinition/fonts/`. Two stages. R7a follows SDL2's font choice
-and improves on its scaling: the bitmap whenever `allFontsScale` is 1.0
-and the scalable font otherwise, and the canvas scaled as a whole by the largest
-integer factor that fits, pixel for pixel, under browser zoom and fullscreen
-alike, where SDL2's fullscreen scaling softens. R7b, later: keep the bitmap
-beyond that at every integer `allFontsScale`, where SDL2 takes the outline font
-today, and the outline font at every other factor. On the DOM route none
-of this was reachable at any price, a span having no way to hold a glyph bitmap.
+brings it to the browser first. The browser has drawn the map only
+in the outline `16x16xw.woff`, because a `@font-face` reads the sfnt formats
+alone, TrueType, OpenType, WOFF and WOFF2, and neither BDF nor Windows FNT ---
+which is why that woff was made in 2019 from the same bitmap. A canvas draws
+images, so a bitmap font is a glyph atlas: decode the BDF, plain text, once ---
+at build time into a PNG and a codepoint table, committed and freshness-checked
+like 0.2's generated files --- and paint each cell with `drawImage` from it,
+which is what SDL2 does with the surfaces FreeType renders. Pixel-perfect
+under four rules. The backing store is in device pixels and every blit lands
+at integer device coordinates with image smoothing off, so a 16x16 tile occupies
+sixteen device pixels a side. Integer scales only, the largest that fits,
+the rest letterbox: a bitmap at 1.5x is a contradiction, and the letterbox
+is SDL2's own logical-size rule. A fractional `devicePixelRatio`, browser zoom
+at 1.25 or 1.5, is handled by working in device pixels throughout, the cell
+an integer number of them and the canvas's CSS size whatever that divides to,
+recomputed on zoom and resize, so the map sits on device pixels exactly and only
+the page around it is fractional. And fullscreen re-renders at the fitting
+integer scale rather than through 1.3's transform, which stays for the outline
+font, where resampling is what SDL2 does too. The `.fnt` files are Windows
+raster fonts FreeType reads for SDL2; Mikolaj converts them to BDF, so one
+decoder serves every bitmap font under `GameDefinition/fonts/`. Two stages. R7a
+follows SDL2's font choice and improves on its scaling: the bitmap whenever
+`allFontsScale` is 1.0 and the scalable font otherwise, and the canvas scaled
+as a whole by the largest integer factor that fits, pixel for pixel,
+under browser zoom and fullscreen alike, where SDL2's fullscreen scaling
+softens. R7b, later: keep the bitmap beyond that at every integer
+`allFontsScale`, where SDL2 takes the outline font today, and the outline font
+at every other factor. On the DOM route none of this was reachable at any price,
+a span having no way to hold a glyph bitmap.
 
 **Rulings** --- ruled 2026-10-20 by Mikolaj: R7b's criterion for crisper
 is the integer one, applied by arithmetic, with no side-by-side owed ---
@@ -2867,13 +2867,15 @@ after all.
 **Sum-typed frontend selection.**
 `sfrontendANSI`/`sfrontendTeletype`/`sfrontendNull`/`sfrontendLazy` are four
 independent `Bool`s (`ClientOptions.hs:, sfrontendANSI ::`) whose simultaneous
-truth is resolved by guard order in two places
-(`Frontend.hs:sfrontendNull soptions =`
-and `Frontend.hs:frontendName :: ClientOptions`). One sum-typed field,
+truth is resolved by guard order in the guard chains of `Frontend.hs`
+(`Frontend.hs:sfrontendNull soptions =`,
+`Frontend.hs:frontendName :: ClientOptions`
+and `Frontend.hs:supportsMultiFont :: ClientOptions`). One sum-typed field,
 with the constructors `FrontendDefault`, `FrontendANSI`, `FrontendTeletype`,
 `FrontendNull` and `FrontendLazy`, makes the guard chains total cases and turns
 conflicting flags into a parse error. Mechanical, moderate churn (options
-parser, UnitTestHelpers' stub options).
+parser, UnitTestHelpers' stub options, the MonadClientUIUnitTests capability
+case).
 
 **Rulings** --- all three ruled on 2026-08-07. (1) The save format needs
 no bump, confirming the analysis this field carried: `ClientOptions` derives

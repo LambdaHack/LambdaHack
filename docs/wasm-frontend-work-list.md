@@ -222,15 +222,15 @@ and in headless Chromium over WebDriver BiDi, Chromium's through chromedriver
 from xtradeb's chromium-driver package, and asserts in each that frames arrive
 after `lhStart`, that a `?` stops the insert-coin self-play, frames arriving
 in the second before it and none in a second after, that an Escape then changes
-the quiet screen, and, once 2.4 lands, that an overlay is submitted. It observes
-the page by wrapping the `globalThis` hooks the loader installs and by hashing
-`#screen`, a canvas's data URL where one exists, so 0.4 owes it no change.
-Its controls are mutants in `tools/mutants-deep.py`, each judged
-by `make page-gate`, which `selftest-mutants.py tools/mutants-deep.py` replays,
-unsandboxed: a site missing `LambdaHack.wasm`; the `?` press removed, which
-an earlier form of the self-play assertion, a hash changed after the `?`, let
-pass; a `syncExport` without its scheduler run; and `PAGE_GATE_OVERLAYS=1`
-before 2.4. The Chromium leg came with 1.2, after Mikolaj's ruling of 2026-10-22
+the quiet screen, and that an overlay is submitted. It observes the page
+by wrapping the `globalThis` hooks the loader installs and by hashing `#screen`,
+a canvas's data URL where one exists, so 0.4 owes it no change. Its controls
+are mutants in `tools/mutants-deep.py`, each judged by `make page-gate`, which
+`selftest-mutants.py tools/mutants-deep.py` replays, unsandboxed: a site missing
+`LambdaHack.wasm`; the `?` press removed, which an earlier form of the self-play
+assertion, a hash changed after the `?`, let pass; a `syncExport` without
+its scheduler run; and the browser without the multi-font capability.
+The Chromium leg came with 1.2, after Mikolaj's ruling of 2026-10-22
 that a session's browser tests run in Chromium too; a missing chromedriver stops
 the run at 2. It is the campaign's acceptance test: what a human still walks
 at 2.5 is the look, not whether the page runs.
@@ -435,12 +435,13 @@ harness extends it. 0.0 lands first or is dropped, since the `lhKey` commit
 rewrites the very listener it fixes. Several items edit `CLAUDE.md`: 0.1, 0.2
 and 2.1 for the frontend bullet's three module names, 2.1 again for the Gotchas
 bullet's "awaits its scheduled fix", which its fix of [Sdl.hs#L568][sdl-568]
-falsifies, 2.2 for the build-ts target's list of what it deploys, R3
-for the GHCJS mentions, and the pointman campaign's 04.4 for the sentences
-that campaign's landing falsifies, enumerated in its head callout. Where
-the edit rides is each item's **Split** to say, and they differ on purpose: 2.1
-folds it into the re-anchoring commit that follows its `Sdl.hs` rewrite, 2.2
-into the correction its code commits owed, R3 into the rip-out whose deletions
+falsifies, 2.2 for the build-ts target's list of what it deploys, 2.4
+for the page-gate target's list of what the gate requires, R3 for the GHCJS
+mentions, and the pointman campaign's 04.4 for the sentences that campaign's
+landing falsifies, enumerated in its head callout. Where the edit rides is each
+item's **Split** to say, and they differ on purpose: 2.1 folds it
+into the re-anchoring commit that follows its `Sdl.hs` rewrite, 2.2 and 2.4
+into the correction their code commits owed, R3 into the rip-out whose deletions
 the reworded sentences describe, and 04.4 into the deletion commit that resolves
 the clause.
 
@@ -757,7 +758,7 @@ over the deployed page and bundle --- and note that `make build-ts` merely `cp`s
 deleting the clause its feature falsified *and repairing the sentence around
 it* --- 1.3 for "fullscreen", off since `d211caa38`, 2.4 for "proportional
 fonts" and for the `#status` div's and the README's "limited to the square
-font", R1 for the savefile-corruption clause
+font", off since `7a8195426`, R1 for the savefile-corruption clause
 (`[Ss]avefiles are prone to corruption`, the bracket for the README's lower
 case), R5 for "runs rather slowly" once its bars are cleared. One commit
 belonged to no landing: "and persistent save games", false all along since
@@ -767,26 +768,23 @@ the **Done** line below with only its own phrase in the alternation.
 Delete-only is not enough, and the repair belongs here rather than to three
 sessions inventing it separately: every clause above sits inside a carrier
 sentence that stops parsing without it. Both carriers, with their end states.
-The banner's (`GameDefinition/index.html:proportional fonts`) is a list
-of reasons to prefer the native binary, so it shortens as items go --- three
-with an Oxford comma, then two joined by "and", then one with neither ---
-and when the last goes the whole "For ... use the native binary instead."
-sentence goes with it, its `<a>` to the releases page included, while
-"This is the experimental wasm build." and everything from "If the game window
-is too large" onward are not this item's to touch. The quoted README paragraph
+The banner's was a list of reasons to prefer the native binary, which shortened
+as items went --- three with an Oxford comma, then two joined by "and", then one
+with neither --- and went whole with the last, 2.4's, the "For ... use
+the native binary instead." sentence taking its `<a>` to the releases page
+with it; "This is the experimental wasm build."
+(`GameDefinition/index.html:This is the experimental wasm build.`)
+and everything from "If the game window is too large" onward are not this item's
+to touch. The quoted README paragraph
 (`GameDefinition/index.html:The game runs rather slowly`, and in `README.md`
 the paragraph under the heading "Installation of the sample game from binary
-archives") is three claims supporting one conclusion, "Hence, after trying out
-the game, you may prefer to use a native binary". Its first two share one
-sentence in both files --- "The game runs rather slowly in the browser (fastest
-on Chrome) and you are limited to the square font ..." --- so R5's clause
-and 2.4's are not independently deletable: whichever lands first deletes its own
-clause together with the "and you" that joins them and re-opens the survivor
-as a sentence of its own, "The game runs rather slowly in the browser (fastest
-on Chrome)." or "You are limited to the square font for both map and texts."
-on the page and "You are limited to the square font for all purposes, though
-it's scalable." in `README.md`, and whichever lands second deletes that sentence
-whole. The third, R1's, hangs off an "Also," in the README, and the rule
+archives") was three claims supporting one conclusion, "Hence, after trying out
+the game, you may prefer to use a native binary". Its first two shared one
+sentence in both files, so R5's clause and 2.4's were not independently
+deletable: 2.4's banner commit deleted its own clause together with
+the "and you" that joined them, leaving the survivor a sentence of its own,
+"The game runs rather slowly in the browser (fastest on Chrome).", which R5
+deletes whole. The third, R1's, hangs off an "Also," in the README, and the rule
 that the word moves to whichever claim then stands second never fires on it:
 it is last of the three and stays last while either earlier claim survives,
 so what the one case that reaches it wants --- both earlier claims gone,
@@ -808,19 +806,20 @@ and the four that touch the quoted paragraph write `README.md` too: this item,
 2.4, R1 and R5. `../lambdahack.github.io` is redeployed by **Done**, not owned.
 
 **Done** --- `wasm`, `deploy`, `page`, `docs`, plus
-`! grep -qE 'proportional fonts|limited to the square font' ../lambdahack.github.io/index.html`
-&& `U=$(mktemp)` && `wrap80 --unwrap README.md > "$U"` &&
-`! grep -qE 'limited to the square font' "$U"`, each page's own phrases --- both
-on the deployed one, so a forgotten `make build-ts` fails the first,
-and the square-font one on the source `README.md`, which no build deploys.
-The README half greps an unwrapped copy rather than the file: `wrap80` keeps
-that file wrapped, so a deletion earlier in the paragraph reflows what remains
-and a later landing's line-oriented grep passes over a clause that is still
-there, split across two lines --- and that silence reads exactly like success.
-An `&&` chain and never a pipeline, per the trap bullet above: piped,
-the negation would report the grep's status whatever `wrap80` did. The `[Ss]`
-bracket R1's **Split** explains guards the other axis, case; a phrase can
-be missed for either reason and each guard covers one.
+`! grep -qE PHRASE ../lambdahack.github.io/index.html` && `U=$(mktemp)` &&
+`wrap80 --unwrap README.md > "$U"` && `! grep -qE PHRASE "$U"`, PHRASE being
+the landing's own, R1's `[Ss]avefiles are prone to corruption` or R5's
+`runs rather slowly`, each in both files --- on the deployed page,
+so a forgotten `make build-ts` fails the first, and on the source `README.md`,
+which no build deploys. The README half greps an unwrapped copy rather
+than the file: `wrap80` keeps that file wrapped, so a deletion earlier
+in the paragraph reflows what remains and a later landing's line-oriented grep
+passes over a clause that is still there, split across two lines ---
+and that silence reads exactly like success. An `&&` chain and never a pipeline,
+per the trap bullet above: piped, the negation would report the grep's status
+whatever `wrap80` did. The `[Ss]` bracket R1's **Split** explains guards
+the other axis, case; a phrase can be missed for either reason and each guard
+covers one.
 
 **Hands back** --- *judgement*: whether the replacement sentence is true
 of the shipped build. No display is needed and no command decides it --- a grep
@@ -1132,7 +1131,7 @@ is spent at 2.4 instead.
 
 ### 2.4 Flip the switch --- as a capability, not a name list
 
-**Split** --- seven commits, and the split is the point. (1) the capability
+**Split** --- nine commits, and the split is the point. (1) the capability
 mechanism, behaviour-preserving: `supportsMultiFont` exported by `Sdl.hs`
 (`True`), `Wasm.hs` (`False`, for now), `ANSI.hs` and `Teletype.hs` (`False`),
 the `Frontend.hs` dispatch mirroring `frontendName`'s CPP-guarded guard chain
@@ -1153,18 +1152,21 @@ through its `startupUnderTest`
 (`FrontendContractUnitTests.hs:startupUnderTest coscreen = Wasm.startup coscreen defClientOptions`
 and
 `FfiCoverageUnitTests.hs:startupUnderTest coscreen = Wasm.startup coscreen defClientOptions`),
-get options that resolve. (3) `Wasm.supportsMultiFont = True`, one line
-and nothing else. (4) the page gate's overlay assertion made unconditional,
-`ts-src/page-gate.mjs`'s `PAGE_GATE_OVERLAYS` switch deleted with the gate
-table's mention of it and the `tools/mutants-deep.py` mutant anchored on it,
-since a check that runs only where a caller sets a variable is skipped by every
-plain `make page-gate`. (5) the banner commit this item's **Owns** carries
-under 1.4's rule: the "proportional fonts" and "limited to the square font"
-clauses come off `GameDefinition/index.html` and the second off `README.md` too,
-run with 1.4's **Done** and only those phrases in the alternation. (6)
-the re-anchoring (1) owes: it rewrites the `multiFont` gate
-in `MonadClientUI.hs`, which every citation of that line anchors on. (7)
-the outcome line naming (3)'s hash and the ledger flip; this item has
+get options that resolve; then the driver commit **Owns** places before (3). (3)
+`Wasm.supportsMultiFont = True`, one line and nothing else. (4) the page gate's
+overlay assertion made unconditional, `ts-src/page-gate.mjs`'s
+`PAGE_GATE_OVERLAYS` switch deleted with the gate table's mention of it
+and the `tools/mutants-deep.py` mutant anchored on it, since a check that runs
+only where a caller sets a variable is skipped by every plain `make page-gate`.
+(5) the banner commit this item's **Owns** carries under 1.4's rule:
+the "proportional fonts" and "limited to the square font" clauses come off
+`GameDefinition/index.html` and the second off `README.md` too, run with 1.4's
+**Done** and only those phrases in the alternation; then the correction
+of the claims (1) to (5) falsified, the `Makefile`'s, `CLAUDE.md`'s, the goldens
+module's and `docs/leader-desync-migration.md`'s among them. (6)
+the re-anchoring (1) and (2) owe: they rewrite the `multiFont` gate
+in `MonadClientUI.hs` and the `startupUnderTest` lines, which citations anchor
+on. (7) the outcome line naming (3)'s hash and the ledger flip; this item has
 no `tools/doc-refs-allow.txt` entries.
 
 **Owns** --- `engine-src/Game/LambdaHack/Client/UI/Frontend/Sdl.hs`,
@@ -1174,24 +1176,25 @@ no `tools/doc-refs-allow.txt` entries.
 `engine-src/Game/LambdaHack/Client/UI/Frontend.hs`,
 `engine-src/Game/LambdaHack/Client/UI/MonadClientUI.hs`,
 `test/MonadClientUIUnitTests.hs`, `test/FrontendContractUnitTests.hs`,
-`test/FfiCoverageUnitTests.hs` (both for (2)), `ts-src/page-gate.mjs`,
-`tools/mutants-deep.py` (both for (4), with this document's gate table),
-`ts-src/run-wasm-game.mjs`, in a commit before (3), whose checks compare frames
-by their cells alone
+`test/FfiCoverageUnitTests.hs` (both for (2)),
+`test/DeterminismGoldenUnitTests.hs` (its module haddock, which (3) falsifies),
+`ts-src/page-gate.mjs`, `tools/mutants-deep.py` (both for (4),
+with this document's gate table), `Makefile` and `CLAUDE.md` for their summaries
+of what the page gate requires, `docs/leader-desync-migration.md` for C1's
+naming of the gate's line, `ts-src/run-wasm-game.mjs`, in a commit before (3),
+whose checks compare frames by their cells alone
 (`run-wasm-test.mjs:calls.push({ w, h, first: words[0], hash });`), which
 are the whole frame only while the browser is single-font,
 `GameDefinition/index.html`, `README.md` --- the "proportional fonts"
 and "limited to the square font" clauses its flip falsifies, the second of them
 in both files since the `#status` div quotes the README, deleted in this item's
 landing sequence under 1.4's rule, per that item's 2026-08-07 ruling ---
-and `docs/wasm-frontend-unified-plan.md` --- (1) rewrites the `multiFont` gate
+and `docs/wasm-frontend-unified-plan.md` --- (1) and (2) rewrite lines
 the citations anchor on, so this item owes the re-anchoring. `Dom.hs`
 is deliberately not here: a dead example file no configuration compiles, R3.
-The sum-typed selection practice also rewrites the `multiFont` gate
-in `MonadClientUI.hs`, so whichever lands first shapes the other's diff;
-the pointman campaign's C1 appends its witness and accessors to the same file
-below `partPronounLeader`, per that campaign's own ruling, so it rewrites
-nothing cited here.
+The pointman campaign's C1 appends its witness and accessors
+to `MonadClientUI.hs` below `partPronounLeader`, per that campaign's own ruling,
+so it rewrites nothing cited here.
 
 **Done** --- `native`, `ts`, `wasm`, `reactor`, `deploy`, `page`, `docs`, plus
 `make test-medium`.
@@ -1455,7 +1458,7 @@ this item proposes no artifact.
 `cpp-options` stanza and the comment above it, `-DREMOVE_TELETYPE`,
 the `ghcjs-options` knob block, and the two `impl(ghcjs)` module/dependency
 branches), `cabal.project.local.js` (deleted), `Frontend.hs` (the `USE_GHCJS`
-import branch and both `#ifndef REMOVE_TELETYPE` guards), `File.hs`'s
+import branch and every `#ifndef REMOVE_TELETYPE` guard), `File.hs`'s
 `USE_JSFILE` branch, `TieKnot.hs`'s `USE_GHCJS` GHC.Compact branch,
 the `USE_JSFILE` halves at `Server/LoopM.hs:!defined(USE_JSFILE) &&`,
 `HandleHumanLocalM.hs:!defined(USE_JSFILE) &&`
@@ -1739,33 +1742,31 @@ the outcome line naming (1)'s hash and the ledger flip.
 
 **Owns** --- `Common/ClientOptions.hs` (the field), `Server/Commandline.hs`
 (the four parsers at `Commandline.hs:frontendANSIP :: Parser Bool` and their
-bindings at `Commandline.hs:<- frontendANSIP`), `Client/UI/Frontend.hs` (both
-guard chains), `Client/UI/DrawM.hs` and `Client/UI/MonadClientUI.hs` --- the two
-`frontendName soptions ==` string compares the sum type subsumes
-(`DrawM.hs:unless (frontendName soptions`,
-`MonadClientUI.hs:= Frontend.frontendName`), which this item's churn list omits
-and which `git grep 'frontendName soptions =='` shows are the only two
-in the tree --- `test/UnitTestHelpers.hs`, whose `stubClientOptions`
-and `multiFontClientOptions` are the fixtures setting an `sfrontend*` field,
-`sfrontendNull` to `True` and `False`, and `docs/wasm-frontend-unified-plan.md`,
-for the re-anchoring commit. 2.4 rewrites
-`MonadClientUI.hs:= Frontend.frontendName` and dispatches through
-`Frontend.hs:frontendName :: ClientOptions`, and R3 deletes
-the `#ifndef REMOVE_TELETYPE` guards at `Frontend.hs:= Teletype.startup`
-and `Frontend.hs:-> Teletype.frontendName` --- the exact lines this item turns
-into cases --- so whichever lands first shapes the others' diffs.
+bindings at `Commandline.hs:<- frontendANSIP`), `Client/UI/Frontend.hs`
+(its guard chains, `supportsMultiFont`'s, which 2.4 added, among them),
+`Client/UI/DrawM.hs` --- the `frontendName soptions ==` string compare the sum
+type subsumes (`DrawM.hs:unless (frontendName soptions`), which this item's
+churn list omits and which `git grep 'frontendName soptions =='` shows
+is the only one in the tree --- `test/UnitTestHelpers.hs`, whose
+`stubClientOptions` and `multiFontClientOptions` are the fixtures setting
+an `sfrontend*` field, `sfrontendNull` to `True` and `False`,
+`test/MonadClientUIUnitTests.hs`, whose capability case sets each such field
+on `multiFontClientOptions`, and `docs/wasm-frontend-unified-plan.md`,
+for the re-anchoring commit. R3 deletes the `#ifndef REMOVE_TELETYPE` guards
+at `Frontend.hs:= Teletype.startup`, `Frontend.hs:-> Teletype.frontendName`
+and `Frontend.hs:-> Teletype.supportsMultiFont` --- the exact lines this item
+turns into cases --- so whichever lands first shapes the other's diff.
 The determinism goldens also write `test/UnitTestHelpers.hs`, for their
-fixtures, and the pointman campaign's C1 appends to `MonadClientUI.hs` below
-`partPronounLeader`.
+fixtures.
 
-<!-- probe: git -C .. grep -h 'frontendName soptions ==' -- '*.hs' | wc -l :: 2 -->
+<!-- probe: git -C .. grep -h 'frontendName soptions ==' -- '*.hs' | wc -l :: 1 -->
 
 **Done** --- `native`, `wasm`, `docs`, plus `make test-short` &&
 `! git grep -q 'frontendName soptions ==' -- '*.hs'` &&
 `LH=$(cabal list-bin exe:LambdaHack)` &&
 `! "$LH" --frontendNull --frontendTeletype --newGame 1 --gameMode dig --benchmark --stopAfterFrames 1 --automateAll`.
-Both negated checks fail *today* and so are non-vacuous: the grep finds two
-sites, and the double `--frontend` invocation exits 0 because guard order
+Both negated checks fail *today* and so are non-vacuous: the grep finds one
+site, and the double `--frontend` invocation exits 0 because guard order
 silently picks null. `make test-short` plays whole games --- minutes,
 not seconds.
 

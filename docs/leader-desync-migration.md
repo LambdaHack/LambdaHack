@@ -540,8 +540,7 @@ two campaigns write, as **Owns** says. **Append, do not insert**, as the spike
 did, below `MonadClientUI.hs:partPronounLeader ::`.
 
 **Owns** --- `engine-src/Game/LambdaHack/Client/UI/MonadClientUI.hs`
-and this document. The wasm plan's 2.4 and its sum-typed selection practice
-write the same file, both
+and this document. The wasm plan's 2.4 writes the same file,
 at `MonadClientUI.hs:multiFont = Frontend.frontendName soptions`; the bodies
 are disjoint, so serialize.
 
