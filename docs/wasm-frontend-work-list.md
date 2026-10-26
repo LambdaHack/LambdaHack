@@ -196,7 +196,8 @@ reactor  make test-reactor    # the reactor's exports, by the game driver
 deploy   make build-ts        # UNSANDBOXED: writes into the pages checkout
 page     make page-gate       # UNSANDBOXED: Chromium will not start
          sandboxed; the page as deployed, in headless Firefox and
-         Chromium: boots, paints, repaints on a key, submits overlays
+         Chromium: boots, paints without subpixel antialiasing,
+         repaints on a key, submits overlays
 docs     the repo's standing document passes over every .md document
          the item's Owns names, the record and this file always among them; CLAUDE.md
          lists the passes and this document does not; what they cost is
@@ -220,20 +221,25 @@ builds the page as `build-ts` would deploy it into a scratch directory,
 and `ts-src/page-gate.mjs` serves it, loads it in headless Firefox
 and in headless Chromium over WebDriver BiDi, Chromium's through chromedriver
 from xtradeb's chromium-driver package, and asserts in each that frames arrive
-after `lhStart`, that a `?` stops the insert-coin self-play, frames arriving
-in the second before it and none in a second after, that an Escape then changes
-the quiet screen, and that an overlay is submitted. It observes the page
-by wrapping the `globalThis` hooks the loader installs and by hashing `#screen`,
-a canvas's data URL where one exists, so 0.4 owes it no change. Its controls
+after `lhStart`, that the map's font in the self-play's HUD rows carries
+no subpixel antialiasing at 1:1 and, the page laid out again at device pixel
+ratio 2, at 2:1, every lit pixel a palette colour or a blend of one
+with the background and never a tint, that a `?` stops the insert-coin
+self-play, frames arriving in the second before it and none in a second after,
+that an Escape then changes the quiet screen, and that an overlay is submitted.
+It observes the page by wrapping the `globalThis` hooks the loader installs,
+by hashing `#screen`, a canvas's data URL where one exists, and by reading
+the HUD rows' pixels from the canvas, so 0.4 owes it no change. Its controls
 are mutants in `tools/mutants-deep.py`, each judged by `make page-gate`, which
 `selftest-mutants.py tools/mutants-deep.py` replays, unsandboxed: a site missing
 `LambdaHack.wasm`; the `?` press removed, which an earlier form of the self-play
 assertion, a hash changed after the `?`, let pass; a `syncExport` without
-its scheduler run; and the browser without the multi-font capability.
-The Chromium leg came with 1.2, after Mikolaj's ruling of 2026-10-22
-that a session's browser tests run in Chromium too; a missing chromedriver stops
-the run at 2. It is the campaign's acceptance test: what 2.5 adds is the look,
-compared against SDL2 by a session, not whether the page runs.
+its scheduler run; the browser without the multi-font capability; and the canvas
+opaque again, terminal-02's bug. The Chromium leg came with 1.2, after Mikolaj's
+ruling of 2026-10-22 that a session's browser tests run in Chromium too;
+a missing chromedriver stops the run at 2. It is the campaign's acceptance test:
+what 2.5 adds is the look, compared against SDL2 by a session, not whether
+the page runs.
 
 **Read the counts, not the exit status alone** --- `CLAUDE.md`'s rule, binding
 here too: a suite that silently loses a test still passes, and a listing is what

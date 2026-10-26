@@ -1,15 +1,16 @@
 // The deployed-page gate: build outputs in a directory, served here and loaded
 // in headless Firefox and headless Chromium over WebDriver BiDi, Chromium's
-// through chromedriver, must boot the reactor, paint, stop its self-play on
-// a key, repaint on a key on a quiet screen and submit overlays, in each
-// browser. It is the one check in the repository that asks whether the page
-// players load works, and it runs locally, before every browser landing, by
-// ruling (docs/wasm-frontend-work-list.md, the page gate under Handing an
-// item); CI stays blind to the page by that same ruling. Exit 0 when every
-// assertion holds in both browsers, 1 when one fails, 2 when the run did
-// not happen: no browser named or an unknown one, no Firefox, Chromium or
-// chromedriver, no BiDi endpoint or one that closes or stops answering, no
-// server, a throw outside the assertions; a FAIL already printed keeps 1.
+// through chromedriver, must boot the reactor, paint, draw the map's font
+// without subpixel antialiasing at 1:1 and 2:1, stop its self-play on a key,
+// repaint on a key on a quiet screen and submit overlays, in each browser. It
+// is the one check in the repository that asks whether the page players
+// load works, and it runs locally, before every browser landing, by ruling
+// (docs/wasm-frontend-work-list.md, the page gate under Handing an item); CI
+// stays blind to the page by that same ruling. Exit 0 when every assertion
+// holds in both browsers, 1 when one fails, 2 when the run did not happen:
+// no browser named or an unknown one, no Firefox, Chromium or chromedriver,
+// no BiDi endpoint or one that closes or stops answering, no server, a throw
+// outside the assertions; a FAIL already printed keeps 1.
 //
 // Usage: node page-gate.mjs <site-dir> (Node 22+, for the global WebSocket)
 //   PAGE_GATE_BROWSERS=firefox or =chromium runs one browser alone; BROWSER,
@@ -20,14 +21,15 @@
 // accessor properties before loader.ts assigns them, so every call is counted,
 // the first with its size, and the page's own code runs unchanged. The screen
 // is read back as a hash of the canvas's data URL, so a key's effect is a
-// stopped frame count or a changed hash rather than a claim about what it drew.
+// stopped frame count or a changed hash rather than a claim about what it drew;
+// the HUD rows' pixels are read back too, against the generated palette.
 //
 // Non-vacuity: the gate's controls are mutants in tools/mutants-deep.py,
 // each judged by `make page-gate` and replayed by `selftest-mutants.py
 // tools/mutants-deep.py`.
 
 import { spawn } from "node:child_process";
-import { mkdir, writeFile } from "node:fs/promises";
+import { mkdir, readFile, writeFile } from "node:fs/promises";
 import { join, resolve } from "node:path";
 
 import { sleep, waitFor } from "./run-wasm-test.mjs";
@@ -247,6 +249,56 @@ async function connect(url) {
   };
 }
 
+// The colours the game draws in, the generated palette's, the backlight fill
+// included, and the backgrounds a glyph is drawn over: black and that fill.
+const PALETTE_TS = await readFile(
+  new URL("./src/generated/palette.ts", import.meta.url),
+  "utf8",
+);
+const PALETTE = [...PALETTE_TS.matchAll(/"#([0-9A-F]{6})"/g)].map((m) =>
+  parseInt(m[1], 16),
+);
+const BACKGROUNDS = [
+  0,
+  parseInt(PALETTE_TS.match(/BACKLIGHT_FILL = "#([0-9A-F]{6})"/)[1], 16),
+];
+const rgb = (v) => [(v >> 16) & 255, (v >> 8) & 255, v & 255];
+// Whether a colour lies, within 3 per channel, on the segment from a palette
+// colour to a background, as the greyscale coverage of a glyph's edge does;
+// subpixel antialiasing's fringes are tints off every such segment.
+function isBlend(v) {
+  const p = rgb(v);
+  return PALETTE.some((fg) =>
+    BACKGROUNDS.some((bg) => {
+      const f = rgb(fg);
+      const b = rgb(bg);
+      const d = f.map((x, i) => x - b[i]);
+      const n = d.reduce((s, x) => s + x * x, 0);
+      if (n === 0) return false;
+      const t = d.reduce((s, x, i) => s + (p[i] - b[i]) * x, 0) / n;
+      const k = Math.min(1, Math.max(0, t));
+      return d.every((x, i) => Math.abs(p[i] - (b[i] + k * x)) <= 3);
+    }),
+  );
+}
+// The HUD's two bottom rows, all in the map font: how many of their device
+// pixels are lit, the colours of those of no palette colour with their
+// counts, and the canvas's width.
+const HUD_PIXELS = `(() => {
+  const ok = new Set(${JSON.stringify(PALETTE)});
+  const c = document.getElementById("screen").querySelector("canvas");
+  const ch = c.height / globalThis.__lhGate.first[1];
+  const y = Math.round(c.height - 2 * ch);
+  const d = c.getContext("2d").getImageData(0, y, c.width, c.height - y).data;
+  let lit = 0;
+  const off = {};
+  for (let i = 0; i < d.length; i += 4) {
+    if (d[i] + d[i + 1] + d[i + 2] > 0) lit++;
+    const v = (d[i] << 16) | (d[i + 1] << 8) | d[i + 2];
+    if (!ok.has(v)) off[v] = (off[v] ?? 0) + 1;
+  }
+  return JSON.stringify({ lit, off, width: c.width });
+})()`;
 const HASH = `(() => { const el = document.getElementById("screen");
   const s = el?.querySelector("canvas")?.toDataURL() ?? ""; let h = 0;
   for (let i = 0; i < s.length; i++) h = (h * 31 + s.charCodeAt(i)) | 0;
@@ -315,7 +367,61 @@ async function gate(name, send) {
         ` the first ${size} cells`,
     );
   }
-  // 2. a key stops the self-play. With no save the game is the insert-coin
+  // 2. no subpixel antialiasing in the map's font, at 1:1 and, the page laid
+  // out again at device pixel ratio 2, at 2:1: of the self-play's HUD rows,
+  // every lit pixel a palette colour or a blend of one with the background,
+  // never a tint (terminal-02). Blends are counted, not failed: the outline
+  // woff's points sit off the pixel grid, and only a pixel-exact font removes
+  // them, as the record's ruling of 2026-10-26 under R7 asks.
+  const crisp = async (scale) => {
+    const r = JSON.parse(await evaluate(HUD_PIXELS));
+    let blends = 0;
+    let tints = 0;
+    for (const [v, n] of Object.entries(r.off)) {
+      if (isBlend(Number(v))) blends += n;
+      else tints += n;
+    }
+    if (r.lit < 200 * scale * scale) {
+      fail(
+        `${name}: at ${scale}:1 the HUD rows hold ${r.lit} lit pixels,` +
+          " too few to judge the font by",
+      );
+    } else if (tints > 0) {
+      fail(
+        `${name}: at ${scale}:1 ${tints} of the HUD rows' ${r.lit} lit` +
+          " pixels are tints no palette colour blends to: the map's font" +
+          " has subpixel antialiasing",
+      );
+    } else {
+      console.log(
+        `ok   ${name}: no subpixel antialiasing at ${scale}:1: of ${r.lit}` +
+          ` lit HUD pixels ${blends} are blends of a palette colour with` +
+          " the background, none a tint",
+      );
+    }
+  };
+  await crisp(1);
+  const width1 = JSON.parse(await evaluate(HUD_PIXELS)).width;
+  const widthNow = async () => JSON.parse(await evaluate(HUD_PIXELS)).width;
+  await send("browsingContext.setViewport", { context, devicePixelRatio: 2 });
+  let width2 = width1;
+  await waitFor(
+    async () => (width2 = await widthNow()) === 2 * width1,
+    10000,
+    250,
+  );
+  if (width2 !== 2 * width1) {
+    fail(
+      `${name}: at device pixel ratio 2 the canvas stayed ${width2} wide,` +
+        ` not ${2 * width1}`,
+    );
+  } else await crisp(2);
+  await send("browsingContext.setViewport", {
+    context,
+    devicePixelRatio: null,
+  });
+  await waitFor(async () => (await widthNow()) === width1, 10000, 250);
+  // 3. a key stops the self-play. With no save the game is the insert-coin
   // screensaver, repainting until a key regains control, so the screen
   // changes with or without one; what only a key does is stop it. Frames
   // arrive in the second before '?', and a second with no frame follows
@@ -356,7 +462,7 @@ async function gate(name, send) {
       );
     }
   }
-  // 3. a key on a quiet screen changes it: with the game idle no timer
+  // 4. a key on a quiet screen changes it: with the game idle no timer
   // re-enters the RTS scheduler, which a key delivered by a sync export once
   // waited for. Escape leaves the help.
   if (still < 4) {
@@ -381,7 +487,7 @@ async function gate(name, send) {
       );
     }
   }
-  // 4. an overlay submission.
+  // 5. an overlay submission.
   const overlays = await evaluate("globalThis.__lhGate.overlays");
   if (overlays < 1) {
     fail(`${name}: no overlay submission after the key`);

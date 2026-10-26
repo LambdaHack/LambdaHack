@@ -139,7 +139,9 @@ export function mountTerminal(
   canvas.width = 0;
   canvas.height = 0;
   container.appendChild(canvas);
-  const ctx = canvas.getContext("2d", { alpha: false })!;
+  // Not opaque: on an opaque canvas both browsers draw text with subpixel
+  // antialiasing, which blends colours into the map's pixel font.
+  const ctx = canvas.getContext("2d")!;
   // SDL2's crosshair pointer, generated from the same art (MouseCursor.hs); the
   // keyword is the fallback where the image fails to load.
   container.style.cursor =

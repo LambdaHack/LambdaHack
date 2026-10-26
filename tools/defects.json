@@ -1100,6 +1100,20 @@
    "harm": "latent",
    "discovery": "review",
    "notes": "Found by the source re-audit of 2026-09-07, gap (3) of docs/wasm-frontend-unified-plan.md's Appendix C, whose parity half the work list's item 1.8 fixes. Wasm.hs had copied SDL's `when sprintEachScreen $ printScreen sess` without the `unless (arraysEqual && overlaysEqual)` it runs under. The bug direction was watched on 2026-10-25 against the pre-fix reactor, where the plain run passed; the ok direction passed in both make test-reactor runs. Nothing in the page can set the flag, the loader passing no argv. A tier-1 record: the corpus root is tools/, the case is the game driver's, and the deep mutant `test-reactor: a screenshot of every frame under --printEachScreen` replays the bug direction."
+  },
+  {
+   "id": "terminal-02",
+   "program": "ts-src/src/terminal.ts",
+   "name": "the canvas was opaque, so both browsers drew its text with subpixel antialiasing, tinting and fringing the map's pixel font that SDL2 draws in its palette colours",
+   "family": "other:render-mode",
+   "fix_rev": "self",
+   "trigger": "any frame the page paints: the map font on the canvas, as in the self-play's HUD rows",
+   "ok": "every lit pixel of the HUD rows is a palette colour or a blend of one with the background, at 1:1 and 2:1, and the page gate's step 2 passes in both browsers",
+   "bug": "glyph strokes tinted and fringed off every palette-to-background blend: in the run watched the page gate counted 5228 of 7584 lit HUD pixels tinted in Firefox and 4754 of 7355 in Chromium at 1:1, 10473 and 9120 at 2:1",
+   "proved": "ran",
+   "harm": "fired",
+   "discovery": "review",
+   "notes": "Found 2026-10-26 by 2.5's comparison of seeded captures with SDL2, recorded in the plan's 2.5 note, and Mikolaj's question whether the browser's map font is the .bdf. The getContext(\"2d\", { alpha: false }) came with 0.4's painter, 9eb0c2c3c, with no reason recorded. The case is the page gate's step 2, watched failing in both browsers before the fix and passing after; the deep mutant `page gate: the canvas opaque again` replays the bug direction. The greyscale blends that remain are the outline woff's own, its points off the pixel grid, which the record's ruling of 2026-10-26 under R7 asks a pixel-exact font to remove. A tier-1 record: the corpus root is tools/."
   }
  ]
 }

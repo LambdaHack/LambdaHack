@@ -104,6 +104,12 @@ MUTANTS = [
     ('page gate: the browser without the multi-font capability',
      '../engine-src/Game/LambdaHack/Client/UI/Frontend/Wasm.hs',
      'supportsMultiFont = True\n', 'supportsMultiFont = False\n', PAGE_GATE),
+    # The canvas opaque again, as before the fix of terminal-02: both browsers
+    # draw its text with subpixel antialiasing, so the HUD's map font holds
+    # colours no palette colour blends to with the background, at 1:1 and 2:1.
+    ('page gate: the canvas opaque again', '../ts-src/src/terminal.ts',
+     '  const ctx = canvas.getContext("2d")!;\n',
+     '  const ctx = canvas.getContext("2d", { alpha: false })!;\n', PAGE_GATE),
     # No '?' through lhKey: the self-play goes on painting, so the stream never
     # stops, as in the page gate's twin above.
     ("test-reactor: the '?' key not sent", '../ts-src/run-wasm-game.mjs',

@@ -357,11 +357,11 @@ test-ts: $(NPM_CI)
 	cd ts-src && \
 	npm run typecheck && npm run format:check && npm test
 
-# The deployed-page gate: the page as build-ts would deploy it, in a
-# scratch directory, loaded in headless Firefox and headless Chromium and
-# required to boot, paint, repaint on a key and submit overlays in each
-# (ts-src/page-gate.mjs says how). Local only, by ruling; run before every
-# browser landing.
+# The deployed-page gate: the page as build-ts would deploy it, in a scratch
+# directory, loaded in headless Firefox and headless Chromium and required
+# to boot, paint without subpixel antialiasing, repaint on a key and submit
+# overlays in each (ts-src/page-gate.mjs says how). Local only, by ruling; run
+# before every browser landing.
 page-gate: build-wasm $(NPM_CI)
 	. ~/.ghc-wasm/env && \
 	T=$$(mktemp -d) && \

@@ -2396,19 +2396,24 @@ and in the hue and brightness of its summed light, Firefox and Chromium within
 a pixel on every screen but for 6 pixels of the history's, the fullscreen `C-P`
 PNG with the canvas pixel for pixel, and ratio 2 with 1x in every cell but one
 glyph's overhang at the occupancy threshold. What differs: (1) both browsers
-draw text with subpixel antialiasing, the map's pixel font included, because
-the canvas is opaque (`terminal.ts:canvas.getContext("2d", { alpha: false })`),
-where a transparent canvas draws the same glyphs crisp, as SDL2 does; (2)
-proportional and mono text sits a pixel higher than SDL2's, `faceBaseline`
-(`terminal-core.ts:export function faceBaseline(`) meeting the browsers' rounded
-font metrics, Firefox's ascent 13 and descent 4 and Chromium's 12 and 3, where
-SDL_ttf has 13 and 3; (3) along a line the canvas's fractional advances drift
-from SDL_ttf's hinted whole-pixel ones, a word's start by up to 8 pixels
-and a line's end by up to 6; (4) the history's prompt lacks `[.]`, by design;
-(5) the zoom chords reach the game as well as the browser, and the game answers
-`*unknown command 'C-+'*`; (6) where a zoom's cell is not a whole number
-of device pixels the cell is rounded and the faces are not, so proportional
-lines run longer against the grid at 80% and shorter at 120%, and not at 125%.*
+drew text with subpixel antialiasing, the map's pixel font included, because
+the canvas was opaque ([terminal.ts#L142][terminal-142]), where a transparent
+canvas draws the same glyphs without it, the fix the defect record terminal-02
+carries; (2) proportional and mono text sits a pixel higher than SDL2's,
+`faceBaseline` (`terminal-core.ts:export function faceBaseline(`) meeting
+the browsers' rounded font metrics, Firefox's ascent 13 and descent 4
+and Chromium's 12 and 3, where SDL_ttf has 13 and 3; (3) along a line
+the canvas's fractional advances drift from SDL_ttf's hinted whole-pixel ones,
+a word's start by up to 8 pixels and a line's end by up to 6; (4) the history's
+prompt lacks `[.]`, by design; (5) the zoom chords reach the game as well
+as the browser, and the game answers `*unknown command 'C-+'*`; (6) where
+a zoom's cell is not a whole number of device pixels the cell is rounded
+and the faces are not, so proportional lines run longer against the grid at 80%
+and shorter at 120%, and not at 125%; (7) the outline woff's points sit off
+the pixel grid in 315 of its 383 drawn glyphs, mostly by a hundredth or two
+of a pixel, so an unhinted renderer blends their edges with the background,
+the browsers at every scale and SDL2 faintly, its hinting snapping most, where
+the `.bdf` it was made from is crisp.*
 
 ---
 
@@ -2893,12 +2898,13 @@ to be built and proved; and a per-factor table from a human side-by-side, a new
 look for every new factor. Ruled 2026-10-26 by Mikolaj: the map font is drawn
 with no antialiased pixel at 1:1 and at every integer n:1 scale, in both
 frontends and in either form, the `.bdf` and the outline `16x16xw.woff` alike,
-and a test proves it at each scale it covers. The browser falls short of
-it at 1:1 and 2:1 today, its opaque canvas
-(`terminal.ts:canvas.getContext("2d", { alpha: false })`) giving every glyph
-subpixel antialiasing, as 2.5's note of the same day records, and SDL2 faintly
-at 1:1, where `dejavuBold` names the outline woff in its bitmap slot,
-and at 2:1, by the measurement above.
+and a test proves it at each scale it covers. Measured the same day, the outline
+woff falls short of it in both frontends, its points off the pixel grid (2.5's
+note, finding 7): the browser blends its glyphs' edges at every scale, SDL2
+faintly at 1:1, its hinting snapping most, and at 2:1 too, by the measurement
+above; the `.bdf` is crisp in SDL2. The page gate counts the browser's blends
+at 1:1 and 2:1 and fails on a tint, not on a blend, a tint being the subpixel
+antialiasing an opaque canvas gave every glyph until terminal-02's fix.
 
 ## Multi-frontend practices (adopted)
 
@@ -3947,3 +3953,4 @@ passthrough, and B.1.
 [sdl-684]: https://github.com/LambdaHack/LambdaHack/blob/5c58af62ec9d875dfcb051ba5fade405e5b36f8d/engine-src/Game/LambdaHack/Client/UI/Frontend/Sdl.hs#L684
 [sdl-709]: https://github.com/LambdaHack/LambdaHack/blob/5c58af62ec9d875dfcb051ba5fade405e5b36f8d/engine-src/Game/LambdaHack/Client/UI/Frontend/Sdl.hs#L709
 [sdl-876]: https://github.com/LambdaHack/LambdaHack/blob/5c58af62ec9d875dfcb051ba5fade405e5b36f8d/engine-src/Game/LambdaHack/Client/UI/Frontend/Sdl.hs#L876
+[terminal-142]: https://github.com/LambdaHack/LambdaHack/blob/a299516366efcb1e423cfd235474aefa4f82fc45/ts-src/src/terminal.ts#L142
