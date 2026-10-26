@@ -2434,7 +2434,15 @@ at the woff's off-grid edges (7), 2061 pixels in Firefox and 1560 in Chromium
 on the map screen, where SDL2's woff and the opaque canvas had differed by 12000
 and 11856; Firefox and Chromium agree in ink on every screen but for 2 pixels;
 and ratio 2 matches 1x in every cell, but for one in Firefox at the end
-of a proportional line.*
+of a proportional line. Frame timing after the fix, run the same way
+with the load average between 2.4 and 6.0, the machine as quiet as it would get
+that evening: in Firefox p95 4.00 and 4.00ms against the baseline's 3.00
+and 4.00ms, means 1.26 at n=4595 and 1.38 at n=4277 against 1.04 at n=4428
+and 1.07 at n=4724; in Chromium p95 14.20 and 14.40ms against 13.40 and 13.40ms,
+means 3.36 at n=4539 and 3.36 at n=4586 against 3.14 at n=4356 and 3.18
+at n=4249; so by p95 the current tree is 0 to 1ms slower than the baseline
+in both browsers, where before the fix, on the quiet machine, it had matched
+the baseline in Firefox and been 1.9 and 4.2ms slower in Chromium.*
 
 ---
 
