@@ -585,7 +585,8 @@ testCliStateWithItem = stubCliState { cliState = testStateWithItem }
 -- and, on interrupt, restore the run leader) are enabled:
 --
 -- * @fhasPointman = True@ (@emptyUIFaction@ defaults it to 'False', which
---   alone forces 'noRunWithMulti' 'True' via its third disjunct);
+--   alone forces 'Game.LambdaHack.Common.Faction.noRunWithMulti' 'True' via
+--   its third disjunct);
 -- * @fskillsOther = meleeAdjacent@, whose @SkMove@ is @-10@ (< 0);
 -- * @fspawnsFast = False@, so switching the pointman between levels is /not/
 --   banned (see
@@ -596,9 +597,10 @@ partyFaction = testFaction
                            , FK.fhasPointman = True }
   , gunderAI = False }
 
--- | A variant of 'partyFaction' whose kind spawns fast, so pointman switching
--- between levels is banned ('bannedPointmanSwitchBetweenLevels' is 'True').
--- Used to pin the banned-faction semantics of the cycling commands.
+-- | A variant of 'partyFaction' whose kind spawns
+-- fast, so pointman switching between levels is banned
+-- ('Game.LambdaHack.Common.Faction.bannedPointmanSwitchBetweenLevels' is
+-- 'True'). Used to pin the banned-faction semantics of the cycling commands.
 partyFactionBanned :: Faction
 partyFactionBanned =
   partyFaction {gkind = (gkind partyFaction) {FK.fspawnsFast = True}}
@@ -718,10 +720,12 @@ frameCliState options =
           , cliSession = enlargeScreenTo rWidthMax (rHeightMax + 3)
                          . uiOptions <$> cliSession cliS }
 
--- | A run led by hero A with the whole two-hero party as members,
--- as a multi-hero run start ('moveRunHuman') would set up. Also reused
--- with the three-hero party: 'restoreLeaderFromRun' reads only 'runLeader',
--- so the member list doesn't matter to the restore.
+-- | A run led by hero A with the whole two-hero
+-- party as members, as a multi-hero run start
+-- ('Game.LambdaHack.Client.UI.HandleHumanGlobalM.moveRunHuman')
+-- would set up. Also reused with the three-hero
+-- party: 'Game.LambdaHack.Client.UI.FrameM.restoreLeaderFromRun' reads only
+-- 'runLeader', so the member list doesn't matter to the restore.
 runParamsA :: RunParams
 runParamsA = RunParams { runLeader = testActorId
                        , runMembers = [testActorId2, testActorId]
