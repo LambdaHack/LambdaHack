@@ -2385,6 +2385,17 @@ the native playtest battery on (`make test-medium` at minimum).
   the probe recorded there, its diff adapted to `terminal.ts` as it then stands,
   as Phase 2's was adapted to the canvas).
 
+*Landed in `0c59baf55`, the last differences traced and the overrun compared,
+after `73f178a1b`, the rulings, `338d7987d`, the comparisons and the timing
+on `4c95dbd3d`, `d5918775d`, the comparisons after the two fixes the first ones
+found, and `1a1b6587c`, the frame timing after them; the fixes are commits
+of their own, terminal-02's, of the opaque canvas, in `9263ae07b`,
+and the `.bdf` restored as the native map font in `496b1f74e`. Mikolaj signed
+off the findings and the timing, by p95 up to 1ms slower than the baseline
+in both browsers after the fix, on 2026-10-26. Of the note's findings, (1)
+is fixed, (4) is by design, (7) is filed as R10, and (2), (5), (6) and (3)
+are filed as R11, R12, R13 and R14.*
+
 **Rulings** --- since 2026-08-05, re-cut 2026-10-20: 0.4's Split (0) captures
 the baseline, on the canvas, before 0.4's painter merges, closing the question
 this field carried. One instruction survives it: should the record show

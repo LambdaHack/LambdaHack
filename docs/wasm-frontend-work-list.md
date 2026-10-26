@@ -121,7 +121,7 @@ sections of the record are frozen and which live is its head callout's to say.
 | 2.2 | browser canvas overlay renderer + font wiring | medium | 2.1, 0.2, 0.4; 1.5 for the startup call | landed -- e549ef42e |
 | 2.3 | overlay transport over JSFFI | medium | 2.1, 2.2; 0.3 for the end-to-end battery | landed -- c6265677c |
 | 2.4 | multi-font capability flip | tiny diff, big review | 2.1--2.3; determinism goldens (native harness); 0.1 for `FrontendContractUnitTests.hs` | landed -- 778f76602 |
-| 2.5 | post-flip QA | small | 2.4; 1.2 for `Ctrl+P` | not applied |
+| 2.5 | post-flip QA | small | 2.4; 1.2 for `Ctrl+P` | landed -- 0c59baf55 |
 | 3.1 | `lhStart` reads WASI argv | small | --- | landed -- 77e64a697 |
 | 3.2 | Node driver for the game reactor | small | 3.1, 0.3 | not applied |
 | 3.3 | `nodeBench*`/`nodeDeployedBench` targets | small | 3.2 | not applied |
