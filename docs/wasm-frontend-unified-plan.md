@@ -630,6 +630,9 @@ only that the plan was written is one the next reader has to skip.
   him is findings, never pictures to compare; the browser takes the seed
   by a throwaway argv in `loader.ts`, seeds reaching only the first game
   a server starts.
+- 2026-10-26 -- ruled by Mikolaj (R7's Rulings): the map font is drawn
+  with no antialiased pixel at 1:1 and at every integer n:1 scale, in both
+  frontends and in either form, and a test proves it at each scale it covers.
 
 ## Repo facts the plan builds on
 
@@ -2887,7 +2890,15 @@ a bound on that unevenness, which picks the outline font at 1.25x and 1.5x
 anyway; an image metric over captures, whose weighting of blur against
 unevenness nobody can set from first principles and whose instrument would have
 to be built and proved; and a per-factor table from a human side-by-side, a new
-look for every new factor.
+look for every new factor. Ruled 2026-10-26 by Mikolaj: the map font is drawn
+with no antialiased pixel at 1:1 and at every integer n:1 scale, in both
+frontends and in either form, the `.bdf` and the outline `16x16xw.woff` alike,
+and a test proves it at each scale it covers. The browser falls short of
+it at 1:1 and 2:1 today, its opaque canvas
+(`terminal.ts:canvas.getContext("2d", { alpha: false })`) giving every glyph
+subpixel antialiasing, as 2.5's note of the same day records, and SDL2 faintly
+at 1:1, where `dejavuBold` names the outline woff in its bitmap slot,
+and at 2:1, by the measurement above.
 
 ## Multi-frontend practices (adopted)
 

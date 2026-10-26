@@ -1608,7 +1608,8 @@ the decoder module and the atlas under names the executing session mints, their
 and `docs/wasm-frontend-unified-plan.md`.
 
 **Done** --- `ts`, `wasm`, `deploy`, `page`, `docs`, plus `test -f`
-on the deployed atlas.
+on the deployed atlas, and the test the record's ruling of 2026-10-26 asks for:
+no antialiased pixel in a map glyph on the page as deployed, at 1:1 and at 2:1.
 
 **Hands back** --- *display*: that a 1.0 map on the canvas is the `.bdf` pixel
 for pixel, an `xwd` of each side diffed, and that the switch to the outline font
