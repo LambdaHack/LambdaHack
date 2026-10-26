@@ -1082,7 +1082,7 @@ is the gap it closed.
 
 **Hands back** --- *browser*: that the declared `FontFace`s actually load. sec.
 2.2's own "live game pixel-identical to before" needs no human ---
-`getFontSetup` still gates on `"sdl"` (`MonadClientUI.hs:getFontSetup ::`),
+`getFontSetup` gates on `"sdl"` until 2.4 ([MonadClientUI.hs#L329][mcui-329]),
 so the overlays are provably `[]` and the vitest case asserting zero draw calls
 on an empty payload decides it, which is why the substitute gate in Done
 is `make test-ts` plus the two font-deployment tests rather than a look.
@@ -1121,8 +1121,8 @@ for its header's naming of the hook, and `docs/wasm-frontend-unified-plan.md`.
 the freshness case's proof as 0.2's Done states it.
 
 **Hands back** --- hands back nothing. sec. 2.3's "verified by playing" argues
-its own case away in the next sentence: `getFontSetup` still gates on `"sdl"`
-(`MonadClientUI.hs:getFontSetup ::`), the overlays are provably `[]`,
+its own case away in the next sentence: `getFontSetup` gates on `"sdl"` until
+2.4 ([MonadClientUI.hs#L323][mcui-323]), the overlays are provably `[]`,
 and playing proves nothing the zero-draw-call vitest case
 and the `run-wasm-test.mjs` end-to-end case do not. Phase 2's browser budget
 is spent at 2.4 instead.
@@ -1137,18 +1137,18 @@ mechanism, behaviour-preserving: `supportsMultiFont` exported by `Sdl.hs`
 the `Frontend.hs` dispatch mirroring `frontendName`'s CPP-guarded guard chain
 (`Frontend.hs:frontendName :: ClientOptions`), `getFontSetup` reading
 it (`MonadClientUI.hs:= Frontend.supportsMultiFont`), and the new
-`MonadClientUIUnitTests.hs` case pinning it. This is provably a no-op: today's
-gate is `frontendName soptions == "sdl"`, already `False` for wasm, ANSI,
-Teletype, null and lazy alike, so a dispatch true only for `Sdl.hs` reproduces
-it exactly --- which is why (1) may land at any time. (2) the browser matching
-SDL exactly on a fontset that does not resolve: its startup dies
+`MonadClientUIUnitTests.hs` case pinning it. This is provably a no-op: the gate
+(1) replaces is `frontendName soptions == "sdl"`, already `False` for wasm,
+ANSI, Teletype, null and lazy alike, so a dispatch true only for `Sdl.hs`
+reproduces it exactly --- which is why (1) may land at any time. (2) the browser
+matching SDL exactly on a fontset that does not resolve: its startup dies
 with `resolveFonts`'s reason,
 as `Sdl.hs:ChosenFonts{..} <- either die return $ resolveFonts soptions` does,
-where today it reports the reason and goes on with every text in the map font,
-so that `getFontSetup`, which resolves the fontset under the browser too once
-(3) lands, never meets one the startup let through; the test modules that start
-the browser frontend on `defClientOptions`, whose fontset does not resolve, each
-through its `startupUnderTest`
+where before (2) it reports the reason and goes on with every text in the map
+font, so that `getFontSetup`, which resolves the fontset under the browser too
+once (3) lands, never meets one the startup let through; the test modules
+that start the browser frontend on `defClientOptions`, whose fontset does
+not resolve, each through its `startupUnderTest`
 (`FrontendContractUnitTests.hs:startupUnderTest coscreen = Wasm.startup coscreen`
 and
 `FfiCoverageUnitTests.hs:startupUnderTest coscreen = Wasm.startup coscreen`),
@@ -2043,3 +2043,5 @@ it builds on (2.3 uses 0.3's test harness, 2.2 uses 0.2's palette).
 [key-564]: https://github.com/LambdaHack/LambdaHack/blob/4403b8798cd5aef4c2c1ee29dac0953ba1bcde26/engine-src/Game/LambdaHack/Client/UI/Key.hs#L564-L569
 [wasm-158]: https://github.com/LambdaHack/LambdaHack/blob/4403b8798cd5aef4c2c1ee29dac0953ba1bcde26/engine-src/Game/LambdaHack/Client/UI/Frontend/Wasm.hs#L158
 [game-274]: https://github.com/LambdaHack/LambdaHack/blob/4403b8798cd5aef4c2c1ee29dac0953ba1bcde26/ts-src/run-wasm-game.mjs#L274
+[mcui-329]: https://github.com/LambdaHack/LambdaHack/blob/e549ef42e03aca83ed7a07c28be3d602b058b122/engine-src/Game/LambdaHack/Client/UI/MonadClientUI.hs#L329
+[mcui-323]: https://github.com/LambdaHack/LambdaHack/blob/c6265677c9b5d7e12bfa4dd45f2d7e2defccb2c0/engine-src/Game/LambdaHack/Client/UI/MonadClientUI.hs#L323

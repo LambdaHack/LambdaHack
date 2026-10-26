@@ -535,14 +535,12 @@ the two outcome lines itself (the head callout).
 `MonadClientUI` only, ~30 lines: the abstract `HasPointman`, the checking
 `mintHasPointman`, `getLeaderUI` (witness required) and the `Maybe` variant, per
 sec. 02 step 1, with the pinned-parameter note sec. 02 drafts sitting
-on `getLeaderUI` from the start, since the sites C6 writes point at it. A file
-two campaigns write, as **Owns** says. **Append, do not insert**, as the spike
-did, below `MonadClientUI.hs:partPronounLeader ::`.
+on `getLeaderUI` from the start, since the sites C6 writes point at it.
+**Append, do not insert**, as the spike did, below
+`MonadClientUI.hs:partPronounLeader ::`.
 
 **Owns** --- `engine-src/Game/LambdaHack/Client/UI/MonadClientUI.hs`
-and this document. The wasm plan's 2.4 writes the same file,
-at `MonadClientUI.hs:multiFont = Frontend.supportsMultiFont soptions`;
-the bodies are disjoint, so serialize.
+and this document.
 
 **Done** --- `native`, `contract` unmoved, `LR-flip` unmoved, `docs`; nothing
 else changes, this step having no callers yet.
