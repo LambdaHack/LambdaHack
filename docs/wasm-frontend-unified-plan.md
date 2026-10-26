@@ -633,6 +633,11 @@ only that the plan was written is one the next reader has to skip.
 - 2026-10-26 -- ruled by Mikolaj (R7's Rulings): the map font is drawn
   with no antialiased pixel at 1:1 and at every integer n:1 scale, in both
   frontends and in either form, and a test proves it at each scale it covers.
+- 2026-10-26 -- at Mikolaj's word, the FreeType 1076 workaround undone:
+  `dejavuBold` names the `.bdf` in its bitmap slot again, FreeType 2.13.2
+  drawing it, as it draws the 8x8 `.fnt` fontset, without error, with the same
+  glyphs as the woff on every screen of 2.5's seeded comparison and without
+  the woff's faint antialiasing.
 
 ## Repo facts the plan builds on
 
@@ -2854,9 +2859,9 @@ fontset, whose bitmap slot is the `.bdf`, and `allFontsScale = 2.0` in the user
 config, the native build renders the outline woff at 32px, antialiased ---
 in the game's own `Ctrl+Shift+P` screenshot the lit map pixels form uniform 2x2
 blocks 44 percent of the time, where a doubled bitmap gives all of them ---
-and identically with `dejavuBold`, whose both slots are the woff; the crisp
-doubled `.bdf` is not what SDL2 does today, only what it should, and this item
-brings it to the browser first. The browser has drawn the map only
+and identically with `dejavuBold`, whose both slots were then the woff;
+the crisp doubled `.bdf` is not what SDL2 does today, only what it should,
+and this item brings it to the browser first. The browser has drawn the map only
 in the outline `16x16xw.woff`, because a `@font-face` reads the sfnt formats
 alone, TrueType, OpenType, WOFF and WOFF2, and neither BDF nor Windows FNT ---
 which is why that woff was made in 2019 from the same bitmap. A canvas draws
@@ -3202,14 +3207,16 @@ and the rule belongs back in the frontend. The floor-glyph parameter
 is the shape that passes; a frontend tag is the shape that fails.
 
 **G2, that SDL2's behaviour is the bar.** What would sink it is SDL2 being
-wrong, and it already was once: 0.0 assumed the three fill-only highlight kinds
-draw no outline, and SDL2 in fact drew a black ring --- the erase half
+wrong, and it already was: 0.0 assumed the three fill-only highlight kinds draw
+no outline, and SDL2 in fact drew a black ring --- the erase half
 of a workaround for a 2.0.16 rectangle bug, not a design choice anyone made.
-Parity copied it faithfully, until R8 dropped it from both. So the bar is SDL2's
-*intent* where the two can be told apart, and where they cannot, the audit
-record in Appendix C is what has to say which was checked. A second such
-discovery would not sink G2, but a pattern of them would mean the bar
-is a workaround inventory.
+Parity copied it faithfully, until R8 dropped it from both. And on 2026-10-26
+SDL2 drew the map at 1:1 in the outline woff, faintly antialiased, through
+a workaround for FreeType's issue 1076 that had outlived the bug, until
+the `.bdf` came back (the Log of that day). So the bar is SDL2's *intent* where
+the two can be told apart, and where they cannot, the audit record in Appendix C
+is what has to say which was checked. A further such discovery would not sink
+G2, but a pattern of them would mean the bar is a workaround inventory.
 
 **The boundary-cost ruling**, that a per-chunk `js_measureText` crossing is too
 expensive to consider. It is the reason 2.1's pen is split

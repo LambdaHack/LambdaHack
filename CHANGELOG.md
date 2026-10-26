@@ -7,6 +7,7 @@
 - Switch to GHC2024 and to GHC 9.10 or newer
 - Give the unit-test harness a walkable stub board, party fixtures, real key bindings and scripted keys
 - Extend CI with hlint, stylish-haskell, doctests, playtests and the WASM and TypeScript suites
+- Draw the map in the 16x16 bitmap font by default again, the FreeType regression worked around in v0.10.3.0 being long fixed
 
 ## [v0.11.0.1](https://github.com/LambdaHack/LambdaHack/compare/v0.11.0.0...v0.11.0.1)
 
