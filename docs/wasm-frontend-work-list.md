@@ -232,8 +232,8 @@ assertion, a hash changed after the `?`, let pass; a `syncExport` without
 its scheduler run; and the browser without the multi-font capability.
 The Chromium leg came with 1.2, after Mikolaj's ruling of 2026-10-22
 that a session's browser tests run in Chromium too; a missing chromedriver stops
-the run at 2. It is the campaign's acceptance test: what a human still walks
-at 2.5 is the look, not whether the page runs.
+the run at 2. It is the campaign's acceptance test: what 2.5 adds is the look,
+compared against SDL2 by a session, not whether the page runs.
 
 **Read the counts, not the exit status alone** --- `CLAUDE.md`'s rule, binding
 here too: a suite that silently loses a test still passes, and a listing is what
@@ -1215,12 +1215,12 @@ asks for.
 
 ### 2.5 Post-flip QA checklist
 
-**Split** --- one commit, after the human checklist is signed off: this item's
-outcome line and the ledger flip. No banner commit: 1.4's 2026-08-07 ruling made
-the banner a post-condition of every capability item, so the "proportional
-fonts" clause comes off in 2.4's landing sequence, and 2.4 sits before this item
-in the chain. R6's commit stood here as (1) until 2026-09-14 and retired with R6
-(B.10).
+**Split** --- one commit, after Mikolaj signs off the findings and the timing:
+this item's outcome line and the ledger flip. No banner commit: 1.4's 2026-08-07
+ruling made the banner a post-condition of every capability item,
+so the "proportional fonts" clause comes off in 2.4's landing sequence, and 2.4
+sits before this item in the chain. R6's commit stood here as (1) until
+2026-09-14 and retired with R6 (B.10).
 
 **Owns** --- `docs/wasm-frontend-unified-plan.md` and nothing else.
 `GameDefinition/index.html` left this list with the banner commit, which
@@ -1230,14 +1230,14 @@ is 2.4's.
 deletes that clause and carries the check, and a grep run after 2.4 has landed
 would pass having tested nothing.
 
-**Hands back** --- *judgement*: every checklist item is a human's.
-The side-by-side visual comparison with SDL2 (menus, message log, help, item
-descriptions, and the mono-overwrites-prop overrun), the HiDPI and browser-zoom
-spot checks, and the frame-timing re-measurement's verdict --- the runs
-themselves are a session's now, capture and re-measurement under one Xvfb setup
-with the left-hand side 0.4's Split (0) number (B.10 has the record).
-The screenshot line is a glance too: one renderer draws the PNG and the screen,
-so it cannot regress to map-only on its own (B.10).
+**Hands back** --- *judgement*: the findings and the frame-timing
+re-measurement's verdict. The comparisons themselves are a session's,
+by the record's ruling of 2026-10-26: the side-by-side with SDL2 (menus, message
+log, help, item descriptions, and the mono-overwrites-prop overrun), the HiDPI
+and browser-zoom checks and the screenshot, each from captures of one seeded
+launch compared pixel by pixel, every difference investigated to its cause,
+and the re-measurement under one Xvfb setup with the left-hand side 0.4's Split
+(0) number (B.10 has the record).
 
 **Decide first** --- nothing; the rulings are the record's.
 

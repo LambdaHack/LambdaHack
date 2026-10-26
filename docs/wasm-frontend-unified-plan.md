@@ -624,6 +624,12 @@ only that the plan was written is one the next reader has to skip.
   under wasm only after 2.4's (3), and the history case wants a diagnosis first.
 - 2026-10-25 -- the determinism goldens' **Decide first** ruled by Mikolaj,
   as their ruling (4): the wasm stage lands after 2.4's (3).
+- 2026-10-26 -- ruled by Mikolaj (2.5's Rulings): every comparison on 2.5's list
+  is the session's, captures of one seeded launch in each frontend compared
+  pixel by pixel and each difference investigated to its cause, and what reaches
+  him is findings, never pictures to compare; the browser takes the seed
+  by a throwaway argv in `loader.ts`, seeds reaching only the first game
+  a server starts.
 
 ## Repo facts the plan builds on
 
@@ -2360,7 +2366,13 @@ this field carried. One instruction survives it: should the record show
 the capture was skipped regardless, either strike that checklist line
 with a recorded reason or re-derive a baseline from a build at the pre-2.2
 commit --- never quietly measure against nothing and call the number
-a comparison.
+a comparison. Ruled 2026-10-26 by Mikolaj: every comparison on this list
+is the session's --- captures of one seeded launch in each frontend, compared
+pixel by pixel, each difference investigated to its cause --- and what reaches
+him is findings, never pictures to compare. The browser takes the seed
+by a throwaway argv in `loader.ts`'s `new WASI` call, applied for the captures
+as the probe is: seeds reach only the first game a server starts, so the argv
+carries `--newGame` and `--gameMode` too, which R4's allowlist leaves out.
 
 ---
 
