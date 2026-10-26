@@ -2415,42 +2415,57 @@ SDL2 and both browsers launched with
 `--newGame 5 --gameMode raid --setDungeonRng "SMGen 123 123" --setMainRng "SMGen 123 125"`
 and driven through 24 screens: the map and the HUD agree in every cell's ink
 and in the hue and brightness of its summed light, Firefox and Chromium within
-a pixel on every screen but for 6 pixels of the history's, the fullscreen `C-P`
-PNG with the canvas pixel for pixel, and ratio 2 with 1x in every cell but one
-glyph's overhang at the occupancy threshold. What differs: (1) both browsers
-drew text with subpixel antialiasing, the map's pixel font included, because
-the canvas was opaque ([terminal.ts#L142][terminal-142]), where a transparent
-canvas draws the same glyphs without it, the fix the defect record terminal-02
-carries; (2) proportional and mono text sits a pixel higher than SDL2's,
-`faceBaseline` (`terminal-core.ts:export function faceBaseline(`) meeting
-the browsers' rounded font metrics, Firefox's ascent 13 and descent 4
+a pixel on every screen but for 6 pixels of the history's, its line saying when
+the game started being read off the wall clock, which no seed fixes,
+the fullscreen `C-P` PNG with the canvas pixel for pixel, and ratio 2 with 1x
+in every cell but one glyph's overhang at the occupancy threshold. What differs:
+(1) both browsers drew text with subpixel antialiasing, the map's pixel font
+included, because the canvas was opaque ([terminal.ts#L142][terminal-142]),
+where a transparent canvas draws the same glyphs without it, the fix the defect
+record terminal-02 carries; (2) proportional and mono text sits a pixel higher
+than SDL2's, `faceBaseline` (`terminal-core.ts:export function faceBaseline(`)
+meeting the browsers' rounded font metrics, Firefox's ascent 13 and descent 4
 and Chromium's 12 and 3, where SDL_ttf has 13 and 3; (3) along a line
 the canvas's fractional advances drift from SDL_ttf's hinted whole-pixel ones,
 a word's start by up to 8 pixels and a line's end by up to 6; (4) the history's
-prompt lacks `[.]`, by design; (5) the zoom chords reach the game as well
-as the browser, and the game answers `*unknown command 'C-+'*`; (6) where
-a zoom's cell is not a whole number of device pixels the cell is rounded
-and the faces are not, so proportional lines run longer against the grid at 80%
-and shorter at 120%, and not at 125%; (7) the outline woff's points sit off
-the pixel grid in 315 of its 383 drawn glyphs, mostly by a hundredth or two
-of a pixel, so an unhinted renderer blends their edges with the background,
-the browsers at every scale and SDL2 faintly, its hinting snapping most, where
-the `.bdf` it was made from is crisp. Measured again the same day, after
-terminal-02's fix and with the `.bdf` restored as `dejavuBold`'s map font
-at 1:1: on the map and the HUD every glyph's ink agrees with SDL2's to within
-a pixel in both browsers, the browsers differing only by the greyscale blends
-at the woff's off-grid edges (7), 2061 pixels in Firefox and 1560 in Chromium
-on the map screen, where SDL2's woff and the opaque canvas had differed by 12000
-and 11856; Firefox and Chromium agree in ink on every screen but for 2 pixels;
+prompt lacks `[.]`, by design, the browser builds leaving out the key that dumps
+the history to a file, as the determinism goldens' outcome line records; (5)
+the zoom chords reach the game as well as the browser, and the game answers
+`*unknown command 'C-+'*`; (6) where a zoom's cell is not a whole number
+of device pixels the cell is rounded and the faces are not, so proportional
+lines run longer against the grid at 80% and shorter at 120%, and not at 125%;
+(7) the outline woff's points sit off the pixel grid in 315 of its 383 drawn
+glyphs, mostly by a hundredth or two of a pixel, so an unhinted renderer blends
+their edges with the background, the browsers at every scale and SDL2 faintly,
+its hinting snapping most, where the `.bdf` it was made from is crisp. Measured
+again the same day, after terminal-02's fix and with the `.bdf` restored
+as `dejavuBold`'s map font at 1:1: on the map and the HUD every glyph's ink
+agrees with SDL2's to within a pixel in both browsers, the browsers differing
+only by the greyscale blends at the woff's off-grid edges (7), 2061 pixels
+in Firefox and 1560 in Chromium on the map screen, where SDL2's woff
+and the opaque canvas had differed by 12000 and 11856; Firefox and Chromium
+agree in ink on every screen but for 2 pixels of that same wall-clock line;
 and ratio 2 matches 1x in every cell, but for one in Firefox at the end
-of a proportional line. Frame timing after the fix, run the same way
-with the load average between 2.4 and 6.0, the machine as quiet as it would get
-that evening: in Firefox p95 4.00 and 4.00ms against the baseline's 3.00
-and 4.00ms, means 1.26 at n=4595 and 1.38 at n=4277 against 1.04 at n=4428
-and 1.07 at n=4724; in Chromium p95 14.20 and 14.40ms against 13.40 and 13.40ms,
-means 3.36 at n=4539 and 3.36 at n=4586 against 3.14 at n=4356 and 3.18
-at n=4249; so by p95 the current tree is 0 to 1ms slower than the baseline
-in both browsers, where before the fix, on the quiet machine, it had matched
+of a proportional line, the last `r` of the main menu's "look out for", whose
+overhang past its cell, a fraction of a pixel, lights 2 pixels at 1:1,
+under the comparison's threshold of 3 for a 16-pixel cell, and 12 at 2:1,
+on its threshold for a 32-pixel one. The overrun, logged by a throwaway build
+of the fixed page over the same 24 screens: in 6 of its 30-odd overlay frames
+a proportional line ends in an all-space chunk overrunning the screen's edge,
+which `propFit` cuts to it, and a later layer draws over that chunk, monospace
+on row 0 and square cells on rows 1 and 2, the same 7 overlaps in both browsers;
+in the region of that monospace run both browsers agree with SDL2 within a pixel
+on every screen with ink there but the history's, whose difference there is (4);
+no screen draws monospace over proportional ink, and the engine's "--a portion
+of the text trimmed--", which an overlay taller than the screen gets, appears
+on none. Frame timing after the fix, run the same way with the load average
+between 2.4 and 6.0, the machine as quiet as it would get that evening:
+in Firefox p95 4.00 and 4.00ms against the baseline's 3.00 and 4.00ms, means
+1.26 at n=4595 and 1.38 at n=4277 against 1.04 at n=4428 and 1.07 at n=4724;
+in Chromium p95 14.20 and 14.40ms against 13.40 and 13.40ms, means 3.36
+at n=4539 and 3.36 at n=4586 against 3.14 at n=4356 and 3.18 at n=4249;
+so by p95 the current tree is 0 to 1ms slower than the baseline in both
+browsers, where before the fix, on the quiet machine, it had matched
 the baseline in Firefox and been 1.9 and 4.2ms slower in Chromium.*
 
 ---
