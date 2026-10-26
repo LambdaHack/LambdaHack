@@ -3810,7 +3810,7 @@ on 2026-10-26 the `.bdf`, and an OTB that `fonttosfnt` built from it, raw
 and wrapped in WOFF, were each rejected by Firefox and by Chromium,
 `FontFace.load` failing and the text falling back to `monospace` --- the OTB
 built once its source carried the `CHARSET_REGISTRY` and `CHARSET_ENCODING`
-properties the repository's `.bdf` lacks, without which FreeType finds
+properties the repository's `.bdf` then lacked, without which FreeType found
 no Unicode map in it. So the browser's crisp map font is an outline font whose
 every edge falls on the pixel grid: each lit pixel of the `.bdf` a square of 100
 units at the existing font's 1600 units per em, which rasterizes to whole pixels
