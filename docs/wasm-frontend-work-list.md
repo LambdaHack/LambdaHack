@@ -135,6 +135,10 @@ sections of the record are frozen and which live is its head callout's to say.
 | R8 | the LambdaHack issue #281 workaround retired: no black ring around a cell without a coloured highlight | small | 0.2, 2.2 | landed -- d474dc271 |
 | R9 | German keyboards: a cheap way to play comfortably on QWERTZ, by key config, engine or help texts | exploratory | 2.5 (parity); R4 for a preset picked in the browser | not applied |
 | R10 | a pixel-exact outline map font regenerated from the `.bdf`, and the map font chosen by scale in both frontends: the `.bdf`'s pixels at 1:1 and every n:1, `16x16xw.woff` at the other scales | medium | 2.5 | not applied |
+| R11 | proportional and mono text on SDL2's baseline in the browser, not a pixel above it | small | --- | open |
+| R12 | the zoom chords: in the browser kept from the game, which answers them with an unknown command, and in SDL2 zooming too or saying the zoom is the browser's | small; medium with SDL2's zoom | --- | open |
+| R13 | faces sized to the rounded cell at a fractional zoom, as the grid is; below 1, the 8-pixel map fonts by default, the browser switching at a higher scale than SDL2 | small; medium with the 8-pixel default | R7 for the 8-pixel fonts in the browser | open |
+| R14 | proportional text at SDL_ttf's whole-pixel advances in the browser, not drifting along a line | small | --- | open |
 | capability constants | named constants in place of behavioral CPP | --- | --- | not applied |
 | sum-typed selection | one frontend field replacing four `Bool`s | mechanical, moderate churn | --- | not applied |
 | RawFrontend contract | haddock contract, tasty harness, add-a-frontend checklist | medium | haddock and checklist: nothing; native harness after 0.1, which creates its module; wasm case with 0.3 | not applied |
@@ -345,8 +349,9 @@ Parity work stays in one checkout.
 ## Items
 
 Each item's design and rulings are in the record, under the same heading, R8's,
-R9's and R10's under B.12, B.13 and B.15, and 1.7's and 1.8's at Appendix C's
-gaps (2) and (3), with their rulings in the Log; what is here is how it lands.
+R9's, R10's, R11's, R12's, R13's and R14's under B.12, B.13, B.15, B.16, B.17,
+B.18 and B.19, and 1.7's and 1.8's at Appendix C's gaps (2) and (3), with their
+rulings in the Log; what is here is how it lands.
 
 ## Phase 0 --- shared foundations
 
@@ -1630,7 +1635,8 @@ pixels out equal to the BDF's bitmap in.
 **Decide first** --- (a) what R7's atlas draws once R10 has landed, R10 drawing
 the `.bdf`'s pixels at every integer scale in both frontends with an outline
 font (B.15): the 16x16 font as well, or the `.fnt` fonts alone, which have
-no outline form; R7's Split, Done and Hands back are re-cut by the answer.
+no outline form and which R13's (2) needs in the browser; R7's Split, Done
+and Hands back are re-cut by the answer.
 
 **R8 --- Retire the LambdaHack issue #281 workaround.** Design and ruling
 in the record, at B.12.
@@ -1759,6 +1765,103 @@ font's departures from it having been made for legibility below 1, by Mikolaj's
 recollection (B.15); (c) whether the 2019 hand hinting is carried over, which
 a pixel-exact outline needs at no integer size and which a browser runs only
 under a system's full hinting (B.15).
+
+**R11 --- Proportional and mono text on SDL2's baseline.** Design and ruling
+in the record, at B.16.
+
+**Owns** --- `ts-src/src/terminal-core.ts` and its test,
+`ts-src/src/terminal.ts`, and, as **Decide first** (a) settles it, 0.2's
+generator in the Haskell suite and the generated file it writes,
+and `docs/wasm-frontend-unified-plan.md`. R13 and R14 write other lines
+of `terminal.ts` and `terminal-core.ts`.
+
+**Done** --- `ts`, `wasm`, `deploy`, `page`, `docs`, plus 2.5's seeded
+comparison, as its Rulings describe it, run again: proportional and mono text
+on the rows SDL2 draws it on, in both browsers at 1:1 and 2:1.
+
+**Hands back** --- hands back nothing: the comparison is a session's, by 2.5's
+ruling of 2026-10-26.
+
+**Decide first** --- (a) where a face's ascent and descent come from: SDL_ttf's
+figures in 0.2's generated files, or the font's `hhea` table read in the browser
+(B.16).
+
+**R12 --- The zoom chords in both frontends.** Design and ruling in the record,
+at B.17.
+
+**Owns** --- `engine-src/Game/LambdaHack/Client/UI/Frontend/InputDecision.hs`,
+`test/InputDecisionUnitTests.hs`,
+`engine-src/Game/LambdaHack/Client/UI/Frontend/Wasm.hs`,
+`test/FrontendContractUnitTests.hs` where a case there builds a `KeyDecision`,
+and, as **Decide first** (a) settles it,
+`engine-src/Game/LambdaHack/Client/UI/Frontend/Sdl.hs` for the zoom
+or `engine-src/Game/LambdaHack/Client/UI.hs`
+and `GameDefinition/game-src/Client/UI/Content/Input.hs` for the message,
+and `docs/wasm-frontend-unified-plan.md`.
+
+**Done** --- `native`, `wasm`, `deploy`, `page`, `docs`, plus a `decideKey` case
+for each of `C-+`, `C--` and `C-0`, and, under Xvfb with real XTEST events,
+headless applying no chrome zoom, each chord zooming the page in both browsers
+with the game's message line unchanged, and, under Xvfb with `xdotool`, each
+chord in SDL2 zooming the map or printing that message.
+
+**Hands back** --- *browser*: Mikolaj's check of the same three chords
+in Firefox, where he takes the browser hand-backs (ruled 2026-10-22).
+The substitute gate in Done is the Xvfb run.
+
+**Decide first** --- (a) whether SDL2 zooms by the chords, as Mikolaj would have
+it, or says at the keypress that the zoom is available only in the browser:
+the zoom's cost in `Sdl.hs`, every font reloaded at a new scale and the window
+resized, found out first and put to him (B.17).
+
+**R13 --- Faces sized to the rounded cell, and the 8-pixel fonts below 1.**
+Design and ruling in the record, at B.18.
+
+**Split** --- (1) the faces sized to the rounded cell, any time; (2) the 8-pixel
+map fonts by default below 1 in both frontends, the browser's threshold
+the higher (B.18), after R7's atlas, which alone draws a `.fnt` font
+in a browser; (3) the outcome line and the ledger flip.
+
+**Owns** --- `ts-src/src/terminal.ts`, `ts-src/src/terminal-core.ts`
+and its test, and, for (2),
+`engine-src/Game/LambdaHack/Client/UI/Frontend/Fonts.hs`
+and its `test/FontsUnitTests.hs` and `GameDefinition/config.ui.default`,
+and `docs/wasm-frontend-unified-plan.md`. R10 rewrites the map font's choice
+in `terminal.ts` and `Fonts.hs` first, where (2) adds the 8-pixel fonts, and R11
+and R14 write other lines of `terminal.ts` and `terminal-core.ts`.
+
+**Done** --- `ts`, `wasm`, `deploy`, `page`, `docs`, plus 2.5's seeded
+comparison run again at 80%, 120% and 125% zoom: proportional lines ending
+on the same cell of the grid as at 100%, in both browsers; and, for (2),
+`resolveFonts`'s tests taking the 8-pixel fontset below SDL2's threshold
+and the browser's choice taking it below its own, under the browser's tests.
+
+**Hands back** --- hands back nothing: the comparison is a session's, by 2.5's
+ruling of 2026-10-26.
+
+**Decide first** --- (a) whether each face's size is rounded to whole device
+pixels, as SDL2 rounds it, or scaled by the rounded cell's ratio
+to the unrounded one (B.18); (b) for (2), the two thresholds, and the 8-pixel
+fontset each fontset falls back to (B.18).
+
+**R14 --- Proportional text at whole-pixel advances.** Design and ruling
+in the record, at B.19.
+
+**Owns** --- `ts-src/src/terminal-core.ts` and its test,
+`ts-src/src/terminal.ts`, and `docs/wasm-frontend-unified-plan.md`. R11 and R13
+write other lines of both files.
+
+**Done** --- `ts`, `wasm`, `deploy`, `page`, `docs`, plus 2.5's seeded
+comparison run again: the start of every word of a proportional line where
+Decide first's bar puts it against SDL2's, in both browsers at 1:1 and 2:1;
+and the frame timing beside B.10's baseline, as 2.5 ran it.
+
+**Hands back** --- hands back nothing: the comparison is a session's, by 2.5's
+ruling of 2026-10-26.
+
+**Decide first** --- (a) the bar: every word starting within a pixel of where
+SDL2 starts it, or only less drift than today, SDL_ttf's hinting being out
+of a page's reach (B.19).
 
 ## Multi-frontend practices (adopted)
 
@@ -2103,6 +2206,10 @@ R7 --- after 0.4, 1.5 and R10; R7b after R7a
 R9 --- late: after 2.5 (parity), R9a's measurement first, R9b on Mikolaj's
     ruling
 R10 --- after 2.5, before R7, whose atlas may then serve the .fnt fonts alone
+R11 --- any time, in either order with R13 and R14
+R12 --- any time
+R13 --- any time, in either order with R10, R11 and R14; its (2) after R7
+R14 --- any time, in either order with R11 and R13
 ```
 
 Rationale, condensed: the input cluster goes first (mechanism already validated,

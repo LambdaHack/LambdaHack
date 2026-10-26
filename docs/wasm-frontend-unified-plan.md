@@ -646,6 +646,15 @@ only that the plan was written is one the next reader has to skip.
   below 1. `resolveFonts` takes the `.bdf` at 1.0 alone and the browser draws
   `16x16xw.woff` at every scale, so R10 changes the font choice in both
   frontends, and R7, landing after it, asks what its atlas then draws.
+- 2026-10-26 -- 2.5's four open findings filed as items by Mikolaj, each `open`,
+  the code being wrong today: R11, proportional and mono text a pixel above
+  SDL2's baseline (B.16); R12, the zoom chords, kept from the game
+  in the browser and in SDL2 zooming the map too or saying the zoom
+  is the browser's (B.17); R13, faces unrounded against a rounded cell
+  at a fractional zoom, and by Mikolaj's ruling the 8-pixel map fonts by default
+  below 1, the browser switching at a higher scale than SDL2, which waits
+  on R7's atlas (B.18); R14, proportional text drifting from SDL2's along a line
+  at the canvas's fractional advances (B.19).
 
 ## Repo facts the plan builds on
 
@@ -3875,6 +3884,78 @@ between two outline fonts. Today `resolveFonts` takes the `.bdf` at 1.0 alone
 and the browser draws the existing font at every scale. R10 lands before R7,
 whose atlas may then serve the `.fnt` fonts alone, they having no outline form,
 which R7's **Decide first** asks.
+
+**B.16 Proportional and mono text on SDL2's baseline, as R11.** Filed 2026-10-26
+by Mikolaj, from 2.5's finding (2): the browsers draw proportional and mono text
+a pixel higher than SDL2 does. `faceBaseline`
+(`terminal-core.ts:export function faceBaseline(`) centres a face's line box
+in the cell from the canvas's `fontBoundingBoxAscent`
+and `fontBoundingBoxDescent`, which round to Firefox's ascent 13 and descent 4
+and Chromium's 12 and 3, where SDL_ttf has 13 and 3 (2.5's note), so
+in a 16-pixel cell both browsers put the baseline at 12 and SDL2 at 13. The fix
+takes a face's ascent and descent as SDL_ttf has them, and where from is R11's
+**Decide first** (a): SDL_ttf's own figures, written for each face and size
+into 0.2's generated files by the Haskell suite, which links SDL; or the font's
+`hhea` table, read in the browser and rounded as SDL_ttf rounds it. The canvas's
+metrics differ by browser, so no correction of them is proposed.
+
+**B.17 The zoom chords in both frontends, as R12.** Filed 2026-10-26 by Mikolaj,
+from 2.5's finding (5): `C-+`, `C--` and `C-0` zoom the page and reach the game
+as well, which answers `*unknown command 'C-+'*`. `decideKey` leaves the browser
+its default for the bare Control chords of `browserKeys`
+(`InputDecision.hs:browserKeys = "+-0"`), and `deliverKey`
+(`Common.hs:deliverKey :: RawFrontend -> KeyDecision`) hands every key
+to the game whatever the decision. In the browser the fix is a field
+of `KeyDecision` saying that the browser takes a key alone, true
+for those chords, which `Wasm.hs` reads and so delivers nothing for them. Ruled
+the same day by Mikolaj: SDL2 handles the chords too, zooming the map by them,
+or, if not, saying at the keypress that the zoom is available only
+in the browser, in place of the game's `unknown command`
+(`UI.hs:let msgKey = "unknown command '"`). Which of the two is R12's **Decide
+first** (a): SDL2 sizes its fonts by `allFontsScale` once, at startup,
+so its zoom means reloading every font at a new scale and resizing the window,
+whose cost the executing session finds out first. `Dom.hs`, which delivered
+the chords too, stays as it is.
+
+**B.18 Faces sized to the rounded cell, as R13.** Filed 2026-10-26 by Mikolaj,
+from 2.5's finding (6): at a zoom whose cell is not a whole number of device
+pixels, proportional lines run longer against the grid at 80% and shorter
+at 120%, and not at 125%. `cellMetrics`
+(`terminal-core.ts:export function cellMetrics(`) rounds the map font's height
+into the cell, while `faceFont`
+(`terminal.ts:function faceFont(face: Face): string {`) sizes every face
+at its size times `devicePixelRatio`, unrounded, so at a fractional ratio
+the faces and the grid scale apart. SDL2 rounds each face's pixel size
+at a fractional `allFontsScale`
+(`Fonts.hs:in ChosenFont def file (round $ scale * intToDouble size)`) and takes
+the cell from the map font's height at that size. Which way the browser follows
+is R13's **Decide first** (a): each face's size rounded to whole device pixels,
+as SDL2 rounds it, or scaled by the rounded cell's ratio to the unrounded one,
+which keeps each face's proportion to the grid exact. Ruled the same day
+by Mikolaj, on B.15's finding that SDL2 runs the woff's hinting and no page can
+ask a browser to: below 1 the browser defaults to the 8-pixel map fonts
+at a higher scale than SDL2 does, making up for drawing the woff unhinted,
+and R13, where the browser's sizes at a fractional scale are settled, sets both
+thresholds. Neither frontend defaults to those fonts today: the fontset
+is the player's `chosenFontset`, and `8x8xb` and `8x8x` name no scalable map
+font, so `resolveFonts` refuses them at any `allFontsScale` but 1.0
+(`Fonts.hs:Scaling requested but scalable map font not defined`). And a browser
+draws an 8-pixel `.fnt` font only through R7's atlas, those fonts having
+no outline form (B.15), so this half of R13 waits on R7, and the thresholds,
+with the 8-pixel fontset each fontset falls back to, are its **Decide first**
+(b).
+
+**B.19 Proportional text at whole-pixel advances, as R14.** Filed 2026-10-26
+by Mikolaj, from 2.5's finding (3): along a line the canvas's fractional
+advances drift from SDL_ttf's hinted whole-pixel ones, a word's start by up to 8
+pixels and a line's end by up to 6. The browser draws a proportional run
+with one `fillText`
+(`terminal.ts:ctx.fillText(op.text, op.x, op.y + op.baseline);`), so the canvas
+places each glyph at its fractional advance. Drawing glyph by glyph
+at whole-pixel advances, each glyph's measured width rounded, follows SDL_ttf's
+rounding, though not its hinting's adjustments, which no page can ask
+for (B.15), so some drift may remain; how much is the bar, R14's **Decide
+first** (a). The cost is a draw call per glyph, which R14's Done times.
 
 ---
 
