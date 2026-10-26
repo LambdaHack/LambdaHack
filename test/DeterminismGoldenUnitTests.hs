@@ -55,7 +55,14 @@ determinismGoldenUnitTests :: TestTree
 determinismGoldenUnitTests = testGroup "determinismGoldenUnitTests" $ concat
   [ frameGolden hudScript 0xc903da55cccbbada 0xc903da55cccbbada
   , frameGolden helpScript 0xdfcea6da3d931836 0x2cd4b9ef354ea8de
+  -- The browser builds offer no key to dump the history to a file, so the
+  -- history screen's prompt lists one key fewer there (allHistoryHuman), and
+  -- their goldens are those `make test-wasm` prints.
+#if !defined(USE_JSFILE) && !defined(USE_WASMFILE)
   , frameGolden historyScript 0xaf37da5db75d7fb0 0x25eea5689396c8e0
+#else
+  , frameGolden historyScript 0x3a766f7350d32486 0xf3e785f52f3f62e6
+#endif
   , frameGolden mainMenuScript 0xa32e124d169cae09 0x4bcf461cd770978a
   , frameGolden itemScript 0xf9cb38ca86a7f36c 0xf76941846095dcda
   , [ stateGolden "crawl" 1 "SMGen 123 123" "SMGen 123 125" 0x6e31649e74658d4a

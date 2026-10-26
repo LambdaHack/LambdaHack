@@ -58,15 +58,26 @@ SMOKE_ANSI = judge(NATIVE, 'smokeANSI',
                    '|| { cat build.log; exit 2; }; ')
 
 
-# The cases the tasty pattern selects in the test executable named: exit 0 where
-# tasty passed, a pattern selecting no case included, 1 where it reported a
-# failed case, and 2 otherwise, as where the seeding or the build failed or
-# tasty could not parse the pattern.
-def tasty(component, pattern):
-    return (NATIVE + ' || exit 2; '
-            'cabal build ' + component + ' > build.log 2>&1 '
+# The cases the tasty pattern selects in the test executable named, built
+# natively or, for wasm, built and run as `make test-wasm` builds and runs it:
+# exit 0 where tasty passed, a pattern selecting no case included, 1 where it
+# reported a failed case, and 2 otherwise, as where the seeding or the build
+# failed or tasty could not parse the pattern.
+def tasty(component, pattern, wasm=False):
+    if wasm:
+        cabal = '. ~/.ghc-wasm/env && wasm32-wasi-cabal'
+        opts = ' --enable-optimization'
+        run = ('W=$(wasm32-wasi-cabal list-bin ' + component + opts + ') && '
+               '~/.ghc-wasm/wasm32-wasi-ghc/lib/post-link.mjs --input "$W" '
+               '--output jsffi.mjs && '
+               'node ts-src/run-wasm-test.mjs "$W" jsffi.mjs')
+    else:
+        cabal, opts = 'cabal', ''
+        run = '"$(cabal list-bin ' + component + ')"'
+    return ((WASM if wasm else NATIVE) + ' || exit 2; '
+            + cabal + ' build ' + component + opts + ' > build.log 2>&1 '
             '|| { cat build.log; exit 2; }; '
-            '"$(cabal list-bin ' + component + ')" -p \'' + pattern + '\' '
+            '{ ' + run + ' -p \'' + pattern + '\'; } '
             '> judge.log 2>&1; s=$?; cat judge.log; '
             'if [ $s -eq 0 ]; then exit 0; '
             "elif grep -q ' tests failed ' judge.log; then exit 1; "
@@ -154,6 +165,14 @@ MUTANTS = [
      '../engine-src/Game/LambdaHack/Client/UI/Overlay.hs',
      'textSize MonoFont l = length l\n',
      'textSize MonoFont l = length l + 1\n', tasty('test-game', '/fe-golden/')),
+    # The browser's history screen offering the key that dumps it to a file, as
+    # the native one does: the browser's history goldens fail under wasm.
+    ("goldens: the dump key in the browser's history",
+     '../engine-src/Game/LambdaHack/Client/UI/HandleHumanLocalM.hs',
+     '#if !defined(USE_JSFILE) && !defined(USE_WASMFILE)\n'
+     "        : K.mkChar '.'\n",
+     "#if 1\n        : K.mkChar '.'\n",
+     tasty('test-game', '/fe-golden: history/', wasm=True)),
     # Heroes one HP hardier, starting the state goldens' games with more.
     ('goldens: heroes with one more HP',
      '../GameDefinition/Content/ItemKindActor.hs',

@@ -1462,9 +1462,12 @@ import branch and every `#ifndef REMOVE_TELETYPE` guard), `File.hs`'s
 `USE_JSFILE` branch, `TieKnot.hs`'s `USE_GHCJS` GHC.Compact branch,
 the `USE_JSFILE` halves at `Server/LoopM.hs:!defined(USE_JSFILE) &&`,
 `HandleHumanLocalM.hs:!defined(USE_JSFILE) &&`
-and `WatchUpdAtomicM.hs:#if defined(USE_JSFILE)`, header comments only
-in `Dom.hs` and `JSFile.hs`, the two orphan GHCJS comments nothing else claims
---- `GameDefinition/Main.hs:This test is faulty in the browser`, reworded
+and `WatchUpdAtomicM.hs:#if defined(USE_JSFILE)`, and of the copies
+of the second in `test/DeterminismGoldenUnitTests.hs`, whose history case picks
+its digests by it, and in `tools/mutants-deep.py`, as the anchor of a `goldens:`
+mutant, header comments only in `Dom.hs` and `JSFile.hs`, the two orphan GHCJS
+comments nothing else claims ---
+`GameDefinition/Main.hs:This test is faulty in the browser`, reworded
 in wasm/browser terms since the fact survives the compiler it names,
 and `Point.hs:not supported yet by GHCJS (not verified)`'s "not supported yet
 by GHCJS" clause, updated or dropped --- `.hlint.yaml`'s comment naming
@@ -1692,15 +1695,18 @@ in the record.
 the File-layer modules gain the constants (`Common/HSFile.hs`,
 `Common/WasmFile.hs`, `Common/JSFile.hs`, re-exported through `Common/File.hs`,
 whose selection `#ifdef` at `File.hs:#ifdef USE_JSFILE` stays untouched),
-then the three engine consumers branch on values and lose their `#if`s;
-then the re-anchoring the second owes, the three `#if` sites being lines cited
-here that it rewrites. The outcome line names the second commit's hash
-and follows the third; the item sits in no `tools/doc-refs-allow.txt` gate,
-so it deletes nothing there.
+then the three engine consumers, and the determinism goldens' history case
+beside them, branch on values and lose their `#if`s; then the re-anchoring
+the second owes, the three `#if` sites being lines cited here that it rewrites.
+The outcome line names the second commit's hash and follows the third; the item
+sits in no `tools/doc-refs-allow.txt` gate, so it deletes nothing there.
 
 **Owns** --- `Common/File.hs`, `Common/HSFile.hs`, `Common/WasmFile.hs`,
 `Common/JSFile.hs`, `Server/LoopM.hs`, `Client/UI/HandleHumanLocalM.hs`,
-`Client/UI/Watch/WatchUpdAtomicM.hs`, and `docs/wasm-frontend-unified-plan.md`,
+`Client/UI/Watch/WatchUpdAtomicM.hs`, `test/DeterminismGoldenUnitTests.hs`,
+whose history case picks its digests by the history-dump key's condition,
+`tools/mutants-deep.py`, whose `goldens:` mutant giving the browser that key
+edits the condition, and `docs/wasm-frontend-unified-plan.md`,
 for the re-anchoring the second commit owes. The two code commits are strictly
 ordered --- the second does not compile without the first. R1's whole point
 is flipping two of the constants (`Server/LoopM.hs:!defined(USE_JSFILE) &&`,
@@ -1714,8 +1720,8 @@ the `HandleHumanLocalM.hs:!defined(USE_JSFILE) &&` this item and R3 both cite,
 so re-read those two snippets if it has landed.
 
 **Done** --- `native`, `wasm`, `docs`, plus
-`! git grep -lE 'USE_JSFILE|USE_WASMFILE' -- engine-src/Game/LambdaHack/Server/LoopM.hs engine-src/Game/LambdaHack/Client`.
-That `git grep` names three files today, which is what makes its later silence
+`! git grep -lE 'USE_JSFILE|USE_WASMFILE' -- engine-src/Game/LambdaHack/Server/LoopM.hs engine-src/Game/LambdaHack/Client test/DeterminismGoldenUnitTests.hs`.
+That `git grep` names four files today, which is what makes its later silence
 evidence rather than a vacuous search.
 
 **Hands back** --- *browser*: a session does now enter the save-and-exit path
@@ -1835,7 +1841,7 @@ which must precede 2.4, then, after 2.4's (3) by the record's ruling (4),
 the wasm stage, which begins by diagnosing the history case, under wasm
 differing from native under both setups, and then lifts the harness's
 native-only guard in `test/GameSpec.hs`, so that `make test-wasm` and R2's
-existing job run the same goldens. The first landed in `f9a50d959`,
+existing job run the goldens too. The first landed in `f9a50d959`,
 with the `tools/doc-refs-allow.txt` deletion, run in `test-game`, the executable
 `0efca9f8d` gave the cases on the sample game's content; the second carries
 the outcome line.
@@ -1872,7 +1878,7 @@ demand of any new self-checking assertion: perturb one input to the frames
 or overlays the engine builds, re-run
 `cabal test --test-options='-p "/fe-golden/"'` --- this item's own marker, never
 the bare `golden` the tasty-tag rule forbids --- expect failure, and record
-the perturbation as a mutant, the native harness's being the `goldens:` ones
+the perturbation as a mutant, one of the `goldens:` ones
 in `tools/mutants-deep.py`, which the test's header names. Confirmed
 for the native harness on 2026-10-25, in the record's item.
 

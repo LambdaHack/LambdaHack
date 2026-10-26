@@ -733,9 +733,10 @@ catches wasm-only compile and link breakage. 0.3's FFI battery executes both
 modules' code, `WasmFile.hs` through `Common/File.hs`'s exports and `Wasm.hs`
 through `startup` and `fdisplay`, and 0.1's input-side contract cases enter
 `Wasm.hs` through `startup`; the rest of the suites do not enter `Wasm.hs`,
-the integration test passing `--frontendNull`, so that `nullStartup` stands
-in for `Chosen.startup`, and the cases under the mock starting no frontend
-at all, the stubs of `test/UnitTestHelpers.hs` standing in for one).
+the integration test and the state goldens passing `--frontendNull`,
+so that `nullStartup` stands in for `Chosen.startup`, and the cases
+under the mock starting no frontend at all, the stubs
+of `test/UnitTestHelpers.hs` standing in for one).
 
 **Claims here that no pass can re-run.** Five live assertions rested
 on experiments whose artifact was never recorded: 0.1's sync-export spike, 0.3's
@@ -2660,16 +2661,19 @@ in one commit:
   `USE_GHCJS` import branch, `File.hs`'s `USE_JSFILE` branch,
   `TieKnot.hs:#ifdef USE_GHCJS`'s GHC.Compact escape hatch, and the `USE_JSFILE`
   halves of the browser conditions
-  in `Server/LoopM.hs`/`WatchUpdAtomicM.hs`/`HandleHumanLocalM.hs` ---
-  or of their capability-constant successors, if that practice lands first.
-  Update CLAUDE.md's GHCJS mentions in the same commit. The README needs
-  no GHCJS edit --- it contains the string nowhere (checked repo-wide); what
-  it carries is browser-era prose --- the "The game runs rather slowly
-  in the browser" paragraph under "Installation of the sample game from binary
-  archives", which the page's `#status` div quotes with small edits --- it opens
-  the savefile sentence in capitals where the README hangs it off an "Also,",
-  and drops the README's "(which takes a long time)" --- owned clause by clause
-  by R1 and R5 under 1.4's rule, as 2.4's clause was, not by this rip-out.
+  in `Server/LoopM.hs`/`WatchUpdAtomicM.hs`/`HandleHumanLocalM.hs`, and
+  of the determinism goldens' copies of the last,
+  in `test/DeterminismGoldenUnitTests.hs` and as a mutant's anchor
+  in `tools/mutants-deep.py` --- or of their capability-constant successors,
+  if that practice lands first. Update CLAUDE.md's GHCJS mentions in the same
+  commit. The README needs no GHCJS edit --- it contains the string nowhere
+  (checked repo-wide); what it carries is browser-era prose --- the "The game
+  runs rather slowly in the browser" paragraph under "Installation of the sample
+  game from binary archives", which the page's `#status` div quotes with small
+  edits --- it opens the savefile sentence in capitals where the README hangs
+  it off an "Also,", and drops the README's "(which takes a long time)" ---
+  owned clause by clause by R1 and R5 under 1.4's rule, as 2.4's clause was,
+  not by this rip-out.
 
 Timed after parity, not before, so the rip-out doesn't tangle with Phase 0--2
 diffs touching the same cabal stanzas and CPP sites.

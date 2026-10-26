@@ -22,6 +22,8 @@ import           Game.LambdaHack.Server
 import qualified Content.RuleKind
 import           TieKnot
 
+import DeterminismGoldenUnitTests
+
 #ifndef USE_BROWSER
 import qualified Data.Text as T
 import           System.IO.Unsafe (unsafePerformIO)
@@ -29,8 +31,6 @@ import           System.IO.Unsafe (unsafePerformIO)
 import Game.LambdaHack.Client.UI.UIOptions
 import Game.LambdaHack.Client.UI.UIOptionsParse
 import Game.LambdaHack.Common.ClientOptions
-
-import DeterminismGoldenUnitTests
 #endif
 
 main :: IO ()
@@ -42,12 +42,6 @@ main = do
 corule :: RK.RuleContent
 corule = RK.makeData Content.RuleKind.standardRules
 
-#ifdef USE_BROWSER
--- | The determinism goldens are native only until their wasm stage.
-determinismGoldenUnitTests :: TestTree
-determinismGoldenUnitTests = testGroup "determinismGoldenUnitTests" []
-
-#endif
 tests :: TestTree
 tests = testGroup "Tests" [ determinismGoldenUnitTests
                           , integrationTests
