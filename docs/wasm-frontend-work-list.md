@@ -1757,7 +1757,8 @@ for those scales.
 by Mikolaj (B.15); (b) answered: the new font follows the `.bdf`, the existing
 font's departures from it having been made for legibility below 1, by Mikolaj's
 recollection (B.15); (c) whether the 2019 hand hinting is carried over, which
-a pixel-exact outline needs at no integer size.
+a pixel-exact outline needs at no integer size and which a browser runs only
+under a system's full hinting (B.15).
 
 ## Multi-frontend practices (adopted)
 

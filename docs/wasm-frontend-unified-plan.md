@@ -3835,22 +3835,38 @@ at a font size of 11), `3 8 B S` reshaped "to deform better when scaled"
 (`46b128f9c`), and edited again on 2019-01-29 (`8127ba07b`), after the `.bdf`'s
 edits since its conversion (`ea2905ed6`, `82c01f8ed`, `f0fedeb3d`), then fixed
 to be recognized as monospace (`e60034f00`) and updated twice more by March 2019
-(`a71894806`, `0f5d8b491`). Mikolaj recalled the same day that its departures
-were made on purpose, for legibility at scales below 1; and none is radical,
-both fonts mapping the same 385 code points, every glyph 16 pixels wide in each,
-none drawn in one and empty in the other, the least alike, the accented capitals
-of O, still overlapping by two thirds. Ruled the same day by Mikolaj: the new
-font joins the existing one, and in both frontends the map is drawn
-in the `.bdf`'s pixels at 1:1 and at every integer scale, a browser's zoom
-included, in SDL2 by the `.bdf` itself or the new font, and in the existing font
-below 1; at a fractional scale above 1, such as 1.5, the new font draws as well
-if a visual comparison finds it reads better there, a bitmap being kept
-to integer scales by R7's Rulings, whose arithmetic settles a bitmap against
-an outline and leaves open this choice between two outline fonts. Today
-`resolveFonts` takes the `.bdf` at 1.0 alone (`Fonts.hs:if scale == 1.0`),
-and the existing font at 2.0 as at 0.8, and the browser draws the existing font
-at every scale. R10 lands before R7, whose atlas may then serve the `.fnt` fonts
-alone, they having no outline form, which R7's **Decide first** asks.
+(`a71894806`, `0f5d8b491`). Its hinting --- instructions in 378 of its 388
+glyphs, an `fpgm`, a `prep` and a `cvt `, and a `gasp` table asking
+for grid-fitting at every size --- runs in SDL2, whose `HintingHeavy` leaves
+SDL_ttf at its default, FreeType's normal mode, and in the browsers only where
+fontconfig asks for full hinting: measured the same day, at this machine's
+default light hinting each browser draws the font and a copy stripped
+of its hinting identically at 11, 16 and 24 pixels, Firefox exactly
+as FreeType's light mode, which ignores a font's instructions, draws either,
+while under a fontconfig file setting `hintstyle` to `hintfull` both run
+the instructions, Firefox drawing 11 pixels as SDL2's normal mode does. No page
+can ask for that: no CSS property and no canvas attribute controls hinting,
+the canvas's `textRendering` changing nothing in Firefox and,
+at `geometricPrecision`, only towards more blending in Chromium; the setting
+is the user's or the system's, as is Chromium's `--font-render-hinting` switch.
+So the hinting decides what SDL2 draws at every `allFontsScale` but 1.0 today,
+and what a browser draws only on a system configured for full hinting. Mikolaj
+recalled the same day that its departures were made on purpose, for legibility
+at scales below 1; and none is radical, both fonts mapping the same 385 code
+points, every glyph 16 pixels wide in each, none drawn in one and empty
+in the other, the least alike, the accented capitals of O, still overlapping
+by two thirds. Ruled the same day by Mikolaj: the new font joins the existing
+one, and in both frontends the map is drawn in the `.bdf`'s pixels at 1:1
+and at every integer scale, a browser's zoom included, in SDL2 by the `.bdf`
+itself or the new font, and in the existing font below 1; at a fractional scale
+above 1, such as 1.5, the new font draws as well if a visual comparison finds
+it reads better there, a bitmap being kept to integer scales by R7's Rulings,
+whose arithmetic settles a bitmap against an outline and leaves open this choice
+between two outline fonts. Today `resolveFonts` takes the `.bdf` at 1.0 alone
+(`Fonts.hs:if scale == 1.0`), and the existing font at 2.0 as at 0.8,
+and the browser draws the existing font at every scale. R10 lands before R7,
+whose atlas may then serve the `.fnt` fonts alone, they having no outline form,
+which R7's **Decide first** asks.
 
 ---
 
