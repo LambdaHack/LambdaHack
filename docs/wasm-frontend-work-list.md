@@ -1236,8 +1236,9 @@ by the record's ruling of 2026-10-26: the side-by-side with SDL2 (menus, message
 log, help, item descriptions, and the mono-overwrites-prop overrun), the HiDPI
 and browser-zoom checks and the screenshot, each from captures of one seeded
 launch compared pixel by pixel, every difference investigated to its cause,
-and the re-measurement under one Xvfb setup with the left-hand side 0.4's Split
-(0) number (B.10 has the record).
+and the re-measurement under one Xvfb setup, its left-hand side 0.4's Split (0)
+tree, `9eb0c2c3c`, run alternately with the current one (B.10 has its first
+number).
 
 **Decide first** --- nothing; the rulings are the record's.
 

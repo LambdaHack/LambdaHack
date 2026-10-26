@@ -2374,6 +2374,39 @@ by a throwaway argv in `loader.ts`'s `new WASI` call, applied for the captures
 as the probe is: seeds reach only the first game a server starts, so the argv
 carries `--newGame` and `--gameMode` too, which R4's allowlist leaves out.
 
+*Measured 2026-10-26, on `4c95dbd3d`. Frame timing, B.10's probe adapted
+to `applyFrame(frame)`, B.10's baseline tree `9eb0c2c3c` and the current one run
+alternately, two runs each, so that both sides share the day's machine, B.10's
+canvas pair having been read on another day, under wasm GHC 9.12.4.20260402,
+node v26.4.0, firefox-beta 159.0b5 and Chromium 156.0.8078.47, the load average
+beside every reading between 0.1 and 2.9: in Firefox p95 3.00 and 3.00ms against
+the baseline's 3.00 and 3.00ms, means 0.99 at n=4531 and 0.96 at n=4519 against
+0.91 at n=4112 and 0.85 at n=4609; in Chromium p95 12.20 and 11.50ms against
+10.30 and 7.30ms, means 2.59 at n=4507 and 2.51 at n=4544 against 2.02 at n=4295
+and 1.72 at n=3295; so by p95, the figure the protocol compares, the current
+tree matches the baseline in Firefox and is 1.9 and 4.2ms slower in Chromium,
+the means, cumulative and read at different n, not being compared. Comparisons,
+SDL2 and both browsers launched with
+`--newGame 5 --gameMode raid --setDungeonRng "SMGen 123 123" --setMainRng "SMGen 123 125"`
+and driven through 24 screens: the map and the HUD agree in every cell's ink
+and in the hue and brightness of its summed light, Firefox and Chromium within
+a pixel on every screen but for 6 pixels of the history's, the fullscreen `C-P`
+PNG with the canvas pixel for pixel, and ratio 2 with 1x in every cell but one
+glyph's overhang at the occupancy threshold. What differs: (1) both browsers
+draw text with subpixel antialiasing, the map's pixel font included, because
+the canvas is opaque (`terminal.ts:canvas.getContext("2d", { alpha: false })`),
+where a transparent canvas draws the same glyphs crisp, as SDL2 does; (2)
+proportional and mono text sits a pixel higher than SDL2's, `faceBaseline`
+(`terminal-core.ts:export function faceBaseline(`) meeting the browsers' rounded
+font metrics, Firefox's ascent 13 and descent 4 and Chromium's 12 and 3, where
+SDL_ttf has 13 and 3; (3) along a line the canvas's fractional advances drift
+from SDL_ttf's hinted whole-pixel ones, a word's start by up to 8 pixels
+and a line's end by up to 6; (4) the history's prompt lacks `[.]`, by design;
+(5) the zoom chords reach the game as well as the browser, and the game answers
+`*unknown command 'C-+'*`; (6) where a zoom's cell is not a whole number
+of device pixels the cell is rounded and the faces are not, so proportional
+lines run longer against the grid at 80% and shorter at 120%, and not at 125%.*
+
 ---
 
 ## Phase 3 --- port the Node benchmark targets from GHCJS to WASM
