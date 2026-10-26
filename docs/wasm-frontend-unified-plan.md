@@ -2426,7 +2426,15 @@ and shorter at 120%, and not at 125%; (7) the outline woff's points sit off
 the pixel grid in 315 of its 383 drawn glyphs, mostly by a hundredth or two
 of a pixel, so an unhinted renderer blends their edges with the background,
 the browsers at every scale and SDL2 faintly, its hinting snapping most, where
-the `.bdf` it was made from is crisp.*
+the `.bdf` it was made from is crisp. Measured again the same day, after
+terminal-02's fix and with the `.bdf` restored as `dejavuBold`'s map font
+at 1:1: on the map and the HUD every glyph's ink agrees with SDL2's to within
+a pixel in both browsers, the browsers differing only by the greyscale blends
+at the woff's off-grid edges (7), 2061 pixels in Firefox and 1560 in Chromium
+on the map screen, where SDL2's woff and the opaque canvas had differed by 12000
+and 11856; Firefox and Chromium agree in ink on every screen but for 2 pixels;
+and ratio 2 matches 1x in every cell, but for one in Firefox at the end
+of a proportional line.*
 
 ---
 
