@@ -638,6 +638,14 @@ only that the plan was written is one the next reader has to skip.
   drawing it, as it draws the 8x8 `.fnt` fontset, without error, with the same
   glyphs as the woff on every screen of 2.5's seeded comparison and without
   the woff's faint antialiasing.
+- 2026-10-26 -- R10 filed (B.15), ruled by Mikolaj after 2.5's comparison:
+  a pixel-exact outline map font regenerated from the `.bdf` joins
+  `16x16xw.woff`, whose departures from the `.bdf` were made for legibility
+  below 1, and in both frontends the map is drawn in the `.bdf`'s pixels at 1:1
+  and at every integer scale, a browser's zoom included, and in `16x16xw.woff`
+  below 1. `resolveFonts` takes the `.bdf` at 1.0 alone and the browser draws
+  `16x16xw.woff` at every scale, so R10 changes the font choice in both
+  frontends, and R7, landing after it, asks what its atlas then draws.
 
 ## Repo facts the plan builds on
 
@@ -2889,7 +2897,10 @@ under browser zoom and fullscreen alike, where SDL2's fullscreen scaling
 softens. R7b, later: keep the bitmap beyond that at every integer
 `allFontsScale`, where SDL2 takes the outline font today, and the outline font
 at every other factor. On the DOM route none of this was reachable at any price,
-a span having no way to hold a glyph bitmap.
+a span having no way to hold a glyph bitmap. R10 (B.15) lands first and draws
+the `.bdf`'s pixels at every integer scale in both frontends with an outline
+font, which is R7b's choice, so what R7's atlas then draws is the work list's R7
+**Decide first**.
 
 **Rulings** --- ruled 2026-10-20 by Mikolaj: R7b's criterion for crisper
 is the integer one, applied by arithmetic, with no side-by-side owed ---
@@ -3789,6 +3800,49 @@ that does not honour 80 columns
 (`run-wasm-test.mjs:--input foo.wasm --output ghc_wasm_jsffi.mjs`).
 The `synopsis` keeps its one line too, Cabal defining it as a one-line summary.
 None is to be rewrapped.
+
+**B.15 A pixel-exact outline map font, as R10.** Ruled 2026-10-26 by Mikolaj,
+after 2.5's comparison found the map font antialiased in the browsers and he
+ruled that it be crisp at 1:1 and every integer n:1, in either form (R7's
+Rulings): file the regenerated font as an item, with the session's and his
+comparison of it against the existing one. No browser draws a bitmap font:
+on 2026-10-26 the `.bdf`, and an OTB that `fonttosfnt` built from it, raw
+and wrapped in WOFF, were each rejected by Firefox and by Chromium,
+`FontFace.load` failing and the text falling back to `monospace` --- the OTB
+built once its source carried the `CHARSET_REGISTRY` and `CHARSET_ENCODING`
+properties the repository's `.bdf` lacks, without which FreeType finds
+no Unicode map in it. So the browser's crisp map font is an outline font whose
+every edge falls on the pixel grid: each lit pixel of the `.bdf` a square of 100
+units at the existing font's 1600 units per em, which rasterizes to whole pixels
+at 16 pixels and at every multiple, unhinted, and which SDL2 can draw the same
+at its integer scales above 1. The existing `16x16xw.woff`, measured the same
+day: 315 of its 383 drawn glyphs have points off that grid, mostly by one or two
+units, which leave faint blends at their edges; sampled at pixel centres
+it differs from the `.bdf` in 35 glyphs at 16 pixels, the accented capitals
+of A, O and S with the slashed O, the AE ligature and their kin, and in 45
+at 32, adding `B`, `8`, `5` and `s`; in both browsers its shapes match
+the `.bdf`'s at 16 pixels for `.#@8BSA$%` and not at 32. Its history: converted
+on 2019-01-17 (`ac9714bdd`), hand-hinted (`c2f24bbd2`, and `7ebff08ea`, tested
+at a font size of 11), `3 8 B S` reshaped "to deform better when scaled"
+(`46b128f9c`), and edited again on 2019-01-29 (`8127ba07b`), after the `.bdf`'s
+edits since its conversion (`ea2905ed6`, `82c01f8ed`, `f0fedeb3d`), then fixed
+to be recognized as monospace (`e60034f00`) and updated twice more by March 2019
+(`a71894806`, `0f5d8b491`). Mikolaj recalled the same day that its departures
+were made on purpose, for legibility at scales below 1; and none is radical,
+both fonts mapping the same 385 code points, every glyph 16 pixels wide in each,
+none drawn in one and empty in the other, the least alike, the accented capitals
+of O, still overlapping by two thirds. Ruled the same day by Mikolaj: the new
+font joins the existing one, and in both frontends the map is drawn
+in the `.bdf`'s pixels at 1:1 and at every integer scale, a browser's zoom
+included, in SDL2 by the `.bdf` itself or the new font, and in the existing font
+below 1; at a fractional scale above 1, such as 1.5, the new font draws as well
+if a visual comparison finds it reads better there, a bitmap being kept
+to integer scales by R7's Rulings, whose arithmetic settles a bitmap against
+an outline and leaves open this choice between two outline fonts. Today
+`resolveFonts` takes the `.bdf` at 1.0 alone (`Fonts.hs:if scale == 1.0`),
+and the existing font at 2.0 as at 0.8, and the browser draws the existing font
+at every scale. R10 lands before R7, whose atlas may then serve the `.fnt` fonts
+alone, they having no outline form, which R7's **Decide first** asks.
 
 ---
 

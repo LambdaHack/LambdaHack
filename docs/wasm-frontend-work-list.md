@@ -131,9 +131,10 @@ sections of the record are frozen and which live is its head callout's to say.
 | R4 | URL-parameter options | small | 3.1 | not applied |
 | R5 | performance pass | exploratory | 2.5, 3.3; R4 + 3.1 for the browser-side instrument | not applied |
 | R6 | screenshot/overlay coherence | small | 1.2, 2.2 | retired -- B.10 |
-| R7 | pixel-perfect bitmap map fonts on the canvas, scaled whole by integers, the scalable font only off `allFontsScale` 1.0 | medium | 0.4; 1.5 for the scale; R4 for a player-chosen fontset | not applied |
+| R7 | pixel-perfect bitmap map fonts on the canvas, scaled whole by integers, the scalable font only off `allFontsScale` 1.0 | medium | 0.4; 1.5 for the scale; R4 for a player-chosen fontset; R10 | not applied |
 | R8 | the LambdaHack issue #281 workaround retired: no black ring around a cell without a coloured highlight | small | 0.2, 2.2 | landed -- d474dc271 |
 | R9 | German keyboards: a cheap way to play comfortably on QWERTZ, by key config, engine or help texts | exploratory | 2.5 (parity); R4 for a preset picked in the browser | not applied |
+| R10 | a pixel-exact outline map font regenerated from the `.bdf`, and the map font chosen by scale in both frontends: the `.bdf`'s pixels at 1:1 and every n:1, `16x16xw.woff` at the other scales | medium | 2.5 | not applied |
 | capability constants | named constants in place of behavioral CPP | --- | --- | not applied |
 | sum-typed selection | one frontend field replacing four `Bool`s | mechanical, moderate churn | --- | not applied |
 | RawFrontend contract | haddock contract, tasty harness, add-a-frontend checklist | medium | haddock and checklist: nothing; native harness after 0.1, which creates its module; wasm case with 0.3 | not applied |
@@ -343,9 +344,9 @@ Parity work stays in one checkout.
 
 ## Items
 
-Each item's design and rulings are in the record, under the same heading, R8's
-and R9's under B.12 and B.13, and 1.7's and 1.8's at Appendix C's gaps (2)
-and (3), with their rulings in the Log; what is here is how it lands.
+Each item's design and rulings are in the record, under the same heading, R8's,
+R9's and R10's under B.12, B.13 and B.15, and 1.7's and 1.8's at Appendix C's
+gaps (2) and (3), with their rulings in the Log; what is here is how it lands.
 
 ## Phase 0 --- shared foundations
 
@@ -807,9 +808,10 @@ and `docs/wasm-frontend-unified-plan.md` wherever this item's own body quotes
 the banner: 1.4 is `open -- standing`, so a quote that no longer matches
 the page is an error to fix, not drift to leave alone. Every item that writes
 `index.html` writes the banner, the `#status` div or the `#screen` rule beside
-them --- 0.4, 1.2, 1.3, 1.6, R4, R5 and the banner commits of 2.4 and R1 ---
-and the four that touch the quoted paragraph write `README.md` too: this item,
-2.4, R1 and R5. `../lambdahack.github.io` is redeployed by **Done**, not owned.
+them --- 0.4, 1.2, 1.3, 1.6, R4, R5, R10 and the banner commits of 2.4 and R1
+--- and the four that touch the quoted paragraph write `README.md` too:
+this item, 2.4, R1 and R5. `../lambdahack.github.io` is redeployed by **Done**,
+not owned.
 
 **Done** --- `wasm`, `deploy`, `page`, `docs`, plus
 `! grep -qE PHRASE ../lambdahack.github.io/index.html` && `U=$(mktemp)` &&
@@ -1611,7 +1613,9 @@ and its test, `ts-src/src/fullscreen.ts`, `Makefile` (the atlas copy
 into the pages checkout), `GameDefinition/fonts/` (the converted BDFs),
 the decoder module and the atlas under names the executing session mints, their
 `tools/doc-refs-allow.txt` entries added before the names are written anywhere,
-and `docs/wasm-frontend-unified-plan.md`.
+and `docs/wasm-frontend-unified-plan.md`. R10 writes the map font's choice
+in `terminal.ts` and `terminal-core.ts`, and the `Makefile`'s font copy, before
+this item.
 
 **Done** --- `ts`, `wasm`, `deploy`, `page`, `docs`, plus `test -f`
 on the deployed atlas, and the test the record's ruling of 2026-10-26 asks for:
@@ -1623,7 +1627,10 @@ when `allFontsScale` leaves 1.0 reads as SDL2's behaviour and not
 as a regression. The substitute gate in Done is the decoder's tests: a glyph's
 pixels out equal to the BDF's bitmap in.
 
-**Decide first** --- nothing; the rulings are the record's.
+**Decide first** --- (a) what R7's atlas draws once R10 has landed, R10 drawing
+the `.bdf`'s pixels at every integer scale in both frontends with an outline
+font (B.15): the 16x16 font as well, or the `.fnt` fonts alone, which have
+no outline form; R7's Split, Done and Hands back are re-cut by the answer.
 
 **R8 --- Retire the LambdaHack issue #281 workaround.** Design and ruling
 in the record, at B.12.
@@ -1693,6 +1700,64 @@ bare, rebound defaults and help texts naming keys as typed on the layout,
 or a mix; (b) whether it may change what every non-QWERTY layout gets,
 not German alone; (c) whether the browser may differ from SDL where SDL cannot
 follow.
+
+**R10 --- Pixel-exact outline map font.** Design and ruling in the record,
+at B.15.
+
+**Split** --- (1) the generator, a script that writes a new font
+from `16x16xw.bdf` with every lit pixel a square on the font's 100-unit grid,
+and the font, under a name of its own beside `16x16xw.woff`, with the record's
+comparison of the two; (2) the map font chosen by scale, by Mikolaj's ruling
+(B.15): the `.bdf`'s pixels at 1:1 and every integer scale, and `16x16xw.woff`
+below 1 and, until the comparison handed back says otherwise, at the fractional
+scales above 1 --- in SDL2 `resolveFonts`, which today takes the `.bdf` at 1.0
+alone and `16x16xw.woff` at 2.0 as at 0.8, changed to take the `.bdf` itself
+or the new font at every integer `allFontsScale`, and in the browser a pure
+choice in `terminal-core.ts`, under its tests, by `allFontsScale` times
+`devicePixelRatio`, which zoom moves, applied by `terminal.ts`, so
+that at `allFontsScale` 1.0, on a display whose `devicePixelRatio` is 1 at 100%
+zoom, 100% and 200% zoom draw the new font and 80% `16x16xw.woff`; (3) the page
+gate's step 2 failing on a blend as on a tint, the greyscale blends it counts
+today being the existing font's off-grid edges, and its mutant; (4) the outcome
+line and the ledger flip.
+
+**Owns** --- the new font and the generator under names the executing session
+mints, their `tools/doc-refs-allow.txt` entries added before the names
+are written anywhere, `GameDefinition/config.ui.default`,
+`GameDefinition/index.html`, `Makefile` for the new font's copy into the pages
+checkout, `README.md`, whose `allFontsScale` sentence names the switch
+to the scalable font, `engine-src/Game/LambdaHack/Client/UI/Frontend/Fonts.hs`
+and its `test/FontsUnitTests.hs`, `ts-src/src/terminal-core.ts` and its test,
+`ts-src/src/terminal.ts` and, as (2) needs them,
+`engine-src/Game/LambdaHack/Client/UI/Frontend/Sdl.hs` and the `FontSet`
+record's `engine-src/Game/LambdaHack/Common/Misc.hs`, `ts-src/page-gate.mjs`
+and `tools/mutants-deep.py` for (3), and `docs/wasm-frontend-unified-plan.md`.
+R7 writes `GameDefinition/fonts/` too, its converted BDFs, rewrites the map
+font's choice in `terminal.ts` and `terminal-core.ts`, writes the `Makefile`'s
+atlas copy, and lands after this item.
+
+**Done** --- `native`, `ts`, `wasm`, `deploy`, `page`, `docs`, plus: every glyph
+of the new font, sampled at pixel centres, equal to the `.bdf`'s bitmap at 16
+pixels and doubled at 32, and no point of it off the 16-pixel grid;
+`resolveFonts`'s tests requiring the `.bdf` or the new font at 1.0 and 2.0
+and `16x16xw.woff` at 0.8; the page gate's step 2 counting no blend at 1:1
+or 2:1 in either browser; and, under Xvfb, SDL2's map at `allFontsScale` 1.0
+and 2.0 with no antialiased pixel, each lit pixel a palette colour, as R7's
+ruling asks of both frontends.
+
+**Hands back** --- *judgement*: Mikolaj's comparison of the new font
+with the existing one at the fractional scales above 1, beside the session's,
+which B.15 starts --- in SDL2 at an `allFontsScale` of 1.5, and in the browsers
+at 120% and 150% zoom --- deciding whether the new font draws there too, by his
+ruling (B.15). At 1:1 and 2:1 the new font is the `.bdf` pixel for pixel, which
+Done checks, and below 1 the existing font draws, its shapes made
+for those scales.
+
+**Decide first** --- (a) answered: the new font joins `16x16xw.woff`, ruled
+by Mikolaj (B.15); (b) answered: the new font follows the `.bdf`, the existing
+font's departures from it having been made for legibility below 1, by Mikolaj's
+recollection (B.15); (c) whether the 2019 hand hinting is carried over, which
+a pixel-exact outline needs at no integer size.
 
 ## Multi-frontend practices (adopted)
 
@@ -2033,9 +2098,10 @@ R4 --- after 3.1, which leaves it loader-only
 R3 GHCJS rip-out --- one commit, after 2.5 (parity); Dom.hs/JSFile.hs stay
     as documented-dead examples
 R5 --- after 2.5 and 3.3, measurement first
-R7 --- after 0.4 and 1.5; R7b after R7a
+R7 --- after 0.4, 1.5 and R10; R7b after R7a
 R9 --- late: after 2.5 (parity), R9a's measurement first, R9b on Mikolaj's
     ruling
+R10 --- after 2.5, before R7, whose atlas may then serve the .fnt fonts alone
 ```
 
 Rationale, condensed: the input cluster goes first (mechanism already validated,
