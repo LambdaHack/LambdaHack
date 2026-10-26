@@ -168,7 +168,7 @@ GRAMMARS = [
         # How an item opens: a `### N.N` heading or a bold `**RN --- ...**`
         # paragraph, group 1 being the id; the practices open on their titles.
         "openers": (re.compile(r"^### (\d\.\d) "),
-                    re.compile(r"^\*\*(R\d) --- ")),
+                    re.compile(r"^\*\*(R\d+) --- ")),
         "practices": PRACTICES,
     },
     {
@@ -242,6 +242,7 @@ SELF_TEST_DOC = """\
 | 1.2 | d | tiny | --- | open |
 | 1.3 | g | tiny | --- | landed -- 0123abc |
 | R1 | e | tiny | 1.1 | open |
+| R10 | h | tiny | R1 | open |
 | determinism goldens | f | tiny | 0.1--0.2 | open |
 
 ## Handing an item to a session
@@ -324,6 +325,16 @@ Body naming `foo.ts` as evidence, which is not an **Owns**.
 
 **Decide first** --- nothing.
 
+**R10 --- Sixth.** Body.
+
+**Owns** --- this document.
+
+**Done** --- `docs`.
+
+**Hands back** --- nothing.
+
+**Decide first** --- nothing.
+
 ## Practices
 
 **Determinism goldens --- scratch.** Body.
@@ -355,6 +366,9 @@ SELF_TEST_QUIET = ["loader.ts", "foo.ts", "dropped.ts", "new-core.test.ts",
                    "handed.ts", "A3 1.3",
                    "gen-scratch", "A3 1.1", "A4 0.1", "A4 0.2",
                    "A4 R1", "A5 0.1", "A5 1.1",
+                   # a related goal numbered past nine opens an item of its
+                   # own (check-plan-crossrefs-14)
+                   "R10", "two **",
                    # 1.2's disclaimed mentions of 0.2's new module, which it
                    # does not depend on: read as ownership, A3 draws them.
                    "writes `NewUnitTests.hs`"]

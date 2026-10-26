@@ -1114,6 +1114,31 @@
    "harm": "fired",
    "discovery": "review",
    "notes": "Found 2026-10-26 by 2.5's comparison of seeded captures with SDL2, recorded in the plan's 2.5 note, and Mikolaj's question whether the browser's map font is the .bdf. The getContext(\"2d\", { alpha: false }) came with 0.4's painter, 9eb0c2c3c, with no reason recorded. The case is the page gate's step 2, watched failing in both browsers before the fix and passing after; the deep mutant `page gate: the canvas opaque again` replays the bug direction. The greyscale blends that remain are the outline woff's own, its points off the pixel grid, which the record's ruling of 2026-10-26 under R7 asks a pixel-exact font to remove. A tier-1 record: the corpus root is tools/."
+  },
+  {
+   "id": "check-plan-crossrefs-14",
+   "program": "check-plan-crossrefs.py",
+   "name": "a related goal opened an item only for an id of one digit, so R10's block was read as R1's, R1 drawing two of every label and R10 a ledger row with no item",
+   "family": "scan-for-parse",
+   "fix_rev": "self",
+   "trigger": "a work list whose ledger has rows R1 and R10 and whose items open `**R1 --- ` and `**R10 --- `",
+   "ok": "no finding: exit 0",
+   "bug": "`FAIL A0 R10 --- ledger row with no item` and four `FAIL A0 R1 --- two ... labels`, exit 1",
+   "proved": "ran",
+   "harm": "fired",
+   "discovery": "in-use",
+   "notes": "Fired on 2026-10-26 when R10 was filed in docs/wasm-frontend-work-list.md, the first related goal past nine, and was fixed before that filing was committed. check-plan-crossrefs-12 was the same pattern on A5's step markers. The self-test's scratch plan carries an R10 now, its controls R10 and two **, and the mutant `check-plan-crossrefs a related goal of one digit` proves they bite.",
+   "plant": "a work list with rows R1 and R10, each with a well-formed item, and an empty allowlist",
+   "plant_cmd": "printf '%s\\n' '# Scratch work list' '' '## 00 -- Status' '' '| row | delivers | size | depends on | state |' '|---|---|---|---|---|' '| R1 | a | tiny | --- | not applied |' '| R10 | b | tiny | R1 | not applied |' '' '**R1 --- first.** Body.' '' '**Owns** --- `ts-src/src/y.ts`.' '' '**Done** --- `native`.' '' '**Hands back** --- nothing.' '' '**Decide first** --- nothing.' '' '**R10 --- tenth.** Body.' '' '**Owns** --- `ts-src/src/x.ts`.' '' '**Done** --- `native`.' '' '**Hands back** --- nothing.' '' '**Decide first** --- nothing.' > plan.md && : > allow.txt",
+   "invoke": [
+    "plan.md",
+    "--allowlist",
+    "allow.txt"
+   ],
+   "expect_exit": 0,
+   "expect_text": "0 failed over 2 ledger rows, 2 items",
+   "bug_exit": 1,
+   "bug_text": "R10 --- ledger row with no item"
   }
  ]
 }

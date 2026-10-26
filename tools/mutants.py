@@ -83,6 +83,10 @@ MUTANTS = [
     # check-plan-crossrefs-12, 2026-10-23
     ('check-plan-crossrefs A5 step markers of one digit', 'check-plan-crossrefs.py',
      'MARKER_RE = re.compile(r"\\((\\d+)\\)")\n', 'MARKER_RE = re.compile(r"\\((\\d)\\)")\n', ST),
+    # check-plan-crossrefs-14, 2026-10-26
+    ('check-plan-crossrefs a related goal of one digit', 'check-plan-crossrefs.py',
+     '                    re.compile(r"^\\*\\*(R\\d+) --- ")),\n',
+     '                    re.compile(r"^\\*\\*(R\\d) --- ")),\n', ST),
     ('check-plan-crossrefs commentary after the first sentence read as a list', 'check-plan-crossrefs.py',
      '        return FIRST_SENTENCE_RE.split(self.field(iid, "Owns"), 1)[0]\n',
      '        return self.field(iid, "Owns")\n', ST),
