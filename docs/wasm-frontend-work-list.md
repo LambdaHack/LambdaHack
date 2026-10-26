@@ -1712,10 +1712,10 @@ ordered --- the second does not compile without the first. R1's whole point
 is flipping two of the constants (`Server/LoopM.hs:!defined(USE_JSFILE) &&`,
 `WatchUpdAtomicM.hs:#if defined(USE_JSFILE)`) and R3 deletes their `USE_JSFILE`
 halves, so whichever of the three lands first shapes the others' diffs: R3's
-**Owns** and body both say "whichever lands first", Sequencing schedules
-this item any time, and neither `depends on` cell names it. The pointman
-campaign writes `HandleHumanLocalM.hs` too --- its PR 0, C3, C4 and C6 ---
-converting several functions above
+**Owns** says "whichever lands first" and its body "if that practice lands
+first", Sequencing schedules this item any time, and neither `depends on` cell
+names it. The pointman campaign writes `HandleHumanLocalM.hs` too --- its PR 0,
+C3, C4 and C6 --- converting several functions above
 the `HandleHumanLocalM.hs:!defined(USE_JSFILE) &&` this item and R3 both cite,
 so re-read those two snippets if it has landed.
 
