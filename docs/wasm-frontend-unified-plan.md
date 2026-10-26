@@ -2996,6 +2996,22 @@ content. Still to do: the wasm stage, whose multi-font cases pass under wasm
 only after 2.4's (3), and whose history case differs from native under both
 setups (the Log, 2026-10-25).
 
+*Landed in `091ec1d5a`, the Split's second commit, after `f9a50d959`, its first.
+Beyond this body: the history case differs under wasm by design. The browser
+builds leave the key that dumps the history to a file out of the history
+screen's keys (`HandleHumanLocalM.hs:!defined(USE_JSFILE) &&`), so there
+the screen's prompt lists one key fewer and the background cleared behind
+its text is narrower, the frames matching native's elsewhere; under the same
+condition the case compares with digests of the browser's own, their control
+being a `goldens:` mutant in `tools/mutants-deep.py` that gives the browser
+the key, judged by the history cases under wasm. Every other case matches
+its native digests under wasm.*
+
+*The wasm stage's hand-back confirmed by Mikolaj on 2026-10-26: under wasm
+the digests catch what 2.4 changes, the dialogs' multi-font cases having failed
+there before 2.4's (3), and a change of the browser build alone, the `goldens:`
+mutant giving the browser the dump key failing the history cases.*
+
 *The native harness's hand-back confirmed by Mikolaj on 2026-10-25: the digests
 catch what 2.4 changes, on the evidence of the `goldens:` mutants, the monospace
 one failing only the multi-font cases.*
