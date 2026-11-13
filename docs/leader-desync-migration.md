@@ -1408,12 +1408,13 @@ the beginning of step 1.
    are a human's, not a run's: the session and the two switches are played
    by hand, and `frontendCrawl` runs `--automateAll`, so reaching a menu means
    mashing keys to regain control (`UI.hs:if sregainControl then do`). Keys
-   *can* be pressed here --- `xdotool`, per CLAUDE.md's sandboxing notes ---
-   so what stays a human's is the judgement and the sequencing, not the typing.
-   The 2026-08-07 spike drove all of that headlessly, a mid-dialog pointman
-   switch included, so what stays unproven is only the sec. 04 window itself,
-   which no run has yet reached. Performance needs no gate --- the post-mortem's
-   sec. 11: no benchmark reaches this layer.
+   *can* be pressed here --- `xdotool`, per CLAUDE.md's session facts
+   for this repo's builds --- so what stays a human's is the judgement
+   and the sequencing, not the typing. The 2026-08-07 spike drove all
+   of that headlessly, a mid-dialog pointman switch included, so what stays
+   unproven is only the sec. 04 window itself, which no run has yet reached.
+   Performance needs no gate --- the post-mortem's sec. 11: no benchmark reaches
+   this layer.
 
 ### The artifacts sec. 02 asks for, drafted
 
