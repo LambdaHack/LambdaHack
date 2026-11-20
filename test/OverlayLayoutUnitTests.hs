@@ -116,7 +116,7 @@ chunkingTests =
                     (pcFont $ PropChunk fg "a")
   , testCase "chunkPropLine asserts the highlight of a chunk's colour" $
       assertAsserts $ chunkPropLine 1
-        [Color.attrCharToW32 $ Color.AttrChar backlit 'a']
+        [attrCell backlit 'a']
   ]
 
 layoutTests :: [TestTree]
@@ -147,7 +147,7 @@ layoutTests =
         @?= []
   , testCase "layOutMono asserts the highlight of every cell drawn" $
       assertAsserts $ layOutMono 10
-        [(PointUI 0 0, [ Color.attrCharToW32 $ Color.AttrChar backlit 'a'])]
+        [(PointUI 0 0, [attrCell backlit 'a'])]
   ]
 
 -- | One row per branch of 'propCutoff' and 'propFit', at metrics whose last
@@ -352,7 +352,7 @@ genCell = frequency
                       , (1, elements [minBound .. maxBound]) ]
       bg <- elements [Color.HighlightNone, Color.HighlightNoneCursor]
       c <- elements "ab $"
-      return $! Color.attrCharToW32 $ Color.AttrChar (Color.Attr fg bg) c) ]
+      return $! attrCell (Color.Attr fg bg) c) ]
 
 genLine :: Gen AttrString
 genLine = listOf genCell
@@ -386,6 +386,9 @@ sp = Color.spaceAttrW32
 
 backlit :: Color.Attr
 backlit = Color.Attr Color.Red Color.HighlightBackground
+
+attrCell :: Color.Attr -> Char -> Color.AttrCharW32
+attrCell attr c = Color.attrCharToW32 $ Color.AttrChar attr c
 
 -- | Force every element of the list and expect an assertion to fail.
 assertAsserts :: Show a => [a] -> Assertion
@@ -469,7 +472,6 @@ overlayWireJson = jsonDocument source [("cases", map wireCase frames)]
       , frame [] [] [ (PointUI 17 1, str Color.Green "abcd")
                     , (PointUI 0 0, [attrCell cursor 'x']) ] )
     , ("all three", 10, wireFrame) ]
-  attrCell attr c = Color.attrCharToW32 $ Color.AttrChar attr c
   cursor = Color.Attr Color.BrWhite Color.HighlightNoneCursor
   wireCase (name, width, f) =
     let layout = layOutFrame width f
