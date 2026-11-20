@@ -70,7 +70,7 @@ loopSave cops stateToFileName toSave =
       Nothing -> return ()  -- exit
 
 wrapInSaves :: Binary a
-            => COps -> (a -> FilePath) -> (ChanSave a -> IO ()) -> IO ()
+            => COps -> (a -> FilePath) -> (ChanSave a -> IO b) -> IO b
 {-# INLINE wrapInSaves #-}
 wrapInSaves cops stateToFileName exe = do
   -- We don't merge this with the other calls to waitForChildren,

@@ -151,7 +151,6 @@ executorSer cops@COps{corule} ccui soptionsNxtCmdline sUIOptions = do
         executorCli ccui sUIOptions clientOptions startsNewGame cops
   -- Wire together game content, the main loop of game clients
   -- and the game server loop.
-  finalState <- newEmptyMVar
   let stateToFileName (_, ser) =
         ssavePrefixSer (soptions ser) <> Save.saveNameSer corule
       totalState serToSave = SerState
@@ -162,9 +161,7 @@ executorSer cops@COps{corule} ccui soptionsNxtCmdline sUIOptions = do
         , serToSave
         }
       m = loopSer soptionsNxt executorClient
-      exe serToSave = do
-        serS <- execStateT (runSerImplementation m) (totalState serToSave)
-        putMVar finalState $ serState serS
+      exe = fmap serState . execStateT (runSerImplementation m) . totalState
       exeWithSaves = Save.wrapInSaves cops stateToFileName exe
       unwrapEx e = case Ex.fromException e of
         Just (ExceptionInLinkedThread _ ex) -> unwrapEx ex
@@ -172,25 +169,27 @@ executorSer cops@COps{corule} ccui soptionsNxtCmdline sUIOptions = do
   -- Wait for clients to exit even in case of server crash
   -- (or server and client crash), which gives them time to save
   -- and report their own inconsistencies, if any.
-  Ex.handle (\ex -> case Ex.fromException (unwrapEx ex) :: Maybe ExitCode of
-               Just{} ->
-                 -- User-forced shutdown, not crash, so the intention is
-                 -- to keep old saves and also clients may be not ready to save.
-                 Ex.throwIO ex
-               _ -> do
-                 Ex.uninterruptibleMask_ $ threadDelay 1000000
-                   -- let clients report their errors and save
-                 moveAside <- Save.bkpAllSaves corule clientOptions
-                 when moveAside $
-                   T.hPutStrLn stdout
-                               "The game crashed, so savefiles are moved aside."
-                 hFlush stdout
-                 Ex.throwIO ex  -- crash eventually, which kills clients
-            )
-            exeWithSaves
+  finalState <-
+    Ex.handle (\ex -> case Ex.fromException (unwrapEx ex) :: Maybe ExitCode of
+                 Just{} ->
+                   -- User-forced shutdown, not crash, so the intention is
+                   -- to keep old saves and also clients may be not ready
+                   -- to save.
+                   Ex.throwIO ex
+                 _ -> do
+                   Ex.uninterruptibleMask_ $ threadDelay 1000000
+                     -- let clients report their errors and save
+                   moveAside <- Save.bkpAllSaves corule clientOptions
+                   when moveAside $
+                     T.hPutStrLn
+                       stdout "The game crashed, so savefiles are moved aside."
+                   hFlush stdout
+                   Ex.throwIO ex  -- crash eventually, which kills clients
+              )
+              exeWithSaves
 --  T.hPutStrLn stdout "Server exiting, waiting for clients."
 --  hFlush stdout
   waitForChildren childrenServer  -- no crash, wait for clients indefinitely
 --  T.hPutStrLn stdout "Server exiting now."
 --  hFlush stdout
-  takeMVar finalState
+  return finalState
