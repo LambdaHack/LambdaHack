@@ -1799,8 +1799,9 @@ on the rows SDL2 draws it on, in both browsers at 1:1 and 2:1.
 ruling of 2026-10-26.
 
 **Decide first** --- (a) where a face's ascent and descent come from: SDL_ttf's
-figures in 0.2's generated files, or the font's `hhea` table read in the browser
-(B.16).
+figures, written for each face and size into 0.2's generated files
+by the Haskell suite, which links SDL, or the font's `hhea` table, read
+in the browser and rounded as SDL_ttf rounds it (B.16).
 
 **R12 --- The zoom chords in both frontends.** Design and ruling in the record,
 at B.17.
