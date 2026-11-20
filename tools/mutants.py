@@ -137,6 +137,16 @@ MUTANTS = [
     ('check-plan-crossrefs a ledger row with no item crashes the closure', 'check-plan-crossrefs.py',
      '        return it["doc"] if it else self.row_doc.get(iid)\n',
      '        return it["doc"]\n', ST),
+    # The ledger keyed on its header's `depends on` and `state` (2026-11-20):
+    # taken by cell count again, the self-test's five-cell table that is no
+    # ledger is read as one; and a short ledger row skipped in silence.
+    ('check-plan-crossrefs a ledger taken by its cell count', 'check-plan-crossrefs.py',
+     '                cols = ((cells.index("depends on"), cells.index("state"))\n'
+     '                        if "depends on" in cells and "state" in cells else ())\n',
+     '                cols = (3, 4) if len(cells) == 5 else ()\n', ST),
+    ('check-plan-crossrefs a short ledger row skipped in silence', 'check-plan-crossrefs.py',
+     '                self.findings.append(f"A0 {iid} --- ledger row short of"\n',
+     '                str(f"A0 {iid} --- ledger row short of"\n', ST),
     # check-sync-exports: one break per finding and per control it rests on,
     # each watched failing the day the checker was written (2026-10-21)
     ('check-sync-exports comments read as code', 'check-sync-exports.py',

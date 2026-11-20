@@ -249,6 +249,12 @@ SELF_TEST_DOC = """\
 
 **Owns** --- here this is prose, not a field, since no item is open.
 
+A table of five cells and no `depends on` column, which is no ledger:
+
+| step | input | output | who | note |
+|---|---|---|---|---|
+| one | a | b | c | d |
+
 ## Phase 0
 
 ### 0.1 First
@@ -707,20 +713,30 @@ class Doc:
         return entries
 
     def parse_ledger(self):
-        """Every five-cell table row whose fourth cell is not the header's
-        `depends on`; both plans' ledgers are the only such tables."""
+        """The rows of every table whose header names a `depends on` and
+        a `state` column: the id from the first cell, those two by the
+        header's indices."""
+        cols = None   # the header's two indices; () in a table that is no ledger
         for line in self.lines:
-            if not line.startswith("| "):
+            if not line.startswith("|"):
+                cols = None
                 continue
             cells = [c.strip() for c in line.strip().strip("|").split("|")]
-            if len(cells) != 5 or set(cells[0]) <= set("-") or \
-                    cells[3] == "depends on":
+            if cols is None:
+                cols = ((cells.index("depends on"), cells.index("state"))
+                        if "depends on" in cells and "state" in cells else ())
+                continue
+            if not cols or set(cells[0]) <= set("-"):
                 continue
             iid = cells[0]
+            if len(cells) <= max(cols):
+                self.findings.append(f"A0 {iid} --- ledger row short of"
+                                     " its header's cells")
+                continue
             if iid in self.ledger:
                 self.findings.append(f"A0 {iid} --- two ledger rows")
-            self.ledger[iid] = cells[3]
-            self.state[iid] = cells[4]
+            self.ledger[iid] = cells[cols[0]]
+            self.state[iid] = cells[cols[1]]
             self.order.append(iid)
 
     def parse_items(self):
@@ -1176,13 +1192,15 @@ def self_test():
             open(doc, "w").write(
                 "# Scratch\n\n| sec. | delivers | size | depends on | state |\n"
                 "|---|---|---|---|---|\n| 0.1 | a | tiny | --- | open |\n"
-                "| 0.2 | b | tiny | 0.1, functional core | open |\n\n"
+                "| 0.2 | b | tiny | 0.1, functional core | open |\n"
+                "| 0.3 | c | tiny |\n\n"
                 "### 0.2 Second\n\n**Owns** --- nothing.\n\n"
                 "**Done** --- `ts`.\n\n**Hands back** --- nothing.\n\n"
                 "**Decide first** --- nothing.\n")
             open(allow, "w").write("")
             check("ledger row with no item", *capture([doc], allow), 1,
-                  ["A0 0.1 --- ledger row with no item"], [])
+                  ["A0 0.1 --- ledger row with no item",
+                   "A0 0.3 --- ledger row short of its header's cells"], [])
         finally:
             os.chdir(cwd)
     if bad:
