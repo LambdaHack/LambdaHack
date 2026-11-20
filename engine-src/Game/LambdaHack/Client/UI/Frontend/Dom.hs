@@ -7,7 +7,7 @@ module Game.LambdaHack.Client.UI.Frontend.Dom
   (
 #ifdef USE_GHCJS
 -- to molify doctest, but don't break stylish-haskell parsing
-   startup, frontendName
+   startup, frontendName, supportsMultiFont
 #endif
   ) where
 
@@ -88,6 +88,11 @@ data FrontendSession = FrontendSession
 -- | The name of the frontend.
 frontendName :: String
 frontendName = "ghcjs"
+
+-- | Whether the frontend draws text in proportional and monospace fonts as well
+-- as in the map font.
+supportsMultiFont :: Bool
+supportsMultiFont = False
 
 -- | Starts the main program loop using the frontend input and output.
 startup :: ScreenContent -> ClientOptions -> IO RawFrontend
