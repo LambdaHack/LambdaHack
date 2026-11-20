@@ -2645,11 +2645,11 @@ and the success rule is: resolved.*
   included (ruled 2026-08-07: the ratio is honest only if the halves differ
   along nothing but the compared axis, so neither half drops a flag the other
   keeps) --- invoking the 3.2 driver
-  on `wasm32-wasi-cabal list-bin exe:LambdaHack` plus post-linked glue
-  (the `test-wasm` target shows the exact `post-link.mjs` recipe,
-  `Makefile:test-wasm:`), under `~/.ghc-wasm/env`'s node, which the recipe
-  sources for `list-bin` anyway and which the recipe states. `nodeBench` stays
-  the aggregate of both.
+  on `wasm32-wasi-cabal list-bin exe:LambdaHack --enable-optimization` plus
+  post-linked glue (the `test-reactor` target shows the exact `post-link.mjs`
+  recipe, `Makefile:test-reactor:`), under `~/.ghc-wasm/env`'s node, which
+  the recipe sources for `list-bin` anyway and which the recipe states.
+  `nodeBench` stays the aggregate of both.
 - `nodeMinifiedBench` -> rename to `nodeDeployedBench` (there is no "minified"
   wasm; the honest name is "the deployed artifact"): run the same two benchmarks
   against `../lambdahack.github.io/LambdaHack.wasm` + its `ghc_wasm_jsffi.mjs`,
