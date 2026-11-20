@@ -732,7 +732,7 @@ only that the plan was written is one the next reader has to skip.
   by `make build-ts`, which since 2.2 copies every
   `GameDefinition/fonts/*.ttf.woff` too, any of which the startup payload may
   name for `terminal.ts` to declare; the deployed `index.html` references none
-  of them.
+  of the `.ttf.woff` files.
 
 ## Ground rules
 
