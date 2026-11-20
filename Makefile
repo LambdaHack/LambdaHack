@@ -327,16 +327,20 @@ test-wasm: $(NPM_CI)
 
 # Every mode of ts-src/run-wasm-game.mjs under Node: a self-played game run to
 # its end under --frontendNull, then the reactor's exports, called as the page
-# calls them, once plain and once under --printEachScreen. No workflow runs it.
+# calls them, once plain and once under --printEachScreen, the two side by side,
+# the plain run's lines printed after the other's. No workflow runs it.
 test-reactor: build-wasm $(NPM_CI)
 	. ~/.ghc-wasm/env && \
 	T=$$(mktemp -d) && \
 	trap 'rm -rf "$$T"' EXIT && \
 	W=$$(wasm32-wasi-cabal list-bin exe:LambdaHack --enable-optimization) && \
 	$(POSTLINK) --input "$$W" --output "$$T/ghc_wasm_jsffi.mjs" && \
-	node ts-src/run-wasm-game.mjs "$$W" "$$T/ghc_wasm_jsffi.mjs" --newGame 1 --gameMode crawl --noAnim --maxFps 100000 --frontendNull --benchmark --stopAfterFrames 200 --automateAll --keepAutomated && \
-	node ts-src/run-wasm-game.mjs "$$W" "$$T/ghc_wasm_jsffi.mjs" && \
-	node ts-src/run-wasm-game.mjs "$$W" "$$T/ghc_wasm_jsffi.mjs" --printEachScreen
+	node ts-src/run-wasm-game.mjs "$$W" "$$T/ghc_wasm_jsffi.mjs" --newGame 1 --gameMode crawl --noAnim --maxFps 100000 --frontendNull --benchmark --stopAfterFrames 200 --automateAll --keepAutomated || exit 1; \
+	node ts-src/run-wasm-game.mjs "$$W" "$$T/ghc_wasm_jsffi.mjs" > "$$T/plain.log" 2>&1 & P=$$!; \
+	node ts-src/run-wasm-game.mjs "$$W" "$$T/ghc_wasm_jsffi.mjs" --printEachScreen; S=$$?; \
+	wait $$P; Q=$$?; \
+	cat "$$T/plain.log"; \
+	test $$S -eq 0 -a $$Q -eq 0
 
 # deployPage puts the page into the directory given: its own files, the bundle,
 # the glue and the binary. build-ts deploys it and page-gate gates it, so the
