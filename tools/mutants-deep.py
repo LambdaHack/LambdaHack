@@ -4,14 +4,15 @@ mutants want a rebuild or ts-src's packages, as mutants their own runs must
 catch.
 
 Read by `selftest-mutants.py tools/mutants-deep.py`, on demand rather than by
-`check-all tools`: each judge is one of those targets, or the cases a tasty or
-vitest pattern selects in one test executable or test file, in a shared clone
-of the repository, which builds what the target needs and runs it, so a replay
-takes long, and like the targets it runs unsandboxed; and without -j, since two
-page gates at once contend for the gate's fixed ports. Replay it when a target,
-or what it runs, changes in a way these could see. The clone carries the working
-tree's edits to tracked files and no untracked file, so a new file is tracked
-first, and no edit may land while it runs.
+`check-all tools`, which tests only that each mutant still applies: each judge
+is one of those targets, or the cases a tasty or vitest pattern selects in one
+test executable or test file, in a shared clone of the repository, which builds
+what the target needs and runs it, so a replay takes long, and like the targets
+it runs unsandboxed; and without -j, since two page gates at once contend for
+the gate's fixed ports. Replay it when a target, or what it runs, changes in
+a way these could see. The clone carries the working tree's edits to tracked
+files and no untracked file, so a new file is tracked first, and no edit may
+land while it runs.
 
 Each judge seeds its copy with what it needs of this checkout's: the wasm and
 native ones with the build of their platform, the wasm and TypeScript ones with

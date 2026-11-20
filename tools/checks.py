@@ -81,6 +81,11 @@ STEPS = [
     ('cases, ok direction',    ['python3', '{bin}/defect-run.py', '{root}']),
     ('cases, bug direction',   ['python3', '{bin}/defect-run.py', '--audit', '{root}']),
     ('source lint',            ['python3', '{bin}/defect-lint.py', '{root}']),
+    # Each mutant of the deep list still applying, its anchor found once in
+    # its file: a test of a second where replaying them takes long, so that an
+    # edit moving an anchor shows at the next check-all rather than at the next
+    # replay.
+    ('deep mutants anchors',   ['python3', '{bin}/selftest-mutants.py', 'tools/mutants-deep.py', '--anchors'], '{root}/..'),
     ('selftest mutants',       ['python3', '{bin}/selftest-mutants.py', '{root}']),
 ]
 

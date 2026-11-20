@@ -219,4 +219,10 @@ MUTANTS = [
     ('explicit widths empty pathspec read as a pass', 'checks.py',
      """                                '[ -n "$files" ] || { echo "no tracked file matches the frontend pathspec, so nothing was checked"; exit 2; }; '\n""",
      '', ['python3', '{bin}/defect-run.py', '-k', 'checks-06', '{dir}']),
+    # The deep list's anchors, tested by the step of checks.py that check-all
+    # runs: overlaidCells's fill test reworded, the anchor of a deep mutant,
+    # which is then lost.
+    ('deep mutants anchors: an anchor reworded', '../ts-src/src/overlay-core.ts',
+     '    if (op.kind !== "fill") continue;\n',
+     '    if (op.kind != "fill") continue;\n', step('deep mutants anchors')),
 ]
