@@ -305,10 +305,10 @@ and carries it in **Owns** by that rule rather than by enumeration --- most
 items that build anything write it, and the one-holder-at-a-time discipline
 binds it as it binds `Sdl.hs`. Deleting the entry is the executing session's act
 and not something a checker will prompt: once the artifact exists,
-`../tools/check-doc-refs.py` prints `ok path` for its path and `allow path`
-for its module name while the entry stands, and fails neither --- which is why
-the allowlist's own header asks for the deletion by hand, and why a survivor
-means a proposed artifact was never built rather than a check that failed.
+`../tools/check-doc-refs.py` prints `ok path` for its path while the entry
+stands, and fails no spelling of it --- which is why the allowlist's own header
+asks for the deletion by hand, and why a survivor means a proposed artifact
+was never built rather than a check that failed.
 
 Two traps have each already produced a wrong result in this repo
 or this campaign, so a session is told both rather than trusted to know them.
