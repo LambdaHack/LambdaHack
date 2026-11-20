@@ -28,8 +28,6 @@ import qualified Data.Char as Char
 import           Data.IORef
 import           Data.Primitive.ByteArray (ByteArray (..), ByteArray#)
 import qualified Data.Text as T
-import           Data.Time.Clock (getCurrentTime)
-import           Data.Time.LocalTime (getTimeZone)
 import qualified Data.Vector.Primitive as VP
 import qualified Data.Vector.Unboxed as U
 import qualified Data.Vector.Unboxed.Base as VU
@@ -182,9 +180,8 @@ display ScreenContent{rwidth, rheight} printEachScreen previousFrame
 -- of the PNG the canvas exports in place of SDL's bitmap.
 printScreen :: IO ()
 printScreen = do
-  utcTime <- getCurrentTime
-  timezone <- getTimeZone utcTime
-  js_printScreen $ toJSString $ screenshotName timezone utcTime <.> "png"
+  name <- screenshotNameNow
+  js_printScreen $ toJSString $ name <.> "png"
 
 -- | Save a screenshot under the given file name. The JS side (set up
 -- by the loader as @globalThis.lhPrintScreen@) saves the screen as it is

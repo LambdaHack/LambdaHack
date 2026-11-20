@@ -1,15 +1,15 @@
 -- | The names the frontends give the screenshots they save, so that
 -- a screenshot is named alike whichever frontend takes it.
 module Game.LambdaHack.Client.UI.Frontend.Screenshot
-  ( screenshotName
+  ( screenshotName, screenshotNameNow
   ) where
 
 import Prelude ()
 
 import Game.LambdaHack.Core.Prelude
 
-import Data.Time.Clock (UTCTime)
-import Data.Time.LocalTime (TimeZone, utcToLocalTime)
+import Data.Time.Clock (UTCTime, getCurrentTime)
+import Data.Time.LocalTime (TimeZone, getTimeZone, utcToLocalTime)
 
 -- | The name of a screenshot taken at the given time, seen in the given
 -- time zone, with no directory and no extension, each frontend adding
@@ -24,3 +24,10 @@ screenshotName timezone utcTime =
         ':' -> '.'
         _ -> c
   in "prtscn" <> unspace (take 25 $ show $ utcToLocalTime timezone utcTime)
+
+-- | 'screenshotName' at the current time, in the local time zone.
+screenshotNameNow :: IO String
+screenshotNameNow = do
+  utcTime <- getCurrentTime
+  timezone <- getTimeZone utcTime
+  return $! screenshotName timezone utcTime

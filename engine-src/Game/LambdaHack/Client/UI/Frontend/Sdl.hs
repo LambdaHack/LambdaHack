@@ -17,8 +17,6 @@ import qualified Data.Char as Char
 import qualified Data.EnumMap.Strict as EM
 import           Data.IORef
 import qualified Data.Text as T
-import           Data.Time.Clock.POSIX
-import           Data.Time.LocalTime
 import qualified Data.Vector as V
 import qualified Data.Vector.Storable as VS
 import qualified Data.Vector.Unboxed as U
@@ -637,10 +635,8 @@ printScreen FrontendSession{..} = do
   dataDir <- appDataDir
   tryCreateDir dataDir
   tryCreateDir $ dataDir </> "screenshots"
-  utcTime <- getCurrentTime
-  timezone <- getTimeZone utcTime
-  let fileName = dataDir </> "screenshots"
-                 </> screenshotName timezone utcTime <.> "bmp"
+  name <- screenshotNameNow
+  let fileName = dataDir </> "screenshots" </> name <.> "bmp"
       SDL.Internal.Types.Renderer renderer = srenderer
   Vect.V2 sw sh <- SDL.get $ SDL.windowSize swindow
   ptrOut <- SDL.Raw.Video.createRGBSurface 0 sw sh 32 0 0 0 0
