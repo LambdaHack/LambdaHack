@@ -38,16 +38,38 @@ NATIVE = SEED + ('cp -a {root}/../dist-newstyle/build/x86_64-linux '
 TS = TOP + PACKAGES
 
 
+# A build step, its output in build.log and shown only where it fails, which
+# ends the judge at 2.
+def built(cmd):
+    return cmd + ' > build.log 2>&1 || { cat build.log; exit 2; }; '
+
+
+# What leaves in $W the binary of a wasm component and in jsffi.mjs its glue, as
+# the Makefile's recipes post-link it.
+def postlinked(component):
+    return ('W=$(wasm32-wasi-cabal list-bin ' + component +
+            ' --enable-optimization) && '
+            '~/.ghc-wasm/wasm32-wasi-ghc/lib/post-link.mjs --input "$W" '
+            '--output jsffi.mjs')
+
+
+# The run whose status is the verdict, its output in judge.log and shown: exit 0
+# where it passed, 1 where the log holds the line a failure of its own prints,
+# which `grep` matches by the pattern `failed`, and 2 otherwise.
+def verdict(run, failed, grep='grep -q'):
+    return (run + ' > judge.log 2>&1; s=$?; cat judge.log; '
+            'if [ $s -eq 0 ]; then exit 0; '
+            'elif ' + grep + " '" + failed + "' judge.log; then exit 1; "
+            'else exit 2; fi')
+
+
 # make exits 2 whenever a recipe fails, which selftest-mutants.py reads as a run
 # that did not happen, and its message carries the recipe's own status: so the
 # judge exits 1 only where the target itself failed, and 2 where the seeding,
 # the build before it or a prerequisite did.
 def judge(seed, target, build=''):
-    return (seed + ' || exit 2; ' + build +
-            'make ' + target + ' > judge.log 2>&1; s=$?; cat judge.log; '
-            'if [ $s -eq 0 ]; then exit 0; '
-            "elif grep -q '" + target + "] Error 1$' judge.log; then exit 1; "
-            'else exit 2; fi')
+    return (seed + ' || exit 2; ' + build
+            + verdict('make ' + target, target + '] Error 1$'))
 
 
 PAGE_GATE = judge(WASM, 'page-gate')
@@ -58,14 +80,9 @@ TEST_REACTOR = judge(WASM, 'test-reactor')
 # and 2 otherwise, as where the seeding, the build or the post-link failed or
 # the run did not happen.
 def driver(args, must):
-    return (WASM + ' || exit 2; '
-            'make build-wasm > build.log 2>&1 '
-            '|| { cat build.log; exit 2; }; '
-            '. ~/.ghc-wasm/env && '
-            'W=$(wasm32-wasi-cabal list-bin exe:LambdaHack '
-            '--enable-optimization) && '
-            '~/.ghc-wasm/wasm32-wasi-ghc/lib/post-link.mjs --input "$W" '
-            '--output jsffi.mjs || exit 2; '
+    return (WASM + ' || exit 2; ' + built('make build-wasm')
+            + '. ~/.ghc-wasm/env && ' + postlinked('exe:LambdaHack')
+            + ' || exit 2; '
             'node ts-src/run-wasm-game.mjs "$W" jsffi.mjs --frontendNull ' +
             args + '; '
             'case $? in %d) exit 0;; %d) exit 1;; *) exit 2;; esac'
@@ -81,11 +98,8 @@ REACTOR_HELP = driver('--help', 0)
 # make doctest builds inside its recipe, so a failed build would end in the
 # target's own Error 1, and smokeANSI runs the binary it finds and builds
 # nothing: the judge of each builds first.
-DOCTEST = judge(NATIVE, 'doctest',
-                'cabal build > build.log 2>&1 || { cat build.log; exit 2; }; ')
-SMOKE_ANSI = judge(NATIVE, 'smokeANSI',
-                   'cabal build exe:LambdaHack > build.log 2>&1 '
-                   '|| { cat build.log; exit 2; }; ')
+DOCTEST = judge(NATIVE, 'doctest', built('cabal build'))
+SMOKE_ANSI = judge(NATIVE, 'smokeANSI', built('cabal build exe:LambdaHack'))
 
 
 # The cases the tasty pattern selects in the test executable named, built
@@ -97,21 +111,15 @@ def tasty(component, pattern, wasm=False):
     if wasm:
         cabal = '. ~/.ghc-wasm/env && wasm32-wasi-cabal'
         opts = ' --enable-optimization'
-        run = ('W=$(wasm32-wasi-cabal list-bin ' + component + opts + ') && '
-               '~/.ghc-wasm/wasm32-wasi-ghc/lib/post-link.mjs --input "$W" '
-               '--output jsffi.mjs && '
-               'node ts-src/run-wasm-test.mjs "$W" jsffi.mjs')
+        run = (postlinked(component)
+               + ' && node ts-src/run-wasm-test.mjs "$W" jsffi.mjs')
     else:
         cabal, opts = 'cabal', ''
         run = '"$(cabal list-bin ' + component + ')"'
     return ((WASM if wasm else NATIVE) + ' || exit 2; '
-            + cabal + ' build ' + component + opts + ' > build.log 2>&1 '
-            '|| { cat build.log; exit 2; }; '
-            '{ ' + run + ' -p \'' + pattern + '\'; } '
-            '> judge.log 2>&1; s=$?; cat judge.log; '
-            'if [ $s -eq 0 ]; then exit 0; '
-            "elif grep -q ' tests failed ' judge.log; then exit 1; "
-            'else exit 2; fi')
+            + built(cabal + ' build ' + component + opts)
+            + verdict("{ " + run + " -p '" + pattern + "'; }",
+                      ' tests failed '))
 
 
 # The cases the vitest pattern selects in one file of ts-src's suite, the file
@@ -121,11 +129,9 @@ def tasty(component, pattern, wasm=False):
 # otherwise, as where the seeding failed or the file could not be loaded.
 def vitest(path, pattern):
     return (TS + ' || exit 2; '
-            'ts-src/node_modules/.bin/vitest run --root ts-src ' + path +
-            " -t '" + pattern + "' > judge.log 2>&1; s=$?; cat judge.log; "
-            'if [ $s -eq 0 ]; then exit 0; '
-            "elif grep -qE ' Tests +[0-9]+ failed' judge.log; then exit 1; "
-            'else exit 2; fi')
+            + verdict('ts-src/node_modules/.bin/vitest run --root ts-src '
+                      + path + " -t '" + pattern + "'",
+                      ' Tests +[0-9]+ failed', 'grep -qE'))
 
 
 MUTANTS = [
