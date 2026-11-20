@@ -166,9 +166,7 @@ startupFun coscreen soptions@ClientOptions{..} rfMVar = do
      setHintMode _ HintingHeavy = return ()  -- default
      setHintMode sdlFont HintingLight = TTF.setHinting sdlFont TTF.Light
  (squareFont, squareFontSize) <- loadFont cfMap
- let mapFontIsBitmap = case cfDefinition cfMap of
-       FontMapBitmap{} -> True
-       _ -> False
+ let mapFontIsBitmap = cfIsBitmap cfMap
      halfSize = squareFontSize `div` 2
      boxSize = 2 * halfSize  -- map font determines cell size for all others
  -- Real size of these fonts ignored.

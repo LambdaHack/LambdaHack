@@ -3,7 +3,7 @@
 -- handed them, and the UI asks whether there are auxiliary fonts to lay its
 -- texts out in.
 module Game.LambdaHack.Client.UI.Frontend.Fonts
-  ( ChosenFont(..), ChosenFonts(..), resolveFonts
+  ( ChosenFont(..), cfIsBitmap, ChosenFonts(..), resolveFonts
   ) where
 
 import Prelude ()
@@ -24,6 +24,12 @@ data ChosenFont = ChosenFont
   , cfSize       :: Int
   }
   deriving (Show, Eq)
+
+-- | Whether the font is a bitmap one, whose size its file fixes.
+cfIsBitmap :: ChosenFont -> Bool
+cfIsBitmap ChosenFont{cfDefinition} = case cfDefinition of
+  FontMapBitmap{} -> True
+  _ -> False
 
 -- | The map font, whose size sizes the cell, and the three auxiliary
 -- fonts, proportional regular, proportional bold and monospace, all three

@@ -52,7 +52,6 @@ import           Game.LambdaHack.Client.UI.Frontend.Screenshot
 import qualified Game.LambdaHack.Client.UI.Key as K
 import           Game.LambdaHack.Client.UI.PointUI
 import           Game.LambdaHack.Common.ClientOptions
-import           Game.LambdaHack.Common.Misc (FontDefinition (..))
 import qualified Game.LambdaHack.Common.PointArray as PointArray
 
 -- | Submit a frame's overlays, before the frame and only where it has any:
@@ -128,13 +127,10 @@ startupPayload ClientOptions{sallFontsScale} ChosenFonts{cfAuxiliary} =
       , jsonObject [ ("file", jsonString $ T.unpack cfFile)
                    , ("size", show cfSize) ] )
     | Just (prop, bold, mono) <- [cfAuxiliary]
-    , (field, ChosenFont{..}) <- [ ("propRegular", prop)
-                                 , ("propBold", bold)
-                                 , ("mono", mono) ]
-    , not $ isBitmap cfDefinition ]
-  isBitmap = \case
-    FontMapBitmap{} -> True
-    _ -> False
+    , (field, font@ChosenFont{..}) <- [ ("propRegular", prop)
+                                      , ("propBold", bold)
+                                      , ("mono", mono) ]
+    , not $ cfIsBitmap font ]
 
 -- | A JSON object of the given fields, whose values are JSON already.
 jsonObject :: [(String, String)] -> String
