@@ -441,13 +441,14 @@ library this-game-src
                       ,async
                       ,base
                       ,enummapset
-                      ,file-embed >= 0.0.11
                       ,ghc-compact
                       ,optparse-applicative
                       ,splitmix
                       ,template-haskell
                       ,text
                       ,transformers
+  if !os(wasi)
+    build-depends:    ,file-embed >= 0.0.11
 
 executable LambdaHack
   import: options, exe-options

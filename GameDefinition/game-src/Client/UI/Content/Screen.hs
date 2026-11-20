@@ -9,11 +9,14 @@ import Prelude ()
 import Game.LambdaHack.Core.Prelude
 
 import qualified Data.EnumMap.Strict as EM
-import           Data.FileEmbed (embedDir)
 import           Language.Haskell.TH.Syntax
 import           System.IO
 
 import Game.LambdaHack.Client.UI.Content.Screen
+
+#ifndef USE_BROWSER
+import Data.FileEmbed (embedDir)
+#endif
 
 -- | Description of default screen layout and features.
 standardLayoutAndFeatures :: ScreenContent
