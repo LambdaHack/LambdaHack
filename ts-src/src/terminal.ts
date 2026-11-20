@@ -496,20 +496,31 @@ export function mountTerminal(
   }
 
   // Declare the startup payload's fonts and start them loading, each from its
-  // file beside the page; as each settles, loaded or not, the faces' baselines
-  // are measured again.
+  // file beside the page, fetched once however many faces name it; as each
+  // settles, loaded or not, the faces' baselines are measured again.
   function setFonts(fonts: OverlayFonts): void {
     fontSpecs = fonts;
     currentFace = null;
     baselines = {};
+    const files = new Map<string, Promise<ArrayBuffer>>();
     for (const face of OVERLAY_FACES) {
       const spec = fonts[face];
       if (!spec) continue;
-      const fontFace = new FontFace(FACE_FAMILY[face], `url("./${spec.file}")`);
-      document.fonts.add(fontFace);
+      let file = files.get(spec.file);
+      if (!file) {
+        file = fetch(`./${spec.file}`).then((r) => {
+          if (!r.ok) throw new Error(`HTTP ${r.status}`);
+          return r.arrayBuffer();
+        });
+        files.set(spec.file, file);
+      }
       facesLoading++;
-      fontFace
-        .load()
+      file
+        .then((data) => {
+          const fontFace = new FontFace(FACE_FAMILY[face], data);
+          document.fonts.add(fontFace);
+          return fontFace.load();
+        })
         .catch((e: unknown) =>
           console.warn(`[lh] font ${spec.file} failed to load`, e),
         )
