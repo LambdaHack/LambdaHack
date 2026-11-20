@@ -2,17 +2,18 @@
 // in headless Firefox and headless Chromium over WebDriver BiDi, Chromium's
 // through chromedriver, must boot the reactor, paint, draw the map's font
 // without subpixel antialiasing at 1:1 and 2:1, stop its self-play on a key,
-// repaint on a key on a quiet screen and submit overlays, in each browser. The
-// two run side by side, so their lines interleave, each naming its browser. It
-// is the one check in the repository that asks whether the page players
-// load works, and it runs locally, before every browser landing, by ruling
-// (docs/wasm-frontend-work-list.md, the page gate under Handing an item); CI
-// stays blind to the page by that same ruling. Exit 0 when every assertion
-// holds in both browsers, 1 when one fails, 2 when the run did not happen: no
-// browser named or an unknown one, no Firefox, Chromium or chromedriver, no
-// BiDi endpoint or one that closes or stops answering, no server, no bundle of
-// the generated palette, a throw outside the assertions, a SIGINT or SIGTERM; a
-// FAIL already printed keeps 1.
+// repaint on a key on a quiet screen and submit overlays, and, loaded again
+// without the overlay fonts' files, warn of a font that failed and still draw
+// overlay text, in each browser. The two run side by side, so their lines
+// interleave, each naming its browser. It is the one check in the repository
+// that asks whether the page players load works, and it runs locally, before
+// every browser landing, by ruling (docs/wasm-frontend-work-list.md, the
+// page gate under Handing an item); CI stays blind to the page by that same
+// ruling. Exit 0 when every assertion holds in both browsers, 1 when one
+// fails, 2 when the run did not happen: no browser named or an unknown one,
+// no Firefox, Chromium or chromedriver, no BiDi endpoint or one that closes
+// or stops answering, no server, no bundle of the generated palette, a throw
+// outside the assertions, a SIGINT or SIGTERM; a FAIL already printed keeps 1.
 //
 // Usage: node page-gate.mjs <site-dir> (Node 22+, for the global WebSocket)
 //   PAGE_GATE_BROWSERS=firefox or =chromium runs one browser alone; BROWSER,
@@ -21,17 +22,20 @@
 // What is observed, and how: a preload script wraps the globalThis hooks the
 // loader installs -- lhSubmitFrame and lhSubmitOverlays -- by defining them as
 // accessor properties before loader.ts assigns them, so every call is counted,
-// the first with its size, and the page's own code runs unchanged. The screen
-// is read back as a hash of the canvas's data URL, so a key's effect is a
-// stopped frame count or a changed hash rather than a claim about what it drew;
-// the HUD rows' pixels are read back too, against the generated palette.
+// the first with its size, and the page's own code runs unchanged; it replaces
+// console.warn and the 2D context's fillText with wrappers that keep the
+// warnings and count the fillText calls made while the context's font names an
+// overlay family. The screen is read back as a hash of the canvas's data URL,
+// so a key's effect is a stopped frame count or a changed hash rather than a
+// claim about what it drew; the HUD rows' pixels are read back too, against the
+// generated palette.
 //
 // Non-vacuity: the gate's controls are mutants in tools/mutants-deep.py,
 // each judged by `make page-gate` and replayed by `selftest-mutants.py
 // tools/mutants-deep.py`.
 
 import { spawn } from "node:child_process";
-import { mkdir, writeFile } from "node:fs/promises";
+import { mkdir, readdir, rm, symlink, writeFile } from "node:fs/promises";
 import { join, resolve } from "node:path";
 
 import { importTs, sleep, waitFor, waitQuiet } from "./run-wasm-test.mjs";
@@ -91,6 +95,16 @@ const STARTERS = { firefox: startFirefox, chromium: startChromium };
 for (const name of BROWSERS) {
   if (!Object.hasOwn(STARTERS, name)) {
     blocked(`unknown browser ${name} in PAGE_GATE_BROWSERS`);
+  }
+}
+
+// The site again, under it, without the overlay fonts' files.
+const MISSING = "missing-fonts";
+await rm(join(site, MISSING), { recursive: true, force: true });
+await mkdir(join(site, MISSING));
+for (const f of await readdir(site, { withFileTypes: true })) {
+  if (f.isFile() && !f.name.endsWith(".ttf.woff")) {
+    await symlink(resolve(site, f.name), join(site, MISSING, f.name));
   }
 }
 
@@ -325,8 +339,16 @@ async function gate(name, send) {
   const context = tree.contexts[0].context;
   await send("script.addPreloadScript", {
     functionDeclaration: `() => {
-    const g = { frames: 0, first: null, overlays: 0 };
+    const g = { frames: 0, first: null, overlays: 0, warnings: [], texts: 0 };
     globalThis.__lhGate = g;
+    const warn = console.warn;
+    console.warn = (...xs) => { g.warnings.push(String(xs[0]));
+                                return warn.apply(console, xs); };
+    const fillText = CanvasRenderingContext2D.prototype.fillText;
+    CanvasRenderingContext2D.prototype.fillText = function (...xs) {
+      if (/lambdaHack(Prop|Mono)/.test(this.font)) g.texts++;
+      return fillText.apply(this, xs);
+    };
     let frame; let overlay;
     Object.defineProperty(globalThis, "lhSubmitFrame", { configurable: true,
       get() { return frame; },
@@ -504,6 +526,43 @@ async function gate(name, send) {
   if (overlays < 1) {
     fail(`${name}: no overlay submission after the key`);
   } else console.log(`ok   ${name}: overlays submitted: ${overlays}`);
+  // 6. fonts that fail to load: loaded again without the overlay fonts' files,
+  // the page warns of a face that failed and still draws overlay text, the
+  // frames held for those faces released as their loads fail.
+  await send("browsingContext.navigate", {
+    context,
+    url: `http://localhost:${PORT}/${MISSING}/index.html`,
+    wait: "complete",
+  });
+  let after = { warnings: [], texts: 0 };
+  await waitFor(
+    async () => {
+      after = JSON.parse(
+        await evaluate(
+          "JSON.stringify({ warnings: globalThis.__lhGate.warnings" +
+            ".filter((w) => w.startsWith('[lh] font ')), texts:" +
+            " globalThis.__lhGate.texts })",
+        ),
+      );
+      return after.warnings.length > 0 && after.texts > 0;
+    },
+    30000,
+    500,
+  );
+  if (after.warnings.length === 0) {
+    fail(`${name}: no font warning within 30s of a load missing the fonts`);
+  } else if (after.texts === 0) {
+    fail(
+      `${name}: no overlay text drawn within 30s of a load missing the` +
+        ` fonts, after ${after.warnings.length} font warnings`,
+    );
+  } else {
+    console.log(
+      `ok   ${name}: with the overlay fonts missing, ` +
+        `${after.warnings.length} font warnings and ${after.texts} overlay` +
+        " texts drawn",
+    );
+  }
 }
 
 await Promise.all(

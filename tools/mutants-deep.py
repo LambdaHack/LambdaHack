@@ -183,6 +183,27 @@ MUTANTS = [
     ('page gate: the canvas opaque again', '../ts-src/src/terminal.ts',
      '  const ctx = canvas.getContext("2d")!;\n',
      '  const ctx = canvas.getContext("2d", { alpha: false })!;\n', PAGE_GATE),
+    # A face whose file fails to load never counted down: the frames held for
+    # the faces go unpainted, so a load without the overlay fonts' files warns
+    # and draws no overlay text.
+    ('page gate: a failed font load holding the frames',
+     '../ts-src/src/terminal.ts',
+     '        .catch((e: unknown) =>\n'
+     '          console.warn(`[lh] font ${spec.file} failed to load`, e),\n'
+     '        )\n'
+     '        .finally(() => {\n',
+     '        .catch((e: unknown) => {\n'
+     '          console.warn(`[lh] font ${spec.file} failed to load`, e);\n'
+     '          throw e;\n'
+     '        })\n'
+     '        .then(() => {\n', PAGE_GATE),
+    # A face whose file fails to load releases its frames without a word, so
+    # the load without the overlay fonts' files draws overlay text and warns
+    # of nothing.
+    ('page gate: a failed font load not warned of',
+     '../ts-src/src/terminal.ts',
+     '          console.warn(`[lh] font ${spec.file} failed to load`, e),\n',
+     '          e,\n', PAGE_GATE),
     # No '?' through lhKey: the self-play goes on painting, so the stream never
     # stops, as in the page gate's twin above.
     ("test-reactor: the '?' key not sent", '../ts-src/run-wasm-game.mjs',
