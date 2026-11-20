@@ -69,14 +69,17 @@ async function mount() {
   return { container, canvas, onKey, onWheel, onMouseUp };
 }
 
-function keydown(target: EventTarget, init: KeyboardEventInit): KeyboardEvent {
-  const e = new KeyboardEvent("keydown", {
-    bubbles: true,
-    cancelable: true,
-    ...init,
-  });
+// The init of an event that reaches the handlers and that they can cancel.
+const LIVE = { bubbles: true, cancelable: true };
+
+// Dispatch an event and return it, for its flags.
+function fire<E extends Event>(target: EventTarget, e: E): E {
   target.dispatchEvent(e);
   return e;
+}
+
+function keydown(target: EventTarget, init: KeyboardEventInit): KeyboardEvent {
+  return fire(target, new KeyboardEvent("keydown", { ...LIVE, ...init }));
 }
 
 describe("keydown forwarding", () => {
@@ -113,40 +116,43 @@ describe("mouse forwarding", () => {
   });
   it("forwards a wheel turn with its point and delta, and stops the page scrolling", async () => {
     const { canvas, onWheel } = await mount();
-    const e = new WheelEvent("wheel", {
-      bubbles: true,
-      cancelable: true,
-      deltaY: -3,
-      shiftKey: true,
-      ...at(5, 1),
-    });
-    canvas.dispatchEvent(e);
+    const e = fire(
+      canvas,
+      new WheelEvent("wheel", {
+        ...LIVE,
+        deltaY: -3,
+        shiftKey: true,
+        ...at(5, 1),
+      }),
+    );
     expect(onWheel.mock.calls).toEqual([[5, 1, -3, false, true, false, false]]);
     expect(e.defaultPrevented).toBe(true);
   });
   it("leaves a Control wheel turn, the browser's zoom, to the browser", async () => {
     const { canvas, onWheel } = await mount();
-    const e = new WheelEvent("wheel", {
-      bubbles: true,
-      cancelable: true,
-      deltaY: -3,
-      ctrlKey: true,
-      ...at(5, 1),
-    });
-    canvas.dispatchEvent(e);
+    const e = fire(
+      canvas,
+      new WheelEvent("wheel", {
+        ...LIVE,
+        deltaY: -3,
+        ctrlKey: true,
+        ...at(5, 1),
+      }),
+    );
     expect(onWheel).not.toHaveBeenCalled();
     expect(e.defaultPrevented).toBe(false);
   });
   it("forwards a button release with its point, in half-cells, and DOM button code", async () => {
     const { canvas, onMouseUp } = await mount();
-    const e = new MouseEvent("mouseup", {
-      bubbles: true,
-      cancelable: true,
-      button: 2,
-      modifierAltGraph: true,
-      ...at(7, 2),
-    });
-    canvas.dispatchEvent(e);
+    const e = fire(
+      canvas,
+      new MouseEvent("mouseup", {
+        ...LIVE,
+        button: 2,
+        modifierAltGraph: true,
+        ...at(7, 2),
+      }),
+    );
     expect(onMouseUp.mock.calls).toEqual([
       [7, 2, 2, false, false, true, false],
     ]);
@@ -154,11 +160,7 @@ describe("mouse forwarding", () => {
   });
   it("suppresses the browser's context menu", async () => {
     const { canvas } = await mount();
-    const e = new MouseEvent("contextmenu", {
-      bubbles: true,
-      cancelable: true,
-    });
-    canvas.dispatchEvent(e);
+    const e = fire(canvas, new MouseEvent("contextmenu", LIVE));
     expect(e.defaultPrevented).toBe(true);
   });
 });

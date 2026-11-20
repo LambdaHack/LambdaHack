@@ -14,6 +14,7 @@ import {
   cellMetrics,
   cellRunOps,
   encodeCell as enc,
+  SPACE,
   type DrawOp,
   type Face,
 } from "./terminal-core.js";
@@ -28,9 +29,11 @@ const {
   HighlightNoneCursor: HiNoneCursor,
 } = HIGHLIGHT;
 
-const SPACE = 32,
-  AT = 64,
+const AT = 64,
   FLOOR = 0xb7; /* U+00B7 */
+
+const fixture = (name: string) =>
+  overlayWire.cases.find((c) => c.name === name)!;
 
 // The cases are generated from OverlayLayout.encodeFrameLayout by
 // test/OverlayLayoutUnitTests.hs: a mismatch means decodeFrameLayout drifted
@@ -39,8 +42,6 @@ describe("decodeFrameLayout against OverlayLayout's wire fixtures", () => {
   it.each(overlayWire.cases)("decodes $name", (c) => {
     expect(decodeFrameLayout(c.words, c.width, c.width)).toEqual(c.layout);
   });
-  const fixture = (name: string) =>
-    overlayWire.cases.find((c) => c.name === name)!;
   const all = fixture("all three");
   it("refuses overlays laid out for another width than the frame's", () => {
     expect(() =>
@@ -66,20 +67,6 @@ describe("decodeFrameLayout against OverlayLayout's wire fixtures", () => {
     expect(() => decodeFrameLayout(at(8, 2), all.width, all.width)).toThrow(
       "word 8 is 2",
     );
-  });
-  it("decodes no overlays to a layout that draws and measures nothing", () => {
-    const none = fixture("no overlays");
-    const measure = vi.fn(() => 0);
-    const layout = decodeFrameLayout(none.words, none.width, none.width);
-    const ops = overlayOps(
-      layout,
-      none.width,
-      cellMetrics(13, 3),
-      () => 13,
-      measure,
-    );
-    expect(ops).toEqual([]);
-    expect(measure).not.toHaveBeenCalled();
   });
 });
 
@@ -127,6 +114,20 @@ describe("overlayOps (the draw ops of a frame's overlays)", () => {
     square: [],
     mono: [],
   });
+  const squareRun = {
+    col: 5,
+    row: 2,
+    words: [enc(AT, BrRed, HiRed), enc(SPACE, White, HiNone)],
+  };
+  const monoRun = {
+    col: 3,
+    row: 2,
+    words: [
+      enc(AT, White, HiNoneCursor),
+      enc(SPACE, White, HiNone),
+      enc(FLOOR, BrBlack, HiNone),
+    ],
+  };
 
   it("draws nothing for a frame with no overlays, measuring nothing", () => {
     const measure = vi.fn(() => 0);
@@ -219,38 +220,24 @@ describe("overlayOps (the draw ops of a frame's overlays)", () => {
   );
 
   it("draws a square run's cells as the map's", () => {
-    const run = {
-      col: 5,
-      row: 2,
-      words: [enc(AT, BrRed, HiRed), enc(SPACE, White, HiNone)],
-    };
     expect(
       overlayOps(
-        { prop: [], square: [run], mono: [] },
+        { prop: [], square: [squareRun], mono: [] },
         80,
         m,
         baseline,
         () => 0,
       ),
-    ).toEqual(cellRunOps(run, m));
+    ).toEqual(cellRunOps(squareRun, m));
   });
 
   it(
     "draws a mono run a glyph per half cell, recoloured for the row only," +
       " on black with no ring",
     () => {
-      const run = {
-        col: 3,
-        row: 2,
-        words: [
-          enc(AT, White, HiNoneCursor),
-          enc(SPACE, White, HiNone),
-          enc(FLOOR, BrBlack, HiNone),
-        ],
-      };
       expect(
         overlayOps(
-          { prop: [], square: [], mono: [run] },
+          { prop: [], square: [], mono: [monoRun] },
           80,
           m,
           baseline,
@@ -309,43 +296,12 @@ describe("overlayOps (the draw ops of a frame's overlays)", () => {
     "lays every op but a fill on a fill's rectangle," +
       " so overlaidCells may skip them",
     () => {
-      const all = overlayWire.cases.find((c) => c.name === "all three")!;
+      const all = fixture("all three");
       const cases: [FrameLayout, number, number][] = [
         [decodeFrameLayout(all.words, all.width, all.width), all.width, 20],
         [propOnly(2, 1, [chunk("long"), chunk("dropped")]), 4, 100],
-        [
-          {
-            prop: [],
-            square: [
-              {
-                col: 5,
-                row: 2,
-                words: [enc(AT, BrRed, HiRed), enc(SPACE, White, HiNone)],
-              },
-            ],
-            mono: [],
-          },
-          80,
-          0,
-        ],
-        [
-          {
-            prop: [],
-            square: [],
-            mono: [
-              {
-                col: 3,
-                row: 2,
-                words: [
-                  enc(AT, White, HiNoneCursor),
-                  enc(SPACE, White, HiNone),
-                ],
-              },
-            ],
-          },
-          80,
-          0,
-        ],
+        [{ prop: [], square: [squareRun], mono: [] }, 80, 0],
+        [{ prop: [], square: [], mono: [monoRun] }, 80, 0],
       ];
       const kinds = new Set<string>();
       for (const [layout, width, measured] of cases) {

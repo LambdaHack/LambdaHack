@@ -11,6 +11,7 @@ import {
   cellRunOps,
   faceBaseline,
   pointerPoint,
+  SPACE,
 } from "./terminal-core.js";
 import {
   BACKLIGHT_FILL,
@@ -21,7 +22,8 @@ import {
 import fixtures from "./generated/fixtures.json";
 
 // AttrCharW32 layout (Definition/Color.hs): code = w>>16, fg = (w>>8)&0xFF, bg
-// = w&0xFF
+// = w&0xFF. Written out here, not imported as encodeCell: it is decodeCell's
+// independent oracle in the cases below.
 const enc = (code: number, fg: number, bg: number) =>
   (code << 16) | (fg << 8) | bg;
 
@@ -32,8 +34,7 @@ const {
   HighlightRed: HiRed,
 } = HIGHLIGHT;
 
-const SPACE = 32,
-  AT = 64,
+const AT = 64,
   FLOOR = 0xb7 /* U+00B7 */,
   MIDDOT = 0x22c5; /* U+22C5 */
 

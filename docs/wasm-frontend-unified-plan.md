@@ -2305,6 +2305,11 @@ a `startupUnderTest`, as `FrontendContractUnitTests.hs` does. The words
 of no overlays decode to a layout that draws and measures nothing, which
 an `overlay-core.test.ts` case asserts.*
 
+*Noted 2026-11-20: that case is gone, two others asserting it between them:
+the wire fixtures' pins the layout the words of no overlays decode to,
+and the one on a frame with no overlays that such a layout draws and measures
+nothing.*
+
 Because `getFontSetup` still gates on `"sdl"`, the overlays are provably `[]`
 in the live game --- this step is a visual no-op, verified by playing.
 The real-data path is exercised by tests instead: a tasty case constructs
