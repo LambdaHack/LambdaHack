@@ -1,37 +1,40 @@
 """The controls of the slow make targets -- the page gate, the doctest count,
-the ANSI smoke and the reactor driver -- and of the test suites' cases whose
-mutants want a rebuild, as mutants their own runs must catch.
+the ANSI smoke and the reactor driver -- and of the test suites' cases, whose
+mutants want a rebuild or ts-src's packages, as mutants their own runs must
+catch.
 
 Read by `selftest-mutants.py tools/mutants-deep.py`, on demand rather than by
-`check-all tools`: each judge is one of those targets, or the cases a tasty
-pattern selects in one test executable, in a shared clone of the repository,
-which builds what the target needs and runs it, so a replay takes long, and
-like the targets it runs unsandboxed; and without -j, since two page gates at
-once contend for the gate's fixed ports. Replay it when a target, or what it
-runs, changes in a way these could see. The clone carries the working tree's
-edits to tracked files and no untracked file, so a new file is tracked first,
-and no edit may land while it runs.
+`check-all tools`: each judge is one of those targets, or the cases a tasty or
+vitest pattern selects in one test executable or test file, in a shared clone
+of the repository, which builds what the target needs and runs it, so a replay
+takes long, and like the targets it runs unsandboxed; and without -j, since two
+page gates at once contend for the gate's fixed ports. Replay it when a target,
+or what it runs, changes in a way these could see. The clone carries the working
+tree's edits to tracked files and no untracked file, so a new file is tracked
+first, and no edit may land while it runs.
 
-Each judge seeds its copy with this checkout's build of the platform it
-needs, and the wasm ones with ts-src's packages, the native ones with
-cabal.project.local, so that only what a mutant touches is rebuilt; `{root}`
-names this checkout's tools/, not the copy's.
+Each judge seeds its copy with what it needs of this checkout's: the wasm and
+native ones with the build of their platform, the wasm and TypeScript ones with
+ts-src's packages and the native ones with cabal.project.local, so that only
+what a mutant touches is rebuilt; `{root}` names this checkout's tools/, not the
+copy's.
 """
 
 COPY = 'clone'
 SIBLINGS = []
 TIMEOUT = 3600
 
-SEED = ('top=$(git -C {dir} rev-parse --show-toplevel) && cd "$top" && '
-        'mkdir -p dist-newstyle/build && '
-        'cp -a {root}/../dist-newstyle/packagedb dist-newstyle/ && ')
+TOP = 'top=$(git -C {dir} rev-parse --show-toplevel) && cd "$top" && '
+PACKAGES = ('cp -a {root}/../ts-src/node_modules ts-src/ && '
+            'touch ts-src/node_modules/.npm-ci')
+SEED = TOP + ('mkdir -p dist-newstyle/build && '
+              'cp -a {root}/../dist-newstyle/packagedb dist-newstyle/ && ')
 WASM = SEED + ('cp -a {root}/../dist-newstyle/build/wasm32-wasi '
-               'dist-newstyle/build/ && '
-               'cp -a {root}/../ts-src/node_modules ts-src/ && '
-               'touch ts-src/node_modules/.npm-ci')
+               'dist-newstyle/build/ && ') + PACKAGES
 NATIVE = SEED + ('cp -a {root}/../dist-newstyle/build/x86_64-linux '
                  'dist-newstyle/build/ && '
                  'cp {root}/../cabal.project.local .')
+TS = TOP + PACKAGES
 
 
 # make exits 2 whenever a recipe fails, which selftest-mutants.py reads as a run
@@ -82,6 +85,21 @@ def tasty(component, pattern, wasm=False):
             'if [ $s -eq 0 ]; then exit 0; '
             "elif grep -q ' tests failed ' judge.log; then exit 1; "
             'else exit 2; fi')
+
+
+# The cases the vitest pattern selects in one file of ts-src's suite, the file
+# named from the repository's root, so that --changed sees an edit of it, with
+# ts-src's packages seeded and nothing built: exit 0 where vitest passed, a
+# pattern selecting no case included, 1 where it reported a failed case, and 2
+# otherwise, as where the seeding failed or the file could not be loaded.
+def vitest(path, pattern):
+    return (TS + ' || exit 2; '
+            'ts-src/node_modules/.bin/vitest run --root ts-src ' + path +
+            " -t '" + pattern + "' > judge.log 2>&1; s=$?; cat judge.log; "
+            'if [ $s -eq 0 ]; then exit 0; '
+            "elif grep -qE ' Tests +[0-9]+ failed' judge.log; then exit 1; "
+            'else exit 2; fi')
+
 
 MUTANTS = [
     # The site without the binary: no frame arrives, so the frame assertions and
@@ -185,4 +203,18 @@ MUTANTS = [
      'AddSkill SkMaxHP 80  -- partially from clothes and first aid\n',
      'AddSkill SkMaxHP 81  -- partially from clothes and first aid\n',
      tasty('test-game', '/fe-golden: the state/')),
+    # A proportional text op a pixel right of its fill, so that the fills alone
+    # no longer cover every cell the overlays draw over: overlayOps' case
+    # pinning each op but a fill to a fill's rectangle fails.
+    ('overlay-core: a text op a pixel off its fill',
+     '../ts-src/src/overlay-core.ts',
+     '        kind: "textLeft",\n        ...box,\n',
+     '        kind: "textLeft",\n        ...box,\n        x: box.x + 1,\n',
+     vitest('ts-src/src/overlay-core.test.ts', 'lays every op but a fill')),
+    # overlaidCells visiting every op and not the fills alone: its case over a
+    # stroke that lies on no fill gets the stroke's cell back too.
+    ('overlay-core: overlaidCells visiting every op',
+     '../ts-src/src/overlay-core.ts',
+     '    if (op.kind !== "fill") continue;\n', '',
+     vitest('ts-src/src/overlay-core.test.ts', 'the other ops skipped')),
 ]

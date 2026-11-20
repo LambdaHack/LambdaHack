@@ -304,23 +304,90 @@ describe("overlayOps (the draw ops of a frame's overlays)", () => {
       ]);
     },
   );
+
+  it(
+    "lays every op but a fill on a fill's rectangle," +
+      " so overlaidCells may skip them",
+    () => {
+      const all = overlayWire.cases.find((c) => c.name === "all three")!;
+      const cases: [FrameLayout, number, number][] = [
+        [decodeFrameLayout(all.words, all.width, all.width), all.width, 20],
+        [propOnly(2, 1, [chunk("long"), chunk("dropped")]), 4, 100],
+        [
+          {
+            prop: [],
+            square: [
+              {
+                col: 5,
+                row: 2,
+                words: [enc(AT, BrRed, HiRed), enc(SPACE, White, HiNone)],
+              },
+            ],
+            mono: [],
+          },
+          80,
+          0,
+        ],
+        [
+          {
+            prop: [],
+            square: [],
+            mono: [
+              {
+                col: 3,
+                row: 2,
+                words: [
+                  enc(AT, White, HiNoneCursor),
+                  enc(SPACE, White, HiNone),
+                ],
+              },
+            ],
+          },
+          80,
+          0,
+        ],
+      ];
+      const kinds = new Set<string>();
+      for (const [layout, width, measured] of cases) {
+        const ops = overlayOps(layout, width, m, baseline, () => measured);
+        const fills = ops.filter((op) => op.kind === "fill");
+        const onAFill = (op: DrawOp) =>
+          fills.some(
+            (f) => f.x === op.x && f.y === op.y && f.w === op.w && f.h === op.h,
+          );
+        expect(ops.filter((op) => !onAFill(op))).toEqual([]);
+        for (const op of ops) kinds.add(op.kind);
+      }
+      // Every kind of op is among those checked.
+      expect([...kinds].sort()).toEqual(["fill", "stroke", "text", "textLeft"]);
+    },
+  );
 });
 
 describe("overlaidCells (the map cells overlays draw over)", () => {
   const m = cellMetrics(13, 3);
   const black = PALETTE[Black];
-  it("is every cell an op reaches into, once each, in index order", () => {
+  // Compared as sets, the cells coming in no particular order.
+  const cellsOf = (ops: DrawOp[]) => new Set(overlaidCells(ops, m, 10, 3));
+  it("is every cell a fill reaches into, the other ops skipped", () => {
     const ops: DrawOp[] = [
-      { kind: "stroke", x: 32, y: 16, w: 16, h: 16, color: black },
+      { kind: "stroke", x: 96, y: 0, w: 16, h: 16, color: black },
       { kind: "fill", x: 24, y: 16, w: 21, h: 16, color: black },
     ];
-    expect(overlaidCells(ops, m, 10, 3)).toEqual([11, 12]);
+    expect(cellsOf(ops)).toEqual(new Set([11, 12]));
+  });
+  it("is each cell once", () => {
+    const ops: DrawOp[] = [
+      { kind: "fill", x: 24, y: 16, w: 21, h: 16, color: black },
+      { kind: "fill", x: 32, y: 16, w: 8, h: 16, color: black },
+    ];
+    expect(overlaidCells(ops, m, 10, 3)).toHaveLength(2);
   });
   it("is cut to the screen", () => {
     const ops: DrawOp[] = [
       { kind: "fill", x: 144, y: 32, w: 40, h: 32, color: black },
     ];
-    expect(overlaidCells(ops, m, 10, 3)).toEqual([29]);
+    expect(cellsOf(ops)).toEqual(new Set([29]));
   });
   it("is nothing for no ops", () => {
     expect(overlaidCells([], m, 10, 3)).toEqual([]);

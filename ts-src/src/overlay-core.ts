@@ -285,9 +285,10 @@ function monoRunOps(
 }
 
 /**
- * The cells of a screen cols by rows cells of m that ops draw over, as frame
- * indices in ascending order: those the next frame repaints from its map before
- * drawing its own overlays.
+ * The cells of a screen cols by rows cells of m that the fills among ops cover,
+ * as frame indices, once each and in no particular order: those the next frame
+ * repaints from its map before drawing its own overlays. Every other op is
+ * skipped, overlayOps laying each on a fill's rectangle, which its test pins.
  */
 export function overlaidCells(
   ops: DrawOp[],
@@ -295,8 +296,11 @@ export function overlaidCells(
   cols: number,
   rows: number,
 ): number[] {
-  const cells = new Set<number>();
-  for (const { x, y, w, h } of ops) {
+  const seen = new Uint8Array(cols * rows);
+  const cells: number[] = [];
+  for (const op of ops) {
+    if (op.kind !== "fill") continue;
+    const { x, y, w, h } = op;
     const colEnd = Math.min(cols, Math.ceil((x + w) / m.boxSize));
     const rowEnd = Math.min(rows, Math.ceil((y + h) / m.boxSize));
     for (let row = Math.max(0, Math.floor(y / m.boxSize)); row < rowEnd; row++)
@@ -304,8 +308,13 @@ export function overlaidCells(
         let col = Math.max(0, Math.floor(x / m.boxSize));
         col < colEnd;
         col++
-      )
-        cells.add(row * cols + col);
+      ) {
+        const i = row * cols + col;
+        if (seen[i] === 0) {
+          seen[i] = 1;
+          cells.push(i);
+        }
+      }
   }
-  return [...cells].sort((a, b) => a - b);
+  return cells;
 }
