@@ -1504,9 +1504,9 @@ by GHCJS" clause, updated or dropped --- `.hlint.yaml`'s comment naming
 the defines its Dom ignore fires under, reworded so that the grep in **Done**
 can pass, by the record's ruling of 2026-10-25, and `CLAUDE.md`
 and `docs/wasm-frontend-unified-plan.md`. The three engine `#if` sites are also
-R1's and the capability-constants practice's, so whichever lands first shapes
-R3's diff. The pointman campaign writes two of these too: its PR 0, C3, C4
-and C6 write `HandleHumanLocalM.hs`, the first three above the `#if` site
+the capability-constants practice's, and two of them R1's, so whichever lands
+first shapes R3's diff. The pointman campaign writes two of these too: its PR 0,
+C3, C4 and C6 write `HandleHumanLocalM.hs`, the first three above the `#if` site
 this item cites, and its 04.4 writes `CLAUDE.md` at that campaign's landing.
 
 **Done** --- `native`, with stylish widened past the gate's Owns-derived list
@@ -1544,11 +1544,10 @@ at `loader.ts:const wasi = new WASI(["LambdaHack"], [], fds);`),
 `GameDefinition/index.html` if the knobs get on-page documentation,
 `tools/doc-refs-allow.txt`, whose two `url-options-core` entries commit (1)
 deletes as it creates the files, and `docs/wasm-frontend-unified-plan.md`,
-the re-anchoring commit included. R5's `?benchmark` mode is one
-of this allowlist's own entries and edits the same `loader.ts` call,
-so whichever lands first shapes the other's diff. This item's rejected-parameter
-message is a branch of 1.6's handler on `lhStart`'s settlement, which has
-landed.
+the re-anchoring commit included. R5a, whose `?benchmark` mode is one
+of this item's URL parameters, edits the same `loader.ts` call after this item
+lands, so this item's diff shapes R5a's. This item's rejected-parameter message
+is a branch of 1.6's handler on `lhStart`'s settlement, which has landed.
 
 **Done** --- `ts`, `page`, `docs`.
 
@@ -1588,10 +1587,9 @@ and `ts-src/src/frame-timing-core.test.ts`, `ts-src/src/terminal.ts`
 rather slowly" clause, which stands in both, deleted under 1.4's rule when both
 bars are cleared), `tools/doc-refs-allow.txt` (R5a's two `frame-timing-core`
 entries), and `docs/wasm-frontend-unified-plan.md`; R5b writes it alone.
-`?benchmark=` sits in R4's parameter allowlist, so whichever of the two lands
-first shapes the other's `loader.ts` diff. R15 rewrites the `submitFrame` R5a
-instruments, so whichever of those lands first shapes the other's `terminal.ts`
-diff.
+`?benchmark=` sits in R4's parameter allowlist, so R4's `loader.ts` diff,
+landing first, shapes R5a's. R15 rewrites the `submitFrame` R5a instruments,
+so whichever of those lands first shapes the other's `terminal.ts` diff.
 
 **Done** --- `ts`, `page`, `docs`, which decides R5a only.
 
@@ -2251,8 +2249,7 @@ R8 #281 ring workaround retired --- after 2.2, before or after 2.3
     independent of Phases 1-2; shared infrastructure with R4)
 3.2 Node reactor driver (grows 0.3's seed driver; exit propagation)
 3.3 repurpose nodeBench* targets; nodeMinifiedBench -> nodeDeployedBench
-    (Phase 3 may run before or between Phases 1-2 --- it's independent, and
-    doing it early unlocks the wasm-vs-native ratio)
+    (unlocks the wasm-vs-native ratio)
 R2 CI jobs --- grow them per phase (0.3's game driver with build-wasm; a short
     nodeBench smoke run joins after 3.3)
 0.3 FFI coverage --- after the baseline, incremental with every
@@ -2267,9 +2264,9 @@ determinism goldens --- native harness before 2.4; cross-backend
     then check under wasm
 R1 --- independent but for its save-lag re-measurement, after 3.2
 R4 --- after 3.1, which leaves it loader-only
-R3 GHCJS rip-out --- one commit, after 2.5 (parity); Dom.hs/JSFile.hs stay
+R3 GHCJS rip-out --- one code commit, after 2.5 (parity); Dom.hs/JSFile.hs stay
     as documented-dead examples
-R5 --- after 2.5 and 3.3, measurement first
+R5 --- after 2.5 and 3.3, R5a after R4, measurement first
 R7 --- after 0.4, 1.5 and R10; R7b after R7a
 R9 --- late: after 2.5 (parity), R9a's measurement first, R9b on Mikolaj's
     ruling
