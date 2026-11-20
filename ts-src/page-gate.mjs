@@ -67,8 +67,10 @@ function fail(msg) {
 }
 process.on("uncaughtException", (e) => blocked(`uncaught: ${e?.stack ?? e}`));
 if (BROWSERS.length === 0) blocked("PAGE_GATE_BROWSERS names no browser");
+// What starts each browser PAGE_GATE_BROWSERS may name.
+const STARTERS = { firefox: startFirefox, chromium: startChromium };
 for (const name of BROWSERS) {
-  if (name !== "firefox" && name !== "chromium") {
+  if (!Object.hasOwn(STARTERS, name)) {
     blocked(`unknown browser ${name} in PAGE_GATE_BROWSERS`);
   }
 }
@@ -278,8 +280,8 @@ function isBlend(v) {
   );
 }
 // The HUD's two bottom rows, all in the map font: how many of their device
-// pixels are lit, the colours of those of no palette colour with their
-// counts, and the canvas's width.
+// pixels are lit, and the colours of those of no palette colour with their
+// counts.
 const HUD_PIXELS = `(() => {
   const ok = new Set(${JSON.stringify(PALETTE)});
   const c = document.getElementById("screen").querySelector("canvas");
@@ -293,8 +295,11 @@ const HUD_PIXELS = `(() => {
     const v = (d[i] << 16) | (d[i + 1] << 8) | d[i + 2];
     if (!ok.has(v)) off[v] = (off[v] ?? 0) + 1;
   }
-  return JSON.stringify({ lit, off, width: c.width });
+  return JSON.stringify({ lit, off });
 })()`;
+// The canvas's width, in device pixels.
+const CANVAS_WIDTH =
+  'document.getElementById("screen").querySelector("canvas").width';
 const HASH = `(() => { const el = document.getElementById("screen");
   const s = el?.querySelector("canvas")?.toDataURL() ?? ""; let h = 0;
   for (let i = 0; i < s.length; i++) h = (h * 31 + s.charCodeAt(i)) | 0;
@@ -397,8 +402,8 @@ async function gate(name, send) {
     }
   };
   await crisp(1);
-  const width1 = JSON.parse(await evaluate(HUD_PIXELS)).width;
-  const widthNow = async () => JSON.parse(await evaluate(HUD_PIXELS)).width;
+  const widthNow = () => evaluate(CANVAS_WIDTH);
+  const width1 = await widthNow();
   await send("browsingContext.setViewport", { context, devicePixelRatio: 2 });
   let width2 = width1;
   await waitFor(
@@ -486,8 +491,7 @@ async function gate(name, send) {
 }
 
 for (const name of BROWSERS) {
-  const start = { firefox: startFirefox, chromium: startChromium }[name];
-  const browser = await start();
+  const browser = await STARTERS[name]();
   const { send, close } = await connect(browser.url);
   try {
     if (browser.newSession) await send("session.new", { capabilities: {} });
