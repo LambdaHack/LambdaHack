@@ -12,10 +12,10 @@
 -- pin its decoder to (2.3).
 module Game.LambdaHack.Client.UI.Frontend.OverlayLayout
   ( -- * Cell metrics
-    LayoutMetrics, lmHalfSize, lmWidth, lmBoxSize, mkLayoutMetrics
+    LayoutMetrics, lmBoxSize, mkLayoutMetrics
     -- * The layout, which takes no metrics
   , PropFont(..), PropChunk(..), pcFont, pcAllSpace, PropLine(..)
-  , CellLayer(..), cellPitch, CellRun(..), FrameLayout(..)
+  , CellLayer(..), CellRun(..), FrameLayout(..)
   , layOutFrame, layOutSquare, layOutMono, propLineStartFits
     -- * The proportional pen, which advances by measured widths
   , PropCursor, startPropLine, propCutoff, PropFit(..), propFit
@@ -112,7 +112,7 @@ pcAllSpace = T.all Char.isSpace . pcText
 -- | One proportional line, still at its logical 'PointUI' start.
 data PropLine = PropLine
   { plStartX :: Int  -- ^ 'PointUI' x, in half-cells; multiplied by
-                     --   'lmHalfSize' only in 'startPropLine'
+                     --   @lmHalfSize@ only in 'startPropLine'
   , plRow    :: Int
   , plChunks :: [PropChunk]
   }
@@ -121,13 +121,6 @@ data PropLine = PropLine
 -- | Which fixed-pitch layer a run belongs to.
 data CellLayer = LayerSquare | LayerMono
   deriving (Show, Eq, Ord, Enum, Bounded)
-
--- | Device advance of one cell: a box for the square layer, a half
--- for the mono one.
-cellPitch :: LayoutMetrics -> CellLayer -> Int
-cellPitch lm = \case
-  LayerSquare -> lmBoxSize lm
-  LayerMono -> lmHalfSize lm
 
 -- | A run of cells in one fixed-pitch layer, already cut to the screen.
 --
@@ -139,9 +132,9 @@ cellPitch lm = \case
 data CellRun = CellRun
   { crLayer :: CellLayer
   , crRow   :: Int
-  , crCol   :: Int         -- ^ leftmost cell, in units of 'cellPitch':
-                           --   square columns for the square layer,
-                           --   'PointUI' half-cells for the mono one
+  , crCol   :: Int         -- ^ leftmost cell: in square columns for the
+                           --   square layer, in 'PointUI' half-cells
+                           --   for the mono one
   , crCells :: AttrString  -- ^ never empty
   }
   deriving (Show, Eq)
@@ -223,7 +216,7 @@ unhighlighted = (`elem` [Color.HighlightNone, Color.HighlightNoneCursor])
 -- | Whether a proportional line starting at this 'PointUI' x may be drawn
 -- at all, given @rwidth coscreen@: the half of 'propCutoff' expressible
 -- in logical units, equal to it on the line's first chunk because
--- 'lmBoxSize' is twice 'lmHalfSize' and 'lmHalfSize' is positive:
+-- 'lmBoxSize' is twice @lmHalfSize@ and @lmHalfSize@ is positive:
 --
 -- > xUI * halfSize >= (width - 1) * boxSize  <=>  xUI >= 2 * (width - 1)
 propLineStartFits :: Int -> Int -> Bool

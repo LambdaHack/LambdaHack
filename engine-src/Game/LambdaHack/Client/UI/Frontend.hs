@@ -18,9 +18,9 @@ module Game.LambdaHack.Client.UI.Frontend
     -- * Screenshot names shared by the frontends
   , screenshotName
     -- * Overlay layout shared by the frontends
-  , LayoutMetrics, lmHalfSize, lmWidth, lmBoxSize, mkLayoutMetrics
+  , LayoutMetrics, lmBoxSize, mkLayoutMetrics
   , PropFont(..), PropChunk(..), pcFont, pcAllSpace, PropLine(..)
-  , CellLayer(..), cellPitch, CellRun(..), FrameLayout(..)
+  , CellLayer(..), CellRun(..), FrameLayout(..)
   , layOutFrame, layOutSquare, layOutMono, propLineStartFits
   , PropCursor, startPropLine, propCutoff, PropFit(..), propFit
   , trimmedMarkerRun, encodeFrameLayout
