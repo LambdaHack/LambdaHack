@@ -2584,6 +2584,20 @@ integration points to cover:
   times and reports `setItem` durations and payload sizes, so R1's save-lag
   re-measurement falls out of any nodeBench run.
 
+*Landed in `f988213a5`, the driver's growth. Beyond this body: **Done**'s crawl
+benchmark under `--frontendNull` resolved `lhStart`'s promise, as 1.6's
+save-and-exit did, at a peak memory of 18.9 MiB and with no `setItem`, where
+the plain run makes one, of `config.ui.ini`, so R1's save lag needs a run
+that saves, as (c) says, and no benchmark run yields it, where the same crawl
+without `--benchmark` ends by saving; a run given `--help`
+under `--frontendNull`, which ends in `exitWith ExitSuccess`, rejected
+the promise with `ExitSuccess` on the tree before `lhStart`'s catch and resolved
+it with the catch; and a run given `--stopAfterFrames notanumber` reaches
+the success rule only under `--frontendNull`, a plain run failing it through
+the coverage checks instead, so **Done**'s negated run now carries the flag,
+and the controls of the rule and of the catch are mutants
+in `tools/mutants-deep.py`.*
+
 **Rulings** --- (a) to (c) ruled on 2026-08-07. (a) A sibling file, seeded
 by 0.3's export half and grown here, its setup imported from the test driver
 rather than copied; the extend branch is refused --- two lifecycles in one
