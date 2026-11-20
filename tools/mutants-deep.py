@@ -5,14 +5,14 @@ catch.
 
 Read by `selftest-mutants.py tools/mutants-deep.py`, on demand rather than by
 `check-all tools`, which tests only that each mutant still applies: each judge
-is one of those targets, or the cases a tasty or vitest pattern selects in one
-test executable or test file, in a shared clone of the repository, which builds
-what the target needs and runs it, so a replay takes long, and like the targets
-it runs unsandboxed; and without -j, since two page gates at once contend for
-the gate's fixed ports. Replay it when a target, or what it runs, changes in
-a way these could see. The clone carries the working tree's edits to tracked
-files and no untracked file, so a new file is tracked first, and no edit may
-land while it runs.
+is one of those targets or a run of the reactor driver, or the cases a tasty or
+vitest pattern selects in one test executable or test file, in a shared clone
+of the repository, which builds what the target needs and runs it, so a replay
+takes long, and like the targets it runs unsandboxed; and without -j, since two
+page gates at once contend for the gate's fixed ports. Replay it when a target,
+or what it runs, changes in a way these could see. The clone carries the working
+tree's edits to tracked files and no untracked file, so a new file is tracked
+first, and no edit may land while it runs.
 
 Each judge seeds its copy with what it needs of this checkout's: the wasm and
 native ones with the build of their platform, the wasm and TypeScript ones with
@@ -52,6 +52,32 @@ def judge(seed, target, build=''):
 
 PAGE_GATE = judge(WASM, 'page-gate')
 TEST_REACTOR = judge(WASM, 'test-reactor')
+# The reactor driver, which exits 0 where its run passed and 1 where it failed,
+# under --frontendNull given the arguments named, on the binary make build-wasm
+# builds: exit 0 where it exited with `must`, 1 where with the other of the two,
+# and 2 otherwise, as where the seeding, the build or the post-link failed or
+# the run did not happen.
+def driver(args, must):
+    return (WASM + ' || exit 2; '
+            'make build-wasm > build.log 2>&1 '
+            '|| { cat build.log; exit 2; }; '
+            '. ~/.ghc-wasm/env && '
+            'W=$(wasm32-wasi-cabal list-bin exe:LambdaHack '
+            '--enable-optimization) && '
+            '~/.ghc-wasm/wasm32-wasi-ghc/lib/post-link.mjs --input "$W" '
+            '--output jsffi.mjs || exit 2; '
+            'node ts-src/run-wasm-game.mjs "$W" jsffi.mjs --frontendNull ' +
+            args + '; '
+            'case $? in %d) exit 0;; %d) exit 1;; *) exit 2;; esac'
+            % (must, 1 - must))
+
+
+# Given an argument lhStart's parse refuses, which ends in ExitFailure 1, the
+# driver must fail the run.
+REACTOR_REFUSED = driver('--stopAfterFrames notanumber', 1)
+# Given --help, which ends in exitWith ExitSuccess, the driver must pass the
+# run.
+REACTOR_HELP = driver('--help', 0)
 # make doctest builds inside its recipe, so a failed build would end in the
 # target's own Error 1, and smokeANSI runs the binary it finds and builds
 # nothing: the judge of each builds first.
@@ -163,6 +189,20 @@ MUTANTS = [
      '../engine-src/Game/LambdaHack/Client/UI/Frontend/Wasm.hs',
      '    unless (curFrame == prevFrame) $ do\n',
      '    unless False $ do\n', TEST_REACTOR),
+    # A rejection of lhStart's promise no longer failing the run under
+    # --frontendNull: the run whose argument the game's parse refuses, which
+    # ends in ExitFailure 1, passes.
+    ('driver under --frontendNull: a rejection of lhStart not failing the run',
+     '../ts-src/run-wasm-game.mjs',
+     '    fail(`lhStart rejected with ${e}`);\n', '', REACTOR_REFUSED),
+    # lhStart rejecting its promise for a clean exit, its catch of ExitSuccess
+    # gone: the run given --help, which ends in one, fails.
+    ('driver under --frontendNull: lhStart without its catch of ExitSuccess',
+     '../GameDefinition/Main.hs',
+     'lhStart = main `Ex.catch` \\case\n'
+     '  ExitSuccess -> return ()\n'
+     '  e -> Ex.throwIO e\n',
+     'lhStart = main\n', REACTOR_HELP),
     # A repl that runs nothing and exits 0, which doctest's own exit status
     # cannot tell from a pass: no run prints an example count.
     ('doctest: a repl that runs nothing', '../Makefile',

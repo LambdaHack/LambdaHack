@@ -1308,9 +1308,12 @@ row --- the `run-wasm-game.mjs` deletion from `tools/doc-refs-allow.txt` rides
 0.3's export half, where the file now appears.
 
 **Owns** --- `ts-src/run-wasm-game.mjs` (0.3's seed, grown here, its argv
-pass-through 1.2's) and `docs/wasm-frontend-unified-plan.md`. The allowlist line
-and every stub are 0.3's per its ruling and this item's (c), and lz-string has
-been in the package and lock files since the page gate.
+pass-through 1.2's), `tools/mutants-deep.py` and `CLAUDE.md`, for the controls
+of the driver's success rule and of `lhStart`'s catch, which the rule leans on,
+and the sentence on that file's judges,
+and `docs/wasm-frontend-unified-plan.md`. The allowlist line and every stub
+are 0.3's per its ruling and this item's (c), and lz-string has been
+in the package and lock files since the page gate.
 
 **Done** --- `ts`, `wasm`, `docs`, plus `. ~/.ghc-wasm/env` && `T=$(mktemp -d)`
 && `W=$(wasm32-wasi-cabal list-bin exe:LambdaHack --enable-optimization)` &&
@@ -1318,7 +1321,9 @@ been in the package and lock files since the page gate.
 &&
 `node ts-src/run-wasm-game.mjs "$W" "$T/ghc_wasm_jsffi.mjs" --newGame 1 --gameMode crawl --noAnim --maxFps 100000 --frontendNull --benchmark --stopAfterFrames 200 --automateAll --keepAutomated`
 && `node ts-src/run-wasm-game.mjs "$W" "$T/ghc_wasm_jsffi.mjs"` &&
-`! node ts-src/run-wasm-game.mjs "$W" "$T/ghc_wasm_jsffi.mjs" --stopAfterFrames notanumber`.
+`! node ts-src/run-wasm-game.mjs "$W" "$T/ghc_wasm_jsffi.mjs" --frontendNull --stopAfterFrames notanumber`,
+the last carrying `--frontendNull`, without which the driver fails it through
+the coverage checks rather than the success rule.
 
 **Hands back** --- hands back nothing. Every integration point in the item
 is an exit status, the negated last run being the non-vacuity control

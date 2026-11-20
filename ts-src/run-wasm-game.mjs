@@ -1,10 +1,14 @@
 // Drives the LambdaHack wasm *reactor* -- exe:LambdaHack as `make build-wasm`
 // builds it, the binary the page loads -- under Node, with the page globals
-// stubbed as run-wasm-test.mjs stubs them for the test suite, and checks the
-// exports the page calls, which the test suite cannot exercise: its binary is
-// a command, whose exports die with its RTS once `_start` returns, and it does
-// not link Main.hs's lhStart. Item 3.2 of docs/wasm-frontend-work-list.md grows
-// this into the benchmark driver.
+// stubbed as run-wasm-test.mjs stubs them for the test suite. Without
+// --frontendNull among its args it checks the exports the page calls, which the
+// test suite cannot exercise: its binary is a command, whose exports die with
+// its RTS once `_start` returns, and it does not link Main.hs's lhStart. With
+// --frontendNull, under which Wasm.hs's frontend never starts and nothing
+// the checks observe arrives, it runs the game to its end and fails unless
+// lhStart's promise resolves, as it does when the game finishes and does not
+// when it crashes. Either way it reports at exit the reactor's peak memory and
+// each localStorage.setItem's key, payload length and duration.
 //
 // The checks lean on the game's default start, which plays itself ("press any
 // key to regain control") and so submits frames steadily until a key arrives:
@@ -27,14 +31,17 @@
 // alone.
 //
 // Usage: node run-wasm-game.mjs <LambdaHack.wasm> <ghc_wasm_jsffi.mjs> [arg...]
-//   <ghc_wasm_jsffi.mjs> is post-link.mjs's output for that binary, as in
-//   run-wasm-test.mjs's usage, and the args go to lhStart as its WASI
-//   argv. Exit 0 when every check holds, 1 when one fails, 2 when the run
-//   did not happen.
+//   <ghc_wasm_jsffi.mjs> is post-link.mjs's output for that binary, as
+//   in run-wasm-test.mjs's usage, and the args go to lhStart as its WASI
+//   argv. Exit 0 when every check holds, or under --frontendNull when lhStart's
+//   promise resolves, 1 when a check fails or the promise rejects, 2 when the
+//   run did not happen.
 //
-// Non-vacuity: some of the checks' controls are mutants in
-// tools/mutants-deep.py, each judged by `make test-reactor` and replayed by
-// `selftest-mutants.py tools/mutants-deep.py`.
+// Non-vacuity: some of the checks' controls, and those of the rule for the
+// game's end under --frontendNull and of the catch in lhStart it leans on, are
+// mutants in tools/mutants-deep.py, judged by `make test-reactor` or, for those
+// two, by a run under --frontendNull, one that must fail and one that must
+// pass, and replayed by `selftest-mutants.py tools/mutants-deep.py`.
 
 import { mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
@@ -82,6 +89,7 @@ async function loadDecoder() {
 }
 const decodeFrameLayout = await loadDecoder();
 const printEachScreen = extraArgs.includes("--printEachScreen");
+const frontendNull = extraArgs.includes("--frontendNull");
 // The scale an "--allFontsScale X" pair in the args gives, if any.
 const scaleAt = extraArgs.indexOf("--allFontsScale");
 const argScale = scaleAt < 0 ? undefined : Number(extraArgs[scaleAt + 1]);
@@ -110,6 +118,37 @@ let instance;
 await installStubs(() => instance.exports.memory);
 instance = await instantiate(wasmPath, jsffiPath, wasi);
 const lh = instance.exports;
+
+// Each localStorage.setItem, timed around the stub's own, is reported at exit,
+// however the run ends, after the size the reactor's memory grew to, which is
+// its peak, a WebAssembly.Memory never shrinking.
+const saves = [];
+const { setItem } = globalThis.localStorage;
+globalThis.localStorage.setItem = (key, value) => {
+  const start = performance.now();
+  try {
+    setItem(key, value);
+  } finally {
+    const ms = performance.now() - start;
+    saves.push({ key: String(key), length: String(value).length, ms });
+  }
+};
+process.on("exit", () => {
+  const bytes = lh.memory.buffer.byteLength;
+  const mib = (bytes / 2 ** 20).toFixed(1);
+  console.log(`peak memory: ${bytes} bytes, ${mib} MiB`);
+  for (const { key, length, ms } of saves) {
+    console.log(`setItem ${key}: ${length} characters in ${ms.toFixed(3)} ms`);
+  }
+});
+
+// An exception no promise catches, as one the RTS raises on a later tick, fails
+// the run, where the status Node exits with for one would be luck.
+process.on("uncaughtException", (e) => {
+  console.error(`FAIL: uncaught ${e?.stack ?? e}`);
+  process.exit(1);
+});
+
 const calls = globalThis.lhSubmitFrameCalls;
 const prints = globalThis.lhPrintScreenCalls;
 const overlays = globalThis.lhSubmitOverlaysCalls;
@@ -222,12 +261,27 @@ async function repaint(name, args) {
   return lastHash();
 }
 
+// With --frontendNull the game runs to its end, which lhStart's promise
+// carries: the run passes where the promise resolves, as it does for a clean
+// exit too, Main.hs's lhStart catching the ExitSuccess of one, and fails where
+// it rejects, any other exception the game ends with rejecting it with a
+// WebAssembly.RuntimeError whose message is the exception shown.
+async function toEnd() {
+  try {
+    await lh.lhStart();
+  } catch (e) {
+    fail(`lhStart rejected with ${e}`);
+  }
+  ok("lhStart resolved: the game ended");
+}
+
 async function run() {
   const names = ["lhStart", "lhKey", "lhWheel", "lhMouseUp"];
   const missing = names.filter((n) => typeof lh[n] !== "function");
   if (missing.length) fail(`missing exports: ${missing.join(", ")}`);
   ok(`exports present: ${names.join(", ")}`);
   wasi.initialize(instance);
+  if (frontendNull) return toEnd();
 
   lh.lhStart().then(
     () => {
