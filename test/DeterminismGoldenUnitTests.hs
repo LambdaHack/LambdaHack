@@ -42,7 +42,6 @@ import           Game.LambdaHack.Client.UI.MonadClientUI (MonadClientUI (..))
 import           Game.LambdaHack.Client.UI.Msg (MsgClassShow (..))
 import           Game.LambdaHack.Client.UI.MsgM (msgAdd)
 import           Game.LambdaHack.Client.UI.PointUI (PointUI (..))
-import           Game.LambdaHack.Client.UI.SessionUI (SessionUI (..))
 import           Game.LambdaHack.Common.ClientOptions (ClientOptions)
 import           Game.LambdaHack.Common.State (State)
 import           Game.LambdaHack.Definition.Defs
@@ -150,8 +149,7 @@ runScript Script{..} options = do
       action = do
         updateClientLeader testActorId
         scriptAction
-  void $ executorCli action
-    cliS {cliSession = (\sess -> sess {schanF = chanF}) <$> cliSession cliS}
+  void $ executorCli action $ withChanFrontend chanF cliS
   getRecords
 
 -- | A request as bytes: a tag, then its contents, a frame being its

@@ -34,6 +34,7 @@ module UnitTestHelpers
   , frameCliState
   , stubClientOptions
   , multiFontClientOptions
+  , withChanFrontend
   , scriptedCliState
   , FrontRecord(..)
   , RealisedFrame(..)
@@ -733,13 +734,16 @@ runParamsA = RunParams { runLeader = testActorId
                        , runStopMsg = Nothing
                        , runWaiting = 0 }
 
+-- | A fixture with the given frontend in place of the stub one.
+withChanFrontend :: ChanFrontend -> CliState -> CliState
+withChanFrontend chanF cliS =
+  cliS {cliSession = (\sess -> sess {schanF = chanF}) <$> cliSession cliS}
+
 -- | A fixture with 'scriptedFchanFrontend' replacing the stub frontend:
 -- each 'FrontKey' request pops the next scripted key.
 scriptedCliState :: CliState -> [K.KM] -> IO CliState
-scriptedCliState cliS kms = do
-  chanF <- scriptedFchanFrontend kms
-  return $ cliS
-    {cliSession = (\sess -> sess {schanF = chanF}) <$> cliSession cliS}
+scriptedCliState cliS kms =
+  (`withChanFrontend` cliS) <$> scriptedFchanFrontend kms
 
 -- | 'partyCliState' with the scripted frontend.
 partyCliStateScripted :: [K.KM] -> IO CliState
