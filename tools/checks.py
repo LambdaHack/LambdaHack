@@ -94,6 +94,12 @@ STEPS = [
     ('selftest mutants',       ['python3', '{bin}/selftest-mutants.py', '{root}']),
 ]
 
-# leader-census.py is temporary, like the migration document it serves, and is
-# deleted with it; it has no self-test and takes no mutant.
-UNCOVERED = {'leader-census.py': 'temporary, deleted with docs/leader-desync-migration.md'}
+# leader-census.py is temporary, like the migration document it serves, and
+# is deleted with it; it has no self-test and takes no mutant. page-gate-06's
+# case runs the page gate in both browsers for minutes, as a judge of the deep
+# mutants, and its stand-ins run under it alone.
+ORPHANS = 'page-gate-06\'s case and its stand-ins, run by the deep mutants\' replay: tools/mutants-deep.py'
+UNCOVERED = {'leader-census.py': 'temporary, deleted with docs/leader-desync-migration.md',
+             'page-gate-orphans/run.sh': ORPHANS,
+             'page-gate-orphans/firefox-dead-bidi.sh': ORPHANS,
+             'page-gate-orphans/chromedriver-mute.sh': ORPHANS}

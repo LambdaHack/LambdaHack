@@ -5,14 +5,15 @@ catch.
 
 Read by `selftest-mutants.py tools/mutants-deep.py`, on demand rather than by
 `check-all tools`, which tests only that each mutant still applies: each judge
-is one of those targets or a run of the reactor driver, or the cases a tasty or
-vitest pattern selects in one test executable or test file, in a shared clone
-of the repository, which builds what the target needs and runs it, so a replay
-takes long, and like the targets it runs unsandboxed; and without -j, since two
-page gates at once contend for the gate's fixed ports. Replay it when a target,
-or what it runs, changes in a way these could see. The clone carries the working
-tree's edits to tracked files and no untracked file, so a new file is tracked
-first, and no edit may land while it runs.
+is one of those targets, a run of the reactor driver or the page gate's orphan
+case, or the cases a tasty or vitest pattern selects in one test executable
+or test file, in a shared clone of the repository, which builds what the
+target needs and runs it, so a replay takes long, and like the targets it runs
+unsandboxed; and without -j, since two page gates at once contend for the gate's
+fixed ports. Replay it when a target, or what it runs, changes in a way these
+could see. The clone carries the working tree's edits to tracked files and no
+untracked file, so a new file is tracked first, and no edit may land while it
+runs.
 
 Each judge seeds its copy with what it needs of this checkout's: the wasm and
 native ones with the build of their platform, the wasm and TypeScript ones with
@@ -73,6 +74,10 @@ def judge(seed, target, build=''):
 
 
 PAGE_GATE = judge(WASM, 'page-gate')
+# The case of page-gate-06, which runs the gate over a blank page of its own and
+# exits 0 where the gate left no process of its run, 1 where it left one and 2
+# where the run did not happen: it needs only ts-src's packages.
+ORPHANS = TS + ' || exit 2; bash tools/page-gate-orphans/run.sh'
 TEST_REACTOR = judge(WASM, 'test-reactor')
 # The reactor driver, which exits 0 where its run passed and 1 where it failed,
 # under --frontendNull given the arguments named, on the binary make build-wasm
@@ -204,6 +209,20 @@ MUTANTS = [
      '../ts-src/src/terminal.ts',
      '          console.warn(`[lh] font ${spec.file} failed to load`, e),\n',
      '          e,\n', PAGE_GATE),
+    # Every child in the gate's own process group: the exit handler's kill of
+    # each child's group finds none, so every variant leaves the server and the
+    # browsers running.
+    ("page gate orphans: the children in the gate's process group",
+     '../ts-src/page-gate.mjs',
+     '  const child = spawn(command, args, { ...options, detached: true });\n',
+     '  const child = spawn(command, args, options);\n', ORPHANS),
+    # SIGINT and SIGTERM left to their defaults: the gate dies of either with
+    # no exit handler run, so the sigint and sigterm variants leave every child
+    # running.
+    ('page gate orphans: SIGINT and SIGTERM not ending the run',
+     '../ts-src/page-gate.mjs',
+     'for (const s of ["SIGINT", "SIGTERM"]) process.on(s, () => blocked(s));\n',
+     '', ORPHANS),
     # No '?' through lhKey: the self-play goes on painting, so the stream never
     # stops, as in the page gate's twin above.
     ("test-reactor: the '?' key not sent", '../ts-src/run-wasm-game.mjs',

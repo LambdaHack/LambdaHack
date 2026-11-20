@@ -7,14 +7,16 @@
    "name": "the shellcheck step printed nothing and exited 0 with no tracked .sh file, so check-all's ok line read like a lint that had run",
    "family": "vacuous-check",
    "fix_rev": "014101b77",
-   "trigger": "the step's bash string with `git ls-files '*.sh'` empty, the case today",
+   "trigger": "the step's bash string with `git ls-files '*.sh'` empty",
    "ok": "the step says no tracked shell script; nothing linted, and exits 0",
    "bug": "no output at all",
    "proved": "ran",
    "harm": "fired",
    "discovery": "review",
    "notes": "CLAUDE.md's standing checks already claimed the step says so, since 2026-09-03; every check-all run until this fix printed the empty tail. Found by a code review on 2026-09-04.",
-   "unit": "__import__('subprocess').run([a.replace('{' + 'root}', '{root}') for a in {s[0]: s[1] for s in STEPS}['shellcheck']], capture_output=True, text=True).stdout",
+   "plant": "a git repository tracking no file",
+   "plant_cmd": "git init -q c && mkdir c/tools",
+   "unit": "__import__('subprocess').run([a.replace('{' + 'root}', '{tmp}/c/tools') for a in {s[0]: s[1] for s in STEPS}['shellcheck']], capture_output=True, text=True).stdout",
    "expect_text": "nothing linted",
    "bug_text": "''"
   },
@@ -1217,7 +1219,7 @@
    "proved": "ran",
    "harm": "unknown",
    "discovery": "review",
-   "notes": "Seen by the main session reading the gate on 2026-11-20, item 118.1 of its reply, and watched both ways that day over a scratch site whose serve.mjs serves a blank page and notes each load, with a Firefox stand-in that prints a dead BiDi endpoint once Chromium has loaded it, or a chromedriver stand-in that never answers. Chromium and its zygotes and renderers stay in chromedriver's process group, the crashpad handlers alone starting sessions of their own, and those exit once Chromium is gone. Every child now starts in a group of its own, killed with it at exit, and SIGINT and SIGTERM end the run through BLOCKED, the children no longer being in the terminal's group. The uncaught-throw exit, the same handler, was not run. A tier-1 record: the corpus root is tools/, and the gate needs a browser."
+   "notes": "Seen by the main session reading the gate on 2026-11-20, item 118.1 of its reply, and watched both ways that day by a scratch form of the case now in tools/page-gate-orphans/: run.sh runs the gate over a blank page that its serve.mjs serves, in the trigger's four variants, with a Firefox stand-in that prints a dead BiDi endpoint once Chromium has loaded the page or a chromedriver stand-in that never answers, and exits 1 where a process of the run is left. Its controls are the `page gate orphans:` mutants in tools/mutants-deep.py. Chromium and its zygotes and renderers stay in chromedriver's process group, the crashpad handlers alone starting sessions of their own, and those exit once Chromium is gone. Every child now starts in a group of its own, killed with it at exit, and SIGINT and SIGTERM end the run through BLOCKED, the children no longer being in the terminal's group. The uncaught-throw exit, the same handler, was not run. A tier-1 record: the corpus root is tools/, the gate is outside it, and the case needs both browsers."
   }
  ]
 }

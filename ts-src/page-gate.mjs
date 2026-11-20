@@ -31,7 +31,8 @@
 // generated palette.
 //
 // Non-vacuity: the gate's controls are mutants in tools/mutants-deep.py,
-// each judged by `make page-gate` and replayed by `selftest-mutants.py
+// each judged by `make page-gate`, or those of its exit handling by
+// tools/page-gate-orphans/run.sh, and replayed by `selftest-mutants.py
 // tools/mutants-deep.py`.
 
 import { spawn } from "node:child_process";

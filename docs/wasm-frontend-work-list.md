@@ -248,10 +248,14 @@ an earlier form of the self-play assertion, a hash changed after the `?`, let
 pass; a `syncExport` without its scheduler run; the browser without
 the multi-font capability; the canvas opaque again, terminal-02's bug; a font
 that fails to load holding the frames drawn in its face; and one releasing them
-without a warning. The Chromium leg came with 1.2, after Mikolaj's ruling
-of 2026-10-22 that a session's browser tests run in Chromium too; a missing
-chromedriver stops the run at 2. It is the campaign's acceptance test: what 2.5
-adds is the look, compared against SDL2 by a session, not whether the page runs.
+without a warning. Two more break its exit handling, judged
+by `tools/page-gate-orphans/run.sh`, page-gate-06's case: its children started
+in its own process group, and SIGINT and SIGTERM left to their defaults, each
+leaving a browser running after the gate ends. The Chromium leg came with 1.2,
+after Mikolaj's ruling of 2026-10-22 that a session's browser tests run
+in Chromium too; a missing chromedriver stops the run at 2. It is the campaign's
+acceptance test: what 2.5 adds is the look, compared against SDL2 by a session,
+not whether the page runs.
 
 **Read the counts, not the exit status alone** --- `CLAUDE.md`'s rule, binding
 here too: a suite that silently loses a test still passes, and a listing is what
