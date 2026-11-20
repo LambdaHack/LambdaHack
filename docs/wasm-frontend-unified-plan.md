@@ -2632,6 +2632,11 @@ where CI's `npm ci` covers it. (d) Ruled 2026-10-22 by Mikolaj: the seed's
 coverage checks run only without `--frontendNull`, and **Done** runs the driver
 both ways, so that this item's own gate exercises them too.
 
+*Noted 2026-11-20: the exit-propagation bullet no longer states the rule (b) saw
+stand in it on 2026-08-07, but the rule of 2026-11-20 the Log's entry
+of that day records: `lhStart` catches the `ExitSuccess` of a clean exit,
+and the success rule is: resolved.*
+
 ### 3.3 Repurpose the Makefile targets
 
 - `nodeBenchCrawl` / `nodeBenchBattle`: mirroring
