@@ -948,6 +948,27 @@
    "bug_text": "FileNotFoundError"
   },
   {
+   "id": "check-sync-exports-09",
+   "program": "check-sync-exports.py",
+   "name": "the listing of the tracked files was split on whitespace, so a tracked path with a space in it reached the reader as two names",
+   "family": "scan-for-parse",
+   "fix_rev": "self",
+   "trigger": "a repository tracking `A B.hs` and a `.cabal` file",
+   "ok": "`A B.hs` is read, and the run reports no sync export in 1 tracked file at exit 0",
+   "bug": "`BLOCKED: cannot read A` and exit 2",
+   "proved": "ran",
+   "harm": "latent",
+   "discovery": "review",
+   "notes": "Noticed by a writer of the /simplify work of 2026-11-20 outside its brief, the main session confirming `.stdout.split()` in `main`; the same defect as checks-05 in checks.py. The listing is now taken with `-z` and split on NUL, which also leaves a path git would quote unquoted. No tracked Haskell or cabal file has a space in its name, so it never fired.",
+   "plant": "a git repository tracking `A B.hs` and `x.cabal`",
+   "plant_cmd": "git init -q . && printf 'module A where\\n' > 'A B.hs' && printf 'executable x\\n' > x.cabal && git add 'A B.hs' x.cabal",
+   "invoke": [],
+   "expect_exit": 0,
+   "expect_text": "no sync export in 1 tracked *.hs files",
+   "bug_exit": 2,
+   "bug_text": "BLOCKED: cannot read A"
+  },
+  {
    "id": "lint-and-test-suites-02",
    "program": ".github/workflows/lint-and-test-suites.yml",
    "name": "the doctest job read the exit status alone, and doctest exits 0 having found no example",

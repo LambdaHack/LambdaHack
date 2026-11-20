@@ -520,9 +520,9 @@ def main():
                               capture_output=True, text=True,
                               check=True).stdout.strip()
         os.chdir(root)
-        names = subprocess.run(["git", "ls-files", "*.hs", "*.cabal"],
+        names = subprocess.run(["git", "ls-files", "-z", "*.hs", "*.cabal"],
                                capture_output=True, text=True,
-                               check=True).stdout.split()
+                               check=True).stdout.split("\0")[:-1]
     except (OSError, subprocess.CalledProcessError) as e:
         print(f"BLOCKED: cannot list the repository's files: {e}")
         return 2
