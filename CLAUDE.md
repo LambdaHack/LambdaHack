@@ -51,8 +51,9 @@ make page-gate          # the page as deployed, loaded in headless firefox
                         # and chromium: boots, paints without subpixel
                         # antialiasing, repaints on a key and submits
                         # overlays
-make test-reactor       # the reactor's exports, called as the page calls
-                        # them by ts-src/run-wasm-game.mjs under node
+make test-reactor       # ts-src/run-wasm-game.mjs under node: a game run
+                        # to its end under --frontendNull, then the
+                        # reactor's exports, called as the page calls them
 ```
 
 ### Tests

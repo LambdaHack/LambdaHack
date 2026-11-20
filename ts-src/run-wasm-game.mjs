@@ -39,9 +39,10 @@
 //
 // Non-vacuity: some of the checks' controls, and those of the rule for the
 // game's end under --frontendNull and of the catch in lhStart it leans on, are
-// mutants in tools/mutants-deep.py, judged by `make test-reactor` or, for those
-// two, by a run under --frontendNull, one that must fail and one that must
-// pass, and replayed by `selftest-mutants.py tools/mutants-deep.py`.
+// mutants in tools/mutants-deep.py, judged by `make test-reactor`, which runs
+// the driver in each of its modes, or, for those two, by a run of their own
+// under --frontendNull, one that must fail and one that must pass, and replayed
+// by `selftest-mutants.py tools/mutants-deep.py`.
 
 import { mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";

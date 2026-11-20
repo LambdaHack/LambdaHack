@@ -198,7 +198,8 @@ native   cabal build && cabal test && hlint .
          && git diff --exit-code <those paths>     # stylish left them alone
 ts       make test-ts        # typecheck and format:check run inside it
 wasm     make build-wasm && make test-wasm
-reactor  make test-reactor    # the reactor's exports, by the game driver
+reactor  make test-reactor    # the game driver: a game run to its end
+         under --frontendNull, then the reactor's exports
 deploy   make build-ts        # UNSANDBOXED: writes into the pages checkout
 page     make page-gate       # UNSANDBOXED: Chromium will not start
          sandboxed; the page as deployed, in headless Firefox and
@@ -1438,12 +1439,13 @@ item, so no commit carries an outcome line and none has
 and ordered, ruled 2026-08-07: the cache commit first --- `~/.ghc-wasm`
 and the wasm cabal store, the toolchain bootstrap being the expensive part
 of every wasm job including the next one --- then a `make build-wasm` job, which
-feeds 0.3's export-half coverage, the game driver run against the reactor
-it builds. One non-job commit rode the same ruling and landed on master
-(`2b4b7d71f`): `build-ts` chains with `&&` now, so the deploy-carrying Done
-gates across this plan no longer trust an exit status that cannot fail. The rest
-land with the artifact each runs, as the practice's `xvfb` SDL and pty ANSI
-smokes did: a short `nodeBench` smoke after 3.3.
+feeds 0.3's export-half coverage, `make test-reactor`'s runs of the game driver
+against the reactor it builds. One non-job commit rode the same ruling
+and landed on master (`2b4b7d71f`): `build-ts` chains with `&&` now,
+so the deploy-carrying Done gates across this plan no longer trust an exit
+status that cannot fail. The rest land with the artifact each runs,
+as the practice's `xvfb` SDL and pty ANSI smokes did: a short `nodeBench` smoke
+after 3.3.
 
 **Owns** --- `.github/workflows/lint-and-test-suites.yml`, plus the `Makefile`
 where a job needs a target of its own ---

@@ -2656,10 +2656,7 @@ both ways, so that this item's own gate exercises them too.
 counts; compare against `nativeBench` on the same machine for a first real
 wasm-vs-native data point (feeding R5). A crash or hang must fail the target:
 a crash through 3.2's exit propagation, a hang through a time bound
-of this item's own, the driver setting none under `--frontendNull`. Once stable,
-a short `--stopAfterFrames` variant is a natural cheap addition to R2's CI job
---- it runs the whole engine headless as the reactor, where `make test-wasm`'s
-integration test runs it only in the command-linked test binary.
+of this item's own, the driver setting none under `--frontendNull`.
 
 **Rulings** --- all three ruled on 2026-08-07. (a) The targets use
 `~/.ghc-wasm/env`'s node (v26.4.0 today, against v18.19.1 on `PATH`), stated
@@ -2750,12 +2747,13 @@ in `.github/workflows/lint-and-test-suites.yml` (the hand-written workflow ---
 do not touch the generated haskell-ci one): a `test-wasm` job that installs
 ghc-wasm-meta and runs `make test-wasm`, and `make test-ts` split off as its own
 Node-only job, so TS regressions fail in seconds. Still to add:
-`make build-wasm`, with a run of 0.3's game driver against the reactor
-it builds, the battery's import half riding the `test-wasm` job already. Still
-to do: cache `~/.ghc-wasm` and the wasm cabal store, the toolchain being
-the expensive part and bootstrapped from scratch on every run today.
-The frontend CI smokes practice (below) widens this with xvfb SDL and pty ANSI
-smokes, which run in the playtest job, and a `nodeBench` smoke after 3.3.
+`make build-wasm`, with `make test-reactor`'s runs of the game driver against
+the reactor it builds, the battery's import half riding the `test-wasm` job
+already. Still to do: cache `~/.ghc-wasm` and the wasm cabal store,
+the toolchain being the expensive part and bootstrapped from scratch on every
+run today. The frontend CI smokes practice (below) widens this with xvfb SDL
+and pty ANSI smokes, which run in the playtest job, and a `nodeBench` smoke
+after 3.3.
 
 **Completeness requirement: everything runs in CI.** What runs there today
 is CLAUDE.md's to state, not this document's; a third copy of that inventory
