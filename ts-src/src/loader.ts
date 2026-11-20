@@ -131,15 +131,8 @@ async function main(): Promise<void> {
   // frame.
   lh.lhStart().then(
     () => showEnd(FINISHED),
-    (e: unknown) => {
-      console.error(e);
-      const message = e instanceof Error ? e.message : String(e);
-      showEnd(
-        `The game crashed: ${message}. See console for details.` +
-          " Reload the page to play again.",
-        RED,
-      );
-    },
+    (e: unknown) =>
+      showFailure("The game crashed", e, " Reload the page to play again."),
   );
 }
 
@@ -156,14 +149,16 @@ function showEnd(text: string, color?: string): void {
   if (color) bannerText.style.color = color;
 }
 
+// Says a failure in the banner, in red, the error itself going to the console.
+function showFailure(what: string, e: unknown, after = ""): void {
+  console.error(e);
+  const message = e instanceof Error ? e.message : String(e);
+  showEnd(`${what}: ${message}. See console for details.${after}`, RED);
+}
+
 // A failure before lhStart's promise exists, the loading message removed or
 // not, is said in the banner too.
 main().catch((e: unknown) => {
-  console.error(e);
+  showFailure("LambdaHack failed to start", e);
   document.getElementById("status")?.remove();
-  const message = e instanceof Error ? e.message : String(e);
-  showEnd(
-    `LambdaHack failed to start: ${message}. See console for details.`,
-    RED,
-  );
 });
