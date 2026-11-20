@@ -1160,6 +1160,31 @@
    "expect_text": "0 failed over 2 ledger rows, 2 items",
    "bug_exit": 1,
    "bug_text": "R10 --- ledger row with no item"
+  },
+  {
+   "id": "check-plan-crossrefs-15",
+   "program": "check-plan-crossrefs.py",
+   "name": "an allowlist entry named in a claim sentence by a text-anchor citation into its file was not matched, entry_matches cutting a line number alone where path_key cuts a run of text too, so the claim went unread",
+   "family": "scan-for-parse",
+   "fix_rev": "self",
+   "trigger": "a **Split** sentence speaking of the `make gen-x` and `x.ts:export const y` entries, `x.ts` and `make gen-x` in the allowlist block, and the item's **Owns** naming `ts-src/src/x.ts`",
+   "ok": "the citation names `x.ts`, so 0.1 claims both entries: no finding, exit 0",
+   "bug": "`FAIL A1 `x.ts` --- claimed by no item; written by 0.1`, exit 1, where the same sentence citing `x.ts:3` passed",
+   "proved": "ran",
+   "harm": "latent",
+   "discovery": "review",
+   "notes": "Relayed by a reviewer of the /simplify work of 2026-11-20, who had not traced whether an input reaches the difference; this scratch plan does. A line-number citation is the form the citation pass has refused since 2026-10-21, so the one citation entry_matches cut was the retired one. Both functions now cut a citation by one helper, cited_file.",
+   "plant": "a work list whose one item names an allowlist entry by a text anchor beside a make entry in one claim sentence, and an allowlist block holding both",
+   "plant_cmd": "printf '%s\\n' '# Scratch plan' '' \"## Ledger --- every item's state\" '' '| sec. | delivers | size | depends on | state |' '|---|---|---|---|---|' '| 0.1 | a | tiny | --- | open |' '' '## Phase 0' '' '### 0.1 First' '' '**Split** --- one commit, with the `make gen-x` and `x.ts:export const y` entries.' '' '**Owns** --- `ts-src/src/x.ts`, `Makefile` and `tools/doc-refs-allow.txt`.' '' '**Done** --- `ts`, `docs`.' '' '**Hands back** --- nothing.' '' '**Decide first** --- nothing.' > plan.md && printf '%s\\n' '# Artifacts the wasm campaign proposes but has not built yet.' 'x.ts' 'make gen-x' > allow.txt",
+   "invoke": [
+    "plan.md",
+    "--allowlist",
+    "allow.txt"
+   ],
+   "expect_exit": 0,
+   "expect_text": "0 failed over 1 ledger rows",
+   "bug_exit": 1,
+   "bug_text": "claimed by no item; written by 0.1"
   }
  ]
 }

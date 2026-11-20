@@ -491,7 +491,6 @@ SELF_TEST_FAIL_JOINT = [
 PATH_EXT = ("hs", "ts", "mjs", "py", "cabal", "html", "md", "yaml", "yml",
             "json", "sh", "txt", "c", "h", "js")
 TICK_RE = re.compile(r"`([^`\n]+)`")
-CITE_RE = re.compile(r":\d+(?:-\d+)?(?:,\d+(?:-\d+)?)*$")
 NUMBERS = {"two": 2, "three": 3, "four": 4, "five": 5, "six": 6,
            "seven": 7, "eight": 8, "nine": 9, "ten": 10, "eleven": 11,
            "twelve": 12}
@@ -582,16 +581,20 @@ def is_file(base):
         ("." in base and base.rsplit(".", 1)[-1] in PATH_EXT)
 
 
+def cited_file(token):
+    """The token, or the file it cites: a citation, `File.hs:` and a line
+    number or a run of its text, names its file."""
+    t = token.strip()
+    head = t.split(":", 1)[0]
+    return head if head != t and is_file(head.rsplit("/", 1)[-1]) else t
+
+
 def path_key(token, ambiguous):
     """The file a backticked token names, as the key the graph is built on:
     the basename, or the last two components where the basename is one the
-    repository carries twice. A citation, `File.hs:` and a line number or
-    a run of its text, names its file. None for a token that is not a
-    path: a path ends in `/` or names a file."""
-    t = token.strip()
-    head = t.split(":", 1)[0]
-    if head != t and is_file(head.rsplit("/", 1)[-1]):
-        t = head
+    repository carries twice. A citation names its file. None for a token
+    that is not a path: a path ends in `/` or names a file."""
+    t = cited_file(token)
     if not t or t[0] in "~$/+-" or t.startswith(("../", "http")):
         return None
     if any(c in t for c in " *{<>()=\"'") or ".." in t:
@@ -615,8 +618,9 @@ def sentences(text):
 def entry_matches(token, entry):
     """Whether a backticked token names an allowlist entry: the entry
     itself, the same path by suffix or basename, a bare target for a `make`
-    entry, or a stem ("url-options-core" for `url-options-core.ts`)."""
-    t = CITE_RE.sub("", token.strip())
+    entry, or a stem ("url-options-core" for `url-options-core.ts`). A citation
+    names its file."""
+    t = cited_file(token)
     if entry.startswith("make "):
         return t in (entry, entry[5:])
     if "*" in entry:

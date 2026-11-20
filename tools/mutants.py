@@ -103,8 +103,8 @@ MUTANTS = [
     # 2026-09-14; the guard stays, and no assertion can now see it break, so it
     # carries no mutant.
     ('check-plan-crossrefs citation by a text anchor names no file', 'check-plan-crossrefs.py',
-     '    if head != t and is_file(head.rsplit("/", 1)[-1]):\n',
-     '    if False:\n', ST),
+     '    return head if head != t and is_file(head.rsplit("/", 1)[-1]) else t\n',
+     '    return t\n', ST),
     ('check-plan-crossrefs missing label not a finding', 'check-plan-crossrefs.py',
      '                if label not in self.items[iid]["fields"]:\n',
      '                if False:\n', ST),
