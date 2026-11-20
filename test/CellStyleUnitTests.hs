@@ -210,7 +210,7 @@ fixturesJson = jsonDocument source
   positionSample = [0, 1, width - 1, width, width + 1, 2 * width - 1]
                    ++ [5 * width + 7]
 
--- | The cursor the browser is to show over the map, as SDL shows it.
+-- | The cursor the browser shows over the map, as SDL shows it.
 cursorTs :: Text
 cursorTs = T.unlines $
   generatedHeader source

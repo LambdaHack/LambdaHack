@@ -60,7 +60,7 @@ lmBoxSize = (2 *) . lmHalfSize
 
 -- | The only constructor exported. SDL passes half the cell its loaded map
 -- font determines, the font opened at a point size already multiplied by
--- @sallFontsScale@; the browser is to pass its painter's @halfSize@, half the
+-- @sallFontsScale@; the browser passes its painter's @halfSize@, half the
 -- cell it takes from its loaded map font the same way. The width is the same
 -- @rwidth coscreen@ the caller passes to 'layOutFrame': two different values
 -- there would leave the line filter and the pen clamping against different
@@ -271,7 +271,7 @@ data PropFit = PropFit
 --
 -- The consumer supplies the chunk's natural rendered width in its own device
 -- units, rounded up, so that "it fits" is never optimistic: SDL the width
--- of the rendered surface, and the browser is to supply the ceiling of
+-- of the rendered surface, and the browser supplies the ceiling of
 -- @measureText@.
 --
 -- Precondition: @not (propCutoff lm cur)@, which is also what keeps
