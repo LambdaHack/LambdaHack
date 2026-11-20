@@ -113,10 +113,9 @@ wasmFileTests =
 wasmFileTests = []
 #endif
 
--- | The frame and overlay cases, and none natively, where no wasm frontend
--- is linked. Kept a binding of its own, as @Spec.hs@ keeps
--- @sdlFontsetTests@, so that the argument of 'testGroup' is the same shape
--- in both builds.
+-- | The frame and overlay cases, and none natively, where no wasm frontend is
+-- linked. Kept a binding of its own, as @GameSpec.hs@ keeps @sdlFontsetTests@,
+-- so that the argument of 'testGroup' is the same shape in both builds.
 frontendTests :: [TestTree]
 #ifdef USE_WASM
 frontendTests = [submitFrameTest, submitOverlaysTest]
