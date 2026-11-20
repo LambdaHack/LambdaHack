@@ -9,7 +9,7 @@ anywhere in the repository.
 A plan here is a document of items, each closing with the same execution
 block (**Split**, **Owns**, **Done**, **Hands back**, **Decide first**) and
 each with a ledger row whose `depends on` cell names the items it waits
-for. Two carry that grammar: `docs/wasm-frontend-work-list.md`, thirty-odd
+for. Two carry that grammar: `docs/wasm-frontend-work-list.md`, dozens of
 items whose designs sit in `docs/wasm-frontend-unified-plan.md` since
 2026-09-14, and `docs/leader-desync-migration.md`, whose rows took the block on
 2026-09-04 so that the same executor is handed both campaigns' items the

@@ -187,7 +187,7 @@ deliberate asymmetry, and its absence says the item is a single commit.
 **The gates, once.** Every **Done** is built from these, run from the repo root,
 each but `native` and `docs` installing `ts-src`'s packages first where its lock
 or manifest is newer than the last install, which wants an unsandboxed call.
-They are spelled out here and nowhere else: thirty-odd items repeating one
+They are spelled out here and nowhere else: dozens of items repeating one
 command chain is the second definition G1 forbids, and the chain that drifts
 is the one nobody re-reads.
 
