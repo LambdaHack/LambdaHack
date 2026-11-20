@@ -1,8 +1,8 @@
 -- | The cases on the sample game's content, whose map is 80 wide: whole games
--- through 'tieKnot', and the determinism goldens, which build frames on that
+-- through @tieKnot@, and the determinism goldens, which build frames on that
 -- content and play its games. They are a test executable of their own because
 -- the t'Game.LambdaHack.Common.Point.Point' 'Enum' width is one value per
--- process, set here once, before anything is built, as 'tieKnot' sets it at
+-- process, set here once, before anything is built, as @tieKnot@ sets it at
 -- a game's startup, while the cases on the stub content, 4 wide, run under
 -- @test/Spec.hs@.
 module Main (main) where
@@ -11,16 +11,13 @@ import Prelude ()
 
 import Game.LambdaHack.Core.Prelude
 
-import Options.Applicative
 import Test.Tasty
 import Test.Tasty.HUnit
 
 import           Game.LambdaHack.Common.Point (setSpeedupHackXSize)
 import qualified Game.LambdaHack.Content.RuleKind as RK
-import           Game.LambdaHack.Server
 
 import qualified Content.RuleKind
-import           TieKnot
 
 import DeterminismGoldenUnitTests
 
@@ -61,8 +58,7 @@ integrationTests = testGroup "integrationTests" $
       let seed = "SMGen 131 141"
           args = words "--dbgMsgSer --logPriority 4 --newGame 1 --noAnim --maxFps 100000 --frontendNull --benchmark --stopAfterFrames 5 --automateAll --keepAutomated --gameMode crawl"
                  ++ [ "--setDungeonRng", seed, "--setMainRng", seed]
-      serverOptions <- handleParseResult $ execParserPure defaultPrefs serverOptionsPI args
-      void $ tieKnot serverOptions
+      void $ playGame args
   ]
   ++ sdlFontsetTests
 
@@ -85,8 +81,7 @@ sdlFontsetTests =
               args2 = words "--dbgMsgSer --logPriority 0 --newGame 3 --maxFps 100000 --benchmark --stopAfterFrames 5 --automateAll --keepAutomated --gameMode battle"
                       ++ [ "--setDungeonRng", seed, "--setMainRng", seed
                          , "--fontset", fontsetName ]
-          serverOptions2 <- handleParseResult $ execParserPure defaultPrefs serverOptionsPI args2
-          void $ tieKnot serverOptions2
+          void $ playGame args2
   in zipWith testFontset [0..] $ map (T.unpack . fst) $ uFontsets uiOptions
 #else
 sdlFontsetTests = []

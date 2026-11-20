@@ -14,7 +14,7 @@
 -- are the mutants in @tools/mutants-deep.py@ whose labels begin @goldens:@.
 --
 -- Each case name begins with the @fe-golden@ series marker.
-module DeterminismGoldenUnitTests (determinismGoldenUnitTests) where
+module DeterminismGoldenUnitTests (determinismGoldenUnitTests, playGame) where
 
 import Prelude ()
 
@@ -44,6 +44,7 @@ import           Game.LambdaHack.Client.UI.MsgM (msgAdd)
 import           Game.LambdaHack.Client.UI.PointUI (PointUI (..))
 import           Game.LambdaHack.Client.UI.SessionUI (SessionUI (..))
 import           Game.LambdaHack.Common.ClientOptions (ClientOptions)
+import           Game.LambdaHack.Common.State (State)
 import           Game.LambdaHack.Definition.Defs
   (CStore (..), ItemDialogMode (..))
 import           Game.LambdaHack.Server (serverOptionsPI)
@@ -180,10 +181,16 @@ stateGolden mode difficulty dungeonRng mainRng golden =
                ++ words "--stopAfterFrames 500 --automateAll --keepAutomated"
                ++ [ "--newGame", show difficulty, "--gameMode", mode
                   , "--setDungeonRng", dungeonRng, "--setMainRng", mainRng ]
-    serverOptions <-
-      handleParseResult $ execParserPure defaultPrefs serverOptionsPI args
-    finalState <- tieKnot serverOptions
+    finalState <- playGame args
     Digest (fnv1a $ encode finalState) @?= Digest golden
+
+-- | Play the game the given command line asks for, to its end, and return the
+-- state it ended in. The whole games of @test/GameSpec.hs@ are played through
+-- it too.
+playGame :: [String] -> IO State
+playGame args =
+  handleParseResult (execParserPure defaultPrefs serverOptionsPI args)
+  >>= tieKnot
 
 -- | 64-bit FNV-1a, the digest fold both golden families share.
 fnv1a :: BL.ByteString -> Word64
