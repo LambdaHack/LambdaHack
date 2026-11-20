@@ -660,6 +660,15 @@ only that the plan was written is one the next reader has to skip.
   so that in every host its promise resolves on a clean exit, a finished game's
   among them, and rejects otherwise; 3.2's exit-propagation bullet states
   the rule and 1.6 carries a note of it.
+- 2026-11-20 -- R15 filed (B.20), ruled by Mikolaj on a finding of that day's
+  `/simplify` review of the code: a frame and its overlays to cross the FFI
+  in one call, where 2.3 landed two that each JS host joins again.
+  It is `not applied`: a probe comes first, whether an `unsafe` JSFFI import
+  takes two `ByteArray#` arguments, and the change waits on it, on whether
+  the Ground rules' preference for additive imports yields here, and on his
+  answer to the criterion he added, whether one call brings the browser's code
+  closer to how SDL's works or further from it, and, if further, whether
+  that merits a change of SDL.
 
 ## Repo facts the plan builds on
 
@@ -4014,6 +4023,39 @@ at whole-pixel advances, each glyph's measured width rounded, follows SDL_ttf's
 rounding, though not its hinting's adjustments, which no page can ask
 for (B.15), so some drift may remain; how much is the bar, R14's **Decide
 first** (a). The cost is a draw call per glyph, which R14's Done times.
+
+**B.20 A frame and its overlays in one FFI call, as R15.** Filed 2026-11-20
+by Mikolaj, from a finding of that day's `/simplify` review of the code:
+a frame's overlays cross the FFI in a call of their own, before the frame's
+(`Wasm.hs:js_submitOverlays ::`, `Wasm.hs:js_submitFrame ::`), the screen's
+width crossing in each, and the JS side joins the two again, each host its own
+way. The page holds the overlays for the frame submitted next
+(`terminal.ts:let pendingOverlays:`) and its decoder throws where the two widths
+differ (`overlay-core.ts:if (laidOutFor !== frameWidth)`); the test driver's
+stub tags each overlay call with the count of frames before
+it (`run-wasm-test.mjs:overlays.push({ w, words, frames: calls.length });`),
+by which the reactor driver finds a frame's overlays
+(`run-wasm-game.mjs:const overlaysOf = (i) =>`); and the page gate wraps
+a second hook to count them
+(`page-gate.mjs:Object.defineProperty(globalThis, "lhSubmitOverlays", {`).
+The design is one import carrying both buffers: `js_submitFrame` takes
+the overlays' address and length after the frame's, the length 0 where a frame
+has none, which a host reads as no overlays without decoding, the decoder
+throwing on an empty run of words. `js_submitOverlays`,
+`globalThis.lhSubmitOverlays`, the page's held overlays and the stub's tag go,
+each host reading a frame's overlays from the call that brings the frame;
+and the width crosses once, which leaves the decoder's comparison, 2.2's guard
+under Cell metrics from one source, nothing to compare. What is painted does
+not change. No import in the tree takes two `ByteArray#` arguments,
+`js_decodeUTF8` (`WasmFile.hs:js_decodeUTF8 ::`) taking one. Mikolaj ruled his
+criterion with the filing: "whether this gets closer to how SDL code works
+or not and if further, does it merit an SDL change or not". SDL's `drawFrame`
+takes a `SingleFrame` whole and lays its overlays out itself
+(`Sdl.hs:let FrameLayout{..} = layOutFrame screenWidth curFrame`), as `display`
+does in the browser (`Wasm.hs:let layout = layOutFrame rwidth curFrame`) before
+it hands JS the layout's words and the cells in two calls. 2.3 added
+`js_submitOverlays` as the additive import the Ground rules prefer to a changed
+signature, so one call would be an exception to that rule, as 0.1's `lhKey` was.
 
 ---
 

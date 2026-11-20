@@ -139,6 +139,7 @@ sections of the record are frozen and which live is its head callout's to say.
 | R12 | the zoom chords: in the browser kept from the game, which answers them with an unknown command, and in SDL2 zooming too or saying the zoom is the browser's | small; medium with SDL2's zoom | --- | open |
 | R13 | faces sized to the rounded cell at a fractional zoom, as the grid is; below 1, the 8-pixel map fonts by default, the browser switching at a higher scale than SDL2 | small; medium with the 8-pixel default | R7 for the 8-pixel fonts in the browser | open |
 | R14 | proportional text at SDL_ttf's whole-pixel advances in the browser, not drifting along a line | small | --- | open |
+| R15 | a frame and its overlays crossing the FFI in one call, not in two that each JS host joins again | small | 2.3 for the two calls; 2.4 for the overlays the page gate counts; 0.3 for the stubs, the coverage case and the reactor driver | not applied |
 | capability constants | named constants in place of behavioral CPP | --- | --- | not applied |
 | sum-typed selection | one frontend field replacing four `Bool`s | mechanical, moderate churn | --- | not applied |
 | RawFrontend contract | haddock contract, tasty harness, add-a-frontend checklist | medium | haddock and checklist: nothing; native harness after 0.1, which creates its module; wasm case with 0.3 | not applied |
@@ -349,9 +350,9 @@ Parity work stays in one checkout.
 ## Items
 
 Each item's design and rulings are in the record, under the same heading, R8's,
-R9's, R10's, R11's, R12's, R13's and R14's under B.12, B.13, B.15, B.16, B.17,
-B.18 and B.19, and 1.7's and 1.8's at Appendix C's gaps (2) and (3), with their
-rulings in the Log; what is here is how it lands.
+R9's, R10's, R11's, R12's, R13's, R14's and R15's under B.12, B.13, B.15, B.16,
+B.17, B.18, B.19 and B.20, and 1.7's and 1.8's at Appendix C's gaps (2) and (3),
+with their rulings in the Log; what is here is how it lands.
 
 ## Phase 0 --- shared foundations
 
@@ -570,7 +571,8 @@ shared by both drivers rather than copied. Later items add to the game driver,
 0.1, 0.4, 1.2 and 1.5 each their own coverage case, 1.7 a parity case, 1.8
 a change to 1.2's, 2.4 the overlays to its frame comparisons and 3.2 its run
 to the game's end under `--frontendNull`, and to the test driver, 2.3
-its overlay hook's stub and 1.5 its startup hook's.
+its overlay hook's stub and 1.5 its startup hook's; R15 folds the overlay hook
+into the frame's in both.
 
 **Done** --- `native`, `wasm`, `docs`, plus, on the export half,
 `make build-wasm` and a run of the seeded driver against the fresh reactor,
@@ -1580,7 +1582,9 @@ rather slowly" clause, which stands in both, deleted under 1.4's rule when both
 bars are cleared), `tools/doc-refs-allow.txt` (R5a's two `frame-timing-core`
 entries), and `docs/wasm-frontend-unified-plan.md`; R5b writes it alone.
 `?benchmark=` sits in R4's parameter allowlist, so whichever of the two lands
-first shapes the other's `loader.ts` diff.
+first shapes the other's `loader.ts` diff. R15 rewrites the `submitFrame` R5a
+instruments, so whichever of those lands first shapes the other's `terminal.ts`
+diff.
 
 **Done** --- `ts`, `page`, `docs`, which decides R5a only.
 
@@ -1870,6 +1874,57 @@ ruling of 2026-10-26.
 SDL2 starts it, or only less drift than today, SDL_ttf's hinting being out
 of a page's reach (B.19).
 
+**R15 --- A frame and its overlays in one FFI call.** Design and ruling
+in the record, at B.20.
+
+**Split** --- four commits. (1) the probe of **Decide first** (a): a throwaway
+import of two `ByteArray#` arguments, built for wasm, called, its two buffers
+read back in JS, and never committed, its command and output recorded
+under B.20, as the record's Build & verification loop asks of a claim no pass
+can re-run, in a commit of the record alone. (2) the change, the import
+and every JS host in one commit with the coverage case, as 0.3's standing half
+asks. (3) the correction of the live claims (2) falsifies, the record's Repo
+facts on the two hooks among them, and the re-anchoring the citation pass names.
+(4) the outcome line under B.20 naming (2)'s hash, and the ledger flip. Nothing
+to delete from `tools/doc-refs-allow.txt`: this item proposes no artifact.
+
+**Owns** --- `engine-src/Game/LambdaHack/Client/UI/Frontend/Wasm.hs`,
+`test/FfiCoverageUnitTests.hs`, `ts-src/src/terminal.ts`,
+`ts-src/src/overlay-core.ts` and its test, `ts-src/src/loader.ts`,
+`ts-src/run-wasm-test.mjs`, `ts-src/run-wasm-game.mjs`, `ts-src/page-gate.mjs`,
+`tools/mutants-deep.py` where the change moves an anchor,
+`engine-src/Game/LambdaHack/Client/UI/Frontend/Sdl.hs` should **Decide first**
+(b) end in a change of SDL, and `docs/wasm-frontend-unified-plan.md`. R5's
+instrument writes `submitFrame` in `terminal.ts` too, so whichever lands first
+shapes the other's diff; R12 writes other lines of `Wasm.hs`, R4 and R5
+of `loader.ts`, R7, R10, R11, R13 and R14 of `terminal.ts`, and R10
+of `page-gate.mjs`.
+
+**Done** --- `native`, `ts`, `wasm`, `reactor`, `deploy`, `page`, `docs`, plus:
+the coverage case in `test/FfiCoverageUnitTests.hs` reading a frame's overlays
+off the frame's own record, and none off a frame without;
+`selftest-mutants.py tools/mutants-deep.py --anchors`, no deep mutant being
+anchored on a line of either call today, and a replay of the deep mutants whose
+program or judge the change rewrites, the browser without the multi-font
+capability among them, the control of the page gate's overlay count; and 2.5's
+seeded comparison, as its Rulings describe it, run on the page before the change
+and after it, every capture equal pixel for pixel in both browsers but
+for the history's line read off the wall clock.
+
+**Hands back** --- hands back nothing: nothing a player sees changes,
+and the comparison is a session's, by 2.5's ruling of 2026-10-26.
+
+**Decide first** --- (a) whether an `unsafe` JSFFI import takes two `ByteArray#`
+arguments, which Split (1) probes; if it does not, the design does not stand
+as B.20 states it, and the finding goes back to Mikolaj. (b) Mikolaj's
+criterion, his to answer once the executing session has laid out how SDL's
+`drawFrame` takes a frame with its overlays, one `SingleFrame` whose overlays
+it lays out itself, against the browser's two calls and the one proposed:
+"whether this gets closer to how SDL code works or not and if further, does
+it merit an SDL change or not" (B.20). (c) whether the Ground rules' preference
+for additive JSFFI imports over changed signatures yields here, as it did
+for 0.1's `lhKey` (B.20).
+
 ## Multi-frontend practices (adopted)
 
 **Capability constants instead of behavioral CPP.** Design and rulings
@@ -1991,8 +2046,8 @@ which `display`'s foreign call traps. The third commit carries the outcome line.
 `test/Spec.hs`, the `test-suite test` stanza of `LambdaHack.cabal`
 (`LambdaHack.cabal:main-is: Spec.hs`), and `docs/wasm-frontend-unified-plan.md`.
 The input-side cases land inside 0.1, which creates the test module and mints
-`[fe-invariant]`, and this item's harness extends it; 2.3 and 1.5 are the items
-extending `ts-src/run-wasm-test.mjs`; this one and 3.2 do not.
+`[fe-invariant]`, and this item's harness extends it; 2.3, 1.5 and R15
+are the items changing `ts-src/run-wasm-test.mjs`; this one and 3.2 do not.
 
 **Done** --- `native`, `wasm`, `docs`, plus
 `cabal test --test-options='-p "/fe-invariant/"'` --- the series marker 0.1's
@@ -2216,6 +2271,8 @@ R11 --- any time, in either order with R13 and R14
 R12 --- any time
 R13 --- any time, in either order with R10, R11 and R14; its (2) after R7
 R14 --- any time, in either order with R11 and R13
+R15 --- its probe first, any time; its change on Mikolaj's answers to its
+    Decide first (b) and (c)
 ```
 
 Rationale, condensed: the input cluster goes first (mechanism already validated,
