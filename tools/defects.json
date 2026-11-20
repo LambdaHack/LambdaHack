@@ -1185,6 +1185,20 @@
    "expect_text": "0 failed over 1 ledger rows",
    "bug_exit": 1,
    "bug_text": "claimed by no item; written by 0.1"
+  },
+  {
+   "id": "page-gate-06",
+   "program": "ts-src/page-gate.mjs",
+   "name": "the exit handler signalled only the children the gate spawned, and Chromium is chromedriver's child, so a gate ending through BLOCKED with a Chromium session open left that Chromium running; a SIGINT or SIGTERM ran no exit handler and left every child running",
+   "family": "unverified-state",
+   "fix_rev": "self",
+   "trigger": "the gate ending while a browser it started is up: Firefox's gate BLOCKED with Chromium's page loaded, Chromium's BLOCKED with Firefox's loaded, or the gate sent SIGINT or SIGTERM with both loaded",
+   "ok": "`BLOCKED: websocket`, `BLOCKED: <driver> not ready within 15s`, `BLOCKED: SIGINT` and `BLOCKED: SIGTERM`, each at exit 2, and 3s later no process left that names the run's site directory or inherited the gate's environment",
+   "bug": "after the BLOCKED in Firefox's gate, the main Chromium process, its zygotes, renderers, GPU and utility processes and its two crashpad handlers left running; after a SIGINT or SIGTERM, exit 130 or 143 and serve.mjs, chromedriver, Firefox and Chromium all left running; Chromium's BLOCKED with Firefox loaded left nothing",
+   "proved": "ran",
+   "harm": "unknown",
+   "discovery": "review",
+   "notes": "Seen by the main session reading the gate on 2026-11-20, item 118.1 of its reply, and watched both ways that day over a scratch site whose serve.mjs serves a blank page and notes each load, with a Firefox stand-in that prints a dead BiDi endpoint once Chromium has loaded it, or a chromedriver stand-in that never answers. Chromium and its zygotes and renderers stay in chromedriver's process group, the crashpad handlers alone starting sessions of their own, and those exit once Chromium is gone. Every child now starts in a group of its own, killed with it at exit, and SIGINT and SIGTERM end the run through BLOCKED, the children no longer being in the terminal's group. The uncaught-throw exit, the same handler, was not run. A tier-1 record: the corpus root is tools/, and the gate needs a browser."
   }
  ]
 }

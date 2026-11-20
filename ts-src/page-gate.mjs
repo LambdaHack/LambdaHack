@@ -11,8 +11,8 @@
 // holds in both browsers, 1 when one fails, 2 when the run did not happen: no
 // browser named or an unknown one, no Firefox, Chromium or chromedriver, no
 // BiDi endpoint or one that closes or stops answering, no server, no bundle of
-// the generated palette, a throw outside the assertions; a FAIL already printed
-// keeps 1.
+// the generated palette, a throw outside the assertions, a SIGINT or SIGTERM; a
+// FAIL already printed keeps 1.
 //
 // Usage: node page-gate.mjs <site-dir> (Node 22+, for the global WebSocket)
 //   PAGE_GATE_BROWSERS=firefox or =chromium runs one browser alone; BROWSER,
@@ -52,11 +52,26 @@ const BROWSERS = (process.env.PAGE_GATE_BROWSERS ?? "firefox,chromium")
 // How long a BiDi command may go unanswered.
 const COMMAND_MS = 60000;
 
-// Every child is killed at exit, whichever verdict ends the run, so that no
-// server or browser outlives the gate holding its port.
+// Every child starts in a process group of its own and is killed with its
+// group at exit, whichever verdict ends the run, so that no server or browser
+// outlives the gate holding its port. Chromium, which chromedriver starts,
+// stays in chromedriver's group, and the DELETE that closes it runs only where
+// a run reaches stop(); the exit handler is synchronous, so a signal is all it
+// can send.
 const children = [];
+function start(command, args, options) {
+  const child = spawn(command, args, { ...options, detached: true });
+  children.push(child);
+  return child;
+}
 process.on("exit", () => {
-  for (const c of children) c.kill();
+  for (const c of children) {
+    try {
+      process.kill(-c.pid, "SIGTERM");
+    } catch {
+      // never started, or its group already gone
+    }
+  }
 });
 function blocked(msg) {
   console.error("BLOCKED: " + msg);
@@ -67,6 +82,9 @@ function fail(msg) {
   process.exitCode = 1;
 }
 process.on("uncaughtException", (e) => blocked(`uncaught: ${e?.stack ?? e}`));
+// The children are out of the terminal's process group, so an interrupt reaches
+// the gate alone, which ends the run as any other exit does.
+for (const s of ["SIGINT", "SIGTERM"]) process.on(s, () => blocked(s));
 if (BROWSERS.length === 0) blocked("PAGE_GATE_BROWSERS names no browser");
 // What starts each browser PAGE_GATE_BROWSERS may name.
 const STARTERS = { firefox: startFirefox, chromium: startChromium };
@@ -77,10 +95,9 @@ for (const name of BROWSERS) {
 }
 
 // --- static server, the bundle's own serve.mjs -------------------------
-const server = spawn("node", [join(site, "serve.mjs"), site, String(PORT)], {
+const server = start("node", [join(site, "serve.mjs"), site, String(PORT)], {
   stdio: ["ignore", "pipe", "inherit"],
 });
-children.push(server);
 await new Promise((ok, no) => {
   server.stdout.on("data", (d) => {
     if (String(d).includes("serving")) ok();
@@ -106,7 +123,7 @@ async function startFirefox() {
       "",
     ].join("\n"),
   );
-  const ff = spawn(
+  const ff = start(
     BROWSER,
     [
       "--headless",
@@ -118,7 +135,6 @@ async function startFirefox() {
     ],
     { stdio: ["ignore", "pipe", "pipe"] },
   );
-  children.push(ff);
   ff.on("error", (e) => blocked(`cannot start ${BROWSER}: ${e.message}`));
   const wsUrl = await new Promise((ok) => {
     const t = setTimeout(() => ok(null), 30000);
@@ -145,10 +161,9 @@ async function startFirefox() {
 // Headless Chromium serves no BiDi of its own: chromedriver starts it and hands
 // back a WebSocket bound to the session it opened.
 async function startChromium() {
-  const driver = spawn(CHROMEDRIVER, [`--port=${DRIVER_PORT}`], {
+  const driver = start(CHROMEDRIVER, [`--port=${DRIVER_PORT}`], {
     stdio: "ignore",
   });
-  children.push(driver);
   driver.on("error", (e) =>
     blocked(`cannot start ${CHROMEDRIVER}: ${e.message}`),
   );
