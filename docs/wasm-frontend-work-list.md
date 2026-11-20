@@ -1165,7 +1165,7 @@ that start the browser frontend on `defClientOptions`, whose fontset does
 not resolve, each through its `startupUnderTest`
 (`FrontendContractUnitTests.hs:startupUnderTest coscreen = Wasm.startup coscreen`
 and
-`FfiCoverageUnitTests.hs:startupUnderTest coscreen = Wasm.startup coscreen`),
+`FfiCoverageUnitTests.hs:import FrontendContractUnitTests (smallScreen, startupUnderTest)`),
 get options that resolve; then the driver commit **Owns** places before (3). (3)
 `Wasm.supportsMultiFont = True`, one line and nothing else. (4) the page gate's
 overlay assertion made unconditional, `ts-src/page-gate.mjs`'s

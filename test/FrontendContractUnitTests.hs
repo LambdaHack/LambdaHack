@@ -9,7 +9,9 @@
 -- this command binary cannot call, is @ts-src/run-wasm-game.mjs@'s to cover.
 --
 -- Each case name begins with the @fe-invariant@ series marker.
-module FrontendContractUnitTests (frontendContractUnitTests) where
+module FrontendContractUnitTests
+  ( frontendContractUnitTests, smallScreen, startupUnderTest
+  ) where
 
 import Prelude ()
 
@@ -41,7 +43,7 @@ import qualified Game.LambdaHack.Client.UI.Frontend.Common as Common
 frontendContractUnitTests :: TestTree
 frontendContractUnitTests = testGroup "frontendContractUnitTests"
   [ testCase "fe-invariant: a key shows a waiting frame and is pending" $ do
-      rf <- startupUnderTest coscreen
+      rf <- startupUnderTest smallScreen
       shown <- frameWaiting rf
       timeout 200000 (readMVar shown) >>= (@?= Nothing)
       deliver rf K.NoModifier (K.Char 'a')
@@ -49,23 +51,26 @@ frontendContractUnitTests = testGroup "frontendContractUnitTests"
       keysPending rf >>= (@?= True)
       pending rf >>= (@?= [K.KM K.NoModifier (K.Char 'a')])
   , testCase "fe-invariant: a dead key shows a waiting frame only" $ do
-      rf <- startupUnderTest coscreen
+      rf <- startupUnderTest smallScreen
       shown <- frameWaiting rf
       deliver rf K.Shift K.DeadKey
       timeout 5000000 (takeMVar shown) >>= (@?= Just ())
       keysPending rf >>= (@?= False)
   , testCase "fe-invariant: Esc empties the keys pending before it" $ do
-      rf <- startupUnderTest coscreen
+      rf <- startupUnderTest smallScreen
       deliver rf K.NoModifier (K.Char 'a')
       deliver rf K.Shift (K.Char '?')
       deliver rf K.NoModifier K.Esc
       pending rf >>= (@?= [K.escKM])
   ]
- where
-  coscreen = emptyScreenContent {rwidth = 7, rheight = 3}
 
--- | The frontend the cases run on, under wasm on options whose fontset
--- resolves, as 'Wasm.startup' requires.
+-- | The screen the cases start the frontend on, 7 wide and 3 high.
+smallScreen :: ScreenContent
+smallScreen = emptyScreenContent {rwidth = 7, rheight = 3}
+
+-- | The frontend the cases run on, as the frame and overlay cases of
+-- @FfiCoverageUnitTests.hs@ do, under wasm on options whose fontset resolves,
+-- as 'Wasm.startup' requires.
 startupUnderTest :: ScreenContent -> IO RawFrontend
 #ifdef USE_WASM
 startupUnderTest coscreen = Wasm.startup coscreen multiFontClientOptions

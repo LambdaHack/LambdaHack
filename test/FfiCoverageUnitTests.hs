@@ -8,7 +8,7 @@
 -- installs, and natively over @HSFile.hs@ in a scratch directory, so that
 -- a drift between the backends fails @cabal test@ or @make test-wasm@.
 -- The frame and overlay cases are wasm-only: they drive @Wasm.hs@'s
--- @js_submitFrame@ and @js_submitOverlays@ through 'Wasm.startup'
+-- @js_submitFrame@ and @js_submitOverlays@ through @Wasm.startup@
 -- and 'fdisplay' and read back what the driver's @lhSubmitFrame@
 -- and @lhSubmitOverlays@ stubs recorded. The reactor's exports, which this
 -- command binary cannot exercise, are @ts-src/run-wasm-game.mjs@'s to cover.
@@ -40,18 +40,16 @@ import           System.IO.Error (isAlreadyExistsError)
 #endif
 
 #ifdef USE_WASM
-import           Game.LambdaHack.Client.UI.Content.Screen
 import           Game.LambdaHack.Client.UI.Frame
 import           Game.LambdaHack.Client.UI.Frontend
   (encodeFrameLayout, layOutFrame)
 import           Game.LambdaHack.Client.UI.Frontend.Common (RawFrontend (..))
-import qualified Game.LambdaHack.Client.UI.Frontend.Wasm as Wasm
 import           Game.LambdaHack.Client.UI.PointUI (PointUI (..))
 import           Game.LambdaHack.Common.Point
 import qualified Game.LambdaHack.Common.PointArray as PointArray
 import qualified Game.LambdaHack.Definition.Color as Color
 
-import UnitTestHelpers (multiFontClientOptions)
+import FrontendContractUnitTests (smallScreen, startupUnderTest)
 #endif
 
 ffiCoverageUnitTests :: TestTree
@@ -193,20 +191,19 @@ damageMarker from to = do
 #endif
 
 #ifdef USE_WASM
--- | @Wasm.hs@'s @js_submitFrame@, reached through 'Wasm.startup' and
+-- | @Wasm.hs@'s @js_submitFrame@, reached through @Wasm.startup@ and
 -- 'fdisplay': the driver's @lhSubmitFrame@ stub records one call per frame,
 -- with the screen's width and height and the cell word it reads at the
 -- address given, which matches the fixture only at the frame's first cell.
 submitFrameTest :: TestTree
 submitFrameTest =
   testCase "js_submitFrame passes each frame's address and size, once" $ do
-    let coscreen = emptyScreenContent {rwidth = 7, rheight = 3}
-        cell = Color.attrChar2ToW32 Color.BrRed
+    let cell = Color.attrChar2ToW32 Color.BrRed
         frameOf c =
-          let blank = blankSingleFrame coscreen
+          let blank = blankSingleFrame smallScreen
           in blank {singleArray =
                       singleArray blank PointArray.// [(Point 0 0, cell c)]}
-    rf <- startupUnderTest coscreen
+    rf <- startupUnderTest smallScreen
     n <- js_frameCount
     fdisplay rf $ frameOf 'A'
     fdisplay rf $ frameOf 'B'
@@ -215,11 +212,6 @@ submitFrameTest =
       js_frameWidth i >>= (@?= 7)
       js_frameHeight i >>= (@?= 3)
       js_frameFirstCell i >>= (@?= fromEnum (Color.attrCharW32 $ cell c))
-
--- | The frontend the frame and overlay cases run on, on options whose fontset
--- resolves, as 'Wasm.startup' requires.
-startupUnderTest :: ScreenContent -> IO RawFrontend
-startupUnderTest coscreen = Wasm.startup coscreen multiFontClientOptions
 
 -- | What the driver's @lhSubmitFrame@ stub recorded, call by call.
 foreign import javascript unsafe "globalThis.lhSubmitFrameCalls.length"
@@ -242,14 +234,13 @@ foreign import javascript unsafe "globalThis.lhSubmitFrameCalls[$1].first"
 submitOverlaysTest :: TestTree
 submitOverlaysTest =
   testCase "js_submitOverlays passes a frame's overlays, before the frame" $ do
-    let coscreen = emptyScreenContent {rwidth = 7, rheight = 3}
-        blank = blankSingleFrame coscreen
+    let blank = blankSingleFrame smallScreen
         line = map $ Color.attrChar2ToW32 Color.BrRed
         overlaid = blank { singlePropOverlay = [(PointUI 2 1, line "ab")]
                          , singleSquareOverlay = [(PointUI 0 0, line "s")]
                          , singleMonoOverlay = [(PointUI 3 2, line "m")] }
         expected = map fromEnum $ encodeFrameLayout $ layOutFrame 7 overlaid
-    rf <- startupUnderTest coscreen
+    rf <- startupUnderTest smallScreen
     n <- js_overlaysCount
     frames <- js_frameCount
     fdisplay rf blank
