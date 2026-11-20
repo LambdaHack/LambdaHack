@@ -16,17 +16,12 @@
 -- Requires @lz-string@ to be loaded as a page-global (@globalThis.LZString@)
 -- alongside the wasm bundle.
 module Game.LambdaHack.Common.WasmFile
-  (
-#ifdef USE_WASMFILE
--- to molify doctest, but don't break stylish-haskell parsing
-    encodeEOF, strictDecodeEOF
+  ( encodeEOF, strictDecodeEOF
   , tryCreateDir, doesFileExist, tryWriteFile, readFile, renameFile
     -- * Operations both internal and used in unit tests
   , compressToUTF16, decompressFromUTF16
-#endif
   ) where
 
-#ifdef USE_WASMFILE
 import Prelude ()
 
 import Game.LambdaHack.Core.Prelude
@@ -159,4 +154,3 @@ getItem path = do
 getExistingItem :: FilePath -> IO JSString
 getExistingItem path =
   getItem path >>= maybe (fail $ "Fatal error: no file " ++ path) return
-#endif

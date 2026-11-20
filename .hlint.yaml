@@ -91,13 +91,6 @@
 - ignore: {name: Use bimap, within: Game.LambdaHack.Server.DungeonGen.AreaRnd}
 - ignore: {name: Parenthesize unary negation}
 
-# MagicHash is used only by the wasm JSFFI declarations, which every native
-# configuration drops, so a native pass sees the pragma unused. It cannot be
-# guarded by CPP: stylish-haskell refuses to parse a LANGUAGE pragma below a
-# conditional and then leaves the file silently unformatted.
-- ignore: {name: Unused LANGUAGE pragma, within: Game.LambdaHack.Client.UI.Frontend.Wasm}
-- ignore: {name: Unused LANGUAGE pragma, within: Game.LambdaHack.Common.WasmFile}
-
 # A lambda whose argument is named on purpose. Every rewrite these two offer
 # here -- eta-reduction, a `.` chain, `flip`, a backtick section -- drops the
 # name that says what the argument is. Two hints, because hlint counts the

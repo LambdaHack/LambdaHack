@@ -12,13 +12,9 @@
 -- under it. Startup: the font scale the page draws by and the fonts it draws
 -- the overlays in are handed to JS once, as JSON.
 module Game.LambdaHack.Client.UI.Frontend.Wasm
-  (
-#ifdef USE_WASM
-   startup, frontendName, supportsMultiFont
-#endif
+  ( startup, frontendName, supportsMultiFont
   ) where
 
-#ifdef USE_WASM
 import Prelude ()
 
 import Game.LambdaHack.Core.Prelude
@@ -301,4 +297,3 @@ lhMouseUp x row button modCtrl modShift modAlt modMeta =
 
 foreign export javascript "lhMouseUp"
   lhMouseUp :: Int -> Int -> Int -> Bool -> Bool -> Bool -> Bool -> IO ()
-#endif
