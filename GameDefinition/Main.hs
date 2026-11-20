@@ -22,6 +22,10 @@ import Game.LambdaHack.Common.File (tryCreateDir)
 import Game.LambdaHack.Common.Misc
 #endif
 
+#ifdef USE_WASM
+import System.Exit (ExitCode (..))
+#endif
+
 import Game.LambdaHack.Server (serverOptionsPI)
 
 import TieKnot
@@ -74,10 +78,15 @@ main = do
 -- @lhStart@. Server options are parsed from the argv the WASI host supplies:
 -- the browser loader passes the program name alone, so they sit at their
 -- defaults there, while a Node driver can pass real flags. The build is
--- linked with @-no-hs-main@, so this, @main@ under the name JS calls,
--- starts the game.
+-- linked with @-no-hs-main@, so this starts the game: it runs @main@
+-- and catches the @ExitSuccess@ a clean exit through @exitWith@ throws,
+-- as @--help@'s does, so that the promise JS gets resolves when the game
+-- finishes and rejects otherwise: when it crashes, or exits with a failure,
+-- as on an argument its parse refuses.
 lhStart :: IO ()
-lhStart = main
+lhStart = main `Ex.catch` \case
+  ExitSuccess -> return ()
+  e -> Ex.throwIO e
 
 foreign export javascript "lhStart" lhStart :: IO ()
 #endif

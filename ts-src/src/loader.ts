@@ -125,25 +125,20 @@ async function main(): Promise<void> {
   // loading message only once everything is wired and about to start, not
   // before, so it stays visible for the whole duration of a slow load.
   status?.remove();
-  // lhStart's promise settles when the game ends, and under the success rule
-  // measured in docs/wasm-frontend-unified-plan.md's 3.2 a resolution or a
-  // rejection with the message ExitSuccess is a finished game and any other
-  // rejection a crash. The page says which, since its screen goes on showing
-  // the last frame.
+  // lhStart's promise settles when the game ends: resolved is a finished game,
+  // Main.hs's lhStart catching a clean exit's ExitSuccess, and rejected is
+  // a crash. The page says which, since its screen goes on showing the last
+  // frame.
   lh.lhStart().then(
     () => showEnd(FINISHED),
     (e: unknown) => {
-      if (e instanceof Error && e.message === "ExitSuccess") {
-        showEnd(FINISHED);
-      } else {
-        console.error(e);
-        const message = e instanceof Error ? e.message : String(e);
-        showEnd(
-          `The game crashed: ${message}. See console for details.` +
-            " Reload the page to play again.",
-          RED,
-        );
-      }
+      console.error(e);
+      const message = e instanceof Error ? e.message : String(e);
+      showEnd(
+        `The game crashed: ${message}. See console for details.` +
+          " Reload the page to play again.",
+        RED,
+      );
     },
   );
 }

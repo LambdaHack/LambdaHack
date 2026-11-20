@@ -655,6 +655,11 @@ only that the plan was written is one the next reader has to skip.
   below 1, the browser switching at a higher scale than SDL2, which waits
   on R7's atlas (B.18); R14, proportional text drifting from SDL2's along a line
   at the canvas's fractional advances (B.19).
+- 2026-11-20 -- ruled by Mikolaj on a finding of that day's `/simplify` review
+  of the code: `lhStart` catches the `ExitSuccess` of a clean exit and returns,
+  so that in every host its promise resolves on a clean exit, a finished game's
+  among them, and rejects otherwise; 3.2's exit-propagation bullet states
+  the rule and 1.6 carries a note of it.
 
 ## Repo facts the plan builds on
 
@@ -1475,6 +1480,10 @@ through the main menu resolved `lhStart`'s promise, in Firefox and in Chromium,
 rather than rejecting it with `ExitSuccess`, so the ruling's premise holds.*
 
 *Its hand-back confirmed by Mikolaj on 2026-10-22.*
+
+*Noted 2026-11-20: `lhStart` catches `ExitSuccess` itself, as 3.2's exit
+propagation now has it, so the loader marks the page finished where the promise
+resolves and crashed wherever it rejects.*
 
 **Rulings** --- ruled 2026-10-20 by Mikolaj: the loader signals the end,
 on `lhStart`'s settlement, and not `shutdown` through a new import in SDL's
@@ -2554,13 +2563,14 @@ integration points to cover:
   --- measured on this toolchain, a Haskell `error`, `exitWith (ExitFailure 3)`
   and `exitWith ExitSuccess` all surface as the same rejected promise carrying
   a `WebAssembly.RuntimeError` whose message is the shown exception,
-  so the success rule is: resolved, or rejected with the message `ExitSuccess`;
-  anything else sets a nonzero `process.exitCode`, which covers both ways
-  `--stopAfterFrames` termination can surface. A fault raised in the RTS
-  scheduler loop on a later tick escapes the awaited promise entirely,
-  so install `process.on('uncaughtException')` as well --- Node exiting 1 there
-  is luck, not a mechanism. Re-established 2026-08-07 with a throwaway
-  `lhProbeCrash` export: `error`, `exitWith (ExitFailure 3)`
+  so `lhStart` catches `ExitSuccess` and returns, every other exception
+  rejecting the promise still, which makes both ways `--stopAfterFrames`
+  termination can surface resolve the promise, and the success rule is:
+  resolved; a rejection sets a nonzero `process.exitCode`. A fault raised
+  in the RTS scheduler loop on a later tick escapes the awaited promise
+  entirely, so install `process.on('uncaughtException')` as well --- Node
+  exiting 1 there is luck, not a mechanism. Re-established 2026-08-07
+  with a throwaway `lhProbeCrash` export: `error`, `exitWith (ExitFailure 3)`
   and `exitWith ExitSuccess` rejected the call's promise
   with `RuntimeError: probe-error` / `ExitFailure 3` / `ExitSuccess`
   respectively, and a post-resolution fault escaped the promise as claimed ---
