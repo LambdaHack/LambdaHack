@@ -248,6 +248,25 @@
    "bug_text": "0"
   },
   {
+   "id": "checks-08",
+   "program": "checks.py",
+   "name": "the shellcheck step passed `$files` unquoted, so a tracked shell script with a space in its name reached shellcheck as two names that do not exist",
+   "family": "scan-for-parse",
+   "fix_rev": "self",
+   "trigger": "a repository tracking `a b.sh`",
+   "ok": "shellcheck lints `a b.sh` and names it in its findings",
+   "bug": "`a: openBinaryFile: does not exist` and `b.sh: openBinaryFile: does not exist`, exit 2",
+   "proved": "ran",
+   "harm": "latent",
+   "discovery": "review",
+   "notes": "Latent while no shell script was tracked, the step saying so and linting nothing; found by the main session's review of 2026-11-20, item 138 of its reply, before the first ones, those of tools/page-gate-orphans/, were added. The step now reads git's listing split on NUL into an array and passes it quoted, as the DOCS steps do.",
+   "plant": "a git repository tracking `a b.sh`, whose `cd` shellcheck warns of",
+   "plant_cmd": "git init -q c && mkdir c/tools && printf '#!/bin/sh\\ncd /tmp\\n' > 'c/a b.sh' && git -C c add -A",
+   "unit": "(lambda p: p.stdout + p.stderr)(__import__('subprocess').run([a.replace('{' + 'root}', '{tmp}/c/tools') for a in {s[0]: s[1] for s in STEPS}['shellcheck']], capture_output=True, text=True))",
+   "expect_text": "a b.sh:2:1: warning",
+   "bug_text": "a: openBinaryFile: does not exist"
+  },
+  {
    "id": "mutants-01",
    "program": "mutants.py",
    "name": "its docstring said the mutants replace the dated broken-in-a-copy proofs in the checkers' docstrings, while the checkers still carried them",

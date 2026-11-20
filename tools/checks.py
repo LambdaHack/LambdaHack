@@ -44,8 +44,13 @@ STEPS = [
     ('check-sync-exports self-test', ['python3', '{root}/check-sync-exports.py', '--self-test']),
     ('pyflakes', ['bash', '-c',
                   'cd "{root}" && { python3 -m pyflakes --version >/dev/null 2>&1 || { echo "python3 -m pyflakes --version failed, so tools/*.py went unlinted"; exit 1; }; } && python3 -m pyflakes *.py']),
+    # The listing split on NUL, so a name with a space reaches shellcheck whole
+    # (checks-08).
     ('shellcheck', ['bash', '-c',
-                    'cd "{root}/.." && { command -v shellcheck >/dev/null || { echo "shellcheck is not on PATH (command -v shellcheck finds nothing), so the shell scripts went unlinted"; exit 1; }; } && files=$(git ls-files "*.sh") && if [ -z "$files" ]; then echo "no tracked shell script; nothing linted"; else shellcheck -S warning -f gcc $files; fi']),
+                    'cd "{root}/.." || { echo "cannot enter the repository root"; exit 2; }; '
+                    'command -v shellcheck >/dev/null || { echo "shellcheck is not on PATH (command -v shellcheck finds nothing), so the shell scripts went unlinted"; exit 1; }; '
+                    'readarray -d "" -t files < <(git ls-files -z "*.sh") && wait $! || { echo "git ls-files failed, so nothing was linted"; exit 2; }; '
+                    'if [ ${#files[@]} -eq 0 ]; then echo "no tracked shell script; nothing linted"; else shellcheck -S warning -f gcc "${files[@]}"; fi']),
     ('doc citations',          ['bash', '-c', DOCS % 'check-plan-citations.py']),
     ('doc refs',               ['bash', '-c', DOCS % 'check-doc-refs.py']),
     ('doc wrap',               ['bash', '-c', DOCS_WRAP % 'check-doc-wrap.py']),
