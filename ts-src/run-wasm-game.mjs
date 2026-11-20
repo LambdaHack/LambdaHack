@@ -365,16 +365,21 @@ async function run() {
         frameHash(i) === frameHash(i - 1);
       return same ? [] : [i + 1];
     });
-  const framePrints = () => (printEachScreen ? changed() : []);
-  const expected = framePrints();
+  // Fail the run with the counts, `n` being that of the changed frames.
+  const miscounted = (n, when) =>
+    fail(
+      `${prints.length} screenshots for ${calls.length} frames,` +
+        ` ${n} of them changed, ${when}`,
+    );
+  const changedBefore = changed();
+  const expected = printEachScreen ? changedBefore : [];
   if (
     prints.length !== expected.length ||
     !prints.every((p, i) => p.frames === expected[i])
   ) {
-    fail(
-      `${prints.length} screenshots for ${calls.length} frames,` +
-        ` ${changed().length} of them changed, before C-P` +
-        `${printEachScreen ? " under" : " without"} --printEachScreen`,
+    miscounted(
+      changedBefore.length,
+      `before C-P${printEachScreen ? " under" : " without"} --printEachScreen`,
     );
   }
   const printed = prints.length;
@@ -383,11 +388,9 @@ async function run() {
     fail("C-P through lhKey printed no screenshot within 5s");
   }
   await waitQuiet(500, 5000);
-  if (prints.length !== framePrints().length + 1) {
-    fail(
-      `${prints.length} screenshots for ${calls.length} frames,` +
-        ` ${changed().length} of them changed, after C-P`,
-    );
+  const changedAfter = changed().length;
+  if (prints.length !== (printEachScreen ? changedAfter : 0) + 1) {
+    miscounted(changedAfter, "after C-P");
   }
   const shape = /^prtscn\d{4}-\d\d-\d\d_\d\d\.\d\d\.\d\d(\.\d+)?\.png$/;
   const bad = prints.find((p) => !shape.test(p.name));
@@ -395,7 +398,7 @@ async function run() {
   const which = printEachScreen ? "each changed frame" : "no frame";
   ok(
     `C-P prints one screenshot and ${which} one: ${prints.length} for` +
-      ` ${calls.length} frames, ${changed().length} of them changed,` +
+      ` ${calls.length} frames, ${changedAfter} of them changed,` +
       ` the last ${prints.at(-1).name}`,
   );
 
