@@ -223,7 +223,9 @@ export function cellRunOps(run: CellRun, m: CellMetrics): DrawOp[] {
     const box = { x, y, w: m.boxSize, h: m.boxSize };
     const s = styledCell(run.words[k], run.row);
     ops.push({ kind: "fill", ...box, color: s.background });
-    if (decodeCell(run.words[k]).code !== SPACE) {
+    // s.char is a space exactly where the cell's code is SPACE: glyph
+    // substitutes one character, DIM_FLOOR, which is not a space.
+    if (s.char !== " ") {
       ops.push({
         kind: "text",
         ...box,
