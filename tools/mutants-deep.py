@@ -105,9 +105,10 @@ SMOKE_ANSI = judge(NATIVE, 'smokeANSI', built('cabal build exe:LambdaHack'))
 # The cases the tasty pattern selects in the test executable named, built
 # natively or, for wasm, built and run as `make test-wasm` builds and runs it:
 # exit 0 where tasty passed, a pattern selecting no case included, 1 where it
-# reported a failed case, and 2 otherwise, as where the seeding or the build
-# failed or tasty could not parse the pattern.
-def tasty(component, pattern, wasm=False):
+# reported a failed case or, given `every`, the number of cases the pattern
+# selects, where every one of them failed, and 2 otherwise, as where the seeding
+# or the build failed or tasty could not parse the pattern.
+def tasty(component, pattern, wasm=False, every=None):
     if wasm:
         cabal = '. ~/.ghc-wasm/env && wasm32-wasi-cabal'
         opts = ' --enable-optimization'
@@ -119,7 +120,28 @@ def tasty(component, pattern, wasm=False):
     return ((WASM if wasm else NATIVE) + ' || exit 2; '
             + built(cabal + ' build ' + component + opts)
             + verdict("{ " + run + " -p '" + pattern + "'; }",
-                      ' tests failed '))
+                      ' tests failed ' if every is None
+                      else '^%d out of %d tests failed ' % (every, every)))
+
+
+# The rows of placementTests in test/OverlayLayoutUnitTests.hs, numbered from 1
+# as its haddock numbers them; and the judge of the rows named, 1 only where
+# every one of them failed.
+PLACEMENT = [
+    'propCutoff: a pen short of the last column goes on',
+    'propCutoff: a pen at the last column stops',
+    'propFit: a chunk narrower than the rest of the row fits',
+    'propFit: a chunk exactly as wide as the rest of the row fits',
+    'propFit: an overrun is cut a cell short, raising the marker',
+    'propFit: an all-space overrun is cut at the edge, no marker',
+    'propFit: a cut chunk ends its line',
+    'propFit: a cell and a pixel left cut one pixel wide',
+]
+
+
+def placement(*rows):
+    return tasty('test', ' || '.join('$NF == "%s"' % PLACEMENT[r - 1]
+                                     for r in rows), every=len(rows))
 
 
 # The cases the vitest pattern selects in one file of ts-src's suite, the file
@@ -250,6 +272,39 @@ MUTANTS = [
      'AddSkill SkMaxHP 80  -- partially from clothes and first aid\n',
      'AddSkill SkMaxHP 81  -- partially from clothes and first aid\n',
      tasty('test-game', '/fe-golden: the state/')),
+    # The breaks of propCutoff and propFit that placementTests' rows catch, each
+    # judged by the rows it fails. The cutoff weakened fails the fifth, the
+    # seventh and the eighth by propFit's assertion that a cut chunk ends its
+    # line; strengthened, the eighth by propFit's precondition; every other row
+    # fails by its comparison.
+    ("placement: propCutoff's >= weakened to >",
+     '../engine-src/Game/LambdaHack/Client/UI/Frontend/OverlayLayout.hs',
+     '  pcurXPx >= (lmWidth lm - 1) * lmBoxSize lm\n',
+     '  pcurXPx > (lmWidth lm - 1) * lmBoxSize lm\n', placement(2, 5, 7, 8)),
+    ("placement: propCutoff's >= strengthened to pcurXPx + 1 >=",
+     '../engine-src/Game/LambdaHack/Client/UI/Frontend/OverlayLayout.hs',
+     '  pcurXPx >= (lmWidth lm - 1) * lmBoxSize lm\n',
+     '  pcurXPx + 1 >= (lmWidth lm - 1) * lmBoxSize lm\n', placement(1, 8)),
+    ("placement: propFit's fit test's <= weakened to <",
+     '../engine-src/Game/LambdaHack/Client/UI/Frontend/OverlayLayout.hs',
+     '  width | widthRaw <= remaining = widthRaw\n',
+     '  width | widthRaw < remaining = widthRaw\n', placement(4)),
+    ("placement: propFit's fitting width replaced by remaining",
+     '../engine-src/Game/LambdaHack/Client/UI/Frontend/OverlayLayout.hs',
+     '  width | widthRaw <= remaining = widthRaw\n',
+     '  width | widthRaw <= remaining = remaining\n', placement(3)),
+    ("placement: propFit's cut without its - boxSize",
+     '../engine-src/Game/LambdaHack/Client/UI/Frontend/OverlayLayout.hs',
+     '        | otherwise = remaining - boxSize\n',
+     '        | otherwise = remaining\n', placement(5, 7, 8)),
+    ("placement: propFit's not allSpace flipped",
+     '../engine-src/Game/LambdaHack/Client/UI/Frontend/OverlayLayout.hs',
+     '  trimmed = width /= widthRaw && not allSpace\n',
+     '  trimmed = width /= widthRaw && allSpace\n', placement(5, 6, 7, 8)),
+    ("placement: propFit's all-space cut a cell short",
+     '../engine-src/Game/LambdaHack/Client/UI/Frontend/OverlayLayout.hs',
+     '        | allSpace = remaining\n',
+     '        | allSpace = remaining - boxSize\n', placement(6)),
     # A proportional text op a pixel right of its fill, so that the fills alone
     # no longer cover every cell the overlays draw over: overlayOps' case
     # pinning each op but a fill to a fill's rectangle fails.

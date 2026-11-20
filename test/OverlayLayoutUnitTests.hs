@@ -153,16 +153,9 @@ layoutTests =
 -- | One row per branch of 'propCutoff' and 'propFit', at metrics whose last
 -- column starts at 144 and whose screen ends at 160.
 --
--- Each row fails when the line it exercises is perturbed, as run on this
--- module's first version: the cutoff's @>=@ weakened to @>@ fails the second
--- by its comparison, and the fifth, the seventh and the eighth by 'propFit''s
--- assertion that a cut chunk ends its line; strengthened to @pcurXPx + 1 >=@,
--- the first by its comparison and the eighth by 'propFit''s precondition; the
--- fit test's @<=@ weakened to @<@, the fourth; the fitting width replaced by
--- @remaining@, the third; the @- boxSize@ dropped, the fifth, the seventh
--- and the eighth; the @not allSpace@ flipped, the fifth to the eighth; and
--- the all-space cut moved a cell short, the sixth --- these five by their
--- comparisons.
+-- Each row fails when the line it exercises is perturbed: the mutants named
+-- @placement:@ in @tools/mutants-deep.py@ break each such line, and each fails
+-- every row it names.
 placementTests :: [TestTree]
 placementTests =
   [ testCase "propCutoff: a pen short of the last column goes on" $
