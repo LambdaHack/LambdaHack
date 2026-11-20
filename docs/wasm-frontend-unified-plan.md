@@ -682,7 +682,7 @@ only that the plan was written is one the next reader has to skip.
   `terminal.ts` snapshots it and repaints the changed cells on one `<canvas>`
   (diffing against the cells it painted last) by the draw ops the pure
   `cellRunOps` in `terminal-core.ts` computes, and draws the frame's overlays
-  over them by those `overlayOps` in `overlay-core.ts` computes. Input flows
+  over them by the ops `overlayOps` in `overlay-core.ts` computes. Input flows
   the other way: DOM events -> `lhKey`/`lhWheel`/`lhMouseUp` exports ->
   the engine's key channel. Two hooks more: `startup` hands
   `globalThis.lhConfigure` the startup payload as JSON, and `fprintScreen` hands
