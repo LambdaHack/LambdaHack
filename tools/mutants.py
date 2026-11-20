@@ -15,6 +15,7 @@ The clone is what lets the judges run: every tool finds the repository from
 its own path and asks git about it.
 """
 
+import functools
 import importlib.util
 import pathlib
 
@@ -31,14 +32,19 @@ ST = ['python3', '{file}', '--self-test']
 PROBES = ['python3', str(pathlib.Path.home() / '.claude/skills/doc-verification/run-probes.py'), '{file}']
 
 
-def step(name):
-    """The argv of a checks.py step, so that a mutant of what the step checks
-    is judged by the step as check-all runs it, not by a copy of it."""
+@functools.cache
+def checks_steps():
     spec = importlib.util.spec_from_file_location(
         'checks', pathlib.Path(__file__).with_name('checks.py'))
     checks = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(checks)
-    return next(s[1] for s in checks.STEPS if s[0] == name)
+    return checks.STEPS
+
+
+def step(name):
+    """The argv of a checks.py step, so that a mutant of what the step checks
+    is judged by the step as check-all runs it, not by a copy of it."""
+    return next(s[1] for s in checks_steps() if s[0] == name)
 
 
 MUTANTS = [

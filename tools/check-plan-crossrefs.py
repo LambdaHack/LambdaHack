@@ -486,7 +486,6 @@ SELF_TEST_FAIL_JOINT = [
     "A4 04.3 --- **Owns** names `docs/wasm-frontend-work-list.md` and"
     " **Done** lacks `docs`",
 ]
-SELF_TEST_QUIET_JOINT = []
 # --- end per-document configuration -------------------------------------
 
 PATH_EXT = ("hs", "ts", "mjs", "py", "cabal", "html", "md", "yaml", "yml",
@@ -1147,28 +1146,26 @@ def self_test():
                   SELF_TEST_NOTE_2)
             check("joint", *capture([doc, doc2], allow), 1,
                   SELF_TEST_FAIL + SELF_TEST_FAIL_2 + SELF_TEST_FAIL_JOINT,
-                  SELF_TEST_QUIET + SELF_TEST_QUIET_2 + SELF_TEST_QUIET_JOINT,
+                  SELF_TEST_QUIET + SELF_TEST_QUIET_2,
                   SELF_TEST_NOTE_2)
             rc, _ = capture([os.path.join(tmp, "absent.md")], allow)
             if rc != 2:
                 bad.append(f"missing document: exit {rc}, wanted 2")
-            open(doc, "w").write("# Nothing here\n\nProse.\n")
-            rc, out = capture([doc], allow)
-            if rc != 2 or "BLOCKED" not in out:
-                bad.append(f"document without the grammar: exit {rc},"
-                           f" wanted BLOCKED at 2")
-            open(doc, "w").write(SELF_TEST_DOC_2)
-            rc, out = capture([doc, doc2], allow)
-            if rc != 2 or "two documents" not in out:
-                bad.append(f"two documents sharing an id: exit {rc},"
-                           f" wanted BLOCKED at 2")
+
+            def blocked(label, text, docs, needle="BLOCKED"):
+                open(doc, "w").write(text)
+                rc, out = capture(docs, allow)
+                if rc != 2 or needle not in out:
+                    bad.append(f"{label}: exit {rc}, wanted BLOCKED at 2")
+
+            blocked("document without the grammar",
+                    "# Nothing here\n\nProse.\n", [doc])
+            blocked("two documents sharing an id", SELF_TEST_DOC_2,
+                    [doc, doc2], "two documents")
             # An item and no ledger fits a grammar and is still no plan.
-            open(doc, "w").write("# Scratch\n\n### 0.1 First\n\n"
-                                 "**Owns** --- nothing.\n")
-            rc, out = capture([doc], allow)
-            if rc != 2 or "BLOCKED" not in out:
-                bad.append(f"document with an item and no ledger: exit {rc},"
-                           f" wanted BLOCKED at 2")
+            blocked("document with an item and no ledger",
+                    "# Scratch\n\n### 0.1 First\n\n**Owns** --- nothing.\n",
+                    [doc])
             # A depends-on cell naming a row with no item, and a practice with
             # neither: A0 reports the first, and A3's closure follows neither
             # (check-plan-crossrefs-06).
