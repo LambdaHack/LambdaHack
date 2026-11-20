@@ -18,13 +18,13 @@ and `sdl2-to-wasm-parity-plan.md`. It pursues two goals at once:
   cropping in 0.4 and the compound-modifier shift flag in 1.7. That is not every
   real gap, and the goal no longer claims it is: the 2026-09-07 re-audit
   recorded in Appendix C found six more, of which four were scheduled the same
-  day --- its (3) into 1.2, (4) as 1.6, (5) into 2.2 and (6) into 0.1, each
-  with a ledger row --- and two were carried into item bodies without a row
-  of their own: the half-cell mouse pitch, which 0.4 has since closed
-  under B.10, and the compound-modifier shift flag, which 0.1 says outright
-  needs a signature it has not specified, and which has since become 1.7. SDL2's
-  behaviour is not always its intent: What would falsify this has the rule
-  and the case.
+  day --- its (3) into 1.2, (4) as 1.6, (5) into 2.2, which 0.4 has since closed
+  under B.10, and (6) into 0.1, each with a ledger row --- and two were carried
+  into item bodies without a row of their own: the half-cell mouse pitch, which
+  0.4 has since closed under B.10, and the compound-modifier shift flag, which
+  0.1 says outright needs a signature it has not specified, and which has since
+  become 1.7. SDL2's behaviour is not always its intent: What would falsify
+  this has the rule and the case.
 
 The ordering follows from G1: multi-font done naively would re-implement
 in TypeScript the layout logic that lived in `Sdl.hs`'s
