@@ -2,7 +2,8 @@
 // in headless Firefox and headless Chromium over WebDriver BiDi, Chromium's
 // through chromedriver, must boot the reactor, paint, draw the map's font
 // without subpixel antialiasing at 1:1 and 2:1, stop its self-play on a key,
-// repaint on a key on a quiet screen and submit overlays, in each browser. It
+// repaint on a key on a quiet screen and submit overlays, in each browser. The
+// two run side by side, so their lines interleave, each naming its browser. It
 // is the one check in the repository that asks whether the page players
 // load works, and it runs locally, before every browser landing, by ruling
 // (docs/wasm-frontend-work-list.md, the page gate under Handing an item); CI
@@ -490,17 +491,19 @@ async function gate(name, send) {
   } else console.log(`ok   ${name}: overlays submitted: ${overlays}`);
 }
 
-for (const name of BROWSERS) {
-  const browser = await STARTERS[name]();
-  const { send, close } = await connect(browser.url);
-  try {
-    if (browser.newSession) await send("session.new", { capabilities: {} });
-    await gate(name, send);
-  } catch (e) {
-    fail(`${name}: ${e.message ?? e}`);
-  } finally {
-    close();
-    await browser.stop();
-  }
-}
+await Promise.all(
+  BROWSERS.map(async (name) => {
+    const browser = await STARTERS[name]();
+    const { send, close } = await connect(browser.url);
+    try {
+      if (browser.newSession) await send("session.new", { capabilities: {} });
+      await gate(name, send);
+    } catch (e) {
+      fail(`${name}: ${e.message ?? e}`);
+    } finally {
+      close();
+      await browser.stop();
+    }
+  }),
+);
 process.exit(process.exitCode ?? 0);
