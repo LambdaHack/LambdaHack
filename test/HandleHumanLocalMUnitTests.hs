@@ -131,34 +131,19 @@ handleHumanLocalMUnitTests = testGroup "handleHumanLocalMUnitTests"
     testCase "psuitReq: unwalkable board obstructs aiming" $ do
       let testFn = psuitReq testActorId
       (result, _) <- executorCli testFn testCliStateWithItem
-      case result of
-        Left err -> err @?= "aiming obstructed by terrain"
-        Right psuitReqFun -> assertFailure $ "expected a failed aim, got: "
-          ++ show (psuitReqFun testItemFull)
+      fmap ($ testItemFull) result @?= Left "aiming obstructed by terrain"
   , testCase "psuitReq: walkable board, unskilled actor" $ do
       let testFn = aimAtFreeFloor >> psuitReq testActorId
       (result, _) <- executorCli testFn (walkableParty Ability.zeroSkills)
-      case result of
-        Left err -> assertFailure $ "expected a suitability function, got: "
-          ++ T.unpack err
-        Right psuitReqFun -> case psuitReqFun testItemFull of
-          Left reqFail -> reqFail @?= ProjectUnskilled
-          Right posRange -> assertFailure $ "expected an unskilled actor, got: "
-            ++ show posRange
+      fmap ($ testItemFull) result @?= Right (Left ProjectUnskilled)
   , testCase "psuitReq: walkable board, skilled actor" $ do
       let testFn = aimAtFreeFloor >> psuitReq testActorId
       (result, _) <- executorCli testFn (walkableParty projectSkills)
-      case result of
-        Left err -> assertFailure $ "expected a suitability function, got: "
-          ++ T.unpack err
-        Right psuitReqFun -> case psuitReqFun testItemFull of
-          Left reqFail -> assertFailure $ "expected a permitted fling, got: "
-            ++ show reqFail
-          Right posRange -> posRange @?= (freeFloorPos, True)
-            -- the xhair position, and the range verdict: the stub item is
-            -- weightless, so the range its throw modifier yields covers the
-            -- step there (the range is computed from weight and velocity, not
-            -- from the aiming path)
+      fmap ($ testItemFull) result @?= Right (Right (freeFloorPos, True))
+        -- the xhair position, and the range verdict: the stub item is
+        -- weightless, so the range its throw modifier yields covers the
+        -- step there (the range is computed from weight and velocity, not
+        -- from the aiming path)
   , -- The fourth outcome, and the only one that never reaches the aiming
     -- pipeline: psuitReq returns before it whenever the viewed level is
     -- not the actor's (which is also what keeps xhairLegalEps's
@@ -170,10 +155,7 @@ handleHumanLocalMUnitTests = testGroup "handleHumanLocalMUnitTests"
                                             , detailLevel = defaultDetailLevel }}
             psuitReq testActorId
       (result, _) <- executorCli testFn testCliStateWithItem
-      case result of
-        Left err -> err @?= "can't fling on remote level"
-        Right psuitReqFun -> assertFailure $ "expected a failed aim, got: "
-          ++ show (psuitReqFun testItemFull)
+      fmap ($ testItemFull) result @?= Left "can't fling on remote level"
   , testCase "xhairLegalEps" $ do
       let testFn = xhairLegalEps testActorId
       result <- executorCli testFn testCliStateWithItem
