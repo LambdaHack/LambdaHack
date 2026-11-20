@@ -567,9 +567,10 @@ the import half, `CLAUDE.md`'s session fact on which wasm targets need
 an unsandboxed call. Nothing else. The two commits are serial: the export half's
 driver imports the setup and stubs the import half installs --- defined once,
 shared by both drivers rather than copied. Later items add to the game driver,
-0.1, 0.4, 1.2, 1.5 and 3.2 each their own coverage case, 1.7 a parity case, 1.8
-a change to 1.2's and 2.4 the overlays to its frame comparisons, and to the test
-driver, 2.3 its overlay hook's stub and 1.5 its startup hook's.
+0.1, 0.4, 1.2 and 1.5 each their own coverage case, 1.7 a parity case, 1.8
+a change to 1.2's, 2.4 the overlays to its frame comparisons and 3.2 its run
+to the game's end under `--frontendNull`, and to the test driver, 2.3
+its overlay hook's stub and 1.5 its startup hook's.
 
 **Done** --- `native`, `wasm`, `docs`, plus, on the export half,
 `make build-wasm` and a run of the seeded driver against the fresh reactor,
@@ -1337,11 +1338,12 @@ not this one's; 3.2 owes the numbers, not their reading.
 ### 3.3 Repurpose the Makefile targets
 
 **Split** --- three commits. The `Makefile` rewrite first: both `nodeBench*`
-targets onto the 3.2 driver, and `nodeMinifiedBench` renamed. Then, separate
-because the rewrite falsified them, the claims elsewhere that these targets
-are dead --- the `nodeBench*` sentence in `.claude/skills/playtests/SKILL.md`.
-Last the landing: outcome line, ledger row, and the `make nodeDeployedBench`
-deletion from `tools/doc-refs-allow.txt`.
+targets onto the 3.2 driver, each under a time bound of its own, the driver
+setting none under `--frontendNull`, and `nodeMinifiedBench` renamed. Then,
+separate because the rewrite falsified them, the claims elsewhere
+that these targets are dead --- the `nodeBench*` sentence
+in `.claude/skills/playtests/SKILL.md`. Last the landing: outcome line, ledger
+row, and the `make nodeDeployedBench` deletion from `tools/doc-refs-allow.txt`.
 
 **Owns** --- `Makefile`, `.claude/skills/playtests/SKILL.md`,
 `tools/doc-refs-allow.txt` and `docs/wasm-frontend-unified-plan.md`.
@@ -1370,8 +1372,8 @@ the target.
 
 **R1 --- Save robustness.** Design and rulings in the record.
 
-**Split** --- four commits. R1a re-measures the browser save lag under wasm
-from 0.3's instrumented stub and records the number
+**Split** --- four commits. R1a re-measures the browser save lag under wasm,
+with 3.2's driver on a run that saves, and records the number
 in `docs/wasm-frontend-unified-plan.md`, editing it alone. R1b
 is the staging-key/generation-pointer change in `WasmFile.hs` plus
 its interrupted-cycle test, and carries the `test/WasmFileUnitTests.hs` deletion
@@ -2188,8 +2190,7 @@ R8 #281 ring workaround retired --- after 2.2, before or after 2.3
 3.2 Node reactor driver (grows 0.3's seed driver; exit propagation)
 3.3 repurpose nodeBench* targets; nodeMinifiedBench -> nodeDeployedBench
     (Phase 3 may run before or between Phases 1-2 --- it's independent, and
-    doing it early unlocks the wasm-vs-native ratio and R1's save-lag
-    measurement via 3.2's instrumented stub)
+    doing it early unlocks the wasm-vs-native ratio)
 R2 CI jobs --- grow them per phase (0.3's game driver with build-wasm; a short
     nodeBench smoke run joins after 3.3)
 0.3 FFI coverage --- after the baseline, incremental with every

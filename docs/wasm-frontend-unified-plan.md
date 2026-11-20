@@ -2640,11 +2640,12 @@ both ways, so that this item's own gate exercises them too.
 
 **Verify:** both benchmarks run to completion under Node with plausible frame
 counts; compare against `nativeBench` on the same machine for a first real
-wasm-vs-native data point (feeding R5). A crash or hang must fail the target
-(3.2's exit propagation). Once stable, a short `--stopAfterFrames` variant
-is a natural cheap addition to R2's CI job --- it runs the whole engine headless
-as the reactor, where `make test-wasm`'s integration test runs it only
-in the command-linked test binary.
+wasm-vs-native data point (feeding R5). A crash or hang must fail the target:
+a crash through 3.2's exit propagation, a hang through a time bound
+of this item's own, the driver setting none under `--frontendNull`. Once stable,
+a short `--stopAfterFrames` variant is a natural cheap addition to R2's CI job
+--- it runs the whole engine headless as the reactor, where `make test-wasm`'s
+integration test runs it only in the command-linked test binary.
 
 **Rulings** --- all three ruled on 2026-08-07. (a) The targets use
 `~/.ghc-wasm/env`'s node (v26.4.0 today, against v18.19.1 on `PATH`), stated
@@ -2693,10 +2694,12 @@ Two engine-side facts shape this goal:
   with `Client/LoopM.hs`) skips the periodic `writeSaveAll`
   under `USE_JSFILE`/`USE_WASMFILE`, with the comment *"Saving on the browser
   causes a huge lag"*. That measurement is GHCJS-era; re-measure under wasm
-  as soon as 3.2 exists --- it instruments 0.3's localStorage stub, which
-  then reports `setItem` durations from any nodeBench run. If it's now
-  acceptable --- ruled 2026-08-07: a full `writeSaveAll` cycle's total `setItem`
-  time at or under 100ms, a marginal hitch at autosave cadence --- re-enabling
+  with 3.2's driver, which instruments 0.3's localStorage stub and reports each
+  `setItem`'s duration, on a run that saves: under `--stopAfterFrames` without
+  `--benchmark` the game ends by `ReqUIGameSaveAndExit`, where with it,
+  as in every nodeBench run, it drops the game unsaved. If it's now acceptable
+  --- ruled 2026-08-07: a full `writeSaveAll` cycle's total `setItem` time
+  at or under 100ms, a marginal hitch at autosave cadence --- re-enabling
   periodic saves shrinks the loss window far more than any atomicity work; above
   the bar, a save triggered from JS `pagehide`/`visibilitychange`
   is the alternative (needs investigation of what the server monad allows
@@ -3211,7 +3214,7 @@ discovery and decoding, once per configured fontset, ahead of the backdoor
 branch, but never its event loop or renderer. Add an `xvfb-run` smoke driving
 a real SDL game for a few frames (a tiny `--stopAfterFrames` variant
 of `benchFrontendBattle`), a pty-driven ANSI startup/shutdown check, and ---
-once 3.2 exists --- a short `nodeBench` run of the reactor build, though
+once 3.3 exists --- a short `nodeBench` run of the reactor build, though
 on the null frontend, so `Wasm.hs` stays unexercised there. No shipped frontend
 goes permanently untested the way `Dom.hs` did. Partly landed,
 in the `Makefile`'s `smokeANSI` and `smokeSdl`, which the playtest job runs
