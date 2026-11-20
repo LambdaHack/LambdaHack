@@ -45,16 +45,17 @@
 
 import { mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
-import { basename, join } from "node:path";
-import { fileURLToPath } from "node:url";
+import { join } from "node:path";
 import { WASI } from "node:wasi";
 
 import {
+  hashStep,
+  importTs,
   installStubs,
   instantiate,
   requireFiles,
-  sleep,
   waitFor as poll,
+  waitQuiet as pollQuiet,
 } from "./run-wasm-test.mjs";
 
 const [, , wasmPath, jsffiPath, ...extraArgs] = process.argv;
@@ -63,33 +64,17 @@ const usage =
   " <ghc_wasm_jsffi.mjs> [arg...]";
 requireFiles(usage, wasmPath, jsffiPath);
 
-// The page's decoder of a frame's overlays, overlay-core.ts's, bundled from its
-// source by esbuild, which npm ci in ts-src installs, so that the words are
-// read as the page reads them.
-async function loadDecoder() {
-  try {
-    const { build } = await import("esbuild");
-    const source = new URL("src/overlay-core.ts", import.meta.url);
-    const { outputFiles } = await build({
-      entryPoints: [fileURLToPath(source)],
-      bundle: true,
-      format: "esm",
-      write: false,
-      logLevel: "silent",
-    });
-    const code = Buffer.from(outputFiles[0].contents).toString("base64");
-    return (await import(`data:text/javascript;base64,${code}`))
-      .decodeFrameLayout;
-  } catch (e) {
-    console.error(
-      `${basename(process.argv[1])}: cannot bundle overlay-core.ts: ${e.message}`,
-    );
-    process.exit(2);
-  }
-}
-const decodeFrameLayout = await loadDecoder();
 const printEachScreen = extraArgs.includes("--printEachScreen");
 const frontendNull = extraArgs.includes("--frontendNull");
+// The page's decoders of a frame's overlays and of a cell word, so that the
+// words are read as the page reads them; none under --frontendNull, where no
+// frame arrives to decode.
+const { decodeFrameLayout } = frontendNull
+  ? {}
+  : await importTs("src/overlay-core.ts");
+const { decodeCell } = frontendNull
+  ? {}
+  : await importTs("src/terminal-core.ts");
 // The scale an "--allFontsScale X" pair in the args gives, if any.
 const scaleAt = extraArgs.indexOf("--allFontsScale");
 const argScale = scaleAt < 0 ? undefined : Number(extraArgs[scaleAt + 1]);
@@ -159,10 +144,7 @@ const overlaysOf = (i) => overlays.find((o) => o.frames === i);
 // overlays, so the cells' hash alone where it has none.
 function frameHash(i) {
   const words = overlaysOf(i)?.words ?? [];
-  return words.reduce(
-    (hash, word) => Math.imul(hash ^ word, 0x01000193) >>> 0,
-    calls[i].hash,
-  );
+  return words.reduce(hashStep, calls[i].hash);
 }
 const lastHash = () => frameHash(calls.length - 1);
 // The latest frame's text, a string per row, its square overlay laid over its
@@ -170,12 +152,13 @@ const lastHash = () => frameHash(calls.length - 1);
 // under the multi-font setup.
 function screenRows() {
   const { w, h, words } = globalThis.lhLastFrame;
-  const chars = Array.from(words, (word) => String.fromCodePoint(word >>> 16));
+  const char = (word) => String.fromCodePoint(decodeCell(word).code);
+  const chars = Array.from(words, char);
   const o = overlaysOf(calls.length - 1);
   const square = o ? decodeFrameLayout(o.words, o.w, w).square : [];
   for (const run of square) {
     run.words.forEach((word, k) => {
-      chars[run.row * w + run.col + k] = String.fromCodePoint(word >>> 16);
+      chars[run.row * w + run.col + k] = char(word);
     });
   }
   return Array.from({ length: h }, (_, y) =>
@@ -232,21 +215,15 @@ function waitFor(cond, ms) {
 }
 
 // Wait for `quietMs` with no new frame, for at most `ms`.
-async function waitQuiet(quietMs, ms) {
-  const end = Date.now() + ms;
-  let n = calls.length;
-  let since = Date.now();
-  while (Date.now() < end) {
-    await sleep(50);
-    alive();
-    if (calls.length !== n) {
-      n = calls.length;
-      since = Date.now();
-    } else if (Date.now() - since >= quietMs) {
-      return true;
-    }
-  }
-  return false;
+function waitQuiet(quietMs, ms) {
+  return pollQuiet(
+    () => {
+      alive();
+      return calls.length;
+    },
+    quietMs,
+    ms,
+  );
 }
 
 // Call an export with `args` on the quiet screen and wait for the repaint it

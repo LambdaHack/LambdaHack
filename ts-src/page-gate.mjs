@@ -7,10 +7,11 @@
 // load works, and it runs locally, before every browser landing, by ruling
 // (docs/wasm-frontend-work-list.md, the page gate under Handing an item); CI
 // stays blind to the page by that same ruling. Exit 0 when every assertion
-// holds in both browsers, 1 when one fails, 2 when the run did not happen:
-// no browser named or an unknown one, no Firefox, Chromium or chromedriver,
-// no BiDi endpoint or one that closes or stops answering, no server, a throw
-// outside the assertions; a FAIL already printed keeps 1.
+// holds in both browsers, 1 when one fails, 2 when the run did not happen: no
+// browser named or an unknown one, no Firefox, Chromium or chromedriver, no
+// BiDi endpoint or one that closes or stops answering, no server, no bundle of
+// the generated palette, a throw outside the assertions; a FAIL already printed
+// keeps 1.
 //
 // Usage: node page-gate.mjs <site-dir> (Node 22+, for the global WebSocket)
 //   PAGE_GATE_BROWSERS=firefox or =chromium runs one browser alone; BROWSER,
@@ -29,10 +30,10 @@
 // tools/mutants-deep.py`.
 
 import { spawn } from "node:child_process";
-import { mkdir, readFile, writeFile } from "node:fs/promises";
+import { mkdir, writeFile } from "node:fs/promises";
 import { join, resolve } from "node:path";
 
-import { sleep, waitFor } from "./run-wasm-test.mjs";
+import { importTs, sleep, waitFor, waitQuiet } from "./run-wasm-test.mjs";
 
 const site = process.argv[2];
 if (!site) {
@@ -251,17 +252,12 @@ async function connect(url) {
 
 // The colours the game draws in, the generated palette's, the backlight fill
 // included, and the backgrounds a glyph is drawn over: black and that fill.
-const PALETTE_TS = await readFile(
-  new URL("./src/generated/palette.ts", import.meta.url),
-  "utf8",
+const { PALETTE: HEX, BACKLIGHT_FILL } = await importTs(
+  "src/generated/palette.ts",
 );
-const PALETTE = [...PALETTE_TS.matchAll(/"#([0-9A-F]{6})"/g)].map((m) =>
-  parseInt(m[1], 16),
-);
-const BACKGROUNDS = [
-  0,
-  parseInt(PALETTE_TS.match(/BACKLIGHT_FILL = "#([0-9A-F]{6})"/)[1], 16),
-];
+const hex = (s) => parseInt(s.slice(1), 16);
+const PALETTE = [...HEX, BACKLIGHT_FILL].map(hex);
+const BACKGROUNDS = [0, hex(BACKLIGHT_FILL)];
 const rgb = (v) => [(v >> 16) & 255, (v >> 8) & 255, v & 255];
 // Whether a colour lies, within 3 per channel, on the segment from a palette
 // colour to a background, as the greyscale coverage of a glyph's edge does;
@@ -429,8 +425,8 @@ async function gate(name, send) {
   const framesBefore = await count();
   await sleep(1000);
   const framesAtKey = await count();
-  let seen = framesAtKey,
-    still = 0;
+  let seen = framesAtKey;
+  let stopped = false;
   if (framesAtKey === framesBefore) {
     fail(
       `${name}: no frame in the second before '?' (frames ${framesAtKey}),` +
@@ -438,18 +434,13 @@ async function gate(name, send) {
     );
   } else {
     await press("?");
-    seen = await count();
-    await waitFor(
-      async () => {
-        const f = await count();
-        still = f === seen ? still + 1 : 0;
-        seen = f;
-        return still >= 4;
-      },
+    stopped = await waitQuiet(
+      async () => (seen = await count()),
+      1000,
       10000,
       250,
     );
-    if (still < 4) {
+    if (!stopped) {
       fail(
         `${name}: the screen never went quiet for a second within 10s` +
           ` of a '?' key (frames ${framesAtKey} -> ${seen})`,
@@ -465,7 +456,7 @@ async function gate(name, send) {
   // 4. a key on a quiet screen changes it: with the game idle no timer
   // re-enters the RTS scheduler, which a key delivered by a sync export once
   // waited for. Escape leaves the help.
-  if (still < 4) {
+  if (!stopped) {
     fail(`${name}: no quiet screen to press Escape on`);
   } else {
     const quiet = await evaluate(HASH);
