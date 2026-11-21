@@ -116,6 +116,10 @@ benchNull: benchBattle benchAnimBattle benchCrawl
 
 bench: benchBattle benchAnimBattle benchFrontendBattle benchCrawl benchFrontendCrawl
 
+# X against BASE, both optional, and ROUNDS for --rounds: tools/bench-sdl.py
+bench-sdl:
+	python3 tools/bench-sdl.py $(if $(ROUNDS),--rounds $(ROUNDS)) $(if $(BASE),$(BASE) $(or $(X),HEAD),$(X))
+
 nativeBenchCrawl:
 	$$(cabal list-bin exe:LambdaHack)		   --dbgMsgSer --logPriority 4 --newGame 1 --noAnim --maxFps 100000 --frontendNull --benchmark --benchMessages --stopAfterFrames 2000 --automateAll --keepAutomated --gameMode crawl $(RNGOPTS)
 

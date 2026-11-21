@@ -42,6 +42,9 @@ STEPS = [
     ('check-doc-refs self-test', ['python3', '{root}/../../tools/check-doc-refs.py', '--self-test'], '{root}/..'),
     ('check-plan-crossrefs self-test', ['python3', '{root}/check-plan-crossrefs.py', '--self-test']),
     ('check-sync-exports self-test', ['python3', '{root}/check-sync-exports.py', '--self-test']),
+    # The judging of tools/bench-sdl.py over synthetic rows; the bench itself
+    # builds and plays for minutes, run by hand after a UI commit.
+    ('bench-sdl self-test', ['python3', '{root}/bench-sdl.py', '--self-test']),
     ('pyflakes', ['bash', '-c',
                   'cd "{root}" && { python3 -m pyflakes --version >/dev/null 2>&1 || { echo "python3 -m pyflakes --version failed, so tools/*.py went unlinted"; exit 1; }; } && python3 -m pyflakes *.py']),
     # The listing split on NUL, so a name with a space reaches shellcheck whole

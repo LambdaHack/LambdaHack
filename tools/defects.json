@@ -1234,6 +1234,21 @@
    "harm": "fired",
    "discovery": "other:benchmark",
    "notes": "Born in 6ecfbbda4 and found on 2026-11-21 by an interleaved benchmark of each commit of the year that changed Sdl.hs against its parent, on make bench's two SDL games under Xvfb: 6ecfbbda4 raised their allocation by 0.142% and 0.155% and their instructions by 0.03%, and a build of 6ecfbbda4 with getFontSetup's old body, which looked the fontset up and tested its proportional font's name, allocated as the parent did. SDL and the browser both resolve the fonts at startup and die where they cannot, so no game reaches getFontSetup with fonts that do not resolve, and hasAuxiliaryFonts agrees with resolveFonts wherever it resolves, which a case of FontsUnitTests checks. Both directions of the case watched that day on an unoptimized build. A tier-1 record: the corpus root is tools/, the case is the test suite's `getFontSetup reads the fontset, not its fonts`, and the deep mutant `fonts: getFontSetup resolving the fonts at every call` replays the bug direction."
+  },
+  {
+   "id": "bench-sdl-01",
+   "program": "bench-sdl.py",
+   "name": "with no commit given, X was HEAD, so where commits changing no UI file followed the latest one that did, the bench measured them against it and left that UI commit unmeasured",
+   "family": "other:wrong-default",
+   "fix_rev": "self",
+   "trigger": "make bench-sdl with no BASE or X, HEAD a commit that changes no file under UI_DIRS, committed after one that does",
+   "ok": "X is the latest commit at HEAD or before it that changes a file under UI_DIRS, and BASE the latest such commit before X",
+   "bug": "X was HEAD and BASE the latest UI commit, which went unmeasured; the self-test's scratch repository failed with `pick []: X docs2, BASE game, wanted game, engine`",
+   "proved": "ran",
+   "harm": "latent",
+   "discovery": "review",
+   "no_audit": "other:introduced-and-fixed-in-one-commit",
+   "notes": "Introduced and fixed within the commit that adds tools/bench-sdl.py, whose parent has no such file. Found on 2026-11-21 by the review of that commit against Mikolaj's ruling of the same day, which measures a commit changing the UI against the previous commit that did, and against the standing check in CLAUDE.md, which runs the bench at any time between that commit and the push. A tier-1 record: the case is the self-test's commit picking, and the mutant `bench-sdl X defaults to HEAD` in tools/mutants.py replays the bug direction with the pre-fix default."
   }
  ]
 }
