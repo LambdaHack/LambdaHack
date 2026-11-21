@@ -291,6 +291,21 @@ MUTANTS = [
      '../test/Spec.hs', '  setSpeedupHackXSize stubWidth\n', '',
      tasty('test', '$NF == "contract AS7: promptGetKey draws a HUD frame on'
            ' the stub board"')),
+    # MonadClientUI-01 put back: getFontSetup resolving the fonts at every
+    # call, which without the font table fails with "Font not defined".
+    ('fonts: getFontSetup resolving the fonts at every call',
+     '../engine-src/Game/LambdaHack/Client/UI/MonadClientUI.hs',
+     '                  && Frontend.hasAuxiliaryFonts soptions\n',
+     '                  && either error (isJust . Frontend.cfAuxiliary)\n'
+     '                            (Frontend.resolveFonts soptions)\n',
+     tasty('test', 'getFontSetup reads the fontset')),
+    # hasAuxiliaryFonts reading the bitmap map font's name for the proportional
+    # one: the fontset naming no auxiliary font then reads as naming them.
+    ('fonts: hasAuxiliaryFonts reading the wrong font of the fontset',
+     '../engine-src/Game/LambdaHack/Client/UI/Frontend/Fonts.hs',
+     '    Just fontset -> not $ T.null $ fontPropRegular fontset\n',
+     '    Just fontset -> not $ T.null $ fontMapBitmap fontset\n',
+     tasty('test', 'hasAuxiliaryFonts says what resolveFonts resolves')),
     # Monospace text one column wider, which only the multi-font setup lays text
     # out in: the multi-font goldens of help, history and the item's description
     # fail, every single-font one standing.

@@ -1,9 +1,10 @@
 -- | The chosen fontset's fonts, resolved from the client options in one place
--- for every frontend that draws with fonts: SDL loads them, the browser is
--- handed them, and the UI asks whether there are auxiliary fonts to lay its
--- texts out in.
+-- for every frontend that draws with fonts: SDL loads them and the browser is
+-- handed them. The UI asks, at every frame and without resolving them,
+-- whether there are auxiliary fonts to lay its texts out in.
 module Game.LambdaHack.Client.UI.Frontend.Fonts
   ( ChosenFont(..), cfIsBitmap, ChosenFonts(..), resolveFonts
+  , hasAuxiliaryFonts
   ) where
 
 import Prelude ()
@@ -83,3 +84,14 @@ resolveFonts ClientOptions{schosenFontset, sfontsets, sfonts, sallFontsScale} =
     _ -> Left $ "Either all auxiliary fonts should be defined or none"
                 `showFailure` fontset
   return ChosenFonts{..}
+
+-- | Whether the chosen fontset names auxiliary fonts, read off the fontset
+-- alone. The UI asks at every frame, and a frontend that draws with fonts
+-- resolves them once, at its startup, dying where 'resolveFonts' refuses
+-- them. Where 'resolveFonts' succeeds, this is @isJust . cfAuxiliary@,
+-- the auxiliary fonts being all three or none.
+hasAuxiliaryFonts :: ClientOptions -> Bool
+hasAuxiliaryFonts ClientOptions{schosenFontset, sfontsets} =
+  case schosenFontset >>= flip lookup sfontsets of
+    Just fontset -> not $ T.null $ fontPropRegular fontset
+    Nothing -> False

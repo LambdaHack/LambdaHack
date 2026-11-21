@@ -1220,6 +1220,20 @@
    "harm": "unknown",
    "discovery": "review",
    "notes": "Seen by the main session reading the gate on 2026-11-20, item 118.1 of its reply, and watched both ways that day by a scratch form of the case now in tools/page-gate-orphans/: run.sh runs the gate over a blank page that its serve.mjs serves, in the trigger's four variants, with a Firefox stand-in that prints a dead BiDi endpoint once Chromium has loaded the page or a chromedriver stand-in that never answers, and exits 1 where a process of the run is left. Its controls are the `page gate orphans:` mutants in tools/mutants-deep.py. Chromium and its zygotes and renderers stay in chromedriver's process group, the crashpad handlers alone starting sessions of their own, and those exit once Chromium is gone. Every child now starts in a group of its own, killed with it at exit, and SIGINT and SIGTERM end the run through BLOCKED, the children no longer being in the terminal's group. The uncaught-throw exit, the same handler, was not run. A tier-1 record: the corpus root is tools/, the gate is outside it, and the case needs both browsers."
+  },
+  {
+   "id": "MonadClientUI-01",
+   "program": "engine-src/Game/LambdaHack/Client/UI/MonadClientUI.hs",
+   "name": "getFontSetup, which the UI calls at every frame, resolved the chosen fontset's fonts at every call under a frontend that draws with fonts, where it needs only whether the fontset names auxiliary fonts",
+   "family": "other:startup-work-per-frame",
+   "fix_rev": "self",
+   "trigger": "any game under SDL or in the browser, getFontSetup then running with supportsMultiFont true; in the case, multiFontClientOptions with no font table",
+   "ok": "getFontSetup reads the fontset alone, through hasAuxiliaryFonts, and answers multiFontSetup without the font table",
+   "bug": "getFontSetup called resolveFonts, so the case failed with `Font not defined in config file`, raised at MonadClientUI.hs:324; in make bench's SDL games under Xvfb it cost 1310 bytes and 9788 instructions a frame in benchFrontendBattle and 1337 and 9576 in benchFrontendCrawl",
+   "proved": "ran",
+   "harm": "fired",
+   "discovery": "other:benchmark",
+   "notes": "Born in 6ecfbbda4 and found on 2026-11-21 by an interleaved benchmark of each commit of the year that changed Sdl.hs against its parent, on make bench's two SDL games under Xvfb: 6ecfbbda4 raised their allocation by 0.142% and 0.155% and their instructions by 0.03%, and a build of 6ecfbbda4 with getFontSetup's old body, which looked the fontset up and tested its proportional font's name, allocated as the parent did. SDL and the browser both resolve the fonts at startup and die where they cannot, so no game reaches getFontSetup with fonts that do not resolve, and hasAuxiliaryFonts agrees with resolveFonts wherever it resolves, which a case of FontsUnitTests checks. Both directions of the case watched that day on an unoptimized build. A tier-1 record: the corpus root is tools/, the case is the test suite's `getFontSetup reads the fontset, not its fonts`, and the deep mutant `fonts: getFontSetup resolving the fonts at every call` replays the bug direction."
   }
  ]
 }

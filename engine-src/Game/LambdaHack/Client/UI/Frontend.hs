@@ -9,7 +9,7 @@ module Game.LambdaHack.Client.UI.Frontend
     -- * Input decisions shared by the frontends
   , KeyDecision(..), decideKey, decideWheel, decideMouseButton
     -- * Fonts shared by the frontends
-  , ChosenFont(..), ChosenFonts(..), resolveFonts
+  , ChosenFont(..), ChosenFonts(..), resolveFonts, hasAuxiliaryFonts
     -- * Cell styling shared by the frontends
   , CellStyle(..), CellGlyphs(..), scalableGlyphs, styleCell, rowColor
   , backlightRGB, rgbChannels

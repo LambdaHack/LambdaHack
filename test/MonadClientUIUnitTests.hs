@@ -55,4 +55,14 @@ monadClientUIUnitTests = testGroup "monadClientUIUnitTests"
             , multiFontClientOptions {sfrontendANSI = True}
 #endif
             ] $ fontSetupUnder >=> (@?= singleFontSetup)
+  , testCase "getFontSetup reads the fontset, not its fonts" $ do
+      -- The UI asks at every frame, and a frontend that draws with fonts
+      -- resolves them once, at its startup, dying where it cannot, so the
+      -- answer does not resolve them again and stands without the font table.
+      let options = multiFontClientOptions {sfonts = []}
+          chosen = Frontend.supportsMultiFont options
+      fontSetup <- fst <$> executorCli getFontSetup
+        stubCliState {cliClient = (cliClient stubCliState)
+                                    {soptions = options}}
+      fontSetup @?= if chosen then multiFontSetup else singleFontSetup
   ]

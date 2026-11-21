@@ -321,8 +321,7 @@ getFontSetup :: MonadClientUI m => m FontSetup
 getFontSetup = do
   soptions <- getsClient soptions
   let multiFont = Frontend.supportsMultiFont soptions
-                  && either error (isJust . Frontend.cfAuxiliary)
-                            (Frontend.resolveFonts soptions)
+                  && Frontend.hasAuxiliaryFonts soptions
   return $! if multiFont then multiFontSetup else singleFontSetup
 
 scoreToSlideshow :: MonadClientUI m => Int -> Status -> m Slideshow

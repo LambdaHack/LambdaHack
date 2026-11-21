@@ -1,5 +1,6 @@
 -- | Tests of 'resolveFonts', the fonts every frontend that draws with fonts
--- takes from the client options.
+-- takes from the client options, and of 'hasAuxiliaryFonts', which the UI
+-- asks.
 module FontsUnitTests (fontsUnitTests) where
 
 import Prelude ()
@@ -11,7 +12,7 @@ import Test.Tasty
 import Test.Tasty.HUnit
 
 import Game.LambdaHack.Client.UI.Frontend
-  (ChosenFont (..), ChosenFonts (..), resolveFonts)
+  (ChosenFont (..), ChosenFonts (..), hasAuxiliaryFonts, resolveFonts)
 import Game.LambdaHack.Common.ClientOptions
 import Game.LambdaHack.Common.Misc
 
@@ -44,6 +45,13 @@ fontsUnitTests = testGroup "fontsUnitTests"
         @? "resolved"
   , testCase "no fontset chosen is refused" $
       isLeft (resolveFonts defClientOptions) @? "resolved"
+  , testCase "hasAuxiliaryFonts says what resolveFonts resolves" $
+      forM_ [ options
+            , withFontset fontset { fontPropRegular = ""
+                                  , fontPropBold = ""
+                                  , fontMono = "" } options ] $ \o ->
+        Right (hasAuxiliaryFonts o)
+          @?= fmap (isJust . cfAuxiliary) (resolveFonts o)
   ]
  where
   fileAndSize ChosenFont{..} = (cfFile, cfSize)
