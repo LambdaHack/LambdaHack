@@ -2545,13 +2545,13 @@ mechanism R4 needs anyway.
 parses an empty list where `main` parses real argv. Change it to parse
 `getArgs`: GHC's wasm RTS gets argv from WASI `args_get`, which every host shim
 controls --- the browser loader passes `["LambdaHack"]`
-(`loader.ts:const wasi = new WASI(["LambdaHack"], [], fds);`), so `getArgs`
-returns `[]` there and browser behavior is provably unchanged, while a Node
-harness can pass real flags. Update the stale "there is no argv in the browser"
-comment to describe the new contract (argv comes from the WASI host; the browser
-host passes none). **Spike**: performed and recorded 2026-08-07 --- a throwaway
-`lhProbeArgs` export in the reactor, driven under `node:wasi`
-with `--newGame 1 --gameMode crawl` as WASI args, printed
+([`new WASI`][loader-73]), so `getArgs` returns `[]` there and browser behavior
+is provably unchanged, while a Node harness can pass real flags. Update
+the stale "there is no argv in the browser" comment to describe the new contract
+(argv comes from the WASI host; the browser host passes none). **Spike**:
+performed and recorded 2026-08-07 --- a throwaway `lhProbeArgs` export
+in the reactor, driven under `node:wasi` with `--newGame 1 --gameMode crawl`
+as WASI args, printed
 `getProgName="LambdaHack.wasm" getArgs=["--newGame","1","--gameMode","crawl"]`,
 so `getArgs` surfaces host-supplied args in reactor mode, with argv[0] held
 separately by `getProgName` and no drop needed. This entry point is what R4
@@ -2903,12 +2903,12 @@ the host supplies --- so the whole feature reduces to the *loader* translating
 an allowlist of URL query parameters (e.g. `?fontset=`, `?allFontsScale=` ---
 the player-facing half of 1.5 --- `?benchmark=`, debug flags) into the args
 array it already passes to the WASI shim
-(`loader.ts:const wasi = new WASI(["LambdaHack"], [], fds);`), reusing the real
-options parser with no engine-side parsing code at all. This gives browser users
-what argv gives native ones with no new UI surface --- an address-bar knob.
-`?fontset=` only becomes meaningful once 2.2's font wiring exists, and 2.2's
-`make build-ts` deploys every fontset's `.ttf.woff` files, not the default set's
-alone.
+(`loader.ts:const wasi = new WASI(["LambdaHack", ...options.args], [], fds);`),
+reusing the real options parser with no engine-side parsing code at all.
+This gives browser users what argv gives native ones with no new UI surface ---
+an address-bar knob. `?fontset=` only becomes meaningful once 2.2's font wiring
+exists, and 2.2's `make build-ts` deploys every fontset's `.ttf.woff` files,
+not the default set's alone.
 
 **Rulings** --- all three ruled on 2026-08-07, all player-visible. The allowlist
 is the minimal named set --- `?fontset=`, `?allFontsScale=`, plus R5's
@@ -4268,3 +4268,4 @@ passthrough, and B.1.
 [sdl-709]: https://github.com/LambdaHack/LambdaHack/blob/5c58af62ec9d875dfcb051ba5fade405e5b36f8d/engine-src/Game/LambdaHack/Client/UI/Frontend/Sdl.hs#L709
 [sdl-876]: https://github.com/LambdaHack/LambdaHack/blob/5c58af62ec9d875dfcb051ba5fade405e5b36f8d/engine-src/Game/LambdaHack/Client/UI/Frontend/Sdl.hs#L876
 [terminal-142]: https://github.com/LambdaHack/LambdaHack/blob/a299516366efcb1e423cfd235474aefa4f82fc45/ts-src/src/terminal.ts#L142
+[loader-73]: https://github.com/LambdaHack/LambdaHack/blob/f62f822f9d75ba4f1e266bdb8dbc786434f70978/ts-src/src/loader.ts#L73

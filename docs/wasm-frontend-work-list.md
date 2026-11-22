@@ -747,9 +747,8 @@ and `ts-src/src/fullscreen-core.test.ts`, the one import and one call they need
 in `ts-src/src/loader.ts`, `tools/doc-refs-allow.txt` (its two entries leave
 with the commit that creates the files),
 and `docs/wasm-frontend-unified-plan.md` --- the import shifts
-`loader.ts:const wasi = new WASI(["LambdaHack"], [], fds);`, cited twice,
-so this item is not citation-safe either. `../lambdahack.github.io`
-is redeployed by **Done**, not owned.
+[`new WASI`][loader-73], cited twice, so this item is not citation-safe either.
+`../lambdahack.github.io` is redeployed by **Done**, not owned.
 
 **Done** --- `ts`, `wasm`, `deploy`, `docs`, plus
 `grep -qF Fullscreen ../lambdahack.github.io/index.html` &&
@@ -892,10 +891,10 @@ a check, labelled `Verify:` at 1.2 and in plain prose at the other two ---
 and the interesting case wants a throwaway edit, never committed:
 `allFontsScale = 1.0` sits in `config.ui.default`, which is embedded at compile
 time via `rcfgUIDefault`, and the argv the loader passes
-(`loader.ts:const wasi = new WASI(["LambdaHack"], [], fds);`), which `lhStart`
-has parsed since 3.1, overrides it, so `"--allFontsScale", "2"` appended there
-and a `make build-ts` produce it without a wasm rebuild. The substitute gates
-in **Done** are `make test-wasm`, which link-checks the new import string,
+([`new WASI`][loader-73]), which `lhStart` has parsed since 3.1, overrides it,
+so `"--allFontsScale", "2"` appended there and a `make build-ts` produce
+it without a wasm rebuild. The substitute gates in **Done**
+are `make test-wasm`, which link-checks the new import string,
 and the reactor-driver run, which proves the startup payload arrives carrying
 this item's field.
 
@@ -1282,8 +1281,7 @@ a third commit once carried was overtaken by the recorded spike of 2026-08-07
 comment; and `docs/wasm-frontend-unified-plan.md`. Deliberately not `CLAUDE.md`:
 its "there is no argv and no config file on disk" stays true after the change,
 since the loader still passes the one-element argv `["LambdaHack"]`
-(`loader.ts:const wasi = new WASI(["LambdaHack"], [], fds);`), and touching
-it would widen this item for nothing.
+([`new WASI`][loader-73]), and touching it would widen this item for nothing.
 
 **Done** --- `native`, `wasm` --- of whose two halves only `make build-wasm`
 bears on this item, `make test-wasm` linking `Main.hs` in no configuration ---
@@ -1542,9 +1540,9 @@ it rewrites the `new WASI` line cited here. (3) the outcome line naming (1)'s
 hash and the ledger flip.
 
 **Owns** --- the new `ts-src/src/url-options-core.ts`
-and `ts-src/src/url-options-core.test.ts`, `ts-src/src/loader.ts`
-(the `new WASI(["LambdaHack"], [], fds)` argv construction
-at `loader.ts:const wasi = new WASI(["LambdaHack"], [], fds);`),
+and `ts-src/src/url-options-core.test.ts`, `ts-src/src/loader.ts` (the argv
+construction at
+`loader.ts:const wasi = new WASI(["LambdaHack", ...options.args], [], fds);`),
 `GameDefinition/index.html` if the knobs get on-page documentation,
 `tools/doc-refs-allow.txt`, whose two `url-options-core` entries commit (1)
 deletes as it creates the files, and `docs/wasm-frontend-unified-plan.md`,
@@ -1563,7 +1561,8 @@ WebDriver BiDi navigates the deployed page and `location.search` reads back
 intact, so once this item lands its confirmation is scriptable rather than one
 served page per parameter. The substitute gate in Done is the vitest case
 over `url-options-core.ts`: query string in, args array out, which is everything
-between the URL and `loader.ts:const wasi = new WASI(["LambdaHack"], [], fds);`.
+between the URL and
+`loader.ts:const wasi = new WASI(["LambdaHack", ...options.args], [], fds);`.
 
 **Decide first** --- nothing; the rulings are the record's.
 
@@ -2301,3 +2300,4 @@ it builds on (2.3 uses 0.3's test harness, 2.2 uses 0.2's palette).
 [game-274]: https://github.com/LambdaHack/LambdaHack/blob/4403b8798cd5aef4c2c1ee29dac0953ba1bcde26/ts-src/run-wasm-game.mjs#L274
 [mcui-329]: https://github.com/LambdaHack/LambdaHack/blob/e549ef42e03aca83ed7a07c28be3d602b058b122/engine-src/Game/LambdaHack/Client/UI/MonadClientUI.hs#L329
 [mcui-323]: https://github.com/LambdaHack/LambdaHack/blob/c6265677c9b5d7e12bfa4dd45f2d7e2defccb2c0/engine-src/Game/LambdaHack/Client/UI/MonadClientUI.hs#L323
+[loader-73]: https://github.com/LambdaHack/LambdaHack/blob/f62f822f9d75ba4f1e266bdb8dbc786434f70978/ts-src/src/loader.ts#L73
