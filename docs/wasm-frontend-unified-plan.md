@@ -669,6 +669,11 @@ only that the plan was written is one the next reader has to skip.
   answer to the criterion he added, whether one call brings the browser's code
   closer to how SDL's works or further from it, and, if further, whether
   that merits a change of SDL.
+- 2026-11-22 -- 3.3 landed, and its first wasm-vs-native reading, which Mikolaj
+  judged plausible, has the reactor under Node at 6.7 to 6.9 times the native
+  binary's time over `make nativeBench`'s two games,
+  `+with_expensive_assertions` in both: past the 3x game-logic bar of R5's
+  ruling, which R5b's measurement pass is to settle.
 
 ## Repo facts the plan builds on
 
@@ -2662,6 +2667,18 @@ counts; compare against `nativeBench` on the same machine for a first real
 wasm-vs-native data point (feeding R5). A crash or hang must fail the target:
 a crash through 3.2's exit propagation, a hang through a time bound
 of this item's own, the driver setting none under `--frontendNull`.
+
+*Landed in `d02268ee5`, the skill's sentence on the targets corrected
+in `3ee97b546`. On one machine and the local `cabal.project.local`,
+the development one without its `optimization: False`,
+`+with_expensive_assertions` reaching both halves, the native binary at cabal's
+default optimization and the reactor `--enable-optimization`, `make nativeBench`
+played the battle's 1000 frames in 0.431 s and the crawl's 2096 in 0.895 s,
+`make nodeBench` the same frames in 2.988 s and 6.197 s,
+and `make nodeDeployedBench` in 2.896 s and 6.156 s: wasm takes 6.7 to 6.9 times
+native's time, past R5's 3x bar for the game-logic ratio. Each game runs
+under `timeout` at `NODEBENCHTIMEOUT` seconds, and at 1 the battle failed
+with `timeout`'s 124. Mikolaj judged the readings plausible on 2026-11-22.*
 
 **Rulings** --- all three ruled on 2026-08-07. (a) The targets use
 `~/.ghc-wasm/env`'s node (v26.4.0 today, against v18.19.1 on `PATH`), stated

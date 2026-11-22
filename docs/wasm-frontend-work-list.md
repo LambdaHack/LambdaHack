@@ -124,7 +124,7 @@ sections of the record are frozen and which live is its head callout's to say.
 | 2.5 | post-flip QA | small | 2.4; 1.2 for `Ctrl+P` | landed -- 0c59baf55 |
 | 3.1 | `lhStart` reads WASI argv | small | --- | landed -- 77e64a697 |
 | 3.2 | Node driver for the game reactor | small | 3.1, 0.3 | landed -- f988213a5 |
-| 3.3 | `nodeBench*`/`nodeDeployedBench` targets | small | 3.2 | not applied |
+| 3.3 | `nodeBench*`/`nodeDeployedBench` targets | small | 3.2 | landed -- d02268ee5 |
 | R1 | save robustness: staging keys plus a generation pointer | medium | 3.2, for the lag re-measurement | open |
 | R2 | browser-and-frontend CI | ongoing | grows per phase | standing |
 | R3 | retire GHCJS support | one commit, plus repair and record | 2.5 (parity) | not applied |
