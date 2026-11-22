@@ -429,13 +429,13 @@ BROWSER ?= firefox
 run-wasm:
 	$(BROWSER) http://localhost:8080/
 
-# The frontend smokes: a few frames of benchFrontendBattle through the
-# event loop of a shipped frontend other than teletype, whose loop the
-# playtests enter. Exit status alone cannot tell a game that ran from one
-# that quit at frame zero, so each smoke also requires the frame count
-# of the benchmark report to reach --stopAfterFrames, read where stdout
-# went: GameDefinition/Main.hs redirects it to ~/.LambdaHack/stdout.txt unless
-# it is a terminal.
+# The frontend smokes: a few frames of benchFrontendBattle through the event
+# loop of a shipped frontend other than teletype, whose loop the playtests
+# enter, and on the reactor, on the null frontend. Exit status alone cannot
+# tell a game that ran from one that quit at frame zero, so each smoke also
+# requires the frame count of the benchmark report to reach --stopAfterFrames,
+# read where stdout went: GameDefinition/Main.hs redirects it, natively, to
+# ~/.LambdaHack/stdout.txt unless it is a terminal.
 SMOKEFRAMES=60
 SMOKEOPTS=--dbgMsgSer --logPriority 4 --newGame 3 --noAnim --maxFps 100000 --benchmark --benchMessages --stopAfterFrames $(SMOKEFRAMES) --automateAll --keepAutomated --gameMode battle $(RNGOPTS1)
 smokeFrames=N=$$(sed -n 's/.*Session time: .*; frames: \([0-9]*\)\..*/\1/p' $(1)) && echo "frames: $$N" && test "$$N" -ge $(SMOKEFRAMES)
@@ -456,3 +456,10 @@ smokeSdl:
 	rm -f ~/.LambdaHack/stdout.txt
 	$(if $(wildcard $(MESAEGL)),__EGL_VENDOR_LIBRARY_FILENAMES=$(MESAEGL)) LIBGL_ALWAYS_SOFTWARE=1 xvfb-run -a $$(cabal list-bin exe:LambdaHack) $(SMOKEOPTS) > /dev/null
 	$(call smokeFrames,~/.LambdaHack/stdout.txt)
+
+# The reactor's smoke plays the same frames under Node on the null frontend, so
+# it checks the reactor's build, its exports and a game to its end, and no event
+# loop of Wasm.hs. The report is on the driver's stdout, captured here.
+smokeNodeBench: build-wasm $(NPM_CI)
+	$(nodeBuilt) $(SMOKEOPTS) --frontendNull > /tmp/smokeNodeBench.log
+	$(call smokeFrames,/tmp/smokeNodeBench.log)

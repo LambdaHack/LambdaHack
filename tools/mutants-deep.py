@@ -1,7 +1,7 @@
 """The controls of the slow make targets -- the page gate, the doctest count,
-the ANSI smoke and the reactor driver -- and of the test suites' cases, whose
-mutants want a rebuild or ts-src's packages, as mutants their own runs must
-catch.
+the ANSI and nodeBench smokes and the reactor driver -- and of the test suites'
+cases, whose mutants want a rebuild or ts-src's packages, as mutants their own
+runs must catch.
 
 Read by `selftest-mutants.py tools/mutants-deep.py`, on demand rather than by
 `check-all tools`, which tests only that each mutant still applies: each judge
@@ -66,11 +66,11 @@ def verdict(run, failed, grep='grep -q'):
 
 # make exits 2 whenever a recipe fails, which selftest-mutants.py reads as a run
 # that did not happen, and its message carries the recipe's own status: so the
-# judge exits 1 only where the target itself failed, and 2 where the seeding,
-# the build before it or a prerequisite did.
-def judge(seed, target, build=''):
+# judge exits 1 only where the target itself failed, with `status`, and 2 where
+# the seeding, the build before it or a prerequisite did.
+def judge(seed, target, build='', status=1):
     return (seed + ' || exit 2; ' + build
-            + verdict('make ' + target, target + '] Error 1$'))
+            + verdict('make ' + target, target + '] Error %d$' % status))
 
 
 PAGE_GATE = judge(WASM, 'page-gate')
@@ -105,6 +105,11 @@ REACTOR_HELP = driver('--help', 0)
 # nothing: the judge of each builds first.
 DOCTEST = judge(NATIVE, 'doctest', built('cabal build'))
 SMOKE_ANSI = judge(NATIVE, 'smokeANSI', built('cabal build exe:LambdaHack'))
+# smokeNodeBench builds the reactor through its prerequisite build-wasm, so
+# a failed build is that target's error and the judge's 2; a game its timeout
+# kills fails the target with timeout's own status, 124.
+SMOKE_NODE = judge(WASM, 'smokeNodeBench')
+SMOKE_NODE_BOUND = judge(WASM, 'smokeNodeBench', status=124)
 
 
 # The cases the tasty pattern selects in the test executable named, built
@@ -284,6 +289,11 @@ MUTANTS = [
     # of the benchmark report falls short of --stopAfterFrames.
     ('smokeANSI: a game that stops at frame 1', '../Makefile',
      '--stopAfterFrames $(SMOKEFRAMES) ', '--stopAfterFrames 1 ', SMOKE_ANSI),
+    ('smokeNodeBench: a game that stops at frame 1', '../Makefile',
+     '--stopAfterFrames $(SMOKEFRAMES) ', '--stopAfterFrames 1 ', SMOKE_NODE),
+    # A time bound shorter than the game.
+    ('smokeNodeBench: a game past the time bound', '../Makefile',
+     'NODEBENCHTIMEOUT=600\n', 'NODEBENCHTIMEOUT=0.1\n', SMOKE_NODE_BOUND),
     # The stub suite's width left at the hack's initial 80, the game's,
     # as UnitTestHelpers-02 records the harness once did for a test run
     # alone: AS7's fixture, 4 wide, is refused by executorCli's assertion.
