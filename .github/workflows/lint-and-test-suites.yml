@@ -5,7 +5,7 @@
 # and, exercising the optimized build, the teletype playtests of `make test-gha`
 # and the frontend smokes. One job each, so a failure names itself; the ANSI
 # and SDL smokes and the doctests share the playtest job's build, and the
-# nodeBench smoke the wasm job's, each a step of its own.
+# nodeBench smoke and the reactor driver the wasm job's, each a step of its own.
 name: Lint-and-Test-Suites
 on:
   - push
@@ -165,3 +165,8 @@ jobs:
       - name: nodeBench smoke
         if: ${{ !cancelled() }}
         run: make smokeNodeBench
+      # The game driver on the same reactor: a game run to its end, then the
+      # reactor's exports, called as the page calls them.
+      - name: Reactor driver
+        if: ${{ !cancelled() }}
+        run: make test-reactor

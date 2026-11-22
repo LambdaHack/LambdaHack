@@ -679,6 +679,11 @@ only that the plan was written is one the next reader has to skip.
   the wasm toolchain and builds the libraries the reactor links, where the work
   list had put each smoke's step in the playtest job, which has neither
   (the practice's ruling (4)).
+- 2026-11-22 -- ruled by Mikolaj (R2's Rulings): `make test-reactor` is a step
+  of the `test-wasm` job, which builds the reactor for the `nodeBench` smoke,
+  and not the `make build-wasm` job ruled 2026-08-07, which would bootstrap
+  the toolchain a second time; it lands ahead of the toolchain cache, which
+  stays R2's next job.
 
 ## Repo facts the plan builds on
 
@@ -2798,12 +2803,16 @@ check, the determinism goldens (native under `cabal test`, cross-backend
 under `make test-wasm`), and the frontend smokes --- each in CI from the commit
 that introduces it.
 
-**Rulings** --- both ruled on 2026-08-07; R2 remains a track handing out one job
-at a time, in the Split's order. The next two jobs are the cache
-then `make build-wasm`, as the Split now states. And CI gets no `make build-ts`
-job: its verifiable pieces are covered piecewise --- `tsc` and vitest
-in `test-ts`, the wasm build in the `build-wasm` job --- and the deploy write
-has no meaningful destination on a runner; nor, ruled 2026-09-14, a page job,
+**Rulings** --- ruled on 2026-08-07 unless dated otherwise; R2 remains a track
+handing out one job at a time, in the Split's order. The next two jobs
+were to be the cache then a `make build-wasm` job. Ruled 2026-11-22 by Mikolaj:
+`make test-reactor` is instead a step of the `test-wasm` job, which builds
+the reactor for the `nodeBench` smoke, where a job of its own would bootstrap
+the toolchain a second time, and it lands ahead of the cache, which stays
+the next job, as the Split now states. And CI gets no `make build-ts` job:
+its verifiable pieces are covered piecewise --- `tsc` and vitest in `test-ts`,
+the wasm build in the `build-wasm` job --- and the deploy write has
+no meaningful destination on a runner; nor, ruled 2026-09-14, a page job,
 `make page-gate` running locally before every browser landing and CI staying
 blind to the page by choice; what the target got is the `;`->`&&` hygiene fix,
 landed on master (`2b4b7d71f`) with its measured proof --- a planted npm-ci
