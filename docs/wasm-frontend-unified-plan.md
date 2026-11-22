@@ -1156,7 +1156,8 @@ names; after it, the imports 0.1 gave `lhKey`, covered by that driver's `lhKey`
 case, 1.2's `js_printScreen`, by its `Ctrl+P` case, 1.5's `js_configure`,
 by its startup-payload case, and 2.3's `js_submitOverlays`, by the suite's
 overlay case under `make test-wasm`. Still to do: the standing half,
-and the game driver's run in CI, with R2's `build-wasm` job.
+and the game driver's export checks in CI, with R2's `build-wasm` job,
+its `--frontendNull` run being the `nodeBench` smoke's already.
 
 <!-- probe: git -C .. grep -h 'foreign \(import\|export\) javascript' -- engine-src/Game/LambdaHack/Client/UI/Frontend/Wasm.hs engine-src/Game/LambdaHack/Common/WasmFile.hs GameDefinition/Main.hs | grep -vc '^-- ' :: 24 -->
 
@@ -2516,17 +2517,18 @@ the baseline in Firefox and been 1.9 and 4.2ms slower in Chromium.*
 
 ## Phase 3 --- port the Node benchmark targets from GHCJS to WASM
 
-The Makefile still carries `nodeBenchCrawl`/`nodeBenchBattle`/`nodeBench`/
-`nodeMinifiedBench` (`Makefile:nodeBenchCrawl:`), but they invoke GHCJS output
-that is gone, the `.jsexe/all.js` the Makefile can no longer build and,
+The Makefile carried `nodeBenchCrawl`/`nodeBenchBattle`/`nodeBench`/
+`nodeMinifiedBench`, which invoked GHCJS output that is gone,
+the `.jsexe/all.js` the Makefile can no longer build and,
 for `nodeMinifiedBench`, a deployed bundle the pages checkout no longer carries
---- they are dead as written. What they did matters: headless AI-vs-AI
-benchmarks of the browser-targeted build under Node
+--- they were dead as written until 3.3. What they did matters: headless
+AI-vs-AI benchmarks of the browser-targeted build under Node
 (`--frontendNull --benchmark --stopAfterFrames N --automateAll ...`, same flag
 sets as the `nativeBench*` targets, sharing `RNGOPTS`), with `nodeMinifiedBench`
 additionally benchmarking the *deployed* artifact from `../lambdahack.github.io`
-rather than the build tree. This phase repurposes those targets for the wasm
-build, restoring the browser half of the native-vs-browser benchmark comparison.
+rather than the build tree. This phase repurposed those targets for the wasm
+build (`Makefile:nodeBenchCrawl:`), restoring the browser half
+of the native-vs-browser benchmark comparison.
 
 Independent of Phases 1--2; only 3.1 touches Haskell, and it's the same
 mechanism R4 needs anyway.
@@ -2774,13 +2776,14 @@ in `.github/workflows/lint-and-test-suites.yml` (the hand-written workflow ---
 do not touch the generated haskell-ci one): a `test-wasm` job that installs
 ghc-wasm-meta and runs `make test-wasm`, and `make test-ts` split off as its own
 Node-only job, so TS regressions fail in seconds. Still to add:
-`make build-wasm`, with `make test-reactor`'s runs of the game driver against
-the reactor it builds, the battery's import half riding the `test-wasm` job
-already. Still to do: cache `~/.ghc-wasm` and the wasm cabal store,
-the toolchain being the expensive part and bootstrapped from scratch on every
-run today. The frontend CI smokes practice (below) widens this with xvfb SDL
-and pty ANSI smokes, which run in the playtest job, and a `nodeBench` smoke
-after 3.3.
+`make test-reactor`'s runs of the game driver against the reactor
+`make build-wasm` builds, which the `test-wasm` job builds now
+for the `nodeBench` smoke, the battery's import half riding that job already.
+Still to do: cache `~/.ghc-wasm` and the wasm cabal store, the toolchain being
+the expensive part and bootstrapped from scratch on every run today.
+The frontend CI smokes practice (below) widens this with xvfb SDL and pty ANSI
+smokes, which run in the playtest job, and a `nodeBench` smoke, which runs
+in the `test-wasm` job.
 
 **Completeness requirement: everything runs in CI.** What runs there today
 is CLAUDE.md's to state, not this document's; a third copy of that inventory

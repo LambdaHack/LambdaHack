@@ -29,13 +29,11 @@
 > to a session).
 >
 > **Landing part of an item takes no outcome line**, and the row stays live,
-> in the state of what remains, as frontend CI smokes reads `not applied`
-> for its unbuilt `nodeBench` smoke: a partial landing is recorded in the item's
-> body as specification for what remains, which is what R2 does today.
-> **A standing item never lands** --- 0.3, 1.4 and R2 are ongoing or recurring
-> by their own size cells, explicit widths and functional core review rules
-> by theirs --- so it retires when the campaign does, rather than acquiring
-> a hash.
+> in the state of what remains: a partial landing is recorded in the item's body
+> as specification for what remains, which is what R2 does today. **A standing
+> item never lands** --- 0.3, 1.4 and R2 are ongoing or recurring by their own
+> size cells, explicit widths and functional core review rules by theirs ---
+> so it retires when the campaign does, rather than acquiring a hash.
 >
 > An item that proposes an artifact may take its outcome line **only once
 > its entries in `tools/doc-refs-allow.txt` can be deleted**; that file's
@@ -1453,8 +1451,8 @@ against the reactor it builds. One non-job commit rode the same ruling
 and landed on master (`2b4b7d71f`): `build-ts` chains with `&&` now,
 so the deploy-carrying Done gates across this plan no longer trust an exit
 status that cannot fail. The rest land with the artifact each runs,
-as the practice's `xvfb` SDL and pty ANSI smokes did: a short `nodeBench` smoke
-after 3.3.
+as the practice's smokes did, the `xvfb` SDL and pty ANSI ones in the playtest
+job and the `nodeBench` one in the `test-wasm` job.
 
 **Owns** --- `.github/workflows/lint-and-test-suites.yml`, plus the `Makefile`
 where a job needs a target of its own ---
@@ -2144,19 +2142,21 @@ beyond the three target names this block introduces, which its own commit
 deletes as it lands.
 
 **Owns** --- `Makefile`, gaining `smokeANSI`, `smokeSdl` and `smokeNodeBench`,
-`.github/workflows/lint-and-test-suites.yml`, one step each in the playtest job,
-whose apt line ruling (2) gives `xvfb`, `tools/doc-refs-allow.txt`, whose
-`make smokeANSI`, `make smokeSdl` and `make smokeNodeBench` entries leave
-with the commits that add those targets, `docs/wasm-frontend-unified-plan.md`,
-and `CLAUDE.md`, whose CI paragraphs say what the smokes cover.
-Not `.github/workflows/haskell-ci.yml`, which is generated from the cabal file
-and whose hand edits vanish on the next regenerate.
+`.github/workflows/lint-and-test-suites.yml`, one step each, the ANSI and SDL
+smokes' in the playtest job, whose apt line ruling (2) gives `xvfb`,
+and the `nodeBench` smoke's in the `test-wasm` job, by ruling (4),
+`tools/mutants-deep.py`, for the `nodeBench` smoke's two mutants,
+`tools/doc-refs-allow.txt`, whose `make smokeANSI`, `make smokeSdl`
+and `make smokeNodeBench` entries leave with the commits that add those targets,
+`docs/wasm-frontend-unified-plan.md`, and `CLAUDE.md`, whose CI paragraphs say
+what the smokes cover. Not `.github/workflows/haskell-ci.yml`, which
+is generated from the cabal file and whose hand edits vanish on the next
+regenerate.
 
 **Done** --- `native`, `docs`, plus `make smokeANSI` && `make smokeSdl` &&
-`make smokeNodeBench --dry-run`. `--dry-run` gates the one target that cannot
-execute here on existing and on expanding, without running it;
-`check-doc-refs.py` resolves all three names against the makefile, which is what
-makes the allowlist deletion a checked claim.
+`make smokeNodeBench`, each run in-session; `check-doc-refs.py` resolves all
+three names against the makefile, which is what makes the allowlist deletion
+a checked claim.
 
 **Hands back** --- hands back nothing. *Display*: `xvfb-run` and `Xvfb`
 were installed on 2026-07-31 and a whole game has since played out in the real
