@@ -337,6 +337,23 @@ MUTANTS = [
      'AddSkill SkMaxHP 80  -- partially from clothes and first aid\n',
      'AddSkill SkMaxHP 81  -- partially from clothes and first aid\n',
      tasty('test-game', '/fe-golden: the state/')),
+    # HSFile-01 put back: the text written in the locale encoding, which
+    # under code page 1251 cannot encode the case's e-acute, so the write
+    # stops there and leaves no file.
+    ('file: tryWriteFile in the locale encoding',
+     '../engine-src/Game/LambdaHack/Common/HSFile.hs',
+     '           hSetEncoding h utf8\n           T.hPutStr h content\n',
+     '           T.hPutStr h content\n',
+     tasty('test', 'tryWriteFile writes whole a text the locale encoding'
+                   ' lacks')),
+    # readFile without its fallback to the locale encoding: a file in code
+    # page 1252, as earlier versions wrote one, fails to decode as UTF-8.
+    ('file: readFile without its fallback',
+     '../engine-src/Game/LambdaHack/Common/HSFile.hs',
+     '                        (\\(_ :: Ex.IOException) -> T.readFile path)\n',
+     '                        (\\(e :: Ex.IOException) -> Ex.throwIO e)\n',
+     tasty('test', 'readFile reads a file earlier versions wrote in a code'
+                   ' page')),
     # The breaks of propCutoff and propFit that placementTests' rows catch, each
     # judged by the rows it fails. The cutoff weakened fails the fifth, the
     # seventh and the eighth by propFit's assertion that a cut chunk ends its

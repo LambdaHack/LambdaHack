@@ -1263,6 +1263,20 @@
    "harm": "latent",
    "discovery": "review",
    "notes": "Found by the code review of 2026-10-23 over the year's diff, its 52.1. Both directions watched on 2026-11-22 on an unoptimized build: the bug's with the guard deleted from Sdl.hs at e23fbc29a, the fix's with it deleted from walkPropLine. A tier-1 record: the corpus root is tools/, the case is the test suite's `propFit: a cut chunk ends its line`, and the deep mutant `placement: walkPropLine without its cutoff guard` replays the fixed direction."
+  },
+  {
+   "id": "HSFile-01",
+   "program": "engine-src/Game/LambdaHack/Common/HSFile.hs",
+   "name": "tryWriteFile wrote in the locale encoding, which on Windows is a code page, so under code page 1251 the e-acute of a hero's name in the default config stopped the write and left config.ui.ini truncated before it, which every later start failed to parse",
+   "family": "other:locale-encoding",
+   "fix_rev": "self",
+   "trigger": "tryWriteFile of a text holding U+00E9 with the locale encoding set to CP1251",
+   "ok": "the file holds the text whole, in UTF-8, and readFile returns it: the case `tryWriteFile writes whole a text the locale encoding lacks` passes",
+   "bug": "tryWriteFile printed `cannot encode character '\\233'`; master's code, run verbatim in a harness, left the file ending just before the U+00E9, and with PR 304's atomic write merged no file was left, the case failing with `openFile: does not exist`",
+   "proved": "ran",
+   "harm": "fired",
+   "discovery": "in-use",
+   "notes": "Reported as issue #302 from Allure v0.11.0.0 on Windows 10, whose reporter's screenshot in the itch.io thread it links shows Russian Notepad and the file ending `HeroName_2 = (\"In`. The switch to UTF-8 in Main.hs and in tryWriteFile named ASCII and ISO-8859-1 and -2, never a Windows code page, which GHC names CP and its number. PR 304's atomic write, merged before the fix, left no file in place of a truncated one. The fix writes UTF-8 always, and readFile reads UTF-8, falling back to the locale encoding for files earlier versions wrote, which the case `readFile reads a file earlier versions wrote in a code page` guards. Both directions watched on 2026-11-22 on an unoptimized build, the bug's on the tree with PR 304 merged. A tier-1 record: the corpus root is tools/, the cases are the test suite's, and the deep mutants `file: tryWriteFile in the locale encoding` and `file: readFile without its fallback` replay the bug and the fallback's loss."
   }
  ]
 }

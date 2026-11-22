@@ -7,11 +7,12 @@
 -- @localStorage@ stub and the real lz-string that @ts-src/run-wasm-test.mjs@
 -- installs, and natively over @HSFile.hs@ in a scratch directory, so that
 -- a drift between the backends fails @cabal test@ or @make test-wasm@.
--- The frame and overlay cases are wasm-only: they drive @Wasm.hs@'s
--- @js_submitFrame@ and @js_submitOverlays@ through @Wasm.startup@
--- and 'fdisplay' and read back what the driver's @lhSubmitFrame@
--- and @lhSubmitOverlays@ stubs recorded. The reactor's exports, which this
--- command binary cannot exercise, are @ts-src/run-wasm-game.mjs@'s to cover.
+-- The text-encoding cases are native-only, @localStorage@ holding strings
+-- rather than bytes. The frame and overlay cases are wasm-only: they drive
+-- @Wasm.hs@'s @js_submitFrame@ and @js_submitOverlays@ through @Wasm.startup@
+-- and 'fdisplay' and read back what the driver's @lhSubmitFrame@ and
+-- @lhSubmitOverlays@ stubs recorded. The reactor's exports, which this command
+-- binary cannot exercise, are @ts-src/run-wasm-game.mjs@'s to cover.
 module FfiCoverageUnitTests (ffiCoverageUnitTests) where
 
 import Prelude ()
@@ -33,9 +34,11 @@ import           Data.Text.Encoding (decodeLatin1)
 import           GHC.Wasm.Prim (fromJSString, toJSString)
 #else
 import qualified Data.ByteString.Char8 as BS
+import           GHC.IO.Encoding (getLocaleEncoding, setLocaleEncoding)
 import           System.Directory
   (createDirectory, getTemporaryDirectory, removeDirectoryRecursive)
 import           System.FilePath ((</>))
+import           System.IO (mkTextEncoding)
 import           System.IO.Error (isAlreadyExistsError)
 #endif
 
@@ -92,6 +95,7 @@ ffiCoverageUnitTests = testGroup "ffiCoverageUnitTests" $
           Right _ -> assertFailure "a damaged EOF marker was decoded"
   ]
   ++ wasmFileTests
+  ++ encodingTests
   ++ frontendTests
 
 -- | The stored form of a save, and none natively: under wasm a save is
@@ -111,6 +115,37 @@ wasmFileTests =
   ]
 #else
 wasmFileTests = []
+#endif
+
+-- | The native files' text encoding, and none under wasm, whose
+-- @localStorage@ holds strings rather than bytes.
+encodingTests :: [TestTree]
+#ifdef USE_WASMFILE
+encodingTests = []
+#else
+encodingTests =
+  [ testCase "tryWriteFile writes whole a text the locale encoding lacks" $
+      withScratch $ \path -> withLocaleEncoding "CP1251" $ do
+        File.tryWriteFile (path "cp1251") $ T.pack notInCP1251
+        File.readFile (path "cp1251") >>= (@?= notInCP1251)
+  , testCase "readFile reads a file earlier versions wrote in a code page" $
+      withScratch $ \path -> withLocaleEncoding "CP1252" $ do
+        BS.writeFile (path "cp1252") $ BS.pack "In\xE9s"
+        File.readFile (path "cp1252") >>= (@?= "In\xE9s")
+  ]
+
+-- | A line of the default UI config before issue #302's fix: code page
+-- 1251, Windows' Cyrillic one, has no e-acute.
+notInCP1251 :: String
+notInCP1251 = "HeroName_2 = (\"In\xE9s Galenti\", \"she\")"
+
+-- | Run an action with the locale encoding, which each new handle takes,
+-- set to the one named, as Windows sets it to a code page.
+withLocaleEncoding :: String -> IO a -> IO a
+withLocaleEncoding name act = do
+  enc <- mkTextEncoding name
+  Ex.bracket (getLocaleEncoding <* setLocaleEncoding enc)
+             setLocaleEncoding (const act)
 #endif
 
 -- | The frame and overlay cases, and none natively, where no wasm frontend is
