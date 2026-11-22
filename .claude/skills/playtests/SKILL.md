@@ -22,11 +22,12 @@ invocation before adding a new one.
 
 The headless targets select test frontends by flag: `--frontendNull` (frames
 forced but not displayed), `--frontendLazy` (frames not even computed),
-`--frontendTeletype` (line-printer output). The `nodeBench*`
-and `nodeMinifiedBench` targets are dead GHCJS remnants --- they invoke
-a `.jsexe` that nothing builds anymore; repurposing them for WASM is Phase 3
-of `docs/wasm-frontend-unified-plan.md`.
+`--frontendTeletype` (line-printer output).
 
 Such runs look completely silent, because the main game executable redirects
 its own stdout and stderr to files --- see "Playtests and headless runs"
-in the repo-root `CLAUDE.md` for how to harvest the output.
+in the repo-root `CLAUDE.md` for how to harvest the output. The wasm reactor's
+runs are not silent: `make nodeBench` plays `make nativeBench`'s two games, flag
+for flag, on the reactor under `ts-src/run-wasm-game.mjs`,
+and `make nodeDeployedBench` on the reactor `make build-ts` deployed, each
+printing the benchmark report to the terminal.
