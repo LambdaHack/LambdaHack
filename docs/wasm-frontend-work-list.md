@@ -1442,17 +1442,19 @@ already runs in the wasm environment and stays green through the pointer.
 
 **Split** --- one commit per job, and the row never flips: R2 is a standing
 item, so no commit carries an outcome line and none has
-`tools/doc-refs-allow.txt` entries to delete. Two jobs are ready today
-and ordered, ruled 2026-08-07: the cache commit first --- `~/.ghc-wasm`
-and the wasm cabal store, the toolchain bootstrap being the expensive part
-of every wasm job including the next one --- then a `make build-wasm` job, which
-feeds 0.3's export-half coverage, `make test-reactor`'s runs of the game driver
-against the reactor it builds. One non-job commit rode the same ruling
-and landed on master (`2b4b7d71f`): `build-ts` chains with `&&` now,
-so the deploy-carrying Done gates across this plan no longer trust an exit
-status that cannot fail. The rest land with the artifact each runs,
-as the practice's smokes did, the `xvfb` SDL and pty ANSI ones in the playtest
-job and the `nodeBench` one in the `test-wasm` job.
+`tools/doc-refs-allow.txt` entries to delete. One job is ready today: the cache
+commit --- `~/.ghc-wasm` and the wasm cabal store, the toolchain bootstrap being
+the expensive part of every wasm job. Ruled 2026-08-07, a `make build-wasm` job
+feeding 0.3's export-half coverage was to follow it; ruled 2026-11-22
+by Mikolaj, that coverage, `make test-reactor`'s runs of the game driver,
+is a step of the `test-wasm` job instead, on the reactor that job builds
+for the `nodeBench` smoke, sparing a second toolchain bootstrap, and it lands
+ahead of the cache. One non-job commit rode the 2026-08-07 ruling and landed
+on master (`2b4b7d71f`): `build-ts` chains with `&&` now, so the deploy-carrying
+Done gates across this plan no longer trust an exit status that cannot fail.
+The rest land with the artifact each runs, as the practice's smokes did,
+the `xvfb` SDL and pty ANSI ones in the playtest job and the `nodeBench` one
+in the `test-wasm` job.
 
 **Owns** --- `.github/workflows/lint-and-test-suites.yml`, plus the `Makefile`
 where a job needs a target of its own ---
@@ -2255,8 +2257,8 @@ R8 #281 ring workaround retired --- after 2.2, before or after 2.3
 3.2 Node reactor driver (grows 0.3's seed driver; exit propagation)
 3.3 repurpose nodeBench* targets; nodeMinifiedBench -> nodeDeployedBench
     (unlocks the wasm-vs-native ratio)
-R2 CI jobs --- grow them per phase (0.3's game driver with build-wasm; a short
-    nodeBench smoke run joins after 3.3)
+R2 CI jobs --- grow them per phase (0.3's game driver a step of the test-wasm
+    job, beside the nodeBench smoke, ahead of the toolchain cache)
 0.3 FFI coverage --- after the baseline, incremental with every
     FFI-touching commit
 capability constants / sum-typed selection --- standalone refactors, any

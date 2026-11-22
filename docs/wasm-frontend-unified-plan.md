@@ -1154,15 +1154,14 @@ in the plan (0.1's `lhKey` signature rewrite) is made against tested ground.
 After that, each new FFI declaration lands with its coverage case in the same
 commit. Partly landed, in `test/FfiCoverageUnitTests.hs`
 and `ts-src/run-wasm-game.mjs`: the baseline, covering every such declaration
---- the imports under `make test-wasm`, and the exports by the game driver run
-by hand against a `make build-wasm` reactor, its checks made on the frames
-the `lhSubmitFrame` stub records rather than on the frontend channel ruling (3)
-names; after it, the imports 0.1 gave `lhKey`, covered by that driver's `lhKey`
-case, 1.2's `js_printScreen`, by its `Ctrl+P` case, 1.5's `js_configure`,
-by its startup-payload case, and 2.3's `js_submitOverlays`, by the suite's
-overlay case under `make test-wasm`. Still to do: the standing half,
-and the game driver's export checks in CI, with R2's `build-wasm` job,
-its `--frontendNull` run being the `nodeBench` smoke's already.
+--- the imports under `make test-wasm`, and the exports by the game driver
+under `make test-reactor`, a step of R2's `test-wasm` job, its checks made
+on the frames the `lhSubmitFrame` stub records rather than on the frontend
+channel ruling (3) names; after it, the imports 0.1 gave `lhKey`, covered
+by that driver's `lhKey` case, 1.2's `js_printScreen`, by its `Ctrl+P` case,
+1.5's `js_configure`, by its startup-payload case, and 2.3's
+`js_submitOverlays`, by the suite's overlay case under `make test-wasm`. Still
+to do: the standing half.
 
 <!-- probe: git -C .. grep -h 'foreign \(import\|export\) javascript' -- engine-src/Game/LambdaHack/Client/UI/Frontend/Wasm.hs engine-src/Game/LambdaHack/Common/WasmFile.hs GameDefinition/Main.hs | grep -vc '^-- ' :: 24 -->
 
@@ -1185,20 +1184,22 @@ the reactor wiring and `lhStart` uncovered until Phase 3; a second,
 reactor-linked test component would duplicate 3.2's machinery against
 a synthetic twin while the real binary's export list stayed unexercised ---
 the `.cabal` comment it contradicts is the smaller objection. The consequences
-are taken deliberately: CI builds the wasm executable too (R2's build-wasm job,
-closing the reactor-wiring gap CLAUDE.md names), and a slice of 3.2's design
-is decided in Phase 0. (2) `test/FfiCoverageUnitTests.hs` dual-runs:
-the file-backend table asserts backend-neutral semantics through
-`Common/File.hs`'s exported functions and runs natively over `HSFile.hs` too,
-in a temp directory, so `cabal test` exercises it on every CI GHC version
-and drift between the twin backends is caught; only the frontend and export
-cases carry the wasm-only guard. (3) "A known input/output" is the proposed
-list, adopted as the acceptance criteria: an `encodeEOF`/`strictDecodeEOF` round
-trip returning the original value; `doesFileExist` False before a write and True
-after; `renameFile` leaving the new key holding the old bytes and the old key
-absent (`WasmFile.hs:renameFile :: FilePath`); a damaged EOF marker rejected
-rather than silently decoded, which is also R1's stated wasm round-trip test;
-and, for `js_submitFrame`, the stub recording exactly one call per frame
+are taken deliberately: CI builds the wasm executable too (in R2's `test-wasm`
+job, which builds it for the `nodeBench` smoke, the game driver calling
+its exports there by R2's ruling of 2026-11-22, closing the reactor-wiring gap
+CLAUDE.md named), and a slice of 3.2's design is decided in Phase 0. (2)
+`test/FfiCoverageUnitTests.hs` dual-runs: the file-backend table asserts
+backend-neutral semantics through `Common/File.hs`'s exported functions and runs
+natively over `HSFile.hs` too, in a temp directory, so `cabal test` exercises
+it on every CI GHC version and drift between the twin backends is caught; only
+the frontend and export cases carry the wasm-only guard. (3) "A known
+input/output" is the proposed list, adopted as the acceptance criteria:
+an `encodeEOF`/`strictDecodeEOF` round trip returning the original value;
+`doesFileExist` False before a write and True after; `renameFile` leaving
+the new key holding the old bytes and the old key absent
+(`WasmFile.hs:renameFile :: FilePath`); a damaged EOF marker rejected rather
+than silently decoded, which is also R1's stated wasm round-trip test; and,
+for `js_submitFrame`, the stub recording exactly one call per frame
 with `(addr, w, h)` matching `rwidth`/`rheight` and the first cell word equal
 to the fixture's. The export half's criteria follow the same shape when
 it lands: a known synthetic event produces the expected key on the frontend
@@ -2779,16 +2780,14 @@ if it opens.
 unless CI runs it. Partly landed,
 in `.github/workflows/lint-and-test-suites.yml` (the hand-written workflow ---
 do not touch the generated haskell-ci one): a `test-wasm` job that installs
-ghc-wasm-meta and runs `make test-wasm`, and `make test-ts` split off as its own
-Node-only job, so TS regressions fail in seconds. Still to add:
-`make test-reactor`'s runs of the game driver against the reactor
-`make build-wasm` builds, which the `test-wasm` job builds now
-for the `nodeBench` smoke, the battery's import half riding that job already.
-Still to do: cache `~/.ghc-wasm` and the wasm cabal store, the toolchain being
-the expensive part and bootstrapped from scratch on every run today.
-The frontend CI smokes practice (below) widens this with xvfb SDL and pty ANSI
-smokes, which run in the playtest job, and a `nodeBench` smoke, which runs
-in the `test-wasm` job.
+ghc-wasm-meta and runs `make test-wasm`, then `make test-reactor`'s runs
+of the game driver against the reactor the job builds for the `nodeBench` smoke,
+so that both halves of 0.3's battery ride it; and `make test-ts` split off
+as its own Node-only job, so TS regressions fail in seconds. Still to do: cache
+`~/.ghc-wasm` and the wasm cabal store, the toolchain being the expensive part
+and bootstrapped from scratch on every run today. The frontend CI smokes
+practice (below) widens this with xvfb SDL and pty ANSI smokes, which run
+in the playtest job, and a `nodeBench` smoke, which runs in the `test-wasm` job.
 
 **Completeness requirement: everything runs in CI.** What runs there today
 is CLAUDE.md's to state, not this document's; a third copy of that inventory
@@ -2811,13 +2810,13 @@ the reactor for the `nodeBench` smoke, where a job of its own would bootstrap
 the toolchain a second time, and it lands ahead of the cache, which stays
 the next job, as the Split now states. And CI gets no `make build-ts` job:
 its verifiable pieces are covered piecewise --- `tsc` and vitest in `test-ts`,
-the wasm build in the `build-wasm` job --- and the deploy write has
-no meaningful destination on a runner; nor, ruled 2026-09-14, a page job,
-`make page-gate` running locally before every browser landing and CI staying
-blind to the page by choice; what the target got is the `;`->`&&` hygiene fix,
-landed on master (`2b4b7d71f`) with its measured proof --- a planted npm-ci
-failure exited 0 under the old chains and 2 under the new --- because several
-items' Done lines gate on `build-ts`'s exit status unsandboxed.
+the wasm build in the `test-wasm` job --- and the deploy write has no meaningful
+destination on a runner; nor, ruled 2026-09-14, a page job, `make page-gate`
+running locally before every browser landing and CI staying blind to the page
+by choice; what the target got is the `;`->`&&` hygiene fix, landed on master
+(`2b4b7d71f`) with its measured proof --- a planted npm-ci failure exited 0
+under the old chains and 2 under the new --- because several items' Done lines
+gate on `build-ts`'s exit status unsandboxed.
 
 **R3 --- Retire GHCJS support (one browser target is enough).** The original
 GHCJS target is unbuildable, permanently: this codebase requires GHC 9.10+

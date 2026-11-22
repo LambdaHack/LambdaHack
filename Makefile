@@ -319,7 +319,7 @@ test-wasm: $(NPM_CI)
 # Every mode of ts-src/run-wasm-game.mjs under Node: a self-played game run to
 # its end under --frontendNull, then the reactor's exports, called as the page
 # calls them, once plain and once under --printEachScreen, the two side by side,
-# the plain run's lines printed after the other's. No workflow runs it.
+# the plain run's lines printed after the other's. CI's test-wasm job runs it.
 test-reactor: build-wasm $(NPM_CI)
 	. ~/.ghc-wasm/env && \
 	T=$$(mktemp -d) && \
