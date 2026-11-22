@@ -26,10 +26,10 @@ import           System.IO
   , hSetEncoding
   , localeEncoding
   , openBinaryFile
+  , openFile
   , readFile
   , utf8
   , withBinaryFile
-  , withFile
   )
 
 -- | Serialize and save data.
@@ -81,6 +81,13 @@ tryCreateDir dir = do
 -- We catch exceptions in case many clients and/or the server try to do
 -- the same thing at the same time. Using `Text.IO` to avoid UTF conflicts
 -- with OS or filesystem.
+--
+-- The content is first written to a temporary file, which is then
+-- renamed to the target path, so that the target file never exists
+-- in a partially written state. Otherwise, a client could read the file
+-- while another thread is still writing it, and a game interrupted
+-- mid-write would leave a truncated file that is never rewritten,
+-- because the file already exists.
 tryWriteFile :: FilePath -> Text -> IO ()
 tryWriteFile path content = do
   fileExists <- doesFileExist path
@@ -88,8 +95,15 @@ tryWriteFile path content = do
     -- With some luck, locale was already corrected in Main.hs, but just
     -- in case, we make sure not to save UTF files in too primitve encodings.
     let enc = localeEncoding
+        tmpPath = path <.> "tmp"
     Ex.handle (\(ex :: Ex.IOException) -> print $ show ex) $
-      withFile path WriteMode $ \h -> do
-        when (show enc `elem` ["ASCII", "ISO-8859-1", "ISO-8859-2"]) $
-          hSetEncoding h utf8
-        T.hPutStr h content
+      Ex.bracketOnError
+        (openFile tmpPath WriteMode)
+        (\h -> hClose h >> removeFile tmpPath)
+        (\h -> do
+           when (show enc `elem` ["ASCII", "ISO-8859-1", "ISO-8859-2"]) $
+             hSetEncoding h utf8
+           T.hPutStr h content
+           hClose h
+           renameFile tmpPath path
+        )
