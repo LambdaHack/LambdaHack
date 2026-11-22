@@ -86,11 +86,11 @@ const fail = (msg) => {
   throw new Failed(msg);
 };
 
-// The page's loader gives the reactor the argv ["LambdaHack"], no environment
-// and an empty root directory; so does this, the root being a fresh temporary
-// directory, Node's WASI preopening host directories, removed at exit, a
-// failing one included, and the argv carrying this script's args after the
-// program name.
+// The page's loader gives the reactor an argv of the program name and the
+// options its URL parameters set, no environment and an empty root directory;
+// so does this, the root being a fresh temporary directory, Node's WASI
+// preopening host directories, removed at exit, a failing one included, and the
+// argv carrying this script's args after the program name.
 const root = mkdtempSync(join(tmpdir(), "lh-reactor-"));
 process.on("exit", () => rmSync(root, { recursive: true, force: true }));
 const wasi = new WASI({

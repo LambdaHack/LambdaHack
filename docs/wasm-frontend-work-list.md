@@ -1550,8 +1550,8 @@ construction at
 `GameDefinition/index.html` if the knobs get on-page documentation,
 `tools/doc-refs-allow.txt`, whose two `url-options-core` entries commit (1)
 deletes as it creates the files, and `docs/wasm-frontend-unified-plan.md`,
-the re-anchoring commit included. R5a, whose `?benchmark` mode is one
-of this item's URL parameters, edits the same `loader.ts` call after this item
+the re-anchoring commit included. R5a, whose `?benchmark` mode joins this item's
+URL parameters, edits the allowlist in `url-options-core.ts` after this item
 lands, so this item's diff shapes R5a's. This item's rejected-parameter message
 is a branch of 1.6's handler on `lhStart`'s settlement, which has landed.
 
@@ -1589,13 +1589,16 @@ for the purpose.
 
 **Owns** --- the new `ts-src/src/frame-timing-core.ts`
 and `ts-src/src/frame-timing-core.test.ts`, `ts-src/src/terminal.ts`
-(the `submitFrame`-to-paint instrumentation), `ts-src/src/loader.ts`
-(the `?benchmark` entry), `GameDefinition/index.html` and `README.md` (the "runs
-rather slowly" clause, which stands in both, deleted under 1.4's rule when both
-bars are cleared), `tools/doc-refs-allow.txt` (R5a's two `frame-timing-core`
-entries), and `docs/wasm-frontend-unified-plan.md`; R5b writes it alone.
-`?benchmark=` sits in R4's parameter allowlist, so R4's `loader.ts` diff,
-landing first, shapes R5a's. R15 rewrites the `submitFrame` R5a instruments,
+(the `submitFrame`-to-paint instrumentation), `ts-src/src/url-options-core.ts`
+and `ts-src/src/url-options-core.test.ts` (the `?benchmark` entry),
+`GameDefinition/index.html` and `README.md` (the "runs rather slowly" clause,
+which stands in both, deleted under 1.4's rule when both bars are cleared),
+`tools/doc-refs-allow.txt` (R5a's two `frame-timing-core` entries),
+and `docs/wasm-frontend-unified-plan.md`; R5b writes it alone. `?benchmark=`
+joins R4's allowlist, which passes each key as one `--key=value` word: a form
+the `--benchmark` switch refuses, and one option where the record's benchmark
+mode, an `--automateAll` game, takes several, so R5a extends R4's translation
+rather than adding a line to it. R15 rewrites the `submitFrame` R5a instruments,
 so whichever of those lands first shapes the other's `terminal.ts` diff.
 
 **Done** --- `ts`, `page`, `docs`, which decides R5a only.

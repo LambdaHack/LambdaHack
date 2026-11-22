@@ -96,9 +96,9 @@ carries an outcome line.
 >   is deliberate: the pointman records have no such case and need no such word.
 >
 > The distinction a reader will trip on is **open** against **not applied**,
-> because the work list's ledger sorts by item number and not by it: R1 and R4
+> because the work list's ledger sorts by item number and not by it: R1 and R5
 > are two rows of one table and mean different things --- a tab killed mid-save
-> leaves saves of mixed generations, while `ts-src/src/url-options-core.ts`
+> leaves saves of mixed generations, while `ts-src/src/frame-timing-core.ts`
 > is a file nobody has written. The first is a bug report, the second
 > a specification, and only the second may be edited to match a tree that moved.
 > The rule fires at the item and the state lives in the ledger, so before

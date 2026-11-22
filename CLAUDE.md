@@ -171,7 +171,7 @@ Frontend selection and native-vs-browser backend are both compile-time, driven b
 
 The test-suite stanzas share the same CPP flags (so `USE_BROWSER`/`USE_WASM` etc. are consistent across library/executable/test-suites) but are deliberately excluded from the reactor linker treatment --- tasty's normal `exitcode-stdio` main doesn't fit that model.
 
-Browser-build runtime differences: there is no argv and no config file on disk --- server/client options sit at their defaults and the UI config comes from `config.ui.default`, embedded at compile time via TH (`rcfgUIDefault` in `GameDefinition/Content/RuleKind.hs`), with user overrides read from localStorage. Periodic autosave is disabled under the browser file backends (`Server/LoopM.hs`) --- saves happen only on explicit save/exit.
+Browser-build runtime differences: there is no config file on disk, and the argv carries only the options the page's URL parameters set (`ts-src/src/url-options-core.ts`) --- the other server/client options sit at their defaults and the UI config comes from `config.ui.default`, embedded at compile time via TH (`rcfgUIDefault` in `GameDefinition/Content/RuleKind.hs`), with user overrides read from localStorage. Periodic autosave is disabled under the browser file backends (`Server/LoopM.hs`) --- saves happen only on explicit save/exit.
 
 ## Coding style
 
