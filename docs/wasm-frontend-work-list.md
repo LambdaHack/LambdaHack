@@ -144,7 +144,7 @@ sections of the record are frozen and which live is its head callout's to say.
 | sum-typed selection | one frontend field replacing four `Bool`s | mechanical, moderate churn | --- | not applied |
 | RawFrontend contract | haddock contract, tasty harness, add-a-frontend checklist | medium | haddock and checklist: nothing; native harness after 0.1, which creates its module; wasm case with 0.3 | not applied |
 | determinism goldens | fixed-seed frame-and-overlay and final-state digests | medium | 2.4 for the wasm stage | landed -- 091ec1d5a |
-| frontend CI smokes | xvfb SDL, pty ANSI, a short nodeBench run | small each | 3.3 for the wasm one | not applied |
+| frontend CI smokes | xvfb SDL, pty ANSI, a short nodeBench run | small each | 3.3 for the wasm one | landed -- dcb009037 |
 | explicit widths | `punindex`, never the `Enum` instance, in frontend code | review rule, and a `tools/checks.py` step | --- | standing |
 | functional core | the standing review bar for frontend modules | review rule; nothing to execute | --- | standing |
 

@@ -674,6 +674,11 @@ only that the plan was written is one the next reader has to skip.
   binary's time over `make nativeBench`'s two games,
   `+with_expensive_assertions` in both: past the 3x game-logic bar of R5's
   ruling, which R5b's measurement pass is to settle.
+- 2026-11-22 -- ruled by Mikolaj at the frontend CI smokes' landing:
+  the `nodeBench` smoke's CI step is in the `test-wasm` job, which installs
+  the wasm toolchain and builds the libraries the reactor links, where the work
+  list had put each smoke's step in the playtest job, which has neither
+  (the practice's ruling (4)).
 
 ## Repo facts the plan builds on
 
@@ -3255,7 +3260,15 @@ in the `Makefile`'s `smokeANSI` and `smokeSdl`, which the playtest job runs
 on its optimized build, each gated as ruling (1) says. Still to do:
 the `nodeBench` smoke, after 3.3.
 
-**Rulings** --- all three ruled on 2026-08-07. (1) Each smoke gates on exit
+*Landed in `dcb009037`, the third smoke, after `4ddff74d5`'s ANSI one
+and `c4491c33a`'s SDL one: `make smokeNodeBench` plays their 60 frames
+on the reactor under Node, on the null frontend, as a step of the `test-wasm`
+job by ruling (4), and reads the frame count off the driver's stdout, which
+no browser build redirects. Here it played 62 frames, as `make smokeANSI`
+and `make smokeSdl` did, and two deep mutants fail it: the game stopped at frame
+1, and a time bound shorter than the game.*
+
+**Rulings** --- (1) to (3) ruled on 2026-08-07. (1) Each smoke gates on exit
 status *and* a frame-count assertion against the benchmark report, each reading
 its own source --- the repo fact that makes one source wrong per smoke:
 the executable redirects its own stdout and stderr to `~/.LambdaHack/stdout.txt`
@@ -3273,7 +3286,10 @@ and well into the render loop while keeping the job's game portion to seconds
 The ANSI smoke's driver is `script -e`, present at `/usr/bin/script`
 and propagating the child's exit status: zero new code, and the smoke's
 termination is `--stopAfterFrames`'s business, so a python pty helper would
-be maintained machinery ahead of need.
+be maintained machinery ahead of need. (4) Ruled 2026-11-22 by Mikolaj:
+the `nodeBench` smoke is a step of the `test-wasm` job, after its tests, which
+installs the wasm toolchain and builds the libraries the reactor links, where
+the playtest job has neither.
 
 **Frontends pass widths explicitly.** Frontend code decodes linear indices
 with the explicitly-parameterized `punindex (rwidth coscreen)`, never the `Enum`
