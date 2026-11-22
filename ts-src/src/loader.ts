@@ -1,9 +1,9 @@
 // Browser loader wiring: instantiate the LambdaHack wasm reactor with an
 // in-memory WASI shim and the generated JSFFI glue, hook up frame and overlay
-// submission, screenshots, the startup payload + keyboard, then start the game
-// and say on the page how it ended. Mirrors ../run-wasm-game.mjs (the Node
-// driver for the reactor), but paints a canvas instead of recording frames. Not
-// unit-tested.
+// submission, screenshots, the startup payload + keyboard, then start the
+// game with the options the URL parameters set and say on the page how it
+// ended. Mirrors ../run-wasm-game.mjs (the Node driver for the reactor), but
+// paints a canvas instead of recording frames. Not unit-tested.
 
 import {
   WASI,
@@ -19,6 +19,7 @@ import {
   type WheelHandler,
 } from "./terminal.js";
 import { leaveFullscreen, mountFullscreen } from "./fullscreen.js";
+import { rejectionMessage, urlOptions } from "./url-options-core.js";
 
 interface LhExports {
   memory: WebAssembly.Memory;
@@ -70,7 +71,9 @@ async function main(): Promise<void> {
     ConsoleStdout.lineBuffered((line) => console.warn("[lh]", line)),
     new PreopenDirectory("/", new Map()),
   ];
-  const wasi = new WASI(["LambdaHack"], [], fds);
+  const options = urlOptions(location.search);
+  for (const w of options.warnings) console.warn("LambdaHack:", w);
+  const wasi = new WASI(["LambdaHack", ...options.args], [], fds);
 
   // The module is compiled as it downloads, and the glue fetched meanwhile;
   // a static server that does not serve .wasm as application/wasm fails the
@@ -103,7 +106,11 @@ async function main(): Promise<void> {
     term.submitOverlays(addr, len, w);
   globalThis.lhSubmitFrame = (addr, w, h) => term.submitFrame(addr, w, h);
   globalThis.lhPrintScreen = (name) => term.printScreen(name);
+  // Whether the engine has resolved its options and fonts and configured the
+  // page, which it does before the first frame.
+  let configured = false;
   globalThis.lhConfigure = (json) => {
+    configured = true;
     const payload = JSON.parse(json) as StartupPayload;
     if (payload.allFontsScale !== undefined)
       term.setFontScale(payload.allFontsScale);
@@ -128,11 +135,20 @@ async function main(): Promise<void> {
   // lhStart's promise settles when the game ends: resolved is a finished game,
   // Main.hs's lhStart catching a clean exit's ExitSuccess, and rejected is
   // a crash. The page says which, since its screen goes on showing the last
-  // frame.
+  // frame. A rejection before the page is configured, with allowlisted URL
+  // parameters given, is taken for the game refusing them: its options parser
+  // rejecting a value, or a fontset it parsed failing to resolve; the page
+  // names them, the engine's own message going to the console.
   lh.lhStart().then(
     () => showEnd(FINISHED),
-    (e: unknown) =>
-      showFailure("The game crashed", e, " Reload the page to play again."),
+    (e: unknown) => {
+      if (configured || options.params.length === 0) {
+        showFailure("The game crashed", e, " Reload the page to play again.");
+      } else {
+        console.error(e);
+        showEnd(rejectionMessage(options.params), RED);
+      }
+    },
   );
 }
 
