@@ -1,6 +1,6 @@
--- | Tests of 'resolveFonts', the fonts every frontend that draws with fonts
--- takes from the client options, and of 'hasAuxiliaryFonts', which the UI
--- asks.
+-- | Tests of the scale the command line's @--allFontsScale@ sets, of
+-- 'resolveFonts', the fonts every frontend that draws with fonts takes from the
+-- client options, and of 'hasAuxiliaryFonts', which the UI asks.
 module FontsUnitTests (fontsUnitTests) where
 
 import Prelude ()
@@ -8,6 +8,7 @@ import Prelude ()
 import Game.LambdaHack.Core.Prelude
 
 import Data.Either (isLeft)
+import Options.Applicative (defaultPrefs, execParserPure, getParseResult)
 import Test.Tasty
 import Test.Tasty.HUnit
 
@@ -15,10 +16,15 @@ import Game.LambdaHack.Client.UI.Frontend
   (ChosenFont (..), ChosenFonts (..), hasAuxiliaryFonts, resolveFonts)
 import Game.LambdaHack.Common.ClientOptions
 import Game.LambdaHack.Common.Misc
+import Game.LambdaHack.Server (ServerOptions (..), serverOptionsPI)
 
 fontsUnitTests :: TestTree
 fontsUnitTests = testGroup "fontsUnitTests"
-  [ testCase "at scale 1 the map font is the bitmap one, at its own size" $
+  [ testCase "the command line refuses a scale not positive and finite" $
+      filter (isJust . commandLineScale) ["0", "-1", "NaN", "Infinity"] @?= []
+  , testCase "the command line takes a positive scale" $
+      commandLineScale "1.5" @?= Just (Just 1.5)
+  , testCase "at scale 1 the map font is the bitmap one, at its own size" $
       mapFont options @?= Right ("b.fon", 0)
   , testCase "at scale 1 without a bitmap font it is the scalable one" $
       mapFont (withFontset fontset {fontMapBitmap = ""} options)
@@ -54,6 +60,10 @@ fontsUnitTests = testGroup "fontsUnitTests"
           @?= fmap (isJust . cfAuxiliary) (resolveFonts o)
   ]
  where
+  commandLineScale d =
+    sallFontsScale . sclientOptions
+      <$> getParseResult (execParserPure defaultPrefs serverOptionsPI
+                                         ["--allFontsScale=" ++ d])
   fileAndSize ChosenFont{..} = (cfFile, cfSize)
   mapFont = fmap (fileAndSize . cfMap) . resolveFonts
   auxiliary = fmap (fmap (\(p, b, m) -> map fileAndSize [p, b, m])

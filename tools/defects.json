@@ -1277,6 +1277,20 @@
    "harm": "fired",
    "discovery": "in-use",
    "notes": "Reported as issue #302 from Allure v0.11.0.0 on Windows 10, whose reporter's screenshot in the itch.io thread it links shows Russian Notepad and the file ending `HeroName_2 = (\"In`. The switch to UTF-8 in Main.hs and in tryWriteFile named ASCII and ISO-8859-1 and -2, never a Windows code page, which GHC names CP and its number. PR 304's atomic write, merged before the fix, left no file in place of a truncated one. The fix writes UTF-8 always, and readFile reads UTF-8, falling back to the locale encoding for files earlier versions wrote, which the case `readFile reads a file earlier versions wrote in a code page` guards. Both directions watched on 2026-11-22 on an unoptimized build, the bug's on the tree with PR 304 merged. A tier-1 record: the corpus root is tools/, the cases are the test suite's, and the deep mutants `file: tryWriteFile in the locale encoding` and `file: readFile without its fallback` replay the bug and the fallback's loss."
+  },
+  {
+   "id": "Commandline-01",
+   "program": "engine-src/Game/LambdaHack/Server/Commandline.hs",
+   "name": "the options parser took an --allFontsScale of 0, a negative or NaN as 0 and Infinity as itself, so the browser's ?allFontsScale=0 ran a game on a canvas 0 wide with no message",
+   "family": "domain-unchecked",
+   "fix_rev": "self",
+   "trigger": "the server options parser given --allFontsScale=0, -1, NaN or Infinity",
+   "ok": "the parse fails, and the page names the parameter in its banner: the case `the command line refuses a scale not positive and finite` passes",
+   "bug": "the parse succeeded for all four values, the case failing with `but got: [\"0\",\"-1\",\"NaN\",\"Infinity\"]`; in headless Firefox and Chromium `?allFontsScale=0`, `-1` and `NaN` gave a startup payload of scale 0.0, frames on a canvas 0 wide and no message",
+   "proved": "ran",
+   "harm": "latent",
+   "discovery": "review",
+   "notes": "Found on 2026-11-22 by R4's probe of the URL parameters' edge values, R4's rulings of 2026-08-07 forbidding a dead canvas; the parser refuses such a value by Mikolaj's ruling of 2026-11-22, the loader validating nothing, where `max 0` had clamped it. Watched failing before the fix on an unoptimized build. A tier-1 record: the cases are the test suite's."
   }
  ]
 }

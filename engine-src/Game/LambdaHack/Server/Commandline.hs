@@ -283,10 +283,16 @@ chosenFontsetP = optional $ T.pack <$>
             <> help "Render UI using the given fontset from config file" )
 
 allFontsScaleP :: Parser (Maybe Double)
-allFontsScaleP = optional $ max 0 <$>
-  option auto (  long "allFontsScale"
-              <> metavar "D"
-              <> help "Scale all fonts by D, resizing the whole UI" )
+allFontsScaleP = optional $
+  option (auto >>= verifyScale)
+         (  long "allFontsScale"
+         <> metavar "D"
+         <> help "Scale all fonts by D, resizing the whole UI" )
+  where
+    verifyScale d =
+      if d > 0 && not (isInfinite d)
+      then return d
+      else readerError "D has to be a positive finite number"
 
 maxFpsP :: Parser (Maybe Double)
 maxFpsP = optional $ max 0 <$>

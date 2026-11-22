@@ -1537,7 +1537,11 @@ than a mechanical edit.
 otherwise assert this is one commit. (1) the change, which deletes the two
 allowlist entries as it creates the files. (2) the re-anchoring (1) owes:
 it rewrites the `new WASI` line cited here. (3) the outcome line naming (1)'s
-hash and the ledger flip.
+hash and the ledger flip. Between (2) and (3), by Mikolaj's ruling
+of 2026-11-22, an engine commit outside this item's **Owns** and gated
+by `native`: the options parser refusing an `--allFontsScale` that is
+not a positive finite number, which the page then names as it names any value
+the parser rejects.
 
 **Owns** --- the new `ts-src/src/url-options-core.ts`
 and `ts-src/src/url-options-core.test.ts`, `ts-src/src/loader.ts` (the argv

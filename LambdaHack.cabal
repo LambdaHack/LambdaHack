@@ -513,6 +513,7 @@ test-suite test
                       ,base
                       ,containers
                       ,enummapset
+                      ,optparse-applicative
                       ,splitmix
                       ,stm
                       ,tasty >= 1.0

@@ -684,6 +684,12 @@ only that the plan was written is one the next reader has to skip.
   and not the `make build-wasm` job ruled 2026-08-07, which would bootstrap
   the toolchain a second time; it lands ahead of the toolchain cache, which
   stays R2's next job.
+- 2026-11-22 -- ruled by Mikolaj (R4's Rulings): the options parser refuses
+  an `--allFontsScale` that is not a positive finite number, where it took 0,
+  a negative or NaN as 0 and Infinity as itself, which gave the page a running
+  game on a zero-width canvas and no message, as R4's probe of edge values
+  found; the refusal is an engine commit beside R4's, the loader still
+  validating nothing.
 
 ## Repo facts the plan builds on
 
@@ -2910,9 +2916,9 @@ an address-bar knob. `?fontset=` only becomes meaningful once 2.2's font wiring
 exists, and 2.2's `make build-ts` deploys every fontset's `.ttf.woff` files,
 not the default set's alone.
 
-**Rulings** --- all three ruled on 2026-08-07, all player-visible. The allowlist
-is the minimal named set --- `?fontset=`, `?allFontsScale=`, plus R5's
-`?benchmark=` when it lands --- and no debug flags: URLs are shareable,
+**Rulings** --- ruled on 2026-08-07 unless dated otherwise, all player-visible.
+The allowlist is the minimal named set --- `?fontset=`, `?allFontsScale=`, plus
+R5's `?benchmark=` when it lands --- and no debug flags: URLs are shareable,
 so a pasted link must not carry a soft-brick like `--stopAfterFrames`, and each
 later addition is one allowlist line with a recorded reason. The failure policy:
 unknown keys `console.warn` and are ignored --- real URLs accumulate third-party
@@ -2923,7 +2929,11 @@ message naming the parameter, never a dead canvas. And the loader validates
 nothing: every value delegates to the real options parser --- the item's own
 selling point --- with the loader only filtering to the allowlist, mapping query
 keys to argv strings and presenting rejections; the vitest covers exactly
-that query-to-args mapping.
+that query-to-args mapping. Ruled 2026-11-22 by Mikolaj: the options parser
+refuses an `--allFontsScale` that is not a positive finite number, where it took
+0, a negative or NaN as 0 and Infinity as itself, and `?allFontsScale=0` ran
+a game on a zero-width canvas with no message; the refusal is the engine's,
+in a commit beside R4's, and the loader still validates nothing.
 
 *Noted 2026-10-25, at 2.4's landing: since 2.4's (2) a fontset that parses
 but does not resolve ends the game at startup, `lhStart`'s promise rejecting
