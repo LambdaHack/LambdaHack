@@ -126,7 +126,7 @@ sections of the record are frozen and which live is its head callout's to say.
 | R1 | save robustness: staging keys plus a generation pointer | medium | 3.2, for the lag re-measurement | open |
 | R2 | browser-and-frontend CI | ongoing | grows per phase | standing |
 | R3 | retire GHCJS support | one commit, plus repair and record | 2.5 (parity) | not applied |
-| R4 | URL-parameter options | small | 3.1 | not applied |
+| R4 | URL-parameter options | small | 3.1 | landed -- 2caf84d59 |
 | R5 | performance pass | exploratory | 2.5, 3.3; R4 + 3.1 for the browser-side instrument | not applied |
 | R6 | screenshot/overlay coherence | small | 1.2, 2.2 | retired -- B.10 |
 | R7 | pixel-perfect bitmap map fonts on the canvas, scaled whole by integers, the scalable font only off `allFontsScale` 1.0 | medium | 0.4; 1.5 for the scale; R4 for a player-chosen fontset; R10 | not applied |

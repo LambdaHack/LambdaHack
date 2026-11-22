@@ -2916,6 +2916,16 @@ an address-bar knob. `?fontset=` only becomes meaningful once 2.2's font wiring
 exists, and 2.2's `make build-ts` deploys every fontset's `.ttf.woff` files,
 not the default set's alone.
 
+*Landed in `2caf84d59`, with `bab30eed7` beside it by the ruling of 2026-11-22
+below, the options parser refusing an `--allFontsScale` that is not a positive
+finite number. Beyond this body: each value passes as one `--key=value` word;
+a value the parser rejects and a fontset that parses but does not resolve both
+reject `lhStart`'s promise before `lhConfigure`, so the page names
+the parameters for either, as it does for any failure before `lhConfigure` while
+allowlisted parameters are given, and the 2026-10-25 note's crash no longer
+shows. Mikolaj's check in Firefox, the item's Hands back, on 2026-11-22:
+`?allFontsScale=0` refused, the page naming the parameter.*
+
 **Rulings** --- ruled on 2026-08-07 unless dated otherwise, all player-visible.
 The allowlist is the minimal named set --- `?fontset=`, `?allFontsScale=`, plus
 R5's `?benchmark=` when it lands --- and no debug flags: URLs are shareable,
