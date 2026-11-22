@@ -1249,6 +1249,20 @@
    "discovery": "review",
    "no_audit": "other:introduced-and-fixed-in-one-commit",
    "notes": "Introduced and fixed within the commit that adds tools/bench-sdl.py, whose parent has no such file. Found on 2026-11-21 by the review of that commit against Mikolaj's ruling of the same day, which measures a commit changing the UI against the previous commit that did, and against the standing check in CLAUDE.md, which runs the bench at any time between that commit and the push. A tier-1 record: the case is the self-test's commit picking, and the mutant `bench-sdl X defaults to HEAD` in tools/mutants.py replays the bug direction with the pre-fix default."
+  },
+  {
+   "id": "OverlayLayoutUnitTests-01",
+   "program": "test/OverlayLayoutUnitTests.hs",
+   "name": "the case `propFit: a cut chunk ends its line` checked placeLine, the test's own copy of the proportional pen's walk that Sdl.hs's drawPropChunks ran, so SDL's walk losing its cutoff guard failed no test",
+   "family": "vacuous-check",
+   "fix_rev": "self",
+   "trigger": "the guard `drawPropChunks _ cur _ | propCutoff lm cur = return ()` deleted from Sdl.hs",
+   "ok": "SDL draws through OverlayLayout's walkPropLine and the case runs it too, so deleting that walk's cutoff guard fails the case, by propFit's precondition on the chunk after the cut one",
+   "bug": "with the guard deleted from drawPropChunks, cabal test passed whole: all 291 tests of test and all 22 of test-game",
+   "proved": "ran",
+   "harm": "latent",
+   "discovery": "review",
+   "notes": "Found by the code review of 2026-10-23 over the year's diff, its 52.1. Both directions watched on 2026-11-22 on an unoptimized build: the bug's with the guard deleted from Sdl.hs at e23fbc29a, the fix's with it deleted from walkPropLine. A tier-1 record: the corpus root is tools/, the case is the test suite's `propFit: a cut chunk ends its line`, and the deep mutant `placement: walkPropLine without its cutoff guard` replays the fixed direction."
   }
  ]
 }

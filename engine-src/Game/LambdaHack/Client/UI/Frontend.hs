@@ -23,7 +23,7 @@ module Game.LambdaHack.Client.UI.Frontend
   , CellLayer(..), CellRun(..), FrameLayout(..)
   , layOutFrame, layOutSquare, layOutMono, propLineStartFits
   , PropCursor, startPropLine, propCutoff, PropFit(..), propFit
-  , trimmedMarkerRun, encodeFrameLayout
+  , walkPropLine, trimmedMarkerRun, encodeFrameLayout
 #ifdef EXPOSE_INTERNAL
     -- * Internal operations
   , FrontSetup, getKey, fchanFrontend, display, defaultMaxFps, microInSec

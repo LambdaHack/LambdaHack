@@ -4,9 +4,11 @@
 -- fixed-pitch line cuts take no metrics at all. The proportional pen, which
 -- advances by rendered widths only a frontend can measure, goes through two
 -- functions: 'propCutoff', asked before a chunk is rendered, and 'propFit',
--- given the width just measured. The table the test suite writes into
--- @ts-src/src/generated/@ (@docs/wasm-frontend-unified-plan.md@, 2.1) pins
--- any re-implementation of those two to them, such as the browser carries.
+-- given the width just measured; 'walkPropLine' runs the two along a line,
+-- given the measurement, and SDL draws through it. The table the test suite
+-- writes into @ts-src/src/generated/@ (@docs/wasm-frontend-unified-plan.md@,
+-- 2.1) pins any re-implementation of those two to them, such as the browser
+-- carries.
 -- A frontend across an FFI is handed the layout as the words
 -- 'encodeFrameLayout' writes, which fixtures the suite writes there too
 -- pin its decoder to (2.3).
@@ -19,7 +21,7 @@ module Game.LambdaHack.Client.UI.Frontend.OverlayLayout
   , layOutFrame, layOutSquare, layOutMono, propLineStartFits
     -- * The proportional pen, which advances by measured widths
   , PropCursor, startPropLine, propCutoff, PropFit(..), propFit
-  , trimmedMarkerRun
+  , walkPropLine, trimmedMarkerRun
     -- * The layout on the wire to a frontend across an FFI
   , encodeFrameLayout
     -- * Operations both internal and used in unit tests
@@ -290,6 +292,31 @@ propFit lm cur chunk widthRaw =
         | otherwise = remaining - boxSize
   trimmed = width /= widthRaw && not allSpace
   next = cur {pcurXPx = pcurXPx cur + width}
+
+-- | The pen's walk along one line: from 'startPropLine', each chunk measured,
+-- placed by 'propFit' and drawn, until the chunks run out or 'propCutoff'
+-- drops the rest, so that a cut chunk ends its line. The measurement returns
+-- the width 'propFit' takes together with whatever the drawing needs of it,
+-- so that a consumer renders each chunk once: SDL its rendered surface.
+--
+-- INLINE, so that a frontend's measuring and drawing are known calls
+-- in its monad, with no dictionary passed per chunk.
+walkPropLine :: Monad m
+             => LayoutMetrics
+             -> (PropChunk -> m (Int, a))  -- ^ the natural width, and more
+             -> (PropFit -> a -> m ())     -- ^ draw the chunk as placed
+             -> PropLine
+             -> m ()
+{-# INLINE walkPropLine #-}
+walkPropLine lm measure draw line = go (startPropLine lm line) (plChunks line)
+ where
+  go _ [] = return ()
+  go !cur _ | propCutoff lm cur = return ()
+  go cur (chunk : rest) = do
+    (!widthRaw, a) <- measure chunk
+    let !fit = propFit lm cur chunk widthRaw
+    draw fit a
+    go (pfNext fit) rest
 
 -- | The @$@ stamped into the last square column of a row whose proportional
 -- text was cut, 'Color.trimmedLineAttrW32', as an ordinary square-layer run,

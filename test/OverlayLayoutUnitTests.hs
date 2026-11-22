@@ -9,6 +9,7 @@ import Prelude ()
 import Game.LambdaHack.Core.Prelude
 
 import           Control.Exception (AssertionFailed, evaluate, try)
+import qualified Control.Monad.Trans.State.Strict as St
 import qualified Data.Text as T
 import           Test.Tasty
 import           Test.Tasty.HUnit hiding (assert)
@@ -52,6 +53,7 @@ import           Game.LambdaHack.Client.UI.Frontend
   , rowColor
   , startPropLine
   , trimmedMarkerRun
+  , walkPropLine
   )
 import           Game.LambdaHack.Client.UI.Overlay
   (AttrString, attrStringToString)
@@ -150,8 +152,9 @@ layoutTests =
         [(PointUI 0 0, [attrCell backlit 'a'])]
   ]
 
--- | One row per branch of 'propCutoff' and 'propFit', at metrics whose last
--- column starts at 144 and whose screen ends at 160.
+-- | One row per branch of 'propCutoff' and 'propFit', one of them through
+-- 'walkPropLine', at metrics whose last column starts at 144 and whose screen
+-- ends at 160.
 --
 -- Each row fails when the line it exercises is perturbed: the mutants named
 -- @placement:@ in @tools/mutants-deep.py@ break each such line, and each fails
@@ -183,14 +186,17 @@ placementTests =
   ]
  where
   lm = mkLayoutMetrics 8 10
+  -- The fits 'walkPropLine' draws, its chunks measured by the given widths
+  -- in turn.
   placeLine :: PropLine -> [Int] -> [PropFit]
-  placeLine line = go (startPropLine lm line) . zip (plChunks line)
+  placeLine line widths =
+    reverse $ snd
+    $ St.execState (walkPropLine lm measure draw line) (widths, [])
    where
-    go _ [] = []
-    go cur _ | propCutoff lm cur = []
-    go cur ((chunk, widthRaw) : rest) =
-      let fit = propFit lm cur chunk widthRaw
-      in fit : go (pfNext fit) rest
+    measure _ = St.state $ \(ws, fits) -> case ws of
+      w : rest -> ((w, ()), (rest, fits))
+      [] -> error "placeLine: a chunk measured with no width left"
+    draw fit () = St.modify' $ second (fit :)
 
 propertyTests :: [TestTree]
 propertyTests =

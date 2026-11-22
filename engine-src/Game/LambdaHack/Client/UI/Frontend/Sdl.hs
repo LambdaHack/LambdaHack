@@ -581,11 +581,11 @@ drawFrame coscreen ClientOptions{..} sess@FrontendSession{..} curFrame = do
         chooseAndDrawHighlight col row csBorder
       drawPropLine :: PropLine -> IO ()
       drawPropLine line =
-        drawPropChunks (plRow line) (startPropLine lm line) (plChunks line)
-      drawPropChunks :: Int -> PropCursor -> [PropChunk] -> IO ()
-      drawPropChunks _ _ [] = return ()
-      drawPropChunks _ cur _ | propCutoff lm cur = return ()
-      drawPropChunks row cur (chunk : rest) = do
+        walkPropLine lm renderPropChunk (drawPropChunk (plRow line)) line
+      -- The chunk rendered once: its width is measured on the surface
+      -- that drawPropChunk draws and frees.
+      renderPropChunk :: PropChunk -> IO (Int, (SDL.Surface, CInt))
+      renderPropChunk chunk = do
         let font = case pcFont chunk of
               PropRegular -> spropFont
               PropBold -> sboldFont
@@ -593,7 +593,9 @@ drawFrame coscreen ClientOptions{..} sess@FrontendSession{..} curFrame = do
         textSurfaceRaw <- TTF.shaded (fromJust font) (colorToRGBA fg)
                                      blackRGBA (pcText chunk)
         Vect.V2 sw sh <- SDL.surfaceDimensions textSurfaceRaw
-        let PropFit{..} = propFit lm cur chunk (fromEnum sw)
+        return (fromEnum sw, (textSurfaceRaw, sh))
+      drawPropChunk :: Int -> PropFit -> (SDL.Surface, CInt) -> IO ()
+      drawPropChunk !row PropFit{..} (textSurfaceRaw, sh) = do
         textTexture <- scaleSurfaceToTextureProp pfWidthPx sh textSurfaceRaw
         let tgtR = SDL.Rectangle (vp pfXPx (row * boxSize))
                                  (Vect.V2 (toEnum pfWidthPx) (toEnum boxSize))
@@ -601,7 +603,6 @@ drawFrame coscreen ClientOptions{..} sess@FrontendSession{..} curFrame = do
         SDL.copy srenderer textTexture Nothing (Just tgtR)
         SDL.destroyTexture textTexture
         mapM_ drawCellRun pfMarker
-        drawPropChunks row pfNext rest
   let arraysEqual = singleArray curFrame == singleArray prevFrame
       overlaysEqual =
         singleMonoOverlay curFrame == singleMonoOverlay prevFrame

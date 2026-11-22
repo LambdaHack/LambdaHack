@@ -370,6 +370,12 @@ MUTANTS = [
      '../engine-src/Game/LambdaHack/Client/UI/Frontend/OverlayLayout.hs',
      '        | allSpace = remaining\n',
      '        | allSpace = remaining - boxSize\n', placement(6)),
+    # The walk placing a chunk after the cut one, its guard gone from the
+    # walk SDL draws through: the seventh row's line gets a second fit, which
+    # propFit's precondition refuses.
+    ('placement: walkPropLine without its cutoff guard',
+     '../engine-src/Game/LambdaHack/Client/UI/Frontend/OverlayLayout.hs',
+     '  go !cur _ | propCutoff lm cur = return ()\n', '', placement(7)),
     # A proportional text op a pixel right of its fill, so that the fills alone
     # no longer cover every cell the overlays draw over: overlayOps' case
     # pinning each op but a fill to a fill's rectangle fails.
