@@ -128,19 +128,6 @@ nativeBenchBattle:
 
 nativeBench: nativeBenchBattle nativeBenchCrawl
 
-nodeBenchCrawl:
-	node $$(cabal list-bin exe:LambdaHack).jsexe/all.js --dbgMsgSer --logPriority 4 --newGame 1 --noAnim --maxFps 100000 --frontendNull --benchmark --benchMessages --stopAfterFrames 2000 --automateAll --keepAutomated --gameMode crawl $(RNGOPTS)
-
-nodeBenchBattle:
-	node $$(cabal list-bin exe:LambdaHack).jsexe/all.js --dbgMsgSer --logPriority 4 --newGame 3 --noAnim --maxFps 100000 --frontendNull --benchmark --benchMessages --stopAfterFrames 1000 --automateAll --keepAutomated --gameMode battle $(RNGOPTS)
-
-nodeBench: nodeBenchBattle nodeBenchCrawl
-
-nodeMinifiedBench:
-	node ../lambdahack.github.io/lambdahack.all.js --dbgMsgSer --logPriority 4 --newGame 3 --noAnim --maxFps 100000 --frontendNull --benchmark --benchMessages --stopAfterFrames 1000 --automateAll --keepAutomated --gameMode battle $(RNGOPTS)
-	node ../lambdahack.github.io/lambdahack.all.js --dbgMsgSer --logPriority 4 --newGame 1 --noAnim --maxFps 100000 --frontendNull --benchmark --benchMessages --stopAfterFrames 2000 --automateAll --keepAutomated --gameMode crawl $(RNGOPTS)
-
-
 test: test-short test-medium benchNull
 
 test-gha: test testCrawl-medium testCrawl-stopAfterGameOver testDefense-medium test-sniff
@@ -361,6 +348,35 @@ deployPage = cp $(PAGE_FILES) "$(1)" && \
 build-ts: build-wasm $(NPM_CI)
 	. ~/.ghc-wasm/env && \
 	$(call deployPage,$(CURDIR)/../lambdahack.github.io)
+
+# nativeBench's games, flag for flag, on the wasm reactor under
+# ts-src/run-wasm-game.mjs and ~/.ghc-wasm/env's node: nodeBench on the
+# build tree's reactor, its glue post-linked as test-reactor's is, and
+# nodeDeployedBench on the reactor and glue build-ts deployed. The driver
+# bounds no game under --frontendNull, so timeout bounds each, and a hang fails
+# the target as a crash does. The report is on stdout, which only the native
+# executable redirects.
+NODEBENCHTIMEOUT=600
+nodeGame = timeout $(NODEBENCHTIMEOUT) node ts-src/run-wasm-game.mjs
+nodeBuilt = . ~/.ghc-wasm/env && \
+	T=$$(mktemp -d) && \
+	trap 'rm -rf "$$T"' EXIT && \
+	W=$$(wasm32-wasi-cabal list-bin exe:LambdaHack --enable-optimization) && \
+	$(POSTLINK) --input "$$W" --output "$$T/ghc_wasm_jsffi.mjs" && \
+	$(nodeGame) "$$W" "$$T/ghc_wasm_jsffi.mjs"
+
+nodeBenchCrawl: build-wasm $(NPM_CI)
+	$(nodeBuilt) --dbgMsgSer --logPriority 4 --newGame 1 --noAnim --maxFps 100000 --frontendNull --benchmark --benchMessages --stopAfterFrames 2000 --automateAll --keepAutomated --gameMode crawl $(RNGOPTS)
+
+nodeBenchBattle: build-wasm $(NPM_CI)
+	$(nodeBuilt) --dbgMsgSer --logPriority 4 --newGame 3 --noAnim --maxFps 100000 --frontendNull --benchmark --benchMessages --stopAfterFrames 1000 --automateAll --keepAutomated --gameMode battle $(RNGOPTS)
+
+nodeBench: nodeBenchBattle nodeBenchCrawl
+
+nodeDeployedBench: $(NPM_CI)
+	. ~/.ghc-wasm/env && \
+	$(nodeGame) ../lambdahack.github.io/LambdaHack.wasm ../lambdahack.github.io/ghc_wasm_jsffi.mjs --dbgMsgSer --logPriority 4 --newGame 3 --noAnim --maxFps 100000 --frontendNull --benchmark --benchMessages --stopAfterFrames 1000 --automateAll --keepAutomated --gameMode battle $(RNGOPTS) && \
+	$(nodeGame) ../lambdahack.github.io/LambdaHack.wasm ../lambdahack.github.io/ghc_wasm_jsffi.mjs --dbgMsgSer --logPriority 4 --newGame 1 --noAnim --maxFps 100000 --frontendNull --benchmark --benchMessages --stopAfterFrames 2000 --automateAll --keepAutomated --gameMode crawl $(RNGOPTS)
 
 test-ts: $(NPM_CI)
 	cd ts-src && \
