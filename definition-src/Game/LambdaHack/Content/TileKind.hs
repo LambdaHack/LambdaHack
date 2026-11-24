@@ -7,10 +7,11 @@ module Game.LambdaHack.Content.TileKind
   , isUknownSpace, unknownId
   , isSuspectKind, isOpenableKind, isClosableKind
   , talterForStairs, floorSymbol
+  , validateSingle
   , mandatoryGroups, mandatoryGroupsSingleton
 #ifdef EXPOSE_INTERNAL
     -- * Internal operations
-  , validateSingle, validateAll, validateDups
+  , validateAll, validateDups
 #endif
   ) where
 
@@ -119,8 +120,8 @@ validateSingle t@TileKind{..} =
                                    && Trail `elem` tfeature ]
   ++ [ "OftenItem and NoItem on a tile" | OftenItem `elem` tfeature
                                           && NoItem `elem` tfeature ]
-  ++ [ "OftenActor and NoActor on a tile" | OftenItem `elem` tfeature
-                                            && NoItem `elem` tfeature ]
+  ++ [ "OftenActor and NoActor on a tile" | OftenActor `elem` tfeature
+                                            && NoActor `elem` tfeature ]
   ++ (let f :: Feature -> Bool
           f OpenTo{} = True
           f CloseTo{} = True

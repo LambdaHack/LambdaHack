@@ -506,6 +506,7 @@ test-suite test
                       ScreenshotUnitTests
                       SessionUIMock
                       SessionUIUnitTests
+                      TileKindUnitTests
                       UnitTestHelpers
   build-depends:      ,LambdaHack
                       ,this-game-content

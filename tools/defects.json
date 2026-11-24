@@ -1291,6 +1291,20 @@
    "harm": "latent",
    "discovery": "review",
    "notes": "Found on 2026-11-22 by R4's probe of the URL parameters' edge values, R4's rulings of 2026-08-07 forbidding a dead canvas; the parser refuses such a value by Mikolaj's ruling of 2026-11-22, the loader validating nothing, where `max 0` had clamped it. Watched failing before the fix on an unoptimized build. A tier-1 record: the cases are the test suite's."
+  },
+  {
+   "id": "TileKind-01",
+   "program": "definition-src/Game/LambdaHack/Content/TileKind.hs",
+   "name": "validateSingle's check labelled \"OftenActor and NoActor on a tile\" tested OftenItem and NoItem, a copy of the line above it, so a tile kind with both actor features passed and one with both item features was refused twice",
+   "family": "vacuous-check",
+   "fix_rev": "self",
+   "trigger": "validateSingle on a tile kind whose tfeature is [OftenActor, NoActor], or [OftenItem, NoItem]",
+   "ok": "the first refused with \"OftenActor and NoActor on a tile\" and the second with \"OftenItem and NoItem on a tile\" alone: the cases of `tileKindUnitTests` pass",
+   "bug": "the first passed, the case failing with `but got: []`, and the second was refused under both labels, `but got: [\"OftenItem and NoItem on a tile\",\"OftenActor and NoActor on a tile\"]`",
+   "proved": "ran",
+   "harm": "latent",
+   "discovery": "review",
+   "notes": "Since 4b7045990 (2017-04-28). Found on 2026-11-24 by a review of the open help-wanted issues, reading TileKind.hs for issue #186; no tile kind of the sample game carries both actor features. validateSingle is exported outside EXPOSE_INTERNAL for the cases, as ItemKind's is. Watched failing before the fix on an unoptimized build. A tier-1 record: the cases are the test suite's."
   }
  ]
 }

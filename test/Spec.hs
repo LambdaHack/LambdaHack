@@ -30,6 +30,7 @@ import OverlayLayoutUnitTests
 import ReqFailureUnitTests
 import ScreenshotUnitTests
 import SessionUIUnitTests
+import TileKindUnitTests
 import UnitTestHelpers (stubWidth)
 
 -- | The cases on the stub content, the 'Point' 'Enum' width set once here
@@ -61,6 +62,7 @@ tests = testGroup "Tests" [ actorStateUnitTests
                           , overlayLayoutUnitTests
                           , reqFailureUnitTests
                           , screenshotUnitTests
+                          , tileKindUnitTests
                           , macroTests
                           , monadClientUIUnitTests
                           ]
