@@ -30,7 +30,7 @@ maxBoundInt32 = toIntegralCrash (maxBound :: Int32)
 -- normalized frequencies, so operations don't need to preserve
 -- the expected equalities.
 data Frequency a = Frequency
-  { runFrequency  :: [(Int, a)]  -- ^ give acces to raw frequency values
+  { runFrequency  :: [(Int, a)]  -- ^ give access to raw frequency values
   , nameFrequency :: Text        -- ^ short description for debug, etc.
   }
   deriving (Show, Eq, Ord, Foldable, Traversable, Generic)

@@ -23,7 +23,7 @@ import GHC.Generics (Generic)
 
 import Game.LambdaHack.Definition.DefsInternal
 
--- | X spacial dimension for points and vectors.
+-- | X spatial dimension for points and vectors.
 type X = Int
 
 -- | Y xpacial dimension for points and vectors.

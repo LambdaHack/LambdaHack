@@ -106,7 +106,7 @@ validateSingleRoster cofact caves roster =
      in concatMap f roster
         ++ [ "player is confused by both positive and negative level numbers"
            | not (null keys) && signum minD /= signum maxD ]
-        ++ [ "player is confused by level numer zero"
+        ++ [ "player is confused by level number zero"
            | 0 `elem` keys ]
 
 -- | Validate game mode kinds together.
