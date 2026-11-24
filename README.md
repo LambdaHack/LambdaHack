@@ -104,9 +104,8 @@ At the next game start, the new default config file appears in its place.
 Screen fonts and, consequently, window size can be changed by editing the config
 file in the user data folder. The default bitmap font `16x16xw.bdf` used
 for the game map covers most national characters in the Latin alphabet (e.g.
-to give custom names to player characters) and results in a game window
-of exactly 720p HD dimensions. The `8x8xb.fnt` bitmap font results in a tiny
-window and covers Latin-1 characters only. The config file parameter
+to give custom names to player characters). The `8x8xb.fnt` bitmap font results
+in a tiny window and covers Latin-1 characters only. The config file parameter
 `allFontsScale` permits further window size adjustments, automatically switching
 to the scalable version of the large game map font (`16x16xw.woff`). Config file
 option `chosenFontset` governs not only the main game map font, but also
