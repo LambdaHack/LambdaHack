@@ -154,7 +154,7 @@ data Aspect =
 -- | Effects of items. Can be invoked by the item wielder to affect
 -- another actor or the wielder himself.
 --
--- Various effects of an item kind are all groupped in one list,
+-- Various effects of an item kind are all grouped in one list,
 -- at the cost of conditionals, sequences, etc., to ensure brevity
 -- and simplicity of content definitions. Most effects fire regardless
 -- of activation kind (the only exceptions are @OnSmash@ and @OnCombine@
@@ -180,7 +180,7 @@ data Effect =
   | ParalyzeInWater Dice.Dice
                           -- ^ paralyze for this many game clips due to water
   | InsertMove Dice.Dice  -- ^ give actor this many extra tenths of actor move
-  | Teleport Dice.Dice    -- ^ teleport actor across rougly this distance
+  | Teleport Dice.Dice    -- ^ teleport actor across roughly this distance
   | CreateItem (Maybe Int) CStore (GroupName ItemKind) TimerDice
       -- ^ create an item of the group and insert into the store with the given
       --   random timer; it cardinality not specified, roll it
@@ -254,7 +254,7 @@ data Effect =
   | NopEffect                -- ^ nothing happens, @UseDud@, no description
   | AndEffect Effect Effect  -- ^ only fire second effect if first activated
   | OrEffect Effect Effect   -- ^ only fire second effect if first not activated
-  | SeqEffect [Effect]       -- ^ fire all effects in order; always suceed
+  | SeqEffect [Effect]       -- ^ fire all effects in order; always succeed
   | When Condition Effect    -- ^ if condition not met, fail without a message;
                              --   better avoided, since AI can't value it well
   | Unless Condition Effect  -- ^ if condition met, fail without a message;

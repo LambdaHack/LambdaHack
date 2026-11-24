@@ -155,7 +155,7 @@ validateDups TileKind{..} feat =
 -- unless there is a good reason they shouldn't. Otherwise the player has
 -- to inspect manually all the tiles with this look to see if any is special.
 -- This tends to be tedious. Note that tiles may freely differ wrt text blurb,
--- dungeon generation rules, AI preferences, etc., whithout causing the tedium.
+-- dungeon generation rules, AI preferences, etc., without causing the tedium.
 validateAll :: [TileKind] -> ContentData TileKind -> [Text]
 validateAll content cotile =
   let f :: Feature -> Bool

@@ -119,7 +119,7 @@ data Flag =
                   --   kinetic damage is not applied
   deriving (Show, Eq, Enum, Bounded, Generic)
 
--- | These flags correspond to the last cases of @Flag@ and addtionally
+-- | These flags correspond to the last cases of @Flag@ and additionally
 -- to all the universal circumstances of item activation,
 -- under which every item activates (even if vacuusly).
 data ActivationFlag =

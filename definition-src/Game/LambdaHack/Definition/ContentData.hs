@@ -66,7 +66,7 @@ emptyContentData = ContentData V.empty M.empty
 makeContentData :: Show c
                 => String
                 -> (c -> Text)
-                     -- ^ name of the content itme, used for validation
+                     -- ^ name of the content item, used for validation
                 -> (c -> Freqs c)
                      -- ^ frequency in groups, for validation and preprocessing
                 -> (c -> [Text])
