@@ -1637,7 +1637,10 @@ from the atlas at `allFontsScale` 1.0, the canvas scaled whole by integers,
 and from the outline font otherwise, `make build-ts` copying the atlas beside
 the woff; (3) the outcome line and the ledger flip, for R7a. R7b, ruled
 in the record, takes no commit here: it follows R7a's landing as a change
-of the font choice alone.
+of the font choice alone. LambdaHack issue #249's SDL2 change, once landed, adds
+to (2) the record's ruling of 2026-11-24, the outline font laid out
+at the fullscreen fit, and re-cuts Owns and Done by it; should R7 have landed
+first, that ruling is an item of its own.
 
 **Owns** --- `ts-src/src/terminal.ts`, `ts-src/src/terminal-core.ts`
 and its test, `ts-src/src/fullscreen.ts`, `Makefile` (the atlas copy

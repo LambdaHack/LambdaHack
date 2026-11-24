@@ -690,6 +690,12 @@ only that the plan was written is one the next reader has to skip.
   game on a zero-width canvas and no message, as R4's probe of edge values
   found; the refusal is an engine commit beside R4's, the loader still
   validating nothing.
+- 2026-11-24 -- ruled by Mikolaj (R7's Rulings), to take effect when LambdaHack
+  issue #249's SDL2 change lands, SDL2 then drawing the fonts in its fullscreen
+  modes at the largest scale at which the grid fits the screen rather
+  than resampling the frame: the page lays the canvas out in fullscreen
+  at the same fit, the outline font included, rather than through 1.3's
+  transform, one pure function computing the fit for both frontends.
 
 ## Repo facts the plan builds on
 
@@ -3068,7 +3074,19 @@ note, finding 7): the browser blends its glyphs' edges at every scale, SDL2
 faintly at 1:1, its hinting snapping most, and at 2:1 too, by the measurement
 above; the `.bdf` is crisp in SDL2. The page gate counts the browser's blends
 at 1:1 and 2:1 and fails on a tint, not on a blend, a tint being the subpixel
-antialiasing an opaque canvas gave every glyph until terminal-02's fix.
+antialiasing an opaque canvas gave every glyph until terminal-02's fix. Ruled
+2026-11-24 by Mikolaj, to take effect when LambdaHack issue #249's SDL2 change
+lands, under which SDL2 draws the fonts in its fullscreen modes at the largest
+scale at which the grid fits the screen's pixels rather than resampling
+the frame: the page then lays the canvas out in fullscreen at the same fit,
+the outline font included, instead of scaling it by 1.3's transform, which R7
+above keeps for the outline font because resampling is what SDL2 does too,
+a reason that change removes. The fit is one pure function beside
+`resolveFonts`, the browser's TypeScript copy pinned to it by a generated table
+as the proportional pen's is (2.1), and the startup payload carries
+the auxiliary fonts' sizes unscaled, or the page rescales them by the fit's
+ratio to `allFontsScale`. Should R7 have landed first, this is an item
+of its own.
 
 ## Multi-frontend practices (adopted)
 
