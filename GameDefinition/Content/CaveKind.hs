@@ -153,7 +153,9 @@ smoking = arena
   -- Trails provide enough light for fun stealth.
   , cnightOdds    = 51  -- always night
   , citemNum      = 6 `d` 5  -- rare, so make it exciting
-  , citemFreq     = [(IK.COMMON_ITEM, 20), (IK.TREASURE, 40), (IK.ANY_GLASS, 40)]
+  , citemFreq     = [ (IK.COMMON_ITEM, 20), (IK.TREASURE, 40)
+                    , (IK.ANY_GLASS, 40), (CHIC_GEAR, 10) ]
+                      -- gentlemen leave their jackets on the couches
   , cdefTile      = ARENA_SET_DARK
   , cdesc         = "Velvet couches exude the strong smell of tobacco."
   }
