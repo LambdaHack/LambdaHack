@@ -5,6 +5,7 @@ module Game.LambdaHack.Definition.Flavour
     Flavour
   , -- * Constructors
     zipPlain, zipFancy, zipLiquid, zipGlassPlain, zipGlassFancy, zipStory
+  , zipMetal, zipGem, zipSpray
   , dummyFlavour, stdFlavList
   , -- * Accessors
     flavourToColor, flavourToName
@@ -13,6 +14,7 @@ module Game.LambdaHack.Definition.Flavour
 #ifdef EXPOSE_INTERNAL
     -- * Internal operations
   , FancyName, colorToLiquidName, colorToGlassPlainName, colorToGlassFancyName
+  , colorToMetalName, colorToGemName, colorToSprayName
 #endif
   ) where
 
@@ -26,7 +28,10 @@ import GHC.Generics (Generic)
 
 import Game.LambdaHack.Definition.Color
 
+-- New constructors go at the end, so that the @Enum@ codes of the existing
+-- flavours, and so the flavours in old savefiles, stay unchanged.
 data FancyName = Plain | Fancy | Liquid | GlassPlain | GlassFancy | Story
+               | Metal | Gem | Spray
   deriving (Show, Eq, Ord, Enum, Bounded, Generic)
 
 -- | The type of item flavours.
@@ -53,13 +58,17 @@ stdFlavList :: [Flavour]
 stdFlavList = [Flavour fn bc | fn <- [minBound..maxBound], bc <- stdCol]
 
 -- | Turn a colour set into a flavour set.
-zipPlain, zipFancy, zipLiquid, zipGlassPlain, zipGlassFancy, zipStory :: [Color] -> [Flavour]
+zipPlain, zipFancy, zipLiquid, zipGlassPlain, zipGlassFancy, zipStory,
+  zipMetal, zipGem, zipSpray :: [Color] -> [Flavour]
 zipPlain = map (Flavour Plain)
 zipFancy = map (Flavour Fancy)
 zipLiquid = map (Flavour Liquid)
 zipGlassPlain = map (Flavour GlassPlain)
 zipGlassFancy = map (Flavour GlassFancy)
 zipStory = map (Flavour Story)
+zipMetal = map (Flavour Metal)
+zipGem = map (Flavour Gem)
+zipSpray = map (Flavour Spray)
 
 -- | Get the underlying base colour of a flavour.
 flavourToColor :: Flavour -> Color
@@ -76,6 +85,9 @@ flavourToName Flavour{fancyName=GlassFancy, ..} =
   colorToGlassFancyName baseColor
 flavourToName Flavour{fancyName=Story, ..} =
   colorToStoryName baseColor
+flavourToName Flavour{fancyName=Metal, ..} = colorToMetalName baseColor
+flavourToName Flavour{fancyName=Gem, ..} = colorToGemName baseColor
+flavourToName Flavour{fancyName=Spray, ..} = colorToSprayName baseColor
 
 -- | Human-readable names for item colors. The plain set.
 colorToPlainName :: Color -> Text
@@ -164,6 +176,70 @@ colorToStoryName BrBlue    = "profound"
 colorToStoryName BrMagenta = "torturous"
 colorToStoryName BrCyan    = "peculiar"
 colorToStoryName BrWhite   = "explosive"
+
+-- | Human-readable names for item colors. The metal set.
+-- This is just flavour (what the item looks like), not a material system,
+-- so for now use it only where the material plainly doesn't matter,
+-- such as jewelry, and not for weapons or tools.
+colorToMetalName :: Color -> Text
+colorToMetalName Black     = "iron"
+colorToMetalName Red       = "copper"
+colorToMetalName Green     = "verdigris"
+colorToMetalName Brown     = "bronze"
+colorToMetalName Blue      = "cobalt"
+colorToMetalName Magenta   = "bismuth"
+colorToMetalName Cyan      = "tin"
+colorToMetalName White     = "silver"
+colorToMetalName AltWhite  = error "colorToMetalName: illegal color"
+colorToMetalName BrBlack   = "lead"
+colorToMetalName BrRed     = "rose-gold"
+colorToMetalName BrGreen   = "green-gold"
+colorToMetalName BrYellow  = "gold"
+colorToMetalName BrBlue    = "steel"
+colorToMetalName BrMagenta = "titanium"
+colorToMetalName BrCyan    = "zinc"
+colorToMetalName BrWhite   = "platinum"
+
+-- | Human-readable names for item colors. The gem set.
+colorToGemName :: Color -> Text
+colorToGemName Black     = "onyx"
+colorToGemName Red       = "garnet"
+colorToGemName Green     = "jade"
+colorToGemName Brown     = "agate"
+colorToGemName Blue      = "lapis"
+colorToGemName Magenta   = "amethyst"
+colorToGemName Cyan      = "aquamarine"
+colorToGemName White     = "opal"
+colorToGemName AltWhite  = error "colorToGemName: illegal color"
+colorToGemName BrBlack   = "hematite"
+colorToGemName BrRed     = "ruby"
+colorToGemName BrGreen   = "emerald"
+colorToGemName BrYellow  = "citrine"
+colorToGemName BrBlue    = "sapphire"
+colorToGemName BrMagenta = "rose-quartz"
+colorToGemName BrCyan    = "turquoise"
+colorToGemName BrWhite   = "diamond"
+
+-- | Human-readable names for item colors. The spray set,
+-- for blasts such as mists, clouds and showers.
+colorToSprayName :: Color -> Text
+colorToSprayName Black     = "smoky"
+colorToSprayName Red       = "fiery"
+colorToSprayName Green     = "sickly"
+colorToSprayName Brown     = "dusty"
+colorToSprayName Blue      = "frosty"
+colorToSprayName Magenta   = "swirling"
+colorToSprayName Cyan      = "sparkling"
+colorToSprayName White     = "cloudy"
+colorToSprayName AltWhite  = error "colorToSprayName: illegal color"
+colorToSprayName BrBlack   = "sooty"
+colorToSprayName BrRed     = "glowing"
+colorToSprayName BrGreen   = "fuming"
+colorToSprayName BrYellow  = "sulfurous"
+colorToSprayName BrBlue    = "icy"
+colorToSprayName BrMagenta = "hazy"
+colorToSprayName BrCyan    = "misty"
+colorToSprayName BrWhite   = "shining"
 
 -- | Simple names for team colors (bright colours preferred).
 colorToTeamName :: Color -> Text
