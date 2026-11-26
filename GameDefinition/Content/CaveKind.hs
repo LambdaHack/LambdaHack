@@ -156,6 +156,7 @@ smoking = arena
   , citemFreq     = [ (IK.COMMON_ITEM, 20), (IK.TREASURE, 40)
                     , (IK.ANY_GLASS, 40), (CHIC_GEAR, 10) ]
                       -- gentlemen leave their jackets on the couches
+                      -- and their brandy glasses half-full on the tables
   , cdefTile      = ARENA_SET_DARK
   , cdesc         = "Velvet couches exude the strong smell of tobacco."
   }
